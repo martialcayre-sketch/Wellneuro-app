@@ -2,13 +2,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { type SyntheseSchema } from '@/lib/anthropic';
-import { blocsDepuisSynthese, STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents';
+import { STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents';
+import { compositionDepuisSynthese } from '@/lib/documents/compositionSynthese';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { logger } from '@/lib/observability/logger';
-import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -69,20 +68,8 @@ export async function GET(req: Request) {
     }
 
     const patient = await prisma.patient.findUnique({ where: { idPatient: synthese.idPatient } });
-    const patientNom = patient ? `${patient.prenom} ${patient.nom}` : '';
-    const dateDocument = (synthese.dateValidation ?? synthese.dateGeneration).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
-
-    const blocs = blocsDepuisSynthese({
-      syntheseJson: synthese.syntheseJson as unknown as SyntheseSchema,
-      statut,
-      versionPrompt: synthese.versionPrompt,
-      dateValidation: synthese.dateValidation ? synthese.dateValidation.toISOString() : null,
-      origine: estRedactionPraticien(synthese.modele) ? 'praticien' : 'ia',
-    });
+    // Une seule composition pour l'aperçu et l'impression (F38).
+    const { patientNom, dateDocument, blocs } = compositionDepuisSynthese(synthese, patient);
 
     return withCorrelationHeader(
       NextResponse.json({ ok: true, patientNom, dateDocument, statut, blocs }),

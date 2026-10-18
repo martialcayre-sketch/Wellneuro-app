@@ -90,4 +90,78 @@ describe('DocumentsPanel', () => {
     expect(iframe.getAttribute('srcdoc')).toContain('explorations à discuter');
     expect(iframe.getAttribute('srcdoc')).not.toContain('STRICTEMENT interne');
   });
+
+  // D-307 §2 (F38) : « Imprimer » le document pour le médecin se confirme,
+  // s'enregistre au serveur, puis imprime l'instantané qu'il renvoie.
+  async function ouvrirApercuMedecin() {
+    const { container } = render(<DocumentsPanel />);
+    await waitFor(() => screen.getByRole('option', { name: /Sophie Nicola/ }));
+    fireEvent.change(container.querySelectorAll('select')[0], { target: { value: 'PAT_1' } });
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    fireEvent.change(container.querySelectorAll('select')[1], { target: { value: 'SYN_1' } });
+    await waitFor(() => screen.getByTitle('Aperçu Patient'));
+    const groupe = screen.getByRole('group', { name: /Destinataire de l’aperçu imprimable/ });
+    fireEvent.click(within(groupe).getByRole('button', { name: 'Médecin traitant' }));
+    return screen.getByTitle('Aperçu Médecin traitant') as HTMLIFrameElement;
+  }
+
+  function appelsImpression() {
+    return fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/praticien/documents/medecin/impression'));
+  }
+
+  function repondreImpression(reponse: { ok: boolean; json: unknown }) {
+    const precedente = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/praticien/documents/medecin/impression')) {
+        return Promise.resolve({ ok: reponse.ok, json: async () => reponse.json });
+      }
+      return precedente!(url, init);
+    });
+  }
+
+  it('médecin : « Imprimer » demande une confirmation, et Annuler n’enregistre rien', async () => {
+    await ouvrirApercuMedecin();
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    const confirmation = screen.getByRole('group', { name: 'Confirmer l’impression' });
+    expect(confirmation.textContent).toContain('Fil de correspondance');
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Annuler' }));
+    expect(screen.queryByRole('group', { name: 'Confirmer l’impression' })).toBeNull();
+    expect(appelsImpression()).toHaveLength(0);
+  });
+
+  it('médecin : la confirmation enregistre, puis l’iframe porte l’instantané du serveur', async () => {
+    repondreImpression({
+      ok: true,
+      json: { ok: true, impression: { id: 'imp_1', imprimeLe: '2026-10-18T15:00:00.000Z' }, html: '<p>Instantané serveur</p>' },
+    });
+    const iframe = await ouvrirApercuMedecin();
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer et imprimer' }));
+    await waitFor(() => expect(screen.getByText(/Impression enregistrée/)).not.toBeNull());
+    expect(appelsImpression()).toHaveLength(1);
+    expect(JSON.parse(String(appelsImpression()[0][1]?.body))).toEqual({ idSynthese: 'SYN_1' });
+    expect(iframe.getAttribute('srcdoc')).toBe('<p>Instantané serveur</p>');
+  });
+
+  it('médecin : un refus du serveur est affiché, l’aperçu reste celui relu', async () => {
+    repondreImpression({ ok: false, json: { ok: false, reason: 'consentement_partage_retire', error: 'Le patient a retiré son consentement.' } });
+    const iframe = await ouvrirApercuMedecin();
+    const avant = iframe.getAttribute('srcdoc');
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer et imprimer' }));
+    await waitFor(() => expect(screen.getByText('Le patient a retiré son consentement.')).not.toBeNull());
+    expect(iframe.getAttribute('srcdoc')).toBe(avant);
+  });
+
+  it('patient : « Imprimer » ne passe ni par la confirmation ni par le serveur', async () => {
+    const { container } = render(<DocumentsPanel />);
+    await waitFor(() => screen.getByRole('option', { name: /Sophie Nicola/ }));
+    fireEvent.change(container.querySelectorAll('select')[0], { target: { value: 'PAT_1' } });
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    fireEvent.change(container.querySelectorAll('select')[1], { target: { value: 'SYN_1' } });
+    await waitFor(() => screen.getByTitle('Aperçu Patient'));
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    expect(screen.queryByRole('group', { name: 'Confirmer l’impression' })).toBeNull();
+    expect(appelsImpression()).toHaveLength(0);
+  });
 });

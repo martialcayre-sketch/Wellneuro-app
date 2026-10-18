@@ -10,6 +10,7 @@ import {
   type Destinataire,
 } from '@/lib/documents';
 import { DocumentComposer } from '@/components/patient-cockpit/DocumentComposer';
+import type { ImpressionDocumentMedecinResponse } from '@/app/api/praticien/documents/medecin/impression/route';
 
 // Montage praticien de la composition documentaire C3 (LOT-05). Page dédiée
 // `/dashboard/documents`. Sélectionne une synthèse VALIDÉE, compose côté serveur
@@ -52,6 +53,13 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   const [sending, setSending] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const apercuRef = useRef<HTMLIFrameElement>(null);
+  // Document pour le médecin ([[D-307]] §2, F38) : l'impression se confirme,
+  // s'enregistre côté serveur, puis imprime l'instantané que le serveur a
+  // composé et conservé — pas l'aperçu du navigateur.
+  const [confirmationImpression, setConfirmationImpression] = useState(false);
+  const [impressionEnCours, setImpressionEnCours] = useState(false);
+  const [htmlImprime, setHtmlImprime] = useState<string | null>(null);
+  const imprimerAuChargement = useRef(false);
 
   useEffect(() => {
     fetch('/api/praticien/patients-pg')
@@ -90,6 +98,8 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   async function onSelectSynthese(idSynthese: string) {
     setSelectedIdSynthese(idSynthese);
     setDoc(null);
+    setConfirmationImpression(false);
+    setHtmlImprime(null);
     setFeedback(null);
     setRelectureConfirmee(false);
     if (!idSynthese) return;
@@ -127,6 +137,53 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   }, [doc, destinataireApercu]);
 
   function onImprimer() {
+    if (destinataireApercu === 'medecin') {
+      setConfirmationImpression(true);
+      return;
+    }
+    apercuRef.current?.contentWindow?.print();
+  }
+
+  function choisirDestinataire(d: Destinataire) {
+    setDestinataireApercu(d);
+    setConfirmationImpression(false);
+    setHtmlImprime(null);
+  }
+
+  async function onConfirmerImpressionMedecin() {
+    if (!selectedIdSynthese) return;
+    setImpressionEnCours(true);
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/documents/medecin/impression', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idSynthese: selectedIdSynthese }),
+      });
+      const d = (await r.json()) as ImpressionDocumentMedecinResponse;
+      if (!r.ok || !d.ok) {
+        setFeedback({ ok: false, msg: ('error' in d && d.error) || 'Impression impossible.' });
+        return;
+      }
+      setConfirmationImpression(false);
+      setFeedback({ ok: true, msg: 'Impression enregistrée : une ligne datée est ajoutée au Fil de correspondance.' });
+      if (d.html === (htmlImprime ?? apercu.html)) {
+        apercuRef.current?.contentWindow?.print();
+      } else {
+        // L'iframe se recharge sur l'instantané, puis imprime (`onLoad`).
+        imprimerAuChargement.current = true;
+        setHtmlImprime(d.html);
+      }
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’impression.' });
+    } finally {
+      setImpressionEnCours(false);
+    }
+  }
+
+  function onApercuCharge() {
+    if (!imprimerAuChargement.current) return;
+    imprimerAuChargement.current = false;
     apercuRef.current?.contentWindow?.print();
   }
 
@@ -216,7 +273,7 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                     key={d}
                     type="button"
                     aria-pressed={destinataireApercu === d}
-                    onClick={() => setDestinataireApercu(d)}
+                    onClick={() => choisirDestinataire(d)}
                     className={`${btnBase} border ${destinataireApercu === d ? 'bg-foreground text-surface' : 'bg-surface text-foreground'}`}
                   >
                     {DESTINATAIRE_LABELS[d]}
@@ -230,12 +287,18 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
             <iframe
               ref={apercuRef}
               title={`Aperçu ${DESTINATAIRE_LABELS[destinataireApercu]}`}
-              srcDoc={apercu.html ?? ''}
+              srcDoc={htmlImprime ?? apercu.html ?? ''}
+              onLoad={onApercuCharge}
               sandbox="allow-same-origin allow-modals"
               className="w-full h-[420px] border border-border rounded-lg bg-surface"
             />
             <div className="flex flex-wrap items-center gap-3">
-              <button type="button" onClick={onImprimer} className={`${btnBase} border bg-surface text-foreground`}>
+              <button
+                type="button"
+                onClick={onImprimer}
+                disabled={impressionEnCours}
+                className={`${btnBase} border bg-surface text-foreground`}
+              >
                 Imprimer cet aperçu
               </button>
               {destinataireApercu === 'patient' && (
@@ -259,6 +322,32 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                 </>
               )}
             </div>
+            {destinataireApercu === 'medecin' && confirmationImpression && (
+              <div role="group" aria-label="Confirmer l’impression" className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                <p className="text-sm text-foreground">
+                  Imprimer le document pour le médecin ? L’impression est datée dans le Fil de correspondance.
+                  Wellneuro n’envoie ce document à personne.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onConfirmerImpressionMedecin()}
+                    disabled={impressionEnCours}
+                    className={`${btnBase} bg-foreground text-surface`}
+                  >
+                    {impressionEnCours ? 'Enregistrement…' : 'Confirmer et imprimer'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmationImpression(false)}
+                    disabled={impressionEnCours}
+                    className={`${btnBase} border bg-surface text-foreground`}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               Le rendu médecin et praticien s’imprime en HTML (PDF différé). L’envoi patient réutilise le canal
               e-mail existant (booklet).

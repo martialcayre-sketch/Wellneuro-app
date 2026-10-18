@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   CorrespondanceExposee,
   CorrespondancePatientExposee,
+  DocumentMedecinImprimeExpose,
   CorrespondanceMedecinApiResponse,
 } from '@/app/api/praticien/correspondance-medecin/route';
 import {
@@ -50,6 +51,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
   const [erreur, setErreur] = useState('');
   const [correspondances, setCorrespondances] = useState<CorrespondanceExposee[]>([]);
   const [correspondancesPatient, setCorrespondancesPatient] = useState<CorrespondancePatientExposee[]>([]);
+  const [impressions, setImpressions] = useState<DocumentMedecinImprimeExpose[]>([]);
   const [accepteConsignation, setAccepteConsignation] = useState(true);
   const [partage, setPartage] = useState<string | null>(null);
 
@@ -77,6 +79,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
       }
       setCorrespondances(payload.correspondances);
       setCorrespondancesPatient(payload.correspondancesPatient ?? []);
+      setImpressions(payload.documentsMedecinImprimes ?? []);
       setAccepteConsignation(payload.accepteConsignation);
       setPartage(payload.partageMedecinTraitant);
       setEtat('chargee');
@@ -287,6 +290,21 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
             Réessayer
           </button>
         </div>
+      )}
+
+      {/*
+        LES IMPRESSIONS DU DOCUMENT POUR LE MÉDECIN ([[D-307]] §2, F38) : une
+        ligne datée par impression confirmée, depuis la page Documents. Le
+        document lui-même ne s'affiche pas ici — le Fil date le geste.
+      */}
+      {etat === 'chargee' && impressions.length > 0 && (
+        <ul aria-label="Impressions du document pour le médecin" className="mt-3 space-y-1">
+          {impressions.map((ligne) => (
+            <li key={ligne.id} className="text-sm text-foreground">
+              Document pour le médecin imprimé le {formatDate(ligne.imprimeLe)}
+            </li>
+          ))}
+        </ul>
       )}
 
       {etat === 'chargee' && correspondances.length === 0 && (

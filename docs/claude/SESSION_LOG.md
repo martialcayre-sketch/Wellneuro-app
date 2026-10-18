@@ -10649,3 +10649,20 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, CodeRabbit, merge, release-db approuvée, constat par conteneur, puis la PR du code (route d'impression gardée, ligne au Fil, « Pour votre médecin » au portail sous drapeau éteint).
 
 **Ouvert.** Texte portail « Pour votre médecin » et son éventuel ajout à la note patient ; sort au portail d'une impression antérieure à un retrait du partage : à trancher avec le code, avant le drapeau.
+
+## 2026-10-18 — F38 : code du document pour le médecin
+
+**Fait.** La migration #1560 est mergée, puis appliquée (run release-db 39144243510, approuvé par le responsable). Constat par conteneur : 121 migrations, déploiement en tête sur la tête de main. Le code de la PR 2 :
+- impression confirmée, recomposée au serveur, instantané figé, partage relu sous verrou ;
+- ligne au Fil ;
+- portail « Pour votre médecin » derrière un drapeau éteint, chaque téléchargement journalisé ;
+- une seule composition pour l'aperçu et l'impression ;
+- une garde des écrivains.
+
+Arbitrages : le retrait du partage retire le document du portail ; l'impression tracée est servie dès le déploiement.
+
+**Écarté.** Une espèce de lecture au fil du jour : elle demandait une nouvelle migration du CHECK, et le journal des téléchargements date déjà la remise.
+
+**Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
+
+**Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?

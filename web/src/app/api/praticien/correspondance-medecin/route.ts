@@ -79,11 +79,23 @@ export type CorrespondancePatientExposee = {
   enregistreLe: string;
 };
 
+/**
+ * Une impression du document pour le médecin ([[D-307]] §2, F38) : la ligne
+ * « Document pour le médecin imprimé le … » du Fil. Sans le HTML — le Fil
+ * date le geste, il ne recopie pas le document.
+ */
+export type DocumentMedecinImprimeExpose = {
+  id: string;
+  idSynthese: string;
+  imprimeLe: string;
+};
+
 export type CorrespondanceMedecinApiResponse =
   | {
       ok: true;
       correspondances: CorrespondanceExposee[];
       correspondancesPatient: CorrespondancePatientExposee[];
+      documentsMedecinImprimes: DocumentMedecinImprimeExpose[];
       accepteConsignation: boolean;
       partageMedecinTraitant: StatutChoix | null;
     }
@@ -207,7 +219,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, communicationsPatient, patient, choix] = await Promise.all([
+    const [lignes, communicationsPatient, patient, choix, impressions] = await Promise.all([
       prisma.correspondanceMedecin.findMany({
         where: { idPatient },
         select: SELECTION,
@@ -235,6 +247,11 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
         where: { idPatient, finalite: 'partage_medecin_traitant' },
         select: { finalite: true, statut: true, enregistreLe: true },
       }),
+      prisma.documentMedecinImprime.findMany({
+        where: { idPatient },
+        select: { id: true, idSynthese: true, imprimeLe: true },
+        orderBy: { ordre: 'desc' },
+      }),
     ]);
 
     return NextResponse.json({
@@ -243,6 +260,10 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
       correspondancesPatient: communicationsPatient.map((ligne) => ({
         ...ligne,
         enregistreLe: ligne.enregistreLe.toISOString(),
+      })),
+      documentsMedecinImprimes: impressions.map((ligne) => ({
+        ...ligne,
+        imprimeLe: ligne.imprimeLe.toISOString(),
       })),
       // Courtoisie d'écran : la décision qui fait foi reste le 409 du POST.
       accepteConsignation: patient ? accepteNouvelEnvoi(patient) : false,
