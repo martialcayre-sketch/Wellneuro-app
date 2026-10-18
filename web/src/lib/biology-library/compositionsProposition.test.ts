@@ -24,8 +24,8 @@ const NFS: CompositionSignee = {
   libelle: 'Numération formule sanguine',
   type: 'groupe',
   composants: [
-    { code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' },
-    { code: 'BIO_PLAQUETTES', libelle: 'Plaquettes' },
+    { code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', actif: true },
+    { code: 'BIO_PLAQUETTES', libelle: 'Plaquettes', actif: true },
   ],
 };
 const IONO: CompositionSignee = {
@@ -33,24 +33,24 @@ const IONO: CompositionSignee = {
   libelle: 'Ionogramme',
   type: 'groupe',
   composants: [
-    { code: 'BIO_SODIUM', libelle: 'Sodium' },
-    { code: 'BIO_POTASSIUM', libelle: 'Potassium' },
-    { code: 'BIO_CHLORE', libelle: 'Chlore' },
+    { code: 'BIO_SODIUM', libelle: 'Sodium', actif: true },
+    { code: 'BIO_POTASSIUM', libelle: 'Potassium', actif: true },
+    { code: 'BIO_CHLORE', libelle: 'Chlore', actif: true },
   ],
 };
 const IONO_COMPLET: CompositionSignee = {
   analyteCode: 'BIO_IONOGRAMME_COMPLET',
   libelle: 'Ionogramme complet',
   type: 'groupe',
-  composants: [...IONO.composants, { code: 'BIO_BICARBONATES', libelle: 'Bicarbonates' }],
+  composants: [...IONO.composants, { code: 'BIO_BICARBONATES', libelle: 'Bicarbonates', actif: true }],
 };
 const HOMA: CompositionSignee = {
   analyteCode: 'BIO_RATIO_HOMA',
   libelle: 'Indice HOMA',
   type: 'calcul',
   composants: [
-    { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun' },
-    { code: 'BIO_INSULINE', libelle: 'Insuline' },
+    { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun', actif: true },
+    { code: 'BIO_INSULINE', libelle: 'Insuline', actif: true },
   ],
 };
 const HEPATIQUE: CompositionSignee = {
@@ -58,8 +58,8 @@ const HEPATIQUE: CompositionSignee = {
   libelle: 'Bilan hépatique',
   type: 'regroupement',
   composants: [
-    { code: 'BIO_ALAT', libelle: 'ALAT' },
-    { code: 'BIO_GGT', libelle: 'GGT' },
+    { code: 'BIO_ALAT', libelle: 'ALAT', actif: true },
+    { code: 'BIO_GGT', libelle: 'GGT', actif: true },
   ],
 };
 
@@ -232,7 +232,7 @@ describe('remboursementsAvecCompositions — §4 : un calculé hérite de ses me
   });
 
   it('une mesure « si groupé » compte par son groupe signé — sans lui, par elle-même', () => {
-    const avecHb: CompositionSignee = { ...HOMA, composants: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }] };
+    const avecHb: CompositionSignee = { ...HOMA, composants: [{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine', actif: true }] };
     expect(remboursementsAvecCompositions(REMBOURSEMENTS, carte(avecHb, NFS)).get('BIO_RATIO_HOMA')!.statut).toBe('remboursable');
     expect(remboursementsAvecCompositions(REMBOURSEMENTS, carte(avecHb)).get('BIO_RATIO_HOMA')!.statut).toBe('remboursable_si_groupe');
   });
@@ -323,5 +323,38 @@ describe('textes : ce que les mesures disent', () => {
     expect(libelleNonEvalue({ ...analyte('BIO_RATIO_HOMA', 'Indice HOMA'), remboursement: homa }))
       .toBe('Indice HOMA (mesure non évaluée : Insuline)');
     expect(libelleNonEvalue(analyte('BIO_FERRITINE', 'Ferritine'))).toBe('Ferritine');
+  });
+});
+
+describe('revue CodeRabbit de #1545', () => {
+  it('le plus petit groupe REMBOURSABLE remplace : 1609 non évalué, le sodium va au 1610', () => {
+    const lecture1610 = {
+      ...lecture(carte(IONO, IONO_COMPLET)),
+      remboursementDe: (code: string) => (code === 'BIO_IONOGRAMME' ? r('non_evalue') : REMBOURSEMENTS.get(code) ?? r('non_evalue')),
+    };
+    const lignes = regrouperAnalytes([analyte('BIO_SODIUM', 'Sodium')], lecture1610);
+    expect(lignes.map(l => l.code)).toEqual(['BIO_IONOGRAMME_COMPLET']);
+  });
+
+  it('une mesure retirée du catalogue compte « non évalué » : le calculé ne se lit pas remboursé', () => {
+    const homaRetiree: CompositionSignee = {
+      ...HOMA,
+      composants: [HOMA.composants[0], { ...HOMA.composants[1], actif: false }],
+    };
+    const resultat = remboursementsAvecCompositions(REMBOURSEMENTS, carte(homaRetiree)).get('BIO_RATIO_HOMA')!;
+    expect(resultat.statut).toBe('non_evalue');
+    expect(resultat.parMesures?.map(m => [m.code, m.statut])).toEqual([
+      ['BIO_GLYCEMIE_JEUN', 'remboursable'],
+      ['BIO_INSULINE', 'non_evalue'],
+    ]);
+  });
+
+  it('un constituant retiré du catalogue ne se cite plus sous son groupe', () => {
+    const nfsRetiree: CompositionSignee = {
+      ...NFS,
+      composants: [NFS.composants[0], { ...NFS.composants[1], actif: false }],
+    };
+    const [ligne] = regrouperAnalytes([analyte('BIO_NFS', 'Numération formule sanguine')], lecture(carte(nfsRetiree)));
+    expect(ligne.constituants?.map(c => c.code)).toEqual(['BIO_HEMOGLOBINE']);
   });
 });

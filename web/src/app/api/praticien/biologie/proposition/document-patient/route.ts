@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { LONGUEUR_MAX_TEXTE } from '@/lib/praticien/correspondanceMedecin';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import {
@@ -108,9 +109,8 @@ const MESSAGES_REFUS: Record<RefusDocumentPatientBiologie, string> = {
 
 // Même borne que la consignation du courrier (`preparerCorrespondance`) : une
 // proposition dérivée qui la dépasse est une anomalie à signaler, pas une
-// pièce à consigner. Borne technique, aucune sémantique clinique ; 12 000
-// depuis le 2026-10-18, comme le courrier (arbitrage du responsable, F80).
-const LONGUEUR_MAX_TEXTE = 12000;
+// pièce à consigner. Borne technique, aucune sémantique clinique ; la
+// constante est celle du courrier (12 000 depuis le 2026-10-18, D-323 §7).
 
 function echec(reason: string, error: string, status: number, texteSha256?: string) {
   return NextResponse.json<DocumentPatientApiResponse>(

@@ -97,16 +97,16 @@ export async function chargerCompositionsSignees(): Promise<Map<string, Composit
       analyteCode: true,
       type: true,
       analyte: { select: { libelle: true } },
-      // Un composant retiré du catalogue depuis la signature ne se cite plus.
+      // Un composant retiré du catalogue depuis la signature reste lu, marqué :
+      // il ne se cite plus, et un calculé ne se lit pas remboursé sans lui.
       items: {
-        where: { composant: { actif: true } },
         orderBy: { position: 'asc' },
-        select: { composant: { select: { code: true, libelle: true } } },
+        select: { composant: { select: { code: true, libelle: true, actif: true } } },
       },
     },
   });
   return new Map(
-    lignes.filter(l => l.items.length > 0).map(l => [
+    lignes.map(l => [
       l.analyteCode,
       {
         analyteCode: l.analyteCode,

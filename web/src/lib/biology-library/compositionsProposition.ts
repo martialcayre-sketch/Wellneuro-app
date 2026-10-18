@@ -27,8 +27,12 @@ export type CompositionSignee = {
   /** Libellé de l'analyte composé — la ligne qu'il fait quand il remplace. */
   libelle: string;
   type: TypeComposition;
-  /** Dans l'ordre de la signature. */
-  composants: ReadonlyArray<{ code: string; libelle: string }>;
+  /**
+   * Dans l'ordre de la signature. `actif` : le composant est encore au
+   * catalogue ; retiré depuis, il n'est plus cité, et une mesure retirée ne
+   * compte jamais comme remboursée (DC-25).
+   */
+  composants: ReadonlyArray<{ code: string; libelle: string; actif: boolean }>;
 };
 
 const REMBOURSEMENT_NON_EVALUE: Remboursement = {
@@ -43,17 +47,18 @@ function contient(composition: CompositionSignee, code: string): boolean {
 
 /**
  * Le groupe signé (type `groupe`, coté par un acte) qui porte un constituant :
- * le plus petit, puis le premier par code — sodium, potassium et chlore vont
- * au 1609 plutôt qu'au 1610 (D-323 §3). Un regroupement n'a pas d'acte : il
- * ne porte personne.
+ * parmi les groupes éligibles, le plus petit, puis le premier par code —
+ * sodium, potassium et chlore vont au 1609 plutôt qu'au 1610 (D-323 §3). Un
+ * regroupement n'a pas d'acte : il ne porte personne.
  */
 export function groupePourConstituant(
   code: string,
   compositions: ReadonlyMap<string, CompositionSignee>,
+  eligible: (groupe: CompositionSignee) => boolean = () => true,
 ): CompositionSignee | null {
   let retenu: CompositionSignee | null = null;
   for (const composition of compositions.values()) {
-    if (composition.type !== 'groupe' || !contient(composition, code)) continue;
+    if (composition.type !== 'groupe' || !contient(composition, code) || !eligible(composition)) continue;
     if (
       retenu === null
       || composition.composants.length < retenu.composants.length
@@ -70,7 +75,9 @@ export function groupePourConstituant(
  * Les remboursements, une fois les calculés et les regroupements signés
  * dérivés de leurs mesures (D-323 §4). Un groupe garde le sien : il a son
  * acte. Un opérande remboursable seulement accompagné compte par son groupe
- * signé (le plus petit) ; sans groupe signé, par lui-même.
+ * signé — le plus petit des remboursables, sinon le plus petit ; sans groupe
+ * signé, par lui-même. Un opérande retiré du catalogue compte « non évalué » :
+ * le taire ferait lire remboursé un calculé dont une mesure manque (DC-25).
  */
 export function remboursementsAvecCompositions(
   remboursements: ReadonlyMap<string, Remboursement>,
@@ -84,7 +91,9 @@ export function remboursementsAvecCompositions(
       composition.analyteCode,
       deriverRemboursementParMesures(
         composition.composants.map(c => {
-          const groupe = groupePourConstituant(c.code, compositions);
+          if (!c.actif) return { code: c.code, libelle: c.libelle, remboursement: REMBOURSEMENT_NON_EVALUE, groupe: null };
+          const groupe = groupePourConstituant(c.code, compositions, g => de(g.analyteCode).statut === 'remboursable')
+            ?? groupePourConstituant(c.code, compositions);
           return {
             code: c.code,
             libelle: c.libelle,
@@ -128,22 +137,23 @@ export function regrouperAnalytes(
   // Les groupes que le bilan propose lui-même (§2), dans son ordre.
   const duBilan = analytes.map(a => groupeOuRegroupement(a.code)).filter(c => c !== null);
 
-  // §3 — les groupes ajoutés pour porter un constituant seul.
+  // §3 — les groupes ajoutés pour porter un constituant seul. Un groupe ne
+  // remplace que s'il est lui-même remboursable : remplacer un constituant par
+  // un groupe dont l'acte n'est pas signé ne le rendrait pas remboursé, et
+  // rangerait sous un « non évalué » ce qui avait son état (D-323 §7).
+  const remboursable = (g: CompositionSignee) => remboursementDe(g.analyteCode).statut === 'remboursable';
   const nombreDeGroupes = (code: string) =>
-    [...compositions.values()].filter(c => c.type === 'groupe' && contient(c, code)).length;
+    [...compositions.values()].filter(c => c.type === 'groupe' && contient(c, code) && remboursable(c)).length;
   const aRemplacer = analytes
     .filter(a => a.remboursement.statut === 'remboursable_si_groupe' && groupeOuRegroupement(a.code) === null)
     .map((a, rang) => ({ a, rang, nombre: nombreDeGroupes(a.code) }))
     .filter(x => x.nombre > 0)
     .sort((x, y) => x.nombre - y.nombre || x.rang - y.rang);
-  // Un groupe ne remplace que s'il est lui-même remboursable : remplacer un
-  // constituant par un groupe dont l'acte n'est pas signé ne le rendrait pas
-  // remboursé, et rangerait sous un « non évalué » ce qui avait son état.
   const ajoutes: CompositionSignee[] = [];
   for (const { a } of aRemplacer) {
     if (duBilan.some(g => contient(g, a.code)) || ajoutes.some(g => contient(g, a.code))) continue;
-    const groupe = groupePourConstituant(a.code, compositions);
-    if (groupe && remboursementDe(groupe.analyteCode).statut === 'remboursable') ajoutes.push(groupe);
+    const groupe = groupePourConstituant(a.code, compositions, remboursable);
+    if (groupe) ajoutes.push(groupe);
   }
 
   const lignes: LigneAnalyteProposition[] = [];
@@ -197,7 +207,7 @@ function avecConstituants(
 ): LigneAnalyteProposition {
   return {
     ...analyte,
-    constituants: composition.composants.map(c => ({
+    constituants: composition.composants.filter(c => c.actif).map(c => ({
       code: c.code,
       libelle: c.libelle,
       validationMedicaleRequise: validationDe(c.code),

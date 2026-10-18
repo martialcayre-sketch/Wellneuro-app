@@ -225,7 +225,7 @@ describe('deriverStatutsBiologie — compositions signées (D-323 §2)', () => {
       analyteCode: 'BIO_GLY',
       libelle: 'Glycémie',
       type: 'groupe' as const,
-      composants: [{ code: 'BIO_INS', libelle: 'Insuline' }],
+      composants: [{ code: 'BIO_INS', libelle: 'Insuline', actif: true }],
     }],
   ]);
 

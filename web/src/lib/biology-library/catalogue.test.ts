@@ -79,8 +79,8 @@ describe('remboursement d’un calculé signé — hérité de ses mesures (D-32
     type: 'calcul',
     analyte: { libelle: 'Indice HOMA' },
     items: [
-      { composant: { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun' } },
-      { composant: { code: 'BIO_INSULINE', libelle: 'Insuline' } },
+      { composant: { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun', actif: true } },
+      { composant: { code: 'BIO_INSULINE', libelle: 'Insuline', actif: true } },
     ],
   },
 ]);

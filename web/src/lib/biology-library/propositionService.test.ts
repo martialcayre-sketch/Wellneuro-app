@@ -263,8 +263,8 @@ describe('remboursements — la carte passée au moteur (lettre f)', () => {
         type: 'calcul',
         analyte: { libelle: 'Calculé' },
         items: [
-          { composant: { code: 'BIO_FER', libelle: 'Ferritine' } },
-          { composant: { code: 'BIO_HCY', libelle: 'Homocystéine' } },
+          { composant: { code: 'BIO_FER', libelle: 'Ferritine', actif: true } },
+          { composant: { code: 'BIO_HCY', libelle: 'Homocystéine', actif: true } },
         ],
       },
     ]);
@@ -277,8 +277,8 @@ describe('remboursements — la carte passée au moteur (lettre f)', () => {
       libelle: 'Calculé',
       type: 'calcul',
       composants: [
-        { code: 'BIO_FER', libelle: 'Ferritine' },
-        { code: 'BIO_HCY', libelle: 'Homocystéine' },
+        { code: 'BIO_FER', libelle: 'Ferritine', actif: true },
+        { code: 'BIO_HCY', libelle: 'Homocystéine', actif: true },
       ],
     });
   });
