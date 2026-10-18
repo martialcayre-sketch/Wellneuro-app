@@ -17,16 +17,20 @@ vi.mock('@/lib/documents/documentMedecinImprime', async (importOriginal) => ({
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
-import { GET as TELECHARGER } from './telechargement/route';
+import { POST as TELECHARGER } from './telechargement/route';
 
 const PATIENT = { idPatient: 'PAT_TEST', email: 'jennifer.martin@example.test' };
 
-function requete(chemin: string, avecCookie = true): Request {
+function requete(chemin: string, avecCookie = true, method = 'GET'): Request {
   const cookie = signPatientSession({ idPatient: PATIENT.idPatient, email: PATIENT.email });
   return new Request(`http://localhost${chemin}`, {
+    method,
     headers: avecCookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {},
   });
 }
+
+const telechargement = (avecCookie = true) =>
+  requete('/api/portail/document-medecin/telechargement', avecCookie, 'POST');
 
 function compte(revoque = false) {
   return {
@@ -78,22 +82,28 @@ describe('GET /api/portail/document-medecin', () => {
   });
 });
 
-describe('GET /api/portail/document-medecin/telechargement', () => {
+describe('POST /api/portail/document-medecin/telechargement', () => {
+  it('n’expose pas de GET : un HEAD ou un lien ne journalise rien', async () => {
+    const route = await import('./telechargement/route');
+    expect('GET' in route).toBe(false);
+    expect('HEAD' in route).toBe(false);
+  });
+
   it('drapeau fermé : 503, rien n’est journalisé', async () => {
     vi.stubEnv('WN_DOCUMENT_MEDECIN_PATIENT', 'false');
-    expect((await TELECHARGER(requete('/api/portail/document-medecin/telechargement'))).status).toBe(503);
+    expect((await TELECHARGER(telechargement())).status).toBe(503);
     expect(telechargerDocument).not.toHaveBeenCalled();
   });
 
   it('sans session : 401 ; compte révoqué : 403 — rien n’est journalisé', async () => {
-    expect((await TELECHARGER(requete('/api/portail/document-medecin/telechargement', false))).status).toBe(401);
+    expect((await TELECHARGER(telechargement(false))).status).toBe(401);
     prisma.patient.findUnique.mockResolvedValue(compte(true));
-    expect((await TELECHARGER(requete('/api/portail/document-medecin/telechargement'))).status).toBe(403);
+    expect((await TELECHARGER(telechargement())).status).toBe(403);
     expect(telechargerDocument).not.toHaveBeenCalled();
   });
 
   it('sert le fichier de CE patient, en pièce jointe, jamais en cache', async () => {
-    const res = await TELECHARGER(requete('/api/portail/document-medecin/telechargement'));
+    const res = await TELECHARGER(telechargement());
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(res.headers.get('content-disposition')).toBe('attachment; filename="pour-votre-medecin.html"');
@@ -104,7 +114,7 @@ describe('GET /api/portail/document-medecin/telechargement', () => {
 
   it('rien à remettre : 404, sans dire pourquoi', async () => {
     telechargerDocument.mockResolvedValue(null);
-    const res = await TELECHARGER(requete('/api/portail/document-medecin/telechargement'));
+    const res = await TELECHARGER(telechargement());
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ ok: false, reason: 'introuvable', error: 'Aucun document à remettre.' });
   });

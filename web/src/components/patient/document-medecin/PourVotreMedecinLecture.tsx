@@ -10,6 +10,7 @@ import {
   AUCUN_DOCUMENT_MEDECIN,
   BOUTON_TELECHARGER,
   dateDuDocumentMedecin,
+  NOM_FICHIER_DOCUMENT_MEDECIN,
   PHRASE_DOCUMENT_MEDECIN,
   TITRE_DOCUMENT_MEDECIN,
 } from './textesDocumentMedecin';
@@ -19,8 +20,10 @@ import {
 // sont définitifs, le reste se réessaie.
 //
 // LE DOCUMENT NE S'AFFICHE PAS ICI : il se télécharge, et chaque téléchargement
-// est journalisé par la route qui le sert. Un lien simple (pas `next/link`) :
-// aucun préchargement ne doit compter un téléchargement que personne n'a fait.
+// est journalisé par la route qui le sert. Un POST lancé par le bouton, et non
+// un lien : aucun préchargement, aucun HEAD ne compte un téléchargement que
+// personne n'a fait, et un refus (accord retiré entre-temps) se dit en
+// français au lieu d'un échec de téléchargement muet.
 
 type Etat =
   | { statut: 'chargement' }
@@ -31,6 +34,35 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
   const router = useRouter();
   const [etat, setEtat] = useState<Etat>({ statut: 'chargement' });
   const annuleRef = useRef(false);
+  const [telechargement, setTelechargement] = useState<{ enCours: boolean; erreur: string | null }>({
+    enCours: false,
+    erreur: null,
+  });
+
+  async function telecharger() {
+    setTelechargement({ enCours: true, erreur: null });
+    try {
+      const res = await fetch('/api/portail/document-medecin/telechargement', { method: 'POST', cache: 'no-store' });
+      if (res.status === 401) {
+        router.replace(`/portail/${token}`);
+        return;
+      }
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        setTelechargement({ enCours: false, erreur: data?.error ?? 'Le téléchargement a échoué. Réessayez.' });
+        return;
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const lien = document.createElement('a');
+      lien.href = url;
+      lien.download = NOM_FICHIER_DOCUMENT_MEDECIN;
+      lien.click();
+      URL.revokeObjectURL(url);
+      setTelechargement({ enCours: false, erreur: null });
+    } catch {
+      setTelechargement({ enCours: false, erreur: 'Connexion interrompue. Vérifiez votre connexion et réessayez.' });
+    }
+  }
 
   const charger = useCallback(async () => {
     setEtat({ statut: 'chargement' });
@@ -97,9 +129,19 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
       <h1 className="text-2xl font-semibold text-foreground">{TITRE_DOCUMENT_MEDECIN}</h1>
       {date && <p className="mt-1 text-sm text-muted-foreground">{date}</p>}
       <p className="mt-3 text-base text-foreground">{PHRASE_DOCUMENT_MEDECIN}</p>
-      <a href="/api/portail/document-medecin/telechargement" download className={patientButtonClassName('primary', 'mt-5')}>
-        {BOUTON_TELECHARGER}
-      </a>
+      <button
+        type="button"
+        onClick={() => void telecharger()}
+        disabled={telechargement.enCours}
+        className={patientButtonClassName('primary', 'mt-5')}
+      >
+        {telechargement.enCours ? 'Téléchargement…' : BOUTON_TELECHARGER}
+      </button>
+      {telechargement.erreur && (
+        <p role="alert" className="mt-3 text-base text-status-warning">
+          {telechargement.erreur}
+        </p>
+      )}
     </PatientCard>
   );
 }

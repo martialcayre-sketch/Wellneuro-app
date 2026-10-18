@@ -60,6 +60,11 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   const [impressionEnCours, setImpressionEnCours] = useState(false);
   const [htmlImprime, setHtmlImprime] = useState<string | null>(null);
   const imprimerAuChargement = useRef(false);
+  // La sélection AU RENDU : une réponse d'impression arrivée après un
+  // changement de synthèse ou de destinataire est ignorée — sinon le document
+  // d'un dossier s'imprimerait sous la sélection d'un autre (revue wn-reviewer).
+  const selectionCourante = useRef({ idSynthese: selectedIdSynthese, destinataire: destinataireApercu });
+  selectionCourante.current = { idSynthese: selectedIdSynthese, destinataire: destinataireApercu };
 
   useEffect(() => {
     fetch('/api/praticien/patients-pg')
@@ -83,6 +88,8 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
     setSelectedPatient(idPatient);
     setSelectedIdSynthese('');
     setDoc(null);
+    setConfirmationImpression(false);
+    setHtmlImprime(null);
     setFeedback(null);
     setSyntheses([]);
     if (!idPatient) return;
@@ -151,16 +158,26 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
   }
 
   async function onConfirmerImpressionMedecin() {
-    if (!selectedIdSynthese) return;
+    const idSynthese = selectedIdSynthese;
+    if (!idSynthese) return;
     setImpressionEnCours(true);
     setFeedback(null);
     try {
       const r = await fetch('/api/praticien/documents/medecin/impression', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idSynthese: selectedIdSynthese }),
+        body: JSON.stringify({ idSynthese }),
       });
       const d = (await r.json()) as ImpressionDocumentMedecinResponse;
+      const memeSelection =
+        selectionCourante.current.idSynthese === idSynthese && selectionCourante.current.destinataire === 'medecin';
+      if (r.ok && d.ok && !memeSelection) {
+        // Enregistrée, mais l'écran montre désormais autre chose : on le dit,
+        // on n'imprime pas.
+        setConfirmationImpression(false);
+        setFeedback({ ok: true, msg: 'Impression enregistrée au Fil de correspondance ; la sélection a changé, rien n’a été imprimé.' });
+        return;
+      }
       if (!r.ok || !d.ok) {
         setFeedback({ ok: false, msg: ('error' in d && d.error) || 'Impression impossible.' });
         return;
@@ -274,6 +291,7 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
                     type="button"
                     aria-pressed={destinataireApercu === d}
                     onClick={() => choisirDestinataire(d)}
+                    disabled={impressionEnCours}
                     className={`${btnBase} border ${destinataireApercu === d ? 'bg-foreground text-surface' : 'bg-surface text-foreground'}`}
                   >
                     {DESTINATAIRE_LABELS[d]}

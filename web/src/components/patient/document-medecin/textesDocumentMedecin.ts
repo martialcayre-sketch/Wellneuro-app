@@ -15,6 +15,9 @@ export const AUCUN_DOCUMENT_MEDECIN = 'Aucun document n’est à remettre à vot
 
 export const BOUTON_TELECHARGER = 'Télécharger le document';
 
+/** Nom du fichier téléchargé — le même que celui que la route annonce. */
+export const NOM_FICHIER_DOCUMENT_MEDECIN = 'pour-votre-medecin.html';
+
 /** « Document du 18 octobre 2026 », à l'heure du cabinet. */
 export function dateDuDocumentMedecin(iso: string): string | null {
   const date = new Date(iso);

@@ -83,6 +83,14 @@ describe('POST /api/praticien/documents/medecin/impression (D-307 §2)', () => {
     expect(enregistrerImpression).not.toHaveBeenCalled();
   });
 
+  it('la synthèse est cherchée PARMI LES DOSSIERS DU PRATICIEN, jamais par son seul identifiant', async () => {
+    await POST(requete({ idSynthese: 'SYN_1' }));
+    const { filtrePatientsDuPraticien } = await import('@/lib/praticien/appartenance');
+    expect(findFirst.mock.calls[0][0]).toEqual({
+      where: { idSynthese: 'SYN_1', patient: filtrePatientsDuPraticien('p@wellneuro.fr') },
+    });
+  });
+
   it('404 pour la synthèse d’un autre praticien, sans journal ni écriture', async () => {
     findFirst.mockResolvedValue(null);
     expect((await POST(requete({ idSynthese: 'SYN_1' }))).status).toBe(404);

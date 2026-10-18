@@ -12,8 +12,14 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
  * Mêmes gardes que la route d'état ; le partage est relu sous verrou au moment
  * d'écrire le journal (`telechargerDocument`). Rien à remettre : 404, sans dire
  * pourquoi. Jamais mis en cache : le fichier porte un document de santé.
+ *
+ * POST, ET NON GET : la requête ÉCRIT (une ligne de journal). Un GET serait
+ * rejoué par un HEAD (Next le sert avec le gestionnaire GET), par une
+ * navigation venue d'un autre site (cookie `SameSite=lax`) ou par un
+ * gestionnaire de téléchargement — autant de « téléchargements » que personne
+ * n'a faits (revue wn-reviewer).
  */
-export async function GET(req: Request): Promise<Response> {
+export async function POST(req: Request): Promise<Response> {
   if (!documentMedecinPatientOuvert()) {
     return NextResponse.json(
       { ok: false, reason: 'feature_disabled', error: 'Cet espace n’est pas encore ouvert.' },
@@ -41,7 +47,7 @@ export async function GET(req: Request): Promise<Response> {
     });
   } catch (err) {
     // La classe et le code seulement : un message Prisma recopie les arguments.
-    console.error('[portail/document-medecin/telechargement GET]', ...classeEtCode(err));
+    console.error('[portail/document-medecin/telechargement POST]', ...classeEtCode(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
   }
 }

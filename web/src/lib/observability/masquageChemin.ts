@@ -50,6 +50,7 @@ const ROUTES: readonly string[] = [
   '/portail/:idPatient/comptes-rendus',
   '/portail/:idPatient/conditions',
   '/portail/:idPatient/courrier-medecin',
+  '/portail/:idPatient/pour-votre-medecin',
   '/portail/:idPatient/comprehension',
   '/portail/:idPatient/dossier',
   '/portail/:idPatient/echanges',

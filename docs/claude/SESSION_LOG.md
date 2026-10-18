@@ -10650,6 +10650,18 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Texte portail « Pour votre médecin » et son éventuel ajout à la note patient ; sort au portail d'une impression antérieure à un retrait du partage : à trancher avec le code, avant le drapeau.
 
+## 2026-10-18 — ACT-3 : relecture préalable, EF-0 constaté servi
+
+**Fait.** ai déployée (ad5a130d) ; triggers constatés en production, aucune lecture datée encore. EF-0 constaté servi par #1546 ; plan H14 et H61 à jour.
+
+**Décidé.** Responsable : micro-textes de « Mes échanges » validés tels quels ; limite « protocole indisponible » acceptée.
+
+**Écarté.** Masquer au journal un protocole indisponible (lot de code avant ACT-3, pour un cas rare).
+
+**Prochaine action.** Constater ACT-2 à la première vraie diffusion, puis ouvrir ACT-3.
+
+**Ouvert.** Premier jour de lecture écrit en production, à constater par conteneur.
+
 ## 2026-10-18 — F38 : code du document pour le médecin
 
 **Fait.** La migration #1560 est mergée, puis appliquée (run release-db 39144243510, approuvé par le responsable). Constat par conteneur : 121 migrations, déploiement en tête sur la tête de main. Le code de la PR 2 :
@@ -10666,14 +10678,3 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
-## 2026-10-18 — ACT-3 : relecture préalable, EF-0 constaté servi
-
-**Fait.** ai déployée (ad5a130d) ; triggers constatés en production, aucune lecture datée encore. EF-0 constaté servi par #1546 ; plan H14 et H61 à jour.
-
-**Décidé.** Responsable : micro-textes de « Mes échanges » validés tels quels ; limite « protocole indisponible » acceptée.
-
-**Écarté.** Masquer au journal un protocole indisponible (lot de code avant ACT-3, pour un cas rare).
-
-**Prochaine action.** Constater ACT-2 à la première vraie diffusion, puis ouvrir ACT-3.
-
-**Ouvert.** Premier jour de lecture écrit en production, à constater par conteneur.

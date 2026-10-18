@@ -143,6 +143,59 @@ describe('DocumentsPanel', () => {
     expect(iframe.getAttribute('srcdoc')).toBe('<p>Instantané serveur</p>');
   });
 
+  it('médecin : l’instantané différent de l’aperçu est imprimé une fois chargé', async () => {
+    repondreImpression({
+      ok: true,
+      json: { ok: true, impression: { id: 'imp_1', imprimeLe: '2026-10-18T15:00:00.000Z' }, html: '<p>Instantané serveur</p>' },
+    });
+    const iframe = await ouvrirApercuMedecin();
+    const imprimer = vi.spyOn(iframe.contentWindow!, 'print').mockImplementation(() => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer et imprimer' }));
+    await waitFor(() => expect(iframe.getAttribute('srcdoc')).toBe('<p>Instantané serveur</p>'));
+    expect(imprimer).not.toHaveBeenCalled();
+    fireEvent.load(iframe);
+    expect(imprimer).toHaveBeenCalledTimes(1);
+    fireEvent.load(iframe);
+    expect(imprimer).toHaveBeenCalledTimes(1);
+  });
+
+  it('médecin : l’instantané identique à l’aperçu s’imprime aussitôt (aucun rechargement)', async () => {
+    const iframe = await ouvrirApercuMedecin();
+    repondreImpression({
+      ok: true,
+      json: { ok: true, impression: { id: 'imp_1', imprimeLe: '2026-10-18T15:00:00.000Z' }, html: iframe.getAttribute('srcdoc') },
+    });
+    const imprimer = vi.spyOn(iframe.contentWindow!, 'print').mockImplementation(() => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer et imprimer' }));
+    await waitFor(() => expect(imprimer).toHaveBeenCalledTimes(1));
+  });
+
+  it('médecin : une réponse arrivée après un changement de sélection n’imprime rien', async () => {
+    let repondre: (valeur: unknown) => void = () => {};
+    const precedente = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/praticien/documents/medecin/impression')) {
+        return new Promise((resolve) => { repondre = resolve; });
+      }
+      return precedente!(url, init);
+    });
+    const iframe = await ouvrirApercuMedecin();
+    const imprimer = vi.spyOn(iframe.contentWindow!, 'print').mockImplementation(() => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer et imprimer' }));
+    // La synthèse change pendant l'appel.
+    fireEvent.change(document.querySelectorAll('select')[1], { target: { value: '' } });
+    repondre({
+      ok: true,
+      json: async () => ({ ok: true, impression: { id: 'imp_1', imprimeLe: '2026-10-18T15:00:00.000Z' }, html: '<p>Ancien dossier</p>' }),
+    });
+    await waitFor(() => expect(screen.getByText(/la sélection a changé, rien n’a été imprimé/)).not.toBeNull());
+    expect(imprimer).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).not.toContain('Ancien dossier');
+  });
+
   it('médecin : un refus du serveur est affiché, l’aperçu reste celui relu', async () => {
     repondreImpression({ ok: false, json: { ok: false, reason: 'consentement_partage_retire', error: 'Le patient a retiré son consentement.' } });
     const iframe = await ouvrirApercuMedecin();
