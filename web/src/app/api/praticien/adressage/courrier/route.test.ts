@@ -384,7 +384,7 @@ describe('l’EXCEPTION d’adressage — D-219 §3 amendé (2026-09-17)', () =>
 // sur les mêmes signaux, et ne s'écrit jamais sans sa lettre.
 describe('couverture — D-257, LOT-03', () => {
   const constatsAttendus = (signaux: string[]) =>
-    construireSafetyFindings(signaux, [], []).findings.map(finding => finding.findingId);
+    construireSafetyFindings(signaux, []).findings.map(finding => finding.findingId);
 
   it('écrit la lettre ET sa couverture dans la même transaction', async () => {
     const res = await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
@@ -515,7 +515,7 @@ describe('réponses de questionnaire — D-275 §2, LOT-3', () => {
     const reponses = reponsesSecuriteDeclarees([PASSATION]);
     expect(genererCourrierAdressage).toHaveBeenCalledWith(expect.objectContaining({ reponses }));
     const { findingIds } = tx.adressageSignalAlerte.create.mock.calls[0][0].data;
-    expect(findingIds).toEqual(construireSafetyFindings([], [], reponses).findings.map(f => f.findingId));
+    expect(findingIds).toEqual(construireSafetyFindings([], reponses).findings.map(f => f.findingId));
     expect(findingIds).toHaveLength(1);
     expect(findingIds[0]).toMatch(/^safety:questionnaire:[0-9a-f]{16}$/);
   });

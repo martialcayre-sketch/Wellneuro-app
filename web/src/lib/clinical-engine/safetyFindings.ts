@@ -106,27 +106,6 @@ const LIMITATION_HORS_COTATION =
   + ' il est traité comme un adressage plutôt qu’ignoré.';
 
 /**
- * Un signalement d'effet indésirable, tel que la chaîne C1 le reçoit.
- *
- * NI LES SYMPTÔMES NI LE LIBELLÉ DU PRODUIT N'Y FIGURENT, et c'est une garde,
- * pas un oubli. Ce type traverse la chaîne C1, dont la sortie entre dans
- * l'empreinte de la carte de décision, puis dans le corps d'une réponse HTTP.
- * Aucune sortie n'en dépend plus (D-281 §5, 2026-10-17), mais la garde tient
- * pour le jour où une en dépendrait : les mots que le patient a écrits sur ses
- * symptômes n'ont rien à faire sur ce trajet ; le praticien les lit sur la
- * surface des signalements, à leur place.
- */
-export type EffetIndesirableRuntime = {
-  id: string;
-  /** Le protocole que le patient a DÉSIGNÉ, ou `null` — jamais déduit. */
-  protocolDraftId: string | null;
-  /** `element` | `ne_sait_pas` | `autre_produit`, ou `null` sans rattachement ([[D-281]] §2). */
-  rattachement: string | null;
-  /** `recu` | `en_cours` | `traite` | `clos`, tel que la base le porte. */
-  statutTraitement: string;
-};
-
-/**
  * Le SECOND producteur ([[D-101]] amendée par [[D-281]], `DC-42`) — il ne
  * produit plus AUCUN constat.
  *
@@ -433,24 +412,6 @@ function construireFindingsQuestionnaire(reponses: ReponseSecurite[]): {
 export function construireSafetyFindings(
   signauxAlerte: string[],
   /**
-   * Les signalements d'effet indésirable du dossier ([[D-101]], LOT-05).
-   *
-   * DÉFAUT `[]`, ET C'EST LE SEUL DE CE MODULE — il ne dit pas « aucun
-   * signalement » mais « ce chemin ne lit pas les signalements ». La distinction
-   * tient parce que le seul appelant qui les fournit est celui qui les a
-   * réellement interrogés : quand `interruptionEffetIndesirableActive()` est
-   * faux, aucune requête n'est émise et le second producteur reste muet — il
-   * n'y a rien à dire d'une lecture qui n'a pas eu lieu et dont le dispositif
-   * entier est éteint. Un défaut sur `signauxAlerte`, lui, resterait interdit : ce
-   * chemin-là est allumé.
-   *
-   * AUCUNE SORTIE N'EN DÉPEND PLUS (D-281 §5, arbitrage du 2026-10-17) : le
-   * second producteur ne rend que sa règle, selon la signature. Le paramètre
-   * reste pour ne pas déplacer le contrat de la chaîne ; le retrait de la
-   * lecture est une dette du plan (§8).
-   */
-  effetsIndesirables: EffetIndesirableRuntime[] = [],
-  /**
    * Les réponses aux questions sur le suicide ([[D-275]] §2), telles que
    * `reponsesSecuriteDeclarees` les rend.
    *
@@ -568,12 +529,11 @@ export function partitionnerConstatsAdresses(
  */
 export function constatsSecuriteOuverts(
   signauxAlerte: string[],
-  effetsIndesirables: EffetIndesirableRuntime[] | undefined,
   reponsesSecurite: ReponseSecurite[],
   couvertures: CouvertureAdressage[] | undefined,
 ): SafetyFinding[] {
   return partitionnerConstatsAdresses(
-    construireSafetyFindings(signauxAlerte, effetsIndesirables ?? [], reponsesSecurite).findings,
+    construireSafetyFindings(signauxAlerte, reponsesSecurite).findings,
     couvertures ?? [],
   ).ouverts;
 }

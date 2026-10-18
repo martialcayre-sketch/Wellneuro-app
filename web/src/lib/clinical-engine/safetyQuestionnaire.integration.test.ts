@@ -7,7 +7,6 @@ const { prisma } = vi.hoisted(() => ({
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('./effetsIndesirablesPrisma', () => ({ lireEffetsIndesirables: vi.fn(async () => undefined) }));
 vi.mock('./adressagesSignalAlertePrisma', () => ({ lireCouverturesAdressage: vi.fn(async () => undefined) }));
 vi.mock('./selectionPrioritePrisma', async importOriginal => ({
   ...(await importOriginal<typeof import('./selectionPrioritePrisma')>()),

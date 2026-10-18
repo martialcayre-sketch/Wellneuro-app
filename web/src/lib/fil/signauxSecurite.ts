@@ -12,17 +12,17 @@ import {
 } from '@/lib/clinical-engine/safetyFindings';
 import { QUESTIONNAIRES_SECURITE } from '@/lib/clinical/safetyQuestionnaireV1';
 import { lireCouverturesAdressageGroupees } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
-import { lireEffetsIndesirablesGroupes } from '@/lib/clinical-engine/effetsIndesirablesPrisma';
 import type { SignalSecuriteRow } from './cartes';
 
 // SIGNAUX DE SÉCURITÉ OUVERTS DE LA PATIENTÈLE — [[D-275]] §3.
 //
 // LES MÊMES ENTRÉES QUE LA CHAÎNE C1, LUES EN GROUPE. La chaîne lit, par
 // dossier, l'anamnèse de la consultation porteuse, les couvertures d'adressage
-// posées sur CETTE consultation, les signalements d'effet indésirable et les
-// réponses aux questions sur le suicide ([[D-275]] §2) ; puis
-// `construireSafetyFindings` et `partitionnerConstatsAdresses` disent ce qui
-// reste ouvert. Ce module lit les mêmes quatre sources pour tous les dossiers
+// posées sur CETTE consultation et les réponses aux questions sur le suicide
+// ([[D-275]] §2) ; puis `construireSafetyFindings` et
+// `partitionnerConstatsAdresses` disent ce qui reste ouvert. Les signalements
+// d'effet indésirable n'en sont plus une source (D-281 §5, t29) : ils se
+// comptent sur leur propre carte. Ce module lit les mêmes trois sources pour tous les dossiers
 // à la fois et passe par `constatsSecuriteOuverts`, la composition de ces deux
 // fonctions : aucune règle n'est réécrite ici.
 //
@@ -30,8 +30,8 @@ import type { SignalSecuriteRow } from './cartes';
 // clos ne peut plus recevoir de lettre d'adressage (`accepteNouvelEnvoi`), et
 // une carte que rien ne peut éteindre ne serait que du bruit. Un dossier sans
 // consultation porteuse n'a pas d'anamnèse qui fasse foi, donc aucun signal
-// déclaré — mais ses signalements d'effet indésirable sont lus quand même,
-// comme le fait le cockpit.
+// déclaré — mais ses réponses aux questions sur le suicide sont lues quand
+// même, comme le fait le cockpit.
 
 export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalSecuriteRow[]> {
   const dossiers = { actif: true, suiviClotureLe: null, ...filtrePatientsDuPraticien(email) };
@@ -47,11 +47,10 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
     if (!porteuses.has(consultation.idPatient)) porteuses.set(consultation.idPatient, consultation);
   }
 
-  const [couvertures, effets, passations] = await Promise.all([
+  const [couvertures, passations] = await Promise.all([
     lireCouverturesAdressageGroupees(
       new Map([...porteuses].map(([idPatient, porteuse]) => [idPatient, porteuse.id])),
     ),
-    lireEffetsIndesirablesGroupes(dossiers),
     // Les seuls questionnaires que la table lit : la sélection est celle de la
     // chaîne, et `reponsesSecuriteDeclarees` applique le même filtre de validité.
     prisma.questionnaireReponse.findMany({
@@ -76,7 +75,6 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
   const lignes: SignalSecuriteRow[] = [];
   const idPatients = [...new Set([
     ...porteuses.keys(),
-    ...(effets?.keys() ?? []),
     ...passationsParDossier.keys(),
   ])].sort();
   for (const idPatient of idPatients) {
@@ -85,9 +83,6 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
       // Sans porteuse, aucune anamnèse ne fait foi : `signauxDeclares(null)`
       // rend `[]`, exactement ce que la chaîne reçoit.
       signauxDeclares(porteuse?.anamnese ?? null),
-      // `undefined` garde son sens d'un bout à l'autre : dispositif éteint,
-      // aucune lecture. Une lecture qui a eu lieu sans ligne rend `[]`.
-      effets ? effets.get(idPatient) ?? [] : undefined,
       reponsesSecuriteDeclarees(passationsParDossier.get(idPatient) ?? []),
       couvertures ? couvertures.get(idPatient) ?? [] : undefined,
     );

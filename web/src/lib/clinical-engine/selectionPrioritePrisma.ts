@@ -6,7 +6,7 @@ import type { DecisionPrioritySelection } from './types';
 // LECTURE DE LA SÉLECTION PRATICIEN D'UNE PRIORITÉ — [[D-127]].
 //
 // MODULE À PART, et le motif est structurel, pas esthétique — même séparation
-// que `effetsIndesirablesPrisma.ts` / `runtimeFromPrisma.ts` : un module qui
+// que `adressagesSignalAlertePrisma.ts` / `runtimeFromPrisma.ts` : un module qui
 // TRADUIT peut être importé sans `DATABASE_URL`, un module qui LIT ne le peut
 // pas. Y poser `import { prisma }` casserait les bancs au chargement, avant
 // toute assertion.

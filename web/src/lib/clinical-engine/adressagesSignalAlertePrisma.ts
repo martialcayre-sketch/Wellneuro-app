@@ -4,7 +4,7 @@ import type { CouvertureAdressage } from './safetyFindingSource';
 
 // LECTURE DES COUVERTURES D'ADRESSAGE — [[D-257]], LOT-04.
 //
-// MODULE À PART, POUR LE MOTIF DE `effetsIndesirablesPrisma.ts` :
+// MODULE À PART, pour un motif structurel :
 // `runtimeFromPrisma` traduit des lignes sans toucher la base, et ses bancs
 // tournent sans `DATABASE_URL`. La lecture est PARTAGÉE par les quatre
 // appelants de la chaîne C1 (cockpit ×2, `verifierChaineC1`, rejeu patient) :

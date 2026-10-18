@@ -276,12 +276,7 @@ describe('la carte n’est jamais touchée — règle signée simulée', () => {
       sourceReference: 'Signature simulée par le banc — jamais servie en production.',
       shaPerimetre: SAFETY_EI_SHA256,
     });
-    const { findings } = construireSafetyFindings([], [
-      { id: 's1', protocolDraftId: V1, rattachement: 'element', statutTraitement: 'recu' },
-      { id: 's2', protocolDraftId: V1, rattachement: 'ne_sait_pas', statutTraitement: 'traite' },
-      { id: 's3', protocolDraftId: V1, rattachement: 'autre_produit', statutTraitement: 'clos' },
-      { id: 's4', protocolDraftId: V1, rattachement: null, statutTraitement: 'recu' },
-    ], []);
+    const { findings } = construireSafetyFindings([], []);
     expect(findings.filter(f => f.ruleId === REGLE_SECURITE_EFFET_INDESIRABLE)).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
-  prisma, entreesRuntime, construireChaineC1Tolerante, lireSelectionPriorite, lireEffetsIndesirables,
+  prisma, entreesRuntime, construireChaineC1Tolerante, lireSelectionPriorite,
   lireCouverturesAdressage,
 } =
   vi.hoisted(() => ({
@@ -9,14 +9,12 @@ const {
     entreesRuntime: vi.fn(),
     construireChaineC1Tolerante: vi.fn(),
     lireSelectionPriorite: vi.fn(),
-    lireEffetsIndesirables: vi.fn(),
     lireCouverturesAdressage: vi.fn(),
   }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('./verifierChaineC1', () => ({ entreesRuntime }));
 vi.mock('./selectionPrioritePrisma', () => ({ construireChaineC1Tolerante, lireSelectionPriorite }));
-vi.mock('./effetsIndesirablesPrisma', () => ({ lireEffetsIndesirables }));
 vi.mock('./adressagesSignalAlertePrisma', () => ({ lireCouverturesAdressage }));
 
 import { canonicalSha256 } from './canonical';
@@ -66,7 +64,6 @@ describe('rejouerCarteDecision', () => {
     });
     entreesRuntime.mockResolvedValue(entrees());
     lireSelectionPriorite.mockResolvedValue(null);
-    lireEffetsIndesirables.mockResolvedValue([]);
     lireCouverturesAdressage.mockResolvedValue(undefined);
     construireChaineC1Tolerante.mockReturnValue({
       chaine: { decisionCard: { decisionCardId: ID_CARTE, inputHash: EMPREINTE_APPROUVEE } },
@@ -172,6 +169,5 @@ describe('rejouerCarteDecision', () => {
     await appel();
     expect(entreesRuntime).toHaveBeenCalledWith(ID_PATIENT);
     expect(lireSelectionPriorite).toHaveBeenCalledWith(ID_PATIENT, ID_CARTE);
-    expect(lireEffetsIndesirables).toHaveBeenCalledWith(ID_PATIENT);
   });
 });
