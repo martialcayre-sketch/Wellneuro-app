@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { FORMULATION_CHOIX_VERSION, traceFormulationActive } from '@/lib/trust/finalitesChoix';
@@ -48,6 +49,14 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
       if (statut === 'retire' && (!precedent || precedent.statut !== 'accorde')) {
         return { ignore: true as const };
       }
+      // Cadence ([[D-326]], t08) — JAMAIS SUR UN RETRAIT : le retrait doit rester
+      // aussi simple que l'accord, et un retrait ne suit qu'un accord, lui borné.
+      // Compté sous le verrou de ligne : la borne est ici exacte.
+      if (statut !== 'retire' && await cadenceAtteinte('portail', depuis =>
+        tx.trustChoiceEvent.count({ where: { idPatient: patient.idPatient, enregistreLe: { gte: depuis } } }),
+      )) {
+        return { cadence: true as const };
+      }
       // DEUX VERSIONS, ET ELLES NE DISENT PAS LA MÊME CHOSE ([[D-222]] §3).
       // `documentVersion` porte `droits_patient` — le document de référence.
       // `formulationVersion` porte le texte RÉELLEMENT LU pour choisir, celui de
@@ -83,6 +92,9 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
       });
       return { ignore: false as const };
     });
+    if ('cadence' in resultat) {
+      return NextResponse.json({ ok: false, reason: 'cadence', error: MESSAGE_CADENCE_PATIENT }, { status: 429 });
+    }
     if (resultat.ignore) return NextResponse.json({ ok: true });
     return NextResponse.json({ ok: true });
   } catch (err) {

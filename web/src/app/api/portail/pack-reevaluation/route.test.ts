@@ -6,7 +6,7 @@ const { prisma } = vi.hoisted(() => ({
     questionnaireReponse: { findFirst: vi.fn() },
     consultation: { findFirst: vi.fn() },
     pack: { findMany: vi.fn() },
-    packProposition: { findFirst: vi.fn(), create: vi.fn() },
+    packProposition: { count: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
     assignation: { create: vi.fn(), createMany: vi.fn() },
   },
 }));
@@ -67,6 +67,7 @@ beforeEach(() => {
   prisma.pack.findMany.mockResolvedValue([PACK]);
   prisma.packProposition.findFirst.mockResolvedValue(null);
   prisma.packProposition.create.mockResolvedValue({});
+  prisma.packProposition.count.mockResolvedValue(0);
 });
 
 describe('GET /api/portail/pack-reevaluation', () => {
@@ -193,6 +194,20 @@ describe('POST /api/portail/pack-reevaluation', () => {
     await POST(post({ idPack: PACK.idPack, reponse: 'acceptee' }));
     expect(prisma.assignation.create).not.toHaveBeenCalled();
     expect(prisma.assignation.createMany).not.toHaveBeenCalled();
+  });
+
+  it('au plafond horaire des réponses du patient (D-326) : 429, aucune écriture', async () => {
+    prisma.packProposition.count.mockResolvedValue(20);
+    const res = await POST(post({ idPack: PACK.idPack, reponse: 'acceptee' }));
+    expect(res.status).toBe(429);
+    const corps = await res.json();
+    expect(corps.reason).toBe('cadence');
+    expect(corps.error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.packProposition.create).not.toHaveBeenCalled();
+    expect(prisma.packProposition.count.mock.calls[0][0].where).toMatchObject({
+      idPatient: PATIENT.idPatient,
+      acteurRole: 'patient',
+    });
   });
 
   it('chaîne la réponse sur la précédente plutôt que de la réécrire', async () => {

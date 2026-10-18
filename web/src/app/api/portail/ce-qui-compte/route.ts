@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { isCeQuiCompteEnabled } from '@/lib/patient/featureFlag';
 import { fenetreDeDepot, preparerEntree, type FenetreDepot, type RefusEntree } from '@/lib/patient/ceQuiCompte';
@@ -287,6 +288,14 @@ export async function POST(req: Request): Promise<NextResponse<PortailCeQuiCompt
     const fenetre = await lireFenetre(patient.idPatient);
     if (!fenetre.ouverte) {
       return echec('fenetre_fermee', MESSAGE_FENETRE_FERMEE, 409);
+    }
+
+    // 2 ter — CADENCE ([[D-326]], t08) : au plafond horaire du dossier, rien
+    //     n'est lu ni écrit. Avant le corps, comme la fenêtre.
+    if (await cadenceAtteinte('portail', depuis =>
+      prisma.entreeCeQuiCompte.count({ where: { idPatient: patient.idPatient, creeLe: { gte: depuis } } }),
+    )) {
+      return echec('cadence', MESSAGE_CADENCE_PATIENT, 429);
     }
 
     // 3 — TAILLE DU CORPS, AVANT DE LE LIRE (voir `TAILLE_CORPS_MAX_OCTETS`).

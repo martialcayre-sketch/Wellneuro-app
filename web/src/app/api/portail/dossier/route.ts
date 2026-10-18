@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import {
   isCeQuiCompteEnabled,
@@ -906,6 +907,22 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     const auth = await authentifierPatientPortail(req);
     if (auth.erreur) return auth.erreur as NextResponse<PortailDossierResponse>;
     const patient = auth.patient;
+
+    // 2 bis — CADENCE ([[D-326]], t08) : un plafond pour les quatre gestes de ce
+    //     POST ensemble, compté sur les quatre tables qu'ils écrivent (seule
+    //     cette route y écrit). Avant le corps : un dossier au plafond ne lit rien.
+    if (await cadenceAtteinte('portail', async depuis => {
+      const where = { idPatient: patient.idPatient, creeLe: { gte: depuis } };
+      const comptes = await Promise.all([
+        prisma.ratificationObjectif.count({ where }),
+        prisma.amendementObjectif.count({ where }),
+        prisma.demandeCorrectionObjectif.count({ where }),
+        prisma.reponseJalonObjectif.count({ where }),
+      ]);
+      return comptes.reduce((a, b) => a + b, 0);
+    })) {
+      return echec('cadence', MESSAGE_CADENCE_PATIENT, 429);
+    }
 
     // DOSSIER CLOS : LA RATIFICATION RESTE AUTORISÉE, délibérément. La clôture
     // est un état du SUIVI PRATICIEN, pas un ordre de silence fait au patient ;

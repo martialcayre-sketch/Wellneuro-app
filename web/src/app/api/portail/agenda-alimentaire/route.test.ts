@@ -4,7 +4,7 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
-    agendaAlimentaireJour: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    agendaAlimentaireJour: { count: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -444,6 +444,20 @@ describe('POST /api/portail/agenda-alimentaire', () => {
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('deja_notee');
     expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
+  });
+
+  it('au plafond horaire du dossier (D-326) : 429, texte arbitré, aucune journée écrite', async () => {
+    prisma.agendaAlimentaireJour.count.mockResolvedValue(60);
+    const { POST } = await chargerRoute('true');
+    const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));
+    expect(res.status).toBe(429);
+    const json = await res.json();
+    expect(json.reason).toBe('cadence');
+    expect(json.error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
+    const where = prisma.agendaAlimentaireJour.count.mock.calls[0][0].where;
+    expect(where.idPatient).toBe(OWNER.idPatient);
+    expect(where.soumisLe.gte).toEqual(new Date('2026-07-15T09:00:00.000Z'));
   });
 
   it('accepte une correction chaînée sur la journée active (201)', async () => {

@@ -86,6 +86,26 @@ describe('PropositionPackReevaluation', () => {
     expect(screen.getByRole('button', { name: /Non, pas maintenant/i })).toBeTruthy();
   });
 
+  it('au plafond horaire (D-326), le texte du serveur remplace « Réessayez »', async () => {
+    fetchMock([
+      { corps: { ok: true, proposition: PROPOSITION } },
+      {
+        ok: false,
+        corps: {
+          ok: false,
+          reason: 'cadence',
+          error: 'Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.',
+        },
+      },
+    ]);
+    render(<PropositionPackReevaluation />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Oui, je veux bien/i }));
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+  });
+
   it('aucun chiffre de score ni pression dans ce qui est rendu', async () => {
     fetchMock([{ corps: { ok: true, proposition: PROPOSITION } }]);
     render(<PropositionPackReevaluation />);

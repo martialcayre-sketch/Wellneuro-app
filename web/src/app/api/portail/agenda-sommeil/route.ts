@@ -16,6 +16,8 @@ import {
   type FenetreAgenda,
   type NuitReponses,
 } from '@/lib/agenda-sommeil/persistence';
+import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -184,6 +186,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // consultation d'un agenda déjà clôturé (déjà géré ci-dessus).
     if (isDeadlineExpired(ass.dateLimite)) {
       return refuserEcriture('expired', 'La période de recueil est terminée.', 410, requestContext);
+    }
+    // CADENCE ([[D-326]], t08) : plafond large (saisies et corrections
+    // chaînées), compté sur toutes les nuits du dossier.
+    if (await cadenceAtteinte('agenda', depuis =>
+      prisma.agendaSommeilNuit.count({ where: { idPatient: auth.idPatient, soumisLe: { gte: depuis } } }),
+    )) {
+      return refuserEcriture('cadence', MESSAGE_CADENCE_PATIENT, 429, requestContext);
     }
 
     const aujourdHui = dateJourParis();

@@ -11,6 +11,7 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     entreeCeQuiCompte: {
+      count: vi.fn(),
       create: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
@@ -121,6 +122,8 @@ beforeEach(() => {
   // dépôt, qui n'a jamais été borné.
   prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(null);
   prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+  // D-326 (t08) : sous le plafond horaire par défaut.
+  prisma.entreeCeQuiCompte.count.mockResolvedValue(0);
   prisma.entreeCeQuiCompte.create.mockImplementation(
     async ({ data }: { data: { saisiLe: Date | null } }) => ({
       id: 'ENT_1',
@@ -230,6 +233,25 @@ describe('POST /api/portail/ce-qui-compte — contrat d’accès', () => {
     const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
     expect(res.status).toBe(201);
     expect(prisma.entreeCeQuiCompte.create).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('POST /api/portail/ce-qui-compte — cadence (D-326, t08)', () => {
+  it('au plafond horaire du dossier : 429, texte arbitré, rien d’écrit', async () => {
+    prisma.entreeCeQuiCompte.count.mockResolvedValue(20);
+    const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+    expect(res.status).toBe(429);
+    expect((await res.json()).error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    aucuneEcriture();
+    const where = prisma.entreeCeQuiCompte.count.mock.calls[0][0].where;
+    expect(where.idPatient).toBe(PATIENT.idPatient);
+    expect(where.creeLe.gte).toBeInstanceOf(Date);
+  });
+
+  it('sous le plafond : le dépôt passe', async () => {
+    prisma.entreeCeQuiCompte.count.mockResolvedValue(19);
+    const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+    expect(res.status).toBe(201);
   });
 });
 

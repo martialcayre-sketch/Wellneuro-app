@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
+import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { objectifsCourants } from '@/lib/praticien/objectifNegocie';
@@ -86,6 +88,10 @@ export async function POST(req: Request): Promise<NextResponse<AccordApiResponse
     });
     if (patient && !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+    // Cadence ([[D-326]], t08) : plafond technique des écritures sur les objectifs du dossier.
+    if (await cadenceObjectifsAtteinte(idPatient)) {
+      return echec('cadence', MESSAGE_CADENCE_PRATICIEN, 429);
     }
 
     const idObjectif = typeof corps.idObjectif === 'string' ? corps.idObjectif.trim() : '';

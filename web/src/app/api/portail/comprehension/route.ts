@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
@@ -268,6 +269,14 @@ export async function POST(req: Request): Promise<NextResponse<PortailComprehens
     // permettrait de clore un dossier pour rendre sa synthèse incontestable.
     // Ne pas « corriger » cette absence de garde en la posant. La révocation du
     // compte, elle, ferme bien la route (403 ci-dessus).
+
+    // 2 ter — CADENCE ([[D-326]], t08) : au plafond horaire du dossier, rien
+    //     n'est lu ni écrit.
+    if (await cadenceAtteinte('portail', depuis =>
+      prisma.desaccordComprehension.count({ where: { idPatient: patient.idPatient, creeLe: { gte: depuis } } }),
+    )) {
+      return echec('cadence', MESSAGE_CADENCE_PATIENT, 429);
+    }
 
     // 3 — TAILLE DU CORPS, AVANT DE LE LIRE. Deux étages : `content-length`
     //     annoncé (refus sec, rien n'est bufférisé), puis la même borne sur le

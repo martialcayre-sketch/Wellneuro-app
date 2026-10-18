@@ -17,6 +17,7 @@ const { prisma, logger } = vi.hoisted(() => ({
       deleteMany: vi.fn(),
     },
     desaccordComprehension: {
+      count: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       // Moqués EXPRÈS bien que jamais appelés : sans eux, l'assertion
@@ -97,6 +98,8 @@ describe('/api/portail/comprehension', () => {
     prisma.syntheseComprehension.findMany.mockResolvedValue([]);
     prisma.syntheseComprehension.findFirst.mockResolvedValue(null);
     prisma.desaccordComprehension.findMany.mockResolvedValue([]);
+    // D-326 (t08) : sous le plafond horaire par défaut.
+    prisma.desaccordComprehension.count.mockResolvedValue(0);
     prisma.desaccordComprehension.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'DES_NEUF',
@@ -106,6 +109,19 @@ describe('/api/portail/comprehension', () => {
         creeLe: new Date('2026-08-22T10:00:00.000Z'),
       }),
     );
+  });
+
+  // ── Cadence (D-326, t08) ──────────────────────────────────────────────────
+
+  it('au plafond horaire du dossier : 429, texte arbitré, aucun désaccord écrit', async () => {
+    prisma.desaccordComprehension.count.mockResolvedValue(20);
+    const reponse = await POST(postRequest(cookieProprio(), { idSynthese: 'SYN_1' }));
+    expect(reponse.status).toBe(429);
+    expect((await reponse.json()).error).toBe('Vous avez fait beaucoup d’envois en peu de temps. Réessayez dans une heure.');
+    expect(prisma.desaccordComprehension.create).not.toHaveBeenCalled();
+    const where = prisma.desaccordComprehension.count.mock.calls[0][0].where;
+    expect(where.idPatient).toBe(PATIENT.idPatient);
+    expect(where.creeLe.gte).toBeInstanceOf(Date);
   });
 
   // ── Drapeau ───────────────────────────────────────────────────────────────
