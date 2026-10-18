@@ -10682,3 +10682,12 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, revue, merge ; puis le responsable re-signe 1104, 1609, 1610, 0996 en « acte isolé » et signe le lot ; constat par conteneur.
 
 **Ouvert.** Un constat « aucun acte » sur un constituant contredit sa composition : il garde son état, rien ne le signale.
+## 2026-10-18 — ACT-2 constatée, ACT-3 ouverte
+
+**Fait.** Première vraie diffusion après le drapeau, par le responsable, sur un dossier de test : une seule annonce `protocole_diffuse` envoyée avec le clic, e-mail reçu identique au gabarit validé. `WN_PORTAIL_MES_ECHANGES=true` posé à 17 h 47 UTC, constaté dans l'image servie (401 au lieu de 404). Aucune lecture datée encore en base.
+
+**Écarté.** Garder la garde d'âge sur le POST du rendez-vous de suivi : l'arbitrage du 2026-10-14 garde le suivi du protocole ouvert (relecture `wn-reviewer`, no-go) ; code retiré avant commit.
+
+**Prochaine action.** Constater un premier dossier servi par « Mes échanges » et le premier jour `lu_le`, par conteneur.
+
+**Ouvert.** La ligne « rendez-vous de suivi » reste fermée environ 24 h entre deux points (routée en H61, fenêtres inchangées).
