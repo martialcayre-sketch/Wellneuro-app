@@ -7,8 +7,10 @@
 --      sous une session en Europe/Paris ; une date antidatée est ignorée ;
 --      l'ordre croît d'une impression à la suivante ;
 --   3. la synthèse d'un AUTRE dossier, ou une synthèse inexistante, est refusée ;
---   4. une synthèse NON VALIDÉE est refusée ; `Corrigee_Praticien` passe ;
---   5. seul le praticien DU DOSSIER imprime (la casse ne compte pas) ;
+--   4. une synthèse NON VALIDÉE est refusée — `Brouillon_IA`,
+--      `Brouillon_Praticien`, `Rejetee` — ; `Corrigee_Praticien` passe ;
+--   5. seul le praticien DU DOSSIER imprime (la casse ne compte pas, ni côté
+--      dossier ni côté appelant) ;
 --   6. un HTML vide, ou une empreinte qui n'est pas la sienne, est refusé ;
 --   7. le téléchargement de la DERNIÈRE impression passe ; instant et ordre
 --      posés par la base ;
@@ -19,8 +21,9 @@
 --      ni la synthèse ni l'impression ne s'effacent avant ce qui les désigne
 --      (RESTRICT) ;
 --  12. les FK ont la règle annoncée (RESTRICT), les CHECK, les index et les six
---      triggers sont présents, le refus de REPEATABLE READ précède les verrous,
---      le dossier précède le verrou partagé, et les trois fonctions ont leur
+--      triggers sont présents, le refus de tout niveau autre que READ
+--      COMMITTED précède les verrous, le dossier précède le verrou partagé,
+--      l'ordre est tiré sous ce verrou, et les trois fonctions ont leur
 --      `search_path` épinglé (présence relue : une session seule n'éprouve pas
 --      la concurrence) ;
 --  13. chaque table porte EXACTEMENT ses colonnes (liste blanche) ;
@@ -71,18 +74,22 @@ $$;
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --
--- Dossier A (praticien@wellneuro.fr) : `syn_a_validee` (Validee_Praticien),
--- `syn_a_corrigee` (Corrigee_Praticien), `syn_a_brouillon` (Brouillon_IA).
+-- Dossier A (praticien stocké `Praticien@WellNeuro.fr`, casse comprise) :
+-- `syn_a_validee` (Validee_Praticien), `syn_a_corrigee` (Corrigee_Praticien),
+-- `syn_a_brouillon` (Brouillon_IA), `syn_a_brouillon_p` (Brouillon_Praticien),
+-- `syn_a_rejetee` (Rejetee).
 -- Dossier B, d'un AUTRE praticien : `syn_b_validee`, et une impression `imp_b`.
 
 INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at) VALUES
-  ('pat_contrat_docm_a', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'Sophie', 'Nicola', 'praticien@wellneuro.fr', CURRENT_TIMESTAMP),
+  ('pat_contrat_docm_a', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'Sophie', 'Nicola', 'Praticien@WellNeuro.fr', CURRENT_TIMESTAMP),
   ('pat_contrat_docm_b', 'PAT_CONTRAT_DOCM_B', 'jennifer.martin+docm@example.test', 'Jennifer', 'Martin', 'autre.praticien@wellneuro.fr', CURRENT_TIMESTAMP);
 
 INSERT INTO syntheses_ia (id, id_synthese, id_patient, email_patient, modele, donnees_entree, synthese_json, statut, updated_at) VALUES
   ('s1', 'syn_a_validee', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'contrat', '{}', '{}', 'Validee_Praticien', CURRENT_TIMESTAMP),
   ('s2', 'syn_a_corrigee', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'contrat', '{}', '{}', 'Corrigee_Praticien', CURRENT_TIMESTAMP),
   ('s3', 'syn_a_brouillon', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'contrat', '{}', '{}', 'Brouillon_IA', CURRENT_TIMESTAMP),
+  ('s5', 'syn_a_brouillon_p', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'contrat', '{}', '{}', 'Brouillon_Praticien', CURRENT_TIMESTAMP),
+  ('s6', 'syn_a_rejetee', 'PAT_CONTRAT_DOCM_A', 'sophie.nicola+docm@example.test', 'contrat', '{}', '{}', 'Rejetee', CURRENT_TIMESTAMP),
   ('s4', 'syn_b_validee', 'PAT_CONTRAT_DOCM_B', 'jennifer.martin+docm@example.test', 'contrat', '{}', '{}', 'Validee_Praticien', CURRENT_TIMESTAMP);
 
 INSERT INTO documents_medecin_imprimes (id, id_patient, id_synthese, praticien_email, html, html_sha256)
@@ -128,6 +135,14 @@ BEGIN
   PERFORM pg_temp.refuse('4 synthèse en brouillon',
     $q$INSERT INTO documents_medecin_imprimes (id, id_patient, id_synthese, praticien_email, html, html_sha256)
        VALUES ('x4', 'PAT_CONTRAT_DOCM_A', 'syn_a_brouillon', 'praticien@wellneuro.fr', '<p>x</p>', pg_temp.sha('<p>x</p>'))$q$,
+    'P0001', 'n''est pas validée par le praticien');
+  PERFORM pg_temp.refuse('4 synthèse vidée par le praticien',
+    $q$INSERT INTO documents_medecin_imprimes (id, id_patient, id_synthese, praticien_email, html, html_sha256)
+       VALUES ('x4b', 'PAT_CONTRAT_DOCM_A', 'syn_a_brouillon_p', 'praticien@wellneuro.fr', '<p>x</p>', pg_temp.sha('<p>x</p>'))$q$,
+    'P0001', 'n''est pas validée par le praticien');
+  PERFORM pg_temp.refuse('4 synthèse rejetée',
+    $q$INSERT INTO documents_medecin_imprimes (id, id_patient, id_synthese, praticien_email, html, html_sha256)
+       VALUES ('x4c', 'PAT_CONTRAT_DOCM_A', 'syn_a_rejetee', 'praticien@wellneuro.fr', '<p>x</p>', pg_temp.sha('<p>x</p>'))$q$,
     'P0001', 'n''est pas validée par le praticien');
   -- Corrigée passe, et l'ordre croît. Casse de l'e-mail indifférente (5).
   INSERT INTO documents_medecin_imprimes (id, id_patient, id_synthese, praticien_email, html, html_sha256)
@@ -186,13 +201,13 @@ BEGIN
     'P0001', 'est figée (UPDATE refusé)');
   PERFORM pg_temp.refuse('10 TRUNCATE des impressions',
     $q$TRUNCATE documents_medecin_imprimes CASCADE$q$,
-    'P0001', 'est figée (TRUNCATE refusé)');
+    'P0001', 'documents_medecin_imprimes : une trace du document pour le médecin est figée (TRUNCATE refusé)');
   PERFORM pg_temp.refuse('10 UPDATE d''un téléchargement',
     $q$UPDATE telechargements_documents_medecin SET telecharge_le = now() WHERE id = 'tel_a1'$q$,
     'P0001', 'est figée (UPDATE refusé)');
   PERFORM pg_temp.refuse('10 TRUNCATE des téléchargements',
     $q$TRUNCATE telechargements_documents_medecin$q$,
-    'P0001', 'est figée (TRUNCATE refusé)');
+    'P0001', 'telechargements_documents_medecin : une trace du document pour le médecin est figée (TRUNCATE refusé)');
 
   -- ── 11. L'effacement nommé ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('11 synthèse effacée avant ses impressions',
@@ -260,15 +275,15 @@ BEGIN
   IF nb <> 6 THEN
     RAISE EXCEPTION 'CONTRAT — 12 : % trigger(s) sur 6 sont présents et actifs, de la forme annoncée.', nb;
   END IF;
-  -- Le refus de REPEATABLE READ, puis le dossier, puis le verrou partagé
-  -- (en-tête de la migration) : une session seule ne joue pas la
+  -- Le refus de tout niveau autre que READ COMMITTED, puis le dossier, puis
+  -- le verrou partagé, puis l'ordre tiré sous lui (en-tête de la migration) : une session seule ne joue pas la
   -- concurrence, elle relit l'ordre.
   def := pg_get_functiondef('public.documents_medecin_imprimes_avant_insertion()'::regprocedure);
-  IF def !~ 'repeatable read[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_medecin:''' THEN
+  IF def !~ '<> ''read committed''[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_medecin:''[^$]*NEW\.ordre := nextval' THEN
     RAISE EXCEPTION 'CONTRAT — 12 : l''ordre des verrous de l''impression n''est plus celui annoncé.';
   END IF;
   def := pg_get_functiondef('public.telechargements_documents_medecin_avant_insertion()'::regprocedure);
-  IF def !~ 'repeatable read[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_medecin:''[^$]*ORDER BY i\.ordre DESC' THEN
+  IF def !~ '<> ''read committed''[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_medecin:''[^$]*ORDER BY i\.ordre DESC[^$]*NEW\.ordre := nextval' THEN
     RAISE EXCEPTION 'CONTRAT — 12 : l''ordre des verrous du téléchargement n''est plus celui annoncé.';
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p

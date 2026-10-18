@@ -10612,3 +10612,13 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Texte des deux marques choisi par l'assistant (D-308 ne le fixe pas) ; révocation d'une annulation : le dernier statut posé redevient actif (à confirmer).
 
+
+## 2026-10-18 — F38 : migration du document pour le médecin
+
+**Fait.** #1553 (marques datées) mergée sur sa tête relue, F58 soldée. Migration `documents_medecin_imprimes_v1` : impressions figées (HTML recopié, empreinte vérifiée par CHECK, synthèse validée du dossier, praticien du dossier) et téléchargements du patient (dernière impression seule), en ajout seul, sous le verrou du dossier. Contrat négatif à quatorze promesses, 32 mutations toutes tuées ; relecture `wn-reviewer` (SERIALIZABLE refusé, statuts non validés tous éprouvés, ordre sous le verrou) ; effacement nommé ; déclaration RGPD validée par le responsable ; T3 vert.
+
+**Écarté.** Une ligne au Fil de correspondance comme seule trace : elle ne dit pas ce qui a été imprimé, ni ce que le patient a reçu.
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, release-db approuvée, constat par conteneur, puis la PR du code (route d'impression gardée, ligne au Fil, « Pour votre médecin » au portail sous drapeau éteint).
+
+**Ouvert.** Texte portail « Pour votre médecin » et son éventuel ajout à la note patient ; sort au portail d'une impression antérieure à un retrait du partage : à trancher avec le code, avant le drapeau.

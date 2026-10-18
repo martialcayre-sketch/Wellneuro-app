@@ -61,12 +61,15 @@
 -- puis un verrou consultatif par dossier, PARTAGÉ par les deux tables
 -- (`hashtext('documents_medecin:' || id_patient)`). Une impression et un
 -- téléchargement concurrents du même dossier se sérialisent : le refus 5 lit
--- l'impression que le verrou vient de laisser commettre. REPEATABLE READ est
--- REFUSÉ par les deux triggers : son instantané masquerait cette impression,
--- et le refus 5 journaliserait une version tout juste remplacée (même
--- discipline que les verrous de clé de BP-09). Aucun écrivain de
--- l'application n'emploie ce niveau au 2026-10-18 : un écrivain futur qui
--- l'emploierait échoue, il n'écrit pas à tort.
+-- l'impression que le verrou vient de laisser commettre. Tout niveau autre
+-- que READ COMMITTED est REFUSÉ par les deux triggers, SERIALIZABLE compris :
+-- l'instantané de la transaction, pris avant l'attente du verrou, masquerait
+-- cette impression, et le refus 5 journaliserait une version tout juste
+-- remplacée — la détection de conflit de SERIALIZABLE ne suit pas un écrivain
+-- en READ COMMITTED (même discipline que l'exclusion NABM, revue wn-reviewer
+-- de cette migration). Aucun écrivain de l'application n'emploie un autre
+-- niveau au 2026-10-18 : un écrivain futur qui l'emploierait échoue, il
+-- n'écrit pas à tort.
 --
 -- ── FIGÉES, MAIS EFFAÇABLES ────────────────────────────────────────────────
 --
@@ -191,8 +194,8 @@ DECLARE
   synthese_patient text;
   synthese_statut text;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'écriture refusée en REPEATABLE READ : la trace du document pour le médecin exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'écriture refusée en % : la trace du document pour le médecin exige READ COMMITTED.', upper(current_setting('transaction_isolation'));
   END IF;
   -- Le dossier d'abord (en-tête, « Les verrous »).
   SELECT p.praticien_email INTO praticien_dossier
@@ -240,8 +243,8 @@ DECLARE
   impression_patient text;
   derniere text;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'écriture refusée en REPEATABLE READ : la trace du document pour le médecin exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'écriture refusée en % : la trace du document pour le médecin exige READ COMMITTED.', upper(current_setting('transaction_isolation'));
   END IF;
   PERFORM 1 FROM public.patients p WHERE p.id_patient = NEW.id_patient FOR KEY SHARE;
 
