@@ -48,9 +48,13 @@ les routes du cockpit et du portail alors que le snapshot écarte toute
 passation incomplète. Le §1 ferme ce cas : un sous-score partiel est
 désormais non mesuré des deux côtés. Un résidu demeure, sans biais de mesure :
 le snapshot juge la passation entière, les routes jugent les items que chaque
-source lit. Mesuré en production par conteneur, en lecture seule, le
-2026-10-18 : aucune dernière passation n'est incomplète sur les sources à
-sous-score ; sur les agendas du sommeil que le moteur score, un omet des
+source lit. Exemples du mécanisme : une passation du DNST incomplète sur l'axe
+ME garde le besoin 10 au cockpit et l'écarte du snapshot ; de même un mode de
+vie incomplet hors du bloc activité (besoin 5) ou une enquête alimentaire à
+un item manquant (besoin 3). Mesuré en production par conteneur, en lecture
+seule, le 2026-10-18 : aucune passation exploitable, historique compris, n'a
+d'axe servi partiel ; aucune dernière passation des sources à sous-score
+n'est incomplète ; sur les agendas du sommeil que le moteur score, un omet des
 rubriques non couvertes, que le snapshot écarte et que les routes gardent.
 **Non aligné dans ce lot**, parce que chacune des deux directions change une
 sortie réelle : aligner les routes sur le snapshot retire l'agenda du besoin 5
@@ -65,7 +69,11 @@ sous la mention de nature de l'indice global : « Calculé sur n besoins mesuré
 sur 12 » (compte lu dans les strates du résultat, `compterBesoinsMesures`). Au
 portail, sans chiffre (arbitrage du 2026-10-10) et seulement si un besoin
 manque : « Votre indice ne tient compte que des besoins déjà renseignés :
-certains ne sont pas encore mesurés. » Les besoins 6, 7 et 11 restent affichés
+certains ne sont pas encore mesurés. » Assumé : tant que les besoins 2, 6, 7
+et 11 n'ont aucune source, cette phrase accompagne toujours l'indice, et le
+compte du cockpit plafonne à 8 sur 12 (7 sur 12 en forme courte de l'enquête
+alimentaire). C'est exact, et c'est le constat que l'audit voulait rendre
+visible. Les besoins 6, 7 et 11 restent affichés
 « non mesuré », ce que la décision 5 des dossiers de mesure (2026-10-18,
 option a) a retenu jusqu'à une définition signée.
 
@@ -73,8 +81,9 @@ option a) a retenu jusqu'à une définition signée.
 même classe que v10 à v15 : la disponibilité d'une source change. L'effet va
 dans les deux sens (un axe partiel et haut cesse de dire « bien couvert » ; un
 axe partiel et bas sous le seuil d'effondrement cesse de plafonner le total).
-Le stock ne bouge pas en production ; le momentum ne compare que des lectures
-de même version, comme à chaque changement.
+Le stock ne bouge pas en production, ni les lectures de jalons passés (mesure
+du §2, sur toutes les passations) ; le momentum ne compare que des lectures de
+même version, comme à chaque changement.
 
 **Ne touche pas** : `BESOIN_SOURCES`, les seuils, les poids, le 60/20/20, le
 plafond ; le double compte des items SIIN52 à SIIN55 entre les besoins 1 et 3

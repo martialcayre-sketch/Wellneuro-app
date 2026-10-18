@@ -25,9 +25,10 @@ export function clamp01(valeur: number): number {
 
 /**
  * Un sous-score porte-t-il sur tous les items de son axe ? `missing` d'abord
- * (`had`), puis `repondus` contre `items` (`subscore`, `scoresBesoins` ; `items`
- * y exclut déjà les questions conditionnelles non posées). Sans compte lisible :
- * non, jamais présumé complet ([[D-328]] §1).
+ * (`had`), puis `repondus` contre `items` (`subscore`, où `items` exclut les
+ * questions conditionnelles non posées ; `scoresBesoins`, où `items` est le
+ * nombre d'items déclarés — aucun n'y est conditionnel aujourd'hui). Sans compte
+ * lisible : non, jamais présumé complet ([[D-328]] §1).
  */
 function sousScoreComplet(sub: Record<string, unknown>): boolean {
   if (typeof sub.missing === 'number') return sub.missing === 0;

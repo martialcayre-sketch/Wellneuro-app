@@ -598,3 +598,20 @@ describe('compterBesoinsMesures et sa mention ([[D-328]] §3)', () => {
     expect(mentionBesoinsMesures(8, 12)).toBe('Calculé sur 8 besoins mesurés sur 12');
   });
 });
+
+describe('plafond des fondations critiques — un axe partiel ne le déclenche plus ([[D-328]] §1)', () => {
+  it('une seule réponse d’activité au pire ne plafonne pas le total', async () => {
+    const { calculerEquilibre } = await import('./score');
+    // Besoin 8 bien couvert (axe D complet au mieux), plus une seule réponse
+    // d'activité au pire. Avant D-328 : mouvement à 0, besoin 5 effondré,
+    // fondation critique déclenchée, total plafonné.
+    const axeD = Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, '0']));
+    const resultat = calculerEquilibre({
+      Q_NEU_11: axeD,
+      Q_MOD_01: { ACTIVITE_PHYSIQUE_Q001: '0' },
+    });
+    expect(resultat.fondationsCritiquesDeclenchees).toEqual([]);
+    expect(resultat.plafondApplique).toBe(false);
+    expect(resultat.scoreGlobal).toBe(100);
+  });
+});

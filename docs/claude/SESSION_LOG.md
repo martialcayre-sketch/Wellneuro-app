@@ -10726,3 +10726,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
+
+## 2026-10-18 — « Mon équilibre » : lot de cohérence du calcul (D-328)
+
+**Fait.** Les sept décisions des dossiers de mesure sont rendues (recommandations suivies, « non mesuré » pour 6, 7, 11). Lot de cohérence écrit : un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12), badges de preuve alignés ; le total dit sur combien de besoins il est établi ; score v16/v17. T3 complet vert, contre-revue `wn-reviewer` GO avec réserves levées.
+
+**Écarté.** Aligner le snapshot et les routes dans ce lot : chaque direction change une sortie réelle en production (un agenda du sommeil retiré, ou des PSQI partiels admis).
+
+**Prochaine action.** Merge sur revue CodeRabbit ; puis ingestion des sources libres ou préparation du changement de sources des besoins 8, 9, 12.
+
+**Ouvert.** Résidu D-328 §2 ; badges de preuve à signer ou retirer.

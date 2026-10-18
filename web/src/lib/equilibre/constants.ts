@@ -210,9 +210,11 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // partiel et haut (sources `inverser: true`) cessait de dire « bien couvert »,
 // la couverture BAISSE ; un axe partiel et bas sous `SEUIL_EFFONDREMENT`
 // (bloc activité, fondation critique 5) cessait de plafonner le total à 50, le
-// total REMONTE. Mesuré avant de fermer, en production par conteneur : aucune
-// dernière passation de ces instruments n'est partielle — le STOCK ne bouge
-// pas, c'est le FLUX qui change de définition.
+// total REMONTE. Mesuré avant de fermer, en production par conteneur, sur
+// TOUTES les passations exploitables (historique compris, pas seulement la
+// dernière de chaque dossier) : aucun axe servi n'est partiel — ni le STOCK ni
+// les lectures de jalons passés ne bougent, c'est le FLUX qui change de
+// définition.
 export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v17' : 'v16';
 
 /**
