@@ -32,15 +32,9 @@ describe('ProtocolConsultationPanel', () => {
     render(<ProtocolConsultationPanel decisionCard={null} protocolDraft={null} />);
     expect(screen.getByText(/Aperçu du protocole indisponible/)).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Valider pour diffusion' })).toBeNull();
-    // Sur fixture, il n'y a pas de sous-vue « Diffusion » : aucun renvoi.
-    expect(screen.queryByText(/sous-vue « Diffusion »/)).toBeNull();
-  });
-
-  // HORS FIXTURE, CE PANNEAU N'A JAMAIS DE PROTOCOLE. Sans renvoi, il promettait
-  // un aperçu que ni la relecture ni la validation ne feraient apparaître ici.
-  it('renvoie vers la sous-vue où l’aperçu vit réellement', () => {
-    render(<ProtocolConsultationPanel decisionCard={null} protocolDraft={null} apercuEnDiffusion />);
-    expect(screen.getByText(/sous-vue « Diffusion »/)).not.toBeNull();
+    // Le renvoi vers « Diffusion » vit dans la section, hors fixture (t13) :
+    // ce panneau, désormais monté sur fixture seule, n'en porte plus.
+    expect(screen.queryByText(/Diffusion »/)).toBeNull();
   });
 
   it('distingue revue, validation et transmission sans requête réseau', () => {
