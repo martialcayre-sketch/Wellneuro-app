@@ -1192,6 +1192,148 @@ describe('EstimeMesurePanel — annuler un résultat saisi par erreur (D-294)', 
   });
 });
 
+describe('EstimeMesurePanel — le statut posé près d’une valeur (D-322)', () => {
+  const SANS_STATUT = { actif: null, historique: [] };
+  const COURANTE = {
+    id: 'r1',
+    analyteCode: 'BIO_FERRITINE',
+    analyteLibelle: 'Ferritine',
+    valeur: '42.5',
+    unite: 'µg/L',
+    uniteCatalogue: 'µg/L',
+    preleveLe: '2026-09-01T08:00:00.000Z',
+    source: 'saisie_praticien',
+    saisiLe: '2026-09-01T09:00:00.000Z',
+    supersedesResultatId: null,
+    corrigeeParId: null,
+    annulation: null,
+    statutPose: SANS_STATUT,
+  };
+  const POSE = { acte: 'pose', statut: 'a_suivre', par: 'praticien@wellneuro.fr', le: '2026-09-03T10:00:00.000Z' };
+  const AVEC_STATUT = {
+    actif: { statut: 'a_suivre', par: 'praticien@wellneuro.fr', le: '2026-09-03T10:00:00.000Z' },
+    historique: [POSE],
+  };
+
+  function monterAvec(resultats: unknown[], reponsePost?: { ok: boolean; status: number; error?: string }) {
+    const corps: Array<{ url: string; corps: unknown }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(entree);
+        if (url.includes('/api/praticien/biologie/catalogue')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, analytes: [{ code: 'BIO_FERRITINE', libelle: 'Ferritine', unite: 'µg/L' }] }),
+          } as Response;
+        }
+        if (init?.method === 'POST') {
+          corps.push({ url, corps: JSON.parse(String(init.body)) });
+          const r = reponsePost ?? { ok: true, status: 201 };
+          return { ok: r.ok, status: r.status, json: async () => ({ ok: r.ok, error: r.error }) } as Response;
+        }
+        return { ok: true, status: 200, json: async () => ({ ok: true, resultats, plagesParAnalyte: {} }) } as Response;
+      }),
+    );
+    render(
+      <CbFeatureProvider enabled resultsEnabled>
+        <EstimeMesurePanel idPatient="PAT1" />
+      </CbFeatureProvider>,
+    );
+    return { corps };
+  }
+
+  it('rien par défaut : une valeur sans acte se dit « sans statut posé » (§2)', async () => {
+    monterAvec([COURANTE]);
+    expect(await screen.findByText(/· sans statut posé/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Poser un statut de la mesure du/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Retirer le statut/ })).toBeNull();
+  });
+
+  it('le statut actif s’affiche avec son libellé, sa date et son auteur', async () => {
+    monterAvec([{ ...COURANTE, statutPose: AVEC_STATUT }]);
+    expect(await screen.findByText(/· statut : à suivre — posé le .* par praticien@wellneuro\.fr/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Changer le statut de la mesure du/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Retirer le statut de la mesure du/ })).toBeTruthy();
+  });
+
+  it('la pose exige un statut de la liste, sans l’actif ni texte libre, puis poste l’acte', async () => {
+    const { corps } = monterAvec([{ ...COURANTE, statutPose: AVEC_STATUT }]);
+    fireEvent.click(await screen.findByRole('button', { name: /Changer le statut de la mesure du/ }));
+    const poser = screen.getByRole('button', { name: 'Poser ce statut' }) as HTMLButtonElement;
+    expect(poser.disabled).toBe(true);
+    const choix = screen.getByRole('group', { name: 'Statut' });
+    // Les six de la liste, moins l'actif : reposer l'actif est refusé.
+    expect(choix.querySelectorAll('input[type="radio"]')).toHaveLength(5);
+    expect(choix.querySelectorAll('input:not([type="radio"]), textarea')).toHaveLength(0);
+    expect(screen.queryByLabelText('à suivre')).toBeNull();
+    fireEvent.click(screen.getByLabelText('donnée à vérifier'));
+    fireEvent.click(poser);
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toEqual({
+      url: '/api/praticien/biologie/resultats/statuts',
+      corps: { idPatient: 'PAT1', idResultat: 'r1', acte: 'pose', statut: 'donnee_a_verifier' },
+    });
+  });
+
+  it('le retrait se confirme, puis poste l’acte sans statut', async () => {
+    const { corps } = monterAvec([{ ...COURANTE, statutPose: AVEC_STATUT }]);
+    fireEvent.click(await screen.findByRole('button', { name: /Retirer le statut de la mesure du/ }));
+    expect(screen.getByText(/Le statut « à suivre » est retiré/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer le statut' }));
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0].corps).toEqual({ idPatient: 'PAT1', idResultat: 'r1', acte: 'retrait' });
+  });
+
+  it('un refus se dit tel que le serveur le formule, et le choix reste ouvert', async () => {
+    monterAvec([COURANTE], { ok: false, status: 409, error: 'Ce statut est déjà posé sur cette valeur.' });
+    fireEvent.click(await screen.findByRole('button', { name: /Poser un statut de la mesure du/ }));
+    fireEvent.click(screen.getByLabelText('à suivre'));
+    fireEvent.click(screen.getByRole('button', { name: 'Poser ce statut' }));
+    expect(await screen.findByText('Ce statut est déjà posé sur cette valeur.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Poser ce statut' })).toBeTruthy();
+  });
+
+  it('une valeur CORRIGÉE ne porte plus de statut courant ni de geste ; son historique reste lisible (§3)', async () => {
+    monterAvec([
+      { ...COURANTE, corrigeeParId: 'r2', statutPose: AVEC_STATUT },
+      { ...COURANTE, id: 'r2', valeur: '48', supersedesResultatId: 'r1', saisiLe: '2026-09-04T09:00:00.000Z' },
+    ]);
+    await screen.findByText(/remplacée/);
+    // Une seule valeur fait foi : un seul « sans statut posé », un seul geste.
+    expect(screen.getAllByText(/· sans statut posé/)).toHaveLength(1);
+    expect(screen.queryByText(/· statut : à suivre/)).toBeNull();
+    expect(screen.getAllByRole('button', { name: /Poser un statut de la mesure du/ })).toHaveLength(1);
+    expect(screen.getByText('Historique du statut (1)')).toBeTruthy();
+    expect(screen.getByText(/statut posé : à suivre — le .* par praticien@wellneuro\.fr/)).toBeTruthy();
+  });
+
+  it('un retrait se lit à l’historique', async () => {
+    monterAvec([
+      {
+        ...COURANTE,
+        statutPose: {
+          actif: null,
+          historique: [POSE, { acte: 'retrait', statut: null, par: 'praticien@wellneuro.fr', le: '2026-09-04T10:00:00.000Z' }],
+        },
+      },
+    ]);
+    expect(await screen.findByText('Historique du statut (2)')).toBeTruthy();
+    expect(screen.getByText(/statut retiré — le .* par praticien@wellneuro\.fr/)).toBeTruthy();
+    expect(screen.getByText(/· sans statut posé/)).toBeTruthy();
+  });
+
+  it('réponse d’une version antérieure (sans le champ) : aucun statut affirmé, aucun geste offert', async () => {
+    const { statutPose: _absent, ...ancienne } = COURANTE;
+    void _absent;
+    monterAvec([ancienne]);
+    await screen.findByText('42.5 µg/L');
+    expect(screen.queryByText(/sans statut posé/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Poser un statut/ })).toBeNull();
+  });
+});
+
 describe('EstimeMesurePanel — la série qui fait foi (BP-03)', () => {
   const ORIGINE = {
     id: 'r1',

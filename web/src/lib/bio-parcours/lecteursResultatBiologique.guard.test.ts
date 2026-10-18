@@ -22,6 +22,10 @@ const ACCES_ADMIS = [
   // Annulation et révocation ([[D-294]]) : lit le fil de la clé visée, sous
   // les verrous de la garde ; n'écrit que dans la table des actes.
   'web/src/app/api/praticien/biologie/resultats/annulations/route.ts',
+  // Statut posé près d'une valeur ([[D-322]], F58) : lit le fil de la clé
+  // visée (tête, annulation), sous les mêmes verrous ; n'écrit que dans la
+  // table des statuts — aucune valeur lue.
+  'web/src/app/api/praticien/biologie/resultats/statuts/route.ts',
   // Les annulations actives et les clés occupées ([[D-294]] §3, §6) : relit
   // les fils (identité, chaînage, clé) et prend le verrou de clé en SQL —
   // aucune valeur lue.

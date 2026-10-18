@@ -72,6 +72,26 @@ export const MESSAGES_REFUS_ANNULATION: Record<string, string> = {
 };
 
 /**
+ * Refus des actes de statut posé près d'une valeur ([[D-322]], F58). Chaque
+ * refus du trigger est nommé ici ; la route le dit avant, sous les mêmes
+ * verrous. Le refus d'un acte sur un résultat annulé est celui de la route
+ * seule (en-tête de la migration).
+ */
+export const MESSAGES_REFUS_STATUT: Record<string, string> = {
+  acte_invalide: 'Le geste demandé est illisible.',
+  cible_invalide: 'La valeur visée est mal désignée. Reprenez le geste depuis la série.',
+  statut_invalide: 'Choisissez un statut dans la liste.',
+  statut_cible_inconnue: 'La valeur visée est introuvable dans ce dossier. Relisez la série.',
+  statut_pas_tete:
+    'Cette valeur ne fait plus foi : elle a été corrigée, et la valeur corrigée porte son propre '
+    + 'statut. Relisez la série.',
+  statut_resultat_annule:
+    'Ce résultat est annulé : son statut ne se pose ni ne se retire plus. Il reste à l’historique.',
+  statut_deja_actif: 'Ce statut est déjà posé sur cette valeur.',
+  statut_aucun_a_retirer: 'Aucun statut n’est posé sur cette valeur.',
+};
+
+/**
  * Ce qu'on a le droit d'écrire d'une erreur : son NOM et son CODE Prisma, et
  * rien d'autre. `err.message` rendrait les arguments d'un
  * `PrismaClientValidationError` — valeur mesurée, identifiant de dossier. Le
