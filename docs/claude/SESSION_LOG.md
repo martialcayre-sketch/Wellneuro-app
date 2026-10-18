@@ -10602,6 +10602,33 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Matcher de la matrice : un spécificateur qui en préfixe un autre (`…/statuts` dans `…/statutsX`) compte un faux consommateur.
 
+## 2026-10-18 — J1-base : la minute d'après nomme la priorité retenue
+
+**Fait.** La route de clôture relit le libellé de la priorité de la version active : règle du registre signé (`priority:`), ou libellé du praticien sur la sélection qui porte cet identifiant (`libre:`, D-279). L'écran l'affiche ; l'identifiant reste en repli. Dette du plan soldée.
+
+**Écarté.** Recalculer la carte de décision (lourd, et ce n'est pas l'état enregistré) ; lire la tête du fil des sélections (le praticien a pu changer d'avis depuis la version).
+
+**Prochaine action.** PR, CI, merge après #1555 ; puis repli localhost.
+
+**Ouvert.** Liste J1-base à recevoir du responsable ; t08, t09, t16 cadrés (mémoire du 2026-10-18).
+## 2026-10-18 — Besoin 2 : dossier de la vitamine D signé, étiquetage en lot (D-325)
+
+**Fait.** Sources externes du dossier ingérées sur approbation de chaque envoi (LOT_018 à LOT_020, 41 passages, 82 claims), toutes signées par le responsable ; positions v0.1 et v0.2 validées par lui, signature transcrite sur son instruction ; fiche H15 à jour (#1551). Étiquetage : D-325 (geste en lot, tout ou rien, un acte par claim, correspondance des rubriques) et son code ; liste de 194 claims préparée au dossier privé.
+
+**Écarté.** Recherche par identifiant seule (212 gestes unitaires) ; correspondance codée des rubriques (rien n'est complété).
+
+**Prochaine action.** PR du lot, CI, CodeRabbit, merge ; le responsable colle la liste, constat par conteneur en agrégats ; puis dossier du zinc.
+
+**Ouvert.** Rejets du dossier encore VALIDE en base (geste du responsable) ; pas de contrat SQL sur base réelle pour le geste en lot (vérifié à la main par la contre-revue).
+## 2026-10-18 — J1-base : libellé « Compléments alimentaires » entier au menu
+
+**Fait.** Le libellé décidé par D-324 dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent à la ligne au lieu d'être coupés ; un cas de banc épingle la règle. Plan : ligne `MESSAGE_ORIENTATION_INACTIVE` soldée (corrigée par D-076 en août).
+
+**Écarté.** Raccourcir le libellé (texte tranché par D-324) ; élargir le rail (toutes les pages bougent).
+
+**Prochaine action.** PR, bases d'images Desktop si le CI les refuse, merge, constat ; puis la minute d'après et le repli localhost.
+
+**Ouvert.** Les « 8 gestes cosmétiques », les jetons, K-10, NF-6 et NU-2a ne sont définis nulle part dans le dépôt.
 ## 2026-10-18 — F58 : deux marques datées, fiche soldée
 
 **Fait.** #1550 (code du statut posé) mergée après revue `wn-reviewer` (go, P2 traités : retrait refusé sur un résultat annulé, garde des lecteurs, test entrelacé) et CodeRabbit sans remarque. Marques « Lignes validées — dernière le … » et « Lecture consignée le … / non consignée » sur la carte du compte rendu, sans stockage neuf. F38 cadré ; trois arbitrages pris (chaque téléchargement journalisé, instantané de la dernière impression, vie du dossier).
@@ -10622,3 +10649,33 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** `wn-reviewer`, T3, PR ; merge après #1556 et #1557.
 
 **Ouvert.** t08 (plafond des écritures, décision à écrire) ; t09 (fait nouveau à trancher) ; liste J1-base.
+## 2026-10-18 — J1-base : plus de repli localhost possible en production
+
+**Fait.** Base unique des liens de courriel (`baseLiensCourriel`) ; `instrumentation.ts` refuse de démarrer en production réelle sans `NEXTAUTH_URL` (trace fatale, sortie au tour suivant). Constat Scalingo (noms seuls) : `NEXTAUTH_URL` et `WN_DEPLOY_ENV` posés.
+
+**Écarté.** Lever à la fabrication du lien (première version) : la revue `wn-reviewer` a montré que la levée tombait après des écritures validées (assignations créées, route en échec, trace d'envoi perdue) ; inférer la production par `NODE_ENV` (les E2E tournent sur un build de production).
+
+**Prochaine action.** Seconde relecture, T3, PR ; merge après #1555 et #1556.
+
+**Ouvert.** t09 à reprendre (drapeaux allumés en production) ; liste J1-base attendue.
+## 2026-10-18 — F38 : migration du document pour le médecin
+
+**Fait.** #1553 (marques datées) mergée sur sa tête relue, F58 soldée. Migration `documents_medecin_imprimes_v1` : impressions figées (HTML recopié, empreinte vérifiée par CHECK, synthèse validée du dossier, praticien du dossier) et téléchargements du patient (dernière impression seule), en ajout seul, sous le verrou du dossier. Contrat négatif à quatorze promesses, 32 mutations toutes tuées ; relecture `wn-reviewer` (SERIALIZABLE refusé, statuts non validés tous éprouvés, ordre sous le verrou) ; effacement nommé ; déclaration RGPD validée par le responsable ; T3 vert.
+
+**Écarté.** Une ligne au Fil de correspondance comme seule trace : elle ne dit pas ce qui a été imprimé, ni ce que le patient a reçu.
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, release-db approuvée, constat par conteneur, puis la PR du code (route d'impression gardée, ligne au Fil, « Pour votre médecin » au portail sous drapeau éteint).
+
+**Ouvert.** Texte portail « Pour votre médecin » et son éventuel ajout à la note patient ; sort au portail d'une impression antérieure à un retrait du partage : à trancher avec le code, avant le drapeau.
+
+## 2026-10-18 — ACT-3 : relecture préalable, EF-0 constaté servi
+
+**Fait.** ai déployée (ad5a130d) ; triggers constatés en production, aucune lecture datée encore. EF-0 constaté servi par #1546 ; plan H14 et H61 à jour.
+
+**Décidé.** Responsable : micro-textes de « Mes échanges » validés tels quels ; limite « protocole indisponible » acceptée.
+
+**Écarté.** Masquer au journal un protocole indisponible (lot de code avant ACT-3, pour un cas rare).
+
+**Prochaine action.** Constater ACT-2 à la première vraie diffusion, puis ouvrir ACT-3.
+
+**Ouvert.** Premier jour de lecture écrit en production, à constater par conteneur.

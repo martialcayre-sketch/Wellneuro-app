@@ -249,7 +249,10 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                   strokeWidth={2}
                   className={`shrink-0 ${active ? '' : 'opacity-85'}`}
                 />
-                {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+                {/* Le libellé passe à la ligne plutôt que d'être coupé : « Compléments
+                    alimentaires » (D-324 §4) dépasse les 252 px du rail déplié, et
+                    « Compléments aliment… » ne disait plus le rayon (H43). */}
+                {!collapsed && <span className="min-w-0 flex-1 break-words leading-snug">{item.label}</span>}
                 {item.badge === 'fil' && filIncomplet && (
                   // Le « ! » double le texte, jamais la couleur seule (A5-R1),
                   // et se voit rail réduit comme déplié.

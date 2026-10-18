@@ -73,10 +73,12 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     }),
     lectureFichesOuverte() ? fichesALire(idPatient) : Promise.resolve([]),
     lettreAdressagePatientOuverte() ? lettreALire(idPatient) : Promise.resolve([]),
-    // LIMITE CONNUE, à relire avant ACT-3 : la règle « servi » de l'accueil
-    // (rejeu de la carte, contrat) n'est pas rejouée ici — même limite que
-    // `api/portail/lectures` assume ([[D-315]]). Un protocole diffusé que
-    // l'accueil dit « indisponible » paraît au journal et mène à cet écran.
+    // LIMITE CONNUE, ACCEPTÉE par le responsable le 2026-10-18 (relecture
+    // préalable à ACT-3) : la règle « servi » de l'accueil (rejeu de la carte,
+    // contrat) n'est pas rejouée ici — même limite que `api/portail/lectures`
+    // assume ([[D-315]]). Un protocole diffusé que l'accueil dit
+    // « indisponible » paraît au journal, comme remis, et mène à l'accueil,
+    // qui explique l'indisponibilité.
     resolveProtocoleDiffuse(idPatient),
     questionnairesTransmis(idPatient),
     isBioPortailEnabled() ? listerTransmissions(idPatient) : Promise.resolve([]),

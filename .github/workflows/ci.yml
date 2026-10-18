@@ -1340,6 +1340,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/statuts_poses_resultats_biologiques_v1_negatif.sql
 
+      # Le document pour le médecin (D-307, F38) : impression d'une synthèse
+      # validée DU dossier par son praticien, HTML et empreinte figés,
+      # téléchargement de la seule dernière impression, ajout seul, effacement
+      # nommé, RLS deny-all. Transaction annulée.
+      - name: Documents medecin imprimes negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/documents_medecin_imprimes_v1_negatif.sql
+
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte
       # rendu (unicité PARTIELLE), import courant du même compte rendu, identité

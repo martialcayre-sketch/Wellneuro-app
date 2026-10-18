@@ -157,3 +157,34 @@ describe('ClotureMinuteApresPanel', () => {
     expect(screen.queryByText(/Les trois étapes sont franchies/i)).toBeNull();
   });
 });
+
+describe('ClotureMinuteApresPanel — libellé de la priorité retenue (H43)', () => {
+  const avecLibelle = (libellePriorite: string | null) =>
+    construireCloture({
+      versionActive: {
+        inputHash: 'hash-v2',
+        selectedPriorityId: 'priority:PRIO-DIG-01',
+        libellePriorite,
+        status: 'draft',
+        reviewedAt: null,
+        createdAt: new Date('2026-07-01T09:00:00.000Z'),
+      },
+      approbationActive: null,
+      syntheses: [],
+    });
+
+  it('affiche le libellé, jamais l’identifiant brut', async () => {
+    repondre(avecLibelle('Axe digestif'));
+    const { container } = render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText('Axe digestif')).toBeTruthy());
+    expect(container.textContent).not.toContain('priority:');
+  });
+
+  it('libellé introuvable : l’identifiant reste, plutôt qu’un vide', async () => {
+    repondre(avecLibelle(null));
+    render(<ClotureMinuteApresPanel idPatient="PAT_SEED_03" />);
+
+    await waitFor(() => expect(screen.getByText('priority:PRIO-DIG-01')).toBeTruthy());
+  });
+});

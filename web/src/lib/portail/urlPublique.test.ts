@@ -1,11 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { urlPubliquePortail } from './urlPublique';
+import { baseLiensAbsenteEnProduction, baseLiensCourriel, urlPubliquePortail } from './urlPublique';
 
 const NEXTAUTH_URL_AVANT = process.env.NEXTAUTH_URL;
+const WN_DEPLOY_ENV_AVANT = process.env.WN_DEPLOY_ENV;
 
 afterEach(() => {
   if (NEXTAUTH_URL_AVANT === undefined) delete process.env.NEXTAUTH_URL;
   else process.env.NEXTAUTH_URL = NEXTAUTH_URL_AVANT;
+  if (WN_DEPLOY_ENV_AVANT === undefined) delete process.env.WN_DEPLOY_ENV;
+  else process.env.WN_DEPLOY_ENV = WN_DEPLOY_ENV_AVANT;
 });
 
 describe('urlPubliquePortail', () => {
@@ -22,5 +25,34 @@ describe('urlPubliquePortail', () => {
     delete process.env.NEXTAUTH_URL;
     const url = urlPubliquePortail('/portail/lien/indisponible', 'http://localhost:3111/portail/lien/x');
     expect(url.toString()).toBe('http://localhost:3111/portail/lien/indisponible');
+  });
+});
+
+describe('base des liens de courriel (H43, repli localhost)', () => {
+  it('NEXTAUTH_URL posée : elle, sans barre finale', () => {
+    process.env.NEXTAUTH_URL = 'https://app.exemple.fr/';
+    expect(baseLiensCourriel()).toBe('https://app.exemple.fr');
+  });
+
+  it('absente : le repli de développement', () => {
+    delete process.env.NEXTAUTH_URL;
+    expect(baseLiensCourriel()).toBe('http://localhost:3000');
+  });
+
+  it('production réelle sans NEXTAUTH_URL (ou vide) : signalée — c’est ce qui arrête le démarrage', () => {
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production' })).toBe(true);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '  ' })).toBe(true);
+    // `'/'` se réduit à une base vide, que `baseLiensCourriel` remplacerait par localhost.
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '/' })).toBe(true);
+    // Ni barres seules, ni hôte sans schéma : `//portail/lien/<jeton>` viserait l'hôte « portail ».
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: '//' })).toBe(true);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: 'app.exemple.fr' })).toBe(true);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: 'javascript:alert(1)' })).toBe(true);
+  });
+
+  it('base posée, ou hors production réelle (E2E sur build de production compris) : rien à signaler', () => {
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'production', NEXTAUTH_URL: 'https://app.exemple.fr' })).toBe(false);
+    expect(baseLiensAbsenteEnProduction({ NODE_ENV: 'production' })).toBe(false);
+    expect(baseLiensAbsenteEnProduction({ WN_DEPLOY_ENV: 'staging' })).toBe(false);
   });
 });
