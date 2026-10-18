@@ -106,6 +106,10 @@ model Patient {
   adressagesSignalAlerte     AdressageSignalAlerte[]
   // Lettres d'adressage mises à disposition du patient (D-262, LOT-01).
   lettresAdressageRemises    LettreAdressageRemise[]
+  // Document pour le médecin : impressions figées et téléchargements du
+  // patient (D-307, F38).
+  documentsMedecinImprimes        DocumentMedecinImprime[]
+  telechargementsDocumentsMedecin TelechargementDocumentMedecin[]
   correspondancesPatient     CorrespondancePatient[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
@@ -415,6 +419,7 @@ model SyntheseIA {
   patient       Patient         @relation(fields: [idPatient], references: [idPatient])
   auditEntrees  AuditSynthese[]
   bookletEnvois BookletEnvoi[]
+  documentsMedecinImprimes DocumentMedecinImprime[]
 
   @@map("syntheses_ia")
 }
@@ -3845,4 +3850,54 @@ model LettreAdressageRemise {
   @@index([idApprobation], map: "lettres_adressage_remises_approbation_idx")
   @@index([idCorrespondance], map: "lettres_adressage_remises_correspondance_idx")
   @@map("lettres_adressage_remises")
+}
+
+/// Une impression CONFIRMÉE du document pour le médecin ([[D-307]] §2, F38) :
+/// le HTML imprimé est recopié avec son empreinte — le document se recompose à
+/// chaque ouverture, seul l'instantané dit ce qui a été imprimé et remis. En
+/// ajout seul (UPDATE/TRUNCATE refusés) ; instant et ordre posés par la base.
+model DocumentMedecinImprime {
+  id             String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base sous verrou.
+  ordre          BigInt   @default(autoincrement()) @map("ordre")
+  idPatient      String   @map("id_patient")
+  /// La synthèse validée dont le document est composé.
+  idSynthese     String   @map("id_synthese")
+  praticienEmail String   @map("praticien_email")
+  /// Instantané du HTML imprimé.
+  html           String   @map("html")
+  /// sha-256 du HTML en UTF-8 (CHECK).
+  htmlSha256     String   @map("html_sha256")
+  /// Posé par la base (trigger), en UTC.
+  imprimeLe      DateTime @default(now()) @map("imprime_le")
+
+  patient         Patient                         @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  synthese        SyntheseIA                      @relation(fields: [idSynthese], references: [idSynthese], onDelete: Restrict)
+  telechargements TelechargementDocumentMedecin[]
+
+  @@unique([ordre], map: "documents_medecin_imprimes_ordre_key")
+  @@index([idPatient, ordre], map: "documents_medecin_imprimes_patient_ordre_idx")
+  @@index([idSynthese], map: "documents_medecin_imprimes_synthese_idx")
+  @@map("documents_medecin_imprimes")
+}
+
+/// Un téléchargement, par le patient, de « Pour votre médecin » ([[D-307]] §3,
+/// F38) : il désigne l'impression téléchargée, la dernière du dossier
+/// (trigger). En ajout seul ; instant et ordre posés par la base.
+model TelechargementDocumentMedecin {
+  id           String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base sous verrou.
+  ordre        BigInt   @default(autoincrement()) @map("ordre")
+  idPatient    String   @map("id_patient")
+  idImpression String   @map("id_impression")
+  /// Posé par la base (trigger), en UTC.
+  telechargeLe DateTime @default(now()) @map("telecharge_le")
+
+  patient    Patient                @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  impression DocumentMedecinImprime @relation(fields: [idImpression], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "telechargements_documents_medecin_ordre_key")
+  @@index([idPatient, ordre], map: "telechargements_documents_medecin_patient_ordre_idx")
+  @@index([idImpression], map: "telechargements_documents_medecin_impression_idx")
+  @@map("telechargements_documents_medecin")
 }
