@@ -13,6 +13,7 @@ const { appels, tx, prisma } = vi.hoisted(() => {
       return [];
     }),
     trustChoiceEvent: { findMany: vi.fn() },
+    patient: { findUnique: vi.fn() },
     documentMedecinImprime: { create: vi.fn(), findFirst: vi.fn() },
     telechargementDocumentMedecin: { create: vi.fn() },
   };
@@ -43,6 +44,10 @@ beforeEach(() => {
   tx.trustChoiceEvent.findMany.mockImplementation(async () => {
     appels.push('choix');
     return evenement('accorde');
+  });
+  tx.patient.findUnique.mockImplementation(async () => {
+    appels.push('dossier');
+    return { actif: true, suiviClotureLe: null };
   });
   tx.documentMedecinImprime.create.mockResolvedValue({ id: 'imp_1', imprimeLe: new Date('2026-10-18T15:00:00Z') });
   tx.documentMedecinImprime.findFirst.mockResolvedValue({
@@ -78,7 +83,7 @@ describe('enregistrerImpression', () => {
     });
     const res = await enregistrerImpression(entree);
     expect(res).toEqual({ ok: true, impression: { id: 'imp_1', imprimeLe: new Date('2026-10-18T15:00:00Z') } });
-    expect(appels).toEqual(['verrou', 'choix', 'ecriture']);
+    expect(appels).toEqual(['verrou', 'dossier', 'choix', 'ecriture']);
     expect(tx.documentMedecinImprime.create.mock.calls[0][0].data).toEqual({
       ...entree,
       htmlSha256: empreinteHtml('<p>x</p>'),
@@ -89,6 +94,14 @@ describe('enregistrerImpression', () => {
     tx.trustChoiceEvent.findMany.mockResolvedValue(evenement(statut));
     const res = await enregistrerImpression(entree);
     expect(res.ok).toBe(false);
+    expect(tx.documentMedecinImprime.create).not.toHaveBeenCalled();
+  });
+
+  it('dossier clos à la relecture sous verrou : refus « dossier clos », aucune écriture', async () => {
+    tx.patient.findUnique.mockResolvedValue({ actif: false, suiviClotureLe: new Date('2026-10-18T14:00:00Z') });
+    const res = await enregistrerImpression(entree);
+    expect(res).toMatchObject({ ok: false, raison: 'dossier_cloture' });
+    expect(tx.trustChoiceEvent.findMany).not.toHaveBeenCalled();
     expect(tx.documentMedecinImprime.create).not.toHaveBeenCalled();
   });
 

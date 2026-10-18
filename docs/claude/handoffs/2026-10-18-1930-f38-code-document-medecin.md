@@ -79,6 +79,12 @@ portail, chaque téléchargement journalisé.
   - formulation du changelog corrigée.
 - T1 vert. T2 (`--fast`) vert après ces correctifs : 13 811 unitaires,
   278 E2E.
+- Revue CodeRabbit de #1564, corrigée :
+  - le dossier clos est relu sous le verrou dans `enregistrerImpression` ;
+  - l'ancre de téléchargement est rattachée au DOM, et la révocation de l'URL
+    est différée.
+
+  Vitest ciblé : 115 fichiers, 2 818 tests verts.
 
 ## Problèmes ouverts
 

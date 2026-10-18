@@ -56,8 +56,13 @@ export function PourVotreMedecinLecture({ token }: { token: string }) {
       const lien = document.createElement('a');
       lien.href = url;
       lien.download = NOM_FICHIER_DOCUMENT_MEDECIN;
+      // Rattachée au document, et l'URL révoquée plus tard : une révocation
+      // dans le même tour annule le téléchargement sur Safari (revue
+      // CodeRabbit), alors que le serveur l'a déjà journalisé.
+      document.body.appendChild(lien);
       lien.click();
-      URL.revokeObjectURL(url);
+      lien.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       setTelechargement({ enCours: false, erreur: null });
     } catch {
       setTelechargement({ enCours: false, erreur: 'Connexion interrompue. Vérifiez votre connexion et réessayez.' });

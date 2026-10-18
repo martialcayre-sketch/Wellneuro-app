@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
+import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
 
 // Le document pour le médecin, imprimé puis remis par le patient ([[D-307]],
@@ -57,6 +58,16 @@ export async function enregistrerImpression(entree: {
 }): Promise<ResultatImpression> {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${entree.idPatient} FOR UPDATE`;
+    // Le dossier ouvert est relu SOUS LE VERROU, comme le partage : une
+    // clôture concurrente passe avant ou après, jamais entre la garde
+    // d'entrée de la route et l'écriture (revue CodeRabbit).
+    const dossier = await tx.patient.findUnique({
+      where: { idPatient: entree.idPatient },
+      select: { actif: true, suiviClotureLe: true },
+    });
+    if (!dossier || !accepteNouvelEnvoi(dossier)) {
+      return { ok: false as const, raison: RAISON_DOSSIER_CLOS, message: MESSAGE_DOSSIER_CLOS };
+    }
     const choix = await tx.trustChoiceEvent.findMany({
       where: { idPatient: entree.idPatient, finalite: 'partage_medecin_traitant' },
       select: CHOIX_PARTAGE,
