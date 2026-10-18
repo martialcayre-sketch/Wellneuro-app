@@ -233,7 +233,7 @@ export function regimeDocumentaire(
  * ([[D-316]] §2-§3) : chaque phrase nomme les analyses distinctes (par code)
  * de son état, dans l'ordre de première apparition. Dites ligne à ligne, elles
  * répétaient les libellés et faisaient passer un bilan complet au-delà de la
- * borne de consignation (8 000 caractères). Un état sans analyse ne dit rien.
+ * borne de consignation (8 000 caractères, 12 000 depuis le 2026-10-18). Un état sans analyse ne dit rien.
  */
 export function mentionsRemboursement(
   analytes: ReadonlyArray<{ code: string; libelle: string; remboursement: Pick<Remboursement, 'statut'> }>,

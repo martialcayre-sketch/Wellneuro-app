@@ -10523,8 +10523,10 @@ qualité inchangés (item de l'indice).
 
 **Fait.** PR 2 (#1541) mergée après correctif de revue (lecture tardive d'un autre analyte). PR 3 : groupe en une ligne avec son acte et ses constituants, constituant seul remplacé par son groupe, calculé héritant de ses mesures — courrier, document patient, écran, fiche d'analyte ; inerte sans composition signée.
 
+**Décidé.** Responsable : tous les constituants dits, borne de consignation 12 000 (D-323 §7).
+
 **Écarté.** Dire l'acte de chaque ligne : reste à F55 (D-309 §1).
 
-**Prochaine action.** Merge, pages file A et BioFlow, puis file D.
+**Prochaine action.** Merge, pages file A et BioFlow, puis file D (h5 constaté fait ; Autofix toujours affiché).
 
 **Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.

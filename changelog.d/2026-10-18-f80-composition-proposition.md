@@ -14,6 +14,11 @@
   remboursé par ses mesures (…) ». La fiche d'analyte de la Bibliothèque
   rend le même état.
 - Une validation médicale exigée par un constituant rangé sous son groupe
-  reste dite.
+  reste dite ; un constituant rangé reste attendable par une action de
+  protocole, comme avant le regroupement. Un groupe dont l'acte n'est pas
+  remboursable ne remplace pas. Pour un calculé non évalué, la limite nomme
+  la mesure qui manque ; la fiche d'analyte dit l'état de chaque mesure.
+- Borne de consignation des courriers, du document patient et des
+  correspondances : 12 000 caractères au lieu de 8 000 (D-323 §7).
 - Sans composition signée, la proposition, le courrier et le document sont
   inchangés.

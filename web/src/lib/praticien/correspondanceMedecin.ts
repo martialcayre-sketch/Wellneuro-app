@@ -112,8 +112,11 @@ export function libelleLigne(valeur: unknown, verdictAncrage: unknown): string {
 }
 
 /** Une lettre transcrite dépasse une note de relecture (4000) ; au-delà de
- *  8000, ce n'est plus une transcription mais une archive à tenir ailleurs. */
-export const LONGUEUR_MAX_TEXTE = 8000;
+ *  la borne, ce n'est plus une transcription mais une archive à tenir ailleurs.
+ *  12 000 depuis le 2026-10-18 (arbitrage du responsable, F80) : un courrier de
+ *  biologie qui liste les constituants des analyses groupées ([[D-323]] §2)
+ *  dépassait 8 000 au pire cas du catalogue réel. Borne technique. */
+export const LONGUEUR_MAX_TEXTE = 12000;
 export const LONGUEUR_MAX_MEDECIN_LIBELLE = 200;
 
 export type RefusCorrespondance =

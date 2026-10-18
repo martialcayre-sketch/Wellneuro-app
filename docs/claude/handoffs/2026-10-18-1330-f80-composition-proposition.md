@@ -27,6 +27,13 @@ d'analyte.
   groupe (le reste de D-309 §1 reste à F55).
 - Sans composition signée, sortie identique (contre-épreuves au moteur, au
   service et au catalogue).
+- Revue `wn-reviewer` : no-go levé. Borne des attentes (D-305 §4) gardée sur
+  ce que le bilan proposait ; groupe non remboursable ne remplace pas ;
+  « non évalué » nomme la mesure ; fiche d'analyte et écran disent les
+  mesures ; « analyse demandée pour » ; composants inactifs non cités.
+- Arbitrage du responsable (2026-10-18) : tous les constituants dits, borne
+  de consignation 8 000 → 12 000 (D-323 §7) ; la constante est partagée avec
+  la correspondance saisie à la main.
 
 ## Fichiers modifiés
 
@@ -36,7 +43,11 @@ d'analyte.
 - `statuts.ts` (`composerAnalytes`, champs `constituants`, `demandeePour`,
   entrée `compositions`), `propositionService.ts`, `catalogue.ts`,
   `compositionsAnalytes.ts` (`chargerCompositionsSignees`) ;
-- `courrier.ts`, `documentPatient.ts`, `PropositionBilanPanel.tsx` ;
+- `courrier.ts`, `documentPatient.ts`, `PropositionBilanPanel.tsx`,
+  `FicheAnalytePanel.tsx`, `attentesBornees.ts`, `ClinicalRuntimeSection.tsx` ;
+- borne : `correspondanceMedecin.ts` (`LONGUEUR_MAX_TEXTE`), route du document
+  patient, messages des routes courrier, adressage, correspondance ;
+- `docs/DECISIONS.md` : D-323 §7 ;
 - bancs : `compositionsProposition.test.ts`, `remboursable.test.ts`,
   `statuts.test.ts`, `propositionService.test.ts`, `catalogue.test.ts`,
   `courrier.test.ts`, `documentPatient.test.ts`,
@@ -47,7 +58,9 @@ d'analyte.
 ## Validations exécutées
 
 - Bancs ciblés verts ; contre-épreuves par mutation (appel de regroupement
-  retiré du moteur : rouge).
+  retiré du moteur : rouge ; ancienne borne des attentes : rouge) ; banc de
+  longueur au pire cas avec les quatre groupes : au-delà de 8 000, sous
+  12 000.
 - T1 (`npm run check:rapide`) vert ; T3 (`npm run test:worktree`) et revue
   `wn-reviewer` : verdicts dans la PR.
 
@@ -56,6 +69,10 @@ d'analyte.
 - Signature des compositions par le responsable, à l'écran : tant qu'aucune
   n'est signée, rien ne change en production.
 - Alias d'import des sept fiches de D-323 §6 : dette au §8 du plan.
+- Cas non tranchés par D-323, laissés tels quels : un bilan qui propose le
+  1609 et les bicarbonates fait ajouter le 1610 (sodium dit deux fois) ; le
+  regroupement se fait par ligne de bilan, deux lignes peuvent citer deux
+  ionogrammes ; la vue par analyte ne montre pas les constituants rangés.
 - Après le merge : pages de suivi file A et BioFlow (n14).
 
 ## Prochaine action exacte
