@@ -1,7 +1,7 @@
 -- Contrat de la colonne `lu_le` de `portail_lectures_patient` (lettre ai,
 -- [[D-297]], migration `20261018120000_portail_lectures_lu_le_v1`).
 --
--- La migration promet SEPT choses, et ce fichier les éprouve toutes :
+-- La migration promet NEUF choses, et ce fichier les éprouve toutes :
 --   1. la colonne existe, de type DATE — le jour seul, sans heure (§2) ;
 --   2. elle est NULLABLE : les lectures antérieures restent sans date, sans
 --      rattrapage (§3) ;
@@ -16,8 +16,9 @@
 --   5. le jour ne se pose pas APRÈS COUP sur une lecture sans jour (UPDATE
 --      refusé — aucun rattrapage, §3) ;
 --   6. le jour posé ne se CORRIGE ni ne s'EFFACE (UPDATE refusé, §1) ;
---   7. les deux triggers qui tiennent 4 à 6 existent, et une mise à jour qui
---      ne touche pas au jour n'est pas refusée par eux.
+--   7. les deux triggers qui tiennent 4 à 6 et 8 existent ;
+--   8. une lecture ne change pas de DOCUMENT (`espece`, `id_objet` refusés) ;
+--   9. la renumérotation d'un dossier (ON UPDATE CASCADE) passe, jour compris.
 --
 -- Le reste de la table (liste blanche, aucun horodatage, FK, RLS) est tenu par
 -- `portail_lectures_patient_v1_negatif.sql`, que ce fichier ne répète pas.
@@ -150,18 +151,59 @@ BEGIN
     RAISE EXCEPTION 'LU_LE: le jour de première lecture a été EFFACÉ (D-297 §1)';
   END IF;
 
-  -- ── 7 (suite). Une mise à jour qui ne touche pas au jour passe ───────────
-  -- Le trigger garde le JOUR, pas la ligne : il ne doit pas masquer un autre
-  -- refus sous le sien.
+  -- ── 8. Une lecture ne change pas de document ─────────────────────────────
+  -- Ni la version (`id_objet`), ni l'espèce — sur une ligne datée comme sur une
+  -- ligne sans jour : déplacer l'une ou l'autre ferait porter un jour, ou un
+  -- « lu », à une version que le patient n'a peut-être jamais ouverte.
+  refuse := false;
   BEGIN
-    UPDATE portail_lectures_patient SET id_objet = 'envoi_antidate_renomme'
+    UPDATE portail_lectures_patient SET id_objet = 'envoi_deplace'
     WHERE id_patient = 'PAT_CONTRAT_PLULEE' AND id_objet = 'envoi_antidate';
   EXCEPTION
-    WHEN others THEN
-      RAISE EXCEPTION 'LU_LE: une mise à jour qui ne touche pas au jour a été refusée (%)', SQLERRM;
+    WHEN raise_exception THEN refuse := true;
   END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'LU_LE: une lecture DATÉE a été déplacée vers une autre version (id_objet)';
+  END IF;
 
-  RAISE NOTICE 'LU_LE: type date, nullable, AUCUN défaut, 2 triggers, lecture sans jour laissée vide, date et horodatage fournis remplacés par le jour de Paris (fuseaux UTC+14 et UTC-12 compris), rattrapage, correction et effacement refusés.';
+  refuse := false;
+  BEGIN
+    UPDATE portail_lectures_patient SET id_objet = 'envoi_deplace'
+    WHERE id_patient = 'PAT_CONTRAT_PLULEE' AND id_objet = 'envoi_sans_jour';
+  EXCEPTION
+    WHEN raise_exception THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'LU_LE: une lecture sans jour a été déplacée vers une autre version (id_objet)';
+  END IF;
+
+  refuse := false;
+  BEGIN
+    UPDATE portail_lectures_patient SET espece = 'synthese'
+    WHERE id_patient = 'PAT_CONTRAT_PLULEE' AND id_objet = 'envoi_antidate';
+  EXCEPTION
+    WHEN raise_exception THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'LU_LE: une lecture a changé d''espèce';
+  END IF;
+
+  -- ── 9. La renumérotation d'un dossier emporte ses lectures, jour compris ─
+  -- Cas POSITIF : la FK est en ON UPDATE CASCADE, et le trigger ne doit pas la
+  -- bloquer. Le jour suit la ligne, intact.
+  BEGIN
+    UPDATE patients SET id_patient = 'PAT_CONTRAT_PLULEE_BIS' WHERE id_patient = 'PAT_CONTRAT_PLULEE';
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION 'LU_LE: la renumérotation d''un dossier est bloquée sur ses lectures (%)', SQLERRM;
+  END;
+  SELECT lu_le INTO jour FROM portail_lectures_patient
+  WHERE id_patient = 'PAT_CONTRAT_PLULEE_BIS' AND id_objet = 'envoi_antidate';
+  IF jour IS DISTINCT FROM jour_base THEN
+    RAISE EXCEPTION 'LU_LE: la lecture renumérotée a perdu son jour (%)', jour;
+  END IF;
+
+  RAISE NOTICE 'LU_LE: type date, nullable, AUCUN défaut, 2 triggers, lecture sans jour laissée vide, date et horodatage fournis remplacés par le jour de Paris (fuseaux UTC+14 et UTC-12 compris), rattrapage, correction, effacement et changement de document refusés, renumérotation du dossier acceptée avec son jour.';
 END $$;
 
 ROLLBACK;

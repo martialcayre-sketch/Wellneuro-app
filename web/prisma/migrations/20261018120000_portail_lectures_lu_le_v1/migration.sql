@@ -45,7 +45,12 @@ CREATE TRIGGER portail_lectures_patient_lu_le_insertion
   FOR EACH ROW EXECUTE FUNCTION public.portail_lectures_patient_lu_le_par_la_base();
 
 -- À la mise à jour : le jour ne change JAMAIS — ni corrigé, ni posé après coup
--- sur une lecture antérieure (aucun rattrapage), ni effacé.
+-- sur une lecture antérieure (aucun rattrapage), ni effacé. Et la lecture ne
+-- change pas de DOCUMENT : déplacer `espece` ou `id_objet` ferait porter un jour
+-- (ou un « lu ») à une version que le patient n'a peut-être jamais ouverte
+-- (revue CodeRabbit de #1547, arbitrage du responsable du 2026-10-18). Seul
+-- `id_patient` reste modifiable : la clé étrangère est en ON UPDATE CASCADE, et
+-- la renumérotation d'un dossier doit emporter ses lectures, jour compris.
 CREATE OR REPLACE FUNCTION public.portail_lectures_patient_lu_le_fige()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -54,6 +59,9 @@ AS $$
 BEGIN
   IF NEW.lu_le IS DISTINCT FROM OLD.lu_le THEN
     RAISE EXCEPTION '% : le jour de première lecture ne se modifie pas (D-297 §1, §3).', TG_TABLE_NAME;
+  END IF;
+  IF NEW.espece IS DISTINCT FROM OLD.espece OR NEW.id_objet IS DISTINCT FROM OLD.id_objet THEN
+    RAISE EXCEPTION '% : une lecture ne change pas de document (espece, id_objet).', TG_TABLE_NAME;
   END IF;
   RETURN NEW;
 END;

@@ -13,7 +13,7 @@ Livrer le schéma de la lettre ai : le jour (heure de Paris) de la première ouv
 - Migration permise par le responsable (2026-10-18), avec deux triggers (recommandation de revue retenue).
 - Colonne `lu_le` DATE, nullable, **sans défaut** (§4) ; aucun rattrapage (§3).
 - Trigger d'insertion : toute date fournie est remplacée par `(clock_timestamp() AT TIME ZONE 'Europe/Paris')::date`. Le code choisit s'il date, jamais quelle date.
-- Trigger de mise à jour : tout changement de `lu_le` est refusé (pose après coup, correction, effacement) ; une mise à jour qui ne touche pas au jour passe.
+- Trigger de mise à jour : tout changement de `lu_le` est refusé (pose après coup, correction, effacement), et une lecture ne change pas de document (`espece`, `id_objet`), sur constat CodeRabbit de #1547 et arbitrage du responsable. `id_patient` reste modifiable : la clé étrangère est en ON UPDATE CASCADE.
 - La route `POST /api/portail/lectures` lit `select: { idObjet: true }` : elle ne tombe pas entre le déploiement et la release-db.
 
 ## Fichiers modifiés

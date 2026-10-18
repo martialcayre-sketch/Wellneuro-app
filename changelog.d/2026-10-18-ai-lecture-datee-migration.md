@@ -10,10 +10,13 @@
 - Deux triggers gravent le reste de D-297 dans la base : à l'insertion, toute
   date fournie est remplacée par le jour de Paris de l'horloge de la base (le
   code choisit s'il date, jamais quelle date, §2) ; à la mise à jour, le jour ne
-  se pose pas après coup, ne se corrige ni ne s'efface (§1, §3).
+  se pose pas après coup, ne se corrige ni ne s'efface (§1, §3), et une lecture
+  ne change pas de document (`espece`, `id_objet` figés ; `id_patient` reste
+  modifiable pour la cascade de la clé étrangère).
 - Contrats SQL : `portail_lectures_lu_le_v1_negatif.sql` est neuf (type date,
   nullable, aucun défaut, deux triggers, date et horodatage fournis remplacés
-  par le jour de la base, rattrapage, correction et effacement refusés). Le contrat de la
+  par le jour de la base, rattrapage, correction, effacement et changement de document refusés,
+  renumérotation du dossier acceptée). Le contrat de la
   table est amendé : quatre colonnes, aucun horodatage, `lu_le` seule date.
 - La consignation d'une lecture lit désormais `select: { idObjet: true }` : la
   route ne tombe pas entre le déploiement et l'application de la migration.
