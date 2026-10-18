@@ -1401,6 +1401,18 @@ jobs:
           WN_BIO_ANNULATION_BANC_BASE: wellneuro_ci
         run: node scripts/banc-annulations-resultats-deux-sessions.test.mjs
 
+      # Statuts posés près d'une valeur (D-322, F58) : le trigger ne tient ses
+      # refus que par les verrous de clé de BP-09. Deux poses du même statut,
+      # une pose contre un retrait, une correction contre une pose (dans les
+      # deux ordres), le refus de REPEATABLE READ, l'effacement contre une pose.
+      # Commet ses fixtures puis les efface : la base doit être nommée.
+      - name: Statuts poses resultats biologiques two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_STATUT_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-statuts-poses-deux-sessions.test.mjs
+
       # Exclusion signature ↔ constat « aucun acte » NABM (M-3c, F54) : un
       # constat et une signature concurrents sur le même analyte se
       # sérialisent par le verrou consultatif de l'analyte, et le second est
