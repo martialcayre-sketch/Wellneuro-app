@@ -114,7 +114,9 @@ dernière session.
    PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
    précisément cette clôture, donc elle passe le contrôle par construction — et
-   c'est la seule forme acceptée de PR de rattrapage.
+   c'est la seule forme acceptée de PR de rattrapage. Depuis E56 (2026-10-18),
+   l'étape « Contrôle de clôture » du CI refuse la même absence sur toute PR
+   qui touche du code ; ce contrôle-ci reste, et couvre aussi les PR de doc.
 8. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
    présence de `verify`, régime déduit, applicabilité de l'exception, verdicts de
    revue (étape 6), verdict de clôture (étape 7) — puis la commande exacte à
