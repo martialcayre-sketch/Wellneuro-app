@@ -69,8 +69,13 @@ reviews:
       - name: "Clôture de la PR"
         mode: warning
         instructions: |
-          Si la PR modifie au moins un fichier hors de `docs/` et hors des
-          fichiers `.md` (du code, des tests, de la configuration), elle doit
+          Si la PR modifie au moins un fichier de code au sens de l'étape
+          « Périmètre du diff » de `.github/workflows/ci.yml` — tout fichier
+          hors de `docs/` et hors des `.md`, plus la matrice
+          `docs/questionnaires-drive-mapping.md`, le registre
+          `docs/claude/corpus/instrument_registry.json`, les preuves
+          `docs/claude/corpus/measurement_evidence.json` et les consignes
+          `tools/corpus/fiches*/consignes/` —, elle doit
           porter les deux éléments de clôture
           (`.claude/rules/docs-changelog.md`, skill `wn-merge` étape 7) :
           une entrée AJOUTÉE à la fin de `docs/claude/SESSION_LOG.md`

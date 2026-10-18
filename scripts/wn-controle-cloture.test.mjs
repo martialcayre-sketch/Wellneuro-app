@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SESSION_LOG, lignesAjoutees, verdictCloture } from './wn-controle-cloture.mjs';
+import { SESSION_LOG, fichiersPresents, lignesAjoutees, verdictCloture } from './wn-controle-cloture.mjs';
 
 const CODE = 'web/src/lib/protocol/cabinet.ts';
 const HANDOFF = 'docs/claude/handoffs/2026-10-18-0400-sujet.md';
@@ -44,6 +44,20 @@ test('le README des handoffs, ou un fichier sans horodatage, n’est pas un hand
     const { ok } = verdictCloture({ fichiers: [CODE, SESSION_LOG, faux], lignesAjouteesSessionLog: 2 });
     assert.equal(ok, false, faux);
   }
+});
+
+test('un handoff supprimé ne clôt rien ; un renommage compte sous son nouveau nom', () => {
+  const nameStatus = [
+    `M\t${CODE}`,
+    `M\t${SESSION_LOG}`,
+    'D\tdocs/claude/handoffs/2026-10-01-0900-ancien.md',
+    'R100\tdocs/brouillon.md\tdocs/claude/handoffs/2026-10-18-0400-renomme.md',
+  ].join('\n');
+  const fichiers = fichiersPresents(nameStatus);
+  assert.ok(!fichiers.includes('docs/claude/handoffs/2026-10-01-0900-ancien.md'));
+  assert.ok(fichiers.includes('docs/claude/handoffs/2026-10-18-0400-renomme.md'));
+  const seulementSupprime = fichiersPresents(`M\t${CODE}\nM\t${SESSION_LOG}\nD\t${HANDOFF}`);
+  assert.equal(verdictCloture({ fichiers: seulementSupprime, lignesAjouteesSessionLog: 2 }).ok, false);
 });
 
 test('lignes ajoutées lues dans un numstat ; fichier absent ou binaire : 0', () => {

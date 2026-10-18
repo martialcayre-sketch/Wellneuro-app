@@ -41,8 +41,14 @@ et le changement de relecteur l'ayant laissée sans garde.
 - Banc du contrôle : 7 cas verts. Contre-épreuve en ligne de commande sur le
   diff de #1535 (sans SESSION_LOG) : refus, code 1.
 - Bancs d'invariants et de parité de `ci.yml` : verts.
-- T1 complet : voir le corps de la PR. La PR modifie `.coderabbit.yaml` : P1,
-  donc passe `wn-reviewer` avant le merge (D-291).
+- T1 complet vert.
+- Revue `wn-reviewer` (P1, D-291) : go, la revue CodeRabbit n'est pas
+  affaiblie. Trois P2 corrigés : un handoff supprimé ne compte plus
+  (`--name-status`, banc), une base introuvable donne un message clair, la
+  consigne CodeRabbit suit la liste « code » du périmètre du diff. P2 acceptés :
+  une retouche d'une ligne du SESSION_LOG compte comme entrée (l'avertissement
+  CodeRabbit couvre « à la fin ») ; un revert fait depuis GitHub doit porter
+  sa clôture comme toute PR de code.
 
 ## Problèmes ouverts
 

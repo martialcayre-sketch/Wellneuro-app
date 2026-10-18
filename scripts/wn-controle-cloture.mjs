@@ -46,6 +46,22 @@ export function verdictCloture({ fichiers, lignesAjouteesSessionLog }) {
   return { ok: manques.length === 0, manques };
 }
 
+/**
+ * Les fichiers présents APRÈS la PR, lus dans un `git diff --name-status` : une
+ * suppression n'en est pas (un handoff effacé ne clôt rien), un renommage
+ * compte sous son nouveau nom.
+ */
+export function fichiersPresents(nameStatus) {
+  const fichiers = [];
+  for (const ligne of nameStatus.split('\n')) {
+    const champs = ligne.split('\t');
+    const statut = champs[0];
+    if (!statut || statut.startsWith('D')) continue;
+    fichiers.push(champs[champs.length - 1]);
+  }
+  return fichiers;
+}
+
 /** Les lignes ajoutées d'un fichier dans un `git diff --numstat` (binaire : 0). */
 export function lignesAjoutees(numstat, chemin) {
   for (const ligne of numstat.split('\n')) {
@@ -56,7 +72,7 @@ export function lignesAjoutees(numstat, chemin) {
 }
 
 function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8' });
+  return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
@@ -65,8 +81,16 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     console.error('Usage : node scripts/wn-controle-cloture.mjs <sha de base>');
     process.exit(2);
   }
-  const fichiers = git('diff', '--name-only', base, 'HEAD').split('\n').filter(Boolean);
-  const numstat = git('diff', '--numstat', base, 'HEAD', '--', SESSION_LOG);
+  let fichiers;
+  let numstat;
+  try {
+    fichiers = fichiersPresents(git('diff', '--name-status', base, 'HEAD'));
+    numstat = git('diff', '--numstat', base, 'HEAD', '--', SESSION_LOG);
+  } catch {
+    // Base absente de l'historique : on refuse, en disant pourquoi.
+    console.error(`Base « ${base} » introuvable dans l'historique : la clôture ne peut pas être jugée.`);
+    process.exit(1);
+  }
   const { ok, manques } = verdictCloture({
     fichiers,
     lignesAjouteesSessionLog: lignesAjoutees(numstat, SESSION_LOG),
