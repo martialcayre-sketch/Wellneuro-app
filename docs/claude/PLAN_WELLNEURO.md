@@ -449,6 +449,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre q ; « la signature ne qualifie rien », un envoi direct vers un tiers serait un déclencheur.
 - **Critère de fin** : aperçu tracé au Fil ; remise journalisée.
 - **Mise à jour (2026-10-15)** : q écrite par D-307 : « Imprimer » demande une confirmation puis écrit une ligne datée au Fil ; l'aperçu n'est pas tracé ; remise par téléchargement du patient, journalisé (patron D-262) ; rien vers un tiers.
+- **Mise à jour (2026-10-18)** : la migration est confirmée, et J2-med passe au rang 4, avec ses arbitrages du jour : un seul lot ; impression bloquée par la règle de la correspondance médecin ; chaque téléchargement journalisé ; le patient reçoit l'instantané de la dernière impression ; conservation la vie du dossier. PR 1, la migration `documents_medecin_imprimes_v1` : deux tables en ajout seul, contrat SQL négatif, effacement nommé, déclaration RGPD avant les tables. Restent la release-db et son constat, puis la PR 2 : route d'impression gardée, ligne au Fil, « Pour votre médecin » au portail derrière un drapeau éteint.
 
 #### F57 · Onglet « Biologie » de la fiche patient
 - **Identifiant, piste** : lettre s ; socle.
