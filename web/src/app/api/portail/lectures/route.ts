@@ -354,10 +354,16 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
 
     try {
       await prisma.portailLecturePatient.create({
-        data: { idPatient: garde.patient.idPatient, espece, idObjet: idConsigne },
-        // `select` explicite : sans lui, Prisma relirait toutes les colonnes,
-        // `lu_le` comprise ([[D-297]]) — et la route tomberait entre le
-        // déploiement et l'application de sa migration.
+        // LE JOUR EST DEMANDÉ, PAS CHOISI ([[D-297]] §2). La valeur envoyée ne
+        // compte pas : le trigger d'insertion la REMPLACE par le jour de Paris
+        // de l'horloge de la base (migration `20261018150000`). Toute page qui
+        // appelle cette route sert « Votre lecture est datée » en tête (§4) —
+        // `lectureDatee.guard.test.ts`. Un doublon (`P2002`) n'écrit rien : la
+        // première ouverture garde son jour (§1). Sur une base SANS le trigger,
+        // cette valeur serait gardée et convertie en jour UTC — la veille entre
+        // 0 h et 2 h à Paris : c'est le contrat `portail_lectures_lu_le_v1_negatif`
+        // qui garantit que le trigger existe et réécrit toute valeur fournie.
+        data: { idPatient: garde.patient.idPatient, espece, idObjet: idConsigne, luLe: new Date() },
         select: { idObjet: true },
       });
     } catch (erreur) {

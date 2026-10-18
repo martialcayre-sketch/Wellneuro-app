@@ -1630,6 +1630,38 @@ dossier ([[D-283]] §2) et effacé avec lui.
   garder l'horodatage en base et n'afficher que le jour ; dater chaque
   ouverture ([[D-295]] §4).
 
+**Amendement (2026-10-18) — la migration et le code de ai.** Quatre
+arbitrages du responsable du 2026-10-18, sur questions à options :
+
+- **La base choisit le jour** (migration `20261018150000_portail_lectures_lu_le_v1`,
+  #1547) : deux triggers. À l'insertion, toute date fournie est remplacée
+  par le jour de Paris de l'horloge de la base ; à la mise à jour, le jour
+  ne se pose, ne se corrige ni ne s'efface, et une lecture ne change pas de
+  document (`espece`, `id_objet`). Le code choisit s'il date, jamais quelle
+  date (§2).
+- **Le protocole est daté aussi.** §4 nommait quatre documents ; le
+  protocole, accusé depuis [[D-315]], devient le cinquième : la phrase se lit
+  au-dessus du bouton qui en ouvre le détail, seul geste qui consigne.
+- **La phrase se place en tête**, avant le document : le jour s'enregistre à
+  l'affichage.
+- **Le praticien lit un encart « Documents remis »** au dossier (phase
+  « Patient ») : chaque version remise des cinq espèces, son jour de remise
+  et « Lu le JJ/MM/AAAA », « Lu, date non enregistrée » ou rien (§5). Aucune
+  surface ne listait jusqu'ici les versions remises, hors les synthèses. Sa
+  route est la seule surface praticien qui lit la table, sans compte ni
+  agrégat (banc de garde amendé). « Remis » y désigne le geste du praticien
+  (envoi du bilan, publication de la synthèse, validation pour diffusion), pas
+  ce que le portail sert aujourd'hui : une version retirée, indisponible ou
+  servie sous un drapeau fermé y figure, sans lecture possible — l'absence de
+  « Lu » n'y dit donc rien du patient.
+- Limite connue, routée (fiche H51) : le bilan et la synthèse se consignent au
+  montage de leur page, que le document s'affiche ou non (comportement de
+  LOT-08) ; une page en erreur peut donc dater une lecture.
+- Options écartées : figer toute la ligne datée (une renumérotation de
+  dossier ne passerait plus) ; porter la lecture sur les écrans existants
+  (fiches et courriers resteraient invisibles) ; quatre documents seulement ;
+  la phrase en bas de page.
+
 ### D-296 — Packs biologiques : l'analyte devient l'unité canonique, les quinze panels sont classés, et plus aucun pack clinique ne se crée (lettre cj)
 
 - Date : 2026-10-14

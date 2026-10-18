@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { MonBilan } from '@/components/patient/MonBilan';
 
@@ -15,6 +16,9 @@ export default async function PortailBilanPage({ params }: { params: Promise<{ t
       >
         ← Mon parcours
       </Link>
+      {/* En tête, avant le document : ouvrir le bilan en date la première
+          lecture ([[D-297]] §4, arbitrage du 2026-10-18). */}
+      <AvisLectureDatee />
       <MonBilan token={token} />
       {/* Ouvrir le document ACQUITTE la tâche du fil du jour : elle en sort,
           et le document reste atteignable indéfiniment par « Consulter mon

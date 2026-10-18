@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { notFound } from 'next/navigation';
 import { ComprehensionView } from '@/components/patient-companion/ComprehensionView';
@@ -23,6 +24,7 @@ export default async function PortailComprehensionPage({ params }: { params: Pro
       >
         ← Mon parcours
       </Link>
+      <AvisLectureDatee />
       <ComprehensionView />
       {/* Même geste que sur l'écran du bilan : ouvrir acquitte la tâche du fil.
           Le drapeau garde déjà cet écran par `notFound()` plus haut — une

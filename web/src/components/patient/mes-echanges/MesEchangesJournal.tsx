@@ -23,7 +23,7 @@ import {
 // ([[D-293]] §3) : une panne de la route ne peut pas le faire disparaître.
 //
 // Rien ne s'écrit d'ici : chaque ligne est un lien vers la page qui porte
-// l'élément. La lecture datée viendra avec ai ([[D-297]]).
+// l'élément ; c'est elle qui consigne la lecture, et la date ([[D-297]]).
 
 type Etat =
   | { statut: 'chargement' }

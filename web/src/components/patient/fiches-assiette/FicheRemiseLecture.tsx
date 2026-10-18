@@ -1,5 +1,6 @@
 'use client';
 
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -58,6 +59,9 @@ export function FicheRemiseLecture({ token, idRemise }: { token: string; idRemis
 
   return (
     <article className="space-y-6">
+      {/* En tête, avant la fiche, et sous la MÊME condition que la
+          consignation plus bas : la page qui date sert la phrase ([[D-297]] §4). */}
+      {fiche.contenu && <AvisLectureDatee />}
       <PatientCard>
         <header className="border-b border-border pb-5">
           <h1 className="text-2xl font-semibold text-foreground">{titreDeLaFiche(fiche)}</h1>

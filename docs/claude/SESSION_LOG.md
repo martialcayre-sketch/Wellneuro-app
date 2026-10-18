@@ -10580,3 +10580,15 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** PR, CI, merge, constat ; t13 soldée sur la page de la file A.
 
 **Ouvert.** Libellé « Compléments aliment… » tronqué au menu ; concept de Bibliothèque à revoir.
+
+## 2026-10-18 — ai, code : la première lecture datée (D-297)
+
+**Fait.** Migration ai mergée (#1547) après Codex « accepter », appliquée et constatée par conteneur (120 migrations). Seconde PR : phrase « Votre lecture est datée » en tête de chaque page qui consigne une lecture, protocole compris ; le POST demande un jour, le trigger le fixe ; encart praticien « Documents remis » ; deux gardes.
+
+**Décidé.** Responsable : encart dédié, protocole daté, phrase en tête ; amendement de D-297.
+
+**Écarté.** Lecture sur les écrans existants (fiches et courriers invisibles) ; phrase en bas de page.
+
+**Prochaine action.** Revue, PR, CI, merge ; constat du premier jour écrit sur un dossier de test.
+
+**Ouvert.** Micro-textes de « Mes échanges » et limite « protocole indisponible » à relire avant ACT-3.
