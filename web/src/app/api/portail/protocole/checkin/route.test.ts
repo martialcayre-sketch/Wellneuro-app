@@ -6,7 +6,7 @@ const { prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
-    protocolCheckin: { count: vi.fn(async () => 0), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    protocolCheckin: { count: vi.fn(async (_args: { where: { idPatient: string } }) => 0), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
