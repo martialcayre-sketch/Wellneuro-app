@@ -1017,6 +1017,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : titre servi.
+- **Mise à jour (2026-10-18)** : titre livré seul, sans attendre L4. Le panneau en tête de l'accueil, au-dessus du Fil, s'intitule « Questionnaires à consulter » au lieu de « Inbox questionnaires » (réponse 9 de la séance du 2026-10-12). N-6 tenue : aucune PR de biologie ouverte ne touchait le Fil. Le regroupement avec L4 n'était qu'une économie (0,25 j au lieu de 0,5) ; or L4 attend une décision d'écran que la seule D-310 ne couvre pas : questions Q1, Q2, Q4, Q5 et Q8 de la pièce 17 (agenda, file des signalements et des droits, page Biologie, bouton « Synthèses » du téléphone, « Planifier le bilan »). Aucune base d'images ne capture l'accueil.
 
 #### H45 · J2-alim : journal alimentaire de 21 jours
 - **Identifiant, piste** : J2-alim ; relance du recueil de 21 jours, geste du responsable ; alimentation ; file A.

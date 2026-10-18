@@ -10509,3 +10509,21 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Merge de #1537, release-db, constat par conteneur, puis PR du code F58 (route, lecture, écran, banc à deux sessions, nettoyage E2E). Puis F38 : migration de la remise patient, puis code.
 
 **Ouvert.** F38 : impression bloquée si refus de partage médecin (arbitré) ; forme de l'objet « document remis » à cadrer.
+## 2026-10-18 — F80 : composition des analyses groupées (D-323, migration, signature)
+
+**Fait.** D-323 écrite sur arbitrages du responsable (#1529) ; migration des deux tables de composition en ajout seul et des sept fiches (#1540), release-db appliquée et constatée par conteneur ; PR 2 : liste préparée, signature par le praticien, section « Composition » de la fiche d'analyte.
+
+**Écarté.** `BiologyRatio` (deux opérandes et une constante : ni DFG, ni soustractions, constante sans provenance) ; un analyte « bilan thyroïdien ».
+
+**Prochaine action.** PR 3 : proposition, courrier et document lisent la composition (D-323 §2-§4), puis clôture du lot.
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
+## 2026-10-18 — r2_02 : « Questionnaires à consulter » en tête du Fil
+
+**Fait.** Le panneau des réponses en attente, au-dessus du Fil, s'intitule « Questionnaires à consulter » (séance du 2026-10-12, réponse 9). E56 mergé (#1538) et déployé ; #1530 mergé par l'autre session, ce qui ouvre la fenêtre N-6.
+
+**Écarté.** Attendre L4 pour livrer le titre : le regroupement n'était qu'une économie, et L4 attend des décisions d'écran.
+
+**Prochaine action.** Poser au responsable les questions Q1, Q2, Q4, Q5 et Q8 de la pièce 17 (retrait d'« Héritage 4.0 »).
+
+**Ouvert.** Résidu de t13 ; rediffusions des trois programmes à constater.

@@ -68,6 +68,7 @@ const LIPIDES_0996 = 'Exploration d’une anomalie lipidique : acte de groupe.';
 const MARTIAL_2002 =
   'Pas d’acte isolé dans la V105 ; le libellé de 2002 (coefficient de saturation de la transferrine) ne dit pas ce que l’acte dose.';
 const AUCUN = 'Aucun libellé de la V105 ne nomme cet analyte.';
+const IONO_COMPLET_1610 = 'Ionogramme complet (Na + K + Cl + CO2 + protides), relu le 2026-10-18 (D-323 §6).';
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 
 /** La liste, par code d'analyte. Les 92 analytes du catalogue y figurent
@@ -220,6 +221,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     candidats: [
       { codeActe: '1608', nature: 'isole', motif: 'Le libellé nomme le potassium (sang).' },
       { codeActe: '1609', nature: 'groupe_et', motif: 'Ionogramme (Na + K + éventuellement Cl).' },
+      { codeActe: '1610', nature: 'groupe_et', motif: IONO_COMPLET_1610 },
     ],
   },
   BIO_TRIGLYCERIDES: {
@@ -257,11 +259,15 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     situation: 'acte_de_groupe',
     candidats: [
       { codeActe: '1609', nature: 'groupe_et', motif: 'Ionogramme (Na + K + éventuellement Cl) ; pas d’acte de chlore isolé.' },
+      { codeActe: '1610', nature: 'groupe_et', motif: IONO_COMPLET_1610 },
     ],
   },
   BIO_SODIUM: {
     situation: 'acte_de_groupe',
-    candidats: [{ codeActe: '1609', nature: 'groupe_et', motif: 'Ionogramme ; pas d’acte de sodium sanguin isolé.' }],
+    candidats: [
+      { codeActe: '1609', nature: 'groupe_et', motif: 'Ionogramme ; pas d’acte de sodium sanguin isolé.' },
+      { codeActe: '1610', nature: 'groupe_et', motif: IONO_COMPLET_1610 },
+    ],
   },
 
   // ── À juger : le libellé ne tranche pas.
