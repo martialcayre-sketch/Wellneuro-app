@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-324 — Menu praticien : le groupe « Héritage 4.0 » est retiré ; chaque rayon de la Bibliothèque a son entrée ; « Biologie fonctionnelle » devient le rayon « Analyses biologiques » (L4, L5 ; amende D-310 §1)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18 sur les
+  questions Q1, Q2, Q4 et Q5 de la pièce 17 du dossier privé (sortie de
+  l'héritage 4.0), puis sur quatre questions de forme. Agenda gardé au menu
+  (recommandé) ; « Confiance & droits » avec le travail du jour
+  (recommandé) ; « Synthèses » gardé au téléphone (recommandé) ; pour la page
+  Biologie, réponse libre : « remettre chaque rayon de la bibliothèque en
+  accès sur le menu à gauche ; aujourd'hui la bibliothèque est trop confuse
+  (concept à revoir en tout cas) ». Formes, toutes sur la recommandation :
+  un groupe « Bibliothèque », cinq entrées (Questionnaires réunit le
+  catalogue et les assignations et packs), Documents et Synthèse IA retirés
+  du menu du bureau, ancienne adresse de la biologie redirigée, fiches
+  d'usage sur la page « Analyses biologiques ». Q3 l'était déjà ([[D-310]]),
+  Q6 le 2026-10-12 (onglet « Synthèse et documents » plus tard), Q7 de fait.
+  Texte rédigé par l'assistant à partir de ces réponses.
+- Amende : [[D-310]] §1 — « juste après la Bibliothèque » se lit désormais
+  « en fin du groupe Bibliothèque », la Bibliothèque n'étant plus une entrée.
+- Domaine : `components/ui/SidebarRail.tsx`, `components/ui/MobileBottomNav.tsx`,
+  `app/dashboard/bibliotheque/` (une page par rayon), `app/dashboard/biologie/`
+  (redirection) ; fiches H43 (L4, L5), H44.
+- Nature : décision d'écran, non clinique.
+- **Ne touche pas** : aucune page supprimée hors redirection, aucune route
+  d'API, aucun drapeau, aucun texte clinique. Les écrans des rayons sont
+  repris tels quels ; seule leur place change.
+
+**§1 — Le groupe « Héritage 4.0 » disparaît.** Né d'une maquette du
+2026-07-15, sans décision qui l'ait créé ni daté, il rangeait cinq surfaces
+sous l'étiquette « 4.0 ». Aucune entrée du menu ne porte plus cette
+étiquette. Le menu compte trois groupes : La Spirale, Bibliothèque,
+Réglages.
+
+**§2 — L'agenda.** « Agenda & consultations » reste une entrée de La
+Spirale, sans encart sur l'accueil. Aucun rendez-vous n'était saisi en
+production le jour de la décision.
+
+**§3 — Confiance & droits.** La file des signalements d'effets indésirables
+et des demandes de droits monte dans La Spirale, après « Correspondance » :
+c'est du travail du jour, pas un réglage. Réglages ne garde que
+« Paramètres ».
+
+**§4 — Un rayon, une entrée.** La page unique de la Bibliothèque empilait
+trois onglets en tête et quatre rayons plus bas. Elle est éclatée : le
+groupe « Bibliothèque » porte cinq entrées, chacune avec sa page :
+Questionnaires (catalogue, aperçu, file d'envoi, puis assignations et
+packs), Fiches conseils, Compléments alimentaires, Analyses biologiques,
+Connaissances (la lecture du corpus, [[D-310]] §2, ex-« Recherche corpus »).
+L'atelier de validation suit, en fin de groupe. L'adresse de l'ancienne page
+unique mène au rayon Questionnaires. Le concept même de Bibliothèque reste à
+revoir : ce découpage ne le tranche pas.
+
+**§5 — Documents et Synthèse IA.** Les deux entrées quittent le menu du
+bureau ; les pages restent. On les ouvre depuis la fiche du patient, les
+cartes du Fil, la minute d'après du copilote (« Composer le document »,
+#1429) et, pour les synthèses, le bouton du bas au téléphone. Ce bouton
+reste l'un des trois de la barre basse (Le Fil, Fiches, Synthèses) : trois
+cartes du Fil y mènent, c'est le geste de relecture au téléphone. La feuille
+« Plus » du téléphone reprend l'ordre et les libellés du menu du bureau.
+
+**§6 — La biologie.** « Biologie fonctionnelle » quitte le menu. La page du
+rayon « Analyses biologiques » devient la page unique de la biologie : le
+catalogue des analytes, puis l'écran de validation des fiches d'usage
+([[D-314]] ; l'arbitrage du 2026-10-16, « près du parcours biologique »,
+est tenu), puis l'état de l'étage 2 ([[D-122]] §2, phrase recopiée).
+L'ancienne adresse y mène par une redirection temporaire, sans échéance.
+
+**§7 — Exécution.** Une PR (L4 et L5 réunis : séparés, la page des fiches
+d'usage aurait perdu son entrée entre les deux). Bancs : aucun groupe
+Héritage ni pilule « 4.0 », ordre des quatorze entrées, un seul item actif
+sur chaque rayon ; E2E qui emprunte les deux redirections ; bases d'images
+Desktop de la fiche régénérées (le rail y est capturé).
+
 ### D-323 — F80 : les analyses groupées et les valeurs calculées ont une composition signée — un groupe fait une ligne, ses constituants dessous ; un constituant seul est proposé par son groupe ; un calculé hérite du remboursement de ses mesures ; sept fiches entrent au catalogue (amende D-320 §4)
 
 - Date : 2026-10-18
@@ -80,6 +153,18 @@ thyroïdien » : TSH, T4L et T3L restent reliées par leurs correspondances
 garde la mention de ses actes de groupe. Les alias d'import de compte rendu
 de ces sept fiches sont hors de cette décision (résolveur signé, décision
 propre) : jusque-là, elles se saisissent à la main.
+
+**§7 — Exécution (2026-10-18, PR 3 du lot).** Arbitrage du responsable du
+2026-10-18, sur question à options : tous les constituants sont dits au
+courrier et au document patient, et la borne technique de consignation passe
+de 8 000 à 12 000 caractères (courrier, document patient et correspondance
+saisie, une seule constante) — au pire cas du catalogue réel, les quatre
+groupes signés faisaient dépasser 8 000. Choix d'exécution, relus contre
+§2-§4 : un groupe ne remplace un constituant (§3) que s'il est lui-même
+remboursable, sinon le constituant garde sa ligne et son état ; la borne des
+attentes d'action ([[D-305]] §4) reste ce que le bilan proposait, constituants
+rangés compris, sans le groupe ajouté ; « non évalué » nomme, pour un calculé,
+la mesure qui manque ; « le bilan » de §2 et §3 est la ligne de bilan.
 
 ### D-322 — F58 : la liste fermée des statuts posés près d'une valeur biologique — six gestes du praticien, jamais un jugement de la valeur ; stockage en ajout seul, statut attaché à la valeur exacte (amende D-308 §2)
 

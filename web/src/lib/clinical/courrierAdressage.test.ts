@@ -157,8 +157,9 @@ describe('ancrage et couplage rendu ↔ consigné', () => {
   });
 
   it('les DOUZE signaux de la table tiennent sous la borne consignable', () => {
-    // Borne réelle : `LONGUEUR_MAX_TEXTE` vaut 8 000. Le pire cas n'est pas
-    // théorique — c'est un dossier qui déclare tout.
+    // Borne réelle : `LONGUEUR_MAX_TEXTE` vaut 12 000 depuis le 2026-10-18 ;
+    // le banc garde 8 000, sa marge d'avant. Le pire cas n'est pas théorique —
+    // c'est un dossier qui déclare tout.
     const tous = SAFETY_SIGNALS_V1.map(s => s.libelle);
     const resultat = genererCourrierAdressage(entree(tous));
     if (!resultat.ok) throw new Error('refus inattendu');

@@ -39,6 +39,14 @@ describe('InboxQuestionnaires', () => {
     expect(screen.getByRole('button', { name: /Sophie Nicola/ })).toBeTruthy();
   });
 
+  it('porte le titre français « Questionnaires à consulter » (séance du 2026-10-12, réponse 9)', async () => {
+    stubInbox({ ok: true, lignes: [] });
+    render(<InboxQuestionnaires />);
+    expect(screen.getByText('Questionnaires à consulter')).toBeTruthy();
+    expect(screen.queryByText(/Inbox/i)).toBeNull();
+    await waitFor(() => expect(screen.getByText(/Aucune réponse reçue/i)).toBeTruthy());
+  });
+
   it('un fil vide dit ce qu’il SAIT, et n’affirme pas que tout a été vu', async () => {
     // L'ANCIEN LIBELLÉ ÉTAIT UNE AFFIRMATION FAUSSE : « tout a été vu en
     // consultation », sur la foi de `Consultation.dateValidation` — dont

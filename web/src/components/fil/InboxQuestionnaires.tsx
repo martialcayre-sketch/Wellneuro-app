@@ -198,7 +198,7 @@ export function InboxQuestionnaires() {
   return (
     <PanneauRail
       testId="inbox-questionnaires"
-      titre="Inbox questionnaires"
+      titre="Questionnaires à consulter"
       complement={
         data && !data.unavailable && data.lignes.length > 0 ? (
           <span className="font-mono text-13 text-muted-foreground">

@@ -300,7 +300,7 @@ describe('refus — motivés en français, jamais consignés à moitié', () => 
       courrier: {
         document: { blocs: [{ provenance: { source: 'biologie_proposition', ancrageHash: ANCRE, version: 'indications-biologie-v1' } }] },
         html: '<p>long</p>',
-        texte: 'x'.repeat(8001),
+        texte: 'x'.repeat(12001),
       },
     });
     const response = await POST(postRequest({ idPatient: 'PAT_TEST', medecinLibelle: 'Dr Martin' }));

@@ -217,6 +217,29 @@ describe('deriverStatutsBiologie — chaque ligne est traçable (Lot F, critère
   });
 });
 
+describe('deriverStatutsBiologie — compositions signées (D-323 §2)', () => {
+  // Fixture de MÉCANISME : un groupe signé fictif qui range l'insuline sous la
+  // glycémie — pas une composition réelle.
+  const compositions = new Map([
+    ['BIO_GLY', {
+      analyteCode: 'BIO_GLY',
+      libelle: 'Glycémie',
+      type: 'groupe' as const,
+      composants: [{ code: 'BIO_INS', libelle: 'Insuline', actif: true }],
+    }],
+  ]);
+
+  it('un groupe signé fait une ligne, son constituant du même bilan dessous', () => {
+    const glucidique = ligne(deriverStatutsBiologie(entree({ compositions })), 'PANEL_GLUCIDIQUE');
+    expect(glucidique.analytes.map(a => a.code)).toEqual(['BIO_GLY']);
+    expect(glucidique.analytes[0].constituants?.map(c => c.code)).toEqual(['BIO_INS']);
+  });
+
+  it('contre-épreuve : une carte vide rend exactement la sortie sans composition', () => {
+    expect(deriverStatutsBiologie(entree({ compositions: new Map() }))).toEqual(deriverStatutsBiologie(entree()));
+  });
+});
+
 describe('deriverStatutsBiologie — panels documentés hors outil', () => {
   it('un panel documenté n’est pas reproposé : « déjà documenté »', () => {
     const resultat = deriverStatutsBiologie(entree({

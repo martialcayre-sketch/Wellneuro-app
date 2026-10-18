@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// L'entrée publiée ré-exporte du code serveur qui ouvre Prisma au chargement
+// (`import/transmission`) : ce banc ne lit que ses listes, aucune base.
+vi.mock('@/lib/prisma', () => ({ prisma: {} }));
+
 import {
   DRAPEAUX_BIOFLOW,
   FICHIERS_PUBLIES,
@@ -33,7 +38,10 @@ const DOMAINE_BIOLOGIE = [
   'web/src/lib/biology-library/',
   'web/src/lib/bio-parcours/',
   'web/src/app/api/praticien/biologie/',
-  'web/src/app/dashboard/biologie/',
+  // La page de la biologie : « Biologie fonctionnelle » jusqu'au 2026-10-18,
+  // le rayon « Analyses biologiques » depuis D-324 §6 (l'ancienne adresse ne
+  // fait plus que rediriger, sans import).
+  'web/src/app/dashboard/bibliotheque/biologie/',
   'web/src/components/biologie/',
   'web/src/components/patient/biologie/',
 ];
@@ -45,7 +53,6 @@ const DEROGATIONS: ReadonlyArray<{ chemin: string; depuis: string }> = [
   { chemin: 'web/src/app/api/praticien/fil/route.ts', depuis: '2026-10-17' },
   { chemin: 'web/src/app/api/praticien/patients/route.ts', depuis: '2026-10-17' },
   { chemin: 'web/src/app/api/praticien/protocoles/versions/route.ts', depuis: '2026-10-17' },
-  { chemin: 'web/src/app/dashboard/bibliotheque/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/app/dashboard/patients/[idPatient]/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/app/portail/[token]/comptes-rendus/page.tsx', depuis: '2026-10-17' },
   { chemin: 'web/src/components/patient-cockpit/ActeAnnulationResultat.tsx', depuis: '2026-10-17' },
@@ -70,7 +77,11 @@ const DEROGATIONS: ReadonlyArray<{ chemin: string; depuis: string }> = [
 const PLAFOND_DEROGATIONS = 20;
 
 /** Les lecteurs hors biologie qui passent par la seule entrée publiée ([[D-306]] §1, §4). */
-const LECTEURS_PUBLIES = ['web/src/app/api/praticien/patients/cycle-de-vie/route.ts'];
+const LECTEURS_PUBLIES = [
+  'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
+  // « Mes échanges » ([[D-293]]) : comptes rendus transmis, date seule (2026-10-18).
+  'web/src/lib/portail/mesEchangesServeur.ts',
+];
 
 const ENTREE = 'biology-library/publie';
 

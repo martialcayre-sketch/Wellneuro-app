@@ -67,6 +67,11 @@ export type Remboursement = {
   conditions: ConditionRemboursement[];
   /** Les actes retenus, pour que l'écran puisse citer ses codes. */
   codesActesRetenus: string[];
+  /**
+   * Calculé ou regroupement signé ([[D-323]] §4) : les mesures dont l'état
+   * est hérité, pour que la mention les cite. Absent pour tout autre analyte.
+   */
+  parMesures?: MesureRemboursement[];
 };
 
 /**
@@ -147,6 +152,65 @@ export function deriverRemboursement(
   };
 }
 
+/** Une mesure d'un calculé ou d'un regroupement, telle qu'elle a compté. */
+export type MesureRemboursement = {
+  code: string;
+  libelle: string;
+  /** L'état qui a compté — celui du groupe signé pour une mesure « si groupé ». */
+  statut: StatutRemboursement;
+  codesActes: string[];
+};
+
+/** Du plus faible au plus fort : ce qui n'a pas été tranché d'abord. */
+const ORDRE_FAIBLESSE: readonly StatutRemboursement[] = [
+  'non_evalue',
+  'hors_nomenclature',
+  'remboursable_si_groupe',
+  'remboursable',
+];
+
+/**
+ * Le remboursement d'une valeur calculée ou d'un regroupement ([[D-323]] §4) :
+ * il n'a pas d'acte, il hérite de ses mesures. Son état est le PLUS FAIBLE de
+ * ceux de ses mesures — « non évalué » si l'une d'elles n'a été ni signée ni
+ * constatée : une mesure qu'on n'a pas tranchée ne se lit pas remboursée. Une
+ * mesure remboursable seulement accompagnée compte par son groupe signé
+ * (`groupe`) ; sans groupe signé, par elle-même.
+ *
+ * Les conditions et les actes sont ceux des mesures, réunis : une entente
+ * préalable sur l'une conditionne le tout.
+ */
+export function deriverRemboursementParMesures(
+  mesures: ReadonlyArray<{
+    code: string;
+    libelle: string;
+    remboursement: Remboursement;
+    groupe: Remboursement | null;
+  }>,
+): Remboursement {
+  if (mesures.length === 0) {
+    return { statut: 'non_evalue', conditions: [], codesActesRetenus: [] };
+  }
+  const comptees = mesures.map(m => ({
+    m,
+    r: m.remboursement.statut === 'remboursable_si_groupe' && m.groupe ? m.groupe : m.remboursement,
+  }));
+  const statut = comptees
+    .map(({ r }) => r.statut)
+    .reduce((plusFaible, s) => (ORDRE_FAIBLESSE.indexOf(s) < ORDRE_FAIBLESSE.indexOf(plusFaible) ? s : plusFaible));
+  return {
+    statut,
+    conditions: [...new Set(comptees.flatMap(({ r }) => r.conditions))],
+    codesActesRetenus: [...new Set(comptees.flatMap(({ r }) => r.codesActesRetenus))],
+    parMesures: comptees.map(({ m, r }) => ({
+      code: m.code,
+      libelle: m.libelle,
+      statut: r.statut,
+      codesActes: r.codesActesRetenus,
+    })),
+  };
+}
+
 /**
  * Le régime documentaire du §4 : qui reçoit quoi. Seul un analyte franchement
  * remboursable part par courrier au médecin traitant ; tout le reste — y
@@ -169,7 +233,7 @@ export function regimeDocumentaire(
  * ([[D-316]] §2-§3) : chaque phrase nomme les analyses distinctes (par code)
  * de son état, dans l'ordre de première apparition. Dites ligne à ligne, elles
  * répétaient les libellés et faisaient passer un bilan complet au-delà de la
- * borne de consignation (8 000 caractères). Un état sans analyse ne dit rien.
+ * borne de consignation (8 000 caractères, 12 000 depuis le 2026-10-18). Un état sans analyse ne dit rien.
  */
 export function mentionsRemboursement(
   analytes: ReadonlyArray<{ code: string; libelle: string; remboursement: Pick<Remboursement, 'statut'> }>,

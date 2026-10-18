@@ -10499,3 +10499,63 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Rediffusions des trois programmes par le praticien, à constater ; résidu de t13 à arbitrer ; dettes t16, t08, t09 à cadrer.
 
 **Ouvert.** r2_01 et r2_02 attendent la fin de #1530 (Fil).
+
+## 2026-10-18 — J3-base : PA-1, carte du Fil, « Mes échanges » ; ACT-2 posé
+
+**Fait.** #1530 mergée et déployée (49a2bb19) : PA-1 et la carte « Point d'étape ». ACT-2 : `WN_ANNONCE_PROTOCOLE` posé sur ordre du responsable. « Mes échanges » livré prêt et fermé (drapeau neuf éteint, majeurs seulement), sur trois arbitrages : ordre, ligne, entrée.
+
+**Écarté.** Rafraîchir le fil en continu (lecture à la visite, D-317 §6) ; lister la synthèse au journal (D-293 §1 ne la nomme pas).
+
+**Prochaine action.** Merger « Mes échanges », puis le lot ai : migration autorisée, release-db, puis le code.
+
+**Ouvert.** Constat d'ACT-2 à la prochaine vraie diffusion ; deux micro-textes et la limite « protocole indisponible » avant ACT-3 ; garde d'âge du check-in.
+## 2026-10-18 — F80 : composition des analyses groupées (D-323, migration, signature)
+
+**Fait.** D-323 écrite sur arbitrages du responsable (#1529) ; migration des deux tables de composition en ajout seul et des sept fiches (#1540), release-db appliquée et constatée par conteneur ; PR 2 : liste préparée, signature par le praticien, section « Composition » de la fiche d'analyte.
+
+**Écarté.** `BiologyRatio` (deux opérandes et une constante : ni DFG, ni soustractions, constante sans provenance) ; un analyte « bilan thyroïdien ».
+
+**Prochaine action.** PR 3 : proposition, courrier et document lisent la composition (D-323 §2-§4), puis clôture du lot.
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
+## 2026-10-18 — r2_02 : « Questionnaires à consulter » en tête du Fil
+
+**Fait.** Le panneau des réponses en attente, au-dessus du Fil, s'intitule « Questionnaires à consulter » (séance du 2026-10-12, réponse 9). E56 mergé (#1538) et déployé ; #1530 mergé par l'autre session, ce qui ouvre la fenêtre N-6.
+
+**Écarté.** Attendre L4 pour livrer le titre : le regroupement n'était qu'une économie, et L4 attend des décisions d'écran.
+
+**Prochaine action.** Poser au responsable les questions Q1, Q2, Q4, Q5 et Q8 de la pièce 17 (retrait d'« Héritage 4.0 »).
+
+**Ouvert.** Résidu de t13 ; rediffusions des trois programmes à constater.
+
+## 2026-10-18 — F80 : la proposition lit les compositions signées (D-323 §2-§4)
+
+**Fait.** PR 2 (#1541) mergée après correctif de revue (lecture tardive d'un autre analyte). PR 3 : groupe en une ligne avec son acte et ses constituants, constituant seul remplacé par son groupe, calculé héritant de ses mesures — courrier, document patient, écran, fiche d'analyte ; inerte sans composition signée.
+
+**Décidé.** Responsable : tous les constituants dits, borne de consignation 12 000 (D-323 §7).
+
+**Écarté.** Dire l'acte de chaque ligne : reste à F55 (D-309 §1).
+
+**Prochaine action.** Merge, pages file A et BioFlow, puis file D (h5 constaté fait ; Autofix toujours affiché).
+
+**Ouvert.** Signature des compositions par le responsable ; alias d'import des sept fiches.
+
+## 2026-10-18 — L4 et L5 : menu sans « Héritage 4.0 », un rayon par entrée (D-324)
+
+**Fait.** Le responsable a tranché Q1, Q2, Q4 et Q5 de la pièce 17, puis quatre questions de forme. D-324 en est tirée. Le menu compte trois groupes ; la Bibliothèque est éclatée en cinq pages, chacune avec son entrée. La page Biologie redirige vers « Analyses biologiques », qui porte aussi les fiches d'usage. Documents et Synthèse IA quittent le menu du bureau.
+
+**Écarté.** Livrer L4 et L5 séparément (les fiches d'usage auraient perdu leur entrée entre les deux) ; six entrées (le responsable a préféré cinq, Questionnaires réunissant le catalogue et les assignations).
+
+**Prochaine action.** T2, PR, bases d'images Desktop de la fiche si le CI les refuse, merge, constat.
+
+**Ouvert.** Concept de Bibliothèque à revoir ; résidu de t13.
+
+## 2026-10-18 — File B en autonomie : F58 migration, lettre z
+
+**Fait.** Lettre z (D-302) mergée : date de naissance obligatoire à la création d'un dossier, formulaire au libellé visible et serveur (#1539). F58 : migration seule de la table des statuts posés (D-322), contrat négatif, effacement nommé, déclaration RGPD validée par le responsable (#1537).
+
+**Écarté.** Un verrou F58 propre à la ligne : la relecture CodeRabbit a montré qu'une correction concurrente passait sous lui ; le trigger prend les verrous de clé de BP-09, qui refusent aussi REPEATABLE READ. F38 en deux lots (le responsable choisit un seul lot avec migration).
+
+**Prochaine action.** Merge de #1537, release-db, constat par conteneur, puis PR du code F58 (route, lecture, écran, banc à deux sessions, nettoyage E2E). Puis F38 : migration de la remise patient, puis code.
+
+**Ouvert.** F38 : impression bloquée si refus de partage médecin (arbitré) ; forme de l'objet « document remis » à cadrer.

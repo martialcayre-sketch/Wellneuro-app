@@ -64,10 +64,82 @@ describe('SidebarRail — le rayon Patients', () => {
   it('« Questionnaires & packs » a quitté le rail — il ne mène plus nulle part', () => {
     const { container } = rendreSur('/dashboard');
 
-    expect(within(container).queryByRole('link', { name: /Questionnaires/ })).toBeNull();
+    // Depuis D-324, une entrée « Questionnaires » existe — le rayon de la
+    // Bibliothèque, qui ne pointe pas vers l'ancienne page d'héritage.
+    expect(within(container).queryByRole('link', { name: /Questionnaires\s*&/ })).toBeNull();
+    expect(within(container).getByRole('link', { name: 'Questionnaires' }).getAttribute('href')).toBe(
+      '/dashboard/bibliotheque/questionnaires',
+    );
     // Et le libellé n'existe plus du tout : un item renommé mais conservé
     // passerait la seule assertion précédente.
     expect(container.textContent).not.toMatch(/Questionnaires\s*&\s*packs/);
+  });
+});
+
+describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => {
+  const ORDRE = [
+    'Le Fil du jour',
+    'Patients',
+    'Fiche-trajectoire',
+    'Consultation copilote',
+    'Agenda & consultations',
+    'Correspondance',
+    'Confiance & droits',
+    'Questionnaires',
+    'Fiches conseils',
+    'Compléments alimentaires',
+    'Analyses biologiques',
+    'Connaissances',
+    'Atelier corpus',
+    'Paramètres',
+  ];
+
+  it('aucun groupe Héritage, aucune pilule « 4.0 »', () => {
+    const { container } = rendreSur('/dashboard');
+
+    expect(container.textContent).not.toMatch(/Héritage/);
+    for (const lien of within(container).getAllByRole('link')) {
+      expect(lien.textContent, lien.textContent ?? '').not.toContain('4.0');
+    }
+  });
+
+  it('trois groupes, quatorze entrées, dans l’ordre décidé', () => {
+    const { container } = rendreSur('/dashboard');
+
+    expect(within(container).getByText('La Spirale')).toBeTruthy();
+    expect(within(container).getByText('Bibliothèque')).toBeTruthy();
+    expect(within(container).getByText('Réglages')).toBeTruthy();
+    expect(within(container).getAllByRole('link').map(l => l.textContent?.trim())).toEqual(ORDRE);
+  });
+
+  it('Documents, Synthèse IA et Biologie fonctionnelle ont quitté le menu', () => {
+    const { container } = rendreSur('/dashboard');
+    const ui = within(container);
+
+    expect(ui.queryByRole('link', { name: 'Documents' })).toBeNull();
+    expect(ui.queryByRole('link', { name: 'Synthèse IA' })).toBeNull();
+    expect(ui.queryByRole('link', { name: 'Biologie fonctionnelle' })).toBeNull();
+    expect(ui.queryByRole('link', { name: 'Bibliothèque' })).toBeNull();
+  });
+
+  it('un seul item actif sur chacun des rayons et des entrées déplacées', () => {
+    for (const chemin of [
+      '/dashboard/bibliotheque/questionnaires',
+      '/dashboard/bibliotheque/fiches-conseils',
+      '/dashboard/bibliotheque/complements',
+      '/dashboard/bibliotheque/biologie',
+      '/dashboard/bibliotheque/connaissances',
+      '/dashboard/corpus',
+      '/dashboard/agenda',
+      '/dashboard/droits',
+    ]) {
+      const { container } = rendreSur(chemin);
+      const actifs = within(container)
+        .getAllByRole('link')
+        .filter(l => l.getAttribute('aria-current') === 'page');
+      expect(actifs.map(a => a.getAttribute('href')), `chemin ${chemin}`).toEqual([chemin]);
+      cleanup();
+    }
   });
 });
 

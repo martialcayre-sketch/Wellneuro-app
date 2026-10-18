@@ -6,6 +6,7 @@ const { prisma } = vi.hoisted(() => ({
     biologyPanel: { findMany: vi.fn() },
     biologyCatalogVersionCourante: { findUnique: vi.fn() },
     biologyNabmActe: { findMany: vi.fn() },
+    biologyAnalyteComposition: { findMany: vi.fn() },
   },
 }));
 
@@ -44,6 +45,59 @@ beforeEach(() => {
   prisma.biologyPanel.findMany.mockResolvedValue([]);
   prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
+  prisma.biologyAnalyteComposition.findMany.mockResolvedValue([]);
+});
+
+describe('remboursement d’un calculé signé — hérité de ses mesures (D-323 §4)', () => {
+  const signee = (code: string, libelle: string, acteCode: string) =>
+    analyteBase({
+      code,
+      libelle,
+      correspondancesNabm: [{ codeActe: acteCode, nature: 'isole', verifiePar: 'praticien@wellneuro.fr' }],
+    });
+
+  beforeEach(() => {
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({
+      versionSource: 'V105',
+      nombreEntrees: 987,
+      importeLe: new Date('2026-07-26T00:00:00.000Z'),
+    });
+    prisma.biologyNabmActe.findMany.mockResolvedValue(
+      ['0552', '7422'].map(codeActe => ({ codeActe, inactif: false, ententePrealable: false, acteReserve: false, remboursementTotal: true })),
+    );
+  });
+
+  it('composition signée : la fiche du calculé dit « remboursable », par ses mesures', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_RATIO_HOMA', libelle: 'Indice HOMA' }),
+      signee('BIO_GLYCEMIE_JEUN', 'Glycémie à jeun', '0552'),
+      signee('BIO_INSULINE', 'Insuline', '7422'),
+    ]);
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+  {
+    analyteCode: 'BIO_RATIO_HOMA',
+    type: 'calcul',
+    analyte: { libelle: 'Indice HOMA' },
+    items: [
+      { composant: { code: 'BIO_GLYCEMIE_JEUN', libelle: 'Glycémie à jeun', actif: true } },
+      { composant: { code: 'BIO_INSULINE', libelle: 'Insuline', actif: true } },
+    ],
+  },
+]);
+    const fiche = (await listerCatalogueBiologie()).analytes.find(a => a.code === 'BIO_RATIO_HOMA')!;
+    expect(fiche.remboursement.statut).toBe('remboursable');
+    expect(fiche.remboursement.parMesures?.map(m => m.code)).toEqual(['BIO_GLYCEMIE_JEUN', 'BIO_INSULINE']);
+    expect(prisma.biologyAnalyteComposition.findMany.mock.calls[0][0].where).toEqual({ retireeLe: null, analyte: { actif: true } });
+  });
+
+  it('contre-épreuve : sans composition signée, le calculé reste « non évalué »', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_RATIO_HOMA', libelle: 'Indice HOMA' }),
+      signee('BIO_GLYCEMIE_JEUN', 'Glycémie à jeun', '0552'),
+    ]);
+    const fiche = (await listerCatalogueBiologie()).analytes.find(a => a.code === 'BIO_RATIO_HOMA')!;
+    expect(fiche.remboursement).toEqual({ statut: 'non_evalue', conditions: [], codesActesRetenus: [] });
+  });
 });
 
 describe('remboursement — dérivé par remboursable.ts, jamais recalculé ici', () => {

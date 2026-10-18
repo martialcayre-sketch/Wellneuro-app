@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/Badge';
+import { CompositionAnalyteSection } from '@/components/biologie/CompositionAnalyteSection';
 import { CorrespondancesNabmSection } from '@/components/biologie/CorrespondancesNabmSection';
 import type { FicheAnalyte } from '@/lib/biology-library/catalogue';
 import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
@@ -191,7 +192,21 @@ export function FicheAnalytePanel({
         <p className="mt-1 text-sm text-foreground">
           {LABEL_REMBOURSEMENT[fiche.remboursement.statut] ?? fiche.remboursement.statut}
         </p>
-        {fiche.remboursement.statut === 'non_evalue' && (
+        {fiche.remboursement.parMesures ? (
+          // [[D-323]] §4 : un calculé ou un regroupement signé n'a pas d'acte ;
+          // son état est le plus faible de ceux de ses mesures, et se dit ainsi.
+          <div className="mt-1 text-xs text-muted-foreground">
+            <p>Hérité de ses mesures — l’état le plus faible l’emporte :</p>
+            <ul className="mt-1 list-disc pl-4">
+              {fiche.remboursement.parMesures.map(mesure => (
+                <li key={mesure.code}>
+                  {mesure.libelle} : {LABEL_REMBOURSEMENT[mesure.statut] ?? mesure.statut}
+                  {mesure.codesActes.length > 0 ? ` (${mesure.codesActes.join(', ')})` : ''}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : fiche.remboursement.statut === 'non_evalue' && (
           <p className="mt-1 text-xs text-muted-foreground">
             La correspondance à la nomenclature n’est pas encore signée. Cela ne veut pas dire
             « non remboursé » — personne n’a tranché.
@@ -206,7 +221,7 @@ export function FicheAnalytePanel({
             ))}
           </ul>
         )}
-        {fiche.remboursement.codesActesRetenus.length > 0 && (
+        {fiche.remboursement.codesActesRetenus.length > 0 && !fiche.remboursement.parMesures && (
           <p className="mt-1 text-xs text-muted-foreground">
             Actes cités : {fiche.remboursement.codesActesRetenus.join(', ')}
           </p>
@@ -214,6 +229,8 @@ export function FicheAnalytePanel({
       </section>
 
       <CorrespondancesNabmSection analyteCode={fiche.code} onModifie={onCorrespondancesModifiees} />
+
+      <CompositionAnalyteSection analyteCode={fiche.code} />
 
       <section aria-label="Conditions préanalytiques">
         <h5 className="text-sm font-semibold text-foreground">Préanalytique</h5>

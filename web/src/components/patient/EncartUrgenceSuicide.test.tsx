@@ -27,6 +27,18 @@ describe('EncartUrgenceSuicide ([[D-275]])', () => {
       expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
     }
   });
+
+  it('dans « Mes échanges », seul le sujet de la phrase finale change ([[D-293]] §3)', () => {
+    render(<EncartUrgenceSuicide ecran="mes_echanges" />);
+    const encart = screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' });
+    const paragraphes = [...encart.querySelectorAll('p')].map(p => p.textContent?.replace(/\s+/g, ' ').trim());
+    expect(paragraphes).toEqual(
+      [
+        ...TEXTE_VALIDE.slice(0, 2),
+        'Ce que vous transmettez est transmis à votre praticien, mais il ne le lit pas en temps réel : n’attendez pas sa réponse.',
+      ].map(t => t.replace(/\s+/g, ' ')),
+    );
+  });
 });
 
 function assignation(idQuestionnaire: string) {

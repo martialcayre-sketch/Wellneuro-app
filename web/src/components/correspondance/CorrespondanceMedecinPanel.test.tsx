@@ -369,16 +369,16 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     fetchMock.mockImplementation(router());
     await attendreLeFil();
 
-    expect(screen.getByText('0 / 8 000 caractères')).toBeTruthy();
+    expect(screen.getByText('0 / 12 000 caractères')).toBeTruthy();
     expect(screen.queryByText(/Limite atteinte/)).toBeNull();
 
     // Le geste réel d'une transcription est un COLLAGE, et le navigateur le
     // coupe à `maxLength` sans un mot — sous un placeholder qui promet une
     // transcription fidèle. L'écran le dit désormais.
     fireEvent.change(screen.getByLabelText(/Texte de l’échange/), {
-      target: { value: 'x'.repeat(8000) },
+      target: { value: 'x'.repeat(12000) },
     });
-    expect(screen.getByText('8 000 / 8 000 caractères')).toBeTruthy();
+    expect(screen.getByText('12 000 / 12 000 caractères')).toBeTruthy();
     expect(screen.getByText(/Limite atteinte/)).toBeTruthy();
   });
 

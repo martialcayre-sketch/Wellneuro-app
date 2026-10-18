@@ -1,12 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
-import { RayonFichesConseilsPanel } from '@/components/fiches-assiette/RayonFichesConseilsPanel';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
 import {
   LIBELLE_INSTRUMENT_CABINET,
@@ -30,24 +28,16 @@ import type {
 } from '@/app/api/praticien/file-envoi/route';
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 
-type Rayon = 'questionnaires' | 'analyses' | 'conseils';
-
 type PatientOption = { email: string; prenom: string; nom: string };
 
 // Rayon Questionnaires de la Bibliothèque (arbitrages 2026-07-23) :
 // chercher → prévisualiser tel que le patient le verra → ajouter à la file →
 // envoyer, un seul mail et un seul lien portail par patient.
-export function BibliothequePanel({
-  entrees,
-  rayonBiologieOuvert = false,
-}: {
-  entrees: BibliothequeEntree[];
-  /** État du drapeau WN_CB_ENABLED, lu par la page serveur (CB-08) : la puce
-   *  « Analyses biologiques » et sa bannière doivent dire la même chose que le
-   *  rayon rendu plus bas sur la même page. */
-  rayonBiologieOuvert?: boolean;
-}) {
-  const [rayon, setRayon] = useState<Rayon>('questionnaires');
+//
+// Ses onglets « Analyses biologiques » et « Fiches conseils » sont devenus
+// des entrées du menu, chacune avec sa page (D-324 §4) : ce panneau ne porte
+// plus que le rayon Questionnaires.
+export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }) {
   const [recherche, setRecherche] = useState('');
   const [categorie, setCategorie] = useState<string | null>(null);
   const [selectionId, setSelectionId] = useState<string>(entrees[0]?.id ?? '');
@@ -338,49 +328,7 @@ export function BibliothequePanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Rayons de la bibliothèque">
-        <BoutonRayon actif={rayon === 'questionnaires'} onClick={() => setRayon('questionnaires')}>
-          Questionnaires
-        </BoutonRayon>
-        <BoutonRayon
-          actif={rayon === 'analyses'}
-          onClick={() => setRayon('analyses')}
-          aVenir={!rayonBiologieOuvert}
-        >
-          Analyses biologiques
-        </BoutonRayon>
-        <BoutonRayon actif={rayon === 'conseils'} onClick={() => setRayon('conseils')}>
-          Fiches conseils
-        </BoutonRayon>
-      </div>
-
-      {rayon === 'analyses' &&
-        (rayonBiologieOuvert ? (
-          <div
-            role="status"
-            className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
-          >
-            Le rayon Analyses biologiques est ouvert : fiches d&apos;analytes, plus bas sur cette
-            page —{' '}
-            <a
-              href="#rayon-biologie-titre"
-              className="font-medium text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-            >
-              aller au rayon
-            </a>
-            . La saisie de résultats reste un second temps, ouvert par une décision dédiée.
-          </div>
-        ) : (
-          <BanniereDiffere>
-            Le rayon Analyses biologiques ouvrira avec le catalogue et les fiches
-            d&apos;analytes ; la saisie de résultats patients restera un second temps, ouvert par
-            une décision dédiée.
-          </BanniereDiffere>
-        ))}
-      {rayon === 'conseils' && <RayonFichesConseilsPanel />}
-
-      {rayon === 'questionnaires' && (
-        <>
+      <>
           <div className="flex flex-wrap gap-2">
             <PanneauSuperpose
               largeur="standard"
@@ -783,41 +731,8 @@ export function BibliothequePanel({
               </div>
             </section>
           </div>
-        </>
-      )}
+      </>
     </div>
-  );
-}
-
-function BoutonRayon({
-  actif,
-  aVenir = false,
-  onClick,
-  children,
-}: {
-  actif: boolean;
-  aVenir?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={actif}
-      className={`inline-flex min-h-[34px] items-center gap-2 rounded-full border px-4 text-xs font-semibold transition-colors ${
-        actif
-          ? 'border-indigo-600 bg-indigo-600/10 text-primary'
-          : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
-      }`}
-    >
-      {children}
-      {aVenir && (
-        <span className="rounded-full bg-muted px-2 py-0.5 text-3xs font-bold uppercase tracking-[.08em] text-muted-foreground">
-          à venir
-        </span>
-      )}
-    </button>
   );
 }
 
