@@ -16,8 +16,9 @@ migration de F58, puis lots sans geste humain.
 
 - F58 : table `statuts_poses_resultats_biologiques`, actes `pose`/`retrait`,
   six codes en CHECK, tête de fil, praticien du dossier, pose qui change le
-  statut, retrait d'un statut actif ; verrous dossier puis ligne ;
-  REPEATABLE READ toléré (limite décrite). Déclarée à BioFlow (D-306).
+  statut, retrait d'un statut actif ; verrous de clé de BP-09 (ceux de la
+  correction : course à deux sessions fermée, relecture CodeRabbit) ;
+  REPEATABLE READ refusé. Déclarée à BioFlow (D-306).
 - Paragraphe RGPD validé par le responsable le 2026-10-18.
 - z : date valide au sens de la garde d'âge (règle du portail) ; mineur créé.
 - F38 : un seul lot avec migration (trace d'impression + remise patient
