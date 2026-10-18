@@ -81,8 +81,17 @@ export async function POST(req: Request): Promise<NextResponse<SignatureLotNabmA
       const refus =
         resultat.raison === 'lot_invalide'
           ? { message: 'Une ligne du lot est mal formée ou en double.', status: 400 }
-          : MESSAGES_REFUS_CORRESPONDANCE[resultat.raison];
-      const enCause = resultat.ligne ? ` (${resultat.ligne.analyteCode} → ${resultat.ligne.codeActe})` : '';
+          : resultat.raison === 'etat_divergent'
+            ? // Au lot, pas de fiche à recharger : la liste se relit, et une
+              // attente épuisée est un autre geste en cours (revue du lot).
+              resultat.ligne
+              ? { message: 'cette correspondance a changé depuis l’affichage — la liste est relue.', status: 409 }
+              : { message: 'un autre geste est en cours sur ces analyses — réessayez.', status: 409 }
+            : MESSAGES_REFUS_CORRESPONDANCE[resultat.raison];
+      const enCause =
+        resultat.ligne?.analyteCode && resultat.ligne.codeActe
+          ? ` (${resultat.ligne.analyteCode} → ${resultat.ligne.codeActe})`
+          : '';
       return echec<R>(resultat.raison, `Rien n’a été signé${enCause} : ${refus.message}`, refus.status, {
         ligne: resultat.ligne,
       });

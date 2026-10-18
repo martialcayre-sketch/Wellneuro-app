@@ -4,6 +4,80 @@
 
 ## Décisions actives
 
+### D-326 — Un constituant d'un groupe signé est coté par l'acte du groupe, sans ligne NABM écrite pour lui ; les correspondances préparées se signent en lot, tout ou rien ; l'acte d'une analyse groupée se signe « acte isolé » (amende D-323 §3)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18, sur questions à
+  options, après la signature des neuf compositions de F80 : « les deux »
+  (héritage par la composition pour les actes de groupe, et signature en lot
+  pour les autres ; contre l'une ou l'autre seule) ; pour les quatre actes de
+  groupe signés « groupe imposé » le même jour, « je re-signe en acte isolé »
+  (recommandé, contre une règle qui réinterpréterait la signature et contre
+  le statu quo). Texte rédigé par l'assistant.
+- Amende : [[D-323]] §3 (un constituant n'a plus besoin de sa propre
+  correspondance « groupe imposé » pour être remplacé par son groupe : la
+  composition signée la lui donne). Ne touche pas [[D-323]] §2 et §4, ni la
+  signature unitaire.
+- Domaine : `avecActesDesGroupes` (`web/src/lib/biology-library/
+  compositionsProposition.ts`), `listerCorrespondancesALot` et
+  `signerCorrespondancesLot` (`correspondancesNabm.ts`), route
+  `web/src/app/api/praticien/biologie/nabm/correspondances/lot`, composant
+  `SignatureNabmLotPanel` du rayon Analyses biologiques ; fiche F80.
+- Nature : dérivation administrative du remboursement et outil de signature.
+  Aucune règle d'indication, aucun seuil, aucun bilan gelé touchés.
+- **Ne touche pas** : aucune migration, aucune écriture en base hors du geste
+  du praticien ; le journal reçoit des actes `signature` de la forme déjà
+  contrainte ; la dérivation reste écrite une fois (`remboursable.ts` pour la
+  règle d'un analyte, ce module pour les compositions).
+
+**§1 — Le constituant tient l'acte de son groupe.** La composition signée d'un
+groupe dit qu'un analyte en fait partie ; la correspondance signée du groupe
+dit l'acte. Un constituant actif d'une composition de type `groupe` signée et
+active, dont l'analyte composé est remboursable ou remboursable seulement
+accompagné, est « remboursable seulement accompagné » par les actes de ce
+groupe, avec leurs conditions, comme s'il portait la correspondance « groupe
+imposé » — sans qu'aucune ligne NABM ne soit écrite pour lui. Seul hérite ce
+qui n'a pas été tranché autrement : un constituant non évalué hérite ; un
+constituant déjà « si groupé » par ses propres signatures réunit ses actes à
+ceux du groupe ; un constituant remboursable seul garde son état ; un
+constituant hors nomenclature (constat « aucun acte » courant, ou actes signés
+tous inactifs) garde son état, car ce qui a été signé pour lui ne se recouvre
+pas. Un regroupement n'a pas d'acte et ne transmet rien. Un constituant de
+deux groupes tient les actes des deux. L'état hérité nourrit ensuite les
+calculés ([[D-323]] §4) et le remplacement ([[D-323]] §3) ; un constituant
+qui serait lui-même un calculé signé prend l'état de ses mesures, qui
+l'emporte (aucun cas aujourd'hui). La fiche du constituant le dit (« par
+l'acte de son groupe, dont la composition signée le compte »), et le candidat
+de cet acte n'est plus proposé à la signature — sous la même condition que
+l'héritage, et sous elle seule : acte actif au millésime courant, constituant
+ni remboursable seul ni hors nomenclature.
+
+**§2 — La signature en lot.** Le rayon Analyses biologiques réunit, en un
+écran, les candidats que chaque fiche d'analyte propose (`candidatsNabm.ts`,
+M-3b) — l'écran n'en montre pas d'autres : analyte actif sans constat, couple
+sans ligne en base, acte présent et actif au millésime courant, acte non tenu
+du groupe (§1). Le serveur, lui, signe tout couple valide qu'on lui envoie,
+comme la signature unitaire, qui accepte tout acte actif cherché par le
+praticien : la liste fermée est une propriété de l'écran, pas une garde. Sont cochés d'office les candidats d'un analyte qui ne porte encore
+aucune signature, sauf ceux que la liste range « à juger », jamais cochés. Le
+praticien relit, décoche, change une nature, puis confirme un compte : chaque
+couple est signé par le même code que la signature unitaire, au nom de la
+session, avec sa ligne de journal, dans une seule transaction — un seul refus
+et rien n'est écrit, le refus nomme la ligne. Au plus cent couples par geste,
+borne technique de la transaction ; seul l'état « absente » se signe en lot.
+Une réponse perdue s'annonce « résultat inconnu » et la liste se relit. Ce
+geste n'est pas délégué ([[D-325]] §5 ne vaut pas pour une signature NABM).
+
+**§3 — L'acte d'une analyse groupée.** L'acte qui cote une analyse groupée
+(NFS 1104, ionogramme 1609, ionogramme complet 1610, profil lipidique 0996) la
+cote à lui seul : sa correspondance se signe « acte isolé ». Signée « groupe
+imposé », elle dit l'analyse remboursable seulement accompagnée d'une autre,
+sans son acte, et aucun constituant ne peut être remplacé par elle ([[D-323]]
+§3 exige un groupe remboursable). Le 2026-10-18, les quatre l'ont été ; le
+responsable les re-signe (retrait puis signature), et la fiche d'une analyse
+groupée le dit désormais là où la nature se choisit. Aucune règle ne
+réinterprète une nature signée.
+
 ### D-325 — Étiquetage en lot : un geste du praticien sur une liste qu'il a relue pose les clés de lien de N claims validés, un acte `etiquetage` par claim, tout ou rien ; correspondance des rubriques des dossiers de preuve (amende D-321 §5 et §6)
 
 - Date : 2026-10-18

@@ -422,6 +422,24 @@ describe('remboursementsAvecCompositions — D-326 §1 : un constituant est cot�
     expect(hepatique.get('BIO_ALAT')).toBeUndefined();
   });
 
+  it('de bout en bout : une hémoglobine sans correspondance propre, proposée seule, est remplacée par la NFS', () => {
+    const compositions = carte(NFS);
+    const carteHeritee = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable', ['1104'])]), compositions);
+    const remboursementDe = (code: string) => carteHeritee.get(code) ?? r('non_evalue');
+    const hemoglobine = { ...analyte('BIO_HEMOGLOBINE', 'Hémoglobine'), remboursement: remboursementDe('BIO_HEMOGLOBINE') };
+    const lignes = regrouperAnalytes([hemoglobine], { compositions, remboursementDe, validationDe: () => false });
+    expect(lignes.map(l => l.code)).toEqual(['BIO_NFS']);
+    expect(lignes[0].demandeePour).toEqual([{ code: 'BIO_HEMOGLOBINE', libelle: 'Hémoglobine' }]);
+    // Contre-épreuve : la NFS signée « groupe imposé » ne remplace pas (D-326 §3).
+    const imposee = remboursementsAvecCompositions(base(['BIO_NFS', r('remboursable_si_groupe', ['1104'])]), compositions);
+    const deImposee = (code: string) => imposee.get(code) ?? r('non_evalue');
+    const seule = regrouperAnalytes(
+      [{ ...analyte('BIO_HEMOGLOBINE', 'Hémoglobine'), remboursement: deImposee('BIO_HEMOGLOBINE') }],
+      { compositions, remboursementDe: deImposee, validationDe: () => false },
+    );
+    expect(seule.map(l => l.code)).toEqual(['BIO_HEMOGLOBINE']);
+  });
+
   it('un calculé lit l’état hérité de ses mesures', () => {
     const calcul: CompositionSignee = { ...HOMA, composants: [{ code: 'BIO_CHLORE', libelle: 'Chlore', actif: true }] };
     const resultat = remboursementsAvecCompositions(base(['BIO_IONOGRAMME', r('remboursable', ['1609'])]), carte(calcul, IONO));

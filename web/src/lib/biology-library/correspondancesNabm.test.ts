@@ -787,6 +787,40 @@ describe('lireCorrespondancesAnalyte — acte tenu du groupe signé (D-326 §1)'
     expect(resultat.ok && resultat.candidats?.propositions.map(p => p.codeActe)).toEqual(['2108', '1104']);
     expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
   });
+
+  it('le masque suit la règle de l’héritage : acte du groupe inactif, ou constituant hors nomenclature — rien n’est « tenu »', async () => {
+    prisma.biologyAnalyteComposition.findMany.mockResolvedValue([
+      groupeSigne('Numération formule sanguine', ['1104'], [{ code: 'BIO_HEMATOCRITE' }]),
+    ]);
+    // 1104 inactif au millésime courant : le groupe ne transmet rien.
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108' }), acte({ codeActe: '1104', inactif: true })]);
+    let resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
+
+    // Ses actes propres signés tous inactifs : hors nomenclature, il n'hérite
+    // pas — le candidat 1104 reste à signer, et la fiche ne le dit pas tenu.
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HEMATOCRITE',
+      actif: true,
+      correspondancesNabm: [{ codeActe: '2108', nature: 'isole', verifiePar: PRATICIEN, verifieLe: DATE_BASE }],
+      constatNabm: null,
+    });
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108', inactif: true }), acte({ codeActe: '1104' })]);
+    resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.propositions.map(p => p.codeActe)).toEqual(['1104']);
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([]);
+
+    // Contre-épreuve : actes propres actifs mais « si groupé » seulement — il hérite, 1104 est tenu.
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({
+      code: 'BIO_HEMATOCRITE',
+      actif: true,
+      correspondancesNabm: [{ codeActe: '2108', nature: 'groupe_et', verifiePar: PRATICIEN, verifieLe: DATE_BASE }],
+      constatNabm: null,
+    });
+    prisma.biologyNabmActe.findMany.mockResolvedValue([acte({ codeActe: '2108' }), acte({ codeActe: '1104' })]);
+    resultat = await lireCorrespondancesAnalyte('BIO_HEMATOCRITE');
+    expect(resultat.ok && resultat.candidats?.tenusDuGroupe).toEqual([{ codeActe: '1104', groupe: 'Numération formule sanguine' }]);
+  });
 });
 
 describe('listerCorrespondancesALot (D-326 §2)', () => {
@@ -816,6 +850,11 @@ describe('listerCorrespondancesALot (D-326 §2)', () => {
       acte({ codeActe: '2108' }),
       acte({ codeActe: '1211' }),
       acte({ codeActe: '1212', inactif: true }),
+      // Présents et actifs : leur absence de la liste ne peut venir que du
+      // filtre qui les écarte (tenu du groupe, déjà en base, constat).
+      acte({ codeActe: '1104' }),
+      acte({ codeActe: '0592' }),
+      acte({ codeActe: '1208' }),
     ]);
   });
 

@@ -106,8 +106,9 @@ export function SignatureNabmLotPanel({ onSignees }: { onSignees?: () => void })
       });
       const corps = (await res.json()) as SignatureLotNabmApiResponse;
       if (!corps.ok) {
+        // Rien n'est signé ; la liste se relit, l'état a pu bouger (revue du lot).
+        await charger();
         setMessageEchec(corps.error);
-        setAConfirmer(false);
         return;
       }
       setMessageSucces(

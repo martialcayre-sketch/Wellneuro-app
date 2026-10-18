@@ -50,7 +50,7 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { MILLESIME_LISTE_NABM, candidatsNabmPour, type SituationNabm } from './candidatsNabm';
 import { jetons, normaliserRecherche } from './rechercheTexte';
-import { constatValable } from './remboursable';
+import { constatValable, deriverRemboursement, type CorrespondanceNabm, type Remboursement } from './remboursable';
 
 /** Pointeur de millésime de la nomenclature (même clé que `catalogue.ts`). */
 const SOURCE_NABM = 'nabm_smt_ans';
@@ -152,6 +152,22 @@ async function actesTenusDesGroupes(constituant?: string): Promise<Map<string, M
     }
   }
   return tenus;
+}
+
+/**
+ * Les actes que le constituant tient VRAIMENT de ses groupes : la condition
+ * même de l'héritage (`avecActesDesGroupes`, [[D-326]] §1) — acte actif au
+ * millésime courant, et constituant ni remboursable seul ni hors
+ * nomenclature par ce qui a été signé pour lui. Hors de là, rien n'est
+ * masqué : le candidat reste à signer, et la fiche ne dit pas « tenu ».
+ */
+function tenusEffectifs(
+  duGroupe: ReadonlyMap<string, string> | undefined,
+  propre: Remboursement,
+  parCode: ReadonlyMap<string, { inactif: boolean }>,
+): Map<string, string> {
+  if (!duGroupe || propre.statut === 'remboursable' || propre.statut === 'hors_nomenclature') return new Map();
+  return new Map([...duGroupe].filter(([codeActe]) => parCode.get(codeActe)?.inactif === false));
 }
 
 export type ChercherActeResultat =
@@ -271,13 +287,12 @@ export async function lireCorrespondancesAnalyte(
   // Un candidat dont le couple a déjà une ligne (signée ou proposition) n'est
   // pas reproposé : la ligne existante porte seule son geste. Un analyte
   // inactif n'en reçoit aucun : sa signature serait refusée (`analyte_inactif`).
-  // Un acte que l'analyte tient de son groupe signé ne l'est pas non plus.
+  // Un acte que l'analyte tient VRAIMENT de son groupe signé ne l'est pas non
+  // plus (`tenusEffectifs`, la règle de l'héritage).
   const dejaEnBase = new Set(analyte.correspondancesNabm.map(c => c.codeActe));
-  const duGroupe = tenus.get(analyte.code) ?? new Map<string, string>();
   const nonEnBase =
     analyte.actif && liste && 'candidats' in liste ? liste.candidats.filter(c => !dejaEnBase.has(c.codeActe)) : [];
-  const aProposer = nonEnBase.filter(c => !duGroupe.has(c.codeActe));
-  const codes = [...dejaEnBase, ...aProposer.map(c => c.codeActe)];
+  const codes = [...dejaEnBase, ...nonEnBase.map(c => c.codeActe)];
   const actes =
     millesime && codes.length > 0
       ? await prisma.biologyNabmActe.findMany({
@@ -286,6 +301,15 @@ export async function lireCorrespondancesAnalyte(
         })
       : [];
   const parCode = new Map(actes.map(a => [a.codeActe, a]));
+  const duGroupe = tenusEffectifs(
+    tenus.get(analyte.code),
+    deriverRemboursement(analyte.correspondancesNabm as CorrespondanceNabm[], actes, {
+      constat: analyte.constatNabm ?? null,
+      millesimeCourant: millesime,
+    }),
+    parCode,
+  );
+  const aProposer = nonEnBase.filter(c => !duGroupe.has(c.codeActe));
 
   const candidats: CandidatsNabmAffiches | null = liste && {
     millesimeListe: MILLESIME_LISTE_NABM,
@@ -596,7 +620,7 @@ export async function listerCorrespondancesALot(): Promise<ListerLotNabmResultat
       select: {
         code: true,
         libelle: true,
-        correspondancesNabm: { select: { codeActe: true, verifiePar: true } },
+        correspondancesNabm: { select: { codeActe: true, nature: true, verifiePar: true } },
         constatNabm: { select: { id: true } },
       },
       orderBy: { libelle: 'asc' },
@@ -606,23 +630,37 @@ export async function listerCorrespondancesALot(): Promise<ListerLotNabmResultat
   ]);
   if (!millesime) return { millesime: null, lignes: [] };
 
-  const aProposer = analytes.flatMap(analyte => {
+  // Les candidats d'abord, sans masque : le masque « tenu du groupe » se juge
+  // sur l'état propre de l'analyte, qui demande ses actes signés.
+  const candidatsDe = analytes.flatMap(analyte => {
     const liste = candidatsNabmPour(analyte.code);
     if (analyte.constatNabm || !liste || !('candidats' in liste)) return [];
     const enBase = new Set(analyte.correspondancesNabm.map(c => c.codeActe));
-    const duGroupe = tenus.get(analyte.code);
-    const signe = analyte.correspondancesNabm.some(c => c.verifiePar !== null);
-    return liste.candidats
-      .filter(c => !enBase.has(c.codeActe) && !duGroupe?.has(c.codeActe))
-      .map(candidat => ({ analyte, candidat, situation: liste.situation, signe }));
+    const candidats = liste.candidats.filter(c => !enBase.has(c.codeActe));
+    return candidats.length > 0 ? [{ analyte, candidats, situation: liste.situation }] : [];
   });
-  if (aProposer.length === 0) return { millesime, lignes: [] };
+  if (candidatsDe.length === 0) return { millesime, lignes: [] };
 
+  const codes = new Set<string>();
+  for (const { analyte, candidats } of candidatsDe) {
+    for (const c of candidats) codes.add(c.codeActe);
+    for (const c of analyte.correspondancesNabm) if (c.verifiePar !== null) codes.add(c.codeActe);
+  }
   const actes = await prisma.biologyNabmActe.findMany({
-    where: { versionSource: millesime, codeActe: { in: [...new Set(aProposer.map(p => p.candidat.codeActe))] } },
+    where: { versionSource: millesime, codeActe: { in: [...codes] } },
     select: SELECT_ACTE,
   });
   const parCode = new Map(actes.map(a => [a.codeActe, a]));
+
+  const aProposer = candidatsDe.flatMap(({ analyte, candidats, situation }) => {
+    // Sans constat (écarté plus haut) : l'état propre ne dépend que des signatures.
+    const propre = deriverRemboursement(analyte.correspondancesNabm as CorrespondanceNabm[], actes);
+    const duGroupe = tenusEffectifs(tenus.get(analyte.code), propre, parCode);
+    const signe = analyte.correspondancesNabm.some(c => c.verifiePar !== null);
+    return candidats
+      .filter(c => !duGroupe.has(c.codeActe))
+      .map(candidat => ({ analyte, candidat, situation, signe }));
+  });
   return {
     millesime,
     lignes: aProposer.flatMap(({ analyte, candidat, situation, signe }) => {
