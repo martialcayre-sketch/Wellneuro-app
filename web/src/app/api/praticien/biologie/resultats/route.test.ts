@@ -10,6 +10,7 @@ const { getServerSession, prisma, lireJoursZeroSuccessifs } = vi.hoisted(() => (
     biologyFunctionalRange: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     annulationResultatBiologique: { findMany: vi.fn() },
+    statutPoseResultatBiologique: { findMany: vi.fn() },
     $transaction: vi.fn(),
     $executeRaw: vi.fn(),
   },
@@ -97,6 +98,8 @@ beforeEach(() => {
   prisma.resultatBiologique.create.mockResolvedValue(LIGNE_CONSIGNEE);
   // Par défaut AUCUNE annulation ([[D-294]]) — l'état de la production.
   prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
+  // Par défaut AUCUN statut posé ([[D-322]]).
+  prisma.statutPoseResultatBiologique.findMany.mockResolvedValue([]);
   // La transaction de la correction rejoue ses lectures sur le même client.
   prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
   prisma.$executeRaw.mockResolvedValue(1);
@@ -163,6 +166,8 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
         faitsLaboratoire: null,
         commentaireLaboratoire: null,
         annulation: null,
+        // Aucun acte : « sans statut posé », jamais un statut par défaut.
+        statutPose: { actif: null, historique: [] },
       },
     ]);
   });
@@ -893,6 +898,58 @@ describe('GET — un fil annulé reste sur la fiche, marqué (D-294 §6)', () =>
       acte: 'annulation',
       revocations: { none: {} },
     });
+  });
+});
+
+// LE STATUT POSÉ SUR LA LIGNE EXACTE ([[D-322]], F58).
+describe('GET — le statut posé, sur la ligne exacte, avec son historique (D-322)', () => {
+  const acte = (id: string, idResultat: string, a: 'pose' | 'retrait', statut: string | null, iso: string) => ({
+    id,
+    idResultat,
+    acte: a,
+    statut,
+    praticienEmail: PRATICIEN,
+    acteLe: new Date(iso),
+  });
+
+  it('le dernier acte fait foi ; la correction apparaît SANS statut, l’ancien reste à l’historique (§2, §3)', async () => {
+    // res1 corrigée par res2 ; sur res1 : pose « à suivre », puis « donnée à vérifier ».
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE, LIGNE_CORRECTION]);
+    prisma.statutPoseResultatBiologique.findMany.mockResolvedValue([
+      acte('st1', 'res1', 'pose', 'a_suivre', '2026-09-03T10:00:00.000Z'),
+      acte('st2', 'res1', 'pose', 'donnee_a_verifier', '2026-09-03T11:00:00.000Z'),
+    ]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    const parId = new Map(payload.resultats.map((r: { id: string }) => [r.id, r]));
+    expect(parId.get('res1')).toMatchObject({
+      statutPose: {
+        actif: { statut: 'donnee_a_verifier', par: PRATICIEN, le: '2026-09-03T11:00:00.000Z' },
+        historique: [
+          { acte: 'pose', statut: 'a_suivre', par: PRATICIEN, le: '2026-09-03T10:00:00.000Z' },
+          { acte: 'pose', statut: 'donnee_a_verifier', par: PRATICIEN, le: '2026-09-03T11:00:00.000Z' },
+        ],
+      },
+    });
+    // Rien n'est hérité par la correction.
+    expect(parId.get('res2')).toMatchObject({ statutPose: { actif: null, historique: [] } });
+  });
+
+  it('un retrait ramène à « sans statut posé », et reste à l’historique', async () => {
+    prisma.resultatBiologique.findMany.mockResolvedValue([LIGNE_CONSIGNEE]);
+    prisma.statutPoseResultatBiologique.findMany.mockResolvedValue([
+      acte('st1', 'res1', 'pose', 'a_suivre', '2026-09-03T10:00:00.000Z'),
+      acte('st2', 'res1', 'retrait', null, '2026-09-03T11:00:00.000Z'),
+    ]);
+    const payload = await (await GET(getRequest('PAT1'))).json();
+    expect(payload.resultats[0].statutPose.actif).toBeNull();
+    expect(payload.resultats[0].statutPose.historique).toHaveLength(2);
+  });
+
+  it('les actes sont lus pour CE dossier, dans l’ordre posé par la base', async () => {
+    await GET(getRequest('PAT1'));
+    const appel = prisma.statutPoseResultatBiologique.findMany.mock.calls[0][0];
+    expect(appel.where).toEqual({ idPatient: 'PAT1' });
+    expect(appel.orderBy).toEqual({ ordre: 'asc' });
   });
 });
 

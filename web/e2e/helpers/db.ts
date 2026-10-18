@@ -1123,11 +1123,18 @@ export async function nettoyerProtocoleEtArbitrages(
  * `saisi_le` est posé par la base (c'est ce qui rend une mesure
  * inantidatable) et la table est append-only. Sans ramassage, la garde
  * anti-doublon du run suivant buterait sur une mesure qu'il n'a pas posée.
+ *
+ * Les statuts posés sur ces mesures partent AVANT elles ([[D-322]], F58) :
+ * leur clé vers le résultat est en RESTRICT, et un statut posé par un E2E
+ * ferait échouer le ramassage entier.
  */
 export async function nettoyerResultatsBiologiques(
   idPatient: string,
   depuis: Date,
 ): Promise<void> {
+  await prisma.statutPoseResultatBiologique.deleteMany({
+    where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
+  });
   await prisma.resultatBiologique.deleteMany({
     where: { idPatient, saisiLe: { gte: depuis } },
   });
