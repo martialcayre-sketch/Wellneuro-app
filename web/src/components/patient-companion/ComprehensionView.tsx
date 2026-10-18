@@ -1,5 +1,7 @@
 'use client';
 
+import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
+import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { useCallback, useEffect, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
@@ -130,6 +132,11 @@ export function ComprehensionView() {
 
   return (
     <div className="space-y-4">
+      {/* LA LECTURE NE SE DATE QUE SUR UNE SYNTHÈSE AFFICHÉE ([[D-297]]) :
+          l'avis en tête et la consignation n'existent que si une synthèse est
+          servie et rendue — ni en chargement, ni en erreur, ni sans synthèse. */}
+      {synthese && <AvisLectureDatee />}
+      {synthese && <ConsignerLecturePortail espece="synthese" />}
       <PatientCard className="space-y-5">
         <PatientPageHeader
           title="Ce que votre praticien a compris de vous"

@@ -1,12 +1,15 @@
-// Textes de « Mes échanges » ([[D-293]]). Les cinq blocs sont ceux validés tels
+// Textes de « Mes échanges » ([[D-293]]). Les blocs sont ceux validés tels
 // quels par le responsable le 2026-10-14 :
 // `docs/claude/propositions/2026-10-14-u-patient-hub/README.md`. Ils ne changent
 // plus sans nouvelle validation.
 //
-// LE BLOC « VOTRE LECTURE EST DATÉE » N'EST PAS ICI, ET C'EST VOULU. Il est
-// remplacé par le texte de [[D-297]] §4 et ne se sert qu'avec le code de ai :
-// aucune date ne s'écrit depuis une page qui ne sert pas cette phrase, et « Mes
-// échanges » ne s'ouvre pas avant ai ([[D-293]] §4).
+// LE BLOC « VOTRE LECTURE EST DATÉE » est celui de [[D-297]] §4, qui remplace
+// la phrase validée par [[D-293]] §4 (elle ne datait que l'ouverture depuis
+// « Mes échanges »). Il est lu dans `lib/portail/lectureDatee.ts`, la source
+// unique servie aussi en tête de chaque page de document remis : le texte ne
+// se recopie pas. Il garde la troisième place de la proposition validée.
+
+import { TEXTE_LECTURE_DATEE, TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 export const TITRE_MES_ECHANGES = 'Mes échanges';
 
@@ -24,6 +27,7 @@ export const BLOCS_MES_ECHANGES: readonly { titre: string; texte: string }[] = O
     texte:
       'Vous ne pouvez pas écrire ici. Rien n’y est nouveau : ce sont les éléments déjà présents dans votre espace, rassemblés par date.',
   },
+  { titre: TITRE_LECTURE_DATEE, texte: TEXTE_LECTURE_DATEE },
   {
     titre: 'Qui y a accès',
     texte:

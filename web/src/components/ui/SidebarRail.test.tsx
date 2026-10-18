@@ -112,6 +112,15 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     expect(within(container).getAllByRole('link').map(l => l.textContent?.trim())).toEqual(ORDRE);
   });
 
+  it('un libellé long passe à la ligne au lieu d’être coupé (« Compléments aliment… », H43)', () => {
+    const { container } = rendreSur('/dashboard');
+    const libelle = within(container).getByText('Compléments alimentaires');
+
+    // jsdom ne mesure rien : on épingle la règle de rendu, pas la largeur.
+    expect(libelle.className).not.toMatch(/\btruncate\b/);
+    expect(libelle.className).toMatch(/\bbreak-words\b/);
+  });
+
   it('Documents, Synthèse IA et Biologie fonctionnelle ont quitté le menu', () => {
     const { container } = rendreSur('/dashboard');
     const ui = within(container);
