@@ -54,7 +54,15 @@ fermé. Conduire la file C en autonomie, sur délégation du responsable du
   Écarté : traces de sécurité sur 401/403, parce que
   `authentifierPatientPortail` est partagé avec les routes TRUST, qui n'en
   posent pas.
-- Voir la PR pour T1 complet, T3 (périmètre portail) et le CI.
+- Premier T3 rouge sur trois gardes : la frontière BioFlow (deux gardes) et le
+  masquage des chemins. Les trois sont corrigées : entrée publiée, listes
+  fermées, gabarit `/portail/:idPatient/echanges`.
+- T1 complet vert. T3 complet vert en 6 min. Vitest : 13 508 verts, 4 sautés.
+  E2E : 276 verts. Aucune dérive schéma ↔ migrations.
+- Un premier banc du composant bouclait (mock de `useRouter` instable, OOM du
+  worker). Le mock est stabilisé.
+- Après T3, `origin/main` eee1cdf3 (#1543, encart du Fil) a été fusionné sans
+  conflit, sans fichier commun avec le lot. T1 rapide rejoué : vert.
 
 ## Problèmes ouverts
 
