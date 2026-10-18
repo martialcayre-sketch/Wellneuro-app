@@ -1470,6 +1470,18 @@ jobs:
           WN_BIO_PORTAIL_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-plafond-transmission-deux-depots.test.ts
 
+      # La naissance d'un lien magique contre la fermeture du dossier (t16,
+      # écart résiduel n° 3 de D-126) : le VRAI écrivain (`emettreLienSurDemande`)
+      # contre PostgreSQL — une désactivation commise pendant l'attente du
+      # verrou consultatif, puis en cours sur la ligne du dossier : refus, aucun
+      # lien ; une révocation annulée : le lien naît.
+      - name: Magic link birth race bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_PORTAIL_LIEN_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-naissance-lien-deux-sessions.test.ts
+
       # La file durable des lectures (D-282, G3 lot 3) : le VRAI code de la file
       # contre PostgreSQL — deux demandes, deux réclamations (courses FORCÉES
       # par le verrou du compte rendu tenu par une troisième session), la

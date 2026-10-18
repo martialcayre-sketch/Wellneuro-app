@@ -10612,3 +10612,13 @@ qualité inchangés (item de l'indice).
 
 **Ouvert.** Texte des deux marques choisi par l'assistant (D-308 ne le fixe pas) ; révocation d'une annulation : le dernier statut posé redevient actif (à confirmer).
 
+
+## 2026-10-18 — t16 : la naissance d'un lien magique se sérialise contre la fermeture du dossier
+
+**Fait.** Transaction de la demande sortie dans `lib/portail/emissionSurDemande.ts` ; l'éligibilité y est relue sous `FOR SHARE` après le verrou consultatif. Banc à deux sessions (vrai écrivain, PostgreSQL) : désactivation commise pendant l'attente du verrou, désactivation en cours, révocation annulée ; il rougit sans la relecture (mutation constatée). Câblé en CI et en T3.
+
+**Écarté.** Faire prendre le verrou consultatif aux deux gestes praticien (trois écrivains à toucher au lieu d'un, ordre des verrous à refaire).
+
+**Prochaine action.** `wn-reviewer`, T3, PR ; merge après #1556 et #1557.
+
+**Ouvert.** t08 (plafond des écritures, décision à écrire) ; t09 (fait nouveau à trancher) ; liste J1-base.
