@@ -12,6 +12,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
       create: vi.fn(),
     },
     correspondancePatient: { findMany: vi.fn() },
+    documentMedecinImprime: { findMany: vi.fn() },
     $transaction: vi.fn(),
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
@@ -124,6 +125,7 @@ describe('/api/praticien/correspondance-medecin', () => {
     ]);
     prisma.correspondanceMedecin.findMany.mockResolvedValue([]);
     prisma.correspondancePatient.findMany.mockResolvedValue([]);
+    prisma.documentMedecinImprime.findMany.mockResolvedValue([]);
     prisma.syntheseIA.findUnique.mockResolvedValue(null);
     // LA RELECTURE DU CONSENTEMENT VIT DANS UNE TRANSACTION. Le mock la
     // traverse en passant les mêmes doublures : sans cela, chaque cas
@@ -384,6 +386,21 @@ describe('/api/praticien/correspondance-medecin', () => {
     ]);
     expect(JSON.stringify(json.correspondancesPatient)).not.toContain('@');
     expect(JSON.stringify(json.correspondancesPatient)).not.toContain('texte');
+  });
+
+  // D-307 §2 (F38) : chaque impression confirmée du document pour le médecin
+  // est une ligne datée du Fil — sans le HTML, que le Fil ne recopie pas.
+  it('expose les impressions du document pour le médecin, datées, sans le document', async () => {
+    prisma.documentMedecinImprime.findMany.mockResolvedValue([
+      { id: 'IMP_2', idSynthese: 'SYN_1', imprimeLe: new Date('2026-10-18T15:00:00.000Z') },
+    ]);
+    const json = await (await GET(getRequest())).json();
+    expect(json.documentsMedecinImprimes).toEqual([
+      { id: 'IMP_2', idSynthese: 'SYN_1', imprimeLe: '2026-10-18T15:00:00.000Z' },
+    ]);
+    const requeteLue = prisma.documentMedecinImprime.findMany.mock.calls[0][0];
+    expect(requeteLue.select).toEqual({ id: true, idSynthese: true, imprimeLe: true });
+    expect(requeteLue.orderBy).toEqual({ ordre: 'desc' });
   });
 
   it('une lettre dont l’ancre concorde avec la table vivante est dite concordante', async () => {

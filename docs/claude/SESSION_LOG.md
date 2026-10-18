@@ -10709,3 +10709,20 @@ qualité inchangés (item de l'indice).
 **Prochaine action.** Constater un premier dossier servi par « Mes échanges » et le premier jour `lu_le`, par conteneur.
 
 **Ouvert.** La ligne « rendez-vous de suivi » reste fermée environ 24 h entre deux points (routée en H61, fenêtres inchangées).
+
+## 2026-10-18 — F38 : code du document pour le médecin
+
+**Fait.** La migration #1560 est mergée, puis appliquée (run release-db 39144243510, approuvé par le responsable). Constat par conteneur : 121 migrations, déploiement en tête sur la tête de main. Le code de la PR 2 :
+- impression confirmée, recomposée au serveur, instantané figé, partage relu sous verrou ;
+- ligne au Fil ;
+- portail « Pour votre médecin » derrière un drapeau éteint, chaque téléchargement journalisé ;
+- une seule composition pour l'aperçu et l'impression ;
+- une garde des écrivains.
+
+Arbitrages : le retrait du partage retire le document du portail ; l'impression tracée est servie dès le déploiement.
+
+**Écarté.** Une espèce de lecture au fil du jour : elle demandait une nouvelle migration du CHECK, et le journal des téléchargements date déjà la remise.
+
+**Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
+
+**Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?

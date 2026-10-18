@@ -1323,6 +1323,23 @@ direct vers un tiers est un déclencheur de [[D-286]] §2.
 **§5 — Exécution.** J2-med : rang 1 si la trace tient dans le Fil existant,
 sinon rang 4 avec sa migration.
 
+**Amendement (2026-10-18, F38).** Arbitrages du responsable, sur questions à
+options :
+- la trace est une table neuve : l'instantané FIGÉ de chaque impression
+  confirmée (`documents_medecin_imprimes`) ;
+- chaque téléchargement est une ligne datée (`telechargements_documents_medecin`) ;
+- le patient reçoit la DERNIÈRE impression ;
+- conservation : la vie du dossier ;
+- l'impression est refusée si le partage avec le médecin traitant est refusé,
+  retiré ou jamais exprimé (règle de la correspondance médecin) ;
+- **§3 précisé** : après un refus, un retrait ou un silence, le portail ne
+  propose plus le document, et un accord redonné le rend. Cette exception à la
+  règle « un document reçu par le patient n'est pas gardé par ce choix »
+  (`lib/trust/consentementPartage.ts`) a été maintenue en connaissance de
+  cause : ce document n'existe que pour être remis à un médecin ;
+- l'impression tracée est servie dès le déploiement ; le portail est derrière
+  `WN_DOCUMENT_MEDECIN_PATIENT`.
+
 ### D-306 — Règle de dépendance entre domaines (D2) ; un module publié a une entrée publiée, ses tables, ses drapeaux et un lecteur ; BioFlow d'abord, sous un banc à liste fermée (lettre j)
 
 - Date : 2026-10-15

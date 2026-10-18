@@ -31,6 +31,15 @@
 // lui refuser ses propres données au nom de son propre choix. Écrit ici parce
 // que c'était tacite, et qu'un lecteur pressé aurait pu « compléter » la garde.
 //
+// UNE EXCEPTION, ARBITRÉE : « Pour votre médecin » ([[D-307]] §3 amendé, F38,
+// arbitrage du responsable du 2026-10-18, maintenu après lecture du
+// paragraphe ci-dessus). Le patient le reçoit, mais ce document n'existe QUE
+// pour être remis à un médecin : sa finalité est celle que le choix porte.
+// Refus, retrait et silence ferment donc son téléchargement au portail comme
+// son impression (`lib/documents/documentMedecinImprime.ts`) ; un accord
+// redonné le rend. La synthèse reste accessible au patient par le booklet, que
+// cette garde ne touche toujours pas.
+//
 // CE QUE LA GARDE NE COUVRE PAS, ET C'EST DÉLIBÉRÉ : la lettre d'adressage sur
 // signal d'alerte (`/api/praticien/adressage/courrier`). Fermer là serait fermer
 // au moment précis où la décision clinique est déjà suspendue, et sur les

@@ -17,6 +17,9 @@ const ROUTES_QUI_DOIVENT_VERROUILLER = [
   'src/app/api/portail/trust/choix/route.ts',
   'src/app/api/praticien/biologie/proposition/courrier/route.ts',
   'src/app/api/praticien/correspondance-medecin/route.ts',
+  // Le document pour le médecin ([[D-307]], F38) : l'impression et le
+  // téléchargement relisent le partage sous ce verrou (revue wn-reviewer).
+  'src/lib/documents/documentMedecinImprime.ts',
 ];
 
 describe('le verrou de dossier est pris par TOUS les écrivains du périmètre', () => {

@@ -26,6 +26,7 @@ import { PatientCompanionHome } from '@/components/patient-companion/PatientComp
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
+import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVotreMedecin';
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
 import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
@@ -446,6 +447,9 @@ export default function QuestionnairesHubPage() {
         {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
             son propre drapeau. */}
         <LienCourrierMedecin token={token} />
+        {/* « Pour votre médecin » ([[D-307]] §3) : même règle, sous son propre
+            drapeau ; le partage avec le médecin traitant doit être accordé. */}
+        <LienPourVotreMedecin token={token} />
         {/* La transmission d'un compte rendu d'analyses ([[D-269]]) : sous son
             propre drapeau, le lien n'existe que si la route répond. */}
         <LienTransmissionCompteRendu token={token} />
