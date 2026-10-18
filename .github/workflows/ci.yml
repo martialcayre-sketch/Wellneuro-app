@@ -719,6 +719,13 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/nabm_journal_constats_v1_negatif.sql
 
+      # Composition signée des analyses groupées et des calculés (F80, D-323 §1) :
+      # en ajout seul, éléments écrits avec la signature, une active par analyte.
+      - name: F80 analyte compositions negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/compositions_analytes_v1_negatif.sql
+
       # Arbitrage biologique sans valeurs (LOT-06, D-059 §4) : les trois CHECK
       # de `arbitrages_biologiques` doivent MORDRE (verdict borné, note
       # obligatoire non vide sur « infirme », note ≤ 2000), et la table ne doit

@@ -74,11 +74,40 @@ BEGIN
   -- « régression ». Les analytes, eux, sont filtrés sur `saisie_praticien`.
   -- 47 au niveau 1 (D-068), + 2 le 2026-09-24 (D-245 §5 : index oméga 3 et
   -- rapport AA/EPA, migration 20260924090000), + 36 le 2026-10-03 (D-261 :
-  -- analyses d'un compte rendu courant, migration 20261003150000).
+  -- analyses d'un compte rendu courant, migration 20261003150000), + 7 le
+  -- 2026-10-18 (D-323 §6 : analyses groupées, migration 20261018100100).
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
-    IF nb <> 85 THEN
-      RAISE EXCEPTION 'D-068/D-245/D-261: % analyte(s) saisie_praticien au lieu des 85 du catalogue', nb;
+    IF nb <> 92 THEN
+      RAISE EXCEPTION 'D-068/D-245/D-261/D-323: % analyte(s) saisie_praticien au lieu des 92 du catalogue', nb;
+    END IF;
+
+    -- Les sept fiches de D-323 §6, LIGNE PAR LIGNE (aucun panel ne les cite),
+    -- et AUCUNE plage, aucune correspondance, aucune composition à leur entrée.
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE type_prelevement = 'sang' AND NOT validation_medicale_requise
+      AND source_provenance = 'saisie_praticien'
+      AND ((code, libelle, unite, niveau_completude) IN (
+        ('BIO_T4_LIBRE', 'Thyroxine libre (T4L)', 'pmol/L', 'partielle'),
+        ('BIO_T3_LIBRE', 'Triiodothyronine libre (T3L)', 'pmol/L', 'partielle'),
+        ('BIO_BICARBONATES', 'Bicarbonates (CO2 total)', 'mmol/L', 'partielle'),
+        ('BIO_PROTIDES', 'Protides totaux', 'g/L', 'partielle'),
+        ('BIO_BILIRUBINE', 'Bilirubine', 'µmol/L', 'partielle'),
+        ('BIO_PHOSPHATASES_ALCALINES', 'Phosphatases alcalines', 'UI/L', 'partielle'))
+      OR (code = 'BIO_IONOGRAMME_COMPLET' AND libelle = 'Ionogramme sanguin complet'
+          AND unite IS NULL AND niveau_completude = 'lacunaire'));
+    IF nb <> 7 THEN
+      RAISE EXCEPTION 'D-323: % fiche(s) des analyses groupées conformes au lieu de 7 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
+    END IF;
+    SELECT count(*) INTO nb FROM (
+      SELECT analyte_code FROM biology_reference_ranges
+      UNION ALL SELECT analyte_code FROM biology_functional_ranges
+      UNION ALL SELECT analyte_code FROM biology_analyte_links
+    ) p WHERE p.analyte_code IN (
+      'BIO_T4_LIBRE', 'BIO_T3_LIBRE', 'BIO_IONOGRAMME_COMPLET', 'BIO_BICARBONATES',
+      'BIO_PROTIDES', 'BIO_BILIRUBINE', 'BIO_PHOSPHATASES_ALCALINES');
+    IF nb > 0 THEN
+      RAISE EXCEPTION 'D-323: % plage(s) ou lien(s) clinique(s) sur une fiche des analyses groupées — hors périmètre', nb;
     END IF;
 
     -- Les 36 analytes de D-261, LIGNE PAR LIGNE, pour la même raison que les
