@@ -627,6 +627,20 @@ describe('etiqueterClaimsLot — un geste, un acte « étiquetage » par claim, 
     ]);
   });
 
+  it('des besoins dans un autre ordre sont les mêmes clés : ni réécrits ni journalisés', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { ...TROUVES[0], besoins: [2], rubrique: 'limites' },
+      { ...TROUVES[1], besoins: [2, 4], rubrique: 'options' },
+    ]);
+    const lignes = [LIGNES[0], { ...LIGNES[1], besoins: [4, 2, 4] }];
+    expect(await etiqueterClaimsLot({ lignes, validateur: 'praticien@wellneuro.fr' })).toEqual({
+      ok: true,
+      n: 0,
+      inchanges: 2,
+    });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
   it('une liste entièrement déjà étiquetée n’écrit rien et n’ajoute aucun acte', async () => {
     prisma.$queryRaw.mockResolvedValueOnce([
       { ...TROUVES[0], besoins: [2], rubrique: 'limites' },

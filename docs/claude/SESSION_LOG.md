@@ -10792,3 +10792,21 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR après #1569 ; puis questions au responsable (geste sans porteuse, t07b, t11, t12, t14, t15).
 
 **Ouvert.** Geste de lettre sans porteuse.
+
+## 2026-10-19 — Étiquetage vit. D exécuté (D-325 §5) et banc du lot
+
+**Fait.**
+- Par délégation, depuis la session du responsable, le dossier vitamine D est
+  étiqueté en lot (194 claims) et ses 14 rejets sont appliqués : remise en
+  attente puis rejet motivé. Le constat par conteneur est consigné au
+  dossier privé.
+- Un banc PostgreSQL de l'écrivain en lot est branché au CI et à T3. Il a
+  révélé que des besoins non triés se réécrivaient ; c'est corrigé.
+
+**Écarté.** Les POST par script depuis la page : le mode auto les refuse, on
+passe par les boutons de l'atelier.
+
+**Prochaine action.** PR du banc ; ligne « Nature » de D-325 (texte du
+responsable) ; dossier zinc.
+
+**Ouvert.** Alignement de 0239-014 et 0350-024 au dossier magnésium.
