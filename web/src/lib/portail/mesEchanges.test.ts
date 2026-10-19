@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { entreesMesEchanges, regrouperParJour, type SourcesMesEchanges } from './mesEchanges';
+import {
+  entreesMesEchanges,
+  jourOuverture,
+  libelleAfficheDepuis,
+  regrouperParJour,
+  type SourcesMesEchanges,
+} from './mesEchanges';
 
 // « Mes échanges » ([[D-293]]) : une liste datée, le plus récent en haut, où
 // chaque ligne dit qui a agi et ouvre la page qui porte l'élément.
@@ -109,5 +115,50 @@ describe('regrouperParJour', () => {
       ['2026-10-18', '18 octobre 2026', 2],
       ['2026-10-12', '12 octobre 2026', 1],
     ]);
+  });
+});
+
+describe('ouverture d’une surface fermée (t14)', () => {
+  const fiches = [
+    // 23 h 30 UTC le 1er = 1 h 30 à Paris le 2 : le jour même, pas avant.
+    { idRemise: 'rem_meme_jour', libelle: 'A', remiseLe: new Date('2026-10-01T23:30:00Z') },
+    { idRemise: 'rem_avant', libelle: 'B', remiseLe: new Date('2026-09-20T08:00:00Z') },
+    { idRemise: 'rem_apres', libelle: 'C', remiseLe: new Date('2026-10-05T08:00:00Z') },
+  ];
+
+  it('seul ce qui est daté d’avant le jour d’ouverture, en heure de Paris, porte la mention ; il reste à son jour', () => {
+    const entrees = entreesMesEchanges(sources({ fiches }), { fiche_assiette: '2026-10-02' });
+    const parCle = Object.fromEntries(entrees.map(e => [e.cle, e]));
+    expect(parCle['fiche_assiette:rem_avant'].afficheDepuis).toBe('2026-10-02');
+    expect(parCle['fiche_assiette:rem_avant'].date).toBe('2026-09-20T08:00:00.000Z');
+    expect(parCle['fiche_assiette:rem_meme_jour'].afficheDepuis).toBeUndefined();
+    expect(parCle['fiche_assiette:rem_apres'].afficheDepuis).toBeUndefined();
+  });
+
+  it('l’ouverture d’une espèce ne touche pas les autres', () => {
+    const entrees = entreesMesEchanges(
+      sources({ bilan: { id: 'env_1', envoyeLe: new Date('2026-09-01T08:00:00Z') } }),
+      { fiche_assiette: '2026-10-02' },
+    );
+    expect(entrees[0].afficheDepuis).toBeUndefined();
+  });
+
+  it('sans réglage, aucune mention', () => {
+    expect(entreesMesEchanges(sources({ fiches })).every(e => e.afficheDepuis === undefined)).toBe(true);
+  });
+
+  it.each([undefined, '', '2026-10-2', '2026-02-30', '02/10/2026', '2026-10-02T00:00:00Z', 'true'])(
+    'réglage « %s » illisible : aucun jour inventé',
+    valeur => expect(jourOuverture(valeur)).toBeNull(),
+  );
+
+  it('réglage lisible : le jour tel quel', () => {
+    expect(jourOuverture('2026-10-02')).toBe('2026-10-02');
+  });
+
+  it('« aujourd’hui » le jour même, en heure de Paris ; la date ensuite', () => {
+    // 22 h 30 UTC le 1er = 0 h 30 à Paris le 2.
+    expect(libelleAfficheDepuis('2026-10-02', new Date('2026-10-01T22:30:00Z'))).toBe('Affiché à partir d’aujourd’hui');
+    expect(libelleAfficheDepuis('2026-10-02', new Date('2026-10-03T09:00:00Z'))).toBe('Affiché à partir du 2 octobre 2026');
   });
 });

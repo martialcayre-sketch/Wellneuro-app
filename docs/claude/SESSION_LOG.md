@@ -10886,3 +10886,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Aucune sur F38.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t14 : jour d'ouverture d'une surface au journal patient
+
+**Fait.** « Mes échanges » lit le jour d'ouverture des surfaces remises sous leur propre drapeau (`<DRAPEAU>_OUVERT_LE`, fiches et courrier) : une remise antérieure garde son jour et dit « Affiché à partir d'aujourd'hui », puis « du … ». Procédure d'allumage complétée. Sans migration.
+
+**Écarté.** Poser rétroactivement le jour des surfaces déjà ouvertes : geste de production non demandé.
+
+**Prochaine action.** Merge, déploiement constaté, t14 → fait.
+
+**Ouvert.** Solder la ligne t14 du plan après #1580 et #1581.
