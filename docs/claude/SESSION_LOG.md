@@ -10852,6 +10852,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t11 PR 2 : course perdue en 409, refus « désactivé »
+
+**Fait.** Course perdue contre l'index (PR 1) rendue en 409 sur une révision, 500 sur une racine ; dossier désactivé servi par son propre refus sur les six routes de l'objectif, chacune testée.
+
+**Écarté.** Index partiel ou unicité de racine par dossier : deux objectifs distincts restent légitimes.
+
+**Prochaine action.** PR une fois l'index constaté en production ; puis t14, t15, NIR.
+
+**Ouvert.** 404/403 gardé par arbitrage.
 ## 2026-10-19 — t11 PR 1 : migration de l'index de révision
 
 **Fait.** Branche migration seule : index unique sur la version révisée, schéma, contrat SQL, étape CI. T3 vert sur l'ensemble ; revue indépendante go.
@@ -10888,3 +10897,32 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t14 : jour d'ouverture d'une surface au journal patient
+
+**Fait.** « Mes échanges » lit le jour d'ouverture des surfaces remises sous leur propre drapeau (`<DRAPEAU>_OUVERT_LE`, fiches et courrier) : une remise antérieure garde son jour et dit « Affiché à partir d'aujourd'hui », puis « du … ». Procédure d'allumage complétée. Sans migration.
+
+**Écarté.** Poser rétroactivement le jour des surfaces déjà ouvertes : geste de production non demandé.
+
+**Prochaine action.** Merge, déploiement constaté, t14 → fait.
+
+**Ouvert.** Solder la ligne t14 du plan après #1580 et #1581.
+## 2026-10-19 — t07b : course du « Retour » dans l'E2E de l'aperçu
+
+**Fait.** CI de main rouge sur d867b290 : l'E2E de l'aperçu cliquait le « Retour » de l'accueil avant le changement de vue. Attente du titre du détail ajoutée.
+
+**Écarté.** Relancer le CI : un rouge se corrige, il ne se relance pas.
+
+**Prochaine action.** PR, merge, CI de main vert, déploiement constaté.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
+
+**Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.
+
+**Écarté.** Committer le fichier tel que `/permissions` l'avait réécrit : il déplaçait trois clés sans rien changer.
+
+**Prochaine action.** Le dossier zinc.
+
+**Ouvert.** Aucun.

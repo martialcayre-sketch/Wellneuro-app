@@ -6,7 +6,7 @@ import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
 import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import { dossierDansPerimetreProposition, isObjectifProposeEnabled } from '@/lib/patient/featureFlag';
 import { assemblerPropositions } from '@/lib/praticien/assemblageProposition';
 import {
@@ -631,7 +631,9 @@ export async function POST(req: Request): Promise<NextResponse<PropositionsApiRe
       select: { actif: true, suiviClotureLe: true },
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
-      return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      // Clos ou désactivé : chacun son refus (t11).
+      const refus = refusDossierFerme(patient);
+      return echec(refus.raison, refus.message, 409);
     }
 
     // `return await`, ET LE `await` N'EST PAS DÉCORATIF : `return promesse`

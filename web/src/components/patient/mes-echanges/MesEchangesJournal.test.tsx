@@ -78,6 +78,27 @@ describe('MesEchangesJournal', () => {
     expect(screen.getByText('12 octobre 2026')).toBeTruthy();
   });
 
+  it('une remise antérieure à l’ouverture de sa page le dit sous la ligne (t14)', async () => {
+    repondre(200, {
+      ok: true,
+      ouvert: true,
+      entrees: [
+        {
+          cle: 'fiche_assiette:rem_1',
+          sens: 'remis',
+          espece: 'fiche_assiette',
+          objet: 'Votre fiche — Petit-déjeuner',
+          date: '2026-09-20T08:00:00.000Z',
+          chemin: 'fiches/rem_1',
+          afficheDepuis: '2026-10-02',
+        },
+      ],
+    });
+    render(<MesEchangesJournal token="TOK" />);
+    await screen.findByText('Affiché à partir du 2 octobre 2026');
+    expect(screen.getByText('20 septembre 2026')).toBeTruthy();
+  });
+
   it('les blocs validés sont servis, dont celui de D-297 §4 et non l’ancienne phrase de D-293 §4', async () => {
     repondre(200, { ok: true, ouvert: true, entrees: [] });
     render(<MesEchangesJournal token="TOK" />);

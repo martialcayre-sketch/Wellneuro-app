@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PortailEchangesResponse } from '@/app/api/portail/echanges/route';
-import { LIBELLE_SENS, regrouperParJour, type EntreeEchange } from '@/lib/portail/mesEchanges';
+import { LIBELLE_SENS, libelleAfficheDepuis, regrouperParJour, type EntreeEchange } from '@/lib/portail/mesEchanges';
 import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
@@ -104,6 +104,12 @@ export function MesEchangesJournal({ token }: { token: string }) {
                         >
                           <span>
                             <span className="font-semibold">{LIBELLE_SENS[entree.sens]}</span> · {entree.objet}
+                            {/* Surface ouverte après la remise (t14) : le fait reste à son jour, la ligne dit depuis quand il se voit. */}
+                            {entree.afficheDepuis && (
+                              <span className="block text-sm text-muted-foreground">
+                                {libelleAfficheDepuis(entree.afficheDepuis, new Date())}
+                              </span>
+                            )}
                           </span>
                           <span aria-hidden="true" className="text-muted-foreground">
                             ›
