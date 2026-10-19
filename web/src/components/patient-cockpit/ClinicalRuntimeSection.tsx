@@ -689,7 +689,9 @@ export function ClinicalRuntimeSection({
       );
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
-      if (carteVersionsAttendue.current !== null && carteVersionsAttendue.current !== decisionCardId) return;
+      // Égalité stricte, `null` compris : une réponse arrivée après que la carte
+      // a cessé d'être prête ne rétablit pas ses versions (t15, revue).
+      if (carteVersionsAttendue.current !== decisionCardId) return;
       setVersions(payload.history);
       // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
       // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
