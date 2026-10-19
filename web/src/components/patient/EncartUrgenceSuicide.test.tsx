@@ -39,6 +39,18 @@ describe('EncartUrgenceSuicide ([[D-275]])', () => {
       ].map(t => t.replace(/\s+/g, ' ')),
     );
   });
+
+  it('au dépôt d’un document, « Vos documents sont transmis… » ([[D-293]] §3, texte validé le 2026-10-14)', () => {
+    render(<EncartUrgenceSuicide ecran="depot_documents" />);
+    const encart = screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' });
+    const paragraphes = [...encart.querySelectorAll('p')].map(p => p.textContent?.replace(/\s+/g, ' ').trim());
+    expect(paragraphes).toEqual(
+      [
+        ...TEXTE_VALIDE.slice(0, 2),
+        'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
+      ].map(t => t.replace(/\s+/g, ' ')),
+    );
+  });
 });
 
 function assignation(idQuestionnaire: string) {

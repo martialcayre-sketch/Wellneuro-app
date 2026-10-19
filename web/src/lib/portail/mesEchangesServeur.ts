@@ -4,8 +4,9 @@
 // LA RÈGLE DE VISIBILITÉ EST EMPRUNTÉE, JAMAIS RECOPIÉE — même principe que
 // `api/portail/lectures` : `whereEnvoiVisible` pour le bilan, `fichesALire` et
 // `lettreALire` pour les remises, `resolveProtocoleDiffuse` pour le protocole,
-// `listerTransmissions` pour les comptes rendus. Une surface fermée par son
-// propre drapeau ne produit AUCUNE ligne.
+// `listerTransmissions` pour les comptes rendus, `listerDepotsPatient` pour les
+// documents déposés. Une surface fermée par son propre drapeau ne produit AUCUNE
+// ligne.
 //
 // Sélections minimales : des identifiants, des dates, des titres de
 // questionnaire, des catégories et des statuts. Jamais une réponse, une valeur,
@@ -21,6 +22,8 @@ import { lettreALire } from '@/lib/correspondance/lettreServicePatient';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 // La biologie se lit par son entrée publiée ([[D-306]] §2).
 import { isBioPortailEnabled, listerTransmissions } from '@/lib/biology-library/publie';
+import { depotDocumentsOuvert } from '@/lib/collecte/drapeau';
+import { listerDepotsPatient } from '@/lib/collecte/documentsDeposesServeur';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import type { SourcesMesEchanges } from '@/lib/portail/mesEchanges';
 
@@ -65,7 +68,7 @@ async function signalements(idPatient: string): Promise<SourcesMesEchanges['sign
 }
 
 export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesEchanges> {
-  const [bilan, fiches, lettres, protocole, questionnaires, comptesRendus, signales] = await Promise.all([
+  const [bilan, fiches, lettres, protocole, questionnaires, comptesRendus, depots, signales] = await Promise.all([
     prisma.bookletEnvoi.findFirst({
       where: whereEnvoiVisible(idPatient),
       orderBy: [{ dateEnvoi: 'desc' }, { id: 'desc' }],
@@ -82,6 +85,7 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     resolveProtocoleDiffuse(idPatient),
     questionnairesTransmis(idPatient),
     isBioPortailEnabled() ? listerTransmissions(idPatient) : Promise.resolve([]),
+    depotDocumentsOuvert() ? listerDepotsPatient(idPatient) : Promise.resolve([]),
     signalements(idPatient),
   ]);
   return {
@@ -91,6 +95,7 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     protocole: protocole ? { approbationId: protocole.approbationId, approuveLe: protocole.approvedAt } : null,
     questionnaires,
     comptesRendus: comptesRendus.map(c => ({ deposeLe: new Date(c.deposeLe) })),
+    documentsDeposes: depots.map(d => ({ deposeLe: new Date(d.deposeLe) })),
     signalements: signales,
   };
 }

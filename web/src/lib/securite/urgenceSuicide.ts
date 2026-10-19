@@ -51,6 +51,8 @@ export const DELAI_ENCART_PAR_ECRAN = Object.freeze({
   questionnaire: ENCART_URGENCE.delai,
   mes_echanges:
     'Ce que vous transmettez est transmis à votre praticien, mais il ne le lit pas en temps réel : n’attendez pas sa réponse.',
+  depot_documents:
+    'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
 });
 export type EcranEncartUrgence = keyof typeof DELAI_ENCART_PAR_ECRAN;
 
