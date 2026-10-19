@@ -481,18 +481,47 @@ export async function PATCH(req: Request) {
       return withCorrelationHeader(NextResponse.json({ error: 'Action invalide.' }, { status: 400 }), requestContext);
     }
 
-    const record = await prisma.syntheseIA.update({
-      where: { idSynthese },
-      data: {
-        statut,
-        dateValidation,
-        notesPraticien,
-        ...(modele ? { modele } : {}),
-        ...(versionPrompt ? { versionPrompt } : {}),
-        ...(donneesEntree ? { donneesEntree } : {}),
-        ...(syntheseJson ? { syntheseJson } : {}),
-      },
-    });
+    const data = {
+      statut,
+      dateValidation,
+      notesPraticien,
+      ...(modele ? { modele } : {}),
+      ...(versionPrompt ? { versionPrompt } : {}),
+      ...(donneesEntree ? { donneesEntree } : {}),
+      ...(syntheseJson ? { syntheseJson } : {}),
+    };
+
+    // UNE SYNTHÈSE IMPRIMÉE POUR LE MÉDECIN NE SE VIDE NI NE SE REJETTE
+    // ([[D-307]], F38, arbitrage du responsable du 2026-10-19 — même règle que
+    // le booklet envoyé). Le document remis est une copie figée : défaire sa
+    // source en silence laisserait le patient porter au médecin un document
+    // que le dossier ne montre plus. Pour corriger, une nouvelle synthèse,
+    // imprimée, remplace l'ancienne pour le patient.
+    //
+    // SOUS LE VERROU DU DOSSIER que l'impression prend aussi
+    // (`documentMedecinImprime.ts`) : une impression concurrente passe avant
+    // ou après le contrôle, jamais entre le contrôle et l'écriture.
+    const figeeParImpression = action === 'effacer' || action === 'rejeter';
+    const record = figeeParImpression
+      ? await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${existing.idPatient} FOR UPDATE`;
+          const imprimee = await tx.documentMedecinImprime.findFirst({
+            where: { idSynthese },
+            select: { id: true },
+          });
+          if (imprimee) return null;
+          return tx.syntheseIA.update({ where: { idSynthese }, data });
+        })
+      : await prisma.syntheseIA.update({ where: { idSynthese }, data });
+    if (!record) {
+      return withCorrelationHeader(NextResponse.json(
+        {
+          error: `Impossible de ${action === 'effacer' ? 'vider' : 'rejeter'} une synthèse dont le document pour le médecin a été imprimé. Pour corriger, créez une nouvelle synthèse et imprimez-la : elle remplacera ce document pour le patient.`,
+          reason: 'synthese_imprimee_pour_medecin',
+        },
+        { status: 409 },
+      ), requestContext);
+    }
 
     if (action === 'effacer') {
       await prisma.auditSynthese.create({
