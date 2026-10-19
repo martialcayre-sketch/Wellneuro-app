@@ -1208,7 +1208,11 @@ export function FichePatientPanel({
       }
       if (id === 'actions') {
         if (etatRuntime.nombreVersions > 0) return 'fait';
-        return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+        if (!etatRuntime.episodeConfirme) return 'a_ouvrir';
+        // Avant la lecture des versions, « 0 version » n'est pas « aucune
+        // version » (t15, `DC-24`) : le rail ne dit « en attente » qu'une fois
+        // la lecture aboutie.
+        return etatRuntime.versionsLues ? 'en_attente' : 'inconnu';
       }
       if (id === 'suivi') {
         if (!etatRuntime.episodeConfirme) return 'a_ouvrir';

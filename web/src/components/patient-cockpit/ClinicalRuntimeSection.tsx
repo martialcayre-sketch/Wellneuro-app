@@ -156,6 +156,11 @@ export type EtatRuntimeClinique = {
   episodeConfirme: boolean;
   nombreVersions: number;
   /**
+   * Vrai une fois une lecture des versions ABOUTIE (t15) : avant, `0` version
+   * est un état inconnu, jamais « aucune version » (`DC-24`).
+   */
+  versionsLues: boolean;
+  /**
    * Au moins un point d'étape rendu par le patient sur le calendrier courant.
    * `null` tant que les check-ins ne sont pas lus, ou si leur lecture a échoué.
    */
@@ -344,7 +349,13 @@ export function ClinicalRuntimeSection({
   >('protocole');
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
-  const [versionsLues, setVersionsLues] = useState(false);
+  // LA LECTURE EST CELLE D'UNE CARTE (t15, revue) : un changement de carte
+  // remet le témoin à faux jusqu'à la lecture de la nouvelle — sans quoi le rail
+  // dirait « en attente » sur la foi de la carte précédente.
+  const [versionsLuesPour, setVersionsLuesPour] = useState<string | null>(null);
+  // La carte dont les versions sont attendues : une réponse arrivée pour une
+  // autre carte est écartée, elle ne décrit plus l'écran.
+  const carteVersionsAttendue = useRef<string | null>(null);
   /**
    * Le refus de registre en attente de confirmation ([[D-189]] §4), et son
    * jeton. UNE GARDE CONFIRMABLE SANS COMMANDE D'ÉCRAN EST UNE GARDE BLOQUANTE
@@ -678,6 +689,9 @@ export function ClinicalRuntimeSection({
       );
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
+      // Égalité stricte, `null` compris : une réponse arrivée après que la carte
+      // a cessé d'être prête ne rétablit pas ses versions (t15, revue).
+      if (carteVersionsAttendue.current !== decisionCardId) return;
       setVersions(payload.history);
       // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
       // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
@@ -686,7 +700,7 @@ export function ClinicalRuntimeSection({
       // La lecture a ABOUTI : les états vides des sous-vues Historique et
       // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
       // `[]` en vol ou après échec est un état INCONNU, pas un vide).
-      setVersionsLues(true);
+      setVersionsLuesPour(decisionCardId);
       setActiveVersionId(payload.active?.versionId ?? null);
       setContenuActif(payload.active?.contenu ?? null);
     } catch {
@@ -1236,7 +1250,19 @@ export function ClinicalRuntimeSection({
   // réel est prêt.
   const readyDecisionCardId =
     !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
+  const versionsLues = readyDecisionCardId !== null && versionsLuesPour === readyDecisionCardId;
   useEffect(() => {
+    // UNE CARTE NEUVE NE DOIT RIEN À LA PRÉCÉDENTE (t15, revue) : ses versions,
+    // sa version active et son témoin de lecture sont vidés au changement de
+    // carte, pour qu'une lecture échouée laisse un état INCONNU, et non les
+    // versions de l'autre carte (rail « fait », Historique, Diffusion).
+    if (carteVersionsAttendue.current !== readyDecisionCardId) {
+      setVersions([]);
+      setVersionsLuesPour(null);
+      setActiveVersionId(null);
+      setContenuActif(null);
+    }
+    carteVersionsAttendue.current = readyDecisionCardId;
     if (readyDecisionCardId) {
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
@@ -1468,6 +1494,7 @@ export function ClinicalRuntimeSection({
       erreur: error,
       episodeConfirme: readyDecisionCardId !== null || episodeConfirmeEnBase,
       nombreVersions,
+      versionsLues,
       suiviRenseigne,
       suiviOuvert,
       trajectoireErreur,
@@ -1486,6 +1513,7 @@ export function ClinicalRuntimeSection({
     readyDecisionCardId,
     episodeConfirmeEnBase,
     nombreVersions,
+    versionsLues,
     suiviRenseigne,
     suiviOuvert,
     trajectoireErreur,
@@ -2302,7 +2330,13 @@ export function ClinicalRuntimeSection({
             />
           </div>
         )}
+        {/* UN BROUILLON PAR CARTE (t15, revue) : une carte neuve dans le même
+            montage (confirmation d'un jalon) remonte le constructeur, qui se
+            recharge alors de SA version en vigueur — le brouillon d'une carte
+            ne s'enregistre jamais comme révision d'une autre. Sans carte, le
+            formulaire est fermé : aucune saisie ne se perd. */}
         <ProtocolMiniBuilder
+          key={decisionCard?.decisionCardId ?? 'sans-carte'}
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
           onSaveVersion={fixture ? undefined : saveVersion}
@@ -2318,6 +2352,9 @@ export function ClinicalRuntimeSection({
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
+          versionActive={fixture || !versionsLues || !contenuActif || !activeVersionId
+            ? null
+            : { versionId: activeVersionId, contenu: contenuActif }}
         />
       </div>
       {/* LE BLOC « CLÔTURE ET APERÇU PATIENT » N'EST PLUS MONTÉ SUR UN VRAI

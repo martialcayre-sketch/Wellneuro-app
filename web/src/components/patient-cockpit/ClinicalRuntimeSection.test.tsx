@@ -1595,6 +1595,68 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     });
   });
 
+  it('le constructeur se recharge depuis la version EN VIGUEUR lue par la route (t15)', async () => {
+    const carte = pretRejoue();
+    vi.stubGlobal('fetch', fetchParRoute({
+      cockpitGet: [rep(carte)],
+      trajectoire: rep(trajectoireAvecCycle(1)),
+      protocolesVersions: rep({
+        ok: true,
+        history: [],
+        active: {
+          versionId: 'version-active',
+          contenu: {
+            purpose: 'Raison de la version en vigueur',
+            followUpCriterion: 'Critère de la version en vigueur',
+            therapeuticLoad: { level: 'light', source: 'practitioner', justification: null },
+            actions: [{
+              actionId: 'action-2', type: 'hydration', title: 'Boire au réveil',
+              idealPlan: 'Idéal', minimalPlan: 'Minimal', rescuePlan: 'Secours', limitations: [],
+            }],
+          },
+        },
+      }),
+    }));
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Raison d’être') as HTMLTextAreaElement).value)
+        .toBe('Raison de la version en vigueur');
+    });
+    expect((screen.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Boire au réveil');
+  });
+
+  it('« versions lues » reste FAUX tant qu’aucune lecture des versions n’a abouti (t15)', async () => {
+    // Même rejeu : aucune carte servie, donc aucune lecture des versions.
+    // `nombreVersions === 0` n'y dit pas « aucune version » — le rail doit
+    // pouvoir rendre « inconnu » plutôt qu'« en attente » (`DC-24`).
+    const onEtatChange = vi.fn();
+    vi.stubGlobal('fetch', fetchParUrl({
+      trajectoire: trajectoireAvecCycle(1),
+      cockpitT0: proposalResponse,
+    }));
+
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onEtatChange={onEtatChange}
+      />,
+    );
+
+    await waitFor(() => {
+      const dernier = onEtatChange.mock.calls.at(-1)?.[0] as {
+        chargement: boolean; nombreVersions: number; versionsLues: boolean;
+      };
+      expect(dernier?.chargement).toBe(false);
+      expect(dernier?.nombreVersions).toBe(0);
+      expect(dernier?.versionsLues).toBe(false);
+    });
+  });
+
   const PROPOSITION_J21: CockpitRuntimeApiResponse = {
     status: 'proposal_required',
     proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
