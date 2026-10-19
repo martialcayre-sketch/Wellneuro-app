@@ -9,6 +9,6 @@
 - Au cockpit, l'indice global indique « Calculé sur n besoins mesurés sur 12 ».
   Au portail, une phrase sans chiffre signale que certains besoins ne sont
   pas encore mesurés.
-- Version du score : v17 (forme longue de l'enquête alimentaire), v16 (forme
-  courte). Aucun seuil, poids ni source ne change ; aucune passation actuelle
-  en production n'est concernée.
+- Version du score inchangée : aucune passation actuelle en production n'est
+  concernée, et une nouvelle version aurait interrompu les protocoles
+  diffusés. Aucun seuil, poids ni source ne change.

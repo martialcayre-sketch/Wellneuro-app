@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (score v16/v17 ; audit de D-312, section 10)
+### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (version du score inchangée ; audit de D-312, section 10)
 
 - Date : 2026-10-18
 - Statut : accepté. Demande du responsable du 2026-10-18 (« Écrit le lot de
@@ -15,12 +15,12 @@
 - Source : audit des 12 besoins de [[D-312]], section 10 « Mesure »
   (2026-10-17), et ses deux contre-revues (`wn-reviewer`, Codex).
 - Domaine : `web/src/lib/equilibre/score.ts` (lecteur de sous-score,
-  `compterBesoinsMesures`), `constants.ts` (étiquette de version),
+  `compterBesoinsMesures`), `constants.ts` (motif de la version inchangée),
   `natureIndiceGlobal.ts` (deux mentions), route
   `api/praticien/equilibre`, `FichePatientPanel` (cockpit),
   `MonEquilibreAccueil` (portail).
 - Nature : clinique au sens de `DC-17` (la disponibilité d'une source de
-  « Mon équilibre » change, d'où le changement de version) ; **aucun seuil,
+  « Mon équilibre » change ; version du score gardée, voir §4) ; **aucun seuil,
   aucun poids, aucune borne, aucune source** ne bouge (`DC-19`). Le mapping
   besoin → sources reste intouché, conformément à l'arbitrage du 2026-10-15
   (un seul changement de version avec les changements de sources, à la
@@ -77,13 +77,27 @@ visible. Les besoins 6, 7 et 11 restent affichés
 « non mesuré », ce que la décision 5 des dossiers de mesure (2026-10-18,
 option a) a retenu jusqu'à une définition signée.
 
-**§4 — Version du score : v14/v15 → v16/v17.** Quatrième occurrence de la
-même classe que v10 à v15 : la disponibilité d'une source change. L'effet va
-dans les deux sens (un axe partiel et haut cesse de dire « bien couvert » ; un
-axe partiel et bas sous le seuil d'effondrement cesse de plafonner le total).
-Le stock ne bouge pas en production, ni les lectures de jalons passés (mesure
-du §2, sur toutes les passations) ; le momentum ne compare que des lectures de
-même version, comme à chaque changement.
+**§4 — Version du score : gardée (v14/v15), sur arbitrage du responsable du
+2026-10-19.** Le lot appartient à la même classe que les changements v10 à
+v15 (la disponibilité d'une source change), et l'usage aurait voulu v16/v17 :
+la première rédaction du lot les posait. Un fait que ces changements d'août ne
+rencontraient pas l'a fait écarter, relevé à la fusion avec `main` par le banc
+d'empreinte figée de #1569 : la version entre dans l'empreinte de chaque carte
+de décision, que le portail rejoue avant de servir un protocole
+(`rejeuCarteDecision.ts`). Une nouvelle étiquette aurait fait dériver toutes
+les cartes diffusées et éteint l'écran protocole de 3 dossiers (4
+approbations en production, lecture par conteneur du 2026-10-19). Or aucune
+passation exploitable, historique compris, n'a d'axe servi partiel : les
+valeurs, recalculées à chaque lecture, ne bougent pour aucun dossier, et
+l'empreinte de référence reste celle de `main` dans les deux formes de
+l'enquête alimentaire. Une passation partielle future changera sa propre
+lecture, et sa carte dérivera alors pour une raison clinique réelle. Question
+posée au responsable avec les deux autres options (changer de version et
+réapprouver les 3 diffusions ; attendre) ; recommandation suivie.
+**Dette nommée** : tant que la version entre dans l'empreinte des cartes, tout
+changement de version du score éteint les protocoles diffusés ; le prochain
+changement de sources (décisions 1 à 4 des dossiers de mesure) le rencontrera
+et devra prévoir la réapprobation.
 
 **Ne touche pas** : `BESOIN_SOURCES`, les seuils, les poids, le 60/20/20, le
 plafond ; le double compte des items SIIN52 à SIIN55 entre les besoins 1 et 3

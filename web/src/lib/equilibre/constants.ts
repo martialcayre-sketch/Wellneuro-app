@@ -197,25 +197,23 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // `rawAnswers`, que `depuisPrisma` écarte déjà — le STOCK ne bouge pas, c'est
 // le FLUX qui change de définition, et c'est lui que l'étiquette gouverne.
 //
-// v14/v15 → v16/v17 (garde des sous-scores partiels, [[D-329]] §1, audit de
-// D-312 section 10, 2026-10-18) : un sous-score servi n'alimente plus un besoin
-// que si TOUS les items de son axe sont répondus. Quatrième occurrence de la
-// même classe : la DISPONIBILITÉ d'une source change, aucun poids, aucun seuil,
-// aucune source ne bouge (mapping besoin → sources intouché, arbitrage du
-// 2026-10-15 ; ne pas nommer la constante ici : le contrôle de certification
-// l'extrait à sa PREMIÈRE occurrence dans ce fichier).
-// Besoins concernés : 5 (bloc activité de `Q_MOD_01`), 8 (axe D de `Q_NEU_11`),
-// 10 et 12 (axes de `Q_INF_03`) ; le besoin 3 exigeait déjà ses quatre items.
-// L'effet va dans les deux sens, comme pour les trois prédécesseurs : un axe
-// partiel et haut (sources `inverser: true`) cessait de dire « bien couvert »,
-// la couverture BAISSE ; un axe partiel et bas sous `SEUIL_EFFONDREMENT`
-// (bloc activité, fondation critique 5) cessait de plafonner le total à 50, le
-// total REMONTE. Mesuré avant de fermer, en production par conteneur, sur
-// TOUTES les passations exploitables (historique compris, pas seulement la
-// dernière de chaque dossier) : aucun axe servi n'est partiel — ni le STOCK ni
-// les lectures de jalons passés ne bougent, c'est le FLUX qui change de
-// définition.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v17' : 'v16';
+// GARDE DES SOUS-SCORES PARTIELS, SANS CHANGEMENT DE VERSION ([[D-329]] §1 et
+// §4, 2026-10-19). Un sous-score servi n'alimente plus un besoin que si TOUS les
+// items de son axe sont répondus (besoins 5, 8, 10, 12). C'est la même classe
+// que les bumps v10 à v15 — la DISPONIBILITÉ d'une source change — et l'usage
+// aurait voulu v16/v17. Le responsable a écarté ce changement le 2026-10-19,
+// sur un fait que les bumps d'août ne rencontraient pas : la version entre dans
+// l'empreinte de chaque carte de décision, que le portail REJOUE
+// (`rejeuCarteDecision.ts`) ; une nouvelle étiquette aurait fait dériver toutes
+// les cartes diffusées et éteint leurs écrans protocole. Or aucune passation
+// exploitable en production, historique compris, n'a d'axe servi partiel : les
+// valeurs, recalculées à chaque lecture, ne bougent pour aucun dossier. Seule
+// une passation partielle FUTURE changera sa propre lecture — et sa carte
+// dérivera alors pour une raison clinique réelle.
+//
+// Ne pas nommer ici la constante du mapping : le contrôle de certification
+// l'extrait à sa PREMIÈRE occurrence dans ce fichier.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v15' : 'v14';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

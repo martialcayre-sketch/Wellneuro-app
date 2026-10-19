@@ -10729,7 +10729,7 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 ## 2026-10-18 — « Mon équilibre » : lot de cohérence du calcul (D-329)
 
-**Fait.** Les sept décisions des dossiers de mesure sont rendues (recommandations suivies, « non mesuré » pour 6, 7, 11). Lot de cohérence écrit : un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12), badges de preuve alignés ; le total dit sur combien de besoins il est établi ; score v16/v17. T3 complet vert, contre-revue `wn-reviewer` GO avec réserves levées.
+**Fait.** Les sept décisions des dossiers de mesure sont rendues (recommandations suivies, « non mesuré » pour 6, 7, 11). Lot de cohérence écrit : un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12), badges de preuve alignés ; le total dit sur combien de besoins il est établi ; version du score gardée (arbitrage du responsable : v16/v17 aurait éteint 3 protocoles diffusés via le rejeu des cartes). T3 complet vert, contre-revue `wn-reviewer` GO avec réserves levées.
 
 **Écarté.** Aligner le snapshot et les routes dans ce lot : chaque direction change une sortie réelle en production (un agenda du sommeil retiré, ou des PSQI partiels admis).
 

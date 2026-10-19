@@ -43,8 +43,7 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    // v16 / v17 depuis la garde des sous-scores partiels ([[D-329]] §1) ; v14 /
-    // v15 depuis les comptes de recueil de `group_majority` (2026-08-13,
+    // v14 / v15 depuis les comptes de recueil de `group_majority` (2026-08-13,
     // D-055 / LOT-08) : la disponibilité de `Q_STR_01` comme source du besoin 9
     // change à son tour — troisième occurrence de la même classe, après
     // v10 / v11 (PSQI, besoin 5) et v12 / v13 (TFD, besoin 4), toutes deux du
@@ -53,7 +52,7 @@ describe('forme alimentaire servie', () => {
     // et non protectrice — c'est elle qui rend le bump obligatoire, sur
     // `Q_STR_01` comme sur `Q_GAS_01` et `Q_SOM_01` : trois sources
     // `inverser: true`, où retirer une mesure basse REMONTE la couverture.
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v17' : 'v16');
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v15' : 'v14');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {

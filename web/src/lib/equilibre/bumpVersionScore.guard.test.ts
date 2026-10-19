@@ -57,8 +57,8 @@ import { agregerEquilibre } from './score';
 /**
  * Les deux valeurs de plafonnement, par étiquette de version de score.
  *
- * `v16` et `v17` coexistent parce que `VERSION_SCORE_EQUILIBRE` dépend de la
- * FORME SERVIE de `Q_ALI_01` (`maxTotal === 90` ⇒ `v17`, sinon `v16`) : les
+ * `v14` et `v15` coexistent parce que `VERSION_SCORE_EQUILIBRE` dépend de la
+ * FORME SERVIE de `Q_ALI_01` (`maxTotal === 90` ⇒ `v15`, sinon `v14`) : les
  * deux positions du drapeau `WN_ALI_01_SIIN57` doivent donc être couvertes, sans
  * quoi le banc ne garderait que la position dans laquelle il tourne.
  *
@@ -69,8 +69,8 @@ import { agregerEquilibre } from './score';
  * n'enregistrer qu'une signature.
  */
 const VALEURS_PAR_VERSION: Record<string, { seuil: number; plafond: number }> = {
-  v16: { seuil: 0.34, plafond: 50 },
-  v17: { seuil: 0.34, plafond: 50 },
+  v14: { seuil: 0.34, plafond: 50 },
+  v15: { seuil: 0.34, plafond: 50 },
 };
 
 describe('plafonnement — une valeur ne change pas sans bump de version', () => {
@@ -89,7 +89,7 @@ describe('plafonnement — une valeur ne change pas sans bump de version', () =>
   // tourne : sans ce cas, supprimer l'entrée de la position inactive passerait
   // inaperçu jusqu'au jour où le drapeau bascule.
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(VALEURS_PAR_VERSION).sort()).toEqual(['v16', 'v17']);
+    expect(Object.keys(VALEURS_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
   });
 });
 
@@ -152,7 +152,7 @@ type SortieDeReference = {
  * sans jamais l'avoir jugé.
  */
 const SORTIES_PAR_VERSION: Record<string, Record<string, SortieDeReference>> = {
-  v16: {
+  v14: {
     pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
     fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
     toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
@@ -160,7 +160,7 @@ const SORTIES_PAR_VERSION: Record<string, Record<string, SortieDeReference>> = {
     rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
     frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
   },
-  v17: {
+  v15: {
     pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
     fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
     toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
@@ -203,7 +203,7 @@ describe('formule — une sortie ne change pas sans bump de version', () => {
   }
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(SORTIES_PAR_VERSION).sort()).toEqual(['v16', 'v17']);
+    expect(Object.keys(SORTIES_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
   });
 });
 
@@ -231,7 +231,7 @@ function empreinteDuMapping(): string {
 }
 
 const MAPPING_PAR_VERSION: Record<string, string> = {
-  v16:
+  v14:
     '1:Q_ALI_01|-|42|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|0|dir|-|1 '
     + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
     + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1 '
@@ -239,11 +239,11 @@ const MAPPING_PAR_VERSION: Record<string, string> = {
     + '9:Q_STR_01|-|42|inv|-|1,Q_STR_02|-|50|inv|-|1,Q_STR_03|-|55|inv|-|1 '
     + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
     + '11:- 12:Q_INF_03|ME|40|inv|-|1',
-  // v17 diffère de v16 en DEUX points, et seulement deux : le barème du besoin 1
+  // v15 diffère en DEUX points, et seulement deux : le barème du besoin 1
   // (42 → 90) et le sous-score du besoin 3, que la forme courte ne déclare pas
   // (0 → 7). C'est exactement ce que les notes v5 → v6 et v6 → v7 de
   // `constants.ts` décrivent.
-  v17:
+  v15:
     '1:Q_ALI_01|-|90|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|7|dir|-|1 '
     + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
     + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1 '
@@ -263,12 +263,12 @@ describe('mapping — une source ne change pas sans bump de version', () => {
   });
 
   it('les deux empreintes diffèrent bien — le drapeau change le mapping', () => {
-    // Sans ce cas, recopier v16 dans v17 rendrait le registre vert dans les deux
+    // Sans ce cas, recopier v14 dans v15 rendrait le registre vert dans les deux
     // positions tout en cessant de décrire l'une des deux.
-    expect(MAPPING_PAR_VERSION.v16).not.toBe(MAPPING_PAR_VERSION.v17);
+    expect(MAPPING_PAR_VERSION.v14).not.toBe(MAPPING_PAR_VERSION.v15);
   });
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(MAPPING_PAR_VERSION).sort()).toEqual(['v16', 'v17']);
+    expect(Object.keys(MAPPING_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
   });
 });
