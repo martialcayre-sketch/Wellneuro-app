@@ -14,3 +14,6 @@
 - La route d'écriture d'un objectif n'enregistre plus la date « négocié le »
   qu'on lui transmettrait : l'accord se lit depuis la ratification ou
   l'attestation (D-161 §11).
+- Au cockpit comme au portail, un accord que le patient a ensuite contesté ou
+  reformulé à sa façon n'est plus affiché comme convenu : la contradiction
+  l'emporte (D-161 §3, relevé en revue).

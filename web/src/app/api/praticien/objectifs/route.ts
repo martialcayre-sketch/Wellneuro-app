@@ -562,7 +562,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
        */
       accords: Object.fromEntries(
         lignes.map((ligne) => {
-          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe);
+          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe, amendements);
           return [ligne.id, lu === null ? null : { date: lu.date.toISOString(), forme: lu.forme }];
         }),
       ),
