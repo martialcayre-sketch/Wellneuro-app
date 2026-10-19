@@ -43,6 +43,10 @@ responsable (2026-10-19) : corriger les deux.
   carte laisse un état inconnu, jamais les versions de l'ancienne (rail
   « fait », Historique, Diffusion). Rien n'est vidé à la relecture de la même
   carte.
+- Troisième remarque hors diff (P1) : une réponse de versions n'est acceptée
+  que pour la carte attendue, `null` compris — une lecture arrivée après que
+  la carte a cessé d'être prête ne rétablit pas ses versions. Tous les
+  appelants tournent sur une carte prête : aucun ne perd sa lecture.
 
 ## Fichiers modifiés
 
