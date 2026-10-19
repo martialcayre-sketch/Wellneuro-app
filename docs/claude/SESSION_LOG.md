@@ -10889,9 +10889,9 @@ Ce lot les livre, sans migration.
 
 ## 2026-10-19 — t14 : journal du portail, close sans code
 
-**Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Dette close sans code ; règle pour une future source écrite au FEATURE_FLAGS § B.
+**Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Ligne du plan soldée en citant #1586 (mécanisme `_OUVERT_LE` livré le même soir par une autre session, sans effet sans variable posée) ; état de production de `WN_PORTAIL_MES_ECHANGES` corrigé au FEATURE_FLAGS.
 
-**Écarté.** Dater les ouvertures passées, ou un mécanisme sans date posée : effet déjà passé, ou en attente d'une surface qui n'existe pas.
+**Écarté.** Revenir #1586 : sans effet aujourd'hui, et travail d'une autre session.
 
 **Prochaine action.** PR, merge.
 

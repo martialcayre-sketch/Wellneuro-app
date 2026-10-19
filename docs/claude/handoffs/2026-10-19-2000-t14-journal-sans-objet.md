@@ -1,38 +1,41 @@
-# Handoff — t14 : journal du portail, close sans code
+# Handoff — t14 : journal du portail, soldée (constat + état du drapeau)
 
 ## Branche et état du dépôt
 
-- Branche `t14-journal-sans-objet`, partie de `origin/main` 89907823. Worktree
-  `d281-lot3-portail`. Documentation seule.
+- Branche `t14-journal-sans-objet`, worktree `d281-lot3-portail`. Documentation
+  seule, à jour de `origin/main` (contient #1586).
 
 ## Objectif
 
 Dette t14 : à l'ouverture d'une surface fermée, le journal patient fait
-apparaître d'un coup des faits anciens. Arbitrage initial du 2026-10-19 : une
-ligne « affiché à partir du … », datée par un réglage posé avec le drapeau.
+apparaître d'un coup des faits anciens.
 
 ## Décisions prises
 
-- Fait nouveau, constaté sur Scalingo (`env`, noms filtrés) le 2026-10-19 :
-  `WN_PORTAIL_MES_ECHANGES`, `WN_FICHES_ASSIETTE_LECTURE`,
-  `WN_LETTRE_ADRESSAGE_PATIENT`, `WN_BIO_PORTAIL_ENABLED` (et
-  `WN_BIO_INGEST_ENABLED`) sont à `true`. Le journal a été ouvert le dernier
-  (2026-10-18, plan H76) : aucune source fermée ne reste.
-- Question reposée au responsable sur ce fait : **clore sans code**, règle
-  pour la prochaine source écrite au `docs/FEATURE_FLAGS.md` § B.
+- Fait constaté sur Scalingo le 2026-10-19 (`env`, noms filtrés) : le journal
+  et ses trois sources sous drapeau sont à `true`, le journal ouvert le dernier
+  (2026-10-18) — aucune source fermée ne reste.
+- Deux arbitrages le même soir, dans deux sessions : « clore sans code » (cette
+  session, sur ce constat) ; le mécanisme `<DRAPEAU>_OUVERT_LE` livré par
+  #1586 (autre session, sur l'arbitrage initial). #1586 est mergée et sans
+  effet tant qu'aucune variable n'est posée : rien n'est défait. Cette PR
+  solde la ligne du plan en citant #1586, retire son propre paragraphe en
+  doublon de la procédure de #1586, et corrige l'état de production de
+  `WN_PORTAIL_MES_ECHANGES` (revue CodeRabbit).
 
 ## Fichiers modifiés
 
-- `docs/FEATURE_FLAGS.md` (§ B, un paragraphe).
+- `docs/FEATURE_FLAGS.md` (ligne de `WN_PORTAIL_MES_ECHANGES`).
 - Plan (ligne t14), changelog, SESSION_LOG.
 
 ## Validations exécutées
 
-- T1 complet : voir la PR.
+- T1 : voir la PR.
 
 ## Problèmes ouverts
 
-- Aucun.
+- Aucun. Le responsable dira s'il veut poser après coup une date
+  `_OUVERT_LE` (geste de production non demandé à ce jour).
 
 ## Prochaine action exacte
 
