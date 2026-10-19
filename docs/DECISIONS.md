@@ -411,7 +411,9 @@ réinterprète une nature signée.
 - Amende : [[D-321]] §6 (« un claim par acte » reste vrai au journal ; un
   geste peut désormais en poser plusieurs) et §5 (la correspondance
   ci-dessous fixe comment un dossier en six rubriques « se reclasse en
-  dix »). Ne touche pas l'étiquetage individuel ni la signature avec clés.
+  dix ») ; par son §5, la mention de [[D-321]] « aucune rubrique n'est posée
+  par l'assistant » (le responsable peut lui déléguer le geste). Ne touche
+  pas l'étiquetage individuel ni la signature avec clés.
 - Domaine : `web/src/lib/rag/claims/etiquetageLot.ts` (lecture de la liste,
   module pur), `etiqueterClaimsLot` (`web/src/lib/rag/claims/revue.ts`), route
   `web/src/app/api/praticien/corpus/claims/etiquetage-lot`, composant
