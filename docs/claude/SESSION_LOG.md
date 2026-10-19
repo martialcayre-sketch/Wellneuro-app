@@ -10807,3 +10807,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t11 : verrou de révision de l'objectif
+
+**Fait.** Index unique en base sur la version révisée (migration + contrat + CI), course perdue rendue en 409 ; dossier désactivé servi par son propre refus sur les six routes de l'objectif. Constat préalable en production : aucune version révisée deux fois.
+
+**Écarté.** Index partiel ou unicité de racine par dossier : deux objectifs distincts restent légitimes.
+
+**Prochaine action.** PR, T3, release-db, constat ; puis t14, t15, NIR.
+
+**Ouvert.** 404/403 gardé par arbitrage.
