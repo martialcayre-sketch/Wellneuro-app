@@ -10792,3 +10792,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR après #1569 ; puis questions au responsable (geste sans porteuse, t07b, t11, t12, t14, t15).
 
 **Ouvert.** Geste de lettre sans porteuse.
+
+## 2026-10-19 — t07b : « Mon équilibre » dans l'aperçu praticien
+
+**Fait.** L'aperçu du cockpit mène de la consultation à l'accueil puis au détail de « Mon équilibre », lus par une route d'aperçu journalisée qui partage la composition du portail. Seconde série d'arbitrages reçue (t14 date posée avec l'ouverture, t12 gestes « atteint »/« abandonné », t11 message « désactivé », 404/403 gardé).
+
+**Écarté.** Réutiliser la route praticien de l'équilibre : elle sert les niveaux de preuve.
+
+**Prochaine action.** PR ; puis t12, t11, t14, t15, NIR.
+
+**Ouvert.** Prop `email` résiduel de `MonEquilibreDetail`.
