@@ -27,10 +27,16 @@ responsable (2026-10-19) : corriger les deux.
   ce qu'il porte).
 - `EtatRuntimeClinique.versionsLues` ; rail (`FichePatientPanel.tsx`, phase
   Actions) : `inconnu` tant que la lecture n'a pas abouti, épisode confirmé.
+- Revue CodeRabbit (4 remarques, toutes corrigées) : la coche « relu » retombe
+  au rechargement ; « Réinitialiser » interdit tout rechargement ultérieur,
+  version neuve comprise ; le contrat V4 suit la VERSION EN VIGUEUR (pas
+  seulement le brouillon rechargé) ; `versionsLues` est celui de la carte
+  courante (`versionsLuesPour`), et une réponse de versions arrivée pour une
+  autre carte est écartée.
 
 ## Fichiers modifiés
 
-- `web/src/components/patient-cockpit/ProtocolMiniBuilder.tsx` + test (5 cas).
+- `web/src/components/patient-cockpit/ProtocolMiniBuilder.tsx` + test (6 cas).
 - `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx` + test (2 cas).
 - `web/src/components/FichePatientPanel.tsx` (rail).
 - `web/src/components/patient-cockpit/ArbitrageBiologiquePanel.tsx` (commentaire).

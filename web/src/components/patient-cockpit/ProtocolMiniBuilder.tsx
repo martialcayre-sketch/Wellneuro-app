@@ -310,11 +310,20 @@ export function ProtocolMiniBuilder({
   // ([[D-257]] §8). La coche de relecture reste à poser : recharger n'est pas
   // relire ([[D-213]] §1).
   const [versionRechargee, setVersionRechargee] = useState<string | null>(null);
+  // Vidé par « Réinitialiser » : plus aucune version ne le remplit, même une
+  // version neuve — le praticien a choisi de repartir de rien (revue).
+  const [videALaMain, setVideALaMain] = useState(false);
+  // UNE VERSION EN VIGUEUR V4 SE RÉVISE EN V4, que le brouillon vienne d'elle
+  // ou non, et même si ses statuts sont retirés ensuite (une attente
+  // décochée) : la route refuse une révision V1 d'une V4. Une version V4 porte
+  // un statut sur chaque action — c'est ce qui la signe ici.
+  const versionActiveV4 = versionActive?.contenu.actions
+    .some(action => action.interventionStatus !== undefined) ?? false;
   const brouillonVierge = purpose === '' && followUpCriterion === '' && actions.length === 0
     && loadLevel === '' && loadJustification === '';
   if (versionActive && versionActive.versionId !== versionRechargee) {
     setVersionRechargee(versionActive.versionId);
-    if (brouillonVierge && !editedSinceSave) {
+    if (brouillonVierge && !editedSinceSave && !videALaMain) {
       const reprises = versionActive.contenu.actions
         .filter(action => action.actionId !== ACTION_ID_ORIENTATION);
       setPurpose(versionActive.contenu.purpose);
@@ -323,6 +332,9 @@ export function ProtocolMiniBuilder({
       setNextActionId(prochainNumeroAction(reprises));
       setLoadLevel(versionActive.contenu.therapeuticLoad.level);
       setLoadJustification(versionActive.contenu.therapeuticLoad.justification ?? '');
+      // Recharger n'est pas relire : une coche posée avant ne vaut pas pour ce
+      // contenu ([[D-213]] §1).
+      setReviewed(false);
     }
   }
 
@@ -499,6 +511,7 @@ export function ProtocolMiniBuilder({
     if (hasContent && !window.confirm('Effacer ce brouillon local non enregistré ?')) return;
     setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel(''); setLoadJustification('');
     setReviewed(false); setMessage(null); setErreur(null); setNextActionId(1); setEditedSinceSave(false);
+    setVideALaMain(true);
   };
 
   // Validations locales communes à « Marquer comme relu » et « Enregistrer la
@@ -569,7 +582,7 @@ export function ProtocolMiniBuilder({
     // une version V4 le porte (t15), et une révision V1 d'une version V4 est
     // refusée (`version_contrat_incompatible`). Même raison que l'assiette.
     const porteUnStatut = actions.some(action => action.interventionStatus !== undefined);
-    const contratV4 = suspendues || porteUneAssiette || porteUnStatut;
+    const contratV4 = suspendues || porteUneAssiette || porteUnStatut || versionActiveV4;
     return {
       purpose,
       followUpCriterion,

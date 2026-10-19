@@ -1246,5 +1246,33 @@ describe('ProtocolMiniBuilder — recharge de la version en vigueur (t15)', () =
     rerender(<ProtocolMiniBuilder decisionCard={card()} versionActive={{ ...version }} />);
     expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('');
     expect(ui.queryByLabelText('Intitulé de l’action 1')).toBeNull();
+    // Une version NEUVE ne le remplit pas non plus : le praticien a choisi de
+    // repartir de rien.
+    rerender(<ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([ACTION_EN_VIGUEUR], 'version-2')} />);
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('sur une version en vigueur V4, un brouillon saisi à la main se soumet en V4', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onReviewed={onReviewed}
+        versionActive={versionActive([{ ...ACTION_EN_VIGUEUR, interventionStatus: 'active' }])}
+      />,
+    );
+    const ui = within(container);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(ui.getByRole('button', { name: 'Réinitialiser' }));
+    confirm.mockRestore();
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe(VERSION_PROTOCOL_DRAFT_V4);
+    expect(soumission.actions[0].interventionStatus).toBe('active');
   });
 });

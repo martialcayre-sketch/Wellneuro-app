@@ -349,7 +349,13 @@ export function ClinicalRuntimeSection({
   >('protocole');
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
-  const [versionsLues, setVersionsLues] = useState(false);
+  // LA LECTURE EST CELLE D'UNE CARTE (t15, revue) : un changement de carte
+  // remet le témoin à faux jusqu'à la lecture de la nouvelle — sans quoi le rail
+  // dirait « en attente » sur la foi de la carte précédente.
+  const [versionsLuesPour, setVersionsLuesPour] = useState<string | null>(null);
+  // La carte dont les versions sont attendues : une réponse arrivée pour une
+  // autre carte est écartée, elle ne décrit plus l'écran.
+  const carteVersionsAttendue = useRef<string | null>(null);
   /**
    * Le refus de registre en attente de confirmation ([[D-189]] §4), et son
    * jeton. UNE GARDE CONFIRMABLE SANS COMMANDE D'ÉCRAN EST UNE GARDE BLOQUANTE
@@ -683,6 +689,7 @@ export function ClinicalRuntimeSection({
       );
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
+      if (carteVersionsAttendue.current !== null && carteVersionsAttendue.current !== decisionCardId) return;
       setVersions(payload.history);
       // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
       // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
@@ -691,7 +698,7 @@ export function ClinicalRuntimeSection({
       // La lecture a ABOUTI : les états vides des sous-vues Historique et
       // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
       // `[]` en vol ou après échec est un état INCONNU, pas un vide).
-      setVersionsLues(true);
+      setVersionsLuesPour(decisionCardId);
       setActiveVersionId(payload.active?.versionId ?? null);
       setContenuActif(payload.active?.contenu ?? null);
     } catch {
@@ -1241,7 +1248,9 @@ export function ClinicalRuntimeSection({
   // réel est prêt.
   const readyDecisionCardId =
     !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
+  const versionsLues = readyDecisionCardId !== null && versionsLuesPour === readyDecisionCardId;
   useEffect(() => {
+    carteVersionsAttendue.current = readyDecisionCardId;
     if (readyDecisionCardId) {
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
