@@ -10755,3 +10755,12 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR ; puis t05b (date « depuis » du Fil).
 
 **Ouvert.** Rien de propre au lot.
+## 2026-10-19 — t07 : paramètre email mort retiré
+
+**Fait.** #1565 (D-328) mergée. Dette t07, moitié exécutable : les écrans de consultation des réponses et de « Mon équilibre » n'envoient plus l'adresse du patient, ignorée par le serveur depuis LOT-04 ; un banc interdit son retour.
+
+**Écarté.** L'aperçu praticien de « Mon équilibre » : arbitrage (route d'aperçu, scores au portail).
+
+**Prochaine action.** PR, merge après #1567 ; puis t05a (tests de parité du Fil), t28, t10.
+
+**Ouvert.** Aperçu praticien de « Mon équilibre ».

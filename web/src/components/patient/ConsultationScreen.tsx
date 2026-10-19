@@ -12,9 +12,10 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 // `fetchUrl`/`readOnlyPreview` sont additifs pour le mécanisme
 // PrévisualisationPatient (HC-F LOT-03) : par défaut (props absents), le
 // comportement du portail réel est strictement inchangé.
-export function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre, fetchUrl, readOnlyPreview }: {
+// La session portail authentifie seule (LOT-04) : aucune adresse ne transite
+// plus par l'URL ni par le corps (dette t07, paramètre mort retiré).
+export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquilibre, fetchUrl, readOnlyPreview }: {
   idAssignation: string;
-  email?: string;
   statutReponses: string;
   onVoirEquilibre: () => void;
   fetchUrl?: string;
@@ -30,8 +31,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
   useEffect(() => {
     (async () => {
       try {
-        const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-        const url = fetchUrl ?? `/api/patient/reponses?id=${encodeURIComponent(idAssignation)}${emailQuery}`;
+        const url = fetchUrl ?? `/api/patient/reponses?id=${encodeURIComponent(idAssignation)}`;
         const res = await fetch(url);
         const data = await res.json();
         if (!data.ok) { setError(data.error); }
@@ -42,7 +42,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
         setLoading(false);
       }
     })();
-  }, [email, fetchUrl, idAssignation]);
+  }, [fetchUrl, idAssignation]);
 
   const handleDemande = async () => {
     setDemandeLoading(true);
@@ -53,7 +53,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
       const res = await fetch('/api/patient/consentement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idAssignation, email, action: 'demander_modification', commentaire: commentaire.trim() }),
+        body: JSON.stringify({ idAssignation, action: 'demander_modification', commentaire: commentaire.trim() }),
       });
       const data = await res.json();
       if (data.ok) setDemandeEnvoyee(true);
