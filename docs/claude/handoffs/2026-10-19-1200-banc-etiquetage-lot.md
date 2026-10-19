@@ -32,7 +32,8 @@ vitamine D.
 - Banc joué sur une base locale migrée : 6 cas sur 6 verts. Avant la
   correction, le cas 2 était rouge.
 - Vitest de `revue.test.ts` : 67 sur 67.
-- T1 complet et T2 : voir la PR.
+- T1 complet vert ; T2 rapide vert (7 min 8 s), il ne joue pas les bancs
+  (T3 et CI seulement).
 
 ## Problèmes ouverts
 

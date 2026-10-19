@@ -18,8 +18,13 @@
 //   3. une liste dont une ligne change : seule elle est écrite et journalisée ;
 //   4. un claim non validé ou introuvable dans la liste : refus nommé, rien
 //      d'écrit pour les autres (tout ou rien, §2) ;
-//   5. deux envois concurrents de la même liste : le second attend le verrou
-//      du premier, puis ne réécrit rien — un seul acte au journal.
+//   5. un envoi concurrent d'un autre qui pose les mêmes clés : une autre
+//      session tient la ligne `FOR UPDATE`, y pose les clés et journalise son
+//      acte ; l'envoi ATTEND son verrou (constaté dans `pg_stat_activity`),
+//      puis relit la ligne commise et n'ajoute rien — un seul acte au journal.
+//      La course se joue contre une session `pg` et non deux appels Prisma :
+//      le pool du client sérialiserait ceux-ci avant la base, et la course
+//      n'aurait pas lieu.
 //
 // ÉCRIT EN BASE ET COMMET : base NOMMÉE (`WN_ETIQUETAGE_LOT_BANC_BASE`) et
 // LOCALE. Les claims de banc, leurs liens et leur passage sont effacés à la
@@ -72,19 +77,20 @@ async function actes(c: pg.Client): Promise<Array<{ source_id: string; validateu
   return rows;
 }
 
-/** Attend qu'une requête soit bloquée sur un verrou (session d'observation
- *  hors transaction : `pg_stat_activity` y est fraîche). */
+/** Attend que l'envoi du banc soit bloqué sur le verrou des claims (session
+ *  d'observation hors transaction : `pg_stat_activity` y est fraîche). */
 async function attendreBlocage(c: pg.Client) {
   const limite = Date.now() + 10_000;
   while (Date.now() < limite) {
     const { rows } = await c.query(
       `SELECT count(*)::int AS n FROM pg_stat_activity
-        WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%FOR UPDATE%'`,
+        WHERE datname = current_database() AND wait_event_type = 'Lock'
+          AND query ILIKE '%FROM public.rag_corpus_claims%FOR UPDATE%' AND pid <> pg_backend_pid()`,
     );
     if (rows[0].n >= 1) return;
     await new Promise(r => setTimeout(r, 25));
   }
-  assert.fail('un envoi devait attendre le verrou des claims : la course n’a pas eu lieu.');
+  assert.fail('l’envoi devait attendre le verrou des claims : la course n’a pas eu lieu.');
 }
 
 const CHUNK = `WN-CH-${NUMERO}-001`;
@@ -217,27 +223,34 @@ async function main() {
     assert.equal((await actes(c)).length, 3);
     console.log('ok 4 — liste refusée : chaque claim en cause nommé, rien d’écrit');
 
-    // 5. Deux envois concurrents : le second attend, puis ne réécrit rien.
+    // 5. Un envoi concurrent d'un autre geste qui pose les mêmes clés.
     await verrou.query('BEGIN');
     await verrou.query('SELECT id FROM public.rag_corpus_claims WHERE id = $1 FOR UPDATE', [idLigne(3)]);
-    const liste = [{ claimId: claimId(3), besoins: [2], rubrique: 'question' as const }];
-    const envois = [
-      etiqueterClaimsLot({ lignes: liste, validateur: PRATICIEN }),
-      etiqueterClaimsLot({ lignes: liste, validateur: PRATICIEN }),
-    ];
+    const envoi = etiqueterClaimsLot({
+      lignes: [{ claimId: claimId(3), besoins: [2], rubrique: 'question' }],
+      validateur: PRATICIEN,
+    });
     try {
       await attendreBlocage(c);
+      // Le premier geste, joué par la session qui tient le verrou.
+      await verrou.query(
+        `UPDATE public.rag_corpus_claims
+            SET metadata = metadata || '{"besoins":[2],"rubrique":"question"}'::jsonb
+          WHERE id = $1`,
+        [idLigne(3)],
+      );
+      await verrou.query(
+        `INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, source_id, claims)
+         VALUES ('etiquetage', $1, $2, $3::jsonb)`,
+        [PRATICIEN, SOURCE, JSON.stringify([{ id: idLigne(3), claimId: claimId(3), versionClaim: 'v1.0', besoins: [2], rubrique: 'question' }])],
+      );
     } finally {
       await verrou.query('COMMIT');
     }
-    const r5 = await Promise.all(envois);
-    assert.deepEqual(
-      r5.map(r => (r.ok ? [r.n, r.inchanges] : r.raison)).sort(),
-      [[0, 1], [1, 0]],
-    );
+    assert.deepEqual(await envoi, { ok: true, n: 0, inchanges: 1 });
     const a5 = await actes(c);
-    assert.equal(a5.filter(a => a.element.claimId === claimId(3)).length, 1, 'un seul acte pour deux envois');
-    console.log('ok 5 — deux envois concurrents : le second attend le verrou, puis n’ajoute aucun acte');
+    assert.equal(a5.filter(a => a.element.claimId === claimId(3)).length, 1, 'un seul acte pour deux gestes');
+    console.log('ok 5 — envoi concurrent : il attend le verrou, relit les clés commises, n’ajoute aucun acte');
   } finally {
     try {
       await verrou.query('ROLLBACK').catch(() => {});
