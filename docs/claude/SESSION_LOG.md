@@ -10807,3 +10807,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t12 : fin de l'objectif depuis le cockpit
+
+**Fait.** t12 rejugée : quatre points sur cinq déjà livrés. Ajouts : bloc « Fin de l'objectif » (proposer atteint, attester la voix du patient, renoncer motivé, confirmation en deux temps), provenance de l'accord sous chaque version, `negocieLe` ignorée à l'écriture.
+
+**Écarté.** Attester la voix du patient avant toute proposition : D-161 interdit d'attester ce que personne n'a dit.
+
+**Prochaine action.** PR après #1576 ; puis t11.
+
+**Ouvert.** Pas de geste de fin au portail.

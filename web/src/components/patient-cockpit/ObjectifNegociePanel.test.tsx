@@ -1370,6 +1370,136 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
   });
 
 
+  // ── La fin de l'objectif, depuis le cockpit (D-161, dette t12) ─────────────
+
+  describe('LA FIN DE L’OBJECTIF SE POSE DEPUIS LE COCKPIT (D-161, t12)', () => {
+    // Une chaîne à deux versions : la fin vise la RACINE (OBJ_1), jamais la tête.
+    const dossierFin = (fin: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' })],
+      trajectoires: [{
+        idObjectif: 'OBJ_2',
+        lignes: [ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' }), ligne({ id: 'OBJ_1' })],
+      }],
+      ratifications: { OBJ_2: 'en_attente' as const },
+      fins: { OBJ_2: { ...FIN_OUVERTE, ...fin } },
+      tetesActives: 1,
+      ...extra,
+    });
+    const postsFin = () => fetchMock.mock.calls
+      .filter(([url, options]) => url === '/api/praticien/objectifs/fin' && options?.method === 'POST')
+      .map(([, options]) => JSON.parse(options.body as string));
+
+    it('proposer « atteint » écrit la voix du praticien sur la racine, après confirmation', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierFin({}) }));
+      await attendreLeDossier();
+      fireEvent.click(screen.getByRole('button', { name: 'Proposer : objectif atteint' }));
+      // Rien n'est écrit au premier clic : la confirmation dit ce qui va l'être.
+      expect(postsFin()).toHaveLength(0);
+      expect(screen.getByText(/Il restera la voix de votre patient/)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }));
+      await waitFor(() => expect(postsFin()).toHaveLength(1));
+      expect(postsFin()[0]).toEqual({
+        idPatient: 'PAT_SEED_03',
+        racineObjectifId: 'OBJ_1',
+        motif: 'atteint',
+        voix: 'praticien',
+        sens: 'declare',
+      });
+    });
+
+    it('un renoncement ne part pas sans motif écrit', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierFin({}) }));
+      await attendreLeDossier();
+      fireEvent.click(screen.getByRole('button', { name: 'Renoncer à cet objectif' }));
+      const confirmer = screen.getByRole('button', { name: 'Confirmer' }) as HTMLButtonElement;
+      expect(confirmer.disabled).toBe(true);
+      fireEvent.change(screen.getByLabelText('Motif du renoncement'), {
+        target: { value: 'Le sommeil s’est réglé ; la priorité est ailleurs.' },
+      });
+      fireEvent.click(confirmer);
+      await waitFor(() => expect(postsFin()).toHaveLength(1));
+      expect(postsFin()[0]).toMatchObject({
+        racineObjectifId: 'OBJ_1',
+        motif: 'abandonne',
+        voix: 'praticien',
+        sens: 'declare',
+        motifTexte: 'Le sommeil s’est réglé ; la priorité est ailleurs.',
+      });
+    });
+
+    it('fin proposée : la voix du patient s’atteste — jamais avant que la fin soit proposée', async () => {
+      fetchMock.mockImplementation(router({
+        dossier: dossierFin({ etat: 'fin_proposee', motif: 'atteint', voixManquante: 'patient' }),
+      }));
+      await attendreLeDossier();
+      expect(screen.queryByRole('button', { name: 'Proposer : objectif atteint' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Mon patient l’a confirmé en consultation' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }));
+      await waitFor(() => expect(postsFin()).toHaveLength(1));
+      expect(postsFin()[0]).toMatchObject({ motif: 'atteint', voix: 'patient', sens: 'confirme' });
+    });
+
+    it('sur un dossier ouvert, aucun geste n’atteste la voix du patient', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierFin({}) }));
+      await attendreLeDossier();
+      expect(screen.queryByRole('button', { name: 'Mon patient l’a confirmé en consultation' })).toBeNull();
+    });
+
+    it('chaîne close : la fin se lit, aucun geste n’est offert', async () => {
+      fetchMock.mockImplementation(router({
+        dossier: dossierFin(
+          { etat: 'close', motif: 'abandonne' },
+          {
+            lignesFin: [{
+              id: 'FIN_1', racineObjectifId: 'OBJ_1', motif: 'abandonne', voix: 'praticien',
+              consigneePar: 'praticien', sens: 'declare', motifTexte: 'La priorité est ailleurs.',
+              remplaceParRacineId: null, exprimeLe: null, creeLe: '2026-09-01T09:00:00.000Z',
+            }],
+          },
+        ),
+      }));
+      await attendreLeDossier();
+      expect(screen.getByText('Objectif abandonné.')).toBeTruthy();
+      expect(screen.getByText(/Motif : « La priorité est ailleurs. »/)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Renoncer à cet objectif' })).toBeNull();
+    });
+
+    it('deux têtes actives : le départage passe d’abord, aucun geste de fin', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierFin({}, { tetesActives: 2 }) }));
+      await attendreLeDossier();
+      expect(screen.queryByRole('button', { name: 'Proposer : objectif atteint' })).toBeNull();
+    });
+  });
+
+  describe('L’ACCORD DIT SA PROVENANCE (D-161 §4, t12)', () => {
+    const dossierAccord = (accord: unknown) => ({
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1', negocieLe: '2026-08-21T00:00:00.000Z' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1', negocieLe: '2026-08-21T00:00:00.000Z' })] }],
+      ratifications: { OBJ_1: 'en_attente' as const },
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+      accords: { OBJ_1: accord },
+    });
+
+    it.each([
+      [{ date: '2026-08-22T00:00:00.000Z', forme: 'preuve' }, /accord de votre patient le 22\/08\/2026, donné depuis son espace/],
+      [{ date: '2026-08-22T00:00:00.000Z', forme: 'temoignage' }, /accord noté par vous le 22\/08\/2026, conclu en consultation/],
+      [{ date: '2026-08-21T00:00:00.000Z', forme: 'heritee' }, /négocié le 21\/08\/2026 \(date saisie à la main, provenance non connue\)/],
+    ])('forme %#', async (accord, attendu) => {
+      fetchMock.mockImplementation(router({ dossier: dossierAccord(accord) }));
+      await attendreLeDossier();
+      expect(document.body.textContent).toMatch(attendu);
+    });
+
+    it('sans accord connu, la colonne héritée ne se lit plus nue', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAccord(null) }));
+      await attendreLeDossier();
+      expect(document.body.textContent).not.toMatch(/négocié le/);
+    });
+  });
+
   // ── La réponse du patient, et ce qu'il demande de reprendre ───────────────
 
   describe('LA RÉPONSE DU PATIENT REMONTE EN TÊTE DE CARTE (2026-09-11)', () => {
