@@ -1063,9 +1063,10 @@ describe('GET — `idPatient` restreint aussi la liste des dossiers (LOT-06)', (
   });
 
   it('★ une valeur restée dans la colonne NIR n’est pas servie (D-284 §2, lot g)', async () => {
-    // La colonne existe jusqu'à sa migration de retrait, et une requête sans
-    // `select` la remonte : c'est le DTO qui ne la sert plus. Le banc PATCH ne
-    // le prouvait pas — sa réponse ne porte aucune fiche (constat de revue).
+    // La colonne est retirée de la base depuis le 2026-10-20 (t03). Le banc
+    // reste en garde de régression : un champ `nir` remonté par une requête
+    // (ancien client, fixture) n'est pas servi, c'est le DTO qui le décide. Le
+    // banc PATCH ne le prouvait pas — sa réponse ne porte aucune fiche.
     prisma.patient.findMany.mockResolvedValue([
       {
         idPatient: 'PAT_SEED_03',
