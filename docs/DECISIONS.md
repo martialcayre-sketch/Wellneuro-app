@@ -1592,6 +1592,14 @@ options :
 - l'impression tracée est servie dès le déploiement ; le portail est derrière
   `WN_DOCUMENT_MEDECIN_PATIENT`.
 
+Compléments du 2026-10-19 :
+- les textes du portail sont validés tels quels ;
+- une synthèse imprimée pour le médecin ne se vide ni ne se rejette, comme
+  après l'envoi du booklet ; pour corriger, une nouvelle synthèse imprimée
+  remplace l'ancienne pour le patient ;
+- portail ouvert, la confirmation d'impression annonce : « Le patient pourra
+  le télécharger dans son espace pour le remettre lui-même. »
+
 ### D-306 — Règle de dépendance entre domaines (D2) ; un module publié a une entrée publiée, ses tables, ses drapeaux et un lecteur ; BioFlow d'abord, sous un banc à liste fermée (lettre j)
 
 - Date : 2026-10-15

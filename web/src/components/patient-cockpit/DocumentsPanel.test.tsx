@@ -119,6 +119,32 @@ describe('DocumentsPanel', () => {
     });
   }
 
+  it('médecin : la confirmation n’annonce le portail que s’il est ouvert (arbitrage du 2026-10-19)', async () => {
+    await ouvrirApercuMedecin();
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    expect(screen.getByRole('group', { name: 'Confirmer l’impression' }).textContent)
+      .not.toContain('télécharger dans son espace');
+    cleanup();
+
+    const precedente = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/praticien/documents?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            ok: true, patientNom: 'Sophie Nicola', dateDocument: '18 juillet 2026', statut: 'Validee_Praticien',
+            blocs: blocsFixture(), portailDocumentMedecinOuvert: true,
+          }),
+        });
+      }
+      return precedente!(url, init);
+    });
+    await ouvrirApercuMedecin();
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
+    expect(screen.getByRole('group', { name: 'Confirmer l’impression' }).textContent)
+      .toContain('Le patient pourra le télécharger dans son espace pour le remettre lui-même.');
+  });
+
   it('médecin : « Imprimer » demande une confirmation, et Annuler n’enregistre rien', async () => {
     await ouvrirApercuMedecin();
     fireEvent.click(screen.getByRole('button', { name: 'Imprimer cet aperçu' }));
