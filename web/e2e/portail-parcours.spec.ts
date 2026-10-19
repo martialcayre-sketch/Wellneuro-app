@@ -373,6 +373,12 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       ]);
       expect(equilibreReq.url()).not.toContain('email=');
       await dialog.getByRole('button', { name: 'Voir le détail de mes 12 besoins' }).click();
+      // LA VUE CHANGE APRÈS LE CLIC, pas pendant : sans cette attente, « Retour »
+      // pouvait se résoudre sur celui de l'accueil encore affiché, qui ramène à
+      // la consultation — rouge intermittent constaté sur le CI de main
+      // (d867b290, WebKit). Le détail se reconnaît à son titre.
+      await expect(dialog.getByRole('heading', { name: 'Mes 12 besoins' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Voir le détail de mes 12 besoins' })).toHaveCount(0);
       await dialog.getByRole('button', { name: /Retour/ }).first().click();
       await expect(dialog.getByRole('button', { name: 'Voir le détail de mes 12 besoins' })).toBeVisible();
 
