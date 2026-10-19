@@ -10896,3 +10896,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, merge ; puis question t14 au responsable, NIR.
 
 **Ouvert.** t14 : toutes les surfaces du journal sont déjà ouvertes en production.
+## 2026-10-19 — t07b : course du « Retour » dans l'E2E de l'aperçu
+
+**Fait.** CI de main rouge sur d867b290 : l'E2E de l'aperçu cliquait le « Retour » de l'accueil avant le changement de vue. Attente du titre du détail ajoutée.
+
+**Écarté.** Relancer le CI : un rouge se corrige, il ne se relance pas.
+
+**Prochaine action.** PR, merge, CI de main vert, déploiement constaté.
+
+**Ouvert.** Aucun.
+
