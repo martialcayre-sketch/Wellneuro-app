@@ -53,7 +53,6 @@ import {
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
-import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { Chip } from '@/components/ui/Chip';
@@ -166,17 +165,6 @@ function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
       <span className="text-3xs text-muted-foreground text-center leading-tight">
         {MENTION_NATURE_INDICE_GLOBAL}
       </span>
-    </div>
-  );
-}
-
-function LegendeNiveauxPreuve() {
-  return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-      <span><span className="font-medium text-foreground">A</span> — questionnaire clinique validé</span>
-      <span><span className="font-medium text-foreground">B</span> — référentiel neuronutrition</span>
-      <span><span className="font-medium text-foreground">C</span> — biologie fonctionnelle interprétative</span>
-      <span><span className="font-medium text-foreground">D</span> — hypothèse WellNeuro</span>
     </div>
   );
 }
@@ -1390,7 +1378,6 @@ export function FichePatientPanel({
           <tr>
             <th className="px-4 py-2 text-left">Besoin</th>
             <th className="px-4 py-2 text-left">Couverture</th>
-            <th className="px-4 py-2 text-left">Niveau de preuve</th>
           </tr>
         </thead>
         <tbody>
@@ -1415,19 +1402,16 @@ export function FichePatientPanel({
                   '—'
                 )}
               </td>
-              <td className="px-4 py-2"><EvidenceBadge niveau={p.niveauPreuve} /></td>
             </tr>
           ))}
         </tbody>
       </table>
-      {/* Légende en repli (audit 2026-09-02) : pédagogique, utile une fois,
-          pas un pied de tableau permanent. */}
-      <details className="px-4 py-3 border-t border-border">
-        <summary className="cursor-pointer text-xs text-muted-foreground">Niveaux de preuve A–D</summary>
-        <div className="mt-2">
-          <LegendeNiveauxPreuve />
-        </div>
-      </details>
+      {/* NIVEAUX DE PREUVE MASQUÉS (J3-12d, arbitrage du 2026-10-19) : les
+          lettres A à D et leur légende ne s'affichent plus, en attendant la
+          table révisée soumise à signature avec le changement de sources. La
+          table `NIVEAU_PREUVE_PAR_SOURCE` reste intacte et la route sert
+          toujours `niveauPreuve` : les grades entrent dans le snapshot
+          clinique, donc dans l'empreinte des cartes de décision. */}
     </div>
   );
 

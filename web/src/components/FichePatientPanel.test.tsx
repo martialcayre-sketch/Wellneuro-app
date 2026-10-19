@@ -981,6 +981,16 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('tiroir des 12 besoins : aucun niveau de preuve affiché, la couverture reste (J3-12d)', async () => {
+    // La route sert toujours `niveauPreuve` (ici A et D) : c'est l'écran qui
+    // ne l'affiche plus, ni en lettre ni en légende.
+    await rendreFiche();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('40%');
+    expect(tiroir.textContent).not.toMatch(/Niveau [A-D]|Niveaux? de preuve|questionnaire clinique validé|hypothèse WellNeuro/);
+  });
+
   it('poste de pilotage : propose les outils de synthèse IA avec le patient présélectionné', async () => {
     await rendreFiche();
 

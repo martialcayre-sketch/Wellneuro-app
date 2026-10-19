@@ -521,7 +521,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 |---|---|---|---|---|---|---|
 | J3-12c | clés `besoins` et `rubrique` posées à la signature d'un claim ; étiquetage en lot (D-325) | A | 1 | aucun | oui (appliquée) | fait (#1521, #1525, #1554) |
 | D-329 | cohérence du calcul de « Mon équilibre » | A | 1 | aucun | non | fait (#1566), déployé le 2026-10-19 |
-| J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-xxx et fragment | A | 1 | aucun | non | à faire, premier |
+| J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-332 et fragment | A | 1 | aucun | non | fait le 2026-10-20 (D-332) |
 | J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable | A | 1 | J3-12d (ordre) | non | à faire |
 | J3-12b | guide transcrit, onglet « Les 12 besoins » réorganisé | A | 1 | w | non | attente |
 | J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment | A | 2 | J3-12e ; sources fermées fournies ; w signé ; table des niveaux de preuve signée | non | attente |

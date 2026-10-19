@@ -10935,3 +10935,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le dossier zinc.
 
 **Ouvert.** Aucun.
+
+## 2026-10-20 — J3-12d : niveaux de preuve masqués au cockpit (D-332)
+
+**Fait.** Les lettres A à D et leur légende ne s'affichent plus au tiroir des 12 besoins ni au détail des besoins ; la couverture reste. Table et données servies intactes, aucun changement de version. D-332 consigne l'arbitrage du 2026-10-19.
+
+**Écarté.** Retirer `niveauPreuve` des routes ou supprimer `EvidenceBadge` : le grade reste dans le snapshot, et le badge revient avec la table signée (J3-12f).
+
+**Prochaine action.** Bases visuelles du tiroir régénérées, PR, merge, déploiement constaté.
+
+**Ouvert.** Aucun.

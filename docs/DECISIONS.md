@@ -4,6 +4,35 @@
 
 ## Décisions actives
 
+### D-332 — Niveaux de preuve des 12 besoins masqués aux deux écrans praticien, table intacte, sans changement de version du score (J3-12d)
+
+- Date : 2026-10-20
+- Statut : accepté. Arbitrage du responsable du 2026-10-19 (question à
+  options, option recommandée, après contre-expertise externe vérifiée au
+  code ; plan, mise à jour du 2026-10-20, point 1). Texte rédigé par
+  l'assistant.
+- Domaine : `web/src/components/FichePatientPanel.tsx` (tiroir « Les 12
+  besoins »), `web/src/components/DetailBesoinsPanel.tsx` ; fiche H15 du plan
+  (J3-12d).
+- Nature : présentation praticien. Non clinique : aucun seuil, aucune règle,
+  aucun grade ne change.
+
+**1. Ce qui change.** Les lettres A à D et leur légende ne s'affichent plus
+dans le tiroir des 12 besoins de la fiche patient ni sur le détail des
+besoins. La couverture reste affichée. Le patient ne voit aucun changement :
+les grades ne lui ont jamais été servis.
+
+**2. Ce qui ne change pas.** La table `NIVEAU_PREUVE_PAR_SOURCE` et les routes
+qui servent `niveauPreuve` restent intactes. Les grades entrent dans le
+snapshot clinique, donc dans l'empreinte des cartes de décision : modifier la
+table ferait dériver les protocoles diffusés. Aucun changement de version du
+score, aucune migration.
+
+**3. La suite.** Une table révisée des niveaux de preuve sera soumise à la
+signature du responsable avec le changement de sources des besoins 8, 9 et 12
+(J3-12f), en un seul changement de version. L'affichage d'un grade ne revient
+qu'avec cette table signée.
+
 ### D-330 — Collecte documentaire : le patient dépose et propose une catégorie, le praticien du dossier consulte, corrige et retire ; un retrait efface le contenu et garde la ligne ; bornes du compte rendu ; « Transmis » dans « Mes échanges » (J3-collecte, amende D-293)
 
 - Date : 2026-10-18
