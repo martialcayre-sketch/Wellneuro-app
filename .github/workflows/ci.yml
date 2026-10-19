@@ -1465,6 +1465,18 @@ jobs:
           WN_NABM_GESTES_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts
 
+      # Le VRAI écrivain de l'étiquetage en lot (`etiqueterClaimsLot`, D-325)
+      # contre le journal des claims : clés posées et un acte par claim ; un
+      # renvoi n'ajoute rien ; une liste refusée n'écrit rien ; deux envois
+      # concurrents se sérialisent sur le verrou. Contre-épreuve en tête : un
+      # acte de deux claims est refusé par le CHECK.
+      - name: Batch labelling writer bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_ETIQUETAGE_LOT_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts
+
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
       # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est

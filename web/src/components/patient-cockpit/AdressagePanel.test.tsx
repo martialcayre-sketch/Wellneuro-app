@@ -130,6 +130,21 @@ describe('le papier', () => {
   });
 });
 
+describe('sans consultation porteuse (D-275 §2, arbitrage du 2026-10-19)', () => {
+  it('remplace le geste par une phrase qui dit quoi faire', () => {
+    rendre({ sansConsultationPorteuse: true });
+    expect(screen.getByText(/Validez d’abord une consultation pour rédiger la lettre/)).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByLabelText('Nom du médecin destinataire')).toBeNull();
+  });
+
+  it('par défaut, le geste reste offert', () => {
+    rendre();
+    expect(screen.getByRole('button', { name: 'Établir et consigner la lettre' })).toBeTruthy();
+    expect(screen.queryByText(/Validez d’abord une consultation/)).toBeNull();
+  });
+});
+
 describe('levée ouverte (D-257, LOT-04b) : la mention dit l’état réel', () => {
   it('dit que la lettre VAUT adressage, et ce qu’elle ne couvre pas', () => {
     rendre({ leveeOuverte: true });
