@@ -52,7 +52,8 @@ test.describe.serial('« Ce qui compte » — dépôt au portail, lecture au coc
 
     // Un seul dépôt par cycle : rechargée, la page ne rouvre pas le formulaire.
     await page.reload();
-    await expect(page.getByText('Vous avez déjà écrit ce qui compte pour vous.')).toBeVisible();
+    // Le dépôt du jour est daté : « Vous avez écrit … le <date>. »
+    await expect(page.getByText(/^Vous avez écrit ce qui compte pour vous le /)).toBeVisible();
     await expect(page.getByLabel('Ce que je veux dire')).toHaveCount(0);
   });
 
