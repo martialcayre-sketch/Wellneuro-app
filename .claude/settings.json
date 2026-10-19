@@ -15,7 +15,8 @@
       "Bash(git push:*)",
       "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-context-pack.mjs --format markdown)",
       "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs)",
-      "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs --local)"
+      "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs --local)",
+      "mcp__claude-in-chrome__computer"
     ],
     "deny": [
       "mcp__claude_ai_Supabase__apply_migration",
