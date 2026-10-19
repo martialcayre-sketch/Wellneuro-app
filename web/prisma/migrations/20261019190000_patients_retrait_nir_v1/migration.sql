@@ -1,0 +1,12 @@
+-- Dossier administratif : retrait de la colonne `nir` (dette t03, H26 (g), D-284).
+--
+-- Le NIR déclaré n'a plus de lecteur : l'écran ne le saisit plus, l'export a
+-- cessé de le lire (#1567), et aucune ligne de production ne le porte (constat
+-- par conteneur en lecture seule, 2026-10-19, refait avant la release). La
+-- colonne retirée, il n'y a plus de numéro de sécurité sociale à protéger,
+-- exporter ou effacer dans `patients`.
+--
+-- La contrainte de forme `patients_nir_forme` part avec la colonne (Postgres
+-- retire les CHECK qui ne portent que sur elle). Les trois autres colonnes du
+-- dossier administratif et la RLS de `patients` ne bougent pas.
+ALTER TABLE "patients" DROP COLUMN "nir";

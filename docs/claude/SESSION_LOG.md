@@ -10852,3 +10852,14 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Aucune sur F38.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t03 : migration de retrait de la colonne NIR
+
+**Fait.** Migration `DROP COLUMN "nir"`, schéma, contrat d'absence neuf, contrat du dossier administratif à trois colonnes, étape CI.
+
+**Écarté.** Garder la colonne vide : D-284 (g) demande son retrait, et rien ne la lit plus.
+
+**Prochaine action.** PR, merge après la release-db de t11, re-constat de 0 NIR, release-db, constat.
+
+**Ouvert.** Aucun.
+
