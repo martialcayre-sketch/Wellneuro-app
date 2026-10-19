@@ -51,6 +51,11 @@ export type EntreeEchange = {
   date: string;
   /** Le chemin sous `/portail/<token>/`. Le token vient de l'écran, jamais du serveur. */
   chemin: string;
+  /**
+   * Jour d'ouverture de la surface (AAAA-MM-JJ, Paris), présent seulement quand
+   * l'élément est daté d'AVANT : remis ce jour-là, il n'est visible que depuis.
+   */
+  afficheDepuis?: string;
 };
 
 export type JourEchanges = { jour: string; libelle: string; entrees: EntreeEchange[] };
@@ -91,7 +96,17 @@ export type SourcesMesEchanges = {
   signalements: { categorie: string; statutTraitement: string; soumisLe: Date }[];
 };
 
-export function entreesMesEchanges(sources: SourcesMesEchanges): EntreeEchange[] {
+/**
+ * Jour d'ouverture de chaque surface fermée par son propre drapeau (t14) : une
+ * fois ouverte, elle fait paraître d'un coup des éléments anciens, vrais et
+ * datés de leur jour, mais que le patient ne voyait pas. La ligne le dit.
+ */
+export type OuverturesMesEchanges = Partial<Record<EspeceEchange, string>>;
+
+export function entreesMesEchanges(
+  sources: SourcesMesEchanges,
+  ouvertures: OuverturesMesEchanges = {},
+): EntreeEchange[] {
   const entrees: EntreeEchange[] = [];
   if (sources.bilan) {
     entrees.push({
@@ -182,9 +197,30 @@ export function entreesMesEchanges(sources: SourcesMesEchanges): EntreeEchange[]
       chemin: 'informations',
     });
   });
+  // L'élément reste à SON jour (le fait est vrai) ; seule une mention s'ajoute.
+  for (const entree of entrees) {
+    const ouverture = ouvertures[entree.espece];
+    if (ouverture && jourParis(new Date(entree.date)) < ouverture) entree.afficheDepuis = ouverture;
+  }
   // Le plus récent en haut. À instant égal, la clé départage : l'ordre ne
   // dépend jamais de l'ordre des lectures en base.
   return entrees.sort((a, b) => b.date.localeCompare(a.date) || a.cle.localeCompare(b.cle));
+}
+
+/**
+ * Lit un réglage d'ouverture : `AAAA-MM-JJ`, jour civil existant, sinon `null`.
+ * Une valeur illisible n'invente pas de jour : la mention ne s'affiche pas.
+ */
+export function jourOuverture(valeur: string | undefined): string | null {
+  if (!valeur || !/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return null;
+  const instant = new Date(`${valeur}T12:00:00Z`);
+  return !Number.isNaN(instant.getTime()) && instant.toISOString().slice(0, 10) === valeur ? valeur : null;
+}
+
+/** « Affiché à partir d'aujourd'hui », ou du jour d'ouverture s'il est passé. */
+export function libelleAfficheDepuis(afficheDepuis: string, maintenant: Date): string {
+  if (afficheDepuis === jourParis(maintenant)) return 'Affiché à partir d’aujourd’hui';
+  return `Affiché à partir du ${LIBELLE_JOUR.format(new Date(`${afficheDepuis}T12:00:00Z`))}`;
 }
 
 const JOUR_PARIS = new Intl.DateTimeFormat('fr-CA', {
@@ -200,12 +236,17 @@ const LIBELLE_JOUR = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 });
 
+/** Jour civil `AAAA-MM-JJ` d'un instant, en heure de Paris. */
+export function jourParis(instant: Date): string {
+  return JOUR_PARIS.format(instant);
+}
+
 /** Groupe des entrées déjà triées par jour civil, en heure de Paris. */
 export function regrouperParJour(entrees: EntreeEchange[]): JourEchanges[] {
   const jours: JourEchanges[] = [];
   for (const entree of entrees) {
     const instant = new Date(entree.date);
-    const jour = JOUR_PARIS.format(instant);
+    const jour = jourParis(instant);
     const dernier = jours[jours.length - 1];
     if (dernier && dernier.jour === jour) dernier.entrees.push(entree);
     else jours.push({ jour, libelle: LIBELLE_JOUR.format(instant), entrees: [entree] });

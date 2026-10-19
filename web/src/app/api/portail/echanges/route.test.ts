@@ -107,6 +107,20 @@ describe('GET /api/portail/echanges', () => {
     ]);
   });
 
+  it('jour d’ouverture posé avec le drapeau des fiches : la remise antérieure le porte (t14)', async () => {
+    vi.stubEnv('WN_FICHES_ASSIETTE_LECTURE_OUVERT_LE', '2026-10-02');
+    vi.stubEnv('WN_LETTRE_ADRESSAGE_PATIENT_OUVERT_LE', 'pas une date');
+    sourcesMesEchanges.mockResolvedValue({
+      ...VIDE,
+      fiches: [{ idRemise: 'rem_1', libelle: 'Petit-déjeuner', remiseLe: new Date('2026-09-20T08:00:00Z') }],
+      lettre: { id: 'let_1', remiseLe: new Date('2026-09-20T08:00:00Z') },
+    });
+    const corps = await (await GET(requete())).json();
+    const parCle = Object.fromEntries(corps.entrees.map((e: { cle: string }) => [e.cle, e]));
+    expect(parCle['fiche_assiette:rem_1'].afficheDepuis).toBe('2026-10-02');
+    expect(parCle['lettre_adressage:let_1'].afficheDepuis).toBeUndefined();
+  });
+
   it('lecture en échec : 500, sans détail', async () => {
     sourcesMesEchanges.mockRejectedValue(new Error('base indisponible'));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
