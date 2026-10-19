@@ -1250,6 +1250,16 @@ export function ClinicalRuntimeSection({
     !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
   const versionsLues = readyDecisionCardId !== null && versionsLuesPour === readyDecisionCardId;
   useEffect(() => {
+    // UNE CARTE NEUVE NE DOIT RIEN À LA PRÉCÉDENTE (t15, revue) : ses versions,
+    // sa version active et son témoin de lecture sont vidés au changement de
+    // carte, pour qu'une lecture échouée laisse un état INCONNU, et non les
+    // versions de l'autre carte (rail « fait », Historique, Diffusion).
+    if (carteVersionsAttendue.current !== readyDecisionCardId) {
+      setVersions([]);
+      setVersionsLuesPour(null);
+      setActiveVersionId(null);
+      setContenuActif(null);
+    }
     carteVersionsAttendue.current = readyDecisionCardId;
     if (readyDecisionCardId) {
       void loadVersions(readyDecisionCardId);

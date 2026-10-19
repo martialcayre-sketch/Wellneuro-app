@@ -38,6 +38,11 @@ responsable (2026-10-19) : corriger les deux.
   version) et `versionActive` n'est servie qu'après la lecture des versions de
   la carte courante. Le brouillon d'une carte ne s'enregistre plus comme
   révision d'une autre ; sans carte le formulaire est fermé, rien ne se perd.
+- Seconde remarque hors diff (P1) : au changement de carte, versions, version
+  active et témoin de lecture sont vidés — une lecture échouée de la nouvelle
+  carte laisse un état inconnu, jamais les versions de l'ancienne (rail
+  « fait », Historique, Diffusion). Rien n'est vidé à la relecture de la même
+  carte.
 
 ## Fichiers modifiés
 
