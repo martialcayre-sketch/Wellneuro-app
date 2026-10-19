@@ -156,6 +156,11 @@ export type EtatRuntimeClinique = {
   episodeConfirme: boolean;
   nombreVersions: number;
   /**
+   * Vrai une fois une lecture des versions ABOUTIE (t15) : avant, `0` version
+   * est un état inconnu, jamais « aucune version » (`DC-24`).
+   */
+  versionsLues: boolean;
+  /**
    * Au moins un point d'étape rendu par le patient sur le calendrier courant.
    * `null` tant que les check-ins ne sont pas lus, ou si leur lecture a échoué.
    */
@@ -1468,6 +1473,7 @@ export function ClinicalRuntimeSection({
       erreur: error,
       episodeConfirme: readyDecisionCardId !== null || episodeConfirmeEnBase,
       nombreVersions,
+      versionsLues,
       suiviRenseigne,
       suiviOuvert,
       trajectoireErreur,
@@ -1486,6 +1492,7 @@ export function ClinicalRuntimeSection({
     readyDecisionCardId,
     episodeConfirmeEnBase,
     nombreVersions,
+    versionsLues,
     suiviRenseigne,
     suiviOuvert,
     trajectoireErreur,
@@ -2318,6 +2325,9 @@ export function ClinicalRuntimeSection({
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
+          versionActive={fixture || !contenuActif || !activeVersionId
+            ? null
+            : { versionId: activeVersionId, contenu: contenuActif }}
         />
       </div>
       {/* LE BLOC « CLÔTURE ET APERÇU PATIENT » N'EST PLUS MONTÉ SUR UN VRAI

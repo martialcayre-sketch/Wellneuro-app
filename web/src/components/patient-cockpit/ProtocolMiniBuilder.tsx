@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import { estSelectionLibre, isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import {
+  ACTION_ID_ORIENTATION,
   TEXTE_ORIENTATION,
   actionOrientation,
   orientationRequise,
@@ -122,6 +123,31 @@ function emptyAction(actionId: string): BrouillonAction {
   };
 }
 
+/** Le contenu de la version EN VIGUEUR, tel que la route des versions le sert. */
+export type VersionActiveConstructeur = {
+  versionId: string;
+  contenu: {
+    purpose: string;
+    followUpCriterion: string;
+    therapeuticLoad: TherapeuticLoad;
+    actions: ProtocolAction[];
+  };
+};
+
+/**
+ * Le prochain numéro libre après les actions reprises : une action ajoutée au
+ * brouillon rechargé ne doit jamais reprendre l'identifiant d'une action déjà
+ * là (`action-N`).
+ */
+function prochainNumeroAction(actions: { actionId: string }[]): number {
+  let max = 0;
+  for (const { actionId } of actions) {
+    const trouve = /^action-(\d+)$/.exec(actionId);
+    if (trouve) max = Math.max(max, Number(trouve[1]));
+  }
+  return max + 1;
+}
+
 export function ProtocolMiniBuilder({
   decisionCard,
   onReviewed,
@@ -140,6 +166,7 @@ export function ProtocolMiniBuilder({
   provenancePurpose = null,
   baremeCharge = [],
   chargeVersionActive = null,
+  versionActive = null,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -215,6 +242,13 @@ export function ProtocolMiniBuilder({
    * anticipé. Le praticien déclarait une charge qu'il ne revoyait jamais.
    */
   chargeVersionActive?: TherapeuticLoad | null;
+  /**
+   * La version EN VIGUEUR, dont le brouillon VIERGE se recharge (dette t15,
+   * arbitrage du responsable du 2026-10-19) : réviser un protocole partait d'un
+   * formulaire vide, et le praticien ressaisissait tout. `null` = aucune version
+   * active lue (fixture, lecture en échec, premier protocole).
+   */
+  versionActive?: VersionActiveConstructeur | null;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -268,6 +302,29 @@ export function ProtocolMiniBuilder({
   const [erreur, setErreur] = useState<string | null>(null);
   const [nextActionId, setNextActionId] = useState(1);
   const [editedSinceSave, setEditedSinceSave] = useState(false);
+
+  // LE BROUILLON VIERGE SE RECHARGE DEPUIS LA VERSION EN VIGUEUR — une fois par
+  // version, et jamais par-dessus une frappe : un brouillon commencé, ou vidé à
+  // la main, reste ce que le praticien en a fait. L'orientation n'est pas
+  // reprise : elle suit la carte courante et repart en tête à la soumission
+  // ([[D-257]] §8). La coche de relecture reste à poser : recharger n'est pas
+  // relire ([[D-213]] §1).
+  const [versionRechargee, setVersionRechargee] = useState<string | null>(null);
+  const brouillonVierge = purpose === '' && followUpCriterion === '' && actions.length === 0
+    && loadLevel === '' && loadJustification === '';
+  if (versionActive && versionActive.versionId !== versionRechargee) {
+    setVersionRechargee(versionActive.versionId);
+    if (brouillonVierge && !editedSinceSave) {
+      const reprises = versionActive.contenu.actions
+        .filter(action => action.actionId !== ACTION_ID_ORIENTATION);
+      setPurpose(versionActive.contenu.purpose);
+      setFollowUpCriterion(versionActive.contenu.followUpCriterion);
+      setActions(reprises);
+      setNextActionId(prochainNumeroAction(reprises));
+      setLoadLevel(versionActive.contenu.therapeuticLoad.level);
+      setLoadJustification(versionActive.contenu.therapeuticLoad.justification ?? '');
+    }
+  }
 
   // UNE PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]] §2) n'est bloquée que par un
   // constat de sécurité — pas par l'abstention pour recueil incomplet, qui ne
@@ -508,7 +565,11 @@ export function ProtocolMiniBuilder({
     // l'écran qui demande, sur ce qu'il porte, exactement comme il le fait déjà
     // pour une suspension.
     const porteUneAssiette = actions.some(action => action.recommendedPlateRef !== undefined);
-    const contratV4 = suspendues || porteUneAssiette;
+    // UN STATUT D'INTERVENTION N'EXISTE QU'EN V4 : une action rechargée depuis
+    // une version V4 le porte (t15), et une révision V1 d'une version V4 est
+    // refusée (`version_contrat_incompatible`). Même raison que l'assiette.
+    const porteUnStatut = actions.some(action => action.interventionStatus !== undefined);
+    const contratV4 = suspendues || porteUneAssiette || porteUnStatut;
     return {
       purpose,
       followUpCriterion,
