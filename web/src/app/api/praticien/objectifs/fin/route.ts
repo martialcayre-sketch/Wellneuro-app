@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
 import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { preparerFin, type RefusFin } from '@/lib/praticien/objectifNegocie';
 
@@ -109,7 +109,9 @@ export async function POST(req: Request): Promise<NextResponse<FinApiResponse>> 
       select: { actif: true, suiviClotureLe: true },
     });
     if (patient && !accepteNouvelEnvoi(patient)) {
-      return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      // Clos ou désactivé : chacun son refus (t11).
+      const refus = refusDossierFerme(patient);
+      return echec(refus.raison, refus.message, 409);
     }
     // Cadence ([[D-327]], t08) : plafond technique des écritures sur les objectifs du dossier.
     if (await cadenceObjectifsAtteinte(idPatient)) {

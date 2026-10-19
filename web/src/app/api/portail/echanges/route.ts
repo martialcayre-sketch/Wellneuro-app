@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
-import { mesEchangesOuvert } from '@/lib/portail/mesEchangesDrapeau';
+import { mesEchangesOuvert, ouverturesMesEchanges } from '@/lib/portail/mesEchangesDrapeau';
 import { sourcesMesEchanges } from '@/lib/portail/mesEchangesServeur';
 import { entreesMesEchanges, type EntreeEchange } from '@/lib/portail/mesEchanges';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
@@ -43,7 +43,11 @@ export async function GET(req: Request): Promise<NextResponse<PortailEchangesRes
 
   try {
     const sources = await sourcesMesEchanges(auth.patient.idPatient);
-    return NextResponse.json<PortailEchangesResponse>({ ok: true, ouvert: true, entrees: entreesMesEchanges(sources) });
+    return NextResponse.json<PortailEchangesResponse>({
+      ok: true,
+      ouvert: true,
+      entrees: entreesMesEchanges(sources, ouverturesMesEchanges()),
+    });
   } catch (erreur) {
     console.error('[portail/echanges GET] lecture impossible :', ...classeEtCode(erreur));
     return echec('exception', 'Lecture impossible pour le moment.', 500);

@@ -10,6 +10,7 @@ import type {
   TrajectoireObjectif,
   LigneRatificationExposee,
   LigneDemandeCorrectionExposee,
+  LigneFinExposee,
 } from '@/app/api/praticien/objectifs/route';
 import type { FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import type { LectureFin } from '@/lib/praticien/objectifNegocie';
@@ -31,6 +32,7 @@ import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MAX_PRIORITE,
   LONGUEUR_MAX_REFORMULATION,
+  MOTIF_FIN_MAX,
   type EtatRatification,
 } from '@/lib/praticien/objectifNegocie';
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
@@ -275,6 +277,21 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+type AccordAffiche = { date: string; forme: 'preuve' | 'temoignage' | 'heritee' };
+
+/**
+ * D'OÙ VIENT L'ACCORD, dit à côté de sa date (`D-161` §4, dette t12). « Négocié
+ * le » sans provenance laissait le praticien lire comme un fait ce qui n'était
+ * qu'une date saisie à la main. La forme vient du serveur (`accordDeVersion`,
+ * la même lecture qu'au portail), jamais d'un calcul local.
+ */
+function libelleAccord(accord: AccordAffiche): string {
+  const date = formatDate(accord.date);
+  if (accord.forme === 'preuve') return `accord de votre patient le ${date}, donné depuis son espace`;
+  if (accord.forme === 'temoignage') return `accord noté par vous le ${date}, conclu en consultation`;
+  return `négocié le ${date} (date saisie à la main, provenance non connue)`;
+}
+
 /**
  * Une ligne d'objectif, telle qu'elle se lit — version courante ou antérieure.
  *
@@ -320,9 +337,12 @@ function reprisMotPourMot(ligne: {
 function LigneObjectif({
   ligne,
   ratification,
+  accord,
 }: {
   ligne: ObjectifExpose;
   ratification?: { libelle: string; date: string | null };
+  /** L'accord de CETTE version et sa provenance ; absent = aucun accord connu. */
+  accord?: AccordAffiche | null;
 }) {
   return (
     <div className="text-base text-foreground">
@@ -405,7 +425,7 @@ function LigneObjectif({
           répété à deux endroits finit par diverger quand l'un des deux bouge. */}
       <p className="mt-2 text-xs font-medium text-foreground">
         Enregistré le {formatDate(ligne.creeLe)}
-        {ligne.negocieLe ? ` · négocié le ${formatDate(ligne.negocieLe)}` : ''}
+        {accord ? ` · ${libelleAccord(accord)}` : ''}
       </p>
     </div>
   );
@@ -427,6 +447,233 @@ function Compteur({ valeur, maximum }: { valeur: string; maximum: number }) {
       {valeur.length.toLocaleString('fr-FR')} / {maximum.toLocaleString('fr-FR')} caractères
       {depasse ? ' — trop long, l’enregistrement sera refusé.' : ''}
     </p>
+  );
+}
+
+type GesteFin = {
+  motif: 'atteint' | 'abandonne';
+  voix: 'praticien' | 'patient';
+  sens: 'declare' | 'confirme' | 'refuse';
+  libelle: string;
+  confirmation: string;
+};
+
+const PROPOSER_ATTEINT: GesteFin = {
+  motif: 'atteint', voix: 'praticien', sens: 'declare',
+  libelle: 'Proposer : objectif atteint',
+  confirmation: 'Vous proposez de conclure cet objectif comme atteint. Il restera la voix de votre patient.',
+};
+const PATIENT_CONFIRME: GesteFin = {
+  motif: 'atteint', voix: 'patient', sens: 'confirme',
+  libelle: 'Mon patient l’a confirmé en consultation',
+  confirmation: 'Vous attestez que votre patient a confirmé, devant vous, que cet objectif est atteint.',
+};
+const PATIENT_REFUSE: GesteFin = {
+  motif: 'atteint', voix: 'patient', sens: 'refuse',
+  libelle: 'Mon patient ne l’a pas confirmé',
+  confirmation: 'Vous attestez que votre patient ne considère pas cet objectif comme atteint. L’objectif reste en cours.',
+};
+const PRATICIEN_CONFIRME: GesteFin = {
+  motif: 'atteint', voix: 'praticien', sens: 'confirme',
+  libelle: 'Confirmer : objectif atteint',
+  confirmation: 'Vous confirmez que cet objectif est atteint.',
+};
+const PRATICIEN_REFUSE: GesteFin = {
+  motif: 'atteint', voix: 'praticien', sens: 'refuse',
+  libelle: 'Ne pas confirmer',
+  confirmation: 'Vous ne confirmez pas la fin de cet objectif. Il reste en cours.',
+};
+const RENONCER: GesteFin = {
+  motif: 'abandonne', voix: 'praticien', sens: 'declare',
+  libelle: 'Renoncer à cet objectif',
+  confirmation: 'Vous renoncez à cet objectif. Dites pourquoi : ce motif restera lisible au dossier.',
+};
+
+/**
+ * LA FIN D'UN OBJECTIF, DEPUIS LE COCKPIT (`D-161` §5-7, dette t12, arbitrage
+ * du responsable du 2026-10-19). Seul « remplacé » s'écrivait jusqu'ici, par le
+ * départage : un objectif atteint ou abandonné restait affiché comme en cours.
+ *
+ * « ATTEINT » À DEUX VOIX, « ABANDONNÉ » SEUL, ET MOTIVÉ. Le praticien propose ;
+ * la voix du patient se recueille en consultation et le praticien l'ATTESTE
+ * (`voix: 'patient'`, consignée par lui) — il ne peut pas attester ce que
+ * personne n'a dit, d'où un geste qui ne s'offre qu'une fois la fin proposée.
+ * L'état vient du serveur (`etatDeChaine`), jamais d'un calcul local.
+ *
+ * DEUX TEMPS POUR CHAQUE GESTE : le choix, puis une confirmation qui dit ce
+ * qui va être écrit. Une ligne de fin ne s'efface pas (append-only).
+ */
+function FinObjectifBloc({
+  idPatient,
+  racineId,
+  lecture,
+  lignesFin,
+  actif,
+  onEcrit,
+}: {
+  idPatient: string;
+  racineId: string;
+  lecture: LectureFin | undefined;
+  lignesFin: LigneFinExposee[];
+  /** Une seule tête active : sans elle, le départage passe d'abord. */
+  actif: boolean;
+  onEcrit: () => Promise<void>;
+}) {
+  const [geste, setGeste] = useState<GesteFin | null>(null);
+  const [motifTexte, setMotifTexte] = useState('');
+  const [enCours, setEnCours] = useState(false);
+  const [message, setMessage] = useState('');
+
+  if (lecture?.etat === 'close') {
+    const fin = lignesFin.find(
+      (ligne) => ligne.racineObjectifId === racineId && ligne.motif === lecture.motif && ligne.sens === 'declare',
+    );
+    return (
+      <div className="mt-2 rounded-lg border border-border p-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Fin de l’objectif
+        </h4>
+        <p className="mt-1 text-sm text-foreground">
+          {lecture.motif === 'atteint' && (
+            <>
+              Objectif atteint, conclu à deux voix
+              {lecture.attestee ? ' — la voix de votre patient notée par vous en consultation.' : '.'}
+            </>
+          )}
+          {lecture.motif === 'abandonne' && 'Objectif abandonné.'}
+          {lecture.motif === 'remplace' && 'Objectif remplacé par une autre formulation.'}
+        </p>
+        {lecture.motif === 'abandonne' && fin?.motifTexte && (
+          <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">Motif : « {fin.motifTexte} »</p>
+        )}
+      </div>
+    );
+  }
+  if (!actif) return null;
+
+  const proposee = lecture?.etat === 'fin_proposee';
+  const gestes: GesteFin[] = proposee
+    ? lecture?.voixManquante === 'patient'
+      ? [PATIENT_CONFIRME, PATIENT_REFUSE, RENONCER]
+      : [PRATICIEN_CONFIRME, PRATICIEN_REFUSE, RENONCER]
+    : [PROPOSER_ATTEINT, RENONCER];
+
+  const ecrire = async (choisi: GesteFin) => {
+    setEnCours(true);
+    setMessage('');
+    try {
+      const reponse = await fetch('/api/praticien/objectifs/fin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          racineObjectifId: racineId,
+          motif: choisi.motif,
+          voix: choisi.voix,
+          sens: choisi.sens,
+          ...(choisi.motif === 'abandonne' ? { motifTexte } : {}),
+        }),
+      });
+      const payload = (await reponse.json()) as { ok: boolean; error?: string };
+      if (!reponse.ok || !payload.ok) {
+        setMessage(payload.error ?? 'La fin de l’objectif n’a pas pu être enregistrée.');
+        return;
+      }
+      setGeste(null);
+      setMotifTexte('');
+      await onEcrit();
+    } catch {
+      setMessage('La fin de l’objectif n’a pas pu être enregistrée.');
+    } finally {
+      setEnCours(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-lg border border-border p-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Fin de l’objectif
+      </h4>
+      {proposee && lecture?.voixManquante === 'patient' && (
+        <p className="mt-1 text-sm text-foreground">
+          Vous avez proposé de conclure cet objectif comme atteint. Il reste la voix de votre
+          patient : recueillez-la en consultation.
+        </p>
+      )}
+      {proposee && lecture?.voixManquante === 'praticien' && (
+        <p className="mt-1 text-sm text-foreground">
+          Votre patient propose de conclure cet objectif comme atteint.
+        </p>
+      )}
+      {!proposee && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Un objectif atteint se conclut à deux voix : vous le proposez, votre patient le confirme.
+          Un renoncement se décide seul, et se motive.
+        </p>
+      )}
+      {lecture?.refusee && (
+        <p className="mt-1 text-xs text-foreground">
+          Une proposition de conclure n’a pas été confirmée : l’objectif reste en cours.
+        </p>
+      )}
+
+      {geste === null ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {gestes.map((choix) => (
+            <button
+              key={choix.libelle}
+              type="button"
+              onClick={() => { setGeste(choix); setMessage(''); }}
+              className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {choix.libelle}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-2 rounded-lg bg-muted p-3">
+          <p className="text-sm text-foreground">{geste.confirmation}</p>
+          {geste.motif === 'abandonne' && (
+            <>
+              <label htmlFor={`fin-motif-${racineId}`} className="mt-2 block text-xs font-medium text-foreground">
+                Motif du renoncement
+              </label>
+              <textarea
+                id={`fin-motif-${racineId}`}
+                value={motifTexte}
+                maxLength={MOTIF_FIN_MAX}
+                rows={3}
+                onChange={(evenement) => setMotifTexte(evenement.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              />
+            </>
+          )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={enCours || (geste.motif === 'abandonne' && motifTexte.trim() === '')}
+              onClick={() => void ecrire(geste)}
+              className="min-h-9 rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              {enCours ? 'Enregistrement…' : 'Confirmer'}
+            </button>
+            <button
+              type="button"
+              disabled={enCours}
+              onClick={() => { setGeste(null); setMotifTexte(''); }}
+              className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+      {message && (
+        <p role="alert" className="mt-1 text-xs text-status-danger">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -476,6 +723,8 @@ export function ObjectifNegociePanel({
   // calcule pas : la règle « le témoignage cède à la preuve » vit dans le
   // module, et deux lectures de la même chose finiraient par diverger.
   const [fins, setFins] = useState<Record<string, LectureFin>>({});
+  const [lignesFin, setLignesFin] = useState<LigneFinExposee[]>([]);
+  const [accords, setAccords] = useState<Record<string, AccordAffiche | null>>({});
   const [tetesActives, setTetesActives] = useState(0);
   const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
   const [erreurDepartage, setErreurDepartage] = useState('');
@@ -617,7 +866,9 @@ export function ObjectifNegociePanel({
       }
       setObjectifs(payload.objectifs);
       setTrajectoires(payload.trajectoires);
-      setFins(payload.fins);
+      setFins(payload.fins ?? {});
+      setLignesFin(payload.lignesFin ?? []);
+      setAccords(payload.accords ?? {});
       setTetesActives(payload.tetesActives);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
@@ -1502,6 +1753,7 @@ export function ObjectifNegociePanel({
                 <div className="mt-1">
                   <LigneObjectif
                     ligne={courante}
+                    accord={accords[courante.id] ?? null}
                     ratification={{
                       libelle:
                         LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente'],
@@ -1594,6 +1846,20 @@ export function ObjectifNegociePanel({
                       </p>
                     )}
                   </div>
+                )}
+
+                {/* ── LA FIN DE L'OBJECTIF (`D-161`, dette t12) ──────────────
+                    Sur la RACINE de la chaîne, jamais sur sa tête : la racine
+                    ne bouge pas, une fin ainsi attachée survit aux révisions. */}
+                {trajectoire.lignes.length > 0 && (
+                  <FinObjectifBloc
+                    idPatient={idPatient}
+                    racineId={trajectoire.lignes[trajectoire.lignes.length - 1].id}
+                    lecture={fins[trajectoire.idObjectif]}
+                    lignesFin={lignesFin}
+                    actif={tetesActives === 1}
+                    onEcrit={chargerDossier}
+                  />
                 )}
 
                 {/* ── RENVOYER LE COURRIER ────────────────────────────────────
@@ -1812,7 +2078,7 @@ export function ObjectifNegociePanel({
                         );
                         return (
                           <li key={ligne.id} className="opacity-80">
-                            <LigneObjectif ligne={ligne} />
+                            <LigneObjectif ligne={ligne} accord={accords[ligne.id] ?? null} />
                             {gestes.length > 0 && (
                               <ul className="mt-1 space-y-0.5">
                                 {gestes.map((geste) => (

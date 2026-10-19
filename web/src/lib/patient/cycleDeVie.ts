@@ -76,6 +76,25 @@ export const MESSAGE_DOSSIER_CLOS =
 export const RAISON_DOSSIER_CLOS = 'dossier_cloture';
 
 /**
+ * LE DOSSIER DÉSACTIVÉ A SON PROPRE REFUS (dette t11, arbitrage du 2026-10-19).
+ * Il recevait « le suivi est clôturé », ce qu'il n'est pas : le praticien
+ * cherchait à rouvrir un suivi qui n'était pas clos. La clôture prime toujours
+ * (`phaseDossier`) — un dossier clos puis désactivé reste « clos ».
+ */
+export const MESSAGE_DOSSIER_DESACTIVE =
+  'Ce dossier est désactivé : rien de nouveau ne peut y être enregistré. Réactivez le dossier pour reprendre.';
+
+export const RAISON_DOSSIER_DESACTIVE = 'dossier_desactive';
+
+/** Le refus juste pour un dossier qui n'accepte plus rien ; dossier absent = clos. */
+export function refusDossierFerme(etat: EtatDossier | null): { raison: string; message: string } {
+  if (etat && phaseDossier(etat) === 'desactive') {
+    return { raison: RAISON_DOSSIER_DESACTIVE, message: MESSAGE_DOSSIER_DESACTIVE };
+  }
+  return { raison: RAISON_DOSSIER_CLOS, message: MESSAGE_DOSSIER_CLOS };
+}
+
+/**
  * Le résidu laissé par un effacement.
  *
  * ANNÉE et non date complète, TROIS LETTRES et non nom : de quoi ne pas

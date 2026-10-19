@@ -36,6 +36,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. `create` est moqué ici
     // bien que cette route ne l'appelle pas — il vit à `objectifs/fin`.
     finObjectif: { findMany: vi.fn(), create: vi.fn() },
+    accordAtteste: { findMany: vi.fn() },
     // L'ÉTAPE ATTENDUE se calcule depuis l'ancre du cycle courant : sans cette
     // lecture, la route lève au lieu de rendre « aucune fenêtre ouverte ».
     assessmentEpisode: { findMany: vi.fn() },
@@ -153,6 +154,7 @@ describe('/api/praticien/objectifs', () => {
     prisma.demandeCorrectionObjectif.findMany.mockResolvedValue([]);
     prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
     prisma.finObjectif.findMany.mockResolvedValue([]);
+    prisma.accordAtteste.findMany.mockResolvedValue([]);
     // AUCUNE ANCRE PAR DÉFAUT : c'est l'état de la quasi-totalité des dossiers,
     // et la fenêtre d'étape ne s'annonce que quand le SERVEUR en ouvre une.
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
@@ -277,6 +279,45 @@ describe('/api/praticien/objectifs', () => {
     expect((await GET(getRequest())).status).toBe(200);
   });
 
+  it('un dossier DÉSACTIVÉ reçoit son propre refus, pas « clôturé » (t11)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'praticien@wellneuro.fr',
+      actif: false,
+      suiviClotureLe: null,
+    });
+    const res = await POST(postRequest(corps()));
+    expect(res.status).toBe(409);
+    const payload = await res.json();
+    expect(payload.reason).toBe('dossier_desactive');
+    expect(payload.error).toMatch(/désactivé/);
+    expect(payload.error).not.toMatch(/clôturé/);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('LA COURSE PERDUE : l’index unique refuse (P2002), la route rend le même 409 (t11)', async () => {
+    // La lecture a vu la cible libre ; la révision concurrente l'a prise avant
+    // l'écriture, et seul l'index la refuse.
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_TEST',
+      enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+    });
+    prisma.objectifNegocie.create.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    );
+    const res = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_1' })));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('objectif_supplante');
+  });
+
+  it('un P2002 sur une RACINE n’est pas une course perdue : il reste un 500 (t11)', async () => {
+    prisma.objectifNegocie.create.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    );
+    const res = await POST(postRequest(corps()));
+    expect(res.status).toBe(500);
+    expect((await res.json()).reason).toBe('exception');
+  });
+
   // ── Le cœur du lot : deux dates ───────────────────────────────────────────
 
   it('écrit un objectif sans JAMAIS transmettre la date d’écriture (G4)', async () => {
@@ -285,15 +326,15 @@ describe('/api/praticien/objectifs', () => {
 
     expect(res.status).toBe(201);
     const data = prisma.objectifNegocie.create.mock.calls[0][0].data;
-    // La date d'ÉVÉNEMENT est une donnée portée par l'appelant…
-    expect(data.negocieLe.toISOString()).toBe('2026-08-20T00:00:00.000Z');
+    // `negocieLe` N'EST PLUS ÉCRITE (`D-161` §11, t12) : une date reçue est
+    // ignorée — l'accord se lit depuis la ratification ou l'attestation.
+    expect(data.negocieLe).toBeNull();
     expect(data.praticienEmail).toBe('praticien@wellneuro.fr');
     // …la date d'ENREGISTREMENT ne part pas de l'application : `cree_le` est
     // posé par la base. C'est ce qui rend la ligne inantidatable.
     expect(data).not.toHaveProperty('creeLe');
     expect(data).not.toHaveProperty('cree_le');
-    // Et les deux restent distinctes dans ce qui est rendu.
-    expect(payload.objectif.negocieLe).toBe('2026-08-20T00:00:00.000Z');
+    expect(payload.objectif.negocieLe).toBeNull();
     expect(payload.objectif.creeLe).toBe('2026-08-22T09:00:00.000Z');
   });
 
@@ -338,17 +379,21 @@ describe('/api/praticien/objectifs', () => {
 
   it('refuse une date d’événement future au-delà de la tolérance de fuseau', async () => {
     const loin = new Date(Date.now() + TOLERANCE_FUSEAU_MS + 60 * 60 * 1000).toISOString();
-    const res = await POST(postRequest(corps({ negocieLe: loin })));
+    // La date d'événement qui reste saisie : « non traité depuis le » (t12).
+    const motif = 'La priorité est ailleurs.';
+    const res = await POST(postRequest(corps({ nonTraiteMotif: motif, nonTraiteDepuisLe: loin })));
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('date_future');
 
     // …mais accepte la date du jour lue minuit UTC (la tolérance sert à ça).
     const dansUneHeure = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    expect((await POST(postRequest(corps({ negocieLe: dansUneHeure })))).status).toBe(201);
+    expect(
+      (await POST(postRequest(corps({ nonTraiteMotif: motif, nonTraiteDepuisLe: dansUneHeure })))).status,
+    ).toBe(201);
   });
 
   it('refuse une date d’événement illisible', async () => {
-    const res = await POST(postRequest(corps({ negocieLe: 'hier' })));
+    const res = await POST(postRequest(corps({ nonTraiteMotif: 'La priorité est ailleurs.', nonTraiteDepuisLe: 'hier' })));
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('date_invalide');
   });
@@ -520,6 +565,27 @@ describe('/api/praticien/objectifs', () => {
 
     const payload = await (await GET(getRequest())).json();
     expect(payload.ratifications).toEqual({ OBJ_1: 'conteste' });
+  });
+
+  it('sert l’accord de chaque version et sa provenance — preuve, témoignage, héritée (D-161 §4, t12)', async () => {
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      ligneLue({ id: 'OBJ_3', supersedesObjectifId: 'OBJ_2' }),
+      ligneLue({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' }),
+      ligneLue({ id: 'OBJ_1', negocieLe: new Date('2026-08-19T00:00:00.000Z') }),
+    ]);
+    prisma.ratificationObjectif.findMany.mockResolvedValue([
+      { id: 'R1', idObjectif: 'OBJ_3', sens: 'ratifie', creeLe: new Date('2026-08-23T10:00:00.000Z') },
+    ]);
+    prisma.accordAtteste.findMany.mockResolvedValue([
+      { id: 'A1', idObjectif: 'OBJ_2', convenuLe: new Date('2026-08-21T00:00:00.000Z'), creeLe: new Date('2026-08-21T12:00:00.000Z') },
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.accords).toEqual({
+      OBJ_3: { date: '2026-08-23T10:00:00.000Z', forme: 'preuve' },
+      OBJ_2: { date: '2026-08-21T00:00:00.000Z', forme: 'temoignage' },
+      OBJ_1: { date: '2026-08-19T00:00:00.000Z', forme: 'heritee' },
+    });
   });
 
   it('distingue « aucune consultation validée » de « champ non renseigné » (DC-24)', async () => {
