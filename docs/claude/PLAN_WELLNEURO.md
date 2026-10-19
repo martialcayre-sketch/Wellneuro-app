@@ -456,6 +456,13 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
   - « Pour votre médecin » au portail, derrière `WN_DOCUMENT_MEDECIN_PATIENT` éteint, avec chaque téléchargement journalisé et rien de servi sans accord.
 
   Reste, avant d'allumer le drapeau : la relecture des textes du portail par le responsable, puis un constat sur un dossier de test.
+- **Mise à jour (2026-10-19)** : #1564 mergée et déployée. Arbitrages du responsable :
+  - textes du portail validés tels quels ;
+  - une synthèse imprimée ne se vide ni ne se rejette ;
+  - portail ouvert, la confirmation d'impression l'annonce ;
+  - constat en trois gestes (le responsable imprime, l'assistant allume, le responsable télécharge), puis relecture par conteneur.
+
+  Reste le constat, puis le drapeau.
 
 #### F57 · Onglet « Biologie » de la fiche patient
 - **Identifiant, piste** : lettre s ; socle.
