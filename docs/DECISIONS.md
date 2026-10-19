@@ -8,9 +8,10 @@
 
 - Date : 2026-10-18
 - Statut : accepté. Migration demandée par le responsable le 2026-10-18
-  (« Oui », à la question de préparer la migration de J3-collecte) ; quatre
+  (« Oui », à la question de préparer la migration de J3-collecte) ; sept
   arbitrages du même jour, sur questions à options, tous sur l'option
-  recommandée. Texte rédigé par l'assistant.
+  recommandée — quatre avant la migration, trois après sa relecture
+  `wn-reviewer`. Texte rédigé par l'assistant.
 - Domaine : `web/prisma/migrations/20261018200000_documents_deposes_patient_v1`,
   `web/prisma/checks/documents_deposes_patient_v1_negatif.sql`,
   `web/src/lib/patient/effacement.ts`, `docs/DOSSIER_RGPD.md` ; fiche H62 du
@@ -28,7 +29,7 @@ ses traitements ou de ses compléments (texte de collecte de G-11, accepté le
 le lit ; rien ne part hors de la base HDS ; conservé avec le dossier
 ([[D-283]] §2). Ce n'est pas une messagerie ([[D-293]]).
 
-**2. Les quatre arbitrages.**
+**2. Les sept arbitrages.**
 - **Classement** : le patient propose une catégorie au dépôt — courrier,
   compte rendu de consultation, traitements ou compléments, autre ; le
   praticien du dossier la corrige à la lecture, chaque correction datée. La
@@ -46,23 +47,43 @@ le lit ; rien ne part hors de la base HDS ; conservé avec le dossier
   métadonnées ; nom de fichier jamais gardé ; au plus 10 dépôts par 24 heures
   et 3 documents non consultés à la fois, par dossier (chiffres techniques,
   `DC-20`).
+- **Doublon** : un même fichier (même empreinte) déjà présent et non retiré
+  dans le dossier est refusé, « déjà déposé » ; un document retiré peut être
+  redéposé.
+- **Consultation** : seule la PREMIÈRE ouverture par le praticien est
+  tracée, pas chaque ouverture ; le journal d'accès au dossier trace déjà les
+  ouvertures de dossier.
+- **Retrait sur demande de droit** : il porte son motif et sa date, sans
+  désigner la demande qu'il traite ; la demande garde sa propre trace.
 
 **3. Ce que la base tient** (migration `documents_deposes_patient_v1`,
 contrat négatif à quatorze promesses) : types, taille et empreinte ;
 catégorie de la liste ; un dépôt porte son document et ne naît ni consulté ni
-retiré ; deux transitions seulement, une par écriture — la première
+retiré ; pas de doublon d'un document non retiré du dossier, lu sous un verrou
+du dossier ; deux transitions seulement, une par écriture — la première
 consultation et le retrait —, par le seul praticien du dossier, instants posés
 par la base ; ce qui a été déposé ne se réécrit pas ; un document retiré ne
 change plus et ne se classe plus ; classements en ajout seul ; TRUNCATE
-refusé ; DELETE admis pour l'effacement nommé seul (banc
-`collecte/documentsDeposes.guard.test.ts`) ; RLS deny-all.
+refusé ; RLS deny-all. La base ADMET le DELETE, pour l'effacement nommé :
+c'est le banc `collecte/documentsDeposes.guard.test.ts` qui réserve la
+suppression à `patient/effacement.ts`. Verrous : la consultation et le retrait
+ne verrouillent pas le dossier — la ligne du document l'est déjà, et le
+prendre ensuite ouvrirait un interblocage avec l'effacement, qui prend le
+dossier en premier.
 
 **4. Ce qui revient au code** (PR suivante, après l'application constatée,
 sous un drapeau éteint) : la route de dépôt, ses bornes, ses plafonds et
 l'encart d'urgence de [[D-293]] §3 ; la garde d'âge et le dossier clos (le
 dépôt est une surface neuve : fermé à un mineur et à un dossier sans date,
 [[D-283]] §5, [[D-284]] §3) ; l'écran du praticien (consulter, classer,
-retirer) ; la ligne « Transmis ». L'ouverture est ACT-4, après ACT-3
+retirer) ; la ligne « Transmis ». Prescriptions de la relecture : compter
+les plafonds sous le verrou du dossier que prend le dépôt
+(`hashtext('documents_deposes:' || id_patient)`), sinon deux dépôts
+simultanés le franchissent ; ne jamais charger le document dans une liste
+(`select` sans `contenu`) ; consulter par une écriture conditionnelle (seulement
+si aucune consultation n'est posée), une seconde ouverture ne devant pas
+échouer ; ne jamais journaliser tel quel le message d'une contrainte refusée,
+qui recopie la ligne (dossier, auteur, début du document). L'ouverture est ACT-4, après ACT-3
 constatée (porte 18) et J2-conf (F45) ; « Vos données personnelles » se met à
 jour avant elle, en version à valider.
 
