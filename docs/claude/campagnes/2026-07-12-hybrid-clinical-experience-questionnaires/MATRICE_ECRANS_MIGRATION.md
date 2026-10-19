@@ -24,7 +24,7 @@ Classement des écrans réels par priorité de migration vers le shell premium
 | `portail/[token]/questionnaires/page.tsx` (hub) | Fonctionnel, distinction brouillon/transmis déjà présente | **Vague 1** |
 | `portail/[token]/questionnaires/[idAssignation]/page.tsx` | Dispatch saisie/lecture seule/Mon équilibre | **Vague 1** (hors rendu des questions elles-mêmes → QX) |
 | `ConsultationScreen.tsx` | Lecture seule + demande de correction | Vague 1 |
-| `MonEquilibreAccueil/Detail.tsx` | Score/synthèse côté patient, distinct du praticien | Vague 2 (dépend de la cohérence avec la prévisualisation) — couverts par `PatientPreview` depuis le 2026-10-19 (t07b) |
+| `MonEquilibreAccueil/Detail.tsx` | Score/synthèse côté patient, distinct du praticien | Vague 2 (dépend de la cohérence avec la prévisualisation) |
 
 ## Hors périmètre de migration HC-F
 

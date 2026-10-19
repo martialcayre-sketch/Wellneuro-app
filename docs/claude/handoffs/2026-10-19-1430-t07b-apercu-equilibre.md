@@ -36,9 +36,11 @@ Reste de la dette t07 (`DETTE_UX_RESIDUELLE.md`) : accueil et détail de
   `MonEquilibreAccueil.tsx`, `MonEquilibreDetail.tsx`.
 - `web/e2e/portail-parcours.spec.ts` : l'étape d'aperçu attendait le bouton
   masqué ; elle parcourt désormais accueil et détail par la route miroir.
-- `docs/claude/MATRICE_CONSOMMATION.md` régénéré (une surface indirecte de plus).
-- `DETTE_UX_RESIDUELLE.md`, `MATRICE_ECRANS_MIGRATION.md`, plan, changelog,
-  SESSION_LOG.
+- `docs/claude/MATRICE_CONSOMMATION.md` régénéré : le catalogue de scoring passe
+  de 49 à 48 surfaces indirectes — la route patient n'importe plus le scoring
+  elle-même, elle passe par `lecturePatient`.
+- Plan, changelog, SESSION_LOG. Les registres de la campagne HC-F ne sont
+  pas touchés : le plan fait foi depuis le 2026-10-14 (revue CodeRabbit).
 
 ## Validations exécutées
 

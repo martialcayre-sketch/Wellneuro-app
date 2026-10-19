@@ -26,11 +26,7 @@ HC-F. Aucun élément ci-dessous n'a été maquillé comme résolu.
   patient-only que `ConsultationScreen.tsx` avant LOT-03 — non couvert par
   `PatientPreview` (le bouton « Voir Mon équilibre » y est simplement
   masqué en mode prévisualisation). Classé Vague 2
-  (`MATRICE_ECRANS_MIGRATION.md`). **Soldé le 2026-10-19 (t07b)** : prop
-  `fetchUrl` sur les deux écrans, route miroir
-  `api/praticien/apercu-patient/equilibre` (même composition que la route
-  patient, `lib/equilibre/lecturePatient.ts`), navigation consultation →
-  accueil → détail dans `PatientPreview`.
+  (`MATRICE_ECRANS_MIGRATION.md`).
 
 ## Dette de navigation praticien
 
