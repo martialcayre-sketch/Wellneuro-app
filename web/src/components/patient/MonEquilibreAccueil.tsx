@@ -47,22 +47,25 @@ export function MonEquilibreAccueil({
   idAssignation,
   onVoirDetail,
   onRetour,
+  fetchUrl,
 }: {
   idAssignation: string;
   onVoirDetail: () => void;
   onRetour: () => void;
+  /** Aperçu praticien (dette t07b) : la route miroir, même composition. */
+  fetchUrl?: string;
 }) {
   const [data, setData] = useState<PatientEquilibreResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Session portail seule (LOT-04) : plus d'adresse dans l'URL (dette t07).
-    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}`)
+    fetch(fetchUrl ?? `/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}`)
       .then(r => r.json())
       .then((d: PatientEquilibreResponse) => setData(d))
       .catch(() => setData({ ok: false, reason: 'exception', error: 'Erreur réseau.' }))
       .finally(() => setLoading(false));
-  }, [idAssignation]);
+  }, [fetchUrl, idAssignation]);
 
   if (loading) {
     return (
