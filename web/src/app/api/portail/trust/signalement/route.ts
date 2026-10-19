@@ -4,7 +4,7 @@ import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffe
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { orienterEffetIndesirable } from '@/lib/trust/securite';
-import { notifierPraticienSignalement } from '@/lib/trust/notification';
+import { notifierPraticienSignalement, premierSignalementDeLHeure } from '@/lib/trust/notification';
 import { RATTACHEMENTS, elementsDesignablesParLePatient, type Rattachement } from '@/lib/trust/pauseEffetIndesirable';
 import { designationOuverte, programmeDiffuse } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type {
@@ -263,6 +263,11 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         }
       }
       const orientation = orienterEffetIndesirable(severite);
+      // Un effet indésirable orienté vers un avis médical ou l'urgence prévient
+      // TOUJOURS le praticien ([[D-328]] §2) : la limite d'un e-mail par heure ne
+      // vaut que pour une gêne légère (« revue praticien »).
+      const prevenir = orientation.orientation !== 'revue_praticien'
+        || await premierSignalementDeLHeure(patient.idPatient);
       await prisma.trustAdverseEffectReport.create({
         data: {
           idPatient: patient.idPatient,
@@ -284,7 +289,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           ...association,
         },
       });
-      void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
       return NextResponse.json({ ok: true, messagePatient: orientation.messagePatient });
     }
 
@@ -297,10 +302,11 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           { status: 400 },
         );
       }
+      const prevenir = await premierSignalementDeLHeure(patient.idPatient);
       await prisma.trustPrivacyIncident.create({
         data: { idPatient: patient.idPatient, categorie: categorieIncident, description },
       });
-      void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
       return NextResponse.json({ ok: true });
     }
 
@@ -312,6 +318,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           { status: 400 },
         );
       }
+      const prevenir = await premierSignalementDeLHeure(patient.idPatient);
       await prisma.trustRightsRequest.create({
         data: {
           idPatient: patient.idPatient,
@@ -319,7 +326,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           description: tronque(payload.description, 2000) || null,
         },
       });
-      void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
       return NextResponse.json({ ok: true });
     }
 

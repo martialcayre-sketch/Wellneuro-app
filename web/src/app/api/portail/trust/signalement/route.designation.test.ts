@@ -3,19 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // LA DÉSIGNATION D'UN ÉLÉMENT DU PROGRAMME ([[D-281]] §2, étape 3).
 
 const {
-  prisma, notifierPraticienSignalement, designationOuverte, programmeDiffuse, resolveProtocoleDiffuse,
+  prisma, notifierPraticienSignalement, premierSignalementDeLHeure, designationOuverte, programmeDiffuse, resolveProtocoleDiffuse,
 } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     trustAdverseEffectReport: { create: vi.fn() },
   },
   notifierPraticienSignalement: vi.fn(),
+  premierSignalementDeLHeure: vi.fn(async (_idPatient: string) => true),
   designationOuverte: vi.fn(),
   programmeDiffuse: vi.fn(),
   resolveProtocoleDiffuse: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement }));
+vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement, premierSignalementDeLHeure }));
 vi.mock('@/lib/trust/pauseEffetIndesirableServeur', () => ({ designationOuverte, programmeDiffuse }));
 vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 

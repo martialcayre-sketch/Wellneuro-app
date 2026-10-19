@@ -1024,6 +1024,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-18, libellé du menu)** : le libellé « Compléments alimentaires » (D-324 §4) dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent désormais à la ligne au lieu d'être coupés ; le libellé décidé reste entier.
 - **Mise à jour (2026-10-18, minute d'après)** : la minute d'après affiche le libellé de la priorité retenue (règle du registre signé, ou libellé écrit par le praticien sur la sélection de cet identifiant) au lieu de l'identifiant brut ; l'identifiant ne reste qu'en repli, si le libellé ne se relit pas.
 - **Mise à jour (2026-10-18, repli localhost)** : les trois liens de courriel (lien magique, page de connexion, Fil du jour) partagent une base unique ; son repli `localhost` ne sert plus qu'en développement, car le serveur de production refuse de démarrer sans `NEXTAUTH_URL` (trace fatale ; panne franche assumée, le port s'ouvrant avant le refus). Constaté le même jour : la variable est posée en production.
+- **Mise à jour (2026-10-18, restes reportés)** : les 8 gestes cosmétiques, les jetons, K-10, NF-6 et NU-2a ne sont définis nulle part dans le dépôt (pièce privée jamais versée). Arbitrage du responsable du même jour : ils restent au plan **en attente, sans date** ; la file A passe au lot suivant. J1-base ne se rouvre que sur leur définition.
 
 #### H44 · R:Titre du Fil
 - **Identifiant, piste** : R:Titre du Fil ; « Questionnaires à consulter » au-dessus du Fil ; cockpit ; file A.
