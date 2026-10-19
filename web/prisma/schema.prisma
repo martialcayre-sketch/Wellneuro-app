@@ -3135,6 +3135,10 @@ model ObjectifNegocie {
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
   @@index([idPatient, creeLe], map: "alli_objectif_negocie_patient_idx")
+  // Une version ne se révise qu'une fois (dette t11) : la course entre deux
+  // révisions concurrentes est fermée par la base. Les racines (NULL) restent
+  // multiples.
+  @@unique([supersedesObjectifId], map: "alli_objectif_negocie_supersedes_unique")
   @@map("objectifs_negocies")
 }
 

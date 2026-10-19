@@ -10824,3 +10824,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t11 PR 1 : migration de l'index de révision
+
+**Fait.** Branche migration seule : index unique sur la version révisée, schéma, contrat SQL, étape CI. T3 vert sur l'ensemble ; revue indépendante go.
+
+**Écarté.** Garder code et migration dans une même PR : la règle de release-db veut la migration seule.
+
+**Prochaine action.** PR, merge, release-db après recomptage, constat ; puis PR 2 (code).
+
+**Ouvert.** Aucun.

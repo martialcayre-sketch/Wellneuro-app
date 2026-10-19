@@ -975,6 +975,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_fin_objectif_v1_negatif.sql
 
+      # Une version d'objectif ne se révise qu'une fois (dette t11) : l'index
+      # unique sur `supersedes_objectif_id` ferme la course entre deux
+      # révisions concurrentes. Le contrat éprouve aussi l'inverse — deux
+      # racines (NULL) coexistent — et que l'index n'est pas partiel.
+      - name: Alliance objectif unicité de révision negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_objectif_supersedes_unique_v1_negatif.sql
+
       # L'accord attesté en consultation (D-161 §11) : le TÉMOIGNAGE, à côté de
       # la PREUVE qu'est la ratification posée au portail. Le contrat éprouve
       # l'écart assumé de cette table — `convenu_le` est NOT NULL là où les
