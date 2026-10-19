@@ -360,10 +360,21 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(dialog).toBeVisible();
       await expect(dialog.getByText('verrouillées en lecture seule')).toBeVisible();
       await expect(dialog.getByText('Aperçu praticien — vue identique à celle du patient.')).toBeVisible();
-      // readOnlyPreview masque la demande de correction et « Voir Mon équilibre » :
-      // un praticien ne doit jamais pouvoir déclencher une action patient depuis l'aperçu.
+      // readOnlyPreview masque la demande de correction : un praticien ne doit
+      // jamais pouvoir déclencher une action patient depuis l'aperçu.
       await expect(dialog.getByRole('button', { name: 'Demander une correction' })).toHaveCount(0);
-      await expect(dialog.getByRole('button', { name: 'Voir Mon équilibre' })).toHaveCount(0);
+
+      // « Mon équilibre » se LIT dans l'aperçu (dette t07b) : accueil puis
+      // détail, par la route miroir praticien — jamais par la route patient,
+      // que le cockpit n'ouvre pas.
+      const [equilibreReq] = await Promise.all([
+        page.waitForRequest(req => req.url().includes('/api/praticien/apercu-patient/equilibre')),
+        dialog.getByRole('button', { name: 'Voir Mon équilibre' }).click(),
+      ]);
+      expect(equilibreReq.url()).not.toContain('email=');
+      await dialog.getByRole('button', { name: 'Voir le détail de mes 12 besoins' }).click();
+      await dialog.getByRole('button', { name: /Retour/ }).first().click();
+      await expect(dialog.getByRole('button', { name: 'Voir le détail de mes 12 besoins' })).toBeVisible();
 
       await page.keyboard.press('Escape');
       await expect(dialog).toBeHidden();

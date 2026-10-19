@@ -10802,6 +10802,15 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Validation RGPD du responsable, merge, release-db approuvée, constat par conteneur ; puis la PR du code sous drapeau éteint.
 
 **Ouvert.** D-328 puis D-329 pris par d'autres sessions pendant le lot : renuméroté D-330.
+## 2026-10-19 — t07b : « Mon équilibre » dans l'aperçu praticien
+
+**Fait.** L'aperçu du cockpit mène de la consultation à l'accueil puis au détail de « Mon équilibre », lus par une route d'aperçu journalisée qui partage la composition du portail. Seconde série d'arbitrages reçue (t14 date posée avec l'ouverture, t12 gestes « atteint »/« abandonné », t11 message « désactivé », 404/403 gardé).
+
+**Écarté.** Réutiliser la route praticien de l'équilibre : elle sert les niveaux de preuve.
+
+**Prochaine action.** PR ; puis t12, t11, t14, t15, NIR.
+
+**Ouvert.** Prop `email` résiduel de `MonEquilibreDetail`.
 ## 2026-10-19 — t05c : lettre sans consultation porteuse expliquée
 
 **Fait.** Arbitrages du responsable reçus (t07b, t11/t12, t14 maintenant, t15, NIR par règle de permission, migrations sans redemander). Sans consultation porteuse, le cockpit remplace le bouton de lettre par « Validez d'abord une consultation pour rédiger la lettre » ; indication servie à côté de la carte.
@@ -10840,5 +10849,15 @@ Ce lot les livre, sans migration.
 **Écarté.** Retirer du portail une impression dont la synthèse est vidée, ce qui revenait à défaire un document remis sans prévenir.
 
 **Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
+
+**Ouvert.** Aucun.
+
+## 2026-10-19 — F38 : constat et allumage de « Pour votre médecin » (D-307)
+
+**Fait.** La PR #1573 a été mergée et déployée. Constat 2A sur un dossier de test : le responsable a imprimé, l'assistant a relu l'impression par conteneur puis allumé `WN_DOCUMENT_MEDECIN_PATIENT` (lu `true`, 401 au lieu de 503 sans session), le responsable a téléchargé depuis le portail, et l'assistant a relu les téléchargements, tous rattachés à la dernière impression. Le drapeau reste allumé.
+
+**Noté.** L'`ordre` des deux tables avance de deux en deux : la valeur par défaut de la colonne puis le trigger consomment chacun la séquence. Ce n'est pas un échec.
+
+**Prochaine action.** Aucune sur F38.
 
 **Ouvert.** Aucun.

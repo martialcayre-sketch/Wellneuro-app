@@ -35,10 +35,13 @@ export function MonEquilibreDetail({
   idAssignation,
   email,
   onRetour,
+  fetchUrl,
 }: {
   idAssignation: string;
   email?: string;
   onRetour: () => void;
+  /** Aperçu praticien (dette t07b) : la route miroir, même composition. */
+  fetchUrl?: string;
 }) {
   const [data, setData] = useState<PatientEquilibreResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,12 +49,12 @@ export function MonEquilibreDetail({
 
   useEffect(() => {
     const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}${emailQuery}`)
+    fetch(fetchUrl ?? `/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}${emailQuery}`)
       .then(r => r.json())
       .then((d: PatientEquilibreResponse) => setData(d))
       .catch(() => setData({ ok: false, reason: 'exception', error: 'Erreur réseau.' }))
       .finally(() => setLoading(false));
-  }, [idAssignation, email]);
+  }, [fetchUrl, idAssignation, email]);
 
   if (loading) {
     return (
