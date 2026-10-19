@@ -463,6 +463,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
   - constat en trois gestes (le responsable imprime, l'assistant allume, le responsable télécharge), puis relecture par conteneur.
 
   Reste le constat, puis le drapeau.
+- **Mise à jour (2026-10-19, constat)** : #1573 a été mergée et déployée. Le constat a été fait sur un dossier de test : l'impression puis les téléchargements depuis le portail ont été relus par conteneur et concordent. `WN_DOCUMENT_MEDECIN_PATIENT` est **allumé** depuis le 2026-10-19. F38 est livrée.
 
 #### F57 · Onglet « Biologie » de la fiche patient
 - **Identifiant, piste** : lettre s ; socle.

@@ -10833,3 +10833,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — F38 : constat et allumage de « Pour votre médecin » (D-307)
+
+**Fait.** La PR #1573 a été mergée et déployée. Constat 2A sur un dossier de test : le responsable a imprimé, l'assistant a relu l'impression par conteneur puis allumé `WN_DOCUMENT_MEDECIN_PATIENT` (lu `true`, 401 au lieu de 503 sans session), le responsable a téléchargé depuis le portail, et l'assistant a relu les téléchargements, tous rattachés à la dernière impression. Le drapeau reste allumé.
+
+**Noté.** L'`ordre` des deux tables avance de deux en deux : la valeur par défaut de la colonne puis le trigger consomment chacun la séquence. Ce n'est pas un échec.
+
+**Prochaine action.** Aucune sur F38.
+
+**Ouvert.** Aucun.
