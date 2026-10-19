@@ -1750,6 +1750,9 @@ export function ClinicalRuntimeSection({
   const couverturesAdressage = runtime?.status === 'ready' ? runtime.couverturesAdressage : undefined;
   const leveeOuverte = couverturesAdressage !== undefined;
   leveeOuverteRef.current = leveeOuverte;
+  // Sans consultation porteuse, la lettre est refusée d'avance ([[D-275]] §2) :
+  // le panneau dit quoi faire au lieu d'offrir un geste voué au refus.
+  const sansConsultationPorteuse = runtime?.status === 'ready' && runtime.sansConsultationPorteuse === true;
 
   // IL NE PART QUE LÀ OÙ LE GESTE PEUT ABOUTIR, et trois constats l'ont écrit.
   //
@@ -2033,6 +2036,7 @@ export function ClinicalRuntimeSection({
               state={adressageState}
               onEtablir={etablirAdressage}
               leveeOuverte={leveeOuverte}
+              sansConsultationPorteuse={sansConsultationPorteuse}
             />
           )}
         </section>

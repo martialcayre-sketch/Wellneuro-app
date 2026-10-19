@@ -38,6 +38,7 @@ export function AdressagePanel({
   state,
   onEtablir,
   leveeOuverte = false,
+  sansConsultationPorteuse = false,
 }: {
   lettre: AdressageEtabli | null;
   erreur: string | null;
@@ -49,6 +50,15 @@ export function AdressagePanel({
    * dit que la lettre ne lève rien encore.
    */
   leveeOuverte?: boolean;
+  /**
+   * Le dossier n'a pas de consultation porteuse ([[D-275]] §2) : la route
+   * refuserait toute lettre, faute d'anamnèse validée à laquelle rattacher la
+   * couverture. Le geste cède la place à une phrase qui dit quoi faire
+   * (arbitrage du 2026-10-19) — un bouton qui ne peut qu'échouer n'est pas
+   * offert. Absent = porteuse présente ou inconnue : le geste reste, et le
+   * refus du serveur, s'il vient, est affiché tel quel.
+   */
+  sansConsultationPorteuse?: boolean;
 }) {
   const [medecin, setMedecin] = useState('');
   // Un envoi à la fois, et pas de re-consignation du même geste : le verrou se
@@ -62,6 +72,18 @@ export function AdressagePanel({
     setEnvoiEnCours(false);
   }, [lettre, erreur]);
   const dejaConsigne = lettre !== null && consigneSans === medecin.trim();
+
+  if (sansConsultationPorteuse) {
+    return (
+      <div className="mt-4 rounded-lg border border-border bg-surface p-3">
+        <p className="text-sm font-medium text-foreground">Lettre d’adressage au médecin</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Validez d’abord une consultation pour rédiger la lettre : elle ne couvre ces constats
+          qu’une fois l’anamnèse validée.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-surface p-3">
