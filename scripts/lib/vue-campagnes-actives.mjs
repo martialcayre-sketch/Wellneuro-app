@@ -14,6 +14,22 @@
 // test »), dans le paragraphe même qui dénonçait cette dette.
 
 /**
+ * Statut lu sur la fiche `CAMPAGNE.md` de la campagne : son premier mot
+ * (`en_pause`, `en_cours`…), sans la parenthèse qui le date. Repli « inconnu »
+ * quand la fiche est absente ou muette.
+ *
+ * Pourquoi : la vue écrivait « active » en dur pour la campagne primaire, même
+ * quand sa fiche disait `en_pause` (constaté aux clôtures de LOT-07 puis de
+ * LOT-03, revue CodeRabbit de #1526 ; dette t31).
+ *
+ * @param {{status?: string} | undefined} campagne
+ * @returns {string}
+ */
+export function statutDeFiche(campagne) {
+  return (campagne?.status || "").trim().match(/^[\p{L}_-]+/u)?.[0] || "inconnu";
+}
+
+/**
  * Rend le contenu attendu de `ACTIVE_CAMPAIGN.md`.
  *
  * Fonction PURE : ni `fs`, ni horloge. `updatedAtParDefaut` n'est utilisé que
@@ -41,13 +57,13 @@ export function rendreVueCampagnesActives(etatMachine, campagnes, options = {}) 
   const updatedAt = (etat.updated_at || options.updatedAtParDefaut || "").slice(0, 10);
 
   const primaryBlock = activeCampaignId
-    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : active\n**Lot actif** : ${etat.active_lot || "aucun"}\n`
+    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : ${statutDeFiche(primary)}\n**Lot actif** : ${etat.active_lot || "aucun"}\n`
     : "## Activité primaire\n\nAucune campagne primaire active.\n";
   const parallelBlock = parallels.length
     ? parallels
         .map(
           (entry) =>
-            `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || "active"}\n**Lot actif** : ${entry.active_lot || "aucun"}`,
+            `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || statutDeFiche(entry.campaign)}\n**Lot actif** : ${entry.active_lot || "aucun"}`,
         )
         .join("\n\n")
     : "Aucune campagne parallèle active.";
