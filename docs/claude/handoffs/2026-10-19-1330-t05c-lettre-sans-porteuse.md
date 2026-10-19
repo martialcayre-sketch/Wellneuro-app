@@ -31,7 +31,9 @@ lettre restait offert sans consultation porteuse, et ne pouvait qu'échouer.
 ## Validations exécutées
 
 - Vitest ciblé (panneau, route cockpit, section) : 146/146.
-- T1 rapide vert ; T1 complet et T2 : voir la PR.
+- T1 complet vert ; T2 vert (6 min 43 s) ; CI vert.
+- Revue CodeRabbit : un nitpick (rejeu GET non couvert), corrigé par
+  aa685069 (test du rejeu sans porteuse) ; `main` 926a0420 (F38) fusionnée.
 
 ## Problèmes ouverts
 
