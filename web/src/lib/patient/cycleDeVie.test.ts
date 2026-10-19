@@ -5,6 +5,7 @@ import {
   anneeDeNaissance,
   initialesNom,
   phaseDossier,
+  refusDossierFerme,
   residuEffacement,
 } from './cycleDeVie';
 
@@ -112,5 +113,18 @@ describe('résidu d’effacement', () => {
       anneeNaissance: null,
       initialesNom: 'MAR',
     });
+  });
+});
+
+describe('refusDossierFerme — clos ou désactivé, chacun son refus (t11)', () => {
+  it('désactivé : son propre motif', () => {
+    expect(refusDossierFerme({ actif: false, suiviClotureLe: null }).raison).toBe('dossier_desactive');
+  });
+  it('clos, même désactivé ensuite : la clôture prime', () => {
+    const clos = { actif: false, suiviClotureLe: new Date('2026-08-01T00:00:00.000Z') };
+    expect(refusDossierFerme(clos).raison).toBe('dossier_cloture');
+  });
+  it('dossier absent : le refus historique', () => {
+    expect(refusDossierFerme(null).raison).toBe('dossier_cloture');
   });
 });

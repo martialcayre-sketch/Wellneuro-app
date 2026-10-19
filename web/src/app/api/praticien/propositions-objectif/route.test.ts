@@ -227,6 +227,21 @@ describe('/api/praticien/propositions-objectif', () => {
     expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
   });
 
+  it('un dossier DÉSACTIVÉ reçoit son propre refus, pas « clôturé » (t11)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'praticien@wellneuro.fr',
+      actif: false,
+      suiviClotureLe: null,
+    });
+    const reponse = await POST(postRequest(corpsAssembler()));
+    expect(reponse.status).toBe(409);
+    const payload = await reponse.json();
+    expect(payload.reason).toBe('dossier_desactive');
+    expect(payload.error).toMatch(/désactivé/);
+    expect(payload.error).not.toMatch(/clôturé/);
+    expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
+  });
+
   // ── Corps malformé ────────────────────────────────────────────────────────
 
   it('rend 400, jamais 500, sur un corps qui n’est pas un objet', async () => {

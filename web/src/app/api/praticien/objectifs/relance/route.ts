@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
 import { sendObjectifProposeEmail } from '@/lib/consultation/email';
@@ -108,7 +108,9 @@ export async function POST(req: Request): Promise<NextResponse<RelanceApiRespons
       select: { actif: true, suiviClotureLe: true },
     });
     if (patient && !accepteNouvelEnvoi(patient)) {
-      return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      // Clos ou désactivé : chacun son refus (t11).
+      const refus = refusDossierFerme(patient);
+      return echec(refus.raison, refus.message, 409);
     }
 
     const [lignes, fins, ratifications, amendements, envoisPrecedents] = await Promise.all([

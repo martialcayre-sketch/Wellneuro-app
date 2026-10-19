@@ -279,6 +279,45 @@ describe('/api/praticien/objectifs', () => {
     expect((await GET(getRequest())).status).toBe(200);
   });
 
+  it('un dossier DÉSACTIVÉ reçoit son propre refus, pas « clôturé » (t11)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'praticien@wellneuro.fr',
+      actif: false,
+      suiviClotureLe: null,
+    });
+    const res = await POST(postRequest(corps()));
+    expect(res.status).toBe(409);
+    const payload = await res.json();
+    expect(payload.reason).toBe('dossier_desactive');
+    expect(payload.error).toMatch(/désactivé/);
+    expect(payload.error).not.toMatch(/clôturé/);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('LA COURSE PERDUE : l’index unique refuse (P2002), la route rend le même 409 (t11)', async () => {
+    // La lecture a vu la cible libre ; la révision concurrente l'a prise avant
+    // l'écriture, et seul l'index la refuse.
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_TEST',
+      enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+    });
+    prisma.objectifNegocie.create.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    );
+    const res = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_1' })));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('objectif_supplante');
+  });
+
+  it('un P2002 sur une RACINE n’est pas une course perdue : il reste un 500 (t11)', async () => {
+    prisma.objectifNegocie.create.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    );
+    const res = await POST(postRequest(corps()));
+    expect(res.status).toBe(500);
+    expect((await res.json()).reason).toBe('exception');
+  });
+
   // ── Le cœur du lot : deux dates ───────────────────────────────────────────
 
   it('écrit un objectif sans JAMAIS transmettre la date d’écriture (G4)', async () => {

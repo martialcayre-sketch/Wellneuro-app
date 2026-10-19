@@ -10852,6 +10852,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t11 PR 2 : course perdue en 409, refus « désactivé »
+
+**Fait.** Course perdue contre l'index (PR 1) rendue en 409 sur une révision, 500 sur une racine ; dossier désactivé servi par son propre refus sur les six routes de l'objectif, chacune testée.
+
+**Écarté.** Index partiel ou unicité de racine par dossier : deux objectifs distincts restent légitimes.
+
+**Prochaine action.** PR une fois l'index constaté en production ; puis t14, t15, NIR.
+
+**Ouvert.** 404/403 gardé par arbitrage.
 ## 2026-10-19 — t11 PR 1 : migration de l'index de révision
 
 **Fait.** Branche migration seule : index unique sur la version révisée, schéma, contrat SQL, étape CI. T3 vert sur l'ensemble ; revue indépendante go.

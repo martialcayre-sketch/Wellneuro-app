@@ -7,7 +7,7 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import { cadenceObjectifsAtteinte } from '@/lib/praticien/cadenceObjectifs';
 import { MESSAGE_CADENCE_PRATICIEN } from '@/lib/securite/cadenceEcritures';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import {
   dossierDansPerimetreProposition,
   isDossierDeuxVoixEnabled,
@@ -436,6 +436,13 @@ const ANCRAGE_SANS_CONSULTATION: AncrageAnamnese = {
   objectifPrioritaire: null,
   attentes: [],
 };
+
+/** Le code d'unicité de Postgres, tel que Prisma le remonte (patron `orientation/ecartement`). */
+function estConflitUnicite(erreur: unknown): boolean {
+  return typeof erreur === 'object'
+    && erreur !== null
+    && (erreur as { code?: unknown }).code === 'P2002';
+}
 
 // GET /api/praticien/objectifs?idPatient= — trajectoire complète + matériau.
 export async function GET(req: Request): Promise<NextResponse<ObjectifsApiResponse>> {
@@ -903,6 +910,8 @@ function texteDuCorps(valeur: unknown): string {
 
 // POST /api/praticien/objectifs — dépose un objectif ou sa révision.
 export async function POST(req: Request): Promise<NextResponse<ObjectifsApiResponse>> {
+  // Hors du `try` : le `catch` doit savoir si l'écriture était une révision.
+  let estRevision = false;
   try {
     let body: PostBody;
     try {
@@ -931,7 +940,9 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       select: { actif: true, suiviClotureLe: true },
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
-      return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      // Clos ou désactivé : chacun son refus (t11).
+      const refus = refusDossierFerme(patient);
+      return echec(refus.raison, refus.message, 409);
     }
     // Cadence ([[D-327]], t08) : plafond technique des écritures sur les objectifs du dossier.
     if (await cadenceObjectifsAtteinte(idPatient)) {
@@ -946,6 +957,7 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     if (supersedesObjectifId.length > LONGUEUR_MAX_ID) {
       return echec('invalid', 'Référence de version invalide.', 400);
     }
+    estRevision = supersedesObjectifId.length > 0;
 
     const referenceProposition = body.sourcePropositionId;
     if (
@@ -1066,9 +1078,10 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
         return echec('objectif_introuvable', 'Objectif à reformuler introuvable.', 404);
       }
       // Déjà reformulée : deux révisions concurrentes scinderaient la chaîne
-      // en deux têtes. La lecture-puis-409 n'est pas étanche à la course — ce
-      // qui passe malgré tout est RENDU VISIBLE par l'écran, jamais départagé
-      // en silence (`objectifsCourants`).
+      // en deux têtes. Cette lecture-puis-409 n'est pas étanche à la course ;
+      // c'est la BASE qui l'est depuis t11 — index unique sur
+      // `supersedes_objectif_id` —, et son refus (P2002) rend le même 409
+      // plus bas.
       if (dejaSupplantee) {
         return echec('objectif_supplante', 'Cet objectif a déjà été reformulé. Rechargez le dossier.', 409);
       }
@@ -1209,6 +1222,13 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     await notifierObjectifPropose(idPatient);
     return NextResponse.json({ ok: true, objectif: exposer(creee) }, { status: 201 });
   } catch (err) {
+    // LA COURSE PERDUE (t11) : une révision concurrente a pris la même version
+    // entre la lecture et l'écriture, et l'index unique l'a refusée. Même
+    // réponse que la lecture-puis-409 : rien n'est écrit, le dossier se relit.
+    // Une racine ne touche pas cet index : un P2002 hors révision reste un 500.
+    if (estRevision && estConflitUnicite(err)) {
+      return echec('objectif_supplante', 'Cet objectif a déjà été reformulé. Rechargez le dossier.', 409);
+    }
     // Jamais le payload : il porte l'énoncé du patient et la compréhension du
     // praticien, le contenu le plus nominatif du dossier.
     console.error('[praticien/objectifs POST]', messageJournalisable(err));
