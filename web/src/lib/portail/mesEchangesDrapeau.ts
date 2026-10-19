@@ -1,4 +1,4 @@
-import { jourOuverture, type OuverturesMesEchanges } from '@/lib/portail/mesEchanges';
+import { jourOuverture, jourParis, type OuverturesMesEchanges } from '@/lib/portail/mesEchanges';
 
 // `WN_PORTAIL_MES_ECHANGES` ([[D-293]], J3-base) — valeur exacte `'true'`,
 // absent = fermé. Variable serveur : la page et la route la lisent, un composant
@@ -15,18 +15,28 @@ export function mesEchangesOuvert(value = process.env.WN_PORTAIL_MES_ECHANGES): 
 // JOUR D'OUVERTURE DES SURFACES QUE LE JOURNAL LIT (t14, arbitrage du
 // 2026-10-19) : `<DRAPEAU>_OUVERT_LE=AAAA-MM-JJ` (jour de Paris), posé AVEC le
 // drapeau, au même geste — c'est la procédure d'allumage
-// (`docs/FEATURE_FLAGS.md`). Sans base ni migration. Absent ou illisible : aucune
-// mention, la ligne reste celle d'avant.
+// (`docs/FEATURE_FLAGS.md`), et remis au jour du réallumage si le drapeau a été
+// refermé. Sans base ni migration. Absent, illisible ou postérieur à aujourd'hui
+// (posé d'avance, coquille d'année) : aucune mention, la ligne reste celle
+// d'avant — un jour à venir ferait dire faux à une page déjà ouverte.
 //
 // Seules les espèces REMISES par le praticien sous un drapeau propre y sont :
 // une remise peut précéder l'ouverture de sa page. Ce que le patient transmet
 // (comptes rendus, questionnaires, signalements) ne peut pas précéder la
-// surface qui le recueille.
-export function ouverturesMesEchanges(env: NodeJS.ProcessEnv = process.env): OuverturesMesEchanges {
+// surface qui le recueille, hors refermeture (voir la procédure).
+export function ouverturesMesEchanges(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  maintenant: Date = new Date(),
+): OuverturesMesEchanges {
+  const aujourdhui = jourParis(maintenant);
+  const lire = (valeur: string | undefined) => {
+    const jour = jourOuverture(valeur);
+    return jour && jour <= aujourdhui ? jour : null;
+  };
   const ouvertures: OuverturesMesEchanges = {};
-  const fiches = jourOuverture(env.WN_FICHES_ASSIETTE_LECTURE_OUVERT_LE);
+  const fiches = lire(env.WN_FICHES_ASSIETTE_LECTURE_OUVERT_LE);
   if (fiches) ouvertures.fiche_assiette = fiches;
-  const lettre = jourOuverture(env.WN_LETTRE_ADRESSAGE_PATIENT_OUVERT_LE);
+  const lettre = lire(env.WN_LETTRE_ADRESSAGE_PATIENT_OUVERT_LE);
   if (lettre) ouvertures.lettre_adressage = lettre;
   return ouvertures;
 }

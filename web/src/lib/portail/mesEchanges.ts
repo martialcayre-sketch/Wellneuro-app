@@ -221,7 +221,8 @@ const LIBELLE_JOUR = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 });
 
-function jourParis(instant: Date): string {
+/** Jour civil `AAAA-MM-JJ` d'un instant, en heure de Paris. */
+export function jourParis(instant: Date): string {
   return JOUR_PARIS.format(instant);
 }
 

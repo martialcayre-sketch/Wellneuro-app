@@ -40,8 +40,14 @@ ligne « révélé aujourd'hui ».
 
 ## Validations exécutées
 
-- Vitest ciblé (domaine, route, composant) : 37/37.
-- T1 complet et T2 : voir la PR.
+- Vitest ciblé (portail, route, composant) : 278/278.
+- T1 complet vert ; T2 (`--fast`) vert sur 83251c94.
+- Revue wn-reviewer : go, trois P2. Corrigés : un jour d'ouverture à venir
+  est ignoré (posé d'avance, coquille d'année) ; procédure de réallumage
+  (remettre `_OUVERT_LE` au même geste). Accepté : « aujourd'hui » jugé à
+  l'horloge de l'appareil, effet cosmétique d'un jour au plus.
+- « Affiché » au masculin : il qualifie l'élément de la ligne, pas l'objet
+  nommé (mots de l'arbitrage).
 
 ## Problèmes ouverts
 
