@@ -34,6 +34,9 @@ Reste de la dette t07 (`DETTE_UX_RESIDUELLE.md`) : accueil et détail de
 - `web/src/components/PatientPreview.tsx` + test (nouveau),
   `web/src/components/patient/ConsultationScreen.tsx`,
   `MonEquilibreAccueil.tsx`, `MonEquilibreDetail.tsx`.
+- `web/e2e/portail-parcours.spec.ts` : l'étape d'aperçu attendait le bouton
+  masqué ; elle parcourt désormais accueil et détail par la route miroir.
+- `docs/claude/MATRICE_CONSOMMATION.md` régénéré (une surface indirecte de plus).
 - `DETTE_UX_RESIDUELLE.md`, `MATRICE_ECRANS_MIGRATION.md`, plan, changelog,
   SESSION_LOG.
 
@@ -41,7 +44,8 @@ Reste de la dette t07 (`DETTE_UX_RESIDUELLE.md`) : accueil et détail de
 
 - Vitest ciblé (aperçu, routes patient et aperçu, composants patient,
   `lib/equilibre`, portail) : 2878 verts ; garde du bundle client verte.
-- T1 complet et T2 : voir la PR.
+- T1 complet vert ; T2 vert (282 E2E, 7 min) après mise à jour de l'E2E
+  d'aperçu — le premier T2 rougissait sur l'ancienne attente, comme prévu.
 
 ## Problèmes ouverts
 
