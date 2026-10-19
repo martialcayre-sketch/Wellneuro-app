@@ -44,8 +44,12 @@ test.describe.serial('« Ce qui compte » — dépôt au portail, lecture au coc
     await expect(page.getByText('C’est enregistré. Merci de l’avoir écrit.')).toBeVisible();
 
     // Aucun chiffre ni jugement sur un texte libre (innerText : `textContent`
-    // lit aussi les scripts RSC et leur buildId aléatoire).
-    const lu = (await page.locator('body').innerText()).toLowerCase();
+    // lit aussi les scripts RSC et leur buildId aléatoire). Le texte déposé
+    // n'est pas réaffiché : le « 4 » de la patiente ne peut pas fausser le
+    // contrôle des chiffres, qui porte sur ce que l'écran produit.
+    const lu = (await page.getByRole('main').innerText()).toLowerCase();
+    expect(lu).not.toContain('dormir sans me réveiller');
+    expect(lu).not.toMatch(/\d/);
     for (const mot of ['score', 'niveau', 'moyenne', 'taux', 'points', 'sur 10']) {
       expect(lu).not.toContain(mot);
     }
