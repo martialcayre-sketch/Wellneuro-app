@@ -293,12 +293,27 @@ describe('/api/praticien/objectifs', () => {
   });
 
   it('LA COURSE PERDUE : l’index unique refuse (P2002), la route rend le même 409 (t11)', async () => {
+    // La lecture a vu la cible libre ; la révision concurrente l'a prise avant
+    // l'écriture, et seul l'index la refuse.
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_TEST',
+      enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+    });
+    prisma.objectifNegocie.create.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    );
+    const res = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_1' })));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('objectif_supplante');
+  });
+
+  it('un P2002 sur une RACINE n’est pas une course perdue : il reste un 500 (t11)', async () => {
     prisma.objectifNegocie.create.mockRejectedValueOnce(
       Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
     );
     const res = await POST(postRequest(corps()));
-    expect(res.status).toBe(409);
-    expect((await res.json()).reason).toBe('objectif_supplante');
+    expect(res.status).toBe(500);
+    expect((await res.json()).reason).toBe('exception');
   });
 
   // ── Le cœur du lot : deux dates ───────────────────────────────────────────

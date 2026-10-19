@@ -887,6 +887,8 @@ function texteDuCorps(valeur: unknown): string {
 
 // POST /api/praticien/objectifs — dépose un objectif ou sa révision.
 export async function POST(req: Request): Promise<NextResponse<ObjectifsApiResponse>> {
+  // Hors du `try` : le `catch` doit savoir si l'écriture était une révision.
+  let estRevision = false;
   try {
     let body: PostBody;
     try {
@@ -932,6 +934,7 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     if (supersedesObjectifId.length > LONGUEUR_MAX_ID) {
       return echec('invalid', 'Référence de version invalide.', 400);
     }
+    estRevision = supersedesObjectifId.length > 0;
 
     const referenceProposition = body.sourcePropositionId;
     if (
@@ -1196,7 +1199,8 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     // LA COURSE PERDUE (t11) : une révision concurrente a pris la même version
     // entre la lecture et l'écriture, et l'index unique l'a refusée. Même
     // réponse que la lecture-puis-409 : rien n'est écrit, le dossier se relit.
-    if (estConflitUnicite(err)) {
+    // Une racine ne touche pas cet index : un P2002 hors révision reste un 500.
+    if (estRevision && estConflitUnicite(err)) {
       return echec('objectif_supplante', 'Cet objectif a déjà été reformulé. Rechargez le dossier.', 409);
     }
     // Jamais le payload : il porte l'énoncé du patient et la compréhension du

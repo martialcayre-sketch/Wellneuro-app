@@ -10834,12 +10834,12 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
-## 2026-10-19 — t11 : verrou de révision de l'objectif
+## 2026-10-19 — t11 PR 2 : course perdue en 409, refus « désactivé »
 
-**Fait.** Index unique en base sur la version révisée (migration + contrat + CI), course perdue rendue en 409 ; dossier désactivé servi par son propre refus sur les six routes de l'objectif. Constat préalable en production : aucune version révisée deux fois.
+**Fait.** Course perdue contre l'index (PR 1) rendue en 409 sur une révision, 500 sur une racine ; dossier désactivé servi par son propre refus sur les six routes de l'objectif, chacune testée.
 
 **Écarté.** Index partiel ou unicité de racine par dossier : deux objectifs distincts restent légitimes.
 
-**Prochaine action.** PR, T3, release-db, constat ; puis t14, t15, NIR.
+**Prochaine action.** PR une fois l'index constaté en production ; puis t14, t15, NIR.
 
 **Ouvert.** 404/403 gardé par arbitrage.
