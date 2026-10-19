@@ -10755,3 +10755,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR, merge après #1567 ; puis t05a (tests de parité du Fil), t28, t10.
 
 **Ouvert.** Aperçu praticien de « Mon équilibre ».
+
+## 2026-10-19 — t05b : date « depuis » de la carte de sécurité
+
+**Fait.** La carte « Signal de sécurité » du Fil prend la date du plus ancien constat ouvert (passation pour une réponse, validation de la porteuse pour un signal d'anamnèse) au lieu de la seule porteuse ; dossier sans porteuse daté. Constats inchangés.
+
+**Écarté.** Dater par la passation la plus récente : le Fil trie « le plus ancien d'abord », c'est l'attente qui compte.
+
+**Prochaine action.** PR après #1569 ; puis questions au responsable (geste sans porteuse, t07b, t11, t12, t14, t15).
+
+**Ouvert.** Geste de lettre sans porteuse.

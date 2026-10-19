@@ -208,7 +208,9 @@ const LIBELLE_SIGNALEMENT: Record<SignalementRow['kind'], string> = {
 export type SignalSecuriteRow = {
   idPatient: string;
   findingIds: string[];
-  /** Validation de l'anamnèse porteuse, ou `null` si non datée. */
+  /** Date du plus ancien constat ouvert — passation pour une réponse au
+   * questionnaire, validation de la porteuse pour un signal déclaré —, ou
+   * `null` si aucun n'est daté. */
   depuis: Date | null;
 };
 
