@@ -10745,3 +10745,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR D-328, merge, constat ; lot suivant de la file A.
 
 **Ouvert.** Définition des restes J1-base (pièce privée non versée).
+
+## 2026-10-19 — t10 : E2E « Ce qui compte »
+
+**Fait.** Test de bout en bout : dépôt par le formulaire du portail, fenêtre refermée au rechargement, texte lu tel quel à l'onglet « Trajectoire ». Test seul.
+
+**Écarté.** t28 (rejeu + contrat patient en une fonction) : le plan l'attache au premier lot qui touche l'un des trois sites ; un refactor isolé du service au patient n'a pas de déclencheur.
+
+**Prochaine action.** PR ; puis t05b (date « depuis » du Fil).
+
+**Ouvert.** Rien de propre au lot.
