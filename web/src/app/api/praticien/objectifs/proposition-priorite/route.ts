@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { MESSAGE_CADENCE_PRATICIEN, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { lireMatierePriorite } from '@/lib/objectif/matierePriorite';
 import { VERSION_CONSIGNE, proposerPriorite } from '@/lib/objectif/propositionPriorite';
@@ -255,7 +255,9 @@ export async function POST(req: Request): Promise<NextResponse<PropositionApiRes
       select: { actif: true, suiviClotureLe: true },
     });
     if (patient && !accepteNouvelEnvoi(patient)) {
-      return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      // Clos ou désactivé : chacun son refus (t11).
+      const refus = refusDossierFerme(patient);
+      return echec(refus.raison, refus.message, 409);
     }
     // Cadence ([[D-327]], t08) : AVANT l'appel payant. Seules les propositions
     // produites laissent une ligne — un appel qui échoue n'est pas compté.
