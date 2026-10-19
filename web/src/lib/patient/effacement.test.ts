@@ -34,6 +34,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'critereDossierConstate',
     'adressageSignalAlerte',
     'telechargementDocumentMedecin', 'documentMedecinImprime',
+    'classementDocumentDepose', 'documentDeposePatient',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectVerdict', 'trustAdverseEffectReport', 'trustPrivacyIncident',
@@ -218,6 +219,17 @@ describe('effacerDossier', () => {
     expect(rang('telechargementDocumentMedecin')).toBeGreaterThanOrEqual(0);
     expect(rang('telechargementDocumentMedecin')).toBeLessThan(rang('documentMedecinImprime'));
     expect(rang('documentMedecinImprime')).toBeLessThan(rang('syntheseIA'));
+  });
+
+  // Collecte documentaire (D-328) : FK RESTRICT du classement vers le document
+  // déposé, et du document vers le dossier. Une ligne déplacée rendrait
+  // l'effacement impossible pour tout dossier dont un document a été classé.
+  it('supprime les classements, puis les documents déposés, avant le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('classementDocumentDepose')).toBeGreaterThanOrEqual(0);
+    expect(rang('classementDocumentDepose')).toBeLessThan(rang('documentDeposePatient'));
+    expect(rang('documentDeposePatient')).toBeLessThan(rang('patient'));
   });
 
   // Actes de lecture d'un import validé (D-268, BP-10) : FK RESTRICT vers
