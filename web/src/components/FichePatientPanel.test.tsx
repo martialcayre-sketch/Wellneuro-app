@@ -981,6 +981,17 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('tiroir des 12 besoins : la couverture reste, le niveau de preuve A–D n’est plus affiché ([[D-331]])', async () => {
+    await rendreFiche();
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('40%');
+    expect(tiroir.textContent).not.toMatch(/Niveau [ABCD]\b/);
+    expect(tiroir.textContent).not.toMatch(/niveaux? de preuve/i);
+    expect(within(tiroir).queryByRole('columnheader', { name: /preuve/i })).toBeNull();
+  });
+
   it('poste de pilotage : propose les outils de synthèse IA avec le patient présélectionné', async () => {
     await rendreFiche();
 

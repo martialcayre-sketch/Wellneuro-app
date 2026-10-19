@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-331 — Cockpit : les badges de niveau de preuve A–D des 12 besoins sont masqués, la couverture reste ; la table des grades, le snapshot et les API ne bougent pas (J3-12d)
+
+- Date : 2026-10-20
+- Statut : accepté. Arbitrage du responsable du 2026-10-19, après la
+  contre-expertise du dossier de mesure des besoins 6 à 12 (badges masqués
+  maintenant, table des grades intacte, table révisée soumise avec le lot des
+  sources) ; lot J3-12d de la fiche H15 du plan (#1591), demandé le
+  2026-10-20. Choix de conception (API, composant retiré) et texte rédigés par
+  l'assistant, motifs ci-dessous.
+- Domaine : `web/src/components/FichePatientPanel.tsx` (tiroir « Les
+  12 besoins »), `web/src/components/DetailBesoinsPanel.tsx` (onglet « Les
+  12 besoins »), `web/src/components/ui/EvidenceBadge.tsx` (retiré).
+- Nature : affichage praticien seul. Aucune valeur calculée ne change : ni
+  seuil, ni poids, ni source, ni grade (`DC-19`) ; version du score inchangée,
+  aucune migration.
+
+**§1 — Ce qui est masqué.** Les deux tableaux des 12 besoins du cockpit
+n'affichent plus la colonne du niveau de preuve (« Niveau A » à « Niveau D »,
+« Non mesuré ») ni la légende A–D. La couverture reste, avec son « — » pour un
+besoin sans source exploitable, qui est exactement le cas que le badge disait
+« Non mesuré » (même prédicat, `calculerCouvertureSource`) ; l'axe du radar
+continue de dire « non mesuré » ([[D-301]]). Motif : la table
+`NIVEAU_PREUVE_PAR_SOURCE` se déclare elle-même « proposition initiale, pas
+encore validée cliniquement, à faire valider avant tout affichage en
+production », et l'audit des 12 besoins ([[D-312]]) a relevé des divergences
+entre la référence d'une source grade A et l'instrument servi (PSS-10 servie
+en 1-5 avec paliers « source Drive », là où Cohen cote 0-4 sans seuil). Un
+grade affiché passait pour une garantie que personne n'a donnée.
+
+**§2 — Ce qui ne bouge pas, et pourquoi.** `NIVEAU_PREUVE_PAR_SOURCE`,
+`RANG_PREUVE` et `equilibre/evidence.ts` restent intacts : le grade entre dans
+le snapshot clinique (`NeedAssessment.evidence`), donc dans l'empreinte des
+cartes de décision que le portail rejoue avant de servir un protocole
+(`rejeuCarteDecision.ts`). Le modifier éteindrait les protocoles diffusés
+jusqu'à réapprobation ([[D-329]] §4). La table révisée sera soumise avec le
+lot des sources des besoins 8, 9 et 12 (J3-12f), qui prévoit la réapprobation.
+
+**§3 — Les API praticien gardent le champ.** `/api/praticien/besoins` et
+`/api/praticien/equilibre` continuent de rendre `niveauPreuve` par besoin, et
+`/api/praticien/cockpit` le snapshot avec `evidence`. Motifs : (a) aucun écran
+ne le lit plus — recensement du 2026-10-20 sur `web/src` : les deux panneaux
+étaient les seuls lecteurs du champ des deux routes, et aucun composant ne lit
+`evidence` du snapshot ; le « Niveau de preuve » d'`EstimeMesurePanel` est
+celui des claims biologiques, sans rapport ; (b) les trois routes sont
+authentifiées et réservées au praticien du dossier, et le snapshot qui porte la
+même valeur doit la garder (§2) : la retirer de deux routes ne la retirerait
+pas du système ; (c) le contrat se rouvrira avec la table révisée — le retirer
+puis le remettre ferait deux changements de contrat pour aucun effet. Un
+écran qui voudrait réafficher un grade le fera sous une décision, sur la table
+révisée.
+
+**§4 — Le composant `EvidenceBadge` est retiré**, sans lecteur restant : le
+garder inviterait à le remonter sur la table non validée. Il se reprend de
+l'historique si la table révisée le justifie.
+
+**Ne touche pas** : le portail (qui n'a jamais affiché de grade), le niveau de
+preuve des claims (biologie, corpus, compléments), la couverture, le radar,
+l'empreinte figée de `safetyQuestionnaire.integration.test.ts`.
+
 ### D-330 — Collecte documentaire : le patient dépose et propose une catégorie, le praticien du dossier consulte, corrige et retire ; un retrait efface le contenu et garde la ligne ; bornes du compte rendu ; « Transmis » dans « Mes échanges » (J3-collecte, amende D-293)
 
 - Date : 2026-10-18
