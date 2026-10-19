@@ -9,4 +9,16 @@
 -- La contrainte de forme `patients_nir_forme` part avec la colonne (Postgres
 -- retire les CHECK qui ne portent que sur elle). Les trois autres colonnes du
 -- dossier administratif et la RLS de `patients` ne bougent pas.
+--
+-- LE CONSTAT DEVIENT UNE GARANTIE : la suppression est irréversible, et elle
+-- ne s'appuyait que sur un re-constat manuel. Si une ligne porte encore un NIR
+-- au moment de l'application, la migration échoue et rien n'est supprimé
+-- (revue `wn-reviewer`, P2-1).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "patients" WHERE "nir" IS NOT NULL) THEN
+    RAISE EXCEPTION 'Retrait du NIR refusé : au moins un dossier porte encore un NIR.';
+  END IF;
+END $$;
+
 ALTER TABLE "patients" DROP COLUMN "nir";
