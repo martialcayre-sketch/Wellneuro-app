@@ -10870,3 +10870,14 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Aucune sur F38.
 
 **Ouvert.** Aucun.
+
+## 2026-10-19 — t14 : journal du portail, close sans code
+
+**Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Dette close sans code ; règle pour une future source écrite au FEATURE_FLAGS § B.
+
+**Écarté.** Dater les ouvertures passées, ou un mécanisme sans date posée : effet déjà passé, ou en attente d'une surface qui n'existe pas.
+
+**Prochaine action.** PR, merge.
+
+**Ouvert.** Aucun.
+

@@ -82,6 +82,19 @@ datée, avec ses dépendances.
 > `WN_OBJECTIF_PROPOSE_PATIENTS` étant **absent**, le périmètre de la machine
 > qui propose est **tous les dossiers**. Toute extinction ou activation
 > ultérieure se consigne ici, datée, comme au § A.
+>
+> **UNE SOURCE NEUVE DE « MES ÉCHANGES » S'OUVRE AVEC SA DATE** (dette t14,
+> close sans code le 2026-10-19, arbitrage du responsable). Le journal liste à
+> leur date d'origine les faits que lui versent ses sources
+> (`lib/portail/mesEchangesServeur.ts`) : une source fermée qu'on ouvre y fait
+> apparaître d'un coup des faits anciens, sans qu'aucune ligne dise qu'ils sont
+> montrés ce jour-là. **Au 2026-10-19, le cas n'a pas d'objet** : le journal et
+> ses trois sources sous drapeau (`WN_FICHES_ASSIETTE_LECTURE`,
+> `WN_LETTRE_ADRESSAGE_PATIENT`, `WN_BIO_PORTAIL_ENABLED`) sont tous posés à
+> `true`, relus sur Scalingo, le journal ouvert en dernier (2026-10-18). **Pour
+> la prochaine source sous drapeau qui entrera au journal**, sa conception
+> prévoit une date d'ouverture posée avec le drapeau et une ligne « affiché à
+> partir du … » au journal — à écrire avec elle, pas après son allumage.
 
 ### B.1 — Les portes d'entrée
 
