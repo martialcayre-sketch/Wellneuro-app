@@ -10802,6 +10802,32 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR ; puis t12, t11, t14, t15, NIR.
 
 **Ouvert.** Prop `email` résiduel de `MonEquilibreDetail`.
+## 2026-10-19 — t05c : lettre sans consultation porteuse expliquée
+
+**Fait.** Arbitrages du responsable reçus (t07b, t11/t12, t14 maintenant, t15, NIR par règle de permission, migrations sans redemander). Sans consultation porteuse, le cockpit remplace le bouton de lettre par « Validez d'abord une consultation pour rédiger la lettre » ; indication servie à côté de la carte.
+
+**Écarté.** Masquer le geste : arbitrage « expliquer ». Lire la porteuse par le GET de la lettre : il ne nomme aucun dossier, exprès.
+
+**Prochaine action.** PR ; puis t07b, t12, t11, t14, t15, NIR.
+
+**Ouvert.** Aucun pour t05.
+## 2026-10-19 — Étiquetage vit. D exécuté (D-325 §5) et banc du lot
+
+**Fait.**
+- Par délégation, depuis la session du responsable, le dossier vitamine D est
+  étiqueté en lot (194 claims) et ses 14 rejets sont appliqués : remise en
+  attente puis rejet motivé. Le constat par conteneur est consigné au
+  dossier privé.
+- Un banc PostgreSQL de l'écrivain en lot est branché au CI et à T3. Il a
+  révélé que des besoins non triés se réécrivaient ; c'est corrigé.
+
+**Écarté.** Les POST par script depuis la page : le mode auto les refuse, on
+passe par les boutons de l'atelier.
+
+**Prochaine action.** PR du banc ; ligne « Nature » de D-325 (texte du
+responsable) ; dossier zinc.
+
+**Ouvert.** Alignement de 0239-014 et 0350-024 au dossier magnésium.
 ## 2026-10-19 — F38 : synthèse imprimée figée, textes validés
 
 **Fait.** #1564 est mergée et déployée (contenue dans 892f0948). Le responsable a validé les textes du portail tels quels et tranché les trois restes :

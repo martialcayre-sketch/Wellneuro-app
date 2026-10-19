@@ -562,6 +562,11 @@ grep -q 'banc-nabm-gestes-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc de l'écrivain NABM."
 WN_NABM_GESTES_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts > /dev/null < /dev/null \
   || die "banc de l'écrivain NABM en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-nabm-gestes-prisma.test.ts\`, depuis web/)."
+# Le vrai écrivain de l'étiquetage en lot contre le journal des claims (D-325).
+grep -q 'banc-etiquetage-lot-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'étiquetage en lot."
+WN_ETIQUETAGE_LOT_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts > /dev/null < /dev/null \
+  || die "banc de l'étiquetage en lot en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts\`, depuis web/)."
 grep -q 'banc-unicite-mesure-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc du client Prisma contre la garde anti-doublon."
 WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts > /dev/null < /dev/null \
