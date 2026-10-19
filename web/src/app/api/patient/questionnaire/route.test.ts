@@ -193,12 +193,15 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       expect(await response.json()).toMatchObject({ ok: false, reason: 'circuit_mineur_requis' });
     });
 
-    it('des réponses VERROUILLÉES restent consultables : la pause porte sur la saisie', async () => {
-      prisma.patient.findUnique.mockResolvedValue(patient(quinzeAns()));
-      prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statutReponses: 'verrouille' });
-      const response = await GET(requeteProprietaire());
-      expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({ ok: true });
-    });
+    it.each(['verrouille', 'modification_demandee'])(
+      'des réponses en lecture seule (%s) restent consultables : la pause porte sur la saisie',
+      async (statutReponses) => {
+        prisma.patient.findUnique.mockResolvedValue(patient(quinzeAns()));
+        prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statutReponses });
+        const response = await GET(requeteProprietaire());
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ ok: true });
+      },
+    );
   });
 });

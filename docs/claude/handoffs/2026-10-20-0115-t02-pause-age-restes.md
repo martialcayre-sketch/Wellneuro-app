@@ -20,6 +20,11 @@ manquant) qui ne demandent ni décision ni migration.
 - Banc `web/src/lib/patient/gardeAge.routes.guard.test.ts` : balayage des
   routes d'écriture sous `api/patient` et `api/portail` ; six gardées, dix-huit
   ouvertes avec motif (périmètre de l'arbitrage du 2026-10-14).
+- Revue CodeRabbit (quatre remarques, toutes corrigées) : `modification_demandee`
+  reste consultable comme `verrouille` (la soumission refuse d'écrire dans les
+  deux) ; raison du refus typée (`RaisonRefusAge`), cast retiré ; le banc ignore
+  les commentaires et exige que le résultat de la garde soit lié puis testé ;
+  il voit aussi les méthodes réexportées (`export { handler as POST }`).
 - Non traités (restent au plan, avec J3-mineurs) : le signal de sécurité de
   l'envoi d'un mineur (inhérent à la pause : relève d'une décision) et
   l'origine de la date (colonne, donc migration).

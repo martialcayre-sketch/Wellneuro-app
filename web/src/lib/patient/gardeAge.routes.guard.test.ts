@@ -47,6 +47,27 @@ const OUVERTES: Record<string, string> = {
   'portail/trust/signalement': 'signalement, ouvert par l’arbitrage du 2026-10-14',
 };
 
+/** Le source sans ses commentaires : un appel cité en commentaire ne garde rien. */
+function sansCommentaires(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+/** Méthodes d'écriture exportées, déclarées ou réexportées (`export { handler as POST }`). */
+const METHODE_ECRITURE =
+  /export\s+(?:async\s+function|const|function)\s+(?:POST|PUT|PATCH|DELETE)\b|export\s*\{[^}]*\b(?:POST|PUT|PATCH|DELETE)\b[^}]*\}/;
+
+/**
+ * La garde est-elle EFFECTIVE ? Son résultat doit être lié à un nom, et ce nom
+ * tester une branche de refus. Un appel en commentaire, ou dont le résultat est
+ * ignoré, ne compte pas.
+ */
+function gardeEffective(source: string): boolean {
+  const code = sansCommentaires(source);
+  const liaison = code.match(/const\s+(\w+)\s*=\s*(?:await\s+)?refusSaisieSante(?:Pour)?\(/);
+  if (!liaison) return false;
+  return new RegExp(`if\\s*\\(\\s*${liaison[1]}\\s*\\)`).test(code);
+}
+
 function routesDEcriture(): Map<string, string> {
   const trouvees = new Map<string, string>();
   for (const espace of ['patient', 'portail']) {
@@ -58,7 +79,7 @@ function routesDEcriture(): Map<string, string> {
         if (entree.isDirectory()) pile.push(plein);
         else if (entree.name === 'route.ts') {
           const source = fs.readFileSync(plein, 'utf8');
-          if (/export\s+(?:async\s+function|const)\s+(?:POST|PUT|PATCH|DELETE)\b/.test(source)) {
+          if (METHODE_ECRITURE.test(sansCommentaires(source))) {
             trouvees.set(path.relative(RACINE_API, path.dirname(plein)).split(path.sep).join('/'), source);
           }
         }
@@ -80,9 +101,21 @@ describe('pause d’âge — routes d’écriture patient (D-284 §3)', () => {
     expect(nonClassees).toEqual([]);
   });
 
-  it('chaque route gardée appelle la garde d’âge', () => {
-    const sansGarde = GARDEES.filter((r) => !/refusSaisieSante(?:Pour)?\(/.test(routes.get(r) ?? ''));
+  it('chaque route gardée joue la garde d’âge et en suit le refus', () => {
+    const sansGarde = GARDEES.filter((r) => !gardeEffective(routes.get(r) ?? ''));
     expect(sansGarde).toEqual([]);
+  });
+
+  it('le détecteur refuse une garde citée en commentaire ou dont le résultat est ignoré', () => {
+    expect(gardeEffective('// const r = await refusSaisieSantePour(id);\nif (r) return;')).toBe(false);
+    expect(gardeEffective('await refusSaisieSantePour(id);')).toBe(false);
+    expect(gardeEffective('const r = await refusSaisieSantePour(id);')).toBe(false);
+    expect(gardeEffective('const r = await refusSaisieSantePour(id);\nif (r) return refus;')).toBe(true);
+  });
+
+  it('le balayage voit une méthode réexportée', () => {
+    expect(METHODE_ECRITURE.test('const handler = () => {};\nexport { handler as POST };')).toBe(true);
+    expect(METHODE_ECRITURE.test('export async function GET() {}')).toBe(false);
   });
 
   it('aucune entrée de la classification ne désigne une route disparue', () => {
@@ -92,6 +125,6 @@ describe('pause d’âge — routes d’écriture patient (D-284 §3)', () => {
 
   it('l’ouverture d’un questionnaire refuse aussi sous la pause (lecture du formulaire)', () => {
     const source = fs.readFileSync(path.join(RACINE_API, 'patient', 'questionnaire', 'route.ts'), 'utf8');
-    expect(source).toMatch(/refusSaisieSantePour\(/);
+    expect(gardeEffective(source)).toBe(true);
   });
 });
