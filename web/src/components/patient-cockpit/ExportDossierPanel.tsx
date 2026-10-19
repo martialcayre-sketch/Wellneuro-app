@@ -16,7 +16,7 @@ const OPTIONS_VERSION: readonly { valeur: VersionExport; libelle: string; aide: 
     valeur: 'ia-externe',
     libelle: 'Pour une IA externe (pseudonymisée)',
     aide:
-      'Sans nom, prénom, date de naissance, coordonnées, numéro de sécurité sociale ni médecin traitant ; '
+      'Sans nom, prénom, date de naissance, coordonnées ni médecin traitant ; '
       + 'l’âge et l’identifiant du dossier restent. Leurs occurrences dans les textes libres sont masquées : '
       + 'relisez le PDF avant de l’envoyer.',
   },
@@ -24,7 +24,7 @@ const OPTIONS_VERSION: readonly { valeur: VersionExport; libelle: string; aide: 
     valeur: 'complete',
     libelle: 'Complète',
     aide:
-      'Identité, coordonnées et numéro de sécurité sociale compris. À conserver dans votre environnement de '
+      'Identité et coordonnées comprises. À conserver dans votre environnement de '
       + 'santé : ne pas transmettre à un service d’IA externe.',
   },
 ];

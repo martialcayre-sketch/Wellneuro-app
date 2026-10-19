@@ -6,10 +6,14 @@ import {
 } from '@/lib/consultation/consultationPorteuse';
 import {
   constatsSecuriteOuverts,
+  findingIdQuestionnaire,
   reponsesSecuriteDeclarees,
   signauxDeclares,
   type PassationSecuriteRow,
+  type ReponseSecurite,
 } from '@/lib/clinical-engine/safetyFindings';
+import { estFindingAnamnese, estFindingQuestionnaire } from '@/lib/clinical-engine/safetyFindingSource';
+import type { SafetyFinding } from '@/lib/clinical-engine/types';
 import { QUESTIONNAIRES_SECURITE } from '@/lib/clinical/safetyQuestionnaireV1';
 import { lireCouverturesAdressageGroupees } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
 import type { SignalSecuriteRow } from './cartes';
@@ -79,19 +83,52 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
   ])].sort();
   for (const idPatient of idPatients) {
     const porteuse = porteuses.get(idPatient);
+    const passationsDuDossier = passationsParDossier.get(idPatient) ?? [];
+    const reponses = reponsesSecuriteDeclarees(passationsDuDossier);
     const ouverts = constatsSecuriteOuverts(
       // Sans porteuse, aucune anamnèse ne fait foi : `signauxDeclares(null)`
       // rend `[]`, exactement ce que la chaîne reçoit.
       signauxDeclares(porteuse?.anamnese ?? null),
-      reponsesSecuriteDeclarees(passationsParDossier.get(idPatient) ?? []),
+      reponses,
       couvertures ? couvertures.get(idPatient) ?? [] : undefined,
     );
     if (ouverts.length === 0) continue;
     lignes.push({
       idPatient,
       findingIds: ouverts.map(constat => constat.findingId).sort(),
-      depuis: porteuse?.dateValidation ?? null,
+      depuis: depuisLePlusAncien(ouverts, reponses, passationsDuDossier, porteuse?.dateValidation ?? null),
     });
   }
   return lignes;
+}
+
+// DEPUIS QUAND LE DOSSIER ATTEND — reste de [[D-275]] (P2-4, dette t05). La
+// date de la carte était celle de l'anamnèse porteuse, même quand seule une
+// réponse aux questions sur le suicide était ouverte : un « oui » d'hier
+// s'affichait à la date d'une validation vieille de plusieurs mois (et le tri
+// « le plus ancien d'abord » le plaçait sur cette date fausse), un dossier sans
+// porteuse n'était pas daté du tout et passait en dernier. Chaque constat ouvert
+// porte désormais SA date — la passation pour une réponse, la validation de
+// la porteuse pour un signal déclaré — et la carte prend la plus ancienne.
+// Aucun constat n'est ajouté ni retiré : seules la date affichée et la place
+// de la carte changent. Un signal d'anamnèse sur une porteuse non datée ne
+// date rien ; la carte prend alors la date des réponses.
+function depuisLePlusAncien(
+  ouverts: readonly SafetyFinding[],
+  reponses: readonly ReponseSecurite[],
+  passations: readonly PassationSecuriteRow[],
+  validationPorteuse: Date | null,
+): Date | null {
+  const dateParReponse = new Map(passations.map(passation => [passation.idReponse, passation.dateReponse]));
+  const dateParConstat = new Map(
+    reponses.map(reponse => [findingIdQuestionnaire(reponse), dateParReponse.get(reponse.idReponse) ?? null]),
+  );
+  let plusAncienne: Date | null = null;
+  for (const constat of ouverts) {
+    const date = estFindingQuestionnaire(constat.findingId)
+      ? dateParConstat.get(constat.findingId) ?? null
+      : estFindingAnamnese(constat.findingId) ? validationPorteuse : null;
+    if (date && (!plusAncienne || date < plusAncienne)) plusAncienne = date;
+  }
+  return plusAncienne;
 }

@@ -23,7 +23,6 @@ function patient(surcharge: Partial<PatientExport> = {}): PatientExport {
     email: 'sophie.nicola@example.test',
     telephone: '0612345678',
     adresse: '12 rue des Lilas, 75011 Paris',
-    nir: '199999999999999',
     medecinTraitantNom: 'Dr Michel Dogné',
     medecinTraitantCoordonnees: 'Cabinet du parc, 01 23 45 67 89, cabinet.parc@example.test',
     actif: true,
@@ -214,14 +213,12 @@ describe('creerMasqueur — caractères que le rendu efface ou recompose', () =>
     ['06    12    34    56    78', '06 12 34 56 78'],
     ['06  -  12  -  34  -  56  -  78', '06 12 34 56 78'],
     ['06\u{A0}\u{A0}-\u{A0}\u{A0}12\u{A0}\u{A0}-\u{A0}\u{A0}34\u{A0}\u{A0}-\u{A0}\u{A0}56\u{A0}\u{A0}-\u{A0}\u{A0}78', '06 12 34 56 78'],
-    ['2  -  85  -  03  -  69  -  123  -  456  -  78', null],
-    ['2    85    03    69    123    456    78', null],
   ])('masque un numéro écrit avec des séparateurs larges « %s »', (forme, telephone) => {
-    const large = creerMasqueur(patient({ telephone, nir: '2 85 03 69 123 456 78' }));
+    const large = creerMasqueur(patient({ telephone }));
     expect(large(`numéro ${forme}.`)).toBe(`numéro ${M}.`);
     // Et le même numéro STOCKÉ ainsi se retrouve sous sa forme ordinaire.
-    const stocke = creerMasqueur(patient({ telephone: forme, nir: forme }));
-    expect(stocke(`numéro ${telephone ?? '2 85 03 69 123 456 78'}.`)).toBe(`numéro ${M}.`);
+    const stocke = creerMasqueur(patient({ telephone: forme }));
+    expect(stocke(`numéro ${telephone}.`)).toBe(`numéro ${M}.`);
   });
 
   // Un nom collé à ce que le PDF DESSINE (« ? », « -> », « © ») reste un mot sur
@@ -348,17 +345,6 @@ describe('creerMasqueur — coordonnées', () => {
   it('ne construit aucun motif de téléphone sous 8 chiffres', () => {
     const court = creerMasqueur(patient({ telephone: '1234567' }));
     expect(court('code 1234567')).toBe('code 1234567');
-  });
-
-  it('masque le NIR avec ou sans espaces, et sans sa clé', () => {
-    expect(masquer('NIR : 1 99 99 99 999 999 99.')).toBe(`NIR : ${M}.`);
-    expect(masquer('NIR : 199999999999999')).toBe(`NIR : ${M}`);
-    expect(masquer('NIR : 1.99.99.99.999.999')).toBe(`NIR : ${M}`);
-  });
-
-  it('ne construit aucun motif de NIR sous 10 chiffres', () => {
-    const court = creerMasqueur(patient({ nir: '123456789' }));
-    expect(court('lot 123456789')).toBe('lot 123456789');
   });
 
   it('masque l’adresse entière et chacun de ses morceaux', () => {
@@ -536,7 +522,6 @@ describe('creerMasqueur — garanties', () => {
         email: '',
         telephone: null,
         adresse: null,
-        nir: null,
         medecinTraitantNom: null,
         medecinTraitantCoordonnees: null,
       }),
