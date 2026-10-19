@@ -10793,6 +10793,33 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Geste de lettre sans porteuse.
 
+## 2026-10-19 — J3-collecte : migration des documents déposés
+
+**Fait.** D-330 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (34 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
+
+**Écarté.** Unicité partielle en base pour le doublon (index non modélisable par Prisma) : refus par trigger sous verrou du dossier.
+
+**Prochaine action.** Validation RGPD du responsable, merge, release-db approuvée, constat par conteneur ; puis la PR du code sous drapeau éteint.
+
+**Ouvert.** D-328 puis D-329 pris par d'autres sessions pendant le lot : renuméroté D-330.
+## 2026-10-19 — t07b : « Mon équilibre » dans l'aperçu praticien
+
+**Fait.** L'aperçu du cockpit mène de la consultation à l'accueil puis au détail de « Mon équilibre », lus par une route d'aperçu journalisée qui partage la composition du portail. Seconde série d'arbitrages reçue (t14 date posée avec l'ouverture, t12 gestes « atteint »/« abandonné », t11 message « désactivé », 404/403 gardé).
+
+**Écarté.** Réutiliser la route praticien de l'équilibre : elle sert les niveaux de preuve.
+
+**Prochaine action.** PR ; puis t12, t11, t14, t15, NIR.
+
+**Ouvert.** Prop `email` résiduel de `MonEquilibreDetail`.
+## 2026-10-19 — t05c : lettre sans consultation porteuse expliquée
+
+**Fait.** Arbitrages du responsable reçus (t07b, t11/t12, t14 maintenant, t15, NIR par règle de permission, migrations sans redemander). Sans consultation porteuse, le cockpit remplace le bouton de lettre par « Validez d'abord une consultation pour rédiger la lettre » ; indication servie à côté de la carte.
+
+**Écarté.** Masquer le geste : arbitrage « expliquer ». Lire la porteuse par le GET de la lettre : il ne nomme aucun dossier, exprès.
+
+**Prochaine action.** PR ; puis t07b, t12, t11, t14, t15, NIR.
+
+**Ouvert.** Aucun pour t05.
 ## 2026-10-19 — Étiquetage vit. D exécuté (D-325 §5) et banc du lot
 
 **Fait.**
@@ -10832,5 +10859,21 @@ Ce lot les livre, sans migration.
 **Écarté.** Garder code et migration dans une même PR : la règle de release-db veut la migration seule.
 
 **Prochaine action.** PR, merge, release-db après recomptage, constat ; puis PR 2 (code).
+## 2026-10-19 — t12 : fin de l'objectif depuis le cockpit
+
+**Fait.** t12 rejugée : quatre points sur cinq déjà livrés. Ajouts : bloc « Fin de l'objectif » (proposer atteint, attester la voix du patient, renoncer motivé, confirmation en deux temps), provenance de l'accord sous chaque version, `negocieLe` ignorée à l'écriture.
+
+**Écarté.** Attester la voix du patient avant toute proposition : D-161 interdit d'attester ce que personne n'a dit.
+
+**Prochaine action.** PR après #1576 ; puis t11.
+
+**Ouvert.** Pas de geste de fin au portail.
+## 2026-10-19 — F38 : constat et allumage de « Pour votre médecin » (D-307)
+
+**Fait.** La PR #1573 a été mergée et déployée. Constat 2A sur un dossier de test : le responsable a imprimé, l'assistant a relu l'impression par conteneur puis allumé `WN_DOCUMENT_MEDECIN_PATIENT` (lu `true`, 401 au lieu de 503 sans session), le responsable a téléchargé depuis le portail, et l'assistant a relu les téléchargements, tous rattachés à la dernière impression. Le drapeau reste allumé.
+
+**Noté.** L'`ordre` des deux tables avance de deux en deux : la valeur par défaut de la colonne puis le trigger consomment chacun la séquence. Ce n'est pas un échec.
+
+**Prochaine action.** Aucune sur F38.
 
 **Ouvert.** Aucun.
