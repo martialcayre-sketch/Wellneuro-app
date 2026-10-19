@@ -10726,3 +10726,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
+
+## 2026-10-19 — NIR : l'export ne lit plus la colonne
+
+**Fait.** Dette t03 soldée côté code : l'export ne sélectionne plus le NIR, le masquage ne le cherche plus (0 enregistré), textes d'export et de la fiche purgés du « numéro de sécurité sociale ». La colonne n'a plus de lecteur.
+
+**Écarté.** Migration de retrait dans le même lot : le mode auto a refusé l'écriture de la migration et du contrat SQL ; rien contourné, schéma restauré.
+
+**Prochaine action.** PR, merge après #1565 ; la migration attend une règle de permission ou le responsable.
+
+**Ouvert.** Migration H26 (g) préparée, non écrite.

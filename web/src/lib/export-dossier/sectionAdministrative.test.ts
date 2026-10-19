@@ -15,7 +15,6 @@ function patient(surcharge: Partial<PatientExport> = {}): PatientExport {
     email: 'sophie.nicola@example.test',
     telephone: '06 12 34 56 78',
     adresse: '12 rue des Lilas, 75011 Paris',
-    nir: '1 99 99 99 999 999 99',
     medecinTraitantNom: 'Dr Michel Dogné',
     medecinTraitantCoordonnees: 'Cabinet du parc, 01 23 45 67 89',
     actif: true,
@@ -62,7 +61,6 @@ describe('sectionAdministrative — version complète', () => {
         email: '',
         telephone: null,
         adresse: '   ',
-        nir: null,
         medecinTraitantNom: null,
         medecinTraitantCoordonnees: '',
       }),
@@ -135,7 +133,7 @@ describe('sectionAdministrative — version IA externe', () => {
 
   it('annonce la pseudonymisation dans les mots attendus', () => {
     expect(MENTION_PSEUDONYMISATION).toBe(
-      'Version pseudonymisée : nom, prénom, date de naissance, coordonnées, numéro de sécurité sociale et médecin traitant sont retirés de ce document.',
+      'Version pseudonymisée : nom, prénom, date de naissance, coordonnées et médecin traitant sont retirés de ce document.',
     );
   });
 
@@ -171,7 +169,6 @@ describe('sectionAdministrative — version IA externe', () => {
           email: 'jennifer.martin@example.test',
           telephone: '+33 7 00 00 00 01',
           adresse: '4 allée des Tilleuls\n69000 Lyon',
-          nir: '299999999999999',
           medecinTraitantNom: 'Docteur Michel Dogné',
           medecinTraitantCoordonnees: 'michel.dogne@example.test',
           actif: false,
@@ -191,7 +188,6 @@ describe('sectionAdministrative — version IA externe', () => {
         p.email,
         p.telephone,
         p.adresse,
-        p.nir,
         p.medecinTraitantNom,
         p.medecinTraitantCoordonnees,
         p.dateNaissance,
@@ -205,7 +201,7 @@ describe('sectionAdministrative — version IA externe', () => {
         expect(texte, interdit).not.toContain(interdit.toLowerCase());
       }
       const suiteDeChiffres = JSON.stringify(blocs).replace(/\D/g, '');
-      for (const numero of [chiffres(p.telephone), chiffres(p.nir)]) {
+      for (const numero of [chiffres(p.telephone)]) {
         expect(suiteDeChiffres).not.toContain(numero);
       }
       // Aucun libellé identifiant n'est seulement vidé : il est absent.
