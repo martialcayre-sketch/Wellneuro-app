@@ -219,9 +219,10 @@ async function main() {
         { claimId: claimId(5), raison: 'claim_introuvable' },
       ],
     });
-    assert.equal((await etat(c, 3)).rubrique, null, 'le claim valide de la liste refusée reste sans clé');
+    const e3 = await etat(c, 3);
+    assert.deepEqual([e3.besoins, e3.rubrique], [null, null], 'le claim valide de la liste refusée reste sans clé');
     const e4 = await etat(c, 4);
-    assert.deepEqual([e4.statut, e4.rubrique], ['EN_ATTENTE_VALIDATION', null], 'le claim refusé reste en attente et sans clé');
+    assert.deepEqual([e4.statut, e4.besoins, e4.rubrique], ['EN_ATTENTE_VALIDATION', null, null], 'le claim refusé reste en attente et sans clé');
     assert.equal((await actes(c)).length, 3);
     console.log('ok 4 — liste refusée : chaque claim en cause nommé, rien d’écrit');
 
