@@ -220,6 +220,8 @@ async function main() {
       ],
     });
     assert.equal((await etat(c, 3)).rubrique, null, 'le claim valide de la liste refusée reste sans clé');
+    const e4 = await etat(c, 4);
+    assert.deepEqual([e4.statut, e4.rubrique], ['EN_ATTENTE_VALIDATION', null], 'le claim refusé reste en attente et sans clé');
     assert.equal((await actes(c)).length, 3);
     console.log('ok 4 — liste refusée : chaque claim en cause nommé, rien d’écrit');
 
@@ -246,6 +248,9 @@ async function main() {
       );
     } finally {
       await verrou.query('COMMIT');
+      // L'envoi s'achève toujours avant le nettoyage, même si l'attente a
+      // échoué ; son issue est jugée juste après.
+      await envoi.catch(() => {});
     }
     assert.deepEqual(await envoi, { ok: true, n: 0, inchanges: 1 });
     const a5 = await actes(c);
