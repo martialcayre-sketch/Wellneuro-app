@@ -56,16 +56,37 @@ function sansCommentaires(source: string): string {
 const METHODE_ECRITURE =
   /export\s+(?:async\s+function|const|function)\s+(?:POST|PUT|PATCH|DELETE)\b|export\s*\{[^}]*\b(?:POST|PUT|PATCH|DELETE)\b[^}]*\}/;
 
+/** Le corps d'une branche : le bloc `{…}` équilibré, ou l'instruction seule. */
+function corpsDeBranche(code: string, debut: number): string {
+  let i = debut;
+  while (i < code.length && /\s/.test(code[i])) i += 1;
+  if (code[i] !== '{') return code.slice(i, code.indexOf(';', i) + 1);
+  let profondeur = 0;
+  for (let j = i; j < code.length; j += 1) {
+    if (code[j] === '{') profondeur += 1;
+    else if (code[j] === '}') {
+      profondeur -= 1;
+      if (profondeur === 0) return code.slice(i, j + 1);
+    }
+  }
+  return '';
+}
+
 /**
- * La garde est-elle EFFECTIVE ? Son résultat doit être lié à un nom, et ce nom
- * tester une branche de refus. Un appel en commentaire, ou dont le résultat est
- * ignoré, ne compte pas.
+ * La garde est-elle EFFECTIVE ? Son résultat doit être lié à un nom, ce nom
+ * tester une branche, et cette branche RETOURNER — sans quoi la route poursuit
+ * l'écriture. Un appel en commentaire, un résultat ignoré ou une branche qui ne
+ * fait que journaliser ne comptent pas.
  */
 function gardeEffective(source: string): boolean {
   const code = sansCommentaires(source);
   const liaison = code.match(/const\s+(\w+)\s*=\s*(?:await\s+)?refusSaisieSante(?:Pour)?\(/);
   if (!liaison) return false;
-  return new RegExp(`if\\s*\\(\\s*${liaison[1]}\\s*\\)`).test(code);
+  for (const test of code.matchAll(/if\s*\(\s*(\w+)\s*\)/g)) {
+    if (test[1] !== liaison[1]) continue;
+    if (/\breturn\b/.test(corpsDeBranche(code, test.index + test[0].length))) return true;
+  }
+  return false;
 }
 
 function routesDEcriture(): Map<string, string> {
@@ -111,6 +132,10 @@ describe('pause d’âge — routes d’écriture patient (D-284 §3)', () => {
     expect(gardeEffective('await refusSaisieSantePour(id);')).toBe(false);
     expect(gardeEffective('const r = await refusSaisieSantePour(id);')).toBe(false);
     expect(gardeEffective('const r = await refusSaisieSantePour(id);\nif (r) return refus;')).toBe(true);
+    // Branche qui ne retourne pas : la route poursuivrait l'écriture.
+    expect(gardeEffective('const r = await refusSaisieSantePour(id);\nif (r) console.log(r);\nawait ecrire();')).toBe(false);
+    expect(gardeEffective('const r = await refusSaisieSantePour(id);\nif (r) { logger.warn({ a: 1 }); }\nawait ecrire();')).toBe(false);
+    expect(gardeEffective('const r = await refusSaisieSantePour(id);\nif (r) {\n  logger.warn({ a: 1 });\n  return json(r);\n}')).toBe(true);
   });
 
   it('le balayage voit une méthode réexportée', () => {
