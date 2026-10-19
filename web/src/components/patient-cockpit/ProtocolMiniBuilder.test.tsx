@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ProtocolMiniBuilder, type RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
-import { MAX_ACTIONS_PROTOCOLE_21J, type DecisionCard } from '@/lib/clinical-engine/types';
+import { ProtocolMiniBuilder, type RelectureProtocoleSoumission, type VersionActiveConstructeur } from './ProtocolMiniBuilder';
+import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PROTOCOL_DRAFT_V4, type DecisionCard } from '@/lib/clinical-engine/types';
+import { ACTION_ID_ORIENTATION } from '@/lib/clinical-engine/orientationAdressage';
 import { lignesBaremeServables } from '@/lib/clinical/baremeChargeV1';
 import type { FoodCompassActionRef } from '@/lib/food-compass';
 
@@ -1158,5 +1159,120 @@ describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
     expect(suggestion(container)).toBeNull();
     fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
     expect(suggestion(container)).toBe(MODERE);
+  });
+});
+
+// ── t15 : le brouillon vierge se recharge depuis la version en vigueur ──────
+
+function versionActive(actions: VersionActiveConstructeur['contenu']['actions'], versionId = 'version-1'): VersionActiveConstructeur {
+  return {
+    versionId,
+    contenu: {
+      purpose: 'Raison en vigueur',
+      followUpCriterion: 'Critère en vigueur',
+      therapeuticLoad: { level: 'moderate', source: 'practitioner', justification: null },
+      actions,
+    },
+  };
+}
+
+const ACTION_EN_VIGUEUR = {
+  actionId: 'action-3', type: 'food' as const, title: 'Action en vigueur',
+  idealPlan: 'Idéal en vigueur', minimalPlan: 'Minimal en vigueur', rescuePlan: 'Secours en vigueur', limitations: [],
+};
+
+describe('ProtocolMiniBuilder — recharge de la version en vigueur (t15)', () => {
+  it('recharge un brouillon vierge, sans l’orientation, et sans poser la coche', () => {
+    const orientation = { ...ACTION_EN_VIGUEUR, actionId: ACTION_ID_ORIENTATION, type: 'medical_referral' as const, title: 'Orientation' };
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([orientation, ACTION_EN_VIGUEUR])} />,
+    );
+    const ui = within(container);
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('Raison en vigueur');
+    expect((ui.getByLabelText('Critère observable à J21') as HTMLTextAreaElement).value).toBe('Critère en vigueur');
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Action en vigueur');
+    expect(ui.queryByLabelText('Intitulé de l’action 2')).toBeNull();
+    expect((ui.getByLabelText('Charge déclarée par le praticien') as HTMLSelectElement).value).toBe('moderate');
+    expect(ui.queryByText('Relu par le praticien')).toBeNull();
+  });
+
+  it('une action ajoutée ne reprend pas l’identifiant d’une action rechargée', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onReviewed={onReviewed} versionActive={versionActive([ACTION_EN_VIGUEUR])} />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 2'), { target: { value: 'hydration' } });
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 2'), { target: { value: 'Ajoutée' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 2'), { target: { value: 'Idéal' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 2'), { target: { value: 'Minimal' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 2'), { target: { value: 'Secours' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions.map(action => action.actionId)).toEqual(['action-3', 'action-4']);
+  });
+
+  it('une version V4 rechargée se révise en V4', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onReviewed={onReviewed}
+        versionActive={versionActive([{ ...ACTION_EN_VIGUEUR, interventionStatus: 'active' }])}
+      />,
+    );
+    fireEvent.click(within(container).getByRole('button', { name: 'Marquer comme relu' }));
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe(VERSION_PROTOCOL_DRAFT_V4);
+  });
+
+  it('ne recharge jamais par-dessus un brouillon commencé', () => {
+    const { container, rerender } = render(<ProtocolMiniBuilder decisionCard={card()} versionActive={null} />);
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'En cours de frappe' } });
+    rerender(<ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([ACTION_EN_VIGUEUR])} />);
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('En cours de frappe');
+    expect(ui.queryByLabelText('Intitulé de l’action 1')).toBeNull();
+  });
+
+  it('recharge une fois par version : vidé à la main, le brouillon reste vide', () => {
+    const version = versionActive([ACTION_EN_VIGUEUR]);
+    const { container, rerender } = render(<ProtocolMiniBuilder decisionCard={card()} versionActive={version} />);
+    const ui = within(container);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(ui.getByRole('button', { name: 'Réinitialiser' }));
+    confirm.mockRestore();
+    rerender(<ProtocolMiniBuilder decisionCard={card()} versionActive={{ ...version }} />);
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('');
+    expect(ui.queryByLabelText('Intitulé de l’action 1')).toBeNull();
+    // Une version NEUVE ne le remplit pas non plus : le praticien a choisi de
+    // repartir de rien.
+    rerender(<ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([ACTION_EN_VIGUEUR], 'version-2')} />);
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('sur une version en vigueur V4, un brouillon saisi à la main se soumet en V4', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onReviewed={onReviewed}
+        versionActive={versionActive([{ ...ACTION_EN_VIGUEUR, interventionStatus: 'active' }])}
+      />,
+    );
+    const ui = within(container);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(ui.getByRole('button', { name: 'Réinitialiser' }));
+    confirm.mockRestore();
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe(VERSION_PROTOCOL_DRAFT_V4);
+    expect(soumission.actions[0].interventionStatus).toBe('active');
   });
 });

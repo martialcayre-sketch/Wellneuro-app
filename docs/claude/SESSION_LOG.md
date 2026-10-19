@@ -10887,6 +10887,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t15 : réviser part de la version en vigueur
+
+**Fait.** Brouillon vierge du constructeur rechargé depuis la version en vigueur (une fois par version, orientation non reprise, V4 redemandé) ; `versionsLues` au rail, phase Actions « inconnu » avant lecture.
+
+**Écarté.** Bouton « recharger » explicite : l'arbitrage veut que réviser parte de la version en vigueur.
+
+**Prochaine action.** PR, merge ; puis question t14 au responsable, NIR.
+
+**Ouvert.** t14 : toutes les surfaces du journal sont déjà ouvertes en production.
 ## 2026-10-19 — t14 : journal du portail, close sans code
 
 **Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Ligne du plan soldée en citant #1586 (mécanisme `_OUVERT_LE` livré le même soir par une autre session, sans effet sans variable posée) ; état de production de `WN_PORTAIL_MES_ECHANGES` corrigé au FEATURE_FLAGS.

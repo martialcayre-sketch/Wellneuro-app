@@ -211,7 +211,8 @@ export function ArbitrageBiologiquePanel({
         <div className="mt-3">
           {/* Bouton inactif sans la coche : une révision née en brouillon ne
               se relirait plus, le panneau ne propose de réviser que la version
-              arbitrée, et le constructeur n'est pas réhydraté depuis elle. */}
+              arbitrée, et le constructeur ne se recharge depuis la version en
+              vigueur que sur un brouillon vierge (t15). */}
           <label className="mb-2 flex min-h-11 items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"
