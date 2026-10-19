@@ -10916,3 +10916,12 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, CI, revue CodeRabbit, merge, déploiement constaté.
 
 **Ouvert.** À valider avant ACT-4 : les libellés de l'écran, le bloc « Ce que vous trouvez ici », « Vos données personnelles ». Observations relevées : le protocole n'a aucune lecture datée ; « Mes échanges » n'a aucun lecteur tracé.
+## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
+
+**Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.
+
+**Écarté.** Committer le fichier tel que `/permissions` l'avait réécrit : il déplaçait trois clés sans rien changer.
+
+**Prochaine action.** Le dossier zinc.
+
+**Ouvert.** Aucun.
