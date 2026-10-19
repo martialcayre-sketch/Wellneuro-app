@@ -412,6 +412,47 @@ describe('/api/praticien/cockpit', () => {
     }
   });
 
+  it('dit « sans consultation porteuse » seulement quand le dossier n’en a pas (D-275 §2, 2026-10-19)', async () => {
+    // Porteuse présente : rien n'est ajouté à la réponse.
+    prisma.consultation.findFirst.mockResolvedValue({
+      id: 'CONS_PORTEUSE',
+      anamnese: { motif_principal: 'Fatigue', objectif_prioritaire: 'Énergie', attentes: ['Comprendre'] },
+    });
+    const avec = await proposal();
+    const reponseAvec = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: avec.proposal.inWindowResponseIds,
+      proposalHash: avec.proposalHash,
+    }));
+    const payloadAvec = await reponseAvec.json();
+    expect(payloadAvec.status).toBe('ready');
+    expect(payloadAvec).not.toHaveProperty('sansConsultationPorteuse');
+
+    // Aucune porteuse : un jalon de suivi se confirme quand même, et la
+    // réponse le dit — l'écran remplace alors le geste de lettre.
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    brancherPassations(responses, []);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([diffusionSurT0('2026-01-01T00:00:00.000Z')]);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-22T00:00:00.000Z'));
+    try {
+      const sans = await proposal('J21');
+      const reponseSans = await POST(postRequest({
+        idPatient: 'PAT_TEST', milestone: 'J21',
+        includedResponseIds: sans.proposal.inWindowResponseIds,
+        proposalHash: sans.proposalHash,
+      }));
+      const payloadSans = await reponseSans.json();
+      expect(payloadSans.status).toBe('ready');
+      expect(payloadSans.sansConsultationPorteuse).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('le POST recalcule le J21 depuis le même jour 0 que le GET : pas de 409 (D-255)', async () => {
     brancherPassations(responses, []);
     prisma.assessmentEpisode.findMany.mockResolvedValue([

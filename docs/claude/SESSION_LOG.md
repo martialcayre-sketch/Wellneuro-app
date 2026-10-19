@@ -10792,3 +10792,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR après #1569 ; puis questions au responsable (geste sans porteuse, t07b, t11, t12, t14, t15).
 
 **Ouvert.** Geste de lettre sans porteuse.
+
+## 2026-10-19 — t05c : lettre sans consultation porteuse expliquée
+
+**Fait.** Arbitrages du responsable reçus (t07b, t11/t12, t14 maintenant, t15, NIR par règle de permission, migrations sans redemander). Sans consultation porteuse, le cockpit remplace le bouton de lettre par « Validez d'abord une consultation pour rédiger la lettre » ; indication servie à côté de la carte.
+
+**Écarté.** Masquer le geste : arbitrage « expliquer ». Lire la porteuse par le GET de la lettre : il ne nomme aucun dossier, exprès.
+
+**Prochaine action.** PR ; puis t07b, t12, t11, t14, t15, NIR.
+
+**Ouvert.** Aucun pour t05.
