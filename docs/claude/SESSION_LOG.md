@@ -10896,6 +10896,16 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, merge ; puis question t14 au responsable, NIR.
 
 **Ouvert.** t14 : toutes les surfaces du journal sont déjà ouvertes en production.
+## 2026-10-19 — t14 : journal du portail, close sans code
+
+**Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Ligne du plan soldée en citant #1586 (mécanisme `_OUVERT_LE` livré le même soir par une autre session, sans effet sans variable posée) ; état de production de `WN_PORTAIL_MES_ECHANGES` corrigé au FEATURE_FLAGS.
+
+**Écarté.** Revenir #1586 : sans effet aujourd'hui, et travail d'une autre session.
+
+**Prochaine action.** PR, merge.
+
+**Ouvert.** Aucun.
+
 ## 2026-10-19 — t14 : jour d'ouverture d'une surface au journal patient
 
 **Fait.** « Mes échanges » lit le jour d'ouverture des surfaces remises sous leur propre drapeau (`<DRAPEAU>_OUVERT_LE`, fiches et courrier) : une remise antérieure garde son jour et dit « Affiché à partir d'aujourd'hui », puis « du … ». Procédure d'allumage complétée. Sans migration.
