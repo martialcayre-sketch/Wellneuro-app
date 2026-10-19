@@ -10935,3 +10935,14 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Le dossier zinc.
 
 **Ouvert.** Aucun.
+
+
+## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
+
+**Fait.** Un questionnaire remplissable ouvert par son adresse rend le refus de la soumission (409, même texte) ; banc structurel qui classe chaque route d'écriture patient, gardée ou ouverte avec motif.
+
+**Écarté.** Envoyer le signal de sécurité d'un mineur malgré la pause : décision du responsable. Tracer l'origine de la date : migration, avec J3-mineurs.
+
+**Prochaine action.** PR, T2, merge, déploiement constaté.
+
+**Ouvert.** Les deux restes ci-dessus.
