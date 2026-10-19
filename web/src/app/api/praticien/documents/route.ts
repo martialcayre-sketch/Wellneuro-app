@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents';
 import { compositionDepuisSynthese } from '@/lib/documents/compositionSynthese';
+import { documentMedecinPatientOuvert } from '@/lib/documents/documentMedecinImprime';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -72,7 +73,16 @@ export async function GET(req: Request) {
     const { patientNom, dateDocument, blocs } = compositionDepuisSynthese(synthese, patient);
 
     return withCorrelationHeader(
-      NextResponse.json({ ok: true, patientNom, dateDocument, statut, blocs }),
+      NextResponse.json({
+        ok: true,
+        patientNom,
+        dateDocument,
+        statut,
+        blocs,
+        // La confirmation d'impression annonce le portail seulement quand il
+        // est ouvert ([[D-307]], arbitrage du 2026-10-19).
+        portailDocumentMedecinOuvert: documentMedecinPatientOuvert(),
+      }),
       requestContext,
     );
   } catch (err) {

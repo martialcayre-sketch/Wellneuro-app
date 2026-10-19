@@ -27,6 +27,7 @@ type DocumentApiResponse = {
   dateDocument: string;
   statut: string;
   blocs: Bloc[];
+  portailDocumentMedecinOuvert?: boolean;
   error?: string;
 };
 
@@ -344,6 +345,8 @@ export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: s
               <div role="group" aria-label="Confirmer l’impression" className="flex flex-col gap-2 rounded-lg border border-border p-3">
                 <p className="text-sm text-foreground">
                   Imprimer le document pour le médecin ? L’impression est datée dans le Fil de correspondance.
+                  {doc.portailDocumentMedecinOuvert
+                    && ' Le patient pourra le télécharger dans son espace pour le remettre lui-même.'}{' '}
                   Wellneuro n’envoie ce document à personne.
                 </p>
                 <div className="flex flex-wrap gap-2">
