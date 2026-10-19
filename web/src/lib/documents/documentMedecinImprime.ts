@@ -2,6 +2,11 @@ import { createHash } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusPartage, verdictPartageMedecin } from '@/lib/trust/consentementPartage';
+import { STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents/types';
+
+export const RAISON_SYNTHESE_PLUS_VALIDEE = 'synthese_plus_validee';
+export const MESSAGE_SYNTHESE_PLUS_VALIDEE =
+  'La synthèse n’est plus validée : elle a été vidée ou rejetée entre-temps. Rien n’a été imprimé.';
 
 // Le document pour le médecin, imprimé puis remis par le patient ([[D-307]],
 // F38). Tables `documents_medecin_imprimes` et
@@ -67,6 +72,21 @@ export async function enregistrerImpression(entree: {
     });
     if (!dossier || !accepteNouvelEnvoi(dossier)) {
       return { ok: false as const, raison: RAISON_DOSSIER_CLOS, message: MESSAGE_DOSSIER_CLOS };
+    }
+    // La synthèse est relue sous le même verrou : « vider » et « rejeter » le
+    // prennent aussi (`api/praticien/synthese`). Vidée ou rejetée depuis la
+    // composition, elle donne un refus nommé, pas l'exception du trigger
+    // traduite en 500 (revue CodeRabbit de #1573).
+    const synthese = await tx.syntheseIA.findUnique({
+      where: { idSynthese: entree.idSynthese },
+      select: { idPatient: true, statut: true },
+    });
+    if (
+      !synthese
+      || synthese.idPatient !== entree.idPatient
+      || !STATUTS_SYNTHESE_VALIDES.includes(synthese.statut as StatutSyntheseSource)
+    ) {
+      return { ok: false as const, raison: RAISON_SYNTHESE_PLUS_VALIDEE, message: MESSAGE_SYNTHESE_PLUS_VALIDEE };
     }
     const choix = await tx.trustChoiceEvent.findMany({
       where: { idPatient: entree.idPatient, finalite: 'partage_medecin_traitant' },

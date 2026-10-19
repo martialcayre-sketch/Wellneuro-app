@@ -8,6 +8,9 @@ const { getServerSession, prisma, journaliserAccesDossier } = vi.hoisted(() => (
     syntheseIA: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
     bookletEnvoi: { findFirst: vi.fn() },
     auditSynthese: { create: vi.fn() },
+    documentMedecinImprime: { findFirst: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
   },
 }));
 
@@ -96,6 +99,9 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     prisma.syntheseIA.update.mockResolvedValue(ligneSynthese());
     prisma.bookletEnvoi.findFirst.mockResolvedValue(null);
     prisma.auditSynthese.create.mockResolvedValue({});
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue(null);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
     journaliserAccesDossier.mockResolvedValue(undefined);
   });
 
@@ -194,6 +200,40 @@ describe('brouillon praticien /api/praticien/synthese', () => {
 
     expect(response.status).toBe(409);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  // D-307 (F38), arbitrage du 2026-10-19 : une synthèse imprimée pour le
+  // médecin ne se vide ni ne se rejette — contrôlé sous le verrou du dossier.
+  it.each([['effacer'], ['rejeter']])('refuse de %s une synthèse imprimée pour le médecin, sous le verrou du dossier', async (action) => {
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).reason).toBe('synthese_imprimee_pour_medecin');
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(String((prisma.$queryRaw.mock.calls[0] as unknown[])[0])).toContain('FOR UPDATE');
+    expect(prisma.documentMedecinImprime.findFirst).toHaveBeenCalledWith({
+      where: { idSynthese: 'SYN_MANUEL_1' },
+      select: { id: true },
+    });
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+    expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
+  });
+
+  it('rejette une synthèse jamais imprimée, sous le verrou du dossier', async () => {
+    const response = await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'rejeter' }));
+    expect(response.status).toBe(200);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.syntheseIA.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ statut: 'Rejetee' }),
+    }));
+  });
+
+  it('valider n’entre pas dans le contrôle d’impression', async () => {
+    prisma.documentMedecinImprime.findFirst.mockResolvedValue({ id: 'IMP_1' });
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut: 'Brouillon_IA', modele: 'claude-test' });
+    await PATCH(requete('PATCH', { idSynthese: 'SYN_MANUEL_1', action: 'valider' }));
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.documentMedecinImprime.findFirst).not.toHaveBeenCalled();
   });
 
   it('refuse de valider un brouillon praticien vide', async () => {
