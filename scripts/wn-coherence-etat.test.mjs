@@ -361,7 +361,9 @@ test('CÂBLAGE — un dépôt cohérent ne produit aucun écart, sinon le test c
   const racine = depotFixture({
     etat,
     campagnes: [campagneFixture({ dossier: 'campagne-de-banc', lotCourant: 'LOT-00' })],
-    vue: rendreVueCampagnesActives(etat, [{ name: 'campagne-de-banc', title: 'Campagne de banc' }]),
+    // `status` : celui de la fiche écrite par `campagneFixture` (`statut: "active"`),
+    // que la vue lit depuis t31.
+    vue: rendreVueCampagnesActives(etat, [{ name: 'campagne-de-banc', title: 'Campagne de banc', status: 'active' }]),
   });
 
   // Égalité stricte, sans filtre : la fixture est datée relativement, donc
@@ -479,4 +481,29 @@ test("DÉPÔT RÉEL — la tête de next_action nomme la campagne active, pas un
       + "de `[trace <date> — ancienne tête remplacée]`. Ne PAS réécrire les entrées "
       + "suivantes : elles sont l'archive, et c'est à ça qu'elles servent.",
   );
+});
+
+// ── Statut de la campagne : celui de sa fiche (t31) ─────────────────────────
+
+test('STATUT — la vue écrit le statut de la fiche de la campagne primaire, plus « active » en dur', () => {
+  const etat = { status: 'active', active_campaign: 'campagne-x', active_lot: 'aucun', updated_at: '2026-10-20T00:00:00Z' };
+  const vue = rendreVueCampagnesActives(etat, [
+    { name: 'campagne-x', title: 'Campagne X', status: 'en_pause (ouverte le 2026-10-04 ; suite au plan)' },
+  ]);
+  assert.match(vue, /## Activité primaire[\s\S]*\*\*Statut\*\* : en_pause\n/);
+  assert.doesNotMatch(vue, /\*\*Statut\*\* : active\n\*\*Lot actif\*\*/);
+});
+
+test('STATUT — sans fiche ni statut lisible, la vue dit « inconnu », jamais « active »', () => {
+  const etat = {
+    status: 'active',
+    active_campaign: 'campagne-absente',
+    active_lot: 'aucun',
+    parallel_campaigns: [{ campaign_id: 'campagne-y', active_lot: 'LOT-01' }],
+    updated_at: '2026-10-20T00:00:00Z',
+  };
+  const vue = rendreVueCampagnesActives(etat, [{ name: 'campagne-y', title: 'Campagne Y', status: 'en_cours (ouverte)' }]);
+  assert.match(vue, /\*\*Campagne\*\* : campagne-absente\n\*\*Titre\*\* : campagne-absente\n\*\*Statut\*\* : inconnu\n/);
+  // Parallèle sans statut dans l'état machine : celui de sa fiche.
+  assert.match(vue, /### campagne-y\n\n\*\*Titre\*\* : Campagne Y\n\*\*Statut\*\* : en_cours\n/);
 });
