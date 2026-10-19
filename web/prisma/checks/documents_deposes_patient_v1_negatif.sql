@@ -1,5 +1,5 @@
 -- Contrat de la collecte documentaire : documents déposés par le patient et
--- classements du praticien ([[D-329]], J3-collecte).
+-- classements du praticien ([[D-330]], J3-collecte).
 --
 -- Les deux tables promettent QUATORZE choses, et ce fichier les éprouve TOUTES :
 --   1. un dépôt valide s'écrit et se relit ; son instant est posé par la BASE,

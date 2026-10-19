@@ -10727,6 +10727,15 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
 
+## 2026-10-18 — « Mon équilibre » : lot de cohérence du calcul (D-329)
+
+**Fait.** Les sept décisions des dossiers de mesure sont rendues (recommandations suivies, « non mesuré » pour 6, 7, 11). Lot de cohérence écrit : un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12), badges de preuve alignés ; le total dit sur combien de besoins il est établi ; version du score gardée (arbitrage du responsable : v16/v17 aurait éteint 3 protocoles diffusés via le rejeu des cartes). T3 complet vert, contre-revue `wn-reviewer` GO avec réserves levées.
+
+**Écarté.** Aligner le snapshot et les routes dans ce lot : chaque direction change une sortie réelle en production (un agenda du sommeil retiré, ou des PSQI partiels admis).
+
+**Prochaine action.** Merge sur revue CodeRabbit ; puis ingestion des sources libres ou préparation du changement de sources des besoins 8, 9, 12.
+
+**Ouvert.** Résidu D-329 §2 ; badges de preuve à signer ou retirer.
 ## 2026-10-19 — NIR : l'export ne lit plus la colonne
 
 **Fait.** Dette t03 soldée côté code : l'export ne sélectionne plus le NIR, le masquage ne le cherche plus (0 enregistré), textes d'export et de la fiche purgés du « numéro de sécurité sociale ». La colonne n'a plus de lecteur.
@@ -10786,10 +10795,10 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 ## 2026-10-19 — J3-collecte : migration des documents déposés
 
-**Fait.** D-329 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (33 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
+**Fait.** D-330 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (33 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
 
 **Écarté.** Unicité partielle en base pour le doublon (index non modélisable par Prisma) : refus par trigger sous verrou du dossier.
 
 **Prochaine action.** Validation RGPD du responsable, merge, release-db approuvée, constat par conteneur ; puis la PR du code sous drapeau éteint.
 
-**Ouvert.** D-328 pris par une autre session pendant le lot : renuméroté D-329.
+**Ouvert.** D-328 puis D-329 pris par d'autres sessions pendant le lot : renuméroté D-330.

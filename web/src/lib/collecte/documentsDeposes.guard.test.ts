@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// GARDE : QUI ÉCRIT LA COLLECTE DOCUMENTAIRE ([[D-329]], J3-collecte). Patron
+// GARDE : QUI ÉCRIT LA COLLECTE DOCUMENTAIRE ([[D-330]], J3-collecte). Patron
 // de `documents/documentMedecinImprime.guard.test.ts`.
 //
 // La base refuse déjà TRUNCATE, un dépôt hors bornes, une catégorie hors
@@ -57,7 +57,7 @@ const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s
  */
 const IMBRIQUEE = /\b(?:documentsDeposes|classementsDocumentsDeposes|classements)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
 
-describe('Collecte documentaire — qui écrit (D-329, J3-collecte)', () => {
+describe('Collecte documentaire — qui écrit (D-330, J3-collecte)', () => {
   it('seul l’effacement nommé du dossier supprime — une instruction par table', () => {
     expect(occurrences(SUPPRIMER)).toEqual([{ fichier: EFFACEMENT, n: 2 }]);
   });

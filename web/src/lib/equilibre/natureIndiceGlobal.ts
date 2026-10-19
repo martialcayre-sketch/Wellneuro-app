@@ -45,6 +45,23 @@
 export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clinique';
 
 /**
+ * CE SUR QUOI LE TOTAL EST ÉTABLI — [[D-329]] §3, audit de D-312 (section 10).
+ *
+ * Les besoins non mesurés sortent de la moyenne, et les strates vides de la
+ * pondération : un seul besoin mesuré suffit à produire un total, servi jusque-là
+ * sans rien dire de ce qui manque. Le praticien lit donc le compte, le patient
+ * une phrase sans chiffre (portail sans chiffre, arbitrage du 2026-10-10) — et
+ * seulement quand il manque quelque chose : lui dire « tout est mesuré » ne
+ * l'informerait pas.
+ */
+export function mentionBesoinsMesures(mesures: number, total: number): string {
+  return `Calculé sur ${mesures} besoin${mesures > 1 ? 's' : ''} mesuré${mesures > 1 ? 's' : ''} sur ${total}`;
+}
+
+export const MENTION_BESOINS_PARTIELS_PATIENT =
+  'Votre indice ne tient compte que des besoins déjà renseignés : certains ne sont pas encore mesurés.';
+
+/**
  * Les trois libellés de tendance servis AU PATIENT.
  *
  * CE QU'ILS CORRIGENT, et c'est UN SEUL des trois : le libellé de hausse disait

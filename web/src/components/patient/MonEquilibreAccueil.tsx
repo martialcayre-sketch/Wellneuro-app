@@ -8,7 +8,7 @@ import { GrowthIllustration } from '@/components/patient/ui/GrowthIllustration';
 // Doctrine « construction, jamais dégradation » (SP-CONV LOT-05, D7) ET nature
 // du total ([[D-106]], `DC-22`) : les trois libellés vivent désormais avec la
 // doctrine qui les motive, jamais en double.
-import { TENDANCE_INDICE_GLOBAL_PATIENT } from '@/lib/equilibre/natureIndiceGlobal';
+import { MENTION_BESOINS_PARTIELS_PATIENT, TENDANCE_INDICE_GLOBAL_PATIENT } from '@/lib/equilibre/natureIndiceGlobal';
 
 // Frise qualitative (SP-CONV LOT-05) : des repères temporels, pas des
 // valeurs. L'ancienne frise encodait l'indice dans la hauteur des barres — le
@@ -94,6 +94,9 @@ export function MonEquilibreAccueil({
   }
 
   const { indiceGlobal, momentum, besoins } = data;
+  // [[D-329]] §3 : le total ne dit plus qu'il est complet quand il ne l'est pas.
+  // Sans chiffre — le portail n'en sert aucun.
+  const indicePartiel = indiceGlobal !== null && besoins.some(b => b.couverture === null);
   const priorites = besoins
     .filter(b => b.couverture !== null)
     .sort((a, b) => (a.couverture ?? 0) - (b.couverture ?? 0))
@@ -118,6 +121,10 @@ export function MonEquilibreAccueil({
             </div>
           )}
         </div>
+
+        {indicePartiel && (
+          <p className="text-sm text-muted-foreground text-center mb-4">{MENTION_BESOINS_PARTIELS_PATIENT}</p>
+        )}
 
         {momentum && (
           <p className="text-base text-primary bg-primary/10 rounded-xl px-4 py-2 text-center mb-4">

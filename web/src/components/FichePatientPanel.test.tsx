@@ -23,6 +23,8 @@ const EQUILIBRE = {
   patient: { idPatient: 'PAT001', prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
   objetsCliniques: {
     indiceGlobal: 62,
+    besoinsMesures: 8,
+    besoinsTotal: 12,
     stabiliteMetabolique: null,
     reserveAdaptation: 48,
     clarte: null,
@@ -78,6 +80,8 @@ type Options = {
   dossier?: 'absent' | Partial<typeof DOSSIER_ADMINISTRATIF>;
   /** Le dossier porte un questionnaire JAMAIS REMPLI dont l'échéance est passée. */
   assignationEchue?: boolean;
+  /** L'indice global n'est pas calculable (aucun besoin mesuré, [[D-329]] §3). */
+  indiceGlobalNul?: boolean;
   // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
   // - `defaut` : rideau T0 complet, un envoi hors rideau en attente ;
   // - `rideauIncomplet` : `Q_ALI_01` du rideau jamais rendu — le seul cas qui
@@ -482,7 +486,13 @@ function stubFetch(options: Options = {}) {
     const ok = (payload: unknown, status = 200) =>
       Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(payload) });
 
-    if (url.includes('/api/praticien/equilibre')) return ok(EQUILIBRE);
+    if (url.includes('/api/praticien/equilibre')) {
+      return ok(
+        options.indiceGlobalNul
+          ? { ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, indiceGlobal: null, besoinsMesures: 0 } }
+          : EQUILIBRE,
+      );
+    }
     // L'ÉTAT DE LA PHASE 3 (`D-161` §10). Par défaut : un objectif actif et une
     // synthèse publiée — la phase est faite. `options.phase3` permet de dire le
     // contraire, et l'ABSENCE de réponse fait rendre « indéterminée » au rail,
@@ -2040,6 +2050,19 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     // de l'arbitrage — le chiffre reste, il ne passe plus pour un score.
     expect(screen.getByText('62')).toBeTruthy();
     expect(screen.getAllByText('Repère de suivi, pas un score clinique').length).toBeGreaterThan(0);
+  });
+
+  it('dit sur combien de besoins l’indice global est établi ([[D-329]] §3)', async () => {
+    await ouvrirTiroirObjets();
+    expect(screen.getByText('Calculé sur 8 besoins mesurés sur 12')).toBeTruthy();
+  });
+
+  it('indice global non calculable : ni chiffre ni base, la tuile dit « Non mesuré »', async () => {
+    await rendreFiche({ indiceGlobalNul: true });
+    fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
+    await screen.findByText('Indice global');
+    expect(screen.queryByText(/^Calculé sur/)).toBeNull();
+    expect(screen.getByText('Indice global').parentElement?.textContent).toContain('Non mesuré');
   });
 
   it('ne rend aucune mention sur un objet non mesuré', async () => {

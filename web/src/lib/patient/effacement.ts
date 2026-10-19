@@ -147,7 +147,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.documentsMedecinImprimes = (
       await tx.documentMedecinImprime.deleteMany({ where: par })
     ).count;
-    // La collecte documentaire ([[D-329]]) : chaque classement désigne un
+    // La collecte documentaire ([[D-330]]) : chaque classement désigne un
     // document déposé (FK RESTRICT) — les classements d'abord, puis les
     // documents. Les tables refusent TRUNCATE, pas DELETE : c'est pour ce
     // geste-ci.

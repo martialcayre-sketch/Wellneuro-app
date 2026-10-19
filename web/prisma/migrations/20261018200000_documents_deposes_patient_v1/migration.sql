@@ -1,5 +1,5 @@
 -- COLLECTE DOCUMENTAIRE — LES DOCUMENTS DÉPOSÉS PAR LE PATIENT ET LEURS
--- CLASSEMENTS ([[D-329]], fiche H62, J3-collecte).
+-- CLASSEMENTS ([[D-330]], fiche H62, J3-collecte).
 --
 -- Migration demandée explicitement par le responsable le 2026-10-18 (« Oui »,
 -- à la question de préparer la migration de J3-collecte), sur quatre

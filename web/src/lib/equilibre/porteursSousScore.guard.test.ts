@@ -29,13 +29,16 @@ const SOURCE = {
 const REPONSES = { Q_TEST: { X1: 1 } };
 
 describe('extraireValeurBrute — un sous-score, deux porteurs possibles', () => {
+  // Les retours ci-dessous portent des comptes d'items COMPLETS (`repondus` =
+  // `items`) : depuis [[D-329]] §1, un sous-score sans compte lisible n'est
+  // plus une mesure. Les cas de complétude ont leur propre bloc plus bas.
   it('lit un sous-score porté par `subScores` seul', () => {
-    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 5 }] });
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 5, repondus: 4, items: 4 }] });
     expect(calculerCouvertureSource(SOURCE, REPONSES)).toBe(0.5);
   });
 
   it('lit un sous-score porté par `scoresBesoins` seul', () => {
-    calculateScore.mockReturnValue({ scoresBesoins: [{ id: 'RYTHME', total: 5 }] });
+    calculateScore.mockReturnValue({ scoresBesoins: [{ id: 'RYTHME', total: 5, repondus: 4, items: 4 }] });
     expect(calculerCouvertureSource(SOURCE, REPONSES)).toBe(0.5);
   });
 
@@ -81,7 +84,7 @@ describe('extraireValeurBrute — un sous-score, deux porteurs possibles', () =>
     // corrigé alors qu'il ne l'était plus : sans test, l'affirmation était
     // devenue fausse en silence. Si un lot futur traite le `NaN`, ce test
     // rougit et force à mettre la réserve à jour.
-    calculateScore.mockReturnValue({ scoresBesoins: [{ id: 'RYTHME', total: NaN }] });
+    calculateScore.mockReturnValue({ scoresBesoins: [{ id: 'RYTHME', total: NaN, repondus: 4, items: 4 }] });
     expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNaN();
   });
 
@@ -89,6 +92,43 @@ describe('extraireValeurBrute — un sous-score, deux porteurs possibles', () =>
     // `total: null` est la parade anti-zéro des sous-scores servis (aucun item
     // répondu, ou sous-score servi incomplet). Il ne doit pas devenir un 0.
     calculateScore.mockReturnValue({ scoresBesoins: [{ id: 'RYTHME', total: null }] });
+    expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNull();
+  });
+});
+
+// [[D-329]] §1 — audit de D-312, section 10 : les moteurs `subscore` et `had`
+// rendent le total d'un axe dès qu'UN item est répondu, et ce total était lu
+// comme la couverture de l'axe entier.
+describe('extraireValeurBrute — un sous-score partiel ne couvre rien', () => {
+  it('`had` : un item manquant sur l\'axe (`missing` > 0) rend null', () => {
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 1, missing: 6, repondus: 1 }] });
+    expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNull();
+  });
+
+  it('`had` : axe complet (`missing` = 0) se lit', () => {
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 3, missing: 0, repondus: 7 }] });
+    expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeCloseTo(0.3);
+  });
+
+  it('`subscore` : `repondus` < `items` rend null, même au meilleur total', () => {
+    // Le cas qui motive la garde, sur une source `inverser: false` : un item
+    // répondu au maximum rendait un ratio bas, et donc un besoin effondré.
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 4, repondus: 1, items: 5 }] });
+    expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNull();
+  });
+
+  it('`subscore` inversé : un item répondu au minimum ne rend pas « bien couvert »', () => {
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 0, repondus: 1, items: 10 }] });
+    expect(calculerCouvertureSource({ ...SOURCE, inverser: true }, REPONSES)).toBeNull();
+  });
+
+  it('sans compte lisible, un sous-score n\'est pas présumé complet', () => {
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 5 }] });
+    expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNull();
+  });
+
+  it('un axe sans aucun item (`items` = 0) n\'est pas une mesure', () => {
+    calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 0, repondus: 0, items: 0 }] });
     expect(calculerCouvertureSource(SOURCE, REPONSES)).toBeNull();
   });
 });
