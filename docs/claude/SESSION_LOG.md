@@ -10852,6 +10852,13 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t11 PR 1 : migration de l'index de révision
+
+**Fait.** Branche migration seule : index unique sur la version révisée, schéma, contrat SQL, étape CI. T3 vert sur l'ensemble ; revue indépendante go.
+
+**Écarté.** Garder code et migration dans une même PR : la règle de release-db veut la migration seule.
+
+**Prochaine action.** PR, merge, release-db après recomptage, constat ; puis PR 2 (code).
 ## 2026-10-19 — t12 : fin de l'objectif depuis le cockpit
 
 **Fait.** t12 rejugée : quatre points sur cinq déjà livrés. Ajouts : bloc « Fin de l'objectif » (proposer atteint, attester la voix du patient, renoncer motivé, confirmation en deux temps), provenance de l'accord sous chaque version, `negocieLe` ignorée à l'écriture.
