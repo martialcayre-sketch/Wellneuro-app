@@ -66,6 +66,20 @@ const IMBRIQUEE = /\b(?:documentsDeposes|classementsDocumentsDeposes|classements
 /** Une relation inverse incluse en entier : toutes les colonnes, `contenu` compris. */
 const INCLUSION = /\b(?:documentsDeposes|document)\s*:\s*true\b|include\s*:\s*\{\s*(?:documentsDeposes|document)\b/;
 
+/** Une lecture du modèle des documents (`count` ne charge aucune colonne). */
+const LECTURE_DOCUMENT = /\.documentDeposePatient\s*\.\s*(?:findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow)\s*\(/g;
+const SELECT = /\bselect\s*:/;
+
+/** Le texte des arguments d'un appel, de la parenthèse ouverte à sa fermante. */
+function argumentsDe(source: string, debut: number): string {
+  let profondeur = 1;
+  for (let i = debut; i < source.length; i++) {
+    if (source[i] === '(') profondeur++;
+    else if (source[i] === ')' && --profondeur === 0) return source.slice(debut, i);
+  }
+  return source.slice(debut);
+}
+
 describe('Collecte documentaire — qui écrit (D-330, J3-collecte)', () => {
   it('seul l’effacement nommé du dossier supprime — une instruction par table', () => {
     expect(occurrences(SUPPRIMER)).toEqual([{ fichier: EFFACEMENT, n: 2 }]);
@@ -84,6 +98,24 @@ describe('Collecte documentaire — qui écrit (D-330, J3-collecte)', () => {
     const lecteurs = new Set(occurrences(new RegExp(`\\.${MODELES}\\b|\\bdocumentsDeposes\\b`)).map(o => o.fichier));
     expect(occurrences(/\bcontenu\s*:\s*true\b/).filter(o => lecteurs.has(o.fichier))).toEqual([{ fichier: SERVEUR, n: 1 }]);
     expect(occurrences(INCLUSION)).toEqual([]);
+  });
+
+  it('toute lecture d’un document porte son `select` — sans lui, `contenu` serait chargé', () => {
+    const sansSelect: string[] = [];
+    for (const fichier of RACINES.flatMap(fichiersSources)) {
+      const source = readFileSync(fichier, 'utf8');
+      for (const appel of source.matchAll(LECTURE_DOCUMENT)) {
+        if (!SELECT.test(argumentsDe(source, (appel.index ?? 0) + appel[0].length))) {
+          sansSelect.push(path.relative(RACINE, fichier));
+        }
+      }
+    }
+    expect(sansSelect).toEqual([]);
+    // Contre-épreuve : le motif voit une lecture nue, et l'accepte avec `select`.
+    const nue = 'prisma.documentDeposePatient.findMany({ where: { idPatient } })';
+    const avec = 'prisma.documentDeposePatient.findFirst({ where: { id }, select: { id: true } })';
+    expect(SELECT.test(argumentsDe(nue, nue.indexOf('(') + 1))).toBe(false);
+    expect(SELECT.test(argumentsDe(avec, avec.indexOf('(') + 1))).toBe(true);
   });
 
   it('les motifs reconnaissent bien les formes qu’ils doivent refuser', () => {

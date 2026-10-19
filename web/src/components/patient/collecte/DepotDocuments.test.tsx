@@ -81,6 +81,8 @@ describe('DepotDocuments', () => {
     expect(corps.get('categorie')).toBe('traitements_complements');
     expect(corps.get('fichier')).toBeInstanceOf(File);
     expect([...corps.keys()].sort()).toEqual(['categorie', 'fichier']);
+    // Le nom du fichier choisi ne part pas sur le réseau.
+    expect((corps.get('fichier') as File).name).toBe('document');
   });
 
   it('sans catégorie : rien n’est envoyé', async () => {
@@ -104,6 +106,15 @@ describe('DepotDocuments', () => {
     render(<DepotDocuments token="TOK" />);
     expect(await screen.findByText(message)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Déposer le document' })).toBeNull();
+  });
+
+  it('date de naissance manquante : l’écran de la date, et l’encart d’urgence reste', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ...PRET, statutAge: 'date_manquante' }), { status: 200 })));
+    render(<DepotDocuments token="TOK" />);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Déposer le document' })).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Chargement…')).toBeNull());
+    expect(screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' })).toBeTruthy();
+    expect(screen.getByText(PHRASE_ENCART)).toBeTruthy();
   });
 
   it('401 : retour au portail', async () => {

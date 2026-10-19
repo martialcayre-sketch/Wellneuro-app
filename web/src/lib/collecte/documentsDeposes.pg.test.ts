@@ -12,7 +12,8 @@
 //      puis relâche : un dépôt passe, l'autre est refusé au plafond. Même
 //      épreuve pour deux dépôts du même fichier : un seul passe.
 //   3. La consultation trace la PREMIÈRE ouverture, une seule fois ; une
-//      seconde ouverture n'écrit rien et n'échoue pas.
+//      seconde ouverture n'écrit rien et n'échoue pas — y compris quand les
+//      deux partent ensemble, constatées en attente du verrou de la ligne.
 //   4. Le classement s'ajoute, daté ; la catégorie courante suit.
 //   5. Le retrait efface le contenu et garde la ligne ; un document retiré ne
 //      s'ouvre plus, ne se classe plus, et peut être redéposé.
@@ -94,13 +95,14 @@ describe.skipIf(!ACTIF)('collecte documentaire — base réelle (triggers, verro
     await prisma.$disconnect();
   });
 
-  /** Attend que `n` sessions attendent un verrou consultatif. */
-  async function attendreBloquees(n: number) {
+  /** Attend que `n` sessions attendent un verrou (consultatif, ou de ligne). */
+  async function attendreBloquees(n: number, attente: 'advisory' | 'ligne' = 'advisory') {
     const limite = Date.now() + 10_000;
+    const evenement = attente === 'advisory' ? "wait_event = 'advisory'" : "wait_event IN ('transactionid', 'tuple')";
     while (Date.now() < limite) {
       const { rows } = await observateur.query(
         `SELECT count(*)::int AS n FROM pg_stat_activity
-         WHERE wait_event_type = 'Lock' AND wait_event = 'advisory' AND datname = current_database()`,
+         WHERE wait_event_type = 'Lock' AND ${evenement} AND datname = current_database()`,
       );
       if (rows[0].n >= n) return;
       await new Promise(r => setTimeout(r, 25));
@@ -173,6 +175,34 @@ describe.skipIf(!ACTIF)('collecte documentaire — base réelle (triggers, verro
     expect(apres2.consulte_le).toEqual(apres1.consulte_le);
     // Consulté, il sort du plafond des non consultés.
     expect(await m.jugerPlafondsDepot(id)).toEqual({ ok: true });
+  });
+
+  it('3b. deux ouvertures simultanées d’un document jamais ouvert : deux réponses, une seule trace', async () => {
+    const id = await dossier();
+    await deposer(id);
+    const [doc] = await idsDocuments(id);
+    // Une session tierce tient la LIGNE pendant que les deux ouvertures partent :
+    // les deux attendent, puis la seconde relit la ligne après le verrou et ne
+    // correspond plus à « jamais ouvert » — elle n'écrit rien et n'échoue pas.
+    const tenant = new pg.Client({ connectionString: URL_BASE });
+    await tenant.connect();
+    let issues: Awaited<ReturnType<typeof m.consulterDocument>>[];
+    try {
+      await tenant.query('BEGIN');
+      await tenant.query('SELECT 1 FROM documents_deposes_patient WHERE id = $1 FOR UPDATE', [doc]);
+      const enVol = [m.consulterDocument(id, doc, PRATICIEN), m.consulterDocument(id, doc, PRATICIEN)];
+      await attendreBloquees(2, 'ligne');
+      await tenant.query('COMMIT');
+      issues = await Promise.all(enVol);
+    } finally {
+      await tenant.end();
+    }
+    expect(issues.map(i => i.ok)).toEqual([true, true]);
+    const { rows } = await observateur.query(
+      'SELECT consulte_le IS NOT NULL AS trace, consulte_par FROM documents_deposes_patient WHERE id = $1',
+      [doc],
+    );
+    expect(rows).toEqual([{ trace: true, consulte_par: PRATICIEN }]);
   });
 
   it('4. le classement s’ajoute, daté, et la catégorie courante suit', async () => {

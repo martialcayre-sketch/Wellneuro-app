@@ -10897,3 +10897,13 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+
+## 2026-10-19 — J3-collecte : le code sous drapeau éteint (D-330 §4)
+
+**Fait.** Livré sous `WN_PORTAIL_DEPOT_DOCUMENTS`, éteint : la route et la page de dépôt, l'écran du praticien (ouvrir, corriger, retirer) et la ligne « Transmis ». Plafonds rejugés sous le verrou du dossier, en READ COMMITTED ; listes sans `contenu` ; consultation conditionnelle. Banc sur base réelle ajouté au CI. Relecture `wn-reviewer` : aucun bloquant, six points corrigés.
+
+**Écarté.** Dérogation d'import vers la biologie : passage par l'entrée publiée. Drapeau sur l'écran du praticien : il ne sert que ce qui a été déposé.
+
+**Prochaine action.** PR, CI, revue CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** À valider avant ACT-4 : les libellés de l'écran, le bloc « Ce que vous trouvez ici », « Vos données personnelles ». Observations relevées : le protocole n'a aucune lecture datée ; « Mes échanges » n'a aucun lecteur tracé.

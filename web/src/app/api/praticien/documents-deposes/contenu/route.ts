@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
-import { estTypeCompteRendu } from '@/lib/biology-library/import/depot';
+import { estTypeCompteRendu } from '@/lib/biology-library/publie';
 import { consulterDocument } from '@/lib/collecte/documentsDeposesServeur';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 

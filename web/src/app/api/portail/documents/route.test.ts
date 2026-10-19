@@ -45,6 +45,8 @@ async function requete(
 ) {
   const form = new FormData();
   if (opts.categorie !== null) form.set('categorie', opts.categorie ?? 'courrier');
+  // Un dossier désigné par le client : la route doit l'ignorer.
+  form.set('idPatient', 'PAT_AUTRE');
   form.set(
     'fichier',
     new File([new Uint8Array(opts.octets ?? PDF)], opts.nom ?? 'document.pdf', { type: opts.type ?? 'application/pdf' }),

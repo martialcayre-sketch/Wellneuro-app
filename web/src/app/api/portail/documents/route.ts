@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusSaisieSante, statutAge, type StatutAge } from '@/lib/patient/gardeAge';
-import { jugerFichier, MESSAGES_DEPOT, preparerImage, TAILLE_MAX_OCTETS } from '@/lib/biology-library/import/depot';
+import { jugerFichier, MESSAGES_DEPOT, preparerImage, TAILLE_MAX_OCTETS } from '@/lib/biology-library/publie';
 import { depotDocumentsOuvert } from '@/lib/collecte/drapeau';
 import { estCategorieDocument, MESSAGES_DEPOT_DOCUMENT } from '@/lib/collecte/documentsDeposes';
 import {

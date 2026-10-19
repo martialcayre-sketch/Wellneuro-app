@@ -30,8 +30,22 @@ export {
 export { isBioPortailEnabled } from './featureFlag';
 export { listerTransmissions } from './import/transmission';
 
+// Troisième lecteur hors biologie : la collecte documentaire ([[D-330]],
+// J3-collecte), dont les bornes sont celles du compte rendu (arbitrage 4) — la
+// validation du fichier (signature des octets, 10 Mio, image réencodée sans
+// métadonnées, empreinte), jamais le dépôt d'un compte rendu ni ses tables.
+export {
+  empreinteSha256,
+  estTypeCompteRendu,
+  jugerFichier,
+  MESSAGES_DEPOT,
+  preparerImage,
+  TAILLE_MAX_OCTETS,
+  type TypeMimeCompteRendu,
+} from './import/depot';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
-export const FICHIERS_PUBLIES = ['import/lectureDemandee', 'featureFlag', 'import/transmission'] as const;
+export const FICHIERS_PUBLIES = ['import/lectureDemandee', 'featureFlag', 'import/transmission', 'import/depot'] as const;
 
 /**
  * Les tables dont BioFlow est propriétaire (`@@map` du schéma). Le banc vérifie

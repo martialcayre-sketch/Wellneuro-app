@@ -89,6 +89,13 @@ const IMPORTEURS_ADMIS = [
   // le patient, date seule, sous `isBioPortailEnabled` — par l'entrée publiée,
   // deuxième lecteur hors biologie (2026-10-18).
   'web/src/lib/portail/mesEchangesServeur.ts',
+  // La collecte documentaire ([[D-330]], J3-collecte) : les bornes du fichier
+  // déposé sont celles du compte rendu (arbitrage 4) — signature, taille,
+  // image réencodée, empreinte. Validation seule, aucune table ni valeur de la
+  // biologie ; par l'entrée publiée, troisième lecteur hors biologie (2026-10-19).
+  'web/src/app/api/portail/documents/route.ts',
+  'web/src/app/api/praticien/documents-deposes/contenu/route.ts',
+  'web/src/lib/collecte/documentsDeposesServeur.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien. La page unique de la biologie est le

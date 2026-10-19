@@ -41,7 +41,8 @@ import {
 //
 // LE PATIENT NE VOIT QUE DATE, CATÉGORIE PROPOSÉE ET RETRAIT : ni le document, ni
 // la consultation par le praticien, ni le motif d'un retrait. Le nom du fichier
-// n'est jamais envoyé comme donnée (il n'est pas gardé).
+// ne part pas : le navigateur l'enverrait dans l'en-tête multipart, il est
+// remplacé par un nom neutre (le serveur ne le lit ni ne le garde).
 
 type Pret = Exclude<Extract<PortailDocumentsResponse, { ok: true }>, { ouvert: true }>;
 
@@ -113,7 +114,7 @@ export function DepotDocuments({ token }: { token: string }) {
     try {
       const form = new FormData();
       form.append('categorie', categorie);
-      form.append('fichier', fichier);
+      form.append('fichier', fichier, 'document');
       const res = await fetch('/api/portail/documents', { method: 'POST', body: form });
       if (res.status === 401) {
         router.replace(`/portail/${token}`);
@@ -138,7 +139,13 @@ export function DepotDocuments({ token }: { token: string }) {
 
   const donnees = etat.statut === 'pret' ? etat.donnees : null;
   if (donnees && donnees.dossierOuvert && donnees.statutAge === 'date_manquante') {
-    return <DateNaissanceEcran onEnregistree={() => void charger()} />;
+    // L'encart reste rendu ici aussi : chaque branche de rendu le porte.
+    return (
+      <article className="space-y-6">
+        <EncartUrgenceSuicide ecran="depot_documents" />
+        <DateNaissanceEcran onEnregistree={() => void charger()} />
+      </article>
+    );
   }
 
   return (

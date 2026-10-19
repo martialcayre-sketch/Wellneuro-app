@@ -1,7 +1,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
-import { empreinteSha256, type TypeMimeCompteRendu } from '@/lib/biology-library/import/depot';
+import { empreinteSha256, type TypeMimeCompteRendu } from '@/lib/biology-library/publie';
 import {
   categorieCourante,
   PLAFOND_DEPOTS_24H,
@@ -228,6 +228,11 @@ export type IssueClassement =
  * Corrige la catégorie d'un document : une ligne de classement de plus, datée
  * par la base. La catégorie déjà courante ne fait pas de ligne — une
  * correction qui ne change rien n'est pas une correction.
+ *
+ * LIMITE ACCEPTÉE : la lecture n'est pas verrouillée. Deux corrections
+ * simultanées vers la même catégorie (deux onglets) écrivent deux lignes
+ * identiques ; la catégorie courante reste juste, l'historique porte un
+ * doublon daté. Le trigger sérialise les deux écritures, il ne les fusionne pas.
  */
 export async function classerDocument(params: {
   idPatient: string;
