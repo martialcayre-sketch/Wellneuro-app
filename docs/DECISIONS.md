@@ -416,8 +416,12 @@ réinterprète une nature signée.
   module pur), `etiqueterClaimsLot` (`web/src/lib/rag/claims/revue.ts`), route
   `web/src/app/api/praticien/corpus/claims/etiquetage-lot`, composant
   `EtiquetageLotPanel` de l'atelier corpus ; fiche H15.
-- Nature : outil de l'atelier, non clinique. Les clés posées sont celles que
-  le responsable relit et confirme ; aucune n'est posée par l'assistant.
+- Nature : outil de l'atelier, non clinique. Le geste pose les clés d'une
+  liste dont l'aperçu a été relu et confirmé, soit par le responsable, soit
+  par l'assistant quand le responsable lui délègue le geste (§5). Dans les
+  deux cas, l'acte est journalisé à l'e-mail du responsable. *(Amendé le
+  2026-10-19 : la délégation de §5 rendait fausse la mention « aucune n'est
+  posée par l'assistant ».)*
 - **Ne touche pas** : aucun statut, aucune signature, aucune migration (le
   journal reçoit des actes `etiquetage` de la forme déjà contrainte par
   `rag_claim_decisions_etiquetage_complet`) ; la validation par lot (voie
