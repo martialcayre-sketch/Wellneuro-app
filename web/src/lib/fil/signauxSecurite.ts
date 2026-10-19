@@ -105,11 +105,14 @@ export async function lireSignauxSecuriteOuverts(email: string): Promise<SignalS
 // DEPUIS QUAND LE DOSSIER ATTEND — reste de [[D-275]] (P2-4, dette t05). La
 // date de la carte était celle de l'anamnèse porteuse, même quand seule une
 // réponse aux questions sur le suicide était ouverte : un « oui » d'hier
-// s'affichait à la date d'une validation vieille de plusieurs mois, et le tri
-// « le plus ancien d'abord » le reléguait derrière lui. Chaque constat ouvert
+// s'affichait à la date d'une validation vieille de plusieurs mois (et le tri
+// « le plus ancien d'abord » le plaçait sur cette date fausse), un dossier sans
+// porteuse n'était pas daté du tout et passait en dernier. Chaque constat ouvert
 // porte désormais SA date — la passation pour une réponse, la validation de
 // la porteuse pour un signal déclaré — et la carte prend la plus ancienne.
-// Aucun constat n'est ajouté ni retiré : seule la date affichée change.
+// Aucun constat n'est ajouté ni retiré : seules la date affichée et la place
+// de la carte changent. Un signal d'anamnèse sur une porteuse non datée ne
+// date rien ; la carte prend alors la date des réponses.
 function depuisLePlusAncien(
   ouverts: readonly SafetyFinding[],
   reponses: readonly ReponseSecurite[],
