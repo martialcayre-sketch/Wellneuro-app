@@ -10,6 +10,7 @@ import type {
   TrajectoireObjectif,
   LigneRatificationExposee,
   LigneDemandeCorrectionExposee,
+  LigneFinExposee,
 } from '@/app/api/praticien/objectifs/route';
 import type { FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import type { LectureFin } from '@/lib/praticien/objectifNegocie';
@@ -31,6 +32,7 @@ import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MAX_PRIORITE,
   LONGUEUR_MAX_REFORMULATION,
+  MOTIF_FIN_MAX,
   type EtatRatification,
 } from '@/lib/praticien/objectifNegocie';
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
@@ -275,6 +277,21 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+type AccordAffiche = { date: string; forme: 'preuve' | 'temoignage' | 'heritee' };
+
+/**
+ * D'OÙ VIENT L'ACCORD, dit à côté de sa date (`D-161` §4, dette t12). « Négocié
+ * le » sans provenance laissait le praticien lire comme un fait ce qui n'était
+ * qu'une date saisie à la main. La forme vient du serveur (`accordDeVersion`,
+ * la même lecture qu'au portail), jamais d'un calcul local.
+ */
+function libelleAccord(accord: AccordAffiche): string {
+  const date = formatDate(accord.date);
+  if (accord.forme === 'preuve') return `accord de votre patient le ${date}, donné depuis son espace`;
+  if (accord.forme === 'temoignage') return `accord noté par vous le ${date}, conclu en consultation`;
+  return `négocié le ${date} (date saisie à la main, provenance non connue)`;
+}
+
 /**
  * Une ligne d'objectif, telle qu'elle se lit — version courante ou antérieure.
  *
@@ -320,9 +337,12 @@ function reprisMotPourMot(ligne: {
 function LigneObjectif({
   ligne,
   ratification,
+  accord,
 }: {
   ligne: ObjectifExpose;
   ratification?: { libelle: string; date: string | null };
+  /** L'accord de CETTE version et sa provenance ; absent = aucun accord connu. */
+  accord?: AccordAffiche | null;
 }) {
   return (
     <div className="text-base text-foreground">
@@ -405,7 +425,7 @@ function LigneObjectif({
           répété à deux endroits finit par diverger quand l'un des deux bouge. */}
       <p className="mt-2 text-xs font-medium text-foreground">
         Enregistré le {formatDate(ligne.creeLe)}
-        {ligne.negocieLe ? ` · négocié le ${formatDate(ligne.negocieLe)}` : ''}
+        {accord ? ` · ${libelleAccord(accord)}` : ''}
       </p>
     </div>
   );
@@ -476,6 +496,8 @@ export function ObjectifNegociePanel({
   // calcule pas : la règle « le témoignage cède à la preuve » vit dans le
   // module, et deux lectures de la même chose finiraient par diverger.
   const [fins, setFins] = useState<Record<string, LectureFin>>({});
+  const [lignesFin, setLignesFin] = useState<LigneFinExposee[]>([]);
+  const [accords, setAccords] = useState<Record<string, AccordAffiche | null>>({});
   const [tetesActives, setTetesActives] = useState(0);
   const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
   const [erreurDepartage, setErreurDepartage] = useState('');
@@ -618,6 +640,8 @@ export function ObjectifNegociePanel({
       setObjectifs(payload.objectifs);
       setTrajectoires(payload.trajectoires);
       setFins(payload.fins);
+      setLignesFin(payload.lignesFin ?? []);
+      setAccords(payload.accords ?? {});
       setTetesActives(payload.tetesActives);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
@@ -1502,6 +1526,7 @@ export function ObjectifNegociePanel({
                 <div className="mt-1">
                   <LigneObjectif
                     ligne={courante}
+                    accord={accords[courante.id] ?? null}
                     ratification={{
                       libelle:
                         LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente'],
@@ -1812,7 +1837,7 @@ export function ObjectifNegociePanel({
                         );
                         return (
                           <li key={ligne.id} className="opacity-80">
-                            <LigneObjectif ligne={ligne} />
+                            <LigneObjectif ligne={ligne} accord={accords[ligne.id] ?? null} />
                             {gestes.length > 0 && (
                               <ul className="mt-1 space-y-0.5">
                                 {gestes.map((geste) => (
