@@ -1486,6 +1486,21 @@ describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-11
     expect(prisma.assessmentEpisode.create).toHaveBeenCalledTimes(1);
   });
 
+  it('le GET rejoué dit lui aussi « sans consultation porteuse » (D-275 §2, revue CodeRabbit)', async () => {
+    await confirmerT0();
+    const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: create.payload, payloadHash: create.payloadHash,
+    });
+    // La porteuse a disparu depuis la confirmation : le rejeu le dit, sinon
+    // l'écran rechargé offrirait le geste de lettre que la route refuse.
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    const payload = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T0'))).json();
+    expect(payload.status).toBe('ready');
+    expect(payload.rejoue).toBe(true);
+    expect(payload.sansConsultationPorteuse).toBe(true);
+  });
+
   it('un POST qui rend `ready` ne pose jamais le marqueur `rejoue`', async () => {
     const post = await confirmerT0();
     expect('rejoue' in (await post.json())).toBe(false);
