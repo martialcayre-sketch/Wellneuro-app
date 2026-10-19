@@ -220,6 +220,17 @@ describe('POST — produit un tirage', () => {
     expect(prisma.propositionPrioriteIA.create).not.toHaveBeenCalled();
   });
 
+  it('un dossier DÉSACTIVÉ reçoit son propre refus, pas « clôturé » (t11)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ actif: false, suiviClotureLe: null });
+    const res = await post();
+    expect(res.status).toBe(409);
+    const payload = await res.json();
+    expect(payload.reason).toBe('dossier_desactive');
+    expect(payload.error).toMatch(/désactivé/);
+    expect(payload.error).not.toMatch(/clôturé/);
+    expect(messagesCreate).not.toHaveBeenCalled();
+  });
+
   it('REFUSE un libellé trop long au lieu de le couper', async () => {
     messagesCreate.mockResolvedValue(reponseModele('x'.repeat(201)));
     const res = await post();

@@ -10793,6 +10793,15 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Geste de lettre sans porteuse.
 
+## 2026-10-19 — J3-collecte : migration des documents déposés
+
+**Fait.** D-330 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (34 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
+
+**Écarté.** Unicité partielle en base pour le doublon (index non modélisable par Prisma) : refus par trigger sous verrou du dossier.
+
+**Prochaine action.** Validation RGPD du responsable, merge, release-db approuvée, constat par conteneur ; puis la PR du code sous drapeau éteint.
+
+**Ouvert.** D-328 puis D-329 pris par d'autres sessions pendant le lot : renuméroté D-330.
 ## 2026-10-19 — t07b : « Mon équilibre » dans l'aperçu praticien
 
 **Fait.** L'aperçu du cockpit mène de la consultation à l'accueil puis au détail de « Mon équilibre », lus par une route d'aperçu journalisée qui partage la composition du portail. Seconde série d'arbitrages reçue (t14 date posée avec l'ouverture, t12 gestes « atteint »/« abandonné », t11 message « désactivé », 404/403 gardé).
@@ -10843,6 +10852,31 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t11 PR 2 : course perdue en 409, refus « désactivé »
+
+**Fait.** Course perdue contre l'index (PR 1) rendue en 409 sur une révision, 500 sur une racine ; dossier désactivé servi par son propre refus sur les six routes de l'objectif, chacune testée.
+
+**Écarté.** Index partiel ou unicité de racine par dossier : deux objectifs distincts restent légitimes.
+
+**Prochaine action.** PR une fois l'index constaté en production ; puis t14, t15, NIR.
+
+**Ouvert.** 404/403 gardé par arbitrage.
+## 2026-10-19 — t11 PR 1 : migration de l'index de révision
+
+**Fait.** Branche migration seule : index unique sur la version révisée, schéma, contrat SQL, étape CI. T3 vert sur l'ensemble ; revue indépendante go.
+
+**Écarté.** Garder code et migration dans une même PR : la règle de release-db veut la migration seule.
+
+**Prochaine action.** PR, merge, release-db après recomptage, constat ; puis PR 2 (code).
+## 2026-10-19 — t12 : fin de l'objectif depuis le cockpit
+
+**Fait.** t12 rejugée : quatre points sur cinq déjà livrés. Ajouts : bloc « Fin de l'objectif » (proposer atteint, attester la voix du patient, renoncer motivé, confirmation en deux temps), provenance de l'accord sous chaque version, `negocieLe` ignorée à l'écriture.
+
+**Écarté.** Attester la voix du patient avant toute proposition : D-161 interdit d'attester ce que personne n'a dit.
+
+**Prochaine action.** PR après #1576 ; puis t11.
+
+**Ouvert.** Pas de geste de fin au portail.
 ## 2026-10-19 — F38 : constat et allumage de « Pour votre médecin » (D-307)
 
 **Fait.** La PR #1573 a été mergée et déployée. Constat 2A sur un dossier de test : le responsable a imprimé, l'assistant a relu l'impression par conteneur puis allumé `WN_DOCUMENT_MEDECIN_PATIENT` (lu `true`, 401 au lieu de 503 sans session), le responsable a téléchargé depuis le portail, et l'assistant a relu les téléchargements, tous rattachés à la dernière impression. Le drapeau reste allumé.

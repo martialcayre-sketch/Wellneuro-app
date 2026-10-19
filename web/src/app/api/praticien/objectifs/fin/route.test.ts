@@ -61,4 +61,15 @@ describe('POST /api/praticien/objectifs/fin — cadence (D-327)', () => {
     expect(res.status).toBe(403);
     expect(cadenceObjectifsAtteinte).not.toHaveBeenCalled();
   });
+
+  it('un dossier DÉSACTIVÉ reçoit son propre refus, pas « clôturé » (t11)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ actif: false, suiviClotureLe: null });
+    const res = await POST(requete({ idPatient: 'PAT_TEST', idObjectif: 'OBJ_1', motif: 'atteint' }));
+    expect(res.status).toBe(409);
+    const payload = await res.json();
+    expect(payload.reason).toBe('dossier_desactive');
+    expect(payload.error).toMatch(/désactivé/);
+    expect(payload.error).not.toMatch(/clôturé/);
+    expect(prisma.finObjectif.create).not.toHaveBeenCalled();
+  });
 });

@@ -110,6 +110,10 @@ model Patient {
   // patient (D-307, F38).
   documentsMedecinImprimes        DocumentMedecinImprime[]
   telechargementsDocumentsMedecin TelechargementDocumentMedecin[]
+  // Collecte documentaire : documents déposés par le patient et leurs
+  // classements par le praticien (D-330, J3-collecte).
+  documentsDeposes                DocumentDeposePatient[]
+  classementsDocumentsDeposes     ClassementDocumentDepose[]
   correspondancesPatient     CorrespondancePatient[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
@@ -3135,6 +3139,10 @@ model ObjectifNegocie {
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
   @@index([idPatient, creeLe], map: "alli_objectif_negocie_patient_idx")
+  // Une version ne se révise qu'une fois (dette t11) : la course entre deux
+  // révisions concurrentes est fermée par la base. Les racines (NULL) restent
+  // multiples.
+  @@unique([supersedesObjectifId], map: "alli_objectif_negocie_supersedes_unique")
   @@map("objectifs_negocies")
 }
 
@@ -3900,4 +3908,61 @@ model TelechargementDocumentMedecin {
   @@index([idPatient, ordre], map: "telechargements_documents_medecin_patient_ordre_idx")
   @@index([idImpression], map: "telechargements_documents_medecin_impression_idx")
   @@map("telechargements_documents_medecin")
+}
+
+/// Un document déposé par le patient dans son dossier ([[D-330]], J3-collecte).
+/// Aucune IA ne le lit ; seul le praticien du dossier le consulte. Conservé avec
+/// le dossier (D-283 §2). Figé, sauf deux transitions jugées par la base : la
+/// première consultation par le praticien, et le retrait (contenu effacé, ligne
+/// gardée). Le patient ne le supprime pas lui-même (G-11).
+model DocumentDeposePatient {
+  id                String    @id @default(cuid()) @map("id")
+  idPatient         String    @map("id_patient")
+  /// Le document tel que déposé. Jamais de nom de fichier : il porte souvent
+  /// l'identité du patient. NULL une fois retiré — jamais à l'insertion.
+  contenu           Bytes?    @map("contenu")
+  typeMime          String    @map("type_mime") // pdf | jpeg | png | webp (CHECK migration)
+  /// Recalculée et vérifiée égale par la base (CHECK) ; survit au retrait.
+  empreinteSha256   String    @map("empreinte_sha256")
+  /// Proposée par le patient au dépôt, figée (CHECK migration) ; la catégorie
+  /// courante est le dernier classement du praticien, à défaut celle-ci.
+  categorieProposee String    @map("categorie_proposee")
+  /// Posé par la base (trigger), en UTC.
+  deposeLe          DateTime  @default(now()) @map("depose_le")
+  /// Première ouverture par le praticien du dossier : instant posé par la base.
+  consulteLe        DateTime? @map("consulte_le")
+  consultePar       String?   @map("consulte_par")
+  /// Retrait (erreur ou demande de droit), par le praticien du dossier.
+  retireLe          DateTime? @map("retire_le")
+  retirePar         String?   @map("retire_par")
+  motifRetrait      String?   @map("motif_retrait") // depot_par_erreur | demande_droit (CHECK migration)
+
+  patient     Patient                    @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  classements ClassementDocumentDepose[]
+
+  @@index([idPatient, deposeLe], map: "documents_deposes_patient_patient_depose_idx")
+  @@map("documents_deposes_patient")
+}
+
+/// Un classement d'un document déposé par le praticien du dossier ([[D-330]]) :
+/// chaque correction de catégorie est datée. En ajout seul (UPDATE/TRUNCATE
+/// refusés) ; instant et ordre posés par la base.
+model ClassementDocumentDepose {
+  id          String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base.
+  ordre       BigInt   @default(autoincrement()) @map("ordre")
+  idPatient   String   @map("id_patient")
+  idDocument  String   @map("id_document")
+  categorie   String   @map("categorie") // même liste que `categorie_proposee` (CHECK migration)
+  classePar   String   @map("classe_par")
+  /// Posé par la base (trigger), en UTC.
+  classeLe    DateTime @default(now()) @map("classe_le")
+
+  patient  Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  document DocumentDeposePatient @relation(fields: [idDocument], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "classements_documents_deposes_ordre_key")
+  @@index([idDocument, ordre], map: "classements_documents_deposes_document_ordre_idx")
+  @@index([idPatient], map: "classements_documents_deposes_patient_idx")
+  @@map("classements_documents_deposes")
 }
