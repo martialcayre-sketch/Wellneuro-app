@@ -56,6 +56,23 @@ datée **par feature**.
 ON en dev (données **fictives**). En prod, chaque activation est une décision
 datée, avec ses dépendances.
 
+> **Procédure d'allumage — le jour d'ouverture se pose AVEC le drapeau** (t14,
+> arbitrage du 2026-10-19). Quand une surface fermée dont le contenu est remis
+> par le praticien s'ouvre, « Mes échanges » ferait paraître d'un coup des
+> remises anciennes, datées de leur jour, sans dire qu'elles ne se voient que
+> depuis. Au même geste que `<DRAPEAU>=true`, poser
+> `<DRAPEAU>_OUVERT_LE=AAAA-MM-JJ` (jour de Paris) : chaque remise antérieure
+> garde son jour et porte « Affiché à partir d'aujourd'hui », puis « Affiché à
+> partir du … ». Sans base ni migration ; absent, illisible ou à venir, aucune
+> mention (ne pas la poser d'avance). **Un drapeau refermé puis rallumé** :
+> remettre `_OUVERT_LE` au jour du réallumage, au même geste.
+> Lus aujourd'hui : `WN_FICHES_ASSIETTE_LECTURE_OUVERT_LE`,
+> `WN_LETTRE_ADRESSAGE_PATIENT_OUVERT_LE` (`lib/portail/mesEchangesDrapeau.ts`,
+> `ouverturesMesEchanges`). Une surface neuve qui entre au journal y ajoute sa
+> variable dans le même lot. Ce que le patient transmet ne peut pas précéder
+> la surface qui le recueille : pas de variable, sauf refermeture (à relire
+> alors, par exemple pour `WN_BIO_PORTAIL_ENABLED`).
+
 > ⚠️ **Ces drapeaux commandent toute la voie patient** — les trois premiers
 > décident si un patient **entre**, les quatre suivants ce qu'il **trouve** une
 > fois entré. Leur état de production se lit **ici**, daté, comme au § A : une
