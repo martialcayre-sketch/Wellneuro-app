@@ -437,18 +437,44 @@ export function accordDeVersion(
   ratifications: LigneRatification[],
   attestations: LigneAccordAtteste[],
   negocieLe: Date | null = null,
+  amendements: LigneAmendement[] = [],
 ): AccordDeVersion | null {
+  const lu = accordLu(idObjectif, ratifications, attestations, negocieLe);
+  if (lu === null) return null;
+
+  // LA CONTRADICTION L'EMPORTE (`D-161` §3, revue CodeRabbit de t12). Un
+  // patient qui conteste ou dit autrement APRÈS l'accord l'a défait : afficher
+  // encore « accord de votre patient » sous « Contesté par le patient »
+  // dirait deux choses. Le dernier geste est celui de `etatRatification`.
+  const dernier = dernierGesteDeVersion(idObjectif, ratifications, amendements);
+  if (
+    dernier
+    && (dernier.etat === 'conteste' || dernier.etat === 'dit_autrement')
+    && dernier.creeLe.getTime() > lu.enregistreLe.getTime()
+  ) {
+    return null;
+  }
+  return { date: lu.date, forme: lu.forme };
+}
+
+/** L'accord avant toute contradiction, avec l'instant où il a été enregistré. */
+function accordLu(
+  idObjectif: string,
+  ratifications: LigneRatification[],
+  attestations: LigneAccordAtteste[],
+  negocieLe: Date | null,
+): (AccordDeVersion & { enregistreLe: Date }) | null {
   const preuve = ratifications
     .filter((l) => l.idObjectif === idObjectif && l.sens === 'ratifie')
     .sort(plusRecentDAbord)[0];
-  if (preuve) return { date: preuve.creeLe, forme: 'preuve' };
+  if (preuve) return { date: preuve.creeLe, forme: 'preuve', enregistreLe: preuve.creeLe };
 
   const attestee = attestations
     .filter((l) => l.idObjectif === idObjectif)
     .sort(plusRecentDAbord)[0];
-  if (attestee) return { date: attestee.convenuLe, forme: 'temoignage' };
+  if (attestee) return { date: attestee.convenuLe, forme: 'temoignage', enregistreLe: attestee.creeLe };
 
-  if (negocieLe !== null) return { date: negocieLe, forme: 'heritee' };
+  if (negocieLe !== null) return { date: negocieLe, forme: 'heritee', enregistreLe: negocieLe };
   return null;
 }
 

@@ -672,7 +672,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         reformulationPraticien: ligne.reformulationPraticien,
         priorite: ligne.priorite,
         accord: (() => {
-          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe);
+          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe, amendements);
           return lu === null ? null : { date: lu.date.toISOString(), forme: lu.forme };
         })(),
         creeLe: ligne.creeLe.toISOString(),

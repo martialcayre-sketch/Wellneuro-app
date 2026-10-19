@@ -10852,6 +10852,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t12 : fin de l'objectif depuis le cockpit
+
+**Fait.** t12 rejugée : quatre points sur cinq déjà livrés. Ajouts : bloc « Fin de l'objectif » (proposer atteint, attester la voix du patient, renoncer motivé, confirmation en deux temps), provenance de l'accord sous chaque version, `negocieLe` ignorée à l'écriture.
+
+**Écarté.** Attester la voix du patient avant toute proposition : D-161 interdit d'attester ce que personne n'a dit.
+
+**Prochaine action.** PR après #1576 ; puis t11.
+
+**Ouvert.** Pas de geste de fin au portail.
 ## 2026-10-19 — F38 : constat et allumage de « Pour votre médecin » (D-307)
 
 **Fait.** La PR #1573 a été mergée et déployée. Constat 2A sur un dossier de test : le responsable a imprimé, l'assistant a relu l'impression par conteneur puis allumé `WN_DOCUMENT_MEDECIN_PATIENT` (lu `true`, 401 au lieu de 503 sans session), le responsable a téléchargé depuis le portail, et l'assistant a relu les téléchargements, tous rattachés à la dernière impression. Le drapeau reste allumé.
