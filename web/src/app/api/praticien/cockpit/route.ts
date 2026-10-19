@@ -159,6 +159,15 @@ export type CockpitRuntimeApiResponse =
        */
       canalPlainte: string;
       /**
+       * `true` quand le dossier n'a PAS de consultation porteuse ([[D-275]]
+       * §2) — la même lecture que la chaîne, faite par `loadRuntimeInputs`.
+       * Sans porteuse, la route de lettre refuse tout adressage : l'écran
+       * remplace alors le geste par une phrase qui dit quoi faire (arbitrage
+       * du 2026-10-19). À côté de la carte, pas dedans, pour la même raison
+       * que `plainteDominante`.
+       */
+      sansConsultationPorteuse?: true;
+      /**
        * `true` quand ce `ready` est le REJEU d'un épisode persisté (`D-118`),
        * servi par le GET — jamais posé par le POST, dont le `ready` sanctionne
        * une confirmation fraîche.
@@ -477,6 +486,7 @@ async function reponsePrete(
     selectionEcartee?: boolean;
     reponsesDepuisConfirmation?: number;
     couverturesAdressage?: CouvertureAdressage[];
+    sansConsultationPorteuse?: boolean;
   },
 ): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
@@ -501,6 +511,7 @@ async function reponsePrete(
     perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
     canalPlainte: CANAL_PLAINTE,
     ...(options?.couverturesAdressage ? { couverturesAdressage: options.couverturesAdressage } : {}),
+    ...(options?.sansConsultationPorteuse ? { sansConsultationPorteuse: true as const } : {}),
     ...(options?.rejoue ? { rejoue: true as const } : {}),
     ...(options?.selectionEcartee ? { selectionEcartee: true as const } : {}),
     ...(options?.reponsesDepuisConfirmation
@@ -617,6 +628,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             selectionEcartee,
             reponsesDepuisConfirmation,
             couverturesAdressage,
+            sansConsultationPorteuse: inputs.idConsultationPorteuse === null,
           });
         } catch (erreurRejeu) {
           // Le dossier ne porte plus ce que l'épisode cite (passation retirée,
@@ -1015,7 +1027,11 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     return await reponsePrete(
       idPatient,
       { snapshot, review, decisionCard, plainteDominante },
-      { selectionEcartee, couverturesAdressage },
+      {
+        selectionEcartee,
+        couverturesAdressage,
+        sansConsultationPorteuse: inputs.idConsultationPorteuse === null,
+      },
     );
   } catch (error) {
     if (error instanceof TypeError) {
