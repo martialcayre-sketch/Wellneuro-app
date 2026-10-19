@@ -12,7 +12,7 @@ const TITRE = "À lire avant d'utiliser ce document";
 
 const VERSION_IA_EXTERNE =
   "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, " +
-  'la date de naissance, les coordonnées, le numéro de sécurité sociale et le médecin traitant sont ' +
+  'la date de naissance, les coordonnées et le médecin traitant sont ' +
   `retirés, et leurs occurrences dans les textes libres sont remplacées par ${MARQUE_MASQUE}. ` +
   `Un nom qui est aussi un mot courant est masqué partout (« riz ${MARQUE_MASQUE} » pour un patient ` +
   'nommé Blanc). ' +
@@ -20,8 +20,8 @@ const VERSION_IA_EXTERNE =
   "relisez le document avant de l'envoyer.";
 
 const VERSION_COMPLETE =
-  "Version complète : ce document contient l'identité, les coordonnées et le numéro de sécurité " +
-  'sociale du patient. Il relève du secret professionnel et ne doit pas être transmis à un service ' +
+  "Version complète : ce document contient l'identité et les coordonnées du patient. Il relève du " +
+  'secret professionnel et ne doit pas être transmis à un service ' +
   "d'IA externe.";
 
 const CONTENU =

@@ -276,7 +276,6 @@ export async function assemblerDossierExport(params: {
       email: true,
       telephone: true,
       adresse: true,
-      nir: true,
       medecinTraitantNom: true,
       medecinTraitantCoordonnees: true,
       actif: true,

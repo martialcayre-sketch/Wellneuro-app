@@ -1,4 +1,4 @@
-### Collecte documentaire : les tables des documents déposés par le patient (D-328, J3-collecte)
+### Collecte documentaire : les tables des documents déposés par le patient (D-329, J3-collecte)
 
 - Migration `documents_deposes_patient_v1`, en deux tables : les documents
   que le patient dépose dans son dossier, et les classements du praticien.

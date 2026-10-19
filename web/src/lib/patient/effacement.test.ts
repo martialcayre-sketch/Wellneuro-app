@@ -221,7 +221,7 @@ describe('effacerDossier', () => {
     expect(rang('documentMedecinImprime')).toBeLessThan(rang('syntheseIA'));
   });
 
-  // Collecte documentaire (D-328) : FK RESTRICT du classement vers le document
+  // Collecte documentaire (D-329) : FK RESTRICT du classement vers le document
   // déposé, et du document vers le dossier. Une ligne déplacée rendrait
   // l'effacement impossible pour tout dossier dont un document a été classé.
   it('supprime les classements, puis les documents déposés, avant le dossier', async () => {

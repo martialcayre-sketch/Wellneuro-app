@@ -45,12 +45,10 @@ function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[
 
 export function MonEquilibreAccueil({
   idAssignation,
-  email,
   onVoirDetail,
   onRetour,
 }: {
   idAssignation: string;
-  email?: string;
   onVoirDetail: () => void;
   onRetour: () => void;
 }) {
@@ -58,13 +56,13 @@ export function MonEquilibreAccueil({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}${emailQuery}`)
+    // Session portail seule (LOT-04) : plus d'adresse dans l'URL (dette t07).
+    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}`)
       .then(r => r.json())
       .then((d: PatientEquilibreResponse) => setData(d))
       .catch(() => setData({ ok: false, reason: 'exception', error: 'Erreur réseau.' }))
       .finally(() => setLoading(false));
-  }, [idAssignation, email]);
+  }, [idAssignation]);
 
   if (loading) {
     return (

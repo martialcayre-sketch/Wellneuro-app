@@ -242,7 +242,6 @@ const NON_IDENTIFIANTS = new Set([
 // deçà, une suite de chiffres ou un morceau de texte est trop court pour être
 // cherché sans masquer des valeurs qui ne désignent pas le patient.
 const CHIFFRES_MIN_TELEPHONE = 8;
-const CHIFFRES_MIN_NIR = 10;
 const CARACTERES_MIN_MORCEAU = 8;
 // Un jeton de nom plus court (« Du », « Le ») n'est cherché que dans le nom entier.
 const LETTRES_MIN_JETON = 3;
@@ -442,20 +441,6 @@ function motifsTelephone(valeur: string | null): Motif[] {
   return motifs;
 }
 
-// ── NIR ──
-
-function motifsNir(valeur: string | null): Motif[] {
-  // Lettres gardées : les NIR de Corse portent 2A ou 2B.
-  const caracteres = pli(valeur ?? '').replace(/[^0-9a-z]/g, '');
-  if (caracteres.replace(/\D/g, '').length < CHIFFRES_MIN_NIR) return [];
-  const motifs: Motif[] = [{ source: motifChiffres(caracteres), poids: caracteres.length, frontiere: 'nombre' }];
-  // Le numéro cité sans sa clé de contrôle.
-  if (caracteres.length === 15) {
-    motifs.push({ source: motifChiffres(caracteres.slice(0, 13)), poids: 13, frontiere: 'nombre' });
-  }
-  return motifs;
-}
-
 // ── Adresse, coordonnées ──
 
 const CODE_POSTAL = /^\d{5}$/;
@@ -601,7 +586,6 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
   const motifs = [
     ...motifsEmail(patient.email),
     ...motifsTelephone(patient.telephone),
-    ...motifsNir(patient.nir),
     ...motifsCoordonnees(patient.adresse),
     ...motifsCoordonnees(patient.medecinTraitantCoordonnees),
     ...motifsTelephone(patient.medecinTraitantCoordonnees),

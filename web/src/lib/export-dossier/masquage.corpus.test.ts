@@ -44,7 +44,6 @@ const DOSSIER: PatientExport = {
   email: 'sophie.nicola@example.test',
   telephone: '06 12 34 56 78',
   adresse: '12 rue des Lilas 75011 Paris',
-  nir: '2 85 03 69 123 456 78',
   medecinTraitantNom: 'Dr Michel Dogné',
   medecinTraitantCoordonnees: 'Cabinet du parc, 01 23 45 67 89, cabinet.parc@example.test',
   actif: true,
@@ -90,7 +89,6 @@ const FUITES: Fuite[] = [
   { origine: '1re #20', texte: 'Nico\u{200D}la, Dog\u{FEFF}né, Ni\u{200F}cola', identite: ['nicola', 'dogne'] },
   { origine: '1re #20', texte: 'joignable au 06\u{2011}12\u{2011}34\u{2011}56\u{2011}78', identite: ['612345678'] },
   { origine: '1re #20', texte: 'née le 14\u{2011}03\u{2011}1985', identite: ['14031985'] },
-  { origine: '1re #20', texte: 'NIR 2\u{2011}85\u{2011}03\u{2011}69\u{2011}123\u{2011}456\u{2011}78', identite: ['285036912345678'] },
   { origine: '1re #20', texte: 'au ０６ １２ ３４ ５６ ７８', identite: ['612345678'] },
 
   // 1re passe, constats 2, 8 et 27 : téléphones.
@@ -148,8 +146,6 @@ const FUITES: Fuite[] = [
   { origine: 'N0', texte: 'tél 06    12    34    56    78', identite: ['612345678'] },
   { origine: 'N0', texte: 'tél 06  -  12  -  34  -  56  -  78', identite: ['612345678'] },
   { origine: 'N0', texte: 'tél 06\u{A0}\u{A0}-\u{A0}\u{A0}12\u{A0}\u{A0}-\u{A0}\u{A0}34\u{A0}\u{A0}-\u{A0}\u{A0}56\u{A0}\u{A0}-\u{A0}\u{A0}78', identite: ['612345678'] },
-  { origine: 'N0', texte: 'NIR 2  -  85  -  03  -  69  -  123  -  456  -  78', identite: ['285036912345678'] },
-  { origine: 'N0', texte: 'NIR 2    85    03    69    123    456    78', identite: ['285036912345678'] },
   { origine: 'N0', dossier: { telephone: '06    12    34    56    78' }, texte: 'tél 06 12 34 56 78', identite: ['612345678'] },
 
   // 2e passe, N1 : nom collé à un pictogramme texte ou à une autre écriture.
@@ -249,10 +245,9 @@ const FIDELITE: Fidelite[] = [
   { origine: '1re #28', texte: 'Sophie2 et 2Sophie' },
   { origine: '1re #28', dossier: { medecinTraitantNom: 'Dr Michel Dogné, médecin généraliste' }, texte: 'À évoquer avec le médecin traitant ou un généraliste.' },
 
-  // Numéros voisins du téléphone ou du NIR, sans l'être.
+  // Numéros voisins du téléphone, sans l'être.
   { origine: '1re #2', texte: 'réf. 06123456789' },
   { origine: '1re #2', dossier: { telephone: '1234567' }, texte: 'code 1234567' },
-  { origine: '1re #2', dossier: { nir: '123456789' }, texte: 'lot 123456789' },
 
   // Adresses voisines de celle du dossier.
   { origine: 'N4', dossier: { adresse: '12 rue des Lilas' }, texte: 'au 12 rue des Roses' },

@@ -10726,3 +10726,60 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** Le responsable relit les textes du portail, puis constat sur un dossier de test, puis allumage du drapeau.
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
+
+## 2026-10-19 — NIR : l'export ne lit plus la colonne
+
+**Fait.** Dette t03 soldée côté code : l'export ne sélectionne plus le NIR, le masquage ne le cherche plus (0 enregistré), textes d'export et de la fiche purgés du « numéro de sécurité sociale ». La colonne n'a plus de lecteur.
+
+**Écarté.** Migration de retrait dans le même lot : le mode auto a refusé l'écriture de la migration et du contrat SQL ; rien contourné, schéma restauré.
+
+**Prochaine action.** PR, merge après #1565 ; la migration attend une règle de permission ou le responsable.
+
+**Ouvert.** Migration H26 (g) préparée, non écrite.
+## 2026-10-18 — t08 suite : e-mail de signalement borné, restes J1 reportés
+
+**Fait.** #1557, #1559 et #1563 mergées et déployées une à une (D-327 renumérotée, D-326 prise entre-temps). Trois questions tranchées par le responsable : exclusions confirmées, un e-mail de signalement par heure et par dossier (D-328), correction d'objectif sous plafond. Restes J1-base reportés sans date.
+
+**Écarté.** Compter après l'écriture : deux dépôts simultanés n'enverraient aucun e-mail.
+
+**Prochaine action.** PR D-328, merge, constat ; lot suivant de la file A.
+
+**Ouvert.** Définition des restes J1-base (pièce privée non versée).
+
+## 2026-10-19 — t10 : E2E « Ce qui compte »
+
+**Fait.** Test de bout en bout : dépôt par le formulaire du portail, fenêtre refermée au rechargement, texte lu tel quel à l'onglet « Trajectoire ». Test seul.
+
+**Écarté.** t28 (rejeu + contrat patient en une fonction) : le plan l'attache au premier lot qui touche l'un des trois sites ; un refactor isolé du service au patient n'a pas de déclencheur.
+
+**Prochaine action.** PR ; puis t05b (date « depuis » du Fil).
+
+**Ouvert.** Rien de propre au lot.
+## 2026-10-19 — t05 : parité des signaux de sécurité et empreinte figée
+
+**Fait.** #1567 (NIR, export) mergée. Restes de D-275 : banc de parité cockpit ↔ Fil sur une passation positive (trois cas) et empreinte figée de la carte de référence sans réponse positive. Tests seuls.
+
+**Écarté.** Figer l'empreinte d'une carte avec positif : la comparaison relative existante suffit, et le positif change l'empreinte par construction.
+
+**Prochaine action.** PR, merge après #1568 ; puis t28 (service au patient en une fonction), t10 (E2E « Ce qui compte »).
+
+**Ouvert.** Date « depuis » du Fil ; geste de lettre sans porteuse ; l'empreinte des cartes dépend de `WN_ALI_01_SIIN57` — l'allumer dériverait chaque carte diffusée.
+## 2026-10-19 — t07 : paramètre email mort retiré
+
+**Fait.** #1565 (D-328) mergée. Dette t07, moitié exécutable : les écrans de consultation des réponses et de « Mon équilibre » n'envoient plus l'adresse du patient, ignorée par le serveur depuis LOT-04 ; un banc interdit son retour.
+
+**Écarté.** L'aperçu praticien de « Mon équilibre » : arbitrage (route d'aperçu, scores au portail).
+
+**Prochaine action.** PR, merge après #1567 ; puis t05a (tests de parité du Fil), t28, t10.
+
+**Ouvert.** Aperçu praticien de « Mon équilibre ».
+
+## 2026-10-19 — t05b : date « depuis » de la carte de sécurité
+
+**Fait.** La carte « Signal de sécurité » du Fil prend la date du plus ancien constat ouvert (passation pour une réponse, validation de la porteuse pour un signal d'anamnèse) au lieu de la seule porteuse ; dossier sans porteuse daté. Constats inchangés.
+
+**Écarté.** Dater par la passation la plus récente : le Fil trie « le plus ancien d'abord », c'est l'attente qui compte.
+
+**Prochaine action.** PR après #1569 ; puis questions au responsable (geste sans porteuse, t07b, t11, t12, t14, t15).
+
+**Ouvert.** Geste de lettre sans porteuse.

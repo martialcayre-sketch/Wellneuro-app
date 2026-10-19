@@ -1349,7 +1349,7 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/documents_medecin_imprimes_v1_negatif.sql
 
-      # La collecte documentaire (D-328, J3-collecte) : bornes du compte rendu,
+      # La collecte documentaire (D-329, J3-collecte) : bornes du compte rendu,
       # catégorie de la liste, première consultation et retrait (contenu
       # effacé, ligne gardée) par le seul praticien du dossier, classements en
       # ajout seul, effacement nommé, RLS deny-all. Transaction annulée.

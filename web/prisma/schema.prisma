@@ -111,7 +111,7 @@ model Patient {
   documentsMedecinImprimes        DocumentMedecinImprime[]
   telechargementsDocumentsMedecin TelechargementDocumentMedecin[]
   // Collecte documentaire : documents déposés par le patient et leurs
-  // classements par le praticien (D-328, J3-collecte).
+  // classements par le praticien (D-329, J3-collecte).
   documentsDeposes                DocumentDeposePatient[]
   classementsDocumentsDeposes     ClassementDocumentDepose[]
   correspondancesPatient     CorrespondancePatient[]
@@ -3906,7 +3906,7 @@ model TelechargementDocumentMedecin {
   @@map("telechargements_documents_medecin")
 }
 
-/// Un document déposé par le patient dans son dossier ([[D-328]], J3-collecte).
+/// Un document déposé par le patient dans son dossier ([[D-329]], J3-collecte).
 /// Aucune IA ne le lit ; seul le praticien du dossier le consulte. Conservé avec
 /// le dossier (D-283 §2). Figé, sauf deux transitions jugées par la base : la
 /// première consultation par le praticien, et le retrait (contenu effacé, ligne
@@ -3940,7 +3940,7 @@ model DocumentDeposePatient {
   @@map("documents_deposes_patient")
 }
 
-/// Un classement d'un document déposé par le praticien du dossier ([[D-328]]) :
+/// Un classement d'un document déposé par le praticien du dossier ([[D-329]]) :
 /// chaque correction de catégorie est datée. En ajout seul (UPDATE/TRUNCATE
 /// refusés) ; instant et ordre posés par la base.
 model ClassementDocumentDepose {
