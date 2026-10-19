@@ -1,9 +1,10 @@
 // Textes de « Pour votre médecin » au portail ([[D-307]] §3, F38).
 //
-// À RELIRE PAR LE RESPONSABLE AVANT D'ALLUMER `WN_DOCUMENT_MEDECIN_PATIENT`
-// (déclaration RGPD de la migration, validée le 2026-10-18 : « le texte qui
-// annoncera “Pour votre médecin” au portail se relira avec le code, avant que
-// le drapeau s'allume »). Proposés par l'assistant.
+// VALIDÉS TELS QUELS PAR LE RESPONSABLE LE 2026-10-19 — titre, phrase,
+// message « rien à remettre » neutre, bouton et nom de fichier — comme
+// l'engageait la déclaration RGPD de la migration (« le texte qui annoncera
+// “Pour votre médecin” au portail se relira avec le code, avant que le drapeau
+// s'allume »). Proposés par l'assistant ; toute modification se refait relire.
 
 export const TITRE_DOCUMENT_MEDECIN = 'Pour votre médecin';
 

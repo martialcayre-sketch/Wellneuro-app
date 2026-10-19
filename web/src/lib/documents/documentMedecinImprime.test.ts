@@ -14,6 +14,7 @@ const { appels, tx, prisma } = vi.hoisted(() => {
     }),
     trustChoiceEvent: { findMany: vi.fn() },
     patient: { findUnique: vi.fn() },
+    syntheseIA: { findUnique: vi.fn() },
     documentMedecinImprime: { create: vi.fn(), findFirst: vi.fn() },
     telechargementDocumentMedecin: { create: vi.fn() },
   };
@@ -49,6 +50,10 @@ beforeEach(() => {
     appels.push('dossier');
     return { actif: true, suiviClotureLe: null };
   });
+  tx.syntheseIA.findUnique.mockImplementation(async () => {
+    appels.push('synthese');
+    return { idPatient: 'PAT_1', statut: 'Validee_Praticien' };
+  });
   tx.documentMedecinImprime.create.mockResolvedValue({ id: 'imp_1', imprimeLe: new Date('2026-10-18T15:00:00Z') });
   tx.documentMedecinImprime.findFirst.mockResolvedValue({
     id: 'imp_2', html: '<p>Instantané</p>', imprimeLe: new Date('2026-10-18T15:00:00Z'),
@@ -83,7 +88,7 @@ describe('enregistrerImpression', () => {
     });
     const res = await enregistrerImpression(entree);
     expect(res).toEqual({ ok: true, impression: { id: 'imp_1', imprimeLe: new Date('2026-10-18T15:00:00Z') } });
-    expect(appels).toEqual(['verrou', 'dossier', 'choix', 'ecriture']);
+    expect(appels).toEqual(['verrou', 'dossier', 'synthese', 'choix', 'ecriture']);
     expect(tx.documentMedecinImprime.create.mock.calls[0][0].data).toEqual({
       ...entree,
       htmlSha256: empreinteHtml('<p>x</p>'),
@@ -102,6 +107,18 @@ describe('enregistrerImpression', () => {
     const res = await enregistrerImpression(entree);
     expect(res).toMatchObject({ ok: false, raison: 'dossier_cloture' });
     expect(tx.trustChoiceEvent.findMany).not.toHaveBeenCalled();
+    expect(tx.documentMedecinImprime.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['vidée', { idPatient: 'PAT_1', statut: 'Brouillon_Praticien' }],
+    ['rejetée', { idPatient: 'PAT_1', statut: 'Rejetee' }],
+    ['d’un autre dossier', { idPatient: 'PAT_2', statut: 'Validee_Praticien' }],
+    ['disparue', null],
+  ])('synthèse %s à la relecture sous verrou : refus nommé, aucune écriture', async (_cas, ligne) => {
+    tx.syntheseIA.findUnique.mockResolvedValue(ligne);
+    const res = await enregistrerImpression(entree);
+    expect(res).toMatchObject({ ok: false, raison: 'synthese_plus_validee' });
     expect(tx.documentMedecinImprime.create).not.toHaveBeenCalled();
   });
 
