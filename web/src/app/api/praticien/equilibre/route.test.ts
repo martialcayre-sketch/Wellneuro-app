@@ -77,4 +77,23 @@ describe('GET /api/praticien/equilibre', () => {
       },
     });
   });
+  it('dit sur combien de besoins l’indice est établi ([[D-329]] §3)', async () => {
+    // Fixture : un versant dépressif de la HAD complet seul — un besoin mesuré.
+    const axeD = Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, '1']));
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_NEU_11', dateReponse: new Date('2026-10-01T10:00:00Z'), scoresJson: { rawAnswers: axeD }, statutValidite: null },
+    ]);
+    const json = (await (await GET(request())).json()) as { objetsCliniques: { besoinsMesures: number; besoinsTotal: number } };
+    expect(json.objetsCliniques.besoinsMesures).toBe(1);
+    expect(json.objetsCliniques.besoinsTotal).toBe(12);
+  });
+
+  it('un axe partiel ne compte pas parmi les besoins mesurés', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_NEU_11', dateReponse: new Date('2026-10-01T10:00:00Z'), scoresJson: { rawAnswers: { D2: '0' } }, statutValidite: null },
+    ]);
+    const json = (await (await GET(request())).json()) as { objetsCliniques: { indiceGlobal: number | null; besoinsMesures: number } };
+    expect(json.objetsCliniques.besoinsMesures).toBe(0);
+    expect(json.objetsCliniques.indiceGlobal).toBeNull();
+  });
 });

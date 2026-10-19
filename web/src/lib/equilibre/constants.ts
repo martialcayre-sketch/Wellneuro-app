@@ -196,6 +196,23 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // fermer : la production ne porte qu'UNE passation `Q_STR_01`, sans
 // `rawAnswers`, que `depuisPrisma` écarte déjà — le STOCK ne bouge pas, c'est
 // le FLUX qui change de définition, et c'est lui que l'étiquette gouverne.
+//
+// GARDE DES SOUS-SCORES PARTIELS, SANS CHANGEMENT DE VERSION ([[D-329]] §1 et
+// §4, 2026-10-19). Un sous-score servi n'alimente plus un besoin que si TOUS les
+// items de son axe sont répondus (besoins 5, 8, 10, 12). C'est la même classe
+// que les bumps v10 à v15 — la DISPONIBILITÉ d'une source change — et l'usage
+// aurait voulu v16/v17. Le responsable a écarté ce changement le 2026-10-19,
+// sur un fait que les bumps d'août ne rencontraient pas : la version entre dans
+// l'empreinte de chaque carte de décision, que le portail REJOUE
+// (`rejeuCarteDecision.ts`) ; une nouvelle étiquette aurait fait dériver toutes
+// les cartes diffusées et éteint leurs écrans protocole. Or aucune passation
+// exploitable en production, historique compris, n'a d'axe servi partiel : les
+// valeurs, recalculées à chaque lecture, ne bougent pour aucun dossier. Seule
+// une passation partielle FUTURE changera sa propre lecture — et sa carte
+// dérivera alors pour une raison clinique réelle.
+//
+// Ne pas nommer ici la constante du mapping : le contrôle de certification
+// l'extrait à sa PREMIÈRE occurrence dans ce fichier.
 export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v15' : 'v14';
 
 /**

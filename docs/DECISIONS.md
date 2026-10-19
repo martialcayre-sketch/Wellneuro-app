@@ -4,6 +4,109 @@
 
 ## Décisions actives
 
+### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (version du score inchangée ; audit de D-312, section 10)
+
+- Date : 2026-10-18
+- Statut : accepté. Demande du responsable du 2026-10-18 (« Écrit le lot de
+  cohérence »), après la séance des dossiers de mesure des besoins 6, 7, 8, 9,
+  11 et 12 ; périmètre décrit par l'assistant le même jour comme « le seul lot
+  qui ne dépend d'aucune case ». Texte et choix de conception rédigés par
+  l'assistant, motifs ci-dessous.
+- Source : audit des 12 besoins de [[D-312]], section 10 « Mesure »
+  (2026-10-17), et ses deux contre-revues (`wn-reviewer`, Codex).
+- Domaine : `web/src/lib/equilibre/score.ts` (lecteur de sous-score,
+  `compterBesoinsMesures`), `constants.ts` (motif de la version inchangée),
+  `natureIndiceGlobal.ts` (deux mentions), route
+  `api/praticien/equilibre`, `FichePatientPanel` (cockpit),
+  `MonEquilibreAccueil` (portail).
+- Nature : clinique au sens de `DC-17` (la disponibilité d'une source de
+  « Mon équilibre » change ; version du score gardée, voir §4) ; **aucun seuil,
+  aucun poids, aucune borne, aucune source** ne bouge (`DC-19`). Le mapping
+  besoin → sources reste intouché, conformément à l'arbitrage du 2026-10-15
+  (un seul changement de version avec les changements de sources, à la
+  signature du guide).
+
+**§1 — Un sous-score partiel ne couvre rien.** Un sous-score servi
+n'alimente un besoin que si tous les items de son axe sont répondus. La
+complétude se lit sur les comptes que les quatre porteurs publient déjà
+(`missing` par axe pour `had`, `repondus` et `items` pour `subscore` et
+`scoresBesoins`). Un sous-score sans compte lisible n'est pas présumé complet.
+Motif mesuré par l'audit : les moteurs `subscore` et `had` rendent le total
+d'un axe dès qu'un item est répondu, et ce total était divisé par le maximum
+de l'axe complet. Une réponse sur dix d'un axe du DNST rendait 0,9 de
+couverture ; une réponse sur cinq du bloc activité de `Q_MOD_01` effondrait le
+besoin 5 et plafonnait le total à 50. Besoins concernés : 5, 8, 10, 12 ; le
+besoin 3 exigeait déjà ses items. La fiche patient garde sa frontière « au
+moins un item » (2026-07-29) : seule la lecture de « Mon équilibre » durcit la
+sienne. Les badges de niveau de preuve suivent le même prédicat
+(`evidence.ts`) : un axe partiel ne porte plus de grade. Leur valeur, elle,
+n'est pas touchée (voir « Ne touche pas »).
+
+**§2 — Écart entre le snapshot clinique et les routes : fermé pour le cas
+audité, résidu nommé.** L'audit relevait qu'un sous-score partiel était lu par
+les routes du cockpit et du portail alors que le snapshot écarte toute
+passation incomplète. Le §1 ferme ce cas : un sous-score partiel est
+désormais non mesuré des deux côtés. Un résidu demeure, sans biais de mesure :
+le snapshot juge la passation entière, les routes jugent les items que chaque
+source lit. Exemples du mécanisme : une passation du DNST incomplète sur l'axe
+ME garde le besoin 10 au cockpit et l'écarte du snapshot ; de même un mode de
+vie incomplet hors du bloc activité (besoin 5) ou une enquête alimentaire à
+un item manquant (besoin 3). Mesuré en production par conteneur, en lecture
+seule, le 2026-10-18 : aucune passation exploitable, historique compris, n'a
+d'axe servi partiel ; aucune dernière passation des sources à sous-score
+n'est incomplète ; sur les agendas du sommeil que le moteur score, un omet des
+rubriques non couvertes, que le snapshot écarte et que les routes gardent.
+**Non aligné dans ce lot**, parce que chacune des deux directions change une
+sortie réelle : aligner les routes sur le snapshot retire l'agenda du besoin 5
+dans ce dossier ; aligner le snapshot sur les routes y fait entrer des PSQI
+partiels, que le moteur `psqi` complète par défauts. Le choix revient à un lot
+qui tranchera la complétude de l'agenda dans le snapshot.
+
+**§3 — Le total dit sur combien de besoins il est établi.** Les besoins non
+mesurés sortent de la moyenne et les strates vides de la pondération ; un seul
+besoin mesuré suffisait à produire un total servi sans mention. Au cockpit,
+sous la mention de nature de l'indice global : « Calculé sur n besoins mesurés
+sur 12 » (compte lu dans les strates du résultat, `compterBesoinsMesures`). Au
+portail, sans chiffre (arbitrage du 2026-10-10) et seulement si un besoin
+manque : « Votre indice ne tient compte que des besoins déjà renseignés :
+certains ne sont pas encore mesurés. » Assumé : tant que les besoins 2, 6, 7
+et 11 n'ont aucune source, cette phrase accompagne toujours l'indice, et le
+compte du cockpit plafonne à 8 sur 12 (7 sur 12 en forme courte de l'enquête
+alimentaire). C'est exact, et c'est le constat que l'audit voulait rendre
+visible. Les besoins 6, 7 et 11 restent affichés
+« non mesuré », ce que la décision 5 des dossiers de mesure (2026-10-18,
+option a) a retenu jusqu'à une définition signée.
+
+**§4 — Version du score : gardée (v14/v15), sur arbitrage du responsable du
+2026-10-19.** Le lot appartient à la même classe que les changements v10 à
+v15 (la disponibilité d'une source change), et l'usage aurait voulu v16/v17 :
+la première rédaction du lot les posait. Un fait que ces changements d'août ne
+rencontraient pas l'a fait écarter, relevé à la fusion avec `main` par le banc
+d'empreinte figée de #1569 : la version entre dans l'empreinte de chaque carte
+de décision, que le portail rejoue avant de servir un protocole
+(`rejeuCarteDecision.ts`). Une nouvelle étiquette aurait fait dériver toutes
+les cartes diffusées et éteint l'écran protocole de 3 dossiers (4
+approbations en production, lecture par conteneur du 2026-10-19). Or aucune
+passation exploitable, historique compris, n'a d'axe servi partiel : les
+valeurs, recalculées à chaque lecture, ne bougent pour aucun dossier, et
+l'empreinte de référence reste celle de `main` dans les deux formes de
+l'enquête alimentaire. Une passation partielle future changera sa propre
+lecture, et sa carte dérivera alors pour une raison clinique réelle. Question
+posée au responsable avec les deux autres options (changer de version et
+réapprouver les 3 diffusions ; attendre) ; recommandation suivie.
+**Dette nommée** : tant que la version entre dans l'empreinte des cartes, tout
+changement de version du score éteint les protocoles diffusés ; le prochain
+changement de sources (décisions 1 à 4 des dossiers de mesure) le rencontrera
+et devra prévoir la réapprobation.
+
+**Ne touche pas** : `BESOIN_SOURCES`, les seuils, les poids, le 60/20/20, le
+plafond ; le double compte des items SIIN52 à SIIN55 entre les besoins 1 et 3
+(il touche le mapping, il part avec le changement de sources des décisions 1
+à 4 des dossiers de mesure) ; la valeur des badges de niveau de preuve
+(signature ou retrait, question ouverte au responsable) ; la référence du
+momentum du portail (première mesure du dossier, limite déjà nommée par
+[[D-113]] §2) ; aucune migration, aucune écriture en base.
+
 ### D-328 — Signalements : un seul e-mail au praticien par heure civile et par dossier, sauf effet indésirable orienté vers un avis médical ou l'urgence ; signalements et retrait d'un choix confirmés hors plafond ; la demande de correction d'un objectif reste sous plafond (amende D-327 §4)
 
 - Date : 2026-10-18
