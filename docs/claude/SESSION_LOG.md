@@ -10802,3 +10802,17 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR ; puis t12, t11, t14, t15, NIR.
 
 **Ouvert.** Prop `email` résiduel de `MonEquilibreDetail`.
+## 2026-10-19 — F38 : synthèse imprimée figée, textes validés
+
+**Fait.** #1564 est mergée et déployée (contenue dans 892f0948). Le responsable a validé les textes du portail tels quels et tranché les trois restes :
+- refuser « vider » et « rejeter » une synthèse imprimée, sous le verrou du dossier ;
+- constat en trois gestes ;
+- portail ouvert, la confirmation d'impression l'annonce.
+
+Ce lot les livre, sans migration.
+
+**Écarté.** Retirer du portail une impression dont la synthèse est vidée, ce qui revenait à défaire un document remis sans prévenir.
+
+**Prochaine action.** Le responsable imprime sur un dossier de test ; l'assistant constate, allume `WN_DOCUMENT_MEDECIN_PATIENT`, puis constate le téléchargement.
+
+**Ouvert.** Aucun.
