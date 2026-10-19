@@ -24,7 +24,6 @@ function monter(secondAppel: () => Promise<unknown>) {
   render(
     <ConsultationScreen
       idAssignation="ASS_TEST"
-      email="sophie.nicola@example.test"
       statutReponses="repondu"
       onVoirEquilibre={vi.fn()}
     />,
@@ -53,6 +52,17 @@ describe('ConsultationScreen — « Demander une correction »', () => {
     await waitFor(() => expect(screen.getByText('Demande non applicable dans l’état actuel.')).not.toBeNull());
     // Et surtout : le refus n'est pas présenté comme un succès.
     expect(screen.queryByText(/a été transmise à votre praticien/)).toBeNull();
+  });
+
+  // Dette t07 : la session portail authentifie seule, aucune adresse ne doit
+  // plus transiter — ni dans l'URL du chargement, ni dans le corps du geste.
+  it('n’envoie aucune adresse, ni dans l’URL ni dans le corps', async () => {
+    const fetchMock = monter(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }));
+    await screen.findByText(/verrouillées en lecture seule/);
+    fireEvent.click(screen.getByRole('button', { name: 'Demander une correction' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(String(fetchMock.mock.calls[0][0])).not.toContain('email');
+    expect(String(fetchMock.mock.calls[1][1]?.body)).not.toContain('email');
   });
 
   it('affiche un message quand l’appel lui-même échoue', async () => {
@@ -93,7 +103,6 @@ describe('ConsultationScreen — « Demander une correction »', () => {
     render(
       <ConsultationScreen
         idAssignation="ASS_TEST"
-        email="sophie.nicola@example.test"
         statutReponses="repondu"
         onVoirEquilibre={vi.fn()}
       />,

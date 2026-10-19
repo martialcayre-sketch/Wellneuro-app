@@ -10755,3 +10755,12 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 **Prochaine action.** PR, merge après #1568 ; puis t28 (service au patient en une fonction), t10 (E2E « Ce qui compte »).
 
 **Ouvert.** Date « depuis » du Fil ; geste de lettre sans porteuse ; l'empreinte des cartes dépend de `WN_ALI_01_SIIN57` — l'allumer dériverait chaque carte diffusée.
+## 2026-10-19 — t07 : paramètre email mort retiré
+
+**Fait.** #1565 (D-328) mergée. Dette t07, moitié exécutable : les écrans de consultation des réponses et de « Mon équilibre » n'envoient plus l'adresse du patient, ignorée par le serveur depuis LOT-04 ; un banc interdit son retour.
+
+**Écarté.** L'aperçu praticien de « Mon équilibre » : arbitrage (route d'aperçu, scores au portail).
+
+**Prochaine action.** PR, merge après #1567 ; puis t05a (tests de parité du Fil), t28, t10.
+
+**Ouvert.** Aperçu praticien de « Mon équilibre ».
