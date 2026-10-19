@@ -10956,3 +10956,14 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, merge, t31 → fait.
 
 **Ouvert.** Aucun.
+
+
+## 2026-10-20 — t03 : colonne NIR retirée, release constatée
+
+**Fait.** #1581 mergée après recomptage (0 NIR sur 34) ; release-db 39340724658 approuvée par délégation, sentinelle reçue ; constat par conteneur : colonne et contrainte absentes, migration appliquée, aucune en échec. Textes du registre RGPD, commentaires et note du constat de ligne de base mis à jour.
+
+**Écarté.** Reformuler la requête du constat de ligne de base : elle se rejoue à l'identique ; une note suffit.
+
+**Prochaine action.** PR de textes, merge, déploiement constaté.
+
+**Ouvert.** Aucun.
