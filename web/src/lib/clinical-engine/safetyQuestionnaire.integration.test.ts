@@ -37,6 +37,14 @@ const POSITIF_HORS_EPISODE = {
   statutValidite: 'VALID',
 };
 const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { rawAnswers: { B7: 0 } } };
+// Relevées le 2026-10-19 sur `main` c2739354 (voir le cas qui les lit). DEUX
+// valeurs : la carte, elle, dépend de la forme de `Q_ALI_01` servie sous
+// `WN_ALI_01_SIIN57` (la table d'orientation en a été affranchie, pas la carte).
+// Allumer le drapeau en production change donc l'empreinte de chaque carte.
+const EMPREINTE_REFERENCE =
+  process.env.WN_ALI_01_SIIN57 === 'true'
+    ? '484704352c11f4873ab5dd533918dc0e2ee4551d573f4b0d233ed8a3031d8eb2'
+    : 'e5bd9744d54d5804abf12943b5a51c9317868c3ce768fa4b50262f5498d768be';
 
 beforeEach(() => {
   signerTablePriorites();
@@ -82,6 +90,20 @@ describe('chaîne — un positif hors épisode suspend la décision', () => {
     const avant = chaineC1DeReference();
     const apres = chaineC1DeReference({ passationsSecurite: [POSITIF_HORS_EPISODE] });
     expect(apres.decisionCard.inputHash).not.toBe(avant.decisionCard.inputHash);
+  });
+
+  // EMPREINTE DE RÉFÉRENCE FIGÉE — reste nommé de [[D-275]] (handoff du
+  // 2026-10-10, dette t05). La garde « règle jointe sur réponse positive
+  // seulement » protège une propriété : un dossier SANS réponse positive garde
+  // l'empreinte d'avant le lot, sans quoi le rejeu patient dirait dérivée chaque
+  // carte diffusée et éteindrait tous les écrans protocole. La comparaison
+  // relative (« non » = sans passation) ne la voit pas si les deux bougent
+  // ensemble ; une valeur figée, si. Ce banc rougit pour TOUT changement de ce
+  // qui entre dans l'empreinte de la carte de référence : le mettre à jour est
+  // une décision consciente — elle dérive les cartes diffusées.
+  it('sans réponse positive, l’empreinte de la carte de référence est figée', () => {
+    expect(chaineC1DeReference().decisionCard.inputHash).toBe(EMPREINTE_REFERENCE);
+    expect(chaineC1DeReference({ passationsSecurite: [NON] }).decisionCard.inputHash).toBe(EMPREINTE_REFERENCE);
   });
 
   it('un « non » hors épisode ne change rien à l’empreinte', () => {
