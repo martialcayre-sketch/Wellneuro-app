@@ -1038,7 +1038,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J2-bandes | bandes : alimentation et humeur d'abord | A | 11 | non | H13, rang 0 |
 | J3-api | rôles de connexion, aucune clé | A | 9 si migration | selon | H29, rang 1 |
 | D-281, étape 4 | validation de l'implication ; banc de cas fictifs refait | A | aucune | non | F66, rang 1 |
-| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée | A | aucune ; après J3-12e, w et les sources fermées | non | H15, rang 2 |
+| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée | A | aucune ; après J3-12e, w, les sources fermées et la signature de la table des niveaux de preuve | non | H15, rang 2 |
 | BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442 ; migration mergée sous D-294, #1448) | B | 28 ; 9 | oui | F03 |
 | fiche LOT-25 | « quatre termes », cases corrigées | B | aucune | non | F14 |
 | J2-conf | garde d'âge ; registre des droits | B | aucune | non | F45, rang 0 |
