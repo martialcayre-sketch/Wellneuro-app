@@ -548,7 +548,14 @@ export async function etiqueterClaimsLot(params: {
   lignes: LigneEtiquetageLot[];
   validateur: string;
 }): Promise<EtiquetageLotResultat> {
-  const { lignes, validateur } = params;
+  const { validateur } = params;
+  // Clés normalisées (besoins triés, sans doublon) avant toute comparaison :
+  // « 4, 2 » et « 2, 4 » sont les mêmes clés — ni réécrites ni journalisées.
+  const lignes = params.lignes.map((ligne) => {
+    const cles = lireClesLien(ligne.besoins, ligne.rubrique);
+    if (!cles) throw new Error(`Clés d'étiquetage invalides pour ${ligne.claimId}.`);
+    return { ...ligne, ...cles };
+  });
   const ids = lignes.map((l) => l.claimId);
 
   try {
