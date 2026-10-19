@@ -10946,3 +10946,12 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, T2, merge, déploiement constaté.
 
 **Ouvert.** Les deux restes ci-dessus.
+## 2026-10-20 — t31 : statut des campagnes lu sur la fiche
+
+**Fait.** La vue `ACTIVE_CAMPAIGN.md` reprend le statut de la fiche (premier mot, « inconnu » à défaut) au lieu de « active » en dur ; vue régénérée, la primaire passe à `en_pause`. Deux cas au banc.
+
+**Écarté.** `wn-cycle --appliquer` pour régénérer : il réécrit aussi l'état machine.
+
+**Prochaine action.** PR, merge, t31 → fait.
+
+**Ouvert.** Aucun.
