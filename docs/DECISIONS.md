@@ -56,9 +56,17 @@ dossier.
   qu'il remplace (`supersedes`, du même dossier et de la même hypothèse),
   l'empreinte de la structure signée en vigueur à la pose, l'e-mail du
   praticien et la date. L'appartenance de l'hypothèse à la structure
-  signée se vérifie à la route, la structure étant une table TS. Un
-  retrait est une ligne de plus, qui vise un constat posé et non retiré :
-  il ramène l'hypothèse à « aucun constat posé », sans motif.
+  signée se vérifie à la route, la structure étant une table TS.
+  **Un seul constat en vigueur par hypothèse et par dossier** : la
+  **tête**, un constat posé que ni un remplacement ni un retrait ne vise.
+  Une pose sur une hypothèse qui a une tête doit la remplacer (`supersedes`
+  la désigne) ; une pose sans tête n'a pas de `supersedes`. Un retrait est
+  une ligne de plus, qui ne vise **que la tête** : il ramène l'hypothèse à
+  « aucun constat posé », sans motif. Un constat déjà remplacé ou retiré ne
+  se remplace ni ne se retire : si `B` a remplacé `A`, le retrait de `A` est
+  refusé et l'hypothèse reste portée par `B` (revue CodeRabbit de #1589).
+  La base le tient, sous le verrou du dossier, comme l'unicité de
+  [[D-294]] §3.
 - **Ses pièces** : le constat et une pièce par ligne, qui désigne **soit**
   une ligne de résultat de biologie, **soit** une réponse de questionnaire
   (arbitrage 1) — une contrainte en base exige l'une et exclut l'autre ;

@@ -123,7 +123,9 @@ l'hypothèse ne le fait pas (§5.7).
 - **PR 1 (migration seule)** : deux tables (`ConstatPraticien`,
   `PieceConstatPraticien`), CHECK (acte, verdicts, motifs par verdict,
   note, format `HYP_…`, une pièce exactement), triggers (ajout seul,
-  praticien du dossier, pièce du même dossier, tête de fil non annulée,
+  praticien du dossier, un seul constat en vigueur par hypothèse et par
+  dossier — remplacement et retrait ne visent que lui, D-331 §2 —, pièce
+  du même dossier, tête de fil non annulée,
   passation non invalidée, au moins une pièce pour `confirmee` et
   `non_retenue` en fin de transaction), RLS ; contrat SQL négatif au CI ;
   effacement nommé et son banc ; dossier RGPD validé.
