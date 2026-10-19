@@ -10887,6 +10887,25 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t15 : réviser part de la version en vigueur
+
+**Fait.** Brouillon vierge du constructeur rechargé depuis la version en vigueur (une fois par version, orientation non reprise, V4 redemandé) ; `versionsLues` au rail, phase Actions « inconnu » avant lecture.
+
+**Écarté.** Bouton « recharger » explicite : l'arbitrage veut que réviser parte de la version en vigueur.
+
+**Prochaine action.** PR, merge ; puis question t14 au responsable, NIR.
+
+**Ouvert.** t14 : toutes les surfaces du journal sont déjà ouvertes en production.
+## 2026-10-19 — t14 : journal du portail, close sans code
+
+**Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Ligne du plan soldée en citant #1586 (mécanisme `_OUVERT_LE` livré le même soir par une autre session, sans effet sans variable posée) ; état de production de `WN_PORTAIL_MES_ECHANGES` corrigé au FEATURE_FLAGS.
+
+**Écarté.** Revenir #1586 : sans effet aujourd'hui, et travail d'une autre session.
+
+**Prochaine action.** PR, merge.
+
+**Ouvert.** Aucun.
+
 ## 2026-10-19 — t14 : jour d'ouverture d'une surface au journal patient
 
 **Fait.** « Mes échanges » lit le jour d'ouverture des surfaces remises sous leur propre drapeau (`<DRAPEAU>_OUVERT_LE`, fiches et courrier) : une remise antérieure garde son jour et dit « Affiché à partir d'aujourd'hui », puis « du … ». Procédure d'allumage complétée. Sans migration.
@@ -10906,3 +10925,13 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+
+## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
+
+**Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.
+
+**Écarté.** Committer le fichier tel que `/permissions` l'avait réécrit : il déplaçait trois clés sans rien changer.
+
+**Prochaine action.** Le dossier zinc.
+
+**Ouvert.** Aucun.
