@@ -82,9 +82,17 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
         </p>
       )}
       {readOnlyPreview ? (
-        <p className="text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3">
-          Aperçu praticien — vue identique à celle du patient.
-        </p>
+        <>
+          {/* « Mon équilibre » se lit aussi dans l'aperçu (dette t07b) : c'est
+              une lecture, pas un geste du patient — seule la demande de
+              modification reste hors aperçu. */}
+          <PatientButton variant="primary" onClick={onVoirEquilibre} className="w-full mb-3">
+            Voir Mon équilibre
+          </PatientButton>
+          <p className="text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3">
+            Aperçu praticien — vue identique à celle du patient.
+          </p>
+        </>
       ) : (
         <>
           <PatientButton variant="primary" onClick={onVoirEquilibre} className="w-full mb-3">

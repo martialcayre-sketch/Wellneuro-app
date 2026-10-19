@@ -18,6 +18,7 @@ import { lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
 import {
+  accordDeVersion,
   chaineDObjectif,
   etatRatification,
   dernierGesteDeVersion,
@@ -293,6 +294,14 @@ export type ObjectifsApiResponse =
       tetesActives: number;
       /** Les lignes de fin elles-mêmes, motif écrit compris. */
       lignesFin: LigneFinExposee[];
+      /**
+       * L'ACCORD DE CHAQUE VERSION ET SA PROVENANCE (`D-161` §4, dette t12),
+       * indexé par version : `preuve` (le patient a ratifié depuis son espace),
+       * `temoignage` (accord noté par le praticien en consultation), `heritee`
+       * (ancienne colonne `negocie_le`, provenance inconnue). La même fonction
+       * que le portail : les deux écrans disent la même chose.
+       */
+      accords: Record<string, { date: string; forme: 'preuve' | 'temoignage' | 'heritee' } | null>;
     }
   | { ok: true; objectif: ObjectifExpose }
   | { ok: false; reason: string; error: string };
@@ -452,6 +461,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       consultation,
       fins,
       ancres,
+      attestations,
     ] =
       await Promise.all([
       prisma.objectifNegocie.findMany({
@@ -518,6 +528,13 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
         orderBy: { creeLe: 'desc' },
       }),
       lireAncresPersistees(idPatient),
+      // LES ATTESTATIONS D'ACCORD (`D-161` §11), en lecture : avec la
+      // ratification, elles disent d'où vient l'accord affiché (t12).
+      prisma.accordAtteste.findMany({
+        where: { idPatient },
+        select: { id: true, idObjectif: true, convenuLe: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
     ]);
 
     // MARQUÉES, JAMAIS FILTRÉES : une chaîne close reste au cockpit, sans quoi
@@ -550,6 +567,12 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
        * LES LIGNES DE FIN elles-mêmes, motif écrit compris : le praticien doit
        * pouvoir relire POURQUOI une chaîne a été close, et par quelle voix.
        */
+      accords: Object.fromEntries(
+        lignes.map((ligne) => {
+          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe, amendements);
+          return [ligne.id, lu === null ? null : { date: lu.date.toISOString(), forme: lu.forme }];
+        }),
+      ),
       lignesFin: fins.map((ligne) => ({
         id: ligne.id,
         racineObjectifId: ligne.racineObjectifId,
@@ -1121,7 +1144,10 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
         priorite: texteDuCorps(body.priorite),
         nonTraiteMotif: texteDuCorps(body.nonTraiteMotif),
         nonTraiteDepuisLe: texteDuCorps(body.nonTraiteDepuisLe),
-        negocieLe: texteDuCorps(body.negocieLe),
+        // `negocieLe` N'EST PLUS ÉCRITE (`D-161` §11, dette t12) : la date
+        // d'accord se lit depuis le fait qui la porte — ratification ou
+        // attestation. Une valeur reçue est ignorée, jamais recopiée.
+        negocieLe: null,
         supersedesObjectifId: supersedesObjectifId || null,
         sourcePropositionId: sourcePropositionId || null,
       },

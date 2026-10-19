@@ -1124,6 +1124,20 @@ describe('accordDeVersion — le témoignage cède à la preuve (D-161 §11)', (
     expect(lu?.forme).toBe('preuve');
   });
 
+  it('LA CONTRADICTION L’EMPORTE : une contestation POSTÉRIEURE défait la preuve (D-161 §3)', () => {
+    expect(accordDeVersion('v1', [rat('R1', 'ratifie', 3), rat('R2', 'conteste', 5)], [])).toBeNull();
+    // Une contestation ANTÉRIEURE, suivie d'une ratification, laisse l'accord.
+    expect(accordDeVersion('v1', [rat('R1', 'conteste', 3), rat('R2', 'ratifie', 5)], [])?.forme).toBe('preuve');
+  });
+
+  it('un « dit autrement » postérieur défait aussi le témoignage — jugé sur la SAISIE', () => {
+    const amendement = { id: 'M1', idObjectif: 'v1', texte: 'Pas tout à fait.', creeLe: new Date('2026-09-06T10:00:00Z') };
+    // Convenu le 3, noté le 5, dit autrement le 6 : l'accord tombe.
+    expect(accordDeVersion('v1', [], [att('A1', 3, 5)], null, [amendement])).toBeNull();
+    // Noté le 8, après le « dit autrement » du 6 : l'accord tient.
+    expect(accordDeVersion('v1', [], [att('A1', 7, 8)], null, [amendement])?.forme).toBe('temoignage');
+  });
+
   it('`negocieLe` RESTE LU EN DERNIER RECOURS, et se dit HÉRITÉ', () => {
     // La colonne subsiste et des dossiers réels la portent : l'ignorer
     // effacerait une déclaration faite. Mais elle ne dit pas laquelle des deux
