@@ -2318,7 +2318,13 @@ export function ClinicalRuntimeSection({
             />
           </div>
         )}
+        {/* UN BROUILLON PAR CARTE (t15, revue) : une carte neuve dans le même
+            montage (confirmation d'un jalon) remonte le constructeur, qui se
+            recharge alors de SA version en vigueur — le brouillon d'une carte
+            ne s'enregistre jamais comme révision d'une autre. Sans carte, le
+            formulaire est fermé : aucune saisie ne se perd. */}
         <ProtocolMiniBuilder
+          key={decisionCard?.decisionCardId ?? 'sans-carte'}
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
           onSaveVersion={fixture ? undefined : saveVersion}
@@ -2334,7 +2340,7 @@ export function ClinicalRuntimeSection({
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
-          versionActive={fixture || !contenuActif || !activeVersionId
+          versionActive={fixture || !versionsLues || !contenuActif || !activeVersionId
             ? null
             : { versionId: activeVersionId, contenu: contenuActif }}
         />

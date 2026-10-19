@@ -33,6 +33,11 @@ responsable (2026-10-19) : corriger les deux.
   seulement le brouillon rechargé) ; `versionsLues` est celui de la carte
   courante (`versionsLuesPour`), et une réponse de versions arrivée pour une
   autre carte est écartée.
+- Revue CodeRabbit hors diff (P1) : le constructeur porte une `key` par carte
+  (une carte neuve dans le même montage le remonte, il se recharge de SA
+  version) et `versionActive` n'est servie qu'après la lecture des versions de
+  la carte courante. Le brouillon d'une carte ne s'enregistre plus comme
+  révision d'une autre ; sans carte le formulaire est fermé, rien ne se perd.
 
 ## Fichiers modifiés
 
