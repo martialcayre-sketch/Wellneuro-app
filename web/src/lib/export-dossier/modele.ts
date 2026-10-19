@@ -52,11 +52,6 @@ export type PatientExport = {
   email: string;
   telephone: string | null;
   adresse: string | null;
-  /**
-   * Plus affiché (D-284 §2, lot g). Lu pour le seul masquage des textes libres,
-   * tant que la colonne existe : une valeur ancienne y serait encore retirée.
-   */
-  nir: string | null;
   medecinTraitantNom: string | null;
   medecinTraitantCoordonnees: string | null;
   actif: boolean;

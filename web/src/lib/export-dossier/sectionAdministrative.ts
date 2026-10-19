@@ -23,7 +23,7 @@ const SEXE_NON_RENSEIGNE =
   'Non renseigné dans la fiche administrative (peut figurer dans les réponses aux questionnaires)';
 
 export const MENTION_PSEUDONYMISATION =
-  'Version pseudonymisée : nom, prénom, date de naissance, coordonnées, numéro de sécurité sociale et médecin traitant sont retirés de ce document.';
+  'Version pseudonymisée : nom, prénom, date de naissance, coordonnées et médecin traitant sont retirés de ce document.';
 
 function champ(libelle: string, valeur: string): BlocExport {
   return { type: 'champ', libelle, valeur };

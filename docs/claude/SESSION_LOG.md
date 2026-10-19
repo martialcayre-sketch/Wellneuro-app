@@ -10727,6 +10727,15 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
 
+## 2026-10-19 — NIR : l'export ne lit plus la colonne
+
+**Fait.** Dette t03 soldée côté code : l'export ne sélectionne plus le NIR, le masquage ne le cherche plus (0 enregistré), textes d'export et de la fiche purgés du « numéro de sécurité sociale ». La colonne n'a plus de lecteur.
+
+**Écarté.** Migration de retrait dans le même lot : le mode auto a refusé l'écriture de la migration et du contrat SQL ; rien contourné, schéma restauré.
+
+**Prochaine action.** PR, merge après #1565 ; la migration attend une règle de permission ou le responsable.
+
+**Ouvert.** Migration H26 (g) préparée, non écrite.
 ## 2026-10-18 — t08 suite : e-mail de signalement borné, restes J1 reportés
 
 **Fait.** #1557, #1559 et #1563 mergées et déployées une à une (D-327 renumérotée, D-326 prise entre-temps). Trois questions tranchées par le responsable : exclusions confirmées, un e-mail de signalement par heure et par dossier (D-328), correction d'objectif sous plafond. Restes J1-base reportés sans date.

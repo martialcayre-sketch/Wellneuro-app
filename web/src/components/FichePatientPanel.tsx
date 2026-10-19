@@ -1672,7 +1672,7 @@ export function FichePatientPanel({
             <div className="rounded-xl border border-border bg-surface p-4">
               <p role="alert" className="text-base text-status-warning">
                 La fiche administrative n’a pas pu être lue. Ce n’est pas une absence : ce dossier
-                porte peut-être une adresse, un numéro de sécurité sociale et un médecin traitant.
+                porte peut-être une adresse et un médecin traitant.
               </p>
               <p className="mt-2 text-base text-foreground">{nomComplet}</p>
               <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
