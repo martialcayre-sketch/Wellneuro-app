@@ -60,7 +60,9 @@ le lit ; rien ne part hors de la base HDS ; conservé avec le dossier
 contrat négatif à quatorze promesses) : types, taille et empreinte ;
 catégorie de la liste ; un dépôt porte son document et ne naît ni consulté ni
 retiré ; pas de doublon d'un document non retiré du dossier, lu sous un verrou
-du dossier ; deux transitions seulement, une par écriture — la première
+du dossier, et le dépôt exige READ COMMITTED (en REPEATABLE READ, un doublon
+commis pendant l'attente du verrou resterait invisible — revue CodeRabbit) ;
+deux transitions seulement, une par écriture — la première
 consultation et le retrait —, par le seul praticien du dossier, instants posés
 par la base ; ce qui a été déposé ne se réécrit pas ; un document retiré ne
 change plus et ne se classe plus ; classements en ajout seul ; TRUNCATE

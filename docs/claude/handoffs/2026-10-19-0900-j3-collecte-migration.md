@@ -22,7 +22,7 @@ Poser les tables de la collecte documentaire (H62), sans code qui dépose ; le d
 
 ## Validations exécutées
 
-- Base locale neuve : `migrate deploy` vert, `migrate diff` sans différence, contrat vert. 33 mutations de la migration, toutes tuées par le contrat.
+- Base locale neuve : `migrate deploy` vert, `migrate diff` sans différence, contrat vert. 34 mutations de la migration, toutes tuées par le contrat (dont le refus hors READ COMMITTED, ajouté sur la revue CodeRabbit).
 - Tests de l'effacement (26), banc des écrivains, T1 rapide : verts.
 - T3 complet vert : dérive « No difference detected », contrat joué, E2E 282 verts. Un premier passage avait été interrompu à Vitest par la charge de la machine (trois délais dépassés, verts seuls).
 

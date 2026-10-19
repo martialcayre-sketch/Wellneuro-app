@@ -70,7 +70,11 @@
 --  - au DÉPÔT : le dossier `FOR KEY SHARE`, puis un verrou consultatif par
 --    dossier (`hashtext('documents_deposes:' || id_patient)`) sous lequel se
 --    lit le doublon — deux dépôts du même fichier se sérialisent. La route y
---    comptera ses plafonds sous le même verrou ;
+--    comptera ses plafonds sous le même verrou. Le dépôt EXIGE READ
+--    COMMITTED, refusé avant tout verrou sinon : en REPEATABLE READ,
+--    l'instantané précède l'attente du verrou, et le dépôt commis entre-temps
+--    resterait invisible au refus du doublon (revue CodeRabbit de #1572 ;
+--    même discipline que F38) ;
 --  - au CLASSEMENT : le dossier `FOR KEY SHARE`, puis le document
 --    `FOR NO KEY UPDATE` — deux classements du même document se sérialisent,
 --    et l'`ordre` tiré ensuite suit l'ordre des validations ; un retrait
@@ -81,7 +85,9 @@
 --    de l'effacement et ouvrirait un interblocage (UPDATE du document, puis
 --    effacement `FOR UPDATE` du dossier, puis attente croisée). L'effacement,
 --    lui, attend la fin de l'UPDATE pour supprimer le document.
--- Aucun refus ne lit une « dernière » ligne : READ COMMITTED n'est pas exigé.
+-- Le classement, la consultation et le retrait ne lisent rien qu'un verrou de
+-- ligne ne protège : un niveau plus strict y échoue par conflit de
+-- sérialisation, il n'écrit pas à tort. READ COMMITTED n'y est pas exigé.
 --
 -- ── EFFAÇABLES ─────────────────────────────────────────────────────────────
 --
@@ -199,7 +205,12 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  -- Le dossier d'abord, puis le verrou du dossier (en-tête, « Les verrous »).
+  -- READ COMMITTED d'abord : le doublon se lit après l'attente du verrou
+  -- (en-tête, « Les verrous »).
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'dépôt refusé en % : un dépôt s''écrit en READ COMMITTED.', upper(current_setting('transaction_isolation'));
+  END IF;
+  -- Le dossier, puis le verrou du dossier.
   PERFORM 1 FROM public.patients p WHERE p.id_patient = NEW.id_patient FOR KEY SHARE;
   PERFORM pg_advisory_xact_lock(hashtext('documents_deposes:' || NEW.id_patient));
 

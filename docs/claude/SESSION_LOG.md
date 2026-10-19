@@ -10795,7 +10795,7 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 ## 2026-10-19 — J3-collecte : migration des documents déposés
 
-**Fait.** D-330 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (33 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
+**Fait.** D-330 sur sept arbitrages du responsable (catégorie proposée puis corrigée, retrait qui efface et garde la ligne, « Transmis », bornes du compte rendu, doublon refusé, première consultation seule, pas de lien vers la demande de droit). Migration `documents_deposes_patient_v1` (documents, classements), contrat à quatorze promesses (34 mutations tuées), effacement nommé, banc des écrivains, déclaration RGPD. Relecture `wn-reviewer` : contrat complété, verrou du dossier retiré de la modification (interblocage avec l'effacement).
 
 **Écarté.** Unicité partielle en base pour le doublon (index non modélisable par Prisma) : refus par trigger sous verrou du dossier.
 

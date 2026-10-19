@@ -10,7 +10,8 @@
 --   3. une catégorie hors liste est refusée, au dépôt comme au classement ;
 --   4. un dépôt sans document, ou qui naît consulté, ou qui naît retiré, est
 --      refusé ; un DOUBLON d'un document non retiré du dossier est refusé, un
---      document retiré se redépose ;
+--      document retiré se redépose ; un dépôt hors READ COMMITTED est refusé
+--      (seconde transaction, en fin de fichier) ;
 --   5. la première consultation par le praticien DU DOSSIER passe (casse
 --      indifférente), instant posé par la base ; un autre praticien est
 --      refusé ; une seconde consultation est refusée ;
@@ -33,8 +34,8 @@
 --      document ne s'efface pas avant ses classements (RESTRICT) ;
 --  12. les FK ont la règle annoncée (RESTRICT), les CHECK, les index et les
 --      six triggers sont présents ; l'ordre des verrous est celui de l'en-tête
---      de la migration — dépôt : dossier puis verrou du dossier avant le
---      doublon ; classement : dossier puis document exclusif ; modification :
+--      de la migration — dépôt : refus hors READ COMMITTED, puis dossier,
+--      puis verrou du dossier avant le doublon ; classement : dossier puis document exclusif ; modification :
 --      AUCUN verrou sur le dossier — ; les quatre fonctions ont leur
 --      `search_path` épinglé ;
 --  13. chaque table porte EXACTEMENT ses colonnes (liste blanche) ;
@@ -415,7 +416,7 @@ BEGIN
   -- Le dossier, puis le document (en-tête de la migration) : une session
   -- seule ne joue pas la concurrence, elle relit l'ordre.
   def := pg_get_functiondef('public.documents_deposes_avant_insertion()'::regprocedure);
-  IF def !~ 'FROM public\.patients p[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_deposes:''[^$]*déjà déposé' THEN
+  IF def !~ '<> ''read committed''[^$]*FROM public\.patients p[^$]*FOR KEY SHARE[^$]*pg_advisory_xact_lock\(hashtext\(''documents_deposes:''[^$]*déjà déposé' THEN
     RAISE EXCEPTION 'CONTRAT — 12 : l''ordre des verrous du dépôt n''est plus celui annoncé.';
   END IF;
   def := pg_get_functiondef('public.classements_documents_deposes_avant_insertion()'::regprocedure);
@@ -477,6 +478,33 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'Contrat documents_deposes_patient_v1 : quatorze promesses tenues.';
+END;
+$$;
+
+ROLLBACK;
+
+-- ── 4 (suite). Un dépôt hors READ COMMITTED est refusé ──────────────────────
+-- Seconde transaction : le niveau se choisit avant toute requête. Le refus
+-- précède tout verrou ; sans lui, en REPEATABLE READ, un doublon commis
+-- pendant l'attente du verrou resterait invisible.
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+
+INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at) VALUES
+  ('pat_contrat_dep_rr', 'PAT_CONTRAT_DEP_RR', 'jennifer.martin+deprr@example.test', 'Jennifer', 'Martin', 'praticien@wellneuro.fr', CURRENT_TIMESTAMP);
+
+DO $$
+BEGIN
+  BEGIN
+    INSERT INTO documents_deposes_patient (id, id_patient, contenu, type_mime, empreinte_sha256, categorie_proposee)
+    VALUES ('dep_rr', 'PAT_CONTRAT_DEP_RR', convert_to('%PDF rr', 'UTF8'), 'application/pdf',
+            encode(sha256(convert_to('%PDF rr', 'UTF8')), 'hex'), 'courrier');
+    RAISE EXCEPTION 'CONTRAT — 4 : un dépôt en REPEATABLE READ est passé, il devait être refusé.';
+  EXCEPTION WHEN raise_exception THEN
+    IF position('un dépôt s''écrit en READ COMMITTED' IN SQLERRM) = 0 THEN
+      RAISE;
+    END IF;
+  END;
+  RAISE NOTICE 'Contrat documents_deposes_patient_v1 : dépôt hors READ COMMITTED refusé.';
 END;
 $$;
 
