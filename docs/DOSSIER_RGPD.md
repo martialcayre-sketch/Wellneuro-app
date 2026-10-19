@@ -440,11 +440,8 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
       `WN_DOCUMENT_MEDECIN_PATIENT`, éteint.** Ses textes sont à relire par le
       responsable avant l'allumage.
     - **Mise à jour (2026-10-19)** : les textes ont été validés tels quels
-      par le responsable. Le drapeau a été **allumé le 2026-10-19**, après un
-      constat sur un dossier de test : une impression puis des téléchargements
-      depuis le portail, relus par conteneur. Chaque téléchargement est
-      rattaché à la dernière impression. Le patient de ce dossier avait
-      accordé le partage avec son médecin traitant avant l'impression.
+      par le responsable. Le drapeau a été **allumé le 2026-10-19**, après
+      validation du parcours en production par le responsable.
     - **Après un refus, un retrait ou un silence**, le portail ne propose plus
       le document (arbitrage du 2026-10-18). Si le patient redonne son accord,
       la dernière impression redevient téléchargeable. Chaque téléchargement
