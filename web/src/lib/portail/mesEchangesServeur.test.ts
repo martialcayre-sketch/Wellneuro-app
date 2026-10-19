@@ -81,10 +81,15 @@ describe('sourcesMesEchanges', () => {
   it('documents déposés ([[D-330]]) : la date seule, sous le drapeau du dépôt', async () => {
     m.listerDepotsPatient.mockResolvedValue([
       { deposeLe: '2026-10-08T08:00:00.000Z', categorie: 'courrier', retireLe: null },
+      // Retiré : le contenu est effacé, la transmission reste au journal (D-330 §2).
+      { deposeLe: '2026-10-09T08:00:00.000Z', categorie: 'courrier', retireLe: '2026-10-10T08:00:00.000Z' },
     ]);
     const s = await sourcesMesEchanges('PAT_SOPHIE');
     expect(m.listerDepotsPatient).toHaveBeenCalledWith('PAT_SOPHIE');
-    expect(s.documentsDeposes).toEqual([{ deposeLe: new Date('2026-10-08T08:00:00.000Z') }]);
+    expect(s.documentsDeposes).toEqual([
+      { deposeLe: new Date('2026-10-08T08:00:00.000Z') },
+      { deposeLe: new Date('2026-10-09T08:00:00.000Z') },
+    ]);
   });
 
   it('le bilan suit la règle de visibilité de son écran', async () => {

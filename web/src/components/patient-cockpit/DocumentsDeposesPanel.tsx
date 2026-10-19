@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DocumentsDeposesResponse, GesteDocumentDeposeResponse } from '@/app/api/praticien/documents-deposes/route';
 import type { DocumentDeposeLu } from '@/lib/collecte/documentsDeposesServeur';
 import {
@@ -204,15 +204,21 @@ function LigneDocument({
 
 export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
   const [etat, setEtat] = useState<Etat>({ statut: 'chargement' });
+  // Plusieurs relectures peuvent se croiser (minuteur de l'ouverture, retrait) :
+  // seule la réponse de la DERNIÈRE est retenue, jamais une réponse périmée.
+  const generation = useRef(0);
 
   const charger = useCallback(async () => {
+    const mienne = ++generation.current;
     try {
       const res = await fetch(`/api/praticien/documents-deposes?idPatient=${encodeURIComponent(idPatient)}`, {
         cache: 'no-store',
       });
       const data = (await res.json()) as DocumentsDeposesResponse;
+      if (mienne !== generation.current) return;
       setEtat(res.ok && data.ok ? { statut: 'charge', ouvert: data.ouvert, documents: data.documents } : { statut: 'erreur' });
     } catch {
+      if (mienne !== generation.current) return;
       setEtat({ statut: 'erreur' });
     }
   }, [idPatient]);

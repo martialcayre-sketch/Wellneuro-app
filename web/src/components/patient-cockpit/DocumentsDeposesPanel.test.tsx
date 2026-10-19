@@ -88,6 +88,40 @@ describe('DocumentsDeposesPanel', () => {
     expect(screen.queryByRole('button', { name: 'Retirer le document' })).toBeNull();
   });
 
+  it('une réponse périmée n’écrase pas la relecture la plus récente', async () => {
+    const reponses: ((r: Response) => void)[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+          : new Promise<Response>(resoudre => reponses.push(resoudre)),
+      ),
+    );
+    const jamaisOuvert = { ...DOC, consulteLe: null };
+    const liste = (documents: unknown[]) => new Response(JSON.stringify({ ok: true, ouvert: true, documents }), { status: 200 });
+    render(<DocumentsDeposesPanel idPatient="PAT_SOPHIE" />);
+    await waitFor(() => expect(reponses).toHaveLength(1));
+    reponses[0](liste([jamaisOuvert]));
+    // L'ouverture arme une relecture différée ; le retrait en lance une tout de suite.
+    fireEvent.click(await screen.findByRole('link', { name: 'Ouvrir le document' }));
+    fireEvent.click(screen.getByLabelText('Demande de droit'));
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer le document' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le retrait' }));
+    await waitFor(() => expect(reponses).toHaveLength(2));
+    await waitFor(() => expect(reponses).toHaveLength(3), { timeout: 3000 });
+    // La plus récente répond d'abord ; la périmée arrive ensuite et doit être ignorée.
+    const retire = { ...jamaisOuvert, retireLe: '2026-10-10T08:00:00.000Z', motifRetrait: 'demande_droit' };
+    reponses[2](liste([retire]));
+    expect(await screen.findByText('Retiré le 10/10/2026 — Demande de droit')).toBeTruthy();
+    await act(async () => {
+      reponses[1](liste([jamaisOuvert]));
+      await Promise.resolve();
+    });
+    expect(screen.getByText('Retiré le 10/10/2026 — Demande de droit')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Ouvrir le document' })).toBeNull();
+  });
+
   it('une lecture en échec ne se rend pas comme une liste vide', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: false }), { status: 500 })));
     render(<DocumentsDeposesPanel idPatient="PAT_SOPHIE" />);
