@@ -74,7 +74,6 @@ const PATIENT = {
   email: 'sophie.nicola@example.test',
   telephone: '06 12 34 56 78',
   adresse: '12 rue des Lilas, 69003 Lyon',
-  nir: '299999999999999',
   medecinTraitantNom: 'Dr Jennifer Martin',
   medecinTraitantCoordonnees: 'Cabinet des Tilleuls, 04 78 00 00 00',
   actif: true,
