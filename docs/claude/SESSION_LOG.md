@@ -10746,6 +10746,15 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Définition des restes J1-base (pièce privée non versée).
 
+## 2026-10-19 — t05 : parité des signaux de sécurité et empreinte figée
+
+**Fait.** #1567 (NIR, export) mergée. Restes de D-275 : banc de parité cockpit ↔ Fil sur une passation positive (trois cas) et empreinte figée de la carte de référence sans réponse positive. Tests seuls.
+
+**Écarté.** Figer l'empreinte d'une carte avec positif : la comparaison relative existante suffit, et le positif change l'empreinte par construction.
+
+**Prochaine action.** PR, merge après #1568 ; puis t28 (service au patient en une fonction), t10 (E2E « Ce qui compte »).
+
+**Ouvert.** Date « depuis » du Fil ; geste de lettre sans porteuse ; l'empreinte des cartes dépend de `WN_ALI_01_SIIN57` — l'allumer dériverait chaque carte diffusée.
 ## 2026-10-19 — t07 : paramètre email mort retiré
 
 **Fait.** #1565 (D-328) mergée. Dette t07, moitié exécutable : les écrans de consultation des réponses et de « Mon équilibre » n'envoient plus l'adresse du patient, ignorée par le serveur depuis LOT-04 ; un banc interdit son retour.
