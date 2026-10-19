@@ -4,8 +4,9 @@
 -- deux révisions concurrentes de la même version passaient toutes deux la
 -- lecture et scindaient la chaîne en deux têtes, que seul un départage
 -- (`D-161`, motif `remplace`) pouvait ramener à une. L'index ferme la course
--- dans la base ; la route rend son refus (P2002) en 409 `objectif_supplante`,
--- la même réponse que la lecture.
+-- dans la base. La route rendra ce refus (P2002) en 409 `objectif_supplante`,
+-- la même réponse que la lecture, avec le code qui suit cette migration
+-- (t11, PR 2) ; d'ici là, il remonte en erreur technique.
 --
 -- CE QU'IL NE TOUCHE PAS : deux RACINES distinctes (`supersedes_objectif_id`
 -- NULL) restent possibles — Postgres admet plusieurs NULL dans un index

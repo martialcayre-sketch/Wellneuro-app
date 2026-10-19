@@ -19,8 +19,9 @@ accordée, merge et release-db sans redemander.
 - Constat préalable en production (conteneur `one-off-5565`, lecture seule,
   2026-10-19 14:05) : 10 objectifs, 0 version révisée deux fois. **À refaire
   juste avant l'approbation de release-db** (revue `wn-reviewer`, P2 4).
-- Le code actuel est compatible avant comme après l'index : aucun ordre de
-  déploiement à tenir.
+- Le code en service est compatible avant comme après l'index. Le code
+  consommateur (PR 2), lui, ne se merge qu'après l'application de l'index
+  CONSTATÉE par conteneur (`D-087`).
 
 ## Fichiers modifiés
 
