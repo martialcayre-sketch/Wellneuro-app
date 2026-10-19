@@ -10727,7 +10727,7 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Ouvert.** Faut-il refuser l'action « effacer » d'une synthèse déjà imprimée (question B de la revue) ?
 
-## 2026-10-18 — « Mon équilibre » : lot de cohérence du calcul (D-328)
+## 2026-10-18 — « Mon équilibre » : lot de cohérence du calcul (D-329)
 
 **Fait.** Les sept décisions des dossiers de mesure sont rendues (recommandations suivies, « non mesuré » pour 6, 7, 11). Lot de cohérence écrit : un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12), badges de preuve alignés ; le total dit sur combien de besoins il est établi ; score v16/v17. T3 complet vert, contre-revue `wn-reviewer` GO avec réserves levées.
 
@@ -10735,4 +10735,13 @@ Arbitrages : le retrait du partage retire le document du portail ; l'impression 
 
 **Prochaine action.** Merge sur revue CodeRabbit ; puis ingestion des sources libres ou préparation du changement de sources des besoins 8, 9, 12.
 
-**Ouvert.** Résidu D-328 §2 ; badges de preuve à signer ou retirer.
+**Ouvert.** Résidu D-329 §2 ; badges de preuve à signer ou retirer.
+## 2026-10-18 — t08 suite : e-mail de signalement borné, restes J1 reportés
+
+**Fait.** #1557, #1559 et #1563 mergées et déployées une à une (D-327 renumérotée, D-326 prise entre-temps). Trois questions tranchées par le responsable : exclusions confirmées, un e-mail de signalement par heure et par dossier (D-328), correction d'objectif sous plafond. Restes J1-base reportés sans date.
+
+**Écarté.** Compter après l'écriture : deux dépôts simultanés n'enverraient aucun e-mail.
+
+**Prochaine action.** PR D-328, merge, constat ; lot suivant de la file A.
+
+**Ouvert.** Définition des restes J1-base (pièce privée non versée).

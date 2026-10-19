@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, notifierPraticienSignalement } = vi.hoisted(() => ({
+const { prisma, notifierPraticienSignalement, premierSignalementDeLHeure } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     trustAdverseEffectReport: { create: vi.fn() },
@@ -8,9 +8,10 @@ const { prisma, notifierPraticienSignalement } = vi.hoisted(() => ({
     trustRightsRequest: { create: vi.fn() },
   },
   notifierPraticienSignalement: vi.fn(),
+  premierSignalementDeLHeure: vi.fn(async (_idPatient: string) => true),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement }));
+vi.mock('@/lib/trust/notification', () => ({ notifierPraticienSignalement, premierSignalementDeLHeure }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { POST } from './route';
@@ -97,5 +98,44 @@ describe('POST /api/portail/trust/signalement', () => {
     expect(prisma.trustRightsRequest.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ type: 'rectification' }),
     });
+  });
+
+  // D-328 : un e-mail par heure et par dossier. Le signalement, lui,
+  // s'enregistre TOUJOURS — c'est seulement l'e-mail qui se tait.
+  it.each(['severe', 'moderee', 'incertaine'])(
+    'effet indésirable %s : le praticien est TOUJOURS prévenu, même après un dépôt dans l’heure (D-328 §2)',
+    async (severiteDeclaree) => {
+      premierSignalementDeLHeure.mockResolvedValue(false);
+      const response = await POST(
+        request({ categorie: 'effet_indesirable', produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree }),
+      );
+      expect(response.status).toBe(200);
+      expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
+      premierSignalementDeLHeure.mockResolvedValue(true);
+    },
+  );
+
+  it.each([
+    ['effet_indesirable', { produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree: 'legere' }],
+    ['incident_confidentialite', { categorieIncident: 'connexion_non_reconnue', description: 'Connexion inconnue.' }],
+    ['demande_droit', { typeDemande: 'rectification' }],
+  ])('%s déjà précédé d’un signalement dans l’heure : enregistré, sans e-mail (D-328)', async (categorie, champs) => {
+    premierSignalementDeLHeure.mockResolvedValueOnce(false);
+    const response = await POST(request({ categorie, ...champs }));
+    expect(response.status).toBe(200);
+    expect(premierSignalementDeLHeure).toHaveBeenCalledWith('PAT_TEST');
+    const ecrits = prisma.trustAdverseEffectReport.create.mock.calls.length
+      + prisma.trustPrivacyIncident.create.mock.calls.length
+      + prisma.trustRightsRequest.create.mock.calls.length;
+    expect(ecrits).toBe(1);
+    expect(notifierPraticienSignalement).not.toHaveBeenCalled();
+  });
+
+  it('la cadence de l’e-mail se lit AVANT l’écriture — compter après ferait taire deux dépôts simultanés', async () => {
+    await POST(request({ categorie: 'demande_droit', typeDemande: 'rectification' }));
+    expect(premierSignalementDeLHeure.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.trustRightsRequest.create.mock.invocationCallOrder[0],
+    );
+    expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
   });
 });

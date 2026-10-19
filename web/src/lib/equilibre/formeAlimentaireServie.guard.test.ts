@@ -43,7 +43,7 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    // v16 / v17 depuis la garde des sous-scores partiels ([[D-328]] §1) ; v14 /
+    // v16 / v17 depuis la garde des sous-scores partiels ([[D-329]] §1) ; v14 /
     // v15 depuis les comptes de recueil de `group_majority` (2026-08-13,
     // D-055 / LOT-08) : la disponibilité de `Q_STR_01` comme source du besoin 9
     // change à son tour — troisième occurrence de la même classe, après

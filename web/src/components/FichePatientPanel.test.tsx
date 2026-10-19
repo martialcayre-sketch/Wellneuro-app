@@ -80,7 +80,7 @@ type Options = {
   dossier?: 'absent' | Partial<typeof DOSSIER_ADMINISTRATIF>;
   /** Le dossier porte un questionnaire JAMAIS REMPLI dont l'échéance est passée. */
   assignationEchue?: boolean;
-  /** L'indice global n'est pas calculable (aucun besoin mesuré, [[D-328]] §3). */
+  /** L'indice global n'est pas calculable (aucun besoin mesuré, [[D-329]] §3). */
   indiceGlobalNul?: boolean;
   // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
   // - `defaut` : rideau T0 complet, un envoi hors rideau en attente ;
@@ -2052,7 +2052,7 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     expect(screen.getAllByText('Repère de suivi, pas un score clinique').length).toBeGreaterThan(0);
   });
 
-  it('dit sur combien de besoins l’indice global est établi ([[D-328]] §3)', async () => {
+  it('dit sur combien de besoins l’indice global est établi ([[D-329]] §3)', async () => {
     await ouvrirTiroirObjets();
     expect(screen.getByText('Calculé sur 8 besoins mesurés sur 12')).toBeTruthy();
   });

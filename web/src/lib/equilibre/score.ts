@@ -28,7 +28,7 @@ export function clamp01(valeur: number): number {
  * (`had`), puis `repondus` contre `items` (`subscore`, où `items` exclut les
  * questions conditionnelles non posées ; `scoresBesoins`, où `items` est le
  * nombre d'items déclarés — aucun n'y est conditionnel aujourd'hui). Sans compte
- * lisible : non, jamais présumé complet ([[D-328]] §1).
+ * lisible : non, jamais présumé complet ([[D-329]] §1).
  */
 function sousScoreComplet(sub: Record<string, unknown>): boolean {
   if (typeof sub.missing === 'number') return sub.missing === 0;
@@ -72,7 +72,7 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
       if (sub && typeof sub.total === 'number') candidats.push(sub);
     }
     if (candidats.length !== 1) return null;
-    // GARDE — un sous-score PARTIEL ne couvre rien ([[D-328]] §1).
+    // GARDE — un sous-score PARTIEL ne couvre rien ([[D-329]] §1).
     //
     // Même défaut que celui que la garde du total ferme plus bas, un étage plus
     // fin. Les moteurs `subscore` et `had` rendent le total d'un axe dès qu'UN
@@ -119,7 +119,7 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
   // sous-score rendrait le besoin 3 non mesuré parce qu'un item quelconque des
   // 57 de l'enquête alimentaire est vide, alors que les quatre items qui le
   // fondent sont complets. La complétude d'un sous-score se juge donc au grain
-  // de l'axe, dans la branche du haut (`sousScoreComplet`, [[D-328]] §1) — et
+  // de l'axe, dans la branche du haut (`sousScoreComplet`, [[D-329]] §1) — et
   // non plus seulement chez `scoresBesoins`, le seul porteur qui l'exigeait
   // jusque-là.
   if (typeof resultat.missing === 'number' && resultat.missing > 0) return null;
@@ -311,7 +311,7 @@ export function agregerEquilibre(couverturesParBesoin: CouverturesParBesoin): Re
 }
 
 /**
- * Nombre de besoins qui ont réellement nourri le total ([[D-328]] §3) : ceux dont
+ * Nombre de besoins qui ont réellement nourri le total ([[D-329]] §3) : ceux dont
  * la couverture n'est pas `null`. Lu dans les strates du résultat, donc dans ce
  * que `agregerEquilibre` a effectivement moyenné, jamais recalculé à côté.
  */

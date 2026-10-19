@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-328 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (score v16/v17 ; audit de D-312, section 10)
+### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (score v16/v17 ; audit de D-312, section 10)
 
 - Date : 2026-10-18
 - Statut : accepté. Demande du responsable du 2026-10-18 (« Écrit le lot de
@@ -92,6 +92,64 @@ plafond ; le double compte des items SIIN52 à SIIN55 entre les besoins 1 et 3
 (signature ou retrait, question ouverte au responsable) ; la référence du
 momentum du portail (première mesure du dossier, limite déjà nommée par
 [[D-113]] §2) ; aucune migration, aucune écriture en base.
+
+### D-328 — Signalements : un seul e-mail au praticien par heure civile et par dossier, sauf effet indésirable orienté vers un avis médical ou l'urgence ; signalements et retrait d'un choix confirmés hors plafond ; la demande de correction d'un objectif reste sous plafond (amende D-327 §4)
+
+- Date : 2026-10-18
+- Statut : accepté. Arbitrages du responsable du 2026-10-18 (soir), sur
+  questions à options posées après le merge de D-327 : « garder hors
+  plafond » (recommandé, contre un plafond de 20 ou un plafond très large) ;
+  « un e-mail par heure et par dossier » (recommandé, contre « ne rien
+  limiter » et « un par jour ») ; « laisser sous plafond » la demande de
+  correction (recommandé, contre « sortir du plafond »). Texte rédigé par
+  l'assistant.
+- Amende : [[D-327]] §4 — l'exclusion des signalements et du retrait, posée
+  par l'assistant, est confirmée ; la question qu'elle laissait ouverte (la
+  notification) est tranchée ici.
+- Domaine : `premierSignalementDeLHeure` (`web/src/lib/trust/notification.ts`),
+  route `web/src/app/api/portail/trust/signalement`.
+- Nature : notification technique, non clinique. L'orientation d'un effet
+  indésirable, le message rendu au patient et l'enregistrement ne changent
+  pas.
+
+**1. L'e-mail.** Chaque signalement (effet indésirable, incident de
+confidentialité, demande d'exercice d'un droit) s'enregistre toujours. Seul le
+premier de l'HEURE CIVILE, pour un dossier, envoie au praticien l'e-mail
+générique « Un signalement a été déposé dans votre espace » ; les suivants se
+lisent dans « Confiance & droits » (et, pour un effet indésirable non traité,
+en tête du Fil du jour). Les trois natures comptent ensemble : l'e-mail est le
+même pour toutes.
+
+**Heure civile, pas glissante.** Comptée sur les soixante minutes
+précédentes, une suite de dépôts espacés de moins d'une heure taisait TOUS
+les e-mails après le premier, sans borne de temps (revue `wn-reviewer` du
+2026-10-18, P1). L'heure civile garantit au moins un e-mail par heure où le
+dossier dépose.
+
+**2. L'effet indésirable qui demande un avis prévient toujours.** Un effet
+indésirable orienté vers un avis médical, l'urgence ou « urgence ou contact »
+(sévérité déclarée modérée, sévère ou incertaine) envoie l'e-mail sans passer
+par la limite ; seule la gêne légère (« revue praticien ») y est soumise.
+Choix de l'assistant après la revue, dans le sens de la sécurité (plus
+d'e-mails, jamais moins) — à confirmer par le responsable. La conduite
+d'urgence du patient ne repose pas sur l'e-mail : le message qu'il lit
+l'oriente vers le 15 ou le 112.
+
+**3. Compter avant d'écrire.** Le dossier est lu AVANT l'écriture du
+signalement : deux dépôts simultanés voient chacun zéro et envoient chacun leur
+e-mail — un doublon, bénin. Compter après ferait voir à chacun l'autre, et
+aucun e-mail ne partirait. Une lecture en échec prévient quand même : un e-mail
+de trop vaut mieux qu'un signalement que le praticien n'apprend pas.
+
+**4. Ce qui est confirmé sans changement.** Les signalements et le retrait
+d'un choix ne sont jamais plafonnés ([[D-327]] §4). La demande de correction
+d'un objectif reste dans le plafond commun du dossier à deux voix (20 par
+heure) : c'est un geste d'échange sur un objectif, pas une demande d'exercice
+d'un droit — celle-ci passe par les signalements.
+
+**Ne touche pas** : aucune migration (les tables des incidents et des demandes
+n'ont pas d'index par dossier ; elles sont petites, la lecture est un
+parcours), aucune règle clinique, aucun texte d'e-mail ni d'écran.
 
 ### D-327 — Cadence des écritures par dossier : un plafond horaire, compté en base sur les lignes déjà écrites, sur les routes portail authentifiées et les routes praticien des objectifs (dette t08)
 

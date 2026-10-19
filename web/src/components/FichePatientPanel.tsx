@@ -114,7 +114,7 @@ function ObjetGauge({
    *  clinique (`DC-20`). Absente pour les objets qui n'en ont pas besoin. */
   mention?: string;
   /** Ce sur quoi le chiffre est établi (« Calculé sur 8 besoins mesurés sur
-   *  12 », [[D-328]] §3). Servie sous la mention, seulement si un chiffre
+   *  12 », [[D-329]] §3). Servie sous la mention, seulement si un chiffre
    *  s'affiche. */
   base?: string;
 }) {

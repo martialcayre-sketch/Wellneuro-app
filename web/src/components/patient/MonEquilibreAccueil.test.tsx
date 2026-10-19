@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MonEquilibreAccueil } from './MonEquilibreAccueil';
 import { MENTION_BESOINS_PARTIELS_PATIENT } from '@/lib/equilibre/natureIndiceGlobal';
 
-// [[D-328]] §3 — le total se calcule sur les seuls besoins mesurés. Le portail
+// [[D-329]] §3 — le total se calcule sur les seuls besoins mesurés. Le portail
 // le dit en une phrase, sans chiffre, et seulement quand il manque un besoin.
 function reponse(couvertures: (number | null)[], indiceGlobal: number | null = 60) {
   return {

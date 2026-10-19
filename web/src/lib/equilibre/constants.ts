@@ -197,7 +197,7 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // `rawAnswers`, que `depuisPrisma` écarte déjà — le STOCK ne bouge pas, c'est
 // le FLUX qui change de définition, et c'est lui que l'étiquette gouverne.
 //
-// v14/v15 → v16/v17 (garde des sous-scores partiels, [[D-328]] §1, audit de
+// v14/v15 → v16/v17 (garde des sous-scores partiels, [[D-329]] §1, audit de
 // D-312 section 10, 2026-10-18) : un sous-score servi n'alimente plus un besoin
 // que si TOUS les items de son axe sont répondus. Quatrième occurrence de la
 // même classe : la DISPONIBILITÉ d'une source change, aucun poids, aucun seuil,

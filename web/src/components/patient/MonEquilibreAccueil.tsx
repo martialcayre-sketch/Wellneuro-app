@@ -96,7 +96,7 @@ export function MonEquilibreAccueil({
   }
 
   const { indiceGlobal, momentum, besoins } = data;
-  // [[D-328]] §3 : le total ne dit plus qu'il est complet quand il ne l'est pas.
+  // [[D-329]] §3 : le total ne dit plus qu'il est complet quand il ne l'est pas.
   // Sans chiffre — le portail n'en sert aucun.
   const indicePartiel = indiceGlobal !== null && besoins.some(b => b.couverture === null);
   const priorites = besoins

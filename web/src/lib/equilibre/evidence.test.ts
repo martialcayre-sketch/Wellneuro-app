@@ -125,7 +125,7 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     expect(calculerNiveauPreuveBesoin(5, AGENDA_INSUFFISANT)).toBe('NON_MESURE');
   });
 
-  it('un sous-score partiellement répondu ne porte plus de preuve ([[D-328]] §1)', () => {
+  it('un sous-score partiellement répondu ne porte plus de preuve ([[D-329]] §1)', () => {
     // Ce test disait l'inverse jusqu'au 2026-10-18 : « un sous-score
     // partiellement répondu reste compté », et un seul item de l'axe DA
     // donnait au besoin 10 la preuve B. C'était le grade d'une couverture que

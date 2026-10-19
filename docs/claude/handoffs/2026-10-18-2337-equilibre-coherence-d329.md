@@ -1,4 +1,4 @@
-# Handoff — « Mon équilibre » : lot de cohérence du calcul (D-328)
+# Handoff — « Mon équilibre » : lot de cohérence du calcul (D-329)
 
 ## Branche et état Git
 
@@ -14,7 +14,7 @@ dossiers de mesure : demande du responsable du 2026-10-18.
 
 ## Décisions prises
 
-- D-328 : §1 un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12),
+- D-329 : §1 un sous-score partiel ne mesure plus un besoin (5, 8, 10, 12),
   badges de preuve alignés ; §2 écart snapshot/routes fermé pour le cas
   audité, résidu nommé et non aligné (chaque direction change une sortie
   réelle) ; §3 « Calculé sur n besoins mesurés sur 12 » au cockpit, phrase sans
@@ -44,7 +44,7 @@ dossiers de mesure : demande du responsable du 2026-10-18.
   `bumpVersionScore.guard.test.ts` et `formeAlimentaireServie.guard.test.ts`
   (v16/v17), route `praticien/equilibre`, `FichePatientPanel.test.tsx`,
   `MonEquilibreAccueil.test.tsx` (neuf).
-- Docs : D-328, `changelog.d/2026-10-18-equilibre-coherence-calcul.md`, fiche
+- Docs : D-329, `changelog.d/2026-10-18-equilibre-coherence-calcul.md`, fiche
   H15, SESSION_LOG.
 
 ## Validations exécutées
@@ -62,7 +62,7 @@ dossiers de mesure : demande du responsable du 2026-10-18.
 
 ## Problèmes ouverts
 
-- Résidu D-328 §2 : complétude jugée sur la passation entière par le
+- Résidu D-329 §2 : complétude jugée sur la passation entière par le
   snapshot, sur les items lus par les routes. À trancher par un lot sur la
   complétude de l'agenda dans le snapshot.
 - Badges de niveau de preuve : signer ou retirer (question au responsable).

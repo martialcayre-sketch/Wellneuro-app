@@ -30,7 +30,7 @@ const REPONSES = { Q_TEST: { X1: 1 } };
 
 describe('extraireValeurBrute — un sous-score, deux porteurs possibles', () => {
   // Les retours ci-dessous portent des comptes d'items COMPLETS (`repondus` =
-  // `items`) : depuis [[D-328]] §1, un sous-score sans compte lisible n'est
+  // `items`) : depuis [[D-329]] §1, un sous-score sans compte lisible n'est
   // plus une mesure. Les cas de complétude ont leur propre bloc plus bas.
   it('lit un sous-score porté par `subScores` seul', () => {
     calculateScore.mockReturnValue({ subScores: [{ id: 'RYTHME', total: 5, repondus: 4, items: 4 }] });
@@ -96,7 +96,7 @@ describe('extraireValeurBrute — un sous-score, deux porteurs possibles', () =>
   });
 });
 
-// [[D-328]] §1 — audit de D-312, section 10 : les moteurs `subscore` et `had`
+// [[D-329]] §1 — audit de D-312, section 10 : les moteurs `subscore` et `had`
 // rendent le total d'un axe dès qu'UN item est répondu, et ce total était lu
 // comme la couverture de l'axe entier.
 describe('extraireValeurBrute — un sous-score partiel ne couvre rien', () => {

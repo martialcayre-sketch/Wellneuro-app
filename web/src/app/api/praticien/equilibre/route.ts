@@ -29,7 +29,7 @@ export type PrioriteBesoin = {
 
 export type ObjetsCliniquesReponse = {
   indiceGlobal: number | null; // 0-100
-  /** Besoins qui ont nourri `indiceGlobal`, sur `besoinsTotal` ([[D-328]] §3). */
+  /** Besoins qui ont nourri `indiceGlobal`, sur `besoinsTotal` ([[D-329]] §3). */
   besoinsMesures: number;
   besoinsTotal: number;
   stabiliteMetabolique: number | null; // 0-100

@@ -1,4 +1,4 @@
-### « Mon équilibre » : un sous-score partiel ne mesure plus un besoin, et l'indice dit sur combien de besoins il est établi (D-328)
+### « Mon équilibre » : un sous-score partiel ne mesure plus un besoin, et l'indice dit sur combien de besoins il est établi (D-329)
 
 - Un besoin nourri par un sous-score (activité physique, versant dépressif de
   la HAD, axes du DNST) n'est plus mesuré tant que tous les items de cet axe

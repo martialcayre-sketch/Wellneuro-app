@@ -45,7 +45,7 @@
 export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clinique';
 
 /**
- * CE SUR QUOI LE TOTAL EST ÉTABLI — [[D-328]] §3, audit de D-312 (section 10).
+ * CE SUR QUOI LE TOTAL EST ÉTABLI — [[D-329]] §3, audit de D-312 (section 10).
  *
  * Les besoins non mesurés sortent de la moyenne, et les strates vides de la
  * pondération : un seul besoin mesuré suffit à produire un total, servi jusque-là

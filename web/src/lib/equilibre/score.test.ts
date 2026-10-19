@@ -542,7 +542,7 @@ describe('besoin 9 — le Q_STR_01 partiel n’est plus une mesure', () => {
   });
 });
 
-// [[D-328]] §1 — sur le vrai catalogue, les trois cas que l'audit de D-312
+// [[D-329]] §1 — sur le vrai catalogue, les trois cas que l'audit de D-312
 // (section 10) a mesurés : une réponse isolée sur un axe à sous-score rendait
 // une couverture, haute ou effondrée selon le sens de la source.
 describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
@@ -560,7 +560,7 @@ describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
   });
 
   it('besoin 5 : un seul item d’activité au pire ne fait pas effondrer le mouvement', () => {
-    // Avant D-328 : 0/20 sur le groupe « mouvement », sous le seuil
+    // Avant D-329 : 0/20 sur le groupe « mouvement », sous le seuil
     // d'effondrement, donc un total plafonné à 50 sur une réponse.
     expect(calculerCouvertureBesoin(5, { Q_MOD_01: { ACTIVITE_PHYSIQUE_Q001: '0' } })).toBeNull();
   });
@@ -584,7 +584,7 @@ describe('sous-score partiel — non mesuré, sur le vrai catalogue', () => {
   });
 });
 
-describe('compterBesoinsMesures et sa mention ([[D-328]] §3)', () => {
+describe('compterBesoinsMesures et sa mention ([[D-329]] §3)', () => {
   it('compte les seuls besoins dont la couverture n’est pas null', async () => {
     const { compterBesoinsMesures } = await import('./score');
     const resultat = agregerEquilibre({ 1: 0.5, 3: 0.8, 9: null, 12: 0.2 });
@@ -599,11 +599,11 @@ describe('compterBesoinsMesures et sa mention ([[D-328]] §3)', () => {
   });
 });
 
-describe('plafond des fondations critiques — un axe partiel ne le déclenche plus ([[D-328]] §1)', () => {
+describe('plafond des fondations critiques — un axe partiel ne le déclenche plus ([[D-329]] §1)', () => {
   it('une seule réponse d’activité au pire ne plafonne pas le total', async () => {
     const { calculerEquilibre } = await import('./score');
     // Besoin 8 bien couvert (axe D complet au mieux), plus une seule réponse
-    // d'activité au pire. Avant D-328 : mouvement à 0, besoin 5 effondré,
+    // d'activité au pire. Avant D-329 : mouvement à 0, besoin 5 effondré,
     // fondation critique déclenchée, total plafonné.
     const axeD = Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, '0']));
     const resultat = calculerEquilibre({

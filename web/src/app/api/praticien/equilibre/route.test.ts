@@ -77,7 +77,7 @@ describe('GET /api/praticien/equilibre', () => {
       },
     });
   });
-  it('dit sur combien de besoins l’indice est établi ([[D-328]] §3)', async () => {
+  it('dit sur combien de besoins l’indice est établi ([[D-329]] §3)', async () => {
     // Fixture : un versant dépressif de la HAD complet seul — un besoin mesuré.
     const axeD = Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, '1']));
     prisma.questionnaireReponse.findMany.mockResolvedValue([
