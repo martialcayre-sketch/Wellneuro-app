@@ -11074,3 +11074,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge, puis la ligne J3-12e de la page de suivi de la file A et la fiche H15 ; ensuite J3-12f, quand `w` sera signé.
 
 **Ouvert.** PDF de deux articles à fournir par le responsable ; étude de Rasch 2019 non ingérée ; message à la session « Dossiers de preuves » retenu.
+
+## 2026-10-20 — t28 : « servi au patient » composé à un seul endroit (D-200)
+
+**Fait.** File A recalée : r4_04 (J3-collecte) passée à « fait » (#1572, #1582, #1590). Lot t28 : `servirAuPatient` (`lib/protocol/servirAuPatientServeur.ts`) compose le rejeu de la carte puis le contrat patient ; le portail, le miroir praticien et `programmeDiffuse` l'appellent. Dette soldée au plan (§8). Contre-revue `wn-reviewer` : GO, deux P2 écartés.
+
+**Écarté.** t30 (attend sa décision de résolveur signé), t06 (conception et migration), t23 (épinglages signés), r1_15, r4_06, tout ce qui attend M-2.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté, t28 → « fait ».
+
+**Ouvert.** Aucun dans ce lot.
