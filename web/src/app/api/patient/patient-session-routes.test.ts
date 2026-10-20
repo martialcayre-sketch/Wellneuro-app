@@ -218,6 +218,8 @@ describe('routes patient — session du propriétaire : accès normal', () => {
       email: assignation.emailPatient,
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
+      // Majeur : l'ouverture d'un questionnaire joue la garde d'âge (t02).
+      dateNaissance: '1985-03-14',
     });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findFirst.mockResolvedValue({
