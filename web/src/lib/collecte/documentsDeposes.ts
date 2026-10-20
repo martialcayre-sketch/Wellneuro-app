@@ -71,8 +71,9 @@ export const MESSAGES_DEPOT_DOCUMENT: Readonly<Record<string, string>> = Object.
   desactive: 'Cette page n’est pas disponible.',
   fichier_absent: 'Joignez le document : PDF, ou photo JPEG, PNG ou WebP.',
   categorie_absente: 'Indiquez ce que contient le document.',
-  plafond_non_consultes:
-    'Trois documents attendent déjà que votre praticien les ouvre. Vous pourrez en déposer un autre ensuite.',
+  // Neutre, arbitrage du responsable du 2026-10-20 : le patient ne voit jamais si
+  // le praticien a ouvert un document, et ce refus ne doit pas le lui apprendre.
+  plafond_non_consultes: 'Vous ne pouvez pas déposer d’autre document pour le moment. Réessayez plus tard.',
   plafond_24h: 'Vous avez déposé dix documents en 24 heures. Réessayez plus tard.',
   document_deja_depose: 'Ce document est déjà déposé dans votre dossier.',
   dossier_cloture: 'Votre suivi est clôturé : vous ne pouvez plus déposer de document.',

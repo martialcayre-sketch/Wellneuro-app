@@ -272,6 +272,26 @@ biologique. Ordre des migrations : celle-ci précède BF-8, que la hiérarchie
 du plan plaçait avant la collecte, comme ai et F38 l'ont précédée ; aucune
 autre migration n'est en vol (constaté par conteneur le 2026-10-18).
 
+**Amendement (2026-10-20) — les textes d'ACT-4.** Quatre arbitrages du
+responsable, sur questions à options
+(`docs/claude/propositions/2026-10-20-act4-textes/README.md`) :
+(1) les libellés neufs de l'écran de dépôt sont validés tels quels, sauf le
+refus du plafond des non-consultés, rendu neutre (« Vous ne pouvez pas
+déposer d'autre document pour le moment. Réessayez plus tard. ») : l'écran ne
+montre jamais la consultation, ce refus ne la révèle pas non plus ;
+(2) dépôt ouvert, le bloc « Ce que vous trouvez ici » de « Mes échanges »
+nomme les documents déposés et finit par « la page de votre espace qui le
+concerne » ; la ligne « Transmis · Document déposé » est validée ;
+(3) « Vos données personnelles » v19 porte la collecte et la lecture datée
+([[D-297]]) en une seule version ; elle entraîne les conditions v2 ([[D-292]]
+§5) et leur e-mail, et **se publie à l'ouverture d'ACT-4**, non avant : elle
+décrit un dépôt encore fermé. « Se met à jour avant elle » se lit donc « au
+plus tard avec elle ». Les résumés de version, l'e-mail v2 et une correction
+de la phrase sur la lecture datée restent à valider avant cette publication ;
+(4) le constat d'ACT-3 se fait sans code : le responsable ouvre « Mes
+échanges » sur un dossier de test, l'assistant compare à une lecture en
+conteneur ; aucune trace de lecture n'est ajoutée à la route.
+
 ### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (version du score inchangée ; audit de D-312, section 10)
 
 - Date : 2026-10-18

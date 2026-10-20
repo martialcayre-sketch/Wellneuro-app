@@ -1836,6 +1836,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : texte de collecte (G-11).
 - **Critère de fin** : constat, puis drapeau.
+- **Mise à jour (2026-10-20, préparation)** : textes validés par le responsable (D-330, amendement ; `docs/claude/propositions/2026-10-20-act4-textes/README.md`) : libellés de l'écran, refus du plafond des non-consultés rendu neutre ; bloc « Ce que vous trouvez ici » de « Mes échanges » qui nomme les dépôts, servi drapeau ouvert ; « Vos données personnelles » v19 (collecte et lecture datée), publiée à l'ouverture avec les conditions v2 et leur e-mail (D-292 §5). Restent à valider avant cette publication : résumés de version, e-mail v2, correction de la phrase sur la lecture datée. Constat d'ACT-3 sans code, sur un dossier de test ouvert par le responsable. Drapeau toujours éteint.
 
 #### F23 · BP-21b : ouverture du protocole personnalisé
 - **Identifiant, piste** : BP-21b (LOT-30 de BIO-PARCOURS, à ne pas confondre avec la porte 30) ; même régime que BP-21a ; parcours.

@@ -99,7 +99,7 @@ describe('DepotDocuments', () => {
 
   it.each([
     [{ dossierOuvert: false }, 'Votre suivi est clôturé : vous ne pouvez plus déposer de document.'],
-    [{ plafond: 'plafond_non_consultes' }, /Trois documents attendent déjà/],
+    [{ plafond: 'plafond_non_consultes' }, 'Vous ne pouvez pas déposer d’autre document pour le moment. Réessayez plus tard.'],
     [{ statutAge: 'mineur' }, /Votre praticien reprendra contact avec vous/],
   ])('dépôt fermé (%o) : le formulaire n’est pas rendu', async (etat, message) => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ...PRET, ...etat }), { status: 200 })));

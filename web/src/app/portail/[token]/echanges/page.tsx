@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MesEchangesJournal } from '@/components/patient/mes-echanges/MesEchangesJournal';
 import { mesEchangesOuvert } from '@/lib/portail/mesEchangesDrapeau';
+import { depotDocumentsOuvert } from '@/lib/collecte/drapeau';
 
 // « Mes échanges » ([[D-293]], J3-base) — page mince, patron de
 // `courrier-medecin/page.tsx`. La lecture passe par /api/portail/echanges, qui
@@ -21,7 +22,7 @@ export default async function PortailMesEchangesPage({ params }: { params: Promi
       >
         ← Mon parcours
       </Link>
-      <MesEchangesJournal token={token} />
+      <MesEchangesJournal token={token} depotOuvert={depotDocumentsOuvert()} />
     </div>
   );
 }

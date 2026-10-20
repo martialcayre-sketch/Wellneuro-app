@@ -11,7 +11,7 @@ const { replace, routeur } = vi.hoisted(() => {
 vi.mock('next/navigation', () => ({ useRouter: () => routeur }));
 
 import { MesEchangesJournal } from './MesEchangesJournal';
-import { BLOCS_MES_ECHANGES } from './textesMesEchanges';
+import { BLOCS_MES_ECHANGES, BLOCS_MES_ECHANGES_DEPOT_OUVERT } from './textesMesEchanges';
 import { TEXTE_LECTURE_DATEE, TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 
 // « Mes échanges » ([[D-293]]) : l'encart d'urgence est là quoi qu'il arrive,
@@ -110,6 +110,28 @@ describe('MesEchangesJournal', () => {
     expect(BLOCS_MES_ECHANGES[2]).toEqual({ titre: TITRE_LECTURE_DATEE, texte: TEXTE_LECTURE_DATEE });
     // L'ancienne phrase ne datait que l'ouverture depuis « Mes échanges ».
     expect(document.body.textContent).not.toMatch(/depuis « Mes échanges », la date de votre lecture/);
+  });
+
+  it('dépôt fermé (défaut) : « Ce que vous trouvez ici » ne nomme pas les documents déposés', async () => {
+    repondre(200, { ok: true, ouvert: true, entrees: [] });
+    render(<MesEchangesJournal token="TOK" />);
+    await screen.findByText('Aucun élément pour le moment.');
+    expect(screen.getByText(BLOCS_MES_ECHANGES[0].texte)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/documents que vous avez déposés/);
+  });
+
+  it('dépôt ouvert : le bloc validé le 2026-10-20 nomme les documents déposés, les cinq autres sont inchangés', async () => {
+    repondre(200, { ok: true, ouvert: true, entrees: [] });
+    render(<MesEchangesJournal token="TOK" depotOuvert />);
+    await screen.findByText('Aucun élément pour le moment.');
+    expect(BLOCS_MES_ECHANGES_DEPOT_OUVERT[0].texte).toBe(
+      'La liste datée de ce que votre praticien vous a remis — votre bilan et sa note, vos fiches, le courrier pour votre médecin, votre protocole — et de ce que vous lui avez transmis — vos questionnaires, vos comptes rendus d’analyses, les documents que vous avez déposés, vos signalements, avec leur statut. Chaque ligne ouvre la page de votre espace qui le concerne.',
+    );
+    expect(BLOCS_MES_ECHANGES_DEPOT_OUVERT.slice(1)).toEqual(BLOCS_MES_ECHANGES.slice(1));
+    for (const bloc of BLOCS_MES_ECHANGES_DEPOT_OUVERT) {
+      expect(screen.getByText(bloc.texte)).toBeTruthy();
+    }
+    expect(screen.queryByText(BLOCS_MES_ECHANGES[0].texte)).toBeNull();
   });
 
   it('session expirée : retour au portail', async () => {
