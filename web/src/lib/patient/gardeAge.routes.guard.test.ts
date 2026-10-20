@@ -89,6 +89,15 @@ function gardeEffective(source: string): boolean {
   return false;
 }
 
+/** Nombre de méthodes d'écriture exportées par un fichier de route. */
+function methodesDEcriture(source: string): number {
+  const code = sansCommentaires(source);
+  const declarees = code.match(/export\s+(?:async\s+function|const|function)\s+(?:POST|PUT|PATCH|DELETE)\b/g) ?? [];
+  const reexportees = [...code.matchAll(/export\s*\{([^}]*)\}/g)]
+    .flatMap((m) => m[1].match(/\b(?:POST|PUT|PATCH|DELETE)\b/g) ?? []);
+  return declarees.length + reexportees.length;
+}
+
 function routesDEcriture(): Map<string, string> {
   const trouvees = new Map<string, string>();
   for (const espace of ['patient', 'portail']) {
@@ -125,6 +134,20 @@ describe('pause d’âge — routes d’écriture patient (D-284 §3)', () => {
   it('chaque route gardée joue la garde d’âge et en suit le refus', () => {
     const sansGarde = GARDEES.filter((r) => !gardeEffective(routes.get(r) ?? ''));
     expect(sansGarde).toEqual([]);
+  });
+
+  it('chaque route gardée n’exporte qu’UNE méthode d’écriture : la garde lue est la sienne', () => {
+    // La garde se juge sur le fichier entier. Une seconde méthode d'écriture
+    // dans une route gardée pourrait s'en passer sans faire rougir le banc :
+    // elle le fait rougir ici, et oblige à la classer (revue CodeRabbit).
+    const plusieurs = GARDEES.filter((r) => methodesDEcriture(routes.get(r) ?? '') !== 1);
+    expect(plusieurs).toEqual([]);
+  });
+
+  it('le compteur voit deux méthodes d’écriture, déclarées ou réexportées', () => {
+    expect(methodesDEcriture('export async function POST() {}\nexport async function DELETE() {}')).toBe(2);
+    expect(methodesDEcriture('export async function POST() {}\nexport { supprimer as DELETE };')).toBe(2);
+    expect(methodesDEcriture('export async function GET() {}\nexport async function POST() {}')).toBe(1);
   });
 
   it('le détecteur refuse une garde citée en commentaire ou dont le résultat est ignoré', () => {
