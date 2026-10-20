@@ -143,12 +143,23 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect(poser.disabled).toBe(false);
   });
 
-  it('un refus de la route se dit tel quel', async () => {
-    stubFetch(LECTURE, { status: 409, corps: { ok: false, reason: 'tete_changee', error: 'Le constat en vigueur a changé.' } });
+  it('une tête périmée : le refus se dit, le formulaire se ferme, le parcours se relit', async () => {
+    const fetchMock = stubFetch(LECTURE, { status: 409, corps: { ok: false, reason: 'tete_changee', error: 'Le constat en vigueur a changé.' } });
     rendre();
     fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
     const confirmer = screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!;
     fireEvent.click(confirmer);
-    expect((await screen.findByRole('alert')).textContent).toBe('Le constat en vigueur a changé.');
+    expect((await screen.findByRole('alert')).textContent).toBe('Le constat en vigueur a changé. Le parcours a été relu.');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(screen.getAllByRole('button', { name: 'Retirer le constat' })).toHaveLength(1);
+  });
+
+  it('un autre refus se dit dans le formulaire, sans relecture', async () => {
+    const fetchMock = stubFetch(LECTURE, { status: 400, corps: { ok: false, reason: 'note_trop_longue', error: 'La note dépasse 2000 caractères.' } });
+    rendre();
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!);
+    expect((await screen.findByRole('alert')).textContent).toBe('La note dépasse 2000 caractères.');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

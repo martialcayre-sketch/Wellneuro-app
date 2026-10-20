@@ -75,8 +75,13 @@ export async function GET(req: Request) {
 
     const structure = structureDuParcours();
     const aujourdhui = dateJourParis();
+    // Une structure retouchée et non re-signée n'est pas « la structure signée
+    // en vigueur » (D-331 §5.7) : aucune hypothèse n'y figure, et chaque
+    // constat se dit « à relire » plutôt que de tenir contre une table que
+    // personne n'a signée (revue `wn-reviewer` de la PR 2).
+    const enVigueur = new Set(structure.signee ? structure.hypotheses : []);
     const [constats, libelles] = await Promise.all([
-      lireConstatsDuDossier(prisma, idPatient, { hypothesesEnVigueur: new Set(structure.hypotheses), aujourdhui }),
+      lireConstatsDuDossier(prisma, idPatient, { hypothesesEnVigueur: enVigueur, aujourdhui }),
       structure.signee ? libellesDesHypotheses() : Promise.resolve(new Map<string, string>()),
     ]);
     const offertes = structure.signee

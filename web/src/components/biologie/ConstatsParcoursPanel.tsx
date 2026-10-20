@@ -11,6 +11,7 @@ import {
   MOTIFS_PAR_VERDICT,
   NATURE_DATE_A_REVOIR,
   NOTE_MAX,
+  PIECES_MAX,
   VERDICTS,
   VERDICTS_A_PIECE,
   estVerdict,
@@ -81,12 +82,16 @@ function lendemain(aaaammjj: string): string {
 
 type Geste = { hypotheseCode: string; acte: 'pose' | 'retrait'; remplace: string | null };
 
+/** Les refus qui disent « rechargez » : le panneau relit lui-même le parcours. */
+const REFUS_PERIMES = new Set(['tete_changee', 'conflit_concurrent', 'refus_base', 'piece_inconnue']);
+
 function FormulairePose({
   idPatient,
   geste,
   citables,
   aujourdhui,
   onFait,
+  onPerime,
   onFermer,
 }: {
   idPatient: string;
@@ -94,6 +99,7 @@ function FormulairePose({
   citables: PieceDecrite[];
   aujourdhui: string;
   onFait: () => void;
+  onPerime: (message: string) => void;
   onFermer: () => void;
 }) {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
@@ -129,7 +135,11 @@ function FormulairePose({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPatient, ...corps }),
       });
-      const rendu = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const rendu = (await res.json().catch(() => null)) as { ok?: boolean; reason?: string; error?: string } | null;
+      if (res.status === 409 && rendu?.reason && REFUS_PERIMES.has(rendu.reason)) {
+        onPerime(rendu.error ?? 'Le parcours a changé depuis votre lecture.');
+        return;
+      }
       if (!res.ok || !rendu?.ok) {
         setErreur(rendu?.error ?? 'Le geste n’a pas été enregistré.');
         return;
@@ -216,7 +226,12 @@ function FormulairePose({
           const cle = `${p.type}:${p.id}`;
           return (
             <label key={cle} className="flex min-h-11 items-center gap-2">
-              <input type="checkbox" checked={pieces.has(cle)} onChange={() => basculer(cle)} />
+              <input
+                type="checkbox"
+                checked={pieces.has(cle)}
+                disabled={!pieces.has(cle) && pieces.size >= PIECES_MAX}
+                onChange={() => basculer(cle)}
+              />
               {decrirePiece(p)}
             </label>
           );
@@ -310,6 +325,8 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
   const [donnees, setDonnees] = useState<Donnees | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [geste, setGeste] = useState<Geste | null>(null);
+  // Le refus d'un geste périmé, gardé au-dessus de la relecture qui suit.
+  const [avis, setAvis] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setErreur(null);
@@ -344,6 +361,7 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
       <h3 id="constats-parcours-titre" className="text-base font-semibold text-foreground">Constats du parcours</h3>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_FILET}</p>
       {erreur && <p role="alert" className="mt-2 text-sm text-destructive">{erreur}</p>}
+      {avis && <p role="alert" className="mt-2 text-sm text-destructive">{avis}</p>}
       {donnees && !donnees.structureSignee && (
         <p className="mt-2 text-sm text-muted-foreground">
           La structure des fiches d’usage n’est pas encore signée : aucun constat ne se pose.
@@ -398,6 +416,12 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
                     aujourdhui={donnees.aujourdhui}
                     onFait={() => {
                       setGeste(null);
+                      setAvis(null);
+                      void charger();
+                    }}
+                    onPerime={message => {
+                      setGeste(null);
+                      setAvis(`${message} Le parcours a été relu.`);
                       void charger();
                     }}
                     onFermer={() => setGeste(null)}

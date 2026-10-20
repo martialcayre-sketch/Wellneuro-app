@@ -106,7 +106,7 @@ describe('pose', () => {
     expect(raison({ ...POSE, pieces: [{ type: 'resultat', id: 'a' }, { type: 'resultat', id: 'a' }] })).toBe('pieces_invalides');
     expect(raison({ ...POSE, pieces: [{ type: 'resultat', id: 'a' }, { type: 'reponse', id: 'a' }] })).toBe('ok');
     const trop = Array.from({ length: PIECES_MAX + 1 }, (_, i) => ({ type: 'resultat', id: `r${i}` }));
-    expect(raison({ ...POSE, pieces: trop })).toBe('pieces_invalides');
+    expect(raison({ ...POSE, pieces: trop })).toBe('pieces_trop_nombreuses');
   });
 
   it('un remplacement mal désigné est refusé', () => {

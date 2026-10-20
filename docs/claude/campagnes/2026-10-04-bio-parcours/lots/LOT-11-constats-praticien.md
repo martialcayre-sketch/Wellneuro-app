@@ -161,6 +161,27 @@ de la structure qui garde l'hypothèse ne le fait pas (§5.7).
   strictement postérieure au jour ; une seule `$transaction` interactive.
   Lecteurs des constats épinglés (`lecteursConstats.guard.test.ts`) : ni
   portail, ni courrier, ni scoring, ni orientation, ni IA.
+- **Relecture `wn-reviewer` de la PR 2** : go sous condition, aucun P0 ni
+  P1. Corrigés : délai de la transaction interactive (`P2028`) rendu comme
+  une course perdue ; refus nommé au-delà de 30 pièces, cases plafonnées à
+  l'écran ; après un refus « le constat en vigueur a changé », le panneau
+  ferme le formulaire et relit le parcours ; ordre des verrous éprouvé par
+  test. **Structure retouchée sans re-signature** (`structureSignee()` rend
+  `false`) : aucune hypothèse n'est tenue « en vigueur », et chaque constat
+  se dit « à relire » (§5.7) plutôt que de tenir contre une table que
+  personne n'a signée — lecture de l'assistant, la plus prudente, à infirmer
+  par le responsable s'il préfère la dernière structure signée. Q1 et Q2
+  (date atteinte, passation retenue) arbitrées le 2026-10-20 et consignées
+  en D-331 §5. **Routé** : un test d'intégration sur une vraie base (pose,
+  pièces, trigger différé, deux poses concurrentes, formes réelles de
+  `P0001` et `40P01`) est une **condition de l'allumage** de
+  `WN_BIO_CONSTAT`, écrite à sa ligne de `docs/FEATURE_FLAGS.md`. **Écartés,
+  avec motif** : la passation lue sans `FOR SHARE` à la route (une
+  invalidation concurrente rend « la base a refusé ce geste » au lieu de
+  « passation exclue » : sans danger, le trigger tient et le panneau relit) ;
+  « Poser » offert sur un dossier clos (la route le refuse, comme les autres
+  panneaux de biologie) ; l'interblocage résiduel d'un import contre une pose
+  sur la même clé (antérieur à ce lot, Postgres sacrifie l'un des deux).
 - **En production, rien ne se pose encore** : la structure de BP-12a est
   vide et non signée (D-314 §10). L'allumage du drapeau est un geste du
   responsable, constaté par son effet.

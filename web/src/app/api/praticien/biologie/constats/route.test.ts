@@ -152,11 +152,27 @@ describe('GET — les constats par hypothèse, sans aucune valeur', () => {
     expect(prisma.journalAccesDossier.create).toHaveBeenCalled();
   });
 
-  it('structure non signée : aucune hypothèse offerte, la lecture reste', async () => {
+  it('structure non signée : aucune hypothèse offerte ni en vigueur, la lecture reste', async () => {
     structure.signee = false;
+    prisma.constatPraticien.findMany.mockResolvedValue([{
+      id: 'c1',
+      ordre: BigInt(1),
+      acte: 'pose',
+      hypotheseCode: 'HYP_TEST_A',
+      verdict: 'sans_objet',
+      motif: 'hors_population',
+      note: null,
+      aRevoirLe: null,
+      idConstatRemplace: null,
+      praticienEmail: PRATICIEN,
+      acteLe: new Date('2026-10-10T09:00:00.000Z'),
+      pieces: [],
+    }]);
     const corps = await (await lecture()).json();
     expect(corps.structureSignee).toBe(false);
     expect(corps.offertes).toEqual([]);
+    // Retouchée sans re-signature : le constat ne tient plus contre elle.
+    expect(corps.hypotheses[0].aRelire).toEqual(['hypothese_hors_structure']);
   });
 
   it('dossier d’un autre praticien : 403, rien lu', async () => {
@@ -167,6 +183,16 @@ describe('GET — les constats par hypothèse, sans aucune valeur', () => {
 });
 
 describe('POST pose — un acte en ajout seul, auteur = la session', () => {
+  it('prend les verrous dans l’ordre du trigger : dossier, hypothèse, puis chaque clé citée', async () => {
+    await POST(requete(POSE));
+    const sql = prisma.$executeRaw.mock.calls.map(([gabarit]) => (gabarit as TemplateStringsArray).join('?'));
+    expect(sql).toHaveLength(3);
+    expect(sql[0]).toMatch(/FROM public\.patients .* FOR KEY SHARE/);
+    expect(sql[1]).toMatch(/pg_advisory_xact_lock\(331,/);
+    expect(sql[2]).toMatch(/resultats_biologiques_verrouiller_cle/);
+    expect(prisma.$executeRaw.mock.invocationCallOrder[2]).toBeLessThan(prisma.constatPraticien.create.mock.invocationCallOrder[0]);
+  });
+
   it('consigne la pose et ses pièces dans la même transaction, pièces dans l’ordre des clés', async () => {
     dossier([ligne('resB', 'BIO_B', PRELEVE), ligne('resA2', 'BIO_A', new Date('2026-10-02T08:00:00.000Z')), ligne('resA1', 'BIO_A', PRELEVE)]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([
@@ -312,6 +338,9 @@ describe('POST — les refus de la base, reconnus à leur code', () => {
     prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'P2034' }));
     expect((await (await POST(requete(POSE))).json()).reason).toBe('conflit_concurrent');
     prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('x'), { cause: { code: '40P01' } }));
+    expect((await (await POST(requete(POSE))).json()).reason).toBe('conflit_concurrent');
+    // Délai de la transaction interactive dépassé : un verrou tenu ailleurs.
+    prisma.$transaction.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'P2028' }));
     expect((await (await POST(requete(POSE))).json()).reason).toBe('conflit_concurrent');
   });
 

@@ -195,6 +195,13 @@ son état, sans geste. Une re-signature de la structure qui garde
 l'hypothèse ne rend pas, à elle seule, le constat « à relire ». L'écran dit
 quelle condition tient, sans jamais dire une valeur.
 
+*Précisions du 2026-10-20*, relevées par la relecture `wn-reviewer` du code
+(PR 2) et arbitrées par le responsable, sur l'option recommandée : au 6, la
+date est **atteinte** — le jour fixé par le praticien compte, et la route
+refuse une date qui n'est pas postérieure au jour ; au 4, seule une passation
+**retenue** (VALID ou AMBIGUOUS) plus récente compte : une passation exclue
+n'alimente pas le raisonnement et ne rend pas le constat « à relire ».
+
 **§6 — D-122 précisée.** Consommer un constat **n'est pas** « faire parler
 un résultat réel au moteur » ([[D-122]], frontières) : le constat est un
 geste daté du praticien sur une hypothèse, pas une lecture de valeur. Le

@@ -35,10 +35,16 @@ export type DemandeConstat =
 
 export type LectureDemande = { ok: true; demande: DemandeConstat } | { ok: false; raison: string };
 
+/** Longueur maximale d'un identifiant : borne technique de saisie, comme la garde des résultats. */
+const IDENTIFIANT_MAX = 64;
+
+/** Longueur maximale d'un code d'hypothèse : celle du CHECK de `constats_praticien_v1` (technique). */
+const HYPOTHESE_MAX = 128;
+
 /** Un identifiant borné, ou `''` — même discipline que les autres gestes de biologie. */
 export function identifiant(valeur: unknown): string {
   const v = typeof valeur === 'string' ? valeur.trim() : '';
-  return v.length > 0 && v.length <= 64 ? v : '';
+  return v.length > 0 && v.length <= IDENTIFIANT_MAX ? v : '';
 }
 
 const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -52,9 +58,10 @@ function estDateCivile(valeur: string): boolean {
 
 const absent = (v: unknown) => v === undefined || v === null;
 
-function lirePieces(valeur: unknown): PieceDemandee[] | null {
+function lirePieces(valeur: unknown): PieceDemandee[] | 'trop' | null {
   if (absent(valeur)) return [];
-  if (!Array.isArray(valeur) || valeur.length > PIECES_MAX) return null;
+  if (!Array.isArray(valeur)) return null;
+  if (valeur.length > PIECES_MAX) return 'trop';
   const vues = new Set<string>();
   const pieces: PieceDemandee[] = [];
   for (const brute of valeur) {
@@ -77,7 +84,7 @@ export function lireDemandeConstat(
   const acte = corps.acte;
   if (acte !== 'pose' && acte !== 'retrait') return { ok: false, raison: 'acte_invalide' };
   const hypotheseCode = typeof corps.hypothese === 'string' ? corps.hypothese.trim() : '';
-  if (!RE_HYPOTHESE.test(hypotheseCode) || hypotheseCode.length > 128) return { ok: false, raison: 'hypothese_invalide' };
+  if (!RE_HYPOTHESE.test(hypotheseCode) || hypotheseCode.length > HYPOTHESE_MAX) return { ok: false, raison: 'hypothese_invalide' };
 
   if (acte === 'retrait') {
     const remplace = identifiant(corps.remplace);
@@ -118,6 +125,7 @@ export function lireDemandeConstat(
 
   const pieces = lirePieces(corps.pieces);
   if (pieces === null) return { ok: false, raison: 'pieces_invalides' };
+  if (pieces === 'trop') return { ok: false, raison: 'pieces_trop_nombreuses' };
   if (VERDICTS_A_PIECE.includes(verdict) && pieces.length === 0) return { ok: false, raison: 'piece_requise' };
 
   return {

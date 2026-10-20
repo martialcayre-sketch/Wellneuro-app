@@ -25,11 +25,14 @@ export function estRefusDeLaBase(err: unknown): boolean {
 }
 
 /**
- * Une course perdue : échec de sérialisation, interblocage, ou l'échec de
- * transaction interactive de Prisma (`P2034`). Le geste se rejoue.
+ * Une course perdue : échec de sérialisation, interblocage, l'échec de
+ * transaction interactive de Prisma (`P2034`), ou son délai dépassé (`P2028`)
+ * — un verrou de clé tenu ailleurs plus longtemps que la transaction
+ * (revue `wn-reviewer` de la PR 2). Le geste se rejoue.
  */
 export function estConflitConcurrent(err: unknown): boolean {
   const code = codePostgres(err);
   if (code === '40001' || code === '40P01') return true;
-  return (err as { code?: unknown } | null | undefined)?.code === 'P2034';
+  const prisma = (err as { code?: unknown } | null | undefined)?.code;
+  return prisma === 'P2034' || prisma === 'P2028';
 }

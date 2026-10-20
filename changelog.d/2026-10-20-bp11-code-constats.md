@@ -12,5 +12,8 @@
 - Sous `WN_BIO_CONSTAT`, créé éteint : rien ne change tant qu'il n'est pas
   posé. Allumé, aucun constat ne se pose encore : la structure des fiches
   d'usage n'est pas signée, et l'écran le dit.
+- « À relire » : le jour fixé « à revoir le » compte ; seule une passation
+  retenue plus récente compte comme questionnaire repassé (précisions de
+  D-331 du 2026-10-20).
 - Seul l'écran du praticien lit un constat : ni le portail, ni le courrier
   au médecin, ni le scoring, ni l'orientation, ni l'IA. Un banc le garde.

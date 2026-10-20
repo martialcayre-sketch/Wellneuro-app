@@ -15,6 +15,7 @@ export const MESSAGES_REFUS_CONSTAT: Record<string, string> = {
   date_invalide: 'La date « à revoir le » est illisible.',
   date_passee: 'La date « à revoir le » doit être postérieure à aujourd’hui.',
   pieces_invalides: 'Les pièces sont mal désignées. Rechargez le parcours.',
+  pieces_trop_nombreuses: 'Un constat cite au plus 30 pièces.',
   piece_requise: 'Un constat « confirmée » ou « non retenue » cite au moins une pièce.',
   piece_inconnue: 'Une pièce citée est introuvable dans ce dossier. Rechargez le parcours.',
   piece_corrigee: 'Un résultat cité a été corrigé : citez la valeur qui fait foi.',

@@ -11024,3 +11024,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Faire valider la partie B (résumés, e-mail v2, phrase de la lecture datée), puis préparer la PR de publication, à merger à l'ouverture.
 
 **Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
+
+## 2026-10-20 — File B : BP-11, code des constats (D-331)
+
+**Fait.** Route des constats (lecture, pose, remplacement, retrait, une transaction, verrous dans l'ordre du trigger), « à relire » dérivé, panneau de l'onglet « Biologie » sous `WN_BIO_CONSTAT` éteint ; banc des lecteurs. Relecture `wn-reviewer` : go sous condition, P2 corrigés ou routés. Q1 et Q2 arbitrées (date atteinte, passation retenue), consignées en D-331 §5. LOT-11 clos.
+
+**Écarté.** Exempter les deux bornes au banc des seuils : nommées. `FOR SHARE` de la passation à la route : le trigger tient.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis BP-13.
+
+**Ouvert.** Test d'intégration sur vraie base avant l'allumage du drapeau.
