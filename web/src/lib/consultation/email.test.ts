@@ -314,7 +314,7 @@ describe('sendConditionsUtilisationEmail — [[D-292]] §3', () => {
     expect(envoi.from).toBe('"Wellneuro" <noreply@wellneuro.fr>');
     expect(envoi.to).toBe('patient@example.com');
     expect(envoi.replyTo).toBe('praticien@wellneuro.fr');
-    expect(envoi.subject).toBe('Wellneuro — les conditions d’utilisation de votre espace');
+    expect(envoi.subject).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
     expect(envoi.text).toContain(`ouvrez ce lien : ${LIEN}\n\nCe lien est valable 24 heures`);
     expect(envoi.text.startsWith('Bonjour,\n')).toBe(true);
   });

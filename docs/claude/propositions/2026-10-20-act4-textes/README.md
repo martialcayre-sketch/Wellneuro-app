@@ -2,9 +2,9 @@
 
 Place 4 de la file C (H77), dépôt de documents par le patient ([[D-330]]).
 Ce document consigne les textes soumis au responsable le 2026-10-20, et ses
-réponses. Les textes de la partie A sont **validés** ; ceux de la partie B
-restent **à valider** avant la PR qui publiera « Vos données personnelles » v19
-et les conditions v2.
+réponses. Les textes des parties A et B sont **validés** (A puis B, le même
+jour) ; la PR de publication de « Vos données personnelles » v19 et des
+conditions v2 les reprend, B1 corrigeant A3.
 
 Ce qui était déjà validé n'est pas repris ici :
 
@@ -110,7 +110,7 @@ le contenu de ce que vous y faites. » :
 > que votre praticien vous a remis — bilan, fiche, courrier, protocole — est
 > noté, sans l'heure, et votre praticien le voit.
 
-## B. Textes à valider avant la PR de publication
+## B. Textes de la publication (validés le 2026-10-20)
 
 La v19 entraîne les conditions v2 ([[D-292]] §5 : après ACT-1, toute
 modification d'une partie est une nouvelle version des conditions). Les
@@ -172,6 +172,20 @@ Sujet : **Wellneuro — les conditions d'utilisation de votre espace évoluent**
 
 Les quatre derniers paragraphes sont ceux de la version 1, au caractère près.
 Ni nom, ni donnée de santé.
+
+### B5. Partie 5 des conditions v2, une phrase précisée
+
+La phrase de la v1 (« …lorsque vous déposez un document dans votre espace… »)
+deviendrait inexacte : le dépôt de documents se fait sans accusé (arbitrage 2
+de G-11), seul le dépôt du compte rendu biologique présente les conditions.
+Question à options du 2026-10-20, réponse sur la proposition :
+
+> Si vous n'avez pas encore validé la version en vigueur lorsque vous déposez
+> le compte rendu de vos analyses biologiques, elle vous est présentée juste
+> avant le dépôt, avec le même bouton.
+
+Le reste de la partie 5, le titre et le résumé des conditions sont ceux de la
+v1.
 
 ## Ce qui n'est pas touché
 
