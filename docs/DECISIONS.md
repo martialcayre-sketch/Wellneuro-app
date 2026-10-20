@@ -291,6 +291,12 @@ de la phrase sur la lecture datée restent à valider avant cette publication ;
 (4) le constat d'ACT-3 se fait sans code : le responsable ouvre « Mes
 échanges » sur un dossier de test, l'assistant compare à une lecture en
 conteneur ; aucune trace de lecture n'est ajoutée à la route.
+Le même jour, la partie B est validée (phrase de la lecture datée sans
+énumération, résumés de la v19 et des conditions v2, e-mail
+`conditions_utilisation` v2), et une cinquième question tranchée : la phrase
+de la partie 5 des conditions sur le filet nomme « le compte rendu de vos
+analyses biologiques », le dépôt de documents restant sans accusé (G-11). La
+PR de publication est prête, à merger à l'ouverture.
 
 ### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (version du score inchangée ; audit de D-312, section 10)
 

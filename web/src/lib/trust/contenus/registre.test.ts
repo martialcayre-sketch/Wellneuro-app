@@ -6,6 +6,7 @@ import {
   getDocumentCourant,
   getVersion,
   PARTIES_REPRISES_CONDITIONS_V1,
+  PARTIES_REPRISES_CONDITIONS_V2,
   REGISTRE_DOCUMENTS_TRUST,
   sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
@@ -25,7 +26,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente-deux documents attendus', () => {
+  it('expose les trente-quatre documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -64,6 +65,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v17',
       // D4 (`D-299`) — OpenAI nommé parmi les prestataires.
       'donnees_confidentialite@v18',
+      // `D-330` (ACT-4) — la collecte documentaire, et la lecture datée de `D-297`.
+      'donnees_confidentialite@v19',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -86,6 +89,8 @@ describe('registre des documents TRUST', () => {
       'consentement_suivi@v3',
       // `D-292` — les quatre textes d'information réunis, servis avec ACT-1.
       'conditions_utilisation@v1',
+      // `D-292` §5 — la partie 3 passe à la v19 ; publiées avec ACT-4.
+      'conditions_utilisation@v2',
     ]);
   });
 
@@ -131,7 +136,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v18');
+    expect(courant.version).toBe('v19');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -682,7 +687,7 @@ describe('registre des documents TRUST', () => {
     // flux reçoit réellement (`rag/embeddings.ts`) : le texte de la recherche et
     // celui des références à indexer, jamais le dossier.
     const v17 = getVersion('donnees_confidentialite', 'v17')!;
-    const v18 = getDocumentCourant('donnees_confidentialite');
+    const v18 = getVersion('donnees_confidentialite', 'v18')!;
     expect(v18.version).toBe('v18');
     const titre = 'Quels prestataires techniques interviennent ?';
     const avant = v17.sections.find(s => s.titre === titre)?.points ?? [];
@@ -698,6 +703,62 @@ describe('registre des documents TRUST', () => {
     // Même motif que la v17 : sans le sien, l'accusé de la v17 s'effaçait.
     expect(v18.requiresAcknowledgement).toBe(true);
     expect(v18.publieLe >= v17.publieLe).toBe(true);
+  });
+
+  // LE TEXTE PUBLIÉ FACE AU TEXTE VALIDÉ ([[D-330]], amendement du 2026-10-20).
+  // L'attendu se lit dans la proposition validée, à l'apostrophe typographique
+  // du registre près : la citation qui suit un titre, lignes recollées.
+  const PROPOSITION_ACT4 = path.resolve(
+    __dirname,
+    '../../../../../docs/claude/propositions/2026-10-20-act4-textes/README.md',
+  );
+  function citations(apres: string): string[] {
+    const readme = fs.readFileSync(PROPOSITION_ACT4, 'utf8').replaceAll("'", '’');
+    const suite = readme.slice(readme.indexOf(apres) + apres.length);
+    const section = suite.slice(0, suite.search(/\n#{2,3} /) === -1 ? undefined : suite.search(/\n#{2,3} /));
+    return section
+      .split(/\n\s*\n/)
+      .map(bloc => bloc.trim())
+      .filter(bloc => bloc.startsWith('>'))
+      .map(bloc =>
+        bloc
+          .split('\n')
+          .map(ligne => ligne.replace(/^>\s?/, '').trim())
+          .join(' ')
+          .replaceAll('**', ''),
+      );
+  }
+
+  it('`D-330` (ACT-4) : la v19 dit la collecte et la lecture datée, mot pour mot, et rien d’autre', () => {
+    const v18 = getVersion('donnees_confidentialite', 'v18')!;
+    const v19 = getDocumentCourant('donnees_confidentialite');
+    expect(v19.version).toBe('v19');
+    const [, paragrapheNeuf] = citations('### A3. « Vos données personnelles » v19');
+    const [phraseLecture] = citations('### B1. Correction de la phrase sur la lecture datée (A3)');
+
+    // 1. « et les autres documents » au premier paragraphe, rien d'autre.
+    const recueil = 'Quelles données sont recueillies ?';
+    const avant = v18.sections.find(s => s.titre === recueil)!.paragraphes;
+    const apres = v19.sections.find(s => s.titre === recueil)!.paragraphes;
+    expect(apres[0]).toBe(
+      avant[0].replace('les comptes rendus d’analyses que', 'les comptes rendus d’analyses et les autres documents que'),
+    );
+    expect(apres[0]).not.toBe(avant[0]);
+    // 2. Le paragraphe validé, juste après le dernier du compte rendu biologique.
+    const i = apres.findIndex(p => p.startsWith('Ces informations comptent parmi les plus sensibles'));
+    expect(apres[i + 1]).toBe(paragrapheNeuf);
+    expect([...apres.slice(1, i + 1), ...apres.slice(i + 2)]).toEqual(avant.slice(1));
+    // 3. La phrase de la lecture datée, à la suite du journal des connexions.
+    const incident = 'Signaler un incident de confidentialité';
+    const p18 = v18.sections.find(s => s.titre === incident)!.paragraphes;
+    const p19 = v19.sections.find(s => s.titre === incident)!.paragraphes;
+    expect(p19).toEqual([p18[0], `${p18[1]} ${phraseLecture}`]);
+    // Rien d'autre ne bouge.
+    const autres = (doc: typeof v18) => doc.sections.filter(s => s.titre !== recueil && s.titre !== incident);
+    expect(autres(v19)).toEqual(autres(v18));
+    expect(v19.requiresAcknowledgement).toBe(true);
+    expect(v19.publieLe >= v18.publieLe).toBe(true);
+    expect(v19.changeSummary).toBe(citations('### B2. Résumé de la v19 (historique des versions)')[0]);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {
@@ -734,10 +795,18 @@ describe('registre des documents TRUST', () => {
     const conditions = getDocumentCourant('conditions_utilisation');
 
     it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
+      expect(conditions.version).toBe('v2');
       expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
         'donnees_confidentialite@v18',
+        'usage_ia@v8',
+      ]);
+      // La v2 ne change que la partie 3 ([[D-292]] §5).
+      expect(PARTIES_REPRISES_CONDITIONS_V2.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v19',
         'usage_ia@v8',
       ]);
       expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
@@ -754,7 +823,7 @@ describe('registre des documents TRUST', () => {
     // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
     // hash) ; après, publier une nouvelle version des conditions.
     it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
-      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V1) {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V2) {
         const courant = getDocumentCourant(source.key);
         expect(
           courant.version,
@@ -796,10 +865,21 @@ describe('registre des documents TRUST', () => {
           const [entete, ...corps] = s.replace(/^### /, '').split(/\n\n+/);
           return { titre: entete.trim(), paragraphes: corps.map(p => p.trim()) };
         });
-      const partie5 = conditions.sections
-        .filter(s => s.partie === 'Quand ces conditions changent')
-        .map(s => ({ titre: s.titre, paragraphes: s.paragraphes }));
-      expect(partie5).toEqual(attendu);
+      const partie5 = (doc: typeof conditions) =>
+        doc.sections
+          .filter(s => s.partie === 'Quand ces conditions changent')
+          .map(s => ({ titre: s.titre, paragraphes: s.paragraphes }));
+      expect(partie5(getVersion('conditions_utilisation', 'v1')!)).toEqual(attendu);
+
+      // La v2 précise UNE phrase de la partie 5, validée le 2026-10-20 (B5) :
+      // le filet ne joue qu'au dépôt du compte rendu biologique.
+      const [phraseB5] = citations('### B5. Partie 5 des conditions v2, une phrase précisée');
+      const ancienne = attendu.flatMap(s => s.paragraphes).find(p => p.includes('lorsque vous déposez un document'))!;
+      expect(ancienne).toBeTruthy();
+      expect(partie5(conditions)).toEqual(
+        attendu.map(s => ({ ...s, paragraphes: s.paragraphes.map(p => (p === ancienne ? phraseB5 : p)) })),
+      );
+      expect(conditions.changeSummary).toBe(citations('### B3. Résumé des conditions v2')[0]);
     });
 
     it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {

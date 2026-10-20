@@ -609,6 +609,40 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-10-16',
     hash: '73c6d787a50e9352a83d89444e6e260f0cfa468437000f9a6f7cac4e68cda59d',
   },
+  // [[D-292]] §3, conditions v2 (ACT-4, [[D-330]]) : l'annonce d'une NOUVELLE
+  // version. Texte validé tel quel par le responsable le 2026-10-20
+  // (`docs/claude/propositions/2026-10-20-act4-textes/README.md`, B4) ; ses
+  // quatre derniers paragraphes sont ceux de la version 1, au caractère près.
+  // Ni nom, ni donnée de santé : « déposer des documents » ne dit rien du
+  // dossier. `getGabarit` rend la version la plus haute : elle part dès que
+  // les conditions v2 sont en vigueur.
+  {
+    key: 'conditions_utilisation',
+    version: 2,
+    titre: "Annonce d'une nouvelle version des conditions d'utilisation aux patients suivis",
+    sujet: 'Wellneuro — les conditions d’utilisation de votre espace évoluent',
+    corps:
+      'Bonjour,\n\n' +
+      'Les conditions d’utilisation de votre espace Wellneuro évoluent : vous pouvez ' +
+      'désormais y déposer des documents pour votre praticien, et la partie « Vos ' +
+      'données personnelles » dit ce qui en est gardé et qui peut les ouvrir. Elle ' +
+      'précise aussi que le jour où vous ouvrez pour la première fois un document ' +
+      'remis par votre praticien est noté.\n\n' +
+      'Rien d’autre ne change dans votre accompagnement.\n\n' +
+      'Pour lire cette nouvelle version et la valider, ouvrez ce lien : {{lien}}\n\n' +
+      'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ' +
+      'connectez-vous à votre espace comme d’habitude : le document vous attend ' +
+      'dans « Informations, confidentialité et droits ».\n\n' +
+      'Le lien ouvre le texte. Rien n’est validé tant que vous n’avez pas cliqué ' +
+      'sur « J’en ai pris connaissance ».\n\n' +
+      'Pour toute question, répondez simplement à ce message.\n\n' +
+      'Wellneuro',
+    variables: ['lien'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-20',
+    valideLe: '2026-10-20',
+    hash: '1b4a43fae6d9273838713b53583e38f691840006a6f041fe125864a44a92be71',
+  },
   // ── PROTOCOLE DIFFUSÉ ───────────────────────────────────────────────────
   // [[D-317]] §3 (PA-2) — part au clic « Valider pour diffusion » qui diffuse
   // une NOUVELLE version, et vaut alors l'annonce des fiches et du courrier
