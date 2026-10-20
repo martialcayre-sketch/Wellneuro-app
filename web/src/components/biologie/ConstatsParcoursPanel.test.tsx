@@ -154,6 +154,18 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect(screen.getAllByRole('button', { name: 'Retirer le constat' })).toHaveLength(1);
   });
 
+  it.each(['piece_corrigee', 'piece_annulee', 'passation_exclue', 'structure_non_signee', 'hypothese_hors_structure'])(
+    'refus %s, né d’une lecture périmée : le parcours se relit',
+    async raison => {
+      const fetchMock = stubFetch(LECTURE, { status: 409, corps: { ok: false, reason: raison, error: 'Refus.' } });
+      rendre();
+      fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!);
+      expect((await screen.findByRole('alert')).textContent).toBe('Refus. Le parcours a été relu.');
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    },
+  );
+
   it('un autre refus se dit dans le formulaire, sans relecture', async () => {
     const fetchMock = stubFetch(LECTURE, { status: 400, corps: { ok: false, reason: 'note_trop_longue', error: 'La note dépasse 2000 caractères.' } });
     rendre();

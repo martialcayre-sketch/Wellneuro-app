@@ -199,8 +199,10 @@ quelle condition tient, sans jamais dire une valeur.
 (PR 2) et arbitrées par le responsable, sur l'option recommandée : au 6, la
 date est **atteinte** — le jour fixé par le praticien compte, et la route
 refuse une date qui n'est pas postérieure au jour ; au 4, seule une passation
-**retenue** (VALID ou AMBIGUOUS) plus récente compte : une passation exclue
-n'alimente pas le raisonnement et ne rend pas le constat « à relire ».
+**retenue** (VALID ou AMBIGUOUS) plus récente compte : une passation plus
+récente mais exclue n'alimente pas le raisonnement et ne rend pas, à ce
+titre, le constat « à relire ». Une passation **citée** qui devient exclue le
+rend « à relire » par le 5 (revue CodeRabbit de #1603).
 
 **§6 — D-122 précisée.** Consommer un constat **n'est pas** « faire parler
 un résultat réel au moteur » ([[D-122]], frontières) : le constat est un

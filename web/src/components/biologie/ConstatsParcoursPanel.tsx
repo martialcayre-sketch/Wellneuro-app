@@ -82,8 +82,23 @@ function lendemain(aaaammjj: string): string {
 
 type Geste = { hypotheseCode: string; acte: 'pose' | 'retrait'; remplace: string | null };
 
-/** Les refus qui disent « rechargez » : le panneau relit lui-même le parcours. */
-const REFUS_PERIMES = new Set(['tete_changee', 'conflit_concurrent', 'refus_base', 'piece_inconnue']);
+/**
+ * Les refus nés d'une lecture périmée — la tête, une pièce ou la structure ont
+ * changé depuis le GET : le panneau ferme le formulaire et relit le parcours,
+ * pour que les pièces offertes soient celles qui font foi (revue CodeRabbit
+ * de #1603).
+ */
+const REFUS_PERIMES = new Set([
+  'tete_changee',
+  'conflit_concurrent',
+  'refus_base',
+  'piece_inconnue',
+  'piece_corrigee',
+  'piece_annulee',
+  'passation_exclue',
+  'structure_non_signee',
+  'hypothese_hors_structure',
+]);
 
 function FormulairePose({
   idPatient,
