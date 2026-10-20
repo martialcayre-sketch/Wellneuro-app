@@ -1,7 +1,7 @@
 {
   "version": "measurement-evidence-v1",
   "dateAudit": "2026-08-04",
-  "commentaire": "Preuves psychométriques par instrument (campagne 2026-07-25-certification-corpus-questionnaires, lot 1 — squelette, rempli aux lots 2-3 depuis les sources primaires et les claims validés). Une ligne par étude × propriété : questionnaireId, population, langue, tailleEchantillon, propriete (validite_contenu | structure_interne | coherence_interne | fidelite | erreur_mesure | validite_construit | sensibilite_changement | mdc | mcid), resultat, conclusionCosmin (A | B | C | inconnu), doi/pmid/sourceId, et `claimId` — facultatif : le garde exige au moins UNE référence vérifiable (doi, pmid OU sourceId), jamais un claim validé, et aucune des lignes présentes n'en porte. Ce fichier alimente l'axe `cosmin` du registre des instruments, commande le barreau `psychometrie_revue` depuis le 2026-08-04, et portera les annotations « changement fiable » du momentum (lot 12). LOT-07 (2026-08-04) : trois lignes amorcées sur Q_PED_01 depuis Caci H. et al., L'Encéphale 2005 ; aucune ne porte d'appréciation COSMIN, donc aucune ne peut fonder à elle seule un franchissement de `psychometrie_revue`.",
+  "commentaire": "Preuves psychométriques par instrument (campagne 2026-07-25-certification-corpus-questionnaires, lot 1 — squelette, rempli aux lots 2-3 depuis les sources primaires et les claims validés). Une ligne par étude × propriété : questionnaireId, population, langue, tailleEchantillon, propriete (validite_contenu | structure_interne | coherence_interne | fidelite | erreur_mesure | validite_construit | sensibilite_changement | mdc | mcid), resultat, conclusionCosmin (A | B | C | inconnu), doi/pmid/sourceId, et `claimId` — facultatif : le garde exige au moins UNE référence vérifiable (doi, pmid OU sourceId), jamais un claim validé, et aucune des lignes présentes n'en porte. Ce fichier alimente l'axe `cosmin` du registre des instruments, commande le barreau `psychometrie_revue` depuis le 2026-08-04, et portera les annotations « changement fiable » du momentum (lot 12). LOT-07 (2026-08-04) : trois lignes amorcées sur Q_PED_01 depuis Caci H. et al., L'Encéphale 2005 ; aucune ne porte d'appréciation COSMIN, donc aucune ne peut fonder à elle seule un franchissement de `psychometrie_revue`. J3-12e (2026-10-20) : quatre lignes ajoutées sur Q_STR_02 (Lesage et al. 2012, WN-SRC-0540) et Q_NEU_11 (Bocéréan et Dupret 2014, WN-SRC-0545), conclusionCosmin `inconnu` : aucune ne franchit `psychometrie_revue`.",
   "etudes": [
     {
       "questionnaireId": "Q_PED_01",
@@ -40,6 +40,58 @@
       "doi": "10.1016/s0013-7006(05)82372-3",
       "pmid": "15971640",
       "sourceId": null,
+      "claimId": null
+    },
+    {
+      "questionnaireId": "Q_STR_02",
+      "population": "Salariés tirés au sort dans des services de santé au travail du nord de la France (PSS-10 extraite de la PSS-14 administrée)",
+      "langue": "fr",
+      "tailleEchantillon": 501,
+      "propriete": "coherence_interne",
+      "resultat": "alpha de Cronbach = 0,83 (PSS-10), 0,84 (PSS-14), 0,73 (PSS-4)",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.2478/S13382-012-0024-8",
+      "pmid": null,
+      "sourceId": "WN-SRC-0540",
+      "claimId": "WN-CL-0540-003"
+    },
+    {
+      "questionnaireId": "Q_STR_02",
+      "population": "Salariés tirés au sort dans des services de santé au travail du nord de la France (PSS-10 extraite de la PSS-14 administrée)",
+      "langue": "fr",
+      "tailleEchantillon": 501,
+      "propriete": "structure_interne",
+      "resultat": "analyse factorielle exploratoire : deux facteurs (items positifs et négatifs) corrélés à r = 0,50 pour la PSS-10, lus par les auteurs comme un effet de formulation ; usage unidimensionnel (score total unique)",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.2478/S13382-012-0024-8",
+      "pmid": null,
+      "sourceId": "WN-SRC-0540",
+      "claimId": "WN-CL-0540-004"
+    },
+    {
+      "questionnaireId": "Q_NEU_11",
+      "population": "Salariés de 19 grandes entreprises françaises, recueil en 2011 lors de la visite de médecine du travail",
+      "langue": "fr",
+      "tailleEchantillon": 20992,
+      "propriete": "coherence_interne",
+      "resultat": "alpha de Cronbach = 0,78 (dépression) et 0,81 (anxiété)",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.1186/s12888-014-0354-0",
+      "pmid": null,
+      "sourceId": "WN-SRC-0545",
+      "claimId": null
+    },
+    {
+      "questionnaireId": "Q_NEU_11",
+      "population": "Salariés de 19 grandes entreprises françaises, recueil en 2011 lors de la visite de médecine du travail",
+      "langue": "fr",
+      "tailleEchantillon": 20992,
+      "propriete": "structure_interne",
+      "resultat": "modèle original à deux facteurs retenu après ajout de deux liens croisés (D4 vers anxiété, A4 vers dépression) ; RMSEA 0,06, AGFI 0,96",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.1186/s12888-014-0354-0",
+      "pmid": null,
+      "sourceId": "WN-SRC-0545",
       "claimId": null
     }
   ]
