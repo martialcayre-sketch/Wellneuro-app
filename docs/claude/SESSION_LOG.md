@@ -11084,3 +11084,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté, t28 → « fait ».
 
 **Ouvert.** Aucun dans ce lot.
+
+## 2026-10-20 — ACT-4 ouvert et constaté (place 4, dépôt de documents)
+
+**Fait.** #1599 mergée (c1a0d640) et déployée ; drapeau `WN_PORTAIL_DEPOT_DOCUMENTS` posé à 19:58 UTC sur accord du responsable ; e-mail des conditions v2 envoyé depuis le cockpit (15 envois, aucun en erreur). Constat par conteneur sur un dossier de test : accusé v2, dépôt PDF avec empreinte, ligne de « Mes échanges », première consultation datée. DOSSIER_RGPD, drapeau et plan à jour.
+
+**Écarté.** Refuser le GET du dépôt aux dossiers non majeurs (revue CodeRabbit) : il sert l'écran de la date de naissance et le message des mineurs ; texte de D-330 corrigé à la place.
+
+**Prochaine action.** Place 5 (ACT-5), qui exige J2-conf entier.
+
+**Ouvert.** Message « Trois documents attendent déjà… » du compte rendu biologique ; question du responsable sur l'encart d'urgence de l'écran de dépôt (D-293 §3), non arbitrée ; réencodage d'image non éprouvé en production.
