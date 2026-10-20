@@ -10955,6 +10955,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-20 — J3-12d : badges de niveau de preuve masqués au cockpit
+
+**Fait.** D-332 : les deux tableaux des 12 besoins du cockpit n'affichent plus la colonne A–D ni sa légende ; la couverture reste. Table des grades, `evidence.ts`, snapshot et empreinte intacts (banc figé vert), version du score inchangée, sans migration.
+
+**Écarté.** Retirer `niveauPreuve` des API praticien : aucun écran ne le lit, le snapshot le garde, et le contrat se rouvrira avec la table révisée.
+
+**Prochaine action.** PR, CI (base visuelle du tiroir), merge, déploiement constaté ; r1_14 → fait, fiche H15.
+
+**Ouvert.** Aucun : D-331 prise par #1589 pendant le CI, ce lot renuméroté en D-332.
 
 ## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
 
@@ -10997,6 +11006,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-20 — File B : BP-11, migration des constats (D-331)
+
+**Fait.** D-331 mergée (#1589), RGPD validé par le responsable. Migration seule des constats : deux tables en ajout seul, une tête par hypothèse sous verrou, motifs fermés, pièces par clé écrites avec leur constat, pièces requises en fin de transaction ; contrat négatif (20 mutations rouges), banc à deux sessions au CI, suppression réservée à l'effacement, effacement nommé. Arbitrages BP-13, BP-15, F52 rendus.
+
+**Écarté.** Motifs en `OR` : un motif absent rendait le CHECK NULL, donc passant. Refus d'une date passée en base : fuseau de la route.
+
+**Prochaine action.** CI, revues, merge, release-db, constat par conteneur, puis PR du code BP-11.
+
+**Ouvert.** Liste des motifs de BP-15 à proposer ; brouillon de la lettre cm.
 ## 2026-10-20 — ACT-4 préparé : textes du dépôt validés, drapeau éteint
 
 **Fait.** Textes soumis puis validés (quatre arbitrages, D-330 amendée) : libellés de l'écran, refus du plafond des non-consultés rendu neutre ; bloc « Ce que vous trouvez ici » qui nomme les dépôts, servi drapeau ouvert ; « Vos données personnelles » v19 (collecte et lecture datée) consignée. Observation prod (agrégats) : protocole 1 lecture, 0 datée ; bilan 1 datée (2026-10-19) ; 0 dépôt ; « Mes échanges » sans lecteur observable (aucun journal d'accès).

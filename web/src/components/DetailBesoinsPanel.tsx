@@ -5,18 +5,6 @@ import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
-import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
-
-function LegendeNiveauxPreuve() {
-  return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-      <span><span className="font-medium text-foreground">A</span> — questionnaire clinique validé</span>
-      <span><span className="font-medium text-foreground">B</span> — référentiel neuronutrition</span>
-      <span><span className="font-medium text-foreground">C</span> — biologie fonctionnelle interprétative</span>
-      <span><span className="font-medium text-foreground">D</span> — hypothèse WellNeuro</span>
-    </div>
-  );
-}
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
@@ -86,7 +74,6 @@ export function DetailBesoinsPanel({
               <tr>
                 <th className="px-4 py-2 text-left">Besoin</th>
                 <th className="px-4 py-2 text-left">Couverture</th>
-                <th className="px-4 py-2 text-left">Preuve</th>
               </tr>
             </thead>
             <tbody>
@@ -94,14 +81,10 @@ export function DetailBesoinsPanel({
                 <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || 'Aucun questionnaire source'}>
                   <td className="px-4 py-2">{b.libellePraticien}</td>
                   <td className="px-4 py-2 text-muted-foreground">{b.couverture !== null ? `${b.couverture}%` : '—'}</td>
-                  <td className="px-4 py-2"><EvidenceBadge niveau={b.niveauPreuve} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="px-4 py-3 border-t border-border">
-            <LegendeNiveauxPreuve />
-          </div>
         </div>
       </div>
     </div>

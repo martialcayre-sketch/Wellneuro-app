@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "BP-11 — Constats du praticien"
-statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; migration à écrire, release-db après celle de t03, #1581)"
+statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; PR 1, migration seule, ouverte le 2026-10-20 ; release-db à la suite du merge, celle de t03 étant passée)"
 dépend_de: "LOT-09, LOT-12"
 ---
 
@@ -129,11 +129,20 @@ de la structure qui garde l'hypothèse ne le fait pas (§5.7).
   dossier — remplacement et retrait ne visent que lui, D-331 §2 —, pièce
   du même dossier, tête de fil non annulée,
   passation non invalidée, au moins une pièce pour `confirmee` et
-  `non_retenue` en fin de transaction), RLS ; contrat SQL négatif au CI ;
+  `non_retenue` en fin de transaction, suppression réservée à l'effacement
+  du dossier), RLS ; contrat SQL négatif et banc à deux sessions au CI ;
   effacement nommé et son banc ; dossier RGPD validé.
 - **PR 2 (code)** : route de pose et de retrait, lecture et dérivation de
   « à relire » (D-331 §5), écran du parcours sous `WN_BIO_CONSTAT`,
   `docs/FEATURE_FLAGS.md`.
+  Routés de la revue `wn-reviewer` de la PR 1 (P2), à tenir par la route :
+  trier les pièces de biologie par clé (dossier, analyte, prélèvement) avant
+  de les écrire — deux poses qui citent les mêmes lignes dans un ordre
+  croisé interbloqueraient sur les verrous de BP-09 ; traduire l'échec de
+  sérialisation (`40001`, Prisma `P2034`) en refus lisible ; normaliser la
+  note (espaces insécables et blancs Unicode), que `~ '\S'` de la base ne
+  garantit pas ; refuser une date « à revoir le » passée ; constat et pièces
+  dans une seule `$transaction` interactive, sans `$transaction` imbriquée.
 
 ## Hors périmètre
 
