@@ -1474,6 +1474,20 @@ jobs:
           WN_BIO_STATUT_BANC_BASE: wellneuro_ci
         run: node scripts/banc-statuts-poses-deux-sessions.test.mjs
 
+      # Constats du praticien (D-331, BP-11) : la tête d'une hypothèse ne tient
+      # que par son verrou, et les pièces par la transaction de leur constat.
+      # Deux premières poses, un remplacement contre un retrait, une pièce après
+      # COMMIT, une correction et une invalidation contre une pièce, le refus de
+      # REPEATABLE READ, l'effacement contre une pose, une suppression hors
+      # effacement. Commet ses fixtures puis les efface : la base doit être
+      # nommée.
+      - name: Constats praticien two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_CONSTAT_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-constats-praticien-deux-sessions.test.mjs
+
       # Exclusion signature ↔ constat « aucun acte » NABM (M-3c, F54) : un
       # constat et une signature concurrents sur le même analyte se
       # sérialisent par le verrou consultatif de l'analyte, et le second est

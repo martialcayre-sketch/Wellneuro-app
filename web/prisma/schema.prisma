@@ -3090,6 +3090,9 @@ model ConstatPraticien {
   idConstatRemplace String?   @unique @map("id_constat_remplace")
   /// Pose seule : l'empreinte de la structure signée lue à la pose.
   structureSha256   String?   @map("structure_sha256")
+  /// Posé par la base (trigger) : la transaction de l'acte, que ses pièces
+  /// doivent partager.
+  transactionPose   BigInt?   @map("transaction_pose")
   praticienEmail    String    @map("praticien_email")
   /// Posé par la base (trigger), en UTC.
   acteLe            DateTime  @default(now()) @map("acte_le")

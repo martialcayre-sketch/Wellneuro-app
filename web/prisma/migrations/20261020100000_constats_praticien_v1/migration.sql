@@ -64,10 +64,13 @@
 -- Sur une pièce (trigger `pieces_constats_praticien_avant_insertion`) :
 --  4. une pièce d'un constat d'un autre dossier, ou d'un retrait ;
 --  5. une pièce ajoutée hors de la transaction qui a posé le constat — les
---     pièces s'écrivent AVEC le constat (§2). La règle compare le `xmin` du
---     constat à la transaction courante : constat et pièces s'écrivent au
---     même niveau, hors point de sauvegarde ; un constat écrit dans un point
---     de sauvegarde refuse ses pièces (l'erreur tombe du côté du refus) ;
+--     pièces s'écrivent AVEC le constat (§2). Le trigger du constat pose
+--     `transaction_pose`, l'identifiant 64 bits de la transaction de niveau
+--     supérieur (`pg_current_xact_id()`, le même dans un point de
+--     sauvegarde) ; la pièce le compare au sien. Ni le repli des
+--     identifiants 32 bits ni un point de sauvegarde ne le trompent (revue
+--     `wn-reviewer` du lot : comparer le `xmin` refusait les pièces sous un
+--     point de sauvegarde) ;
 --  6. un résultat d'un autre dossier, une ligne déjà corrigée (seule la tête
 --     du fil se cite) ou un fil qui porte une annulation active ([[D-294]]) ;
 --  7. une réponse de questionnaire d'un autre dossier, ou dont la validité
@@ -81,6 +84,14 @@
 -- `constats_praticien_pieces_requises`) :
 --  8. une pose `confirmee` ou `non_retenue` sans pièce. `non_evaluable` et
 --     `sans_objet` peuvent n'en porter aucune.
+--
+-- Et sur les deux tables, en fin de transaction (triggers de contrainte
+-- DIFFÉRÉS `…_suppression_nommee`) :
+--  9. une suppression dont le dossier survit à la transaction : DELETE est
+--     réservé à l'effacement nommé du dossier ([[D-331]] §2), qui supprime
+--     le dossier dans la même transaction. Sans cette garde, supprimer une
+--     tête ressusciterait le constat qu'elle remplaçait, et supprimer une
+--     pièce laisserait un `confirmee` sans pièce (revue `wn-reviewer`).
 --
 -- La base NE refuse PAS une date « à revoir le » passée : l'instant de la
 -- route et celui de la base ne sont pas le même jour au même moment, et une
@@ -110,10 +121,11 @@
 -- ── FIGÉES, MAIS EFFAÇABLES ────────────────────────────────────────────────
 --
 -- UPDATE et TRUNCATE sont refusés par trigger sur les deux tables. DELETE ne
--- l'est PAS, comme pour les annulations et les statuts posés : chaque ligne
--- est une donnée patient, et l'effacement du dossier la supprime NOMMÉMENT —
--- les pièces, puis les constats, avant les réponses de questionnaire et les
--- résultats que leurs clés RESTRICT retiennent.
+-- l'est qu'en fin de transaction, si le dossier survit (refus 9) : chaque
+-- ligne est une donnée patient, et l'effacement du dossier la supprime
+-- NOMMÉMENT — les pièces, puis les constats, avant les réponses de
+-- questionnaire et les résultats que leurs clés RESTRICT retiennent, puis le
+-- dossier.
 --
 -- ── L'INSTANT ET L'ORDRE SONT POSÉS PAR LA BASE ────────────────────────────
 --
@@ -134,6 +146,7 @@ CREATE TABLE "constats_praticien" (
     "a_revoir_le" DATE,
     "id_constat_remplace" TEXT,
     "structure_sha256" TEXT,
+    "transaction_pose" BIGINT,
     "praticien_email" TEXT NOT NULL,
     "acte_le" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -340,6 +353,7 @@ BEGIN
 
   NEW.acte_le := clock_timestamp() AT TIME ZONE 'UTC';
   NEW.ordre := nextval(pg_get_serial_sequence('public.constats_praticien', 'ordre'));
+  NEW.transaction_pose := pg_current_xact_id()::text::bigint;
   RETURN NEW;
 END;
 $$;
@@ -357,13 +371,13 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   constat_acte text;
-  constat_xmin xid;
+  constat_transaction bigint;
   cible_id text;
   cible_analyte text;
   cible_preleve timestamp(3);
   validite text;
 BEGIN
-  SELECT c.acte, c.xmin INTO constat_acte, constat_xmin
+  SELECT c.acte, c.transaction_pose INTO constat_acte, constat_transaction
   FROM public.constats_praticien c
   WHERE c.id = NEW.id_constat AND c.id_patient = NEW.id_patient;
   IF constat_acte IS NULL THEN
@@ -372,7 +386,7 @@ BEGIN
   IF constat_acte <> 'pose' THEN
     RAISE EXCEPTION 'pièce refusée : un retrait ne porte pas de pièce.';
   END IF;
-  IF constat_xmin IS DISTINCT FROM pg_current_xact_id()::xid THEN
+  IF constat_transaction IS DISTINCT FROM pg_current_xact_id()::text::bigint THEN
     RAISE EXCEPTION 'pièce refusée : les pièces s''écrivent avec leur constat, dans la transaction qui le pose.';
   END IF;
 
@@ -449,11 +463,37 @@ CREATE CONSTRAINT TRIGGER constats_praticien_pieces_requises
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION public.constats_praticien_pieces_requises();
 
+-- ── EN FIN DE TRANSACTION : LA SUPPRESSION EST CELLE DU DOSSIER ────────────
+
+CREATE OR REPLACE FUNCTION public.constats_praticien_suppression_nommee()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.patients p WHERE p.id_patient = OLD.id_patient) THEN
+    RAISE EXCEPTION '% : suppression refusée ; un constat et ses pièces ne s''effacent qu''avec leur dossier.', TG_TABLE_NAME;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER constats_praticien_suppression_nommee
+  AFTER DELETE ON public.constats_praticien
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION public.constats_praticien_suppression_nommee();
+
+CREATE CONSTRAINT TRIGGER pieces_constats_praticien_suppression_nommee
+  AFTER DELETE ON public.pieces_constats_praticien
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION public.constats_praticien_suppression_nommee();
+
 -- Hygiène d'exécution : ces fonctions ne servent qu'aux triggers.
 REVOKE EXECUTE ON FUNCTION public.constats_praticien_figee() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.constats_praticien_avant_insertion() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.pieces_constats_praticien_avant_insertion() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.constats_praticien_pieces_requises() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.constats_praticien_suppression_nommee() FROM PUBLIC;
 
 DO $$
 DECLARE
@@ -465,6 +505,7 @@ BEGIN
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.constats_praticien_avant_insertion() FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.pieces_constats_praticien_avant_insertion() FROM %I', role_nom);
       EXECUTE format('REVOKE EXECUTE ON FUNCTION public.constats_praticien_pieces_requises() FROM %I', role_nom);
+      EXECUTE format('REVOKE EXECUTE ON FUNCTION public.constats_praticien_suppression_nommee() FROM %I', role_nom);
     END IF;
   END LOOP;
 END $$;
@@ -478,7 +519,7 @@ ALTER TABLE "public"."pieces_constats_praticien" ENABLE ROW LEVEL SECURITY;
 -- que les migrations échouées (précédent BIO-INGEST, P3012). Déployer d'abord
 -- le code sans l'effacement des constats et sans les modèles
 -- `ConstatPraticien` et `PieceConstatPraticien` ; puis DROP TABLE des deux
--- tables (pièces d'abord) et DROP FUNCTION des quatre fonctions ci-dessus.
+-- tables (pièces d'abord) et DROP FUNCTION des cinq fonctions ci-dessus.
 -- Entre ces deux temps, un dossier qui porte un constat ne s'efface plus (les
 -- clés RESTRICT refusent, la transaction d'effacement est annulée entière) :
 -- la fenêtre se tient courte. En production, aucun constat ne se pose avant

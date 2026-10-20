@@ -2,9 +2,10 @@
 --
 -- Les deux tables promettent SEIZE choses, et ce fichier les éprouve TOUTES :
 --   1. une pose valide s'écrit et se relit ;
---   2. l'instant et l'`ordre` sont posés par la BASE, pas par l'appelant —
---      l'instant en UTC, même sous une session en Europe/Paris ; une date
---      antidatée est ignorée ; l'ordre croît d'un acte au suivant ;
+--   2. l'instant, l'`ordre` et la transaction de l'acte sont posés par la
+--      BASE, pas par l'appelant — l'instant en UTC, même sous une session en
+--      Europe/Paris ; une date antidatée, un ordre ou une transaction fournis
+--      sont ignorés ; l'ordre croît d'un acte au suivant ;
 --   3. seul le praticien DU DOSSIER pose ou retire (l'e-mail d'un autre
 --      praticien est refusé, la casse ne compte pas) ;
 --   4. UN SEUL CONSTAT EN VIGUEUR par hypothèse et par dossier : une pose sur
@@ -26,7 +27,10 @@
 --   9. les formats : `HYP_…` (minuscules, autre préfixe, préfixe nu, plus de
 --      128 caractères refusés) et l'empreinte en 64 hexadécimaux ;
 --  10. une pièce appartient à une POSE de son dossier, et s'écrit dans la
---      transaction qui l'a posée ;
+--      transaction qui l'a posée — un point de sauvegarde n'y change rien ;
+--      la pièce écrite APRÈS le COMMIT du constat ne se figure pas dans une
+--      transaction seule : le banc à deux sessions l'éprouve
+--      (`scripts/banc-constats-praticien-deux-sessions.test.mjs`) ;
 --  11. une pièce de biologie est un résultat du dossier, tête de son fil,
 --      sans annulation active ; une pièce de questionnaire est une réponse
 --      du dossier, VALID ou AMBIGUOUS ; une pièce est l'une OU l'autre, et
@@ -36,13 +40,16 @@
 --      aucune ; un constat effacé dans la transaction n'est plus contrôlé ;
 --  13. UPDATE et TRUNCATE sont refusés sur les deux tables ;
 --  14. l'effacement NOMMÉ passe en base, pièces puis constats, une
---      instruction chacun, et ni la ligne citée ni le constat ne s'effacent
---      avant leurs pièces (RESTRICT) ;
+--      instruction chacun, avec le dossier ; ni la ligne citée ni le constat
+--      ne s'effacent avant leurs pièces (RESTRICT) ; une suppression dont le
+--      dossier survit est refusée en fin de transaction ;
 --  15. les FK ont la règle annoncée, les CHECK, les index et les triggers
---      sont présents (le contrôle de fin de transaction, différé), les
---      verrous précèdent les contrôles, REPEATABLE READ est refusé, et les
---      fonctions ont leur `search_path` épinglé (présence relue : une session
---      seule n'éprouve pas la concurrence) ;
+--      sont présents (les trois contrôles de fin de transaction, différés),
+--      les verrous précèdent les contrôles, REPEATABLE READ est refusé avant
+--      eux, et les fonctions ont leur `search_path` épinglé (présence
+--      relue : une session seule n'éprouve ni la concurrence ni un autre
+--      niveau d'isolation — le banc à deux sessions joue les courses et le
+--      refus de REPEATABLE READ) ;
 --  16. les deux tables portent EXACTEMENT leurs colonnes (liste blanche) :
 --      aucune valeur, aucune unité, aucun analyte, aucune date de
 --      prélèvement recopiés ([[D-331]] §7) ; la RLS deny-all est active et
@@ -136,8 +143,21 @@ RETURNS void
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  SET CONSTRAINTS constats_praticien_pieces_requises IMMEDIATE;
-  SET CONSTRAINTS constats_praticien_pieces_requises DEFERRED;
+  SET CONSTRAINTS constats_praticien_pieces_requises, constats_praticien_suppression_nommee,
+    pieces_constats_praticien_suppression_nommee IMMEDIATE;
+  SET CONSTRAINTS constats_praticien_pieces_requises, constats_praticien_suppression_nommee,
+    pieces_constats_praticien_suppression_nommee DEFERRED;
+END;
+$$;
+
+-- Une suppression hors effacement, jugée sur-le-champ.
+CREATE FUNCTION pg_temp.supprimer_puis_clore(p_table text, p_id text)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  EXECUTE format('DELETE FROM %I WHERE id = %L', p_table, p_id);
+  PERFORM pg_temp.clore();
 END;
 $$;
 
@@ -194,9 +214,9 @@ DECLARE
   i integer := 0;
 BEGIN
   -- ── 1 et 2. Une pose valide, instant et ordre posés par la base ──────────
-  INSERT INTO constats_praticien (id, ordre, id_patient, acte, hypothese_code, verdict, motif, note, a_revoir_le, structure_sha256, praticien_email, acte_le)
+  INSERT INTO constats_praticien (id, ordre, id_patient, acte, hypothese_code, verdict, motif, note, a_revoir_le, structure_sha256, transaction_pose, praticien_email, acte_le)
   VALUES ('c_a1', 999999, 'PAT_CONTRAT_CONST_A', 'pose', 'HYP_CONTRAT_A', 'non_evaluable', 'piece_attendue_manquante',
-          'note de contrat', DATE '2027-01-15', repeat('a', 64), 'praticien@wellneuro.fr', TIMESTAMP '2000-01-01 00:00:00');
+          'note de contrat', DATE '2027-01-15', repeat('a', 64), 42, 'praticien@wellneuro.fr', TIMESTAMP '2000-01-01 00:00:00');
   SELECT * INTO ligne FROM constats_praticien WHERE id = 'c_a1';
   IF ligne.acte IS DISTINCT FROM 'pose' OR ligne.hypothese_code IS DISTINCT FROM 'HYP_CONTRAT_A'
      OR ligne.verdict IS DISTINCT FROM 'non_evaluable' OR ligne.motif IS DISTINCT FROM 'piece_attendue_manquante'
@@ -209,6 +229,9 @@ BEGIN
   ecart := (now() AT TIME ZONE 'UTC') - ligne.acte_le;
   IF ligne.acte_le = TIMESTAMP '2000-01-01 00:00:00' OR abs(extract(epoch FROM ecart)) > 60 THEN
     RAISE EXCEPTION 'CONTRAT — 2 : l''instant n''est pas l''instant UTC posé par la base (écart %).', ecart;
+  END IF;
+  IF ligne.transaction_pose IS DISTINCT FROM pg_current_xact_id()::text::bigint THEN
+    RAISE EXCEPTION 'CONTRAT — 2 : la transaction de l''acte n''est pas celle posée par la base (%).', ligne.transaction_pose;
   END IF;
   ordre_premier := ligne.ordre;
 
@@ -377,17 +400,17 @@ BEGIN
   PERFORM pg_temp.refuse('10 pièce d''un retrait',
     $q$SELECT pg_temp.piece_q('x10c', 'c_a3', 'PAT_CONTRAT_CONST_A', 'q_valid')$q$,
     'P0001', 'un retrait ne porte pas de pièce');
-  -- Un constat écrit dans un point de sauvegarde porte le `xmin` de ce
-  -- dernier, pas celui de la transaction : c'est ainsi qu'une session seule
-  -- figure un constat posé AILLEURS, qui refuse ses pièces.
+  -- Un constat écrit dans un point de sauvegarde reste de la transaction :
+  -- ses pièces, écrites hors du point, passent (le `xmin` les refusait).
+  -- Une pièce écrite après le COMMIT de son constat ne se figure pas ici :
+  -- la transaction fournie est écrasée par la base (cas 2) ; le banc à deux
+  -- sessions l'éprouve, et le cas 15 relit la règle sur la fonction.
   BEGIN
     PERFORM pg_temp.poser('c_t1', 'PAT_CONTRAT_CONST_A', 'HYP_CONTRAT_T1', 'sans_objet', 'hors_population', NULL);
   EXCEPTION WHEN OTHERS THEN
     RAISE;
   END;
-  PERFORM pg_temp.refuse('10 pièce hors de la transaction du constat',
-    $q$SELECT pg_temp.piece_q('x10d', 'c_t1', 'PAT_CONTRAT_CONST_A', 'q_valid')$q$,
-    'P0001', 'dans la transaction qui le pose');
+  PERFORM pg_temp.piece_q('p_t1', 'c_t1', 'PAT_CONTRAT_CONST_A', 'q_valid');
 
   -- ── 11. La pièce elle-même ───────────────────────────────────────────────
   PERFORM pg_temp.refuse('11 résultat d''un autre dossier',
@@ -469,6 +492,12 @@ BEGIN
   -- refuser (garde « constat effacé » du contrôle différé).
   PERFORM pg_temp.poser('c_e1', 'PAT_CONTRAT_CONST_A', 'HYP_CONTRAT_E9', 'confirmee', NULL, NULL);
   PERFORM pg_temp.piece_q('p_e1', 'c_e1', 'PAT_CONTRAT_CONST_A', 'q_amb');
+  PERFORM pg_temp.refuse('14 pièce supprimée hors effacement',
+    $q$SELECT pg_temp.supprimer_puis_clore('pieces_constats_praticien', 'p_v1_c')$q$,
+    'P0001', 'pieces_constats_praticien : suppression refusée');
+  PERFORM pg_temp.refuse('14 constat supprimé hors effacement',
+    $q$SELECT pg_temp.supprimer_puis_clore('constats_praticien', 'c_b1')$q$,
+    'P0001', 'constats_praticien : suppression refusée');
   PERFORM pg_temp.refuse('14 résultat effacé avant ses pièces',
     $q$DELETE FROM resultats_biologiques WHERE id = 'res_c1'$q$,
     '23503', 'pieces_constats_praticien_id_resultat_fkey');
@@ -485,11 +514,14 @@ BEGIN
   IF nb <> 0 THEN
     RAISE EXCEPTION 'CONTRAT — 14 : l''effacement a laissé % ligne(s).', nb;
   END IF;
-  -- Les contrôles différés des constats effacés ne refusent plus rien.
-  PERFORM pg_temp.clore();
+  -- Le reste du dossier, puis le dossier : les contrôles différés ne
+  -- refusent plus rien, ni la pose en attente (constat effacé), ni la
+  -- suppression (le dossier ne survit pas).
   DELETE FROM questionnaire_reponses WHERE id_patient = 'PAT_CONTRAT_CONST_A';
   DELETE FROM annulations_resultats_biologiques WHERE id_patient = 'PAT_CONTRAT_CONST_A';
   DELETE FROM resultats_biologiques WHERE id_patient = 'PAT_CONTRAT_CONST_A';
+  DELETE FROM patients WHERE id_patient = 'PAT_CONTRAT_CONST_A';
+  PERFORM pg_temp.clore();
 
   -- ── 15. Clés, CHECK, index, triggers, verrous ────────────────────────────
   SELECT count(*) INTO nb FROM pg_constraint
@@ -562,16 +594,25 @@ BEGIN
   IF nb <> 6 THEN
     RAISE EXCEPTION 'CONTRAT — 15 : % trigger(s) BEFORE sur 6 sont présents et actifs, de la forme annoncée.', nb;
   END IF;
-  -- Le contrôle des pièces requises : trigger de CONTRAINTE, AFTER INSERT par
-  -- ligne, différable et différé par défaut — en fin de transaction.
+  -- Les trois contrôles de fin de transaction : triggers de CONTRAINTE, AFTER
+  -- par ligne, différables et différés par défaut — les pièces requises à
+  -- l'insertion d'un constat, la suppression nommée sur chaque table.
   SELECT count(*) INTO nb FROM pg_trigger t
-  WHERE t.tgrelid = 'public.constats_praticien'::regclass
-    AND t.tgname = 'constats_praticien_pieces_requises'
-    AND t.tgenabled = 'O' AND t.tgconstraint <> 0
+  WHERE t.tgenabled = 'O' AND t.tgconstraint <> 0
     AND t.tgdeferrable AND t.tginitdeferred
-    AND (t.tgtype & 2) = 0 AND (t.tgtype & 1) = 1 AND (t.tgtype & 4) = 4;
-  IF nb <> 1 THEN
-    RAISE EXCEPTION 'CONTRAT — 15 : le contrôle des pièces requises n''est pas un trigger de contrainte différé.';
+    AND (t.tgtype & 2) = 0 AND (t.tgtype & 1) = 1
+    AND ((t.tgrelid = 'public.constats_praticien'::regclass
+          AND t.tgname = 'constats_praticien_pieces_requises' AND (t.tgtype & 4) = 4)
+      OR (t.tgrelid = 'public.constats_praticien'::regclass
+          AND t.tgname = 'constats_praticien_suppression_nommee' AND (t.tgtype & 8) = 8)
+      OR (t.tgrelid = 'public.pieces_constats_praticien'::regclass
+          AND t.tgname = 'pieces_constats_praticien_suppression_nommee' AND (t.tgtype & 8) = 8));
+  IF nb <> 3 THEN
+    RAISE EXCEPTION 'CONTRAT — 15 : % contrôle(s) de fin de transaction sur 3 sont des triggers de contrainte différés.', nb;
+  END IF;
+  IF pg_get_functiondef('public.pieces_constats_praticien_avant_insertion()'::regprocedure)
+       !~ 'constat_transaction IS DISTINCT FROM pg_current_xact_id\(\)::text::bigint' THEN
+    RAISE EXCEPTION 'CONTRAT — 15 : la pièce ne compare plus sa transaction à celle du constat.';
   END IF;
   -- Les verrous avant les contrôles (en-tête de la migration). Une session
   -- seule n'éprouve pas la concurrence : elle relit l'appel et sa place.
@@ -591,10 +632,11 @@ BEGIN
   WHERE p.oid IN ('public.constats_praticien_avant_insertion()'::regprocedure,
                   'public.pieces_constats_praticien_avant_insertion()'::regprocedure,
                   'public.constats_praticien_pieces_requises()'::regprocedure,
+                  'public.constats_praticien_suppression_nommee()'::regprocedure,
                   'public.constats_praticien_figee()'::regprocedure)
     AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
-  IF nb <> 4 THEN
-    RAISE EXCEPTION 'CONTRAT — 15 : % fonction(s) sur 4 ont le search_path épinglé.', nb;
+  IF nb <> 5 THEN
+    RAISE EXCEPTION 'CONTRAT — 15 : % fonction(s) sur 5 ont le search_path épinglé.', nb;
   END IF;
 
   -- ── 16. Liste blanche des colonnes, RLS et fonctions ─────────────────────
@@ -603,7 +645,7 @@ BEGIN
   WHERE table_schema = 'public' AND table_name = 'constats_praticien';
   IF colonnes <> ARRAY['a_revoir_le', 'acte', 'acte_le', 'hypothese_code', 'id',
                        'id_constat_remplace', 'id_patient', 'motif', 'note', 'ordre',
-                       'praticien_email', 'structure_sha256', 'verdict'] THEN
+                       'praticien_email', 'structure_sha256', 'transaction_pose', 'verdict'] THEN
     RAISE EXCEPTION 'CONTRAT — 16 : colonnes inattendues sur les constats : %', colonnes;
   END IF;
   SELECT array_agg(column_name::text ORDER BY column_name::text COLLATE "C") INTO colonnes
@@ -625,7 +667,8 @@ BEGIN
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.proname IN ('constats_praticien_figee', 'constats_praticien_avant_insertion',
-                      'pieces_constats_praticien_avant_insertion', 'constats_praticien_pieces_requises')
+                      'pieces_constats_praticien_avant_insertion', 'constats_praticien_pieces_requises',
+                      'constats_praticien_suppression_nommee')
     AND has_function_privilege('public', p.oid, 'EXECUTE');
   IF nb <> 0 THEN
     RAISE EXCEPTION 'CONTRAT — 16 : % fonction(s) exécutable(s) par PUBLIC.', nb;

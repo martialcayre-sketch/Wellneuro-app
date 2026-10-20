@@ -10999,7 +10999,7 @@ Ce lot les livre, sans migration.
 
 ## 2026-10-20 — File B : BP-11, migration des constats (D-331)
 
-**Fait.** D-331 mergée (#1589), RGPD validé par le responsable. Migration seule des constats : deux tables en ajout seul, une tête par hypothèse sous verrou, motifs fermés, pièces par clé écrites avec leur constat, pièces requises en fin de transaction ; contrat négatif (17 mutations rouges), course à deux sessions fermée, effacement nommé. Arbitrages BP-13, BP-15, F52 rendus.
+**Fait.** D-331 mergée (#1589), RGPD validé par le responsable. Migration seule des constats : deux tables en ajout seul, une tête par hypothèse sous verrou, motifs fermés, pièces par clé écrites avec leur constat, pièces requises en fin de transaction ; contrat négatif (20 mutations rouges), banc à deux sessions au CI, suppression réservée à l'effacement, effacement nommé. Arbitrages BP-13, BP-15, F52 rendus.
 
 **Écarté.** Motifs en `OR` : un motif absent rendait le CHECK NULL, donc passant. Refus d'une date passée en base : fuseau de la route.
 
