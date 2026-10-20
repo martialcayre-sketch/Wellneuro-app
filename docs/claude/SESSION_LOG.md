@@ -11025,6 +11025,17 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
 
+## 2026-10-20 — S-2 : doctrine du cockpit chiffré et de l'adhésion rédigée
+
+**Fait.** #1596 fermée sans merge : doublon de #1592, qui avait déjà livré J3-12d ; r1_14 passée à « fait ». S-2 ouvert : D-333 (lettre c) et D-334 (lettre d) rédigées au statut « proposé », avec le fragment, les commentaires d'`adhesion.ts`, le registre des frontières (A1, A6-R2, SP-MET) et la fiche H01. Deux arbitrages du jour : E4 vit avec les constats par point d'étape (A8-4 intacte) ; la progression d'un questionnaire est gardée comme exception nommée. Contre-revue P0 (`wn-reviewer`) intégrée.
+
+**Écarté.** Lever « jamais un score » pour SP-MET (pièce 31) : c'est inutile, car un comptage n'est pas un score, et cela contredisait A8-4.
+
+Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) et les exceptions du portail (deux familles), puis accepté les deux textes tels quels.
+
+**Prochaine action.** CI, CodeRabbit, merge ; signature M-2 au rang 2.
+
+**Ouvert.** Aucun dans ce lot.
 ## 2026-10-20 — ACT-4 : publication des textes prête (v19, conditions v2)
 
 **Fait.** Partie B validée ; une cinquième question tranchée : la partie 5 des conditions nomme le dépôt du compte rendu (le dépôt de documents reste sans accusé). Registre : `donnees_confidentialite@v19`, `conditions_utilisation@v2`, gabarit `conditions_utilisation@2`, chacun comparé par banc à la proposition validée. PR ouverte en brouillon, à merger à l'ouverture d'ACT-4.
