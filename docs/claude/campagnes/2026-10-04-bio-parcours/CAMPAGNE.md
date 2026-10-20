@@ -135,7 +135,7 @@ nouveaux, décisions acceptées.
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | terminé (2026-10-15 ; `D-305` #1471, code en une PR sans migration) | non | BP-01, BP-09 |
 | BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | à_faire | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
-| BP-11 | LOT-11 | Constats du praticien | à_faire | **oui** | BP-09, BP-12a |
+| BP-11 | LOT-11 | Constats du praticien | à_faire (2026-10-19 : fiche, six arbitrages, `D-331`, déclaration RGPD validée le 2026-10-20 ; migration à écrire, release-db après t03) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
 | BP-15 | LOT-15 | Décisions de parcours | à_faire | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |

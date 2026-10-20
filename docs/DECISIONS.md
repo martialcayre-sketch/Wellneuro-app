@@ -4,6 +4,183 @@
 
 ## Décisions actives
 
+### D-331 — BP-11 : le constat du praticien, un acte en ajout seul sur une hypothèse du vocabulaire signé — quatre verdicts, motif fermé, pièces tenues par clé, aucune valeur ; « à relire » dérivé à la lecture ; précise D-122 (LOT-11)
+
+- Date : 2026-10-19
+- Statut : accepté. Six arbitrages du responsable rendus le 2026-10-19 sur
+  questions à options, consignés dans la fiche LOT-11 : quatre sur l'option
+  recommandée (pièces, validité, questionnaire repassé, liste des motifs),
+  deux contre elle (un nouveau prélèvement rend le constat « à relire » ; un
+  motif fermé plutôt qu'une note libre). Sur sa demande, l'assistant a
+  proposé la liste des motifs ([[D-308]] §2 levé pour cette liste, comme en
+  [[D-322]]) ; le responsable l'a retenue telle quelle. Texte rédigé par
+  l'assistant à partir de ces réponses. Les deux précisions de l'assistant
+  (§5.5, et la re-signature qui garde l'hypothèse, §5) et le paragraphe du
+  dossier RGPD sont retenus par le responsable le 2026-10-20.
+- Domaine : campagne bio-parcours, BP-11 (LOT-11) ; plan, fiche F06 ; deux
+  tables neuves en ajout seul ; `web/src/lib/patient/effacement.ts` ;
+  `docs/DOSSIER_RGPD.md`.
+- Précise : [[D-122]] (frontière « résultat → moteur », §6 ci-dessous).
+  Applique le cadrage v3, §3.4 et ligne BP-11 ; [[D-266]] §11 (une
+  migration, deux PR) ; [[D-314]] §2 et §10 (le vocabulaire d'hypothèses de
+  BP-12a, que BP-11 consomme par identifiant).
+- **Une migration autorisée**, demandée par le responsable le 2026-10-19
+  (reprise de la file B : « il exige une migration ») : deux tables neuves,
+  aucune table existante modifiée.
+- **Ne touche pas** : aucune valeur, aucune règle clinique, aucun seuil,
+  aucune durée ; [[D-059]] §4 et le contrat d'`arbitrages_biologiques` ;
+  [[D-157]] §2 ; les statuts posés près d'une valeur ([[D-322]]) ; ni le
+  portail, ni le courrier au médecin, ni le scoring, ni l'orientation, ni
+  l'IA ne lisent un constat.
+
+**§1 — Le constat (2026-10-19).** Dans l'étage outil, aucun module ne lit
+de valeur : le parcours lira les constats posés par le praticien (cadrage
+v3, §3.4). Aucun objet ne les porte aujourd'hui. Deux objets voisins ne
+conviennent pas. `ArbitrageBiologique` juge une **action** (unicité version
+× intention), et son contrat négatif refuse toute colonne `resultat` ; le
+statut de [[D-322]] juge ce que le praticien **fait** d'une valeur, ligne par
+ligne. Le constat, lui, porte sur une **hypothèse**, appuyée sur plusieurs
+pièces. Le vocabulaire d'hypothèses existe en format (`HYP_…`, fixé par la
+base en [[D-314]] §8), mais il est **vide** : la structure de BP-12a se
+signe quand quatre dossiers de preuve sont clos ([[D-314]] §10). Tant
+qu'elle ne l'est pas, aucun constat ne peut être posé.
+
+**§2 — L'objet : deux tables en ajout seul.** Sur le patron des annulations
+de résultats ([[D-294]]) et des statuts ([[D-322]]) : clé d'ordre et date
+posées par la base, inantidatables ; UPDATE et TRUNCATE refusés par
+trigger ; DELETE réservé à l'effacement nommé du dossier ; RLS activée sans
+politique ; la base refuse l'acte d'un autre praticien que celui du
+dossier.
+
+- **Le constat** : le dossier, l'acte (`pose` ou `retrait`), l'hypothèse
+  (identifiant `HYP_…`, format vérifié par la base), le verdict, le motif,
+  la note facultative, la date « à revoir le » facultative, le constat
+  qu'il remplace (`supersedes`, du même dossier et de la même hypothèse),
+  l'empreinte de la structure signée en vigueur à la pose, l'e-mail du
+  praticien et la date. L'appartenance de l'hypothèse à la structure
+  signée se vérifie à la route, la structure étant une table TS.
+  **Un seul constat en vigueur par hypothèse et par dossier** : la
+  **tête**, un constat posé que ni un remplacement ni un retrait ne vise.
+  Une pose sur une hypothèse qui a une tête doit la remplacer (`supersedes`
+  la désigne) ; une pose sans tête n'a pas de `supersedes`. Un retrait est
+  une ligne de plus, qui ne vise **que la tête** : il ramène l'hypothèse à
+  « aucun constat posé », sans motif. Un constat déjà remplacé ou retiré ne
+  se remplace ni ne se retire : si `B` a remplacé `A`, le retrait de `A` est
+  refusé et l'hypothèse reste portée par `B` (revue CodeRabbit de #1589).
+  La base le tient, sous le verrou du dossier, comme l'unicité de
+  [[D-294]] §3.
+- **Ses pièces** : le constat et une pièce par ligne, qui désigne **soit**
+  une ligne de résultat de biologie, **soit** une réponse de questionnaire
+  (arbitrage 1) — une contrainte en base exige l'une et exclut l'autre ;
+  chacune par une vraie clé, en `RESTRICT`, du même dossier. À la pose, une
+  pièce de biologie est la tête de son fil et n'est pas annulée ; une pièce
+  de questionnaire n'est pas invalidée. Un constat `confirmee` ou
+  `non_retenue` porte au moins une pièce ; `non_evaluable` et `sans_objet`
+  peuvent n'en porter aucune. Les pièces s'écrivent avec le constat, dans
+  la même transaction ; la base le vérifie en fin de transaction. Les
+  traitements et le contexte de prélèvement deviendront des pièces par une
+  migration, avec BP-13 et BP-05, quand leurs lignes existeront.
+
+**§3 — Les verdicts et les motifs.** Quatre verdicts (cadrage v3, §3.4),
+affichés tels quels : `confirmee` « confirmée », `non_retenue` « non
+retenue », `non_evaluable` « non évaluable » (données insuffisantes, DC-24),
+`sans_objet` « sans objet ». **Hors `confirmee`, un motif est obligatoire**,
+pris dans une liste fermée (arbitrages 5 et 6) ; la base refuse un motif qui
+n'appartient pas à son verdict :
+
+| verdict | code | libellé affiché |
+|---|---|---|
+| `non_retenue` | `pieces_ne_soutiennent_pas` | les pièces ne soutiennent pas l'hypothèse |
+| `non_retenue` | `autre_hypothese_retenue` | une autre hypothèse est retenue |
+| `non_retenue` | `contexte_explique` | le contexte ou un traitement explique les pièces |
+| `non_evaluable` | `piece_attendue_manquante` | une pièce attendue manque |
+| `non_evaluable` | `contexte_inconnu` | le contexte du prélèvement est inconnu |
+| `non_evaluable` | `donnee_a_verifier` | la fiabilité d'une pièce est à contrôler |
+| `sans_objet` | `hors_population` | le patient est hors de la population de la fiche |
+| `sans_objet` | `question_ne_se_pose_plus` | la question ne se pose plus pour ce patient |
+| les trois | `autre` | autre motif |
+
+Un constat `confirmee` ne porte pas de motif. La **note** est facultative,
+**obligatoire avec `autre`**, 2000 caractères au plus, jamais réduite à des
+espaces ; l'écran dit « ne recopiez aucune valeur » — la base ne peut pas le
+vérifier. Écartés, comme en [[D-322]] §1 : « normal », « anormal »,
+« déficit », « carence », « excès » (ils jugent une valeur ou posent un
+diagnostic, DC-31, [[D-157]] §3). Un motif neuf exige une décision et une
+migration.
+
+**§4 — La validité.** Aucun claim certifié ne fixe de durée, et
+l'application n'en invente pas. Le praticien **peut** poser une date « à
+revoir le » (arbitrage 2) ; sa nature, affichée, est « fixée par le
+praticien » (DC-19, DC-20). Sans date, le constat tient jusqu'à son
+remplacement, son retrait ou l'un des événements du §5.
+
+**§5 — « À relire », dérivé à la lecture, jamais écrit.** Un constat posé
+se dit « à relire » dès que l'une de ces conditions tient ; il n'est jamais
+réécrit, et seul un nouveau constat (qui le remplace) ou un retrait en sort :
+
+1. une pièce de biologie est **corrigée** (une ligne la supplante,
+   [[D-124]]) ;
+2. une pièce de biologie est **annulée** (annulation active, [[D-294]]) ;
+3. un **nouveau prélèvement** d'un analyte cité arrive : un résultat non
+   annulé du même analyte, prélevé après le plus récent prélèvement de cet
+   analyte parmi les pièces (arbitrage 3) ;
+4. le patient **repasse** un questionnaire cité : une réponse plus récente
+   au même questionnaire (arbitrage 4) ;
+5. une pièce de questionnaire est **invalidée** par le praticien
+   (équivalent d'une annulation pour une passation) ;
+6. la date « à revoir le » est **passée** (arbitrage 2) ;
+7. l'hypothèse ne figure plus dans la structure signée en vigueur.
+
+Une condition levée (une annulation révoquée, par exemple) rend au constat
+son état, sans geste. Une re-signature de la structure qui garde
+l'hypothèse ne rend pas, à elle seule, le constat « à relire ». L'écran dit
+quelle condition tient, sans jamais dire une valeur.
+
+**§6 — D-122 précisée.** Consommer un constat **n'est pas** « faire parler
+un résultat réel au moteur » ([[D-122]], frontières) : le constat est un
+geste daté du praticien sur une hypothèse, pas une lecture de valeur. Le
+parcours (BP-16, BP-20) peut donc le lire. Cela ne dispense aucune règle qui
+l'utilise de sa décision et de ses claims. Aucun code ne déduit un constat
+d'une valeur ; l'évaluateur de l'étage assistant (BP-27) pourra **proposer**
+un constat, que le praticien pose ou non. Le logiciel ne signale pas une
+valeur, et la surface le dit : un constat n'est pas un filet de sécurité
+(cadrage v3, §4.5).
+
+**§7 — Aucune valeur.** Aucune colonne ne recopie une valeur, une unité, un
+analyte ou une date de prélèvement : l'analyte et la date se lisent sur la
+pièce, par sa clé. Un **contrat SQL négatif propre** aux deux tables, joué au
+CI, les éprouve. Celui d'`arbitrages_biologiques` ne les couvre pas : la
+seule colonne admise qui contienne `resultat` est la clé de la pièce.
+
+**§8 — Lecture, drapeau, effacement.** Le praticien du dossier seul pose,
+retire et lit, à l'écran du parcours. Le drapeau `WN_BIO_CONSTAT` naît avec
+le code qui le lit, éteint, fail-closed, et exige `isCbResultsEnabled` ; sa
+pose est un geste daté ([[D-081]]). L'effacement d'un dossier vide les
+pièces, puis les constats, **avant** les réponses de questionnaire et les
+résultats qu'ils désignent, nommément (`effacerDossier`), et le banc de
+complétude de l'effacement les compte. Déclaration au dossier RGPD avant la
+table, validée par le responsable avant le merge de la migration.
+
+**§9 — Exécution.** Deux PR ([[D-266]] §11). D'abord la migration seule,
+avec son effacement nommé, son contrat négatif et son banc : PR relue,
+release-db approuvée, sentinelle et constat par conteneur ([[D-087]]). Sa
+release-db attend celle de t03 (#1581), constatée : une à la fois
+([[D-248]]). Puis le code consommateur (route, lecture, écran), sous
+`WN_BIO_CONSTAT`. Ses tests emploient un vocabulaire synthétique ; en
+production, aucun constat ne se pose avant la signature de la structure de
+BP-12a.
+
+**§10 — Hors de ce lot.** Les pièces attendues par une fiche d'usage
+(présente, absente, inconnue) : la structure de BP-12a ne les déclare pas
+encore ; à reprendre avec BP-16. Le réveil « résultat arrivé, constat à
+poser » de la boucle d'exploration (BP-16), dont le §5 couvre la part qui
+touche un constat déjà posé. Les traitements et le contexte comme pièces
+(BP-13, BP-05). Toute proposition de constat (BP-27). Toute surface
+patient.
+
+- Conséquences : fragment `changelog.d/2026-10-19-d331-constats-praticien.md` ;
+  fiche LOT-11 ; paragraphe du dossier RGPD ; puis la PR de migration seule.
+
 ### D-330 — Collecte documentaire : le patient dépose et propose une catégorie, le praticien du dossier consulte, corrige et retire ; un retrait efface le contenu et garde la ligne ; bornes du compte rendu ; « Transmis » dans « Mes échanges » (J3-collecte, amende D-293)
 
 - Date : 2026-10-18
