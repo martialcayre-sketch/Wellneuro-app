@@ -53,6 +53,8 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       actif: true,
       accessTokenRevoked: false,
       email: assignation.emailPatient,
+      // Majeur : la pause d'âge (D-284 §3) ne s'applique pas aux cas ci-dessous.
+      dateNaissance: '1985-03-14',
     });
   });
 
@@ -165,5 +167,41 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     const response = await GET(requeteProprietaire());
     expect(response.status).toBe(410);
     expect(await response.json()).toMatchObject({ ok: false, reason: 'annulee' });
+  });
+
+  describe('pause d’âge dès l’ouverture (D-284 §3, t02)', () => {
+    const quinzeAns = () => new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const patient = (dateNaissance: string | null) => ({
+      idPatient: assignation.idPatient,
+      actif: true,
+      accessTokenRevoked: false,
+      email: assignation.emailPatient,
+      dateNaissance,
+    });
+
+    it('★ date de naissance manquante : 409 avant tout formulaire, même refus que la soumission', async () => {
+      prisma.patient.findUnique.mockResolvedValue(patient(null));
+      const response = await GET(requeteProprietaire());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ ok: false, reason: 'date_naissance_requise' });
+    });
+
+    it('★ patient mineur : 409, pause maintenue jusqu’au circuit des mineurs', async () => {
+      prisma.patient.findUnique.mockResolvedValue(patient(quinzeAns()));
+      const response = await GET(requeteProprietaire());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ ok: false, reason: 'circuit_mineur_requis' });
+    });
+
+    it.each(['verrouille', 'modification_demandee'])(
+      'des réponses en lecture seule (%s) restent consultables : la pause porte sur la saisie',
+      async (statutReponses) => {
+        prisma.patient.findUnique.mockResolvedValue(patient(quinzeAns()));
+        prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statutReponses });
+        const response = await GET(requeteProprietaire());
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ ok: true });
+      },
+    );
   });
 });

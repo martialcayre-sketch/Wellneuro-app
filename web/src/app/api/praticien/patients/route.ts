@@ -74,10 +74,9 @@ type Patient = {
   // et qu'un champ date ne sait pas afficher « ».
   //
   // LE NIR N'EST PLUS SERVI (D-284 §2, lot g) : son recueil n'a pas de
-  // fondement pour ce responsable. La colonne vide reste en base jusqu'à sa
-  // migration de retrait. Cette route ne l'écrit plus et ne la sert plus ; les
-  // requêtes sans `select` la remontent encore jusqu'au processus, sans
-  // l'exposer — la migration de retrait clora ce reste (0 valeur enregistrée).
+  // fondement pour ce responsable. La colonne est retirée de la base depuis le
+  // 2026-10-20 (migration `patients_retrait_nir_v1`, t03 ; 0 valeur enregistrée
+  // au retrait) : plus aucune requête ne la remonte.
   dateNaissance: string | null;
   adresse: string;
   medecinTraitantNom: string;

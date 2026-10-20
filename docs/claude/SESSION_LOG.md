@@ -10887,6 +10887,16 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t03 : migration de retrait de la colonne NIR
+
+**Fait.** Migration `DROP COLUMN "nir"`, schéma, contrat d'absence neuf, contrat du dossier administratif à trois colonnes, étape CI.
+
+**Écarté.** Garder la colonne vide : D-284 (g) demande son retrait, et rien ne la lit plus.
+
+**Prochaine action.** PR, merge après la release-db de t11, re-constat de 0 NIR, release-db, constat.
+
+**Ouvert.** Aucun.
+
 ## 2026-10-19 — t15 : réviser part de la version en vigueur
 
 **Fait.** Brouillon vierge du constructeur rechargé depuis la version en vigueur (une fois par version, orientation non reprise, V4 redemandé) ; `versionsLues` au rail, phase Actions « inconnu » avant lecture.
@@ -10943,5 +10953,33 @@ Ce lot les livre, sans migration.
 **Écarté.** Retirer `niveauPreuve` des routes ou supprimer `EvidenceBadge` : le grade reste dans le snapshot, et le badge revient avec la table signée (J3-12f).
 
 **Prochaine action.** Bases visuelles du tiroir régénérées, PR, merge, déploiement constaté.
+
+## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
+
+**Fait.** Un questionnaire remplissable ouvert par son adresse rend le refus de la soumission (409, même texte) ; banc structurel qui classe chaque route d'écriture patient, gardée ou ouverte avec motif.
+
+**Écarté.** Envoyer le signal de sécurité d'un mineur malgré la pause : décision du responsable. Tracer l'origine de la date : migration, avec J3-mineurs.
+
+**Prochaine action.** PR, T2, merge, déploiement constaté.
+
+**Ouvert.** Les deux restes ci-dessus.
+## 2026-10-20 — t31 : statut des campagnes lu sur la fiche
+
+**Fait.** La vue `ACTIVE_CAMPAIGN.md` reprend le statut de la fiche (premier mot, « inconnu » à défaut) au lieu de « active » en dur ; vue régénérée, la primaire passe à `en_pause`. Deux cas au banc.
+
+**Écarté.** `wn-cycle --appliquer` pour régénérer : il réécrit aussi l'état machine.
+
+**Prochaine action.** PR, merge, t31 → fait.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-20 — t03 : colonne NIR retirée, release constatée
+
+**Fait.** #1581 mergée après recomptage (0 NIR sur 34) ; release-db 39340724658 approuvée par délégation, sentinelle reçue ; constat par conteneur : colonne et contrainte absentes, migration appliquée, aucune en échec. Textes du registre RGPD, commentaires et note du constat de ligne de base mis à jour.
+
+**Écarté.** Reformuler la requête du constat de ligne de base : elle se rejoue à l'identique ; une note suffit.
+
+**Prochaine action.** PR de textes, merge, déploiement constaté.
 
 **Ouvert.** Aucun.
