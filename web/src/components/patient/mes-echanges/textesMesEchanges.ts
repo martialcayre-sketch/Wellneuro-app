@@ -16,12 +16,26 @@ export const TITRE_MES_ECHANGES = 'Mes échanges';
 /** Le lien de la navigation « Autres espaces » (arbitrage du 2026-10-18). */
 export const LIEN_MES_ECHANGES = 'Ouvrir mes échanges';
 
-export const BLOCS_MES_ECHANGES: readonly { titre: string; texte: string }[] = Object.freeze([
-  {
-    titre: 'Ce que vous trouvez ici',
-    texte:
-      'La liste datée de ce que votre praticien vous a remis — votre bilan et sa note, vos fiches, le courrier pour votre médecin, votre protocole — et de ce que vous lui avez transmis — vos questionnaires, vos comptes rendus d’analyses, vos signalements, avec leur statut. Chaque ligne ouvre la page de votre espace où se trouve le document.',
-  },
+const CE_QUE_VOUS_TROUVEZ_ICI = {
+  titre: 'Ce que vous trouvez ici',
+  texte:
+    'La liste datée de ce que votre praticien vous a remis — votre bilan et sa note, vos fiches, le courrier pour votre médecin, votre protocole — et de ce que vous lui avez transmis — vos questionnaires, vos comptes rendus d’analyses, vos signalements, avec leur statut. Chaque ligne ouvre la page de votre espace où se trouve le document.',
+};
+
+// LE MÊME BLOC, DÉPÔT OUVERT ([[D-330]], ACT-4) : il nomme les documents
+// déposés, et la ligne d'un dépôt n'ouvre pas le document (la page de dépôt ne
+// montre que date et catégorie) — d'où « qui le concerne ». Validé tel quel
+// par le responsable le 2026-10-20 :
+// `docs/claude/propositions/2026-10-20-act4-textes/README.md`. Servi
+// seulement `WN_PORTAIL_DEPOT_DOCUMENTS` ouvert : fermé, il nommerait des
+// dépôts que le patient ne peut pas voir.
+const CE_QUE_VOUS_TROUVEZ_ICI_DEPOT_OUVERT = {
+  titre: 'Ce que vous trouvez ici',
+  texte:
+    'La liste datée de ce que votre praticien vous a remis — votre bilan et sa note, vos fiches, le courrier pour votre médecin, votre protocole — et de ce que vous lui avez transmis — vos questionnaires, vos comptes rendus d’analyses, les documents que vous avez déposés, vos signalements, avec leur statut. Chaque ligne ouvre la page de votre espace qui le concerne.',
+};
+
+const BLOCS_SUIVANTS: readonly { titre: string; texte: string }[] = [
   {
     titre: 'Ce n’est pas une messagerie',
     texte:
@@ -42,6 +56,16 @@ export const BLOCS_MES_ECHANGES: readonly { titre: string; texte: string }[] = O
     texte:
       'Vous pouvez demander à tout moment à consulter, corriger ou retirer un élément depuis « Signaler un problème », choix « Je souhaite exercer un droit ».',
   },
+];
+
+export const BLOCS_MES_ECHANGES: readonly { titre: string; texte: string }[] = Object.freeze([
+  CE_QUE_VOUS_TROUVEZ_ICI,
+  ...BLOCS_SUIVANTS,
+]);
+
+export const BLOCS_MES_ECHANGES_DEPOT_OUVERT: readonly { titre: string; texte: string }[] = Object.freeze([
+  CE_QUE_VOUS_TROUVEZ_ICI_DEPOT_OUVERT,
+  ...BLOCS_SUIVANTS,
 ]);
 
 // Micro-textes d'état, validés tels quels par le responsable le 2026-10-18

@@ -6,8 +6,11 @@
 // côté du dépôt, sans accusé (arbitrage 2 de G-11), et ne change plus sans
 // nouvelle validation ; un banc le compare au document validé.
 //
-// LES LIBELLÉS DE L'ÉCRAN (titre, champs, bouton, liste) sont NEUFS : à faire
-// valider avant l'ouverture (ACT-4). Le drapeau est éteint d'ici là.
+// LES LIBELLÉS DE L'ÉCRAN (titre, champs, bouton, liste, refus) ont été validés
+// tels quels par le responsable le 2026-10-20 (préparation d'ACT-4), le refus
+// du plafond des non-consultés rendu neutre :
+// `docs/claude/propositions/2026-10-20-act4-textes/README.md`. Le drapeau reste
+// éteint jusqu'à l'ouverture.
 
 export const TITRE_DEPOT = 'Déposer un document';
 
