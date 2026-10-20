@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 542 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 546 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 35 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 39 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
 un résumé des caractéristiques du produit et une information de bon usage de
@@ -12,8 +12,10 @@ recommandations de la DGCCRF, un avis de l'EFSA, une fiche du NIH et un
 règlement de l'Union, `WN-SRC-0519` à `0524` ; J3-12e : quinze sources de mesure en accès
 libre des besoins 6 à 12 — études de validation, revues, documentation des
 auteurs d'instruments —, `WN-SRC-0540` à `0554`, puis trois compléments en
-accès libre des besoins 6, 8 et 12, `WN-SRC-0560` à `0562`), dont seuls des
-extraits ciblés sont ingérés. Les plages `0525` à `0539` et `0555` à `0559` sont
+accès libre des besoins 6, 8 et 12, `WN-SRC-0560` à `0562`, et quatre autres
+des besoins 6, 8 et 12, `WN-SRC-0563` à `0566`), dont seuls des extraits
+ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546` est `deprecated` :
+remplacé par sa version publiée `WN-SRC-0564`, ses claims restent non signés. Les plages `0525` à `0539` et `0555` à `0559` sont
 laissées à une autre session d'ingestion (`0555` est déjà en base, lot
 `LOT_036_2026-10-20`). Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
@@ -41,10 +43,12 @@ corpus runtime.
   articles sous licence CC BY dont les extraits sont ingérés (`WN-SRC-0545`,
   `0550`, `0553`, `0554`) ; les onze autres sources de mesure (droits de
   l'éditeur, CC BY-NC, manuscrit soumis, pages des auteurs) restent à vérifier ;
-  au 2026-10-20 encore, pour le zinc, le résumé des caractéristiques du produit
-  RUBOZINC (`WN-SRC-0520`, Licence Ouverte etalab-2.0), dont les extraits sont
-  ingérés ; les cinq autres sources du zinc (`0519`, `0521` à `0524`) restent à
-  vérifier.
+  puis une de plus, la version publiée sous CC BY 4.0 de la validation
+  française de la DARS (`WN-SRC-0564`) ; les compléments `0560` à `0563`,
+  `0565` et `0566` restent à vérifier ; au 2026-10-20 encore, pour le zinc, le
+  résumé des caractéristiques du produit RUBOZINC (`WN-SRC-0520`, Licence
+  Ouverte etalab-2.0), dont les extraits sont ingérés ; les cinq autres sources
+  du zinc (`0519`, `0521` à `0524`) restent à vérifier.
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
