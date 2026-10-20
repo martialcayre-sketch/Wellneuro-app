@@ -1370,6 +1370,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/documents_deposes_patient_v1_negatif.sql
 
+      # Les mêmes tables, par les VRAIS chemins du code (D-330 §4) : dépôt en
+      # READ COMMITTED, deux dépôts concurrents au seuil — constatés en attente
+      # du verrou du dossier — n'en posent qu'un, première consultation tracée
+      # une fois, classement daté, retrait qui garde la ligne. Commet ses lignes
+      # (dossiers PAT_BANC_COLLECTE_…) : la base doit être NOMMÉE.
+      - name: Documents deposes patient real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_COLLECTE_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/collecte/documentsDeposes.pg.test.ts
+
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte
       # rendu (unicité PARTIELLE), import courant du même compte rendu, identité

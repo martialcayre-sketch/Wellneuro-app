@@ -10936,6 +10936,15 @@ Ce lot les livre, sans migration.
 **Ouvert.** Aucun.
 
 
+## 2026-10-19 — J3-collecte : le code sous drapeau éteint (D-330 §4)
+
+**Fait.** Livré sous `WN_PORTAIL_DEPOT_DOCUMENTS`, éteint : la route et la page de dépôt, l'écran du praticien (ouvrir, corriger, retirer) et la ligne « Transmis ». Plafonds rejugés sous le verrou du dossier, en READ COMMITTED ; listes sans `contenu` ; consultation conditionnelle. Banc sur base réelle ajouté au CI. Relecture `wn-reviewer` : aucun bloquant, six points corrigés.
+
+**Écarté.** Dérogation d'import vers la biologie : passage par l'entrée publiée. Drapeau sur l'écran du praticien : il ne sert que ce qui a été déposé.
+
+**Prochaine action.** PR, CI, revue CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** À valider avant ACT-4 : les libellés de l'écran, le bloc « Ce que vous trouvez ici », « Vos données personnelles ». Observations relevées : le protocole n'a aucune lecture datée ; « Mes échanges » n'a aucun lecteur tracé.
 ## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
 
 **Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.

@@ -16,6 +16,8 @@ const m = vi.hoisted(() => ({
   resolveProtocoleDiffuse: vi.fn(),
   isBioPortailEnabled: vi.fn(),
   listerTransmissions: vi.fn(),
+  depotDocumentsOuvert: vi.fn(),
+  listerDepotsPatient: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma: m.prisma }));
 vi.mock('@/lib/documents/bilanPatient', () => ({ whereEnvoiVisible: (idPatient: string) => ({ idPatient, visible: true }) }));
@@ -30,6 +32,8 @@ vi.mock('@/lib/biology-library/publie', () => ({
   isBioPortailEnabled: m.isBioPortailEnabled,
   listerTransmissions: m.listerTransmissions,
 }));
+vi.mock('@/lib/collecte/drapeau', () => ({ depotDocumentsOuvert: m.depotDocumentsOuvert }));
+vi.mock('@/lib/collecte/documentsDeposesServeur', () => ({ listerDepotsPatient: m.listerDepotsPatient }));
 vi.mock('@/lib/questionnaires-catalog', () => ({ IDS_SUSPENDUS: new Set(['Q_SUSPENDU']) }));
 
 import { sourcesMesEchanges } from './mesEchangesServeur';
@@ -53,6 +57,8 @@ beforeEach(() => {
   m.resolveProtocoleDiffuse.mockResolvedValue(null);
   m.isBioPortailEnabled.mockReturnValue(true);
   m.listerTransmissions.mockResolvedValue([]);
+  m.depotDocumentsOuvert.mockReturnValue(true);
+  m.listerDepotsPatient.mockResolvedValue([]);
 });
 
 describe('sourcesMesEchanges', () => {
@@ -60,13 +66,30 @@ describe('sourcesMesEchanges', () => {
     m.lectureFichesOuverte.mockReturnValue(false);
     m.lettreAdressagePatientOuverte.mockReturnValue(false);
     m.isBioPortailEnabled.mockReturnValue(false);
+    m.depotDocumentsOuvert.mockReturnValue(false);
     const s = await sourcesMesEchanges('PAT_SOPHIE');
     expect(s.fiches).toEqual([]);
     expect(s.lettre).toBeNull();
     expect(s.comptesRendus).toEqual([]);
+    expect(s.documentsDeposes).toEqual([]);
     expect(m.fichesALire).not.toHaveBeenCalled();
     expect(m.lettreALire).not.toHaveBeenCalled();
     expect(m.listerTransmissions).not.toHaveBeenCalled();
+    expect(m.listerDepotsPatient).not.toHaveBeenCalled();
+  });
+
+  it('documents déposés ([[D-330]]) : la date seule, sous le drapeau du dépôt', async () => {
+    m.listerDepotsPatient.mockResolvedValue([
+      { deposeLe: '2026-10-08T08:00:00.000Z', categorie: 'courrier', retireLe: null },
+      // Retiré : le contenu est effacé, la transmission reste au journal (D-330 §2).
+      { deposeLe: '2026-10-09T08:00:00.000Z', categorie: 'courrier', retireLe: '2026-10-10T08:00:00.000Z' },
+    ]);
+    const s = await sourcesMesEchanges('PAT_SOPHIE');
+    expect(m.listerDepotsPatient).toHaveBeenCalledWith('PAT_SOPHIE');
+    expect(s.documentsDeposes).toEqual([
+      { deposeLe: new Date('2026-10-08T08:00:00.000Z') },
+      { deposeLe: new Date('2026-10-09T08:00:00.000Z') },
+    ]);
   });
 
   it('le bilan suit la règle de visibilité de son écran', async () => {
