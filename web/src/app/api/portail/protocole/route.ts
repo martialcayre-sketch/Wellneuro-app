@@ -7,8 +7,7 @@ import {
 } from '@/lib/protocol/portailProtocol';
 import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
-import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
-import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
+import { servirAuPatient } from '@/lib/protocol/servirAuPatientServeur';
 import { pausesParReference, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
@@ -219,40 +218,26 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const finDeCycle =
       (new Date().getTime() - jourZero.getTime()) / JOUR_MS > JOURS_FIN_DE_CYCLE;
 
-    // LA CARTE, REJOUÉE. Si elle a dérivé, ou si le contrat refuse ce que le
-    // payload contient, rien n'est servi — et l'écran le DIT. Le repli sur
-    // l'ancienne projection serait pire que le vide : il servirait un protocole
-    // que la garde de fraîcheur vient d'écarter, sous une forme qui ne sait pas
-    // dire qu'une intervention n'est pas ferme.
-    const rejeu = await rejouerCarteDecision({
+    // LA CARTE, REJOUÉE, PUIS LE CONTRAT. Si elle a dérivé, ou si le contrat
+    // refuse ce que le payload contient, rien n'est servi — et l'écran le DIT.
+    // Le repli sur l'ancienne projection serait pire que le vide : il servirait
+    // un protocole que la garde de fraîcheur vient d'écarter, sous une forme qui
+    // ne sait pas dire qu'une intervention n'est pas ferme. Les deux marches
+    // sont composées par `servirAuPatient`, partagé avec le miroir praticien de
+    // la diffusion et la désignation du signalement ([[D-200]]).
+    const service = await servirAuPatient({
       idPatient: auth.idPatient,
       decisionCardId: diffuse.decisionCardId,
       assessmentEpisodeId: row.assessmentEpisodeId,
-      decisionCardInputHash: diffuse.decisionCardInputHash,
-    });
-    if (!rejeu.ok) {
-      console.warn('[portail/protocole GET] protocole diffusé non servi :', rejeu.motif);
-      return NextResponse.json({
-        ok: true, protocoleDiffuse: true, finDeCycle, vue: null, indisponible: true, calibrage: null,
-      });
-    }
-
-    // LE CONTRAT ACCEPTE-T-IL ? La question est posée par `vuePatientOuRefus`,
-    // partagé avec le miroir praticien de la diffusion — deux descriptions de
-    // la même règle auraient dérivé ([[D-200]]).
-    const service = vuePatientOuRefus({
-      decisionCard: rejeu.decisionCard,
       protocolDraft: draft,
       approval,
-      // AUCUNE LIMITATION PATIENT AUJOURD'HUI, et c'est une absence, pas un
-      // vide : celles de la carte sont écrites POUR LE PRATICIEN (« aucune
-      // priorité ne peut être proposée avant… »). Les traduire serait fabriquer
-      // du texte patient ; les recopier serait lui servir un raisonnement
-      // interne. Dette nommée au dossier de campagne.
-      patientLimitations: [],
     });
     if (!service.ok) {
-      console.warn('[portail/protocole GET] le contrat patient refuse ce protocole :', service.detail);
+      if (service.marche === 'carte') {
+        console.warn('[portail/protocole GET] protocole diffusé non servi :', service.motif);
+      } else {
+        console.warn('[portail/protocole GET] le contrat patient refuse ce protocole :', service.detail);
+      }
       return NextResponse.json({
         ok: true, protocoleDiffuse: true, finDeCycle, vue: null, indisponible: true, calibrage: null,
       });

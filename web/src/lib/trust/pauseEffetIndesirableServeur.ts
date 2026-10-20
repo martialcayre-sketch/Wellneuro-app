@@ -1,7 +1,6 @@
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
-import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import {
   associationEffetIndesirableDisponible,
   interruptionEffetIndesirableActive,
@@ -9,7 +8,7 @@ import {
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
-import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
+import { servirAuPatient } from '@/lib/protocol/servirAuPatientServeur';
 import {
   effetsNonTraites,
   elementsDesignables,
@@ -37,9 +36,10 @@ import {
  * `null` — rien à désigner plutôt qu'une liste qu'on ne sait pas garantir.
  *
  * `servi` : les deux marches du portail (`api/portail/protocole`), le rejeu de
- * la carte puis le contrat patient (`vuePatientOuRefus`, [[D-200]]). Faux, le
- * patient lit « indisponible » : aucun élément ne lui est proposé, il désigne
- * sans liste (D-281 §2, arbitrage du responsable du 2026-10-16).
+ * la carte puis le contrat patient, composées par `servirAuPatient`
+ * ([[D-200]]). Faux, le patient lit « indisponible » : aucun élément ne lui
+ * est proposé, il désigne sans liste (D-281 §2, arbitrage du responsable du
+ * 2026-10-16).
  *
  * UNE LECTURE EN ÉCHEC LÈVE, elle ne rend pas `servi: false` — et c'est voulu.
  * Au dépôt, l'exception mène au repli (le signalement vise le programme
@@ -63,14 +63,10 @@ export async function programmeDiffuse(
   } catch {
     return null;
   }
-  const rejeu = await rejouerCarteDecision({
+  const servi = (await servirAuPatient({
     idPatient,
     decisionCardId: diffuse.decisionCardId,
     assessmentEpisodeId: row.assessmentEpisodeId,
-    decisionCardInputHash: diffuse.decisionCardInputHash,
-  });
-  const servi = rejeu.ok && vuePatientOuRefus({
-    decisionCard: rejeu.decisionCard,
     protocolDraft: draft,
     approval: {
       decisionCardInputHash: diffuse.decisionCardInputHash,
@@ -79,8 +75,7 @@ export async function programmeDiffuse(
       approvedBy: 'practitioner',
       confirmation: 'content_approved_for_diffusion',
     },
-    patientLimitations: [],
-  }).ok;
+  })).ok;
   return {
     protocolDraftId: diffuse.protocolDraftId,
     version: versionProgramme(diffuse.protocolDraftInputHash),
