@@ -11,7 +11,9 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/components/patient/mes-echanges/MesEchangesJournal', () => ({ MesEchangesJournal: () => null }));
 
+import type { ReactElement } from 'react';
 import PortailMesEchangesPage from './page';
+import { MesEchangesJournal } from '@/components/patient/mes-echanges/MesEchangesJournal';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -28,5 +30,19 @@ describe('la page « Mes échanges »', () => {
   it('drapeau ouvert : la page se rend', async () => {
     vi.stubEnv('WN_PORTAIL_MES_ECHANGES', 'true');
     await expect(page()).resolves.toBeTruthy();
+  });
+
+  // Le bloc « Ce que vous trouvez ici » qui nomme les dépôts ([[D-330]], ACT-4)
+  // suit `WN_PORTAIL_DEPOT_DOCUMENTS`, lu ici côté serveur.
+  it.each([
+    ['true', true],
+    ['', false],
+    ['TRUE', false],
+  ])('dépôt « %s » : le journal reçoit depotOuvert=%s', async (valeur, attendu) => {
+    vi.stubEnv('WN_PORTAIL_MES_ECHANGES', 'true');
+    vi.stubEnv('WN_PORTAIL_DEPOT_DOCUMENTS', valeur);
+    const rendu = (await page()) as ReactElement<{ children: ReactElement[] }>;
+    const journal = rendu.props.children.find(e => e.type === MesEchangesJournal) as ReactElement<{ depotOuvert: boolean }>;
+    expect(journal.props.depotOuvert).toBe(attendu);
   });
 });

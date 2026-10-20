@@ -11006,3 +11006,12 @@ Ce lot les livre, sans migration.
 **Prochaine action.** CI, revues, merge, release-db, constat par conteneur, puis PR du code BP-11.
 
 **Ouvert.** Liste des motifs de BP-15 à proposer ; brouillon de la lettre cm.
+## 2026-10-20 — ACT-4 préparé : textes du dépôt validés, drapeau éteint
+
+**Fait.** Textes soumis puis validés (quatre arbitrages, D-330 amendée) : libellés de l'écran, refus du plafond des non-consultés rendu neutre ; bloc « Ce que vous trouvez ici » qui nomme les dépôts, servi drapeau ouvert ; « Vos données personnelles » v19 (collecte et lecture datée) consignée. Observation prod (agrégats) : protocole 1 lecture, 0 datée ; bilan 1 datée (2026-10-19) ; 0 dépôt ; « Mes échanges » sans lecteur observable (aucun journal d'accès).
+
+**Écarté.** Publier la v19 maintenant : elle décrirait un dépôt fermé. L'asservir au drapeau : le registre est lu côté client. Une trace de lecture pour ACT-3 : constat par le responsable sur un dossier de test.
+
+**Prochaine action.** Faire valider la partie B (résumés, e-mail v2, phrase de la lecture datée), puis préparer la PR de publication, à merger à l'ouverture.
+
+**Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
