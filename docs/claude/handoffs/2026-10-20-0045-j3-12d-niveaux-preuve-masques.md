@@ -24,15 +24,16 @@ de preuve sur les deux écrans praticien, table intacte.
 - `web/src/components/DetailBesoinsPanel.tsx` (colonne et légende retirées ;
   fichier en CRLF, conservé).
 - `docs/DECISIONS.md` (D-332), plan (ligne J3-12d), changelog, SESSION_LOG.
-- Bases visuelles `fiche-tiroir-besoins` régénérées si le CI les refuse.
+- Sous-titre du tiroir : « Couverture descriptive, par besoin. » (il promettait encore le niveau de preuve) ; le test est insensible à la casse.
+- Bases visuelles `fiche-tiroir-besoins` Desktop et iPhone 13 régénérées (workflow visual-baselines, runs 39350172240 puis 39350955274), relues à l'œil.
 
 ## Validations exécutées
 
-- `FichePatientPanel.test.tsx` vert (121) ; T1 et T2 : voir la PR.
+- `FichePatientPanel.test.tsx` vert (121). T1 rouge seulement sur la numérotation des décisions : D-332 attend D-331 (#1589, autre session).
 
 ## Problèmes ouverts
 
-- Aucun.
+- D-331 doit être dans main avant le merge (#1589).
 
 ## Prochaine action exacte
 
