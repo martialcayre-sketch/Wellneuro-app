@@ -4,6 +4,191 @@
 
 ## Décisions actives
 
+### D-335 — BP-13 : données physiologiques déclarées et traitements en cours, en lignes datées et en ajout seul, à deux mains — « inconnu » écrit, aucune classe, aucun IMC ; la garde de population intacte ; le traitement devient une pièce de constat (LOT-13)
+
+- Date : 2026-10-21
+- Statut : proposé. Arbitrages du responsable rendus le 2026-10-20 (neuf
+  réponses et trois listes, sur questions à options) et le 2026-10-21 (deux
+  réponses : le doublon avec l'anamnèse, la synthèse), consignés dans la
+  fiche LOT-13. Texte rédigé par l'assistant à partir de ces réponses ; ses
+  précisions (ce que chaque main pose et retire, §2 et §5 ; la forme des
+  dates et l'arrêt, §4 ; le mineur, §6) sont soumises au responsable avec le
+  paragraphe du dossier RGPD et le texte patient, avant le merge de la
+  migration.
+- Domaine : campagne bio-parcours, BP-13 (LOT-13) ; plan, fiche F07 ; deux
+  tables neuves en ajout seul et une clé ajoutée à
+  `pieces_constats_praticien` ; `web/src/lib/patient/effacement.ts` ;
+  `web/src/lib/consultation/anamnese.ts` et `contexteClinique.ts` (code) ;
+  `docs/DOSSIER_RGPD.md` ; « Vos données personnelles » (v20).
+- Applique le cadrage v3 (lignes « données physiologiques du parcours » et
+  « traitements et compléments en cours », ligne BP-13) ; [[D-266]] §11 (une
+  migration, deux PR) ; le patron de [[D-331]] §2, remplacement de la tête et
+  retrait (arbitrage 9). **Amende** [[D-331]] §2 et §5 : une pièce de
+  constat peut désigner une ligne de traitement (§7 ci-dessous).
+- **Une migration autorisée** : demandée par le cadrage (ligne BP-13) et par
+  le responsable le 2026-10-21 (« tables, plus la clé traitement ajoutée aux
+  pièces de constat de D-331 §2 »).
+- **Ne touche pas** : la garde de population ([[D-101]],
+  `etatPopulation.ts`, `gatePopulationV1.ts`) et ses lecteurs (orientation,
+  indications) ; la section « État actuel » et les « Repères corporels » de
+  l'anamnèse ; l'automédication en classes fermées ; aucun seuil, aucune
+  dose, aucune règle clinique ; aucun calcul (ni IMC, ni variation de poids).
+
+**§1 — Le manque.** Le parcours juxtapose la population d'une fiche d'usage
+aux données du patient (cadrage v3, règles de structure) ; BP-27 et BP-19 en
+auront besoin. Aujourd'hui, le sexe n'est recueilli nulle part, le statut
+menstruel non plus ; grossesse et allaitement sont des réponses de
+l'anamnèse (« oui », « non », « je ne sais pas ») que lit la garde de
+[[D-101]] ; taille et poids sont du texte libre des « Repères corporels » ;
+médicaments et compléments sont des groupes de texte libre de l'anamnèse,
+sans date de début ni de fin, sans auteur, réécrits à chaque validation.
+Rien de cela n'est daté ni confirmé par le praticien.
+
+**§2 — Les données physiologiques : une ligne par critère, datée.** Six
+critères, chacun sous une forme fermée (arbitrage 4 et listes du
+2026-10-20) :
+
+| critère | forme | posé par |
+|---|---|---|
+| `sexe_declare` | `feminin`, `masculin`, `autre`, `inconnu` | le patient au portail, le praticien au cockpit |
+| `statut_menstruel` | `cycles_reguliers`, `cycles_irreguliers`, `absence_de_cycles`, `menopause`, `inconnu` ; posé si le sexe déclaré en vigueur est `feminin` ou `autre` | le patient au portail, le praticien au cockpit |
+| `grossesse` | `oui`, `non`, `inconnu` | le praticien au cockpit |
+| `allaitement` | `oui`, `non`, `inconnu` | le praticien au cockpit |
+| `poids` | mesure en kg, de 1 à 500, au dixième, avec sa date | le praticien au cockpit |
+| `taille` | mesure en cm, de 30 à 260, à l'unité, avec sa date | le praticien au cockpit |
+
+Les bornes de mesure sont **techniques** (une saisie absurde est refusée) ;
+elles n'ont aucun sens clinique. Le sexe est **déclaré, jamais déduit** (ni
+d'un prénom, ni d'une civilité, ni d'un questionnaire). `inconnu` est
+**écrit** : il n'est pas l'absence de ligne, et ni l'un ni l'autre ne se lit
+comme « non » (DC-24). Un critère sans ligne se dit « non renseigné ». Un
+statut menstruel posé alors que le sexe en vigueur n'est ni `feminin` ni
+`autre` est refusé à la route (la règle lit une autre ligne ; la base ne la
+tient pas).
+
+**Pas de doublon avec l'anamnèse** (arbitrage du 2026-10-21) : grossesse,
+allaitement, taille et poids restent des réponses de l'anamnèse au portail ;
+le patient n'y répond qu'une fois. Au cockpit, le praticien voit « déclaré
+à l'anamnèse du … » à côté de chaque critère et le confirme ou le corrige en
+ligne datée. **La garde de [[D-101]] continue de lire l'anamnèse** : un
+écart entre l'anamnèse et une ligne du praticien (« non » d'un côté, « oui »
+de l'autre) s'affiche comme une **discordance** (DC-30), jamais résolue en
+silence. Faire lire les lignes à la garde est une décision à part,
+**condition de l'allumage** du drapeau (§9).
+
+Aucun IMC, aucune variation de poids, aucun calcul dans ce lot
+(arbitrage 4).
+
+**§3 — Les traitements et compléments en cours : une ligne par
+traitement.** Une ligne porte : la nature (`medicament` ou `complement`),
+le nom (texte non vide, 200 caractères au plus), la dose et le moment de
+prise (textes facultatifs, 200 au plus), le motif ou l'objectif (texte
+facultatif, 500 au plus), le début et la fin (§4), et « prescrit par un
+autre soignant » (`oui`, `non`, `inconnu`). **Aucune classe** (arbitrage 3 :
+une liste sourcée viendra avec BP-18a et BP-27), aucun code de référentiel
+médicamenteux : ce n'est pas un référentiel normalisé (cadrage v3).
+L'automédication régulière (classes fermées de l'anamnèse) ne change pas.
+
+Au portail, les groupes « Médicaments en cours » et « Compléments
+alimentaires en cours » de l'anamnèse **sont remplacés** par ces lignes
+(arbitrage 2). Les anamnèses déjà validées restent lisibles telles quelles,
+partout où elles le sont aujourd'hui ; **aucune conversion automatique** du
+texte libre (arbitrage 1).
+
+**§4 — Les dates d'un traitement.** Début et fin se disent au jour, au mois
+ou à l'année, ou `inconnu` : un patient sait rarement le jour exact, et une
+date ramenée au premier du mois serait une précision qu'il n'a pas donnée.
+La date est rangée au premier jour de sa période, sa précision à côté ; la
+base vérifie l'accord des deux. Une fin absente dit « en cours ». Un arrêt
+est un **remplacement** de la tête qui porte une fin : la ligne arrêtée reste
+lisible, rien ne se réécrit.
+
+**§5 — Deux mains, et qui pose quoi** (arbitrages 1 et 9). Chaque ligne dit
+sa source : « déclaré par le patient » (posée au portail, sans e-mail de
+praticien) ou « confirmé par le praticien » (posée au cockpit par le
+praticien du dossier, son e-mail inscrit). Confirmer, c'est poser la même
+ligne en remplacement de la tête ; corriger, c'est la poser modifiée.
+
+Même patron que [[D-331]] §2 : une **tête** par fil (par critère et par
+dossier pour une donnée physiologique ; par traitement pour un traitement),
+la ligne que ni un remplacement ni un retrait ne vise. Une pose sur un fil
+qui a une tête la désigne ; une pose sans tête n'en désigne aucune (un
+traitement neuf ouvre un fil). Un **retrait** — ligne posée par erreur — ne
+vise que la tête et ramène le fil à « non renseigné ». Une ligne déjà
+remplacée ou retirée ne se remplace ni ne se retire. Un retrait ne porte ni
+valeur ni motif.
+
+Le patient remplace une tête de son dossier, quelle qu'en soit la source
+(il déclare un changement ; le praticien le reverra) ; il ne retire qu'une
+tête qu'il a lui-même déclarée. Le praticien du dossier remplace et retire
+toute tête. La base le tient, sous le verrou du dossier.
+
+**§6 — Le mineur, hors périmètre** (cadrage v3). Au portail, les lignes
+suivent la garde d'âge de [[D-284]] (`accepteSaisieSante`, comme la
+biologie) : date de naissance manquante ou dossier mineur, la saisie est
+refusée. Au cockpit, la route refuse aussi un dossier mineur.
+
+**§7 — Le traitement, pièce de constat** (amende [[D-331]] §2 et §5).
+`pieces_constats_praticien` reçoit une troisième clé, vers une ligne de
+traitement du même dossier, en `RESTRICT` ; une pièce désigne **une seule**
+des trois. À la pose du constat, la ligne citée est la tête de son fil et
+n'est pas un retrait. Un constat dont la ligne de traitement citée est
+ensuite **remplacée** (confirmée, corrigée, arrêtée) ou **retirée** se dit
+« à relire » (huitième condition du §5 de [[D-331]]), dérivé à la lecture,
+jamais écrit. Les données physiologiques ne deviennent pas des pièces dans
+ce lot ; le contexte de prélèvement vient avec BP-05.
+
+**§8 — Qui lit.** Le praticien du dossier, au cockpit ; le patient, ses
+propres lignes au portail. **La synthèse du premier bilan** (arbitrage du
+2026-10-21) : la ligne de vigilance écrite par le code et le texte transmis à
+l'IA reprennent les traitements **en vigueur** (nom, dose, moment, début),
+sous la même forme et la même neutralisation qu'aujourd'hui ; les groupes
+d'une anamnèse ancienne y restent lus, chaque source nommée, sans fusion.
+Aucun flux nouveau : l'IA reçoit déjà les traitements. **Le sexe déclaré et
+le statut menstruel ne partent pas à l'IA.** Ni l'orientation, ni le
+scoring, ni le courrier au médecin ne lisent ces lignes dans ce lot ; la
+garde de population non plus (§2).
+
+**§9 — Drapeau, information, effacement.** Le drapeau
+`WN_PHYSIO_TRAITEMENTS` naît avec le code qui le lit, éteint, fail-closed
+([[D-081]]) : éteint, le portail garde ses groupes de texte libre, le
+cockpit ne montre rien, la synthèse lit l'anamnèse comme aujourd'hui.
+**Conditions de l'allumage** : la décision qui fait lire les lignes (ou non)
+à la garde de [[D-101]] ; « Vos données personnelles » v20 publiée (le
+patient y apprend le sexe, le statut menstruel et les lignes de
+traitement) ; un test d'intégration sur une vraie base (pose, remplacement,
+retrait, deux poses concurrentes sur un fil). L'effacement d'un dossier
+supprime nommément les pièces de constat, puis les constats, puis les
+lignes de traitement et de données physiologiques, avant le dossier ; le
+banc de complétude les compte. Déclaration au dossier RGPD et texte patient
+**avant la table**, validés par le responsable avant le merge de la
+migration.
+
+**§10 — Aucune déduction, contrat négatif.** Aucune colonne ne porte un IMC,
+une classe de traitement, un code de référentiel, un statut déduit. Un
+contrat SQL négatif propre aux deux tables, joué au CI, l'éprouve. Aucun
+code ne déduit un critère d'un autre champ (prénom, civilité, réponse de
+questionnaire, texte libre).
+
+**§11 — Exécution.** Trois PR : cette décision et la déclaration RGPD ;
+puis la migration seule (deux tables, la clé de pièce, l'effacement nommé,
+le contrat négatif et le banc), relue, release-db approuvée par le
+responsable, sentinelle et constat par conteneur ([[D-087]]), une seule
+release-db en vol ([[D-248]]) ; puis le code consommateur (routes du portail
+et du cockpit, panneau, formulaire du portail, synthèse, « à relire » de la
+pièce de traitement) sous `WN_PHYSIO_TRAITEMENTS` éteint.
+
+**§12 — Hors de ce lot.** La classe de traitement (BP-18a, BP-27) ; l'IMC et
+toute dérivée ; la garde de population sur les lignes (§2) ; le contexte de
+prélèvement (BP-05) ; les données physiologiques comme pièces de constat ;
+la conversion du texte libre ancien ; toute interaction médicamenteuse
+calculée ; tout médicament prescrit, ajusté ou arrêté par l'application.
+
+- Conséquences : fragment `changelog.d/2026-10-21-d335-physio-traitements.md` ;
+  fiche LOT-13 ; paragraphe du dossier RGPD ; proposition du texte patient
+  (`docs/claude/propositions/2026-10-21-bp13-texte-patient/README.md`) ;
+  puis la PR de migration seule.
+
 ### D-334 — Doctrine d'adhésion : quatre niveaux ordinaux datés, une marque par point d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian, jamais une moyenne ; « protocole servi » = premier check-in (lettre d)
 
 - Date : 2026-10-20
