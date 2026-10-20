@@ -1800,6 +1800,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : encart d'urgence étendu ; lecture datée.
 - **Critère de fin** : un premier dossier servi, constaté.
 - **Mise à jour (2026-10-18, ouverte)** : ACT-2 constatée (H75), `WN_PORTAIL_MES_ECHANGES=true` est posé en production à 17 h 47 UTC. Conteneurs recréés à 17 h 47 UTC, code en service 74cdfd82. Constat dans l'image servie : la route de « Mes échanges » ne répond plus « page indisponible » (404) ; sans session, elle répond 401, sur les deux conteneurs web. Reste le critère de fin : un premier dossier servi, constaté par conteneur.
+- **Mise à jour (2026-10-20, constatée)** : critère de fin atteint. Le responsable a ouvert « Mes échanges » sur un dossier de test ; les lignes affichées concordent avec la lecture du dossier par conteneur (dernière remise de chaque document, signalement avec son statut, transmissions ; ni courrier ni dépôt, comme en base). Constat sans trace de lecture, sur arbitrage du 2026-10-20 (D-330, amendement) : la route ne consigne pas ses lectures et l'hébergeur ne journalise pas les accès. Lève la porte 18 pour ACT-4 (H77).
 
 #### F22 · BP-21a : ouverture J1
 - **Identifiant, piste** : BP-21a ; parcours.
