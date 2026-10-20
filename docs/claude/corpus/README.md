@@ -1,13 +1,16 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 518 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 533 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 11 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 26 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
 un résumé des caractéristiques du produit et une information de bon usage de
-l'ANSM, `WN-SRC-0512` à `0518`), dont seuls des
-extraits ciblés sont ingérés. Il s'agit d'un inventaire documentaire, pas d'un
+l'ANSM, `WN-SRC-0512` à `0518` ; J3-12e : quinze sources de mesure en accès
+libre des besoins 6 à 12 — études de validation, revues, documentation des
+auteurs d'instruments —, `WN-SRC-0540` à `0554`), dont seuls des
+extraits ciblés sont ingérés. La plage `0519` à `0539` est laissée à une autre
+session d'ingestion (`0519` à `0524` sont déjà en base, lot `LOT_021_2026-10-20`). Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
 ## Politique de publication
@@ -29,7 +32,10 @@ corpus runtime.
   Base de données publique des médicaments (`WN-SRC-0517`, Licence Ouverte
   etalab-2.0) ; l'avis de l'Anses, le rapport de la HAS, la recommandation de
   l'Endocrine Society et l'information de l'ANSM (`0512`, `0515`, `0516`,
-  `0518`) restent à vérifier.
+  `0518`) restent à vérifier ; au 2026-10-20, quatre de plus pour J3-12e, les
+  articles sous licence CC BY dont les extraits sont ingérés (`WN-SRC-0545`,
+  `0550`, `0553`, `0554`) ; les onze autres sources de mesure (droits de
+  l'éditeur, CC BY-NC, manuscrit soumis, pages des auteurs) restent à vérifier.
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
