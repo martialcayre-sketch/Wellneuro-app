@@ -66,8 +66,11 @@ export const MESSAGES_TRANSMISSION: Record<string, string> = {
   // conditions, présentée juste avant le dépôt — pas seulement avant le premier.
   accuse_conditions_requis:
     'Avant votre envoi, prenez connaissance de la version en vigueur des « Conditions d’utilisation de votre espace Wellneuro ».',
+  // Le plafond compte aussi les documents « reçus » (ouverts, sans résultat
+  // enregistré) : le texte ne dit plus « les ouvre » (arbitrage du 2026-10-21,
+  // [[D-269]]).
   plafond_en_attente:
-    'Trois documents attendent déjà que votre praticien les ouvre. Vous pourrez en déposer un autre ensuite.',
+    'Trois documents attendent déjà d’être traités par votre praticien. Vous pourrez en déposer un autre ensuite.',
   plafond_24h: 'Vous avez déposé dix documents en 24 heures. Réessayez plus tard.',
   document_deja_transmis: 'Ce compte rendu figure déjà dans votre dossier.',
   document_deja_ecarte:

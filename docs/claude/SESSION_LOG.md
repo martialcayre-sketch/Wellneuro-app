@@ -11094,3 +11094,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Place 5 (ACT-5), qui exige J2-conf entier.
 
 **Ouvert.** Message « Trois documents attendent déjà… » du compte rendu biologique ; question du responsable sur l'encart d'urgence de l'écran de dépôt (D-293 §3), non arbitrée ; réencodage d'image non éprouvé en production.
+
+## 2026-10-21 — Restes d'ACT-4 : quatre arbitrages, texte du refus du compte rendu
+
+**Fait.** Quatre arbitrages du responsable : (1) refus du plafond du compte rendu biologique rendu exact, « attendent déjà d’être traités » (D-269, précision ; le plafond compte aussi les documents reçus) — livré ici ; (2) l'encart d'urgence quitte l'écran de dépôt, remplacé par une aide permanente du portail (lien « Urgence » sur toutes les pages), textes à valider avant la PR qui amendera D-293 §3 ; (3) une photo de test à déposer par le responsable sur un dossier de test, pour constater le réencodage ; (4) le PDF de test à retirer par le responsable, retrait à constater par conteneur.
+
+**Écarté.** Pour l'alerte : confirmation après dépôt, ligne discrète, lien repliable.
+
+**Prochaine action.** Textes de l'aide permanente, puis PR (retrait de l'encart du dépôt et aide permanente ensemble).
+
+**Ouvert.** Aide permanente du portail (D-293 §3 à amender).
