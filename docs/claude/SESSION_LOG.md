@@ -10955,6 +10955,15 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-20 — J3-12d : badges de niveau de preuve masqués au cockpit
+
+**Fait.** D-332 : les deux tableaux des 12 besoins du cockpit n'affichent plus la colonne A–D ni sa légende ; la couverture reste. Table des grades, `evidence.ts`, snapshot et empreinte intacts (banc figé vert), version du score inchangée, sans migration.
+
+**Écarté.** Retirer `niveauPreuve` des API praticien : aucun écran ne le lit, le snapshot le garde, et le contrat se rouvrira avec la table révisée.
+
+**Prochaine action.** PR, CI (base visuelle du tiroir), merge, déploiement constaté ; r1_14 → fait, fiche H15.
+
+**Ouvert.** Aucun : D-331 prise par #1589 pendant le CI, ce lot renuméroté en D-332.
 
 ## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
 
