@@ -32,8 +32,8 @@ patient, le constat du praticien et la liste de la désignation.
   `web/src/app/api/praticien/protocoles/diffusion/route.ts`,
   `web/src/lib/trust/pauseEffetIndesirableServeur.ts`.
 - `docs/claude/PLAN_WELLNEURO.md` (§8 → soldées),
-  `docs/claude/MATRICE_CONSOMMATION.md` (régénérée : un consommateur
-  indirect de plus), `changelog.d/2026-10-20-t28-servi-au-patient-partage.md`,
+  `docs/claude/MATRICE_CONSOMMATION.md` (régénérée : « Catalogue des
+  questionnaires et scoring » passe de 48 à 47 consommateurs indirects), `changelog.d/2026-10-20-t28-servi-au-patient-partage.md`,
   SESSION_LOG.
 
 ## Validations exécutées
