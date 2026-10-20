@@ -4,8 +4,9 @@
   entrent au registre des sources** (`WN-SRC-0540` à `0554`, corpus
   `SOURCES_EXTERNES`, décision 6 du 2026-10-18), titre seul, sans chiffre ni
   texte clinique : études de validation, revues et documentation des auteurs
-  d'instruments (stress perçu, anhédonie, solitude, sens de la vie, respiration
-  dysfonctionnelle, conscience corporelle). Seuls des extraits ciblés, mot pour
+  d'instruments (stress perçu, anxiété et dépression, anhédonie, solitude, sens
+  de la vie, respiration dysfonctionnelle, conscience corporelle, savouration).
+  Seuls des extraits ciblés, mot pour
   mot, sont ingérés en base (lots `LOT_030_2026-10-20` à `LOT_035_2026-10-20`,
   88 passages), chaque paquet sur approbation de l'envoi par le responsable,
   et constatés par lecture. Les 104 claims qui en sont tirés, relus par une

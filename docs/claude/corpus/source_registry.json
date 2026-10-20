@@ -13945,7 +13945,7 @@
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
     "requiredAction": "Extraits ciblés ingérés (J3-12e, besoin 8, lot LOT_031_2026-10-20) ; claims en attente de signature",
-    "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : à vérifier. Mention d'origine : « Copyright © 2003 Snaith; licensee BioMed Central Ltd. This is an Open Access article: verbatim copying and redistribution of this article are permitted in all media for any purpose, provided this notice is preserved along with the article's original URL. » URL d'origine : https://doi.org/10.1186/1477-7525-1-29. Pas une licence CC BY ; aucune adaptation explicitement permise ; l'échelle elle-même est distribuée par un éditeur de tests.. Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
+    "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : à vérifier. Mention d'origine : « Copyright © 2003 Snaith; licensee BioMed Central Ltd. This is an Open Access article: verbatim copying and redistribution of this article are permitted in all media for any purpose, provided this notice is preserved along with the article's original URL. » Pas une licence CC BY ; aucune adaptation explicitement permise ; l'échelle elle-même est distribuée par un éditeur de tests. Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
     "auditDate": "2026-10-20"
   },
   {
@@ -14054,7 +14054,7 @@
   },
   {
     "sourceId": "WN-SRC-0549",
-    "title": "Steger MF, laboratoire de recherche (michaelfsteger.com/?page_id=13). The Meaning in Life Questionnaire, page web, capture Internet Archive du 25 janvier 2025",
+    "title": "Steger MF, laboratoire de recherche. The Meaning in Life Questionnaire, page web, capture Internet Archive du 25 janvier 2025",
     "corpus": "SOURCES_EXTERNES",
     "documentType": "Documentation d'instrument",
     "format": "HTML",
