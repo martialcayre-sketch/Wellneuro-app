@@ -82,6 +82,7 @@ import { DocumentsRemisPanel } from '@/components/patient-cockpit/DocumentsRemis
 import { DocumentsDeposesPanel } from '@/components/patient-cockpit/DocumentsDeposesPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
+import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPanel';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -2794,6 +2795,9 @@ export function FichePatientPanel({
         {ongletActif === 'biologie' && (
           <EstimeMesurePanel idPatient={idPatient} compteRenduDemande={compteRenduDemande} />
         )}
+        {/* Les constats du praticien sur les hypothèses ([[D-331]], BP-11) :
+            le panneau se tait drapeau `WN_BIO_CONSTAT` éteint. */}
+        {ongletActif === 'biologie' && <ConstatsParcoursPanel idPatient={idPatient} />}
         {/* La proposition de bilan ([[D-319]], plan F57 PR 2) : montée à la
             première visite, puis gardée (voir `propositionMontee`). */}
         {propositionMontee && (

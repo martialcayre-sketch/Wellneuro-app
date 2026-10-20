@@ -1,9 +1,9 @@
 ---
 id: "2026-10-04-bio-parcours"
 titre: "BIO-PARCOURS — la biologie dans un assistant clinique de bout en bout"
-statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-03, LOT-04, LOT-07, LOT-09, LOT-10, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; LOT-03 (BP-03) terminé le 2026-10-17 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
+statut: "en_pause (ouverte le 2026-10-04 ; LOT-00, LOT-01, LOT-02, LOT-03, LOT-04, LOT-07, LOT-09, LOT-10, LOT-11, LOT-23, LOT-25 et LOT-26 terminés ; lots de sécurité issus de BP-26 livrés : 10A, 11A, 5A, 8B, D-281 lots 1 et 2 ; LOT-03 (BP-03) terminé le 2026-10-17 ; suite au plan docs/claude/PLAN_WELLNEURO.md)"
 créée_le: "2026-10-04"
-mise_à_jour: "2026-10-17"
+mise_à_jour: "2026-10-20"
 lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -135,7 +135,7 @@ nouveaux, décisions acceptées.
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | terminé (2026-10-15 ; `D-305` #1471, code en une PR sans migration) | non | BP-01, BP-09 |
 | BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | à_faire | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
-| BP-11 | LOT-11 | Constats du praticien | à_faire (2026-10-19 : fiche, six arbitrages, `D-331`, déclaration RGPD validée le 2026-10-20 ; migration seule en PR le 2026-10-20) | **oui** | BP-09, BP-12a |
+| BP-11 | LOT-11 | Constats du praticien | terminé (2026-10-20 ; #1600, release-db constatée, puis le code sous `WN_BIO_CONSTAT` éteint ; `D-331`) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
 | BP-15 | LOT-15 | Décisions de parcours | à_faire | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |

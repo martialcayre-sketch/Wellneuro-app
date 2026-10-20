@@ -30,6 +30,11 @@ const ACCES_ADMIS = [
   // les fils (identité, chaînage, clé) et prend le verrou de clé en SQL —
   // aucune valeur lue.
   'web/src/lib/biology-library/annulations.ts',
+  // Les constats du praticien ([[D-331]], BP-11) : lisent la clé et le fil
+  // des lignes citées (tête, annulation), sous le verrou de clé à l'écriture —
+  // aucune valeur lue ; n'écrivent que dans la table des constats.
+  'web/src/lib/bio-parcours/constats/ecriture.ts',
+  'web/src/lib/bio-parcours/constats/lecture.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
   // L'entrée publiée de BioFlow ([[D-306]] §1) NOMME la table parmi celles
