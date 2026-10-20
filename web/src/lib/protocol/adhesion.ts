@@ -10,15 +10,21 @@ import {
 //
 // Signal de PILOTAGE praticien à trois états, dérivé À LA LECTURE des points
 // d'étape J7/J14/J21 déjà collectés. Rien n'est persisté : le schéma interdit
-// doctrinalement d'en faire un score ou un jalon (`schema.prisma:733-734`,
-// arbitrage A1), et aucune migration n'est nécessaire.
+// doctrinalement d'en faire un score ou un jalon (commentaire du modèle
+// `ProtocolCheckin` de `schema.prisma`, arbitrage A1), et aucune migration
+// n'est nécessaire.
 //
 // Frontière A8-4 : les constats déterministes PAR point d'étape appartiennent à
 // C2B ; l'agrégat trois états appartient entièrement à SP-MET. Aucun pré-agrégat
-// en C2B, aucun constat par point d'étape ici.
+// en C2B, aucun constat par point d'étape ici. L'échelle E4 (une marque datée
+// par point d'étape) vit en C2B, pas ici (`D-334` §2).
 //
-// Trois interdits structurants :
-//   1. jamais un score, jamais un pourcentage d'observance, jamais un classement ;
+// Trois interdits structurants (`D-334`) :
+//   1. jamais un pourcentage d'observance, jamais un classement, jamais une
+//      moyenne des niveaux d'adhésion (ordinaux, jamais codés en nombre).
+//      « Jamais un score » relève désormais de `D-333` : au cockpit, un
+//      comptage sourcé est permis (« N points d'étape renseignés sur 3 ») ;
+//      rien ne s'ouvre avant la signature M-2 (porte 6) ;
 //   2. jamais exposé côté patient (praticien seul) ;
 //   3. jamais d'interprétation : on rapporte la réponse du patient, on n'en
 //      infère pas un motif. Le praticien tire les conclusions.

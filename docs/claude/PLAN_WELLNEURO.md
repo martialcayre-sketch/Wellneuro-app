@@ -267,6 +267,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : textes de c (F59) et de d (H32), à relire par le responsable ; T2 et contre-revue P0.
 - **Critère de fin** : PR mergée, T2 vert, contre-revue P0 lue.
+- **Mise à jour (2026-10-20)** : c et d rédigées en `D-333` (cockpit chiffré) et `D-334` (doctrine d'adhésion), statut « proposé », soumises au responsable (gestes c et d) ; deux arbitrages du même jour : l'échelle E4 vit avec les constats par point d'étape (C2B, A8-4 intacte), la progression d'un questionnaire reste au portail comme exception nommée, avec la jauge sans valeur (E10). Fragment, commentaires d'`adhesion.ts` et registre des frontières (A1, A6-R2, SP-MET) mis à jour. Reste : relecture du responsable, puis signature M-2 (rang 2, porte 6).
 
 #### H02 · S-4 : « Relire » et « Composer »
 - **Identifiant, piste** : S-4, Q-4 ; cockpit ; file A, frontière commune.
