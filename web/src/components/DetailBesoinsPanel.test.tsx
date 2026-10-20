@@ -16,7 +16,7 @@ const reponse = {
   ],
 };
 
-describe('DetailBesoinsPanel — niveau de preuve masqué ([[D-331]])', () => {
+describe('DetailBesoinsPanel — niveau de preuve masqué ([[D-332]])', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();

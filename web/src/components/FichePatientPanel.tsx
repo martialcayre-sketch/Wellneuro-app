@@ -79,6 +79,7 @@ import type {
 import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
 import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPanel';
 import { DocumentsRemisPanel } from '@/components/patient-cockpit/DocumentsRemisPanel';
+import { DocumentsDeposesPanel } from '@/components/patient-cockpit/DocumentsDeposesPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
@@ -1196,7 +1197,11 @@ export function FichePatientPanel({
       }
       if (id === 'actions') {
         if (etatRuntime.nombreVersions > 0) return 'fait';
-        return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+        if (!etatRuntime.episodeConfirme) return 'a_ouvrir';
+        // Avant la lecture des versions, « 0 version » n'est pas « aucune
+        // version » (t15, `DC-24`) : le rail ne dit « en attente » qu'une fois
+        // la lecture aboutie.
+        return etatRuntime.versionsLues ? 'en_attente' : 'inconnu';
       }
       if (id === 'suivi') {
         if (!etatRuntime.episodeConfirme) return 'a_ouvrir';
@@ -1837,6 +1842,9 @@ export function FichePatientPanel({
           {/* Ce qui a été remis au patient, et sa première lecture s'il l'a
               ouvert ([[D-297]] §5). Rien sur un dossier effacé. */}
           {gestesDossier.dernierGeste !== 'effacement' && <DocumentsRemisPanel idPatient={idPatient} />}
+          {/* Ce que le patient a déposé ([[D-330]]) : ouvrir, corriger la
+              catégorie, retirer. Rien sur un dossier effacé. */}
+          {gestesDossier.dernierGeste !== 'effacement' && <DocumentsDeposesPanel idPatient={idPatient} />}
         </div>
       );
     }

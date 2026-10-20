@@ -20,6 +20,11 @@
 --
 -- CE QUE LES TROIS ZÉROS SONT : la ligne de base, pas un échec. Ils mesurent
 -- l'instant d'avant. Leur valeur vient de la REPRISE.
+--
+-- DEPUIS LE 2026-10-20, LA COLONNE `nir` N'EXISTE PLUS (migration
+-- `patients_retrait_nir_v1`, t03, D-284 (g)) : la requête telle quelle échoue
+-- sur `avec_nir`. Elle reste écrite à l'identique, comme trace de ce qui a été
+-- mesuré ; un rejeu retire cette seule ligne, et `avec_nir` ne se compare plus.
 
 select
   (select count(*) from patients)                                        as dossiers,

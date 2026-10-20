@@ -981,7 +981,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('tiroir des 12 besoins : la couverture reste, le niveau de preuve A–D n’est plus affiché ([[D-331]])', async () => {
+  it('tiroir des 12 besoins : la couverture reste, le niveau de preuve A–D n’est plus affiché ([[D-332]])', async () => {
     await rendreFiche();
 
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));

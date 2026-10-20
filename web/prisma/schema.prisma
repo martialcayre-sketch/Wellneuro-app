@@ -18,21 +18,16 @@ model Patient {
   praticienEmail String   @map("praticien_email")
   actif          Boolean  @default(true) @map("actif")
 
-  // Dossier administratif (2026-09-16) — quatre renseignements qui n'existaient
+  // Dossier administratif (2026-09-16) — trois renseignements qui n'existaient
   // nulle part. Tous nullables : les dossiers ouverts avant cette date les
-  // portent à NULL, et rien n'oblige à les remplir.
-  //
-  // `nir` est un NIR DÉCLARÉ, saisi par le praticien. Ce n'est PAS une INS au
-  // sens du référentiel national — aucune qualification par téléservice n'a
-  // lieu ici — et il ne sert d'identifiant à rien : l'identité du dossier reste
-  // `idPatient`, l'unicité reste portée par `email`. Sa forme est gardée en
-  // base ; sa clé de contrôle l'est côté application.
+  // portent à NULL, et rien n'oblige à les remplir. Le NIR déclaré, quatrième
+  // à l'origine, est retiré le 2026-10-19 (dette t03, D-284) : plus aucun
+  // numéro de sécurité sociale n'est gardé dans ce dossier.
   //
   // Le médecin traitant est une propriété du DOSSIER, à distinguer de
   // `CorrespondanceMedecin.medecinLibelle` — texte libre saisi par lettre, qui
   // reste ce qu'il est.
   adresse                     String? @map("adresse")
-  nir                         String? @map("nir")
   medecinTraitantNom          String? @map("medecin_traitant_nom")
   medecinTraitantCoordonnees  String? @map("medecin_traitant_coordonnees")
 

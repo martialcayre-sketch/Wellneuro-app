@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { refusSaisieSante, statutAge } from './gardeAge';
+import { refusSaisieSante, statutAge, type RaisonRefusAge } from './gardeAge';
 
 /**
  * La garde d'âge pour une route qui n'a pas le dossier sous la main (D-284 §3).
@@ -11,7 +11,7 @@ import { refusSaisieSante, statutAge } from './gardeAge';
  */
 export async function refusSaisieSantePour(
   idPatient: string,
-): Promise<{ reason: string; error: string } | null> {
+): Promise<{ reason: RaisonRefusAge; error: string } | null> {
   const patient = await prisma.patient.findUnique({
     where: { idPatient },
     select: { dateNaissance: true },

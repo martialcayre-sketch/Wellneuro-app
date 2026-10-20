@@ -1268,21 +1268,24 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/compteur_ouverture_sources_v1_negatif.sql
 
-      # Dossier administratif patient (rayon Patients, LOT-03) : adresse, NIR,
-      # médecin traitant. Les quatre colonnes doivent rester NULLABLES — un
-      # dossier ouvert avant cette date ne remplit rien —, le NIR doit refuser
-      # les formes fausses ET accepter la Corse (`2A`/`2B`), les trois colonnes
-      # texte doivent refuser une chaîne blanche (`btrim/2`, pas `btrim/1` : une
-      # tabulation passerait), et la RLS deny-all de `patients` est re-vérifiée
-      # plutôt que supposée.
-      #
-      # Un cas est POSITIF À DESSEIN : un NIR de forme juste mais de CLÉ FAUSSE
-      # passe en base. La clé se vérifie côté application ; ce contrat interdit
-      # de croire que la base la garde. Transaction annulée.
+      # Dossier administratif patient (rayon Patients, LOT-03) : adresse et
+      # médecin traitant (le NIR est retiré le 2026-10-19, contrat suivant). Les
+      # trois colonnes doivent rester NULLABLES — un dossier ouvert avant cette
+      # date ne remplit rien —, refuser une chaîne blanche (`btrim/2`, pas
+      # `btrim/1` : une tabulation passerait), et la RLS deny-all de `patients`
+      # est re-vérifiée plutôt que supposée. Transaction annulée.
       - name: Dossier administratif patient negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/dossier_administratif_patient_v1_negatif.sql
+
+      # Retrait du NIR (dette t03, H26 (g), D-284) : la colonne `nir` et sa
+      # contrainte de forme ont disparu de `patients`, les trois autres colonnes
+      # du dossier administratif et la RLS restent. Lecture du catalogue seule.
+      - name: Patients retrait NIR negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/patients_retrait_nir_v1_negatif.sql
 
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
@@ -1366,6 +1369,19 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/documents_deposes_patient_v1_negatif.sql
+
+      # Les mêmes tables, par les VRAIS chemins du code (D-330 §4) : dépôt en
+      # READ COMMITTED, deux dépôts concurrents au seuil — constatés en attente
+      # du verrou du dossier — n'en posent qu'un, première consultation tracée
+      # une fois, classement daté, retrait qui garde la ligne. Commet ses lignes
+      # (dossiers PAT_BANC_COLLECTE_…) : la base doit être NOMMÉE.
+      - name: Documents deposes patient real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_COLLECTE_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/collecte/documentsDeposes.pg.test.ts
 
       # La file durable des lectures (D-282, G3) : statut fermé et sa cohérence
       # en CASE, deux tentatives au plus, un seul travail ouvert par compte

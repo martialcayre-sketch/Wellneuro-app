@@ -81,6 +81,11 @@ const LECTEURS_PUBLIES = [
   'web/src/app/api/praticien/patients/cycle-de-vie/route.ts',
   // « Mes échanges » ([[D-293]]) : comptes rendus transmis, date seule (2026-10-18).
   'web/src/lib/portail/mesEchangesServeur.ts',
+  // La collecte documentaire ([[D-330]]) : les bornes du fichier, celles du
+  // compte rendu — validation seule, aucune table de la biologie (2026-10-19).
+  'web/src/app/api/portail/documents/route.ts',
+  'web/src/app/api/praticien/documents-deposes/contenu/route.ts',
+  'web/src/lib/collecte/documentsDeposesServeur.ts',
 ];
 
 const ENTREE = 'biology-library/publie';

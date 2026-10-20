@@ -21,6 +21,7 @@ const VIDE = {
   protocole: null,
   questionnaires: [],
   comptesRendus: [],
+  documentsDeposes: [],
   signalements: [],
 };
 

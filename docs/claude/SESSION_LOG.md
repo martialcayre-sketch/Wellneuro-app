@@ -10887,6 +10887,25 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t03 : migration de retrait de la colonne NIR
+
+**Fait.** Migration `DROP COLUMN "nir"`, schéma, contrat d'absence neuf, contrat du dossier administratif à trois colonnes, étape CI.
+
+**Écarté.** Garder la colonne vide : D-284 (g) demande son retrait, et rien ne la lit plus.
+
+**Prochaine action.** PR, merge après la release-db de t11, re-constat de 0 NIR, release-db, constat.
+
+**Ouvert.** Aucun.
+
+## 2026-10-19 — t15 : réviser part de la version en vigueur
+
+**Fait.** Brouillon vierge du constructeur rechargé depuis la version en vigueur (une fois par version, orientation non reprise, V4 redemandé) ; `versionsLues` au rail, phase Actions « inconnu » avant lecture.
+
+**Écarté.** Bouton « recharger » explicite : l'arbitrage veut que réviser parte de la version en vigueur.
+
+**Prochaine action.** PR, merge ; puis question t14 au responsable, NIR.
+
+**Ouvert.** t14 : toutes les surfaces du journal sont déjà ouvertes en production.
 ## 2026-10-19 — t14 : journal du portail, close sans code
 
 **Fait.** Constat en production : « Mes échanges » et ses trois sources sous drapeau déjà ouverts. Ligne du plan soldée en citant #1586 (mécanisme `_OUVERT_LE` livré le même soir par une autre session, sans effet sans variable posée) ; état de production de `WN_PORTAIL_MES_ECHANGES` corrigé au FEATURE_FLAGS.
@@ -10917,6 +10936,15 @@ Ce lot les livre, sans migration.
 **Ouvert.** Aucun.
 
 
+## 2026-10-19 — J3-collecte : le code sous drapeau éteint (D-330 §4)
+
+**Fait.** Livré sous `WN_PORTAIL_DEPOT_DOCUMENTS`, éteint : la route et la page de dépôt, l'écran du praticien (ouvrir, corriger, retirer) et la ligne « Transmis ». Plafonds rejugés sous le verrou du dossier, en READ COMMITTED ; listes sans `contenu` ; consultation conditionnelle. Banc sur base réelle ajouté au CI. Relecture `wn-reviewer` : aucun bloquant, six points corrigés.
+
+**Écarté.** Dérogation d'import vers la biologie : passage par l'entrée publiée. Drapeau sur l'écran du praticien : il ne sert que ce qui a été déposé.
+
+**Prochaine action.** PR, CI, revue CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** À valider avant ACT-4 : les libellés de l'écran, le bloc « Ce que vous trouvez ici », « Vos données personnelles ». Observations relevées : le protocole n'a aucune lecture datée ; « Mes échanges » n'a aucun lecteur tracé.
 ## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
 
 **Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.
@@ -10929,10 +10957,61 @@ Ce lot les livre, sans migration.
 
 ## 2026-10-20 — J3-12d : badges de niveau de preuve masqués au cockpit
 
-**Fait.** D-331 : les deux tableaux des 12 besoins du cockpit n'affichent plus la colonne A–D ni sa légende ; la couverture reste. Table des grades, `evidence.ts`, snapshot et empreinte intacts (banc figé vert), version du score inchangée, sans migration.
+**Fait.** D-332 : les deux tableaux des 12 besoins du cockpit n'affichent plus la colonne A–D ni sa légende ; la couverture reste. Table des grades, `evidence.ts`, snapshot et empreinte intacts (banc figé vert), version du score inchangée, sans migration.
 
 **Écarté.** Retirer `niveauPreuve` des API praticien : aucun écran ne le lit, le snapshot le garde, et le contrat se rouvrira avec la table révisée.
 
 **Prochaine action.** PR, CI (base visuelle du tiroir), merge, déploiement constaté ; r1_14 → fait, fiche H15.
 
-**Ouvert.** Numéro D-331 disputé avec #1589 : à relire avant le merge.
+**Ouvert.** Aucun : D-331 prise par #1589 pendant le CI, ce lot renuméroté en D-332.
+
+## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
+
+**Fait.** Un questionnaire remplissable ouvert par son adresse rend le refus de la soumission (409, même texte) ; banc structurel qui classe chaque route d'écriture patient, gardée ou ouverte avec motif.
+
+**Écarté.** Envoyer le signal de sécurité d'un mineur malgré la pause : décision du responsable. Tracer l'origine de la date : migration, avec J3-mineurs.
+
+**Prochaine action.** PR, T2, merge, déploiement constaté.
+
+**Ouvert.** Les deux restes ci-dessus.
+## 2026-10-20 — t31 : statut des campagnes lu sur la fiche
+
+**Fait.** La vue `ACTIVE_CAMPAIGN.md` reprend le statut de la fiche (premier mot, « inconnu » à défaut) au lieu de « active » en dur ; vue régénérée, la primaire passe à `en_pause`. Deux cas au banc.
+
+**Écarté.** `wn-cycle --appliquer` pour régénérer : il réécrit aussi l'état machine.
+
+**Prochaine action.** PR, merge, t31 → fait.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-20 — t03 : colonne NIR retirée, release constatée
+
+**Fait.** #1581 mergée après recomptage (0 NIR sur 34) ; release-db 39340724658 approuvée par délégation, sentinelle reçue ; constat par conteneur : colonne et contrainte absentes, migration appliquée, aucune en échec. Textes du registre RGPD, commentaires et note du constat de ligne de base mis à jour.
+
+**Écarté.** Reformuler la requête du constat de ligne de base : elle se rejoue à l'identique ; une note suffit.
+
+**Prochaine action.** PR de textes, merge, déploiement constaté.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-20 — main rouge après #1590 : route de dépôt à classer
+
+**Fait.** Le CI de `main` sur 4b6ae49b était rouge sur un seul test : le banc des routes d'écriture patient (#1594, mergé juste avant) exige que chaque route soit classée, et `portail/documents` (#1590) ne l'était pas. Conflit sémantique entre deux PR vertes chacune. La route joue déjà la garde d'âge et en suit le refus : elle est classée « gardée ».
+
+**Écarté.** Relancer le CI : un rouge se corrige. La classer « ouverte » : D-330 ferme la garde d'âge au dépôt.
+
+**Prochaine action.** PR, merge, déploiement constaté (1re ligne Scalingo = tête de main).
+
+**Ouvert.** Aucun.
+
+## 2026-10-20 — ACT-4 préparé : textes du dépôt validés, drapeau éteint
+
+**Fait.** Textes soumis puis validés (quatre arbitrages, D-330 amendée) : libellés de l'écran, refus du plafond des non-consultés rendu neutre ; bloc « Ce que vous trouvez ici » qui nomme les dépôts, servi drapeau ouvert ; « Vos données personnelles » v19 (collecte et lecture datée) consignée. Observation prod (agrégats) : protocole 1 lecture, 0 datée ; bilan 1 datée (2026-10-19) ; 0 dépôt ; « Mes échanges » sans lecteur observable (aucun journal d'accès).
+
+**Écarté.** Publier la v19 maintenant : elle décrirait un dépôt fermé. L'asservir au drapeau : le registre est lu côté client. Une trace de lecture pour ACT-3 : constat par le responsable sur un dossier de test.
+
+**Prochaine action.** Faire valider la partie B (résumés, e-mail v2, phrase de la lecture datée), puis préparer la PR de publication, à merger à l'ouverture.
+
+**Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).

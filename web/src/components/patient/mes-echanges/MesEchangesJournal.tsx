@@ -10,6 +10,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import {
   AUCUN_ECHANGE,
   BLOCS_MES_ECHANGES,
+  BLOCS_MES_ECHANGES_DEPOT_OUVERT,
   CHARGEMENT_MES_ECHANGES,
   TITRE_MES_ECHANGES,
 } from './textesMesEchanges';
@@ -24,13 +25,17 @@ import {
 //
 // Rien ne s'écrit d'ici : chaque ligne est un lien vers la page qui porte
 // l'élément ; c'est elle qui consigne la lecture, et la date ([[D-297]]).
+//
+// `depotOuvert` vient de la page (serveur), qui lit `WN_PORTAIL_DEPOT_DOCUMENTS` :
+// ouvert, le bloc « Ce que vous trouvez ici » nomme les documents déposés
+// ([[D-330]], ACT-4).
 
 type Etat =
   | { statut: 'chargement' }
   | { statut: 'erreur'; message: string; definitif: boolean }
   | { statut: 'pret'; entrees: EntreeEchange[] };
 
-export function MesEchangesJournal({ token }: { token: string }) {
+export function MesEchangesJournal({ token, depotOuvert = false }: { token: string; depotOuvert?: boolean }) {
   const router = useRouter();
   const [etat, setEtat] = useState<Etat>({ statut: 'chargement' });
   const annuleRef = useRef(false);
@@ -126,7 +131,7 @@ export function MesEchangesJournal({ token }: { token: string }) {
 
       <PatientCard>
         <div className="space-y-4">
-          {BLOCS_MES_ECHANGES.map(bloc => (
+          {(depotOuvert ? BLOCS_MES_ECHANGES_DEPOT_OUVERT : BLOCS_MES_ECHANGES).map(bloc => (
             <section key={bloc.titre}>
               <h2 className="text-base font-semibold text-foreground">{bloc.titre}</h2>
               <p className="mt-1 text-base text-foreground">{bloc.texte}</p>

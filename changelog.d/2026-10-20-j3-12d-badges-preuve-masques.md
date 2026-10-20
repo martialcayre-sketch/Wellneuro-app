@@ -1,4 +1,4 @@
-### Cockpit : les badges de niveau de preuve des 12 besoins sont masqués (D-331, J3-12d)
+### Cockpit : les badges de niveau de preuve des 12 besoins sont masqués (D-332, J3-12d)
 
 - Le tiroir « Les 12 besoins » du poste de pilotage et l'onglet du même nom
   n'affichent plus la colonne « Niveau A » à « Niveau D » ni la légende A–D ;
