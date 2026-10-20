@@ -1,16 +1,18 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 533 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 536 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 26 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 29 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
 un résumé des caractéristiques du produit et une information de bon usage de
 l'ANSM, `WN-SRC-0512` à `0518` ; J3-12e : quinze sources de mesure en accès
 libre des besoins 6 à 12 — études de validation, revues, documentation des
-auteurs d'instruments —, `WN-SRC-0540` à `0554`), dont seuls des
-extraits ciblés sont ingérés. La plage `0519` à `0539` est laissée à une autre
-session d'ingestion (`0519` à `0524` sont déjà en base, lot `LOT_021_2026-10-20`). Il s'agit d'un inventaire documentaire, pas d'un
+auteurs d'instruments —, `WN-SRC-0540` à `0554`, puis trois compléments en
+accès libre des besoins 6, 8 et 12, `WN-SRC-0560` à `0562`), dont seuls des
+extraits ciblés sont ingérés. Les plages `0519` à `0539` et `0555` à `0559` sont
+laissées à une autre session d'ingestion (`0519` à `0524` sont déjà en base, lot
+`LOT_021_2026-10-20`, et `0555`, lot `LOT_036_2026-10-20`). Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
 ## Politique de publication
