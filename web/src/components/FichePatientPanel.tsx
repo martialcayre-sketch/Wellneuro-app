@@ -2600,7 +2600,7 @@ export function FichePatientPanel({
               <p className="px-1 text-2xs font-semibold uppercase tracking-[.07em] text-muted-foreground">Instruments</p>
               <InstrumentTiroir
                 libelle="Les 12 besoins"
-                description="Couverture descriptive et niveau de preuve, par besoin. Aucune priorité clinique n’est déduite ici."
+                description="Couverture descriptive, par besoin. Aucune priorité clinique n’est déduite ici."
                 icone={ListChecks}
               >
                 {tableauBesoins}

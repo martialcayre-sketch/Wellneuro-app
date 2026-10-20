@@ -988,7 +988,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
     expect(tiroir.textContent).toContain('40%');
-    expect(tiroir.textContent).not.toMatch(/Niveau [A-D]|Niveaux? de preuve|questionnaire clinique validé|hypothèse WellNeuro/);
+    expect(tiroir.textContent).not.toMatch(/Niveau [A-D]\b|niveaux? de preuve|questionnaire clinique validé|hypothèse WellNeuro/i);
   });
 
   it('poste de pilotage : propose les outils de synthèse IA avec le patient présélectionné', async () => {
