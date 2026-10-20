@@ -350,6 +350,21 @@ de la phrase sur la lecture datée restent à valider avant cette publication ;
 (4) le constat d'ACT-3 se fait sans code : le responsable ouvre « Mes
 échanges » sur un dossier de test, l'assistant compare à une lecture en
 conteneur ; aucune trace de lecture n'est ajoutée à la route.
+Le même jour, la partie B est validée (phrase de la lecture datée sans
+énumération, résumés de la v19 et des conditions v2, e-mail
+`conditions_utilisation` v2), et une cinquième question tranchée : la phrase
+de la partie 5 des conditions sur le filet nomme « le compte rendu de vos
+analyses biologiques », le dépôt de documents restant sans accusé (G-11). La
+PR de publication est prête, à merger à l'ouverture.
+Toujours le 2026-10-20, le responsable arbitre le préalable « J2-conf » de
+l'ouverture (H77) : pour ACT-4, il est tenu par la garde d'âge que porte déjà
+le code du dépôt : seul un dossier majeur peut déposer (mineur ou date
+manquante, 409) ; l'écran demande la date de naissance à un dossier qui n'en a
+pas, et sert au mineur le message du circuit des mineurs. Les autres parts de J2-conf ne visent pas cette
+surface : le registre des droits (lettre r) porte sur des instruments, et le
+dépôt n'en sert aucun ; la lettre at porte sur une extraction par l'IA, et le
+dépôt n'est lu par aucune. La lettre as (place 6) reste après ACT-4 (porte
+18). J2-conf garde son objet et reste un préalable entier d'ACT-5 (H78).
 
 ### D-329 — « Mon équilibre », lot de cohérence du calcul : un sous-score partiel ne mesure plus un besoin, et le total dit sur combien de besoins il est établi (version du score inchangée ; audit de D-312, section 10)
 

@@ -101,7 +101,7 @@ describe('GET /api/praticien/conditions-utilisation', () => {
       { idPatient: 'PAT_1', prenom: 'Sophie', nom: 'Nicola' },
       { idPatient: 'PAT_2', prenom: 'Jennifer', nom: 'Martin' },
     ]);
-    expect(corps.apercu.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace');
+    expect(corps.apercu.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
     expect(corps.apercu.corps).toContain('ouvrez ce lien : [lien personnel]');
   });
 

@@ -35,7 +35,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les seize versions attendues, dans cet ordre', () => {
+  it('expose les dix-sept versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -72,6 +72,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'document_remis@1',
       // [[D-292]] §3 — les conditions d'utilisation aux patients suivis.
       'conditions_utilisation@1',
+      // [[D-292]] §3 — l'annonce des conditions v2 (ACT-4, [[D-330]]).
+      'conditions_utilisation@2',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
     ]);
@@ -113,11 +115,41 @@ describe('registre des gabarits patient — intégrité', () => {
       .join('\n\n')
       .replace('[lien personnel]', '{{lien}}');
 
-    const g = getGabarit('conditions_utilisation');
+    const g = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 1)!;
     expect(g.sujet).toBe(objet.replace('Objet : ', ''));
     expect(g.corps).toBe(attendu);
     // Ni nom, ni prénom : la seule variable est le lien personnel.
     expect([...g.variables]).toEqual(['lien']);
+  });
+
+  // La version 2 face au texte validé le 2026-10-20 (B4 de la proposition
+  // d'ACT-4) : sujet en gras, corps cité, à l'apostrophe typographique près.
+  it('conditions_utilisation@2 : le texte validé mot pour mot, la fin de la version 1 au caractère près', () => {
+    const readme = fs
+      .readFileSync(
+        path.resolve(__dirname, '../../../../docs/claude/propositions/2026-10-20-act4-textes/README.md'),
+        'utf8',
+      )
+      .replaceAll("'", '’');
+    const bloc = readme.slice(readme.indexOf('### B4.'), readme.indexOf('### B5.'));
+    const sujet = /Sujet : \*\*(.+)\*\*/.exec(bloc)![1];
+    const corps = bloc
+      .split('\n')
+      .filter(l => l.startsWith('>'))
+      .map(l => l.replace(/^>\s?/, ''))
+      .join('\n')
+      .split(/\n\n+/)
+      .map(p => p.split('\n').join(' ').trim())
+      .join('\n\n');
+
+    const g = getGabarit('conditions_utilisation');
+    expect(g.version).toBe(2);
+    expect(g.sujet).toBe(sujet);
+    expect(g.corps).toBe(corps);
+    expect([...g.variables]).toEqual(['lien']);
+    const v1 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 1)!;
+    const fin = (c: string) => c.slice(c.indexOf('Ce lien est valable 24 heures'));
+    expect(fin(g.corps)).toBe(fin(v1.corps));
   });
 
   it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
@@ -156,7 +188,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les six validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les sept validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -177,6 +209,9 @@ describe('registre des gabarits patient — intégrité', () => {
       // [[D-292]] — le texte de la proposition validée, plus la phrase des
       // 24 heures choisie par le responsable le 2026-10-16.
       'conditions_utilisation@1',
+      // [[D-292]] §3, conditions v2 — validé le 2026-10-20 avec les textes
+      // d'ACT-4 ([[D-330]], amendement).
+      'conditions_utilisation@2',
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.
       'protocole_diffuse@1',
@@ -187,6 +222,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-09-08',
       '2026-09-29',
       '2026-10-16',
+      '2026-10-20',
       '2026-10-17',
     ]);
   });

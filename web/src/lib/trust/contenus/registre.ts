@@ -1645,6 +1645,67 @@ const DONNEES_CONFIDENTIALITE_V18: VersionDocumentTrust = {
   hash: '41f60179bdf710480deb91c9a609ec4dfa843a049b36280cc9f90ed42747961d',
 };
 
+// LA v19 DIT LA COLLECTE DOCUMENTAIRE ([[D-330]], ACT-4) ET LA LECTURE DATÉE
+// ([[D-297]]) — textes validés tels quels par le responsable le 2026-10-20
+// (`docs/claude/propositions/2026-10-20-act4-textes/README.md`, A3 corrigé par
+// B1). Trois retouches, rien d'autre : « et les autres documents » au premier
+// paragraphe, un paragraphe après ceux du compte rendu biologique, une phrase
+// à la suite du journal des connexions.
+//
+// PUBLIÉE À L'OUVERTURE D'ACT-4, pas avant : elle décrit un dépôt qui n'est
+// ouvert qu'avec `WN_PORTAIL_DEPOT_DOCUMENTS`. Elle entraîne les conditions v2
+// ([[D-292]] §5). Accusé EXIGÉ pour le motif de la v16 à la v18 : seule la
+// version courante en réclame un, et l'accueil en trois textes des dossiers
+// mineurs ou sans date de naissance le lit encore.
+const PARAGRAPHE_COLLECTE_DOCUMENTAIRE =
+  'Vous pouvez aussi déposer dans votre espace d’autres documents utiles à votre accompagnement : un courrier, le compte rendu d’une consultation, la liste de vos traitements ou de vos compléments. Chaque document est gardé dans votre dossier avec la date de son dépôt et le type que vous lui avez donné, que votre praticien peut corriger. Le nom de votre fichier n’est jamais gardé ; une photo est enregistrée sans les informations que votre appareil y ajoute, comme le lieu ou la date de la prise de vue ; un PDF est gardé tel que vous l’avez envoyé. Nous conservons aussi une empreinte du document, qui ne permet pas de le reconstituer, pour refuser un second dépôt du même fichier. Seul votre praticien peut l’ouvrir, et la date de sa première ouverture est notée. Aucun outil d’intelligence artificielle ne le lit et il n’est transmis à personne. Il est conservé avec votre dossier. S’il est retiré — déposé par erreur, ou à votre demande —, son contenu est effacé : restent la date du dépôt, celle du retrait, son motif, le type du document et son empreinte. Des copies peuvent en subsister jusqu’à 12 mois dans les sauvegardes de notre hébergeur, qui s’effacent ensuite d’elles-mêmes.';
+const PHRASE_LECTURE_DATEE =
+  ' Seule exception : le jour où vous ouvrez pour la première fois un document que votre praticien vous a remis est noté, sans l’heure, et votre praticien le voit.';
+
+const DONNEES_CONFIDENTIALITE_V19: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v19',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V18.sections.map(section => {
+    if (section.titre === 'Quelles données sont recueillies ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.flatMap(paragraphe => {
+          if (paragraphe.startsWith('Les informations que vous transmettez')) {
+            return [
+              paragraphe.replace(
+                'les comptes rendus d’analyses que vous déposez dans votre espace',
+                'les comptes rendus d’analyses et les autres documents que vous déposez dans votre espace',
+              ),
+            ];
+          }
+          return paragraphe.startsWith('Ces informations comptent parmi les plus sensibles')
+            ? [paragraphe, PARAGRAPHE_COLLECTE_DOCUMENTAIRE]
+            : [paragraphe];
+        }),
+      };
+    }
+    if (section.titre === 'Signaler un incident de confidentialité') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.map(paragraphe =>
+          paragraphe.endsWith('jamais le contenu de ce que vous y faites.') ? paragraphe + PHRASE_LECTURE_DATEE : paragraphe,
+        ),
+      };
+    }
+    return section;
+  }),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Vous pouvez désormais déposer dans votre espace des documents utiles à votre accompagnement : cette version dit ce qui en est gardé, qui peut les ouvrir et comment ils sont retirés. Elle précise aussi que le jour où vous ouvrez pour la première fois un document remis par votre praticien est noté. Le reste ne change pas.',
+  publieLe: '2026-10-20',
+  requiresAcknowledgement: true,
+  hash: '9db51777008adfc2388d13290962d3a6005bf2e47c3c99221f18f8dc28860491',
+};
+
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
 // d'information repris mot pour mot, dans leur version en vigueur au jour de
 // l'assemblage, puis une cinquième partie neuve. Texte validé par le
@@ -1728,6 +1789,54 @@ const CONDITIONS_UTILISATION_V1: VersionDocumentTrust = {
   hash: '634fdc4312ee6d9621146d564425cae6fe68f88420418f3933bb157a6b32307b',
 };
 
+// LES CONDITIONS v2 ([[D-292]] §5) : après ACT-1, une partie ne change plus que
+// par une nouvelle version des conditions. La partie 3 reprend « Vos données
+// personnelles » v19 ; les trois autres sont celles de la v1. Titre et résumé
+// inchangés. Une phrase de la partie 5 précise le filet : il ne joue qu'au dépôt
+// du compte rendu biologique, le dépôt de documents restant sans accusé
+// (arbitrage 2 de G-11) — validée par le responsable le 2026-10-20
+// (`docs/claude/propositions/2026-10-20-act4-textes/README.md`, B5).
+//
+// PUBLIÉES À L'OUVERTURE D'ACT-4, avec la v19. Leur accusé passe par l'e-mail
+// `conditions_utilisation@2` (patients suivis, envoi en une fois par le
+// responsable), par l'accueil (nouveau patient majeur) ou au filet du dépôt
+// du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V2: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V19 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V2: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v2',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V2.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V1.sections
+      .filter(section => section.partie === PARTIE_5_CONDITIONS)
+      .map(section => ({
+        ...section,
+        paragraphes: section.paragraphes.map(paragraphe =>
+          paragraphe.replace(
+            'lorsque vous déposez un document dans votre espace',
+            'lorsque vous déposez le compte rendu de vos analyses biologiques',
+          ),
+        ),
+      })),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie « Vos données personnelles » décrit désormais le dépôt de documents dans votre espace, et précise que le jour de votre première ouverture d’un document remis par votre praticien est noté. Le reste ne change pas.',
+  publieLe: '2026-10-20',
+  requiresAcknowledgement: true,
+  hash: '05f3f39ba48a2ea15a0a119998719e7356ce4fb2362a66f3196b11f5c341b4ad',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1750,6 +1859,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V16,
   DONNEES_CONFIDENTIALITE_V17,
   DONNEES_CONFIDENTIALITE_V18,
+  DONNEES_CONFIDENTIALITE_V19,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -1762,6 +1872,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,
   CONDITIONS_UTILISATION_V1,
+  CONDITIONS_UTILISATION_V2,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

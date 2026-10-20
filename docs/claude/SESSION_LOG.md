@@ -11024,3 +11024,23 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Faire valider la partie B (résumés, e-mail v2, phrase de la lecture datée), puis préparer la PR de publication, à merger à l'ouverture.
 
 **Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
+
+## 2026-10-20 — ACT-4 : publication des textes prête (v19, conditions v2)
+
+**Fait.** Partie B validée ; une cinquième question tranchée : la partie 5 des conditions nomme le dépôt du compte rendu (le dépôt de documents reste sans accusé). Registre : `donnees_confidentialite@v19`, `conditions_utilisation@v2`, gabarit `conditions_utilisation@2`, chacun comparé par banc à la proposition validée. PR ouverte en brouillon, à merger à l'ouverture d'ACT-4.
+
+**Écarté.** Merger maintenant : la v2 deviendrait courante (filet du compte rendu, accueil, liste d'envoi) et la v19 décrirait un dépôt fermé.
+
+**Prochaine action.** À l'ouverture : fusionner main, dater `publieLe`, CI, merge, déploiement constaté, drapeau, e-mail.
+
+**Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
+
+## 2026-10-20 — ACT-4 : ouverture, préalable J2-conf arbitré
+
+**Fait.** J2-conf constaté non fait (ni at, ni as, ni r). Arbitrage du responsable (D-330, amendement) : pour ACT-4, J2-conf est tenu par la garde d'âge du code du dépôt (majeur seulement, 409 sinon) ; r et at ne visent pas cette surface ; as reste en place 6. Main fusionnée dans la branche (conflit sur `FEATURE_FLAGS.md`, résolu ligne à ligne) ; `publieLe` déjà au jour du merge.
+
+**Écarté.** Attendre r, at et as : as passe après ACT-4 (porte 18), ce qui bloquait la file.
+
+**Prochaine action.** Merge, déploiement constaté, drapeau, e-mail des conditions v2, constat sur un premier dossier réel, ligne `DocumentDeposePatient` de DOSSIER_RGPD.
+
+**Ouvert.** Message « Trois documents attendent déjà… » du compte rendu biologique, non arbitré.
