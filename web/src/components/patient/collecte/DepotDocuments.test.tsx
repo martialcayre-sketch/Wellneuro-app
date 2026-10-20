@@ -11,12 +11,14 @@ vi.mock('next/navigation', () => ({ useRouter: () => routeur }));
 import { DepotDocuments } from './DepotDocuments';
 import { BLOCS_COLLECTE_G11 } from './textesDepot';
 
-// L'écran de dépôt ([[D-330]]) : l'encart d'urgence du dépôt est là quoi
-// qu'il arrive ([[D-293]] §3), le texte de collecte de G-11 suit, et le dépôt
-// envoie la catégorie et le fichier — rien d'autre.
+// L'écran de dépôt ([[D-330]]) : plus d'encart d'urgence depuis l'amendement
+// du 2026-10-21 de [[D-293]] §3 (les numéros sont au pied du portail) ; le
+// délai de lecture est dit sous le bouton, le texte de collecte de G-11 suit,
+// et le dépôt envoie la catégorie et le fichier — rien d'autre.
 
-const PHRASE_ENCART =
+const PHRASE_DELAI =
   'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.';
+const encart = () => screen.queryByRole('note', { name: 'Besoin d’aide maintenant ?' });
 
 const PRET = {
   ok: true,
@@ -36,19 +38,21 @@ afterEach(() => {
 });
 
 describe('DepotDocuments', () => {
-  it('l’encart d’urgence du dépôt et le texte de G-11 sont rendus dès le chargement', () => {
+  it('le texte de G-11 est rendu dès le chargement, sans encart d’urgence', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
     render(<DepotDocuments token="TOK" />);
-    expect(screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' })).toBeTruthy();
-    expect(screen.getByText(PHRASE_ENCART)).toBeTruthy();
+    expect(encart()).toBeNull();
     for (const bloc of BLOCS_COLLECTE_G11) expect(screen.getByText(bloc.texte)).toBeTruthy();
   });
 
-  it('une panne de la route laisse l’encart en place', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: false, error: 'Erreur technique.' }), { status: 500 })));
+  it('le délai de lecture est dit sous le bouton de dépôt, en texte simple', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(PRET), { status: 200 })));
     render(<DepotDocuments token="TOK" />);
-    await screen.findByText('Erreur technique.');
-    expect(screen.getByText(PHRASE_ENCART)).toBeTruthy();
+    const bouton = await screen.findByRole('button', { name: 'Déposer le document' });
+    const phrase = screen.getByText(PHRASE_DELAI);
+    expect(phrase.tagName).toBe('P');
+    expect(bouton.compareDocumentPosition(phrase) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(encart()).toBeNull();
   });
 
   it('liste ses dépôts : date, catégorie proposée, retrait', async () => {
@@ -108,13 +112,12 @@ describe('DepotDocuments', () => {
     expect(screen.queryByRole('button', { name: 'Déposer le document' })).toBeNull();
   });
 
-  it('date de naissance manquante : l’écran de la date, et l’encart d’urgence reste', async () => {
+  it('date de naissance manquante : l’écran de la date, sans encart d’urgence', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ...PRET, statutAge: 'date_manquante' }), { status: 200 })));
     render(<DepotDocuments token="TOK" />);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Déposer le document' })).toBeNull());
     await waitFor(() => expect(screen.queryByText('Chargement…')).toBeNull());
-    expect(screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' })).toBeTruthy();
-    expect(screen.getByText(PHRASE_ENCART)).toBeTruthy();
+    expect(encart()).toBeNull();
   });
 
   it('401 : retour au portail', async () => {

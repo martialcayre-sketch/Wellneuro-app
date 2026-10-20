@@ -45,14 +45,31 @@ export const ENCART_URGENCE = Object.freeze({
  * La phrase finale de l'encart, par écran ([[D-293]] §3). L'encart reste celui
  * de [[D-275]] §1, mot pour mot ; seul le SUJET de sa dernière phrase s'adapte —
  * « vos réponses » ne désigne rien hors d'un questionnaire. Textes validés tels
- * quels par le responsable le 2026-10-14 (lettre u).
+ * quels par le responsable le 2026-10-14 (lettre u). L'écran de dépôt n'a plus
+ * d'encart depuis l'amendement du 2026-10-21 : les numéros sont au pied de
+ * toutes les pages du portail (`PIED_URGENCE_PORTAIL`).
  */
 export const DELAI_ENCART_PAR_ECRAN = Object.freeze({
   questionnaire: ENCART_URGENCE.delai,
   mes_echanges:
     'Ce que vous transmettez est transmis à votre praticien, mais il ne le lit pas en temps réel : n’attendez pas sa réponse.',
-  depot_documents:
-    'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
+});
+
+/**
+ * L'aide permanente du portail ([[D-293]] §3, amendement du 2026-10-21) : au
+ * pied de TOUTES les pages de `/portail`, connexion comprise, les numéros
+ * cliquables, sans page intermédiaire. Texte validé tel quel par le
+ * responsable le 2026-10-21 : « Besoin d’aide maintenant ? Idées suicidaires :
+ * 3114 · Danger immédiat : 15 ou 112 · Par SMS : 114 ». Les numéros sont ceux
+ * d'`ENCART_URGENCE`.
+ */
+export const PIED_URGENCE_PORTAIL = Object.freeze({
+  titre: ENCART_URGENCE.titre,
+  lignes: Object.freeze([
+    Object.freeze({ libelle: 'Idées suicidaires', numeros: Object.freeze(['3114']) }),
+    Object.freeze({ libelle: 'Danger immédiat', numeros: Object.freeze(['15', '112']) }),
+    Object.freeze({ libelle: 'Par SMS', numeros: Object.freeze(['114']) }),
+  ]),
 });
 export type EcranEncartUrgence = keyof typeof DELAI_ENCART_PAR_ECRAN;
 

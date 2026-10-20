@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
+import { DELAI_ENCART_PAR_ECRAN } from '@/lib/securite/urgenceSuicide';
 import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
 import { GenericQuestionnaire } from './GenericQuestionnaire';
 
@@ -40,16 +41,8 @@ describe('EncartUrgenceSuicide ([[D-275]])', () => {
     );
   });
 
-  it('au dépôt d’un document, « Vos documents sont transmis… » ([[D-293]] §3, texte validé le 2026-10-14)', () => {
-    render(<EncartUrgenceSuicide ecran="depot_documents" />);
-    const encart = screen.getByRole('note', { name: 'Besoin d’aide maintenant ?' });
-    const paragraphes = [...encart.querySelectorAll('p')].map(p => p.textContent?.replace(/\s+/g, ' ').trim());
-    expect(paragraphes).toEqual(
-      [
-        ...TEXTE_VALIDE.slice(0, 2),
-        'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.',
-      ].map(t => t.replace(/\s+/g, ' ')),
-    );
+  it('l’écran de dépôt n’a plus de phrase d’encart ([[D-293]] §3, amendement du 2026-10-21)', () => {
+    expect(Object.keys(DELAI_ENCART_PAR_ECRAN).sort()).toEqual(['mes_echanges', 'questionnaire']);
   });
 });
 

@@ -53,6 +53,13 @@ export const BLOCS_COLLECTE_G11: readonly { titre: string; texte: string }[] = O
 export const LEGENDE_CATEGORIE = 'Ce que contient le document';
 export const LIBELLE_FICHIER = 'Le document : un PDF de 10 Mo au plus, ou une photo (JPEG, PNG ou WebP)';
 export const BOUTON_DEPOSER = 'Déposer le document';
+/**
+ * Sous le bouton, en texte simple ([[D-293]] §3, amendement du 2026-10-21) :
+ * l'ancienne phrase finale de l'encart d'urgence, gardée seule quand l'encart a
+ * quitté l'écran de dépôt. Texte du 2026-10-14, maintenu par le responsable le 2026-10-21.
+ */
+export const DELAI_LECTURE_DEPOT =
+  'Vos documents sont transmis à votre praticien, mais il ne les lit pas en temps réel : n’attendez pas sa réponse.';
 export const DEPOT_REUSSI = 'Votre document est déposé dans votre dossier.';
 export const TITRE_MES_DEPOTS = 'Mes documents déposés';
 export const AUCUN_DEPOT = 'Vous n’avez encore déposé aucun document.';
