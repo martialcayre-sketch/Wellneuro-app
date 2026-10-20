@@ -5,8 +5,8 @@
 //
 // Une liste datée, EN LECTURE, de ce que le praticien a remis (bilan et sa note,
 // fiches, courrier pour le médecin, protocole) et de ce que le patient a
-// transmis (questionnaires, comptes rendus d'analyses, signalements avec leur
-// statut). Chaque ligne ouvre la page du portail où l'élément se trouve DÉJÀ :
+// transmis (questionnaires, comptes rendus d'analyses, documents déposés,
+// signalements avec leur statut). Chaque ligne ouvre la page du portail où l'élément se trouve DÉJÀ :
 // le journal ne montre aucun contenu qui ne soit servi ailleurs (§1).
 //
 // ── CE QUE CE N'EST PAS ─────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ export type EspeceEchange =
   | 'protocole'
   | 'questionnaire'
   | 'compte_rendu'
+  | 'document_depose'
   | 'signalement';
 
 export type EntreeEchange = {
@@ -90,6 +91,8 @@ export type SourcesMesEchanges = {
   protocole: { approbationId: string; approuveLe: Date } | null;
   questionnaires: { idAssignation: string; titre: string; transmisLe: Date }[];
   comptesRendus: { deposeLe: Date }[];
+  /** Les documents déposés par le patient ([[D-330]]) : la date seule. */
+  documentsDeposes: { deposeLe: Date }[];
   signalements: { categorie: string; statutTraitement: string; soumisLe: Date }[];
 };
 
@@ -168,6 +171,18 @@ export function entreesMesEchanges(
       objet: 'Compte rendu d’analyses',
       date: cr.deposeLe.toISOString(),
       chemin: 'comptes-rendus',
+    });
+  });
+  sources.documentsDeposes.forEach((d, rang) => {
+    entrees.push({
+      // [[D-330]] §2 : une ligne datée, SANS nom de fichier — il n'est jamais
+      // gardé — ni catégorie : l'objet dit seulement qu'un document est parti.
+      cle: `document_depose:${d.deposeLe.toISOString()}:${rang}`,
+      sens: 'transmis',
+      espece: 'document_depose',
+      objet: 'Document déposé',
+      date: d.deposeLe.toISOString(),
+      chemin: 'documents',
     });
   });
   sources.signalements.forEach((s, rang) => {

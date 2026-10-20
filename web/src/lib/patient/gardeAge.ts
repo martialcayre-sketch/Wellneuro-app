@@ -46,6 +46,9 @@ export function accepteSaisieSante(statut: StatutAge): boolean {
 export const RAISON_DATE_NAISSANCE_REQUISE = 'date_naissance_requise';
 export const RAISON_CIRCUIT_MINEUR = 'circuit_mineur_requis';
 
+/** Les deux raisons d'un refus de la pause d'âge, typées pour les contrats de route. */
+export type RaisonRefusAge = typeof RAISON_DATE_NAISSANCE_REQUISE | typeof RAISON_CIRCUIT_MINEUR;
+
 /** Le refus opposé au patient. Une seule formulation par cas, un seul endroit. */
 export const MESSAGE_DATE_NAISSANCE_REQUISE =
   'Votre date de naissance est nécessaire avant de continuer. Indiquez-la sur la page d’accueil de votre espace.';
@@ -55,7 +58,7 @@ export const MESSAGE_CIRCUIT_MINEUR =
 /** Le refus à renvoyer par une route gardée, ou `null` si la saisie est ouverte. */
 export function refusSaisieSante(
   statut: StatutAge,
-): { reason: string; error: string } | null {
+): { reason: RaisonRefusAge; error: string } | null {
   if (statut === 'majeur') return null;
   return statut === 'mineur'
     ? { reason: RAISON_CIRCUIT_MINEUR, error: MESSAGE_CIRCUIT_MINEUR }

@@ -10887,6 +10887,16 @@ Ce lot les livre, sans migration.
 
 **Ouvert.** Aucun.
 
+## 2026-10-19 — t03 : migration de retrait de la colonne NIR
+
+**Fait.** Migration `DROP COLUMN "nir"`, schéma, contrat d'absence neuf, contrat du dossier administratif à trois colonnes, étape CI.
+
+**Écarté.** Garder la colonne vide : D-284 (g) demande son retrait, et rien ne la lit plus.
+
+**Prochaine action.** PR, merge après la release-db de t11, re-constat de 0 NIR, release-db, constat.
+
+**Ouvert.** Aucun.
+
 ## 2026-10-19 — t15 : réviser part de la version en vigueur
 
 **Fait.** Brouillon vierge du constructeur rechargé depuis la version en vigueur (une fois par version, orientation non reprise, V4 redemandé) ; `versionsLues` au rail, phase Actions « inconnu » avant lecture.
@@ -10926,6 +10936,15 @@ Ce lot les livre, sans migration.
 **Ouvert.** Aucun.
 
 
+## 2026-10-19 — J3-collecte : le code sous drapeau éteint (D-330 §4)
+
+**Fait.** Livré sous `WN_PORTAIL_DEPOT_DOCUMENTS`, éteint : la route et la page de dépôt, l'écran du praticien (ouvrir, corriger, retirer) et la ligne « Transmis ». Plafonds rejugés sous le verrou du dossier, en READ COMMITTED ; listes sans `contenu` ; consultation conditionnelle. Banc sur base réelle ajouté au CI. Relecture `wn-reviewer` : aucun bloquant, six points corrigés.
+
+**Écarté.** Dérogation d'import vers la biologie : passage par l'entrée publiée. Drapeau sur l'écran du praticien : il ne sert que ce qui a été déposé.
+
+**Prochaine action.** PR, CI, revue CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** À valider avant ACT-4 : les libellés de l'écran, le bloc « Ce que vous trouvez ici », « Vos données personnelles ». Observations relevées : le protocole n'a aucune lecture datée ; « Mes échanges » n'a aucun lecteur tracé.
 ## 2026-10-19 — D-325 : ligne « Nature » et règle Chrome committée
 
 **Fait.** Le responsable a validé le texte de la ligne « Nature » de D-325, qui nomme la délégation de §5 (PR #1587, documentation seule). La règle d'autorisation `mcp__claude-in-chrome__computer`, posée par `/permissions` pour l'étiquetage délégué, est committée sur sa demande, seule ligne ajoutée, sans réordonner le fichier.
@@ -10933,5 +10952,36 @@ Ce lot les livre, sans migration.
 **Écarté.** Committer le fichier tel que `/permissions` l'avait réécrit : il déplaçait trois clés sans rien changer.
 
 **Prochaine action.** Le dossier zinc.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-20 — t02 : pause d'âge, refus dès l'ouverture et banc des routes
+
+**Fait.** Un questionnaire remplissable ouvert par son adresse rend le refus de la soumission (409, même texte) ; banc structurel qui classe chaque route d'écriture patient, gardée ou ouverte avec motif.
+
+**Écarté.** Envoyer le signal de sécurité d'un mineur malgré la pause : décision du responsable. Tracer l'origine de la date : migration, avec J3-mineurs.
+
+**Prochaine action.** PR, T2, merge, déploiement constaté.
+
+**Ouvert.** Les deux restes ci-dessus.
+## 2026-10-20 — t31 : statut des campagnes lu sur la fiche
+
+**Fait.** La vue `ACTIVE_CAMPAIGN.md` reprend le statut de la fiche (premier mot, « inconnu » à défaut) au lieu de « active » en dur ; vue régénérée, la primaire passe à `en_pause`. Deux cas au banc.
+
+**Écarté.** `wn-cycle --appliquer` pour régénérer : il réécrit aussi l'état machine.
+
+**Prochaine action.** PR, merge, t31 → fait.
+
+**Ouvert.** Aucun.
+
+
+## 2026-10-20 — t03 : colonne NIR retirée, release constatée
+
+**Fait.** #1581 mergée après recomptage (0 NIR sur 34) ; release-db 39340724658 approuvée par délégation, sentinelle reçue ; constat par conteneur : colonne et contrainte absentes, migration appliquée, aucune en échec. Textes du registre RGPD, commentaires et note du constat de ligne de base mis à jour.
+
+**Écarté.** Reformuler la requête du constat de ligne de base : elle se rejoue à l'identique ; une note suffit.
+
+**Prochaine action.** PR de textes, merge, déploiement constaté.
 
 **Ouvert.** Aucun.

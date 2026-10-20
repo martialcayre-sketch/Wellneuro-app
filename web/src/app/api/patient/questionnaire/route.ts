@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
+import type { RaisonRefusAge } from '@/lib/patient/gardeAge';
 import { getRendererPourDefinition, type DefinitionServie, type RendererProfile } from '@/lib/questionnaire-display';
 
 export type PatientQuestionnaireResponse =
@@ -26,7 +28,13 @@ export type PatientQuestionnaireResponse =
        */
       consentementPossible: boolean;
     }
-  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'unauthorized' | 'annulee' | 'exception'; error: string };
+  | {
+      ok: false;
+      reason:
+        | 'not_found' | 'expired' | 'invalid' | 'unauthorized' | 'annulee' | 'exception'
+        | RaisonRefusAge;
+      error: string;
+    };
 
 export type AssignationInfo = {
   idAssignation: string;
@@ -101,6 +109,20 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       && ass.statutReponses !== 'deverrouille';
     if (bloqueParDeadline && isDeadlineExpired(ass.dateLimite)) {
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
+    }
+
+    // PAUSE D'ÂGE DÈS L'OUVERTURE (D-284 §3, reste P2-c du lot (h), t02) : un
+    // questionnaire ouvert par son adresse se remplissait en entier avant que
+    // la soumission ne le refuse. Il est refusé ici, avec le refus de
+    // `api/patient/submit` (même texte, même raison). Des réponses en lecture
+    // seule restent consultables — `verrouille` et `modification_demandee`, les
+    // deux états où la soumission refuse déjà d'écrire : la pause porte sur la
+    // saisie, pas sur la lecture.
+    if (ass.statutReponses !== 'verrouille' && ass.statutReponses !== 'modification_demandee') {
+      const refusAge = await refusSaisieSantePour(ass.idPatient);
+      if (refusAge) {
+        return NextResponse.json({ ok: false, ...refusAge }, { status: 409 });
+      }
     }
 
     // Resolver commun catalogue/cabinet en mode passation : l'assignation

@@ -18,6 +18,7 @@ function sources(over: Partial<SourcesMesEchanges> = {}): SourcesMesEchanges {
     protocole: null,
     questionnaires: [],
     comptesRendus: [],
+    documentsDeposes: [],
     signalements: [],
     ...over,
   };
@@ -39,6 +40,7 @@ describe('entreesMesEchanges', () => {
           { idAssignation: 'ASS_1', titre: 'Enquête alimentaire', transmisLe: new Date('2026-10-05T08:00:00Z') },
         ],
         comptesRendus: [{ deposeLe: new Date('2026-10-06T08:00:00Z') }],
+        documentsDeposes: [{ deposeLe: new Date('2026-10-06T20:00:00Z') }],
         signalements: [
           { categorie: 'demande_droit', statutTraitement: 'traite', soumisLe: new Date('2026-10-07T08:00:00Z') },
         ],
@@ -46,6 +48,7 @@ describe('entreesMesEchanges', () => {
     );
     expect(entrees.map(e => [e.sens, e.objet, e.chemin])).toEqual([
       ['transmis', 'Signalement — Demande de droit · Traité', 'informations'],
+      ['transmis', 'Document déposé', 'documents'],
       ['transmis', 'Compte rendu d’analyses', 'comptes-rendus'],
       ['transmis', 'Questionnaire « Enquête alimentaire »', 'questionnaires/ASS_1'],
       ['remis', 'Votre protocole', 'questionnaires'],
@@ -79,6 +82,7 @@ describe('entreesMesEchanges', () => {
     const entrees = entreesMesEchanges(
       sources({
         comptesRendus: [{ deposeLe: t }, { deposeLe: t }],
+        documentsDeposes: [{ deposeLe: t }, { deposeLe: t }],
         signalements: [
           { categorie: 'demande_droit', statutTraitement: 'recu', soumisLe: t },
           { categorie: 'demande_droit', statutTraitement: 'recu', soumisLe: t },
