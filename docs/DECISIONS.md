@@ -18,8 +18,10 @@
   `web/src/lib/protocol/trajectoireIntentions.ts` (constats par point
   d'étape, C2B), `web/src/lib/protocol/checkinDomain.ts` (la question
   posée) ; écrans à venir : E4, comptes du cabinet (lettre y, H58).
-- Nature : aucune règle clinique nouvelle. Aucun seuil, poids, codage ni
-  borne ; l'effectif de masquage est celui de [[D-298]].
+- Nature : doctrine de présentation. Aucun seuil, poids, codage ni borne ;
+  l'effectif de masquage est celui de [[D-298]]. Le niveau médian du §4 est
+  classé parmi les décisions cliniques à signer par la séance du
+  2026-10-12 : il est signé avec M-2, sur ce texte et son fragment.
 - **Ne touche pas** : la question du check-in et ses quatre réponses ; la
   table de la météo (`adhesion.ts`, `ETAT_PAR_ADHESION`) ; aucune migration ;
   rien au portail.
@@ -34,8 +36,10 @@ décision clinique avec fragment.
 
 **§2 — Au dossier : l'échelle E4.** Une marque datée par point d'étape :
 le niveau répondu, un pictogramme et son mot, la date du check-in. Sans
-réponse, la marque est vide et le dit (« pas de réponse ») : jamais
-« interrompue », jamais un niveau par défaut (DC-24). Une correction du
+réponse sur une fenêtre passée, la marque est vide et le dit (« pas de
+réponse ») : jamais « interrompue », jamais un niveau par défaut (DC-24). Un
+point d'étape dont la fenêtre n'est pas encore passée ne porte aucune marque
+(« à venir »). Une correction du
 patient remplace sa réponse, comme aujourd'hui (tête de chaîne). E4 vit avec
 les constats par point d'étape (C2B, bande 3 de la trajectoire) : **A8-4
 reste intacte** (arbitrage du 2026-10-20, option recommandée). Elle peut
@@ -57,8 +61,10 @@ comptage au sens de [[D-333]] §2 (règle 3), jamais un pourcentage.
 
 Jamais une moyenne, jamais un pourcentage d'adhésion, jamais un classement
 de patients, jamais une comparaison de période sans donnée de période.
-L'unité est le dossier : un dossier compte une fois, au niveau de sa réponse
-au point d'étape lu ; on ne médiane que des réponses d'un même point d'étape.
+L'unité est le dossier ([[D-298]] §1). **Proposition de l'assistant, à
+trancher à la relecture** : le groupe est un point d'étape (J7, J14 ou J21) ;
+chaque dossier y compte une fois, au niveau de sa réponse courante à ce
+point ; on ne médiane jamais ensemble des réponses de points différents.
 Sous cinq dossiers distincts, répartition et niveau médian se masquent,
 l'effectif reste ([[D-298]] §1-§2).
 
@@ -70,16 +76,17 @@ porte 15). Ce constat se joue au rang 2 au plus tôt, après cette décision.
 aujourd'hui ; aucun niveau, état, compte ni pictogramme d'adhésion ne lui
 revient.
 
-**§7 — Ce que cela amende.** Le commentaire de tête d'`adhesion.ts` (« jamais
-un score » relève désormais de [[D-333]] ; « jamais un pourcentage
-d'observance » et « jamais un classement » sont maintenus ici). A1 et SP-MET
-sont amendés par [[D-333]] §4 ; A8-4 est intacte.
+**§7 — Ce que cela amende.** Rien. Les trois interdits d'`adhesion.ts`
+(jamais un score, jamais un pourcentage d'observance, jamais un classement),
+SP-MET et A8-4 restent entiers ; la décision y ajoute « jamais une moyenne
+des niveaux » (§1, §4). Un comptage sourcé n'est pas un score ([[D-333]]
+§4).
 
 **§8 — Entrée en vigueur.** Comme [[D-333]] §6 : aucun écran ne s'ouvre
 avant la signature M-2 (porte 6). Les écrans E4 et cabinet sont des lots de
 code distincts (J2-jourN, lettre y), revue ordinaire, T2.
 
-### D-333 — Cockpit chiffré : l'espace praticien calcule et montre sous provenance, il ne qualifie qu'avec un seuil signé ; le portail reste sans chiffre, deux exceptions nommées (lettre c)
+### D-333 — Cockpit chiffré : l'espace praticien calcule et montre sous provenance, il ne qualifie qu'avec un seuil signé ; le portail reste sans chiffre, deux familles d'exceptions nommées (lettre c)
 
 - Date : 2026-10-20
 - Statut : **proposé**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
@@ -88,7 +95,9 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
   (« chiffres, scores, indicateurs, courbes d'évolution et outils numériques
   de visualisation sont autorisés […] Aucun chiffre ne doit être inventé »),
   ceux de la séance du 2026-10-12 (stabilité métabolique, effectif) et celui
-  du 2026-10-20 sur la progression des questionnaires (§1). La signature M-2
+  du 2026-10-20 sur la progression des questionnaires (§1). Contre-revue P0
+du même jour intégrée (SP-MET, exceptions du portail, dette de [[D-058]]
+§3). La signature M-2
   (rang 2) de cette décision et de [[D-334]] lève la porte 6.
 - Domaine : doctrine de présentation, espace praticien ; frontière du
   portail.
@@ -102,17 +111,20 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
 **§1 — Périmètre.** L'espace praticien peut afficher chiffres, scores,
 indices, indicateurs, courbes et instruments de visualisation, aux règles du
 §2. Le portail patient et ses API (`api/patient`, `api/portail`) restent sans
-chiffre : D7, A6-R1, SP-SPI, tendances en mots ([[D-106]] décision 2). Tout
-document remis au patient ou adressé à un tiers suit la règle du portail.
-Deux exceptions, et deux seulement, existent au portail ; elles sont actées
-ici :
-1. **la progression d'un questionnaire** (« N % complété », « N réponses
-   sur M », `GenericQuestionnaire.tsx`) : un repère de navigation, pas une
-   mesure de santé (arbitrage du 2026-10-20) ;
-2. **la jauge de « Mon équilibre » sans valeur** (`MonEquilibreAccueil.tsx`,
-   `ScoreGauge` avec `showValue={false}`, régression E10) : aucun chiffre
-   n'est écrit, l'arc seul est montré (arbitrage du 2026-10-10, transcrit
-   ici).
+chiffre : D7 (SP-CONV LOT-05), A6-R1, SP-SPI, tendances en mots ([[D-106]]
+décision 2). Tout document remis au patient ou adressé à un tiers suit la
+règle du portail. Deux familles d'exceptions, déjà au code, sont actées ici ;
+aucune autre n'est admise sans décision :
+1. **les repères de parcours**, qui comptent ce que le patient a fait et
+   jamais ce qu'il vaut : progression d'un questionnaire (« N % complété »,
+   « N réponses sur M », `GenericQuestionnaire.tsx` ; arbitrage du
+   2026-10-20), progression des agendas (« N journées notées sur 7 »,
+   « Jour N sur 7 »), nombre de bilans du parcours ;
+2. **les représentations sans valeur** : la jauge de « Mon équilibre »
+   (`MonEquilibreAccueil.tsx`, `ScoreGauge` avec `showValue={false}`,
+   régression E10 ; arbitrage du 2026-10-10, transcrit ici), les cercles dont
+   l'intensité suit la couverture et les paliers de couverture dits en mots
+   (`MonEquilibreDetail.tsx`) : aucun chiffre n'est écrit.
 
 **§2 — Sept règles.**
 1. **Provenance datée.** Chaque chiffre ouvre, d'un geste, sa source
@@ -127,7 +139,9 @@ ici :
    par Wellneuro qui n'est pas la cotation publiée d'un instrument.
 4. **Qualifier exige un seuil signé.** Aucun mot, couleur, icône ou rang qui
    juge un chiffre sans un seuil ou une bande signé dans une décision
-   clinique avec fragment (DC-17 à DC-20). Sans seuil : couleur neutre, écart
+   clinique avec fragment (DC-17 à DC-20) ; pour un besoin, seulement quand
+   toutes les bandes de ses questionnaires sont signées (séance du
+   2026-10-12). Sans seuil : couleur neutre, écart
    avec son signe. Aucun état porté par la seule couleur. L'état ordinal de
    la météo (SP-MET) n'est pas un chiffre : il relève de [[D-334]].
 5. **Aucun chiffre ne traverse au portail.** Chaque module de calcul et
@@ -141,11 +155,13 @@ ici :
 
 **§3 — Les objets du panneau « Mon équilibre » au cockpit.** L'indice
 global et le momentum portent déjà la mention de nature ; la stabilité
-métabolique, la réserve d'adaptation et la clarté la reçoivent.
+métabolique, la réserve d'adaptation et la clarté la reçoivent. La couverture
+des 12 besoins est de nature « couverture de recueil ».
 La stabilité métabolique est la moyenne simple des instruments présents
 parmi Q_INF_01 et Q_INF_02 (`objetsCliniques.ts`) ; aucune décision ne
 motive ce poids égal (DC-21). Le responsable la motivera de sa main, avec
-source (séance du 2026-10-12 ; porte 4, source du poids égal). D'ici là,
+source (séance du 2026-10-12 ; porte 4, source du poids égal). Tolérance
+nommée et bornée : après la signature M-2 et jusqu'à cette motivation,
 l'objet affiche « Non motivé, décision due » à côté de sa valeur, et nomme
 les sources présentes et celle qui manque : jamais « deux instruments »
 quand une seule source est présente.
@@ -155,12 +171,15 @@ quand une seule source est présente.
   ordonner les réponses des points d'étape est permis ; les convertir en
   score reste exclu. A1 seconde moitié (jamais dans « Mon équilibre ») est
   intacte.
-- **SP-MET et `adhesion.ts`**, interdit 1 : « jamais un score » seul tombe
-  pour le cockpit ; « jamais un pourcentage d'observance » et « jamais un
-  classement » restent ([[D-334]]).
+- **SP-MET, A8-4 et `adhesion.ts`** : inchangés. L'adhésion reste ordinale,
+  jamais un score, jamais un pourcentage d'observance, jamais un classement
+  ([[D-334]]) ; un comptage sourcé (« N points d'étape renseignés sur 3 »,
+  déjà servi au cockpit) n'est pas un score.
 - **A6-R2** : son principe (praticien seul, points réellement mesurés,
   aucun point interpolé) s'étend à tout instrument de visualisation.
-- Intacts : A6-2 tel que précisé par [[D-298]], A8-2, A8-3, A8-4, [[D-058]],
+- Intacts : A6-2 tel que précisé par [[D-298]], A8-2, A8-3, A8-4, [[D-058]]
+  (dont son §3 : « stable » à delta nul du momentum scalaire reste une dette
+  nommée, ni levée ni étendue ici),
   [[D-106]], [[D-266]] à [[D-268]] (biologie : aucune couleur, aucun tri,
   aucun statut), la propriété des modules (`lib/equilibre/momentum.ts`,
   `lib/protocol/adhesion.ts`). Les valeurs des maquettes sont des exemples :
@@ -169,7 +188,8 @@ quand une seule source est présente.
 **§5 — Ce que cela ne permet pas.** Un pourcentage d'adhésion (la donnée est
 ordinale, trois points au plus) ; un mot qui juge un momentum sans bande
 signée ([[D-058]] §1) ; une couleur, un tri ou une flèche sur une valeur de
-biologie ; un poids, y compris égal, sans motif signé.
+biologie ; un poids, y compris égal, sans motif signé, hors la tolérance
+nommée du §3.
 
 **§6 — Entrée en vigueur et livraison.** Rien ne s'ouvre au code avant la
 signature M-2 (porte 6). Ensuite, un lot par instrument (J1-cockpit, rang 3) ;

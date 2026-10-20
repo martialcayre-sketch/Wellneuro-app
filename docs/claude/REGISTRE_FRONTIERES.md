@@ -114,10 +114,11 @@
   lectures comparables entre elles, sous condition `versionScore`.
 - **Points d'étape** : J7 / J14 / J21. Propriété de C2. Check-ins courts
   (effet ressenti, tolérance, adhésion). **Jamais convertis en score, jamais
-  injectés dans le calcul « Mon équilibre ».** **Amendé le 2026-10-20**
-  (`D-333` §4, à la signature M-2, porte 6) : compter et ordonner leurs
-  réponses est permis au cockpit ; les convertir en score reste exclu ; la
-  seconde moitié (jamais dans « Mon équilibre ») est intacte.
+  injectés dans le calcul « Mon équilibre ».** **Précisé le 2026-10-20**
+  (`D-333` §4, proposée, à la signature M-2, porte 6) : compter et ordonner
+  leurs réponses est permis au cockpit, un comptage n'étant pas un score ;
+  les convertir en score reste exclu ; la seconde moitié (jamais dans « Mon
+  équilibre ») est intacte.
 - **J21 = point de jonction déclaré.** Le « résumé J21 » est le seul objet
   autorisé à croiser les deux lectures, via leurs contrats publics.
 - Vocabulaire verrouillé : « jalon de mesure » / « point d'étape » (côté
@@ -356,7 +357,7 @@
   interpolé, aucun prolongement prédictif, aucun pronostic : un jalon non
   mesuré est un **trou visible** dans la ligne, jamais un 0 (A8-2 intact).
   Sous 2 jalons mesurés, pas de courbe — repli sur le texte momentum
-  existant. **Étendu le 2026-10-20** (`D-333` §4, à la signature M-2) : le
+  existant. **Étendu le 2026-10-20** (`D-333` §4, proposée, à la signature M-2) : le
   même principe vaut pour tout instrument de visualisation praticien. La Spirale reste l'index de navigation (A6) ; la courbe est un
   instrument de lecture du cycle, **invisible côté patient**.
 - Avance le **repère de cabinet** (périmètre ex-SP-CAB) : médiane
@@ -818,16 +819,15 @@
 - **Consomme** : `ProtocolCheckin.reponses` (`lib/protocol/checkinDomain.ts`) —
   `adhesion`, `tolerance`, `energie`, `sommeil` et les fenêtres J7/J14/J21 ±3 j.
 - **Décisions actées** : **calculé à la lecture, jamais persisté** — aucune
-  migration, conforme à `schema.prisma:733-734` (instrument de pilotage, jamais
+  migration, conforme au commentaire du modèle `ProtocolCheckin` de `schema.prisma` (instrument de pilotage, jamais
   un score ni un jalon, arbitrage A1) ; **praticien seul**, vérifié par test ;
   jamais un pourcentage d'observance ; statut jamais porté par la seule
   couleur ; **abstention honnête** — sans point d'étape exploitable l'état est
   « indéterminée », jamais « interrompue » par défaut ; la cause est rapportée,
-  jamais interprétée. **Doctrine d'adhésion du 2026-10-20** (`D-334`, à la
-  signature M-2, porte 6) : « jamais un score » relève de `D-333` ; jamais un
-  pourcentage d'observance, jamais un classement, jamais une moyenne des
-  niveaux ; l'échelle E4 (une marque datée par point d'étape) vit en C2B,
-  A8-4 intacte.
+  jamais interprétée. **Doctrine d'adhésion du 2026-10-20** (`D-334`,
+  proposée, à la signature M-2, porte 6) : interdits inchangés, s'y ajoute
+  « jamais une moyenne des niveaux » ; l'échelle E4 (une marque datée par
+  point d'étape) vit en C2B, A8-4 intacte.
 - **Ne possède pas** : les constats déterministes par point d'étape, qui
   restent C2B (**A8-4**, symétrie stricte) ; toute diffusion patient ; les
   repères de cohorte (SP-CAB, seuil `n ≥ 5`).

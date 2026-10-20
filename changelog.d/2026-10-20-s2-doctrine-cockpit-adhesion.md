@@ -2,10 +2,11 @@
 
 - Le cockpit praticien pourra montrer chiffres, indices et courbes à condition
   que chacun dise sa source, sa date, sa formule et sa nature ; rien n'est
-  qualifié (« bon », « stable ») sans seuil signé ; une donnée absente reste
-  absente. Le portail patient reste sans chiffre, à deux exceptions nommées :
-  la progression d'un questionnaire et la jauge « Mon équilibre » sans valeur
-  (`D-333`).
+  qualifié (« bon », « favorable ») sans seuil signé ; une donnée absente
+  reste absente. Le portail patient reste sans chiffre, à deux familles
+  d'exceptions déjà en place et désormais nommées : les repères de parcours
+  (progression d'un questionnaire ou d'un agenda) et les représentations sans
+  valeur (jauge « Mon équilibre », cercles, paliers en mots) (`D-333`).
 - L'adhésion se lit en quatre niveaux ordinaux datés, une marque par point
   d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian,
   jamais une moyenne ni un pourcentage, masqués sous cinq dossiers (`D-334`).

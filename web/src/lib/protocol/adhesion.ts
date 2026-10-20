@@ -17,14 +17,13 @@ import {
 // Frontière A8-4 : les constats déterministes PAR point d'étape appartiennent à
 // C2B ; l'agrégat trois états appartient entièrement à SP-MET. Aucun pré-agrégat
 // en C2B, aucun constat par point d'étape ici. L'échelle E4 (une marque datée
-// par point d'étape) vit en C2B, pas ici (`D-334` §2).
+// par point d'étape) vivra en C2B, pas ici (`D-334` §2, proposée).
 //
-// Trois interdits structurants (`D-334`) :
-//   1. jamais un pourcentage d'observance, jamais un classement, jamais une
-//      moyenne des niveaux d'adhésion (ordinaux, jamais codés en nombre).
-//      « Jamais un score » relève désormais de `D-333` : au cockpit, un
-//      comptage sourcé est permis (« N points d'étape renseignés sur 3 ») ;
-//      rien ne s'ouvre avant la signature M-2 (porte 6) ;
+// Trois interdits structurants :
+//   1. jamais un score, jamais un pourcentage d'observance, jamais un classement
+//      (et jamais une moyenne des niveaux, ordinaux : `D-334`, proposée). Un
+//      comptage sourcé (« N points d'étape renseignés sur 3 ») n'est pas un
+//      score (`D-333` §4, proposée) ;
 //   2. jamais exposé côté patient (praticien seul) ;
 //   3. jamais d'interprétation : on rapporte la réponse du patient, on n'en
 //      infère pas un motif. Le praticien tire les conclusions.

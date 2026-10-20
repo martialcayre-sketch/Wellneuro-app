@@ -11024,3 +11024,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** Faire valider la partie B (résumés, e-mail v2, phrase de la lecture datée), puis préparer la PR de publication, à merger à l'ouverture.
 
 **Ouvert.** Constat d'ACT-3 ; J2-conf (at, as).
+
+## 2026-10-20 — S-2 : doctrine du cockpit chiffré et de l'adhésion rédigée
+
+**Fait.** #1596 fermée sans merge : doublon de #1592, qui avait déjà livré J3-12d ; r1_14 passée à « fait ». S-2 ouvert : D-333 (lettre c) et D-334 (lettre d) rédigées au statut « proposé », avec le fragment, les commentaires d'`adhesion.ts`, le registre des frontières (A1, A6-R2, SP-MET) et la fiche H01. Deux arbitrages du jour : E4 vit avec les constats par point d'étape (A8-4 intacte) ; la progression d'un questionnaire est gardée comme exception nommée. Contre-revue P0 (`wn-reviewer`) intégrée.
+
+**Écarté.** Lever « jamais un score » pour SP-MET (pièce 31) : c'est inutile, car un comptage n'est pas un score, et cela contredisait A8-4.
+
+**Prochaine action.** Relecture du responsable (gestes c et d, groupe de la médiane), puis statut « accepté », merge ; signature M-2 au rang 2.
+
+**Ouvert.** Groupe de la médiane d'adhésion (proposition) ; familles d'exceptions du portail, élargies au-delà de la seule progression d'un questionnaire.
