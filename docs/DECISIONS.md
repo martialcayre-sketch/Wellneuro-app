@@ -14,7 +14,9 @@
   motif fermé plutôt qu'une note libre). Sur sa demande, l'assistant a
   proposé la liste des motifs ([[D-308]] §2 levé pour cette liste, comme en
   [[D-322]]) ; le responsable l'a retenue telle quelle. Texte rédigé par
-  l'assistant à partir de ces réponses.
+  l'assistant à partir de ces réponses. Les deux précisions de l'assistant
+  (§5.5, et la re-signature qui garde l'hypothèse, §5) et le paragraphe du
+  dossier RGPD sont retenus par le responsable le 2026-10-20.
 - Domaine : campagne bio-parcours, BP-11 (LOT-11) ; plan, fiche F06 ; deux
   tables neuves en ajout seul ; `web/src/lib/patient/effacement.ts` ;
   `docs/DOSSIER_RGPD.md`.

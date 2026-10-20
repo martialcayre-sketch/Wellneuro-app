@@ -535,8 +535,8 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     son dossier, de même nature que les notes de consultation déjà
     déclarées. L'information se relit avant l'ouverture du parcours
     (BP-21a), qui exige le registre et TRUST des tables lues. **Ce
-    paragraphe attend la validation du responsable**, note patient inchangée
-    comprise, avant le merge de la migration.
+    paragraphe est validé par le responsable le 2026-10-20**, note patient
+    inchangée comprise, avant le merge de la migration.
 - **Transmission du compte rendu par le patient depuis son portail
   ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
   migration et avant tout code.** Le patient peut déposer lui-même son

@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "BP-11 — Constats du praticien"
-statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD posée, validation du responsable attendue avant le merge de la migration ; migration à écrire, release-db après celle de t03, #1581)"
+statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; migration à écrire, release-db après celle de t03, #1581)"
 dépend_de: "LOT-09, LOT-12"
 ---
 
@@ -102,7 +102,9 @@ réponse retenue suit, en **Rendu**.
    - **A.** « À relire », comme un résultat.
    - **B.** Reste tel quel.
    - **Rendu : A.**
-5. **La forme de la note** (exigée hors « confirmée » par le cadrage).
+5. **La forme de la note** (le cadrage l'exige hors « confirmée » ; rendu :
+   un motif fermé l'y remplace, la note n'est obligatoire qu'avec `autre`,
+   D-331 §3).
    - **A.** Libre, avec un avertissement à l'écran.
    - **B.** Libre, avec un filtre serveur des recopies « nombre + unité ».
    - **C.** Motif fermé obligatoire + note facultative.
@@ -113,10 +115,10 @@ réponse retenue suit, en **Rendu**.
    obligatoire) ; liste au D-331 §3.
    - **Rendu : la liste telle quelle.**
 
-Précisions de l'assistant, lues après les réponses et consignées en D-331 :
-une passation **invalidée** rend aussi le constat « à relire » (équivalent
-d'une annulation, §5.5) ; une re-signature de la structure qui garde
-l'hypothèse ne le fait pas (§5.7).
+Précisions de l'assistant, consignées en D-331 et retenues par le
+responsable le 2026-10-20 : une passation **invalidée** rend aussi le
+constat « à relire » (équivalent d'une annulation, §5.5) ; une re-signature
+de la structure qui garde l'hypothèse ne le fait pas (§5.7).
 
 ## Périmètre
 
