@@ -158,6 +158,18 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.documentDeposePatient.deleteMany({ where: par })
     ).count;
 
+    // Les constats du praticien et leurs pièces ([[D-331]], BP-11) : FK
+    // RESTRICT vers les réponses de questionnaire et les résultats qu'ils
+    // citent — les pièces d'abord, puis les constats (remplacements et
+    // retraits en une seule instruction), AVANT les unes et les autres
+    // (contrat `constats_praticien_v1_negatif.sql`).
+    supprimees.piecesConstatsPraticien = (
+      await tx.pieceConstatPraticien.deleteMany({ where: par })
+    ).count;
+    supprimees.constatsPraticien = (
+      await tx.constatPraticien.deleteMany({ where: par })
+    ).count;
+
     // 3. Enfants directs.
     supprimees.synthesesIA = (await tx.syntheseIA.deleteMany({ where: par })).count;
     supprimees.questionnaireLecturesPraticien = (
