@@ -34,6 +34,14 @@ const IMPORTEURS_ADMIS = [
   // §1) : référentiel global au cabinet, même garde que la signature NABM —
   // aucune donnée patient.
   'web/src/app/api/praticien/biologie/compositions/route.ts',
+  // Les constats du praticien sur une hypothèse ([[D-331]], BP-11) : la
+  // garde des résultats, le drapeau parent, le fil d'une ligne citée (tête,
+  // annulation) et son verrou de clé — la pièce se dit par son analyse et sa
+  // date, aucune valeur lue, aucune qualification.
+  'web/src/app/api/praticien/biologie/constats/route.ts',
+  'web/src/lib/bio-parcours/constats/drapeau.ts',
+  'web/src/lib/bio-parcours/constats/ecriture.ts',
+  'web/src/lib/bio-parcours/constats/lecture.ts',
   'web/src/app/api/praticien/biologie/import/compte-rendu/route.ts',
   'web/src/app/api/praticien/biologie/import/decisions/route.ts',
   'web/src/app/api/praticien/biologie/import/depot/route.ts',

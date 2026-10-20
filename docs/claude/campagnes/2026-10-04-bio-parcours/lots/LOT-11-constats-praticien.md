@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "BP-11 — Constats du praticien"
-statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; PR 1, migration seule, ouverte le 2026-10-20 ; release-db à la suite du merge, celle de t03 étant passée)"
+statut: "terminé (2026-10-20) — PR 1, migration seule, mergée (#1600), release-db constatée par conteneur ; PR 2, code consommateur sous `WN_BIO_CONSTAT` éteint, dans la PR de clôture"
 dépend_de: "LOT-09, LOT-12"
 ---
 
@@ -143,6 +143,48 @@ de la structure qui garde l'hypothèse ne le fait pas (§5.7).
   note (espaces insécables et blancs Unicode), que `~ '\S'` de la base ne
   garantit pas ; refuser une date « à revoir le » passée ; constat et pièces
   dans une seule `$transaction` interactive, sans `$transaction` imbriquée.
+
+## Exécution (2026-10-20)
+
+- **PR 1** mergée (#1600, b6cdc275). Release-db run 39415107189, approuvée
+  par le responsable ; sentinelle `39415107189-1` ; constat par conteneur
+  (`one-off-305`) : migration appliquée, aucune tentative non aboutie, deux
+  tables vides, RLS active sans politique, neuf triggers.
+- **PR 2** (code) : route `api/praticien/biologie/constats` (GET, POST),
+  lecture et « à relire » dérivé (`web/src/lib/bio-parcours/constats/`),
+  panneau « Constats du parcours » de l'onglet « Biologie », drapeau
+  `WN_BIO_CONSTAT` créé éteint (`docs/FEATURE_FLAGS.md`). Les cinq P2
+  routés de la PR 1 sont tenus : pièces de biologie verrouillées et écrites
+  dans l'ordre de leur clé, passations dans l'ordre de leur identifiant ;
+  `40001`, `40P01` et `P2034` rendus « un autre geste est passé au même
+  moment » ; note normalisée (NFC, blancs Unicode) ; date « à revoir le »
+  strictement postérieure au jour ; une seule `$transaction` interactive.
+  Lecteurs des constats épinglés (`lecteursConstats.guard.test.ts`) : ni
+  portail, ni courrier, ni scoring, ni orientation, ni IA.
+- **Relecture `wn-reviewer` de la PR 2** : go sous condition, aucun P0 ni
+  P1. Corrigés : délai de la transaction interactive (`P2028`) rendu comme
+  une course perdue ; refus nommé au-delà de 30 pièces, cases plafonnées à
+  l'écran ; après un refus « le constat en vigueur a changé », le panneau
+  ferme le formulaire et relit le parcours ; ordre des verrous éprouvé par
+  test. **Structure retouchée sans re-signature** (`structureSignee()` rend
+  `false`) : aucune hypothèse n'est tenue « en vigueur », et chaque constat
+  se dit « à relire » (§5.7) plutôt que de tenir contre une table que
+  personne n'a signée — lecture de l'assistant, la plus prudente, à infirmer
+  par le responsable s'il préfère la dernière structure signée. Q1 et Q2
+  (date atteinte, passation retenue) arbitrées le 2026-10-20 et consignées
+  en D-331 §5. **Routé** : un test d'intégration sur une vraie base (pose,
+  pièces, trigger différé, deux poses concurrentes, formes réelles de
+  `P0001` et `40P01`) est une **condition de l'allumage** de
+  `WN_BIO_CONSTAT`, écrite à sa ligne de `docs/FEATURE_FLAGS.md`. **Écartés,
+  avec motif** : la passation lue sans `FOR SHARE` à la route (une
+  invalidation concurrente rend « la base a refusé ce geste » au lieu de
+  « passation exclue » : sans danger, le trigger tient et le panneau relit) ;
+  « Poser » offert sur un dossier clos (la route le refuse, comme les autres
+  panneaux de biologie) ; l'interblocage résiduel d'un import contre une pose
+  sur la même clé (antérieur à ce lot, Postgres sacrifie l'un des deux).
+- **En production, rien ne se pose encore** : la structure de BP-12a est
+  vide et non signée (D-314 §10). L'allumage du drapeau est un geste du
+  responsable, constaté par son effet.
 
 ## Hors périmètre
 

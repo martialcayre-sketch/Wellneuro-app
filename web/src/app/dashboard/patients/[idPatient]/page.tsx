@@ -19,6 +19,7 @@ import { C5FeatureProvider } from '@/components/patient-cockpit/C5FeatureProvide
 import { isAgendaAlimentaireEnabled } from '@/lib/agenda-alimentaire/featureFlag';
 import { AgendaAliFeatureProvider } from '@/components/agenda-alimentaire/AgendaAliFeatureProvider';
 import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled, isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
+import { isBioConstatEnabled } from '@/lib/bio-parcours/constats/drapeau';
 import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
 
 export default async function FichePatientPage({
@@ -71,6 +72,7 @@ export default async function FichePatientPage({
           resultsEnabled={isCbResultsEnabled()}
           bioIngestEnabled={isBioIngestEnabled()}
           bioLectureEnabled={isBioLectureEnabled()}
+          bioConstatEnabled={isBioConstatEnabled()}
         >
           {/* `key` AU NIVEAU DU DOSSIER, et pas plus bas ([[D-072]] §4).
               `FichePatientPanel` détient l'état clinique du dossier —

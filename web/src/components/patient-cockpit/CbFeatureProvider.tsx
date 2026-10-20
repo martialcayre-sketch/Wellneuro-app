@@ -11,29 +11,36 @@ import { createContext, useContext, type ReactNode } from 'react';
 // LOT-02, celui de l'import de comptes rendus (`isBioIngestEnabled`, qui
 // exige déjà les deux autres). Et depuis BP-10, celui de l'acte de lecture
 // d'un import validé (`isBioLectureEnabled`, [[D-268]], qui exige l'import).
+// Et depuis BP-11, celui des constats du parcours (`isBioConstatEnabled`,
+// [[D-331]] §8, qui exige les résultats réels).
 const CbEnabledContext = createContext(false);
 const CbResultsEnabledContext = createContext(false);
 const BioIngestEnabledContext = createContext(false);
 const BioLectureEnabledContext = createContext(false);
+const BioConstatEnabledContext = createContext(false);
 
 export function CbFeatureProvider({
   enabled,
   resultsEnabled = false,
   bioIngestEnabled = false,
   bioLectureEnabled = false,
+  bioConstatEnabled = false,
   children,
 }: {
   enabled: boolean;
   resultsEnabled?: boolean;
   bioIngestEnabled?: boolean;
   bioLectureEnabled?: boolean;
+  bioConstatEnabled?: boolean;
   children: ReactNode;
 }) {
   return (
     <CbEnabledContext.Provider value={enabled}>
       <CbResultsEnabledContext.Provider value={resultsEnabled}>
         <BioIngestEnabledContext.Provider value={bioIngestEnabled}>
-          <BioLectureEnabledContext.Provider value={bioLectureEnabled}>{children}</BioLectureEnabledContext.Provider>
+          <BioLectureEnabledContext.Provider value={bioLectureEnabled}>
+            <BioConstatEnabledContext.Provider value={bioConstatEnabled}>{children}</BioConstatEnabledContext.Provider>
+          </BioLectureEnabledContext.Provider>
         </BioIngestEnabledContext.Provider>
       </CbResultsEnabledContext.Provider>
     </CbEnabledContext.Provider>
@@ -54,4 +61,8 @@ export function useBioIngestEnabled(): boolean {
 
 export function useBioLectureEnabled(): boolean {
   return useContext(BioLectureEnabledContext);
+}
+
+export function useBioConstatEnabled(): boolean {
+  return useContext(BioConstatEnabledContext);
 }
