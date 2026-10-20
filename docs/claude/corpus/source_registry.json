@@ -13580,9 +13580,9 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (BP-07, lot LOT_016_2026-10-14) ; claims à extraire",
+    "requiredAction": "Extraits ciblés ingérés (BP-07, lots LOT_016_2026-10-14 et LOT_036_2026-10-20) ; claims à extraire",
     "comment": "Source externe, manuscrit accepté. Licence non indiquée dans le fichier, à confirmer.",
-    "auditDate": "2026-10-14"
+    "auditDate": "2026-10-20"
   },
   {
     "sourceId": "WN-SRC-0510",
@@ -14206,6 +14206,32 @@
     "vigilance": "Modérée",
     "requiredAction": "Extraits ciblés ingérés (J3-12e, besoin 7, lot LOT_035_2026-10-20) ; claims en attente de signature",
     "comment": "Source externe de mesure (décision 6 du 2026-10-18), accès libre. Droits : CC BY (Creative Commons Attribution License ; © 2018 Golay et al.). Extraits mot pour mot, sans adaptation ; aucun item d'échelle reproduit.",
+    "auditDate": "2026-10-20"
+  },
+  {
+    "sourceId": "WN-SRC-0555",
+    "title": "World Health Organization (2016). WHO recommendations on antenatal care for a positive pregnancy experience. Genève : OMS (ISBN 978 92 4 154991 2)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Recommandation de pratique",
+    "format": "PDF",
+    "mimeType": "application/pdf",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_GUIDELINE",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "10 — Micronutrition et compléments",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Élevée",
+    "requiredAction": "Extrait ciblé ingéré (BP-07, lot LOT_036_2026-10-20) ; cité en contexte, sans claim de dose",
+    "comment": "Source externe (iris.who.int, handle 10665/250796). Droits : © OMS 2016, tous droits réservés ; extrait court mot pour mot, usage interne, autorisation à vérifier.",
     "auditDate": "2026-10-20"
   }
 ]
