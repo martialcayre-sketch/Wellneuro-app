@@ -166,6 +166,34 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     },
   );
 
+  it('deux lectures concurrentes : seule la dernière s’applique', async () => {
+    const ancienne = { ...LECTURE, offertes: [{ hypotheseCode: 'HYP_TEST_A', libelle: 'Lecture ancienne' }] };
+    const recente = { ...LECTURE, offertes: [{ hypotheseCode: 'HYP_TEST_A', libelle: 'Lecture récente' }] };
+    let libererAncienne: (r: Response) => void = () => {};
+    let appel = 0;
+    vi.stubGlobal('fetch', vi.fn(async (_entree: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'POST') {
+        return new Response(JSON.stringify({ ok: true, id: 'c2' }), { status: 201 });
+      }
+      appel += 1;
+      if (appel === 1) return new Response(JSON.stringify(LECTURE), { status: 200 });
+      if (appel === 2) return new Promise<Response>(resoudre => { libererAncienne = resoudre; });
+      return new Response(JSON.stringify(recente), { status: 200 });
+    }));
+    rendre();
+    // Deux gestes réussis : deux relectures, la première reste en vol.
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!);
+    await waitFor(() => expect(appel).toBe(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer le constat' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!);
+    expect(await screen.findByText('Lecture récente')).toBeTruthy();
+    libererAncienne(new Response(JSON.stringify(ancienne), { status: 200 }));
+    await new Promise(r => setTimeout(r, 0));
+    expect(screen.queryByText('Lecture ancienne')).toBeNull();
+    expect(screen.getByText('Lecture récente')).toBeTruthy();
+  });
+
   it('un autre refus se dit dans le formulaire, sans relecture', async () => {
     const fetchMock = stubFetch(LECTURE, { status: 400, corps: { ok: false, reason: 'note_trop_longue', error: 'La note dépasse 2000 caractères.' } });
     rendre();

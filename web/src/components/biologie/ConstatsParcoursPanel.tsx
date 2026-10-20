@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useBioConstatEnabled } from '@/components/patient-cockpit/CbFeatureProvider';
 import {
   AVERTISSEMENT_FILET,
@@ -343,18 +343,24 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
   // Le refus d'un geste périmé, gardé au-dessus de la relecture qui suit.
   const [avis, setAvis] = useState<string | null>(null);
 
+  // Chaque lecture est numérotée : seule la dernière s'applique, pour qu'une
+  // réponse plus ancienne n'écrase pas une relecture plus récente (revue
+  // CodeRabbit de #1603).
+  const sequence = useRef(0);
   const charger = useCallback(async () => {
+    const numero = ++sequence.current;
     setErreur(null);
     try {
       const res = await fetch(`/api/praticien/biologie/constats?idPatient=${encodeURIComponent(idPatient)}`);
       const rendu = (await res.json().catch(() => null)) as ({ ok: true } & Donnees) | { ok: false; error?: string } | null;
+      if (numero !== sequence.current) return;
       if (!res.ok || !rendu || !rendu.ok) {
         setErreur((rendu && !rendu.ok && rendu.error) || 'Les constats n’ont pas pu être lus.');
         return;
       }
       setDonnees(rendu);
     } catch {
-      setErreur('Les constats n’ont pas pu être lus.');
+      if (numero === sequence.current) setErreur('Les constats n’ont pas pu être lus.');
     }
   }, [idPatient]);
 
