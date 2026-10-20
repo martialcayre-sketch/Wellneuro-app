@@ -825,7 +825,7 @@
   couleur ; **abstention honnête** — sans point d'étape exploitable l'état est
   « indéterminée », jamais « interrompue » par défaut ; la cause est rapportée,
   jamais interprétée. **Doctrine d'adhésion du 2026-10-20** (`D-334`,
-  proposée, à la signature M-2, porte 6) : interdits inchangés, s'y ajoute
+  acceptée ; ouverture au code à la signature M-2, porte 6) : interdits inchangés, s'y ajoute
   « jamais une moyenne des niveaux » ; l'échelle E4 (une marque datée par
   point d'étape) vit en C2B, A8-4 intacte.
 - **Ne possède pas** : les constats déterministes par point d'étape, qui

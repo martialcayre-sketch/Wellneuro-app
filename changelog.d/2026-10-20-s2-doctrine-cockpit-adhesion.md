@@ -9,7 +9,8 @@
   valeur (jauge « Mon équilibre », cercles, paliers en mots) (`D-333`).
 - L'adhésion se lit en quatre niveaux ordinaux datés, une marque par point
   d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian,
-  jamais une moyenne ni un pourcentage, masqués sous cinq dossiers (`D-334`).
+  jamais une moyenne ni un pourcentage ; sous cinq dossiers, répartition et
+  niveau médian se masquent, l'effectif `n=` reste affiché (`D-334`).
 - Rien ne change à l'écran : ces règles s'ouvrent au code avec la signature
   M-2 (porte 6). Commentaires de la météo d'adhésion et registre des
   frontières mis à jour ; aucune migration.

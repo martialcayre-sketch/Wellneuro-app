@@ -41,7 +41,8 @@ la signature M-2 (rang 2) qui lève la porte 6.
 
 - Aucun dans ce lot. Tranchés le 2026-10-20 : groupe de la médiane = un
   point d'étape ; exceptions du portail en deux familles.
-- Numéros D-333 et D-334 à revérifier sur main avant le merge (N-5).
+- Numéros D-333 et D-334 vérifiés libres sur main le 2026-10-20 (après
+  fusion de c1a0d640) ; à revérifier au merge si main avance (N-5).
 
 ## Prochaine action exacte
 

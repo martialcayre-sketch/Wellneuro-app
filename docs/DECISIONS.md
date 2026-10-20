@@ -38,9 +38,9 @@ décision clinique avec fragment.
 **§2 — Au dossier : l'échelle E4.** Une marque datée par point d'étape :
 le niveau répondu, un pictogramme et son mot, la date du check-in. Sans
 réponse sur une fenêtre passée, la marque est vide et le dit (« pas de
-réponse ») : jamais « interrompue », jamais un niveau par défaut (DC-24). Un
-point d'étape dont la fenêtre n'est pas encore passée ne porte aucune marque
-(« à venir »). Une correction du
+réponse ») : jamais « interrompue », jamais un niveau par défaut (DC-24). Pendant
+la fenêtre, tant que le patient peut encore répondre, la marque dit « en
+cours » ; avant l'ouverture de la fenêtre, elle dit « à venir ». Une correction du
 patient remplace sa réponse, comme aujourd'hui (tête de chaîne). E4 vit avec
 les constats par point d'étape (C2B, bande 3 de la trajectoire) : **A8-4
 reste intacte** (arbitrage du 2026-10-20, option recommandée). Elle peut
@@ -54,16 +54,17 @@ exploitable. Son compte « N points d'étape renseignés sur 3 » est un
 comptage au sens de [[D-333]] §2 (règle 3), jamais un pourcentage.
 
 **§4 — Au cabinet.** Un agrégat d'adhésion est fait de deux choses :
-- des **comptes** de dossiers par état ou par niveau, effectif toujours
-  affiché ;
+- des **comptes** de dossiers, effectif toujours affiché : par état
+  d'ensemble de la météo (un état par dossier, celui que SP-MET dérive), ou
+  par niveau répondu à un point d'étape (groupe ci-dessous) ;
 - un **niveau médian ordinal** par groupe. Quand la médiane tombe entre deux
   niveaux, l'écran nomme les deux niveaux, avec leurs deux pictogrammes et
   l'effectif (séance du 2026-10-12-bis, réponse 4).
 
 Jamais une moyenne, jamais un pourcentage d'adhésion, jamais un classement
 de patients, jamais une comparaison de période sans donnée de période.
-L'unité est le dossier ([[D-298]] §1). Le groupe est un point d'étape (J7,
-J14 ou J21 ; arbitrage du 2026-10-20) :
+L'unité est le dossier ([[D-298]] §1). Pour les niveaux et leur médiane, le
+groupe est un point d'étape (J7, J14 ou J21 ; arbitrage du 2026-10-20) :
 chaque dossier y compte une fois, au niveau de sa réponse courante à ce
 point ; on ne médiane jamais ensemble des réponses de points différents.
 Sous cinq dossiers distincts, répartition et niveau médian se masquent,
