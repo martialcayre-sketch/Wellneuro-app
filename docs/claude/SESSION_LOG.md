@@ -10985,3 +10985,14 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR de textes, merge, déploiement constaté.
 
 **Ouvert.** Aucun.
+
+
+## 2026-10-20 — main rouge après #1590 : route de dépôt à classer
+
+**Fait.** Le CI de `main` sur 4b6ae49b était rouge sur un seul test : le banc des routes d'écriture patient (#1594, mergé juste avant) exige que chaque route soit classée, et `portail/documents` (#1590) ne l'était pas. Conflit sémantique entre deux PR vertes chacune. La route joue déjà la garde d'âge et en suit le refus : elle est classée « gardée ».
+
+**Écarté.** Relancer le CI : un rouge se corrige. La classer « ouverte » : D-330 ferme la garde d'âge au dépôt.
+
+**Prochaine action.** PR, merge, déploiement constaté (1re ligne Scalingo = tête de main).
+
+**Ouvert.** Aucun.

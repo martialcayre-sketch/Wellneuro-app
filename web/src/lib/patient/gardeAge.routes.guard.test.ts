@@ -15,13 +15,15 @@ import { describe, expect, it } from 'vitest';
 
 const RACINE_API = path.join(__dirname, '..', '..', 'app', 'api');
 
-/** Routes d'écriture qui recueillent un questionnaire, un agenda ou de la biologie. */
+/** Routes d'écriture qui recueillent un questionnaire, un agenda, de la biologie ou un document de santé. */
 const GARDEES = [
   'patient/submit',
   'portail/agenda-alimentaire',
   'portail/agenda-sommeil',
   'portail/agenda-sommeil/cloture',
   'portail/comptes-rendus',
+  // Dépôt d'un document par le patient : garde d'âge fermée (D-330).
+  'portail/documents',
   'portail/valider',
 ];
 
