@@ -7,11 +7,12 @@
 ### D-334 — Doctrine d'adhésion : quatre niveaux ordinaux datés, une marque par point d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian, jamais une moyenne ; « protocole servi » = premier check-in (lettre d)
 
 - Date : 2026-10-20
-- Statut : **proposé**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
-  plan), soumis au responsable pour relecture : la lettre d est de sa main
-  (fiche H32). Il assemble des arbitrages déjà rendus (séances du 2026-10-11,
-  du 2026-10-12 réponses 3 et 4, du 2026-10-12-bis réponse 4) et un arbitrage
-  du 2026-10-20 sur la place de l'échelle E4 (§2). La signature M-2 (rang 2)
+- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+  plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
+  sur question à options, avant le merge (lettre d, fiche H32). Il assemble des arbitrages déjà rendus (séances du 2026-10-11,
+  du 2026-10-12 réponses 3 et 4, du 2026-10-12-bis réponse 4) et deux arbitrages
+  du 2026-10-20 : la place de l'échelle E4 (§2) et le groupe de la médiane
+  (§4). La signature M-2 (rang 2)
   de cette décision et de [[D-333]] lève la porte 6.
 - Domaine : doctrine de présentation, espace praticien.
   `web/src/lib/protocol/adhesion.ts` (météo, SP-MET),
@@ -61,8 +62,8 @@ comptage au sens de [[D-333]] §2 (règle 3), jamais un pourcentage.
 
 Jamais une moyenne, jamais un pourcentage d'adhésion, jamais un classement
 de patients, jamais une comparaison de période sans donnée de période.
-L'unité est le dossier ([[D-298]] §1). **Proposition de l'assistant, à
-trancher à la relecture** : le groupe est un point d'étape (J7, J14 ou J21) ;
+L'unité est le dossier ([[D-298]] §1). Le groupe est un point d'étape (J7,
+J14 ou J21 ; arbitrage du 2026-10-20) :
 chaque dossier y compte une fois, au niveau de sa réponse courante à ce
 point ; on ne médiane jamais ensemble des réponses de points différents.
 Sous cinq dossiers distincts, répartition et niveau médian se masquent,
@@ -89,13 +90,13 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
 ### D-333 — Cockpit chiffré : l'espace praticien calcule et montre sous provenance, il ne qualifie qu'avec un seuil signé ; le portail reste sans chiffre, deux familles d'exceptions nommées (lettre c)
 
 - Date : 2026-10-20
-- Statut : **proposé**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
-  plan), soumis au responsable pour relecture : la lettre c est de sa main
-  (fiche F59). Il transcrit ses arbitrages du 2026-10-10 et du 2026-10-11
+- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+  plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
+  sur question à options, avant le merge (lettre c, fiche F59). Il transcrit ses arbitrages du 2026-10-10 et du 2026-10-11
   (« chiffres, scores, indicateurs, courbes d'évolution et outils numériques
   de visualisation sont autorisés […] Aucun chiffre ne doit être inventé »),
   ceux de la séance du 2026-10-12 (stabilité métabolique, effectif) et celui
-  du 2026-10-20 sur la progression des questionnaires (§1). Contre-revue P0
+  du 2026-10-20 sur les exceptions du portail (§1). Contre-revue P0
 du même jour intégrée (SP-MET, exceptions du portail, dette de [[D-058]]
 §3). La signature M-2
   (rang 2) de cette décision et de [[D-334]] lève la porte 6.
@@ -113,8 +114,8 @@ indices, indicateurs, courbes et instruments de visualisation, aux règles du
 §2. Le portail patient et ses API (`api/patient`, `api/portail`) restent sans
 chiffre : D7 (SP-CONV LOT-05), A6-R1, SP-SPI, tendances en mots ([[D-106]]
 décision 2). Tout document remis au patient ou adressé à un tiers suit la
-règle du portail. Deux familles d'exceptions, déjà au code, sont actées ici ;
-aucune autre n'est admise sans décision :
+règle du portail. Deux familles d'exceptions, déjà au code, sont actées ici (arbitrage du
+2026-10-20) ; aucune autre n'est admise sans décision :
 1. **les repères de parcours**, qui comptent ce que le patient a fait et
    jamais ce qu'il vaut : progression d'un questionnaire (« N % complété »,
    « N réponses sur M », `GenericQuestionnaire.tsx` ; arbitrage du

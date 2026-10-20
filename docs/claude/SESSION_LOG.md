@@ -11031,6 +11031,8 @@ Ce lot les livre, sans migration.
 
 **Écarté.** Lever « jamais un score » pour SP-MET (pièce 31) : c'est inutile, car un comptage n'est pas un score, et cela contredisait A8-4.
 
-**Prochaine action.** Relecture du responsable (gestes c et d, groupe de la médiane), puis statut « accepté », merge ; signature M-2 au rang 2.
+Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) et les exceptions du portail (deux familles), puis accepté les deux textes tels quels.
 
-**Ouvert.** Groupe de la médiane d'adhésion (proposition) ; familles d'exceptions du portail, élargies au-delà de la seule progression d'un questionnaire.
+**Prochaine action.** CI, CodeRabbit, merge ; signature M-2 au rang 2.
+
+**Ouvert.** Aucun dans ce lot.

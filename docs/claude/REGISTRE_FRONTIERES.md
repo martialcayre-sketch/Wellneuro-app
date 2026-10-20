@@ -115,7 +115,7 @@
 - **Points d'étape** : J7 / J14 / J21. Propriété de C2. Check-ins courts
   (effet ressenti, tolérance, adhésion). **Jamais convertis en score, jamais
   injectés dans le calcul « Mon équilibre ».** **Précisé le 2026-10-20**
-  (`D-333` §4, proposée, à la signature M-2, porte 6) : compter et ordonner
+  (`D-333` §4, à la signature M-2, porte 6) : compter et ordonner
   leurs réponses est permis au cockpit, un comptage n'étant pas un score ;
   les convertir en score reste exclu ; la seconde moitié (jamais dans « Mon
   équilibre ») est intacte.
@@ -357,7 +357,7 @@
   interpolé, aucun prolongement prédictif, aucun pronostic : un jalon non
   mesuré est un **trou visible** dans la ligne, jamais un 0 (A8-2 intact).
   Sous 2 jalons mesurés, pas de courbe — repli sur le texte momentum
-  existant. **Étendu le 2026-10-20** (`D-333` §4, proposée, à la signature M-2) : le
+  existant. **Étendu le 2026-10-20** (`D-333` §4, à la signature M-2) : le
   même principe vaut pour tout instrument de visualisation praticien. La Spirale reste l'index de navigation (A6) ; la courbe est un
   instrument de lecture du cycle, **invisible côté patient**.
 - Avance le **repère de cabinet** (périmètre ex-SP-CAB) : médiane
