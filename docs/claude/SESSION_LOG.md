@@ -11064,3 +11064,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge, déploiement constaté, drapeau, e-mail des conditions v2, constat sur un premier dossier réel, ligne `DocumentDeposePatient` de DOSSIER_RGPD.
 
 **Ouvert.** Message « Trois documents attendent déjà… » du compte rendu biologique, non arbitré.
+
+## 2026-10-20 — J3-12e : sources de mesure des besoins 6 à 12
+
+**Fait.** Recensement des sources (aucune au corpus de production). Six paquets, chacun approuvé par le responsable puis constaté par conteneur : `LOT_030` à `LOT_035`, notices `WN-SRC-0540` à `0554`, 88 passages, 104 claims (besoin 9 signé, 85 en attente). Registre du dépôt : +15 notices ; `measurement_evidence.json` : +4 lignes `inconnu`, compte épinglé passé de 3 à 7.
+
+**Écarté.** Les identifiants `0519` et suivants, à cause d'une collision avec la session zinc ; renumérotation en `0540`+.
+
+**Prochaine action.** Merge, puis la ligne J3-12e de la page de suivi de la file A et la fiche H15 ; ensuite J3-12f, quand `w` sera signé.
+
+**Ouvert.** PDF de deux articles à fournir par le responsable ; étude de Rasch 2019 non ingérée ; message à la session « Dossiers de preuves » retenu.

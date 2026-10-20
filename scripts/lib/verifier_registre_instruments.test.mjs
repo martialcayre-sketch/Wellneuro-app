@@ -1378,12 +1378,13 @@ const PREUVES_REELLES = JSON.parse(
   readFileSync(new URL('../../docs/claude/corpus/measurement_evidence.json', import.meta.url), 'utf8')
 );
 
-test('measurement_evidence réel : 3 lignes, aucune ne conclut quoi que ce soit', () => {
+test('measurement_evidence réel : 7 lignes, aucune ne conclut quoi que ce soit', () => {
   // Ce fichier est devenu PORTEUR D'UN BARREAU le 2026-08-04 : `psychometrie_revue`
   // exige désormais qu'une de ses lignes conclue A, B ou C. Y écrire une ligne
   // graduée n'est donc plus une addition documentaire, c'est ouvrir un barreau de
   // certification — le compte est épinglé pour que ça se voie en revue.
-  assert.equal(PREUVES_REELLES.etudes.length, 3);
+  // 3 → 7 le 2026-10-20 (J3-12e) : quatre lignes sur Q_STR_02 et Q_NEU_11, toutes `inconnu`.
+  assert.equal(PREUVES_REELLES.etudes.length, 7);
   const concluantes = PREUVES_REELLES.etudes
     .filter(e => e.conclusionCosmin !== 'inconnu')
     .map(e => `${e.questionnaireId}|${e.conclusionCosmin}`);

@@ -41,7 +41,7 @@ Une modification clinique est notamment :
 
 La validité psychométrique des instruments servis n'a jamais été évaluée. Au 2026-08-04, `cosmin` vaut `inconnu` sur les 65 entrées du registre.
 
-`measurement_evidence.json` est la seule pièce qui pourrait la porter. Au 2026-08-04 il contient 3 lignes, toutes sur `Q_PED_01`, aucune ne portant d'appréciation COSMIN.
+`measurement_evidence.json` est la seule pièce qui pourrait la porter. Au 2026-10-20 il contient 7 lignes — 3 sur `Q_PED_01` (2026-08-04), puis 2 sur `Q_STR_02` et 2 sur `Q_NEU_11` (J3-12e) —, aucune ne portant d'appréciation COSMIN.
 
 La complétude bibliographique est un troisième axe, distinct des deux précédents — et `statutBibliographique` s'y lit avec la même prudence. Au 2026-09-14, sur les 65 entrées : 43 portent `reference_identifiee`, 12 `referentiel_interne_siin`, 10 `a_completer`, chacune de ces dix avec un constat de recherche écrit dans `motifBibliographique`. Deux de ces dix ne fermeront jamais — `Q_SOM_09` et `Q_ALI_09` sont des instruments créés par WellNeuro, sans publication d'origine à retrouver. Le compteur de `check_questionnaire_certification.js` imprime ce sous-compte à part, dérivé de `versionServie.statutContenu`.
 
