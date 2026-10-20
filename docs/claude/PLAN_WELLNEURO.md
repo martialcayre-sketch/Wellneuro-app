@@ -521,8 +521,8 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 |---|---|---|---|---|---|---|
 | J3-12c | clés `besoins` et `rubrique` posées à la signature d'un claim ; étiquetage en lot (D-325) | A | 1 | aucun | oui (appliquée) | fait (#1521, #1525, #1554) |
 | D-329 | cohérence du calcul de « Mon équilibre » | A | 1 | aucun | non | fait (#1566), déployé le 2026-10-19 |
-| J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-xxx et fragment | A | 1 | aucun | non | à faire, premier |
-| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable | A | 1 | J3-12d (ordre) | non | à faire |
+| J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-332 et fragment `changelog.d/2026-10-20-j3-12d-badges-preuve-masques.md` | A | 1 | aucun | non | fait (#1592, D-332), déployé le 2026-10-20 |
+| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable | A | 1 | J3-12d (ordre), fait | non | à faire, premier |
 | J3-12b | guide transcrit, onglet « Les 12 besoins » réorganisé | A | 1 | w | non | attente |
 | J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment | A | 2 | J3-12e ; sources fermées fournies ; w signé ; table des niveaux de preuve signée | non | attente |
 | J3-12g | complétude de l'agenda du sommeil au snapshot (résidu de D-329 §2) | A | sans rang | inventaire « rubrique de l'agenda → lecteurs du moteur » ; compte des diffusions actives | non | attente |
@@ -1397,6 +1397,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : D-xxx d'objet ; D-122 précisée ; registre RGPD avant la table (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:388`).
 - **Critère de fin** : release-db constatée ; contrat négatif ; correction ou annulation rend « à relire ».
 - **Mise à jour (2026-10-19, D-331)** : fiche LOT-11 et six arbitrages du responsable : deux tables en ajout seul (constat, pièces) ; pièces = résultats de biologie et réponses de questionnaire, par clé ; quatre verdicts, motif fermé hors « confirmée » (neuf codes), note facultative ; date « à revoir le » facultative, fixée par le praticien ; « à relire » dérivé à la lecture (correction, annulation, invalidation, prélèvement ou passation plus récents, date passée, hypothèse hors structure) ; D-122 précisée (consommer un constat n'est pas lire une valeur). Déclaration RGPD posée, validée par le responsable le 2026-10-20. Suite : la migration seule ; sa release-db attend celle de t03 (#1581). Aucun constat ne se pose en production avant la signature de la structure de BP-12a (D-314 §10).
+- **Mise à jour (2026-10-20, D-331, migration)** : PR de migration seule — `20261020100000_constats_praticien_v1` : deux tables en ajout seul, un seul constat en vigueur par hypothèse et par dossier (verrou de l'hypothèse), motifs fermés en CHECK, pièces tenues par clé et écrites dans la transaction du constat, tête de fil non annulée et passation VALID ou AMBIGUOUS, pièces requises en fin de transaction pour `confirmee` et `non_retenue` ; contrat négatif propre au CI ; effacement nommé et son banc. La release-db de t03 (#1581) est passée le 2026-10-20 (run 39340724658) : celle-ci peut suivre le merge. Suite : constat par conteneur, puis le code sous `WN_BIO_CONSTAT`.
 
 #### F07 · BP-13 : données physiologiques, traitements et compléments en cours
 - **Identifiant, piste** : BP-13 ; à partir de la saisie existante ; parcours.
@@ -1799,6 +1800,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : encart d'urgence étendu ; lecture datée.
 - **Critère de fin** : un premier dossier servi, constaté.
 - **Mise à jour (2026-10-18, ouverte)** : ACT-2 constatée (H75), `WN_PORTAIL_MES_ECHANGES=true` est posé en production à 17 h 47 UTC. Conteneurs recréés à 17 h 47 UTC, code en service 74cdfd82. Constat dans l'image servie : la route de « Mes échanges » ne répond plus « page indisponible » (404) ; sans session, elle répond 401, sur les deux conteneurs web. Reste le critère de fin : un premier dossier servi, constaté par conteneur.
+- **Mise à jour (2026-10-20, constatée)** : critère de fin atteint. Le responsable a ouvert « Mes échanges » sur un dossier de test ; les lignes affichées concordent avec la lecture du dossier par conteneur (dernière remise de chaque document, signalement avec son statut, transmissions ; ni courrier ni dépôt, comme en base). Constat sans trace de lecture, sur arbitrage du 2026-10-20 (D-330, amendement) : la route ne consigne pas ses lectures et l'hébergeur ne journalise pas les accès. Lève la porte 18 pour ACT-4 (H77).
 
 #### F22 · BP-21a : ouverture J1
 - **Identifiant, piste** : BP-21a ; parcours.
