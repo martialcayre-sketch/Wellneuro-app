@@ -45,10 +45,11 @@ corpus runtime.
   l'éditeur, CC BY-NC, manuscrit soumis, pages des auteurs) restent à vérifier ;
   puis une de plus, la version publiée sous CC BY 4.0 de la validation
   française de la DARS (`WN-SRC-0564`) ; les compléments `0560` à `0563`,
-  `0565` et `0566` restent à vérifier ; au 2026-10-20 encore, pour le zinc, le
-  résumé des caractéristiques du produit RUBOZINC (`WN-SRC-0520`, Licence
-  Ouverte etalab-2.0), dont les extraits sont ingérés ; les cinq autres sources
-  du zinc (`0519`, `0521` à `0524`) restent à vérifier.
+  `0565` et `0566` restent à vérifier ; au 2026-10-20 encore, pour le zinc, dont
+  les extraits des six sources sont ingérés (`WN-SRC-0519` à `0524`), une de
+  plus : le résumé des caractéristiques du produit RUBOZINC (`WN-SRC-0520`,
+  Licence Ouverte etalab-2.0) ; les cinq autres sources du zinc (`0519`, `0521`
+  à `0524`) restent à vérifier.
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document
