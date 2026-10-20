@@ -523,9 +523,9 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | J3-12c | clés `besoins` et `rubrique` posées à la signature d'un claim ; étiquetage en lot (D-325) | A | 1 | aucun | oui (appliquée) | fait (#1521, #1525, #1554) |
 | D-329 | cohérence du calcul de « Mon équilibre » | A | 1 | aucun | non | fait (#1566), déployé le 2026-10-19 |
 | J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-332 et fragment `changelog.d/2026-10-20-j3-12d-badges-preuve-masques.md` | A | 1 | aucun | non | fait (#1592, D-332), déployé le 2026-10-20 |
-| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable | A | 1 | J3-12d (ordre), fait | non | à faire, premier |
+| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable ; 15 notices `WN-SRC-0540` à `0554`, lots `LOT_030` à `LOT_035` (88 passages, 104 claims, 19 signés), 4 lignes `measurement_evidence.json` toutes `inconnu` ; restent deux articles fermés à fournir et une étude non ingérée | A | 1 | J3-12d (ordre), fait | non | fait (#1605), déployé le 2026-10-20 |
 | J3-12b | guide transcrit, onglet « Les 12 besoins » réorganisé | A | 1 | w | non | attente |
-| J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment | A | 2 | J3-12e ; sources fermées fournies ; w signé ; table des niveaux de preuve signée | non | attente |
+| J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment | A | 2 | J3-12e, fait ; sources fermées fournies ; w signé ; table des niveaux de preuve signée | non | attente |
 | J3-12g | complétude de l'agenda du sommeil au snapshot (résidu de D-329 §2) | A | sans rang | inventaire « rubrique de l'agenda → lecteurs du moteur » ; compte des diffusions actives | non | attente |
 | J3-12h | garde sur le complément ciblé chez le mineur et chez la femme enceinte ou allaitante : courrier au médecin traitant remis et tracé avant l'entrée au programme, sans attendre sa réponse (règle du responsable du 2026-10-17) | A | sans rang | cadrage du lot | selon | à cadrer |
 | dossiers du besoin 2 | zinc, puis magnésium érythrocytaire, puis B9 et B12, puis iode et sélénium (ordre du 2026-10-16), au modèle de BP-07, hors dépôt ; étiquetage en lot à la clôture de chacun | B | 1 | aucun | non | zinc à ouvrir |
@@ -534,7 +534,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | étiquetage du fer | 92 claims, besoins servis et rubrique | geste | 1 | aucun | non | à faire |
 | sources fermées | sources des dossiers de mesure à fournir par le responsable, deux d'abord (liste au dossier privé) | geste | 1 | aucun | non | à faire |
 | position d'expert du fer | amendement v0.3, en conflit avec la règle du 2026-10-17 (au dossier privé) | geste | 1 | aucun | non | à faire |
-| table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e | non | attente |
+| table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | attente |
 | réapprobation | protocoles diffusés, dossier par dossier, juste après le déploiement de J3-12f | geste | 2 | J3-12f | non | attente |
 | dossiers des autres besoins | 1, 4, 5, 9, puis 3, 8, 10, 12, puis 6, 7, 11 (ordre du 2026-10-15) ; définitions signées des besoins 6, 7 et 11, qui restent « non mesuré » d'ici là | geste | sans rang | besoin 2 achevé | non | attente |
 | momentum | référence de la première mesure du dossier, troisième divergence de la section « Mesure » (limite nommée par D-113 §2) | geste | sans rang | arbitrage du responsable | non | à arbitrer |
@@ -727,7 +727,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J3-12b | guide transcrit, onglet réorganisé | A | aucune | non | H15, rang 0 |
 | J3-12c | clés `besoins` + `rubrique` posées à la signature d'un claim (route de décision, atelier, liste fermée, sans migration) ; précède le deuxième dossier de preuve ; ré-étiquetage des 92 claims du fer ensuite (geste) | A | aucune | non | H15, rang 0 |
 | J3-12d | badges de niveau de preuve masqués au cockpit, table intacte (premier des lots de mesure, 2026-10-19) | A | aucune | non | H15, rang 1 |
-| J3-12e | ingestion des sources de mesure en accès libre, sur approbation de chaque envoi | A | aucune | non | H15, rang 1 |
+| J3-12e | ingestion des sources de mesure en accès libre, sur approbation de chaque envoi ; fait (#1605) | A | aucune | non | H15, rang 1 |
 | aq | contrôle bloquant des modifications cliniques en CI | A | 28 | non | H21 |
 | ar | montée de version datée des briques | A | 28 | non | H22 |
 | E56 | contrôle de clôture contre l'auto-merge | A | 27 | non | H23 |
