@@ -358,8 +358,9 @@ analyses biologiques », le dépôt de documents restant sans accusé (G-11). La
 PR de publication est prête, à merger à l'ouverture.
 Toujours le 2026-10-20, le responsable arbitre le préalable « J2-conf » de
 l'ouverture (H77) : pour ACT-4, il est tenu par la garde d'âge que porte déjà
-le code du dépôt (dossier majeur seulement ; mineur ou date manquante, 409,
-en lecture comme en dépôt). Les autres parts de J2-conf ne visent pas cette
+le code du dépôt : seul un dossier majeur peut déposer (mineur ou date
+manquante, 409) ; l'écran demande la date de naissance à un dossier qui n'en a
+pas, et sert au mineur le message du circuit des mineurs. Les autres parts de J2-conf ne visent pas cette
 surface : le registre des droits (lettre r) porte sur des instruments, et le
 dépôt n'en sert aucun ; la lettre at porte sur une extraction par l'IA, et le
 dépôt n'est lu par aucune. La lettre as (place 6) reste après ACT-4 (porte
