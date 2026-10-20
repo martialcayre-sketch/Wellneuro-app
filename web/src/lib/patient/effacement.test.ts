@@ -35,6 +35,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'adressageSignalAlerte',
     'telechargementDocumentMedecin', 'documentMedecinImprime',
     'classementDocumentDepose', 'documentDeposePatient',
+    'pieceConstatPraticien', 'constatPraticien',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectVerdict', 'trustAdverseEffectReport', 'trustPrivacyIncident',
@@ -219,6 +220,19 @@ describe('effacerDossier', () => {
     expect(rang('telechargementDocumentMedecin')).toBeGreaterThanOrEqual(0);
     expect(rang('telechargementDocumentMedecin')).toBeLessThan(rang('documentMedecinImprime'));
     expect(rang('documentMedecinImprime')).toBeLessThan(rang('syntheseIA'));
+  });
+
+  // Constats du praticien (D-331, BP-11) : FK RESTRICT des pièces vers le
+  // constat, la réponse de questionnaire et le résultat cités. Une ligne
+  // déplacée après eux rendrait l'effacement impossible pour tout dossier qui
+  // porte un constat.
+  it('supprime les pièces, puis les constats, avant les réponses et les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('pieceConstatPraticien')).toBeGreaterThanOrEqual(0);
+    expect(rang('pieceConstatPraticien')).toBeLessThan(rang('constatPraticien'));
+    expect(rang('constatPraticien')).toBeLessThan(rang('questionnaireReponse'));
+    expect(rang('constatPraticien')).toBeLessThan(rang('resultatBiologique'));
   });
 
   // Collecte documentaire (D-330) : FK RESTRICT du classement vers le document

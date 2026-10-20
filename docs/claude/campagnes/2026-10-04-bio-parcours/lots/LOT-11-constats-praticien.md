@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "BP-11 — Constats du praticien"
-statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; migration à écrire, release-db après celle de t03, #1581)"
+statut: "à_faire (fiche proposée le 2026-10-19 ; six arbitrages rendus le 2026-10-19 ; décision du lot D-331 écrite ; déclaration RGPD validée par le responsable le 2026-10-20 ; PR 1, migration seule, ouverte le 2026-10-20 ; release-db à la suite du merge, celle de t03 étant passée)"
 dépend_de: "LOT-09, LOT-12"
 ---
 

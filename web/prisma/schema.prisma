@@ -86,6 +86,10 @@ model Patient {
   annulationsResultatsBiologiques AnnulationResultatBiologique[]
   // Statuts posés près d'une valeur biologique, et leurs retraits (D-322, F58).
   statutsPosesResultatsBiologiques StatutPoseResultatBiologique[]
+  // Constats du praticien sur une hypothèse du parcours, et leurs pièces
+  // (D-331, BP-11).
+  constatsPraticien ConstatPraticien[]
+  piecesConstatsPraticien PieceConstatPraticien[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
   // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
@@ -373,6 +377,9 @@ model QuestionnaireReponse {
 
   patient  Patient                         @relation(fields: [idPatient], references: [idPatient])
   lectures QuestionnaireLecturePraticien[]
+  // Relation inverse SEULE (D-331, BP-11) : une pièce de constat désigne la
+  // passation exacte ; ce modèle ne reçoit aucune colonne.
+  piecesConstats PieceConstatPraticien[]
 
   @@index([idPatient, statutValidite], map: "questionnaire_reponses_patient_validite_idx")
   @@index([idAssignation], map: "questionnaire_reponses_id_assignation_idx")
@@ -2691,6 +2698,10 @@ model ResultatBiologique {
   // exacte ; ce modèle ne reçoit aucune colonne.
   statutsPoses StatutPoseResultatBiologique[]
 
+  // Relation inverse SEULE (D-331, BP-11) : une pièce de constat désigne la
+  // ligne exacte ; ce modèle ne reçoit aucune colonne.
+  piecesConstats PieceConstatPraticien[]
+
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
@@ -3048,6 +3059,74 @@ model StatutPoseResultatBiologique {
   @@index([idPatient, ordre], map: "statuts_poses_resultats_biologiques_patient_ordre_idx")
   @@index([idResultat, ordre], map: "statuts_poses_resultats_biologiques_resultat_ordre_idx")
   @@map("statuts_poses_resultats_biologiques")
+}
+
+/// Le constat du praticien sur une hypothèse du parcours ([[D-331]], BP-11),
+/// ou son retrait. Ajout seul (UPDATE et TRUNCATE refusés par trigger), aucune
+/// valeur recopiée. Un seul constat en vigueur par hypothèse et par dossier :
+/// la pose que ni un remplacement ni un retrait ne vise. « À relire » se
+/// dérive à la lecture, jamais écrit. Écran du praticien seul : ni portail,
+/// ni courrier, ni scoring, ni orientation, ni IA ne le lisent. Les refus
+/// vivent en base (migration `constats_praticien_v1`).
+model ConstatPraticien {
+  id                String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre             BigInt    @default(autoincrement()) @map("ordre")
+  idPatient         String    @map("id_patient")
+  /// `pose` | `retrait` (CHECK).
+  acte              String    @map("acte")
+  /// `HYP_…` (format de [[D-314]] §8, CHECK) ; l'appartenance à la structure
+  /// signée se vérifie à la route.
+  hypotheseCode     String    @map("hypothese_code")
+  /// Pose seule : `confirmee` | `non_retenue` | `non_evaluable` | `sans_objet`.
+  verdict           String?   @map("verdict")
+  /// Hors `confirmee`, liste fermée par verdict ([[D-331]] §3, CHECK).
+  motif             String?   @map("motif")
+  /// Facultative, obligatoire avec `autre` ; 2000 caractères au plus.
+  note              String?   @map("note")
+  /// « À revoir le », fixée par le praticien, facultative ([[D-331]] §4).
+  aRevoirLe         DateTime? @map("a_revoir_le") @db.Date
+  /// La tête remplacée (pose) ou retirée (retrait) ; un successeur au plus.
+  idConstatRemplace String?   @unique @map("id_constat_remplace")
+  /// Pose seule : l'empreinte de la structure signée lue à la pose.
+  structureSha256   String?   @map("structure_sha256")
+  praticienEmail    String    @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe            DateTime  @default(now()) @map("acte_le")
+
+  patient     Patient                 @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  remplace    ConstatPraticien?       @relation("RemplacementConstat", fields: [idConstatRemplace], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar ConstatPraticien?       @relation("RemplacementConstat")
+  pieces      PieceConstatPraticien[]
+
+  @@unique([ordre], map: "constats_praticien_ordre_key")
+  @@index([idPatient, ordre], map: "constats_praticien_patient_ordre_idx")
+  @@index([idPatient, hypotheseCode], map: "constats_praticien_patient_hypothese_idx")
+  @@map("constats_praticien")
+}
+
+/// Une pièce d'un constat posé ([[D-331]] §2) : SOIT une ligne de résultat de
+/// biologie (tête de fil, non annulée), SOIT une réponse de questionnaire
+/// (VALID ou AMBIGUOUS), du même dossier, écrite dans la transaction du
+/// constat. Ajout seul ; aucune valeur recopiée.
+model PieceConstatPraticien {
+  id                     String  @id @default(cuid()) @map("id")
+  idConstat              String  @map("id_constat")
+  idPatient              String  @map("id_patient")
+  idResultat             String? @map("id_resultat")
+  idQuestionnaireReponse String? @map("id_questionnaire_reponse")
+
+  constat               ConstatPraticien      @relation(fields: [idConstat], references: [id], onDelete: Restrict)
+  patient               Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  resultat              ResultatBiologique?   @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+  questionnaireReponse  QuestionnaireReponse? @relation(fields: [idQuestionnaireReponse], references: [id], onDelete: Restrict)
+
+  @@unique([idConstat, idResultat], map: "pieces_constats_praticien_constat_resultat_key")
+  @@unique([idConstat, idQuestionnaireReponse], map: "pieces_constats_praticien_constat_reponse_key")
+  @@index([idPatient], map: "pieces_constats_praticien_id_patient_idx")
+  @@index([idResultat], map: "pieces_constats_praticien_id_resultat_idx")
+  @@index([idQuestionnaireReponse], map: "pieces_constats_praticien_id_questionnaire_reponse_idx")
+  @@map("pieces_constats_praticien")
 }
 
 // ───────────────────────────────────────────────────────────────────────────

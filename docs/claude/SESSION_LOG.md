@@ -10996,3 +10996,13 @@ Ce lot les livre, sans migration.
 **Prochaine action.** PR, merge, déploiement constaté (1re ligne Scalingo = tête de main).
 
 **Ouvert.** Aucun.
+
+## 2026-10-20 — File B : BP-11, migration des constats (D-331)
+
+**Fait.** D-331 mergée (#1589), RGPD validé par le responsable. Migration seule des constats : deux tables en ajout seul, une tête par hypothèse sous verrou, motifs fermés, pièces par clé écrites avec leur constat, pièces requises en fin de transaction ; contrat négatif (17 mutations rouges), course à deux sessions fermée, effacement nommé. Arbitrages BP-13, BP-15, F52 rendus.
+
+**Écarté.** Motifs en `OR` : un motif absent rendait le CHECK NULL, donc passant. Refus d'une date passée en base : fuseau de la route.
+
+**Prochaine action.** CI, revues, merge, release-db, constat par conteneur, puis PR du code BP-11.
+
+**Ouvert.** Liste des motifs de BP-15 à proposer ; brouillon de la lettre cm.
