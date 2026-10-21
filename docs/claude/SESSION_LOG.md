@@ -11152,3 +11152,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CodeRabbit, merge ; puis lots inscrits, chacun dans sa session.
 
 **Ouvert.** k04 : aucun dossier en `@wellneuro.fr` en production ; dossier d'essai à désigner par le responsable.
+
+## 2026-10-21 — t30 : résolveur des libellés, six des sept fiches de D-323 §6
+
+**Fait.** 22 libellés ajoutés au résolveur (T4L, T3L, bicarbonates, protides totaux, bilirubine totale, PAL) ; résolveur re-signé par le responsable (D-336 : 167 entrées, 85 analytes, `shaPerimetre` recalculé, date reportée à `FEATURE_FLAGS.md`) ; plan : t30 soldée, ligne neuve pour les autres libellés inconnus vus en production.
+
+**Écarté.** Bilirubine conjuguée, directe et libre (même unité que la totale) ; ionogramme complet (panel sans unité).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis la PR de doc E67.
+
+**Ouvert.** Autres libellés inconnus de production : lot séparé.

@@ -203,6 +203,35 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Capacité totale de fixation en fer de la transferrine', code: 'BIO_CTF' },
   { libelle: 'Vitamine B12', code: 'BIO_VITAMINE_B12' },
   { libelle: 'CRP (Protéine C Réactive)', code: 'BIO_CRP' },
+  // [[D-336]] (t30) : six des sept fiches de [[D-323]] §6. Aucun de ces
+  // libellés n'a encore été lu en production (constat par conteneur du
+  // 2026-10-21) : ce sont le libellé du catalogue et des synonymes courants,
+  // validés par le responsable. « Ionogramme sanguin complet » n'y est pas :
+  // un panel sans unité, qu'aucune ligne ne mesure seule (règle du
+  // 2026-10-02). La bilirubine ne se rattache que « totale » : conjuguée,
+  // directe et libre s'impriment sous la même unité.
+  { libelle: 'Thyroxine libre (T4L)', code: 'BIO_T4_LIBRE' },
+  { libelle: 'Thyroxine libre', code: 'BIO_T4_LIBRE' },
+  { libelle: 'T4 libre', code: 'BIO_T4_LIBRE' },
+  { libelle: 'T4L', code: 'BIO_T4_LIBRE' },
+  { libelle: 'FT4', code: 'BIO_T4_LIBRE' },
+  { libelle: 'Triiodothyronine libre (T3L)', code: 'BIO_T3_LIBRE' },
+  { libelle: 'Triiodothyronine libre', code: 'BIO_T3_LIBRE' },
+  { libelle: 'T3 libre', code: 'BIO_T3_LIBRE' },
+  { libelle: 'T3L', code: 'BIO_T3_LIBRE' },
+  { libelle: 'FT3', code: 'BIO_T3_LIBRE' },
+  { libelle: 'Bicarbonates (CO2 total)', code: 'BIO_BICARBONATES' },
+  { libelle: 'Bicarbonates', code: 'BIO_BICARBONATES' },
+  { libelle: 'CO2 total', code: 'BIO_BICARBONATES' },
+  { libelle: 'Réserve alcaline', code: 'BIO_BICARBONATES' },
+  { libelle: 'HCO3-', code: 'BIO_BICARBONATES' },
+  { libelle: 'Protides totaux', code: 'BIO_PROTIDES' },
+  { libelle: 'Protéines totales', code: 'BIO_PROTIDES' },
+  { libelle: 'Protides', code: 'BIO_PROTIDES' },
+  { libelle: 'Bilirubine totale', code: 'BIO_BILIRUBINE' },
+  { libelle: 'Phosphatases alcalines', code: 'BIO_PHOSPHATASES_ALCALINES' },
+  { libelle: 'Phosphatase alcaline', code: 'BIO_PHOSPHATASES_ALCALINES' },
+  { libelle: 'PAL', code: 'BIO_PHOSPHATASES_ALCALINES' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -223,15 +252,17 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-263]] — RE-SIGNER REMPLACE : la signature de [[D-260]]
-  // (11:12 UTC, SHA `5f95d167…`, 101 entrées) portait la table sans les
-  // analyses du compte rendu courant ; celle de [[D-259]] (SHA `ccbd8008…`)
-  // était déjà remplacée. 145 entrées, 79 analytes.
+  // RE-SIGNÉE PAR [[D-336]] — RE-SIGNER REMPLACE : la signature de [[D-263]]
+  // (2026-10-03, SHA `be9a463c…`, 145 entrées, 79 analytes) portait la table
+  // sans les six fiches de [[D-323]] §6 ; celles de [[D-260]] (`5f95d167…`) et
+  // de [[D-259]] (`ccbd8008…`) étaient déjà remplacées. 167 entrées,
+  // 85 analytes. Signature du responsable transcrite par l'assistant sur son
+  // instruction, le 2026-10-21.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-03T20:18:43.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-03, contre le catalogue biology_analytes (migrations niveau 1, oméga-3 AA/EPA et compte rendu courant) ; libellés réels lus sur un compte rendu de laboratoire de biologie médicale (Biogroup)',
-  shaPerimetre: 'be9a463c7d3ea0517b0e53c5adb0b7dfe9322d744cabffbdc097522644888fc3',
+  dateValidation: '2026-10-21T11:13:04.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-21, contre le catalogue biology_analytes (migrations niveau 1, oméga-3 AA/EPA, compte rendu courant et groupes F80) ; libellés du catalogue et synonymes rédigés pour six fiches de D-323 §6, aucun encore lu en production (constat par conteneur du même jour)',
+  shaPerimetre: '3e08466760059e7281759c00cc835cf9a10e8881b38c8f63ab98da363f74832c',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du
