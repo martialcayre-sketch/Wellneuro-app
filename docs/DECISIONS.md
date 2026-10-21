@@ -4,6 +4,69 @@
 
 ## Décisions actives
 
+### D-341 — ACT-5 : le texte des mineurs servi au jeune (G-11, 2B) sur l'écran de pause du mineur ; le texte au titulaire (2A) attend J3-mineurs ; J2-conf tenu pour cette surface (r reconnu, at hors périmètre)
+
+- Date : 2026-10-21
+- Statut : accepté — quatre arbitrages du responsable du 2026-10-21, rendus sur
+  questions à options, transcrits par l'assistant.
+- Domaine : portail patient, mineurs (D-283 §5, D-284 §4) ; file C, place 5
+  (H78) ; préalable J2-conf (F45) ; lettre r (H28). Aucune fenêtre, aucun
+  seuil, aucune règle clinique ; aucune migration.
+
+**§1 — Relevé de J2-conf.** Préalable entier d'ACT-5 (D-330, amendement du
+2026-10-20), constaté non fait le 2026-10-21 : la lettre r n'avait jamais été
+consignée au plan (H28 sans mise à jour) ; at n'est pas faite (l'extraction ne
+lit aucune date de naissance) ; le lot de code J2-conf n'avait qu'un intitulé.
+
+**§2 — r est faite.** Le registre des instruments
+(`docs/claude/corpus/instrument_registry.json`) porte les droits des 65
+instruments, tous instruits (63 « permission obtenue », dont huit sur
+déclaration du praticien du 2026-07-30 ; 2 « libre ») ; la déclaration du
+2026-09-16 sur Q_ALI_09 (« de ma conception », 9be025ed), recueillie sur
+question posée et sur le texte relu, tient lieu de la déclaration signée que
+demandait H28. Les gardes en service la consomment : `droitsAssignabilite.guard.test.ts`
+et `verifier_registre_instruments` au CI.
+
+**§3 — at hors du périmètre d'ACT-5.** Les textes des mineurs ne passent par
+aucune lecture de l'IA. at garde son objet (second filet : repérer un mineur à
+la date lue sur un compte rendu) et reste au rang 1, avec ses gestes (registre
+IA, version de « L'IA dans Wellneuro », texte patient, contrat d'extraction
+constaté sur un import réel). D'ici là, un dossier qui porte à tort la date
+d'un majeur ne voit pas le texte : c'est déjà le cas de toutes les surfaces.
+
+**§4 — Le lot de code J2-conf est fondu dans ACT-5.** La garde d'âge existe
+(lot (h), #1437 ; z, D-302, #1539 ; banc des routes `gardeAge.routes.guard.test.ts`,
+t02). Le lot d'ACT-5 ajoute ses bancs : `lib/patient/texteMineurs.test.ts`
+(sentinelle structurelle : l'écran du texte n'est rendu que sous une condition
+« mineur », et les deux pages servent un dossier clos en « majeur ») et
+`app/portail/[token]/page.test.tsx` (rendus : une session mineure ouverte voit
+le texte entier, un dossier mineur clos et un majeur ne le voient pas ; un
+dossier sans date se voit d'abord demander sa date). Aucun instrument n'est
+servi au mineur : ce sont la pause des routes (`gardeAge.ts`, tenue par
+`gardeAge.routes.guard.test.ts`) et les gardes des droits qui le tiennent, pas
+ce lot. Le critère de fin de F45 (rubrique « Cas des mineurs », constat par
+identifiant) reste celui de at et as ; J2-conf est tenu pour cette surface par
+arbitrage, sur ces preuves.
+
+**§5 — 2B seul.** L'écran de pause du mineur (`EcranCircuitMineur`, accueil
+du portail et page des questionnaires) sert le texte 2B de G-11, mot pour mot
+(`lib/patient/texteMineurs.ts`, comparé par le banc au texte validé le
+2026-10-14), à la place de l'ancien texte de l'écran ; les numéros du texte
+(15, 112, 119) s'appellent d'un geste. Le texte 2A, au titulaire de l'autorité
+parentale, décrit une validation en ligne qui n'existe qu'avec J3-mineurs
+(H79), et aucun parent n'a accès au portail : il part avec J3-mineurs, et le
+banc refuse ses titres dans le code servi d'ici là. 2B dit « D'ici là, les
+questionnaires attendent » : il ne promet pas qu'ils se rouvrent à l'accord,
+qui se recueille à la main jusqu'à J3-mineurs (la pause est fail-closed).
+Restent tels quels, hors de ce lot : le refus des routes et de l'écran de
+dépôt (`MESSAGE_CIRCUIT_MINEUR`, au vouvoiement : « Votre praticien reprendra
+contact avec vous… ») ; 2B ne nomme plus ni ce contact ni la pause de l'envoi
+des analyses biologiques, que l'ancien texte de l'écran nommait.
+
+**§6 — Ordre.** J3-mineurs suit ACT-5 (H79 l'a pour préalable) ; il n'est pas
+un préalable d'ACT-5. Critère de fin d'ACT-5 : lecture consignée du texte
+servi ; le premier mineur servi se constate plus tard, sans bloquer.
+
 ### D-340 — Trace d'essai : avec occasion, « C'était faisable ? » est la réponse du patient — vide au retour sur « Oui », « Sans objet » retiré, refus sans choix (t37)
 
 - Date : 2026-10-21

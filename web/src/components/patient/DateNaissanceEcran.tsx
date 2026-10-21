@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { StatutAge } from '@/lib/patient/gardeAge';
+import { TEXTE_MINEUR_JEUNE, decouperNumeros } from '@/lib/patient/texteMineurs';
 import type { PortailDateNaissanceResponse } from '@/app/api/portail/date-naissance/route';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton, patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -13,7 +14,8 @@ import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 // la date manque — on la demande, puis on la fait confirmer, parce qu'une
 // faute de frappe sur l'année ferait basculer un adulte dans le circuit des
 // mineurs, et qu'une date enregistrée ne se corrige plus que par le praticien ;
-// ou le patient a moins de 18 ans — on le dit sans rien rouvrir.
+// ou le patient a moins de 18 ans — on le dit sans rien rouvrir, avec le texte
+// des mineurs (G-11, texte 2B ; ACT-5).
 //
 // La garde qui fait foi est celle des ROUTES : cet écran ne décide rien, il
 // rend visible une pause que le serveur applique de toute façon.
@@ -32,18 +34,36 @@ function dateEnClair(iso: string): string {
   });
 }
 
+// ACT-5 (H78) : l'écran du mineur sert le texte 2B de G-11, mot pour mot
+// (`texteMineurs.ts`). Sa première section en est le titre ; les numéros
+// d'urgence du texte s'appellent d'un geste, comme au pied du portail.
 export function EcranCircuitMineur({ lienParcours }: { lienParcours?: string }) {
+  const [entree, ...suite] = TEXTE_MINEUR_JEUNE;
   return (
     <PatientCard maxWidth="md">
-      <PatientPageHeader title="Votre praticien va reprendre contact avec vous" as="h2" />
-      <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-        <p>
-          Jusqu’à 18 ans, l’accompagnement suit un cadre particulier. Votre praticien reprendra
-          contact avec vous avant la suite.
-        </p>
-        <p>
-          D’ici là, vos questionnaires et l’envoi de vos analyses biologiques sont en pause.
-        </p>
+      <PatientPageHeader title={entree.titre} as="h2" />
+      <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+        <p>{entree.texte}</p>
+        {suite.map(section => (
+          <section key={section.titre} className="space-y-1">
+            <h3 className="font-semibold text-foreground">{section.titre}</h3>
+            <p>
+              {decouperNumeros(section.texte, section.numerosAppelables).map((m, i) =>
+                m.numero ? (
+                  <a
+                    key={i}
+                    href={`tel:${m.morceau}`}
+                    className="font-semibold underline underline-offset-2 text-foreground"
+                  >
+                    {m.morceau}
+                  </a>
+                ) : (
+                  m.morceau
+                ),
+              )}
+            </p>
+          </section>
+        ))}
       </div>
       {lienParcours && (
         <a href={lienParcours} className={`${patientButtonClassName('primary', 'inline-block mt-6')}`}>
