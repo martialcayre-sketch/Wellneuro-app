@@ -17,17 +17,6 @@
       "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs)",
       "Bash(node /Users/wellneuro/Developer/Wellneuro-app/scripts/wn-cycle.mjs --local)",
       "mcp__claude-in-chrome__computer"
-    ],
-    "deny": [
-      "mcp__claude_ai_Supabase__apply_migration",
-      "mcp__claude_ai_Supabase__merge_branch",
-      "mcp__claude_ai_Supabase__rebase_branch",
-      "mcp__claude_ai_Supabase__reset_branch",
-      "mcp__claude_ai_Supabase__delete_branch",
-      "mcp__claude_ai_Supabase__create_branch",
-      "mcp__claude_ai_Supabase__pause_project",
-      "mcp__claude_ai_Supabase__restore_project",
-      "mcp__claude_ai_Supabase__deploy_edge_function"
     ]
   },
   "hooks": {

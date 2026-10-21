@@ -11220,3 +11220,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t37 → « fait ».
 
 **Ouvert.** Traces déjà transmises non relues (D-340 §4).
+
+## 2026-10-22 — D/5 : refus Supabase de settings.json retirés
+
+**Fait.** Connecteur absent (d05, constaté le 2026-10-21) : les neuf refus `mcp__claude_ai_Supabase__*` retirés de `.claude/settings.json` ; phrase de `CLAUDE.md` et `.claude/rules/db-prisma.md` mises à jour.
+
+**Écarté.** Retirer aussi la garde `execute_sql` (filet gratuit si le connecteur revenait) ; toucher au plan dans cette PR.
+
+**Prochaine action.** CI, CodeRabbit, merge ; ligne d05 de la page D ; puis PR D/41.
+
+**Ouvert.** Aucun.
