@@ -7,6 +7,11 @@ import { PatientField, patientInputClassName } from '@/components/patient/ui/Pat
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
+import {
+  ecrireBrouillonCeQuiCompte,
+  effacerBrouillonCeQuiCompte,
+  lireBrouillonCeQuiCompte,
+} from '@/lib/patient/ceQuiCompteBrouillon';
 
 // Dépôt patient de « ce qui compte pour moi aujourd'hui » (Alliance 6.0-A,
 // LOT-03). Un champ libre, une date facultative, un bouton.
@@ -25,6 +30,12 @@ import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
 // Aucune correction, aucune suppression : la table n'a pas de chaînage, une
 // entrée déposée se conserve. On n'ajoute donc ici ni bouton « modifier », ni
 // bouton « supprimer ».
+//
+// BROUILLON LOCAL (t06, 2026-10-21). Ce qui est rédigé et pas encore envoyé
+// reste sur l'appareil (`lib/patient/ceQuiCompteBrouillon.ts`), sous l'identité
+// de la session que la page lit dans le cookie signé — jamais dans le corps
+// envoyé. Sans identité, aucun brouillon : le formulaire se comporte comme
+// avant.
 
 /**
  * L'état de la fenêtre côté écran (`D-166`).
@@ -47,9 +58,10 @@ function dateLisible(iso: string): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export function CeQuiCompteForm() {
+export function CeQuiCompteForm({ idPatient = null }: { idPatient?: string | null } = {}) {
   const [texte, setTexte] = useState('');
   const [saisiLe, setSaisiLe] = useState('');
+  const [restaure, setRestaure] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [depose, setDepose] = useState(false);
@@ -85,6 +97,28 @@ export function CeQuiCompteForm() {
     void lireFenetre();
   }, [lireFenetre]);
 
+  // La reprise se fait au montage, AVANT que le champ ne s'affiche (l'écran
+  // attend la fenêtre) : le texte ne surgit pas sous les doigts du patient.
+  useEffect(() => {
+    const brouillon = lireBrouillonCeQuiCompte(idPatient);
+    if (!brouillon) return;
+    setTexte(brouillon.texte);
+    setSaisiLe(brouillon.saisiLe);
+    setRestaure(true);
+  }, [idPatient]);
+
+  // L'écriture suit la FRAPPE, pas un effet sur l'état : un effet tournerait
+  // aussi au premier rendu, champ encore vide, et effacerait le brouillon
+  // avant que la reprise ne l'ait relu.
+  const changerTexte = (valeur: string) => {
+    setTexte(valeur);
+    ecrireBrouillonCeQuiCompte(idPatient, { texte: valeur, saisiLe });
+  };
+  const changerDate = (valeur: string) => {
+    setSaisiLe(valeur);
+    ecrireBrouillonCeQuiCompte(idPatient, { texte, saisiLe: valeur });
+  };
+
   // Le dépassement s'AFFICHE, il ne bloque pas : le bouton reste actif, la
   // requête part, et c'est la route qui refuse avec son message. Désactiver
   // l'envoi ici priverait le patient de la seule explication existante.
@@ -105,9 +139,12 @@ export function CeQuiCompteForm() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (res.ok && data.ok) {
-        // Le dépôt est acquis : le champ peut repartir vide.
+        // Le dépôt est acquis : le champ peut repartir vide, et le brouillon
+        // n'a plus rien à garder.
         setTexte('');
         setSaisiLe('');
+        effacerBrouillonCeQuiCompte(idPatient);
+        setRestaure(false);
         setDepose(true);
       } else {
         // LE CHAMP N'EST PAS VIDÉ SUR ERREUR, et c'est délibéré : la session
@@ -121,7 +158,7 @@ export function CeQuiCompteForm() {
     } finally {
       setEnvoi(false);
     }
-  }, [texte, saisiLe]);
+  }, [texte, saisiLe, idPatient]);
 
   // APRÈS LE DÉPÔT, L'ACCUSÉ PREND TOUTE LA PLACE — et il dit maintenant deux
   // choses : que c'est enregistré, et quand on pourra écrire de nouveau. Il
@@ -194,6 +231,10 @@ export function CeQuiCompteForm() {
         subtitle="Écrivez ce que vous souhaitez que votre praticien sache. Personne ne le note ni ne le résume : c’est conservé tel quel."
       />
 
+      {restaure && (
+        <PatientInlineMessage tone="info">Brouillon restauré sur cet appareil.</PatientInlineMessage>
+      )}
+
       <PatientField label="Ce que je veux dire" requis>
         {/* AUCUN `maxLength` SUR CE CHAMP, ET C'EST LE POINT.
             `maxLength` fait couper le navigateur SILENCIEUSEMENT : un collage
@@ -207,7 +248,7 @@ export function CeQuiCompteForm() {
             l'attribut « pour aider l'utilisateur » : il aide en effaçant. */}
         <textarea
           value={texte}
-          onChange={(e) => setTexte(e.target.value)}
+          onChange={(e) => changerTexte(e.target.value)}
           rows={7}
           placeholder="Ce qui compte pour moi en ce moment…"
           aria-label="Ce que je veux dire"
@@ -230,7 +271,7 @@ export function CeQuiCompteForm() {
         <input
           type="date"
           value={saisiLe}
-          onChange={(e) => setSaisiLe(e.target.value)}
+          onChange={(e) => changerDate(e.target.value)}
           aria-label="Date à laquelle cela vous concerne"
           className={patientInputClassName}
         />

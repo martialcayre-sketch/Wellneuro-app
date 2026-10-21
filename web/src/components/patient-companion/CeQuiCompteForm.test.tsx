@@ -276,3 +276,70 @@ describe('CeQuiCompteForm — la fenêtre de dépôt (D-166)', () => {
     expect(lectures).toHaveLength(1);
   });
 });
+
+// BROUILLON LOCAL (t06, 2026-10-21) : ce qui est rédigé survit au rechargement
+// et à la fermeture de l'onglet, sur l'appareil, sous l'identité de la session.
+describe('CeQuiCompteForm — brouillon local (t06)', () => {
+  const CLE = 'wellneuro:ce-qui-compte-brouillon:v1:PAT_1';
+
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  async function rendreAvecIdentite(idPatient: string | null) {
+    render(<CeQuiCompteForm idPatient={idPatient} />);
+    await waitFor(() => expect(screen.getByLabelText('Ce que je veux dire')).toBeTruthy());
+  }
+
+  it('la frappe s’écrit sur l’appareil, et un rechargement la restitue en le disant', async () => {
+    fetchMock.mockImplementation(fenetreServie({ ouverte: true }));
+    await rendreAvecIdentite('PAT_1');
+    ecrire(TEXTE);
+    expect(JSON.parse(window.localStorage.getItem(CLE) ?? '{}')).toEqual({ texte: TEXTE, saisiLe: '' });
+
+    cleanup();
+    await rendreAvecIdentite('PAT_1');
+    expect(champTexte().value).toBe(TEXTE);
+    expect(screen.getByText('Brouillon restauré sur cet appareil.')).toBeTruthy();
+  });
+
+  it('le corps envoyé ne porte toujours que la parole et sa date', async () => {
+    fetchMock.mockImplementation(fenetreServie({ ouverte: true }));
+    await rendreAvecIdentite('PAT_1');
+    ecrire(TEXTE);
+    envoyer();
+
+    await waitFor(() => expect(aEcrit()).toBe(true));
+    expect(JSON.parse(appelPost()[1].body)).toEqual({ texte: TEXTE, saisiLe: null });
+  });
+
+  it('DÉPÔT CONFIRMÉ : le brouillon est effacé', async () => {
+    fetchMock.mockImplementation(fenetreServie({ ouverte: true }));
+    await rendreAvecIdentite('PAT_1');
+    ecrire(TEXTE);
+    envoyer();
+
+    await waitFor(() => expect(screen.getByText(/C’est enregistré/)).toBeTruthy());
+    expect(window.localStorage.getItem(CLE)).toBeNull();
+  });
+
+  it('DÉPÔT REFUSÉ : le brouillon est conservé', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' }, false),
+    );
+    await rendreAvecIdentite('PAT_1');
+    ecrire(TEXTE);
+    envoyer();
+
+    await waitFor(() => expect(screen.getByText('Session expirée. Reconnectez-vous.')).toBeTruthy());
+    expect(JSON.parse(window.localStorage.getItem(CLE) ?? '{}').texte).toBe(TEXTE);
+  });
+
+  it('SANS IDENTITÉ : rien ne s’écrit sur l’appareil', async () => {
+    fetchMock.mockImplementation(fenetreServie({ ouverte: true }));
+    await rendreAvecIdentite(null);
+    ecrire(TEXTE);
+    expect(window.localStorage.length).toBe(0);
+    expect(screen.queryByText('Brouillon restauré sur cet appareil.')).toBeNull();
+  });
+});
