@@ -19,13 +19,26 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     vi.unstubAllGlobals();
   });
 
+  // Une assignation EN ATTENTE est servie par la route : la page doit la taire
+  // pendant la pause d'un mineur. Fixture neutre.
+  const ASSIGNATION = {
+    idAssignation: 'ASS_TEST',
+    idQuestionnaire: 'Q_TEST',
+    titre: 'Questionnaire de test',
+    statut: 'En attente',
+    statutReponses: '',
+    dateLimite: null,
+    estEnAttenteSaisie: true,
+    duree: '5 min',
+  };
+
   function stubAssignations(session: Record<string, unknown>) {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       const corps = url.startsWith('/api/portail/assignations')
         ? {
             ok: true,
             patient: { idPatient: 'PAT_TEST', prenom: 'Sophie', nom: 'Nicola' },
-            assignations: [],
+            assignations: [ASSIGNATION],
             agendas: [],
             agendasAlimentaires: [],
             derniereReponseLe: null,
@@ -40,11 +53,14 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
   }
 
   const TITRE = 'Avant 18 ans, un parent donne d’abord son accord';
+  const COMPTEUR = /Un questionnaire à compléter/;
 
   it('★ un dossier mineur ouvert voit le texte des mineurs, numéros appelables', async () => {
     stubAssignations({ statutAge: 'mineur', dossierOuvert: true });
     render(<QuestionnairesHubPage />);
     await waitFor(() => expect(screen.getByText(TITRE)).not.toBeNull());
+    expect(screen.queryByText(COMPTEUR)).toBeNull();
+    expect(screen.queryByText('Questionnaire de test')).toBeNull();
     for (const numero of ['15', '112', '119']) {
       expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
     }
@@ -57,10 +73,13 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     expect(screen.queryByText(TITRE)).toBeNull();
   });
 
-  it('★ un dossier majeur ne voit pas le texte des mineurs', async () => {
+  it('★ un dossier majeur ne voit pas le texte des mineurs, et voit son questionnaire', async () => {
     stubAssignations({ statutAge: 'majeur', dossierOuvert: true });
     render(<QuestionnairesHubPage />);
-    await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
+    // Contre-épreuve de la fixture : servie à un majeur, l'assignation est
+    // comptée à compléter (le compteur reste complet même quand « Mon
+    // parcours » porte la carte).
+    await waitFor(() => expect(screen.getByText(COMPTEUR)).not.toBeNull());
     expect(screen.queryByText(TITRE)).toBeNull();
   });
 });
