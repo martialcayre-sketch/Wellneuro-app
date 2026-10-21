@@ -16,8 +16,12 @@ paths:
 sortie relue par `scalingo logs --filter one-off-N` — le mode détaché lève
 l'exigence de TTY. La base Supabase gelée au cutover et son outil MCP
 `execute_sql` **n'existent plus** : décommissionnement `D-080` exécuté le
-2026-09-01 (`D-120`, preuve au registre RGPD, rubrique 12). L'unique base est
-la production Scalingo, et elle ne se lit que par conteneur.
+2026-09-01 (`D-120`, preuve au registre RGPD, rubrique 12). Le connecteur MCP
+Supabase est débranché de claude.ai (constaté le 2026-10-21, plan `D/5`) : les
+refus `mcp__claude_ai_Supabase__*` de `.claude/settings.json` sont retirés,
+seule reste la garde `guard-supabase-mcp.mjs` sur `execute_sql`, filet si le
+connecteur revenait. L'unique base est la production Scalingo, et elle ne se
+lit que par conteneur.
 
 **Un nom de migration porte plusieurs lignes dans `_prisma_migrations`.** Un
 échec suivi d'un `migrate resolve --applied` laisse la ligne annulée en place

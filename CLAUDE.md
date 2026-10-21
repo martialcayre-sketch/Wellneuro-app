@@ -37,9 +37,9 @@ technologique sans demande explicite. État courant :
   depuis un conteneur `scalingo run -d`, écriture uniquement par migration
   relue puis release-db approuvée (`D-087`, qui supplante `D-086` §1-2 — le
   one-off applique APRÈS approbation humaine, le `postdeploy` ne migre plus
-  sous drapeau)**. La base Supabase gelée n'existe plus (`D-120`) ; son
-  outil MCP, lui, reste branché et n'est neutralisé que par les refus de
-  `.claude/settings.json`. Détail : `.claude/rules/db-prisma.md`.
+  sous drapeau)**. La base Supabase gelée n'existe plus (`D-120`), et son
+  connecteur MCP est débranché (constaté le 2026-10-21). Détail :
+  `.claude/rules/db-prisma.md`.
 
 ## Données patients
 
