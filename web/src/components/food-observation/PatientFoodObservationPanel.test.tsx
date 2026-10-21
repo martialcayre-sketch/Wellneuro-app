@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PatientFoodObservationPanel } from './PatientFoodObservationPanel';
 
@@ -123,9 +123,18 @@ describe('PatientFoodObservationPanel', () => {
 
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
     expect(screen.getByText('Choisissez ce qui a compté cette fois-ci.')).toBeTruthy();
+    expect(screen.getByText('Pas encore d’élément enregistré.')).toBeTruthy();
+
+    // Revenir à « Oui » ne rechoisit rien à la place du patient.
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'oui' } });
+    expect(issue.value).toBe('');
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
 
     fireEvent.change(issue, { target: { value: 'oublie_non_note' } });
     expect(Array.from(issue.options).map(o => o.value)).toEqual(['partiel_empeche', 'oublie_non_note']);
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(within(screen.getByTestId('ja-patient-historique')).getByText(/Oublié ou pas noté/)).toBeTruthy();
+    expect(issue.value).toBe('');
   });
 
   // Lot 1 (audit du 2026-07-27, §2.1) : atteindre le budget hebdomadaire ne

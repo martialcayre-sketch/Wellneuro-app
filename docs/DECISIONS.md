@@ -27,9 +27,14 @@ la porte ; `createTrialTrace` refuse une trace sans occasion dont l'issue est
 avoir choisi « fait » ou « adapté » efface le choix sans en poser un autre :
 le patient choisit, ou la trace ne s'enregistre pas.
 
-**§4 — Hors de cette décision.** Les traces déjà enregistrées ne sont pas
-relues ni corrigées : la lecture d'un brouillon (`persistence.ts`) ne passe
-pas par `createTrialTrace`.
+**§4 — Hors de cette décision.** Les traces déjà enregistrées ne sont ni
+relues ni corrigées : aucune relecture ne passe par `createTrialTrace` — ni le
+brouillon de l'appareil (`readDraft`), ni l'instantané transmis (`lireTrace`,
+`persistence.ts`), ni la publication de faisabilité (`validateTrace`,
+`feasibility.ts`). L'écriture serveur ne vérifie pas la combinaison : un
+brouillon ouvert avant le déploiement peut encore transmettre une trace sans
+occasion marquée « fait » ou « adapté », et la refuser ferait échouer tout son
+instantané.
 
 ### D-336 — t30 : le résolveur des libellés est re-signé sur six des sept fiches de D-323 §6 — libellés du catalogue et synonymes, la bilirubine « totale » seule, l'ionogramme complet exclu
 
