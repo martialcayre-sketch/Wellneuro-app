@@ -92,6 +92,10 @@ cette dette règle par règle.
 - Ne jamais changer une question, une cotation, un seuil ou une interprétation
   sans demande explicite ; documenter toute modification clinique dans un
   fragment `changelog.d/`.
+- **`questions.ts` est sous instantané** (t23, 2026-10-21) : retoucher un bloc
+  `scoring` ou le moteur (de `calculateScore` à la fin du fichier, refactoring
+  compris) rougit `seuilsCatalogue.guard.test.ts` ; ajouter l'étape à
+  `seuilsCatalogue.instantane.json` avec la `D-xxx` qui la décide.
 - **Ces fichiers sont du clinique, pas du code** (`DC-17`) : une table de
   règles signée, les poids des douze besoins, les cut-offs d'un instrument.
   Une ligne de TypeScript qui les touche est une modification clinique et
