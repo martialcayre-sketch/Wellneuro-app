@@ -96,7 +96,8 @@
 // débranchement, dans la même PR que le chemin. Les régimes (journalisant /
 // confirmable / refus dur) sont des choix datés et motivés — ils ne
 // s'alignent pas entre eux sans décision : le durcissement éventuel est un
-// arbitrage du responsable (instruit au handoff du Socle LOT-01, non tranché).
+// arbitrage du responsable (instruit au handoff du Socle LOT-01 ; tranché le
+// 2026-10-21 : régime A, statu quo — D/40 du plan).
 
 /** Racines de termes prescriptifs à proscrire d'un rendu médecin (minuscules). */
 export const RACINES_PRESCRIPTIVES: readonly string[] = [

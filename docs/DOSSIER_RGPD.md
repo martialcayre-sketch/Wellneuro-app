@@ -925,7 +925,9 @@ comptes rendus biologiques, atelier du corpus), OpenAI (recherche du corpus).
 Le banc ne voit pas un appel dont l'adresse ne nomme aucun fournisseur ;
 `tools/` et `scripts/` n'en relèvent pas.
 
-**DESTINATAIRE NON DÉCLARÉ, CONSTATÉ LE 2026-09-07 — OpenAI.** Le chemin
+*Historique — constat du 2026-09-07, soldé le 2026-10-15 par [[D-299]] : la
+liste patient a été corrigée, OpenAI figure au tableau ci-dessus (D/35 du plan,
+close le 2026-10-21).* **OpenAI, destinataire constaté le 2026-09-07.** Le chemin
 d'embeddings du corpus (`web/src/lib/rag/embeddings.ts:20-34`) envoie à
 `api.openai.com` le **texte libre saisi par le praticien** dans la recherche de
 corpus, ainsi que le texte des chunks à indexer. Il est **armé en production** :
@@ -938,10 +940,10 @@ libre et rien n'empêche un praticien d'y écrire une situation clinique.
 OpenAI n'apparaissait, au 2026-09-07, **dans aucune pièce** : ni dans ce
 dossier, ni dans `GATES_GO_NO_GO.md`, ni dans le module `trust/`, ni dans
 aucune des 141 décisions du registre. C'est le même écart que celui de Sentry
-(trou 3), à une différence près : **Sentry n'émettait rien, celui-ci émet**. À
-trancher par le responsable, dans les mêmes termes — soit ce flux ne porte
-aucune donnée personnelle et cela s'écrit avec sa garde, soit la liste patient
-est incomplète et se corrige.
+(trou 3), à une différence près : **Sentry n'émettait rien, celui-ci émet**. La
+question posée alors — soit ce flux ne porte aucune donnée personnelle et cela
+s'écrit avec sa garde, soit la liste patient est incomplète et se corrige — est
+tranchée par [[D-299]] : la liste patient est corrigée, le flux inchangé.
 
 **Destinataire de build, sans donnée applicative.** `checkpoint.prisma.io` —
 télémétrie de version de l'outil Prisma, déclenchée au `prisma generate` du
