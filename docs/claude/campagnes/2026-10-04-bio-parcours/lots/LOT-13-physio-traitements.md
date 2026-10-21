@@ -27,9 +27,10 @@ statut menstruel s'il y a lieu, et ses traitements ligne par ligne ; au
 cockpit, le praticien du dossier confirme ou corrige chaque ligne et pose
 grossesse, allaitement, poids et taille datés ; chaque ligne dit qui l'a
 posée ; « inconnu » est écrit ; l'historique reste lisible. Un écart avec
-l'anamnèse s'affiche en discordance. La synthèse du premier bilan lit les
-traitements en vigueur comme elle lit aujourd'hui ceux de l'anamnèse. Drapeau
-éteint, rien ne change.
+l'anamnèse s'affiche en discordance. La ligne de vigilance de la synthèse du
+premier bilan, écrite par le code, lit les traitements en vigueur comme elle
+lit aujourd'hui ceux de l'anamnèse ; rien ne part à l'IA. Drapeau éteint,
+rien ne change.
 
 ## Socle établi (ne se rediscute pas)
 
@@ -60,12 +61,13 @@ traitements en vigueur comme elle lit aujourd'hui ceux de l'anamnèse. Drapeau
   (`anamnese.ts:62-64`), repris par `contexteClinique.ts:144`.
 - **Traitements** : groupes répétables `medicaments` et `complements`
   (`anamnese.ts:316-340`, texte libre : nom, dose, moment, depuis,
-  motif/objectif), plus `automedication` en classes fermées. Lus par
-  `contexteClinique.ts` : `buildContexteClinique` (texte transmis à l'IA de
-  la synthèse) et `extraireVigilanceDeterministe` (ligne de vigilance
-  écrite par le code, `contexteClinique.ts:196-211`), appelés par
-  `synthese/generation.ts:51`. Aucune date, aucun auteur, réécrits à chaque
-  validation de l'anamnèse (JSON sur `Patient` et sur la consultation).
+  motif/objectif), plus `automedication` en classes fermées. Lus par la
+  seule `extraireVigilanceDeterministe` (nom et dose ; ligne de vigilance
+  écrite par le code, `contexteClinique.ts:188-213`), ajoutée à la synthèse
+  après la réponse de l'IA (`synthese/generation.ts:1043`, `:719`) ;
+  `buildContexteClinique`, le texte transmis à l'IA, ne les lit pas. Aucune
+  date, aucun auteur, réécrits à chaque validation de l'anamnèse (JSON sur
+  `Patient` et sur la consultation).
 - **Pièces de constat** : `pieces_constats_praticien` porte deux clés
   (`id_resultat`, `id_questionnaire_reponse`) et un CHECK « une pièce
   exactement » (migration `20261020100000_constats_praticien_v1`).
@@ -118,11 +120,14 @@ scénario :
   - **Rendu : A.**
 - **La synthèse du premier bilan.** Ses traitements viennent de l'anamnèse ;
   remplacés au portail, la ligne de vigilance déterministe disparaîtrait.
-  - **A.** Vigilance et texte transmis à l'IA lisent les lignes en vigueur,
-    même forme ; sexe et statut menstruel ne partent pas à l'IA.
-  - **B.** Vigilance seule ; l'IA ne reçoit plus les traitements.
-  - **C.** Ni l'une ni l'autre.
-  - **Rendu : A.**
+  Posée d'abord sur un fait faux (« l'IA reçoit déjà les traitements ») et
+  tranchée « vigilance et IA » ; le fait vérifié (seule la ligne de
+  vigilance les lit, l'IA jamais), la question a été reposée le même jour :
+  - **A.** La ligne de vigilance seule lit les lignes en vigueur (nom,
+    dose) ; rien ne part à l'IA.
+  - **B.** Vigilance et IA : un flux nouveau (registre de l'IA, texte
+    « L'intelligence artificielle dans Wellneuro », banc des sites IA).
+  - **Rendu : A.** Le premier rendu est annulé.
 
 **Précisions de l’assistant, retenues telles quelles par le responsable le 2026-10-21** (D-335) : qui pose
 quoi (le patient pose sexe, statut menstruel et traitements ; le praticien
@@ -151,8 +156,8 @@ le constat « à relire » (§7).
 - **PR 2 (code)** : routes du portail et du cockpit ; formulaire du portail
   (groupes remplacés, lecture des anciennes anamnèses intacte) ; panneau du
   cockpit (lignes, source, « déclaré à l'anamnèse du … », discordance) ;
-  `contexteClinique.ts` (lignes en vigueur, sources nommées, sexe et statut
-  menstruel exclus de l'IA ; banc des sites IA rejoué) ; « à relire » de la
+  `extraireVigilanceDeterministe` (lignes en vigueur, sources nommées ; le
+  texte transmis à l'IA inchangé) ; « à relire » de la
   pièce de traitement (`bio-parcours/constats/`) ; drapeau
   `WN_PHYSIO_TRAITEMENTS` créé éteint, `docs/FEATURE_FLAGS.md`.
 
@@ -179,8 +184,9 @@ constat ; conversion du texte libre ; interaction médicamenteuse calculée.
 - « Inconnu » explicite, distinct de « non renseigné » (tests).
 - Contrat négatif propre joué au CI.
 - Effacement testé.
-- Synthèse : vigilance et texte IA identiques à aujourd'hui pour une
-  anamnèse ancienne ; lignes en vigueur lues sous le drapeau (tests).
+- Synthèse : ligne de vigilance identique à aujourd'hui pour une anamnèse
+  ancienne ; lignes en vigueur lues sous le drapeau ; texte transmis à l'IA
+  inchangé, sans aucune ligne de ce lot (tests).
 
 ## Dépendances
 

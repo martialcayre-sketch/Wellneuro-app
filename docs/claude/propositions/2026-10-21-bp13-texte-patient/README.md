@@ -3,15 +3,16 @@
 Lot BP-13 (LOT-13, fiche F07), décision [[D-335]]. Ce document porte les
 textes soumis au responsable le 2026-10-21, **avant toute table** : le
 paragraphe neuf de « Vos données personnelles » (v20) et les libellés du
-portail. Rien n'est publié par cette PR. Statut : **validé** (2026-10-21).
+portail. Rien n'est publié par cette PR. Statut : validé le 2026-10-21,
+puis **corrigé et revalidé** le même jour (voir « Réponses du
+responsable »).
 
 ## Ce qui ne change pas
 
-- **« L'intelligence artificielle dans Wellneuro »** : la synthèse du bilan
-  part déjà « de vos réponses aux questionnaires et des éléments transmis à
-  votre praticien » ; les traitements en font partie aujourd'hui. Les lignes
-  structurées prennent leur place sous la même forme ; le sexe déclaré et le
-  statut menstruel n'y partent pas ([[D-335]] §8). Aucune nouvelle version.
+- **« L'intelligence artificielle dans Wellneuro »** : aucune ligne de ce lot
+  ne part à l'IA ([[D-335]] §8). Les traitements ne lui sont pas transmis
+  aujourd'hui (seule la ligne de vigilance, écrite par le code après sa
+  réponse, les lit), et ne le seront pas. Aucune nouvelle version.
 - **Grossesse, allaitement, taille, poids** : questions de la fiche de
   renseignements, inchangées au portail (arbitrage du 2026-10-21, pas de
   doublon).
@@ -29,15 +30,16 @@ des documents déposés (v19) :
 > vous pouvez toujours répondre que vous ne savez pas ou préférez ne pas
 > répondre. Vos médicaments et vos compléments alimentaires en cours y sont
 > notés un par un : leur nom, leur dose, le moment de la prise, depuis quand,
-> et s’ils vous ont été prescrits par un autre soignant. Votre praticien peut
-> confirmer ou corriger chacune de ces informations, ainsi que votre taille,
-> votre poids, une grossesse ou un allaitement : rien n’est effacé, chaque
+> s’ils vous ont été prescrits par un autre soignant et, si vous l’indiquez,
+> le motif d’un médicament ou l’objectif d’un complément ; quand vous en
+> arrêtez un, la date de l’arrêt y est notée. Votre praticien peut confirmer
+> ou corriger chacune de ces informations, ainsi que votre taille, votre
+> poids, une grossesse ou un allaitement : rien n’est effacé, chaque
 > information garde sa date et dit si elle vient de vous ou de votre
-> praticien. Seul votre praticien les voit, et vous voyez les vôtres. Pour
-> préparer la synthèse de votre bilan, la liste de vos traitements en cours
-> est transmise à l’outil d’intelligence artificielle, comme elle l’est déjà
-> aujourd’hui ; votre sexe et vos cycles ne le sont jamais. Ces informations
-> sont conservées et effacées avec votre dossier.
+> praticien. Dans votre dossier, seul votre praticien les voit, et vous
+> voyez les vôtres. Aucun outil d’intelligence artificielle ne les reçoit, et
+> elles ne sont transmises à personne. Ces informations sont conservées et
+> effacées avec votre dossier.
 
 ### A2. Le résumé du changement (`changeSummary`)
 
@@ -84,3 +86,13 @@ Le 2026-10-21, sur question à options : les parties A (paragraphe de la v20,
 résumé, conséquences) et B (libellés du portail) sont **validées telles
 quelles**, avec le paragraphe du dossier RGPD. La publication de la v20 et des
 conditions v3 reste un geste de l'allumage de `WN_PHYSIO_TRAITEMENTS`.
+
+**Correction du même jour.** Le paragraphe validé disait que la liste des
+traitements part à l'IA « comme elle l'est déjà aujourd'hui » : c'était faux.
+Le texte transmis à l'IA de la synthèse ne contient aucun traitement ; seule
+la ligne de vigilance, écrite par le code après la réponse de l'IA, les lit.
+Reposée sur ce fait, la question de la synthèse a été tranchée « la ligne de
+vigilance seule, sans IA » ([[D-335]] §8). A1 est corrigé en conséquence, avec
+deux retouches de la revue CodeRabbit de #1614 : le motif ou l'objectif quand
+il est indiqué, la date d'un arrêt ; et « dans votre dossier » borne la phrase
+sur qui voit ces informations. **Revalidé tel quel par le responsable le même jour.**

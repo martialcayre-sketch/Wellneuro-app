@@ -7,12 +7,15 @@
   traitements et compléments en lignes, sans classe ; ajout seul, à deux
   mains (patient au portail, praticien au cockpit), patron de remplacement
   de la tête et de retrait de D-331. La garde de population (D-101) reste
-  sur l'anamnèse ; un écart s'affiche en discordance. La synthèse du premier
-  bilan lira les traitements en vigueur ; sexe et statut menstruel ne
-  partent pas à l'IA. Un traitement devient une pièce de constat.
+  sur l'anamnèse ; un écart s'affiche en discordance. La ligne de vigilance
+  de la synthèse du premier bilan, écrite par le code, lira les traitements
+  en vigueur ; aucune de ces lignes ne part à l'IA. Un traitement devient
+  une pièce de constat.
 - `docs/DOSSIER_RGPD.md` : les deux tables et la clé de pièce sont
   déclarées avant leur création ; texte patient proposé
   (`docs/claude/propositions/2026-10-21-bp13-texte-patient/README.md`).
-  Paragraphe et texte validés par le responsable le 2026-10-21.
+  Paragraphe et texte validés par le responsable le 2026-10-21, puis
+  corrigés le même jour (l'IA ne reçoit aucun traitement, contrairement à
+  ce que la première version affirmait) et revalidés le même jour.
 - Fiche LOT-13 proposée ; campagne et fiche F07 du plan mises à jour.
 - Décision seule : aucun code, aucune migration encore.

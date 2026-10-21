@@ -16,7 +16,12 @@
   d'un traitement cité, confirmation comprise, §7) sont **retenues telles
   quelles** par le responsable le 2026-10-21, sur question à options, avec
   le paragraphe du dossier RGPD et le texte patient (v20 et libellés du
-  portail), validés le même jour.
+  portail), validés le même jour. **Correction du même jour** : la question
+  de la synthèse affirmait que l'IA recevait déjà les traitements ; c'était
+  faux (§8). Reposée sur le fait vérifié, elle a été tranchée « la ligne de
+  vigilance seule, sans IA » ; le paragraphe RGPD et le texte v20 sont
+  corrigés en conséquence, avec deux retouches de la revue CodeRabbit (motif
+  ou objectif, date d’arrêt), et revalidés par le responsable le même jour.
 - Domaine : campagne bio-parcours, BP-13 (LOT-13) ; plan, fiche F07 ; deux
   tables neuves en ajout seul et une clé ajoutée à
   `pieces_constats_praticien` ; `web/src/lib/patient/effacement.ts` ;
@@ -142,14 +147,16 @@ ce lot ; le contexte de prélèvement vient avec BP-05.
 
 **§8 — Qui lit.** Le praticien du dossier, au cockpit ; le patient, ses
 propres lignes au portail. **La synthèse du premier bilan** (arbitrage du
-2026-10-21) : la ligne de vigilance écrite par le code et le texte transmis à
-l'IA reprennent les traitements **en vigueur** (nom, dose, moment, début),
-sous la même forme et la même neutralisation qu'aujourd'hui ; les groupes
-d'une anamnèse ancienne y restent lus, chaque source nommée, sans fusion.
-Aucun flux nouveau : l'IA reçoit déjà les traitements. **Le sexe déclaré et
-le statut menstruel ne partent pas à l'IA.** Ni l'orientation, ni le
-scoring, ni le courrier au médecin ne lisent ces lignes dans ce lot ; la
-garde de population non plus (§2).
+2026-10-21, refait sur un fait corrigé) : aujourd'hui, les traitements de
+l'anamnèse ne nourrissent que la **ligne de vigilance écrite par le code**
+(`extraireVigilanceDeterministe` : nom et dose), ajoutée après la réponse de
+l'IA ; le texte transmis à l'IA (`buildContexteClinique`) ne les contient
+pas. Cette ligne reprend les traitements **en vigueur**, sous la même
+forme ; les groupes d'une anamnèse ancienne y restent lus, chaque source
+nommée, sans fusion. **Rien de ce lot ne part à l'IA** : ni traitement, ni
+sexe déclaré, ni statut menstruel. Ni l'orientation, ni le scoring, ni le
+courrier au médecin ne lisent ces lignes dans ce lot ; la garde de
+population non plus (§2).
 
 **§9 — Drapeau, information, effacement.** Le drapeau
 `WN_PHYSIO_TRAITEMENTS` naît avec le code qui le lit, éteint, fail-closed
