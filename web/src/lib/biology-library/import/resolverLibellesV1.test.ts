@@ -263,3 +263,30 @@ describe('banc — un compte rendu courant, libellés et unités tels qu’impri
     expect(BANC.filter(([, , code, concorde]) => code !== null && concorde)).toHaveLength(43);
   });
 });
+
+describe('resolver — six fiches de D-323 §6 ([[D-336]], t30)', () => {
+  it.each([
+    ['T4 libre', 'BIO_T4_LIBRE'],
+    ['FT4', 'BIO_T4_LIBRE'],
+    ['T3 libre', 'BIO_T3_LIBRE'],
+    ['FT3', 'BIO_T3_LIBRE'],
+    ['CO2 total', 'BIO_BICARBONATES'],
+    ['HCO3-', 'BIO_BICARBONATES'],
+    ['Protéines totales', 'BIO_PROTIDES'],
+    ['Bilirubine totale', 'BIO_BILIRUBINE'],
+    ['PAL', 'BIO_PHOSPHATASES_ALCALINES'],
+  ])('« %s » se rattache à %s', (libelle, code) => {
+    expect(resoudreLibelle(libelle, true)).toEqual({ statut: 'resolu', code });
+  });
+
+  it('« Bilirubine » sans fraction, conjuguée, libre ou directe : jamais rattachée', () => {
+    for (const libelle of ['Bilirubine', 'Bilirubine conjuguée', 'Bilirubine libre', 'Bilirubine directe']) {
+      expect(resoudreLibelle(libelle, true).statut).toBe('inconnu');
+    }
+  });
+
+  it('l’ionogramme complet, panel sans unité, n’a pas de libellé ; rT3 reste à T3 reverse', () => {
+    expect(resoudreLibelle('Ionogramme sanguin complet', true).statut).toBe('inconnu');
+    expect(resoudreLibelle('rT3', true)).toEqual({ statut: 'resolu', code: 'BIO_T3_REVERSE' });
+  });
+});

@@ -4,6 +4,52 @@
 
 ## Décisions actives
 
+### D-336 — t30 : le résolveur des libellés est re-signé sur six des sept fiches de D-323 §6 — libellés du catalogue et synonymes, la bilirubine « totale » seule, l'ionogramme complet exclu
+
+- Date : 2026-10-21
+- Statut : accepté — arbitrages du responsable du 2026-10-21 (file A, t30),
+  signature transcrite par l'assistant sur son instruction.
+- Domaine : staging d'import ([[D-256]] A4) ; amende [[D-263]] et complète
+  [[D-323]] §6. Aucune règle clinique, aucun seuil, aucune conversion
+  ([[D-157]]).
+
+**§1 — Source.** Les libellés devaient venir de deux sources : les lignes
+restées « inconnu » en production, et des synonymes rédigés. Le constat par
+conteneur du 2026-10-21 (lecture seule, agrégats, 53 lignes « inconnu » pour
+92 résolues) ne porte **aucune** des sept fiches. La table ne reprend donc que
+le libellé du catalogue et des synonymes courants, validés un par un par le
+responsable.
+
+**§2 — Les entrées** (22, pour six analytes) :
+
+- `BIO_T4_LIBRE` : « Thyroxine libre (T4L) », « Thyroxine libre », « T4 libre »,
+  « T4L », « FT4 » ;
+- `BIO_T3_LIBRE` : « Triiodothyronine libre (T3L) », « Triiodothyronine
+  libre », « T3 libre », « T3L », « FT3 » (« rT3 » et « T3 reverse » restent à
+  `BIO_T3_REVERSE`) ;
+- `BIO_BICARBONATES` : « Bicarbonates (CO2 total) », « Bicarbonates », « CO2
+  total », « Réserve alcaline », « HCO3- » ;
+- `BIO_PROTIDES` : « Protides totaux », « Protéines totales », « Protides » ;
+- `BIO_BILIRUBINE` : « Bilirubine totale » **seule**. « Bilirubine » sans
+  fraction n'est pas reprise. Conjuguée, directe et libre s'impriment sous la
+  même unité (µmol/L) : c'est le piège que la garde d'unité ne voit pas (même
+  prudence que « Zinc » seul, [[D-259]]) ;
+- `BIO_PHOSPHATASES_ALCALINES` : « Phosphatases alcalines », « Phosphatase
+  alcaline », « PAL » (« UI/L » ≡ « U/L », [[D-261]] §5).
+
+**§3 — L'ionogramme sanguin complet n'a pas de libellé** : c'est un panel
+sans unité, qu'aucune ligne de compte rendu ne mesure seule (règle du
+2026-10-02, [[D-259]]). Il se saisit par ses constituants.
+
+**§4 — Signature.** Nouvelle empreinte
+`3e08466760059e7281759c00cc835cf9a10e8881b38c8f63ab98da363f74832c`
+(167 entrées, 85 analytes). Elle remplace celle de [[D-263]].
+
+**§5 — Hors de cette décision.** Les autres libellés restés « inconnu » en
+production (profil d'acides gras, « PROTEINE C REACTIVE (CRP) », VGM,
+plaquettes, TP/INR, DFG, HbA1c avec antériorités) font l'objet d'un lot
+séparé de la file A.
+
 ### D-335 — BP-13 : données physiologiques déclarées et traitements en cours, en lignes datées et en ajout seul, à deux mains — « inconnu » écrit, aucune classe, aucun IMC ; la garde de population intacte ; le traitement devient une pièce de constat (LOT-13)
 
 - Date : 2026-10-21
