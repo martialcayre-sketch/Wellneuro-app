@@ -32,7 +32,8 @@ des documents déposés (v19) :
 > notés un par un : leur nom, leur dose, le moment de la prise, depuis quand,
 > s’ils vous ont été prescrits par un autre soignant et, si vous l’indiquez,
 > le motif d’un médicament ou l’objectif d’un complément ; quand vous en
-> arrêtez un, la date de l’arrêt y est notée. Votre praticien peut confirmer
+> arrêtez un, l’arrêt y est noté, avec sa date si vous la connaissez (au
+> jour, au mois ou à l’année). Votre praticien peut confirmer
 > ou corriger chacune de ces informations, ainsi que votre taille, votre
 > poids, une grossesse ou un allaitement : rien n’est effacé, chaque
 > information garde sa date et dit si elle vient de vous ou de votre
@@ -96,3 +97,8 @@ vigilance seule, sans IA » ([[D-335]] §8). A1 est corrigé en conséquence, av
 deux retouches de la revue CodeRabbit de #1614 : le motif ou l'objectif quand
 il est indiqué, la date d'un arrêt ; et « dans votre dossier » borne la phrase
 sur qui voit ces informations. **Revalidé tel quel par le responsable le même jour.**
+
+**Seconde retouche, même jour** (revue CodeRabbit de 607286fa, corrigée sur
+accord du responsable) : la date d'un arrêt peut être inconnue ([[D-335]] §4) ;
+A1 dit « l'arrêt y est noté, avec sa date si vous la connaissez (au jour, au
+mois ou à l'année) », sans promettre une date.
