@@ -158,6 +158,10 @@ const ALLOWLIST = new Map([
   ['src/lib/clinical-engine/clinicalSnapshot.test.ts', 'même motif tautologique que versioning.test.ts'],
   ['src/app/api/praticien/protocoles/route.test.ts', 'même motif tautologique que versioning.test.ts'],
   [
+    'src/lib/doctrine/seuilsCatalogue.guard.test.ts',
+    'empreinte les DEUX variantes importées par leur nom (Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57) et vérifie que Q_ALI_01 sert l’une des deux : vert par construction dans les deux positions (t23)',
+  ],
+  [
     'src/lib/bibliotheque.test.ts',
     'balaye le catalogue mais n’assère que des identifiants et des propriétés de structure, stables dans les deux positions',
   ],
