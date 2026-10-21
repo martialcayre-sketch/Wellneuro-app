@@ -3161,6 +3161,28 @@ aucune intelligence artificielle ne le lit. Les droits s'exercent par
   adaptation (« vos réponses » ne désigne rien au dépôt) ; la phrase de G-11
   seule au dépôt, sans 3114.
 
+**Amendement du 2026-10-21 (§3, arbitrage du responsable après l'ouverture
+d'ACT-4).** Le responsable trouve l'encart déplacé sur un dépôt banal (une
+ordonnance, une liste de compléments) : sur les questionnaires, il ne
+s'affiche que sur les quatre qui posent une question sur le suicide ; au
+dépôt, il s'affichait toujours. Il quitte l'écran de dépôt, et l'aide devient
+permanente sur tout le portail :
+- au pied de toutes les pages de `/portail`, connexion comprise, les numéros,
+  chacun cliquable : « Besoin d’aide maintenant ? Idées suicidaires : 3114 ·
+  Danger immédiat : 15 ou 112 · Par SMS : 114 » ;
+- la phrase du pied de page devient « Vos informations sont transmises à
+  votre praticien, qui ne les lit pas en temps réel. » ;
+- l'écran de dépôt garde, en texte simple sous le bouton, « Vos documents sont
+  transmis à votre praticien, mais il ne les lit pas en temps réel :
+  n’attendez pas sa réponse. » Le texte de collecte de G-11 y nomme toujours
+  le 15, le 112 et le 114.
+
+« Mes échanges », les questionnaires et l'anamnèse gardent leur encart. Textes
+validés tels quels par le responsable le 2026-10-21. Options écartées : une
+alerte dans la confirmation après le dépôt ; une ligne discrète sous le bouton
+sans aide permanente ; un lien repliable ; un lien vers une page dédiée ; le
+texte long de [[D-275]] au pied de page.
+
 ### D-292 — Les quatre textes d'information du portail deviennent un seul document, les « Conditions d'utilisation de votre espace Wellneuro », accusé une fois puis à chaque version par un lien envoyé par e-mail (lettre k)
 
 - Date : 2026-10-14

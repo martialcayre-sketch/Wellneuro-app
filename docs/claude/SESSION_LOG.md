@@ -11104,3 +11104,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Textes de l'aide permanente, puis PR (retrait de l'encart du dépôt et aide permanente ensemble).
 
 **Ouvert.** Aide permanente du portail (D-293 §3 à amender).
+
+## 2026-10-21 — Numéros d'urgence au pied du portail ; l'encart quitte le dépôt
+
+**Fait.** #1613 mergée (refus du plafond du compte rendu exact). Textes de l'aide permanente validés tels quels : numéros cliquables au pied de toutes les pages du portail, phrase du pied « qui ne les lit pas en temps réel », phrase du délai gardée en texte simple sous le bouton de dépôt. D-293 §3 amendé ; l'encart quitte l'écran de dépôt dans la même PR.
+
+**Écarté.** Lien vers une page dédiée ; texte long de D-275 au pied de page ; pied de page inchangé.
+
+**Prochaine action.** CI (bases visuelles du portail à régénérer), CodeRabbit, merge, déploiement constaté ; constats du retrait du PDF et de la photo de test.
+
+**Ouvert.** Gestes du responsable sur le dossier de test (retrait du PDF, photo).

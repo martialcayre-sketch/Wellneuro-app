@@ -55,3 +55,34 @@ describe('layout du portail — visibilité de « Se déconnecter »', () => {
     expect(bouton()).toBeTruthy();
   });
 });
+
+// L'AIDE PERMANENTE DU PORTAIL ([[D-293]] §3, amendement du 2026-10-21) : le
+// pied de page de toutes les pages porte les numéros, chacun cliquable, et le
+// délai de lecture. Textes validés tels quels par le responsable.
+describe('layout du portail — pied de page et numéros d’urgence', () => {
+  beforeEach(() => {
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    cookieStore.valeur = undefined;
+  });
+
+  const rendre = async () => render(await PortailLayout({ children: <p>contenu</p> }));
+  const texte = (el: Element) => el.textContent?.replace(/\s+/g, ' ').trim();
+
+  it('le délai de lecture est dit au pied de page', async () => {
+    await rendre();
+    const pied = screen.getByRole('contentinfo');
+    expect(texte(pied)).toContain(
+      'Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien, qui ne les lit pas en temps réel.',
+    );
+  });
+
+  it('les numéros, au texte validé, chacun cliquable — y compris sans session', async () => {
+    await rendre();
+    const pied = screen.getByRole('contentinfo');
+    const ligne = [...pied.querySelectorAll('p')].map(texte).find(t => t?.startsWith('Besoin d’aide maintenant ?'));
+    expect(ligne).toBe('Besoin d’aide maintenant ? Idées suicidaires : 3114 · Danger immédiat : 15 ou 112 · Par SMS : 114');
+    for (const numero of ['3114', '15', '112', '114']) {
+      expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
+    }
+  });
+});
