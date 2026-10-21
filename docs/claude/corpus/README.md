@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 551 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 554 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 44 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 47 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -15,7 +15,11 @@ libre des besoins 6 à 12 — études de validation, revues, documentation des
 auteurs d'instruments —, `WN-SRC-0540` à `0554`, puis trois compléments en
 accès libre des besoins 6, 8 et 12, `WN-SRC-0560` à `0562`, et quatre autres
 des besoins 6, 8 et 12, `WN-SRC-0563` à `0566`, enfin quatre sources fournies
-par le responsable pour les besoins 6, 8, 11 et 12, `WN-SRC-0567` à `0570`),
+par le responsable pour les besoins 6, 8, 11 et 12, `WN-SRC-0567` à `0570` ;
+besoin 2, magnésium : un avis du comité scientifique de l'alimentation, un
+résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
+`0573`, les lignes du magnésium de la DGCCRF et de l'annexe XIII étant lues dans
+`0521` et `0524`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -53,7 +57,10 @@ corpus runtime.
   Licence Ouverte etalab-2.0) ; les cinq autres sources du zinc (`0519`, `0521`
   à `0524`) restent à vérifier ; au 2026-10-21, pour J3-12e, une de plus : la
   validation française du MLQ sous CC BY 4.0 (`WN-SRC-0569`) ; `0567`, `0568`
-  et `0570` (droits de l'éditeur) restent à vérifier ;
+  et `0570` (droits de l'éditeur) restent à vérifier ; au 2026-10-21 encore,
+  pour le magnésium (`WN-SRC-0571` à `0573`), une de plus : le résumé des
+  caractéristiques du produit MAG 2 (`WN-SRC-0572`, Licence Ouverte
+  etalab-2.0) ; `0571` et `0573` restent à vérifier ;
   la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
   extrait court est ingéré pour usage interne sur arbitrage du responsable,
   reste à vérifier.
