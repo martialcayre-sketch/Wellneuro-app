@@ -11104,3 +11104,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Textes de l'aide permanente, puis PR (retrait de l'encart du dépôt et aide permanente ensemble).
 
 **Ouvert.** Aide permanente du portail (D-293 §3 à amender).
+
+## 2026-10-21 — File A, restes : arbitrages et banc de validation de consultation (t23)
+
+**Fait.** Quatre lignes recalées sur main (t23 en partie soldée par D-107 ; t06 : session de 30 jours, pas 12 h) et arbitrées (PR de doc #1617). Premier lot : banc `consultationPorteuse.ecritures.guard.test.ts`, seule `api/portail/valider` pose `'validee'` et `dateValidation`.
+
+**Écarté.** Contrainte en base (migration) ; épingler les voisins de CS-MAG-01 (claims de conduite) ; brouillon serveur.
+
+**Prochaine action.** Brouillon local de « Ce qui compte » (t06), puis banc des seuils du catalogue, surface des libellés de t30, grille E67.
+
+**Ouvert.** Aucun.
