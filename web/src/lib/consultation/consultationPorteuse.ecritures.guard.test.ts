@@ -40,7 +40,10 @@ function fichiersSources(depart: string): string[] {
 }
 
 const ECRITURE = /\.consultation\s*\.\s*(?:create|createMany|createManyAndReturn|update|updateMany|updateManyAndReturn|upsert)\s*\(/g;
-const IMBRIQUEE = /\bconsultations\s*:\s*\{/;
+// Singulier ET pluriel (revue CodeRabbit de #1618 : `AdressageSignalAlerte`
+// porte une relation `consultation`) ; seules les OPÉRATIONS d'écriture sont
+// visées, une lecture `where: { consultation: { … } }` reste libre.
+const IMBRIQUEE = /\bconsultations?\s*:\s*\{\s*(?:create|createMany|connectOrCreate|update|updateMany|upsert)\b/;
 const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE)\s+(?:public\.)?"?consultations\b/i;
 
 /** Le texte entre la parenthèse ouvrante (exclue) et sa fermante, chaînes et commentaires sautés. */
@@ -163,6 +166,8 @@ describe('le détecteur rougit sur ce qu’il doit refuser', () => {
 
   it('écriture imbriquée et SQL brut', () => {
     expect(IMBRIQUEE.test('prisma.patient.update({ data: { consultations: { updateMany: {} } } })')).toBe(true);
+    expect(IMBRIQUEE.test("prisma.adressageSignalAlerte.update({ data: { consultation: { update: { statut: 'validee' } } } })")).toBe(true);
+    expect(IMBRIQUEE.test('prisma.adressageSignalAlerte.findMany({ where: { consultation: { idPatient } } })')).toBe(false);
     expect(SQL_BRUT.test('UPDATE "consultations" SET statut = $1')).toBe(true);
   });
 });
