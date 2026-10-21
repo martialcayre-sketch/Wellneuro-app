@@ -11201,3 +11201,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis BP-15 (LOT-15), puis le brouillon de la lettre cm (F52).
 
 **Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base ; titre « Ma fiche de renseignements » à valider.
+
+## 2026-10-21 — t34 : le barème de charge ignore les actions vides (D-339)
+
+**Fait.** Arbitrage m13 transcrit en D-339 (amende D-273 §5) ; `estActionVide` filtre la mesure ; banc « actions vierges supprimées » (rouge sans le correctif) ; cas de composition mis à jour ; F76 soldée au plan. T3 vert ; contre-revue `wn-reviewer` GO.
+
+**Écarté.** Ignorer toute action non typée (aurait défait D-273 §5) ; garde d’exhaustivité des champs.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis t37 (arbitré : vide au retour, « Sans objet » retiré sous « Oui »).
+
+**Ouvert.** Aucun.

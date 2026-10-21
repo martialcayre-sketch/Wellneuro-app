@@ -609,6 +609,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : aucune D-xxx si le correctif ne change pas D-273 ; sinon une D-xxx et son fragment. D-273 « quatre termes » inchangée (F14).
 - **Critère de fin** : banc « actions vierges supprimées » vert selon le texte du responsable ; aucune version enregistrée touchée.
 - **Mise à jour (2026-10-21, comportement voulu)** : tranché par le responsable : le barème de charge ignore les actions vides. Le correctif passe en file A, avec sa D-xxx et son fragment ; critère de fin inchangé.
+- **Mise à jour (2026-10-21, code livré)** : D-339 (amende D-273 §5) : une action où rien n'est saisi n'entre dans aucun terme de `mesurerProtocole` ; une action sans type mais saisie compte toujours. Banc « actions vierges supprimées » vert (`ProtocolMiniBuilder.test.tsx`) ; aucune ligne de barème ni signature touchée, aucune version enregistrée touchée (une action du contrat porte un type). Fiche soldée.
 
 #### F25 · Effectif de masquage des agrégats
 - **Identifiant, piste** : constante de D-266 §14 ; parcours.
@@ -744,7 +745,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | PR 2 de l'audit | vue dédoublonnée par analyte | B | aucune | non | F50 |
 | J2-med | aperçu médecin tracé au Fil | B | 27 ; 9 si migration | selon | F38, rang 0 |
 | J3-bioflow | premier lecteur hors biologie du module | B | 12 | non | F63, rang 0 |
-| correctif de la charge | « Reprendre cette charge » ne fige plus ; le barème ignore les actions vides (tranché le 2026-10-21, D-xxx et fragment avec le lot) | A (B jusqu'au 2026-10-21) | 28 | non | F76, rang 0 |
+| correctif de la charge | « Reprendre cette charge » ne fige plus ; le barème ignore les actions vides (tranché le 2026-10-21, D-xxx et fragment avec le lot ; **soldé le 2026-10-21 par D-339**) | A (B jusqu'au 2026-10-21) | 28 | non | F76, rang 0 |
 | trace d'import, code | empreinte, lectures, décisions ; purge à 30 jours (D-283 §10 c) | B | 17, 13 | non | F44, rang 0 |
 | D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db consignée (porte 9, 2026-10-15) | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
@@ -2787,7 +2788,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | de BP-08, BP-21a, BP-19, BF-9, par fonction | indicateurs ; ouverture J1 ; stratégie proposée ; statut « demandé » ; étage 2 et marches 2 à 4 | 7 [Hypothese] | F19, F22, F28, F62, F29, F30 |
 | de BP-21b, BP-22 | ouverture du protocole personnalisé ; observation | 8 [Hypothese] | F23, F24 |
 | par parcours | phase 5 par situation | 9 [Hypothese] | F31 |
-| du correctif de la charge (le barème ignore les actions vides, tranché le 2026-10-21) | une D-xxx et son fragment | 1 [Hypothese] | F76 |
+| du correctif de la charge (le barème ignore les actions vides, tranché le 2026-10-21) | une D-xxx et son fragment ; fait le 2026-10-21 : D-339 | 1 [Hypothese] | F76 |
 | du message de la page des résultats | deux textes de la page des résultats, non décidés ; de la main du responsable | 9 [Hypothese] | F65 |
 | du gabarit imprimable commun | commun à av et bh, tranché dans le texte d'av ; à défaut, deux gabarits [Hypothese] | 0 | F33, H69 |
 | amendant D-122, de P1, par levée | biologie dans le score ; jeu de référence ; P2, second compte, API, flux, envoi direct | gelés (§6) | F32, F72, F73, F75 |

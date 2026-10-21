@@ -32,7 +32,7 @@ export type NiveauCharge = TherapeuticLoad['level'];
  * c'est-à-dire d'inventer.
  */
 export type MesureProtocole = {
-  /** Nombre d'actions du protocole, suspensions comprises. */
+  /** Nombre d'actions du protocole, suspensions comprises, actions vides exclues ([[D-339]]). */
   nombreActions: number;
   /** Nombre d'actions RÉELLEMENT engagées — les suspendues n'en sont pas. */
   nombreActionsFermes: number;
@@ -135,8 +135,37 @@ export type LigneBaremeCharge = {
  */
 export type ActionMesurable = Omit<ProtocolAction, 'type'> & { type: ProtocolAction['type'] | '' };
 
-/** Ce que le protocole mesure — dérivé, jamais déclaré. */
-export function mesurerProtocole(actions: readonly ActionMesurable[]): MesureProtocole {
+/**
+ * UNE ACTION VIDE N'EST PAS UNE ACTION DU PROTOCOLE ([[D-339]]) : rien n'y est
+ * saisi — ni type, ni intitulé, ni plan, ni limitation, ni référence, ni
+ * statut. C'est l'emplacement que « Ajouter une action » vient de créer.
+ * Compté, il gonflait la suggestion, et « Reprendre cette charge » figeait ce
+ * niveau dans le brouillon ; le praticien devait ensuite supprimer
+ * l'emplacement pour enregistrer, et la charge reprise restait la gonflée.
+ *
+ * UNE ACTION SANS TYPE N'EST PAS VIDE pour autant : dès qu'un intitulé ou un
+ * plan y est tapé, elle se compose, et elle compte ([[D-273]] §5, maintenu).
+ *
+ * AUCUNE VERSION ENREGISTRÉE N'EST TOUCHÉE : une action du contrat porte
+ * toujours un type, elle n'est donc jamais vide.
+ */
+export function estActionVide(action: ActionMesurable): boolean {
+  return action.type === ''
+    && action.title.trim() === ''
+    && action.idealPlan.trim() === ''
+    && action.minimalPlan.trim() === ''
+    && action.rescuePlan.trim() === ''
+    && action.limitations.length === 0
+    && action.foodCompassRef === undefined
+    && action.recommendedPlateRef === undefined
+    && action.supplementCatalogRef === undefined
+    && action.interventionStatus === undefined
+    && action.waitFor === undefined;
+}
+
+/** Ce que le protocole mesure — dérivé, jamais déclaré ; les actions vides n'y entrent pas. */
+export function mesurerProtocole(actionsSaisies: readonly ActionMesurable[]): MesureProtocole {
+  const actions = actionsSaisies.filter(action => !estActionVide(action));
   const fermes = actions.filter(action => action.interventionStatus === undefined
     || action.interventionStatus === 'active');
   const actionsSansRepli = fermes.filter(action =>
