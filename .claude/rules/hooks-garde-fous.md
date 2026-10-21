@@ -23,7 +23,9 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   CLAUDE.md. Depuis le Socle LOT-02, **les fichiers cliniques** aussi — six
   tables signées (`orientationRulesV1`, `stopRulesV1`, `priorityRulesV1`,
   `contradictionsV1`, `corpusSyntheseV1`, `indicationsBiologieV1`) et deux
-  fichiers de constantes (`equilibre/constants.ts`, `questions.ts`) — avec un
+  fichiers de constantes (`equilibre/constants.ts`, `questions.ts`), et depuis
+  le 2026-10-21 (plan D/41) `stopRulesLibelles.ts` et
+  `questionnaires/alimentaire.ts` ; la fixture `chaineC1Fixture` reste libre — avec un
   motif distinct citant `DC-17`/`DC-18` : autoriser vaut confirmation de la
   décision `D-xxx` exigée. Depuis BP-01 (`D-266`), **toute table signée**
   demande aussi, détectée par son marqueur `validationExterne: true` hors
@@ -86,9 +88,11 @@ principale, elle, n'est pas concernée. Le garde exécuté est celui de la
 branche où se trouve la copie : si elle repasse sur une branche antérieure
 au garde, l'agent perd son Bash (échec fermé) — le message le dit.
 
-Il n'existe pas de variable d'environnement désactivant la protection des
-fichiers (`WN_ALLOW_PROTECTED_WRITE` a été supprimée : elle neutralisait le
-hook pour la session entière).
+Il n'existe pas de variable d'environnement désactivant un garde
+(`WN_ALLOW_PROTECTED_WRITE` a été supprimée : elle neutralisait le hook des
+fichiers pour la session entière ; `WN_ALLOW_RISKY_COMMAND`, qui faisait
+sortir le garde des commandes sans rien lire, l'a été le 2026-10-21, plan
+D/41).
 
 Le hook PostToolUse `log-bash-command.mjs` est purement observationnel
 (journal `.claude/logs/`, secrets masqués avant écriture) — il ne décide rien.

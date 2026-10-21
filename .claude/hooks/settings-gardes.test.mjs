@@ -42,7 +42,7 @@ function lancer(commande, { projet, cwd, entree }) {
     input: JSON.stringify(entree),
     encoding: "utf8",
     cwd,
-    env: { ...process.env, CLAUDE_PROJECT_DIR: projet, WN_ALLOW_RISKY_COMMAND: "" },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projet },
   });
 }
 

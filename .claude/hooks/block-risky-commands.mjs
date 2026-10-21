@@ -13,8 +13,6 @@
 //             positif qui a bloqué un `gh pr create` le 2026-07-20.
 import fs from "node:fs";
 
-if (process.env.WN_ALLOW_RISKY_COMMAND === "1") process.exit(0);
-
 let data = {};
 try {
   data = JSON.parse(fs.readFileSync(0, "utf8"));
@@ -129,8 +127,8 @@ for (const motif of refus) {
     console.error(
       `Commande bloquée par WellNeuro : ${original}. ` +
       `Elle est destructive ou peut exposer des secrets. ` +
-      `Après confirmation explicite seulement, utiliser une session dédiée avec ` +
-      `WN_ALLOW_RISKY_COMMAND=1.`
+      `Aucune dérogation depuis la session : après confirmation explicite, ` +
+      `l'utilisateur la lance lui-même dans son terminal.`
     );
     process.exit(2);
   }

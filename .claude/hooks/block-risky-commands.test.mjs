@@ -18,12 +18,11 @@ import { fileURLToPath } from "node:url";
 const hook = path.join(path.dirname(fileURLToPath(import.meta.url)), "block-risky-commands.mjs");
 
 /** Verdict du hook : 'passe' | 'demande' | 'refus'. */
-function verdict(command) {
+function verdict(command, env = {}) {
   const res = spawnSync("node", [hook], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: "utf8",
-    // La dérogation ne doit jamais teinter un résultat de test.
-    env: { ...process.env, WN_ALLOW_RISKY_COMMAND: "" },
+    env: { ...process.env, ...env },
   });
   if (res.status === 2) return "refus";
   return (res.stdout || "").includes('"ask"') ? "demande" : "passe";
@@ -34,6 +33,12 @@ function verdict(command) {
 
 test("une commande destructive nue est refusée", () => {
   assert.equal(verdict("rm -rf /"), "refus");
+});
+
+// L'ancienne dérogation `WN_ALLOW_RISKY_COMMAND=1` faisait sortir le hook
+// avant toute lecture ; elle est retirée (plan D/41, tranché le 2026-10-21).
+test("WN_ALLOW_RISKY_COMMAND=1 ne lève plus le refus", () => {
+  assert.equal(verdict("rm -rf /", { WN_ALLOW_RISKY_COMMAND: "1" }), "refus");
 });
 
 test("une destructive cachée dans un littéral sous bash -c est refusée", () => {
