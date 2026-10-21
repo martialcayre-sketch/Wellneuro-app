@@ -4,6 +4,101 @@
 
 ## Décisions actives
 
+### D-338 — Chaîne besoin → leviers : la clé des besoins vit sur chaque levier dans sa table signée ; les retouches de tables signées partent avec le changement de version ; la priorité libre peut viser des besoins (amende D-279 §1) ; un constat praticien unique pour les besoins sans score (H84)
+
+- Date : 2026-10-21
+- Statut : accepté — sept arbitrages du responsable du 2026-10-21 (questions à
+  options, recommandations suivies), sur un cadrage d'architecte contre-revu
+  (affirmations à réfuter, quatorze corrections appliquées), transcrits par
+  l'assistant.
+- Domaine : les 12 besoins de « Mon équilibre » et leur aval — règles de
+  priorité et d'orientation, actions, bilans, assiettes, suivi, atelier du
+  corpus. Fiche H84 du plan. Aucun seuil, aucune dose, aucun contenu clinique :
+  tout contenu vient d'un dossier de preuve signé ([[D-312]] §2).
+- Amende : [[D-279]] §1 (§3 ci-dessous). Précise : [[D-321]], [[D-325]]
+  (clés de lien), [[D-331]] (constat), [[D-329]] §4 et [[D-332]] §2
+  (dérive des cartes diffusées).
+- Constat de départ, lu au code et en production par conteneur (agrégats
+  seuls) : l'aval ne lit les besoins qu'à travers les `needIds` de deux tables
+  signées (règles de priorité : besoins 1, 3, 4, 5 ; rattachements
+  d'orientation : besoins 4, 5, 8, 9) ; les besoins 2, 6, 7, 10, 11 et 12 ne
+  commandent aucun levier ; l'aval des protocoles est quasi vierge.
+
+**§1 — Où vit le lien besoin → levier.** Chaque levier (règle, action,
+analyte, axe, fiche) porte la clé des besoins qu'il sert **dans sa propre table
+signée** — même patron que les `needIds` des règles et que le champ `besoins`
+de la structure des fiches d'usage. La clé se pose à la naissance d'une table
+neuve (catalogue d'actions, correspondance besoin → axe) et par retouche
+regroupée (§2) sur une table existante. Ni table centrale de correspondance
+(migration, double source de vérité), ni dérivation pure depuis les claims
+étiquetés (un claim multi-besoins rattacherait un levier à un besoin que
+personne n'a visé pour lui). La dérivation reste admise là où l'amont est
+signé (`BESOIN_SOURCES` pour la re-passation ciblée et la hiérarchie des
+assiettes, [[D-254]] §2). La provenance d'un levier passe par ses claims
+([[D-140]]), qui portent `besoins` et `rubrique` ([[D-321]]).
+
+**§2 — Retouches de tables signées : regroupées avec le changement de
+version.** Les tables de levier sont signées par empreinte de périmètre :
+ajouter une clé à une ligne re-signe la table entière ; et toute table signée
+entre dans l'empreinte des cartes de décision diffusées, que sa retouche fait
+dériver — même coût que le changement de version ([[D-329]] §4, [[D-332]]
+§2). Toute retouche d'une table signée existante (règles aval d'un besoin,
+clés sur les règles ou les indications d'assiette) part donc **regroupée avec
+J3-12f et sa réapprobation préparée dossier par dossier** : une seule
+interruption. Options écartées : une réapprobation à chaque lot de règles ;
+geler tout l'aval jusqu'au changement de version. Avant lui, aucun lot ne
+touche ni la version du score ni une table signée existante.
+
+**§3 — La priorité libre peut viser des besoins (amende [[D-279]] §1).**
+[[D-279]] §1 disait : « le domaine range, il ne déclenche rien — ni besoins
+visés, ni repassation ciblée ». Fait nouveau : tant que les besoins 2, 6, 7,
+10, 11 et 12 n'ont aucune règle, toute priorité qui les vise est libre, donc
+sans re-mesure ciblée, et cet angle mort de suivi grandit avec chaque dossier
+servi, le temps que leurs dossiers de preuve se closent. La priorité libre
+reçoit un champ **facultatif** « besoins visés » (liste d'entiers de 1 à 12,
+clés de `BESOIN_SOURCES`), **lu par la re-passation ciblée seule** — ni par la
+hiérarchie des assiettes, ni par aucun calcul, ni par une règle. Migration au
+patron de [[D-279]] §3 (colonnes et CHECK, fil en ajout seul), relue puis
+appliquée par `release-db` approuvée. Le reste de [[D-279]] est inchangé.
+
+**§4 — Un constat praticien unique pour les besoins sans score.** Pour les
+besoins 6, 7 et 11 (« non mesuré » jusqu'à une définition signée, arbitrage
+du 2026-10-18, inchangé) et pour le besoin 2 (hors score, F32 / [[D-122]]), le
+fond — scorer ou évaluer en entretien, et quoi constater — reste au dossier de
+preuve de chaque besoin ([[D-312]] arbitrage 6). Le **véhicule** est cadré
+une fois : un acte praticien daté, en ajout seul, motif pris dans une liste
+fermée, aucune valeur inventée, au modèle de [[D-331]] ; une migration, cadrée
+avec son périmètre RGPD comme l'a été J3-collecte ([[D-330]]). Chaque dossier
+clos le remplit.
+
+**§5 — Une règle aval du besoin 2 peut lire un constat.** Le score du besoin 2
+reste fermé tant que [[D-122]] n'est pas amendée (F32). [[D-331]] §6 permet au
+parcours de lire un constat relu — jamais un résultat brut — par une décision
+et des claims : une règle du besoin 2 fondée sur un constat relu s'écrit au lot
+de contenu qui suit les dossiers du besoin 2, sous sa propre D-xxx. Le besoin
+2 obtient ainsi un levier de protocole sans entrer dans le score.
+
+**§6 — Vue par besoin dans l'atelier.** Le lot D/22 (recherche par identifiant
+dans l'atelier du corpus, file B) s'étend d'un filtre par clés `besoins` et
+`rubrique` : même écran, mêmes données, sans migration. L'étiquetage devient
+contrôlable à l'écran. La provenance chiffrée au cockpit relève de F59
+([[D-333]]), pas de ce lot.
+
+**§7 — Cohérence clés ↔ leviers.** Les clés des claims ne vivent qu'en base
+(colonne `metadata`, J3-12c) et les rubriques restent hors dépôt ([[D-251]]
+§4) : aucun banc de CI ne peut les lire. La cohérence entre les besoins
+déclarés par un levier et les clés des claims qu'il cite se **constate par
+conteneur, en agrégats, à chaque lot de règles** — comme les constats
+actuels. L'export opaque des clés au dépôt pour un banc est écarté ; il
+demanderait sa propre décision.
+
+**§8 — Hors de cette décision.** L'ordre des dossiers de preuve ([[D-312]]
+arbitrage 1), la liste fermée du besoin 2, le changement de version unique à
+la signature du guide, les bandes de bruit (H13, lettre v — G-10 se complète
+des sources de J3-12f, fait nouveau relevé le 2026-10-21), le contenu de
+toute règle, action, assiette ou bilan : rien n'est décidé ici. Le portail ne
+reçoit rien par besoin ; aucune IA ne lit les besoins.
+
 ### D-337 — D-JA-03 : après « Non » à l'occasion, la trace d'essai ne propose plus que les issues d'empêchement
 
 - Date : 2026-10-21
