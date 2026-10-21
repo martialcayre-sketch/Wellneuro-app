@@ -742,7 +742,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | PR 2 de l'audit | vue dédoublonnée par analyte | B | aucune | non | F50 |
 | J2-med | aperçu médecin tracé au Fil | B | 27 ; 9 si migration | selon | F38, rang 0 |
 | J3-bioflow | premier lecteur hors biologie du module | B | 12 | non | F63, rang 0 |
-| correctif de la charge | « Reprendre cette charge » ne fige plus | B | 28 | non | F76, rang 0 |
+| correctif de la charge | « Reprendre cette charge » ne fige plus ; le barème ignore les actions vides (tranché le 2026-10-21, D-xxx et fragment avec le lot) | A (B jusqu'au 2026-10-21) | 28 | non | F76, rang 0 |
 | trace d'import, code | empreinte, lectures, décisions ; purge à 30 jours (D-283 §10 c) | B | 17, 13 | non | F44, rang 0 |
 | D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db consignée (porte 9, 2026-10-15) | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
@@ -2455,7 +2455,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | D-TRUST-02 revue juridique des textes v1 | `DETTE_TRUST.md:10` | avis d'un conseil (porte 28, H09) ; 2027-06-30 |
 | D-TRUST-06 durées de conservation formalisées | `DETTE_TRUST.md:14` | fixées par D-283 §2 ; restent le texte patient et le code (H26) |
 | D-TRUST-07 titre d'instrument dans l'e-mail d'assignation ; bascule du booklet envoyé par e-mail vers une consultation au portail | `DETTE_TRUST.md:15` | titre : constat au premier S-1 (H06) ; bascule du booklet : file A, sans porteur, déclencheur IDP/C3 [Hypothese] (moitié ajoutée le 2026-10-14) |
-| D-TRUST-08 revue périodique de la règle EI | `DETTE_TRUST.md:16` | reprise par D-278 et D-281 (F66) ; échéance de six mois conservée ; point de départ du décompte non écrit (D.5, §4) |
+| D-TRUST-08 revue périodique de la règle EI | `DETTE_TRUST.md:16` | reprise par D-278 et D-281 (F66) ; échéance de six mois conservée ; point de départ fixé le 2026-10-21 par le responsable à la mise en service du 2026-10-18 (porte 7 levée), revue le 2027-04-18 (D.5, §4) |
 | D-TRUST-09 désignation d'un DPO | `DETTE_TRUST.md:17` | clos par D-284 §6 : pas d'obligation à cette échelle, point de contact = le responsable ; reste une analyse d'une page, datée, revue avant toute ouverture à plusieurs praticiens, tout partage systématique ou tout changement d'échelle (F74) |
 | D-TRUST-10 confirmation de la procédure de violation par un conseil | `DETTE_TRUST.md:18` ; `PROCEDURE_VIOLATION_DONNEES.md:155` | porte 28 ; 2027-06-30 |
 | Identité juridique ; critères de l'AIPD ; 15 à 17 ans et durée probatoire en cas de dommage corporel (avocat) | D-283 §9 ; D-284 §3-4 ; `DOSSIER_RGPD.md:1332-1356` sur f3ddbd3d | faits et gestes (H20), conseil (porte 28), AIPD (F68) ; 2027-06-30. Clos par D-284 : NIR (recueil cessé, champ à retirer, lot g de H26), seuil des mineurs (18 ans), transferts (cadre UE-États-Unis ou clauses types, H20, F47) |
@@ -2769,7 +2769,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | de BP-08, BP-21a, BP-19, BF-9, par fonction | indicateurs ; ouverture J1 ; stratégie proposée ; statut « demandé » ; étage 2 et marches 2 à 4 | 7 [Hypothese] | F19, F22, F28, F62, F29, F30 |
 | de BP-21b, BP-22 | ouverture du protocole personnalisé ; observation | 8 [Hypothese] | F23, F24 |
 | par parcours | phase 5 par situation | 9 [Hypothese] | F31 |
-| du correctif de la charge, si D-273 change | une D-xxx et son fragment | 1 [Hypothese] | F76 |
+| du correctif de la charge (le barème ignore les actions vides, tranché le 2026-10-21) | une D-xxx et son fragment | 1 [Hypothese] | F76 |
 | du message de la page des résultats | deux textes de la page des résultats, non décidés ; de la main du responsable | 9 [Hypothese] | F65 |
 | du gabarit imprimable commun | commun à av et bh, tranché dans le texte d'av ; à défaut, deux gabarits [Hypothese] | 0 | F33, H69 |
 | amendant D-122, de P1, par levée | biologie dans le score ; jeu de référence ; P2, second compte, API, flux, envoi direct | gelés (§6) | F32, F72, F73, F75 |
