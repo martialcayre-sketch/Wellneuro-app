@@ -36,6 +36,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'telechargementDocumentMedecin', 'documentMedecinImprime',
     'classementDocumentDepose', 'documentDeposePatient',
     'pieceConstatPraticien', 'constatPraticien',
+    'donneePhysiologique', 'traitementEnCours',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectVerdict', 'trustAdverseEffectReport', 'trustPrivacyIncident',
@@ -233,6 +234,18 @@ describe('effacerDossier', () => {
     expect(rang('pieceConstatPraticien')).toBeLessThan(rang('constatPraticien'));
     expect(rang('constatPraticien')).toBeLessThan(rang('questionnaireReponse'));
     expect(rang('constatPraticien')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Données physiologiques et traitements (D-335, BP-13) : FK RESTRICT de la
+  // pièce de constat vers le traitement cité. Les pièces d'abord, sinon tout
+  // dossier dont un constat cite un traitement ne s'efface plus.
+  it('supprime les traitements et les données physiologiques après les pièces, avant le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('traitementEnCours')).toBeGreaterThan(rang('pieceConstatPraticien'));
+    expect(rang('donneePhysiologique')).toBeGreaterThanOrEqual(0);
+    expect(rang('traitementEnCours')).toBeLessThan(rang('patient'));
+    expect(rang('donneePhysiologique')).toBeLessThan(rang('patient'));
   });
 
   // Collecte documentaire (D-330) : FK RESTRICT du classement vers le document

@@ -651,7 +651,9 @@ BEGIN
   SELECT array_agg(column_name::text ORDER BY column_name::text COLLATE "C") INTO colonnes
   FROM information_schema.columns
   WHERE table_schema = 'public' AND table_name = 'pieces_constats_praticien';
-  IF colonnes <> ARRAY['id', 'id_constat', 'id_patient', 'id_questionnaire_reponse', 'id_resultat'] THEN
+  -- `id_traitement` : la troisième clé, ajoutée par BP-13 ([[D-335]] §7) ;
+  -- son contrat est `donnees_physiologiques_traitements_v1_negatif.sql`.
+  IF colonnes <> ARRAY['id', 'id_constat', 'id_patient', 'id_questionnaire_reponse', 'id_resultat', 'id_traitement'] THEN
     RAISE EXCEPTION 'CONTRAT — 16 : colonnes inattendues sur les pièces : %', colonnes;
   END IF;
   SELECT count(*) INTO nb FROM pg_class

@@ -90,6 +90,10 @@ model Patient {
   // (D-331, BP-11).
   constatsPraticien ConstatPraticien[]
   piecesConstatsPraticien PieceConstatPraticien[]
+  // Données physiologiques déclarées et traitements en cours, en lignes
+  // datées (D-335, BP-13).
+  donneesPhysiologiques DonneePhysiologique[]
+  traitementsEnCours    TraitementEnCours[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
   // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
@@ -3110,26 +3114,120 @@ model ConstatPraticien {
 
 /// Une pièce d'un constat posé ([[D-331]] §2) : SOIT une ligne de résultat de
 /// biologie (tête de fil, non annulée), SOIT une réponse de questionnaire
-/// (VALID ou AMBIGUOUS), du même dossier, écrite dans la transaction du
-/// constat. Ajout seul ; aucune valeur recopiée.
+/// (VALID ou AMBIGUOUS), SOIT une ligne de traitement en vigueur ([[D-335]]
+/// §7), du même dossier, écrite dans la transaction du constat. Ajout seul ;
+/// aucune valeur recopiée.
 model PieceConstatPraticien {
   id                     String  @id @default(cuid()) @map("id")
   idConstat              String  @map("id_constat")
   idPatient              String  @map("id_patient")
   idResultat             String? @map("id_resultat")
   idQuestionnaireReponse String? @map("id_questionnaire_reponse")
+  idTraitement           String? @map("id_traitement")
 
   constat               ConstatPraticien      @relation(fields: [idConstat], references: [id], onDelete: Restrict)
   patient               Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   resultat              ResultatBiologique?   @relation(fields: [idResultat], references: [id], onDelete: Restrict)
   questionnaireReponse  QuestionnaireReponse? @relation(fields: [idQuestionnaireReponse], references: [id], onDelete: Restrict)
+  traitement            TraitementEnCours?    @relation(fields: [idTraitement], references: [id], onDelete: Restrict)
 
   @@unique([idConstat, idResultat], map: "pieces_constats_praticien_constat_resultat_key")
   @@unique([idConstat, idQuestionnaireReponse], map: "pieces_constats_praticien_constat_reponse_key")
+  @@unique([idConstat, idTraitement], map: "pieces_constats_praticien_constat_traitement_key")
   @@index([idPatient], map: "pieces_constats_praticien_id_patient_idx")
   @@index([idResultat], map: "pieces_constats_praticien_id_resultat_idx")
   @@index([idQuestionnaireReponse], map: "pieces_constats_praticien_id_questionnaire_reponse_idx")
+  @@index([idTraitement], map: "pieces_constats_praticien_id_traitement_idx")
   @@map("pieces_constats_praticien")
+}
+
+/// Une donnée physiologique déclarée ou mesurée, datée ([[D-335]], BP-13), ou
+/// son retrait. Ajout seul (UPDATE et TRUNCATE refusés par trigger). Une tête
+/// par critère et par dossier : la pose que ni un remplacement ni un retrait
+/// ne vise. `inconnu` est une réponse écrite, jamais l'absence de ligne.
+/// Aucun IMC, aucune déduction. Les refus vivent en base (migration
+/// `donnees_physiologiques_traitements_v1`).
+model DonneePhysiologique {
+  id               String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre            BigInt    @default(autoincrement()) @map("ordre")
+  idPatient        String    @map("id_patient")
+  /// `pose` | `retrait` (CHECK).
+  acte             String    @map("acte")
+  /// `sexe_declare` | `statut_menstruel` | `grossesse` | `allaitement` |
+  /// `poids` | `taille` (CHECK).
+  critere          String    @map("critere")
+  /// Pose d'un critère fermé : réponse de SA liste ([[D-335]] §2, CHECK).
+  reponse          String?   @map("reponse")
+  /// Pose de `poids` (kg, 1 à 500) ou `taille` (cm, 30 à 260, à l'unité) :
+  /// bornes techniques, sans sens clinique.
+  mesure           Decimal?  @map("mesure") @db.Decimal(4, 1)
+  /// Date de la mesure, exigée avec elle.
+  mesureLe         DateTime? @map("mesure_le") @db.Date
+  /// `patient` (portail, sans e-mail) | `praticien` (cockpit, son e-mail).
+  source           String    @map("source")
+  /// La tête remplacée (pose) ou retirée (retrait) ; un successeur au plus.
+  idLigneRemplacee String?   @unique @map("id_ligne_remplacee")
+  /// Ligne du praticien seule : le praticien du dossier (trigger).
+  praticienEmail   String?   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe           DateTime  @default(now()) @map("acte_le")
+
+  patient     Patient              @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  remplace    DonneePhysiologique? @relation("RemplacementDonneePhysiologique", fields: [idLigneRemplacee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar DonneePhysiologique? @relation("RemplacementDonneePhysiologique")
+
+  @@unique([ordre], map: "donnees_physiologiques_ordre_key")
+  @@index([idPatient, ordre], map: "donnees_physiologiques_patient_ordre_idx")
+  @@index([idPatient, critere], map: "donnees_physiologiques_patient_critere_idx")
+  @@map("donnees_physiologiques")
+}
+
+/// Un médicament ou un complément en cours ([[D-335]], BP-13), tel que le
+/// patient le déclare ou que le praticien le confirme, ou son retrait. Ajout
+/// seul ; un arrêt est un remplacement qui porte une fin. Aucune classe,
+/// aucun code de référentiel. Peut être cité comme pièce d'un constat
+/// ([[D-335]] §7). Les refus vivent en base.
+model TraitementEnCours {
+  id               String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre            BigInt    @default(autoincrement()) @map("ordre")
+  idPatient        String    @map("id_patient")
+  /// `pose` | `retrait` (CHECK).
+  acte             String    @map("acte")
+  /// Pose seule : `medicament` | `complement`.
+  nature           String?   @map("nature")
+  /// Pose seule, non vide, 200 caractères au plus.
+  nom              String?   @map("nom")
+  dose             String?   @map("dose")
+  moment           String?   @map("moment")
+  /// Motif d'un médicament ou objectif d'un complément, 500 au plus.
+  motif            String?   @map("motif")
+  /// Premier jour de sa période (`debutPrecision`), nul si `inconnu`.
+  debut            DateTime? @map("debut") @db.Date
+  /// Pose seule : `jour` | `mois` | `annee` | `inconnu`.
+  debutPrecision   String?   @map("debut_precision")
+  /// Absente : en cours.
+  fin              DateTime? @map("fin") @db.Date
+  finPrecision     String?   @map("fin_precision")
+  /// Pose seule : `oui` | `non` | `inconnu` — prescrit par un autre soignant.
+  prescritParTiers String?   @map("prescrit_par_tiers")
+  /// `patient` | `praticien`.
+  source           String    @map("source")
+  /// La tête remplacée (pose) ou retirée (retrait) ; un successeur au plus.
+  idLigneRemplacee String?   @unique @map("id_ligne_remplacee")
+  praticienEmail   String?   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe           DateTime  @default(now()) @map("acte_le")
+
+  patient        Patient                 @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  remplace       TraitementEnCours?      @relation("RemplacementTraitement", fields: [idLigneRemplacee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar    TraitementEnCours?      @relation("RemplacementTraitement")
+  piecesConstats PieceConstatPraticien[]
+
+  @@unique([ordre], map: "traitements_en_cours_ordre_key")
+  @@index([idPatient, ordre], map: "traitements_en_cours_patient_ordre_idx")
+  @@map("traitements_en_cours")
 }
 
 // ───────────────────────────────────────────────────────────────────────────

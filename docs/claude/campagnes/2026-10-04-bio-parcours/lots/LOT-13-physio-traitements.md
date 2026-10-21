@@ -1,7 +1,7 @@
 ---
 id: "LOT-13"
 titre: "BP-13 — Données physiologiques, traitements et compléments en cours"
-statut: "en_cours (2026-10-21) — D-335 acceptée, déclaration RGPD et texte patient validés le 2026-10-21 ; migration et code à suivre"
+statut: "en_cours (2026-10-21) — D-335 acceptée (#1614), déclaration RGPD et texte patient validés le 2026-10-21 ; PR 1, migration seule, ouverte le 2026-10-21 ; release-db à la suite du merge, puis le code"
 dépend_de: "LOT-00, LOT-11"
 ---
 
@@ -152,7 +152,12 @@ le constat « à relire » (§7).
   `pieces_constats_praticien.id_traitement` (FK `RESTRICT`, CHECK « une
   pièce exactement » sur trois clés, trigger : même dossier, tête, pas un
   retrait) ; contrat SQL négatif propre et banc au CI ; effacement nommé et
-  son banc.
+  son banc. Livrée : migration
+  `20261021100000_donnees_physiologiques_traitements_v1`, contrat
+  `donnees_physiologiques_traitements_v1_negatif.sql` (quatorze promesses),
+  banc `banc-physio-traitements-deux-sessions.test.mjs` (huit courses, dont
+  deux remplacements concurrents d'un même traitement) ; la liste blanche
+  des pièces du contrat de BP-11 reçoit `id_traitement`.
 - **PR 2 (code)** : routes du portail et du cockpit ; formulaire du portail
   (groupes remplacés, lecture des anciennes anamnèses intacte) ; panneau du
   cockpit (lignes, source, « déclaré à l'anamnèse du … », discordance) ;
@@ -160,6 +165,17 @@ le constat « à relire » (§7).
   texte transmis à l'IA inchangé) ; « à relire » de la
   pièce de traitement (`bio-parcours/constats/`) ; drapeau
   `WN_PHYSIO_TRAITEMENTS` créé éteint, `docs/FEATURE_FLAGS.md`.
+  Routés de la revue `wn-reviewer` de la PR 1 (P2), à tenir par le code :
+  la lecture des pièces (`constats/lecture.ts`, `aRelire.ts`) décode la
+  troisième clé — aujourd'hui, toute pièce qui n'est pas un résultat y
+  devient une réponse ; normaliser nom, dose, moment et motif (espaces
+  insécables et blancs Unicode), que `~ '\S'` de la base ne garantit pas ;
+  écrire les pièces dans l'ordre canonique de `constats/ecriture.ts`
+  (résultats triés, réponses, puis traitements) et les critères
+  physiologiques dans un ordre fixe, faute de quoi deux écritures croisées
+  s'interbloquent (PostgreSQL annule l'une, rien n'est corrompu) ; rester en
+  READ COMMITTED — une transaction SERIALIZABLE face à une READ COMMITTED
+  peut laisser deux têtes sur un critère (trou commun à BP-09 et BP-11).
 
 ## Hors périmètre
 

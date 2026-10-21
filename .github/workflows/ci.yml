@@ -1361,6 +1361,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/constats_praticien_v1_negatif.sql
 
+      # Données physiologiques déclarées et traitements en cours (D-335,
+      # BP-13) : une tête par critère et par fil, réponses fermées, bornes
+      # techniques, dates et précision, deux mains (le patient ne retire que
+      # ses lignes), pièce de traitement d'un constat, ajout seul, effacement
+      # nommé.
+      - name: Donnees physiologiques et traitements negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/donnees_physiologiques_traitements_v1_negatif.sql
+
       # Le document pour le médecin (D-307, F38) : impression d'une synthèse
       # validée DU dossier par son praticien, HTML et empreinte figés,
       # téléchargement de la seule dernière impression, ajout seul, effacement
@@ -1487,6 +1497,20 @@ jobs:
         env:
           WN_BIO_CONSTAT_BANC_BASE: wellneuro_ci
         run: node scripts/banc-constats-praticien-deux-sessions.test.mjs
+
+      # Données physiologiques et traitements (D-335, BP-13) : la tête d'un
+      # critère ou d'un fil ne tient que par son verrou, et la pièce de
+      # traitement prend le même. Deux premières poses, un remplacement contre
+      # un retrait, deux remplacements d'un traitement, un remplacement contre
+      # une pièce, le refus de REPEATABLE READ, l'effacement contre deux
+      # poses, une suppression hors effacement. Commet ses fixtures puis les
+      # efface : la base doit être nommée.
+      - name: Donnees physiologiques et traitements two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_PHYSIO_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-physio-traitements-deux-sessions.test.mjs
 
       # Exclusion signature ↔ constat « aucun acte » NABM (M-3c, F54) : un
       # constat et une signature concurrents sur le même analyte se
