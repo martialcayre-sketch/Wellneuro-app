@@ -57,7 +57,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
    fin. L'objet détaillé, l'effet visible, le coût et la provenance restent
    hors dépôt.
 4. Deux séries de fiches. Fnn : les 79 fiches de la feuille de route BioFlow.
-   Hnn : les 83 fiches hors biologie. Quand une fiche et sa table d'entrée
+   Hnn : les 84 fiches hors biologie. Quand une fiche et sa table d'entrée
    diffèrent, la table d'entrée fait foi.
 5. Les files. File A : cosmétique et noyau, c'est-à-dire tout le code hors
    biologie. File B : biologie structurelle (BIO-PARCOURS, BIO-INGEST, panels,
@@ -87,10 +87,10 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
 - Fiches : 163, soit 79 fiches Fnn et 84 fiches Hnn. Gelées en §6 : 7 fiches
   Fnn ; closes : 2 (F42, F43, G3 clos par #1416), rangées après la table
   « Livré ».
-- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 28 ;
+- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 29 ;
   rang 2 : 11 ; rang 3 : 7 ; rang 4 : 16 ; rang 5 : 17 ; rang 6 : 9 ;
   rang 7 : 8 ; rang 8 : 4 ; rang 9 : 3 ; rang 10 : 6 ; rang T : 2 ; gelées : 7.
-- Lignes des tables d'entrée des rangs : 206. Fiches de gestes du responsable
+- Lignes des tables d'entrée des rangs : 210. Fiches de gestes du responsable
   dans les rangs : 65.
 - Portes : 30 (§1). Gelés : 33 lignes et 7 fiches (§6). Abandonnés :
   32 lignes (§7). Dettes : 64 lignes (§8), dont 10 soldées.
@@ -729,7 +729,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J2-radar | un trou nommé au lieu de 0 au radar | A | 3 | non | H12, rang 0 |
 | J1-alim | Boussole retirée du portail | A | 9 si migration | selon | H16, rang 0 |
 | J3-12b | guide transcrit, onglet réorganisé | A | aucune | non | H15, rang 0 |
-| J3-12c | clés `besoins` + `rubrique` posées à la signature d'un claim (route de décision, atelier, liste fermée, sans migration) ; précède le deuxième dossier de preuve ; ré-étiquetage des 92 claims du fer ensuite (geste) ; fait — migration `20261017100000_rag_claim_decisions_etiquetage_v1` appliquée (D-321), étiquetage du fer fait le 2026-10-20 | A | aucune | oui (appliquée) | H15, rang 0 |
+| J3-12c | clés `besoins` + `rubrique` posées à la signature d'un claim (route de décision, atelier, liste fermée ; décrit sans migration, puis une migration de journal ajoutée par D-321 : `20261017100000_rag_claim_decisions_etiquetage_v1`, appliquée) ; précède le deuxième dossier de preuve ; ré-étiquetage des 92 claims du fer ensuite (geste) ; fait, étiquetage du fer fait le 2026-10-20 | A | aucune | oui (appliquée) | H15, rang 0 |
 | J3-12d | badges de niveau de preuve masqués au cockpit, table intacte (premier des lots de mesure, 2026-10-19) | A | aucune | non | H15, rang 1 |
 | J3-12e | ingestion des sources de mesure en accès libre, sur approbation de chaque envoi ; fait (#1605) | A | aucune | non | H15, rang 1 |
 | aq | contrôle bloquant des modifications cliniques en CI | A | 28 | non | H21 |
