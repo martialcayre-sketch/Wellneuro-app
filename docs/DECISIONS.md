@@ -4,6 +4,38 @@
 
 ## Décisions actives
 
+### D-337 — D-JA-03 : après « Non » à l'occasion, la trace d'essai ne propose plus que les issues d'empêchement
+
+- Date : 2026-10-21
+- Statut : accepté — arbitrage du responsable du 2026-10-21 (file D, D/42),
+  transcrit par l'assistant.
+- Domaine : journal alimentaire, trace d'essai (JA5-02) ; solde la dette
+  `D-JA-03` (`DETTE_JA.md:18`). Aucun seuil, aucun score, aucune règle
+  d'orientation.
+
+**§1 — Règle.** Quand l'occasion ne s'est pas présentée, « Je l'ai fait » et
+« J'ai adapté » n'ont pas d'objet : seules « En partie, ou empêché·e » et
+« Oublié ou pas noté » restent proposées. Avec occasion, les quatre issues de
+l'amendement terrain n° 1 restent proposées.
+
+**§2 — Où la règle vit.** `issuesProposees` (`lib/food-observation/trace.ts`)
+la porte ; `createTrialTrace` refuse une trace sans occasion dont l'issue est
+« fait » ou « adapté ». Le panneau patient de production et le harnais
+`/dev/validation-ja` ne proposent que les issues admises.
+
+**§3 — Aucune issue choisie à la place du patient.** Passer à « Non » après
+avoir choisi « fait » ou « adapté » efface le choix sans en poser un autre :
+le patient choisit, ou la trace ne s'enregistre pas.
+
+**§4 — Hors de cette décision.** Les traces déjà enregistrées ne sont ni
+relues ni corrigées : aucune relecture ne passe par `createTrialTrace` — ni le
+brouillon de l'appareil (`readDraft`), ni l'instantané transmis (`lireTrace`,
+`persistence.ts`), ni la publication de faisabilité (`validateTrace`,
+`feasibility.ts`). L'écriture serveur ne vérifie pas la combinaison : un
+brouillon ouvert avant le déploiement peut encore transmettre une trace sans
+occasion marquée « fait » ou « adapté », et la refuser ferait échouer tout son
+instantané.
+
 ### D-336 — t30 : le résolveur des libellés est re-signé sur six des sept fiches de D-323 §6 — libellés du catalogue et synonymes, la bilirubine « totale » seule, l'ionogramme complet exclu
 
 - Date : 2026-10-21

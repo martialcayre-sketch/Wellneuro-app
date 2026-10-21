@@ -5,6 +5,7 @@ import {
   createTrialTrace,
   declarePatientPause,
   frictionLabel,
+  issuesProposees,
 } from './trace';
 import type { TraceIssue } from './types';
 
@@ -68,6 +69,25 @@ describe('createTrialTrace — les quatre issues (amendement terrain n° 1)', ()
       issue: 'oublie_non_note',
     });
     expect(trace.faisable).toBeNull();
+  });
+});
+
+describe('sans occasion, seules les issues d’empêchement (D-337, D-JA-03)', () => {
+  const sansOccasion = { ...base, occasionPresentee: false, faisable: null };
+
+  it('propose les quatre issues avec occasion, les deux d’empêchement sans', () => {
+    expect(issuesProposees(true)).toEqual(['fait', 'adapte', 'partiel_empeche', 'oublie_non_note']);
+    expect(issuesProposees(false)).toEqual(['partiel_empeche', 'oublie_non_note']);
+  });
+
+  it.each<TraceIssue>(['fait', 'adapte'])('refuse « %s » quand l’occasion ne s’est pas présentée', issue => {
+    expect(() => createTrialTrace({ ...sansOccasion, issue })).toThrow(/Sans occasion/);
+  });
+
+  it('accepte « en partie / empêché·e » et « oublié ou pas noté » sans occasion', () => {
+    expect(createTrialTrace({ ...sansOccasion, issue: 'partiel_empeche', frictionCode: 'F1' }).issue)
+      .toBe('partiel_empeche');
+    expect(createTrialTrace({ ...sansOccasion, issue: 'oublie_non_note' }).issue).toBe('oublie_non_note');
   });
 });
 

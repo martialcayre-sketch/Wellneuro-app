@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PatientFoodObservationPanel } from './PatientFoodObservationPanel';
 
@@ -108,6 +108,39 @@ describe('PatientFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
 
     expect(screen.getByText(/précise la friction/i)).toBeTruthy();
+  });
+
+  it('après « Non » à l’occasion, ne propose que les issues d’empêchement, sans en choisir une (D-337)', async () => {
+    await rendrePret();
+    const issue = screen.getByTestId('ja-patient-issue') as HTMLSelectElement;
+    expect(Array.from(issue.options).map(o => o.value)).toEqual([
+      'fait', 'adapte', 'partiel_empeche', 'oublie_non_note',
+    ]);
+
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
+    expect(Array.from(issue.options).map(o => o.value)).toEqual(['', 'partiel_empeche', 'oublie_non_note']);
+    expect(issue.value).toBe('');
+
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(screen.getByText('Choisissez ce qui a compté cette fois-ci.')).toBeTruthy();
+    expect(screen.getByText('Pas encore d’élément enregistré.')).toBeTruthy();
+    expect(issue.getAttribute('aria-invalid')).toBe('true');
+    expect(issue.getAttribute('aria-describedby')).toBe('ja-patient-issue-erreur');
+    expect(document.getElementById('ja-patient-issue-erreur')?.textContent)
+      .toBe('Choisissez ce qui a compté cette fois-ci.');
+
+    // Revenir à « Oui » ne rechoisit rien à la place du patient.
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'oui' } });
+    expect(issue.value).toBe('');
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
+
+    fireEvent.change(issue, { target: { value: 'oublie_non_note' } });
+    expect(Array.from(issue.options).map(o => o.value)).toEqual(['partiel_empeche', 'oublie_non_note']);
+    expect(issue.getAttribute('aria-invalid')).toBeNull();
+    expect(screen.queryByText('Choisissez ce qui a compté cette fois-ci.')).toBeNull();
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(within(screen.getByTestId('ja-patient-historique')).getByText(/Oublié ou pas noté/)).toBeTruthy();
+    expect(issue.value).toBe('');
   });
 
   // Lot 1 (audit du 2026-07-27, §2.1) : atteindre le budget hebdomadaire ne
