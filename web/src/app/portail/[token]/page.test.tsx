@@ -16,6 +16,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import PortailPage from './page';
+import { TEXTE_MINEUR_JEUNE } from '@/lib/patient/texteMineurs';
 
 describe('PortailPage — restauration de session', () => {
   afterEach(() => {
@@ -95,7 +96,11 @@ describe('PortailPage — garde d’âge', () => {
     replace.mockClear();
   });
 
-  function stubPortail(statutAge: string, reponseDate: Record<string, unknown>) {
+  function stubPortail(
+    statutAge: string,
+    reponseDate: Record<string, unknown>,
+    session: Record<string, unknown> = {},
+  ) {
     const postes: { url: string; corps: unknown }[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
       if (init?.body) postes.push({ url, corps: JSON.parse(String(init.body)) });
@@ -106,6 +111,7 @@ describe('PortailPage — garde d’âge', () => {
             consultation: null,
             premiereAssignation: null,
             statutAge,
+            ...session,
           }
         : url.startsWith('/api/portail/trust/etat')
           ? { ok: true, avantDeCommencerRequis: false }
@@ -150,13 +156,47 @@ describe('PortailPage — garde d’âge', () => {
     fireEvent.change(screen.getByLabelText('Date de naissance'), { target: { value: '2012-05-01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
     fireEvent.click(screen.getByRole('button', { name: 'C’est exact, enregistrer' }));
+    // ACT-5 : l'écran sert le texte des mineurs (G-11, 2B), numéros appelables.
     await waitFor(() =>
-      expect(screen.getByText('Votre praticien va reprendre contact avec vous')).not.toBeNull(),
+      expect(screen.getByText('Avant 18 ans, un parent donne d’abord son accord')).not.toBeNull(),
     );
+    expect(screen.getByText('Ce n’est pas secret pour tes parents')).not.toBeNull();
+    for (const numero of ['15', '112', '119']) {
+      expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
+    }
     expect(screen.queryByText('Merci !')).toBeNull();
     expect(screen.getByRole('link', { name: 'Accéder à mon parcours' }).getAttribute('href')).toBe(
       '/portail/PAT_TEST/questionnaires',
     );
+  });
+
+  // ACT-5 (D-341 §4) : le texte des mineurs n'est servi qu'à un dossier mineur
+  // ouvert — ni à un majeur, ni à un dossier clos (jamais traité en mineur).
+  const TEXTE_ATTENDU = TEXTE_MINEUR_JEUNE.flatMap(s => [s.titre, s.texte]).join('');
+
+  it('★ une session mineure ouverte sert le texte des mineurs, entier et dans l’ordre', async () => {
+    stubPortail('mineur', {});
+    const { container } = render(<PortailPage />);
+    await waitFor(() =>
+      expect(screen.getByText('Avant 18 ans, un parent donne d’abord son accord')).not.toBeNull(),
+    );
+    const carte = screen.getByRole('heading', { level: 2 }).closest('div.w-full');
+    expect((carte ?? container).textContent).toContain(TEXTE_ATTENDU);
+    expect(screen.queryByText('Merci !')).toBeNull();
+  });
+
+  it('★ un dossier mineur clos ne voit pas le texte des mineurs', async () => {
+    stubPortail('mineur', {}, { dossierOuvert: false });
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
+    expect(screen.queryByText('Avant 18 ans, un parent donne d’abord son accord')).toBeNull();
+  });
+
+  it('★ un dossier majeur ne voit pas le texte des mineurs', async () => {
+    stubPortail('majeur', {});
+    render(<PortailPage />);
+    await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
+    expect(screen.queryByText('Avant 18 ans, un parent donne d’abord son accord')).toBeNull();
   });
 
   it('le refus de la route s’affiche, et la saisie reste possible', async () => {

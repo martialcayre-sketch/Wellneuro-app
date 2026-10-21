@@ -412,6 +412,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-14)** : lot (h) codé (garde d'âge `lib/patient/gardeAge.ts`, étape date au portail, gardes serveur) ; la garde d'âge de z existe donc pour les surfaces en service ; as, at et J2-conf inchangés.
 - **Mise à jour (2026-10-15)** : z écrite par D-302 sur arbitrage du responsable : D-284 §3-4 entérinés ; la date de naissance devient obligatoire à la création d'un dossier par le praticien (facultative au code aujourd'hui) ; lot de code sans migration à placer ; as, at, J2-conf et le circuit des mineurs inchangés.
 - **Mise à jour (2026-10-18)** : lot de code de z livré, sans migration : la création d'un dossier par le praticien exige une date de naissance valide au sens de la garde d'âge (règle de la saisie au portail : format, 1900 au plus tôt, réelle, non future), au formulaire et au serveur ; un mineur se crée et reste sous la garde ; dossiers anciens et PATCH de la fiche inchangés. as, at, J2-conf et le circuit des mineurs inchangés.
+- **Mise à jour (2026-10-21, J2-conf pour ACT-5)** : relevé : non fait (r jamais consignée, at non faite, lot sans objet écrit). Arbitrages du responsable (D-341) : r faite (registre existant reconnu, H28) ; at hors du périmètre d'ACT-5 (aucune lecture IA dans les textes des mineurs), reste au rang 1 avec ses gestes ; le lot de code J2-conf est fondu dans le lot d'ACT-5 (bancs `lib/patient/texteMineurs.test.ts` et `app/portail/[token]/page.test.tsx` : texte rendu au seul dossier mineur ouvert, ni au majeur, ni au dossier clos ; aucun instrument servi, tenu par la pause des routes inchangée). J2-conf tenu pour ACT-5 par arbitrage ; le critère de fin de cette fiche (rubrique « Cas des mineurs », constat par identifiant) reste celui de at et as, qui restent ouvertes.
 
 #### H12 · ac et J2-radar : radar sans zéro
 - **Identifiant, piste** : lettre ac (M-6, D-ac, R:ac), puis J2-radar.
@@ -760,7 +761,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | cm | axes biologiques, liste fermée | geste | aucune | non | F51 |
 | D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits ((f) faite le 2026-10-14, G-8) | geste | aucune | non | H26 |
 | LOT-02 du sommeil | re-mesure ; sa clôture lève la porte 16 | geste | lève 16 | non | H27 |
-| r | droits d'usage des instruments servis | geste | 1 | non | H28 |
+| r | droits d'usage des instruments servis ; fait le 2026-10-21 (D-341 §2 : registre existant reconnu) | geste | 1 | non | H28 |
 | x | posture d'API, aucune clé | geste | 28 | non | H29 |
 | o | Momentum à remesure libre, ancre unique | geste | 1 | non | H30 |
 | t | point d'étape, rappel nommé, invitation lue | geste | 1 | non | H31 |
@@ -937,6 +938,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre r, registre ; déclaration de Q_ALI_09 à rédiger et à signer.
 - **Critère de fin** : registre relu, mergé ; J2-conf le consomme (F45).
+- **Mise à jour (2026-10-21)** : r faite (D-341 §2), sur arbitrage du responsable : le registre des instruments (`docs/claude/corpus/instrument_registry.json`) porte les droits des 65 instruments, tous instruits (63 « permission obtenue », dont huit sur déclaration du praticien du 2026-07-30 ; 2 « libre ») ; la déclaration du 2026-09-16 sur Q_ALI_09 (9be025ed) tient lieu de la déclaration signée ; registre reconnu tel quel, consommé par `droitsAssignabilite.guard.test.ts` et `verifier_registre_instruments` au CI. Critère de fin tenu.
 
 #### H29 · x et J3-api : posture d'API, aucune clé
 - **Identifiant, piste** : lettre x (D-x), puis J3-api ; plateforme ; geste du responsable (x), puis file A (J3-api).
@@ -1912,6 +1914,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : textes de G-11, de la main du responsable.
 - **Critère de fin** : lecture consignée ; le premier mineur servi se constate plus tard, sans bloquer.
+- **Mise à jour (2026-10-21, préparation)** : J2-conf tenu pour cette surface (D-341 §1-4, F45). Arbitrage du responsable (D-341 §5) : ACT-5 sert le texte 2B (au jeune) seul, mot pour mot, sur l'écran de pause du mineur (accueil du portail et page des questionnaires) ; le texte 2A (au titulaire) part avec J3-mineurs (H79), qui crée la validation en ligne qu'il décrit. J3-mineurs n'est pas un préalable d'ACT-5 (D-341 §6). Lot sans migration ni drapeau : `lib/patient/texteMineurs.ts`, banc mot pour mot contre `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`.
 
 #### F65 · Page « Mes résultats de biologie » au portail
 - **Identifiant, piste** : page patient ; socle.
@@ -1942,6 +1945,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : oui ; au rang 10 de l'ordre des release-db.
 - **Décisions, textes** : aucune D-xxx écrite ; mineurs encadrés (D-283 §5).
 - **Critère de fin** : release-db constatée ; consentement recueilli ; validation d'un titulaire constatée.
+- **Mise à jour (2026-10-21)** : le texte 2A de G-11 (au titulaire de l'autorité parentale) part avec ce lot, non avec ACT-5 (D-341 §5) ; le banc d'ACT-5 refuse ses titres dans le code servi jusque-là, et sera à ajuster ici.
 
 **File C**
 
@@ -2577,7 +2581,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Libellés restés « inconnu » en production hors des fiches de D-323 §6 : profil d'acides gras (une vingtaine d'acides, rapports, indice oméga 3), « PROTEINE C REACTIVE (CRP) », VGM, plaquettes (EDTA), TP/INR/temps de Quick, DFG CKD-EPI, HbA1c avec antériorités ; deux lignes validées à la main (VGM, plaquettes) | constat par conteneur du 2026-10-21 (agrégats, 53 lignes « inconnu » pour 92 résolues) ; D-336 §5 | file A, sans rang : surface des libellés réels à rattacher aux analytes déjà au catalogue, en tranchant les pièges (CRP contre CRP ultrasensible, acides gras sans fiche), puis signature (D-xxx) ; arbitrage du responsable du 2026-10-21 (lot séparé, après t30) ; ligne ajoutée le 2026-10-21 |
 | J3-12g : complétude de l'agenda du sommeil jugée sur la passation entière par le snapshot, sur les items de chaque source par les routes (résidu de D-329 §2) | `docs/DECISIONS.md` (D-329 §2) ; arbitrage du responsable du 2026-10-19 (H15) | file A, lot séparé après l'inventaire « rubrique de l'agenda → lecteurs du moteur » ; compter les diffusions actives avant, l'entrée au snapshot fait dériver les cartes |
 | J3-12h : garde absente sur le complément ciblé chez le mineur et chez la femme enceinte ou allaitante (courrier au médecin traitant remis et tracé avant l'entrée au programme) | règle du responsable du 2026-10-17 (H15) | file A, à cadrer ; le courrier actuel ne sert que la biologie |
-| D-JA-03 (D/42) : après « Non » à l'occasion, l'issue « fait » ou « adapté » reste choisissable ; tranché le 2026-10-21 : seules les issues d'empêchement restent proposées | `DETTE_JA.md:18` ; `FoodObservationJourney.tsx:135-139` ; arbitrage du responsable du 2026-10-21 | file A, D-xxx et fragment avec le lot, avant H45 ; **soldée le 2026-10-21 par D-337** (panneau patient, harnais et `createTrialTrace`) |
+| D-JA-03 (D/42) : après « Non » à l'occasion, l'issue « fait » ou « adapté » reste choisissable ; tranché le 2026-10-21 : seules les issues d'empêchement restent proposées | `DETTE_JA.md:18` ; `FoodObservationJourney.tsx:135-139` ; arbitrage du responsable du 2026-10-21 | file A, D-xxx et fragment avec le lot, avant H45 ; **soldée le 2026-10-21 par D-337** (panneau patient, harnais et `createTrialTrace`) ; défaut voisin (t37 : après « Non » puis « Oui », « faisable » restait « sans objet », trace comptée « bloquée ») **soldé le 2026-10-21 par D-340** |
 | Recherche par identifiant `WN-CL-…` dans l'atelier de curation du corpus (D/22, tranché le 2026-10-21) | handoff 2026-10-14-1455 ; H15, mise à jour du 2026-10-18 (D-325 : pages de cinquante, sans recherche par identifiant) | file B, lot sans migration |
 | Rayon « 08 — Biologie fonctionnelle » de la bibliothèque, seul dormant : à brancher comme les sept autres (D/23, tranché le 2026-10-21) | `docs/claude/corpus/consommation_decisions.json:14` ; `web/src/lib/supplement-library/rayonCorpus.ts:40` | lot à cadrer, file B [Hypothese] |
 | Crochet d'écriture : `stopRulesLibelles.ts` et `questionnaires/alimentaire.ts` sous « demande », fixture libre ; vestige `WN_ALLOW_RISKY_COMMAND` retiré (D/41, tranché le 2026-10-21) | `.claude/hooks/protect-wellneuro-files.test.mjs:106-115` ; `.claude/hooks/block-risky-commands.mjs:16` | PR d'outillage |
@@ -2719,7 +2723,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | o | Momentum à remesure libre | la main du responsable | 1 | H30 |
 | p | journal de lecture du protocole ; fait le 2026-10-15 (D-315) | registre | 4 (migration) | H60 |
 | q | aperçu médecin tracé, remise au patient ; fait le 2026-10-15 (D-307) | la main du responsable | 0 | F38 |
-| r | droits d'usage des instruments | registre | 1 | H28 |
+| r | droits d'usage des instruments ; fait le 2026-10-21 (D-341 §2) | registre | 1 | H28 |
 | s | onglet Biologie, statut posé, deux marques ; fait le 2026-10-15 (D-308 ; la liste des statuts reste à écrire) | la main du responsable | 0 | F57 |
 | t | point d'étape, rappel nommé ; fait le 2026-10-17 (D-317) | la main du responsable | 1 | H31 |
 | u | Patient Hub, collecte, « Mes échanges » | la main du responsable | 1 | H37 |

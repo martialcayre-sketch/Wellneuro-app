@@ -11202,6 +11202,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base ; titre « Ma fiche de renseignements » à valider.
 
+## 2026-10-21 — ACT-5 : texte des mineurs (2B) servi, J2-conf tenu (D-341)
+
+**Fait.** Relevé de J2-conf : non fait (r jamais consignée, at non faite, lot sans objet écrit) ; quatre arbitrages du responsable transcrits en D-341 (r reconnue sur le registre existant, at hors périmètre, lot fondu, 2B seul). `lib/patient/texteMineurs.ts` (texte 2B mot pour mot) servi par `EcranCircuitMineur` ; banc : texte comparé à la source G-11, titres de 2A absents du code servi, écran rendu sous une seule condition « mineur ». Plan H28, F45, H78, H79 ; page de suivi a05 et q17 corrigées (J3-mineurs suit ACT-5).
+
+**Écarté.** Texte 2A (au titulaire) : avec J3-mineurs. Drapeau : aucun (l'écran existait, seul son texte change).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; lecture consignée du texte servi ; place 5 → fait.
+
+**Ouvert.** at et as (F45) ; les 15–17 ans (avocat, D-284) ; circuit des droits des mineurs (D-283 §5).
 ## 2026-10-21 — t34 : le barème de charge ignore les actions vides (D-339)
 
 **Fait.** Arbitrage m13 transcrit en D-339 (amende D-273 §5) ; `estActionVide` filtre la mesure ; banc « actions vierges supprimées » (rouge sans le correctif) ; cas de composition mis à jour ; F76 soldée au plan. T3 vert ; contre-revue `wn-reviewer` GO.
@@ -11211,3 +11220,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis t37 (arbitré : vide au retour, « Sans objet » retiré sous « Oui »).
 
 **Ouvert.** Aucun.
+
+## 2026-10-21 — t37 : « C’était faisable ? » n’est plus rempli à la place du patient (D-340)
+
+**Fait.** Deux arbitrages du responsable transcrits en D-340 : vide au retour sur « Oui » avec refus relié au champ, « Sans objet » retiré sous « Oui » ; refus aussi dans `createTrialTrace` ; tests du panneau (retour Non → Oui, instantané transmis) et du domaine ; ligne D-JA-03 du plan complétée.
+
+**Écarté.** « Oui » au retour (statut favorable par défaut, DC-24) ; vide aussi à l’ouverture (un choix de plus à chaque trace).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t37 → « fait ».
+
+**Ouvert.** Traces déjà transmises non relues (D-340 §4).

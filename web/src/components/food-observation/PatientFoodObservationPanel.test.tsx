@@ -143,6 +143,60 @@ describe('PatientFoodObservationPanel', () => {
     expect(issue.value).toBe('');
   });
 
+  it('après « Non » puis « Oui » à l’occasion, « faisable » est vide et se choisit (D-340)', async () => {
+    await rendrePret();
+    const faisable = screen.getByTestId('ja-patient-faisable') as HTMLSelectElement;
+    // Avec occasion, « Sans objet » n'est pas proposé.
+    expect(Array.from(faisable.options).map(o => o.value)).toEqual(['oui', 'non']);
+
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
+    expect(Array.from(faisable.options).map(o => o.value)).toEqual(['na']);
+    expect(faisable.disabled).toBe(true);
+
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'oui' } });
+    expect(faisable.value).toBe('');
+    expect(Array.from(faisable.options).map(o => o.value)).toEqual(['', 'oui', 'non']);
+
+    // Rien n'est choisi à la place du patient : la trace ne part pas.
+    fireEvent.change(screen.getByTestId('ja-patient-issue'), { target: { value: 'fait' } });
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(screen.getByText('Pas encore d’élément enregistré.')).toBeTruthy();
+    expect(faisable.getAttribute('aria-invalid')).toBe('true');
+    expect(faisable.getAttribute('aria-describedby')).toBe('ja-patient-faisable-erreur');
+    expect(document.getElementById('ja-patient-faisable-erreur')?.textContent)
+      .toBe('Dites si c’était faisable.');
+
+    fireEvent.change(faisable, { target: { value: 'oui' } });
+    expect(faisable.getAttribute('aria-invalid')).toBeNull();
+    expect(screen.queryByText('Dites si c’était faisable.')).toBeNull();
+    expect(Array.from(faisable.options).map(o => o.value)).toEqual(['oui', 'non']);
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(within(screen.getByTestId('ja-patient-historique')).getByText(/Je l’ai fait/)).toBeTruthy();
+  });
+
+  it('transmet « faisable » tel que choisi après un retour à « Oui » (D-340)', async () => {
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+    await screen.findByTestId('ja-patient-transmettre');
+
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'oui' } });
+    fireEvent.change(screen.getByTestId('ja-patient-faisable'), { target: { value: 'oui' } });
+    fireEvent.change(screen.getByTestId('ja-patient-issue'), { target: { value: 'fait' } });
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    fireEvent.click(screen.getByTestId('ja-patient-transmettre'));
+
+    await waitFor(() => {
+      expect(vi.mocked(fetch).mock.calls.some(([url, init]) =>
+        String(url).includes('/api/portail/ja/observations') && init?.method === 'POST')).toBe(true);
+    });
+    const post = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+      String(url).includes('/api/portail/ja/observations') && init?.method === 'POST');
+    const corps = JSON.parse(String(post?.[1]?.body));
+    expect(corps.traces).toHaveLength(1);
+    expect(corps.traces[0]).toMatchObject({ occasionPresentee: true, faisable: true });
+  });
+
   // Lot 1 (audit du 2026-07-27, §2.1) : atteindre le budget hebdomadaire ne
   // prouve RIEN sur la couverture — trois traces du même lundi y suffisent.
   // Le panneau ne rend donc plus aucun verdict de suffisance au patient. Ce
