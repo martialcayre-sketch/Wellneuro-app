@@ -54,6 +54,7 @@ type WizardDraftKind = 'fiche' | 'anamnese';
 const WIZARD_DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const MESSAGE_LIGNE_OUVERTE = 'Enregistrez ou annulez la ligne en cours avant de continuer.';
+const MESSAGE_PARTIE_ILLISIBLE = 'Une partie de votre fiche n’a pas pu être chargée : réessayez avant de continuer.';
 
 type WizardDraftValidator<T> = (value: unknown) => value is T;
 
@@ -396,6 +397,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   // dit « ouvert », la fiche reste celle d'avant.
   const [physioOuvert, setPhysioOuvert] = useState(false);
   const [lignePhysioOuverte, setLignePhysioOuverte] = useState(false);
+  const [physioIllisible, setPhysioIllisible] = useState(false);
   useEffect(() => {
     let vivant = true;
     void (async () => {
@@ -473,19 +475,29 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   // silence (revue `wn-reviewer`, P1) : on ne quitte la section — ni en
   // avant, ni en arrière (revue CodeRabbit) — qu'après l'avoir enregistrée ou
   // annulée. Le message tombe dès que la ligne se ferme.
+  // Rappels STABLES : recréés à chaque rendu, ils relanceraient le nettoyage
+  // de `DeclarationsPatient`, qui effacerait le blocage d'une ligne pourtant
+  // toujours ouverte (revue CodeRabbit).
   const bloqueParLigneOuverte = () => {
     if (!lignePhysioOuverte) return false;
     setError(MESSAGE_LIGNE_OUVERTE);
     return true;
   };
-  const changerLignePhysio = (ouverte: boolean) => {
+  const changerLignePhysio = useCallback((ouverte: boolean) => {
     setLignePhysioOuverte(ouverte);
     if (!ouverte) setError(e => (e === MESSAGE_LIGNE_OUVERTE ? '' : e));
-  };
+  }, []);
+  // Les lignes qui remplacent les groupes de texte libre n'ont pas pu être
+  // lues : la section ne se valide pas sans elles (revue CodeRabbit, P1).
+  const changerPhysioIllisible = useCallback((illisible: boolean) => {
+    setPhysioIllisible(illisible);
+    if (!illisible) setError(e => (e === MESSAGE_PARTIE_ILLISIBLE ? '' : e));
+  }, []);
 
   const handleSectionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (bloqueParLigneOuverte()) return;
+    if (physioIllisible) { setError(MESSAGE_PARTIE_ILLISIBLE); return; }
     if (!isLastSection) { setSectionIndex(i => i + 1); window.scrollTo(0, 0); return; }
     void soumettre();
   };
@@ -527,7 +539,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         {section.id === SECTION_ANAMNESE_SIGNAUX && anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX]) && (
           <MessageReponseSuicide />
         )}
-        {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={changerLignePhysio} />}
+        {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={changerLignePhysio} onLectureEchouee={changerPhysioIllisible} />}
 
         {(physioOuvert ? (section.groupes ?? []).filter(g => !GROUPES_REMPLACES.includes(g.id)) : section.groupes ?? []).map(groupe => (
           <div key={groupe.id} className="space-y-3">
@@ -560,7 +572,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
             </PatientButton>
           </div>
         ))}
-        {physioOuvert && section.id === SECTION_TRAITEMENTS && <DeclarationsPatient parties="traitements" onEditionChange={changerLignePhysio} />}
+        {physioOuvert && section.id === SECTION_TRAITEMENTS && <DeclarationsPatient parties="traitements" onEditionChange={changerLignePhysio} onLectureEchouee={changerPhysioIllisible} />}
       </fieldset>
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}

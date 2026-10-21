@@ -121,12 +121,20 @@ function valeursDe(t: TraitementPatient, fin: string | null) {
 export function DeclarationsPatient({
   parties,
   onEditionChange,
+  onLectureEchouee,
 }: {
   parties: 'sexe' | 'traitements' | 'tout';
   /** Une ligne est en cours de saisie, non enregistrée : la fiche englobante ne se valide pas. */
   onEditionChange?: (ouverte: boolean) => void;
+  /**
+   * La partie n'a pas pu être lue : la fiche englobante ne se valide pas, car
+   * ces lignes REMPLACENT des groupes de texte libre — sans elles, le patient
+   * n'aurait aucun moyen de déclarer ses traitements (revue CodeRabbit, P1).
+   */
+  onLectureEchouee?: (echouee: boolean) => void;
 }) {
   const [donnees, setDonnees] = useState<Ouverte | null>(null);
+  const [illisible, setIllisible] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [edition, setEdition] = useState<string | null>(null);
@@ -138,15 +146,25 @@ export function DeclarationsPatient({
   }, [edition, onEditionChange]);
   // Démonté (changement de section), plus rien n'est en cours de saisie ici.
   useEffect(() => () => onEditionChange?.(false), [onEditionChange]);
+  useEffect(() => {
+    onLectureEchouee?.(illisible);
+  }, [illisible, onLectureEchouee]);
+  useEffect(() => () => onLectureEchouee?.(false), [onLectureEchouee]);
 
   const charger = useCallback(async () => {
     const numero = ++lecture.current;
     try {
       const res = await fetch('/api/portail/physio-traitements');
       const data = (await res.json()) as PortailPhysioTraitementsResponse;
-      if (numero === lecture.current && res.ok && data.ok && 'saisieOuverte' in data) setDonnees(data);
+      if (numero !== lecture.current) return;
+      if (res.ok && data.ok && 'saisieOuverte' in data) {
+        setDonnees(data);
+        setIllisible(false);
+      } else {
+        setIllisible(true);
+      }
     } catch {
-      // Silence : la partie ne s'affiche pas ; le reste de la fiche continue.
+      if (numero === lecture.current) setIllisible(true);
     }
   }, []);
 
@@ -174,7 +192,15 @@ export function DeclarationsPatient({
     }
   };
 
-  if (!donnees) return null;
+  if (!donnees) {
+    if (!illisible) return null;
+    return (
+      <p role="alert" className="text-sm text-foreground">
+        Cette partie de votre fiche n’a pas pu être chargée.{' '}
+        <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
+      </p>
+    );
+  }
   const actif = donnees.saisieOuverte;
   const sexe = donnees.donnees.criteres.find(c => c.critere === 'sexe_declare')?.tete ?? null;
   const cycles = donnees.donnees.criteres.find(c => c.critere === 'statut_menstruel')?.tete ?? null;

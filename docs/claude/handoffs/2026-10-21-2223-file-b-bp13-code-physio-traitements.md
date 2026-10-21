@@ -73,6 +73,12 @@ banc de la garde d'âge. Docs : `FEATURE_FLAGS.md`, `PLAN_WELLNEURO.md`
   `SYNTHESE_TRAITEMENTS_INDISPONIBLES`. Un écarté : le message d'un geste
   refusé s'affichait déjà. Après correctifs et fusion de `origin/main` :
   T1 rapide, Vitest des fichiers changés (3753 tests) et T2 verts.
+- Second tour CodeRabbit (deux commentaires), corrigés : rappels de la
+  fiche stabilisés (`useCallback`), sans quoi le nettoyage de
+  `DeclarationsPatient` effaçait le blocage d'une ligne encore ouverte ;
+  une lecture en échec de la partie ne la laisse plus vide en silence —
+  message, « Réessayer », et la section ne se valide pas (les lignes
+  remplacent les groupes de texte libre). Banc `DeclarationsPatient.test.tsx`.
 
 ## Problèmes ouverts
 
@@ -82,7 +88,10 @@ banc de la garde d'âge. Docs : `FEATURE_FLAGS.md`, `PLAN_WELLNEURO.md`
   retrait, deux poses concurrentes).
 - Le titre « Ma fiche de renseignements » (page et lien du hub) n'a pas été
   soumis comme libellé ; quelques textes d'écran (boutons « Enregistrer »,
-  messages de refus) non plus.
+  messages de refus) non plus, ni les messages du portail nés de la revue
+  (« Cette partie de votre fiche n’a pas pu être chargée. », « Enregistrez
+  ou annulez la ligne en cours avant de continuer. » et sa variante de
+  lecture en échec).
 - L'export du dossier (droit d'accès) ne porte pas encore ces lignes, et
   `export-dossier/sectionPerimetre.ts` ne les déclare pas « non incluses » :
   drapeau allumé, l'anamnèse ne porte plus les traitements. D-335 ne le
