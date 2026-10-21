@@ -11114,3 +11114,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Brouillon local de « Ce qui compte » (t06), puis banc des seuils du catalogue, surface des libellés de t30, grille E67.
 
 **Ouvert.** Aucun.
+## 2026-10-21 — Numéros d'urgence au pied du portail ; l'encart quitte le dépôt
+
+**Fait.** #1613 mergée (refus du plafond du compte rendu exact). Textes de l'aide permanente validés tels quels : numéros cliquables au pied de toutes les pages du portail, phrase du pied « qui ne les lit pas en temps réel », phrase du délai gardée en texte simple sous le bouton de dépôt. D-293 §3 amendé ; l'encart quitte l'écran de dépôt dans la même PR.
+
+**Écarté.** Lien vers une page dédiée ; texte long de D-275 au pied de page ; pied de page inchangé.
+
+**Prochaine action.** CI (bases visuelles du portail à régénérer), CodeRabbit, merge, déploiement constaté ; constats du retrait du PDF et de la photo de test.
+
+**Ouvert.** Gestes du responsable sur le dossier de test (retrait du PDF, photo).
