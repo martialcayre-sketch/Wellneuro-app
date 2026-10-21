@@ -90,6 +90,9 @@ for (const chemin of [
   "web/src/lib/biology-library/indicationsBiologieV1.ts",
   "web/src/lib/equilibre/constants.ts",
   "web/src/lib/questions.ts",
+  // Candidats du LOT-02, tranchés le 2026-10-21 (plan D/41).
+  "web/src/lib/clinical/stopRulesLibelles.ts",
+  "web/src/lib/questionnaires/alimentaire.ts",
 ]) {
   test(`demande clinique : ${chemin}`, () => {
     const j = jugement(chemin);
@@ -108,10 +111,10 @@ for (const chemin of [
   // Les compagnons de test : le sha épinglé s'y ré-épingle librement.
   "web/src/lib/clinical/orientationRulesV1.test.ts",
   "web/src/lib/questions.test.ts",
-  // Le candidat non tranché du LOT-02 : silence tant que la décision n'est
-  // pas prise — ce cas ÉCHOUERA le jour où on l'ajoute, et c'est voulu :
-  // il forcera la mise à jour du banc en même temps que la liste.
-  "web/src/lib/clinical/stopRulesLibelles.ts",
+  // La fixture du LOT-02 reste libre (tranché le 2026-10-21, plan D/41), et
+  // le compagnon de test du questionnaire alimentaire ne matche pas.
+  "web/src/lib/clinical-engine/chaineC1Fixture.ts",
+  "web/src/lib/questionnaires/alimentaire.test.ts",
   // Un voisin ordinaire, et le module de garde lui-même.
   "web/src/lib/documents/vocabulaire.ts",
   "web/src/lib/consultation/email.ts",

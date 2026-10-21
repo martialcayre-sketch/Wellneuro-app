@@ -87,7 +87,12 @@ const demandeClinique = [
   "src/lib/clinical/corpussynthesev1.ts",
   "src/lib/biology-library/indicationsbiologiev1.ts",
   "src/lib/equilibre/constants.ts",
-  "src/lib/questions.ts"
+  "src/lib/questions.ts",
+  // Candidats du LOT-02, tranchés le 2026-10-21 (plan D/41) : les libellés
+  // des règles d'arrêt, et le questionnaire alimentaire qui pilote
+  // `VERSION_SCORE_EQUILIBRE`. La fixture `chaineC1Fixture` reste libre.
+  "src/lib/clinical/stopruleslibelles.ts",
+  "src/lib/questionnaires/alimentaire.ts"
 ];
 
 for (const motif of refus) {
