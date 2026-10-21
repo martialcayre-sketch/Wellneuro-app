@@ -11133,3 +11133,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Banc des seuils du catalogue (instantané + D-xxx), puis surface des libellés de t30, grille E67.
 
 **Ouvert.** Aucun.
+
+## 2026-10-21 — t23 : les seuils du catalogue sous instantané
+
+**Fait.** #1619 (t06) mergée. Banc `seuilsCatalogue.guard.test.ts` : empreintes des 65 blocs `scoring` et du moteur (tout `questions.ts` hors du littéral du catalogue), historique par étape, toute retouche exige une D-xxx postérieure à D-335 ; pose figée. Deux contre-revues `wn-reviewer` (NO-GO puis GO), correctifs appliqués.
+
+**Écarté.** Verrou par empreinte (couperait le scoring) ; littéraux seuls du moteur (une comparaison changée échapperait).
+
+**Prochaine action.** Surface de relecture des libellés de t30 (conteneur + synonymes), grille E67.
+
+**Ouvert.** Options de réponse (`sections`) et modules importés hors empreinte, déclarés.

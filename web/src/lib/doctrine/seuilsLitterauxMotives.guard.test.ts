@@ -39,10 +39,10 @@ import { describe, expect, it } from 'vitest';
 // `questions.ts` (PSQI, Horne-Östberg, Karasek…) ne sont donc pas gardés ici ;
 // ils le sont par la certification de scoring et par `DC-17`/`DC-18`, et,
 // depuis le 2026-10-21 (t23), par `seuilsCatalogue.guard.test.ts` : un
-// instantané des 65 blocs `scoring` ET du moteur de `questions.ts` (de
-// `calculateScore` à la fin du fichier, où vivent la plupart de ces 33 seuils),
-// qu'aucune retouche ne franchit sans décision `D-xxx`. Ce banc-là ne voit pas
-// les fonctions que le moteur appelle hors de `questions.ts` ; il le déclare.
+// instantané des 65 blocs `scoring` ET du moteur (tout `questions.ts` hors du
+// littéral du catalogue, imports compris — là vivent la plupart de ces 33
+// seuils), qu'aucune retouche ne franchit sans décision `D-xxx`. Ce banc-là ne
+// voit pas le contenu des modules que le moteur importe ; il le déclare.
 
 const RACINE = path.resolve(__dirname, '../../..');
 const LIB = path.join(RACINE, 'src', 'lib');

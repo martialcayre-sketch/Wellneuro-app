@@ -3,8 +3,15 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57 } from '@/lib/questionnaires';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
-import { empreinteMoteur, empreinteScoring, FIN_DU_MOTEUR, sourceSansCommentaires } from './empreinteScoring';
+import {
+  DEBUT_DU_CATALOGUE,
+  empreinteMoteur,
+  empreinteScoring,
+  FIN_DU_CATALOGUE,
+  sourceSansCommentaires,
+} from './empreinteScoring';
 import INSTANTANE from './seuilsCatalogue.instantane.json';
 
 // GARDE : AUCUN SEUIL DU CATALOGUE NE BOUGE SANS DÉCISION — t23, portée
@@ -44,9 +51,9 @@ import INSTANTANE from './seuilsCatalogue.instantane.json';
 // croit garder autre chose est pire qu'absent :
 //   — la valeur des options de réponse (`sections`) n'entre dans aucune
 //     empreinte ;
-//   — les fonctions appelées par le moteur HORS de `questions.ts` (par exemple
-//     `clinical/bandesPsqi.ts`, gardé, lui, par les grilles signées) ne sont pas
-//     dans l'empreinte du moteur ;
+//   — le MOTEUR est tout `questions.ts` hors du littéral du catalogue (imports
+//     compris) ; les modules qu'il importe (`clinical/bandesPsqi.ts`, gardé, lui,
+//     par les grilles signées) ne sont pas dans son empreinte, seul l'import l'est ;
 //   — le banc vérifie qu'une décision EXISTE et qu'elle est récente, pas
 //     qu'elle parle de ce questionnaire : la revue le fait.
 
@@ -60,10 +67,24 @@ type Instantane = {
 };
 
 /** Toute réécriture d'une étape de pose change cette valeur. */
-const EMPREINTE_DE_LA_POSE = 'efe8eebeb7067591f7e3149146c8676c345fd1ac47ef1fb3f762900b57d3b410';
+const EMPREINTE_DE_LA_POSE = '8fc610670c87b1bf4749c4df3709d18376e9ecaeba4835a197ef0279b60dc11c';
 
 const instantane = INSTANTANE as Instantane;
-const CATALOGUE = QUESTIONNAIRE_CATALOGUE as Record<string, { scoring?: unknown }>;
+type Entree = { scoring?: unknown };
+const CATALOGUE = QUESTIONNAIRE_CATALOGUE as Record<string, Entree>;
+
+/**
+ * UN QUESTIONNAIRE À DEUX VARIANTES servies selon un drapeau
+ * (`WN_ALI_01_SIIN57`, lu à l'import) : chacune a son historique, quelle que
+ * soit la position du drapeau dans le run — sinon le banc ne garderait que la
+ * variante du jour, et rougirait selon l'environnement.
+ */
+const VARIANTES: Record<string, Record<string, Entree>> = { Q_ALI_01: { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57 } };
+
+/** Les blocs gardés : le catalogue, chaque variante à la place de son entrée. */
+const BLOCS: Record<string, Entree> = Object.fromEntries(
+  Object.entries(CATALOGUE).flatMap(([id, entree]) => (VARIANTES[id] ? Object.entries(VARIANTES[id]) : [[id, entree]])),
+);
 const SOURCE_QUESTIONS = readFileSync(path.resolve(__dirname, '../questions.ts'), 'utf8');
 const REGISTRE = readFileSync(path.resolve(__dirname, '../../../../docs/DECISIONS.md'), 'utf8');
 
@@ -74,10 +95,22 @@ function decisionAuRegistre(registre: string, decision: string): boolean {
   return new RegExp(`^#+ ${decision.replace('-', '\\-')} `, 'm').test(registre);
 }
 
+/**
+ * Ce qui fait la pose : sa date, la dernière décision qu'elle connaissait, et
+ * les étapes SANS décision. Un questionnaire neuf, entré avec sa décision, n'y
+ * touche pas ; abaisser `derniereDecisionALaPose` la change (contre-revue).
+ */
 function empreinteDeLaPose(i: Instantane): string {
   const pose = {
+    pose: i.pose,
+    derniereDecisionALaPose: i.derniereDecisionALaPose,
     moteur: i.moteur[0],
-    entrees: Object.fromEntries(Object.keys(i.entrees).sort().map(k => [k, i.entrees[k][0]])),
+    entrees: Object.fromEntries(
+      Object.keys(i.entrees)
+        .sort()
+        .filter(k => i.entrees[k][0].decision === null)
+        .map(k => [k, i.entrees[k][0]]),
+    ),
   };
   return createHash('sha256').update(JSON.stringify(pose)).digest('hex');
 }
@@ -112,13 +145,20 @@ describe('garde : les seuils du catalogue ne bougent pas sans décision', () => 
   });
 
   it('le moteur a l’empreinte de la dernière étape de son historique', () => {
-    // Le moteur court jusqu'à la fin du fichier : rien ne s'y ajoute sans lui.
-    expect(SOURCE_QUESTIONS.trimEnd().endsWith(FIN_DU_MOTEUR)).toBe(true);
+    // Les bornes du littéral exclu existent : sans elles, l'empreinte lève.
+    expect(SOURCE_QUESTIONS).toContain(DEBUT_DU_CATALOGUE);
+    expect(SOURCE_QUESTIONS).toContain(FIN_DU_CATALOGUE);
     expect(empreinteMoteur(SOURCE_QUESTIONS)).toBe(instantane.moteur.at(-1)?.empreinte);
   });
 
+  it('une entrée à variantes sert l’une de ses variantes déclarées, jamais une troisième', () => {
+    for (const [id, variantes] of Object.entries(VARIANTES)) {
+      expect(Object.values(variantes)).toContain(CATALOGUE[id]);
+    }
+  });
+
   it('chaque bloc de scoring a l’empreinte de la dernière étape de son historique', () => {
-    const divergents = Object.entries(CATALOGUE)
+    const divergents = Object.entries(BLOCS)
       .map(([id, entree]) => ({
         id,
         attendue: instantane.entrees[id]?.at(-1)?.empreinte,
@@ -130,7 +170,7 @@ describe('garde : les seuils du catalogue ne bougent pas sans décision', () => 
   });
 
   it('l’historique respecte ses règles', () => {
-    expect(fautesHistorique(instantane, REGISTRE, Object.keys(CATALOGUE))).toEqual([]);
+    expect(fautesHistorique(instantane, REGISTRE, Object.keys(BLOCS))).toEqual([]);
   });
 });
 
@@ -178,6 +218,15 @@ describe('les règles d’historique rougissent sur ce qu’elles doivent refuse
     expect(fautesHistorique(i, REG, [])).toEqual([]);
   });
 
+  it('la pose : un questionnaire neuf décidé ne la touche pas ; abaisser la dernière décision la change', () => {
+    const i = base();
+    const avant = empreinteDeLaPose(i);
+    i.entrees.Q_B = [{ empreinte: E, decision: 'D-201', date: '2026-11-02' }];
+    expect(empreinteDeLaPose(i)).toBe(avant);
+    i.derniereDecisionALaPose = 'D-100';
+    expect(empreinteDeLaPose(i)).not.toBe(avant);
+  });
+
   it('D-10 ne se lit pas comme D-107', () => {
     expect(decisionAuRegistre('### D-107 — x\n', 'D-10')).toBe(false);
   });
@@ -197,22 +246,32 @@ describe('les empreintes voient ce qu’elles doivent voir', () => {
     expect(() => empreinteScoring({ ...BLOC, max: Infinity })).toThrow(/non fini/);
   });
 
-  const MOTEUR = [
+  const FICHIER = [
+    "import { BANDES_PSQI } from './clinical/bandesPsqi';",
+    DEBUT_DU_CATALOGUE,
+    "  Q_X: { scoring: { type: 'sum' } },",
+    FIN_DU_CATALOGUE,
     'export function calculateScore(id) { return 1; }',
     "function computeScoreFromDefBrut(def) { if (score > 30) return { label: 'Élevé' }; // seuil publié",
     '  return null; /* fin */',
-    FIN_DU_MOTEUR,
+    '}',
   ].join('\n');
 
-  it('le moteur : un seuil ou un libellé retouché changent l’empreinte', () => {
-    expect(empreinteMoteur(MOTEUR.replace('> 30', '>= 30'))).not.toBe(empreinteMoteur(MOTEUR));
-    expect(empreinteMoteur(MOTEUR.replace("'Élevé'", "'Haut'"))).not.toBe(empreinteMoteur(MOTEUR));
+  it('le moteur : un seuil, un libellé ou un import retouchés changent l’empreinte', () => {
+    expect(empreinteMoteur(FICHIER.replace('> 30', '>= 30'))).not.toBe(empreinteMoteur(FICHIER));
+    expect(empreinteMoteur(FICHIER.replace("'Élevé'", "'Haut'"))).not.toBe(empreinteMoteur(FICHIER));
+    expect(empreinteMoteur(FICHIER.replace('./clinical/bandesPsqi', './autresBandes'))).not.toBe(empreinteMoteur(FICHIER));
   });
 
-  it('le moteur : commentaires et blancs ne changent pas l’empreinte, ce qui précède non plus', () => {
-    const recommente = MOTEUR.replace('// seuil publié', '// autre motif').replace('/* fin */', '').replace('  return', '\treturn');
-    expect(empreinteMoteur(recommente)).toBe(empreinteMoteur(MOTEUR));
-    expect(empreinteMoteur(`const avant = 1;\n${MOTEUR}`)).toBe(empreinteMoteur(MOTEUR));
+  it('le moteur : commentaires, blancs et littéral du catalogue ne changent pas son empreinte', () => {
+    const recommente = FICHIER.replace('// seuil publié', '// autre motif').replace('/* fin */', '').replace('  return', '\treturn');
+    expect(empreinteMoteur(recommente)).toBe(empreinteMoteur(FICHIER));
+    expect(empreinteMoteur(FICHIER.replace("type: 'sum'", "type: 'subscore'"))).toBe(empreinteMoteur(FICHIER));
+  });
+
+  it('une regex après un mot-clé n’avale pas le seuil qui la suit', () => {
+    const source = 'function f(x, s) { return /a\\/\\//.test(x) && s > 30; }';
+    expect(sourceSansCommentaires(source)).toContain('s > 30');
   });
 
   it('une chaîne qui contient // n’est pas prise pour un commentaire', () => {

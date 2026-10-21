@@ -9,8 +9,8 @@ import { createHash } from 'node:crypto';
 //   — le bloc `scoring` de chaque entrée de `QUESTIONNAIRE_CATALOGUE` : bandes,
 //     interprétations, sous-scores, pondérations, statut de certification, et
 //     la `note`, qui voyage telle quelle dans le résultat du score ;
-//   — le MOTEUR de `questions.ts` (de `calculateScore` à la fin du fichier,
-//     `computeScoreFromDefBrut` compris) : Horne, QIF, Berlin, AUDIT, les
+//   — le MOTEUR : tout `questions.ts` hors du littéral du catalogue (imports,
+//     `computeScoreFromDefBrut` et ses helpers) : Horne, QIF, Berlin, AUDIT, les
 //     composantes du PSQI, Karasek, Bristol… y portent leurs seuils en dur.
 //     Une contre-revue l'a mesuré : les « 33 seuils du catalogue » étaient
 //     surtout ceux-là, et les blocs seuls ne les voyaient pas.
@@ -42,12 +42,16 @@ export function empreinteScoring(scoring: unknown): string {
 /**
  * Le source sans ses commentaires, blancs hors chaînes réduits à un espace.
  * Les CHAÎNES restent : le moteur écrit en dur des libellés d'interprétation,
- * et en retoucher un est une retouche clinique. Commenter, réindenter ou
- * reformater ne l'est pas.
+ * et en retoucher un est une retouche clinique. Commenter ou réindenter ne
+ * l'est pas. Un reformatage qui change l'espacement AUTOUR d'un opérateur
+ * (`x<=41` contre `x <= 41`) change l'empreinte : faux positif, côté sûr.
  */
 export function sourceSansCommentaires(source: string): string {
   const sortie: string[] = [];
-  const PRECEDE_UNE_REGEX = /[=(,:[!&|?{};+\-*%<>~^]$/;
+  // Un `/` ouvre une regex après une ponctuation… ou après un mot-clé : sans
+  // ce second cas, `return /a\/\//` serait lu comme une division, et le `//`
+  // de la regex avalerait le reste de la ligne, seuil compris (contre-revue).
+  const PRECEDE_UNE_REGEX = /(?:[=(,:[!&|?{};+\-*%<>~^]|\b(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await))$/;
   let blanc = false;
   const pousser = (texte: string) => {
     if (blanc && sortie.length > 0) sortie.push(' ');
@@ -70,7 +74,7 @@ export function sourceSansCommentaires(source: string): string {
       while (j < source.length && source[j] !== c) j += source[j] === '\\' ? 2 : 1;
       pousser(source.slice(i, j + 1));
       i = j + 1;
-    } else if (c === '/' && PRECEDE_UNE_REGEX.test(sortie.join('').slice(-1) || '(')) {
+    } else if (c === '/' && PRECEDE_UNE_REGEX.test(sortie.join('').slice(-12) || '(')) {
       let j = i + 1;
       let dansClasse = false;
       while (j < source.length && (dansClasse || source[j] !== '/') && source[j] !== '\n') {
@@ -92,12 +96,19 @@ export function sourceSansCommentaires(source: string): string {
   return sortie.join('');
 }
 
-export const DEBUT_DU_MOTEUR = 'export function calculateScore(';
-export const FIN_DU_MOTEUR = '} // fin computeScoreFromDefBrut';
+export const DEBUT_DU_CATALOGUE = 'export const QUESTIONNAIRE_CATALOGUE = {';
+export const FIN_DU_CATALOGUE = '}; // fin QUESTIONNAIRE_CATALOGUE';
 
-/** L'empreinte du moteur : de `calculateScore` à la fin du fichier. */
+/**
+ * L'empreinte du MOTEUR : tout `questions.ts` SAUF le littéral du catalogue,
+ * dont les blocs `scoring` ont chacun la leur. Le haut du fichier en fait
+ * partie — les imports d'abord : rediriger `BANDES_PSQI` vers un autre module
+ * changerait les bandes du PSQI sans toucher une ligne du calcul (contre-revue).
+ */
 export function empreinteMoteur(sourceQuestions: string): string {
-  const debut = sourceQuestions.indexOf(DEBUT_DU_MOTEUR);
-  if (debut < 0) throw new Error(`début du moteur introuvable : ${DEBUT_DU_MOTEUR}`);
-  return sha256(sourceSansCommentaires(sourceQuestions.slice(debut)));
+  const debut = sourceQuestions.indexOf(DEBUT_DU_CATALOGUE);
+  const fin = sourceQuestions.indexOf(FIN_DU_CATALOGUE);
+  if (debut < 0 || fin < debut) throw new Error('bornes du littéral du catalogue introuvables');
+  const horsCatalogue = sourceQuestions.slice(0, debut) + sourceQuestions.slice(fin + FIN_DU_CATALOGUE.length);
+  return sha256(sourceSansCommentaires(horsCatalogue));
 }
