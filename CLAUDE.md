@@ -138,8 +138,7 @@ session réécrit tout le cache. `/model` seulement juste après `/clear`.
 
 Trois verdicts — **refus**, **demande**, **silence**. Leur portée n'est pas
 absolue, et la croire absolue est le risque : le crochet d'écriture n'arme que
-`Edit|Write` — une écriture par `Bash` n'y passe pas — et le crochet Bash sort
-sans rien lire si `WN_ALLOW_RISKY_COMMAND=1`. Détail :
+`Edit|Write` — une écriture par `Bash` n'y passe pas. Détail :
 `.claude/rules/hooks-garde-fous.md`.
 
 ## Validation

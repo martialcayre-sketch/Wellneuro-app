@@ -52,8 +52,8 @@
 # Overrides : WN_PG_PORT, WN_APP_PORT, WN_PG_BIN.
 #
 # Note hook Claude (.claude/hooks/block-risky-commands.mjs) : il n'inspecte que
-# la ligne de commande Bash, ce script reste donc invocable sans
-# WN_ALLOW_RISKY_COMMAND ; le garde-fou interne (base locale uniquement,
+# la ligne de commande Bash, ce script reste donc invocable depuis la
+# session ; le garde-fou interne (base locale uniquement,
 # identifiants jetables ci_user/wellneuro_ci) compense.
 set -euo pipefail
 

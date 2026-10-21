@@ -11240,3 +11240,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis BP-15 (LOT-15), puis le brouillon de la lettre cm (F52).
 
 **Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base, borne de 500 caractères de la vigilance, export du dossier, courrier au médecin, procédure d'extinction ; titre « Ma fiche de renseignements » à valider. Revue CodeRabbit : six commentaires corrigés, un écarté (le message d'un geste refusé s'affichait déjà).
+## 2026-10-22 — D/41 : couverture du crochet d'écriture, vestige retiré
+
+**Fait.** D/5 mergée (#1634). D/41 : `stopRulesLibelles.ts` et `questionnaires/alimentaire.ts` sous « demande » clinique, `chaineC1Fixture` libre ; `WN_ALLOW_RISKY_COMMAND` retiré du garde Bash avec un banc qui le prouve ; doc alignée. Banc des crochets 273/273.
+
+**Écarté.** Couvrir aussi les écritures par Bash (suivi nommé du Socle, autre lot).
+
+**Prochaine action.** CI, CodeRabbit, merge ; ligne d41 de la page D.
+
+**Ouvert.** Lignes D/5 et D/41 du plan à marquer faites au prochain relevé.
