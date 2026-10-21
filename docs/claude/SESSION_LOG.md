@@ -11123,3 +11123,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI (bases visuelles du portail à régénérer), CodeRabbit, merge, déploiement constaté ; constats du retrait du PDF et de la photo de test.
 
 **Ouvert.** Gestes du responsable sur le dossier de test (retrait du PDF, photo).
+
+## 2026-10-21 — t06 : brouillon local de « Ce qui compte »
+
+**Fait.** #1617 (plan) et #1618 (banc de validation de consultation) mergées. t06 : brouillon localStorage de « Ce qui compte », nommé par l'`idPatient` du cookie signé, effacé après dépôt confirmé, conservé sur erreur ; famille inscrite à `FAMILLES_DONNEES_PATIENT` (purge à la déconnexion), garde de l'inventaire étendue au module.
+
+**Écarté.** Brouillon serveur (arbitrage) ; ajouter `connect`/`delete` imbriqués au banc de #1618 (ne posent pas le statut).
+
+**Prochaine action.** Banc des seuils du catalogue (instantané + D-xxx), puis surface des libellés de t30, grille E67.
+
+**Ouvert.** Aucun.
