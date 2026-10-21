@@ -11143,3 +11143,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CodeRabbit, merge ; puis lots inscrits, chacun dans sa session.
 
 **Ouvert.** k04 : aucun dossier en `@wellneuro.fr` en production ; dossier d'essai à désigner par le responsable.
+
+## 2026-10-21 — BP-13 : migration des données physiologiques et des traitements
+
+**Fait.** #1614 (D-335) mergée. PR 1 de BP-13 : migration seule `donnees_physiologiques_traitements_v1` (deux tables en ajout seul, une tête par critère et par fil sous verrou, deux mains, clé de traitement des pièces de constat), contrat négatif, banc à deux sessions (huit courses), effacement nommé. Revue `wn-reviewer` : « fin après le début » corrigée sur arbitrage (fin de période).
+
+**Écarté.** Garder la comparaison stricte des dates ; retirer la règle de la base ; base locale jetable (refusée, T3 seul).
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db par le responsable, constat par conteneur ; puis PR 2 du code sous `WN_PHYSIO_TRAITEMENTS`.
+
+**Ouvert.** Aucun.

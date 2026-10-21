@@ -26,7 +26,10 @@
 //      tout autre verrou, l'attendent sans interblocage, puis passent quand
 //      l'effacement est annulé ;
 //   7. UNE SUPPRESSION HORS EFFACEMENT, dossier conservé : refusée au
-//      COMMIT, sur les deux tables.
+//      COMMIT, sur les deux tables ;
+//   8. L'EFFACEMENT COMMIS CONTRE UNE POSE EN ATTENTE : la pose, qui
+//      attendait le dossier, est refusée et ne laisse aucune ligne orpheline
+//      (revue `wn-reviewer`).
 // Chaque course constate d'abord que la seconde session est BLOQUÉE sur un
 // verrou (`pg_stat_activity`) : sans ce constat, une course « gagnée » ne
 // prouverait rien — elle aurait pu se jouer en série.
@@ -65,6 +68,8 @@ if (!BASE_ATTENDUE || BASE_ATTENDUE !== BASE_REELLE) {
 
 const RUN = randomBytes(4).toString('hex');
 const PATIENT = `PAT_BANC_PHYSIO_${RUN}`;
+/** Le dossier que la course 8 efface pour de bon. */
+const PATIENT_EFFACE = `PAT_BANC_PHYSIO_EFF_${RUN}`;
 const PRATICIEN = 'praticien@wellneuro.fr';
 const id = nom => `${nom}_${RUN}`;
 
@@ -154,6 +159,11 @@ before(async () => {
              VALUES ($1, $2, $3, 'Michel', 'Dogné', $4, CURRENT_TIMESTAMP)`,
       values: [id('pat_banc_physio'), PATIENT, `michel.dogne+banc-physio-${RUN}@example.test`, PRATICIEN],
     },
+    {
+      text: `INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
+             VALUES ($1, $2, $3, 'Michel', 'Dogné', $4, CURRENT_TIMESTAMP)`,
+      values: [id('pat_banc_physio_eff'), PATIENT_EFFACE, `michel.dogne+banc-physio-eff-${RUN}@example.test`, PRATICIEN],
+    },
   ]);
   if (err) throw err;
 });
@@ -162,14 +172,14 @@ after(async () => {
   // L'ordre de l'effacement nommé du dossier (`patient/effacement.ts`), en
   // une transaction et dossier compris : la suppression de ces lignes n'est
   // admise qu'avec lui. La connexion se ferme quoi qu'il arrive.
-  const par = [PATIENT];
+  const par = [[PATIENT, PATIENT_EFFACE]];
   try {
     const err = await transaction(observateur, [
-      { text: 'DELETE FROM pieces_constats_praticien WHERE id_patient = $1', values: par },
-      { text: 'DELETE FROM constats_praticien WHERE id_patient = $1', values: par },
-      { text: 'DELETE FROM donnees_physiologiques WHERE id_patient = $1', values: par },
-      { text: 'DELETE FROM traitements_en_cours WHERE id_patient = $1', values: par },
-      { text: 'DELETE FROM patients WHERE id_patient = $1', values: par },
+      { text: 'DELETE FROM pieces_constats_praticien WHERE id_patient = ANY($1)', values: par },
+      { text: 'DELETE FROM constats_praticien WHERE id_patient = ANY($1)', values: par },
+      { text: 'DELETE FROM donnees_physiologiques WHERE id_patient = ANY($1)', values: par },
+      { text: 'DELETE FROM traitements_en_cours WHERE id_patient = ANY($1)', values: par },
+      { text: 'DELETE FROM patients WHERE id_patient = ANY($1)', values: par },
     ]);
     if (err) throw err;
   } finally {
@@ -324,6 +334,36 @@ describe('Données physiologiques et traitements — deux sessions (D-335, BP-13
       assert.deepEqual(await lignes(observateur, 'donnees_physiologiques', 'd7'), ['pose:d7']);
       assert.deepEqual(await lignes(observateur, 'traitements_en_cours', 't7'), ['pose:t7']);
     } finally {
+      await b.client.end();
+    }
+  });
+
+  it('8. l’effacement commis contre une pose en attente : la pose est refusée, sans ligne orpheline', async () => {
+    const a = await session();
+    const b = await session();
+    try {
+      await a.client.query('BEGIN');
+      await a.client.query('SELECT 1 FROM patients WHERE id_patient = $1 FOR UPDATE', [PATIENT_EFFACE]);
+      const enVol = b.client
+        .query({
+          text: `INSERT INTO traitements_en_cours (id, id_patient, acte, nature, nom, debut_precision, prescrit_par_tiers, source, praticien_email)
+                 VALUES ($1, $2, 'pose', 'medicament', 'TRAITEMENT_BANC', 'inconnu', 'inconnu', 'praticien', $3)`,
+          values: [id('t8'), PATIENT_EFFACE, PRATICIEN],
+        })
+        .then(() => null, err => err);
+      await attendreBloquee(observateur, b.pid);
+      await a.client.query('DELETE FROM patients WHERE id_patient = $1', [PATIENT_EFFACE]);
+      await a.client.query('COMMIT');
+      const refus = await enVol;
+      assert.ok(refus, 'une pose est passée sur un dossier effacé.');
+      const { rows } = await observateur.query(
+        `SELECT (SELECT count(*) FROM traitements_en_cours WHERE id_patient = $1)
+              + (SELECT count(*) FROM donnees_physiologiques WHERE id_patient = $1) AS n`,
+        [PATIENT_EFFACE],
+      );
+      assert.equal(Number(rows[0].n), 0, 'une ligne orpheline survit à l’effacement de son dossier.');
+    } finally {
+      await a.client.end();
       await b.client.end();
     }
   });

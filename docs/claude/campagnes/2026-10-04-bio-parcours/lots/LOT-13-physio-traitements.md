@@ -165,6 +165,17 @@ le constat « à relire » (§7).
   texte transmis à l'IA inchangé) ; « à relire » de la
   pièce de traitement (`bio-parcours/constats/`) ; drapeau
   `WN_PHYSIO_TRAITEMENTS` créé éteint, `docs/FEATURE_FLAGS.md`.
+  Routés de la revue `wn-reviewer` de la PR 1 (P2), à tenir par le code :
+  la lecture des pièces (`constats/lecture.ts`, `aRelire.ts`) décode la
+  troisième clé — aujourd'hui, toute pièce qui n'est pas un résultat y
+  devient une réponse ; normaliser nom, dose, moment et motif (espaces
+  insécables et blancs Unicode), que `~ '\S'` de la base ne garantit pas ;
+  écrire les pièces dans l'ordre canonique de `constats/ecriture.ts`
+  (résultats triés, réponses, puis traitements) et les critères
+  physiologiques dans un ordre fixe, faute de quoi deux écritures croisées
+  s'interbloquent (PostgreSQL annule l'une, rien n'est corrompu) ; rester en
+  READ COMMITTED — une transaction SERIALIZABLE face à une READ COMMITTED
+  peut laisser deux têtes sur un critère (trou commun à BP-09 et BP-11).
 
 ## Hors périmètre
 
