@@ -11134,6 +11134,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Aucun.
 
+## 2026-10-21 — t23 : les seuils du catalogue sous instantané
+
+**Fait.** #1619 (t06) mergée. Banc `seuilsCatalogue.guard.test.ts` : empreintes des 65 blocs `scoring` et du moteur (tout `questions.ts` hors du littéral du catalogue), historique par étape, toute retouche exige une D-xxx postérieure à D-335 ; pose figée. Deux contre-revues `wn-reviewer` (NO-GO puis GO), correctifs appliqués.
+
+**Écarté.** Verrou par empreinte (couperait le scoring) ; littéraux seuls du moteur (une comparaison changée échapperait).
+
+**Prochaine action.** Surface de relecture des libellés de t30 (conteneur + synonymes), grille E67.
+
+**Ouvert.** Options de réponse (`sections`) et modules importés hors empreinte, déclarés.
 ## 2026-10-21 — File D : arbitrages de la séance versés au plan
 
 **Fait.** Plan (D/11, D/48, D/34, D/36, D/49 au §6, e05, D/26, D/43, D/40, lettre l, Momentum vers o, D/1, D/2, D/6 faits) ; lots inscrits au §8 (D/42, D/22, D/23, D/41, D/5) et F76 en file A ; constat OpenAI du registre RGPD passé en historique (D-299) ; commentaire de `vocabulaire.ts` (régime A) ; ligne `nir` retirée de la ligne de base du rayon Patients, reprise lue par conteneur en agrégats.
