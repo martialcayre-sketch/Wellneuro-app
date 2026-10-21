@@ -67,6 +67,55 @@ des analyses biologiques, que l'ancien texte de l'écran nommait.
 un préalable d'ACT-5. Critère de fin d'ACT-5 : lecture consignée du texte
 servi ; le premier mineur servi se constate plus tard, sans bloquer.
 
+### D-339 — Le barème de charge ignore les actions vides : « Reprendre cette charge » ne fige plus un niveau gonflé par des emplacements vierges (F76, amende D-273 §5)
+
+- Date : 2026-10-21
+- Statut : accepté — arbitrage du responsable du 2026-10-21 (file D, m13 :
+  « le barème ignore les actions vides »), transcrit par l'assistant.
+- Domaine : constructeur de protocole 21 jours, suggestion de charge pendant la
+  composition. **Aucun seuil, aucune borne, aucune ligne de barème touchée** :
+  `BAREME_CHARGE_V1` et `TABLE_REPLI_V1` gardent leurs lignes et leur
+  `shaPerimetre` ; rien n'est re-signé.
+- Amende : [[D-273]] §5 (« une action vierge non suspendue compte parmi les
+  engagées »). Maintient [[D-198]] §5 (la charge est une saisie du praticien).
+- Fiche : F76 du plan (reste de BP-25).
+
+**§1 — Constat.** La suggestion se calcule sur le brouillon. Un emplacement
+ajouté d'avance et laissé vierge comptait parmi les actions engagées : un
+brouillon d'une action saisie et de six emplacements vierges suggérait
+« Chargé ». « Reprendre cette charge » posait ce niveau ; le praticien devait
+ensuite supprimer les emplacements pour enregistrer (`collectSubmission` refuse
+une action sans intitulé ni plans), et la charge reprise restait la gonflée.
+Démontré dans le code ; non observable en production, le brouillon ne vivant
+que dans le navigateur du praticien.
+
+**§2 — Règle.** Une action **vide** n'entre dans aucun terme de la mesure
+(`mesurerProtocole`, `baremeChargePur.ts`). Est vide une action où rien n'est
+saisi : ni type, ni intitulé, ni plan idéal, minimal ou de secours (espaces
+seuls compris), ni limitation, ni référence (Boussole, assiette, catalogue), ni
+statut d'intervention, ni attente — l'emplacement tel que « Ajouter une action »
+le crée (`estActionVide`).
+
+**§3 — Ce qui reste compté.** Une action sans type mais où quelque chose est
+saisi se compose : elle compte, comme [[D-273]] §5 l'a voulu (« trois actions
+dont une encore sans type »). Le silence tant qu'aucune action n'est typée est
+inchangé. Le second exemple de [[D-273]] §5 (« à sept actions dont une seule
+typée, il aurait affirmé « Au plus une » ») ne vaut plus que pour des actions
+non typées mais saisies : quand les six autres sont vides, « Léger » est
+désormais le résultat voulu.
+
+**§4 — Aucune version enregistrée touchée.** Une action du contrat porte
+toujours un type : elle n'est jamais vide, et sa mesure est identique avant et
+après. Les charges déjà déclarées restent celles du praticien.
+
+**§5 — Bancs.** `ProtocolMiniBuilder.test.tsx`, « actions vierges
+supprimées » : la charge reprise est celle qui reste après la suppression des
+emplacements vierges, et aucune suggestion nouvelle n'apparaît ;
+`baremeChargeV1.guard.test.ts` : une action vide n'entre dans aucun terme, une
+action saisie n'est pas vide. Les cas de composition de [[D-273]] qui portaient
+des emplacements vierges changent de niveau : « 1 typée + 1 vierge » et
+« 1 typée + 6 vierges » ⇒ « Léger », « 3 typées + 1 vierge » ⇒ « Modéré ».
+
 ### D-338 — Chaîne besoin → leviers : la clé des besoins vit sur chaque levier dans sa table signée ; les retouches de tables signées partent avec le changement de version ; la priorité libre peut viser des besoins (amende D-279 §1) ; un constat praticien unique pour les besoins sans score (H84)
 
 - Date : 2026-10-21
