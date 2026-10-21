@@ -37,7 +37,10 @@ import { describe, expect, it } from 'vitest';
 // écrit dans le catalogue est CHEZ LUI — c'est lui la source déclarée, et
 // `ranges.ts` interdit déjà de ré-encoder ses bornes ailleurs. Les 33 seuils de
 // `questions.ts` (PSQI, Horne-Östberg, Karasek…) ne sont donc pas gardés ici ;
-// ils le sont par la certification de scoring et par `DC-17`/`DC-18`.
+// ils le sont par la certification de scoring et par `DC-17`/`DC-18`, et,
+// depuis le 2026-10-21 (t23), par `seuilsCatalogue.guard.test.ts` : un
+// instantané de leurs blocs de scoring qu'aucune retouche ne franchit sans
+// décision `D-xxx`.
 
 const RACINE = path.resolve(__dirname, '../../..');
 const LIB = path.join(RACINE, 'src', 'lib');
