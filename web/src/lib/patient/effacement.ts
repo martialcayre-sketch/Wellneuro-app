@@ -170,6 +170,18 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.constatPraticien.deleteMany({ where: par })
     ).count;
 
+    // Données physiologiques et traitements en cours ([[D-335]], BP-13) :
+    // APRÈS les pièces, dont la clé RESTRICT cite un traitement ; chaque
+    // table en une instruction (remplacements et retraits ensemble). La base
+    // refuse leur suppression si le dossier survit à la transaction
+    // (contrat `donnees_physiologiques_traitements_v1_negatif.sql`).
+    supprimees.donneesPhysiologiques = (
+      await tx.donneePhysiologique.deleteMany({ where: par })
+    ).count;
+    supprimees.traitementsEnCours = (
+      await tx.traitementEnCours.deleteMany({ where: par })
+    ).count;
+
     // 3. Enfants directs.
     supprimees.synthesesIA = (await tx.syntheseIA.deleteMany({ where: par })).count;
     supprimees.questionnaireLecturesPraticien = (

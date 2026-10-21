@@ -1,7 +1,7 @@
 ---
 id: "LOT-13"
 titre: "BP-13 — Données physiologiques, traitements et compléments en cours"
-statut: "en_cours (2026-10-21) — D-335 acceptée, déclaration RGPD et texte patient validés le 2026-10-21 ; migration et code à suivre"
+statut: "en_cours (2026-10-21) — D-335 acceptée (#1614), déclaration RGPD et texte patient validés le 2026-10-21 ; PR 1, migration seule, ouverte le 2026-10-21 ; release-db à la suite du merge, puis le code"
 dépend_de: "LOT-00, LOT-11"
 ---
 
@@ -152,7 +152,12 @@ le constat « à relire » (§7).
   `pieces_constats_praticien.id_traitement` (FK `RESTRICT`, CHECK « une
   pièce exactement » sur trois clés, trigger : même dossier, tête, pas un
   retrait) ; contrat SQL négatif propre et banc au CI ; effacement nommé et
-  son banc.
+  son banc. Livrée : migration
+  `20261021100000_donnees_physiologiques_traitements_v1`, contrat
+  `donnees_physiologiques_traitements_v1_negatif.sql` (quatorze promesses),
+  banc `banc-physio-traitements-deux-sessions.test.mjs` (sept courses, dont
+  deux remplacements concurrents d'un même traitement) ; la liste blanche
+  des pièces du contrat de BP-11 reçoit `id_traitement`.
 - **PR 2 (code)** : routes du portail et du cockpit ; formulaire du portail
   (groupes remplacés, lecture des anciennes anamnèses intacte) ; panneau du
   cockpit (lignes, source, « déclaré à l'anamnèse du … », discordance) ;
