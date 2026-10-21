@@ -269,6 +269,12 @@ export function ProtocolMiniBuilder({
    * suggestion suit sa suppression. `mesurerProtocole` n'en fait pas un
    * registre : le type vide n'entre pas dans `typesDistincts`.
    *
+   * LES ACTIONS VIDES NE SONT PAS COMPTÉES ([[D-339]], amende [[D-273]] §5) :
+   * un emplacement où rien n'est saisi n'est pas une action. Compté, il
+   * gonflait la suggestion, et « Reprendre cette charge » posait ce niveau
+   * gonflé, qui restait après la suppression de l'emplacement. Le filtre vit
+   * dans `mesurerProtocole` (`estActionVide`), pas ici.
+   *
    * SILENCE TANT QU'AUCUNE ACTION DU BROUILLON N'EST TYPÉE, suspendues
    * comprises : un brouillon fait seulement d'emplacements vierges n'a encore
    * rien dit de son contenu. Une action typée mais suspendue lève ce silence
