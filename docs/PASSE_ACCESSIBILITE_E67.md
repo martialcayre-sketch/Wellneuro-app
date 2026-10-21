@@ -11,7 +11,7 @@
 |---|---|---|---|
 | A — mobile | iPhone physique (ou Android) | VoiceOver (ou TalkBack) | Safari (ou Chrome) |
 | B — ordinateur | Mac, ou PC Windows | VoiceOver (Mac) ou NVDA (Windows) | Safari / Firefox |
-| C — vision basse | le même ordinateur | aucun | zoom navigateur 200 %, puis texte iOS au plus grand (réglage Accessibilité) |
+| C — vision basse | l'ordinateur du poste B, puis le téléphone du poste A | aucun | ordinateur : zoom du navigateur à 200 % ; téléphone : taille du texte au plus grand (Réglages › Accessibilité) |
 
 ## Avant de commencer
 
@@ -70,5 +70,6 @@ Modèle de relevé :
 Transmettre la grille remplie à l'assistant. Chaque défaut « bloquant » ou
 « gênant » devient une ligne de la file A ; un défaut « mineur » est routé au
 plan. La passe est **faite** quand les trois postes ont parcouru les huit
-étapes ; D-TRUST-05 et D-C5-01 se soldent alors au registre de leurs
+étapes et que le poste B a parcouru l'Observatoire praticien ; D-TRUST-05,
+D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` se soldent alors au registre de leurs
 campagnes.
