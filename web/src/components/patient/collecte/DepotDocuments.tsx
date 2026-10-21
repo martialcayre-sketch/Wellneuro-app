@@ -11,7 +11,6 @@ import {
   type CategorieDocument,
 } from '@/lib/collecte/documentsDeposes';
 import type { DepotLu } from '@/lib/collecte/documentsDeposesServeur';
-import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -22,6 +21,7 @@ import {
   AUCUN_DEPOT,
   BLOCS_COLLECTE_G11,
   BOUTON_DEPOSER,
+  DELAI_LECTURE_DEPOT,
   DEPOT_REUSSI,
   LEGENDE_CATEGORIE,
   LIBELLE_FICHIER,
@@ -139,10 +139,8 @@ export function DepotDocuments({ token }: { token: string }) {
 
   const donnees = etat.statut === 'pret' ? etat.donnees : null;
   if (donnees && donnees.dossierOuvert && donnees.statutAge === 'date_manquante') {
-    // L'encart reste rendu ici aussi : chaque branche de rendu le porte.
     return (
       <article className="space-y-6">
-        <EncartUrgenceSuicide ecran="depot_documents" />
         <DateNaissanceEcran onEnregistree={() => void charger()} />
       </article>
     );
@@ -151,7 +149,6 @@ export function DepotDocuments({ token }: { token: string }) {
   return (
     <article className="space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">{TITRE_DEPOT}</h1>
-      <EncartUrgenceSuicide ecran="depot_documents" />
 
       {etat.statut === 'chargement' && (
         <PatientCard padding="sm">
@@ -215,6 +212,10 @@ export function DepotDocuments({ token }: { token: string }) {
                 <PatientButton onClick={() => void deposer()} disabled={!fichier} loading={occupe} loadingLabel="Envoi…">
                   {BOUTON_DEPOSER}
                 </PatientButton>
+                {/* L'encart d'urgence a quitté cet écran ([[D-293]] §3,
+                    amendement du 2026-10-21) : les numéros sont au pied du
+                    portail, le délai de lecture reste dit ici. */}
+                <p className="text-sm text-muted-foreground">{DELAI_LECTURE_DEPOT}</p>
               </div>
             )}
           </div>
