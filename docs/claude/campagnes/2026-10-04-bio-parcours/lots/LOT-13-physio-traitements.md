@@ -155,7 +155,7 @@ le constat « à relire » (§7).
   son banc. Livrée : migration
   `20261021100000_donnees_physiologiques_traitements_v1`, contrat
   `donnees_physiologiques_traitements_v1_negatif.sql` (quatorze promesses),
-  banc `banc-physio-traitements-deux-sessions.test.mjs` (sept courses, dont
+  banc `banc-physio-traitements-deux-sessions.test.mjs` (huit courses, dont
   deux remplacements concurrents d'un même traitement) ; la liste blanche
   des pièces du contrat de BP-11 reçoit `id_traitement`.
 - **PR 2 (code)** : routes du portail et du cockpit ; formulaire du portail

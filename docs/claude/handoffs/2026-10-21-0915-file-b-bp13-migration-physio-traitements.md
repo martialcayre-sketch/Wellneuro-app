@@ -55,13 +55,22 @@ liste blanche du contrat `constats_praticien_v1_negatif.sql`, banc
 - T3 vert avant la revue (7 min 35 s) : `migrate deploy`, `migrate diff`
   « No difference detected », les 57 contrats SQL dont le nouveau (quatorze
   promesses), tous les bancs à deux sessions dont le nouveau, build, E2E.
-- T3 rejoué après le correctif de la revue et la course 8 : voir la PR.
+- T3 rejoué vert après le correctif de la revue et la course 8 ; T1 complet
+  vert ; CI de #1622 vert (`verify`).
 - Vitest `patient/` vert (103 tests, dont l'ordre d'effacement).
 - Revue `wn-reviewer` : go sous condition ; P1 corrigé sur arbitrage ;
   P2-6 (effacement commis contre une pose) levé par la course 8 du banc ;
   P2-2 à P2-5 routés à la PR 2.
-- Non fait : aucune mutation jouée contre le contrat ou le banc (la base
-  locale jetable a été refusée ; seul T3 monte une base).
+- Mutations (base locale jetable, autorisée par le responsable puis
+  supprimée) : 62 contre le contrat, toutes rouges (60 sur un message
+  `CONTRAT —`, 2 sur un cas admis qui casse) — chaque contrôle des trois
+  triggers, verrous, REPEATABLE READ, instant et ordre, suppression
+  nommée, triggers de figement, RLS, droits, colonnes, CASCADE, `une_piece`
+  sur deux clés, fin comparée au premier jour, `btrim`, `coalesce`, et
+  chaque CHECK retiré. 7 contre le banc : 6 rouges ; survit le retrait du
+  `FOR KEY SHARE` du dossier dans le trigger physio — la clé étrangère
+  prend le même verrou à l'insertion, la pose attend et échoue sans
+  orpheline ; l'ordre reste relu par le cas 13 du contrat.
 
 ## Problèmes ouverts
 
