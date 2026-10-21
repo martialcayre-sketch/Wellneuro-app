@@ -23,13 +23,16 @@
 --
 -- DEPUIS LE 2026-10-20, LA COLONNE `nir` N'EXISTE PLUS (migration
 -- `patients_retrait_nir_v1`, t03, D-284 (g)) : la requête telle quelle échoue
--- sur `avec_nir`. Elle reste écrite à l'identique, comme trace de ce qui a été
--- mesuré ; un rejeu retire cette seule ligne, et `avec_nir` ne se compare plus.
+-- sur `avec_nir`. Le 2026-10-21 (D/27 du plan), cette seule ligne est retirée ;
+-- les six autres restent à l'identique, et `avec_nir` ne se compare plus.
+--
+-- REPRISE DU 2026-10-21, conteneur one-off détaché, lecture seule :
+--   dossiers=34  consultations=41  fiches=28  anamneses=28
+--   avec_adresse=0  avec_medecin=0
 
 select
   (select count(*) from patients)                                        as dossiers,
   (select count(*) from patients where adresse is not null)              as avec_adresse,
-  (select count(*) from patients where nir is not null)                  as avec_nir,
   (select count(*) from patients where medecin_traitant_nom is not null) as avec_medecin,
   (select count(*) from consultations)                                   as consultations,
   (select count(*) from consultations where fiche_signaletique is not null) as fiches,
