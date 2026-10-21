@@ -1331,7 +1331,9 @@ ouverte.
 
 **TROU.** Le **mécanisme de transfert invoqué** (clauses contractuelles types,
 annexe d'un DPA, décision d'adéquation) n'est écrit nulle part, pour aucun de
-ces flux. Ne rien affirmer avant vérification contractuelle.
+ces flux. Ne rien affirmer avant vérification contractuelle. *(Constat
+antérieur à l'avis du 2026-10-13 ; pour Sentry, le mécanisme est écrit depuis
+le DPA du 2026-10-21, ci-dessous.)*
 
 **Avis reçu le 2026-10-13 ([[D-284]] §5-6).**
 - **Anthropic** : clauses contractuelles types de ses Conditions commerciales,
@@ -1340,6 +1342,9 @@ ces flux. Ne rien affirmer avant vérification contractuelle.
   UE–États-Unis, s'il couvre l'entité et le flux. Sa preuve datée s'archive
   avec le DPA ; à défaut, les clauses contractuelles types et une TIA
   s'appliquent.
+  - **Sentry, 2026-10-21** : le DPA signé écrit le mécanisme (annexe 3 :
+    DPF, repli sur les CCT module 2). Restent la preuve datée de la
+    certification DPF de Sentry et la TIA du repli.
 - **Reste** : les pièces à archiver, et les TIA.
 
 ## 8. Durées de conservation
