@@ -81,6 +81,13 @@ function ecartsHorsValider(argument: string): string[] {
   }
   // Un `data` étalé peut porter n'importe quoi.
   if (/\.\.\./.test(argument)) ecarts.push('objet étalé');
+  // Un argument ou un `data` en variable aussi (revue CodeRabbit de #1618) :
+  // on ne juge que ce qu'on lit.
+  if (!/^\s*\{/.test(argument)) ecarts.push('argument non littéral');
+  for (const m of argument.matchAll(/\b(data|create|update)\b\s*([:,}])/g)) {
+    const suite = argument.slice((m.index ?? 0) + m[0].length).trimStart();
+    if (m[2] !== ':' || !/^[{[]/.test(suite)) ecarts.push(`${m[1]} non littéral`);
+  }
   return ecarts;
 }
 
@@ -137,6 +144,13 @@ describe('le détecteur rougit sur ce qu’il doit refuser', () => {
   it('statut en variable ou en raccourci', () => {
     expect(juger('prisma.consultation.update({ data: { statut: STATUT } })')).toContain('statut non littéral');
     expect(juger('prisma.consultation.create({ data: { statut, motif } })')).toContain('statut non littéral');
+  });
+
+  it('argument ou data en variable', () => {
+    expect(juger('prisma.consultation.update({ where, data })')).toContain('data non littéral');
+    expect(juger('prisma.consultation.update({ where, data: donnees })')).toContain('data non littéral');
+    expect(juger('prisma.consultation.update({ where, data: construireDonnees() })')).toContain('data non littéral');
+    expect(juger('prisma.consultation.update(args)')).toContain('argument non littéral');
   });
 
   it('data étalé', () => {
