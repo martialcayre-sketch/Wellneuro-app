@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { ReadingComfortControl } from '@/components/patient/ReadingComfortControl';
 import { BoutonDeconnexion } from '@/components/patient/BoutonDeconnexion';
 import { PiedDePageInformations } from '@/components/patient/trust/PiedDePageInformations';
+import { PiedDePageUrgence } from '@/components/patient/PiedDePageUrgence';
 import { PORTAIL_COOKIE_NAME, verifyPatientSession } from '@/lib/patient-session';
 
 export const metadata: Metadata = {
@@ -51,8 +52,12 @@ export default async function PortailLayout({ children }: { children: ReactNode 
       </main>
       <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1 print:hidden">
         <p>
-          Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien.
+          Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien,
+          qui ne les lit pas en temps réel.
         </p>
+        {/* Les numéros d'urgence, sur toutes les pages ([[D-293]] §3,
+            amendement du 2026-10-21). */}
+        <PiedDePageUrgence />
         <p>
           <PiedDePageInformations />
         </p>
