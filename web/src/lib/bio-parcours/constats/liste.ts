@@ -71,7 +71,8 @@ export function normaliserNote(valeur: unknown): string | null {
 }
 
 /**
- * Pourquoi un constat posé se dit « à relire » ([[D-331]] §5) — dérivé à la
+ * Pourquoi un constat posé se dit « à relire » ([[D-331]] §5, et [[D-335]] §7
+ * pour la huitième condition) — dérivé à la
  * lecture, jamais écrit. L'écran dit quelle condition tient, sans jamais dire
  * une valeur.
  */
@@ -83,6 +84,7 @@ export const RAISONS_A_RELIRE = [
   'passation_invalidee',
   'date_echue',
   'hypothese_hors_structure',
+  'traitement_remplace',
 ] as const;
 export type RaisonARelire = (typeof RAISONS_A_RELIRE)[number];
 
@@ -94,6 +96,9 @@ export const LIBELLES_A_RELIRE: Record<RaisonARelire, string> = {
   passation_invalidee: 'une passation citée est exclue du raisonnement',
   date_echue: 'la date « à revoir le » est atteinte',
   hypothese_hors_structure: 'l’hypothèse ne figure plus dans la structure signée',
+  // Huitième condition ([[D-335]] §7) : la ligne citée n'est plus la tête de
+  // son fil — confirmée, corrigée, arrêtée ou retirée.
+  traitement_remplace: 'un traitement cité a été confirmé, corrigé, arrêté ou retiré',
 };
 
 /** La nature de la date « à revoir le », affichée (DC-19, DC-20 ; [[D-331]] §4). */

@@ -15,6 +15,7 @@ import {
   HelpCircle,
   ListChecks,
   Moon,
+  Pill,
   ShieldAlert,
   Sparkles,
   Stethoscope,
@@ -83,6 +84,7 @@ import { DocumentsDeposesPanel } from '@/components/patient-cockpit/DocumentsDep
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPanel';
+import { PhysioTraitementsPanel } from '@/components/physio-traitements/PhysioTraitementsPanel';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -438,6 +440,7 @@ export function FichePatientPanel({
   compteRenduDemande,
   fixtureValidationErgo = null,
   lienMagiqueActif = false,
+  physioTraitementsActif = false,
 }: {
   idPatient: string;
   /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
@@ -456,6 +459,9 @@ export function FichePatientPanel({
   /** Drapeau G4, lu au serveur par la page. Sans lui, le menu du cockpit perd
    *  « Lien à usage unique (24 h) » que le rayon, lui, propose. */
   lienMagiqueActif?: boolean;
+  /** Drapeau `WN_PHYSIO_TRAITEMENTS` ([[D-335]] §9), lu au serveur par la page :
+   *  éteint, le tiroir des données physiologiques et des traitements n'existe pas. */
+  physioTraitementsActif?: boolean;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -2635,6 +2641,20 @@ export function FichePatientPanel({
               >
                 <RenseignementsPatientPanel {...renseignements} />
               </InstrumentTiroir>
+              {/* Les données physiologiques et les traitements en cours, en
+                  lignes datées ([[D-335]], BP-13) : sous leur drapeau
+                  seulement. Le panneau ne lit rien tant que le tiroir est
+                  fermé — la primitive ne monte son contenu qu'à l'ouverture. */}
+              {physioTraitementsActif && (
+                <InstrumentTiroir
+                  libelle="Données physiologiques et traitements"
+                  description="Sexe et statut déclarés, grossesse, allaitement, poids, taille, traitements et compléments en cours : chaque ligne datée, avec sa source. Rien n’est déduit ni calculé."
+                  icone={Pill}
+                  large
+                >
+                  <PhysioTraitementsPanel idPatient={idPatient} />
+                </InstrumentTiroir>
+              )}
               <InstrumentTiroir
                 libelle="Agenda du sommeil"
                 description="Recueil nuit par nuit (Q_SOM_09) : chronogramme, durée, efficacité, régularité."

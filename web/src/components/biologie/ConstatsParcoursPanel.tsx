@@ -18,6 +18,7 @@ import {
   type RaisonARelire,
   type Verdict,
 } from '@/lib/bio-parcours/constats/liste';
+import { LIBELLES_NATURE } from '@/lib/physio-traitements/liste';
 
 // LES CONSTATS DU PRATICIEN SUR LES HYPOTHÈSES DU PARCOURS ([[D-331]], BP-11) :
 // l'écran du praticien seul, sous `WN_BIO_CONSTAT` (éteint par défaut). Un
@@ -28,7 +29,8 @@ import {
 
 type PieceDecrite =
   | { type: 'resultat'; id: string; analyteCode: string; analyteLibelle: string | null; preleveLe: string }
-  | { type: 'reponse'; id: string; titre: string; dateReponse: string };
+  | { type: 'reponse'; id: string; titre: string; dateReponse: string }
+  | { type: 'traitement'; id: string; nature: string | null; nom: string | null; acteLe: string };
 
 type ActeDecrit = {
   id: string;
@@ -67,9 +69,11 @@ const jourCivil = (aaaammjj: string) => {
 };
 
 function decrirePiece(p: PieceDecrite): string {
-  return p.type === 'resultat'
-    ? `${p.analyteLibelle ?? p.analyteCode} — prélevé le ${jour(p.preleveLe)}`
-    : `${p.titre} — passé le ${jour(p.dateReponse)}`;
+  if (p.type === 'resultat') return `${p.analyteLibelle ?? p.analyteCode} — prélevé le ${jour(p.preleveLe)}`;
+  if (p.type === 'reponse') return `${p.titre} — passé le ${jour(p.dateReponse)}`;
+  // Une ligne de traitement ([[D-335]] §7) : sa nature, son nom, la date de la ligne citée.
+  const nature = p.nature === 'medicament' || p.nature === 'complement' ? LIBELLES_NATURE[p.nature] : 'Traitement';
+  return `${nature} : ${p.nom ?? ''} — ligne du ${jour(p.acteLe)}`;
 }
 
 const libelleVerdict = (v: string | null) => (v !== null && estVerdict(v) ? LIBELLES_VERDICT[v] : v ?? '');
@@ -96,6 +100,7 @@ const REFUS_PERIMES = new Set([
   'piece_corrigee',
   'piece_annulee',
   'passation_exclue',
+  'traitement_remplace',
   'structure_non_signee',
   'hypothese_hors_structure',
 ]);

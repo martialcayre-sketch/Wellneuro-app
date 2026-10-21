@@ -49,6 +49,8 @@ import {
   motifNonInterpretable,
 } from '@/lib/scoring/passationsNonInterpretables';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
+import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
+import { lireTraitementsEnVigueur } from '@/lib/physio-traitements/lecture';
 import {
   MODELE_REDACTION_PRATICIEN,
   VERSION_SYNTHESE_PRATICIEN,
@@ -1051,6 +1053,28 @@ export async function preparerGeneration(
         context: finalizeLogContext(requestContext, { retryable: true }),
         error: ctxErr,
       });
+    }
+
+    // Les traitements en vigueur du dossier ([[D-335]] §8, BP-13), sous
+    // `WN_PHYSIO_TRAITEMENTS` seulement : ils nourrissent la LIGNE DE
+    // VIGILANCE, écrite par le code après la réponse de l'IA, et rien
+    // d'autre — `buildContexteClinique`, le texte transmis au modèle, ne les
+    // reçoit pas. HORS du `try` de l'anamnèse (revue `wn-reviewer`, P2) : un
+    // échec de lecture des lignes n'emporte ni le contexte ni les signaux
+    // d'alerte ; il se dit, et la vigilance de l'anamnèse reste entière.
+    if (isPhysioTraitementsEnabled()) {
+      try {
+        const lignesEnVigueur = await lireTraitementsEnVigueur(prisma, idPatient);
+        vigilanceDeterministe = extraireVigilanceDeterministe(anamnesePourConstats, lignesEnVigueur);
+      } catch (lignesErr) {
+        logger.warn({
+          event: EVENT_CODES.SYNTHESE_POST_CONTEXT_UNAVAILABLE,
+          domain: 'SYNTHESE_IA',
+          message: 'Traitements en vigueur illisibles : vigilance de l\'anamnèse seule',
+          context: finalizeLogContext(requestContext, { retryable: true }),
+          error: lignesErr,
+        });
+      }
     }
 
     // Vigilances de DISCORDANCE ([[D-057]], LOT-09) — la seconde moitié de

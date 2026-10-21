@@ -121,6 +121,55 @@ describe('extraireVigilanceDeterministe', () => {
   });
 });
 
+// [[D-335]] §8 (BP-13) : sous `WN_PHYSIO_TRAITEMENTS`, la ligne de vigilance
+// lit AUSSI les traitements en vigueur du dossier, sous la même forme (nom,
+// dose). Une anamnèse ancienne rend exactement ce qu'elle rendait ; deux
+// sources d'une même nature sont nommées, sans fusion. Traitements
+// synthétiques : aucun nom réel.
+describe('extraireVigilanceDeterministe — lignes en vigueur (D-335 §8)', () => {
+  const ANCIENNE = {
+    signaux_alerte: ['Signal X'],
+    medicaments: [{ nom: 'Traitement A', dose: '1 cp' }],
+    automedication: ['Antalgiques'],
+    complements: [{ nom: 'Complément B' }],
+  };
+
+  it('drapeau éteint (`null`) ou aucune ligne : sortie identique à aujourd’hui', () => {
+    const avant = extraireVigilanceDeterministe(ANCIENNE);
+    expect(extraireVigilanceDeterministe(ANCIENNE, null)).toEqual(avant);
+    expect(extraireVigilanceDeterministe(ANCIENNE, [])).toEqual(avant);
+    expect(avant[1]).toBe(
+      'Traitements médicamenteux en cours : Traitement A (1 cp) — vérifier les interactions, sans proposer d\'ajustement posologique ni d\'arrêt.',
+    );
+  });
+
+  it('les lignes seules : même forme, source nommée', () => {
+    const result = extraireVigilanceDeterministe({}, [
+      { nature: 'medicament', nom: 'Traitement C', dose: '2 mg' },
+      { nature: 'complement', nom: 'Complément D', dose: null },
+    ]);
+    expect(result).toEqual([
+      'Traitements médicamenteux en cours (lignes datées du dossier) : Traitement C (2 mg) — vérifier les interactions, sans proposer d\'ajustement posologique ni d\'arrêt.',
+      'Compléments alimentaires en cours (lignes datées du dossier) : Complément D — vérifier les redondances et interactions.',
+    ]);
+  });
+
+  it('anamnèse ancienne ET lignes : chaque source nommée, sans fusion, dans l’ordre', () => {
+    const result = extraireVigilanceDeterministe(ANCIENNE, [{ nature: 'medicament', nom: 'Traitement C', dose: null }]);
+    expect(result).toHaveLength(5);
+    expect(result[1]).toContain('Traitements médicamenteux en cours (déclarés à l’anamnèse) : Traitement A (1 cp)');
+    expect(result[2]).toContain('Traitements médicamenteux en cours (lignes datées du dossier) : Traitement C —');
+    expect(result[3]).toContain('Antalgiques');
+    // Aucune ligne de complément : l'item de l'anamnèse garde sa forme d'avant.
+    expect(result[4]).toBe('Compléments alimentaires en cours : Complément B — vérifier les redondances et interactions.');
+  });
+
+  it('le texte transmis à l’IA ne reçoit aucune ligne : `buildContexteClinique` n’en prend pas', () => {
+    expect(buildContexteClinique.length).toBe(2);
+    expect(buildContexteClinique(null, ANCIENNE)).not.toContain('Traitement');
+  });
+});
+
 // Revue de sécurité du 2026-08-22, constat M — injection de prompt par les
 // champs libres. Le texte patient n'entre dans le prompt que par ce module :
 // c'est ICI que les caractères porteurs de structure perdent leur pouvoir.

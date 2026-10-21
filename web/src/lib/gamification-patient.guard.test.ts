@@ -53,6 +53,9 @@ const SURFACES_PATIENT = [
   // composant qu'elle monte.
   'components/patient-companion',
   'components/ui',
+  // BP-13 ([[D-335]]) : la fiche de renseignements du portail (sexe, cycles,
+  // traitements) vit avec le panneau du cockpit ; le dossier entier est gardé.
+  'components/physio-traitements',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.

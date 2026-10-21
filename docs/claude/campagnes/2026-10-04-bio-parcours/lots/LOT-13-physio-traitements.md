@@ -1,7 +1,7 @@
 ---
 id: "LOT-13"
 titre: "BP-13 — Données physiologiques, traitements et compléments en cours"
-statut: "en_cours (2026-10-21) — D-335 acceptée (#1614), déclaration RGPD et texte patient validés le 2026-10-21 ; PR 1, migration seule, ouverte le 2026-10-21 ; release-db à la suite du merge, puis le code"
+statut: "terminé (2026-10-21) — D-335 acceptée (#1614) ; PR 1, migration seule, mergée (#1622), release-db constatée par conteneur ; PR 2, code consommateur sous `WN_PHYSIO_TRAITEMENTS` éteint, dans la PR de clôture"
 dépend_de: "LOT-00, LOT-11"
 ---
 
@@ -176,6 +176,52 @@ le constat « à relire » (§7).
   s'interbloquent (PostgreSQL annule l'une, rien n'est corrompu) ; rester en
   READ COMMITTED — une transaction SERIALIZABLE face à une READ COMMITTED
   peut laisser deux têtes sur un critère (trou commun à BP-09 et BP-11).
+
+**PR 2 livrée (2026-10-21)** : release-db run 39654198602 approuvée et
+constatée (sentinelle liée au run ; production sur la tête de `main` ;
+conteneur : migration appliquée, deux tables vides, RLS sans politique,
+`id_traitement` présente, « une pièce » sur trois clés). Routes
+`api/portail/physio-traitements` et `api/praticien/physio-traitements` ;
+module `lib/physio-traitements/` (listes, dates, demande, fils, lecture,
+écriture, garde, anamnèse) ; écrans `components/physio-traitements/`. Les
+quatre P2 routés sont tenus : la lecture des pièces décode la troisième clé
+(`constats/lecture.ts`, `aRelire.ts`, huitième condition
+`traitement_remplace`) ; les textes sont normalisés (`normaliserTexte`) ;
+les pièces s'écrivent résultats, réponses puis traitements, et le statut
+menstruel prend le verrou du sexe déclaré avant le sien ; l'écriture reste
+en READ COMMITTED. Choix d'exécution, à relire avant l'allumage :
+
+- **Le portail** montre au patient la tête du sexe déclaré, du statut
+  menstruel et de chaque traitement (en cours ou arrêté), sans l'e-mail du
+  praticien ; il n'y voit ni grossesse, ni allaitement, ni mesures posées
+  au cockpit. Il note un arrêt et supprime une ligne qu'il a ajoutée ; il
+  ne « modifie » pas une ligne (aucun libellé validé ne le dit).
+- **Une page « Ma fiche de renseignements »** (`portail/[token]/renseignements`)
+  et son lien au hub rouvrent ces lignes pour un dossier dont l'anamnèse est
+  déjà validée — sans elle, un patient existant ne déclarerait jamais rien.
+  Le titre de la page et du lien, « Ma fiche de renseignements », reprend
+  le nom de la v20 ; il n'a pas été soumis comme libellé.
+- **La date** se saisit en année, mois facultatif, jour facultatif, ou
+  « Je ne sais pas » : la précision se lit de ce qui est rempli, jamais
+  choisie à part.
+- **Au cockpit**, un dossier MINEUR est refusé à l'écriture ; une date de
+  naissance manquante ne l'est pas ([[D-335]] §6 ne vise que le mineur).
+- **La vigilance** nomme ses sources quand l'anamnèse et les lignes portent
+  une même nature (« déclarés à l'anamnèse », « lignes datées du dossier ») ;
+  sinon l'item de l'anamnèse garde sa forme exacte d'avant.
+- **Les journaux** des deux routes rendent la classe et le code de l'erreur
+  (`classeEtCode`), jamais son message — `signature` vit dans
+  `biology-library`, dont la frontière refuse un importeur neuf (D-306).
+
+Relecture `wn-reviewer` de la PR 2 : go sous condition ; un P1 et trois P2
+corrigés dans la PR (Entrée et ligne ouverte dans l'assistant, lecture des
+lignes hors du `try` de l'anamnèse, retrait d'un statut menstruel périmé,
+U+0000 et an 0000). **Ajoutés aux conditions de l'allumage** : la longueur
+d'un point de vigilance (borne de 500 du brouillon praticien) ; l'export du
+dossier, qui ne porte pas ces lignes ; la confirmation que le courrier au
+médecin peut reprendre la ligne de vigilance qui les nomme ; une procédure
+d'extinction qui dise que les traitements déclarés en lignes deviennent
+invisibles à la vigilance.
 
 ## Hors périmètre
 

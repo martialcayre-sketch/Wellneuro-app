@@ -16,6 +16,7 @@ import { estConflitConcurrent, estRefusDeLaBase } from '@/lib/bio-parcours/const
 import { lireConstatsDuDossier, type ConstatsDuDossier } from '@/lib/bio-parcours/constats/lecture';
 import { MESSAGES_REFUS_CONSTAT } from '@/lib/bio-parcours/constats/messages';
 import { structureDuParcours } from '@/lib/bio-parcours/constats/structure';
+import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
 
 // LES CONSTATS DU PRATICIEN SUR UNE HYPOTHÈSE DU PARCOURS ([[D-331]], BP-11).
 //
@@ -30,7 +31,8 @@ import { structureDuParcours } from '@/lib/bio-parcours/constats/structure';
 // lecture et l'écriture — sont reconnus à leur CODE, jamais à leur message.
 //
 // DRAPEAU `WN_BIO_CONSTAT`, éteint, fail-closed ([[D-081]]) : il passe avant
-// la session, comme celui des résultats. Aucun constat ne se pose avant la
+// la session, comme celui des résultats. Une ligne de traitement ne se cite
+// en pièce que sous `WN_PHYSIO_TRAITEMENTS` aussi ([[D-335]] §7). Aucun constat ne se pose avant la
 // signature de la structure de BP-12a ([[D-314]] §10).
 //
 // PAS de journal d'accès à l'écriture : dispense `GD-1` ([[D-118]]), comme les
@@ -81,7 +83,11 @@ export async function GET(req: Request) {
     // personne n'a signée (revue `wn-reviewer` de la PR 2).
     const enVigueur = new Set(structure.signee ? structure.hypotheses : []);
     const [constats, libelles] = await Promise.all([
-      lireConstatsDuDossier(prisma, idPatient, { hypothesesEnVigueur: enVigueur, aujourdhui }),
+      lireConstatsDuDossier(prisma, idPatient, {
+        hypothesesEnVigueur: enVigueur,
+        aujourdhui,
+        traitementsCitables: isPhysioTraitementsEnabled(),
+      }),
       structure.signee ? libellesDesHypotheses() : Promise.resolve(new Map<string, string>()),
     ]);
     const offertes = structure.signee
@@ -126,7 +132,7 @@ export async function POST(req: Request) {
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, 409, MESSAGE_DOSSIER_CLOS);
 
     const structure = structureDuParcours();
-    const lu = lireDemandeConstat(brut, structure, dateJourParis());
+    const lu = lireDemandeConstat(brut, structure, dateJourParis(), isPhysioTraitementsEnabled());
     if (!lu.ok) {
       const conflit = lu.raison === 'structure_non_signee' || lu.raison === 'hypothese_hors_structure';
       return echec(lu.raison, conflit ? 409 : 400);

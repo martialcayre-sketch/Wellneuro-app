@@ -13,6 +13,13 @@ import {
 } from '@/lib/securite/urgenceSuicide';
 import { EncartUrgenceSuicide } from '@/components/patient/EncartUrgenceSuicide';
 import { MessageReponseSuicide } from '@/components/patient/MessageReponseSuicide';
+import { DeclarationsPatient } from '@/components/physio-traitements/DeclarationsPatient';
+import {
+  GROUPES_REMPLACES,
+  SECTION_REPERES,
+  SECTION_TRAITEMENTS,
+  sansGroupesRemplaces,
+} from '@/lib/physio-traitements/anamnese';
 import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -380,6 +387,26 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('anamnese', idPatient));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const premierRendu = useRef(true);
+  // [[D-335]] §3 (BP-13) : sous `WN_PHYSIO_TRAITEMENTS`, les groupes
+  // « Médicaments en cours » et « Compléments alimentaires en cours » sont
+  // REMPLACÉS par des lignes datées, et « Repères corporels » reçoit le sexe
+  // et les cycles. La route décide (`?interrupteur=1`) ; tant qu'elle n'a pas
+  // dit « ouvert », la fiche reste celle d'avant.
+  const [physioOuvert, setPhysioOuvert] = useState(false);
+  const [lignePhysioOuverte, setLignePhysioOuverte] = useState(false);
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/portail/physio-traitements?interrupteur=1');
+        const data = (await res.json()) as { ok?: boolean; ouvert?: boolean };
+        if (vivant && res.ok && data.ok === true && data.ouvert === true) setPhysioOuvert(true);
+      } catch {
+        // Silence : la fiche garde ses groupes de texte libre.
+      }
+    })();
+    return () => { vivant = false; };
+  }, []);
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
@@ -425,7 +452,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
       const res = await fetch('/api/portail/valider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, email, anamnese: valeurs, motif }),
+        // Lignes datées ouvertes : un brouillon ancien ne fait pas revivre
+        // les groupes remplacés.
+        body: JSON.stringify({ token, email, anamnese: physioOuvert ? sansGroupesRemplaces(valeurs) : valeurs, motif }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string; premiereAssignation?: string | null };
       if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
@@ -440,6 +469,13 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
 
   const handleSectionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Une ligne de traitement ouverte et non enregistrée ne se perd pas en
+    // silence (revue `wn-reviewer`, P1) : on ne quitte la section qu'après
+    // l'avoir enregistrée ou annulée.
+    if (lignePhysioOuverte) {
+      setError('Enregistrez ou annulez la ligne en cours avant de continuer.');
+      return;
+    }
     if (!isLastSection) { setSectionIndex(i => i + 1); window.scrollTo(0, 0); return; }
     void soumettre();
   };
@@ -481,8 +517,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         {section.id === SECTION_ANAMNESE_SIGNAUX && anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX]) && (
           <MessageReponseSuicide />
         )}
+        {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={setLignePhysioOuverte} />}
 
-        {(section.groupes ?? []).map(groupe => (
+        {(physioOuvert ? (section.groupes ?? []).filter(g => !GROUPES_REMPLACES.includes(g.id)) : section.groupes ?? []).map(groupe => (
           <div key={groupe.id} className="space-y-3">
             <div>
               <p className="text-sm font-medium text-foreground">{groupe.label}</p>
@@ -513,6 +550,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
             </PatientButton>
           </div>
         ))}
+        {physioOuvert && section.id === SECTION_TRAITEMENTS && <DeclarationsPatient parties="traitements" onEditionChange={setLignePhysioOuverte} />}
       </fieldset>
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}

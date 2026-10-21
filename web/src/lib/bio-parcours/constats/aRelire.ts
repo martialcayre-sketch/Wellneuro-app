@@ -11,7 +11,8 @@ import { RAISONS_A_RELIRE } from './liste';
 
 export type PieceLue =
   | { type: 'resultat'; idResultat: string }
-  | { type: 'reponse'; idReponse: string };
+  | { type: 'reponse'; idReponse: string }
+  | { type: 'traitement'; idTraitement: string };
 
 export type ActeConstatLu = {
   id: string;
@@ -57,6 +58,12 @@ export type EtatDuDossier = {
   reponses: ReadonlyMap<string, ReponseCitee>;
   /** Par questionnaire : la passation la plus récente qui alimente le raisonnement (ISO). */
   derniereReponse: ReadonlyMap<string, string>;
+  /**
+   * Les lignes de traitement citées ([[D-335]] §7) : `true` si une ligne la
+   * vise (remplacée — confirmée, corrigée, arrêtée — ou retirée). Absente :
+   * aucune pièce de traitement n'est lue.
+   */
+  traitementsRemplaces?: ReadonlyMap<string, boolean>;
   /** Les hypothèses de la structure signée en vigueur. */
   hypothesesEnVigueur: ReadonlySet<string>;
   /** Le jour, AAAA-MM-JJ, Europe/Paris (`dateJourParis`). */
@@ -140,6 +147,14 @@ export function raisonsARelire(constat: ActeConstatLu, etat: EtatDuDossier): Rai
 
   // 7 — l'hypothèse ne figure plus dans la structure signée en vigueur.
   if (!etat.hypothesesEnVigueur.has(constat.hypotheseCode)) raisons.add('hypothese_hors_structure');
+
+  // 8 — un traitement cité n'est plus la tête de son fil ([[D-335]] §7) :
+  // une confirmation compte, comme une correction, un arrêt ou un retrait.
+  for (const piece of constat.pieces) {
+    if (piece.type === 'traitement' && etat.traitementsRemplaces?.get(piece.idTraitement) === true) {
+      raisons.add('traitement_remplace');
+    }
+  }
 
   return RAISONS_A_RELIRE.filter(r => raisons.has(r));
 }
