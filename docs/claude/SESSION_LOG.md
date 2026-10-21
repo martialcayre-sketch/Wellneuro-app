@@ -11165,7 +11165,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 ## 2026-10-21 — E67 : parcours et grille de la passe d'accessibilité
 
-**Fait.** `docs/PASSE_ACCESSIBILITE_E67.md` : trois postes (mobile et lecteur d'écran, ordinateur et lecteur d'écran, zoom 200 %), huit étapes du portail plus l'Observatoire praticien, neuf critères ; plan H64 pointé vers la grille. Écrans vérifiés dans le code.
+**Fait.** `docs/PASSE_ACCESSIBILITE_E67.md` : quatre postes (mobile et lecteur d'écran, ordinateur et lecteur d'écran, zoom 200 % sur l'ordinateur, texte agrandi sur le téléphone), huit étapes du portail plus l'Observatoire praticien, neuf critères ; plan H64 pointé vers la grille. Écrans vérifiés dans le code.
 
 **Écarté.** Rien.
 

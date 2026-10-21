@@ -1343,7 +1343,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : aucune.
 - **Critère de fin** : passe réelle jouée ; contrôles visuels verts.
-- **Mise à jour (2026-10-21)** : arbitrage du responsable : la passe au lecteur d'écran sur appareil physique est un geste humain, requalifié en file D ; l'assistant prépare le parcours à suivre et la grille de constat. Parcours et grille versés : `docs/PASSE_ACCESSIBILITE_E67.md` (8 étapes, 3 postes, 9 critères).
+- **Mise à jour (2026-10-21)** : arbitrage du responsable : la passe au lecteur d'écran sur appareil physique est un geste humain, requalifié en file D ; l'assistant prépare le parcours à suivre et la grille de constat. Parcours et grille versés : `docs/PASSE_ACCESSIBILITE_E67.md` (8 étapes, 4 postes, 9 critères).
 
 #### H65 · J2-nf5 : comparer deux versions de score
 - **Identifiant, piste** : J2-nf5 ; cockpit ; file A.

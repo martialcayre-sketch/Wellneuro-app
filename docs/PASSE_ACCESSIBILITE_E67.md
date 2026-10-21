@@ -7,11 +7,12 @@
 
 ## Matériel
 
-| Poste | Appareil | Lecteur d'écran | Navigateur |
+| Poste | Appareil | Lecteur d'écran | Navigateur ou réglage |
 |---|---|---|---|
 | A — mobile | iPhone physique (ou Android) | VoiceOver (ou TalkBack) | Safari (ou Chrome) |
 | B — ordinateur | Mac, ou PC Windows | VoiceOver (Mac) ou NVDA (Windows) | Safari / Firefox |
-| C — vision basse | l'ordinateur du poste B, puis le téléphone du poste A | aucun | ordinateur : zoom du navigateur à 200 % ; téléphone : taille du texte au plus grand (Réglages › Accessibilité) |
+| C — vision basse, ordinateur | l'ordinateur du poste B | aucun | zoom du navigateur à 200 % |
+| D — vision basse, téléphone | le téléphone du poste A | aucun | taille du texte au plus grand (Réglages › Accessibilité) |
 
 ## Avant de commencer
 
@@ -24,7 +25,7 @@
 - Noter l'heure de début : une session portail dure 30 jours, la passe n'est
   pas pressée.
 
-## Parcours (portail patient, postes A puis B, puis C)
+## Parcours (portail patient, postes A, B, C puis D)
 
 1. Connexion par lien magique (`/portail/connexion`, `/portail/lien/[jeton]`, `/portail/lien/indisponible`).
 2. Accueil du dossier (`/portail/[jeton]`) et **pied de page d'urgence**.
@@ -55,7 +56,7 @@ Pour chaque critère : **OK**, **Défaut** (bloquant / gênant / mineur), ou
 | 4 | États | coché, développé, désactivé, obligatoire, en erreur : annoncés |
 | 5 | Messages | erreur, succès, « brouillon restauré » : annoncés sans chercher |
 | 6 | Navigation | gestes (A) ou clavier (B) : tout est atteignable, aucun piège, focus visible |
-| 7 | Zoom | 200 % ou texte au plus grand (C) : rien de coupé, pas de défilement horizontal |
+| 7 | Zoom | 200 % (C) ou texte au plus grand (D) : rien de coupé, pas de défilement horizontal |
 | 8 | Lisibilité | contraste suffisant en plein jour ; rien ne repose sur la seule couleur |
 | 9 | Cibles | sur mobile, chaque cible se touche sans toucher sa voisine |
 
@@ -69,7 +70,7 @@ Modèle de relevé :
 
 Transmettre la grille remplie à l'assistant. Chaque défaut « bloquant » ou
 « gênant » devient une ligne de la file A ; un défaut « mineur » est routé au
-plan. La passe est **faite** quand les trois postes ont parcouru les huit
+plan. La passe est **faite** quand les quatre postes ont parcouru les huit
 étapes et que le poste B a parcouru l'Observatoire praticien ; D-TRUST-05,
 D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` se soldent alors au registre de leurs
 campagnes.
