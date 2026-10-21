@@ -79,6 +79,9 @@ banc de la garde d'âge. Docs : `FEATURE_FLAGS.md`, `PLAN_WELLNEURO.md`
   une lecture en échec de la partie ne la laisse plus vide en silence —
   message, « Réessayer », et la section ne se valide pas (les lignes
   remplacent les groupes de texte libre). Banc `DeclarationsPatient.test.tsx`.
+- Troisième tour CodeRabbit (un commentaire), corrigé : l'alerte et
+  « Réessayer » s'affichent aussi quand la relecture qui suit une écriture
+  échoue (données d'avant conservées) ; cas ajouté au banc.
 
 ## Problèmes ouverts
 

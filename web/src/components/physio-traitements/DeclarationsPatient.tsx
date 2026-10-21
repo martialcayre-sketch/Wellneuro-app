@@ -192,15 +192,16 @@ export function DeclarationsPatient({
     }
   };
 
-  if (!donnees) {
-    if (!illisible) return null;
-    return (
-      <p role="alert" className="text-sm text-foreground">
-        Cette partie de votre fiche n’a pas pu être chargée.{' '}
-        <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
-      </p>
-    );
-  }
+  // Une lecture en échec se dit, qu'il y ait déjà des données ou non : après
+  // une écriture, les données conservées sont celles d'avant (revue
+  // CodeRabbit).
+  const alerteLecture = illisible ? (
+    <p role="alert" className="text-sm text-foreground">
+      Cette partie de votre fiche n’a pas pu être chargée.{' '}
+      <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
+    </p>
+  ) : null;
+  if (!donnees) return alerteLecture;
   const actif = donnees.saisieOuverte;
   const sexe = donnees.donnees.criteres.find(c => c.critere === 'sexe_declare')?.tete ?? null;
   const cycles = donnees.donnees.criteres.find(c => c.critere === 'statut_menstruel')?.tete ?? null;
@@ -312,6 +313,7 @@ export function DeclarationsPatient({
         if (e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault();
       }}
     >
+      {alerteLecture}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}
       {!actif && (
         <p className="text-sm text-muted-foreground">Cette partie de votre fiche ne peut pas être modifiée pour le moment.</p>
