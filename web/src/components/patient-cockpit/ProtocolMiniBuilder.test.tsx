@@ -1126,10 +1126,12 @@ describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
     { nom: '1 vierge, aucune typée', brouillon: { typees: 0, vierges: 1 }, attendu: null },
     { nom: '3 vierges, aucune typée', brouillon: { typees: 0, vierges: 3 }, attendu: null },
     { nom: '1 typée', brouillon: { typees: 1, vierges: 0 }, attendu: LEGER },
-    { nom: '1 typée + 1 vierge', brouillon: { typees: 1, vierges: 1 }, attendu: MODERE },
+    // LES VIERGES NE COMPTENT PLUS ([[D-339]]) : rien n'y est saisi. Avant,
+    // « 1 typée + 1 vierge » suggérait Modéré et « 1 typée + 6 vierges » Chargé.
+    { nom: '1 typée + 1 vierge', brouillon: { typees: 1, vierges: 1 }, attendu: LEGER },
     { nom: '2 typées + 1 vierge', brouillon: { typees: 2, vierges: 1 }, attendu: MODERE },
-    { nom: '3 typées + 1 vierge', brouillon: { typees: 3, vierges: 1 }, attendu: CHARGE },
-    { nom: '1 typée + 6 vierges', brouillon: { typees: 1, vierges: 6 }, attendu: CHARGE },
+    { nom: '3 typées + 1 vierge', brouillon: { typees: 3, vierges: 1 }, attendu: MODERE },
+    { nom: '1 typée + 6 vierges', brouillon: { typees: 1, vierges: 6 }, attendu: LEGER },
     { nom: '3 typées dont 1 suspendue', brouillon: { typees: 3, vierges: 0, suspendues: [3] }, attendu: MODERE },
     { nom: '3 typées, toutes suspendues', brouillon: { typees: 3, vierges: 0, suspendues: [1, 2, 3] }, attendu: LEGER },
     // Une action typée mais suspendue LÈVE le silence : le brouillon a un contenu.
@@ -1147,8 +1149,12 @@ describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
     });
   }
 
-  it('le retrait de l’action non typée fait redescendre la suggestion', () => {
+  // UNE ACTION SANS TYPE MAIS SAISIE COMPTE ([[D-273]] §5, maintenu par
+  // [[D-339]]) : elle se compose, elle n'est pas vide.
+  it('le retrait d’une action non typée mais saisie fait redescendre la suggestion', () => {
     const { container, ui } = composer({ typees: 1, vierges: 1 });
+    expect(suggestion(container)).toBe(LEGER);
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 2'), { target: { value: 'Marcher' } });
     expect(suggestion(container)).toBe(MODERE);
     fireEvent.click(ui.getAllByRole('button', { name: 'Supprimer l’action' })[1]);
     expect(suggestion(container)).toBe(LEGER);
@@ -1158,8 +1164,50 @@ describe('ProtocolMiniBuilder — le comptage pendant la composition', () => {
     const { container, ui } = composer({ typees: 0, vierges: 2 });
     expect(suggestion(container)).toBeNull();
     fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
-    expect(suggestion(container)).toBe(MODERE);
+    expect(suggestion(container)).toBe(LEGER);
   });
+});
+
+// ── t34 : « Reprendre cette charge » ne fige plus un niveau gonflé (D-339) ──
+//
+// LE BANC « ACTIONS VIERGES SUPPRIMÉES » (critère de F76). Le praticien ajoute
+// des emplacements d'avance, reprend la charge suggérée, puis supprime les
+// emplacements restés vierges pour pouvoir enregistrer — `collectSubmission`
+// refuse une action sans intitulé ni plans. Avant [[D-339]], la charge reprise
+// était celle des emplacements comptés, et elle restait après leur
+// suppression. Désormais la suggestion, la charge reprise et la charge après
+// suppression coïncident.
+describe('ProtocolMiniBuilder — actions vierges supprimées', () => {
+  const NIVEAU_ATTENDU: Record<number, string> = { 1: 'light', 2: 'moderate', 3: 'moderate', 4: 'loaded' };
+
+  function composer(typees: number, vierges: number) {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} baremeCharge={lignesBaremeServables()} />);
+    const ui = within(container);
+    for (let rang = 0; rang < typees + vierges; rang += 1) fireEvent.click(ui.getByText('Ajouter une action'));
+    for (let rang = 1; rang <= typees; rang += 1) {
+      fireEvent.change(ui.getByLabelText(`Type de l’action ${rang}`), { target: { value: 'food' } });
+    }
+    return ui;
+  }
+
+  const charge = (ui: ReturnType<typeof within>) =>
+    (ui.getByLabelText('Charge déclarée par le praticien') as HTMLSelectElement).value;
+
+  for (const [typees, vierges] of [[1, 1], [1, 6], [2, 1], [3, 1], [4, 3]] as const) {
+    it(`${typees} typée(s) + ${vierges} vierge(s) : la charge reprise survit à la suppression des vierges`, () => {
+      const ui = composer(typees, vierges);
+      fireEvent.click(ui.getByRole('button', { name: 'Reprendre cette charge' }));
+      expect(charge(ui)).toBe(NIVEAU_ATTENDU[typees]);
+      for (let reste = vierges; reste > 0; reste -= 1) {
+        const boutons = ui.getAllByRole('button', { name: 'Supprimer l’action' });
+        fireEvent.click(boutons[boutons.length - 1]);
+      }
+      expect(ui.getAllByRole('button', { name: 'Supprimer l’action' })).toHaveLength(typees);
+      expect(charge(ui)).toBe(NIVEAU_ATTENDU[typees]);
+      // La suggestion n'a pas bougé : rien à reprendre une seconde fois.
+      expect(ui.queryByRole('button', { name: 'Reprendre cette charge' })).toBeNull();
+    });
+  }
 });
 
 // ── t15 : le brouillon vierge se recharge depuis la version en vigueur ──────

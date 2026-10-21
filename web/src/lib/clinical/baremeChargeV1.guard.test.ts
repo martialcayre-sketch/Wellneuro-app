@@ -9,7 +9,7 @@ import {
 } from './baremeChargeV1';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { chevauchementsBareme, suggererDepuisLignes } from './baremeChargePur';
+import { chevauchementsBareme, estActionVide, suggererDepuisLignes } from './baremeChargePur';
 import { MAX_ACTIONS_PROTOCOLE_21J } from '@/lib/clinical-engine/types';
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 
@@ -153,6 +153,33 @@ describe('barème de charge — ce qu’il mesure et ce qu’il suggère', () =>
     expect(mesure.typesDistincts).toBe(1);
     // Contre-épreuve : seule, une action sans type ne fabrique aucun registre.
     expect(mesurerProtocole([{ ...action(), type: '' }]).typesDistincts).toBe(0);
+  });
+
+  // UNE ACTION VIDE N'ENTRE DANS AUCUN TERME ([[D-339]]) : rien n'y est saisi,
+  // c'est un emplacement. Une action du contrat porte toujours un type : elle
+  // n'est jamais vide, et aucune version enregistrée ne change de mesure.
+  it('une action vide n’entre dans aucun terme', () => {
+    const vide = { ...action({ actionId: 'a2', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [] }), type: '' as const };
+    expect(estActionVide(vide)).toBe(true);
+    expect(mesurerProtocole([action(), vide])).toEqual(mesurerProtocole([action()]));
+    expect(mesurerProtocole([vide])).toEqual(mesurerProtocole([]));
+  });
+
+  it('une action saisie n’est pas vide, typée ou non', () => {
+    const vide = { ...action({ title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [] }), type: '' as const };
+    expect(estActionVide({ ...vide, type: 'food' })).toBe(false);
+    expect(estActionVide({ ...vide, title: 'Marcher' })).toBe(false);
+    expect(estActionVide({ ...vide, idealPlan: 'Marcher 30 min' })).toBe(false);
+    expect(estActionVide({ ...vide, minimalPlan: 'Marcher 10 min' })).toBe(false);
+    expect(estActionVide({ ...vide, rescuePlan: 'Dix minutes' })).toBe(false);
+    expect(estActionVide({ ...vide, waitFor: { type: 'biologie', cible: 'Ferritine' } })).toBe(false);
+    expect(estActionVide({ ...vide, foodCompassRef: {} as NonNullable<ProtocolAction['foodCompassRef']> })).toBe(false);
+    expect(estActionVide({ ...vide, recommendedPlateRef: {} as NonNullable<ProtocolAction['recommendedPlateRef']> })).toBe(false);
+    expect(estActionVide({ ...vide, supplementCatalogRef: {} as NonNullable<ProtocolAction['supplementCatalogRef']> })).toBe(false);
+    expect(estActionVide({ ...vide, limitations: ['Genou'] })).toBe(false);
+    expect(estActionVide({ ...vide, interventionStatus: 'conditionnelle_biologie' })).toBe(false);
+    // Des espaces ne sont pas une saisie.
+    expect(estActionVide({ ...vide, title: '   ' })).toBe(true);
   });
 
   // LA SURFACE EXACTE DÉCLARÉE CONFORME LE 2026-10-08 ([[D-273]]) — huit
