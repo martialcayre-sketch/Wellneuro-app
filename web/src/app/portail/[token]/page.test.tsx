@@ -170,7 +170,7 @@ describe('PortailPage — garde d’âge', () => {
     );
   });
 
-  // ACT-5 (D-340 §4) : le texte des mineurs n'est servi qu'à un dossier mineur
+  // ACT-5 (D-341 §4) : le texte des mineurs n'est servi qu'à un dossier mineur
   // ouvert — ni à un majeur, ni à un dossier clos (jamais traité en mineur).
   const TEXTE_ATTENDU = TEXTE_MINEUR_JEUNE.flatMap(s => [s.titre, s.texte]).join('');
 

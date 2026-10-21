@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-340 — ACT-5 : le texte des mineurs servi au jeune (G-11, 2B) sur l'écran de pause du mineur ; le texte au titulaire (2A) attend J3-mineurs ; J2-conf tenu pour cette surface (r reconnu, at hors périmètre)
+### D-341 — ACT-5 : le texte des mineurs servi au jeune (G-11, 2B) sur l'écran de pause du mineur ; le texte au titulaire (2A) attend J3-mineurs ; J2-conf tenu pour cette surface (r reconnu, at hors périmètre)
 
 - Date : 2026-10-21
 - Statut : accepté — quatre arbitrages du responsable du 2026-10-21, rendus sur

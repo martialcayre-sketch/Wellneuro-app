@@ -1,4 +1,4 @@
-# Handoff — ACT-5 : texte des mineurs (2B) servi, J2-conf tenu (D-340)
+# Handoff — ACT-5 : texte des mineurs (2B) servi, J2-conf tenu (D-341)
 
 ## Branche et état du dépôt
 
@@ -14,7 +14,7 @@ avoir établi l'état de J2-conf (F45), préalable entier d'ACT-5.
 
 - Relevé de J2-conf le 2026-10-21 : non fait. Quatre arbitrages du
   responsable (questions à options, recommandations prises), transcrits en
-  `D-340` (numéro libre sur main au bf6d2235) :
+  `D-341` (numéro libre sur main au bf6d2235) :
   - r faite : registre des instruments existant reconnu ; la déclaration
     Q_ALI_09 du 2026-09-16 tient lieu de signature ;
   - at hors du périmètre d'ACT-5, reste au rang 1 ;
@@ -28,7 +28,7 @@ avoir établi l'état de J2-conf (F45), préalable entier d'ACT-5.
 - `web/src/lib/patient/texteMineurs.ts` (+ `texteMineurs.test.ts`).
 - `web/src/components/patient/DateNaissanceEcran.tsx` (`EcranCircuitMineur`).
 - `web/src/app/portail/[token]/page.test.tsx` (attente du nouveau texte).
-- `docs/DECISIONS.md` (D-340), `docs/claude/PLAN_WELLNEURO.md` (H28, F45,
+- `docs/DECISIONS.md` (D-341), `docs/claude/PLAN_WELLNEURO.md` (H28, F45,
   H78, H79, deux lignes de r), `changelog.d/2026-10-21-act5-texte-mineurs.md`,
   SESSION_LOG.
 
@@ -48,7 +48,7 @@ avoir établi l'état de J2-conf (F45), préalable entier d'ACT-5.
   praticien (l'ancien texte les nommait) ; le refus des routes et de l'écran de
   dépôt (`MESSAGE_CIRCUIT_MINEUR`, au vouvoiement) dit toujours « Votre
   praticien reprendra contact avec vous » : deux voix pour le mineur, à aligner
-  avec J3-mineurs ou sur décision du responsable (D-340 §5).
+  avec J3-mineurs ou sur décision du responsable (D-341 §5).
 - Le banc refuse les titres de 2A dans le code servi : J3-mineurs devra
   l'ajuster en servant 2A.
 
@@ -61,4 +61,4 @@ texte servi dans l'image déployée ; plan H78 et page de suivi a05 → fait.
 
 - Aucune fenêtre, aucun seuil, aucune règle clinique ; aucune migration sans
   accord ; un merge à la fois ; regarder main et les release-db en attente
-  juste avant le merge ; revérifier D-340 libre sur main au merge.
+  juste avant le merge ; revérifier D-341 libre sur main au merge.

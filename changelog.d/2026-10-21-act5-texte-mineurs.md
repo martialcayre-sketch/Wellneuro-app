@@ -1,4 +1,4 @@
-### Portail : l'écran du mineur sert le texte des mineurs validé (ACT-5, D-340)
+### Portail : l'écran du mineur sert le texte des mineurs validé (ACT-5, D-341)
 
 - Un patient de moins de 18 ans voit désormais, sur l'écran de pause de son
   espace (accueil et page des questionnaires), le texte qui lui est destiné,
