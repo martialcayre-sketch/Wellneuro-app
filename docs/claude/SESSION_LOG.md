@@ -11162,3 +11162,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis la PR de doc E67.
 
 **Ouvert.** Autres libellés inconnus de production : lot séparé.
+
+## 2026-10-21 — E67 : parcours et grille de la passe d'accessibilité
+
+**Fait.** `docs/PASSE_ACCESSIBILITE_E67.md` : quatre postes (mobile et lecteur d'écran, ordinateur et lecteur d'écran, zoom 200 % sur l'ordinateur, texte agrandi sur le téléphone), huit étapes du portail plus l'Observatoire praticien, neuf critères ; plan H64 pointé vers la grille. Écrans vérifiés dans le code.
+
+**Écarté.** Rien.
+
+**Prochaine action.** Le responsable joue la passe (file D) et transmet la grille ; chaque défaut bloquant ou gênant devient une ligne de la file A.
+
+**Ouvert.** D-TRUST-05 et D-C5-01 restent ouvertes jusqu'à la passe.
