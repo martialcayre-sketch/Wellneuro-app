@@ -609,8 +609,8 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     `docs/claude/propositions/2026-10-21-bp13-texte-patient/README.md`.
     La migration n'en dépend pas (tables vides jusqu'au code, drapeau
     éteint) ; l'allumage de `WN_PHYSIO_TRAITEMENTS` exige sa publication.
-    **Paragraphe et texte soumis au responsable le 2026-10-21**, à valider
-    avant le merge de la migration.
+    **Paragraphe et texte validés tels quels par le responsable le
+    2026-10-21**, avant la migration.
 - **Transmission du compte rendu par le patient depuis son portail
   ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
   migration et avant tout code.** Le patient peut déposer lui-même son

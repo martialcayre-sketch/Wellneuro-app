@@ -13,6 +13,6 @@
 - `docs/DOSSIER_RGPD.md` : les deux tables et la clé de pièce sont
   déclarées avant leur création ; texte patient proposé
   (`docs/claude/propositions/2026-10-21-bp13-texte-patient/README.md`).
-  Validation du responsable attendue avant le merge de la migration.
+  Paragraphe et texte validés par le responsable le 2026-10-21.
 - Fiche LOT-13 proposée ; campagne et fiche F07 du plan mises à jour.
 - Décision seule : aucun code, aucune migration encore.

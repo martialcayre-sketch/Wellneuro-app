@@ -3,7 +3,7 @@
 Lot BP-13 (LOT-13, fiche F07), décision [[D-335]]. Ce document porte les
 textes soumis au responsable le 2026-10-21, **avant toute table** : le
 paragraphe neuf de « Vos données personnelles » (v20) et les libellés du
-portail. Rien n'est publié par cette PR. Statut : **à valider**.
+portail. Rien n'est publié par cette PR. Statut : **validé** (2026-10-21).
 
 ## Ce qui ne change pas
 
@@ -80,4 +80,7 @@ cause (grossesse, traitement, maladie).
 
 ## Réponses du responsable
 
-À compléter.
+Le 2026-10-21, sur question à options : les parties A (paragraphe de la v20,
+résumé, conséquences) et B (libellés du portail) sont **validées telles
+quelles**, avec le paragraphe du dossier RGPD. La publication de la v20 et des
+conditions v3 reste un geste de l'allumage de `WN_PHYSIO_TRAITEMENTS`.

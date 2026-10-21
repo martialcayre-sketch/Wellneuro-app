@@ -1,7 +1,7 @@
 ---
 id: "LOT-13"
 titre: "BP-13 — Données physiologiques, traitements et compléments en cours"
-statut: "en_cours (2026-10-21) — décision D-335 proposée, déclaration RGPD et texte patient soumis ; migration et code à suivre"
+statut: "en_cours (2026-10-21) — D-335 acceptée, déclaration RGPD et texte patient validés le 2026-10-21 ; migration et code à suivre"
 dépend_de: "LOT-00, LOT-11"
 ---
 
@@ -124,7 +124,7 @@ scénario :
   - **C.** Ni l'une ni l'autre.
   - **Rendu : A.**
 
-**Précisions de l'assistant, soumises au responsable** (D-335) : qui pose
+**Précisions de l’assistant, retenues telles quelles par le responsable le 2026-10-21** (D-335) : qui pose
 quoi (le patient pose sexe, statut menstruel et traitements ; le praticien
 tout) ; le patient remplace toute tête de son dossier mais ne retire que ce
 qu'il a déclaré (§5) ; les dates de traitement au jour, au mois ou à

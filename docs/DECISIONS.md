@@ -7,14 +7,16 @@
 ### D-335 — BP-13 : données physiologiques déclarées et traitements en cours, en lignes datées et en ajout seul, à deux mains — « inconnu » écrit, aucune classe, aucun IMC ; la garde de population intacte ; le traitement devient une pièce de constat (LOT-13)
 
 - Date : 2026-10-21
-- Statut : proposé. Arbitrages du responsable rendus le 2026-10-20 (neuf
+- Statut : accepté. Arbitrages du responsable rendus le 2026-10-20 (neuf
   réponses et trois listes, sur questions à options) et le 2026-10-21 (deux
   réponses : le doublon avec l'anamnèse, la synthèse), consignés dans la
   fiche LOT-13. Texte rédigé par l'assistant à partir de ces réponses ; ses
   précisions (ce que chaque main pose et retire, §2 et §5 ; la forme des
-  dates et l'arrêt, §4 ; le mineur, §6) sont soumises au responsable avec le
-  paragraphe du dossier RGPD et le texte patient, avant le merge de la
-  migration.
+  dates et l'arrêt, §4 ; le mineur, §6 ; « à relire » dès le remplacement
+  d'un traitement cité, confirmation comprise, §7) sont **retenues telles
+  quelles** par le responsable le 2026-10-21, sur question à options, avec
+  le paragraphe du dossier RGPD et le texte patient (v20 et libellés du
+  portail), validés le même jour.
 - Domaine : campagne bio-parcours, BP-13 (LOT-13) ; plan, fiche F07 ; deux
   tables neuves en ajout seul et une clé ajoutée à
   `pieces_constats_praticien` ; `web/src/lib/patient/effacement.ts` ;
