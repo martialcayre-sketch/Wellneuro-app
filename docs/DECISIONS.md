@@ -4,6 +4,39 @@
 
 ## Décisions actives
 
+### D-340 — Trace d'essai : avec occasion, « C'était faisable ? » est la réponse du patient — vide au retour sur « Oui », « Sans objet » retiré, refus sans choix (t37)
+
+- Date : 2026-10-21
+- Statut : accepté — deux arbitrages du responsable du 2026-10-21 (questions à
+  options, recommandations suivies), transcrits par l'assistant.
+- Domaine : journal alimentaire, trace d'essai (JA5-02), panneau patient de
+  production. Aucun seuil, aucun score, aucune règle d'orientation. Prolonge
+  [[D-337]] (même trace, même patron : rien n'est choisi à la place du
+  patient), applique `DC-24`.
+
+**§1 — Constat.** Dans le panneau patient, « Non » à l'occasion passait
+« C'était faisable ? » à « Sans objet » ; revenir à « Oui » ne remettait rien,
+et la trace partait avec `faisable: false`, comptée « bloquée » à la
+publication de faisabilité (`feasibility.ts`). Choisir soi-même « Sans objet »
+sous « Oui » menait au même compte. Démontré dans le code, sans occurrence
+recherchée en production.
+
+**§2 — Règle.** Avec occasion, seuls « Oui » et « Non » sont proposés ;
+« Sans objet » n'existe que sans occasion, champ désactivé. Revenir à « Oui »
+après « Non » laisse le champ **vide** ; la trace ne s'enregistre pas tant que
+le patient n'a pas répondu, et le refus est relié au champ (`aria-invalid`,
+`aria-describedby`). L'ouverture du formulaire reste sur « Oui » (écart avec
+le harnais `/dev/validation-ja`, qui ne propose aucune valeur, assumé par
+l'arbitrage).
+
+**§3 — Où la règle vit.** Le panneau (`PatientFoodObservationPanel.tsx`) ;
+`createTrialTrace` refuse une trace avec occasion dont `faisable` n'est pas un
+booléen. Les trois appelants passent déjà un booléen avec occasion.
+
+**§4 — Hors de cette décision.** Les traces déjà enregistrées ne sont ni
+relues ni corrigées, comme en [[D-337]] §4 : une trace transmise avec
+`faisable: false` après un retour à « Oui » reste comptée « bloquée ».
+
 ### D-339 — Le barème de charge ignore les actions vides : « Reprendre cette charge » ne fige plus un niveau gonflé par des emplacements vierges (F76, amende D-273 §5)
 
 - Date : 2026-10-21

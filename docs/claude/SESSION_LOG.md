@@ -11201,3 +11201,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis t37 (arbitré : vide au retour, « Sans objet » retiré sous « Oui »).
 
 **Ouvert.** Aucun.
+
+## 2026-10-21 — t37 : « C’était faisable ? » n’est plus rempli à la place du patient (D-340)
+
+**Fait.** Deux arbitrages du responsable transcrits en D-340 : vide au retour sur « Oui » avec refus relié au champ, « Sans objet » retiré sous « Oui » ; refus aussi dans `createTrialTrace` ; tests du panneau (retour Non → Oui, instantané transmis) et du domaine ; ligne D-JA-03 du plan complétée.
+
+**Écarté.** « Oui » au retour (statut favorable par défaut, DC-24) ; vide aussi à l’ouverture (un choix de plus à chaque trace).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t37 → « fait ».
+
+**Ouvert.** Traces déjà transmises non relues (D-340 §4).
