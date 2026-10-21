@@ -31,6 +31,9 @@ const SURFACES_PATIENT = [
   'components/patient-companion',
   'components/patient-food-observation',
   'components/food-observation/PatientFoodObservationPanel.tsx',
+  // Hors des dossiers de surface, mais exécuté par `CeQuiCompteForm` sur
+  // l'appareil du patient : ses clés sont celles du portail (t06).
+  'lib/patient/ceQuiCompteBrouillon.ts',
 ];
 
 function fichiersSources(chemin: string): string[] {
