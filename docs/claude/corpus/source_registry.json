@@ -13892,7 +13892,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_021_2026-10-20) ; claims signés par le responsable le 2026-10-20",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_021_2026-10-20) ; claims signés par le responsable le 2026-10-20 ; lignes du magnésium ingérées (besoin 2, deux passages, lot LOT_051_2026-10-21) ; claims en attente de signature",
     "comment": "Source externe, document administratif public, lu sur une copie archivée ; version en vigueur non vérifiée. Extraits mot pour mot, sans adaptation.",
     "auditDate": "2026-10-20"
   },
@@ -13970,7 +13970,7 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_021_2026-10-20) ; claims signés par le responsable le 2026-10-20",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, lot LOT_021_2026-10-20) ; claims signés par le responsable le 2026-10-20 ; ligne du magnésium lue dans le passage existant (besoin 2, 2026-10-21) ; claim en attente de signature",
     "comment": "Source externe, texte réglementaire de l'Union, lu dans sa version d'origine ; version consolidée non vérifiée. Extrait mot pour mot, sans adaptation.",
     "auditDate": "2026-10-20"
   },
