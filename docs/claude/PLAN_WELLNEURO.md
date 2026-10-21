@@ -57,7 +57,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
    fin. L'objet détaillé, l'effet visible, le coût et la provenance restent
    hors dépôt.
 4. Deux séries de fiches. Fnn : les 79 fiches de la feuille de route BioFlow.
-   Hnn : les 83 fiches hors biologie. Quand une fiche et sa table d'entrée
+   Hnn : les 84 fiches hors biologie. Quand une fiche et sa table d'entrée
    diffèrent, la table d'entrée fait foi.
 5. Les files. File A : cosmétique et noyau, c'est-à-dire tout le code hors
    biologie. File B : biologie structurelle (BIO-PARCOURS, BIO-INGEST, panels,
@@ -84,13 +84,13 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
 
 ### Le décompte
 
-- Fiches : 162, soit 79 fiches Fnn et 83 fiches Hnn. Gelées en §6 : 7 fiches
+- Fiches : 163, soit 79 fiches Fnn et 84 fiches Hnn. Gelées en §6 : 7 fiches
   Fnn ; closes : 2 (F42, F43, G3 clos par #1416), rangées après la table
   « Livré ».
-- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 28 ;
+- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 29 ;
   rang 2 : 11 ; rang 3 : 7 ; rang 4 : 16 ; rang 5 : 17 ; rang 6 : 9 ;
   rang 7 : 8 ; rang 8 : 4 ; rang 9 : 3 ; rang 10 : 6 ; rang T : 2 ; gelées : 7.
-- Lignes des tables d'entrée des rangs : 206. Fiches de gestes du responsable
+- Lignes des tables d'entrée des rangs : 210. Fiches de gestes du responsable
   dans les rangs : 65.
 - Portes : 30 (§1). Gelés : 33 lignes et 7 fiches (§6). Abandonnés :
   32 lignes (§7). Dettes : 64 lignes (§8), dont 10 soldées.
@@ -431,6 +431,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : lettre v, de la main du responsable ; une source test-retest par instrument, de la main du responsable ; publication dans BANDES_DE_BRUIT.
 - **Critère de fin** : bandes publiées en banc ; un mot seulement là où la bande est signée.
 - **Mise à jour (2026-10-15)** : instruments arrêtés par le responsable pour G-10 : enquête alimentaire (Q_ALI_01, besoins 1 et 3), DNST (Q_INF_03, 10 et 12), hyperexcitabilité (Q_INF_01, 4), mode de vie (Q_MOD_01, 5), HADS (Q_NEU_11, 8). Répétitions constatées en production le 2026-10-10, en dossiers : 5, 3, 2, 2, 0. Aucune source test-retest au corpus pour eux ; aucune bande signée (`BANDES_DE_BRUIT` vide, non publiée). À fournir : une référence test-retest par instrument, ou un paramètre technique déclaré comme tel (DC-20). La bande se porte par besoin : la règle d'un besoin lu par plusieurs instruments se tranche dans v.
+- **Mise à jour (2026-10-21, fait nouveau relevé par le cadrage H84)** : la liste d'instruments arrêtée le 2026-10-15 ne couvre pas les sources que J3-12f installera pour les besoins 8, 9 et 12 (H15, décisions 1 à 4 du 2026-10-18 ; sources ingérées par J3-12e et ses compléments). G-10 se complète de ces sources après le changement de version, avant v ; aucune bande n'est signée d'ici là.
 
 #### F63 · Module BioFlow publié
 - **Identifiant, piste** : lettre j (D2, règle de dépendance) ; J3-bioflow : un premier lecteur hors biologie ; socle.
@@ -517,22 +518,23 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-18, dossier de la vitamine D signé)** : forme opaque (`D-251` §4), identifiants, mécanismes et agrégats seulement. Trois séances de décisions du responsable (2026-10-17, puis 2026-10-18 matin et après-midi, sur questions à options) tranchent tous les points du dossier privé, y compris les conflits que les sources externes ont ouverts avec des repères du corpus ; aucun point ne reste « à relire ». Verdicts au dossier sur les 157 claims cités : 130 retenus, 14 rejetés, 13 hors parcours. Sources externes : 7 notices au registre (`WN-SRC-0512` à `0518`, titre seul, #1542), 3 lots ingérés sur approbation de chaque envoi par le responsable (`LOT_018_2026-10-18` à `LOT_020_2026-10-18`), 41 passages mot pour mot, 82 claims ; trois contre-revues adverses `wn-reviewer` avant envoi (deux NO-GO corrigés, un GO aux corrections appliquées) ; les 82 claims sont signés par le responsable dans l'atelier. Aucune source de correction n'est ingérée : les conduites chiffrées de correction restent fermées, comme recommandé le 2026-10-17. Positions d'expert : 8, en v0.1 puis v0.2 au dossier privé, validées par le responsable le 2026-10-18, signature transcrite par l'assistant sur son instruction ; la v0.2 fait foi. Constat par conteneur le 2026-10-18, lecture seule : les 157 claims cités et les 82 claims externes sont `VALIDE`, aucun ne porte de clé `besoins` ni `rubrique` ; les verdicts de rejet ne sont pas encore appliqués en base ; 41 passages sur 7 sources. Migration de J3-12c (`20261017100000_rag_claim_decisions_etiquetage_v1`) constatée appliquée en production le 2026-10-17 : l'étiquetage est ouvert. Suite, dans l'ordre : (1) étiquetage par le responsable, dans l'atelier, des claims retenus et des claims externes, constaté en agrégats par rubrique ; (2) application en base des verdicts de rejet, geste du responsable ; (3) fiches de la vitamine D ajoutées à la question existante (F05, BP-12a), en lot de contenu ; (4) deux alignements entre dossiers notés au dossier privé, repris par le dossier du magnésium ; (5) dossier suivant : le zinc (ordre du 2026-10-16). Rubriques : les dix des fiches d'usage, celles de la liste fermée de BP-12a (D-321 §5, qui a levé le [A verifier] du 2026-10-17) ; le reclassement du dossier, rédigé en six rubriques, est une action distincte, préalable à l'étiquetage, sur une correspondance arbitrée par le responsable le 2026-10-18.
 - **Mise à jour (2026-10-18, étiquetage en lot, D-325)** : l'onglet des claims validés de l'atelier en compte plusieurs milliers, par pages de cinquante, sans recherche par identifiant : étiqueter un dossier claim par claim n'y est pas praticable. Sur deux arbitrages du responsable du même jour (questions à options), D-325 amende D-321 §5 et §6 : un geste « étiquetage en lot » dans l'atelier (liste collée, aperçu relu, confirmation), tout ou rien, un acte `etiquetage` par claim au journal, au nom du praticien, sans migration ni changement de statut ; correspondance des six rubriques abandonnées vers les dix des fiches d'usage (adressage → Limites), non codée : la liste se prépare reclassée. Liste du dossier de la vitamine D préparée au dossier privé (194 claims, besoin 2 ; les claims rejetés, hors parcours et ceux des autres micronutriments n'y sont pas). Suite : merge du lot, constat du déploiement, puis le geste, délégable à l'assistant depuis la session du responsable (D-325 §5, amendé par lui le même jour), et constat par conteneur en agrégats par rubrique ; application des rejets en base sous la même règle.
 - **Mise à jour (2026-10-20, lots des 12 besoins répartis par file)** : quatre arbitrages du responsable du 2026-10-19 (questions à options, après une contre-expertise externe des quatre points restés ouverts, vérifiée au code avant d'être posée). (1) Les badges de niveau de preuve sont masqués sur les deux écrans praticien qui les affichent, sans toucher la table : les grades entrent dans le snapshot clinique, donc dans l'empreinte des cartes de décision, et modifier la table ferait dériver les protocoles diffusés ; une table révisée sera soumise à la signature avec le changement de sources. (2) Le changement de version du score s'accompagne de la réapprobation des protocoles diffusés (option retenue pour la dette de D-329 §4), dossier par dossier, préparée avant le déploiement : chaque clic peut remettre des fiches et une lettre et déclenche une annonce neutre au patient ; entre le déploiement et le clic, le patient lit que son accompagnement n'est pas consultable, sans perte de données. (3) Le résidu de D-329 §2 (complétude de l'agenda du sommeil jugée par le snapshot) reste en l'état ; il se traite en lot séparé, après l'inventaire de ce que le moteur lit de l'agenda (le marquage « hors barème » n'agit que sur le prédicat du snapshot, mais le rideau T0 lit l'agenda). (4) Ordre : badges, puis ingestion des sources de mesure en accès libre, puis changement de sources ; le responsable fournit les sources fermées en parallèle. Le changement de sources attend aussi la signature du guide (w), avec laquelle il part en un seul changement de version (arbitrage du 2026-10-15). Depuis la mise à jour précédente : étiquetage en lot du dossier de la vitamine D fait le 2026-10-19 et rejets appliqués, constatés par conteneur ; l'étiquetage du fer reste à faire. Lots des 12 besoins par file, état au 2026-10-20 (les identifiants J3-12d à J3-12h sont neufs) :
+- **Mise à jour (2026-10-21, état des gestes et chaîne besoin → leviers, D-338)** : depuis la mise à jour précédente, trois gestes sont faits et constatés par conteneur : l'étiquetage du fer le 2026-10-20 (la liste finale du dossier BP-07 compte 84 claims après verdicts — rejetés et hors parcours retirés, brouillons et claims d'une position ajoutés —, 82 étiquetés et 2 déjà porteurs ; un claim rejeté ; 84 sur 84 conformes à la relecture du 2026-10-21 ; l'écart avec les « 92 claims cités » de la clôture se réconcilie au dossier privé) ; les sources fermées fournies et ingérées (`WN-SRC-0567` à `0570`, #1615, lots `LOT_047` à `LOT_050`), ce qui lève ce préalable de J3-12f ; le dossier du zinc clos le 2026-10-21 (`LOT_021`, #1612, claims étiquetés). Le 2026-10-21, un cadrage de la suite des 12 besoins (architecte, contre-revue adverse, version corrigée ; faits de production lus par conteneur, agrégats seuls) a établi que l'aval ne lit les besoins qu'à travers les `needIds` de deux tables signées (besoins 1, 3, 4, 5, 8, 9) et que les besoins 2, 6, 7, 10, 11 et 12 ne commandent aucun levier ; il a aussi relevé que toute retouche d'une table signée re-signe son périmètre entier et fait dériver les cartes de décision diffusées, au même coût qu'un changement de version. Sept arbitrages du responsable (questions à options, recommandations suivies) en découlent, consignés par D-338 et portés par la fiche H84 ; les lots des 12 besoins ci-dessous ne changent pas, sauf que les règles aval par besoin et toute clé posée sur une table signée existante partent regroupées avec J3-12f et sa réapprobation.
 
 | lot | objet | file | rang | préalables | migration | état |
 |---|---|---|---|---|---|---|
 | J3-12c | clés `besoins` et `rubrique` posées à la signature d'un claim ; étiquetage en lot (D-325) | A | 1 | aucun | oui (appliquée) | fait (#1521, #1525, #1554) |
 | D-329 | cohérence du calcul de « Mon équilibre » | A | 1 | aucun | non | fait (#1566), déployé le 2026-10-19 |
 | J3-12d | badges de niveau de preuve masqués sur les deux écrans praticien, table intacte, sans changement de version ; D-332 et fragment `changelog.d/2026-10-20-j3-12d-badges-preuve-masques.md` | A | 1 | aucun | non | fait (#1592, D-332), déployé le 2026-10-20 |
-| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable ; 15 notices `WN-SRC-0540` à `0554`, lots `LOT_030` à `LOT_035` (88 passages, 104 claims, 19 signés), 4 lignes `measurement_evidence.json` toutes `inconnu` ; restent deux articles fermés à fournir et une étude non ingérée | A | 1 | J3-12d (ordre), fait | non | fait (#1605), déployé le 2026-10-20 |
+| J3-12e | ingestion des sources de mesure en accès libre (décision 6 du 2026-10-18) au registre et au corpus, sur approbation de chaque envoi par le responsable ; 15 notices `WN-SRC-0540` à `0554`, lots `LOT_030` à `LOT_035` (88 passages, 104 claims, 19 signés), 4 lignes `measurement_evidence.json` toutes `inconnu` ; restent deux articles fermés à fournir et une étude non ingérée ; compléments : `0560` à `0570` (#1610, #1611, #1615), plus rien à fournir au 2026-10-21 | A | 1 | J3-12d (ordre), fait | non | fait (#1605), déployé le 2026-10-20 |
 | J3-12b | guide transcrit, onglet « Les 12 besoins » réorganisé | A | 1 | w | non | attente |
-| J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment | A | 2 | J3-12e, fait ; sources fermées fournies ; w signé ; table des niveaux de preuve signée | non | attente |
+| J3-12f | changement de sources des besoins 8, 9 et 12 (décisions 1 à 4 du 2026-10-18), 60/20/20 redéfini, double compte des besoins 1 et 3 retiré, table des niveaux de preuve révisée, en un seul changement de version ; liste de réapprobation préparée dossier par dossier (fiches, lettre, annonce) ; D-xxx et fragment ; emporte les retouches regroupées des tables signées (règles aval par besoin, clés sur tables existantes — D-338 §2) | A | 2 | J3-12e, fait ; sources fermées fournies (fait, #1615) ; w signé ; table des niveaux de preuve signée | non | attente |
 | J3-12g | complétude de l'agenda du sommeil au snapshot (résidu de D-329 §2) | A | sans rang | inventaire « rubrique de l'agenda → lecteurs du moteur » ; compte des diffusions actives | non | attente |
 | J3-12h | garde sur le complément ciblé chez le mineur et chez la femme enceinte ou allaitante : courrier au médecin traitant remis et tracé avant l'entrée au programme, sans attendre sa réponse (règle du responsable du 2026-10-17) | A | sans rang | cadrage du lot | selon | à cadrer |
-| dossiers du besoin 2 | zinc, puis magnésium érythrocytaire, puis B9 et B12, puis iode et sélénium (ordre du 2026-10-16), au modèle de BP-07, hors dépôt ; étiquetage en lot à la clôture de chacun | B | 1 | aucun | non | zinc à ouvrir |
+| dossiers du besoin 2 | zinc, puis magnésium érythrocytaire, puis B9 et B12, puis iode et sélénium (ordre du 2026-10-16), au modèle de BP-07, hors dépôt ; étiquetage en lot à la clôture de chacun | B | 1 | aucun | non | zinc clos le 2026-10-21 (`LOT_021`, #1612) ; magnésium à ouvrir |
 | fiches d'usage du besoin 2 | lots de contenu de la question du besoin 2, un par dossier clos (F05) | B | 4 au plus tôt [Hypothese] | structure de BP-12a signée, à la clôture des dossiers fer, vitamine D, zinc et magnésium (D-314 §10) | non | attente |
 | w | guide des 12 besoins, de la main du responsable | geste | 0 | dossiers de preuve | non | en cours |
-| étiquetage du fer | 92 claims, besoins servis et rubrique | geste | 1 | aucun | non | à faire |
-| sources fermées | sources des dossiers de mesure à fournir par le responsable, deux d'abord (liste au dossier privé) | geste | 1 | aucun | non | à faire |
+| étiquetage du fer | 92 claims, besoins servis et rubrique | geste | 1 | aucun | non | fait le 2026-10-20 (84 claims après verdicts, 84 sur 84 constatés le 2026-10-21) |
+| sources fermées | sources des dossiers de mesure à fournir par le responsable, deux d'abord (liste au dossier privé) | geste | 1 | aucun | non | fait (`WN-SRC-0567` à `0570`, #1615) |
 | position d'expert du fer | amendement v0.3, en conflit avec la règle du 2026-10-17 (au dossier privé) | geste | 1 | aucun | non | à faire |
 | table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | attente |
 | réapprobation | protocoles diffusés, dossier par dossier, juste après le déploiement de J3-12f | geste | 2 | J3-12f | non | attente |
@@ -727,7 +729,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J2-radar | un trou nommé au lieu de 0 au radar | A | 3 | non | H12, rang 0 |
 | J1-alim | Boussole retirée du portail | A | 9 si migration | selon | H16, rang 0 |
 | J3-12b | guide transcrit, onglet réorganisé | A | aucune | non | H15, rang 0 |
-| J3-12c | clés `besoins` + `rubrique` posées à la signature d'un claim (route de décision, atelier, liste fermée, sans migration) ; précède le deuxième dossier de preuve ; ré-étiquetage des 92 claims du fer ensuite (geste) | A | aucune | non | H15, rang 0 |
+| J3-12c | clés `besoins` + `rubrique` posées à la signature d'un claim (route de décision, atelier, liste fermée ; décrit sans migration, puis une migration de journal ajoutée par D-321 : `20261017100000_rag_claim_decisions_etiquetage_v1`, appliquée) ; précède le deuxième dossier de preuve ; ré-étiquetage des 92 claims du fer ensuite (geste) ; fait, étiquetage du fer fait le 2026-10-20 | A | aucune | oui (appliquée) | H15, rang 0 |
 | J3-12d | badges de niveau de preuve masqués au cockpit, table intacte (premier des lots de mesure, 2026-10-19) | A | aucune | non | H15, rang 1 |
 | J3-12e | ingestion des sources de mesure en accès libre, sur approbation de chaque envoi ; fait (#1605) | A | aucune | non | H15, rang 1 |
 | aq | contrôle bloquant des modifications cliniques en CI | A | 28 | non | H21 |
@@ -771,7 +773,11 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | E31 | seuils_points de Q_ALI_01, décision sourcée | geste | 4 | non | H40 |
 | E32 | règles orphelines : trois restes réécrits | geste | aucune | non | H41 |
 | E64 | table d'arrêt étendue aux grilles citées | geste | aucune | non | H42 |
-| sources de mesure | sources fermées des dossiers de mesure fournies par le responsable | geste | aucune | non | H15, rang 1 |
+| sources de mesure | sources fermées des dossiers de mesure fournies par le responsable ; fait (#1615) | geste | aucune | non | H15, rang 1 |
+| vue par besoin | lot D/22 étendu : filtre de l'atelier par clés `besoins` et `rubrique` (D-338 §6) | B | aucune | non | H84, rang 1 |
+| contrat du lien | module pur : types, liste fermée des leviers, vocabulaire ; aucune table signée touchée (D-338 §1) | A | aucune | non | H84, rang 1 |
+| priorité libre à besoins visés | amendement de D-279 §1 : champ facultatif lu par la re-passation ciblée seule (D-338 §3) | A | 9 | oui | H84, rang 1 |
+| constat praticien | patron unique d'acte daté, en ajout seul, motif fermé, sans valeur (D-338 §4) | A | 9 | oui | H84, rang 1 |
 | position du fer | amendement v0.3 d'une position d'expert du dossier du fer (règle du 2026-10-17) | geste | aucune | non | H15, rang 1 |
 
 **File A**
@@ -816,6 +822,15 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre ag, D-xxx propre.
 - **Critère de fin** : décision mergée ; site IA déclaré ; aide servie, relue zone par zone.
+
+#### H84 · CB : chaîne besoin → leviers
+- **Identifiant, piste** : CB-01 à CB-14 (cadrage contre-revu du 2026-10-21, D-338) ; chaque levier (règle, action, analyte, axe, fiche) porte la clé des besoins qu'il sert — posée à la naissance des tables neuves, par retouche regroupée pour les tables signées existantes, qui re-signent leur périmètre entier et font dériver les cartes diffusées (rejeu du portail) ; provenance héritée des claims étiquetés (D-321, D-140) ; cockpit, protocole, parcours, alimentation ; file A (code), file B (contenus, D/22 étendu), file D (gestes).
+- **Rang** : 1 pour la vue par besoin, le contrat du lien, l'amendement de D-279 et le patron du constat praticien ; les retouches de tables signées partent regroupées avec J3-12f et sa réapprobation ; les règles aval suivent la clôture du dossier de preuve de leur besoin (ordre de D-312).
+- **Portes, préalables** : D-338 rendue ; dossiers de preuve (H15, D-312) ; ag (H25) et be (H47) pour les actions ; al (H57) et J2-alim (H45) pour l'alimentation ; w et la table des niveaux de preuve pour tout regroupement avec J3-12f ; J3-12h avant le premier levier de complément indexé par besoin ; porte 11 (H13) pour les bandes, G-10 à compléter des sources de J3-12f.
+- **Migration, release-db** : non pour le contrat, la vue et les règles (tables en code) ; oui pour l'amendement de D-279 (patron D-279 §3) ; oui, cadrée une fois, pour le patron du constat praticien (modèle D-331) ; chacune au rang des release-db.
+- **Décisions, textes** : D-338 (architecture du lien, regroupement, amendement de D-279 §1 sur fait nouveau, constat praticien, lecture d'un constat par une règle du besoin 2, vue, contrôle de cohérence) ; une D-xxx par règle aval, avec ses claims (D-140, DC-17) ; aucun seuil, aucune dose, aucun contenu de l'assistant — tout vient d'un dossier de preuve signé (D-312 §2).
+- **Critère de fin** : chaque besoin mesuré ou « non mesuré » avec motif écrit ; chaque levier rattaché par clé signée ou déclaré sans objet avec motif au guide (besoin 2 au score tant que D-122 n'est pas amendée ; constat praticien possible par D-331) ; une priorité libre à besoins visés cible sa re-mesure ; cohérence clés ↔ leviers constatée par conteneur, en agrégats, à chaque lot de règles.
+- **Trous nommés sans lot** (CB-13, CB-14) : le portail ne reçoit rien par besoin (phrase sans chiffre, D-329 §3 ; tout ajout est une activation patient, file C) ; aucun module d'IA ne lit les besoins, rien à inscrire sans besoin praticien exprimé. Fibres, prébiotiques et probiotiques (besoin 4, D-312 arbitrage 7) : fiche gelée jusqu'à la clôture du dossier du besoin 4.
 
 #### F66 · Chaîne D-281 : SAF-EI-01 amendée, signée en fin de chantier
 - **Identifiant, piste** : DC-42 (`docs/DECISIONS.md:84-86` sur main) ; trust.
@@ -1044,7 +1059,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J2-bandes | bandes : alimentation et humeur d'abord | A | 11 | non | H13, rang 0 |
 | J3-api | rôles de connexion, aucune clé | A | 9 si migration | selon | H29, rang 1 |
 | D-281, étape 4 | validation de l'implication ; banc de cas fictifs refait | A | aucune | non | F66, rang 1 |
-| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée | A | aucune ; après J3-12e, w, les sources fermées et la signature de la table des niveaux de preuve | non | H15, rang 2 |
+| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée ; retouches regroupées des tables signées (D-338 §2) | A | aucune ; après J3-12e, w et la signature de la table des niveaux de preuve (les sources fermées sont fournies, #1615) | non | H15, rang 2 |
 | BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442 ; migration mergée sous D-294, #1448) | B | 28 ; 9 | oui | F03 |
 | fiche LOT-25 | « quatre termes », cases corrigées | B | aucune | non | F14 |
 | J2-conf | garde d'âge ; registre des droits | B | aucune | non | F45, rang 0 |
@@ -2132,7 +2147,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h3 | relance du recueil réel de 21 jours [Hypothese] | H45 | barème gelé |
 | h3 | préparation des sources du thème « respiration et apaisement » | H68 | ah (rang 5) |
 | h5 | retirer `WN_BIO_EXTRACTION_ASYNC` de Scalingo (`env-unset`, variable inerte depuis #1416) | F42 (mise à jour de G3) ; `docs/FEATURE_FLAGS.md:469-476` | ménage, sans effet sur le service |
-| h2 | sources fermées des dossiers de mesure des besoins 6 à 12, deux d'abord (2026-10-18, décision 7) | H15 | J3-12f |
+| h2 | sources fermées des dossiers de mesure des besoins 6 à 12, deux d'abord (2026-10-18, décision 7) ; fait le 2026-10-21 (`WN-SRC-0567` à `0570`, #1615) | H15 | J3-12f |
 | h2 | amendement v0.3 d'une position d'expert du dossier du fer, en conflit avec une règle du responsable du 2026-10-17 | H15, F02 | J3-12h |
 
 **D.2 Constats en attente**
