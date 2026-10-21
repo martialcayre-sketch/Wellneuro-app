@@ -64,6 +64,15 @@ banc de la garde d'âge. Docs : `FEATURE_FLAGS.md`, `PLAN_WELLNEURO.md`
   enregistrer — risque déjà présent avec l'anamnèse, à traiter avant
   l'allumage. Après correctifs : tsc, 781 tests ciblés et lint verts ; T1
   complet (`npm run check`) vert ; T2 rejoué vert en 8 min 10 s.
+- Revue CodeRabbit de #1631 (sept commentaires) : six corrigés — entrée
+  du journal remise en fin de fichier ; conditions d'allumage complétées
+  (`FEATURE_FLAGS.md`, plan F07) ; « ← Précédent » tenu par la même garde
+  de ligne ouverte, message effacé à la fermeture de la ligne ; échec de
+  relecture signalé au-dessus des données conservées ; blancs de largeur
+  nulle U+200B à U+200D et U+2060 normalisés ; code d'événement propre
+  `SYNTHESE_TRAITEMENTS_INDISPONIBLES`. Un écarté : le message d'un geste
+  refusé s'affichait déjà. Après correctifs et fusion de `origin/main` :
+  T1 rapide, Vitest des fichiers changés (3753 tests) et T2 verts.
 
 ## Problèmes ouverts
 

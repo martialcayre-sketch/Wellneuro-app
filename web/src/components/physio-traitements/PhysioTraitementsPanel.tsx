@@ -340,6 +340,14 @@ export function PhysioTraitementsPanel({ idPatient }: { idPatient: string }) {
           Ce dossier est celui d’un mineur : aucune donnée ne s’y pose.
         </p>
       )}
+      {/* Une relecture en échec se dit, même quand des données restent
+          affichées : elles peuvent être périmées (revue CodeRabbit). */}
+      {erreurLecture && (
+        <p role="alert" className="text-sm text-foreground">
+          La relecture a échoué : ce qui suit peut ne plus être à jour.{' '}
+          <button type="button" onClick={() => void charger()} className="underline">Réessayer</button>
+        </p>
+      )}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}
 
       <section aria-labelledby="physio-titre" className="space-y-2">

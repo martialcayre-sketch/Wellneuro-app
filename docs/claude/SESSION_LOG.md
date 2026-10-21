@@ -11192,16 +11192,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** t34 (barème de charge, m13) reste en file A.
 
-## 2026-10-21 — BP-13 : le code des données physiologiques et des traitements, drapeau éteint (D-335)
-
-**Fait.** Release-db 39654198602 approuvée par le responsable, sentinelle liée au run, production sur la tête de `main`, constat par conteneur (migration appliquée, deux tables vides, RLS, `id_traitement`). PR 2 : routes du portail et du cockpit, fiche de renseignements (sexe, cycles, traitements en lignes), page « Ma fiche de renseignements », tiroir du cockpit avec discordance, vigilance sur les traitements en vigueur, pièce de constat « traitement » et « à relire » ; P2 de la migration tenus ; banc des lecteurs. Fiche LOT-13 close.
-
-**Écarté.** `signature` de `biology-library` (frontière D-306) : `classeEtCode`, même garantie. Un bouton « modifier » au portail : aucun libellé validé.
-
-**Prochaine action.** CI, CodeRabbit, merge ; puis BP-15 (LOT-15), puis le brouillon de la lettre cm (F52).
-
-**Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base ; titre « Ma fiche de renseignements » à valider.
-
 ## 2026-10-21 — ACT-5 : texte des mineurs (2B) servi, J2-conf tenu (D-341)
 
 **Fait.** Relevé de J2-conf : non fait (r jamais consignée, at non faite, lot sans objet écrit) ; quatre arbitrages du responsable transcrits en D-341 (r reconnue sur le registre existant, at hors périmètre, lot fondu, 2B seul). `lib/patient/texteMineurs.ts` (texte 2B mot pour mot) servi par `EcranCircuitMineur` ; banc : texte comparé à la source G-11, titres de 2A absents du code servi, écran rendu sous une seule condition « mineur ». Plan H28, F45, H78, H79 ; page de suivi a05 et q17 corrigées (J3-mineurs suit ACT-5).
@@ -11230,3 +11220,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t37 → « fait ».
 
 **Ouvert.** Traces déjà transmises non relues (D-340 §4).
+
+## 2026-10-21 — BP-13 : le code des données physiologiques et des traitements, drapeau éteint (D-335)
+
+**Fait.** Release-db 39654198602 approuvée par le responsable, sentinelle liée au run, production sur la tête de `main`, constat par conteneur (migration appliquée, deux tables vides, RLS, `id_traitement`). PR 2 : routes du portail et du cockpit, fiche de renseignements (sexe, cycles, traitements en lignes), page « Ma fiche de renseignements », tiroir du cockpit avec discordance, vigilance sur les traitements en vigueur, pièce de constat « traitement » et « à relire » ; P2 de la migration tenus ; banc des lecteurs. Fiche LOT-13 close.
+
+**Écarté.** `signature` de `biology-library` (frontière D-306) : `classeEtCode`, même garantie. Un bouton « modifier » au portail : aucun libellé validé.
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis BP-15 (LOT-15), puis le brouillon de la lettre cm (F52).
+
+**Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base, borne de 500 caractères de la vigilance, export du dossier, courrier au médecin, procédure d'extinction ; titre « Ma fiche de renseignements » à valider. Revue CodeRabbit : six commentaires corrigés, un écarté (le message d'un geste refusé s'affichait déjà).

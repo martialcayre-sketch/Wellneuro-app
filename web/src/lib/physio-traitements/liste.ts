@@ -77,7 +77,7 @@ export function normaliserTexte(valeur: unknown): string | null {
   // Les caractères de contrôle (U+0000 compris, que PostgreSQL refuse dans un
   // texte) deviennent des blancs comme les autres (revue `wn-reviewer`).
   // eslint-disable-next-line no-control-regex
-  const texte = valeur.normalize('NFC').replace(/[\s\u0000-\u001F\u007F​﻿]+/gu, ' ').trim();
+  const texte = valeur.normalize('NFC').replace(/[\s\u0000-\u001F\u007F​-‍⁠﻿]+/gu, ' ').trim();
   return texte.length > 0 ? texte : null;
 }
 

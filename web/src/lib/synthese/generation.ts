@@ -1068,7 +1068,7 @@ export async function preparerGeneration(
         vigilanceDeterministe = extraireVigilanceDeterministe(anamnesePourConstats, lignesEnVigueur);
       } catch (lignesErr) {
         logger.warn({
-          event: EVENT_CODES.SYNTHESE_POST_CONTEXT_UNAVAILABLE,
+          event: EVENT_CODES.SYNTHESE_TRAITEMENTS_INDISPONIBLES,
           domain: 'SYNTHESE_IA',
           message: 'Traitements en vigueur illisibles : vigilance de l\'anamnèse seule',
           context: finalizeLogContext(requestContext, { retryable: true }),

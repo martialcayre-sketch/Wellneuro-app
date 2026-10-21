@@ -156,6 +156,12 @@ export const EVENT_CODES = {
    * clinique qui manque, et une alerte doit pouvoir séparer les deux.
    */
   SYNTHESE_DISCORDANCES_INDISPONIBLES: 'SYNTHESE_IA.DISCORDANCES.INDISPONIBLES',
+  /**
+   * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
+   * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code
+   * distinct pour la même raison que le précédent (revue CodeRabbit).
+   */
+  SYNTHESE_TRAITEMENTS_INDISPONIBLES: 'SYNTHESE_IA.TRAITEMENTS.INDISPONIBLES',
   // LOT-01 étape 4 — la sortie du modèle n'a pas passé le schéma strict et une
   // relance a été émise. Code DISTINCT de l'échec de génération : celui-ci dit
   // que la première sortie était non conforme ET qu'on a retenté, l'autre que

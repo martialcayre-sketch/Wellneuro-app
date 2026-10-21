@@ -53,6 +53,8 @@ type WizardDraftKind = 'fiche' | 'anamnese';
 // un délai, au lieu d'être conservé indéfiniment.
 const WIZARD_DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+const MESSAGE_LIGNE_OUVERTE = 'Enregistrez ou annulez la ligne en cours avant de continuer.';
+
 type WizardDraftValidator<T> = (value: unknown) => value is T;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -467,15 +469,23 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
     }
   };
 
+  // Une ligne de traitement ouverte et non enregistrée ne se perd pas en
+  // silence (revue `wn-reviewer`, P1) : on ne quitte la section — ni en
+  // avant, ni en arrière (revue CodeRabbit) — qu'après l'avoir enregistrée ou
+  // annulée. Le message tombe dès que la ligne se ferme.
+  const bloqueParLigneOuverte = () => {
+    if (!lignePhysioOuverte) return false;
+    setError(MESSAGE_LIGNE_OUVERTE);
+    return true;
+  };
+  const changerLignePhysio = (ouverte: boolean) => {
+    setLignePhysioOuverte(ouverte);
+    if (!ouverte) setError(e => (e === MESSAGE_LIGNE_OUVERTE ? '' : e));
+  };
+
   const handleSectionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Une ligne de traitement ouverte et non enregistrée ne se perd pas en
-    // silence (revue `wn-reviewer`, P1) : on ne quitte la section qu'après
-    // l'avoir enregistrée ou annulée.
-    if (lignePhysioOuverte) {
-      setError('Enregistrez ou annulez la ligne en cours avant de continuer.');
-      return;
-    }
+    if (bloqueParLigneOuverte()) return;
     if (!isLastSection) { setSectionIndex(i => i + 1); window.scrollTo(0, 0); return; }
     void soumettre();
   };
@@ -517,7 +527,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         {section.id === SECTION_ANAMNESE_SIGNAUX && anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX]) && (
           <MessageReponseSuicide />
         )}
-        {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={setLignePhysioOuverte} />}
+        {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={changerLignePhysio} />}
 
         {(physioOuvert ? (section.groupes ?? []).filter(g => !GROUPES_REMPLACES.includes(g.id)) : section.groupes ?? []).map(groupe => (
           <div key={groupe.id} className="space-y-3">
@@ -550,7 +560,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
             </PatientButton>
           </div>
         ))}
-        {physioOuvert && section.id === SECTION_TRAITEMENTS && <DeclarationsPatient parties="traitements" onEditionChange={setLignePhysioOuverte} />}
+        {physioOuvert && section.id === SECTION_TRAITEMENTS && <DeclarationsPatient parties="traitements" onEditionChange={changerLignePhysio} />}
       </fieldset>
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
@@ -560,7 +570,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         {sectionIndex > 0 && (
           <PatientButton
             variant="neutral" className="flex-1"
-            onClick={() => { setSectionIndex(i => i - 1); window.scrollTo(0, 0); }}
+            onClick={() => { if (bloqueParLigneOuverte()) return; setSectionIndex(i => i - 1); window.scrollTo(0, 0); }}
           >
             ← Précédent
           </PatientButton>

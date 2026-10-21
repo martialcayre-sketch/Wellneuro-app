@@ -85,6 +85,10 @@ describe('traitement', () => {
     expect(nul.ok && nul.demande.acte === 'pose' && [nul.demande.nom, nul.demande.moment]).toEqual(['Traitement A', null]);
     expect(raison(traitement({ ...POSE, nom: 'x'.repeat(201) }))).toBe('texte_trop_long');
     expect(raison(traitement({ ...POSE, motif: 'x'.repeat(501) }))).toBe('texte_trop_long');
+    // Les blancs de largeur nulle (U+200B à U+200D, U+2060, U+FEFF) aussi (revue CodeRabbit).
+    expect(raison(traitement({ ...POSE, nom: '​‌‍⁠﻿' }))).toBe('nom_requis');
+    const joint = traitement({ ...POSE, nom: 'Traitement⁠A' });
+    expect(joint.ok && joint.demande.acte === 'pose' && joint.demande.nom).toBe('Traitement A');
   });
 
   it('les dates : illisible, future, fin avant début', () => {
