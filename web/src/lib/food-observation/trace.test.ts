@@ -91,6 +91,16 @@ describe('sans occasion, seules les issues d’empêchement (D-337, D-JA-03)', (
   });
 });
 
+describe('avec occasion, « faisable » est une réponse, jamais un défaut (D-340)', () => {
+  it('refuse une trace avec occasion sans faisabilité', () => {
+    expect(() => createTrialTrace({ ...base, faisable: null, issue: 'fait' })).toThrow(/faisable/);
+  });
+
+  it.each([true, false])('garde la réponse du patient (%s)', faisable => {
+    expect(createTrialTrace({ ...base, faisable, issue: 'fait' }).faisable).toBe(faisable);
+  });
+});
+
 describe('registre de frictions v1 (JA-00 A2)', () => {
   it('porte les huit catégories fermées en français patient', () => {
     expect(Object.keys(FRICTIONS)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8']);

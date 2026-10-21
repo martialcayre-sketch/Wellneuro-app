@@ -171,7 +171,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     }
   });
   const [occasionPresentee, setOccasionPresentee] = useState(true);
-  const [faisable, setFaisable] = useState<'oui' | 'non' | 'na'>('oui');
+  // Vide = rien de choisi : revenir à « Oui » après « Non » ne rechoisit rien
+  // à la place du patient, et « Sans objet » n'existe que sans occasion (D-340).
+  const [faisable, setFaisable] = useState<'oui' | 'non' | 'na' | ''>('oui');
+  const [faisableManquant, setFaisableManquant] = useState(false);
   // Vide = rien de choisi : après « Non » à l'occasion, « fait » et « adapté »
   // ne sont plus proposés (D-337) et aucune autre issue n'est choisie à la place.
   const [issue, setIssue] = useState<TraceIssue | ''>('fait');
@@ -419,11 +422,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
   const addTrace = () => {
     setError('');
-    if (!issue) {
-      setIssueManquante(true);
-      return;
-    }
-    setIssueManquante(false);
+    const sansFaisable = occasionPresentee && faisable !== 'oui' && faisable !== 'non';
+    setFaisableManquant(sansFaisable);
+    setIssueManquante(!issue);
+    if (!issue || sansFaisable) return;
     try {
       const trace = createTrialTrace({
         traceId: makeId('trace'),
@@ -534,6 +536,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     setJournees([]);
     setOccasionPresentee(true);
     setFaisable('oui');
+    setFaisableManquant(false);
     setIssue('fait');
     setIssueManquante(false);
     setFrictionCode('');
@@ -744,7 +747,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
               setOccasionPresentee(next);
               if (!next) {
                 setFaisable('na');
+                setFaisableManquant(false);
                 if (issue && !issuesProposees(false).includes(issue)) setIssue('');
+              } else if (faisable === 'na') {
+                setFaisable('');
               }
             }}
           >
@@ -758,13 +764,29 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             data-testid="ja-patient-faisable"
             className={patientInputClassName}
             value={faisable}
-            onChange={(e) => setFaisable(e.target.value as 'oui' | 'non' | 'na')}
+            onChange={(e) => {
+              setFaisable(e.target.value as 'oui' | 'non');
+              setFaisableManquant(false);
+            }}
             disabled={!occasionPresentee}
+            aria-invalid={faisableManquant || undefined}
+            aria-describedby={faisableManquant ? 'ja-patient-faisable-erreur' : undefined}
           >
-            <option value="oui">Oui</option>
-            <option value="non">Non</option>
-            <option value="na">Sans objet</option>
+            {occasionPresentee ? (
+              <>
+                {!faisable && <option value="">Sélectionnez…</option>}
+                <option value="oui">Oui</option>
+                <option value="non">Non</option>
+              </>
+            ) : (
+              <option value="na">Sans objet</option>
+            )}
           </select>
+          {faisableManquant && (
+            <div id="ja-patient-faisable-erreur" className="mt-2">
+              <PatientInlineMessage tone="error">Dites si c’était faisable.</PatientInlineMessage>
+            </div>
+          )}
         </PatientField>
 
         <PatientField label="Ce qui a compté cette fois-ci">

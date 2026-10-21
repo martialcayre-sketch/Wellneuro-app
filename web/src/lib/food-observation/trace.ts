@@ -47,6 +47,11 @@ export function createTrialTrace(input: {
       'Sans occasion, la trace ne peut dire que « en partie / empêché·e » ou « oublié ou pas noté ».'
     );
   }
+  // Avec occasion, « faisable » est la réponse du patient, jamais un défaut :
+  // ni « oui » supposé, ni « sans objet » compté comme bloqué (D-340).
+  if (input.occasionPresentee && typeof input.faisable !== 'boolean') {
+    throw new TypeError('Quand l’occasion s’est présentée, la trace dit si c’était faisable.');
+  }
   if (input.frictionCode !== undefined && !isFrictionCode(input.frictionCode)) {
     throw new TypeError(`Friction inconnue au registre v1 : ${input.frictionCode}.`);
   }
