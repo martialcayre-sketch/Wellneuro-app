@@ -99,7 +99,9 @@ describe('TransmissionCompteRendu', () => {
     render(<TransmissionCompteRendu token="TOK" />);
     expect(await screen.findByText('Illisible')).toBeTruthy();
     expect(screen.getByText('Validé')).toBeTruthy();
-    expect(screen.getByText(/Trois documents attendent déjà/)).toBeTruthy();
+    expect(
+      screen.getByText('Trois documents attendent déjà d’être traités par votre praticien. Vous pourrez en déposer un autre ensuite.'),
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Envoyer à mon praticien' })).toBeNull();
 
     cleanup();

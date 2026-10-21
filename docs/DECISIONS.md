@@ -5422,6 +5422,13 @@ la migration, écrite avec le code)** : un document transmis **purgé sans
 « refusé ». Le plafond de 3 documents « en attente » ou « reçus » ne compte que
 les documents **non purgés**.
 
+**Précision du 2026-10-21 (§5, texte du refus, arbitrage du responsable)** :
+le refus du plafond disait « Trois documents attendent déjà que votre
+praticien les ouvre », faux quand les trois sont « reçus », donc déjà ouverts.
+Il devient : « Trois documents attendent déjà d’être traités par votre
+praticien. Vous pourrez en déposer un autre ensuite. » Le plafond, son compte
+et sa raison technique sont inchangés.
+
 - Options écartées : l'extraction automatique (§1) ; une table de
   transmission (§2) ; le statut dérivé de l'échec (§3) ; le texte sans accusé
   et la case à chaque dépôt (§6, arbitrage) ; un e-mail au praticien (§7).
