@@ -75,7 +75,7 @@ describe('FoodObservationJourney — parcours JA5-02', () => {
 
     choose("L'occasion s'est-elle présentée ?", 'Non');
     expect(screen.queryByRole('group', { name: "C'était faisable ?" })).toBeNull();
-    choose("Qu'est-ce qui a compté ?", LABELS_ISSUE_TRACE.fait);
+    choose("Qu'est-ce qui a compté ?", LABELS_ISSUE_TRACE.oublie_non_note);
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.queryByRole('textbox', { name: 'Un mot si vous le souhaitez' })).toBeNull();
 
@@ -83,20 +83,25 @@ describe('FoodObservationJourney — parcours JA5-02', () => {
     const trace = onTraceRecorded.mock.calls[0][0];
     expect(trace.occasionPresentee).toBe(false);
     expect(trace.faisable).toBeNull();
-    expect(trace.issue).toBe('fait');
+    expect(trace.issue).toBe('oublie_non_note');
     expect(trace.frictionCode).toBeUndefined();
     expect(trace.motLibre).toBeUndefined();
   });
 
-  it('propose les quatre issues et exige une friction fermée pour une issue empêchée', () => {
+  it('propose les quatre issues avec occasion, les seules issues d’empêchement sans (D-337)', () => {
     render(<FoodObservationJourney episode={JA5_VALIDATION_EPISODE} question={JA5_VALIDATION_DAILY_QUESTION} />);
-    choose("L'occasion s'est-elle présentée ?", 'Non');
-
-    const issueGroup = screen.getByRole('group', { name: "Qu'est-ce qui a compté ?" });
-    expect(within(issueGroup).getAllByRole('radio')).toHaveLength(4);
+    choose("L'occasion s'est-elle présentée ?", 'Oui');
+    const avecOccasion = screen.getByRole('group', { name: "Qu'est-ce qui a compté ?" });
+    expect(within(avecOccasion).getAllByRole('radio')).toHaveLength(4);
     for (const label of Object.values(LABELS_ISSUE_TRACE)) {
-      expect(within(issueGroup).getByRole('radio', { name: label })).not.toBeNull();
+      expect(within(avecOccasion).getByRole('radio', { name: label })).not.toBeNull();
     }
+
+    choose("L'occasion s'est-elle présentée ?", 'Non');
+    const issueGroup = screen.getByRole('group', { name: "Qu'est-ce qui a compté ?" });
+    expect(within(issueGroup).getAllByRole('radio')).toHaveLength(2);
+    expect(within(issueGroup).queryByRole('radio', { name: LABELS_ISSUE_TRACE.fait })).toBeNull();
+    expect(within(issueGroup).queryByRole('radio', { name: LABELS_ISSUE_TRACE.adapte })).toBeNull();
 
     choose("Qu'est-ce qui a compté ?", LABELS_ISSUE_TRACE.partiel_empeche);
     expect((screen.getByRole('button', { name: 'Noter cette trace' }) as HTMLButtonElement).disabled).toBe(true);
@@ -104,6 +109,17 @@ describe('FoodObservationJourney — parcours JA5-02', () => {
     expect(friction.options).toHaveLength(9);
     fireEvent.change(friction, { target: { value: 'F1' } });
     expect((screen.getByRole('button', { name: 'Noter cette trace' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('« Non » à l’occasion efface une issue « fait » déjà choisie, sans en choisir une autre (D-337)', () => {
+    render(<FoodObservationJourney episode={JA5_VALIDATION_EPISODE} question={JA5_VALIDATION_DAILY_QUESTION} />);
+    completeSimpleTrace();
+    choose("L'occasion s'est-elle présentée ?", 'Non');
+    const issueGroup = screen.getByRole('group', { name: "Qu'est-ce qui a compté ?" });
+    for (const radio of within(issueGroup).getAllByRole('radio') as HTMLInputElement[]) {
+      expect(radio.checked).toBe(false);
+    }
+    expect((screen.getByRole('button', { name: 'Noter cette trace' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('active librement un plan minimal de 1, 3 ou 7 jours sans justification', () => {

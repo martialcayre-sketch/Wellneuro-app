@@ -11162,3 +11162,32 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, release-db par le responsable, constat par conteneur ; puis PR 2 du code sous `WN_PHYSIO_TRAITEMENTS`.
 
 **Ouvert.** Aucun.
+## 2026-10-21 — t30 : résolveur des libellés, six des sept fiches de D-323 §6
+
+**Fait.** 22 libellés ajoutés au résolveur (T4L, T3L, bicarbonates, protides totaux, bilirubine totale, PAL) ; résolveur re-signé par le responsable (D-336 : 167 entrées, 85 analytes, `shaPerimetre` recalculé, date reportée à `FEATURE_FLAGS.md`) ; plan : t30 soldée, ligne neuve pour les autres libellés inconnus vus en production.
+
+**Écarté.** Bilirubine conjuguée, directe et libre (même unité que la totale) ; ionogramme complet (panel sans unité).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; puis la PR de doc E67.
+
+**Ouvert.** Autres libellés inconnus de production : lot séparé.
+
+## 2026-10-21 — E67 : parcours et grille de la passe d'accessibilité
+
+**Fait.** `docs/PASSE_ACCESSIBILITE_E67.md` : quatre postes (mobile et lecteur d'écran, ordinateur et lecteur d'écran, zoom 200 % sur l'ordinateur, texte agrandi sur le téléphone), huit étapes du portail plus l'Observatoire praticien, neuf critères ; plan H64 pointé vers la grille. Écrans vérifiés dans le code.
+
+**Écarté.** Rien.
+
+**Prochaine action.** Le responsable joue la passe (file D) et transmet la grille ; chaque défaut bloquant ou gênant devient une ligne de la file A.
+
+**Ouvert.** D-TRUST-05 et D-C5-01 restent ouvertes jusqu'à la passe.
+
+## 2026-10-21 — t35 : sans occasion, seules les issues d'empêchement (D-337)
+
+**Fait.** Arbitrage D/42 transcrit en D-337 ; `issuesProposees` et refus dans `createTrialTrace` ; panneau patient (choix effacé sans substitution, message si rien n'est choisi) et harnais `/dev/validation-ja` alignés ; deux tests du harnais qui encodaient l'ancien comportement réécrits ; plan : D/42 soldée.
+
+**Écarté.** Relire ou corriger les traces déjà enregistrées (hors décision, §4).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t35 → « fait ».
+
+**Ouvert.** t34 (barème de charge, m13) reste en file A.
