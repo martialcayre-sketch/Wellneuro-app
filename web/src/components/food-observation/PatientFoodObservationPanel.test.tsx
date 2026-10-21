@@ -110,6 +110,24 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText(/précise la friction/i)).toBeTruthy();
   });
 
+  it('après « Non » à l’occasion, ne propose que les issues d’empêchement, sans en choisir une (D-337)', async () => {
+    await rendrePret();
+    const issue = screen.getByTestId('ja-patient-issue') as HTMLSelectElement;
+    expect(Array.from(issue.options).map(o => o.value)).toEqual([
+      'fait', 'adapte', 'partiel_empeche', 'oublie_non_note',
+    ]);
+
+    fireEvent.change(screen.getByTestId('ja-patient-occasion'), { target: { value: 'non' } });
+    expect(Array.from(issue.options).map(o => o.value)).toEqual(['', 'partiel_empeche', 'oublie_non_note']);
+    expect(issue.value).toBe('');
+
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    expect(screen.getByText('Choisissez ce qui a compté cette fois-ci.')).toBeTruthy();
+
+    fireEvent.change(issue, { target: { value: 'oublie_non_note' } });
+    expect(Array.from(issue.options).map(o => o.value)).toEqual(['partiel_empeche', 'oublie_non_note']);
+  });
+
   // Lot 1 (audit du 2026-07-27, §2.1) : atteindre le budget hebdomadaire ne
   // prouve RIEN sur la couverture — trois traces du même lundi y suffisent.
   // Le panneau ne rend donc plus aucun verdict de suffisance au patient. Ce

@@ -7,6 +7,18 @@ import { localDate, nonEmpty } from './validation';
 const ISSUES: TraceIssue[] = ['fait', 'adapte', 'partiel_empeche', 'oublie_non_note'];
 
 /**
+ * Issues proposées quand l'occasion ne s'est pas présentée (D-337, D-JA-03) :
+ * sans occasion, « Je l'ai fait » et « J'ai adapté » n'ont pas d'objet ; seules
+ * les issues d'empêchement restent.
+ */
+export const ISSUES_SANS_OCCASION: readonly TraceIssue[] = ['partiel_empeche', 'oublie_non_note'];
+
+/** Issues proposées selon la réponse à « l'occasion s'est-elle présentée ? ». */
+export function issuesProposees(occasionPresentee: boolean): readonly TraceIssue[] {
+  return occasionPresentee ? ISSUES : ISSUES_SANS_OCCASION;
+}
+
+/**
  * Crée une trace d'essai — boucle courte : l'occasion s'est-elle présentée ?
  * était-ce faisable ? qu'est-ce qui a compté ?
  *
@@ -29,6 +41,11 @@ export function createTrialTrace(input: {
   localDate(input.localDate, 'localDate');
   if (!ISSUES.includes(input.issue)) {
     throw new TypeError(`Issue de trace inconnue : ${String(input.issue)}.`);
+  }
+  if (!issuesProposees(input.occasionPresentee).includes(input.issue)) {
+    throw new TypeError(
+      'Sans occasion, la trace ne peut dire que « en partie / empêché·e » ou « oublié ou pas noté ».'
+    );
   }
   if (input.frictionCode !== undefined && !isFrictionCode(input.frictionCode)) {
     throw new TypeError(`Friction inconnue au registre v1 : ${input.frictionCode}.`);

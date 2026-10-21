@@ -11,6 +11,7 @@ import {
   MESSAGE_SILENCE_UTILE,
   createTrialTrace,
   declarePatientPause,
+  issuesProposees,
 } from '@/lib/food-observation';
 import type {
   DailyQuestion,
@@ -40,7 +41,6 @@ export type FoodObservationJourneyProps = {
   onSolutionRecorded?: (solution: IntraEpisodeSolution) => void;
 };
 
-const TRACE_ISSUES = Object.entries(LABELS_ISSUE_TRACE) as Array<[TraceIssue, string]>;
 const FRICTION_ENTRIES = Object.entries(FRICTIONS) as Array<[FrictionCode, string]>;
 const SHORT_ANSWER_MAX_LENGTH = 80;
 
@@ -135,7 +135,10 @@ export function FoodObservationJourney({
   const handleOccasionChange = (value: string) => {
     const next = value as BooleanChoice;
     setOccasion(next);
-    if (next === 'non') setFaisable('');
+    if (next === 'non') {
+      setFaisable('');
+      if (issue && !issuesProposees(false).includes(issue)) setIssue('');
+    }
   };
 
   const handleIssueChange = (value: string) => {
@@ -321,7 +324,10 @@ export function FoodObservationJourney({
             legend="Qu'est-ce qui a compté ?"
             name={`${mode}-issue`}
             value={issue}
-            choices={TRACE_ISSUES.map(([value, label]) => ({ value, label }))}
+            choices={issuesProposees(occasion === 'oui').map(value => ({
+              value,
+              label: LABELS_ISSUE_TRACE[value],
+            }))}
             onChange={handleIssueChange}
           />
         )}

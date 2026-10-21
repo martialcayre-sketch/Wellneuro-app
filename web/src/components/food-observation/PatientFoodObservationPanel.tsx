@@ -19,6 +19,7 @@ import {
   createTrialTrace,
   declarePatientPause,
   describeCoverage,
+  issuesProposees,
   type FoodObservationEpisode,
   type IntraEpisodeSolution,
   type JourneeRepere,
@@ -171,7 +172,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   });
   const [occasionPresentee, setOccasionPresentee] = useState(true);
   const [faisable, setFaisable] = useState<'oui' | 'non' | 'na'>('oui');
-  const [issue, setIssue] = useState<TraceIssue>('fait');
+  // Vide = rien de choisi : après « Non » à l'occasion, « fait » et « adapté »
+  // ne sont plus proposés (D-337) et aucune autre issue n'est choisie à la place.
+  const [issue, setIssue] = useState<TraceIssue | ''>('fait');
   const [frictionCode, setFrictionCode] = useState('');
   const [motLibre, setMotLibre] = useState('');
   const [solutionInput, setSolutionInput] = useState('');
@@ -415,6 +418,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
   const addTrace = () => {
     setError('');
+    if (!issue) {
+      setError('Choisissez ce qui a compté cette fois-ci.');
+      return;
+    }
     try {
       const trace = createTrialTrace({
         traceId: makeId('trace'),
@@ -429,7 +436,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       setTraces(prev => [trace, ...prev]);
       setMotLibre('');
       setFrictionCode('');
-      setIssue('fait');
+      setIssue(occasionPresentee ? 'fait' : '');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Impossible d’enregistrer la trace.');
     }
@@ -732,7 +739,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             onChange={(e) => {
               const next = e.target.value === 'oui';
               setOccasionPresentee(next);
-              if (!next) setFaisable('na');
+              if (!next) {
+                setFaisable('na');
+                if (issue && !issuesProposees(false).includes(issue)) setIssue('');
+              }
             }}
           >
             <option value="oui">Oui</option>
@@ -759,10 +769,11 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             data-testid="ja-patient-issue"
             className={patientInputClassName}
             value={issue}
-            onChange={(e) => setIssue(e.target.value as TraceIssue)}
+            onChange={(e) => setIssue(e.target.value as TraceIssue | '')}
           >
-            {Object.entries(LABELS_ISSUE_TRACE).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {!issue && <option value="">Sélectionnez…</option>}
+            {issuesProposees(occasionPresentee).map(value => (
+              <option key={value} value={value}>{LABELS_ISSUE_TRACE[value]}</option>
             ))}
           </select>
         </PatientField>

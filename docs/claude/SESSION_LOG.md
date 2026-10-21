@@ -11172,3 +11172,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Le responsable joue la passe (file D) et transmet la grille ; chaque défaut bloquant ou gênant devient une ligne de la file A.
 
 **Ouvert.** D-TRUST-05 et D-C5-01 restent ouvertes jusqu'à la passe.
+
+## 2026-10-21 — t35 : sans occasion, seules les issues d'empêchement (D-337)
+
+**Fait.** Arbitrage D/42 transcrit en D-337 ; `issuesProposees` et refus dans `createTrialTrace` ; panneau patient (choix effacé sans substitution, message si rien n'est choisi) et harnais `/dev/validation-ja` alignés ; deux tests du harnais qui encodaient l'ancien comportement réécrits ; plan : D/42 soldée.
+
+**Écarté.** Relire ou corriger les traces déjà enregistrées (hors décision, §4).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t35 → « fait ».
+
+**Ouvert.** t34 (barème de charge, m13) reste en file A.
