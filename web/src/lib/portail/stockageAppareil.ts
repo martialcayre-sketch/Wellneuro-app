@@ -1,3 +1,4 @@
+import { lireBrouillonCeQuiCompte } from '@/lib/patient/ceQuiCompteBrouillon';
 import { hasDraft } from '@/lib/questionnaire-draft';
 
 // Ce que le portail laisse sur l'APPAREIL du patient, et ce que « Se déconnecter »
@@ -80,6 +81,21 @@ export const FAMILLES_DONNEES_PATIENT: readonly FamilleCles[] = [
     contenu: 'fiche signalétique et anamnèse en cours de saisie',
   },
   { prefixe: 'wellneuro:wizard-draft-meta:', stockage: 'session', contenu: 'horodatage du wizard', metadonnee: true },
+  {
+    prefixe: 'wellneuro:ce-qui-compte-brouillon:v1:',
+    stockage: 'local',
+    contenu: '« Ce qui compte pour moi aujourd’hui » rédigé, pas encore envoyé',
+    // DÉLÉGUÉ comme pour les questionnaires : texte ou date non vides, et
+    // brouillon non périmé (30 jours) — la règle vit dans son module.
+    estSubstantielle: (_brut, cle) =>
+      lireBrouillonCeQuiCompte(cle.slice('wellneuro:ce-qui-compte-brouillon:v1:'.length)) !== null,
+  },
+  {
+    prefixe: 'wellneuro:ce-qui-compte-brouillon-meta:v1:',
+    stockage: 'local',
+    contenu: 'horodatage du brouillon « Ce qui compte »',
+    metadonnee: true,
+  },
   {
     prefixe: 'wellneuro:ja5-02:patient:',
     stockage: 'session',
