@@ -52,11 +52,20 @@ export function sourceSansCommentaires(source: string): string {
   // ce second cas, `return /a\/\//` serait lu comme une division, et le `//`
   // de la regex avalerait le reste de la ligne, seuil compris (contre-revue).
   const PRECEDE_UNE_REGEX = /(?:[=(,:[!&|?{};+\-*%<>~^]|\b(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await))$/;
+  // Une `)` qui ferme la condition d'un `if`, `while` ou `for` précède aussi
+  // une regex (`if (x) /re/.test(y)`) — mais pas `(x) / 2`, qui divise : d'où
+  // la pile des ouvrantes, chacune marquée si elle ouvre une condition.
+  const pile: boolean[] = [];
+  let fermeUneCondition = false;
   let blanc = false;
+  let queue = '';
   const pousser = (texte: string) => {
-    if (blanc && sortie.length > 0) sortie.push(' ');
+    const espace = blanc && sortie.length > 0 ? ' ' : '';
+    if (espace) sortie.push(espace);
     blanc = false;
     sortie.push(texte);
+    queue = (queue + espace + texte).slice(-16);
+    fermeUneCondition = false;
   };
   let i = 0;
   while (i < source.length) {
@@ -74,7 +83,7 @@ export function sourceSansCommentaires(source: string): string {
       while (j < source.length && source[j] !== c) j += source[j] === '\\' ? 2 : 1;
       pousser(source.slice(i, j + 1));
       i = j + 1;
-    } else if (c === '/' && PRECEDE_UNE_REGEX.test(sortie.join('').slice(-12) || '(')) {
+    } else if (c === '/' && (fermeUneCondition || PRECEDE_UNE_REGEX.test(queue || '('))) {
       let j = i + 1;
       let dansClasse = false;
       while (j < source.length && (dansClasse || source[j] !== '/') && source[j] !== '\n') {
@@ -87,6 +96,15 @@ export function sourceSansCommentaires(source: string): string {
       i = j + 1;
     } else if (/\s/.test(c)) {
       blanc = true;
+      i++;
+    } else if (c === '(') {
+      pile.push(/\b(?:if|while|for)$/.test(queue));
+      pousser(c);
+      i++;
+    } else if (c === ')') {
+      const condition = pile.pop() ?? false;
+      pousser(c);
+      fermeUneCondition = condition;
       i++;
     } else {
       pousser(c);

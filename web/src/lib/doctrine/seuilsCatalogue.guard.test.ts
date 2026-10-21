@@ -54,8 +54,12 @@ import INSTANTANE from './seuilsCatalogue.instantane.json';
 //   — le MOTEUR est tout `questions.ts` hors du littéral du catalogue (imports
 //     compris) ; les modules qu'il importe (`clinical/bandesPsqi.ts`, gardé, lui,
 //     par les grilles signées) ne sont pas dans son empreinte, seul l'import l'est ;
-//   — le banc vérifie qu'une décision EXISTE et qu'elle est récente, pas
-//     qu'elle parle de ce questionnaire : la revue le fait.
+//   — le banc vérifie qu'une décision EXISTE, qu'elle est récente et que les
+//     décisions d'un historique croissent, pas qu'elle parle de ce
+//     questionnaire : la revue le fait ;
+//   — seule la DERNIÈRE étape est confrontée au code, et seule la pose est
+//     figée : une étape intermédiaire réécrite ne rougit pas — c'est le diff de
+//     l'instantané, en revue, qui la montre.
 
 type Etape = { empreinte: string; decision: string | null; date: string; retire?: boolean };
 type Instantane = {
@@ -120,6 +124,9 @@ function fautesHistorique(i: Instantane, registre: string, idsCatalogue: string[
   const fautes: string[] = [];
   const historiques: [string, Etape[]][] = [['MOTEUR', i.moteur], ...Object.entries(i.entrees)];
   for (const [id, historique] of historiques) {
+    // Les décisions d'un historique sont STRICTEMENT croissantes (revue
+    // CodeRabbit de #1621) : ni numéro réutilisé, ni retour en arrière.
+    let precedente = i.derniereDecisionALaPose;
     historique.forEach((etape, rang) => {
       if (!/^[0-9a-f]{64}$/.test(etape.empreinte)) fautes.push(`${id}#${rang} : empreinte illisible`);
       if (etape.decision === null) {
@@ -128,6 +135,10 @@ function fautesHistorique(i: Instantane, registre: string, idsCatalogue: string[
         fautes.push(`${id}#${rang} : ${etape.decision} absente du registre`);
       } else if (numero(etape.decision) <= numero(i.derniereDecisionALaPose)) {
         fautes.push(`${id}#${rang} : ${etape.decision} antérieure à la pose`);
+      } else if (numero(etape.decision) <= numero(precedente)) {
+        fautes.push(`${id}#${rang} : ${etape.decision} non postérieure à ${precedente}`);
+      } else {
+        precedente = etape.decision;
       }
     });
   }
@@ -227,6 +238,20 @@ describe('les règles d’historique rougissent sur ce qu’elles doivent refuse
     expect(empreinteDeLaPose(i)).not.toBe(avant);
   });
 
+  it('des décisions réutilisées ou décroissantes dans un historique', () => {
+    const REG2 = `${REG}### D-202 — encore après\n`;
+    const i = base();
+    i.entrees.Q_A.push(
+      { empreinte: E, decision: 'D-202', date: '2026-11-02' },
+      { empreinte: E, decision: 'D-202', date: '2026-11-03' },
+      { empreinte: E, decision: 'D-201', date: '2026-11-04' },
+    );
+    expect(fautesHistorique(i, REG2, ['Q_A'])).toEqual([
+      'Q_A#2 : D-202 non postérieure à D-202',
+      'Q_A#3 : D-201 non postérieure à D-202',
+    ]);
+  });
+
   it('D-10 ne se lit pas comme D-107', () => {
     expect(decisionAuRegistre('### D-107 — x\n', 'D-10')).toBe(false);
   });
@@ -267,6 +292,13 @@ describe('les empreintes voient ce qu’elles doivent voir', () => {
     const recommente = FICHIER.replace('// seuil publié', '// autre motif').replace('/* fin */', '').replace('  return', '\treturn');
     expect(empreinteMoteur(recommente)).toBe(empreinteMoteur(FICHIER));
     expect(empreinteMoteur(FICHIER.replace("type: 'sum'", "type: 'subscore'"))).toBe(empreinteMoteur(FICHIER));
+  });
+
+  it('une regex après une condition n’avale pas le seuil qui la suit ; une division reste une division', () => {
+    expect(sourceSansCommentaires('if (x) /\\/\\//.test(y); score > 30;')).toContain('score > 30');
+    expect(sourceSansCommentaires('while (x) /\\/\\//.test(y); score > 30;')).toContain('score > 30');
+    // `(x) / 2 // note` : division, puis commentaire retiré.
+    expect(sourceSansCommentaires('const m = (x) / 2; // note')).toBe('const m = (x) / 2;');
   });
 
   it('une regex après un mot-clé n’avale pas le seuil qui la suit', () => {
