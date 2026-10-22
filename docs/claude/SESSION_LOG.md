@@ -11290,3 +11290,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge et déploiement constaté ; q10 de la page de suivi.
 
 **Ouvert.** F45 : rubrique 4 (15–17 ans, avant J3-mineurs).
+
+## 2026-10-22 — BP-15 : décision D-343 et migration des décisions de parcours
+
+**Fait.** D-343 écrite depuis les arbitrages du 2026-10-20 ; précisions de l'assistant et paragraphe RGPD retenus tels quels ; #1642 mergée. Migration seule `decisions_parcours_v1` : une table en ajout seul ancrée sur une version, trois familles, motifs fermés sans efficacité ; contrat (quinze promesses, versions intouchées) et banc (sept courses) verts en local ; relecture `wn-reviewer` sans P0 ni P1, quatre P2 corrigés, trois routés à la PR 2.
+
+**Écarté.** Une règle de séquence (début avant interruption) : des déclarations, une lacune se dit ; la date future refusée en base (route, comme BP-13).
+
+**Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée et déclenchée par le responsable ; constat par conteneur ; puis le code sous `WN_DECISIONS_PARCOURS`.
+
+**Ouvert.** Brouillon de la lettre cm (F52) après le code.

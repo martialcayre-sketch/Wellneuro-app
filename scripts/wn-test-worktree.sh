@@ -564,6 +564,13 @@ grep -q 'banc-physio-traitements-deux-sessions.test.mjs' "$ROOT/.github/workflow
   || die "ci.yml ne lance plus le banc à deux sessions des données physiologiques et des traitements."
 WN_PHYSIO_BANC_BASE=wellneuro_ci node scripts/banc-physio-traitements-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc des données physiologiques et des traitements en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-physio-traitements-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions des décisions de parcours (D-343, BP-15) : même
+# discipline.
+step "Banc à deux sessions (décisions de parcours)"
+grep -q 'banc-decisions-parcours-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions des décisions de parcours."
+WN_DECISIONS_BANC_BASE=wellneuro_ci node scripts/banc-decisions-parcours-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc des décisions de parcours en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-decisions-parcours-deux-sessions.test.mjs\`, depuis web/)."
 # Banc à deux sessions de l'exclusion signature ↔ constat NABM (M-3c, F54) :
 # même discipline.
 step "Banc à deux sessions (exclusion signature ↔ constat NABM)"

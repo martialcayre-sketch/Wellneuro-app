@@ -1371,6 +1371,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/donnees_physiologiques_traitements_v1_negatif.sql
 
+      # Décisions de parcours (D-343, BP-15) : une révision en vigueur par
+      # version, un fil par événement, motifs en listes fermées (aucun motif
+      # d'efficacité), date de l'événement, version suivante, versions
+      # intouchées, ajout seul, effacement nommé.
+      - name: Decisions de parcours negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/decisions_parcours_v1_negatif.sql
+
       # Le document pour le médecin (D-307, F38) : impression d'une synthèse
       # validée DU dossier par son praticien, HTML et empreinte figés,
       # téléchargement de la seule dernière impression, ajout seul, effacement
@@ -1511,6 +1520,19 @@ jobs:
         env:
           WN_PHYSIO_BANC_BASE: wellneuro_ci
         run: node scripts/banc-physio-traitements-deux-sessions.test.mjs
+
+      # Décisions de parcours (D-343, BP-15) : la tête d'un fil ne tient que
+      # par son verrou. Deux premières révisions, un remplacement contre un
+      # retrait, deux remplacements d'un événement, le refus de REPEATABLE
+      # READ, l'effacement contre deux poses, une suppression hors
+      # effacement. Commet ses fixtures puis les efface : la base doit être
+      # nommée.
+      - name: Decisions de parcours two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_DECISIONS_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-decisions-parcours-deux-sessions.test.mjs
 
       # Exclusion signature ↔ constat « aucun acte » NABM (M-3c, F54) : un
       # constat et une signature concurrents sur le même analyte se

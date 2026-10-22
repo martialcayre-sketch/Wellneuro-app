@@ -1446,6 +1446,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : D-xxx de véhicule ; D-255 précisée (`docs/claude/campagnes/CADRAGE_BIO_PARCOURS_v3_2026-10-04.md:390`).
 - **Critère de fin** : release-db constatée ; contrat négatif ; bancs du jour 0 et des quatre empreintes.
 - **Mise à jour (2026-10-22, D-343, décision)** : arbitrages du 2026-10-20 consignés (ancrage sur la version, action facultative ; praticien seul, source notée ; motifs en listes fermées, aucun motif d'efficacité ; correction par remplacement de la tête et retrait) ; table `decisions_parcours` en trois familles (choix, mise en œuvre, révision) ; D-255 précisée (le début réel n'est pas le jour 0) ; quatre empreintes nommées (`decision_card_input_hash`, `snapshot_input_hash`, `review_input_hash`, `input_hash`) ; déclaration RGPD avant la table ; fiche LOT-15. Suite : migration seule, release-db, code sous `WN_DECISIONS_PARCOURS` éteint.
+- **Mise à jour (2026-10-22, D-343, migration)** : #1642 mergée ; migration `20261022100000_decisions_parcours_v1` en PR seule, avec son contrat négatif (quinze promesses, versions intouchées comprises), son banc à deux sessions (sept courses) et l'effacement nommé avant `protocol_drafts`. Reste : release-db approuvée par le responsable, constat par conteneur, puis le code.
 
 #### F15 · BP-03 : série par analyte
 - **Identifiant, piste** : BP-03 ; parcours.
