@@ -65,10 +65,12 @@ export function lexer(commande) {
   const jetons = [];
   const corps = [];
   const heredocsEnAttente = [];
+  const sousCommandes = [];
   let mot = null;
   const finirMot = () => {
     if (mot !== null) jetons.push({ t: "mot", v: mot });
     mot = null;
+    for (const v of sousCommandes.splice(0)) jetons.push({ t: "sous", v });
   };
   const pousserOp = (v) => {
     finirMot();
@@ -101,10 +103,29 @@ export function lexer(commande) {
       continue;
     }
     if (c === '"') {
+      // Entre guillemets doubles, `$(…)` et `` `…` `` s'EXÉCUTENT : leur
+      // texte est rendu à part (jeton `sous`), analysé comme une commande
+      // (revue CodeRabbit #1643). `$((…))` reste de l'arithmétique.
       let j = i + 1;
       let v = "";
       while (j < s.length && s[j] !== '"') {
-        if (s[j] === "\\" && /["\\$`\n]/.test(s[j + 1] ?? "")) { v += s[j + 1]; j += 2; } else v += s[j++];
+        if (s[j] === "\\" && /["\\$`\n]/.test(s[j + 1] ?? "")) { v += s[j + 1]; j += 2; continue; }
+        if (s[j] === "$" && s[j + 1] === "(" && s[j + 2] !== "(") {
+          const fin = finArithmetique(s, j + 1);
+          sousCommandes.push(s.slice(j + 2, fin - 1));
+          v += s.slice(j, fin);
+          j = fin;
+          continue;
+        }
+        if (s[j] === "`") {
+          let fin = j + 1;
+          while (fin < s.length && s[fin] !== "`") fin += s[fin] === "\\" ? 2 : 1;
+          sousCommandes.push(s.slice(j + 1, fin));
+          v += s.slice(j, fin + 1);
+          j = fin + 1;
+          continue;
+        }
+        v += s[j++];
       }
       mot = (mot ?? "") + v;
       i = j + 1;
@@ -190,13 +211,19 @@ export function segments(jetons) {
   const out = [];
   let liste = 0;
   let profondeur = 0;
-  const neuf = () => ({ argv: [], cibles: [], liste, profondeur, corps: [] });
+  const neuf = () => ({ argv: [], cibles: [], liste, profondeur, corps: [], sous: [] });
   let courant = neuf();
   const clore = () => {
-    if (courant.argv.length || courant.cibles.length || courant.corps.length) out.push(courant);
+    if (courant.argv.length || courant.cibles.length || courant.corps.length || courant.sous.length) {
+      out.push(courant);
+    }
   };
   for (let k = 0; k < jetons.length; k++) {
     const j = jetons[k];
+    if (j.t === "sous") {
+      courant.sous.push(j.v);
+      continue;
+    }
     if (j.t === "sep") {
       clore();
       if (FIN_DE_LISTE.has(j.v)) liste++;
@@ -425,11 +452,18 @@ function resoudre(brut, cwd) {
   return path.resolve(cwd, v);
 }
 
-/** Expansion d'accolades (`f.ts{,.bak}`, `{a,b}/x`), bornée à 64 formes. */
+/**
+ * Expansion d'accolades (`f.ts{,.bak}`, `{a,b}/x`). La borne porte sur les
+ * formes produites ET en attente (revue CodeRabbit #1643) : sinon des
+ * accolades imbriquées gonflent la file sans fin avant le premier résultat.
+ * Au-delà, les formes restantes sont gardées telles quelles.
+ */
+const LIMITE_FORMES = 64;
 function accolades(mot) {
   const formes = [mot];
   const out = [];
-  while (formes.length && out.length < 64) {
+  while (formes.length) {
+    if (out.length + formes.length > LIMITE_FORMES) return [...out, ...formes];
     const f = formes.shift();
     let ouverture = -1;
     let profondeur = 0;
@@ -504,6 +538,7 @@ export function ciblesEcritureBash(commande, cwdInitial) {
   // survit pas à sa parenthèse.
   const cwds = [cwdInitial];
   const ecritures = new Map();
+  const mentions = [];
   const cites = [];
   for (const seg of segs) {
     if (seg.fermeture) {
@@ -519,6 +554,11 @@ export function ciblesEcritureBash(commande, cwdInitial) {
       }
     };
     seg.cibles.forEach(ecrire);
+    for (const sous of seg.sous) {
+      const r = ciblesEcritureBash(sous, cwd);
+      for (const { chemin, contenu: c } of r.ecritures) ecritures.set(chemin, (ecritures.get(chemin) ?? "") + c);
+      mentions.push(...r.mentions);
+    }
     // Les accolades s'étendent en mots distincts, comme le fait le shell.
     const argv = commandeEffective(seg.argv.flatMap(accolades));
     if (!argv.length) continue;
@@ -535,7 +575,6 @@ export function ciblesEcritureBash(commande, cwdInitial) {
     ecrituresArgv(argv).forEach(ecrire);
     if (estInterprete(cmd, argv.slice(1))) cites.push({ texte: argv.slice(1).join(" "), cwd });
   }
-  const mentions = [];
   if (cites.length) {
     // Un corps de heredoc n'est cité que si un interpréteur peut le lire.
     for (const texte of corps) cites.push({ texte, cwd: cwdInitial });

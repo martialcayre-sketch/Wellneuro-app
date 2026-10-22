@@ -50,7 +50,8 @@ le build y écrit lui-même ne passe par aucune cible et reste libre.
   `git restore f` (pas `--staged` seul). Chemins résolus depuis le `cwd` de la
   commande, `cd` successifs (pas au-delà de leur sous-shell), `~`, `$HOME`,
   `$CLAUDE_PROJECT_DIR` et `git -C` compris ; accolades et globs étendus sur
-  disque (`**` excepté) ; `$(…)` analysé, `$((…))` ignoré.
+  disque (`**` excepté, 64 formes au plus) ; `$(…)` et `` `…` `` analysés,
+  entre guillemets doubles compris ; `$((…))` ignoré.
 - **Mention par un interpréteur** (python, node, tsx, perl, ruby, un shell…)
   : un chemin protégé cité dans ses arguments, ou dans un heredoc de la même
   commande, **demande** — l'écriture n'est pas prouvée, elle échappe à

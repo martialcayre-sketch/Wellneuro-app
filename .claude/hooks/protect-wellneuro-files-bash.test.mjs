@@ -89,6 +89,10 @@ for (const commande of [
   `(cd /tmp && true); sed -i '' 's/a/b/' ${Q}`,
   `rsync -e ssh /tmp/questions.ts web/src/lib/`,
   `rsync --exclude '*.log' /tmp/questions.ts web/src/lib/`,
+  // Revue CodeRabbit #1643 : substitutions entre guillemets doubles.
+  `echo "$(sed -i '' s/a/b/ ${Q})"`,
+  "echo \"`tee " + Q + " < /tmp/x`\"",
+  `cd web && echo "résultat : $(sed -i '' s/a/b/ src/lib/questions.ts)"`,
 ]) {
   test(`forme reconnue, demande : ${commande.split("\n")[0]}`, () => {
     const { verdict, sortie } = jugement(commande);
@@ -204,6 +208,19 @@ for (const commande of [
     assert.equal(verdict, "passe", sortie);
   });
 }
+
+test("arithmétique entre guillemets doubles : pas un heredoc, la suite reste jugée", () => {
+  assert.equal(jugement(`echo "$((1<<2))"\nls`).verdict, "passe");
+  assert.equal(jugement(`echo "$((1<<2))"\necho x > ${Q}`).verdict, "demande");
+});
+
+test("accolades en cascade : borne tenue, verdict rendu sans exploser", () => {
+  const cascade = "{a,b}".repeat(40);
+  const debut = Date.now();
+  const { verdict } = jugement(`node -e "x" ${cascade} && echo x > ${Q}`);
+  assert.equal(verdict, "demande");
+  assert.ok(Date.now() - debut < 5000, `trop lent : ${Date.now() - debut} ms`);
+});
 
 // ── Trous ASSUMÉS (hooks-garde-fous.md) : épinglés, pas promis ───────────────
 // Le jour où l'un d'eux est couvert, ce test rougit et la doc se met à jour.
