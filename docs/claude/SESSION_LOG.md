@@ -11290,3 +11290,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge et déploiement constaté ; q10 de la page de suivi.
 
 **Ouvert.** F45 : rubrique 4 (15–17 ans, avant J3-mineurs).
+
+## 2026-10-22 — Mineurs : rubrique 4 provisoire, avocat consulté (D-344)
+
+**Fait.** Avis préparatoire (Codex) confronté au dépôt : trois erreurs de fait corrigées. Rubrique 4 réécrite en version provisoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; étape 7 à trois demandeurs ; second avis intégré (architecture hybride, proportionnalité des seuils, transition dès 15 ans) ; note à l'avocat (six questions et faits du contrat).
+
+**Écarté.** Corriger 2B tout de suite (aucun mineur servi ; un seul changement après l'avis).
+
+**Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
+
+**Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.

@@ -70,6 +70,30 @@ page et dix questions fermées. Les réponses fixeront :
 - le texte 2B (§2) ;
 - l'âge plancher et la transition à 18 ans, deux règles à écrire ;
 - le cahier de J3-mineurs.
+
+**§6 — Un second avis préparatoire, intégré** (arbitrage du même jour). Il
+reprend la même erreur de fait (2B non publié) et rejoint le §4 sur les trois
+demandeurs. Il ajoute quatre points, portés à la rubrique 4 comme hypothèses
+soumises à l'avocat, et non comme règles :
+- **architecture hybride** : l'accord parental devient une condition
+  d'admission et de contrat ; pour les fonctions du portail qui relèvent de
+  l'art. 8 RGPD et de l'art. 45 LIL, le jeune de 15 ans ou plus consent
+  lui-même, explicitement pour les données de santé. Au code, le mineur
+  s'arrête à la pause avant l'étape du consentement : personne ne consent
+  encore pour lui ;
+- **non-discrimination selon l'âge** (loi n° 2008-496, art. 2, 3°) : tout
+  seuil d'âge d'accès au service se justifie par un but légitime et des
+  moyens nécessaires et appropriés ; une analyse de proportionnalité est à
+  écrire avant le premier mineur admis ;
+- **chaque droit garde son régime en cas de conflit** : un retrait de son
+  consentement par le jeune n'est pas retardé ;
+- **transition dès 15 ans** pour les fonctions de l'art. 45, fin des pouvoirs
+  parentaux à 18 ans, et pas de nouveau consentement du seul fait de l'âge.
+
+La note à l'avocat passe à six questions, avec en annexe la grille des dix
+réponses provisoires. Une rubrique « Faits du contrat » (prix, durée,
+engagement, résiliation) est à remplir par le responsable.
+
 ### D-343 — BP-15 : les décisions de parcours, des lignes en ajout seul ancrées sur une version du protocole — choix du patient, mise en œuvre réelle, révision du praticien ; motifs fermés, aucun motif d'efficacité ; le jour 0 et les quatre empreintes intouchés (LOT-15)
 
 - Date : 2026-10-22
