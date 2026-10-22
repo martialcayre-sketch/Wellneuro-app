@@ -7,6 +7,8 @@ import { DeclarationsPatient } from './DeclarationsPatient';
 // l'anamnèse : une lecture en échec ne laisse pas la partie vide en silence.
 // Elle le dit, offre « Réessayer », et le signale à la fiche englobante, qui
 // ne se valide pas sans elle (revue CodeRabbit, P1).
+// Le rappel part d'un effet passif, APRÈS le rendu de l'alerte : il s'attend
+// (`waitFor`), sinon l'assertion court devant l'effet sous charge.
 
 const LUES = {
   ok: true,
@@ -35,7 +37,7 @@ describe('DeclarationsPatient — lecture en échec', () => {
     render(<DeclarationsPatient parties="traitements" onLectureEchouee={onLectureEchouee} />);
 
     expect((await screen.findByRole('alert')).textContent).toContain('n’a pas pu être chargée');
-    expect(onLectureEchouee).toHaveBeenLastCalledWith(true);
+    await waitFor(() => expect(onLectureEchouee).toHaveBeenLastCalledWith(true));
 
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
     await waitFor(() => expect(onLectureEchouee).toHaveBeenLastCalledWith(false));
@@ -49,7 +51,7 @@ describe('DeclarationsPatient — lecture en échec', () => {
     render(<DeclarationsPatient parties="sexe" onLectureEchouee={onLectureEchouee} />);
 
     expect(await screen.findByRole('alert')).toBeTruthy();
-    expect(onLectureEchouee).toHaveBeenLastCalledWith(true);
+    await waitFor(() => expect(onLectureEchouee).toHaveBeenLastCalledWith(true));
   });
 
   it('une relecture en échec APRÈS une écriture se dit aussi, au-dessus des données conservées', async () => {
@@ -82,7 +84,7 @@ describe('DeclarationsPatient — lecture en échec', () => {
 
     expect((await screen.findByRole('alert')).textContent).toContain('n’a pas pu être chargée');
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
-    expect(onLectureEchouee).toHaveBeenLastCalledWith(true);
+    await waitFor(() => expect(onLectureEchouee).toHaveBeenLastCalledWith(true));
   });
 
   it('démontée, elle ne bloque plus la fiche', async () => {
