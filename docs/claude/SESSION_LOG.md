@@ -11270,3 +11270,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Lot du repère en liste, puis lot de la date au masquage.
 
 **Ouvert.** 15–17 ans (avocat, avant J3-mineurs).
+
+## 2026-10-22 — Repère du mineur dans la liste des patients (D-342 §2)
+
+**Fait.** `PatientRow` porte « Mineur, accord parental attendu » sur un dossier en suivi dont la date dit un mineur ; règle du portail (`en_suivi`, `statutAge`) ; banc de neuf cas.
+
+**Écarté.** Alerte au fil du jour (non demandée) ; migration ou drapeau (repère déduit de la date).
+
+**Prochaine action.** Merge et déploiement constaté, puis PR de la date au masquage (D-342 §3).
+
+**Ouvert.** `DeclarationsPatient.test.tsx` instable sous charge (une fois).
