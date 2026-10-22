@@ -103,6 +103,24 @@ describe('GET /api/praticien/patients', () => {
     expect(json.patients[1].suiviClotureLe).toBeNull();
   });
 
+  it('sert la date de naissance telle que stockée : le repère du mineur de la liste la lit (D-342 §2)', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      {
+        idPatient: 'PAT_SEED_02',
+        email: 'jennifer.martin@fictif.wellneuro.fr',
+        prenom: 'Jennifer',
+        nom: 'Martin',
+        telephone: null,
+        actif: true,
+        suiviClotureLe: null,
+        accessTokenRevoked: false,
+        dateNaissance: '2010-05-01',
+      },
+    ]);
+    const json = (await (await GET(get())).json()) as { patients: { dateNaissance: string | null }[] };
+    expect(json.patients[0].dateNaissance).toBe('2010-05-01');
+  });
+
   it('expose l’accès révoqué, distinct de l’état du dossier', async () => {
     // TROIS ÉTATS INDÉPENDANTS, et c'est tout l'objet du champ : un dossier
     // ACTIF, en suivi OUVERT, peut avoir son accès portail révoqué. `D-126` §2

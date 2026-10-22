@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Badge, type BadgeVariant } from './Badge';
 import { MenuActions, type ElementMenu } from './MenuActions';
 import { phaseDossier, type PhaseDossier } from '@/lib/patient/cycleDeVie';
+import { statutAge } from '@/lib/patient/gardeAge';
 
 export type PatientRowData = {
   idPatient: string;
@@ -16,7 +17,14 @@ export type PatientRowData = {
   /** Accès au portail révoqué. CUMULATIF, jamais dérivé : `phaseDossier` ne le
    * connaît pas, et `D-126` §2 interdit de le déduire d'une désactivation. */
   accesRevoque: boolean;
+  /** `AAAA-MM-JJ` tel que stocké, ou `null`. Facultatif : le menu du cockpit
+   * partage ce type sans servir la date. */
+  dateNaissance?: string | null;
 };
+
+/** D-342 §2 : le praticien est prévenu d'un mineur en attente de l'accord
+ * parental. Le portail ne le lui dit pas ; c'est à lui de prendre contact. */
+export const LIBELLE_MINEUR_EN_ATTENTE = 'Mineur, accord parental attendu';
 
 export type ActionDossier =
   | 'resend'
@@ -92,6 +100,13 @@ export function PatientRow({
               mot désigne le fait aux deux endroits. La différence : cette
               pastille-ci ne s'éteint pas au 31ᵉ jour. */}
           {patient.accesRevoque && <Badge variant="neutral">Accès révoqué</Badge>}
+          {/* D-342 §2 : même règle que le portail, qui ne sert l'écran du
+              mineur qu'à un dossier en suivi (`accepteNouvelEnvoi`) ; la
+              pause dure jusqu'à J3-mineurs, même avec un accord recueilli à
+              la main. */}
+          {phase === 'en_suivi' && statutAge(patient.dateNaissance, Date.now()) === 'mineur' && (
+            <Badge variant="warning">{LIBELLE_MINEUR_EN_ATTENTE}</Badge>
+          )}
         </span>
       </td>
       <td className="px-4 py-2">
