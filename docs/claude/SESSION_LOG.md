@@ -11320,6 +11320,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
 
+## 2026-10-22 — Instruments : textes faux (F9b, N1)
+
+**Fait.** Infobulle d'un besoin sans source rendue exacte (« Aucune réponse de questionnaire exploitable pour ce besoin »), sans motif. « Vérifiez le terminal Next.js. » remplacé par un message praticien et « Réessayer » sur le détail des besoins et la fiche ; texte seul dans `messagesDossier.ts`, qui déborde sur quatre surfaces hors instruments.
+
+**Écarté.** Bouton dans les quatre surfaces partagées (hors lot) ; tout motif (lot 4, après M-2).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge.
+
+**Ouvert.** Rien pour le lot.
 ## 2026-10-22 — Banc DeclarationsPatient : rappel attendu (BP-13)
 
 **Fait.** Les trois assertions sur `onLectureEchouee` qui suivaient `findByRole('alert')` passent sous `waitFor` : le rappel part d'un effet passif, après le rendu de l'alerte, et l'assertion pouvait le devancer sous charge (rouge CI de main sur db9018ee, T2 local une fois).
