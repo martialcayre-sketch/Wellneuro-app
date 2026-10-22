@@ -89,7 +89,11 @@ function estObjet(valeur: unknown): valeur is Record<string, unknown> {
 
 /** Une liste de besoins : non vide, chaque élément un besoin, sans doublon. */
 function controlerBesoins(valeur: unknown, erreurs: string[]): Besoin[] | null {
-  if (!Array.isArray(valeur) || valeur.length === 0) {
+  if (!Array.isArray(valeur)) {
+    erreurs.push('Les besoins ne sont pas une liste.');
+    return null;
+  }
+  if (valeur.length === 0) {
     erreurs.push('La liste des besoins est vide : un lien porte au moins un besoin.');
     return null;
   }
@@ -122,6 +126,9 @@ export function controlerLien(valeur: unknown): ResultatControleLien {
     erreurs.push(`Nature de levier inconnue : ${JSON.stringify(levier.nature)}.`);
   } else if (!texteNonVide(levier.id)) {
     erreurs.push('L’identifiant du levier est vide.');
+  } else if (levier.id !== levier.id.trim()) {
+    // Deux écritures d'un même identifiant désigneraient deux leviers.
+    erreurs.push('L’identifiant du levier commence ou finit par un espace.');
   } else {
     ref = { nature: levier.nature, id: levier.id };
   }
@@ -143,20 +150,24 @@ export function controlerLien(valeur: unknown): ResultatControleLien {
   }
 
   if (mode === 'sans_objet') {
-    if (!texteNonVide(valeur.motif)) {
+    const motif = valeur.motif;
+    if (!texteNonVide(motif)) {
       erreurs.push('Un levier « sans objet » porte un motif écrit.');
+      return { ok: false, erreurs };
     }
     if (erreurs.length > 0 || ref === null) return { ok: false, erreurs };
-    return { ok: true, lien: { levier: ref, mode, motif: valeur.motif as string } };
+    return { ok: true, lien: { levier: ref, mode, motif: motif.trim() } };
   }
 
   const besoins = controlerBesoins(valeur.besoins, erreurs);
   if (mode === 'deduit_amont_signe') {
-    if (!estAmontSigne(valeur.amont)) {
-      erreurs.push(`Amont signé inconnu : ${JSON.stringify(valeur.amont)}.`);
+    const amont = valeur.amont;
+    if (!estAmontSigne(amont)) {
+      erreurs.push(`Amont signé inconnu : ${JSON.stringify(amont)}.`);
+      return { ok: false, erreurs };
     }
     if (erreurs.length > 0 || ref === null || besoins === null) return { ok: false, erreurs };
-    return { ok: true, lien: { levier: ref, mode, amont: valeur.amont as AmontSigne, besoins } };
+    return { ok: true, lien: { levier: ref, mode, amont, besoins } };
   }
 
   if (erreurs.length > 0 || ref === null || besoins === null) return { ok: false, erreurs };

@@ -93,6 +93,21 @@ describe('controlerLien', () => {
     }
   });
 
+  it('rend le motif sans ses espaces de bordure', () => {
+    const r = controlerLien({ levier, mode: 'sans_objet', motif: '  Geste commun.  ' });
+    expect(r).toEqual({ ok: true, lien: { levier, mode: 'sans_objet', motif: 'Geste commun.' } });
+  });
+
+  it('distingue « pas une liste » de « liste vide »', () => {
+    const pasListe = controlerLien({ levier, mode: 'cle_signee', besoins: 2 });
+    const vide = controlerLien({ levier, mode: 'cle_signee', besoins: [] });
+    expect(pasListe).toEqual({ ok: false, erreurs: ['Les besoins ne sont pas une liste.'] });
+    expect(vide).toEqual({
+      ok: false,
+      erreurs: ['La liste des besoins est vide : un lien porte au moins un besoin.'],
+    });
+  });
+
   it('refuse un « sans objet » qui porterait aussi des besoins', () => {
     const r = controlerLien({ levier, mode: 'sans_objet', motif: 'x', besoins: [2] });
     expect(r.ok).toBe(false);
@@ -108,6 +123,7 @@ describe('controlerLien', () => {
   it('refuse une nature de levier hors liste, un identifiant vide, un mode inconnu', () => {
     expect(controlerLien({ levier: { nature: 'complement', id: 'X' }, mode: 'cle_signee', besoins: [1] }).ok).toBe(false);
     expect(controlerLien({ levier: { nature: 'regle', id: ' ' }, mode: 'cle_signee', besoins: [1] }).ok).toBe(false);
+    expect(controlerLien({ levier: { nature: 'regle', id: ' PRIO-X ' }, mode: 'cle_signee', besoins: [1] }).ok).toBe(false);
     expect(controlerLien({ levier, mode: 'derive', besoins: [1] }).ok).toBe(false);
     expect(controlerLien({ mode: 'cle_signee', besoins: [1] }).ok).toBe(false);
     expect(controlerLien(null).ok).toBe(false);
