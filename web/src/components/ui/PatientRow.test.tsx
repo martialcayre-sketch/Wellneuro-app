@@ -1,6 +1,4 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LIBELLE_MINEUR_EN_ATTENTE, PatientRow, type PatientRowData } from './PatientRow';
@@ -64,10 +62,5 @@ describe('PatientRow — repère du mineur en attente (D-342 §2)', () => {
   ])('%s : aucun repère', (_cas, champs) => {
     rendre({ ...BASE, ...champs });
     expect(screen.queryByText(LIBELLE_MINEUR_EN_ATTENTE)).toBeNull();
-  });
-
-  it('la liste des patients passe la date servie par la route à la ligne', () => {
-    const panneau = readFileSync(join(__dirname, '../dossier/RayonPatientsPanel.tsx'), 'utf8');
-    expect(panneau).toMatch(/<PatientRow\s+key=\{p\.idPatient\}\s+patient=\{\{ \.\.\.p,/);
   });
 });

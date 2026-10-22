@@ -403,6 +403,18 @@ describe('RayonPatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
   // `phaseDossier` fait primer la clôture, ce qui est juste pour décider d'un
   // envoi. Mais afficher le seul « Suivi clôturé » sur un dossier désactivé
   // laisserait croire que le patient consulte encore ses archives.
+  it('un dossier en suivi dont la date dit un mineur porte le repère (D-342 §2)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-22T10:00:00Z'));
+    try {
+      stubFetch({ patient: { ...PATIENT, dateNaissance: '2010-05-01' } });
+      render(<RayonPatientsPanel />);
+      await waitFor(() => expect(screen.getByText('Mineur, accord parental attendu')).toBeTruthy());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('un dossier clos ET désactivé affiche les deux états', async () => {
     stubFetch({
       patient: { ...PATIENT, actif: 'NON', suiviClotureLe: '2026-07-21T10:00:00.000Z' },
