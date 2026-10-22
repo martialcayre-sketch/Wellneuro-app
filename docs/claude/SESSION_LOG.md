@@ -11309,3 +11309,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CI, CodeRabbit, merge, déploiement constaté, t18 → fait.
 
 **Ouvert.** Scripts opaques et chemins par variable : silence documenté.
+
+## 2026-10-22 — Mineurs : rubrique 4 provisoire, avocat consulté (D-344)
+
+**Fait.** Avis préparatoire (Codex) confronté au dépôt : trois erreurs de fait corrigées. Rubrique 4 réécrite en version provisoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; étape 7 à trois demandeurs ; second avis intégré comme hypothèses soumises à l'avocat, non comme règles (architecture hybride, proportionnalité des seuils, transition dès 15 ans) ; note à l'avocat (six questions et faits du contrat).
+
+**Écarté.** Corriger 2B tout de suite (aucun mineur servi ; un seul changement après l'avis).
+
+**Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
+
+**Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.

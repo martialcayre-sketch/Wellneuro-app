@@ -810,6 +810,169 @@ fictives**, et **13 accès portail ouverts**.
 Ce chiffre est un relevé, pas un effectif courant : il n'est pas régénéré par
 ce document.
 
+### Cas des mineurs — version provisoire du 2026-10-22 ([[D-344]]), qui fait foi
+
+**Statut.** Les mineurs sont encadrés et non admis aux fonctions de santé tant
+que leur circuit n'existe pas. Les règles propres aux 15–17 ans attendent
+l'avis d'un avocat, consulté le 2026-10-22 ([[D-344]] §5). Cette version
+reprend deux avis préparatoires écrits, qui ne sont pas une consultation
+d'avocat, confrontés au dépôt ([[D-344]] §1 et §6).
+
+**Périmètre.** Le responsable exerce un accompagnement en neuronutrition qui
+relève du bien-être, sans diagnostic médical. Il n'est pas professionnel de
+santé au sens du Code de la santé publique. Le service traite des données
+concernant la santé (RGPD art. 9).
+
+**Âge.** La minorité civile prend fin à 18 ans (C. civ. art. 388), sous réserve
+de l'émancipation. L'âge de 15 ans de l'art. 45 de la loi Informatique et
+Libertés vise certains traitements liés à l'offre directe de services de la
+société de l'information. Il peut concerner le portail, mais il n'est ni une
+règle générale de capacité à contracter, ni une majorité médicale. Le seuil de
+18 ans reste en service ([[D-284]] §4).
+
+**Accord préalable.** À titre conservatoire, l'admission d'un mineur aux
+fonctions de santé suppose la validation préalable d'un titulaire de
+l'autorité parentale, et l'avis du jeune selon son âge et sa maturité
+(C. civ. art. 371-1). **Suspendu à l'avis de l'avocat** : que l'accord d'un
+seul titulaire suffise, l'autre étant présumé d'accord. Cela suppose un acte
+usuel (C. civ. art. 372-2), qualification non établie pour cet
+accompagnement. Elle tient d'autant moins que le responsable connaît un
+désaccord : la présomption ne protège que le tiers de bonne foi. Hypothèse
+soumise à l'avocat : cet accord est une condition d'admission et de contrat,
+et il ne vaut pas, à lui seul, consentement du jeune aux traitements de
+données. Aucun accord n'est recueilli en ligne d'ici là.
+
+**Consentement aux données de santé.** Le traitement repose sur les art. 6 §1
+a) et 9 §2 a) du RGPD. Deux questions restent à trancher par l'avocat :
+- un mineur de 15 à 17 ans peut-il donner seul un consentement explicite
+  valable, et pour quelles opérations ?
+- peut-il conclure seul le contrat d'accompagnement (C. civ. art. 1146 à
+  1149) ?
+
+L'accord à la prestation et le consentement au traitement des données sont
+distingués.
+
+*Hypothèse soumise à l'avocat (architecture hybride).* Certaines fonctions du
+portail peuvent relever d'une offre directe de service de la société de
+l'information (RGPD art. 4 point 25 et art. 8 ; directive (UE) 2015/1535 ;
+CJUE, C-606/21, Doctipharma) : compte personnel, questionnaires remplis en
+ligne, dépôt de documents. Pour ces fonctions, le jeune de 15 ans ou plus
+consentirait lui-même (LIL art. 45), et ce consentement serait explicite pour
+les données de santé (art. 9 §2 a)), l'art. 9 ne fixant pas de second seuil.
+La qualification se fait fonction par fonction, pas pour l'accompagnement
+entier.
+
+*Constat au code (2026-10-22).* Le mineur s'arrête à l'écran de pause avant
+l'étape du consentement : personne, ni le jeune ni un parent, ne consent
+encore pour lui. Si l'hypothèse est confirmée, J3-mineurs placera le
+consentement du jeune lui-même après l'accord parental.
+
+**Seuils d'âge et non-discrimination.** Une condition d'âge dans l'accès au
+service est une différence de traitement fondée sur l'âge (loi n° 2008-496 du
+27 mai 2008, art. 2, 3°). C'est le cas de l'accord parental exigé jusqu'à
+18 ans, comme d'un éventuel plancher à 15 ans. Elle n'est admise que si elle
+poursuit un but légitime par des moyens nécessaires et appropriés : la
+liberté de choisir son cocontractant (C. civ. art. 1102) s'arrête là. Une
+analyse de proportionnalité est à écrire avant l'admission d'un premier
+mineur. Buts envisagés :
+- l'incertitude sur la capacité contractuelle ;
+- l'exercice conjoint de l'autorité parentale ;
+- la sensibilité des données ;
+- la prévention des conflits entre le jeune et ses parents.
+
+**Information du jeune.** L'écran de pause du mineur sert le texte 2B depuis
+le 2026-10-21 ([[D-341]]). Le texte est gardé mot pour mot jusqu'à l'avis de
+l'avocat ([[D-344]] §2). La notice d'information (« Vos données
+personnelles », « L'IA dans Wellneuro ») lui est accessible, mais elle
+s'adresse à un adulte. Une version adaptée à son âge (RGPD art. 12 §1) est à
+écrire avec J3-mineurs. Elle dira notamment le rôle de l'IA dans la lecture
+des comptes rendus. Le masquage de l'identité est une pseudonymisation, pas
+une anonymisation.
+
+**Confidentialité.** Le responsable n'invoque pas le régime dérogatoire de
+l'art. L1111-5 du CSP, qui vise d'autres professionnels. **Suspendu à l'avis
+de l'avocat** : la formule « aucun secret opposable aux parents ». Une demande
+parentale d'accès s'examine en tenant compte de l'autorité parentale, des
+droits propres du mineur et de sa vie privée (C. civ. art. 9 et 371-1). La
+communication intégrale du dossier n'est pas automatique.
+
+**Exercice des droits.** Les demandes du jeune, du titulaire qui a donné
+l'accord et de l'autre titulaire sont toutes reçues (rubrique 9, étape 7).
+Identité et qualité se vérifient par les moyens de la procédure ; un doute
+raisonnable fait passer la demande en traitement manuel (RGPD art. 12 §6). En
+cas de désaccord, seule la communication contestée attend l'instruction, dans
+les délais de l'art. 12 §3, qui ne sont pas suspendus. Chaque droit garde son
+régime :
+- une rectification vérifiable se fait sans attendre ;
+- un effacement suit l'art. 17 et ses exceptions ;
+- un retrait de son consentement par le jeune n'est pas retardé, son effet
+  sur les traitements futurs s'examine aussitôt (art. 7 §3).
+
+**Fermeture par défaut.** Tant que l'admission n'est pas établie, les
+questionnaires de santé et le dépôt de biologie restent fermés au mineur et au
+dossier sans date de naissance. Restent ouverts : l'information, le
+signalement et les demandes de droits.
+
+**Accès des parents.** Aucun accès parental au portail, permanent ou
+automatique. Toute communication passe par une demande examinée une à une.
+
+**Quinze ans, majorité ou émancipation : règle à écrire.**
+- *À 15 ans*, pour les fonctions visées par l'art. 45 LIL, le jeune peut
+  confirmer, modifier ou retirer un consentement donné avant lui (CEPD,
+  lignes directrices 05/2020 sur le consentement).
+- *À 18 ans*, l'autorité parentale cesse (C. civ. art. 371-1) : tout accès et
+  tout pouvoir fondés sur elle prennent fin.
+- *Pas de nouveau consentement automatique.* Le RGPD n'en exige pas du seul
+  fait de l'âge. Il en faut un si le consentement antérieur n'était pas
+  valable, ou ne couvre pas le traitement. Un consentement parental donné à
+  la place d'un jeune de 15 à 17 ans qui pouvait consentir lui-même se
+  régularise sans attendre ses 18 ans [à vérifier par l'avocat].
+
+Un événement « majorité » est à prévoir : fin des accès parentaux,
+information du jeune majeur, contrôle des autorisations. Un nouveau
+consentement s'y recueille seulement s'il est nécessaire.
+
+**Âge minimal : non arrêté.** Un éventuel seuil de 15 ans serait un choix
+d'organisation du service, distinct du champ de l'art. 45 LIL. Il ne vaudrait
+que justifié comme le veut la loi de 2008 (voir « Seuils d'âge et
+non-discrimination »).
+
+**AIPD.** La conclusion « non requise à ce stade » (rubrique 13) se revoit
+avant l'admission d'un premier mineur : un public mineur est un critère de
+vulnérabilité.
+
+**État au 2026-10-21.** 31 dossiers ouverts, aucun mineur. Le circuit
+parental en ligne et le texte 2A, au titulaire, ne sont pas servis.
+
+**Six questions posées à l'avocat** ([[D-344]] §6) :
+1. Quelles fonctions du portail relèvent de l'art. 8 RGPD et de l'art. 45
+   LIL ?
+2. Le consentement du jeune de 15 à 17 ans suffit-il alors aux art. 6 §1 a)
+   et 9 §2 a) ?
+3. L'accompagnement est-il un acte usuel (C. civ. art. 372-2) ?
+4. Jusqu'où va l'accès d'un parent au dossier quand le jeune s'y oppose ?
+5. Le jeune exerce-t-il seul ses droits, et peut-il retirer seul son
+   consentement ?
+6. Les seuils d'âge sont-ils justifiés au sens de la loi de 2008 ?
+
+**Références.**
+- RGPD art. 4 point 25, 5 à 9, 12 à 22, 35 ;
+- directive (UE) 2015/1535, art. 1 §1 b) ;
+- loi n° 78-17 du 6 janvier 1978, art. 45, et art. 70 (régime spécial de la
+  recherche en santé, non transposable ici) ;
+- loi n° 2008-496 du 27 mai 2008, art. 2, 3° ;
+- C. civ. art. 9, 371-1, 372-2, 388, 1102, 1146, 1148, 1149 ;
+- CSP art. L1111-5, L1111-5-1 ;
+- CJUE, 29 février 2024, Doctipharma, C-606/21 ;
+- CEPD, lignes directrices 05/2020 sur le consentement ;
+- CNIL, recommandation n° 2 sur les droits des mineurs (9 juin 2021).
+
+Cités par l'avis, non vérifiés par l'assistant : l'avis de la CNCDH du
+8 septembre 2026 sur l'exclusion des enfants des biens et services, et la
+modification de la loi de 2008 par l'art. 86 de la loi n° 2016-1547.
+
+*Historique de la rubrique (versions antérieures, conservées).*
+
 **Tranché le 2026-10-13 ([[D-283]] §5).** Les mineurs sont **encadrés**, non
 exclus : consentement du titulaire de l'autorité parentale, textes dédiés,
 garde d'âge, circuit des droits adapté. Aucune surface neuve ne leur est
@@ -1614,16 +1777,29 @@ ci-dessous (2026-10-14).
 6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
    possibilité d'introduire une réclamation auprès de la CNIL et de former un
    recours juridictionnel (RGPD art. 12.4).
-7. **Mineurs.** Les titulaires de l'autorité parentale exercent les droits
-   sur les données de l'enfant ([[D-283]] §5 ; arbitrage 5 de G-11). Jusqu'à
-   J3-mineurs, aucun parent n'a accès au portail : le responsable répond à la
-   main au titulaire qui a donné l'accord, à l'adresse notée lors de cet
-   accord, quelle que soit l'adresse d'expédition (celle-ci se falsifie) ; la
-   demande ne s'instruit qu'à sa confirmation depuis cette boîte, comme à
-   l'étape 1. Toute autre demande (autre titulaire, adresse inconnue) passe en
-   traitement manuel, comme un désaccord ([[D-284]] §4) ; aucune pièce
-   d'identité n'est collectée (étape 3). Délai de l'étape 2 ; courriels gardés
-   comme à l'étape 5 ([[D-342]] §6). Le circuit en ligne part avec J3-mineurs.
+7. **Mineurs** ([[D-344]] §4, qui amende [[D-342]] §6). Trois demandeurs,
+   tous reçus ; aucun n'est écarté au seul motif qu'il n'a pas donné l'accord.
+   - **Le jeune** : sa demande faite au portail est identifiée par la session
+     (étape 1) et s'instruit. Ce qu'il peut obtenir seul (effacement, retrait
+     du consentement, opposition à l'information de ses parents) attend
+     l'avis de l'avocat : d'ici là, ces demandes passent en traitement manuel,
+     sans retarder l'effet d'un retrait de son consentement (art. 7 §3).
+   - **Le titulaire qui a donné l'accord** : aucun parent n'a accès au portail
+     avant J3-mineurs. Le responsable répond à l'adresse notée lors de
+     l'accord, quelle que soit l'adresse d'expédition (celle-ci se falsifie),
+     et la demande ne s'instruit qu'après confirmation depuis cette boîte
+     (comme à l'étape 1).
+   - **L'autre titulaire**, ou une adresse inconnue : traitement manuel, comme
+     un désaccord ([[D-284]] §4).
+
+   Un doute raisonnable sur l'identité ou la qualité de parent fait passer la
+   demande en traitement manuel (RGPD art. 12 §6), sans pièce d'identité
+   (étape 3). Une demande parentale d'accès s'examine au regard des droits
+   propres du mineur et de sa vie privée : la communication intégrale n'est
+   pas automatique (rubrique 4). En cas de conflit entre le jeune et un
+   parent, ou entre les deux parents, seule la communication contestée attend
+   l'instruction, dans le délai de l'étape 2. Les courriels sont gardés comme
+   à l'étape 5. Le circuit en ligne part avec J3-mineurs.
 
 *Antérieurement :* le **délai de réponse** annoncé, la **procédure de
 vérification d'identité** du demandeur, et le **circuit interne de traitement**
@@ -1918,7 +2094,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; reste la validation des 15–17 ans par un avocat, préalable de J3-mineurs ([[D-342]] §5).** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; 2026-10-22 ([[D-344]]) : version provisoire de la rubrique ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; avocat consulté (six questions : art. 8, consentement du jeune aux données de santé, acte usuel, accès parental, droits du jeune, seuils d'âge).** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
@@ -1929,7 +2105,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 7 | Transferts | **2026-10-13 ([[D-284]] §5-6) : CCT pour Anthropic, cadre UE–États-Unis pour Google et Sentry s'il les couvre ; restent les preuves à archiver et les TIA.** Sentry : mécanisme contractuel posé par le DPA signé le 2026-10-21 (annexe 3 : Data Privacy Framework, repli sur les CCT module 2) ; restent dus, pour Sentry aussi, la preuve de sa certification DPF et la TIA du repli. Mécanisme invoqué (CCT/DPA) | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
 | 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
-| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; mineurs : à la main jusqu'à J3-mineurs (étape 7, [[D-342]] §6).** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
+| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; mineurs : trois demandeurs reçus (étape 7, [[D-344]] §4) ; le jeune dépose sa demande au portail, identifiée par la session, et seules se traitent à la main les demandes dont la portée attend l'avis de l'avocat (effacement, retrait, opposition à l'information des parents) ou qu'un doute raisonnable sur l'identité ou la qualité du demandeur entoure (art. 12 §6, sans pièce d'identité), sans jamais retarder un retrait ; les demandes d'un parent passent en traitement manuel jusqu'à J3-mineurs.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
 | 10 | Sécurité | **Clos le 2026-10-13 ([[D-283]] §7) : la revue du 2026-08-22 suffit ; test d'intrusion humain obligatoire avant toute offre commerciale ou second compte praticien.** *Historique — constat d'origine :* Pentest / revue externe | Prestataire à engager | fermé | checklist du gate, exigence 7 |
 | 10 | Sécurité | **Clos par constat : ouvert hors dépôt le 2026-08-22 (D-085 §3).** *Historique — constat d'origine :* Registre physique des violations (EX-3) | Responsable | fermé | `PROCEDURE_VIOLATION_DONNEES.md` |
 | 10 | Sécurité | **Clos par constat : produite le 2026-08-22 (D-085 §2).** *Historique — constat d'origine :* Preuve fonctionnelle de la piste d'audit | Responsable | fermé | checklist du gate, item 4 |
