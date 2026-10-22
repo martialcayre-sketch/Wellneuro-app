@@ -32,7 +32,7 @@ recueilli à la main ; le praticien n'en voit l'état que sur la fiche
 administrative du dossier.
 
 **§2 — Le contact promis au mineur.** Le texte 2B ne change pas. Le praticien
-est prévenu : la liste des patients porte un repère « Mineur, accord parental
+est prévenu : la liste des patients portera un repère « Mineur, accord parental
 attendu » sur un dossier ouvert dont la date dit un mineur, déduit de la date,
 sans migration. C'est le praticien qui prend contact avec la famille. Le refus
 des routes au vouvoiement (`MESSAGE_CIRCUIT_MINEUR`) reste tel quel jusqu'à
@@ -41,7 +41,7 @@ J3-mineurs, qui en réécrit le texte.
 **§3 — at remplacée.** Aucune lecture de la date de naissance par l'IA : la
 faire exigerait de lever son masquage et de renvoyer une donnée d'identité
 chez Anthropic, à rebours de [[D-284]] §5. Le second filet de [[D-341]] §3
-passe au praticien : l'écran de masquage affiche la date de naissance du
+passe au praticien : l'écran de masquage affichera la date de naissance du
 dossier, à comparer au compte rendu avant de la noircir. Un écart signale un
 dossier mal daté ou un compte rendu classé dans le mauvais dossier. Lot de code
 sans migration ; rien ne part de plus chez le fournisseur.
@@ -61,7 +61,11 @@ prépare à ce moment.
 
 **§6 — Droits exercés par un parent.** Jusqu'à J3-mineurs, le responsable
 répond à la main au titulaire de l'autorité parentale qui a donné l'accord, à
-l'adresse notée lors de cet accord. Écrit à l'étape 7 de la procédure
+l'adresse notée lors de cet accord, quelle que soit l'adresse d'expédition ;
+la demande ne s'instruit qu'à sa confirmation depuis cette boîte, comme à
+l'étape 1 de la procédure. Toute autre demande (autre titulaire, adresse
+inconnue) passe en traitement manuel, comme un désaccord ([[D-284]] §4). Aucune
+pièce d'identité n'est collectée ([[D-283]] §6). Écrit à l'étape 7 de la procédure
 (`docs/DOSSIER_RGPD.md`, rubrique 9). Le circuit en ligne part avec
 J3-mineurs.
 

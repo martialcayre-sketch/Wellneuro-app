@@ -1563,8 +1563,12 @@ ci-dessous (2026-10-14).
    sur les données de l'enfant ([[D-283]] §5 ; arbitrage 5 de G-11). Jusqu'à
    J3-mineurs, aucun parent n'a accès au portail : le responsable répond à la
    main au titulaire qui a donné l'accord, à l'adresse notée lors de cet
-   accord, dans le délai de l'étape 2, et garde les courriels comme à
-   l'étape 5 ([[D-342]] §6). Le circuit en ligne part avec J3-mineurs.
+   accord, quelle que soit l'adresse d'expédition (celle-ci se falsifie) ; la
+   demande ne s'instruit qu'à sa confirmation depuis cette boîte, comme à
+   l'étape 1. Toute autre demande (autre titulaire, adresse inconnue) passe en
+   traitement manuel, comme un désaccord ([[D-284]] §4) ; aucune pièce
+   d'identité n'est collectée (étape 3). Délai de l'étape 2 ; courriels gardés
+   comme à l'étape 5 ([[D-342]] §6). Le circuit en ligne part avec J3-mineurs.
 
 *Antérieurement :* le **délai de réponse** annoncé, la **procédure de
 vérification d'identité** du demandeur, et le **circuit interne de traitement**
