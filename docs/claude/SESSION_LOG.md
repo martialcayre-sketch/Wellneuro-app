@@ -11319,3 +11319,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
+
+## 2026-10-22 — t39 : besoins visés de la priorité libre, migration (D-338 §3)
+
+**Fait.** Migration seule `c1_selection_priorite_besoins_vises_v1` : colonne `besoins_vises` (1 à 12, une dimension indicée à 1, strictement croissante, `{}` pour l'absence, lignes `libre:` seules) ; contrat étendu, chaque refus sous son propre CHECK, mutations rougies en local ; T3 vert ; `wn-reviewer` GO, trois P2 corrigés, un routé à la PR.
+
+**Écarté.** Proposer les seuls besoins à questionnaire (arbitrage : les douze, effet nul affiché) ; NULL pour l'absence (deux représentations, deux empreintes).
+
+**Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée par le responsable ; constat par conteneur ; puis le code consommateur.
+
+**Ouvert.** Fenêtre d'écriture d'une sélection entre déploiement et release-db.
