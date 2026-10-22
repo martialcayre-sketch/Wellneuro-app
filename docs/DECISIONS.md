@@ -4,6 +4,71 @@
 
 ## Décisions actives
 
+### D-342 — Restes de F45 et des mineurs : at remplacée par un contrôle du praticien au masquage, as close, repère du mineur en attente dans la liste, 15–17 ans avant J3-mineurs, droits d'un parent à la main
+
+- Date : 2026-10-22
+- Statut : accepté — sept arbitrages du responsable du 2026-10-22, rendus sur
+  questions à options après un relevé des faits sur main, transcrits par
+  l'assistant.
+- Amende : [[D-302]] §3 (as, at) ; [[D-341]] §3 (at), §5 (contact et deux
+  voix) ; [[D-283]] §6 (procédure des droits, étape 7) ; [[D-284]] « Restent
+  ouverts » (15–17 ans).
+- Domaine : fiche F45 (at, as, critère de fin) ; H78 ; H79 ; file C, place 6 ;
+  `docs/DOSSIER_RGPD.md` rubriques 4 et 9. Aucune fenêtre, aucun seuil, aucune
+  règle clinique ; aucune migration. Le seuil de 18 ans reste celui de
+  [[D-284]] §4.
+
+**§1 — Relevé (main, 2026-10-22).** Au 2026-10-21 (agrégats, conteneur) :
+31 dossiers ouverts, 13 sans date lisible, aucun mineur. La date est
+obligatoire à la création d'un dossier ([[D-302]]). Au portail, une date
+s'enregistre une seule fois et ne se réécrit pas (`api/portail/date-naissance`,
+409) ; sa correction se demande par « Faire corriger une information »
+(`components/patient/trust/SignalerProbleme.tsx`). Depuis le lot (j)
+([[D-284]] §5), la consigne de l'écran de masquage fait noircir la date de
+naissance avant l'envoi du compte rendu
+(`components/patient-cockpit/MasquageIdentite.tsx`) : l'IA ne la voit plus.
+Un mineur reste en pause jusqu'à J3-mineurs, même avec l'accord d'un parent
+recueilli à la main ; le praticien n'en voit l'état que sur la fiche
+administrative du dossier.
+
+**§2 — Le contact promis au mineur.** Le texte 2B ne change pas. Le praticien
+est prévenu : la liste des patients porte un repère « Mineur, accord parental
+attendu » sur un dossier ouvert dont la date dit un mineur, déduit de la date,
+sans migration. C'est le praticien qui prend contact avec la famille. Le refus
+des routes au vouvoiement (`MESSAGE_CIRCUIT_MINEUR`) reste tel quel jusqu'à
+J3-mineurs, qui en réécrit le texte.
+
+**§3 — at remplacée.** Aucune lecture de la date de naissance par l'IA : la
+faire exigerait de lever son masquage et de renvoyer une donnée d'identité
+chez Anthropic, à rebours de [[D-284]] §5. Le second filet de [[D-341]] §3
+passe au praticien : l'écran de masquage affiche la date de naissance du
+dossier, à comparer au compte rendu avant de la noircir. Un écart signale un
+dossier mal daté ou un compte rendu classé dans le mauvais dossier. Lot de code
+sans migration ; rien ne part de plus chez le fournisseur.
+
+**§4 — as close.** La garde sans saisie est tranchée par [[D-284]] §3 (pause) ;
+l'invitation au dépôt n'a plus d'objet, le dépôt étant fermé à un dossier sans
+date ([[D-330]], amendement du 2026-10-20). La correction d'une date passe par
+« Faire corriger une information », puis par le praticien : une date
+modifiable par le patient permettrait à un mineur de lever sa pause lui-même.
+La place 6 de la file C est close sans activation ; la place 7 suit la
+place 5 (les numéros des places 7 à 11 ne changent pas).
+
+**§5 — 15–17 ans.** La règle de 18 ans reste en service. La validation par un
+avocat devient un préalable de J3-mineurs (H79) : une note d'une page se
+prépare à ce moment.
+
+**§6 — Droits exercés par un parent.** Jusqu'à J3-mineurs, le responsable
+répond à la main au titulaire de l'autorité parentale qui a donné l'accord, à
+l'adresse notée lors de cet accord. Écrit à l'étape 7 de la procédure
+(`docs/DOSSIER_RGPD.md`, rubrique 9). Le circuit en ligne part avec
+J3-mineurs.
+
+**§7 — Critère de fin de F45.** Les bancs sur fixtures (garde des routes,
+`gardeAge.routes.guard.test.ts` ; écran du mineur, [[D-341]] §4) tiennent lieu
+de constat par identifiant. F45 se clôt quand le lot du §3 est livré et la
+rubrique 4 du dossier RGPD renseignée ; il n'y reste que les 15–17 ans (§5).
+
 ### D-341 — ACT-5 : le texte des mineurs servi au jeune (G-11, 2B) sur l'écran de pause du mineur ; le texte au titulaire (2A) attend J3-mineurs ; J2-conf tenu pour cette surface (r reconnu, at hors périmètre)
 
 - Date : 2026-10-21
