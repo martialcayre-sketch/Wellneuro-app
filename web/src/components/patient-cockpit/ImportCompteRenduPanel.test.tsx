@@ -16,8 +16,8 @@ import {
 // Le masquage rend des pages dans des canevas (pdf.js) : jsdom n'en a pas. Il
 // est simulé ici ; son propre banc l'éprouve (`MasquageIdentite.test.tsx`).
 vi.mock('./MasquageIdentite', () => ({
-  MasquageIdentite: (props: { onEnregistre: () => void; onAnnuler?: () => void; urlEnregistrement: string }) => (
-    <section aria-label="Masquer l’identité du patient" data-url={props.urlEnregistrement}>
+  MasquageIdentite: (props: { onEnregistre: () => void; onAnnuler?: () => void; urlEnregistrement: string; dateNaissanceDossier: string | null }) => (
+    <section aria-label="Masquer l’identité du patient" data-url={props.urlEnregistrement} data-date={String(props.dateNaissanceDossier)}>
       <button type="button" onClick={() => void props.onEnregistre()}>Simuler l’enregistrement</button>
       {props.onAnnuler && <button type="button" onClick={props.onAnnuler}>Annuler le masquage</button>}
     </section>
@@ -71,6 +71,7 @@ function compteRendu(
     purgeLe: null, motifPurge: null, motifEcart: null, lectureDemandee: false,
     // Masqué par défaut : la lecture n'est possible qu'ainsi (D-284 §5).
     masquage: MASQUE,
+    dateNaissanceDossier: '1985-03-12',
     imports: [{
       id: 'imp_1', statut, motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v4',
       laboratoireLu: 'Laboratoire fixture', commentairesLus: null, commentairesNonTranscrits: false, commentairesReleves: true,
@@ -958,6 +959,8 @@ describe('ImportCompteRenduPanel — l’identité masquée avant la lecture (D-
     fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
     const etape = await screen.findByRole('region', { name: 'Masquer l’identité du patient' });
     expect(etape.getAttribute('data-url')).toBe('/api/praticien/biologie/import/masquage?idPatient=pat_sophie');
+    // D-342 §3 : la date du dossier, servie avec le compte rendu, va à l'écran de masquage.
+    expect(etape.getAttribute('data-date')).toBe('1985-03-12');
     expect(screen.queryByRole('button', { name: 'Lancer la lecture' })).toBeNull();
     // Premier masquage : rien à annuler, il n'y a pas de masquage antérieur.
     expect(screen.queryByRole('button', { name: 'Annuler le masquage' })).toBeNull();

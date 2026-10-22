@@ -947,6 +947,7 @@ export function ImportCompteRenduPanel({
               typeMime={detail.typeMime}
               urlEnregistrement={`/api/praticien/biologie/import/masquage?${urlDossier}`}
               idCompteRendu={detail.id}
+              dateNaissanceDossier={detail.dateNaissanceDossier}
               onEnregistre={async () => {
                 setRemasquage(false);
                 await chargerDetail(detail.id);

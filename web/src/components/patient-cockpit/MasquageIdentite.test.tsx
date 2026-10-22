@@ -28,7 +28,7 @@ const { pdfjs, page, traces } = vi.hoisted(() => {
 });
 vi.mock('pdfjs-dist', () => pdfjs);
 
-import { MasquageIdentite } from './MasquageIdentite';
+import { MasquageIdentite, phraseDateDossier } from './MasquageIdentite';
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 9]);
 
@@ -76,6 +76,7 @@ function rendre(onEnregistre = vi.fn()) {
       typeMime="application/pdf"
       urlEnregistrement="/api/praticien/biologie/import/masquage?idPatient=pat_sophie"
       idCompteRendu="cr_1"
+      dateNaissanceDossier="1985-03-12"
       onEnregistre={onEnregistre}
     />,
   );
@@ -87,6 +88,22 @@ function tracer(canevas: HTMLElement, de: [number, number], a: [number, number])
   fireEvent.pointerMove(canevas, { clientX: a[0], clientY: a[1], pointerId: 1 });
   fireEvent.pointerUp(canevas, { clientX: a[0], clientY: a[1], pointerId: 1 });
 }
+
+describe('phraseDateDossier — la date du dossier à comparer au compte rendu (D-342 §3)', () => {
+  const MAINTENANT = Date.UTC(2026, 9, 22, 10);
+
+  it('une date lisible se dit au format des comptes rendus, avec la consigne de comparaison', () => {
+    const phrase = phraseDateDossier('1985-03-12', MAINTENANT);
+    expect(phrase).toContain('Date de naissance au dossier : 12/03/1985.');
+    expect(phrase).toContain('Vérifiez qu’elle correspond à celle du compte rendu avant de la masquer');
+  });
+
+  it.each([null, '', '1985-02-31', '12/03/1985', '2099-01-01'])('%o : aucune date lisible, la saisir dans la fiche', date => {
+    expect(phraseDateDossier(date, MAINTENANT)).toBe(
+      'Aucune date de naissance lisible au dossier : relevez-la sur le compte rendu et saisissez-la dans la fiche administrative.',
+    );
+  });
+});
 
 describe('MasquageIdentite (D-284 §5)', () => {
   it('rend chaque page du PDF, au grand côté du fournisseur, travailleur servi par le même domaine', async () => {
@@ -100,6 +117,8 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(pdfjs.destroy).toHaveBeenCalled();
     // Un PDF transmis par le patient : pas de formulaire XFA.
     expect(pdfjs.getDocument).toHaveBeenCalledWith(expect.objectContaining({ enableXfa: false }));
+    // D-342 §3 : la date du dossier se lit sur l'écran, à comparer avant de la masquer.
+    expect(screen.getByText(/Date de naissance au dossier : 12\/03\/1985\./)).toBeTruthy();
   });
 
   it('« Enregistrer » reste fermé sans zone ni case ; la case se ferme dès qu’une zone existe', async () => {
@@ -186,6 +205,7 @@ describe('MasquageIdentite (D-284 §5)', () => {
         typeMime="image/png"
         urlEnregistrement="/api/praticien/biologie/import/masquage?idPatient=pat_sophie"
         idCompteRendu="cr_2"
+        dateNaissanceDossier="1985-03-12"
         onEnregistre={vi.fn()}
       />,
     );

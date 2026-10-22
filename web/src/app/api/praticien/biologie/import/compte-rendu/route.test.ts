@@ -35,6 +35,7 @@ beforeEach(() => {
     deposeLe: new Date('2026-10-02T09:00:00.000Z'),
     travaux: [],
     masquages: [],
+    patient: { dateNaissance: '1985-03-12' },
     imports: [{
       id: 'imp_1', statut: 'extrait', motifEchec: null, modele: 'claude-sonnet-5-5', versionPrompt: 'bio-extraction-v1',
       laboratoireLu: null, lanceLe: new Date('2026-10-02T09:01:00.000Z'), termineLe: new Date('2026-10-02T09:02:00.000Z'),
@@ -63,6 +64,9 @@ describe('GET /api/praticien/biologie/import/compte-rendu', () => {
     expect(corps.compteRendu.imports[0].modele).toBe('claude-sonnet-5-5');
     expect(corps.compteRendu.imports[0].courant).toBe(true);
     expect(corps.compteRendu.imports[0].lignes[0].preMarquage).toBe('unite_divergente');
+    // D-342 §3 : la date du dossier, pour l'écran de masquage — seul champ lu du patient.
+    expect(corps.compteRendu.dateNaissanceDossier).toBe('1985-03-12');
+    expect(prisma.compteRenduBiologique.findFirst.mock.calls[0][0].select.patient).toEqual({ select: { dateNaissance: true } });
     for (const ecriture of [
       prisma.compteRenduBiologique.create, prisma.compteRenduBiologique.delete,
       prisma.importBiologique.create, prisma.importBiologique.update, prisma.importBiologique.deleteMany,
