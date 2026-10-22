@@ -34,7 +34,8 @@ fragment `changelog.d/2026-10-22-instruments-textes-faux.md`.
 ## Validations exécutées
 
 Bancs des deux panneaux : 125 verts (trois nouveaux cas). T1 vert après
-`prisma generate` (client du worktree périmé). T2 `--fast` : voir la PR.
+`prisma generate` (client du worktree périmé). T2 `--fast` vert
+(14 398 unitaires, 282 E2E). T1 complet vert.
 
 ## Problèmes ouverts
 
