@@ -11319,3 +11319,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
+
+## 2026-10-22 — Instruments : textes faux (F9b, N1)
+
+**Fait.** Infobulle d'un besoin sans source rendue exacte (« Aucune réponse de questionnaire exploitable pour ce besoin »), sans motif. « Vérifiez le terminal Next.js. » remplacé par un message praticien et « Réessayer » sur le détail des besoins et la fiche ; texte seul dans `messagesDossier.ts`, qui déborde sur quatre surfaces hors instruments.
+
+**Écarté.** Bouton dans les quatre surfaces partagées (hors lot) ; tout motif (lot 4, après M-2).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge.
+
+**Ouvert.** Rien pour le lot.

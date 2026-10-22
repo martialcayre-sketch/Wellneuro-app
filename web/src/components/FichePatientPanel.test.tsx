@@ -68,6 +68,9 @@ function decisionCard(surcharges: Partial<DecisionCard> = {}): DecisionCard {
 
 type Options = {
   runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
+  // Nombre de lectures `equilibre` qui échouent (`exception`) avant la
+  // première réussie — de quoi éprouver le bouton « Réessayer ».
+  equilibreEchecs?: number;
   assignationsModif?: boolean;
   // Comportement de `GET /api/praticien/patients` :
   // - `erreur` : charge d'indisponibilité (session expirée) ;
@@ -481,12 +484,17 @@ function stubFetch(options: Options = {}) {
           ? decisionCard({ selectedMainPriority: null, priorityCandidates: [], proposedMainPriorityId: null })
           : decisionCard();
 
+  let equilibreEchecs = options.equilibreEchecs ?? 0;
   const fetchMock = vi.fn((input: unknown) => {
     const url = String(input);
     const ok = (payload: unknown, status = 200) =>
       Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(payload) });
 
     if (url.includes('/api/praticien/equilibre')) {
+      if (equilibreEchecs > 0) {
+        equilibreEchecs -= 1;
+        return ok({ unavailable: true, reason: 'exception' }, 500);
+      }
       return ok(
         options.indiceGlobalNul
           ? { ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, indiceGlobal: null, besoinsMesures: 0 } }
@@ -2631,5 +2639,32 @@ describe('Cockpit — les quatre constats de revue', () => {
     expect((screen.getByLabelText(/adresse postale/i) as HTMLInputElement).value).toBe(
       '12 rue des Fictifs, 75000 Paris',
     );
+  });
+});
+
+// Textes faux des instruments (F9b, N1) : l'échec de lecture de la fiche
+// s'adressait au développeur (« Vérifiez le terminal Next.js. »). Il parle
+// désormais au praticien et offre de relancer la lecture.
+describe('FichePatientPanel — échec de lecture de la fiche', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('dit l’échec au praticien, sans renvoyer au terminal, et « Réessayer » relance la lecture', async () => {
+    const fetchMock = stubFetch({ equilibreEchecs: 1 });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('La fiche patient n’a pas pu être lue.');
+    expect(document.body.textContent).not.toMatch(/terminal|Next\.js/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+    expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/praticien/equilibre'))).toHaveLength(2);
   });
 });
