@@ -11250,3 +11250,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis BP-15 (LOT-15), puis le brouillon de la lettre cm (F52).
 
 **Ouvert.** Allumage : décision de la garde de population, v20 publiée, test d'intégration sur vraie base, borne de 500 caractères de la vigilance, export du dossier, courrier au médecin, procédure d'extinction ; titre « Ma fiche de renseignements » à valider. Revue CodeRabbit : six commentaires corrigés, un écarté (le message d'un geste refusé s'affichait déjà).
+
+## 2026-10-22 — t38 : contrat du lien besoin → leviers (H84, D-338 §1)
+
+**Fait.** Module pur `web/src/lib/besoins/lienLeviers.ts` : leviers en liste fermée, trois modes (clé signée, déduit d'un amont signé, sans objet avec motif), `controlerLien` ; banc qui lit sans les toucher les `needIds` existants. Quatre arbitrages du responsable (hors clinique, trois modes, motif libre, mesure hors contrat). Constat t18 : #1635 n'a levé que le préalable.
+
+**Écarté.** Lot clinique sous `lib/clinical/` ; liste fermée de motifs vide ; état de mesure dans le contrat.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t38 → « fait ».
+
+**Ouvert.** t18 reste entière (crochet d'écriture aveugle à Bash).
