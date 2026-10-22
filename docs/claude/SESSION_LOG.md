@@ -11329,3 +11329,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CI, CodeRabbit, merge ; puis brouillon de la lettre cm (F52), hors dépôt.
 
 **Ouvert.** Allumage : test d'intégration de la route sur une vraie base ; information patient relue avant BP-21a.
+## 2026-10-22 — Banc DeclarationsPatient : rappel attendu (BP-13)
+
+**Fait.** Les trois assertions sur `onLectureEchouee` qui suivaient `findByRole('alert')` passent sous `waitFor` : le rappel part d'un effet passif, après le rendu de l'alerte, et l'assertion pouvait le devancer sous charge (rouge CI de main sur db9018ee, T2 local une fois).
+
+**Écarté.** Toucher le composant (le comportement est juste) ; T2 (test seul).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Rubrique 4 des mineurs : avis de l'avocat (D-344).
