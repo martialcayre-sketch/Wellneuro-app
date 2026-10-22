@@ -11300,3 +11300,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée et déclenchée par le responsable ; constat par conteneur ; puis le code sous `WN_DECISIONS_PARCOURS`.
 
 **Ouvert.** Brouillon de la lettre cm (F52) après le code.
+## 2026-10-22 — t18 : crochet d'écriture sur Bash
+
+**Fait.** `protect-wellneuro-files.mjs` armé sur Bash : redirections, `tee`, `sed -i`, `cp`/`mv`, `truncate`, `dd`, `git checkout -- f`/`restore` reçoivent le verdict d'Edit/Write ; un interpréteur citant un fichier protégé demande. Banc dédié, doc alignée.
+
+**Écarté.** Refus systématique d'une écriture Bash (bloquerait le geste autorisé) ; demande sur tout interpréteur (bruit) ; couvrir `rm` (`rm -rf web/.next` refusé).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, déploiement constaté, t18 → fait.
+
+**Ouvert.** Scripts opaques et chemins par variable : silence documenté.
