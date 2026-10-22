@@ -31,10 +31,44 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   demande aussi, détectée par son marqueur `validationExterne: true` hors
   commentaire — sur disque, ou dans le contenu entrant d'un Write/Edit (une
   table signée neuve demande dès sa création) ; compagnons de test exclus.
-  Portée dite sans sur-promettre : le hook ne voit
-  que Edit/Write — une écriture par commande Bash n'y passe pas (suivi nommé
-  du Socle).
 - **silence** — tout le reste.
+
+**Écritures par Bash** (t18, 2026-10-22). `protect-wellneuro-files.mjs` est
+armé sur `Edit|Write` **et** sur `Bash` ; `cibles-ecriture-bash.mjs` lit les
+cibles d'une commande, et chacune reçoit le **même verdict** que par
+Edit/Write — le contenu entrant étant le texte de la commande qui écrit (tube
+et heredocs compris, pas ses voisines de `&&`), un heredoc qui pose le
+marqueur d'une table neuve demande ; le refus l'emporte. Même verdict veut dire
+**refus aussi** : `cp`/`>` vers `.next/`, `dist/`, `coverage/` ou
+`node_modules/` est refusé comme par Write (arbitrage du 2026-10-22) — ce que
+le build y écrit lui-même ne passe par aucune cible et reste libre.
+
+- **Formes reconnues** : redirections (`>`, `>>`, `>|`, `&>`, `2>`,
+  `>&fichier`), `tee`, `sed -i` (BSD et GNU), `perl -i`/`ruby -i`,
+  destination de `cp`/`mv`/`install`/`ln`/`rsync`/`ditto` (fichier ou
+  dossier, `-t` compris), `truncate`, `dd of=`, `git checkout … -- f`,
+  `git restore f` (pas `--staged` seul). Chemins résolus depuis le `cwd` de la
+  commande, `cd` successifs (pas au-delà de leur sous-shell), `~`, `$HOME`,
+  `$CLAUDE_PROJECT_DIR` et `git -C` compris ; accolades et globs étendus sur
+  disque (`**` excepté, 64 formes au plus) ; `$(…)` et `` `…` `` analysés,
+  entre guillemets doubles compris ; `$((…))` ignoré.
+- **Mention par un interpréteur** (python, node, tsx, perl, ruby, un shell…)
+  : un chemin protégé cité dans ses arguments, ou dans un heredoc de la même
+  commande, **demande** — l'écriture n'est pas prouvée, elle échappe à
+  l'analyse. Au plus « demande » : un `.env` cité demande ; les répertoires
+  d'infrastructure cités (`node_modules/`, `.next/`…) restent en silence.
+- **Silence assumé** : un script opaque qui ne cite pas la cible
+  (`npm run x`, `python script.py`), un chemin porté par une variable,
+  `xargs`, `find -exec`, `git apply`/`patch`, les opérations Git sur l'arbre
+  entier (changement de branche, merge, pull, stash, `checkout -- dossier/` ;
+  `reset --hard` et `checkout .` sont refusés par le garde des commandes),
+  awk sans `>`/`|`/`system`, et toute suppression (`rm`,
+  source d'un `mv`) — Edit/Write ne suppriment rien, et `rm -rf web/.next`
+  doit rester libre. Ce que le corps d'un heredoc *raconte* sans interpréteur
+  (`cat >> journal.md <<'FIN'`) n'est pas une commande.
+
+Banc : `protect-wellneuro-files-bash.test.mjs` — une ligne par forme, les
+verdicts égaux, les mentions, et les trous assumés épinglés en silence.
 
 Un hook `SessionStart` séparé (`startup|resume|clear|compact`) exécute
 `git fetch origin main` et enregistre le constat ; le hook `PreToolUse`

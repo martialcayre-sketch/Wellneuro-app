@@ -11290,3 +11290,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge et déploiement constaté ; q10 de la page de suivi.
 
 **Ouvert.** F45 : rubrique 4 (15–17 ans, avant J3-mineurs).
+
+## 2026-10-22 — t18 : crochet d'écriture sur Bash
+
+**Fait.** `protect-wellneuro-files.mjs` armé sur Bash : redirections, `tee`, `sed -i`, `cp`/`mv`, `truncate`, `dd`, `git checkout -- f`/`restore` reçoivent le verdict d'Edit/Write ; un interpréteur citant un fichier protégé demande. Banc dédié, doc alignée.
+
+**Écarté.** Refus systématique d'une écriture Bash (bloquerait le geste autorisé) ; demande sur tout interpréteur (bruit) ; couvrir `rm` (`rm -rf web/.next` refusé).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, déploiement constaté, t18 → fait.
+
+**Ouvert.** Scripts opaques et chemins par variable : silence documenté.

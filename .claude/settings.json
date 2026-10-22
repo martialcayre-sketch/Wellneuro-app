@@ -50,6 +50,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/protect-wellneuro-files.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/protect-wellneuro-files.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (protect-wellneuro-files.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/protect-wellneuro-files.mjs\""
+          },
+          {
+            "type": "command",
             "command": "d=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$d/.claude/hooks/block-risky-commands.mjs\" ] || d=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; [ -f \"$d/.claude/hooks/block-risky-commands.mjs\" ] && command -v node >/dev/null 2>&1 || { echo 'Garde WellNeuro introuvable (block-risky-commands.mjs, ou node absent) : ouvrir la session à la racine du dépôt ou de son worktree.' >&2; exit 2; }; exec node \"$d/.claude/hooks/block-risky-commands.mjs\""
           },
           {
