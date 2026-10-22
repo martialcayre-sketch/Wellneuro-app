@@ -65,7 +65,7 @@ d'identité ([[D-283]] §6). En cas de conflit, la seule communication
 contestée attend l'instruction, dans le délai de l'étape 2.
 
 **§5 — Avocat consulté maintenant** (amende [[D-342]] §5), sur une note d'une
-page et dix questions fermées. Les réponses fixeront :
+page et six questions fermées (§6). Les réponses fixeront :
 - les formules suspendues du §3 ;
 - le texte 2B (§2) ;
 - l'âge plancher et la transition à 18 ans, deux règles à écrire ;

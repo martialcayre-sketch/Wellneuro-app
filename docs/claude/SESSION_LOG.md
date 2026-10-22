@@ -11291,15 +11291,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** F45 : rubrique 4 (15–17 ans, avant J3-mineurs).
 
-## 2026-10-22 — Mineurs : rubrique 4 provisoire, avocat consulté (D-344)
-
-**Fait.** Avis préparatoire (Codex) confronté au dépôt : trois erreurs de fait corrigées. Rubrique 4 réécrite en version provisoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; étape 7 à trois demandeurs ; second avis intégré (architecture hybride, proportionnalité des seuils, transition dès 15 ans) ; note à l'avocat (six questions et faits du contrat).
-
-**Écarté.** Corriger 2B tout de suite (aucun mineur servi ; un seul changement après l'avis).
-
-**Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
-
-**Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
 ## 2026-10-22 — BP-15 : décision D-343 et migration des décisions de parcours
 
 **Fait.** D-343 écrite depuis les arbitrages du 2026-10-20 ; précisions de l'assistant et paragraphe RGPD retenus tels quels ; #1642 mergée. Migration seule `decisions_parcours_v1` : une table en ajout seul ancrée sur une version, trois familles, motifs fermés sans efficacité ; contrat (quinze promesses, versions intouchées) et banc (sept courses) verts en local ; relecture `wn-reviewer` sans P0 ni P1, quatre P2 corrigés, trois routés à la PR 2.
@@ -11318,3 +11309,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CI, CodeRabbit, merge, déploiement constaté, t18 → fait.
 
 **Ouvert.** Scripts opaques et chemins par variable : silence documenté.
+
+## 2026-10-22 — Mineurs : rubrique 4 provisoire, avocat consulté (D-344)
+
+**Fait.** Avis préparatoire (Codex) confronté au dépôt : trois erreurs de fait corrigées. Rubrique 4 réécrite en version provisoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus ; étape 7 à trois demandeurs ; second avis intégré comme hypothèses soumises à l'avocat, non comme règles (architecture hybride, proportionnalité des seuils, transition dès 15 ans) ; note à l'avocat (six questions et faits du contrat).
+
+**Écarté.** Corriger 2B tout de suite (aucun mineur servi ; un seul changement après l'avis).
+
+**Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
+
+**Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.

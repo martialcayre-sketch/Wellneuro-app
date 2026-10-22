@@ -17,11 +17,13 @@ D-344 : texte 2B gardé jusqu'à l'avis (§2) ; rubrique 4 réécrite sur l'avis
 relue, resserrée et corrigée sur trois faits (2B servi, droits du jeune déjà
 ouverts au portail, notice existante mais adulte) ; « un seul titulaire
 suffit » et « aucun secret opposable » suspendus (§3) ; trois demandeurs à
-l'étape 7 (§4) ; avocat consulté maintenant (§5). Second avis intégré (§6) :
+l'étape 7 (§4) ; avocat consulté maintenant (§5). Second avis intégré (§6)
+comme hypothèses soumises à l'avocat, non comme décisions adoptées :
 architecture hybride (accord parental = admission, consentement du jeune dès
-15 ans), proportionnalité des seuils d'âge (loi de 2008), retrait du jeune
-jamais retardé, transition dès 15 ans ; note réduite à six questions plus les
-faits du contrat. Constat au code : le mineur s'arrête à la pause avant
+15 ans pour les seules fonctions de l'art. 8 et de l'art. 45),
+proportionnalité des seuils d'âge (loi de 2008), transition dès 15 ans. Seul
+le retrait du jeune jamais retardé est déjà la règle de l'étape 7. Note
+réduite à six questions plus les faits du contrat. Constat au code : le mineur s'arrête à la pause avant
 l'étape du consentement.
 
 ## Fichiers modifiés
@@ -37,7 +39,7 @@ commit.
 
 ## Problèmes ouverts
 
-Réponse de l'avocat (note d'une page, dix questions, hors dépôt) ; puis
+Réponse de l'avocat (note d'une page, six questions, hors dépôt) ; puis
 texte 2B, formules suspendues, âge plancher, transition à 18 ans, notice
 adaptée, AIPD avant le premier mineur.
 
