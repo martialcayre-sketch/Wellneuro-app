@@ -34,11 +34,12 @@ formes reconnues, mentions) ; `.claude/hooks/protect-wellneuro-files.mjs`
 
 ## Validations exécutées
 
-Banc des crochets `node --test .claude/hooks/*.test.mjs` : 380 verts (dont
-107 du nouveau banc). T1 complet vert. T2 `--fast` vert (14 394 unitaires,
-282 E2E). CodeRabbit (#1643, tête 7313660c) : deux constats corrigés —
+Banc des crochets `node --test .claude/hooks/*.test.mjs` : 386 verts (dont
+113 du nouveau banc). T1 complet vert. T2 `--fast` vert (14 394 unitaires,
+282 E2E). CodeRabbit (#1643), quatre constats corrigés en deux passes :
 `$(…)` et backticks entre guillemets doubles analysés, expansion d'accolades
-bornée sur la file d'attente.
+bornée sur la file d'attente ; fermeture de `$(…)` qui saute les guillemets,
+mots réservés (`then`, `do`, `{`, `!`…) retirés en tête de commande.
 `/code-review medium` : dix constats — sept corrigés (arithmétique `$((<<))`
 lue comme heredoc, accolades et glob intermédiaire, `timeout -s/-k`,
 `perl -MFile` pris pour `-i`, `cd` de sous-shell, contenu entrant réduit à la

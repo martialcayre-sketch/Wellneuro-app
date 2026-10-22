@@ -56,6 +56,32 @@ function finArithmetique(s, i) {
 }
 
 /**
+ * Indice de la `)` qui ferme la `(` ouverte en `i`, ou -1. Apostrophes,
+ * guillemets et échappements sautés : le `)` de `sed 's/)/x/'` n'en ferme
+ * aucune (revue CodeRabbit #1643).
+ */
+function finSubstitution(s, i) {
+  let profondeur = 0;
+  for (let j = i; j < s.length; j++) {
+    const c = s[j];
+    if (c === "\\") { j++; continue; }
+    if (c === "'") {
+      const f = s.indexOf("'", j + 1);
+      if (f === -1) return -1;
+      j = f;
+      continue;
+    }
+    if (c === '"') {
+      for (j++; j < s.length && s[j] !== '"'; j++) if (s[j] === "\\") j++;
+      continue;
+    }
+    if (c === "(") profondeur++;
+    else if (c === ")" && --profondeur === 0) return j;
+  }
+  return -1;
+}
+
+/**
  * Découpe lexicale façon shell : mots (guillemets retirés), séparateurs,
  * redirections ; les corps de heredoc sont extraits à part, jamais lus comme
  * des commandes.
@@ -111,8 +137,9 @@ export function lexer(commande) {
       while (j < s.length && s[j] !== '"') {
         if (s[j] === "\\" && /["\\$`\n]/.test(s[j + 1] ?? "")) { v += s[j + 1]; j += 2; continue; }
         if (s[j] === "$" && s[j + 1] === "(" && s[j + 2] !== "(") {
-          const fin = finArithmetique(s, j + 1);
-          sousCommandes.push(s.slice(j + 2, fin - 1));
+          const fermante = finSubstitution(s, j + 1);
+          const fin = fermante === -1 ? s.length : fermante + 1;
+          sousCommandes.push(s.slice(j + 2, fermante === -1 ? s.length : fermante));
           v += s.slice(j, fin);
           j = fin;
           continue;
@@ -257,11 +284,15 @@ export function segments(jetons) {
 
 const sansOptions = (args) => args.filter((a) => !a.startsWith("-") || a === "-");
 
-/** Retire affectations et enveloppes de tête (`sudo`, `env`, `npx`…). */
+// Mots réservés qui PRÉCÈDENT une commande : `then sed -i …` reste un `sed`
+// (revue CodeRabbit #1643).
+const MOTS_RESERVES = new Set(["if", "then", "else", "elif", "do", "while", "until", "{", "!"]);
+
+/** Retire mots réservés, affectations et enveloppes de tête (`sudo`, `env`, `npx`…). */
 function commandeEffective(argv) {
   const a = [...argv];
   for (;;) {
-    while (a.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(a[0])) a.shift();
+    while (a.length && (MOTS_RESERVES.has(a[0]) || /^[A-Za-z_][A-Za-z0-9_]*=/.test(a[0]))) a.shift();
     const cmd = a[0];
     if (["sudo", "command", "builtin", "nohup", "time", "exec", "nice", "stdbuf", "env"].includes(cmd)) {
       a.shift();

@@ -93,6 +93,12 @@ for (const commande of [
   `echo "$(sed -i '' s/a/b/ ${Q})"`,
   "echo \"`tee " + Q + " < /tmp/x`\"",
   `cd web && echo "résultat : $(sed -i '' s/a/b/ src/lib/questions.ts)"`,
+  `echo "$(sed -i 's/)/x/' ${Q})"`,
+  `if true; then sed -i '' 's/a/b/' ${Q}; fi`,
+  `for f in a; do sed -i '' 's/a/b/' ${Q}; done`,
+  `{ sed -i '' 's/a/b/' ${Q}; }`,
+  `! sed -i '' 's/a/b/' ${Q}`,
+  `if true; then x=1; else cp /tmp/x.ts ${Q}; fi`,
 ]) {
   test(`forme reconnue, demande : ${commande.split("\n")[0]}`, () => {
     const { verdict, sortie } = jugement(commande);
