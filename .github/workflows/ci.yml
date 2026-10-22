@@ -1524,7 +1524,7 @@ jobs:
       # Décisions de parcours (D-343, BP-15) : la tête d'un fil ne tient que
       # par son verrou. Deux premières révisions, un remplacement contre un
       # retrait, deux remplacements d'un événement, le refus de REPEATABLE
-      # READ, l'effacement contre deux poses, une suppression hors
+      # READ et de SERIALIZABLE, l'effacement contre deux poses, une suppression hors
       # effacement. Commet ses fixtures puis les efface : la base doit être
       # nommée.
       - name: Decisions de parcours two-session bench

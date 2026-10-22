@@ -9,7 +9,9 @@
   jour ou « inconnue », version suivante sur `ajuster` seule ; une révision
   en vigueur par version, un fil par événement, remplacement dans la même
   famille, retrait de la tête ; praticien du dossier seul ; verrou du
-  dossier puis verrou consultatif 343 ; REPEATABLE READ refusé ; UPDATE et
+  dossier puis verrou consultatif 343 ; READ COMMITTED seul admis
+  (REPEATABLE READ et SERIALIZABLE refusés : arbitrage du 2026-10-22 sur la
+  revue CodeRabbit, plus strict que BP-09, BP-11 et BP-13) ; UPDATE et
   TRUNCATE refusés, suppression réservée à l'effacement du dossier ; RLS
   sans politique. Rien n'écrit dans les versions, les approbations ni les
   check-ins.

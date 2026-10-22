@@ -44,12 +44,13 @@
 --      ses décisions (RESTRICT) ; une suppression dont le dossier survit est
 --      refusée en fin de transaction ;
 --  14. les FK ont la règle annoncée, les CHECK, les index et les triggers
---      sont présents (la suppression nommée, différée), REPEATABLE READ est
---      refusé avant les verrous, les verrous précèdent le contrôle du
---      praticien et des têtes, et les fonctions ont leur `search_path`
---      épinglé (présence relue : une session seule n'éprouve ni la
---      concurrence ni un autre niveau d'isolation — le banc à deux sessions
---      joue les courses et le refus de REPEATABLE READ,
+--      sont présents (la suppression nommée, différée), tout niveau autre
+--      que READ COMMITTED est refusé avant les verrous, les verrous
+--      précèdent le contrôle du praticien et des têtes, et les fonctions ont
+--      leur `search_path` épinglé (présence relue : une session seule
+--      n'éprouve ni la concurrence ni un autre niveau d'isolation — le banc
+--      à deux sessions joue les courses et le refus de REPEATABLE READ et
+--      de SERIALIZABLE,
 --      `scripts/banc-decisions-parcours-deux-sessions.test.mjs`) ;
 --  15. la table porte EXACTEMENT ses colonnes (liste blanche) : aucune
 --      colonne d'efficacité, de score, de résultat, de valeur ni
@@ -695,12 +696,12 @@ BEGIN
   IF nb <> 1 THEN
     RAISE EXCEPTION 'CONTRAT — 14 : la suppression nommée n''est pas un trigger de contrainte différé.';
   END IF;
-  -- REPEATABLE READ refusé, puis les verrous, avant le contrôle du praticien
-  -- et des têtes. Une session seule n'éprouve pas la concurrence : elle
-  -- relit l'appel et sa place.
+  -- Tout niveau autre que READ COMMITTED refusé, puis les verrous, avant le
+  -- contrôle du praticien et des têtes. Une session seule n'éprouve pas la
+  -- concurrence : elle relit l'appel et sa place.
   IF pg_get_functiondef('public.decisions_parcours_avant_insertion()'::regprocedure)
-       !~ '''repeatable read''[^$]*FOR KEY SHARE;\s*PERFORM pg_advisory_xact_lock\(343, hashtext\(NEW\.id_patient \|\| ''\|decision_parcours''\)\);[^$]*seul le praticien du dossier[^$]*SELECT d\.id INTO tete[^$]*SELECT c\.acte, c\.id_version, c\.id_action, c\.nature' THEN
-    RAISE EXCEPTION 'CONTRAT — 14 : REPEATABLE READ refusé, puis dossier et décisions verrouillés AVANT les contrôles : l''ordre n''y est plus.';
+       !~ 'current_setting\(''transaction_isolation''\) <> ''read committed''[^$]*FOR KEY SHARE;\s*PERFORM pg_advisory_xact_lock\(343, hashtext\(NEW\.id_patient \|\| ''\|decision_parcours''\)\);[^$]*seul le praticien du dossier[^$]*SELECT d\.id INTO tete[^$]*SELECT c\.acte, c\.id_version, c\.id_action, c\.nature' THEN
+    RAISE EXCEPTION 'CONTRAT — 14 : READ COMMITTED seul admis, puis dossier et décisions verrouillés AVANT les contrôles : l''ordre n''y est plus.';
   END IF;
   SELECT count(*) INTO nb FROM pg_proc p
   WHERE p.oid IN ('public.decisions_parcours_avant_insertion()'::regprocedure,

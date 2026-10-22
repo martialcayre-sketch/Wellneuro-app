@@ -16,7 +16,8 @@
 //   3. DEUX REMPLACEMENTS CONCURRENTS d'un même événement : le second
 //      attend, puis est refusé par le trigger — pas seulement par l'unicité
 //      du successeur ;
-//   4. REPEATABLE READ REFUSÉ PAR LA BASE ;
+//   4. REPEATABLE READ ET SERIALIZABLE REFUSÉS PAR LA BASE : seul READ
+//      COMMITTED relit la tête après le verrou (arbitrage du 2026-10-22) ;
 //   5. L'EFFACEMENT CONTRE DEUX POSES : l'effacement prend le dossier
 //      `FOR UPDATE` en premier ; les poses l'attendent, puis passent quand
 //      l'effacement est annulé. L'effacement ne prenant pas le verrou 343,
@@ -243,12 +244,15 @@ describe('Décisions de parcours — deux sessions (D-343, BP-15)', () => {
     }
   });
 
-  it('4. REPEATABLE READ est refusé par la base', async () => {
+  it('4. REPEATABLE READ et SERIALIZABLE sont refusés par la base', async () => {
     const b = await session();
     try {
-      const refus = await transaction(b.client, [debut('e4')], 'BEGIN ISOLATION LEVEL REPEATABLE READ');
-      assert.ok(refus, 'une décision posée en REPEATABLE READ est passée.');
-      assert.match(refus.message, /ligne refusée en REPEATABLE READ/);
+      const refusRr = await transaction(b.client, [debut('e4')], 'BEGIN ISOLATION LEVEL REPEATABLE READ');
+      assert.ok(refusRr, 'une décision posée en REPEATABLE READ est passée.');
+      assert.match(refusRr.message, /ligne refusée en REPEATABLE READ : la tête d'un fil exige READ COMMITTED/);
+      const refusSer = await transaction(b.client, [debut('e4')], 'BEGIN ISOLATION LEVEL SERIALIZABLE');
+      assert.ok(refusSer, 'une décision posée en SERIALIZABLE est passée.');
+      assert.match(refusSer.message, /ligne refusée en SERIALIZABLE : la tête d'un fil exige READ COMMITTED/);
       assert.deepEqual(await lignes(observateur, 'e4'), []);
     } finally {
       await b.client.end();

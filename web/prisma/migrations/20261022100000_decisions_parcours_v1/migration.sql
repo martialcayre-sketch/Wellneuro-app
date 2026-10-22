@@ -88,9 +88,13 @@
 -- prend `FOR UPDATE` en premier : l'ordre « dossier, puis le reste » est le
 -- même partout), puis un verrou consultatif (espace 343) : celui des
 -- décisions de parcours du dossier. Deux actes du dossier se sérialisent, et
--- le second lit la tête laissée par le premier. REPEATABLE READ est refusé,
--- avec le motif de BP-09, BP-11 et BP-13 : son instantané masquerait l'acte
--- que le verrou vient de laisser commettre.
+-- le second lit la tête laissée par le premier. Tout niveau autre que READ
+-- COMMITTED est refusé : l'instantané de REPEATABLE READ masquerait l'acte
+-- que le verrou vient de laisser commettre (motif de BP-09, BP-11 et BP-13),
+-- et celui de SERIALIZABLE aussi, face à une session READ COMMITTED que SSI
+-- ne surveille pas — deux révisions en vigueur sur une version. Plus strict
+-- que BP-09, BP-11 et BP-13, qui n'écartent que REPEATABLE READ (revue
+-- CodeRabbit de #1644, arbitrage du responsable du 2026-10-22).
 --
 -- ── LE JOUR 0 ET LES EMPREINTES NE BOUGENT PAS ─────────────────────────────
 --
@@ -289,8 +293,9 @@ DECLARE
   cible_action text;
   cible_nature text;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'ligne refusée en REPEATABLE READ : la tête d''un fil exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'ligne refusée en % : la tête d''un fil exige READ COMMITTED.',
+      upper(current_setting('transaction_isolation'));
   END IF;
 
   -- Les verrous d'abord : le dossier, puis les décisions de parcours du

@@ -61,7 +61,9 @@ l'effacement nommé. Aucun code consommateur.
 
 ## Problèmes ouverts
 
-- Routés à la PR 2 (fiche LOT-15) : écrivain en READ COMMITTED ; nettoyages
+- Isolation fermée en base (READ COMMITTED seul admis), sur la revue
+  CodeRabbit de #1644 et l'arbitrage du responsable du 2026-10-22.
+- Routés à la PR 2 (fiche LOT-15) : nettoyages
   E2E de `web/e2e/helpers/db.ts` qui suppriment des versions ; retour
   arrière de BP-13 après celui de BP-15.
 - Entre le déploiement du code et la release-db, un effacement de dossier

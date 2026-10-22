@@ -114,10 +114,13 @@ seulement (§7) ; le dossier mineur refusé au cockpit (§8).
   versions ne bougent pas » : empreintes, statut et mise à jour des versions,
   approbations et check-ins inchangés après toutes les poses), banc
   `banc-decisions-parcours-deux-sessions.test.mjs` (sept courses).
-  Routés de la relecture `wn-reviewer` de la PR 1 (P2), à tenir par le
-  code : l'écrivain reste en READ COMMITTED (une transaction SERIALIZABLE
-  face à une READ COMMITTED peut laisser deux têtes, trou commun à BP-09,
-  BP-11 et BP-13 ; le message du trigger cite encore SERIALIZABLE) ; les
+  Isolation : la base n'admet que READ COMMITTED (REPEATABLE READ et
+  SERIALIZABLE refusés par le trigger) — une transaction SERIALIZABLE face
+  à une READ COMMITTED pouvait laisser deux révisions en vigueur, trou
+  commun à BP-09, BP-11 et BP-13 ; fermé ici en base sur la revue
+  CodeRabbit de #1644, arbitrage du responsable du 2026-10-22 (les tables
+  voisines gardent leur garde). Routés de la relecture `wn-reviewer` de la
+  PR 1 (P2), à tenir par le code : les
   nettoyages E2E qui suppriment des versions (`web/e2e/helpers/db.ts`)
   suppriment d'abord leurs décisions de parcours, dès qu'un E2E en pose ;
   le retour arrière de BP-13 passe après celui de BP-15 (fonctions
