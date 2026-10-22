@@ -4,6 +4,73 @@
 
 ## Décisions actives
 
+### D-344 — Mineurs : rubrique 4 réécrite en version provisoire sur un avis préparatoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus à l'avocat, consulté dès maintenant ; trois demandeurs de droits ; texte 2B gardé
+
+- Date : 2026-10-22
+- Statut : accepté — trois arbitrages du responsable du 2026-10-22, sur
+  questions à options, après un avis préparatoire écrit (Codex, sur un prompt
+  de l'assistant) confronté au dépôt par l'assistant.
+- Amende : [[D-284]] §4 (deux formules suspendues) ; [[D-342]] §5 (avocat
+  consulté maintenant, plus seulement avant J3-mineurs) et §6 (étape 7 de la
+  procédure des droits).
+- Domaine : `docs/DOSSIER_RGPD.md` rubrique 4 (« Cas des mineurs ») et
+  rubrique 9 (étape 7) ; fiches F45 et H79. Documents seuls : aucun code,
+  aucune migration, aucun texte servi changé, aucune règle clinique. La pause
+  fail-closed du mineur et le seuil de 18 ans restent en service.
+
+**§1 — L'avis préparatoire, confronté au dépôt.** L'avis n'est pas une
+consultation d'avocat. Il tient sur six points :
+- le seuil de 15 ans de l'art. 45 LIL a été écarté trop vite ;
+- « un seul titulaire suffit » suppose un acte usuel (art. 372-2 C. civ.), ce
+  qui n'est pas établi ;
+- « aucun secret opposable » est trop absolu au regard de la vie privée de
+  l'enfant (art. 9 et 371-1 C. civ.), sans que L1111-5 CSP s'applique à ce
+  responsable ;
+- le masquage n'est pas une anonymisation ;
+- la notice d'information n'est pas adaptée à l'âge du jeune ;
+- rien n'est prévu au passage à 18 ans.
+
+Il se trompe sur trois faits, corrigés dans la rubrique 4 :
+- le texte 2B est servi depuis le 2026-10-21 ([[D-341]]) ;
+- le mineur fait déjà ses propres demandes de droits depuis son espace
+  (périmètre de la pause arbitré le 2026-10-14) ;
+- la notice existe (« Vos données personnelles », « L'IA dans Wellneuro »),
+  mais elle s'adresse à un adulte.
+
+**§2 — Le texte 2B est gardé** mot pour mot jusqu'à l'avis de l'avocat. Aucun
+mineur n'est servi (0 sur 31 dossiers ouverts au 2026-10-21), et la pause
+reste fermée. Le texte ne changera qu'une fois, sur la réponse de l'avocat.
+
+**§3 — Rubrique 4 réécrite** sur le texte de l'avis, relu et resserré par
+l'assistant, et corrigé sur les faits du §1. Elle fait foi en version
+provisoire ; les paragraphes antérieurs restent en historique. Deux formules
+de [[D-284]] §4 y sont **suspendues** à l'avis de l'avocat, sans être
+remplacées par une règle neuve :
+- « l'accord d'un seul titulaire suffit » ;
+- « aucun secret opposable aux parents ».
+
+D'ici là, aucun accord n'est recueilli en ligne et aucun accès parental n'est
+ouvert. Une demande parentale s'instruit à la main, au cas par cas.
+
+**§4 — Trois demandeurs de droits** (étape 7, amende [[D-342]] §6) :
+- le jeune ;
+- le titulaire qui a donné l'accord ;
+- l'autre titulaire.
+
+Aucun d'eux n'est exclu au seul motif qu'il n'a pas donné l'accord.
+L'identité et la qualité se jugent par les moyens de la procédure (session du
+portail, confirmation depuis la boîte notée). Un doute raisonnable fait passer
+la demande en traitement manuel (RGPD art. 12 §6), sans collecte de pièce
+d'identité ([[D-283]] §6). En cas de conflit, la seule communication
+contestée attend l'instruction, dans le délai de l'étape 2.
+
+**§5 — Avocat consulté maintenant** (amende [[D-342]] §5), sur une note d'une
+page et dix questions fermées. Les réponses fixeront :
+- les formules suspendues du §3 ;
+- le texte 2B (§2) ;
+- l'âge plancher et la transition à 18 ans, deux règles à écrire ;
+- le cahier de J3-mineurs.
+
 ### D-342 — Restes de F45 et des mineurs : at remplacée par un contrôle du praticien au masquage, as close, repère du mineur en attente dans la liste, 15–17 ans avant J3-mineurs, droits d'un parent à la main
 
 - Date : 2026-10-22
