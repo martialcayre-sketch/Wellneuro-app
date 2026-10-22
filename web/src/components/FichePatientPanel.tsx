@@ -736,7 +736,7 @@ export function FichePatientPanel({
       });
   };
 
-  useEffect(() => {
+  const chargerFiche = useCallback(() => {
     setLoading(true);
     fetch(`/api/praticien/equilibre?idPatient=${encodeURIComponent(idPatient)}`)
       .then(r => r.json())
@@ -744,6 +744,10 @@ export function FichePatientPanel({
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, [idPatient]);
+
+  useEffect(() => {
+    chargerFiche();
+  }, [chargerFiche]);
 
   useEffect(() => {
     // ROUTE À PART, ET JOURNALISÉE. La fiche appelle déjà `equilibre`, ce qui
@@ -1356,8 +1360,22 @@ export function FichePatientPanel({
         ? 'Patient introuvable.'
         : reason === 'unauthenticated'
           ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
-          : 'Erreur technique. Vérifiez le terminal Next.js.';
-    return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
+          : null;
+    if (message) {
+      return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
+    }
+    return (
+      <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
+        <span className="min-w-0">La fiche patient n’a pas pu être lue.</span>
+        <button
+          type="button"
+          onClick={chargerFiche}
+          className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
   }
 
   const { patient, objetsCliniques, priorites } = data;

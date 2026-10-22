@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
@@ -19,7 +19,7 @@ export function DetailBesoinsPanel({
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const charger = useCallback(() => {
     setLoading(true);
     fetch(`/api/praticien/besoins?idPatient=${encodeURIComponent(idPatient)}`)
       .then(r => r.json())
@@ -27,6 +27,10 @@ export function DetailBesoinsPanel({
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, [idPatient]);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
 
   if (loading) {
     return <div className="text-base text-muted-foreground">Chargement du détail des besoins...</div>;
@@ -39,8 +43,22 @@ export function DetailBesoinsPanel({
         ? 'Patient introuvable.'
         : reason === 'unauthenticated'
           ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
-          : 'Erreur technique. Vérifiez le terminal Next.js.';
-    return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
+          : null;
+    if (message) {
+      return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
+    }
+    return (
+      <div role="alert" className="flex flex-wrap items-center gap-3 bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
+        <span className="min-w-0">Le détail des besoins n’a pas pu être lu.</span>
+        <button
+          type="button"
+          onClick={charger}
+          className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
   }
 
   const { patient, besoins } = data;
@@ -78,7 +96,7 @@ export function DetailBesoinsPanel({
             </thead>
             <tbody>
               {besoins.map((b: BesoinDetail) => (
-                <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || 'Aucun questionnaire source'}>
+                <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || 'Aucune réponse de questionnaire exploitable pour ce besoin'}>
                   <td className="px-4 py-2">{b.libellePraticien}</td>
                   <td className="px-4 py-2 text-muted-foreground">{b.couverture !== null ? `${b.couverture}%` : '—'}</td>
                 </tr>
