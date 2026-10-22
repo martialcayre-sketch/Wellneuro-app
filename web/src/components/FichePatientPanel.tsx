@@ -85,6 +85,7 @@ import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel'
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPanel';
 import { PhysioTraitementsPanel } from '@/components/physio-traitements/PhysioTraitementsPanel';
+import { DecisionsParcoursPanel } from '@/components/decisions-parcours/DecisionsParcoursPanel';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -441,6 +442,7 @@ export function FichePatientPanel({
   fixtureValidationErgo = null,
   lienMagiqueActif = false,
   physioTraitementsActif = false,
+  decisionsParcoursActif = false,
 }: {
   idPatient: string;
   /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
@@ -462,6 +464,9 @@ export function FichePatientPanel({
   /** Drapeau `WN_PHYSIO_TRAITEMENTS` ([[D-335]] §9), lu au serveur par la page :
    *  éteint, le tiroir des données physiologiques et des traitements n'existe pas. */
   physioTraitementsActif?: boolean;
+  /** Drapeau `WN_DECISIONS_PARCOURS` ([[D-343]] §11), lu au serveur par la page :
+   *  éteint, le tiroir des décisions de parcours n'existe pas. */
+  decisionsParcoursActif?: boolean;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -2671,6 +2676,18 @@ export function FichePatientPanel({
                   large
                 >
                   <PhysioTraitementsPanel idPatient={idPatient} />
+                </InstrumentTiroir>
+              )}
+              {/* Les décisions de parcours, par version du protocole
+                  ([[D-343]], BP-15) : sous leur drapeau seulement. */}
+              {decisionsParcoursActif && (
+                <InstrumentTiroir
+                  libelle="Décisions de parcours"
+                  description="Par version du protocole : préférences et refus du patient, début réel, interruption, reprise, arrêt, révision. Chaque ligne datée, avec sa source et son motif. Rien n’est déduit."
+                  icone={ListChecks}
+                  large
+                >
+                  <DecisionsParcoursPanel idPatient={idPatient} />
                 </InstrumentTiroir>
               )}
               <InstrumentTiroir

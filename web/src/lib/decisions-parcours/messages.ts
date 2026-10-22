@@ -1,0 +1,35 @@
+// Les refus des décisions de parcours ([[D-343]], BP-15), en français, sans
+// aucune valeur. La route les rend ; le panneau du cockpit les affiche tels
+// quels.
+
+export const MESSAGES_REFUS: Record<string, string> = {
+  decisions_desactive: 'Les décisions de parcours ne sont pas ouvertes.',
+  acte_invalide: 'Le geste demandé est illisible.',
+  version_invalide: 'La version du protocole est mal désignée. Rechargez la fiche.',
+  version_inconnue: 'Cette version du protocole est introuvable dans ce dossier. Rechargez la fiche.',
+  version_illisible: 'Le contenu de cette version du protocole est illisible : aucune action ne peut y être désignée.',
+  version_non_diffusee: 'Cette version n’a pas été diffusée : rien n’est encore à mettre en œuvre ni à réviser.',
+  version_suivante_inconnue: 'La version suivante est introuvable dans ce dossier. Rechargez la fiche.',
+  version_suivante_invalide: 'La version suivante ne se désigne que sur une révision « ajuster », et elle diffère de la version révisée.',
+  action_invalide: 'L’action est mal désignée. Rechargez la fiche.',
+  action_inconnue: 'Cette action n’appartient pas à la version. Rechargez la fiche.',
+  action_sur_revision: 'Une révision vise la version entière, jamais une action.',
+  nature_invalide: 'Choisissez le type de décision dans la liste.',
+  issue_invalide: 'Choisissez maintenir, ajuster ou arrêter.',
+  source_invalide: 'Indiquez si le fait est rapporté par le patient ou constaté par le praticien.',
+  motif_invalide: 'Choisissez un motif dans la liste.',
+  motif_interdit: 'Ce geste ne porte pas de motif.',
+  note_requise: 'Une note est requise pour ce geste.',
+  texte_trop_long: 'La note dépasse la longueur permise.',
+  date_invalide: 'La date est illisible.',
+  date_requise: 'Indiquez la date de l’événement, ou « date inconnue ».',
+  date_interdite: 'Ce geste ne porte pas de date d’événement.',
+  date_future: 'La date ne peut pas être postérieure à aujourd’hui.',
+  remplacement_invalide: 'La ligne visée est mal désignée. Rechargez la fiche.',
+  remplacement_hors_famille: 'Une correction garde l’action et le type de la ligne corrigée.',
+  ligne_inconnue: 'La ligne visée est introuvable sur cette version. Rechargez la fiche.',
+  tete_changee: 'La ligne en vigueur a changé depuis votre lecture. Rechargez la fiche.',
+  dossier_mineur: 'Ce dossier est celui d’un mineur : les décisions de parcours ne s’y posent pas.',
+  refus_base: 'La base a refusé ce geste. Rechargez la fiche et reprenez-le.',
+  conflit_concurrent: 'Un autre geste est passé au même moment. Rechargez la fiche et reprenez-le.',
+};

@@ -11320,6 +11320,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
 
+## 2026-10-22 — BP-15 : code des décisions de parcours (D-343)
+
+**Fait.** Release-db de #1644 constatée par conteneur. Route du cockpit, tiroir « Décisions de parcours » sous `WN_DECISIONS_PARCOURS` éteint ; libellés retenus par le responsable ; première diffusion affichée à côté des débuts réels (§9). Bancs : jour 0 et quatre empreintes, lecteurs, demande, fils, route (38 tests).
+
+**Écarté.** `signature(err)` dans les journaux : vit dans la bibliothèque biologique, hors frontière D-306 — `classeEtCode`, précédent BP-13, jamais `err.message`.
+
+**Prochaine action.** PR, CI, CodeRabbit, merge ; puis brouillon de la lettre cm (F52), hors dépôt.
+
+**Ouvert.** Allumage : test d'intégration de la route sur une vraie base ; information patient relue avant BP-21a.
 ## 2026-10-22 — Instruments : textes faux (F9b, N1)
 
 **Fait.** Infobulle d'un besoin sans source rendue exacte (« Aucune réponse de questionnaire exploitable pour ce besoin »), sans motif. « Vérifiez le terminal Next.js. » remplacé par un message praticien et « Réessayer » sur le détail des besoins et la fiche ; texte seul dans `messagesDossier.ts`, qui déborde sur quatre surfaces hors instruments.
