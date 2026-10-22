@@ -613,6 +613,52 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     corrigés le même jour (l'IA ne reçoit aucun traitement : un fait
     vérifié après la validation) et revalidés le même jour, avant la
     migration.
+- **Décisions de parcours ([[D-343]], BP-15) — déclarées le 2026-10-22,
+  avant la table.** Une table neuve, créée par la migration seule
+  `decisions_parcours_v1` : PR relue, release-db à approuver, puis constat
+  par conteneur ; aucun code ne l'écrit ni ne la lit avant ce constat, hors
+  l'effacement nommé du dossier, livré avec la migration. Le code qui
+  l'écrit naît derrière `WN_DECISIONS_PARCOURS`, éteint.
+  - `DecisionParcours` trace **ce que le patient fait d'une version de son
+    protocole et ce que le praticien décide à sa revue** : un choix du
+    patient (préférence, refus), un événement de mise en œuvre (début,
+    interruption, reprise, arrêt, avec la date où il a eu lieu, ou
+    « inconnue ») ou une révision (maintenir, ajuster, arrêter). Une ligne
+    porte : le dossier, l'acte (`pose` ou `retrait`), la version du
+    protocole, l'action visée (facultative, par son identifiant), la
+    nature, l'issue d'une révision, un motif pris dans une **liste
+    fermée** (dont `effet_indesirable_rapporte` et `avis_autre_soignant`),
+    une **note libre** (obligatoire avec `autre` et pour une préférence,
+    2000 caractères au plus), la source (« rapporté par le patient » ou
+    « constaté par le praticien »), la version suivante d'une révision
+    `ajuster`, la ligne qu'elle remplace, l'e-mail du praticien et la date.
+  - **Ce qui est nouveau.** Des faits sur la mise en œuvre du protocole,
+    rapportés par le patient au praticien ou constatés par lui, et la
+    décision de révision du praticien, **consignés, datés et motivés** sur
+    une base légale et une finalité inchangées : le suivi du patient par
+    son praticien. Catégorie particulière (art. 9) : un motif ou une note
+    peuvent dire un effet indésirable rapporté ; la note peut nommer un
+    tiers (un autre soignant). Aucun motif d'efficacité, aucune colonne de
+    score, de résultat ou d'attribution (contrat SQL négatif).
+  - **Ce qui ne change pas.** **Aucun destinataire, aucun sous-traitant,
+    aucun flux nouveau, aucune IA** : rien ne part hors de la base HDS. Le
+    praticien du dossier seul écrit et lit, au cockpit ; le patient ne voit
+    rien ; ni le portail, ni le courrier au médecin, ni le scoring, ni
+    l'orientation, ni l'IA ne lisent ces lignes. Le jour 0 du suivi et le
+    contenu des versions du protocole ne changent pas. Un effet indésirable
+    noté ici ne remplace pas le signalement de sécurité. Dossier mineur
+    exclu. En **ajout seul** (une correction ou un retrait est une ligne de
+    plus), RLS activée sans politique ; la base refuse la ligne d'un autre
+    praticien que celui du dossier. **Effacées nommément avec le
+    dossier**, avant les versions du protocole qu'elles désignent.
+  - **Information du patient : inchangée pour la migration.** La table
+    reste vide jusqu'au code, livré derrière un drapeau éteint, et le
+    patient n'a aucune surface. Une décision de parcours est une note
+    datée du praticien sur son dossier, de même nature que les notes de
+    consultation déjà déclarées. L'information se relit avant l'ouverture
+    du suivi (BP-21a). **Ce paragraphe est validé par le responsable le
+    2026-10-22**, note patient inchangée comprise, avant le merge de la
+    migration.
 - **Transmission du compte rendu par le patient depuis son portail
   ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
   migration et avant tout code.** Le patient peut déposer lui-même son
@@ -830,6 +876,7 @@ personnelles se répartissent ainsi :
 | **Santé — documents déposés par le patient (art. 9)** ([[D-330]], J3-collecte, déclaré le 2026-10-18 **avant** la création des tables) | `DocumentDeposePatient` (dossier, **document déposé tel quel**, type, empreinte SHA-256, catégorie proposée, date de dépôt, date et auteur de la première consultation, date, auteur et motif du retrait ; aucun nom de fichier) ; `ClassementDocumentDepose` (dossier, document, catégorie, e-mail du praticien, date). Créées par la migration `documents_deposes_patient_v1`, **appliquée le 2026-10-19** (run `release-db` 39290340495) ; écrites par le dépôt du patient depuis son ouverture le 2026-10-20 (ACT-4, drapeau `WN_PORTAIL_DEPOT_DOCUMENTS`), information du patient publiée le même jour (« Vos données personnelles » v19, conditions d'utilisation v2 et leur e-mail aux patients suivis) | **Document de santé remis par le patient lui-même**, sans IA. Figé, sauf la première consultation et le retrait, par le seul praticien du dossier ; le retrait efface le contenu et garde la ligne. Destinataire : le praticien du dossier seul ; aucun tiers, aucun sous-traitant. Conservées avec le dossier et effacées nommément avec lui (rubrique 8) |
 | **Santé — constat du praticien sur une hypothèse du parcours (art. 9)** ([[D-331]], BP-11, déclaré le 2026-10-19 **avant** la création des tables) | `ConstatPraticien` (dossier, acte `pose` ou `retrait`, hypothèse par son code, verdict — `confirmee`, `non_retenue`, `non_evaluable`, `sans_objet` —, motif pris dans une liste fermée — `pieces_ne_soutiennent_pas`, `autre_hypothese_retenue`, `contexte_explique`, `piece_attendue_manquante`, `contexte_inconnu`, `donnee_a_verifier`, `hors_population`, `question_ne_se_pose_plus`, `autre` —, note libre facultative, date « à revoir le » facultative, constat remplacé, empreinte de la structure signée, e-mail du praticien, date, identifiant technique de la transaction) ; `PieceConstatPraticien` (constat, ligne de résultat de biologie **ou** réponse de questionnaire du même dossier). Migration `20261020100000_constats_praticien_v1` (PR de migration seule), à appliquer par release-db | **Jugement du praticien sur son dossier**, aval de `ResultatBiologique` et de `QuestionnaireReponse`. Aucune valeur, aucun analyte, aucune date de prélèvement recopiés. Une note libre facultative peut porter une donnée de santé ou nommer un tiers. En ajout seul, par le praticien du dossier seul, lu par lui seul. Rien n'en part vers un tiers. Effacées nommément avec le dossier (rubrique 8) |
 | **Santé — données physiologiques déclarées, traitements et compléments en cours (art. 9)** ([[D-335]], BP-13, déclaré le 2026-10-21 **avant** la création des tables) | `DonneePhysiologique` (dossier, acte `pose` ou `retrait`, critère — `sexe_declare`, `statut_menstruel`, `grossesse`, `allaitement`, `poids`, `taille` —, réponse fermée ou mesure, date de la mesure, source « déclaré par le patient » ou « confirmé par le praticien », ligne remplacée, e-mail du praticien s'il la pose, date) ; `TraitementEnCours` (dossier, acte, nature `medicament` ou `complement`, nom, dose, moment de prise, motif ou objectif, début et fin avec leur précision, prescrit par un autre soignant, source, ligne remplacée, e-mail du praticien s'il la pose, date) ; clé `id_traitement` ajoutée à `PieceConstatPraticien`. Migration `20261021100000_donnees_physiologiques_traitements_v1` (PR de migration seule), à appliquer par release-db | **Déclarations du patient et confirmations du praticien**, datées. Nouveau : sexe déclaré et statut menstruel, jamais déduits, « inconnu » possible ; le reste était déjà recueilli en texte libre par la fiche de renseignements. Aucune classe ni code de référentiel, aucun IMC. Textes libres (nom, dose, motif) pouvant nommer un tiers. En ajout seul ; écrit par le patient (ses lignes) et le praticien du dossier ; lu par eux seuls ; rien ne part à l'IA (la ligne de vigilance de la synthèse, écrite par le code, lit les traitements en vigueur comme aujourd'hui ceux de la fiche). Dossier mineur exclu. Effacées nommément avec le dossier (rubrique 8) |
+| **Santé — décisions de parcours sur une version du protocole (art. 9)** ([[D-343]], BP-15, déclaré le 2026-10-22 **avant** la création de la table) | `DecisionParcours` (dossier, acte `pose` ou `retrait`, version du protocole, action facultative, nature — `preference`, `refus`, `debut`, `interruption`, `reprise`, `arret`, `revision` —, issue d'une révision — `maintenir`, `ajuster`, `arreter` —, motif pris dans une liste fermée, note libre, date de l'événement ou « inconnue », source « rapporté par le patient » ou « constaté par le praticien », version suivante, ligne remplacée, e-mail du praticien, date). Migration `decisions_parcours_v1` (PR de migration seule), à appliquer par release-db | **Faits de mise en œuvre et décision de révision**, consignés par le praticien du dossier seul, datés et motivés. Aucun motif d'efficacité, aucune colonne de score, de résultat ou d'attribution. Un motif ou une note peuvent dire un effet indésirable rapporté ; la note peut nommer un tiers. En ajout seul ; lu par le praticien du dossier seul ; aucune surface patient ; rien ne part à l'IA. Dossier mineur exclu. Effacées nommément avec le dossier (rubrique 8) |
 | **Santé — fiches d'assiette remises au patient (art. 9)** (`D-251`) | `FicheAssietteRemise` (dossier, clic « Valider pour diffusion » qui l'a remise, action du protocole, version de la fiche remise et son empreinte, date de remise) | **Catégorie particulière — qualification du responsable de traitement, rendue le 2026-09-28.** La table ne recopie aucun texte, mais la version désigne une assiette, et **le nom d'une assiette révèle une indication** (`D-251` §9). Elle est rangée en art. 9 comme le protocole qui la porte (`ProtocolDraft`). Elle a été créée par la migration M2 (lot 7, appliquée le 2026-09-28). Elle s'alimente au clic « Valider pour diffusion » depuis l'ouverture de `WN_FICHES_ASSIETTE` (2026-09-28) ; la lecture patient est ouverte depuis le 2026-09-29 (`WN_FICHES_ASSIETTE_LECTURE`). Elle était encore vide à cette seconde ouverture (constat par conteneur). Le patient en est averti par un e-mail neutre qui ne nomme ni l'assiette ni la fiche (type `document_remis` du registre des correspondances). Elle est effacée nommément avec le dossier. La lecture de la fiche par le patient s'accuse dans `PortailLecturePatient`, espèce `fiche_assiette`, sans horodatage ; [[D-297]] (déclaré le 2026-10-14, avant sa migration) y ajoute le seul jour de la première ouverture, vu du praticien, vide pour les lectures antérieures : colonne `lu_le` (type date, sans défaut), créée par la migration `20261018150000_portail_lectures_lu_le_v1` (2026-10-18, appliquée le même jour : release-db 39134432362, constat par conteneur), dont deux triggers imposent le jour de l'horloge de la base, refusent toute modification du jour et tout changement du document lu. Elle s'écrit depuis le code de ai (2026-10-18), avec la phrase « Votre lecture est datée » en tête de chaque page qui consigne une lecture — protocole compris — ; seul l'encart praticien « Documents remis » la lit, sans compte ni agrégat. Elle restait vide jusqu'au code de ai, qui l'écrit avec la phrase « Votre lecture est datée » |
 | **Santé — adressage sur signal d'alerte (art. 9)** ([[D-257]], déclaré le 2026-10-02 **avant** toute écriture) | `AdressageSignalAlerte` (dossier, acte `adressage` ou `revocation`, lettre d'adressage consignée qui porte la couverture, consultation porteuse, identifiants des constats de sécurité couverts, motif de révocation, e-mail du praticien, date) | **Même nature que `CorrespondanceMedecin`, dont elle est le prolongement.** Elle ne recopie aucun libellé de signal, mais chaque identifiant de constat est l'empreinte d'un signal d'alerte **déclaré par le patient** dans son anamnèse : la ligne dit « ce patient a déclaré un signal qui appelle un avis médical, et il a été adressé ». Créée par la migration `adressages_signal_alerte_v1` (appliquée le 2026-10-03, run `release-db` n° 131). **Alimentée depuis le LOT-03** : une ligne `adressage` s'écrit à chaque lettre d'adressage consignée, dans la même transaction ; une ligne `revocation` au geste de révocation motivé. **Lue depuis le LOT-04** par la chaîne C1 (lecteur unique `lireCouverturesAdressage`), et seulement drapeau `WN_LEVEE_ADRESSAGE` allumé ; éteint à la livraison, la table n'est lue par aucune surface hors la route de révocation, qui vérifie sa cible. Rien n'en part vers un tiers : la lettre, elle, est déjà déclarée. Effacée nommément avec le dossier |
 | **Santé — lettres d'adressage remises au patient (art. 9)** ([[D-262]], déclaré le 2026-10-03 **avant** toute écriture) | `LettreAdressageRemise` (dossier, clic « Valider pour diffusion » qui l'a remise, lettre d'adressage consignée, **texte de la lettre recopié tel qu'il est remis** et son empreinte SHA-256, date de remise) | **Même nature que `CorrespondanceMedecin`, dont elle recopie le texte** : la lettre nomme les signaux d'alerte déclarés par le patient. Instantané figé à la remise, pour qu'une révision du gabarit ne change pas ce que le patient a reçu. Créée par la migration `lettres_adressage_remises_v1` (LOT-01) ; Appliquée le 2026-10-04 (run `release-db` 37210794747). **Écrite depuis le LOT-02** au clic « Valider pour diffusion », derrière `WN_LETTRE_ADRESSAGE_PATIENT`, **éteint à la livraison** : aucune ligne tant qu'il l'est. **Lue depuis le LOT-03a** par le portail du patient (`api/portail/lettre-adressage`, son écran et son fil du jour), sous le même drapeau : le patient lit SA remise la plus récente ; une lettre révoquée après remise s'affiche « retirée », sans texte ni motif ; seule la révocation retire une lettre remise (une consultation porteuse dépassée, ou une lettre plus récente pas encore diffusée, la laissent servie — arbitrage Q-L1 du 2026-10-04). **Depuis le LOT-03b**, la version à imprimer (`api/portail/lettre-adressage/impression`) rend ce texte figé avec le prénom et le nom du patient et la date de la lettre, comme la lettre imprimée par le praticien ; le praticien voit, avant le clic de diffusion, la date de la lettre qui partira (jamais son texte, déjà dans l'onglet Correspondance). Destinataire : **le patient lui-même**, dans son portail — aucun tiers. Effacée nommément avec le dossier |
@@ -1492,6 +1539,14 @@ le 2026-10-21).**
 - **Effacement du dossier** : après les pièces et les constats qui les
   citent, les lignes de traitement et de données physiologiques, nommément
   (`patient/effacement.ts`).
+
+**Décisions de parcours ([[D-343]], BP-15, déclaré le 2026-10-22).**
+
+- **Durée** : celle du dossier ([[D-283]] §2). Aucune purge propre. Une
+  ligne remplacée ou retirée reste à l'historique, lisible par le
+  praticien.
+- **Effacement du dossier** : les décisions de parcours, nommément, avant
+  les versions du protocole qu'elles désignent (`patient/effacement.ts`).
 
 ## 9. Droits des personnes et modalités d'exercice
 

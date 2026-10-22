@@ -70,6 +70,199 @@ page et dix questions fermées. Les réponses fixeront :
 - le texte 2B (§2) ;
 - l'âge plancher et la transition à 18 ans, deux règles à écrire ;
 - le cahier de J3-mineurs.
+### D-343 — BP-15 : les décisions de parcours, des lignes en ajout seul ancrées sur une version du protocole — choix du patient, mise en œuvre réelle, révision du praticien ; motifs fermés, aucun motif d'efficacité ; le jour 0 et les quatre empreintes intouchés (LOT-15)
+
+- Date : 2026-10-22
+- Statut : accepté. Arbitrages du responsable rendus le 2026-10-20 (quatre
+  réponses et les listes de motifs, sur questions à options), consignés dans
+  la fiche LOT-15. Texte rédigé par l'assistant à partir de ces réponses ;
+  ses **précisions** (marquées *Précision* ci-dessous : les familles et
+  leurs fils, §3 ; la note d'une préférence et la date de l'événement, §4 ;
+  le refus levé, §5 ; la version suivante, §6 ; la version diffusée, §7 ; le
+  mineur, §8) sont **retenues telles quelles** par le responsable le
+  2026-10-22, sur questions à options, avec le paragraphe du dossier RGPD
+  (information du patient inchangée pour la migration).
+- Domaine : campagne bio-parcours, BP-15 (LOT-15) ; plan, fiche F08 ; une
+  table neuve en ajout seul ; `web/src/lib/patient/effacement.ts` ;
+  `docs/DOSSIER_RGPD.md`.
+- Applique le cadrage v3 (ligne « décisions de parcours », ligne BP-15,
+  invariant B5) ; [[D-266]] §7 (porteur de DC-40 et DC-48) et §11 (une
+  migration, deux PR) ; le patron de [[D-331]] §2, remplacement de la tête
+  et retrait (arbitrage 4). **Précise** [[D-255]] §2 (§9 ci-dessous).
+- **Une migration autorisée** : demandée par le cadrage (ligne BP-15) et par
+  le responsable le 2026-10-22 (ordre du lot : décision, migration,
+  release-db, code).
+- **Ne touche pas** : `protocol_drafts`, `protocol_diffusion_approvals`,
+  `protocol_checkins`, les ancres et leurs jalons ; le calcul du jour 0
+  (`calendrierSuivi.ts`) ; le panneau J21 (ses six libellés restent un
+  affichage guidé) ; aucun seuil, aucune dose, aucune règle clinique ; ni le
+  portail, ni l'IA, ni le scoring, ni l'orientation, ni le courrier au
+  médecin ne lisent une décision de parcours.
+
+**§1 — Le manque.** Une version du protocole se diffuse et ses jalons
+courent depuis le jour 0 ([[D-255]]) ; ce que le patient en fait n'est écrit
+nulle part. Le panneau J21 présente « continuer, alléger, densifier,
+pivoter… » sans rien persister (`J21DecisionPanel.tsx:7-11`) ; DC-40 exige
+« maintenir, ajuster ou arrêter » comme objet, DC-48 la temporalité de la
+mise en œuvre (début réel, interruption, reprise). Les objets voisins ne
+conviennent pas : `ArbitrageBiologique` juge une intention au regard d'un
+résultat ([[D-059]]) ; le signalement d'effet indésirable est une
+déclaration de sécurité du patient ; le check-in est la réponse du patient
+à un point d'étape.
+
+**§2 — L'ancrage : une version du protocole, l'action facultative**
+(arbitrage 1). Une ligne désigne **une version** (`protocol_drafts.id`, par
+une vraie clé, en `RESTRICT`, du même dossier) et, facultativement, **une
+action** de cette version (son `actionId`, un texte sans clé : l'action vit
+dans le contenu de la version). L'appartenance de l'action à la version se
+vérifie à la route, comme pour `ArbitrageBiologique`. **La révision vise la
+version entière** : elle ne porte jamais d'action.
+
+**§3 — Une table, trois familles, typées par CHECK** (cadrage : « une table
+typée par CHECK »). Chaque ligne porte une **nature** :
+
+| famille | nature | motif |
+|---|---|---|
+| choix du patient | `preference`, `refus` | obligatoire, liste « choix » |
+| mise en œuvre | `debut`, `reprise` | aucun |
+| mise en œuvre | `interruption`, `arret` | obligatoire, liste « interruption » |
+| révision | `revision`, issue `maintenir` | aucun |
+| révision | `revision`, issue `ajuster` ou `arreter` | obligatoire, liste « révision » |
+
+*Précision* — **les fils.** Une révision a **un seul fil par version** : la
+décision en vigueur sur la version est sa tête, et une révision nouvelle
+remplace la précédente. Les deux autres familles ouvrent **un fil par
+événement** : un début, une interruption, une reprise sont des faits
+successifs, qui coexistent ; le remplacement n'y sert qu'à **corriger**
+l'événement (sa date, son motif, sa note, sa source, ou sa nature au sein
+de la même famille — une interruption corrigée en arrêt). Un remplacement
+garde la version, l'action et la famille de la ligne qu'il remplace.
+
+*Précision* — **aucune règle de séquence.** Ni la base ni la route
+n'imposent d'ordre (une reprise sans interruption, une interruption sans
+début se posent) : ce sont des déclarations, et l'application ne complète
+jamais un événement manquant. Une séquence lacunaire se **dit** à l'écran,
+sans rien en déduire (DC-30).
+
+**§4 — Les motifs, la note, la date** (arbitrage 3, listes validées le
+2026-10-20). La base refuse un motif qui n'appartient pas à la liste de sa
+nature.
+
+| liste | codes |
+|---|---|
+| choix (préférence, refus) | `choix_du_patient`, `contrainte_pratique`, `avis_autre_soignant`, `autre` |
+| interruption, arrêt | `effet_indesirable_rapporte`, `contrainte_pratique`, `choix_du_patient`, `avis_autre_soignant`, `evenement_intercurrent`, `autre` |
+| révision (ajuster, arrêter) | `mise_en_oeuvre_incomplete`, `nouvelle_donnee_au_dossier`, `effet_indesirable_rapporte`, `choix_du_patient`, `autre` |
+
+**Aucun motif d'efficacité** (DC-39) : « inefficace », « objectif
+atteint », « amélioration » sont écartés ; rien n'attribue un changement à
+une action. Un motif neuf exige une décision et une migration. Un effet
+indésirable rapporté ici **ne remplace pas** le signalement de sécurité :
+l'écran le rappelle, la ligne ne déclenche rien.
+
+La **note** est facultative, **obligatoire avec `autre`** ; *Précision* :
+obligatoire aussi pour une **préférence** (sans elle, la ligne ne dit pas ce
+qui est préféré) ; 2000 caractères au plus, jamais réduite à des espaces.
+
+*Précision* — **la date de l'événement.** Début, interruption, reprise et
+arrêt portent la date où l'événement a eu lieu, **au jour**, ou `inconnue`
+écrit (DC-24 : elle ne se devine pas) ; jamais postérieure au jour de la
+pose. Elle est distincte de la date de la pose, que la base écrit. Choix et
+révision n'en portent pas : leur date est celle de la pose.
+
+**§5 — Le déclarant et la correction** (arbitrages 2 et 4). **Le praticien
+du dossier seul** pose, remplace, retire et lit, au cockpit ; **aucune
+surface patient**. Chaque ligne de choix ou de mise en œuvre dit sa
+**source** : `rapporte_par_patient` « rapporté par le patient » ou
+`constate_par_praticien` « constaté par le praticien ». Une révision n'en
+porte pas : c'est la décision du praticien. L'e-mail du praticien est
+inscrit sur chaque ligne ; la base refuse celui d'un autre praticien que
+celui du dossier.
+
+Ajout seul, patron de [[D-331]] §2 : une pose sur un fil qui a une tête la
+désigne (ligne remplacée) ; une pose qui ouvre un fil n'en désigne aucune ;
+un **retrait** ne vise que la tête et ne porte ni motif, ni note, ni date
+d'événement ; une ligne remplacée ou retirée ne se remplace ni ne se
+retire. *Précision* — **le refus levé** : un refus que le patient lève se
+**retire** ; le refus et son retrait restent à l'historique, lisibles. La
+base le tient, sous le verrou du dossier.
+
+**§6 — La version suivante** (cadrage : « révision … ; version suivante »).
+*Précision* — une révision `ajuster` peut désigner la **version suivante**
+(une vraie clé vers `protocol_drafts`, du même dossier, autre que la version
+révisée). Elle est facultative à la pose, la version suivante n'existant
+souvent pas encore ; le praticien la désigne ensuite en remplaçant la tête
+de la révision. Seule `ajuster` la porte. La désigner ne crée, ne diffuse ni
+ne relie aucune version : le chaînage des versions (`supersedes_draft_id`)
+ne change pas.
+
+**§7 — Quelle version.** *Précision* — un choix (préférence, refus) se pose
+sur toute version du dossier ; un événement de mise en œuvre et une
+révision, seulement sur une version **diffusée** (au moins une approbation
+de diffusion recevable, `estDiffusionRecevable`) : avant la diffusion, rien
+n'est à mettre en œuvre ni à réviser. La route le vérifie ; la base, non
+(l'approbation est une autre table).
+
+**§8 — Le mineur.** *Précision* — comme en [[D-335]] §6 au cockpit, la route
+refuse un dossier mineur (cadrage v3 : mineur hors périmètre de la
+campagne).
+
+**§9 — Le jour 0 et les quatre empreintes ne bougent pas** (cadrage v3,
+invariant B5 ; [[D-255]] précisée). Aucune décision de parcours n'écrit dans
+`protocol_drafts`, `protocol_diffusion_approvals`, `protocol_checkins` ni
+dans les ancres. **Le début réel n'est pas le jour 0** : le jour 0 reste la
+première diffusion de la version du cycle ; le début réel s'affiche à côté,
+sans le remplacer. Une révision `ajuster` ne relance rien par elle-même :
+seule la diffusion d'une version qui est un pivot relance le calendrier
+([[D-255]] §2, inchangé). Une révision `arreter` et un arrêt de mise en
+œuvre ne ferment ni le cycle ni ses jalons dans ce lot ; ce que le suivi en
+fait relève de BP-20. **Les quatre empreintes** de chaque version —
+`decision_card_input_hash`, `snapshot_input_hash`, `review_input_hash`,
+`input_hash` — restent égales. **Banc comparatif** au CI : sur une fixture,
+le jour 0 de chaque cycle (`joursZeroParCycle`) et les quatre empreintes de
+chaque version sont identiques avant et après la pose de chaque nature ; un
+banc des lecteurs épingle que ni le calendrier ni le versionnement ne lisent
+la table.
+
+**§10 — L'objet : une table en ajout seul.** `decisions_parcours`, sur le
+patron de [[D-331]] et [[D-335]] : clé d'ordre et date posées par la base,
+inantidatables ; UPDATE et TRUNCATE refusés par trigger ; DELETE réservé à
+l'effacement nommé du dossier ; RLS activée sans politique ; une tête au
+plus par fil, sous le verrou du dossier. Colonnes : le dossier, l'acte
+(`pose` ou `retrait`), la version, l'action facultative, la nature,
+l'issue (révision seule), le motif, la note, la date de l'événement et son
+caractère inconnu, la source, la version suivante (`ajuster` seule), la
+ligne remplacée, l'e-mail du praticien, la date. Un **contrat SQL négatif
+propre**, joué au CI : aucune colonne d'efficacité, de score, de résultat,
+d'attribution ni de valeur ; aucune nature, issue ou motif hors des listes ;
+aucune action sur une révision ; aucune version suivante hors `ajuster`.
+
+**§11 — Qui lit, drapeau, effacement.** Le praticien du dossier seul, au
+cockpit. Le drapeau `WN_DECISIONS_PARCOURS` naît avec le code qui le lit,
+éteint, fail-closed ([[D-081]]). L'effacement d'un dossier supprime
+nommément les décisions de parcours **avant** les versions du protocole
+qu'elles désignent ; le banc de complétude les compte. Déclaration au
+dossier RGPD **avant la table**, validée par le responsable avant le merge
+de la migration ; information du patient inchangée pour la migration (aucune
+surface patient, tables vides jusqu'au code), à relire avant l'ouverture du
+suivi (BP-21a).
+
+**§12 — Exécution.** Trois PR : cette décision et la déclaration RGPD ;
+puis la migration seule (table, effacement nommé, contrat négatif, banc de
+deux sessions), relue, release-db approuvée et déclenchée par le
+responsable, sentinelle et constat par conteneur ([[D-087]]), une seule
+release-db en vol ([[D-248]]) ; puis le code consommateur (route du cockpit,
+panneau de la version, bancs du jour 0 et des empreintes, banc des
+lecteurs) sous `WN_DECISIONS_PARCOURS` éteint.
+
+**§13 — Hors de ce lot.** Toute surface patient ; la frise et la revue de
+cycle (BP-20) ; toute attribution d'un changement à une action (DC-39,
+marche 4) ; la persistance des six libellés du J21 ; un arrêt qui fermerait
+les jalons ; la décision de parcours comme pièce de constat ; toute
+proposition de révision (BP-19).
+
+- Conséquences : fragment `changelog.d/2026-10-22-d343-decisions-parcours.md` ;
+  fiche LOT-15 ; paragraphe du dossier RGPD ; puis la PR de migration seule.
 
 ### D-342 — Restes de F45 et des mineurs : at remplacée par un contrôle du praticien au masquage, as close, repère du mineur en attente dans la liste, 15–17 ans avant J3-mineurs, droits d'un parent à la main
 
