@@ -8,7 +8,9 @@ import { DeclarationsPatient } from './DeclarationsPatient';
 // Elle le dit, offre « Réessayer », et le signale à la fiche englobante, qui
 // ne se valide pas sans elle (revue CodeRabbit, P1).
 // Le rappel part d'un effet passif, APRÈS le rendu de l'alerte : il s'attend
-// (`waitFor`), sinon l'assertion court devant l'effet sous charge.
+// (`waitFor`). Démontré dans le code : sans attente, l'assertion peut devancer
+// l'effet. Observé : ce banc a rougi une fois le CI de main (db9018ee) et un
+// T2 local ; l'assertion en cause n'est pas identifiée (journal CI tronqué).
 
 const LUES = {
   ok: true,
