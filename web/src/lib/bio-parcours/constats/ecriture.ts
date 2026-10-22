@@ -17,6 +17,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { annulationParLigne, correctionsParLigne } from '@/lib/biology-library/filCorrection';
 import { annulationsActives, verrouillerCleDuResultat } from '@/lib/biology-library/annulations';
+import { verrouillerTraitements } from '@/lib/physio-traitements/ecriture';
 import { VALIDITES_RETENUES } from './aRelire';
 import type { DemandeConstat } from './demande';
 import type { StructureDuParcours } from './structure';
@@ -87,6 +88,28 @@ async function verifierPiecesReponse(tx: Prisma.TransactionClient, idPatient: st
   return [...ids].sort();
 }
 
+/**
+ * Les lignes de traitement citées ([[D-335]] §7), sous le verrou des
+ * traitements du dossier — celui que prend le trigger de la pièce, APRÈS les
+ * clés de biologie : l'ordre des verrous reste celui de l'écriture des pièces.
+ * Chacune est une pose de ce dossier que rien ne vise encore.
+ */
+async function verifierPiecesTraitement(tx: Prisma.TransactionClient, idPatient: string, ids: readonly string[]) {
+  if (ids.length === 0) return [];
+  await verrouillerTraitements(tx, idPatient);
+  const citees = await tx.traitementEnCours.findMany({
+    where: { idPatient, id: { in: [...ids] } },
+    select: { id: true, acte: true },
+  });
+  if (citees.length !== ids.length || citees.some(t => t.acte !== 'pose')) throw new RefusConstat('piece_inconnue');
+  const successeur = await tx.traitementEnCours.findFirst({
+    where: { idLigneRemplacee: { in: [...ids] } },
+    select: { id: true },
+  });
+  if (successeur) throw new RefusConstat('traitement_remplace');
+  return [...ids].sort();
+}
+
 /** Écrit le geste, ou lève `RefusConstat`. L'auteur est l'e-mail de session. */
 export async function ecrireConstat(
   tx: Prisma.TransactionClient,
@@ -109,6 +132,7 @@ export async function ecrireConstat(
   if (demande.remplace !== tete) throw new RefusConstat('tete_changee');
   const resultats = await verifierPiecesResultat(tx, idPatient, demande.pieces.filter(p => p.type === 'resultat').map(p => p.id));
   const reponses = await verifierPiecesReponse(tx, idPatient, demande.pieces.filter(p => p.type === 'reponse').map(p => p.id));
+  const traitements = await verifierPiecesTraitement(tx, idPatient, demande.pieces.filter(p => p.type === 'traitement').map(p => p.id));
 
   const constat = await tx.constatPraticien.create({
     data: {
@@ -125,10 +149,12 @@ export async function ecrireConstat(
     },
     select: { id: true },
   });
-  // Dans l'ordre des verrous : les lignes par clé, puis les passations.
+  // Dans l'ordre des verrous : les lignes par clé, puis les passations, puis
+  // les traitements ([[D-335]] §7).
   const pieces = [
     ...resultats.map(idResultat => ({ idConstat: constat.id, idPatient, idResultat })),
     ...reponses.map(idQuestionnaireReponse => ({ idConstat: constat.id, idPatient, idQuestionnaireReponse })),
+    ...traitements.map(idTraitement => ({ idConstat: constat.id, idPatient, idTraitement })),
   ];
   if (pieces.length > 0) await tx.pieceConstatPraticien.createMany({ data: pieces });
   return constat;

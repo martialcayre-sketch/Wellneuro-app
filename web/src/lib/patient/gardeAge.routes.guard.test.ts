@@ -24,6 +24,8 @@ const GARDEES = [
   'portail/comptes-rendus',
   // Dépôt d'un document par le patient : garde d'âge fermée (D-330).
   'portail/documents',
+  // Sexe déclaré, statut menstruel et traitements en cours (D-335 §6).
+  'portail/physio-traitements',
   'portail/valider',
 ];
 

@@ -5,7 +5,8 @@
 // ne la lisent (`lecteursConstats.guard.test.ts`).
 //
 // AUCUNE VALEUR NE SORT D'ICI : une pièce de biologie se dit par son analyte
-// et sa date de prélèvement, une passation par son titre et sa date. La
+// et sa date de prélèvement, une passation par son titre et sa date, une
+// ligne de traitement par sa nature, son nom et sa date ([[D-335]] §7). La
 // dérivation (`aRelire.ts`) est pure ; ce module ne fait que lire. Un échec
 // de lecture lève : il ne se replie jamais sur « aucun constat ».
 
@@ -19,6 +20,7 @@ import {
   VALIDITES_RETENUES,
   type ActeConstatLu,
   type EtatDuDossier,
+  type PieceLue,
   type ReponseCitee,
   type ResultatCite,
 } from './aRelire';
@@ -28,7 +30,8 @@ type Client = Prisma.TransactionClient | typeof prisma;
 
 export type PieceDecrite =
   | { type: 'resultat'; id: string; analyteCode: string; analyteLibelle: string | null; preleveLe: string }
-  | { type: 'reponse'; id: string; titre: string; dateReponse: string };
+  | { type: 'reponse'; id: string; titre: string; dateReponse: string }
+  | { type: 'traitement'; id: string; nature: string | null; nom: string | null; acteLe: string };
 
 export type ActeConstatDecrit = Omit<ActeConstatLu, 'pieces'> & { pieces: PieceDecrite[] };
 
@@ -49,6 +52,8 @@ export type ConstatsDuDossier = {
 export type ContexteLecture = {
   hypothesesEnVigueur: ReadonlySet<string>;
   aujourdhui: string;
+  /** Sous `WN_PHYSIO_TRAITEMENTS` : les têtes de traitement s'offrent en pièces ([[D-335]] §7). */
+  traitementsCitables?: boolean;
 };
 
 const iso = (d: Date) => d.toISOString();
@@ -89,9 +94,22 @@ export async function lireConstatsDuDossier(
       idConstatRemplace: true,
       praticienEmail: true,
       acteLe: true,
-      pieces: { select: { idResultat: true, idQuestionnaireReponse: true } },
+      pieces: { select: { idResultat: true, idQuestionnaireReponse: true, idTraitement: true } },
     },
   });
+
+  // Les lignes de traitement ([[D-335]] §7) : lues si l'écran peut en citer,
+  // ou si un constat en cite une — drapeau éteint et aucune pièce de
+  // traitement, la table n'est pas lue.
+  const lireTraitements = contexte.traitementsCitables === true
+    || actes.some(a => a.pieces.some(p => p.idTraitement !== null));
+  const traitements = lireTraitements
+    ? await client.traitementEnCours.findMany({
+      where: { idPatient },
+      select: { id: true, acte: true, nature: true, nom: true, acteLe: true, idLigneRemplacee: true },
+    })
+    : [];
+  const visees = new Set(traitements.map(t => t.idLigneRemplacee).filter((id): id is string => id !== null));
 
   // Toutes les lignes du dossier : celles que citent les pièces, celles de
   // leurs fils, les prélèvements plus récents, et les citables.
@@ -123,6 +141,7 @@ export async function lireConstatsDuDossier(
       reponses.map(r => [r.id, { idQuestionnaire: r.idQuestionnaire, dateReponse: iso(r.dateReponse), statutValidite: r.statutValidite }]),
     ),
     derniereReponse: new Map(),
+    traitementsRemplaces: new Map(traitements.map(t => [t.id, visees.has(t.id)])),
     hypothesesEnVigueur: contexte.hypothesesEnVigueur,
     aujourdhui: contexte.aujourdhui,
   };
@@ -141,15 +160,32 @@ export async function lireConstatsDuDossier(
     if (deja === undefined || r.dateReponse.getTime() > Date.parse(deja)) derniereReponse.set(r.idQuestionnaire, iso(r.dateReponse));
   }
 
-  const decrire = (piece: { idResultat: string | null; idQuestionnaireReponse: string | null }): PieceDecrite | null => {
+  const decrireTraitement = (t: (typeof traitements)[number]): PieceDecrite =>
+    ({ type: 'traitement', id: t.id, nature: t.nature, nom: t.nom, acteLe: iso(t.acteLe) });
+
+  // Trois clés, une seule renseignée par pièce (CHECK `une_piece`) : chacune
+  // se décode à son type — une pièce qui n'est pas un résultat n'est pas
+  // forcément une réponse (revue `wn-reviewer` de la migration).
+  type PieceBrute = { idResultat: string | null; idQuestionnaireReponse: string | null; idTraitement: string | null };
+  const decrire = (piece: PieceBrute): PieceDecrite | null => {
     if (piece.idResultat !== null) {
       const l = lignes.find(x => x.id === piece.idResultat);
       return l
         ? { type: 'resultat', id: l.id, analyteCode: l.analyteCode, analyteLibelle: libelles.get(l.analyteCode) ?? null, preleveLe: iso(l.preleveLe) }
         : null;
     }
+    if (piece.idTraitement !== null) {
+      const t = traitements.find(x => x.id === piece.idTraitement);
+      return t ? decrireTraitement(t) : null;
+    }
     const r = reponses.find(x => x.id === piece.idQuestionnaireReponse);
     return r ? { type: 'reponse', id: r.id, titre: r.titre, dateReponse: iso(r.dateReponse) } : null;
+  };
+  const pieceLue = (p: PieceBrute): PieceLue | null => {
+    if (p.idResultat !== null) return { type: 'resultat', idResultat: p.idResultat };
+    if (p.idTraitement !== null) return { type: 'traitement', idTraitement: p.idTraitement };
+    if (p.idQuestionnaireReponse !== null) return { type: 'reponse', idReponse: p.idQuestionnaireReponse };
+    return null;
   };
 
   const lus: ActeConstatLu[] = actes.map(a => ({
@@ -164,9 +200,7 @@ export async function lireConstatsDuDossier(
     idConstatRemplace: a.idConstatRemplace,
     praticienEmail: a.praticienEmail,
     acteLe: iso(a.acteLe),
-    pieces: a.pieces.map(p => (p.idResultat !== null
-      ? { type: 'resultat' as const, idResultat: p.idResultat }
-      : { type: 'reponse' as const, idReponse: p.idQuestionnaireReponse ?? '' })),
+    pieces: a.pieces.map(pieceLue).filter((p): p is PieceLue => p !== null),
   }));
   const piecesBrutes = new Map(actes.map(a => [a.id, a.pieces]));
   const decrireActe = (a: ActeConstatLu): ActeConstatDecrit => ({
@@ -190,6 +224,13 @@ export async function lireConstatsDuDossier(
       .filter(r => VALIDITES_RETENUES.includes(r.statutValidite))
       .sort((a, b) => b.dateReponse.getTime() - a.dateReponse.getTime())
       .map(r => ({ type: 'reponse' as const, id: r.id, titre: r.titre, dateReponse: iso(r.dateReponse) })),
+    // Les têtes de traitement — en cours ou arrêtées : une pose que rien ne vise.
+    ...(contexte.traitementsCitables === true
+      ? traitements
+        .filter(t => t.acte === 'pose' && !visees.has(t.id))
+        .sort((a, b) => b.acteLe.getTime() - a.acteLe.getTime())
+        .map(decrireTraitement)
+      : []),
   ];
 
   return { hypotheses, citables };

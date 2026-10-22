@@ -130,3 +130,21 @@ describe('retrait', () => {
     expect(raison({ acte: 'modification', hypothese: 'HYP_TEST_A' })).toBe('acte_invalide');
   });
 });
+
+// [[D-335]] §7 : une ligne de traitement se cite en pièce sous
+// `WN_PHYSIO_TRAITEMENTS` seulement ; drapeau éteint, le type est inconnu.
+describe('pièce de traitement (D-335 §7)', () => {
+  const avecTraitement = { ...POSE, pieces: [{ type: 'resultat', id: 'res1' }, { type: 'traitement', id: 't1' }] };
+
+  it('drapeau éteint : refusée comme une pièce illisible', () => {
+    expect(raison(avecTraitement)).toBe('pieces_invalides');
+  });
+
+  it('drapeau allumé : lue, à côté des autres', () => {
+    const lu = lireDemandeConstat(avecTraitement, SIGNEE, AUJOURDHUI, true);
+    expect(lu.ok && lu.demande.acte === 'pose' && lu.demande.pieces).toEqual([
+      { type: 'resultat', id: 'res1' },
+      { type: 'traitement', id: 't1' },
+    ]);
+  });
+});

@@ -130,7 +130,7 @@ describe('GET — les constats par hypothèse, sans aucune valeur', () => {
       idConstatRemplace: null,
       praticienEmail: PRATICIEN,
       acteLe: new Date('2026-10-10T09:00:00.000Z'),
-      pieces: [{ idResultat: 'res1', idQuestionnaireReponse: null }],
+      pieces: [{ idResultat: 'res1', idQuestionnaireReponse: null, idTraitement: null }],
     }]);
     const response = await lecture();
     expect(response.status).toBe(200);

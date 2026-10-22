@@ -179,24 +179,53 @@ function decrireEntree(e: Record<string, string>): string {
   return `${nom}${dose}`.trim();
 }
 
+/** Un traitement en vigueur, tel que la ligne de vigilance le lit : nom et dose ([[D-335]] §8). */
+export type TraitementPourVigilance = { nature: string | null; nom: string | null; dose: string | null };
+
+/** Les deux sources, nommées quand elles coexistent ([[D-335]] §8, « sans fusion »). */
+const SOURCE_ANAMNESE = ' (déclarés à l’anamnèse)';
+const SOURCE_LIGNES = ' (lignes datées du dossier)';
+
 /**
  * Extrait les points de vigilance garantis à partir de l'anamnèse : signaux
  * d'alerte médicaux cochés, traitements et automédication en cours. Ces items
  * sont ajoutés en tête des points de vigilance de la synthèse, indépendamment
  * de ce que produit le LLM. Retourne [] si rien à signaler.
+ *
+ * `lignesEnVigueur` ([[D-335]] §8, BP-13) : les traitements en vigueur du
+ * dossier, passés sous `WN_PHYSIO_TRAITEMENTS` seulement — `null` sinon, et
+ * la sortie est alors celle d'avant. Ils prennent la MÊME forme que ceux de
+ * l'anamnèse (nom, dose), dans un item à eux : les groupes d'une anamnèse
+ * ancienne restent lus, et quand les deux sources portent une même nature,
+ * chacune est nommée, sans fusion. Ce texte est écrit par le code APRÈS la
+ * réponse de l'IA : rien de ce lot ne part au modèle.
  */
-export function extraireVigilanceDeterministe(anamnese: unknown): string[] {
+export function extraireVigilanceDeterministe(
+  anamnese: unknown,
+  lignesEnVigueur: readonly TraitementPourVigilance[] | null = null,
+): string[] {
   const a = asRecord(anamnese);
   const out: string[] = [];
+  const lignes = (nature: string) => (lignesEnVigueur ?? [])
+    .filter(l => l.nature === nature)
+    .map(l => decrireEntree({ nom: l.nom ?? '', ...(l.dose ? { dose: l.dose } : {}) }))
+    .filter(Boolean);
 
   for (const signal of liste(a.signaux_alerte)) {
     out.push(`Signal d'alerte signalé par le patient : ${signal} — avis médical à évaluer en priorité.`);
   }
 
   const medicaments = entrees(a.medicaments).map(decrireEntree).filter(Boolean);
+  const medicamentsLignes = lignes('medicament');
+  const deuxSourcesMedicaments = medicaments.length > 0 && medicamentsLignes.length > 0;
   if (medicaments.length) {
     out.push(
-      `Traitements médicamenteux en cours : ${medicaments.join(' ; ')} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`
+      `Traitements médicamenteux en cours${deuxSourcesMedicaments ? SOURCE_ANAMNESE : ''} : ${medicaments.join(' ; ')} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`
+    );
+  }
+  if (medicamentsLignes.length) {
+    out.push(
+      `Traitements médicamenteux en cours${SOURCE_LIGNES} : ${medicamentsLignes.join(' ; ')} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`
     );
   }
 
@@ -206,8 +235,13 @@ export function extraireVigilanceDeterministe(anamnese: unknown): string[] {
   }
 
   const complements = entrees(a.complements).map(decrireEntree).filter(Boolean);
+  const complementsLignes = lignes('complement');
+  const deuxSourcesComplements = complements.length > 0 && complementsLignes.length > 0;
   if (complements.length) {
-    out.push(`Compléments alimentaires en cours : ${complements.join(' ; ')} — vérifier les redondances et interactions.`);
+    out.push(`Compléments alimentaires en cours${deuxSourcesComplements ? SOURCE_ANAMNESE : ''} : ${complements.join(' ; ')} — vérifier les redondances et interactions.`);
+  }
+  if (complementsLignes.length) {
+    out.push(`Compléments alimentaires en cours${SOURCE_LIGNES} : ${complementsLignes.join(' ; ')} — vérifier les redondances et interactions.`);
   }
 
   return out;

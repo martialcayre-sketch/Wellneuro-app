@@ -60,6 +60,7 @@ const ROUTES: readonly string[] = [
   '/portail/:idPatient/informations',
   '/portail/:idPatient/questionnaires',
   '/portail/:idPatient/questionnaires/:idAssignation',
+  '/portail/:idPatient/renseignements',
   '/portail/:idPatient/suivi',
   // Dashboard praticien.
   '/dashboard',

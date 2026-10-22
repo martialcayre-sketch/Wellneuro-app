@@ -21,6 +21,7 @@ export const MESSAGES_REFUS_CONSTAT: Record<string, string> = {
   piece_corrigee: 'Un résultat cité a été corrigé : citez la valeur qui fait foi.',
   piece_annulee: 'Un résultat cité est annulé : il ne se cite plus.',
   passation_exclue: 'Une passation citée est exclue du raisonnement : elle ne se cite plus.',
+  traitement_remplace: 'Un traitement cité a changé depuis votre lecture : citez la ligne en vigueur.',
   remplacement_invalide: 'Le constat à remplacer est mal désigné. Rechargez le parcours.',
   tete_changee: 'Le constat en vigueur a changé depuis votre lecture. Rechargez le parcours.',
   refus_base: 'La base a refusé ce geste. Rechargez le parcours et reprenez-le.',

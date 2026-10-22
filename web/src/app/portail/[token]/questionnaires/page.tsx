@@ -30,6 +30,7 @@ import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVot
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
 import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
 import { LienDepotDocuments } from '@/components/patient-companion/LienDepotDocuments';
+import { LienFicheRenseignements } from '@/components/physio-traitements/LienFicheRenseignements';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
@@ -457,6 +458,9 @@ export default function QuestionnairesHubPage() {
         {/* Le dépôt d'un document ([[D-330]]) : sous son propre drapeau, le lien
             n'existe que si la route répond « ouvert ». */}
         <LienDepotDocuments token={token} />
+        {/* La fiche de renseignements en lignes datées ([[D-335]]) : sous son
+            propre drapeau, le lien n'existe que si la route répond « ouvert ». */}
+        <LienFicheRenseignements token={token} />
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>

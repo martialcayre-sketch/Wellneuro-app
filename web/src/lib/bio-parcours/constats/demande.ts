@@ -17,7 +17,7 @@ import {
 } from './liste';
 import type { StructureDuParcours } from './structure';
 
-export type PieceDemandee = { type: 'resultat' | 'reponse'; id: string };
+export type PieceDemandee = { type: 'resultat' | 'reponse' | 'traitement'; id: string };
 
 export type DemandeConstat =
   | {
@@ -58,7 +58,11 @@ function estDateCivile(valeur: string): boolean {
 
 const absent = (v: unknown) => v === undefined || v === null;
 
-function lirePieces(valeur: unknown): PieceDemandee[] | 'trop' | null {
+/**
+ * Les pièces citées. Une ligne de traitement ([[D-335]] §7) ne se cite que
+ * sous `WN_PHYSIO_TRAITEMENTS` : drapeau éteint, le type est inconnu.
+ */
+function lirePieces(valeur: unknown, traitementsCitables: boolean): PieceDemandee[] | 'trop' | null {
   if (absent(valeur)) return [];
   if (!Array.isArray(valeur)) return null;
   if (valeur.length > PIECES_MAX) return 'trop';
@@ -68,10 +72,11 @@ function lirePieces(valeur: unknown): PieceDemandee[] | 'trop' | null {
     if (brute === null || typeof brute !== 'object') return null;
     const { type, id } = brute as { type?: unknown; id?: unknown };
     const cle = identifiant(id);
-    if ((type !== 'resultat' && type !== 'reponse') || !cle) return null;
+    const typeConnu = type === 'resultat' || type === 'reponse' || (traitementsCitables && type === 'traitement');
+    if (!typeConnu || !cle) return null;
     if (vues.has(`${type}:${cle}`)) return null;
     vues.add(`${type}:${cle}`);
-    pieces.push({ type, id: cle });
+    pieces.push({ type: type as PieceDemandee['type'], id: cle });
   }
   return pieces;
 }
@@ -80,6 +85,7 @@ export function lireDemandeConstat(
   corps: Record<string, unknown>,
   structure: StructureDuParcours,
   aujourdhui: string,
+  traitementsCitables = false,
 ): LectureDemande {
   const acte = corps.acte;
   if (acte !== 'pose' && acte !== 'retrait') return { ok: false, raison: 'acte_invalide' };
@@ -123,7 +129,7 @@ export function lireDemandeConstat(
     aRevoirLe = corps.aRevoirLe;
   }
 
-  const pieces = lirePieces(corps.pieces);
+  const pieces = lirePieces(corps.pieces, traitementsCitables);
   if (pieces === null) return { ok: false, raison: 'pieces_invalides' };
   if (pieces === 'trop') return { ok: false, raison: 'pieces_trop_nombreuses' };
   if (VERDICTS_A_PIECE.includes(verdict) && pieces.length === 0) return { ok: false, raison: 'piece_requise' };

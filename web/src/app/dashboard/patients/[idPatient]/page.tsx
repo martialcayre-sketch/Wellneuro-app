@@ -21,6 +21,7 @@ import { AgendaAliFeatureProvider } from '@/components/agenda-alimentaire/Agenda
 import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled, isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { isBioConstatEnabled } from '@/lib/bio-parcours/constats/drapeau';
 import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
+import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
 
 export default async function FichePatientPage({
   params,
@@ -96,6 +97,9 @@ export default async function FichePatientPage({
             // unique (24 h) » — alors que les deux surfaces sont censées offrir
             // les mêmes gestes (constat de revue, 2026-09-17).
             lienMagiqueActif={isG4LienMagiqueEnabled()}
+            // Même règle pour les données physiologiques et les traitements
+            // ([[D-335]] §9) : éteint, le tiroir n'est pas monté.
+            physioTraitementsActif={isPhysioTraitementsEnabled()}
           />
           {typeCarteLu && (
             <ConsignerLectureFil

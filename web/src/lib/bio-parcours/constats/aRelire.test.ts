@@ -101,6 +101,16 @@ describe('raisonsARelire (D-331 §5)', () => {
     expect(r).toEqual(['nouveau_prelevement', 'date_echue', 'hypothese_hors_structure']);
     expect(r).toEqual(RAISONS_A_RELIRE.filter(x => r.includes(x)));
   });
+
+  // Huitième condition ([[D-335]] §7) : la ligne de traitement citée n'est
+  // plus la tête de son fil — une confirmation compte, comme un retrait.
+  it('un traitement cité remplacé ou retiré rend le constat « à relire »', () => {
+    const constat = acte({ pieces: [{ type: 'traitement', idTraitement: 't1' }] });
+    expect(raisonsARelire(constat, etat({ traitementsRemplaces: new Map([['t1', false]]) }))).toEqual([]);
+    expect(raisonsARelire(constat, etat({ traitementsRemplaces: new Map([['t1', true]]) }))).toEqual(['traitement_remplace']);
+    // Une pièce de traitement n'est ni un résultat ni une réponse.
+    expect(raisonsARelire(constat, etat())).toEqual([]);
+  });
 });
 
 describe('erreurs — le code Postgres, jamais le message', () => {
