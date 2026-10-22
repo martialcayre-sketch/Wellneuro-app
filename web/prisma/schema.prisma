@@ -94,6 +94,8 @@ model Patient {
   // datées (D-335, BP-13).
   donneesPhysiologiques DonneePhysiologique[]
   traitementsEnCours    TraitementEnCours[]
+  // Décisions de parcours sur une version du protocole (D-343, BP-15).
+  decisionsParcours     DecisionParcours[]
   // File durable des lectures (D-282, G3).
   travauxExtractionBiologique TravailExtractionBiologique[]
   // Pages masquées avant l'envoi à Anthropic (D-284 §5, lot j).
@@ -1385,6 +1387,10 @@ model ProtocolDraft {
   arbitragesBiologiques ArbitrageBiologique[]
   // Signalements d'effet indésirable rattachés à ce protocole (D-101, DC-42).
   effetsIndesirables    TrustAdverseEffectReport[]
+  // Décisions de parcours sur cette version, et révisions qui la désignent
+  // comme version suivante (D-343, BP-15).
+  decisionsParcours          DecisionParcours[] @relation("DecisionParcoursVersion")
+  decisionsParcoursSuivantes DecisionParcours[] @relation("DecisionParcoursVersionSuivante")
 
   @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
   @@index([decisionCardId], map: "c2a_draft_decision_card_idx")
@@ -3228,6 +3234,62 @@ model TraitementEnCours {
   @@unique([ordre], map: "traitements_en_cours_ordre_key")
   @@index([idPatient, ordre], map: "traitements_en_cours_patient_ordre_idx")
   @@map("traitements_en_cours")
+}
+
+/// Une décision de parcours sur une version du protocole ([[D-343]], BP-15),
+/// ou son retrait : un choix du patient, un événement de mise en œuvre ou une
+/// révision du praticien. Ajout seul (UPDATE et TRUNCATE refusés par
+/// trigger). Une révision a un fil par version ; choix et mise en œuvre, un
+/// fil par événement. Aucun motif d'efficacité, aucune valeur. N'écrit rien
+/// dans les versions : le jour 0 et les empreintes ne bougent pas. Les refus
+/// vivent en base (migration `decisions_parcours_v1`).
+model DecisionParcours {
+  id                String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre             BigInt    @default(autoincrement()) @map("ordre")
+  idPatient         String    @map("id_patient")
+  /// `pose` | `retrait` (CHECK).
+  acte              String    @map("acte")
+  /// La version du protocole (`protocol_drafts.id`), du même dossier.
+  idVersion         String    @map("id_version")
+  /// L'`actionId` d'une action de la version, facultatif ; jamais sur une
+  /// révision.
+  idAction          String?   @map("id_action")
+  /// Pose seule : `preference` | `refus` | `debut` | `interruption` |
+  /// `reprise` | `arret` | `revision` (CHECK).
+  nature            String?   @map("nature")
+  /// Révision seule : `maintenir` | `ajuster` | `arreter`.
+  issue             String?   @map("issue")
+  /// Code de la liste fermée de sa nature ([[D-343]] §4, CHECK).
+  motif             String?   @map("motif")
+  /// 2000 caractères au plus ; obligatoire avec `autre` et pour une préférence.
+  note              String?   @map("note")
+  /// Mise en œuvre seule : la date de l'événement, au jour…
+  evenementLe       DateTime? @map("evenement_le") @db.Date
+  /// … ou `true` : « inconnue », écrit.
+  evenementInconnu  Boolean?  @map("evenement_inconnu")
+  /// Choix et mise en œuvre : `rapporte_par_patient` | `constate_par_praticien`.
+  source            String?   @map("source")
+  /// Révision `ajuster` seule : la version suivante, du même dossier.
+  idVersionSuivante String?   @map("id_version_suivante")
+  /// La tête remplacée (pose) ou retirée (retrait) ; un successeur au plus.
+  idLigneRemplacee  String?   @unique @map("id_ligne_remplacee")
+  /// Le praticien du dossier (trigger).
+  praticienEmail    String    @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe            DateTime  @default(now()) @map("acte_le")
+
+  patient         Patient            @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  version         ProtocolDraft      @relation("DecisionParcoursVersion", fields: [idVersion], references: [id], onDelete: Restrict)
+  versionSuivante ProtocolDraft?     @relation("DecisionParcoursVersionSuivante", fields: [idVersionSuivante], references: [id], onDelete: Restrict)
+  remplace        DecisionParcours?  @relation("RemplacementDecisionParcours", fields: [idLigneRemplacee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar     DecisionParcours?  @relation("RemplacementDecisionParcours")
+
+  @@unique([ordre], map: "decisions_parcours_ordre_key")
+  @@index([idPatient, ordre], map: "decisions_parcours_patient_ordre_idx")
+  @@index([idVersion], map: "decisions_parcours_id_version_idx")
+  @@index([idVersionSuivante], map: "decisions_parcours_id_version_suivante_idx")
+  @@map("decisions_parcours")
 }
 
 // ───────────────────────────────────────────────────────────────────────────

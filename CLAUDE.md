@@ -137,8 +137,10 @@ session réécrit tout le cache. `/model` seulement juste après `/clear`.
 ## Garde-fous d'écriture (hooks)
 
 Trois verdicts — **refus**, **demande**, **silence**. Leur portée n'est pas
-absolue, et la croire absolue est le risque : le crochet d'écriture n'arme que
-`Edit|Write` — une écriture par `Bash` n'y passe pas. Détail :
+absolue, et la croire absolue est le risque : le crochet d'écriture juge
+`Edit|Write` et, depuis t18, les écritures `Bash` aux formes reconnues
+(redirection, `tee`, `sed -i`, `cp`…) — même verdict ; un interpréteur qui
+cite un fichier protégé demande ; un script opaque reste en silence. Détail :
 `.claude/rules/hooks-garde-fous.md`.
 
 ## Validation

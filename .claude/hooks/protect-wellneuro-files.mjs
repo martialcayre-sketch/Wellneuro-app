@@ -15,8 +15,17 @@
 // gate restait sans filet tout le reste de la journée (constaté le 2026-07-20).
 // Le niveau DEMANDE rend l'échappatoire inutile ; le niveau REFUS ne doit pas
 // en avoir.
+//
+// ARMÉ AUSSI SUR BASH (t18, 2026-10-22). Une commande qui écrit un fichier
+// protégé — redirection, `tee`, `sed -i`, `cp`… — reçoit le MÊME verdict que
+// par Edit/Write : `cibles-ecriture-bash.mjs` en lit les cibles, chacune passe
+// par `juger()` ci-dessous. Un interpréteur qui CITE un chemin protégé
+// (`python3 -c "open(…)"`) reçoit « demande » : son écriture éventuelle
+// échappe à toute analyse. Le reste — script opaque, chemin par variable —
+// est un silence assumé, dit dans `.claude/rules/hooks-garde-fous.md`.
 import fs from "node:fs";
 import path from "node:path";
+import { ciblesEcritureBash } from "./cibles-ecriture-bash.mjs";
 
 let data = {};
 try {
@@ -24,22 +33,6 @@ try {
 } catch {
   process.exit(0);
 }
-
-const toolInput = data.tool_input || {};
-const filePath = String(
-  toolInput.file_path || toolInput.path || toolInput.notebook_path || ""
-);
-if (!filePath) process.exit(0);
-
-// `path.posix.normalize` replie `/./`, `//` et `..` AVANT la comparaison :
-// sans lui, `web/src/lib/./clinical/x.ts` échappait à tout motif
-// multi-segment (relecture adversariale du Socle LOT-02 — le défaut était
-// hérité et touchait déjà le niveau « demande » Prisma). Les motifs REFUS,
-// mono-segment, n'y étaient pas sensibles ; rien n'est abaissé, des chemins
-// d'évitement se referment.
-const normalized = path.posix
-  .normalize(filePath.replaceAll("\\", "/"))
-  .toLowerCase();
 
 // Niveau REFUS : aucune écriture, jamais.
 const refus = [
@@ -68,11 +61,8 @@ const demande = [
 // matérialise cette confirmation dans la session. JAMAIS « refus » : le
 // niveau demande n'interdit pas le travail, il le rend explicite.
 //
-// PORTÉE, dite sans sur-promettre : ce hook ne voit que les outils
-// d'édition de fichiers (Edit/Write, cf. `.claude/settings.json`) — une
-// écriture par commande Bash (`echo >`, `sed -i`) passe par
-// `block-risky-commands.mjs`, qui ne connaît pas ces fichiers. La
-// couverture Bash est un suivi nommé du Socle, pas une promesse d'ici.
+// PORTÉE, dite sans sur-promettre : Edit/Write, et depuis t18 les écritures
+// Bash aux formes reconnues (voir l'en-tête) — pas un script opaque.
 //
 // Motifs en minuscules (le chemin est normalisé plus haut) et ancrés par leur
 // répertoire : `includes()` sans ancrage ferait d'un motif court un filet
@@ -95,24 +85,40 @@ const demandeClinique = [
   "src/lib/questionnaires/alimentaire.ts"
 ];
 
-for (const motif of refus) {
-  if (normalized.includes(motif)) {
-    console.error(
-      `Action bloquée par WellNeuro : modification protégée de ${filePath}. ` +
-      `Règle : ${motif}. Secrets et répertoires d'infrastructure ne s'écrivent ` +
-      `pas depuis une session — aucune dérogation.`
-    );
-    process.exit(2);
-  }
-}
+/**
+ * Verdict pour un chemin : `{ niveau: 'refus', motif, message }`,
+ * `{ niveau: 'demande', motif, raison }`, ou `null` (silence).
+ */
+function juger(filePath, toolInput) {
+  // `path.posix.normalize` replie `/./`, `//` et `..` AVANT la comparaison :
+  // sans lui, `web/src/lib/./clinical/x.ts` échappait à tout motif
+  // multi-segment (relecture adversariale du Socle LOT-02 — le défaut était
+  // hérité et touchait déjà le niveau « demande » Prisma). Les motifs REFUS,
+  // mono-segment, n'y étaient pas sensibles ; rien n'est abaissé, des chemins
+  // d'évitement se referment.
+  const normalized = path.posix
+    .normalize(filePath.replaceAll("\\", "/"))
+    .toLowerCase();
 
-for (const motif of demande) {
-  if (normalized.includes(motif)) {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "ask",
-        permissionDecisionReason:
+  for (const motif of refus) {
+    if (normalized.includes(motif)) {
+      return {
+        niveau: "refus",
+        motif,
+        message:
+          `Action bloquée par WellNeuro : modification protégée de ${filePath}. ` +
+          `Règle : ${motif}. Secrets et répertoires d'infrastructure ne s'écrivent ` +
+          `pas depuis une session — aucune dérogation.`
+      };
+    }
+  }
+
+  for (const motif of demande) {
+    if (normalized.includes(motif)) {
+      return {
+        niveau: "demande",
+        motif,
+        raison:
           `Écriture de schéma ou de migration Prisma (${motif}). ` +
           `Le SQL committé deviendra applicable à la base de production ` +
           `Supabase HORS du build : rien ne part automatiquement, il faudra ` +
@@ -120,111 +126,105 @@ for (const motif of demande) {
           `faire approuver dans l'environnement protégé release-db. ` +
           `Une migration doit rester additive : ` +
           `colonnes nullables, ni DROP ni renommage.`
-      }
-    }));
-    process.exit(0);
+      };
+    }
   }
-}
 
-for (const motif of demandeClinique) {
-  if (normalized.includes(motif)) {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "ask",
-        permissionDecisionReason:
+  for (const motif of demandeClinique) {
+    if (normalized.includes(motif)) {
+      return {
+        niveau: "demande",
+        motif,
+        raison:
           `Fichier clinique protégé (${motif}) : table signée ou constantes ` +
           `cliniques. Toute modification — même une ligne, même un ` +
           `commentaire — exige une décision D-xxx et un fragment ` +
           `changelog.d/ (DC-17, DC-18) ; un fichier au sha épinglé devra ` +
           `être ré-épinglé dans son banc. Autoriser vaut confirmation ` +
           `explicite dans la session.`
+      };
+    }
+  }
+
+  // Niveau DEMANDE — toute table signée, récente ou future (BP-01, D-266).
+  // La liste ci-dessus est littérale : neuf tables signées après le Socle n'y
+  // étaient pas (catalogue des conduites, signaux de sécurité, portes
+  // biologiques…), et la prochaine n'y serait pas davantage. Le critère est
+  // donc le marqueur lui-même, `validationExterne: true` hors commentaire,
+  // cherché dans le fichier sur disque ET dans le contenu entrant (`Write` d'un
+  // fichier neuf, `Edit` qui pose le marqueur). Les compagnons de test restent
+  // en silence, comme plus haut : leurs fixtures portent le marqueur.
+  const estSourceDeProduction =
+    /\.([cm]?[tj]sx?|json)$/.test(normalized) && !/\.(test|spec)\.[a-z]+$/.test(normalized);
+
+  if (estSourceDeProduction) {
+    // Commentaires retirés : blocs `/* */`, et `//` jusqu'à la fin de ligne
+    // quand il est HORS d'une chaîne de la même ligne (une URL `'http://…'`
+    // n'est pas un commentaire ; `x = 1; // validationExterne: true` en est un).
+    const retirerFinDeLigne = (ligne) => {
+      let guillemet = null;
+      for (let i = 0; i < ligne.length; i++) {
+        const c = ligne[i];
+        if (guillemet) {
+          if (c === "\\") i++;
+          else if (c === guillemet) guillemet = null;
+        } else if (c === "'" || c === '"' || c === "`") guillemet = c;
+        else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
       }
-    }));
-    process.exit(0);
-  }
-}
-
-// Niveau DEMANDE — toute table signée, récente ou future (BP-01, D-266).
-// La liste ci-dessus est littérale : neuf tables signées après le Socle n'y
-// étaient pas (catalogue des conduites, signaux de sécurité, portes
-// biologiques…), et la prochaine n'y serait pas davantage. Le critère est
-// donc le marqueur lui-même, `validationExterne: true` hors commentaire,
-// cherché dans le fichier sur disque ET dans le contenu entrant (`Write` d'un
-// fichier neuf, `Edit` qui pose le marqueur). Les compagnons de test restent
-// en silence, comme plus haut : leurs fixtures portent le marqueur.
-const estSourceDeProduction =
-  /\.([cm]?[tj]sx?|json)$/.test(normalized) && !/\.(test|spec)\.[a-z]+$/.test(normalized);
-
-if (estSourceDeProduction) {
-  // Commentaires retirés : blocs `/* */`, et `//` jusqu'à la fin de ligne
-  // quand il est HORS d'une chaîne de la même ligne (une URL `'http://…'`
-  // n'est pas un commentaire ; `x = 1; // validationExterne: true` en est un).
-  const retirerFinDeLigne = (ligne) => {
-    let guillemet = null;
-    for (let i = 0; i < ligne.length; i++) {
-      const c = ligne[i];
-      if (guillemet) {
-        if (c === "\\") i++;
-        else if (c === guillemet) guillemet = null;
-      } else if (c === "'" || c === '"' || c === "`") guillemet = c;
-      else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
+      return ligne;
+    };
+    const sansCommentaires = (texte) =>
+      String(texte)
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .split("\n")
+        .map(retirerFinDeLigne)
+        .join("\n");
+    let surDisque = null;
+    try {
+      const absolu = path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd(), filePath);
+      surDisque = fs.readFileSync(absolu, "utf8");
+    } catch {
+      // Fichier neuf ou illisible : seul le contenu entrant est jugé.
     }
-    return ligne;
-  };
-  const sansCommentaires = (texte) =>
-    String(texte)
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map(retirerFinDeLigne)
-      .join("\n");
-  let surDisque = null;
-  try {
-    const absolu = path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd(), filePath);
-    surDisque = fs.readFileSync(absolu, "utf8");
-  } catch {
-    // Fichier neuf ou illisible : seul le contenu entrant est jugé.
-  }
-  // Le source RÉSULTANT est jugé, pas seulement chaque fragment : remplacer
-  // `false` par `true` sur une table au verrou éteint ne porte le marqueur
-  // complet ni sur disque ni dans le fragment — seulement après l'édition.
-  const appliquer = (texte, edit) => {
-    if (typeof texte !== "string" || !edit || typeof edit.old_string !== "string"
-      || typeof edit.new_string !== "string") return texte;
-    return edit.replace_all
-      ? texte.split(edit.old_string).join(edit.new_string)
-      : texte.replace(edit.old_string, () => edit.new_string);
-  };
-  let resultat = typeof toolInput.content === "string" ? toolInput.content : surDisque;
-  resultat = appliquer(resultat, toolInput);
-  if (Array.isArray(toolInput.edits)) {
-    for (const edit of toolInput.edits) resultat = appliquer(resultat, edit);
-  }
-  const textes = [surDisque, resultat];
-  for (const champ of [toolInput.content, toolInput.new_string]) {
-    if (typeof champ === "string") textes.push(champ);
-  }
-  if (Array.isArray(toolInput.edits)) {
-    for (const edit of toolInput.edits) {
-      if (edit && typeof edit.new_string === "string") textes.push(edit.new_string);
+    // Le source RÉSULTANT est jugé, pas seulement chaque fragment : remplacer
+    // `false` par `true` sur une table au verrou éteint ne porte le marqueur
+    // complet ni sur disque ni dans le fragment — seulement après l'édition.
+    const appliquer = (texte, edit) => {
+      if (typeof texte !== "string" || !edit || typeof edit.old_string !== "string"
+        || typeof edit.new_string !== "string") return texte;
+      return edit.replace_all
+        ? texte.split(edit.old_string).join(edit.new_string)
+        : texte.replace(edit.old_string, () => edit.new_string);
+    };
+    let resultat = typeof toolInput.content === "string" ? toolInput.content : surDisque;
+    resultat = appliquer(resultat, toolInput);
+    if (Array.isArray(toolInput.edits)) {
+      for (const edit of toolInput.edits) resultat = appliquer(resultat, edit);
     }
-  }
-  // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
-  //
-  // LA STRUCTURE DES FICHES D'USAGE est couverte verrou posé OU ÉTEINT
-  // ([[D-314]] §2, critère de fin de F05) : elle est livrée vide et non signée,
-  // et ce qu'on y écrit avant la signature est déjà le périmètre que le
-  // responsable signera. Ailleurs, un verrou éteint reste en silence.
-  const structureFichesUsage = /(^|\/)web\/src\/lib\/fiches-usage\//.test(normalized);
-  const marqueur = structureFichesUsage
-    ? /["']?validationExterne["']?\s*:\s*(true|false)/
-    : /["']?validationExterne["']?\s*:\s*true/;
-  if (textes.some((texte) => typeof texte === "string" && marqueur.test(sansCommentaires(texte)))) {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "ask",
-        permissionDecisionReason:
+    const textes = [surDisque, resultat];
+    for (const champ of [toolInput.content, toolInput.new_string]) {
+      if (typeof champ === "string") textes.push(champ);
+    }
+    if (Array.isArray(toolInput.edits)) {
+      for (const edit of toolInput.edits) {
+        if (edit && typeof edit.new_string === "string") textes.push(edit.new_string);
+      }
+    }
+    // Clé nue ou entre guillemets (`"validationExterne": true` en JSON).
+    //
+    // LA STRUCTURE DES FICHES D'USAGE est couverte verrou posé OU ÉTEINT
+    // ([[D-314]] §2, critère de fin de F05) : elle est livrée vide et non signée,
+    // et ce qu'on y écrit avant la signature est déjà le périmètre que le
+    // responsable signera. Ailleurs, un verrou éteint reste en silence.
+    const structureFichesUsage = /(^|\/)web\/src\/lib\/fiches-usage\//.test(normalized);
+    const marqueur = structureFichesUsage
+      ? /["']?validationExterne["']?\s*:\s*(true|false)/
+      : /["']?validationExterne["']?\s*:\s*true/;
+    if (textes.some((texte) => typeof texte === "string" && marqueur.test(sansCommentaires(texte)))) {
+      return {
+        niveau: "demande",
+        motif: "validationExterne",
+        raison:
           // Le littéral du marqueur n'est PAS recopié ici : ce hook se
           // demanderait sinon confirmation pour sa propre édition.
           `Table signée détectée (marqueur validationExterne) : ${filePath}. ` +
@@ -232,10 +232,73 @@ if (estSourceDeProduction) {
           `une décision D-xxx et un fragment changelog.d/ (DC-17, DC-18) ; ` +
           `un fichier au sha épinglé devra être ré-épinglé dans son banc. ` +
           `Autoriser vaut confirmation explicite dans la session.`
-      }
-    }));
-    process.exit(0);
+      };
+    }
   }
+
+  return null;
 }
 
-process.exit(0);
+function rendre(verdict) {
+  if (verdict?.niveau === "refus") {
+    console.error(verdict.message);
+    process.exit(2);
+  }
+  if (verdict?.niveau === "demande") {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason: verdict.raison
+      }
+    }));
+  }
+  process.exit(0);
+}
+
+const toolInput = data.tool_input || {};
+
+if (typeof toolInput.command === "string") {
+  // Bash. Chaque cible d'écriture est jugée comme un Write dont le contenu
+  // entrant serait le texte de la commande qui l'écrit, tube et heredocs
+  // compris (un heredoc qui pose le marqueur d'une table signée neuve
+  // demande, comme son Write). Le refus l'emporte.
+  const cwd = data.cwd || process.cwd();
+  const { ecritures, mentions } = ciblesEcritureBash(toolInput.command, cwd);
+  const verdicts = ecritures
+    .map(({ chemin: cible, contenu }) => {
+      const v = juger(cible, { content: contenu });
+      if (!v) return null;
+      const prefixe = `Écriture par commande Bash vers ${cible}. `;
+      return v.niveau === "refus"
+        ? { ...v, message: prefixe + v.message }
+        : { ...v, raison: prefixe + v.raison };
+    })
+    .filter(Boolean);
+  // Une MENTION n'est pas une écriture prouvée : au plus « demande ». Les
+  // répertoires d'infrastructure (`node_modules/`, `.next/`, `dist/`…) qu'un
+  // interpréteur cite à chaque lancement restent en silence ; un `.env`
+  // cité demande.
+  for (const cible of mentions) {
+    const v = juger(cible, {});
+    if (!v || (v.niveau === "refus" && !v.motif.includes(".env"))) continue;
+    verdicts.push({
+      niveau: "demande",
+      motif: v.motif,
+      raison:
+        `Commande d'interpréteur citant ${cible} : une écriture par ` +
+        `l'interpréteur échappe à l'analyse de la commande, elle est donc ` +
+        `jugée comme possible. ` +
+        (v.niveau === "refus"
+          ? `Règle : ${v.motif} — secrets, aucune écriture depuis une session.`
+          : v.raison)
+    });
+  }
+  rendre(verdicts.find((v) => v.niveau === "refus") ?? verdicts[0]);
+}
+
+const filePath = String(
+  toolInput.file_path || toolInput.path || toolInput.notebook_path || ""
+);
+if (!filePath) process.exit(0);
+rendre(juger(filePath, toolInput));

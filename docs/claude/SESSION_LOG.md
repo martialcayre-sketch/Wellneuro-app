@@ -11300,3 +11300,21 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
+## 2026-10-22 — BP-15 : décision D-343 et migration des décisions de parcours
+
+**Fait.** D-343 écrite depuis les arbitrages du 2026-10-20 ; précisions de l'assistant et paragraphe RGPD retenus tels quels ; #1642 mergée. Migration seule `decisions_parcours_v1` : une table en ajout seul ancrée sur une version, trois familles, motifs fermés sans efficacité ; contrat (quinze promesses, versions intouchées) et banc (sept courses) verts en local ; relecture `wn-reviewer` sans P0 ni P1, quatre P2 corrigés, trois routés à la PR 2.
+
+**Écarté.** Une règle de séquence (début avant interruption) : des déclarations, une lacune se dit ; la date future refusée en base (route, comme BP-13).
+
+**Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée et déclenchée par le responsable ; constat par conteneur ; puis le code sous `WN_DECISIONS_PARCOURS`.
+
+**Ouvert.** Brouillon de la lettre cm (F52) après le code.
+## 2026-10-22 — t18 : crochet d'écriture sur Bash
+
+**Fait.** `protect-wellneuro-files.mjs` armé sur Bash : redirections, `tee`, `sed -i`, `cp`/`mv`, `truncate`, `dd`, `git checkout -- f`/`restore` reçoivent le verdict d'Edit/Write ; un interpréteur citant un fichier protégé demande. Banc dédié, doc alignée.
+
+**Écarté.** Refus systématique d'une écriture Bash (bloquerait le geste autorisé) ; demande sur tout interpréteur (bruit) ; couvrir `rm` (`rm -rf web/.next` refusé).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, déploiement constaté, t18 → fait.
+
+**Ouvert.** Scripts opaques et chemins par variable : silence documenté.
