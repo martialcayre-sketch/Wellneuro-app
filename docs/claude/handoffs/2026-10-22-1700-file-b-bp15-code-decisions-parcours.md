@@ -47,8 +47,13 @@ constat par conteneur de la migration.
 - Constat par conteneur de la migration (#1644) : appliquée en une
   tentative, aucune migration en échec, table vide, RLS sans politique,
   quatre triggers, treize CHECK, garde d'isolement présente.
-- `tsc --noEmit` vert ; vitest ciblé 38/38 ; T1 `check:rapide` vert. Le
-  reste (`npm run check`, T2, relecture) est noté dans la PR.
+- `tsc --noEmit` vert ; vitest ciblé 40/40 ; T1 `check:rapide` et
+  `npm run check` verts ; T2 noté dans la PR.
+- Relecture `wn-reviewer` : GO, aucun P0. P1 corrigé : les fils retirés
+  restaient invisibles (contre D-343 §5) ; ils se lisent désormais sous
+  « Décisions retirées », avec un test de composant. P2 corrigés : l'an 0
+  refusé à la demande (la base aurait rendu une 500), `min-h-11` sur
+  « Réessayer », montage du panneau épinglé par le banc des lecteurs.
 
 ## Problèmes ouverts
 
@@ -56,6 +61,11 @@ constat par conteneur de la migration.
   base (pose, correction, retrait, deux poses concurrentes sur un fil de
   révision, formes réelles des refus reconnus à leur code) ; information
   du patient relue avant l'ouverture du suivi (BP-21a).
+- P2 de la relecture routés à l'arbitrage du responsable, avant
+  l'allumage : le bouton « Retirer (posée par erreur) » sert aussi à
+  enregistrer un refus levé (§5) et part sans confirmation ; « Corriger la
+  révision » sert aussi à poser une révision neuve ou à désigner la
+  version suivante (§6).
 
 ## Prochaine action exacte
 

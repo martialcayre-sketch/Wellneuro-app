@@ -19,14 +19,16 @@ const ACCES_ADMIS = [
   // Lecture et écriture, sous les verrous du trigger.
   'web/src/lib/decisions-parcours/ecriture.ts',
   'web/src/lib/decisions-parcours/lecture.ts',
-  // L'écran : le panneau du cockpit.
+  // L'écran : le panneau du cockpit, et la fiche patient qui le monte sous
+  // son drapeau — un montage ailleurs (le portail) rougit ici.
   'web/src/components/decisions-parcours/DecisionsParcoursPanel.tsx',
+  'web/src/components/FichePatientPanel.tsx',
   // Effacement du dossier : supprime, ne lit pas.
   'web/src/lib/patient/effacement.ts',
 ];
 
 const MOTIF_ACCES =
-  /\.decisionParcours\b|\bdecisionsParcours(?:Suivantes)?\b|\bdecisions_parcours\b|\blireDecisionsDuDossier\b|\/api\/praticien\/decisions-parcours\b/;
+  /\.decisionParcours\b|\bDecisionsParcoursPanel\b|\bdecisionsParcours(?:Suivantes)?\b|\bdecisions_parcours\b|\blireDecisionsDuDossier\b|\/api\/praticien\/decisions-parcours\b/;
 
 export function lecteursDecisionsParcours(fichiers: readonly { chemin: string; source: string }[]): string[] {
   return fichiers
@@ -62,10 +64,11 @@ describe('Décisions de parcours — lecteurs épinglés ([[D-343]] §9, §11)',
       { chemin: 'web/src/lib/neuf/i.ts', source: "import { filsDeLaVersion } from '@/lib/decisions-parcours/fils';" },
       { chemin: 'web/src/lib/neuf/j.tsx', source: 'decisionsParcoursActif={isDecisionsParcoursEnabled()}' },
       { chemin: 'web/src/lib/neuf/k.test.ts', source: 'await prisma.decisionParcours.create({});' },
+      { chemin: 'web/src/lib/neuf/l.tsx', source: "import { DecisionsParcoursPanel } from '@/components/decisions-parcours/DecisionsParcoursPanel';" },
     ]);
     expect(lus).toEqual([
       'web/src/lib/neuf/a.ts', 'web/src/lib/neuf/b.ts', 'web/src/lib/neuf/c.ts', 'web/src/lib/neuf/d.ts',
-      'web/src/lib/neuf/e.ts', 'web/src/lib/neuf/f.tsx',
+      'web/src/lib/neuf/e.ts', 'web/src/lib/neuf/f.tsx', 'web/src/lib/neuf/l.tsx',
     ]);
   });
 });

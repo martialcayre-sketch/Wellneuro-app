@@ -366,7 +366,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
     return (
       <p role="alert" className="text-sm text-foreground">
         Les décisions de parcours n’ont pas pu être lues.{' '}
-        <button type="button" onClick={() => void charger()} className="underline">Réessayer</button>
+        <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
       </p>
     );
   }
@@ -381,6 +381,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
     const revision = revisionEnVigueur(fils);
     const filRevision = fils.find(f => f.tete !== null && f.tete.id === revision?.id);
     const filsVivants = fils.filter(f => familleDuFil(f) !== 'revision' && f.tete !== null);
+    const filsRetires = fils.filter(f => f.tete === null);
     const portees = [...new Set(filsVivants.filter(f => familleDuFil(f) === 'mise_en_oeuvre').map(f => f.tete!.idAction))];
     const lacunaires = portees.filter(p => sequenceIncomplete(fils, p));
     const formulaire = (mode: Mode) => (
@@ -472,6 +473,32 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
           )}
           {edition === `${version.id}:ajout` && formulaire({ type: 'ajout' })}
         </section>
+
+        {/* Un fil retiré reste lisible, avec son retrait (§5 : un refus
+            levé se retire, et l'historique le garde). */}
+        {filsRetires.length > 0 && (
+          <details className="text-xs text-muted-foreground">
+            <summary className="min-h-11 cursor-pointer py-2">Décisions retirées ({filsRetires.length})</summary>
+            <ul className="space-y-2 pl-4">
+              {filsRetires.map(f => {
+                const derniere = f.historique.filter(l => l.acte === 'pose').at(-1) ?? f.racine;
+                return (
+                  <li key={f.racine.id}>
+                    <p>{decrire(derniere, version)} — retirée</p>
+                    <ol className="space-y-1 pl-4">
+                      {[...f.historique].reverse().map(l => (
+                        <li key={l.id}>
+                          {decrire(l, version)}
+                          {l.motif ? ` (${LIBELLES_MOTIF[l.motif] ?? l.motif})` : ''} — le {jour(l.acteLe)}
+                        </li>
+                      ))}
+                    </ol>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        )}
       </li>
     );
   };
@@ -488,7 +515,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
       {erreurLecture && (
         <p role="alert" className="text-sm text-foreground">
           La relecture a échoué : ce qui suit peut ne plus être à jour.{' '}
-          <button type="button" onClick={() => void charger()} className="underline">Réessayer</button>
+          <button type="button" onClick={() => void charger()} className="min-h-11 underline">Réessayer</button>
         </p>
       )}
       {message && <p role="alert" className="text-sm text-foreground">{message}</p>}

@@ -54,9 +54,9 @@ function identifiant(valeur: unknown): string {
   return v.length > 0 && v.length <= IDENTIFIANT_MAX ? v : '';
 }
 
-/** Une date civile réelle (le 31 février n'en est pas une). */
+/** Une date civile réelle (le 31 février n'en est pas une ; l'an 0, que la base refuse, non plus). */
 function estDateCivile(valeur: string): boolean {
-  if (!RE_DATE.test(valeur)) return false;
+  if (!RE_DATE.test(valeur) || valeur.startsWith('0000')) return false;
   const d = new Date(`${valeur}T00:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === valeur;
 }

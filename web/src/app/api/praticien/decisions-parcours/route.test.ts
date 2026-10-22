@@ -217,6 +217,15 @@ describe('POST — la base fait foi, la route le dit avant', () => {
     expect((await poser({ nature: 'revision', issue: 'maintenir', remplace: 'r1' })).status).toBe(201);
   });
 
+  it('le fil de révision retiré : une révision neuve n’en désigne aucune, l’ancienne tête est refusée', async () => {
+    prisma.decisionParcours.findMany.mockResolvedValue([
+      ligne({ id: 'r1', nature: 'revision', issue: 'maintenir', motif: null, source: null }),
+      ligne({ id: 'r2', ordre: BigInt(2), acte: 'retrait', nature: null, motif: null, source: null, idLigneRemplacee: 'r1' }),
+    ]);
+    expect((await poser({ nature: 'revision', issue: 'maintenir', remplace: 'r1' })).corps.reason).toBe('tete_changee');
+    expect((await poser({ nature: 'revision', issue: 'maintenir' })).status).toBe(201);
+  });
+
   it('une correction garde la famille et l’action (§3)', async () => {
     prisma.decisionParcours.findMany.mockResolvedValue([ligne({})]);
     expect((await poser({ ...REFUS, remplace: 'l1' })).corps.reason).toBe('remplacement_hors_famille');

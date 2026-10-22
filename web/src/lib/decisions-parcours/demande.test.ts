@@ -44,6 +44,8 @@ describe('décision de parcours — lecture de la demande', () => {
     expect(raison(lire({ ...debut, evenementInconnu: true }))).toBe('date_invalide');
     expect(raison(lire({ ...debut, evenementLe: '2026-02-31' }))).toBe('date_invalide');
     expect(raison(lire({ ...debut, evenementLe: '2026-10' }))).toBe('date_invalide');
+    // L'an 0 : la base le refuserait en 22008, une 500 au lieu d'un refus nommé.
+    expect(raison(lire({ ...debut, evenementLe: '0000-01-01' }))).toBe('date_invalide');
     expect(raison(lire({ ...debut, evenementLe: '2026-10-23' }))).toBe('date_future');
     expect(raison(lire({ ...debut, evenementLe: AUJOURDHUI }))).toBe('ok');
   });
