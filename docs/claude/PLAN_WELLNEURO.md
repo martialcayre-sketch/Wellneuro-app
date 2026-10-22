@@ -127,7 +127,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 
 | n° | objet | levée par | état au 2026-10-13 |
 |---|---|---|---|
-| 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait ; [A verifier] : la lecture est en `bio-extraction-v5` depuis #1428 et `usage_ia` en v8 depuis #1431, le critère nomme encore v4 et v7 ; relu le 2026-10-22 : réalignement seul, aucun import hors v5 après #1428 (F40) |
+| 1 | Constat initial en conteneur, en agrégats | S-1, Q-1 (rang 0) : F40, H06 | levée en partie le 2026-10-12 ; restent le premier import v4 commenté et le premier accusé usage_ia v7, au fait ; la lecture est en `bio-extraction-v5` depuis #1428 et `usage_ia` en v8 depuis #1431, le critère nomme encore v4 et v7 ; relu le 2026-10-22 : réalignement seul, aucun import hors v5 après #1428 (F40) |
 | 2 | Décisions d'ordre mergées : deux files, une activation à la fois, restauration | a, b, g par la PR S-3 (rang 0) : F01, H05, F04 | levée le 2026-10-14 : a, b, g écrites par D-287, D-288, D-289, mergées par la PR S-3 (#1430) |
 | 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | **levée le 2026-10-18** : texte écrit le 2026-10-15 (D-301) ; J2-radar livré (#1531), « non mesuré » constaté à l'écran par l'E2E, déploiement 586db8fc constaté |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) |
