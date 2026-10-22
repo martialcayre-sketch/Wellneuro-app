@@ -99,6 +99,13 @@ export type CompteRenduLu = {
    * lecture enverra. `null` : la lecture est bloquée. Jamais ses pages.
    */
   masquage: { poseLe: string; zonesMasquees: number; aucuneIdentite: boolean } | null;
+  /**
+   * La date de naissance du DOSSIER (`AAAA-MM-JJ` telle que stockée, ou
+   * `null`), montrée au praticien sur l'écran de masquage pour qu'il la compare
+   * au compte rendu avant de la noircir ([[D-342]] §3). Elle ne part jamais au
+   * service de lecture.
+   */
+  dateNaissanceDossier: string | null;
   imports: ImportLu[];
 };
 
@@ -163,6 +170,7 @@ export async function lireCompteRendu(
       motifPurge: true,
       motifEcart: true,
       travaux: { where: { statut: { in: ['en_attente', 'en_cours'] } }, select: { id: true }, take: 1 },
+      patient: { select: { dateNaissance: true } },
       // Le résumé seul : les pages (jusqu'à 20 Mio) ne se chargent qu'à la lecture.
       masquages: {
         where: { purgeLe: null },
@@ -219,6 +227,7 @@ export async function lireCompteRendu(
         aucuneIdentite: c.masquages[0].aucuneIdentite,
       }
       : null,
+    dateNaissanceDossier: c.patient.dateNaissance,
     imports: c.imports.map(i => ({
       id: i.id,
       statut: i.statut,

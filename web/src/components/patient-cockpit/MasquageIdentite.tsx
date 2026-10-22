@@ -17,6 +17,7 @@ import {
   zoneEntre,
   type Zone,
 } from '@/lib/biology-library/import/masquage';
+import { statutAge } from '@/lib/patient/gardeAge';
 
 // LE MASQUAGE DE L'IDENTITÉ AVANT LA LECTURE ([[D-284]] §5, lot (j)).
 //
@@ -40,6 +41,20 @@ import {
 // curseur (Maj : plus vite), Entrée pose chaque coin, Échap abandonne. Sans
 // cela, un praticien sans souris ne pourrait que déclarer « aucune
 // identité » à tort (revue Copilot de #1428).
+
+// LA DATE DU DOSSIER, À COMPARER ([[D-342]] §3). L'IA ne lit pas la date de
+// naissance : le praticien la noircit. Il la voit pourtant, ici, avant de la
+// masquer — c'est donc lui le second filet : un écart avec la date du dossier
+// signale un dossier mal daté, ou un compte rendu qui n'est pas celui de ce
+// patient. Au format des comptes rendus (JJ/MM/AAAA), pour se lire d'un coup
+// d'œil contre eux ; la date ne quitte pas l'écran du praticien.
+export function phraseDateDossier(dateNaissance: string | null, maintenantMs: number): string {
+  if (dateNaissance === null || statutAge(dateNaissance, maintenantMs) === 'date_manquante') {
+    return 'Aucune date de naissance lisible au dossier : relevez-la sur le compte rendu et saisissez-la dans la fiche administrative.';
+  }
+  const [annee, mois, jour] = dateNaissance.split('-');
+  return `Date de naissance au dossier : ${jour}/${mois}/${annee}. Vérifiez qu’elle correspond à celle du compte rendu avant de la masquer : un écart signale un dossier mal daté ou un compte rendu d’un autre patient.`;
+}
 
 type Page = { source: HTMLCanvasElement; largeur: number; hauteur: number };
 type ZonePlacee = { page: number; zone: Zone };
@@ -135,6 +150,7 @@ export function MasquageIdentite({
   typeMime,
   urlEnregistrement,
   idCompteRendu,
+  dateNaissanceDossier,
   onEnregistre,
   onAnnuler,
 }: {
@@ -142,6 +158,8 @@ export function MasquageIdentite({
   typeMime: string;
   urlEnregistrement: string;
   idCompteRendu: string;
+  /** La date de naissance du dossier, `AAAA-MM-JJ` ou `null` ([[D-342]] §3). */
+  dateNaissanceDossier: string | null;
   onEnregistre: () => void | Promise<void>;
   onAnnuler?: () => void;
 }) {
@@ -334,6 +352,7 @@ export function MasquageIdentite({
         masquées sont transmises au service de lecture (Anthropic), jamais le document d’origine. Au clavier :
         placez-vous sur une page, déplacez le curseur avec les flèches et posez chaque coin avec Entrée.
       </p>
+      <p className="mt-1 text-xs text-foreground">{phraseDateDossier(dateNaissanceDossier, Date.now())}</p>
 
       {etat === 'chargement' && (
         <p role="status" className="mt-2 text-sm text-foreground">Préparation des pages…</p>

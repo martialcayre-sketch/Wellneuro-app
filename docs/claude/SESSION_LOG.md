@@ -11280,3 +11280,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge et déploiement constaté, puis PR de la date au masquage (D-342 §3).
 
 **Ouvert.** `DeclarationsPatient.test.tsx` instable sous charge (une fois).
+
+## 2026-10-22 — Date du dossier à l'écran de masquage (D-342 §3, at remplacée)
+
+**Fait.** L'écran de masquage affiche la date de naissance du dossier (JJ/MM/AAAA) à comparer au compte rendu, ou invite à la saisir ; servie par la route du compte rendu, jamais envoyée au service de lecture.
+
+**Écarté.** Lecture de la date par l'IA (lèverait le masquage) ; bouton de correction sur l'écran (la fiche administrative existe).
+
+**Prochaine action.** Merge et déploiement constaté ; q10 de la page de suivi.
+
+**Ouvert.** F45 : rubrique 4 (15–17 ans, avant J3-mineurs).
