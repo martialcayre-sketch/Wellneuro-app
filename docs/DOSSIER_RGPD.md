@@ -785,6 +785,8 @@ fonction neuve, sauf la fiche signalétique. **Reste ouvert** : le seuil d'âge
 - **Dossiers concernés au constat du 2026-10-13** (agrégats) : 15 sans date de
   naissance sur 32, aucun de moins de 21 ans.
 - **Reste à faire valider par un avocat** : les 15–17 ans (renvoi de l'avis).
+  Préalable de J3-mineurs depuis le 2026-10-22 ([[D-342]] §5) ; la règle de
+  18 ans reste en service d'ici là.
 
 **Mise en œuvre du lot (h), 2026-10-14.** Au portail, la date se demande juste
 après « Avant de commencer » et avant tout le reste. Elle se fait confirmer,
@@ -1557,9 +1559,16 @@ ci-dessous (2026-10-14).
 6. **Refus ou réponse partielle.** Motivés par écrit. La réponse indique la
    possibilité d'introduire une réclamation auprès de la CNIL et de former un
    recours juridictionnel (RGPD art. 12.4).
-7. **Mineurs.** Le circuit adapté reste à écrire ([[D-283]] §5 ; arbitrage 5
-   de G-11 : les titulaires de l'autorité parentale exercent les droits sur
-   les données de l'enfant).
+7. **Mineurs.** Les titulaires de l'autorité parentale exercent les droits
+   sur les données de l'enfant ([[D-283]] §5 ; arbitrage 5 de G-11). Jusqu'à
+   J3-mineurs, aucun parent n'a accès au portail : le responsable répond à la
+   main au titulaire qui a donné l'accord, à l'adresse notée lors de cet
+   accord, quelle que soit l'adresse d'expédition (celle-ci se falsifie) ; la
+   demande ne s'instruit qu'à sa confirmation depuis cette boîte, comme à
+   l'étape 1. Toute autre demande (autre titulaire, adresse inconnue) passe en
+   traitement manuel, comme un désaccord ([[D-284]] §4) ; aucune pièce
+   d'identité n'est collectée (étape 3). Délai de l'étape 2 ; courriels gardés
+   comme à l'étape 5 ([[D-342]] §6). Le circuit en ligne part avec J3-mineurs.
 
 *Antérieurement :* le **délai de réponse** annoncé, la **procédure de
 vérification d'identité** du demandeur, et le **circuit interne de traitement**
@@ -1854,7 +1863,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 1 | Responsable | Identité juridique exacte | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 1 |
 | 1 | Responsable | **Clos le 2026-10-13 ([[D-284]] §6) : pas d'obligation de désigner un DPO à cette échelle, selon l'avis reçu ; analyse datée à revoir à chaque changement d'échelle.** *Historique :* aucun DPO désigné, le responsable est le point de contact ([[D-283]] §7). Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | fermé | `docs/DECISIONS.md` |
 | 3 | Base légale | ~~Qualification, non rédigée à ce jour~~ — **qualifiée le 2026-10-04** par déclaration du responsable ([[D-265]] §3) | Responsable | fermé | ici, rubrique 3 |
-| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; reste la validation des 15–17 ans par un avocat.** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
+| 4 | Personnes | **2026-10-13 ([[D-284]] §3-4) : mineur jusqu'à 18 ans, entrée validée par un titulaire de l'autorité parentale, âge inconnu demandé avant toute fonction de santé ; reste la validation des 15–17 ans par un avocat, préalable de J3-mineurs ([[D-342]] §5).** *Historique :* encadrés, non exclus ([[D-283]] §5). Cas des mineurs | Responsable | 2027-06-30 (était 2026-10-21) | `SOURCES_ET_VALIDATIONS.md` |
 | 5 | Catégories | **Soldé le 2026-10-13 ([[D-283]] §3) : les six classées en catégorie particulière, la liste du banc est vide.** *Historique — constat d'origine :* **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | fermé | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | 2027-06-30 (était : ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21**) | `CHECKLIST_FINALISATION.md` §F |
@@ -1865,7 +1874,7 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 7 | Transferts | **2026-10-13 ([[D-284]] §5-6) : CCT pour Anthropic, cadre UE–États-Unis pour Google et Sentry s'il les couvre ; restent les preuves à archiver et les TIA.** Sentry : mécanisme contractuel posé par le DPA signé le 2026-10-21 (annexe 3 : Data Privacy Framework, repli sur les CCT module 2) ; restent dus, pour Sentry aussi, la preuve de sa certification DPF et la TIA du repli. Mécanisme invoqué (CCT/DPA) | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
 | 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
 | 8 | Conservation | **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
-| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; reste le circuit des mineurs.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
+| 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; mineurs : à la main jusqu'à J3-mineurs (étape 7, [[D-342]] §6).** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
 | 10 | Sécurité | **Clos le 2026-10-13 ([[D-283]] §7) : la revue du 2026-08-22 suffit ; test d'intrusion humain obligatoire avant toute offre commerciale ou second compte praticien.** *Historique — constat d'origine :* Pentest / revue externe | Prestataire à engager | fermé | checklist du gate, exigence 7 |
 | 10 | Sécurité | **Clos par constat : ouvert hors dépôt le 2026-08-22 (D-085 §3).** *Historique — constat d'origine :* Registre physique des violations (EX-3) | Responsable | fermé | `PROCEDURE_VIOLATION_DONNEES.md` |
 | 10 | Sécurité | **Clos par constat : produite le 2026-08-22 (D-085 §2).** *Historique — constat d'origine :* Preuve fonctionnelle de la piste d'audit | Responsable | fermé | checklist du gate, item 4 |

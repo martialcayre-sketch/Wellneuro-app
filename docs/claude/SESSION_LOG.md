@@ -11260,3 +11260,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; t38 → « fait ».
 
 **Ouvert.** t18 reste entière (crochet d'écriture aveugle à Bash).
+
+## 2026-10-22 — Restes de F45 et des mineurs (D-342)
+
+**Fait.** Sept arbitrages écrits : at remplacée par la date du dossier affichée au masquage ; as close (place 6 sans activation) ; repère du mineur en attente dans la liste des patients ; refus au vouvoiement laissé à J3-mineurs ; droits d'un parent à la main jusqu'à J3-mineurs ; validation des 15–17 ans par un avocat, préalable de J3-mineurs ; bancs sur fixtures pour F45.
+
+**Écarté.** Lecture de la date par l'IA (lèverait le masquage, D-284 §5) ; date modifiable par le patient (un mineur lèverait sa pause) ; renumérotation des places 7 à 11.
+
+**Prochaine action.** Lot du repère en liste, puis lot de la date au masquage.
+
+**Ouvert.** 15–17 ans (avocat, avant J3-mineurs).

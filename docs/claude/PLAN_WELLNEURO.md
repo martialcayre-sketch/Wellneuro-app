@@ -413,6 +413,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-15)** : z écrite par D-302 sur arbitrage du responsable : D-284 §3-4 entérinés ; la date de naissance devient obligatoire à la création d'un dossier par le praticien (facultative au code aujourd'hui) ; lot de code sans migration à placer ; as, at, J2-conf et le circuit des mineurs inchangés.
 - **Mise à jour (2026-10-18)** : lot de code de z livré, sans migration : la création d'un dossier par le praticien exige une date de naissance valide au sens de la garde d'âge (règle de la saisie au portail : format, 1900 au plus tôt, réelle, non future), au formulaire et au serveur ; un mineur se crée et reste sous la garde ; dossiers anciens et PATCH de la fiche inchangés. as, at, J2-conf et le circuit des mineurs inchangés.
 - **Mise à jour (2026-10-21, J2-conf pour ACT-5)** : relevé : non fait (r jamais consignée, at non faite, lot sans objet écrit). Arbitrages du responsable (D-341) : r faite (registre existant reconnu, H28) ; at hors du périmètre d'ACT-5 (aucune lecture IA dans les textes des mineurs), reste au rang 1 avec ses gestes ; le lot de code J2-conf est fondu dans le lot d'ACT-5 (bancs `lib/patient/texteMineurs.test.ts` et `app/portail/[token]/page.test.tsx` : texte rendu au seul dossier mineur ouvert, ni au majeur, ni au dossier clos ; aucun instrument servi, tenu par la pause des routes inchangée). J2-conf tenu pour ACT-5 par arbitrage ; le critère de fin de cette fiche (rubrique « Cas des mineurs », constat par identifiant) reste celui de at et as, qui restent ouvertes.
+- **Mise à jour (2026-10-22, restes)** : arbitrages du responsable (D-342). at remplacée : aucune lecture de la date par l'IA (son masquage tient, D-284 §5) ; l'écran de masquage affiche la date du dossier, à comparer au compte rendu avant de la noircir (lot de code sans migration, D-342 §3). as close : garde sans saisie tranchée par D-284 §3, invitation au dépôt sans objet (dépôt fermé sans date), correction par « Faire corriger une information » puis par le praticien (D-342 §4). Repère « Mineur, accord parental attendu » dans la liste des patients (lot de code sans migration, D-342 §2). Critère de fin : les bancs sur fixtures tiennent lieu de constat par identifiant ; F45 se clôt aux lots du repère et de at livrés et à la rubrique 4 renseignée, où ne restent que les 15–17 ans, préalable de J3-mineurs (D-342 §5, §7).
 
 #### H12 · ac et J2-radar : radar sans zéro
 - **Identifiant, piste** : lettre ac (M-6, D-ac, R:ac), puis J2-radar.
@@ -757,7 +758,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | c | cockpit chiffré : provenance, formule, nature | geste | 4 | non | F59 |
 | aw | familles du bilan hiérarchisé | geste | aucune | non | F34 |
 | az, texte | notice patient du bilan | geste | aucune | non | F37 |
-| at | date de naissance lue par l'extraction | geste | 5 | non | F45, rang 0 |
+| at | date de naissance lue par l'extraction ; remplacée le 2026-10-22 par la date du dossier affichée au masquage (D-342 §3) | geste | 5 | non | F45, rang 0 |
 | cm | axes biologiques, liste fermée | geste | aucune | non | F51 |
 | D-283 (a), (e), (f) | texte des durées ; phrase au médecin ; procédure des droits ((f) faite le 2026-10-14, G-8) | geste | aucune | non | H26 |
 | LOT-02 du sommeil | re-mesure ; sa clôture lève la porte 16 | geste | lève 16 | non | H27 |
@@ -1917,6 +1918,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Critère de fin** : lecture consignée ; le premier mineur servi se constate plus tard, sans bloquer.
 - **Mise à jour (2026-10-21, préparation)** : J2-conf tenu pour cette surface (D-341 §1-4, F45). Arbitrage du responsable (D-341 §5) : ACT-5 sert le texte 2B (au jeune) seul, mot pour mot, sur l'écran de pause du mineur (accueil du portail et page des questionnaires) ; le texte 2A (au titulaire) part avec J3-mineurs (H79), qui crée la validation en ligne qu'il décrit. J3-mineurs n'est pas un préalable d'ACT-5 (D-341 §6). Lot sans migration ni drapeau : `lib/patient/texteMineurs.ts`, banc mot pour mot contre `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`.
 - **Mise à jour (2026-10-21, livré et constaté)** : #1630 mergée (0ef2649f) sur CI vert et revue CodeRabbit de la tête ; déployée avec fbc2b21a, en service à 22:10:46 UTC. Lecture consignée (critère de fin), par conteneur, sur le code servi et non sur des données : texte 2B présent dans l'image, texte 2A absent. Relevé agrégé : 31 dossiers ouverts, 18 avec une date lisible, aucun mineur ; le premier mineur servi se constatera plus tard, sans bloquer. Critère de fin tenu : place 5 faite. Restent ouverts, hors place : les 15–17 ans (avocat, D-284), le circuit des droits des mineurs (D-283 §5), les deux voix servies au mineur (refus des routes au vouvoiement, D-341 §5), at et as (F45).
+- **Mise à jour (2026-10-22)** : restes tranchés par D-342 : le contact promis au mineur passe par un repère dans la liste des patients, 2B inchangé (§2) ; les deux voix restent à J3-mineurs (§2) ; at remplacée et as close (§3, §4, F45) ; 15–17 ans et droits d'un parent renvoyés à J3-mineurs (§5, §6, H79).
 
 #### F65 · Page « Mes résultats de biologie » au portail
 - **Identifiant, piste** : page patient ; socle.
@@ -1931,7 +1933,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | identifiant | objet | file | portes | migration | fiche |
 |---|---|---|---|---|---|
 | J3-mineurs | consentement du titulaire de l'autorité parentale | A | 9 | oui | H79 |
-| as | place 6 : fiche signalétique, date de naissance | C | 18 | selon | F45, rang 0 |
+| as | place 6 : fiche signalétique, date de naissance ; close le 2026-10-22 sans activation (D-342 §4) | C | 18 | selon | F45, rang 0 |
 | ak | place 7 : invitation d'autoévaluation au 21e jour | C | 18 | non | H80 |
 | ao | place 8 : fiche compléments remise | C | 18, 19, 28 | non | F78 |
 | R:FC-5 (2/2) | place 9 : geste du 21e jour de l'agenda | C | 18 | non | H81 |
@@ -1948,13 +1950,14 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : aucune D-xxx écrite ; mineurs encadrés (D-283 §5).
 - **Critère de fin** : release-db constatée ; consentement recueilli ; validation d'un titulaire constatée.
 - **Mise à jour (2026-10-21)** : le texte 2A de G-11 (au titulaire de l'autorité parentale) part avec ce lot, non avec ACT-5 (D-341 §5) ; le banc d'ACT-5 refuse ses titres dans le code servi jusque-là, et sera à ajuster ici.
+- **Mise à jour (2026-10-22)** : D-342 ajoute à ce lot : la validation des 15–17 ans par un avocat, préalable (note d'une page à préparer, §5) ; le circuit en ligne des droits exercés par un parent, à la main d'ici là (procédure des droits, étape 7, §6) ; la réécriture du refus des routes servi au mineur (`MESSAGE_CIRCUIT_MINEUR`, au vouvoiement, §2).
 
 **File C**
 
 #### H80 · R:ak : place 7, invitation d'autoévaluation au 21e jour
 - **Identifiant, piste** : lettre ak ; portail sans chiffre ; protocole ; file C, place 7.
 - **Rang** : 10 ; place 7, déduite de « places 7 à 11 dans l'ordre proposé ».
-- **Portes, préalables** : k (F77) ; t (H31) ; texte patient ; porte 18, après la place 6.
+- **Portes, préalables** : k (F77) ; t (H31) ; texte patient ; porte 18, après la place 6 (close, D-342 §4 : après la place 5).
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre ak, de la main du responsable ; deux messages, deux places, aucune fusion avec la place 9.
 - **Critère de fin** : activation constatée sur un vrai dossier.
@@ -2042,7 +2045,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 3 | « Mes échanges » en lecture | H76 | u, ai, J3-base ; durée de D-283 §2 | encart d'urgence étendu ; lecture datée | 7 |
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |
 | 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11, acceptés le 2026-10-14, #1441) ; constat par lecture consignée | 9 |
-| 6 | Fiche signalétique (date de naissance, invitation au dépôt) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
+| 6 | Fiche signalétique (date de naissance, invitation au dépôt) ; close le 2026-10-22 sans activation (D-342 §4) : la saisie initiale de la date d'un dossier ouvert sans date reste en service (lot (h), D-284 §3) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
 | 7 | Invitation d'autoévaluation au 21e jour | H80 | k, t, texte patient | texte patient | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste ; deux messages, deux places, sans fusion avec la place 7 | 10 |
@@ -2140,7 +2143,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | sources de fidélité (G-10) : instruments arrêtés le 2026-10-15, références test-retest à fournir (H13) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) | H08 | c, am, al, cm, seuils_points |
 | h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
-| h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
+| h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable ; remplacée le 2026-10-22, D-342 §3) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
 | h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; véhicule de M-3 arrêté le 2026-10-15 : écran praticien, lot de code livré le 2026-10-15 ; 5 des 8 signées le 2026-10-15 ; candidats des 77 autres analytes préparés et deux arbitrages pris le 2026-10-15 (liste pré-remplie, constat signé « aucun acte ») | F54, porte 10 | M-3b, M-3c, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) ; j, q, s, aa, ab, av faits le 2026-10-15 (D-306 à D-311) ; w : méthode écrite (D-312), dossiers de preuve par besoin puis guide de la main du responsable ; huit arbitrages rendus le 2026-10-15 (H15), deuxième dossier après J3-12c ; liste des statuts posés de s à écrire | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co (fait le 2026-10-15 : D-313 ; neuf critères à cocher de la main du responsable) | F49, F68 | cm ; AIPD |
@@ -2752,8 +2755,8 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ap | bibliothèque pédagogique | la main du responsable | 10, place 10 | H82 |
 | aq | contrôle bloquant des modifications cliniques | registre | 1 | H21 |
 | ar | montée de version datée des briques | registre | 1 | H22 |
-| as | fiche signalétique, date de naissance | la main du responsable | 10, place 6 | F45 |
-| at | date de naissance lue par l'extraction | registre ; texte patient de la main du responsable | 1 au plus tôt [Hypothese] | F45 |
+| as | fiche signalétique, date de naissance ; close le 2026-10-22 (D-342 §4) | la main du responsable | 10, place 6 | F45 |
+| at | date de naissance lue par l'extraction ; remplacée le 2026-10-22 (D-342 §3) | registre ; texte patient de la main du responsable | 1 au plus tôt [Hypothese] | F45 |
 | au | drapeaux du sommeil à l'écran | la main du responsable | 3 au plus tôt [Hypothese] | H56 |
 | av | contenu biologique du document médecin ; fait le 2026-10-15 (D-311) | la main du responsable | 0 | F33 |
 | aw | familles du bilan | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
