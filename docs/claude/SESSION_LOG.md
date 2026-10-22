@@ -11263,7 +11263,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 ## 2026-10-22 — Restes de F45 et des mineurs (D-342)
 
-**Fait.** Sept arbitrages écrits : at remplacée par la date du dossier affichée au masquage ; as close (place 6 sans activation) ; repère du mineur en attente dans la liste des patients ; refus au vouvoiement laissé à J3-mineurs ; avocat des 15–17 ans et droits d'un parent renvoyés à J3-mineurs, à la main d'ici là ; bancs sur fixtures pour F45.
+**Fait.** Sept arbitrages écrits : at remplacée par la date du dossier affichée au masquage ; as close (place 6 sans activation) ; repère du mineur en attente dans la liste des patients ; refus au vouvoiement laissé à J3-mineurs ; droits d'un parent à la main jusqu'à J3-mineurs ; validation des 15–17 ans par un avocat, préalable de J3-mineurs ; bancs sur fixtures pour F45.
 
 **Écarté.** Lecture de la date par l'IA (lèverait le masquage, D-284 §5) ; date modifiable par le patient (un mineur lèverait sa pause) ; renumérotation des places 7 à 11.
 

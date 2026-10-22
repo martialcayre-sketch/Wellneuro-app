@@ -49,7 +49,8 @@ sans migration ; rien ne part de plus chez le fournisseur.
 **§4 — as close.** La garde sans saisie est tranchée par [[D-284]] §3 (pause) ;
 l'invitation au dépôt n'a plus d'objet, le dépôt étant fermé à un dossier sans
 date ([[D-330]], amendement du 2026-10-20). La correction d'une date passe par
-« Faire corriger une information », puis par le praticien : une date
+« Faire corriger une information », puis par le praticien ; la saisie
+initiale d'une date manquante reste en service (lot (h)). Une date
 modifiable par le patient permettrait à un mineur de lever sa pause lui-même.
 La place 6 de la file C est close sans activation ; la place 7 suit la
 place 5 (les numéros des places 7 à 11 ne changent pas).
@@ -66,8 +67,8 @@ J3-mineurs.
 
 **§7 — Critère de fin de F45.** Les bancs sur fixtures (garde des routes,
 `gardeAge.routes.guard.test.ts` ; écran du mineur, [[D-341]] §4) tiennent lieu
-de constat par identifiant. F45 se clôt quand le lot du §3 est livré et la
-rubrique 4 du dossier RGPD renseignée ; il n'y reste que les 15–17 ans (§5).
+de constat par identifiant. F45 se clôt quand les lots des §2 et §3 sont livrés et
+la rubrique 4 du dossier RGPD renseignée ; il n'y reste que les 15–17 ans (§5).
 
 ### D-341 — ACT-5 : le texte des mineurs servi au jeune (G-11, 2B) sur l'écran de pause du mineur ; le texte au titulaire (2A) attend J3-mineurs ; J2-conf tenu pour cette surface (r reconnu, at hors périmètre)
 
