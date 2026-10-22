@@ -114,7 +114,8 @@ describe('controlerLien', () => {
   });
 
   it('refuse une liste de besoins vide, hors bornes, non entière ou en doublon', () => {
-    for (const besoins of [[], [0], [13], [2.5], ['2'], [2, 2], undefined, 2]) {
+    // eslint-disable-next-line no-sparse-arrays
+    for (const besoins of [[], [0], [13], [2.5], ['2'], [2, 2], undefined, 2, new Array(1), [1, , 3]]) {
       const r = controlerLien({ levier, mode: 'cle_signee', besoins });
       expect(r.ok, JSON.stringify(besoins)).toBe(false);
     }

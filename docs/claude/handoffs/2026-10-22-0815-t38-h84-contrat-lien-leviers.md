@@ -39,10 +39,13 @@ clé posée (D-338 §1, §2).
 - T1 rapide et T1 complet verts ; T2 (`--fast`) vert en 6 min 31 s ; après
   les retouches de revue, Vitest ciblé (15 tests) et type-check verts.
 - `/code-review medium` : six constats ; trois corrigés (message « pas une
-  liste », identifiant à espaces de bordure refusé, motif rogné et gardes
-  sans `as`) ; trois écartés avec motif (ordre des clés entières garanti par
-  la spécification ; un `needIds: []` doit rougir, ce serait un « sans
-  objet » sans motif ; l'allowlist motivée est le mécanisme du banc).
+  liste », identifiant à espaces de bordure refusé, motif rogné et assertions
+  `as` retirées du motif et de l'amont) ; trois écartés avec motif (ordre des
+  clés entières garanti par la spécification ; un `needIds: []` doit rougir,
+  ce serait un « sans objet » sans motif ; l'allowlist motivée est le
+  mécanisme du banc).
+- CodeRabbit (1c75dcc2) : deux remarques corrigées (tableau clairsemé refusé,
+  ce bilan rectifié) ; Vitest ciblé vert après correction.
 
 ## Problèmes ouverts
 

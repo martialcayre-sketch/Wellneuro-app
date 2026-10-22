@@ -93,20 +93,23 @@ function controlerBesoins(valeur: unknown, erreurs: string[]): Besoin[] | null {
     erreurs.push('Les besoins ne sont pas une liste.');
     return null;
   }
-  if (valeur.length === 0) {
+  // `Array.from` rend chaque trou d'un tableau clairsemé en `undefined`, que
+  // `estBesoin` refuse ; `filter` les aurait sautés.
+  const liste: unknown[] = Array.from(valeur);
+  if (liste.length === 0) {
     erreurs.push('La liste des besoins est vide : un lien porte au moins un besoin.');
     return null;
   }
-  const inconnus = valeur.filter((b) => !estBesoin(b));
+  const inconnus = liste.filter((b) => !estBesoin(b));
   if (inconnus.length > 0) {
     erreurs.push(`Besoins inconnus : ${inconnus.map((b) => JSON.stringify(b)).join(', ')}.`);
     return null;
   }
-  if (new Set(valeur).size !== valeur.length) {
+  if (new Set(liste).size !== liste.length) {
     erreurs.push('La liste des besoins contient un doublon.');
     return null;
   }
-  return valeur as Besoin[];
+  return liste as Besoin[];
 }
 
 /**
