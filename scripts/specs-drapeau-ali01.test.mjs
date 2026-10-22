@@ -112,6 +112,11 @@ const ALLOWLIST = new Map([
       + 'drapeaux (D-254)',
   ],
   [
+    'src/lib/besoins/lienLeviers.test.ts',
+    'ne lit de BESOIN_SOURCES que les CLÉS (les douze besoins) — jamais une source ni un max : '
+      + 'verdict identique sous les deux drapeaux (D-338 §1, t38)',
+  ],
+  [
     'src/components/patient-cockpit/AssiettesIndiqueesPanel.test.tsx',
     'ne nomme BESOIN_SOURCES qu’en commentaire ; ses cas visent les besoins 8 et 10, sans Q_ALI_01 : '
       + 'verdict identique sous les deux drapeaux (D-254)',
