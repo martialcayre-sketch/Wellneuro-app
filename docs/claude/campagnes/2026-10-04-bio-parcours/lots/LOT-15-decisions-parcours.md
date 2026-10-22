@@ -1,7 +1,7 @@
 ---
 id: "LOT-15"
 titre: "BP-15 — Décisions de parcours"
-statut: "en_cours (2026-10-22) — D-343 acceptée ; PR 0 (décision et déclaration RGPD) ouverte"
+statut: "en_cours (2026-10-22) — D-343 acceptée (#1642) ; PR 1, migration seule, ouverte"
 dépend_de: "LOT-00"
 ---
 
@@ -106,7 +106,27 @@ seulement (§7) ; le dossier mineur refusé au cockpit (§8).
   verrou du dossier, remplacement dans la même famille, suppression
   réservée à l'effacement du dossier ; RLS sans politique) ; contrat SQL
   négatif propre et banc de deux sessions au CI ; effacement nommé avant
-  `protocol_drafts` et son banc.
+  `protocol_drafts` et son banc. Livrée : migration
+  `20261022100000_decisions_parcours_v1` (les fonctions « figée » et
+  « suppression nommée » de BP-13 réutilisées ; une fonction de famille et
+  le trigger d'insertion neufs, verrou consultatif 343), contrat
+  `decisions_parcours_v1_negatif.sql` (quinze promesses, dont « les
+  versions ne bougent pas » : empreintes, statut et mise à jour des versions,
+  approbations et check-ins inchangés après toutes les poses), banc
+  `banc-decisions-parcours-deux-sessions.test.mjs` (sept courses).
+  Isolation : la base n'admet que READ COMMITTED (REPEATABLE READ et
+  SERIALIZABLE refusés par le trigger) — une transaction SERIALIZABLE face
+  à une READ COMMITTED pouvait laisser deux révisions en vigueur, trou
+  commun à BP-09, BP-11 et BP-13 ; fermé ici en base sur la revue
+  CodeRabbit de #1644, arbitrage du responsable du 2026-10-22 (les tables
+  voisines gardent leur garde). Routés de la relecture `wn-reviewer` de la
+  PR 1 (P2), à tenir par le code : les
+  nettoyages E2E qui suppriment des versions (`web/e2e/helpers/db.ts`)
+  suppriment d'abord leurs décisions de parcours, dès qu'un E2E en pose ;
+  le retour arrière de BP-13 passe après celui de BP-15 (fonctions
+  partagées). Gardés à la route, comme D-343 le dit : date d'événement
+  future, version suivante plus ancienne admise (D-343 §6 n'exige qu'une
+  autre version).
 - **PR 2 (code)** : route du cockpit ; panneau de la version (lignes,
   source, historique, séquence lacunaire dite) ; bancs comparatifs du jour 0
   et des quatre empreintes ; banc des lecteurs ; drapeau

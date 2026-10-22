@@ -97,6 +97,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.arbitragesBiologiques = (
       await tx.arbitrageBiologique.deleteMany({ where: par })
     ).count;
+    // Décisions de parcours ([[D-343]], BP-15) : FK RESTRICT vers
+    // protocol_drafts (version et version suivante) ET patients — supprimées
+    // en une instruction (remplacements et retraits ensemble), avant les
+    // versions. La base refuse leur suppression si le dossier survit à la
+    // transaction (contrat `decisions_parcours_v1_negatif.sql`).
+    supprimees.decisionsParcours = (
+      await tx.decisionParcours.deleteMany({ where: par })
+    ).count;
     // Panels documentés hors outil (LOT-06) : FK RESTRICT vers patients ET
     // biology_panels — la déclaration est une pièce du dossier, elle part avec
     // lui. Le catalogue, lui, n'est pas touché : c'est du référentiel.

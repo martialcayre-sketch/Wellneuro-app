@@ -28,7 +28,7 @@ const { prisma, appels } = vi.hoisted(() => {
   };
   for (const nom of [
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'lettreAdressageRemise', 'protocolDiffusionApproval',
-    'arbitrageBiologique', 'panelBiologieDocumente',
+    'arbitrageBiologique', 'decisionParcours', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
     'ecartementProposition',
     'critereDossierConstate',
@@ -246,6 +246,17 @@ describe('effacerDossier', () => {
     expect(rang('donneePhysiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('traitementEnCours')).toBeLessThan(rang('patient'));
     expect(rang('donneePhysiologique')).toBeLessThan(rang('patient'));
+  });
+
+  // Décisions de parcours (D-343, BP-15) : FK RESTRICT vers protocol_drafts
+  // (version et version suivante). Une ligne déplacée après les versions
+  // rendrait l'effacement impossible pour tout dossier qui porte une décision.
+  it('supprime les décisions de parcours avant les versions du protocole et le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('decisionParcours')).toBeGreaterThanOrEqual(0);
+    expect(rang('decisionParcours')).toBeLessThan(rang('protocolDraft'));
+    expect(rang('decisionParcours')).toBeLessThan(rang('patient'));
   });
 
   // Collecte documentaire (D-330) : FK RESTRICT du classement vers le document
