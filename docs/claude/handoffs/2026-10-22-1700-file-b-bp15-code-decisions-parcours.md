@@ -54,6 +54,14 @@ constat par conteneur de la migration.
   « Décisions retirées », avec un test de composant. P2 corrigés : l'an 0
   refusé à la demande (la base aurait rendu une 500), `min-h-11` sur
   « Réessayer », montage du panneau épinglé par le banc des lecteurs.
+- Revue CodeRabbit de #1650 : P1 corrigé, la clôture du dossier se relit
+  sous le verrou dans `ecrireDecision` (une clôture posée entre la route et
+  la transaction laissait passer une décision) ; `evenementInconnu` non
+  booléen refusé ; « Enregistrer » grisé tant qu'un champ obligatoire est
+  vide. Écarté avec motif : le corps non objet reste refusé après la
+  session (400 nommé, ordre de BP-13). Le même trou de clôture hors verrou
+  existe dans la route de BP-13 (`physio-traitements`) : à reprendre hors
+  de ce lot. Vitest ciblé 42/42.
 
 ## Problèmes ouverts
 

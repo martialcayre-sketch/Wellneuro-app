@@ -145,6 +145,18 @@ describe('drapeau et gardes', () => {
     expect((await poser(REFUS)).status).toBe(409);
     expect(prisma.decisionParcours.create).not.toHaveBeenCalled();
   });
+
+  it('une clôture posée entre la lecture de la route et la transaction : refusée sous le verrou', async () => {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ ...DOSSIER }) // appartenance
+      .mockResolvedValueOnce({ ...DOSSIER }) // la route, avant la transaction
+      .mockResolvedValue({ ...DOSSIER, suiviClotureLe: new Date('2026-10-22') }); // sous le verrou
+    const { status, corps } = await poser(REFUS);
+    expect(status).toBe(409);
+    expect(corps.reason).toBe('dossier_cloture');
+    expect(corps.error).toMatch(/clôturé/);
+    expect(prisma.decisionParcours.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET — versions et décisions', () => {

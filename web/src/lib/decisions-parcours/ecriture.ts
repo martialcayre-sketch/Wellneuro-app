@@ -18,6 +18,7 @@
 
 import type { Prisma } from '@/generated/prisma';
 import { JA_FOOD_OBSERVATION_CONTRACT_VERSION } from '@/lib/food-observation/contract';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { lireVersionsDiffusees } from '@/lib/protocol/calendriersPersistes';
 import type { Demande } from './demande';
 import { estTete } from '@/lib/physio-traitements/fils';
@@ -53,6 +54,12 @@ export async function ecrireDecision(
   praticienEmail: string,
 ): Promise<{ id: string }> {
   await verrouiller(tx, idPatient);
+
+  // La clôture se relit SOUS le verrou : lue par la route avant la
+  // transaction, elle a pu être posée entre-temps, et le trigger ne la voit
+  // pas (revue CodeRabbit de #1650, P1).
+  const dossier = await tx.patient.findUnique({ where: { idPatient }, select: { actif: true, suiviClotureLe: true } });
+  if (!dossier || !accepteNouvelEnvoi(dossier)) throw new RefusDecision(RAISON_DOSSIER_CLOS);
 
   const version = await versionDuDossier(tx, idPatient, demande.idVersion);
   if (version === null) throw new RefusDecision('version_inconnue');

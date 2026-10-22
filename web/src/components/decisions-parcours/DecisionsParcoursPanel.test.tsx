@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DecisionsParcoursPanel } from './DecisionsParcoursPanel';
 
@@ -69,5 +69,21 @@ describe('DecisionsParcoursPanel — un fil retiré', () => {
     expect(screen.getByText(/refus du patient — Action de fixture \(choix du patient\)/)).toBeTruthy();
     // Aucune décision en vigueur : le bloc le dit, sans effacer l'historique.
     expect(screen.getByText('Aucune décision posée.')).toBeTruthy();
+  });
+});
+
+describe('DecisionsParcoursPanel — formulaire', () => {
+  it('« Enregistrer » reste grisé tant qu’un champ obligatoire est vide', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => LUES } as Response));
+    render(<DecisionsParcoursPanel idPatient="PAT1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajouter une décision' }));
+    const enregistrer = screen.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement;
+    // Préférence : source, motif et note manquent.
+    expect(enregistrer.disabled).toBe(true);
+    fireEvent.click(screen.getByLabelText('refus du patient'));
+    fireEvent.click(screen.getByLabelText('rapporté par le patient'));
+    expect(enregistrer.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Motif'), { target: { value: 'choix_du_patient' } });
+    expect(enregistrer.disabled).toBe(false);
   });
 });

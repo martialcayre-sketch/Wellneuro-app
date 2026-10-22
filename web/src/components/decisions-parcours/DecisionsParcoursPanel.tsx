@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { normaliserTexte } from '@/lib/physio-traitements/liste';
 import type { DecisionsParcoursGetResponse } from '@/app/api/praticien/decisions-parcours/route';
 import {
   familleDuFil,
@@ -166,6 +167,11 @@ function FormulaireDecision({
   const motifRetenu = motifs.includes(motif) ? motif : '';
   const noteObligatoire = noteRequise(nature, motifRetenu || null);
   const autresVersions = versions.filter(v => v.id !== version.id);
+  // Un champ obligatoire vide grise « Enregistrer » : la route le refuserait.
+  const incomplet =
+    (estRevision ? issue === '' : source === '')
+    || (motifs.length > 0 && motifRetenu === '')
+    || (noteObligatoire && normaliserTexte(note) === null);
 
   return (
     <form
@@ -298,7 +304,7 @@ function FormulaireDecision({
       </label>
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={envoi} className={classePrincipal}>Enregistrer</button>
+        <button type="submit" disabled={envoi || incomplet} className={classePrincipal}>Enregistrer</button>
         <button type="button" disabled={envoi} onClick={onAnnuler} className={classeBouton}>Annuler</button>
       </div>
     </form>

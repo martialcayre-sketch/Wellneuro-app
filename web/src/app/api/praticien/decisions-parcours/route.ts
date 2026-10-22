@@ -105,7 +105,9 @@ export async function POST(req: Request) {
     const ecrit = await prisma.$transaction(tx => ecrireDecision(tx, idPatient, lu.demande, garde.email));
     return NextResponse.json<DecisionsParcoursPostResponse>({ ok: true, id: ecrit.id }, { status: 201 });
   } catch (err) {
-    if (err instanceof RefusDecision) return echec(err.raison, 409);
+    if (err instanceof RefusDecision) {
+      return echec(err.raison, 409, err.raison === RAISON_DOSSIER_CLOS ? MESSAGE_DOSSIER_CLOS : undefined);
+    }
     if (estConflitConcurrent(err)) return echec('conflit_concurrent', 409);
     if (estRefusDeLaBase(err)) {
       console.error('[praticien/decisions-parcours POST] refus de la base :', ...classeEtCode(err));

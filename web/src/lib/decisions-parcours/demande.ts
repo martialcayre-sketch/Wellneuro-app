@@ -127,6 +127,9 @@ export function lireDemande(brut: Record<string, unknown>, aujourdhui: string): 
   let evenementLe: string | null = null;
   let evenementInconnu: boolean | null = null;
   if (NATURES_MISE_EN_OEUVRE.includes(nature)) {
+    // « date inconnue » est un booléen écrit : une chaîne `"true"` ne se lit
+    // pas comme `false` (revue CodeRabbit de #1650).
+    if (!absent(brut.evenementInconnu) && typeof brut.evenementInconnu !== 'boolean') return refus('date_invalide');
     if (brut.evenementInconnu === true) {
       if (!absent(brut.evenementLe)) return refus('date_invalide');
       evenementInconnu = true;

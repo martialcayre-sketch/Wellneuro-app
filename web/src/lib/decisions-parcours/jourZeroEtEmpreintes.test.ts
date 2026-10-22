@@ -108,6 +108,9 @@ function delegue(table: string, methodes: Record<string, (arg: never) => unknown
 }
 
 const delegues: Record<string, unknown> = {
+  patient: delegue('patient', {
+    findUnique: () => ({ actif: true, suiviClotureLe: null }),
+  }),
   protocolDraft: delegue('protocolDraft', {
     findFirst: ({ where }: { where: { id: string; idPatient: string } }) =>
       base.protocolDraft.find(v => v.id === where.id && v.idPatient === where.idPatient) ?? null,
