@@ -1,5 +1,6 @@
 import { canonicalSha256 } from './canonical';
 import { estSelectionLibre } from './prioriteLibre';
+import { estNatureComplement, estSituationComplement } from './complementCible';
 import { assertRefAssietteDIndication } from '../food-compass/plates';
 import {
   ACTION_ID_ORIENTATION,
@@ -246,6 +247,55 @@ function normalizeFoodCompassRef(
 }
 
 /**
+ * LA NATURE DU COMPLÉMENT ET SES SITUATIONS ([[D-345]] §1 et §3, J3-12h) —
+ * même forme que l'assiette juste au-dessus : V4 explicite, un type d'action
+ * lié, une liste fermée. Une valeur hors liste est un REFUS, jamais un repli.
+ *
+ * L'ABSENCE PASSE ICI, ET C'EST VOULU. « Pas de valeur par défaut » interdit
+ * d'en inventer une ; le refus d'une intention sans nature appartient au clic
+ * de diffusion (lot 3), là où la garde lit l'état du dossier. L'exiger à
+ * l'écriture fermerait toute intention de complément tant que l'écran ne pose
+ * pas la case.
+ *
+ * Utilisée à l'écriture comme à la relecture : une valeur forgée dans un
+ * payload persisté y devient une erreur d'intégrité, pas une garde muette.
+ */
+function assertNatureComplement(action: ProtocolAction, version: ProtocolDraft['version']): void {
+  const { natureComplement: nature, situationsComplement: situations } = action;
+  if (nature === undefined && situations === undefined) return;
+  if (version !== VERSION_PROTOCOL_DRAFT_V4) {
+    throw new TypeError('La nature d’un complément exige un payload protocole V4 explicite.');
+  }
+  if (action.type !== 'supplement_exploration') {
+    throw new TypeError('La nature d’un complément ne vise qu’une intention de complément.');
+  }
+  if (nature !== undefined && !estNatureComplement(nature)) {
+    throw new TypeError('Nature de complément inconnue : « ciblé » ou « multivitaminé en vente libre ».');
+  }
+  if (situations === undefined) return;
+  if (nature !== 'cible') {
+    throw new TypeError('Une situation ne se déclare que sur un complément ciblé.');
+  }
+  if (!Array.isArray(situations) || situations.some(situation => !estSituationComplement(situation))) {
+    throw new TypeError('Situation de complément inconnue.');
+  }
+}
+
+function normalizeNatureComplement(
+  action: ProtocolAction,
+  version: ProtocolDraft['version'],
+): Pick<ProtocolAction, 'natureComplement' | 'situationsComplement'> {
+  assertNatureComplement(action, version);
+  if (action.natureComplement === undefined) return {};
+  // Dédupliquées et triées : la même déclaration rend la même empreinte. Vide,
+  // la clé n'est pas écrite — une liste vide ne dit rien de plus que l'absence.
+  const situations = uniqueSorted(action.situationsComplement ?? []);
+  return situations.length === 0
+    ? { natureComplement: action.natureComplement }
+    : { natureComplement: action.natureComplement, situationsComplement: situations as ProtocolAction['situationsComplement'] };
+}
+
+/**
  * L'ORIENTATION VERS LE MÉDECIN ([[D-257]] §8, LOT-05) : due dès qu'un constat
  * est adressé, en tête, au texte signé, et nulle part ailleurs.
  *
@@ -352,6 +402,7 @@ function normalizeActions(
       ...normalizeInterventionStatus(action, version),
       ...normalizePlateRef(action, version),
       ...normalizeFoodCompassRef(action, version),
+      ...normalizeNatureComplement(action, version),
     };
   });
 }
@@ -526,6 +577,15 @@ export function assertProtocolDraftSupplementStructure(draft: ProtocolDraft): vo
   draft.actions.forEach(action => {
     if (action.type === 'supplement_exploration') {
       assertNoForbiddenSupplementFields(action);
+    }
+    assertNatureComplement(action, draft.version);
+    // À LA RELECTURE, LA FORME NORMALISÉE EST EXIGÉE : l'écrivain ne persiste
+    // jamais une liste vide, dupliquée ou désordonnée. Seul un payload forgé en
+    // porte une.
+    const situations = action.situationsComplement;
+    if (situations !== undefined
+      && (situations.length === 0 || situations.join('\n') !== uniqueSorted(situations).join('\n'))) {
+      throw new TypeError('Situations de complément non normalisées.');
     }
     if (action.supplementCatalogRef === undefined) return;
     if (draft.version !== VERSION_PROTOCOL_DRAFT_V3 && draft.version !== VERSION_PROTOCOL_DRAFT_V4) {
