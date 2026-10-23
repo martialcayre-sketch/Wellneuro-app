@@ -10,10 +10,11 @@ import {
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
-import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
-import { compterBesoinsMesures } from '@/lib/equilibre/score';
+import { calculerObjetsCliniques, SOURCES_STABILITE_METABOLIQUE } from '@/lib/equilibre/objetsCliniques';
+import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import type { PresenceSourceStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
 import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
@@ -33,6 +34,9 @@ export type ObjetsCliniquesReponse = {
   besoinsMesures: number;
   besoinsTotal: number;
   stabiliteMetabolique: number | null; // 0-100
+  /** Sources de la stabilité présentes ou manquantes ([[D-333]] §3) : la
+   *  présence seule, aucun chiffre par source. */
+  stabiliteMetaboliqueSources: PresenceSourceStabilite[];
   reserveAdaptation: number | null; // 0-100
   clarte: number | null; // 0-100
   momentum: ResultatMomentum | null;
@@ -138,6 +142,12 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         besoinsMesures: compterBesoinsMesures(objets.indiceGlobal),
         besoinsTotal: BESOINS.length,
         stabiliteMetabolique: versCent(objets.stabiliteMetabolique),
+        // Même liste et même fonction que la formule : la présence dite ne
+        // peut pas s'écarter de ce que la moyenne a réellement lu.
+        stabiliteMetaboliqueSources: SOURCES_STABILITE_METABOLIQUE.map(source => ({
+          idQuestionnaire: source.idQuestionnaire,
+          presente: calculerCouvertureSource(source, reponses) !== null,
+        })),
         reserveAdaptation: versCent(objets.reserveAdaptation),
         clarte: versCent(objets.clarte),
         momentum,

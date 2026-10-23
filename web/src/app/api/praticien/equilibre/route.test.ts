@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -86,6 +86,94 @@ describe('GET /api/praticien/equilibre', () => {
     const json = (await (await GET(request())).json()) as { objetsCliniques: { besoinsMesures: number; besoinsTotal: number } };
     expect(json.objetsCliniques.besoinsMesures).toBe(1);
     expect(json.objetsCliniques.besoinsTotal).toBe(12);
+  });
+
+  // [[D-333]] §3 : la route dit quelles sources de la stabilité sont là, pour
+  // que le cockpit nomme la présente et celle qui manque — la présence seule,
+  // aucun chiffre par source.
+  describe('sources de la stabilité métabolique', () => {
+    const toutes = (prefixe: string, n: number, valeur: string) =>
+      Object.fromEntries(Array.from({ length: n }, (_, i) => [`${prefixe}${i + 1}`, valeur]));
+    const reponse = (idQuestionnaire: string, rawAnswers: Record<string, string>) => ({
+      idQuestionnaire,
+      dateReponse: new Date('2026-10-01T10:00:00Z'),
+      scoresJson: { rawAnswers },
+      statutValidite: null,
+    });
+    type Objets = { objetsCliniques: { stabiliteMetabolique: number | null; stabiliteMetaboliqueSources: unknown } };
+
+    it('aucune réponse : les deux sources manquent, la valeur reste nulle', async () => {
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetabolique).toBeNull();
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: false },
+        { idQuestionnaire: 'Q_INF_02', presente: false },
+      ]);
+    });
+
+    it('Q_INF_01 seule : présente, Q_INF_02 manquante', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([reponse('Q_INF_01', toutes('H', 24, '1'))]);
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetabolique).not.toBeNull();
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: true },
+        { idQuestionnaire: 'Q_INF_02', presente: false },
+      ]);
+    });
+
+    it('Q_INF_02 seule : Q_INF_01 manquante, l’ordre de la liste tient', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([reponse('Q_INF_02', toutes('M', 13, '2'))]);
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetabolique).not.toBeNull();
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: false },
+        { idQuestionnaire: 'Q_INF_02', presente: true },
+      ]);
+    });
+
+    // La présence dite et la valeur lisent la même chose : une passation
+    // invalidée n'est ni comptée dans la moyenne, ni dite présente. Le filtre
+    // de validité vit derrière son drapeau (`validite.ts`) : on l'allume.
+    it('Q_INF_02 invalidée : dite manquante, la valeur est celle de Q_INF_01 seule', async () => {
+      vi.stubEnv('WN_ENABLE_VALIDITE_PASSATIONS', '1');
+      onTestFinished(() => {
+        vi.unstubAllEnvs();
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([reponse('Q_INF_01', toutes('H', 24, '1'))]);
+      const seule = (await (await GET(request())).json()) as Objets;
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        reponse('Q_INF_01', toutes('H', 24, '1')),
+        { ...reponse('Q_INF_02', toutes('M', 13, '2')), statutValidite: 'INVALID' },
+      ]);
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetabolique).toBe(seule.objetsCliniques.stabiliteMetabolique);
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: true },
+        { idQuestionnaire: 'Q_INF_02', presente: false },
+      ]);
+    });
+
+    it('Q_INF_01 incomplète, donc non scorée : dite manquante, valeur nulle', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([reponse('Q_INF_01', { H1: '1' })]);
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetabolique).toBeNull();
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: false },
+        { idQuestionnaire: 'Q_INF_02', presente: false },
+      ]);
+    });
+
+    it('les deux sources : toutes deux présentes', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        reponse('Q_INF_01', toutes('H', 24, '1')),
+        reponse('Q_INF_02', toutes('M', 13, '2')),
+      ]);
+      const json = (await (await GET(request())).json()) as Objets;
+      expect(json.objetsCliniques.stabiliteMetaboliqueSources).toEqual([
+        { idQuestionnaire: 'Q_INF_01', presente: true },
+        { idQuestionnaire: 'Q_INF_02', presente: true },
+      ]);
+    });
   });
 
   it('un axe partiel ne compte pas parmi les besoins mesurés', async () => {

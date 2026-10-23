@@ -30,6 +30,11 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 // Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
 import { MENTION_NATURE_INDICE_GLOBAL, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import {
+  MENTION_POIDS_NON_MOTIVE,
+  MENTION_SOURCES_INDISPONIBLES,
+  mentionSourcesStabilite,
+} from '@/lib/praticien/mentionStabiliteMetabolique';
 // Même patron, même raison : `rideauT0.ts` est une feuille sans import, alors
 // que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
 // `orientationService`.
@@ -110,6 +115,7 @@ function ObjetGauge({
   label,
   value,
   mention,
+  tolerance,
   base,
 }: {
   label: string;
@@ -117,6 +123,9 @@ function ObjetGauge({
   /** Nature du chiffre, servie sous la jauge quand il n'est pas un score
    *  clinique (`DC-20`). Absente pour les objets qui n'en ont pas besoin. */
   mention?: string;
+  /** Tolérance nommée et bornée d'un objet dont la formule n'est pas encore
+   *  motivée ([[D-333]] §3). Servie sous la mention. */
+  tolerance?: string;
   /** Ce sur quoi le chiffre est établi (« Calculé sur 8 besoins mesurés sur
    *  12 », [[D-329]] §3). Servie sous la mention, seulement si un chiffre
    *  s'affiche. */
@@ -130,11 +139,12 @@ function ObjetGauge({
       </div>
     );
   }
-  if (!mention && !base) return <ScoreGauge value={value} label={label} />;
+  if (!mention && !tolerance && !base) return <ScoreGauge value={value} label={label} />;
   return (
     <div className="flex flex-col items-center">
       <ScoreGauge value={value} label={label} />
       {mention && <span className="mt-1 text-xs text-muted-foreground text-center">{mention}</span>}
+      {tolerance && <span className="text-xs text-muted-foreground text-center">{tolerance}</span>}
       {base && <span className="text-xs text-muted-foreground text-center">{base}</span>}
     </div>
   );
@@ -1456,9 +1466,28 @@ export function FichePatientPanel({
         mention={MENTION_NATURE_INDICE_GLOBAL}
         base={mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)}
       />
-      <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
-      <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
-      <ObjetGauge label="Clarté" value={objetsCliniques.clarte} />
+      {/* LES TROIS AUTRES OBJETS SONT DES REPÈRES DE SUIVI ([[D-333]] §2 règle 3,
+          §3 ; arbitrage du 2026-10-23) : calculés par Wellneuro, aucun n'est la
+          cotation publiée d'un instrument. La stabilité porte en plus la
+          tolérance du §3 — poids égal non motivé, sources nommées — jusqu'à la
+          levée de la porte 4. */}
+      <ObjetGauge
+        label="Stabilité métabolique"
+        value={objetsCliniques.stabiliteMetabolique}
+        mention={MENTION_NATURE_INDICE_GLOBAL}
+        tolerance={MENTION_POIDS_NON_MOTIVE}
+        base={
+          objetsCliniques.stabiliteMetaboliqueSources
+            ? (mentionSourcesStabilite(objetsCliniques.stabiliteMetaboliqueSources) ?? undefined)
+            : MENTION_SOURCES_INDISPONIBLES
+        }
+      />
+      <ObjetGauge
+        label="Réserve d'adaptation"
+        value={objetsCliniques.reserveAdaptation}
+        mention={MENTION_NATURE_INDICE_GLOBAL}
+      />
+      <ObjetGauge label="Clarté" value={objetsCliniques.clarte} mention={MENTION_NATURE_INDICE_GLOBAL} />
       <MomentumCard momentum={objetsCliniques.momentum} />
     </div>
   );
