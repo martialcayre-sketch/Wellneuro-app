@@ -97,6 +97,11 @@ describe('Garde du complément ciblé — âge', () => {
     expect(verdict({ statutAge: 'date_manquante' }).statut).toBe('date_requise');
   });
 
+  it('un statut d’âge hors liste se lit comme une date manquante', () => {
+    expect(verdict({ statutAge: 'autre' as never }).statut).toBe('date_requise');
+    expect(verdict({ statutAge: undefined as never }).statut).toBe('date_requise');
+  });
+
   it('mineur : refus, même avec un accord et sans autre déclencheur', () => {
     expect(verdict({ statutAge: 'mineur' }).statut).toBe('mineur');
   });
@@ -206,6 +211,7 @@ describe('Lecture de Q4 dans le temps', () => {
     ['le dernier « non » compte, pas le premier', [non('2026-09-01T00:00:00.000Z'), oui('2026-09-15T00:00:00.000Z'), non('2026-10-01T00:00:00.000Z')], 'leve'],
     ['un « non » remplacé par « inconnu » ne lève plus', [non('2026-09-01T00:00:00.000Z'), { ...non('2026-10-01T00:00:00.000Z'), reponse: 'inconnu' as const }], 'a_etablir'],
     ['à égalité, un mot autre que « non » empêche la levée', [non('2026-10-01T00:00:00.000Z'), { ...non('2026-10-01T00:00:00.000Z'), reponse: 'inconnu' as const }], 'a_etablir'],
+    ['un « inconnu » non daté du praticien vaut le plus récent', [non('2026-10-01T00:00:00.000Z'), { ...non(null), reponse: 'inconnu' as const }], 'a_etablir'],
     ['une date lisible mais non canonique vaut non datée', [oui('2020-01-01T00:00:00.000Z'), non('2026-10-02')], 'declenche'],
   ])('%s', (_cas, declarations, attendu) => {
     expect(lireEtatCritere('grossesse', declarations)).toBe(attendu);

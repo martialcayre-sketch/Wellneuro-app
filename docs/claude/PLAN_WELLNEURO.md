@@ -544,7 +544,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | étiquetage du fer | 92 claims, besoins servis et rubrique | geste | 1 | aucun | non | fait le 2026-10-20 (84 claims après verdicts, 84 sur 84 constatés le 2026-10-21) |
 | sources fermées | sources des dossiers de mesure à fournir par le responsable, deux d'abord (liste au dossier privé) | geste | 1 | aucun | non | fait (`WN-SRC-0567` à `0570`, #1615) |
 | position d'expert du fer | amendement v0.3, en conflit avec la règle du 2026-10-17 (au dossier privé) | geste | 1 | aucun | non | fait : P5 v0.3 signée le 2026-10-21 |
-| position d'expert du magnésium | amendement v0.4 de P6 : la seconde situation propre au magnésium passe d'un adressage à « courrier, puis complément » (D-345 §2, au dossier privé) | geste | 1 | aucun | non | à faire, préalable de J3-12h |
+| position d'expert du magnésium | amendement v0.4 de P6 : la seconde situation propre au magnésium passe d'un adressage à « courrier, puis complément » (D-345 §2, au dossier privé) | geste | 1 | aucun | non | fait : v0.4 signée pour le responsable le 2026-10-23 (préalable de J3-12h levé) |
 | table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | attente |
 | réapprobation | protocoles diffusés, dossier par dossier, juste après le déploiement de J3-12f | geste | 2 | J3-12f | non | attente |
 | dossiers des autres besoins | 1, 4, 5, 9, puis 3, 8, 10, 12, puis 6, 7, 11 (ordre du 2026-10-15) ; définitions signées des besoins 6, 7 et 11, qui restent « non mesuré » d'ici là | geste | sans rang | besoin 2 achevé | non | attente |
@@ -2184,7 +2184,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h5 | retirer `WN_BIO_EXTRACTION_ASYNC` de Scalingo (`env-unset`, variable inerte depuis #1416) | F42 (mise à jour de G3) ; `docs/FEATURE_FLAGS.md:469-476` | ménage, sans effet sur le service |
 | h2 | sources fermées des dossiers de mesure des besoins 6 à 12, deux d'abord (2026-10-18, décision 7) ; fait le 2026-10-21 (`WN-SRC-0567` à `0570`, #1615) | H15 | J3-12f |
 | h2 | amendement v0.3 d'une position d'expert du dossier du fer, en conflit avec une règle du responsable du 2026-10-17 ; fait, signé le 2026-10-21 | H15, F02 | J3-12h |
-| h2 | amendement v0.4 de la position P6 du dossier du magnésium (D-345 §2) | H15 | J3-12h |
+| h2 | amendement v0.4 de la position P6 du dossier du magnésium (D-345 §2) — fait, signé le 2026-10-23 | H15 | J3-12h |
 
 **D.2 Constats en attente**
 

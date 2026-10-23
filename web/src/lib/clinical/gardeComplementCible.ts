@@ -117,7 +117,13 @@ function instant(le: string | null): number | null {
 function dernierNonDuPraticien(visees: readonly DeclarationEtat[]): number | null {
   const praticien = visees
     .filter(declaration => declaration.source === 'praticien')
-    .map(declaration => ({ reponse: declaration.reponse, t: instant(declaration.le) ?? Number.NEGATIVE_INFINITY }));
+    // Non datée, une ligne vaut ANCIENNE si elle est un « non », la PLUS
+    // RÉCENTE sinon : l'incertitude ferme dans les deux cas (revue CodeRabbit).
+    .map(declaration => ({
+      reponse: declaration.reponse,
+      t: instant(declaration.le)
+        ?? (declaration.reponse === 'non' ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY),
+    }));
   if (praticien.length === 0) return null;
   const dernier = Math.max(...praticien.map(ligne => ligne.t));
   const auDernier = praticien.filter(ligne => ligne.t === dernier);
@@ -194,8 +200,9 @@ export function courrierComplementRequis(
     return { statut: 'table_non_signee', motif: MOTIF_TABLE_NON_SIGNEE };
   }
 
-  if (entree.statutAge === 'date_manquante') return { statut: 'date_requise', motif: MOTIF_DATE_REQUISE };
   if (entree.statutAge === 'mineur') return { statut: 'mineur', motif: MOTIF_MINEUR };
+  // Seul « majeur » ouvre : une valeur hors liste se lit comme une date manquante.
+  if (entree.statutAge !== 'majeur') return { statut: 'date_requise', motif: MOTIF_DATE_REQUISE };
 
   const situationsConnues = new Set<string>(
     table.filter(ligne => ligne.nature === 'situation').map(ligne => ligne.id),
