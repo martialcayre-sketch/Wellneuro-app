@@ -191,6 +191,10 @@ Points tranchés par défaut, à contester :
 - **courrier révoqué ou remplacé après la remise** : la remise reste tracée
   (patron [[D-262]], « servie jusqu'à révocation ») ; la version suivante
   rejoue la garde ;
+- **retrait de l'accord de partage** : il ferme les clics suivants, même si
+  une remise antérieure couvre déjà ces compléments — la trace prouve la
+  remise, pas l'accord, que la garde relit à chaque clic ([[D-345]] §6) ; il
+  ne retire pas une version déjà servie (la garde joue au clic) ;
 - **annonce** : la remise du courrier entre dans l'annonce unique du clic
   (`gabaritAnnonceDuClic`), sans e-mail de plus ;
 - **destinataire** : saisi dans le courrier, prérempli du médecin traitant
