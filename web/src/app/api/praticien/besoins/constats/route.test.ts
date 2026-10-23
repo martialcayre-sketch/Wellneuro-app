@@ -33,6 +33,7 @@ vi.mock('@/lib/constats-besoin/besoins', async importOriginal => ({
   besoinsConstatablesAvecScore: () => new Set(avecScore),
 }));
 
+import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { GET, POST } from './route';
 
 const PRATICIEN = 'praticien@wellneuro.fr';
@@ -327,6 +328,22 @@ describe('POST pose — un acte en ajout seul, auteur = la session', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: PRATICIEN, actif: true, suiviClotureLe: new Date() });
     expect((await POST(requete(POSE))).status).toBe(409);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('clôture posée entre la lecture de la route et le verrou : relue sous le verrou, refusée, rien écrit', async () => {
+    const ouvert = { praticienEmail: PRATICIEN, actif: true, suiviClotureLe: null };
+    prisma.patient.findUnique
+      .mockResolvedValueOnce(ouvert) // appartenance
+      .mockResolvedValueOnce(ouvert) // la route, avant la transaction
+      .mockResolvedValueOnce({ actif: true, suiviClotureLe: new Date() }); // sous le verrou
+    const response = await POST(requete(POSE));
+    expect(response.status).toBe(409);
+    const corps = await response.json();
+    expect(corps.reason).toBe(RAISON_DOSSIER_CLOS);
+    expect(corps.error).toBe(MESSAGE_DOSSIER_CLOS);
+    // Relue APRÈS les verrous du dossier et du besoin.
+    expect(prisma.$executeRaw.mock.invocationCallOrder[1]).toBeLessThan(prisma.patient.findUnique.mock.invocationCallOrder[2]);
+    expect(prisma.constatBesoinPraticien.create).not.toHaveBeenCalled();
   });
 });
 

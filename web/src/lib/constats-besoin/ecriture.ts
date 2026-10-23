@@ -21,6 +21,7 @@
 import type { Prisma } from '@/generated/prisma';
 import { annulationParLigne, annulationsActives, correctionsParLigne, verrouillerCleDuResultat } from '@/lib/biology-library/publie';
 import { VALIDITES_RETENUES } from '@/lib/bio-parcours/constats/aRelire';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import type { DemandeConstatBesoin } from './demande';
 
 /** Une issue de transaction : le refus nommé. */
@@ -97,6 +98,13 @@ export async function ecrireConstatBesoin(
   praticienEmail: string,
 ): Promise<{ id: string }> {
   await verrouillerBesoin(tx, idPatient, demande.besoin);
+
+  // La clôture se relit SOUS le verrou : lue par la route avant la
+  // transaction, elle a pu être posée entre-temps, et le trigger ne la voit
+  // pas (revue CodeRabbit de #1668, P1 ; même correctif que #1650).
+  const dossier = await tx.patient.findUnique({ where: { idPatient }, select: { actif: true, suiviClotureLe: true } });
+  if (!dossier || !accepteNouvelEnvoi(dossier)) throw new RefusConstatBesoin(RAISON_DOSSIER_CLOS);
+
   const tete = await lireTete(tx, idPatient, demande.besoin);
 
   if (demande.acte === 'retrait') {

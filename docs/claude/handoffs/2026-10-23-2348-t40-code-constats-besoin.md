@@ -70,6 +70,11 @@
       relu) ;
     - le constat par conteneur est consigné ci-dessus.
 - **T3 rejoué** après ces retouches.
+- **CodeRabbit sur 5d2ae791** (après fusion de `main`) : deux commentaires,
+  corrigés tous les deux.
+  - P1, hors diff : la clôture du dossier est désormais relue sous le verrou,
+    comme dans le correctif de #1650 pour BP-15. Un test vérifie le cas.
+  - P2 : `FEATURE_FLAGS.md` nomme aussi `WN_CB_ENABLED`.
 
 ## Problèmes ouverts
 
