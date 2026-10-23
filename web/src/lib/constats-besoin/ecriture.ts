@@ -15,8 +15,7 @@
 // identifiant), puis les passations dans l'ordre de leur identifiant.
 
 import type { Prisma } from '@/generated/prisma';
-import { annulationParLigne, correctionsParLigne } from '@/lib/biology-library/filCorrection';
-import { annulationsActives, verrouillerCleDuResultat } from '@/lib/biology-library/annulations';
+import { annulationParLigne, annulationsActives, correctionsParLigne, verrouillerCleDuResultat } from '@/lib/biology-library/publie';
 import { VALIDITES_RETENUES } from '@/lib/bio-parcours/constats/aRelire';
 import type { DemandeConstatBesoin } from './demande';
 

@@ -12,8 +12,7 @@
 
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
-import { annulationParLigne, correctionsParLigne } from '@/lib/biology-library/filCorrection';
-import { annulationsActives } from '@/lib/biology-library/annulations';
+import { annulationParLigne, annulationsActives, correctionsParLigne } from '@/lib/biology-library/publie';
 import type { ReponseCitee, ResultatCite } from '@/lib/bio-parcours/constats/aRelire';
 import { VALIDITES_RETENUES } from '@/lib/bio-parcours/constats/aRelire';
 import {

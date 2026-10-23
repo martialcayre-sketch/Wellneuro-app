@@ -104,6 +104,13 @@ const IMPORTEURS_ADMIS = [
   'web/src/app/api/portail/documents/route.ts',
   'web/src/app/api/praticien/documents-deposes/contenu/route.ts',
   'web/src/lib/collecte/documentsDeposesServeur.ts',
+  // Le constat du praticien sur un besoin sans score ([[D-347]], t40) : le
+  // drapeau de l'étage des résultats, le fil d'une ligne citée en pièce
+  // (tête, annulation) et son verrou de clé — aucune valeur lue ; par
+  // l'entrée publiée, quatrième lecteur hors biologie (2026-10-23).
+  'web/src/app/api/praticien/besoins/constats/route.ts',
+  'web/src/lib/constats-besoin/ecriture.ts',
+  'web/src/lib/constats-besoin/lecture.ts',
   'web/src/app/api/praticien/patients/route.ts',
   'web/src/app/api/praticien/protocoles/versions/route.ts',
   // Pages et composants praticien. La page unique de la biologie est le

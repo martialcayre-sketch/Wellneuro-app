@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { dateJourParis } from '@/lib/dateParis';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
-import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
+import { isCbResultsEnabled } from '@/lib/biology-library/publie';
 import { estConflitConcurrent, estRefusDeLaBase } from '@/lib/bio-parcours/constats/erreurs';
 import { besoinsConstatablesAvecScore, besoinsOfferts, type BesoinOffert } from '@/lib/constats-besoin/besoins';
 import { lireDemandeConstatBesoin } from '@/lib/constats-besoin/demande';
