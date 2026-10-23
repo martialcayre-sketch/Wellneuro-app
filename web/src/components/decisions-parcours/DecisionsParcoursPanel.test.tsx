@@ -101,8 +101,11 @@ describe('DecisionsParcoursPanel — retrait confirmé (arbitrage du 2026-10-23)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Retirer' }));
     expect(screen.getByText('Retirer cette décision ? Elle restera lisible dans l’historique.')).toBeTruthy();
+    // Le focus suit au clavier : « Annuler » à l'ouverture, « Retirer » après.
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Annuler' }));
     fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
     expect(envois(fetchMock)).toHaveLength(0);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Retirer' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Retirer' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }));

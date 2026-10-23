@@ -320,6 +320,8 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   const [edition, setEdition] = useState<string | null>(null);
   /** La ligne dont le retrait attend sa confirmation (arbitrage du 2026-10-23). */
   const [aRetirer, setARetirer] = useState<string | null>(null);
+  /** Où poser le focus au prochain rendu : la confirmation ouverte, ou le « Retirer » d'une confirmation annulée. */
+  const focus = useRef<{ vers: 'confirmation' | 'retirer'; ligne: string } | null>(null);
   const lecture = useRef(0);
 
   const charger = useCallback(async () => {
@@ -389,6 +391,14 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   };
   // Un retrait sert à l'erreur de saisie comme au refus que le patient lève
   // ([[D-343]] §5) : libellé neutre, et confirmation en ligne avant l'envoi.
+  // Au clavier, le bouton focalisé disparaît : le focus va à « Annuler » (le
+  // choix sans effet) à l'ouverture, et revient à « Retirer » après l'annulation.
+  const focaliser = (el: HTMLButtonElement | null, vers: 'confirmation' | 'retirer', ligne: string) => {
+    if (el && focus.current?.vers === vers && focus.current.ligne === ligne) {
+      focus.current = null;
+      el.focus();
+    }
+  };
   const boutonRetirer = (version: VersionLue, ligne: DecisionLue) =>
     aRetirer === ligne.id ? (
       <span role="group" aria-label="Confirmer le retrait" className="flex flex-wrap items-center gap-2">
@@ -404,12 +414,29 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         >
           Confirmer
         </button>
-        <button type="button" className={classeBouton} onClick={() => setARetirer(null)}>
+        <button
+          type="button"
+          className={classeBouton}
+          ref={el => focaliser(el, 'confirmation', ligne.id)}
+          onClick={() => {
+            focus.current = { vers: 'retirer', ligne: ligne.id };
+            setARetirer(null);
+          }}
+        >
           Annuler
         </button>
       </span>
     ) : (
-      <button type="button" disabled={!actif} className={classeBouton} onClick={() => setARetirer(ligne.id)}>
+      <button
+        type="button"
+        disabled={!actif}
+        className={classeBouton}
+        ref={el => focaliser(el, 'retirer', ligne.id)}
+        onClick={() => {
+          focus.current = { vers: 'confirmation', ligne: ligne.id };
+          setARetirer(ligne.id);
+        }}
+      >
         Retirer
       </button>
     );
