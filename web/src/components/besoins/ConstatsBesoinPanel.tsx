@@ -20,7 +20,8 @@ import {
 // LE CONSTAT DU PRATICIEN SUR UN BESOIN SANS SCORE ([[D-347]], t40) : l'écran
 // du praticien seul, sous l'onglet « Besoins », monté seulement si
 // `WN_CONSTAT_BESOIN` est allumé (la page le lit au serveur). Un constat est
-// la décision datée du praticien sur un besoin évalué en entretien — 2, 6, 7
+// la décision datée du praticien sur un besoin évalué en entretien ou sur
+// pièces ([[D-347]] §1) — 2, 6, 7
 // et 11, qui n'ont aucune source de score ; il ne dit jamais l'état du
 // patient, et l'écran n'affiche aucune valeur — une pièce se dit par son
 // analyse ou son questionnaire, et sa date. « À relire » est dérivé par la
@@ -365,7 +366,7 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section aria-labelledby="constats-besoin-titre" className="mt-6 rounded-xl border border-border p-4">
-      <h3 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Besoins évalués en entretien</h3>
+      <h3 id="constats-besoin-titre" className="text-base font-semibold text-foreground">Constats sur les besoins sans score</h3>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_MESURE}</p>
       {erreur && <p role="alert" className="mt-2 text-sm text-destructive">{erreur}</p>}
       {avis && <p role="alert" className="mt-2 text-sm text-destructive">{avis}</p>}
@@ -376,7 +377,9 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
             const tete = lu?.tete ?? null;
             return (
               <li key={offert.besoin} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium text-foreground">{`B${offert.besoin} · ${offert.libelle}`}</p>
+                <p id={`constat-besoin-${offert.besoin}`} className="text-sm font-medium text-foreground">
+                  {`B${offert.besoin} · ${offert.libelle}`}
+                </p>
                 {tete ? <Acte acte={tete} /> : <p className="text-xs text-muted-foreground">Aucun constat posé.</p>}
                 {lu && lu.aRelire.length > 0 && (
                   <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">
@@ -392,6 +395,7 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
                   {!offert.avecScore && (
                     <button
                       type="button"
+                      aria-describedby={`constat-besoin-${offert.besoin}`}
                       onClick={() => setGeste({ besoin: offert.besoin, acte: 'pose', remplace: tete?.id ?? null })}
                       className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
                     >
@@ -401,6 +405,7 @@ export function ConstatsBesoinPanel({ idPatient }: { idPatient: string }) {
                   {tete && (
                     <button
                       type="button"
+                      aria-describedby={`constat-besoin-${offert.besoin}`}
                       onClick={() => setGeste({ besoin: offert.besoin, acte: 'retrait', remplace: tete.id })}
                       className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
                     >

@@ -98,5 +98,5 @@ export const AVERTISSEMENT_NOTE = 'Ne recopiez aucune valeur dans la note.';
 
 /** Un constat n'est pas une mesure ([[D-347]] §6), et la surface le dit. */
 export const AVERTISSEMENT_MESURE =
-  'Un constat est votre décision sur un besoin évalué en entretien. Ce n’est pas une mesure : '
+  'Un constat est votre décision sur un besoin sans score, évalué en entretien ou sur pièces. Ce n’est pas une mesure : '
   + 'le besoin reste « non mesuré » ou « hors score » et n’entre dans aucun compte de besoins mesurés.';

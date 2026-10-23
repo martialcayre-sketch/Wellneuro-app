@@ -176,6 +176,18 @@ describe('GET — les quatre besoins, leurs constats, sans aucune valeur', () =>
     expect(corps.citables).toEqual([{ type: 'reponse', id: 'rep1', titre: 'Questionnaire de test', dateReponse: PRELEVE.toISOString() }]);
     expect(prisma.resultatBiologique.findMany).not.toHaveBeenCalled();
   });
+
+  it('étage fermé, mais un constat cite déjà une ligne : la pièce reste décrite et « à relire » se calcule, rien n’est offert', async () => {
+    process.env.WN_CB_RESULTS_ENABLED = 'false';
+    dossier([ligne('res1', 'BIO_TEST', PRELEVE), ligne('res9', 'BIO_TEST', PRELEVE, 'res1')]);
+    prisma.constatBesoinPraticien.findMany.mockResolvedValue([
+      acteLu({ besoin: 2, pieces: [{ idResultat: 'res1', idQuestionnaireReponse: null }] }),
+    ]);
+    const corps = await (await lecture()).json();
+    expect(corps.besoins[0].tete.pieces.map((p: { id: string }) => p.id)).toEqual(['res1']);
+    expect(corps.besoins[0].aRelire).toEqual(['piece_corrigee']);
+    expect(corps.citables).toEqual([]);
+  });
 });
 
 describe('POST pose — un acte en ajout seul, auteur = la session', () => {

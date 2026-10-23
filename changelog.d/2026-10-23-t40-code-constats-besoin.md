@@ -25,7 +25,7 @@
   - « à relire », pur, avec les conditions de D-331 §5 sur les pièces ;
   - la lecture, l'écriture, la garde et le drapeau, fail-closed ;
   - un point unique de lecture des sources de score.
-- Écran : le bloc « Besoins évalués en entretien » se place sous le tableau de
+- Écran : le bloc « Constats sur les besoins sans score » se place sous le tableau de
   l'onglet « Besoins », sur arbitrage du responsable du 2026-10-23. Il n'est
   monté que si le drapeau est allumé, et il le dit : un constat n'est pas une
   mesure. Le tableau des besoins, les cercles et les jauges du cockpit ne

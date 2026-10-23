@@ -11431,3 +11431,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; page de la file A (r3_07 en cours) ; puis J1-cockpit-b.
 
 **Ouvert.** Porte 4 (poids égal) ; incohérence de nom des besoins 9 et 10 (jauge « repère de suivi », tableau « couverture ») jusqu'aux lots Q2 à Q4.
+## 2026-10-23 — t40 : constat sur un besoin sans score, code consommateur (D-347)
+
+**Fait.** Migration #1664 appliquée : release-db 40021347640, sentinelle liée au run, constat par conteneur. PR 2 : route `api/praticien/besoins/constats`, lecture, écriture sous les verrous du trigger, bloc sous le tableau de l'onglet « Besoins » (arbitrage du responsable), garde des lecteurs jumelle, sous `WN_CONSTAT_BESOIN` éteint. Biologie lue par l'entrée publiée (D-306). T3 vert ; wn-reviewer GO avec réserves, corrigées.
+
+**Écarté.** Tiroir de la phase « Données », onglet Biologie (confusion avec D-331) ; relever le plafond des dérogations BioFlow.
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t40 « fait » au suivi.
+
+**Ouvert.** Test d'intégration sur vraie base avant l'allumage.

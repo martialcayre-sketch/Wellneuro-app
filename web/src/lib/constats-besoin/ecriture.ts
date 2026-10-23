@@ -12,7 +12,11 @@
 // L'ORDRE DES VERROUS EST FIXE, celui du trigger : `FOR KEY SHARE` sur le
 // dossier, le verrou consultatif du besoin (espace 347), puis les pièces de
 // biologie dans l'ordre de leur clé (analyte, date de prélèvement,
-// identifiant), puis les passations dans l'ordre de leur identifiant.
+// identifiant). Les passations ne sont pas verrouillées ici : leur statut se
+// lit sans verrou, et c'est le trigger de la pièce qui prend leur `FOR SHARE`,
+// dans l'ordre de leur identifiant (l'ordre d'écriture des pièces). Une
+// invalidation passée entre les deux revient en `refus_base`, que l'écran
+// relit — comme pour les constats du parcours ([[D-331]]).
 
 import type { Prisma } from '@/generated/prisma';
 import { annulationParLigne, annulationsActives, correctionsParLigne, verrouillerCleDuResultat } from '@/lib/biology-library/publie';
