@@ -86,6 +86,12 @@ const LECTEURS_PUBLIES = [
   'web/src/app/api/portail/documents/route.ts',
   'web/src/app/api/praticien/documents-deposes/contenu/route.ts',
   'web/src/lib/collecte/documentsDeposesServeur.ts',
+  // Le constat du praticien sur un besoin sans score ([[D-347]], t40) : le
+  // drapeau de l'étage, le fil et le verrou de clé d'une ligne citée en
+  // pièce — aucune valeur lue (2026-10-23).
+  'web/src/app/api/praticien/besoins/constats/route.ts',
+  'web/src/lib/constats-besoin/ecriture.ts',
+  'web/src/lib/constats-besoin/lecture.ts',
 ];
 
 const ENTREE = 'biology-library/publie';

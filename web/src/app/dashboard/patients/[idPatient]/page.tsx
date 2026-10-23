@@ -23,6 +23,7 @@ import { isBioConstatEnabled } from '@/lib/bio-parcours/constats/drapeau';
 import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
 import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
 import { isDecisionsParcoursEnabled } from '@/lib/decisions-parcours/drapeau';
+import { isConstatBesoinEnabled } from '@/lib/constats-besoin/drapeau';
 
 export default async function FichePatientPage({
   params,
@@ -103,6 +104,8 @@ export default async function FichePatientPage({
             physioTraitementsActif={isPhysioTraitementsEnabled()}
             // Et pour les décisions de parcours ([[D-343]] §11).
             decisionsParcoursActif={isDecisionsParcoursEnabled()}
+            // Et pour le constat sur un besoin sans score ([[D-347]] §8).
+            constatBesoinActif={isConstatBesoinEnabled()}
           />
           {typeCarteLu && (
             <ConsignerLectureFil
