@@ -11394,3 +11394,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis J1-cockpit-a en premier lot de code.
 
 **Ouvert.** Porte 4 (poids égal) ; y (comptes du cabinet), geste du responsable.
+
+## 2026-10-23 — t40 : constat sur un besoin sans score, migration (D-347)
+
+**Fait.** Liste des motifs absente de D-338 et D-331 : cinq arbitrages du responsable, D-347 mergée (#1661). Paragraphe RGPD validé. Migration `constats_besoin_praticien_v1` au patron de D-331 : besoins 2, 6, 7, 11, quatre verdicts, neuf motifs, pièces facultatives ; contrat, banc, effacement nommé. T3 vert ; wn-reviewer GO avec réserves, corrigées.
+
+**Écarté.** Transposer la liste de D-331 (elle parle d'hypothèses et de prélèvements) ; base ouverte aux douze besoins.
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db par le responsable, constat par conteneur ; puis PR 2 sous `WN_CONSTAT_BESOIN`.
+
+**Ouvert.** Emplacement de l'écran (PR 2), hors des panneaux de J1-cockpit-a.

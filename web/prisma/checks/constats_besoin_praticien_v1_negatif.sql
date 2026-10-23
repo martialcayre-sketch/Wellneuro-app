@@ -310,9 +310,11 @@ BEGIN
     $q$INSERT INTO constats_besoin_praticien (id, id_patient, acte, besoin, verdict, id_constat_remplace, praticien_email)
        VALUES ('x6c', 'PAT_CONTRAT_CB_A', 'retrait', 2, 'a_soutenir', 'cb_a4', 'praticien@wellneuro.fr')$q$,
     '23514', 'constats_besoin_praticien_forme_retrait');
+  -- Le motif vient avec un verdict qui l'admet : seul `forme_retrait` juge
+  -- (un motif sans verdict tomberait aussi sous `motif_selon_verdict`).
   PERFORM pg_temp.refuse('6 retrait avec motif',
-    $q$INSERT INTO constats_besoin_praticien (id, id_patient, acte, besoin, motif, id_constat_remplace, praticien_email)
-       VALUES ('x6m', 'PAT_CONTRAT_CB_A', 'retrait', 2, 'hors_population', 'cb_a4', 'praticien@wellneuro.fr')$q$,
+    $q$INSERT INTO constats_besoin_praticien (id, id_patient, acte, besoin, verdict, motif, id_constat_remplace, praticien_email)
+       VALUES ('x6m', 'PAT_CONTRAT_CB_A', 'retrait', 2, 'sans_objet', 'hors_population', 'cb_a4', 'praticien@wellneuro.fr')$q$,
     '23514', 'constats_besoin_praticien_forme_retrait');
   PERFORM pg_temp.refuse('6 retrait avec note',
     $q$INSERT INTO constats_besoin_praticien (id, id_patient, acte, besoin, note, id_constat_remplace, praticien_email)
@@ -468,9 +470,12 @@ BEGIN
 
   -- ── 12. Les pièces sont facultatives ─────────────────────────────────────
   -- Les douze couples du cas 8 sont posés sans pièce, chacun des quatre
-  -- verdicts compris ; la fin de transaction, jouée sur-le-champ, ne refuse
-  -- rien.
-  PERFORM pg_temp.clore();
+  -- verdicts compris. TOUS les contrôles différés de la transaction sont
+  -- joués sur-le-champ (`ALL`, pas seulement les deux suppressions
+  -- nommées) : aucun ne refuse. Le cas 15 compte en outre exactement deux
+  -- triggers de contrainte sur les deux tables.
+  SET CONSTRAINTS ALL IMMEDIATE;
+  SET CONSTRAINTS ALL DEFERRED;
   SELECT count(*) INTO nb FROM constats_besoin_praticien c
   WHERE c.id LIKE 'cb\_v%'
     AND NOT EXISTS (SELECT 1 FROM pieces_constats_besoin_praticien p WHERE p.id_constat = c.id);
