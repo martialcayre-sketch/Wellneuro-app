@@ -136,6 +136,25 @@ describe('drapeau et gardes', () => {
     expect((await POST(requete({ idPatient: 'PAT1', objet: 'physio', acte: 'pose', critere: 'grossesse', reponse: 'non' }))).status).toBe(409);
     expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
   });
+
+  it('une clôture posée entre la lecture de la route et la transaction : refusée sous le verrou', async () => {
+    prisma.patient.findUnique
+      .mockResolvedValueOnce({ ...DOSSIER }) // appartenance
+      .mockResolvedValueOnce({ ...DOSSIER }) // la route, avant la transaction
+      .mockResolvedValue({ ...DOSSIER, suiviClotureLe: new Date('2026-10-21') }); // sous le verrou
+    for (const corps of [
+      { idPatient: 'PAT1', objet: 'physio', acte: 'pose', critere: 'grossesse', reponse: 'non' },
+      { idPatient: 'PAT1', objet: 'traitement', acte: 'pose', nature: 'medicament', nom: 'Traitement A', debut: '2024-05', prescritParTiers: 'non' },
+    ]) {
+      const reponse = await POST(requete(corps));
+      expect(reponse.status).toBe(409);
+      const lu = await reponse.json();
+      expect(lu.reason).toBe('dossier_cloture');
+      expect(lu.error).toMatch(/clôturé/);
+    }
+    expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
+    expect(prisma.traitementEnCours.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET — lignes, anamnèse, discordance', () => {

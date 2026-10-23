@@ -11347,3 +11347,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge.
 
 **Ouvert.** Rubrique 4 des mineurs : avis de l'avocat (D-344).
+
+## 2026-10-23 — BP-13 : clôture relue sous le verrou
+
+**Fait.** `verrouillerDossier` (écriture BP-13) relit la clôture du suivi après le `FOR KEY SHARE` ; les routes praticien et portail rendent le refus nommé `dossier_cloture` avec le message du dossier clos. Même trou que la revue CodeRabbit de #1650 a trouvé sur BP-15, routé au responsable, arbitré « petite PR maintenant » le 2026-10-23. Deux tests de course.
+
+**Écarté.** `FOR SHARE` sur le patient (bloquerait la clôture pendant l'écriture : changement d'ordre des verrous hors lot).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Allumage BP-13 : conditions de FEATURE_FLAGS.md inchangées.
