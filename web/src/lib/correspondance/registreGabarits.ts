@@ -690,7 +690,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
   // l'échéance et l'adresse de l'espace. La note reste lisible dans l'espace :
   // elle s'affiche en tête du questionnaire (`GenericQuestionnaire.tsx`,
   // `PlaintesForm.tsx`). Textes relus et validés par le responsable en session,
-  // le jour de leur rédaction.
+  // le jour de leur rédaction. Le pack et la sélection ne renvoient pas au
+  // « mot » du praticien : sans note, leurs routes enregistrent une note par
+  // défaut que l'espace affiche comme la sienne (revue de #1659).
   {
     key: 'assignation_questionnaire',
     version: 2,
@@ -716,15 +718,14 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     corps:
       'Bonjour,\n\n' +
       'Votre praticien vous invite à compléter plusieurs questionnaires avant votre consultation.{{dateInfo}}\n\n' +
-      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix. " +
-      'Si votre praticien vous a laissé un mot, vous le trouverez en les ouvrant.\n\n' +
+      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n" +
       'Accéder à vos questionnaires :\n{{portalUrl}}\n\n' +
       "L'équipe Wellneuro",
     variables: ['dateInfo', 'portalUrl'],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-10-23',
     valideLe: '2026-10-23',
-    hash: '14a698f4e40202156a2dd7ec6971480fca4801244b426d691d3de3b2bde628c2',
+    hash: 'a4986a4e76b9c1d7014798c23cf2a584051e9201f6137d9868fac7bbabcf8f9e',
   },
   {
     key: 'file_envoi',
@@ -734,15 +735,14 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     corps:
       'Bonjour,\n\n' +
       'Votre praticien vous invite à compléter des questionnaires.{{dateInfo}}\n\n' +
-      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix. " +
-      'Si votre praticien vous a laissé un mot, vous le trouverez en les ouvrant.\n\n' +
+      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n" +
       'Accéder à vos questionnaires :\n{{portalUrl}}\n\n' +
       "L'équipe Wellneuro",
     variables: ['dateInfo', 'portalUrl'],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-10-23',
     valideLe: '2026-10-23',
-    hash: '07b28bb39bc267ac392e947f4bf7a8ab6a31aa99ce9a4a01a45cf8f970f02fb6',
+    hash: '613dbe22fe8930a1eceb83aeea0efeb81e7c87837aa90fe735fee783bc6897f1',
   },
   {
     key: 'accuse_reception',

@@ -336,8 +336,7 @@ describe('registre des gabarits patient — les quatre v2 sans donnée de santé
 
   it("pack et file d'envoi v2 — textes validés, au caractère près", () => {
     const suite =
-      `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix. ` +
-      `Si votre praticien vous a laissé un mot, vous le trouverez en les ouvrant.\n\n` +
+      `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n` +
       `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
       `L'équipe Wellneuro`;
     const pack = rendreGabarit(getGabarit('assignation_pack'), { dateInfo: '', portalUrl });
