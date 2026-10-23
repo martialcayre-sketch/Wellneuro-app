@@ -11384,3 +11384,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis brouillon de la lettre cm en session neuve.
 
 **Ouvert.** Allumage BP-15 : test d'intégration sur vraie base, information du patient avant BP-21a.
+
+## 2026-10-23 — M-2 : signature de la doctrine du cockpit
+
+**Fait.** D-333 et D-334 signées telles quelles par le responsable (niveau médian de D-334 §4 compris) ; porte 6 levée au plan ; F59 et H32 mises à jour ; lots de l'audit des instruments (Q1 à Q12) inscrits à F59 avec leurs préalables. Constat : la stabilité métabolique est affichée au cockpit sans mention, donc hors D-333 §3 dès le merge.
+
+**Écarté.** Masquer la jauge (s'écarte de la tolérance « à côté de sa valeur ») ; tout fondre dans un seul J1-cockpit (cockpit hors doctrine plus longtemps).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-cockpit-a en premier lot de code.
+
+**Ouvert.** Porte 4 (poids égal) ; y (comptes du cabinet), geste du responsable.
