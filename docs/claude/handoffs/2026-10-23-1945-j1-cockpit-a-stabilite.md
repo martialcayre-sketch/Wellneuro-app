@@ -50,6 +50,8 @@ Arbitrages du responsable, 2026-10-23, sur question à options :
   invalidée sous drapeau de validité : valeur égale à Q_INF_01 seule,
   Q_INF_01 incomplète : nulle et manquante), rendu de la clarté chiffrée.
   Écarté : garde de frontière (J1-cockpit-b).
+- CodeRabbit (sha db8deb10, P2) : champ des sources absent affiché « Sources
+  indisponibles » au lieu d'une liste vide — corrigé, banc de rendu ajouté.
 - T1 complet et T2 (`--fast`, E2E Chromium + WebKit) verts avant et après
   les correctifs de revue.
 
