@@ -11404,3 +11404,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, release-db par le responsable, constat par conteneur ; puis PR 2 sous `WN_CONSTAT_BESOIN`.
 
 **Ouvert.** Emplacement de l'écran (PR 2), hors des panneaux de J1-cockpit-a.
+## 2026-10-23 — J1-cockpit-a : nature des trois objets, tolérance de la stabilité
+
+**Fait.** Stabilité métabolique, réserve d'adaptation et clarté portent « Repère de suivi, pas un score clinique » au cockpit ; la stabilité affiche « Non motivé, décision due » et ses sources nommées (présente, manquante ; moyenne à poids égal sur deux). Route : présence par source en booléens. Garde de nature étendu aux trois objets, rouge sous mutation.
+
+**Écarté.** « Couverture de recueil » pour B9 et B10 (laisse lire un taux de réponses) ; chiffres par source dans l'API (exigeraient provenance et nature) ; garde séparé hors `lib/equilibre` (copie divergente).
+
+**Prochaine action.** CI, CodeRabbit, merge ; page de la file A (r3_07 en cours) ; puis J1-cockpit-b.
+
+**Ouvert.** Porte 4 (poids égal) ; incohérence de nom des besoins 9 et 10 (jauge « repère de suivi », tableau « couverture ») jusqu'aux lots Q2 à Q4.
