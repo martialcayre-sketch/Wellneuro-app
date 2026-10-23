@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, auth } = vi.hoisted(() => ({
   prisma: {
+    patient: { findUnique: vi.fn() },
     donneePhysiologique: { findMany: vi.fn(), create: vi.fn(), count: vi.fn() },
     traitementEnCours: { findMany: vi.fn(), create: vi.fn(), count: vi.fn() },
     $transaction: vi.fn(),
@@ -41,6 +42,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.WN_PHYSIO_TRAITEMENTS = 'true';
   auth.mockResolvedValue({ patient: { ...PATIENT } });
+  prisma.patient.findUnique.mockResolvedValue({ actif: true, suiviClotureLe: null });
   prisma.donneePhysiologique.findMany.mockResolvedValue([]);
   prisma.traitementEnCours.findMany.mockResolvedValue([]);
   prisma.donneePhysiologique.count.mockResolvedValue(0);
@@ -109,6 +111,14 @@ describe('POST — gardes et main du patient', () => {
   it('dossier clos : 409', async () => {
     auth.mockResolvedValue({ patient: { ...PATIENT, suiviClotureLe: new Date('2026-10-01') } });
     expect((await POST(requete(SEXE))).status).toBe(409);
+  });
+
+  it('une clôture posée entre la session et la transaction : refusée sous le verrou', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ actif: true, suiviClotureLe: new Date('2026-10-21') });
+    const reponse = await POST(requete(SEXE));
+    expect(reponse.status).toBe(409);
+    expect((await reponse.json()).reason).toBe('dossier_cloture');
+    expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
   });
 
   it('cadence atteinte : 429 avant le corps', async () => {
