@@ -138,14 +138,22 @@ export function shaPerimetreDeclencheurs(lignes: readonly LigneDeclencheur[]): s
 }
 
 /**
- * MÉTADONNÉE NON SIGNÉE — verrou éteint jusqu'à la déclaration du responsable
- * ([[D-195]] §1). Tant qu'elle l'est, la garde rend `table_non_signee` pour
- * tout complément ciblé : fail-closed, jamais « un défaut raisonnable ».
+ * MÉTADONNÉE SIGNÉE — attestation du responsable du 2026-10-23 ([[D-345]]),
+ * sur sa déclaration en séance « signe la table pour moi », après lecture des
+ * cinq lignes et de leurs provenances. LA RECOPIE CI-DESSOUS EST MÉCANIQUE et
+ * ne vaut que portée par cette déclaration ([[D-195]] §1).
+ *
+ * Une ligne retouchée change le sha : l'attestation ne couvre plus rien et la
+ * garde rend `table_non_signee` pour tout complément ciblé — fail-closed,
+ * jamais « un défaut raisonnable ».
  */
 export const DECLENCHEURS_COMPLEMENT_METADATA: DeclencheursMetadata = {
-  validationExterne: false,
-  dateValidation: null,
-  shaPerimetre: null,
+  validationExterne: true,
+  dateValidation: '2026-10-23T17:32:07.000Z',
+  // LITTÉRAL FIGÉ — surtout pas `shaPerimetreDeclencheurs(...)`, qui rendrait
+  // la comparaison tautologique et ferait entrer toute ligne ajoutée plus tard
+  // sous une signature acquise ([[D-063]]).
+  shaPerimetre: '709ab44c3a986b22092bf5e847c3dd58578e81a155b59777d4d7f0fb5dd36a2e',
 };
 
 const POPULATIONS: readonly IdPopulation[] = ['allaitement', 'grossesse', 'mineur'];

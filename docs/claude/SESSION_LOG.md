@@ -11394,3 +11394,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis J1-cockpit-a en premier lot de code.
 
 **Ouvert.** Porte 4 (poids égal) ; y (comptes du cabinet), geste du responsable.
+
+## 2026-10-23 — J3-12h : cadrage mergé, lot 1 de D-345
+
+**Fait.** #1651 mergée : quatre commentaires CodeRabbit corrigés (« personne enceinte », retrait de l'accord, G0 fermée, lecture de Q4 dans le temps). Lot 1 : nature « ciblé / multivitaminé » au contrat V4, table des cinq déclencheurs signée par le responsable le 2026-10-23 (provenance en codes, S-MG-1 et S-MG-2 en P6 v0.4 §2 lus au dossier privé), garde pure. Revue `wn-reviewer` : GO, P1-2 corrigé (dernier mot du praticien).
+
+**Écarté.** Exiger la nature à l'écriture (fermerait tout complément avant l'écran) ; refuser les champs à la route (aucun lecteur avant le lot 3).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge ; puis lot 2, migration de la trace de remise.
+
+**Ouvert.** Lot 3 : déclarations toujours datées (un « oui » non daté ne se lève pas), têtes de fil passées à la garde.
