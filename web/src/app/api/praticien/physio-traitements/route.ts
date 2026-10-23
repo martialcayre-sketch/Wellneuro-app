@@ -137,7 +137,9 @@ export async function POST(req: Request) {
     }
     return echec('objet_invalide', 400);
   } catch (err) {
-    if (err instanceof RefusLigne) return echec(err.raison, 409);
+    if (err instanceof RefusLigne) {
+      return err.raison === RAISON_DOSSIER_CLOS ? echec(RAISON_DOSSIER_CLOS, 409, MESSAGE_DOSSIER_CLOS) : echec(err.raison, 409);
+    }
     if (estConflitConcurrent(err)) return echec('conflit_concurrent', 409);
     if (estRefusDeLaBase(err)) {
       console.error('[praticien/physio-traitements POST] refus de la base :', ...classeEtCode(err));

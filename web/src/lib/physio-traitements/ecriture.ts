@@ -16,6 +16,7 @@
 // aucune écriture croisée s'interbloquer.
 
 import type { Prisma } from '@/generated/prisma';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import type { DemandePhysio, DemandeTraitement } from './demande';
 import { estTete, teteUnique } from './fils';
 import { SEXES_OUVRANT_LE_STATUT, type Critere } from './liste';
@@ -30,8 +31,13 @@ export class RefusLigne extends Error {
 /** L'auteur d'une ligne : la main, et l'e-mail de session pour le praticien. */
 export type Auteur = { source: 'patient' } | { source: 'praticien'; email: string };
 
+// La clôture se relit APRÈS ce verrou, dans la transaction : celle que la
+// route lit avant ne couvre pas une clôture posée entre-temps (revue
+// CodeRabbit de BP-15, #1650 — même trou ici).
 async function verrouillerDossier(tx: Prisma.TransactionClient, idPatient: string) {
   await tx.$executeRaw`SELECT 1 FROM public.patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
+  const dossier = await tx.patient.findUnique({ where: { idPatient }, select: { actif: true, suiviClotureLe: true } });
+  if (!dossier || !accepteNouvelEnvoi(dossier)) throw new RefusLigne(RAISON_DOSSIER_CLOS);
 }
 
 async function verrouillerCritere(tx: Prisma.TransactionClient, idPatient: string, critere: Critere) {
