@@ -52,6 +52,9 @@ const TABLES = [
   // Enrôlé le jour de sa première signature ([[D-259]], 2026-10-03), dans le même
   // geste. Hors de `clinical/` : le chemin est relatif à ce dossier.
   { fichier: '../biology-library/import/resolverLibellesV1.ts', constante: 'RESOLVER_LIBELLES_SHA256' },
+  // Enrôlée le jour de sa première signature ([[D-345]], 2026-10-23), dans le
+  // même geste. Sa tautologie s'écrirait `shaPerimetre: shaPerimetreDeclencheurs(...)`.
+  { fichier: 'declencheursComplementCibleV1.ts', constante: 'shaPerimetreDeclencheurs' },
 ] as const;
 
 describe('shaPerimetre — littéral figé dans les tables signées, jamais la constante', () => {

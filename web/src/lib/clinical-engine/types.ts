@@ -1,6 +1,7 @@
 import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre/types';
 import type { FoodCompassActionRef, RecommendedPlateRef } from '../food-compass/types';
 import type { PrioriteLibre } from './prioriteLibre';
+import type { NatureComplement, SituationComplement } from './complementCible';
 
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
 // v1 → v2 (2026-07-28) : le besoin 3 « Rythme alimentaire » gagne une source.
@@ -522,6 +523,20 @@ export type ProtocolAction = {
   recommendedPlateRef?: RecommendedPlateRef;
   /** Référence catalogue C4 uniquement dans un payload protocole V3 ou V4, sur une action `supplement_exploration` seule. */
   supplementCatalogRef?: SupplementCatalogRef;
+  /**
+   * « Ciblé » ou « multivitaminé en vente libre » ([[D-345]] §1) — payload V4,
+   * action `supplement_exploration` seule, sur le patron de
+   * `recommendedPlateRef`. Facultatif au type : son absence se refuse au clic
+   * de diffusion (lot 3), jamais par une valeur par défaut. Clé absente :
+   * empreinte inchangée.
+   */
+  natureComplement?: NatureComplement;
+  /**
+   * Situations déclarées par le praticien sur une action « ciblé » seule
+   * ([[D-345]] §3, Q7) : liste fermée de la table signée des déclencheurs,
+   * dédupliquée et triée ; vide, la clé n'est pas écrite.
+   */
+  situationsComplement?: SituationComplement[];
   /** Requis sur toute action d'un payload V4 ; interdit avant (`D-056`). */
   interventionStatus?: ProtocolInterventionStatus;
   /** Requis si et seulement si `interventionStatus` vaut `conditionnelle_biologie`. */
