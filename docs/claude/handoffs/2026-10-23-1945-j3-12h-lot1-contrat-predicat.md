@@ -78,6 +78,9 @@ Poser G0 à G3 de la fiche de cadrage
 - Lot 3 :
   - passer à la garde les têtes de fil physiologiques, retraits exclus ;
   - garantir des déclarations datées : un « oui » non daté ne se lève jamais.
+- Lot 3 : l'appelant du clic n'injecte ni table ni signature (valeurs par
+  défaut du module) et calcule l'âge depuis le dossier (revue CodeRabbit de
+  #1662, comparaison au littéral écartée avec motif).
 - Lot 3 : la case « ciblé / multivitaminé » dans `ProtocolMiniBuilder` avant
   l'ouverture du drapeau. Un test de route sur les deux champs reste à écrire
   avec cette case.
