@@ -275,7 +275,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const portalUrl = buildGoogleConnexionUrl();
 
     // Un seul email récapitulatif (best-effort), vers la page de connexion.
-    await sendPackEmail(patient.idPatient, idPack, emailPatient, pack.nom, crees.aInserer, dateLimite, notes, portalUrl).catch(
+    await sendPackEmail(patient.idPatient, idPack, emailPatient, dateLimite, portalUrl).catch(
       e => logger.error({
         event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -302,10 +302,7 @@ async function sendPackEmail(
   idPatient: string,
   idPack: string,
   patientEmail: string,
-  packNom: string,
-  assignations: { idAssignation: string; titre: string }[],
   dateLimite: string,
-  notes: string,
   portalUrl: string,
 ) {
   const smtpUrl = process.env.SMTP_URL;
@@ -320,13 +317,10 @@ async function sendPackEmail(
     await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
     return;
   }
-  // Texte au registre des gabarits (Socle LOT-03, DC-26) ; la liste reste
-  // préformatée ici — une ligne « • titre » par questionnaire.
+  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne porte
+  // plus ni titre ni note (2026-10-23) : l'échéance et l'adresse seules.
   const gabarit = rendreGabarit(getGabarit('assignation_pack'), {
-    packNom,
-    liste: assignations.map(a => `• ${a.titre}`).join('\n'),
     dateInfo: rendreSegment('dateLimite', dateLimite),
-    noteInfo: rendreSegment('notePraticien', notes),
     portalUrl,
   });
   const transport = creerTransportSmtp(smtpUrl);

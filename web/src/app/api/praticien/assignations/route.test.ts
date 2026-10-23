@@ -62,6 +62,9 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
+    // assignation_questionnaire@2 (2026-10-23) : ni titre ni note.
+    expect(message.text).not.toContain('« ');
+    expect(message.text).not.toContain('Note de votre praticien');
   });
 
   // Le refus doit être DANS la route, pas dans l'écran : retirer l'entrée du

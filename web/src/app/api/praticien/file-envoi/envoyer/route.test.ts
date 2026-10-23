@@ -90,7 +90,9 @@ describe('file-envoi/envoyer POST', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
-    expect(message.text).toContain('PSS-10');
+    // file_envoi@2 (2026-10-23) : ni titre d'instrument ni note dans l'e-mail.
+    expect(message.text).not.toContain('PSS-10');
+    expect(message.text).not.toContain('Note de votre praticien');
   });
 
   it('révocation portail : 409, aucune assignation, brouillon intact', async () => {

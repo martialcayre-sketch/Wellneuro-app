@@ -921,6 +921,8 @@ describe('POST /api/patient/submit — deux transmissions concurrentes : une seu
     expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
     expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
     expect(sendMailAck).toHaveBeenCalledTimes(1);
+    // accuse_reception@2 (2026-10-23) : l'accusé ne nomme plus le questionnaire.
+    expect((sendMailAck.mock.calls[0][0] as { text: string }).text).not.toContain(assignation.titre);
     expect(notifierPraticienSignalSecurite).toHaveBeenCalledTimes(1);
   });
 

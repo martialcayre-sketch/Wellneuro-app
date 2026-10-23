@@ -208,9 +208,7 @@ export async function POST(request: Request) {
       idPatient: patient.idPatient,
       idBrouillon,
       emailPatient: patient.email,
-      titres: retenus.map(item => item.titre),
       dateLimite: brouillon.dateLimite,
-      notes: brouillon.notes,
       portalUrl,
     }).catch(() => {
       // Best-effort : le lien portail reste récupérable côté praticien.
@@ -229,17 +227,13 @@ async function sendFileEnvoiEmail({
   idPatient,
   idBrouillon,
   emailPatient,
-  titres,
   dateLimite,
-  notes,
   portalUrl,
 }: {
   idPatient: string;
   idBrouillon: string;
   emailPatient: string;
-  titres: string[];
   dateLimite: string | null;
-  notes: string | null;
   portalUrl: string;
 }) {
   const smtpUrl = process.env.SMTP_URL;
@@ -257,11 +251,10 @@ async function sendFileEnvoiEmail({
     return;
   }
   const transporter = creerTransportSmtp(smtpUrl);
-  // Texte au registre des gabarits (Socle LOT-03, DC-26).
+  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne porte
+  // plus ni titre ni note (2026-10-23) : l'échéance et l'adresse seules.
   const gabarit = rendreGabarit(getGabarit('file_envoi'), {
-    liste: titres.map(t => `• ${t}`).join('\n'),
     dateInfo: rendreSegment('dateLimite', dateLimite),
-    noteInfo: rendreSegment('notePraticien', notes),
     portalUrl,
   });
   try {

@@ -415,7 +415,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     // Accusé de réception email best-effort. La promesse est attendue pour que
     // le runtime serverless ne coupe ni l'envoi ni sa trace après la réponse.
-    const accuse = sendAck(idPatient, idReponse, emailPatient, titre).catch(e =>
+    const accuse = sendAck(idPatient, idReponse, emailPatient).catch(e =>
       logger.error({
         event: EVENT_CODES.QUESTIONNAIRE_ACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -477,7 +477,6 @@ async function sendAck(
   idPatient: string,
   idReponse: string,
   patientEmail: string,
-  titreQuestionnaire: string,
 ) {
   const smtpUrl = process.env.SMTP_URL;
   const trace = {
@@ -492,8 +491,9 @@ async function sendAck(
     return;
   }
   const transport = creerTransportSmtp(smtpUrl);
-  // Texte au registre des gabarits (Socle LOT-03, DC-26).
-  const gabarit = rendreGabarit(getGabarit('accuse_reception'), { titre: titreQuestionnaire });
+  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne nomme
+  // plus le questionnaire (2026-10-23).
+  const gabarit = rendreGabarit(getGabarit('accuse_reception'), {});
   try {
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',

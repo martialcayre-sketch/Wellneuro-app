@@ -11375,3 +11375,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis brouillon de la lettre cm en session neuve.
 
 **Ouvert.** Allumage BP-15 : test d'intégration sur vraie base, information du patient avant BP-21a.
+
+## 2026-10-23 — File D : gabarits servis tous datés, quatre v2 sans donnée de santé (D/39)
+
+**Fait.** Arbitrages du praticien du 2026-10-23, gabarit par gabarit, sur le texte servi : quatre validés tels quels (`lien_magique`, `relance_agenda_sommeil`, `envoi_bilan`, `relance_questionnaire`) ; `objectif_propose` v2 daté du 2026-09-10 (commentaire faux corrigé) ; quatre v2 rédigées par l'assistant, relues et validées : invitations et accusé sans titre, sans liste, sans note. Routes et bancs alignés. Les 14 gabarits servis sont datés.
+
+**Écarté.** Garder la note dans l'e-mail (écart déclaré restant) ; un drapeau (le texte change au déploiement, comme chaque version de gabarit).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Note par défaut « Pack <nom> » ou « Envoi groupé — bibliothèque » affichée comme note du praticien dans l'espace : non tranché, hors lot.

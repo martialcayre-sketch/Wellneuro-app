@@ -250,7 +250,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     try {
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-      await sendAssignmentEmail(idPatient, idAssignation, emailPatient, titre, dateLimite, notes, portalUrl);
+      await sendAssignmentEmail(idPatient, idAssignation, emailPatient, dateLimite, portalUrl);
     } catch (e) {
       console.error('[assignations POST] email patient:', (e as Error).message);
     }
@@ -348,9 +348,7 @@ async function sendAssignmentEmail(
   idPatient: string,
   idAssignation: string,
   patientEmail: string,
-  titreQuestionnaire: string,
   dateLimite: string,
-  notes: string,
   portalUrl: string
 ) {
   const smtpUrl = process.env.SMTP_URL;
@@ -366,12 +364,10 @@ async function sendAssignmentEmail(
     return;
   }
   const transport = creerTransportSmtp(smtpUrl);
-  // Texte au registre des gabarits (Socle LOT-03, DC-26) — fidèle au
-  // caractère près, fidélité prouvée par `registreGabarits.test.ts`.
+  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne porte
+  // plus ni titre ni note (2026-10-23) : l'échéance et l'adresse seules.
   const gabarit = rendreGabarit(getGabarit('assignation_questionnaire'), {
-    titre: titreQuestionnaire,
     dateInfo: rendreSegment('dateLimite', dateLimite),
-    noteInfo: rendreSegment('notePraticien', notes),
     portalUrl,
   });
   try {

@@ -24,6 +24,12 @@ import {
 // Le recalcul vit ici, pas dans le module : le registre est atteint par un
 // composant client (via relanceEmail) et ne doit pas tirer node:crypto.
 // `valideLe`/`redigeLe`/`donneesSante` hors champ — l'empreinte fige le TEXTE.
+function version(key: string, v: number) {
+  const g = REGISTRE_GABARITS_PATIENT.find(x => x.key === key && x.version === v);
+  if (!g) throw new Error(`${key}@${v} retirée du registre`);
+  return g;
+}
+
 function empreinteGabarit(g: (typeof REGISTRE_GABARITS_PATIENT)[number]): string {
   return canonicalSha256({ key: g.key, version: g.version, sujet: g.sujet, corps: g.corps, variables: [...g.variables] });
 }
@@ -35,7 +41,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les dix-sept versions attendues, dans cet ordre', () => {
+  it('expose les vingt et une versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -76,6 +82,13 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@2',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
+      // Décision du praticien du 2026-10-23 (D/39 du plan) : les quatre
+      // invitations et l'accusé ne portent plus ni titre d'instrument, ni
+      // nom de pack, ni note libre. Les v1 restent au registre.
+      'assignation_questionnaire@2',
+      'assignation_pack@2',
+      'file_envoi@2',
+      'accuse_reception@2',
     ]);
   });
 
@@ -188,11 +201,16 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les sept validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les seize validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
     expect(valides.map(g => `${g.key}@${g.version}`)).toEqual([
+      // Validés le 2026-10-23, en session, sur le texte servi relu par le
+      // responsable (D/39 du plan) — empreintes inchangées.
+      'lien_magique@1',
+      'relance_agenda_sommeil@1',
+      'envoi_bilan@1',
       'acces_portail@2',
       // Validé par le praticien le 2026-09-07, sur lecture de la seule prose
       // neuve : le reste est le texte de la v2 au caractère près.
@@ -203,6 +221,11 @@ describe('registre des gabarits patient — intégrité', () => {
       // ce que le hash-lock ci-dessus prouve, et c'est pour cela que la
       // validation n'est pas une v2.
       'objectif_propose@1',
+      // Validée le 2026-09-10, le jour de sa rédaction : date confirmée par
+      // le responsable le 2026-10-23 (D/39 du plan).
+      'objectif_propose@2',
+      // Validé le 2026-10-23 avec les trois précédents.
+      'relance_questionnaire@1',
       // [[D-251]] §9 — né validé : le responsable a choisi puis validé le texte
       // exact en session, le jour de sa rédaction.
       'document_remis@1',
@@ -215,15 +238,30 @@ describe('registre des gabarits patient — intégrité', () => {
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.
       'protocole_diffuse@1',
+      // Nées validées : textes relus mot pour mot en session, le jour de
+      // leur rédaction (2026-10-23).
+      'assignation_questionnaire@2',
+      'assignation_pack@2',
+      'file_envoi@2',
+      'accuse_reception@2',
     ]);
     expect(valides.map(g => g.valideLe)).toEqual([
+      '2026-10-23',
+      '2026-10-23',
+      '2026-10-23',
       '2026-09-04',
       '2026-09-07',
       '2026-09-08',
+      '2026-09-10',
+      '2026-10-23',
       '2026-09-29',
       '2026-10-16',
       '2026-10-20',
       '2026-10-17',
+      '2026-10-23',
+      '2026-10-23',
+      '2026-10-23',
+      '2026-10-23',
     ]);
   });
 
@@ -263,6 +301,62 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(rendreSegment('dateLimite', '')).toBe('');
     expect(rendreSegment('dateLimite', '12/09/2026')).toBe('\nÀ compléter avant le : 12/09/2026');
     expect(rendreSegment('notePraticien', 'Prenez votre temps.')).toBe('\nNote de votre praticien : Prenez votre temps.');
+  });
+});
+
+describe('registre des gabarits patient — les quatre v2 sans donnée de santé (2026-10-23)', () => {
+  const portalUrl = 'https://app.wellneuro.fr/portail/connexion';
+
+  it('ce sont les v2 qui sont servies, déclarées conformes', () => {
+    for (const key of ['assignation_questionnaire', 'assignation_pack', 'file_envoi', 'accuse_reception']) {
+      const g = getGabarit(key);
+      expect(g.version, key).toBe(2);
+      expect(g.donneesSante, key).toEqual({ statut: 'conforme' });
+      expect(g.variables, key).not.toContain('titre');
+      expect(g.variables, key).not.toContain('liste');
+      expect(g.variables, key).not.toContain('packNom');
+      expect(g.variables, key).not.toContain('noteInfo');
+    }
+  });
+
+  it('assignation de questionnaire v2 — texte validé, au caractère près', () => {
+    const { sujet, corps } = rendreGabarit(getGabarit('assignation_questionnaire'), {
+      dateInfo: rendreSegment('dateLimite', '12/09/2026'),
+      portalUrl,
+    });
+    expect(sujet).toBe('Questionnaire à compléter avant votre consultation — Wellneuro');
+    expect(corps).toBe(
+      `Bonjour,\n\n` +
+      `Votre praticien vous invite à compléter un questionnaire avant votre consultation.\nÀ compléter avant le : 12/09/2026\n\n` +
+      `Il vous attend dans votre espace patient. Si votre praticien vous a laissé un mot, vous le trouverez en l'ouvrant.\n\n` +
+      `Accédez à votre espace patient ici :\n${portalUrl}\n\n` +
+      `L'équipe Wellneuro`,
+    );
+  });
+
+  it("pack et file d'envoi v2 — textes validés, au caractère près", () => {
+    const suite =
+      `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix. ` +
+      `Si votre praticien vous a laissé un mot, vous le trouverez en les ouvrant.\n\n` +
+      `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
+      `L'équipe Wellneuro`;
+    const pack = rendreGabarit(getGabarit('assignation_pack'), { dateInfo: '', portalUrl });
+    expect(pack.corps).toBe(
+      `Bonjour,\n\nVotre praticien vous invite à compléter plusieurs questionnaires avant votre consultation.\n\n` + suite,
+    );
+    const file = rendreGabarit(getGabarit('file_envoi'), { dateInfo: '', portalUrl });
+    expect(file.corps).toBe(`Bonjour,\n\nVotre praticien vous invite à compléter des questionnaires.\n\n` + suite);
+  });
+
+  it('accusé de réception v2 — ne nomme plus le questionnaire', () => {
+    const { sujet, corps } = rendreGabarit(getGabarit('accuse_reception'), {});
+    expect(sujet).toBe('Vos réponses ont bien été reçues — Wellneuro');
+    expect(corps).toBe(
+      `Bonjour,\n\n` +
+      `Nous confirmons la bonne réception de vos réponses.\n\n` +
+      `Votre praticien Wellneuro en prendra connaissance prochainement.\n\n` +
+      `L'équipe Wellneuro`,
+    );
   });
 });
 
@@ -372,8 +466,8 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
     expect(corps).toContain('gratuits');
   });
 
-  it('assignation de questionnaire — avec et sans segments', () => {
-    const g = getGabarit('assignation_questionnaire');
+  it('assignation de questionnaire v1 — avec et sans segments (texte historique)', () => {
+    const g = version('assignation_questionnaire', 1);
     const avec = rendreGabarit(g, {
       titre: 'Questionnaire de suivi',
       dateInfo: rendreSegment('dateLimite', '12/09/2026'),
@@ -396,9 +490,9 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
     expect(sans.corps).toContain('« Questionnaire de suivi »\n\nAccédez');
   });
 
-  it("pack et file d'envoi — liste préformatée", () => {
+  it("pack et file d'envoi v1 — liste préformatée (textes historiques)", () => {
     const liste = ['Questionnaire A', 'Questionnaire B'].map(t => `• ${t}`).join('\n');
-    const pack = rendreGabarit(getGabarit('assignation_pack'), {
+    const pack = rendreGabarit(version('assignation_pack', 1), {
       packNom: 'Base de consultation',
       liste,
       dateInfo: '',
@@ -413,7 +507,7 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
       `Accéder à vos questionnaires :\nhttps://app.wellneuro.fr/portail\n\n` +
       `L'équipe Wellneuro`,
     );
-    const file = rendreGabarit(getGabarit('file_envoi'), {
+    const file = rendreGabarit(version('file_envoi', 1), {
       liste,
       dateInfo: '',
       noteInfo: '',
@@ -455,8 +549,8 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
     );
   });
 
-  it('accusé de réception et envoi du bilan', () => {
-    const accuse = rendreGabarit(getGabarit('accuse_reception'), { titre: 'Questionnaire de suivi' });
+  it('accusé de réception v1 et envoi du bilan', () => {
+    const accuse = rendreGabarit(version('accuse_reception', 1), { titre: 'Questionnaire de suivi' });
     expect(accuse.corps).toBe(
       `Bonjour,\n\n` +
       `Nous confirmons la bonne réception de vos réponses au questionnaire :\n` +
