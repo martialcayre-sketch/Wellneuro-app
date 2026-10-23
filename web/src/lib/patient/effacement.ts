@@ -178,6 +178,17 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.constatPraticien.deleteMany({ where: par })
     ).count;
 
+    // Les constats du praticien sur un besoin sans score et leurs pièces
+    // ([[D-347]], t40) : même patron, même ordre — les pièces, puis les
+    // constats, AVANT les réponses et les résultats qu'ils citent (contrat
+    // `constats_besoin_praticien_v1_negatif.sql`).
+    supprimees.piecesConstatsBesoinPraticien = (
+      await tx.pieceConstatBesoinPraticien.deleteMany({ where: par })
+    ).count;
+    supprimees.constatsBesoinPraticien = (
+      await tx.constatBesoinPraticien.deleteMany({ where: par })
+    ).count;
+
     // Données physiologiques et traitements en cours ([[D-335]], BP-13) :
     // APRÈS les pièces, dont la clé RESTRICT cite un traitement ; chaque
     // table en une instruction (remplacements et retraits ensemble). La base

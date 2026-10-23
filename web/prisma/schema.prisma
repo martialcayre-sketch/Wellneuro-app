@@ -90,6 +90,10 @@ model Patient {
   // (D-331, BP-11).
   constatsPraticien ConstatPraticien[]
   piecesConstatsPraticien PieceConstatPraticien[]
+  // Constats du praticien sur un besoin sans score, et leurs pièces (D-347,
+  // t40).
+  constatsBesoinPraticien ConstatBesoinPraticien[]
+  piecesConstatsBesoinPraticien PieceConstatBesoinPraticien[]
   // Données physiologiques déclarées et traitements en cours, en lignes
   // datées (D-335, BP-13).
   donneesPhysiologiques DonneePhysiologique[]
@@ -386,6 +390,9 @@ model QuestionnaireReponse {
   // Relation inverse SEULE (D-331, BP-11) : une pièce de constat désigne la
   // passation exacte ; ce modèle ne reçoit aucune colonne.
   piecesConstats PieceConstatPraticien[]
+  // Relation inverse SEULE (D-347, t40) : même chose pour un constat sur un
+  // besoin.
+  piecesConstatsBesoin PieceConstatBesoinPraticien[]
 
   @@index([idPatient, statutValidite], map: "questionnaire_reponses_patient_validite_idx")
   @@index([idAssignation], map: "questionnaire_reponses_id_assignation_idx")
@@ -2718,6 +2725,10 @@ model ResultatBiologique {
   // ligne exacte ; ce modèle ne reçoit aucune colonne.
   piecesConstats PieceConstatPraticien[]
 
+  // Relation inverse SEULE (D-347, t40) : même chose pour un constat sur un
+  // besoin.
+  piecesConstatsBesoin PieceConstatBesoinPraticien[]
+
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
@@ -3151,6 +3162,75 @@ model PieceConstatPraticien {
   @@index([idQuestionnaireReponse], map: "pieces_constats_praticien_id_questionnaire_reponse_idx")
   @@index([idTraitement], map: "pieces_constats_praticien_id_traitement_idx")
   @@map("pieces_constats_praticien")
+}
+
+/// Le constat du praticien sur un besoin sans score ([[D-347]], t40), ou son
+/// retrait. Ajout seul (UPDATE et TRUNCATE refusés par trigger), aucune valeur
+/// recopiée. Un seul constat en vigueur par besoin et par dossier : la pose
+/// que ni un remplacement ni un retrait ne vise. « À relire » se dérive à la
+/// lecture, jamais écrit. Cockpit du praticien seul : ni portail, ni courrier,
+/// ni scoring, ni orientation, ni re-passation ciblée, ni IA ne le lisent. Les
+/// refus vivent en base (migration `constats_besoin_praticien_v1`).
+model ConstatBesoinPraticien {
+  id                String    @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre             BigInt    @default(autoincrement()) @map("ordre")
+  idPatient         String    @map("id_patient")
+  /// `pose` | `retrait` (CHECK).
+  acte              String    @map("acte")
+  /// 2, 6, 7 ou 11 seuls (CHECK, [[D-347]] §2) ; la route refuse en outre un
+  /// besoin qui porte une source de score.
+  besoin            Int       @map("besoin")
+  /// Pose seule : `a_soutenir` | `non_retenu` | `non_evaluable` | `sans_objet`.
+  verdict           String?   @map("verdict")
+  /// Hors `a_soutenir`, liste fermée par verdict ([[D-347]] §3, CHECK).
+  motif             String?   @map("motif")
+  /// Facultative, obligatoire avec `autre` ; 2000 caractères au plus.
+  note              String?   @map("note")
+  /// « À revoir le », fixée par le praticien, facultative ([[D-347]] §4).
+  aRevoirLe         DateTime? @map("a_revoir_le") @db.Date
+  /// La tête remplacée (pose) ou retirée (retrait) ; un successeur au plus.
+  idConstatRemplace String?   @unique @map("id_constat_remplace")
+  /// Posé par la base (trigger) : la transaction de l'acte, que ses pièces
+  /// doivent partager.
+  transactionPose   BigInt?   @map("transaction_pose")
+  praticienEmail    String    @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  acteLe            DateTime  @default(now()) @map("acte_le")
+
+  patient     Patient                       @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  remplace    ConstatBesoinPraticien?       @relation("RemplacementConstatBesoin", fields: [idConstatRemplace], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar ConstatBesoinPraticien?       @relation("RemplacementConstatBesoin")
+  pieces      PieceConstatBesoinPraticien[]
+
+  @@unique([ordre], map: "constats_besoin_praticien_ordre_key")
+  @@index([idPatient, ordre], map: "constats_besoin_praticien_patient_ordre_idx")
+  @@index([idPatient, besoin], map: "constats_besoin_praticien_patient_besoin_idx")
+  @@map("constats_besoin_praticien")
+}
+
+/// Une pièce, facultative, d'un constat sur un besoin ([[D-347]] §2) : SOIT
+/// une ligne de résultat de biologie (tête de fil, non annulée), SOIT une
+/// réponse de questionnaire (VALID ou AMBIGUOUS), du même dossier, écrite
+/// dans la transaction du constat. Ajout seul ; aucune valeur recopiée.
+model PieceConstatBesoinPraticien {
+  id                     String  @id @default(cuid()) @map("id")
+  idConstat              String  @map("id_constat")
+  idPatient              String  @map("id_patient")
+  idResultat             String? @map("id_resultat")
+  idQuestionnaireReponse String? @map("id_questionnaire_reponse")
+
+  constat              ConstatBesoinPraticien @relation(fields: [idConstat], references: [id], onDelete: Restrict)
+  patient              Patient                @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  resultat             ResultatBiologique?    @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+  questionnaireReponse QuestionnaireReponse?  @relation(fields: [idQuestionnaireReponse], references: [id], onDelete: Restrict)
+
+  @@unique([idConstat, idResultat], map: "pieces_constats_besoin_praticien_constat_resultat_key")
+  @@unique([idConstat, idQuestionnaireReponse], map: "pieces_constats_besoin_praticien_constat_reponse_key")
+  @@index([idPatient], map: "pieces_constats_besoin_praticien_id_patient_idx")
+  @@index([idResultat], map: "pieces_constats_besoin_praticien_id_resultat_idx")
+  @@index([idQuestionnaireReponse], map: "pieces_constats_besoin_praticien_id_questionnaire_reponse_idx")
+  @@map("pieces_constats_besoin_praticien")
 }
 
 /// Une donnée physiologique déclarée ou mesurée, datée ([[D-335]], BP-13), ou

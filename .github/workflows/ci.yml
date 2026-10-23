@@ -1364,6 +1364,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/constats_praticien_v1_negatif.sql
 
+      # Les constats du praticien sur un besoin sans score et leurs pièces
+      # (D-347, t40) : besoins 2, 6, 7 et 11 seuls, un seul constat en vigueur
+      # par besoin, motifs fermés, pièces facultatives tenues par clé et
+      # écrites avec leur constat, aucune valeur, ajout seul, effacement nommé.
+      - name: Constats besoin negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/constats_besoin_praticien_v1_negatif.sql
+
       # Données physiologiques déclarées et traitements en cours (D-335,
       # BP-13) : une tête par critère et par fil, réponses fermées, bornes
       # techniques, dates et précision, deux mains (le patient ne retire que
@@ -1509,6 +1518,17 @@ jobs:
         env:
           WN_BIO_CONSTAT_BANC_BASE: wellneuro_ci
         run: node scripts/banc-constats-praticien-deux-sessions.test.mjs
+
+      # Constats sur un besoin sans score (D-347, t40) : mêmes courses que
+      # celles de D-331, un dossier par course ; un « à soutenir » sans pièce
+      # passe (pièces facultatives). Commet ses fixtures puis les efface : la
+      # base doit être nommée.
+      - name: Constats besoin two-session bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_CONSTAT_BESOIN_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-constats-besoin-deux-sessions.test.mjs
 
       # Données physiologiques et traitements (D-335, BP-13) : la tête d'un
       # critère ou d'un fil ne tient que par son verrou, et la pièce de

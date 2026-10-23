@@ -11395,6 +11395,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Porte 4 (poids égal) ; y (comptes du cabinet), geste du responsable.
 
+## 2026-10-23 — t40 : constat sur un besoin sans score, migration (D-347)
+
+**Fait.** Liste des motifs absente de D-338 et D-331 : cinq arbitrages du responsable, D-347 mergée (#1661). Paragraphe RGPD validé. Migration `constats_besoin_praticien_v1` au patron de D-331 : besoins 2, 6, 7, 11, quatre verdicts, neuf motifs, pièces facultatives ; contrat, banc, effacement nommé. T3 vert ; wn-reviewer GO avec réserves, corrigées.
+
+**Écarté.** Transposer la liste de D-331 (elle parle d'hypothèses et de prélèvements) ; base ouverte aux douze besoins.
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db par le responsable, constat par conteneur ; puis PR 2 sous `WN_CONSTAT_BESOIN`.
+
+**Ouvert.** Emplacement de l'écran (PR 2), hors des panneaux de J1-cockpit-a.
 ## 2026-10-23 — J3-12h : cadrage mergé, lot 1 de D-345
 
 **Fait.** #1651 mergée : quatre commentaires CodeRabbit corrigés (« personne enceinte », retrait de l'accord, G0 fermée, lecture de Q4 dans le temps). Lot 1 : nature « ciblé / multivitaminé » au contrat V4, table des cinq déclencheurs signée par le responsable le 2026-10-23 (provenance en codes, S-MG-1 et S-MG-2 en P6 v0.4 §2 lus au dossier privé), garde pure. Revue `wn-reviewer` : GO, P1-2 corrigé (dernier mot du praticien).
