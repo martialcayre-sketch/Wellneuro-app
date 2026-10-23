@@ -6,6 +6,7 @@ import {
   MENTION_NATURE_INDICE_GLOBAL,
   TENDANCE_INDICE_GLOBAL_PATIENT,
 } from './natureIndiceGlobal';
+import { MENTION_POIDS_NON_MOTIVE } from '../praticien/mentionStabiliteMetabolique';
 
 // LOT-07 « Doctrine exécutable » — [[D-106]], `DC-22`.
 //
@@ -123,8 +124,8 @@ function sansImports(source: string): string {
  * faudrait un flot de données inter-fichiers ; le second détecteur, par
  * LIBELLÉ, est ce qui couvre ces cas-là.
  */
-function nomsSuivis(source: string): string[] {
-  const noms = new Set(['indiceGlobal']);
+function nomsSuivis(source: string, racine = 'indiceGlobal'): string[] {
+  const noms = new Set([racine]);
   const AFFECTATION = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;\n]+)?=\s*([^;\n]+)/g;
   const DESTRUCTURATION = /(?:const|let|var)\s*\{([^}]*)\}\s*=/g;
 
@@ -148,6 +149,11 @@ function nomsSuivis(source: string): string[] {
 }
 
 function elementsDuTotal(): { chemin: string; element: string }[] {
+  return elementsDe('indiceGlobal');
+}
+
+/** Même extraction pour tout objet du panneau, suivi depuis son nom de champ. */
+function elementsDe(racine: string): { chemin: string; element: string }[] {
   const trouves: { chemin: string; element: string }[] = [];
   // (A) BALISE OUVRANTE dont les ATTRIBUTS citent le total. Le nom du composant
   //     n'entre pas dans le filtre : `<JaugeIndice value={…indiceGlobal} />`
@@ -163,7 +169,7 @@ function elementsDuTotal(): { chemin: string; element: string }[] {
   for (const fichier of composants()) {
     const chemin = path.relative(RACINE, fichier);
     const source = readFileSync(fichier, 'utf8');
-    const noms = nomsSuivis(source);
+    const noms = nomsSuivis(source, racine);
     const CITE_LE_TOTAL = new RegExp(`(?<![\\w$])(?:${noms.join('|')})(?![\\w$])`);
     // Le détecteur d'enfant se construit sur les MÊMES noms : sans quoi l'alias
     // serait vu en attribut et manqué en interpolation.
@@ -344,6 +350,46 @@ describe('nature du total — les surfaces qui le nomment sans le nommer', () =>
     for (const [chemin, motif] of Object.entries(SURFACES_PAR_LIBELLE)) {
       expect(motif.trim().length, `surface sans motif : ${chemin}`).toBeGreaterThan(20);
     }
+  });
+});
+
+// LES TROIS AUTRES OBJETS DU PANNEAU — [[D-333]] §3 et §6, J1-cockpit-a.
+//
+// Stabilité métabolique, réserve d'adaptation et clarté sont calculées par
+// Wellneuro ; aucune n'est la cotation publiée d'un instrument. Elles reçoivent
+// donc la mention de l'indice global (§2 règle 3 ; arbitrage du 2026-10-23,
+// « repère de suivi » pour les trois). La stabilité porte en plus la tolérance
+// du §3 — « Non motivé, décision due » et ses sources nommées — jusqu'à la
+// levée de la porte 4 : la retirer avant fait rougir ce banc, et c'est voulu.
+const OBJETS_REPERES = ['stabiliteMetabolique', 'reserveAdaptation', 'clarte'] as const;
+
+describe('nature des trois objets — le chiffre ne s’affiche jamais sans ce qu’il est', () => {
+  // Anti-vacuité et sentinelle : chacun est trouvé, et sur la seule fiche
+  // praticien. Une seconde surface qui les restituerait passe par une relecture.
+  it('la découverte trouve chaque objet, sur la seule fiche praticien', () => {
+    for (const objet of OBJETS_REPERES) {
+      const elements = elementsDe(objet);
+      expect(elements.length, objet).toBeGreaterThan(0);
+      expect([...new Set(elements.map(e => e.chemin))], objet).toEqual(['components/FichePatientPanel.tsx']);
+    }
+  });
+
+  it('tout élément qui les restitue porte la mention de nature', () => {
+    const fautifs = OBJETS_REPERES.flatMap(objet =>
+      elementsDe(objet)
+        .filter(({ element }) => !sansCommentaires(element).includes('MENTION_NATURE_INDICE_GLOBAL'))
+        .map(({ chemin, element }) => `${objet} — ${chemin} — ${element.replace(/\s+/g, ' ')}`),
+    );
+    expect(fautifs).toEqual([]);
+  });
+
+  it('la stabilité porte la tolérance du §3 : poids non motivé, sources nommées', () => {
+    for (const { element } of elementsDe('stabiliteMetabolique')) {
+      const rendu = sansCommentaires(element);
+      expect(rendu).toContain('MENTION_POIDS_NON_MOTIVE');
+      expect(rendu).toMatch(/mentionSourcesStabilite\(/);
+    }
+    expect(MENTION_POIDS_NON_MOTIVE).toBe('Non motivé, décision due');
   });
 });
 
