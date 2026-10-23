@@ -24,12 +24,17 @@ export const SOURCES_STABILITE_METABOLIQUE: SourceQuestionnaire[] = [
   { idQuestionnaire: 'Q_INF_02', max: 52, inverser: true }, // magnésium/spasmophilie SIIN
 ];
 
+// Exportés pour la provenance du cockpit ([[D-333]] §2 règle 1) : la route
+// nomme les sources du même besoin que celui que la formule lit.
+export const BESOIN_CLARTE = 10;
+export const BESOIN_RESERVE_ADAPTATION = 9;
+
 export function calculerClarte(reponses: ReponsesParQuestionnaire): number | null {
-  return calculerCouvertureBesoin(10, reponses);
+  return calculerCouvertureBesoin(BESOIN_CLARTE, reponses);
 }
 
 export function calculerReserveAdaptation(reponses: ReponsesParQuestionnaire): number | null {
-  return calculerCouvertureBesoin(9, reponses);
+  return calculerCouvertureBesoin(BESOIN_RESERVE_ADAPTATION, reponses);
 }
 
 export function calculerStabiliteMetabolique(reponses: ReponsesParQuestionnaire): number | null {

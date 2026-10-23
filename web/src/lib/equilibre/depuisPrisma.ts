@@ -59,6 +59,31 @@ export function construireReponsesParQuestionnaire(
   reponses: ReponseBrute[],
   dateLimite?: Date
 ): ReponsesParQuestionnaire {
+  const resultat: ReponsesParQuestionnaire = {};
+  for (const [idQuestionnaire, { rawAnswers }] of retenirParQuestionnaire(reponses, dateLimite)) {
+    resultat[idQuestionnaire] = rawAnswers;
+  }
+  return resultat;
+}
+
+/**
+ * Date de la passation que `construireReponsesParQuestionnaire` retient pour
+ * chaque questionnaire — la même sélection, pas une copie : la provenance datée
+ * du cockpit ([[D-333]] §2 règle 1) ne peut pas nommer une autre réponse que
+ * celle que la formule a lue.
+ */
+export function datesDesReponsesRetenues(reponses: ReponseBrute[], dateLimite?: Date): Record<string, Date> {
+  const resultat: Record<string, Date> = {};
+  for (const [idQuestionnaire, { reponse }] of retenirParQuestionnaire(reponses, dateLimite)) {
+    resultat[idQuestionnaire] = reponse.dateReponse;
+  }
+  return resultat;
+}
+
+function retenirParQuestionnaire(
+  reponses: ReponseBrute[],
+  dateLimite?: Date
+): Map<string, { reponse: ReponseBrute; rawAnswers: Record<string, string | number> }> {
   // Filtre de validité AVANT la déduplication « plus récente » : une
   // re-passation SUPERSEDED ne doit pas masquer la passation valide qui la
   // remplace, et une passation INVALID ne doit pas gagner le dédoublonnage.
@@ -72,12 +97,12 @@ export function construireReponsesParQuestionnaire(
     }
   }
 
-  const resultat: ReponsesParQuestionnaire = {};
+  const retenues = new Map<string, { reponse: ReponseBrute; rawAnswers: Record<string, string | number> }>();
   for (const [idQuestionnaire, r] of parQuestionnaire) {
     const rawAnswers = extraireRawAnswers(r.scoresJson);
-    if (rawAnswers) resultat[idQuestionnaire] = rawAnswers;
+    if (rawAnswers) retenues.set(idQuestionnaire, { reponse: r, rawAnswers });
   }
-  return resultat;
+  return retenues;
 }
 
 /**

@@ -32,7 +32,21 @@ const EQUILIBRE = {
     ],
     reserveAdaptation: 48,
     clarte: null,
-    momentum: null,
+    momentum: null as { delta: number; tendance: string } | null,
+    plafondApplique: false,
+    // [[D-333]] §2 règle 1 : chaque chiffre affiché porte sa provenance datée.
+    // Le panneau ne la lit que si le chiffre existe.
+    provenance: {
+      indiceGlobal: { sources: [{ idQuestionnaire: 'Q_NEU_11', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' },
+      stabiliteMetabolique: { sources: [{ idQuestionnaire: 'Q_INF_01', dateReponse: '2026-10-02T10:00:00.000Z' }], versionCalcul: null },
+      reserveAdaptation: { sources: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-09-12T08:00:00.000Z' }], versionCalcul: 'v15' },
+      clarte: { sources: [{ idQuestionnaire: 'Q_NEU_11', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' },
+      momentum: null as {
+        depart: { jalon: string; date: string | null };
+        arrivee: { jalon: string; date: string | null };
+        versionCalcul: string | null;
+      } | null,
+    },
   },
   priorites: [
     { besoin: 1, libellePraticien: 'Sommeil réparateur', strate: 'CORPS', couverture: 40, niveauPreuve: 'A' },
@@ -94,6 +108,12 @@ type Options = {
   stabilite?: 'q1' | 'deux' | 'sansChamp';
   /** La clarté est mesurée (sinon nulle dans la fixture). */
   clarteMesuree?: boolean;
+  /** J1-cockpit-b : réponse d'un conteneur antérieur au lot, sans provenance. */
+  provenanceAbsente?: boolean;
+  /** Le total a été plafonné par une fondation critique ([[D-106]], Q9). */
+  plafondApplique?: boolean;
+  /** Momentum mesuré, avec ou sans provenance de ses deux jalons. */
+  momentum?: 'avecProvenance' | 'sansProvenance';
   // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
   // - `defaut` : rideau T0 complet, un envoi hors rideau en attente ;
   // - `rideauIncomplet` : `Q_ALI_01` du rideau jamais rendu — le seul cas qui
@@ -506,6 +526,33 @@ function stubFetch(options: Options = {}) {
       }
       if (options.clarteMesuree) {
         return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, clarte: 57 } });
+      }
+      if (options.provenanceAbsente) {
+        const { provenance: _absente, ...objets } = EQUILIBRE.objetsCliniques;
+        return ok({ ...EQUILIBRE, objetsCliniques: objets });
+      }
+      if (options.plafondApplique) {
+        return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, plafondApplique: true } });
+      }
+      if (options.momentum) {
+        return ok({
+          ...EQUILIBRE,
+          objetsCliniques: {
+            ...EQUILIBRE.objetsCliniques,
+            momentum: { delta: 4, tendance: 'hausse' },
+            provenance: {
+              ...EQUILIBRE.objetsCliniques.provenance,
+              momentum:
+                options.momentum === 'avecProvenance'
+                  ? {
+                      depart: { jalon: 'T0', date: '2026-08-01T10:00:00.000Z' },
+                      arrivee: { jalon: 'J21', date: '2026-08-22T10:00:00.000Z' },
+                      versionCalcul: 'v15',
+                    }
+                  : null,
+            },
+          },
+        });
       }
       if (options.stabilite === 'sansChamp') {
         // Réponse d'un conteneur antérieur au lot : la valeur, sans le champ.
@@ -2190,6 +2237,77 @@ describe('FichePatientPanel — stabilité, réserve et clarté disent leur natu
         'Moyenne à poids égal : Hyperexcitabilité SIIN (Q_INF_01) et Magnésium / spasmophilie SIIN (Q_INF_02)',
       ),
     ).toBeTruthy();
+  });
+});
+
+// [[D-333]] §2 règle 1, J1-cockpit-b : chaque chiffre ouvre sa provenance
+// datée d'un geste ; sans elle, il ne s'affiche pas. Q9 : le plafond se dit
+// sans besoin ni valeur avant plafond.
+describe('FichePatientPanel — provenance datée de chaque chiffre', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  async function ouvrirTiroir(options: Options = {}) {
+    await rendreFiche(options);
+    fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
+    await screen.findByText('Indice global');
+  }
+
+  it('un geste « Source » par chiffre affiché, et seulement par chiffre affiché', async () => {
+    await ouvrirTiroir();
+    // Indice global (62) et réserve (48) : deux chiffres, deux gestes ; la
+    // stabilité, la clarté et le momentum, non mesurés, n'en ont pas.
+    expect(screen.getAllByText('Source')).toHaveLength(2);
+  });
+
+  it('le geste ouvre les questionnaires lus, leur date et la version du calcul', async () => {
+    await ouvrirTiroir();
+    const geste = screen.getAllByText('Source')[0];
+    expect(geste.tagName).toBe('SUMMARY');
+    const detail = geste.closest('details');
+    expect(detail?.textContent).toContain('Questionnaire : Q_NEU_11 (réponse du 01/10/2026)');
+    expect(detail?.textContent).toContain('Version du calcul : v15');
+  });
+
+  it('une formule sans version le dit, sans en emprunter une', async () => {
+    await ouvrirTiroir({ stabilite: 'q1' });
+    expect(screen.getByText('Questionnaire : Q_INF_01 (réponse du 02/10/2026)')).toBeTruthy();
+    expect(screen.getByText('Formule non versionnée')).toBeTruthy();
+  });
+
+  it('sans provenance (ancien conteneur) : aucun chiffre, « Source non enregistrée » à sa place', async () => {
+    await ouvrirTiroir({ provenanceAbsente: true });
+    expect(screen.queryByText('62')).toBeNull();
+    expect(screen.queryByText('48')).toBeNull();
+    expect(screen.getAllByText('Source non enregistrée')).toHaveLength(2);
+    // Ce qui n'est pas mesuré le reste : les deux états ne se confondent pas.
+    expect(screen.getAllByText('Non mesuré').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Source')).toBeNull();
+  });
+
+  it('plafond appliqué : la mention seule, sous l’indice global (Q9)', async () => {
+    await ouvrirTiroir({ plafondApplique: true });
+    const mention = screen.getByText('Plafond appliqué (règle des fondations critiques, D-106)');
+    expect(mention.parentElement?.textContent).toContain('Indice global');
+  });
+
+  it('plafond non appliqué : aucune mention', async () => {
+    await ouvrirTiroir();
+    expect(screen.queryByText(/Plafond appliqué/)).toBeNull();
+  });
+
+  it('momentum : l’écart et ses deux jalons datés', async () => {
+    await ouvrirTiroir({ momentum: 'avecProvenance' });
+    expect(screen.getByText('Momentum').parentElement?.textContent).toContain('+4');
+    expect(screen.getByText("Écart de l'indice global entre T0 (01/08/2026) et J21 (22/08/2026)")).toBeTruthy();
+  });
+
+  it('momentum sans provenance : ni écart ni tendance, « Source non enregistrée »', async () => {
+    await ouvrirTiroir({ momentum: 'sansProvenance' });
+    expect(screen.getByText('Momentum').parentElement?.textContent).toContain('Source non enregistrée');
+    expect(screen.queryByText('hausse')).toBeNull();
   });
 });
 

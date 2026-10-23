@@ -13,6 +13,20 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+// Le plafond des fondations critiques ne se fabrique pas sans une fixture
+// clinique complète : le banc force le seul booléen que la route recopie.
+const plafond = vi.hoisted(() => ({ force: false }));
+vi.mock('@/lib/equilibre/objetsCliniques', async importOriginal => {
+  const reel = await importOriginal<typeof import('@/lib/equilibre/objetsCliniques')>();
+  return {
+    ...reel,
+    calculerObjetsCliniques: (...args: Parameters<typeof reel.calculerObjetsCliniques>) => {
+      const objets = reel.calculerObjetsCliniques(...args);
+      return plafond.force ? { ...objets, indiceGlobal: { ...objets.indiceGlobal, plafondApplique: true } } : objets;
+    },
+  };
+});
+
 import { GET } from './route';
 
 function request(query = 'idPatient=PAT_1'): Request {
@@ -22,6 +36,7 @@ function request(query = 'idPatient=PAT_1'): Request {
 describe('GET /api/praticien/equilibre', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    plafond.force = false;
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue({
       idPatient: 'PAT_1',
@@ -183,5 +198,119 @@ describe('GET /api/praticien/equilibre', () => {
     const json = (await (await GET(request())).json()) as { objetsCliniques: { indiceGlobal: number | null; besoinsMesures: number } };
     expect(json.objetsCliniques.besoinsMesures).toBe(0);
     expect(json.objetsCliniques.indiceGlobal).toBeNull();
+  });
+
+  // [[D-333]] §2 règle 1 : chaque chiffre porte les questionnaires que la
+  // formule a lus, à la date de la passation retenue, et la version du calcul.
+  describe('provenance datée', () => {
+    // L'étiquette de version suit le drapeau de la forme servie : l'importer
+    // rangerait ce banc parmi les specs qui en dépendent
+    // (`specs-drapeau-ali01.test.mjs`). Sa forme suffit ici.
+    const VERSION_DU_CALCUL = expect.stringMatching(/^v\d+$/);
+    const axeD = (valeur: string) =>
+      Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, valeur]));
+    const had = (date: Date, valeur = '1', statutValidite: string | null = null) => ({
+      idQuestionnaire: 'Q_NEU_11',
+      dateReponse: date,
+      scoresJson: { rawAnswers: axeD(valeur) },
+      statutValidite,
+    });
+    type Provenance = {
+      objetsCliniques: {
+        plafondApplique: boolean;
+        provenance: Record<string, unknown>;
+      };
+    };
+
+    it('aucun chiffre : aucune provenance, aucun plafond', async () => {
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.plafondApplique).toBe(false);
+      expect(json.objetsCliniques.provenance).toEqual({
+        indiceGlobal: null,
+        stabiliteMetabolique: null,
+        reserveAdaptation: null,
+        clarte: null,
+        momentum: null,
+      });
+    });
+
+    it('indice global : la source lue, sa date, la version du calcul', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([had(new Date('2026-10-01T10:00:00Z'))]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.indiceGlobal).toEqual({
+        sources: [{ idQuestionnaire: 'Q_NEU_11', dateReponse: '2026-10-01T10:00:00.000Z' }],
+        versionCalcul: VERSION_DU_CALCUL,
+      });
+    });
+
+    it('la date est celle de la passation que la formule retient — la plus récente exploitable', async () => {
+      vi.stubEnv('WN_ENABLE_VALIDITE_PASSATIONS', '1');
+      onTestFinished(() => {
+        vi.unstubAllEnvs();
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        had(new Date('2026-09-01T10:00:00Z')),
+        had(new Date('2026-10-01T10:00:00Z')),
+        had(new Date('2026-10-05T10:00:00Z'), '1', 'INVALID'),
+      ]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.indiceGlobal).toMatchObject({
+        sources: [{ idQuestionnaire: 'Q_NEU_11', dateReponse: '2026-10-01T10:00:00.000Z' }],
+      });
+    });
+
+    it('une source incomplète n’est pas nommée : elle n’a rien nourri', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        had(new Date('2026-10-01T10:00:00Z')),
+        {
+          idQuestionnaire: 'Q_INF_01',
+          dateReponse: new Date('2026-10-02T10:00:00Z'),
+          scoresJson: { rawAnswers: { H1: '1' } },
+          statutValidite: null,
+        },
+      ]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.stabiliteMetabolique).toBeNull();
+      expect(json.objetsCliniques.provenance.indiceGlobal).toMatchObject({
+        sources: [{ idQuestionnaire: 'Q_NEU_11' }],
+      });
+    });
+
+    it('stabilité métabolique : sa source datée, et aucune version empruntée', async () => {
+      const h = Object.fromEntries(Array.from({ length: 24 }, (_, i) => [`H${i + 1}`, '1']));
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idQuestionnaire: 'Q_INF_01', dateReponse: new Date('2026-10-02T10:00:00Z'), scoresJson: { rawAnswers: h }, statutValidite: null },
+      ]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.stabiliteMetabolique).toEqual({
+        sources: [{ idQuestionnaire: 'Q_INF_01', dateReponse: '2026-10-02T10:00:00.000Z' }],
+        versionCalcul: null,
+      });
+    });
+
+    it('momentum : les deux jalons soustraits, à leur date', async () => {
+      const jour = 24 * 60 * 60 * 1000;
+      const t0 = new Date(Date.now() - 60 * jour);
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        had(t0, '0'),
+        had(new Date(Date.now() - 45 * jour), '3'),
+      ]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.momentum).toEqual({
+        depart: { jalon: 'T0', date: t0.toISOString() },
+        arrivee: { jalon: 'J21', date: new Date(t0.getTime() + 21 * jour).toISOString() },
+        versionCalcul: VERSION_DU_CALCUL,
+      });
+    });
+
+    it('plafond appliqué : le booléen seul, ni besoin ni valeur avant plafond (Q9)', async () => {
+      plafond.force = true;
+      prisma.questionnaireReponse.findMany.mockResolvedValue([had(new Date('2026-10-01T10:00:00Z'))]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.plafondApplique).toBe(true);
+      const texte = JSON.stringify(json.objetsCliniques);
+      expect(texte).not.toContain('scoreGlobalAvantPlafond');
+      expect(texte).not.toContain('fondationsCritiquesDeclenchees');
+    });
   });
 });

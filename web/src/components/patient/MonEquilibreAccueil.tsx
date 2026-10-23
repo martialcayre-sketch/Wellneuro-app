@@ -14,7 +14,7 @@ import { MENTION_BESOINS_PARTIELS_PATIENT, TENDANCE_INDICE_GLOBAL_PATIENT } from
 // valeurs. L'ancienne frise encodait l'indice dans la hauteur des barres — le
 // score était masqué mais toujours dessiné. Ici chaque bilan est un point
 // identique ; seule la position dans le temps est racontée.
-function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[] }) {
+function Frise({ trajectoire }: { trajectoire: { date: string }[] }) {
   if (trajectoire.length < 2) return null;
   return (
     <div className="mb-6">
