@@ -431,7 +431,7 @@ describe('GET /api/portail/protocole', () => {
     });
   });
 
-  // L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-348]], lettre bd).
+  // L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
   describe('encartConduite', () => {
     afterEach(() => {
       delete process.env.WN_PORTAIL_ENCART_CONDUITE;

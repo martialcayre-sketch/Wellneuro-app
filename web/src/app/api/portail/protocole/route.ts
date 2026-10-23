@@ -115,7 +115,7 @@ type GetResponse =
        */
       lectureDuDetail?: { dejaOuvert: boolean };
       /**
-       * L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-348]], lettre bd).
+       * L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
        * Présent seulement quand `WN_PORTAIL_ENCART_CONDUITE` est ouvert et
        * qu'une vue est servie. Absent, l'accueil ne le rend pas.
        */

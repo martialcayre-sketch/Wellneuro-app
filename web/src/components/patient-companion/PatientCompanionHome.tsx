@@ -42,7 +42,7 @@ type ProtocoleResponse =
       boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
       /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
       lectureDuDetail?: { dejaOuvert: boolean };
-      /** Encart « quand ralentir ou demander avis » ([[D-348]]) ; absent = drapeau fermé. */
+      /** Encart « quand ralentir ou demander avis » ([[D-349]]) ; absent = drapeau fermé. */
       encartConduite?: true;
     }
   | { ok: false };
@@ -352,7 +352,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
       {/* Progression factuelle (jamais de pourcentage). */}
       {checkin && checkin.points.length > 0 && <ProtocolCheckinTrend points={checkin.points} />}
 
-      {/* QUAND RALENTIR OU DEMANDER AVIS ([[D-348]], lettre bd) — le texte
+      {/* QUAND RALENTIR OU DEMANDER AVIS ([[D-349]], lettre bd) — le texte
           ACCEPTÉ, jamais reformulé. Hors du détail replié et servi en fin de
           cycle aussi : la conduite vaut tant qu'un protocole est servi. */}
       {protocole.encartConduite && (

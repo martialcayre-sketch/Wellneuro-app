@@ -1,11 +1,11 @@
-// L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » — lettre bd, fiche H71, [[D-348]].
+// L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » — lettre bd, fiche H71, [[D-349]].
 //
 // MODULE PUR, LISIBLE PAR LE NAVIGATEUR : l'accueil du protocole en tire son
 // texte. Aucune horloge, aucune base, aucune variable d'environnement — le
 // drapeau se lit côté serveur (`encartConduite.ts`) et la route du protocole
 // le dit au composant.
 //
-// TEXTE DU RESPONSABLE, ACCEPTÉ LE 2026-10-23 ([[D-348]] §1), recopié au
+// TEXTE DU RESPONSABLE, ACCEPTÉ LE 2026-10-23 ([[D-349]] §1), recopié au
 // caractère près : un banc relit la décision et rougit au premier écart. Il ne
 // se reformule pas ici ; une nouvelle version passe par une décision.
 

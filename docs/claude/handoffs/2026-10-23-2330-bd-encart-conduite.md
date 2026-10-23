@@ -1,10 +1,11 @@
-# Handoff — 2026-10-23 — bd : encart « quand ralentir ou demander avis » (D-348)
+# Handoff — 2026-10-23 — bd : encart « quand ralentir ou demander avis » (D-349)
 
 ## Branche et état Git
 
 - Branche `lot/bd-encart-conduite`, partie d'`origin/main` (a7247fe4), puis
-  `origin/main` fusionnée (99166e2d, #1659) sous la délégation du
-  2026-10-16 ; worktree `act5-mineurs` (session concurrente, cycle en git/gh
+  `origin/main` fusionnée (99166e2d, #1659 ; 6cce6381, #1665 ; 1f5750a8,
+  #1666) sous la délégation du 2026-10-16. Décision renumérotée D-349 :
+  D-348 a été prise par #1666 (lettre cm) pendant le CI ; worktree `act5-mineurs` (session concurrente, cycle en git/gh
   direct).
 - Une PR, code et documents ; aucune migration.
 
@@ -16,7 +17,7 @@ registre, drapeau — pour qu'il prenne la place suivante de la file C
 
 ## Décisions prises
 
-- D-348 : texte du responsable du 2026-10-23, variante A d'un brouillon
+- D-349 : texte du responsable du 2026-10-23, variante A d'un brouillon
   qu'il a fait rédiger par un assistant externe.
 - Première question à options : la phrase « choisissez l’élément ou « Je ne
   sais pas » » rendue conditionnelle (« Si le formulaire vous le propose »),
@@ -38,9 +39,9 @@ registre, drapeau — pour qu'il prenne la place suivante de la file C
 - `web/src/app/api/portail/protocole/route.ts` et son test
 - `web/src/components/patient-companion/PatientCompanionHome.tsx` et son test
 - `web/src/lib/gamification-patient.guard.test.ts` (surface ajoutée)
-- `docs/DECISIONS.md` (D-348), `docs/FEATURE_FLAGS.md`,
+- `docs/DECISIONS.md` (D-349), `docs/FEATURE_FLAGS.md`,
   `docs/claude/PLAN_WELLNEURO.md` (H71, ligne de l'encart),
-  `changelog.d/2026-10-23-d348-encart-bd.md`, `docs/claude/SESSION_LOG.md`
+  `changelog.d/2026-10-23-d349-encart-bd.md`, `docs/claude/SESSION_LOG.md`
 
 ## Validations exécutées
 
@@ -49,17 +50,17 @@ registre, drapeau — pour qu'il prenne la place suivante de la file C
   6 min 51 s, E2E Chromium + WebKit).
 - Revue `wn-reviewer` : GO pour merger drapeau éteint, NO-GO pour activer
   sur un P1 (phrase du formulaire) ; P1 tranché par le responsable (phrase
-  retirée). P2 traités : banc strict (citation de D-348 §1 extraite ligne à
+  retirée). P2 traités : banc strict (citation de D-349 §1 extraite ligne à
   ligne, égalité stricte ; rouge sous mutation d'un paragraphe retiré),
   surface ajoutée au garde de gamification, cas « indisponible » de la
-  route. §5 de D-348 précisé (le formulaire est sur la page « Mes
+  route. §5 de D-349 précisé (le formulaire est sur la page « Mes
   informations et mes droits »).
 - Bancs touchés verts après correctifs (4 fichiers, 68 cas) ; T3 et T1
   complet rejoués sur l'état fusionné avant la PR.
 
 ## Problèmes ouverts
 
-- « Signaler un problème » n'est pas un lien depuis l'encart (D-348 §5).
+- « Signaler un problème » n'est pas un lien depuis l'encart (D-349 §5).
 - Une gêne liée à un geste de vie passe par le libellé « Un produit me
   semble mal toléré ».
 - L'aperçu du protocole au cockpit ne montre pas l'encart.
@@ -68,7 +69,7 @@ registre, drapeau — pour qu'il prenne la place suivante de la file C
 
 Après merge et déploiement constaté : sur accord du responsable,
 `WN_PORTAIL_ENCART_CONDUITE=true` (env-set, puis redémarrage : env-set ne
-redémarre pas) ; constat D-348 §4 — l'encart lu en ligne par le responsable
+redémarre pas) ; constat D-349 §4 — l'encart lu en ligne par le responsable
 sur un dossier de test dont un protocole est servi, la diffusion en vigueur
 relue par identifiant en conteneur, consigné en agrégats ; page de suivi de
 la file C (ouverture « encart » → fait).

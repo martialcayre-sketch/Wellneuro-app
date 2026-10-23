@@ -428,7 +428,7 @@ describe('PatientCompanionHome — détail replié', () => {
   });
 });
 
-// L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-348]], lettre bd).
+// L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
 describe('PatientCompanionHome — encart de conduite', () => {
   const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
   const vueServie = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };

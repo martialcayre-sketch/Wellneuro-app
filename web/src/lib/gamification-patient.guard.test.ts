@@ -56,7 +56,7 @@ const SURFACES_PATIENT = [
   // BP-13 ([[D-335]]) : la fiche de renseignements du portail (sexe, cycles,
   // traitements) vit avec le panneau du cockpit ; le dossier entier est gardé.
   'components/physio-traitements',
-  // bd ([[D-348]]) : le texte de l'encart « quand ralentir ou demander avis »
+  // bd ([[D-349]]) : le texte de l'encart « quand ralentir ou demander avis »
   // vit dans un module pur, hors des composants qui le rendent.
   'lib/portail/texteEncartConduite.ts',
 ];

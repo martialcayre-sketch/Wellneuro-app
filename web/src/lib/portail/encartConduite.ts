@@ -1,5 +1,5 @@
 // `WN_PORTAIL_ENCART_CONDUITE` — L'ENCART « QUAND RALENTIR OU DEMANDER AVIS »
-// (lettre bd, fiche H71, [[D-348]]). Fermé, l'accueil du portail sert le
+// (lettre bd, fiche H71, [[D-349]]). Fermé, l'accueil du portail sert le
 // protocole exactement comme avant. Ouvert, la route du protocole annonce
 // l'encart quand elle sert une vue, et l'accueil le rend avec le texte accepté
 // (`texteEncartConduite.ts`). Aucune écriture, aucune trace, aucune migration.

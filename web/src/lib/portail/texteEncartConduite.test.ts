@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from './texteEncartConduite';
 
 describe('texte accepté de l’encart « quand ralentir ou demander avis »', () => {
-  // RECOPIE AU CARACTÈRE PRÈS : le banc relit la citation de D-348 §1, ligne à
+  // RECOPIE AU CARACTÈRE PRÈS : le banc relit la citation de D-349 §1, ligne à
   // ligne. Égalité stricte : un paragraphe tronqué, omis ou ajouté rougit, pas
   // seulement un mot changé.
-  it('est la citation de D-348 §1, ni plus ni moins', () => {
+  it('est la citation de D-349 §1, ni plus ni moins', () => {
     const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const debut = decisions.indexOf('### D-348');
-    const fin = decisions.indexOf('### D-347');
+    const debut = decisions.indexOf('### D-349');
+    const fin = decisions.indexOf('### D-348');
     expect(debut).toBeGreaterThanOrEqual(0);
     expect(fin).toBeGreaterThan(debut);
     const section = decisions.slice(debut, fin);
