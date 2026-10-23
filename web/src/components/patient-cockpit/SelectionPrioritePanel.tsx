@@ -175,7 +175,11 @@ export function SelectionPrioritePanel({
             )}
             {retenuLibre?.besoinsVises && (
               <p className="text-sm text-muted-foreground">
-                Besoins visés : {retenuLibre.besoinsVises.map(libelleBesoin).join(' · ')}
+                Besoins visés : {retenuLibre.besoinsVises
+                  .map(id => (BESOINS_SANS_REPASSATION.has(id)
+                    ? `${libelleBesoin(id)} (aucun questionnaire à re-passer)`
+                    : libelleBesoin(id)))
+                  .join(' · ')}
               </p>
             )}
             {/* LE MOTIF EST RE-AFFICHÉ, jamais seulement stocké : c'est la
@@ -311,8 +315,15 @@ export function SelectionPrioritePanel({
                     <legend className="text-sm font-medium text-foreground">
                       Besoins visés <span className="font-normal text-muted-foreground">(facultatif)</span>
                     </legend>
+                    {/* LA DÉRIVE SE DIT AVANT LE GESTE (arbitrage du responsable du
+                        2026-10-23) : changer les besoins visés écrit une
+                        nouvelle sélection, dont l'horodatage et le motif
+                        entrent dans l'empreinte de la carte — le protocole
+                        déjà diffusé dérive, comme pour un motif corrigé. */}
                     <p className="text-xs text-muted-foreground">
-                      Ils désignent les questionnaires à re-passer au jalon, et rien d’autre.
+                      Ils désignent les questionnaires à re-passer au jalon ; aucun calcul ne les lit. Les
+                      modifier après la diffusion du protocole, comme modifier le motif, oblige à le
+                      diffuser de nouveau.
                     </p>
                     <ul className="grid gap-1 sm:grid-cols-2">
                       {BESOINS.map(besoin => (

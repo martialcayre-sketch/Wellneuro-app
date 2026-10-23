@@ -27,6 +27,13 @@ sans règle puissent être re-mesurés.
   propre au choix du praticien. Exclusif des `needIds` par construction.
 - Clé `besoinsVises` absente quand vide, à la carte comme à la lecture ;
   `VERSION_DECISION_CARD` inchangée ; identifiant `libre:` inchangé.
+- Arbitrage du responsable du 2026-10-23 (P1 de `wn-reviewer`) : modifier
+  les besoins visés après diffusion fait dériver la carte et interrompt le
+  protocole au portail jusqu'à rediffusion, comme un motif corrigé — accepté,
+  l'écran le dit avant le geste. Sortir le champ de la carte n'y changerait
+  rien : la nouvelle ligne du fil porte un `selectedAt` et un motif neufs, qui
+  entrent déjà dans l'empreinte ; l'éviter demanderait un autre support et
+  une autre migration (option écartée).
 - Liste des douze prise à `fiches-usage/vocabulaire` (`BESOINS`, pur), parité
   avec les clés de `BESOIN_SOURCES` déjà épinglée par `clesLien.test.ts` :
   aucun test neuf ne nomme `BESOIN_SOURCES`.
@@ -47,11 +54,21 @@ sans règle puissent être re-mesurés.
 ## Validations exécutées
 
 - Six bancs touchés : 136 tests verts ; `tsc` vert ; T1 rapide vert.
-- T3 et `wn-reviewer` : voir la PR.
+- T3 (`npm run test:worktree`) vert en 6 min 51 s sur a3ff0ed6.
+- `wn-reviewer` (fort risque) : GO conditionnel, aucun P0 ; symétrie des
+  empreintes (cockpit, vérificateur, rejeu portail) et absence de fuite vers
+  assiettes, règles, score, contenu patient vérifiées. P1 tranché (ci-dessus),
+  texte de l'écran et fragment corrigés ; P2 « relecture sans la mention »
+  corrigé ; P2 « rien au jalon quand aucun besoin visé n'a d'instrument »
+  conforme à l'arbitrage du 2026-10-22, laissé.
 
 ## Problèmes ouverts
 
-- Aucun pour le lot. t40 (H84, acte daté, autre migration) s'ouvre après
+- Tests suggérés par la revue, non écrits : chaîne de bout en bout avec une
+  ligne libre porteuse de besoins (cockpit = vérificateur = rejeu), garde
+  `prioriteViseeAssiettes === null` pour une priorité libre au cockpit. La
+  symétrie est prouvée par morceaux (lecture Prisma, `buildDecisionCard`).
+- t40 (H84, acte daté, autre migration) s'ouvre après
   le constat de t39.
 
 ## Prochaine action exacte

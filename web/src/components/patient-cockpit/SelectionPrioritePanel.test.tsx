@@ -329,6 +329,22 @@ describe('SelectionPrioritePanel', () => {
       expect(coches).toHaveLength(2);
     });
 
+    it('dit, à la relecture, quel besoin visé n’a rien à re-passer', () => {
+      const sansRepassation = BESOINS.find(besoin => questionnairesCiblesPourPriorite([besoin.id]).length === 0)!;
+      const { ecran } = rendre({
+        ...retenue,
+        selectedMainPriority: { ...retenue.selectedMainPriority, libre: { ...libre, besoinsVises: [sansRepassation.id] } },
+      });
+      expect(ecran.getByText(
+        `Besoins visés : ${sansRepassation.libellePraticien} (aucun questionnaire à re-passer)`,
+      )).toBeTruthy();
+    });
+
+    it('prévient, avant le geste, que les modifier après diffusion oblige à rediffuser', () => {
+      const { ecran } = rendre({ priorityCandidates: [], proposedMainPriorityId: null });
+      expect(ecran.getByText(/oblige à le\s+diffuser de nouveau/)).toBeTruthy();
+    });
+
     it('la changer repart du domaine et du libellé écrits', () => {
       const { ecran } = rendre(retenue);
       fireEvent.click(ecran.getByRole('button', { name: 'Retenir une autre priorité' }));
