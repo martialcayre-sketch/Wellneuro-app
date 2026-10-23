@@ -11440,3 +11440,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; drapeau sur accord du responsable, puis constat (D-348 §4) ; page de la file C.
 
 **Ouvert.** Aperçu du protocole au cockpit sans l'encart ; gêne liée à un geste de vie routée par le libellé « produit ».
+## 2026-10-23 — J1-cockpit-b : provenance datée, garde de frontière, Q9 et Q10
+
+**Fait.** Quatre arbitrages du responsable (options recommandées). Repli « Source » sous les cinq cartes du cockpit : questionnaires lus, date de la passation retenue, version du calcul ; sans provenance, « Source non enregistrée » au lieu du chiffre. Q9 : mention du plafond sous l'indice (booléen seul). Q10 : valeur de trajectoire et écart du momentum retirés de `lecturePatient`. Garde `frontierePortail` en trois volets, rouge sous huit mutations. wn-reviewer : GO avec réserves ; P1 (trois répertoires patient hors garde) corrigé.
+
+**Écarté.** Provenance du tableau des couvertures (r3_08 le refait) ; dates recalculées dans la route (copie de la déduplication) ; version empruntée pour la stabilité (« Formule non versionnée »).
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_07 « fait » à la page de la file A.
+
+**Ouvert.** Règle 2 (formule `nom-vN`) ; contrat à liste fermée limité à `api/patient/equilibre`.

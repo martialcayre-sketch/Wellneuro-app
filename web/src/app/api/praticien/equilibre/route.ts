@@ -2,20 +2,33 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { BESOINS } from '@/lib/equilibre/constants';
+import { BESOIN_SOURCES, BESOINS } from '@/lib/equilibre/constants';
 import {
   construireHistoriqueEquilibre,
   construireReponsesParQuestionnaire,
+  datesDesReponsesRetenues,
   resoudreDateT0,
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
-import { calculerObjetsCliniques, SOURCES_STABILITE_METABOLIQUE } from '@/lib/equilibre/objetsCliniques';
+import {
+  BESOIN_CLARTE,
+  BESOIN_RESERVE_ADAPTATION,
+  calculerObjetsCliniques,
+  SOURCES_STABILITE_METABOLIQUE,
+} from '@/lib/equilibre/objetsCliniques';
 import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import type { PresenceSourceStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
-import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
+import type { ProvenanceChiffre, ProvenanceMomentum } from '@/lib/praticien/provenanceChiffre';
+import type {
+  JalonMomentum,
+  NiveauPreuveBesoin,
+  ResultatMomentum,
+  SourceQuestionnaire,
+  StrateCode,
+} from '@/lib/equilibre/types';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/equilibre';
@@ -40,6 +53,18 @@ export type ObjetsCliniquesReponse = {
   reserveAdaptation: number | null; // 0-100
   clarte: number | null; // 0-100
   momentum: ResultatMomentum | null;
+  /** Le total a été ramené au plafond des fondations critiques ([[D-106]]) :
+   *  le fait seul — ni le besoin, ni la valeur avant plafond (Q9). */
+  plafondApplique: boolean;
+  /** Provenance datée de chaque chiffre ([[D-333]] §2 règle 1) ; `null` quand
+   *  le chiffre lui-même est absent. */
+  provenance: {
+    indiceGlobal: ProvenanceChiffre | null;
+    stabiliteMetabolique: ProvenanceChiffre | null;
+    reserveAdaptation: ProvenanceChiffre | null;
+    clarte: ProvenanceChiffre | null;
+    momentum: ProvenanceMomentum | null;
+  };
 };
 
 export type EquilibreApiResponse =
@@ -104,6 +129,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     // cycle courant.
     const dateT0 = resoudreDateT0(reponsesDb);
     let momentum: ResultatMomentum | null = null;
+    let provenanceMomentum: ProvenanceMomentum | null = null;
     if (dateT0) {
       const historique = construireHistoriqueEquilibre(reponsesDb);
       const lectureT0 = resoudreLectureJalon(dateT0, 'T0', historique);
@@ -115,7 +141,38 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         ? resoudreLectureJalon(dateT0, dernierJalonAtteint, historique)
         : null;
       momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
+      // Les deux lectures que le delta a soustraites, à la date de leur jalon,
+      // recalculées à la version courante (A8-3 : jamais deux versions).
+      if (momentum && lectureT0 && lectureRecente && dernierJalonAtteint) {
+        provenanceMomentum = {
+          depart: { jalon: 'T0', date: lectureT0.date.toISOString() },
+          arrivee: { jalon: dernierJalonAtteint, date: lectureRecente.date.toISOString() },
+          versionCalcul: objets.indiceGlobal.versionScore,
+        };
+      }
     }
+
+    // PROVENANCE DATÉE ([[D-333]] §2 règle 1) : les questionnaires que la
+    // formule a RÉELLEMENT lus — mêmes listes, même fonction que le calcul —,
+    // chacun à la date de la passation retenue (même sélection que
+    // `construireReponsesParQuestionnaire`). Rien n'est inféré : un chiffre
+    // dont la provenance ne s'établit pas n'est pas affiché par le panneau.
+    const datesRetenues = datesDesReponsesRetenues(reponsesDb);
+    const provenanceDe = (
+      valeur: number | null,
+      sources: SourceQuestionnaire[],
+      versionCalcul: string | null
+    ): ProvenanceChiffre | null => {
+      if (valeur === null) return null;
+      const lues = [
+        ...new Set(sources.filter(s => calculerCouvertureSource(s, reponses) !== null).map(s => s.idQuestionnaire)),
+      ];
+      return {
+        sources: lues.map(id => ({ idQuestionnaire: id, dateReponse: datesRetenues[id]?.toISOString() ?? null })),
+        versionCalcul,
+      };
+    };
+    const versionScore = objets.indiceGlobal.versionScore;
 
     const couverturesParBesoin = new Map(
       objets.indiceGlobal.strates.flatMap(s => s.besoins).map(b => [b.besoin, b.couverture])
@@ -151,6 +208,25 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         reserveAdaptation: versCent(objets.reserveAdaptation),
         clarte: versCent(objets.clarte),
         momentum,
+        plafondApplique: objets.indiceGlobal.plafondApplique,
+        provenance: {
+          indiceGlobal: provenanceDe(
+            objets.indiceGlobal.scoreGlobal,
+            BESOINS.flatMap(b => BESOIN_SOURCES[b.id] ?? []),
+            versionScore
+          ),
+          // La stabilité ne relève pas de `VERSION_SCORE_EQUILIBRE` : sa liste
+          // vit dans `objetsCliniques.ts`, hors du registre des versions. Elle
+          // ne porte donc aucune version — le dire, plutôt qu'en emprunter une.
+          stabiliteMetabolique: provenanceDe(objets.stabiliteMetabolique, SOURCES_STABILITE_METABOLIQUE, null),
+          reserveAdaptation: provenanceDe(
+            objets.reserveAdaptation,
+            BESOIN_SOURCES[BESOIN_RESERVE_ADAPTATION] ?? [],
+            versionScore
+          ),
+          clarte: provenanceDe(objets.clarte, BESOIN_SOURCES[BESOIN_CLARTE] ?? [], versionScore),
+          momentum: provenanceMomentum,
+        },
       },
       priorites,
     });

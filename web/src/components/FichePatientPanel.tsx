@@ -35,6 +35,15 @@ import {
   MENTION_SOURCES_INDISPONIBLES,
   mentionSourcesStabilite,
 } from '@/lib/praticien/mentionStabiliteMetabolique';
+import {
+  LIBELLE_GESTE_PROVENANCE,
+  lignesProvenance,
+  lignesProvenanceMomentum,
+  MENTION_PLAFOND_APPLIQUE,
+  MENTION_SOURCE_NON_ENREGISTREE,
+  provenanceEtablie,
+  provenanceMomentumEtablie,
+} from '@/lib/praticien/provenanceChiffre';
 // Même patron, même raison : `rideauT0.ts` est une feuille sans import, alors
 // que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
 // `orientationService`.
@@ -111,12 +120,49 @@ import { elementsMenuDossier, type PatientRowData } from '@/components/ui/Patien
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
 
+// Le geste qui ouvre la provenance d'un chiffre ([[D-333]] §2 règle 1) :
+// `<details>` natif, ouvrable au clavier et au toucher, sans survol.
+function DetailProvenance({ objet, lignes }: { objet: string; lignes: string[] }) {
+  return (
+    <details className="mt-1 w-full text-center">
+      {/* Cinq gestes portent le même mot à l'écran : le nom accessible dit
+          duquel il s'agit, en gardant le mot visible en tête. */}
+      <summary
+        aria-label={`${LIBELLE_GESTE_PROVENANCE} — ${objet}`}
+        className="cursor-pointer py-1 text-xs text-muted-foreground underline underline-offset-2"
+      >
+        {LIBELLE_GESTE_PROVENANCE}
+      </summary>
+      <div className="mt-1 space-y-0.5 text-left">
+        {lignes.map(ligne => (
+          <p key={ligne} className="text-xs text-muted-foreground">
+            {ligne}
+          </p>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+// Un chiffre dont la provenance n'est pas établie ne s'affiche pas
+// ([[D-333]] §2 règle 1) — et ne se confond pas avec « Non mesuré ».
+function SourceNonEnregistree({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
+      <span className="text-sm text-muted-foreground">{MENTION_SOURCE_NON_ENREGISTREE}</span>
+      <span className="text-xs text-muted-foreground uppercase tracking-wide text-center">{label}</span>
+    </div>
+  );
+}
+
 function ObjetGauge({
   label,
   value,
   mention,
   tolerance,
   base,
+  plafond,
+  provenance,
 }: {
   label: string;
   value: number | null;
@@ -130,6 +176,11 @@ function ObjetGauge({
    *  12 », [[D-329]] §3). Servie sous la mention, seulement si un chiffre
    *  s'affiche. */
   base?: string;
+  /** Le chiffre a été plafonné ([[D-106]]) : la mention seule (Q9). */
+  plafond?: string;
+  /** Lignes de provenance datée ; `null` quand elle n'est pas établie — le
+   *  chiffre ne s'affiche alors pas. Obligatoire : aucun chiffre sans elle. */
+  provenance: string[] | null;
 }) {
   if (value === null) {
     return (
@@ -139,18 +190,20 @@ function ObjetGauge({
       </div>
     );
   }
-  if (!mention && !tolerance && !base) return <ScoreGauge value={value} label={label} />;
+  if (!provenance) return <SourceNonEnregistree label={label} />;
   return (
     <div className="flex flex-col items-center">
       <ScoreGauge value={value} label={label} />
       {mention && <span className="mt-1 text-xs text-muted-foreground text-center">{mention}</span>}
       {tolerance && <span className="text-xs text-muted-foreground text-center">{tolerance}</span>}
       {base && <span className="text-xs text-muted-foreground text-center">{base}</span>}
+      {plafond && <span className="text-xs text-muted-foreground text-center">{plafond}</span>}
+      <DetailProvenance objet={label} lignes={provenance} />
     </div>
   );
 }
 
-function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
+function MomentumCard({ momentum, provenance }: { momentum: ResultatMomentum | null; provenance: string[] | null }) {
   if (!momentum) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
@@ -160,9 +213,10 @@ function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
       </div>
     );
   }
+  if (!provenance) return <SourceNonEnregistree label="Momentum" />;
   const signe = momentum.delta > 0 ? '+' : '';
   return (
-    <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
+    <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 min-h-[148px]">
       <span className="text-2xl font-bold text-foreground">
         {signe}
         {momentum.delta}
@@ -180,6 +234,7 @@ function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
       <span className="text-3xs text-muted-foreground text-center leading-tight">
         {MENTION_NATURE_INDICE_GLOBAL}
       </span>
+      <DetailProvenance objet="Momentum" lignes={provenance} />
     </div>
   );
 }
@@ -1450,6 +1505,13 @@ export function FichePatientPanel({
     </div>
   );
 
+  // Provenance datée ([[D-333]] §2 règle 1). Le champ peut manquer d'un ancien
+  // conteneur pendant un déploiement : chaque chiffre dit alors « Source non
+  // enregistrée », jamais une provenance vide.
+  const provenance = objetsCliniques.provenance;
+  const lignesDe = (p: Parameters<typeof provenanceEtablie>[0]) =>
+    provenanceEtablie(p) ? lignesProvenance(p) : null;
+
   const cartesObjetsCliniques = (
     /* 2 colonnes fixes : la pane de tiroir fait 440px (maquette), les
        breakpoints viewport de Tailwind n'y voient rien. */
@@ -1465,6 +1527,8 @@ export function FichePatientPanel({
         value={objetsCliniques.indiceGlobal}
         mention={MENTION_NATURE_INDICE_GLOBAL}
         base={mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)}
+        plafond={objetsCliniques.plafondApplique ? MENTION_PLAFOND_APPLIQUE : undefined}
+        provenance={lignesDe(provenance?.indiceGlobal)}
       />
       {/* LES TROIS AUTRES OBJETS SONT DES REPÈRES DE SUIVI ([[D-333]] §2 règle 3,
           §3 ; arbitrage du 2026-10-23) : calculés par Wellneuro, aucun n'est la
@@ -1481,14 +1545,26 @@ export function FichePatientPanel({
             ? (mentionSourcesStabilite(objetsCliniques.stabiliteMetaboliqueSources) ?? undefined)
             : MENTION_SOURCES_INDISPONIBLES
         }
+        provenance={lignesDe(provenance?.stabiliteMetabolique)}
       />
       <ObjetGauge
         label="Réserve d'adaptation"
         value={objetsCliniques.reserveAdaptation}
         mention={MENTION_NATURE_INDICE_GLOBAL}
+        provenance={lignesDe(provenance?.reserveAdaptation)}
       />
-      <ObjetGauge label="Clarté" value={objetsCliniques.clarte} mention={MENTION_NATURE_INDICE_GLOBAL} />
-      <MomentumCard momentum={objetsCliniques.momentum} />
+      <ObjetGauge
+        label="Clarté"
+        value={objetsCliniques.clarte}
+        mention={MENTION_NATURE_INDICE_GLOBAL}
+        provenance={lignesDe(provenance?.clarte)}
+      />
+      <MomentumCard
+        momentum={objetsCliniques.momentum}
+        provenance={
+          provenanceMomentumEtablie(provenance?.momentum) ? lignesProvenanceMomentum(provenance.momentum) : null
+        }
+      />
     </div>
   );
 

@@ -17,12 +17,20 @@ import type { JalonMomentum, LectureDatee, ResultatMomentum, StrateCode } from '
 // Données patient-safe uniquement : jamais les niveaux de preuve A/B/C/D
 // (réservés praticien, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md §3). Ne rien
 // ajouter ici qui ne soit destiné au patient.
+//
+// AUCUN CHIFFRE NE TRAVERSE AU PORTAIL ([[D-333]] §2 règle 5, Q10) : ni la
+// valeur de chaque point de la trajectoire, ni l'écart du momentum. Le portail
+// n'en dessinait rien — la frise ne compte que des points, la tendance se dit
+// en mots — mais la réponse les portait. Seuls restent deux nombres, ceux des
+// représentations sans valeur du §1 (famille 2) : `indiceGlobal` pour la jauge
+// sans chiffre, `couverture` pour les cercles et les paliers dits en mots.
+// `frontierePortail.guard.test.ts` tient la liste fermée.
 export type BesoinPatient = { id: number; libellePatient: string; strate: StrateCode; couverture: number | null };
 
 export type EquilibrePatient = {
   indiceGlobal: number | null; // 0-100
-  momentum: ResultatMomentum | null;
-  trajectoire: { date: string; valeur: number }[]; // T0 -> J90
+  momentum: Pick<ResultatMomentum, 'tendance'> | null;
+  trajectoire: { date: string }[]; // T0 -> J90
   besoins: BesoinPatient[];
 };
 
@@ -77,8 +85,8 @@ export async function lireEquilibrePatient(idPatient: string): Promise<Equilibre
 
   return {
     indiceGlobal: objets.indiceGlobal.scoreGlobal,
-    momentum,
-    trajectoire: historique.map(l => ({ date: l.date.toISOString(), valeur: l.valeur })),
+    momentum: momentum ? { tendance: momentum.tendance } : null,
+    trajectoire: historique.map(l => ({ date: l.date.toISOString() })),
     besoins,
   };
 }
