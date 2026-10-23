@@ -26,6 +26,10 @@ const EQUILIBRE = {
     besoinsMesures: 8,
     besoinsTotal: 12,
     stabiliteMetabolique: null,
+    stabiliteMetaboliqueSources: [
+      { idQuestionnaire: 'Q_INF_01', presente: false },
+      { idQuestionnaire: 'Q_INF_02', presente: false },
+    ],
     reserveAdaptation: 48,
     clarte: null,
     momentum: null,
@@ -85,6 +89,11 @@ type Options = {
   assignationEchue?: boolean;
   /** L'indice global n'est pas calculable (aucun besoin mesuré, [[D-329]] §3). */
   indiceGlobalNul?: boolean;
+  /** Sources présentes de la stabilité métabolique ([[D-333]] §3) ; absente =
+   *  aucune, la tuile dit « Non mesuré ». */
+  stabilite?: 'q1' | 'deux';
+  /** La clarté est mesurée (sinon nulle dans la fixture). */
+  clarteMesuree?: boolean;
   // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
   // - `defaut` : rideau T0 complet, un envoi hors rideau en attente ;
   // - `rideauIncomplet` : `Q_ALI_01` du rideau jamais rendu — le seul cas qui
@@ -494,6 +503,22 @@ function stubFetch(options: Options = {}) {
       if (equilibreEchecs > 0) {
         equilibreEchecs -= 1;
         return ok({ unavailable: true, reason: 'exception' }, 500);
+      }
+      if (options.clarteMesuree) {
+        return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, clarte: 57 } });
+      }
+      if (options.stabilite) {
+        return ok({
+          ...EQUILIBRE,
+          objetsCliniques: {
+            ...EQUILIBRE.objetsCliniques,
+            stabiliteMetabolique: options.stabilite === 'deux' ? 63 : 75,
+            stabiliteMetaboliqueSources: [
+              { idQuestionnaire: 'Q_INF_01', presente: true },
+              { idQuestionnaire: 'Q_INF_02', presente: options.stabilite === 'deux' },
+            ],
+          },
+        });
       }
       return ok(
         options.indiceGlobalNul
@@ -2094,6 +2119,65 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     for (const tuile of nonMesures) {
       expect(tuile.parentElement?.textContent).not.toContain('pas un score clinique');
     }
+  });
+});
+
+// [[D-333]] §3, J1-cockpit-a : les trois autres objets disent leur nature à
+// l'écran, et la stabilité sa tolérance — le garde de nature lit les attributs,
+// ces cas lisent le rendu.
+describe('FichePatientPanel — stabilité, réserve et clarté disent leur nature', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  async function ouvrirTiroir(options: Options = {}) {
+    await rendreFiche(options);
+    fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
+    await screen.findByText('Indice global');
+  }
+
+  it('la réserve d’adaptation affichée porte la mention de nature', async () => {
+    await ouvrirTiroir();
+    // Indice global (62) et réserve (48) : deux chiffres, deux mentions ; la
+    // stabilité et la clarté, non mesurées, n'en portent aucune.
+    expect(screen.getByText('48')).toBeTruthy();
+    expect(screen.getAllByText('Repère de suivi, pas un score clinique')).toHaveLength(2);
+  });
+
+  it('la clarté affichée porte la mention de nature', async () => {
+    await ouvrirTiroir({ clarteMesuree: true });
+    expect(screen.getByText('57')).toBeTruthy();
+    // Indice global, réserve et clarté : trois chiffres, trois mentions.
+    expect(screen.getAllByText('Repère de suivi, pas un score clinique')).toHaveLength(3);
+  });
+
+  it('stabilité non mesurée : ni tolérance ni sources', async () => {
+    await ouvrirTiroir();
+    expect(screen.queryByText('Non motivé, décision due')).toBeNull();
+    expect(screen.queryByText(/Q_INF_0/)).toBeNull();
+  });
+
+  it('une source présente : la tolérance, la source présente et celle qui manque', async () => {
+    await ouvrirTiroir({ stabilite: 'q1' });
+    expect(screen.getByText('75')).toBeTruthy();
+    expect(screen.getAllByText('Repère de suivi, pas un score clinique')).toHaveLength(3);
+    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(
+      screen.getByText('Sur Hyperexcitabilité SIIN (Q_INF_01) seule ; manque Magnésium / spasmophilie SIIN (Q_INF_02)'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/deux instruments/i)).toBeNull();
+  });
+
+  it('deux sources présentes : la tolérance et la moyenne à poids égal nommée', async () => {
+    await ouvrirTiroir({ stabilite: 'deux' });
+    expect(screen.getByText('63')).toBeTruthy();
+    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Moyenne à poids égal : Hyperexcitabilité SIIN (Q_INF_01) et Magnésium / spasmophilie SIIN (Q_INF_02)',
+      ),
+    ).toBeTruthy();
   });
 });
 
