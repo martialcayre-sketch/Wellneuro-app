@@ -11431,3 +11431,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; page de la file A (r3_07 en cours) ; puis J1-cockpit-b.
 
 **Ouvert.** Porte 4 (poids égal) ; incohérence de nom des besoins 9 et 10 (jauge « repère de suivi », tableau « couverture ») jusqu'aux lots Q2 à Q4.
+## 2026-10-23 — bd : encart « quand ralentir ou demander avis », livré éteint (D-348)
+
+**Fait.** Texte du responsable accepté (variante A d'un brouillon externe ; phrase du choix dans le formulaire retirée sur revue adverse) ; servi au caractère près à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, éteint ; D-348, registre des drapeaux, plan H71.
+
+**Écarté.** Phrase « choisissez l’élément ou « Je ne sais pas » » : sur l'ancien formulaire (mineur, sans date), « Je ne sais pas » laisse le signalement hors du programme (D-281). Lien vers « Signaler un problème » : non demandé, limite écrite au §5.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; drapeau sur accord du responsable, puis constat (D-348 §4) ; page de la file C.
+
+**Ouvert.** Aperçu du protocole au cockpit sans l'encart ; gêne liée à un geste de vie routée par le libellé « produit ».
