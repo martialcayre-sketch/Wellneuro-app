@@ -23,10 +23,10 @@
 // ── LA CONTRAINTE DE CONTENU — DÉCLARÉE, PAS IMPOSÉE ────────────────────────
 // Référence : le banc de `agenda-sommeil/relanceEmail.ts` — « aucune donnée
 // de santé dans un e-mail : ni titre d'instrument, ni domaine, ni chiffre ».
-// Quatre gabarits N'Y SONT PAS conformes aujourd'hui (titres d'instruments,
-// note libre du praticien) : leur écart est DÉCLARÉ ci-dessous, gabarit par
-// gabarit. Le corriger changerait le contenu servi aux patients — décision
-// praticien, hors campagne (précédent : l'audit HDS du 2026-07-24 a retiré le
+// Quatre gabarits n'y étaient pas conformes en v1 (titres d'instruments,
+// note libre du praticien) : leur écart reste DÉCLARÉ sur chaque v1. Le
+// praticien l'a corrigé le 2026-10-23 : leurs v2, servies, ne portent plus
+// ni titre ni note (précédent : l'audit HDS du 2026-07-24 avait retiré le
 // motif de consultation de l'e-mail portail).
 //
 // ── ÉVOLUTION D'UN GABARIT ──────────────────────────────────────────────────
@@ -93,7 +93,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     variables: ['prenom', 'lien'],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-07-20',
-    valideLe: null,
+    // VALIDÉ le 2026-10-23, en session, sur le texte servi relu par le
+    // responsable (D/39 du plan) ; l'empreinte ne bouge pas.
+    valideLe: '2026-10-23',
     hash: '20542552ef304ba7906c997402838f31bf40b7d2e92306706c903b9c222fc03d',
   },
   {
@@ -139,7 +141,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     // (`relanceEmail.test.ts`) : ni instrument, ni « sommeil », ni chiffre.
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-07-30',
-    valideLe: null,
+    // VALIDÉ le 2026-10-23, en session, sur le texte servi relu par le
+    // responsable (D/39 du plan) ; l'empreinte ne bouge pas.
+    valideLe: '2026-10-23',
     hash: '3626875e5045effb6a2b85c865dda391d8ba30c717c568f413893c50db265250',
   },
   {
@@ -256,7 +260,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     variables: [],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-06-30',
-    valideLe: null,
+    // VALIDÉ le 2026-10-23, en session, sur le texte servi relu par le
+    // responsable (D/39 du plan) ; l'empreinte ne bouge pas.
+    valideLe: '2026-10-23',
     hash: 'c67f70beb29b025c6cb93eb8397bf35e32d85a556d6142439f2da93b1fd74780',
   },
   // Ajoutée en fin de liste, comme le veut l'append-only : la v1 ci-dessus ne
@@ -489,18 +495,11 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     // de l'objectif, qui reste dans l'espace.
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-09-10',
-    // VALIDÉ LE JOUR MÊME, sur demande explicite du responsable en session.
-    // [[D-154]] §7 avait laissé le geste ouvert et en avait nommé la forme :
-    // « elle se pose en changeant `valideLe`, sans toucher l'empreinte ».
-    //
-    // PREMIÈRE VALIDATION DU REGISTRE POSÉE APRÈS COUP : les deux autres
-    // (`acces_portail@2`, `acces_portail_lien@1`) sont nées validées. Que le
-    // `hash` ci-dessous ne bouge pas EST la preuve — il couvre
-    // `{key, version, sujet, corps, variables}` et rien d'autre, donc le texte
-    // servi au patient est au caractère près celui qui a été relu. Une
-    // validation qui aurait exigé de recalculer l'empreinte aurait été, par
-    // définition, une v2.
-    valideLe: null,
+    // VALIDÉE LE 2026-09-10, le jour de sa rédaction : date confirmée par le
+    // responsable le 2026-10-23 (D/39 du plan). Le commentaire recopié de la
+    // v1 la disait validée sans que la date soit posée ; l'empreinte ne
+    // bouge pas, le texte servi est celui qui a été relu.
+    valideLe: '2026-09-10',
     hash: 'f15fa027f32590344710015e66947d4e8ead2b2bd394beda8725848060b39024',
   },
   {
@@ -523,7 +522,9 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     variables: ['dateInfo', 'portalUrl'],
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-09-12',
-    valideLe: null,
+    // VALIDÉ le 2026-10-23, en session, sur le texte servi relu par le
+    // responsable (D/39 du plan) ; l'empreinte ne bouge pas.
+    valideLe: '2026-10-23',
     hash: '29da6688c0d92bf35b9645066ecc3706c0ca261303c15a802a02f7f1970d0a90',
   },
   // ── UN DOCUMENT REMIS ([[D-251]] §9, lot 11) ────────────────────────────────
@@ -681,6 +682,83 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     redigeLe: '2026-10-17',
     valideLe: '2026-10-17',
     hash: '619bf4277ec37db2ef11d15f9e7344c0f2baeea2145c68fc17272c224d26c780',
+  },
+  // ── LES QUATRE INVITATIONS SANS DONNÉE DE SANTÉ (2026-10-23) ──────────────
+  // Décision du praticien du 2026-10-23 (D/39 du plan) : les v1 nommaient
+  // l'instrument, le pack et la liste des titres, et recopiaient la note libre
+  // du praticien — l'écart déclaré du registre. Les v2 ne portent plus que
+  // l'échéance et l'adresse de l'espace. La note reste lisible dans l'espace :
+  // elle s'affiche en tête du questionnaire (`GenericQuestionnaire.tsx`,
+  // `PlaintesForm.tsx`). Textes relus et validés par le responsable en session,
+  // le jour de leur rédaction. Le pack et la sélection ne renvoient pas au
+  // « mot » du praticien : sans note, leurs routes enregistrent une note par
+  // défaut que l'espace affiche comme la sienne (revue de #1659).
+  {
+    key: 'assignation_questionnaire',
+    version: 2,
+    titre: "Invitation à compléter un questionnaire",
+    sujet: 'Questionnaire à compléter avant votre consultation — Wellneuro',
+    corps:
+      'Bonjour,\n\n' +
+      'Votre praticien vous invite à compléter un questionnaire avant votre consultation.{{dateInfo}}\n\n' +
+      "Il vous attend dans votre espace patient. Si votre praticien vous a laissé un mot, vous le trouverez en l'ouvrant.\n\n" +
+      'Accédez à votre espace patient ici :\n{{portalUrl}}\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['dateInfo', 'portalUrl'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-23',
+    valideLe: '2026-10-23',
+    hash: '5060d03bc8ebd79051a24aca2f53cc55afdcbe6016b868c53ec0f5d1943454dd',
+  },
+  {
+    key: 'assignation_pack',
+    version: 2,
+    titre: "Invitation à compléter les questionnaires d'un pack",
+    sujet: 'Questionnaires à compléter avant votre consultation — Wellneuro',
+    corps:
+      'Bonjour,\n\n' +
+      'Votre praticien vous invite à compléter plusieurs questionnaires avant votre consultation.{{dateInfo}}\n\n' +
+      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n" +
+      'Accéder à vos questionnaires :\n{{portalUrl}}\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['dateInfo', 'portalUrl'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-23',
+    valideLe: '2026-10-23',
+    hash: 'a4986a4e76b9c1d7014798c23cf2a584051e9201f6137d9868fac7bbabcf8f9e',
+  },
+  {
+    key: 'file_envoi',
+    version: 2,
+    titre: "Invitation à compléter une sélection de questionnaires",
+    sujet: 'Questionnaires à compléter avant votre consultation — Wellneuro',
+    corps:
+      'Bonjour,\n\n' +
+      'Votre praticien vous invite à compléter des questionnaires.{{dateInfo}}\n\n' +
+      "Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente et les remplir dans l'ordre de votre choix.\n\n" +
+      'Accéder à vos questionnaires :\n{{portalUrl}}\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['dateInfo', 'portalUrl'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-23',
+    valideLe: '2026-10-23',
+    hash: '613dbe22fe8930a1eceb83aeea0efeb81e7c87837aa90fe735fee783bc6897f1',
+  },
+  {
+    key: 'accuse_reception',
+    version: 2,
+    titre: "Accusé de réception d'un questionnaire",
+    sujet: 'Vos réponses ont bien été reçues — Wellneuro',
+    corps:
+      'Bonjour,\n\n' +
+      'Nous confirmons la bonne réception de vos réponses.\n\n' +
+      'Votre praticien Wellneuro en prendra connaissance prochainement.\n\n' +
+      "L'équipe Wellneuro",
+    variables: [],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-23',
+    valideLe: '2026-10-23',
+    hash: '3a18f994746053008a87d0ceddfb782733156f833fc6a5608009312778d9a2b4',
   },
 ]);
 

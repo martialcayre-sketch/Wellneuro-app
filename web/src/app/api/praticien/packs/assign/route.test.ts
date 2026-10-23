@@ -74,6 +74,10 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
+    // assignation_pack@2 (2026-10-23) : ni nom de pack, ni titres, ni note.
+    expect(message.text).not.toContain('Pack test');
+    expect(message.text).not.toContain('• ');
+    expect(message.text).not.toContain('Note de votre praticien');
   });
 
   // Cas réel : un pack enregistré en base contient un instrument depuis

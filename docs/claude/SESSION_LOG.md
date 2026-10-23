@@ -11385,6 +11385,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Allumage BP-15 : test d'intégration sur vraie base, information du patient avant BP-21a.
 
+## 2026-10-23 — File D : gabarits servis tous datés, quatre v2 sans donnée de santé (D/39)
+
+**Fait.** Arbitrages du praticien du 2026-10-23, gabarit par gabarit, sur le texte servi : quatre validés tels quels (`lien_magique`, `relance_agenda_sommeil`, `envoi_bilan`, `relance_questionnaire`) ; `objectif_propose` v2 daté du 2026-09-10 (commentaire faux corrigé) ; quatre v2 rédigées par l'assistant, relues et validées : invitations et accusé sans titre, sans liste, sans note. Routes et bancs alignés. Les 14 gabarits servis sont datés.
+
+**Écarté.** Garder la note dans l'e-mail (écart déclaré restant) ; un drapeau (le texte change au déploiement, comme chaque version de gabarit).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Note par défaut « Pack <nom> » ou « Envoi groupé — bibliothèque » affichée comme note du praticien dans l'espace : non tranché, hors lot, routé en D/52 ; les v2 du pack et de la sélection n'y renvoient pas.
 ## 2026-10-23 — M-2 : signature de la doctrine du cockpit
 
 **Fait.** D-333 et D-334 signées telles quelles par le responsable (niveau médian de D-334 §4 compris) ; porte 6 levée au plan ; F59 et H32 mises à jour ; lots de l'audit des instruments (Q1 à Q12) inscrits à F59 avec leurs préalables. Constat : la stabilité métabolique est affichée au cockpit sans mention, donc hors D-333 §3 dès le merge.
