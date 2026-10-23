@@ -79,8 +79,10 @@ Poser G0 à G3 de la fiche de cadrage
   - passer à la garde les têtes de fil physiologiques, retraits exclus ;
   - garantir des déclarations datées : un « oui » non daté ne se lève jamais.
 - Lot 3 : l'appelant du clic n'injecte ni table ni signature (valeurs par
-  défaut du module) et calcule l'âge depuis le dossier (revue CodeRabbit de
-  #1662, comparaison au littéral écartée avec motif).
+  défaut du module) et calcule l'âge depuis le dossier par `statutAge` : une
+  date de naissance absente ou illisible rend « date requise » avant tout
+  complément ciblé (D-345 §3, Q5) (revue CodeRabbit de #1662, comparaison au
+  littéral écartée avec motif).
 - Lot 3 : la case « ciblé / multivitaminé » dans `ProtocolMiniBuilder` avant
   l'ouverture du drapeau. Un test de route sur les deux champs reste à écrire
   avec cette case.
