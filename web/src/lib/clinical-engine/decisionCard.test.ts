@@ -177,6 +177,33 @@ describe('DecisionCard — priorité posée par le praticien (D-279)', () => {
     expect(() => buildDecisionCard({ ...base, review: review(), selectedMainPriority: sansLibre })).toThrow('liste fermée');
   });
 
+  // LES BESOINS VISÉS ([[D-338]] §3) entrent dans la carte avec la priorité
+  // posée : les corriger seuls fait dériver la carte, comme corriger le motif,
+  // sans changer l'identifiant. Absents, ils ne laissent aucune clé — et
+  // l'empreinte d'une carte à priorité posée d'avant la colonne ne bouge pas.
+  it('porte les besoins visés d’une priorité posée, sans toucher l’empreinte quand il n’y en a pas', () => {
+    const sans = buildDecisionCard({ ...base, review: review(), candidates: [], selectedMainPriority: selectionLibre });
+    const avecBesoins = { ...selectionLibre, libre: { ...libre, besoinsVises: [5, 9] } };
+    const avec = buildDecisionCard({ ...base, review: review(), candidates: [], selectedMainPriority: avecBesoins });
+    expect(avec.selectedMainPriority?.libre?.besoinsVises).toEqual([5, 9]);
+    expect(avec.selectedMainPriority?.candidateId).toBe(sans.selectedMainPriority?.candidateId);
+    expect(avec.inputHash).not.toBe(sans.inputHash);
+    const indefinis = buildDecisionCard({
+      ...base, review: review(), candidates: [],
+      selectedMainPriority: { ...selectionLibre, libre: { ...libre, besoinsVises: undefined } },
+    });
+    expect(indefinis.inputHash).toBe(sans.inputHash);
+  });
+
+  it('refuse des besoins visés vides, non rangés, doublés ou hors des douze', () => {
+    for (const besoinsVises of [[], [9, 5], [5, 5], [0], [13]]) {
+      expect(() => buildDecisionCard({
+        ...base, review: review(), candidates: [],
+        selectedMainPriority: { ...selectionLibre, libre: { ...libre, besoinsVises } },
+      })).toThrow('besoins visés');
+    }
+  });
+
   it('refuse un candidat du moteur qui porterait un libellé libre', () => {
     expect(() => buildDecisionCard({
       ...base, review: review(), candidates: [candidate()],

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { isGesteCandidatDisponible } from '@/lib/clinical-engine/decisionGuards';
+import { BESOINS } from '@/lib/equilibre/constants';
+import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 import {
   DOMAINES_PRIORITE_LIBRE,
   LIBELLE_PRIORITE_LIBRE_MAX,
@@ -46,6 +48,19 @@ export type ChoixPriorite = { candidateId: string } | { prioriteLibre: PrioriteL
 /** Valeur du bouton radio « poser une autre priorité » — jamais un `candidateId`. */
 const CHOIX_LIBRE = '__priorite_libre__';
 
+// LES BESOINS VISÉS ([[D-338]] §3) : les douze sont offerts (arbitrage du
+// 2026-10-22), et l'effet de chaque case se dit avant le choix — un besoin
+// sans questionnaire à re-passer ne cible rien, et le cocher sans le savoir
+// ferait attendre une re-mesure qui ne viendra pas. Le constat vient du MÊME
+// calcul que la re-passation elle-même, jamais d'une liste recopiée.
+const BESOINS_SANS_REPASSATION = new Set(
+  BESOINS.filter(besoin => questionnairesCiblesPourPriorite([besoin.id]).length === 0).map(besoin => besoin.id),
+);
+
+function libelleBesoin(id: number): string {
+  return BESOINS.find(besoin => besoin.id === id)?.libellePraticien ?? `Besoin ${id}`;
+}
+
 export function SelectionPrioritePanel({
   decisionCard,
   selectionEcartee = false,
@@ -70,6 +85,7 @@ export function SelectionPrioritePanel({
   const [candidatChoisi, setCandidatChoisi] = useState<string | null>(null);
   const [domaineLibre, setDomaineLibre] = useState<DomainePrioriteLibre | ''>('');
   const [libelleLibre, setLibelleLibre] = useState('');
+  const [besoinsVises, setBesoinsVises] = useState<number[]>([]);
   const [motif, setMotif] = useState('');
 
   // TROIS SILENCES, ET CHACUN A SON PROPRIÉTAIRE AILLEURS. Pas de carte : la
@@ -157,6 +173,11 @@ export function SelectionPrioritePanel({
                 Priorité posée par le praticien — {libelleDomainePrioriteLibre(retenuLibre.domaine)}
               </p>
             )}
+            {retenuLibre?.besoinsVises && (
+              <p className="text-sm text-muted-foreground">
+                Besoins visés : {retenuLibre.besoinsVises.map(libelleBesoin).join(' · ')}
+              </p>
+            )}
             {/* LE MOTIF EST RE-AFFICHÉ, jamais seulement stocké : c'est la
                 moitié de l'acte, et le praticien qui rouvre le dossier six
                 semaines plus tard vient d'abord lire pourquoi. */}
@@ -169,6 +190,9 @@ export function SelectionPrioritePanel({
                   setCandidatChoisi(retenuLibre ? CHOIX_LIBRE : dejaRetenu.candidateId);
                   setDomaineLibre(retenuLibre?.domaine ?? '');
                   setLibelleLibre(retenuLibre?.libelle ?? '');
+                  // Repris tels quels : retenir à nouveau sans y toucher ne
+                  // doit pas les effacer en silence.
+                  setBesoinsVises(retenuLibre?.besoinsVises ?? []);
                   setMotif('');
                 }}
                 className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
@@ -198,7 +222,13 @@ export function SelectionPrioritePanel({
               if (!choixComplet || !motifRenseigne || enregistrement) return;
               onRetenir(
                 libreChoisi
-                  ? { prioriteLibre: { domaine: domaineLibre as DomainePrioriteLibre, libelle: libelleLibre } }
+                  ? {
+                    prioriteLibre: {
+                      domaine: domaineLibre as DomainePrioriteLibre,
+                      libelle: libelleLibre,
+                      ...(besoinsVises.length > 0 ? { besoinsVises } : {}),
+                    },
+                  }
                   : { candidateId: choixCourant as string },
                 motif.trim(),
               );
@@ -277,6 +307,41 @@ export function SelectionPrioritePanel({
                       className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
                     />
                   </label>
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-medium text-foreground">
+                      Besoins visés <span className="font-normal text-muted-foreground">(facultatif)</span>
+                    </legend>
+                    <p className="text-xs text-muted-foreground">
+                      Ils désignent les questionnaires à re-passer au jalon, et rien d’autre.
+                    </p>
+                    <ul className="grid gap-1 sm:grid-cols-2">
+                      {BESOINS.map(besoin => (
+                        <li key={besoin.id}>
+                          <label className="flex min-h-11 items-start gap-2 rounded-lg border border-border p-2">
+                            <input
+                              type="checkbox"
+                              checked={besoinsVises.includes(besoin.id)}
+                              onChange={event => {
+                                const coche = event.target.checked;
+                                setBesoinsVises(courants => (coche
+                                  ? [...courants.filter(id => id !== besoin.id), besoin.id].sort((x, y) => x - y)
+                                  : courants.filter(id => id !== besoin.id)));
+                              }}
+                              className="mt-1"
+                            />
+                            <span>
+                              <span className="block text-sm text-foreground">{besoin.libellePraticien}</span>
+                              {BESOINS_SANS_REPASSATION.has(besoin.id) && (
+                                <span className="block text-xs text-muted-foreground">
+                                  Aucun questionnaire à re-passer pour ce besoin.
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </fieldset>
                 </div>
               )}
             </fieldset>

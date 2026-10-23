@@ -31,6 +31,7 @@ const CHAMPS = {
   rationale: true,
   domaineLibre: true,
   libelleLibre: true,
+  besoinsVises: true,
   selectedAt: true,
   supersedesSelectionId: true,
 } as const;
@@ -41,6 +42,7 @@ type LigneSelection = {
   rationale: string;
   domaineLibre?: string | null;
   libelleLibre?: string | null;
+  besoinsVises?: number[];
   selectedAt: Date;
   supersedesSelectionId: string | null;
 };
@@ -153,8 +155,20 @@ export async function lireSelectionPriorite(
     // ancrée. Un domaine hors liste ne peut pas sortir de la base (CHECK) ;
     // s'il en sortait, `buildDecisionCard` le refuserait et la sélection
     // serait écartée, jamais servie.
+    //
+    // LES BESOINS VISÉS ([[D-338]] §3), même règle un cran plus bas : clé
+    // posée seulement quand la ligne en porte — `{}` en base (le défaut, et
+    // toute ligne d'avant la colonne) ne pose rien, si bien que l'empreinte
+    // des cartes déjà ancrées ne bouge pas. La base garantit la forme
+    // canonique (CHECK) ; `buildDecisionCard` la revérifie.
     ...(tete.domaineLibre && tete.libelleLibre
-      ? { libre: { domaine: tete.domaineLibre as DomainePrioriteLibre, libelle: tete.libelleLibre } }
+      ? {
+        libre: {
+          domaine: tete.domaineLibre as DomainePrioriteLibre,
+          libelle: tete.libelleLibre,
+          ...(tete.besoinsVises && tete.besoinsVises.length > 0 ? { besoinsVises: tete.besoinsVises } : {}),
+        },
+      }
       : {}),
   };
 }

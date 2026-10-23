@@ -67,6 +67,7 @@ export function TrajectoirePanel({
   modeViePresent,
   modeVieT0CycleCourant,
   needIdsPriorite,
+  besoinsVisesPraticien,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
@@ -85,6 +86,13 @@ export function TrajectoirePanel({
    * proposition de re-passation ciblée au jalon. Absent ou vide : aucun bloc.
    */
   needIdsPriorite?: number[];
+  /**
+   * Besoins visés par le PRATICIEN sur une priorité qu'il a posée ([[D-338]]
+   * §3) — cible de la re-passation quand aucun candidat du moteur n'est visé.
+   * Les deux sont exclusifs par construction : une priorité posée n'est pas un
+   * candidat classé, et n'a donc pas de `needIds`.
+   */
+  besoinsVisesPraticien?: number[];
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -136,9 +144,17 @@ export function TrajectoirePanel({
     // aurait proposé une re-passation ciblée pour l'ouverture d'un `T1`.
     return du.statut === 'du' && !estAncreDeCycle(du.jalon) ? du.jalon : null;
   }, [trajectoire]);
+  // La cible vient des `needIds` du candidat visé, ou — priorité posée par le
+  // praticien — des besoins qu'il a cochés ([[D-338]] §3). Le texte du bloc
+  // dit laquelle : un choix du praticien ne se présente pas comme une
+  // dérivation du moteur.
+  const repassationParLePraticien = (needIdsPriorite ?? []).length === 0
+    && (besoinsVisesPraticien ?? []).length > 0;
   const ciblesRepassation = useMemo(
-    () => questionnairesCiblesPourPriorite(needIdsPriorite ?? []),
-    [needIdsPriorite],
+    () => questionnairesCiblesPourPriorite(
+      repassationParLePraticien ? besoinsVisesPraticien ?? [] : needIdsPriorite ?? [],
+    ),
+    [repassationParLePraticien, besoinsVisesPraticien, needIdsPriorite],
   );
   const [ajouts, setAjouts] = useState<Record<string, 'en_cours' | 'ajoute' | 'erreur'>>({});
   const [erreursAjout, setErreursAjout] = useState<Record<string, string>>({});
@@ -526,8 +542,11 @@ export function TrajectoirePanel({
                 Re-passation ciblée — jalon {jalonDuRepassation}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Instruments visés par la priorité du protocole. L’ajout pose l’instrument dans la
-                file d’envoi ; rien n’est envoyé au patient depuis cet écran.
+                {repassationParLePraticien
+                  ? 'Instruments des besoins que vous avez visés en posant la priorité.'
+                  : 'Instruments visés par la priorité du protocole.'}{' '}
+                L’ajout pose l’instrument dans la file d’envoi ; rien n’est envoyé au patient
+                depuis cet écran.
               </p>
               <ul className="mt-2 space-y-1">
                 {ciblesRepassation.map((qid) => (

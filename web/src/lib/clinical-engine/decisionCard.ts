@@ -1,6 +1,7 @@
 import { canonicalSha256 } from './canonical';
 import {
   LIBELLE_PRIORITE_LIBRE_MAX,
+  estBesoinsVisesCanoniques,
   estDomainePrioriteLibre,
   estIdentifiantPrioriteLibre,
   normaliserLibellePrioriteLibre,
@@ -145,6 +146,11 @@ export function buildDecisionCard(input: {
         || libre.libelle === ''
         || libre.libelle.length > LIBELLE_PRIORITE_LIBRE_MAX) {
         throw new TypeError('Le libellé d’une priorité posée par le praticien est vide, trop long ou non normalisé.');
+      }
+      // LES BESOINS VISÉS ([[D-338]] §3) : clé absente ou forme canonique —
+      // jamais `[]`, qui ferait dériver l'empreinte d'une carte déjà ancrée.
+      if (libre.besoinsVises !== undefined && !estBesoinsVisesCanoniques(libre.besoinsVises)) {
+        throw new TypeError('Les besoins visés d’une priorité posée sont vides, hors des douze besoins ou non rangés.');
       }
       if (selectedMainPriority.candidateId !== identifiantPrioriteLibre(libre)) {
         throw new TypeError('L’identifiant de la priorité posée ne correspond pas à son domaine et à son libellé.');

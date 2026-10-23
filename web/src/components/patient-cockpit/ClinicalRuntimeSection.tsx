@@ -5,7 +5,7 @@ import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/rout
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 import { isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
-import { isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
+import { estSelectionLibre, isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
@@ -187,6 +187,14 @@ export type EtatRuntimeClinique = {
    * priorité — on ne repropose jamais « le pack entier » à sa place.
    */
   needIdsPrioriteSelectionnee: number[];
+  /**
+   * Besoins VISÉS PAR LE PRATICIEN sur une priorité qu'il a posée ([[D-338]]
+   * §3) — CANAL DISTINCT de `needIdsPrioriteSelectionnee` : ceux-là fondent un
+   * candidat par une table signée, ceux-ci sont un choix du praticien, et
+   * l'écran le dit. Lus par la re-passation ciblée SEULE. Vide hors d'une
+   * priorité posée, ou quand elle n'en vise aucun.
+   */
+  besoinsVisesPrioriteLibre: number[];
   // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
   // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
@@ -1453,6 +1461,13 @@ export function ClinicalRuntimeSection({
     ? decisionCard?.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
     : null;
   const needIdsPrioriteSelectionnee = candidatVise?.provenance.needIds ?? NEED_IDS_VIDE;
+  // LA PRIORITÉ POSÉE n'est pas un candidat : `candidatVise` est nul pour elle,
+  // et ses besoins visés ([[D-338]] §3) passent par leur propre canal, vers la
+  // re-passation ciblée SEULE — jamais vers les assiettes ci-dessous.
+  const selectionRetenue = decisionCard?.selectedMainPriority ?? null;
+  const besoinsVisesPrioriteLibre = estSelectionLibre(selectionRetenue)
+    ? selectionRetenue.libre.besoinsVises ?? NEED_IDS_VIDE
+    : NEED_IDS_VIDE;
   // LA HIÉRARCHIE DES ASSIETTES VISE LA MÊME PRIORITÉ ([[D-254]]) — second
   // usage du repli, qui ne débloque toujours rien : il CLASSE, et la carte dit
   // si la priorité est retenue par le praticien ou seulement proposée.
@@ -1502,6 +1517,7 @@ export function ClinicalRuntimeSection({
       reevaluationMesuree,
       decisionBloquee,
       needIdsPrioriteSelectionnee,
+      besoinsVisesPrioriteLibre,
       rideauT0Satisfait,
       selectionPrioriteDue,
       actionsEnAttenteArbitrage,
@@ -1521,6 +1537,7 @@ export function ClinicalRuntimeSection({
     reevaluationMesuree,
     decisionBloquee,
     needIdsPrioriteSelectionnee,
+    besoinsVisesPrioriteLibre,
     rideauT0Satisfait,
     selectionPrioriteDue,
     actionsEnAttenteArbitrage,
