@@ -4,6 +4,78 @@
 
 ## Décisions actives
 
+### D-345 — J3-12h : un complément marqué « ciblé » n'entre au programme d'un mineur ou d'une personne enceinte ou allaitante qu'avec un courrier remis au patient dans le clic de diffusion ; accord de partage exigé ; mineur refusé jusqu'à J3-mineurs
+
+- Date : 2026-10-22
+- Statut : accepté — huit arbitrages du responsable du 2026-10-22, sur
+  questions à options, après une contre-revue `wn-reviewer` (NO-GO, un P0 et
+  cinq P1, tous corrigés avant les questions). Cadrage seulement : aucun
+  code, aucune migration dans cette décision.
+- Applique : la règle du responsable du 2026-10-17 (H15) ; la position P5
+  v0.3 du dossier du fer (signée le 2026-10-21) ; les positions P4 et P6
+  v0.3 du dossier du magnésium érythrocytaire (signées le 2026-10-22).
+- Étend : la pause du mineur de [[D-284]] §4 (questionnaires et biologie) au
+  complément ciblé.
+- Domaine : fiche de cadrage
+  `docs/claude/propositions/2026-10-22-j3-12h-garde-complement-cible/README.md`
+  (constats, chemins, découpage) ; action `supplement_exploration` du
+  protocole ; clic « Valider pour diffusion » ; courrier au médecin
+  ([[D-262]], [[D-307]], [[D-219]] §3 amendé). Forme opaque : les situations
+  propres à un nutriment portent un identifiant (`S-MG-1`, `S-MG-2`), leurs
+  libellés restent au dossier privé.
+
+**§1 — Objet gardé.** Sur chaque action `supplement_exploration`, le
+praticien marque « ciblé » ou « multivitaminé en vente libre ». Seule une
+action « ciblé » est gardée. Une ligne neuve n'a pas de valeur par défaut.
+
+**§2 — Déclencheurs.** Mineur ; grossesse ; allaitement ; pour le magnésium,
+`S-MG-1` (adossée à un claim signé) et `S-MG-2` (position d'expert), cette
+dernière seulement après l'amendement v0.4 de la position P6 qui la fait
+passer d'un adressage à « courrier, puis complément ». Chaque déclencheur
+vit dans une table en code, signée, avec sa provenance ; aucun sans
+provenance.
+
+**§3 — Lecture des déclencheurs.**
+- Date de naissance manquante ou illisible : refus « date de naissance
+  requise ».
+- Mineur : refus jusqu'à J3-mineurs, quel que soit le courrier.
+- Grossesse, allaitement : un « oui » dans la fiche physiologique
+  ([[D-335]]) ou dans l'anamnèse déclenche ; seule une ligne « non » écrite
+  par le praticien lève ; sinon refus « état à établir ». Aucune déduction
+  par le sexe déclaré.
+- `S-MG-1`, `S-MG-2` : case du praticien sur l'action, prise dans la liste
+  fermée de la table ; aucune inférence par questionnaire.
+
+**§4 — Remise.** Le courrier est consigné avant le clic, puis remis au
+patient, au portail, dans la transaction du clic « Valider pour diffusion »
+(patron [[D-262]]) ; le patient le remet lui-même, rien ne part vers un
+tiers ([[D-307]] §4). La garde refuse le clic, parmi les refus d'avant
+l'embranchement, si aucun courrier n'est remis dans ce clic ni déjà tracé
+pour ces compléments ; fail-closed si le chemin transactionnel est fermé ou
+si la remise est sautée. La réponse du médecin n'est pas attendue.
+
+**§5 — Portée d'un courrier.** La remise retient la liste des compléments
+ciblés couverts : un complément ciblé ajouté exige un courrier neuf ; une
+version qui garde la même liste n'en demande pas.
+
+**§6 — Consentement.** Régime fermé, celui du courrier de biologie : refus,
+retrait et silence sur le partage avec le médecin traitant ferment le
+courrier, donc le complément ciblé chez une personne visée.
+
+**§7 — Courrier.** Modèle neuf, sous la garde non prescriptive
+(« ordonnance », « posologie », « dosage » refusés). Destinataire saisi dans
+le courrier, prérempli du médecin traitant s'il est renseigné ; libellé « le
+professionnel qui suit la grossesse, à défaut le médecin traitant ». Textes
+validés par le responsable avant tout service.
+
+**§8 — Exécution.** Préalable : P6 v0.4 signée (geste du responsable, au
+dossier privé). Puis trois lots : contrat du protocole, table et prédicat
+(sans migration, revue `wn-reviewer`, palier T3) ; trace de remise
+(migration seule, release-db) ; courrier, remise et refus sous drapeau
+éteint, ouvert après un passage de bout en bout sur un dossier de test.
+Chaque lot porte son fragment `changelog.d/`. Constat du 2026-10-22 :
+aucune action de complément en production, aucune version à reprendre.
+
 ### D-344 — Mineurs : rubrique 4 réécrite en version provisoire sur un avis préparatoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus à l'avocat, consulté dès maintenant ; trois demandeurs de droits ; texte 2B gardé
 
 - Date : 2026-10-22
