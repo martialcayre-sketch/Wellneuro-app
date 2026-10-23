@@ -19,6 +19,7 @@ vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TES
 vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 
 import { PATCH, POST } from './route';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -62,6 +63,12 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
+    // assignation_questionnaire@2 (2026-10-23) : ni titre ni note.
+    const titre = (QUESTIONNAIRE_CATALOGUE as Record<string, { titre: string }>).Q_NEU_03.titre;
+    expect(titre.length).toBeGreaterThan(0);
+    expect(message.text).not.toContain(titre);
+    expect(message.text).not.toContain('« ');
+    expect(message.text).not.toContain('Note de votre praticien');
   });
 
   // Le refus doit être DANS la route, pas dans l'écran : retirer l'entrée du
