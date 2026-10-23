@@ -27,12 +27,33 @@ import { SITUATIONS_COMPLEMENT, type SituationComplement } from '@/lib/clinical-
 export type IdPopulation = 'mineur' | 'grossesse' | 'allaitement';
 export type IdDeclencheur = IdPopulation | SituationComplement;
 
+// LES PROVENANCES SONT DES CODES, PAS DES PHRASES (BP-01, [[D-266]]) : une
+// structure signée neuve ne porte aucun texte rédigé — le banc
+// `bio-parcours/aucunePhraseStructureSignee.guard.test.ts` le vérifie. La
+// légende vit ici, en commentaire :
+//
+// - `H15` — règle du responsable du 2026-10-17 : mineur, grossesse,
+//   allaitement ; un complément ciblé n'entre au programme qu'après la remise
+//   tracée d'un courrier au médecin, sans attendre sa réponse ;
+// - `D-284§4` — pause du mineur, étendue au complément ciblé par `D-345§3` :
+//   refus jusqu'au circuit J3-mineurs, quel que soit le courrier ;
+// - `BP-07/P5@v0.3` — dossier du fer, position P5 v0.3 : destinataire du
+//   courrier, le professionnel qui suit la grossesse, à défaut le médecin
+//   traitant ;
+// - `MG-ERY/P6@v0.4§2` — dossier du magnésium érythrocytaire, position P6
+//   v0.4, §2, qui rappelle les deux situations ; `D-345§2` — la décision qui
+//   les fait entrer dans la garde (Q6 : « courrier, puis complément » pour la
+//   seconde) ;
+// - `appui` — une position d'expert adossée à un claim signé du dossier privé,
+//   ou sans claim. Le claim n'est jamais nommé ici.
 export type ProvenanceDeclencheur = {
   nature: 'regle_responsable' | 'decision' | 'position_expert';
-  /** Ce qui porte la ligne, en forme opaque : texte daté, décision, position signée. */
+  /** Code de la règle, de la décision ou de la position signée (légende ci-dessus). */
   reference: string;
   /** Date de la règle, de la décision ou de la signature de la position (AAAA-MM-JJ). */
   date: string;
+  /** Position d'expert seulement : adossée à un claim signé du dossier privé, ou sans claim. */
+  appui?: 'claim_signe' | 'sans_claim';
 };
 
 export type LigneDeclencheur = {
@@ -43,13 +64,8 @@ export type LigneDeclencheur = {
   provenance: readonly ProvenanceDeclencheur[];
 };
 
-const REGLE_DU_2026_10_17: ProvenanceDeclencheur = {
-  nature: 'regle_responsable',
-  reference: 'Règle du responsable du 2026-10-17 (fiche H15) : mineur, grossesse, allaitement — '
-    + 'un complément ciblé n’entre au programme qu’après la remise tracée d’un courrier au médecin, '
-    + 'sans attendre sa réponse.',
-  date: '2026-10-17',
-};
+const REGLE_H15: ProvenanceDeclencheur = { nature: 'regle_responsable', reference: 'H15', date: '2026-10-17' };
+const DECISION_SITUATIONS: ProvenanceDeclencheur = { nature: 'decision', reference: 'D-345§2', date: '2026-10-22' };
 
 export const DECLENCHEURS_COMPLEMENT_V1: readonly LigneDeclencheur[] = [
   {
@@ -57,13 +73,9 @@ export const DECLENCHEURS_COMPLEMENT_V1: readonly LigneDeclencheur[] = [
     nature: 'population',
     portee: 'tous_nutriments',
     provenance: [
-      REGLE_DU_2026_10_17,
-      {
-        nature: 'decision',
-        reference: 'D-284 §4 (pause du mineur), étendue au complément ciblé par D-345 §3 : refus '
-          + 'jusqu’au circuit J3-mineurs, quel que soit le courrier.',
-        date: '2026-10-22',
-      },
+      REGLE_H15,
+      { nature: 'decision', reference: 'D-284§4', date: '2026-10-13' },
+      { nature: 'decision', reference: 'D-345§3', date: '2026-10-22' },
     ],
   },
   {
@@ -71,42 +83,33 @@ export const DECLENCHEURS_COMPLEMENT_V1: readonly LigneDeclencheur[] = [
     nature: 'population',
     portee: 'tous_nutriments',
     provenance: [
-      REGLE_DU_2026_10_17,
-      {
-        nature: 'position_expert',
-        reference: 'Dossier du fer (BP-07), position P5 v0.3 : destinataire du courrier, le '
-          + 'professionnel qui suit la grossesse, à défaut le médecin traitant.',
-        date: '2026-10-21',
-      },
+      REGLE_H15,
+      { nature: 'position_expert', reference: 'BP-07/P5@v0.3', date: '2026-10-21' },
     ],
   },
   {
     id: 'allaitement',
     nature: 'population',
     portee: 'tous_nutriments',
-    provenance: [REGLE_DU_2026_10_17],
+    provenance: [REGLE_H15],
   },
   {
     id: 'S-MG-1',
     nature: 'situation',
     portee: 'magnesium',
-    provenance: [{
-      nature: 'position_expert',
-      reference: 'Dossier du magnésium érythrocytaire, position P6 v0.4 §2 (décision du '
-        + '2026-10-22), adossée à un claim signé du dossier privé.',
-      date: '2026-10-23',
-    }],
+    provenance: [
+      { nature: 'position_expert', reference: 'MG-ERY/P6@v0.4§2', date: '2026-10-23', appui: 'claim_signe' },
+      DECISION_SITUATIONS,
+    ],
   },
   {
     id: 'S-MG-2',
     nature: 'situation',
     portee: 'magnesium',
-    provenance: [{
-      nature: 'position_expert',
-      reference: 'Dossier du magnésium érythrocytaire, position P6 v0.4 §2 (décision Q6 du '
-        + '2026-10-22 : courrier, puis complément), position d’expert sans claim.',
-      date: '2026-10-23',
-    }],
+    provenance: [
+      { nature: 'position_expert', reference: 'MG-ERY/P6@v0.4§2', date: '2026-10-23', appui: 'sans_claim' },
+      DECISION_SITUATIONS,
+    ],
   },
 ];
 
@@ -193,6 +196,14 @@ export function tableDeclencheursSignee(
   const populations = lignes.filter(ligne => ligne.nature === 'population');
   const situations = lignes.filter(ligne => ligne.nature === 'situation');
   if (populations.some(ligne => ligne.portee !== 'tous_nutriments')) return false;
+  // `appui` ne qualifie qu'une position d'expert ; une situation propre à un
+  // nutriment repose sur une position signée qui DIT son appui.
+  if (lignes.some(ligne => ligne.provenance.some(p => p.appui !== undefined && p.nature !== 'position_expert'))) {
+    return false;
+  }
+  if (situations.some(ligne => !ligne.provenance.some(p => p.nature === 'position_expert' && p.appui !== undefined))) {
+    return false;
+  }
   if (!memesIds(populations.map(ligne => ligne.id), POPULATIONS)) return false;
   if (!memesIds(situations.map(ligne => ligne.id), SITUATIONS_COMPLEMENT)) return false;
   if (signature.shaPerimetre === null) return false;

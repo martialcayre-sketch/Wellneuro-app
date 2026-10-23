@@ -99,10 +99,29 @@ const MOTIF_ACCORD: Record<Exclude<VerdictPartageMedecin['motif'], 'accorde'>, s
 
 const CRITERES: readonly CritereEtat[] = ['allaitement', 'grossesse'];
 
+/** Instant ISO CANONIQUE seulement : une date lisible mais non canonique vaut non datée. */
 function instant(le: string | null): number | null {
   if (le === null) return null;
-  const ms = Date.parse(le);
-  return Number.isNaN(ms) ? null : ms;
+  const date = new Date(le);
+  if (Number.isNaN(date.getTime()) || date.toISOString() !== le) return null;
+  return date.getTime();
+}
+
+/**
+ * LE DERNIER MOT DU PRATICIEN, ET LUI SEUL. Un « non » remplacé ensuite par
+ * « inconnu » ne lève plus rien : sur un historique, le maximum de tous les
+ * « non » lèverait encore la garde (revue `wn-reviewer` du lot 1, P1-2). Rend
+ * l'instant du dernier « non » s'il est le dernier mot, sinon `null`. À
+ * égalité d'instant, un seul mot autre que « non » suffit à ne pas lever.
+ */
+function dernierNonDuPraticien(visees: readonly DeclarationEtat[]): number | null {
+  const praticien = visees
+    .filter(declaration => declaration.source === 'praticien')
+    .map(declaration => ({ reponse: declaration.reponse, t: instant(declaration.le) ?? Number.NEGATIVE_INFINITY }));
+  if (praticien.length === 0) return null;
+  const dernier = Math.max(...praticien.map(ligne => ligne.t));
+  const auDernier = praticien.filter(ligne => ligne.t === dernier);
+  return auDernier.every(ligne => ligne.reponse === 'non') ? dernier : null;
 }
 
 /**
@@ -115,19 +134,19 @@ function instant(le: string | null): number | null {
  * - un « non » du praticien antérieur à un « oui » ne lève rien ;
  * - une date absente ou illisible vaut ANCIENNE pour un « non » et déclenche
  *   pour un « oui » : dans les deux cas, l'incertitude ferme ;
- * - sans « oui » à tenir, un « non » du praticien lève ; sinon l'état est à
- *   établir — le « non » du patient ou de l'anamnèse ne lève pas, et le sexe
- *   déclaré ne dispense de rien.
+ * - sans « oui » à tenir, un « non » du praticien lève s'il est son DERNIER
+ *   mot sur ce critère ; sinon l'état est à établir — le « non » du patient ou
+ *   de l'anamnèse ne lève pas, et le sexe déclaré ne dispense de rien.
+ *
+ * L'appelant passe les lignes EN VIGUEUR (têtes de fil, retraits exclus) ;
+ * la règle du dernier mot tient aussi sur un historique complet.
  */
 export function lireEtatCritere(critere: CritereEtat, declarations: readonly DeclarationEtat[]): EtatCritere {
   const visees = declarations.filter(declaration => declaration.critere === critere);
   const ouis = visees
     .filter(declaration => declaration.reponse === 'oui')
     .map(declaration => instant(declaration.le) ?? Number.POSITIVE_INFINITY);
-  const nonsPraticien = visees
-    .filter(declaration => declaration.reponse === 'non' && declaration.source === 'praticien')
-    .map(declaration => instant(declaration.le) ?? Number.NEGATIVE_INFINITY);
-  const dernierNon = nonsPraticien.length > 0 ? Math.max(...nonsPraticien) : null;
+  const dernierNon = dernierNonDuPraticien(visees);
   if (ouis.some(oui => dernierNon === null || oui >= dernierNon)) return 'declenche';
   return dernierNon === null ? 'a_etablir' : 'leve';
 }
@@ -199,12 +218,10 @@ export function courrierComplementRequis(
 
   if (declencheurs.length > 0) {
     if (entree.accordPartage !== 'accorde') {
-      return {
-        statut: 'accord_requis',
-        motif: MOTIF_ACCORD[entree.accordPartage],
-        accord: entree.accordPartage,
-        declencheurs,
-      };
+      // Un motif hors type ne passe ni pour un accord, ni sans motif : il se
+      // lit comme un choix jamais exprimé.
+      const accord = Object.hasOwn(MOTIF_ACCORD, entree.accordPartage) ? entree.accordPartage : 'jamais_exprime';
+      return { statut: 'accord_requis', motif: MOTIF_ACCORD[accord], accord, declencheurs };
     }
     return {
       statut: 'requis',

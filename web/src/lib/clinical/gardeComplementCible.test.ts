@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import {
+  DECLENCHEURS_COMPLEMENT_METADATA,
   DECLENCHEURS_COMPLEMENT_V1,
   shaPerimetreDeclencheurs,
   type DeclencheursMetadata,
@@ -81,8 +82,13 @@ describe('Garde du complément ciblé — objet gardé', () => {
 
   it('la table livrée par défaut est jugée par son propre verrou', () => {
     // Sans paramètre, la garde lit la métadonnée livrée : verrou éteint tant que
-    // le responsable n'a pas signé, et jamais un « non requis » silencieux.
-    expect(['table_non_signee', 'non_requis']).toContain(courrierComplementRequis(entree()).statut);
+    // le responsable n'a pas signé — et alors refus, jamais « non requis ».
+    expect(courrierComplementRequis(entree()).statut)
+      .toBe(DECLENCHEURS_COMPLEMENT_METADATA.validationExterne ? 'non_requis' : 'table_non_signee');
+  });
+
+  it('chez un mineur, l’intention sans nature se refuse d’abord (ordre épinglé)', () => {
+    expect(verdict({ actions: [complement('a-1')], statutAge: 'mineur' }).statut).toBe('nature_requise');
   });
 });
 
@@ -154,6 +160,20 @@ describe('Garde du complément ciblé — déclencheurs et accord', () => {
     },
   );
 
+  it.each(['autre', 'constructor'])('un motif d’accord forgé (%s) se lit « jamais exprimé », jamais requis', forge => {
+    const v = verdict({
+      accordPartage: forge as never,
+      actions: [complement('a-1', { natureComplement: 'cible', situationsComplement: ['S-MG-1'] })],
+    });
+    expect(v).toMatchObject({ statut: 'accord_requis', accord: 'jamais_exprime' });
+    expect(typeof v.motif).toBe('string');
+  });
+
+  it('un identifiant de population glissé parmi les situations se refuse', () => {
+    const v = verdict({ actions: [complement('a-1', { natureComplement: 'cible', situationsComplement: ['grossesse' as never] })] });
+    expect(v.statut).toBe('situation_inconnue');
+  });
+
   it('sans déclencheur, l’accord n’est pas exigé', () => {
     expect(verdict({ accordPartage: 'jamais_exprime' }).statut).toBe('non_requis');
   });
@@ -184,6 +204,9 @@ describe('Lecture de Q4 dans le temps', () => {
     ['aucune expiration : un « oui » ancien tient', [oui('2019-01-01T00:00:00.000Z')], 'declenche'],
     ['« inconnu » ne déclenche ni ne lève', [{ ...oui('2026-10-01T00:00:00.000Z'), reponse: 'inconnu' as const }], 'a_etablir'],
     ['le dernier « non » compte, pas le premier', [non('2026-09-01T00:00:00.000Z'), oui('2026-09-15T00:00:00.000Z'), non('2026-10-01T00:00:00.000Z')], 'leve'],
+    ['un « non » remplacé par « inconnu » ne lève plus', [non('2026-09-01T00:00:00.000Z'), { ...non('2026-10-01T00:00:00.000Z'), reponse: 'inconnu' as const }], 'a_etablir'],
+    ['à égalité, un mot autre que « non » empêche la levée', [non('2026-10-01T00:00:00.000Z'), { ...non('2026-10-01T00:00:00.000Z'), reponse: 'inconnu' as const }], 'a_etablir'],
+    ['une date lisible mais non canonique vaut non datée', [oui('2020-01-01T00:00:00.000Z'), non('2026-10-02')], 'declenche'],
   ])('%s', (_cas, declarations, attendu) => {
     expect(lireEtatCritere('grossesse', declarations)).toBe(attendu);
   });

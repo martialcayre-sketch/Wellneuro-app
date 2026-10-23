@@ -91,6 +91,10 @@ describe('Table des déclencheurs — verrou', () => {
       ? { ...ligne, portee: 'magnesium' as const } : ligne))],
     ['une situation rangée parmi les populations', LIGNES.map(ligne => (ligne.id === 'S-MG-1'
       ? { ...ligne, nature: 'population' as const, portee: 'tous_nutriments' as const } : ligne))],
+    ['une situation sans position d’expert qui dit son appui', LIGNES.map(ligne => (ligne.id === 'S-MG-2'
+      ? { ...ligne, provenance: ligne.provenance.map(p => ({ ...p, appui: undefined })) } : ligne))],
+    ['un appui posé sur une décision', LIGNES.map(ligne => (ligne.id === 'mineur'
+      ? { ...ligne, provenance: ligne.provenance.map(p => ({ ...p, appui: 'sans_claim' as const })) } : ligne))],
   ];
   it.each(variantes)('ferme sur %s, même signée sur son propre sha', (_cas, lignes) => {
     expect(tableDeclencheursSignee(signer(lignes), lignes)).toBe(false);
