@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-348 — bd : l'encart « quand ralentir ou demander avis » — texte du responsable accepté, servi à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, fermé à la livraison (H71 ; applique D-346 §2 et D-288 §1)
+
+- Date : 2026-10-23
+- Statut : accepté — texte du responsable du 2026-10-23. Il a retenu la
+  variante A d'un brouillon qu'il a fait rédiger par un assistant externe,
+  puis, sur deux questions à options, retiré la phrase qui décrivait le
+  choix à faire dans le formulaire (§1, motif). Décision rédigée par
+  l'assistant à partir de ces choix.
+- Domaine : file C du plan, fiche H71 (lettre bd) ; accueil du protocole au
+  portail (`PatientCompanionHome`, route `api/portail/protocole`).
+- Applique : [[D-346]] §2 (l'encart prend la place suivante dès qu'il est
+  prêt) ; [[D-288]] §1 (texte accepté, puis registre, puis drapeau) et §2
+  (le constat).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune durée,
+  aucun signe nommé ; le formulaire « Signaler un problème » et ses libellés ;
+  les textes signés de la pause ([[D-281]] §4) ; les numéros d'urgence du pied
+  de page ([[D-293]] §3, amendement du 2026-10-21) ; aucune migration, aucune
+  écriture, aucune trace de lecture.
+
+**§1 — Le texte.** Accepté tel quel, servi au caractère près
+(`web/src/lib/portail/texteEncartConduite.ts`, relu par un banc) :
+
+> Quand ralentir ou demander avis
+>
+> Un geste d’alimentation ou d’hygiène de vie vous pèse ? Allégez-le ou ralentissez, sans culpabiliser.
+>
+> Si une gêne inhabituelle apparaît ou vous inquiète après le début d’un élément, ouvrez « Signaler un problème », puis « Un produit me semble mal toléré ». Respectez les pauses affichées, sans reprendre de vous-même.
+>
+> En cas de malaise sérieux, appelez les urgences indiquées en bas de page, sans attendre.
+>
+> Poursuivez vos traitements prescrits et votre suivi médical, sans les modifier sans votre médecin.
+
+Motif du retrait de la phrase « choisissez l’élément ou « Je ne sais pas » » :
+les deux formulaires du signalement ne posent pas la même question. Le
+nouveau propose la liste des éléments du programme ; l'ancien — dossier
+mineur ou sans date de naissance, ou adulte resté sur lui ([[D-281]] §2) —
+demande si le produit fait partie du programme, et ne rattache le
+signalement que sur « Oui ». Sur l'ancien, « Je ne sais pas » laisse le
+signalement hors du programme : ni attente de l'avis, ni blocage de la
+diffusion. Une consigne unique aurait poussé ce geste-là ; la retirer laisse
+chaque formulaire guider seul. « Respectez les pauses affichées » couvre les
+deux portées de la pause : l'élément désigné, ou tous les compléments
+([[D-281]] §3).
+
+**§2 — Où et quand.** À l'accueil du protocole, sous les rendez-vous de
+suivi, chaque fois qu'une vue du protocole est servie : hors du détail
+replié ([[D-315]]), lu avant tout clic, et en fin de cycle aussi. Rien sur
+l'accueil sans protocole ni sur le protocole indisponible. Le même texte
+pour tout dossier servi : la condition du §1 le rend vrai pour tous.
+
+**§3 — Registre et drapeau.** `WN_PORTAIL_ENCART_CONDUITE`, chaîne exacte
+`'true'`, absent = fermé, **neuf et éteint à la livraison** ; inscrit à
+`docs/FEATURE_FLAGS.md` § A. La route du protocole annonce l'encart
+(`encartConduite`) ; le composant client ne lit pas l'environnement. Aucune
+table, aucun site d'IA : le registre de F70 n'a rien à recevoir.
+
+**§4 — L'activation.** Une seule à la fois, la précédente constatée
+(porte 18). Le drapeau se pose sur accord du responsable, après le merge et
+le déploiement constaté. Constat ([[D-288]] §2) : sur un dossier de test dont
+un protocole est servi, l'encart lu en ligne par le responsable, et la
+diffusion en vigueur de ce dossier relue par identifiant depuis un
+conteneur ; consigné en agrégats. Ensuite seulement, l'ouverture suivante.
+
+**§5 — Limites connues, laissées en l'état.** « Signaler un problème » n'est
+pas un lien : le formulaire est sur la page « Mes informations et mes
+droits », dont le bouton figure sur le même écran que l'encart. Une gêne liée à un geste de vie, et non à un produit,
+passe par le libellé « Un produit me semble mal toléré », le seul qui ouvre
+le signalement d'un effet. L'aperçu du protocole au cockpit ne montre pas
+l'encart.
+
+- Conséquences : fragment `changelog.d/2026-10-23-d348-encart-bd.md` ;
+  `docs/FEATURE_FLAGS.md` ; plan, fiche H71 et §3 de la file C.
+
 ### D-347 — t40 : le constat du praticien sur un besoin sans score, un acte en ajout seul — quatre verdicts cadrés sur la cible, motif fermé, pièces facultatives tenues par clé, aucune valeur ; base fermée aux besoins 2, 6, 7 et 11 (précise D-338 §4, H84)
 
 - Date : 2026-10-23

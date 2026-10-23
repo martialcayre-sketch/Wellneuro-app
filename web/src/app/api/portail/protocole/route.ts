@@ -21,6 +21,7 @@ import { resolvePatientFoodCompassView } from '@/lib/food-compass/patientReferen
 import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
+import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
 
 // Vue patient du protocole diffusé actif (C2A LOT-05, compagnon minimal). DÉRIVÉE
 // À LA VOLÉE côté serveur (§8.3) : le patient ne lit jamais `protocol_drafts`.
@@ -113,6 +114,12 @@ type GetResponse =
        * faux. Absent, l'accueil sert le protocole déplié, comme avant.
        */
       lectureDuDetail?: { dejaOuvert: boolean };
+      /**
+       * L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-348]], lettre bd).
+       * Présent seulement quand `WN_PORTAIL_ENCART_CONDUITE` est ouvert et
+       * qu'une vue est servie. Absent, l'accueil ne le rend pas.
+       */
+      encartConduite?: true;
     }
   | ErrorResponse;
 
@@ -263,6 +270,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
+      ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {
