@@ -11320,6 +11320,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
 
+## 2026-10-22 — t39 : besoins visés de la priorité libre, migration (D-338 §3)
+
+**Fait.** Migration seule `c1_selection_priorite_besoins_vises_v1` : colonne `besoins_vises` (1 à 12, une dimension indicée à 1, strictement croissante, `{}` pour l'absence, lignes `libre:` seules) ; contrat étendu, chaque refus sous son propre CHECK, mutations rougies en local ; T3 vert ; `wn-reviewer` GO, trois P2 corrigés, un routé à la PR.
+
+**Écarté.** Proposer les seuls besoins à questionnaire (arbitrage : les douze, effet nul affiché) ; NULL pour l'absence (deux représentations, deux empreintes).
+
+**Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée par le responsable ; constat par conteneur ; puis le code consommateur.
+
+**Ouvert.** Fenêtre d'écriture d'une sélection entre déploiement et release-db.
 ## 2026-10-22 — BP-15 : code des décisions de parcours (D-343)
 
 **Fait.** Release-db de #1644 constatée par conteneur. Route du cockpit, tiroir « Décisions de parcours » sous `WN_DECISIONS_PARCOURS` éteint ; libellés retenus par le responsable ; première diffusion affichée à côté des débuts réels (§9). Bancs : jour 0 et quatre empreintes, lecteurs, demande, fils, route (38 tests).

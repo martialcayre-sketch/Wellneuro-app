@@ -21,7 +21,12 @@
 --      liste fermée ; libellé vide, réduit à des blancs ou au-delà de 200 ;
 --      ligne `libre:` sans domaine ou sans libellé, ou dont l'identifiant ne
 --      reprend pas le domaine ; candidat du moteur qui porterait l'un des deux ;
---   5. la table porte EXACTEMENT douze colonnes, liste blanche — un
+--      Et depuis [[D-338]] §3 (besoins visés d'une priorité libre) : besoin
+--      hors de 1 à 12, élément NULL, doublon, ordre non croissant, tableau à
+--      deux dimensions, candidat du moteur qui porterait des besoins visés ;
+--      les douze besoins, une visée partielle et l'absence (`{}`, valeur par
+--      défaut) sont acceptés, et corriger les seuls besoins visés chaîne ;
+--   5. la table porte EXACTEMENT treize colonnes, liste blanche — un
 --      `commentaire` ou un `verdict` arrivé sans arbitrage se verrait ici ;
 --   6. la clé étrangère vers `patients` est en ON DELETE RESTRICT : la
 --      suppression nommée reste celle de `patient/effacement.ts`, jamais une
@@ -46,7 +51,7 @@ DECLARE
   EMPREINTE CONSTANT text := repeat('ab', 32);
 
   COLONNES_ATTENDUES CONSTANT text[] := ARRAY[
-    'candidate_id', 'created_at', 'decision_card_id',
+    'besoins_vises', 'candidate_id', 'created_at', 'decision_card_id',
     'decision_card_input_hash', 'domaine_libre', 'id', 'id_patient',
     'libelle_libre', 'rationale', 'selected_at', 'selected_by_email',
     'supersedes_selection_id'
@@ -129,6 +134,47 @@ DECLARE
         VALUES ('t21', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_L11', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil')$q$]
   ];
 
+  -- ── Besoins visés d'une priorité libre ([[D-338]] §3) ──
+  -- Chaque entrée nomme en plus le CHECK qui doit mordre : les fixtures portent
+  -- une ligne `libre:` complète, et un cas dont la fixture se casserait
+  -- passerait sinon en silence par un autre CHECK (revue wn-reviewer de t39 ;
+  -- patron du contrat SAF-EI).
+  cas_besoins CONSTANT text[][] := ARRAY[
+    ['besoin visé 0, hors de 1 à 12',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t22', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B1', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[0])$q$,
+     'decision_priority_selections_besoins_vises_bornes_check'],
+    ['besoin visé 13, hors de 1 à 12',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t23', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B2', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[2, 13])$q$,
+     'decision_priority_selections_besoins_vises_bornes_check'],
+    ['élément NULL parmi les besoins visés',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t24', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B3', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[2, NULL]::integer[])$q$,
+     'decision_priority_selections_besoins_vises_bornes_check'],
+    ['besoin visé en double — deux écritures d''une même visée, deux cartes',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t25', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B4', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[6, 6])$q$,
+     'decision_priority_selections_besoins_vises_forme_check'],
+    ['besoins visés hors de l''ordre croissant',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t26', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B5', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[2, 12, 6])$q$,
+     'decision_priority_selections_besoins_vises_forme_check'],
+    ['besoins visés en tableau à deux dimensions',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t27', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B6', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', ARRAY[[2, 6], [7, 10]])$q$,
+     'decision_priority_selections_besoins_vises_forme_check'],
+    ['besoins visés indicés à partir de 0 — une autre valeur SQL que {2,6}',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+        VALUES ('t29', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B8', repeat('ab', 32), 'libre:sommeil:0123456789abcdef', 'Motif de contrat.', 'praticien@wellneuro.fr', 'sommeil', 'Retrouver un sommeil réparateur', '[0:1]={2,6}'::integer[])$q$,
+     'decision_priority_selections_besoins_vises_forme_check'],
+    ['candidat du moteur qui porterait des besoins visés — ses besoins sont ceux de sa règle signée',
+     $q$INSERT INTO decision_priority_selections (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, besoins_vises)
+        VALUES ('t28', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_B7', repeat('ab', 32), 'priority:REGLE_CONTRAT', 'Motif de contrat.', 'praticien@wellneuro.fr', ARRAY[4])$q$,
+     'decision_priority_selections_besoins_vises_libre_check']
+  ];
+  contrainte text;
+
   -- La liste fermée, valeur par valeur, et la borne du libellé à 200 pile :
   -- une liste amputée ou une borne passée en `< 200` doit rougir ici.
   DOMAINES CONSTANT text[] := ARRAY[
@@ -208,6 +254,44 @@ BEGIN
     END;
   END LOOP;
 
+  -- LES BESOINS VISÉS ([[D-338]] §3). L'absence est la valeur par défaut : une
+  -- ligne écrite sans la colonne — toutes celles d'avant la migration — porte
+  -- `{}`, jamais NULL, et passe les CHECK.
+  SELECT count(*) INTO nb
+  FROM decision_priority_selections
+  WHERE id_patient = 'PAT_CONTRAT_SELPRIO'
+    AND besoins_vises IS DISTINCT FROM ARRAY[]::integer[];
+  IF nb <> 0 THEN
+    RAISE EXCEPTION
+      'D-338: % ligne(s) écrite(s) sans besoins visés ne portent pas `{}` — l''absence aurait deux représentations, et la carte deux empreintes.', nb;
+  END IF;
+
+  -- Les douze besoins, ceux sans source comprise (arbitrage du 2026-10-22), et
+  -- une visée partielle ; puis corriger les SEULS besoins visés chaîne sur la
+  -- même priorité — même identifiant, ce n'est pas un pivot.
+  BEGIN
+    INSERT INTO decision_priority_selections
+      (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+    VALUES ('besoins_tous', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_BESOINS_TOUS', EMPREINTE,
+            ID_LIBRE, 'Motif de contrat.', 'praticien@wellneuro.fr',
+            'sommeil', 'Retrouver un sommeil réparateur', ARRAY[1,2,3,4,5,6,7,8,9,10,11,12]);
+    INSERT INTO decision_priority_selections
+      (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises)
+    VALUES ('besoins_racine', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_BESOINS', EMPREINTE,
+            ID_LIBRE, 'Motif de contrat.', 'praticien@wellneuro.fr',
+            'sommeil', 'Retrouver un sommeil réparateur', ARRAY[2, 6, 7, 10, 11, 12]);
+    INSERT INTO decision_priority_selections
+      (id, id_patient, decision_card_id, decision_card_input_hash, candidate_id, rationale, selected_by_email, domaine_libre, libelle_libre, besoins_vises, supersedes_selection_id)
+    VALUES ('besoins_corr', 'PAT_CONTRAT_SELPRIO', 'CARTE_CONTRAT_BESOINS', EMPREINTE,
+            ID_LIBRE, 'Le besoin 12 seul reste visé.', 'praticien@wellneuro.fr',
+            'sommeil', 'Retrouver un sommeil réparateur', ARRAY[12], 'besoins_racine');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-338: une visée VALIDE (les douze besoins, une visée partielle, ou sa correction chaînée) a été refusée (SQLSTATE %) — une contrainte est trop serrée, la route échouerait en production.',
+        SQLSTATE;
+  END;
+
   -- ── 2. DEUX RACINES sur la même carte : refusées ─────────────────────────
   accepte := false;
   BEGIN
@@ -285,7 +369,32 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- ── 5. Douze colonnes exactes, liste blanche ─────────────────────────────
+  -- Les besoins visés : chaque CHECK mord sous son PROPRE nom.
+  FOR i IN 1 .. array_length(cas_besoins, 1) LOOP
+    accepte := false;
+    contrainte := NULL;
+    BEGIN
+      EXECUTE cas_besoins[i][2];
+      accepte := true;
+    EXCEPTION
+      WHEN check_violation THEN
+        GET STACKED DIAGNOSTICS contrainte = CONSTRAINT_NAME;
+      WHEN others THEN
+        RAISE EXCEPTION
+          'D-338: « % » rejeté pour le mauvais motif (SQLSTATE %, attendu 23514 check_violation)',
+          cas_besoins[i][1], SQLSTATE;
+    END;
+    IF accepte THEN
+      RAISE EXCEPTION 'D-338: « % » a été ACCEPTÉ alors qu''il doit être rejeté', cas_besoins[i][1];
+    END IF;
+    IF contrainte IS DISTINCT FROM cas_besoins[i][3] THEN
+      RAISE EXCEPTION
+        'D-338: « % » rejeté par % au lieu de % — la fixture a-t-elle cassé un autre CHECK ?',
+        cas_besoins[i][1], contrainte, cas_besoins[i][3];
+    END IF;
+  END LOOP;
+
+  -- ── 5. Treize colonnes exactes, liste blanche ────────────────────────────
   -- `column_name` est un `sql_identifier`, pas un `text` : sans la conversion,
   -- la comparaison avec `COLONNES_ATTENDUES` ne porte pas sur le même type.
   SELECT array_agg(c.column_name::text ORDER BY c.column_name) INTO colonnes
@@ -308,6 +417,28 @@ BEGIN
                         'candidate_id', 'rationale', 'selected_by_email');
   IF nb <> 6 THEN
     RAISE EXCEPTION 'D-127: % colonne(s) porteuse(s) NOT NULL au lieu de 6', nb;
+  END IF;
+
+  -- Les besoins visés aussi ([[D-338]] §3) : NULL serait une seconde
+  -- représentation de l'absence, à côté de `{}`.
+  SELECT count(*) INTO nb
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'decision_priority_selections'
+    AND column_name = 'besoins_vises' AND is_nullable = 'NO';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'D-338: `besoins_vises` admet NULL — l''absence aurait deux représentations';
+  END IF;
+
+  -- La fonction de forme est IMMUTABLE : un CHECK qui appellerait une fonction
+  -- VOLATILE pourrait juger deux fois la même ligne différemment.
+  SELECT count(*) INTO nb
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'selection_priorite_besoins_croissants'
+    AND p.provolatile = 'i';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'D-338: `selection_priorite_besoins_croissants` absente ou non IMMUTABLE';
   END IF;
 
   -- ── 6. La clé étrangère vers `patients` est en ON DELETE RESTRICT ────────
@@ -369,8 +500,8 @@ BEGIN
       'D-127: `c1_selection_priorite_supersedes_unique` est absent, invalide ou devenu partiel — la fourche redeviendrait représentable.';
   END IF;
 
-  RAISE NOTICE 'SELECTION PRIORITE: racine acceptée, correction chaînée acceptée, racine d''une autre carte acceptée, priorité libre acceptée et corrigée par un candidat, seconde racine refusée, fourche refusée, % cas rejetants dont un CHECK de non-réflexivité, 12 colonnes exactes, 6 NOT NULL, 1 FK RESTRICT, deux gardes sous leur forme attendue, RLS deny-all.',
-    array_length(cas, 1);
+  RAISE NOTICE 'SELECTION PRIORITE: racine acceptée, correction chaînée acceptée, racine d''une autre carte acceptée, priorité libre acceptée et corrigée par un candidat, besoins visés acceptés (douze, partiels, absents, corrigés), seconde racine refusée, fourche refusée, % cas rejetants dont un CHECK de non-réflexivité, % refus de besoins visés chacun sous son propre CHECK, 13 colonnes exactes, 6 NOT NULL et besoins visés NOT NULL, fonction de forme IMMUTABLE, 1 FK RESTRICT, deux gardes sous leur forme attendue, RLS deny-all.',
+    array_length(cas, 1), array_length(cas_besoins, 1);
 END $$;
 
 ROLLBACK;

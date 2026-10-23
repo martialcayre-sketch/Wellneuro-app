@@ -838,7 +838,10 @@ jobs:
       # succéder ; les CHECK mordent sur un domaine hors liste, un libellé
       # vide/blanc/trop long, une ligne `libre:` sans domaine ou sans libellé
       # ou dont l'identifiant ne reprend pas le domaine, un candidat du moteur
-      # qui porterait l'un des deux. Douze colonnes exactes en liste
+      # qui porterait l'un des deux. Depuis D-338 §3 : les besoins visés d'une
+      # priorité libre (1 à 12, une dimension indicée à 1, strictement
+      # croissants, `{}` pour l'absence, réservés aux lignes `libre:`), chaque
+      # refus sous le nom de son propre CHECK. Treize colonnes exactes en liste
       # blanche ; six colonnes porteuses NOT NULL ; FK patients en ON DELETE RESTRICT ; RLS deny-all
       # active et sans policy ; et la FORME des deux index, qu'un `@@unique`
       # redéclaré au schéma rendrait totaux sans faire rougir la dérive.
