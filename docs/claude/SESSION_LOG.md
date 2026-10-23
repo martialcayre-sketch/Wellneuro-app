@@ -11431,3 +11431,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; page de la file A (r3_07 en cours) ; puis J1-cockpit-b.
 
 **Ouvert.** Porte 4 (poids égal) ; incohérence de nom des besoins 9 et 10 (jauge « repère de suivi », tableau « couverture ») jusqu'aux lots Q2 à Q4.
+
+## 2026-10-23 — File D : la note par défaut ne s'affiche plus comme celle du praticien (D/52)
+
+**Fait.** Arbitrage du responsable : note vide et filtre. Les trois écrivains (pack du praticien, pack de base du portail, sélection) enregistrent null ; `api/patient/questionnaire` retire les deux anciens libellés à la lecture, donc les assignations déjà ouvertes cessent de les afficher. Lecture de production en agrégats (one-off-6824) : aucune vraie note en base. Bancs aux trois écrivains, à la route et au filtre.
+
+**Écarté.** Écrivains seuls (les assignations ouvertes gardaient le libellé) ; nettoyage en base (migration et release-db) ; libellé distinct à l'écran (le nom du pack restait affiché).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis b16 (vérifier au plan, F25, s'il relève de la file D) et b25 (texte des durées, à relire).
+
+**Ouvert.** Une vraie note commençant par « Pack » serait masquée : risque accepté.

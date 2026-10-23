@@ -144,7 +144,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       ), requestContext);
     }
 
-    const notesPack = notes || `Pack ${pack.nom}`;
+    // Sans note du praticien, rien : l'ancien défaut « Pack <nom> »
+    // s'affichait comme sa note dans l'espace patient (D/52, 2026-10-23).
+    const notesPack = notes || null;
     const nowIso = new Date().toISOString();
     const { qids, raison, registryCount } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
     // Repli voulu dans les trois cas — rien n'est jamais bloqué, `packs.qids`
