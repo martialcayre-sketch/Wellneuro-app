@@ -46,7 +46,9 @@ les titres d'instruments, le nom du pack et la note libre du praticien.
 
 - Sans note du praticien, l'assignation enregistre « Pack <nom> » ou
   « Envoi groupé — bibliothèque », que l'espace affiche comme « Note de
-  votre praticien » : non tranché, hors lot.
+  votre praticien » : non tranché, hors lot, routé au plan en D/52. Les v2
+  du pack et de la sélection ne renvoient donc pas au « mot » du praticien
+  (revue CodeRabbit de #1659, arbitrage du responsable).
 - Les deux routes en fins de ligne CRLF (ou mixtes) les gardent : toute
   réécriture par script doit les préserver.
 
