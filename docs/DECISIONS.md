@@ -302,6 +302,13 @@ proposition de révision (BP-19).
   de première diffusion recevable s'affiche dans l'en-tête de la version, à
   côté des débuts réels. Fragment
   `changelog.d/2026-10-22-bp15-code-decisions-parcours.md`.
+- Mise à jour (2026-10-23, libellés) : sur arbitrage du responsable, le
+  retrait se nomme « Retirer » (il sert à l'erreur de saisie comme au refus
+  levé, §5) et passe par une confirmation en ligne — « Retirer cette
+  décision ? Elle restera lisible dans l’historique. » ; « Corriger la
+  révision » devient « Changer la révision » (correction ou révision
+  nouvelle, §6). Fragment
+  `changelog.d/2026-10-23-bp15-libelles-retrait-revision.md`.
 
 ### D-342 — Restes de F45 et des mineurs : at remplacée par un contrôle du praticien au masquage, as close, repère du mineur en attente dans la liste, 15–17 ans avant J3-mineurs, droits d'un parent à la main
 

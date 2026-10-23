@@ -106,6 +106,7 @@ export const TEXTES = {
   dateInconnue: 'date inconnue',
   rappelEffetIndesirable: 'Noter ici ne remplace pas le signalement d’effet indésirable.',
   sequenceIncomplete: 'Séquence incomplète : rien n’est déduit des événements absents.',
+  confirmerRetrait: 'Retirer cette décision ? Elle restera lisible dans l’historique.',
 } as const;
 
 export const estNature = (v: unknown): v is Nature => typeof v === 'string' && (NATURES as readonly string[]).includes(v);

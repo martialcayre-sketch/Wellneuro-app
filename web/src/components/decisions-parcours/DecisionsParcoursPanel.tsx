@@ -318,6 +318,8 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   const [envoi, setEnvoi] = useState(false);
   /** Le formulaire ouvert : `<version>:ajout`, `<version>:revision`, `<version>:corriger:<ligne>`. */
   const [edition, setEdition] = useState<string | null>(null);
+  /** La ligne dont le retrait attend sa confirmation (arbitrage du 2026-10-23). */
+  const [aRetirer, setARetirer] = useState<string | null>(null);
   const lecture = useRef(0);
 
   const charger = useCallback(async () => {
@@ -381,6 +383,36 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   const actif = !donnees.mineur && !envoi;
   const retirer = (version: VersionLue, ligne: DecisionLue) =>
     void envoyer({ acte: 'retrait', idVersion: version.id, remplace: ligne.id });
+  const ouvrir = (cle: string) => {
+    setARetirer(null);
+    setEdition(cle);
+  };
+  // Un retrait sert à l'erreur de saisie comme au refus que le patient lève
+  // ([[D-343]] §5) : libellé neutre, et confirmation en ligne avant l'envoi.
+  const boutonRetirer = (version: VersionLue, ligne: DecisionLue) =>
+    aRetirer === ligne.id ? (
+      <span role="group" aria-label="Confirmer le retrait" className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-foreground">{TEXTES.confirmerRetrait}</span>
+        <button
+          type="button"
+          disabled={!actif}
+          className={classeBouton}
+          onClick={() => {
+            setARetirer(null);
+            retirer(version, ligne);
+          }}
+        >
+          Confirmer
+        </button>
+        <button type="button" className={classeBouton} onClick={() => setARetirer(null)}>
+          Annuler
+        </button>
+      </span>
+    ) : (
+      <button type="button" disabled={!actif} className={classeBouton} onClick={() => setARetirer(ligne.id)}>
+        Retirer
+      </button>
+    );
 
   const blocVersion = (version: VersionLue) => {
     const fils = filsDeLaVersion(donnees.decisions, version.id);
@@ -425,14 +457,10 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
           {version.diffuseeLe === null && <p className="text-xs text-muted-foreground">Révision et mise en œuvre se posent sur une version diffusée.</p>}
           {!donnees.mineur && version.diffuseeLe !== null && edition === null && (
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={!actif} className={classeBouton} onClick={() => setEdition(`${version.id}:revision`)}>
-                {revision ? 'Corriger la révision' : 'Poser une révision'}
+              <button type="button" disabled={!actif} className={classeBouton} onClick={() => ouvrir(`${version.id}:revision`)}>
+                {revision ? 'Changer la révision' : 'Poser une révision'}
               </button>
-              {revision && (
-                <button type="button" disabled={!actif} className={classeBouton} onClick={() => retirer(version, revision)}>
-                  Retirer (posée par erreur)
-                </button>
-              )}
+              {revision && boutonRetirer(version, revision)}
             </div>
           )}
           {edition === `${version.id}:revision` && formulaire({ type: 'revision', remplace: revision?.id ?? null, initiale: revision })}
@@ -458,12 +486,10 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
                   <Details l={t} versions={donnees.versions} />
                   {!donnees.mineur && edition === null && (
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" disabled={!actif} className={classeBouton} onClick={() => setEdition(cle)}>
+                      <button type="button" disabled={!actif} className={classeBouton} onClick={() => ouvrir(cle)}>
                         Corriger
                       </button>
-                      <button type="button" disabled={!actif} className={classeBouton} onClick={() => retirer(version, t)}>
-                        Retirer (posée par erreur)
-                      </button>
+                      {boutonRetirer(version, t)}
                     </div>
                   )}
                   {edition === cle && formulaire({ type: 'corriger', ligne: t })}
@@ -473,7 +499,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
             })}
           </ul>
           {!donnees.mineur && edition === null && (
-            <button type="button" disabled={!actif} className={classeBouton} onClick={() => setEdition(`${version.id}:ajout`)}>
+            <button type="button" disabled={!actif} className={classeBouton} onClick={() => ouvrir(`${version.id}:ajout`)}>
               Ajouter une décision
             </button>
           )}
