@@ -247,6 +247,37 @@ describe('POST /api/praticien/cockpit/priorite', () => {
     });
   });
 
+  // ── D-338 §3 : LES BESOINS VISÉS D'UNE PRIORITÉ POSÉE ─────────────────────
+  it('consigne les besoins visés, rangés, hors de l’identifiant', async () => {
+    const res = await POST(postRequest(corpsLibre({ domaine: 'moral', libelle: 'Retrouver du lien', besoinsVises: [12, 9] })));
+    expect(res.status).toBe(200);
+    const data = prisma.decisionPrioritySelection.create.mock.calls[0][0].data;
+    expect(data).toMatchObject({
+      candidateId: identifiantPrioriteLibre({ domaine: 'moral', libelle: 'Retrouver du lien' }),
+      besoinsVises: [9, 12],
+    });
+  });
+
+  it('consigne une liste vide sans besoin visé, et rien sur un candidat du moteur', async () => {
+    await POST(postRequest(corpsLibre({ domaine: 'moral', libelle: 'Retrouver du lien' })));
+    expect(prisma.decisionPrioritySelection.create.mock.calls[0][0].data.besoinsVises).toEqual([]);
+    await POST(postRequest(corps()));
+    expect(Object.keys(prisma.decisionPrioritySelection.create.mock.calls[1][0].data)).not.toContain('besoinsVises');
+  });
+
+  it.each([
+    ['un besoin doublé', [6, 6]],
+    ['un besoin hors des douze', [0]],
+    ['un besoin au-delà de 12', [13]],
+    ['un numéro en texte', ['4']],
+    ['une liste qui n’en est pas une', '4'],
+  ])('refuse des besoins visés : %s (422)', async (_cas, besoinsVises) => {
+    const res = await POST(postRequest(corpsLibre({ domaine: 'moral', libelle: 'Retrouver du lien', besoinsVises })));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'besoins_invalides' });
+    expect(prisma.decisionPrioritySelection.create).not.toHaveBeenCalled();
+  });
+
   it('consigne une priorité posée quand aucun candidat n’est classé', async () => {
     designerTablePriorites();
     expect(referenceSansCandidat.decisionCard.priorityCandidates).toEqual([]);

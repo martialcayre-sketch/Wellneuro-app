@@ -132,7 +132,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 3 | Radar sans zéro décidé | M-6, ac (rang 0) : H12 | **levée le 2026-10-18** : texte écrit le 2026-10-15 (D-301) ; J2-radar livré (#1531), « non mesuré » constaté à l'écran par l'E2E, déploiement 586db8fc constaté |
 | 4 | Sources à fournir : poids égal, seuils, fidélité, quantités, axes | le responsable (rang 0) : H08 | en partie : D-280 source les seuils de 8B ; règle du milieu levée ; restent poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) |
 | 5 | K-05a et D4 : liste fermée et déclaration des sites IA | le responsable (rang 0) : F46 | levée le 2026-10-15 : D4 (D-299, #1467) puis K-05a, liste fermée des neuf fichiers IA de `web/src` (`web/src/lib/sitesAppelIa.guard.test.ts`), chacun rattaché à `docs/DOSSIER_RGPD.md` |
-| 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | non levée |
+| 6 | Doctrine du cockpit chiffré et de l'adhésion signée | M-2, G-4 (rang 2), sur c et d (rang 1) : F59, H32 | **levée le 2026-10-23** : D-333 et D-334 signées telles quelles par le responsable (M-2), niveau médian ordinal de D-334 §4 compris ; premier lot libéré : J1-cockpit-a (F59) |
 | 7 | SAF-EI-01 signée, puis déploiement constaté | M-1 (rang 3), puis J1-sécu (rang 4) : F66 | **levée le 2026-10-18** : SAF-EI-01 amendée signée le 2026-10-17 (M-1, #1528) ; commit de signature en service, constaté dans l'image déployée 9aec4a5b (J1-sécu) |
 | 8 | Essai de restauration réussi | K-18a (0), G-7 (1) : F04 | levée le 2026-10-14 : G-7 joué et réussi (#1462 ; écart HDS consigné à F04, essai retenu par le responsable) ; portée et procédure écrites par D-289 (#1430) |
 | 9 | release-db approuvée, sentinelle, constat, une à une | le responsable, à chaque migration | constatée pour #1397 (2026-10-11) et pour le lot 2 de D-281 (2026-10-13) ; constatée pour BP-09 le 2026-10-14 (#1448 : release-db approuvée hors usage, run 38612283121 vert, sentinelle liée, constat par conteneur one-off-204, base à jour relue par one-off-4921) ; migration de D-284 lot (j) mergée le 2026-10-14 (#1426), release-db consignée le 2026-10-15 : run 38527276005, approuvé par le responsable (« D-284 §5, lot j »), release appliquée par one-off-5372 (sentinelle `WN_RELEASE_DB_OK id=38527276005-1`, 2026-10-14 07:30:01 UTC), vérification `migrate status` verte ; le run finit rouge par sa garde anti-recul, voulue (tête dépassée par #1427 pendant le run), sans effet sur la base ; déploiements constatés : f3d3fcbd (#1426) à 07:22 UTC, 5f7e2f16 (#1427) à 07:40 UTC ; migration finie à 07:30 UTC, relue par conteneur pendant G-7 (#1462) ; constatée pour le formulaire d'avant de D-281 le 2026-10-15 (#1464 : run 38649200510 vert, sentinelle liée, migration appliquée par one-off-9362, base à jour relue par one-off-4547) ; constatée pour le gel du patient de D-281 le 2026-10-15 (#1474 : run 38718890105, sentinelle `id=38718890105-1`, `migrate status` à jour par conteneur, 109 migrations) ; constatée pour le verrou de course de D-281 le 2026-10-15 (#1476 : run 38746811654, sentinelle `id=38746811654-1` par one-off-9963, `migrate status` à jour par one-off-7924, 110 migrations, production sur 8bc48e55) ; constatée pour EF-3b le 2026-10-15 (#1478 : run 38770021810 vert, sentinelle liée, migration appliquée par one-off-3935, base relue par one-off-9138) ; constatée pour CC-8 le 2026-10-16 (#1490 : run 38821976094 vert, approuvé par le responsable, sentinelle `WN_RELEASE_DB_OK id=38821976094-1`, migration appliquée par one-off-6113 à 23:43:22 UTC, une tentative ; base relue par one-off-7920 : CHECK à cinq espèces, validé, aucune migration non aboutie ; déploiement 2086fa7b en tête) |
@@ -892,6 +892,12 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre c ; doctrine signée de la main du responsable.
 - **Critère de fin** : chaque chiffre avec source, date, nature, tenu par banc.
+- **Mise à jour (2026-10-23, M-2)** : D-333 et D-334 signées telles quelles par le responsable, sur question à options ; porte 6 levée. La stabilité métabolique est affichée au cockpit (tiroir « Objets cliniques & momentum », `FichePatientPanel.tsx`, route `api/praticien/equilibre`), sans mention ni source : la tolérance de D-333 §3 court depuis la signature. Ordre arbitré le même jour, au rang 3 :
+  1. **J1-cockpit-a**, premier lot de code après la signature, rien avant lui : « Non motivé, décision due » à côté de la valeur de la stabilité métabolique, avec la source présente et celle qui manque (Q_INF_01, Q_INF_02 ; jamais « deux instruments » sur une seule source), jusqu'à la levée de la porte 4 (poids égal) ; mention de nature sur la stabilité métabolique, la réserve d'adaptation et la clarté (§3), garde `natureIndiceGlobal.guard.test.ts` étendue aux trois objets (§6). Couverture par source lue dans la route, rien sous `lib/equilibre` ; T2, `wn-reviewer`.
+  2. **J1-cockpit-b** : provenance datée sous chaque chiffre (§2 règle 1), garde de frontière (§6) ; Q10 (retrait de `trajectoire[].valeur` et `momentum.delta` de l'API portail, au lot qui écrit la garde) ; Q9 (« Plafond appliqué (règle des fondations critiques, D-106) », sans besoin ni valeur avant plafond).
+  3. **Lots de l'audit des instruments des 12 besoins** (Q1 à Q12, tranchées le 2026-10-22), chacun après son préalable : Q2, Q3, Q4 d'abord (composant des cercles propre au cockpit ; motif sur une ligne dépliable ; six motifs, libellés relus par le responsable avant le code) ; Q1 (ordre fixe B1 à B12 par strate) après J3-12b ; Q5 (le motif décrit les routes de calcul, écart avec le snapshot nommé) avec J3-12g ; Q6 (« Calculé sur n besoins mesurés sur 12 ») et Q8 (compléter la mesure) après une D-xxx produit commune ; Q7 (entier 0 à 100 sans « % », écarts en points) avec J2-mom (H30) ; Q11 (« Points à explorer », acté ou retiré) après sa D-xxx, sur relecture de la fiche SP-CONV LOT-05 ; Q12 (accessibilité : passe humaine, banc AxeBuilder, « Mon équilibre ») aux étapes E67 et H64.
+  4. **y** (H58), geste du responsable, en parallèle.
+  Restent tenus par une autre porte : J2-jourN (lettre o), ce et au (porte 16), BF-5 (porte 25), page de santé de BioFlow (G-3, axes).
 
 #### F34 · aw : signature des familles
 - **Identifiant, piste** : lettre aw ; re-signature de la table des quinze règles ; trackc.
@@ -983,6 +989,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre d, de la main du responsable ; trancher le choix d'échelle d'E4.
 - **Critère de fin** : doctrine mergée ; signature M-2 au rang 2 (F59), qui lève la porte 6.
+- **Mise à jour (2026-10-23, M-2)** : critère de fin tenu. D-334 mergée (S-2, #1604), signée telle quelle par le responsable le 2026-10-23 avec D-333, niveau médian ordinal du §4 compris ; porte 6 levée. Les écrans E4 (J2-jourN, H52, qui attend encore la lettre o) et cabinet (y, H58) restent des lots distincts.
 
 #### H33 · am : table de quantités au protocole
 - **Identifiant, piste** : lettre am (R:am) ; protocole ; geste du responsable.
@@ -1656,6 +1663,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre bd, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
+- **Mise à jour (2026-10-23, D-346)** : la porte 7 est levée (2026-10-18, F66). L'encart n'attend plus la place 11 : dès qu'il est prêt (texte accepté, registre, drapeau), il prend la place suivante, après la place 5, devant les places 7 à 11 non encore ouvertes. La porte 18 est inchangée. Reste : son texte, de la main du responsable.
 
 **File D : gestes du responsable**
 
@@ -2069,10 +2077,12 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 
 Chacune prend une place avec son constat, servie après la place 5 au moins, sauf l'imprimable du protocole : il est la page déjà servie, imprimée, et suit les ajouts de contenu. Leur ordre au-delà de la place 11 est tranché : la conduite passe devant. Dès que l'encart « quand ralentir ou demander avis » (bd, H71) est prêt, il prend la place suivante avant toute autre ; les autres (bb, cc, qui compte comme une place (D-288 §3, #1430), cg, bf, et toute ouverture sans place numérotée) s'ouvrent dans l'ordre où elles sont prêtes, une à la fois, le constat de la précédente avant (porte 18). C'est la règle de b (H05) pour les places 12 et suivantes.
 
+Mise à jour (2026-10-23, D-346, amende D-288 §3) : l'encart bd n'attend plus la place 11. Dès qu'il est prêt, il prend la place suivante, après la place 5, devant les places 7 à 11 non encore ouvertes. Les autres ouvertures ci-dessous gardent la règle des places 12 et suivantes.
+
 | ouverture | fiche | rang au plus tôt | condition |
 |---|---|---|---|
 | Bloc « Protocole » du document médecin, sans la charge déclarée | F39 | 5 | J2-med, p ; « avant le premier check-in » reste une visée que la file peut mettre en défaut |
-| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4) ; passe devant dès qu'il est prêt |
+| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) |
 | Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart |
 | Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : oui (arbitrage du 2026-10-14, D-288 §3, #1430) |
 | Ses nuits par semaine | H63 | 4 | porte 16, N-8 ; ordre de préparation après l'encart |

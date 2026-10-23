@@ -123,6 +123,23 @@ describe('lireSelectionPriorite', () => {
     expect(Object.keys((await lireSelectionPriorite('PAT_1', 'CARTE')) ?? {})).not.toContain('libre');
   });
 
+  // D-338 §3 : les besoins visés sont lus, et `{}` — le défaut de la colonne,
+  // donc toute ligne d'avant elle — ne pose AUCUNE clé : l'empreinte des cartes
+  // à priorité posée déjà ancrées ne bouge pas.
+  it('rend les besoins visés d’une priorité posée, et aucune clé quand la ligne n’en porte pas', async () => {
+    const libre = { domaine: 'moral' as const, libelle: 'Retrouver du lien' };
+    const ligneLibre = {
+      ...ligne(), candidateId: identifiantPrioriteLibre(libre), domaineLibre: libre.domaine, libelleLibre: libre.libelle,
+    };
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{ ...ligneLibre, besoinsVises: [9, 12] }]);
+    expect((await lireSelectionPriorite('PAT_1', 'CARTE'))?.libre).toEqual({ ...libre, besoinsVises: [9, 12] });
+    expect(prisma.decisionPrioritySelection.findMany.mock.calls[0][0].select.besoinsVises).toBe(true);
+
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{ ...ligneLibre, besoinsVises: [] }]);
+    const sansBesoins = await lireSelectionPriorite('PAT_1', 'CARTE');
+    expect(Object.keys(sansBesoins?.libre ?? {})).not.toContain('besoinsVises');
+  });
+
   it('rend null quand le dossier ne porte aucune sélection', async () => {
     prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
     expect(await lireSelectionPriorite('PAT_1', 'CARTE')).toBeNull();
