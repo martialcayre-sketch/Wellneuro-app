@@ -61,7 +61,7 @@ describe('provenanceChiffre', () => {
     };
     expect(provenanceMomentumEtablie(p)).toBe(true);
     expect(lignesProvenanceMomentum(p)).toEqual([
-      "Écart de l'indice global entre T0 (01/08/2026) et J21 (22/08/2026)",
+      "Écart de l'indice global entre l'état au T0 (01/08/2026) et l'état au J21 (22/08/2026)",
       'Version du calcul : v15',
     ]);
     expect(provenanceMomentumEtablie({ ...p, arrivee: { jalon: 'J21', date: null } })).toBe(false);

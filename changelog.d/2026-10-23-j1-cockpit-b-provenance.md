@@ -6,7 +6,7 @@
   version du calcul : « Questionnaire : Q_NEU_11 (réponse du 01/10/2026) »,
   « Version du calcul : v15 ». La stabilité métabolique, hors du registre des
   versions, dit « Formule non versionnée ». Le momentum dit ses deux jalons :
-  « Écart de l'indice global entre T0 (…) et J21 (…) ».
+  « Écart de l'indice global entre l'état au T0 (…) et l'état au J21 (…) ».
 - Sans provenance établie (ancien conteneur pendant un déploiement, source
   sans date), le chiffre ne s'affiche pas : la tuile dit « Source non
   enregistrée », distincte de « Non mesuré ».

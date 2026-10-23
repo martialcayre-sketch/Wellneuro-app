@@ -303,6 +303,23 @@ describe('GET /api/praticien/equilibre', () => {
       });
     });
 
+    it('réserve d’adaptation : les sources du besoin que la formule lit', async () => {
+      const pss = { P1: '2', P2: '2', P3: '3', P4: '3', P5: '3', P6: '2', P7: '3', P8: '3', P9: '2', P10: '3' };
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-09-12T08:00:00Z'), scoresJson: { rawAnswers: pss }, statutValidite: null },
+      ]);
+      const json = (await (await GET(request())).json()) as Provenance;
+      expect(json.objetsCliniques.provenance.reserveAdaptation).toEqual({
+        sources: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-09-12T08:00:00.000Z' }],
+        versionCalcul: VERSION_DU_CALCUL,
+      });
+      // Le même questionnaire nourrit l'indice global, une seule fois nommé.
+      expect(json.objetsCliniques.provenance.indiceGlobal).toMatchObject({
+        sources: [{ idQuestionnaire: 'Q_STR_02' }],
+      });
+      expect(json.objetsCliniques.provenance.clarte).toBeNull();
+    });
+
     it('plafond appliqué : le booléen seul, ni besoin ni valeur avant plafond (Q9)', async () => {
       plafond.force = true;
       prisma.questionnaireReponse.findMany.mockResolvedValue([had(new Date('2026-10-01T10:00:00Z'))]);

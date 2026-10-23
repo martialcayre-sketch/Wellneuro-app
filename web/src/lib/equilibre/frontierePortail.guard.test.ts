@@ -27,7 +27,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // ou `.tsx` sous les racines ci-dessous, présentes ou à venir.
 
 const SRC = path.resolve(__dirname, '../..');
-const RACINES_PATIENT = ['app/api/patient', 'app/api/portail', 'app/portail', 'components/patient', 'components/portail'];
+const RACINES_PATIENT = [
+  'app/api/patient',
+  'app/api/portail',
+  'app/portail',
+  'components/patient',
+  'components/patient-companion',
+  'components/patient-food-compass',
+  'components/patient-food-observation',
+  'components/portail',
+];
+/** Répertoires `components/patient*` qui ne sont PAS des surfaces patient,
+ *  chacun avec son motif. Un répertoire neuf doit être rangé d'un côté ou de
+ *  l'autre — sinon le banc rougit (voir plus bas). */
+const HORS_PORTAIL: Record<string, string> = {
+  'components/patient-cockpit': 'panneaux du cockpit praticien (fiche patient), jamais rendus au portail',
+};
 
 /** Seuls modules de `lib/equilibre` qu'une surface patient peut importer. */
 const EQUILIBRE_PERMIS = new Set(['lecturePatient', 'natureIndiceGlobal', 'constants']);
@@ -69,6 +84,14 @@ function relatif(fichier: string): string {
 describe('frontière du portail — imports', () => {
   const surfaces = surfacesPatient();
 
+  it('tout répertoire components/patient* est rangé : surface patient ou hors portail motivé', () => {
+    const nonRanges = readdirSync(path.join(SRC, 'components'), { withFileTypes: true })
+      .filter(e => e.isDirectory() && /^(patient|portail)/.test(e.name))
+      .map(e => `components/${e.name}`)
+      .filter(d => !RACINES_PATIENT.includes(d) && !(d in HORS_PORTAIL));
+    expect(nonRanges).toEqual([]);
+  });
+
   it('la découverte trouve les surfaces patient (sinon ce banc ne garde rien)', () => {
     expect(surfaces.length).toBeGreaterThan(20);
     expect(surfaces.map(relatif)).toContain(path.join('app/api/patient/equilibre/route.ts'));
@@ -78,7 +101,11 @@ describe('frontière du portail — imports', () => {
   it('aucune surface patient n’importe un module de lib/equilibre hors de la composition patient', () => {
     const fautes = surfaces.flatMap(f =>
       importsDe(f)
-        .filter(i => i.startsWith('lib/equilibre/') && !EQUILIBRE_PERMIS.has(i.slice('lib/equilibre/'.length)))
+        .filter(
+          i =>
+            (i === 'lib/equilibre' || i.startsWith('lib/equilibre/')) &&
+            !EQUILIBRE_PERMIS.has(i.slice('lib/equilibre/'.length)),
+        )
         .map(i => `${relatif(f)} → ${i}`),
     );
     expect(fautes).toEqual([]);

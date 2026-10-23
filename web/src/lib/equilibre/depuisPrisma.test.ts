@@ -33,6 +33,15 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     expect(datesDesReponsesRetenues(brutes, dateAncienne)).toEqual({ Q_STR_02: dateAncienne });
   });
 
+  it('la plus récente sans réponses brutes écarte le questionnaire, sans repli sur une plus ancienne', () => {
+    const brutes: ReponseBrute[] = [
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateRecente, scoresJson: { total: 26 } },
+    ];
+    expect(construireReponsesParQuestionnaire(brutes)).toEqual({});
+    expect(datesDesReponsesRetenues(brutes)).toEqual({});
+  });
+
   it('deux réponses au même questionnaire → seule la plus récente est retenue', () => {
     const dedoublonnees = construireReponsesParQuestionnaire([
       { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: { P1: '4' } } },

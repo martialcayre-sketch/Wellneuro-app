@@ -122,10 +122,15 @@ import { MenuActions } from '@/components/ui/MenuActions';
 
 // Le geste qui ouvre la provenance d'un chiffre ([[D-333]] §2 règle 1) :
 // `<details>` natif, ouvrable au clavier et au toucher, sans survol.
-function DetailProvenance({ lignes }: { lignes: string[] }) {
+function DetailProvenance({ objet, lignes }: { objet: string; lignes: string[] }) {
   return (
     <details className="mt-1 w-full text-center">
-      <summary className="cursor-pointer py-1 text-xs text-muted-foreground underline underline-offset-2">
+      {/* Cinq gestes portent le même mot à l'écran : le nom accessible dit
+          duquel il s'agit, en gardant le mot visible en tête. */}
+      <summary
+        aria-label={`${LIBELLE_GESTE_PROVENANCE} — ${objet}`}
+        className="cursor-pointer py-1 text-xs text-muted-foreground underline underline-offset-2"
+      >
         {LIBELLE_GESTE_PROVENANCE}
       </summary>
       <div className="mt-1 space-y-0.5 text-left">
@@ -193,7 +198,7 @@ function ObjetGauge({
       {tolerance && <span className="text-xs text-muted-foreground text-center">{tolerance}</span>}
       {base && <span className="text-xs text-muted-foreground text-center">{base}</span>}
       {plafond && <span className="text-xs text-muted-foreground text-center">{plafond}</span>}
-      <DetailProvenance lignes={provenance} />
+      <DetailProvenance objet={label} lignes={provenance} />
     </div>
   );
 }
@@ -229,7 +234,7 @@ function MomentumCard({ momentum, provenance }: { momentum: ResultatMomentum | n
       <span className="text-3xs text-muted-foreground text-center leading-tight">
         {MENTION_NATURE_INDICE_GLOBAL}
       </span>
-      <DetailProvenance lignes={provenance} />
+      <DetailProvenance objet="Momentum" lignes={provenance} />
     </div>
   );
 }

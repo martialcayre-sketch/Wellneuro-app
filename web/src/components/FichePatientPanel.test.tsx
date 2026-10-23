@@ -2266,6 +2266,8 @@ describe('FichePatientPanel — provenance datée de chaque chiffre', () => {
     await ouvrirTiroir();
     const geste = screen.getAllByText('Source')[0];
     expect(geste.tagName).toBe('SUMMARY');
+    // Le nom accessible dit de quel chiffre il s'agit.
+    expect(geste.getAttribute('aria-label')).toBe('Source — Indice global');
     const detail = geste.closest('details');
     expect(detail?.textContent).toContain('Questionnaire : Q_NEU_11 (réponse du 01/10/2026)');
     expect(detail?.textContent).toContain('Version du calcul : v15');
@@ -2301,7 +2303,9 @@ describe('FichePatientPanel — provenance datée de chaque chiffre', () => {
   it('momentum : l’écart et ses deux jalons datés', async () => {
     await ouvrirTiroir({ momentum: 'avecProvenance' });
     expect(screen.getByText('Momentum').parentElement?.textContent).toContain('+4');
-    expect(screen.getByText("Écart de l'indice global entre T0 (01/08/2026) et J21 (22/08/2026)")).toBeTruthy();
+    expect(
+      screen.getByText("Écart de l'indice global entre l'état au T0 (01/08/2026) et l'état au J21 (22/08/2026)"),
+    ).toBeTruthy();
   });
 
   it('momentum sans provenance : ni écart ni tendance, « Source non enregistrée »', async () => {
