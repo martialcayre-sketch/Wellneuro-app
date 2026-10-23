@@ -137,7 +137,7 @@ nouveaux, décisions acceptées.
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
 | BP-11 | LOT-11 | Constats du praticien | terminé (2026-10-20 ; #1600, release-db constatée, puis le code sous `WN_BIO_CONSTAT` éteint ; `D-331`) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
-| BP-15 | LOT-15 | Décisions de parcours | en_cours (2026-10-22 : fiche, arbitrages du 2026-10-20, `D-343` et déclaration RGPD validées le 2026-10-22, #1642 ; migration seule en PR le 2026-10-22) | **oui** | BP-00 |
+| BP-15 | LOT-15 | Décisions de parcours | en_cours (2026-10-22 : fiche, arbitrages du 2026-10-20, `D-343` et déclaration RGPD validées le 2026-10-22, #1642 ; migration mergée (#1644), appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` éteint en PR le 2026-10-22) | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |
 | BP-08 | LOT-08 | Indicateurs de processus | à_faire | non | BP-20 ; un cycle réel à J21 |
 | BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | à_faire | non | BP-11, BP-12b |

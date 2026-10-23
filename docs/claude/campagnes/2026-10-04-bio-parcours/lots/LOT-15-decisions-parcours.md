@@ -1,7 +1,7 @@
 ---
 id: "LOT-15"
 titre: "BP-15 — Décisions de parcours"
-statut: "en_cours (2026-10-22) — D-343 acceptée (#1642) ; PR 1, migration seule, ouverte"
+statut: "en_cours (2026-10-22) — D-343 acceptée (#1642) ; migration mergée (#1644), appliquée et constatée ; PR 2, code sous drapeau éteint, ouverte"
 dépend_de: "LOT-00"
 ---
 
@@ -130,7 +130,29 @@ seulement (§7) ; le dossier mineur refusé au cockpit (§8).
 - **PR 2 (code)** : route du cockpit ; panneau de la version (lignes,
   source, historique, séquence lacunaire dite) ; bancs comparatifs du jour 0
   et des quatre empreintes ; banc des lecteurs ; drapeau
-  `WN_DECISIONS_PARCOURS` créé éteint, `docs/FEATURE_FLAGS.md`.
+  `WN_DECISIONS_PARCOURS` créé éteint, `docs/FEATURE_FLAGS.md`. Livrée :
+  route `api/praticien/decisions-parcours` (GET journalisé : versions du
+  dossier, hors instantanés du carnet, avec leur première diffusion
+  recevable et leurs actions, et les décisions ; POST : pose, correction,
+  retrait ; refus nommés avant la base, sous les mêmes verrous ; dossier
+  mineur et dossier clos refusés ; journal par `classeEtCode`, jamais
+  `err.message` — `signature` vit dans la bibliothèque biologique, hors de
+  la frontière D-306, précédent BP-13) ; tiroir « Décisions de parcours »
+  du cockpit (`DecisionsParcoursPanel`, libellés retenus le 2026-10-22 :
+  révision en vigueur, fils de choix et de mise en œuvre, source, motif,
+  note, date de l'événement ou « date inconnue », historique, séquence
+  incomplète dite par portée, rappel du signalement d'effet indésirable ;
+  la date de première diffusion s'affiche dans l'en-tête de la version, à
+  côté des débuts réels, sans être remplacée — §9) ; bancs
+  `jourZeroEtEmpreintes.test.ts` (jour 0 relu par `lireCalendriersSuivi`
+  et quatre empreintes égaux après chaque nature, transaction de fixture
+  qui refuse toute écriture hors `decisionParcours.create`, contre-épreuve)
+  et `lecteursDecisionsParcours.guard.test.ts`. Le routé E2E reste sans
+  objet : aucun E2E ne pose de décision. **Condition de l'allumage** : un
+  test d'intégration de la route sur une vraie base (pose, correction,
+  retrait, deux poses concurrentes sur un fil de révision, formes réelles
+  des refus reconnus à leur code) ; l'information du patient relue avant
+  l'ouverture du suivi (BP-21a).
 
 ## Hors périmètre
 

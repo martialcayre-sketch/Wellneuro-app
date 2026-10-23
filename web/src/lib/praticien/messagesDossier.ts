@@ -31,7 +31,7 @@ const MESSAGES: Record<string, string> = {
   questionnaire_not_found: 'Questionnaire introuvable.',
   // Annulation d'assignation (Fil A) : seules les ouvertes sont annulables.
   already_filled: 'Ce questionnaire a déjà été rempli — il ne peut pas être annulé.',
-  exception: 'Erreur technique. Vérifiez le terminal Next.js.',
+  exception: 'Une erreur inattendue est survenue. Réessayez dans un instant.',
 };
 
 /**

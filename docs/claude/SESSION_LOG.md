@@ -11329,6 +11329,24 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée par le responsable ; constat par conteneur ; puis le code consommateur.
 
 **Ouvert.** Fenêtre d'écriture d'une sélection entre déploiement et release-db.
+## 2026-10-22 — BP-15 : code des décisions de parcours (D-343)
+
+**Fait.** Release-db de #1644 constatée par conteneur. Route du cockpit, tiroir « Décisions de parcours » sous `WN_DECISIONS_PARCOURS` éteint ; libellés retenus par le responsable ; première diffusion affichée à côté des débuts réels (§9). Bancs : jour 0 et quatre empreintes, lecteurs, demande, fils, route (38 tests).
+
+**Écarté.** `signature(err)` dans les journaux : vit dans la bibliothèque biologique, hors frontière D-306 — `classeEtCode`, précédent BP-13, jamais `err.message`.
+
+**Prochaine action.** PR, CI, CodeRabbit, merge ; puis brouillon de la lettre cm (F52), hors dépôt.
+
+**Ouvert.** Allumage : test d'intégration de la route sur une vraie base ; information patient relue avant BP-21a.
+## 2026-10-22 — Instruments : textes faux (F9b, N1)
+
+**Fait.** Infobulle d'un besoin sans source rendue exacte (« Aucune réponse de questionnaire exploitable pour ce besoin »), sans motif. « Vérifiez le terminal Next.js. » remplacé par un message praticien et « Réessayer » sur le détail des besoins et la fiche ; texte seul dans `messagesDossier.ts`, qui déborde sur quatre surfaces hors instruments.
+
+**Écarté.** Bouton dans les quatre surfaces partagées (hors lot) ; tout motif (lot 4, après M-2).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge.
+
+**Ouvert.** Rien pour le lot.
 ## 2026-10-22 — Banc DeclarationsPatient : rappel attendu (BP-13)
 
 **Fait.** Les trois assertions sur `onLectureEchouee` qui suivaient `findByRole('alert')` passent sous `waitFor` : le rappel part d'un effet passif, après le rendu de l'alerte, et l'assertion pouvait le devancer sous charge (rouge CI de main sur db9018ee, T2 local une fois).
