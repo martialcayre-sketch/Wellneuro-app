@@ -359,6 +359,28 @@ proposition de révision (BP-19).
 
 - Conséquences : fragment `changelog.d/2026-10-22-d343-decisions-parcours.md` ;
   fiche LOT-15 ; paragraphe du dossier RGPD ; puis la PR de migration seule.
+- Mise à jour (2026-10-22, code) : **libellés du cockpit retenus tels quels
+  par le responsable** — natures « préférence du patient », « refus du
+  patient », « début réel », « interruption », « reprise », « arrêt »,
+  « révision » ; issues « maintenir », « ajuster », « arrêter » ; sources
+  « rapporté par le patient », « constaté par le praticien » ; motifs
+  « choix du patient », « contrainte pratique », « avis d’un autre
+  soignant », « effet indésirable rapporté », « événement intercurrent »,
+  « mise en œuvre incomplète », « nouvelle donnée au dossier », « autre
+  motif (note obligatoire) » ; « date inconnue » ; le rappel « Noter ici ne
+  remplace pas le signalement d’effet indésirable. » ; la séquence lacunaire
+  « Séquence incomplète : rien n’est déduit des événements absents. »
+  (`web/src/lib/decisions-parcours/liste.ts`). §9 tenu à l'écran : la date
+  de première diffusion recevable s'affiche dans l'en-tête de la version, à
+  côté des débuts réels. Fragment
+  `changelog.d/2026-10-22-bp15-code-decisions-parcours.md`.
+- Mise à jour (2026-10-23, libellés) : sur arbitrage du responsable, le
+  retrait se nomme « Retirer » (il sert à l'erreur de saisie comme au refus
+  levé, §5) et passe par une confirmation en ligne — « Retirer cette
+  décision ? Elle restera lisible dans l’historique. » ; « Corriger la
+  révision » devient « Changer la révision » (correction ou révision
+  nouvelle, §6). Fragment
+  `changelog.d/2026-10-23-bp15-libelles-retrait-revision.md`.
 
 ### D-342 — Restes de F45 et des mineurs : at remplacée par un contrôle du praticien au masquage, as close, repère du mineur en attente dans la liste, 15–17 ans avant J3-mineurs, droits d'un parent à la main
 

@@ -11319,3 +11319,59 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Envoi de la note par le responsable ; report des réponses dans la rubrique 4.
 
 **Ouvert.** Âge plancher, transition à 18 ans, notice adaptée, AIPD avant le premier mineur.
+
+## 2026-10-22 — t39 : besoins visés de la priorité libre, migration (D-338 §3)
+
+**Fait.** Migration seule `c1_selection_priorite_besoins_vises_v1` : colonne `besoins_vises` (1 à 12, une dimension indicée à 1, strictement croissante, `{}` pour l'absence, lignes `libre:` seules) ; contrat étendu, chaque refus sous son propre CHECK, mutations rougies en local ; T3 vert ; `wn-reviewer` GO, trois P2 corrigés, un routé à la PR.
+
+**Écarté.** Proposer les seuls besoins à questionnaire (arbitrage : les douze, effet nul affiché) ; NULL pour l'absence (deux représentations, deux empreintes).
+
+**Prochaine action.** CI, CodeRabbit, merge ; release-db approuvée par le responsable ; constat par conteneur ; puis le code consommateur.
+
+**Ouvert.** Fenêtre d'écriture d'une sélection entre déploiement et release-db.
+## 2026-10-22 — BP-15 : code des décisions de parcours (D-343)
+
+**Fait.** Release-db de #1644 constatée par conteneur. Route du cockpit, tiroir « Décisions de parcours » sous `WN_DECISIONS_PARCOURS` éteint ; libellés retenus par le responsable ; première diffusion affichée à côté des débuts réels (§9). Bancs : jour 0 et quatre empreintes, lecteurs, demande, fils, route (38 tests).
+
+**Écarté.** `signature(err)` dans les journaux : vit dans la bibliothèque biologique, hors frontière D-306 — `classeEtCode`, précédent BP-13, jamais `err.message`.
+
+**Prochaine action.** PR, CI, CodeRabbit, merge ; puis brouillon de la lettre cm (F52), hors dépôt.
+
+**Ouvert.** Allumage : test d'intégration de la route sur une vraie base ; information patient relue avant BP-21a.
+## 2026-10-22 — Instruments : textes faux (F9b, N1)
+
+**Fait.** Infobulle d'un besoin sans source rendue exacte (« Aucune réponse de questionnaire exploitable pour ce besoin »), sans motif. « Vérifiez le terminal Next.js. » remplacé par un message praticien et « Réessayer » sur le détail des besoins et la fiche ; texte seul dans `messagesDossier.ts`, qui déborde sur quatre surfaces hors instruments.
+
+**Écarté.** Bouton dans les quatre surfaces partagées (hors lot) ; tout motif (lot 4, après M-2).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge.
+
+**Ouvert.** Rien pour le lot.
+## 2026-10-22 — Banc DeclarationsPatient : rappel attendu (BP-13)
+
+**Fait.** Les trois assertions sur `onLectureEchouee` qui suivaient `findByRole('alert')` passent sous `waitFor` : le rappel part d'un effet passif, après le rendu de l'alerte, et l'assertion pouvait le devancer sous charge (rouge CI de main sur db9018ee, T2 local une fois).
+
+**Écarté.** Toucher le composant (le comportement est juste) ; T2 (test seul).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Rubrique 4 des mineurs : avis de l'avocat (D-344).
+
+## 2026-10-23 — BP-13 : clôture relue sous le verrou
+
+**Fait.** `verrouillerDossier` (écriture BP-13) relit la clôture du suivi après le `FOR KEY SHARE` ; les routes praticien et portail rendent le refus nommé `dossier_cloture` avec le message du dossier clos. Même trou que la revue CodeRabbit de #1650 a trouvé sur BP-15, routé au responsable, arbitré « petite PR maintenant » le 2026-10-23. Deux tests de course.
+
+**Écarté.** `FOR SHARE` sur le patient (bloquerait la clôture pendant l'écriture : changement d'ordre des verrous hors lot).
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Allumage BP-13 : conditions de FEATURE_FLAGS.md inchangées.
+## 2026-10-23 — BP-15 : libellés du retrait et de la révision
+
+**Fait.** Les deux P2 de la relecture de #1650, routés au responsable, arbitrés le 2026-10-23 : « Retirer (posée par erreur) » devient « Retirer » (il sert aussi au refus levé, D-343 §5), avec une confirmation en ligne avant l'envoi ; « Corriger la révision » devient « Changer la révision » (§6). Test de composant : « Annuler » n'envoie rien, « Confirmer » envoie le retrait.
+
+**Écarté.** Deux boutons distincts (même geste en base, motif non conservé) ; `window.confirm` (dialogue bloquant).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis brouillon de la lettre cm en session neuve.
+
+**Ouvert.** Allumage BP-15 : test d'intégration sur vraie base, information du patient avant BP-21a.

@@ -22,6 +22,7 @@ import { isBioIngestEnabled, isBioLectureEnabled, isCbEnabled, isCbResultsEnable
 import { isBioConstatEnabled } from '@/lib/bio-parcours/constats/drapeau';
 import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
 import { isPhysioTraitementsEnabled } from '@/lib/physio-traitements/drapeau';
+import { isDecisionsParcoursEnabled } from '@/lib/decisions-parcours/drapeau';
 
 export default async function FichePatientPage({
   params,
@@ -100,6 +101,8 @@ export default async function FichePatientPage({
             // Même règle pour les données physiologiques et les traitements
             // ([[D-335]] §9) : éteint, le tiroir n'est pas monté.
             physioTraitementsActif={isPhysioTraitementsEnabled()}
+            // Et pour les décisions de parcours ([[D-343]] §11).
+            decisionsParcoursActif={isDecisionsParcoursEnabled()}
           />
           {typeCarteLu && (
             <ConsignerLectureFil

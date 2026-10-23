@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { ancreCourante, lireAncresPersistees, type AncrePersistee } from './ancresPersistees';
 import {
   calendriersParCycle,
+  estDiffusionRecevable,
   joursZeroParCycle,
   joursZeroSuccessifs,
   type AncreDeRattachement,
@@ -90,6 +91,29 @@ export async function lireCalendriersSuivi(
     ancresDejaLues ?? lireAncresPersistees(idPatient, avantOuA),
   ]);
   return calendriersParCycle(versDiffusions(approbations, idPatient), ancres);
+}
+
+/**
+ * Les versions du dossier qu'au moins une approbation RECEVABLE a diffusées,
+ * avec la date de leur première diffusion recevable ([[D-343]] §7, §9) :
+ * avant la diffusion, rien n'est à mettre en œuvre ni à réviser ; le début
+ * réel s'affiche à côté de cette date, sans la remplacer. `client` : le
+ * client Prisma ou la transaction de l'appelant.
+ */
+export async function lireVersionsDiffusees(
+  client: Pick<typeof prisma, 'protocolDiffusionApproval'>,
+  idPatient: string,
+): Promise<Map<string, Date>> {
+  const approbations = await client.protocolDiffusionApproval.findMany({
+    where: { idPatient },
+    select: SELECTION_APPROBATION,
+  });
+  const premieres = new Map<string, Date>();
+  for (const diffusion of versDiffusions(approbations, idPatient).filter(estDiffusionRecevable)) {
+    const deja = premieres.get(diffusion.version.id);
+    if (deja === undefined || diffusion.approuveLe < deja) premieres.set(diffusion.version.id, diffusion.approuveLe);
+  }
+  return premieres;
 }
 
 /**

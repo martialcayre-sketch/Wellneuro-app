@@ -1241,6 +1241,12 @@ model DecisionPrioritySelection {
   // non vide ≤ 200 — l'intitulé que le patient lira (CHECK migration).
   domaineLibre          String?  @map("domaine_libre")
   libelleLibre          String?  @map("libelle_libre")
+  // Les BESOINS VISÉS d'une priorité libre ([[D-338]] §3, amende [[D-279]] §1) :
+  // facultatif (`{}` = aucun), entiers de 1 à 12 strictement croissants, lus
+  // par la re-passation ciblée SEULE. Toujours vide sur un candidat du moteur
+  // (CHECK migration). N'entre pas dans l'identifiant `libre:` : changer les
+  // seuls besoins visés n'est pas un pivot.
+  besoinsVises          Int[]    @default([]) @map("besoins_vises")
   selectedAt            DateTime @default(now()) @map("selected_at")
   // E-mail de session, posé CÔTÉ SERVEUR (patron `arbitre_par`) : l'écran ne
   // transmet ni auteur ni horodatage. À NE PAS CONFONDRE avec le `selectedBy`
