@@ -895,13 +895,14 @@ calculée ; tout médicament prescrit, ajusté ou arrêté par l'application.
 ### D-334 — Doctrine d'adhésion : quatre niveaux ordinaux datés, une marque par point d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian, jamais une moyenne ; « protocole servi » = premier check-in (lettre d)
 
 - Date : 2026-10-20
-- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+- Statut : accepté ; **signé (M-2) le 2026-10-23**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
   plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
   sur question à options, avant le merge (lettre d, fiche H32). Il assemble des arbitrages déjà rendus (séances du 2026-10-11,
   du 2026-10-12 réponses 3 et 4, du 2026-10-12-bis réponse 4) et deux arbitrages
   du 2026-10-20 : la place de l'échelle E4 (§2) et le groupe de la médiane
-  (§4). La signature M-2 (rang 2)
-  de cette décision et de [[D-333]] lève la porte 6.
+  (§4). Signature M-2 (rang 2) de cette décision et de [[D-333]] par le
+  responsable le 2026-10-23, telles quelles, sur question à options, niveau
+  médian ordinal du §4 compris : elle lève la porte 6.
 - Domaine : doctrine de présentation, espace praticien.
   `web/src/lib/protocol/adhesion.ts` (météo, SP-MET),
   `web/src/lib/protocol/trajectoireIntentions.ts` (constats par point
@@ -979,7 +980,7 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
 ### D-333 — Cockpit chiffré : l'espace praticien calcule et montre sous provenance, il ne qualifie qu'avec un seuil signé ; le portail reste sans chiffre, deux familles d'exceptions nommées (lettre c)
 
 - Date : 2026-10-20
-- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+- Statut : accepté ; **signé (M-2) le 2026-10-23**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
   plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
   sur question à options, avant le merge (lettre c, fiche F59). Il transcrit ses arbitrages du 2026-10-10 et du 2026-10-11
   (« chiffres, scores, indicateurs, courbes d'évolution et outils numériques
@@ -987,8 +988,11 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
   ceux de la séance du 2026-10-12 (stabilité métabolique, effectif) et celui
   du 2026-10-20 sur les exceptions du portail (§1). Contre-revue P0
 du même jour intégrée (SP-MET, exceptions du portail, dette de [[D-058]]
-§3). La signature M-2
-  (rang 2) de cette décision et de [[D-334]] lève la porte 6.
+§3). Signature M-2 (rang 2) de cette décision et de [[D-334]] par le
+  responsable le 2026-10-23, telles quelles, sur question à options : elle
+  lève la porte 6. La tolérance du §3 court depuis cette date : la stabilité
+  métabolique, affichée au cockpit, reçoit sa mention par J1-cockpit-a,
+  premier lot de code après la signature (F59).
 - Domaine : doctrine de présentation, espace praticien ; frontière du
   portail.
 - Nature : aucune règle clinique nouvelle. Ne crée ni seuil, ni bande, ni
