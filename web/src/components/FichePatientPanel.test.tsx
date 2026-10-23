@@ -91,7 +91,7 @@ type Options = {
   indiceGlobalNul?: boolean;
   /** Sources présentes de la stabilité métabolique ([[D-333]] §3) ; absente =
    *  aucune, la tuile dit « Non mesuré ». */
-  stabilite?: 'q1' | 'deux';
+  stabilite?: 'q1' | 'deux' | 'sansChamp';
   /** La clarté est mesurée (sinon nulle dans la fixture). */
   clarteMesuree?: boolean;
   // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
@@ -506,6 +506,11 @@ function stubFetch(options: Options = {}) {
       }
       if (options.clarteMesuree) {
         return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, clarte: 57 } });
+      }
+      if (options.stabilite === 'sansChamp') {
+        // Réponse d'un conteneur antérieur au lot : la valeur, sans le champ.
+        const { stabiliteMetaboliqueSources: _absent, ...objets } = EQUILIBRE.objetsCliniques;
+        return ok({ ...EQUILIBRE, objetsCliniques: { ...objets, stabiliteMetabolique: 75 } });
       }
       if (options.stabilite) {
         return ok({
@@ -2167,6 +2172,13 @@ describe('FichePatientPanel — stabilité, réserve et clarté disent leur natu
       screen.getByText('Sur Hyperexcitabilité SIIN (Q_INF_01) seule ; manque Magnésium / spasmophilie SIIN (Q_INF_02)'),
     ).toBeTruthy();
     expect(screen.queryByText(/deux instruments/i)).toBeNull();
+  });
+
+  it('champ des sources absent : dit « Sources indisponibles », jamais une liste vide', async () => {
+    await ouvrirTiroir({ stabilite: 'sansChamp' });
+    expect(screen.getByText('75')).toBeTruthy();
+    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(screen.getByText('Sources indisponibles')).toBeTruthy();
   });
 
   it('deux sources présentes : la tolérance et la moyenne à poids égal nommée', async () => {

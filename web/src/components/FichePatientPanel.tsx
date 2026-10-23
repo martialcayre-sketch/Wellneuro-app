@@ -30,7 +30,11 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 // Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
 import { MENTION_NATURE_INDICE_GLOBAL, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
-import { MENTION_POIDS_NON_MOTIVE, mentionSourcesStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
+import {
+  MENTION_POIDS_NON_MOTIVE,
+  MENTION_SOURCES_INDISPONIBLES,
+  mentionSourcesStabilite,
+} from '@/lib/praticien/mentionStabiliteMetabolique';
 // Même patron, même raison : `rideauT0.ts` est une feuille sans import, alors
 // que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
 // `orientationService`.
@@ -1472,7 +1476,11 @@ export function FichePatientPanel({
         value={objetsCliniques.stabiliteMetabolique}
         mention={MENTION_NATURE_INDICE_GLOBAL}
         tolerance={MENTION_POIDS_NON_MOTIVE}
-        base={mentionSourcesStabilite(objetsCliniques.stabiliteMetaboliqueSources ?? []) ?? undefined}
+        base={
+          objetsCliniques.stabiliteMetaboliqueSources
+            ? (mentionSourcesStabilite(objetsCliniques.stabiliteMetaboliqueSources) ?? undefined)
+            : MENTION_SOURCES_INDISPONIBLES
+        }
       />
       <ObjetGauge
         label="Réserve d'adaptation"

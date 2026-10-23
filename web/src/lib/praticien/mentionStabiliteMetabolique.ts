@@ -17,6 +17,10 @@
 /** Servie à côté de la valeur, tant que le poids égal n'est pas motivé. */
 export const MENTION_POIDS_NON_MOTIVE = 'Non motivé, décision due';
 
+/** Champ absent de la réponse (ancien conteneur pendant un déploiement) :
+ *  une liste inconnue ne se présente jamais comme une liste vide. */
+export const MENTION_SOURCES_INDISPONIBLES = 'Sources indisponibles';
+
 /** Noms courts des deux sources, avec leur code (arbitrage du 2026-10-23). */
 export const NOMS_SOURCES_STABILITE: Record<string, string> = {
   Q_INF_01: 'Hyperexcitabilité SIIN (Q_INF_01)',
