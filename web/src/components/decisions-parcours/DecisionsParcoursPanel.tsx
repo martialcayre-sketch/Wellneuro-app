@@ -311,6 +311,9 @@ function FormulaireDecision({
   );
 }
 
+/** Les cibles du focus autour d'un retrait. */
+type Cible = 'confirmation' | 'retirer' | 'titre';
+
 export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   const [donnees, setDonnees] = useState<Donnees | null>(null);
   const [erreurLecture, setErreurLecture] = useState(false);
@@ -320,8 +323,8 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   const [edition, setEdition] = useState<string | null>(null);
   /** La ligne dont le retrait attend sa confirmation (arbitrage du 2026-10-23). */
   const [aRetirer, setARetirer] = useState<string | null>(null);
-  /** Où poser le focus au prochain rendu : la confirmation ouverte, ou le « Retirer » d'une confirmation annulée. */
-  const focus = useRef<{ vers: 'confirmation' | 'retirer'; ligne: string } | null>(null);
+  /** Où poser le focus au prochain rendu : la confirmation ouverte, le « Retirer » d'une confirmation annulée, ou le titre de la section après un retrait confirmé. */
+  const focus = useRef<{ vers: Cible; cle: string } | null>(null);
   const lecture = useRef(0);
 
   const charger = useCallback(async () => {
@@ -392,14 +395,16 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
   // Un retrait sert à l'erreur de saisie comme au refus que le patient lève
   // ([[D-343]] §5) : libellé neutre, et confirmation en ligne avant l'envoi.
   // Au clavier, le bouton focalisé disparaît : le focus va à « Annuler » (le
-  // choix sans effet) à l'ouverture, et revient à « Retirer » après l'annulation.
-  const focaliser = (el: HTMLButtonElement | null, vers: 'confirmation' | 'retirer', ligne: string) => {
-    if (el && focus.current?.vers === vers && focus.current.ligne === ligne) {
+  // choix sans effet) à l'ouverture, revient à « Retirer » après l'annulation,
+  // et va au titre de la section après « Confirmer » — il y reste que l'envoi
+  // réussisse (la ligne quitte la liste) ou échoue.
+  const focaliser = (el: HTMLElement | null, vers: Cible, cle: string) => {
+    if (el && focus.current?.vers === vers && focus.current.cle === cle) {
       focus.current = null;
       el.focus();
     }
   };
-  const boutonRetirer = (version: VersionLue, ligne: DecisionLue) =>
+  const boutonRetirer = (version: VersionLue, ligne: DecisionLue, titre: string) =>
     aRetirer === ligne.id ? (
       <span role="group" aria-label="Confirmer le retrait" className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-foreground">{TEXTES.confirmerRetrait}</span>
@@ -408,6 +413,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
           disabled={!actif}
           className={classeBouton}
           onClick={() => {
+            focus.current = { vers: 'titre', cle: titre };
             setARetirer(null);
             retirer(version, ligne);
           }}
@@ -419,7 +425,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
           className={classeBouton}
           ref={el => focaliser(el, 'confirmation', ligne.id)}
           onClick={() => {
-            focus.current = { vers: 'retirer', ligne: ligne.id };
+            focus.current = { vers: 'retirer', cle: ligne.id };
             setARetirer(null);
           }}
         >
@@ -433,7 +439,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         className={classeBouton}
         ref={el => focaliser(el, 'retirer', ligne.id)}
         onClick={() => {
-          focus.current = { vers: 'confirmation', ligne: ligne.id };
+          focus.current = { vers: 'confirmation', cle: ligne.id };
           setARetirer(ligne.id);
         }}
       >
@@ -472,7 +478,9 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         )}
 
         <section aria-label="Révision" className="space-y-1">
-          <h4 className="text-xs font-semibold text-foreground">Révision</h4>
+          <h4 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:revision`)} className="text-xs font-semibold text-foreground">
+            Révision
+          </h4>
           {revision ? (
             <>
               <p className="text-sm text-foreground">{decrire(revision, version)}</p>
@@ -487,7 +495,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
               <button type="button" disabled={!actif} className={classeBouton} onClick={() => ouvrir(`${version.id}:revision`)}>
                 {revision ? 'Changer la révision' : 'Poser une révision'}
               </button>
-              {revision && boutonRetirer(version, revision)}
+              {revision && boutonRetirer(version, revision, `${version.id}:revision`)}
             </div>
           )}
           {edition === `${version.id}:revision` && formulaire({ type: 'revision', remplace: revision?.id ?? null, initiale: revision })}
@@ -495,7 +503,9 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
         </section>
 
         <section aria-label="Choix et mise en œuvre" className="space-y-2">
-          <h4 className="text-xs font-semibold text-foreground">Choix du patient et mise en œuvre</h4>
+          <h4 tabIndex={-1} ref={el => focaliser(el, 'titre', `${version.id}:choix`)} className="text-xs font-semibold text-foreground">
+            Choix du patient et mise en œuvre
+          </h4>
           {lacunaires.map(p => (
             <p key={p ?? ''} className="flex items-center gap-1 text-xs font-medium text-foreground">
               <AlertTriangle aria-hidden="true" size={14} className="text-accent" />
@@ -516,7 +526,7 @@ export function DecisionsParcoursPanel({ idPatient }: { idPatient: string }) {
                       <button type="button" disabled={!actif} className={classeBouton} onClick={() => ouvrir(cle)}>
                         Corriger
                       </button>
-                      {boutonRetirer(version, t)}
+                      {boutonRetirer(version, t, `${version.id}:choix`)}
                     </div>
                   )}
                   {edition === cle && formulaire({ type: 'corriger', ligne: t })}

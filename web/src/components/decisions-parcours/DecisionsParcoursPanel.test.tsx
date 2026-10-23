@@ -109,6 +109,8 @@ describe('DecisionsParcoursPanel — retrait confirmé (arbitrage du 2026-10-23)
 
     fireEvent.click(screen.getByRole('button', { name: 'Retirer' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }));
+    // Le focus va au titre de la section, qui survit au retrait.
+    expect(document.activeElement).toBe(screen.getByText('Choix du patient et mise en œuvre'));
     await waitFor(() => expect(envois(fetchMock)).toHaveLength(1));
     expect(JSON.parse(String((envois(fetchMock)[0][1] as RequestInit).body))).toEqual({
       idPatient: 'PAT1',
