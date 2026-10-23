@@ -39,7 +39,8 @@ les titres d'instruments, le nom du pack et la note libre du praticien.
 
 - Vitest ciblé : 15 fichiers, 196 tests verts ; empreintes des quatre v2
   calculées par `canonicalSha256`, vérifiées par le hash-lock.
-- T1 `npm run check` et T2 `npm run test:worktree -- --fast` : voir la PR.
+- T2 `npm run test:worktree -- --fast` vert (E2E : 282 passés, séquence
+  de 6 min 54 s) ; T1 `npm run check` vert après la fusion de main.
 
 ## Problèmes ouverts
 
