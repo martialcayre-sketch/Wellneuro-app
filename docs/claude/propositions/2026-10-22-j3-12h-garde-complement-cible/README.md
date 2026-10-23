@@ -162,9 +162,9 @@ L'autre session écrit la structure des fiches d'usage
 
 | Pièce | Mécanisme | Migration |
 |---|---|---|
-| G0 — nature du complément | sur chaque action `supplement_exploration`, une case du praticien « ciblé » ou « multivitaminé en vente libre » (Q0) ; champ additif du payload du protocole, sans valeur par défaut sur une ligne neuve ; seule « ciblé » est gardée | non (payload) |
+| G0 — nature du complément | sur chaque action `supplement_exploration`, une case du praticien « ciblé » ou « multivitaminé en vente libre » (Q0) ; champ additif du payload du protocole, sans valeur par défaut sur une ligne neuve ; liste fermée aux deux choix : une valeur absente ou hors liste est refusée avant la diffusion (fail-closed) ; seule « ciblé » est gardée | non (payload) |
 | G1 — table des déclencheurs | table en code, signée : une ligne par déclencheur, avec nature (population ou situation), portée (tous nutriments ou un analyte) et provenance (règle datée, position signée) ; aucune ligne sans provenance | non |
-| G2 — prédicat pur | `courrierRequis(etat, complements)` : rend « requis », « non requis », « état à établir », « date requise » ou « mineur » (Q4, Q5), motif obligatoire ; lit `statutAge`, grossesse et allaitement, situations déclarées | non |
+| G2 — prédicat pur | `courrierRequis(etat, complements)` : rend « requis », « non requis », « état à établir », « date requise » ou « mineur » (Q4, Q5), motif obligatoire ; lit `statutAge`, grossesse et allaitement, situations déclarées et l'accord de partage courant (Q2), relu à chaque clic indépendamment de la trace de remise | non |
 | G3 — déclaration des situations | case du praticien sur l'action de complément ciblé, prise dans la liste fermée de G1 (Q7) ; tracée par la chaîne de versions du protocole | non (payload) |
 | G4 — courrier | modèle `courrier_complement`, générateur au patron de `src/lib/biology-library/courrier.ts`, sous la garde non prescriptive, régime de consentement de Q2 ; textes validés par le responsable | non |
 | G5 — trace de remise | selon Q1 ; ajout seul, instantané du texte, empreinte sha-256, **empreinte de l'ensemble des compléments couverts** (Q3) ; trigger, RLS, contrat SQL négatif sous `prisma/checks/` et sa ligne de CI | **oui** |
@@ -195,6 +195,11 @@ Points tranchés par défaut, à contester :
   une remise antérieure couvre déjà ces compléments — la trace prouve la
   remise, pas l'accord, que la garde relit à chaque clic ([[D-345]] §6) ; il
   ne retire pas une version déjà servie (la garde joue au clic) ;
+- **lecture de Q4 dans le temps** : aucune ligne n'expire (une durée de
+  validité serait une borne clinique sans provenance) ; un « oui » déclenche
+  tant qu'aucune ligne « non » du praticien ne lui est postérieure ; un
+  « non » du praticien antérieur à un « oui » ne lève rien ; une ligne non
+  datée vaut ancienne pour un « non », et déclenche pour un « oui » ;
 - **annonce** : la remise du courrier entre dans l'annonce unique du clic
   (`gabaritAnnonceDuClic`), sans e-mail de plus ;
 - **destinataire** : saisi dans le courrier, prérempli du médecin traitant
