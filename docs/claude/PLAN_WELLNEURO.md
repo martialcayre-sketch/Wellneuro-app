@@ -924,6 +924,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non pour la décision (voir F52).
 - **Décisions, textes** : lettre cm, de la main du responsable ; les liens analyte-axe se signent ensuite, claim par claim (F79).
 - **Critère de fin** : D-xxx mergée ; liste curée et signée.
+- **Mise à jour (2026-10-23)** : lettre cm signée par le responsable ; D-348 en forme opaque (dix codes, cinquante claims fondateurs, limites écrites). Fait au merge de sa PR. Trois claims certifiés renvoyés à l'atelier des claims (D-348 §6) ; la correspondance panel → axe reste ouverte (D-348 §7). Ouvre F52.
 
 #### H26 · Lots de D-283 : durées, droits, information du médecin
 - **Identifiant, piste** : lots du §10 de D-283 (mergée, #1411) et du §7 de D-284 (mergée, #1413) : (a) texte patient des durées, nouvelle version de « Vos données personnelles », accusé exigé.
@@ -1489,6 +1490,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : oui, seule dans sa PR ; rang 4, après la chaîne BP du même rang.
 - **Décisions, textes** : celle de cm ; passe Codex.
 - **Critère de fin** : migration constatée, 0 lien ; contrat SQL négatif (axe inconnu, lien sans claim refusés) ; T3.
+- **Mise à jour (2026-10-23)** : préalable cm levé (D-348). Liste des dix codes : D-348 §2. Avant la migration, relire en production les cinquante fondateurs (D-348 §7).
 
 #### F58 · Statut posé et deux marques datées
 - **Identifiant, piste** : le mot du responsable près de la valeur, daté, à l'écran du responsable seul, jamais calculé ; socle.
