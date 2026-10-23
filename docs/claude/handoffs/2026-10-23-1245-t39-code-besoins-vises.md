@@ -64,6 +64,13 @@ sans règle puissent être re-mesurés.
 
 ## Problèmes ouverts
 
+- Démontré dans le code, sans occurrence observée (CodeRabbit sur #1655,
+  routé par le responsable le 2026-10-23 vers t41 du suivi de la file A) : au
+  jalon dû, le cockpit charge la proposition du jalon, la route rend
+  `proposal_required` et `decisionCard` est nul. La re-passation ciblée ne
+  reçoit alors ni les `needIds` du candidat retenu (depuis LOT-07) ni les
+  besoins visés (t39). t41 étendra la réponse de la route cockpit pour
+  transmettre la sélection de l'épisode confirmé de l'ancre.
 - Tests suggérés par la revue, non écrits : chaîne de bout en bout avec une
   ligne libre porteuse de besoins (cockpit = vérificateur = rejeu), garde
   `prioriteViseeAssiettes === null` pour une priorité libre au cockpit. La
