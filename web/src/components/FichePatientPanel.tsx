@@ -2795,6 +2795,7 @@ export function FichePatientPanel({
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
               needIdsPriorite={etatRuntime?.needIdsPrioriteSelectionnee}
+              besoinsVisesPraticien={etatRuntime?.besoinsVisesPrioriteLibre}
             />
           ))}
       </div>

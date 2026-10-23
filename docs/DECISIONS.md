@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-346 — L'encart « quand ralentir ou demander avis » (bd) passe dès qu'il est prêt, après la place 5, sans attendre les places 7 à 11 (amende D-288 §3)
+
+- Date : 2026-10-23
+- Statut : accepté — arbitrage du responsable du 2026-10-23, sur question à
+  options, après le relevé des préalables des places 7 à 11.
+- Amende : [[D-288]] §3, la phrase « Au-delà de la place 11, la conduite passe
+  devant : l'encart … prend la place suivante dès qu'il est prêt ».
+- Domaine : file C du plan (§3, « Ouvertures sans place numérotée ») ; fiche
+  H71. Documents seuls : aucun code, aucun drapeau, aucune activation, aucun
+  texte servi.
+- **Ne touche pas** : les places 1 à 5 ; la porte 18 ; le texte de bd, de la
+  main du responsable ; l'ordre des autres ouvertures sans place numérotée.
+
+**§1 — Le manque.** La porte 7 est levée depuis le 2026-10-18 (F66, J1-sécu).
+L'encart n'attend plus que son texte et la porte 18. [[D-288]] §3 le place
+pourtant au-delà de la place 11. Au 2026-10-23, aucune des places 7 à 11
+n'est prête :
+- place 7 (ak) : le choix des questionnaires qui portent la phrase, puis son
+  texte ;
+- place 8 (F78) : la porte 19 (BP-18a et BP-18b non livrés) et la porte 28 ;
+- place 9 (H81) : la chaîne c, M-2, R:Onglet, puis R:FC-5 (1/2) ;
+- place 10 (H82) : la lettre ap, sa décision et la porte 28 ;
+- place 11 (H83) : la lettre an, le registre IA et le code.
+
+L'encart de conduite attendrait derrière des ouvertures dont il ne dépend
+pas.
+
+**§2 — La règle.** Dès qu'il est prêt, au sens de [[D-288]] §1 (texte
+accepté, puis registre, puis drapeau), l'encart prend la place suivante,
+devant toute place de 7 à 11 non encore ouverte et devant toute ouverture
+sans place numérotée. Les places 1 à 5 ne bougent pas : jamais permutées,
+rien avant les places 2 à 5. Une activation à la fois, le constat de la
+précédente avant (porte 18, [[D-288]] §1-2) : si une autre ouverture attend
+son constat quand l'encart est prêt, il attend ce constat.
+
+**§3 — Ce qui ne change pas.** Les places 6 à 11 suivent l'ordre proposé au
+plan, sauf si l'une est prête avant une autre. Les autres ouvertures sans
+place numérotée, la nouvelle saisie du sommeil (cc) comprise, restent
+au-delà de la place 11, dans l'ordre où elles sont prêtes ([[D-288]] §3).
+Conséquence dite et acceptée : si l'encart est prêt avant ak, ak attend le
+constat de l'encart.
+
+- Conséquences : fragment `changelog.d/2026-10-23-d346-encart-bd-des-qu-il-est-pret.md` ;
+  plan, fiche H71 et §3 de la file C.
+
 ### D-345 — J3-12h : un complément marqué « ciblé » n'entre au programme d'un mineur ou d'une personne enceinte ou allaitante qu'avec un courrier remis au patient dans le clic de diffusion ; accord de partage exigé ; mineur refusé jusqu'à J3-mineurs
 
 - Date : 2026-10-22
@@ -75,6 +120,7 @@ dossier privé). Puis trois lots : contrat du protocole, table et prédicat
 éteint, ouvert après un passage de bout en bout sur un dossier de test.
 Chaque lot porte son fragment `changelog.d/`. Constat du 2026-10-22 :
 aucune action de complément en production, aucune version à reprendre.
+
 
 ### D-344 — Mineurs : rubrique 4 réécrite en version provisoire sur un avis préparatoire ; « un seul titulaire suffit » et « aucun secret opposable » suspendus à l'avocat, consulté dès maintenant ; trois demandeurs de droits ; texte 2B gardé
 
@@ -967,13 +1013,14 @@ calculée ; tout médicament prescrit, ajusté ou arrêté par l'application.
 ### D-334 — Doctrine d'adhésion : quatre niveaux ordinaux datés, une marque par point d'étape, vide sans réponse ; au cabinet, des comptes et un niveau médian, jamais une moyenne ; « protocole servi » = premier check-in (lettre d)
 
 - Date : 2026-10-20
-- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+- Statut : accepté ; **signé (M-2) le 2026-10-23**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
   plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
   sur question à options, avant le merge (lettre d, fiche H32). Il assemble des arbitrages déjà rendus (séances du 2026-10-11,
   du 2026-10-12 réponses 3 et 4, du 2026-10-12-bis réponse 4) et deux arbitrages
   du 2026-10-20 : la place de l'échelle E4 (§2) et le groupe de la médiane
-  (§4). La signature M-2 (rang 2)
-  de cette décision et de [[D-333]] lève la porte 6.
+  (§4). Signature M-2 (rang 2) de cette décision et de [[D-333]] par le
+  responsable le 2026-10-23, telles quelles, sur question à options, niveau
+  médian ordinal du §4 compris : elle lève la porte 6.
 - Domaine : doctrine de présentation, espace praticien.
   `web/src/lib/protocol/adhesion.ts` (météo, SP-MET),
   `web/src/lib/protocol/trajectoireIntentions.ts` (constats par point
@@ -1051,7 +1098,7 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
 ### D-333 — Cockpit chiffré : l'espace praticien calcule et montre sous provenance, il ne qualifie qu'avec un seuil signé ; le portail reste sans chiffre, deux familles d'exceptions nommées (lettre c)
 
 - Date : 2026-10-20
-- Statut : accepté. Texte rédigé par l'assistant (lot S-2, fiche H01 du
+- Statut : accepté ; **signé (M-2) le 2026-10-23**. Texte rédigé par l'assistant (lot S-2, fiche H01 du
   plan), soumis au responsable et accepté par lui tel quel le 2026-10-20,
   sur question à options, avant le merge (lettre c, fiche F59). Il transcrit ses arbitrages du 2026-10-10 et du 2026-10-11
   (« chiffres, scores, indicateurs, courbes d'évolution et outils numériques
@@ -1059,8 +1106,11 @@ code distincts (J2-jourN, lettre y), revue ordinaire, T2.
   ceux de la séance du 2026-10-12 (stabilité métabolique, effectif) et celui
   du 2026-10-20 sur les exceptions du portail (§1). Contre-revue P0
 du même jour intégrée (SP-MET, exceptions du portail, dette de [[D-058]]
-§3). La signature M-2
-  (rang 2) de cette décision et de [[D-334]] lève la porte 6.
+§3). Signature M-2 (rang 2) de cette décision et de [[D-334]] par le
+  responsable le 2026-10-23, telles quelles, sur question à options : elle
+  lève la porte 6. La tolérance du §3 court depuis cette date : la stabilité
+  métabolique, affichée au cockpit, reçoit sa mention par J1-cockpit-a,
+  premier lot de code après la signature (F59).
 - Domaine : doctrine de présentation, espace praticien ; frontière du
   portail.
 - Nature : aucune règle clinique nouvelle. Ne crée ni seuil, ni bande, ni
