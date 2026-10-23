@@ -36,6 +36,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'telechargementDocumentMedecin', 'documentMedecinImprime',
     'classementDocumentDepose', 'documentDeposePatient',
     'pieceConstatPraticien', 'constatPraticien',
+    'pieceConstatBesoinPraticien', 'constatBesoinPraticien',
     'donneePhysiologique', 'traitementEnCours',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
@@ -234,6 +235,17 @@ describe('effacerDossier', () => {
     expect(rang('pieceConstatPraticien')).toBeLessThan(rang('constatPraticien'));
     expect(rang('constatPraticien')).toBeLessThan(rang('questionnaireReponse'));
     expect(rang('constatPraticien')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Constats sur un besoin sans score (D-347, t40) : même patron que ceux de
+  // D-331, mêmes clés RESTRICT vers le constat, la réponse et le résultat.
+  it('supprime les pièces, puis les constats sur un besoin, avant les réponses et les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('pieceConstatBesoinPraticien')).toBeGreaterThanOrEqual(0);
+    expect(rang('pieceConstatBesoinPraticien')).toBeLessThan(rang('constatBesoinPraticien'));
+    expect(rang('constatBesoinPraticien')).toBeLessThan(rang('questionnaireReponse'));
+    expect(rang('constatBesoinPraticien')).toBeLessThan(rang('resultatBiologique'));
   });
 
   // Données physiologiques et traitements (D-335, BP-13) : FK RESTRICT de la

@@ -703,8 +703,8 @@ traitement n'existe** : ni code d'extraction, ni table, ni drapeau.
     patient n'a aucune surface. Un constat sur un besoin est une note datée
     du praticien sur son dossier, de même nature que les notes de
     consultation déjà déclarées. L'information se relit avant l'allumage du
-    drapeau. **Validation du responsable attendue avant le merge de la
-    migration**, note patient inchangée comprise.
+    drapeau. **Ce paragraphe est validé par le responsable le 2026-10-23**,
+    note patient inchangée comprise, avant le merge de la migration.
 - **Transmission du compte rendu par le patient depuis son portail
   ([[D-269]], BIO-INGEST LOT-04) — déclarée le 2026-10-07, avant la
   migration et avant tout code.** Le patient peut déposer lui-même son

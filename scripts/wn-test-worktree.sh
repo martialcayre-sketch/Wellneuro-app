@@ -557,6 +557,13 @@ grep -q 'banc-constats-praticien-deux-sessions.test.mjs' "$ROOT/.github/workflow
   || die "ci.yml ne lance plus le banc à deux sessions des constats du praticien."
 WN_BIO_CONSTAT_BANC_BASE=wellneuro_ci node scripts/banc-constats-praticien-deux-sessions.test.mjs > /dev/null < /dev/null \
   || die "banc des constats du praticien en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-constats-praticien-deux-sessions.test.mjs\`, depuis web/)."
+# Banc à deux sessions des constats sur un besoin sans score (D-347, t40) :
+# même discipline.
+step "Banc à deux sessions (constats sur un besoin)"
+grep -q 'banc-constats-besoin-deux-sessions.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc à deux sessions des constats sur un besoin."
+WN_CONSTAT_BESOIN_BANC_BASE=wellneuro_ci node scripts/banc-constats-besoin-deux-sessions.test.mjs > /dev/null < /dev/null \
+  || die "banc des constats sur un besoin en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-constats-besoin-deux-sessions.test.mjs\`, depuis web/)."
 # Banc à deux sessions des données physiologiques et des traitements (D-335,
 # BP-13) : même discipline.
 step "Banc à deux sessions (données physiologiques et traitements)"
