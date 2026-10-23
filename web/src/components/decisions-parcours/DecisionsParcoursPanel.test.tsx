@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DecisionsParcoursPanel } from './DecisionsParcoursPanel';
 
@@ -85,5 +85,38 @@ describe('DecisionsParcoursPanel — formulaire', () => {
     expect(enregistrer.disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('Motif'), { target: { value: 'choix_du_patient' } });
     expect(enregistrer.disabled).toBe(false);
+  });
+});
+
+describe('DecisionsParcoursPanel — retrait confirmé (arbitrage du 2026-10-23)', () => {
+  const vivante = { ...pose, nature: 'debut', motif: null, idAction: null, evenementLe: '2026-10-05' };
+  const AVEC_DEBUT = { ...LUES, decisions: [vivante] };
+  const envois = (f: ReturnType<typeof vi.fn>) =>
+    f.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
+
+  it('« Retirer » demande une confirmation ; « Annuler » n’envoie rien, « Confirmer » envoie le retrait', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => AVEC_DEBUT } as Response);
+    vi.stubGlobal('fetch', fetchMock);
+    render(<DecisionsParcoursPanel idPatient="PAT1" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer' }));
+    expect(screen.getByText('Retirer cette décision ? Elle restera lisible dans l’historique.')).toBeTruthy();
+    // Le focus suit au clavier : « Annuler » à l'ouverture, « Retirer » après.
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(envois(fetchMock)).toHaveLength(0);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Retirer' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retirer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }));
+    // Le focus va au titre de la section, qui survit au retrait.
+    expect(document.activeElement).toBe(screen.getByText('Choix du patient et mise en œuvre'));
+    await waitFor(() => expect(envois(fetchMock)).toHaveLength(1));
+    expect(JSON.parse(String((envois(fetchMock)[0][1] as RequestInit).body))).toEqual({
+      idPatient: 'PAT1',
+      acte: 'retrait',
+      idVersion: V,
+      remplace: 'l1',
+    });
   });
 });

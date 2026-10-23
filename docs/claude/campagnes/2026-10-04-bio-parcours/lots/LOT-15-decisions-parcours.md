@@ -1,7 +1,7 @@
 ---
 id: "LOT-15"
 titre: "BP-15 — Décisions de parcours"
-statut: "en_cours (2026-10-22) — D-343 acceptée (#1642) ; migration mergée (#1644), appliquée et constatée ; PR 2, code sous drapeau éteint, ouverte"
+statut: "en_cours (2026-10-23) — D-343 acceptée (#1642) ; migration mergée (#1644), appliquée et constatée ; code mergé sous drapeau éteint (#1650) ; libellés du retrait et de la révision arbitrés le 2026-10-23, PR ouverte"
 dépend_de: "LOT-00"
 ---
 
@@ -153,6 +153,15 @@ seulement (§7) ; le dossier mineur refusé au cockpit (§8).
   retrait, deux poses concurrentes sur un fil de révision, formes réelles
   des refus reconnus à leur code) ; l'information du patient relue avant
   l'ouverture du suivi (BP-21a).
+
+**Libellés arbitrés le 2026-10-23** (P2 de la relecture de la PR 2, routés
+au responsable) : un retrait sert à l'erreur de saisie comme au refus que
+le patient lève (§5) — le bouton devient « Retirer », et une confirmation
+en ligne (« Retirer cette décision ? Elle restera lisible dans
+l'historique. », Confirmer / Annuler) précède l'envoi ; « Corriger la
+révision » devient « Changer la révision », qui couvre la correction comme
+la révision nouvelle (§6). Test de composant : « Annuler » n'envoie rien,
+« Confirmer » envoie le retrait.
 
 ## Hors périmètre
 
