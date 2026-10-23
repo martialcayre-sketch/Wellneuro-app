@@ -4,6 +4,163 @@
 
 ## Décisions actives
 
+### D-347 — t40 : le constat du praticien sur un besoin sans score, un acte en ajout seul — quatre verdicts cadrés sur la cible, motif fermé, pièces facultatives tenues par clé, aucune valeur ; base fermée aux besoins 2, 6, 7 et 11 (précise D-338 §4, H84)
+
+- Date : 2026-10-23
+- Statut : accepté — cinq arbitrages du responsable du 2026-10-23, sur
+  questions à options : quatre sur l'option recommandée (passer par une
+  proposition puis une décision ; quatre verdicts ; la liste des motifs ;
+  la base fermée aux besoins 2, 6, 7 et 11), un contre elle (des pièces
+  facultatives plutôt qu'aucune pièce). Sur sa demande, l'assistant a
+  proposé les verdicts et la liste des motifs ([[D-308]] §2 levé pour cette
+  liste, comme en [[D-331]]) ; le responsable les a retenus tels quels.
+  Texte rédigé par l'assistant à partir de ces réponses.
+- Domaine : fiche H84 du plan, ligne « constat praticien » (lot t40, file
+  A) ; deux tables neuves en ajout seul ; `web/src/lib/patient/effacement.ts` ;
+  `docs/DOSSIER_RGPD.md`.
+- Précise : [[D-338]] §4 (le véhicule, cadré une fois). Patron : [[D-331]]
+  §2, §4, §5 et §7. Applique [[D-266]] §11 (une migration, deux PR).
+- **Une migration autorisée**, demandée par le responsable le 2026-10-23
+  (lot t40) : deux tables neuves, aucune table existante modifiée.
+- **Ne touche pas** : le fond de chaque besoin — scorer ou évaluer en
+  entretien, et quoi constater — reste au dossier de preuve du besoin
+  ([[D-338]] §4, [[D-312]]) ; aucune valeur, aucune règle clinique, aucun
+  seuil, aucune durée ; `BESOIN_SOURCES`, la version du score et toute
+  table signée ; le statut « non mesuré » des besoins 6, 7 et 11 et « hors
+  score » du besoin 2 ; le compte « n besoins mesurés sur 12 » ; ni le
+  portail, ni le courrier au médecin, ni le scoring, ni l'orientation, ni
+  la re-passation ciblée, ni l'IA ne lisent un constat sur un besoin.
+
+**§1 — Le manque.** Les besoins 2, 6, 7 et 11 n'ont aucune source de score
+(`BESOIN_SOURCES` vide) : le praticien les évalue en entretien, ou sur des
+pièces pour le besoin 2, sans aucun objet pour le consigner. [[D-338]] §4
+cadre le véhicule (acte daté, ajout seul, motif fermé, aucune valeur, au
+modèle de [[D-331]]) sans en écrire la liste des motifs. Le constat de
+[[D-331]] ne convient pas : il porte sur une hypothèse du vocabulaire signé
+de BP-12a, et sa liste de motifs parle de pièces de biologie et de contexte
+de prélèvement.
+
+**§2 — L'objet : deux tables en ajout seul.** Sur le patron de [[D-331]]
+§2 : clé d'ordre et date posées par la base, inantidatables ; UPDATE et
+TRUNCATE refusés par trigger ; DELETE réservé à l'effacement nommé du
+dossier ; RLS activée sans politique ; la base refuse l'acte d'un autre
+praticien que celui du dossier.
+
+- **Le constat** : le dossier, l'acte (`pose` ou `retrait`), le besoin, le
+  verdict, le motif, la note facultative, la date « à revoir le »
+  facultative, le constat qu'il remplace (`supersedes`, du même dossier et
+  du même besoin), l'e-mail du praticien et la date. **Un seul constat en
+  vigueur par besoin et par dossier** : la tête, un constat posé que ni un
+  remplacement ni un retrait ne vise. Une pose sur un besoin qui a une tête
+  doit la remplacer ; une pose sans tête n'a pas de `supersedes`. Un
+  retrait est une ligne de plus, sans verdict, sans motif ni pièce, qui ne
+  vise que la tête et ramène le besoin à « aucun constat posé ». Un constat
+  déjà remplacé ou retiré ne se remplace ni ne se retire. La base le tient,
+  sous le verrou du dossier, comme en [[D-331]] §2.
+- **Le besoin (arbitrage 5)** : la base n'admet que **2, 6, 7 et 11**, le
+  périmètre exact de [[D-338]] §4. La route refuse en outre tout besoin qui
+  porte une source de score (`BESOIN_SOURCES` non vide) : elle seule suit
+  un besoin qui gagne un score. Ouvrir un autre besoin exige une décision
+  et une migration.
+- **Ses pièces (arbitrage 4, contre la recommandation)** : **facultatives,
+  pour les quatre verdicts**. Une pièce par ligne désigne **soit** une ligne
+  de résultat de biologie, **soit** une réponse de questionnaire du même
+  dossier — une contrainte en base exige l'une et exclut l'autre —, par une
+  vraie clé, en `RESTRICT`. À la pose, une pièce de biologie est la tête de
+  son fil et n'est pas annulée ; une pièce de questionnaire n'est pas
+  invalidée. Les pièces s'écrivent avec leur constat, dans la même
+  transaction ; un retrait n'en porte aucune. Aucune autre nature de pièce
+  (traitement, donnée physiologique) sans décision et migration.
+
+**§3 — Les verdicts et les motifs (arbitrages 2 et 3).** Quatre verdicts,
+cadrés sur **ce que le praticien décide du besoin**, jamais sur l'état du
+patient : `a_soutenir` « à soutenir » (le praticien retient ce besoin comme
+cible d'accompagnement), `non_retenu` « non retenu », `non_evaluable`
+« non évaluable », `sans_objet` « sans objet ». **Hors `a_soutenir`, un
+motif est obligatoire**, pris dans une liste fermée ; la base refuse un
+motif qui n'appartient pas à son verdict :
+
+| verdict | code | libellé affiché |
+|---|---|---|
+| `non_retenu` | `non_ressorti_entretien` | l'entretien ne fait pas ressortir ce besoin |
+| `non_retenu` | `autre_besoin_d_abord` | un autre besoin est travaillé d'abord |
+| `non_retenu` | `deja_accompagne` | ce besoin est déjà accompagné par ailleurs |
+| `non_evaluable` | `non_aborde` | ce besoin n'a pas encore été abordé |
+| `non_evaluable` | `piece_attendue_manquante` | une pièce attendue manque |
+| `non_evaluable` | `donnee_a_verifier` | la fiabilité d'une information est à contrôler |
+| `sans_objet` | `hors_population` | le patient est hors de la population visée |
+| `sans_objet` | `question_ne_se_pose_plus` | la question ne se pose plus pour ce patient |
+| les trois | `autre` | autre motif |
+
+Un constat `a_soutenir` ne porte pas de motif. La **note** est facultative,
+**obligatoire avec `autre`**, 2000 caractères au plus, jamais réduite à des
+espaces ; l'écran dit « ne recopiez aucune valeur » — la base ne peut pas le
+vérifier. Écartés : « satisfait », « couvert », « déficitaire »,
+« carence », « normal », « anormal » (ils jugent un état ou posent un
+diagnostic, DC-31, [[D-157]] §3). Un motif neuf exige une décision et une
+migration. « Un autre besoin est travaillé d'abord » dit un choix du
+praticien, pas une règle d'ordre entre besoins : aucune n'est signée.
+
+**§4 — La validité.** Comme en [[D-331]] §4 : aucune durée inventée ; le
+praticien **peut** poser une date « à revoir le », postérieure au jour,
+affichée « fixée par le praticien » (DC-19, DC-20). Sans date, le constat
+tient jusqu'à son remplacement, son retrait ou l'un des événements du §5.
+
+**§5 — « À relire », dérivé à la lecture, jamais écrit.** Un constat posé
+se dit « à relire » dès que l'une de ces conditions tient ; il n'est jamais
+réécrit, et seul un nouveau constat ou un retrait en sort :
+
+1. les conditions 1 à 5 de [[D-331]] §5, précisions du 2026-10-20
+   comprises, quand le constat porte des pièces : pièce de biologie
+   corrigée ou annulée, nouveau prélèvement d'un analyte cité, passation
+   retenue plus récente d'un questionnaire cité, pièce de questionnaire
+   invalidée ;
+2. la date « à revoir le » est **atteinte** ;
+3. le besoin **porte une source de score** (`BESOIN_SOURCES` non vide) :
+   le constat reste lisible, et la route refuse toute nouvelle pose sur ce
+   besoin.
+
+Une condition levée rend au constat son état, sans geste. L'écran dit
+quelle condition tient, sans jamais dire une valeur.
+
+**§6 — Qui le lit.** Le praticien du dossier seul pose, retire et lit, au
+cockpit. Le besoin reste affiché « non mesuré » (6, 7, 11) ou « hors
+score » (2) : un constat n'est pas une mesure et n'entre dans aucun compte
+de besoins mesurés. Une règle aval ne peut lire un constat sur un besoin
+que par sa propre décision et ses claims ([[D-338]] §5, [[D-331]] §6) ;
+aucune n'est écrite. Aucun code ne déduit un constat d'une valeur ou d'un
+score.
+
+**§7 — Aucune valeur.** Aucune colonne ne recopie une valeur, une unité,
+un analyte, un score ou une date de prélèvement : ils se lisent sur la
+pièce, par sa clé. Un **contrat SQL négatif propre** aux deux tables, joué
+au CI, les éprouve.
+
+**§8 — Drapeau, effacement, RGPD.** Le drapeau `WN_CONSTAT_BESOIN` naît
+avec le code qui le lit, éteint, fail-closed ; sa pose est un geste daté
+([[D-081]]). L'effacement d'un dossier vide les pièces, puis les constats,
+**avant** les réponses de questionnaire et les résultats qu'ils désignent,
+nommément (`effacerDossier`), et le banc de complétude de l'effacement les
+compte. Déclaration au dossier RGPD avant la table, comme J3-collecte
+([[D-330]]), validée par le responsable avant le merge de la migration.
+
+**§9 — Exécution.** Deux PR ([[D-266]] §11). D'abord la migration seule,
+avec son effacement nommé, son contrat négatif et son banc : PR relue,
+release-db approuvée, sentinelle et constat par conteneur ([[D-087]]) ;
+une release-db à la fois ([[D-248]]). Puis le code consommateur (route,
+lecture, écran au cockpit), sous `WN_CONSTAT_BESOIN`, seulement après ce
+constat. L'emplacement de l'écran se décide avec la PR 2, hors des
+panneaux que J1-cockpit-a et les lots Q2 à Q4 de [[D-333]] retouchent.
+
+**§10 — Hors de ce lot.** Ce qu'il faut constater pour chaque besoin (ses
+pièces attendues, sa population) : au dossier de preuve du besoin, qui le
+remplit ([[D-338]] §4). Toute règle aval qui lit un constat (§6). Toute
+surface patient. Toute proposition de constat par l'IA.
+
+- Conséquences : fragment `changelog.d/2026-10-23-d347-constat-besoin.md` ;
+  paragraphe du dossier RGPD ; fiche H84 du plan ; puis la PR de migration
+  seule.
+
 ### D-346 — L'encart « quand ralentir ou demander avis » (bd) passe dès qu'il est prêt, après la place 5, sans attendre les places 7 à 11 (amende D-288 §3)
 
 - Date : 2026-10-23
