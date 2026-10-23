@@ -91,6 +91,7 @@ import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePane
 import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPanel';
 import { PhysioTraitementsPanel } from '@/components/physio-traitements/PhysioTraitementsPanel';
 import { DecisionsParcoursPanel } from '@/components/decisions-parcours/DecisionsParcoursPanel';
+import { ConstatsBesoinPanel } from '@/components/besoins/ConstatsBesoinPanel';
 import { PropositionBilanSection } from '@/components/biologie/PropositionBilanSection';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -453,6 +454,7 @@ export function FichePatientPanel({
   lienMagiqueActif = false,
   physioTraitementsActif = false,
   decisionsParcoursActif = false,
+  constatBesoinActif = false,
 }: {
   idPatient: string;
   /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
@@ -477,6 +479,9 @@ export function FichePatientPanel({
   /** Drapeau `WN_DECISIONS_PARCOURS` ([[D-343]] §11), lu au serveur par la page :
    *  éteint, le tiroir des décisions de parcours n'existe pas. */
   decisionsParcoursActif?: boolean;
+  /** Drapeau `WN_CONSTAT_BESOIN` ([[D-347]] §8), lu au serveur par la page :
+   *  éteint, l'onglet « Besoins » ne porte pas le bloc des constats. */
+  constatBesoinActif?: boolean;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -2754,6 +2759,7 @@ export function FichePatientPanel({
       {/* ------------------------------ Onglets in-fiche ------------------- */}
       <div role="tabpanel" id="panneau-besoins" aria-labelledby="onglet-besoins" hidden={ongletActif !== 'besoins'}>
         {ongletActif === 'besoins' && <DetailBesoinsPanel idPatient={idPatient} enteteMasquee />}
+        {ongletActif === 'besoins' && constatBesoinActif && <ConstatsBesoinPanel idPatient={idPatient} />}
       </div>
 
       <div role="tabpanel" id="panneau-alimentation" aria-labelledby="onglet-alimentation" hidden={ongletActif !== 'alimentation'}>
