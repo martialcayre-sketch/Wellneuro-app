@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { TrajectoirePanel } from './TrajectoirePanel';
+import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 
 afterEach(cleanup);
 
@@ -756,6 +757,53 @@ describe('TrajectoirePanel — re-passation ciblée (LOT-07, D-058)', () => {
 
     expect(await screen.findByText('Dossier clos.')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Réessayer l’ajout' })[0]).toBeTruthy();
+  });
+
+  // D-338 §3 : une priorité POSÉE cible les besoins que le praticien a cochés,
+  // et le bloc le dit — un choix du praticien ne se présente pas comme une
+  // dérivation du moteur.
+  it('cible les besoins visés par le praticien, et dit d’où vient la cible', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ok: true }) })));
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[]}
+        besoinsVisesPraticien={[4]}
+      />,
+    );
+    expect(screen.getByText(/Re-passation ciblée — jalon J21/)).toBeTruthy();
+    expect(screen.getByText(/Instruments des besoins que vous avez visés en posant la priorité/)).toBeTruthy();
+    expect(screen.queryByText(/Instruments visés par la priorité du protocole/)).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Ajouter à la file d’envoi' })).toHaveLength(
+      questionnairesCiblesPourPriorite([4]).length,
+    );
+  });
+
+  it('garde le texte du moteur quand la cible vient d’un candidat', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ok: true }) })));
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[4]}
+      />,
+    );
+    expect(screen.getByText(/Instruments visés par la priorité du protocole/)).toBeTruthy();
+  });
+
+  it('aucun bloc quand les besoins visés n’ont aucun questionnaire à re-passer', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ok: true }) })));
+    expect(questionnairesCiblesPourPriorite([6])).toEqual([]);
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[]}
+        besoinsVisesPraticien={[6]}
+      />,
+    );
+    expect(screen.queryByText(/Re-passation ciblée/)).toBeNull();
   });
 
   it('aucun bloc sans priorité fondée — jamais « le pack entier » à la place', () => {

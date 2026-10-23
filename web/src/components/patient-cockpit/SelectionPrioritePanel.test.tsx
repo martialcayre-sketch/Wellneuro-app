@@ -3,6 +3,8 @@ import { fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SelectionPrioritePanel } from './SelectionPrioritePanel';
 import type { DecisionCard, DecisionPriorityCandidate } from '@/lib/clinical-engine/types';
+import { BESOINS } from '@/lib/equilibre/constants';
+import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 
 function candidat(over: Partial<DecisionPriorityCandidate> = {}): DecisionPriorityCandidate {
   return {
@@ -120,6 +122,35 @@ describe('SelectionPrioritePanel', () => {
     fireEvent.change(ecran.getByLabelText(/Pourquoi cette priorité/), { target: { value: 'Motif.' } });
     fireEvent.click(ecran.getByRole('button', { name: 'Retenir cette priorité' }));
     expect(onRetenir).toHaveBeenCalledWith({ prioriteLibre: { domaine: 'moral', libelle: 'Apaiser les soirées' } }, 'Motif.');
+  });
+
+  // D-338 §3 : LES DOUZE BESOINS SONT OFFERTS (arbitrage du 2026-10-22), et
+  // l'effet de chaque case se lit avant de cocher — la mention suit le calcul
+  // même de la re-passation, pas une liste recopiée.
+  it('offre les douze besoins, dit lesquels n’ont rien à re-passer, et transmet les cochés rangés', () => {
+    const { ecran, onRetenir } = rendre({ priorityCandidates: [], proposedMainPriorityId: null });
+    const sansRepassation = BESOINS.filter(besoin => questionnairesCiblesPourPriorite([besoin.id]).length === 0);
+    expect(sansRepassation.length).toBeGreaterThan(0);
+    expect(sansRepassation.length).toBeLessThan(12);
+    expect(ecran.getAllByRole('checkbox')).toHaveLength(12);
+    for (const besoin of BESOINS) {
+      const etiquette = ecran.getByText(besoin.libellePraticien).closest('label');
+      expect(etiquette?.textContent?.includes('Aucun questionnaire à re-passer pour ce besoin.'))
+        .toBe(sansRepassation.includes(besoin));
+    }
+    fireEvent.change(ecran.getByLabelText(/Domaine/), { target: { value: 'moral' } });
+    fireEvent.change(ecran.getByLabelText(/Libellé de la priorité/), { target: { value: 'Retrouver du lien' } });
+    const caseDe = (id: number) => ecran.getByText(BESOINS[id - 1].libellePraticien).closest('label')!.querySelector('input')!;
+    fireEvent.click(caseDe(12));
+    fireEvent.click(caseDe(9));
+    fireEvent.click(caseDe(4));
+    fireEvent.click(caseDe(4));
+    fireEvent.change(ecran.getByLabelText(/Pourquoi cette priorité/), { target: { value: 'Motif.' } });
+    fireEvent.click(ecran.getByRole('button', { name: 'Retenir cette priorité' }));
+    expect(onRetenir).toHaveBeenCalledWith(
+      { prioriteLibre: { domaine: 'moral', libelle: 'Retrouver du lien', besoinsVises: [9, 12] } },
+      'Motif.',
+    );
   });
 
   it('dit ce qui manque, et pourquoi cela bloque le protocole', () => {
@@ -283,6 +314,35 @@ describe('SelectionPrioritePanel', () => {
       expect(ecran.getByText('Retrouver un sommeil réparateur')).toBeTruthy();
       expect(ecran.getByText(/Priorité posée par le praticien — Sommeil \/ insomnie/)).toBeTruthy();
       expect(ecran.getByText('Le patient le place en tête.')).toBeTruthy();
+    });
+
+    it('relit ses besoins visés, et les reprend cochés quand on la change', () => {
+      const { ecran } = rendre({
+        ...retenue,
+        selectedMainPriority: { ...retenue.selectedMainPriority, libre: { ...libre, besoinsVises: [5, 9] } },
+      });
+      expect(ecran.getByText(
+        `Besoins visés : ${BESOINS[4].libellePraticien} · ${BESOINS[8].libellePraticien}`,
+      )).toBeTruthy();
+      fireEvent.click(ecran.getByRole('button', { name: 'Retenir une autre priorité' }));
+      const coches = ecran.getAllByRole('checkbox').filter(entree => (entree as HTMLInputElement).checked);
+      expect(coches).toHaveLength(2);
+    });
+
+    it('dit, à la relecture, quel besoin visé n’a rien à re-passer', () => {
+      const sansRepassation = BESOINS.find(besoin => questionnairesCiblesPourPriorite([besoin.id]).length === 0)!;
+      const { ecran } = rendre({
+        ...retenue,
+        selectedMainPriority: { ...retenue.selectedMainPriority, libre: { ...libre, besoinsVises: [sansRepassation.id] } },
+      });
+      expect(ecran.getByText(
+        `Besoins visés : ${sansRepassation.libellePraticien} (aucun questionnaire à re-passer)`,
+      )).toBeTruthy();
+    });
+
+    it('prévient, avant le geste, que les modifier après diffusion oblige à rediffuser', () => {
+      const { ecran } = rendre({ priorityCandidates: [], proposedMainPriorityId: null });
+      expect(ecran.getByText(/oblige à le\s+diffuser de nouveau/)).toBeTruthy();
     });
 
     it('la changer repart du domaine et du libellé écrits', () => {

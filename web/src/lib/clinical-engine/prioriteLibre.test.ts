@@ -3,7 +3,10 @@ import { ABSTENTION_PROCEDURE_V1 } from '../clinical/priorityRulesV1';
 import { Q_MOD_03 } from '../questionnaires/mode-de-vie';
 import type { DecisionPriorityCandidate } from './types';
 import {
+  BESOINS_VISABLES,
   DOMAINES_PRIORITE_LIBRE,
+  canoniserBesoinsVises,
+  estBesoinsVisesCanoniques,
   estDomainePrioriteLibre,
   estIdentifiantPrioriteLibre,
   isPrioriteLibreOuverte,
@@ -62,6 +65,44 @@ describe('prioriteLibre (D-279)', () => {
     expect(identifiantPrioriteLibre({ domaine: 'sommeil', libelle: 'Dormir mieux' })).not.toBe(id);
     expect(estIdentifiantPrioriteLibre(id)).toBe(true);
     expect(estIdentifiantPrioriteLibre('priority:PRIO-SOM-01')).toBe(false);
+  });
+
+  // LES BESOINS VISÉS ([[D-338]] §3) : les douze, et pas un de plus — la
+  // migration les borne de la même façon (CHECK `besoins_vises_bornes_check`).
+  it('offre les douze besoins, de 1 à 12', () => {
+    expect([...BESOINS_VISABLES]).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it('range les besoins visés transmis, et refuse ce qui ne se lit pas', () => {
+    expect(canoniserBesoinsVises(undefined)).toEqual([]);
+    expect(canoniserBesoinsVises(null)).toEqual([]);
+    expect(canoniserBesoinsVises([])).toEqual([]);
+    expect(canoniserBesoinsVises([12, 2, 6])).toEqual([2, 6, 12]);
+    expect(canoniserBesoinsVises([6, 6])).toBeNull();
+    expect(canoniserBesoinsVises([0])).toBeNull();
+    expect(canoniserBesoinsVises([13])).toBeNull();
+    expect(canoniserBesoinsVises([2.5])).toBeNull();
+    expect(canoniserBesoinsVises(['4'])).toBeNull();
+    expect(canoniserBesoinsVises([null])).toBeNull();
+    expect(canoniserBesoinsVises('4')).toBeNull();
+    expect(canoniserBesoinsVises({ 0: 4 })).toBeNull();
+  });
+
+  // LA FORME CONSIGNÉE : celle que la carte accepte. `[]` n'en est pas une —
+  // aucun besoin visé, c'est la clé absente.
+  it('ne tient pour canonique qu’une liste non vide, connue, strictement croissante', () => {
+    expect(estBesoinsVisesCanoniques([4])).toBe(true);
+    expect(estBesoinsVisesCanoniques([2, 6, 7, 10, 11, 12])).toBe(true);
+    expect(estBesoinsVisesCanoniques([])).toBe(false);
+    expect(estBesoinsVisesCanoniques([6, 2])).toBe(false);
+    expect(estBesoinsVisesCanoniques([6, 6])).toBe(false);
+    expect(estBesoinsVisesCanoniques([0, 4])).toBe(false);
+    expect(estBesoinsVisesCanoniques(undefined)).toBe(false);
+  });
+
+  it('laisse les besoins visés hors de l’identifiant : les changer n’est pas un pivot', () => {
+    const sans = identifiantPrioriteLibre({ domaine: 'moral', libelle: 'Retrouver du lien' });
+    expect(identifiantPrioriteLibre({ domaine: 'moral', libelle: 'Retrouver du lien', besoinsVises: [12] })).toBe(sans);
   });
 
   // LA PRIORITÉ POSÉE PASSE SOUS TOUTE ABSTENTION SANS CONSTAT DE SÉCURITÉ —

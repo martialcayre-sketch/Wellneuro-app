@@ -7,6 +7,7 @@ import { teteDuFil } from '@/lib/clinical-engine/selectionPrioritePrisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import {
   LIBELLE_PRIORITE_LIBRE_MAX,
+  canoniserBesoinsVises,
   estDomainePrioriteLibre,
   normaliserLibellePrioriteLibre,
   type PrioriteLibre,
@@ -52,7 +53,7 @@ type PostBody = {
   decisionCard?: DecisionCard;
   candidateId?: string;
   /** La priorité POSÉE PAR LE PRATICIEN ([[D-279]]) — exclusive de `candidateId`. */
-  prioriteLibre?: { domaine?: unknown; libelle?: unknown };
+  prioriteLibre?: { domaine?: unknown; libelle?: unknown; besoinsVises?: unknown };
   rationale?: string;
 };
 
@@ -159,7 +160,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       // non vide, borné, et sans registre anxiogène : c'est l'intitulé que le
       // patient lira seul en tête de son protocole. L'identifiant se dérive
       // ICI, jamais à l'écran.
-      const { domaine, libelle } = body.prioriteLibre ?? {};
+      const { domaine, libelle, besoinsVises } = body.prioriteLibre ?? {};
       if (!estDomainePrioriteLibre(domaine)) {
         return echec('domaine_inconnu', 'Choisissez un domaine dans la liste.', 422);
       }
@@ -178,7 +179,14 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           422,
         );
       }
-      libre = { domaine, libelle: libelleNormalise };
+      // LES BESOINS VISÉS ([[D-338]] §3) : facultatifs, pris parmi les douze,
+      // chacun une fois — rangés ici, refusés s'ils ne se lisent pas. Ils
+      // n'entrent pas dans l'identifiant : seul le libellé le fait.
+      const besoins = canoniserBesoinsVises(besoinsVises);
+      if (besoins === null) {
+        return echec('besoins_invalides', 'Les besoins visés se choisissent parmi les douze besoins, chacun une fois.', 422);
+      }
+      libre = { domaine, libelle: libelleNormalise, ...(besoins.length > 0 ? { besoinsVises: besoins } : {}) };
       candidateId = identifiantPrioriteLibre(libre);
     } else {
       candidateId = body.candidateId as string;
@@ -245,7 +253,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           decisionCardInputHash: decisionCard.inputHash,
           candidateId,
           rationale,
-          ...(libre ? { domaineLibre: libre.domaine, libelleLibre: libre.libelle } : {}),
+          ...(libre
+            ? { domaineLibre: libre.domaine, libelleLibre: libre.libelle, besoinsVises: libre.besoinsVises ?? [] }
+            : {}),
           // `selectedAt` reste le défaut de la base : le client ne date pas son
           // propre acte.
           selectedByEmail: emailPraticien(session) ?? '',

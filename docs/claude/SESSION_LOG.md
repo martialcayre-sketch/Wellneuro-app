@@ -11356,6 +11356,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge.
 
 **Ouvert.** Rubrique 4 des mineurs : avis de l'avocat (D-344).
+## 2026-10-23 — t39 : besoins visés de la priorité libre, code (D-338 §3)
+
+**Fait.** Release-db 39920257712 approuvée : sentinelle, `migrate status` à jour, colonne et trois CHECK constatés par conteneur. Code : douze cases au formulaire (mention des besoins sans questionnaire), route (422 `besoins_invalides`), carte (clé absente si vide), lecture Prisma, re-passation par canal distinct des `needIds`.
+
+**Écarté.** Mêler les besoins saisis aux `needIds` signés (revue de #1652) ; les montrer au portail ou aux assiettes (D-338 §3).
+
+**Prochaine action.** T3, wn-reviewer, PR, CI, CodeRabbit, merge ; t39 « fait » au suivi.
+
+**Ouvert.** t40 s'ouvre après le constat de t39.
 
 ## 2026-10-23 — BP-13 : clôture relue sous le verrou
 
