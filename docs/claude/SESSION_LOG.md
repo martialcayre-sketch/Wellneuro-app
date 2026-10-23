@@ -11365,3 +11365,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** T3, wn-reviewer, PR, CI, CodeRabbit, merge ; t39 « fait » au suivi.
 
 **Ouvert.** t40 s'ouvre après le constat de t39.
+
+## 2026-10-23 — BP-15 : libellés du retrait et de la révision
+
+**Fait.** Les deux P2 de la relecture de #1650, routés au responsable, arbitrés le 2026-10-23 : « Retirer (posée par erreur) » devient « Retirer » (il sert aussi au refus levé, D-343 §5), avec une confirmation en ligne avant l'envoi ; « Corriger la révision » devient « Changer la révision » (§6). Test de composant : « Annuler » n'envoie rien, « Confirmer » envoie le retrait.
+
+**Écarté.** Deux boutons distincts (même geste en base, motif non conservé) ; `window.confirm` (dialogue bloquant).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis brouillon de la lettre cm en session neuve.
+
+**Ouvert.** Allumage BP-15 : test d'intégration sur vraie base, information du patient avant BP-21a.
