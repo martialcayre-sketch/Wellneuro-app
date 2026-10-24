@@ -11590,3 +11590,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — t43 : le mode consultation, écran partagé sans chiffre (D-354)
+
+**Fait.** D-354 écrite à partir des huit arbitrages du jour : la fiche pose un contexte `ChiffresMasques`, et pourcentages des 12 besoins, indice et repères, momentum, scores, interprétations, plainte « x/10 » et valeurs biologiques cèdent la place à « masqué en mode consultation » ; seuls le cockpit et les 12 besoins restent. Bancs E2E à valeurs sentinelles, unitaires de la fiche et des cercles. Revue medium : deux corrigés, six écartés avec motif.
+
+**Écarté.** Démonter les onglets gardés montés (perte du brouillon) ; une étiquette qualitative à la place des valeurs (aucun seuil signé).
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t43 « fait » sur la page de la file A.
+
+**Ouvert.** Interprétations et motifs du moteur masqués, agendas et physio laissés visibles : à confirmer par le responsable.

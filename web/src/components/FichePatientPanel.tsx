@@ -654,6 +654,11 @@ export function FichePatientPanel({
     setModeConsultationActif(true);
     if (!ONGLETS_CONSULTATION.includes(ongletActif)) setOngletActifBrut('cockpit');
   };
+  // Filet : un rappel retenu d'un rendu antérieur au mode (sa garde lisait
+  // encore le mode éteint) ne laisse pas un onglet masqué ouvert.
+  useEffect(() => {
+    if (modeConsultationActif && !ONGLETS_CONSULTATION.includes(ongletActif)) setOngletActifBrut('cockpit');
+  }, [modeConsultationActif, ongletActif]);
   // L'onglet actif se MÉMORISE comme la phase (par patient, en localStorage,
   // audit 2026-09-02) : après un aller-retour hors de la fiche, le praticien
   // retrouve l'onglet qu'il consultait. Le deep-link `?onglet=` prime
@@ -2805,7 +2810,9 @@ export function FichePatientPanel({
                 onFixtureReviewed={relectureErgo}
                 phase={phaseCourante.runtime ?? 'aucune'}
                 onAjusterProtocole={() => setPhaseActive('actions')}
-                onOuvrirTrajectoire={() => {
+                // Sans rappel, le runtime ne rend pas le bouton : en mode
+                // consultation, la Trajectoire est un onglet masqué ([[D-354]] §4).
+                onOuvrirTrajectoire={modeConsultationActif ? undefined : () => {
                   setOngletActif('trajectoire');
                   requestAnimationFrame(() => document.getElementById('panneau-trajectoire')?.focus());
                 }}
