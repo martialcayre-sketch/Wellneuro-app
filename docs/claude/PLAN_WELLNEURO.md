@@ -1491,6 +1491,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : celle de cm ; passe Codex.
 - **Critère de fin** : migration constatée, 0 lien ; contrat SQL négatif (axe inconnu, lien sans claim refusés) ; T3.
 - **Mise à jour (2026-10-23)** : préalable cm levé (D-348). Liste des dix codes : D-348 §2. Avant la migration, relire en production les cinquante fondateurs (D-348 §7).
+- **Mise à jour (2026-10-24)** : cinquante fondateurs relus en production, tous conformes ; 0 lien. Migration `20261024100000_biology_axes_liste_fermee_v1` (CHECK seul) et contrat négatif `biology_axes_v1_negatif.sql`, dans leur PR. Reste : release-db approuvée, puis constat par conteneur (contrainte en place, 0 lien). Ouvre F79.
 
 #### F58 · Statut posé et deux marques datées
 - **Identifiant, piste** : le mot du responsable près de la valeur, daté, à l'écran du responsable seul, jamais calculé ; socle.

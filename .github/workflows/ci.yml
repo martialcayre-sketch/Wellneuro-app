@@ -727,6 +727,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
 
+      # Référentiel d'axes biologiques (F52, D-348 §2) : la cible `axe` est
+      # fermée sur les dix codes signés, ni plus ni moins ; un axe inconnu et
+      # un lien sans claim sont refusés pour le bon motif, les dix codes
+      # entrent. Transaction annulée.
+      - name: F52 biology axes negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/biology_axes_v1_negatif.sql
+
       # Journal des gestes NABM en ajout seul et constat « aucun acte » (M-3c,
       # F54) : forme de chaque acte, journal figé, exclusion signature ↔
       # constat, millésime vu vérifié, et aucune signature ni constat sans
