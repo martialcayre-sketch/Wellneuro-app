@@ -11458,3 +11458,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; drapeau sur accord du responsable, puis constat (D-349 §4) ; page de la file C.
 
 **Ouvert.** Aperçu du protocole au cockpit sans l'encart ; gêne liée à un geste de vie routée par le libellé « produit ».
+## 2026-10-24 — t41 : la re-passation ciblée atteignable au jalon dû
+
+**Fait.** Au jalon de mesure, la route cockpit joint à `proposal_required` la cible de re-passation (`needIds`, `besoinsVises`), tirée du rejeu de la carte de l'ancre courante (`lireSelectionPriorite`, repli `construireChaineC1Tolerante`). Une dérivation pure est partagée avec l'écran (`besoinsDeRepassation`), et le rejeu est factorisé. Aucune migration, rien de clinique. wn-reviewer : GO avec réserves, P2-1 corrigée, P1 documentée et figée par un banc.
+
+**Écarté.** Relire l'épisode de l'ancre sans repasser par sa proposition : la cible divergerait de l'écran de l'ancre.
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t41 « fait » au suivi de la file A.
+
+**Ouvert.** Rejeu des ancres `T1+` cassé par une passation postérieure (D-118, antérieur au lot), à router par le responsable ; Q1 (cible du J42 après la confirmation du J21).
