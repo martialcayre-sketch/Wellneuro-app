@@ -4,6 +4,50 @@
 
 ## Décisions actives
 
+### D-350 — t42 : une ancre de cycle rouvert déjà posée se date sur sa propre ligne, et non plus sur la réponse la plus récente (amende le cas 3 de `dateDeReference` ; applique D-118 et D-129)
+
+- Date : 2026-10-24
+- Statut : accepté. Le responsable l'a arbitré le 2026-10-24 par une question
+  à options (« corriger en lot t42 », option recommandée), sur un scénario
+  daté : un `T1` confirmé le 1er novembre, un questionnaire le 5, puis la
+  fiche qui redemande de confirmer le `T1` le 6. Décision rédigée par
+  l'assistant à partir de ce choix, à la demande de la revue CodeRabbit de
+  #1673 : `runtimeFromPrisma.ts` est un chemin clinique, et la date de
+  l'ancre commande la fenêtre des réponses proposées.
+- Domaine : file A du plan, ligne t42 ; `proposeRuntimeEpisode`
+  (`web/src/lib/clinical-engine/runtimeFromPrisma.ts`) et la route cockpit.
+- Applique : [[D-118]] (un épisode confirmé se rejoue) ; [[D-129]] (une
+  re-confirmation ne réécrit ni `confirmedAt` ni `targetAt`, c'est-à-dire la
+  géométrie de la fenêtre posée avec l'acte). Amende le cas 3 de la date de
+  référence, né avec [[D-113]].
+- **Ne touche pas** :
+  - aucune règle, aucun seuil, aucune tolérance de fenêtre (±8 j), aucun mode
+    d'inclusion ;
+  - `T0`, toujours daté sur la première réponse du dossier ;
+  - l'ouverture d'un cycle neuf, toujours datée sur la réponse la plus
+    récente ;
+  - les jalons de mesure ;
+  - aucune migration.
+
+**§1 — La règle.** Une ancre de rang 1 ou plus (`T1`, `T2`…) déjà confirmée
+se date sur le `targetAt` de sa ligne en base. Celle qui n'est pas encore
+posée se date comme avant, sur la réponse la plus récente. La même date sert
+au GET, au POST et à la cible de re-passation (t41). En lecture datée, une
+ligne confirmée après la date lue est ignorée.
+
+**§2 — Motif.** « La réponse la plus récente » choisit l'instant d'une
+ouverture. Une fois l'acte confirmé, cet instant est le sien, et D-129
+interdit déjà de le réécrire. Recalculé à chaque passation, il déplaçait la
+date de l'acte. L'épisode ne se rejouait plus, la fiche redemandait de
+confirmer un `T1` déjà confirmé, et la re-passation du deuxième cycle perdait
+sa cible. C'est un défaut démontré dans le code (revue `wn-reviewer` de
+#1670), sans occurrence observée.
+
+**§3 — Effet constaté.** Seule la proposition de re-confirmation d'un `T1`
+déjà posé change : sa fenêtre reste centrée sur la date de l'acte, et une
+passation reçue ensuite hors de ±8 j appartient au jalon suivant. Constat
+par conteneur du 2026-10-24 sur les ancres `T1+` : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
+
 ### D-349 — bd : l'encart « quand ralentir ou demander avis » — texte du responsable accepté, servi à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, fermé à la livraison (H71 ; applique D-346 §2 et D-288 §1)
 
 - Date : 2026-10-23

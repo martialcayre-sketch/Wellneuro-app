@@ -1704,7 +1704,12 @@ trace du dépôt reste — date et empreinte ([[D-318]] §2).
   BIO-INGEST : « Des copies peuvent en subsister jusqu'à 12 mois après sa
   suppression dans les sauvegardes de notre hébergeur, qui ne servent qu'à
   rétablir le service en cas d'incident ; elles s'effacent ensuite
-  d'elles-mêmes. » Le reste de la v13 est inchangé.
+  d'elles-mêmes. » Le reste de la v13 est inchangé. **Ce qui reste après
+  [[D-318]] est déclaré par la v20 du 2026-10-24** (accusé exigé), reprise
+  par les conditions d'utilisation v3 ([[D-292]] §5) : la v12 disait garder
+  « valeurs relevées et décisions » ; la v20 dit la date du dépôt,
+  l'empreinte, la trace de lecture de chaque valeur validée, et l'effacement
+  des autres. Texte validé par le responsable le même jour.
 - **État** : migration appliquée et constatée par conteneur le 2026-10-02
   (PR 1, #1286) ; la décision qui purge, la relance refusée et le cron
   (`npm run bio:purge-echeance`, chaque heure) arrivent avec le code

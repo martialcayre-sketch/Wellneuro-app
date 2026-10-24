@@ -1706,6 +1706,43 @@ const DONNEES_CONFIDENTIALITE_V19: VersionDocumentTrust = {
   hash: '9db51777008adfc2388d13290962d3a6005bf2e47c3c99221f18f8dc28860491',
 };
 
+// LA v20 DIT CE QUI RESTE D'UN COMPTE RENDU APRÈS SA LECTURE ([[D-318]], b25
+// du plan). La v12 annonçait que l'on garde « la trace de sa lecture : outil
+// utilisé, valeurs relevées et décisions » ; depuis la purge à 30 jours, les
+// valeurs écartées ou restées sans décision sont effacées, et seule reste la
+// trace des valeurs validées (`purge.ts`, `effacerNonValide`). Une phrase
+// change, rien d'autre. Texte validé par le responsable le 2026-10-24. Accusé
+// EXIGÉ pour le motif de la v17 : seule la version courante en réclame un.
+const PHRASE_TRACE_LECTURE_V12 =
+  'Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.';
+const PHRASE_TRACE_LECTURE_V20 =
+  'Pour savoir d’où vient chaque résultat, nous conservons la date du dépôt et une empreinte du document, qui ne permet pas de le reconstituer. Pour chaque valeur validée, nous gardons aussi la trace de sa lecture : l’outil utilisé et la décision de votre praticien. Les valeurs écartées ou restées sans décision sont effacées au plus tard 30 jours après le dépôt, et aussitôt si votre praticien écarte le document.';
+
+const DONNEES_CONFIDENTIALITE_V20: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v20',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V19.sections.map(section =>
+    section.titre === 'Quelles données sont recueillies ?'
+      ? {
+          ...section,
+          paragraphes: section.paragraphes.map(paragraphe =>
+            paragraphe.replace(PHRASE_TRACE_LECTURE_V12, PHRASE_TRACE_LECTURE_V20),
+          ),
+        }
+      : section,
+  ),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Cette version précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
+  publieLe: '2026-10-24',
+  requiresAcknowledgement: true,
+  hash: '1c1f62005fad1f499103511e5b6431ac094715cb789e150622fedb2f0a77a4ee',
+};
+
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
 // d'information repris mot pour mot, dans leur version en vigueur au jour de
 // l'assemblage, puis une cinquième partie neuve. Texte validé par le
@@ -1837,6 +1874,38 @@ const CONDITIONS_UTILISATION_V2: VersionDocumentTrust = {
   hash: '05f3f39ba48a2ea15a0a119998719e7356ce4fb2362a66f3196b11f5c341b4ad',
 };
 
+// LES CONDITIONS v3 ([[D-292]] §5) : la partie 3 reprend « Vos données
+// personnelles » v20 ; les trois autres parties et la partie 5 sont celles de
+// la v2. Titre et résumé inchangés. Résumé du changement validé par le
+// responsable le 2026-10-24. Accusé par l'e-mail `conditions_utilisation@3`
+// (patients suivis, envoi en une fois par le responsable), par l'accueil
+// (nouveau patient majeur) ou au filet du dépôt du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V3: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V20 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V3: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v3',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V3.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V2.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie « Vos données personnelles » précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
+  publieLe: '2026-10-24',
+  requiresAcknowledgement: true,
+  hash: '453f2605d8b38d71e208815edd27bceb1d9ee18c6304a29f1b1892a5460e2343',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1860,6 +1929,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V17,
   DONNEES_CONFIDENTIALITE_V18,
   DONNEES_CONFIDENTIALITE_V19,
+  DONNEES_CONFIDENTIALITE_V20,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -1873,6 +1943,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONSENTEMENT_SUIVI_V3,
   CONDITIONS_UTILISATION_V1,
   CONDITIONS_UTILISATION_V2,
+  CONDITIONS_UTILISATION_V3,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

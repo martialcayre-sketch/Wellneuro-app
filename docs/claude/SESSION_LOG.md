@@ -11504,3 +11504,32 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
 
 **Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
+
+## 2026-10-24 — Outillage : sondage en boucle autorisé
+
+**Fait.** Sur autorisation du responsable (toutes sessions), bloc SONDAGE retiré de `block-risky-commands.mjs` ; bancs inversés (387 verts) ; CLAUDE.md et règle des PR alignés ; mémoire posée.
+
+**Écarté.** Passer la boucle en « demande » plutôt que la libérer : l'autorisation est définitive.
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Le garde d'isolation des worktrees (harness) refuse encore les boucles en ligne complexes : passer par un script.
+
+## 2026-10-24 — File D : « Vos données personnelles » v20 et conditions v3 (b25)
+
+**Fait.** H07 : outil mergé (#1676). b25 : la phrase de la v12 (« valeurs relevées et décisions » conservées) corrigée en v20 sur texte validé par le responsable ; les conditions étant ouvertes, D-292 §5 impose des conditions v3 (partie 3 = v20) et l'e-mail `conditions_utilisation@3`, tous deux validés en session. Bancs du registre et des gabarits mis à jour, textes figés mot pour mot. Dossier RGPD et plan (F44) mis à jour.
+
+**Écarté.** Différer b25 jusqu'au texte des durées (m17) : la v19 restait inexacte.
+
+**Prochaine action.** CI, CodeRabbit, merge ; envoi de l'e-mail des conditions v3 par le responsable s'il le décide ; constat H07 en conteneur dès le déploiement de #1676.
+
+**Ouvert.** Constat de la première purge après le 2026-11-02.
+## 2026-10-24 — t42 : un T1 confirmé ne redevient plus « à confirmer »
+
+**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Sans migration ; l'arbitrage est transcrit en D-350 (demande de CodeRabbit). wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
+
+**Écarté.** Modifier `lireAncresPersistees`, que lisent aussi portail, objectifs et check-ins ; dater `T0` sur sa ligne.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
+
+**Ouvert.** Rien dans le périmètre.

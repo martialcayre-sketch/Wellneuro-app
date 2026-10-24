@@ -179,9 +179,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 
 - Ouvrir la PR avec `--body-file` et un diff d'une seule finalité.
 - Attendre le CI en un seul appel bloquant, **en tâche de fond** :
-  `node scripts/wn-attendre-ci.mjs <N>` — puis attendre sa notification, sans
-  sonder (`gh pr checks`, `gh run`, `sleep` : un garde les refuse). L'attente
-  sert au fragment, au handoff ou à la relecture du lot en cours.
+  `node scripts/wn-attendre-ci.mjs <N>` — puis attendre sa notification.
+  Une boucle bornée reste permise pour la revue CodeRabbit ou un déploiement
+  (autorisation du responsable du 2026-10-24). L'attente sert au fragment, au
+  handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
 - **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
   des branches par délégation du responsable. Pas de merge avant une revue de
