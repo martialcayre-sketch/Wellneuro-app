@@ -24,6 +24,9 @@ puis aligner le snapshot.
   demande) : deux lots, J3-12g d'abord ; tout agenda clôturé est complet au
   snapshot ; réapprobation après déploiement, sans changement de version ;
   inventaire au dossier de proposition.
+- D-358 : D-357 a été pris par #1695 (lettre ap), mergée pendant la PR ;
+  fusion de `main` et renumérotation. #1691 porte D-356, déjà pris par t36 :
+  il devra passer à D-359.
 
 ## Fichiers modifiés
 
