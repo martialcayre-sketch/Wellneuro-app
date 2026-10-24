@@ -1013,7 +1013,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             etat: 'refuse',
             statut: 'version_illisible',
             motif: MOTIF_VERSION_ILLISIBLE,
-            populationDeclenche: false,
+            grossesseDeclenche: false,
             courrier: null,
           }
           : await apercuCourrierComplement(prisma, {
@@ -1032,7 +1032,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           etat: 'refuse',
           statut: 'lecture_impossible',
           motif: MOTIF_LECTURE_COMPLEMENT,
-          populationDeclenche: false,
+          grossesseDeclenche: false,
           courrier: null,
         };
         if (fiches) fiches = { ...fiches, jeton: 'lecture_impossible' };

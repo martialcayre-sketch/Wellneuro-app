@@ -120,7 +120,19 @@ Documentation :
       fenêtre étroite, documentée) ;
     - P2-8 (`courrierComplementRemis` dit « ce clic a remis ») ;
     - P2-9 (même patron que le courrier biologie).
-- **T3** (`test:worktree`) sur c847b10e : séquence complète verte en 8 min 17 s, 296 E2E passés. La passe Codex suit (voir prochaine action).
+- **T3** (`test:worktree`) sur c847b10e : séquence complète verte en 8 min 17 s, 296 E2E passés.
+- **CodeRabbit** sur fe81fdb1 : D-356 corrigée (`WN_FICHES_ASSIETTE` parmi les
+  conditions d'ouverture) ; matrice écartée avec motif, signalement retiré par
+  CodeRabbit. Sur 536bd66e : aucun commentaire ; la proposition de durcissement
+  (fenêtre de fraîcheur) est routée vers la condition 2 d'ouverture (lot 4).
+- **Codex** (P0) sur 536bd66e : BLOQUER, deux P1, corrigés :
+  - P1-1 : la consignation relit la date de naissance sous verrou. Bancs route
+    et Postgres (9 sur 9) ; contre-épreuve : sans le contrôle, les deux bancs
+    rougissent ;
+  - P1-2 : le libellé du destinataire est réservé à la grossesse (arbitrage du
+    responsable) ; banc de l'aperçu pour un allaitement seul.
+- **Numérotation** : D-355 prise par r3_13 (#1689) ; la décision du lot est
+  D-356 (fusion de main dans la branche).
 
 ## Problèmes ouverts
 
@@ -146,15 +158,12 @@ Documentation :
 
 ## Prochaine action exacte
 
-1. T3 fait (vert).
-2. Préparer le bloc `$wellneuro-pr-review` (Risque : P0) pour la passe Codex
-   manuelle du responsable.
-3. Ouvrir la PR (`--body-file`) et lancer `wn-attendre-ci` en fond.
-4. Lire CodeRabbit sur la tête et rendre un verdict sur chaque commentaire.
-5. Vérifier qu'aucun run `release-db` n'attend.
-6. Merger avec `--match-head-commit`. Aucune release-db n'est attendue.
-7. Vérifier que la première ligne de `scalingo deployments` est la tête de
+1. CI et CodeRabbit sur la tête qui porte les corrections Codex (PR #1691).
+2. Vérifier qu'aucun run `release-db` n'attend.
+3. Merger avec `--match-head-commit`. Aucune release-db n'est attendue.
+4. Vérifier que la première ligne de `scalingo deployments` est la tête de
    main.
+5. Ensuite, le lot 4 (portail).
 
 ## Interdits encore actifs
 

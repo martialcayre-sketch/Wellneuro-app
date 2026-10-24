@@ -79,6 +79,12 @@
     - transaction annulée sur refus du trigger ;
     - collation en casse mélangée ;
     - référence catalogue nulle.
+- Revue Codex (P0), deux P1 corrigés :
+  - la consignation relit la date de naissance sous le verrou du patient et
+    refuse un dossier devenu mineur, ou sans date, avant toute insertion
+    (bancs route et Postgres, contre-épreuve comprise) ;
+  - le libellé du destinataire de D-345 §7 ne s'affiche que pour la
+    grossesse, plus pour un allaitement seul (arbitrage du responsable).
 - Revue `wn-reviewer` : GO sous conditions, aucun P0.
   - Les deux P1 sont corrigés :
     - clôture posée ;

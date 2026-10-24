@@ -73,7 +73,7 @@ vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus: vi.fn(() =
 
 const { apercuCourrierComplement, remettreCourrierComplement } = vi.hoisted(() => ({
   apercuCourrierComplement: vi.fn(async (): Promise<ApercuCourrierComplement> => ({
-    etat: 'non_requis', statut: 'non_requis', motif: 'm', populationDeclenche: false, courrier: null,
+    etat: 'non_requis', statut: 'non_requis', motif: 'm', grossesseDeclenche: false, courrier: null,
   })),
   remettreCourrierComplement: vi.fn(async (): Promise<'remis' | 'deja_remis' | 'rien'> => 'remis'),
 }));
@@ -87,11 +87,11 @@ import { MOTIF_REMISE_REFUSEE, RemiseComplementRefusee } from '@/lib/corresponda
 import { GET, POST } from './route';
 
 const PART: ApercuCourrierComplement = {
-  etat: 'part', statut: 'requis', motif: 'part', populationDeclenche: true,
+  etat: 'part', statut: 'requis', motif: 'part', grossesseDeclenche: true,
   courrier: { idCorrespondance: 'corr_1', consigneLe: '2026-10-20T10:00:00.000Z' },
 };
 const MANQUANT: ApercuCourrierComplement = {
-  etat: 'manquant', statut: 'requis', motif: 'Un courrier au médecin est requis.', populationDeclenche: false, courrier: null,
+  etat: 'manquant', statut: 'requis', motif: 'Un courrier au médecin est requis.', grossesseDeclenche: false, courrier: null,
 };
 
 const lireGet = async () =>
@@ -155,7 +155,7 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
 
   it('refus de la garde (accord absent) : 409, motif de la garde', async () => {
     apercuCourrierComplement.mockResolvedValue({
-      etat: 'refuse', statut: 'accord_requis', motif: 'Accord requis.', populationDeclenche: true, courrier: null,
+      etat: 'refuse', statut: 'accord_requis', motif: 'Accord requis.', grossesseDeclenche: true, courrier: null,
     });
     const res = await cliquer('jeton');
     expect(res.status).toBe(409);
@@ -173,7 +173,7 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
   it('non requis, chemin des fiches fermé : le clic d’avant, sans remise', async () => {
     delete process.env.WN_FICHES_ASSIETTE;
     apercuCourrierComplement.mockResolvedValue({
-      etat: 'non_requis', statut: 'non_requis', motif: 'm', populationDeclenche: false, courrier: null,
+      etat: 'non_requis', statut: 'non_requis', motif: 'm', grossesseDeclenche: false, courrier: null,
     });
     const res = await cliquer('jeton');
     expect(res.status).toBe(200);

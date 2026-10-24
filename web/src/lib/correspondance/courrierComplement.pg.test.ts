@@ -165,7 +165,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     expect(liste.elements.some(e => e.split(':').length === 3)).toBe(true);
 
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du banc.'), ancrage: ANCRAGE, liste,
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du banc.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
     });
     expect(consigne.ok).toBe(true);
     if (!consigne.ok) return;
@@ -205,7 +205,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     expect(sansIngredient.ok).toBe(true);
     if (!sansIngredient.ok) return;
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, autre courrier.'), ancrage: ANCRAGE, liste: sansIngredient,
+      idPatient, donnees: donnees(idPatient, 'Docteur, autre courrier.'), ancrage: ANCRAGE, liste: sansIngredient, maintenantMs: Date.now(),
     });
     expect(consigne.ok).toBe(true);
     if (!consigne.ok) return;
@@ -233,6 +233,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
       idPatient,
       donnees: donnees(idPatient, 'Docteur, courrier refusé.'),
       ancrage: ANCRAGE,
+      maintenantMs: Date.now(),
       liste: {
         elements: desordre,
         sha256: sha(desordre.join('\n')),
@@ -247,7 +248,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du clic.'), ancrage: ANCRAGE, liste,
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
     });
     if (!consigne.ok) throw new Error('consignation');
     const entrees = {
@@ -268,7 +269,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier refusé au clic.'), ancrage: ANCRAGE, liste,
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier refusé au clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
     });
     if (!consigne.ok) throw new Error('consignation');
     // Une approbation dont la version ne porte AUCUN complément ciblé : le
@@ -317,7 +318,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     if (!liste.ok) throw new Error('fixture');
     expect(liste.elements.map(e => e.split(':')[0])).toEqual(['A-quatre', 'B-deux', 'a-trois', 'b-un']);
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, collation.'), ancrage: ANCRAGE, liste,
+      idPatient, donnees: donnees(idPatient, 'Docteur, collation.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
     });
     if (!consigne.ok) throw new Error('consignation');
     const remise = await prisma.courrierComplementRemise.createMany({
@@ -338,7 +339,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const forgee = listeComplementsCibles([action('ref-nulle', 'Référence nulle')], V4);
     if (!forgee.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, référence nulle.'), ancrage: ANCRAGE, liste: forgee,
+      idPatient, donnees: donnees(idPatient, 'Docteur, référence nulle.'), ancrage: ANCRAGE, liste: forgee, maintenantMs: Date.now(),
     });
     if (!consigne.ok) throw new Error('consignation');
     await expect(prisma.courrierComplementRemise.createMany({
@@ -360,9 +361,29 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier sans accord.'), ancrage: ANCRAGE, liste,
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier sans accord.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
     });
     expect(consigne.ok).toBe(false);
+    expect(await courriers(idPatient)).toBe(0);
+  });
+
+  it('devenu mineur après la garde (revue Codex P1-1) : l’âge relu sous verrou refuse, rien n’est consigné', async () => {
+    const { idPatient } = await dossier();
+    const liste = listeComplementsCibles(ACTIONS, V4);
+    if (!liste.ok) throw new Error('fixture');
+    // La garde de la route a vu un majeur ; la date est corrigée avant le verrou.
+    await observateur.query(
+      `UPDATE patients SET date_naissance = to_char(CURRENT_DATE - interval '10 years', 'YYYY-MM-DD') WHERE id_patient = $1`,
+      [idPatient],
+    );
+    const consigne = await consigner(prisma, {
+      idPatient,
+      donnees: donnees(idPatient, 'Docteur, courrier pour un dossier devenu mineur.'),
+      ancrage: ANCRAGE,
+      liste,
+      maintenantMs: Date.now(),
+    });
+    expect(consigne).toMatchObject({ ok: false, raison: 'garde_mineur' });
     expect(await courriers(idPatient)).toBe(0);
   });
 });

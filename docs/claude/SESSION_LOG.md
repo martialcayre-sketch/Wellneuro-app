@@ -11626,6 +11626,8 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Écarté.** L'égalité stricte et l'union des remises, pour la couverture ; le portail dans ce lot.
 
-**Prochaine action.** T3, puis la passe Codex manuelle (P0), la PR, CodeRabbit et le merge ; ensuite le lot 4 (portail).
+**Revue Codex.** Deux P1 corrigés : l'âge relu sous verrou à la consignation ; le libellé du destinataire réservé à la grossesse (arbitrage du responsable).
+
+**Prochaine action.** CI et CodeRabbit sur la tête, puis le merge ; ensuite le lot 4 (portail).
 
 **Ouvert.** Le nombre d'anamnèses envoyées sans date en production, à lire par conteneur : un « oui » non daté rend le courrier perpétuel.

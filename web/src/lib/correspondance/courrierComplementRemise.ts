@@ -69,8 +69,12 @@ export type ApercuCourrierComplement = {
   etat: EtatCourrierComplement;
   statut: VerdictGardeComplement['statut'] | RefusListe | 'dossier_introuvable' | 'version_illisible' | 'lecture_impossible' | 'dossier_bloque';
   motif: string;
-  /** Un critère de population (grossesse, allaitement) a déclenché : libellé du destinataire. */
-  populationDeclenche: boolean;
+  /**
+   * La grossesse a déclenché : l'écran affiche le libellé du destinataire de
+   * [[D-345]] §7, qui ne vaut que pour elle (revue Codex de #1691, P1-2 : un
+   * allaitement seul ne l'affiche pas).
+   */
+  grossesseDeclenche: boolean;
   /** `part` seulement : le courrier que le clic remettra. */
   courrier: { idCorrespondance: string; consigneLe: string } | null;
 };
@@ -93,9 +97,9 @@ const MOTIF_MANQUANT =
 export const MOTIF_REMISE_REFUSEE =
   'La remise du courrier au médecin a été refusée : rien n’a été diffusé. Relisez l’aperçu puis recommencez.';
 
-function populationDeclenche(verdict: VerdictGardeComplement): boolean {
+function grossesseDeclenche(verdict: VerdictGardeComplement): boolean {
   return (verdict.statut === 'requis' || verdict.statut === 'accord_requis')
-    && verdict.declencheurs.some(id => id === 'grossesse' || id === 'allaitement');
+    && verdict.declencheurs.some(id => id === 'grossesse');
 }
 
 /** Le plus récent courrier complément consigné pour EXACTEMENT cette liste, non encore remis. */
@@ -132,23 +136,23 @@ async function calculer(
   const garde = await lireEntreesGardeComplement(client, entrees.idPatient, entrees.actions, entrees.maintenantMs);
   if (!garde) {
     return {
-      apercu: { etat: 'refuse', statut: 'dossier_introuvable', motif: MOTIF_DOSSIER, populationDeclenche: false, courrier: null },
+      apercu: { etat: 'refuse', statut: 'dossier_introuvable', motif: MOTIF_DOSSIER, grossesseDeclenche: false, courrier: null },
       liste: null,
       du: null,
     };
   }
   const verdict = courrierComplementRequis(garde);
-  const population = populationDeclenche(verdict);
+  const grossesse = grossesseDeclenche(verdict);
   if (verdict.statut === 'non_requis') {
     return {
-      apercu: { etat: 'non_requis', statut: verdict.statut, motif: verdict.motif, populationDeclenche: false, courrier: null },
+      apercu: { etat: 'non_requis', statut: verdict.statut, motif: verdict.motif, grossesseDeclenche: false, courrier: null },
       liste: null,
       du: null,
     };
   }
   if (verdict.statut !== 'requis') {
     return {
-      apercu: { etat: 'refuse', statut: verdict.statut, motif: verdict.motif, populationDeclenche: population, courrier: null },
+      apercu: { etat: 'refuse', statut: verdict.statut, motif: verdict.motif, grossesseDeclenche: grossesse, courrier: null },
       liste: null,
       du: null,
     };
@@ -158,7 +162,7 @@ async function calculer(
   if (!liste.ok) {
     return {
       apercu: {
-        etat: 'refuse', statut: liste.raison, motif: MOTIFS_REFUS_LISTE[liste.raison], populationDeclenche: population, courrier: null,
+        etat: 'refuse', statut: liste.raison, motif: MOTIFS_REFUS_LISTE[liste.raison], grossesseDeclenche: grossesse, courrier: null,
       },
       liste: null,
       du: null,
@@ -172,7 +176,7 @@ async function calculer(
   });
   if (listeCouverte(liste.elements, remises)) {
     return {
-      apercu: { etat: 'deja', statut: verdict.statut, motif: MOTIF_DEJA, populationDeclenche: population, courrier: null },
+      apercu: { etat: 'deja', statut: verdict.statut, motif: MOTIF_DEJA, grossesseDeclenche: grossesse, courrier: null },
       liste: elements,
       du: null,
     };
@@ -181,7 +185,7 @@ async function calculer(
   const du = await courrierDu(client, entrees.idPatient, elements);
   if (!du) {
     return {
-      apercu: { etat: 'manquant', statut: verdict.statut, motif: MOTIF_MANQUANT, populationDeclenche: population, courrier: null },
+      apercu: { etat: 'manquant', statut: verdict.statut, motif: MOTIF_MANQUANT, grossesseDeclenche: grossesse, courrier: null },
       liste: elements,
       du: null,
     };
@@ -191,7 +195,7 @@ async function calculer(
       etat: 'part',
       statut: verdict.statut,
       motif: MOTIF_PART,
-      populationDeclenche: population,
+      grossesseDeclenche: grossesse,
       courrier: { idCorrespondance: du.idCorrespondance, consigneLe: du.consigneLe.toISOString() },
     },
     liste: elements,

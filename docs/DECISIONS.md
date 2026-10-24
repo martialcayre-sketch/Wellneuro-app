@@ -62,6 +62,16 @@ pas le sort des fiches en silence. L'ouverture du drapeau exige aussi
 refusé) et `WN_PHYSIO_TRAITEMENTS` (sans lui, aucun « non » du praticien ne
 s'écrit et la garde refuse tout complément ciblé).
 
+**Revue Codex (2026-10-24), deux corrections avant le merge.** (a) La
+consignation relit la date de naissance sous le verrou du patient, avant
+toute insertion : un dossier devenu mineur, ou dont la date est effacée,
+entre la garde de la route et le verrou est refusé ([[D-345]] §3). (b)
+Arbitrage du responsable : le libellé du destinataire de [[D-345]] §7 (« le
+professionnel qui suit la grossesse, à défaut le médecin traitant ») ne
+s'affiche que quand la grossesse déclenche, plus pour un allaitement seul. La
+forme opaque vise les situations du dossier de preuve, désignées par leur
+code, pas les déclencheurs que D-345 §2 nomme en clair.
+
 ### D-355 — r3_13 (Q11) : « Points à explorer avec votre praticien » reste au portail — les trois besoins mesurés les moins couverts, matière de dialogue ; troisième famille d'exceptions à la règle du portail (amende D-333 §1 et, pour ce seul objet, §2 règle 4)
 
 - Date : 2026-10-24

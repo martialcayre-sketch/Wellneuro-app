@@ -167,8 +167,8 @@ function ApercuLettreAdressageBloc({
   );
 }
 
-/** Le libellé du destinataire quand une grossesse ou un allaitement appelle le courrier (D-345 §7, P5 v0.3). */
-export const AIDE_DESTINATAIRE_POPULATION =
+/** Le libellé du destinataire quand la grossesse appelle le courrier (D-345 §7, P5 v0.3) — pas un allaitement seul. */
+export const AIDE_DESTINATAIRE_GROSSESSE =
   'Destinataire : le professionnel qui suit la grossesse, à défaut le médecin traitant.';
 
 /**
@@ -226,8 +226,8 @@ function ApercuCourrierComplementBloc({
               className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-base"
             />
           </label>
-          {apercu.populationDeclenche && (
-            <p className="text-sm text-muted-foreground">{AIDE_DESTINATAIRE_POPULATION}</p>
+          {apercu.grossesseDeclenche && (
+            <p className="text-sm text-muted-foreground">{AIDE_DESTINATAIRE_GROSSESSE}</p>
           )}
           <div>
             <button

@@ -114,8 +114,18 @@ describe('apercuCourrierComplement — ce que le clic fera', () => {
     entreesSimulees.valeur = requisPourGrossesse('jamais_exprime');
     const { fake } = client({ remises: [], listes: [] });
     const apercu = await apercuCourrierComplement(fake as never, ENTREES);
-    expect(apercu).toMatchObject({ etat: 'refuse', statut: 'accord_requis', populationDeclenche: true });
+    expect(apercu).toMatchObject({ etat: 'refuse', statut: 'accord_requis', grossesseDeclenche: true });
     expect(bloqueLeClic(apercu)).toBe(true);
+  });
+
+  it('allaitement seul : le libellé du destinataire, propre à la grossesse, ne s’affiche pas (revue Codex P1-2)', async () => {
+    entreesSimulees.valeur = {
+      ...requisPourGrossesse('jamais_exprime'),
+      declarations: [{ critere: 'allaitement', reponse: 'oui', source: 'anamnese', le: '2026-10-01T00:00:00.000Z' }],
+    };
+    const { fake } = client({ remises: [], listes: [] });
+    const apercu = await apercuCourrierComplement(fake as never, ENTREES);
+    expect(apercu).toMatchObject({ etat: 'refuse', statut: 'accord_requis', grossesseDeclenche: false });
   });
 
   it('dossier introuvable : refusé', async () => {
@@ -180,7 +190,7 @@ describe('jetonAvecComplement — le jeton du clic couvre le courrier', () => {
   });
 
   it('drapeau ouvert : l’état et le courrier entrent dans le jeton', () => {
-    const base = { statut: 'requis' as const, motif: 'm', populationDeclenche: false };
+    const base = { statut: 'requis' as const, motif: 'm', grossesseDeclenche: false };
     const manquant = jetonAvecComplement('j', { ...base, etat: 'manquant', courrier: null });
     const part = jetonAvecComplement('j', { ...base, etat: 'part', courrier: { idCorrespondance: 'c', consigneLe: 'x' } });
     expect(manquant).not.toBe('j');

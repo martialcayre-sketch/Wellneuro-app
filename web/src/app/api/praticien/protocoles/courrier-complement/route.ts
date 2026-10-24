@@ -209,6 +209,7 @@ export async function POST(req: Request) {
         donnees: preparation.donnees,
         ancrage: { sha256: provenance.ancrageHash, version: provenance.version },
         liste,
+        maintenantMs: maintenant.getTime(),
       });
     } catch (err) {
       // JAMAIS `err.message` : il peut recopier le texte du courrier.

@@ -11,6 +11,7 @@ import type { EntreeGardeComplement } from '@/lib/clinical/gardeComplementCible'
 const { prisma, tx, getServerSession, entrees, reconstruire } = vi.hoisted(() => {
   const tx = {
     $queryRaw: vi.fn(async () => [{ id: 'PAT_1' }]),
+    patient: { findUnique: vi.fn(async (): Promise<{ dateNaissance: string | null }> => ({ dateNaissance: '1985-03-14' })) },
     trustChoiceEvent: {
       findMany: vi.fn(async () => [{ finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-10-01T00:00:00Z') }]),
     },
@@ -132,6 +133,25 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('garde_mineur');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('devenu mineur entre la garde et le verrou : l’âge relu sous verrou refuse, rien d’écrit (revue Codex P1-1)', async () => {
+    const ilYaDixAns = new Date(Date.now() - 10 * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    tx.patient.findUnique.mockResolvedValueOnce({ dateNaissance: ilYaDixAns });
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('garde_mineur');
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.courrierComplementListe.create).not.toHaveBeenCalled();
+  });
+
+  it('date de naissance effacée entre la garde et le verrou : refus, rien d’écrit', async () => {
+    tx.patient.findUnique.mockResolvedValueOnce({ dateNaissance: null });
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('garde_date_requise');
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it('identifiant d’action hors format : refus EN CLAIR avant toute écriture', async () => {
