@@ -77,6 +77,8 @@ describe('file-envoi/envoyer POST', () => {
     expect(premiere.statut).toBe('En attente');
     expect(premiere.emailPatient).toBe('sophie.nicola@example.com');
     expect(premiere.dateLimite).toBe('2026-08-01');
+    // D/52 : sans note, rien — l'ancien défaut s'affichait comme une note du praticien.
+    expect(premiere.notes).toBeNull();
 
     expect(tx.envoiBrouillon.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
