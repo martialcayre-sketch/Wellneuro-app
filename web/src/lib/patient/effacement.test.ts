@@ -27,7 +27,7 @@ const { prisma, appels } = vi.hoisted(() => {
     }),
   };
   for (const nom of [
-    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'lettreAdressageRemise', 'courrierComplementRemise', 'protocolDiffusionApproval',
+    'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'ficheAssietteRemise', 'lettreAdressageRemise', 'courrierComplementRemise', 'courrierComplementListe', 'protocolDiffusionApproval',
     'arbitrageBiologique', 'decisionParcours', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
     'ecartementProposition',
@@ -188,12 +188,15 @@ describe('effacerDossier', () => {
   });
 
   // Courriers complément remis (D-345, J3-12h lot 2) : même patron, mêmes
-  // trois FK RESTRICT — patient, approbation, courrier consigné.
-  it('supprime les courriers complément remis avant les approbations et les correspondances', async () => {
+  // trois FK RESTRICT — patient, approbation, courrier consigné ; puis la liste
+  // de chaque courrier, avant le courrier.
+  it('supprime les courriers complément remis, puis leurs listes, avant les approbations et les correspondances', async () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('courrierComplementRemise');
     expect(appels.indexOf('courrierComplementRemise')).toBeLessThan(appels.indexOf('protocolDiffusionApproval'));
     expect(appels.indexOf('courrierComplementRemise')).toBeLessThan(appels.indexOf('correspondanceMedecin'));
+    expect(appels.indexOf('courrierComplementRemise')).toBeLessThan(appels.indexOf('courrierComplementListe'));
+    expect(appels.indexOf('courrierComplementListe')).toBeLessThan(appels.indexOf('correspondanceMedecin'));
   });
 
   // Staging d'import biologique (D-256, LOT-02) : la ligne validée retient son
