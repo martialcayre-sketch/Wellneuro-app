@@ -4,6 +4,68 @@
 
 ## Décisions actives
 
+### D-355 — r3_13 (Q11) : « Points à explorer avec votre praticien » reste au portail — les trois besoins mesurés les moins couverts, matière de dialogue ; troisième famille d'exceptions à la règle du portail (amende D-333 §1 et, pour ce seul objet, §2 règle 4)
+
+- Date : 2026-10-24
+- Statut : accepté. Le responsable a tranché le 2026-10-24, sur deux
+  questions à options : **acter** la section (et non la retirer) en nommant
+  une exception à [[D-333]] §2 règle 4, et retenir pour motif « matière de
+  dialogue », formule déjà écrite au code par SP-CONV LOT-05. Décision
+  rédigée par l'assistant à partir de ces réponses. La règle du 2026-10-22
+  (relire la fiche LOT-05, puis acter ou retirer ; retrait faute de motif
+  clinique écrit) est appliquée : le motif est désormais écrit, ici (§2).
+- Domaine : portail patient, accueil « Mon équilibre »
+  (`web/src/components/patient/MonEquilibreAccueil.tsx`, aussi rendu par
+  l'aperçu praticien) ; file A, lot r3_13 ; audit des instruments des
+  12 besoins, Q11 (F59).
+- Constat : relecture du 2026-10-24 de la fiche LOT-05, de sa maquette
+  `mon-equilibre-qualitatif.html`, de la `CAMPAGNE.md` SP-CONV et de la
+  PR #294. Toutes renomment le libellé (« Vos priorités » devient « Points à
+  explorer avec votre praticien » « tant qu'aucune validation praticien
+  n'existe ») ; aucune n'écrit de motif clinique du tri, que la maquette
+  qualifie de « tri automatique présenté comme un choix clinique ». Le tri
+  vivait donc sans décision, contre [[D-333]] §2 règle 4.
+- Amende : [[D-333]] §1 (« aucune autre [exception] n'est admise sans
+  décision ») et §2 règle 4 (« Aucun mot, couleur, icône ou rang qui juge un
+  chiffre sans un seuil ou une bande signé »), pour ce seul objet.
+- **Ne touche pas** : aucune formule, table, version, poids, seuil ni borne
+  clinique (`VERSION_SCORE_EQUILIBRE` inchangée, `lib/equilibre` non
+  modifié) ; aucune route (`api/patient/equilibre` sert les mêmes champs, le
+  garde `frontierePortail` est inchangé) ; aucune migration ; aucun drapeau ;
+  aucun texte d'écran neuf ou modifié. L'écran est inchangé.
+
+**§1 — Ce qui est acté.** L'accueil garde, sous la frise, la section
+« Points à explorer avec votre praticien » : au plus trois besoins
+**mesurés** (couverture renseignée, zéro compris), ceux dont la couverture est la plus
+basse, de la plus basse à la moins basse ; à égalité, l'ordre servi par la
+route. Un besoin non mesuré n'y entre jamais (DC-24). Aucun besoin mesuré :
+pas de section.
+
+**§2 — Le motif : matière de dialogue.** Les items sont un tri automatique
+par couverture, pas une décision clinique. Ils ouvrent la conversation de
+consultation sur les besoins que les réponses couvrent le moins. La liste ne
+juge pas, ne décide pas, ne prescrit rien : c'est le praticien qui en fait,
+ou non, une priorité (celle qu'il pose lui-même relève de [[D-279]]).
+
+**§3 — Les bornes de l'exception.** Troisième famille, après les repères de
+parcours et les représentations sans valeur ([[D-333]] §1). Elle ne vaut que
+pour cette section, et la section reste :
+1. **sans chiffre** : ni couverture, ni rang numéroté, ni compte ;
+2. **sans mot ni couleur qui juge** : chaque item porte le libellé patient
+   du besoin et la même icône, sans couleur d'état ; jamais « faible »,
+   « priorité », « à risque » ;
+3. **sous le libellé** « Points à explorer avec votre praticien » ;
+4. **bornée à trois items**.
+
+Toute extension (plus d'items, un mot qui qualifie, une autre surface du
+portail) ou tout autre rang au portail demande une décision.
+
+**§4 — Livraison.** Le commentaire du composant cite D-355 à la place de la
+seule fiche LOT-05 ; un test unitaire fige le §1 et le §3 (ordre, égalité,
+zéro, exclusion des besoins non mesurés, borne à trois, aucun chiffre, même
+rendu pour chaque item). Fragment
+`changelog.d/`.
+
 ### D-354 — t43 : le mode consultation est un écran partagé avec le patient, sous la règle du portail — aucun chiffre ; seuls le cockpit et les 12 besoins restent (amende HC-F LOT-03 ; applique la règle du portail des arbitrages des 2026-10-10 et 11)
 
 - Date : 2026-10-24
