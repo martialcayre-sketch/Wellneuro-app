@@ -32,7 +32,7 @@ import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges'
 import { LienDepotDocuments } from '@/components/patient-companion/LienDepotDocuments';
 import { LienFicheRenseignements } from '@/components/physio-traitements/LienFicheRenseignements';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
-import { construireFilDuJour, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
+import { construireFilDuJour, questionnairesRenvoyesDepuis, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
@@ -123,6 +123,9 @@ export default function QuestionnairesHubPage() {
    * vérifier.
    */
   const [rendezVousSuivi, setRendezVousSuivi] = useState<PointEtape | null>(null);
+  // Les questionnaires RENVOYÉS ([[D-353]], lettre ak), lus dans la même
+  // réponse : vide en cas d'échec, le fil ne pose alors aucune phrase.
+  const [questionnairesRenvoyes, setQuestionnairesRenvoyes] = useState<Set<string>>(() => new Set());
   // Mineur ou dossier clos : les recueils sont en pause, et le fil n'invite à
   // aucun — l'écran « Mes rendez-vous de suivi » reste atteignable par son lien.
   const [recueilsEnPause, setRecueilsEnPause] = useState(false);
@@ -220,11 +223,17 @@ export default function QuestionnairesHubPage() {
         // `no-store`, comme le formulaire : la ligne doit disparaître dès la réponse.
         const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
         const data: unknown = res.ok ? await res.json() : null;
-        if (vivant) setRendezVousSuivi(rendezVousSuiviAFaire(data));
+        if (vivant) {
+          setRendezVousSuivi(rendezVousSuiviAFaire(data));
+          setQuestionnairesRenvoyes(questionnairesRenvoyesDepuis(data));
+        }
       } catch {
         // Silence délibéré, même raison que pour les lectures — mais une relecture
         // en échec retire la ligne : le doute ne garde pas une tâche.
-        if (vivant) setRendezVousSuivi(null);
+        if (vivant) {
+          setRendezVousSuivi(null);
+          setQuestionnairesRenvoyes(new Set());
+        }
       }
     };
     // La tâche mène à `/suivi` par un lien ordinaire : au retour par le
@@ -383,6 +392,7 @@ export default function QuestionnairesHubPage() {
     agendasAli,
     ceQuiCompteOuvert,
     rendezVousSuivi: recueilsEnPause ? null : rendezVousSuivi,
+    questionnairesRenvoyes: recueilsEnPause ? new Set<string>() : questionnairesRenvoyes,
     formulationParcours: etatParcours?.formulation ?? null,
   });
   // Ce que le fil met en avant ne se répète pas dans les listes plus bas. Le

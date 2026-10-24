@@ -6,16 +6,21 @@ import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoi
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
 // dupliqué est alors masqué. Route pleine page inchangée par défaut.
+// `emailPatient` : celui du patient affiché, passé par la fiche — il ouvre
+// « Compléter la mesure » dans le motif ([[D-352]] §2) ; absent, le motif seul.
 export function DetailBesoinsPanel({
   idPatient,
   enteteMasquee = false,
+  emailPatient,
 }: {
   idPatient: string;
   enteteMasquee?: boolean;
+  emailPatient?: string;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +67,7 @@ export function DetailBesoinsPanel({
     );
   }
 
-  const { patient, besoins } = data;
+  const { patient, besoins, besoinsMesures, besoinsTotal } = data;
   // Un besoin non mesuré n'est pas tracé à zéro : son axe reste, nommé « non
   // mesuré » ([[D-301]]).
   const radarData = donneesRadarBesoins(besoins);
@@ -82,6 +87,13 @@ export function DetailBesoinsPanel({
             ← Retour à la fiche patient
           </Link>
         </div>
+      )}
+
+      {/* En tête de l'onglet, le compte tel que la route l'a établi ([[D-352]]
+          §1). Un ancien conteneur, pendant un déploiement, ne le sert pas :
+          rien plutôt qu'un compte deviné. */}
+      {typeof besoinsMesures === 'number' && typeof besoinsTotal === 'number' && (
+        <p className="text-sm text-muted-foreground">{mentionBesoinsMesures(besoinsMesures, besoinsTotal)}</p>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -109,7 +121,11 @@ export function DetailBesoinsPanel({
                       <>
                         —
                         {b.motifNonMesure && b.motifNonMesure.length > 0 && (
-                          <DetailMotifNonMesure besoin={b.libellePraticien} motifs={b.motifNonMesure} />
+                          <DetailMotifNonMesure
+                            besoin={b.libellePraticien}
+                            motifs={b.motifNonMesure}
+                            emailPatient={emailPatient}
+                          />
                         )}
                       </>
                     )}

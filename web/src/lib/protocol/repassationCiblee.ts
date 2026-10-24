@@ -2,6 +2,7 @@ import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
 import { estSelectionLibre } from '@/lib/clinical-engine/prioriteLibre';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
+import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 
 // Re-passation CIBLÉE au jalon (LOT-07, `D-058`).
 //
@@ -31,17 +32,33 @@ import type { DecisionCard } from '@/lib/clinical-engine/types';
  * précisément ce que la re-passation ciblée remplace.
  */
 export function questionnairesCiblesPourPriorite(needIds: readonly number[]): string[] {
-  const vus = new Set<string>();
-  const cibles: string[] = [];
-  for (const besoin of needIds) {
-    for (const source of BESOIN_SOURCES[besoin] ?? []) {
-      if (vus.has(source.idQuestionnaire)) continue;
-      vus.add(source.idQuestionnaire);
-      if (!IDS_ASSIGNABLES.has(source.idQuestionnaire)) continue;
-      cibles.push(source.idQuestionnaire);
-    }
-  }
-  return cibles;
+  return questionnairesProposables(
+    needIds.flatMap(besoin => (BESOIN_SOURCES[besoin] ?? []).map(source => source.idQuestionnaire)),
+  );
+}
+
+/**
+ * LE filtre commun aux deux propositions vers la file d'envoi — la
+ * re-passation ciblée ci-dessus et « Compléter la mesure » ci-dessous
+ * ([[D-352]] §2) : dédupliqué dans l'ordre reçu, restreint à `IDS_ASSIGNABLES`.
+ * Deux filtres finiraient par proposer deux listes.
+ */
+export function questionnairesProposables(idsQuestionnaire: readonly string[]): string[] {
+  return [...new Set(idsQuestionnaire)].filter(id => IDS_ASSIGNABLES.has(id));
+}
+
+/**
+ * « Compléter la mesure » ([[D-352]] §2) : les questionnaires d'un besoin non
+ * mesuré dont le motif est « aucune passation exploitable » — et ce motif
+ * seul. Lu dans les motifs servis par la route (`motifsNonMesureBesoin`, le
+ * chemin de la valeur), jamais dans une seconde liste : une passation écartée,
+ * un recueil incomplet ou une source suspendue n'appellent pas une première
+ * passation, et un besoin sans instrument n'a rien à proposer.
+ */
+export function questionnairesACompleter(motifs: readonly MotifNonMesureServi[] | null): string[] {
+  return questionnairesProposables(
+    (motifs ?? []).filter(m => m.motif === 'aucune_passation').flatMap(m => m.idsQuestionnaire),
+  );
 }
 
 // Identité STABLE pour « aucun besoin » : l'écran passe ces tableaux dans le

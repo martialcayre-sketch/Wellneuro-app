@@ -163,6 +163,10 @@ type Options = {
   versionCalculAbsente?: boolean;
   /** r3_08 : les besoins 9 et 10, servis aussi par deux cartes. */
   prioritesCartesLiees?: boolean;
+  /** r3_11 : un besoin dont la source n'a aucune passation exploitable. */
+  prioritesAucunePassation?: boolean;
+  /** r3_11 : une réponse sans le compte des besoins mesurés. */
+  compteAbsent?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
   checkins?: 'aucunPoint' | 'unPoint' | 'erreur';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
@@ -570,6 +574,24 @@ function stubFetch(options: Options = {}) {
         return ok({
           ...EQUILIBRE,
           priorites: EQUILIBRE.priorites.map(({ motifNonMesure: _m, provenance: _p, carteLiee: _c, ...p }) => p),
+        });
+      }
+      if (options.compteAbsent) {
+        const { besoinsMesures: _m, besoinsTotal: _t, ...objets } = EQUILIBRE.objetsCliniques;
+        return ok({ ...EQUILIBRE, objetsCliniques: objets });
+      }
+      if (options.prioritesAucunePassation) {
+        return ok({
+          ...EQUILIBRE,
+          priorites: [
+            ...EQUILIBRE.priorites,
+            {
+              ...EQUILIBRE.priorites[1],
+              besoin: 9,
+              libellePraticien: 'Stress',
+              motifNonMesure: [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: null }],
+            },
+          ],
         });
       }
       if (options.prioritesCartesLiees) {
@@ -1173,6 +1195,56 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(tiroir.textContent).toContain('Source non enregistrée');
     expect(within(tiroir).queryByText('Motif', { selector: 'summary' })).toBeNull();
     expect(within(tiroir).getByRole('cell', { name: '—' })).toBeTruthy();
+  });
+
+  // r3_11 ([[D-352]] §1) : le compte se lit sur le bouton, sans ouvrir, et en
+  // tête du tiroir — le même que sous l'indice global.
+  it('tiroir des 12 besoins : le compte des besoins mesurés sur le bouton et en tête', async () => {
+    await rendreFiche();
+
+    const bouton = screen.getByRole('button', { name: /Les 12 besoins/i });
+    expect(bouton.textContent).toContain('Calculé sur 8 besoins mesurés sur 12');
+    fireEvent.click(bouton);
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('Calculé sur 8 besoins mesurés sur 12');
+  });
+
+  it('tiroir des 12 besoins : aucun besoin mesuré, le bouton et la tête le disent (D-352 §4)', async () => {
+    await rendreFiche({ indiceGlobalNul: true });
+
+    const bouton = screen.getByRole('button', { name: /Les 12 besoins/i });
+    expect(bouton.textContent).toContain('Non calculé : aucun besoin mesuré');
+    fireEvent.click(bouton);
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('Non calculé : aucun besoin mesuré');
+    expect(tiroir.textContent).not.toContain('Calculé sur 0');
+  });
+
+  it('tiroir des 12 besoins : une réponse sans le compte n’affiche aucun compte deviné', async () => {
+    await rendreFiche({ compteAbsent: true });
+
+    const bouton = screen.getByRole('button', { name: /Les 12 besoins/i });
+    expect(bouton.textContent).not.toContain('Calculé sur');
+    fireEvent.click(bouton);
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).not.toContain('Calculé sur');
+    expect(tiroir.textContent).not.toContain('undefined');
+  });
+
+  // r3_11 ([[D-352]] §2) : « Compléter la mesure » dans le motif déplié, pour
+  // « aucune passation exploitable » seulement ; hors score, rien.
+  it('tiroir des 12 besoins : « Compléter la mesure » sous la seule ligne « aucune passation exploitable »', async () => {
+    await rendreFiche({ prioritesAucunePassation: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const stress = within(tiroir).getByLabelText('Motif — Stress').closest('details') as HTMLElement;
+    expect(stress.hasAttribute('open')).toBe(false);
+    expect(within(stress).getByText('Compléter la mesure')).toBeTruthy();
+    expect(within(stress).getByRole('button', { name: 'Ajouter à la file d’envoi' })).toBeTruthy();
+    const ancrage = within(tiroir).getByLabelText('Motif — Ancrage du matin').closest('details') as HTMLElement;
+    expect(within(ancrage).queryByText('Compléter la mesure')).toBeNull();
+    expect(within(tiroir).getAllByRole('button', { name: 'Ajouter à la file d’envoi' })).toHaveLength(1);
   });
 
   it('tiroir des 12 besoins : B9 et B10 disent servir la même valeur que leur carte (un seul nom par objet)', async () => {
@@ -2288,14 +2360,18 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
 
   it('dit sur combien de besoins l’indice global est établi ([[D-329]] §3)', async () => {
     await ouvrirTiroirObjets();
-    expect(screen.getByText('Calculé sur 8 besoins mesurés sur 12')).toBeTruthy();
+    // Borné au tiroir : le bouton « Les 12 besoins » porte le même compte ([[D-352]] §1).
+    expect(within(screen.getByRole('dialog')).getByText('Calculé sur 8 besoins mesurés sur 12')).toBeTruthy();
   });
 
   it('indice global non calculable : ni chiffre ni base, la tuile dit « Non mesuré »', async () => {
     await rendreFiche({ indiceGlobalNul: true });
     fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
     await screen.findByText('Indice global');
-    expect(screen.queryByText(/^Calculé sur/)).toBeNull();
+    expect(within(screen.getByRole('dialog')).queryByText(/^Calculé sur/)).toBeNull();
+    // Le libellé à zéro ([[D-352]] §4) ne commence pas par « Calculé » : il est
+    // exclu à part, la jauge sans total n'affiche aucune base.
+    expect(within(screen.getByRole('dialog')).queryByText('Non calculé : aucun besoin mesuré')).toBeNull();
     expect(screen.getByText('Indice global').parentElement?.textContent).toContain('Non mesuré');
   });
 
