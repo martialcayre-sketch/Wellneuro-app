@@ -4,6 +4,68 @@
 
 ## Décisions actives
 
+### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24 (file A, t36),
+  sur questions à options, signature transcrite par l'assistant sur son
+  instruction.
+- Domaine : staging d'import ([[D-256]] A4) ; amende [[D-336]] (signature),
+  [[D-260]], [[D-261]] §5 et [[D-263]] (notations d'unité équivalentes).
+  Aucun seuil, aucune conversion ([[D-157]]) : la valeur lue reste celle du
+  compte rendu.
+
+**§1 — Source.** Constat par conteneur du 2026-10-24 (lecture seule,
+agrégats, aucun identifiant) : 53 lignes « inconnu » sur 8 imports, pour
+92 résolues, aucune « ambigu ». Les libellés visés par [[D-336]] §5 y sont
+tous.
+
+**§2 — Les entrées** (8, sur des analytes déjà au catalogue) :
+
+- « PROTEINE C REACTIVE (CRP) » → `BIO_CRP_US`. Arbitrage : en
+  neuronutrition, la CRP est la CRP ultrasensible, avec ses seuils.
+  « CRP (Protéine C Réactive) » ([[D-263]]) **reste** à `BIO_CRP`, sur choix
+  explicite. Conséquence acceptée : une CRP de dosage standard imprimée sous
+  ce libellé entre dans les panels et les portes biologiques, lue avec les
+  seuils ultrasensibles ; un « <5 » reste refusé comme non quantitatif ;
+- « Volume globulaire moyen » → `BIO_VGM` ; « Plaquettes (EDTA) » →
+  `BIO_PLAQUETTES` (la parenthèse n'est pas retirée : « Plaquettes
+  (citrate) » ne se rattache pas) ;
+- « DFG estimé selon l'équation CKD-EPI » → `BIO_DFG_CKD_EPI` ;
+- « HBA1c - Hémoglobine glyquée (NGSP) » → `BIO_HBA1C` (libellé de la valeur
+  courante, pas encore lu en production) ;
+- « Indice Oméga 3 » → `BIO_INDEX_OMEGA3` ; « Rapport A. Arachidonique /
+  EPA » → `BIO_RATIO_AA_EPA` ;
+- « Indice d'anisocytose » → `BIO_IDR`. Lu sans unité, il reste refusé à la
+  validation (l'IDR est en %) tant que l'unité n'est pas lue.
+
+Une **antériorité** (« HBA1c … - antériorité du 03/03/26 ») n'est jamais
+rattachée : elle entrerait sous la date du compte rendu courant.
+
+**§3 — « mL/min » ≡ « mL/min/1,73 m² ».** Arbitrage du responsable, contre
+l'avis de l'assistant (une clairance absolue, de Cockcroft par exemple,
+passerait pour un DFG indexé). La garde reste le libellé résolu ; une ligne
+rattachée à la main par le praticien passe aussi.
+
+**§4 — Une unité absente concorde avec « ratio »**, et avec lui seul : un
+rapport est sans dimension, aucun laboratoire n'imprime « ratio ». Vaut pour
+toutes les fiches en ratio (zinc/cuivre, kynurénine/tryptophane,
+cortisol/DHEA, AA/EPA).
+
+**§5 — Signature.** Nouvelle empreinte
+`ebe7179eba0665ac0c2382764080da1f3ef817b63994bea8e622f415656e2061`
+(175 entrées, 85 analytes), datée `2026-10-24T18:34:46.000Z`. Elle remplace
+celle de [[D-336]].
+
+**§6 — Hors de cette décision.** Les 53 lignes déjà lues restent
+« inconnu » : la table ne vaut que pour les imports futurs, et ces lignes se
+rattachent à la main (aucune migration de données). Restent sans fiche, donc
+sans libellé : le taux de prothrombine, l'INR et les temps de Quick (le
+« témoin » est un contrôle du laboratoire, jamais une mesure du patient), les
+vingt acides gras et les rapports oméga 6 / oméga 3 et linoléique / DGLA —
+deux lots de fiches inscrits au plan (file A), provenance à sourcer. « Fer »
+nu (exclu par [[D-263]]), « Aspect », « Concentration » : inchangés.
+
 ### D-355 — r3_13 (Q11) : « Points à explorer avec votre praticien » reste au portail — les trois besoins mesurés les moins couverts, matière de dialogue ; troisième famille d'exceptions à la règle du portail (amende D-333 §1 et, pour ce seul objet, §2 règle 4)
 
 - Date : 2026-10-24

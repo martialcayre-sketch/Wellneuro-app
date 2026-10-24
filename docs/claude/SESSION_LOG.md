@@ -11619,3 +11619,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; r3_13 « fait » sur la page de la file A.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — t36 : libellés réels restés « inconnu », résolveur re-signé (D-356)
+
+**Fait.** Constat par conteneur (agrégats : 53 « inconnu », 92 résolues). Huit libellés rattachés sur arbitrage du responsable, puis la signature : « PROTEINE C REACTIVE (CRP) » à la CRP ultrasensible, le VGM, les plaquettes (EDTA), le DFG, l'HbA1c courante, l'indice oméga 3, le rapport AA/EPA, l'indice d'anisocytose. Unités : « mL/min » admis pour le DFG, une unité absente pour un ratio. 175 entrées.
+
+**Écarté.** Les antériorités (fausse date) ; « CRP (Protéine C Réactive) » déplacé (D-263 gardée) ; migration des lignes déjà lues.
+
+**Prochaine action.** CI, CodeRabbit, merge, observation ; t36 « fait » au suivi.
+
+**Ouvert.** Fiches TP/INR/Quick et acides gras : deux lots au plan.
