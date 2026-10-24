@@ -45,11 +45,8 @@ sa cible. C'est un défaut démontré dans le code (revue `wn-reviewer` de
 
 **§3 — Effet constaté.** Seule la proposition de re-confirmation d'un `T1`
 déjà posé change : sa fenêtre reste centrée sur la date de l'acte, et une
-passation reçue ensuite hors de ±8 j appartient au jalon suivant. Constats
-par conteneur du 2026-10-24, en agrégats : un dossier porte un `T1` ; aucune
-passation n'est postérieure à ce `T1` ; aucune ligne `T1+` n'a une colonne
-`target_at` divergente de son payload. Aucun acte existant ne change donc de
-date.
+passation reçue ensuite hors de ±8 j appartient au jalon suivant. Constat
+par conteneur du 2026-10-24 sur les ancres `T1+` : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
 
 ### D-349 — bd : l'encart « quand ralentir ou demander avis » — texte du responsable accepté, servi à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, fermé à la livraison (H71 ; applique D-346 §2 et D-288 §1)
 

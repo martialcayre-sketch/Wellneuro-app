@@ -63,10 +63,9 @@ cycle perdait sa cible.
   - la passation de test tombait hors de la fenêtre ;
   - les cas de lecture datée et le banc unitaire manquaient.
   Tous sont corrigés dans 4e9437f5.
-- **Constats par conteneur**, en agrégats et en lecture seule :
-  - one-off-7948 : 12 `T0`, 1 `T1`, 0 passation postérieure à ce `T1` ;
-  - one-off-4458 : 0 ancre `T1+` dont la colonne `target_at` diverge du
-    payload.
+- **Constats par conteneur**, en lecture seule (one-off-7948, one-off-4458) :
+  ancres `T1+`, passations postérieures et concordance colonne/payload ;
+  effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
 
 ## Problèmes ouverts
 

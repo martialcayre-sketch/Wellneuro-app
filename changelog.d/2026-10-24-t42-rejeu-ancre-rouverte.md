@@ -6,8 +6,6 @@
   après sa confirmation déplaçait sa date, si bien que l'épisode cessait de se
   rejouer (D-118). L'écran redemandait alors de confirmer un `T1` déjà
   confirmé, et la re-passation du deuxième cycle perdait sa cible (t41).
-  Exposition au 2026-10-24 : un dossier a un `T1`, sans passation
-  postérieure.
 - `web/src/lib/clinical-engine/runtimeFromPrisma.ts` : `proposeRuntimeEpisode`
   reçoit, en option, la ligne de l'ancre demandée quand elle est déjà posée
   (`AncrePosee`). Un cycle rouvert se date alors sur le `targetAt` de cette
@@ -37,6 +35,5 @@
   parce que la date de l'ancre commande la fenêtre des réponses proposées :
   l'arbitrage du responsable du 2026-10-24 est transcrit en D-350, sans
   changer le comportement.
-  Constat par conteneur le 2026-10-24 : une ancre `T1+`, aucune dont la
-  colonne `target_at` diverge du payload ; aucun dossier n'hérite donc d'un
-  acte écrit sous l'ancienne date.
+- Constat par conteneur du 2026-10-24 sur les ancres `T1+` : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3)
+  (revue CodeRabbit de #1673).
