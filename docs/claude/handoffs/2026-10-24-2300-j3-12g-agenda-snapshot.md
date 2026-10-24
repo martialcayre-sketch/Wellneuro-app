@@ -45,7 +45,12 @@ puis aligner le snapshot.
   rougissent (agenda d'avant v4, `null`, agenda court).
 - Suites `clinical-engine`, `equilibre`, `patient-cockpit` : 93 fichiers
   verts, aucune empreinte figée touchée.
-- T1 rapide vert.
+- T1 rapide vert ; T1 complet (`npm run check`) vert.
+- T3 (`npm run test:worktree`) vert sur adb173bf : 881 fichiers Vitest
+  (14 865 tests), 28 fichiers d'intégration, 296 E2E, 9 min 22 s. Un premier
+  T3, lancé pendant deux autres T3 de sessions concurrentes, s'était arrêté
+  sur `scripts/wn-etat-reel.test.mjs` ; ce banc rejoué seul était vert (10/10),
+  et le second T3 l'a passé : intermittent hors du lot.
 - `/code-review medium` : huit constats. Corrigés : nombre de nuits exigé
   entier et non négatif, chaînes refusées (la clôture n'écrit que des nombres
   et des `null` ; aucune chaîne en production) ; bancs zéro nuit, négatif,
