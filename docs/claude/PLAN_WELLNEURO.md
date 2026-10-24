@@ -2024,6 +2024,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : [A verifier].
 - **Décisions, textes** : lettre ap et sa D-xxx, de la main du responsable.
 - **Critère de fin** : activation constatée.
+- **Mise à jour (2026-10-24, D-357)** : lettre ap écrite, validée telle quelle par le responsable (rédigée par l'assistant sur sa demande, après quatre arbitrages sur questions à options) ; préalable « sa D-xxx » (porte 28) tenu. La bibliothèque a deux rayons, les documents remis (les fiches d'assiette, régime de D-251 inchangé) et un socle commun, invisible tant qu'il est vide ; ap livre le contenant seul, chaque famille de documents y entre par sa propre décision ; quatrième famille d'exceptions à la règle du portail, bornée aux chiffres de conseil sourcés, jamais une dose (amende D-333 §1) ; dossiers majeurs seuls, la page des fiches d'assiette restant servie telle quelle aux mineurs. Migration : non (D-357 §6). Reste : les trois textes d'écran de la main du responsable (une proposition est consignée, non acceptée), puis le lot sous `WN_PORTAIL_BIBLIOTHEQUE`, éteint ; activation après le constat de la place 9.
 
 #### H83 · an : place 11, photo ou dictée des repas
 - **Identifiant, piste** : lettre an (R:an) ; le praticien reçoit des repas confirmés ; reste « capture photo et voix » du journal ; alimentation ; file C, place 11.
@@ -2088,7 +2089,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste ; deux messages, deux places, sans fusion avec la place 7 | 10 |
-| 10 | Bibliothèque pédagogique | H82 | « Mes échanges » ouvert, sa D-xxx, porte 17 | texte accusé | 10 |
+| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) : reste les trois textes d'écran, puis le lot sans migration, éteint | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) | 10 |
 | 11 | Photo ou dictée des repas | H83 | registre IA, porte 5, D-269, code | information patient | 10 |
 
 ### Ouvertures sans place numérotée
@@ -2799,7 +2800,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | am | table de quantités | la main du responsable | 1, fermé sans source | H33 |
 | an | photo ou dictée des repas | la main du responsable | 10, place 11 | H83 |
 | ao | fiche compléments remise au patient | la main du responsable | 10, place 8 | F78 |
-| ap | bibliothèque pédagogique | la main du responsable | 10, place 10 | H82 |
+| ap | bibliothèque pédagogique (écrite : D-357, 2026-10-24) | la main du responsable | 10, place 10 | H82 |
 | aq | contrôle bloquant des modifications cliniques | registre | 1 | H21 |
 | ar | montée de version datée des briques | registre | 1 | H22 |
 | as | fiche signalétique, date de naissance ; close le 2026-10-22 (D-342 §4) | la main du responsable | 10, place 6 | F45 |
