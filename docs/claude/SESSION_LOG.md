@@ -11581,3 +11581,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
+## 2026-10-24 — r3_11 (suite) : libellé quand aucun besoin n'est mesuré
+
+**Fait.** Le responsable trouvait « Calculé sur 0 besoin mesuré sur 12 » peu explicite : il a choisi « Non calculé : aucun besoin mesuré » (question à options). `mentionBesoinsMesures` le rend à zéro (D-352 §4), donc sur le bouton, le tiroir et l'onglet ; la jauge de l'indice est inchangée.
+
+**Écarté.** « Aucun besoin mesuré sur 12 » (recommandé) ; « Aucun besoin mesuré (0 sur 12) ».
+
+**Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
+
+**Ouvert.** Rien dans le périmètre.
