@@ -304,6 +304,7 @@ DECLARE
   courrier_ancrage text;
   courrier_texte text;
   liste_consignee text[];
+  liste_patient text;
   deja_remis boolean;
 BEGIN
   -- 1. L'approbation et le protocole qu'elle approuve.
@@ -377,12 +378,18 @@ BEGIN
     RAISE EXCEPTION 'remise refusée : % n''est pas un courrier complément de ce dossier.', NEW.id_correspondance;
   END IF;
 
-  -- 4. Le courrier a été écrit pour cette liste.
-  SELECT l.complements INTO liste_consignee
+  -- 4. Le courrier a été écrit pour cette liste, consignée dans ce dossier.
+  -- Le dossier de la liste est relu : un courrier déplacé d'un dossier à
+  -- l'autre après sa consignation (aucun code ne le fait) ne se remet pas
+  -- sous la liste de l'ancien (revue CodeRabbit de #1679).
+  SELECT l.complements, l.id_patient INTO liste_consignee, liste_patient
   FROM public.courriers_complement_listes l
   WHERE l.id_correspondance = NEW.id_correspondance;
   IF liste_consignee IS NULL THEN
     RAISE EXCEPTION 'remise refusée : le courrier % n''a aucune liste consignée.', NEW.id_correspondance;
+  END IF;
+  IF liste_patient IS DISTINCT FROM NEW.id_patient THEN
+    RAISE EXCEPTION 'remise refusée : la liste du courrier % n''a pas été consignée dans ce dossier.', NEW.id_correspondance;
   END IF;
   IF liste_consignee IS DISTINCT FROM NEW.complements THEN
     RAISE EXCEPTION 'remise refusée : le courrier % n''a pas été écrit pour cette liste ; un complément ajouté exige un courrier neuf.', NEW.id_correspondance;

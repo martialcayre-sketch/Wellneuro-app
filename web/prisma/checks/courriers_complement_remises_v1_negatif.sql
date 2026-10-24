@@ -21,7 +21,8 @@
 --   R2. un clic rejoué ne remet rien (zéro ligne, sans erreur) ;
 --   R3. LE COURRIER A ÉTÉ ÉCRIT POUR CETTE LISTE : un courrier consigné pour
 --       {magnésium} ne se remet pas pour {fer, magnésium} ; un courrier sans
---       liste consignée ne se remet pas ;
+--       liste consignée, ou déplacé vers un autre dossier après sa
+--       consignation, ne se remet pas ;
 --   R4. une approbation d'un AUTRE dossier, ou croisée, est refusée ;
 --   R5. un protocole qui n'est pas au contrat V4 est refusé ;
 --   R6. un protocole sans complément ciblé est refusé — multivitaminé seul,
@@ -342,6 +343,15 @@ BEGIN
   PERFORM pg_temp.refuse('R3 courrier écrit pour {Fer, Mg}, version {Mg}',
     format($q$SELECT pg_temp.remettre('x3b', 'PAT_CONTRAT_CCR_A', 'pda_ccr_a_un', 'ccr_a_1', %L::text[])$q$, MG),
     'P0001', 'n''a pas été écrit pour cette liste');
+  -- Un courrier déplacé vers B après sa consignation dans A (geste qu'aucun
+  -- code ne fait) : sa liste reste celle de A, et ne couvre rien chez B.
+  INSERT INTO correspondances_medecin (id, id_patient, praticien_email, sens, medecin_libelle, texte, ancrage_sha256, ancrage_version)
+  VALUES ('ccr_a_deplace', 'PAT_CONTRAT_CCR_A', 'praticien@wellneuro.fr', 'sortant', 'Dr Test', 'Docteur, courrier déplacé.', repeat('c', 64), 'complement-cible-v1');
+  PERFORM pg_temp.consigner('ccr_a_deplace', 'PAT_CONTRAT_CCR_A', LISTE);
+  UPDATE correspondances_medecin SET id_patient = 'PAT_CONTRAT_CCR_B' WHERE id = 'ccr_a_deplace';
+  PERFORM pg_temp.refuse('R3 courrier déplacé après sa consignation',
+    format($q$SELECT pg_temp.remettre('x3d', 'PAT_CONTRAT_CCR_B', 'pda_ccr_b', 'ccr_a_deplace', %L::text[])$q$, LISTE),
+    'P0001', 'n''a pas été consignée dans ce dossier');
   PERFORM pg_temp.refuse('R3 courrier sans liste',
     format($q$SELECT pg_temp.remettre('x3c', 'PAT_CONTRAT_CCR_A', 'pda_ccr_a2', 'ccr_a_sans_liste', %L::text[])$q$, LISTE),
     'P0001', 'n''a aucune liste consignée');
