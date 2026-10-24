@@ -8,7 +8,10 @@
 --     minuscule ou une chaîne vide sont refusées par le CHECK A-D ;
 --   - un lien actif nutriment puis axe sur un même analyte est refusé, dans
 --     les deux ordres, ainsi que sur un rapport ; la réactivation d'un lien
---     dormant et le changement de cible sont refusés de même (UPDATE) ;
+--     dormant, le changement de cible et le déplacement vers un analyte ou un
+--     rapport porteur d'un axe sont refusés de même (UPDATE) ;
+--   - la concurrence et l'isolation se jouent à deux sessions, dans
+--     `scripts/banc-rejeu-liens-axe-f79.test.mjs` ;
 --   - ce que la règle laisse passer passe : deux axes sur un même analyte
 --     (liens 3 et 16 de D-351), un besoin à côté d'un axe, un lien désactivé
 --     de l'autre cible.
@@ -154,7 +157,48 @@ BEGIN
   INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim)
   VALUES ('f79_ok_nut_d', 'BIO_TEST_F79_D', 'nutriment', 'zinc', 'bas_evocateur', 'WN-CL-0000-011', 'v1.0');
 
-  RAISE NOTICE 'F79: nul et A-D acceptés, % lettres refusées ; double lien nutriment/axe refusé dans 5 cas, 4 cas permis acceptés.',
+  -- ── Double lien refusé par UPDATE : déplacer le lien vers une autre source ─
+  -- Le nutriment de BIO_TEST_F79_D, déplacé sur un analyte puis sur un
+  -- rapport qui portent déjà un axe. Sans ces deux cas, retirer
+  -- `analyte_code` ou `ratio_code` de la liste du déclencheur laissait ce
+  -- fichier vert (passe Codex de #1687).
+  refuse := false;
+  BEGIN
+    UPDATE biology_analyte_links SET analyte_code = 'BIO_TEST_F79_A' WHERE id = 'f79_ok_nut_d';
+  EXCEPTION WHEN others THEN
+    GET STACKED DIAGNOSTICS etat = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+    IF etat <> 'P0001' OR position('D-348 §5' in msg) = 0 THEN
+      RAISE EXCEPTION 'F79 test négatif: déplacement vers un analyte rejeté pour le mauvais motif (SQLSTATE %)', etat;
+    END IF;
+    refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'F79 test négatif: nutriment déplacé vers un analyte porteur d''un axe ACCEPTÉ';
+  END IF;
+
+  -- Le déplacement vers un rapport ne change QUE `ratio_code` : un nutriment
+  -- posé sur un second rapport, déplacé sur celui qui porte un axe. Changer
+  -- aussi `analyte_code` déclencherait le trigger par cette autre colonne, et
+  -- le cas ne prouverait rien sur `ratio_code`.
+  INSERT INTO biology_ratios (id, code, libelle, operation, analyte_a_code, analyte_b_code)
+  VALUES ('f79_r2', 'BIO_RATIO_TEST_F79_B', 'x', 'rapport', 'BIO_TEST_F79_C', 'BIO_TEST_F79_D');
+  INSERT INTO biology_analyte_links (id, ratio_code, cible_type, cible_code, direction, claim_id, version_claim)
+  VALUES ('f79_r2_nut', 'BIO_RATIO_TEST_F79_B', 'nutriment', 'zinc', 'bas_evocateur', 'WN-CL-0000-012', 'v1.0');
+  refuse := false;
+  BEGIN
+    UPDATE biology_analyte_links SET ratio_code = 'BIO_RATIO_TEST_F79' WHERE id = 'f79_r2_nut';
+  EXCEPTION WHEN others THEN
+    GET STACKED DIAGNOSTICS etat = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+    IF etat <> 'P0001' OR position('D-348 §5' in msg) = 0 THEN
+      RAISE EXCEPTION 'F79 test négatif: déplacement vers un rapport rejeté pour le mauvais motif (SQLSTATE %)', etat;
+    END IF;
+    refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'F79 test négatif: nutriment déplacé vers un rapport porteur d''un axe ACCEPTÉ';
+  END IF;
+
+  RAISE NOTICE 'F79: nul et A-D acceptés, % lettres refusées ; double lien nutriment/axe refusé dans 7 cas, 4 cas permis acceptés.',
     array_length(lettres, 1);
 END $$;
 

@@ -25,6 +25,9 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
     l'échec total ;
   - **trigger contre le double lien nutriment/axe** (D-348 §5), posé par la
     même migration.
+- Troisième arbitrage, après la passe Codex (D-351 §6) : le trigger
+  **refuse ces écritures hors READ COMMITTED**, car sous REPEATABLE READ le
+  verrou n'exclut plus le double lien.
 - Le contrat de la liste exacte n'est **pas** branché en préflight de
   `release-db` : cela toucherait le script de release, son banc et la
   procédure, hors du lot. En production, il se joue par conteneur au
@@ -73,6 +76,18 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
   garde de transaction du banc élargie, deux cas de banc ajoutés ; fraîcheur
   des claims après la release routée en préalable du code consommateur
   (fiche F79). Les autres P2 sont notés dans la PR.
+- Passe Codex (P0) sur 0762fbfb : deux P1 et un P2, tous corrigés.
+  - P1 : le banc pouvait commettre ses fixtures. La garde lit maintenant les
+    instructions de la migration et du contrat, et s'éprouve sur quatre
+    mutations. Un constat final vérifie qu'aucune fixture n'a survécu.
+  - P1 : le double lien passait sous REPEATABLE READ. Le trigger refuse
+    désormais cette isolation, et cinq cas à deux sessions l'éprouvent.
+  - P2 : le contrat négatif déplace un nutriment vers un analyte, puis
+    d'un rapport à un autre.
+  - Mutations rejouées sur une base jetable : sans le verrou, sans le refus
+    d'isolation, sans `analyte_code` ou sans `ratio_code` dans le
+    déclenchement, le banc ou le contrat rougit. Le banc rejoué deux fois
+    ne laisse aucune ligne.
 
 ## Problèmes ouverts
 

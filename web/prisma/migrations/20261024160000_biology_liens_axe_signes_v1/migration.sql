@@ -35,6 +35,13 @@ ALTER TABLE "biology_analyte_links" ALTER COLUMN "niveau_preuve" DROP NOT NULL;
 -- Seuls les liens actifs comptent : un lien désactivé ne sert plus. Le
 -- verrou par analyte (ou par rapport) range l'un derrière l'autre deux
 -- écrivains simultanés, qui sans lui passeraient tous deux le contrôle.
+-- Le verrou ne suffit qu'en READ COMMITTED, où chaque instruction relit les
+-- lignes validées : sous REPEATABLE READ ou SERIALIZABLE, l'instantané de la
+-- seconde transaction précède la validation de la première, et le double
+-- lien passerait (passe Codex de #1687). Ces isolations sont donc refusées
+-- pour une écriture active nutriment ou axe (arbitrage du responsable du
+-- 2026-10-24). Le refus et la sérialisation sont éprouvés à deux sessions
+-- par `scripts/banc-rejeu-liens-axe-f79.test.mjs`.
 CREATE OR REPLACE FUNCTION public.biology_analyte_links_nutriment_axe_exclusifs()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -42,6 +49,10 @@ SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF NEW.actif AND NEW.cible_type IN ('nutriment', 'axe') THEN
+    IF current_setting('transaction_isolation') <> 'read committed' THEN
+      RAISE EXCEPTION 'D-348 §5 : lien % refusé sous l''isolation % — seule READ COMMITTED garantit l''exclusion nutriment/axe.',
+        NEW.cible_type, current_setting('transaction_isolation');
+    END IF;
     PERFORM pg_advisory_xact_lock(hashtext(
       'biology_analyte_links:' || COALESCE(NEW.analyte_code, NEW.ratio_code)));
     IF EXISTS (
