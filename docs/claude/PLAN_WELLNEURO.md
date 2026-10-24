@@ -1500,6 +1500,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Critère de fin** : migration constatée, 0 lien ; contrat SQL négatif (axe inconnu, lien sans claim refusés) ; T3.
 - **Mise à jour (2026-10-23)** : préalable cm levé (D-348). Liste des dix codes : D-348 §2. Avant la migration, relire en production les cinquante fondateurs (D-348 §7).
 - **Mise à jour (2026-10-24)** : cinquante fondateurs relus en production, tous conformes ; 0 lien. Migration `20261024100000_biology_axes_liste_fermee_v1` (CHECK seul) et contrat négatif `biology_axes_v1_negatif.sql`, dans leur PR. Reste : release-db approuvée, puis constat par conteneur (contrainte en place, 0 lien). Ouvre F79.
+- **Constat (2026-10-24)** : PR #1671 mergée (73560bb8), release-db approuvée. Lecture en production par conteneur (one-off-1762), relue le même jour au cadrage de F79 (one-off-9987) : migration appliquée en une tentative ; `biology_analyte_links_cible_axe_check` en place sur les dix codes de D-348 §2 ; 8 CHECK sur la table ; 0 lien. **Critère de fin atteint.**
 
 #### F58 · Statut posé et deux marques datées
 - **Identifiant, piste** : le mot du responsable près de la valeur, daté, à l'écran du responsable seul, jamais calculé ; socle.
@@ -1641,9 +1642,10 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Identifiant, piste** : étape 3 de l'audit, second temps : « migration seule, puis code : liens analyte ↔ axe signés, claim par claim » (`docs/archive/cadrages/AUDIT_PANELS_BIOLOGIE_2026-10-05.md:181-182`) ; panels.
 - **Rang** : 5 proposé [Hypothese], après F52 (rang 4).
 - **Portes, préalables** : cm (F51) ; F52 constatée ; curation claim par claim de la main du responsable ; aucun lien sans claim.
-- **Migration, release-db** : selon le véhicule d'écriture ; une écriture en base de production passe par migration relue et release-db (D-087) [A verifier : véhicule], porte 9.
+- **Migration, release-db** : selon le véhicule d'écriture ; une écriture en base de production passe par migration relue et release-db (D-087) ; véhicule tranché : migration de données relue (D-351 §5), porte 9.
 - **Décisions, textes** : les signatures du responsable, lien par lien ; aucune règle ni borne sans provenance certifiée.
 - **Critère de fin** : liens signés en base, constatés par conteneur ; contrat SQL « lien sans claim refusé » vert.
+- **Mise à jour (2026-10-24, curation)** : F52 constatée. Dix-sept liens signés par le responsable (D-351 §2), sur seize analytes et les dix axes, chacun avec un claim v1.0 et un sens ; six réserves écrites (§3), dont deux exceptions signées à la règle du §1 (lien 5 : mécanisme non nommé ; lien 16 : sens déduit). Véhicule tranché : une migration de données relue (D-087), qui rend aussi `niveau_preuve` nullable (nul = non gradé, §4) et insère les dix-sept liens, avec un contrat SQL qui exige la liste exacte (§5). La correspondance panel → axe n'est pas nécessaire ici : elle reste ouverte pour F53. Reste : la migration dans sa PR, passe Codex, T3, release-db approuvée, constat par conteneur, puis le code consommateur.
 
 **File C**
 

@@ -4,6 +4,103 @@
 
 ## Décisions actives
 
+### D-351 — Liens analyte-axe : dix-sept liens signés claim par claim, écrits par migration de données, niveau de preuve facultatif (F79, premier temps ; applique D-348 §1, §5, §7)
+
+- Date : 2026-10-24
+- Statut : accepté — liste signée par le responsable le 2026-10-24, sans
+  correction. Brouillon rédigé par l'assistant à partir des claims certifiés
+  lus en production. Le responsable a tranché douze arbitrages sur questions
+  à options : huit sur la recommandation de l'assistant, quatre contre elle
+  (les deux liens du rapport kynurénine/tryptophane, le lien du cortisol
+  salivaire à deux temps, les liens du coenzyme Q10 et des acides gras à
+  chaîne courte fécaux, le lien de l'alpha-amylase salivaire).
+- Domaine : `biology_analyte_links`, cible `axe` ; fiches F52 et F79 du plan
+  unique (`docs/claude/PLAN_WELLNEURO.md`).
+- Applique : [[D-348]] §1 (les claims qui lisent une valeur relèvent des
+  liens), §5 (pas de double lien nutriment/axe), §7 (F79). Respecte [[D-087]]
+  (écriture en production par migration relue et release-db approuvée).
+- **Aucune migration dans cette PR** : elle décide les liens et leur
+  véhicule. La migration suit dans un lot à part, après cette décision.
+- **Ne touche pas** : la liste des dix axes ([[D-348]] §2) ; la cible
+  `nutriment` ; la cible `besoin` ; aucun seuil, aucune borne, aucune
+  indication, aucune règle de priorité ; ni les panels, ni le scoring, ni le
+  portail, ni l'IA. La correspondance panel → axe ([[D-348]] §7) reste
+  ouverte : un lien se pose sur un analyte, et F53 la reprendra.
+
+**§1 — Règle de curation.** Un lien naît d'un claim certifié (`VALIDE`,
+actif, non supplanté, version citée), non prescriptif, de typologie
+`déclaré` ou `interprété`, qui nomme l'analyte du catalogue et un mécanisme
+de l'un des dix axes, et qui écrit le sens. Sont exclus : les claims
+prescriptifs ; les claims de stade ou de profil à plusieurs analytes ; un
+analyte de statut nutritionnel ([[D-348]] §5) ; un analyte du domaine de
+`NeuroAxis`. Un lien porte un seul claim. Le seuil qu'un claim peut citer
+n'entre jamais dans le lien. Deux liens du §2 sont des exceptions signées à
+cette règle, chacune écrite au §3 : le lien 5 (mécanisme non nommé par le
+claim) et le lien 16 (sens déduit, non écrit).
+
+**§2 — Les dix-sept liens.** Tous les claims sont en version v1.0, lus en
+production le 2026-10-24. Le niveau de preuve est nul pour les dix-sept
+(§4). Tous sont portés par `analyte_code` : les rapports du catalogue sont
+des analytes, et `biology_ratios` est vide.
+
+| # | `analyte_code` | `cible_code` | `claim_id` | `direction` |
+| --- | --- | --- | --- | --- |
+| 1 | `BIO_HOMOCYSTEINE` | `methylation` | WN-CL-0043-014 | `haut_evocateur` |
+| 2 | `BIO_CRP_US` | `inflammation` | WN-CL-0125-047 | `haut_evocateur` |
+| 3 | `BIO_RATIO_KYN_TRP` | `inflammation` | WN-CL-0293-013 | `haut_evocateur` |
+| 4 | `BIO_ANTI_LDL_OXYDE` | `stress_oxydant` | WN-CL-0161-070 | `haut_evocateur` |
+| 5 | `BIO_COENZYME_Q10` | `energie_mitochondriale` | WN-CL-0161-081 | `bas_evocateur` |
+| 6 | `BIO_RATIO_HOMA` | `regulation_glycemique` | WN-CL-0390-010 | `haut_evocateur` |
+| 7 | `BIO_GLYCEMIE_JEUN` | `regulation_glycemique` | WN-CL-0025-010 | `haut_evocateur` |
+| 8 | `BIO_INDEX_OMEGA3` | `acides_gras_polyinsatures` | WN-CL-0294-004 | `bas_evocateur` |
+| 9 | `BIO_RATIO_AA_EPA` | `acides_gras_polyinsatures` | WN-CL-0294-004 | `haut_evocateur` |
+| 10 | `BIO_TSH_US` | `thyreotrope` | WN-CL-0110-012 | `haut_evocateur` |
+| 11 | `BIO_CAR` | `corticotrope` | WN-CL-0107-031 | `hors_plage_evocateur` |
+| 12 | `BIO_CORTISOL_8H_20H` | `corticotrope` | WN-CL-0107-033 | `haut_evocateur` |
+| 13 | `BIO_ALPHA_AMYLASE` | `corticotrope` | WN-CL-0042-005 | `hors_plage_evocateur` |
+| 14 | `BIO_LBP` | `barriere_intestinale` | WN-CL-0125-046 | `haut_evocateur` |
+| 15 | `BIO_BETA_DEFENSINE_2` | `barriere_intestinale` | WN-CL-0043-030 | `haut_evocateur` |
+| 16 | `BIO_RATIO_KYN_TRP` | `microbiote_cerveau` | WN-CL-0041-061 | `haut_evocateur` |
+| 17 | `BIO_AGCC_FECAUX` | `microbiote_cerveau` | WN-CL-0291-015 | `hors_plage_evocateur` |
+
+Le texte des claims, la justification de chaque lien et les liens écartés
+sont au Claude Doc privé (Référence).
+
+**§3 — Réserves écrites.** Le responsable a signé ces liens en connaissance
+de cause :
+- lien 12 : le sens écrit vaut pour un seul des deux temps de prélèvement ;
+  l'analyte porte les deux sous un code unique, et le moteur ne pourra pas
+  les distinguer ;
+- lien 13 : le claim relève de la voie neurovégétative sympathique ; le lien
+  étend `corticotrope` au-delà de la cascade décrite au §2 de [[D-348]] ;
+- lien 16 : le sens est déduit de l'activation d'une voie, non écrit comme
+  une valeur haute ;
+- liens 3 et 17 : leurs claims désignent une conduite alimentaire ; seul le
+  sens et le mécanisme en sont repris ;
+- liens 3 et 16 : un même analyte se lie à deux axes. [[D-348]] §5
+  n'interdit que le double lien nutriment/axe ;
+- lien 5 : le claim écrit le sens sans nommer le mécanisme de l'axe ; le
+  rattachement vient des fondateurs WN-CL-0027-003 et WN-CL-0027-004. Cet
+  analyte ne se liera pas à la cible `nutriment`.
+
+**§4 — Le niveau de preuve devient facultatif.** 8 175 des 8 564 claims
+certifiés n'écrivent aucun niveau, et aucun des dix-sept ne le fait.
+Inscrire une lettre serait l'inventer. La migration rend
+`biology_analyte_links.niveau_preuve` nullable : nul signifie « non
+gradé ». Le `CHECK` A-D reste en place pour une valeur non nulle. Cette
+décision vaut demande explicite de modifier `schema.prisma` pour cette seule
+colonne. Le code consommateur affichera « non gradé » et ne traitera jamais
+un nul comme une lettre.
+
+**§5 — Le véhicule.** Une seule migration, relue, dans sa PR : la colonne
+rendue nullable et l'insertion des dix-sept liens. Un contrat SQL exige la
+liste exacte du §2 : un lien en plus, en moins ou modifié rougit. Puis passe
+Codex, T3, release-db approuvée, et constat par conteneur (dix-sept lignes,
+toutes actives, chaque `claim_id` encore `VALIDE`, actif et non supplanté,
+c'est-à-dire `superseded_at` nul, dans sa version). La migration
+n'insère un lien que si son claim remplit ces trois conditions, comme au §1. Retirer
+ou ajouter un lien exige une nouvelle décision, donc une nouvelle migration.
+
 ### D-350 — t42 : une ancre de cycle rouvert déjà posée se date sur sa propre ligne, et non plus sur la réponse la plus récente (amende le cas 3 de `dateDeReference` ; applique D-118 et D-129)
 
 - Date : 2026-10-24
