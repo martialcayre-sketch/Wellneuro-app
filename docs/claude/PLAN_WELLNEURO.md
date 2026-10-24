@@ -2021,7 +2021,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Identifiant, piste** : lettre ap (R:ap) ; bibliothèque pédagogique au portail ; fiches conseils ; file C, place 10.
 - **Rang** : 10 ; place 10.
 - **Portes, préalables** : ACT-3 (H76) ; sa D-xxx (porte 28) ; porte 17 (levée par D-283) ; texte accusé ; porte 18, après la place 9.
-- **Migration, release-db** : [A verifier].
+- **Migration, release-db** : non (D-357 §6, 2026-10-24) ; le stockage du socle commun viendra avec la décision de sa première famille.
 - **Décisions, textes** : lettre ap et sa D-xxx, de la main du responsable.
 - **Critère de fin** : activation constatée.
 - **Mise à jour (2026-10-24, D-357)** : lettre ap écrite, validée telle quelle par le responsable (rédigée par l'assistant sur sa demande, après quatre arbitrages sur questions à options) ; préalable « sa D-xxx » (porte 28) tenu. La bibliothèque a deux rayons, les documents remis (les fiches d'assiette, régime de D-251 inchangé) et un socle commun, invisible tant qu'il est vide ; ap livre le contenant seul, chaque famille de documents y entre par sa propre décision ; quatrième famille d'exceptions à la règle du portail, bornée aux chiffres de conseil sourcés, jamais une dose (amende D-333 §1) ; dossiers majeurs seuls, la page des fiches d'assiette restant servie telle quelle aux mineurs. Migration : non (D-357 §6). Reste : les trois textes d'écran de la main du responsable (une proposition est consignée, non acceptée), puis le lot sous `WN_PORTAIL_BIBLIOTHEQUE`, éteint ; activation après le constat de la place 9.
