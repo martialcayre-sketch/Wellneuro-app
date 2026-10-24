@@ -11514,3 +11514,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge.
 
 **Ouvert.** Le garde d'isolation des worktrees (harness) refuse encore les boucles en ligne complexes : passer par un script.
+
+## 2026-10-24 — File D : « Vos données personnelles » v20 et conditions v3 (b25)
+
+**Fait.** H07 : outil mergé (#1676). b25 : la phrase de la v12 (« valeurs relevées et décisions » conservées) corrigée en v20 sur texte validé par le responsable ; les conditions étant ouvertes, D-292 §5 impose des conditions v3 (partie 3 = v20) et l'e-mail `conditions_utilisation@3`, tous deux validés en session. Bancs du registre et des gabarits mis à jour, textes figés mot pour mot. Dossier RGPD et plan (F44) mis à jour.
+
+**Écarté.** Différer b25 jusqu'au texte des durées (m17) : la v19 restait inexacte.
+
+**Prochaine action.** CI, CodeRabbit, merge ; envoi de l'e-mail des conditions v3 par le responsable s'il le décide ; constat H07 en conteneur dès le déploiement de #1676.
+
+**Ouvert.** Constat de la première purge après le 2026-11-02.
