@@ -11543,6 +11543,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
+## 2026-10-24 — J3-12h lot 2 : liste du courrier complément et trace de sa remise (migration seule, D-345)
+
+**Fait.** Migration `20261024110000_courriers_complement_remises_v1` : deux tables en ajout seul. `courriers_complement_listes` retient la liste du courrier à sa consignation. `courriers_complement_remises` exige l'égalité de trois listes (insérée, recalculée depuis le protocole V4, consignée), un courrier sortant ancré `complement-cible-%` et le texte recopié. S'y ajoutent l'espèce de lecture `courrier_complement`, l'effacement nommé, la garde de dépôt et la ligne RGPD (validée). Le contrat négatif est vert, onze mutations le font rougir ; T1, T2 et T3 sont verts.
+
+**Écarté.** Une colonne sur `correspondances_medecin` (panne de la table pendant la fenêtre de release-db) ; renvoyer le lien courrier ↔ liste au lot 3 (il aurait demandé une seconde migration).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, release-db sur la tête de main, constat par conteneur ; puis le lot 3.
+
+**Ouvert.** Obligations du lot 3 reçues de la revue (handoff du lot).
 ## 2026-10-24 — F79, premier temps : dix-sept liens analyte-axe signés (D-351)
 
 **Fait.** Production relue en lecture seule (one-off-9987, 1677) : 0 lien, 8 CHECK, cible `axe` fermée, 92 analytes, 1 064 claims certifiés qui citent un analyte, presque aucun niveau de preuve écrit. Brouillon au Claude Doc privé ; douze arbitrages (huit sur la recommandation, quatre contre) ; liste de dix-sept liens signée. D-351 en forme opaque, fiches F52 (constat) et F79 mises à jour.
