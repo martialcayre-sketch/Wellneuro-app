@@ -8,6 +8,7 @@ import {
 } from '@/lib/praticien/provenanceChiffre';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // LES CERCLES DES 12 BESOINS, PROPRES AU COCKPIT — r3_08 (Q2, arbitrage du
 // 2026-10-22, qui vaut besoin exprimé au sens du gel D/49).
@@ -24,7 +25,9 @@ import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance'
 // strate (arbitrage du 2026-10-24) — jamais par un changement de teinte.
 // Une valeur sans provenance établie ne s'affiche pas ([[D-333]] §2 règle 1) :
 // ni chiffre dans la liste, ni intensité sur la figure (le point reste au
-// plancher).
+// plancher). En mode consultation ([[D-354]] §2-3), même chose pour toute
+// valeur : le point mesuré reste plein, au plancher, et la liste dit la
+// mention à la place du pourcentage.
 
 type Strate = { code: StrateCode; nom: string; rayon: number; teinte: string; encre: string };
 
@@ -83,6 +86,7 @@ function position(i: number, n: number, rayon: number, ecart = 0): { x: number; 
 
 export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) {
   const ordonnes = [...besoins].sort((a, b) => a.id - b.id);
+  const chiffresMasques = useChiffresMasques();
 
   return (
     <div className="flex w-full flex-col gap-3">
@@ -120,7 +124,11 @@ export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) 
                     cy={p.y}
                     r={RAYON_POINT}
                     fill={s.teinte}
-                    fillOpacity={provenanceEtablie(b.provenance) ? opaciteRemplissage(b.couverture) : OPACITE_PLANCHER}
+                    fillOpacity={
+                      provenanceEtablie(b.provenance) && !chiffresMasques
+                        ? opaciteRemplissage(b.couverture)
+                        : OPACITE_PLANCHER
+                    }
                     stroke={s.encre}
                     strokeWidth={1.5}
                   />
@@ -159,16 +167,20 @@ export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) 
               <span className="text-foreground">{cle}</span>
               <span className="text-muted-foreground">
                 {' — '}
-                {b.couverture === null
-                  ? 'Non mesuré'
-                  : provenanceEtablie(b.provenance)
-                    ? `${b.couverture}%`
-                    : MENTION_SOURCE_NON_ENREGISTREE}
+                {b.couverture === null ? (
+                  'Non mesuré'
+                ) : !provenanceEtablie(b.provenance) ? (
+                  MENTION_SOURCE_NON_ENREGISTREE
+                ) : chiffresMasques ? (
+                  <ValeurMasquee className="text-sm" />
+                ) : (
+                  `${b.couverture}%`
+                )}
               </span>
               {b.couverture === null && b.motifNonMesure && b.motifNonMesure.length > 0 && (
                 <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} />
               )}
-              {b.couverture !== null && provenanceEtablie(b.provenance) && (
+              {b.couverture !== null && provenanceEtablie(b.provenance) && !chiffresMasques && (
                 <>
                   {b.carteLiee && (
                     <span className="block text-xs text-muted-foreground">{MENTION_CARTE_LIEE[b.carteLiee]}</span>

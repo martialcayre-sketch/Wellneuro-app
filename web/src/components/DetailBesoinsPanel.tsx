@@ -7,6 +7,7 @@ import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
@@ -23,6 +24,10 @@ export function DetailBesoinsPanel({
   emailPatient?: string;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
+  // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni contour
+  // du radar — le polygone dit les valeurs par sa forme ; ses axes restent.
+  // Hors fiche : toujours `false`.
+  const chiffresMasques = useChiffresMasques();
   const [loading, setLoading] = useState(true);
 
   const charger = useCallback(() => {
@@ -97,7 +102,10 @@ export function DetailBesoinsPanel({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ScoreRadar data={radarData} />
+        <div className="flex flex-col gap-1">
+          <ScoreRadar data={radarData} valeursMasquees={chiffresMasques} />
+          {chiffresMasques && <ValeurMasquee className="text-center text-sm" />}
+        </div>
 
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <table className="min-w-full text-sm">
@@ -116,7 +124,7 @@ export function DetailBesoinsPanel({
                   <td className="px-4 py-2">{b.libellePraticien}</td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {b.couverture !== null ? (
-                      `${b.couverture}%`
+                      chiffresMasques ? <ValeurMasquee /> : `${b.couverture}%`
                     ) : (
                       <>
                         —

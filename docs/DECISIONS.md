@@ -4,6 +4,83 @@
 
 ## Décisions actives
 
+### D-354 — t43 : le mode consultation est un écran partagé avec le patient, sous la règle du portail — aucun chiffre ; seuls le cockpit et les 12 besoins restent (amende HC-F LOT-03 ; applique la règle du portail des arbitrages des 2026-10-10 et 11)
+
+- Date : 2026-10-24
+- Statut : accepté. Le responsable a tranché les huit questions de t43 le
+  2026-10-24 ; décision rédigée par l'assistant à partir de ces réponses.
+  Deux points d'exécution, non posés par les huit réponses, sont pris par
+  l'assistant au plus près du §1 et nommés au §2 (libellés d'interprétation,
+  textes du moteur qui citent un score) : à reprendre par le responsable s'il
+  les lit autrement.
+- Domaine : fiche patient praticien (`FichePatientPanel.tsx`), dette t43 de la
+  file A. Au 2026-10-24, le mode ne masquait que l'export, et son état n'était
+  transmis à aucun enfant.
+- Applique : la règle du portail (aucun chiffre, ni score, ni pourcentage),
+  confirmée le 2026-10-11, à l'écran que le praticien tourne vers le patient.
+  Amende : l'enveloppe `ModeConsultation` (HC-F LOT-03), qui n'était qu'une
+  bascule de mise en page.
+- **Ne touche pas** : aucune formule, table, version, poids, seuil ni borne
+  (`VERSION_SCORE_EQUILIBRE` inchangée, `lib/equilibre` et `lib/scoring` non
+  modifiés) ; aucune route, aucune écriture ; aucune migration ; aucun drapeau ;
+  rien au portail. Hors du mode, l'écran est inchangé.
+
+**§1 — Principe.** Le mode consultation est un écran partagé avec le patient.
+Il tombe donc sous la règle du portail : sans chiffre. Le praticien quitte le
+mode pour retrouver ses chiffres. La fiche pose un contexte
+(`patient-cockpit/ChiffresMasques.tsx`) que lit chaque composant qui rend une
+valeur ; hors de la fiche, sa valeur par défaut ne masque rien.
+
+**§2 — Ce qui est masqué.** Les pourcentages des 12 besoins — tableau du
+tiroir, tableau de l'onglet et contour du radar (ses axes et leur « non
+mesuré » restent), liste des cercles et intensité de leurs
+points (le point mesuré reste plein, au plancher) ; l'indice global et les
+trois autres repères de suivi (stabilité métabolique, réserve d'adaptation,
+clarté) ; le momentum, son écart et son sens, au tiroir comme au chip « Au
+tour précédent » et à la tendance du point J21 ; les scores et sous-scores
+des questionnaires, leurs découpages descriptifs et leur « Résumé du score »
+(tiroir « Détail des réponses »), et l'intensité « x/10 » de la plainte
+dominante ; les valeurs biologiques des portes (la date de prélèvement et la
+provenance restent). Restent : les dates, le « jour N », les jalons, les
+comptes d'objets (questionnaires reçus, envois, besoins mesurés sur 12). Deux
+lectures prises par l'assistant : **les libellés d'interprétation** d'un score
+(colonne « Interprétation », bande de la plainte) sont masqués avec lui — ils
+disent le score en mots ; **les textes du moteur qui citent un score** (motif
+de la carte de décision, « Ce qui l'indique » des assiettes, de la forme
+« score N dans la plage… ») sont masqués entiers. La provenance d'une valeur
+masquée n'est pas offerte : elle date une valeur qu'on ne montre pas.
+
+**§3 — À la place.** La structure reste — carte, ligne, colonne —, sans
+valeur, avec la mention neutre « masqué en mode consultation », distincte de
+« Non mesuré », qui garde sa forme et son mot. La mention ne couvre qu'une
+valeur qui existe : une valeur absente garde son « — », une valeur sans
+provenance sa « Source non enregistrée ». Aucune étiquette qualitative,
+faute de seuils signés.
+
+**§4 — Onglets.** Seuls « Poste de pilotage » et « Les 12 besoins » restent ;
+Alimentation, Trajectoire, Biologie et Correspondance sont masqués. Tout geste
+qui mène à un onglet masqué pendant le mode (bandeau, runtime clinique,
+clavier) ramène au cockpit.
+
+**§5 — Aucun texte supplémentaire masqué.** La synthèse, les notes et
+l'e-mail restent.
+
+**§6 — Sécurité.** Les bandeaux de sécurité restent visibles.
+
+**§7 — Livraison.** Directe, sans drapeau. Des bancs vérifient l'absence de
+chaque chiffre : E2E `mode-consultation-sans-chiffre.spec.ts` (valeurs
+sentinelles, contrôle positif hors du mode, puis absence dans le mode, et
+balayage de chaque phase du cockpit) ; unitaires de la fiche et des cercles.
+
+**§8 — Activation.** Activé depuis un onglet masqué, le mode ramène au
+cockpit, sans retour mémorisé : en quittant, le praticien reste où il est.
+Activé depuis « Les 12 besoins », il y reste.
+
+**Non masqué, faute d'être dans la liste du §2** : les agendas de sommeil et
+alimentaire (heures, durées, efficacité), les données physiologiques
+déclarées (poids, taille). À reprendre par le responsable s'il les veut sous
+la même règle.
+
 ### D-353 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
 
 - Date : 2026-10-24

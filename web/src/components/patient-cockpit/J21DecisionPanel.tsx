@@ -3,6 +3,7 @@
 import { optionLibelle, type PointEtape } from '@/lib/protocol/checkinDomain';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // Panneau décisionnel du point d'étape J21 (C2A LOT-04) — LECTURE SEULE. Il
 // affiche le « résumé J21 » (point de jonction A1 : le score a-t-il bougé ?
@@ -46,6 +47,7 @@ export function J21DecisionPanel({
    */
   suiviOuvert?: boolean | null;
 }) {
+  const chiffresMasques = useChiffresMasques();
   // SANS DIFFUSION, AUCUN POINT D'ÉTAPE NE COURT ([[D-255]]). Le panneau
   // affichait « en attente du patient » sur un protocole qui n'existait pas, et
   // offrait d'alléger ou de pivoter un protocole jamais servi.
@@ -76,7 +78,11 @@ export function J21DecisionPanel({
         <p className="text-xs text-muted-foreground">{MENTION_NATURE_INDICE_GLOBAL}</p>
         <p className="text-foreground">
           Score « Mon équilibre » :{' '}
-          {resume?.score ? (
+          {/* La tendance du total se lit comme son écart : masquée en mode
+              consultation ([[D-354]] §2). */}
+          {resume?.score && chiffresMasques ? (
+            <ValeurMasquee />
+          ) : resume?.score ? (
             <span className="font-medium">{LABEL_TENDANCE[resume.score.tendance]}</span>
           ) : (
             <span className="text-muted-foreground">non disponible pour l’instant</span>

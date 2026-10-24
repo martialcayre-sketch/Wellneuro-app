@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PortesBiologiquesApiResponse } from '@/app/api/praticien/assiettes-indiquees/portes-biologiques/route';
 import type { DernierResultat } from '@/lib/clinical/portesBiologiquesService';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // CE QUE DISENT LES SOURCES, CE QUE MESURE LE DOSSIER — côte à côte, jamais
 // comparés ([[D-245]], table signée [[D-246]]).
@@ -41,6 +42,9 @@ function phraseSansResultat(nombre: number, aCote: boolean): string {
 }
 
 export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
+  // Mode consultation de la fiche ([[D-354]] §2) : la valeur biologique se
+  // masque ; la date de prélèvement et la provenance restent.
+  const chiffresMasques = useChiffresMasques();
   // MÊME DISCIPLINE QUE LA CARTE QUI LA PORTE : chaque état est daté du dossier
   // qui l'a produit, et un jeton écarte une réponse en retard. Une valeur
   // biologique servie sous le mauvais dossier est la pire des erreurs possibles
@@ -157,7 +161,12 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
                     <li key={marqueur.analyteCode} className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{marqueur.libelle}</span>
                       {' : '}
-                      {marqueur.dernier
+                      {marqueur.dernier && chiffresMasques ? (
+                        <>
+                          <ValeurMasquee /> — prélevé le {dateLisible(marqueur.dernier.preleveLe)},{' '}
+                          {PROVENANCE[marqueur.dernier.source] ?? marqueur.dernier.source}
+                        </>
+                      ) : marqueur.dernier
                         ? `${valeurLisible(marqueur.dernier)} — prélevé le ${dateLisible(marqueur.dernier.preleveLe)}, ${PROVENANCE[marqueur.dernier.source] ?? marqueur.dernier.source}`
                         : 'aucun résultat au dossier'}
                     </li>

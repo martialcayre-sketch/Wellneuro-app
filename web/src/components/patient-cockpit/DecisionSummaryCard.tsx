@@ -7,6 +7,7 @@ import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
 import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION, attestationValide } from '@/lib/clinical/perimetreClassementV1';
 import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
 
@@ -62,6 +63,7 @@ export function DecisionSummaryCard({
   mesurable?: boolean;
 }) {
   const idTitre = useId();
+  const chiffresMasques = useChiffresMasques();
 
   // LA MESURE DE LA SURFACE D'EXPLICABILITÉ — et son dénominateur.
   //
@@ -222,7 +224,10 @@ export function DecisionSummaryCard({
         )}
         detail={(
           <div className="space-y-3">
-            {current && <p>{current.rationale}</p>}
+            {/* Le motif cite les déclencheurs atteints, scores compris
+                (« score N dans la plage… ») : masqué entier en mode
+                consultation ([[D-354]] §2). */}
+            {current && (chiffresMasques ? <p><ValeurMasquee className="text-sm" /></p> : <p>{current.rationale}</p>)}
             {/* LES PASSATIONS QUI FONDENT LE CANDIDAT — `DC-34` (« quelles
                 données patient ») et `DC-01` (la chaîne observation →
                 instrument fait partie de ce qui valide la sortie).

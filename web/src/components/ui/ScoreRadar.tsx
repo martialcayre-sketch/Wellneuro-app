@@ -18,7 +18,18 @@ export type ScoreRadarPoint = { axe: string; value: number | null };
 
 type PointRadar = { x: number; y: number; value?: unknown };
 
-export function ScoreRadar({ data, max = 100 }: { data: ScoreRadarPoint[]; max?: number }) {
+// `valeursMasquees` : mode consultation de la fiche ([[D-354]] §3). Les axes et
+// leur « non mesuré » restent ; ni contour, ni points, ni graduation — rien
+// qui dise une valeur, et aucun axe mesuré ramené à zéro.
+export function ScoreRadar({
+  data,
+  max = 100,
+  valeursMasquees = false,
+}: {
+  data: ScoreRadarPoint[];
+  max?: number;
+  valeursMasquees?: boolean;
+}) {
   const nonMesures = new Set(data.filter(d => !estMesure(d.value)).map(d => d.axe));
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
@@ -39,7 +50,13 @@ export function ScoreRadar({ data, max = 100 }: { data: ScoreRadarPoint[]; max?:
               );
             }}
           />
-          <PolarRadiusAxis angle={30} domain={[0, max]} tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} />
+          <PolarRadiusAxis
+            angle={30}
+            domain={[0, max]}
+            tick={valeursMasquees ? false : { fill: 'var(--muted-foreground)', fontSize: 10 }}
+            axisLine={!valeursMasquees}
+          />
+          {!valeursMasquees && (
           <Radar
             dataKey="value"
             stroke="var(--color-primary)"
@@ -60,6 +77,7 @@ export function ScoreRadar({ data, max = 100 }: { data: ScoreRadarPoint[]; max?:
                 ? <circle cx={cx} cy={cy} r={3} fill="var(--color-primary)" />
                 : <g />}
           />
+          )}
         </RadarChart>
       </ResponsiveContainer>
     </div>
