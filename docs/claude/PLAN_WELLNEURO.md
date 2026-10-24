@@ -2232,7 +2232,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
 | x | H29 | porte 28 |
 | r, o, t | H28, H30, H31 | S-1 (H06) |
-| comptage T0 en conteneur | H07 | effectif de masquage (F25) |
+| comptage T0 en conteneur (fait le 2026-10-24 : constat versé en H07 ; reste la D-xxx du délai, tenue en H07) | H07 | effectif de masquage (F25) : levé par D-298 |
 | texte de l'avis rendu au patient après verdict (D-281 §2 b) : signé le 2026-10-14 (D-281 §4), servi au portail par la seconde PR de l'étape 4 (fait ; inerte avant la signature) | F66 | étape 4 de D-281 |
 | M-1, signature de SAF-EI-01 amendée | F66 | étape 4 de D-281 et les trois préalables de D-281 §2 (§8) |
 | al ; y ; au | H57, H58, H56 | porte 4 et J2-alim (al) ; d, porte 6 et F25 (y) ; porte 16, c et porte 6 (au) |
