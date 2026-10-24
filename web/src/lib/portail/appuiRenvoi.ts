@@ -1,11 +1,11 @@
 // `WN_PORTAIL_APPUI_RENVOI` — LA PHRASE D'APPUI DU QUESTIONNAIRE RENVOYÉ
-// (lettre ak, fiche H80, [[D-351]]). Fermé, le fil du jour sert les
+// (lettre ak, fiche H80, [[D-352]]). Fermé, le fil du jour sert les
 // questionnaires exactement comme avant. Ouvert, la route du check-in annonce,
 // pendant la fenêtre du rendez-vous de suivi J21, les assignations renvoyées ;
 // le fil pose sous chacune la phrase acceptée (`texteAppuiRenvoi.ts`). Aucune
 // écriture, aucune trace, aucune migration.
 //
-// UN QUESTIONNAIRE RENVOYÉ ([[D-351]] §2, Q4 du 2026-10-24) : une assignation
+// UN QUESTIONNAIRE RENVOYÉ ([[D-352]] §2, Q4 du 2026-10-24) : une assignation
 // ouverte, faite au jour 0 ou après, d'un instrument que le patient a déjà
 // rempli AVANT le jour 0. Le jour 0 et la fenêtre ne se calculent pas ici :
 // ce sont ceux de la route du check-in ([[D-255]], `pointEtapeCourant`), pour

@@ -499,7 +499,7 @@ describe('rendezVousSuiviAFaire — la réponse de la route du check-in', () => 
   });
 });
 
-describe('la phrase d’appui du questionnaire renvoyé (D-351, lettre ak)', () => {
+describe('la phrase d’appui du questionnaire renvoyé (D-352, lettre ak)', () => {
   const renvoye = assign({ idAssignation: 'ASS_RENVOYE', idQuestionnaire: 'Q_ALI_01' });
   const neuf = assign({ idAssignation: 'ASS_NEUF', idQuestionnaire: 'Q_SOM_01', titre: 'Sommeil' });
 

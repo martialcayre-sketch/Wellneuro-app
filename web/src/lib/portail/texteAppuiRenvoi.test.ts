@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { APPUI_QUESTIONNAIRE_RENVOYE } from './texteAppuiRenvoi';
 
 describe('texte accepté de la phrase d’appui du questionnaire renvoyé', () => {
-  // RECOPIE AU CARACTÈRE PRÈS : le banc relit la citation de D-351 §1. Égalité
+  // RECOPIE AU CARACTÈRE PRÈS : le banc relit la citation de D-352 §1. Égalité
   // stricte : une phrase tronquée, ajoutée ou retouchée rougit.
-  it('est la citation de D-351 §1, ni plus ni moins', () => {
+  it('est la citation de D-352 §1, ni plus ni moins', () => {
     const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
     // La section se trouve par son titre, non par son numéro : un numéro pris
     // par une autre PR se renumérote au merge sans faire lire au banc la

@@ -1,4 +1,4 @@
-# Handoff — 2026-10-24 — ak : phrase d'appui sous chaque questionnaire renvoyé (D-351)
+# Handoff — 2026-10-24 — ak : phrase d'appui sous chaque questionnaire renvoyé (D-352)
 
 ## Branche et état Git
 
@@ -7,7 +7,7 @@
   2026-10-16 ; worktree `act5-mineurs` (session concurrente, cycle en
   git/gh direct).
 - Une PR, code et documents ; aucune migration.
-- **Numéro à fixer au merge** : D-351 est aussi pris par #1680 (F79),
+- **Numéro à fixer au merge** : D-352 est aussi pris par #1680 (F79),
   ouverte. Le contrôle de numérotation refuse un trou : celle des deux qui
   merge en second se renumérote (D-352). Le banc du texte trouve la décision
   par son titre, pas par son numéro.
@@ -20,7 +20,7 @@ constat par identifiant.
 
 ## Décisions prises
 
-- D-351 : texte du responsable du 2026-10-24, variante A de trois brouillons
+- D-352 : texte du responsable du 2026-10-24, variante A de trois brouillons
   rédigés par l'assistant à sa demande, retenue sans retouche.
 - Renvoyé = assignation ouverte faite au jour 0 ou après, d'un instrument
   déjà rempli avant le jour 0 (Q4) ; agendas exclus (place 9 distincte) ;
@@ -42,7 +42,7 @@ constat par identifiant.
 - `web/src/lib/gamification-patient.guard.test.ts`.
 - `docs/DECISIONS.md`, `docs/FEATURE_FLAGS.md`,
   `docs/claude/PLAN_WELLNEURO.md`,
-  `changelog.d/2026-10-24-d351-appui-renvoi-ak.md`.
+  `changelog.d/2026-10-24-d352-appui-renvoi-ak.md`.
 
 ## Validations exécutées
 
@@ -53,7 +53,6 @@ constat par identifiant.
 
 ## Problèmes ouverts
 
-- Numérotation avec #1680 (ci-dessus).
 - Activation non faite : drapeau `WN_PORTAIL_APPUI_RENVOI` absent en
   production.
 
@@ -62,7 +61,7 @@ constat par identifiant.
 CI, revue CodeRabbit sur la tête, merge `--match-head-commit`, déploiement
 constaté. Puis, sur accord du responsable : `env-set
 WN_PORTAIL_APPUI_RENVOI=true`, redémarrage web, `env-get` relu ; constat
-D-351 §5 sur un dossier de test dans ses jours 18 à 24, avec un
+D-352 §5 sur un dossier de test dans ses jours 18 à 24, avec un
 questionnaire déjà rempli avant le jour 0 renvoyé par le praticien.
 
 ## Interdits encore actifs
