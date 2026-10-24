@@ -4,6 +4,93 @@
 
 ## Décisions actives
 
+### D-353 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
+
+- Date : 2026-10-24
+- Statut : accepté — texte du responsable du 2026-10-24. Sur sa demande,
+  l'assistant a rédigé trois variantes ; le responsable a retenu la
+  variante A, sur une question à options, sans retouche. Décision rédigée
+  par l'assistant à partir de ce choix et des arbitrages des 2026-10-23 et
+  2026-10-24.
+- Domaine : file C du plan, place 7, fiche H80 (lettre ak) ; fil du jour du
+  portail (`web/src/lib/portail/filDuJour.ts`), route
+  `api/portail/protocole/checkin`.
+- Applique : [[D-288]] §1 (texte accepté, puis registre, puis drapeau) et §2
+  (le constat) ; [[D-255]] (le jour 0 est la première diffusion du cycle) ;
+  [[D-317]] §6 et §8 (la fenêtre du rendez-vous de suivi J21 ; aucun
+  courrier).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucun instrument,
+  aucun score ; l'ordre des questions des instruments (piste A1 du
+  2026-10-24, chantier distinct, non démarré) ; le choix des questionnaires
+  renvoyés, qui reste le geste du praticien ; aucune migration, aucune
+  écriture, aucune trace de lecture, aucun e-mail.
+
+**§1 — Le texte.** Accepté tel quel, servi au caractère près
+(`web/src/lib/portail/texteAppuiRenvoi.ts`, relu par un banc) :
+
+> Votre praticien vous le propose à nouveau : il n’y a ni bonne ni mauvaise réponse, répondez tel que vous le vivez.
+
+La phrase vise le biais de performance (Q1) : elle n'annonce aucun progrès
+attendu. Elle ne rappelle pas les premières réponses, pour ne pas raviver le
+biais de souvenir, que l'ordre des questions traitera (A1). Elle ne nomme
+aucune période (« aujourd'hui », « ces jours-ci ») : un instrument validé
+porte sa propre période de rappel, que la phrase ne doit pas contredire.
+
+**§2 — Où et quand.** Sous la ligne de chaque questionnaire renvoyé du fil
+« à faire » du portail, à la place de l'appui vide, sans ligne ajoutée. Un
+questionnaire est **renvoyé** quand son assignation est ouverte, faite au
+jour 0 ou après, et que le patient a déjà rempli le même instrument avant le
+jour 0 (Q4) — toute réponse antérieure compte, quel que soit son statut de
+validité. Ne sont pas des questionnaires renvoyés : les agendas du sommeil
+et alimentaire, qui portent leur propre rappel et dont le geste du 21e jour
+est un message distinct (place 9, H81, sans fusion) ; une assignation
+déverrouillée pour correction, qui reste transmise (une correction n'est pas
+un renvoi). La phrase ne paraît que pendant la fenêtre du rendez-vous de suivi
+J21, jours 18 à 24 depuis le jour 0 ([[D-255]], `pointEtapeCourant`), même si
+le renvoi a eu lieu avant ou après (arbitrage (6) du 2026-10-23, conséquence
+dite et acceptée). Rien quand les recueils sont en pause (mineur, dossier
+clos), ni quand la route ne répond pas ; une lecture en échec retire la
+phrase sans retirer le rendez-vous de suivi.
+
+**§3 — Les arbitrages consignés** (fiche H80) : (1) objet, le patient invité
+à refaire ses questionnaires une fois que le praticien les lui a renvoyés ;
+(2) jour 0 = première diffusion, sans dépendre de BP-15 ; (3) jours 18 à 24 ;
+(4) fil « à faire », sans courrier ; (5) une phrase sous chaque ligne ;
+(6) aucune phrase hors des jours 18 à 24. Puis, le 2026-10-24 : **Q1**,
+réduire les deux biais, chacun par son remède (souvenir par l'ordre des
+questions, performance par la formulation) ; **Q2**, piste A1, un ordre
+aléatoire au T0 et au jalon sur les seuls instruments maison dont les droits
+le permettent, une décision par instrument après recherche bibliographique
+sourcée, chantier distinct d'ak ; **Q3**, B0, les mêmes instruments au jalon
+tant qu'aucune forme de suivi n'est sourcée ; **Q4**, ak n'attend pas A1, la
+phrase vaut pour tout questionnaire rempli avant la diffusion et renvoyé
+après.
+
+**§4 — Registre et drapeau.** `WN_PORTAIL_APPUI_RENVOI`, chaîne exacte
+`'true'`, absent = fermé, **neuf et éteint à la livraison** ; inscrit à
+`docs/FEATURE_FLAGS.md` § A. La route du check-in annonce
+`questionnairesRenvoyes` (identifiants d'assignation du patient de la
+session) seulement drapeau ouvert et point J21 ouvert ; le fil ne lit pas
+l'environnement. Aucune table, aucun site d'IA : le registre de F70 n'a rien
+à recevoir.
+
+**§5 — L'activation.** Une seule à la fois, la précédente constatée
+(porte 18 ; l'encart bd l'est depuis le 2026-10-24). Le drapeau se pose sur
+accord du responsable, après le merge et le déploiement constaté. Constat
+([[D-288]] §2) : sur un dossier de test dans ses jours 18 à 24, un
+questionnaire déjà rempli avant le jour 0 renvoyé par le praticien, la
+phrase lue en ligne par le responsable sous sa ligne ; le jour 0, la date
+d'assignation et la réponse antérieure relus par identifiant depuis un
+conteneur ; consigné en agrégats. Ensuite seulement, la place 8.
+
+**§6 — Limites connues, laissées en l'état.** Un questionnaire renvoyé avant le jour 18 mais rempli après le jour 24
+n'aura porté la phrase que pendant la fenêtre. Un pivot relance le
+calendrier ([[D-255]]) : le jour 0, et donc la fenêtre, suivent le nouveau
+cycle.
+
+- Conséquences : fragment `changelog.d/2026-10-24-d353-appui-renvoi-ak.md` ;
+  `docs/FEATURE_FLAGS.md` ; plan, fiche H80 et §3 de la file C.
+
 ### D-352 — Les 12 besoins au cockpit : le compte des besoins mesurés sur l'instrument, et « Compléter la mesure » pour une source sans passation exploitable (Q6, Q8 de l'audit des instruments ; r3_11, F59)
 
 - Date : 2026-10-24
