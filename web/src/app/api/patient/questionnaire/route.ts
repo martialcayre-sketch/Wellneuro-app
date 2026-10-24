@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { notePraticienAffichable } from '@/lib/consultation/notePraticien';
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
 import type { RaisonRefusAge } from '@/lib/patient/gardeAge';
 import { getRendererPourDefinition, type DefinitionServie, type RendererProfile } from '@/lib/questionnaire-display';
@@ -138,7 +139,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       idQuestionnaire: ass.idQuestionnaire,
       titre: ass.titre,
       dateLimite: ass.dateLimite ?? null,
-      notes: ass.notes ?? null,
+      // Les anciens libellés par défaut ne sont pas une note du praticien (D/52).
+      notes: notePraticienAffichable(ass.notes),
       statut: ass.statut,
       consentement: ass.consentement,
       statutReponses: ass.statutReponses,

@@ -65,6 +65,20 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     expect(await response.json()).toMatchObject({ ok: true, assignation: { idPatient: assignation.idPatient } });
   });
 
+  // D/52 : les anciens libellés par défaut ne s'affichent plus comme une note
+  // du praticien ; une vraie note passe.
+  it.each([
+    ['Pack Pack de base', null],
+    ['Envoi groupé — bibliothèque', null],
+    ['À remplir à jeun, avant la consultation.', 'À remplir à jeun, avant la consultation.'],
+  ])('note %s → %s', async (notes, attendu) => {
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, notes });
+    const response = await GET(requeteProprietaire());
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.assignation.notes).toBe(attendu);
+  });
+
   it('refuse un autre patient même lorsque son email est identique', async () => {
     const cookie = signPatientSession({ idPatient: 'PAT_2', email: assignation.emailPatient });
     expect((await GET(request('', cookie))).status).toBe(404);

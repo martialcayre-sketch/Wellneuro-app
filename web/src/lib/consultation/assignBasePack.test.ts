@@ -51,6 +51,8 @@ describe('assignPackToPatient — instruments suspendus', () => {
     const { cree } = await assigner(['Q_NEU_03']);
     expect(cree).toHaveLength(1);
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    // D/52 : sans note, rien — « Pack <nom> » s'affichait comme une note du praticien.
+    expect(prisma.assignation.create.mock.calls[0][0].data.notes).toBeNull();
   });
 
   // L'instrument témoin était `Q_SOM_07` jusqu'au 2026-07-31 ; il a été
