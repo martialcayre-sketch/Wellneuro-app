@@ -243,7 +243,7 @@ describe('ClinicalSnapshot', () => {
   });
 });
 
-// J3-12g (D-358) : l'agenda du sommeil est complet au snapshot dès que la
+// J3-12g (D-359) : l'agenda du sommeil est complet au snapshot dès que la
 // clôture l'a écrit. Agrégats synthétiques, valeurs techniques de banc.
 const AGENDA_COMPLET = {
   AGD_NB_NUITS: 18, AGD_FENETRE_MOY: 480, AGD_TIB_MOY: 500, AGD_PRELIT_MOY: 20,
@@ -273,7 +273,7 @@ function besoin5DesRoutes(rawAnswers: Record<string, unknown>): number | null {
   return direct.strates.flatMap(strate => strate.besoins).find(b => b.besoin === 5)?.couverture ?? null;
 }
 
-describe('ClinicalSnapshot — agenda du sommeil (J3-12g, D-358)', () => {
+describe('ClinicalSnapshot — agenda du sommeil (J3-12g, D-359)', () => {
   it.each([
     ['complet', AGENDA_COMPLET],
     ['clôturé avant les compteurs du contrat v4', AGENDA_AVANT_V4],

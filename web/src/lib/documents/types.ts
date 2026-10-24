@@ -25,7 +25,9 @@ export type SourceBloc =
   /** Signaux d'alerte DÉCLARÉS à l'anamnèse, cotés par [[D-099]] — lettre d'adressage ([[D-218]]). */
   | 'signaux_securite_anamnese'
   /** Réponses aux questions sur le suicide, avec ou sans signaux d'anamnèse ([[D-275]] §2). */
-  | 'signaux_securite_questionnaires';
+  | 'signaux_securite_questionnaires'
+  /** Compléments ciblés d'une version, sous la table signée des déclencheurs ([[D-345]]). */
+  | 'complement_cible';
 
 /**
  * Régime de contenu — jamais mélangés dans un rendu diffusé :

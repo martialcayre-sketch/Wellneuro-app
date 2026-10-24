@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-358 — J3-12g : l'agenda du sommeil est complet au snapshot dès que la clôture l'a écrit — l'écart avec les routes est fermé pour l'agenda, sans changement de version ; les cartes qui en dérivent se réapprouvent (résidu de D-329 §2)
+### D-359 — J3-12g : l'agenda du sommeil est complet au snapshot dès que la clôture l'a écrit — l'écart avec les routes est fermé pour l'agenda, sans changement de version ; les cartes qui en dérivent se réapprouvent (résidu de D-329 §2)
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24 (file A,
@@ -70,6 +70,74 @@ que l'indice lit (même défaut pour l'agenda sous le seuil d'agrégation).
 **Ne touche pas** : le scoring `agenda_sommeil`, `BESOIN_SOURCES`, le niveau
 de preuve D de l'indice, le rideau T0 (l'agenda en reste exclu, [[D-052]]),
 l'agenda alimentaire (`Q_ALI_09`).
+
+### D-358 — J3-12h, lot 3 : texte du courrier complément validé, et « déjà tracé » = la liste de la version contenue dans celle d'une remise antérieure (applique D-345 §4, §5, §7)
+
+- Date : 2026-10-24
+- Statut : accepté — quatre arbitrages du responsable du 2026-10-24, sur
+  questions à options, au cadrage du lot 3 de [[D-345]]. Deux sont cliniques
+  (§1, §2) ; deux sont d'exécution (§3, §4).
+- Domaine : `lib/correspondance/courrierComplement*.ts`,
+  `lib/clinical/entreesGardeComplement.ts`, route
+  `api/praticien/protocoles/courrier-complement`, clic de diffusion
+  (`api/praticien/protocoles/diffusion`), constructeur de protocole.
+- **Ne touche pas** : la table signée des déclencheurs (sha `709ab44c…6a2e`
+  inchangé), la garde pure du lot 1, aucune migration, aucun `schema.prisma`.
+
+**§1 — Texte du courrier.** Le brouillon proposé au cadrage est validé tel
+quel et embarqué dans le générateur (`genererCourrierComplement`) : il ne
+nomme ni la population ni la situation qui appelle le courrier (forme
+opaque), désigne « la personne que vous suivez », liste les compléments ciblés
+(intitulé, et ingrédient du catalogue s'il est renseigné), laisse la décision
+médicale au médecin, dit que la personne remet elle-même le courrier, et porte
+la réserve « il ne remplace pas une consultation sans délai si son état le
+demande ». Il passe la garde non prescriptive ; le nom du patient n'est que
+dans l'en-tête du rendu. Le retoucher demande une nouvelle validation.
+
+**§2 — « Déjà tracé pour ces compléments ».** La liste des compléments ciblés
+d'une version est couverte si elle est **contenue** dans la liste d'**une**
+remise antérieure du dossier. Retirer un complément ne demande pas de courrier
+neuf ; en ajouter un en demande un. L'égalité stricte (trop lourde pour le
+praticien) et l'union de plusieurs remises (le médecin n'aurait jamais lu la
+liste entière) sont écartées.
+
+**§3 — Le portail au lot suivant.** L'espèce de lecture `courrier_complement`,
+l'écran du patient, l'accusé et l'annonce du clic forment le lot 4, sur le
+découpage de [[D-262]] (LOT-02 puis LOT-03). Le drapeau reste éteint tant que
+l'écran n'existe pas.
+
+**§4 — Un seul drapeau.** `WN_COURRIER_COMPLEMENT` ouvre ensemble la case
+« ciblé » du constructeur, le générateur, la garde du clic et la remise.
+Éteint, le clic lit et écrit exactement ce qu'il faisait avant.
+
+**Exécution (lot 3, livré sous drapeau éteint).** La garde joue parmi les
+refus d'avant l'embranchement (`409 courrier_complement_requis`, motif en
+clair) et refuse aussi un courrier à remettre quand le chemin des fiches est
+fermé. La remise passe par `createMany` dans la transaction du clic : 0 ligne
+ou 23505 se lisent « déjà remis » ; tout autre refus annule le clic entier
+(fail-closed, à la différence de la lettre d'adressage). L'aperçu du courrier
+entre dans le jeton du clic. Le courrier et sa liste s'écrivent dans une seule
+transaction, l'accord de partage relu sous verrou. Les déclarations de
+grossesse et d'allaitement sont lues aux têtes de fil de la fiche
+physiologique et dans toutes les anamnèses envoyées ; la garde de [[D-345]]
+§3 entre donc parmi les lecteurs de [[D-335]] §8 (D-345 §3, postérieure,
+nomme la fiche physiologique : elle amende sur ce point l'exclusion « ni la
+garde de population » de D-335 §8). Un courrier à remettre sous un dossier
+bloqué (clos, contrat patient refusé) refuse aussi le clic : il ne suivrait
+pas le sort des fiches en silence. L'ouverture du drapeau exige aussi
+`WN_FICHES_ASSIETTE` (sans lui, tout clic qui doit remettre un courrier est
+refusé) et `WN_PHYSIO_TRAITEMENTS` (sans lui, aucun « non » du praticien ne
+s'écrit et la garde refuse tout complément ciblé).
+
+**Revue Codex (2026-10-24), deux corrections avant le merge.** (a) La
+consignation relit la date de naissance sous le verrou du patient, avant
+toute insertion : un dossier devenu mineur, ou dont la date est effacée,
+entre la garde de la route et le verrou est refusé ([[D-345]] §3). (b)
+Arbitrage du responsable : le libellé du destinataire de [[D-345]] §7 (« le
+professionnel qui suit la grossesse, à défaut le médecin traitant ») ne
+s'affiche que quand la grossesse déclenche, plus pour un allaitement seul. La
+forme opaque vise les situations du dossier de preuve, désignées par leur
+code, pas les déclencheurs que D-345 §2 nomme en clair.
 
 ### D-357 — ap : la bibliothèque du portail, deux rayons — les documents remis et un socle commun ; le contenant seul à l'ouverture ; quatrième famille d'exceptions à la règle du portail, bornée aux chiffres sourcés de ses documents ; dossiers majeurs seuls (H82, place 10 ; amende D-333 §1)
 

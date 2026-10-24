@@ -863,6 +863,39 @@ describe('POST /api/praticien/protocoles/versions', () => {
       expect(deriverPropositionPourPatient).toHaveBeenCalledWith(episode.patientId, expect.any(String));
     });
 
+    // LA NATURE DU COMPLÉMENT ET SES SITUATIONS ([[D-345]] §1, §3) — reste du
+    // lot 1, joué avec la case du constructeur (J3-12h lot 3) : la route les
+    // persiste normalisées, et les refuse hors d'une intention de complément.
+    it('persiste la nature « ciblé » et les situations normalisées d’une intention de complément (D-345)', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const complement = {
+        ...action,
+        type: 'supplement_exploration' as const,
+        interventionStatus: 'active' as const,
+        natureComplement: 'cible' as const,
+        situationsComplement: ['S-MG-2', 'S-MG-1', 'S-MG-2'] as ('S-MG-1' | 'S-MG-2')[],
+      };
+      const res = await POST(postRequest({ episode, decisionCard, submission: { ...submissionV4, actions: [complement] } }));
+      expect(res.status).toBe(200);
+      const create = prisma.protocolDraft.upsert.mock.calls[0][0].create;
+      expect(create.payload.actions[0].natureComplement).toBe('cible');
+      expect(create.payload.actions[0].situationsComplement).toEqual(['S-MG-1', 'S-MG-2']);
+    });
+
+    it('refuse une nature de complément sur une action qui n’est pas une intention de complément (400)', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...submissionV4, actions: [{ ...actionV4, natureComplement: 'cible' }] },
+      }));
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { reason: string }).reason).toBe('draft_invalid');
+      expect(prisma.protocolDraft.upsert).not.toHaveBeenCalled();
+    });
+
     describe('l’attente nomme ses analytes, et le serveur les borne (`D-305`)', () => {
       beforeEach(() => {
         getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
