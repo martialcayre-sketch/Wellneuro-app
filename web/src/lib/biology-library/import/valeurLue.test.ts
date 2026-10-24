@@ -96,7 +96,7 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('%', null)).toBe(false);
   });
 
-  it('une absence concorde avec « ratio », et avec lui seul (D-355 §4)', () => {
+  it('une absence concorde avec « ratio », et avec lui seul (D-356 §4)', () => {
     expect(unitesConcordent(null, 'ratio')).toBe(true);
     expect(unitesConcordent('  ', 'ratio')).toBe(true);
     expect(unitesConcordent(null, '%')).toBe(false);
@@ -105,7 +105,7 @@ describe('unitesConcordent — aucune conversion (D-157)', () => {
     expect(unitesConcordent('%', 'ratio')).toBe(false);
   });
 
-  it('le DFG lu en « mL/min » concorde avec l’unité indexée du catalogue (D-355 §3), et rien d’autour', () => {
+  it('le DFG lu en « mL/min » concorde avec l’unité indexée du catalogue (D-356 §3), et rien d’autour', () => {
     expect(unitesConcordent('mL/min', 'mL/min/1,73 m²')).toBe(true);
     expect(unitesConcordent('ml/min', 'mL/min/1,73 m²')).toBe(true);
     expect(unitesConcordent('mL/min/1,73 m²', 'mL/min')).toBe(true);

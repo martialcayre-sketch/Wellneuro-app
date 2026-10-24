@@ -11610,7 +11610,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Interprétations et motifs du moteur masqués, agendas et physio laissés visibles : à confirmer par le responsable.
 
-## 2026-10-24 — t36 : libellés réels restés « inconnu », résolveur re-signé (D-355)
+## 2026-10-24 — t36 : libellés réels restés « inconnu », résolveur re-signé (D-356)
 
 **Fait.** Constat par conteneur (agrégats : 53 « inconnu », 92 résolues). Huit libellés rattachés sur arbitrage du responsable, puis la signature : « PROTEINE C REACTIVE (CRP) » à la CRP ultrasensible, le VGM, les plaquettes (EDTA), le DFG, l'HbA1c courante, l'indice oméga 3, le rapport AA/EPA, l'indice d'anisocytose. Unités : « mL/min » admis pour le DFG, une unité absente pour un ratio. 175 entrées.
 

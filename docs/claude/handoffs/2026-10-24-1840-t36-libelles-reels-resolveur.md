@@ -1,4 +1,4 @@
-# Handoff — t36 : libellés réels restés « inconnu », résolveur re-signé (D-355)
+# Handoff — t36 : libellés réels restés « inconnu », résolveur re-signé (D-356)
 
 ## Branche et état du dépôt
 
@@ -15,7 +15,7 @@ libellés lus en production et restés « inconnu ».
 
 - Constat par conteneur du 2026-10-24 (lecture seule, agrégats) : 53 lignes
   « inconnu » sur 8 imports, 92 résolues, aucune « ambigu ».
-- Arbitrages du responsable (questions à options) consignés dans `D-355` :
+- Arbitrages du responsable (questions à options) consignés dans `D-356` :
   huit libellés ; la CRP imprimée « PROTEINE C REACTIVE (CRP) » va à la CRP
   ultrasensible, « CRP (Protéine C Réactive) » (D-263) reste standard ;
   antériorités jamais rattachées ; « mL/min » ≡ « mL/min/1,73 m² » (contre
@@ -29,7 +29,7 @@ libellés lus en production et restés « inconnu ».
 
 - `web/src/lib/biology-library/import/resolverLibellesV1.ts` (+ test),
   `valeurLue.ts` (+ test).
-- `docs/DECISIONS.md` (D-355), `docs/FEATURE_FLAGS.md`,
+- `docs/DECISIONS.md` (D-356), `docs/FEATURE_FLAGS.md`,
   `docs/claude/PLAN_WELLNEURO.md` (t36 soldée, deux lignes de fiches).
 - `changelog.d/2026-10-24-t36-libelles-reels-resolveur.md`, SESSION_LOG.
 
@@ -56,5 +56,5 @@ suivi de la file A.
 ## Interdits encore actifs
 
 - Un merge à la fois, aucun auto-merge ; aucune image antérieure à 257807e3 ;
-  revérifier D-355 libre sur main au merge ; hors périmètre : m38,
+  revérifier D-356 libre sur main au merge ; hors périmètre : m38,
   WN_CONSTAT_BESOIN.

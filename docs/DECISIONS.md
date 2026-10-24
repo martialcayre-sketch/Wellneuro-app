@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-355 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
+### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24 (file A, t36),

@@ -291,7 +291,7 @@ describe('resolver — six fiches de D-323 §6 ([[D-336]], t30)', () => {
   });
 });
 
-describe('resolver — libellés réels restés « inconnu » ([[D-355]], t36)', () => {
+describe('resolver — libellés réels restés « inconnu » ([[D-356]], t36)', () => {
   const UNITES = unitesDuCatalogue();
   it.each([
     ['PROTEINE C REACTIVE (CRP)', 'mg/L', 'BIO_CRP_US'],

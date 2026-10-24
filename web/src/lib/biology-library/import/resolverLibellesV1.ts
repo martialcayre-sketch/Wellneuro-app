@@ -35,7 +35,7 @@ import { unitesConcordent } from './valeurLue';
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
 // lus sur le premier compte rendu de production ; puis par [[D-263]] : les
 // analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]] ;
-// puis par [[D-336]] (six fiches de D-323 §6) et [[D-355]] (libellés réels).
+// puis par [[D-336]] (six fiches de D-323 §6) et [[D-356]] (libellés réels).
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -233,7 +233,7 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Phosphatases alcalines', code: 'BIO_PHOSPHATASES_ALCALINES' },
   { libelle: 'Phosphatase alcaline', code: 'BIO_PHOSPHATASES_ALCALINES' },
   { libelle: 'PAL', code: 'BIO_PHOSPHATASES_ALCALINES' },
-  // [[D-355]] (t36) : libellés LUS en production et restés « inconnu »
+  // [[D-356]] (t36) : libellés LUS en production et restés « inconnu »
   // (constat par conteneur du 2026-10-24), chacun arbitré par le responsable.
   // La CRP de ce libellé est la CRP ultrasensible ; « CRP (Protéine C
   // Réactive) » de [[D-263]] reste à `BIO_CRP`. Une antériorité (« … -
@@ -268,7 +268,7 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-355]] — RE-SIGNER REMPLACE : la signature de [[D-336]]
+  // RE-SIGNÉE PAR [[D-356]] — RE-SIGNER REMPLACE : la signature de [[D-336]]
   // (2026-10-21, SHA `3e084667…`, 167 entrées, 85 analytes) portait la table
   // sans les huit libellés réels de t36 ; celles de [[D-263]] (`be9a463c…`),
   // [[D-260]] (`5f95d167…`) et [[D-259]] (`ccbd8008…`) étaient déjà
@@ -277,7 +277,7 @@ export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
   dateValidation: '2026-10-24T18:34:46.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-24, des libellés restés « inconnu » en production (constat par conteneur du même jour, agrégats : 53 lignes « inconnu », 92 résolues), contre le catalogue biology_analytes ; huit libellés réels arbitrés un par un (D-355), antériorités jamais rattachées',
+  sourceReference: 'Relecture du responsable, le 2026-10-24, des libellés restés « inconnu » en production (constat par conteneur du même jour, agrégats : 53 lignes « inconnu », 92 résolues), contre le catalogue biology_analytes ; huit libellés réels arbitrés un par un (D-356), antériorités jamais rattachées',
   shaPerimetre: 'ebe7179eba0665ac0c2382764080da1f3ef817b63994bea8e622f415656e2061',
 };
 
