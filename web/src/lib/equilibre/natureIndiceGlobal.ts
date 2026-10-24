@@ -55,8 +55,14 @@ export const MENTION_NATURE_INDICE_GLOBAL = 'Repère de suivi, pas un score clin
  * l'informerait pas.
  */
 export function mentionBesoinsMesures(mesures: number, total: number): string {
+  // Aucun besoin mesuré : aucun total n'est établi, et « Calculé sur 0 »
+  // affirmerait un calcul qui n'a pas eu lieu. Libellé choisi par le
+  // responsable le 2026-10-24 ([[D-352]] §4).
+  if (mesures === 0) return MENTION_AUCUN_BESOIN_MESURE;
   return `Calculé sur ${mesures} besoin${mesures > 1 ? 's' : ''} mesuré${mesures > 1 ? 's' : ''} sur ${total}`;
 }
+
+export const MENTION_AUCUN_BESOIN_MESURE = 'Non calculé : aucun besoin mesuré';
 
 export const MENTION_BESOINS_PARTIELS_PATIENT =
   'Votre indice ne tient compte que des besoins déjà renseignés : certains ne sont pas encore mesurés.';

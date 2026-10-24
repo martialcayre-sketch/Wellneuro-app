@@ -148,6 +148,18 @@ patient ; aucune couleur ni aucun mot qui juge la valeur ([[D-333]] §2
 règle 4) ; rien au portail (`frontierePortail.guard.test.ts` reste vert) ;
 aucune migration.
 
+**§4 — Aucun besoin mesuré (ajout du 2026-10-24, après le merge de #1684).**
+Quand aucun besoin n'est mesuré, aucun total n'est établi : « Calculé sur 0
+besoin mesuré sur 12 » affirmait un calcul qui n'a pas eu lieu. Le responsable
+a choisi, par une question à options, « Non calculé : aucun besoin mesuré »
+(options écartées : « Aucun besoin mesuré sur 12 », recommandée, et « Aucun
+besoin mesuré (0 sur 12) »). Il est servi par `mentionBesoinsMesures`, donc aux
+trois endroits du §1. La jauge de l'indice global reste inchangée : sans total,
+elle n'affiche aucune base. Dès un besoin mesuré, le libellé du §1 s'applique
+sans changement. Ce paragraphe touche `web/src/lib/equilibre/natureIndiceGlobal.ts`,
+fichier de libellés : aucun calcul, aucune formule ni version ne bouge, et la
+ligne « Nature » ci-dessus vaut pour tout le reste.
+
 ### D-351 — Liens analyte-axe : dix-sept liens signés claim par claim, écrits par migration de données, niveau de preuve facultatif (F79, premier temps ; applique D-348 §1, §5, §7)
 
 - Date : 2026-10-24

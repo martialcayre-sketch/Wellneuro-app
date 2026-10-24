@@ -596,6 +596,8 @@ describe('compterBesoinsMesures et sa mention ([[D-329]] §3)', () => {
     const { mentionBesoinsMesures } = await import('./natureIndiceGlobal');
     expect(mentionBesoinsMesures(1, 12)).toBe('Calculé sur 1 besoin mesuré sur 12');
     expect(mentionBesoinsMesures(8, 12)).toBe('Calculé sur 8 besoins mesurés sur 12');
+    // Aucun besoin mesuré : aucun calcul n'est affirmé ([[D-352]] §4).
+    expect(mentionBesoinsMesures(0, 12)).toBe('Non calculé : aucun besoin mesuré');
   });
 });
 
