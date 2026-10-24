@@ -316,6 +316,7 @@ function InstrumentTiroir({
   children,
   large = false,
   onOpenChange,
+  sousLibelle,
 }: {
   libelle: string;
   description: string;
@@ -325,6 +326,9 @@ function InstrumentTiroir({
    * denses comme « Détail des réponses » gardent la pane large). */
   large?: boolean;
   onOpenChange?: (ouvert: boolean) => void;
+  /** Seconde ligne du bouton, lue sans ouvrir le tiroir (« Les 12 besoins » :
+   *  le compte des besoins mesurés, [[D-352]] §1). */
+  sousLibelle?: string;
 }) {
   return (
     <PanneauSuperpose
@@ -340,7 +344,10 @@ function InstrumentTiroir({
           className="flex min-h-12 w-full items-center gap-2 rounded-[11px] border border-border bg-surface px-3 py-2 text-left text-14 font-medium text-foreground shadow-card hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           <Icone aria-hidden="true" size={18} strokeWidth={2} className="shrink-0 text-primary" />
-          <span className="min-w-0 flex-1">{libelle}</span>
+          <span className="min-w-0 flex-1">
+            {libelle}
+            {sousLibelle && <span className="block text-xs font-normal text-muted-foreground">{sousLibelle}</span>}
+          </span>
           <ChevronRight aria-hidden="true" size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
         </button>
       }
@@ -1426,6 +1433,17 @@ export function FichePatientPanel({
   }
 
   const { patient, objetsCliniques, priorites } = data;
+  // « Compléter la mesure » pose un instrument dans la file d'envoi de CE
+  // patient : même garde que la Trajectoire, `data` peut porter brièvement le
+  // dossier précédent après une navigation A→B.
+  const emailPatientAffiche = patient.idPatient === idPatient ? patient.email : undefined;
+  // Le compte des besoins mesurés ([[D-352]] §1), tel que la route l'a compté
+  // (`compterBesoinsMesures`) — le même que sous l'indice global. Une réponse
+  // sans l'un des deux champs : rien plutôt qu'un compte deviné.
+  const mentionCompteBesoins =
+    typeof objetsCliniques.besoinsMesures === 'number' && typeof objetsCliniques.besoinsTotal === 'number'
+      ? mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)
+      : undefined;
   const derniereAssignationId = reponses[0]?.idAssignation || null;
   // Rythme DÉCLARÉ, lu de la dernière passation Q_ALI_01 (rawAnswers déjà
   // chargés, `reponses` trié par date décroissante) : passé au panneau agenda
@@ -1469,7 +1487,11 @@ export function FichePatientPanel({
                   <>
                     —
                     {p.motifNonMesure && p.motifNonMesure.length > 0 && (
-                      <DetailMotifNonMesure besoin={p.libellePraticien} motifs={p.motifNonMesure} />
+                      <DetailMotifNonMesure
+                        besoin={p.libellePraticien}
+                        motifs={p.motifNonMesure}
+                        emailPatient={emailPatientAffiche}
+                      />
                     )}
                   </>
                 ) : !provenanceEtablie(p.provenance) ? (
@@ -1525,7 +1547,7 @@ export function FichePatientPanel({
         label="Indice global"
         value={objetsCliniques.indiceGlobal}
         mention={MENTION_NATURE_INDICE_GLOBAL}
-        base={mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)}
+        base={mentionCompteBesoins}
         plafond={objetsCliniques.plafondApplique ? MENTION_PLAFOND_APPLIQUE : undefined}
         provenance={lignesDe(provenance?.indiceGlobal)}
       />
@@ -2755,7 +2777,9 @@ export function FichePatientPanel({
                 libelle="Les 12 besoins"
                 description="Couverture descriptive, par besoin. Aucune priorité clinique n’est déduite ici."
                 icone={ListChecks}
+                sousLibelle={mentionCompteBesoins}
               >
+                {mentionCompteBesoins && <p className="mb-3 text-sm text-muted-foreground">{mentionCompteBesoins}</p>}
                 {tableauBesoins}
                 <p className="mt-3 text-base text-muted-foreground">
                   Le détail complet (radar, sources) est disponible dans l’onglet « Les 12 besoins ».
@@ -2849,7 +2873,9 @@ export function FichePatientPanel({
 
       {/* ------------------------------ Onglets in-fiche ------------------- */}
       <div role="tabpanel" id="panneau-besoins" aria-labelledby="onglet-besoins" hidden={ongletActif !== 'besoins'}>
-        {ongletActif === 'besoins' && <DetailBesoinsPanel idPatient={idPatient} enteteMasquee />}
+        {ongletActif === 'besoins' && (
+          <DetailBesoinsPanel idPatient={idPatient} enteteMasquee emailPatient={emailPatientAffiche} />
+        )}
         {ongletActif === 'besoins' && constatBesoinActif && <ConstatsBesoinPanel idPatient={idPatient} />}
       </div>
 

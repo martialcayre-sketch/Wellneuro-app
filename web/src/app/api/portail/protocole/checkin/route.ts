@@ -14,6 +14,7 @@ import {
 } from '@/lib/protocol/checkins';
 import { prisma } from '@/lib/prisma';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
+import { appuiRenvoiOuvert, assignationsRenvoyees } from '@/lib/portail/appuiRenvoi';
 
 // Check-in patient d'un « rendez-vous de suivi » J7/J14/J21 (C2A LOT-04).
 // Écriture UNIQUEMENT via session portail (`readPatientSession` +
@@ -40,6 +41,13 @@ type GetResponse =
       protocoleDiffuse: boolean;
       pointEtapeOuvert: PointEtape | null;
       points: PointEtat[];
+      /**
+       * LES QUESTIONNAIRES RENVOYÉS ([[D-353]], lettre ak). Présent seulement
+       * quand `WN_PORTAIL_APPUI_RENVOI` est ouvert et que le point J21 est
+       * ouvert (jours 18 à 24 depuis le jour 0) ; il peut être vide. Absent, le
+       * fil du jour ne pose aucune phrase d'appui sous les questionnaires.
+       */
+      questionnairesRenvoyes?: string[];
     }
   | ErrorResponse;
 
@@ -159,11 +167,25 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       return { pointEtape, renseigne: actif !== null, reponses: actif?.reponses ?? null };
     });
 
+    const pointEtapeOuvert = pointEtapeCourant(calendrier.jourZero, new Date());
+    // La phrase d'appui d'ak ne vaut que dans la fenêtre du rendez-vous J21
+    // ([[D-353]] §2) : hors d'elle, la route ne cherche rien. Une lecture en
+    // échec retire le champ et rien d'autre : une phrase d'appui ne doit pas
+    // emporter le rendez-vous de suivi qu'elle accompagne.
+    const questionnairesRenvoyes =
+      appuiRenvoiOuvert() && pointEtapeOuvert === 'J21'
+        ? await assignationsRenvoyees(auth.idPatient, calendrier.jourZero).catch((err: unknown) => {
+            console.error('[portail/protocole/checkin GET] questionnaires renvoyés', err instanceof Error ? err.message : String(err));
+            return null;
+          })
+        : null;
+
     return NextResponse.json({
       ok: true,
       protocoleDiffuse: true,
-      pointEtapeOuvert: pointEtapeCourant(calendrier.jourZero, new Date()),
+      pointEtapeOuvert,
       points,
+      ...(questionnairesRenvoyes ? { questionnairesRenvoyes } : {}),
     });
   } catch (err) {
     console.error('[portail/protocole/checkin GET]', err instanceof Error ? err.message : String(err));

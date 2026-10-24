@@ -59,6 +59,8 @@ const SURFACES_PATIENT = [
   // bd ([[D-349]]) : le texte de l'encart « quand ralentir ou demander avis »
   // vit dans un module pur, hors des composants qui le rendent.
   'lib/portail/texteEncartConduite.ts',
+  // ak ([[D-353]]) : la phrase d'appui du questionnaire renvoyé, même raison.
+  'lib/portail/texteAppuiRenvoi.ts',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.

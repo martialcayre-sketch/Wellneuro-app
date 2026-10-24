@@ -19,6 +19,12 @@ import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
 import { estAncreDeCycle, JALONS_MESURE, numeroEpisodeDeCycle } from '@/lib/protocol/cycles';
 import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import {
+  BoutonAjoutFileEnvoi,
+  ErreurAjoutFileEnvoi,
+  PHRASE_AJOUT_SANS_ENVOI,
+  useAjoutFileEnvoi,
+} from '@/components/patient-cockpit/AjoutFileEnvoi';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // « La Spirale comme index temporel » : une liste de repères datés navigable,
@@ -156,39 +162,7 @@ export function TrajectoirePanel({
     ),
     [repassationParLePraticien, besoinsVisesPraticien, needIdsPriorite],
   );
-  const [ajouts, setAjouts] = useState<Record<string, 'en_cours' | 'ajoute' | 'erreur'>>({});
-  const [erreursAjout, setErreursAjout] = useState<Record<string, string>>({});
-  const ajouterALaFile = async (qid: string) => {
-    if (!emailPatient) return;
-    setAjouts(prev => ({ ...prev, [qid]: 'en_cours' }));
-    setErreursAjout(prev => {
-      const { [qid]: _retiree, ...reste } = prev;
-      return reste;
-    });
-    try {
-      const response = await fetch('/api/praticien/file-envoi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailPatient, qids: [qid] }),
-      });
-      // MÊME contrat que `OrientationPanel` : la route rend
-      // `MutateFileEnvoiResponse { success, error? }` — pas `ok`. Lire `ok`
-      // rendait tout ajout réussi comme un échec (revue LOT-07, B3), et le
-      // motif d'un vrai refus (« Dossier clos », etc.) n'était jamais affiché.
-      const payload = (await response.json()) as { success?: boolean; error?: string };
-      if (response.ok && payload.success) {
-        setAjouts(prev => ({ ...prev, [qid]: 'ajoute' }));
-      } else {
-        setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
-        if (payload.error) {
-          const motif = payload.error;
-          setErreursAjout(prev => ({ ...prev, [qid]: motif }));
-        }
-      }
-    } catch {
-      setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
-    }
-  };
+  const { ajouts, erreursAjout, ajouterALaFile } = useAjoutFileEnvoi(emailPatient);
 
   // État daté du mode de vie (LOT-02) : recalculé côté serveur au repère
   // sélectionné (`etatAu`, même doctrine que SP-TT — jamais un curseur libre).
@@ -545,8 +519,7 @@ export function TrajectoirePanel({
                 {repassationParLePraticien
                   ? 'Instruments des besoins que vous avez visés en posant la priorité.'
                   : 'Instruments visés par la priorité du protocole.'}{' '}
-                L’ajout pose l’instrument dans la file d’envoi ; rien n’est envoyé au patient
-                depuis cet écran.
+                {PHRASE_AJOUT_SANS_ENVOI}
               </p>
               <ul className="mt-2 space-y-1">
                 {ciblesRepassation.map((qid) => (
@@ -555,26 +528,9 @@ export function TrajectoirePanel({
                       <span className="text-foreground">
                         {CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}
                       </span>
-                      {ajouts[qid] === 'ajoute' ? (
-                        <span className="text-muted-foreground">Dans la file d’envoi</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => void ajouterALaFile(qid)}
-                          disabled={ajouts[qid] === 'en_cours'}
-                          className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
-                        >
-                          {ajouts[qid] === 'erreur' ? 'Réessayer l’ajout' : 'Ajouter à la file d’envoi'}
-                        </button>
-                      )}
+                      <BoutonAjoutFileEnvoi qid={qid} etat={ajouts[qid]} onAjouter={q => void ajouterALaFile(q)} />
                     </div>
-                    {/* Le motif du refus vient de la route (« Dossier clos. », …)
-                        — un échec muet ferait recliquer sans comprendre. */}
-                    {ajouts[qid] === 'erreur' && (
-                      <p role="status" className="mt-1 text-xs text-status-warning">
-                        {erreursAjout[qid] ?? 'L’ajout à la file d’envoi a échoué. Réessayez.'}
-                      </p>
-                    )}
+                    <ErreurAjoutFileEnvoi etat={ajouts[qid]} erreur={erreursAjout[qid]} />
                   </li>
                 ))}
               </ul>
