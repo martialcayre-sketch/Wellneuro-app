@@ -11632,7 +11632,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 ## 2026-10-24 — J3-12g : l'agenda du sommeil entre au snapshot (D-358)
 
-**Fait.** Préalables levés : inventaire « rubrique → lecteurs » (27 rubriques, dix lues par l'indice, le snapshot jugeant la présence de toutes) et compte par conteneur (13 agendas clôturés, 2 à indice, le snapshot n'en acceptait qu'un ; 3 des 4 approbations actives sur un épisode à agenda écarté). Le responsable a tranché par questions à options : deux lots (J3-12g puis r3_10), tout agenda clôturé est complet, réapprobation après déploiement, inventaire au dossier de proposition. Prédicat `agendaSommeilCloture`, version gardée, bancs.
+**Fait.** Préalables levés : inventaire « rubrique → lecteurs » (27 rubriques, dix lues par l'indice, le snapshot jugeant la présence de toutes) et compte par conteneur (13 agendas clôturés, 2 à indice, le snapshot n'en acceptait qu'un ; 3 des 4 approbations actives sur un épisode à agenda écarté ; répartition masquée, moins de cinq dossiers). Le responsable a tranché par questions à options : deux lots (J3-12g puis r3_10), tout agenda clôturé est complet, réapprobation après déploiement, inventaire au dossier de proposition. Prédicat `agendaSommeilCloture`, version gardée, bancs.
 
 **Écarté.** L'agenda à indice seul, les rubriques lues par l'indice (un agenda court resterait dit « incomplet ») ; un changement de version (éteindrait les 4 approbations) ; D-357, pris entre-temps par #1695 (renuméroté en D-358).
 

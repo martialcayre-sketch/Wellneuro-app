@@ -19,7 +19,8 @@ puis aligner le snapshot.
   absente ou nulle ; les routes et la chaîne C1 recalculent l'indice sans
   filtre. Compte par conteneur (lecture seule) : 13 agendas clôturés, 2 à
   indice, un seul accepté par le snapshot ; 3 des 4 approbations actives sur
-  un épisode à agenda écarté.
+  un épisode à agenda écarté ; répartition masquée (moins de cinq dossiers,
+  D-298 §3).
 - Arbitrages du responsable (questions à options, une reformulée à sa
   demande) : deux lots, J3-12g d'abord ; tout agenda clôturé est complet au
   snapshot ; réapprobation après déploiement, sans changement de version ;
@@ -67,7 +68,8 @@ puis aligner le snapshot.
 
 ## Problèmes ouverts
 
-- Après déploiement : trois cartes approuvées (deux dossiers) dérivent ;
+- Après déploiement : trois cartes approuvées (2 dossiers, répartition
+  masquée) dérivent ;
   réapprobation par le praticien, puis constat par conteneur (D-358 §5). La
   liste nominative est hors du dépôt (page de suivi de la file A).
 - Hors lot : r3_10 (lot suivant), r3_09, r3_12, r3_14, t33, les deux points

@@ -38,7 +38,8 @@ routes.
 
 **§3 — Écart fermé, pour l'agenda.** Constat par conteneur du 2026-10-24
 (lecture seule, agrégats) : 13 agendas clôturés, dont 2 à indice ; le
-snapshot n'en acceptait qu'un, complet. Le cas nommé par [[D-329]] §2 (un
+snapshot n'en acceptait qu'un, complet (répartition masquée, moins de cinq
+dossiers — [[D-298]] §3). Le cas nommé par [[D-329]] §2 (un
 agenda à indice écarté du snapshot et gardé par les routes) disparaît. Le
 résidu des autres sources (DNST hors de l'axe lu, mode de vie hors du bloc
 activité, enquête alimentaire) reste tel que l'arbitrage du 2026-10-19 l'a
@@ -47,15 +48,17 @@ voulu : r3_10 le nommera.
 **§4 — Version du score : gardée (v15).** `calculerEquilibre` ne change pas,
 ni aucune valeur servie par les routes ; seul le filtre d'entrée du snapshot
 change. Une nouvelle étiquette — du score ou du schéma du snapshot — ferait
-dériver les 4 approbations de diffusion actives ([[D-329]] §4).
+dériver les 4 approbations de diffusion actives, sur 3 dossiers (répartition
+masquée, moins de cinq dossiers ; [[D-329]] §4).
 
 **§5 — Diffusions actives : réapprobation.** Trois des 4 approbations actives
 reposent sur un épisode qui inclut un agenda que le snapshot écartait. Leur
 carte dérive au déploiement : l'écran protocole est indisponible jusqu'à la
 réapprobation par le praticien, suivie d'un constat par conteneur. Les trois
-approbations relèvent de deux dossiers ; la liste nominative reste hors du
-dépôt (dépôt public, identifiant sans constat). Option écartée : différer le déploiement
-jusqu'à la fin de ces diffusions.
+approbations relèvent de 2 dossiers ; répartition masquée (moins de cinq
+dossiers). La liste nominative reste hors du dépôt (dépôt public,
+identifiant sans constat). Option écartée : différer le déploiement jusqu'à
+la fin de ces diffusions.
 
 **Options écartées pour la règle** : accepter le seul agenda à indice (un
 agenda court mais complet resterait dit « incomplet ») ; exiger les rubriques
