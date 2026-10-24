@@ -53,7 +53,8 @@ dériver les 4 approbations de diffusion actives ([[D-329]] §4).
 reposent sur un épisode qui inclut un agenda que le snapshot écartait. Leur
 carte dérive au déploiement : l'écran protocole est indisponible jusqu'à la
 réapprobation par le praticien, suivie d'un constat par conteneur. Les trois
-approbations relèvent de deux dossiers : PAT006, PAT007. Option écartée : différer le déploiement
+approbations relèvent de deux dossiers ; la liste nominative reste hors du
+dépôt (dépôt public, identifiant sans constat). Option écartée : différer le déploiement
 jusqu'à la fin de ces diffusions.
 
 **Options écartées pour la règle** : accepter le seul agenda à indice (un

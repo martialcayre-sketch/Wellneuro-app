@@ -66,8 +66,9 @@ puis aligner le snapshot.
 
 ## Problèmes ouverts
 
-- Après déploiement : les cartes des dossiers PAT006 et PAT007 dérivent ;
-  réapprobation par le praticien, puis constat par conteneur (D-357 §5).
+- Après déploiement : trois cartes approuvées (deux dossiers) dérivent ;
+  réapprobation par le praticien, puis constat par conteneur (D-357 §5). La
+  liste nominative est hors du dépôt (page de suivi de la file A).
 - Hors lot : r3_10 (lot suivant), r3_09, r3_12, r3_14, t33, les deux points
   t43 ouverts.
 
