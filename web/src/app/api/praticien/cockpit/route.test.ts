@@ -1908,28 +1908,100 @@ describe('/api/praticien/cockpit — cible de re-passation au jalon de mesure (t
     expect(payload.reponsesDepuisConfirmation).toBe(1);
   });
 
-  it('re-confirmer le `T1` après une passation postérieure ne rend pas 409 (t42)', async () => {
+  /**
+   * La base telle qu'elle est après la confirmation du `T1`, lue SELON LA
+   * LECTURE : `ancrePoseeDe` (colonnes de l'acte), la ligne du POST (D-129).
+   * Le rejeu, lui, ne trouve rien — pour obtenir la PROPOSITION au GET, comme
+   * un écran qui la sert parce que le praticien rouvre l'acte.
+   */
+  function ligneT1SansRejeu(ecrite: Record<string, unknown>, surcharge: Record<string, unknown> = {}) {
+    const ligne = { ...ecrite, ...surcharge };
+    prisma.assessmentEpisode.findUnique.mockImplementation(
+      (args: { where: { id: string }; select?: Record<string, unknown> }) => {
+        if (args.where.id !== ecrite.id) return Promise.resolve(null);
+        if (args.select?.targetAt) return Promise.resolve({ targetAt: ligne.targetAt, confirmedAt: ligne.confirmedAt });
+        if (args.select?.confirmedAt) {
+          return Promise.resolve({ confirmedAt: ligne.confirmedAt, payloadHash: ligne.payloadHash, payload: ligne.payload });
+        }
+        return Promise.resolve(null);
+      },
+    );
+  }
+
+  it('re-confirmer le `T1` après une passation postérieure : 200, la ligne garde sa date (t42, D-129)', async () => {
     await t1ConfirmeEtPersiste();
     passationApresT1();
-    prisma.assessmentEpisode.findUnique.mockClear();
-    // Le GET de la proposition, sans rejeu, pour obtenir la proposition elle-même.
     const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
-    prisma.assessmentEpisode.findUnique.mockImplementation((args: { where: { id: string }; select?: Record<string, unknown> }) =>
-      Promise.resolve(args.where.id === ecrite.id && args.select?.targetAt
-        ? { targetAt: ecrite.targetAt, confirmedAt: ecrite.confirmedAt }
-        : null));
+    ligneT1SansRejeu(ecrite);
     const proposed = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T1'))).json();
     expect(proposed.status).toBe('proposal_required');
     // La proposition est datée sur l'acte, pas sur la passation reçue depuis.
     expect(proposed.proposal.targetAt).toBe(new Date(ecrite.targetAt).toISOString());
 
+    // Le praticien re-confirme en écartant une réponse : contenu divergent,
+    // donc la branche d'écriture de D-129 (compare-and-swap), pas l'idempotence.
+    const incluses = proposed.proposal.inWindowResponseIds as string[];
+    expect(incluses.length).toBeGreaterThan(1);
     const response = await POST(postRequest({
       idPatient: 'PAT_TEST', milestone: 'T1',
-      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      includedResponseIds: incluses.slice(1),
       proposalHash: proposed.proposalHash,
     }));
-    expect(response.status).not.toBe(409);
-    expect((await response.json()).reason).not.toBe('proposal_stale');
+    expect(response.status).toBe(200);
+    expect(prisma.assessmentEpisode.updateMany).toHaveBeenCalledTimes(1);
+    const reecrite = prisma.assessmentEpisode.updateMany.mock.calls[0][0];
+    expect(reecrite.where).toEqual({ id: ecrite.id, payloadHash: ecrite.payloadHash });
+    // Ni la date de l'acte ni sa géométrie ne sont réécrites ; le payload
+    // réécrit porte la date de la colonne.
+    expect('targetAt' in reecrite.data).toBe(false);
+    expect('confirmedAt' in reecrite.data).toBe(false);
+    expect(reecrite.data.payload.targetAt).toBe(new Date(ecrite.targetAt).toISOString());
+  });
+
+  it('une passation postérieure DANS la fenêtre du `T1` : rejeu servi, et proposée à la re-confirmation (t42)', async () => {
+    // Le `T1` est confirmé un jour après la dernière réponse ; une passation
+    // arrive deux jours plus tard — après l'acte, mais à ±8 j de sa date.
+    const derniere = runtimeGolden.at(-1) as { idReponse: string; dateReponse: Date };
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(derniere.dateReponse.getTime() + 86_400_000));
+      await t1ConfirmeEtPersiste();
+      const proche = { ...derniere, idReponse: 'REP_PROCHE_T1', dateReponse: new Date(derniere.dateReponse.getTime() + 3 * 86_400_000) };
+      brancherPassations([...runtimeGolden, proche], dossierGolden);
+      vi.setSystemTime(new Date(derniere.dateReponse.getTime() + 4 * 86_400_000));
+
+      const rejoue = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T1'))).json();
+      expect(rejoue.status).toBe('ready');
+      expect(rejoue.rejoue).toBe(true);
+
+      const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+      ligneT1SansRejeu(ecrite);
+      const proposed = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T1'))).json();
+      expect(proposed.proposal.targetAt).toBe(new Date(ecrite.targetAt).toISOString());
+      expect(proposed.proposal.inWindowResponseIds).toContain('REP_PROCHE_T1');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('lecture datée : une ligne de `T1` confirmée APRÈS la date lue est ignorée, à la date ou après elle compte (t42)', async () => {
+    await t1ConfirmeEtPersiste();
+    const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    // Une date de colonne distincte de toute réponse, pour voir qui date la proposition.
+    const colonne = new Date('2026-01-05T00:00:00.000Z');
+    const confirmeLe = new Date(ecrite.confirmedAt);
+    ligneT1SansRejeu(ecrite, { targetAt: colonne });
+    const premiere = (runtimeGolden[0] as { dateReponse: Date }).dateReponse.toISOString();
+    const lire = async (asOf: string) =>
+      (await GET(getRequest(`idPatient=PAT_TEST&milestone=T1&asOf=${encodeURIComponent(asOf)}`))).json();
+
+    // Avant la confirmation : l'ancre n'existait pas, la date d'ouverture vaut.
+    const avant = await lire(premiere);
+    expect(avant.status).toBe('proposal_required');
+    expect(avant.proposal.targetAt).not.toBe(colonne.toISOString());
+    // À l'instant même de la confirmation : la ligne compte.
+    const a = await lire(confirmeLe.toISOString());
+    expect(a.proposal.targetAt).toBe(colonne.toISOString());
   });
 
   it('`T0` ne lit pas sa ligne pour se dater : la première réponse suffit (t42)', async () => {
