@@ -295,7 +295,7 @@ describe('GET /api/portail/protocole/checkin', () => {
   });
 });
 
-describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-352, lettre ak)', () => {
+describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-353, lettre ak)', () => {
   const JOUR_MS = 24 * 60 * 60 * 1000;
   const jourZeroIlYa = (jours: number) => new Date(Date.now() - jours * JOUR_MS);
 

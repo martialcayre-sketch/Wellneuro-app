@@ -42,7 +42,7 @@ type GetResponse =
       pointEtapeOuvert: PointEtape | null;
       points: PointEtat[];
       /**
-       * LES QUESTIONNAIRES RENVOYÉS ([[D-352]], lettre ak). Présent seulement
+       * LES QUESTIONNAIRES RENVOYÉS ([[D-353]], lettre ak). Présent seulement
        * quand `WN_PORTAIL_APPUI_RENVOI` est ouvert et que le point J21 est
        * ouvert (jours 18 à 24 depuis le jour 0) ; il peut être vide. Absent, le
        * fil du jour ne pose aucune phrase d'appui sous les questionnaires.
@@ -169,7 +169,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const pointEtapeOuvert = pointEtapeCourant(calendrier.jourZero, new Date());
     // La phrase d'appui d'ak ne vaut que dans la fenêtre du rendez-vous J21
-    // ([[D-352]] §2) : hors d'elle, la route ne cherche rien. Une lecture en
+    // ([[D-353]] §2) : hors d'elle, la route ne cherche rien. Une lecture en
     // échec retire le champ et rien d'autre : une phrase d'appui ne doit pas
     // emporter le rendez-vous de suivi qu'elle accompagne.
     const questionnairesRenvoyes =

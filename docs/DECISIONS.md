@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-352 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
+### D-353 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
 
 - Date : 2026-10-24
 - Statut : accepté — texte du responsable du 2026-10-24. Sur sa demande,
@@ -88,8 +88,66 @@ n'aura porté la phrase que pendant la fenêtre. Un pivot relance le
 calendrier ([[D-255]]) : le jour 0, et donc la fenêtre, suivent le nouveau
 cycle.
 
-- Conséquences : fragment `changelog.d/2026-10-24-d352-appui-renvoi-ak.md` ;
+- Conséquences : fragment `changelog.d/2026-10-24-d353-appui-renvoi-ak.md` ;
   `docs/FEATURE_FLAGS.md` ; plan, fiche H80 et §3 de la file C.
+
+### D-352 — Les 12 besoins au cockpit : le compte des besoins mesurés sur l'instrument, et « Compléter la mesure » pour une source sans passation exploitable (Q6, Q8 de l'audit des instruments ; r3_11, F59)
+
+- Date : 2026-10-24
+- Statut : accepté. Le responsable a arbitré Q6 et Q8 le 2026-10-22 (audit
+  des instruments des 12 besoins, v2) ; les quatre points d'exécution l'ont
+  été le 2026-10-24 par questions à options, toutes à l'option recommandée :
+  endroit du compte faute de ligne d'accès (bouton du tiroir), surfaces du
+  geste (onglet et tiroir), forme (dans le motif déplié), textes au mot près.
+  Texte rédigé par l'assistant à partir de ces choix.
+- Source : audit des instruments des 12 besoins, fiches F2 et F8.
+- Étend : [[D-329]] §3 (le compte, jusque-là servi sous l'indice global
+  seul). Précise : [[D-338]] §1 (dérivation depuis `BESOIN_SOURCES`, admise là
+  où l'amont est signé) et §3 (la re-passation ciblée reste celle de la
+  priorité : le geste du §2 n'en est pas une).
+- Nature : produit, pas clinique. Aucune formule, table, version, poids,
+  seuil ni borne ne bouge (`VERSION_SCORE_EQUILIBRE` inchangée) ;
+  `web/src/lib/equilibre` n'est pas modifié. Rien au portail.
+
+**§1 — Le compte, à trois endroits.** « Calculé sur n besoins mesurés sur 12 »
+(`mentionBesoinsMesures`, au mot près) en tête de l'onglet « Les 12 besoins »,
+en tête du tiroir « Les 12 besoins » et sur le bouton qui ouvre ce tiroir, en
+seconde ligne. La « ligne d'accès » de F2 devait remplacer les cercles ; Q2 les
+ayant gardés, elle n'existe pas, et le bouton du tiroir — la ligne qui ouvre
+l'instrument, visible quelle que soit la phase — en tient lieu. Le nombre vient
+de `compterBesoinsMesures` sur le résultat que la route a agrégé : la route
+`équilibre` le servait déjà, la route `besoins` le sert à son tour par la même
+fonction, sur les couvertures qu'elle affiche. Jamais un recompte côté écran ;
+un ancien conteneur qui ne le sert pas n'affiche rien.
+
+**§2 — « Compléter la mesure ».** Proposé pour une source du mapping dont le
+motif est « aucune passation exploitable » (`aucune_passation`, produit par
+`motifsNonMesureBesoin` sur le chemin de la valeur) — et pour elle seule : ni
+passation écartée, ni recueil incomplet, ni source suspendue, ni les besoins
+sans instrument (6, 7, 11) ou hors score (2). Le geste se lit dans le motif
+déplié, sous cette ligne : aucun bouton n'est visible sans geste. Il paraît
+dans les tableaux de l'onglet et du tiroir ; la liste en texte des cercles,
+figure de compréhension, garde le motif sans geste. Les questionnaires
+proposés sont ceux de la ligne du motif, filtrés par `IDS_ASSIGNABLES` (le
+prédicat de la file d'envoi) par la fonction que partage la re-passation
+ciblée de la Trajectoire ; un questionnaire non assignable n'a ni bouton ni
+texte. Le bouton pose l'instrument dans la file d'envoi, par le même appel et
+les mêmes libellés que la Trajectoire ; rien n'est envoyé depuis l'écran,
+l'envoi reste le geste du praticien, et un questionnaire déjà assigné et
+ouvert est écarté à l'envoi par la route existante. Textes servis : « Compléter
+la mesure » ; « Ajouter à la file d'envoi », « Dans la file d'envoi »,
+« Réessayer l'ajout », « L'ajout à la file d'envoi a échoué. Réessayez. » ;
+« L'ajout pose l'instrument dans la file d'envoi ; rien n'est envoyé au
+patient depuis cet écran. »
+
+**§3 — Ce qui n'est pas fait.** Aucune ventilation du compte (ni par strate,
+ni par motif) ; aucun « N sur M » par besoin, faute de norme de complétude ;
+aucune « source manquante » d'un besoin partiellement mesuré ; aucune relance
+ni envoi automatique, aucune date limite, aucun rappel ; aucun texte adressé au
+patient ; aucune couleur ni aucun mot qui juge la valeur ([[D-333]] §2
+règle 4) ; rien au portail (`frontierePortail.guard.test.ts` reste vert) ;
+aucune migration.
+
 ### D-351 — Liens analyte-axe : dix-sept liens signés claim par claim, écrits par migration de données, niveau de preuve facultatif (F79, premier temps ; applique D-348 §1, §5, §7)
 
 - Date : 2026-10-24

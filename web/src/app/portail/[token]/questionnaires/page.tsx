@@ -123,7 +123,7 @@ export default function QuestionnairesHubPage() {
    * vérifier.
    */
   const [rendezVousSuivi, setRendezVousSuivi] = useState<PointEtape | null>(null);
-  // Les questionnaires RENVOYÉS ([[D-352]], lettre ak), lus dans la même
+  // Les questionnaires RENVOYÉS ([[D-353]], lettre ak), lus dans la même
   // réponse : vide en cas d'échec, le fil ne pose alors aucune phrase.
   const [questionnairesRenvoyes, setQuestionnairesRenvoyes] = useState<Set<string>>(() => new Set());
   // Mineur ou dossier clos : les recueils sont en pause, et le fil n'invite à
