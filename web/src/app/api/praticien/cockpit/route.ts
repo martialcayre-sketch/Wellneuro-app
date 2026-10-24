@@ -12,9 +12,11 @@ import { canonicalJson, canonicalSha256 } from '@/lib/clinical-engine/canonical'
 import { type ChaineC1, type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import {
   adaptRuntimeInputs,
+  identifiantAncre,
   isRuntimeMilestone,
   proposeRuntimeEpisode,
   type AncreCycleCourant,
+  type AncrePosee,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
 import { lireCouverturesAdressage } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
 import type { CouvertureAdressage } from '@/lib/clinical-engine/safetyFindingSource';
@@ -34,7 +36,7 @@ import {
   type AncrePersistee,
 } from '@/lib/protocol/ancresPersistees';
 import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
-import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
+import { ancreRecevable, estAncreDeCycle, indexDeCycle } from '@/lib/protocol/cycles';
 import { refusJalonMesureHorsFenetre } from '@/lib/protocol/jalonDu';
 import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { resolveCycleId, toEpisodeCreateInput, toEpisodeUpdateInput } from '@/lib/protocol/versioning';
@@ -369,6 +371,33 @@ async function ancreCycleCourant(
   };
 }
 
+/**
+ * L'ancre demandée, quand c'est celle d'un cycle ROUVERT (`T1`, `T2`…) déjà
+ * posée — sa date de référence, relue sur sa ligne (t42). Sans elle, un `T1`
+ * se datait sur la réponse la plus récente du dossier : toute passation reçue
+ * après la confirmation le rendait méconnaissable, et l'écran redemandait de
+ * confirmer un acte déjà posé.
+ *
+ * `T0` n'est pas lu : la première réponse le date, et elle ne bouge pas. En
+ * lecture datée, une ancre confirmée APRÈS la date lue n'existe pas encore.
+ * Une ligne sans date lisible rend `null` : la proposition se date comme une
+ * ouverture, jamais sur une date devinée.
+ */
+async function ancrePoseeDe(
+  idPatient: string,
+  milestone: JalonMomentum,
+  asOf: string | null,
+): Promise<AncrePosee | null> {
+  if (!estAncreDeCycle(milestone) || (indexDeCycle(milestone) ?? 0) === 0) return null;
+  const ligne = await prisma.assessmentEpisode.findUnique({
+    where: { id: identifiantAncre(idPatient, milestone) },
+    select: { targetAt: true, confirmedAt: true },
+  });
+  if (!(ligne?.targetAt instanceof Date)) return null;
+  if (asOf && ligne.confirmedAt instanceof Date && ligne.confirmedAt > new Date(asOf)) return null;
+  return { targetAt: ligne.targetAt.toISOString() };
+}
+
 /** Le préfixe que `identifiantEpisode` pose sur tout identifiant d'épisode runtime. */
 const PREFIXE_EPISODE = 'runtime-episode-';
 
@@ -555,14 +584,6 @@ async function rejouerChaine(
  * fournirait la cible. Tout échec rend `null` — la proposition du jalon est
  * servie telle qu'avant, sans cible : un service secondaire n'éteint pas le
  * chemin principal.
- *
- * LIMITE HÉRITÉE DU REJEU, NOMMÉE PAR LA REVUE DU LOT : l'ancre d'un cycle
- * rouvert (`T1`, `T2`…) se date sur la réponse la plus RÉCENTE
- * (`dateDeReference`), si bien qu'une passation arrivée après sa confirmation
- * la rend non rejouable — à l'écran de l'ancre comme ici. La cible manque
- * alors, comme avant t41. La contourner en relisant l'épisode sans repasser
- * par sa proposition ferait diverger la cible de la carte que l'écran de
- * l'ancre sert : le défaut se traite dans le rejeu, pas ici.
  */
 async function repassationDepuisAncre(
   idPatient: string,
@@ -572,8 +593,14 @@ async function repassationDepuisAncre(
   try {
     const ancre = ancreCourante(ancres);
     if (!ancre || !isRuntimeMilestone(ancre.milestone)) return null;
-    // Une ancre ne se date depuis aucune autre : `null`, comme son propre GET.
-    const { proposal } = proposeRuntimeEpisode(inputs, ancre.milestone, null);
+    // Une ancre ne se date depuis aucune autre : `null`, comme son propre GET —
+    // et, déjà posée, sur sa propre ligne (t42), comme lui aussi.
+    const { proposal } = proposeRuntimeEpisode(
+      inputs,
+      ancre.milestone,
+      null,
+      await ancrePoseeDe(idPatient, ancre.milestone, null),
+    );
     if (proposal.assessmentEpisodeId !== ancre.id) return null;
     const episode = await episodePersisteRejouable(inputs, proposal);
     if (!episode) return null;
@@ -681,7 +708,12 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     }
     const { ancreCycle, ancres } = await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf);
-    const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw, ancreCycle);
+    const { proposal, proposalHash } = proposeRuntimeEpisode(
+      inputs,
+      milestoneRaw,
+      ancreCycle,
+      await ancrePoseeDe(idPatient, milestoneRaw, inputs.asOf),
+    );
 
     // ── LE REJEU D'UN ÉPISODE PERSISTÉ (`D-118`) ────────────────────────────
     //
@@ -820,7 +852,14 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const ancreCycle = estAncreDeCycle(payload.milestone)
       ? null
       : ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, null, ancres), payload.milestone);
-    const current = proposeRuntimeEpisode(inputs, payload.milestone, ancreCycle);
+    // La même date d'ancre déjà posée que le GET (t42) : sans elle, le
+    // `proposalHash` d'une re-confirmation divergerait et rendrait 409.
+    const current = proposeRuntimeEpisode(
+      inputs,
+      payload.milestone,
+      ancreCycle,
+      await ancrePoseeDe(idPatient, payload.milestone, null),
+    );
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);
     }

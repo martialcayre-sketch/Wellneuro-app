@@ -11524,3 +11524,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; envoi de l'e-mail des conditions v3 par le responsable s'il le décide ; constat H07 en conteneur dès le déploiement de #1676.
 
 **Ouvert.** Constat de la première purge après le 2026-11-02.
+## 2026-10-24 — t42 : un T1 confirmé ne redevient plus « à confirmer »
+
+**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Sans migration ; l'arbitrage est transcrit en D-350 (demande de CodeRabbit). wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
+
+**Écarté.** Modifier `lireAncresPersistees`, que lisent aussi portail, objectifs et check-ins ; dater `T0` sur sa ligne.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
+
+**Ouvert.** Rien dans le périmètre.
