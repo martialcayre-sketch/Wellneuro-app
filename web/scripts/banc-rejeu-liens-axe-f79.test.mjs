@@ -18,12 +18,20 @@
 // un échec pour une autre raison laisserait le banc vert sans rien prouver.
 // Le message reçu n'est jamais imprimé, seul son code SQLSTATE l'est.
 //
-// LES REJEUX NE COMMETTENT RIEN, et un constat final le vérifie. Les cas à
-// deux sessions (concurrence, isolation) commettent des lignes de test,
-// effacées au début et à la fin. La base visée doit donc être NOMMÉE et
-// locale (patron des bancs à deux sessions) : `WN_LIENS_AXE_BANC_BASE` doit
-// égaler le nom de la base de `DATABASE_URL`. Et le banc refuse une base qui
-// porte déjà un corpus : il n'a de sens que sur une base sans claim.
+// LA BASE NOMMÉE N'EST JAMAIS ÉCRITE. Tout le banc (rejeux et cas à deux
+// sessions) tourne dans un CLONE jetable de la base nommée (`CREATE DATABASE
+// … TEMPLATE`), supprimé à la fin. Un COMMIT glissé dans la migration ou
+// dans le contrat ne toucherait que le clone : la non-persistance tient par
+// construction, et non plus par une garde qu'un contre-exemple contourne
+// (passe Codex de #1687, deux fois). La garde lexicale reste, en refus
+// précoce et lisible. À la fin, la suppression du clone est exigée, et une
+// session neuve constate sur la base nommée qu'aucune fixture n'y est.
+// La base visée doit être NOMMÉE et locale (patron des bancs à deux
+// sessions) : `WN_LIENS_AXE_BANC_BASE` doit égaler le nom de la base de
+// `DATABASE_URL`. Le rôle doit pouvoir créer une base (superutilisateur au
+// CI et en T3), et aucune autre session ne doit être ouverte sur la base
+// nommée pendant le clonage. Le banc refuse une base qui porte déjà un
+// corpus : il n'a de sens que sur une base sans claim.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,23 +58,78 @@ const MIGRATION = readFileSync(
 );
 const CONTRAT = readFileSync(join(WEB, 'prisma/checks/biology_liens_axe_v1.sql'), 'utf8');
 
-// GARDE DE TRANSACTION. Un COMMIT (ou END, ABORT…) dans la migration, ou un
-// contrat qui finirait par COMMIT, validerait les fixtures : le rejeu
-// n'aurait plus rien d'annulé. La garde lit les INSTRUCTIONS des deux
-// fichiers, pas leurs lignes : corps entre dollars (fonctions, blocs DO),
-// commentaires et chaînes sont retirés, puis le texte est découpé au
-// point-virgule. Sa première version ne lisait que le début des lignes de la
-// migration : `SELECT 1; COMMIT;` et un contrat clos par COMMIT lui
-// échappaient (passe Codex de #1687).
+// GARDE DE TRANSACTION, en refus précoce. Un COMMIT (ou END, ABORT…) dans la
+// migration, ou un contrat qui finirait par COMMIT, ferait du rejeu autre
+// chose qu'un rejeu annulé. La garde LIT le SQL : un analyseur lexical
+// parcourt le texte caractère par caractère et reconnaît, dans cet ordre de
+// priorité à chaque position, les commentaires `--` et `/* */` (imbriqués),
+// les chaînes `'…'` (avec `''`, et les antislashs des chaînes `E'…'`), les
+// identifiants `"…"` et les corps `$étiquette$…$étiquette$`. Seul le texte
+// hors de ces blocs est découpé au point-virgule. Ses deux premières
+// versions, à coups d'expressions régulières, laissaient passer
+// `SELECT 1; COMMIT;`, puis `/* fin */ COMMIT;` et un `--` logé dans une
+// chaîne (passe Codex de #1687).
 const TRANSACTION = /^(BEGIN|COMMIT|END|ROLLBACK|ABORT|START\s+TRANSACTION|SAVEPOINT|RELEASE|PREPARE\s+TRANSACTION)\b/i;
 function instructions(sql) {
-  return sql
-    .replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, ' ')
-    .replace(/--.*$/gm, ' ')
-    .replace(/'(?:[^']|'')*'/g, "''")
-    .split(';')
-    .map((x) => x.replace(/\s+/g, ' ').trim().toUpperCase())
-    .filter(Boolean);
+  const resultat = [];
+  let courante = '';
+  let i = 0;
+  const n = sql.length;
+  const identifiant = (c) => /[A-Za-z0-9_]/.test(c ?? '');
+  while (i < n) {
+    const c = sql[i];
+    const suivant = sql[i + 1];
+    if (c === '-' && suivant === '-') {
+      while (i < n && sql[i] !== '\n') i += 1;
+      courante += ' ';
+    } else if (c === '/' && suivant === '*') {
+      let profondeur = 1;
+      i += 2;
+      while (i < n && profondeur > 0) {
+        if (sql[i] === '/' && sql[i + 1] === '*') { profondeur += 1; i += 2; }
+        else if (sql[i] === '*' && sql[i + 1] === '/') { profondeur -= 1; i += 2; }
+        else i += 1;
+      }
+      courante += ' ';
+    } else if (c === "'") {
+      const echappee = /[Ee]/.test(sql[i - 1] ?? '') && !identifiant(sql[i - 2]);
+      i += 1;
+      while (i < n) {
+        if (echappee && sql[i] === '\\') { i += 2; continue; }
+        if (sql[i] === "'" && sql[i + 1] === "'") { i += 2; continue; }
+        if (sql[i] === "'") { i += 1; break; }
+        i += 1;
+      }
+      courante += "''";
+    } else if (c === '"') {
+      i += 1;
+      while (i < n) {
+        if (sql[i] === '"' && sql[i + 1] === '"') { i += 2; continue; }
+        if (sql[i] === '"') { i += 1; break; }
+        i += 1;
+      }
+      courante += '""';
+    } else if (c === '$' && !identifiant(sql[i - 1])) {
+      const m = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      if (m) {
+        const fin = sql.indexOf(m[0], i + m[0].length);
+        i = fin === -1 ? n : fin + m[0].length;
+        courante += ' $$ ';
+      } else {
+        courante += c;
+        i += 1;
+      }
+    } else if (c === ';') {
+      resultat.push(courante);
+      courante = '';
+      i += 1;
+    } else {
+      courante += c;
+      i += 1;
+    }
+  }
+  resultat.push(courante);
+  return resultat.map((x) => x.replace(/\s+/g, ' ').trim().toUpperCase()).filter(Boolean);
 }
 // La migration : aucune instruction de transaction.
 function migrationSure(sql) {
@@ -80,13 +143,20 @@ function contratSur(sql) {
   return tx.length === 2 && tx[0] === 'BEGIN TRANSACTION READ ONLY' && tx[1] === 'ROLLBACK'
     && tout[0] === tx[0] && tout.at(-1) === 'ROLLBACK';
 }
-// La garde s'éprouve elle-même avant toute connexion : les deux mutations
-// de la passe Codex, et deux voisines, doivent être refusées.
+// La garde s'éprouve elle-même avant toute connexion : les contre-exemples
+// des deux passes Codex, et leurs voisins, doivent être refusés.
+const avantRollback = (ajout) => CONTRAT.replace(/ROLLBACK;\s*$/, `${ajout}\nROLLBACK;\n`);
 const MUTATIONS_GARDE = [
   ['migration + « SELECT 1; COMMIT; »', () => migrationSure(`${MIGRATION}\nSELECT 1; COMMIT;\n`)],
   ['migration + « END; » en fin', () => migrationSure(`${MIGRATION}\nEND;\n`)],
+  ['migration + « /* fin */ COMMIT; »', () => migrationSure(`${MIGRATION}\n/* fin */ COMMIT;\n`)],
+  ['migration + « /* a /* b */ c */ COMMIT; »', () => migrationSure(`${MIGRATION}\n/* a /* b */ c */ COMMIT;\n`)],
+  ["migration + « SELECT '--'; COMMIT; » puis « SELECT 'x'; »", () => migrationSure(`${MIGRATION}\nSELECT '--'; COMMIT;\nSELECT 'x';\n`)],
+  ["migration + « SELECT E'\\\\''; COMMIT; »", () => migrationSure(`${MIGRATION}\nSELECT E'\\''; COMMIT;\n`)],
+  ['migration + « SELECT $q$;$q$; COMMIT; »', () => migrationSure(`${MIGRATION}\nSELECT $q$;$q$; COMMIT;\n`)],
   ['contrat clos par COMMIT', () => contratSur(CONTRAT.replace(/ROLLBACK;\s*$/, 'COMMIT;\n'))],
-  ['contrat + « COMMIT; » avant le ROLLBACK', () => contratSur(CONTRAT.replace(/ROLLBACK;\s*$/, 'COMMIT;\nROLLBACK;\n'))],
+  ['contrat + « COMMIT; » avant le ROLLBACK', () => contratSur(avantRollback('COMMIT;'))],
+  ['contrat + « /* fin */ COMMIT; » avant le ROLLBACK', () => contratSur(avantRollback('/* fin */ COMMIT;'))],
 ];
 for (const [nom, sur] of MUTATIONS_GARDE) {
   if (sur()) throw new Error(`REFUS : la garde de transaction laisse passer la mutation « ${nom} ».`);
@@ -97,6 +167,25 @@ if (!migrationSure(MIGRATION)) {
 if (!contratSur(CONTRAT)) {
   throw new Error('REFUS : le contrat ne s\'ouvre pas par BEGIN TRANSACTION READ ONLY ou ne se clôt pas par le seul ROLLBACK.');
 }
+
+// ── Le clone jetable ──────────────────────────────────────────────────────
+// Créé depuis la base nommée (migrations appliquées, trigger posé par
+// `migrate deploy`), par une session sur la base de maintenance `postgres`.
+// Un clone resté d'un banc interrompu est d'abord supprimé.
+if (!/^[a-z0-9_]+$/.test(BASE_REELLE)) {
+  throw new Error(`REFUS : nom de base inattendu « ${BASE_REELLE} ».`);
+}
+const CLONE = `${BASE_REELLE}_f79_rejeu`;
+const urlVers = (base) => {
+  const u = new URL(URL_BASE);
+  u.pathname = `/${base}`;
+  return u.toString();
+};
+const URL_REJEU = urlVers(CLONE);
+const maintenance = new pg.Client({ connectionString: urlVers('postgres') });
+await maintenance.connect();
+await maintenance.query(`DROP DATABASE IF EXISTS "${CLONE}" WITH (FORCE)`);
+await maintenance.query(`CREATE DATABASE "${CLONE}" TEMPLATE "${BASE_REELLE}"`);
 
 // Les seize claims distincts cités par D-351 §2 (WN-CL-0294-004 porte deux
 // liens). La liste exacte, elle, n'est écrite que dans la migration et dans
@@ -230,183 +319,202 @@ const CAS = [
 ];
 
 let echecs = 0;
-for (const cas of CAS) {
-  const script = [PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', CONTRAT].join('\n');
-  const client = new pg.Client({ connectionString: URL_BASE });
-  await client.connect();
-  let erreur = null;
-  try {
-    await client.query(script);
-  } catch (e) {
-    erreur = e;
-  }
-  // Le contrat finit par ROLLBACK ; un script interrompu laisse une
-  // transaction avortée. Dans les deux cas, rien ne survit.
-  await client.query('ROLLBACK').catch(() => {});
-  await client.end();
-
-  if (cas.motif === null) {
-    if (erreur) {
-      echecs += 1;
-      console.error(`ÉCHEC  ${cas.nom} : refusé (SQLSTATE ${erreur.code ?? '?'}) alors qu'il doit passer.`);
-    } else {
-      console.log(`ok     ${cas.nom}`);
-    }
-  } else if (!erreur) {
-    echecs += 1;
-    console.error(`ÉCHEC  ${cas.nom} : ACCEPTÉ alors qu'il doit rougir.`);
-  } else if (!String(erreur.message).includes(cas.motif)) {
-    echecs += 1;
-    console.error(`ÉCHEC  ${cas.nom} : refusé pour un autre motif (SQLSTATE ${erreur.code ?? '?'}).`);
-  } else {
-    console.log(`ok     ${cas.nom} (refusé pour le bon motif)`);
-  }
-}
-
-// ── Rien des rejeux n'a survécu ───────────────────────────────────────────
-// Constaté par une session neuve : un banc qui commettrait ses fixtures
-// finirait rouge APRÈS les avoir validées ; ce constat le dit nommément.
-{
-  const client = new pg.Client({ connectionString: URL_BASE });
-  await client.connect();
-  const { rows } = await client.query(String.raw`
-    SELECT (SELECT count(*) FROM rag_corpus_claims WHERE id LIKE '\_\_f79\_%')::int AS claims,
-           (SELECT count(*) FROM biology_analyte_links
-             WHERE id LIKE 'bal\_f79\_%' OR id LIKE '\_\_f79\_%')::int AS liens`);
-  await client.end();
-  if (rows[0].claims !== 0 || rows[0].liens !== 0) {
-    echecs += 1;
-    console.error(`ÉCHEC  fixtures commises : ${rows[0].claims} claim(s) et ${rows[0].liens} lien(s) ont survécu aux rejeux.`);
-  } else {
-    console.log('ok     aucune fixture des rejeux n\'a survécu');
-  }
-}
-
-// ── Concurrence et isolation, à deux sessions ─────────────────────────────
-// Le contrat négatif joue une seule session : il prouve que le trigger
-// refuse, pas que le verrou SÉRIALISE, ni que l'isolation est gardée (passe
-// Codex de #1687). Ici, le trigger est celui que `migrate deploy` a posé sur
-// la base. Ces cas COMMETTENT des lignes de test (un analyte et ses liens,
-// préfixe `__f79c_`), effacées au début et à la fin.
-const ANALYTE_CONC = 'BIO_TEST_F79_CONC';
-const nouveau = async () => {
-  const c = new pg.Client({ connectionString: URL_BASE });
-  await c.connect();
-  return c;
-};
-const lien = (id, cible, code, actif = true) => ({
-  text: `INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, actif)
-         VALUES ($1, $2, $3, $4, 'haut_evocateur', 'WN-CL-0000-000', 'v1.0', $5)`,
-  values: [id, ANALYTE_CONC, cible, code, actif],
-});
-async function nettoyer(c) {
-  await c.query(String.raw`DELETE FROM biology_analyte_links WHERE id LIKE '\_\_f79c\_%'`);
-  await c.query('DELETE FROM biology_analytes WHERE code = $1', [ANALYTE_CONC]);
-}
-async function refusAttendu(nom, promesse, motif) {
-  try {
-    await promesse;
-    echecs += 1;
-    console.error(`ÉCHEC  ${nom} : ACCEPTÉ alors qu'il doit être refusé.`);
-  } catch (e) {
-    if (String(e.message).includes(motif)) {
-      console.log(`ok     ${nom} (refusé pour le bon motif)`);
-    } else {
-      echecs += 1;
-      console.error(`ÉCHEC  ${nom} : refusé pour un autre motif (SQLSTATE ${e.code ?? '?'}).`);
-    }
-  }
-}
-
-const admin = await nouveau();
-const sessions = [];
 try {
-  await nettoyer(admin);
-  await admin.query(
-    `INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
-     VALUES ('__f79c_analyte', $1, 'x', 'sang', 'saisie_praticien', 'partielle', now())`,
-    [ANALYTE_CONC],
-  );
-
-  // C1 — READ COMMITTED : la seconde écriture ATTEND le verrou, puis voit le
-  // lien validé et se fait refuser. Sans le verrou, elle passerait.
-  {
-    const a = await nouveau();
-    const b = await nouveau();
-    sessions.push(a, b);
-    await a.query('BEGIN');
-    await a.query(lien('__f79c_axe', 'axe', 'methylation'));
-    await b.query('BEGIN');
-    const pidB = (await b.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
-    const ecritureB = b.query(lien('__f79c_nut', 'nutriment', 'zinc'));
-    ecritureB.catch(() => {});
-    let bloquee = false;
-    for (let i = 0; i < 50 && !bloquee; i += 1) {
-      const { rows } = await admin.query(
-        `SELECT 1 FROM pg_stat_activity WHERE pid = $1 AND wait_event_type = 'Lock' AND wait_event = 'advisory'`,
-        [pidB],
-      );
-      bloquee = rows.length > 0;
-      if (!bloquee) await new Promise((r) => setTimeout(r, 100));
-    }
-    if (bloquee) {
-      console.log('ok     C1 : la seconde écriture attend le verrou de la première');
-    } else {
-      echecs += 1;
-      console.error('ÉCHEC  C1 : la seconde écriture n\'a pas attendu le verrou consultatif.');
-    }
-    await a.query('COMMIT');
-    await refusAttendu('C1 : nutriment après un axe validé, en READ COMMITTED', ecritureB, 'porte déjà un lien actif');
-    await b.query('ROLLBACK').catch(() => {});
-  }
-
-  // C2, C3 — une écriture active nutriment ou axe est refusée d'emblée sous
-  // REPEATABLE READ et SERIALIZABLE, où l'instantané précède le verrou.
-  for (const [nom, iso] of [['C2', 'REPEATABLE READ'], ['C3', 'SERIALIZABLE']]) {
-    const b = await nouveau();
-    sessions.push(b);
-    await b.query(`BEGIN ISOLATION LEVEL ${iso}`);
-    await refusAttendu(
-      `${nom} : écriture d'un axe sous ${iso}`,
-      b.query(lien(`__f79c_${nom}`, 'axe', 'inflammation')),
-      'refusé sous l\'isolation',
-    );
-    await b.query('ROLLBACK').catch(() => {});
-  }
-
-  // C4 — la réactivation d'un nutriment dormant, sous REPEATABLE READ.
-  await admin.query(lien('__f79c_dormant', 'nutriment', 'zinc', false));
-  {
-    const b = await nouveau();
-    sessions.push(b);
-    await b.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
-    await refusAttendu(
-      'C4 : réactivation d\'un nutriment sous REPEATABLE READ',
-      b.query(`UPDATE biology_analyte_links SET actif = true WHERE id = '__f79c_dormant'`),
-      'refusé sous l\'isolation',
-    );
-    await b.query('ROLLBACK').catch(() => {});
-  }
-
-  // C5 — témoin : le refus est borné aux liens actifs nutriment/axe. Un
-  // besoin s'écrit sous REPEATABLE READ.
-  {
-    const b = await nouveau();
-    sessions.push(b);
-    await b.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+  for (const cas of CAS) {
+    const script = [PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', CONTRAT].join('\n');
+    const client = new pg.Client({ connectionString: URL_REJEU });
+    await client.connect();
+    let erreur = null;
     try {
-      await b.query(lien('__f79c_besoin', 'besoin', '3'));
-      console.log('ok     C5 : un lien de besoin s\'écrit sous REPEATABLE READ');
+      await client.query(script);
     } catch (e) {
-      echecs += 1;
-      console.error(`ÉCHEC  C5 : lien de besoin refusé sous REPEATABLE READ (SQLSTATE ${e.code ?? '?'}).`);
+      erreur = e;
     }
-    await b.query('ROLLBACK').catch(() => {});
+    // Le contrat finit par ROLLBACK ; un script interrompu laisse une
+    // transaction avortée. Dans les deux cas, rien ne survit.
+    await client.query('ROLLBACK').catch(() => {});
+    await client.end();
+
+    if (cas.motif === null) {
+      if (erreur) {
+        echecs += 1;
+        console.error(`ÉCHEC  ${cas.nom} : refusé (SQLSTATE ${erreur.code ?? '?'}) alors qu'il doit passer.`);
+      } else {
+        console.log(`ok     ${cas.nom}`);
+      }
+    } else if (!erreur) {
+      echecs += 1;
+      console.error(`ÉCHEC  ${cas.nom} : ACCEPTÉ alors qu'il doit rougir.`);
+    } else if (!String(erreur.message).includes(cas.motif)) {
+      echecs += 1;
+      console.error(`ÉCHEC  ${cas.nom} : refusé pour un autre motif (SQLSTATE ${erreur.code ?? '?'}).`);
+    } else {
+      console.log(`ok     ${cas.nom} (refusé pour le bon motif)`);
+    }
   }
+
+  // ── Concurrence et isolation, à deux sessions ─────────────────────────────
+  // Le contrat négatif joue une seule session : il prouve que le trigger
+  // refuse, pas que le verrou SÉRIALISE, ni que l'isolation est gardée (passe
+  // Codex de #1687). Ici, le trigger est celui que `migrate deploy` a posé sur
+  // la base, recopié dans le clone. Ces cas COMMETTENT des lignes de test (un
+  // analyte et ses liens, préfixe `__f79c_`), dans le clone seulement.
+  const ANALYTE_CONC = 'BIO_TEST_F79_CONC';
+  const nouveau = async () => {
+    const c = new pg.Client({ connectionString: URL_REJEU });
+    await c.connect();
+    return c;
+  };
+  const lien = (id, cible, code, actif = true) => ({
+    text: `INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, actif)
+           VALUES ($1, $2, $3, $4, 'haut_evocateur', 'WN-CL-0000-000', 'v1.0', $5)`,
+    values: [id, ANALYTE_CONC, cible, code, actif],
+  });
+  async function refusAttendu(nom, promesse, motif) {
+    try {
+      await promesse;
+      echecs += 1;
+      console.error(`ÉCHEC  ${nom} : ACCEPTÉ alors qu'il doit être refusé.`);
+    } catch (e) {
+      if (String(e.message).includes(motif)) {
+        console.log(`ok     ${nom} (refusé pour le bon motif)`);
+      } else {
+        echecs += 1;
+        console.error(`ÉCHEC  ${nom} : refusé pour un autre motif (SQLSTATE ${e.code ?? '?'}).`);
+      }
+    }
+  }
+
+  const admin = await nouveau();
+  const sessions = [];
+  try {
+    await admin.query(
+      `INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
+       VALUES ('__f79c_analyte', $1, 'x', 'sang', 'saisie_praticien', 'partielle', now())`,
+      [ANALYTE_CONC],
+    );
+
+    // C1 — READ COMMITTED : la seconde écriture ATTEND le verrou, puis voit le
+    // lien validé et se fait refuser. Sans le verrou, elle passerait.
+    {
+      const a = await nouveau();
+      const b = await nouveau();
+      sessions.push(a, b);
+      await a.query('BEGIN');
+      await a.query(lien('__f79c_axe', 'axe', 'methylation'));
+      await b.query('BEGIN');
+      const pidB = (await b.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+      const ecritureB = b.query(lien('__f79c_nut', 'nutriment', 'zinc'));
+      ecritureB.catch(() => {});
+      let bloquee = false;
+      for (let i = 0; i < 50 && !bloquee; i += 1) {
+        const { rows } = await admin.query(
+          `SELECT 1 FROM pg_stat_activity WHERE pid = $1 AND wait_event_type = 'Lock' AND wait_event = 'advisory'`,
+          [pidB],
+        );
+        bloquee = rows.length > 0;
+        if (!bloquee) await new Promise((r) => setTimeout(r, 100));
+      }
+      if (bloquee) {
+        console.log('ok     C1 : la seconde écriture attend le verrou de la première');
+      } else {
+        echecs += 1;
+        console.error('ÉCHEC  C1 : la seconde écriture n\'a pas attendu le verrou consultatif.');
+      }
+      await a.query('COMMIT');
+      await refusAttendu('C1 : nutriment après un axe validé, en READ COMMITTED', ecritureB, 'porte déjà un lien actif');
+      await b.query('ROLLBACK').catch(() => {});
+    }
+
+    // C2, C3 — une écriture active nutriment ou axe est refusée d'emblée sous
+    // REPEATABLE READ et SERIALIZABLE, où l'instantané précède le verrou.
+    for (const [nom, iso] of [['C2', 'REPEATABLE READ'], ['C3', 'SERIALIZABLE']]) {
+      const b = await nouveau();
+      sessions.push(b);
+      await b.query(`BEGIN ISOLATION LEVEL ${iso}`);
+      await refusAttendu(
+        `${nom} : écriture d'un axe sous ${iso}`,
+        b.query(lien(`__f79c_${nom}`, 'axe', 'inflammation')),
+        'refusé sous l\'isolation',
+      );
+      await b.query('ROLLBACK').catch(() => {});
+    }
+
+    // C4 — la réactivation d'un nutriment dormant, sous REPEATABLE READ.
+    await admin.query(lien('__f79c_dormant', 'nutriment', 'zinc', false));
+    {
+      const b = await nouveau();
+      sessions.push(b);
+      await b.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      await refusAttendu(
+        'C4 : réactivation d\'un nutriment sous REPEATABLE READ',
+        b.query(`UPDATE biology_analyte_links SET actif = true WHERE id = '__f79c_dormant'`),
+        'refusé sous l\'isolation',
+      );
+      await b.query('ROLLBACK').catch(() => {});
+    }
+
+    // C5 — témoin : le refus est borné aux liens actifs nutriment/axe. Un
+    // besoin s'écrit sous REPEATABLE READ.
+    {
+      const b = await nouveau();
+      sessions.push(b);
+      await b.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+      try {
+        await b.query(lien('__f79c_besoin', 'besoin', '3'));
+        console.log('ok     C5 : un lien de besoin s\'écrit sous REPEATABLE READ');
+      } catch (e) {
+        echecs += 1;
+        console.error(`ÉCHEC  C5 : lien de besoin refusé sous REPEATABLE READ (SQLSTATE ${e.code ?? '?'}).`);
+      }
+      await b.query('ROLLBACK').catch(() => {});
+    }
+  } finally {
+    for (const c of sessions) await c.end().catch(() => {});
+    await admin.end();
+  }
+} catch (e) {
+  echecs += 1;
+  console.error(`ÉCHEC  le banc s'est interrompu (${e.name ?? 'erreur'}, SQLSTATE ${e.code ?? '?'}).`);
 } finally {
-  for (const c of sessions) await c.end().catch(() => {});
-  await nettoyer(admin).catch(() => {});
-  await admin.end();
+  // La suppression du clone est EXIGÉE : un clone resté porterait les
+  // fixtures, et son échec ne doit jamais laisser le banc vert.
+  try {
+    await maintenance.query(`DROP DATABASE "${CLONE}" WITH (FORCE)`);
+    console.log('ok     clone jetable supprimé');
+  } catch (e) {
+    echecs += 1;
+    console.error(`ÉCHEC  suppression du clone « ${CLONE} » (SQLSTATE ${e.code ?? '?'}).`);
+  }
+  await maintenance.end().catch(() => {});
+}
+
+// ── La base nommée n'a rien reçu ──────────────────────────────────────────
+// Constaté par une session neuve, APRÈS la suppression du clone : aucune
+// fixture des rejeux ni des cas à deux sessions, et aucun lien d'axe (la
+// base est sans corpus). Une erreur de ce constat fait rougir le banc.
+try {
+  const client = new pg.Client({ connectionString: URL_BASE });
+  await client.connect();
+  const { rows } = await client.query(
+    String.raw`
+      SELECT (SELECT count(*) FROM rag_corpus_claims WHERE id LIKE '\_\_f79%')::int AS claims,
+             (SELECT count(*) FROM biology_analyte_links
+               WHERE id LIKE 'bal\_f79\_%' OR id LIKE '\_\_f79%' OR cible_type = 'axe')::int AS liens,
+             (SELECT count(*) FROM biology_analytes WHERE code = $1)::int AS analytes`,
+    ['BIO_TEST_F79_CONC'],
+  );
+  await client.end();
+  const { claims, liens, analytes } = rows[0];
+  if (claims !== 0 || liens !== 0 || analytes !== 0) {
+    echecs += 1;
+    console.error(`ÉCHEC  la base nommée porte ${claims} claim(s), ${liens} lien(s) et ${analytes} analyte(s) de test.`);
+  } else {
+    console.log('ok     la base nommée n\'a reçu aucune fixture');
+  }
+} catch (e) {
+  echecs += 1;
+  console.error(`ÉCHEC  constat sur la base nommée impossible (SQLSTATE ${e.code ?? '?'}).`);
 }
 
 if (echecs > 0) {

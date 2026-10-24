@@ -756,11 +756,12 @@ jobs:
       # Rejeu de la migration F79 sur seize claims de fixture, dans une
       # transaction annulée : dix-sept liens et liste exacte au positif ;
       # échec total si un claim n'est plus conforme ; contrat rouge sur un
-      # lien en plus, en moins ou modifié ; constat qu'aucune fixture n'a
-      # survécu. Puis cinq cas à deux sessions : le verrou sérialise en READ
-      # COMMITTED, REPEATABLE READ et SERIALIZABLE sont refusés (lignes de
-      # test commises puis effacées). `node` et non `node --test` :
-      # l'extraction des bancs Node le jouerait avant la base.
+      # lien en plus, en moins ou modifié. Puis cinq cas à deux sessions : le
+      # verrou sérialise en READ COMMITTED, REPEATABLE READ et SERIALIZABLE
+      # sont refusés. Tout se joue dans un clone jetable de wellneuro_ci,
+      # supprimé à la fin ; la base du CI ne reçoit rien, ce qu'un constat
+      # final vérifie. `node` et non `node --test` : l'extraction des bancs
+      # Node le jouerait avant la base.
       - name: F79 analyte-axe links migration replay bench
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

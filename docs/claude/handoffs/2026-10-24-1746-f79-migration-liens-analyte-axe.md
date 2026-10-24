@@ -88,6 +88,20 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
     d'isolation, sans `analyte_code` ou sans `ratio_code` dans le
     déclenchement, le banc ou le contrat rougit. Le banc rejoué deux fois
     ne laisse aucune ligne.
+- Seconde passe Codex sur 626741eb : isolation et déplacements de source
+  clos ; un P1 maintenu et un P2 nouveau, corrigés.
+  - P1 : la garde à expressions régulières restait contournable
+    (`/* fin */ COMMIT;`, `--` dans une chaîne). Tout le banc tourne
+    désormais dans un clone jetable de la base nommée, supprimé à la fin :
+    la non-persistance tient par construction. La garde devient un
+    analyseur lexical, éprouvé sur dix mutations.
+  - P2 : un nettoyage en échec laissait le banc vert. Il n'y a plus de
+    nettoyage. La suppression du clone est exigée, puis une session neuve
+    constate que la base nommée n'a rien reçu.
+  - Éprouvé sur une base jetable : avec la garde désactivée et
+    `/* fin */ COMMIT;` dans la migration, le banc rougit et la base nommée
+    reste à 0 claim et 0 lien ; une suppression du clone en échec fait
+    sortir le banc en 1 ; le banc suivant supprime le clone resté.
 
 ## Problèmes ouverts
 
