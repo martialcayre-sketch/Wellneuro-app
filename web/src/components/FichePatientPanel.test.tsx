@@ -1209,12 +1209,15 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(tiroir.textContent).toContain('Calculé sur 8 besoins mesurés sur 12');
   });
 
-  it('tiroir des 12 besoins : aucun besoin mesuré, le compte le dit', async () => {
+  it('tiroir des 12 besoins : aucun besoin mesuré, le bouton et la tête le disent (D-352 §4)', async () => {
     await rendreFiche({ indiceGlobalNul: true });
 
-    expect(screen.getByRole('button', { name: /Les 12 besoins/i }).textContent).toContain(
-      'Calculé sur 0 besoin mesuré sur 12'
-    );
+    const bouton = screen.getByRole('button', { name: /Les 12 besoins/i });
+    expect(bouton.textContent).toContain('Non calculé : aucun besoin mesuré');
+    fireEvent.click(bouton);
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('Non calculé : aucun besoin mesuré');
+    expect(tiroir.textContent).not.toContain('Calculé sur 0');
   });
 
   it('tiroir des 12 besoins : une réponse sans le compte n’affiche aucun compte deviné', async () => {
@@ -2366,6 +2369,9 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
     await screen.findByText('Indice global');
     expect(within(screen.getByRole('dialog')).queryByText(/^Calculé sur/)).toBeNull();
+    // Le libellé à zéro ([[D-352]] §4) ne commence pas par « Calculé » : il est
+    // exclu à part, la jauge sans total n'affiche aucune base.
+    expect(within(screen.getByRole('dialog')).queryByText('Non calculé : aucun besoin mesuré')).toBeNull();
     expect(screen.getByText('Indice global').parentElement?.textContent).toContain('Non mesuré');
   });
 
