@@ -185,6 +185,15 @@ export type AncreCycleCourant = {
 };
 
 /**
+ * L'identifiant de la ligne d'une ANCRE (`T0`, `T1`…) — sans préfixe de cycle,
+ * voir `identifiantEpisode`. Exporté pour que la route relise la ligne d'une
+ * ancre déjà posée sans recopier la forme (t42).
+ */
+export function identifiantAncre(idPatient: string, ancre: JalonMomentum): string {
+  return `runtime-episode-${idPatient}-${ancre}`;
+}
+
+/**
  * L'IDENTIFIANT D'UN ÉPISODE RUNTIME — IL DOIT PORTER LE CYCLE.
  *
  * Il valait `runtime-episode-<patient>-<jalon>`. Tant qu'un dossier n'avait
@@ -214,7 +223,7 @@ function identifiantEpisode(
   ancreCycle: AncreCycleCourant | null,
 ): string {
   if (estAncreDeCycle(milestone) || !ancreCycle || !estAncreDeCycle(ancreCycle.ancre)) {
-    return `runtime-episode-${idPatient}-${milestone}`;
+    return identifiantAncre(idPatient, milestone);
   }
   return `runtime-episode-${idPatient}-${ancreCycle.ancre}-${milestone}`;
 }
@@ -247,6 +256,7 @@ function dateDeReference(
   inputs: RuntimeInputs,
   milestone: JalonMomentum,
   ancreCycle: AncreCycleCourant | null,
+  ancrePosee: AncrePosee | null,
 ): string {
   const repliDossier = inputs.patient.createdAt.toISOString();
   if (!estAncreDeCycle(milestone)) {
@@ -255,8 +265,23 @@ function dateDeReference(
   if ((indexDeCycle(milestone) ?? 0) === 0) {
     return inputs.responses[0]?.observedAt ?? repliDossier;
   }
+  // UNE ANCRE DÉJÀ POSÉE GARDE SA DATE ([[D-350]], t42). « La réponse la plus récente »
+  // choisit l'instant d'une OUVERTURE ; une fois l'acte confirmé, cet instant
+  // est le sien (`targetAt` de la ligne, que `D-129` interdit de réécrire).
+  // Recalculé sur la dernière réponse, il bougeait à chaque passation reçue
+  // après la confirmation : l'épisode cessait de se rejouer (`D-118`), l'écran
+  // redemandait de confirmer un `T1` déjà confirmé, et la re-passation du cycle
+  // perdait sa cible (t41).
+  if (ancrePosee) return ancrePosee.targetAt;
   return inputs.responses.at(-1)?.observedAt ?? repliDossier;
 }
+
+/**
+ * La ligne d'une ancre de cycle ROUVERT (`T1`, `T2`…) déjà confirmée, telle
+ * que la route la relit : seule sa date de référence sert ici. `null` pour une
+ * ancre jamais posée — l'ouverture d'un cycle se date alors comme avant.
+ */
+export type AncrePosee = { targetAt: string };
 
 export function proposeRuntimeEpisode(
   inputs: RuntimeInputs,
@@ -275,11 +300,17 @@ export function proposeRuntimeEpisode(
    * (`identifiantEpisode`).
    */
   ancreCycle: AncreCycleCourant | null = null,
+  /**
+   * La ligne de l'ancre demandée quand elle est DÉJÀ POSÉE (t42) — lue pour un
+   * cycle rouvert seulement ; voir `dateDeReference`. `null` : ancre à poser,
+   * ou `T0`, que la première réponse date de toute façon.
+   */
+  ancrePosee: AncrePosee | null = null,
 ): RuntimeEpisodeProposal {
   // Depuis [[D-255]], `ancreCycle.jourZero` date les jalons de mesure ; voir
   // `dateDeReference`.
   const targetAt = new Date(
-    new Date(dateDeReference(inputs, milestone, ancreCycle)).getTime()
+    new Date(dateDeReference(inputs, milestone, ancreCycle, ancrePosee)).getTime()
     + joursDepuisAncre(milestone) * JOUR_MS,
   ).toISOString();
   const proposal = proposeAssessmentEpisode({

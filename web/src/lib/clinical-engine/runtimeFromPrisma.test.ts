@@ -61,6 +61,20 @@ describe('runtime clinique depuis Prisma', () => {
       expect(proposal.targetAt).toBe('2026-01-01T00:00:00.000Z');
     });
 
+    // t42 : une ancre de cycle rouvert DÉJÀ POSÉE garde la date de sa ligne.
+    it('`T2` déjà posé se date sur sa ligne, pas sur la réponse la plus récente (t42)', () => {
+      const posee = { targetAt: '2026-01-05T00:00:00.000Z' };
+      expect(proposeRuntimeEpisode(inputs, 'T2', null, posee).proposal.targetAt).toBe('2026-01-05T00:00:00.000Z');
+      expect(proposeRuntimeEpisode(inputs, 'T2', null, null).proposal.targetAt).toBe('2026-02-10T00:00:00.000Z');
+    });
+
+    it('`T0` et un jalon de mesure ignorent la ligne posée (t42)', () => {
+      const posee = { targetAt: '2026-01-05T00:00:00.000Z' };
+      expect(proposeRuntimeEpisode(inputs, 'T0', null, posee)).toEqual(proposeRuntimeEpisode(inputs, 'T0'));
+      const ancre = { ancre: 'T0' as const, confirmedAt: '2026-01-01T00:00:00.000Z', jourZero: null };
+      expect(proposeRuntimeEpisode(inputs, 'J21', ancre, posee)).toEqual(proposeRuntimeEpisode(inputs, 'J21', ancre));
+    });
+
     it('`T1` ne l’embarque pas : rouvrir un suivi n’est pas constater une entrée', () => {
       const { proposal } = proposeRuntimeEpisode(inputs, 'T1');
       // Ancre de réouverture : fenêtrée sur la réponse la plus RÉCENTE, ±8 j.
