@@ -59,7 +59,8 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
 - Base locale :
   - migration appliquée ;
   - contrats verts : liste exacte, négatif F79, F52, catalogue négatif ;
-  - banc de rejeu : 15 cas sur 15 ;
+  - banc de rejeu : 15 cas sur 15, puis 17 sur 17 après la revue (version
+    modifiée, analyte échangé) ;
   - mutations éprouvées : un sens altéré dans la liste du contrat fait
     rougir le cas positif du banc ; trigger retiré, le contrat négatif et
     le contrat de liste rougissent.
@@ -68,7 +69,10 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
   est vert.
 - T3 (`npm run test:worktree`) vert en 6 min 52 s, avant le second rebase
   (#1686 : interface et docs, aucune migration).
-- Revue `wn-reviewer` : voir la PR.
+- Revue `wn-reviewer` (P0, lecture seule) : GO, aucun P0 ni P1. P2 repris :
+  garde de transaction du banc élargie, deux cas de banc ajoutés ; fraîcheur
+  des claims après la release routée en préalable du code consommateur
+  (fiche F79). Les autres P2 sont notés dans la PR.
 
 ## Problèmes ouverts
 

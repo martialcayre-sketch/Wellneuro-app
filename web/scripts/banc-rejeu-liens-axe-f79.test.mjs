@@ -48,9 +48,12 @@ const MIGRATION = readFileSync(
 );
 const CONTRAT = readFileSync(join(WEB, 'prisma/checks/biology_liens_axe_v1.sql'), 'utf8');
 
-// Une migration qui porterait son propre BEGIN/COMMIT validerait les
-// fixtures : le rejeu n'aurait plus rien d'annulé.
-if (/^\s*(BEGIN|COMMIT|START TRANSACTION)\s*;/im.test(MIGRATION)) {
+// Une migration qui porterait son propre contrôle de transaction validerait
+// les fixtures : le rejeu n'aurait plus rien d'annulé. Les corps entre
+// dollars (fonctions, blocs DO) et les commentaires sont retirés d'abord :
+// leur `BEGIN` / `END;` est du PL/pgSQL, pas une instruction de transaction.
+const HORS_CORPS = MIGRATION.replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, '').replace(/--.*$/gm, '');
+if (/^\s*(BEGIN|COMMIT|END|ROLLBACK|ABORT|START TRANSACTION)\b/im.test(HORS_CORPS)) {
   throw new Error('REFUS : la migration porte un contrôle de transaction, le rejeu ne serait plus annulé.');
 }
 
@@ -159,6 +162,16 @@ const CAS = [
   {
     nom: 'claim échangé',
     apres: `UPDATE biology_analyte_links SET claim_id = 'WN-CL-0043-014' WHERE id = 'bal_f79_09';`,
+    motif: 'D-351 §2 : les liens d\'axe s\'écartent',
+  },
+  {
+    nom: 'version du claim modifiée',
+    apres: `UPDATE biology_analyte_links SET version_claim = 'v1.1' WHERE id = 'bal_f79_07';`,
+    motif: 'D-351 §2 : les liens d\'axe s\'écartent',
+  },
+  {
+    nom: 'analyte échangé',
+    apres: `UPDATE biology_analyte_links SET analyte_code = 'BIO_CRP_US' WHERE id = 'bal_f79_14';`,
     motif: 'D-351 §2 : les liens d\'axe s\'écartent',
   },
   {
