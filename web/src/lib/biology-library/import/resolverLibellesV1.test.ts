@@ -290,3 +290,36 @@ describe('resolver — six fiches de D-323 §6 ([[D-336]], t30)', () => {
     expect(resoudreLibelle('rT3', true)).toEqual({ statut: 'resolu', code: 'BIO_T3_REVERSE' });
   });
 });
+
+describe('resolver — libellés réels restés « inconnu » ([[D-355]], t36)', () => {
+  const UNITES = unitesDuCatalogue();
+  it.each([
+    ['PROTEINE C REACTIVE (CRP)', 'mg/L', 'BIO_CRP_US'],
+    ['Volume globulaire moyen', 'fL', 'BIO_VGM'],
+    ['Plaquettes (EDTA)', 'G/L', 'BIO_PLAQUETTES'],
+    ['DFG estimé selon l\u2019équation CKD\u2212EPI', 'mL/min', 'BIO_DFG_CKD_EPI'],
+    ['HBA1c - Hémoglobine glyquée (NGSP)', '%', 'BIO_HBA1C'],
+    ['Indice Oméga 3', '%', 'BIO_INDEX_OMEGA3'],
+    ['Rapport A. Arachidonique / EPA', null, 'BIO_RATIO_AA_EPA'],
+  ])('« %s » en %s → %s, unité concordante', (libelle, unite, code) => {
+    expect(resoudreLigne(libelle, unite, UNITES)).toEqual({ statut: 'resolu', code });
+    expect(unitesConcordent(unite, UNITES.get(code) ?? null)).toBe(true);
+  });
+
+  it('« Indice d’anisocytose » se rattache à l’IDR, mais sans unité lue la ligne reste refusée', () => {
+    expect(resoudreLigne('Indice d\'anisocytose', null, UNITES)).toEqual({ statut: 'resolu', code: 'BIO_IDR' });
+    expect(unitesConcordent(null, UNITES.get('BIO_IDR') ?? null)).toBe(false);
+  });
+
+  it('une antériorité n’est jamais rattachée : elle entrerait sous la date du compte rendu courant', () => {
+    expect(resoudreLibelle('HBA1c - Hémoglobine glyquée (NGSP) - antériorité du 03/03/26').statut).toBe('inconnu');
+  });
+
+  it('la CRP de D-263 reste standard ; sans fiche, rien n’est rattaché', () => {
+    expect(resoudreLibelle('CRP (Protéine C Réactive)')).toEqual({ statut: 'resolu', code: 'BIO_CRP' });
+    for (const libelle of ['Taux de prothrombine', 'INR', 'Temps de Quick patient', 'Temps de Quick témoin',
+      'Acide Eicosapentaenoique', 'Rapport Oméga 6 / Oméga 3', 'Rapport A. Linoléique / A. DGLA', 'Plaquettes (citrate)']) {
+      expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
+    }
+  });
+});

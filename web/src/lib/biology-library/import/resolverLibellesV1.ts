@@ -34,7 +34,8 @@ import { unitesConcordent } from './valeurLue';
 // `docs/claude/campagnes/SURFACE_RELECTURE_RESOLVER_LIBELLES_2026-10-03.md`,
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
 // lus sur le premier compte rendu de production ; puis par [[D-263]] : les
-// analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]].
+// analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]] ;
+// puis par [[D-336]] (six fiches de D-323 §6) et [[D-355]] (libellés réels).
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -232,6 +233,21 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Phosphatases alcalines', code: 'BIO_PHOSPHATASES_ALCALINES' },
   { libelle: 'Phosphatase alcaline', code: 'BIO_PHOSPHATASES_ALCALINES' },
   { libelle: 'PAL', code: 'BIO_PHOSPHATASES_ALCALINES' },
+  // [[D-355]] (t36) : libellés LUS en production et restés « inconnu »
+  // (constat par conteneur du 2026-10-24), chacun arbitré par le responsable.
+  // La CRP de ce libellé est la CRP ultrasensible ; « CRP (Protéine C
+  // Réactive) » de [[D-263]] reste à `BIO_CRP`. Une antériorité (« … -
+  // antériorité du 03/03/26 ») n'est JAMAIS rattachée : elle entrerait sous
+  // la date du compte rendu courant. « Indice d'anisocytose », lu sans unité,
+  // reste refusé à la validation tant que l'unité n'est pas lue (IDR en %).
+  { libelle: 'PROTEINE C REACTIVE (CRP)', code: 'BIO_CRP_US' },
+  { libelle: 'Volume globulaire moyen', code: 'BIO_VGM' },
+  { libelle: 'Plaquettes (EDTA)', code: 'BIO_PLAQUETTES' },
+  { libelle: "DFG estimé selon l'équation CKD-EPI", code: 'BIO_DFG_CKD_EPI' },
+  { libelle: 'HBA1c - Hémoglobine glyquée (NGSP)', code: 'BIO_HBA1C' },
+  { libelle: 'Indice Oméga 3', code: 'BIO_INDEX_OMEGA3' },
+  { libelle: 'Rapport A. Arachidonique / EPA', code: 'BIO_RATIO_AA_EPA' },
+  { libelle: "Indice d'anisocytose", code: 'BIO_IDR' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -252,17 +268,17 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-336]] — RE-SIGNER REMPLACE : la signature de [[D-263]]
-  // (2026-10-03, SHA `be9a463c…`, 145 entrées, 79 analytes) portait la table
-  // sans les six fiches de [[D-323]] §6 ; celles de [[D-260]] (`5f95d167…`) et
-  // de [[D-259]] (`ccbd8008…`) étaient déjà remplacées. 167 entrées,
-  // 85 analytes. Signature du responsable transcrite par l'assistant sur son
-  // instruction, le 2026-10-21.
+  // RE-SIGNÉE PAR [[D-355]] — RE-SIGNER REMPLACE : la signature de [[D-336]]
+  // (2026-10-21, SHA `3e084667…`, 167 entrées, 85 analytes) portait la table
+  // sans les huit libellés réels de t36 ; celles de [[D-263]] (`be9a463c…`),
+  // [[D-260]] (`5f95d167…`) et [[D-259]] (`ccbd8008…`) étaient déjà
+  // remplacées. 175 entrées, 85 analytes. Signature du responsable transcrite
+  // par l'assistant sur son instruction, le 2026-10-24.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-21T11:13:04.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-21, contre le catalogue biology_analytes (migrations niveau 1, oméga-3 AA/EPA, compte rendu courant et groupes F80) ; libellés du catalogue et synonymes rédigés pour six fiches de D-323 §6, aucun encore lu en production (constat par conteneur du même jour)',
-  shaPerimetre: '3e08466760059e7281759c00cc835cf9a10e8881b38c8f63ab98da363f74832c',
+  dateValidation: '2026-10-24T18:34:46.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-24, des libellés restés « inconnu » en production (constat par conteneur du même jour, agrégats : 53 lignes « inconnu », 92 résolues), contre le catalogue biology_analytes ; huit libellés réels arbitrés un par un (D-355), antériorités jamais rattachées',
+  shaPerimetre: 'ebe7179eba0665ac0c2382764080da1f3ef817b63994bea8e622f415656e2061',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

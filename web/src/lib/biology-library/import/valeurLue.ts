@@ -74,15 +74,15 @@ function formeUnite(unite: string): string {
  * L'unité lue est-elle celle de l'analyte ? Égalité stricte après mise en
  * forme typographique — NFKC ramène le « μ » grec au « µ » micro. Une unité
  * lue absente face à une unité attendue ne concorde pas (on ne devine pas) ;
- * deux absences concordent.
+ * deux absences concordent, et une absence face à « ratio » ([[D-355]] §4).
  */
 /**
  * Deux écritures d'une MÊME grandeur — facteur 1, la valeur lue reste celle du
  * compte rendu. Liste fermée, chaque paire validée par le responsable
  * ([[D-260]] : « µg/L » et « ng/mL », constaté sur un compte rendu réel ;
  * [[D-261]] §5 : giga, téra, l'unité enzymatique ; [[D-263]] : la décimale du
- * DFG). Une
- * paire reliée par un autre facteur (g/dL et g/L) n'a rien à faire ici.
+ * DFG ; [[D-355]] §3 : le DFG lu en « mL/min », seule fiche du catalogue en
+ * « mL/min/1,73 m² », unité que le CHECK du catalogue réserve). Une paire reliée par un autre facteur (g/dL et g/L) n'a rien à faire ici.
  */
 const NOTATIONS_EQUIVALENTES: readonly (readonly [string, string])[] = Object.freeze([
   ['µg/L', 'ng/mL'],
@@ -92,10 +92,16 @@ const NOTATIONS_EQUIVALENTES: readonly (readonly [string, string])[] = Object.fr
   ['U/L', 'UI/L'],
   // [[D-263]] : la décimale du DFG, imprimée en point ou en virgule.
   ['mL/min/1.73 m²', 'mL/min/1,73 m²'],
+  // [[D-355]] §3 : le DFG CKD-EPI lu en « mL/min » (arbitrage du responsable
+  // du 2026-10-24, contre l'avis de l'assistant : une clairance absolue
+  // passerait pour un DFG indexé). Le libellé résolu reste la garde.
+  ['mL/min', 'mL/min/1,73 m²'],
 ] as const);
 
 export function unitesConcordent(lue: string | null, attendue: string | null): boolean {
-  if (lue === null || lue.trim() === '') return attendue === null;
+  // [[D-355]] §4 : un rapport est sans dimension, aucun laboratoire n'imprime
+  // « ratio » — une unité absente concorde avec « ratio », et avec lui seul.
+  if (lue === null || lue.trim() === '') return attendue === null || attendue === 'ratio';
   if (attendue === null) return false;
   const a = formeUnite(lue);
   const b = formeUnite(attendue);
