@@ -11629,3 +11629,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, observation ; t36 « fait » au suivi.
 
 **Ouvert.** Fiches TP/INR/Quick et acides gras : deux lots au plan.
+
+## 2026-10-24 — J3-12h lot 3 : courrier complément, remise au clic et refus (D-358)
+
+**Fait.** Le générateur du courrier (texte validé), le courrier et sa liste dans une seule transaction, la garde du clic parmi les refus d'avant l'embranchement, la remise par `createMany` (tout refus autre que « déjà remis » annule le clic) et la case « ciblé » du constructeur. Tout est sous `WN_COURRIER_COMPLEMENT`, éteint, sans migration. Banc Postgres : parité de la liste avec le trigger, « les deux ou rien », remise de bout en bout. Revue `wn-reviewer` : GO sous conditions ; P1 corrigés.
+
+**Écarté.** L'égalité stricte et l'union des remises, pour la couverture ; le portail dans ce lot.
+
+**Revue Codex.** Deux P1 corrigés : l'âge relu sous verrou à la consignation ; le libellé du destinataire réservé à la grossesse (arbitrage du responsable).
+
+**Prochaine action.** CI et CodeRabbit sur la tête, puis le merge ; ensuite le lot 4 (portail).
+
+**Ouvert.** Le nombre d'anamnèses envoyées sans date en production, à lire par conteneur : un « oui » non daté rend le courrier perpétuel.

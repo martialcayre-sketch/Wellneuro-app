@@ -58,6 +58,23 @@ export const MODELE_COURRIER_ADRESSAGE: ModeleDocument = {
 };
 
 /**
+ * Courrier médecin — compléments ciblés ([[D-345]] §7, J3-12h lot 3).
+ *
+ * MÊME FORME que les deux autres courriers : un papier remis au médecin par le
+ * patient lui-même, non prescriptif, dont la décision appartient au lecteur.
+ * Il transmet les compléments ciblés envisagés avant qu'ils entrent au
+ * programme ; il ne nomme ni la population ni la situation qui l'appelle
+ * (forme opaque).
+ */
+export const MODELE_COURRIER_COMPLEMENT: ModeleDocument = {
+  id: 'courrier_complement',
+  titre: 'Courrier médecin — compléments ciblés',
+  intention:
+    'Informer le médecin, pour son appréciation, des compléments alimentaires ciblés envisagés avant qu’ils entrent au programme.',
+  typesBlocs: ['narratif'],
+};
+
+/**
  * Document patient — proposition d'explorations biologiques (décision F du
  * cadrage CB, D-122 §1). La trace écrite de ce qui est PROPOSÉ au patient et
  * pourquoi — la demande, jamais le résultat. Le registre patient est gardé
@@ -77,6 +94,7 @@ export const MODELES_DOCUMENTS: Readonly<Record<string, ModeleDocument>> = {
   [MODELE_SUIVI_21J.id]: MODELE_SUIVI_21J,
   [MODELE_COURRIER_BIOLOGIE.id]: MODELE_COURRIER_BIOLOGIE,
   [MODELE_COURRIER_ADRESSAGE.id]: MODELE_COURRIER_ADRESSAGE,
+  [MODELE_COURRIER_COMPLEMENT.id]: MODELE_COURRIER_COMPLEMENT,
   [MODELE_DOCUMENT_PATIENT_BIOLOGIE.id]: MODELE_DOCUMENT_PATIENT_BIOLOGIE,
 };
 
