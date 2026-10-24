@@ -58,7 +58,7 @@ function conditionApplies(condition: string | undefined, answers: RawAnswers): b
 
 /**
  * Agenda du sommeil : la passation entière est CE QUE LA CLÔTURE A ÉCRIT
- * (J3-12g, [[D-357]]). Ses items sont des agrégats calculés à la clôture
+ * (J3-12g, [[D-358]]). Ses items sont des agrégats calculés à la clôture
  * (`agenda-sommeil/cloture.ts`), jamais des réponses : le prédicat générique
  * ci-dessous les jugeait comme un questionnaire et écartait l'agenda entier
  * pour une seule rubrique absente ou nulle, quand les routes le comptaient.

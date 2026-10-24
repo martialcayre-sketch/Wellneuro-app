@@ -1,4 +1,4 @@
-# Handoff — 2026-10-24 — J3-12g : l'agenda du sommeil entre au snapshot (D-357)
+# Handoff — 2026-10-24 — J3-12g : l'agenda du sommeil entre au snapshot (D-358)
 
 ## Branche et état du dépôt
 
@@ -24,8 +24,6 @@ puis aligner le snapshot.
   demande) : deux lots, J3-12g d'abord ; tout agenda clôturé est complet au
   snapshot ; réapprobation après déploiement, sans changement de version ;
   inventaire au dossier de proposition.
-- D-357 (et non D-358 : le contrôle de numérotation refuse les trous ; #1691
-  porte D-356, déjà pris par t36, et devra se renuméroter).
 
 ## Fichiers modifiés
 
@@ -33,7 +31,7 @@ puis aligner le snapshot.
   `agendaSommeilCloture`, appelé par `hasExploitableRawAnswers`).
 - `web/src/lib/clinical-engine/clinicalSnapshot.test.ts` (dix cas, dont un
   contrôle négatif hors agenda).
-- `docs/DECISIONS.md` (D-357),
+- `docs/DECISIONS.md` (D-358),
   `docs/claude/propositions/2026-10-24-j3-12g-completude-agenda/README.md`,
   `docs/claude/PLAN_WELLNEURO.md` (deux lignes),
   `changelog.d/2026-10-24-j3-12g-agenda-sommeil-snapshot.md`,
@@ -54,20 +52,20 @@ puis aligner le snapshot.
 - `/code-review medium` : huit constats. Corrigés : nombre de nuits exigé
   entier et non négatif, chaînes refusées (la clôture n'écrit que des nombres
   et des `null` ; aucune chaîne en production) ; bancs zéro nuit, négatif,
-  fractionnaire, chaîne, objet imbriqué ; libellé « null » du banc ; D-357 §5
+  fractionnaire, chaîne, objet imbriqué ; libellé « null » du banc ; D-358 §5
   dit que les trois approbations relèvent de deux dossiers. Écartés avec
   motif : zéro nuit accepté (c'est la sortie de la clôture, et le besoin 5
   reste non mesuré, banc dédié) ; pas de liste de rubriques attendues
   (`Q_SOM_09` n'est écrit que par la clôture — la route de soumission le
   refuse, `api/patient/submit/route.ts:118` — et le scoring garde ses refus) ;
   branche par identifiant plutôt qu'une propriété de catalogue (refactoring
-  hors périmètre de D-357) ; imports du banc déjà présents ; « en PR » au
+  hors périmètre de D-358) ; imports du banc déjà présents ; « en PR » au
   plan, vrai à l'ouverture de la PR de ce lot.
 
 ## Problèmes ouverts
 
 - Après déploiement : trois cartes approuvées (deux dossiers) dérivent ;
-  réapprobation par le praticien, puis constat par conteneur (D-357 §5). La
+  réapprobation par le praticien, puis constat par conteneur (D-358 §5). La
   liste nominative est hors du dépôt (page de suivi de la file A).
 - Hors lot : r3_10 (lot suivant), r3_09, r3_12, r3_14, t33, les deux points
   t43 ouverts.

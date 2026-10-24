@@ -4,7 +4,7 @@ Lot J3-12g (file A, `docs/claude/PLAN_WELLNEURO.md`, table des lots des 12
 besoins), résidu de [[D-329]] §2. Ce dossier porte les deux préalables
 inscrits au plan — l'inventaire « rubrique de l'agenda → lecteurs du moteur »
 et le compte des diffusions actives — et les arbitrages du responsable du
-2026-10-24 qu'en tire [[D-357]].
+2026-10-24 qu'en tire [[D-358]].
 
 Agrégats seulement : aucun identifiant de dossier n'accompagne une mesure.
 
@@ -32,7 +32,7 @@ Les deux familles de lecteurs du moteur :
   `lib/equilibre/lecturePatient.ts:48`, `momentumParBesoin.ts:163`,
   `depuisPrisma.ts:230`. La chaîne C1 recalcule de même chaque passation
   incluse (`clinical-engine/chaineC1.ts:177`).
-- **Snapshot** : avant [[D-357]], le prédicat générique exigeait chaque item
+- **Snapshot** : avant [[D-358]], le prédicat générique exigeait chaque item
   présent et numérique (`clinicalSnapshot.ts:31`) et écartait l'agenda entier
   pour une seule rubrique absente ou nulle — passation `not_calculable`,
   finding `missing_data` (`clinicalReview.ts:156`), source `to_verify`
