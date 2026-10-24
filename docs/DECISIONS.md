@@ -96,7 +96,9 @@ un nul comme une lettre.
 rendue nullable et l'insertion des dix-sept liens. Un contrat SQL exige la
 liste exacte du §2 : un lien en plus, en moins ou modifié rougit. Puis passe
 Codex, T3, release-db approuvée, et constat par conteneur (dix-sept lignes,
-toutes actives, chaque `claim_id` encore `VALIDE` dans sa version). Retirer
+toutes actives, chaque `claim_id` encore `VALIDE`, actif et non supplanté,
+c'est-à-dire `superseded_at` nul, dans sa version). La migration
+n'insère un lien que si son claim remplit ces trois conditions, comme au §1. Retirer
 ou ajouter un lien exige une nouvelle décision, donc une nouvelle migration.
 
 ### D-350 — t42 : une ancre de cycle rouvert déjà posée se date sur sa propre ligne, et non plus sur la réponse la plus récente (amende le cas 3 de `dateDeReference` ; applique D-118 et D-129)
