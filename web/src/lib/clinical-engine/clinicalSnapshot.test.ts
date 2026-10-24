@@ -317,6 +317,9 @@ describe('ClinicalSnapshot — agenda du sommeil (J3-12g, D-358)', () => {
     ['à une valeur illisible', { ...AGENDA_COMPLET, AGD_TST_MOY: 'sept heures' }],
     ['à une valeur en chaîne numérique', { ...AGENDA_COMPLET, AGD_TST_MOY: '420' }],
     ['à une valeur imbriquée', { ...AGENDA_COMPLET, AGD_TST_MOY: { moyenne: 420 } }],
+    ['au seul nombre de nuits, au-dessus du seuil d’agrégation', { AGD_NB_NUITS: 18 }],
+    ['à une rubrique inconnue', { ...AGENDA_COMPLET, AGD_INCONNUE: 3 }],
+    ['privé d’une rubrique antérieure au contrat v4', (({ AGD_TST_MOY: _tst, ...reste }) => reste)(AGENDA_COMPLET)],
   ])('un agenda %s reste non calculable', (_cas, rawAnswers) => {
     const snapshot = snapshotAgenda(rawAnswers as Record<string, unknown>);
     expect(snapshot.questionnaireFindings[0].evaluability).toBe('not_calculable');

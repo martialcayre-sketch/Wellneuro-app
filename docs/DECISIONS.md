@@ -27,7 +27,10 @@ réponses : le snapshot accepte un `null` (métrique non couverte, jamais un
 zéro), l'absence d'un compteur ajouté après la clôture (contrat v4 de
 [[D-271]]) et l'agenda sous le seuil d'agrégation, qui ne porte que le nombre
 de nuits. Il exige ce nombre de nuits, entier, et refuse toute autre valeur
-qu'un nombre ou `null` — une chaîne n'est pas une sortie de la clôture. Les
+qu'un nombre ou `null` — une chaîne n'est pas une sortie de la clôture. Il
+refuse de même une clé hors du catalogue, un agrégat privé d'une rubrique
+antérieure au contrat v4, et le seul nombre de nuits au-dessus du seuil
+d'agrégation. Les
 autres questionnaires gardent le prédicat générique, `null` compris.
 
 **§2 — Ce que la règle ne décide pas.** Aucun indice : le scoring garde ses

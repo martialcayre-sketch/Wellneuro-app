@@ -43,12 +43,13 @@ puis aligner le snapshot.
 
 ## Validations exécutées
 
-- Banc du snapshot : 29 tests verts ; prédicat désactivé, les trois cas visés
+- Banc du snapshot : 32 tests verts ; prédicat désactivé, les trois cas visés
   rougissent (agenda d'avant v4, `null`, agenda court).
 - Suites `clinical-engine`, `equilibre`, `patient-cockpit` : 93 fichiers
   verts, aucune empreinte figée touchée.
 - T1 rapide vert ; T1 complet (`npm run check`) vert.
-- T3 (`npm run test:worktree`) vert sur adb173bf : 881 fichiers Vitest
+- T3 (`npm run test:worktree`) vert sur adb173bf, puis de nouveau après le
+  resserrement du prédicat (6 min 57 s, 296 E2E) : 881 fichiers Vitest
   (14 865 tests), 28 fichiers d'intégration, 296 E2E, 9 min 22 s. Un premier
   T3, lancé pendant deux autres T3 de sessions concurrentes, s'était arrêté
   sur `scripts/wn-etat-reel.test.mjs` ; ce banc rejoué seul était vert (10/10),
@@ -65,6 +66,14 @@ puis aligner le snapshot.
   branche par identifiant plutôt qu'une propriété de catalogue (refactoring
   hors périmètre de D-358) ; imports du banc déjà présents ; « en PR » au
   plan, vrai à l'ouverture de la PR de ce lot.
+- CodeRabbit (#1694), quatre tours. Corrigés : identifiants de dossier retirés
+  du constat public (P1) ; effectifs sous cinq dossiers masqués (D-298 §3) ;
+  classification du snapshot précisée au fragment ; liste de rubriques
+  rétablie sur sa seconde demande — clés lues dans le catalogue, agrégat
+  complet aux deux compteurs v4 près, nombre de nuits seul sous le seuil
+  d'agrégation seulement (ne refuse rien de ce que le snapshot accepte en
+  production). Le constat écarté au premier tour de `/code-review` est donc
+  repris.
 
 ## Problèmes ouverts
 
