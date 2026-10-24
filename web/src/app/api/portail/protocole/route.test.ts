@@ -430,4 +430,55 @@ describe('GET /api/portail/protocole', () => {
       expect(prisma.portailLecturePatient.findUnique).not.toHaveBeenCalled();
     });
   });
+
+  // L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
+  describe('encartConduite', () => {
+    afterEach(() => {
+      delete process.env.WN_PORTAIL_ENCART_CONDUITE;
+    });
+
+    it('drapeau fermé : absent, le protocole servi comme avant', async () => {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('encartConduite');
+    });
+
+    it.each(['1', 'TRUE', 'oui'])('valeur « %s » : fermé (seule la chaîne exacte « true » ouvre)', async (valeur) => {
+      process.env.WN_PORTAIL_ENCART_CONDUITE = valeur;
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json).not.toHaveProperty('encartConduite');
+    });
+
+    it('drapeau ouvert, vue servie : annoncé', async () => {
+      process.env.WN_PORTAIL_ENCART_CONDUITE = 'true';
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json.encartConduite).toBe(true);
+    });
+
+    it('drapeau ouvert, protocole indisponible : rien n’est annoncé', async () => {
+      process.env.WN_PORTAIL_ENCART_CONDUITE = 'true';
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.indisponible).toBe(true);
+      expect(json).not.toHaveProperty('encartConduite');
+    });
+
+    it('drapeau ouvert, sans protocole servi : rien n’est annoncé', async () => {
+      process.env.WN_PORTAIL_ENCART_CONDUITE = 'true';
+      mockOwnerAuth();
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).toBeNull();
+      expect(json).not.toHaveProperty('encartConduite');
+    });
+  });
 });

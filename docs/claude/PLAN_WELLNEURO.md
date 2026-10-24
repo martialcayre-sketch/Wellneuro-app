@@ -1667,6 +1667,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : lettre bd, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
 - **Mise à jour (2026-10-23, D-346)** : la porte 7 est levée (2026-10-18, F66). L'encart n'attend plus la place 11 : dès qu'il est prêt (texte accepté, registre, drapeau), il prend la place suivante, après la place 5, devant les places 7 à 11 non encore ouvertes. La porte 18 est inchangée. Reste : son texte, de la main du responsable.
+- **Mise à jour (2026-10-23, D-349)** : texte du responsable accepté (variante retenue, phrase du choix dans le formulaire retirée) ; registre (`docs/FEATURE_FLAGS.md`) et drapeau `WN_PORTAIL_ENCART_CONDUITE` livrés éteints, l'encart servi à l'accueil du protocole. Reste : le drapeau posé sur accord du responsable, puis le constat (D-349 §4) ; la place suivante de la file C lui revient.
 
 **File D : gestes du responsable**
 
@@ -2085,7 +2086,7 @@ Mise à jour (2026-10-23, D-346, amende D-288 §3) : l'encart bd n'attend plus l
 | ouverture | fiche | rang au plus tôt | condition |
 |---|---|---|---|
 | Bloc « Protocole » du document médecin, sans la charge déclarée | F39 | 5 | J2-med, p ; « avant le premier check-in » reste une visée que la file peut mettre en défaut |
-| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) |
+| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) ; prêt le 2026-10-23 (D-349) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat |
 | Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart |
 | Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : oui (arbitrage du 2026-10-14, D-288 §3, #1430) |
 | Ses nuits par semaine | H63 | 4 | porte 16, N-8 ; ordre de préparation après l'encart |
