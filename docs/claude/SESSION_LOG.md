@@ -11533,3 +11533,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — J3-12h lot 2 : liste du courrier complément et trace de sa remise (migration seule, D-345)
+
+**Fait.** Migration `20261024110000_courriers_complement_remises_v1` : deux tables en ajout seul. `courriers_complement_listes` retient la liste du courrier à sa consignation. `courriers_complement_remises` exige l'égalité de trois listes (insérée, recalculée depuis le protocole V4, consignée), un courrier sortant ancré `complement-cible-%` et le texte recopié. S'y ajoutent l'espèce de lecture `courrier_complement`, l'effacement nommé, la garde de dépôt et la ligne RGPD (validée). Le contrat négatif est vert, onze mutations le font rougir ; T1, T2 et T3 sont verts.
+
+**Écarté.** Une colonne sur `correspondances_medecin` (panne de la table pendant la fenêtre de release-db) ; renvoyer le lien courrier ↔ liste au lot 3 (il aurait demandé une seconde migration).
+
+**Prochaine action.** PR, CI, CodeRabbit, merge, release-db sur la tête de main, constat par conteneur ; puis le lot 3.
+
+**Ouvert.** Obligations du lot 3 reçues de la revue (handoff du lot).
