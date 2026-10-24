@@ -53,6 +53,8 @@ portail, sans chiffre. Aucune migration, aucun drapeau.
 - T2 (`npm run test:worktree -- --fast`) vert en 6 min 41 s après la fusion de
   main et les correctifs de revue : 14 827 tests unitaires, 296 E2E Chromium et
   WebKit, `mode-consultation-sans-chiffre.spec.ts` compris.
+  Rejoué vert après les correctifs CodeRabbit (6 min 42 s, 14 829 unitaires,
+  296 E2E).
 - `/code-review medium` : huit constats. Deux corrigés : filet par effet contre
   un rappel retenu d'avant le mode ; bouton « Ouvrir la trajectoire » retiré
   dans le mode. Six écartés avec motif : la mémoire d'onglet récrite au cockpit
@@ -63,6 +65,13 @@ portail, sans chiffre. Aucune migration, aucun drapeau.
   décision sont des textes constants ; la fiche ne peut pas lire le contexte
   qu'elle pose, et les deux lectures ont la même source ; un point mesuré
   reste plein, le non mesuré est un anneau creux en pointillé.
+
+- CodeRabbit (sha 65844e95) : trois commentaires en ligne, trois corrigés —
+  le radar garde ses axes et leur « non mesuré », sans contour ni graduation
+  (`ScoreRadar` reçoit `valeursMasquees`) ; une valeur absente du « Détail des
+  réponses » garde son « — » ; le chip « Au tour précédent » sans provenance
+  dit « Source non enregistrée » avant tout masquage. Deux cas unitaires et
+  une assertion E2E ajoutés.
 
 ## Problèmes ouverts
 

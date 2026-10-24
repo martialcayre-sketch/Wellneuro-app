@@ -24,8 +24,9 @@ export function DetailBesoinsPanel({
   emailPatient?: string;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
-  // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni radar
-  // — le polygone dit les valeurs par sa forme. Hors fiche : toujours `false`.
+  // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni contour
+  // du radar — le polygone dit les valeurs par sa forme ; ses axes restent.
+  // Hors fiche : toujours `false`.
   const chiffresMasques = useChiffresMasques();
   const [loading, setLoading] = useState(true);
 
@@ -101,14 +102,10 @@ export function DetailBesoinsPanel({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {chiffresMasques ? (
-          <div className="flex min-h-[292px] flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4">
-            <span className="text-sm text-muted-foreground">Radar des 12 besoins</span>
-            <ValeurMasquee className="text-sm" />
-          </div>
-        ) : (
-          <ScoreRadar data={radarData} />
-        )}
+        <div className="flex flex-col gap-1">
+          <ScoreRadar data={radarData} valeursMasquees={chiffresMasques} />
+          {chiffresMasques && <ValeurMasquee className="text-center text-sm" />}
+        </div>
 
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <table className="min-w-full text-sm">

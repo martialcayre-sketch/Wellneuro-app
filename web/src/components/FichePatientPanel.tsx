@@ -1717,7 +1717,11 @@ export function FichePatientPanel({
                           découpages descriptifs et leur interprétation (la
                           colonne voisine) sont masqués ensemble — un libellé
                           d'interprétation dit le score en mots. */}
-                      {modeConsultationActif ? <ValeurMasquee /> : (
+                      {modeConsultationActif && (subScores.length > 0 || r.scorePrincipal !== null || axesDescriptifs.length > 0) ? (
+                        /* Une valeur absente garde son « — » : « masqué » dit
+                           qu'une valeur existe ([[D-354]] §3). */
+                        <ValeurMasquee />
+                      ) : (
                       <div className="flex flex-col gap-1">
                       {subScores.length > 0 ? (
                         <div className="flex flex-col gap-1.5">
@@ -1781,7 +1785,9 @@ export function FichePatientPanel({
                       )}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground max-w-xs">
-                      {modeConsultationActif ? <ValeurMasquee /> : subScores.length > 0 ? (
+                      {modeConsultationActif && (subScores.some(sub => !!sub.interpretation?.label) || !!r.interpretation) ? (
+                        <ValeurMasquee />
+                      ) : subScores.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {subScores.map(sub => (
                             <div key={sub.id}>
@@ -2683,9 +2689,12 @@ export function FichePatientPanel({
                 que sert la route d'équilibre, pas celle stockée sur l'ancre.
                 Inconnue → pas de chiffre. */}
             {bandeauEpisode?.deltaTourPrecedent &&
-              (modeConsultationActif ? (
+              (modeConsultationActif
+                && provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance)
+                && versionCalculCourante ? (
                 /* Ni l'écart, ni son sens : la tendance se lit comme un chiffre
-                   sur un écran partagé ([[D-354]] §2). */
+                   sur un écran partagé ([[D-354]] §2). Sans provenance, la
+                   branche commune dit « Source non enregistrée », mode ou non. */
                 <Chip variante="delta">
                   Au tour précédent : <ValeurMasquee />
                 </Chip>

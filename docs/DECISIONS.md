@@ -32,7 +32,8 @@ mode pour retrouver ses chiffres. La fiche pose un contexte
 valeur ; hors de la fiche, sa valeur par défaut ne masque rien.
 
 **§2 — Ce qui est masqué.** Les pourcentages des 12 besoins — tableau du
-tiroir, tableau et radar de l'onglet, liste des cercles et intensité de leurs
+tiroir, tableau de l'onglet et contour du radar (ses axes et leur « non
+mesuré » restent), liste des cercles et intensité de leurs
 points (le point mesuré reste plein, au plancher) ; l'indice global et les
 trois autres repères de suivi (stabilité métabolique, réserve d'adaptation,
 clarté) ; le momentum, son écart et son sens, au tiroir comme au chip « Au
@@ -51,7 +52,9 @@ masquée n'est pas offerte : elle date une valeur qu'on ne montre pas.
 
 **§3 — À la place.** La structure reste — carte, ligne, colonne —, sans
 valeur, avec la mention neutre « masqué en mode consultation », distincte de
-« Non mesuré », qui garde sa forme et son mot. Aucune étiquette qualitative,
+« Non mesuré », qui garde sa forme et son mot. La mention ne couvre qu'une
+valeur qui existe : une valeur absente garde son « — », une valeur sans
+provenance sa « Source non enregistrée ». Aucune étiquette qualitative,
 faute de seuils signés.
 
 **§4 — Onglets.** Seuls « Poste de pilotage » et « Les 12 besoins » restent ;

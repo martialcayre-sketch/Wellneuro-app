@@ -210,7 +210,7 @@ test.describe('Mode consultation — aucun chiffre à l’écran partagé (D-354
     expect(new Set(opacites).size).toBe(1);
   });
 
-  test('onglet « Les 12 besoins » : ni pourcentage, ni radar', async ({ page }) => {
+  test('onglet « Les 12 besoins » : ni pourcentage, ni contour du radar ; ses axes restent', async ({ page }) => {
     await ouvrirFiche(page, 'besoins');
     const panneau = page.locator('#panneau-besoins');
     await expect(panneau).toContainText(`${COUVERTURES[1]}%`);
@@ -221,6 +221,8 @@ test.describe('Mode consultation — aucun chiffre à l’écran partagé (D-354
     await expect(panneau.getByText(MENTION)).toHaveCount(3);
     expect(await panneau.innerText()).not.toMatch(/\d+\s*%/);
     await expect(panneau.locator('.recharts-radar')).toHaveCount(0);
+    // La structure reste (§3) : les douze axes, et les non mesurés nommés.
+    await expect(panneau.locator('.recharts-polar-angle-axis tspan', { hasText: 'non mesuré' })).toHaveCount(10);
   });
 
   test('balayage : aucun pourcentage visible sur l’écran partagé, sur chaque phase du cockpit', async ({ page }) => {

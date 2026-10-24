@@ -3208,3 +3208,35 @@ describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
     expect(within(tiroir).queryByText(MENTION)).toBeNull();
   });
 });
+
+// [[D-354]] §3, revue CodeRabbit de #1686 : « masqué » dit qu'une valeur
+// existe. Une valeur absente garde son « — », une valeur sans provenance sa
+// « Source non enregistrée » — mode ou non.
+describe('FichePatientPanel — mode consultation : masqué ≠ absent (D-354 §3)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const MENTION = 'masqué en mode consultation';
+  const activer = () => fireEvent.click(screen.getByRole('button', { name: 'Mode consultation' }));
+
+  it('détail des réponses : sans score ni interprétation, la ligne garde ses « — »', async () => {
+    await rendreFiche({ reponses: 'non-interpretable' });
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+    const tiroir = await screen.findByRole('dialog');
+    await within(tiroir).findByText(/MFI-20/);
+    expect(within(tiroir).queryByText(MENTION)).toBeNull();
+    expect(within(tiroir).getAllByText('—').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('bandeau : sans provenance établie, le chip dit « Source non enregistrée », pas « masqué »', async () => {
+    await rendreFiche({ trajectoire: 'deuxCycles', versionCalculAbsente: true });
+    await screen.findByText(/Au tour précédent : Source non enregistrée/);
+    activer();
+    const chip = await screen.findByText(/Au tour précédent :/);
+    expect(chip.textContent).toContain('Source non enregistrée');
+    expect(chip.textContent).not.toContain(MENTION);
+  });
+});
