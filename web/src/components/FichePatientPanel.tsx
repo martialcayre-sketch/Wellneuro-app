@@ -36,7 +36,6 @@ import {
   mentionSourcesStabilite,
 } from '@/lib/praticien/mentionStabiliteMetabolique';
 import {
-  LIBELLE_GESTE_PROVENANCE,
   lignesProvenance,
   lignesProvenanceMomentum,
   MENTION_PLAFOND_APPLIQUE,
@@ -69,7 +68,9 @@ import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpre
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
-import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
+import { CerclesBesoinsCockpit, MENTION_CARTE_LIEE } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
+import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
@@ -120,30 +121,6 @@ import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDo
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
-
-// Le geste qui ouvre la provenance d'un chiffre ([[D-333]] §2 règle 1) :
-// `<details>` natif, ouvrable au clavier et au toucher, sans survol.
-function DetailProvenance({ objet, lignes }: { objet: string; lignes: string[] }) {
-  return (
-    <details className="mt-1 w-full text-center">
-      {/* Cinq gestes portent le même mot à l'écran : le nom accessible dit
-          duquel il s'agit, en gardant le mot visible en tête. */}
-      <summary
-        aria-label={`${LIBELLE_GESTE_PROVENANCE} — ${objet}`}
-        className="cursor-pointer py-1 text-xs text-muted-foreground underline underline-offset-2"
-      >
-        {LIBELLE_GESTE_PROVENANCE}
-      </summary>
-      <div className="mt-1 space-y-0.5 text-left">
-        {lignes.map(ligne => (
-          <p key={ligne} className="text-xs text-muted-foreground">
-            {ligne}
-          </p>
-        ))}
-      </div>
-    </details>
-  );
-}
 
 // Un chiffre dont la provenance n'est pas établie ne s'affiche pas
 // ([[D-333]] §2 règle 1) — et ne se confond pas avec « Non mesuré ».
@@ -1486,21 +1463,35 @@ export function FichePatientPanel({
             <tr key={p.besoin} className="border-t border-border">
               <td className="px-4 py-2">{p.libellePraticien}</td>
               <td className="px-4 py-2 text-muted-foreground">
-                {p.couverture !== null ? (
-                  /* Piste neutre (sans zones) : la couverture n'a pas de bornes
-                     de référentiel — aucun seuil n'est suggéré, le chiffre
-                     reste affiché à côté du point. */
-                  <span className="flex items-center gap-2">
-                    <ScoreZones
-                      value={p.couverture}
-                      max={100}
-                      ariaLabel={`Couverture ${p.couverture} %`}
-                      className="w-16"
-                    />
-                    {p.couverture}%
-                  </span>
+                {p.couverture === null ? (
+                  /* Le tiret reste ([[D-301]] §1) ; le motif se déplie dessous
+                     (r3_08). Un ancien conteneur sans le champ : le tiret seul. */
+                  <>
+                    —
+                    {p.motifNonMesure && p.motifNonMesure.length > 0 && (
+                      <DetailMotifNonMesure besoin={p.libellePraticien} motifs={p.motifNonMesure} />
+                    )}
+                  </>
+                ) : !provenanceEtablie(p.provenance) ? (
+                  /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1). */
+                  MENTION_SOURCE_NON_ENREGISTREE
                 ) : (
-                  '—'
+                  <>
+                    {/* Piste neutre (sans zones) : la couverture n'a pas de bornes
+                        de référentiel — aucun seuil n'est suggéré, le chiffre
+                        reste affiché à côté du point. */}
+                    <span className="flex items-center gap-2">
+                      <ScoreZones
+                        value={p.couverture}
+                        max={100}
+                        ariaLabel={`Couverture ${p.couverture} %`}
+                        className="w-16"
+                      />
+                      {p.couverture}%
+                    </span>
+                    {p.carteLiee && <span className="mt-0.5 block text-xs">{MENTION_CARTE_LIEE[p.carteLiee]}</span>}
+                    <DetailProvenance objet={p.libellePraticien} lignes={lignesProvenance(p.provenance)} aGauche />
+                  </>
                 )}
               </td>
             </tr>
@@ -1514,6 +1505,9 @@ export function FichePatientPanel({
   // conteneur pendant un déploiement : chaque chiffre dit alors « Source non
   // enregistrée », jamais une provenance vide.
   const provenance = objetsCliniques.provenance;
+  // La version du moteur courant, telle que la route d'équilibre la sert ;
+  // absente d'un ancien conteneur.
+  const versionCalculCourante = objetsCliniques.versionCalcul ?? null;
   const lignesDe = (p: Parameters<typeof provenanceEtablie>[0]) =>
     provenanceEtablie(p) ? lignesProvenance(p) : null;
 
@@ -2147,12 +2141,15 @@ export function FichePatientPanel({
       return (
         <div className="flex flex-col gap-4">
           <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
-            <CerclesConcentriques
+            <CerclesBesoinsCockpit
               besoins={priorites.map(p => ({
                 id: p.besoin,
                 libelle: p.libellePraticien,
                 strate: p.strate,
                 couverture: p.couverture,
+                motifNonMesure: p.motifNonMesure ?? null,
+                provenance: p.provenance ?? null,
+                carteLiee: p.carteLiee ?? null,
               }))}
             />
           </div>
@@ -2610,18 +2607,36 @@ export function FichePatientPanel({
             )}
             {/* Chip delta inter-tours : uniquement à version de score identique
                 (A8-3) — sinon rien, jamais approximé. */}
-            {bandeauEpisode?.deltaTourPrecedent && (
-              <Chip variante="delta">
-                Au tour précédent : momentum{' '}
-                {bandeauEpisode.deltaTourPrecedent.tendance === 'hausse'
-                  ? 'en hausse'
-                  : bandeauEpisode.deltaTourPrecedent.tendance === 'baisse'
-                    ? 'en baisse'
-                    : 'stable'}{' '}
-                ({bandeauEpisode.deltaTourPrecedent.delta > 0 ? '+' : ''}
-                {bandeauEpisode.deltaTourPrecedent.delta})
-              </Chip>
-            )}
+            {/* Les deux lectures du tour précédent sont recalculées par le
+                moteur COURANT (`construireTrajectoire`) : sa version est celle
+                que sert la route d'équilibre, pas celle stockée sur l'ancre.
+                Inconnue → pas de chiffre. */}
+            {bandeauEpisode?.deltaTourPrecedent &&
+              (provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance) && versionCalculCourante ? (
+                <div className="flex flex-col items-start">
+                  <Chip variante="delta">
+                    Au tour précédent : momentum{' '}
+                    {bandeauEpisode.deltaTourPrecedent.tendance === 'hausse'
+                      ? 'en hausse'
+                      : bandeauEpisode.deltaTourPrecedent.tendance === 'baisse'
+                        ? 'en baisse'
+                        : 'stable'}{' '}
+                    ({bandeauEpisode.deltaTourPrecedent.delta > 0 ? '+' : ''}
+                    {bandeauEpisode.deltaTourPrecedent.delta})
+                  </Chip>
+                  <DetailProvenance
+                    objet="Au tour précédent"
+                    lignes={lignesProvenanceMomentum({
+                      ...bandeauEpisode.deltaTourPrecedent.provenance,
+                      versionCalcul: versionCalculCourante,
+                    })}
+                    aGauche
+                  />
+                </div>
+              ) : (
+                /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1). */
+                <Chip variante="delta">Au tour précédent : {MENTION_SOURCE_NON_ENREGISTREE}</Chip>
+              ))}
             <Chip variante="due" className="ml-auto">
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
               Phase affichée : {phaseCourante.libelle} — {libelleStatut(phaseCourante.id, statutPhase(phaseCourante.id))}
