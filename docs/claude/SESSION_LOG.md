@@ -11504,3 +11504,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
 
 **Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
+
+## 2026-10-24 — Outillage : sondage en boucle autorisé
+
+**Fait.** Sur autorisation du responsable (toutes sessions), bloc SONDAGE retiré de `block-risky-commands.mjs` ; bancs inversés (387 verts) ; CLAUDE.md et règle des PR alignés ; mémoire posée.
+
+**Écarté.** Passer la boucle en « demande » plutôt que la libérer : l'autorisation est définitive.
+
+**Prochaine action.** CI, CodeRabbit, merge.
+
+**Ouvert.** Le garde d'isolation des worktrees (harness) refuse encore les boucles en ligne complexes : passer par un script.
