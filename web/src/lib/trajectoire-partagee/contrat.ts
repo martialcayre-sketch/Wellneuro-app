@@ -16,6 +16,7 @@
 //   n'y figure — c'est la garantie de visibilité (D11).
 
 import type { TendanceMomentum } from '@/lib/equilibre/types';
+import type { ProvenanceMomentum } from '@/lib/praticien/provenanceChiffre';
 import { indexDeCycle, numeroEpisodeDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
 import {
   FORMULATIONS_PATIENT,
@@ -141,6 +142,9 @@ export type CycleBandeau = {
   jourZero: string | null; // ISO
   versionScore: string | null;
   momentum: { tendance: TendanceMomentum; delta: number } | null;
+  /** Les lectures du cycle, ancre comprise (`TrajectoireCycle.jalons`) : la
+   *  provenance du chip delta en vient (r3_08). Absentes → pas de provenance. */
+  jalons?: readonly { jalon: string; mesure: boolean; date: string | null }[];
 };
 
 export type EpisodeBandeau = {
@@ -163,8 +167,34 @@ export type EpisodeBandeau = {
   // Momentum du tour PRÉCÉDENT, uniquement si sa version de score est connue
   // et identique à celle du tour courant (A8-3). Sinon null — le chip delta
   // ne s'affiche pas, il n'est jamais approximé.
-  deltaTourPrecedent: { cycleId: string; tendance: TendanceMomentum; delta: number } | null;
+  deltaTourPrecedent: {
+    cycleId: string;
+    tendance: TendanceMomentum;
+    delta: number;
+    /** Les deux lectures que le momentum du tour précédent a soustraites — son
+     *  ancre et son dernier jalon de mesure —, et sa version ([[D-333]] §2
+     *  règle 1, r3_08). `null` quand elles ne se lisent pas : le chip dit
+     *  alors « Source non enregistrée » au lieu du chiffre. */
+    provenance: ProvenanceMomentum | null;
+  } | null;
 };
+
+/**
+ * Même couple que `construireTrajectoire` pour `momentum` : la lecture de
+ * l'ancre, et le dernier jalon de MESURE renseigné (les jalons y sont dans
+ * l'ordre ancre, J21, J42, J90).
+ */
+function provenanceMomentumDuCycle(cycle: CycleBandeau): ProvenanceMomentum | null {
+  const jalons = cycle.jalons ?? [];
+  const depart = jalons.find(j => j.jalon === cycle.ancre && j.mesure);
+  const arrivee = [...jalons].reverse().find(j => j.jalon !== cycle.ancre && j.mesure);
+  if (!depart?.date || !arrivee?.date) return null;
+  return {
+    depart: { jalon: depart.jalon, date: depart.date },
+    arrivee: { jalon: arrivee.jalon, date: arrivee.date },
+    versionCalcul: cycle.versionScore,
+  };
+}
 
 export function deriverEpisodeBandeau(
   cycles: readonly CycleBandeau[],
@@ -212,6 +242,7 @@ export function deriverEpisodeBandeau(
             cycleId: precedent.cycleId,
             tendance: precedent.momentum.tendance,
             delta: precedent.momentum.delta,
+            provenance: provenanceMomentumDuCycle(precedent),
           }
         : null,
   };

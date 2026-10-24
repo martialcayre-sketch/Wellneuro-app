@@ -68,6 +68,15 @@ describe('GET /api/praticien/besoins', () => {
     expect(json.patient.idPatient).toBe('PAT_1');
   });
 
+  it('chaque besoin non mesuré porte son motif, un besoin mesuré aucun (r3_08)', async () => {
+    const res = await GET(request());
+    const json = (await res.json()) as { besoins: { id: number; couverture: number | null; motifNonMesure: unknown }[] };
+    const par = new Map(json.besoins.map(b => [b.id, b]));
+    expect(par.get(2)?.motifNonMesure).toEqual([{ motif: 'hors_score', idsQuestionnaire: [], dateDernierePassation: null }]);
+    expect(par.get(6)?.motifNonMesure).toEqual([{ motif: 'sans_instrument', idsQuestionnaire: [], dateDernierePassation: null }]);
+    for (const b of json.besoins) expect(b.motifNonMesure === null).toBe(b.couverture !== null);
+  });
+
   it('GET accessible journalise la lecture au gabarit littéral (G-TRUST-04)', async () => {
     await GET(request());
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);

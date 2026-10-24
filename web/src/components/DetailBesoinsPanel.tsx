@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
+import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
@@ -96,9 +97,23 @@ export function DetailBesoinsPanel({
             </thead>
             <tbody>
               {besoins.map((b: BesoinDetail) => (
-                <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || 'Aucune réponse de questionnaire exploitable pour ce besoin'}>
+                // Le pourquoi d'un non mesuré n'est plus une infobulle : il se
+                // déplie sous le tiret, d'un geste (r3_08). L'infobulle ne garde
+                // que les titres des sources lues.
+                <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || undefined}>
                   <td className="px-4 py-2">{b.libellePraticien}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{b.couverture !== null ? `${b.couverture}%` : '—'}</td>
+                  <td className="px-4 py-2 text-muted-foreground">
+                    {b.couverture !== null ? (
+                      `${b.couverture}%`
+                    ) : (
+                      <>
+                        —
+                        {b.motifNonMesure && b.motifNonMesure.length > 0 && (
+                          <DetailMotifNonMesure besoin={b.libellePraticien} motifs={b.motifNonMesure} />
+                        )}
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

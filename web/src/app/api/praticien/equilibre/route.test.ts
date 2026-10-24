@@ -320,6 +320,34 @@ describe('GET /api/praticien/equilibre', () => {
       expect(json.objetsCliniques.provenance.clarte).toBeNull();
     });
 
+    // r3_08 : chaque ligne du tableau porte sa provenance, ou son motif, et
+    // B9/B10 nomment la carte qui sert la même valeur.
+    it('lignes des 12 besoins : provenance datée si mesuré, motif sinon, carte liée pour B9 et B10', async () => {
+      const pss = { P1: '2', P2: '2', P3: '3', P4: '3', P5: '3', P6: '2', P7: '3', P8: '3', P9: '2', P10: '3' };
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-09-12T08:00:00Z'), scoresJson: { rawAnswers: pss }, statutValidite: null },
+      ]);
+      type Ligne = { besoin: number; couverture: number | null; motifNonMesure: unknown; provenance: unknown; carteLiee: unknown };
+      const json = (await (await GET(request())).json()) as { priorites: Ligne[] };
+      const par = new Map(json.priorites.map(l => [l.besoin, l]));
+
+      expect(par.get(9)).toMatchObject({
+        motifNonMesure: null,
+        provenance: { sources: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-09-12T08:00:00.000Z' }], versionCalcul: VERSION_DU_CALCUL },
+        carteLiee: 'reserveAdaptation',
+      });
+      expect(par.get(10)).toMatchObject({
+        couverture: null,
+        provenance: null,
+        carteLiee: 'clarte',
+        motifNonMesure: [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_INF_03'], dateDernierePassation: null }],
+      });
+      expect(par.get(2)?.motifNonMesure).toEqual([{ motif: 'hors_score', idsQuestionnaire: [], dateDernierePassation: null }]);
+      expect(par.get(1)?.carteLiee).toBeNull();
+      // Égalité null ⇔ motif sur la réponse servie.
+      for (const l of json.priorites) expect(l.motifNonMesure === null).toBe(l.couverture !== null);
+    });
+
     it('plafond appliqué : le booléen seul, ni besoin ni valeur avant plafond (Q9)', async () => {
       plafond.force = true;
       prisma.questionnaireReponse.findMany.mockResolvedValue([had(new Date('2026-10-01T10:00:00Z'))]);

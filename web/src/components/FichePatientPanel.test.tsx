@@ -48,10 +48,29 @@ const EQUILIBRE = {
       } | null,
     },
   },
+  // r3_08 : un besoin mesuré porte sa provenance, un non mesuré son motif.
   priorites: [
-    { besoin: 1, libellePraticien: 'Sommeil réparateur', strate: 'CORPS', couverture: 40, niveauPreuve: 'A' },
-    { besoin: 2, libellePraticien: 'Ancrage du matin', strate: 'ANCRAGE', couverture: null, niveauPreuve: 'D' },
-  ],
+    {
+      besoin: 1,
+      libellePraticien: 'Sommeil réparateur',
+      strate: 'CORPS',
+      couverture: 40,
+      niveauPreuve: 'A',
+      motifNonMesure: null,
+      provenance: { sources: [{ idQuestionnaire: 'Q_ALI_01', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' },
+      carteLiee: null,
+    },
+    {
+      besoin: 2,
+      libellePraticien: 'Ancrage du matin',
+      strate: 'ANCRAGE',
+      couverture: null,
+      niveauPreuve: 'D',
+      motifNonMesure: [{ motif: 'hors_score', idsQuestionnaire: [], dateDernierePassation: null }],
+      provenance: null,
+      carteLiee: null,
+    },
+  ] as Array<Record<string, unknown>>,
 };
 
 const REPONSES = {
@@ -126,7 +145,21 @@ type Options = {
   // calcule qu'en visant une ancre, et son absence doit rester testable.
   rideau?: 'satisfait' | 'incomplet';
   // `cycleSansDiffusion` : T0 confirmé, aucun protocole diffusé ([[D-255]]).
-  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol' | 'cycleSansDiffusion';
+  trajectoire?:
+    | 'ok'
+    | '401'
+    | 'cycleT0Seul'
+    | 'cycleJ21Mesure'
+    | 'discordant'
+    | 'enVol'
+    | 'cycleSansDiffusion'
+    | 'deuxCycles'
+    | 'deuxCyclesSansJalons';
+  /** r3_08 : les lignes du tableau des 12 besoins, telles qu'un ancien
+   *  conteneur les sert — ni provenance ni motif. */
+  prioritesAnciennes?: boolean;
+  /** r3_08 : les besoins 9 et 10, servis aussi par deux cartes. */
+  prioritesCartesLiees?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
   checkins?: 'aucunPoint' | 'unPoint' | 'erreur';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
@@ -527,6 +560,26 @@ function stubFetch(options: Options = {}) {
       if (options.clarteMesuree) {
         return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, clarte: 57 } });
       }
+      if (options.prioritesAnciennes) {
+        return ok({
+          ...EQUILIBRE,
+          priorites: EQUILIBRE.priorites.map(({ motifNonMesure: _m, provenance: _p, carteLiee: _c, ...p }) => p),
+        });
+      }
+      if (options.prioritesCartesLiees) {
+        const ligne = (besoin: number, libellePraticien: string, carteLiee: string) => ({
+          ...EQUILIBRE.priorites[0],
+          besoin,
+          libellePraticien,
+          strate: besoin === 9 ? 'ANCRAGE' : 'ESPRIT',
+          couverture: 48,
+          carteLiee,
+        });
+        return ok({
+          ...EQUILIBRE,
+          priorites: [ligne(9, 'Stress', 'reserveAdaptation'), ligne(10, 'Pensées', 'clarte')],
+        });
+      }
       if (options.provenanceAbsente) {
         const { provenance: _absente, ...objets } = EQUILIBRE.objetsCliniques;
         return ok({ ...EQUILIBRE, objetsCliniques: objets });
@@ -704,7 +757,16 @@ function stubFetch(options: Options = {}) {
         return ok({ ok: false, reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       }
       const cycles =
-        trajectoire === 'cycleT0Seul'
+        trajectoire === 'deuxCycles' || trajectoire === 'deuxCyclesSansJalons'
+          ? [
+              {
+                ...cycleTrajectoire(true),
+                momentum: { tendance: 'hausse', delta: 4 },
+                jalons: trajectoire === 'deuxCycles' ? cycleTrajectoire(true).jalons : [],
+              },
+              { ...cycleTrajectoire(false), cycleId: 'ep_T1', ancre: 'T1', dateAncre: '2026-09-01T00:00:00.000Z' },
+            ]
+          : trajectoire === 'cycleT0Seul'
           ? [cycleTrajectoire(false)]
           : trajectoire === 'cycleSansDiffusion'
             ? [cycleTrajectoire(false, null)]
@@ -1075,6 +1137,67 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(tiroir.textContent).not.toMatch(/Niveau [ABCD]\b/);
     expect(tiroir.textContent).not.toMatch(/niveaux? de preuve/i);
     expect(within(tiroir).queryByRole('columnheader', { name: /preuve/i })).toBeNull();
+  });
+
+  // r3_08 (Q3) : le tiret reste, le motif se déplie dessous d'un geste ; et la
+  // couverture affichée ouvre sa provenance (dette nommée par J1-cockpit).
+  it('tiroir des 12 besoins : le tiret garde son motif dépliable, le chiffre sa provenance', async () => {
+    await rendreFiche();
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const motif = within(tiroir).getByText('Motif', { selector: 'summary' });
+    expect(motif.getAttribute('aria-label')).toBe('Motif — Ancrage du matin');
+    expect(motif.closest('details')?.hasAttribute('open')).toBe(false);
+    expect(tiroir.textContent).toContain('Non mesuré · hors score (D-122)');
+    expect(within(tiroir).getByRole('cell', { name: /^—/ })).toBeTruthy();
+
+    const source = within(tiroir).getByText('Source', { selector: 'summary' });
+    expect(source.getAttribute('aria-label')).toBe('Source — Sommeil réparateur');
+    expect(tiroir.textContent).toContain('Questionnaire : Q_ALI_01 (réponse du 01/10/2026)');
+    expect(tiroir.textContent).toContain('Version du calcul : v15');
+  });
+
+  it('tiroir des 12 besoins : un ancien conteneur sans provenance ne montre pas le chiffre, ni de motif vide', async () => {
+    await rendreFiche({ prioritesAnciennes: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).not.toContain('40%');
+    expect(tiroir.textContent).toContain('Source non enregistrée');
+    expect(within(tiroir).queryByText('Motif', { selector: 'summary' })).toBeNull();
+    expect(within(tiroir).getByRole('cell', { name: '—' })).toBeTruthy();
+  });
+
+  it('tiroir des 12 besoins : B9 et B10 disent servir la même valeur que leur carte (un seul nom par objet)', async () => {
+    await rendreFiche({ prioritesCartesLiees: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('Même valeur que la carte « Réserve d\'adaptation » (repère de suivi)');
+    expect(tiroir.textContent).toContain('Même valeur que la carte « Clarté » (repère de suivi)');
+  });
+
+  it('bandeau : le chip « Au tour précédent » ouvre sa provenance datée', async () => {
+    await rendreFiche({ trajectoire: 'deuxCycles' });
+
+    const chip = await screen.findByText(/Au tour précédent : momentum en hausse/);
+    expect(chip.textContent).toContain('(+4)');
+    const source = screen
+      .getAllByText('Source', { selector: 'summary' })
+      .find(s => s.getAttribute('aria-label') === 'Source — Au tour précédent');
+    expect(source).toBeTruthy();
+    expect(document.body.textContent).toContain(
+      "Écart de l'indice global entre l'état au T0 (01/06/2026) et l'état au J21 (22/06/2026)"
+    );
+    expect(document.body.textContent).toContain('Version du calcul : v1');
+  });
+
+  it('bandeau : sans lectures datées du tour précédent, le chip ne montre pas le chiffre', async () => {
+    await rendreFiche({ trajectoire: 'deuxCyclesSansJalons' });
+
+    const chip = await screen.findByText(/Au tour précédent : Source non enregistrée/);
+    expect(chip.textContent).not.toMatch(/\+4|hausse/);
   });
 
   it('poste de pilotage : propose les outils de synthèse IA avec le patient présélectionné', async () => {
