@@ -356,6 +356,8 @@ describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-351
       idPatient: assignation.idPatient,
       dateAssignation: { gte: jourZero },
       statut: { notIn: ['Complété', 'Annulée'] },
+      // Les agendas sont hors du renvoi : leur message du 21e jour est la place 9.
+      idQuestionnaire: { notIn: ['Q_SOM_09', 'Q_ALI_09'] },
     });
     const [argsRep] = prisma.questionnaireReponse.findMany.mock.calls[0];
     expect(argsRep.where).toEqual({
@@ -372,5 +374,26 @@ describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-351
     const json = await lire(jourZeroIlYa(24 - 1 / 24));
     expect(json.questionnairesRenvoyes).toEqual([]);
     expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+  });
+
+  it('une valeur du drapeau autre que la chaîne exacte « true » le laisse fermé', async () => {
+    for (const valeur of ['1', 'TRUE', 'oui']) {
+      process.env.WN_PORTAIL_APPUI_RENVOI = valeur;
+      const json = await lire(jourZeroIlYa(21));
+      expect(json).not.toHaveProperty('questionnairesRenvoyes');
+    }
+    expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('la lecture en échec retire le champ, et seulement lui : le rendez-vous J21 reste servi', async () => {
+    process.env.WN_PORTAIL_APPUI_RENVOI = 'true';
+    prisma.assignation.findMany.mockRejectedValue(new Error('pool saturé'));
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const json = (await lire(jourZeroIlYa(21))) as Awaited<ReturnType<typeof lire>> & { points: unknown[] };
+    expect(json.pointEtapeOuvert).toBe('J21');
+    expect(json.points).toHaveLength(3);
+    expect(json).not.toHaveProperty('questionnairesRenvoyes');
+    expect(erreur).toHaveBeenCalled();
+    erreur.mockRestore();
   });
 });

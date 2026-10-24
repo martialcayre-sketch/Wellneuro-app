@@ -169,10 +169,15 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const pointEtapeOuvert = pointEtapeCourant(calendrier.jourZero, new Date());
     // La phrase d'appui d'ak ne vaut que dans la fenêtre du rendez-vous J21
-    // ([[D-351]] §2) : hors d'elle, la route ne cherche rien.
+    // ([[D-351]] §2) : hors d'elle, la route ne cherche rien. Une lecture en
+    // échec retire le champ et rien d'autre : une phrase d'appui ne doit pas
+    // emporter le rendez-vous de suivi qu'elle accompagne.
     const questionnairesRenvoyes =
       appuiRenvoiOuvert() && pointEtapeOuvert === 'J21'
-        ? await assignationsRenvoyees(auth.idPatient, calendrier.jourZero)
+        ? await assignationsRenvoyees(auth.idPatient, calendrier.jourZero).catch((err: unknown) => {
+            console.error('[portail/protocole/checkin GET] questionnaires renvoyés', err instanceof Error ? err.message : String(err));
+            return null;
+          })
         : null;
 
     return NextResponse.json({

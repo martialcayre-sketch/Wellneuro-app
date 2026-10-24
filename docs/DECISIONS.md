@@ -41,11 +41,16 @@ porte sa propre période de rappel, que la phrase ne doit pas contredire.
 questionnaire est **renvoyé** quand son assignation est ouverte, faite au
 jour 0 ou après, et que le patient a déjà rempli le même instrument avant le
 jour 0 (Q4) — toute réponse antérieure compte, quel que soit son statut de
-validité. La phrase ne paraît que pendant la fenêtre du rendez-vous de suivi
+validité. Ne sont pas des questionnaires renvoyés : les agendas du sommeil
+et alimentaire, qui portent leur propre rappel et dont le geste du 21e jour
+est un message distinct (place 9, H81, sans fusion) ; une assignation
+déverrouillée pour correction, qui reste transmise (une correction n'est pas
+un renvoi). La phrase ne paraît que pendant la fenêtre du rendez-vous de suivi
 J21, jours 18 à 24 depuis le jour 0 ([[D-255]], `pointEtapeCourant`), même si
 le renvoi a eu lieu avant ou après (arbitrage (6) du 2026-10-23, conséquence
 dite et acceptée). Rien quand les recueils sont en pause (mineur, dossier
-clos), ni quand la route ne répond pas.
+clos), ni quand la route ne répond pas ; une lecture en échec retire la
+phrase sans retirer le rendez-vous de suivi.
 
 **§3 — Les arbitrages consignés** (fiche H80) : (1) objet, le patient invité
 à refaire ses questionnaires une fois que le praticien les lui a renvoyés ;

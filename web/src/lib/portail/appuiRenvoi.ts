@@ -16,6 +16,8 @@
 // lit pas, c'est la route du check-in qui le lui dit.
 
 import { prisma } from '@/lib/prisma';
+import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
+import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 
 export function appuiRenvoiOuvert(): boolean {
   return process.env.WN_PORTAIL_APPUI_RENVOI === 'true';
@@ -32,7 +34,13 @@ export async function assignationsRenvoyees(idPatient: string, jourZero: Date): 
     where: {
       idPatient,
       dateAssignation: { gte: jourZero },
+      // Une assignation déverrouillée pour correction reste `Complété` : une
+      // correction n'est pas un renvoi.
       statut: { notIn: ['Complété', 'Annulée'] },
+      // Les agendas ne sont pas des questionnaires renvoyés : ils portent leur
+      // propre rappel, et le geste du 21e jour de l'agenda est un message
+      // distinct (place 9, H81), sans fusion avec celui-ci.
+      idQuestionnaire: { notIn: [AGENDA_SOMMEIL_ID, AGENDA_ALI_ID] },
     },
     select: { idAssignation: true, idQuestionnaire: true },
   });

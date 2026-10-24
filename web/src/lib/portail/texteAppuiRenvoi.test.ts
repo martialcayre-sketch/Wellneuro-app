@@ -8,7 +8,12 @@ describe('texte accepté de la phrase d’appui du questionnaire renvoyé', () =
   // stricte : une phrase tronquée, ajoutée ou retouchée rougit.
   it('est la citation de D-351 §1, ni plus ni moins', () => {
     const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const debut = decisions.indexOf('### D-351');
+    // La section se trouve par son titre, non par son numéro : un numéro pris
+    // par une autre PR se renumérote au merge sans faire lire au banc la
+    // décision d'à côté. Le titre doit être unique.
+    const titre = /^### D-\d+ — ak : la phrase d'appui/gm;
+    expect(decisions.match(titre)).toHaveLength(1);
+    const debut = decisions.search(titre);
     // La décision suivante dans le fichier, quel que soit son numéro.
     const fin = decisions.indexOf('\n### D-', debut + 1);
     expect(debut).toBeGreaterThanOrEqual(0);
