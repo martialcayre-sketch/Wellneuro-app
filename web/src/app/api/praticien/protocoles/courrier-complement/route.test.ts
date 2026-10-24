@@ -69,7 +69,7 @@ const preparer = (corps: Record<string, unknown> = {}) =>
   POST(new Request('http://localhost/api/praticien/protocoles/courrier-complement', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idPatient: 'PAT_1', protocolDraftId: 'pd_v1', medecinLibelle: 'Dr Exemple', ...corps }),
+    body: JSON.stringify({ idPatient: 'PAT_1', protocolDraftId: 'pd_v1', medecinLibelle: 'Médecin traitant', ...corps }),
   }));
 
 describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 3)', () => {
@@ -102,7 +102,7 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
       data: expect.objectContaining({
         idPatient: 'PAT_1',
         sens: 'sortant',
-        medecinLibelle: 'Dr Exemple',
+        medecinLibelle: 'Médecin traitant',
         ancrageVersion: expect.stringMatching(/^complement-cible-[0-9a-f]{64}$/),
         texte: expect.stringContaining('- Intention ciblée — Magnésium.'),
       }),

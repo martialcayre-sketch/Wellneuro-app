@@ -170,6 +170,19 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
     expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
   });
 
+  it('courrier à remettre, chemin des fiches fermé : le GET dit d’avance le refus du clic (revue CodeRabbit)', async () => {
+    delete process.env.WN_FICHES_ASSIETTE;
+    const get = await lireGet();
+    expect(get.courrierComplement).toMatchObject({
+      apercu: { etat: 'refuse', statut: 'remise_impossible', courrier: null },
+    });
+    const res = await cliquer('jeton');
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe(
+      (get.courrierComplement as { apercu: { motif: string } }).apercu.motif,
+    );
+  });
+
   it('non requis, chemin des fiches fermé : le clic d’avant, sans remise', async () => {
     delete process.env.WN_FICHES_ASSIETTE;
     apercuCourrierComplement.mockResolvedValue({
@@ -217,11 +230,11 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
   it('le GET sert l’aperçu, avec le destinataire prérempli quand un courrier est à préparer', async () => {
     apercuCourrierComplement.mockResolvedValue(MANQUANT);
     prisma.patient.findUnique.mockResolvedValue({
-      praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null, medecinTraitantNom: ' Dr Exemple ',
+      praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null, medecinTraitantNom: ' Médecin traitant ',
     } as never);
     try {
       const get = await lireGet();
-      expect(get.courrierComplement).toEqual({ apercu: MANQUANT, medecinTraitant: 'Dr Exemple' });
+      expect(get.courrierComplement).toEqual({ apercu: MANQUANT, medecinTraitant: 'Médecin traitant' });
     } finally {
       prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null });
     }

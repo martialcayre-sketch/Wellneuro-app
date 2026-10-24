@@ -85,6 +85,9 @@
     (bancs route et Postgres, contre-épreuve comprise) ;
   - le libellé du destinataire de D-345 §7 ne s'affiche que pour la
     grossesse, plus pour un allaitement seul (arbitrage du responsable).
+- Revue CodeRabbit : le GET dit d'avance le refus du clic quand le chemin des
+  fiches est fermé (statut `remise_impossible`) ; les bancs n'emploient plus de
+  nom de médecin fictif.
 - Revue `wn-reviewer` : GO sous conditions, aucun P0.
   - Les deux P1 sont corrigés :
     - clôture posée ;

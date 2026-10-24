@@ -67,7 +67,7 @@ export type EtatCourrierComplement = 'non_requis' | 'refuse' | 'deja' | 'part' |
 
 export type ApercuCourrierComplement = {
   etat: EtatCourrierComplement;
-  statut: VerdictGardeComplement['statut'] | RefusListe | 'dossier_introuvable' | 'version_illisible' | 'lecture_impossible' | 'dossier_bloque';
+  statut: VerdictGardeComplement['statut'] | RefusListe | 'dossier_introuvable' | 'version_illisible' | 'lecture_impossible' | 'dossier_bloque' | 'remise_impossible';
   motif: string;
   /**
    * La grossesse a déclenché : l'écran affiche le libellé du destinataire de

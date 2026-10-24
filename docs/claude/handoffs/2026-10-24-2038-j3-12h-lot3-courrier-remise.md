@@ -131,6 +131,10 @@ Documentation :
     rougissent ;
   - P1-2 : le libellé du destinataire est réservé à la grossesse (arbitrage du
     responsable) ; banc de l'aperçu pour un allaitement seul.
+- **CodeRabbit** sur e89fcaf4 : deux P2 corrigés. Le GET sert `remise_impossible`
+  quand le courrier est à remettre et le chemin des fiches fermé, avec le même
+  motif que le refus du clic (banc neuf). Les bancs remplacent « Dr Exemple »
+  par « Médecin traitant ».
 - **Numérotation** : D-355 prise par r3_13 (#1689), puis D-356 par t36
   (#1690) ; la décision du lot est D-357 (deux fusions de main dans la
   branche).

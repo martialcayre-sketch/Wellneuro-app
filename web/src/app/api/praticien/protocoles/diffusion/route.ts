@@ -1041,8 +1041,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         fiches = { ...fiches, jeton: jetonAvecComplement(fiches.jeton, apercuComplement) };
       }
       // Le jeton est celui de l'aperçu CALCULÉ, comme au clic ; l'écran, lui,
-      // dit d'avance le refus que le clic opposera sous un dossier bloqué.
-      if (apercuComplement.etat === 'part' && fiches?.blocage) {
+      // dit d'avance le refus que le clic opposera : chemin des fiches fermé
+      // (revue CodeRabbit de #1691), puis dossier bloqué.
+      if (apercuComplement.etat === 'part' && !envoiFichesOuvert()) {
+        apercuComplement = {
+          ...apercuComplement, etat: 'refuse', statut: 'remise_impossible', motif: MOTIF_REMISE_IMPOSSIBLE, courrier: null,
+        };
+      } else if (apercuComplement.etat === 'part' && fiches?.blocage) {
         apercuComplement = {
           ...apercuComplement, etat: 'refuse', statut: 'dossier_bloque', motif: MOTIF_DOSSIER_BLOQUE, courrier: null,
         };
