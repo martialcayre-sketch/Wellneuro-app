@@ -78,6 +78,8 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(message.text).not.toContain('Pack test');
     expect(message.text).not.toContain('• ');
     expect(message.text).not.toContain('Note de votre praticien');
+    // D/52 : sans note, rien — « Pack <nom> » s'affichait comme une note du praticien.
+    expect(prisma.assignation.create.mock.calls[0][0].data.notes).toBeNull();
   });
 
   // Cas réel : un pack enregistré en base contient un instrument depuis

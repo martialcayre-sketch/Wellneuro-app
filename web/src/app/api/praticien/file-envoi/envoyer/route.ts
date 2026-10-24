@@ -126,7 +126,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const notesEnvoi = brouillon.notes?.trim() || 'Envoi groupé — bibliothèque';
+    // Sans note du praticien, rien : l'ancien défaut « Envoi groupé —
+    // bibliothèque » s'affichait comme sa note dans l'espace patient (D/52).
+    const notesEnvoi = brouillon.notes?.trim() || null;
 
     // L'accès portail de ce patient ne doit pas être révoqué (LOT-04 — plus de
     // jeton ni de verrou de ligne ; une révocation concurrente est bénigne, un
