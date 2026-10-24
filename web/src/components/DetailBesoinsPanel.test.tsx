@@ -173,6 +173,21 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
     expect(JSON.parse(init.body as string)).toEqual({ emailPatient: EMAIL, qids: ['Q_STR_01'] });
   });
 
+  it('l’état d’un ajout vaut pour un patient : un autre dossier repart du bouton', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ json: async () => avecMotif('aucune_passation', ['Q_STR_01']) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const { rerender } = render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient={EMAIL} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajouter à la file d’envoi' }));
+    expect(await screen.findByText('Dans la file d’envoi')).toBeTruthy();
+    rerender(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee emailPatient="jennifer.martin@example.test" />);
+    expect(screen.queryByText('Dans la file d’envoi')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ajouter à la file d’envoi' })).toBeTruthy();
+  });
+
   it('un refus de la route se lit sous le bouton', async () => {
     const fetchMock = vi
       .fn()

@@ -27,7 +27,6 @@ export function DetailMotifNonMesure({
   emailPatient?: string;
 }) {
   const aCompleter = emailPatient ? questionnairesACompleter(motifs) : [];
-  const { ajouts, erreursAjout, ajouterALaFile } = useAjoutFileEnvoi(emailPatient);
   return (
     <details className="mt-0.5 text-xs text-muted-foreground">
       {/* Un geste par ligne porte le même mot : le nom accessible dit de quel
@@ -44,27 +43,36 @@ export function DetailMotifNonMesure({
           return (
             <li key={ligne}>
               {ligne}
-              {m.motif === 'aucune_passation' && aCompleter.length > 0 && (
-                <div className="mt-1">
-                  <p className="font-semibold text-foreground">Compléter la mesure</p>
-                  <ul className="mt-0.5 space-y-1">
-                    {aCompleter.map(qid => (
-                      <li key={qid}>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-foreground">{CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}</span>
-                          <BoutonAjoutFileEnvoi qid={qid} etat={ajouts[qid]} onAjouter={q => void ajouterALaFile(q)} />
-                        </div>
-                        <ErreurAjoutFileEnvoi etat={ajouts[qid]} erreur={erreursAjout[qid]} />
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-0.5">{PHRASE_AJOUT_SANS_ENVOI}</p>
-                </div>
+              {m.motif === 'aucune_passation' && emailPatient && aCompleter.length > 0 && (
+                <CompleterLaMesure qids={aCompleter} emailPatient={emailPatient} />
               )}
             </li>
           );
         })}
       </ul>
     </details>
+  );
+}
+
+// Monté seulement quand il y a quelque chose à proposer : ni les cercles ni
+// les besoins sans « aucune passation exploitable » ne portent l'état d'ajout.
+function CompleterLaMesure({ qids, emailPatient }: { qids: string[]; emailPatient: string }) {
+  const { ajouts, erreursAjout, ajouterALaFile } = useAjoutFileEnvoi(emailPatient);
+  return (
+    <div className="mt-1">
+      <p className="font-semibold text-foreground">Compléter la mesure</p>
+      <ul className="mt-0.5 space-y-1">
+        {qids.map(qid => (
+          <li key={qid}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-foreground">{CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}</span>
+              <BoutonAjoutFileEnvoi qid={qid} etat={ajouts[qid]} onAjouter={q => void ajouterALaFile(q)} />
+            </div>
+            <ErreurAjoutFileEnvoi etat={ajouts[qid]} erreur={erreursAjout[qid]} />
+          </li>
+        ))}
+      </ul>
+      <p className="mt-0.5">{PHRASE_AJOUT_SANS_ENVOI}</p>
+    </div>
   );
 }

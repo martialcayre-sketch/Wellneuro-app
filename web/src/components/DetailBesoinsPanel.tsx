@@ -92,7 +92,7 @@ export function DetailBesoinsPanel({
       {/* En tête de l'onglet, le compte tel que la route l'a établi ([[D-352]]
           §1). Un ancien conteneur, pendant un déploiement, ne le sert pas :
           rien plutôt qu'un compte deviné. */}
-      {typeof besoinsMesures === 'number' && (
+      {typeof besoinsMesures === 'number' && typeof besoinsTotal === 'number' && (
         <p className="text-sm text-muted-foreground">{mentionBesoinsMesures(besoinsMesures, besoinsTotal)}</p>
       )}
 

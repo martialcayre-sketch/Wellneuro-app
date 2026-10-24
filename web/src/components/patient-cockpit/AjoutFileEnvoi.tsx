@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // L'AJOUT D'UN QUESTIONNAIRE À LA FILE D'ENVOI, depuis une proposition du
 // cockpit : la re-passation ciblée de la Trajectoire (LOT-07, `D-058`) et
@@ -17,8 +17,24 @@ type EtatAjout = 'en_cours' | 'ajoute' | 'erreur';
 export function useAjoutFileEnvoi(emailPatient: string | undefined) {
   const [ajouts, setAjouts] = useState<Record<string, EtatAjout>>({});
   const [erreursAjout, setErreursAjout] = useState<Record<string, string>>({});
+  // L'état vaut pour UN patient : un composant resté monté d'un dossier A à
+  // un dossier B ne doit pas dire « Dans la file d'envoi » pour B, ni y
+  // afficher le refus de A. Une réponse arrivée après le changement est
+  // ignorée pour la même raison.
+  const [pour, setPour] = useState(emailPatient);
+  const courant = useRef(emailPatient);
+  useEffect(() => {
+    courant.current = emailPatient;
+  }, [emailPatient]);
+  if (pour !== emailPatient) {
+    setPour(emailPatient);
+    setAjouts({});
+    setErreursAjout({});
+  }
   const ajouterALaFile = async (qid: string) => {
     if (!emailPatient) return;
+    const destinataire = emailPatient;
+    const toujoursLui = () => courant.current === destinataire;
     setAjouts(prev => ({ ...prev, [qid]: 'en_cours' }));
     setErreursAjout(prev => {
       const { [qid]: _retiree, ...reste } = prev;
@@ -35,6 +51,7 @@ export function useAjoutFileEnvoi(emailPatient: string | undefined) {
       // rendait tout ajout réussi comme un échec (revue LOT-07, B3), et le
       // motif d'un vrai refus (« Dossier clos », etc.) n'était jamais affiché.
       const payload = (await response.json()) as { success?: boolean; error?: string };
+      if (!toujoursLui()) return;
       if (response.ok && payload.success) {
         setAjouts(prev => ({ ...prev, [qid]: 'ajoute' }));
       } else {
@@ -45,6 +62,7 @@ export function useAjoutFileEnvoi(emailPatient: string | undefined) {
         }
       }
     } catch {
+      if (!toujoursLui()) return;
       setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
     }
   };

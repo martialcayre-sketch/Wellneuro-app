@@ -1543,7 +1543,7 @@ export function FichePatientPanel({
         label="Indice global"
         value={objetsCliniques.indiceGlobal}
         mention={MENTION_NATURE_INDICE_GLOBAL}
-        base={mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)}
+        base={mentionCompteBesoins}
         plafond={objetsCliniques.plafondApplique ? MENTION_PLAFOND_APPLIQUE : undefined}
         provenance={lignesDe(provenance?.indiceGlobal)}
       />

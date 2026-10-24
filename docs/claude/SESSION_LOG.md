@@ -11542,3 +11542,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — r3_11 : compte des besoins mesurés et « Compléter la mesure » (Q6, Q8)
+
+**Fait.** D-352 rédigée puis arbitrée par quatre questions à options (toutes à la recommandation) : compte `mentionBesoinsMesures` en tête de l'onglet, en tête du tiroir et sur son bouton (la ligne d'accès de F2 n'existe pas, Q2 ayant gardé les cercles) ; « Compléter la mesure » dans le motif déplié, sous la seule ligne `aucune_passation`, onglet et tiroir, cercles exclus. Filtre `questionnairesProposables` et bouton `AjoutFileEnvoi` partagés avec la Trajectoire, rendu identique.
+
+**Écarté.** Compte en tête des cercles ; geste dans un second repli ; recompte côté écran.
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_11 « fait » sur la page de la file A.
+
+**Ouvert.** Aucun besoin mesuré : le compte dit « Calculé sur 0 besoin mesuré sur 12 », alors que la jauge de l'indice masque sa base.
