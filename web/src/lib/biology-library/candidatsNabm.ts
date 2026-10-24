@@ -71,8 +71,8 @@ const AUCUN = 'Aucun libellé de la V105 ne nomme cet analyte.';
 const IONO_COMPLET_1610 = 'Ionogramme complet (Na + K + Cl + CO2 + protides), relu le 2026-10-18 (D-323 §6).';
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 
-/** La liste, par code d'analyte. Les 92 analytes du catalogue y figurent
- *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6). */
+/** La liste, par code d'analyte. Les 94 analytes du catalogue y figurent
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-357). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -377,6 +377,24 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     situation: 'libelle_explicite',
     candidats: [
       { codeActe: '0514', nature: 'isole', motif: 'Phosphatases alcalines (sang) ; 7309 est l’isoenzyme osseuse.' },
+    ],
+  },
+
+  // ── Les deux fiches de coagulation de D-357 (relues en V105 par conteneur le
+  // 2026-10-24). La V105 lie l'acte au traitement (0126 hors AVK, 0127 sous
+  // AVK) quand le laboratoire imprime TP et INR ensemble : l'INR est à juger.
+  BIO_TP: {
+    situation: 'libelle_explicite',
+    candidats: [
+      { codeActe: '0126', nature: 'isole', motif: 'Temps de Quick (TQ, TP) en l’absence de traitement par AVK.' },
+      { codeActe: '1128', nature: 'groupe_et', motif: 'Exploration de base de l’hémostase (TP + TCA + plaquettes).' },
+    ],
+  },
+  BIO_INR: {
+    situation: 'a_juger',
+    candidats: [
+      { codeActe: '0127', nature: 'isole', motif: 'INR : temps de Quick en cas de traitement par AVK.' },
+      { codeActe: '0126', nature: 'isole', motif: 'Hors AVK, l’INR imprimé avec le TP relève du temps de Quick ; l’acte dépend du traitement.' },
     ],
   },
 
