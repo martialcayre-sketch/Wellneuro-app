@@ -1,3 +1,4 @@
+import { AGENDA_SOMMEIL_ID } from '../agenda-sommeil/types';
 import { BESOINS, BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from '../equilibre/constants';
 import { construireReponsesParQuestionnaire } from '../equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '../equilibre/evidence';
@@ -55,7 +56,34 @@ function conditionApplies(condition: string | undefined, answers: RawAnswers): b
   return value === expected;
 }
 
+/**
+ * Agenda du sommeil : la passation entière est CE QUE LA CLÔTURE A ÉCRIT
+ * (J3-12g, [[D-357]]). Ses items sont des agrégats calculés à la clôture
+ * (`agenda-sommeil/cloture.ts`), jamais des réponses : le prédicat générique
+ * ci-dessous les jugeait comme un questionnaire et écartait l'agenda entier
+ * pour une seule rubrique absente ou nulle, quand les routes le comptaient.
+ * Trois formes en sortent, toutes écrites telles quelles par la clôture :
+ *   — `null` : métrique non couverte, jamais un zéro ;
+ *   — compteur ajouté après la clôture (contrat v4 de [[D-271]]) : absent ;
+ *   — agenda sous le seuil d'agrégation : le seul `AGD_NB_NUITS`.
+ * La clôture n'écrit que des nombres et des `null`, et un nombre de nuits
+ * entier : une chaîne, même numérique, n'est pas sa sortie.
+ * Ce prédicat ne décide d'aucun indice : le scoring `agenda_sommeil` garde ses
+ * propres refus (nuits, week-end, axes), et un agenda sans indice reste non
+ * mesuré au besoin 5 — il cesse seulement d'être dit « incomplet ».
+ */
+function agendaSommeilCloture(scoresJson: unknown): boolean {
+  if (!scoresJson || typeof scoresJson !== 'object' || Array.isArray(scoresJson)) return false;
+  const raw = (scoresJson as { rawAnswers?: unknown }).rawAnswers;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  const answers = raw as Record<string, unknown>;
+  const nbNuits = answers.AGD_NB_NUITS;
+  if (typeof nbNuits !== 'number' || !Number.isInteger(nbNuits) || nbNuits < 0) return false;
+  return Object.values(answers).every(value => value === null || (typeof value === 'number' && Number.isFinite(value)));
+}
+
 function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean {
+  if (response.questionnaireId === AGENDA_SOMMEIL_ID) return agendaSommeilCloture(response.scoresJson);
   const answers = rawAnswersFrom(response.scoresJson);
   if (!answers) return false;
   const definition = QUESTIONNAIRE_CATALOGUE[response.questionnaireId as keyof typeof QUESTIONNAIRE_CATALOGUE];

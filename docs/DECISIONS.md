@@ -4,6 +4,66 @@
 
 ## Décisions actives
 
+### D-357 — J3-12g : l'agenda du sommeil est complet au snapshot dès que la clôture l'a écrit — l'écart avec les routes est fermé pour l'agenda, sans changement de version ; les cartes qui en dérivent se réapprouvent (résidu de D-329 §2)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24 (file A,
+  J3-12g), sur questions à options, après l'inventaire et le compte des
+  diffusions inscrits comme préalables au plan.
+- Source : [[D-329]] §2 (résidu nommé) ; arbitrage du 2026-10-19 (H15 : la
+  complétude se juge sur la passation entière au snapshot, sur les items de
+  chaque source dans les routes) ; inventaire et compte :
+  `docs/claude/propositions/2026-10-24-j3-12g-completude-agenda/README.md`.
+- Domaine : `web/src/lib/clinical-engine/clinicalSnapshot.ts`
+  (`agendaSommeilCloture`, appelé par `hasExploitableRawAnswers`).
+- Nature : clinique au sens de `DC-17` — la disponibilité d'une source dans
+  le snapshot, donc dans les cartes, change. **Aucun seuil, aucun poids,
+  aucune borne, aucune source** ne bouge (`DC-19`) ; ni le scoring
+  `agenda_sommeil` ni `questions.ts` ne sont touchés.
+
+**§1 — Règle.** Pour l'agenda du sommeil (`Q_SOM_09`), la passation entière
+est ce que la clôture a écrit. Ses rubriques sont des agrégats, pas des
+réponses : le snapshot accepte un `null` (métrique non couverte, jamais un
+zéro), l'absence d'un compteur ajouté après la clôture (contrat v4 de
+[[D-271]]) et l'agenda sous le seuil d'agrégation, qui ne porte que le nombre
+de nuits. Il exige ce nombre de nuits, entier, et refuse toute autre valeur
+qu'un nombre ou `null` — une chaîne n'est pas une sortie de la clôture. Les
+autres questionnaires gardent le prédicat générique, `null` compris.
+
+**§2 — Ce que la règle ne décide pas.** Aucun indice : le scoring garde ses
+refus (nuits, week-end, axes couverts). Un agenda sans indice reste non mesuré
+au besoin 5 ; il cesse seulement d'être dit « données brutes incomplètes ».
+Un agenda à indice compte au besoin 5 du snapshot comme il comptait déjà aux
+routes.
+
+**§3 — Écart fermé, pour l'agenda.** Constat par conteneur du 2026-10-24
+(lecture seule, agrégats) : 13 agendas clôturés, dont 2 à indice ; le
+snapshot n'en acceptait qu'un, complet. Le cas nommé par [[D-329]] §2 (un
+agenda à indice écarté du snapshot et gardé par les routes) disparaît. Le
+résidu des autres sources (DNST hors de l'axe lu, mode de vie hors du bloc
+activité, enquête alimentaire) reste tel que l'arbitrage du 2026-10-19 l'a
+voulu : r3_10 le nommera.
+
+**§4 — Version du score : gardée (v15).** `calculerEquilibre` ne change pas,
+ni aucune valeur servie par les routes ; seul le filtre d'entrée du snapshot
+change. Une nouvelle étiquette — du score ou du schéma du snapshot — ferait
+dériver les 4 approbations de diffusion actives ([[D-329]] §4).
+
+**§5 — Diffusions actives : réapprobation.** Trois des 4 approbations actives
+reposent sur un épisode qui inclut un agenda que le snapshot écartait. Leur
+carte dérive au déploiement : l'écran protocole est indisponible jusqu'à la
+réapprobation par le praticien, suivie d'un constat par conteneur. Les trois
+approbations relèvent de deux dossiers : PAT006, PAT007. Option écartée : différer le déploiement
+jusqu'à la fin de ces diffusions.
+
+**Options écartées pour la règle** : accepter le seul agenda à indice (un
+agenda court mais complet resterait dit « incomplet ») ; exiger les rubriques
+que l'indice lit (même défaut pour l'agenda sous le seuil d'agrégation).
+
+**Ne touche pas** : le scoring `agenda_sommeil`, `BESOIN_SOURCES`, le niveau
+de preuve D de l'indice, le rideau T0 (l'agenda en reste exclu, [[D-052]]),
+l'agenda alimentaire (`Q_ALI_09`).
+
 ### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
 
 - Date : 2026-10-24
