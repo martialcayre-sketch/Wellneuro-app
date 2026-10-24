@@ -1,11 +1,11 @@
-### J3-12h, lot 3 : le courrier au médecin avant un complément ciblé, sa remise au clic et le refus, sous drapeau éteint (D-357 ; D-345 §4-§7, 2026-10-24)
+### J3-12h, lot 3 : le courrier au médecin avant un complément ciblé, sa remise au clic et le refus, sous drapeau éteint (D-358 ; D-345 §4-§7, 2026-10-24)
 
 - Le code consommateur de la trace de remise du lot 2 (#1679, appliquée en
   production et constatée par conteneur le 2026-10-24). Aucune migration,
   aucun `schema.prisma`. Le tout est livré sous `WN_COURRIER_COMPLEMENT`,
   **éteint** : drapeau fermé, le clic « Valider pour diffusion » lit et écrit
   exactement ce qu'il faisait avant, jeton compris.
-- Arbitrages du responsable du 2026-10-24 (D-357) :
+- Arbitrages du responsable du 2026-10-24 (D-358) :
   - **le texte du courrier est validé** : il ne nomme ni la population ni la
     situation (forme opaque) ;
   - **« déjà tracé »** veut dire que la liste de la version est contenue
