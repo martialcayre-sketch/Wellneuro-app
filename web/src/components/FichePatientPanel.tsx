@@ -1438,8 +1438,12 @@ export function FichePatientPanel({
   // dossier précédent après une navigation A→B.
   const emailPatientAffiche = patient.idPatient === idPatient ? patient.email : undefined;
   // Le compte des besoins mesurés ([[D-352]] §1), tel que la route l'a compté
-  // (`compterBesoinsMesures`) — le même que sous l'indice global.
-  const mentionCompteBesoins = mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal);
+  // (`compterBesoinsMesures`) — le même que sous l'indice global. Une réponse
+  // sans l'un des deux champs : rien plutôt qu'un compte deviné.
+  const mentionCompteBesoins =
+    typeof objetsCliniques.besoinsMesures === 'number' && typeof objetsCliniques.besoinsTotal === 'number'
+      ? mentionBesoinsMesures(objetsCliniques.besoinsMesures, objetsCliniques.besoinsTotal)
+      : undefined;
   const derniereAssignationId = reponses[0]?.idAssignation || null;
   // Rythme DÉCLARÉ, lu de la dernière passation Q_ALI_01 (rawAnswers déjà
   // chargés, `reponses` trié par date décroissante) : passé au panneau agenda
@@ -2775,7 +2779,7 @@ export function FichePatientPanel({
                 icone={ListChecks}
                 sousLibelle={mentionCompteBesoins}
               >
-                <p className="mb-3 text-sm text-muted-foreground">{mentionCompteBesoins}</p>
+                {mentionCompteBesoins && <p className="mb-3 text-sm text-muted-foreground">{mentionCompteBesoins}</p>}
                 {tableauBesoins}
                 <p className="mt-3 text-base text-muted-foreground">
                   Le détail complet (radar, sources) est disponible dans l’onglet « Les 12 besoins ».

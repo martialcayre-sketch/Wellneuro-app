@@ -165,6 +165,8 @@ type Options = {
   prioritesCartesLiees?: boolean;
   /** r3_11 : un besoin dont la source n'a aucune passation exploitable. */
   prioritesAucunePassation?: boolean;
+  /** r3_11 : une réponse sans le compte des besoins mesurés. */
+  compteAbsent?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
   checkins?: 'aucunPoint' | 'unPoint' | 'erreur';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
@@ -573,6 +575,10 @@ function stubFetch(options: Options = {}) {
           ...EQUILIBRE,
           priorites: EQUILIBRE.priorites.map(({ motifNonMesure: _m, provenance: _p, carteLiee: _c, ...p }) => p),
         });
+      }
+      if (options.compteAbsent) {
+        const { besoinsMesures: _m, besoinsTotal: _t, ...objets } = EQUILIBRE.objetsCliniques;
+        return ok({ ...EQUILIBRE, objetsCliniques: objets });
       }
       if (options.prioritesAucunePassation) {
         return ok({
@@ -1209,6 +1215,17 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByRole('button', { name: /Les 12 besoins/i }).textContent).toContain(
       'Calculé sur 0 besoin mesuré sur 12'
     );
+  });
+
+  it('tiroir des 12 besoins : une réponse sans le compte n’affiche aucun compte deviné', async () => {
+    await rendreFiche({ compteAbsent: true });
+
+    const bouton = screen.getByRole('button', { name: /Les 12 besoins/i });
+    expect(bouton.textContent).not.toContain('Calculé sur');
+    fireEvent.click(bouton);
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).not.toContain('Calculé sur');
+    expect(tiroir.textContent).not.toContain('undefined');
   });
 
   // r3_11 ([[D-352]] §2) : « Compléter la mesure » dans le motif déplié, pour
