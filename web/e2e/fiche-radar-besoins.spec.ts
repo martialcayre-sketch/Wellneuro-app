@@ -47,12 +47,10 @@ test.describe('Radar des besoins — un besoin non mesuré n’est pas un zéro 
     await expect(panneau.getByRole('cell', { name: /^—/ })).toHaveCount(2);
 
     // Un geste, au clavier : le motif est replié, Entrée le déplie.
-    const motif = panneau.getByRole('group').filter({ has: page.locator('summary', { hasText: 'Motif' }) }).first();
     const geste = panneau.locator('summary', { hasText: 'Motif' }).first();
     await expect(panneau.getByText('Non mesuré · hors score (D-122)')).toBeHidden();
     await geste.focus();
     await page.keyboard.press('Enter');
     await expect(panneau.getByText('Non mesuré · hors score (D-122)')).toBeVisible();
-    void motif;
   });
 });

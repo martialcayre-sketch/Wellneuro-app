@@ -172,9 +172,10 @@ export type EpisodeBandeau = {
     tendance: TendanceMomentum;
     delta: number;
     /** Les deux lectures que le momentum du tour précédent a soustraites — son
-     *  ancre et son dernier jalon de mesure —, et sa version ([[D-333]] §2
-     *  règle 1, r3_08). `null` quand elles ne se lisent pas : le chip dit
-     *  alors « Source non enregistrée » au lieu du chiffre. */
+     *  ancre et son dernier jalon de mesure ([[D-333]] §2 règle 1, r3_08) ;
+     *  `versionCalcul` y vaut toujours `null`, à compléter par le
+     *  consommateur. `null` quand elles ne se lisent pas : le chip dit alors
+     *  « Source non enregistrée » au lieu du chiffre. */
     provenance: ProvenanceMomentum | null;
   } | null;
 };
@@ -192,7 +193,11 @@ function provenanceMomentumDuCycle(cycle: CycleBandeau): ProvenanceMomentum | nu
   return {
     depart: { jalon: depart.jalon, date: depart.date },
     arrivee: { jalon: arrivee.jalon, date: arrivee.date },
-    versionCalcul: cycle.versionScore,
+    // PAS `cycle.versionScore` : c'est la version stockée sur l'épisode
+    // d'ancre, alors que les deux lectures sont recalculées par le moteur
+    // courant. Le bandeau ne connaît pas celui-ci ; son consommateur la
+    // fournit (la route d'équilibre la sert).
+    versionCalcul: null,
   };
 }
 

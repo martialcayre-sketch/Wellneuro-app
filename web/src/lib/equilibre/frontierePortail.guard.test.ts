@@ -48,7 +48,16 @@ const HORS_PORTAIL: Record<string, string> = {
 const EQUILIBRE_PERMIS = new Set(['lecturePatient', 'natureIndiceGlobal', 'constants']);
 
 /** Modules qui nomment ou décrivent un indice du cockpit (J1-cockpit-a et b). */
-const MODULES_COCKPIT = ['lib/praticien/mentionStabiliteMetabolique', 'lib/praticien/provenanceChiffre'];
+const MODULES_COCKPIT = [
+  'lib/praticien/mentionStabiliteMetabolique',
+  'lib/praticien/provenanceChiffre',
+  // r3_08 : le motif du non mesuré, servi au praticien seul.
+  'lib/praticien/motifNonMesure',
+];
+
+/** Les panneaux du cockpit (cercles, motif, provenance de r3_08 compris) :
+ *  aucune surface patient ne les importe. */
+const PREFIXE_COMPOSANTS_COCKPIT = 'components/patient-cockpit/';
 
 function surfacesPatient(): string[] {
   const trouves: string[] = [];
@@ -114,7 +123,10 @@ describe('frontière du portail — imports', () => {
   it('aucune surface patient n’importe une route praticien ni un module d’indice du cockpit', () => {
     const fautes = surfaces.flatMap(f =>
       importsDe(f)
-        .filter(i => i.startsWith('app/api/praticien/') || MODULES_COCKPIT.includes(i))
+        .filter(
+          i =>
+            i.startsWith('app/api/praticien/') || MODULES_COCKPIT.includes(i) || i.startsWith(PREFIXE_COMPOSANTS_COCKPIT)
+        )
         .map(i => `${relatif(f)} → ${i}`),
     );
     expect(fautes).toEqual([]);

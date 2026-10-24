@@ -344,6 +344,9 @@ describe('GET /api/praticien/equilibre', () => {
       });
       expect(par.get(2)?.motifNonMesure).toEqual([{ motif: 'hors_score', idsQuestionnaire: [], dateDernierePassation: null }]);
       expect(par.get(1)?.carteLiee).toBeNull();
+      expect((json as unknown as { objetsCliniques: { versionCalcul: string } }).objetsCliniques.versionCalcul).toEqual(
+        VERSION_DU_CALCUL
+      );
       // Égalité null ⇔ motif sur la réponse servie.
       for (const l of json.priorites) expect(l.motifNonMesure === null).toBe(l.couverture !== null);
     });

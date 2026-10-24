@@ -16,6 +16,8 @@ function besoin(id: number, couverture: number | null): BesoinCercle {
     couverture,
     motifNonMesure:
       couverture === null ? [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: null }] : null,
+    provenance:
+      couverture === null ? null : { sources: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' },
   };
 }
 
@@ -75,5 +77,20 @@ describe('CerclesBesoinsCockpit', () => {
     const [geste] = within(liste).getAllByText('Motif', { selector: 'summary' });
     expect(geste.getAttribute('aria-label')).toBe('Motif — B2 · Besoin 2');
     expect(liste.textContent).toContain('Non mesuré · aucune passation exploitable (Q_STR_01)');
+    const [source] = within(liste).getAllByText('Source', { selector: 'summary' });
+    expect(source.getAttribute('aria-label')).toBe('Source — B1 · Besoin 1');
+    expect(liste.textContent).toContain('Questionnaire : Q_STR_01 (réponse du 01/10/2026)');
+  });
+
+  it('sans provenance établie : ni chiffre dans la liste, ni intensité sur la figure', () => {
+    const { container } = render(
+      <CerclesBesoinsCockpit besoins={[{ ...besoin(1, 62), provenance: null }, besoin(2, null)]} />,
+    );
+    const liste = screen.getByRole('list', { name: 'Les 12 besoins, en texte' });
+    expect(liste.textContent).toContain('B1 · Besoin 1 — Source non enregistrée');
+    expect(liste.textContent).not.toContain('62');
+    const point = container.querySelector('[data-besoin="1"] circle') as SVGCircleElement;
+    expect(Number(point.getAttribute('fill-opacity'))).toBe(OPACITE_PLANCHER);
+    expect(within(liste).queryByText('Source', { selector: 'summary' })).toBeNull();
   });
 });

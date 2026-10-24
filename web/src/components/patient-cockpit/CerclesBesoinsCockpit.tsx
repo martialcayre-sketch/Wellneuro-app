@@ -1,6 +1,13 @@
 import type { StrateCode } from '@/lib/equilibre/types';
 import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
+import {
+  lignesProvenance,
+  MENTION_SOURCE_NON_ENREGISTREE,
+  provenanceEtablie,
+  type ProvenanceChiffre,
+} from '@/lib/praticien/provenanceChiffre';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 
 // LES CERCLES DES 12 BESOINS, PROPRES AU COCKPIT — r3_08 (Q2, arbitrage du
 // 2026-10-22, qui vaut besoin exprimé au sens du gel D/49).
@@ -15,6 +22,9 @@ import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNo
 //   — la liste en texte sous la figure, où se lisent la valeur et le motif.
 // La valeur reste portée par l'intensité du point, dans la teinte fixe de sa
 // strate (arbitrage du 2026-10-24) — jamais par un changement de teinte.
+// Une valeur sans provenance établie ne s'affiche pas ([[D-333]] §2 règle 1) :
+// ni chiffre dans la liste, ni intensité sur la figure (le point reste au
+// plancher).
 
 type Strate = { code: StrateCode; nom: string; rayon: number; teinte: string; encre: string };
 
@@ -49,6 +59,7 @@ export type BesoinCercle = {
   strate: StrateCode;
   couverture: number | null; // 0-100
   motifNonMesure: MotifNonMesureServi[] | null;
+  provenance: ProvenanceChiffre | null;
 };
 
 // Le haut de chaque anneau porte son nom : les points partent d'un
@@ -97,7 +108,7 @@ export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) 
                     cy={p.y}
                     r={RAYON_POINT}
                     fill={s.teinte}
-                    fillOpacity={opaciteRemplissage(b.couverture)}
+                    fillOpacity={provenanceEtablie(b.provenance) ? opaciteRemplissage(b.couverture) : OPACITE_PLANCHER}
                     stroke={s.encre}
                     strokeWidth={1.5}
                   />
@@ -129,18 +140,28 @@ export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) 
       </svg>
 
       <ol aria-label="Les 12 besoins, en texte" className="space-y-1 text-sm">
-        {ordonnes.map(b => (
-          <li key={b.id}>
-            <span className="text-foreground">{`B${b.id} · ${b.libelle}`}</span>
-            <span className="text-muted-foreground">
-              {' — '}
-              {b.couverture !== null ? `${b.couverture}%` : 'Non mesuré'}
-            </span>
-            {b.couverture === null && b.motifNonMesure && b.motifNonMesure.length > 0 && (
-              <DetailMotifNonMesure besoin={`B${b.id} · ${b.libelle}`} motifs={b.motifNonMesure} />
-            )}
-          </li>
-        ))}
+        {ordonnes.map(b => {
+          const cle = `B${b.id} · ${b.libelle}`;
+          return (
+            <li key={b.id}>
+              <span className="text-foreground">{cle}</span>
+              <span className="text-muted-foreground">
+                {' — '}
+                {b.couverture === null
+                  ? 'Non mesuré'
+                  : provenanceEtablie(b.provenance)
+                    ? `${b.couverture}%`
+                    : MENTION_SOURCE_NON_ENREGISTREE}
+              </span>
+              {b.couverture === null && b.motifNonMesure && b.motifNonMesure.length > 0 && (
+                <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} />
+              )}
+              {b.couverture !== null && provenanceEtablie(b.provenance) && (
+                <DetailProvenance objet={cle} lignes={lignesProvenance(b.provenance)} aGauche />
+              )}
+            </li>
+          );
+        })}
       </ol>
     </div>
   );

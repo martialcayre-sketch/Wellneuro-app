@@ -36,7 +36,6 @@ import {
   mentionSourcesStabilite,
 } from '@/lib/praticien/mentionStabiliteMetabolique';
 import {
-  LIBELLE_GESTE_PROVENANCE,
   lignesProvenance,
   lignesProvenanceMomentum,
   MENTION_PLAFOND_APPLIQUE,
@@ -71,6 +70,7 @@ import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import { CerclesBesoinsCockpit } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
@@ -121,30 +121,6 @@ import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDo
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
-
-// Le geste qui ouvre la provenance d'un chiffre ([[D-333]] §2 règle 1) :
-// `<details>` natif, ouvrable au clavier et au toucher, sans survol.
-function DetailProvenance({ objet, lignes, aGauche = false }: { objet: string; lignes: string[]; aGauche?: boolean }) {
-  return (
-    <details className={`mt-1 w-full ${aGauche ? 'text-left' : 'text-center'}`}>
-      {/* Cinq gestes portent le même mot à l'écran : le nom accessible dit
-          duquel il s'agit, en gardant le mot visible en tête. */}
-      <summary
-        aria-label={`${LIBELLE_GESTE_PROVENANCE} — ${objet}`}
-        className="cursor-pointer py-1 text-xs text-muted-foreground underline underline-offset-2"
-      >
-        {LIBELLE_GESTE_PROVENANCE}
-      </summary>
-      <div className="mt-1 space-y-0.5 text-left">
-        {lignes.map(ligne => (
-          <p key={ligne} className="text-xs text-muted-foreground">
-            {ligne}
-          </p>
-        ))}
-      </div>
-    </details>
-  );
-}
 
 // B9 et B10 sont servis deux fois, sous deux noms : couverture au tableau,
 // repère de suivi sur leur carte ([[D-333]] §3, arbitrage du 2026-10-23). Le
@@ -1537,6 +1513,9 @@ export function FichePatientPanel({
   // conteneur pendant un déploiement : chaque chiffre dit alors « Source non
   // enregistrée », jamais une provenance vide.
   const provenance = objetsCliniques.provenance;
+  // La version du moteur courant, telle que la route d'équilibre la sert ;
+  // absente d'un ancien conteneur.
+  const versionCalculCourante = objetsCliniques.versionCalcul ?? null;
   const lignesDe = (p: Parameters<typeof provenanceEtablie>[0]) =>
     provenanceEtablie(p) ? lignesProvenance(p) : null;
 
@@ -2177,6 +2156,7 @@ export function FichePatientPanel({
                 strate: p.strate,
                 couverture: p.couverture,
                 motifNonMesure: p.motifNonMesure ?? null,
+                provenance: p.provenance ?? null,
               }))}
             />
           </div>
@@ -2634,8 +2614,12 @@ export function FichePatientPanel({
             )}
             {/* Chip delta inter-tours : uniquement à version de score identique
                 (A8-3) — sinon rien, jamais approximé. */}
+            {/* Les deux lectures du tour précédent sont recalculées par le
+                moteur COURANT (`construireTrajectoire`) : sa version est celle
+                que sert la route d'équilibre, pas celle stockée sur l'ancre.
+                Inconnue → pas de chiffre. */}
             {bandeauEpisode?.deltaTourPrecedent &&
-              (provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance) ? (
+              (provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance) && versionCalculCourante ? (
                 <div className="flex flex-col items-start">
                   <Chip variante="delta">
                     Au tour précédent : momentum{' '}
@@ -2649,7 +2633,10 @@ export function FichePatientPanel({
                   </Chip>
                   <DetailProvenance
                     objet="Au tour précédent"
-                    lignes={lignesProvenanceMomentum(bandeauEpisode.deltaTourPrecedent.provenance)}
+                    lignes={lignesProvenanceMomentum({
+                      ...bandeauEpisode.deltaTourPrecedent.provenance,
+                      versionCalcul: versionCalculCourante,
+                    })}
                     aGauche
                   />
                 </div>

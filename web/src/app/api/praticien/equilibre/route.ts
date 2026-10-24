@@ -66,6 +66,10 @@ export type ObjetsCliniquesReponse = {
   /** Le total a été ramené au plafond des fondations critiques ([[D-106]]) :
    *  le fait seul — ni le besoin, ni la valeur avant plafond (Q9). */
   plafondApplique: boolean;
+  /** Version du moteur courant (`VERSION_SCORE_EQUILIBRE`), servie même sans
+   *  indice : le chip « Au tour précédent » la lit, ses deux lectures étant
+   *  recalculées par ce moteur (r3_08). */
+  versionCalcul: string;
   /** Provenance datée de chaque chiffre ([[D-333]] §2 règle 1) ; `null` quand
    *  le chiffre lui-même est absent. */
   provenance: {
@@ -225,6 +229,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         clarte: versCent(objets.clarte),
         momentum,
         plafondApplique: objets.indiceGlobal.plafondApplique,
+        versionCalcul: versionScore,
         provenance: {
           indiceGlobal: provenanceDe(
             objets.indiceGlobal.scoreGlobal,

@@ -34,6 +34,7 @@ const EQUILIBRE = {
     clarte: null,
     momentum: null as { delta: number; tendance: string } | null,
     plafondApplique: false,
+    versionCalcul: 'v15' as string | undefined,
     // [[D-333]] §2 règle 1 : chaque chiffre affiché porte sa provenance datée.
     // Le panneau ne la lit que si le chiffre existe.
     provenance: {
@@ -158,6 +159,8 @@ type Options = {
   /** r3_08 : les lignes du tableau des 12 besoins, telles qu'un ancien
    *  conteneur les sert — ni provenance ni motif. */
   prioritesAnciennes?: boolean;
+  /** r3_08 : un ancien conteneur, sans la version du moteur courant. */
+  versionCalculAbsente?: boolean;
   /** r3_08 : les besoins 9 et 10, servis aussi par deux cartes. */
   prioritesCartesLiees?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
@@ -559,6 +562,9 @@ function stubFetch(options: Options = {}) {
       }
       if (options.clarteMesuree) {
         return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, clarte: 57 } });
+      }
+      if (options.versionCalculAbsente) {
+        return ok({ ...EQUILIBRE, objetsCliniques: { ...EQUILIBRE.objetsCliniques, versionCalcul: undefined } });
       }
       if (options.prioritesAnciennes) {
         return ok({
@@ -1190,7 +1196,16 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(document.body.textContent).toContain(
       "Écart de l'indice global entre l'état au T0 (01/06/2026) et l'état au J21 (22/06/2026)"
     );
-    expect(document.body.textContent).toContain('Version du calcul : v1');
+    // La version du moteur COURANT (servie par la route d'équilibre), pas
+    // celle stockée sur l'ancre du tour (`v1`).
+    expect(document.body.textContent).toContain('Version du calcul : v15');
+  });
+
+  it('bandeau : sans version courante connue, le chip ne montre pas le chiffre', async () => {
+    await rendreFiche({ trajectoire: 'deuxCycles', versionCalculAbsente: true });
+
+    const chip = await screen.findByText(/Au tour précédent : Source non enregistrée/);
+    expect(chip.textContent).not.toMatch(/\+4|hausse/);
   });
 
   it('bandeau : sans lectures datées du tour précédent, le chip ne montre pas le chiffre', async () => {

@@ -107,6 +107,14 @@ describe('motifsNonMesureBesoin — égalité null ⇔ motif contre calculerCouv
   }
 });
 
+// Un besoin dont toutes les sources sont lues mais dont aucun groupe ne pèse
+// (`sommePoids <= 0`, `score.ts`) serait non mesuré SANS motif. La table ne le
+// permet pas : ce banc le fige, plutôt que d'inventer un motif.
+it('aucune source du mapping ne pèse zéro — un non mesuré a toujours un motif', () => {
+  const poids = Object.values(BESOIN_SOURCES).flat().map(s => s.poids ?? 1);
+  expect(poids.every(p => p > 0)).toBe(true);
+});
+
 describe('questionnairesEcartesParValidite — le seul étage que la carte des réponses ne voit pas', () => {
   const brute = (idQuestionnaire: string, statutValidite: string | null, jour: number): ReponseBrute => ({
     idQuestionnaire,
