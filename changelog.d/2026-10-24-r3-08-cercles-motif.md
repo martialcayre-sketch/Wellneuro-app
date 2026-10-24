@@ -18,7 +18,7 @@
   inchangée) ; un banc tient l'égalité null ⇔ motif.
 - Dettes de J1-cockpit soldées : chaque couverture du tableau ouvre sa
   provenance datée, B9 et B10 y disent servir la même valeur que leur carte
-  (repère de suivi), et le chip « Au tour précédent » ouvre les deux lectures
+  (repère de suivi) — au tableau comme dans la liste des cercles —, et le chip « Au tour précédent » ouvre les deux lectures
   du tour comparé, à la version du moteur courant (la route d'équilibre la
   sert désormais à part, `objetsCliniques.versionCalcul`). Sans provenance,
   le chiffre cède la place à « Source non enregistrée », dans le tableau, le

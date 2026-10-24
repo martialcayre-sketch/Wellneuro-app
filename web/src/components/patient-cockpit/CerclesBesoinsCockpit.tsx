@@ -53,6 +53,17 @@ export function opaciteRemplissage(couverture: number): number {
   return OPACITE_PLANCHER + (1 - OPACITE_PLANCHER) * (Math.max(0, Math.min(100, couverture)) / 100);
 }
 
+// B9 et B10 sont servis deux fois, sous deux noms : couverture au tableau et
+// dans cette liste, repère de suivi sur leur carte ([[D-333]] §3, arbitrage du
+// 2026-10-23). Les deux disent que c'est la même valeur — sans renommer ni
+// l'une ni l'autre (arbitrage du 2026-10-24 pour la liste).
+export type CarteLiee = 'reserveAdaptation' | 'clarte';
+
+export const MENTION_CARTE_LIEE: Record<CarteLiee, string> = {
+  reserveAdaptation: 'Même valeur que la carte « Réserve d\'adaptation » (repère de suivi)',
+  clarte: 'Même valeur que la carte « Clarté » (repère de suivi)',
+};
+
 export type BesoinCercle = {
   id: number;
   libelle: string;
@@ -60,6 +71,7 @@ export type BesoinCercle = {
   couverture: number | null; // 0-100
   motifNonMesure: MotifNonMesureServi[] | null;
   provenance: ProvenanceChiffre | null;
+  carteLiee: CarteLiee | null;
 };
 
 // Le haut de chaque anneau porte son nom : les points partent d'un
@@ -157,7 +169,12 @@ export function CerclesBesoinsCockpit({ besoins }: { besoins: BesoinCercle[] }) 
                 <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} />
               )}
               {b.couverture !== null && provenanceEtablie(b.provenance) && (
-                <DetailProvenance objet={cle} lignes={lignesProvenance(b.provenance)} aGauche />
+                <>
+                  {b.carteLiee && (
+                    <span className="block text-xs text-muted-foreground">{MENTION_CARTE_LIEE[b.carteLiee]}</span>
+                  )}
+                  <DetailProvenance objet={cle} lignes={lignesProvenance(b.provenance)} aGauche />
+                </>
               )}
             </li>
           );

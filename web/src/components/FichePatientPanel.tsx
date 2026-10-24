@@ -68,7 +68,7 @@ import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpre
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
-import { CerclesBesoinsCockpit } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
+import { CerclesBesoinsCockpit, MENTION_CARTE_LIEE } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { Chip } from '@/components/ui/Chip';
@@ -121,14 +121,6 @@ import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDo
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
-
-// B9 et B10 sont servis deux fois, sous deux noms : couverture au tableau,
-// repère de suivi sur leur carte ([[D-333]] §3, arbitrage du 2026-10-23). Le
-// tableau dit que c'est la même valeur — sans renommer ni l'une ni l'autre.
-const MENTION_CARTE_LIEE: Record<NonNullable<PrioriteBesoin['carteLiee']>, string> = {
-  reserveAdaptation: 'Même valeur que la carte « Réserve d\'adaptation » (repère de suivi)',
-  clarte: 'Même valeur que la carte « Clarté » (repère de suivi)',
-};
 
 // Un chiffre dont la provenance n'est pas établie ne s'affiche pas
 // ([[D-333]] §2 règle 1) — et ne se confond pas avec « Non mesuré ».
@@ -2157,6 +2149,7 @@ export function FichePatientPanel({
                 couverture: p.couverture,
                 motifNonMesure: p.motifNonMesure ?? null,
                 provenance: p.provenance ?? null,
+                carteLiee: p.carteLiee ?? null,
               }))}
             />
           </div>

@@ -18,6 +18,7 @@ function besoin(id: number, couverture: number | null): BesoinCercle {
       couverture === null ? [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: null }] : null,
     provenance:
       couverture === null ? null : { sources: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' },
+    carteLiee: id === 9 ? 'reserveAdaptation' : id === 10 ? 'clarte' : null,
   };
 }
 
@@ -80,6 +81,15 @@ describe('CerclesBesoinsCockpit', () => {
     const [source] = within(liste).getAllByText('Source', { selector: 'summary' });
     expect(source.getAttribute('aria-label')).toBe('Source — B1 · Besoin 1');
     expect(liste.textContent).toContain('Questionnaire : Q_STR_01 (réponse du 01/10/2026)');
+  });
+
+  it('B9 et B10 disent servir la même valeur que leur carte ; un non mesuré, non', () => {
+    render(<CerclesBesoinsCockpit besoins={[besoin(9, 48), besoin(10, null), besoin(1, 62)]} />);
+    const liste = screen.getByRole('list', { name: 'Les 12 besoins, en texte' });
+    const [b1, b9, b10] = [...liste.children].map(li => li.textContent ?? '');
+    expect(b9).toContain('Même valeur que la carte « Réserve d\'adaptation » (repère de suivi)');
+    expect(b10).not.toContain('Même valeur');
+    expect(b1).not.toContain('Même valeur');
   });
 
   it('sans provenance établie : ni chiffre dans la liste, ni intensité sur la figure', () => {
