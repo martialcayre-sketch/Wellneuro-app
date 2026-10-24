@@ -11610,7 +11610,17 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Interprétations et motifs du moteur masqués, agendas et physio laissés visibles : à confirmer par le responsable.
 
-## 2026-10-24 — J3-12h lot 3 : courrier complément, remise au clic et refus (D-355)
+## 2026-10-24 — r3_13 : « Points à explorer » acté au portail (D-355)
+
+**Fait.** Relecture de LOT-05, de sa maquette, de la campagne SP-CONV et de #294 : aucun motif clinique écrit du tri, seul le libellé avait changé. Le responsable a choisi d'acter (questions à options) avec le motif « matière de dialogue » : D-355 nomme une troisième famille d'exceptions à D-333 §1 et §2 r4, bornée (trois besoins mesurés au plus, sans chiffre, sans mot ni couleur qui juge). Écran inchangé ; commentaire et banc unitaire.
+
+**Écarté.** Le retrait (règle du 2026-10-22 par défaut) : le responsable a fourni le motif.
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_13 « fait » sur la page de la file A.
+
+**Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — J3-12h lot 3 : courrier complément, remise au clic et refus (D-356)
 
 **Fait.** Le générateur du courrier (texte validé), le courrier et sa liste dans une seule transaction, la garde du clic parmi les refus d'avant l'embranchement, la remise par `createMany` (tout refus autre que « déjà remis » annule le clic) et la case « ciblé » du constructeur. Tout est sous `WN_COURRIER_COMPLEMENT`, éteint, sans migration. Banc Postgres : parité de la liste avec le trigger, « les deux ou rien », remise de bout en bout. Revue `wn-reviewer` : GO sous conditions ; P1 corrigés.
 

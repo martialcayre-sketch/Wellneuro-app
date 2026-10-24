@@ -22,7 +22,7 @@ Le tout est livré sous `WN_COURRIER_COMPLEMENT` éteint (D-345 §4-§7).
 
 ## Décisions prises
 
-D-355 consigne quatre arbitrages du responsable du 2026-10-24 :
+D-356 consigne quatre arbitrages du responsable du 2026-10-24 :
 
 - §1 : le texte du courrier est validé tel quel, sans population ni
   situation nommée ;
@@ -87,7 +87,7 @@ Gardes :
 Documentation :
 
 - `docs/FEATURE_FLAGS.md` ;
-- `docs/DECISIONS.md` (D-355) ;
+- `docs/DECISIONS.md` (D-356) ;
 - `docs/claude/PLAN_WELLNEURO.md` ;
 - `docs/claude/MATRICE_CONSOMMATION.md` (régénérée : une surface indirecte de
   plus pour la Boussole, celle de la route neuve) ;
@@ -160,5 +160,5 @@ Documentation :
 
 - `WN_COURRIER_COMPLEMENT` reste éteint jusqu'aux quatre conditions.
 - Aucun claim ni libellé de situation au dépôt (forme opaque).
-- Le texte du courrier ne se retouche pas sans nouvelle validation (D-355 §1).
+- Le texte du courrier ne se retouche pas sans nouvelle validation (D-356 §1).
 - Pas de `prisma format`.

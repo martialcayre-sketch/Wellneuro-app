@@ -100,6 +100,8 @@ export function MonEquilibreAccueil({
   // [[D-329]] §3 : le total ne dit plus qu'il est complet quand il ne l'est pas.
   // Sans chiffre — le portail n'en sert aucun.
   const indicePartiel = indiceGlobal !== null && besoins.some(b => b.couverture === null);
+  // [[D-355]] §1 : les trois besoins mesurés les moins couverts — exception
+  // nommée à la règle du portail ([[D-333]] §2 r4), bornée par son §3.
   const priorites = besoins
     .filter(b => b.couverture !== null)
     .sort((a, b) => (a.couverture ?? 0) - (b.couverture ?? 0))
@@ -139,10 +141,11 @@ export function MonEquilibreAccueil({
 
         {priorites.length > 0 && (
           <div className="mb-6">
-            {/* « Points à explorer », pas « priorités » (SP-CONV LOT-05) : ces
-                items sont un tri automatique par couverture, pas une décision
-                clinique — tant qu'aucune validation praticien n'existe, ils
-                sont présentés comme matière de dialogue. */}
+            {/* « Points à explorer », pas « priorités » (SP-CONV LOT-05,
+                acté par [[D-355]] §2) : ces items sont un tri automatique par
+                couverture, pas une décision clinique — ils sont présentés
+                comme matière de dialogue. Sans chiffre, sans mot ni couleur
+                qui juge, trois au plus (§3). */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-2">
               Points à explorer avec votre praticien
             </p>
