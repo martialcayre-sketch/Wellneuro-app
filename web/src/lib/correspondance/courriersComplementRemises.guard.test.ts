@@ -54,8 +54,10 @@ const MODELE = String.raw`\.courrierComplement(?:Remise|Liste)\s*\.\s*`;
 const CREER = new RegExp(`${MODELE}(?:create|createMany|createManyAndReturn)\\s*\\(`);
 const SUPPRIMER = new RegExp(`${MODELE}(?:delete|deleteMany)\\s*\\(`);
 const REECRIRE = new RegExp(`${MODELE}(?:update|updateMany|updateManyAndReturn|upsert)\\s*\\(`);
-// Le schéma, cité ou non : `public.`, `"public".` (revue CodeRabbit de #1679).
-const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:"?public"?\.)?"?courriers_complement_(?:remises|listes)\b/i;
+// Le schéma, cité ou non, avec ou sans espaces autour du point : `public.`,
+// `"public".`, `"public" . ` (revue CodeRabbit de #1679). Un filet, pas un
+// analyseur SQL : un commentaire glissé entre les deux noms lui échappe.
+const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:"?public"?\s*\.\s*)?"?courriers_complement_(?:remises|listes)\b/i;
 /**
  * L'ÉCRITURE IMBRIQUÉE : les relations inverses sont `courriersComplementRemises`
  * (patient, approbation), `courriersComplementListes` (patient), `remiseComplement`
@@ -88,6 +90,7 @@ describe('Listes et remises de courrier complément — qui écrit (D-345, J3-12
     expect(SQL_BRUT.test('insert into "courriers_complement_listes" (')).toBe(true);
     expect(SQL_BRUT.test('INSERT INTO "public"."courriers_complement_listes" (')).toBe(true);
     expect(SQL_BRUT.test('TRUNCATE TABLE "public"."courriers_complement_remises"')).toBe(true);
+    expect(SQL_BRUT.test('DELETE FROM "public" . "courriers_complement_listes" WHERE')).toBe(true);
     expect(IMBRIQUEE.test('data: { remiseComplement: { create: {} } }')).toBe(true);
     expect(IMBRIQUEE.test('data: { listeComplement: { create: {} } }')).toBe(true);
     expect(IMBRIQUEE.test('include: { courriersComplementRemises: { orderBy: { ordre: "desc" } } }')).toBe(false);
