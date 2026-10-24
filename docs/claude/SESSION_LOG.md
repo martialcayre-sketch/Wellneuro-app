@@ -11571,16 +11571,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; r3_11 « fait » sur la page de la file A.
 
 **Ouvert.** Aucun besoin mesuré : le compte dit « Calculé sur 0 besoin mesuré sur 12 », alors que la jauge de l'indice masque sa base.
-
-## 2026-10-24 — r3_11 (suite) : libellé quand aucun besoin n'est mesuré
-
-**Fait.** Le responsable trouvait « Calculé sur 0 besoin mesuré sur 12 » peu explicite : il a choisi « Non calculé : aucun besoin mesuré » (question à options). `mentionBesoinsMesures` le rend à zéro (D-352 §4), donc sur le bouton, le tiroir et l'onglet ; la jauge de l'indice est inchangée.
-
-**Écarté.** « Aucun besoin mesuré sur 12 » (recommandé) ; « Aucun besoin mesuré (0 sur 12) ».
-
-**Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
-
-**Ouvert.** Rien dans le périmètre.
 ## 2026-10-24 — ak : la phrase d'appui sous chaque questionnaire renvoyé (D-353)
 
 **Fait.** Relevé des places 8 à 11 et de la porte 28 depuis 0ac2a236 : rien n'a bougé. À la demande du responsable, l'assistant a rédigé trois variantes de la phrase ; le responsable a retenu la variante A sans retouche. D-353 consigne Q1 à Q4 et les six arbitrages du 2026-10-23 (H80). Le lot est sans migration et le drapeau `WN_PORTAIL_APPUI_RENVOI` est livré éteint. wn-reviewer a rendu NO-GO sur deux P1, traités : la lecture isolée du rendez-vous J21 et le numéro, partagé avec #1680, mergée avant (ak devient D-353, après D-352 de #1684). Les agendas sont exclus. T3 vert.
@@ -11591,3 +11581,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
+## 2026-10-24 — r3_11 (suite) : libellé quand aucun besoin n'est mesuré
+
+**Fait.** Le responsable trouvait « Calculé sur 0 besoin mesuré sur 12 » peu explicite : il a choisi « Non calculé : aucun besoin mesuré » (question à options). `mentionBesoinsMesures` le rend à zéro (D-352 §4), donc sur le bouton, le tiroir et l'onglet ; la jauge de l'indice est inchangée.
+
+**Écarté.** « Aucun besoin mesuré sur 12 » (recommandé) ; « Aucun besoin mesuré (0 sur 12) ».
+
+**Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
+
+**Ouvert.** Rien dans le périmètre.
