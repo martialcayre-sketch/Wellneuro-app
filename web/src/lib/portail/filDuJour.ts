@@ -72,6 +72,7 @@ import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { deriverRappelAgendaAli } from '@/lib/agenda-alimentaire/rappelPortail';
 import { ctaLecture, lienLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { POINTS_ETAPE, type PointEtape } from '@/lib/protocol/checkinDomain';
+import { APPUI_QUESTIONNAIRE_RENVOYE } from '@/lib/portail/texteAppuiRenvoi';
 
 export type EspeceTache =
   | 'agenda_sommeil'
@@ -144,6 +145,13 @@ export type SourcesFilDuJour = {
    */
   rendezVousSuivi: PointEtape | null;
   /**
+   * Les questionnaires RENVOYÉS, tels que les rend `questionnairesRenvoyesDepuis`
+   * ([[D-353]], lettre ak) : sous chacun, la phrase d'appui acceptée. Ensemble
+   * VIDE pour l'inconnu — drapeau fermé, hors des jours 18 à 24, sonde en vol ou
+   * en échec, recueils en pause : le doute ne pose aucune phrase.
+   */
+  questionnairesRenvoyes: Set<string>;
+  /**
    * La formulation du contrat de parcours quand plus rien n'est à compléter
    * (`deriverEtatParcoursPatient`), ou `null`. Passée telle quelle : ce module
    * ne dérive pas le parcours, il se contente de la relayer en repos.
@@ -181,6 +189,24 @@ export function rendezVousSuiviAFaire(reponse: unknown): PointEtape | null {
   const etat = (r.points as { pointEtape?: unknown; renseigne?: unknown }[]).find(p => p?.pointEtape === ouvert);
   // Un point absent de la liste est un état qu'on ne sait pas lire : pas de tâche.
   return etat && etat.renseigne === false ? ouvert : null;
+}
+
+/**
+ * LA PHRASE D'APPUI DU QUESTIONNAIRE RENVOYÉ ([[D-353]], lettre ak).
+ *
+ * Ce module ne calcule NI le jour 0 NI la fenêtre : la route du check-in
+ * n'annonce `questionnairesRenvoyes` que drapeau ouvert et point J21 ouvert
+ * (jours 18 à 24). On revérifie ici le point annoncé, et chaque identifiant
+ * doit être une chaîne : une réponse partielle ne pose aucune phrase. La phrase
+ * se pose sous la ligne du questionnaire seulement, aucune ligne n'est ajoutée,
+ * qu'un rendez-vous de suivi soit renseigné ou non.
+ */
+export function questionnairesRenvoyesDepuis(reponse: unknown): Set<string> {
+  if (typeof reponse !== 'object' || reponse === null) return new Set();
+  const r = reponse as { ok?: unknown; protocoleDiffuse?: unknown; pointEtapeOuvert?: unknown; questionnairesRenvoyes?: unknown };
+  if (r.ok !== true || r.protocoleDiffuse !== true || r.pointEtapeOuvert !== 'J21') return new Set();
+  if (!Array.isArray(r.questionnairesRenvoyes)) return new Set();
+  return new Set(r.questionnairesRenvoyes.filter((id): id is string => typeof id === 'string'));
 }
 
 function lienAssignation(token: string, idAssignation: string): string {
@@ -234,6 +260,7 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
     agendasAli,
     ceQuiCompteOuvert,
     rendezVousSuivi,
+    questionnairesRenvoyes,
     formulationParcours,
   } = sources;
 
@@ -391,7 +418,9 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
       // branche qui rend `null` est `expire`. Le repli n'est là que pour que le
       // type ne mente pas.
       cta: `${e.aff.action ?? 'Consulter'} « ${e.a.titre || e.a.idQuestionnaire} »`,
-      appui: null,
+      // Texte du responsable ([[D-353]] §1), jamais fabriqué ici : il vient tel
+      // quel de son module, que le banc relit dans la décision.
+      appui: questionnairesRenvoyes.has(e.a.idAssignation) ? APPUI_QUESTIONNAIRE_RENVOYE : null,
       href: lienAssignation(token, e.a.idAssignation),
     }));
 

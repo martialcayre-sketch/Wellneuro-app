@@ -11581,3 +11581,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
 
 **Ouvert.** Rien dans le périmètre.
+## 2026-10-24 — ak : la phrase d'appui sous chaque questionnaire renvoyé (D-353)
+
+**Fait.** Relevé des places 8 à 11 et de la porte 28 depuis 0ac2a236 : rien n'a bougé. À la demande du responsable, l'assistant a rédigé trois variantes de la phrase ; le responsable a retenu la variante A sans retouche. D-353 consigne Q1 à Q4 et les six arbitrages du 2026-10-23 (H80). Le lot est sans migration et le drapeau `WN_PORTAIL_APPUI_RENVOI` est livré éteint. wn-reviewer a rendu NO-GO sur deux P1, traités : la lecture isolée du rendez-vous J21 et le numéro, partagé avec #1680, mergée avant (ak devient D-353, après D-352 de #1684). Les agendas sont exclus. T3 vert.
+
+**Écarté.** Fixer une période dans la phrase (« aujourd'hui »), qui contredirait la période de rappel d'un instrument ; rappeler les premières réponses (biais de souvenir).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; activation sur accord, puis constat D-353 §5.
+
+**Ouvert.** Rien dans le périmètre.
+
