@@ -34,7 +34,9 @@ de l'un des dix axes, et qui écrit le sens. Sont exclus : les claims
 prescriptifs ; les claims de stade ou de profil à plusieurs analytes ; un
 analyte de statut nutritionnel ([[D-348]] §5) ; un analyte du domaine de
 `NeuroAxis`. Un lien porte un seul claim. Le seuil qu'un claim peut citer
-n'entre jamais dans le lien.
+n'entre jamais dans le lien. Deux liens du §2 sont des exceptions signées à
+cette règle, chacune écrite au §3 : le lien 5 (mécanisme non nommé par le
+claim) et le lien 16 (sens déduit, non écrit).
 
 **§2 — Les dix-sept liens.** Tous les claims sont en version v1.0, lus en
 production le 2026-10-24. Le niveau de preuve est nul pour les dix-sept

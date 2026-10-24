@@ -3,7 +3,8 @@
 - Le responsable signe dix-sept liens entre un analyte du catalogue et l'un
   des dix axes de D-348. Chaque lien porte un seul claim certifié, en
   version v1.0, qui nomme l'analyte et écrit le sens (bas, haut ou hors
-  plage). La décision ne donne que des identifiants : analyte, axe, claim,
+  plage), à deux exceptions signées : un claim ne nomme pas le mécanisme
+  de l'axe, un autre laisse le sens déduit. La décision ne donne que des identifiants : analyte, axe, claim,
   direction. Le texte des claims reste au Claude Doc privé.
 - Écartés : les claims prescriptifs, les claims de stade, les analytes de
   statut nutritionnel (ils restent à la cible `nutriment`) et ceux du
