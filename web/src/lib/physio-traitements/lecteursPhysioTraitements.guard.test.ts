@@ -36,6 +36,11 @@ const ACCES_ADMIS = [
   'web/src/lib/bio-parcours/constats/lecture.ts',
   // Effacement du dossier : supprime, ne lit pas.
   'web/src/lib/patient/effacement.ts',
+  // La garde du complément ciblé ([[D-345]] §3, J3-12h lot 3) : la TÊTE des
+  // fils grossesse et allaitement, rien d'autre — un « oui » déclenche le
+  // courrier au médecin, seul un « non » du praticien lève. Décision
+  // postérieure à §8, qui la nomme.
+  'web/src/lib/clinical/entreesGardeComplement.ts',
 ];
 
 const MOTIF_ACCES =

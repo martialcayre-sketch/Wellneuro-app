@@ -24,7 +24,9 @@ import {
   type ApercuFiches,
   type StatutLigneFiche,
 } from '@/lib/fiches-assiette/apercuRemise';
+import { useState } from 'react';
 import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
+import type { ApercuCourrierComplement } from '@/lib/correspondance/courrierComplementRemise';
 import { ApercuPatientProtocole } from './ApercuPatientProtocole';
 
 export type DiffusionState = 'idle' | 'saving' | 'error';
@@ -165,6 +167,88 @@ function ApercuLettreAdressageBloc({
   );
 }
 
+/** Le libellé du destinataire quand une grossesse ou un allaitement appelle le courrier (D-345 §7, P5 v0.3). */
+export const AIDE_DESTINATAIRE_POPULATION =
+  'Destinataire : le professionnel qui suit la grossesse, à défaut le médecin traitant.';
+
+/**
+ * LE COURRIER COMPLÉMENT AU CLIC ([[D-345]] §4-§7, J3-12h lot 3). Ce que le clic
+ * fera, dit AVANT le geste : refusé (motif en clair), à préparer, remis par ce
+ * clic, ou déjà remis. Le texte du courrier n'est pas recopié ici : il est
+ * consigné dans l'onglet Correspondance. Rien ne s'affiche quand aucun
+ * courrier n'est requis.
+ */
+function ApercuCourrierComplementBloc({
+  complement,
+  preparation,
+  preparationErreur,
+  onPreparer,
+}: {
+  complement: { apercu: ApercuCourrierComplement; medecinTraitant: string | null };
+  preparation: 'idle' | 'saving' | 'error';
+  preparationErreur: string | null;
+  onPreparer?: (medecinLibelle: string) => void;
+}) {
+  const { apercu } = complement;
+  const [destinataire, setDestinataire] = useState(complement.medecinTraitant ?? '');
+  if (apercu.etat === 'non_requis') return null;
+  const bloquant = apercu.etat === 'refuse' || apercu.etat === 'manquant';
+  return (
+    <section
+      aria-labelledby="protocol-diffusion-complement-title"
+      data-testid="apercu-courrier-complement"
+      className="mt-4 rounded-lg border border-border p-3"
+    >
+      <h4 id="protocol-diffusion-complement-title" className="text-sm font-semibold text-foreground">
+        Courrier au médecin avant un complément ciblé
+      </h4>
+      <p className={`mt-2 text-base ${bloquant ? 'text-status-warning' : 'text-foreground'}`} role={bloquant ? 'alert' : undefined}>
+        {apercu.etat === 'part' && apercu.courrier
+          ? `Le courrier du ${dateLisible(apercu.courrier.consigneLe)} sera remis au patient avec ce protocole, tel qu’il a été consigné.`
+          : apercu.motif}
+      </p>
+      {apercu.etat === 'manquant' && onPreparer && (
+        <form
+          className="mt-3 grid gap-2"
+          onSubmit={event => {
+            event.preventDefault();
+            onPreparer(destinataire.trim());
+          }}
+        >
+          <label className="text-sm text-foreground">
+            Destinataire du courrier
+            <input
+              type="text"
+              value={destinataire}
+              onChange={event => setDestinataire(event.target.value)}
+              maxLength={200}
+              required
+              className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-base"
+            />
+          </label>
+          {apercu.populationDeclenche && (
+            <p className="text-sm text-muted-foreground">{AIDE_DESTINATAIRE_POPULATION}</p>
+          )}
+          <div>
+            <button
+              type="submit"
+              disabled={preparation === 'saving' || destinataire.trim() === ''}
+              className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground disabled:opacity-50"
+            >
+              Préparer le courrier au médecin
+            </button>
+          </div>
+          {preparation === 'error' && (
+            <p role="alert" className="text-base text-status-danger">
+              {preparationErreur ?? 'Le courrier n’a pas pu être préparé.'}
+            </p>
+          )}
+        </form>
+      )}
+    </section>
+  );
+}
+
 export function ProtocolDiffusionPanel({
   canApprove,
   approved,
@@ -175,6 +259,10 @@ export function ProtocolDiffusionPanel({
   pausesApercu = [],
   fiches = null,
   lettre = null,
+  courrierComplement = null,
+  preparationComplement = 'idle',
+  preparationComplementErreur = null,
+  onPreparerCourrierComplement,
   annonceParEmail = false,
   annonceProtocoleParEmail = false,
   emailProtocoleOuvert = false,
@@ -224,6 +312,14 @@ export function ProtocolDiffusionPanel({
    * `null` : aucune lettre ne partira, ou drapeau fermé — l'écran n'en dit rien.
    */
   lettre?: ApercuLettreAdressage | null;
+  /**
+   * Le courrier complément au clic ([[D-345]] §4). `null` : drapeau fermé,
+   * lecture non aboutie ou aucune version — l'écran n'en dit rien.
+   */
+  courrierComplement?: { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null;
+  preparationComplement?: 'idle' | 'saving' | 'error';
+  preparationComplementErreur?: string | null;
+  onPreparerCourrierComplement?: (medecinLibelle: string) => void;
   /** Une fiche remise par le clic serait annoncée par e-mail (lecture ouverte). */
   annonceParEmail?: boolean;
   /**
@@ -371,6 +467,16 @@ export function ProtocolDiffusionPanel({
         <ApercuLettreAdressageBloc
           lettre={lettre}
           annonceDejaDite={annonceProtocoleParEmail || Boolean(fiches && annonceParEmail && fichesARemettre(fiches))}
+        />
+      )}
+
+      {courrierComplement && (
+        <ApercuCourrierComplementBloc
+          key={`${courrierComplement.apercu.etat}:${courrierComplement.medecinTraitant ?? ''}`}
+          complement={courrierComplement}
+          preparation={preparationComplement}
+          preparationErreur={preparationComplementErreur}
+          onPreparer={onPreparerCourrierComplement}
         />
       )}
 

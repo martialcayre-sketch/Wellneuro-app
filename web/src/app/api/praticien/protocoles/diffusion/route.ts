@@ -42,6 +42,17 @@ import {
   remettreLettreAdressage,
   type ApercuLettreAdressage,
 } from '@/lib/correspondance/lettreAdressageRemise';
+import {
+  apercuCourrierComplement,
+  bloqueLeClic,
+  courrierComplementOuvert,
+  jetonAvecComplement,
+  MOTIF_REMISE_REFUSEE,
+  RemiseComplementRefusee,
+  remettreCourrierComplement,
+  type ApercuCourrierComplement,
+} from '@/lib/correspondance/courrierComplementRemise';
+import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { messageDiffusionEnAttente, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
@@ -93,8 +104,37 @@ type PostResponse =
        * sort de l'e-mail du protocole ([[D-317]] §2). Il remplace alors
        * `annonceFiches` — un seul e-mail par clic. */
       annonceProtocole?: AnnonceFiches;
+      /** `WN_COURRIER_COMPLEMENT` ouvert seulement : ce clic a-t-il remis le
+       * courrier complément au patient ([[D-345]] §4) ? */
+      courrierComplementRemis?: boolean;
     }
   | { ok: false; reason: string; error: string };
+
+/**
+ * LES ACTIONS PERSISTÉES DE LA VERSION, pour la garde du complément ciblé
+ * ([[D-345]]) — jamais le corps de la requête. `null` quand le payload ne se
+ * relit pas : la garde ne peut alors rien affirmer, et le clic se refuse.
+ */
+function actionsPersistees(payload: unknown, inputHash: string): ProtocolAction[] | null {
+  try {
+    return reconstructProtocolDraft(payload, inputHash).actions;
+  } catch {
+    return null;
+  }
+}
+
+const MOTIF_VERSION_ILLISIBLE =
+  'La version ne se relit pas : la garde du complément ciblé ne peut pas être jugée, rien n’est diffusé.';
+const MOTIF_REMISE_IMPOSSIBLE =
+  'Le courrier au médecin ne peut être remis que par le clic qui remet les documents au patient, '
+  + 'fermé sur ce déploiement : aucun complément ciblé ne peut être diffusé.';
+
+function refusComplement(motif: string): NextResponse<PostResponse> {
+  return NextResponse.json(
+    { ok: false, reason: 'courrier_complement_requis', error: motif },
+    { status: 409 },
+  );
+}
 
 /**
  * L'annonce d'un clic ([[D-317]] §2-§3) : celle du protocole quand il diffuse
@@ -249,7 +289,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         reviewedAt: true,
         // Lu pour les fiches seulement (actions, contrat patient) — et
         // seulement drapeau ouvert : fermé, la lecture reste celle d'avant.
-        payload: envoiFichesOuvert(),
+        payload: envoiFichesOuvert() || courrierComplementOuvert(),
+        // Lu pour la garde du complément ciblé seulement, drapeau ouvert.
+        contractVersion: courrierComplementOuvert(),
       },
     });
     if (!version || version.idPatient !== idPatient) {
@@ -360,6 +402,29 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       }
     }
 
+    // ── LE COMPLÉMENT CIBLÉ ([[D-345]] §4-§6, J3-12h lot 3) ──────────────────
+    //
+    // PARMI LES REFUS D'AVANT L'EMBRANCHEMENT, et fail-closed : une version
+    // illisible, un refus de la garde, un courrier requis mais absent — ou qui
+    // ne peut être remis faute du chemin transactionnel des fiches — refusent
+    // le clic, motif en clair. La transaction recalcule l'aperçu sous verrou et
+    // remet le courrier dû ; un aperçu devenu bloquant entre-temps annule tout.
+    // Drapeau fermé : rien de ce bloc n'existe.
+    const actionsComplement = courrierComplementOuvert()
+      ? actionsPersistees(version.payload, version.inputHash)
+      : null;
+    if (courrierComplementOuvert()) {
+      if (actionsComplement === null) return refusComplement(MOTIF_VERSION_ILLISIBLE);
+      const apercuComplement = await apercuCourrierComplement(prisma, {
+        idPatient,
+        actions: actionsComplement,
+        contractVersion: version.contractVersion ?? null,
+        maintenantMs: Date.now(),
+      });
+      if (bloqueLeClic(apercuComplement)) return refusComplement(apercuComplement.motif);
+      if (apercuComplement.etat === 'part' && !envoiFichesOuvert()) return refusComplement(MOTIF_REMISE_IMPOSSIBLE);
+    }
+
     // ── LES FICHES D'ASSIETTE, DRAPEAU OUVERT ([[D-251]] §7) ─────────────────
     //
     // UNE SEULE TRANSACTION pour l'approbation et les remises : un clic dont
@@ -401,7 +466,21 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         // consignée ou révoquée depuis l'aperçu périme le clic, comme une fiche.
         // Drapeau fermé, le jeton est celui des fiches, inchangé.
         const apercuLettre = await apercuLettreAdressage(tx, { idPatient, actions, bloque: blocage !== null });
-        if (jetonAvecLettre(apercu.jeton, apercuLettre) !== jeton) return { perime: true as const };
+        // LE COURRIER COMPLÉMENT ENTRE AUSSI DANS LE JETON ([[D-345]] §4) ;
+        // drapeau fermé, `jetonAvecComplement` rend le jeton reçu, inchangé.
+        let apercuComplement: ApercuCourrierComplement | null = null;
+        if (courrierComplementOuvert() && actionsComplement !== null) {
+          apercuComplement = await apercuCourrierComplement(tx, {
+            idPatient,
+            actions: actionsComplement,
+            contractVersion: version.contractVersion ?? null,
+            maintenantMs: Date.now(),
+          });
+        }
+        if (jetonAvecComplement(jetonAvecLettre(apercu.jeton, apercuLettre), apercuComplement) !== jeton) {
+          return { perime: true as const };
+        }
+        if (apercuComplement && bloqueLeClic(apercuComplement)) throw new RemiseComplementRefusee();
 
         const approbations = await tx.protocolDiffusionApproval.findMany({
           where: { idPatient, decisionCardInputHash: version.decisionCardInputHash },
@@ -430,6 +509,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           approvalId = cree.id;
           unchanged = false;
         }
+        // LE COURRIER COMPLÉMENT, D'ABORD : refusé, il annule le clic entier
+        // avant qu'une fiche ou une lettre ne parte (fail-closed, D-345 §4).
+        const remiseComplement = apercuComplement && actionsComplement
+          ? await remettreCourrierComplement(tx, {
+            idPatient,
+            idApprobation: approvalId,
+            actions: actionsComplement,
+            contractVersion: version.contractVersion ?? null,
+            maintenantMs: Date.now(),
+            idCorrespondanceVue: apercuComplement.courrier?.idCorrespondance ?? null,
+          })
+          : 'rien';
         const fichesRemises = await remettreFiches(tx, apercu, { idPatient, idApprobation: approvalId });
         // LA LETTRE D'ADRESSAGE ([[D-262]], LOT-02), dans la même transaction,
         // sous son propre drapeau : le même sort que les fiches quand le dossier
@@ -454,7 +545,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           lettreRemise,
         });
         const annonce = gabarit ? await reserverAnnonce(tx, idPatient, gabarit) : null;
-        return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, annonce };
+        return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, annonce, remiseComplement };
       }, { timeout: 20_000 });
 
       if (issue.perime) {
@@ -483,6 +574,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         ...(lettreAdressagePatientOuverte() ? { lettreAdressageRemise: issue.lettreRemise > 0 } : {}),
         ...(annonceFiches ? { annonceFiches } : {}),
         ...(annonceProtocole ? { annonceProtocole } : {}),
+        ...(courrierComplementOuvert() ? { courrierComplementRemis: issue.remiseComplement === 'remis' } : {}),
       });
     }
 
@@ -526,6 +618,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       approvedAt,
     });
   } catch (err) {
+    // Le courrier complément refusé sous verrou : la transaction est annulée
+    // entière, rien n'est diffusé, et le motif se dit (D-345 §4).
+    if (err instanceof RemiseComplementRefusee) return refusComplement(MOTIF_REMISE_REFUSEE);
     console.error('[praticien/protocoles/diffusion POST]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
@@ -587,6 +682,13 @@ type GetResponse =
        * des fiches.
        */
       lettre?: ApercuLettreAdressage | null;
+      /**
+       * LE COURRIER COMPLÉMENT AU CLIC ([[D-345]] §4). Clé absente drapeau
+       * `WN_COURRIER_COMPLEMENT` fermé ; `null` sans version active. Son état
+       * entre dans le jeton des fiches. `medecinTraitant` préremplit le
+       * destinataire du courrier à préparer.
+       */
+      courrierComplement?: { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null;
       /**
        * Une fiche remise par le clic serait-elle annoncée par l'e-mail neutre
        * ([[D-251]] §9, lot 11) ? Vrai seulement aperçu servi ET espace de
@@ -660,6 +762,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // LE PAYLOAD EST LU POUR JUGER LE CONTRAT PATIENT, pas pour l'afficher :
         // sans lui, le miroir ne voyait qu'une des deux causes de refus.
         payload: true,
+        // La garde du complément ciblé lit le contrat de la version ([[D-345]]).
+        contractVersion: true,
       },
     });
     if (versions.length === 0) {
@@ -876,6 +980,39 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       }
     }
 
+    // ── LE COURRIER COMPLÉMENT AU CLIC ([[D-345]] §4), DRAPEAU OUVERT ────────
+    //
+    // La même règle que le POST (`apercuCourrierComplement`), sans verrou ; son
+    // état entre dans le jeton des fiches, que le clic recalcule sous verrou.
+    let courrierComplement: { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null = null;
+    if (courrierComplementOuvert() && activeVersion) {
+      const actionsActives = actionsPersistees(activeVersion.payload, activeVersion.inputHash);
+      const apercuComplement: ApercuCourrierComplement = actionsActives === null
+        ? {
+          etat: 'refuse',
+          statut: 'version_illisible',
+          motif: MOTIF_VERSION_ILLISIBLE,
+          populationDeclenche: false,
+          courrier: null,
+        }
+        : await apercuCourrierComplement(prisma, {
+          idPatient,
+          actions: actionsActives,
+          contractVersion: activeVersion.contractVersion,
+          maintenantMs: Date.now(),
+        });
+      const patientComplement = apercuComplement.etat === 'manquant'
+        ? await prisma.patient.findUnique({ where: { idPatient }, select: { medecinTraitantNom: true } })
+        : null;
+      courrierComplement = {
+        apercu: apercuComplement,
+        medecinTraitant: patientComplement?.medecinTraitantNom?.trim() || null,
+      };
+      if (fiches && fiches !== APERCU_FICHES_ILLISIBLE) {
+        fiches = { ...fiches, jeton: jetonAvecComplement(fiches.jeton, apercuComplement) };
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       approval: active
@@ -892,6 +1029,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       fiches,
       // Drapeau fermé : la clé n'existe pas, la réponse est celle d'avant.
       ...(lettreAdressagePatientOuverte() ? { lettre } : {}),
+      ...(courrierComplementOuvert() ? { courrierComplement } : {}),
       annonceParEmail: fiches !== null && lectureFichesOuverte(),
       // La même règle que le clic (`gabaritAnnonceDuClic`) : version jamais
       // approuvée sur cette décision, et aucun blocage des fiches.
