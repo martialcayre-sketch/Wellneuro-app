@@ -137,10 +137,10 @@ test("l’enveloppe ne couvre pas ce qui la suit après un &&", () => {
   assert.equal(verdict("npm run test:worktree && rm -rf /"), "refus");
 });
 
-// ── Sondage : refusé en boucle, permis en un appel ───────────────────────────
-// Chaque tour de sondage relit tout le contexte de la session ; l’attente se
-// fait par `wn-attendre-ci.mjs` en tâche de fond. Les lectures ponctuelles —
-// dont la lecture d’un échec — restent libres.
+// ── Sondage : permis depuis le 2026-10-24 ────────────────────────────────────
+// Le responsable autorise le contrôle en boucle pour toutes les sessions (CI,
+// revue CodeRabbit, déploiement). `wn-attendre-ci.mjs` en tâche de fond reste la
+// forme préférée pour un CI. Les lectures ponctuelles restent libres.
 
 for (const cmd of [
   "gh pr checks 1259 --watch",
@@ -152,7 +152,7 @@ for (const cmd of [
   "gh run view 123 --json status; sleep 30; gh run view 123 --json status",
   "sleep 120; tail -5 /private/tmp/x/tasks/b09p0cu7s.output",
 ]) {
-  test(`sondage refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+  test(`sondage permis : ${cmd}`, () => assert.equal(verdict(cmd), "passe"));
 }
 
 for (const cmd of [
