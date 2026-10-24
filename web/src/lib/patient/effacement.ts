@@ -88,6 +88,16 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.lettresAdressageRemises = (
       await tx.lettreAdressageRemise.deleteMany({ where: par })
     ).count;
+    // Courriers complément remis au patient ([[D-345]], J3-12h lot 2) : même
+    // patron — FK RESTRICT vers patients, l'approbation ET le courrier
+    // consigné, supprimés avant eux. Puis la liste retenue à la consignation
+    // de chaque courrier (FK RESTRICT vers patients et le courrier).
+    supprimees.courriersComplementRemises = (
+      await tx.courrierComplementRemise.deleteMany({ where: par })
+    ).count;
+    supprimees.courriersComplementListes = (
+      await tx.courrierComplementListe.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;
