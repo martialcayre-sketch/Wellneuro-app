@@ -354,6 +354,12 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
 - **Mise à jour (2026-10-24, outil livré)** : script de conteneur `web/scripts/constatAvantT0.ts`, en lecture seule (il refuse de lire hors `default_transaction_read_only`). Population : dossiers actifs portant au moins une assignation, sans épisode T0. Les préconditions s'évaluent par le chemin des trois routes (`preconditionsT0PourPatient`, jalon T0). Sortie en agrégats, masquée par `agregerConstatAvantT0` (D-298) : effectif, avec et sans T0, bloqués et prêts, dossiers par condition dure manquante, quartiles d'ancienneté des bloqués, sans tranche. Reste : le constat en conteneur après déploiement, puis la D-xxx du délai.
+- **Mise à jour (2026-10-24, constat versé)** : lecture par conteneur en lecture seule (one-off-5061, image 172c4672), agrégats D-298, dossiers de test réels compris (D-075).
+  - **Effectif** : 24 dossiers actifs portant au moins une assignation, dont 12 avec T0 et 12 sans T0.
+  - **Bloqués** : les 12 dossiers sans T0 le sont tous ; aucun n'est prêt à confirmer.
+  - **Conditions dures manquantes** : second rideau 12, rideau T0 9, synthèse validée 5, anamnèse consignée 0.
+  - **Ancienneté des bloqués**, depuis la première assignation : premier quartile 31 jours, médiane 48, troisième quartile 83.
+  - **Critère de fin atteint** (un nombre agrégé versé). Aucune carte et aucun délai proposés : la D-xxx du délai revient au responsable, sur ce compte.
 
 #### H08 · Porte 4 : sources à fournir
 - **Identifiant, piste** : porte 4 ; règle du milieu levée ; seuils de 8B sourcés par D-280 ; cockpit, alimentation, sommeil ; geste du responsable.
@@ -2125,7 +2131,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 0 | h2 | liste des 8 analytes NABM (S-7, fait le 2026-10-15) ; lecture des écarts d'unité textuels ; copie datée de l'accord d'Anthropic | F54, F60, F47 | M-3 ; deux unités ; registre |
 | 0 | h2 | effectif de masquage ; cj ; ci (fait le 2026-10-14 : D-286, #1425) ; co (fait le 2026-10-15 : D-313) ; comportement voulu de la charge | F25, F49, F67, F68, F76 | constats sur plusieurs dossiers ; packs ; levées ; AIPD ; correctif |
 | 0 | h2 | accepter la lettre cq : fait (D-285, PR 1 du versement, #1417) | H04 | PR 1 du versement |
-| 0 | h2 | compter les dossiers bloqués avant T0, en conteneur | H07 | délai avant T0 |
+| 0 | h2 | compter les dossiers bloqués avant T0, en conteneur (fait le 2026-10-24 : constat versé en H07) | H07 | délai avant T0 |
 | 0 | h3 | k (fait le 2026-10-14 : D-292, #1446) ; l (trace d'import ; geste clos le 2026-10-21 sur D-283 §2, F44) ; h ; instruction de bf | F77, F44, H16, H19 | CGU, trace, Boussole, indicateurs |
 | 0 | h3 | G-11 : textes patient de la collecte et des mineurs (l écrite) ; fait le 2026-10-14 (#1441) | H38 | collecte, mineurs, lots (h) et (i) de D-284 |
 | 0 | h3 | archiver l'annexe d'hébergement et les accords de sous-traitance (hébergeur, Google Workspace, Sentry) ; relancer par écrit la confirmation d'effacement ; informer tout dossier resté sur une version antérieure du texte ; faits attendus (identité juridique, copie signée) | H20 | registre RGPD à jour (D-283 §8-9) |
