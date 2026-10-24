@@ -11477,15 +11477,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t41 « fait » au suivi de la file A.
 
 **Ouvert.** Rejeu des ancres `T1+` cassé par une passation postérieure (D-118, antérieur au lot), à router par le responsable ; Q1 (cible du J42 après la confirmation du J21).
-## 2026-10-24 — t42 : un T1 confirmé ne redevient plus « à confirmer »
-
-**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Sans migration ; l'arbitrage est transcrit en D-350 (demande de CodeRabbit). wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
-
-**Écarté.** Modifier `lireAncresPersistees`, que lisent aussi portail, objectifs et check-ins ; dater `T0` sur sa ligne.
-
-**Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
-
-**Ouvert.** Rien dans le périmètre.
 
 ## 2026-10-24 — F52 : la cible `axe` fermée sur les dix codes de D-348
 
@@ -11513,3 +11504,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
 
 **Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
+## 2026-10-24 — t42 : un T1 confirmé ne redevient plus « à confirmer »
+
+**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Sans migration ; l'arbitrage est transcrit en D-350 (demande de CodeRabbit). wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : effectif inférieur à cinq dossiers, répartition masquée (D-298 §3).
+
+**Écarté.** Modifier `lireAncresPersistees`, que lisent aussi portail, objectifs et check-ins ; dater `T0` sur sa ligne.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
+
+**Ouvert.** Rien dans le périmètre.
