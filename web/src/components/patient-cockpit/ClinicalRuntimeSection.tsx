@@ -39,6 +39,7 @@ import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { AssiettesIndiqueesPanel, type PrioriteVisee } from './AssiettesIndiqueesPanel';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
   ArbitrageBiologiquePanel,
@@ -341,6 +342,9 @@ export function ClinicalRuntimeSection({
   statutTrajectoirePartage,
   onRechargerTrajectoire,
 }: ClinicalRuntimeSectionProps) {
+  // Mode consultation de la fiche ([[D-354]] §2) : l'intensité de la plainte
+  // est une valeur de questionnaire, sa bande la dit en mots.
+  const chiffresMasques = useChiffresMasques();
   const cbEnabled = useCbEnabled();
   const cbResultatsActifs = useCbResultsEnabled();
   // Sous-vues de la phase Actions (audit 2026-09-02, constat « jusqu'à 7
@@ -1979,7 +1983,11 @@ export function ClinicalRuntimeSection({
             <div>
               <dt className="text-sm text-muted-foreground">Plainte la plus intense</dt>
               <dd className="text-base text-foreground">
-                {runtime.plainteDominante
+                {runtime.plainteDominante && chiffresMasques ? (
+                  <>
+                    {runtime.plainteDominante.libelle} — <ValeurMasquee />
+                  </>
+                ) : runtime.plainteDominante
                   ? `${runtime.plainteDominante.libelle} — ${runtime.plainteDominante.valeur}/10${
                       runtime.plainteDominante.bande ? ` (${runtime.plainteDominante.bande})` : ''
                     }`

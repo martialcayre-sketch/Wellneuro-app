@@ -3094,3 +3094,111 @@ describe('FichePatientPanel — échec de lecture de la fiche', () => {
     expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/praticien/equilibre'))).toHaveLength(2);
   });
 });
+
+// [[D-354]] (t43) : le mode consultation est un écran partagé avec le patient,
+// sous la règle du portail — aucun chiffre. Chaque cas prouve le chiffre
+// présent hors du mode (sinon son absence ne prouverait rien), puis absent
+// dans le mode, remplacé par la mention distincte de « Non mesuré ».
+describe('FichePatientPanel — mode consultation sans chiffre (D-354)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const MENTION = 'masqué en mode consultation';
+  const activer = () => fireEvent.click(screen.getByRole('button', { name: 'Mode consultation' }));
+  const quitter = () => fireEvent.click(screen.getByRole('button', { name: 'Quitter' }));
+  const onglets = () => screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+
+  it('seuls le cockpit et les 12 besoins restent ; quitter rend les six onglets (§4)', async () => {
+    await rendreFiche();
+    expect(within(onglets()).getAllByRole('tab')).toHaveLength(6);
+    activer();
+    expect(within(onglets()).getAllByRole('tab').map(t => t.textContent)).toEqual(['Poste de pilotage', 'Les 12 besoins']);
+    quitter();
+    expect(within(onglets()).getAllByRole('tab')).toHaveLength(6);
+  });
+
+  it('activé depuis un onglet masqué, ramène au cockpit et n’y retourne pas en quittant (§8)', async () => {
+    await rendreFiche();
+    fireEvent.click(within(onglets()).getByRole('tab', { name: 'Trajectoire' }));
+    activer();
+    expect(within(onglets()).getByRole('tab', { name: 'Poste de pilotage' }).getAttribute('aria-selected')).toBe('true');
+    quitter();
+    expect(within(onglets()).getByRole('tab', { name: 'Poste de pilotage' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('activé depuis « Les 12 besoins », y reste', async () => {
+    await rendreFiche();
+    fireEvent.click(within(onglets()).getByRole('tab', { name: 'Les 12 besoins' }));
+    activer();
+    expect(within(onglets()).getByRole('tab', { name: 'Les 12 besoins' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('tiroir des 12 besoins : le pourcentage masqué, le tiret du non mesuré reste (§2, §3)', async () => {
+    await rendreFiche();
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).not.toContain('40%');
+    expect(within(tiroir).queryByRole('img', { name: /Couverture/ })).toBeNull();
+    expect(within(tiroir).getAllByText(MENTION)).toHaveLength(1);
+    // Le non mesuré garde son tiret et son motif : « masqué » n'est pas « non mesuré ».
+    expect(within(tiroir).getByRole('cell', { name: /^—/ })).toBeTruthy();
+  });
+
+  it('objets cliniques : indice global, réserve et momentum masqués, « Non mesuré » intact (§2)', async () => {
+    await rendreFiche({ momentum: 'avecProvenance' });
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
+    const tiroir = await screen.findByRole('dialog');
+    await within(tiroir).findByText('Indice global');
+    expect(within(tiroir).queryByText('62')).toBeNull();
+    expect(within(tiroir).queryByText('48')).toBeNull();
+    expect(tiroir.textContent).not.toContain('+4');
+    expect(tiroir.textContent).not.toContain('hausse');
+    // Indice global, réserve d'adaptation, momentum.
+    expect(within(tiroir).getAllByText(MENTION)).toHaveLength(3);
+    expect(within(tiroir).getAllByText('Non mesuré').length).toBeGreaterThan(0);
+    // Ni la provenance d'une valeur qu'on ne montre pas.
+    expect(within(tiroir).queryByText('Source', { selector: 'summary' })).toBeNull();
+  });
+
+  it('bandeau : le chip « Au tour précédent » ne dit ni l’écart ni son sens (§2)', async () => {
+    await rendreFiche({ trajectoire: 'deuxCycles' });
+    await screen.findByText(/Au tour précédent : momentum en hausse/);
+    activer();
+    const chip = await screen.findByText(/Au tour précédent :/);
+    expect(chip.textContent).not.toContain('+4');
+    expect(chip.textContent).not.toContain('hausse');
+    expect(chip.textContent).toContain(MENTION);
+  });
+
+  it('détail des réponses : score et interprétation masqués, date et titre restent (§2)', async () => {
+    await rendreFiche();
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+    const tiroir = await screen.findByRole('dialog');
+    await within(tiroir).findByText('Questionnaire sommeil');
+    expect(within(tiroir).queryByText('18')).toBeNull();
+    expect(tiroir.textContent).not.toContain('Vigilance modérée');
+    expect(within(tiroir).getAllByText(MENTION)).toHaveLength(2);
+    expect(tiroir.textContent).toContain(new Date('2026-07-01T10:00:00.000Z').toLocaleDateString('fr-FR'));
+  });
+
+  it('les bandeaux de sécurité restent visibles (§6)', async () => {
+    await rendreFiche({ assignationsModif: true });
+    activer();
+    expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy();
+  });
+
+  it('quitter rend les chiffres', async () => {
+    await rendreFiche();
+    activer();
+    quitter();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(tiroir.textContent).toContain('40%');
+    expect(within(tiroir).queryByText(MENTION)).toBeNull();
+  });
+});

@@ -74,6 +74,7 @@ import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance'
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
+import { ChiffresMasquesProvider, useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
 import { PractitionerFoodObservationPanel } from '@/components/food-observation/PractitionerFoodObservationPanel';
@@ -133,6 +134,17 @@ function SourceNonEnregistree({ label }: { label: string }) {
   );
 }
 
+// Mode consultation ([[D-354]] §3) : la carte reste, sans valeur — ni jauge,
+// ni mention de base, ni provenance (elle date une valeur qu'on ne montre pas).
+function ChiffreMasque({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
+      <ValeurMasquee className="text-sm" />
+      <span className="text-xs text-muted-foreground uppercase tracking-wide text-center">{label}</span>
+    </div>
+  );
+}
+
 function ObjetGauge({
   label,
   value,
@@ -160,6 +172,7 @@ function ObjetGauge({
    *  chiffre ne s'affiche alors pas. Obligatoire : aucun chiffre sans elle. */
   provenance: string[] | null;
 }) {
+  const chiffresMasques = useChiffresMasques();
   if (value === null) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
@@ -169,6 +182,7 @@ function ObjetGauge({
     );
   }
   if (!provenance) return <SourceNonEnregistree label={label} />;
+  if (chiffresMasques) return <ChiffreMasque label={label} />;
   return (
     <div className="flex flex-col items-center">
       <ScoreGauge value={value} label={label} />
@@ -182,6 +196,7 @@ function ObjetGauge({
 }
 
 function MomentumCard({ momentum, provenance }: { momentum: ResultatMomentum | null; provenance: string[] | null }) {
+  const chiffresMasques = useChiffresMasques();
   if (!momentum) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
@@ -192,6 +207,7 @@ function MomentumCard({ momentum, provenance }: { momentum: ResultatMomentum | n
     );
   }
   if (!provenance) return <SourceNonEnregistree label="Momentum" />;
+  if (chiffresMasques) return <ChiffreMasque label="Momentum" />;
   const signe = momentum.delta > 0 ? '+' : '';
   return (
     <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 min-h-[148px]">
@@ -229,6 +245,10 @@ const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'biologie', libelle: 'Biologie' },
   { id: 'correspondance', libelle: 'Correspondance' },
 ];
+
+// En mode consultation, seuls ces deux onglets restent ([[D-354]] §4) :
+// Alimentation, Trajectoire, Biologie et Correspondance sont masqués.
+const ONGLETS_CONSULTATION: readonly OngletFiche[] = ['cockpit', 'besoins'];
 
 // LA LISTE VIT DANS `lib/praticien/ongletsFiche.ts`, pas ici : la page serveur
 // doit valider `?phase=` avant de le passer, et un module `'use client'` ne
@@ -622,7 +642,18 @@ export function FichePatientPanel({
   const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
-  const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
+  const [ongletActif, setOngletActifBrut] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
+  // MODE CONSULTATION : UN ONGLET MASQUÉ NE S'OUVRE PAS ([[D-354]] §4). Tout
+  // geste qui y mène — bandeau, runtime clinique, clavier — ramène au cockpit.
+  // L'activation elle-même y ramène (§8), et sans retour mémorisé : en
+  // quittant le mode, le praticien reste là où il est.
+  const setOngletActif = (onglet: OngletFiche) =>
+    setOngletActifBrut(modeConsultationActif && !ONGLETS_CONSULTATION.includes(onglet) ? 'cockpit' : onglet);
+  const ongletsVisibles = modeConsultationActif ? ONGLETS.filter(o => ONGLETS_CONSULTATION.includes(o.id)) : ONGLETS;
+  const activerModeConsultation = () => {
+    setModeConsultationActif(true);
+    if (!ONGLETS_CONSULTATION.includes(ongletActif)) setOngletActifBrut('cockpit');
+  };
   // L'onglet actif se MÉMORISE comme la phase (par patient, en localStorage,
   // audit 2026-09-02) : après un aller-retour hors de la fiche, le praticien
   // retrouve l'onglet qu'il consultait. Le deep-link `?onglet=` prime
@@ -637,7 +668,7 @@ export function FichePatientPanel({
     if (ongletInitial) return;
     try {
       const brut = window.localStorage.getItem(clefOngletMemorise);
-      if (brut && ONGLETS.some(o => o.id === brut)) setOngletActif(brut as OngletFiche);
+      if (brut && ONGLETS.some(o => o.id === brut)) setOngletActifBrut(brut as OngletFiche);
     } catch {
       // Stockage local indisponible : la mémoire est un confort, jamais une
       // condition (même doctrine que la mémoire de phase).
@@ -1389,17 +1420,17 @@ export function FichePatientPanel({
   const onClavierOnglets = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
     const suivant =
       event.key === 'ArrowRight' || event.key === 'ArrowDown'
-        ? (index + 1) % ONGLETS.length
+        ? (index + 1) % ongletsVisibles.length
         : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-          ? (index - 1 + ONGLETS.length) % ONGLETS.length
+          ? (index - 1 + ongletsVisibles.length) % ongletsVisibles.length
           : event.key === 'Home'
             ? 0
             : event.key === 'End'
-              ? ONGLETS.length - 1
+              ? ongletsVisibles.length - 1
               : null;
     if (suivant === null) return;
     event.preventDefault();
-    setOngletActif(ONGLETS[suivant].id);
+    setOngletActif(ongletsVisibles[suivant].id);
     refsOnglets.current[suivant]?.focus();
   };
 
@@ -1497,6 +1528,8 @@ export function FichePatientPanel({
                 ) : !provenanceEtablie(p.provenance) ? (
                   /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1). */
                   MENTION_SOURCE_NON_ENREGISTREE
+                ) : modeConsultationActif ? (
+                  <ValeurMasquee />
                 ) : (
                   <>
                     {/* Piste neutre (sans zones) : la couverture n'a pas de bornes
@@ -1659,11 +1692,15 @@ export function FichePatientPanel({
                           rédigée puis diffusée). Le même mot pour les deux
                           faisait lire cette ligne comme un extrait de ce
                           document, alors qu'elle dérive des seuls scores. */}
-                      {miniSynthese && (
+                      {miniSynthese && (modeConsultationActif ? (
+                        <div className="mt-1 text-xs font-normal text-foreground/80 max-w-md">
+                          Résumé du score : <ValeurMasquee />
+                        </div>
+                      ) : (
                         <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
                           Résumé du score : {miniSynthese}
                         </div>
-                      )}
+                      ))}
                       {note && (
                         <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
                           {note}
@@ -1671,6 +1708,11 @@ export function FichePatientPanel({
                       )}
                     </td>
                     <td className="px-4 py-2">
+                      {/* Mode consultation ([[D-354]] §2) : score, sous-scores,
+                          découpages descriptifs et leur interprétation (la
+                          colonne voisine) sont masqués ensemble — un libellé
+                          d'interprétation dit le score en mots. */}
+                      {modeConsultationActif ? <ValeurMasquee /> : (
                       <div className="flex flex-col gap-1">
                       {subScores.length > 0 ? (
                         <div className="flex flex-col gap-1.5">
@@ -1731,9 +1773,10 @@ export function FichePatientPanel({
                         </div>
                       )}
                       </div>
+                      )}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground max-w-xs">
-                      {subScores.length > 0 ? (
+                      {modeConsultationActif ? <ValeurMasquee /> : subScores.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {subScores.map(sub => (
                             <div key={sub.id}>
@@ -2252,6 +2295,7 @@ export function FichePatientPanel({
 
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
+    <ChiffresMasquesProvider masques={modeConsultationActif}>
     <div className="flex flex-col gap-4">
       {/* Chrome condensé (D10, SP-CONV LOT-02) : identité et actions tiennent
           sur une ligne en desktop — le cockpit prend l'espace restant de
@@ -2272,7 +2316,7 @@ export function FichePatientPanel({
           {!modeConsultationActif && (
             <button
               type="button"
-              onClick={() => setModeConsultationActif(true)}
+              onClick={activerModeConsultation}
               className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <Stethoscope size={16} strokeWidth={2} />
@@ -2298,7 +2342,7 @@ export function FichePatientPanel({
 
       {/* Onglets in-fiche : plus de sous-vue en page pleine, plus de scroll. */}
       <div role="tablist" aria-label="Vues de la fiche patient" className="flex flex-wrap gap-1 rounded-xl border border-border bg-muted p-1">
-        {ONGLETS.map((onglet, index) => {
+        {ongletsVisibles.map((onglet, index) => {
           const actif = ongletActif === onglet.id;
           return (
             <button
@@ -2634,7 +2678,13 @@ export function FichePatientPanel({
                 que sert la route d'équilibre, pas celle stockée sur l'ancre.
                 Inconnue → pas de chiffre. */}
             {bandeauEpisode?.deltaTourPrecedent &&
-              (provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance) && versionCalculCourante ? (
+              (modeConsultationActif ? (
+                /* Ni l'écart, ni son sens : la tendance se lit comme un chiffre
+                   sur un écran partagé ([[D-354]] §2). */
+                <Chip variante="delta">
+                  Au tour précédent : <ValeurMasquee />
+                </Chip>
+              ) : provenanceMomentumEtablie(bandeauEpisode.deltaTourPrecedent.provenance) && versionCalculCourante ? (
                 <div className="flex flex-col items-start">
                   <Chip variante="delta">
                     Au tour précédent : momentum{' '}
@@ -3037,6 +3087,7 @@ export function FichePatientPanel({
       enCours={annulationEnCours}
       erreur={erreurAnnulation}
     />
+    </ChiffresMasquesProvider>
     </ModeConsultation>
   );
 }

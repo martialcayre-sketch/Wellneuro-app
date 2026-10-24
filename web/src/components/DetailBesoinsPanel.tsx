@@ -7,6 +7,7 @@ import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
 import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
 // pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
@@ -23,6 +24,9 @@ export function DetailBesoinsPanel({
   emailPatient?: string;
 }) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
+  // Mode consultation de la fiche ([[D-354]] §2-3) : ni pourcentage, ni radar
+  // — le polygone dit les valeurs par sa forme. Hors fiche : toujours `false`.
+  const chiffresMasques = useChiffresMasques();
   const [loading, setLoading] = useState(true);
 
   const charger = useCallback(() => {
@@ -97,7 +101,14 @@ export function DetailBesoinsPanel({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ScoreRadar data={radarData} />
+        {chiffresMasques ? (
+          <div className="flex min-h-[292px] flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4">
+            <span className="text-sm text-muted-foreground">Radar des 12 besoins</span>
+            <ValeurMasquee className="text-sm" />
+          </div>
+        ) : (
+          <ScoreRadar data={radarData} />
+        )}
 
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <table className="min-w-full text-sm">
@@ -116,7 +127,7 @@ export function DetailBesoinsPanel({
                   <td className="px-4 py-2">{b.libellePraticien}</td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {b.couverture !== null ? (
-                      `${b.couverture}%`
+                      chiffresMasques ? <ValeurMasquee /> : `${b.couverture}%`
                     ) : (
                       <>
                         —

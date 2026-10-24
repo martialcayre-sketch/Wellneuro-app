@@ -7,6 +7,7 @@ import type { LacuneDeclencheur } from '@/lib/clinical/orientationEngine';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { PortesBiologiquesSection } from './PortesBiologiquesSection';
 import { hierarchiserAssiettes } from './hierarchieAssiettes';
+import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // LES ASSIETTES INDIQUÉES — carte de LECTURE qui ARME UN GESTE, et n'en exécute
 // aucun ([[D-237]], puis [[D-240]]).
@@ -170,6 +171,7 @@ export function AssiettesIndiqueesPanel({
    */
   onIndiqueesLues?: (indiquees: AssietteRetenue[] | null) => void;
 }) {
+  const chiffresMasques = useChiffresMasques();
   // Le rappel le plus récent, lu par l'effet de lecture sans en devenir une
   // dépendance : un appelant qui passe une fonction fléchée relancerait sinon
   // le GET — et sa journalisation — à chacun de ses rendus.
@@ -297,7 +299,13 @@ export function AssiettesIndiqueesPanel({
           c'est la convergence qui classe ([[D-254]]), elle se lit donc sur la
           ligne. */}
       <p className="mt-1 text-xs text-muted-foreground">
-        {assiette.voiesAtteintes.length > 1
+        {/* Le motif d'orientation cite le score atteint (« score N dans la
+            plage… ») : masqué en mode consultation ([[D-354]] §2). */}
+        {chiffresMasques ? (
+          <>
+            Ce qui l’indique : <ValeurMasquee />
+          </>
+        ) : assiette.voiesAtteintes.length > 1
           ? `Ce qui l’indique (${assiette.voiesAtteintes.length} critères) : ${assiette.voiesAtteintes.map(voie => voie.motif).join(' ; ')}`
           : `Ce qui l’indique : ${assiette.motif}`}
       </p>

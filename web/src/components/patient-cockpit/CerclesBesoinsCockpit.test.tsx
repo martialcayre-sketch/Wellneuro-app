@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { CerclesBesoinsCockpit, OPACITE_PLANCHER, opaciteRemplissage, type BesoinCercle } from './CerclesBesoinsCockpit';
+import { ChiffresMasquesProvider } from './ChiffresMasques';
 
 // r3_08 (Q2) — les cercles propres au cockpit : libellé Bn par point, anneaux
 // nommés, forme propre au non mesuré, ordre fixe, liste en texte.
@@ -108,5 +109,29 @@ describe('CerclesBesoinsCockpit', () => {
     const point = container.querySelector('[data-besoin="1"] circle') as SVGCircleElement;
     expect(Number(point.getAttribute('fill-opacity'))).toBe(OPACITE_PLANCHER);
     expect(within(liste).queryByText('Source', { selector: 'summary' })).toBeNull();
+  });
+});
+
+// [[D-354]] §2-3 : en mode consultation, ni pourcentage dans la liste, ni
+// intensité sur la figure — le point mesuré reste plein, au plancher, et le
+// non mesuré garde sa forme et son mot.
+describe('CerclesBesoinsCockpit — mode consultation (D-354)', () => {
+  afterEach(() => cleanup());
+
+  it('aucun pourcentage, aucune intensité, « Non mesuré » intact', () => {
+    const { container } = render(
+      <ChiffresMasquesProvider masques>
+        <CerclesBesoinsCockpit besoins={RECUS} />
+      </ChiffresMasquesProvider>,
+    );
+    const liste = screen.getByRole('list', { name: 'Les 12 besoins, en texte' });
+    expect(liste.textContent).not.toMatch(/\d+\s*%/);
+    expect(within(liste).getAllByText('masqué en mode consultation')).toHaveLength(4);
+    expect(liste.textContent).toContain('Non mesuré');
+    expect(within(liste).queryByText('Source', { selector: 'summary' })).toBeNull();
+    for (const id of [1, 4, 9, 12]) {
+      const point = container.querySelector(`[data-besoin="${id}"] circle`) as SVGCircleElement;
+      expect(Number(point.getAttribute('fill-opacity'))).toBe(OPACITE_PLANCHER);
+    }
   });
 });
