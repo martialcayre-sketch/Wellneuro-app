@@ -7,10 +7,10 @@
   2026-10-16 ; worktree `act5-mineurs` (session concurrente, cycle en
   git/gh direct).
 - Une PR, code et documents ; aucune migration.
-- **Numéro à fixer au merge** : D-352 est aussi pris par #1680 (F79),
-  ouverte. Le contrôle de numérotation refuse un trou : celle des deux qui
-  merge en second se renumérote (D-352). Le banc du texte trouve la décision
-  par son titre, pas par son numéro.
+- **Renumérotée D-352** : D-351 a été prise par #1680 (F79), mergée
+  pendant le CI ; `origin/main` (7e8d2d3d) fusionnée, les deux décisions
+  gardées, ak en tête. Le banc du texte trouve la décision par son titre, pas
+  par son numéro.
 
 ## Objectif
 
