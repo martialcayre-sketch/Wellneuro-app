@@ -508,6 +508,16 @@ done <<< "$contrats"
 [[ "$joues" == "$attendus" ]] \
   || die "$joues contrat(s) joué(s) pour $attendus extrait(s) de ci.yml — la boucle s'est interrompue sans le dire."
 
+# Rejeu de la migration des liens analyte-axe (F79, D-351 §5) sur des claims
+# de fixture, transaction annulée : la base de ce palier, comme celle du CI,
+# n'a aucun corpus, et le chemin d'insertion n'y tournerait jamais. `node` et
+# non `node --test`, comme les bancs à deux sessions ci-dessous.
+step "Banc de rejeu (liens analyte-axe F79)"
+grep -q 'banc-rejeu-liens-axe-f79.test.mjs' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de rejeu des liens analyte-axe."
+WN_LIENS_AXE_BANC_BASE=wellneuro_ci node scripts/banc-rejeu-liens-axe-f79.test.mjs > /dev/null < /dev/null \
+  || die "banc de rejeu F79 en échec — le relancer seul pour en lire la sortie (\`node scripts/banc-rejeu-liens-axe-f79.test.mjs\`, depuis web/)."
+
 # Banc à deux sessions de l'écart contre la validation (D-269, LOT-04), même
 # discipline que celui des actes de lecture ci-dessous.
 step "Banc à deux sessions (écart d'un compte rendu transmis contre validation)"
