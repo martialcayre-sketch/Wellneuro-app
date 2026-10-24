@@ -11474,3 +11474,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
 
 **Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
+
+## 2026-10-24 — F52 : la cible `axe` fermée sur les dix codes de D-348
+
+**Fait.** Cinquante fondateurs de D-348 §3 relus en production (lecture seule) : tous conformes, 0 lien. Migration seule `20261024100000_biology_axes_liste_fermee_v1` (CHECK `cible_axe`), contrat négatif `biology_axes_v1_negatif.sql` au CI : liste exacte, dix codes acceptés, axe inconnu et lien sans claim refusés pour le bon motif.
+
+**Écarté.** Une clé étrangère du claim vers le corpus : hors demande, le claim est versionné et la forme du lien suffit à F52.
+
+**Prochaine action.** Passe Codex, CodeRabbit, merge, release-db approuvée, constat par conteneur (contrainte, 0 lien) ; puis F79.
+
+**Ouvert.** Panel → axe (D-348 §7) ; trois claims à l'atelier ; WN-SRC-0236.
