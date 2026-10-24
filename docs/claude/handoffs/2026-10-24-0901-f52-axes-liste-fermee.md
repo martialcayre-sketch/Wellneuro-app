@@ -44,6 +44,11 @@ Aucun lien analyte-axe (F79).
 - Preuve par mutation du contrat sur la base locale : contrainte retirée,
   renommée, onzième code, neuf codes, garde `axe` retirée, non-vide retiré,
   `NOT NULL` retiré — les sept rougissent ; la base intacte passe.
+- Passe Codex (P1-1, corrigé) : le contrat ne protégeait pas la cible
+  `besoin`. Une contrainte voisine étendant la liste aux besoins laissait
+  l'ancien contrat vert (rejoué). Ajout d'un lien de besoin valide en cas
+  positif ; cette mutation et celle de `cible_besoin_check` rougissent
+  désormais (neuf mutations au total).
 
 ## Problèmes ouverts
 

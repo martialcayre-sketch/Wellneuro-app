@@ -9,7 +9,8 @@
 --     ajouté sans décision rougit ici) ;
 --   - un axe inconnu, mal casé ou préfixé est refusé, par CE check ;
 --   - un lien sans claim est refusé, par le bon motif ;
---   - les autres cibles ne sont pas touchées par la liste.
+--   - les autres cibles (`nutriment`, `besoin`) ne sont pas touchées par la
+--     liste.
 --
 -- Tout se déroule dans une transaction annulée à la fin : l'analyte de test
 -- et les liens acceptés ne survivent pas.
@@ -65,9 +66,14 @@ BEGIN
     VALUES ('f52_ok_' || n, 'BIO_TEST_F52', 'axe', code, 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
   END LOOP;
 
-  -- La liste ne vise que la cible `axe` : un code de nutriment reste libre.
+  -- La liste ne vise que la cible `axe` : un code de nutriment reste libre,
+  -- et un besoin valide entre toujours. Sans ce second cas, une contrainte
+  -- voisine qui étendrait la liste aux besoins rendrait tout lien de besoin
+  -- impossible sans faire rougir ce contrat (passe Codex de #1671).
   INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, niveau_preuve)
   VALUES ('f52_ok_nut', 'BIO_TEST_F52', 'nutriment', 'axe_inconnu', 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
+  INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, niveau_preuve)
+  VALUES ('f52_ok_besoin', 'BIO_TEST_F52', 'besoin', '1', 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
 
   -- ── Cas négatifs : un axe inconnu, refusé par CE check ────────────────
   -- Le bon motif est exigé (23514 ET nom de contrainte) : sans le nom, un
