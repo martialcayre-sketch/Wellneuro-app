@@ -7,6 +7,7 @@ import {
   getVersion,
   PARTIES_REPRISES_CONDITIONS_V1,
   PARTIES_REPRISES_CONDITIONS_V2,
+  PARTIES_REPRISES_CONDITIONS_V3,
   REGISTRE_DOCUMENTS_TRUST,
   sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
@@ -26,7 +27,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente-quatre documents attendus', () => {
+  it('expose les trente-six documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -67,6 +68,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v18',
       // `D-330` (ACT-4) — la collecte documentaire, et la lecture datée de `D-297`.
       'donnees_confidentialite@v19',
+      // `D-318` (b25) — ce qui reste d'un compte rendu après sa lecture.
+      'donnees_confidentialite@v20',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -91,6 +94,8 @@ describe('registre des documents TRUST', () => {
       'conditions_utilisation@v1',
       // `D-292` §5 — la partie 3 passe à la v19 ; publiées avec ACT-4.
       'conditions_utilisation@v2',
+      // `D-292` §5 — la partie 3 passe à la v20 (b25).
+      'conditions_utilisation@v3',
     ]);
   });
 
@@ -136,7 +141,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v19');
+    expect(courant.version).toBe('v20');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -731,7 +736,7 @@ describe('registre des documents TRUST', () => {
 
   it('`D-330` (ACT-4) : la v19 dit la collecte et la lecture datée, mot pour mot, et rien d’autre', () => {
     const v18 = getVersion('donnees_confidentialite', 'v18')!;
-    const v19 = getDocumentCourant('donnees_confidentialite');
+    const v19 = getVersion('donnees_confidentialite', 'v19')!;
     expect(v19.version).toBe('v19');
     const [, paragrapheNeuf] = citations('### A3. « Vos données personnelles » v19');
     const [phraseLecture] = citations('### B1. Correction de la phrase sur la lecture datée (A3)');
@@ -759,6 +764,31 @@ describe('registre des documents TRUST', () => {
     expect(v19.requiresAcknowledgement).toBe(true);
     expect(v19.publieLe >= v18.publieLe).toBe(true);
     expect(v19.changeSummary).toBe(citations('### B2. Résumé de la v19 (historique des versions)')[0]);
+  });
+
+  // b25 (D-318) : texte validé par le responsable le 2026-10-24, en session.
+  // La v12 disait garder « valeurs relevées et décisions » ; la purge à 30 jours
+  // efface les valeurs écartées ou sans décision (`purge.ts`).
+  it('la v20 dit ce qui reste d’un compte rendu après sa lecture, mot pour mot, et rien d’autre', () => {
+    const v19 = getVersion('donnees_confidentialite', 'v19')!;
+    const v20 = getDocumentCourant('donnees_confidentialite');
+    expect(v20.version).toBe('v20');
+    const ancienne =
+      'Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.';
+    const nouvelle =
+      'Pour savoir d’où vient chaque résultat, nous conservons la date du dépôt et une empreinte du document, qui ne permet pas de le reconstituer. Pour chaque valeur validée, nous gardons aussi la trace de sa lecture : l’outil utilisé et la décision de votre praticien. Les valeurs écartées ou restées sans décision sont effacées au plus tard 30 jours après le dépôt, et aussitôt si votre praticien écarte le document.';
+    const texte = (doc: typeof v20) => doc.sections.flatMap(s => s.paragraphes).join('\n');
+    expect(texte(v19)).toContain(ancienne);
+    expect(texte(v20)).not.toContain('valeurs relevées et décisions');
+    expect(texte(v20)).toContain(nouvelle);
+    // Une phrase change, rien d'autre : remise à l'ancienne, la v20 redevient la v19.
+    expect(
+      v20.sections.map(s => ({ ...s, paragraphes: s.paragraphes.map(p => p.replace(nouvelle, ancienne)) })),
+    ).toEqual(v19.sections);
+    expect(v20.changeSummary).toBe(
+      'Cette version précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
+    );
+    expect(v20.requiresAcknowledgement).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {
@@ -795,7 +825,7 @@ describe('registre des documents TRUST', () => {
     const conditions = getDocumentCourant('conditions_utilisation');
 
     it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
-      expect(conditions.version).toBe('v2');
+      expect(conditions.version).toBe('v3');
       expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
@@ -807,6 +837,13 @@ describe('registre des documents TRUST', () => {
         'cadre_accompagnement@v1',
         'limites_securite@v1',
         'donnees_confidentialite@v19',
+        'usage_ia@v8',
+      ]);
+      // La v3 aussi, vers la v20 (b25).
+      expect(PARTIES_REPRISES_CONDITIONS_V3.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v20',
         'usage_ia@v8',
       ]);
       expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
@@ -823,7 +860,7 @@ describe('registre des documents TRUST', () => {
     // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
     // hash) ; après, publier une nouvelle version des conditions.
     it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
-      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V2) {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V3) {
         const courant = getDocumentCourant(source.key);
         expect(
           courant.version,
@@ -876,10 +913,18 @@ describe('registre des documents TRUST', () => {
       const [phraseB5] = citations('### B5. Partie 5 des conditions v2, une phrase précisée');
       const ancienne = attendu.flatMap(s => s.paragraphes).find(p => p.includes('lorsque vous déposez un document'))!;
       expect(ancienne).toBeTruthy();
-      expect(partie5(conditions)).toEqual(
+      const conditionsV2 = getVersion('conditions_utilisation', 'v2')!;
+      expect(partie5(conditionsV2)).toEqual(
         attendu.map(s => ({ ...s, paragraphes: s.paragraphes.map(p => (p === ancienne ? phraseB5 : p)) })),
       );
-      expect(conditions.changeSummary).toBe(citations('### B3. Résumé des conditions v2')[0]);
+      expect(conditionsV2.changeSummary).toBe(citations('### B3. Résumé des conditions v2')[0]);
+      // La v3 garde la partie 5 de la v2 ; son résumé, validé le 2026-10-24 (b25).
+      expect(partie5(conditions)).toEqual(partie5(conditionsV2));
+      expect(conditions.titre).toBe(conditionsV2.titre);
+      expect(conditions.resume).toBe(conditionsV2.resume);
+      expect(conditions.changeSummary).toBe(
+        'La partie « Vos données personnelles » précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
+      );
     });
 
     it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {
