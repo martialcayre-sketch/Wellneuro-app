@@ -158,7 +158,9 @@ export async function assignPackToPatient(params: {
   options?: PackAssignmentOptions;
 }): Promise<BasePackAssignmentResult> {
   const { idPatientBusiness, emailPatient, qids, packNom, options } = params;
-  const notes = options?.notes?.trim() || `Pack ${packNom}`;
+  // Sans note, rien : l'ancien défaut « Pack <nom> » s'affichait comme une
+  // note du praticien dans l'espace patient (D/52, 2026-10-23).
+  const notes = options?.notes?.trim() || null;
   const dateLimite = options?.dateLimite?.trim() || null;
   const now = new Date();
   if (qids.length === 0) return { cree: [], dejaOuverts: [] };
