@@ -115,6 +115,8 @@ model Patient {
   adressagesSignalAlerte     AdressageSignalAlerte[]
   // Lettres d'adressage mises à disposition du patient (D-262, LOT-01).
   lettresAdressageRemises    LettreAdressageRemise[]
+  // Courriers complément remis au patient (D-345, J3-12h lot 2).
+  courriersComplementRemises CourrierComplementRemise[]
   // Document pour le médecin : impressions figées et téléchargements du
   // patient (D-307, F38).
   documentsMedecinImprimes        DocumentMedecinImprime[]
@@ -1525,6 +1527,8 @@ model ProtocolDiffusionApproval {
   fichesAssietteRemises FicheAssietteRemise[]
   // La lettre d'adressage que ce clic a remise (D-262, LOT-01).
   lettresAdressageRemises LettreAdressageRemise[]
+  // Le courrier complément que ce clic a remis (D-345, J3-12h lot 2).
+  courriersComplementRemises CourrierComplementRemise[]
 
   @@index([idPatient], map: "c2a_diffusion_patient_idx")
   @@index([protocolDraftId], map: "c2a_diffusion_draft_idx")
@@ -1676,6 +1680,8 @@ model CorrespondanceMedecin {
   adressagesSignalAlerte AdressageSignalAlerte[]
   // Ses remises au patient (D-262, LOT-01).
   remisesPatient         LettreAdressageRemise[]
+  // Sa remise au patient, s'il est un courrier complément (D-345, J3-12h lot 2).
+  remiseComplement       CourrierComplementRemise?
 
   @@index([idPatient, consigneLe], map: "c3_correspondance_medecin_patient_idx")
   @@map("correspondances_medecin")
@@ -4181,6 +4187,43 @@ model LettreAdressageRemise {
   @@index([idApprobation], map: "lettres_adressage_remises_approbation_idx")
   @@index([idCorrespondance], map: "lettres_adressage_remises_correspondance_idx")
   @@map("lettres_adressage_remises")
+}
+
+/// Courrier complément mis à disposition du patient dans son portail ([[D-345]]
+/// §4-§5, J3-12h lot 2). Ajout seul : UPDATE et TRUNCATE refusés, DELETE réservé
+/// à l'effacement nommé. Le texte est un instantané figé, son empreinte tenue
+/// par un CHECK ; la liste des compléments ciblés couverts (`actionId` et
+/// empreintes de l'intitulé et de l'ingrédient, triés) est recalculée par le
+/// trigger depuis le protocole approuvé, son empreinte tenue par un CHECK. Un
+/// courrier, une liste : le rejouer pour la même liste ne remet rien.
+model CourrierComplementRemise {
+  id                String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base sous verrou.
+  ordre             BigInt   @default(autoincrement()) @map("ordre")
+  idPatient         String   @map("id_patient")
+  /// Le clic « Valider pour diffusion » qui l'a remis.
+  idApprobation     String   @map("id_approbation")
+  /// Le courrier consigné, sortant, ancré `complement-cible-…` ; remis une fois.
+  idCorrespondance  String   @unique @map("id_correspondance")
+  /// Instantané du texte du courrier à la remise.
+  texte             String   @map("texte")
+  /// sha-256 du texte en UTF-8 (CHECK).
+  texteSha256       String   @map("texte_sha256")
+  /// Les compléments ciblés couverts, distincts et triés (trigger, CHECK).
+  complements       String[] @map("complements")
+  /// sha-256 des éléments joints par un saut de ligne, en UTF-8 (CHECK).
+  complementsSha256 String   @map("complements_sha256")
+  /// Posé par la base (trigger), en UTC.
+  remiseLe          DateTime @default(now()) @map("remise_le")
+
+  patient        Patient                   @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  approbation    ProtocolDiffusionApproval @relation(fields: [idApprobation], references: [id], onDelete: Restrict)
+  correspondance CorrespondanceMedecin     @relation(fields: [idCorrespondance], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "courriers_complement_remises_ordre_key")
+  @@index([idPatient, ordre], map: "courriers_complement_remises_patient_ordre_idx")
+  @@index([idApprobation], map: "courriers_complement_remises_approbation_idx")
+  @@map("courriers_complement_remises")
 }
 
 /// Une impression CONFIRMÉE du document pour le médecin ([[D-307]] §2, F38) :
