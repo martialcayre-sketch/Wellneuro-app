@@ -1,4 +1,4 @@
-### t42 : un T1 confirmé ne redevient plus « à confirmer » à la passation suivante (D-118, D-113, D-129, 2026-10-24)
+### t42 : un T1 confirmé ne redevient plus « à confirmer » à la passation suivante (D-350 ; D-118, D-113, D-129, 2026-10-24)
 
 - Le défaut (relevé par `wn-reviewer` sur #1670, routé par le responsable le
   2026-10-24) : une ancre de cycle rouvert (`T1`, `T2`…) se datait sur la
@@ -31,9 +31,12 @@
   - deux bancs unitaires de `proposeRuntimeEpisode`.
   Contre-épreuves : sans le correctif, six bancs rougissent ; sans la garde
   de lecture datée, un banc rougit.
-- Revue `wn-reviewer` : GO avec réserves, aucun P0 ni P1, pas de D-xxx
-  nécessaire (correction d'identité d'acte sous D-118 et D-129). Les
-  réserves portaient sur les bancs, et elles sont levées par ceux ci-dessus.
+- Revue `wn-reviewer` : GO avec réserves, aucun P0 ni P1. Les réserves
+  portaient sur les bancs, et elles sont levées par ceux ci-dessus. La revue
+  jugeait qu'une D-xxx n'était pas nécessaire. CodeRabbit (#1673) la demande,
+  parce que la date de l'ancre commande la fenêtre des réponses proposées :
+  l'arbitrage du responsable du 2026-10-24 est transcrit en D-350, sans
+  changer le comportement.
   Constat par conteneur le 2026-10-24 : une ancre `T1+`, aucune dont la
   colonne `target_at` diverge du payload ; aucun dossier n'hérite donc d'un
   acte écrit sous l'ancienne date.

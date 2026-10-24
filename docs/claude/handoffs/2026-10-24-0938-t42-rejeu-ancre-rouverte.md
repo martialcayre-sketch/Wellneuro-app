@@ -33,9 +33,12 @@ cycle perdait sa cible.
     et les check-ins ;
   - dater aussi le `T0` sur sa ligne, puisque sa première réponse ne bouge
     pas.
-- **Pas de D-xxx** : c'est une correction d'identité d'acte sous D-118 et
-  D-129, sans règle, seuil ni mode d'inclusion. C'est aussi l'avis de
-  `wn-reviewer`. Le fragment `changelog.d/` est posé.
+- **D-350** : l'arbitrage du responsable est transcrit, à la demande de
+  CodeRabbit sur #1673 (chemin clinique : la date commande la fenêtre des
+  réponses proposées). `wn-reviewer` jugeait la D-xxx inutile, puisqu'il
+  s'agit d'une correction d'identité d'acte sous D-118 et D-129. Aucune
+  règle, aucun seuil ni aucun mode d'inclusion. Le fragment `changelog.d/`
+  est posé.
 
 ## Fichiers modifiés
 

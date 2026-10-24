@@ -265,7 +265,7 @@ function dateDeReference(
   if ((indexDeCycle(milestone) ?? 0) === 0) {
     return inputs.responses[0]?.observedAt ?? repliDossier;
   }
-  // UNE ANCRE DÉJÀ POSÉE GARDE SA DATE (t42). « La réponse la plus récente »
+  // UNE ANCRE DÉJÀ POSÉE GARDE SA DATE ([[D-350]], t42). « La réponse la plus récente »
   // choisit l'instant d'une OUVERTURE ; une fois l'acte confirmé, cet instant
   // est le sien (`targetAt` de la ligne, que `D-129` interdit de réécrire).
   // Recalculé sur la dernière réponse, il bougeait à chaque passation reçue

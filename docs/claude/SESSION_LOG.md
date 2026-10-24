@@ -11469,7 +11469,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Ouvert.** Rejeu des ancres `T1+` cassé par une passation postérieure (D-118, antérieur au lot), à router par le responsable ; Q1 (cible du J42 après la confirmation du J21).
 ## 2026-10-24 — t42 : un T1 confirmé ne redevient plus « à confirmer »
 
-**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Ni migration ni D-xxx. wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : 1 `T1` en production, aucun exposé.
+**Fait.** Le responsable a tranché par une question à options : corriger tout de suite le P1 relevé sur #1670. Une ancre `T1+` déjà posée se date désormais sur le `targetAt` de sa ligne (`ancrePoseeDe`, `proposeRuntimeEpisode`), et non plus sur la dernière réponse. Cela vaut au GET, au POST et pour la cible de re-passation. `T0` et l'ouverture d'un cycle neuf sont inchangés. Sans migration ; l'arbitrage est transcrit en D-350 (demande de CodeRabbit). wn-reviewer : GO avec réserves, et les quatre P2 sur les bancs sont corrigées. Constats par conteneur : 1 `T1` en production, aucun exposé.
 
 **Écarté.** Modifier `lireAncresPersistees`, que lisent aussi portail, objectifs et check-ins ; dater `T0` sur sa ligne.
 
