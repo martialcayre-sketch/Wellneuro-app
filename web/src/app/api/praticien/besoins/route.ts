@@ -3,13 +3,19 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { BESOINS } from '@/lib/equilibre/constants';
-import { construireReponsesParQuestionnaire } from '@/lib/equilibre/depuisPrisma';
+import {
+  construireReponsesParQuestionnaire,
+  datesDesReponsesRetenues,
+  questionnairesEcartesParValidite,
+} from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins, listerSourcesPreuveBesoin } from '@/lib/equilibre/evidence';
+import { motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
 import { calculerCouverturesTousLesBesoins } from '@/lib/equilibre/score';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/besoins';
@@ -25,6 +31,8 @@ export type BesoinDetail = {
   couverture: number | null; // 0-100, plus haut = mieux
   niveauPreuve: NiveauPreuveBesoin;
   sources: SourcePreuveAffichee[];
+  /** Pourquoi le besoin n'est pas mesuré (r3_08, Q4) ; `null` s'il l'est. */
+  motifNonMesure: MotifNonMesureServi[] | null;
 };
 
 export type BesoinsApiResponse =
@@ -75,6 +83,10 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
     const reponses = construireReponsesParQuestionnaire(reponsesDb);
     const couvertures = calculerCouverturesTousLesBesoins(reponses);
     const niveauxPreuve = calculerNiveauxPreuveTousLesBesoins(reponses);
+    const contexteMotifs = {
+      ecartes: questionnairesEcartesParValidite(reponsesDb),
+      datesRetenues: datesDesReponsesRetenues(reponsesDb),
+    };
 
     const besoinsDetail: BesoinDetail[] = BESOINS.map(b => ({
       id: b.id,
@@ -86,6 +98,7 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
         idQuestionnaire: s.idQuestionnaire,
         titre: TITRE_PAR_QUESTIONNAIRE.get(s.idQuestionnaire) ?? s.idQuestionnaire,
       })),
+      motifNonMesure: motifsNonMesureBesoin(b.id, reponses, contexteMotifs),
     }));
 
     return NextResponse.json({

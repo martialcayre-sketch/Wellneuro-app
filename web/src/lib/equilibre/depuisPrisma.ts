@@ -80,6 +80,18 @@ export function datesDesReponsesRetenues(reponses: ReponseBrute[], dateLimite?: 
   return resultat;
 }
 
+/**
+ * Questionnaires dont TOUTES les passations sont écartées par le filtre de
+ * validité — le seul étage qui rend « non mesuré » sans que la carte des
+ * réponses le voie : ils en sont simplement absents (r3_08, motif « passation
+ * écartée »). Même filtre que `retenirParQuestionnaire`. Drapeau éteint, rien
+ * n'est écarté : l'ensemble est vide.
+ */
+export function questionnairesEcartesParValidite(reponses: ReponseBrute[]): Set<string> {
+  const exploitables = new Set(filtrerPassationsExploitables(reponses).map(r => r.idQuestionnaire));
+  return new Set(reponses.map(r => r.idQuestionnaire).filter(id => !exploitables.has(id)));
+}
+
 function retenirParQuestionnaire(
   reponses: ReponseBrute[],
   dateLimite?: Date

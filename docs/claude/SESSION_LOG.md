@@ -11487,6 +11487,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Passe Codex, CodeRabbit, merge, release-db approuvée, constat par conteneur (contrainte, 0 lien) ; puis F79.
 
 **Ouvert.** Panel → axe (D-348 §7) ; trois claims à l'atelier ; WN-SRC-0236.
+## 2026-10-24 — r3_08 : cercles du cockpit, motif du non mesuré (Q2 à Q4)
+
+**Fait.** Libellés des motifs et points de forme validés par le responsable avant le code. Cercles propres au cockpit (Bn, anneaux nommés, anneau creux pour le non mesuré, ordre fixe, liste en texte, intensité au-dessus d'un plancher). Motif dépliable sous le tiret, tiroir et onglet, issu du chemin de la valeur (`evaluerCouvertureSource`). Dettes de J1-cockpit soldées : provenance du tableau et du chip, mention « même valeur » sur B9 et B10. wn-reviewer : GO avec réserves, P1 et P2 corrigés.
+
+**Écarté.** Version stockée sur l'ancre pour le chip (le calcul tourne sur le moteur courant) ; motif inventé pour un groupe sans poids (figé par un banc).
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_08 « fait » sur la page de la file A.
+
+**Ouvert.** Q1 (ordre, r3_09) : les cercles suivent B1 à B12, le tableau du tiroir garde le tri « creux d'abord » jusqu'à r3_09.
 
 ## 2026-10-24 — File D : outil du constat avant T0 (H07, b16)
 
@@ -11543,3 +11552,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CI, CodeRabbit, merge, release-db sur la tête de main, constat par conteneur ; puis le lot 3.
 
 **Ouvert.** Obligations du lot 3 reçues de la revue (handoff du lot).
+## 2026-10-24 — File D : constat D/53, renvoi de collecte D/38, b12
+
+**Fait.** #1677 est déployé. D/53, en lecture seule : `WN_G4_LIEN_MAGIQUE` a été retirée le 21 octobre par k10 (le formulaire de nouveau lien a disparu avec elle) puis reposée le 24 ; `WN_BIO_CONSTAT` est livrée éteinte, conforme ; `WN_AGENDA_RELANCE` n'a jamais été reposée sur Scalingo depuis la bascule, et c'est un écart réel. D/38 : le renvoi du texte de collecte nomme désormais la partie des conditions d'utilisation, sur texte validé par le responsable (arbitrage 8 de G-11). b12 était déjà en D.1 depuis le 15 octobre.
+
+**Écarté.** Garder le renvoi au texte autonome. Une PR pour b12 n'avait rien à changer.
+
+**Prochaine action.** CI, CodeRabbit, merge ; d38 « fait » sur la page D.
+
+**Ouvert.** La décision sur `WN_AGENDA_RELANCE`, avant les relectures k01 du 2026-10-29.

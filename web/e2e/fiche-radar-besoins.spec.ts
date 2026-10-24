@@ -21,6 +21,10 @@ const besoins = Array.from({ length: 12 }, (_, i) => {
     couverture: mesure ? 40 + id : null,
     niveauPreuve: mesure ? 'B' : 'NON_MESURE',
     sources: [],
+    // r3_08 : le motif du non mesuré, servi par la route.
+    motifNonMesure: mesure
+      ? null
+      : [{ motif: id === 2 ? 'hors_score' : 'sans_instrument', idsQuestionnaire: [], dateDernierePassation: null }],
   };
 });
 
@@ -38,7 +42,15 @@ test.describe('Radar des besoins — un besoin non mesuré n’est pas un zéro 
     await expect(axes.locator('tspan', { hasText: 'non mesuré' })).toHaveCount(2);
     // Un point par besoin MESURÉ, aucun pour les deux autres.
     await expect(panneau.locator('.recharts-radar-dots circle')).toHaveCount(10);
-    // Le tableau voisin, inchangé, dit « — » pour les deux mêmes besoins.
-    await expect(panneau.getByRole('cell', { name: '—', exact: true })).toHaveCount(2);
+    // Le tableau voisin dit toujours « — » pour les deux mêmes besoins
+    // ([[D-301]] §1) ; le motif se déplie dessous (r3_08).
+    await expect(panneau.getByRole('cell', { name: /^—/ })).toHaveCount(2);
+
+    // Un geste, au clavier : le motif est replié, Entrée le déplie.
+    const geste = panneau.locator('summary', { hasText: 'Motif' }).first();
+    await expect(panneau.getByText('Non mesuré · hors score (D-122)')).toBeHidden();
+    await geste.focus();
+    await page.keyboard.press('Enter');
+    await expect(panneau.getByText('Non mesuré · hors score (D-122)')).toBeVisible();
   });
 });

@@ -45,16 +45,39 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     vi.unstubAllGlobals();
   });
 
-  it('l’infobulle d’un besoin sans source ne prétend pas qu’aucun questionnaire ne le mesure', async () => {
+  it('un besoin sans source lue n’a plus d’infobulle de repli : son motif se déplie sous le tiret (r3_08)', async () => {
     // L'API ne liste que les sources EXPLOITABLES : une liste vide peut
-    // cacher un questionnaire prévu mais pas encore rempli.
-    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    // cacher un questionnaire prévu mais pas encore rempli. Le pourquoi d'un
+    // non mesuré n'est plus une infobulle, invisible au clavier et au toucher.
+    const avecMotif = {
+      ...reponse,
+      besoins: reponse.besoins.map(b =>
+        b.couverture === null
+          ? { ...b, motifNonMesure: [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: null }] }
+          : { ...b, motifNonMesure: null }
+      ),
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecMotif })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
     const titres = screen.getAllByRole('row').slice(1).map(r => r.getAttribute('title'));
-    expect(titres).toEqual(Array(3).fill('Aucune réponse de questionnaire exploitable pour ce besoin'));
+    expect(titres).toEqual([null, null, null]);
     expect(document.body.innerHTML).not.toContain('Aucun questionnaire source');
+    expect(document.body.innerHTML).not.toContain('Aucune réponse de questionnaire exploitable');
+
+    const geste = screen.getByText('Motif', { selector: 'summary' });
+    expect(geste.getAttribute('aria-label')).toBe('Motif — Ancrage du matin');
+    expect(document.body.textContent).toContain('Non mesuré · aucune passation exploitable (Q_STR_01)');
+  });
+
+  it('un ancien conteneur sans motif garde le tiret seul, sans geste vide', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    expect(screen.getAllByRole('cell', { name: '—' })).toHaveLength(1);
+    expect(screen.queryByText('Motif', { selector: 'summary' })).toBeNull();
   });
 
   it('un échec de lecture parle au praticien, et « Réessayer » relance la lecture', async () => {
