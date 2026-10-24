@@ -11610,6 +11610,16 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Interprétations et motifs du moteur masqués, agendas et physio laissés visibles : à confirmer par le responsable.
 
+## 2026-10-24 — r3_13 : « Points à explorer » acté au portail (D-355)
+
+**Fait.** Relecture de LOT-05, de sa maquette, de la campagne SP-CONV et de #294 : aucun motif clinique écrit du tri, seul le libellé avait changé. Le responsable a choisi d'acter (questions à options) avec le motif « matière de dialogue » : D-355 nomme une troisième famille d'exceptions à D-333 §1 et §2 r4, bornée (trois besoins mesurés au plus, sans chiffre, sans mot ni couleur qui juge). Écran inchangé ; commentaire et banc unitaire.
+
+**Écarté.** Le retrait (règle du 2026-10-22 par défaut) : le responsable a fourni le motif.
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_13 « fait » sur la page de la file A.
+
+**Ouvert.** Rien dans le périmètre.
+
 ## 2026-10-24 — t36 : libellés réels restés « inconnu », résolveur re-signé (D-356)
 
 **Fait.** Constat par conteneur (agrégats : 53 « inconnu », 92 résolues). Huit libellés rattachés sur arbitrage du responsable, puis la signature : « PROTEINE C REACTIVE (CRP) » à la CRP ultrasensible, le VGM, les plaquettes (EDTA), le DFG, l'HbA1c courante, l'indice oméga 3, le rapport AA/EPA, l'indice d'anisocytose. Unités : « mL/min » admis pour le DFG, une unité absente pour un ratio. 175 entrées.

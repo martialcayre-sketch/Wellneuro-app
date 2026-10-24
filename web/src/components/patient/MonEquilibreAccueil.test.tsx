@@ -49,3 +49,41 @@ describe('MonEquilibreAccueil — base de l’indice', () => {
     expect(screen.queryByText(MENTION_BESOINS_PARTIELS_PATIENT)).toBeNull();
   });
 });
+
+// [[D-355]] — « Points à explorer » : exception nommée à la règle du portail,
+// bornée. §1 : trois besoins mesurés au plus, les moins couverts d'abord, un
+// besoin non mesuré jamais ; §3 : aucun chiffre.
+describe('MonEquilibreAccueil — points à explorer (D-355)', () => {
+  const TITRE = 'Points à explorer avec votre praticien';
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  function lire() {
+    const section = screen.getByText(TITRE).parentElement!;
+    const lis = Array.from(section.querySelectorAll('li'));
+    return { section, lis, items: lis.map(li => li.textContent) };
+  }
+
+  it('trois besoins mesurés au plus, du moins couvert au plus couvert, sans non mesuré ni chiffre', async () => {
+    await rendre(reponse([80, null, 20, 50, 40]));
+    const { section, lis, items } = lire();
+    expect(items).toEqual(['Besoin 3', 'Besoin 5', 'Besoin 4']);
+    // Rien d'autre que le titre et les libellés : ni couverture, ni rang.
+    expect(section.textContent).toBe(TITRE + items.join(''));
+    // Même rendu pour chaque item : aucune classe ni icône qui suive la valeur.
+    expect(new Set(lis.map(li => li.outerHTML.replace(/Besoin \d/, ''))).size).toBe(1);
+  });
+
+  it('une couverture à zéro est mesurée ; à égalité, l’ordre servi par la route', async () => {
+    await rendre(reponse([40, 0, 40, 40]));
+    expect(lire().items).toEqual(['Besoin 2', 'Besoin 1', 'Besoin 3']);
+  });
+
+  it('aucun besoin mesuré : pas de section', async () => {
+    await rendre(reponse([null, null, null], null));
+    expect(screen.queryByText(TITRE)).toBeNull();
+  });
+});
