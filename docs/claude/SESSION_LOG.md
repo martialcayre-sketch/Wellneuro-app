@@ -11543,6 +11543,25 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
+## 2026-10-24 — F79, premier temps : dix-sept liens analyte-axe signés (D-351)
+
+**Fait.** Production relue en lecture seule (one-off-9987, 1677) : 0 lien, 8 CHECK, cible `axe` fermée, 92 analytes, 1 064 claims certifiés qui citent un analyte, presque aucun niveau de preuve écrit. Brouillon au Claude Doc privé ; douze arbitrages (huit sur la recommandation, quatre contre) ; liste de dix-sept liens signée. D-351 en forme opaque, fiches F52 (constat) et F79 mises à jour.
+
+**Écarté.** Niveau C uniforme (inventé) ; script en conteneur (D-087) ; claims de stade.
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis la migration de données de D-351 §5 dans sa propre PR.
+
+**Ouvert.** Correspondance panel → axe (F53) ; claims à relire (D-348 §6) ; WN-SRC-0236.
+## 2026-10-24 — File D : constat D/53, renvoi de collecte D/38, b12
+
+**Fait.** #1677 est déployé. D/53, en lecture seule : `WN_G4_LIEN_MAGIQUE` a été retirée le 21 octobre par k10 (le formulaire de nouveau lien a disparu avec elle) puis reposée le 24 ; `WN_BIO_CONSTAT` est livrée éteinte, conforme ; `WN_AGENDA_RELANCE` n'a jamais été reposée sur Scalingo depuis la bascule, et c'est un écart réel. D/38 : le renvoi du texte de collecte nomme désormais la partie des conditions d'utilisation, sur texte validé par le responsable (arbitrage 8 de G-11). b12 était déjà en D.1 depuis le 15 octobre.
+
+**Écarté.** Garder le renvoi au texte autonome. Une PR pour b12 n'avait rien à changer.
+
+**Prochaine action.** CI, CodeRabbit, merge ; d38 « fait » sur la page D.
+
+**Ouvert.** La décision sur `WN_AGENDA_RELANCE`, avant les relectures k01 du 2026-10-29.
+
 ## 2026-10-24 — r3_11 : compte des besoins mesurés et « Compléter la mesure » (Q6, Q8)
 
 **Fait.** D-352 rédigée puis arbitrée par quatre questions à options (toutes à la recommandation) : compte `mentionBesoinsMesures` en tête de l'onglet, en tête du tiroir et sur son bouton (la ligne d'accès de F2 n'existe pas, Q2 ayant gardé les cercles) ; « Compléter la mesure » dans le motif déplié, sous la seule ligne `aucune_passation`, onglet et tiroir, cercles exclus. Filtre `questionnairesProposables` et bouton `AjoutFileEnvoi` partagés avec la Trajectoire, rendu identique.

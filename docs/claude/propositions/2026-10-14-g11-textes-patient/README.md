@@ -28,6 +28,12 @@
 7. Revue CodeRabbit (#1441), correction validée par le responsable le
    2026-10-14 : le texte 1 dit à qui le **114** est réservé, comme « Limites
    et sécurité ».
+8. Renvoi du texte 1 ajusté en forme après la publication des conditions
+   d'utilisation ([[D-292]], plan D/38), validé par le responsable le
+   2026-10-24 : « décrit dans « Vos données personnelles » » devient « décrit
+   dans la partie « Vos données personnelles et leur confidentialité » des
+   conditions d'utilisation », comme le renvoi à l'IA dans les conditions. Le
+   dépôt et les conditions sont servis aux mêmes dossiers, les majeurs.
 
 ## Restent ouverts
 
@@ -56,7 +62,7 @@ Déposer un document n'ouvre pas de conversation : vous ne recevrez pas de répo
 
 **Vos analyses biologiques**
 
-Le compte rendu de vos analyses biologiques suit un circuit à part, décrit dans « Vos données personnelles ». Il est supprimé une fois ses valeurs relues par votre praticien, et au plus tard 30 jours après son dépôt. Déposez-le à l'endroit prévu pour lui.
+Le compte rendu de vos analyses biologiques suit un circuit à part, décrit dans la partie « Vos données personnelles et leur confidentialité » des conditions d'utilisation. Il est supprimé une fois ses valeurs relues par votre praticien, et au plus tard 30 jours après son dépôt. Déposez-le à l'endroit prévu pour lui.
 
 **Combien de temps**
 

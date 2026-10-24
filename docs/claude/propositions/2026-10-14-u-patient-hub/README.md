@@ -69,6 +69,7 @@ Vous pouvez demander à tout moment à consulter, corriger ou retirer un éléme
 
 - Le texte de collecte de G-11 renvoie à « Vos données personnelles » : après
   ACT-1, ce texte est une partie des conditions d'utilisation ([[D-292]]) ;
-  renvoi à ajuster, en forme, au moment de sa publication.
+  renvoi à ajuster, en forme, au moment de sa publication. Fait le
+  2026-10-24 (arbitrage 8 de G-11, plan D/38).
 - Les accusés de lecture du portail ne portent pas de date aujourd'hui : c'est
   l'objet de ai (H51), migration probable.
