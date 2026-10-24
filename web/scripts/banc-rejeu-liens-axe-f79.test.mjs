@@ -233,13 +233,18 @@ function codeSeul(sql) {
   }
   return code;
 }
-const ECRITURE = /\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|CREATE|DROP|GRANT|REVOKE|COPY|CALL|REFRESH|REINDEX|VACUUM|CLUSTER|LOCK|NOTIFY|SELECT\s+[\s\S]*?\bINTO\s+(TEMP|TEMPORARY|UNLOGGED|TABLE)\b|nextval|setval|pg_advisory\w*|dblink\w*)\b/i;
+// `EXECUTE` aussi : le SQL dynamique vit dans une chaîne, que `codeSeul`
+// efface — `EXECUTE 'UPDATE …'` passait la garde (quatrième passe Codex de
+// #1687). Le contrat n'a aucune raison d'exécuter du SQL dynamique.
+const ECRITURE = /\b(EXECUTE|INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|CREATE|DROP|GRANT|REVOKE|COPY|CALL|REFRESH|REINDEX|VACUUM|CLUSTER|LOCK|NOTIFY|SELECT\s+[\s\S]*?\bINTO\s+(TEMP|TEMPORARY|UNLOGGED|TABLE)\b|nextval|setval|pg_advisory\w*|dblink\w*)\b/i;
 const contratLectureSeule = (sql) => !ECRITURE.test(codeSeul(sql));
 const MUTATIONS_LECTURE = [
   ['contrat + UPDATE dans son bloc DO', () => contratLectureSeule(CONTRAT.replace("RAISE NOTICE 'D-351 : 17 liens", "UPDATE biology_analyte_links SET actif = false;\n  RAISE NOTICE 'D-351 : 17 liens"))],
   ['contrat + INSERT avant le ROLLBACK', () => contratLectureSeule(avantRollback("INSERT INTO biology_analytes (id) VALUES ('x');"))],
   ['contrat + CREATE TABLE … AS', () => contratLectureSeule(avantRollback('CREATE TABLE t AS SELECT 1;'))],
   ['contrat + nextval', () => contratLectureSeule(avantRollback("SELECT nextval('s');"))],
+  ["contrat + EXECUTE 'UPDATE …' dans son bloc DO", () => contratLectureSeule(CONTRAT.replace("RAISE NOTICE 'D-351 : 17 liens", "EXECUTE 'UPDATE biology_analyte_links SET actif = false';\n  RAISE NOTICE 'D-351 : 17 liens"))],
+  ["contrat + EXECUTE format(…) avant le ROLLBACK", () => contratLectureSeule(avantRollback("DO $d$ BEGIN EXECUTE format('DELETE FROM %I', 't'); END $d$;"))],
 ];
 for (const [nom, sur] of MUTATIONS_LECTURE) {
   if (sur()) throw new Error(`REFUS : la garde de lecture seule du contrat laisse passer la mutation « ${nom} ».`);
