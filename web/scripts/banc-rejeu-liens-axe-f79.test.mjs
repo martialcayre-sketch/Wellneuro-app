@@ -194,6 +194,59 @@ for (const [nom, sur] of MUTATIONS_SORTIE) {
 if (!sansSortie(MIGRATION) || !sansSortie(CONTRAT)) {
   throw new Error('REFUS : la migration ou le contrat porte un moyen de sortir du clone (extension, dblink, postgres_fdw, PROGRAM).');
 }
+// LE CONTRAT NE FAIT QUE LIRE. Dans le rejeu, son `BEGIN TRANSACTION READ
+// ONLY` arrive après les écritures du prélude et de la migration : il n'y a
+// aucun effet (nitpick CodeRabbit sur 626741eb). Une écriture glissée dans
+// son chemin « avec corpus » ne serait donc vue ni ici, ni au CI, où la base
+// sans corpus le fait sortir avant. La garde lit le code du contrat, corps
+// PL/pgSQL compris, sans ses commentaires ni ses chaînes, et refuse tout mot
+// d'écriture. En production, le constat le joue dans une vraie transaction
+// READ ONLY.
+function codeSeul(sql) {
+  let code = '';
+  let i = 0;
+  while (i < sql.length) {
+    const c = sql[i];
+    if (c === '-' && sql[i + 1] === '-') {
+      while (i < sql.length && sql[i] !== '\n') i += 1;
+    } else if (c === '/' && sql[i + 1] === '*') {
+      let profondeur = 1;
+      i += 2;
+      while (i < sql.length && profondeur > 0) {
+        if (sql[i] === '/' && sql[i + 1] === '*') { profondeur += 1; i += 2; }
+        else if (sql[i] === '*' && sql[i + 1] === '/') { profondeur -= 1; i += 2; }
+        else i += 1;
+      }
+      code += ' ';
+    } else if (c === "'") {
+      i += 1;
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") { i += 2; continue; }
+        if (sql[i] === "'") { i += 1; break; }
+        i += 1;
+      }
+      code += " '' ";
+    } else {
+      code += c;
+      i += 1;
+    }
+  }
+  return code;
+}
+const ECRITURE = /\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|CREATE|DROP|GRANT|REVOKE|COPY|CALL|REFRESH|REINDEX|VACUUM|CLUSTER|LOCK|NOTIFY|SELECT\s+[\s\S]*?\bINTO\s+(TEMP|TEMPORARY|UNLOGGED|TABLE)\b|nextval|setval|pg_advisory\w*|dblink\w*)\b/i;
+const contratLectureSeule = (sql) => !ECRITURE.test(codeSeul(sql));
+const MUTATIONS_LECTURE = [
+  ['contrat + UPDATE dans son bloc DO', () => contratLectureSeule(CONTRAT.replace("RAISE NOTICE 'D-351 : 17 liens", "UPDATE biology_analyte_links SET actif = false;\n  RAISE NOTICE 'D-351 : 17 liens"))],
+  ['contrat + INSERT avant le ROLLBACK', () => contratLectureSeule(avantRollback("INSERT INTO biology_analytes (id) VALUES ('x');"))],
+  ['contrat + CREATE TABLE … AS', () => contratLectureSeule(avantRollback('CREATE TABLE t AS SELECT 1;'))],
+  ['contrat + nextval', () => contratLectureSeule(avantRollback("SELECT nextval('s');"))],
+];
+for (const [nom, sur] of MUTATIONS_LECTURE) {
+  if (sur()) throw new Error(`REFUS : la garde de lecture seule du contrat laisse passer la mutation « ${nom} ».`);
+}
+if (!contratLectureSeule(CONTRAT)) {
+  throw new Error('REFUS : le contrat de la liste exacte porte une instruction d\'écriture.');
+}
 const MUTATIONS_GARDE = [
   ['migration + « SELECT 1; COMMIT; »', () => migrationSure(`${MIGRATION}\nSELECT 1; COMMIT;\n`)],
   ['migration + « END; » en fin', () => migrationSure(`${MIGRATION}\nEND;\n`)],
