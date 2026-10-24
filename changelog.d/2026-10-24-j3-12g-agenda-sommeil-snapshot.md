@@ -13,7 +13,7 @@
   snapshot comme il comptait déjà aux écrans ; un agenda sans indice reste
   non mesuré, sans être dit « incomplet ».
 - Les cartes de décision dont l'épisode inclut un tel agenda dérivent au
-  déploiement : trois approbations de diffusion actives, sur 2 dossiers
-  (répartition masquée, moins de cinq dossiers), sont à réapprouver par le
+  déploiement : les approbations de diffusion concernées (effectif et
+  répartition masqués, moins de cinq dossiers) sont à réapprouver par le
   praticien. Inventaire et compte :
   `docs/claude/propositions/2026-10-24-j3-12g-completude-agenda/README.md`.

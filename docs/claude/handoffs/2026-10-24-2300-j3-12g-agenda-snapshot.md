@@ -17,10 +17,8 @@ puis aligner le snapshot.
 
 - Inventaire : le snapshot écartait l'agenda entier pour une seule rubrique
   absente ou nulle ; les routes et la chaîne C1 recalculent l'indice sans
-  filtre. Compte par conteneur (lecture seule) : 13 agendas clôturés, 2 à
-  indice, un seul accepté par le snapshot ; 3 des 4 approbations actives sur
-  un épisode à agenda écarté ; répartition masquée (moins de cinq dossiers,
-  D-298 §3).
+  filtre. Compte par conteneur (lecture seule) : 13 agendas clôturés ;
+  répartition masquée (moins de cinq dossiers, D-298 §3).
 - Arbitrages du responsable (questions à options, une reformulée à sa
   demande) : deux lots, J3-12g d'abord ; tout agenda clôturé est complet au
   snapshot ; réapprobation après déploiement, sans changement de version ;
@@ -58,7 +56,7 @@ puis aligner le snapshot.
   entier et non négatif, chaînes refusées (la clôture n'écrit que des nombres
   et des `null` ; aucune chaîne en production) ; bancs zéro nuit, négatif,
   fractionnaire, chaîne, objet imbriqué ; libellé « null » du banc ; D-359 §5
-  dit que les trois approbations relèvent de deux dossiers. Écartés avec
+  précisé sur les dossiers concernés. Écartés avec
   motif : zéro nuit accepté (c'est la sortie de la clôture, et le besoin 5
   reste non mesuré, banc dédié) ; pas de liste de rubriques attendues
   (`Q_SOM_09` n'est écrit que par la clôture — la route de soumission le
@@ -66,8 +64,9 @@ puis aligner le snapshot.
   branche par identifiant plutôt qu'une propriété de catalogue (refactoring
   hors périmètre de D-359) ; imports du banc déjà présents ; « en PR » au
   plan, vrai à l'ouverture de la PR de ce lot.
-- CodeRabbit (#1694), quatre tours. Corrigés : identifiants de dossier retirés
-  du constat public (P1) ; effectifs sous cinq dossiers masqués (D-298 §3) ;
+- CodeRabbit (#1694), cinq tours. Corrigés : identifiants de dossier retirés
+  du constat public (P1) ; effectifs et répartitions sous cinq dossiers
+  masqués (D-298 §3 : l'effectif total et la mention, aucun sous-compte) ;
   classification du snapshot précisée au fragment ; liste de rubriques
   rétablie sur sa seconde demande — clés lues dans le catalogue, agrégat
   complet aux deux compteurs v4 près, nombre de nuits seul sous le seuil
@@ -77,9 +76,9 @@ puis aligner le snapshot.
 
 ## Problèmes ouverts
 
-- Après déploiement : trois cartes approuvées (2 dossiers, répartition
-  masquée) dérivent ;
-  réapprobation par le praticien, puis constat par conteneur (D-359 §5). La
+- Après déploiement : les cartes approuvées concernées dérivent (effectif
+  masqué, moins de cinq dossiers) ; réapprobation par le praticien, puis
+  constat par conteneur (D-359 §5). La
   liste nominative est hors du dépôt (page de suivi de la file A).
 - Hors lot : r3_10 (lot suivant), r3_09, r3_12, r3_14, t33, les deux points
   t43 ouverts.

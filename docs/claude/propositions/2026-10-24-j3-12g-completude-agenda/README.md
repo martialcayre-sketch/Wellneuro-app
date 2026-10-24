@@ -44,33 +44,34 @@ Les deux familles de lecteurs du moteur :
 
 ## 2. Compte en production (conteneur, lecture seule, 2026-10-24)
 
-- 13 agendas clôturés, tous `VALID`, dont 2 portent un indice. Par forme :
-  8 sous le seuil d'agrégation (le seul nombre de nuits), 4 clôturés avant le
-  contrat v4 de [[D-271]] (sans `AGD_NB_NUITS_LAT` ni
-  `AGD_NB_NUITS_FREQ_WASO`, que l'indice ne lit pas), 1 complet ; répartition
-  masquée sous cinq dossiers ([[D-298]] §3). Aucune valeur `null` stockée.
-- Le snapshot n'acceptait que l'agenda complet ; les routes comptent les deux
-  indices. Écart réel : 1 dossier ; répartition masquée (moins de cinq
-  dossiers).
-- Assignations : 12 en attente, 2 annulées.
+- 13 agendas clôturés, tous `VALID`. Trois formes : sous le seuil
+  d'agrégation (le seul nombre de nuits), clôturé avant le contrat v4 de
+  [[D-271]] (sans `AGD_NB_NUITS_LAT` ni `AGD_NB_NUITS_FREQ_WASO`, que
+  l'indice ne lit pas), complet ; répartition par forme et par indice masquée
+  (moins de cinq dossiers, [[D-298]] §3). Aucune valeur `null` stockée.
+- Le snapshot n'acceptait que l'agenda complet, quand les routes comptent tout
+  agenda à indice : l'écart est réel ; effectif et répartition masqués (moins
+  de cinq dossiers).
+- Assignations en attente : 12 dossiers ; les autres statuts sont masqués
+  (moins de cinq dossiers).
 - 8 épisodes confirmés incluent un agenda (7 dossiers), tous en `v15`.
-- Approbations de diffusion actives : 4, sur 3 dossiers. Trois d'entre elles,
-  sur 2 dossiers, reposent sur un épisode qui inclut un agenda sans indice,
-  que le snapshot écartait. Répartition masquée (moins de cinq dossiers).
+- Approbations de diffusion actives : 3 dossiers ; répartition masquée
+  (moins de cinq dossiers). Une partie repose sur un épisode qui inclut un
+  agenda que le snapshot écartait.
 
 ## 3. Ce que l'entrée au snapshot fait dériver
 
 - Valeurs servies : aucune. Les routes comptaient déjà l'agenda.
 - Version du score : inchangée. `calculerEquilibre` ne change pas ; seul le
   filtre d'entrée du snapshot change. Un changement de version, comme un
-  changement de version du schéma du snapshot, éteindrait les 4 approbations
-  actives ([[D-329]] §4).
+  changement de version du schéma du snapshot, éteindrait toutes les
+  approbations actives ([[D-329]] §4).
 - Cartes : celles dont l'épisode inclut un agenda que le snapshot écartait.
   Un agenda sans indice cesse d'être `not_calculable` : son finding
   `missing_data` disparaît et sa source passe à `calculated`, ce qui change
-  l'empreinte sans changer de chiffre. En production : 3 approbations actives,
-  sur 2 dossiers, à réapprouver (§4) ; répartition masquée (moins de cinq
-  dossiers).
+  l'empreinte sans changer de chiffre. En production, les approbations
+  concernées sont à réapprouver (§4) ; effectif et répartition masqués (moins
+  de cinq dossiers).
 
 ## 4. Arbitrages du responsable (2026-10-24, questions à options)
 
