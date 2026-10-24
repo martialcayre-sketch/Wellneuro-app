@@ -9,7 +9,7 @@ import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/co
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { canonicalJson, canonicalSha256 } from '@/lib/clinical-engine/canonical';
-import { type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
+import { type ChaineC1, type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import {
   adaptRuntimeInputs,
   isRuntimeMilestone,
@@ -36,6 +36,7 @@ import {
 import { lireCalendriersSuivi } from '@/lib/protocol/calendriersPersistes';
 import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
 import { refusJalonMesureHorsFenetre } from '@/lib/protocol/jalonDu';
+import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { resolveCycleId, toEpisodeCreateInput, toEpisodeUpdateInput } from '@/lib/protocol/versioning';
 import type {
   ClinicalReview,
@@ -83,6 +84,29 @@ export type CockpitRuntimeApiResponse =
       // Instant de lecture quand la fiche est relue à une date passée (SP-TT).
       // `null` ou absent = état présent, comportement historique.
       asOf?: string | null;
+      /**
+       * La cible de la re-passation ciblée (LOT-07, [[D-058]] ; [[D-338]] §3),
+       * tirée de la carte REJOUÉE de l'épisode confirmé de l'ancre du cycle
+       * courant (t41) — posée sur un jalon de MESURE seulement, en lecture
+       * présente, et quand cette carte se rejoue.
+       *
+       * LE DÉFAUT QU'ELLE FERME. Au jalon dû, l'écran demande la proposition du
+       * jalon : il n'a pas de carte, et la re-passation ne recevait ni les
+       * besoins du candidat visé ni les besoins visés d'une priorité posée —
+       * elle était inatteignable là même où elle sert.
+       *
+       * LA SÉLECTION EST CELLE DU REJEU DE L'ANCRE, contrôles compris : relue
+       * par `lireSelectionPriorite` et construite par le même repli
+       * (`construireChaineC1Tolerante`) — une sélection devenue inapplicable
+       * est écartée, la cible retombe alors sur la priorité proposée, comme à
+       * l'écran de l'ancre. Même dérivation que l'écran
+       * (`besoinsDeRepassation`).
+       *
+       * RÉSERVÉE À LA RE-PASSATION : deux listes d'identifiants de besoin, rien
+       * d'autre — ni la carte, ni le motif, ni le candidat. Elle ne débloque
+       * aucun protocole et ne classe aucune assiette.
+       */
+      repassationAncre?: { needIds: number[]; besoinsVises: number[] };
     }
   | {
       status: 'ready';
@@ -457,6 +481,97 @@ function episodeRejouable(
   return episode;
 }
 
+/** Les entrées runtime d'un dossier lu au présent ou à une date résolue. */
+type EntreesRuntime = Exclude<NonNullable<Awaited<ReturnType<typeof loadRuntimeInputs>>>, { refus: unknown }>;
+
+/**
+ * L'épisode persisté que cette proposition désigne, s'il se rejoue — sinon
+ * `null` (absent, ou refusé par `episodeRejouable`).
+ */
+async function episodePersisteRejouable(
+  inputs: EntreesRuntime,
+  proposal: ProposedAssessmentEpisode,
+): Promise<ConfirmedAssessmentEpisode | null> {
+  const persiste = await prisma.assessmentEpisode.findUnique({
+    where: { id: proposal.assessmentEpisodeId },
+    select: { payload: true, payloadHash: true },
+  });
+  const reponsesLisibles = new Set(inputs.responses.map(reponse => reponse.responseId));
+  return persiste ? episodeRejouable(persiste, proposal, reponsesLisibles) : null;
+}
+
+/**
+ * La chaîne C1 d'un épisode persisté, REJOUÉE (`D-118`) — d'un seul geste pour
+ * ses deux lecteurs : la carte du jalon demandé, et la cible de re-passation
+ * tirée de la carte de l'ancre (t41). Deux rejeux divergeraient un jour sur la
+ * sélection qu'ils servent. JETTE si le dossier ne porte plus ce que l'épisode
+ * cite : chaque lecteur décide de son repli.
+ */
+async function rejouerChaine(
+  idPatient: string,
+  inputs: EntreesRuntime,
+  episode: ConfirmedAssessmentEpisode,
+): Promise<{ chaine: ChaineC1; selectionEcartee: boolean; couverturesAdressage: CouvertureAdressage[] | undefined }> {
+  const idSuffix = suffixeEnveloppe(episode.assessmentEpisodeId);
+  const decisionCardIdRejeu = `runtime-decision-${idSuffix}`;
+  // Même lecture que `verifierChaineC1` et que le POST ([[D-257]]).
+  const couverturesAdressage = await lireCouverturesAdressage(idPatient, inputs.idConsultationPorteuse);
+  // La sélection praticien, relue en base ([[D-127]]) par la MÊME
+  // fonction que `verifierChaineC1` — deux lectures divergentes
+  // rendraient 409 sur une carte honnête ([[D-101]]) — et construite par
+  // le MÊME repli : une sélection devenue inapplicable est écartée, elle
+  // n'emporte pas l'épisode confirmé ([[D-118]]).
+  const { chaine, selectionEcartee } = construireChaineC1Tolerante({
+    snapshotId: `runtime-snapshot-${idSuffix}`,
+    reviewId: `runtime-review-${idSuffix}`,
+    decisionCardId: decisionCardIdRejeu,
+    patientId: idPatient,
+    horodatage: episode.confirmedAt as string,
+    episode,
+    patientContext: inputs.patientContext,
+    responses: inputs.responses,
+    signauxAlerte: inputs.signauxAlerte,
+    reponsesSecurite: inputs.reponsesSecurite,
+    etatPopulation: inputs.etatPopulation,
+    couverturesAdressage,
+  }, await lireSelectionPriorite(idPatient, decisionCardIdRejeu));
+  return { chaine, selectionEcartee, couverturesAdressage };
+}
+
+/**
+ * La cible de re-passation d'un jalon de mesure (t41) : celle de la carte
+ * rejouée de l'ancre du cycle courant — la carte que l'écran de l'ancre sert,
+ * par le même chemin (proposition de l'ancre, épisode persisté, rejeu).
+ *
+ * L'ANCRE EST CELLE DU CYCLE, ET SEULE ELLE : la proposition doit désigner la
+ * ligne même de `ancreCourante`, sans quoi un épisode d'un autre cycle
+ * fournirait la cible. Tout échec rend `null` — la proposition du jalon est
+ * servie telle qu'avant, sans cible : un service secondaire n'éteint pas le
+ * chemin principal.
+ */
+async function repassationDepuisAncre(
+  idPatient: string,
+  inputs: EntreesRuntime,
+): Promise<{ needIds: number[]; besoinsVises: number[] } | null> {
+  try {
+    const ancre = ancreCourante(await lireAncresPersistees(idPatient));
+    if (!ancre || !isRuntimeMilestone(ancre.milestone)) return null;
+    // Une ancre ne se date depuis aucune autre : `null`, comme son propre GET.
+    const { proposal } = proposeRuntimeEpisode(inputs, ancre.milestone, null);
+    if (proposal.assessmentEpisodeId !== ancre.id) return null;
+    const episode = await episodePersisteRejouable(inputs, proposal);
+    if (!episode) return null;
+    const { chaine } = await rejouerChaine(idPatient, inputs, episode);
+    return besoinsDeRepassation(chaine.decisionCard);
+  } catch (erreur) {
+    console.error(
+      '[cockpit GET] cible de re-passation de l’ancre indisponible',
+      erreur instanceof Error ? erreur.message : String(erreur),
+    );
+    return null;
+  }
+}
+
 /**
  * La réponse `ready`, assemblée d'un seul geste pour la confirmation (POST) et
  * le rejeu (GET, `D-118`) : deux assemblages divergeraient un jour sur ce que
@@ -573,37 +688,10 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     // dossier qui a bougé, payload illisible — ⇒ `proposal_required`, le flux
     // d'aujourd'hui, sans rien inventer.
     if (!inputs.asOf) {
-      const persiste = await prisma.assessmentEpisode.findUnique({
-        where: { id: proposal.assessmentEpisodeId },
-        select: { payload: true, payloadHash: true },
-      });
-      const reponsesLisibles = new Set(inputs.responses.map(reponse => reponse.responseId));
-      const episode = persiste ? episodeRejouable(persiste, proposal, reponsesLisibles) : null;
+      const episode = await episodePersisteRejouable(inputs, proposal);
       if (episode) {
         try {
-          const idSuffix = suffixeEnveloppe(episode.assessmentEpisodeId);
-          const decisionCardIdRejeu = `runtime-decision-${idSuffix}`;
-          // Même lecture que `verifierChaineC1` et que le POST ([[D-257]]).
-          const couverturesAdressage = await lireCouverturesAdressage(idPatient, inputs.idConsultationPorteuse);
-          // La sélection praticien, relue en base ([[D-127]]) par la MÊME
-          // fonction que `verifierChaineC1` — deux lectures divergentes
-          // rendraient 409 sur une carte honnête ([[D-101]]) — et construite par
-          // le MÊME repli : une sélection devenue inapplicable est écartée, elle
-          // n'emporte pas l'épisode confirmé ([[D-118]]).
-          const { chaine, selectionEcartee } = construireChaineC1Tolerante({
-            snapshotId: `runtime-snapshot-${idSuffix}`,
-            reviewId: `runtime-review-${idSuffix}`,
-            decisionCardId: decisionCardIdRejeu,
-            patientId: idPatient,
-            horodatage: episode.confirmedAt as string,
-            episode,
-            patientContext: inputs.patientContext,
-            responses: inputs.responses,
-            signauxAlerte: inputs.signauxAlerte,
-            reponsesSecurite: inputs.reponsesSecurite,
-            etatPopulation: inputs.etatPopulation,
-            couverturesAdressage,
-          }, await lireSelectionPriorite(idPatient, decisionCardIdRejeu));
+          const { chaine, selectionEcartee, couverturesAdressage } = await rejouerChaine(idPatient, inputs, episode);
           if (selectionEcartee) {
             // Un acte praticien n'est plus servi. Il se dit DÉSORMAIS À L'ÉCRAN
             // ([[D-127]] §11, par le champ `selectionEcartee` de la réponse) ; la
@@ -654,12 +742,19 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     const preconditions = inputs.asOf || !estAncreDeCycle(milestoneRaw)
       ? undefined
       : await preconditionsT0PourPatient(idPatient, milestoneRaw);
+    // Un jalon de MESURE n'a pas de carte tant qu'il n'est pas confirmé : la
+    // re-passation ciblée reçoit la cible de l'ancre (t41). Jamais en lecture
+    // datée — le passé ne se recompose pas avec une sélection d'aujourd'hui.
+    const repassationAncre = inputs.asOf || estAncreDeCycle(milestoneRaw)
+      ? null
+      : await repassationDepuisAncre(idPatient, inputs);
     return NextResponse.json({
       status: 'proposal_required',
       proposal,
       proposalHash,
       asOf: inputs.asOf,
       ...(preconditions ? { preconditions } : {}),
+      ...(repassationAncre ? { repassationAncre } : {}),
     });
   } catch (error) {
     console.error('[cockpit GET]', error instanceof Error ? error.message : String(error));

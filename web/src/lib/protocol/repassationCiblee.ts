@@ -1,5 +1,7 @@
 import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
+import { estSelectionLibre } from '@/lib/clinical-engine/prioriteLibre';
+import type { DecisionCard } from '@/lib/clinical-engine/types';
 
 // Re-passation CIBLÉE au jalon (LOT-07, `D-058`).
 //
@@ -40,4 +42,42 @@ export function questionnairesCiblesPourPriorite(needIds: readonly number[]): st
     }
   }
   return cibles;
+}
+
+// Identité STABLE pour « aucun besoin » : l'écran passe ces tableaux dans le
+// tableau de dépendances d'un effet, et un `?? []` recréerait un tableau neuf à
+// chaque rendu — l'effet tirerait en boucle.
+const BESOINS_VIDES: number[] = [];
+
+/**
+ * Ce que la re-passation ciblée lit d'une carte de décision — et elle seule.
+ *
+ * `needIds` : les besoins qui FONDENT la priorité visée — le candidat
+ * sélectionné par le praticien, à défaut le candidat proposé par la carte
+ * (`proposedMainPriorityId`, nul tant que la table des priorités n'est pas
+ * signée). `besoinsVises` : les besoins que le praticien a cochés sur une
+ * priorité qu'il a posée ([[D-338]] §3) — un canal distinct, qu'aucune règle ne
+ * déduit.
+ *
+ * UNE SEULE DÉRIVATION, DEUX LECTEURS (t41) : l'écran l'applique à la carte
+ * qu'il affiche, la route cockpit à la carte de l'ancre quand le jalon dû n'a
+ * pas de carte à lui. Deux copies finiraient par viser deux priorités.
+ *
+ * Les tableaux rendus sont CEUX DE LA CARTE (ou le vide partagé), jamais des
+ * copies : l'écran les passe dans un tableau de dépendances, et une copie par
+ * rendu y relancerait l'effet à chaque rendu.
+ */
+export function besoinsDeRepassation(
+  decisionCard: Pick<DecisionCard, 'priorityCandidates' | 'proposedMainPriorityId' | 'selectedMainPriority'> | null,
+): { needIds: number[]; besoinsVises: number[] } {
+  if (!decisionCard) return { needIds: BESOINS_VIDES, besoinsVises: BESOINS_VIDES };
+  const selection = decisionCard.selectedMainPriority;
+  const idCandidatVise = selection?.candidateId ?? decisionCard.proposedMainPriorityId;
+  const candidatVise = idCandidatVise
+    ? decisionCard.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
+    : null;
+  return {
+    needIds: candidatVise?.provenance.needIds ?? BESOINS_VIDES,
+    besoinsVises: estSelectionLibre(selection) ? selection.libre.besoinsVises ?? BESOINS_VIDES : BESOINS_VIDES,
+  };
 }
