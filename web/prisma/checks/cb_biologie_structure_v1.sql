@@ -158,7 +158,9 @@ BEGIN
     -- Les besoins sont numérotés 1 à 12.
     'biology_panels_besoins_bornes_check',
     'biology_analyte_links_cible_besoin_check',
-    'biology_panel_items_cible_unique_check'
+    'biology_panel_items_cible_unique_check',
+    -- Les axes forment une liste fermée (F52, D-348 §2).
+    'biology_analyte_links_cible_axe_check'
   ] LOOP
     IF NOT EXISTS (
       SELECT 1 FROM pg_constraint
