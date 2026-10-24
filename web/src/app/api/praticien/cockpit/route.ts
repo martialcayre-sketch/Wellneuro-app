@@ -351,15 +351,22 @@ function ancreCycleDepuis(
   };
 }
 
+// Les ancres lues sont RENDUES avec l'ancre du cycle (revue t41) : la cible de
+// re-passation part de la même lecture que la proposition du jalon. Deux
+// lectures pourraient encadrer la confirmation d'une nouvelle ancre, et servir
+// la proposition d'un cycle avec la cible d'un autre.
 async function ancreCycleCourant(
   idPatient: string,
   milestone: JalonMomentum,
   asOf: string | null,
-): Promise<AncreCycleCourant | null> {
-  if (estAncreDeCycle(milestone)) return null;
+): Promise<{ ancreCycle: AncreCycleCourant | null; ancres: readonly AncrePersistee[] }> {
+  if (estAncreDeCycle(milestone)) return { ancreCycle: null, ancres: [] };
   const avantOuA = asOf ? new Date(asOf) : null;
   const ancres = await lireAncresPersistees(idPatient, avantOuA);
-  return ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, avantOuA, ancres), milestone);
+  return {
+    ancreCycle: ancreCycleDepuis(ancres, await lireCalendriersSuivi(idPatient, avantOuA, ancres), milestone),
+    ancres,
+  };
 }
 
 /** Le préfixe que `identifiantEpisode` pose sur tout identifiant d'épisode runtime. */
@@ -548,13 +555,22 @@ async function rejouerChaine(
  * fournirait la cible. Tout échec rend `null` — la proposition du jalon est
  * servie telle qu'avant, sans cible : un service secondaire n'éteint pas le
  * chemin principal.
+ *
+ * LIMITE HÉRITÉE DU REJEU, NOMMÉE PAR LA REVUE DU LOT : l'ancre d'un cycle
+ * rouvert (`T1`, `T2`…) se date sur la réponse la plus RÉCENTE
+ * (`dateDeReference`), si bien qu'une passation arrivée après sa confirmation
+ * la rend non rejouable — à l'écran de l'ancre comme ici. La cible manque
+ * alors, comme avant t41. La contourner en relisant l'épisode sans repasser
+ * par sa proposition ferait diverger la cible de la carte que l'écran de
+ * l'ancre sert : le défaut se traite dans le rejeu, pas ici.
  */
 async function repassationDepuisAncre(
   idPatient: string,
   inputs: EntreesRuntime,
+  ancres: readonly AncrePersistee[],
 ): Promise<{ needIds: number[]; besoinsVises: number[] } | null> {
   try {
-    const ancre = ancreCourante(await lireAncresPersistees(idPatient));
+    const ancre = ancreCourante(ancres);
     if (!ancre || !isRuntimeMilestone(ancre.milestone)) return null;
     // Une ancre ne se date depuis aucune autre : `null`, comme son propre GET.
     const { proposal } = proposeRuntimeEpisode(inputs, ancre.milestone, null);
@@ -664,11 +680,8 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       // lecture serait alors présentée comme passée tout en étant actuelle.
       return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     }
-    const { proposal, proposalHash } = proposeRuntimeEpisode(
-      inputs,
-      milestoneRaw,
-      await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf),
-    );
+    const { ancreCycle, ancres } = await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf);
+    const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw, ancreCycle);
 
     // ── LE REJEU D'UN ÉPISODE PERSISTÉ (`D-118`) ────────────────────────────
     //
@@ -747,7 +760,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     // datée — le passé ne se recompose pas avec une sélection d'aujourd'hui.
     const repassationAncre = inputs.asOf || estAncreDeCycle(milestoneRaw)
       ? null
-      : await repassationDepuisAncre(idPatient, inputs);
+      : await repassationDepuisAncre(idPatient, inputs, ancres);
     return NextResponse.json({
       status: 'proposal_required',
       proposal,

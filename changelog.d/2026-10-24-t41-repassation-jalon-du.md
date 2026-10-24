@@ -15,7 +15,14 @@
   désigner la ligne même de `ancreCourante`. Tout échec rend l'absence du
   champ, jamais une erreur de la proposition. Le rejeu est factorisé
   (`episodePersisteRejouable`, `rejouerChaine`) entre la carte du jalon et
-  cette cible : deux rejeux divergeraient sur la sélection servie.
+  cette cible : deux rejeux divergeraient sur la sélection servie. Les ancres
+  sont lues une seule fois pour la proposition du jalon et pour la cible
+  (revue `wn-reviewer`, P2).
+- Limite nommée par la revue (P1, héritée du rejeu D-118, pas une
+  régression) : l'ancre d'un cycle rouvert (`T1`, `T2`…) se date sur la
+  réponse la plus récente ; une passation postérieure à sa confirmation la
+  rend non rejouable, à l'écran de l'ancre comme pour la cible, qui manque
+  alors comme avant t41. Un banc la fige ; le défaut se traite dans le rejeu.
 - `web/src/lib/protocol/repassationCiblee.ts` : `besoinsDeRepassation`, la
   dérivation unique (candidat sélectionné, à défaut proposé ; besoins visés
   d'une priorité posée), lue par l'écran et par la route.

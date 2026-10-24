@@ -1828,6 +1828,64 @@ describe('/api/praticien/cockpit — cible de re-passation au jalon de mesure (t
     expect('repassationAncre' in payload).toBe(false);
   });
 
+  /**
+   * Un cycle ROUVERT : un `T0` déjà posé (ligne fictive), puis le `T1` confirmé
+   * par la route et relu comme ancre courante.
+   */
+  async function t1ConfirmeEtPersiste() {
+    const t0 = { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') };
+    prisma.assessmentEpisode.findMany.mockResolvedValue([t0]);
+    const proposed = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T1'))).json();
+    const post = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T1',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(post.status).toBe(200);
+    const carte = (await post.json()).decisionCard;
+    const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockImplementation((args: { where: { id: string } }) =>
+      Promise.resolve(args.where.id === ecrite.id ? { payload: ecrite.payload, payloadHash: ecrite.payloadHash } : null));
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      t0,
+      { id: ecrite.id, cycleId: ecrite.id, milestone: 'T1', confirmedAt: new Date(ecrite.confirmedAt) },
+    ]);
+    return carte as {
+      decisionCardId: string;
+      proposedMainPriorityId: string;
+      priorityCandidates: { candidateId: string; provenance: { needIds: number[] } }[];
+    };
+  }
+
+  it('cycle rouvert : la cible vient de la carte du `T1`, l’ancre du cycle courant', async () => {
+    const carte = await t1ConfirmeEtPersiste();
+    const visee = carte.priorityCandidates.find(c => c.candidateId === carte.proposedMainPriorityId);
+    expect(visee?.provenance.needIds.length).toBeGreaterThan(0);
+
+    const payload = await getJ21();
+    expect(payload.repassationAncre).toEqual({ needIds: visee?.provenance.needIds, besoinsVises: [] });
+    expect(prisma.decisionPrioritySelection.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_TEST', decisionCardId: carte.decisionCardId } }),
+    );
+  });
+
+  // LIMITE FIGÉE, PAS UN COMPORTEMENT VOULU (revue du lot) : l'ancre d'un cycle
+  // rouvert se date sur la réponse la plus récente (`dateDeReference`). Une
+  // passation postérieure au `T1` la rend non rejouable — à l'écran de l'ancre
+  // comme ici —, et la cible manque, comme avant t41. Ce banc rougira le jour
+  // où le rejeu des ancres de rang 1 et plus sera corrigé : il faudra alors
+  // l'inverser.
+  it('cycle rouvert : une passation arrivée après le `T1` fait perdre la cible (limite du rejeu)', async () => {
+    await t1ConfirmeEtPersiste();
+    const derniere = runtimeGolden.at(-1) as { idReponse: string; dateReponse: Date };
+    const arriveeDepuis = { ...derniere, idReponse: 'REP_APRES_T1', dateReponse: new Date(Date.now() + 86_400_000) };
+    brancherPassations([...runtimeGolden, arriveeDepuis], dossierGolden);
+
+    const payload = await getJ21();
+    expect(payload.status).toBe('proposal_required');
+    expect('repassationAncre' in payload).toBe(false);
+  });
+
   it('jamais sur une ancre, ni en lecture datée', async () => {
     await t0ConfirmeEtPersiste();
     prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
