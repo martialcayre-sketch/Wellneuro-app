@@ -18,20 +18,31 @@
 // un échec pour une autre raison laisserait le banc vert sans rien prouver.
 // Le message reçu n'est jamais imprimé, seul son code SQLSTATE l'est.
 //
-// LA BASE NOMMÉE N'EST JAMAIS ÉCRITE. Tout le banc (rejeux et cas à deux
-// sessions) tourne dans un CLONE jetable de la base nommée (`CREATE DATABASE
-// … TEMPLATE`), supprimé à la fin. Un COMMIT glissé dans la migration ou
-// dans le contrat ne toucherait que le clone : la non-persistance tient par
-// construction, et non plus par une garde qu'un contre-exemple contourne
-// (passe Codex de #1687, deux fois). La garde lexicale reste, en refus
-// précoce et lisible. À la fin, la suppression du clone est exigée, et une
-// session neuve constate sur la base nommée qu'aucune fixture n'y est.
+// LA BASE NOMMÉE N'EST PAS ÉCRITE PAR ERREUR. Tout le banc (rejeux et cas à
+// deux sessions) tourne dans un CLONE jetable de la base nommée (`CREATE
+// DATABASE … TEMPLATE`), supprimé à la fin. Un COMMIT glissé dans la
+// migration ou dans le contrat ne toucherait que le clone. La garde lexicale
+// reste, en refus précoce et lisible. À la fin, la suppression du clone est
+// exigée, et une session neuve compare la base nommée à son relevé d'avant
+// le banc.
+//
+// PÉRIMÈTRE DE LA MENACE (arbitrage du responsable du 2026-10-24, troisième
+// passe Codex de #1687) : le banc protège la base nommée contre une ERREUR
+// dans deux fichiers committés et relus en P0 — instruction de transaction
+// glissée, nom de base qui déborde, hôte détourné par l'URL. Il ne prétend
+// pas résister à un SQL délibérément hostile : sous le rôle superutilisateur
+// du CI, un tel SQL atteint de toute façon la base nommée (dblink), et il
+// aurait des droits complets en production, où ces fichiers s'appliquent.
+// La garde refuse quand même les moyens connus de sortir du clone
+// (`CREATE EXTENSION`, dblink, postgres_fdw).
+//
 // La base visée doit être NOMMÉE et locale (patron des bancs à deux
 // sessions) : `WN_LIENS_AXE_BANC_BASE` doit égaler le nom de la base de
 // `DATABASE_URL`. Le rôle doit pouvoir créer une base (superutilisateur au
 // CI et en T3), et aucune autre session ne doit être ouverte sur la base
 // nommée pendant le clonage. Le banc refuse une base qui porte déjà un
 // corpus : il n'a de sens que sur une base sans claim.
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,16 +51,32 @@ import pg from 'pg';
 const URL_BASE = process.env.DATABASE_URL;
 if (!URL_BASE) throw new Error('DATABASE_URL est requise.');
 const BASE_ATTENDUE = process.env.WN_LIENS_AXE_BANC_BASE;
-const BASE_REELLE = new URL(URL_BASE).pathname.slice(1);
-const HOTE = new URL(URL_BASE).hostname;
+const URL_ANALYSEE = new URL(URL_BASE);
+// `pg` lit aussi les paramètres de la chaîne de requête (`?host=`…), qui
+// priment sur l'hôte de l'URL : contrôler `hostname` seul ne disait pas où
+// le client se connecte (troisième passe Codex de #1687). Le banc refuse
+// toute chaîne de requête, et ne transmet jamais l'URL à `pg` : il lui donne
+// une configuration construite champ par champ, dont l'hôte est contrôlé.
+if (URL_ANALYSEE.search !== '' || URL_ANALYSEE.hash !== '') {
+  throw new Error('REFUS : DATABASE_URL porte des paramètres, le banc n\'accepte qu\'hôte, port, rôle et base.');
+}
+const HOTE = URL_ANALYSEE.hostname;
 if (HOTE !== '127.0.0.1' && HOTE !== 'localhost') {
   throw new Error(`REFUS : DATABASE_URL vise l'hôte « ${HOTE} », le banc ne joue que sur une base locale.`);
 }
+const BASE_REELLE = decodeURIComponent(URL_ANALYSEE.pathname.slice(1));
 if (!BASE_ATTENDUE || BASE_ATTENDUE !== BASE_REELLE) {
   throw new Error(
     `REFUS : DATABASE_URL vise « ${BASE_REELLE} », WN_LIENS_AXE_BANC_BASE annonce « ${BASE_ATTENDUE ?? ''} ».`,
   );
 }
+const configVers = (database) => ({
+  host: HOTE,
+  port: URL_ANALYSEE.port ? Number(URL_ANALYSEE.port) : 5432,
+  user: decodeURIComponent(URL_ANALYSEE.username),
+  password: decodeURIComponent(URL_ANALYSEE.password) || undefined,
+  database,
+});
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATION = readFileSync(
@@ -143,9 +170,30 @@ function contratSur(sql) {
   return tx.length === 2 && tx[0] === 'BEGIN TRANSACTION READ ONLY' && tx[1] === 'ROLLBACK'
     && tout[0] === tx[0] && tout.at(-1) === 'ROLLBACK';
 }
+// Les moyens connus de sortir du clone vers une autre base, ou vers le
+// système : extension posée à la volée, dblink, postgres_fdw, COPY vers un
+// programme. Cherchés dans le texte ENTIER, corps entre dollars compris
+// (troisième passe Codex de #1687 ; refus d'une erreur, pas d'un adversaire,
+// voir l'en-tête).
+function sansSortie(sql) {
+  return !/\b(dblink\w*|postgres_fdw)\b/i.test(sql)
+    && !instructions(sql).some((x) => /^CREATE (OR REPLACE )?EXTENSION\b/.test(x) || /\bPROGRAM\b/.test(x));
+}
 // La garde s'éprouve elle-même avant toute connexion : les contre-exemples
-// des deux passes Codex, et leurs voisins, doivent être refusés.
+// des passes Codex, et leurs voisins, doivent être refusés.
 const avantRollback = (ajout) => CONTRAT.replace(/ROLLBACK;\s*$/, `${ajout}\nROLLBACK;\n`);
+const MUTATIONS_SORTIE = [
+  ['migration + « CREATE EXTENSION dblink; »', () => sansSortie(`${MIGRATION}\nCREATE EXTENSION dblink;\n`)],
+  ["migration + dblink_exec dans un bloc DO", () => sansSortie(`${MIGRATION}\nDO $x$ BEGIN PERFORM dblink_exec('dbname=x', 'SELECT 1'); END $x$;\n`)],
+  ['contrat + « CREATE EXTENSION postgres_fdw; »', () => sansSortie(avantRollback('CREATE EXTENSION postgres_fdw;'))],
+  ["migration + « COPY t TO PROGRAM 'x'; »", () => sansSortie(`${MIGRATION}\nCOPY t TO PROGRAM 'x';\n`)],
+];
+for (const [nom, sur] of MUTATIONS_SORTIE) {
+  if (sur()) throw new Error(`REFUS : la garde de sortie du clone laisse passer la mutation « ${nom} ».`);
+}
+if (!sansSortie(MIGRATION) || !sansSortie(CONTRAT)) {
+  throw new Error('REFUS : la migration ou le contrat porte un moyen de sortir du clone (extension, dblink, postgres_fdw, PROGRAM).');
+}
 const MUTATIONS_GARDE = [
   ['migration + « SELECT 1; COMMIT; »', () => migrationSure(`${MIGRATION}\nSELECT 1; COMMIT;\n`)],
   ['migration + « END; » en fin', () => migrationSure(`${MIGRATION}\nEND;\n`)],
@@ -172,17 +220,48 @@ if (!contratSur(CONTRAT)) {
 // Créé depuis la base nommée (migrations appliquées, trigger posé par
 // `migrate deploy`), par une session sur la base de maintenance `postgres`.
 // Un clone resté d'un banc interrompu est d'abord supprimé.
-if (!/^[a-z0-9_]+$/.test(BASE_REELLE)) {
+//
+// LE NOM DU CLONE NE PEUT PAS DÉSIGNER LA SOURCE. Il était `<base>_f79_rejeu` :
+// PostgreSQL tronque un identifiant à 63 octets, et pour un nom source assez
+// long le suffixe disparaissait — le `DROP … WITH (FORCE)` supprimait la base
+// source (troisième passe Codex de #1687). Le nom est désormais court et de
+// longueur fixe (préfixe et empreinte de la base source, 23 octets), contrôlé
+// AVANT tout DROP : il diffère de la source et des bases de maintenance, et
+// tient sous la limite.
+const LIMITE_IDENTIFIANT = 63;
+const MAINTENANCE = ['postgres', 'template0', 'template1'];
+if (!/^[a-z0-9_]+$/.test(BASE_REELLE) || Buffer.byteLength(BASE_REELLE) > LIMITE_IDENTIFIANT) {
   throw new Error(`REFUS : nom de base inattendu « ${BASE_REELLE} ».`);
 }
-const CLONE = `${BASE_REELLE}_f79_rejeu`;
-const urlVers = (base) => {
-  const u = new URL(URL_BASE);
-  u.pathname = `/${base}`;
-  return u.toString();
+if (MAINTENANCE.includes(BASE_REELLE)) {
+  throw new Error(`REFUS : « ${BASE_REELLE} » est une base de maintenance.`);
+}
+const CLONE = `wn_banc_f79_${createHash('sha256').update(BASE_REELLE).digest('hex').slice(0, 11)}`;
+if (CLONE === BASE_REELLE || MAINTENANCE.includes(CLONE) || Buffer.byteLength(CLONE) > LIMITE_IDENTIFIANT
+    || !/^wn_banc_f79_[0-9a-f]{11}$/.test(CLONE)) {
+  throw new Error(`REFUS : le nom du clone « ${CLONE} » ne se distingue pas de la base source.`);
+}
+
+// Relevé de la base nommée AVANT le banc : le constat final la compare à
+// lui, table par table, et non à une liste de fixtures connues — un analyte
+// ou un lien étranger, quel que soit son code, fait rougir.
+const RELEVE = `
+  SELECT (SELECT count(*) FROM biology_analytes)::int AS analytes,
+         (SELECT count(*) FROM biology_ratios)::int AS rapports,
+         (SELECT count(*) FROM biology_analyte_links)::int AS liens,
+         (SELECT count(*) FROM rag_corpus_claims)::int AS claims`;
+const releverBase = async () => {
+  const c = new pg.Client(configVers(BASE_REELLE));
+  await c.connect();
+  try {
+    return (await c.query(RELEVE)).rows[0];
+  } finally {
+    await c.end();
+  }
 };
-const URL_REJEU = urlVers(CLONE);
-const maintenance = new pg.Client({ connectionString: urlVers('postgres') });
+const AVANT = await releverBase();
+
+const maintenance = new pg.Client(configVers('postgres'));
 await maintenance.connect();
 await maintenance.query(`DROP DATABASE IF EXISTS "${CLONE}" WITH (FORCE)`);
 await maintenance.query(`CREATE DATABASE "${CLONE}" TEMPLATE "${BASE_REELLE}"`);
@@ -322,7 +401,7 @@ let echecs = 0;
 try {
   for (const cas of CAS) {
     const script = [PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', CONTRAT].join('\n');
-    const client = new pg.Client({ connectionString: URL_REJEU });
+    const client = new pg.Client(configVers(CLONE));
     await client.connect();
     let erreur = null;
     try {
@@ -361,7 +440,7 @@ try {
   // analyte et ses liens, préfixe `__f79c_`), dans le clone seulement.
   const ANALYTE_CONC = 'BIO_TEST_F79_CONC';
   const nouveau = async () => {
-    const c = new pg.Client({ connectionString: URL_REJEU });
+    const c = new pg.Client(configVers(CLONE));
     await c.connect();
     return c;
   };
@@ -490,27 +569,22 @@ try {
 }
 
 // ── La base nommée n'a rien reçu ──────────────────────────────────────────
-// Constaté par une session neuve, APRÈS la suppression du clone : aucune
-// fixture des rejeux ni des cas à deux sessions, et aucun lien d'axe (la
-// base est sans corpus). Une erreur de ce constat fait rougir le banc.
+// Constaté par une session neuve, APRÈS la suppression du clone, contre le
+// relevé d'avant le banc : analytes, rapports, liens et claims, table par
+// table. Toute ligne en plus ou en moins, quel que soit son code, fait
+// rougir — le constat ne cherche plus seulement les fixtures connues
+// (troisième passe Codex de #1687). Une erreur de ce constat fait aussi
+// rougir le banc.
 try {
-  const client = new pg.Client({ connectionString: URL_BASE });
-  await client.connect();
-  const { rows } = await client.query(
-    String.raw`
-      SELECT (SELECT count(*) FROM rag_corpus_claims WHERE id LIKE '\_\_f79%')::int AS claims,
-             (SELECT count(*) FROM biology_analyte_links
-               WHERE id LIKE 'bal\_f79\_%' OR id LIKE '\_\_f79%' OR cible_type = 'axe')::int AS liens,
-             (SELECT count(*) FROM biology_analytes WHERE code = $1)::int AS analytes`,
-    ['BIO_TEST_F79_CONC'],
-  );
-  await client.end();
-  const { claims, liens, analytes } = rows[0];
-  if (claims !== 0 || liens !== 0 || analytes !== 0) {
+  const APRES = await releverBase();
+  const ecarts = Object.keys(AVANT).filter((cle) => AVANT[cle] !== APRES[cle]);
+  if (ecarts.length > 0) {
     echecs += 1;
-    console.error(`ÉCHEC  la base nommée porte ${claims} claim(s), ${liens} lien(s) et ${analytes} analyte(s) de test.`);
+    console.error(`ÉCHEC  la base nommée a changé pendant le banc : ${ecarts
+      .map((cle) => `${cle} ${AVANT[cle]} → ${APRES[cle]}`)
+      .join(', ')}.`);
   } else {
-    console.log('ok     la base nommée n\'a reçu aucune fixture');
+    console.log('ok     la base nommée est identique à son relevé d\'avant le banc');
   }
 } catch (e) {
   echecs += 1;

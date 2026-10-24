@@ -102,6 +102,22 @@ de la liste exacte, puis release-db approuvée et constat par conteneur.
     `/* fin */ COMMIT;` dans la migration, le banc rougit et la base nommée
     reste à 0 claim et 0 lien ; une suppression du clone en échec fait
     sortir le banc en 1 ; le banc suivant supprime le clone resté.
+- Troisième passe Codex sur 3f7b2090 : deux P1 et un P2.
+  - P1 : le nom du clone (`<base>_f79_rejeu`), tronqué à 63 octets,
+    pouvait désigner la source. Le clone a maintenant un nom court et fixe
+    (`wn_banc_f79_<empreinte>`), contrôlé avant tout DROP. Les bases de
+    maintenance et les noms de plus de 63 octets sont refusés. Éprouvé sur
+    une base de 63 caractères : banc vert, source intacte.
+  - P1 : dblink écrivait dans la base nommée. **Arbitrage du responsable**
+    : le banc protège contre l'erreur, pas contre la malveillance (un SQL
+    hostile aurait de toute façon des droits complets en production). La
+    garde refuse `CREATE EXTENSION`, dblink, postgres_fdw et `PROGRAM`. Le
+    constat final compare la base nommée à son relevé d'avant le banc,
+    table par table. Éprouvé : un analyte étranger écrit pendant le banc
+    est détecté (sortie 1).
+  - P2 : `?host=` déviait la connexion. Le banc refuse toute chaîne de
+    requête et donne à `pg` une configuration construite champ par champ.
+    Éprouvé : refusé.
 
 ## Problèmes ouverts
 
