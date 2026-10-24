@@ -44,8 +44,24 @@ export {
   type TypeMimeCompteRendu,
 } from './import/depot';
 
+// Quatrième lecteur hors biologie : le constat du praticien sur un besoin sans
+// score ([[D-347]], t40), dont une pièce peut être une ligne de résultat — le
+// drapeau de l'étage des résultats, le fil d'une ligne citée (tête,
+// annulation) et son verrou de clé. La pièce se dit par son analyse et sa
+// date : aucune valeur lue, aucune qualification.
+export { isCbResultsEnabled } from './featureFlag';
+export { annulationParLigne, correctionsParLigne } from './filCorrection';
+export { annulationsActives, verrouillerCleDuResultat } from './annulations';
+
 /** Les fichiers de `biology-library` que cette entrée ré-exporte — liste fermée. */
-export const FICHIERS_PUBLIES = ['import/lectureDemandee', 'featureFlag', 'import/transmission', 'import/depot'] as const;
+export const FICHIERS_PUBLIES = [
+  'import/lectureDemandee',
+  'featureFlag',
+  'import/transmission',
+  'import/depot',
+  'filCorrection',
+  'annulations',
+] as const;
 
 /**
  * Les tables dont BioFlow est propriétaire (`@@map` du schéma). Le banc vérifie

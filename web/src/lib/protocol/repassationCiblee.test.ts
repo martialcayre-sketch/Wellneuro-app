@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
-import { questionnairesCiblesPourPriorite } from './repassationCiblee';
+import { besoinsDeRepassation, questionnairesCiblesPourPriorite } from './repassationCiblee';
 
 // Ce que ce banc défend (LOT-07, `D-058`) : la re-passation ciblée vise ce que
 // la priorité FONDE (`needIds` → `BESOIN_SOURCES`), jamais le pack entier — et
@@ -54,5 +54,51 @@ describe('questionnairesCiblesPourPriorite', () => {
     for (const qid of tous) {
       expect(IDS_ASSIGNABLES.has(qid), qid).toBe(true);
     }
+  });
+});
+
+// t41 : la cible que la re-passation lit d'une carte — une seule dérivation,
+// appliquée par l'écran à la carte affichée et par la route à celle de l'ancre.
+describe('besoinsDeRepassation', () => {
+  const candidat = (candidateId: string, needIds: number[]) => ({ candidateId, provenance: { needIds } });
+  const carte = (surcharge: Record<string, unknown> = {}) => ({
+    priorityCandidates: [candidat('priority:A', [4]), candidat('priority:B', [9, 12])],
+    proposedMainPriorityId: 'priority:A',
+    selectedMainPriority: null,
+    ...surcharge,
+  }) as unknown as Parameters<typeof besoinsDeRepassation>[0];
+  const selection = (candidateId: string, libre?: Record<string, unknown>) => ({
+    candidateId, selectedAt: '2026-08-13T00:00:00.000Z', selectedBy: 'practitioner', rationale: 'Motif.',
+    ...(libre ? { libre } : {}),
+  });
+
+  it('sans carte, rien — et le même vide d’un appel à l’autre', () => {
+    const un = besoinsDeRepassation(null);
+    const deux = besoinsDeRepassation(null);
+    expect(un).toEqual({ needIds: [], besoinsVises: [] });
+    // Une référence stable : l'écran passe ces tableaux à un effet.
+    expect(un.needIds).toBe(deux.needIds);
+    expect(un.besoinsVises).toBe(deux.besoinsVises);
+  });
+
+  it('à défaut de sélection, vise la priorité PROPOSÉE — par la référence de la carte', () => {
+    const lue = carte();
+    const cible = besoinsDeRepassation(lue);
+    expect(cible).toEqual({ needIds: [4], besoinsVises: [] });
+    expect(cible.needIds).toBe(lue?.priorityCandidates[0].provenance.needIds);
+  });
+
+  it('la sélection du praticien l’emporte sur la proposition', () => {
+    expect(besoinsDeRepassation(carte({ selectedMainPriority: selection('priority:B') })).needIds).toEqual([9, 12]);
+  });
+
+  it('une priorité posée ne vise aucun candidat, et transmet ses besoins visés', () => {
+    const libre = { domaine: 'sommeil', libelle: 'Retrouver un sommeil réparateur', besoinsVises: [5] };
+    expect(besoinsDeRepassation(carte({ selectedMainPriority: selection('libre:sommeil:0123456789abcdef', libre) })))
+      .toEqual({ needIds: [], besoinsVises: [5] });
+  });
+
+  it('ni sélection ni proposition (table non signée) : rien', () => {
+    expect(besoinsDeRepassation(carte({ proposedMainPriorityId: null }))).toEqual({ needIds: [], besoinsVises: [] });
   });
 });

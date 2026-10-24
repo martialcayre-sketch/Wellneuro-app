@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   construireHistoriqueEquilibre,
   construireReponsesParQuestionnaire,
+  datesDesReponsesRetenues,
   resoudreDateT0,
 } from './depuisPrisma';
 import type { ReponseBrute } from './depuisPrisma';
@@ -16,6 +17,30 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
     P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
   };
+
+  // [[D-333]] §2 règle 1 : la provenance datée nomme la passation que la
+  // formule a lue, pas une autre — même sélection, mêmes clés.
+  it('datesDesReponsesRetenues : la date de la passation retenue, aux mêmes clés que les réponses', () => {
+    const brutes: ReponseBrute[] = [
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: { P1: '4' } } },
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateRecente, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      // Sans réponses brutes : ni lue par la formule, ni datée.
+      { statutValidite: null, idQuestionnaire: 'Q_NEU_11', dateReponse: dateRecente, scoresJson: { total: 4 } },
+    ];
+    const dates = datesDesReponsesRetenues(brutes);
+    expect(dates).toEqual({ Q_STR_02: dateRecente });
+    expect(Object.keys(dates)).toEqual(Object.keys(construireReponsesParQuestionnaire(brutes)));
+    expect(datesDesReponsesRetenues(brutes, dateAncienne)).toEqual({ Q_STR_02: dateAncienne });
+  });
+
+  it('la plus récente sans réponses brutes écarte le questionnaire, sans repli sur une plus ancienne', () => {
+    const brutes: ReponseBrute[] = [
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { statutValidite: null, idQuestionnaire: 'Q_STR_02', dateReponse: dateRecente, scoresJson: { total: 26 } },
+    ];
+    expect(construireReponsesParQuestionnaire(brutes)).toEqual({});
+    expect(datesDesReponsesRetenues(brutes)).toEqual({});
+  });
 
   it('deux réponses au même questionnaire → seule la plus récente est retenue', () => {
     const dedoublonnees = construireReponsesParQuestionnaire([

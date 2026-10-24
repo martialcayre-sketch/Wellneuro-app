@@ -1,0 +1,26 @@
+// Les refus des gestes de constat sur un besoin ([[D-347]], t40), en français,
+// sans aucune valeur. La route les rend ; l'écran les affiche tels quels.
+
+export const MESSAGES_REFUS_CONSTAT_BESOIN: Record<string, string> = {
+  constat_besoin_desactive: 'Les constats sur les besoins ne sont pas ouverts.',
+  acte_invalide: 'Le geste demandé est illisible.',
+  besoin_invalide: 'Ce besoin ne reçoit pas de constat. Rechargez la page.',
+  besoin_avec_score: 'Ce besoin porte une source de score : aucun constat neuf ne s’y pose.',
+  verdict_invalide: 'Choisissez un verdict dans la liste.',
+  motif_invalide: 'Choisissez un motif dans la liste de ce verdict.',
+  note_invalide: 'La note est illisible.',
+  note_trop_longue: 'La note dépasse 2000 caractères.',
+  note_requise: 'Le motif « autre motif » demande une note.',
+  date_invalide: 'La date « à revoir le » est illisible.',
+  date_passee: 'La date « à revoir le » doit être postérieure à aujourd’hui.',
+  pieces_invalides: 'Les pièces sont mal désignées. Rechargez la page.',
+  pieces_trop_nombreuses: 'Un constat cite au plus 30 pièces.',
+  piece_inconnue: 'Une pièce citée est introuvable dans ce dossier. Rechargez la page.',
+  piece_corrigee: 'Un résultat cité a été corrigé : citez la valeur qui fait foi.',
+  piece_annulee: 'Un résultat cité est annulé : il ne se cite plus.',
+  passation_exclue: 'Une passation citée est exclue du raisonnement : elle ne se cite plus.',
+  remplacement_invalide: 'Le constat à remplacer est mal désigné. Rechargez la page.',
+  tete_changee: 'Le constat en vigueur a changé depuis votre lecture. Rechargez la page.',
+  refus_base: 'La base a refusé ce geste. Rechargez la page et reprenez-le.',
+  conflit_concurrent: 'Un autre geste est passé au même moment. Rechargez la page et reprenez-le.',
+};

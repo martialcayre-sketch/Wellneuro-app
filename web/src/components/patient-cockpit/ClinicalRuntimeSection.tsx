@@ -5,7 +5,7 @@ import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/rout
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 import { isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
-import { estSelectionLibre, isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
+import { isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
@@ -35,6 +35,7 @@ import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
 import { estAncreDeCycle, estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
+import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { AssiettesIndiqueesPanel, type PrioriteVisee } from './AssiettesIndiqueesPanel';
@@ -128,11 +129,6 @@ type DiffusionApiResponse = {
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
-
-// Identité STABLE pour « aucun besoin » : l'état observable ci-dessous entre
-// dans le tableau de dépendances d'un effet, et un `?? []` recréerait un
-// tableau neuf à chaque rendu — l'effet tirerait en boucle.
-const NEED_IDS_VIDE: number[] = [];
 
 // Phases du cycle clinique 3.x (A6-R1). Le poste de pilotage n'affiche qu'une
 // phase à la fois ; `'tout'` (défaut) conserve l'empilement historique et reste
@@ -1460,14 +1456,25 @@ export function ClinicalRuntimeSection({
   const candidatVise = idCandidatVise
     ? decisionCard?.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
     : null;
-  const needIdsPrioriteSelectionnee = candidatVise?.provenance.needIds ?? NEED_IDS_VIDE;
-  // LA PRIORITÉ POSÉE n'est pas un candidat : `candidatVise` est nul pour elle,
-  // et ses besoins visés ([[D-338]] §3) passent par leur propre canal, vers la
-  // re-passation ciblée SEULE — jamais vers les assiettes ci-dessous.
-  const selectionRetenue = decisionCard?.selectedMainPriority ?? null;
-  const besoinsVisesPrioriteLibre = estSelectionLibre(selectionRetenue)
-    ? selectionRetenue.libre.besoinsVises ?? NEED_IDS_VIDE
-    : NEED_IDS_VIDE;
+  //
+  // LA RE-PASSATION CIBLÉE lit la même priorité par `besoinsDeRepassation`, la
+  // dérivation que la route applique aussi. LA PRIORITÉ POSÉE n'est pas un
+  // candidat : `candidatVise` est nul pour elle, et ses besoins visés
+  // ([[D-338]] §3) passent par leur propre canal, vers la re-passation ciblée
+  // SEULE — jamais vers les assiettes ci-dessous.
+  //
+  // AU JALON DÛ, L'ÉCRAN N'A PAS DE CARTE (t41) : la route y sert la
+  // proposition du jalon, et `decisionCard` est nul. Elle joint alors la cible
+  // tirée de la carte REJOUÉE de l'ancre du cycle (`repassationAncre`) — sans
+  // quoi la re-passation ne visait rien, ni candidat ni besoins visés. Lue ici
+  // pour la re-passation seule : ni assiettes, ni sélection, ni protocole.
+  const repassation = decisionCard === null
+    && runtime?.status === 'proposal_required'
+    && runtime.repassationAncre
+    ? runtime.repassationAncre
+    : besoinsDeRepassation(decisionCard);
+  const needIdsPrioriteSelectionnee = repassation.needIds;
+  const besoinsVisesPrioriteLibre = repassation.besoinsVises;
   // LA HIÉRARCHIE DES ASSIETTES VISE LA MÊME PRIORITÉ ([[D-254]]) — second
   // usage du repli, qui ne débloque toujours rien : il CLASSE, et la carte dit
   // si la priorité est retenue par le praticien ou seulement proposée.

@@ -75,6 +75,7 @@ import {
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { PRIORITY_RULES_METADATA } from '@/lib/clinical/priorityRulesV1';
 import { construireSafetyFindings } from '@/lib/clinical-engine/safetyFindings';
+import { identifiantPrioriteLibre } from '@/lib/clinical-engine/prioriteLibreServeur';
 import { GET, POST } from './route';
 
 const patient = { idPatient: 'PAT_TEST', createdAt: new Date('2026-01-01T00:00:00.000Z') };
@@ -1679,5 +1680,225 @@ describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-11
     expect(res.status).toBe(200);
     expect((await res.json()).status).toBe('proposal_required');
     expect(prisma.assessmentEpisode.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+// ── t41 : LA RE-PASSATION CIBLÉE AU JALON DÛ ──────────────────────────────────
+//
+// Le défaut : au jalon dû, l'écran demande la proposition du jalon, la route
+// rend `proposal_required` et l'écran n'a aucune carte — la re-passation ne
+// visait ni le candidat ni les besoins d'une priorité posée. La route joint
+// désormais la cible tirée de la carte REJOUÉE de l'ancre, et elle seule.
+describe('/api/praticien/cockpit — cible de re-passation au jalon de mesure (t41)', () => {
+  const runtimeGolden = reponsesRuntimeRideauT0(DATE_RIDEAU_FIXTURE, PLAINTES_DIGESTIF_ET_PONDERAL);
+  const dossierGolden = passationsRideauT0(DATE_RIDEAU_FIXTURE, PLAINTES_DIGESTIF_ET_PONDERAL);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
+    prisma.assessmentEpisode.create.mockResolvedValue({});
+    prisma.assessmentEpisode.updateMany.mockResolvedValue({ count: 1 });
+    brancherPassations(runtimeGolden, dossierGolden);
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: {
+        motif_principal: 'Ballonnements et prise de poids depuis un an.',
+        objectif_prioritaire: 'Retrouver un confort digestif',
+      },
+    });
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    PRIORITY_RULES_METADATA.validationExterne = true;
+    PRIORITY_RULES_METADATA.dateValidation = '2026-08-12T00:00:00.000Z';
+  });
+
+  afterEach(() => {
+    PRIORITY_RULES_METADATA.validationExterne = false;
+    PRIORITY_RULES_METADATA.dateValidation = null;
+  });
+
+  /**
+   * Confirme le T0, puis branche la base comme après coup : l'épisode persisté
+   * relu par son identifiant SEUL (le J21, lui, n'a pas de ligne), et l'ancre
+   * listée par `lireAncresPersistees`.
+   */
+  async function t0ConfirmeEtPersiste(idAncre?: string) {
+    const proposed = await proposal();
+    const post = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    const carte = (await post.json()).decisionCard;
+    const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockImplementation((args: { where: { id: string } }) =>
+      Promise.resolve(args.where.id === ecrite.id ? { payload: ecrite.payload, payloadHash: ecrite.payloadHash } : null));
+    prisma.assessmentEpisode.findMany.mockResolvedValue([{
+      id: idAncre ?? ecrite.id, cycleId: idAncre ?? ecrite.id, milestone: 'T0',
+      confirmedAt: new Date(ecrite.confirmedAt),
+    }]);
+    return carte as {
+      decisionCardId: string;
+      proposedMainPriorityId: string;
+      priorityCandidates: { candidateId: string; provenance: { needIds: number[] } }[];
+    };
+  }
+
+  const getJ21 = async () => (await GET(getRequest('idPatient=PAT_TEST&milestone=J21'))).json();
+
+  it('au J21, la proposition porte les besoins du candidat visé par la carte de l’ancre', async () => {
+    const carte = await t0ConfirmeEtPersiste();
+    const visee = carte.priorityCandidates.find(c => c.candidateId === carte.proposedMainPriorityId);
+    expect(visee?.provenance.needIds.length).toBeGreaterThan(0);
+
+    const payload = await getJ21();
+    expect(payload.status).toBe('proposal_required');
+    expect(payload.repassationAncre).toEqual({ needIds: visee?.provenance.needIds, besoinsVises: [] });
+    // Réservée à la re-passation : ni la carte, ni la sélection ne voyagent.
+    expect('decisionCard' in payload).toBe(false);
+  });
+
+  it('la sélection RETENUE à l’ancre l’emporte sur la proposition — lue pour la carte de l’ancre', async () => {
+    const carte = await t0ConfirmeEtPersiste();
+    const autre = carte.priorityCandidates.find(c => c.candidateId !== carte.proposedMainPriorityId);
+    expect(autre).toBeDefined();
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{
+      id: 'SEL_1', candidateId: autre?.candidateId, rationale: 'Choix du praticien.',
+      selectedAt: new Date('2026-08-13T00:00:00.000Z'), supersedesSelectionId: null,
+    }]);
+
+    const payload = await getJ21();
+    expect(payload.repassationAncre.needIds).toEqual(autre?.provenance.needIds);
+    // La lecture vise la carte de l'ANCRE, par son identifiant d'enveloppe.
+    expect(prisma.decisionPrioritySelection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_TEST', decisionCardId: carte.decisionCardId } }),
+    );
+  });
+
+  it('une priorité POSÉE transmet ses besoins visés, par leur propre canal', async () => {
+    await t0ConfirmeEtPersiste();
+    const libre = { domaine: 'sommeil' as const, libelle: 'Retrouver un sommeil réparateur' };
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{
+      id: 'SEL_1', candidateId: identifiantPrioriteLibre(libre), rationale: 'Choix du praticien.',
+      domaineLibre: libre.domaine, libelleLibre: libre.libelle, besoinsVises: [9, 12],
+      selectedAt: new Date('2026-08-13T00:00:00.000Z'), supersedesSelectionId: null,
+    }]);
+
+    const payload = await getJ21();
+    expect(payload.repassationAncre).toEqual({ needIds: [], besoinsVises: [9, 12] });
+  });
+
+  it('une sélection devenue inapplicable est écartée : la cible retombe sur la proposition', async () => {
+    const carte = await t0ConfirmeEtPersiste();
+    prisma.decisionPrioritySelection.findMany.mockResolvedValue([{
+      id: 'SEL_1', candidateId: 'priority:REGLE_QUI_NE_SE_DECLENCHE_PLUS', rationale: 'Motif consigné.',
+      selectedAt: new Date('2026-08-13T00:00:00.000Z'), supersedesSelectionId: null,
+    }]);
+    const visee = carte.priorityCandidates.find(c => c.candidateId === carte.proposedMainPriorityId);
+
+    const payload = await getJ21();
+    expect(payload.repassationAncre.needIds).toEqual(visee?.provenance.needIds);
+  });
+
+  it('aucune cible quand l’ancre listée n’est pas l’épisode que sa proposition désigne', async () => {
+    await t0ConfirmeEtPersiste('runtime-episode-AUTRE_CYCLE');
+    const payload = await getJ21();
+    expect(payload.status).toBe('proposal_required');
+    expect('repassationAncre' in payload).toBe(false);
+  });
+
+  it('aucune cible quand la carte de l’ancre ne se rejoue pas — la proposition reste servie', async () => {
+    await t0ConfirmeEtPersiste();
+    prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
+    const payload = await getJ21();
+    expect(payload.status).toBe('proposal_required');
+    expect('repassationAncre' in payload).toBe(false);
+  });
+
+  it('une panne de la lecture de l’ancre ne fait pas tomber la proposition du jalon', async () => {
+    await t0ConfirmeEtPersiste();
+    prisma.decisionPrioritySelection.findMany.mockRejectedValue(new Error('base indisponible'));
+    const response = await GET(getRequest('idPatient=PAT_TEST&milestone=J21'));
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.status).toBe('proposal_required');
+    expect('repassationAncre' in payload).toBe(false);
+  });
+
+  /**
+   * Un cycle ROUVERT : un `T0` déjà posé (ligne fictive), puis le `T1` confirmé
+   * par la route et relu comme ancre courante.
+   */
+  async function t1ConfirmeEtPersiste() {
+    const t0 = { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') };
+    prisma.assessmentEpisode.findMany.mockResolvedValue([t0]);
+    const proposed = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T1'))).json();
+    const post = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T1',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(post.status).toBe(200);
+    const carte = (await post.json()).decisionCard;
+    const ecrite = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockImplementation((args: { where: { id: string } }) =>
+      Promise.resolve(args.where.id === ecrite.id ? { payload: ecrite.payload, payloadHash: ecrite.payloadHash } : null));
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      t0,
+      { id: ecrite.id, cycleId: ecrite.id, milestone: 'T1', confirmedAt: new Date(ecrite.confirmedAt) },
+    ]);
+    return carte as {
+      decisionCardId: string;
+      proposedMainPriorityId: string;
+      priorityCandidates: { candidateId: string; provenance: { needIds: number[] } }[];
+    };
+  }
+
+  it('cycle rouvert : la cible vient de la carte du `T1`, l’ancre du cycle courant', async () => {
+    const carte = await t1ConfirmeEtPersiste();
+    const visee = carte.priorityCandidates.find(c => c.candidateId === carte.proposedMainPriorityId);
+    expect(visee?.provenance.needIds.length).toBeGreaterThan(0);
+
+    const payload = await getJ21();
+    expect(payload.repassationAncre).toEqual({ needIds: visee?.provenance.needIds, besoinsVises: [] });
+    expect(prisma.decisionPrioritySelection.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_TEST', decisionCardId: carte.decisionCardId } }),
+    );
+  });
+
+  // LIMITE FIGÉE, PAS UN COMPORTEMENT VOULU (revue du lot) : l'ancre d'un cycle
+  // rouvert se date sur la réponse la plus récente (`dateDeReference`). Une
+  // passation postérieure au `T1` la rend non rejouable — à l'écran de l'ancre
+  // comme ici —, et la cible manque, comme avant t41. Ce banc rougira le jour
+  // où le rejeu des ancres de rang 1 et plus sera corrigé : il faudra alors
+  // l'inverser.
+  it('cycle rouvert : une passation arrivée après le `T1` fait perdre la cible (limite du rejeu)', async () => {
+    await t1ConfirmeEtPersiste();
+    const derniere = runtimeGolden.at(-1) as { idReponse: string; dateReponse: Date };
+    const arriveeDepuis = { ...derniere, idReponse: 'REP_APRES_T1', dateReponse: new Date(Date.now() + 86_400_000) };
+    brancherPassations([...runtimeGolden, arriveeDepuis], dossierGolden);
+
+    const payload = await getJ21();
+    expect(payload.status).toBe('proposal_required');
+    expect('repassationAncre' in payload).toBe(false);
+  });
+
+  it('jamais sur une ancre, ni en lecture datée', async () => {
+    await t0ConfirmeEtPersiste();
+    prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
+    const t0 = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T0'))).json();
+    expect(t0.status).toBe('proposal_required');
+    expect('repassationAncre' in t0).toBe(false);
+
+    // Repère réel du dossier : la confirmation de l'ancre elle-même.
+    const date = new Date(prisma.assessmentEpisode.create.mock.calls[0][0].data.confirmedAt).toISOString();
+    const passe = await GET(getRequest(`idPatient=PAT_TEST&milestone=J21&asOf=${encodeURIComponent(date)}`));
+    expect(passe.status).toBe(200);
+    const payloadPasse = await passe.json();
+    expect(payloadPasse.status).toBe('proposal_required');
+    expect('repassationAncre' in payloadPasse).toBe(false);
   });
 });

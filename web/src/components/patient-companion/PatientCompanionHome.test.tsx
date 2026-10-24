@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 import { PatientCompanionHome } from './PatientCompanionHome';
 import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
+import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
 // portail n'en servait qu'une — le banc ne pouvait donc rien constater de ce que
@@ -424,5 +425,58 @@ describe('PatientCompanionHome — détail replié', () => {
     expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
     expect(screen.queryByText(BOUTON)).toBeNull();
     expect(postsDeLecture()).toEqual([]);
+  });
+});
+
+// L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
+describe('PatientCompanionHome — encart de conduite', () => {
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+  const vueServie = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('drapeau fermé (aucun encartConduite) : absent, le protocole servi comme avant', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(screen.queryByText(TITRE_ENCART_CONDUITE)).toBeNull();
+  });
+
+  it('annoncé par la route : le titre et les quatre paragraphes ACCEPTÉS, mot pour mot, dans l’ordre', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, encartConduite: true }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    const titre = await screen.findByRole('heading', { name: TITRE_ENCART_CONDUITE });
+    const encart = titre.closest('section');
+    expect(encart?.getAttribute('aria-labelledby')).toBe(titre.id);
+    const paragraphes = [...(encart?.querySelectorAll('p') ?? [])].map((p) => p.textContent);
+    expect(paragraphes).toEqual([...PARAGRAPHES_ENCART_CONDUITE]);
+  });
+
+  it('hors du détail replié : lu avant le clic qui date la lecture', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, lectureDuDetail: { dejaOuvert: false }, encartConduite: true },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Voir le détail de mon protocole')).toBeTruthy();
+    expect(screen.queryByText('Petit-déjeuner protéiné')).toBeNull();
+    expect(screen.getByRole('heading', { name: TITRE_ENCART_CONDUITE })).toBeTruthy();
+  });
+
+  it('en fin de cycle aussi : la conduite vaut tant qu’un protocole est servi', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: true, vue: vueServie, encartConduite: true }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: TITRE_ENCART_CONDUITE })).toBeTruthy();
+  });
+
+  it.each([
+    ['sans protocole diffusé', { ok: true, protocoleDiffuse: false, finDeCycle: false, vue: null, encartConduite: true }, /arrivera bientôt/],
+    ['protocole indisponible', { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: null, indisponible: true, encartConduite: true }, /pas consultable/],
+  ])('%s : aucun encart', async (_cas, proto, attendu) => {
+    mockFetch(proto, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(attendu)).toBeTruthy();
+    expect(screen.queryByText(TITRE_ENCART_CONDUITE)).toBeNull();
   });
 });

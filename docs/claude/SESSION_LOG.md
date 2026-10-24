@@ -11441,3 +11441,39 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis b16 (vérifier au plan, F25, s'il relève de la file D) et b25 (texte des durées, à relire).
 
 **Ouvert.** Une vraie note commençant par « Pack » serait masquée : risque accepté.
+## 2026-10-23 — t40 : constat sur un besoin sans score, code consommateur (D-347)
+
+**Fait.** Migration #1664 appliquée : release-db 40021347640, sentinelle liée au run, constat par conteneur. PR 2 : route `api/praticien/besoins/constats`, lecture, écriture sous les verrous du trigger, bloc sous le tableau de l'onglet « Besoins » (arbitrage du responsable), garde des lecteurs jumelle, sous `WN_CONSTAT_BESOIN` éteint. Biologie lue par l'entrée publiée (D-306). T3 vert ; wn-reviewer GO avec réserves, corrigées.
+
+**Écarté.** Tiroir de la phase « Données », onglet Biologie (confusion avec D-331) ; relever le plafond des dérogations BioFlow.
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t40 « fait » au suivi.
+
+**Ouvert.** Test d'intégration sur vraie base avant l'allumage.
+## 2026-10-23 — J1-cockpit-b : provenance datée, garde de frontière, Q9 et Q10
+
+**Fait.** Quatre arbitrages du responsable (options recommandées). Repli « Source » sous les cinq cartes du cockpit : questionnaires lus, date de la passation retenue, version du calcul ; sans provenance, « Source non enregistrée » au lieu du chiffre. Q9 : mention du plafond sous l'indice (booléen seul). Q10 : valeur de trajectoire et écart du momentum retirés de `lecturePatient`. Garde `frontierePortail` en trois volets, rouge sous huit mutations. wn-reviewer : GO avec réserves ; P1 (trois répertoires patient hors garde) corrigé.
+
+**Écarté.** Provenance du tableau des couvertures (r3_08 le refait) ; dates recalculées dans la route (copie de la déduplication) ; version empruntée pour la stabilité (« Formule non versionnée »).
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_07 « fait » à la page de la file A.
+
+**Ouvert.** Règle 2 (formule `nom-vN`) ; contrat à liste fermée limité à `api/patient/equilibre`.
+## 2026-10-23 — bd : encart « quand ralentir ou demander avis », livré éteint (D-349)
+
+**Fait.** Texte du responsable accepté (variante A d'un brouillon externe ; phrase du choix dans le formulaire retirée sur revue adverse) ; servi au caractère près à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, éteint ; D-349, registre des drapeaux, plan H71.
+
+**Écarté.** Phrase « choisissez l’élément ou « Je ne sais pas » » : sur l'ancien formulaire (mineur, sans date), « Je ne sais pas » laisse le signalement hors du programme (D-281). Lien vers « Signaler un problème » : non demandé, limite écrite au §5.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; drapeau sur accord du responsable, puis constat (D-349 §4) ; page de la file C.
+
+**Ouvert.** Aperçu du protocole au cockpit sans l'encart ; gêne liée à un geste de vie routée par le libellé « produit ».
+## 2026-10-24 — t41 : la re-passation ciblée atteignable au jalon dû
+
+**Fait.** Au jalon de mesure, la route cockpit joint à `proposal_required` la cible de re-passation (`needIds`, `besoinsVises`), tirée du rejeu de la carte de l'ancre courante (`lireSelectionPriorite`, repli `construireChaineC1Tolerante`). Une dérivation pure est partagée avec l'écran (`besoinsDeRepassation`), et le rejeu est factorisé. Aucune migration, rien de clinique. wn-reviewer : GO avec réserves, P2-1 corrigée, P1 documentée et figée par un banc.
+
+**Écarté.** Relire l'épisode de l'ancre sans repasser par sa proposition : la cible divergerait de l'écran de l'ancre.
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t41 « fait » au suivi de la file A.
+
+**Ouvert.** Rejeu des ancres `T1+` cassé par une passation postérieure (D-118, antérieur au lot), à router par le responsable ; Q1 (cible du J42 après la confirmation du J21).

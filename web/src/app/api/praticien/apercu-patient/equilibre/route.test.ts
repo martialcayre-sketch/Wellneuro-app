@@ -23,7 +23,7 @@ function request(query = 'id=ASS_1'): Request {
 const EQUILIBRE = {
   indiceGlobal: 62,
   momentum: null,
-  trajectoire: [{ date: '2026-07-01T00:00:00.000Z', valeur: 62 }],
+  trajectoire: [{ date: '2026-07-01T00:00:00.000Z' }],
   besoins: [{ id: 1, libellePatient: 'Sommeil', strate: 'S1', couverture: 60 }],
 };
 

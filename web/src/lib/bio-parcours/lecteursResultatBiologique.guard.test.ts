@@ -35,6 +35,12 @@ const ACCES_ADMIS = [
   // aucune valeur lue ; n'écrivent que dans la table des constats.
   'web/src/lib/bio-parcours/constats/ecriture.ts',
   'web/src/lib/bio-parcours/constats/lecture.ts',
+  // Le constat du praticien sur un besoin sans score ([[D-347]], t40), même
+  // lecture que ceux du parcours : la clé et le fil des lignes citées en
+  // pièce, sous le verrou de clé à l'écriture — aucune valeur lue ;
+  // n'écrivent que dans la table des constats sur un besoin.
+  'web/src/lib/constats-besoin/ecriture.ts',
+  'web/src/lib/constats-besoin/lecture.ts',
   // Seul chemin d'un import vers les résultats : la décision du praticien.
   'web/src/lib/biology-library/import/decisions.ts',
   // L'entrée publiée de BioFlow ([[D-306]] §1) NOMME la table parmi celles

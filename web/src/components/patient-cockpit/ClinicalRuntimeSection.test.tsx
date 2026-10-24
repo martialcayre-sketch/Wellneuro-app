@@ -1564,6 +1564,35 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     });
   });
 
+  it('sans carte, la re-passation lit la cible de l’ANCRE que la route joint (t41)', async () => {
+    // Au jalon dû, la route sert la proposition du jalon : aucune carte à
+    // l'écran. Avant t41, la re-passation ne recevait alors rien.
+    const onEtatChange = vi.fn();
+    vi.stubGlobal('fetch', fetchParUrl({
+      trajectoire: trajectoireAvecCycle(1),
+      cockpitT0: { ...proposalResponse, repassationAncre: { needIds: [4], besoinsVises: [9, 12] } },
+    }));
+
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onEtatChange={onEtatChange}
+      />,
+    );
+
+    await waitFor(() => {
+      const dernier = onEtatChange.mock.calls.at(-1)?.[0] as {
+        chargement: boolean; needIdsPrioriteSelectionnee: number[]; besoinsVisesPrioriteLibre: number[];
+      };
+      expect(dernier?.chargement).toBe(false);
+      expect(dernier?.needIdsPrioriteSelectionnee).toEqual([4]);
+      expect(dernier?.besoinsVisesPrioriteLibre).toEqual([9, 12]);
+    });
+  });
+
   it('« sélection de priorité due » est INCONNUE quand la carte ne l’est pas — jamais « rien à faire »', async () => {
     // Le pendant du banc ci-dessus, et la raison du tri-état : sur ce même
     // rejeu, l'épisode est confirmé mais AUCUNE carte n'est servie. Répondre

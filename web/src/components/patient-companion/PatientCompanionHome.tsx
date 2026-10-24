@@ -16,6 +16,7 @@ import {
   TEXTE_PAUSE_ELEMENT,
   type ElementEnPause,
 } from '@/lib/trust/pauseEffetIndesirable';
+import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -41,6 +42,8 @@ type ProtocoleResponse =
       boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
       /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
       lectureDuDetail?: { dejaOuvert: boolean };
+      /** Encart « quand ralentir ou demander avis » ([[D-349]]) ; absent = drapeau fermé. */
+      encartConduite?: true;
     }
   | { ok: false };
 type CheckinResponse =
@@ -348,6 +351,22 @@ export function PatientCompanionHome({ token }: { token: string }) {
 
       {/* Progression factuelle (jamais de pourcentage). */}
       {checkin && checkin.points.length > 0 && <ProtocolCheckinTrend points={checkin.points} />}
+
+      {/* QUAND RALENTIR OU DEMANDER AVIS ([[D-349]], lettre bd) — le texte
+          ACCEPTÉ, jamais reformulé. Hors du détail replié et servi en fin de
+          cycle aussi : la conduite vaut tant qu'un protocole est servi. */}
+      {protocole.encartConduite && (
+        <section aria-labelledby="encart-conduite-titre" className="rounded-xl border border-border px-4 py-3 space-y-2">
+          <h3 id="encart-conduite-titre" className="text-sm font-semibold text-foreground">
+            {TITRE_ENCART_CONDUITE}
+          </h3>
+          {PARAGRAPHES_ENCART_CONDUITE.map((paragraphe) => (
+            <p key={paragraphe} className="text-sm text-foreground">
+              {paragraphe}
+            </p>
+          ))}
+        </section>
+      )}
 
       {/* Mode « jour difficile » — rassurant, non culpabilisant. */}
       {!finDeCycle && (

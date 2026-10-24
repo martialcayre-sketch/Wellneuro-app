@@ -4,6 +4,191 @@
 
 ## Décisions actives
 
+### D-349 — bd : l'encart « quand ralentir ou demander avis » — texte du responsable accepté, servi à l'accueil du protocole sous `WN_PORTAIL_ENCART_CONDUITE`, fermé à la livraison (H71 ; applique D-346 §2 et D-288 §1)
+
+- Date : 2026-10-23
+- Statut : accepté — texte du responsable du 2026-10-23. Il a retenu la
+  variante A d'un brouillon qu'il a fait rédiger par un assistant externe,
+  puis, sur deux questions à options, retiré la phrase qui décrivait le
+  choix à faire dans le formulaire (§1, motif). Décision rédigée par
+  l'assistant à partir de ces choix.
+- Domaine : file C du plan, fiche H71 (lettre bd) ; accueil du protocole au
+  portail (`PatientCompanionHome`, route `api/portail/protocole`).
+- Applique : [[D-346]] §2 (l'encart prend la place suivante dès qu'il est
+  prêt) ; [[D-288]] §1 (texte accepté, puis registre, puis drapeau) et §2
+  (le constat).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune durée,
+  aucun signe nommé ; le formulaire « Signaler un problème » et ses libellés ;
+  les textes signés de la pause ([[D-281]] §4) ; les numéros d'urgence du pied
+  de page ([[D-293]] §3, amendement du 2026-10-21) ; aucune migration, aucune
+  écriture, aucune trace de lecture.
+
+**§1 — Le texte.** Accepté tel quel, servi au caractère près
+(`web/src/lib/portail/texteEncartConduite.ts`, relu par un banc) :
+
+> Quand ralentir ou demander avis
+>
+> Un geste d’alimentation ou d’hygiène de vie vous pèse ? Allégez-le ou ralentissez, sans culpabiliser.
+>
+> Si une gêne inhabituelle apparaît ou vous inquiète après le début d’un élément, ouvrez « Signaler un problème », puis « Un produit me semble mal toléré ». Respectez les pauses affichées, sans reprendre de vous-même.
+>
+> En cas de malaise sérieux, appelez les urgences indiquées en bas de page, sans attendre.
+>
+> Poursuivez vos traitements prescrits et votre suivi médical, sans les modifier sans votre médecin.
+
+Motif du retrait de la phrase « choisissez l’élément ou « Je ne sais pas » » :
+les deux formulaires du signalement ne posent pas la même question. Le
+nouveau propose la liste des éléments du programme ; l'ancien — dossier
+mineur ou sans date de naissance, ou adulte resté sur lui ([[D-281]] §2) —
+demande si le produit fait partie du programme, et ne rattache le
+signalement que sur « Oui ». Sur l'ancien, « Je ne sais pas » laisse le
+signalement hors du programme : ni attente de l'avis, ni blocage de la
+diffusion. Une consigne unique aurait poussé ce geste-là ; la retirer laisse
+chaque formulaire guider seul. « Respectez les pauses affichées » couvre les
+deux portées de la pause : l'élément désigné, ou tous les compléments
+([[D-281]] §3).
+
+**§2 — Où et quand.** À l'accueil du protocole, sous les rendez-vous de
+suivi, chaque fois qu'une vue du protocole est servie : hors du détail
+replié ([[D-315]]), lu avant tout clic, et en fin de cycle aussi. Rien sur
+l'accueil sans protocole ni sur le protocole indisponible. Le même texte
+pour tout dossier servi : la condition du §1 le rend vrai pour tous.
+
+**§3 — Registre et drapeau.** `WN_PORTAIL_ENCART_CONDUITE`, chaîne exacte
+`'true'`, absent = fermé, **neuf et éteint à la livraison** ; inscrit à
+`docs/FEATURE_FLAGS.md` § A. La route du protocole annonce l'encart
+(`encartConduite`) ; le composant client ne lit pas l'environnement. Aucune
+table, aucun site d'IA : le registre de F70 n'a rien à recevoir.
+
+**§4 — L'activation.** Une seule à la fois, la précédente constatée
+(porte 18). Le drapeau se pose sur accord du responsable, après le merge et
+le déploiement constaté. Constat ([[D-288]] §2) : sur un dossier de test dont
+un protocole est servi, l'encart lu en ligne par le responsable, et la
+diffusion en vigueur de ce dossier relue par identifiant depuis un
+conteneur ; consigné en agrégats. Ensuite seulement, l'ouverture suivante.
+
+**§5 — Limites connues, laissées en l'état.** « Signaler un problème » n'est
+pas un lien : le formulaire est sur la page « Mes informations et mes
+droits », dont le bouton figure sur le même écran que l'encart. Une gêne liée à un geste de vie, et non à un produit,
+passe par le libellé « Un produit me semble mal toléré », le seul qui ouvre
+le signalement d'un effet. L'aperçu du protocole au cockpit ne montre pas
+l'encart.
+
+- Conséquences : fragment `changelog.d/2026-10-23-d349-encart-bd.md` ;
+  `docs/FEATURE_FLAGS.md` ; plan, fiche H71 et §3 de la file C.
+
+### D-348 — Axes biologiques : une liste fermée de dix axes, chacun fondé sur des claims de mécanisme certifiés ; aucun lien analyte-axe (lettre cm, F51)
+
+- Date : 2026-10-23
+- Statut : accepté — lettre cm signée par le responsable le 2026-10-23, sans
+  correction du dernier état. Brouillon rédigé par l'assistant à partir des
+  claims certifiés lus en production, puis contre-lu par un relecteur
+  indépendant et soumis à un second avis externe. Le responsable a tranché
+  vingt arbitrages sur questions à options : dix-sept sur la recommandation
+  de l'assistant, trois contre elle (deux axes séparés au §2, un fondateur
+  retiré au corticotrope, un fondateur réintégré à l'énergie
+  mitochondriale).
+- Domaine : référentiel d'axes biologiques, cible `axe` de
+  `biology_analyte_links` ; fiches F51 et F52 du plan unique
+  (`docs/claude/PLAN_WELLNEURO.md`).
+- Applique : [[D-296]] §6 (liste fermée neuve, distincte de `NeuroAxis`).
+- **Aucune migration** : la liste entre en base par F52, dans sa propre PR.
+- **Ne touche pas** : aucun lien analyte-axe (ils se signent claim par
+  claim, F79) ; aucune direction, aucun seuil, aucune indication, aucune
+  règle de priorité ; ni `NeuroAxis`, ni la cible `nutriment`, ni les
+  panels, ni le scoring, ni le portail, ni l'IA.
+
+**§1 — Règle de fondation.** Un axe est une fonction physiologique, ni
+nutriment ni neurotransmetteur. Il se fonde sur des claims du corpus
+certifiés (`VALIDE`, actifs, non supplantés, `NOT prescriptif`, typologie
+`déclaré`) qui décrivent un mécanisme : une cascade, une enzyme, un
+cofacteur, une conversion, une définition. Sont exclus les claims d'effet,
+de conduite et de causalité pathologique, ceux qui nomment une population ou
+une maladie, et ceux qui lisent une valeur ou listent des marqueurs (ils
+relèvent des liens, F79). Un claim fondateur établit que l'axe existe et
+compte ; il ne dit ni quoi doser, ni quoi faire.
+
+**§2 — La liste fermée.** Dix codes, en minuscules et soulignés, sans
+préfixe : `cible_type = 'axe'` porte déjà le type.
+
+| Code | Mécanisme |
+| --- | --- |
+| `methylation` | transfert de groupements méthyle et son cycle |
+| `inflammation` | médiateurs de l'inflammation et leurs voies d'activation |
+| `stress_oxydant` | équilibre entre espèces réactives et défenses antioxydantes |
+| `energie_mitochondriale` | production d'énergie cellulaire par la mitochondrie |
+| `regulation_glycemique` | régulation glucidique et sa signalisation hormonale |
+| `acides_gras_polyinsatures` | apport, conversion et devenir des acides gras essentiels |
+| `thyreotrope` | production et conversion périphérique des hormones thyroïdiennes |
+| `corticotrope` | cascade hypothalamo-hypophyso-surrénalienne |
+| `barriere_intestinale` | fonctions et équilibre de la barrière intestinale |
+| `microbiote_cerveau` | communication bidirectionnelle microbiote-intestin-cerveau |
+
+**§3 — Les claims fondateurs.** Cinquante claims, version v1.0, lus en
+production le 2026-10-23 :
+WN-CL-0006-012, WN-CL-0014-006, WN-CL-0015-027, WN-CL-0021-001,
+WN-CL-0021-002, WN-CL-0021-004, WN-CL-0021-008, WN-CL-0021-015,
+WN-CL-0022-005, WN-CL-0023-001, WN-CL-0023-002, WN-CL-0023-003,
+WN-CL-0023-004, WN-CL-0024-001, WN-CL-0025-001, WN-CL-0025-005,
+WN-CL-0025-006, WN-CL-0025-007, WN-CL-0025-008, WN-CL-0026-022,
+WN-CL-0027-003, WN-CL-0027-004, WN-CL-0028-013, WN-CL-0028-018,
+WN-CL-0028-019, WN-CL-0028-022, WN-CL-0029-011, WN-CL-0029-012,
+WN-CL-0029-013, WN-CL-0029-014, WN-CL-0029-015, WN-CL-0029-023,
+WN-CL-0029-027, WN-CL-0030-018, WN-CL-0030-028, WN-CL-0030-029,
+WN-CL-0043-003, WN-CL-0043-018, WN-CL-0058-002, WN-CL-0059-023,
+WN-CL-0096-028, WN-CL-0108-023, WN-CL-0108-024, WN-CL-0108-026,
+WN-CL-0155-059, WN-CL-0155-062, WN-CL-0169-005, WN-CL-0172-048,
+WN-CL-0190-024, WN-CL-0190-044.
+Leur rattachement à chaque axe, leur texte et les motifs de chaque retrait
+sont au Claude Doc privé (Référence).
+
+**§4 — Limites écrites.** `thyreotrope` et `corticotrope` reposent chacun
+sur une seule source. `acides_gras_polyinsatures` et `barriere_intestinale`
+n'ont chacun que deux fondateurs, dont un partagé, pour le premier, avec
+`inflammation`. Le responsable les a gardés en connaissance de cause. Une
+seconde source les renforcerait, par ingestion, sans changer la liste.
+
+**§5 — Ce qui n'est pas un axe.** Les statuts nutritionnels restent à la
+cible `nutriment` : un analyte ne se lie pas deux fois, au nutriment et à
+l'axe. La neurotransmission et les rythmes relèvent de `NeuroAxis` et des
+douze besoins. Deux candidats relevés par la contre-lecture sont écartés,
+l'un sans marqueur courant, l'autre au domaine de `NeuroAxis`. Six domaines
+n'ont pas assez de claims de mécanisme pour fonder un axe : aucun axe n'y
+est créé, et une ingestion les rouvrirait par une nouvelle décision.
+
+**§6 — Trois claims à relire.** WN-CL-0030-020, WN-CL-0007-006 et
+WN-CL-0021-003 contiennent chacun une erreur de fait. Ils sont certifiés :
+cette décision ne les corrige pas, elle les retire des fondateurs et les
+renvoie à l'atelier des claims pour relecture.
+
+**§7 — La suite.** F52 : une migration seule dans sa PR, qui contrôle
+`cible_code IN (…)` sur les dix codes du §2 quand `cible_type = 'axe'`,
+avec 0 lien et un contrat SQL négatif (axe inconnu et lien sans claim
+refusés), passe Codex, release-db, constat par conteneur. Avant elle, les
+cinquante fondateurs sont relus en production : le corpus bouge, et un
+fondateur supplanté ou désactivé se signale avant la migration, pas après.
+Puis F79 : les liens analyte-axe, claim par claim, de la main du
+responsable. La correspondance d'un panel à un axe, que [[D-296]] §4
+renvoyait à la lettre cm, n'y est pas fixée : elle reste ouverte.
+
+**§8 — Évolution.** La liste est fermée : ajouter, retirer, renommer ou
+scinder un axe exige une nouvelle décision. Un fondateur retiré du corpus
+ne retire pas l'axe ; il se remplace ou se signale à la décision suivante.
+
+- Options écartées : un axe par nutriment (double chemin de lien) ; des
+  axes de neurotransmission (doublon de `NeuroAxis`) ; un seul axe pour la
+  barrière intestinale et l'axe microbiote-cerveau (deux fonctions
+  distinctes) ; un préfixe `axe_` sur tout ou partie des codes (redondant
+  avec `cible_type`).
+- Réversibilité : une décision de registre se révoque par une décision de
+  registre ; avant F52, rien n'est en base.
+- Référence : Claude Doc privé « Lettre cm » `1df877ff-…`, rev 50, qui fait
+  foi pour le texte des claims, leur rattachement, les motifs et les
+  limites détaillées. Lecture en production le 2026-10-23 par conteneur
+  détaché, en transaction `READ ONLY` close par `ROLLBACK` (one-off-5536,
+  4329, 4044, 1780) ; 0 ligne dans `biology_analyte_links` constatée le même
+  jour.
+
 ### D-347 — t40 : le constat du praticien sur un besoin sans score, un acte en ajout seul — quatre verdicts cadrés sur la cible, motif fermé, pièces facultatives tenues par clé, aucune valeur ; base fermée aux besoins 2, 6, 7 et 11 (précise D-338 §4, H84)
 
 - Date : 2026-10-23
