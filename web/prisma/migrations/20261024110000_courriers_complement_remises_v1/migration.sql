@@ -239,6 +239,12 @@ ALTER TABLE "courriers_complement_remises" ADD CONSTRAINT "courriers_complement_
 -- AddForeignKey
 ALTER TABLE "courriers_complement_remises" ADD CONSTRAINT "courriers_complement_remises_id_correspondance_fkey" FOREIGN KEY ("id_correspondance") REFERENCES "correspondances_medecin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+-- « Une remise a sa liste », structurel en plus du trigger : la liste d'un
+-- courrier remis ne s'efface pas avant sa remise (seconde passe `wn-reviewer`
+-- du 2026-10-24, P2-1).
+ALTER TABLE "courriers_complement_remises" ADD CONSTRAINT "courriers_complement_remises_liste_fkey" FOREIGN KEY ("id_correspondance") REFERENCES "courriers_complement_listes"("id_correspondance") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- ── LES CHECK ──────────────────────────────────────────────────────────────
 --
 -- `complements` est nullable au type (Prisma décrit `String[]` sans NOT NULL) ;

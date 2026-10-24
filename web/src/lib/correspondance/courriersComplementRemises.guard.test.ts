@@ -57,10 +57,10 @@ const REECRIRE = new RegExp(`${MODELE}(?:update|updateMany|updateManyAndReturn|u
 const SQL_BRUT = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+(?:public\.)?"?courriers_complement_(?:remises|listes)\b/i;
 /**
  * L'ÉCRITURE IMBRIQUÉE : les relations inverses sont `courriersComplementRemises`
- * et `courriersComplementListes` (patient, approbation), `remiseComplement` et
- * `listeComplement` (courrier consigné).
+ * (patient, approbation), `courriersComplementListes` (patient), `remiseComplement`
+ * et `listeComplement` (courrier consigné), `remise` et `liste` (entre les deux tables).
  */
-const IMBRIQUEE = /\b(?:courriersComplementRemises|courriersComplementListes|remiseComplement|listeComplement)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
+const IMBRIQUEE = /\b(?:courriersComplementRemises|courriersComplementListes|remiseComplement|listeComplement|remise|liste)\s*:\s*\{\s*(?:create|createMany|connectOrCreate|upsert|update|updateMany|delete|deleteMany|set)\b/;
 
 describe('Listes et remises de courrier complément — qui écrit (D-345, J3-12h lot 2)', () => {
   it('seul l’effacement nommé du dossier supprime remises et listes — et il le fait', () => {

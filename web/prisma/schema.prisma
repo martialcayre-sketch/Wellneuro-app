@@ -4212,6 +4212,8 @@ model CourrierComplementListe {
 
   patient        Patient               @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   correspondance CorrespondanceMedecin @relation(fields: [idCorrespondance], references: [id], onDelete: Restrict)
+  /// La remise de ce courrier, s'il a été remis.
+  remise         CourrierComplementRemise?
 
   @@index([idPatient], map: "courriers_complement_listes_patient_idx")
   @@map("courriers_complement_listes")
@@ -4248,6 +4250,8 @@ model CourrierComplementRemise {
   patient        Patient                   @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
   approbation    ProtocolDiffusionApproval @relation(fields: [idApprobation], references: [id], onDelete: Restrict)
   correspondance CorrespondanceMedecin     @relation(fields: [idCorrespondance], references: [id], onDelete: Restrict)
+  /// La liste du courrier à sa consignation : une remise a sa liste.
+  liste          CourrierComplementListe   @relation(fields: [idCorrespondance], references: [idCorrespondance], onDelete: Restrict, map: "courriers_complement_remises_liste_fkey")
 
   @@unique([ordre], map: "courriers_complement_remises_ordre_key")
   @@index([idPatient, ordre], map: "courriers_complement_remises_patient_ordre_idx")

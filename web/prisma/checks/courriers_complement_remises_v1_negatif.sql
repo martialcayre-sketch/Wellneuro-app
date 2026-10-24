@@ -40,8 +40,9 @@
 --       refusée (CHECK) ;
 --  R12. une liste nulle, vide, à élément nul ou à deux dimensions est refusée
 --       par le CHECK lui-même (trigger d'insertion suspendu le temps du cas) ;
---  R13. UPDATE et TRUNCATE refusés ; l'effacement nommé passe ; l'approbation
---       ne s'efface pas avant ses remises (RESTRICT) ;
+--  R13. UPDATE et TRUNCATE refusés ; l'effacement nommé passe ; ni l'approbation
+--       ni la liste d'un courrier remis ne s'effacent avant leurs remises
+--       (RESTRICT) ;
 --  R14. FK, CHECK et index annoncés présents, l'index du courrier unique ;
 --  R15. la table porte EXACTEMENT ses dix colonnes ;
 --  R16. RLS deny-all sans policy, fonctions non exécutables par PUBLIC, et
@@ -285,9 +286,22 @@ BEGIN
   PERFORM pg_temp.refuse('L6 UPDATE',
     format($q$UPDATE courriers_complement_listes SET complements = %L::text[] WHERE id_correspondance = 'ccr_a_2'$q$, LISTE),
     'P0001', 'une liste consignée est figée');
-  PERFORM pg_temp.refuse('L6 TRUNCATE',
+  -- Seule, la table des listes est déjà protégée par la FK des remises
+  -- (0A000) ; avec elles, ce sont les triggers qui répondent.
+  PERFORM pg_temp.refuse('L6 TRUNCATE seul (FK)',
     $q$TRUNCATE courriers_complement_listes$q$,
-    'P0001', 'une liste consignée est figée');
+    '0A000', 'foreign key');
+  PERFORM pg_temp.refuse('L6 TRUNCATE avec les remises',
+    $q$TRUNCATE courriers_complement_listes, courriers_complement_remises$q$,
+    'P0001', 'est figée');
+  SELECT count(*) INTO nb FROM pg_trigger
+  WHERE tgrelid = 'public.courriers_complement_listes'::regclass
+    AND tgname IN ('courriers_complement_listes_no_update', 'courriers_complement_listes_no_truncate',
+                   'courriers_complement_listes_avant_insertion')
+    AND tgenabled = 'O';
+  IF nb <> 3 THEN
+    RAISE EXCEPTION 'CONTRAT — L6 : % trigger(s) de la liste actif(s) sur 3.', nb;
+  END IF;
   PERFORM pg_temp.refuse('L6 courrier avant sa liste',
     $q$DELETE FROM correspondances_medecin WHERE id = 'ccr_a_4'$q$,
     '23503', 'courriers_complement_listes');
@@ -486,6 +500,9 @@ BEGIN
   PERFORM pg_temp.refuse('R13 approbation avant ses remises',
     $q$DELETE FROM protocol_diffusion_approvals WHERE id = 'pda_ccr_a'$q$,
     '23503', 'courriers_complement_remises');
+  PERFORM pg_temp.refuse('R13 liste d''un courrier remis avant sa remise',
+    $q$DELETE FROM courriers_complement_listes WHERE id_correspondance = 'ccr_a_1'$q$,
+    '23503', 'courriers_complement_remises_liste_fkey');
   -- L'effacement nommé : remises, puis listes, puis courriers.
   DELETE FROM courriers_complement_remises WHERE id_patient = 'PAT_CONTRAT_CCR_A';
   DELETE FROM courriers_complement_listes WHERE id_patient = 'PAT_CONTRAT_CCR_A';
@@ -516,8 +533,8 @@ BEGIN
   END IF;
   SELECT count(*) INTO nb FROM pg_constraint
   WHERE conrelid = 'public.courriers_complement_remises'::regclass AND contype = 'f' AND confdeltype = 'r';
-  IF nb <> 3 THEN
-    RAISE EXCEPTION 'CONTRAT — R14 : % clé(s) étrangère(s) RESTRICT sur 3.', nb;
+  IF nb <> 4 THEN
+    RAISE EXCEPTION 'CONTRAT — R14 : % clé(s) étrangère(s) RESTRICT sur 4.', nb;
   END IF;
   SELECT count(*) INTO nb FROM pg_constraint
   WHERE conrelid = 'public.courriers_complement_remises'::regclass AND contype = 'c'
