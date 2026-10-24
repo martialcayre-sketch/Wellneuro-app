@@ -11487,6 +11487,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Passe Codex, CodeRabbit, merge, release-db approuvée, constat par conteneur (contrainte, 0 lien) ; puis F79.
 
 **Ouvert.** Panel → axe (D-348 §7) ; trois claims à l'atelier ; WN-SRC-0236.
+## 2026-10-24 — r3_08 : cercles du cockpit, motif du non mesuré (Q2 à Q4)
+
+**Fait.** Libellés des motifs et points de forme validés par le responsable avant le code. Cercles propres au cockpit (Bn, anneaux nommés, anneau creux pour le non mesuré, ordre fixe, liste en texte, intensité au-dessus d'un plancher). Motif dépliable sous le tiret, tiroir et onglet, issu du chemin de la valeur (`evaluerCouvertureSource`). Dettes de J1-cockpit soldées : provenance du tableau et du chip, mention « même valeur » sur B9 et B10. wn-reviewer : GO avec réserves, P1 et P2 corrigés.
+
+**Écarté.** Version stockée sur l'ancre pour le chip (le calcul tourne sur le moteur courant) ; motif inventé pour un groupe sans poids (figé par un banc).
+
+**Prochaine action.** CI, CodeRabbit, merge ; r3_08 « fait » sur la page de la file A.
+
+**Ouvert.** Q1 (ordre, r3_09) : les cercles suivent B1 à B12, le tableau du tiroir garde le tri « creux d'abord » jusqu'à r3_09.
 
 ## 2026-10-24 — File D : outil du constat avant T0 (H07, b16)
 

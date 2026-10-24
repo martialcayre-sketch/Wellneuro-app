@@ -18,6 +18,16 @@ import type {
   SourceQuestionnaire,
   StrateCode,
 } from './types';
+import type { MotifNonMesure } from '../praticien/motifNonMesure';
+
+/**
+ * Ce qu'une source rend : sa couverture, ou l'étage qui l'a écartée (r3_08,
+ * Q4). Les deux sortent du MÊME chemin — `calculerCouvertureSource` n'en est
+ * que la projection —, pour qu'un motif ne puisse pas diverger de la valeur.
+ */
+export type EvaluationSource = { couverture: number } | { motif: MotifNonMesure };
+
+type LectureBrute = { valeur: number } | { motif: MotifNonMesure };
 
 export function clamp01(valeur: number): number {
   return Math.min(1, Math.max(0, valeur));
@@ -41,8 +51,8 @@ function sousScoreComplet(sub: Record<string, unknown>): boolean {
 // resultat = retour hétérogène de calculateScore (30 formats de scoring
 // différents dans questions.ts) — on ne lit que .total ou .subScores[].total,
 // communs à tous les formats utilisés par BESOIN_SOURCES.
-function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: string): number | null {
-  if (!resultat || resultat.error) return null;
+function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: string): LectureBrute {
+  if (!resultat || resultat.error) return { motif: 'calcul_en_erreur' };
   if (sousScore) {
     // Deux porteurs possibles. `subScores` est la forme historique. Un moteur
     // qui déclare des `dimensions` ne PEUT PAS émettre de `subScores` — la
@@ -71,7 +81,7 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
       const sub = porteur.find((s: { id: string }) => s.id === sousScore);
       if (sub && typeof sub.total === 'number') candidats.push(sub);
     }
-    if (candidats.length !== 1) return null;
+    if (candidats.length !== 1) return { motif: 'sous_score_absent_ou_double' };
     // GARDE — un sous-score PARTIEL ne couvre rien ([[D-329]] §1).
     //
     // Même défaut que celui que la garde du total ferme plus bas, un étage plus
@@ -90,7 +100,9 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     // la couverture ne se rend que si l'on sait qu'elle porte sur l'axe entier.
     // La fiche patient garde sa frontière ; seul « Mon équilibre » durcit la
     // sienne, parce qu'ici le total EST la lecture, sans compte à côté.
-    return sousScoreComplet(candidats[0]) ? (candidats[0].total as number) : null;
+    return sousScoreComplet(candidats[0])
+      ? { valeur: candidats[0].total as number }
+      : { motif: 'recueil_incomplet' };
   }
   // GARDE — un recueil PARTIEL ne couvre rien, et surtout pas « bien ».
   //
@@ -122,8 +134,8 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
   // de l'axe, dans la branche du haut (`sousScoreComplet`, [[D-329]] §1) — et
   // non plus seulement chez `scoresBesoins`, le seul porteur qui l'exigeait
   // jusque-là.
-  if (typeof resultat.missing === 'number' && resultat.missing > 0) return null;
-  return typeof resultat.total === 'number' ? resultat.total : null;
+  if (typeof resultat.missing === 'number' && resultat.missing > 0) return { motif: 'recueil_incomplet' };
+  return typeof resultat.total === 'number' ? { valeur: resultat.total } : { motif: 'calcul_en_erreur' };
 }
 
 /**
@@ -137,21 +149,34 @@ export function calculerCouvertureSource(
   source: SourceQuestionnaire,
   reponses: ReponsesParQuestionnaire
 ): number | null {
+  const evaluation = evaluerCouvertureSource(source, reponses);
+  return 'couverture' in evaluation ? evaluation.couverture : null;
+}
+
+/**
+ * La couverture d'une source, ou l'étage qui rend « non mesuré » (r3_08) —
+ * chaque `null` de `calculerCouvertureSource` y porte son motif. Aucune valeur
+ * n'est calculée autrement qu'avant : seul le pourquoi du `null` est nommé.
+ */
+export function evaluerCouvertureSource(
+  source: SourceQuestionnaire,
+  reponses: ReponsesParQuestionnaire
+): EvaluationSource {
   // Fail-closed : une source suspendue ne doit plus nourrir Mon Équilibre,
   // même si des passations historiques existent encore en base.
-  if (IDS_SUSPENDUS.has(source.idQuestionnaire)) return null;
+  if (IDS_SUSPENDUS.has(source.idQuestionnaire)) return { motif: 'source_suspendue' };
   // `max` nul ou absent : une division par 0 rend `Infinity`, que `clamp01`
   // ramènerait à 1 — le pire rendu possible pour une absence de mesure. Ce cas
   // existe depuis que `BESOIN_SOURCES` porte un `max` DÉRIVÉ : la forme qui ne
   // déclare pas le sous-score en rend 0. Refuser avant de diviser.
-  if (!(source.max > 0)) return null;
+  if (!(source.max > 0)) return { motif: 'forme_sans_sous_score' };
   const answers = reponses[source.idQuestionnaire];
-  if (!answers) return null;
+  if (!answers) return { motif: 'aucune_passation' };
   const resultat = calculateScore(source.idQuestionnaire, answers);
-  const valeurBrute = extraireValeurBrute(resultat, source.sousScore);
-  if (valeurBrute === null) return null;
-  const ratio = valeurBrute / source.max;
-  return clamp01(source.inverser ? 1 - ratio : ratio);
+  const lecture = extraireValeurBrute(resultat, source.sousScore);
+  if ('motif' in lecture) return lecture;
+  const ratio = lecture.valeur / source.max;
+  return { couverture: clamp01(source.inverser ? 1 - ratio : ratio) };
 }
 
 /**

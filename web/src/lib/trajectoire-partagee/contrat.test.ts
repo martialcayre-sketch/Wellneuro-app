@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AncreCycle } from '@/lib/protocol/cycles';
+import { construireTrajectoire } from '@/lib/protocol/trajectoire';
 
 import {
   deriverEpisodeBandeau,
@@ -191,6 +192,68 @@ describe('deriverEpisodeBandeau', () => {
       aujourdhui,
     );
     expect(versionInconnue?.deltaTourPrecedent).toBeNull();
+  });
+
+  // r3_08 : la provenance du chip — l'ancre et le dernier jalon de MESURE du
+  // tour comparé, jamais sa version stockée (les lectures sont recalculées
+  // par le moteur courant ; le consommateur fournit la version).
+  describe('provenance du tour précédent', () => {
+    const momentum = { tendance: 'hausse' as const, delta: 3 };
+    const jalons = (mesures: Record<string, string | null>) =>
+      Object.entries(mesures).map(([jalon, date]) => ({ jalon, mesure: date !== null, date }));
+    const courant = cycle('c2', 'T2', '2026-07-08T00:00:00Z', 'v1');
+
+    it('cycle ancré en T1, J42 mesuré sans J21 : départ T1, arrivée J42, version laissée au consommateur', () => {
+      const precedent = {
+        ...cycle('c1', 'T1', '2026-05-01T00:00:00Z', 'v1', momentum),
+        jalons: jalons({ T1: '2026-05-01T00:00:00Z', J21: null, J42: '2026-06-12T00:00:00Z', J90: null }),
+      };
+      expect(deriverEpisodeBandeau([precedent, courant], aujourdhui)?.deltaTourPrecedent?.provenance).toEqual({
+        depart: { jalon: 'T1', date: '2026-05-01T00:00:00Z' },
+        arrivee: { jalon: 'J42', date: '2026-06-12T00:00:00Z' },
+        versionCalcul: null,
+      });
+    });
+
+    it('ancre non mesurée, ou jalons absents : pas de provenance', () => {
+      const sansAncre = {
+        ...cycle('c1', 'T1', '2026-05-01T00:00:00Z', 'v1', momentum),
+        jalons: jalons({ T1: null, J21: '2026-05-22T00:00:00Z', J42: null, J90: null }),
+      };
+      expect(deriverEpisodeBandeau([sansAncre, courant], aujourdhui)?.deltaTourPrecedent?.provenance).toBeNull();
+      const sansJalons = cycle('c1', 'T1', '2026-05-01T00:00:00Z', 'v1', momentum);
+      expect(deriverEpisodeBandeau([sansJalons, courant], aujourdhui)?.deltaTourPrecedent?.provenance).toBeNull();
+    });
+
+    it('équivalence avec construireTrajectoire : les deux lectures que son momentum soustrait', () => {
+      const RAW = { P1: '2', P2: '2', P3: '3', P4: '3', P5: '3', P6: '2', P7: '3', P8: '3', P9: '2', P10: '3' };
+      const reponse = (iso: string) => ({
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: new Date(iso),
+        scoresJson: { rawAnswers: RAW },
+        statutValidite: null,
+      });
+      const episode = (id: string, milestone: AncreCycle, iso: string) => ({
+        id,
+        milestone,
+        confirmedAt: new Date(iso),
+        cycleId: id,
+        versionScore: 'v1',
+      });
+      const tr = construireTrajectoire({
+        episodes: [episode('ep_T0', 'T0', '2026-01-01T00:00:00.000Z'), episode('ep_T1', 'T1', '2026-06-01T00:00:00.000Z')],
+        // T0, puis une réponse nouvelle à J42 seulement (J21 sans nouveauté).
+        reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-02-12T00:00:00.000Z')],
+      });
+      const [t0] = tr.cycles;
+      expect(t0.momentum).not.toBeNull();
+      const provenance = deriverEpisodeBandeau(tr.cycles, new Date('2026-06-10T00:00:00Z'))?.deltaTourPrecedent?.provenance;
+      const lecture = (j: string) => t0.jalons.find(x => x.jalon === j)!;
+      expect(provenance?.depart).toEqual({ jalon: 'T0', date: lecture('T0').date });
+      expect(provenance?.arrivee).toEqual({ jalon: 'J42', date: lecture('J42').date });
+      // Le delta servi est bien l'écart de ces deux lectures-là.
+      expect(t0.momentum!.delta).toBeCloseTo(lecture('J42').valeur! - lecture('T0').valeur!, 6);
+    });
   });
 });
 
