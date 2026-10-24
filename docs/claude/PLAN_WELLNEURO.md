@@ -353,6 +353,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
+- **Mise à jour (2026-10-24, outil livré)** : script de conteneur `web/scripts/constatAvantT0.ts`, en lecture seule (il refuse de lire hors `default_transaction_read_only`). Population : dossiers actifs portant au moins une assignation, sans épisode T0. Les préconditions s'évaluent par le chemin des trois routes (`preconditionsT0PourPatient`, jalon T0). Sortie en agrégats, masquée par `agregerConstatAvantT0` (D-298) : effectif, avec et sans T0, bloqués et prêts, dossiers par condition dure manquante, quartiles d'ancienneté des bloqués, sans tranche. Reste : le constat en conteneur après déploiement, puis la D-xxx du délai.
 
 #### H08 · Porte 4 : sources à fournir
 - **Identifiant, piste** : porte 4 ; règle du milieu levée ; seuils de 8B sourcés par D-280 ; cockpit, alimentation, sommeil ; geste du responsable.
@@ -1669,6 +1670,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
 - **Mise à jour (2026-10-23, D-346)** : la porte 7 est levée (2026-10-18, F66). L'encart n'attend plus la place 11 : dès qu'il est prêt (texte accepté, registre, drapeau), il prend la place suivante, après la place 5, devant les places 7 à 11 non encore ouvertes. La porte 18 est inchangée. Reste : son texte, de la main du responsable.
 - **Mise à jour (2026-10-23, D-349)** : texte du responsable accepté (variante retenue, phrase du choix dans le formulaire retirée) ; registre (`docs/FEATURE_FLAGS.md`) et drapeau `WN_PORTAIL_ENCART_CONDUITE` livrés éteints, l'encart servi à l'accueil du protocole. Reste : le drapeau posé sur accord du responsable, puis le constat (D-349 §4) ; la place suivante de la file C lui revient.
+- **Mise à jour (2026-10-24, critère de fin atteint)** : #1669 mergée et déployée (5aa5ceec) ; `WN_PORTAIL_ENCART_CONDUITE=true` posé en production le 2026-10-24 à 07 h 17 UTC sur accord du responsable, code en service 5389dd98. Constat (D-349 §4) : encart lu en ligne par le responsable sur un dossier de test dont un protocole est servi (sous les rendez-vous de suivi, détail replié, quatre paragraphes conformes) ; diffusion en vigueur de ce dossier relue par identifiant en conteneur. Porte 18 levée pour l'ouverture suivante.
 
 **File D : gestes du responsable**
 
@@ -2087,7 +2089,7 @@ Mise à jour (2026-10-23, D-346, amende D-288 §3) : l'encart bd n'attend plus l
 | ouverture | fiche | rang au plus tôt | condition |
 |---|---|---|---|
 | Bloc « Protocole » du document médecin, sans la charge déclarée | F39 | 5 | J2-med, p ; « avant le premier check-in » reste une visée que la file peut mettre en défaut |
-| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) ; prêt le 2026-10-23 (D-349) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat |
+| Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) ; prêt le 2026-10-23 (D-349) ; **ouvert et constaté le 2026-10-24** (#1669, drapeau posé à 07 h 17 UTC) ; porte 18 levée pour l'ouverture suivante |
 | Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart |
 | Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : oui (arbitrage du 2026-10-14, D-288 §3, #1430) |
 | Ses nuits par semaine | H63 | 4 | porte 16, N-8 ; ordre de préparation après l'encart |

@@ -11496,3 +11496,20 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Passe Codex, CodeRabbit, merge, release-db approuvée, constat par conteneur (contrainte, 0 lien) ; puis F79.
 
 **Ouvert.** Panel → axe (D-348 §7) ; trois claims à l'atelier ; WN-SRC-0236.
+
+## 2026-10-24 — File D : outil du constat avant T0 (H07, b16)
+
+**Fait.** D/52 mergée (#1667), après la release-db de F52 approuvée par le responsable. H07 relève de la file D (geste, constat de rang 0) : script de conteneur en lecture seule (`constatAvantT0.ts`) qui évalue les préconditions T0 par le chemin des routes ; module pur de masquage D-298 (partitions masquées ensemble, comptes par condition masqués avec elles, quartiles d'ancienneté). Essai sur la base locale : refus hors lecture seule, chemin complet sans écriture.
+
+**Écarté.** Recopier les préconditions en SQL (deux calculs divergeraient) ; tranches d'ancienneté (un délai inventé avant la D-xxx).
+
+**Prochaine action.** CI, CodeRabbit, merge ; constat en conteneur après déploiement, versé au plan en agrégats ; puis b25 (v20, texte validé le 2026-10-24).
+
+**Ouvert.** D-xxx du délai avant T0, de la main du responsable, après le compte.
+## 2026-10-24 — bd : encart ouvert et constaté (D-349 §4)
+
+**Fait.** #1669 mergée et déployée ; drapeau `WN_PORTAIL_ENCART_CONDUITE` posé à 07 h 17 UTC sur accord du responsable ; constat sur un dossier de test (encart lu en ligne, détail replié, texte conforme ; diffusion relue par conteneur). Porte 18 levée.
+
+**Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
+
+**Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
