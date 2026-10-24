@@ -11467,3 +11467,10 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; t41 « fait » au suivi de la file A.
 
 **Ouvert.** Rejeu des ancres `T1+` cassé par une passation postérieure (D-118, antérieur au lot), à router par le responsable ; Q1 (cible du J42 après la confirmation du J21).
+## 2026-10-24 — bd : encart ouvert et constaté (D-349 §4)
+
+**Fait.** #1669 mergée et déployée ; drapeau `WN_PORTAIL_ENCART_CONDUITE` posé à 07 h 17 UTC sur accord du responsable ; constat sur un dossier de test (encart lu en ligne, détail replié, texte conforme ; diffusion relue par conteneur). Porte 18 levée.
+
+**Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
+
+**Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
