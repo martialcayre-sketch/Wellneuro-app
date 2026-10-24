@@ -58,8 +58,9 @@ nomme la fiche physiologique : elle amende sur ce point l'exclusion « ni la
 garde de population » de D-335 §8). Un courrier à remettre sous un dossier
 bloqué (clos, contrat patient refusé) refuse aussi le clic : il ne suivrait
 pas le sort des fiches en silence. L'ouverture du drapeau exige aussi
-`WN_PHYSIO_TRAITEMENTS` : sans lui, aucun « non » du praticien ne s'écrit et
-la garde refuse tout complément ciblé.
+`WN_FICHES_ASSIETTE` (sans lui, tout clic qui doit remettre un courrier est
+refusé) et `WN_PHYSIO_TRAITEMENTS` (sans lui, aucun « non » du praticien ne
+s'écrit et la garde refuse tout complément ciblé).
 
 ### D-354 — t43 : le mode consultation est un écran partagé avec le patient, sous la règle du portail — aucun chiffre ; seuls le cockpit et les 12 besoins restent (amende HC-F LOT-03 ; applique la règle du portail des arbitrages des 2026-10-10 et 11)
 
