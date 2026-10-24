@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
 import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
-import { besoinsDeRepassation, questionnairesCiblesPourPriorite } from './repassationCiblee';
+import {
+  besoinsDeRepassation,
+  questionnairesACompleter,
+  questionnairesCiblesPourPriorite,
+  questionnairesProposables,
+} from './repassationCiblee';
+import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 
 // Ce que ce banc défend (LOT-07, `D-058`) : la re-passation ciblée vise ce que
 // la priorité FONDE (`needIds` → `BESOIN_SOURCES`), jamais le pack entier — et
@@ -100,5 +106,50 @@ describe('besoinsDeRepassation', () => {
 
   it('ni sélection ni proposition (table non signée) : rien', () => {
     expect(besoinsDeRepassation(carte({ proposedMainPriorityId: null }))).toEqual({ needIds: [], besoinsVises: [] });
+  });
+});
+
+// « Compléter la mesure » ([[D-352]] §2) : le motif « aucune passation
+// exploitable » seul, dérivé de la ligne servie, filtré comme la re-passation.
+describe('questionnairesACompleter', () => {
+  const ligne = (motif: MotifNonMesureServi['motif'], ids: string[]): MotifNonMesureServi => ({
+    motif,
+    idsQuestionnaire: ids,
+    dateDernierePassation: null,
+  });
+  const assignables = BESOIN_SOURCES[4].map(s => s.idQuestionnaire).filter(qid => IDS_ASSIGNABLES.has(qid));
+
+  it('propose les questionnaires de la ligne « aucune passation exploitable », et d’elle seule', () => {
+    expect(assignables.length).toBeGreaterThan(0);
+    const motifs = [
+      ligne('aucune_passation', assignables),
+      ligne('passation_ecartee', ['Q_ECARTE']),
+      ligne('recueil_incomplet', ['Q_INCOMPLET']),
+    ];
+    expect(questionnairesACompleter(motifs)).toEqual(assignables);
+  });
+
+  it('aucun autre motif n’appelle une première passation', () => {
+    for (const motif of [
+      'hors_score',
+      'sans_instrument',
+      'passation_ecartee',
+      'source_suspendue',
+      'recueil_incomplet',
+      'forme_sans_sous_score',
+      'calcul_en_erreur',
+      'sous_score_absent_ou_double',
+    ] as const) {
+      expect(questionnairesACompleter([ligne(motif, assignables)])).toEqual([]);
+    }
+  });
+
+  it('un besoin mesuré (motif null) ne propose rien', () => {
+    expect(questionnairesACompleter(null)).toEqual([]);
+  });
+
+  it('même filtre que la re-passation ciblée : un instrument non assignable n’est pas proposé', () => {
+    expect(questionnairesACompleter([ligne('aucune_passation', ['Q_INEXISTANT', ...assignables])])).toEqual(assignables);
+    expect(questionnairesCiblesPourPriorite([4])).toEqual(questionnairesProposables(BESOIN_SOURCES[4].map(s => s.idQuestionnaire)));
   });
 });

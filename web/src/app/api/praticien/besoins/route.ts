@@ -10,7 +10,7 @@ import {
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins, listerSourcesPreuveBesoin } from '@/lib/equilibre/evidence';
 import { motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
-import { calculerCouverturesTousLesBesoins } from '@/lib/equilibre/score';
+import { agregerEquilibre, calculerCouverturesTousLesBesoins, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
@@ -36,7 +36,14 @@ export type BesoinDetail = {
 };
 
 export type BesoinsApiResponse =
-  | { patient: { idPatient: string; prenom: string; nom: string }; besoins: BesoinDetail[] }
+  | {
+      patient: { idPatient: string; prenom: string; nom: string };
+      besoins: BesoinDetail[];
+      /** Besoins mesurés sur `besoinsTotal` ([[D-352]] §1) : `compterBesoinsMesures`
+       *  sur les couvertures servies ci-dessus, jamais un recompte d'écran. */
+      besoinsMesures: number;
+      besoinsTotal: number;
+    }
   | { unavailable: true; reason: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'exception' };
 
 function versCent(ratio: number | null): number | null {
@@ -104,6 +111,8 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
     return NextResponse.json({
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom },
       besoins: besoinsDetail,
+      besoinsMesures: compterBesoinsMesures(agregerEquilibre(couvertures)),
+      besoinsTotal: BESOINS.length,
     });
   } catch (err) {
     console.error('[besoins GET]', err instanceof Error ? err.message : String(err));

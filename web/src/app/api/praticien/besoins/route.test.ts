@@ -68,6 +68,17 @@ describe('GET /api/praticien/besoins', () => {
     expect(json.patient.idPatient).toBe('PAT_1');
   });
 
+  it('sert le compte des besoins mesurés, par compterBesoinsMesures sur les couvertures servies (D-352 §1)', async () => {
+    const json = (await (await GET(request())).json()) as {
+      besoins: { couverture: number | null }[];
+      besoinsMesures: number;
+      besoinsTotal: number;
+    };
+    expect(json.besoinsTotal).toBe(12);
+    expect(json.besoinsMesures).toBe(0);
+    expect(json.besoinsMesures).toBe(json.besoins.filter(b => b.couverture !== null).length);
+  });
+
   it('chaque besoin non mesuré porte son motif, un besoin mesuré aucun (r3_08)', async () => {
     const res = await GET(request());
     const json = (await res.json()) as { besoins: { id: number; couverture: number | null; motifNonMesure: unknown }[] };

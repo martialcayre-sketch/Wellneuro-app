@@ -83,6 +83,12 @@ describe('CerclesBesoinsCockpit', () => {
     expect(liste.textContent).toContain('Questionnaire : Q_STR_01 (réponse du 01/10/2026)');
   });
 
+  it('figure de compréhension : le motif « aucune passation exploitable » n’y porte aucun geste (D-352 §2)', () => {
+    render(<CerclesBesoinsCockpit besoins={RECUS} />);
+    expect(screen.queryByText('Compléter la mesure')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ajouter à la file d’envoi' })).toBeNull();
+  });
+
   it('B9 et B10 disent servir la même valeur que leur carte ; un non mesuré, non', () => {
     render(<CerclesBesoinsCockpit besoins={[besoin(9, 48), besoin(10, null), besoin(1, 62)]} />);
     const liste = screen.getByRole('list', { name: 'Les 12 besoins, en texte' });
