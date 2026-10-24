@@ -4,6 +4,151 @@
 
 ## Décisions actives
 
+### D-359 — Indicateurs hebdomadaires : chacun naît de sa propre décision clinique — nom, source, échelle, nature ; recueil au point d'étape, sans chiffre en retour ; aucune échelle proposée par l'assistant (lettre bf, instruction)
+
+- Date : 2026-10-24
+- Statut : accepté — cadre seul, sur arbitrage du responsable du 2026-10-24
+  (« cadre d'abord, liste plus tard ») ; le moment était tranché (H19) ;
+  lettre validée telle quelle le même jour.
+- Domaine : point d'étape ([[D-317]], H31) ; doctrine d'adhésion ([[D-334]]) ;
+  cockpit chiffré ([[D-333]]) ; fiche H19 du plan.
+- Ne touche pas : aucun indicateur, aucune échelle, aucun seuil, aucune
+  migration, aucun texte patient.
+
+**§1 — Le moment.** Les indicateurs hebdomadaires se recueillent au point
+d'étape, par une nouvelle version de son contrat, aux trois points d'étape du
+cycle (D-317). Aucune saisie à part. Aucun chiffre ne revient au patient
+(règle du portail, D-333).
+
+**§2 — Ce que porte chaque décision d'indicateur.** Un indicateur n'existe que
+par sa propre D-xxx clinique et son fragment `changelog.d/`, de la main du
+responsable : son nom ; sa source (référence certifiée de l'instrument ou de
+l'item) ; son échelle, reprise de la source, jamais construite ; sa nature,
+clinique ou technique (DC-20) ; ce que le praticien en lit. L'assistant ne
+propose ni indicateur, ni échelle, ni borne ; une valeur absente s'écrit « à
+fournir ».
+
+**§3 — La lecture du praticien.** Elle suit D-333 : calculé et montré sous
+provenance, qualifié seulement par un seuil signé ; tout mot qui juge passe par
+la porte 11 ; un agrégat sur plusieurs dossiers suit [[D-298]].
+
+**§4 — Le code.** Rang 3 au plus tôt. Préalables : une D-xxx par indicateur ;
+porte 6 (levée le 2026-10-23) ; porte 11 pour tout mot ; porte 15 (premier
+check-in sur un protocole approuvé). Si le contrat du point d'étape se
+versionne par migration [A verifier] : rang 4, G-7, porte 9. Ouverture en
+file C, au-delà de la place 11, après l'encart, avec un texte patient accepté et
+la porte 18.
+
+**§5 — La charge.** Ce que ces questions ajoutent au point d'étape du
+21e jour se constate avant l'ouverture.
+
+**Ce qu'elle ne décide pas.** La liste des indicateurs, leurs sources, leurs
+échelles, leurs seuils, la forme du contrat, les textes patient.
+
+**Effet sur le plan.** H19 : cadre de l'instruction écrit ; l'instruction
+reste ouverte jusqu'aux décisions par indicateur (critère de fin inchangé).
+Registre « Lettres à écrire » : bf, cadre écrit.
+
+### D-358 — La Boussole alimentaire quitte le portail : démontage côté patient, seule exception nommée à D-276 §1 ; amende D-250 (lettre h)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (portée, protocoles existants, dettes) ; lettre validée telle quelle
+  le même jour.
+- Domaine : portail patient, alimentation (C5B) ; fiche H16, puis J1-alim
+  (FC-4). Amende [[D-250]] §3 pour la Boussole patient ; exception à
+  [[D-276]] §1.
+- Ne touche pas : aucune règle clinique, aucun seuil, aucune table signée,
+  aucune migration ; `WN_C5_ENABLED` reste allumé.
+
+**§1 — Le retrait.** Le portail ne sert plus la Boussole alimentaire : ni son
+résumé dans le protocole, ni la page de l'aliment, ni la route patient. C'est un
+démontage, comme celui de D-250 côté praticien ; le code praticien, déjà non
+monté, reste en place.
+
+**§2 — L'exception.** D-276 §1 (« aucune fonction retirée ni réduite »)
+reçoit cette seule exception, nommée ici ; elle ne s'étend à aucune autre
+fonction.
+
+**§3 — Les protocoles qui en portent une.** Les contrats V2 et V4 lisent
+toujours `foodCompassRef` : aucun protocole ne devient illisible. Avant de
+livrer, le lot compte par conteneur, en agrégats, les protocoles diffusés qui
+portent une Boussole. À zéro, il livre ; au-dessus, il s'arrête et revient au
+responsable, sans toucher un protocole servi.
+
+**§4 — Les dettes.** D-C5-01 à D-C5-04 sont soldées sans objet le jour où le
+retrait est constaté en production. D-C5-05 reste ouverte, opportuniste.
+
+**Ce qu'elle ne décide pas.** La suppression du code C5 côté praticien et des
+contrats ; l'extinction de `WN_C5_ENABLED` ; le sort des tables C5A.
+
+**Effet sur le plan.** J1-alim (file A, rang 1) peut s'ouvrir, sans
+migration ; son critère de fin : page retirée et constatée, constat du §3
+versé, D-C5-01 à 04 soldées. Registre « Lettres à écrire » : h fait.
+
+### D-357 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; le flux est déclaré au registre et au patient, sans accord de sous-traitance, réserve écrite (lettre bg)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (outil et offre, version envoyée, issue, cadre contractuel, envois
+  passés, entraînement, texte patient, forme du constat) ; lettre validée par
+  lui le même jour.
+- Domaine : export PDF du dossier ([[D-252]],
+  `web/src/components/patient-cockpit/ExportDossierPanel.tsx`) ; registre RGPD
+  (`docs/DOSSIER_RGPD.md`, rubrique 6) ; document patient
+  `donnees_confidentialite` ; fiche H18 du plan. Répond à la question laissée
+  ouverte par D-252 §3.
+- Ne touche pas : aucune migration, aucun drapeau, aucune règle clinique ;
+  l'application n'envoie toujours rien à un tiers.
+
+**§1 — Le constat (2026-10-24).** Le responsable soumet l'export PDF du
+dossier à ChatGPT (OpenAI), sur une offre individuelle. Cette offre ne comporte
+pas d'accord de sous-traitance (RGPD art. 28). L'option qui permet
+l'entraînement des modèles sur les conversations est désactivée sur ce compte.
+Ce flux n'était inscrit ni au registre ni dans « Vos données personnelles ».
+Avant le 2026-10-24, la règle du §2 n'était pas écrite ; le constat détaillé
+des envois antérieurs est tenu hors dépôt.
+
+**§2 — La règle d'envoi.** À partir du 2026-10-24, seule la version « Pour une
+IA externe » (pseudonymisée, D-252 §2) part vers un outil d'IA externe. La
+version « Complète » reste téléchargeable pour un autre usage ; elle n'est plus
+soumise à aucun outil d'IA. Pseudonymisé n'est pas anonyme : le document envoyé
+reste une donnée de santé à caractère personnel.
+
+**§3 — La déclaration au registre.** Une ligne entre au tableau de la
+rubrique 6 : « analyse du dossier par un outil d'IA externe choisi par le
+praticien » ; destinataire OpenAI (ChatGPT, offre individuelle) ; données :
+l'export pseudonymisé ; geste : téléchargement, puis envoi par le praticien
+lui-même ; transfert hors de l'Union. La ligne écrit la réserve en clair :
+aucun accord de sous-traitance, aucun mécanisme de transfert contractuel ; base
+légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de
+[[D-283]] §9, à l'échéance du 2027-06-30 ([[D-265]]).
+
+**§4 — L'information du patient.** « Vos données personnelles » reçoit une
+nouvelle version, accusé exigé (motif de [[D-299]] §3), qui dit le flux en ces
+termes, validés mot pour mot par le responsable :
+
+> « Votre praticien peut soumettre une version de votre dossier, dont sont
+> retirés votre nom, vos coordonnées et votre date de naissance, à ChatGPT
+> (OpenAI), un outil d'intelligence artificielle, pour l'aider dans son
+> analyse. Il le fait lui-même : l'application ne l'envoie pas. Ce document
+> reste une information sur votre santé. OpenAI est situé hors de l'Union
+> européenne, et aucun contrat ne l'engage envers nous sur le traitement de ce
+> document. »
+
+**§5 — Les envois passés.** Le constat du §1 suffit ; rien n'est versé au
+registre des violations (arbitrage du responsable).
+
+**Ce qu'elle ne décide pas.** La levée de la réserve (passage à une offre
+avec accord de sous-traitance), consignée par une lettre ; la base légale ;
+aucun verrou dans le code sur la version « Complète » — le §2 est une règle de
+pratique.
+
+**Effet sur le plan.** H18 : flux listé et déclaré par cette lettre ; la
+déclaration est servie par un lot de code distinct (nouvelle version du
+document patient, ligne de la rubrique 6), hors de cette lettre. D-252 §3
+soldé. Registre « Lettres à écrire » : bg fait.
+
 ### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
 
 - Date : 2026-10-24
