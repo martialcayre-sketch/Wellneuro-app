@@ -124,11 +124,12 @@ describe('DetailBesoinsPanel — compte et « Compléter la mesure » (D-352)', 
     expect(await screen.findByText('Calculé sur 2 besoins mesurés sur 12')).toBeTruthy();
   });
 
-  it('aucun besoin mesuré : le compte le dit, jamais caché', async () => {
+  it('aucun besoin mesuré : la tête le dit, sans affirmer un calcul (D-352 §4)', async () => {
     const aucun = { ...avecMotif('aucune_passation', ['Q_STR_01']), besoinsMesures: 0 };
     vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => aucun })));
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" enteteMasquee />);
-    expect(await screen.findByText('Calculé sur 0 besoin mesuré sur 12')).toBeTruthy();
+    expect(await screen.findByText('Non calculé : aucun besoin mesuré')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('Calculé sur 0');
   });
 
   it('un ancien conteneur sans le compte : rien plutôt qu’un compte deviné', async () => {

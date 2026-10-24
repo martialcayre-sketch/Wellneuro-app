@@ -11571,3 +11571,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; r3_11 « fait » sur la page de la file A.
 
 **Ouvert.** Aucun besoin mesuré : le compte dit « Calculé sur 0 besoin mesuré sur 12 », alors que la jauge de l'indice masque sa base.
+
+## 2026-10-24 — r3_11 (suite) : libellé quand aucun besoin n'est mesuré
+
+**Fait.** Le responsable trouvait « Calculé sur 0 besoin mesuré sur 12 » peu explicite : il a choisi « Non calculé : aucun besoin mesuré » (question à options). `mentionBesoinsMesures` le rend à zéro (D-352 §4), donc sur le bouton, le tiroir et l'onglet ; la jauge de l'indice est inchangée.
+
+**Écarté.** « Aucun besoin mesuré sur 12 » (recommandé) ; « Aucun besoin mesuré (0 sur 12) ».
+
+**Prochaine action.** CI, bases visuelles, CodeRabbit, merge.
+
+**Ouvert.** Rien dans le périmètre.
