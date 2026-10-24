@@ -11488,6 +11488,14 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Panel → axe (D-348 §7) ; trois claims à l'atelier ; WN-SRC-0236.
 
+## 2026-10-24 — bd : encart ouvert et constaté (D-349 §4)
+
+**Fait.** #1669 mergée et déployée ; drapeau `WN_PORTAIL_ENCART_CONDUITE` posé à 07 h 17 UTC sur accord du responsable ; constat sur un dossier de test (encart lu en ligne, détail replié, texte conforme ; diffusion relue par conteneur). Porte 18 levée.
+
+**Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
+
+**Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
+
 ## 2026-10-24 — Outillage : sondage en boucle autorisé
 
 **Fait.** Sur autorisation du responsable (toutes sessions), bloc SONDAGE retiré de `block-risky-commands.mjs` ; bancs inversés (387 verts) ; CLAUDE.md et règle des PR alignés ; mémoire posée.
@@ -11497,10 +11505,3 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge.
 
 **Ouvert.** Le garde d'isolation des worktrees (harness) refuse encore les boucles en ligne complexes : passer par un script.
-## 2026-10-24 — bd : encart ouvert et constaté (D-349 §4)
-
-**Fait.** #1669 mergée et déployée ; drapeau `WN_PORTAIL_ENCART_CONDUITE` posé à 07 h 17 UTC sur accord du responsable ; constat sur un dossier de test (encart lu en ligne, détail replié, texte conforme ; diffusion relue par conteneur). Porte 18 levée.
-
-**Prochaine action.** Ouverture suivante de la file C dès qu'elle est prête (ak attend le brainstorming « Questionnaires de jalon », puis son texte).
-
-**Ouvert.** Limites de D-349 §5 (pas de lien vers le formulaire, libellé « produit », aperçu cockpit).
