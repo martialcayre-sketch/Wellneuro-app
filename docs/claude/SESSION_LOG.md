@@ -11533,3 +11533,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; t42 « fait » au suivi, réserve de t41 levée.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — F79, premier temps : dix-sept liens analyte-axe signés (D-351)
+
+**Fait.** Production relue en lecture seule (one-off-9987, 1677) : 0 lien, 8 CHECK, cible `axe` fermée, 92 analytes, 1 064 claims certifiés qui citent un analyte, presque aucun niveau de preuve écrit. Brouillon au Claude Doc privé ; douze arbitrages (huit sur la recommandation, quatre contre) ; liste de dix-sept liens signée. D-351 en forme opaque, fiches F52 (constat) et F79 mises à jour.
+
+**Écarté.** Niveau C uniforme (inventé) ; script en conteneur (D-087) ; claims de stade.
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis la migration de données de D-351 §5 dans sa propre PR.
+
+**Ouvert.** Correspondance panel → axe (F53) ; claims à relire (D-348 §6) ; WN-SRC-0236.
