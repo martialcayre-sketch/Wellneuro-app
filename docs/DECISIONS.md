@@ -4,6 +4,97 @@
 
 ## Décisions actives
 
+### D-357 — ap : la bibliothèque du portail, deux rayons — les documents remis et un socle commun ; le contenant seul à l'ouverture ; quatrième famille d'exceptions à la règle du portail, bornée aux chiffres sourcés de ses documents ; dossiers majeurs seuls (H82, place 10 ; amende D-333 §1)
+
+- Date : 2026-10-24
+- Statut : accepté — lettre ap validée telle quelle par le responsable le
+  2026-10-24. Sur sa demande, l'assistant l'a rédigée à partir de quatre
+  arbitrages du même jour, posés sur questions à options : nature (« les
+  deux » rayons), contenu (le contenant seul), chiffres (une exception pour
+  les documents), mineurs (dossiers majeurs seuls). Les points que
+  l'assistant a ajoutés lui étaient signalés dans le brouillon (§2 rayon
+  vide, §4 point 4, §5 page des fiches d'assiette, §6 aucune migration) ;
+  ils sont validés avec la lettre.
+- Domaine : file C du plan, place 10, fiche H82 (lettre ap) ; portail
+  patient ; fiches d'assiette (`web/src/app/portail/[token]/fiches/`).
+- Lève : le préalable « sa D-xxx » de H82 (porte 28).
+- Amende : [[D-333]] §1 (« aucune autre [exception] n'est admise sans
+  décision »), pour les seuls documents de la bibliothèque (§4).
+- Applique : [[D-251]] (régime d'un document remis) ; [[D-288]] §1-§2
+  (texte accepté, registre, drapeau, constat) ; [[D-297]] (lecture datée) ;
+  [[D-283]] §2 (durée du dossier) et §5, [[D-284]] §3 (surface neuve servie
+  au seul dossier majeur, garde de « Mes échanges »).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune dose,
+  aucun instrument ; aucun document écrit ni publié ; le régime des fiches
+  d'assiette ([[D-251]]), inchangé ; `adviceSheetRef`, fermé
+  ([[D-200]] §2) ; aucune migration, aucun code dans cette PR.
+
+**§1 — Ce qu'est la bibliothèque.** Une page du portail en deux rayons :
+- **les documents remis** par un geste du praticien, en version figée ; leur
+  lecture est datée ([[D-297]]) et conservée selon la durée du dossier
+  ([[D-283]] §2). Les fiches d'assiette ([[D-251]]) forment ce rayon, sans
+  changer de régime ;
+- **le socle commun** : des documents visibles par tous les dossiers qui ont
+  accès à la bibliothèque, sans geste du praticien ; aucune lecture n'est
+  rattachée au dossier, donc ni lecture datée ni durée de conservation.
+
+**§2 — Le contenant seul.** ap n'écrit et ne publie aucun document. Chaque
+famille de documents (familles ah, « Méthode du bilan », toute autre) entre
+dans la bibliothèque par sa propre décision. À l'ouverture, le rayon des
+documents remis porte les fiches d'assiette déjà remises. Un rayon vide ne
+s'affiche pas : le socle reste invisible tant qu'aucun document n'y est
+publié.
+
+**§3 — Le régime d'un document**, dans les deux rayons : une notice du
+registre des sources dont le droit de remise est vérifié, notice par notice
+([[D-251]] §2) ; une version validée par le responsable, acte daté et
+distinct (l'outil qui écrit n'atteste jamais, [[D-195]]) ; une version
+publiée ne se réécrit pas, elle se retire et une nouvelle la remplace ; une
+adaptation par IA seulement hors ligne, sous la décision de la famille ;
+aucun texte de document dans le dépôt ([[D-251]] §4).
+
+**§4 — L'exception aux chiffres** : quatrième famille, après les deux de
+[[D-333]] §1 et celle de [[D-355]]. Un document de la bibliothèque peut
+porter des chiffres, dans ces bornes :
+1. **seulement un chiffre de conseil** : une durée, une fréquence ou une
+   quantité (un mode d'emploi, par exemple) ;
+2. **chacun sourcé** (DC-19), sa source citée dans la version validée ;
+3. **jamais un chiffre sur le patient** : ni score, ni couverture, ni
+   mesure, ni résultat, ni seuil, ni comparaison, qui restent sous
+   [[D-333]] ;
+4. **jamais une dose de complément ni de médicament** : elle relève de la
+   fiche compléments (F78, place 8) et de sa propre règle signée ;
+5. **aucun mot ni aucune couleur qui juge** ([[D-333]] §2 règle 4).
+
+Toute extension (une autre surface, un autre type de chiffre) demande une
+décision.
+
+**§5 — Mineurs.** Seuls les dossiers majeurs accèdent à la bibliothèque,
+même règle et même garde que « Mes échanges » (`statutAge` ; mineur ou date
+de naissance manquante : ni page ni lien). La page « Fiches remises par
+mon praticien », servie aujourd'hui sans garde d'âge, reste accessible telle
+quelle à un mineur : il ne perd aucune fiche déjà remise. Un mineur entrera
+dans la bibliothèque par une décision ultérieure, avec des textes relus pour
+lui.
+
+**§6 — Le lot.** Sans migration : le stockage du socle viendra avec la
+décision de sa première famille. Il livre la page, son entrée dans « Autres
+espaces » et un drapeau neuf, `WN_PORTAIL_BIBLIOTHEQUE`, chaîne exacte
+`'true'`, absent = fermé, **éteint à la livraison** et inscrit à
+`docs/FEATURE_FLAGS.md`. Trois textes patient, de la main du responsable,
+sont acceptés avant le merge du lot : le titre de la page, celui du rayon
+des documents remis, celui du socle commun. Proposition de l'assistant,
+**non encore acceptée** : « Ma bibliothèque », « Remis par votre
+praticien », « Pour mieux comprendre votre démarche ».
+
+**§7 — L'activation.** Porte 18, après le constat de la place 9. Constat
+([[D-288]] §2) par identifiant, lu depuis un conteneur : un dossier de test
+majeur ouvre la bibliothèque et y lit sa fiche remise ; un dossier mineur
+n'en voit pas l'entrée. Consigné en agrégats.
+
+- Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
+  plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).
+
 ### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
 
 - Date : 2026-10-24
