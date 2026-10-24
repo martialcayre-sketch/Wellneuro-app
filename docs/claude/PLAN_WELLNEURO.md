@@ -353,6 +353,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Migration, release-db** : non.
 - **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
+- **Mise à jour (2026-10-24, outil livré)** : script de conteneur `web/scripts/constatAvantT0.ts`, en lecture seule (il refuse de lire hors `default_transaction_read_only`). Population : dossiers actifs portant au moins une assignation, sans épisode T0. Les préconditions s'évaluent par le chemin des trois routes (`preconditionsT0PourPatient`, jalon T0). Sortie en agrégats, masquée par `agregerConstatAvantT0` (D-298) : effectif, avec et sans T0, bloqués et prêts, dossiers par condition dure manquante, quartiles d'ancienneté des bloqués, sans tranche. Reste : le constat en conteneur après déploiement, puis la D-xxx du délai.
 
 #### H08 · Porte 4 : sources à fournir
 - **Identifiant, piste** : porte 4 ; règle du milieu levée ; seuils de 8B sourcés par D-280 ; cockpit, alimentation, sommeil ; geste du responsable.
