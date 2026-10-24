@@ -120,7 +120,7 @@ Documentation :
       fenêtre étroite, documentée) ;
     - P2-8 (`courrierComplementRemis` dit « ce clic a remis ») ;
     - P2-9 (même patron que le courrier biologie).
-- **T3** et la passe Codex : à la suite (voir prochaine action).
+- **T3** (`test:worktree`) sur c847b10e : séquence complète verte en 8 min 17 s, 296 E2E passés. La passe Codex suit (voir prochaine action).
 
 ## Problèmes ouverts
 
@@ -146,7 +146,7 @@ Documentation :
 
 ## Prochaine action exacte
 
-1. Lancer T3 (`npm run test:worktree`), sortie dans un fichier.
+1. T3 fait (vert).
 2. Préparer le bloc `$wellneuro-pr-review` (Risque : P0) pour la passe Codex
    manuelle du responsable.
 3. Ouvrir la PR (`--body-file`) et lancer `wn-attendre-ci` en fond.
