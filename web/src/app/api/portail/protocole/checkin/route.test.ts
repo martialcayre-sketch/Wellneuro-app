@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
-    assignation: { findFirst: vi.fn() },
+    assignation: { findFirst: vi.fn(), findMany: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn() },
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
@@ -291,5 +292,85 @@ describe('GET /api/portail/protocole/checkin', () => {
     expect(json.pointEtapeOuvert).toBe('J14');
     expect(json.points.find((p) => p.pointEtape === 'J7')?.renseigne).toBe(true);
     expect(json.points.find((p) => p.pointEtape === 'J14')?.renseigne).toBe(false);
+  });
+});
+
+describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-351, lettre ak)', () => {
+  const JOUR_MS = 24 * 60 * 60 * 1000;
+  const jourZeroIlYa = (jours: number) => new Date(Date.now() - jours * JOUR_MS);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+  });
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_APPUI_RENVOI;
+  });
+
+  async function lire(jourZero: Date) {
+    mockOwnerAuth();
+    mockDiffusedProtocol();
+    calendrierDuProtocoleDiffuse.mockResolvedValueOnce({ jourZero, versionIds: ['proto_DEC_1#hash'] });
+    const req = new Request('http://localhost/api/portail/protocole/checkin', {
+      headers: { cookie: `wn_portail=${encodeURIComponent(proprioCookie())}` },
+    });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    return (await res.json()) as { pointEtapeOuvert: string | null; questionnairesRenvoyes?: string[] };
+  }
+
+  it('drapeau fermé, au jour 21 : le champ est absent et rien n’est lu', async () => {
+    const json = await lire(jourZeroIlYa(21));
+    expect(json.pointEtapeOuvert).toBe('J21');
+    expect(json).not.toHaveProperty('questionnairesRenvoyes');
+    expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('drapeau ouvert, hors des jours 18 à 24 : le champ est absent et rien n’est lu', async () => {
+    process.env.WN_PORTAIL_APPUI_RENVOI = 'true';
+    for (const jours of [14, 25]) {
+      const json = await lire(jourZeroIlYa(jours));
+      expect(json).not.toHaveProperty('questionnairesRenvoyes');
+    }
+    expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('drapeau ouvert, au jour 18 : seuls les questionnaires déjà remplis avant le jour 0 sont annoncés', async () => {
+    process.env.WN_PORTAIL_APPUI_RENVOI = 'true';
+    const jourZero = jourZeroIlYa(18);
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_RENVOYE', idQuestionnaire: 'Q_TEST_A' },
+      { idAssignation: 'ASS_NEUF', idQuestionnaire: 'Q_TEST_B' },
+    ]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_TEST_A' }]);
+
+    const json = await lire(jourZero);
+    expect(json.pointEtapeOuvert).toBe('J21');
+    expect(json.questionnairesRenvoyes).toEqual(['ASS_RENVOYE']);
+
+    // Ancrées sur la session et sur le jour 0 : renvoyée au jour 0 ou après,
+    // remplie avant lui ; sélection minimale, jamais un score.
+    const [argsAssign] = prisma.assignation.findMany.mock.calls[0];
+    expect(argsAssign.where).toEqual({
+      idPatient: assignation.idPatient,
+      dateAssignation: { gte: jourZero },
+      statut: { notIn: ['Complété', 'Annulée'] },
+    });
+    const [argsRep] = prisma.questionnaireReponse.findMany.mock.calls[0];
+    expect(argsRep.where).toEqual({
+      idPatient: assignation.idPatient,
+      idQuestionnaire: { in: ['Q_TEST_A', 'Q_TEST_B'] },
+      dateReponse: { lt: jourZero },
+    });
+    expect(argsRep.select).toEqual({ idQuestionnaire: true });
+  });
+
+  it('drapeau ouvert, le jour 24 (une heure avant la fermeture), aucune assignation renvoyée : liste vide, aucune seconde lecture', async () => {
+    process.env.WN_PORTAIL_APPUI_RENVOI = 'true';
+    prisma.assignation.findMany.mockResolvedValue([]);
+    const json = await lire(jourZeroIlYa(24 - 1 / 24));
+    expect(json.questionnairesRenvoyes).toEqual([]);
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
   });
 });

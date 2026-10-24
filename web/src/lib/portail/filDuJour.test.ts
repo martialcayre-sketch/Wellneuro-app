@@ -5,9 +5,11 @@ import {
   APPUI_RENDEZ_VOUS_SUIVI,
   construireFilDuJour,
   CTA_RENDEZ_VOUS_SUIVI,
+  questionnairesRenvoyesDepuis,
   rendezVousSuiviAFaire,
   type SourcesFilDuJour,
 } from './filDuJour';
+import { APPUI_QUESTIONNAIRE_RENVOYE } from './texteAppuiRenvoi';
 
 /*
  * LE FIL DU JOUR — ce que ces bancs protègent.
@@ -113,6 +115,7 @@ function fil(
     agendasAli,
     ceQuiCompteOuvert: null,
     rendezVousSuivi: null,
+    questionnairesRenvoyes: new Set(),
     formulationParcours: null,
     ...reste,
   });
@@ -493,6 +496,67 @@ describe('rendezVousSuiviAFaire — la réponse de la route du check-in', () => 
       rendezVousSuiviAFaire(reponse({ points: [{ pointEtape: 'J7', renseigne: 'non' }] })),
     ).toBeNull();
     expect(rendezVousSuiviAFaire(reponse({ points: [null, 'J7'] }))).toBeNull();
+  });
+});
+
+describe('la phrase d’appui du questionnaire renvoyé (D-351, lettre ak)', () => {
+  const renvoye = assign({ idAssignation: 'ASS_RENVOYE', idQuestionnaire: 'Q_ALI_01' });
+  const neuf = assign({ idAssignation: 'ASS_NEUF', idQuestionnaire: 'Q_SOM_01', titre: 'Sommeil' });
+
+  it('sous chaque questionnaire renvoyé, la phrase acceptée ; sous les autres, rien', () => {
+    const f = fil([renvoye, neuf], [], new Set(), [], { questionnairesRenvoyes: new Set(['ASS_RENVOYE']) });
+    expect(f.taches.find(t => t.cle === 'ASS_RENVOYE')?.appui).toBe(APPUI_QUESTIONNAIRE_RENVOYE);
+    expect(f.taches.find(t => t.cle === 'ASS_NEUF')?.appui).toBeNull();
+  });
+
+  it('aucune ligne de plus : la phrase se pose sous la ligne, elle n’en crée pas', () => {
+    const sans = fil([renvoye, neuf]);
+    const avec = fil([renvoye, neuf], [], new Set(), [], { questionnairesRenvoyes: new Set(['ASS_RENVOYE', 'ASS_ABSENT']) });
+    expect(cles(avec)).toEqual(cles(sans));
+  });
+
+  it('un questionnaire renvoyé mais déjà transmis ne revient pas pour porter la phrase', () => {
+    const transmis = assign({ idAssignation: 'ASS_RENVOYE', statut: 'Complété', statutReponses: 'verrouille', estEnAttenteSaisie: false });
+    const f = fil([transmis], [], new Set(), [], { questionnairesRenvoyes: new Set(['ASS_RENVOYE']) });
+    expect(cles(f)).not.toContain('ASS_RENVOYE');
+  });
+
+  it('ensemble vide (drapeau fermé, hors fenêtre, inconnu) : aucune phrase', () => {
+    const f = fil([renvoye, neuf]);
+    expect(f.taches.every(t => t.espece !== 'questionnaire' || t.appui === null)).toBe(true);
+  });
+});
+
+describe('questionnairesRenvoyesDepuis — la réponse de la route du check-in', () => {
+  const reponse = (over: Record<string, unknown> = {}) => ({
+    ok: true,
+    protocoleDiffuse: true,
+    pointEtapeOuvert: 'J21',
+    points: [],
+    questionnairesRenvoyes: ['ASS_1', 'ASS_2'],
+    ...over,
+  });
+
+  it('point J21 ouvert, liste annoncée : les identifiants sont rendus', () => {
+    expect([...questionnairesRenvoyesDepuis(reponse())]).toEqual(['ASS_1', 'ASS_2']);
+  });
+
+  it('hors du point J21 (jours 18 à 24) : rien, même si une liste est annoncée', () => {
+    for (const pointEtapeOuvert of ['J7', 'J14', null, 'J22']) {
+      expect(questionnairesRenvoyesDepuis(reponse({ pointEtapeOuvert })).size).toBe(0);
+    }
+  });
+
+  it('champ absent (drapeau fermé), réponse en échec ou illisible : rien', () => {
+    expect(questionnairesRenvoyesDepuis(reponse({ questionnairesRenvoyes: undefined })).size).toBe(0);
+    expect(questionnairesRenvoyesDepuis(reponse({ questionnairesRenvoyes: 'ASS_1' })).size).toBe(0);
+    expect(questionnairesRenvoyesDepuis(reponse({ protocoleDiffuse: false })).size).toBe(0);
+    expect(questionnairesRenvoyesDepuis({ ok: false, reason: 'exception', error: 'x' }).size).toBe(0);
+    expect(questionnairesRenvoyesDepuis(null).size).toBe(0);
+  });
+
+  it('un identifiant qui n’est pas une chaîne est écarté', () => {
+    expect([...questionnairesRenvoyesDepuis(reponse({ questionnairesRenvoyes: ['ASS_1', 3, null] }))]).toEqual(['ASS_1']);
   });
 });
 
