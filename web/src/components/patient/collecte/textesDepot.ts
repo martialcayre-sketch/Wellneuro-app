@@ -4,7 +4,9 @@
 // 2026-10-14 (« Texte 1 — Déposer un document dans votre espace ») :
 // `docs/claude/propositions/2026-10-14-g11-textes-patient/README.md`. Il est lu à
 // côté du dépôt, sans accusé (arbitrage 2 de G-11), et ne change plus sans
-// nouvelle validation ; un banc le compare au document validé.
+// nouvelle validation ; un banc le compare au document validé. Son renvoi au
+// compte rendu biologique nomme la partie des conditions d'utilisation depuis
+// le 2026-10-24 (arbitrage 8 de G-11, plan D/38).
 //
 // LES LIBELLÉS DE L'ÉCRAN (titre, champs, bouton, liste, refus) ont été validés
 // tels quels par le responsable le 2026-10-20 (préparation d'ACT-4), le refus
@@ -36,7 +38,7 @@ export const BLOCS_COLLECTE_G11: readonly { titre: string; texte: string }[] = O
   {
     titre: 'Vos analyses biologiques',
     texte:
-      'Le compte rendu de vos analyses biologiques suit un circuit à part, décrit dans « Vos données personnelles ». Il est supprimé une fois ses valeurs relues par votre praticien, et au plus tard 30 jours après son dépôt. Déposez-le à l’endroit prévu pour lui.',
+      'Le compte rendu de vos analyses biologiques suit un circuit à part, décrit dans la partie « Vos données personnelles et leur confidentialité » des conditions d’utilisation. Il est supprimé une fois ses valeurs relues par votre praticien, et au plus tard 30 jours après son dépôt. Déposez-le à l’endroit prévu pour lui.',
   },
   {
     titre: 'Combien de temps',
