@@ -22,7 +22,7 @@ Le tout est livré sous `WN_COURRIER_COMPLEMENT` éteint (D-345 §4-§7).
 
 ## Décisions prises
 
-D-356 consigne quatre arbitrages du responsable du 2026-10-24 :
+D-357 consigne quatre arbitrages du responsable du 2026-10-24 :
 
 - §1 : le texte du courrier est validé tel quel, sans population ni
   situation nommée ;
@@ -87,7 +87,7 @@ Gardes :
 Documentation :
 
 - `docs/FEATURE_FLAGS.md` ;
-- `docs/DECISIONS.md` (D-356) ;
+- `docs/DECISIONS.md` (D-357) ;
 - `docs/claude/PLAN_WELLNEURO.md` ;
 - `docs/claude/MATRICE_CONSOMMATION.md` (régénérée : une surface indirecte de
   plus pour la Boussole, celle de la route neuve) ;
@@ -121,7 +121,7 @@ Documentation :
     - P2-8 (`courrierComplementRemis` dit « ce clic a remis ») ;
     - P2-9 (même patron que le courrier biologie).
 - **T3** (`test:worktree`) sur c847b10e : séquence complète verte en 8 min 17 s, 296 E2E passés.
-- **CodeRabbit** sur fe81fdb1 : D-356 corrigée (`WN_FICHES_ASSIETTE` parmi les
+- **CodeRabbit** sur fe81fdb1 : D-357 corrigée (`WN_FICHES_ASSIETTE` parmi les
   conditions d'ouverture) ; matrice écartée avec motif, signalement retiré par
   CodeRabbit. Sur 536bd66e : aucun commentaire ; la proposition de durcissement
   (fenêtre de fraîcheur) est routée vers la condition 2 d'ouverture (lot 4).
@@ -131,8 +131,9 @@ Documentation :
     rougissent ;
   - P1-2 : le libellé du destinataire est réservé à la grossesse (arbitrage du
     responsable) ; banc de l'aperçu pour un allaitement seul.
-- **Numérotation** : D-355 prise par r3_13 (#1689) ; la décision du lot est
-  D-356 (fusion de main dans la branche).
+- **Numérotation** : D-355 prise par r3_13 (#1689), puis D-356 par t36
+  (#1690) ; la décision du lot est D-357 (deux fusions de main dans la
+  branche).
 
 ## Problèmes ouverts
 
@@ -169,5 +170,5 @@ Documentation :
 
 - `WN_COURRIER_COMPLEMENT` reste éteint jusqu'aux quatre conditions.
 - Aucun claim ni libellé de situation au dépôt (forme opaque).
-- Le texte du courrier ne se retouche pas sans nouvelle validation (D-356 §1).
+- Le texte du courrier ne se retouche pas sans nouvelle validation (D-357 §1).
 - Pas de `prisma format`.
