@@ -299,13 +299,19 @@ describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-352
   const JOUR_MS = 24 * 60 * 60 * 1000;
   const jourZeroIlYa = (jours: number) => new Date(Date.now() - jours * JOUR_MS);
 
+  // Le drapeau est fermé au départ de chaque cas, quelle que soit la valeur de
+  // l'environnement qui lance la suite, et cette valeur est rendue ensuite.
+  let drapeauInitial: string | undefined;
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    drapeauInitial = process.env.WN_PORTAIL_APPUI_RENVOI;
+    delete process.env.WN_PORTAIL_APPUI_RENVOI;
   });
   afterEach(() => {
-    delete process.env.WN_PORTAIL_APPUI_RENVOI;
+    if (drapeauInitial === undefined) delete process.env.WN_PORTAIL_APPUI_RENVOI;
+    else process.env.WN_PORTAIL_APPUI_RENVOI = drapeauInitial;
   });
 
   async function lire(jourZero: Date) {
