@@ -32,6 +32,14 @@ import {
 //
 // LA TRACE PROUVE LA REMISE, JAMAIS L'ACCORD : la garde relit l'accord de
 // partage à chaque appel, même quand une remise antérieure couvre la liste.
+//
+// CE QUE LE VERROU DU CLIC NE SÉRIALISE PAS (revue `wn-reviewer` du lot 3,
+// P2-5, fenêtre acceptée) : l'écriture d'une ligne physiologique (son propre
+// verrou consultatif) et l'envoi d'une anamnèse ne prennent pas la ligne du
+// patient. Une grossesse déclarée entre la relecture sous verrou et le commit
+// du clic n'est pas vue par CE clic — elle l'est par le suivant. L'accord, lui,
+// est sérialisé : son écrivain prend la ligne du patient que le clic lit en
+// partage.
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -59,7 +67,7 @@ export type EtatCourrierComplement = 'non_requis' | 'refuse' | 'deja' | 'part' |
 
 export type ApercuCourrierComplement = {
   etat: EtatCourrierComplement;
-  statut: VerdictGardeComplement['statut'] | RefusListe | 'dossier_introuvable' | 'version_illisible';
+  statut: VerdictGardeComplement['statut'] | RefusListe | 'dossier_introuvable' | 'version_illisible' | 'lecture_impossible' | 'dossier_bloque';
   motif: string;
   /** Un critère de population (grossesse, allaitement) a déclenché : libellé du destinataire. */
   populationDeclenche: boolean;
@@ -227,9 +235,13 @@ export function jetonAvecComplement(jeton: string, apercu: ApercuCourrierComplem
 
 /** Une remise refusée pour une autre raison que « déjà remis » : le clic s'annule. */
 export class RemiseComplementRefusee extends Error {
-  constructor() {
+  /** Le motif en clair que la route rend au praticien. */
+  readonly motif: string;
+
+  constructor(motif: string = MOTIF_REMISE_REFUSEE) {
     super('remise du courrier complément refusée');
     this.name = 'RemiseComplementRefusee';
+    this.motif = motif;
   }
 }
 

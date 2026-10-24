@@ -47,7 +47,6 @@ import {
   bloqueLeClic,
   courrierComplementOuvert,
   jetonAvecComplement,
-  MOTIF_REMISE_REFUSEE,
   RemiseComplementRefusee,
   remettreCourrierComplement,
   type ApercuCourrierComplement,
@@ -125,6 +124,11 @@ function actionsPersistees(payload: unknown, inputHash: string): ProtocolAction[
 
 const MOTIF_VERSION_ILLISIBLE =
   'La version ne se relit pas : la garde du complément ciblé ne peut pas être jugée, rien n’est diffusé.';
+const MOTIF_LECTURE_COMPLEMENT =
+  'La garde du complément ciblé n’a pas pu être lue : rien ne peut être diffusé. Rechargez le cockpit.';
+const MOTIF_DOSSIER_BLOQUE =
+  'Le courrier au médecin ne peut pas être remis : les documents de ce clic ne partent pas pour ce dossier '
+  + '(dossier clos ou protocole que le portail ne servirait pas). Aucun complément ciblé ne peut être diffusé.';
 const MOTIF_REMISE_IMPOSSIBLE =
   'Le courrier au médecin ne peut être remis que par le clic qui remet les documents au patient, '
   + 'fermé sur ce déploiement : aucun complément ciblé ne peut être diffusé.';
@@ -481,6 +485,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           return { perime: true as const };
         }
         if (apercuComplement && bloqueLeClic(apercuComplement)) throw new RemiseComplementRefusee();
+        // UN COURRIER À REMETTRE SOUS UN DOSSIER BLOQUÉ NE PART PAS — et le clic
+        // non plus : le courrier suivrait sinon le sort des fiches sans que la
+        // garde le sache, et une remise faite là vaudrait « déjà remis » pour
+        // les versions suivantes (revue `wn-reviewer` du lot 3, P2-4).
+        if (apercuComplement?.etat === 'part' && blocage !== null) {
+          throw new RemiseComplementRefusee(MOTIF_DOSSIER_BLOQUE);
+        }
 
         const approbations = await tx.protocolDiffusionApproval.findMany({
           where: { idPatient, decisionCardInputHash: version.decisionCardInputHash },
@@ -620,7 +631,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
   } catch (err) {
     // Le courrier complément refusé sous verrou : la transaction est annulée
     // entière, rien n'est diffusé, et le motif se dit (D-345 §4).
-    if (err instanceof RemiseComplementRefusee) return refusComplement(MOTIF_REMISE_REFUSEE);
+    if (err instanceof RemiseComplementRefusee) return refusComplement(err.motif);
     console.error('[praticien/protocoles/diffusion POST]', ...classeEtCode(err));
     return NextResponse.json(
       { ok: false, reason: 'exception', error: 'Erreur technique.' },
@@ -762,14 +773,18 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // LE PAYLOAD EST LU POUR JUGER LE CONTRAT PATIENT, pas pour l'afficher :
         // sans lui, le miroir ne voyait qu'une des deux causes de refus.
         payload: true,
-        // La garde du complément ciblé lit le contrat de la version ([[D-345]]).
-        contractVersion: true,
+        // La garde du complément ciblé lit le contrat de la version ([[D-345]]) ;
+        // drapeau fermé, la lecture reste celle d'avant.
+        contractVersion: courrierComplementOuvert(),
       },
     });
     if (versions.length === 0) {
       return NextResponse.json({
         ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null, fiches: null,
         annonceParEmail: false, annonceProtocoleParEmail: false, emailProtocoleOuvert: annonceProtocoleOuverte(),
+        // Drapeau ouvert, la clé dit au cockpit d'afficher la case « ciblé » dès
+        // le PREMIER protocole (revue `wn-reviewer` du lot 3, P2-2).
+        ...(courrierComplementOuvert() ? { courrierComplement: null } : {}),
       });
     }
     const activeVersion = resolveActiveVersion(versions);
@@ -986,31 +1001,53 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // état entre dans le jeton des fiches, que le clic recalcule sous verrou.
     let courrierComplement: { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null = null;
     if (courrierComplementOuvert() && activeVersion) {
-      const actionsActives = actionsPersistees(activeVersion.payload, activeVersion.inputHash);
-      const apercuComplement: ApercuCourrierComplement = actionsActives === null
-        ? {
+      // UNE LECTURE QUI ÉCHOUE NE FAIT PAS TOMBER L'ÉTAT DE DIFFUSION (patron
+      // des fiches ; revue `wn-reviewer` du lot 3, P2-1) : elle se dit, bloque,
+      // et son jeton ne peut égaler aucun aperçu calculé.
+      let apercuComplement: ApercuCourrierComplement;
+      let medecinTraitant: string | null = null;
+      try {
+        const actionsActives = actionsPersistees(activeVersion.payload, activeVersion.inputHash);
+        apercuComplement = actionsActives === null
+          ? {
+            etat: 'refuse',
+            statut: 'version_illisible',
+            motif: MOTIF_VERSION_ILLISIBLE,
+            populationDeclenche: false,
+            courrier: null,
+          }
+          : await apercuCourrierComplement(prisma, {
+            idPatient,
+            actions: actionsActives,
+            contractVersion: activeVersion.contractVersion ?? null,
+            maintenantMs: Date.now(),
+          });
+        if (apercuComplement.etat === 'manquant') {
+          const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { medecinTraitantNom: true } });
+          medecinTraitant = patient?.medecinTraitantNom?.trim() || null;
+        }
+      } catch (erreur) {
+        console.warn('[praticien/protocoles/diffusion GET] aperçu du courrier complément illisible :', ...classeEtCode(erreur));
+        apercuComplement = {
           etat: 'refuse',
-          statut: 'version_illisible',
-          motif: MOTIF_VERSION_ILLISIBLE,
+          statut: 'lecture_impossible',
+          motif: MOTIF_LECTURE_COMPLEMENT,
           populationDeclenche: false,
           courrier: null,
-        }
-        : await apercuCourrierComplement(prisma, {
-          idPatient,
-          actions: actionsActives,
-          contractVersion: activeVersion.contractVersion,
-          maintenantMs: Date.now(),
-        });
-      const patientComplement = apercuComplement.etat === 'manquant'
-        ? await prisma.patient.findUnique({ where: { idPatient }, select: { medecinTraitantNom: true } })
-        : null;
-      courrierComplement = {
-        apercu: apercuComplement,
-        medecinTraitant: patientComplement?.medecinTraitantNom?.trim() || null,
-      };
-      if (fiches && fiches !== APERCU_FICHES_ILLISIBLE) {
+        };
+        if (fiches) fiches = { ...fiches, jeton: 'lecture_impossible' };
+      }
+      if (fiches && fiches.jeton !== 'lecture_impossible') {
         fiches = { ...fiches, jeton: jetonAvecComplement(fiches.jeton, apercuComplement) };
       }
+      // Le jeton est celui de l'aperçu CALCULÉ, comme au clic ; l'écran, lui,
+      // dit d'avance le refus que le clic opposera sous un dossier bloqué.
+      if (apercuComplement.etat === 'part' && fiches?.blocage) {
+        apercuComplement = {
+          ...apercuComplement, etat: 'refuse', statut: 'dossier_bloque', motif: MOTIF_DOSSIER_BLOQUE, courrier: null,
+        };
+      }
+      courrierComplement = { apercu: apercuComplement, medecinTraitant };
     }
 
     return NextResponse.json({

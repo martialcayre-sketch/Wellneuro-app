@@ -671,6 +671,7 @@ export function ClinicalRuntimeSection({
         setApercuFiches(null);
         setApercuLettre(null);
         setCourrierComplement(null);
+        setComplementCibleOuvert(false);
         setAnnonceParEmail(false);
         setAnnonceProtocoleParEmail(false);
         setServieAuPatient(null);
@@ -702,6 +703,7 @@ export function ClinicalRuntimeSection({
       setApercuFiches(null);
       setApercuLettre(null);
       setCourrierComplement(null);
+      setComplementCibleOuvert(false);
       setAnnonceParEmail(false);
       setAnnonceProtocoleParEmail(false);
       setServieAuPatient(null);

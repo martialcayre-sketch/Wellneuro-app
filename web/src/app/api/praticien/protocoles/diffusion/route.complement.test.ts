@@ -227,6 +227,37 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
     }
   });
 
+  it('dossier clos et courrier à remettre : refusé, motif du blocage — et le GET le dit d’avance', async () => {
+    const clos = new Date('2026-09-01T00:00:00.000Z');
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: clos } as never);
+    prisma.$queryRaw.mockResolvedValue([{ actif: true, suivi_cloture_le: clos }] as never);
+    try {
+      const get = await lireGet();
+      expect(get.courrierComplement).toMatchObject({ apercu: { etat: 'refuse', statut: 'dossier_bloque' } });
+      const res = await cliquer();
+      expect(res.status).toBe(409);
+      expect((await res.json()).error).toMatch(/ne peut pas être remis/);
+      expect(remettreCourrierComplement).not.toHaveBeenCalled();
+    } finally {
+      prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null });
+      prisma.$queryRaw.mockResolvedValue([{ actif: true, suivi_cloture_le: null }]);
+    }
+  });
+
+  it('GET sans aucune version, drapeau ouvert : la clé est là — la case paraît dès le premier protocole', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValueOnce([]);
+    const get = await lireGet();
+    expect(get).toHaveProperty('courrierComplement', null);
+  });
+
+  it('GET dont l’aperçu du complément lève : réponse servie, aperçu bloquant, jeton empoisonné', async () => {
+    apercuCourrierComplement.mockRejectedValueOnce(new Error('panne'));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const get = await lireGet();
+    expect(get.courrierComplement).toMatchObject({ apercu: { etat: 'refuse', statut: 'lecture_impossible' } });
+    expect(get.fiches?.jeton).toBe('lecture_impossible');
+  });
+
   it('drapeau fermé : ni aperçu, ni remise, ni clé — la réponse d’avant', async () => {
     delete process.env.WN_COURRIER_COMPLEMENT;
     const get = await lireGet();
@@ -236,5 +267,9 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
     expect(await res.json()).not.toHaveProperty('courrierComplementRemis');
     expect(apercuCourrierComplement).not.toHaveBeenCalled();
     expect(remettreCourrierComplement).not.toHaveBeenCalled();
+    // La lecture de base est celle d'avant : le contrat n'est pas lu.
+    for (const appel of prisma.protocolDraft.findMany.mock.calls as unknown as [{ select: Record<string, unknown> }][]) {
+      expect(appel[0].select.contractVersion).toBe(false);
+    }
   });
 });

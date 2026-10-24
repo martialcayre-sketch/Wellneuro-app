@@ -10,6 +10,13 @@
 //      liste dans une seule transaction : une liste que la base refuse
 //      (désordre) laisse le dossier SANS courrier.
 //   3. Un clic rejoué : `createMany` rend 0 ligne, sans erreur.
+//   4. LA REMISE DU CLIC DE BOUT EN BOUT : `remettreCourrierComplement`, dans
+//      une transaction, avec ses vraies lectures (âge, anamnèse envoyée,
+//      accord) — remise, puis rejeu « déjà remis » ; un refus du trigger
+//      annule la transaction entière, approbation créée dans la même comprise.
+//   5. Collation : des identifiants de casse mélangée se trient en ordre
+//      d'octets des deux côtés ; une référence catalogue nulle est refusée en
+//      clair en TypeScript ET par le trigger.
 //
 // SAUTÉ PAR DÉFAUT (T1, T2) : il écrit et commet. Il ne tourne que si
 // `WN_COURRIER_COMPLEMENT_BANC_BASE` nomme la base de `DATABASE_URL`, sur un
@@ -75,11 +82,22 @@ const ACTIONS: ProtocolAction[] = [
 describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la liste, les deux ou rien)', () => {
   let consigner: typeof import('./courrierComplementConsignation').consignerCourrierComplement;
   let prisma: typeof import('@/lib/prisma').prisma;
+  let remettre: typeof import('./courrierComplementRemise').remettreCourrierComplement;
+  let Refusee: typeof import('./courrierComplementRemise').RemiseComplementRefusee;
   let observateur: pg.Client;
   let numero = 0;
 
+  /** Une anamnèse ENVOYÉE qui déclare une grossesse : la garde rend « requis ». */
+  async function anamneseGrossesse(idPatient: string): Promise<void> {
+    await observateur.query(
+      `INSERT INTO consultations (id, id_consultation, id_patient, email_patient, praticien_email, statut, anamnese, date_validation, updated_at)
+       VALUES ($1, $1, $2, 'sophie.nicola+banc@example.test', $3, 'validee', '{"etat_grossesse": "Oui"}'::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [`cons_banc_ccr_${RUN.toLowerCase()}_${numero}`, idPatient, PRATICIEN],
+    );
+  }
+
   /** Un dossier neuf, son protocole V4 approuvé et l'accord de partage. */
-  async function dossier(): Promise<{ idPatient: string; idApprobation: string }> {
+  async function dossier(actions: ProtocolAction[] = ACTIONS): Promise<{ idPatient: string; idApprobation: string }> {
     numero += 1;
     const idPatient = `PAT_BANC_CCR_${RUN}_${numero}`;
     const suffixe = `${RUN.toLowerCase()}_${numero}`;
@@ -93,7 +111,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
          (id, id_patient, decision_card_id, decision_card_input_hash, snapshot_input_hash,
           review_input_hash, selected_priority_id, payload, input_hash, contract_version, updated_at)
        VALUES ($1, $2, 'dc', $3, $3, $3, 'prio', $4::jsonb, $3, $5, CURRENT_TIMESTAMP)`,
-      [`pd_banc_ccr_${suffixe}`, idPatient, H, JSON.stringify({ actions: ACTIONS }), V4],
+      [`pd_banc_ccr_${suffixe}`, idPatient, H, JSON.stringify({ actions }), V4],
     );
     await observateur.query(
       `INSERT INTO protocol_diffusion_approvals
@@ -130,6 +148,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     await observateur.connect();
     ({ consignerCourrierComplement: consigner } = await import('./courrierComplementConsignation'));
     ({ prisma } = await import('@/lib/prisma'));
+    ({ remettreCourrierComplement: remettre, RemiseComplementRefusee: Refusee } = await import('./courrierComplementRemise'));
   });
 
   afterAll(async () => {
@@ -220,6 +239,115 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
       },
     })).rejects.toThrow(/n'est pas distincte et triée/);
     expect(await courriers(idPatient)).toBe(avant);
+  });
+
+  it('REMISE DU CLIC — remise, puis rejeu « déjà remis », par les vraies lectures de la garde', async () => {
+    const { idPatient, idApprobation } = await dossier();
+    await anamneseGrossesse(idPatient);
+    const liste = listeComplementsCibles(ACTIONS, V4);
+    if (!liste.ok) throw new Error('fixture');
+    const consigne = await consigner(prisma, {
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du clic.'), ancrage: ANCRAGE, liste,
+    });
+    if (!consigne.ok) throw new Error('consignation');
+    const entrees = {
+      idPatient, idApprobation, actions: ACTIONS, contractVersion: V4, maintenantMs: Date.now(),
+      idCorrespondanceVue: consigne.idCorrespondance,
+    };
+    expect(await prisma.$transaction(tx => remettre(tx, entrees))).toBe('remis');
+    // Rejoué : la remise couvre désormais la liste — rien à remettre.
+    expect(await prisma.$transaction(tx => remettre(tx, entrees))).toBe('rien');
+    const { rows } = await observateur.query(
+      'SELECT count(*)::int AS n FROM courriers_complement_remises WHERE id_patient = $1', [idPatient]);
+    expect(rows[0].n).toBe(1);
+  });
+
+  it('REMISE DU CLIC — un refus du trigger annule la transaction entière, approbation du clic comprise', async () => {
+    const { idPatient } = await dossier();
+    await anamneseGrossesse(idPatient);
+    const liste = listeComplementsCibles(ACTIONS, V4);
+    if (!liste.ok) throw new Error('fixture');
+    const consigne = await consigner(prisma, {
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier refusé au clic.'), ancrage: ANCRAGE, liste,
+    });
+    if (!consigne.ok) throw new Error('consignation');
+    // Une approbation dont la version ne porte AUCUN complément ciblé : le
+    // trigger refuse la remise ; la transaction du clic doit tout annuler.
+    const idApprobation = `pda_banc_ccr_vide_${RUN.toLowerCase()}_${numero}`;
+    await expect(prisma.$transaction(async tx => {
+      await tx.protocolDraft.create({
+        data: {
+          id: `pd_banc_ccr_vide_${RUN.toLowerCase()}_${numero}`,
+          idPatient,
+          decisionCardId: 'dc',
+          decisionCardInputHash: H,
+          snapshotInputHash: H,
+          reviewInputHash: H,
+          selectedPriorityId: 'prio',
+          payload: { actions: [] },
+          inputHash: H,
+          contractVersion: V4,
+        },
+      });
+      await tx.protocolDiffusionApproval.create({
+        data: {
+          id: idApprobation,
+          idPatient,
+          protocolDraftId: `pd_banc_ccr_vide_${RUN.toLowerCase()}_${numero}`,
+          decisionCardInputHash: H,
+          protocolDraftInputHash: H,
+          approvedAt: new Date(),
+          confirmation: 'content_approved_for_diffusion',
+        },
+      });
+      return remettre(tx, {
+        idPatient, idApprobation, actions: ACTIONS, contractVersion: V4, maintenantMs: Date.now(),
+        idCorrespondanceVue: consigne.idCorrespondance,
+      });
+    })).rejects.toBeInstanceOf(Refusee);
+    const { rows } = await observateur.query(
+      'SELECT count(*)::int AS n FROM protocol_diffusion_approvals WHERE id = $1', [idApprobation]);
+    expect(rows[0].n).toBe(0);
+  });
+
+  it('COLLATION — des identifiants de casse mélangée se trient en ordre d’octets des deux côtés', async () => {
+    const melange = [action('b-un', 'Un'), action('B-deux', 'Deux'), action('a-trois', 'Trois'), action('A-quatre', 'Quatre')];
+    const { idPatient, idApprobation } = await dossier(melange);
+    const liste = listeComplementsCibles(melange, V4);
+    if (!liste.ok) throw new Error('fixture');
+    expect(liste.elements.map(e => e.split(':')[0])).toEqual(['A-quatre', 'B-deux', 'a-trois', 'b-un']);
+    const consigne = await consigner(prisma, {
+      idPatient, donnees: donnees(idPatient, 'Docteur, collation.'), ancrage: ANCRAGE, liste,
+    });
+    if (!consigne.ok) throw new Error('consignation');
+    const remise = await prisma.courrierComplementRemise.createMany({
+      data: [{
+        idPatient, idApprobation, idCorrespondance: consigne.idCorrespondance,
+        texte: 'Docteur, collation.', texteSha256: sha('Docteur, collation.'),
+        complements: liste.elements, complementsSha256: liste.sha256,
+      }],
+    });
+    expect(remise.count).toBe(1);
+  });
+
+  it('RÉFÉRENCE CATALOGUE NULLE — refusée en clair en TypeScript, et par le trigger', async () => {
+    const nulle = [action('ref-nulle', 'Référence nulle', { supplementCatalogRef: null as never })];
+    expect(listeComplementsCibles(nulle, V4)).toEqual({ ok: false, raison: 'reference_catalogue_invalide' });
+    const { idPatient, idApprobation } = await dossier(nulle);
+    // Une liste forgée qui ignore la référence : le trigger la refuse quand même.
+    const forgee = listeComplementsCibles([action('ref-nulle', 'Référence nulle')], V4);
+    if (!forgee.ok) throw new Error('fixture');
+    const consigne = await consigner(prisma, {
+      idPatient, donnees: donnees(idPatient, 'Docteur, référence nulle.'), ancrage: ANCRAGE, liste: forgee,
+    });
+    if (!consigne.ok) throw new Error('consignation');
+    await expect(prisma.courrierComplementRemise.createMany({
+      data: [{
+        idPatient, idApprobation, idCorrespondance: consigne.idCorrespondance,
+        texte: 'Docteur, référence nulle.', texteSha256: sha('Docteur, référence nulle.'),
+        complements: forgee.elements, complementsSha256: forgee.sha256,
+      }],
+    })).rejects.toThrow(/mal formée/);
   });
 
   it('accord retiré : rien n’est consigné, refus rendu (pas d’exception)', async () => {
