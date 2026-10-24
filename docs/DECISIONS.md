@@ -81,6 +81,13 @@ alimentaire (heures, durées, efficacité), les données physiologiques
 déclarées (poids, taille). À reprendre par le responsable s'il les veut sous
 la même règle.
 
+**Confirmé le 2026-10-24.** Le responsable a confirmé D-354 telle quelle, par
+questions à options : les libellés d'interprétation d'un score restent
+masqués ; les textes du moteur qui citent un score restent masqués en entier ;
+les agendas (sommeil, alimentaire) et les données physiologiques déclarées
+restent visibles. Les deux lectures du §2 et la ligne « Non masqué » ci-dessus
+deviennent des choix du responsable ; aucun lot de code ne suit.
+
 ### D-353 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
 
 - Date : 2026-10-24
