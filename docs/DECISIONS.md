@@ -4,6 +4,98 @@
 
 ## Décisions actives
 
+### D-369 — La page du protocole servi porte « Validé par votre praticien le … » (lettre ba)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (libellé daté ; message de départ hors de ba) ; texte validé mot pour
+  mot le même jour.
+- Domaine : portail, page du protocole servi
+  (`web/src/components/patient-companion/PatientCompanionHome.tsx`) ; complète
+  [[D-307]] (lettre q) ; fiche H35 du plan.
+- Ne touche pas : aucune migration, aucun drapeau, aucune règle clinique ; le
+  badge des documents remis (`web/src/lib/documents/rendu.ts`) est inchangé.
+
+**§1 — La mention.** En tête de la page du protocole servi, une fois :
+« Validé par votre praticien le 24 octobre 2026 » — la date de l'approbation
+de diffusion de la version servie, en toutes lettres. Une nouvelle version
+approuvée porte sa propre date ([[D-368]] §4).
+
+**§2 — Portée.** Ajout à la page servie, hors file C, constaté par lecture.
+Aucun chiffre, aucun mot qui juge.
+
+**§3 — Le message de départ.** Il n'entre pas dans ba : un mot libre du
+praticien joint à la diffusion demanderait sa propre lettre.
+
+**Ce qu'elle ne décide pas.** Le message de départ ; tout autre texte du
+portail.
+
+**Effet sur le plan.** H35 : texte signé ; lot de code au rang 1, petit.
+bb (H49) perd le préalable ba. Registre « Lettres à écrire » : ba fait.
+
+### D-368 — Ajouts par version datée : rien ne s'ajoute à un protocole diffusé sans une nouvelle version, approuvée avant d'être servie (lettre bc)
+
+- Date : 2026-10-24
+- Statut : accepté — texte de registre validé par le responsable le
+  2026-10-24.
+- Domaine : versions de protocole
+  (`web/src/app/api/praticien/protocoles/versions/route.ts`, en ajout seul) ;
+  diffusion (`web/src/app/api/praticien/protocoles/diffusion/route.ts`) ;
+  [[D-207]], [[D-255]], [[D-317]] ; fiche H34 du plan.
+- Ne touche pas : aucun code ; la règle décrit le comportement en place et le
+  rend opposable aux lots futurs.
+
+**§1 — La règle.** Tout ajout à un protocole diffusé (action, fiche,
+complément, attente biologique) passe par une nouvelle version datée, qui
+remplace la précédente dans la chaîne sans la modifier. Une version diffusée ne
+se modifie jamais en place. La relecture d'un brouillon non diffusé (BP-23)
+n'est pas visée.
+
+**§2 — L'approbation.** La nouvelle version n'est servie qu'après sa propre
+approbation de diffusion, liée à cette version ; jusque-là, le patient lit la
+précédente.
+
+**§3 — Le calendrier.** Un ajout ne relance pas le suivi : seul un pivot le
+relance (D-255).
+
+**§4 — La date.** La version servie porte sa date de validation au portail
+([[D-369]]).
+
+**Ce qu'elle ne décide pas.** Aucun code.
+
+**Effet sur le plan.** H34 : second texte mergé. Registre « Lettres à
+écrire » : bc fait.
+
+### D-367 — Un protocole est un cycle, pas un programme : il ne s'enchaîne pas en phases ; `phases` reste fermé (lettre ad)
+
+- Date : 2026-10-24
+- Statut : accepté — texte de registre validé par le responsable le
+  2026-10-24, sur une question à options (définir « programme »).
+- Domaine : protocole 21 jours, contrat V4 (`ProtocolPhase`,
+  `web/src/lib/clinical-engine/types.ts`) ; [[D-056]], [[D-166]], [[D-207]],
+  [[D-255]] ; lettre j ([[D-306]]) ; fiche H34 du plan.
+- Ne touche pas : aucun code, aucune migration, aucun texte servi.
+
+**§1 — Un cycle.** Un protocole sert un cycle, ouvert par son ancre (D-166)
+et suivi depuis sa première diffusion (D-255). Il n'enchaîne ni phases ni
+étapes. La suite d'un accompagnement passe par une nouvelle version
+([[D-368]]) ou par un nouveau cycle, ouvert par une nouvelle ancre.
+
+**§2 — `phases` fermé.** Le champ `phases` du contrat V4 reste sans
+producteur ni lecteur ; il reste dans l'empreinte (D-207) et
+`reviseProtocolDraft` le reporte. Un lot qui l'écrirait ou l'afficherait
+demande une décision.
+
+**§3 — Le mot.** Au portail, « programme » désigne l'ensemble des éléments de
+la version servie ([[D-281]], [[D-345]]), jamais un enchaînement de phases.
+Rien ne change au portail.
+
+**Ce qu'elle ne décide pas.** La fin d'un cycle, que le dépôt ne tranche pas ;
+le retrait du champ du contrat.
+
+**Effet sur le plan.** H34 : premier texte mergé ; critère de fin tenu avec
+bc. aj (H53) perd le préalable ad. Registre « Lettres à écrire » : ad fait.
+
 ### D-366 — Indicateurs hebdomadaires : chacun naît de sa propre décision clinique — nom, source, échelle, nature ; recueil au point d'étape, sans chiffre en retour ; aucune échelle proposée par l'assistant (lettre bf, instruction)
 
 - Date : 2026-10-24

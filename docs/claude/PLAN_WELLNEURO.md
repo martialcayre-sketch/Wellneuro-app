@@ -1019,6 +1019,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettres ad et bc, registre.
 - **Critère de fin** : deux textes mergés ; aucun lot ne rouvre `phases` sans décision.
+- **Mise à jour (2026-10-25, lettres écrites)** : ad écrite par D-367 (un protocole sert un cycle, `phases` reste fermé, « programme » = les éléments de la version servie) ; bc écrite par D-368 (tout ajout passe par une nouvelle version datée, approuvée avant d'être servie ; seul un pivot relance le suivi). Critère de fin atteint au merge.
 
 #### H35 · ba : mention « validé par votre praticien »
 - **Identifiant, piste** : lettre ba ; message de départ facultatif [A verifier] ; protocole ; geste du responsable.
@@ -1027,6 +1028,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre ba, texte à signer une fois, de la main du responsable.
 - **Critère de fin** : texte signé et mergé ; mention constatée sur la page servie.
+- **Mise à jour (2026-10-25, lettre écrite)** : ba écrite par D-369 : « Validé par votre praticien le … », date de l'approbation de diffusion de la version servie, en toutes lettres, en tête de la page du protocole servi ; message de départ hors de ba. Reste le lot de code (rang 1, petit) et le constat par lecture.
 
 #### H36 · R:Drive : extraction du Drive de formation
 - **Identifiant, piste** : R:Drive ; notices comptées d'abord, hors dépôt ; droits notice par notice (D-251 §2) ; jamais de donnée patient ; références validées une à une ; fiches conseils ; geste du responsable.
@@ -1190,6 +1192,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre bb ; protocole ; geste du responsable (intitulés), puis file C.
 - **Rang** : 2 au plus tôt [Hypothese], par ses préalables ; une ouverture, servie au-delà de la place 11, dans l'ordre de préparation après l'encart.
 - **Portes, préalables** : ba (H35) ; texte patient accepté ; porte 18.
+- **Mise à jour (2026-10-25)** : préalable ba levé (D-369).
 - **Migration, release-db** : non [A verifier].
 - **Décisions, textes** : lettre bb ; intitulés des trois plans, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
@@ -1249,6 +1252,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre aj (R:aj) ; protocole ; file A.
 - **Rang** : 3 ; 4 au plus tôt si une table se confirme.
 - **Portes, préalables** : ad (H34) ; d (H32) ; porte 15 (rang 2 au plus tôt) ; si table : G-7, porte 9.
+- **Mise à jour (2026-10-25)** : préalable ad levé (D-367) ; d l’était (D-334).
 - **Migration, release-db** : non, ou oui si table.
 - **Décisions, textes** : lettre aj, de la main du responsable.
 - **Critère de fin** : champ hors projection patient, banc.
@@ -2239,8 +2243,8 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | f | F54 | M-3 ; M-3c (journal R1) ; fait le 2026-10-17 (D-316) |
 | G-3 | F54 | f ; M-3b (liste pré-remplie) ; M-3c pour les analytes sans acte |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
-| ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge |
-| ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge |
+| ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
+| ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
 | aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge |
 | cm | F51 | cj ; fait le 2026-10-23 (D-348) |
 | at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; reportés en D.1 le 2026-10-15 |
@@ -2798,7 +2802,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | aa | courrier de remboursement ; fait le 2026-10-15 (D-309) | la main du responsable | 0 | F55 |
 | ab | EF-0, trancher Q3 ; fait le 2026-10-15 (D-310) | la main du responsable | 0 | H14 |
 | ac | radar sans zéro ; fait le 2026-10-15 (D-301) | la main du responsable | 0 | H12 |
-| ad, bc | un cycle, pas un programme ; ajouts par version datée | registre | 1 | H34 |
+| ad, bc | un cycle, pas un programme ; ajouts par version datée ; faits le 2026-10-25 (D-367, D-368) | registre | 1 | H34 |
 | ae | bloc Protocole du document médecin | la main du responsable | 5 | F39 |
 | af | référence de fiche conseil sur l'action | la main du responsable | 1 | H24 |
 | ag | rédaction assistée des zones du protocole | la main du responsable | 1 | H25 |
@@ -2821,7 +2825,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
-| ba | mention « validé par votre praticien », ajout à la page servie | la main du responsable | 1 [Hypothese] | H35 |
+| ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) | la main du responsable | 1 [Hypothese] | H35 |
 | bb | trois plans de chaque geste | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
