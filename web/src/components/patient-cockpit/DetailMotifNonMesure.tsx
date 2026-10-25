@@ -1,4 +1,11 @@
-import { LIBELLE_GESTE_MOTIF, ligneMotif, type MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
+import {
+  LIBELLE_GESTE_ECART,
+  LIBELLE_GESTE_MOTIF,
+  ligneEcartDecision,
+  ligneMotif,
+  type EcartDecisionServi,
+  type MotifNonMesureServi,
+} from '@/lib/praticien/motifNonMesure';
 import { questionnairesACompleter } from '@/lib/protocol/repassationCiblee';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import {
@@ -48,6 +55,38 @@ export function DetailMotifNonMesure({
               )}
             </li>
           );
+        })}
+      </ul>
+    </details>
+  );
+}
+
+// L'écart avec la décision, sous la VALEUR d'un besoin mesuré (r3_10, Q5) : le
+// même geste que le motif, sur son propre repli, parce que l'écart ne touche
+// jamais un non mesuré. Aucun chiffre : il reste lisible en mode consultation.
+// Ni couleur ni bouton — la ligne nomme un recueil, elle ne juge pas la valeur.
+// La garde vit ici : sans écart, ou sur un ancien conteneur qui ne sert pas le
+// champ, rien n'est rendu — jamais un repli vide.
+export function DetailEcartDecision({
+  besoin,
+  ecarts,
+}: {
+  besoin: string;
+  ecarts: EcartDecisionServi[] | null | undefined;
+}) {
+  if (!ecarts || ecarts.length === 0) return null;
+  return (
+    <details className="mt-0.5 text-xs text-muted-foreground">
+      <summary
+        aria-label={`${LIBELLE_GESTE_ECART} — ${besoin}`}
+        className="cursor-pointer py-0.5 underline underline-offset-2"
+      >
+        {LIBELLE_GESTE_ECART}
+      </summary>
+      <ul className="mt-0.5 space-y-0.5">
+        {ecarts.map(e => {
+          const ligne = ligneEcartDecision(e);
+          return <li key={ligne}>{ligne}</li>;
         })}
       </ul>
     </details>

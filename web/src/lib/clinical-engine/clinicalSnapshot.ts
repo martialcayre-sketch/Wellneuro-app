@@ -98,7 +98,14 @@ const RUBRIQUES_AGENDA_SOMMEIL: ReadonlySet<string> = new Set(
 // Compteurs du contrat v4 ([[D-271]]), absents des agendas clôturés avant lui.
 const COMPTEURS_AGENDA_V4: ReadonlySet<string> = new Set(['AGD_NB_NUITS_LAT', 'AGD_NB_NUITS_FREQ_WASO']);
 
-function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean {
+/**
+ * Le prédicat de la passation entière. Exporté pour une seule lecture : les
+ * routes du cockpit nomment avec lui l'écart avec la décision (r3_10) — le
+ * même prédicat, jamais une copie qui pourrait diverger.
+ */
+export function hasExploitableRawAnswers(
+  response: Pick<QuestionnaireResponseInput, 'questionnaireId' | 'scoresJson'>,
+): boolean {
   if (response.questionnaireId === AGENDA_SOMMEIL_ID) return agendaSommeilCloture(response.scoresJson);
   const answers = rawAnswersFrom(response.scoresJson);
   if (!answers) return false;

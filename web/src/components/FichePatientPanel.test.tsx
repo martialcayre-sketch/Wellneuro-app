@@ -165,6 +165,10 @@ type Options = {
   prioritesCartesLiees?: boolean;
   /** r3_11 : un besoin dont la source n'a aucune passation exploitable. */
   prioritesAucunePassation?: boolean;
+  /** r3_10 : un besoin mesuré dont la passation n'entre pas dans la décision. */
+  prioritesEcartDecision?: boolean;
+  /** r3_10 : le même, servi sans provenance (« Source non enregistrée »). */
+  prioritesEcartSansProvenance?: boolean;
   /** r3_11 : une réponse sans le compte des besoins mesurés. */
   compteAbsent?: boolean;
   // Résumé des points d'étape. ABSENT par défaut : la route rend `resume: null`.
@@ -591,6 +595,19 @@ function stubFetch(options: Options = {}) {
               libellePraticien: 'Stress',
               motifNonMesure: [{ motif: 'aucune_passation', idsQuestionnaire: ['Q_STR_01'], dateDernierePassation: null }],
             },
+          ],
+        });
+      }
+      if (options.prioritesEcartDecision || options.prioritesEcartSansProvenance) {
+        return ok({
+          ...EQUILIBRE,
+          priorites: [
+            {
+              ...EQUILIBRE.priorites[0],
+              ...(options.prioritesEcartSansProvenance ? { provenance: null } : {}),
+              ecartDecision: [{ idQuestionnaire: 'Q_NEU_11', dateDernierePassation: '2026-10-12T08:00:00.000Z' }],
+            },
+            EQUILIBRE.priorites[1],
           ],
         });
       }
@@ -1254,6 +1271,40 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const tiroir = await screen.findByRole('dialog');
     expect(tiroir.textContent).toContain('Même valeur que la carte « Réserve d\'adaptation » (repère de suivi)');
     expect(tiroir.textContent).toContain('Même valeur que la carte « Clarté » (repère de suivi)');
+  });
+
+  // r3_10 (Q5) : l'écart avec la décision, sous la valeur, sur son propre repli.
+  it('tiroir des 12 besoins : l’écart avec la décision se déplie sous la valeur, au mot près', async () => {
+    await rendreFiche({ prioritesEcartDecision: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const ecart = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('details') as HTMLElement;
+    expect(ecart.hasAttribute('open')).toBe(false);
+    expect(within(ecart).getByRole('listitem').textContent).toBe(
+      'N’entre pas dans la décision · passation incomplète hors des items lus, du 12/10/2026 (Q_NEU_11)'
+    );
+    expect((ecart.closest('td') as HTMLElement).textContent).toContain('40%');
+    // Le non mesuré garde son motif, sans écart.
+    expect(within(tiroir).queryByLabelText('Écart avec la décision — Ancrage du matin')).toBeNull();
+  });
+
+  it('tiroir des 12 besoins : sans provenance, « Source non enregistrée » garde l’écart, sans chiffre', async () => {
+    await rendreFiche({ prioritesEcartSansProvenance: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const cellule = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('td') as HTMLElement;
+    expect(cellule.textContent).toContain('Source non enregistrée');
+    expect(cellule.textContent).not.toContain('40%');
+  });
+
+  it('tiroir des 12 besoins : un ancien conteneur sans le champ d’écart n’affiche aucun geste', async () => {
+    await rendreFiche();
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    expect(within(tiroir).queryByText('Écart avec la décision')).toBeNull();
   });
 
   it('bandeau : le chip « Au tour précédent » ouvre sa provenance datée', async () => {
@@ -3229,6 +3280,17 @@ describe('FichePatientPanel — mode consultation : masqué ≠ absent (D-354 §
     await within(tiroir).findByText(/MFI-20/);
     expect(within(tiroir).queryByText(MENTION)).toBeNull();
     expect(within(tiroir).getAllByText('—').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('tiroir des 12 besoins : l’écart avec la décision, sans chiffre, reste lisible sous la valeur masquée (r3_10)', async () => {
+    await rendreFiche({ prioritesEcartDecision: true });
+    activer();
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const cellule = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('td') as HTMLElement;
+    expect(cellule.textContent).toContain(MENTION);
+    expect(cellule.textContent).not.toContain('40%');
+    expect(cellule.textContent).toContain('N’entre pas dans la décision');
   });
 
   it('bandeau : sans provenance établie, le chip dit « Source non enregistrée », pas « masqué »', async () => {
