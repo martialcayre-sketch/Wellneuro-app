@@ -1,11 +1,14 @@
 ### J3-12h, lot 4 : le courrier complément au portail, sous drapeau éteint (D-362, 2026-10-25)
 
-- Le patient lit le courrier qui lui est remis au clic « Valider pour
+- Le patient lit les courriers qui lui sont remis au clic « Valider pour
   diffusion » : écran « Courrier à remettre à votre médecin »
-  (`/portail/[token]/courrier-complement`), texte recopié tel que remis,
-  destinataire saisi par le praticien, version à imprimer rendue par le
-  chokepoint `medecin` (`/api/portail/courrier-complement/impression`), lien
-  dans « Autres espaces ».
+  (`/portail/[token]/courrier-complement`), qui sert toutes les remises, la
+  plus récente en tête (celle qui couvre les compléments en cours n'est pas
+  toujours la dernière). Chaque courrier porte son texte recopié tel que
+  remis, le destinataire saisi par le praticien et sa version à imprimer,
+  rendue par le chokepoint `medecin`
+  (`/api/portail/courrier-complement/impression?remise=…`). Un lien dans
+  « Autres espaces » y mène.
 - Titre et phrase d'accompagnement acceptés par le responsable ; la phrase
   dit au patient de remettre le courrier avant de commencer les compléments
   qu'il cite. Ni l'un ni l'autre ne nomme la population ou la situation.

@@ -30,7 +30,7 @@ const { prisma, tx, getServerSession, entrees, reconstruire } = vi.hoisted(() =>
       // par la base ; le banc rend la version active, relue (J3-12h lot 4).
       findMany: vi.fn(async (): Promise<unknown[]> => [{
         id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
-        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+        status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'), payload: {}, contractVersion: 'c1-protocol-draft-v4',
       }]),
     },
     supplementIngredient: { findMany: vi.fn(async () => [{ id: 'ing_1', nomFr: 'Magnésium' }]) },
@@ -199,11 +199,11 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
     prisma.protocolDraft.findMany.mockResolvedValueOnce([
       {
         id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
-        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+        status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'), payload: {}, contractVersion: 'c1-protocol-draft-v4',
       },
       {
         id: 'pd_v2', inputHash: 'HASH_V2', supersedesDraftId: 'pd_v1', createdAt: new Date('2026-10-21T00:00:00.000Z'),
-        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+        status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'), payload: {}, contractVersion: 'c1-protocol-draft-v4',
       },
     ]);
     const res = await preparer();
@@ -215,7 +215,18 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
   it('J3-12h lot 4 (revue CodeRabbit de #1691) — la version active en brouillon : 409, aucun courrier ne se prépare', async () => {
     prisma.protocolDraft.findMany.mockResolvedValueOnce([{
       id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
-      status: 'draft', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+      status: 'draft', reviewedAt: null, payload: {}, contractVersion: 'c1-protocol-draft-v4',
+    }]);
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('version_non_relue');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('J3-12h lot 4 (revue wn-reviewer, P2-5) — relue sans date de relecture : 409, comme au clic', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValueOnce([{
+      id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+      status: 'practitioner_reviewed', reviewedAt: null, payload: {}, contractVersion: 'c1-protocol-draft-v4',
     }]);
     const res = await preparer();
     expect(res.status).toBe(409);

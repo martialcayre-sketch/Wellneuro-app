@@ -96,7 +96,7 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     bilan: bilan ? { id: bilan.id, envoyeLe: bilan.dateEnvoi } : null,
     fiches: fiches.map(f => ({ idRemise: f.idRemise, libelle: f.libelle, remiseLe: new Date(f.remiseLe) })),
     lettre: lettres[0] ?? null,
-    courrierComplement: courriersComplement[0] ?? null,
+    courriersComplement,
     protocole: protocole ? { approbationId: protocole.approbationId, approuveLe: protocole.approvedAt } : null,
     questionnaires,
     comptesRendus: comptesRendus.map(c => ({ deposeLe: new Date(c.deposeLe) })),

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// La version à imprimer du courrier complément remis ([[D-345]], J3-12h lot 4).
-// Signature réelle : seuls Prisma et le service sont simulés.
+// La version à imprimer d'UN courrier complément remis ([[D-345]], J3-12h
+// lot 4 ; [[D-362]] §2). Signature réelle : seuls Prisma et le service sont
+// simulés.
 
 const { prisma, courrierComplementImprimable } = vi.hoisted(() => ({
   prisma: { patient: { findUnique: vi.fn() } },
@@ -15,9 +16,9 @@ import { GET } from './route';
 
 const PATIENT = { idPatient: 'PAT_TEST', email: 'michel.dogne@example.test' };
 
-function requete(avecCookie = true): Request {
+function requete(avecCookie = true, requeteTexte = '?remise=ccr_1'): Request {
   const cookie = signPatientSession({ idPatient: PATIENT.idPatient, email: PATIENT.email });
-  return new Request('http://localhost/api/portail/courrier-complement/impression', {
+  return new Request(`http://localhost/api/portail/courrier-complement/impression${requeteTexte}`, {
     headers: avecCookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {},
   });
 }
@@ -47,16 +48,24 @@ describe('GET /api/portail/courrier-complement/impression (D-345, J3-12h lot 4)'
     expect(courrierComplementImprimable).not.toHaveBeenCalled();
   });
 
-  it('sert la page HTML du courrier de CE patient, jamais en cache', async () => {
+  it('sert la page HTML de LA remise désignée, dans le dossier de la session, jamais en cache', async () => {
     const res = await GET(requete());
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(await res.text()).toContain('Courrier');
-    expect(courrierComplementImprimable).toHaveBeenCalledWith(PATIENT.idPatient);
+    expect(courrierComplementImprimable).toHaveBeenCalledWith(PATIENT.idPatient, 'ccr_1');
   });
 
-  it('rien de servi : 404, sans dire pourquoi', async () => {
+  it.each(['', '?remise=', '?remise=a%2F..%2Fb', `?remise=${'x'.repeat(65)}`])(
+    'remise absente ou mal formée (« %s ») : 400, rien n’est rendu',
+    async requeteTexte => {
+      expect((await GET(requete(true, requeteTexte))).status).toBe(400);
+      expect(courrierComplementImprimable).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rien de servi sous cet identifiant : 404, sans dire pourquoi', async () => {
     courrierComplementImprimable.mockResolvedValue(null);
     const res = await GET(requete());
     expect(res.status).toBe(404);

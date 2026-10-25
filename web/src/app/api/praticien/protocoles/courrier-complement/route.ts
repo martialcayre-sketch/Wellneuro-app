@@ -166,6 +166,7 @@ export async function POST(req: Request) {
         supersedesDraftId: true,
         createdAt: true,
         status: true,
+        reviewedAt: true,
         payload: true,
         contractVersion: true,
       },
@@ -180,7 +181,8 @@ export async function POST(req: Request) {
         409,
       );
     }
-    if (version.status !== 'practitioner_reviewed') {
+    // La règle du clic (`validateDiffusionApproval`) : statut ET date de relecture.
+    if (version.status !== 'practitioner_reviewed' || version.reviewedAt === null) {
       return echec(
         'version_non_relue',
         'La version active n’est pas encore relue : aucun courrier ne peut être préparé.',

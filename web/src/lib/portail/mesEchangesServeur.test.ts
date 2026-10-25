@@ -79,7 +79,7 @@ describe('sourcesMesEchanges', () => {
     const s = await sourcesMesEchanges('PAT_SOPHIE');
     expect(s.fiches).toEqual([]);
     expect(s.lettre).toBeNull();
-    expect(s.courrierComplement).toBeNull();
+    expect(s.courriersComplement).toEqual([]);
     expect(m.courrierComplementALire).not.toHaveBeenCalled();
     expect(s.comptesRendus).toEqual([]);
     expect(s.documentsDeposes).toEqual([]);
@@ -93,7 +93,7 @@ describe('sourcesMesEchanges', () => {
     m.courrierComplementALire.mockResolvedValue([{ id: 'ccr_1', remiseLe: new Date('2026-10-25T08:00:00.000Z') }]);
     const s = await sourcesMesEchanges('PAT_SOPHIE');
     expect(m.courrierComplementALire).toHaveBeenCalledWith('PAT_SOPHIE');
-    expect(s.courrierComplement).toEqual({ id: 'ccr_1', remiseLe: new Date('2026-10-25T08:00:00.000Z') });
+    expect(s.courriersComplement).toEqual([{ id: 'ccr_1', remiseLe: new Date('2026-10-25T08:00:00.000Z') }]);
   });
 
   it('documents déposés ([[D-330]]) : la date seule, sous le drapeau du dépôt', async () => {

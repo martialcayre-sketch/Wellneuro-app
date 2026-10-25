@@ -7,9 +7,10 @@
 ### D-362 — J3-12h, lot 4 : le courrier complément au portail — titre et phrase d'accompagnement acceptés, « courrier puis complément » dit au patient ; servi, accusé et annoncé comme la lettre d'adressage, sous le même drapeau (applique D-345 §4-§7 et D-358 §3-§4)
 
 - Date : 2026-10-25
-- Statut : accepté — deux arbitrages du responsable du 2026-10-25, sur
-  questions à options, au cadrage du lot 4 de [[D-345]] (§1, §2) ; le reste
-  est d'exécution, sur le patron de [[D-262]] LOT-02 et LOT-03.
+- Statut : accepté — trois arbitrages du responsable du 2026-10-25, sur
+  questions à options : deux au cadrage du lot 4 de [[D-345]] (§1), un sur
+  le P1 de la revue `wn-reviewer` du lot (§2) ; le reste est d'exécution, sur
+  le patron de [[D-262]] LOT-02 et LOT-03.
 - Applique : [[D-345]] §4-§7 ; [[D-358]] §3 (le portail au lot 4) et §4 (un
   seul drapeau).
 - Domaine : portail patient — `web/src/app/portail/[token]/courrier-complement/`,
@@ -40,13 +41,23 @@ la phrase ne nomment la population ou la situation (forme opaque). Le
 destinataire saisi par le praticien est affiché tel quel (« À remettre à :
 … »), sans ajout.
 
-**§2 — Ce qui est servi.** La remise la plus récente du dossier : un courrier
-neuf couvre toute la liste ciblée de sa version ([[D-358]] §2). Deux états
-seulement, `servie` et `indisponible` (empreinte rejouée) : ni la
-correspondance ni la remise ne se révoquent. L'impression repasse par le
-chokepoint `medecin` (`rendreCourrierComplementFige`), texte figé et ancrage
-consigné. Un ancrage qui n'est pas celui du courrier complément, ou un terme
-prescriptif, ne rend rien.
+**§2 — Ce qui est servi : toutes les remises du dossier**, la plus récente en
+tête, chacune avec sa date, son destinataire, son texte, sa version à
+imprimer et sa propre lecture au fil du jour. Servir la dernière seule est
+écarté. Une version qui retire un complément est couverte par une remise
+antérieure ([[D-358]] §2), qui n'est pas forcément la dernière : le seul
+courrier qui cite les compléments en cours deviendrait invisible au patient,
+alors que le cockpit dit « déjà remis » (P1 de la revue `wn-reviewer`). Servir
+la seule remise qui couvre la version diffusée est écarté aussi : il faudrait
+relire l'approbation active à chaque lecture. La contrepartie est acceptée :
+un courrier ancien peut citer un complément retiré depuis.
+
+Deux états seulement, `servie` et `indisponible` (empreinte rejouée), car ni
+la correspondance ni la remise ne se révoquent. L'impression désigne sa
+remise, cherchée dans le dossier de la session, et repasse par le chokepoint
+`medecin` (`rendreCourrierComplementFige`, texte figé, ancrage consigné). Un
+ancrage qui n'est pas celui du courrier complément ou un terme prescriptif ne
+rend rien, et l'écran ne propose alors pas d'impression.
 
 **Exécution (livrée sous drapeau éteint).** Le drapeau unique ferme d'abord
 les routes (503) et l'écran (`notFound`), puis la lecture attendue et
@@ -57,8 +68,9 @@ lecture est datée » en tête. Le praticien voit la remise et sa lecture dans
 l'e-mail neutre (un seul par clic, plafond de 24 heures, [[D-262]] B3), et le
 panneau de diffusion le dit avant le geste. Reprise de la revue CodeRabbit de
 #1691 : la préparation exige la carte de décision, et la version désignée doit
-être la tête de son fil, relue (`practitioner_reviewed`). Une version
-supplantée ou en brouillon est refusée en 409, avant toute génération.
+être la tête de son fil, relue (`practitioner_reviewed` et date de relecture,
+la règle du clic). Une version supplantée ou non relue est refusée en 409,
+avant toute génération.
 Fenêtre de fraîcheur éprouvée sur base réelle : un « oui » de 2019 tient,
 seul un « non » postérieur du praticien le lève, un « oui » sans date d'envoi
 ne se lève jamais, et une déclaration postérieure à un aperçu « non requis »

@@ -90,11 +90,11 @@ export type SourcesMesEchanges = {
   fiches: { idRemise: string; libelle: string; remiseLe: Date }[];
   lettre: { id: string; remiseLe: Date } | null;
   /**
-   * Le courrier à remettre au médecin avant un complément ciblé ([[D-345]],
-   * J3-12h lot 4) : la remise servie. Absent ou `null` = surface fermée par
-   * `WN_COURRIER_COMPLEMENT`, ou rien de servi.
+   * Les courriers à remettre au médecin avant un complément ciblé ([[D-345]],
+   * J3-12h lot 4) : chaque remise servie ([[D-362]] §2). Absent ou vide =
+   * surface fermée par `WN_COURRIER_COMPLEMENT`, ou rien de servi.
    */
-  courrierComplement?: { id: string; remiseLe: Date } | null;
+  courriersComplement?: { id: string; remiseLe: Date }[];
   protocole: { approbationId: string; approuveLe: Date } | null;
   questionnaires: { idAssignation: string; titre: string; transmisLe: Date }[];
   comptesRendus: { deposeLe: Date }[];
@@ -145,13 +145,13 @@ export function entreesMesEchanges(
       chemin: 'courrier-medecin',
     });
   }
-  if (sources.courrierComplement) {
+  for (const courrier of sources.courriersComplement ?? []) {
     entrees.push({
-      cle: `courrier_complement:${sources.courrierComplement.id}`,
+      cle: `courrier_complement:${courrier.id}`,
       sens: 'remis',
       espece: 'courrier_complement',
       objet: 'Le courrier à remettre à votre médecin',
-      date: sources.courrierComplement.remiseLe.toISOString(),
+      date: courrier.remiseLe.toISOString(),
       chemin: 'courrier-complement',
     });
   }
