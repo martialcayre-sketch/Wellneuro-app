@@ -1,5 +1,5 @@
 -- Catalogue biologie — deux fiches de coagulation : le taux de prothrombine et
--- l'INR (D-357, t44 ; D-356 §6). DONNÉES SEULES : aucune plage, aucune borne,
+-- l'INR (D-360, t44 ; D-356 §6). DONNÉES SEULES : aucune plage, aucune borne,
 -- aucune indication (D-059), aucune conversion (D-157), aucune unité ajoutée
 -- au vocabulaire.
 --

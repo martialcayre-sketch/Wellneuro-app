@@ -76,14 +76,14 @@ BEGIN
   -- rapport AA/EPA, migration 20260924090000), + 36 le 2026-10-03 (D-261 :
   -- analyses d'un compte rendu courant, migration 20261003150000), + 7 le
   -- 2026-10-18 (D-323 §6 : analyses groupées, migration 20261018100100), + 2
-  -- le 2026-10-24 (D-357 : TP et INR, migration 20261024220000).
+  -- le 2026-10-24 (D-360 : TP et INR, migration 20261024220000).
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
     IF nb <> 94 THEN
-      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-357: % analyte(s) saisie_praticien au lieu des 94 du catalogue', nb;
+      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-360: % analyte(s) saisie_praticien au lieu des 94 du catalogue', nb;
     END IF;
 
-    -- Les deux fiches de coagulation de D-357, LIGNE PAR LIGNE (aucun panel
+    -- Les deux fiches de coagulation de D-360, LIGNE PAR LIGNE (aucun panel
     -- ne les cite), et AUCUNE plage, aucune correspondance signée, aucune
     -- composition à leur entrée. L'INR en « ratio », jamais NULL (D-356 §4).
     SELECT count(*) INTO nb FROM biology_analytes
@@ -93,7 +93,7 @@ BEGIN
         ('BIO_TP', 'Taux de prothrombine (TP)', '%'),
         ('BIO_INR', 'INR (International Normalized Ratio)', 'ratio'));
     IF nb <> 2 THEN
-      RAISE EXCEPTION 'D-357: % fiche(s) de coagulation conformes au lieu de 2 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
+      RAISE EXCEPTION 'D-360: % fiche(s) de coagulation conformes au lieu de 2 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
     END IF;
     SELECT count(*) INTO nb FROM (
       SELECT analyte_code FROM biology_reference_ranges
@@ -104,7 +104,7 @@ BEGIN
       UNION ALL SELECT composant_code FROM biology_analyte_composition_items
     ) p WHERE p.analyte_code IN ('BIO_TP', 'BIO_INR');
     IF nb > 0 THEN
-      RAISE EXCEPTION 'D-357: % plage, lien clinique, correspondance signée ou composition sur une fiche de coagulation — aucune ne s''écrit par migration', nb;
+      RAISE EXCEPTION 'D-360: % plage, lien clinique, correspondance signée ou composition sur une fiche de coagulation — aucune ne s''écrit par migration', nb;
     END IF;
 
     -- Les sept fiches de D-323 §6, LIGNE PAR LIGNE (aucun panel ne les cite),

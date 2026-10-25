@@ -12,11 +12,11 @@ import { describe, expect, it } from 'vitest';
 // Ce banc garde ce que la base ne peut pas dire — QUEL CODE écrit :
 //   — remises et listes ne se suppriment QUE dans `patient/effacement.ts` ;
 //   — aucun code ne les réécrit, ni par Prisma, ni en SQL brut ;
-//   — AUCUN CODE N'EN CRÉE avant le lot 3 : la migration part seule
-//     ([[D-087]]) ; le lot 3 nommera ici ses émetteurs — le générateur du
-//     courrier pour la liste, la remise au clic par `createMany` (la base
-//     annule sans erreur une remise rejouée, et un `create` qui attend sa
-//     ligne échouerait).
+//   — DEUX ÉMETTEURS, NOMMÉS (lot 3) : la consignation du générateur écrit la liste
+//     avec son courrier, dans une seule transaction ; la remise au clic passe
+//     par `createMany` (la base annule sans erreur une remise rejouée, et un
+//     `create` qui attend sa ligne échouerait). Aucun troisième, et aucune
+//     écriture imbriquée.
 
 // LA PORTÉE EST CELLE DU PATRON : `src/`, `scripts/`, `prisma/`, `e2e/` et les
 // scripts de la racine du dépôt, en TypeScript, JavaScript, SQL et shell.
@@ -26,6 +26,11 @@ const RACINE = process.cwd();
 const RACINES = ['src', 'scripts', 'prisma', 'e2e', path.join('..', 'scripts')]
   .map(dossier => path.join(RACINE, dossier));
 const EFFACEMENT = path.join('src', 'lib', 'patient', 'effacement.ts');
+const GENERATEUR = path.join('src', 'lib', 'correspondance', 'courrierComplementConsignation.ts');
+const REMISE_AU_CLIC = path.join('src', 'lib', 'correspondance', 'courrierComplementRemise.ts');
+const CREER_LISTE = /\.courrierComplementListe\s*\.\s*(?:create|createMany|createManyAndReturn)\s*\(/;
+const CREER_REMISE = /\.courrierComplementRemise\s*\.\s*(?:create|createMany|createManyAndReturn)\s*\(/;
+const CREER_REMISE_PAR_LOT = /\.courrierComplementRemise\s*\.\s*createMany\s*\(/;
 
 function fichiersSources(depart: string): string[] {
   const trouves: string[] = [];
@@ -75,8 +80,15 @@ describe('Listes et remises de courrier complément — qui écrit (D-345, J3-12
     expect(occurrences(SQL_BRUT)).toEqual([]);
   });
 
-  it('aucun code ne crée de remise ni de liste avant le lot 3, ni par écriture imbriquée', () => {
-    expect(occurrences(CREER)).toEqual([]);
+  it('deux émetteurs nommés — le générateur pour la liste, la remise au clic par `createMany` —, aucune écriture imbriquée', () => {
+    const parFichier = <T extends { fichier: string }>(o: T[]) => [...o].sort((a, b) => a.fichier.localeCompare(b.fichier));
+    expect(parFichier(occurrences(CREER))).toEqual(parFichier([
+      { fichier: GENERATEUR, n: 1 },
+      { fichier: REMISE_AU_CLIC, n: 1 },
+    ]));
+    expect(occurrences(CREER_LISTE)).toEqual([{ fichier: GENERATEUR, n: 1 }]);
+    expect(occurrences(CREER_REMISE)).toEqual([{ fichier: REMISE_AU_CLIC, n: 1 }]);
+    expect(occurrences(CREER_REMISE_PAR_LOT)).toEqual([{ fichier: REMISE_AU_CLIC, n: 1 }]);
     expect(occurrences(IMBRIQUEE)).toEqual([]);
   });
 

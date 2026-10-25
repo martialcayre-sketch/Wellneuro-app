@@ -1,3 +1,4 @@
+import { AGENDA_SOMMEIL_ID, MIN_NUITS_AGREGATS } from '../agenda-sommeil/types';
 import { BESOINS, BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from '../equilibre/constants';
 import { construireReponsesParQuestionnaire } from '../equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '../equilibre/evidence';
@@ -55,7 +56,50 @@ function conditionApplies(condition: string | undefined, answers: RawAnswers): b
   return value === expected;
 }
 
+/**
+ * Agenda du sommeil : la passation entière est CE QUE LA CLÔTURE A ÉCRIT
+ * (J3-12g, [[D-359]]). Ses items sont des agrégats calculés à la clôture
+ * (`agenda-sommeil/cloture.ts`), jamais des réponses : le prédicat générique
+ * ci-dessous les jugeait comme un questionnaire et écartait l'agenda entier
+ * pour une seule rubrique absente ou nulle, quand les routes le comptaient.
+ * Trois formes en sortent, toutes écrites telles quelles par la clôture :
+ *   — `null` : métrique non couverte, jamais un zéro ;
+ *   — compteur ajouté après la clôture (contrat v4 de [[D-271]]) : absent ;
+ *   — agenda sous le seuil d'agrégation : le seul `AGD_NB_NUITS`.
+ * La clôture n'écrit que des nombres et des `null`, et un nombre de nuits
+ * entier : une chaîne, même numérique, n'est pas sa sortie. Les clés sont
+ * celles du catalogue : un agrégat porte toutes les rubriques (les deux
+ * compteurs v4 exceptés), et le seul nombre de nuits n'est admis que sous le
+ * seuil d'agrégation — toute autre forme n'est pas une sortie de la clôture.
+ * Ce prédicat ne décide d'aucun indice : le scoring `agenda_sommeil` garde ses
+ * propres refus (nuits, week-end, axes), et un agenda sans indice reste non
+ * mesuré au besoin 5 — il cesse seulement d'être dit « incomplet ».
+ */
+function agendaSommeilCloture(scoresJson: unknown): boolean {
+  if (!scoresJson || typeof scoresJson !== 'object' || Array.isArray(scoresJson)) return false;
+  const raw = (scoresJson as { rawAnswers?: unknown }).rawAnswers;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  const answers = raw as Record<string, unknown>;
+  const nbNuits = answers.AGD_NB_NUITS;
+  if (typeof nbNuits !== 'number' || !Number.isInteger(nbNuits) || nbNuits < 0) return false;
+  if (!Object.values(answers).every(value => value === null || (typeof value === 'number' && Number.isFinite(value)))) return false;
+  const cles = Object.keys(answers);
+  if (cles.some(cle => !RUBRIQUES_AGENDA_SOMMEIL.has(cle))) return false;
+  if (cles.length === 1) return nbNuits < MIN_NUITS_AGREGATS;
+  return [...RUBRIQUES_AGENDA_SOMMEIL].every(cle => cle in answers || COMPTEURS_AGENDA_V4.has(cle));
+}
+
+// Rubriques lues dans la définition, pour ne pas en tenir une seconde liste.
+const RUBRIQUES_AGENDA_SOMMEIL: ReadonlySet<string> = new Set(
+  QUESTIONNAIRE_CATALOGUE[AGENDA_SOMMEIL_ID].sections.flatMap(
+    section => (section.questions as ReadonlyArray<{ id: string }>).map(question => question.id),
+  ),
+);
+// Compteurs du contrat v4 ([[D-271]]), absents des agendas clôturés avant lui.
+const COMPTEURS_AGENDA_V4: ReadonlySet<string> = new Set(['AGD_NB_NUITS_LAT', 'AGD_NB_NUITS_FREQ_WASO']);
+
 function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean {
+  if (response.questionnaireId === AGENDA_SOMMEIL_ID) return agendaSommeilCloture(response.scoresJson);
   const answers = rawAnswersFrom(response.scoresJson);
   if (!answers) return false;
   const definition = QUESTIONNAIRE_CATALOGUE[response.questionnaireId as keyof typeof QUESTIONNAIRE_CATALOGUE];

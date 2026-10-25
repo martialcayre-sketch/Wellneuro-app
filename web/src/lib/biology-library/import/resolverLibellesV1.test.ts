@@ -147,7 +147,7 @@ describe('resolver — une ligne : le libellé, puis l’unité qui départage (
   it('lit les unités de TOUT le catalogue, nouvelle unité du DFG comprise', () => {
     // 85, puis les sept fiches de D-323 §6 (le résolveur ne les nomme pas :
     // elles se saisissent à la main, mais leur unité se lit comme les autres),
-    // puis le TP et l'INR de D-357 (l'INR en « ratio », D-356 §4).
+    // puis le TP et l'INR de D-360 (l'INR en « ratio », D-356 §4).
     expect(UNITES.size).toBe(94);
     expect(UNITES.get('BIO_TP')).toBe('%');
     expect(UNITES.get('BIO_INR')).toBe('ratio');

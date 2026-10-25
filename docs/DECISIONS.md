@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-357 — t44 : le taux de prothrombine et l'INR entrent au catalogue, le temps de Quick n'y entre pas ; l'INR en « ratio », les actes 0126, 0127 et 1128 proposés, jamais signés par migration
+### D-360 — t44 : le taux de prothrombine et l'INR entrent au catalogue, le temps de Quick n'y entre pas ; l'INR en « ratio », les actes 0126, 0127 et 1128 proposés, jamais signés par migration
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24 (file A, t44),
@@ -60,6 +60,231 @@ l'application **constatée** de la migration :
 `biology_analytes.code` (`ON DELETE RESTRICT`) et `resoudreLigne` rend un
 code résolu sans le chercher au catalogue — un code absent ferait échouer
 l'import entier. Les lignes déjà lues restent « inconnu » ([[D-356]] §6).
+
+### D-359 — J3-12g : l'agenda du sommeil est complet au snapshot dès que la clôture l'a écrit — l'écart avec les routes est fermé pour l'agenda, sans changement de version ; les cartes qui en dérivent se réapprouvent (résidu de D-329 §2)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24 (file A,
+  J3-12g), sur questions à options, après l'inventaire et le compte des
+  diffusions inscrits comme préalables au plan.
+- Source : [[D-329]] §2 (résidu nommé) ; arbitrage du 2026-10-19 (H15 : la
+  complétude se juge sur la passation entière au snapshot, sur les items de
+  chaque source dans les routes) ; inventaire et compte :
+  `docs/claude/propositions/2026-10-24-j3-12g-completude-agenda/README.md`.
+- Domaine : `web/src/lib/clinical-engine/clinicalSnapshot.ts`
+  (`agendaSommeilCloture`, appelé par `hasExploitableRawAnswers`).
+- Nature : clinique au sens de `DC-17` — la disponibilité d'une source dans
+  le snapshot, donc dans les cartes, change. **Aucun seuil, aucun poids,
+  aucune borne, aucune source** ne bouge (`DC-19`) ; ni le scoring
+  `agenda_sommeil` ni `questions.ts` ne sont touchés.
+
+**§1 — Règle.** Pour l'agenda du sommeil (`Q_SOM_09`), la passation entière
+est ce que la clôture a écrit. Ses rubriques sont des agrégats, pas des
+réponses : le snapshot accepte un `null` (métrique non couverte, jamais un
+zéro), l'absence d'un compteur ajouté après la clôture (contrat v4 de
+[[D-271]]) et l'agenda sous le seuil d'agrégation, qui ne porte que le nombre
+de nuits. Il exige ce nombre de nuits, entier, et refuse toute autre valeur
+qu'un nombre ou `null` — une chaîne n'est pas une sortie de la clôture. Il
+refuse de même une clé hors du catalogue, un agrégat privé d'une rubrique
+antérieure au contrat v4, et le seul nombre de nuits au-dessus du seuil
+d'agrégation. Les
+autres questionnaires gardent le prédicat générique, `null` compris.
+
+**§2 — Ce que la règle ne décide pas.** Aucun indice : le scoring garde ses
+refus (nuits, week-end, axes couverts). Un agenda sans indice reste non mesuré
+au besoin 5 ; il cesse seulement d'être dit « données brutes incomplètes ».
+Un agenda à indice compte au besoin 5 du snapshot comme il comptait déjà aux
+routes.
+
+**§3 — Écart fermé, pour l'agenda.** Constat par conteneur du 2026-10-24
+(lecture seule, agrégats) : 13 agendas clôturés ; le snapshot n'acceptait
+que l'agenda complet ; répartition masquée (moins de cinq dossiers,
+[[D-298]] §3). Le cas nommé par [[D-329]] §2 (un
+agenda à indice écarté du snapshot et gardé par les routes) disparaît. Le
+résidu des autres sources (DNST hors de l'axe lu, mode de vie hors du bloc
+activité, enquête alimentaire) reste tel que l'arbitrage du 2026-10-19 l'a
+voulu : r3_10 le nommera.
+
+**§4 — Version du score : gardée (v15).** `calculerEquilibre` ne change pas,
+ni aucune valeur servie par les routes ; seul le filtre d'entrée du snapshot
+change. Une nouvelle étiquette — du score ou du schéma du snapshot — ferait
+dériver toutes les approbations de diffusion actives (3 dossiers ;
+répartition masquée, moins de cinq dossiers ; [[D-329]] §4).
+
+**§5 — Diffusions actives : réapprobation.** Les approbations actives dont
+l'épisode inclut un agenda que le snapshot écartait dérivent au déploiement :
+l'écran protocole est indisponible jusqu'à la réapprobation par le
+praticien, suivie d'un constat par conteneur. Effectif et répartition
+masqués (moins de cinq dossiers) ; la liste nominative reste hors du dépôt
+(dépôt public, identifiant sans constat). Option écartée : différer le déploiement jusqu'à
+la fin de ces diffusions.
+
+**Options écartées pour la règle** : accepter le seul agenda à indice (un
+agenda court mais complet resterait dit « incomplet ») ; exiger les rubriques
+que l'indice lit (même défaut pour l'agenda sous le seuil d'agrégation).
+
+**Ne touche pas** : le scoring `agenda_sommeil`, `BESOIN_SOURCES`, le niveau
+de preuve D de l'indice, le rideau T0 (l'agenda en reste exclu, [[D-052]]),
+l'agenda alimentaire (`Q_ALI_09`).
+
+### D-358 — J3-12h, lot 3 : texte du courrier complément validé, et « déjà tracé » = la liste de la version contenue dans celle d'une remise antérieure (applique D-345 §4, §5, §7)
+
+- Date : 2026-10-24
+- Statut : accepté — quatre arbitrages du responsable du 2026-10-24, sur
+  questions à options, au cadrage du lot 3 de [[D-345]]. Deux sont cliniques
+  (§1, §2) ; deux sont d'exécution (§3, §4).
+- Domaine : `lib/correspondance/courrierComplement*.ts`,
+  `lib/clinical/entreesGardeComplement.ts`, route
+  `api/praticien/protocoles/courrier-complement`, clic de diffusion
+  (`api/praticien/protocoles/diffusion`), constructeur de protocole.
+- **Ne touche pas** : la table signée des déclencheurs (sha `709ab44c…6a2e`
+  inchangé), la garde pure du lot 1, aucune migration, aucun `schema.prisma`.
+
+**§1 — Texte du courrier.** Le brouillon proposé au cadrage est validé tel
+quel et embarqué dans le générateur (`genererCourrierComplement`) : il ne
+nomme ni la population ni la situation qui appelle le courrier (forme
+opaque), désigne « la personne que vous suivez », liste les compléments ciblés
+(intitulé, et ingrédient du catalogue s'il est renseigné), laisse la décision
+médicale au médecin, dit que la personne remet elle-même le courrier, et porte
+la réserve « il ne remplace pas une consultation sans délai si son état le
+demande ». Il passe la garde non prescriptive ; le nom du patient n'est que
+dans l'en-tête du rendu. Le retoucher demande une nouvelle validation.
+
+**§2 — « Déjà tracé pour ces compléments ».** La liste des compléments ciblés
+d'une version est couverte si elle est **contenue** dans la liste d'**une**
+remise antérieure du dossier. Retirer un complément ne demande pas de courrier
+neuf ; en ajouter un en demande un. L'égalité stricte (trop lourde pour le
+praticien) et l'union de plusieurs remises (le médecin n'aurait jamais lu la
+liste entière) sont écartées.
+
+**§3 — Le portail au lot suivant.** L'espèce de lecture `courrier_complement`,
+l'écran du patient, l'accusé et l'annonce du clic forment le lot 4, sur le
+découpage de [[D-262]] (LOT-02 puis LOT-03). Le drapeau reste éteint tant que
+l'écran n'existe pas.
+
+**§4 — Un seul drapeau.** `WN_COURRIER_COMPLEMENT` ouvre ensemble la case
+« ciblé » du constructeur, le générateur, la garde du clic et la remise.
+Éteint, le clic lit et écrit exactement ce qu'il faisait avant.
+
+**Exécution (lot 3, livré sous drapeau éteint).** La garde joue parmi les
+refus d'avant l'embranchement (`409 courrier_complement_requis`, motif en
+clair) et refuse aussi un courrier à remettre quand le chemin des fiches est
+fermé. La remise passe par `createMany` dans la transaction du clic : 0 ligne
+ou 23505 se lisent « déjà remis » ; tout autre refus annule le clic entier
+(fail-closed, à la différence de la lettre d'adressage). L'aperçu du courrier
+entre dans le jeton du clic. Le courrier et sa liste s'écrivent dans une seule
+transaction, l'accord de partage relu sous verrou. Les déclarations de
+grossesse et d'allaitement sont lues aux têtes de fil de la fiche
+physiologique et dans toutes les anamnèses envoyées ; la garde de [[D-345]]
+§3 entre donc parmi les lecteurs de [[D-335]] §8 (D-345 §3, postérieure,
+nomme la fiche physiologique : elle amende sur ce point l'exclusion « ni la
+garde de population » de D-335 §8). Un courrier à remettre sous un dossier
+bloqué (clos, contrat patient refusé) refuse aussi le clic : il ne suivrait
+pas le sort des fiches en silence. L'ouverture du drapeau exige aussi
+`WN_FICHES_ASSIETTE` (sans lui, tout clic qui doit remettre un courrier est
+refusé) et `WN_PHYSIO_TRAITEMENTS` (sans lui, aucun « non » du praticien ne
+s'écrit et la garde refuse tout complément ciblé).
+
+**Revue Codex (2026-10-24), deux corrections avant le merge.** (a) La
+consignation relit la date de naissance sous le verrou du patient, avant
+toute insertion : un dossier devenu mineur, ou dont la date est effacée,
+entre la garde de la route et le verrou est refusé ([[D-345]] §3). (b)
+Arbitrage du responsable : le libellé du destinataire de [[D-345]] §7 (« le
+professionnel qui suit la grossesse, à défaut le médecin traitant ») ne
+s'affiche que quand la grossesse déclenche, plus pour un allaitement seul. La
+forme opaque vise les situations du dossier de preuve, désignées par leur
+code, pas les déclencheurs que D-345 §2 nomme en clair.
+
+### D-357 — ap : la bibliothèque du portail, deux rayons — les documents remis et un socle commun ; le contenant seul à l'ouverture ; quatrième famille d'exceptions à la règle du portail, bornée aux chiffres sourcés de ses documents ; dossiers majeurs seuls (H82, place 10 ; amende D-333 §1)
+
+- Date : 2026-10-24
+- Statut : accepté — lettre ap validée telle quelle par le responsable le
+  2026-10-24. Sur sa demande, l'assistant l'a rédigée à partir de quatre
+  arbitrages du même jour, posés sur questions à options : nature (« les
+  deux » rayons), contenu (le contenant seul), chiffres (une exception pour
+  les documents), mineurs (dossiers majeurs seuls). Les points que
+  l'assistant a ajoutés lui étaient signalés dans le brouillon (§2 rayon
+  vide, §4 point 4, §5 page des fiches d'assiette, §6 aucune migration) ;
+  ils sont validés avec la lettre.
+- Domaine : file C du plan, place 10, fiche H82 (lettre ap) ; portail
+  patient ; fiches d'assiette (`web/src/app/portail/[token]/fiches/`).
+- Lève : le préalable « sa D-xxx » de H82 (porte 28).
+- Amende : [[D-333]] §1 (« aucune autre [exception] n'est admise sans
+  décision »), pour les seuls documents de la bibliothèque (§4).
+- Applique : [[D-251]] (régime d'un document remis) ; [[D-288]] §1-§2
+  (texte accepté, registre, drapeau, constat) ; [[D-297]] (lecture datée) ;
+  [[D-283]] §2 (durée du dossier) et §5, [[D-284]] §3 (surface neuve servie
+  au seul dossier majeur, garde de « Mes échanges »).
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune dose,
+  aucun instrument ; aucun document écrit ni publié ; le régime des fiches
+  d'assiette ([[D-251]]), inchangé ; `adviceSheetRef`, fermé
+  ([[D-200]] §2) ; aucune migration, aucun code dans cette PR.
+
+**§1 — Ce qu'est la bibliothèque.** Une page du portail en deux rayons :
+- **les documents remis** par un geste du praticien, en version figée ; leur
+  lecture est datée ([[D-297]]) et conservée selon la durée du dossier
+  ([[D-283]] §2). Les fiches d'assiette ([[D-251]]) forment ce rayon, sans
+  changer de régime ;
+- **le socle commun** : des documents visibles par tous les dossiers qui ont
+  accès à la bibliothèque, sans geste du praticien ; aucune lecture n'est
+  rattachée au dossier, donc ni lecture datée ni durée de conservation.
+
+**§2 — Le contenant seul.** ap n'écrit et ne publie aucun document. Chaque
+famille de documents (familles ah, « Méthode du bilan », toute autre) entre
+dans la bibliothèque par sa propre décision. À l'ouverture, le rayon des
+documents remis porte les fiches d'assiette déjà remises. Un rayon vide ne
+s'affiche pas : le socle reste invisible tant qu'aucun document n'y est
+publié.
+
+**§3 — Le régime d'un document**, dans les deux rayons : une notice du
+registre des sources dont le droit de remise est vérifié, notice par notice
+([[D-251]] §2) ; une version validée par le responsable, acte daté et
+distinct (l'outil qui écrit n'atteste jamais, [[D-195]]) ; une version
+publiée ne se réécrit pas, elle se retire et une nouvelle la remplace ; une
+adaptation par IA seulement hors ligne, sous la décision de la famille ;
+aucun texte de document dans le dépôt ([[D-251]] §4).
+
+**§4 — L'exception aux chiffres** : quatrième famille, après les deux de
+[[D-333]] §1 et celle de [[D-355]]. Un document de la bibliothèque peut
+porter des chiffres, dans ces bornes :
+1. **seulement un chiffre de conseil** : une durée, une fréquence ou une
+   quantité (un mode d'emploi, par exemple) ;
+2. **chacun sourcé** (DC-19), sa source citée dans la version validée ;
+3. **jamais un chiffre sur le patient** : ni score, ni couverture, ni
+   mesure, ni résultat, ni seuil, ni comparaison, qui restent sous
+   [[D-333]] ;
+4. **jamais une dose de complément ni de médicament** : elle relève de la
+   fiche compléments (F78, place 8) et de sa propre règle signée ;
+5. **aucun mot ni aucune couleur qui juge** ([[D-333]] §2 règle 4).
+
+Toute extension (une autre surface, un autre type de chiffre) demande une
+décision.
+
+**§5 — Mineurs.** Seuls les dossiers majeurs accèdent à la bibliothèque,
+même règle et même garde que « Mes échanges » (`statutAge` ; mineur ou date
+de naissance manquante : ni page ni lien). La page « Fiches remises par
+mon praticien », servie aujourd'hui sans garde d'âge, reste accessible telle
+quelle à un mineur : il ne perd aucune fiche déjà remise. Un mineur entrera
+dans la bibliothèque par une décision ultérieure, avec des textes relus pour
+lui.
+
+**§6 — Le lot.** Sans migration : le stockage du socle viendra avec la
+décision de sa première famille. Il livre la page, son entrée dans « Autres
+espaces » et un drapeau neuf, `WN_PORTAIL_BIBLIOTHEQUE`, chaîne exacte
+`'true'`, absent = fermé, **éteint à la livraison** et inscrit à
+`docs/FEATURE_FLAGS.md`. Trois textes patient, de la main du responsable,
+sont acceptés avant le merge du lot : le titre de la page, celui du rayon
+des documents remis, celui du socle commun. Proposition de l'assistant,
+**non encore acceptée** : « Ma bibliothèque », « Remis par votre
+praticien », « Pour mieux comprendre votre démarche ».
+
+**§7 — L'activation.** Porte 18, après le constat de la place 9. Constat
+([[D-288]] §2) par identifiant, lu depuis un conteneur : un dossier de test
+majeur ouvre la bibliothèque et y lit sa fiche remise ; un dossier mineur
+n'en voit pas l'entrée. Consigné en agrégats.
+
+- Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
+  plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).
 
 ### D-356 — t36 : le résolveur des libellés est re-signé sur huit libellés lus en production — la CRP imprimée sans précision est ultrasensible, une antériorité n'est jamais rattachée ; deux notations d'unité admises (DFG en « mL/min », rapport sans unité)
 

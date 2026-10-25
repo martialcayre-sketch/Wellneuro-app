@@ -11630,7 +11630,29 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Fiches TP/INR/Quick et acides gras : deux lots au plan.
 
-## 2026-10-24 — t44 : fiches TP et INR au catalogue, migration (D-357)
+## 2026-10-24 — J3-12h lot 3 : courrier complément, remise au clic et refus (D-358)
+
+**Fait.** Le générateur du courrier (texte validé), le courrier et sa liste dans une seule transaction, la garde du clic parmi les refus d'avant l'embranchement, la remise par `createMany` (tout refus autre que « déjà remis » annule le clic) et la case « ciblé » du constructeur. Tout est sous `WN_COURRIER_COMPLEMENT`, éteint, sans migration. Banc Postgres : parité de la liste avec le trigger, « les deux ou rien », remise de bout en bout. Revue `wn-reviewer` : GO sous conditions ; P1 corrigés.
+
+**Écarté.** L'égalité stricte et l'union des remises, pour la couverture ; le portail dans ce lot.
+
+**Revue Codex.** Deux P1 corrigés : l'âge relu sous verrou à la consignation ; le libellé du destinataire réservé à la grossesse (arbitrage du responsable).
+
+**Prochaine action.** CI et CodeRabbit sur la tête, puis le merge ; ensuite le lot 4 (portail).
+
+**Ouvert.** Le nombre d'anamnèses envoyées sans date en production, à lire par conteneur : un « oui » non daté rend le courrier perpétuel.
+
+## 2026-10-24 — J3-12g : l'agenda du sommeil entre au snapshot (D-359)
+
+**Fait.** Préalables levés : inventaire « rubrique → lecteurs » (27 rubriques, dix lues par l'indice, le snapshot jugeant la présence de toutes) et compte par conteneur (13 agendas clôturés ; répartition masquée, moins de cinq dossiers). Le responsable a tranché par questions à options : deux lots (J3-12g puis r3_10), tout agenda clôturé est complet, réapprobation après déploiement, inventaire au dossier de proposition. Prédicat `agendaSommeilCloture`, version gardée, bancs.
+
+**Écarté.** L'agenda à indice seul, les rubriques lues par l'indice (un agenda court resterait dit « incomplet ») ; un changement de version (éteindrait les 4 approbations) ; D-357 et D-358, pris entre-temps par #1695 et #1691 (renuméroté en D-359).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; réapprobation des approbations concernées, constat par conteneur ; puis r3_10.
+
+**Ouvert.** Rien dans le périmètre.
+
+## 2026-10-24 — t44 : fiches TP et INR au catalogue, migration (D-360)
 
 **Fait.** Constat par conteneur (agrégats) : TP en %, INR sans unité, temps de Quick patient et témoin en s, tous « inconnu ». Le responsable a tranché sur questions à options : deux fiches, `BIO_TP` (%) et `BIO_INR` (« ratio »), `saisie_praticien`, sans plage ni NABM signé ; candidats 0126, 0127, 1128 proposés. Migration de données seule.
 
@@ -11638,4 +11660,4 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (libellés au résolveur, re-signature).
 
-**Ouvert.** #1691 réutilise D-356 (à elle de renuméroter).
+**Ouvert.** cinq PR ont revendiqué D-357 le même soir ; renuméroté D-360 au merge.

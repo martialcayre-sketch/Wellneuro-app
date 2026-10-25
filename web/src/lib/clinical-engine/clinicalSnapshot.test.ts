@@ -242,3 +242,95 @@ describe('ClinicalSnapshot', () => {
     expect(first.inputHash).not.toBe(changedSource.inputHash);
   });
 });
+
+// J3-12g (D-359) : l'agenda du sommeil est complet au snapshot dès que la
+// clôture l'a écrit. Agrégats synthétiques, valeurs techniques de banc.
+const AGENDA_COMPLET = {
+  AGD_NB_NUITS: 18, AGD_FENETRE_MOY: 480, AGD_TIB_MOY: 500, AGD_PRELIT_MOY: 20,
+  AGD_TST_MOY: 420, AGD_EFF_MOY: 88, AGD_LAT_MED: 15, AGD_WASO_MOY: 20,
+  AGD_TWAK_MOY: 10, AGD_REV_MOY: 1.2, AGD_REG_ECT: 30, AGD_QUAL_MOY: 3.5,
+  AGD_FREQ_LAT30_SEM: 0.5, AGD_FREQ_WASO30_SEM: 0.5, AGD_FREQ_CRITERE_SEM: 1,
+  AGD_NB_NUITS_AIDE: 0, AGD_NB_NUITS_TST: 18, AGD_NB_NUITS_EFF: 18,
+  AGD_NB_NUITS_PRELIT: 18, AGD_NB_NUITS_REV: 18, AGD_NB_NUITS_TWAK: 18,
+  AGD_NB_NUITS_LAT: 18, AGD_NB_NUITS_FREQ_WASO: 18, AGD_NB_NUITS_FREQ: 18,
+  AGD_NB_NUITS_AIDE_CONNU: 18, AGD_NB_NUITS_WE: 5, AGD_INDICE_ELIGIBLE: 1,
+};
+const { AGD_NB_NUITS_LAT: _lat, AGD_NB_NUITS_FREQ_WASO: _freqWaso, ...AGENDA_AVANT_V4 } = AGENDA_COMPLET;
+
+function snapshotAgenda(rawAnswers: Record<string, unknown>) {
+  const responses = [makeResponse({ questionnaireId: 'Q_SOM_09', scoresJson: { rawAnswers } })];
+  return buildClinicalSnapshot({
+    snapshotId: 'snapshot-agenda', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+    assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+  });
+}
+
+/** Ce que les routes lisent pour le besoin 5, sans le filtre du snapshot. */
+function besoin5DesRoutes(rawAnswers: Record<string, unknown>): number | null {
+  const direct = calculerEquilibre(construireReponsesParQuestionnaire([
+    { statutValidite: null, idQuestionnaire: 'Q_SOM_09', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers } },
+  ]));
+  return direct.strates.flatMap(strate => strate.besoins).find(b => b.besoin === 5)?.couverture ?? null;
+}
+
+describe('ClinicalSnapshot — agenda du sommeil (J3-12g, D-359)', () => {
+  it.each([
+    ['complet', AGENDA_COMPLET],
+    ['clôturé avant les compteurs du contrat v4', AGENDA_AVANT_V4],
+    ['à métriques non couvertes (null)', { ...AGENDA_COMPLET, AGD_TWAK_MOY: null, AGD_FREQ_LAT30_SEM: null }],
+  ])('un agenda %s est calculable et compte au besoin 5 comme aux routes', (_cas, rawAnswers) => {
+    const snapshot = snapshotAgenda(rawAnswers);
+    const besoin5 = snapshot.balanceAssessment.needs.find(need => need.needId === 5);
+
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('calculable');
+    expect(snapshot.sourceRefs[0].status).toBe('calculated');
+    expect(besoin5?.measurement.value).not.toBeNull();
+    expect(besoin5?.measurement.value).toBe(besoin5DesRoutes(rawAnswers));
+  });
+
+  it('un agenda sous le seuil d’agrégation est calculable, sans indice : le besoin 5 reste non mesuré', () => {
+    const snapshot = snapshotAgenda({ AGD_NB_NUITS: 5 });
+
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('calculable');
+    expect(snapshot.questionnaireFindings[0].limitations).toEqual([]);
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 5)?.measurement.value).toBeNull();
+    expect(besoin5DesRoutes({ AGD_NB_NUITS: 5 })).toBeNull();
+  });
+
+  // Un agenda clôturé sans nuit plausible : c'est ce que la clôture a écrit,
+  // il est donc complet — et ne mesure rien (DC-24).
+  it('un agenda clôturé à zéro nuit est calculable et ne mesure pas le besoin 5', () => {
+    const snapshot = snapshotAgenda({ AGD_NB_NUITS: 0 });
+
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('calculable');
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 5)?.measurement.value).toBeNull();
+  });
+
+  it.each([
+    ['sans rawAnswers', null],
+    ['vide', {}],
+    ['sans nombre de nuits', { ...AGENDA_COMPLET, AGD_NB_NUITS: undefined }],
+    ['au nombre de nuits null', { ...AGENDA_COMPLET, AGD_NB_NUITS: null }],
+    ['au nombre de nuits négatif', { ...AGENDA_COMPLET, AGD_NB_NUITS: -1 }],
+    ['au nombre de nuits fractionnaire', { ...AGENDA_COMPLET, AGD_NB_NUITS: 14.5 }],
+    ['au nombre de nuits en chaîne', { ...AGENDA_COMPLET, AGD_NB_NUITS: '18' }],
+    ['à une valeur illisible', { ...AGENDA_COMPLET, AGD_TST_MOY: 'sept heures' }],
+    ['à une valeur en chaîne numérique', { ...AGENDA_COMPLET, AGD_TST_MOY: '420' }],
+    ['à une valeur imbriquée', { ...AGENDA_COMPLET, AGD_TST_MOY: { moyenne: 420 } }],
+    ['au seul nombre de nuits, au-dessus du seuil d’agrégation', { AGD_NB_NUITS: 18 }],
+    ['à une rubrique inconnue', { ...AGENDA_COMPLET, AGD_INCONNUE: 3 }],
+    ['privé d’une rubrique antérieure au contrat v4', (({ AGD_TST_MOY: _tst, ...reste }) => reste)(AGENDA_COMPLET)],
+  ])('un agenda %s reste non calculable', (_cas, rawAnswers) => {
+    const snapshot = snapshotAgenda(rawAnswers as Record<string, unknown>);
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('not_calculable');
+  });
+
+  it('contrôle négatif — un `null` reste une réponse manquante pour un questionnaire ordinaire', () => {
+    const responses = [makeResponse({ scoresJson: { rawAnswers: { ...RAW_ANSWERS, P1: null } } })];
+    const snapshot = buildClinicalSnapshot({
+      snapshotId: 'snapshot-1', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+      assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+    });
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('not_calculable');
+  });
+});

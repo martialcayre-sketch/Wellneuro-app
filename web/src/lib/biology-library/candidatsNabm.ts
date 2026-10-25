@@ -72,7 +72,7 @@ const IONO_COMPLET_1610 = 'Ionogramme complet (Na + K + Cl + CO2 + protides), re
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 
 /** La liste, par code d'analyte. Les 94 analytes du catalogue y figurent
- *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-357). */
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-360). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -380,7 +380,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     ],
   },
 
-  // ── Les deux fiches de coagulation de D-357 (relues en V105 par conteneur le
+  // ── Les deux fiches de coagulation de D-360 (relues en V105 par conteneur le
   // 2026-10-24). La V105 lie l'acte au traitement (0126 hors AVK, 0127 sous
   // AVK) quand le laboratoire imprime TP et INR ensemble : l'INR est à juger.
   BIO_TP: {
