@@ -31,7 +31,11 @@ import {
   type ExplorationNonIndiquee,
 } from './nonIndiquesBibliotheque';
 import { lireLiensAxe, type LienAxe } from './liensAxe';
-import { claimsValidesAuCorpus, cleClaim } from '@/lib/rag/claims/validite';
+import {
+  claimsNonSupplantesAuCorpus,
+  claimsValidesAuCorpus,
+  cleClaim,
+} from '@/lib/rag/claims/validite';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
 export const SOURCE_NABM = 'nabm_smt_ans';
@@ -84,7 +88,7 @@ export type FicheAnalyte = {
   nonIndiques: ExplorationNonIndiquee[];
   /** Liens signés vers un axe biologique (F79, [[D-351]]) ; nul = non gradé. */
   liensAxe: LienAxe[];
-  /** Liens d'axe tus : leur claim n'est plus valide au corpus ([[D-140]]). */
+  /** Liens d'axe tus : claim plus valide au corpus ou supplanté ([[D-140]], [[D-351]] §5). */
   liensAxeSuspendus: number;
 };
 
@@ -210,12 +214,16 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
 
   // [[D-140]] : la validité du claim d'un lien se CONSTATE à la lecture, jamais
   // présumée. Le préflight de release-db ne la voit qu'à la release suivante ;
-  // un claim repassé hors VALIDE entre-temps tait son lien ici, dès la lecture.
-  const claimsValides = await claimsValidesAuCorpus(
-    analytes.flatMap(a =>
-      a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
-    ),
+  // un claim repassé hors VALIDE, ou supplanté (D-351 §5, exigé par le
+  // préflight), entre-temps tait son lien ici, dès la lecture.
+  const referencesLiens = analytes.flatMap(a =>
+    a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
   );
+  const [valides, nonSupplantes] = await Promise.all([
+    claimsValidesAuCorpus(referencesLiens),
+    claimsNonSupplantesAuCorpus(referencesLiens),
+  ]);
+  const claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
 
   const nonIndiques = explorationsNonIndiqueesParAnalyte(
     new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
