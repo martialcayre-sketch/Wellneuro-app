@@ -25,6 +25,7 @@ import type { StatutAge } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
+import { LienBibliotheque } from '@/components/patient-companion/LienBibliotheque';
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
 import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVotreMedecin';
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
@@ -456,6 +457,9 @@ export default function QuestionnairesHubPage() {
             ouverte ET qu'une fiche au moins a été remise ([[D-251]] §8). C'est
             l'accès permanent ; la tâche « à lire », elle, vit au fil. */}
         <LienFichesRemises token={token} />
+        {/* « Ma bibliothèque » ([[D-357]]) : sous son propre drapeau, au seul
+            dossier majeur ; servie, elle remplace le lien des fiches. */}
+        <LienBibliotheque token={token} />
         {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
             son propre drapeau. */}
         <LienCourrierMedecin token={token} />

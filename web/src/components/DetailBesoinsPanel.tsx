@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
-import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
@@ -124,7 +124,12 @@ export function DetailBesoinsPanel({
                   <td className="px-4 py-2">{b.libellePraticien}</td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {b.couverture !== null ? (
-                      chiffresMasques ? <ValeurMasquee /> : `${b.couverture}%`
+                      <>
+                        {chiffresMasques ? <ValeurMasquee /> : `${b.couverture}%`}
+                        {/* L'écart avec la décision (r3_10) : un ancien
+                            conteneur sans le champ n'affiche rien. */}
+                        <DetailEcartDecision besoin={b.libellePraticien} ecarts={b.ecartDecision} />
+                      </>
                     ) : (
                       <>
                         —

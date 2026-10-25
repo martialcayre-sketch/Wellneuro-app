@@ -1,4 +1,4 @@
-### Biologie : le taux de prothrombine et l'INR entrent au catalogue (t44, D-360, migration)
+### Biologie : le taux de prothrombine et l'INR entrent au catalogue (t44, D-361, migration)
 
 - Deux fiches : « Taux de prothrombine (TP) » en % et « INR (International
   Normalized Ratio) » en « ratio », avec lequel un INR imprimé sans unité

@@ -81,6 +81,37 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     expect(screen.queryByText('Motif', { selector: 'summary' })).toBeNull();
   });
 
+  it('l’écart avec la décision se déplie sous la valeur d’un besoin mesuré, au mot près (r3_10)', async () => {
+    const avecEcart = {
+      ...reponse,
+      besoins: reponse.besoins.map(b =>
+        b.id === 3
+          ? { ...b, ecartDecision: [{ idQuestionnaire: 'Q_INF_03', dateDernierePassation: '2026-10-12T08:00:00.000Z' }] }
+          : { ...b, ecartDecision: null }
+      ),
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => avecEcart })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    const geste = screen.getByText('Écart avec la décision', { selector: 'summary' });
+    expect(geste.getAttribute('aria-label')).toBe('Écart avec la décision — Énergie stable');
+    const ligne = within(geste.closest('details')!).getByRole('listitem');
+    expect(ligne.textContent).toBe(
+      'N’entre pas dans la décision · passation incomplète hors des items lus, du 12/10/2026 (Q_INF_03)'
+    );
+    // La valeur reste servie à côté : l'écart ne la retire pas.
+    expect(geste.closest('td')!.textContent).toContain('70%');
+  });
+
+  it('un ancien conteneur sans le champ d’écart n’affiche aucun geste', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    expect(screen.queryByText('Écart avec la décision', { selector: 'summary' })).toBeNull();
+  });
+
   it('un échec de lecture parle au praticien, et « Réessayer » relance la lecture', async () => {
     const fetchMock = vi
       .fn()

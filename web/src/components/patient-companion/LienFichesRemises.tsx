@@ -15,6 +15,10 @@ import { TITRE_ESPACE } from '@/components/patient/fiches-assiette/textesFiches'
 //
 // FAIL-CLOSED : tant que la sonde n'a pas répondu oui aux deux, le lien
 // n'existe pas.
+//
+// « Ma bibliothèque » servie à ce dossier ([[D-357]]) : le lien s'efface, celui
+// de la bibliothèque le remplace (arbitrage du 2026-10-25). Même sonde, même
+// réponse : les deux liens ne se contredisent jamais.
 
 export function LienFichesRemises({ token }: { token: string }) {
   const [visible, setVisible] = useState(false);
@@ -24,8 +28,10 @@ export function LienFichesRemises({ token }: { token: string }) {
     void (async () => {
       try {
         const res = await fetch('/api/portail/fiches-assiette?interrupteur=1');
-        const data = (await res.json()) as { ok?: boolean; ouvert?: boolean; fichesRemises?: boolean };
-        if (vivant && res.ok && data.ok === true && data.ouvert === true && data.fichesRemises === true) setVisible(true);
+        const data = (await res.json()) as { ok?: boolean; ouvert?: boolean; fichesRemises?: boolean; bibliotheque?: boolean };
+        if (vivant && res.ok && data.ok === true && data.ouvert === true && data.fichesRemises === true && data.bibliotheque !== true) {
+          setVisible(true);
+        }
       } catch {
         // Silence délibéré, même motif que `LienDossierDeuxVoix`.
       }
