@@ -84,10 +84,10 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(compositionPrepareePour('BIO_NFS')?.composants).toHaveLength(20);
   });
 
-  it('les rapports d’acides gras de D-364 : deux nommés par leurs opérandes, le troisième sans liste', () => {
-    expect(compositionPrepareePour('BIO_RATIO_AA_EPA')?.composants).toEqual(['BIO_AG_ARACHIDONIQUE', 'BIO_AG_EPA']);
-    expect(compositionPrepareePour('BIO_RATIO_LA_DGLA')?.composants).toEqual(['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA']);
-    expect(compositionPrepareePour('BIO_RATIO_OMEGA6_OMEGA3')).toBeNull();
+  it('les rapports d’acides gras de D-364 : aucune liste avant la migration constatée (D-087)', () => {
+    for (const code of ['BIO_RATIO_AA_EPA', 'BIO_RATIO_LA_DGLA', 'BIO_RATIO_OMEGA6_OMEGA3']) {
+      expect(compositionPrepareePour(code), code).toBeNull();
+    }
     expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toMatch(/pas au catalogue/);
   });
 

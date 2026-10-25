@@ -89,25 +89,16 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     composants: ['BIO_ZINC_PLASMATIQUE', 'BIO_CUIVRE'],
     motif: 'Rapport du zinc plasmatique et du cuivre.',
   },
-  // Les opérandes de ces deux rapports entrent au catalogue par D-364 : la
-  // composition se nomme d'après le rapport lui-même. Avant l'application de
-  // la migration, un composant absent ne s'affiche pas et ne se signe pas.
-  BIO_RATIO_AA_EPA: {
-    type: 'calcul',
-    composants: ['BIO_AG_ARACHIDONIQUE', 'BIO_AG_EPA'],
-    motif: 'Rapport de l’acide arachidonique et de l’EPA.',
-  },
-  BIO_RATIO_LA_DGLA: {
-    type: 'calcul',
-    composants: ['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA'],
-    motif: 'Rapport de l’acide linoléique et du DGLA.',
-  },
 };
 
 /** Les calculés dont les opérandes manquent au catalogue (D-323 §4) : rien à
  *  signer, ils restent « non évalués », et l'écran le dit. */
 export const OPERANDES_ABSENTS: Readonly<Record<string, string>> = {
   BIO_RATIO_CORTISOL_DHEA: 'La DHEA n’est pas au catalogue.',
+  BIO_RATIO_AA_EPA: 'L’acide arachidonique et l’EPA ne sont pas au catalogue.',
+  // D-364 : les opérandes de LA/DGLA et d'AA/EPA entrent par migration ; leurs
+  // compositions ne se préparent qu'après son application constatée (D-087).
+  BIO_RATIO_LA_DGLA: 'L’acide linoléique et le DGLA ne sont pas au catalogue.',
   // Le laboratoire additionne des familles ; lesquelles de ses acides il y
   // compte n'est pas imprimé, et ne s'invente pas (D-364).
   BIO_RATIO_OMEGA6_OMEGA3: 'Les totaux oméga 6 et oméga 3 ne sont pas au catalogue.',

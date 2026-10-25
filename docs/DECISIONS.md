@@ -50,11 +50,13 @@ panels et `BIO_AG_ERYTHROCYTAIRES` sont inchangés.
 les deux rapports en « valeur calculée ». Rien en base.
 
 **§6 — Compositions préparées** (`compositionsPreparees.ts`, rien en base
-sans la signature du praticien) : `BIO_RATIO_AA_EPA` = acide arachidonique +
-EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA — le nom même du
-rapport. `BIO_RATIO_OMEGA6_OMEGA3` reste « opérandes absents » : quels
-acides le laboratoire additionne n'est pas imprimé. Avant l'application de
-la migration, un composant absent ne s'affiche pas et ne se signe pas.
+sans la signature du praticien) : arbitrés, `BIO_RATIO_AA_EPA` = acide
+arachidonique + EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA — le nom
+même du rapport. Code consommateur des nouvelles fiches : ils partent avec
+le second lot, après l'application constatée ([[D-087]] ; remarque de
+CodeRabbit sur #1704, arbitrage du responsable). D'ici là, les deux
+rapports restent « opérandes absents ». `BIO_RATIO_OMEGA6_OMEGA3` le reste
+durablement : quels acides le laboratoire additionne n'est pas imprimé.
 
 **§7 — Libellés, en second lot.** Arbitré : les 22 libellés imprimés, plus
 des noms usuels (« EPA », « DHA »…), dont la liste sera préparée et soumise

@@ -7,9 +7,9 @@
   nomenclature ne nomme les acides gras).
 - Aucun panel ne change : l'entrée d'un acide dans un panel viendra par une
   décision à part.
-- Dans la Bibliothèque, les rapports AA/EPA et linoléique/DGLA proposent
-  leurs deux opérandes à la signature du praticien ; le rapport oméga 6 /
-  oméga 3 reste sans liste.
+- Le rapport oméga 6 / oméga 3 reste sans liste à signer. Les rapports
+  AA/EPA et linoléique/DGLA proposeront leurs deux opérandes à la signature
+  du praticien au lot suivant.
 - Ces fiches se saisissent à la main. Les libellés lus n'entreront au
   résolveur signé qu'une fois la migration constatée en production (lot
   suivant).

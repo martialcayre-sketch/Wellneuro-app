@@ -24,8 +24,9 @@ attend l'application constatée.
   provenance `saisie_praticien` ; 20 acides + 2 rapports ; nom courant seul ;
   rapports en « ratio », « autre » comme AA/EPA ; aucun panel (lot et
   décision à part, source à désigner) ; NABM « aucun acte » / « valeur
-  calculée » ; AA/EPA et LA/DGLA préparés par leurs opérandes, oméga 6 /
-  oméga 3 « opérandes absents » ; au résolveur, les libellés imprimés plus
+  calculée » ; AA/EPA et LA/DGLA préparés par leurs opérandes — au second
+  lot (remarque CodeRabbit, D-087, arbitrage) —, oméga 6 / oméga 3
+  « opérandes absents » ; au résolveur, les libellés imprimés plus
   des noms usuels (liste à préparer et soumettre au second lot).
 - Deux lots, sans alternative : `analyte_propose` a une clé étrangère
   `RESTRICT` vers `biology_analytes.code`.
@@ -36,8 +37,8 @@ attend l'application constatée.
 - Contrat `web/prisma/checks/cb_catalogue_niveau_1_donnees.sql` (116, 22
   fiches ligne par ligne, rien d'autre sur elles, aucun item de panel).
 - `web/src/lib/biology-library/candidatsNabm.ts` (+ test : 116, comptes) ;
-  `compositionsPreparees.ts` (+ test) ; `compositionsAnalytes.test.ts`
-  (exemple « opérandes absents » porté sur KYN/TRP) ;
+  `compositionsPreparees.ts` (LA/DGLA et oméga 6/oméga 3 en « opérandes
+  absents », + test) ;
   `import/resolverLibellesV1.test.ts` (116 unités lues) — la table et la
   signature du résolveur **inchangées**.
 - `docs/DECISIONS.md` (D-364), `docs/claude/PLAN_WELLNEURO.md`,
@@ -52,8 +53,9 @@ attend l'application constatée.
 
 - D-364 : libre sur main et dans le diff de #1693 (D-361 à D-363, à
   renuméroter par sa session) au commit ; revérifier juste avant le merge.
-- Second lot : libellés imprimés et noms usuels au résolveur, re-signature
-  sur instruction — après la release-db constatée.
+- Second lot : compositions AA/EPA et LA/DGLA ; libellés imprimés et noms
+  usuels au résolveur, re-signature sur instruction — après la release-db
+  constatée.
 - Entrée d'acides dans des panels : lot et décision à part, source à
   désigner par le responsable.
 
