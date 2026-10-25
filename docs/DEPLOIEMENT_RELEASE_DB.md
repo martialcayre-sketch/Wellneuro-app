@@ -10,7 +10,7 @@ import de nomenclature NABM) du **build applicatif Vercel**.
 > jamais directement (le secret `MIGRATE_DATABASE_URL`, resté pointé sur
 > Supabase, a appliqué la purge #746 sur l'ancienne base — constat qui a
 > déclenché cette réécriture). Le job `release` exécute désormais
-> `web/scripts/release-db-scalingo.sh` (les quatre préflights lecture seule,
+> `web/scripts/release-db-scalingo.sh` (les cinq préflights lecture seule,
 > puis `migrate deploy`) **en one-off dans l'image de production**, via le
 > CLI Scalingo (secret `SCALINGO_API_TOKEN` — un jeton d'API, pas une URL de
 > base), après avoir constaté que le commit approuvé est déployé. Sortie par
