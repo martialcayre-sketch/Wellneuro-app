@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-361 — J3-12h, lot 4 : le courrier complément au portail — titre et phrase d'accompagnement acceptés, « courrier puis complément » dit au patient ; servi, accusé et annoncé comme la lettre d'adressage, sous le même drapeau (applique D-345 §4-§7 et D-358 §3-§4)
+### D-362 — J3-12h, lot 4 : le courrier complément au portail — titre et phrase d'accompagnement acceptés, « courrier puis complément » dit au patient ; servi, accusé et annoncé comme la lettre d'adressage, sous le même drapeau (applique D-345 §4-§7 et D-358 §3-§4)
 
 - Date : 2026-10-25
 - Statut : accepté — deux arbitrages du responsable du 2026-10-25, sur
@@ -68,6 +68,63 @@ est vue par l'aperçu suivant, qui bloque le clic. Lu en production le
 **Ouverture du drapeau.** La condition « écran du portail » est levée.
 Restent un passage de bout en bout sur un dossier de test, par identifiant,
 `WN_FICHES_ASSIETTE` ouvert et `WN_PHYSIO_TRAITEMENTS` ouvert.
+
+### D-361 — t44 : le taux de prothrombine et l'INR entrent au catalogue, le temps de Quick n'y entre pas ; l'INR en « ratio », les actes 0126, 0127 et 1128 proposés, jamais signés par migration
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24 (file A, t44),
+  sur questions à options, transcrits par l'assistant.
+- Domaine : catalogue biologie ([[D-261]], [[D-323]] §6) ; applique
+  [[D-356]] §4 et §6. Aucun seuil, aucune borne, aucune plage ([[D-059]]),
+  aucune conversion ([[D-157]]).
+
+**§1 — Source.** Constat par conteneur du 2026-10-24 (lecture seule,
+agrégats, aucun identifiant) : « Taux de prothrombine » en %, l'intervalle du
+laboratoire imprimé ; « INR » sans unité ni intervalle ; « Temps de Quick
+patient » et « Temps de Quick témoin » en s — deux lignes chacun, sur deux
+imports, toutes « inconnu ». Aucune fiche de coagulation au catalogue
+(92 analytes). En V105, actifs : 0126 « Temps de Quick (TQ, TP) en
+l'absence de traitement par AVK », 0127 « INR : temps de Quick en cas de
+traitement par AVK », 1128 « Exploration de base de l'hémostase (TP + TCA
++ plaq.) ».
+
+**§2 — Deux fiches, pas trois, pas de panel.** `BIO_TP` « Taux de
+prothrombine (TP) » en `%` et `BIO_INR` « INR (International Normalized
+Ratio) » (migration `20261024220000_catalogue_biologie_tp_inr`). Le
+laboratoire mesure le temps de Quick et en dérive les deux. Le temps en
+secondes n'a **pas** de fiche : il dépend du réactif et ne se lit qu'à côté
+du témoin, contrôle du laboratoire jamais stocké ; seul, il inviterait à
+comparer deux laboratoires. « s » n'entre donc pas au vocabulaire d'unités.
+Conséquence acceptée : la ligne en secondes reste « inconnu », à écarter à
+la main.
+
+**§3 — L'INR en « ratio ».** Un rapport normalisé, avec lequel seule une
+unité absente concorde ([[D-356]] §4) ; aucun code ne change. NULL est
+écarté : il marque au catalogue un composite « lacunaire ».
+
+**§4 — Provenance.** Patron de [[D-261]] et de F80 : `saisie_praticien`,
+« partielle », prélèvement « sang », aucune plage, aucun lien clinique,
+aucune composition, aucune correspondance NABM écrite par migration. Le
+contrat `cb_catalogue_niveau_1_donnees.sql` tient les deux fiches ligne par
+ligne et le total à 94.
+
+**§5 — Candidats NABM** (`candidatsNabm.ts`, propositions affichées
+pré-remplies, rien en base sans la signature du praticien) : `BIO_TP`
+« libellé explicite », 0126 isolé et 1128 en groupe ; `BIO_INR` « à juger »,
+0127 isolé (sous AVK) et 0126 (hors AVK, l'INR imprimé avec le TP relève du
+temps de Quick) — la V105 lie l'acte au traitement, le praticien tranche à
+la signature.
+
+**§6 — Libellés, en second lot.** Arbitrés : « Taux de prothrombine » →
+`BIO_TP`, « INR » → `BIO_INR` — les seuls imprimés, sans synonyme (« TP »
+nu, « Temps de prothrombine » en secondes se confondraient). « Temps de
+Quick patient » et « Temps de Quick témoin » : jamais rattachés. Ils
+n'entrent au résolveur, avec sa re-signature (décision distincte), qu'après
+l'application **constatée** de la migration :
+`lignes_biologiques_candidates.analyte_propose` référence
+`biology_analytes.code` (`ON DELETE RESTRICT`) et `resoudreLigne` rend un
+code résolu sans le chercher au catalogue — un code absent ferait échouer
+l'import entier. Les lignes déjà lues restent « inconnu » ([[D-356]] §6).
 
 ### D-360 — ap, le contenant : « Ma bibliothèque » livrée éteinte, trois titres acceptés à la première personne ; servie au dossier, elle remplace le lien des fiches (applique D-357 §5-§6 ; H82, place 10)
 

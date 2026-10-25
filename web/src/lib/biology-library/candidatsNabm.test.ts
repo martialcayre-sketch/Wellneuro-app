@@ -39,7 +39,7 @@ const entrees = Object.entries(CANDIDATS_NABM) as [string, CandidatsAnalyteNabm]
 describe('candidats NABM — la liste préparée (M-3b)', () => {
   it('couvre exactement les analytes que les migrations insèrent au catalogue', () => {
     const catalogue = codesAnalytesInseres();
-    expect(catalogue.size).toBe(92);
+    expect(catalogue.size).toBe(94);
     expect(Object.keys(CANDIDATS_NABM).sort()).toEqual([...catalogue].sort());
   });
 
@@ -70,14 +70,14 @@ describe('candidats NABM — la liste préparée (M-3b)', () => {
     }
   });
 
-  it('les comptes relus le 2026-10-15 et le 2026-10-18 tiennent (millésime V105, D-323 §6)', () => {
+  it('les comptes relus le 2026-10-15, le 2026-10-18 et le 2026-10-24 tiennent (millésime V105, D-323 §6, D-361)', () => {
     expect(MILLESIME_LISTE_NABM).toBe('V105');
     const parSituation = Object.fromEntries(SITUATIONS_NABM.map(s => [s, 0])) as Record<string, number>;
     for (const [, fiche] of entrees) parSituation[fiche.situation] += 1;
     expect(parSituation).toEqual({
-      libelle_explicite: 34,
+      libelle_explicite: 35,
       acte_de_groupe: 21,
-      a_juger: 9,
+      a_juger: 10,
       aucun_acte: 20,
       valeur_calculee: 7,
       regroupement: 1,

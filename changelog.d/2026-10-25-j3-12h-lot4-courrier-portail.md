@@ -1,4 +1,4 @@
-### J3-12h, lot 4 : le courrier complément au portail, sous drapeau éteint (D-361, 2026-10-25)
+### J3-12h, lot 4 : le courrier complément au portail, sous drapeau éteint (D-362, 2026-10-25)
 
 - Le patient lit le courrier qui lui est remis au clic « Valider pour
   diffusion » : écran « Courrier à remettre à votre médecin »

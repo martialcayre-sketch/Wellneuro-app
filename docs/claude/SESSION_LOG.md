@@ -11680,3 +11680,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, Codex, merge ; release-db après celle de #1679 ; constat par conteneur, versé dans une PR de suivi.
 
 **Ouvert.** Code consommateur (« non gradé ») ; F53 ; claims à relire en atelier.
+
+## 2026-10-24 — t44 : fiches TP et INR au catalogue, migration (D-361)
+
+**Fait.** Constat par conteneur (agrégats) : TP en %, INR sans unité, temps de Quick patient et témoin en s, tous « inconnu ». Le responsable a tranché sur questions à options : deux fiches, `BIO_TP` (%) et `BIO_INR` (« ratio »), `saisie_praticien`, sans plage ni NABM signé ; candidats 0126, 0127, 1128 proposés. Migration de données seule.
+
+**Écarté.** Le temps de Quick en secondes (dépend du réactif, sans son témoin) et « s » au vocabulaire ; un panel ; l'INR en NULL ; les synonymes.
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (libellés au résolveur, re-signature).
+
+**Ouvert.** cinq PR ont revendiqué D-357 le même soir ; D-357 à D-360 pris par d’autres PR, renuméroté D-361 au merge.
