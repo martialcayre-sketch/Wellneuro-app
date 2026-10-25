@@ -31,6 +31,7 @@ import {
   type ExplorationNonIndiquee,
 } from './nonIndiquesBibliotheque';
 import { lireLiensAxe, type LienAxe } from './liensAxe';
+import { claimsValidesAuCorpus, cleClaim } from '@/lib/rag/claims/validite';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
 export const SOURCE_NABM = 'nabm_smt_ans';
@@ -83,6 +84,8 @@ export type FicheAnalyte = {
   nonIndiques: ExplorationNonIndiquee[];
   /** Liens signés vers un axe biologique (F79, [[D-351]]) ; nul = non gradé. */
   liensAxe: LienAxe[];
+  /** Liens d'axe tus : leur claim n'est plus valide au corpus ([[D-140]]). */
+  liensAxeSuspendus: number;
 };
 
 export type MillesimeNabm = {
@@ -205,6 +208,15 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
         })
       : [];
 
+  // [[D-140]] : la validité du claim d'un lien se CONSTATE à la lecture, jamais
+  // présumée. Le préflight de release-db ne la voit qu'à la release suivante ;
+  // un claim repassé hors VALIDE entre-temps tait son lien ici, dès la lecture.
+  const claimsValides = await claimsValidesAuCorpus(
+    analytes.flatMap(a =>
+      a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
+    ),
+  );
+
   const nonIndiques = explorationsNonIndiqueesParAnalyte(
     new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
   );
@@ -244,7 +256,8 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     remboursement: remboursements.get(analyte.code)!,
     preanalytiques: analyte.preanalytiques,
     nonIndiques: nonIndiques.get(analyte.code) ?? [],
-    liensAxe: lireLiensAxe(analyte.liensCliniques),
+    liensAxe: lireLiensAxe(analyte.liensCliniques.filter(l => claimsValides.has(cleClaim(l)))),
+    liensAxeSuspendus: analyte.liensCliniques.filter(l => !claimsValides.has(cleClaim(l))).length,
   }));
 
   return {

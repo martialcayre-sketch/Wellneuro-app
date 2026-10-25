@@ -56,6 +56,7 @@ const CATALOGUE = {
           niveauPreuve: { statut: 'non_gradé' },
         },
       ],
+      liensAxeSuspendus: 0,
     },
     {
       code: 'BIO_INSULINEMIE',
@@ -77,6 +78,7 @@ const CATALOGUE = {
       preanalytiques: [],
       nonIndiques: [],
       liensAxe: [],
+      liensAxeSuspendus: 0,
     },
     {
       code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE',
@@ -109,6 +111,8 @@ const CATALOGUE = {
         },
       ],
       liensAxe: [],
+      // D-140 : un lien tu, son claim n'étant plus valide au corpus.
+      liensAxeSuspendus: 1,
     },
   ],
   millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
@@ -252,6 +256,18 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(lignes[1].textContent).toContain('Claim WN-CL-0999-001 (v1.0)');
     expect(lignes[1].textContent).toContain('Niveau de preuve : non gradé');
     expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+  });
+
+  it('un lien tu se dit, sans liste ni « aucun lien »', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Magnésium érythrocytaire')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Magnésium érythrocytaire/ }));
+    await waitFor(() => expect(screen.getByText('Axes biologiques')).toBeTruthy());
+    const section = screen.getByRole('region', { name: 'Axes biologiques' });
+    expect(within(section).getByText(/Un lien n’est pas affiché : son claim n’est plus validé au corpus/)).toBeTruthy();
+    expect(within(section).queryAllByRole('listitem')).toHaveLength(0);
+    expect(within(section).queryByText(/Aucun lien vers un axe/)).toBeNull();
   });
 
   it('sans lien d’axe, la section le dit', async () => {

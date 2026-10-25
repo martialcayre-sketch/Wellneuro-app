@@ -31,6 +31,12 @@
 -- encore l'ancienne : il rougirait et bloquerait sa propre release. Ce
 -- contrat-là devra choisir sa liste selon la migration appliquée, comme
 -- celui-ci le fait pour la cible vide.
+-- Il en va de même de toute migration qui touche la STRUCTURE gardée plus bas
+-- (texte exact du CHECK `niveau_preuve`, nullabilité, trigger nutriment/axe) :
+-- graduer un lien, ajouter une lettre ou renommer le trigger exige un contrat
+-- à double état. Et passer un lien à `actif = false` ne débloque rien : la
+-- liste fige `actif = true`, et la fraîcheur se juge sur tous les liens d'axe
+-- — retirer un lien est une nouvelle décision, donc une nouvelle liste.
 --
 -- Lecture seule : rien n'est écrit, la transaction est annulée.
 BEGIN TRANSACTION READ ONLY;

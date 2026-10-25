@@ -110,7 +110,17 @@ test('MIGRATE_DATABASE_URL posée : ignorée, l’add-on fait foi et l’hôte e
   assert.match(r.sortie, /addon-scalingo\.example\.invalid:5432/, "l'hôte cible doit être nommé");
   assert.doesNotMatch(r.sortie, /supabase\.example\.invalid/, "l'hôte de MIGRATE_DATABASE_URL ne doit jamais être la cible");
   assert.doesNotMatch(r.sortie, /motdepassefactice/, 'aucun identifiant ne doit fuiter dans les logs');
-  assert.equal(r.appels.filter((a) => a.includes('db execute')).length, 5, 'les cinq préflights doivent tourner');
+  assert.deepEqual(
+    r.appels.filter((a) => a.includes('db execute')),
+    [
+      'npx prisma db execute --file prisma/checks/c5_ciqual_production_preflight.sql',
+      'npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql',
+      'npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql',
+      'npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+      'npx prisma db execute --file prisma/checks/biology_liens_axe_v1.sql',
+    ],
+    'les cinq préflights, nommés, dans l’ordre — aucun fichier négatif',
+  );
   assert.equal(r.appels.at(-1), 'npx prisma migrate deploy', 'migrate deploy vient en dernier');
 });
 
@@ -125,8 +135,7 @@ test('préflight en échec : sentinelle nommant l’étape, migrate deploy jamai
 });
 
 // D-351 (F79, revue P2-1) : la liste exacte des liens d'axe garde la
-// fraîcheur de leurs claims. Rouge, elle coupe la release comme les autres —
-// et c'est le contrat positif qui tourne, jamais son négatif, qui écrit.
+// fraîcheur de leurs claims. Rouge, elle coupe la release comme les autres.
 test('préflight des liens d’axe en échec : sentinelle nommant l’étape, migrate deploy jamais appelé', () => {
   const r = jouer('release-db-scalingo.sh', {
     env: { WN_RELEASE_ID: 'run-5b', SCALINGO_POSTGRESQL_URL: URL_ADDON, WN_MIGRATIONS_EMPREINTE: EMPREINTE },
@@ -135,7 +144,6 @@ test('préflight des liens d’axe en échec : sentinelle nommant l’étape, mi
   assert.equal(r.code, 1);
   assert.match(r.sortie, /WN_RELEASE_DB_ECHEC id=run-5b etape=preflight_liens_axe/);
   assert.ok(!r.appels.some((a) => a.includes('migrate deploy')), 'un préflight rouge doit couper la release');
-  assert.ok(!r.appels.some((a) => a.includes('_negatif')), 'aucun fichier négatif ne tourne contre la production');
 });
 
 test('migrate deploy en échec : sentinelle d’échec, jamais de OK', () => {

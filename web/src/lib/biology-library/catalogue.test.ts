@@ -12,6 +12,12 @@ const { prisma } = vi.hoisted(() => ({
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+const { claimsValidesAuCorpus } = vi.hoisted(() => ({ claimsValidesAuCorpus: vi.fn() }));
+vi.mock('@/lib/rag/claims/validite', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
+  claimsValidesAuCorpus,
+}));
+
 import { listerCatalogueBiologie } from './catalogue';
 import { INDICATIONS_BIOLOGIE_V1 } from './indicationsBiologieV1';
 
@@ -47,6 +53,7 @@ beforeEach(() => {
   prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
   prisma.biologyAnalyteComposition.findMany.mockResolvedValue([]);
+  claimsValidesAuCorpus.mockResolvedValue(new Set());
 });
 
 describe('remboursement d’un calculé signé — hérité de ses mesures (D-323 §4)', () => {
@@ -321,6 +328,8 @@ describe('fiches — passage fidèle, absences comprises', () => {
       }),
     ]);
 
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-001::v1.0']));
+
     const catalogue = await listerCatalogueBiologie();
 
     const select = prisma.biologyAnalyte.findMany.mock.calls[0][0].select;
@@ -334,6 +343,31 @@ describe('fiches — passage fidèle, absences comprises', () => {
         niveauPreuve: { statut: 'non_gradé' },
       },
     ]);
+  });
+
+  // D-140 : un claim repassé hors VALIDE entre deux releases tait son lien dès
+  // la lecture ; la fiche dit qu'un lien est tu, jamais qu'il est fondé.
+  it('un lien dont le claim n’est plus valide au corpus est tu, et compté', async () => {
+    const lien = (claimId: string) => ({
+      cibleCode: 'inflammation',
+      direction: 'haut_evocateur',
+      claimId,
+      versionClaim: 'v1.0',
+      niveauPreuve: null,
+    });
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ liensCliniques: [lien('WN-CL-0999-001'), lien('WN-CL-0999-002')] }),
+    ]);
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-002::v1.0']));
+
+    const [fiche] = (await listerCatalogueBiologie()).analytes;
+
+    expect(claimsValidesAuCorpus).toHaveBeenCalledWith([
+      { claimId: 'WN-CL-0999-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0999-002', versionClaim: 'v1.0' },
+    ]);
+    expect(fiche.liensAxe.map(l => l.claimId)).toEqual(['WN-CL-0999-002']);
+    expect(fiche.liensAxeSuspendus).toBe(1);
   });
 
   it('verifieLe et le millésime sortent en ISO, prêts pour l’écran', async () => {

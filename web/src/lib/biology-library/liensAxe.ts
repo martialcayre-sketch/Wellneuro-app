@@ -12,8 +12,9 @@
 // comparer un nul comme s'il valait A à D — il n'y a pas de lettre à lire.
 //
 // Les dix codes sont ceux de la liste fermée de [[D-348]] §2, dans son ordre ;
-// leurs libellés et ceux des trois sens sont des noms d'affichage, proposés le
-// 2026-10-25 et soumis au responsable — aucun texte de claim n'entre ici.
+// leurs libellés et ceux des trois sens sont des noms d'affichage, proposés
+// puis validés par le responsable le 2026-10-25 — aucun texte de claim n'entre
+// ici.
 
 export const LIBELLE_AXE: Record<string, string> = {
   methylation: 'Méthylation',

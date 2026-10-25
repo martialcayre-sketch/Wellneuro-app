@@ -249,7 +249,7 @@ export function FicheAnalytePanel({
           jamais une lettre (§4). */}
       <section aria-label="Axes biologiques">
         <h5 className="text-sm font-semibold text-foreground">Axes biologiques</h5>
-        {fiche.liensAxe.length === 0 ? (
+        {fiche.liensAxe.length === 0 && fiche.liensAxeSuspendus === 0 ? (
           <p className="mt-1 text-sm text-muted-foreground">
             Aucun lien vers un axe biologique signé pour cette analyse.
           </p>
@@ -274,6 +274,13 @@ export function FicheAnalytePanel({
                 </li>
               ))}
             </ul>
+            {fiche.liensAxeSuspendus > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {fiche.liensAxeSuspendus === 1
+                  ? 'Un lien n’est pas affiché : son claim n’est plus validé au corpus.'
+                  : `${fiche.liensAxeSuspendus} liens ne sont pas affichés : leur claim n’est plus validé au corpus.`}
+              </p>
+            )}
           </>
         )}
       </section>
