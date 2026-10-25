@@ -86,7 +86,7 @@ contrats ; l'extinction de `WN_C5_ENABLED` ; le sort des tables C5A.
 migration ; son critère de fin : page retirée et constatée, constat du §3
 versé, D-C5-01 à 04 soldées. Registre « Lettres à écrire » : h fait.
 
-### D-364 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; le flux est déclaré au registre et au patient, sans accord de sous-traitance, réserve écrite (lettre bg)
+### D-364 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; la déclaration au registre et au patient est décidée, livrée par un lot de code distinct ; sans accord de sous-traitance, réserve écrite (lettre bg)
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
@@ -113,7 +113,9 @@ des envois antérieurs est tenu hors dépôt.
 IA externe » (pseudonymisée, D-252 §2) part vers un outil d'IA externe. La
 version « Complète » reste téléchargeable pour un autre usage ; elle n'est plus
 soumise à aucun outil d'IA. Pseudonymisé n'est pas anonyme : le document envoyé
-reste une donnée de santé à caractère personnel.
+reste une donnée de santé à caractère personnel. Le praticien relit le PDF avant
+tout envoi : le masquage des textes libres (`masquage.ts`) ne retire que les
+valeurs enregistrées au dossier, et un nom écrit autrement peut y rester.
 
 **§3 — La déclaration au registre.** Une ligne entre au tableau de la
 rubrique 6 : « analyse du dossier par un outil d'IA externe choisi par le
@@ -127,13 +129,14 @@ légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de
 **§4 — L'information du patient.** « Vos données personnelles » reçoit une
 nouvelle version, accusé exigé (motif de [[D-299]] §3), qui dit le flux en ces
 termes, validés mot pour mot par le responsable (complétés le 2026-10-25 :
-le texte dit aussi ce que la version garde, `sectionAdministrative.ts`) :
+le texte dit aussi ce que la version garde, `sectionAdministrative.ts`, et
+« retire » remplace une promesse d'absence que le masquage ne tient pas) :
 
 > « Votre praticien peut soumettre une version de votre dossier à ChatGPT
 > (OpenAI), un outil d'intelligence artificielle, pour l'aider dans son
 > analyse. Il le fait lui-même : l'application ne l'envoie pas. Cette version
-> ne contient ni vos nom et prénom, ni vos coordonnées, ni votre date de
-> naissance, ni le nom de votre médecin traitant. Elle garde votre âge et un
+> retire vos nom et prénom, vos coordonnées, votre date de naissance et le
+> nom de votre médecin traitant. Elle garde votre âge et un
 > numéro de dossier propre à l'application. Ce document reste une information
 > sur votre santé. OpenAI est situé hors de l'Union européenne, et aucun
 > contrat ne l'engage envers nous sur le traitement de ce document. »

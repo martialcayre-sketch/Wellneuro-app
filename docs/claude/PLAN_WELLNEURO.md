@@ -770,7 +770,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db consignée (porte 9, 2026-10-15) | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
 | v | bandes de bruit par instrument | geste | 11 | non | H13, rang 0 |
-| M-3 | signature des 8 liaisons NABM (écran praticien livré le 2026-10-15 ; 5 signées le 2026-10-15, les 3 sans acte attendent M-3c ; F54) | geste | 10 | non | F54, rang 0 |
+| M-3 | signature des 8 liaisons NABM (écran praticien livré le 2026-10-15 ; 5 signées le 2026-10-15, les 3 sans acte couvertes par un constat « aucun acte » signé (2026-10-16 et 2026-10-17) ; 8 sur 8 le 2026-10-17 ; F54) | geste | 10 | non | F54, rang 0 |
 | M-3b | liste des candidats NABM affichée pré-remplie dans la fiche d'analyte (lot de code livré le 2026-10-15, F54) | A | 10 | non | F54, rang 1 |
 | M-3c | journal des signatures NABM (R1) et constat signé « aucun acte » (PR 1 #1493 mergée et appliquée le 2026-10-16, constatée par conteneur ; PR 2, code consommateur, livrée par #1496 et #1499 le 2026-10-16 ; critère de fin atteint le 2026-10-16 : constat de l'homocystéine relu par conteneur) | A | 10, 9 | oui | F54, rang 2 |
 | c | cockpit chiffré : provenance, formule, nature | geste | 4 | non | F59 |
@@ -2234,7 +2234,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 |---|---|---|
 | c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c ; faits : D-333 et D-334 le 2026-10-20, M-2 signée le 2026-10-23 (#1658) |
 | v | H13 | G-10 |
-| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte attendent le constat signé de M-3c ; fait : M-3c clos le 2026-10-16 (#1493, #1496, #1499) |
+| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte couvertes par un constat « aucun acte » signé (2026-10-16 et 2026-10-17) ; fait : 8 sur 8 le 2026-10-17, M-3c clos le 2026-10-16 (#1493, #1496, #1499) |
 | f | F54 | M-3 ; M-3c (journal R1) ; fait le 2026-10-17 (D-316) |
 | G-3 | F54 | f ; M-3b (liste pré-remplie) ; M-3c pour les analytes sans acte |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
