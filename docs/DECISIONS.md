@@ -4,6 +4,56 @@
 
 ## Décisions actives
 
+### D-360 — ap, le contenant : « Ma bibliothèque » livrée éteinte, trois titres acceptés à la première personne ; servie au dossier, elle remplace le lien des fiches (applique D-357 §5-§6 ; H82, place 10)
+
+- Date : 2026-10-25
+- Statut : accepté — les trois titres de [[D-357]] §6 et le libellé du lien
+  sont acceptés par le responsable le 2026-10-25, sur questions à options ;
+  le sort du lien des fiches est tranché le même jour, de la même façon.
+- Applique : [[D-357]] §1, §2, §5 et §6 ; [[D-288]] §1 (texte accepté,
+  registre, drapeau).
+- Domaine : portail patient — `web/src/app/portail/[token]/bibliotheque/`,
+  `web/src/app/api/portail/bibliotheque/`, `web/src/lib/portail/bibliothequeDrapeau.ts`,
+  `web/src/components/patient/bibliotheque/`, la sonde
+  `api/portail/fiches-assiette?interrupteur=1` et `LienFichesRemises`.
+- **Ne touche pas** : aucune règle clinique, aucun seuil, aucune dose ;
+  aucun document écrit ni publié ; le régime des fiches d'assiette
+  ([[D-251]]) ; la page « Fiches remises par mon praticien », servie à tout
+  dossier, mineur compris ; aucune migration.
+
+**§1 — Les textes.** Titre de la page : « Ma bibliothèque », qui est aussi le
+libellé de son lien dans « Autres espaces ». Rayon des documents remis :
+« Remis par mon praticien ». Socle commun : « Pour mieux comprendre ma
+démarche », qui n'est pas encore servi puisque le socle reste invisible tant
+qu'il est vide ([[D-357]] §2). Les titres sont à la première personne, pour
+qu'une seule voix parle sur la page, comme dans « Fiches remises par mon
+praticien » ; la proposition de [[D-357]] §6 disait « votre ».
+
+**§2 — Le lien des fiches.** Quand la bibliothèque est servie au dossier
+(drapeau ouvert et dossier majeur), le lien « Fiches remises par mon
+praticien » quitte « Autres espaces », et « Ma bibliothèque » le remplace.
+La page des fiches reste servie : chaque carte de la bibliothèque y renvoie.
+Le mineur garde son lien ([[D-357]] §5). Les deux sondes appellent la même
+fonction (`bibliothequeServie`), si bien que les deux liens ne peuvent pas
+paraître ensemble ni manquer ensemble.
+
+**§3 — Le lot.** Il livre la page, une route en lecture seule qui ne sert
+aucun document (elle dit si la bibliothèque est servie et si le rayon des
+documents remis a quelque chose à montrer), le lien et le drapeau
+`WN_PORTAIL_BIBLIOTHEQUE`, éteint. Le lien ne paraît que si un rayon a
+quelque chose à montrer, aujourd'hui une fiche remise : aucune porte ne mène
+à une page vide. Une page atteinte sans document, par une adresse tapée, ne
+montre que son titre. Aucun texte d'état neuf : les messages viennent des
+routes et de l'espace des fiches, déjà servis.
+
+**§4 — L'activation** reste celle de [[D-357]] §7, après le constat de la
+place 9. Son constat s'étend au lien : sur le dossier de test majeur, la
+bibliothèque est servie et le lien des fiches s'efface ; sur un dossier
+mineur, le lien des fiches reste et celui de la bibliothèque n'existe pas.
+
+- Conséquences : fragment `changelog.d/2026-10-25-ap-bibliotheque-contenant.md` ;
+  `docs/FEATURE_FLAGS.md` ; plan, fiche H82 et ligne de la place 10 (§3).
+
 ### D-359 — J3-12g : l'agenda du sommeil est complet au snapshot dès que la clôture l'a écrit — l'écart avec les routes est fermé pour l'agenda, sans changement de version ; les cartes qui en dérivent se réapprouvent (résidu de D-329 §2)
 
 - Date : 2026-10-24
