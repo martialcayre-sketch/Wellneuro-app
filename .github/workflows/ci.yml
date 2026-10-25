@@ -736,6 +736,39 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/biology_axes_v1_negatif.sql
 
+      # Liens analyte-axe signés (F79, D-351 §4-§5 ; D-348 §5) : niveau de
+      # preuve nul accepté et lettre hors A-D refusée ; double lien
+      # nutriment/axe refusé par le trigger, dans les deux ordres, sur un
+      # rapport et par UPDATE ; les cas permis passent. Transaction annulée.
+      - name: F79 analyte-axe links negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/biology_liens_axe_v1_negatif.sql
+
+      # La liste exacte des dix-sept liens (D-351 §2). Sur la base du CI, sans
+      # corpus, la migration n'écrit rien : le contrat y vérifie la structure
+      # et la cible vide. La liste elle-même se joue dans le banc suivant.
+      - name: F79 analyte-axe links exact-list contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/biology_liens_axe_v1.sql
+
+      # Rejeu de la migration F79 sur seize claims de fixture, dans une
+      # transaction annulée : dix-sept liens et liste exacte au positif ;
+      # échec total si un claim n'est plus conforme ; contrat rouge sur un
+      # lien en plus, en moins ou modifié. Puis cinq cas à deux sessions : le
+      # verrou sérialise en READ COMMITTED, REPEATABLE READ et SERIALIZABLE
+      # sont refusés. Tout se joue dans un clone jetable de wellneuro_ci,
+      # supprimé à la fin ; la base du CI ne reçoit rien, ce qu'un constat
+      # final vérifie. `node` et non `node --test` : l'extraction des bancs
+      # Node le jouerait avant la base.
+      - name: F79 analyte-axe links migration replay bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_LIENS_AXE_BANC_BASE: wellneuro_ci
+        run: node scripts/banc-rejeu-liens-axe-f79.test.mjs
+
       # Journal des gestes NABM en ajout seul et constat « aucun acte » (M-3c,
       # F54) : forme de chaque acte, journal figé, exclusion signature ↔
       # constat, millésime vu vérifié, et aucune signature ni constat sans

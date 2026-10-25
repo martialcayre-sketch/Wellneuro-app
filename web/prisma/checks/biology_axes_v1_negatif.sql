@@ -70,8 +70,13 @@ BEGIN
   -- et un besoin valide entre toujours. Sans ce second cas, une contrainte
   -- voisine qui étendrait la liste aux besoins rendrait tout lien de besoin
   -- impossible sans faire rougir ce contrat (passe Codex de #1671).
+  -- Le lien de nutriment se pose sur un second analyte : sur le premier, qui
+  -- porte déjà dix liens d'axe, le trigger de D-348 §5 le refuserait
+  -- (`biology_liens_axe_v1_negatif.sql`).
+  INSERT INTO biology_analytes (id, code, libelle, type_prelevement, source_provenance, niveau_completude, updated_at)
+  VALUES ('f52_n', 'BIO_TEST_F52_N', 'x', 'sang', 'saisie_praticien', 'partielle', now());
   INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, niveau_preuve)
-  VALUES ('f52_ok_nut', 'BIO_TEST_F52', 'nutriment', 'axe_inconnu', 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
+  VALUES ('f52_ok_nut', 'BIO_TEST_F52_N', 'nutriment', 'axe_inconnu', 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
   INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, niveau_preuve)
   VALUES ('f52_ok_besoin', 'BIO_TEST_F52', 'besoin', '1', 'bas_evocateur', 'WN-CL-0000-000', 'v1.0', 'C');
 

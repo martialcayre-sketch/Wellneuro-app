@@ -890,6 +890,31 @@ c'est-à-dire `superseded_at` nul, dans sa version). La migration
 n'insère un lien que si son claim remplit ces trois conditions, comme au §1. Retirer
 ou ajouter un lien exige une nouvelle décision, donc une nouvelle migration.
 
+**§6 — Application du véhicule (lot de migration, 2026-10-24).** Trois
+arbitrages du responsable sur questions à options, tous sur la
+recommandation de l'assistant :
+- **corpus vide, aucun lien.** La base du CI et les bases locales n'ont
+  aucun claim. Sur elles, la migration n'écrit rien et le dit en NOTICE.
+  Dès qu'un corpus existe, la migration écrit les dix-sept liens ou échoue
+  tout entière. Un banc rejoue la migration sur des claims de fixture
+  (`web/scripts/banc-rejeu-liens-axe-f79.test.mjs`) ;
+- **le double lien nutriment/axe est refusé à l'écriture** (applique
+  [[D-348]] §5). La même migration pose un trigger
+  (`biology_analyte_links_nutriment_axe_exclusifs`). Il refuse un lien
+  actif `nutriment` ou `axe` quand l'analyte, ou le rapport, porte déjà un
+  lien actif de l'autre cible ;
+- **ces écritures sont refusées hors READ COMMITTED** (arbitrage rendu
+  après la passe Codex). Sous REPEATABLE READ ou SERIALIZABLE, l'instantané
+  de la seconde transaction précède la validation de la première, et le
+  verrou ne suffit plus à exclure le double lien. Le trigger refuse donc une
+  écriture active `nutriment` ou `axe` sous ces isolations. Un banc à deux
+  sessions éprouve la sérialisation et le refus.
+
+La migration est `20261024160000_biology_liens_axe_signes_v1`. Le contrat de
+la liste exacte est `biology_liens_axe_v1.sql`, le contrat négatif
+`biology_liens_axe_v1_negatif.sql`. Le constat se fait par conteneur après la
+release, et se verse dans une PR de suivi.
+
 ### D-350 — t42 : une ancre de cycle rouvert déjà posée se date sur sa propre ligne, et non plus sur la réponse la plus récente (amende le cas 3 de `dateDeReference` ; applique D-118 et D-129)
 
 - Date : 2026-10-24
