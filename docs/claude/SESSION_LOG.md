@@ -11730,3 +11730,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, passe Codex (P0), merge, constat de la fiche après déploiement.
 
 **Ouvert.** Le signal d'un claim rejeté n'arrive qu'à la release-db suivante ; les liens nutriment sans écran.
+
+## 2026-10-25 — Restes de l'audit des instruments : D-354 confirmée, r3_09 et F9a détachés
+
+**Fait.** D-354 : « Confirmé le 2026-10-25 », le compte des besoins mesurés et « Compléter la mesure » restent en mode consultation. Plan : r3_09 (Q1) et F9a détachés de J3-12b, à faire sur l'onglet actuel (F59, H15, H64) ; r3_12 (Q7) reste avec J2-mom (H30). Documentation seule.
+
+**Écarté.** Masquer le compte ou le bouton (D-354 §2 tel qu'écrit) ; attendre J3-12b, car w n'a pas de date ; une phrase de résumé du radar.
+
+**Prochaine action.** Lot r3_09, puis F9a (textes relus avant le code).
+
+**Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
