@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-364 — Indicateurs hebdomadaires : chacun naît de sa propre décision clinique — nom, source, échelle, nature ; recueil au point d'étape, sans chiffre en retour ; aucune échelle proposée par l'assistant (lettre bf, instruction)
+### D-367 — Indicateurs hebdomadaires : chacun naît de sa propre décision clinique — nom, source, échelle, nature ; recueil au point d'étape, sans chiffre en retour ; aucune échelle proposée par l'assistant (lettre bf, instruction)
 
 - Date : 2026-10-24
 - Statut : accepté — cadre seul, sur arbitrage du responsable du 2026-10-24
@@ -49,7 +49,7 @@ la porte 18.
 reste ouverte jusqu'aux décisions par indicateur (critère de fin inchangé).
 Registre « Lettres à écrire » : bf, cadre écrit.
 
-### D-363 — La Boussole alimentaire quitte le portail : démontage côté patient, seule exception nommée à D-276 §1 ; amende D-250 (lettre h)
+### D-366 — La Boussole alimentaire quitte le portail : démontage côté patient, seule exception nommée à D-276 §1 ; amende D-250 (lettre h)
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
@@ -86,7 +86,7 @@ contrats ; l'extinction de `WN_C5_ENABLED` ; le sort des tables C5A.
 migration ; son critère de fin : page retirée et constatée, constat du §3
 versé, D-C5-01 à 04 soldées. Registre « Lettres à écrire » : h fait.
 
-### D-362 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; le flux est déclaré au registre et au patient, sans accord de sous-traitance, réserve écrite (lettre bg)
+### D-365 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; le flux est déclaré au registre et au patient, sans accord de sous-traitance, réserve écrite (lettre bg)
 
 - Date : 2026-10-24
 - Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
