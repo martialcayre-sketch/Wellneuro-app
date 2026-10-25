@@ -83,6 +83,14 @@ vi.mock('@/lib/correspondance/courrierComplementRemise', async importOriginal =>
   remettreCourrierComplement,
 }));
 
+// L'e-mail neutre (J3-12h lot 4) : la trace se réserve dans la transaction
+// (`correspondancePatient`, simulé plus haut), l'envoi part après le commit.
+const { annoncerDiffusion } = vi.hoisted(() => ({ annoncerDiffusion: vi.fn(async () => 'envoye' as const) }));
+vi.mock('@/lib/fiches-assiette/annonce', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/fiches-assiette/annonce')>()),
+  annoncerDiffusion,
+}));
+
 import { MOTIF_REMISE_REFUSEE, RemiseComplementRefusee } from '@/lib/correspondance/courrierComplementRemise';
 import { GET, POST } from './route';
 
@@ -143,6 +151,27 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
     }));
     expect(await res.json()).toEqual(expect.objectContaining({ courrierComplementRemis: true }));
   });
+
+  it('J3-12h lot 4 — un courrier remis SEUL est annoncé par l’e-mail neutre « document remis », une fois', async () => {
+    const res = await cliquer();
+    expect(res.status).toBe(200);
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+    expect(annoncerDiffusion).toHaveBeenCalledTimes(1);
+    expect(annoncerDiffusion).toHaveBeenCalledWith(
+      'PAT_1', expect.objectContaining({ gabarit: 'document_remis' }), 'p@wellneuro.fr',
+    );
+  });
+
+  it.each(['deja_remis', 'rien'] as const)(
+    'J3-12h lot 4 — remise « %s » : aucun document remis, aucun e-mail',
+    async issue => {
+      remettreCourrierComplement.mockResolvedValue(issue);
+      const res = await cliquer();
+      expect(res.status).toBe(200);
+      expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+      expect(annoncerDiffusion).not.toHaveBeenCalled();
+    },
+  );
 
   it('courrier requis non préparé : refus d’avant l’embranchement, motif en clair, rien d’écrit', async () => {
     apercuCourrierComplement.mockResolvedValue(MANQUANT);

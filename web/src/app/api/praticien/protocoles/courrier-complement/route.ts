@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
+import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import { lireEntreesGardeComplement } from '@/lib/clinical/entreesGardeComplement';
 import { courrierComplementRequis } from '@/lib/clinical/gardeComplementCible';
@@ -35,6 +36,13 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // base par son identifiant, jamais le payload d'une requête. Ses refus — format
 // d'identifiant, référence catalogue nulle, contrat — se disent en clair avant
 // toute insertion.
+//
+// ET LA VERSION EST CELLE QUE LE CLIC VALIDERA (revue CodeRabbit de #1691,
+// J3-12h lot 4) : la tête de fil (`resolveActiveVersion`) de la carte que
+// l'écran désigne, relue par le praticien (`practitioner_reviewed`). Une
+// version supplantée, en brouillon ou d'une autre carte préparerait un courrier
+// dont la liste n'est pas celle du clic — au mieux un clic bloqué, au pire une
+// correspondance qui ne dit pas de quelle version elle vient.
 //
 // LE COURRIER ET SA LISTE, OU RIEN (obligation du lot 2) :
 // `consignerCourrierComplement`, une seule transaction, accord relu sous
@@ -74,7 +82,7 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json<CourrierComplementApiResponse>({ ok: false, reason, error }, { status });
 }
 
-type PostBody = { idPatient?: unknown; protocolDraftId?: unknown; medecinLibelle?: unknown };
+type PostBody = { idPatient?: unknown; decisionCardId?: unknown; protocolDraftId?: unknown; medecinLibelle?: unknown };
 
 /** Une ligne par complément ciblé, dans l'ordre du protocole, sans doublon d'identité. */
 async function lignesDuCourrier(
@@ -121,9 +129,13 @@ export async function POST(req: Request) {
     if (!session) return echec('unauthenticated', 'Authentification requise.', 401);
 
     const idPatient = typeof body.idPatient === 'string' ? body.idPatient.trim() : '';
+    const decisionCardId = typeof body.decisionCardId === 'string' ? body.decisionCardId.trim() : '';
     const protocolDraftId = typeof body.protocolDraftId === 'string' ? body.protocolDraftId.trim() : '';
     if (!idPatient || idPatient.length > 64 || !ID_PATTERN.test(idPatient)) {
       return echec('invalid', 'Identifiant patient invalide.', 400);
+    }
+    if (!decisionCardId || decisionCardId.length > 200 || !ID_PATTERN.test(decisionCardId)) {
+      return echec('invalid', 'Carte de décision invalide.', 400);
     }
     if (!protocolDraftId || protocolDraftId.length > 300 || !ID_PATTERN.test(protocolDraftId)) {
       return echec('invalid', 'Version de protocole invalide.', 400);
@@ -145,13 +157,37 @@ export async function POST(req: Request) {
     });
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
-    // LA VERSION PERSISTÉE, de ce dossier.
-    const version = await prisma.protocolDraft.findUnique({
-      where: { id: protocolDraftId },
-      select: { idPatient: true, payload: true, inputHash: true, contractVersion: true },
+    // LA VERSION PERSISTÉE, de ce dossier et de cette carte.
+    const fil = await prisma.protocolDraft.findMany({
+      where: { idPatient, decisionCardId },
+      select: {
+        id: true,
+        inputHash: true,
+        supersedesDraftId: true,
+        createdAt: true,
+        status: true,
+        reviewedAt: true,
+        payload: true,
+        contractVersion: true,
+      },
     });
-    if (!version || version.idPatient !== idPatient) {
-      return echec('not_found', 'Version de protocole introuvable.', 404);
+    const version = fil.find(ligne => ligne.id === protocolDraftId);
+    if (!version) return echec('not_found', 'Version de protocole introuvable.', 404);
+    // La tête de fil, relue : celle que le clic de diffusion validera.
+    if (resolveActiveVersion(fil)?.id !== version.id) {
+      return echec(
+        'version_stale',
+        'Cette version n’est plus la version active du protocole : rechargez avant de préparer le courrier.',
+        409,
+      );
+    }
+    // La règle du clic (`validateDiffusionApproval`) : statut ET date de relecture.
+    if (version.status !== 'practitioner_reviewed' || version.reviewedAt === null) {
+      return echec(
+        'version_non_relue',
+        'La version active n’est pas encore relue : aucun courrier ne peut être préparé.',
+        409,
+      );
     }
     let actions;
     try {

@@ -63,6 +63,7 @@ describe('chaque page qui date une lecture sert « Votre lecture est datée »',
       'components/patient-companion/ComprehensionView.tsx',
       'components/patient-companion/PatientCompanionHome.tsx',
       'components/patient/MonBilan.tsx',
+      'components/patient/courrier-complement/CourrierComplementLecture.tsx',
       'components/patient/fiches-assiette/FicheRemiseLecture.tsx',
       'components/patient/lettre-adressage/CourrierMedecinLecture.tsx',
     ]);

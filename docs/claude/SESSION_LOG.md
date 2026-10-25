@@ -11700,3 +11700,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge après la release-db de t44 (#1692), observation du déploiement.
 
 **Ouvert.** La passe humaine E67 (file D) ; les défauts qu'axe ne classe pas en violation restent à F9a.
+
+## 2026-10-25 — J3-12h lot 4 : le courrier complément au portail, éteint (D-362)
+
+**Fait.** Écran « Courrier à remettre à votre médecin » (toutes les remises, impression `?remise=`), espèce de lecture `courrier_complement` (fil du jour, accusé, Mes échanges, Documents remis), annonce neutre au clic, préparation liée à la tête de fil relue, banc de fraîcheur. Prod (conteneur) : 28 consultations validées, 0 sans date. Condition 1 sur 4 levée ; drapeau éteint.
+
+**Écarté.** La dernière remise seule (perd le courrier d’une version qui retire un complément) ; « au prochain rendez-vous ».
+
+**Prochaine action.** CI, CodeRabbit, passe Codex P0, merge, constat du déploiement.
+
+**Ouvert.** P2-1 routé au plan (libellé « Fiches remises ») ; conditions 2 à 4.

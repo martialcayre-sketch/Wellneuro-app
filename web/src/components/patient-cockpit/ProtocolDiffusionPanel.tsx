@@ -171,20 +171,30 @@ function ApercuLettreAdressageBloc({
 export const AIDE_DESTINATAIRE_GROSSESSE =
   'Destinataire : le professionnel qui suit la grossesse, à défaut le médecin traitant.';
 
+/** Où le patient lit le courrier complément remis (J3-12h lot 4). */
+export const TEXTE_PORTAIL_COMPLEMENT = 'Il sera servi sur le portail du patient, à lire et à imprimer.';
+
 /**
  * LE COURRIER COMPLÉMENT AU CLIC ([[D-345]] §4-§7, J3-12h lot 3). Ce que le clic
  * fera, dit AVANT le geste : refusé (motif en clair), à préparer, remis par ce
  * clic, ou déjà remis. Le texte du courrier n'est pas recopié ici : il est
  * consigné dans l'onglet Correspondance. Rien ne s'affiche quand aucun
  * courrier n'est requis.
+ *
+ * L'ANNONCE (J3-12h lot 4) : un courrier qui part est servi au portail et
+ * annoncé par l'e-mail neutre du clic — dit ici, sauf si l'e-mail l'est déjà
+ * au-dessus (protocole, fiches, lettre) : un seul e-mail par clic.
  */
 function ApercuCourrierComplementBloc({
   complement,
+  annonceDejaDite,
   preparation,
   preparationErreur,
   onPreparer,
 }: {
   complement: { apercu: ApercuCourrierComplement; medecinTraitant: string | null };
+  /** L'e-mail du clic est déjà annoncé au-dessus : un seul par clic. */
+  annonceDejaDite: boolean;
   preparation: 'idle' | 'saving' | 'error';
   preparationErreur: string | null;
   onPreparer?: (medecinLibelle: string) => void;
@@ -207,6 +217,12 @@ function ApercuCourrierComplementBloc({
           ? `Le courrier du ${dateLisible(apercu.courrier.consigneLe)} sera remis au patient avec ce protocole, tel qu’il a été consigné.`
           : apercu.motif}
       </p>
+      {apercu.etat === 'part' && apercu.courrier && (
+        <>
+          <p className="mt-2 text-base text-foreground">{TEXTE_PORTAIL_COMPLEMENT}</p>
+          {!annonceDejaDite && <p className="mt-2 text-sm text-muted-foreground">{TEXTE_ANNONCE_LETTRE}</p>}
+        </>
+      )}
       {apercu.etat === 'manquant' && onPreparer && (
         <form
           className="mt-3 grid gap-2"
@@ -474,6 +490,11 @@ export function ProtocolDiffusionPanel({
         <ApercuCourrierComplementBloc
           key={`${courrierComplement.apercu.etat}:${courrierComplement.medecinTraitant ?? ''}`}
           complement={courrierComplement}
+          annonceDejaDite={
+            annonceProtocoleParEmail
+            || Boolean(fiches && annonceParEmail && fichesARemettre(fiches))
+            || Boolean(lettre && !lettre.dejaRemise)
+          }
           preparation={preparationComplement}
           preparationErreur={preparationComplementErreur}
           onPreparer={onPreparerCourrierComplement}

@@ -17,6 +17,12 @@
 //   5. Collation : des identifiants de casse mélangée se trient en ordre
 //      d'octets des deux côtés ; une référence catalogue nulle est refusée en
 //      clair en TypeScript ET par le trigger.
+//   6. LA FENÊTRE DE FRAÎCHEUR (J3-12h lot 4, routée de la revue CodeRabbit de
+//      #1691), par les vrais lecteurs de la garde : aucune déclaration
+//      n'expire (un « oui » de 2019 tient), seul un « non » postérieur du
+//      praticien lève, un « oui » non daté ne se lève jamais, et une
+//      déclaration posée après un aperçu « non requis » est vue par l'aperçu
+//      SUIVANT, qui bloque le clic.
 //
 // SAUTÉ PAR DÉFAUT (T1, T2) : il écrit et commet. Il ne tourne que si
 // `WN_COURRIER_COMPLEMENT_BANC_BASE` nomme la base de `DATABASE_URL`, sur un
@@ -83,7 +89,9 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
   let consigner: typeof import('./courrierComplementConsignation').consignerCourrierComplement;
   let prisma: typeof import('@/lib/prisma').prisma;
   let remettre: typeof import('./courrierComplementRemise').remettreCourrierComplement;
+  let apercu: typeof import('./courrierComplementRemise').apercuCourrierComplement;
   let Refusee: typeof import('./courrierComplementRemise').RemiseComplementRefusee;
+  let ecrirePhysio: typeof import('@/lib/physio-traitements/ecriture').ecrirePhysio;
   let observateur: pg.Client;
   let numero = 0;
 
@@ -95,6 +103,37 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
       [`cons_banc_ccr_${RUN.toLowerCase()}_${numero}`, idPatient, PRATICIEN],
     );
   }
+
+  /** Une anamnèse ENVOYÉE déclarant une grossesse, à la date d'envoi donnée (`null` = non datée). */
+  async function anamneseGrossesseDatee(idPatient: string, dateValidation: string | null): Promise<void> {
+    await observateur.query(
+      `INSERT INTO consultations (id, id_consultation, id_patient, email_patient, praticien_email, statut, anamnese, date_validation, updated_at)
+       VALUES ($1, $1, $2, 'sophie.nicola+banc@example.test', $3, 'validee', '{"etat_grossesse": "Oui"}'::jsonb, $4::timestamptz, CURRENT_TIMESTAMP)`,
+      [`cons_banc_ccr_datee_${RUN.toLowerCase()}_${numero}`, idPatient, PRATICIEN, dateValidation],
+    );
+  }
+
+  /**
+   * Une ligne du PRATICIEN sur la fiche physiologique, par son VRAI écrivain
+   * (date posée par la base). Grossesse et allaitement sont réservés au
+   * praticien (contrainte `donnees_physiologiques_criteres_du_patient`).
+   */
+  async function declarer(idPatient: string, critere: 'grossesse' | 'allaitement', reponse: string) {
+    await prisma.$transaction(async tx => {
+      const tete = await tx.donneePhysiologique.findFirst({
+        where: { idPatient, critere }, orderBy: { ordre: 'desc' }, select: { id: true },
+      });
+      await ecrirePhysio(
+        tx,
+        idPatient,
+        { acte: 'pose', critere, remplace: tete?.id ?? null, reponse, mesure: null, mesureLe: null },
+        { source: 'praticien', email: PRATICIEN },
+      );
+    });
+  }
+
+  const apercuDu = (idPatient: string) =>
+    apercu(prisma, { idPatient, actions: ACTIONS, contractVersion: V4, maintenantMs: Date.now() });
 
   /** Un dossier neuf, son protocole V4 approuvé et l'accord de partage. */
   async function dossier(actions: ProtocolAction[] = ACTIONS): Promise<{ idPatient: string; idApprobation: string }> {
@@ -148,7 +187,12 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     await observateur.connect();
     ({ consignerCourrierComplement: consigner } = await import('./courrierComplementConsignation'));
     ({ prisma } = await import('@/lib/prisma'));
-    ({ remettreCourrierComplement: remettre, RemiseComplementRefusee: Refusee } = await import('./courrierComplementRemise'));
+    ({
+      remettreCourrierComplement: remettre,
+      apercuCourrierComplement: apercu,
+      RemiseComplementRefusee: Refusee,
+    } = await import('./courrierComplementRemise'));
+    ({ ecrirePhysio } = await import('@/lib/physio-traitements/ecriture'));
   });
 
   afterAll(async () => {
@@ -385,5 +429,38 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     });
     expect(consigne).toMatchObject({ ok: false, raison: 'garde_mineur' });
     expect(await courriers(idPatient)).toBe(0);
+  });
+
+  it('FRAÎCHEUR — un « oui » envoyé en 2019 tient : aucune déclaration n’expire, le courrier est requis', async () => {
+    const { idPatient } = await dossier();
+    await anamneseGrossesseDatee(idPatient, '2019-01-01T00:00:00Z');
+    expect(await apercuDu(idPatient)).toMatchObject({ etat: 'manquant', statut: 'requis', grossesseDeclenche: true });
+  });
+
+  it('FRAÎCHEUR — ce « oui » ancien, le praticien le lève par un « non » postérieur (les deux critères)', async () => {
+    const { idPatient } = await dossier();
+    await anamneseGrossesseDatee(idPatient, '2019-01-01T00:00:00Z');
+    await declarer(idPatient, 'grossesse', 'non');
+    await declarer(idPatient, 'allaitement', 'non');
+    expect(await apercuDu(idPatient)).toMatchObject({ etat: 'non_requis', statut: 'non_requis' });
+  });
+
+  it('FRAÎCHEUR — un « oui » envoyé sans date d’envoi ne se lève jamais, même par un « non » du praticien', async () => {
+    const { idPatient } = await dossier();
+    await anamneseGrossesseDatee(idPatient, null);
+    await declarer(idPatient, 'grossesse', 'non');
+    await declarer(idPatient, 'allaitement', 'non');
+    expect(await apercuDu(idPatient)).toMatchObject({ etat: 'manquant', statut: 'requis', grossesseDeclenche: true });
+  });
+
+  it('FRAÎCHEUR — une déclaration posée après un aperçu « non requis » : l’aperçu suivant la voit et bloque le clic', async () => {
+    const { idPatient } = await dossier();
+    await declarer(idPatient, 'grossesse', 'non');
+    await declarer(idPatient, 'allaitement', 'non');
+    expect(await apercuDu(idPatient)).toMatchObject({ etat: 'non_requis' });
+    // Le patient envoie ensuite une anamnèse qui déclare une grossesse (la
+    // fiche physiologique, elle, réserve ce critère au praticien).
+    await anamneseGrossesseDatee(idPatient, new Date().toISOString());
+    expect(await apercuDu(idPatient)).toMatchObject({ etat: 'manquant', statut: 'requis', grossesseDeclenche: true });
   });
 });
