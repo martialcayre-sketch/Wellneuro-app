@@ -9,6 +9,8 @@ import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
 import { lettreAdressagePatientOuverte } from '@/lib/correspondance/lettreAdressageRemise';
 import { lettreALire } from '@/lib/correspondance/lettreServicePatient';
+import { courrierComplementOuvert } from '@/lib/correspondance/courrierComplementRemise';
+import { courrierComplementALire } from '@/lib/correspondance/courrierComplementServicePatient';
 import { lecturesAttendues, type EspeceLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
@@ -179,13 +181,23 @@ async function lettresServies(idPatient: string) {
   return lettreALire(idPatient);
 }
 
+/**
+ * Le courrier à remettre au médecin avant un complément ciblé SERVI à ce
+ * patient ([[D-345]], J3-12h lot 4). `null` = surface fermée par
+ * `WN_COURRIER_COMPLEMENT`, relu ici après l'identité.
+ */
+async function courriersComplementServis(idPatient: string) {
+  if (!courrierComplementOuvert()) return null;
+  return courrierComplementALire(idPatient);
+}
+
 export async function GET(req: Request): Promise<NextResponse<PortailLecturesResponse>> {
   const requestContext = createRequestContext(req);
   const garde = await garderAcces(req, requestContext, 'GET');
   if (garde.refus) return garde.refus;
 
   try {
-    const [documents, fiches, lettres, dejaLues] = await Promise.all([
+    const [documents, fiches, lettres, courriersComplement, dejaLues] = await Promise.all([
       documentsCourants(garde.patient.idPatient),
       // Une panne des fiches tait LEURS lectures, pas celles du bilan et de la
       // synthèse : le fil retombe sur ce qu'il sait. Seule la classe de
@@ -198,6 +210,10 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
         console.warn('[portail/lectures] courrier pour le médecin illisible', ...classeEtCode(erreur));
         return null;
       }),
+      courriersComplementServis(garde.patient.idPatient).catch((erreur: unknown) => {
+        console.warn('[portail/lectures] courrier à remettre au médecin illisible', ...classeEtCode(erreur));
+        return null;
+      }),
       prisma.portailLecturePatient.findMany({
         where: { idPatient: garde.patient.idPatient },
         select: { espece: true, idObjet: true },
@@ -207,7 +223,13 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
     return withCorrelationHeader(
       NextResponse.json<PortailLecturesResponse>({
         ok: true,
-        lectures: lecturesAttendues({ ...documents, fichesServies: fiches, lettresServies: lettres, dejaLues }),
+        lectures: lecturesAttendues({
+          ...documents,
+          fichesServies: fiches,
+          lettresServies: lettres,
+          courriersComplementServis: courriersComplement,
+          dejaLues,
+        }),
       }),
       requestContext,
     );
@@ -236,7 +258,9 @@ export async function GET(req: Request): Promise<NextResponse<PortailLecturesRes
  */
 type EspeceConsignee = EspeceLecture | 'protocole';
 
-const ESPECES: readonly EspeceConsignee[] = ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage', 'protocole'];
+const ESPECES: readonly EspeceConsignee[] = [
+  'bilan', 'synthese', 'fiche_assiette', 'lettre_adressage', 'courrier_complement', 'protocole',
+];
 
 function especeValide(valeur: unknown): valeur is EspeceConsignee {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
@@ -335,6 +359,8 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
         servis = ((await fichesServies(garde.patient.idPatient)) ?? []).map(fiche => fiche.id);
       } else if (espece === 'lettre_adressage') {
         servis = ((await lettresServies(garde.patient.idPatient)) ?? []).map(lettre => lettre.id);
+      } else if (espece === 'courrier_complement') {
+        servis = ((await courriersComplementServis(garde.patient.idPatient)) ?? []).map(courrier => courrier.id);
       } else {
         const documents = await documentsCourants(garde.patient.idPatient);
         servis =

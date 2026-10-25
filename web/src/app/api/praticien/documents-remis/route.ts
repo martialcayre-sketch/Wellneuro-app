@@ -31,7 +31,7 @@ const LONGUEUR_MAX_ID = 64;
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/documents-remis';
 
-/** Les cinq espèces du CHECK de la table : les quatre documents et le protocole ([[D-315]]). */
+/** Les six espèces du CHECK de la table : les cinq documents et le protocole ([[D-315]], [[D-345]]). */
 export type EspeceRemise = EspeceLecture | 'protocole';
 
 export type DocumentRemis = {
@@ -62,6 +62,7 @@ const LIBELLES: Record<Exclude<EspeceRemise, 'fiche_assiette'>, string> = {
   bilan: 'Bilan',
   synthese: 'Ce que j’ai compris de vous',
   lettre_adressage: 'Courrier pour le médecin',
+  courrier_complement: 'Courrier avant un complément ciblé',
   protocole: 'Protocole',
 };
 
@@ -87,7 +88,7 @@ export async function GET(req: Request): Promise<NextResponse<DocumentsRemisResp
       return echec('forbidden', 'Patient non accessible pour ce praticien.', 403);
     }
 
-    const [envois, syntheses, fiches, lettres, approbations, lectures] = await Promise.all([
+    const [envois, syntheses, fiches, lettres, courriersComplement, approbations, lectures] = await Promise.all([
       // Les envois RÉUSSIS, y compris ceux dont la synthèse a été rejetée
       // depuis : « remis » est le geste du praticien (amendement de D-297), pas
       // ce que le portail sert aujourd'hui — `whereEnvoiVisible` répond à
@@ -105,6 +106,7 @@ export async function GET(req: Request): Promise<NextResponse<DocumentsRemisResp
         select: { id: true, remiseLe: true, version: { select: { plateCode: true } } },
       }),
       prisma.lettreAdressageRemise.findMany({ where: { idPatient }, select: { id: true, remiseLe: true } }),
+      prisma.courrierComplementRemise.findMany({ where: { idPatient }, select: { id: true, remiseLe: true } }),
       prisma.protocolDiffusionApproval.findMany({ where: { idPatient }, select: { id: true, approvedAt: true } }),
       // Trois colonnes, et rien d'autre : ni compte, ni agrégat.
       prisma.portailLecturePatient.findMany({ where: { idPatient }, select: { espece: true, idObjet: true, luLe: true } }),
@@ -129,6 +131,7 @@ export async function GET(req: Request): Promise<NextResponse<DocumentsRemisResp
         ),
       ),
       ...lettres.map(l => documenter('lettre_adressage', l.id, LIBELLES.lettre_adressage, l.remiseLe)),
+      ...courriersComplement.map(c => documenter('courrier_complement', c.id, LIBELLES.courrier_complement, c.remiseLe)),
       ...approbations.map(a => documenter('protocole', a.id, LIBELLES.protocole, a.approvedAt)),
     ].sort((a, b) => (a.remisLe === b.remisLe ? a.idObjet.localeCompare(b.idObjet) : b.remisLe.localeCompare(a.remisLe)));
 

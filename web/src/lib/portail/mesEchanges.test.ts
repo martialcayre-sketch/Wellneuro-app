@@ -35,6 +35,7 @@ describe('entreesMesEchanges', () => {
         bilan: { id: 'env_1', envoyeLe: new Date('2026-10-01T08:00:00Z') },
         fiches: [{ idRemise: 'rem 1', libelle: 'Petit-déjeuner', remiseLe: new Date('2026-10-02T08:00:00Z') }],
         lettre: { id: 'let_1', remiseLe: new Date('2026-10-03T08:00:00Z') },
+        courriersComplement: [{ id: 'ccr_1', remiseLe: new Date('2026-10-03T12:00:00Z') }],
         protocole: { approbationId: 'app_1', approuveLe: new Date('2026-10-04T08:00:00Z') },
         questionnaires: [
           { idAssignation: 'ASS_1', titre: 'Enquête alimentaire', transmisLe: new Date('2026-10-05T08:00:00Z') },
@@ -52,6 +53,7 @@ describe('entreesMesEchanges', () => {
       ['transmis', 'Compte rendu d’analyses', 'comptes-rendus'],
       ['transmis', 'Questionnaire « Enquête alimentaire »', 'questionnaires/ASS_1'],
       ['remis', 'Votre protocole', 'questionnaires'],
+      ['remis', 'Le courrier à remettre à votre médecin', 'courrier-complement'],
       ['remis', 'Le courrier pour votre médecin', 'courrier-medecin'],
       ['remis', 'Votre fiche — Petit-déjeuner', 'fiches/rem%201'],
       ['remis', 'Votre bilan', 'bilan'],

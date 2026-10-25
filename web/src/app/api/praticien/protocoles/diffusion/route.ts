@@ -146,17 +146,23 @@ function refusComplement(motif: string): NextResponse<PostResponse> {
  * servira (aucun blocage : dossier suivi, contrat patient accepté) ; sinon
  * celle des documents remis ; sinon aucune. Une version déjà diffusée, même
  * redevenue active après une autre, n'annonce pas le protocole.
+ *
+ * Le courrier complément remis par CE clic est un document remis ([[D-345]],
+ * J3-12h lot 4) : son drapeau ouvre aussi sa lecture au portail, il est donc
+ * toujours annoncé, comme la lettre ([[D-262]] B3). Drapeau fermé, la remise
+ * vaut `rien` et l'annonce est celle d'avant.
  */
 function gabaritAnnonceDuClic(entrees: {
   versionNeuve: boolean;
   protocoleServable: boolean;
   fichesRemises: number;
   lettreRemise: number;
+  courrierComplementRemis: boolean;
 }): GabaritAnnonce | null {
   if (annonceProtocoleOuverte() && entrees.versionNeuve && entrees.protocoleServable) {
     return TYPES_CORRESPONDANCE_PATIENT.protocoleDiffuse;
   }
-  if (annonceDue(entrees.fichesRemises) || entrees.lettreRemise > 0) {
+  if (annonceDue(entrees.fichesRemises) || entrees.lettreRemise > 0 || entrees.courrierComplementRemis) {
     return TYPES_CORRESPONDANCE_PATIENT.documentRemis;
   }
   return null;
@@ -554,6 +560,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
           protocoleServable: apercu.blocage === null,
           fichesRemises,
           lettreRemise,
+          courrierComplementRemis: remiseComplement === 'remis',
         });
         const annonce = gabarit ? await reserverAnnonce(tx, idPatient, gabarit) : null;
         return { perime: false as const, approvalId, unchanged, fichesRemises, lettreRemise, annonce, remiseComplement };

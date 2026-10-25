@@ -30,15 +30,16 @@
 // `portailLecturesPatient.guard.test.ts` — si elle tombait, ce module ferait
 // disparaître un texte que le patient n'a jamais vu.
 
-export type EspeceLecture = 'bilan' | 'synthese' | 'fiche_assiette' | 'lettre_adressage';
+export type EspeceLecture = 'bilan' | 'synthese' | 'fiche_assiette' | 'lettre_adressage' | 'courrier_complement';
 
 export type LectureAttendue = {
   espece: EspeceLecture;
   /**
    * L'identifiant de la VERSION : `BookletEnvoi.id`, `SyntheseComprehension.id`,
-   * `FicheAssietteRemise.id` ou `LettreAdressageRemise.id` — une remise est
-   * append-only, et une version neuve de fiche ou de lettre est une remise
-   * neuve ([[D-251]] §8, [[D-262]]).
+   * `FicheAssietteRemise.id`, `LettreAdressageRemise.id` ou
+   * `CourrierComplementRemise.id` — une remise est append-only, et une version
+   * neuve de fiche, de lettre ou de courrier est une remise neuve ([[D-251]]
+   * §8, [[D-262]], [[D-345]]).
    */
   idObjet: string;
   /** Quand le praticien l'a remise. Sert à ORDONNER, jamais à compter. */
@@ -80,6 +81,14 @@ export type SourcesLectures = {
    * lecture en échec : aucune lecture n'en sort.
    */
   lettresServies?: { id: string; remiseLe: Date }[] | null;
+  /**
+   * Le courrier à remettre au médecin avant un complément ciblé SERVI
+   * ([[D-345]], J3-12h lot 4) — la remise en cours, quand son texte part.
+   *
+   * `null` ou absent = surface fermée par `WN_COURRIER_COMPLEMENT`, ou lecture
+   * en échec : aucune lecture n'en sort.
+   */
+  courriersComplementServis?: { id: string; remiseLe: Date }[] | null;
   /** Ce que `portail_lectures_patient` porte déjà pour ce dossier. */
   dejaLues: { espece: string; idObjet: string }[];
 };
@@ -112,6 +121,9 @@ export function lecturesAttendues(sources: SourcesLectures): LectureAttendue[] {
   for (const lettre of sources.lettresServies ?? []) {
     toutes.push({ espece: 'lettre_adressage', idObjet: lettre.id, remiseLe: lettre.remiseLe.toISOString() });
   }
+  for (const courrier of sources.courriersComplementServis ?? []) {
+    toutes.push({ espece: 'courrier_complement', idObjet: courrier.id, remiseLe: courrier.remiseLe.toISOString() });
+  }
   for (const synthese of sources.synthesesPubliees ?? []) {
     toutes.push({
       espece: 'synthese',
@@ -135,6 +147,7 @@ function comparer(a: string, b: string): number {
 export function ctaLecture(espece: EspeceLecture): string {
   if (espece === 'fiche_assiette') return 'Lire la fiche remise par mon praticien';
   if (espece === 'lettre_adressage') return 'Lire le courrier pour mon médecin';
+  if (espece === 'courrier_complement') return 'Lire le courrier à remettre à mon médecin';
   return espece === 'bilan' ? 'Lire mon bilan' : 'Lire ce que mon praticien a compris';
 }
 
@@ -145,5 +158,6 @@ export function ctaLecture(espece: EspeceLecture): string {
 export function lienLecture(token: string, lecture: Pick<LectureAttendue, 'espece' | 'idObjet'>): string {
   if (lecture.espece === 'fiche_assiette') return `/portail/${token}/fiches/${encodeURIComponent(lecture.idObjet)}`;
   if (lecture.espece === 'lettre_adressage') return `/portail/${token}/courrier-medecin`;
+  if (lecture.espece === 'courrier_complement') return `/portail/${token}/courrier-complement`;
   return `/portail/${token}/${lecture.espece === 'bilan' ? 'bilan' : 'comprehension'}`;
 }

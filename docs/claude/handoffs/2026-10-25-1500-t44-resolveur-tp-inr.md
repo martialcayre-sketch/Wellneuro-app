@@ -22,8 +22,8 @@ proposent leur fiche à l'import. Préalable rempli : la migration
   `2026-10-25T10:52:31.000Z`. Elle remplace celle de D-356 (`D-363`).
 - Numéro : décidé au merge, sur arbitrage du responsable. D-362 est
   revendiqué par #1701 et D-361 à D-363 par #1693, déjà en collision avec
-  main. D-363 est provisoire et suppose #1701 mergée d'abord. Il se
-  revérifie libre au commit et juste avant le merge.
+  main. #1701 mergée (D-362, ac835c41), main fusionné : D-363 tient la
+  suite. Il se revérifie libre juste avant le merge.
 
 ## Fichiers modifiés
 
@@ -57,7 +57,7 @@ proposent leur fiche à l'import. Préalable rempli : la migration
 
 ## Prochaine action exacte
 
-#1701 mergée, fusionner main, rejouer T3, CI, CodeRabbit sur la tête,
+Rejouer T3, CI, CodeRabbit sur la tête,
 vérifier le numéro, merge, observer le déploiement. Puis faire le constat par
 conteneur dès qu'un compte rendu avec TP ou INR arrive.
 

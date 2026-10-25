@@ -11701,12 +11701,22 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** La passe humaine E67 (file D) ; les défauts qu'axe ne classe pas en violation restent à F9a.
 
+## 2026-10-25 — J3-12h lot 4 : le courrier complément au portail, éteint (D-362)
+
+**Fait.** Écran « Courrier à remettre à votre médecin » (toutes les remises, impression `?remise=`), espèce de lecture `courrier_complement` (fil du jour, accusé, Mes échanges, Documents remis), annonce neutre au clic, préparation liée à la tête de fil relue, banc de fraîcheur. Prod (conteneur) : 28 consultations validées, 0 sans date. Condition 1 sur 4 levée ; drapeau éteint.
+
+**Écarté.** La dernière remise seule (perd le courrier d’une version qui retire un complément) ; « au prochain rendez-vous ».
+
+**Prochaine action.** CI, CodeRabbit, passe Codex P0, merge, constat du déploiement.
+
+**Ouvert.** P2-1 routé au plan (libellé « Fiches remises ») ; conditions 2 à 4.
+
 ## 2026-10-25 — t44, second lot : TP et INR au résolveur (D-363)
 
 **Fait.** Migration de #1692 constatée, préalable de D-361 §6 rempli. « Taux de prothrombine » → `BIO_TP` et « INR » → `BIO_INR` sont au résolveur, sans synonyme ; le temps de Quick reste « inconnu ». La re-signature (177 entrées, SHA `b4007b9c…`) a été posée sur l'instruction du responsable et remplace celle de D-356. Un banc vérifie qu'un INR sans unité est résolu.
 
 **Écarté.** Les synonymes (« TP » nu, « Temps de prothrombine ») ; D-364 réservé d'avance (le contrôle refuse un trou) ; D-362 pris de force sur #1701.
 
-**Prochaine action.** Merge de #1701, fusion de main, T3, CI, CodeRabbit, merge, déploiement.
+**Prochaine action.** #1701 mergée, main fusionné : T3, CI, CodeRabbit, merge, déploiement.
 
 **Ouvert.** Le numéro, qui dépend de l'ordre des merges ; le constat des prochains imports de TP et d'INR.

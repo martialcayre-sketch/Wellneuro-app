@@ -8,6 +8,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     syntheseComprehension: { findMany: vi.fn() },
     ficheAssietteRemise: { findMany: vi.fn() },
     lettreAdressageRemise: { findMany: vi.fn() },
+    courrierComplementRemise: { findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     // `count` est moqué EXPRÈS : sans lui, l'assertion « rien n'est compté »
     // ne pourrait pas être écrite.
@@ -39,6 +40,7 @@ describe('GET /api/praticien/documents-remis (D-297 §5)', () => {
     prisma.syntheseComprehension.findMany.mockResolvedValue([]);
     prisma.ficheAssietteRemise.findMany.mockResolvedValue([]);
     prisma.lettreAdressageRemise.findMany.mockResolvedValue([]);
+    prisma.courrierComplementRemise.findMany.mockResolvedValue([]);
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     prisma.portailLecturePatient.findMany.mockResolvedValue([]);
   });
@@ -103,19 +105,36 @@ describe('GET /api/praticien/documents-remis (D-297 §5)', () => {
     expect(docs.find(d => d.espece === 'lettre_adressage')).toMatchObject({ lu: true, luLe: '2026-10-03' });
   });
 
-  it('les cinq espèces sont listées, la plus récente remise en haut', async () => {
+  it('les six espèces sont listées, la plus récente remise en haut', async () => {
     prisma.bookletEnvoi.findMany.mockResolvedValue([{ id: 'env', dateEnvoi: new Date('2026-10-01T08:00:00Z') }]);
     prisma.syntheseComprehension.findMany.mockResolvedValue([{ id: 'syn', publieeLe: new Date('2026-10-02T08:00:00Z') }]);
     prisma.ficheAssietteRemise.findMany.mockResolvedValue([
       { id: 'fic', remiseLe: new Date('2026-10-03T08:00:00Z'), version: { plateCode: 'code_inconnu' } },
     ]);
     prisma.lettreAdressageRemise.findMany.mockResolvedValue([{ id: 'let', remiseLe: new Date('2026-10-04T08:00:00Z') }]);
+    prisma.courrierComplementRemise.findMany.mockResolvedValue([{ id: 'ccr', remiseLe: new Date('2026-10-04T12:00:00Z') }]);
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([{ id: 'pro', approvedAt: new Date('2026-10-05T08:00:00Z') }]);
 
     const docs = await documents(await GET(requete()));
-    expect(docs.map(d => d.espece)).toEqual(['protocole', 'lettre_adressage', 'fiche_assiette', 'synthese', 'bilan']);
+    expect(docs.map(d => d.espece)).toEqual([
+      'protocole', 'courrier_complement', 'lettre_adressage', 'fiche_assiette', 'synthese', 'bilan',
+    ]);
     expect(docs.find(d => d.espece === 'fiche_assiette')?.libelle).toBe('Fiche d’assiette — code_inconnu');
+    expect(docs.find(d => d.espece === 'courrier_complement')?.libelle).toBe('Courrier avant un complément ciblé');
     expect(docs[0].remisLe).toBe('2026-10-05T08:00:00.000Z');
+  });
+
+  it('J3-12h lot 4 — le courrier complément porte SA lecture, que la lettre d’adressage n’acquitte pas', async () => {
+    prisma.courrierComplementRemise.findMany.mockResolvedValue([{ id: 'x2', remiseLe: new Date('2026-10-25T08:00:00Z') }]);
+    prisma.portailLecturePatient.findMany.mockResolvedValue([
+      { espece: 'lettre_adressage', idObjet: 'x2', luLe: new Date('2026-10-25T00:00:00Z') },
+    ]);
+    expect((await documents(await GET(requete()))).find(d => d.espece === 'courrier_complement')?.lu).toBe(false);
+    prisma.portailLecturePatient.findMany.mockResolvedValue([
+      { espece: 'courrier_complement', idObjet: 'x2', luLe: new Date('2026-10-25T00:00:00Z') },
+    ]);
+    expect((await documents(await GET(requete()))).find(d => d.espece === 'courrier_complement'))
+      .toMatchObject({ lu: true, luLe: '2026-10-25' });
   });
 
   it('ne lit que les versions REMISES : bilan envoyé (même rejeté depuis), synthèse publiée', async () => {

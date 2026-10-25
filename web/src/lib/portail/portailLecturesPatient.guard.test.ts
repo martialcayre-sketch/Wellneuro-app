@@ -98,12 +98,15 @@ describe('la prémisse de la migration : l’identifiant EST la version', () => 
   // remise neuve. Réécrire une remise en place acquitterait un texte jamais lu.
   // Même prémisse pour le courrier pour le médecin ([[D-262]], LOT-03a), et pour
   // le protocole ([[D-315]] §2) : sa lecture porte l'identifiant de la DIFFUSION
-  // approuvée, et une nouvelle diffusion est une ligne neuve.
+  // approuvée, et une nouvelle diffusion est une ligne neuve. Et pour le
+  // courrier complément ([[D-345]], J3-12h lot 4) : sa lecture porte
+  // l'identifiant de la REMISE, et un courrier neuf est une remise neuve.
   const APPEND_ONLY = [
     'syntheseComprehension',
     'bookletEnvoi',
     'ficheAssietteRemise',
     'lettreAdressageRemise',
+    'courrierComplementRemise',
     'protocolDiffusionApproval',
   ];
   const ECRITURES_EN_PLACE = ['update', 'updateMany', 'upsert', 'updateManyAndReturn'];
