@@ -175,9 +175,14 @@ function contratSur(sql) {
 // programme. Cherchés dans le texte ENTIER, corps entre dollars compris
 // (troisième passe Codex de #1687 ; refus d'une erreur, pas d'un adversaire,
 // voir l'en-tête).
+// Les quatre motifs sont cherchés dans le texte brut, comme l'annonce ce
+// commentaire : `instructions()` masque les corps entre dollars, et un
+// `CREATE EXTENSION` ou un `TO PROGRAM` logé dans un bloc DO lui échappait
+// (revue CodeRabbit de 22f60322).
 function sansSortie(sql) {
   return !/\b(dblink\w*|postgres_fdw)\b/i.test(sql)
-    && !instructions(sql).some((x) => /^CREATE (OR REPLACE )?EXTENSION\b/.test(x) || /\bPROGRAM\b/.test(x));
+    && !/\bCREATE\s+(OR\s+REPLACE\s+)?EXTENSION\b/i.test(sql)
+    && !/\b(TO|FROM)\s+PROGRAM\b/i.test(sql);
 }
 // La garde s'éprouve elle-même avant toute connexion : les contre-exemples
 // des passes Codex, et leurs voisins, doivent être refusés.
@@ -187,6 +192,8 @@ const MUTATIONS_SORTIE = [
   ["migration + dblink_exec dans un bloc DO", () => sansSortie(`${MIGRATION}\nDO $x$ BEGIN PERFORM dblink_exec('dbname=x', 'SELECT 1'); END $x$;\n`)],
   ['contrat + « CREATE EXTENSION postgres_fdw; »', () => sansSortie(avantRollback('CREATE EXTENSION postgres_fdw;'))],
   ["migration + « COPY t TO PROGRAM 'x'; »", () => sansSortie(`${MIGRATION}\nCOPY t TO PROGRAM 'x';\n`)],
+  ['migration + CREATE EXTENSION dans un bloc DO', () => sansSortie(`${MIGRATION}\nDO $x$ BEGIN EXECUTE 'CREATE EXTENSION dblink'; END $x$;\n`.replace('dblink', 'plpython3u'))],
+  ["contrat + COPY … TO PROGRAM dans un bloc DO", () => sansSortie(avantRollback("DO $x$ BEGIN EXECUTE 'COPY t TO PROGRAM ''x'''; END $x$;"))],
 ];
 for (const [nom, sur] of MUTATIONS_SORTIE) {
   if (sur()) throw new Error(`REFUS : la garde de sortie du clone laisse passer la mutation « ${nom} ».`);
