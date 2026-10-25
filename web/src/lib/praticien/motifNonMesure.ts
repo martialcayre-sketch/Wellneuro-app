@@ -7,6 +7,13 @@
 // décrit l'état du RECUEIL tel que le calcul l'a lu (Q5 : les routes, pas le
 // snapshot) : il ne juge aucune valeur et ne se lit pas comme une relance.
 //
+// L'ÉCART AVEC LA DÉCISION (r3_10, Q5 ; libellés relus et validés par le
+// responsable le 2026-10-25, avant le code). Les routes jugent les items que
+// chaque source lit, le snapshot la passation entière ([[D-329]] §2, résidu
+// laissé par [[D-359]] §3). L'écart va dans un seul sens — les routes
+// mesurent, la décision écarte —, donc il ne touche jamais un besoin non
+// mesuré : il se dit sous la VALEUR, sur son propre repli, pas sous le tiret.
+//
 // Six motifs, un par étage du code qui rend `null` (`score.ts`,
 // `depuisPrisma.ts`), plus B2 « hors score » et les deux branches résiduelles
 // du moteur. Les codes sont produits par `lib/equilibre/motifsBesoins.ts`, sur
@@ -46,7 +53,7 @@ const LIBELLES: Record<MotifNonMesure, string> = {
   aucune_passation: 'aucune passation exploitable',
   passation_ecartee: 'passation écartée par le filtre de validité',
   source_suspendue: 'source suspendue',
-  recueil_incomplet: 'recueil incomplet à la dernière passation',
+  recueil_incomplet: 'recueil incomplet sur les items lus, à la dernière passation',
   forme_sans_sous_score: 'sous-score non servi par la forme du questionnaire',
   calcul_en_erreur: 'calcul du questionnaire en erreur',
   sous_score_absent_ou_double: 'sous-score absent ou en double dans le résultat',
@@ -61,4 +68,20 @@ export function ligneMotif(m: MotifNonMesureServi): string {
   const date = m.motif === 'recueil_incomplet' && m.dateDernierePassation ? `, du ${dateCourte(m.dateDernierePassation)}` : '';
   const ids = m.idsQuestionnaire.length > 0 ? ` (${m.idsQuestionnaire.join(', ')})` : '';
   return `${PREFIXE} · ${LIBELLES[m.motif]}${date}${ids}`;
+}
+
+/** Une source qui alimente la valeur servie, et dont la décision écarte la
+ *  passation retenue (r3_10) ; la date est celle de cette passation. */
+export type EcartDecisionServi = {
+  idQuestionnaire: string;
+  dateDernierePassation: string | null; // ISO
+};
+
+/** Libellé du geste qui ouvre l'écart. */
+export const LIBELLE_GESTE_ECART = 'Écart avec la décision';
+
+/** La ligne servie au praticien, au mot près du libellé validé. */
+export function ligneEcartDecision(e: EcartDecisionServi): string {
+  const date = e.dateDernierePassation ? `, du ${dateCourte(e.dateDernierePassation)}` : '';
+  return `N’entre pas dans la décision · passation incomplète hors des items lus${date} (${e.idQuestionnaire})`;
 }

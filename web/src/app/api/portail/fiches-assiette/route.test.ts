@@ -134,9 +134,24 @@ describe('GET ?interrupteur=1 — le lien de l’accueil (D-251, lot 10)', () =>
     aDesFichesRemises.mockResolvedValue(remise);
     const res = await GET(requete(true, '?interrupteur=1'));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, ouvert: true, fichesRemises: remise });
+    expect(await res.json()).toEqual({ ok: true, ouvert: true, fichesRemises: remise, bibliotheque: false });
     expect(aDesFichesRemises).toHaveBeenCalledWith('PAT_TEST');
     expect(fichesRemisesAuPatient).not.toHaveBeenCalled();
+  });
+
+  // « Ma bibliothèque » servie remplace le lien des fiches (D-357, arbitrage du
+  // 2026-10-25) : la sonde le dit, au seul dossier majeur, drapeau ouvert.
+  it.each([
+    ['bibliothèque ouverte, dossier majeur', 'true', '1979-07-28', true],
+    ['bibliothèque ouverte, dossier mineur', 'true', '2015-03-01', false],
+    ['bibliothèque ouverte, date manquante', 'true', null, false],
+    ['bibliothèque fermée, dossier majeur', '', '1979-07-28', false],
+  ])('%s : bibliotheque=%s', async (_cas, drapeau, dateNaissance, attendu) => {
+    vi.stubEnv('WN_PORTAIL_BIBLIOTHEQUE', drapeau as string);
+    compteActif({ dateNaissance });
+    aDesFichesRemises.mockResolvedValue(true);
+    const res = await GET(requete(true, '?interrupteur=1'));
+    expect(await res.json()).toEqual({ ok: true, ouvert: true, fichesRemises: true, bibliotheque: attendu });
   });
 
   it('drapeau fermé : 503, même en mode interrupteur', async () => {

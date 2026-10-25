@@ -11652,6 +11652,26 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
+## 2026-10-25 — r3_10 : l'écart avec la décision, nommé sous la valeur (Q5)
+
+**Fait.** Inventaire : l'écart restant (snapshot sur la passation entière, routes sur les items lus) ne va que des routes vers la décision. Il ne touche donc jamais un non mesuré et se dit sous la valeur. Le responsable a validé, par questions à options : la forme du motif, l'onglet et le tiroir, les sources tirées du mapping (HAD comprise), le motif « recueil incomplet » précisé « sur les items lus ». Le prédicat du snapshot est réutilisé, pas copié.
+
+**Écarté.** Les cercles ; une liste fermée de trois sources ; une nouvelle D-xxx (Q5 tranchée, M-2 signée).
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; constat par conteneur après la réapprobation des diffusions de D-359.
+
+**Ouvert.** Rien dans le périmètre : par conteneur, 71 dernières passations des quatre sources, aucune incomplète ; l'écart est démontré, sans occurrence en production.
+
+## 2026-10-25 — ap : « Ma bibliothèque », le contenant livré éteint (D-360)
+
+**Fait.** Relevé de la file C (rien de neuf sur les places 7 à 11 ni sur la porte 28 depuis bb3df30d). Le responsable a accepté, par questions à options, trois titres à la première personne et le libellé du lien. Il a tranché que la bibliothèque servie remplace le lien des fiches, et que le mineur garde le sien. Lot livré : page, route sans document, lien, drapeau éteint, carte de fiche extraite. `wn-reviewer` a rendu GO.
+
+**Écarté.** « votre » dans les titres (deux voix sur une page) ; deux liens vers les mêmes fiches ; toute proposition de texte pour les places 8 et 11 (contenu clinique, ou arbitrages de la lettre an).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis une PR de doc pour la place 9 (texte accepté, départ au premier jour noté du carnet).
+
+**Ouvert.** La fenêtre de service de la place 9 ; le retour depuis une fiche, qui mène à la page des fiches.
+
 ## 2026-10-24 — File D : lettres bg, h, bf (D-361 à D-363)
 
 **Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.

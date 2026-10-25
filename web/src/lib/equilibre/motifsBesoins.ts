@@ -1,7 +1,8 @@
 import { BESOIN_SOURCES } from './constants';
 import { calculerCouvertureBesoin, evaluerCouvertureSource } from './score';
 import type { ReponsesParQuestionnaire } from './types';
-import type { MotifNonMesureServi } from '../praticien/motifNonMesure';
+import type { EcartDecisionServi, MotifNonMesureServi } from '../praticien/motifNonMesure';
+import { hasExploitableRawAnswers } from '../clinical-engine/clinicalSnapshot';
 
 // LE MOTIF D'UN BESOIN NON MESURÉ, SUR LE CHEMIN DE LA VALEUR — r3_08 (Q4).
 //
@@ -80,4 +81,42 @@ export function motifsNonMesureBesoin(
     parMotif.set(cle, ligne);
   }
   return [...parMotif.values()];
+}
+
+/**
+ * L'écart avec la décision d'un besoin MESURÉ (r3_10, Q5) : les sources qui
+ * alimentent sa valeur et dont la passation retenue est écartée par le
+ * snapshot, une ligne par questionnaire ; `null` sans écart ou quand le
+ * besoin n'est pas mesuré — l'écart va des routes vers la décision, jamais
+ * l'inverse.
+ *
+ * Rien n'est jugé ici : la contribution, c'est `evaluerCouvertureSource` ;
+ * la passation entière, c'est le prédicat du snapshot lui-même, appliqué aux
+ * mêmes réponses brutes que celles que les routes ont retenues. Les sources
+ * sont celles de `BESOIN_SOURCES`, jamais une liste copiée : la HAD (besoin 8)
+ * en est, que [[D-359]] §3 ne nommait pas, et J3-12f suivra.
+ *
+ * « Incomplète » est exact parce que les instruments à sous-score ne portent
+ * que des items numériques (`likert`, `select` à valeurs entières) : un refus
+ * du prédicat sur une source qui compte vient d'un item absent ou vide hors de
+ * ceux qu'elle lit — ou d'une valeur non numérique, qu'aucun de leurs
+ * formulaires n'écrit. Les réponses brutes sont l'objet stocké, inchangé
+ * (`extraireRawAnswers`) : l'agenda y garde ses `null`, que le snapshot admet.
+ */
+export function ecartsDecisionBesoin(
+  besoinId: number,
+  reponses: ReponsesParQuestionnaire,
+  contexte: ContexteMotifs
+): EcartDecisionServi[] | null {
+  if (calculerCouvertureBesoin(besoinId, reponses) === null) return null;
+  const parQuestionnaire = new Map<string, EcartDecisionServi>();
+  for (const source of BESOIN_SOURCES[besoinId] ?? []) {
+    const id = source.idQuestionnaire;
+    if (parQuestionnaire.has(id)) continue;
+    if (!('couverture' in evaluerCouvertureSource(source, reponses))) continue;
+    if (hasExploitableRawAnswers({ questionnaireId: id, scoresJson: { rawAnswers: reponses[id] } })) continue;
+    const date = contexte.datesRetenues[id];
+    parQuestionnaire.set(id, { idQuestionnaire: id, dateDernierePassation: date ? date.toISOString() : null });
+  }
+  return parQuestionnaire.size > 0 ? [...parQuestionnaire.values()] : null;
 }

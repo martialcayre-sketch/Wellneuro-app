@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BESOIN_SOURCES, BESOINS, MAX_RYTHME_CHRONO } from './constants';
 import { questionnairesEcartesParValidite, type ReponseBrute } from './depuisPrisma';
-import { motifsNonMesureBesoin, type ContexteMotifs } from './motifsBesoins';
+import { ecartsDecisionBesoin, motifsNonMesureBesoin, type ContexteMotifs } from './motifsBesoins';
+import { QUESTIONNAIRE_CATALOGUE } from '../questions';
 import { calculerCouverturesTousLesBesoins } from './score';
 import type { ReponsesParQuestionnaire } from './types';
 
@@ -113,6 +114,88 @@ describe('motifsNonMesureBesoin — égalité null ⇔ motif contre calculerCouv
 it('aucune source du mapping ne pèse zéro — un non mesuré a toujours un motif', () => {
   const poids = Object.values(BESOIN_SOURCES).flat().map(s => s.poids ?? 1);
   expect(poids.every(p => p > 0)).toBe(true);
+});
+
+// r3_10 (Q5) — l'écart avec la décision, sur le vrai catalogue. Le prédicat
+// est celui du snapshot : ce banc ne le recopie pas, il en vérifie l'usage.
+describe('ecartsDecisionBesoin — les routes mesurent, la décision écarte', () => {
+  const itemsDe = (idQuestionnaire: string, section?: string): string[] =>
+    (QUESTIONNAIRE_CATALOGUE[idQuestionnaire as keyof typeof QUESTIONNAIRE_CATALOGUE].sections as ReadonlyArray<{
+      id: string;
+      questions: ReadonlyArray<{ id: string }>;
+    }>)
+      .filter(s => section === undefined || s.id === section)
+      .flatMap(s => s.questions.map(q => q.id));
+  const repondus = (ids: string[]) => Object.fromEntries(ids.map(id => [id, '0']));
+  const DATE = new Date('2026-10-12T08:00:00.000Z');
+
+  it('HAD-D complète, un item A manquant : B8 mesuré, la passation n’entre pas dans la décision', () => {
+    const contexte: ContexteMotifs = { ecartes: new Set(), datesRetenues: { Q_NEU_11: DATE } };
+    expect(ecartsDecisionBesoin(8, { Q_NEU_11: HAD_D_COMPLET }, contexte)).toEqual([
+      { idQuestionnaire: 'Q_NEU_11', dateDernierePassation: '2026-10-12T08:00:00.000Z' },
+    ]);
+  });
+
+  it('passation entière complète : aucun écart', () => {
+    expect(ecartsDecisionBesoin(8, { Q_NEU_11: repondus(itemsDe('Q_NEU_11')) }, SANS_CONTEXTE)).toBeNull();
+    expect(ecartsDecisionBesoin(9, { Q_STR_01: STR_01_COMPLET }, SANS_CONTEXTE)).toBeNull();
+  });
+
+  it('un besoin non mesuré n’a jamais d’écart : l’écart ne va que des routes vers la décision', () => {
+    expect(ecartsDecisionBesoin(8, { Q_NEU_11: { D2: '0' } }, SANS_CONTEXTE)).toBeNull();
+    expect(ecartsDecisionBesoin(9, { Q_STR_01: STR_01_PARTIEL }, SANS_CONTEXTE)).toBeNull();
+    expect(ecartsDecisionBesoin(2, {}, SANS_CONTEXTE)).toBeNull();
+  });
+
+  it('DNST : trois sous-scores d’un même questionnaire, une seule ligne ; ME non répondu', () => {
+    const dnst = repondus(['DA', 'NA', 'SE'].flatMap(axe => itemsDe('Q_INF_03', axe)));
+    expect(ecartsDecisionBesoin(10, { Q_INF_03: dnst }, SANS_CONTEXTE)).toEqual([
+      { idQuestionnaire: 'Q_INF_03', dateDernierePassation: null },
+    ]);
+    // Le besoin 12 lit ME, absent : non mesuré, donc aucun écart.
+    expect(ecartsDecisionBesoin(12, { Q_INF_03: dnst }, SANS_CONTEXTE)).toBeNull();
+  });
+
+  it('une source qui n’alimente pas la valeur ne porte pas l’écart', () => {
+    // Seul l'axe DA est complet : NA et SE ne comptent pas, la ligne reste une.
+    const dnst = repondus([...itemsDe('Q_INF_03', 'DA'), 'N1']);
+    expect(ecartsDecisionBesoin(10, { Q_INF_03: dnst }, SANS_CONTEXTE)).toEqual([
+      { idQuestionnaire: 'Q_INF_03', dateDernierePassation: null },
+    ]);
+  });
+
+  it('agenda du sommeil clôturé, `null` compris : il compte au besoin 5 et entre dans la décision (D-359)', () => {
+    const agenda = {
+      ...Object.fromEntries(itemsDe('Q_SOM_09').map(id => [id, null])),
+      AGD_NB_NUITS: 18,
+      AGD_NB_NUITS_TST: 18,
+      AGD_NB_NUITS_EFF: 18,
+      AGD_INDICE_ELIGIBLE: 1,
+      AGD_TIB_MOY: 480,
+      AGD_TST_MOY: 470,
+      AGD_EFF_MOY: 95,
+      AGD_REG_ECT: 20,
+      AGD_QUAL_MOY: 5,
+    } as unknown as ReponsesParQuestionnaire[string];
+    const reponses: ReponsesParQuestionnaire = { Q_SOM_09: agenda };
+    // Le banc n'a de sens que si l'agenda alimente bien la valeur.
+    expect(calculerCouverturesTousLesBesoins(reponses)[5]).not.toBeNull();
+    expect(ecartsDecisionBesoin(5, reponses, SANS_CONTEXTE)).toBeNull();
+  });
+
+  it('sur chaque jeu : un écart n’existe que pour un besoin mesuré', () => {
+    const jeux: ReponsesParQuestionnaire[] = [
+      {},
+      { Q_NEU_11: HAD_D_COMPLET, Q_STR_01: STR_01_PARTIEL },
+      { Q_INF_03: repondus(itemsDe('Q_INF_03', 'ME')) },
+    ];
+    for (const reponses of jeux) {
+      const couvertures = calculerCouverturesTousLesBesoins(reponses);
+      for (const besoin of BESOINS) {
+        if (couvertures[besoin.id] === null) expect(ecartsDecisionBesoin(besoin.id, reponses, SANS_CONTEXTE)).toBeNull();
+      }
+    }
+  });
 });
 
 describe('questionnairesEcartesParValidite — le seul étage que la carte des réponses ne voit pas', () => {

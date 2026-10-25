@@ -9,13 +9,13 @@ import {
   questionnairesEcartesParValidite,
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins, listerSourcesPreuveBesoin } from '@/lib/equilibre/evidence';
-import { motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
+import { ecartsDecisionBesoin, motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
 import { agregerEquilibre, calculerCouverturesTousLesBesoins, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
-import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
+import type { EcartDecisionServi, MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/besoins';
@@ -33,6 +33,8 @@ export type BesoinDetail = {
   sources: SourcePreuveAffichee[];
   /** Pourquoi le besoin n'est pas mesuré (r3_08, Q4) ; `null` s'il l'est. */
   motifNonMesure: MotifNonMesureServi[] | null;
+  /** Écart avec la décision d'un besoin mesuré (r3_10, Q5) ; `null` sans écart. */
+  ecartDecision: EcartDecisionServi[] | null;
 };
 
 export type BesoinsApiResponse =
@@ -106,6 +108,7 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
         titre: TITRE_PAR_QUESTIONNAIRE.get(s.idQuestionnaire) ?? s.idQuestionnaire,
       })),
       motifNonMesure: motifsNonMesureBesoin(b.id, reponses, contexteMotifs),
+      ecartDecision: ecartsDecisionBesoin(b.id, reponses, contexteMotifs),
     }));
 
     return NextResponse.json({

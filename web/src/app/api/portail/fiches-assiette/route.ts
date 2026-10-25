@@ -3,6 +3,7 @@ import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import type { FicheRemiseServie } from '@/lib/fiches-assiette/ficheServie';
 import { aDesFichesRemises, fichesRemisesAuPatient } from '@/lib/fiches-assiette/servicePatient';
+import { bibliothequeServie } from '@/lib/portail/bibliothequeDrapeau';
 
 /*
  * /api/portail/fiches-assiette — les fiches d'assiette remises au patient par
@@ -26,11 +27,16 @@ import { aDesFichesRemises, fichesRemisesAuPatient } from '@/lib/fiches-assiette
  * ouverte, et au moins une fiche remise. Aucun texte lu, aucun contrôle
  * rejoué pour une page que personne n'a encore ouverte (même motif
  * qu'`api/portail/comprehension`).
+ *
+ * `bibliotheque` : vrai quand « Ma bibliothèque » est servie à ce dossier
+ * ([[D-357]], drapeau ouvert et dossier majeur). Elle remplace alors le lien
+ * des fiches (arbitrage du 2026-10-25) ; la page des fiches reste servie, la
+ * bibliothèque y renvoie, et le mineur garde son lien ([[D-357]] §5).
  */
 
 export type PortailFichesAssietteResponse =
   | { ok: true; fiches: FicheRemiseServie[] }
-  | { ok: true; ouvert: true; fichesRemises: boolean }
+  | { ok: true; ouvert: true; fichesRemises: boolean; bibliotheque: boolean }
   | { ok: false; reason: 'feature_disabled' | 'unauthenticated' | 'forbidden' | 'exception'; error: string };
 
 export async function GET(req: Request): Promise<NextResponse<PortailFichesAssietteResponse>> {
@@ -49,7 +55,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailFichesAssie
     if (auth.erreur) return auth.erreur as NextResponse<PortailFichesAssietteResponse>;
 
     if (new URL(req.url).searchParams.get('interrupteur') === '1') {
-      return NextResponse.json({ ok: true, ouvert: true, fichesRemises: await aDesFichesRemises(auth.patient.idPatient) });
+      return NextResponse.json({
+        ok: true,
+        ouvert: true,
+        fichesRemises: await aDesFichesRemises(auth.patient.idPatient),
+        bibliotheque: bibliothequeServie(auth.patient.dateNaissance, Date.now()),
+      });
     }
 
     const fiches = await fichesRemisesAuPatient(auth.patient.idPatient);
