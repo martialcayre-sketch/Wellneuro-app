@@ -11661,3 +11661,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; constat par conteneur après la réapprobation des diffusions de D-359.
 
 **Ouvert.** Rien dans le périmètre : par conteneur, 71 dernières passations des quatre sources, aucune incomplète ; l'écart est démontré, sans occurrence en production.
+
+## 2026-10-25 — ap : « Ma bibliothèque », le contenant livré éteint (D-360)
+
+**Fait.** Relevé de la file C (rien de neuf sur les places 7 à 11 ni sur la porte 28 depuis bb3df30d). Le responsable a accepté, par questions à options, trois titres à la première personne et le libellé du lien. Il a tranché que la bibliothèque servie remplace le lien des fiches, et que le mineur garde le sien. Lot livré : page, route sans document, lien, drapeau éteint, carte de fiche extraite. `wn-reviewer` a rendu GO.
+
+**Écarté.** « votre » dans les titres (deux voix sur une page) ; deux liens vers les mêmes fiches ; toute proposition de texte pour les places 8 et 11 (contenu clinique, ou arbitrages de la lettre an).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis une PR de doc pour la place 9 (texte accepté, départ au premier jour noté du carnet).
+
+**Ouvert.** La fenêtre de service de la place 9 ; le retour depuis une fiche, qui mène à la page des fiches.

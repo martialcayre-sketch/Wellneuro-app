@@ -1,10 +1,10 @@
 'use client';
 
 import { PatientCard } from '@/components/patient/ui/PatientCard';
-import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
-import { dateDeRemise, mentionsDeLaFiche, texteDePauseDeLaFiche, titreDeLaFiche, TITRE_ESPACE } from './textesFiches';
+import { CarteFicheRemise } from './CarteFicheRemise';
+import { TITRE_ESPACE } from './textesFiches';
 import { useFichesRemises } from './useFichesRemises';
 
 // L'espace « Fiches remises par mon praticien » ([[D-251]] §8, lot 10) : la
@@ -51,36 +51,11 @@ export function FichesRemises({ token }: { token: string }) {
         </PatientCard>
       ) : (
         <ul className="space-y-3">
-          {etat.fiches.map(fiche => {
-            const date = dateDeRemise(fiche.remiseLe);
-            const mentions = mentionsDeLaFiche(fiche);
-            const pause = texteDePauseDeLaFiche(fiche);
-            return (
-              <li key={fiche.idRemise}>
-                <PatientCard padding="sm">
-                  <h2 className="text-lg font-semibold text-foreground">{titreDeLaFiche(fiche)}</h2>
-                  {date && <p className="mt-1 text-sm text-muted-foreground">{date}</p>}
-                  {mentions.map(mention => (
-                    <p key={mention} className="mt-2 text-sm text-foreground">{mention}</p>
-                  ))}
-                  {pause && (
-                    <>
-                      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
-                      <p className="mt-1 text-sm text-foreground">{pause}</p>
-                    </>
-                  )}
-                  {fiche.etat === 'servie' && (
-                    <a
-                      href={`/portail/${token}/fiches/${encodeURIComponent(fiche.idRemise)}`}
-                      className={patientButtonClassName('ghost', 'mt-3')}
-                    >
-                      Lire la fiche
-                    </a>
-                  )}
-                </PatientCard>
-              </li>
-            );
-          })}
+          {etat.fiches.map(fiche => (
+            <li key={fiche.idRemise}>
+              <CarteFicheRemise token={token} fiche={fiche} />
+            </li>
+          ))}
         </ul>
       )}
     </div>

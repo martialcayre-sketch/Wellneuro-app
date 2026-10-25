@@ -37,6 +37,8 @@ describe('LienFichesRemises', () => {
     ['aucune fiche remise', true, { ok: true, ouvert: true, fichesRemises: false }],
     ['espace fermé (503)', false, { ok: false, reason: 'feature_disabled' }],
     ['réponse sans le double oui', true, { ok: true, ouvert: true }],
+    // D-357, arbitrage du 2026-10-25 : servie, la bibliothèque remplace ce lien.
+    ['« Ma bibliothèque » servie au dossier', true, { ok: true, ouvert: true, fichesRemises: true, bibliotheque: true }],
   ])('%s : aucun lien', async (_cas, ok, corps) => {
     repondre(ok, corps);
     render(<LienFichesRemises token="TOK" />);
