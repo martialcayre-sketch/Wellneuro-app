@@ -4,6 +4,8 @@
 > Il solde ensemble D-TRUST-05, D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` :
 > lecteur d'écran réel, zoom 200 %, appareil mobile physique. Les bancs
 > automatiques (Vitest, Playwright) ne remplacent pas cette passe.
+> Étape 9 et écrans praticien des 12 besoins ajoutés le 2026-10-25 (r3_14,
+> audit des instruments des 12 besoins, Q12 « oui aux trois »).
 
 ## Matériel
 
@@ -39,9 +41,29 @@
 7. Documents (`documents`), Mes échanges (`echanges`), Suivi (`suivi`).
 8. Alimentation et boussole (`alimentation`, `alimentation/boussole/…`) —
    le « Jardin » de D-C5-01.
+9. « Mon équilibre », depuis la vue d'un questionnaire **déjà verrouillé**
+   (`questionnaires/[id]`, réponses en lecture seule) : bouton « Voir Mon
+   équilibre », accueil (titre « Mon équilibre », cercles et légende), bouton
+   « Voir le détail de mes 12 besoins », détail (titre « Mes 12 besoins »),
+   puis les deux retours. Exige un dossier de test qui porte un questionnaire
+   verrouillé ; l'aperçu praticien ne remplace pas ce chemin, son bouton y est
+   neutralisé. Audit des instruments des 12 besoins, Q12 choix C (A11Y-07).
 
-Côté praticien (poste B seulement) : l’Observatoire de la boussole au cockpit
-d'un dossier de test (D-C5-01).
+Côté praticien (poste B seulement), sur un dossier de test :
+
+- l’Observatoire de la boussole au cockpit (D-C5-01) ;
+- l'onglet « Les 12 besoins » de la fiche : radar, tableau, motif d'un besoin
+  non mesuré et « Écart avec la décision » dépliés au clavier ;
+- le tiroir « Les 12 besoins » du poste de pilotage : ouverture, lecture,
+  replis, fermeture par Échap et retour du focus sur son bouton.
+
+Pour l'onglet et le tiroir (Q12 choix A, A11Y-01 à A11Y-05), noter en
+particulier : ce que le lecteur annonce du radar ; si l'état d'un besoin
+passe par la seule couleur des cercles ; si les sources d'un besoin se lisent
+sans survol ; ce qu'il annonce d'un besoin non mesuré (« — »). Le banc
+automatique `web/e2e/fiche-besoins-accessibilite.spec.ts` (axe-core, WCAG 2.1
+A et AA) garde ces deux écrans contre une régression ; il ne juge pas
+l'annonce réelle, que seule cette passe constate.
 
 ## Grille — une ligne par écran et par poste
 
@@ -70,7 +92,7 @@ Modèle de relevé :
 
 Transmettre la grille remplie à l'assistant. Chaque défaut « bloquant » ou
 « gênant » devient une ligne de la file A ; un défaut « mineur » est routé au
-plan. La passe est **faite** quand les quatre postes ont parcouru les huit
-étapes et que le poste B a parcouru l'Observatoire praticien ; D-TRUST-05,
+plan. La passe est **faite** quand les quatre postes ont parcouru les neuf
+étapes et que le poste B a parcouru les trois écrans praticien ; D-TRUST-05,
 D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` se soldent alors au registre de leurs
 campagnes.

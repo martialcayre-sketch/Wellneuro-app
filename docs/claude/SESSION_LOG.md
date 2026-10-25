@@ -11700,3 +11700,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, passe Codex P0, merge, constat du déploiement.
 
 **Ouvert.** P2-1 routé au plan (libellé « Fiches remises ») ; conditions 2 à 4.
+## 2026-10-25 — r3_14 : les instruments des 12 besoins sous banc d'accessibilité (Q12)
+
+**Fait.** Inventaire : J3-12b réorganise l'onglet, mais un banc qui vise le panneau par son id et le tiroir par son rôle lui survit. Le responsable a tranché par questions à options : banc maintenant, correctif sans texte s'il y a violation, aucune règle désactivée, portée bornée aux instruments. Banc axe (WCAG 2.1 A et AA) posé sur l'onglet et sur le tiroir : zéro violation dès le premier passage. Parcours E67 : étape 9 « Mon équilibre », et l'onglet et le tiroir au poste B.
+
+**Écarté.** Attendre J3-12b ; la page entière comme portée ; F9a (caption, radar, graduations), qui suit J3-12b.
+
+**Prochaine action.** CI, CodeRabbit, merge après la release-db de t44 (#1692), observation du déploiement.
+
+**Ouvert.** La passe humaine E67 (file D) ; les défauts qu'axe ne classe pas en violation restent à F9a.
