@@ -2021,6 +2021,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : texte du geste, de la main du responsable.
 - **Critère de fin** : activation constatée.
 - **Mise à jour (2026-10-25)** : arbitrages du responsable, sur questions à options. Le geste est un message au patient, sous son carnet alimentaire, au terme des 21 jours ; il ne porte ni chiffre (« n jours sur m » reste au cockpit, H74) ni jugement, et ne fusionne pas avec le message de la place 7. **Texte accepté** : « Votre carnet alimentaire touche à sa fin. Votre praticien le relira avec vous : il n’y a ni bonne ni mauvaise journée. » **Point de départ (h3)** : le 21e jour se compte depuis le premier jour noté du carnet, et non depuis le jour 0 de D-255. Restent : la fenêtre de service autour du terme (non fixée), H74, puis le lot et sa D-xxx.
+- **Mise à jour (2026-10-25, fenêtre)** : arbitrage du responsable, sur questions à options. Le message est servi du 18e au 21e jour comptés depuis le premier jour noté, jamais après la date de fin du carnet (21 jours depuis la diffusion, `DUREE_EPISODE_JOURS`, `lib/food-observation/episodeDepuisProtocole.ts`) : la fenêtre s'arrête au premier des deux termes. Conséquence acceptée telle quelle : le premier jour noté ne précédant pas le début de la période (le portail ne propose que ses jours, `joursObservables`, `lib/food-observation/journee.ts` ; garde serveur [A verifier]), la fenêtre finit toujours à la date de fin du carnet, et un patient qui commence à noter après le 4e jour de la période ne reçoit pas le message. Reste : H74, puis le lot et sa D-xxx.
 
 #### H82 · ap : place 10, bibliothèque pédagogique
 - **Identifiant, piste** : lettre ap (R:ap) ; bibliothèque pédagogique au portail ; fiches conseils ; file C, place 10.
@@ -2173,7 +2174,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 5 | h3 | ch : trois phrases de tendance, règle de comparaison d'un agenda fini au précédent et marge « stable » à signer | H72 | phrase en fin d'agenda |
 | 6 | h2 | indications v2, re-signées | F53 | bilan par axe |
 | 8 | h2 | constater un cycle réel jusqu'au jalon de fin, par identifiant | F26 | fin de BIO-PARCOURS |
-| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 confirmé le 2026-10-25 (premier jour noté du carnet ; fenêtre de service non fixée) | H80, H81 | places 7 et 9 |
+| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 confirmé le 2026-10-25 (premier jour noté du carnet ; fenêtre de service fixée le 2026-10-25 : du 18e au 21e jour noté, jamais après la fin du carnet, H81) | H80, H81 | places 7 et 9 |
 | T | h1 | chaque release-db, une à une ; chaque contre-revue P0 | §5 | codes consommateurs ; merges des lots P0 |
 
 ### La file D au 2026-10-14
