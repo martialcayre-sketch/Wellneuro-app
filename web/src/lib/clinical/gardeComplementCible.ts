@@ -78,9 +78,9 @@ const MOTIF_NATURE_REQUISE =
   'Indiquez pour chaque complément s’il est ciblé ou multivitaminé en vente libre : la nature ne se devine pas.';
 const MOTIF_TABLE_NON_SIGNEE =
   'La table des déclencheurs n’est pas signée : aucun complément ciblé ne peut entrer au programme.';
-const MOTIF_DATE_REQUISE =
+export const MOTIF_DATE_REQUISE =
   'La date de naissance du patient est requise avant un complément ciblé.';
-const MOTIF_MINEUR =
+export const MOTIF_MINEUR =
   'Patient mineur : un complément ciblé reste suspendu jusqu’au circuit des mineurs, quel que soit le courrier.';
 const MOTIF_SITUATION_INCONNUE =
   'Une situation déclarée sur un complément ciblé n’est pas dans la table signée des déclencheurs.';

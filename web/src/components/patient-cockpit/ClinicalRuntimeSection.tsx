@@ -26,6 +26,7 @@ import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientPro
 import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import type { AnnonceFiches, ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
 import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
+import type { ApercuCourrierComplement } from '@/lib/correspondance/courrierComplementRemise';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -127,6 +128,8 @@ type DiffusionApiResponse = {
   emailProtocoleOuvert?: boolean;
   /** Le courrier pour le médecin que le clic remettrait ([[D-262]], LOT-03b). */
   lettre?: ApercuLettreAdressage | null;
+  /** Le courrier complément au clic ([[D-345]] §4) ; clé absente drapeau fermé. */
+  courrierComplement?: { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -485,6 +488,18 @@ export function ClinicalRuntimeSection({
   const [pausesApercu, setPausesApercu] = useState<ElementEnPause[]>([]);
   const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
   const [apercuLettre, setApercuLettre] = useState<ApercuLettreAdressage | null>(null);
+  /**
+   * LE COURRIER COMPLÉMENT ([[D-345]], J3-12h lot 3). La présence de la clé dans
+   * la réponse de diffusion dit que `WN_COURRIER_COMPLEMENT` est ouvert : la
+   * case « ciblé » du constructeur ne paraît qu'alors — l'écran ne lit pas
+   * l'environnement du serveur.
+   */
+  const [courrierComplement, setCourrierComplement] = useState<
+    { apercu: ApercuCourrierComplement; medecinTraitant: string | null } | null
+  >(null);
+  const [complementCibleOuvert, setComplementCibleOuvert] = useState(false);
+  const [preparationComplement, setPreparationComplement] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [preparationComplementErreur, setPreparationComplementErreur] = useState<string | null>(null);
   const [annonceParEmail, setAnnonceParEmail] = useState(false);
   /** Le sort de l'e-mail du dernier clic ([[D-251]] §9) — dit, jamais tu. */
   const [annonceFiches, setAnnonceFiches] = useState<AnnonceFiches | null>(null);
@@ -655,6 +670,8 @@ export function ClinicalRuntimeSection({
         setPausesApercu([]);
         setApercuFiches(null);
         setApercuLettre(null);
+        setCourrierComplement(null);
+        setComplementCibleOuvert(false);
         setAnnonceParEmail(false);
         setAnnonceProtocoleParEmail(false);
         setServieAuPatient(null);
@@ -674,6 +691,8 @@ export function ClinicalRuntimeSection({
       setPausesApercu(payload.pauses ?? []);
       setApercuFiches(payload.fiches ?? null);
       setApercuLettre(payload.lettre ?? null);
+      setComplementCibleOuvert(Object.hasOwn(payload, 'courrierComplement'));
+      setCourrierComplement(payload.courrierComplement ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
       // L'aperçu des fiches et le constat « servi », eux, ne survivent pas à
@@ -683,6 +702,8 @@ export function ClinicalRuntimeSection({
       setPausesApercu([]);
       setApercuFiches(null);
       setApercuLettre(null);
+      setCourrierComplement(null);
+      setComplementCibleOuvert(false);
       setAnnonceParEmail(false);
       setAnnonceProtocoleParEmail(false);
       setServieAuPatient(null);
@@ -1702,6 +1723,10 @@ export function ClinicalRuntimeSection({
         // fin (constat de revue du lot 8).
         if (payload.reason === 'apercu_fiches_perime') {
           await Promise.all([loadVersions(readyDecisionCardId), loadDiffusion(readyDecisionCardId)]);
+        } else if (payload.reason === 'courrier_complement_requis') {
+          // Le refus du courrier complément ([[D-345]] §4) : l'aperçu relu dit
+          // ce qui manque — courrier à préparer, accord, nature, état à établir.
+          await loadDiffusion(readyDecisionCardId);
         }
         return;
       }
@@ -1714,6 +1739,33 @@ export function ClinicalRuntimeSection({
     } catch {
       setDiffusionState('error');
       setDiffusionError('Erreur technique lors de la validation.');
+    }
+  };
+
+  // Prépare et consigne le courrier complément de la version active ([[D-345]]
+  // §7) : le serveur relit la version PERSISTÉE, la garde et l'accord ; l'écran
+  // ne transmet que la version visée et le destinataire.
+  const preparerCourrierComplement = async (medecinLibelle: string) => {
+    if (fixture || !readyDecisionCardId || !activeVersionId) return;
+    setPreparationComplement('saving');
+    setPreparationComplementErreur(null);
+    try {
+      const response = await fetch('/api/praticien/protocoles/courrier-complement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, protocolDraftId: activeVersionId, medecinLibelle }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (!response.ok || !payload.ok) {
+        setPreparationComplement('error');
+        setPreparationComplementErreur(payload.error ?? 'Le courrier n’a pas pu être préparé.');
+        return;
+      }
+      setPreparationComplement('idle');
+      await loadDiffusion(readyDecisionCardId);
+    } catch {
+      setPreparationComplement('error');
+      setPreparationComplementErreur('Erreur technique lors de la préparation du courrier.');
     }
   };
 
@@ -2384,6 +2436,7 @@ export function ClinicalRuntimeSection({
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
           baremeCharge={fixture ? [] : baremeCharge}
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
+          complementCibleOuvert={!fixture && complementCibleOuvert}
           versionActive={fixture || !versionsLues || !contenuActif || !activeVersionId
             ? null
             : { versionId: activeVersionId, contenu: contenuActif }}
@@ -2442,6 +2495,10 @@ export function ClinicalRuntimeSection({
             pausesApercu={pausesApercu}
             fiches={apercuFiches}
             lettre={apercuLettre}
+            courrierComplement={courrierComplement}
+            preparationComplement={preparationComplement}
+            preparationComplementErreur={preparationComplementErreur}
+            onPreparerCourrierComplement={preparerCourrierComplement}
             annonceParEmail={annonceParEmail}
             annonceProtocoleParEmail={annonceProtocoleParEmail}
             emailProtocoleOuvert={emailProtocoleOuvert}

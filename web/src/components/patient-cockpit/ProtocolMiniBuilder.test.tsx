@@ -1324,3 +1324,78 @@ describe('ProtocolMiniBuilder — recharge de la version en vigueur (t15)', () =
     expect(soumission.actions[0].interventionStatus).toBe('active');
   });
 });
+
+// LA NATURE DU COMPLÉMENT ([[D-345]] §1, §3 ; J3-12h lot 3). Sous le drapeau
+// constaté par l'appelant : aucune valeur par défaut, situations par leur code,
+// retrait au changement de type, et la JOINTURE — une nature fait demander V4.
+describe('ProtocolMiniBuilder — la nature d’une intention de complément (D-345)', () => {
+  function complementEnPlace(container: HTMLElement) {
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'supplement_exploration' } });
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Intention fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal fixture' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours fixture' } });
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture.' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture.' } });
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'moderate' } });
+    return ui;
+  }
+
+  it('drapeau fermé : la case ne paraît pas', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
+    const ui = complementEnPlace(container);
+    expect(ui.queryByText('Nature du complément')).toBeNull();
+  });
+
+  it('aucune valeur par défaut, et l’écran dit que la diffusion sera refusée', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} complementCibleOuvert />);
+    const ui = complementEnPlace(container);
+    expect((ui.getByLabelText('Ciblé (correction d’un besoin) — action 1') as HTMLInputElement).checked).toBe(false);
+    expect((ui.getByLabelText('Multivitaminé en vente libre — action 1') as HTMLInputElement).checked).toBe(false);
+    expect(container.textContent).toContain('la diffusion sera refusée tant que la nature n’est pas choisie');
+  });
+
+  it('« ciblé » + situations par leur code : la soumission demande V4 et porte les deux champs', () => {
+    const onSave = vi.fn();
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} complementCibleOuvert />);
+    const ui = complementEnPlace(container);
+    fireEvent.click(ui.getByLabelText('Ciblé (correction d’un besoin) — action 1'));
+    fireEvent.click(ui.getByLabelText('Situation S-MG-2 — action 1'));
+    fireEvent.click(ui.getByLabelText('Situation S-MG-1 — action 1'));
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.version).toBe(VERSION_PROTOCOL_DRAFT_V4);
+    expect(soumission.actions[0]).toMatchObject({
+      type: 'supplement_exploration',
+      natureComplement: 'cible',
+      situationsComplement: ['S-MG-1', 'S-MG-2'],
+      interventionStatus: 'active',
+    });
+  });
+
+  it('« multivitaminé » retire les situations ; décocher la dernière retire la clé', () => {
+    const onSave = vi.fn();
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} complementCibleOuvert />);
+    const ui = complementEnPlace(container);
+    fireEvent.click(ui.getByLabelText('Ciblé (correction d’un besoin) — action 1'));
+    fireEvent.click(ui.getByLabelText('Situation S-MG-1 — action 1'));
+    fireEvent.click(ui.getByLabelText('Multivitaminé en vente libre — action 1'));
+    expect(ui.queryByLabelText('Situation S-MG-1 — action 1')).toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    const soumission = onSave.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].natureComplement).toBe('multivitamine_vente_libre');
+    expect(soumission.actions[0]).not.toHaveProperty('situationsComplement');
+  });
+
+  it('changer le type retire la nature ET le dit', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} complementCibleOuvert />);
+    const ui = complementEnPlace(container);
+    fireEvent.click(ui.getByLabelText('Ciblé (correction d’un besoin) — action 1'));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
+    expect(ui.queryByText('Nature du complément')).toBeNull();
+    expect(container.textContent).toContain('La nature du complément a été retirée de l’action 1');
+  });
+});

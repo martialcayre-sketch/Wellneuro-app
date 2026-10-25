@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+// Module FEUILLE (aucun import) : lisible d'un composant client.
+import { SITUATIONS_COMPLEMENT, type NatureComplement, type SituationComplement } from '@/lib/clinical-engine/complementCible';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import { estSelectionLibre, isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import {
@@ -167,6 +169,7 @@ export function ProtocolMiniBuilder({
   baremeCharge = [],
   chargeVersionActive = null,
   versionActive = null,
+  complementCibleOuvert = false,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -249,6 +252,13 @@ export function ProtocolMiniBuilder({
    * active lue (fixture, lecture en échec, premier protocole).
    */
   versionActive?: VersionActiveConstructeur | null;
+  /**
+   * `WN_COURRIER_COMPLEMENT` ouvert ([[D-345]] §1, J3-12h lot 3), constaté par
+   * l'appelant sur la réponse de diffusion : la case « ciblé / multivitaminé en
+   * vente libre » paraît sur une intention de complément. Fermé, l'écran est
+   * celui d'avant — et une nature déjà portée par l'action reste affichée.
+   */
+  complementCibleOuvert?: boolean;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -459,7 +469,45 @@ export function ProtocolMiniBuilder({
         const { recommendedPlateRef: _retiree, ...sansAssiette } = fusionnee;
         return sansAssiette;
       }
+      // LA NATURE DU COMPLÉMENT ET SES SITUATIONS n'existent que sur une
+      // intention de complément ([[D-345]] §1) : retirées ET dites, comme
+      // l'assiette — le serveur refuserait sinon l'enregistrement.
+      if ((fusionnee.natureComplement !== undefined || fusionnee.situationsComplement !== undefined)
+        && fusionnee.type !== 'supplement_exploration') {
+        setMessage(`La nature du complément a été retirée de l’action ${index + 1} : elle n’existe que sur `
+          + 'une intention de complément.');
+        const { natureComplement: _nature, situationsComplement: _situations, ...sansNature } = fusionnee;
+        return sansNature;
+      }
       return fusionnee;
+    }));
+  };
+
+  // LA NATURE D'UNE INTENTION DE COMPLÉMENT ([[D-345]] §1) : aucune valeur par
+  // défaut ; « multivitaminé » retire les situations, qui ne vivent que sur une
+  // action « ciblé ».
+  const choisirNature = (actionId: string, nature: NatureComplement) => {
+    markDirty();
+    setActions(previous => previous.map(action => {
+      if (action.actionId !== actionId) return action;
+      if (nature === 'cible') return { ...action, natureComplement: nature };
+      const { situationsComplement: _situations, ...sansSituations } = action;
+      return { ...sansSituations, natureComplement: nature };
+    }));
+  };
+  const basculerSituation = (actionId: string, situation: SituationComplement, cochee: boolean) => {
+    markDirty();
+    setActions(previous => previous.map(action => {
+      if (action.actionId !== actionId) return action;
+      const courantes = new Set(action.situationsComplement ?? []);
+      if (cochee) courantes.add(situation);
+      else courantes.delete(situation);
+      const situations = SITUATIONS_COMPLEMENT.filter(id => courantes.has(id));
+      if (situations.length === 0) {
+        const { situationsComplement: _situations, ...sansSituations } = action;
+        return sansSituations;
+      }
+      return { ...action, situationsComplement: situations };
     }));
   };
 
@@ -588,7 +636,9 @@ export function ProtocolMiniBuilder({
     // une version V4 le porte (t15), et une révision V1 d'une version V4 est
     // refusée (`version_contrat_incompatible`). Même raison que l'assiette.
     const porteUnStatut = actions.some(action => action.interventionStatus !== undefined);
-    const contratV4 = suspendues || porteUneAssiette || porteUnStatut || versionActiveV4;
+    // UNE NATURE DE COMPLÉMENT N'EXISTE QU'EN V4 ([[D-345]] §1) : même raison.
+    const porteUneNature = actions.some(action => action.natureComplement !== undefined);
+    const contratV4 = suspendues || porteUneAssiette || porteUnStatut || porteUneNature || versionActiveV4;
     return {
       purpose,
       followUpCriterion,
@@ -760,6 +810,52 @@ export function ProtocolMiniBuilder({
                     <p className="text-xs text-muted-foreground">
                       Intention d’exploration uniquement : aucun produit, forme, marque ou dose.
                     </p>
+                  )}
+                  {/* LA NATURE DU COMPLÉMENT ([[D-345]] §1, §3) : sans valeur par
+                      défaut — son absence se refuse au clic de diffusion. Les
+                      situations sont désignées par leur CODE seul (forme
+                      opaque) : leurs libellés restent au dossier de preuve. */}
+                  {action.type === 'supplement_exploration'
+                    && (complementCibleOuvert || action.natureComplement !== undefined) && (
+                    <fieldset className="grid gap-1 text-xs">
+                      <legend className="font-medium">Nature du complément</legend>
+                      {([
+                        ['cible', 'Ciblé (correction d’un besoin)'],
+                        ['multivitamine_vente_libre', 'Multivitaminé en vente libre'],
+                      ] as const).map(([valeur, libelle]) => (
+                        <label key={valeur} className="flex min-h-11 items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`nature-${action.actionId}`}
+                            aria-label={`${libelle} — action ${index + 1}`}
+                            checked={action.natureComplement === valeur}
+                            onChange={() => choisirNature(action.actionId, valeur)}
+                          />
+                          {libelle}
+                        </label>
+                      ))}
+                      {action.natureComplement === undefined && (
+                        <p className="text-muted-foreground">
+                          Non renseignée : la diffusion sera refusée tant que la nature n’est pas choisie.
+                        </p>
+                      )}
+                      {action.natureComplement === 'cible' && (
+                        <div className="mt-1 grid gap-1">
+                          <p className="font-medium">Situations déclarées (table signée ; libellés au dossier de preuve)</p>
+                          {SITUATIONS_COMPLEMENT.map(situation => (
+                            <label key={situation} className="flex min-h-11 items-center gap-2">
+                              <input
+                                type="checkbox"
+                                aria-label={`Situation ${situation} — action ${index + 1}`}
+                                checked={(action.situationsComplement ?? []).includes(situation)}
+                                onChange={event => basculerSituation(action.actionId, situation, event.target.checked)}
+                              />
+                              {situation}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </fieldset>
                   )}
                   {/* LE MENU PARAÎT SUR UNE ACTION ALIMENTAIRE dès que la carte a
                       servi sa liste — ou dès que l'action porte déjà une
