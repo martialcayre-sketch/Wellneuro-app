@@ -12,7 +12,7 @@
 export const TITRE_COURRIER_COMPLEMENT = 'Courrier à remettre à votre médecin';
 
 export const PHRASE_COURRIER_COMPLEMENT =
-  'Voici le courrier que je vous ai préparé pour votre médecin. Remettez-le lui avant de commencer les compléments qu’il cite : vous pouvez l’imprimer ou le montrer depuis ce portail.';
+  'Voici le courrier que je vous ai préparé pour votre médecin. Remettez-le-lui avant de commencer les compléments qu’il cite : vous pouvez l’imprimer ou le montrer depuis ce portail.';
 
 export const MENTION_INDISPONIBLE_COMPLEMENT = 'Ce courrier ne peut pas être affiché pour le moment.';
 

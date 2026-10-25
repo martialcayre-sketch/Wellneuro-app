@@ -32,7 +32,7 @@
 « Lire le courrier à remettre à mon médecin ». Le titre de la lettre
 d'adressage (« Courrier pour votre médecin ») reste le sien. Phrase
 d'accompagnement, seule prose patient de l'écran : « Voici le courrier que je
-vous ai préparé pour votre médecin. Remettez-le lui avant de commencer les
+vous ai préparé pour votre médecin. Remettez-le-lui avant de commencer les
 compléments qu’il cite : vous pouvez l’imprimer ou le montrer depuis ce
 portail. » Elle dit au patient l'ordre « courrier puis complément » de
 [[D-345]] (Q6), que le courrier écrit déjà au médecin. La variante calquée sur

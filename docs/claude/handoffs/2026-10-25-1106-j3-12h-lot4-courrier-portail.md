@@ -15,7 +15,7 @@ Lever la condition 1 d'ouverture de `WN_COURRIER_COMPLEMENT` : le patient doit p
 
 D-362, numérotée D-361 au départ et renumérotée après t44, consigne trois arbitrages du responsable du 2026-10-25 :
 - **Titre** : « Courrier à remettre à votre médecin ». Au fil du jour : « Lire le courrier à remettre à mon médecin ».
-- **Phrase d'accompagnement** : « … Remettez-le lui avant de commencer les compléments qu’il cite … ». Le patient lit ainsi l'ordre « courrier puis complément ». La variante « lors de votre prochain rendez-vous » est écartée.
+- **Phrase d'accompagnement** : « … Remettez-le-lui avant de commencer les compléments qu’il cite … ». Le patient lit ainsi l'ordre « courrier puis complément ». La variante « lors de votre prochain rendez-vous » est écartée.
 - **Toutes les remises sont servies**, la plus récente en tête (P1-1 de `wn-reviewer`).
   - La dernière remise seule est écartée : elle perd le courrier qui couvre une version qui retire un complément.
   - La seule remise qui couvre la version diffusée est écartée aussi : elle serait trop lourde à résoudre.
@@ -91,6 +91,7 @@ Modifiés :
   - `WN_PHYSIO_TRAITEMENTS` ouvert.
 - **Dette P2-1** : le libellé du cockpit après un clic sans fiche.
 - **Export d'accès RGPD** : il ne liste ni lettre ni courrier remis. Limite antérieure, non introduite ici.
+- **Orthographe de la lettre d'adressage** : sa phrase d'accompagnement (`textesLettre.ts`, en service, D-262) écrit encore « Remettez-le lui ». CodeRabbit l'a relevé sur la phrase sœur de #1701, corrigée en « Remettez-le-lui ». La correction relève d'une PR à part sur la lettre, avec sa décision.
 
 ## Prochaine action exacte
 

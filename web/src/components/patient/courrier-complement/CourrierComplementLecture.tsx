@@ -58,7 +58,7 @@ function CarteCourrier({ courrier }: { courrier: CourrierComplementServi }) {
           )}
         </header>
         {servi && (
-          <div aria-label="Texte du courrier" className="mt-4">
+          <div role="group" aria-label="Texte du courrier" className="mt-4">
             <p className="whitespace-pre-line text-base leading-relaxed text-foreground">{courrier.texte}</p>
           </div>
         )}

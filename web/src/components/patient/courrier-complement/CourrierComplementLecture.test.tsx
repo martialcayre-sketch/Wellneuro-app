@@ -59,7 +59,7 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     expect(screen.getByRole('heading', { name: TITRE_COURRIER_COMPLEMENT })).toBeTruthy();
     expect(screen.getByText(PHRASE_COURRIER_COMPLEMENT)).toBeTruthy();
     expect(screen.getByText('À remettre à : <i>Médecin traitant</i>')).toBeTruthy();
-    expect(screen.getByLabelText('Texte du courrier').textContent).toContain('<b>pas du HTML</b>');
+    expect(screen.getByRole('group', { name: 'Texte du courrier' }).textContent).toContain('<b>pas du HTML</b>');
     expect(screen.getByRole('link', { name: 'Ouvrir la version à imprimer' }).getAttribute('href'))
       .toBe('/api/portail/courrier-complement/impression?remise=ccr_2');
     expect(tracesPosees()).toEqual([{ espece: 'courrier_complement', idObjet: 'ccr_2' }]);
@@ -68,7 +68,7 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
   it('plusieurs courriers (D-362 §2) : tous servis, le plus récent en tête, chacun son impression et sa lecture', async () => {
     repondre(200, { ok: true, courriers: [SERVI, ANCIEN] });
     await afficher();
-    const textes = screen.getAllByLabelText('Texte du courrier').map(t => t.textContent);
+    const textes = screen.getAllByRole('group', { name: 'Texte du courrier' }).map(t => t.textContent);
     expect(textes).toEqual([SERVI.texte, ANCIEN.texte]);
     expect(screen.getAllByRole('link', { name: 'Ouvrir la version à imprimer' }).map(l => l.getAttribute('href'))).toEqual([
       '/api/portail/courrier-complement/impression?remise=ccr_2',
@@ -89,14 +89,14 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     expect(screen.getByText(MENTION_INDISPONIBLE_COMPLEMENT)).toBeTruthy();
     expect(screen.queryByText(PHRASE_COURRIER_COMPLEMENT)).toBeNull();
     expect(screen.queryByText(/À remettre à/)).toBeNull();
-    expect(screen.queryByLabelText('Texte du courrier')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Texte du courrier' })).toBeNull();
     expect(tracesPosees()).toEqual([]);
   });
 
   it('servi mais pas imprimable : le texte et la lecture, sans lien qui mènerait à une erreur', async () => {
     repondre(200, { ok: true, courriers: [{ ...SERVI, imprimable: false }] });
     await afficher();
-    expect(screen.getByLabelText('Texte du courrier')).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Texte du courrier' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Ouvrir la version à imprimer' })).toBeNull();
     expect(tracesPosees()).toEqual([{ espece: 'courrier_complement', idObjet: 'ccr_2' }]);
   });
@@ -107,7 +107,7 @@ describe('Courrier à remettre à votre médecin (D-345, J3-12h lot 4)', () => {
     expect(screen.getByText(PHRASE_COURRIER_COMPLEMENT).closest('header')?.className).toContain('print:hidden');
     expect(screen.getByText('À remettre à : <i>Médecin traitant</i>').closest('header')?.className).toContain('print:hidden');
     expect(screen.getByRole('link', { name: 'Ouvrir la version à imprimer' }).closest('div.print\\:hidden')).toBeTruthy();
-    expect(screen.getByLabelText('Texte du courrier').closest('.print\\:hidden')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Texte du courrier' }).closest('.print\\:hidden')).toBeNull();
   });
 
   it('« Votre lecture est datée » en tête, AVANT les courriers, seulement quand une lecture se consigne (D-297 §4)', async () => {
