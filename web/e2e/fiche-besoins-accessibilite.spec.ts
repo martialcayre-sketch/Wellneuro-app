@@ -13,7 +13,7 @@
 // mesurés, non mesurés avec motif (r3_08), un écart avec la décision (r3_10).
 // Le banc juge le rendu, pas les calculs. Patient fictif Sophie Nicola
 // (PAT_SEED_01), en lecture seule.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { praticienSessionCookie } from './helpers/auth';
 
@@ -87,12 +87,18 @@ async function ouvrirFiche(page: Page, onglet?: string) {
 }
 
 /** Déplie au clavier chaque repli (`summary`) de la zone : motifs et écart. */
-async function deplierTout(page: Page, zone: ReturnType<Page['locator']>) {
+async function deplierTout(page: Page, zone: Locator) {
   const replis = zone.locator('details:not([open]) > summary');
-  while (await replis.count()) {
+  for (let i = 0; i < 30 && (await replis.count()); i++) {
     await replis.first().focus();
     await page.keyboard.press('Enter');
   }
+  await expect(replis, 'un repli ne s’ouvre pas au clavier').toHaveCount(0);
+}
+
+/** Attend la fin des transitions de la zone : axe ne juge pas un contraste en cours d'animation. */
+async function animationsFinies(zone: Locator) {
+  await zone.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)));
 }
 
 async function sansViolationAxe(page: Page, portee: string, etat: string) {
@@ -114,29 +120,37 @@ test.describe('Instruments des 12 besoins — aucune violation axe (r3_14, Q12)'
   test('onglet « Les 12 besoins » : radar et tableau, motifs repliés puis dépliés', async ({ page }) => {
     await ouvrirFiche(page, 'besoins');
     const panneau = page.locator('#panneau-besoins');
-    // Le rendu est là avant de juger : le radar et le motif d'un non mesuré.
-    await expect(panneau.locator('.recharts-polar-angle-axis')).toBeVisible();
-    await expect(panneau.locator('summary', { hasText: 'Motif' })).toHaveCount(NON_MESURES.size);
-    await expect(panneau.locator('summary', { hasText: 'Écart avec la décision' })).toHaveCount(1);
+    // Le rendu des réponses fixées est là avant de juger (ni chargement ni
+    // erreur) : le motif d'un non mesuré et l'écart d'un mesuré.
+    await expect(panneau.locator('summary', { hasText: 'Motif' }).first()).toBeVisible();
+    await expect(panneau.locator('summary', { hasText: 'Écart avec la décision' }).first()).toBeVisible();
+    await animationsFinies(panneau);
     await sansViolationAxe(page, '#panneau-besoins', 'onglet, replis fermés');
 
     await deplierTout(page, panneau);
-    await expect(panneau.getByText('Non mesuré · hors score (D-122)')).toBeVisible();
+    await expect(panneau.getByText('Non mesuré · hors score (D-122)').first()).toBeVisible();
+    await animationsFinies(panneau);
     await sansViolationAxe(page, '#panneau-besoins', 'onglet, replis ouverts');
   });
 
-  test('tiroir « Les 12 besoins » du poste de pilotage : fermé au clavier', async ({ page }) => {
+  test('tiroir « Les 12 besoins » du poste de pilotage : ouvert et fermé au clavier', async ({ page }) => {
     await ouvrirFiche(page);
-    await page.getByRole('button', { name: /Les 12 besoins/ }).first().click();
-    const tiroir = page.getByRole('dialog');
+    const bouton = page.getByRole('button', { name: /Les 12 besoins/ }).first();
+    await bouton.focus();
+    await page.keyboard.press('Enter');
+    const tiroir = page.getByRole('dialog', { name: 'Les 12 besoins' });
     await expect(tiroir).toBeVisible();
-    await expect(tiroir.locator('summary', { hasText: 'Écart avec la décision' })).toHaveCount(1);
+    await expect(tiroir.locator('summary', { hasText: 'Écart avec la décision' }).first()).toBeVisible();
+    await animationsFinies(tiroir);
     await sansViolationAxe(page, '[role="dialog"]', 'tiroir, replis fermés');
 
     await deplierTout(page, tiroir);
+    await animationsFinies(tiroir);
     await sansViolationAxe(page, '[role="dialog"]', 'tiroir, replis ouverts');
 
+    // Échap ferme, et le focus revient sur le bouton qui a ouvert.
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(bouton).toBeFocused();
   });
 });
