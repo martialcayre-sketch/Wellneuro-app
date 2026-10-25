@@ -70,9 +70,10 @@ const MARTIAL_2002 =
 const AUCUN = 'Aucun libellé de la V105 ne nomme cet analyte.';
 const IONO_COMPLET_1610 = 'Ionogramme complet (Na + K + Cl + CO2 + protides), relu le 2026-10-18 (D-323 §6).';
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
+const AUCUN_AG = 'Aucun libellé de la V105 ne nomme les acides gras.';
 
-/** La liste, par code d'analyte. Les 94 analytes du catalogue y figurent
- *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361). */
+/** La liste, par code d'analyte. Les 116 analytes du catalogue y figurent
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361, 22 par D-364). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -107,7 +108,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     situation: 'aucun_acte',
     motif: 'La V105 cote le cortisol sanguin (0462) et urinaire (0476), aucun cortisol salivaire.',
   },
-  BIO_AG_ERYTHROCYTAIRES: { situation: 'aucun_acte', motif: 'Aucun libellé de la V105 ne nomme les acides gras.' },
+  BIO_AG_ERYTHROCYTAIRES: { situation: 'aucun_acte', motif: AUCUN_AG },
   BIO_HOMOCYSTEINE: { situation: 'aucun_acte', motif: AUCUN },
 
   // ── Libellé explicite.
@@ -398,12 +399,37 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     ],
   },
 
+  // ── Les vingt acides gras de D-364 (V105 relue par conteneur le 2026-10-25 :
+  // aucun libellé ne nomme les acides gras, comme pour le profil).
+  BIO_AG_MYRISTIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_PALMITIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_STEARIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_LAURIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_PENTADECANOIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_HEPTADECANOIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_PALMITOLEIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_CIS_VACCENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_TRANS_VACCENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_RUMENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_OLEIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_NERVONIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_ELAIDIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_LINOLEIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_GAMMA_LINOLENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_DGLA: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_ARACHIDONIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_ALPHA_LINOLENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_EPA: { situation: 'aucun_acte', motif: AUCUN_AG },
+  BIO_AG_DHA: { situation: 'aucun_acte', motif: AUCUN_AG },
+
   // ── Valeurs calculées.
   BIO_RATIO_HOMA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_CORTISOL_DHEA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_NON_HDL: { situation: 'valeur_calculee', motif: 'Calculé à partir du cholestérol total et du HDL.' },
   BIO_DFG_CKD_EPI: { situation: 'valeur_calculee', motif: 'Calculé à partir de la créatinine.' },
   BIO_RATIO_AA_EPA: { situation: 'valeur_calculee', motif: CALCUL },
+  BIO_RATIO_LA_DGLA: { situation: 'valeur_calculee', motif: CALCUL },
+  BIO_RATIO_OMEGA6_OMEGA3: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_KYN_TRP: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_ZINC_CUIVRE: { situation: 'valeur_calculee', motif: CALCUL },
 

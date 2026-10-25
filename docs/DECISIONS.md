@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-364 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrages du responsable du 2026-10-25 (file A, t45),
+  sur questions à options, transcrits par l'assistant.
+- Domaine : catalogue biologie ([[D-261]], [[D-323]] §6) ; applique
+  [[D-356]] §4 et §6, suit [[D-245]] §5 pour les rapports. Aucun seuil,
+  aucune borne, aucune plage ([[D-059]]), aucune conversion ([[D-157]]).
+
+**§1 — Source.** Constat par conteneur du 2026-10-25 (lecture seule,
+agrégats, aucun identifiant) : un profil sur un seul import, extrait le
+2026-10-13 — vingt acides en %, chacun avec l'intervalle du laboratoire
+imprimé, puis « Indice Oméga 3 » (%), « Rapport A. Arachidonique / EPA »,
+« Rapport A. Linoléique / A. DGLA » et « Rapport Oméga 6 / Oméga 3 », ces
+trois sans unité ; 24 lignes « inconnu ». Le compte rendu ne nomme pas la
+matrice. Catalogue : 94 analytes, dont `BIO_AG_ERYTHROCYTAIRES` (profil,
+cité par quatre panels, sans composition), `BIO_INDEX_OMEGA3` et
+`BIO_RATIO_AA_EPA`. En V105, aucun acte ne nomme les acides gras.
+
+**§2 — Provenance.** Patron de [[D-261]] et de [[D-361]] :
+`saisie_praticien`, « partielle », la source étant le compte rendu lu en
+production. Aucune plage : les intervalles imprimés restent ceux du
+laboratoire, jamais copiés au catalogue.
+
+**§3 — Vingt-deux fiches** (migration
+`20261025140000_catalogue_biologie_acides_gras`) : les vingt acides en `%`,
+prélèvement « sang », libellé = nom courant, sans notation lipidique ni
+famille (myristique, palmitique, stéarique, laurique, pentadécanoïque,
+heptadécanoïque, palmitoléique, cis-vaccénique, trans-vaccénique,
+ruménique, oléique, nervonique, élaïdique, linoléique, gamma-linolénique,
+dihomo-gamma-linolénique, arachidonique, alpha-linolénique,
+eicosapentaénoïque, docosahexaénoïque) ; `BIO_RATIO_LA_DGLA` et
+`BIO_RATIO_OMEGA6_OMEGA3` en « ratio », prélèvement « autre », comme
+`BIO_RATIO_AA_EPA` : rendus par le laboratoire, jamais calculés. L'indice
+oméga 3 et AA/EPA gardent leur fiche. Catalogue : 116 analytes ; le contrat
+`cb_catalogue_niveau_1_donnees.sql` tient les 22 fiches ligne par ligne.
+
+**§4 — Aucun panel, aucune composition du profil.** L'entrée d'un acide dans
+un panel change ce que l'application propose de prescrire : clinique, elle
+viendra par un lot et une décision distincts, sur une source désignée. Les
+panels et `BIO_AG_ERYTHROCYTAIRES` sont inchangés.
+
+**§5 — NABM** (`candidatsNabm.ts`) : les vingt acides en « aucun acte »,
+les deux rapports en « valeur calculée ». Rien en base.
+
+**§6 — Compositions préparées** (`compositionsPreparees.ts`, rien en base
+sans la signature du praticien) : `BIO_RATIO_AA_EPA` = acide arachidonique +
+EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA — le nom même du
+rapport. `BIO_RATIO_OMEGA6_OMEGA3` reste « opérandes absents » : quels
+acides le laboratoire additionne n'est pas imprimé. Avant l'application de
+la migration, un composant absent ne s'affiche pas et ne se signe pas.
+
+**§7 — Libellés, en second lot.** Arbitré : les 22 libellés imprimés, plus
+des noms usuels (« EPA », « DHA »…), dont la liste sera préparée et soumise
+au responsable avec le second lot. Ils n'entrent au résolveur, avec sa
+re-signature (décision distincte, sur instruction), qu'après l'application
+**constatée** de la migration (clé étrangère d'`analyte_propose`, comme
+[[D-361]] §6). Les 24 lignes déjà lues restent « inconnu » ([[D-356]] §6).
+
 ### D-363 — t44 : le résolveur des libellés est re-signé sur le taux de prothrombine et l'INR — imprimés seuls, sans synonyme ; le temps de Quick, patient ou témoin, n'est jamais rattaché
 
 - Date : 2026-10-25
