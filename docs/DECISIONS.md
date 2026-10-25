@@ -11,7 +11,7 @@
   sur question à options, transcrite par l'assistant sur son instruction.
 - Domaine : staging d'import ([[D-256]] A4) ; applique [[D-361]] §6 ;
   remplace la signature de [[D-356]] §5. Aucun seuil, aucune borne, aucune
-  conversion ([[D-157]]), aucune migration.
+  conversion ([[D-157]]), aucune migration dans ce lot.
 
 **§1 — Préalable constaté.** La migration
 `20261024220000_catalogue_biologie_tp_inr` est appliquée et constatée en
