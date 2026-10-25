@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ProtocolDiffusionPanel } from './ProtocolDiffusionPanel';
+import { ProtocolDiffusionPanel, TEXTE_ANNONCE_LETTRE, TEXTE_PORTAIL_COMPLEMENT } from './ProtocolDiffusionPanel';
+import type { ApercuCourrierComplement } from '@/lib/correspondance/courrierComplementRemise';
 import {
   TEXTE_ANNONCE,
   TEXTE_ANNONCE_A_VENIR,
@@ -452,5 +453,51 @@ describe('ProtocolDiffusionPanel — le courrier pour le médecin (D-262, LOT-03
   it('la date est celle écrite dans la lettre (jour UTC), quel que soit le fuseau du navigateur', () => {
     panneau({ ...LETTRE, consigneLe: '2026-03-29T22:30:00.000Z' });
     expect(screen.getByTestId('apercu-lettre-adressage').textContent).toMatch(/du 29 mars 2026/);
+  });
+});
+
+describe('ProtocolDiffusionPanel — l’annonce du courrier complément (D-345, J3-12h lot 4)', () => {
+  const PART: ApercuCourrierComplement = {
+    etat: 'part', statut: 'requis', motif: 'm', grossesseDeclenche: false,
+    courrier: { idCorrespondance: 'corr_1', consigneLe: '2026-10-24T08:00:00.000Z' },
+  };
+  const panneau = (apercu: ApercuCourrierComplement, extra: Partial<Parameters<typeof ProtocolDiffusionPanel>[0]> = {}) =>
+    render(
+      <ProtocolDiffusionPanel
+        canApprove approved={false} stale={false} approvedAt={null}
+        courrierComplement={{ apercu, medecinTraitant: null }}
+        onApprove={() => undefined}
+        {...extra}
+      />,
+    );
+
+  it('un courrier qui part : servi au portail, et l’e-mail neutre est dit AVANT le clic', () => {
+    panneau(PART);
+    const bloc = screen.getByTestId('apercu-courrier-complement');
+    expect(bloc.textContent).toContain('Le courrier du 24 octobre 2026 sera remis au patient avec ce protocole');
+    expect(bloc.textContent).toContain(TEXTE_PORTAIL_COMPLEMENT);
+    expect(bloc.textContent).toContain(TEXTE_ANNONCE_LETTRE);
+  });
+
+  it('l’e-mail déjà annoncé par la lettre qui part : le courrier ne le redit pas (un seul e-mail par clic)', () => {
+    panneau(PART, { lettre: { idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false } });
+    const bloc = screen.getByTestId('apercu-courrier-complement');
+    expect(bloc.textContent).toContain(TEXTE_PORTAIL_COMPLEMENT);
+    expect(bloc.textContent).not.toContain(TEXTE_ANNONCE_LETTRE);
+  });
+
+  it('l’e-mail du protocole annoncé : le courrier ne le redit pas', () => {
+    panneau(PART, { annonceProtocoleParEmail: true });
+    expect(screen.getByTestId('apercu-courrier-complement').textContent).not.toContain(TEXTE_ANNONCE_LETTRE);
+  });
+
+  it.each([
+    ['déjà remis', { ...PART, etat: 'deja' as const, motif: 'Déjà remis.', courrier: null }],
+    ['à préparer', { ...PART, etat: 'manquant' as const, motif: 'Un courrier est requis.', courrier: null }],
+  ])('%s : ni portail ni e-mail annoncés', (_cas, apercu) => {
+    panneau(apercu);
+    const bloc = screen.getByTestId('apercu-courrier-complement');
+    expect(bloc.textContent).not.toContain(TEXTE_PORTAIL_COMPLEMENT);
+    expect(bloc.textContent).not.toContain(TEXTE_ANNONCE_LETTRE);
   });
 });

@@ -35,7 +35,8 @@ import { unitesConcordent } from './valeurLue';
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
 // lus sur le premier compte rendu de production ; puis par [[D-263]] : les
 // analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]] ;
-// puis par [[D-336]] (six fiches de D-323 §6) et [[D-356]] (libellés réels).
+// puis par [[D-336]] (six fiches de D-323 §6), [[D-356]] (libellés réels) et
+// [[D-363]] (le TP et l'INR de D-361 §6).
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -248,6 +249,13 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Indice Oméga 3', code: 'BIO_INDEX_OMEGA3' },
   { libelle: 'Rapport A. Arachidonique / EPA', code: 'BIO_RATIO_AA_EPA' },
   { libelle: "Indice d'anisocytose", code: 'BIO_IDR' },
+  // [[D-361]] §6 (t44) : les deux fiches de D-361, sous le libellé LU en
+  // production (constat par conteneur du 2026-10-24), seul, sans synonyme.
+  // L'INR s'imprime sans unité, qui concorde avec « ratio » ([[D-356]] §4).
+  // « Temps de Quick patient » et « … témoin » ne sont JAMAIS rattachés : en
+  // secondes, ils dépendent du réactif, et le catalogue n'a pas de fiche.
+  { libelle: 'Taux de prothrombine', code: 'BIO_TP' },
+  { libelle: 'INR', code: 'BIO_INR' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -268,17 +276,18 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-356]] — RE-SIGNER REMPLACE : la signature de [[D-336]]
-  // (2026-10-21, SHA `3e084667…`, 167 entrées, 85 analytes) portait la table
-  // sans les huit libellés réels de t36 ; celles de [[D-263]] (`be9a463c…`),
-  // [[D-260]] (`5f95d167…`) et [[D-259]] (`ccbd8008…`) étaient déjà
-  // remplacées. 175 entrées, 85 analytes. Signature du responsable transcrite
-  // par l'assistant sur son instruction, le 2026-10-24.
+  // RE-SIGNÉE PAR [[D-363]] — RE-SIGNER REMPLACE : la signature de [[D-356]]
+  // (2026-10-24, SHA `ebe7179e…`, 175 entrées, 85 analytes) portait la table
+  // sans le TP ni l'INR de [[D-361]] §6 ; celles de [[D-336]] (`3e084667…`),
+  // [[D-263]] (`be9a463c…`), [[D-260]] (`5f95d167…`) et [[D-259]]
+  // (`ccbd8008…`) étaient déjà remplacées. 177 entrées, 87 analytes. Signature
+  // du responsable transcrite par l'assistant sur son instruction, le
+  // 2026-10-25.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-24T18:34:46.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-24, des libellés restés « inconnu » en production (constat par conteneur du même jour, agrégats : 53 lignes « inconnu », 92 résolues), contre le catalogue biology_analytes ; huit libellés réels arbitrés un par un (D-356), antériorités jamais rattachées',
-  shaPerimetre: 'ebe7179eba0665ac0c2382764080da1f3ef817b63994bea8e622f415656e2061',
+  dateValidation: '2026-10-25T10:52:31.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-25, des deux libellés de D-361 §6 lus en production (constat par conteneur du 2026-10-24) — « Taux de prothrombine » → BIO_TP, « INR » → BIO_INR, imprimés seuls, sans synonyme ; temps de Quick patient et témoin jamais rattachés',
+  shaPerimetre: 'b4007b9c931b8a93f6fe095778b50a4a8eecdfb368371fe4c5cd7fcfb4dcf4d2',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

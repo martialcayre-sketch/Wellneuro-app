@@ -11681,7 +11681,47 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Code consommateur (« non gradé ») ; F53 ; claims à relire en atelier.
 
-## 2026-10-24 — File D : lettres bg, h, bf (D-365 à D-367)
+## 2026-10-24 — t44 : fiches TP et INR au catalogue, migration (D-361)
+
+**Fait.** Constat par conteneur (agrégats) : TP en %, INR sans unité, temps de Quick patient et témoin en s, tous « inconnu ». Le responsable a tranché sur questions à options : deux fiches, `BIO_TP` (%) et `BIO_INR` (« ratio »), `saisie_praticien`, sans plage ni NABM signé ; candidats 0126, 0127, 1128 proposés. Migration de données seule.
+
+**Écarté.** Le temps de Quick en secondes (dépend du réactif, sans son témoin) et « s » au vocabulaire ; un panel ; l'INR en NULL ; les synonymes.
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (libellés au résolveur, re-signature).
+
+**Ouvert.** cinq PR ont revendiqué D-357 le même soir ; D-357 à D-360 pris par d’autres PR, renuméroté D-361 au merge.
+
+## 2026-10-25 — r3_14 : les instruments des 12 besoins sous banc d'accessibilité (Q12)
+
+**Fait.** Inventaire : J3-12b réorganise l'onglet, mais un banc qui vise le panneau par son id et le tiroir par son rôle lui survit. Le responsable a tranché par questions à options : banc maintenant, correctif sans texte s'il y a violation, aucune règle désactivée, portée bornée aux instruments. Banc axe (WCAG 2.1 A et AA) posé sur l'onglet et sur le tiroir : zéro violation dès le premier passage. Parcours E67 : étape 9 « Mon équilibre », et l'onglet et le tiroir au poste B.
+
+**Écarté.** Attendre J3-12b ; la page entière comme portée ; F9a (caption, radar, graduations), qui suit J3-12b.
+
+**Prochaine action.** CI, CodeRabbit, merge après la release-db de t44 (#1692), observation du déploiement.
+
+**Ouvert.** La passe humaine E67 (file D) ; les défauts qu'axe ne classe pas en violation restent à F9a.
+
+## 2026-10-25 — J3-12h lot 4 : le courrier complément au portail, éteint (D-362)
+
+**Fait.** Écran « Courrier à remettre à votre médecin » (toutes les remises, impression `?remise=`), espèce de lecture `courrier_complement` (fil du jour, accusé, Mes échanges, Documents remis), annonce neutre au clic, préparation liée à la tête de fil relue, banc de fraîcheur. Prod (conteneur) : 28 consultations validées, 0 sans date. Condition 1 sur 4 levée ; drapeau éteint.
+
+**Écarté.** La dernière remise seule (perd le courrier d’une version qui retire un complément) ; « au prochain rendez-vous ».
+
+**Prochaine action.** CI, CodeRabbit, passe Codex P0, merge, constat du déploiement.
+
+**Ouvert.** P2-1 routé au plan (libellé « Fiches remises ») ; conditions 2 à 4.
+
+## 2026-10-25 — t44, second lot : TP et INR au résolveur (D-363)
+
+**Fait.** Migration de #1692 constatée, préalable de D-361 §6 rempli. « Taux de prothrombine » → `BIO_TP` et « INR » → `BIO_INR` sont au résolveur, sans synonyme ; le temps de Quick reste « inconnu ». La re-signature (177 entrées, SHA `b4007b9c…`) a été posée sur l'instruction du responsable et remplace celle de D-356. Un banc vérifie qu'un INR sans unité est résolu.
+
+**Écarté.** Les synonymes (« TP » nu, « Temps de prothrombine ») ; D-364 réservé d'avance (le contrôle refuse un trou) ; D-362 pris de force sur #1701.
+
+**Prochaine action.** #1701 mergée, main fusionné : T3, CI, CodeRabbit, merge, déploiement.
+
+**Ouvert.** Le numéro, qui dépend de l'ordre des merges ; le constat des prochains imports de TP et d'INR.
+
+## 2026-10-24 — File D : lettres bg, h, bf (D-364 à D-366)
 
 **Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
 

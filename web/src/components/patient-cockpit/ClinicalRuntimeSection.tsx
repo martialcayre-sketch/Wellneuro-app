@@ -1753,7 +1753,9 @@ export function ClinicalRuntimeSection({
       const response = await fetch('/api/praticien/protocoles/courrier-complement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient, protocolDraftId: activeVersionId, medecinLibelle }),
+        // La carte désignée : le serveur exige que la version soit SA tête de
+        // fil, relue — celle que le clic validera (revue CodeRabbit de #1691).
+        body: JSON.stringify({ idPatient, decisionCardId: readyDecisionCardId, protocolDraftId: activeVersionId, medecinLibelle }),
       });
       const payload = (await response.json()) as { ok: boolean; error?: string };
       if (!response.ok || !payload.ok) {
