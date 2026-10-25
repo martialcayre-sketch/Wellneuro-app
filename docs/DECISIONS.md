@@ -4,6 +4,39 @@
 
 ## Décisions actives
 
+### D-363 — t44 : le résolveur des libellés est re-signé sur le taux de prothrombine et l'INR — imprimés seuls, sans synonyme ; le temps de Quick, patient ou témoin, n'est jamais rattaché
+
+- Date : 2026-10-25
+- Statut : accepté — signature du responsable du 2026-10-25 (file A, t44),
+  sur question à options, transcrite par l'assistant sur son instruction.
+- Domaine : staging d'import ([[D-256]] A4) ; applique [[D-361]] §6 ;
+  remplace la signature de [[D-356]] §5. Aucun seuil, aucune borne, aucune
+  conversion ([[D-157]]), aucune migration dans ce lot.
+
+**§1 — Préalable constaté.** La migration
+`20261024220000_catalogue_biologie_tp_inr` est appliquée et constatée en
+production le 2026-10-25 (#1692) : `BIO_TP` en %, `BIO_INR` en « ratio »,
+94 analytes. Un code proposé par le résolveur existe donc au catalogue
+(`ON DELETE RESTRICT`, [[D-361]] §6).
+
+**§2 — Les entrées** (2, sous le libellé lu en production le 2026-10-24) :
+« Taux de prothrombine » → `BIO_TP` ; « INR » → `BIO_INR`. Aucun synonyme :
+« TP » nu et « Temps de prothrombine » (en secondes) se confondraient. L'INR
+s'imprime sans unité, qui concorde avec « ratio » ([[D-356]] §4) : la ligne
+est résolue et validable sans unité lue. « Temps de Quick patient » et
+« Temps de Quick témoin » restent « inconnu » : pas de fiche ([[D-361]] §2).
+
+**§3 — Signature.** Nouvelle empreinte
+`b4007b9c931b8a93f6fe095778b50a4a8eecdfb368371fe4c5cd7fcfb4dcf4d2`
+(177 entrées, 87 analytes), datée `2026-10-25T10:52:31.000Z`. Elle remplace
+celle de [[D-356]].
+
+**§4 — Hors de cette décision.** Les lignes déjà lues restent « inconnu »
+(la table ne vaut que pour les imports futurs ; rattachement à la main, aucune
+migration de données). La signature des correspondances NABM de `BIO_TP` et
+`BIO_INR` reste un geste du praticien dans la Bibliothèque ([[D-361]] §5).
+Les acides gras (t45) : inchangés.
+
 ### D-362 — J3-12h, lot 4 : le courrier complément au portail — titre et phrase d'accompagnement acceptés, « courrier puis complément » dit au patient ; servi, accusé et annoncé comme la lettre d'adressage, sous le même drapeau (applique D-345 §4-§7 et D-358 §3-§4)
 
 - Date : 2026-10-25

@@ -320,8 +320,35 @@ describe('resolver — libellés réels restés « inconnu » ([[D-356]], t36)',
 
   it('la CRP de D-263 reste standard ; sans fiche, rien n’est rattaché', () => {
     expect(resoudreLibelle('CRP (Protéine C Réactive)')).toEqual({ statut: 'resolu', code: 'BIO_CRP' });
-    for (const libelle of ['Taux de prothrombine', 'INR', 'Temps de Quick patient', 'Temps de Quick témoin',
+    // Le TP et l'INR en sont sortis avec leurs fiches ([[D-361]] §6) ; le temps
+    // de Quick n'a pas de fiche et n'en sort pas.
+    for (const libelle of ['Temps de Quick patient', 'Temps de Quick témoin',
       'Acide Eicosapentaenoique', 'Rapport Oméga 6 / Oméga 3', 'Rapport A. Linoléique / A. DGLA', 'Plaquettes (citrate)']) {
+      expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
+    }
+  });
+});
+
+describe('resolver — le TP et l’INR, libellés imprimés ([[D-361]] §6, t44)', () => {
+  const UNITES = unitesDuCatalogue();
+  it.each([
+    ['Taux de prothrombine', '%', 'BIO_TP'],
+    // Imprimé sans unité : l'absence concorde avec « ratio » ([[D-356]] §4).
+    ['INR', null, 'BIO_INR'],
+  ])('« %s » en %s → %s, unité concordante', (libelle, unite, code) => {
+    expect(resoudreLigne(libelle, unite, UNITES)).toEqual({ statut: 'resolu', code });
+    expect(unitesConcordent(unite, UNITES.get(code) ?? null)).toBe(true);
+  });
+
+  it('le temps de Quick, patient ou témoin, en secondes : jamais rattaché', () => {
+    for (const libelle of ['Temps de Quick patient', 'Temps de Quick témoin', 'Temps de Quick', 'Temps de Quick (TP)']) {
+      expect(resoudreLigne(libelle, 's', UNITES), libelle).toEqual({ statut: 'inconnu', code: null });
+    }
+  });
+
+  it('aucun synonyme : « TP » nu et « Temps de prothrombine » restent « inconnu »', () => {
+    // Libellé ENTIER : un INR qualifié (cible, sous AVK) n'est pas l'INR lu.
+    for (const libelle of ['TP', 'Temps de prothrombine', 'INR cible', 'INR (patient)']) {
       expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
     }
   });
