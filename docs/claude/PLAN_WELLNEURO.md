@@ -713,12 +713,12 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre bg, de la main du responsable.
 - **Critère de fin** : flux listé, puis déclaré ou arrêté, consigné.
-- **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-361 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance) et déclaré, version pseudonymisée seule ; réserve écrite au registre ; constat des envois antérieurs tenu hors dépôt. Reste un lot de code : nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-361 §4) et ligne de la rubrique 6.
+- **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-361 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance), déclaration décidée, version pseudonymisée seule ; constat des envois antérieurs tenu hors dépôt. La déclaration n'est pas encore livrée : la ligne de la rubrique 6 (réserve écrite) et la nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-361 §4) partent dans un lot de code distinct ; critère de fin atteint à sa livraison.
 
 #### H19 · bf : indicateurs hebdomadaires
 - **Identifiant, piste** : lettre bf.
 - **Rang** : instruction au rang 0 ; code au rang 3 au plus tôt, la porte 15 se levant au plus tôt au rang 2 (règle) ; 4 si migration [Hypothese] ; ouverture en file C au-delà de la place 11, dans l'ordre de préparation après l'encart.
-- **Portes, préalables** : instruction (rang 0) : aucune ; code (rang 3 au plus tôt) : une D-xxx par indicateur, porte 6, porte 11 pour tout mot, porte 15 (lecture proposée, à confirmer) ; ouverture (file C) : texte patient, porte 18. Moment tranché : au point d'étape, par une nouvelle version de son contrat, trois fois par cycle, sans chiffre en retour ; aucune saisie à part ; charge du 21e jour à constater.
+- **Portes, préalables** : instruction (rang 0) : aucune ; code (rang 3 au plus tôt) : une D-xxx par indicateur, porte 6, porte 11 pour tout mot, porte 15 (lecture confirmée le 2026-10-14) ; ouverture (file C) : texte patient, porte 18. Moment tranché : au point d'étape, par une nouvelle version de son contrat, trois fois par cycle, sans chiffre en retour ; aucune saisie à part ; charge du 21e jour à constater.
 - **Migration, release-db** : selon (4 si le contrat du point d'étape se versionne) [A verifier].
 - **Décisions, textes** : une D-xxx clinique et son fragment par indicateur, de la main du responsable ; aucune échelle proposée par l'assistant ; nouvelle version du contrat du point d'étape [A verifier : migration].
 - **Critère de fin** : instruction : décisions signées ; code : réponses constatées en agrégats ; ouverture constatée.
@@ -2861,7 +2861,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | de cq | forme du plan unique : D-285, écrite | registre | 0 | H04 |
 | du délai avant T0 | délai, après le comptage ; lettre cr si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
 | de cadrage ca | refonte du sommeil, présentation seule | la main du responsable | 0 | H17 |
-| par indicateur hebdomadaire | nom, source, échelle, nature | la main du responsable | 0 (instruction) | H19 |
+| par indicateur hebdomadaire | nom, source, échelle, nature, ce que le praticien en lit (D-363 §2) | la main du responsable | 0 (instruction) | H19 |
 | de seuils_points de Q_ALI_01 | décision clinique sourcée | la main du responsable | 1 [Hypothese] | H40 |
 | des règles orphelines | réécriture des trois restes | registre | 1 [Hypothese] | H41 |
 | de la table d'arrêt | grilles citées, signature | la main du responsable | 1 [Hypothese] | H42 |
