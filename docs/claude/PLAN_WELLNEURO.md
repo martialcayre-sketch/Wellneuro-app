@@ -2016,6 +2016,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Migration, release-db** : non.
 - **Décisions, textes** : texte du geste, de la main du responsable.
 - **Critère de fin** : activation constatée.
+- **Mise à jour (2026-10-25)** : arbitrages du responsable, sur questions à options. Le geste est un message au patient, sous son carnet alimentaire, au terme des 21 jours ; il ne porte ni chiffre (« n jours sur m » reste au cockpit, H74) ni jugement, et ne fusionne pas avec le message de la place 7. **Texte accepté** : « Votre carnet alimentaire touche à sa fin. Votre praticien le relira avec vous : il n’y a ni bonne ni mauvaise journée. » **Point de départ (h3)** : le 21e jour se compte depuis le premier jour noté du carnet, et non depuis le jour 0 de D-255. Restent : la fenêtre de service autour du terme (non fixée), H74, puis le lot et sa D-xxx.
 
 #### H82 · ap : place 10, bibliothèque pédagogique
 - **Identifiant, piste** : lettre ap (R:ap) ; bibliothèque pédagogique au portail ; fiches conseils ; file C, place 10.
@@ -2089,7 +2090,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 6 | Fiche signalétique (date de naissance, invitation au dépôt) ; close le 2026-10-22 sans activation (D-342 §4) : la saisie initiale de la date d'un dossier ouvert sans date reste en service (lot (h), D-284 §3) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
-| 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste ; deux messages, deux places, sans fusion avec la place 7 | 10 |
+| 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25 (H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
 | 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
 | 11 | Photo ou dictée des repas | H83 | registre IA, porte 5, D-269, code | information patient | 10 |
 
@@ -2168,7 +2169,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 5 | h3 | ch : trois phrases de tendance, règle de comparaison d'un agenda fini au précédent et marge « stable » à signer | H72 | phrase en fin d'agenda |
 | 6 | h2 | indications v2, re-signées | F53 | bilan par axe |
 | 8 | h2 | constater un cycle réel jusqu'au jalon de fin, par identifiant | F26 | fin de BIO-PARCOURS |
-| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 reste à confirmer | H80, H81 | places 7 et 9 |
+| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 confirmé le 2026-10-25 (premier jour noté du carnet ; fenêtre de service non fixée) | H80, H81 | places 7 et 9 |
 | T | h1 | chaque release-db, une à une ; chaque contre-revue P0 | §5 | codes consommateurs ; merges des lots P0 |
 
 ### La file D au 2026-10-14
