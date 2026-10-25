@@ -366,6 +366,19 @@ FROM unnest(ARRAY[${CLAIMS.map((c) => `'${c}'`).join(', ')}]) AS c(claim_id);
 const CAS = [
   { nom: 'positif : 17 liens, liste exacte, claims certifiés', motif: null },
 
+  // ── La base refuse une écriture du contrat, même hors de la garde ───────
+  // Le contrat de ce cas porte une écriture que la garde lexicale aurait
+  // refusée si elle se trouvait dans le fichier : il prouve que la lecture
+  // seule imposée par la base mord, indépendamment de la garde.
+  {
+    nom: 'contrat qui écrirait (lecture seule imposée par la base)',
+    contrat: CONTRAT.replace(
+      "RAISE NOTICE 'D-351 : 17 liens",
+      "EXECUTE 'UPDATE biology_analyte_links SET actif = actif';\n  RAISE NOTICE 'D-351 : 17 liens",
+    ),
+    motif: 'read-only transaction',
+  },
+
   // ── La migration refuse tout, faute d'un claim conforme ─────────────────
   {
     nom: 'claim REJETE',
@@ -458,7 +471,14 @@ const CAS = [
 let echecs = 0;
 try {
   for (const cas of CAS) {
-    const script = [PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', CONTRAT].join('\n');
+    // `SET TRANSACTION READ ONLY` avant le contrat : PostgreSQL accepte de
+    // passer une transaction en lecture seule après ses écritures, et refuse
+    // ensuite toute écriture. La lecture seule du contrat est ainsi imposée
+    // par la base dans le rejeu, et plus seulement par la garde lexicale
+    // (Merge Risk de CodeRabbit sur 418e1c3b).
+    const script = [
+      PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', 'SET TRANSACTION READ ONLY;', cas.contrat ?? CONTRAT,
+    ].join('\n');
     const client = new pg.Client(configVers(CLONE));
     await client.connect();
     let erreur = null;
@@ -507,6 +527,13 @@ try {
            VALUES ($1, $2, $3, $4, 'haut_evocateur', 'WN-CL-0000-000', 'v1.0', $5)`,
     values: [id, ANALYTE_CONC, cible, code, actif],
   });
+  // Un lien porté par un rapport, sans analyte (CHECK `cible_unique`).
+  const RAPPORT_CONC = 'BIO_RATIO_TEST_F79_CONC';
+  const lienRapport = (id, cible, code) => ({
+    text: `INSERT INTO biology_analyte_links (id, ratio_code, cible_type, cible_code, direction, claim_id, version_claim)
+           VALUES ($1, $2, $3, $4, 'haut_evocateur', 'WN-CL-0000-000', 'v1.0')`,
+    values: [id, RAPPORT_CONC, cible, code],
+  });
   async function refusAttendu(nom, promesse, motif) {
     try {
       await promesse;
@@ -530,18 +557,24 @@ try {
        VALUES ('__f79c_analyte', $1, 'x', 'sang', 'saisie_praticien', 'partielle', now())`,
       [ANALYTE_CONC],
     );
+    await admin.query(
+      `INSERT INTO biology_ratios (id, code, libelle, operation, analyte_a_code, analyte_b_code)
+       VALUES ('__f79c_rapport', $1, 'x', 'rapport', $2, 'BIO_HOMOCYSTEINE')`,
+      [RAPPORT_CONC, ANALYTE_CONC],
+    );
 
-    // C1 — READ COMMITTED : la seconde écriture ATTEND le verrou, puis voit le
-    // lien validé et se fait refuser. Sans le verrou, elle passerait.
-    {
+    // Une course en READ COMMITTED : la seconde écriture ATTEND le verrou,
+    // puis voit le lien validé par la première et se fait refuser. Sans le
+    // verrou, elle passerait.
+    async function course(nom, ecritureA, ecritureSecondeB) {
       const a = await nouveau();
       const b = await nouveau();
       sessions.push(a, b);
       await a.query('BEGIN');
-      await a.query(lien('__f79c_axe', 'axe', 'methylation'));
+      await a.query(ecritureA);
       await b.query('BEGIN');
       const pidB = (await b.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
-      const ecritureB = b.query(lien('__f79c_nut', 'nutriment', 'zinc'));
+      const ecritureB = b.query(ecritureSecondeB);
       ecritureB.catch(() => {});
       let bloquee = false;
       for (let i = 0; i < 50 && !bloquee; i += 1) {
@@ -553,15 +586,21 @@ try {
         if (!bloquee) await new Promise((r) => setTimeout(r, 100));
       }
       if (bloquee) {
-        console.log('ok     C1 : la seconde écriture attend le verrou de la première');
+        console.log(`ok     ${nom} : la seconde écriture attend le verrou de la première`);
       } else {
         echecs += 1;
-        console.error('ÉCHEC  C1 : la seconde écriture n\'a pas attendu le verrou consultatif.');
+        console.error(`ÉCHEC  ${nom} : la seconde écriture n'a pas attendu le verrou consultatif.`);
       }
       await a.query('COMMIT');
-      await refusAttendu('C1 : nutriment après un axe validé, en READ COMMITTED', ecritureB, 'porte déjà un lien actif');
+      await refusAttendu(`${nom} : seconde écriture après la première validée, en READ COMMITTED`, ecritureB, 'porte déjà un lien actif');
       await b.query('ROLLBACK').catch(() => {});
     }
+
+    // C1 — sur un analyte : un axe, puis un nutriment.
+    await course('C1 (analyte)', lien('__f79c_axe', 'axe', 'methylation'), lien('__f79c_nut', 'nutriment', 'zinc'));
+    // C6 — sur un rapport : la clé du verrou est `ratio_code` quand
+    // `analyte_code` est nul (nitpick CodeRabbit sur 418e1c3b).
+    await course('C6 (rapport)', lienRapport('__f79c_r_axe', 'axe', 'inflammation'), lienRapport('__f79c_r_nut', 'nutriment', 'zinc'));
 
     // C2, C3 — une écriture active nutriment ou axe est refusée d'emblée sous
     // REPEATABLE READ et SERIALIZABLE, où l'instantané précède le verrou.
@@ -653,4 +692,4 @@ if (echecs > 0) {
   console.error(`banc F79 : ${echecs} échec(s).`);
   process.exit(1);
 }
-console.log(`banc F79 : ${CAS.length} rejeux, garde de transaction éprouvée, cinq cas à deux sessions conformes.`);
+console.log(`banc F79 : ${CAS.length} rejeux, gardes éprouvées, six cas à deux sessions conformes.`);
