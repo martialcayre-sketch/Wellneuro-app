@@ -899,6 +899,13 @@ les agendas (sommeil, alimentaire) et les données physiologiques déclarées
 restent visibles. Les deux lectures du §2 et la ligne « Non masqué » ci-dessus
 deviennent des choix du responsable ; aucun lot de code ne suit.
 
+**Confirmé le 2026-10-25.** Le responsable a tranché, par questions à
+options, les deux points que le mode laissait ouverts. Le compte « Calculé
+sur n besoins mesurés sur 12 » (D-352) reste affiché en mode consultation :
+c'est un compte d'objets au sens du §2, tel qu'écrit. « Compléter la mesure »
+(le bouton « Ajouter à la file d'envoi » du motif déplié, D-352) reste
+affiché en mode consultation. Aucun lot de code ne suit.
+
 ### D-353 — ak : la phrase d'appui sous chaque questionnaire renvoyé, les jours 18 à 24 — texte du responsable accepté, servie au fil du jour sous `WN_PORTAIL_APPUI_RENVOI`, fermée à la livraison (H80 ; applique D-288 §1)
 
 - Date : 2026-10-24
