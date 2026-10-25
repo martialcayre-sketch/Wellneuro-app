@@ -126,15 +126,17 @@ légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de
 
 **§4 — L'information du patient.** « Vos données personnelles » reçoit une
 nouvelle version, accusé exigé (motif de [[D-299]] §3), qui dit le flux en ces
-termes, validés mot pour mot par le responsable :
+termes, validés mot pour mot par le responsable (complétés le 2026-10-25 :
+le texte dit aussi ce que la version garde, `sectionAdministrative.ts`) :
 
-> « Votre praticien peut soumettre une version de votre dossier, dont sont
-> retirés votre nom, vos coordonnées et votre date de naissance, à ChatGPT
+> « Votre praticien peut soumettre une version de votre dossier à ChatGPT
 > (OpenAI), un outil d'intelligence artificielle, pour l'aider dans son
-> analyse. Il le fait lui-même : l'application ne l'envoie pas. Ce document
-> reste une information sur votre santé. OpenAI est situé hors de l'Union
-> européenne, et aucun contrat ne l'engage envers nous sur le traitement de ce
-> document. »
+> analyse. Il le fait lui-même : l'application ne l'envoie pas. Cette version
+> ne contient ni vos nom et prénom, ni vos coordonnées, ni votre date de
+> naissance, ni le nom de votre médecin traitant. Elle garde votre âge et un
+> numéro de dossier propre à l'application. Ce document reste une information
+> sur votre santé. OpenAI est situé hors de l'Union européenne, et aucun
+> contrat ne l'engage envers nous sur le traitement de ce document. »
 
 **§5 — Les envois passés.** Le constat du §1 suffit ; rien n'est versé au
 registre des violations (arbitrage du responsable).
