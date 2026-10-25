@@ -11700,3 +11700,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge après la release-db de t44 (#1692), observation du déploiement.
 
 **Ouvert.** La passe humaine E67 (file D) ; les défauts qu'axe ne classe pas en violation restent à F9a.
+
+## 2026-10-25 — t44, second lot : TP et INR au résolveur (D-363)
+
+**Fait.** Migration de #1692 constatée, préalable de D-361 §6 rempli. « Taux de prothrombine » → `BIO_TP` et « INR » → `BIO_INR` sont au résolveur, sans synonyme ; le temps de Quick reste « inconnu ». La re-signature (177 entrées, SHA `b4007b9c…`) a été posée sur l'instruction du responsable et remplace celle de D-356. Un banc vérifie qu'un INR sans unité est résolu.
+
+**Écarté.** Les synonymes (« TP » nu, « Temps de prothrombine ») ; D-364 réservé d'avance (le contrôle refuse un trou) ; D-362 pris de force sur #1701.
+
+**Prochaine action.** Merge de #1701, fusion de main, T3, CI, CodeRabbit, merge, déploiement.
+
+**Ouvert.** Le numéro, qui dépend de l'ordre des merges ; le constat des prochains imports de TP et d'INR.
