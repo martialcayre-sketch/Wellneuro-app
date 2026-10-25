@@ -1388,6 +1388,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : aucune.
 - **Critère de fin** : passe réelle jouée ; contrôles visuels verts.
 - **Mise à jour (2026-10-21)** : arbitrage du responsable : la passe au lecteur d'écran sur appareil physique est un geste humain, requalifié en file D ; l'assistant prépare le parcours à suivre et la grille de constat. Parcours et grille versés : `docs/PASSE_ACCESSIBILITE_E67.md` (8 étapes, 4 postes, 9 critères).
+- **Mise à jour (2026-10-25, r3_14)** : audit des instruments des 12 besoins, Q12 « oui aux trois ». Le parcours reçoit l'étape 9 (« Mon équilibre » depuis un questionnaire verrouillé, choix C) et, au poste B, l'onglet et le tiroir « Les 12 besoins » (choix A) : 9 étapes, 3 écrans praticien. Banc automatique posé (choix B) : `web/e2e/fiche-besoins-accessibilite.spec.ts`, axe-core WCAG 2.1 A et AA sur le panneau de l'onglet et le tiroir, zéro violation, aucune règle désactivée. La passe humaine reste le geste de la file D ; F9a (caption, radar nommé ou décoratif, graduations, `role="status"`) suit J3-12b.
 
 #### H65 · J2-nf5 : comparer deux versions de score
 - **Identifiant, piste** : J2-nf5 ; cockpit ; file A.
