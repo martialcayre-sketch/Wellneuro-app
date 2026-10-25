@@ -30,6 +30,7 @@ import {
   reglesNonIndiquees,
   type ExplorationNonIndiquee,
 } from './nonIndiquesBibliotheque';
+import { lireLiensAxe, type LienAxe } from './liensAxe';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
 export const SOURCE_NABM = 'nabm_smt_ans';
@@ -80,6 +81,8 @@ export type FicheAnalyte = {
   preanalytiques: PreanalytiqueAffiche[];
   /** Explorations non indiquées dont cet analyte est l'alternative (D-320 §3). */
   nonIndiques: ExplorationNonIndiquee[];
+  /** Liens signés vers un axe biologique (F79, [[D-351]]) ; nul = non gradé. */
+  liensAxe: LienAxe[];
 };
 
 export type MillesimeNabm = {
@@ -149,6 +152,18 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
         preanalytiques: {
           where: { actif: true },
           select: { typeCondition: true, consigne: true },
+        },
+        // F79 ([[D-351]]) : les liens d'axe seuls — les liens nutriment
+        // (F52) n'ont pas d'écran décidé.
+        liensCliniques: {
+          where: { actif: true, cibleType: 'axe' },
+          select: {
+            cibleCode: true,
+            direction: true,
+            claimId: true,
+            versionClaim: true,
+            niveauPreuve: true,
+          },
         },
       },
       orderBy: { libelle: 'asc' },
@@ -229,6 +244,7 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     remboursement: remboursements.get(analyte.code)!,
     preanalytiques: analyte.preanalytiques,
     nonIndiques: nonIndiques.get(analyte.code) ?? [],
+    liensAxe: lireLiensAxe(analyte.liensCliniques),
   }));
 
   return {

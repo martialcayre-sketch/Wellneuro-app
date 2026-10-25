@@ -35,6 +35,7 @@ function analyteBase(surcharge: Record<string, unknown> = {}) {
     correspondancesNabm: [],
     constatNabm: null,
     preanalytiques: [],
+    liensCliniques: [],
     ...surcharge,
   };
 }
@@ -301,6 +302,38 @@ describe('fiches — passage fidèle, absences comprises', () => {
     const catalogue = await listerCatalogueBiologie();
 
     expect(catalogue.analytes[0].nonIndiques).toEqual([]);
+  });
+
+  // F79 (D-351) : seuls les liens d'axe ACTIFS sont lus — les liens nutriment
+  // (F52) n'ont pas d'écran — et un niveau nul sort « non gradé ».
+  it('les liens d’axe actifs seuls sont lus, un niveau nul sort non gradé', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({
+        liensCliniques: [
+          {
+            cibleCode: 'inflammation',
+            direction: 'haut_evocateur',
+            claimId: 'WN-CL-0999-001',
+            versionClaim: 'v1.0',
+            niveauPreuve: null,
+          },
+        ],
+      }),
+    ]);
+
+    const catalogue = await listerCatalogueBiologie();
+
+    const select = prisma.biologyAnalyte.findMany.mock.calls[0][0].select;
+    expect(select.liensCliniques.where).toEqual({ actif: true, cibleType: 'axe' });
+    expect(catalogue.analytes[0].liensAxe).toEqual([
+      {
+        axe: 'inflammation',
+        sens: 'haut_evocateur',
+        claimId: 'WN-CL-0999-001',
+        versionClaim: 'v1.0',
+        niveauPreuve: { statut: 'non_gradé' },
+      },
+    ]);
   });
 
   it('verifieLe et le millésime sortent en ISO, prêts pour l’écran', async () => {

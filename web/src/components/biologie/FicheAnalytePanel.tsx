@@ -5,6 +5,11 @@ import { CompositionAnalyteSection } from '@/components/biologie/CompositionAnal
 import { CorrespondancesNabmSection } from '@/components/biologie/CorrespondancesNabmSection';
 import type { FicheAnalyte } from '@/lib/biology-library/catalogue';
 import { LABEL_REMBOURSEMENT } from '@/lib/biology-library/libellesRemboursement';
+import {
+  LIBELLE_AXE,
+  LIBELLE_SENS,
+  libelleNiveauPreuve,
+} from '@/lib/biology-library/liensAxe';
 
 // Fiche d'analyte du rayon biologie (CB-08) — consultation documentaire.
 //
@@ -238,6 +243,40 @@ export function FicheAnalytePanel({
       <CorrespondancesNabmSection analyteCode={fiche.code} onModifie={onCorrespondancesModifiees} />
 
       <CompositionAnalyteSection analyteCode={fiche.code} />
+
+      {/* F79 ([[D-351]]) : liens documentaires, signés claim par claim. Ils ne
+          jugent aucun résultat ; un niveau de preuve nul se dit « non gradé »,
+          jamais une lettre (§4). */}
+      <section aria-label="Axes biologiques">
+        <h5 className="text-sm font-semibold text-foreground">Axes biologiques</h5>
+        {fiche.liensAxe.length === 0 ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Aucun lien vers un axe biologique signé pour cette analyse.
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Liens documentaires signés, chacun ancré à un claim validé. Ils ne jugent aucun
+              résultat de patient.
+            </p>
+            <ul className="mt-2 flex flex-col gap-2">
+              {fiche.liensAxe.map(lien => (
+                <li
+                  key={`${lien.axe}-${lien.claimId}`}
+                  className="rounded-lg border border-border p-3 text-sm text-foreground"
+                >
+                  <span className="font-medium">{LIBELLE_AXE[lien.axe]}</span> :{' '}
+                  {LIBELLE_SENS[lien.sens]}
+                  <span className="block text-xs text-muted-foreground">
+                    Claim {lien.claimId} ({lien.versionClaim}) · Niveau de preuve :{' '}
+                    {libelleNiveauPreuve(lien.niveauPreuve)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       <section aria-label="Conditions préanalytiques">
         <h5 className="text-sm font-semibold text-foreground">Préanalytique</h5>

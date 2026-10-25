@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { RayonBiologiePanel } from './RayonBiologiePanel';
 
 // Catalogue minimal mais réaliste : l'état LIVRÉ du catalogue niveau 1 —
@@ -38,6 +38,24 @@ const CATALOGUE = {
       remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
       preanalytiques: [],
       nonIndiques: [],
+      // F79 (D-351) : un lien non gradé — le nul de la base — et un lien
+      // gradé, de fixture, pour éprouver les deux branches de l'affichage.
+      liensAxe: [
+        {
+          axe: 'stress_oxydant',
+          sens: 'bas_evocateur',
+          claimId: 'WN-CL-0999-002',
+          versionClaim: 'v1.0',
+          niveauPreuve: { statut: 'gradé', lettre: 'B' },
+        },
+        {
+          axe: 'inflammation',
+          sens: 'haut_evocateur',
+          claimId: 'WN-CL-0999-001',
+          versionClaim: 'v1.0',
+          niveauPreuve: { statut: 'non_gradé' },
+        },
+      ],
     },
     {
       code: 'BIO_INSULINEMIE',
@@ -58,6 +76,7 @@ const CATALOGUE = {
       remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
       preanalytiques: [],
       nonIndiques: [],
+      liensAxe: [],
     },
     {
       code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE',
@@ -89,6 +108,7 @@ const CATALOGUE = {
           claimId: 'WN-CL-0242-007',
         },
       ],
+      liensAxe: [],
     },
   ],
   millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
@@ -210,6 +230,38 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Ferritine/ }));
     await waitFor(() => expect(screen.getByText('Fiche analyte')).toBeTruthy());
     expect(screen.queryByText('Exploration non indiquée')).toBeNull();
+  });
+
+  // F79 (D-351 §4) : un niveau de preuve nul se dit « non gradé », jamais une
+  // lettre ; un lien gradé garde sa lettre. Ces liens ne jugent aucun résultat.
+  it('la fiche dit ses axes biologiques, « non gradé » quand le niveau est nul', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Ferritine')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Ferritine/ }));
+    await waitFor(() => expect(screen.getByText('Axes biologiques')).toBeTruthy());
+
+    const section = screen.getByRole('region', { name: 'Axes biologiques' });
+    const lignes = within(section).getAllByRole('listitem');
+    expect(lignes).toHaveLength(2);
+    // L'ordre est celui que le service a servi — l'écran ne retrie pas.
+    expect(lignes[0].textContent).toContain('Stress oxydant');
+    expect(lignes[0].textContent).toContain('Niveau de preuve : B');
+    expect(lignes[1].textContent).toContain('Inflammation');
+    expect(lignes[1].textContent).toContain('évocateur quand la valeur est haute');
+    expect(lignes[1].textContent).toContain('Claim WN-CL-0999-001 (v1.0)');
+    expect(lignes[1].textContent).toContain('Niveau de preuve : non gradé');
+    expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+  });
+
+  it('sans lien d’axe, la section le dit', async () => {
+    mockFetch(CATALOGUE);
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Insulinémie à jeun')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Insulinémie à jeun/ }));
+    await waitFor(() => expect(screen.getByText('Axes biologiques')).toBeTruthy());
+    expect(screen.getByText(/Aucun lien vers un axe biologique signé/)).toBeTruthy();
+    expect(screen.queryByText(/non gradé/)).toBeNull();
   });
 
   it('drapeau éteint côté serveur : le message de la route est rendu, rien d’autre', async () => {

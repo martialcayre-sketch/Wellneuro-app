@@ -18,9 +18,19 @@
 -- `scripts/banc-rejeu-liens-axe-f79.test.mjs`, qui rejoue la migration sur des
 -- claims de fixture puis joue ce fichier dans la même transaction annulée.
 -- En production, il se joue par conteneur détaché, en lecture seule : c'est
--- le constat de la release (D-351 §5). Il n'est pas branché en préflight de
--- `release-db`. S'il rougit, la correction est un arbitrage clinique, jamais
--- un `UPDATE` à la main.
+-- le constat de la release (D-351 §5). Il tourne aussi en préflight de
+-- `release-db` (`web/scripts/release-db-scalingo.sh`, étape
+-- `preflight_liens_axe`, avant `migrate deploy` ; revue P2-1) : un claim
+-- rejeté ou supplanté après la release bloque la suivante, au lieu de laisser
+-- ses liens actifs sans signal. S'il rougit, la correction est un arbitrage
+-- clinique, jamais un `UPDATE` à la main.
+--
+-- UNE LISTE FUTURE DOIT LIRE SA MIGRATION. Le préflight joue le contrat de
+-- l'image AVANT `migrate deploy`. La migration qui changera un jour la liste
+-- arrivera avec un contrat qui porte déjà la nouvelle, sur une base qui porte
+-- encore l'ancienne : il rougirait et bloquerait sa propre release. Ce
+-- contrat-là devra choisir sa liste selon la migration appliquée, comme
+-- celui-ci le fait pour la cible vide.
 --
 -- Lecture seule : rien n'est écrit, la transaction est annulée.
 BEGIN TRANSACTION READ ONLY;
