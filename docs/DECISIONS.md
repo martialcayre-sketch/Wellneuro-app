@@ -35,7 +35,10 @@ praticien » quitte « Autres espaces », et « Ma bibliothèque » le remplace.
 La page des fiches reste servie : chaque carte de la bibliothèque y renvoie.
 Le mineur garde son lien ([[D-357]] §5). Les deux sondes appellent la même
 fonction (`bibliothequeServie`), si bien que les deux liens ne peuvent pas
-paraître ensemble ni manquer ensemble.
+paraître ensemble. Hors panne, ils ne manquent pas non plus ensemble. Si
+seule la sonde de la bibliothèque échoue, aucun des deux ne paraît jusqu'au
+rechargement : chaque sonde reste fermée sur un échec, et la fiche reste
+joignable par « Mes échanges » et par le fil (revue du 2026-10-25).
 
 **§3 — Le lot.** Il livre la page, une route en lecture seule qui ne sert
 aucun document (elle dit si la bibliothèque est servie et si le rayon des
