@@ -4,6 +4,71 @@
 
 ## Décisions actives
 
+### D-361 — J3-12h, lot 4 : le courrier complément au portail — titre et phrase d'accompagnement acceptés, « courrier puis complément » dit au patient ; servi, accusé et annoncé comme la lettre d'adressage, sous le même drapeau (applique D-345 §4-§7 et D-358 §3-§4)
+
+- Date : 2026-10-25
+- Statut : accepté — deux arbitrages du responsable du 2026-10-25, sur
+  questions à options, au cadrage du lot 4 de [[D-345]] (§1, §2) ; le reste
+  est d'exécution, sur le patron de [[D-262]] LOT-02 et LOT-03.
+- Applique : [[D-345]] §4-§7 ; [[D-358]] §3 (le portail au lot 4) et §4 (un
+  seul drapeau).
+- Domaine : portail patient — `web/src/app/portail/[token]/courrier-complement/`,
+  `web/src/app/api/portail/courrier-complement/` (lecture et impression),
+  `web/src/components/patient/courrier-complement/`,
+  `LienCourrierComplement`, `lib/correspondance/courrierComplementServicePatient.ts`,
+  l'espèce de lecture (`lib/portail/lecturesAttendues.ts`,
+  `api/portail/lectures`), « Mes échanges », `api/praticien/documents-remis` ;
+  côté praticien, l'annonce du clic (`api/praticien/protocoles/diffusion`,
+  `ProtocolDiffusionPanel`) et la route de préparation du courrier.
+- **Ne touche pas** : le texte du courrier ([[D-358]] §1, recopié tel que
+  remis), la table signée des déclencheurs, la garde ; aucune migration
+  (l'espèce `courrier_complement` est admise par la base depuis la migration
+  `20261024110000`), aucun `schema.prisma`. `WN_COURRIER_COMPLEMENT` reste
+  éteint.
+
+**§1 — Les textes du portail.** Titre de l'écran, du lien d'accueil et de
+« Mes échanges » : « Courrier à remettre à votre médecin » ; au fil du jour,
+« Lire le courrier à remettre à mon médecin ». Le titre de la lettre
+d'adressage (« Courrier pour votre médecin ») reste le sien. Phrase
+d'accompagnement, seule prose patient de l'écran : « Voici le courrier que je
+vous ai préparé pour votre médecin. Remettez-le lui avant de commencer les
+compléments qu’il cite : vous pouvez l’imprimer ou le montrer depuis ce
+portail. » Elle dit au patient l'ordre « courrier puis complément » de
+[[D-345]] (Q6), que le courrier écrit déjà au médecin. La variante calquée sur
+la lettre (« lors de votre prochain rendez-vous ») est écartée. Ni le titre ni
+la phrase ne nomment la population ou la situation (forme opaque). Le
+destinataire saisi par le praticien est affiché tel quel (« À remettre à :
+… »), sans ajout.
+
+**§2 — Ce qui est servi.** La remise la plus récente du dossier : un courrier
+neuf couvre toute la liste ciblée de sa version ([[D-358]] §2). Deux états
+seulement, `servie` et `indisponible` (empreinte rejouée) : ni la
+correspondance ni la remise ne se révoquent. L'impression repasse par le
+chokepoint `medecin` (`rendreCourrierComplementFige`), texte figé et ancrage
+consigné. Un ancrage qui n'est pas celui du courrier complément, ou un terme
+prescriptif, ne rend rien.
+
+**Exécution (livrée sous drapeau éteint).** Le drapeau unique ferme d'abord
+les routes (503) et l'écran (`notFound`), puis la lecture attendue et
+« Mes échanges » (aucune ligne). L'accusé suit la règle de la lettre : POST
+vérifié contre l'identifiant servi, jour posé par la base, avis « Votre
+lecture est datée » en tête. Le praticien voit la remise et sa lecture dans
+« Documents remis ». Une remise de ce clic compte comme document remis pour
+l'e-mail neutre (un seul par clic, plafond de 24 heures, [[D-262]] B3), et le
+panneau de diffusion le dit avant le geste. Reprise de la revue CodeRabbit de
+#1691 : la préparation exige la carte de décision, et la version désignée doit
+être la tête de son fil, relue (`practitioner_reviewed`). Une version
+supplantée ou en brouillon est refusée en 409, avant toute génération.
+Fenêtre de fraîcheur éprouvée sur base réelle : un « oui » de 2019 tient,
+seul un « non » postérieur du praticien le lève, un « oui » sans date d'envoi
+ne se lève jamais, et une déclaration postérieure à un aperçu « non requis »
+est vue par l'aperçu suivant, qui bloque le clic. Lu en production le
+2026-10-25 : 28 consultations `validee`, aucune sans `dateValidation`.
+
+**Ouverture du drapeau.** La condition « écran du portail » est levée.
+Restent un passage de bout en bout sur un dossier de test, par identifiant,
+`WN_FICHES_ASSIETTE` ouvert et `WN_PHYSIO_TRAITEMENTS` ouvert.
+
 ### D-360 — ap, le contenant : « Ma bibliothèque » livrée éteinte, trois titres acceptés à la première personne ; servie au dossier, elle remplace le lien des fiches (applique D-357 §5-§6 ; H82, place 10)
 
 - Date : 2026-10-25

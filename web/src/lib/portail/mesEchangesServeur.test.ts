@@ -13,6 +13,8 @@ const m = vi.hoisted(() => ({
   fichesALire: vi.fn(),
   lettreAdressagePatientOuverte: vi.fn(),
   lettreALire: vi.fn(),
+  courrierComplementOuvert: vi.fn(),
+  courrierComplementALire: vi.fn(),
   resolveProtocoleDiffuse: vi.fn(),
   isBioPortailEnabled: vi.fn(),
   listerTransmissions: vi.fn(),
@@ -27,6 +29,10 @@ vi.mock('@/lib/correspondance/lettreAdressageRemise', () => ({
   lettreAdressagePatientOuverte: m.lettreAdressagePatientOuverte,
 }));
 vi.mock('@/lib/correspondance/lettreServicePatient', () => ({ lettreALire: m.lettreALire }));
+vi.mock('@/lib/correspondance/courrierComplementRemise', () => ({ courrierComplementOuvert: m.courrierComplementOuvert }));
+vi.mock('@/lib/correspondance/courrierComplementServicePatient', () => ({
+  courrierComplementALire: m.courrierComplementALire,
+}));
 vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse: m.resolveProtocoleDiffuse }));
 vi.mock('@/lib/biology-library/publie', () => ({
   isBioPortailEnabled: m.isBioPortailEnabled,
@@ -54,6 +60,8 @@ beforeEach(() => {
   m.fichesALire.mockResolvedValue([]);
   m.lettreAdressagePatientOuverte.mockReturnValue(true);
   m.lettreALire.mockResolvedValue([]);
+  m.courrierComplementOuvert.mockReturnValue(true);
+  m.courrierComplementALire.mockResolvedValue([]);
   m.resolveProtocoleDiffuse.mockResolvedValue(null);
   m.isBioPortailEnabled.mockReturnValue(true);
   m.listerTransmissions.mockResolvedValue([]);
@@ -65,17 +73,27 @@ describe('sourcesMesEchanges', () => {
   it('surfaces fermées par leur drapeau : aucune lecture, aucune ligne', async () => {
     m.lectureFichesOuverte.mockReturnValue(false);
     m.lettreAdressagePatientOuverte.mockReturnValue(false);
+    m.courrierComplementOuvert.mockReturnValue(false);
     m.isBioPortailEnabled.mockReturnValue(false);
     m.depotDocumentsOuvert.mockReturnValue(false);
     const s = await sourcesMesEchanges('PAT_SOPHIE');
     expect(s.fiches).toEqual([]);
     expect(s.lettre).toBeNull();
+    expect(s.courrierComplement).toBeNull();
+    expect(m.courrierComplementALire).not.toHaveBeenCalled();
     expect(s.comptesRendus).toEqual([]);
     expect(s.documentsDeposes).toEqual([]);
     expect(m.fichesALire).not.toHaveBeenCalled();
     expect(m.lettreALire).not.toHaveBeenCalled();
     expect(m.listerTransmissions).not.toHaveBeenCalled();
     expect(m.listerDepotsPatient).not.toHaveBeenCalled();
+  });
+
+  it('courrier à remettre au médecin ([[D-345]], J3-12h lot 4) : la remise servie, sous son drapeau', async () => {
+    m.courrierComplementALire.mockResolvedValue([{ id: 'ccr_1', remiseLe: new Date('2026-10-25T08:00:00.000Z') }]);
+    const s = await sourcesMesEchanges('PAT_SOPHIE');
+    expect(m.courrierComplementALire).toHaveBeenCalledWith('PAT_SOPHIE');
+    expect(s.courrierComplement).toEqual({ id: 'ccr_1', remiseLe: new Date('2026-10-25T08:00:00.000Z') });
   });
 
   it('documents déposés ([[D-330]]) : la date seule, sous le drapeau du dépôt', async () => {

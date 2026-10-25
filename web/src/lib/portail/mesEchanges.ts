@@ -4,7 +4,7 @@
 // ── CE QUE C'EST ────────────────────────────────────────────────────────────
 //
 // Une liste datée, EN LECTURE, de ce que le praticien a remis (bilan et sa note,
-// fiches, courrier pour le médecin, protocole) et de ce que le patient a
+// fiches, courriers pour le médecin, protocole) et de ce que le patient a
 // transmis (questionnaires, comptes rendus d'analyses, documents déposés,
 // signalements avec leur statut). Chaque ligne ouvre la page du portail où l'élément se trouve DÉJÀ :
 // le journal ne montre aucun contenu qui ne soit servi ailleurs (§1).
@@ -34,6 +34,7 @@ export type EspeceEchange =
   | 'bilan'
   | 'fiche_assiette'
   | 'lettre_adressage'
+  | 'courrier_complement'
   | 'protocole'
   | 'questionnaire'
   | 'compte_rendu'
@@ -88,6 +89,12 @@ export type SourcesMesEchanges = {
   bilan: { id: string; envoyeLe: Date } | null;
   fiches: { idRemise: string; libelle: string; remiseLe: Date }[];
   lettre: { id: string; remiseLe: Date } | null;
+  /**
+   * Le courrier à remettre au médecin avant un complément ciblé ([[D-345]],
+   * J3-12h lot 4) : la remise servie. Absent ou `null` = surface fermée par
+   * `WN_COURRIER_COMPLEMENT`, ou rien de servi.
+   */
+  courrierComplement?: { id: string; remiseLe: Date } | null;
   protocole: { approbationId: string; approuveLe: Date } | null;
   questionnaires: { idAssignation: string; titre: string; transmisLe: Date }[];
   comptesRendus: { deposeLe: Date }[];
@@ -136,6 +143,16 @@ export function entreesMesEchanges(
       objet: 'Le courrier pour votre médecin',
       date: sources.lettre.remiseLe.toISOString(),
       chemin: 'courrier-medecin',
+    });
+  }
+  if (sources.courrierComplement) {
+    entrees.push({
+      cle: `courrier_complement:${sources.courrierComplement.id}`,
+      sens: 'remis',
+      espece: 'courrier_complement',
+      objet: 'Le courrier à remettre à votre médecin',
+      date: sources.courrierComplement.remiseLe.toISOString(),
+      chemin: 'courrier-complement',
     });
   }
   if (sources.protocole) {

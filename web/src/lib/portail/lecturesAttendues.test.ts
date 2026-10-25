@@ -208,6 +208,7 @@ describe('les libellés et les liens', () => {
     ['synthese', 'Lire ce que mon praticien a compris', '/portail/TOK/comprehension'],
     ['fiche_assiette', 'Lire la fiche remise par mon praticien', '/portail/TOK/fiches/rem_1'],
     ['lettre_adressage', 'Lire le courrier pour mon médecin', '/portail/TOK/courrier-medecin'],
+    ['courrier_complement', 'Lire le courrier à remettre à mon médecin', '/portail/TOK/courrier-complement'],
   ] as const)('%s : « %s » vers %s', (espece, cta, href) => {
     expect(ctaLecture(espece)).toBe(cta);
     expect(lienLecture('TOK', { espece, idObjet: 'rem_1' })).toBe(href);
@@ -218,7 +219,7 @@ describe('les libellés et les liens', () => {
   });
 
   it('aucun libellé ne compte, ne date ni ne reproche', () => {
-    for (const espece of ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage'] as const) {
+    for (const espece of ['bilan', 'synthese', 'fiche_assiette', 'lettre_adressage', 'courrier_complement'] as const) {
       expect(ctaLecture(espece)).not.toMatch(/\d/);
       expect(ctaLecture(espece)).not.toMatch(/depuis|il y a|non lu|en retard|nouveau/i);
     }
@@ -244,5 +245,32 @@ describe('le courrier pour le médecin (D-262, LOT-03a)', () => {
       lettresServies: [{ id: 'lar_1', remiseLe: D('2026-10-04T10:00:00Z') }],
       dejaLues: [{ espece: 'lettre_adressage', idObjet: 'lar_1' }],
     }))).toEqual([]);
+  });
+});
+
+describe('le courrier à remettre au médecin avant un complément ciblé (D-345, J3-12h lot 4)', () => {
+  it('un courrier servi est une lecture, à sa place dans l’ordre des remises', () => {
+    const lectures = lecturesAttendues(sources({
+      bilansTransmis: [{ id: 'env_1', envoyeLe: D('2026-09-01T10:00:00Z') }],
+      courriersComplementServis: [{ id: 'ccr_1', remiseLe: D('2026-10-25T10:00:00Z') }],
+    }));
+    expect(cles(lectures)).toEqual(['bilan:env_1', 'courrier_complement:ccr_1']);
+  });
+
+  it('surface fermée (`null`) ou absente : aucune lecture n’en sort', () => {
+    expect(lecturesAttendues(sources({ courriersComplementServis: null }))).toEqual([]);
+    expect(lecturesAttendues(sources({}))).toEqual([]);
+  });
+
+  it('un courrier déjà ouvert n’est plus attendu ; la lecture d’une lettre d’adressage ne l’acquitte pas', () => {
+    const servis = [{ id: 'ccr_1', remiseLe: D('2026-10-25T10:00:00Z') }];
+    expect(lecturesAttendues(sources({
+      courriersComplementServis: servis,
+      dejaLues: [{ espece: 'courrier_complement', idObjet: 'ccr_1' }],
+    }))).toEqual([]);
+    expect(cles(lecturesAttendues(sources({
+      courriersComplementServis: servis,
+      dejaLues: [{ espece: 'lettre_adressage', idObjet: 'ccr_1' }],
+    })))).toEqual(['courrier_complement:ccr_1']);
   });
 });

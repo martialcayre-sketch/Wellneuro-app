@@ -118,3 +118,46 @@ export function genererCourrierComplement(entree: EntreeCourrierComplement): Pre
 
   return { ok: true, courrier: { document, html, texte } };
 }
+
+/**
+ * LE COURRIER REMIS, RENDU POUR L'IMPRESSION AU PORTAIL — J3-12h, lot 4
+ * (patron `rendreCourrierAdressageFige`). Le corps est l'INSTANTANÉ recopié
+ * dans la remise, jamais un courrier régénéré : une révision du générateur ne
+ * change pas ce que le patient a reçu, et le texte validé (D-358 §1) n'est pas
+ * relu ici. La provenance recopie l'ancrage consigné avec le courrier.
+ *
+ * Même chokepoint que la génération : `renderDocumentHtml(…, 'medecin')`, donc
+ * sous la garde non prescriptive. Elle lève : `null`, l'appelant le dit sans
+ * servir de rendu contourné. Sans ancrage, ou avec un ancrage qui n'est pas
+ * celui du courrier complément : `null` — aucune provenance fabriquée.
+ */
+export function rendreCourrierComplementFige(entree: {
+  patientId: string;
+  texte: string;
+  dateCourrier: string;
+  patientNom?: string;
+  ancrageSha256: string | null;
+  ancrageVersion: string | null;
+}): string | null {
+  if (!entree.ancrageSha256 || !entree.ancrageVersion?.startsWith(PREFIXE_ANCRAGE_COMPLEMENT)) return null;
+  // Le JOUR UTC, comme `genererCourrierComplement` : l'en-tête imprimé dit le
+  // jour que le corps écrit (« Courrier préparé le … »).
+  const dateLisible = entree.dateCourrier.slice(0, 10);
+  const bloc: Bloc = {
+    id: `courrier-complement-${entree.patientId}-${dateLisible}`,
+    type: 'narratif',
+    regime: 'statique_valide',
+    provenance: {
+      source: 'complement_cible',
+      ancrageHash: entree.ancrageSha256,
+      version: entree.ancrageVersion,
+    },
+    contenu: { praticien: entree.texte, medecin: entree.texte },
+  };
+  const document = assemblerDocument({ modele: MODELE_COURRIER_COMPLEMENT, patientId: entree.patientId, blocs: [bloc] });
+  try {
+    return renderDocumentHtml(document, 'medecin', { dateDocument: dateLisible, patientNom: entree.patientNom });
+  } catch {
+    return null;
+  }
+}

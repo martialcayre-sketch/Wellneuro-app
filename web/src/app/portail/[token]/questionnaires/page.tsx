@@ -27,6 +27,7 @@ import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierD
 import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
 import { LienBibliotheque } from '@/components/patient-companion/LienBibliotheque';
 import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
+import { LienCourrierComplement } from '@/components/patient-companion/LienCourrierComplement';
 import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVotreMedecin';
 import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
 import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
@@ -463,6 +464,9 @@ export default function QuestionnairesHubPage() {
         {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
             son propre drapeau. */}
         <LienCourrierMedecin token={token} />
+        {/* Le courrier à remettre au médecin avant un complément ciblé
+            ([[D-345]]) : même règle, sous `WN_COURRIER_COMPLEMENT`. */}
+        <LienCourrierComplement token={token} />
         {/* « Pour votre médecin » ([[D-307]] §3) : même règle, sous son propre
             drapeau ; le partage avec le médecin traitant doit être accordé. */}
         <LienPourVotreMedecin token={token} />

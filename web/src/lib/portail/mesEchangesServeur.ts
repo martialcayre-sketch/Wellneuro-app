@@ -3,7 +3,8 @@
 //
 // LA RÈGLE DE VISIBILITÉ EST EMPRUNTÉE, JAMAIS RECOPIÉE — même principe que
 // `api/portail/lectures` : `whereEnvoiVisible` pour le bilan, `fichesALire` et
-// `lettreALire` pour les remises, `resolveProtocoleDiffuse` pour le protocole,
+// `lettreALire` et `courrierComplementALire` pour les remises,
+// `resolveProtocoleDiffuse` pour le protocole,
 // `listerTransmissions` pour les comptes rendus, `listerDepotsPatient` pour les
 // documents déposés. Une surface fermée par son propre drapeau ne produit AUCUNE
 // ligne.
@@ -19,6 +20,8 @@ import { lectureFichesOuverte } from '@/lib/fiches-assiette/drapeau';
 import { fichesALire } from '@/lib/fiches-assiette/servicePatient';
 import { lettreAdressagePatientOuverte } from '@/lib/correspondance/lettreAdressageRemise';
 import { lettreALire } from '@/lib/correspondance/lettreServicePatient';
+import { courrierComplementOuvert } from '@/lib/correspondance/courrierComplementRemise';
+import { courrierComplementALire } from '@/lib/correspondance/courrierComplementServicePatient';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 // La biologie se lit par son entrée publiée ([[D-306]] §2).
 import { isBioPortailEnabled, listerTransmissions } from '@/lib/biology-library/publie';
@@ -68,7 +71,7 @@ async function signalements(idPatient: string): Promise<SourcesMesEchanges['sign
 }
 
 export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesEchanges> {
-  const [bilan, fiches, lettres, protocole, questionnaires, comptesRendus, depots, signales] = await Promise.all([
+  const [bilan, fiches, lettres, courriersComplement, protocole, questionnaires, comptesRendus, depots, signales] = await Promise.all([
     prisma.bookletEnvoi.findFirst({
       where: whereEnvoiVisible(idPatient),
       orderBy: [{ dateEnvoi: 'desc' }, { id: 'desc' }],
@@ -76,6 +79,7 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     }),
     lectureFichesOuverte() ? fichesALire(idPatient) : Promise.resolve([]),
     lettreAdressagePatientOuverte() ? lettreALire(idPatient) : Promise.resolve([]),
+    courrierComplementOuvert() ? courrierComplementALire(idPatient) : Promise.resolve([]),
     // LIMITE CONNUE, ACCEPTÉE par le responsable le 2026-10-18 (relecture
     // préalable à ACT-3) : la règle « servi » de l'accueil (rejeu de la carte,
     // contrat) n'est pas rejouée ici — même limite que `api/portail/lectures`
@@ -92,6 +96,7 @@ export async function sourcesMesEchanges(idPatient: string): Promise<SourcesMesE
     bilan: bilan ? { id: bilan.id, envoyeLe: bilan.dateEnvoi } : null,
     fiches: fiches.map(f => ({ idRemise: f.idRemise, libelle: f.libelle, remiseLe: new Date(f.remiseLe) })),
     lettre: lettres[0] ?? null,
+    courrierComplement: courriersComplement[0] ?? null,
     protocole: protocole ? { approbationId: protocole.approbationId, approuveLe: protocole.approvedAt } : null,
     questionnaires,
     comptesRendus: comptesRendus.map(c => ({ deposeLe: new Date(c.deposeLe) })),

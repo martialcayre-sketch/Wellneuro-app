@@ -26,9 +26,12 @@ const { prisma, tx, getServerSession, entrees, reconstruire } = vi.hoisted(() =>
     },
     journalAccesDossier: { create: vi.fn(async () => ({})) },
     protocolDraft: {
-      findUnique: vi.fn(async () => ({
-        idPatient: 'PAT_1', payload: {}, inputHash: 'HASH_V1', contractVersion: 'c1-protocol-draft-v4',
-      })),
+      // Le fil de la carte : `where { idPatient, decisionCardId }` est filtré
+      // par la base ; le banc rend la version active, relue (J3-12h lot 4).
+      findMany: vi.fn(async (): Promise<unknown[]> => [{
+        id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+      }]),
     },
     supplementIngredient: { findMany: vi.fn(async () => [{ id: 'ing_1', nomFr: 'Magnésium' }]) },
     $transaction: vi.fn(async (fn: (client: unknown) => unknown) => fn(tx)),
@@ -69,7 +72,9 @@ const preparer = (corps: Record<string, unknown> = {}) =>
   POST(new Request('http://localhost/api/praticien/protocoles/courrier-complement', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idPatient: 'PAT_1', protocolDraftId: 'pd_v1', medecinLibelle: 'Médecin traitant', ...corps }),
+    body: JSON.stringify({
+      idPatient: 'PAT_1', decisionCardId: 'DEC_1', protocolDraftId: 'pd_v1', medecinLibelle: 'Médecin traitant', ...corps,
+    }),
   }));
 
 describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 3)', () => {
@@ -181,11 +186,51 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
     expect(res.status).toBe(500);
   });
 
-  it('version d’un autre dossier : 404', async () => {
-    prisma.protocolDraft.findUnique.mockResolvedValueOnce({
-      idPatient: 'AUTRE', payload: {}, inputHash: 'H', contractVersion: 'c1-protocol-draft-v4',
-    });
+  it('version d’un autre dossier ou d’une autre carte : 404 — le fil est lu sur CE dossier et CETTE carte', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValueOnce([]);
     expect((await preparer()).status).toBe(404);
+    expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { idPatient: 'PAT_1', decisionCardId: 'DEC_1' },
+    }));
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('J3-12h lot 4 (revue CodeRabbit de #1691) — une version supplantée : 409, aucun courrier ne se prépare', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValueOnce([
+      {
+        id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+      },
+      {
+        id: 'pd_v2', inputHash: 'HASH_V2', supersedesDraftId: 'pd_v1', createdAt: new Date('2026-10-21T00:00:00.000Z'),
+        status: 'practitioner_reviewed', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+      },
+    ]);
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('version_stale');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('J3-12h lot 4 (revue CodeRabbit de #1691) — la version active en brouillon : 409, aucun courrier ne se prépare', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValueOnce([{
+      id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+      status: 'draft', payload: {}, contractVersion: 'c1-protocol-draft-v4',
+    }]);
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('version_non_relue');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['absente', undefined],
+    ['vide', '  '],
+    ['hors format', 'carte/../autre'],
+  ])('carte de décision %s : 400, rien n’est lu', async (_cas, decisionCardId) => {
+    const res = await preparer({ decisionCardId });
+    expect(res.status).toBe(400);
+    expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
   });
 
   it('destinataire vide : 400', async () => {

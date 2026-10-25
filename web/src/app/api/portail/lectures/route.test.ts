@@ -29,6 +29,8 @@ const { fichesALire } = vi.hoisted(() => ({ fichesALire: vi.fn() }));
 vi.mock('@/lib/fiches-assiette/servicePatient', () => ({ fichesALire }));
 const { lettreALire } = vi.hoisted(() => ({ lettreALire: vi.fn() }));
 vi.mock('@/lib/correspondance/lettreServicePatient', () => ({ lettreALire }));
+const { courrierComplementALire } = vi.hoisted(() => ({ courrierComplementALire: vi.fn() }));
+vi.mock('@/lib/correspondance/courrierComplementServicePatient', () => ({ courrierComplementALire }));
 // La résolution de la diffusion a ses propres bancs : ici, on prouve que la
 // route compare la `cycleRef` reçue à LA diffusion en vigueur, et écrit
 // l'identifiant qu'elle résout elle-même.
@@ -415,6 +417,72 @@ describe('le courrier pour le médecin (D-262, LOT-03a)', () => {
   ])('POST refusé en 404 pour %s, et rien n’est écrit', async (_cas, drapeau, idObjet) => {
     if (drapeau) process.env.WN_LETTRE_ADRESSAGE_PATIENT = drapeau;
     const reponse = await POST(requete(cookieProprio(), { espece: 'lettre_adressage', idObjet }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('le courrier à remettre au médecin avant un complément ciblé (D-345, J3-12h lot 4)', () => {
+  const REMISE_LE = '2026-10-25T10:00:00.000Z';
+
+  beforeEach(() => {
+    courrierComplementALire.mockResolvedValue([{ id: 'ccr_servi', remiseLe: new Date(REMISE_LE) }]);
+  });
+  afterEach(() => {
+    delete process.env.WN_COURRIER_COMPLEMENT;
+  });
+
+  it('drapeau FERMÉ : aucun courrier annoncé, et le service n’est même pas appelé', async () => {
+    const corps = await corpsDe(await GET(requete(cookieProprio())));
+    expect((corps.lectures as { espece: string }[]).map(l => l.espece)).not.toContain('courrier_complement');
+    expect(courrierComplementALire).not.toHaveBeenCalled();
+  });
+
+  it('drapeau ouvert : le courrier servi est une lecture, sans aucun contenu', async () => {
+    process.env.WN_COURRIER_COMPLEMENT = 'true';
+    const lectures = (await corpsDe(await GET(requete(cookieProprio())))).lectures as Record<string, unknown>[];
+    expect(lectures.filter(l => l.espece === 'courrier_complement')).toEqual([
+      { espece: 'courrier_complement', idObjet: 'ccr_servi', remiseLe: REMISE_LE },
+    ]);
+    expect(courrierComplementALire).toHaveBeenCalledWith(PATIENT.idPatient);
+  });
+
+  it('une panne du courrier tait SA lecture, pas celles du bilan', async () => {
+    process.env.WN_COURRIER_COMPLEMENT = 'true';
+    courrierComplementALire.mockRejectedValue(new Error('panne'));
+    const reponse = await GET(requete(cookieProprio()));
+    expect(reponse.status).toBe(200);
+    const especes = ((await corpsDe(reponse)).lectures as { espece: string }[]).map(l => l.espece);
+    expect(especes).not.toContain('courrier_complement');
+  });
+
+  it('POST : consigne le courrier SERVI à ce patient', async () => {
+    process.env.WN_COURRIER_COMPLEMENT = 'true';
+    prisma.portailLecturePatient.create.mockResolvedValue({});
+    const reponse = await POST(requete(cookieProprio(), { espece: 'courrier_complement', idObjet: 'ccr_servi' }));
+    expect(reponse.status).toBe(200);
+    expect(prisma.portailLecturePatient.create).toHaveBeenCalledWith({
+      data: { idPatient: PATIENT.idPatient, espece: 'courrier_complement', idObjet: 'ccr_servi', luLe: expect.any(Date) },
+      select: { idObjet: true },
+    });
+  });
+
+  it.each([
+    ['un identifiant non servi', 'true', 'ccr_autre'],
+    ['la surface fermée', undefined, 'ccr_servi'],
+  ])('POST refusé en 404 pour %s, et rien n’est écrit', async (_cas, drapeau, idObjet) => {
+    if (drapeau) process.env.WN_COURRIER_COMPLEMENT = drapeau;
+    const reponse = await POST(requete(cookieProprio(), { espece: 'courrier_complement', idObjet }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('POST : l’identifiant d’un courrier complément ne s’acquitte pas sous l’espèce de la lettre', async () => {
+    process.env.WN_COURRIER_COMPLEMENT = 'true';
+    process.env.WN_LETTRE_ADRESSAGE_PATIENT = 'true';
+    lettreALire.mockResolvedValue([]);
+    const reponse = await POST(requete(cookieProprio(), { espece: 'lettre_adressage', idObjet: 'ccr_servi' }));
+    delete process.env.WN_LETTRE_ADRESSAGE_PATIENT;
     expect(reponse.status).toBe(404);
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
   });
