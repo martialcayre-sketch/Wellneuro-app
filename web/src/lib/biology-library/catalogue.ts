@@ -30,6 +30,12 @@ import {
   reglesNonIndiquees,
   type ExplorationNonIndiquee,
 } from './nonIndiquesBibliotheque';
+import { lireLiensAxe, type LienAxe } from './liensAxe';
+import {
+  claimsNonSupplantesAuCorpus,
+  claimsValidesAuCorpus,
+  cleClaim,
+} from '@/lib/rag/claims/validite';
 
 /** Pointeur de millésime de la nomenclature, tel que l'import CB-02a l'écrit. */
 export const SOURCE_NABM = 'nabm_smt_ans';
@@ -80,6 +86,10 @@ export type FicheAnalyte = {
   preanalytiques: PreanalytiqueAffiche[];
   /** Explorations non indiquées dont cet analyte est l'alternative (D-320 §3). */
   nonIndiques: ExplorationNonIndiquee[];
+  /** Liens signés vers un axe biologique (F79, [[D-351]]) ; nul = non gradé. */
+  liensAxe: LienAxe[];
+  /** Liens d'axe tus : claim plus valide au corpus ou supplanté ([[D-140]], [[D-351]] §5). */
+  liensAxeSuspendus: number;
 };
 
 export type MillesimeNabm = {
@@ -150,6 +160,18 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
           where: { actif: true },
           select: { typeCondition: true, consigne: true },
         },
+        // F79 ([[D-351]]) : les liens d'axe seuls — les liens nutriment
+        // (F52) n'ont pas d'écran décidé.
+        liensCliniques: {
+          where: { actif: true, cibleType: 'axe' },
+          select: {
+            cibleCode: true,
+            direction: true,
+            claimId: true,
+            versionClaim: true,
+            niveauPreuve: true,
+          },
+        },
       },
       orderBy: { libelle: 'asc' },
     }),
@@ -190,6 +212,19 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
         })
       : [];
 
+  // [[D-140]] : la validité du claim d'un lien se CONSTATE à la lecture, jamais
+  // présumée. Le préflight de release-db ne la voit qu'à la release suivante ;
+  // un claim repassé hors VALIDE, ou supplanté (D-351 §5, exigé par le
+  // préflight), entre-temps tait son lien ici, dès la lecture.
+  const referencesLiens = analytes.flatMap(a =>
+    a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
+  );
+  const [valides, nonSupplantes] = await Promise.all([
+    claimsValidesAuCorpus(referencesLiens),
+    claimsNonSupplantesAuCorpus(referencesLiens),
+  ]);
+  const claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
+
   const nonIndiques = explorationsNonIndiqueesParAnalyte(
     new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
   );
@@ -229,6 +264,8 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     remboursement: remboursements.get(analyte.code)!,
     preanalytiques: analyte.preanalytiques,
     nonIndiques: nonIndiques.get(analyte.code) ?? [],
+    liensAxe: lireLiensAxe(analyte.liensCliniques.filter(l => claimsValides.has(cleClaim(l)))),
+    liensAxeSuspendus: analyte.liensCliniques.filter(l => !claimsValides.has(cleClaim(l))).length,
   }));
 
   return {
