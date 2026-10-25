@@ -12,6 +12,16 @@ const { prisma } = vi.hoisted(() => ({
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+const { claimsValidesAuCorpus, claimsNonSupplantesAuCorpus } = vi.hoisted(() => ({
+  claimsValidesAuCorpus: vi.fn(),
+  claimsNonSupplantesAuCorpus: vi.fn(),
+}));
+vi.mock('@/lib/rag/claims/validite', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
+  claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus,
+}));
+
 import { listerCatalogueBiologie } from './catalogue';
 import { INDICATIONS_BIOLOGIE_V1 } from './indicationsBiologieV1';
 
@@ -35,6 +45,7 @@ function analyteBase(surcharge: Record<string, unknown> = {}) {
     correspondancesNabm: [],
     constatNabm: null,
     preanalytiques: [],
+    liensCliniques: [],
     ...surcharge,
   };
 }
@@ -46,6 +57,8 @@ beforeEach(() => {
   prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue(null);
   prisma.biologyNabmActe.findMany.mockResolvedValue([]);
   prisma.biologyAnalyteComposition.findMany.mockResolvedValue([]);
+  claimsValidesAuCorpus.mockResolvedValue(new Set());
+  claimsNonSupplantesAuCorpus.mockResolvedValue(new Set());
 });
 
 describe('remboursement d’un calculé signé — hérité de ses mesures (D-323 §4)', () => {
@@ -301,6 +314,94 @@ describe('fiches — passage fidèle, absences comprises', () => {
     const catalogue = await listerCatalogueBiologie();
 
     expect(catalogue.analytes[0].nonIndiques).toEqual([]);
+  });
+
+  // F79 (D-351) : seuls les liens d'axe ACTIFS sont lus — les liens nutriment
+  // (F52) n'ont pas d'écran — et un niveau nul sort « non gradé ».
+  it('les liens d’axe actifs seuls sont lus, un niveau nul sort non gradé', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({
+        liensCliniques: [
+          {
+            cibleCode: 'inflammation',
+            direction: 'haut_evocateur',
+            claimId: 'WN-CL-0999-001',
+            versionClaim: 'v1.0',
+            niveauPreuve: null,
+          },
+        ],
+      }),
+    ]);
+
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-001::v1.0']));
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-001::v1.0']));
+
+    const catalogue = await listerCatalogueBiologie();
+
+    const select = prisma.biologyAnalyte.findMany.mock.calls[0][0].select;
+    expect(select.liensCliniques.where).toEqual({ actif: true, cibleType: 'axe' });
+    expect(catalogue.analytes[0].liensAxe).toEqual([
+      {
+        axe: 'inflammation',
+        sens: 'haut_evocateur',
+        claimId: 'WN-CL-0999-001',
+        versionClaim: 'v1.0',
+        niveauPreuve: { statut: 'non_gradé' },
+      },
+    ]);
+  });
+
+  // D-140 : un claim repassé hors VALIDE entre deux releases tait son lien dès
+  // la lecture ; la fiche dit qu'un lien est tu, jamais qu'il est fondé.
+  it('un lien dont le claim n’est plus valide au corpus est tu, et compté', async () => {
+    const lien = (claimId: string) => ({
+      cibleCode: 'inflammation',
+      direction: 'haut_evocateur',
+      claimId,
+      versionClaim: 'v1.0',
+      niveauPreuve: null,
+    });
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ liensCliniques: [lien('WN-CL-0999-001'), lien('WN-CL-0999-002')] }),
+    ]);
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-002::v1.0']));
+    claimsNonSupplantesAuCorpus.mockResolvedValue(
+      new Set(['WN-CL-0999-001::v1.0', 'WN-CL-0999-002::v1.0']),
+    );
+
+    const [fiche] = (await listerCatalogueBiologie()).analytes;
+
+    expect(claimsValidesAuCorpus).toHaveBeenCalledWith([
+      { claimId: 'WN-CL-0999-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0999-002', versionClaim: 'v1.0' },
+    ]);
+    expect(fiche.liensAxe.map(l => l.claimId)).toEqual(['WN-CL-0999-002']);
+    expect(fiche.liensAxeSuspendus).toBe(1);
+  });
+
+  // D-351 §5 : un claim encore VALIDE mais SUPPLANTÉ, que le préflight de
+  // release-db refuse, est tu de la même façon.
+  it('un lien dont le claim VALIDE est supplanté est tu, et compté', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({
+        liensCliniques: [
+          {
+            cibleCode: 'inflammation',
+            direction: 'haut_evocateur',
+            claimId: 'WN-CL-0999-001',
+            versionClaim: 'v1.0',
+            niveauPreuve: null,
+          },
+        ],
+      }),
+    ]);
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0999-001::v1.0']));
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set());
+
+    const [fiche] = (await listerCatalogueBiologie()).analytes;
+
+    expect(fiche.liensAxe).toEqual([]);
+    expect(fiche.liensAxeSuspendus).toBe(1);
   });
 
   it('verifieLe et le millésime sortent en ISO, prêts pour l’écran', async () => {

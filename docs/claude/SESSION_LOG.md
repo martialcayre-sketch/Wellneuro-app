@@ -11720,3 +11720,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** #1701 mergée, main fusionné : T3, CI, CodeRabbit, merge, déploiement.
 
 **Ouvert.** Le numéro, qui dépend de l'ordre des merges ; le constat des prochains imports de TP et d'INR.
+
+## 2026-10-25 — F79, troisième temps : axes sur la fiche analyte, liste en préflight (D-351 §4, P2-1)
+
+**Fait.** P2-1 soldé : `biology_liens_axe_v1.sql` en préflight de release-db, avant `migrate deploy`. La fiche analyte de la Bibliothèque porte « Axes biologiques » : axe, sens, claim et niveau, « non gradé » quand le niveau est nul (union discriminée, tri sans le niveau). Libellés validés par le responsable. T3 vert.
+
+**Écarté.** Les paires au contrat de fraîcheur (quatrième copie de la liste) ; l'affichage au dossier du patient (règle d'interprétation non décidée, F53) ; le lecteur sans écran.
+
+**Prochaine action.** CI, CodeRabbit, passe Codex (P0), merge, constat de la fiche après déploiement.
+
+**Ouvert.** Le signal d'un claim rejeté n'arrive qu'à la release-db suivante ; les liens nutriment sans écran.

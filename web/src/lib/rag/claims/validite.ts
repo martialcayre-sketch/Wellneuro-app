@@ -91,6 +91,36 @@ export async function claimsValidesAuCorpus(
   );
 }
 
+/**
+ * Parmi les références demandées, celles dont la version n'est PAS supplantée
+ * (`superseded_at IS NULL`). À combiner avec `claimsValidesAuCorpus` là où un
+ * contrat exige aussi la non-supplantation — les liens d'axe ([[D-351]] §5),
+ * dont le préflight de release-db refuse un claim supplanté : la fiche ne doit
+ * pas le montrer d'ici là. Même absence qu'au-dessus : absent = refusé.
+ */
+export async function claimsNonSupplantesAuCorpus(
+  references: readonly ReferenceClaim[],
+): Promise<ReadonlySet<string>> {
+  const uniques = new Map<string, ReferenceClaim>();
+  for (const reference of references) uniques.set(cleClaim(reference), reference);
+  if (uniques.size === 0) return new Set();
+
+  const couples = [...uniques.values()];
+  const lignes = await prisma.$queryRaw<Array<{ claim_id: string; version_claim: string }>>`
+    SELECT c.claim_id, c.version_claim
+    FROM public.rag_corpus_claims AS c
+    JOIN unnest(${couples.map((r) => r.claimId)}::text[], ${couples.map((r) => r.versionClaim)}::text[])
+      AS demande(claim_id, version_claim)
+      ON demande.claim_id = c.claim_id
+     AND demande.version_claim = c.version_claim
+    WHERE c.superseded_at IS NULL
+  `;
+
+  return new Set(
+    lignes.map((ligne) => cleClaim({ claimId: ligne.claim_id, versionClaim: ligne.version_claim })),
+  );
+}
+
 /** Le cas à une seule référence — l'écriture d'une règle en pose exactement une. */
 export async function claimValideAuCorpus(reference: ReferenceClaim): Promise<boolean> {
   return (await claimsValidesAuCorpus([reference])).has(cleClaim(reference));

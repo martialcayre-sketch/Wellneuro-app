@@ -7,6 +7,7 @@ import {
   CLAIM_ID_RE,
   VERSION_CLAIM_RE,
   claimValideAuCorpus,
+  claimsNonSupplantesAuCorpus,
   claimsValidesAuCorpus,
   cleClaim,
 } from './validite';
@@ -135,5 +136,36 @@ describe('formats recopiés des CHECK de rag_corpus_claims', () => {
   it('la clé de carte distingue deux versions d’un même claim', () => {
     expect(cleClaim({ claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' }))
       .not.toBe(cleClaim({ claimId: 'WN-CL-2026-001', versionClaim: 'v2.0' }));
+  });
+});
+
+describe('claimsNonSupplantesAuCorpus', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.$queryRaw.mockResolvedValue([]);
+  });
+
+  it('ne pose aucune question sans référence', async () => {
+    expect((await claimsNonSupplantesAuCorpus([])).size).toBe(0);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  // D-351 §5 : la paire, appariée position par position, et la seule
+  // non-supplantation — la validité reste à `claimsValidesAuCorpus`.
+  it('joint sur la paire et ne garde que les versions non supplantées', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' }]);
+    const gardes = await claimsNonSupplantesAuCorpus([
+      { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-2026-002', versionClaim: 'v1.0' },
+    ]);
+    expect(parametres()).toEqual([
+      ['WN-CL-2026-001', 'WN-CL-2026-002'],
+      ['v1.0', 'v1.0'],
+    ]);
+    expect(sql()).toContain('unnest');
+    expect(sql()).toContain('demande.version_claim = c.version_claim');
+    expect(sql()).toContain('c.superseded_at IS NULL');
+    expect([...gardes]).toEqual(['WN-CL-2026-001::v1.0']);
   });
 });

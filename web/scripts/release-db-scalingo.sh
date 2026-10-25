@@ -5,8 +5,9 @@
 # Actions ne peut pas s'y connecter directement — ce script tourne donc à
 # l'intérieur de la plateforme, où l'add-on injecte l'URL.
 #
-# Les quatre préflights lecture seule (BEGIN READ ONLY … ROLLBACK dans les
-# fichiers) sont ceux que le workflow jouait à l'ère Supabase, inchangés,
+# Les préflights lecture seule (BEGIN READ ONLY … ROLLBACK dans les
+# fichiers) sont les quatre que le workflow jouait à l'ère Supabase,
+# inchangés, plus la liste exacte des liens analyte-axe (D-351, F79, P2-1),
 # puis `migrate deploy` applique les migrations committées. Les sentinelles
 # WN_RELEASE_DB_OK / WN_RELEASE_DB_ECHEC sont le PROTOCOLE de sortie : le
 # workflow lit les logs du one-off et ne connaît que ces deux mots, LIÉS AU
@@ -63,6 +64,12 @@ npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql || eche
 
 echo "→ Préflight fraîcheur des claims épinglés (lecture seule)…"
 npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql || echec "preflight_claims"
+
+# D-351 (F79, revue P2-1) : les liens d'axe citent seize claims que le
+# contrat ci-dessus ne connaît pas. Un claim rejeté ou supplanté après la
+# release laisserait ses liens actifs sans signal ; ce contrat le voit.
+echo "→ Préflight liens analyte-axe signés (lecture seule)…"
+npx prisma db execute --file prisma/checks/biology_liens_axe_v1.sql || echec "preflight_liens_axe"
 
 echo "→ Migrations Prisma (migrate deploy)…"
 npx prisma migrate deploy || echec "migrate_deploy"
