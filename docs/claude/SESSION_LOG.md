@@ -11651,3 +11651,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; réapprobation des approbations concernées, constat par conteneur ; puis r3_10.
 
 **Ouvert.** Rien dans le périmètre.
+
+## 2026-10-25 — r3_10 : l'écart avec la décision, nommé sous la valeur (Q5)
+
+**Fait.** Inventaire : l'écart restant (snapshot sur la passation entière, routes sur les items lus) ne va que des routes vers la décision. Il ne touche donc jamais un non mesuré et se dit sous la valeur. Le responsable a validé, par questions à options : la forme du motif, l'onglet et le tiroir, les sources tirées du mapping (HAD comprise), le motif « recueil incomplet » précisé « sur les items lus ». Le prédicat du snapshot est réutilisé, pas copié.
+
+**Écarté.** Les cercles ; une liste fermée de trois sources ; une nouvelle D-xxx (Q5 tranchée, M-2 signée).
+
+**Prochaine action.** CI, CodeRabbit, merge, observation du déploiement ; constat par conteneur après la réapprobation des diffusions de D-359.
+
+**Ouvert.** Rien dans le périmètre : par conteneur, 71 dernières passations des quatre sources, aucune incomplète ; l'écart est démontré, sans occurrence en production.

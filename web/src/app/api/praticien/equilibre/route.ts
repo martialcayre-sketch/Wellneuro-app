@@ -12,7 +12,7 @@ import {
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
-import { motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
+import { ecartsDecisionBesoin, motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
 import {
   BESOIN_CLARTE,
   BESOIN_RESERVE_ADAPTATION,
@@ -23,7 +23,7 @@ import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import type { PresenceSourceStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
-import type { MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
+import type { EcartDecisionServi, MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 import type { ProvenanceChiffre, ProvenanceMomentum } from '@/lib/praticien/provenanceChiffre';
 import type {
   JalonMomentum,
@@ -44,6 +44,8 @@ export type PrioriteBesoin = {
   niveauPreuve: NiveauPreuveBesoin;
   /** Pourquoi le besoin n'est pas mesuré (r3_08, Q4) ; `null` s'il l'est. */
   motifNonMesure: MotifNonMesureServi[] | null;
+  /** Écart avec la décision d'un besoin mesuré (r3_10, Q5) ; `null` sans écart. */
+  ecartDecision: EcartDecisionServi[] | null;
   /** Provenance datée de la couverture ([[D-333]] §2 règle 1) ; `null` quand
    *  elle est absente. */
   provenance: ProvenanceChiffre | null;
@@ -201,6 +203,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       couverture: versCent(couverturesParBesoin.get(b.id) ?? null),
       niveauPreuve: niveauxPreuve[b.id],
       motifNonMesure: motifsNonMesureBesoin(b.id, reponses, contexteMotifs),
+      ecartDecision: ecartsDecisionBesoin(b.id, reponses, contexteMotifs),
       provenance: provenanceDe(couverturesParBesoin.get(b.id) ?? null, BESOIN_SOURCES[b.id] ?? [], versionScore),
       carteLiee:
         b.id === BESOIN_RESERVE_ADAPTATION ? ('reserveAdaptation' as const) : b.id === BESOIN_CLARTE ? ('clarte' as const) : null,

@@ -69,7 +69,7 @@ import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import { CerclesBesoinsCockpit, MENTION_CARTE_LIEE } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
-import { DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { Chip } from '@/components/ui/Chip';
 import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
@@ -1531,10 +1531,17 @@ export function FichePatientPanel({
                     )}
                   </>
                 ) : !provenanceEtablie(p.provenance) ? (
-                  /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1). */
-                  MENTION_SOURCE_NON_ENREGISTREE
+                  /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1) ;
+                     l'écart avec la décision (r3_10), lui, n'en porte aucun. */
+                  <>
+                    {MENTION_SOURCE_NON_ENREGISTREE}
+                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
+                  </>
                 ) : modeConsultationActif ? (
-                  <ValeurMasquee />
+                  <>
+                    <ValeurMasquee />
+                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
+                  </>
                 ) : (
                   <>
                     {/* Piste neutre (sans zones) : la couverture n'a pas de bornes
@@ -1551,6 +1558,9 @@ export function FichePatientPanel({
                     </span>
                     {p.carteLiee && <span className="mt-0.5 block text-xs">{MENTION_CARTE_LIEE[p.carteLiee]}</span>}
                     <DetailProvenance objet={p.libellePraticien} lignes={lignesProvenance(p.provenance)} aGauche />
+                    {/* L'écart avec la décision (r3_10) : un ancien conteneur
+                        sans le champ n'affiche rien. */}
+                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
                   </>
                 )}
               </td>
