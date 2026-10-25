@@ -11671,6 +11671,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis une PR de doc pour la place 9 (texte accepté, départ au premier jour noté du carnet).
 
 **Ouvert.** La fenêtre de service de la place 9 ; le retour depuis une fiche, qui mène à la page des fiches.
+## 2026-10-24 — F79 : migration des dix-sept liens analyte-axe (D-351 §4-§6)
+
+**Fait.** Production relue avant d'écrire, conforme à D-351. Migration `20261024160000_biology_liens_axe_signes_v1` : `niveau_preuve` nullable ; trigger contre le double lien nutriment/axe ; dix-sept liens en un seul bloc, tout ou rien. Contrat de la liste exacte, contrat négatif, et banc de rejeu sur des claims de fixture, au CI et en T3. Deux arbitrages consignés en D-351 §6 : corpus vide = aucun lien ; trigger. T3 vert.
+
+**Écarté.** Exiger 17 liens sur toute base (le CI serait rouge) ; constater le double lien sans le refuser ; brancher le contrat en préflight de `release-db` (hors lot).
+
+**Prochaine action.** CI, CodeRabbit, Codex, merge ; release-db après celle de #1679 ; constat par conteneur, versé dans une PR de suivi.
+
+**Ouvert.** Code consommateur (« non gradé ») ; F53 ; claims à relire en atelier.
 
 ## 2026-10-24 — t44 : fiches TP et INR au catalogue, migration (D-361)
 
@@ -11681,12 +11690,3 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (libellés au résolveur, re-signature).
 
 **Ouvert.** cinq PR ont revendiqué D-357 le même soir ; D-357 à D-360 pris par d’autres PR, renuméroté D-361 au merge.
-## 2026-10-24 — F79 : migration des dix-sept liens analyte-axe (D-351 §4-§6)
-
-**Fait.** Production relue avant d'écrire, conforme à D-351. Migration `20261024160000_biology_liens_axe_signes_v1` : `niveau_preuve` nullable ; trigger contre le double lien nutriment/axe ; dix-sept liens en un seul bloc, tout ou rien. Contrat de la liste exacte, contrat négatif, et banc de rejeu sur des claims de fixture, au CI et en T3. Deux arbitrages consignés en D-351 §6 : corpus vide = aucun lien ; trigger. T3 vert.
-
-**Écarté.** Exiger 17 liens sur toute base (le CI serait rouge) ; constater le double lien sans le refuser ; brancher le contrat en préflight de `release-db` (hors lot).
-
-**Prochaine action.** CI, CodeRabbit, Codex, merge ; release-db après celle de #1679 ; constat par conteneur, versé dans une PR de suivi.
-
-**Ouvert.** Code consommateur (« non gradé ») ; F53 ; claims à relire en atelier.
