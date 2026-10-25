@@ -11721,15 +11721,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Le numéro, qui dépend de l'ordre des merges ; le constat des prochains imports de TP et d'INR.
 
-## 2026-10-24 — File D : lettres bg, h, bf (D-364 à D-366)
-
-**Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
-
-**Écarté.** Arrêt ou suspension du flux bg ; registre des violations ; suppression du code C5 ; liste des indicateurs bf avant le cadre.
-
-**Prochaine action.** CI, CodeRabbit, merge, page D ; puis ad + bc et ba.
-
-**Ouvert.** Lot de code de bg sans rang ; J1-alim à ouvrir.
 ## 2026-10-25 — F79, troisième temps : axes sur la fiche analyte, liste en préflight (D-351 §4, P2-1)
 
 **Fait.** P2-1 soldé : `biology_liens_axe_v1.sql` en préflight de release-db, avant `migrate deploy`. La fiche analyte de la Bibliothèque porte « Axes biologiques » : axe, sens, claim et niveau, « non gradé » quand le niveau est nul (union discriminée, tri sans le niveau). Libellés validés par le responsable. T3 vert.
@@ -11739,3 +11730,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, passe Codex (P0), merge, constat de la fiche après déploiement.
 
 **Ouvert.** Le signal d'un claim rejeté n'arrive qu'à la release-db suivante ; les liens nutriment sans écran.
+
+## 2026-10-24 — File D : lettres bg, h, bf (D-364 à D-366)
+
+**Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
+
+**Écarté.** Arrêt ou suspension du flux bg ; registre des violations ; suppression du code C5 ; liste des indicateurs bf avant le cadre.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis ad + bc et ba.
+
+**Ouvert.** Lot de code de bg sans rang ; J1-alim à ouvrir.
