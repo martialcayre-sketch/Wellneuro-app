@@ -11740,3 +11740,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Lot r3_09, puis F9a (textes relus avant le code).
 
 **Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
+## 2026-10-24 — File D : lettres bg, h, bf (D-364 à D-366)
+
+**Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
+
+**Écarté.** Arrêt ou suspension du flux bg ; registre des violations ; suppression du code C5 ; liste des indicateurs bf avant le cadre.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis ad + bc et ba.
+
+**Ouvert.** Lot de code de bg sans rang ; J1-alim à ouvrir.
