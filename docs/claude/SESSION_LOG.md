@@ -11652,7 +11652,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Rien dans le périmètre.
 
-## 2026-10-24 — File D : lettres bg, h, bf (D-360 à D-362)
+## 2026-10-24 — File D : lettres bg, h, bf (D-361 à D-363)
 
 **Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
 

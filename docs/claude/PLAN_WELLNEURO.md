@@ -595,7 +595,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : selon ; migration non écrite.
 - **Décisions, textes** : lettre h, de la main du responsable.
 - **Critère de fin** : page retirée, constatée ; D-C5-01 à 04 soldées à la livraison (`DETTE_C5.md:10-13`).
-- **Mise à jour (2026-10-24, lettre écrite)** : h écrite par D-361 : démontage côté portail seul (résumé dans le protocole, page de l'aliment, route patient) ; code praticien et contrats V2 et V4 en place, `WN_C5_ENABLED` allumé ; avant livraison, constat par conteneur des protocoles diffusés qui portent une Boussole, arrêt au-dessus de zéro ; D-C5-01 à 04 soldées à la livraison constatée, D-C5-05 reste. J1-alim peut s'ouvrir, sans migration.
+- **Mise à jour (2026-10-24, lettre écrite)** : h écrite par D-362 : démontage côté portail seul (résumé dans le protocole, page de l'aliment, route patient) ; code praticien et contrats V2 et V4 en place, `WN_C5_ENABLED` allumé ; avant livraison, constat par conteneur des protocoles diffusés qui portent une Boussole, arrêt au-dessus de zéro ; D-C5-01 à 04 soldées à la livraison constatée, D-C5-05 reste. J1-alim peut s'ouvrir, sans migration.
 
 #### F33 · av : contenu biologique du document remis au médecin
 - **Identifiant, piste** : lettre av ; contenu, voie de remise, régime documentaire ; complète q et ae ; trackc.
@@ -713,7 +713,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre bg, de la main du responsable.
 - **Critère de fin** : flux listé, puis déclaré ou arrêté, consigné.
-- **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-360 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance) et déclaré, version pseudonymisée seule ; réserve écrite au registre ; constat des envois antérieurs tenu hors dépôt. Reste un lot de code : nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-360 §4) et ligne de la rubrique 6.
+- **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-361 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance) et déclaré, version pseudonymisée seule ; réserve écrite au registre ; constat des envois antérieurs tenu hors dépôt. Reste un lot de code : nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-361 §4) et ligne de la rubrique 6.
 
 #### H19 · bf : indicateurs hebdomadaires
 - **Identifiant, piste** : lettre bf.
@@ -723,7 +723,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : une D-xxx clinique et son fragment par indicateur, de la main du responsable ; aucune échelle proposée par l'assistant ; nouvelle version du contrat du point d'étape [A verifier : migration].
 - **Critère de fin** : instruction : décisions signées ; code : réponses constatées en agrégats ; ouverture constatée.
 - **Mise à jour (2026-10-14)** : lecture « porte 15 » du code de bf confirmée par le responsable : porte 15 pour le code, instruction au rang 0 (handoff de la PR 2, #1419). Les [A verifier] sur la migration du contrat du point d'étape restent.
-- **Mise à jour (2026-10-24, cadre écrit)** : D-362 écrit le cadre de l'instruction (moment, contenu de chaque décision d'indicateur, portes du code, charge du 21e jour) ; la liste des indicateurs reste de la main du responsable ; critère de fin inchangé.
+- **Mise à jour (2026-10-24, cadre écrit)** : D-363 écrit le cadre de l'instruction (moment, contenu de chaque décision d'indicateur, portes du code, charge du 21e jour) ; la liste des indicateurs reste de la main du responsable ; critère de fin inchangé.
 
 #### H20 · Gestes RGPD consignés au registre
 - **Identifiant, piste** : archivage de l'annexe d'hébergement signée et de l'accord de sous-traitance de l'hébergeur ; confiance ; geste du responsable.
@@ -2187,15 +2187,15 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | lettres m, n, ac, z : faites le 2026-10-15 (D-303, D-304, D-301, D-302) | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
 | h1 | sources de fidélité (G-10) : instruments arrêtés le 2026-10-15, références test-retest à fournir (H13) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) | H08 | c, am, al, cm, seuils_points |
-| h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg (fait le 2026-10-24 : D-360) | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
+| h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg (fait le 2026-10-24 : D-361) | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable ; remplacée le 2026-10-22, D-342 §3) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
 | h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; véhicule de M-3 arrêté le 2026-10-15 : écran praticien, lot de code livré le 2026-10-15 ; 5 des 8 signées le 2026-10-15 ; candidats des 77 autres analytes préparés et deux arbitrages pris le 2026-10-15 (liste pré-remplie, constat signé « aucun acte ») | F54, porte 10 | M-3b, M-3c, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) ; j, q, s, aa, ab, av faits le 2026-10-15 (D-306 à D-311) ; w : méthode écrite (D-312), dossiers de preuve par besoin puis guide de la main du responsable ; huit arbitrages rendus le 2026-10-15 (H15), deuxième dossier après J3-12c ; liste des statuts posés de s à écrire | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co (fait le 2026-10-15 : D-313 ; neuf critères à cocher de la main du responsable) | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge (tranché le 2026-10-21 : le barème ignore les actions vides ; correctif en file A, F76) | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) | H42, H41 | table d'arrêt complète ; axes |
-| h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-361) | H16 | J1-alim ; D-C5-01 à 04 |
-| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-362), décisions par indicateur à écrire | H19 | indicateurs hebdomadaires |
+| h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-362) | H16 | J1-alim ; D-C5-01 à 04 |
+| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-363), décisions par indicateur à écrire | H19 | indicateurs hebdomadaires |
 | h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) | H26 | durées, information du médecin |
 | h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
@@ -2228,7 +2228,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 |---|---|---|
 | c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c ; faits : D-333 et D-334 le 2026-10-20, M-2 signée le 2026-10-23 (#1658) |
 | v | H13 | G-10 |
-| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte attendent le constat signé de M-3c ; fait : M-3c clos le 2026-10-17 (#1493, #1496, #1499) |
+| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte attendent le constat signé de M-3c ; fait : M-3c clos le 2026-10-16 (#1493, #1496, #1499) |
 | f | F54 | M-3 ; M-3c (journal R1) ; fait le 2026-10-17 (D-316) |
 | G-3 | F54 | f ; M-3b (liste pré-remplie) ; M-3c pour les analytes sans acte |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
@@ -2771,7 +2771,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | e | signature de SAF-EI-01 amendée ; faite le 2026-10-17 (M-1, D-281 §6) | la main du responsable | M-1 au rang 3, J1-sécu au rang 4 | F66 |
 | f | NABM : 8 liaisons, puis liste étendue ; fait le 2026-10-17 (D-316), G-3 en cours | la main du responsable | 2 | F54 |
 | g | essai de restauration, procédure et portée (écrite : D-289, #1430) | la main du responsable | 0 | F04 |
-| h | Boussole retirée ; exception à D-276 §1 ; fait le 2026-10-24 (D-361) | la main du responsable | 0 | H16 |
+| h | Boussole retirée ; exception à D-276 §1 ; fait le 2026-10-24 (D-362) | la main du responsable | 0 | H16 |
 | j | D2, règle de dépendance ; module publié ; fait le 2026-10-15 (D-306) | registre | 0 | F63 |
 | k | CGU unique ; texte de l'IA v7 ; fait le 2026-10-14 (D-292) | la main du responsable | 0 | F77 |
 | m | encart de sécurité sur les CAB_ ; fait le 2026-10-15 (D-303) | la main du responsable | 0 | H10 |
@@ -2818,8 +2818,8 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | bb | trois plans de chaque geste | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
-| bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-362), décisions par indicateur à écrire | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
-| bg | flux de l'export vers l'assistant externe ; fait le 2026-10-24 (D-360) | la main du responsable | 0 | H18 |
+| bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-363), décisions par indicateur à écrire | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
+| bg | flux de l'export vers l'assistant externe ; fait le 2026-10-24 (D-361) | la main du responsable | 0 | H18 |
 | bh | rendu imprimable du protocole | registre | 5 au plus tôt [Hypothese] | H69 |
 | ca | cadrage de la refonte du sommeil ; fait le 2026-10-15 (D-300) | la main du responsable | 0 | H17 |
 | cb | textes de l'écran de fin | la main du responsable | 1 [Hypothese] | H39 |
