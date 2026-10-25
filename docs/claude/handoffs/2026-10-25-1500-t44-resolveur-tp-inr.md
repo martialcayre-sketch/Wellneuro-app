@@ -33,6 +33,8 @@ proposent leur fiche à l'import. Préalable rempli : la migration
   INR en sortent, le temps de Quick reste « inconnu ») ; banc TP/INR (INR
   sans unité résolu et concordant ; « TP » nu, « Temps de prothrombine »
   et le temps de Quick en s restent « inconnu »).
+- `docs/FEATURE_FLAGS.md` : date de la signature du résolveur (garde
+  `verrousSignatureDocumentes`, trouvée par T3).
 - `docs/DECISIONS.md` (D-363), `docs/claude/PLAN_WELLNEURO.md` (ligne t44
   soldée), `changelog.d/2026-10-25-t44-resolveur-tp-inr.md`, SESSION_LOG.
 
