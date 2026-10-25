@@ -321,8 +321,6 @@ async function diffusionLue(idPatient: string, cycleRef: string): Promise<string
  */
 export async function POST(req: Request): Promise<NextResponse<PortailLecturesResponse>> {
   const requestContext = createRequestContext(req);
-  const garde = await garderAcces(req, requestContext, 'POST');
-  if (garde.refus) return garde.refus;
 
   const echec = (
     reason: 'corps_invalide' | 'introuvable' | 'exception',
@@ -334,12 +332,27 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
       requestContext,
     );
 
+  // Le corps est lu AVANT la session : l'accusé d'une surface fermée répond 404
+  // sans résoudre de compte (revue Codex de #1701, P1-1). Un corps illisible
+  // garde son verdict après la garde, comme avant.
   let corps: unknown;
+  let corpsLisible = true;
   try {
     corps = await req.json();
   } catch {
-    return echec('corps_invalide', 'Requête illisible.', 400);
+    corpsLisible = false;
   }
+  if (
+    corpsLisible
+    && (corps as { espece?: unknown } | null)?.espece === 'courrier_complement'
+    && !courrierComplementOuvert()
+  ) {
+    return echec('introuvable', 'Ce document n’est pas celui qui vous est servi.', 404);
+  }
+
+  const garde = await garderAcces(req, requestContext, 'POST');
+  if (garde.refus) return garde.refus;
+  if (!corpsLisible) return echec('corps_invalide', 'Requête illisible.', 400);
 
   const { espece, idObjet, cycleRef } = (corps ?? {}) as { espece?: unknown; idObjet?: unknown; cycleRef?: unknown };
   // Le protocole se désigne par sa `cycleRef`, les documents par leur

@@ -114,6 +114,22 @@ est vue par l'aperçu suivant, qui bloque le clic. Lu en production le
 Restent un passage de bout en bout sur un dossier de test, par identifiant,
 `WN_FICHES_ASSIETTE` ouvert et `WN_PHYSIO_TRAITEMENTS` ouvert.
 
+**Revue Codex (2026-10-25), reçue après le merge de #1701 : deux corrections
+dans une PR de suite, un point écarté.** (a) Drapeau fermé, l'accusé
+`courrier_complement` du POST lectures répond 404 avant toute session : le
+corps est lu d'abord, aucun compte n'est résolu. Les autres espèces gardent
+leur ordre. (b) La consignation relit le fil `(idPatient, decisionCardId)`
+sous le verrou du patient et rejoue la règle de version (tête de fil,
+`practitioner_reviewed`, `reviewedAt`) avant toute insertion. Le verrou
+suffit pour une version neuve : `protocol_drafts.id_patient` référence
+`patients`, et l'insertion prend FOR KEY SHARE sur la ligne que la
+consignation tient en FOR UPDATE. Le banc PostgreSQL le constate.
+(c) Écarté : retirer l'ingrédient du catalogue des lignes du courrier. Le
+texte validé par [[D-358]] §1 liste « intitulé, et ingrédient du catalogue
+s'il est renseigné », et le retoucher demande une nouvelle validation. Un nom
+d'ingrédient ne désigne ni la population ni la situation : ce n'est pas la
+forme opaque qui est visée.
+
 ### D-361 — t44 : le taux de prothrombine et l'INR entrent au catalogue, le temps de Quick n'y entre pas ; l'INR en « ratio », les actes 0126, 0127 et 1128 proposés, jamais signés par migration
 
 - Date : 2026-10-24

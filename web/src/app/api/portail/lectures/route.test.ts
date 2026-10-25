@@ -477,6 +477,22 @@ describe('le courrier à remettre au médecin avant un complément ciblé (D-345
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['avec la session du patient', true],
+    ['sans aucune session', false],
+  ])('revue Codex de #1701, P1-1 — surface fermée : 404 AVANT la session (%s), aucun compte résolu', async (_cas, avecCookie) => {
+    const reponse = await POST(requete(avecCookie ? cookieProprio() : undefined, { espece: 'courrier_complement', idObjet: 'ccr_servi' }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    expect(courrierComplementALire).not.toHaveBeenCalled();
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('surface fermée : une AUTRE espèce sans session garde son 401 (l’ordre ne change que pour le courrier)', async () => {
+    const reponse = await POST(requete(undefined, { espece: 'bilan', idObjet: 'b1' }));
+    expect(reponse.status).toBe(401);
+  });
+
   it('POST : l’identifiant d’un courrier complément ne s’acquitte pas sous l’espèce de la lettre', async () => {
     process.env.WN_COURRIER_COMPLEMENT = 'true';
     process.env.WN_LETTRE_ADRESSAGE_PATIENT = 'true';
