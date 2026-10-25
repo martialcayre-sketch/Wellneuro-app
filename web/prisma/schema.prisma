@@ -2513,7 +2513,7 @@ model BiologyAnalyteLink {
   direction    String   @map("direction")
   claimId      String   @map("claim_id")
   versionClaim String   @map("version_claim")
-  niveauPreuve String   @map("niveau_preuve")
+  niveauPreuve String?  @map("niveau_preuve") // nul = « non gradé » (D-351 §4), jamais une lettre
   actif        Boolean  @default(true) @map("actif")
   createdAt    DateTime @default(now()) @map("created_at")
 
