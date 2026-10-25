@@ -11740,3 +11740,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, page D ; puis ad + bc et ba.
 
 **Ouvert.** Lot de code de bg sans rang ; J1-alim à ouvrir.
+
+## 2026-10-25 — File D : lettres ad, bc, ba (D-367 à D-369)
+
+**Fait.** #1693 mergée (bg, h, bf sous D-364 à D-366, après trois renumérotations et cinq passes CodeRabbit) ; page D remise à jour. Second lot écrit : ad (un cycle, `phases` fermé, « programme » défini), bc (ajout par version datée approuvée, seul un pivot relance), ba (« Validé par votre praticien le … »).
+
+**Écarté.** Message de départ dans ba ; NIR dans le texte patient de bg (plus recueilli depuis D-284 §2).
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis cb, (a) et (e) de D-283, aw, az.
+
+**Ouvert.** Lot de code de ba (rang 1) ; #1704 doit renuméroter.
