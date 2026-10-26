@@ -50,11 +50,23 @@ test.describe('Radar des besoins — un besoin non mesuré n’est pas un zéro 
     await expect(axes.locator('tspan', { hasText: 'source non enregistrée' })).toHaveCount(1);
     // Un point par besoin mesuré À PROVENANCE ÉTABLIE, aucun pour les trois autres.
     await expect(panneau.locator('.recharts-radar-dots circle')).toHaveCount(9);
-    // La figure ouvre la provenance de ses valeurs tracées (r3_09).
-    await expect(panneau.getByLabel('Source — radar des 12 besoins')).toBeVisible();
+    // La figure ouvre la provenance de ses valeurs tracées (r3_09), sous un nom
+    // qui se comprend sans elle (F9a).
+    await expect(panneau.getByLabel('Source — ensemble des valeurs du tableau')).toBeVisible();
     // Le tableau voisin dit toujours « — » pour les deux mêmes besoins
-    // ([[D-301]] §1) ; le motif se déplie dessous (r3_08).
-    await expect(panneau.getByRole('cell', { name: /^—/ })).toHaveCount(2);
+    // ([[D-301]] §1), lu « non mesuré » ; le motif se déplie dessous (r3_08).
+    await expect(panneau.getByRole('cell', { name: /^non mesuré/ })).toHaveCount(2);
+    await expect(panneau.getByRole('table', { name: 'Couverture des 12 besoins, de B1 à B12, par strate' })).toBeVisible();
+
+    // Décoratif (H64, F9a) : la figure est masquée au lecteur d'écran et hors
+    // de la tabulation ; ses graduations gardent leurs anneaux, sans nombre.
+    // (Les portails de recharts portent `tabindex="-1"` : focalisables par
+    // script, jamais par la tabulation — axe ne les compte pas.)
+    await expect(panneau.locator('[aria-hidden="true"] .recharts-surface')).toHaveCount(1);
+    await expect(panneau.locator('.recharts-surface[role], .recharts-surface[tabindex]')).toHaveCount(0);
+    await expect(panneau.locator('.recharts-surface [tabindex]:not([tabindex^="-"])')).toHaveCount(0);
+    await expect(panneau.locator('.recharts-polar-grid-concentric-polygon').first()).toBeAttached();
+    await expect(panneau.locator('.recharts-polar-radius-axis-tick')).toHaveCount(0);
 
     // Un geste, au clavier : le motif est replié, Entrée le déplie.
     const geste = panneau.locator('summary', { hasText: 'Motif' }).first();

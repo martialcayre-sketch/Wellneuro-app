@@ -36,7 +36,7 @@ describe('DetailBesoinsPanel — niveau de preuve masqué ([[D-332]])', () => {
     const tableau = await screen.findByRole('table');
     expect(tableau.textContent).toContain('40%');
     expect(tableau.textContent).toContain('70%');
-    expect(screen.getAllByRole('cell', { name: '—' })).toHaveLength(1);
+    expect(screen.getAllByRole('cell', { name: 'non mesuré' })).toHaveLength(1);
     expect(screen.getAllByRole('columnheader').map(c => c.textContent)).toEqual(['Besoin', 'Couverture']);
 
     const page = document.body.textContent ?? '';
@@ -83,7 +83,8 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
-    expect(screen.getAllByRole('cell', { name: '—' })).toHaveLength(1);
+    const cellule = screen.getByRole('cell', { name: 'non mesuré' });
+    expect(cellule.querySelector('[aria-hidden="true"]')?.textContent).toBe('—');
     expect(screen.queryByText('Motif', { selector: 'summary' })).toBeNull();
   });
 
@@ -186,7 +187,7 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
-    const details = screen.getByLabelText('Source — radar des 12 besoins').closest('details')!;
+    const details = screen.getByLabelText('Source — ensemble des valeurs du tableau').closest('details')!;
     expect(details.textContent).toContain(
       'Questionnaires : Q_SOM_01 (réponse du 10/10/2026), Q_INF_03 (réponse du 12/10/2026)'
     );
@@ -199,7 +200,30 @@ describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
-    expect(screen.queryByLabelText('Source — radar des 12 besoins')).toBeNull();
+    expect(screen.queryByLabelText('Source — ensemble des valeurs du tableau')).toBeNull();
+  });
+});
+
+// Le radar est décoratif (H64, F9a) : le tableau se nomme et dit ce que
+// disaient les axes ; le chargement s'annonce.
+describe('DetailBesoinsPanel — accessibilité sans le radar (F9a)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('le tableau porte sa légende, au mot près', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    expect(await screen.findByRole('table', { name: 'Couverture des 12 besoins, de B1 à B12, par strate' })).toBeTruthy();
+  });
+
+  it('le chargement s’annonce au lecteur d’écran, texte inchangé', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    expect(screen.getByRole('status').textContent).toBe('Chargement du détail des besoins...');
   });
 });
 
