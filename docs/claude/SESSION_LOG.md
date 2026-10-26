@@ -11792,10 +11792,10 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 ## 2026-10-26 — Déployeur : la tête retenue jusqu'à l'application attestée (D-374 §1)
 
-**Fait.** Étape 1 de la séquence « Quatre files en parallèle » : `retenue()` du déployeur part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne ; quatre états (appliquée, en attente, inconnu, échec avant application), la fin rouge volontaire lue « appliquée » par les étapes du run — forme vérifiée sur le run de l'incident du 2026-10-19. Banc : le cas que D-248 gardait, les états, le run relancé sur un descendant, la borne basse, la parité des étapes ; cinq mutations attrapées. D-248 amendée par ligne datée, fiche H85.
+**Fait.** Étape 1 de la séquence « Quatre files en parallèle » : `retenue()` du déployeur part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne ; quatre états (appliquée, en attente, inconnu, échec avant application), la fin rouge volontaire lue « appliquée » par les étapes du run — forme vérifiée sur le run de l'incident du 2026-10-19. Revue `wn-reviewer` : un run en exécution sur un ancêtre qui a déjà lu la tête est attendu (borne de vingt minutes, délai du job 70 min) avant un nouveau jugement. Banc : le cas que D-248 gardait, les états, le run relancé sur un descendant, les deux bornes, l'attente, la parité des étapes ; huit mutations attrapées. D-248 amendée par ligne datée, fiche H85.
 
-**Écarté.** Lire les journaux du run (archive) plutôt que ses étapes ; borner la fenêtre aux cent derniers runs plutôt qu'à la date du commit porteur.
+**Écarté.** Lire les journaux du run plutôt que ses étapes ; borner la fenêtre aux cent derniers runs ; restreindre le commit porteur aux seules migrations (un commit clinique non approuvé retient aussi ses descendants — choix signalé).
 
-**Prochaine action.** Revue `wn-reviewer`, CI, CodeRabbit, merge hors run release-db en vol, déploiement constaté ; puis D-373 §1 dans `CLAUDE.md` et le journal du crochet (D-375 §1).
+**Prochaine action.** CI, CodeRabbit, merge hors run release-db en vol, déploiement constaté ; puis D-373 §1 dans `CLAUDE.md` et le journal du crochet (D-375 §1).
 
-**Ouvert.** Le gel reste intégral jusqu'à la sonde par phases (D-374 §4).
+**Ouvert.** Le gel reste intégral jusqu'à la sonde par phases (D-374 §4) ; la retenue clinique étendue, à confirmer.

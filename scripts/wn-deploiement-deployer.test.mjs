@@ -25,6 +25,7 @@ import {
   classerRunReleaseDb,
   CHEMINS_RELEASE_DB,
   ETAPES_ATTESTATION,
+  ETAPE_DECLENCHEMENT,
   AUTO_DEPLOIEMENT_ACTIF,
   ESSAIS_DEFAUT,
   INTERVALLE_MS_DEFAUT,
@@ -102,10 +103,16 @@ const run = (head_sha, status, conclusion = null, id = 1) => ({ id, head_sha, st
 const [ONE_OFF, VERIFICATION] = ETAPES_ATTESTATION;
 /** Les étapes du job `release` d'un run rouge, avec les conclusions des deux étapes d'attestation. */
 const etapesRelease = (oneOff, verification) => [
-  { name: 'Déclenchement du déploiement du commit approuvé', conclusion: 'success' },
+  { name: ETAPE_DECLENCHEMENT, conclusion: 'success' },
   { name: ONE_OFF, conclusion: oneOff },
   { name: VERIFICATION, conclusion: verification },
   { name: 'Garde anti-recul — le commit du run a été dépassé', conclusion: 'failure' },
+];
+/** Les étapes d'un run EN COURS : le déclenchement conclu (ou non), le reste pas encore joué. */
+const etapesEnCours = (declenchement) => [
+  { name: ETAPE_DECLENCHEMENT, conclusion: declenchement },
+  { name: ONE_OFF, conclusion: null },
+  { name: VERIFICATION, conclusion: null },
 ];
 
 // ── Abstentions ─────────────────────────────────────────────────────────────
@@ -222,11 +229,12 @@ test('revue #1220 — une branche divergente en service n’est pas « déjà en
   assert.equal(v.etat, 'deploye', v.motif);
 });
 
-// Les deux bornes d'attente (avant ET après l'écriture) doivent tenir dans le
-// timeout du job, installation comprise.
-test('revue #1220 — le timeout du job couvre les deux attentes cumulées', () => {
+// Les trois bornes d'attente (la fin d'un run release-db en exécution, le
+// calme avant l'écriture, la conclusion après) doivent tenir dans le timeout
+// du job, installation comprise.
+test('revue #1220 — le timeout du job couvre les trois attentes cumulées', () => {
   const minutes = Number(job('deploiement').match(/^\s+timeout-minutes:\s*(\d+)\s*$/m)?.[1]);
-  const attentes = (2 * ESSAIS_DEFAUT * INTERVALLE_MS_DEFAUT) / 60000;
+  const attentes = (3 * ESSAIS_DEFAUT * INTERVALLE_MS_DEFAUT) / 60000;
   assert.ok(minutes >= attentes + 5, `timeout ${minutes} min < ${attentes} min d'attentes + 5 min d'installation`);
 });
 
@@ -629,6 +637,90 @@ test('D-374 §1 — un run en attente prime sur un échec antérieur ; un run ap
   assert.equal(v2.etat, 'deploye', v2.motif);
 });
 
+// Revue de #1713 (constat 1) : approuvé, release-db lit la tête UNE fois, à
+// son déclenchement, puis applique pendant plusieurs minutes. Un commit C
+// mergé après cette lecture n'est livré par personne — le run finit sans le
+// redéployer, et le run du déployeur de C, retenu au vert, ne repart pas. Le
+// déployeur attend donc la fin du run, puis rejuge : C part.
+test('revue #1713 — un run en exécution sur un ancêtre a déjà lu la tête : le déployeur attend sa fin, puis livre la tête', async () => {
+  let lectures = 0;
+  const m = monde({
+    tetes: [C],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-c', '2026/09/25 11:00:00', '5m0s', C), EN_SERVICE_A)],
+  });
+  const v = await deployer({
+    sha: C,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => {
+      lectures += 1;
+      return [lectures <= 2 ? run(B, 'in_progress', null, 7) : run(B, 'completed', 'success', 7)];
+    },
+    lireEtapesReleaseDb: (id) => (id === 7 ? etapesEnCours('success') : []),
+  });
+  assert.equal(v.etat, 'deploye', v.motif);
+  assert.equal(v.avertissement, undefined);
+  assert.equal(m.appels.declencher, 1);
+  // Deux tours d'attente du run, puis un tour de suivi du build.
+  assert.equal(m.appels.dormir, 3);
+  assert.deepEqual(m.appels.trace, ['lecture 1', 'ECRITURE', 'lecture 2'], 'rien n’est lu ni écrit avant la fin du run');
+});
+
+test('revue #1713 — un run sur un ancêtre qui n’a pas encore lu la tête (approbation en attente) la livrera : retenu, sans attendre', async () => {
+  for (const [statut, etapesLues] of [
+    ['waiting', []],
+    ['queued', etapesEnCours(null)],
+    ['in_progress', etapesEnCours(null)],
+  ]) {
+    const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+    const v = await deployer({
+      sha: C,
+      ...m.deps,
+      dernierCommitReleaseDb: () => B,
+      lireRunsReleaseDb: () => [run(B, statut)],
+      lireEtapesReleaseDb: () => etapesLues,
+    });
+    assert.equal(v.etat, 'retenu-release-db', statut);
+    assert.equal(v.avertissement, undefined, statut);
+    assert.equal(v.attendre, undefined, 'le drapeau ne sort pas du noyau');
+    assert.match(v.motif, /release-db déploiera la tête à l'approbation/, statut);
+    assert.equal(m.appels.dormir, 0, statut);
+    assert.equal(m.appels.declencher, 0, statut);
+  }
+});
+
+test('revue #1713 — un run en exécution qui porte la cible elle-même la livrera : retenu, sans attendre', async () => {
+  const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => [run(B, 'in_progress')],
+    lireEtapesReleaseDb: () => etapesEnCours('success'),
+  });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(v.avertissement, undefined);
+  assert.equal(m.appels.dormir, 0);
+});
+
+test('revue #1713 — le run est toujours en exécution après la borne : retenu, averti, à relancer à la main', async () => {
+  const m = monde({ tetes: [C], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({
+    sha: C,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => [run(B, 'in_progress')],
+    lireEtapesReleaseDb: () => etapesEnCours('success'),
+  });
+  assert.equal(v.code, SORTIE_OK);
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(v.avertissement, true);
+  assert.match(v.motif, /a lu la tête de main avant .* ; toujours en exécution après 0 min — relancer le déployeur \(action=deployer\)/);
+  assert.equal(m.appels.dormir, 5, 'la borne est celle des autres attentes');
+  assert.equal(m.appels.declencher, 0);
+  assert.deepEqual(m.appels.trace, [], 'aucune lecture Scalingo, aucune écriture');
+});
+
 // Revue #1222 : le run release-db du même push peut ne pas encore être visible
 // dans l'API. Une liste vide ne vaut permission que si la ligne ne contient
 // AUCUN commit qui déclenche release-db.
@@ -641,10 +733,54 @@ test('revue #1222 — commit touchant un chemin de release-db SANS run visible :
   assert.equal(m.appels.declencher, 0);
 });
 
+// Un run vert HORS de la plage [porteur, cible] n'atteste rien pour la
+// cible : ni sur un sha étranger à la ligne, ni sur un descendant au-delà de
+// la cible. Revue de #1713 (constat 3) : sans danger en pratique — hors
+// `main`, le job `release` est sauté —, la borne reste délibérée et tenue.
+test('D-374 §1 — un run attesté hors de la plage [porteur, cible] n’atteste pas sa migration', async () => {
+  const HORS_LIGNE = 'f'.repeat(40);
+  const m = monde({ tetes: [B], lectures: [tableau(EN_SERVICE_A)] });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => [run(B, 'waiting', null, 1), run(C, 'completed', 'success', 2), run(HORS_LIGNE, 'completed', 'success', 3)],
+  });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.match(v.motif, /non conclu \(waiting\)/);
+  assert.equal(m.appels.declencher, 0);
+});
+
 // Revue #1222 : la retenue est RELUE juste avant l'écriture, après une attente
-// du calme qui peut durer vingt minutes. Une lecture en échec à ce moment
-// propage — sans écriture.
-test('revue #1222 — la retenue est relue juste avant l’écriture ; une lecture en échec n’écrit pas', async () => {
+// du calme qui peut durer vingt minutes. Seul le verdict de la seconde lecture
+// compte : ce monde factice change d'avis entre les deux (garde de mutation —
+// un run réel ne disparaît pas, mais une relecture qui n'appliquerait pas son
+// verdict passerait inaperçue).
+test('revue #1222 — la retenue est relue juste avant l’écriture, et c’est son verdict qui s’applique', async () => {
+  let lectures = 0;
+  const m = monde({
+    tetes: [B],
+    lectures: [
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '', A2, 'building'), EN_SERVICE_A),
+      tableau(ligne('dep-x', '2026/09/25 10:50:00', '6m0s', A2), EN_SERVICE_A),
+    ],
+  });
+  const v = await deployer({
+    sha: B,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => {
+      lectures += 1;
+      return lectures === 1 ? [run(B, 'completed', 'success')] : [run(B, 'waiting')];
+    },
+  });
+  assert.equal(v.etat, 'retenu-release-db');
+  assert.equal(lectures, 2);
+  assert.equal(m.appels.declencher, 0, 'aucune écriture : la retenue est relue juste avant');
+});
+
+// Et une lecture en échec à ce moment propage — sans écriture.
+test('revue #1222 — une lecture de la retenue en échec juste avant l’écriture n’écrit pas', async () => {
   let lectures = 0;
   const m = monde({
     tetes: [B],
@@ -702,6 +838,11 @@ test('D-374 §1 — parité des étapes d’attestation avec release-db.yml, pla
   assert.ok(positions[0] < positions[1], 'le one-off précède la contre-épreuve');
   const garde = noms.findIndex((n) => n.startsWith('Garde anti-recul'));
   assert.ok(garde > positions[1], 'la garde anti-recul vient après les deux attestations');
+  // Le déclenchement — la lecture de la tête — précède l'application : un
+  // run dont il est conclu a figé ce qu'il livre (revue de #1713).
+  const declenchement = noms.indexOf(ETAPE_DECLENCHEMENT);
+  assert.ok(declenchement !== -1, `étape de déclenchement absente de release-db.yml : ${ETAPE_DECLENCHEMENT}`);
+  assert.ok(declenchement < positions[0], 'le déclenchement précède le one-off');
 });
 
 // La liste des chemins que le déployeur surveille doit être CELLE du filtre
@@ -912,6 +1053,9 @@ test('lot 3 : le câblage transmet la lecture des runs release-db, et le noyau n
   // fin de soirée.
   assert.match(principal, /lancer\('git', \['show', '-s', '--format=%ct', commit\]\)/);
   assert.match(principal, /new Date\(\(secondes - 3600\) \* 1000\)\.toISOString\(\)/);
+  // Toutes les pages, pas la première : `--slurp` rend un tableau de pages.
+  assert.match(principal, /\.flatMap\(\(page\) => page\.workflow_runs\)/);
+  assert.match(principal, /\.jobs\.flatMap\(\(j\) => j\.steps \?\? \[\]\)/);
   const mondes = [];
   const sans = async (nom, tetes) => {
     const m = monde({ tetes, lectures: [tableau(EN_SERVICE_A)] });

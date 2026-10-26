@@ -43,6 +43,19 @@ reste intégral jusqu'à la sonde (D-374 §4 et §5).
   gardée, défensive ; une lecture en échec propage sans écriture.
 - `toucheReleaseDb` disparaît, absorbée par `dernierCommitReleaseDb` ; les
   trois lectures restent sans valeur par défaut (fail-closed).
+- Revue `wn-reviewer` (constat moyen, corrigé) : un run en exécution sur un
+  ancêtre qui a déjà lu la tête (étape de déclenchement conclue) ne livre
+  pas un commit mergé après, et le run du déployeur de ce commit, retenu au
+  vert, ne repartait pas. Le déployeur attend désormais la fin du run (borne
+  de vingt minutes, `timeout-minutes` du job 50 → 70), puis rejuge ; passé
+  la borne, retenu et averti (« relancer le déployeur, action=deployer »).
+  Un run `waiting`/`queued`, ou qui porte la cible elle-même, n'attend pas.
+- Choix signalé au responsable (constat 5 de la revue) : `CHEMINS_RELEASE_DB`
+  garde `web/src/lib/clinical/**` — un commit clinique non approuvé retient
+  ses descendants, comme une migration (sinon un commit de code mergé
+  au-dessus contournerait la porte humaine de D-044 §3). Coût dans le cas
+  D-374 §3 : l'approbation du run du commit clinique reste due avant que la
+  tête ne reparte, même si un ancien run a déjà déployé la tête.
 - D-248 : le paragraphe « Inchangé, et à connaître » est retiré par ligne
   datée ; D-374 : statut « §1 livré » ; fiche H85 au plan (rang 1) ;
   commentaires de `deploiement-production.yml` mis à jour, sans changement
@@ -56,26 +69,33 @@ reste intégral jusqu'à la sonde (D-374 §4 et §5).
   résumé) ; `scripts/wn-deploiement-deployer.test.mjs` (cas D-374 §1, cas
   du lot 3 adaptés, invariants du câblage et de l'API mis à jour, parité
   des étapes avec `release-db.yml`).
-- `.github/workflows/deploiement-production.yml` : commentaires seuls.
+- `.github/workflows/deploiement-production.yml` : commentaires, et
+  `timeout-minutes` du job `deploiement` 50 → 70 (trois attentes bornées).
 - `docs/DECISIONS.md` (D-374 statut, D-248 ligne datée),
   `docs/claude/PLAN_WELLNEURO.md` (H85), fragment de changelog, SESSION_LOG,
   ce handoff.
 
 ## Validations exécutées
 
-- `node --test scripts/wn-deploiement-deployer.test.mjs` : 61 cas verts
+- `node --test scripts/wn-deploiement-deployer.test.mjs` : 67 cas verts
   (54 avant le lot) ; bancs voisins (`release-db-comportement`,
   `wn-deploiement-observation`, `release-db-invariants`, `ci-invariants`) :
   79 verts.
-- Cinq mutations du correctif, chacune attrapée par le banc : ancienne
+- Huit mutations du correctif, chacune attrapée par le banc : ancienne
   lecture (le seul commit cible), étapes ignorées, borne basse absente,
-  attente lue avant appliquée, inconnu lu comme échec.
+  attente lue avant appliquée, inconnu lu comme échec, boucle d'attente
+  retirée, cible elle-même attendue, borne haute absente.
 - Par l'API, en lecture seule : le run release-db de l'incident du
   2026-10-19 (rouge) expose les deux étapes d'attestation en succès et la
   garde anti-recul en échec ; le filtre `created=>=` avec
   `--paginate --slurp` rend les seize runs depuis le 19 octobre, en une page.
-- `bash scripts/check_no_secrets.sh`, `node scripts/lib/decisions-numerotation.mjs`,
-  contrôle de clôture et revue `wn-reviewer` : voir le corps de la PR.
+  La revue a rejoué `classerRunReleaseDb` sur les étapes réelles des onze
+  derniers runs rouges ou annulés : huit « appliquée » (garde anti-recul),
+  trois « échec » (rejet, annulation, garde « dernier déployé »).
+- Revue `wn-reviewer` sur 8d07a8d3 : aucun bloquant ; un constat moyen et
+  trois trous de banc corrigés (ci-dessus), un choix signalé, une note (la
+  date du commit porteur, ci-dessous). `check_no_secrets`, numérotation des
+  décisions, contrôle de clôture : verts (voir le corps de la PR).
 
 ## Problèmes ouverts
 
@@ -84,7 +104,13 @@ reste intégral jusqu'à la sonde (D-374 §4 et §5).
   sur une tête postérieure ; tenus par le banc. Le premier déploiement après
   le merge constate le chemin nominal.
 - La fenêtre de runs dépend de l'horodatage du commit porteur (UTC, marge
-  d'une heure) ; un historique réécrit la fausserait — exclu sur `main`.
+  d'une heure) : un historique réécrit, ou un commit daté dans le futur de
+  plus d'une heure, la fausserait (« aucun run visible », retenu) — exclu
+  sur `main`, datée par GitHub au merge.
+- La retenue d'un commit clinique étendue à ses descendants (choix
+  ci-dessus) attend la confirmation du responsable ; la restreindre aux
+  seules migrations est une ligne de `CHEMINS_RELEASE_DB`, tenue par le banc
+  de parité avec `release-db.yml`.
 - Le gel par phases attend la sonde de `wn-merge` (D-374 §4) et la
   réécriture du piège 2 de `pr-revue-et-release-db.md` §5, lot distinct.
 

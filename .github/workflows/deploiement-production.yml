@@ -145,10 +145,12 @@ jobs:
     permissions:
       contents: read
       actions: read
-    # DEUX bornes de 20 min s'additionnent (revue #1220) : le calme AVANT
-    # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
-    # laisserait un build en vol et un état inconnu. 40 + installation + marge.
-    timeout-minutes: 50
+    # TROIS bornes de 20 min s'additionnent : la fin d'un run release-db en
+    # exécution sur un ancêtre (D-374 §1, revue de #1713), le calme AVANT
+    # l'écriture (revue #1220), puis la conclusion APRÈS. Un job tué entre les
+    # deux dernières laisserait un build en vol et un état inconnu.
+    # 60 + installation + marge.
+    timeout-minutes: 70
     # SÉRIALISÉ : deux déploiements ne s'entrelacent pas, et un déploiement
     # déclenché n'est pas abandonné en plein build. MAIS un seul run ATTEND :
     # un nouvel arrivant évince celui qui attendait — y compris celui de la

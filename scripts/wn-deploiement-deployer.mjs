@@ -48,7 +48,9 @@ export const SORTIE_OK = 0;
 export const SORTIE_ECHEC = 1;
 
 // Un build dure 5 à 9 minutes (relevé du 2026-09-23/24). Vingt minutes, comme
-// la garde de release-db : au-delà, ce n'est plus une attente.
+// la garde de release-db : au-delà, ce n'est plus une attente. Trois attentes
+// bornées au plus : la fin d'un run release-db en exécution sur un ancêtre, le
+// calme avant l'écriture, la conclusion après — le délai du job les couvre.
 export const ESSAIS_DEFAUT = 40;
 export const INTERVALLE_MS_DEFAUT = 30_000;
 
@@ -108,6 +110,14 @@ export const CHEMINS_RELEASE_DB = ['web/prisma/migrations', 'web/src/lib/clinica
  * avec les noms d'étapes du workflow, et leur ordre.
  */
 export const ETAPES_ATTESTATION = ['Release en one-off (préflights + migrate deploy)', 'Vérification — migrate status sur conteneur'];
+
+/**
+ * L'étape de `release-db.yml` qui lit la tête de `main` et la déploie — UNE
+ * fois, à l'approbation. Conclue, le run ne relira plus la tête : ce qu'il
+ * livre est figé, et un commit mergé après elle n'est livré par personne
+ * (revue de #1713). Même parité que les étapes d'attestation.
+ */
+export const ETAPE_DECLENCHEMENT = 'Déclenchement du déploiement du commit approuvé';
 
 /**
  * L'état d'application que révèle UN run release-db (D-374 §1) :
@@ -227,11 +237,22 @@ export async function deployer({
     if (etats.includes('appliquee')) return null;
     const qui = porteur === commit ? commit : `${commit} contient ${porteur}, qui`;
     if (etats.includes('en-attente')) {
-      const statuts = runs.filter((_, i) => etats[i] === 'en-attente').map((r) => r.status).join(', ');
+      const enAttente = runs.filter((_, i) => etats[i] === 'en-attente');
+      const statuts = enAttente.map((r) => r.status).join(', ');
+      // Un run non conclu sur un ANCÊTRE a-t-il déjà lu la tête ? Si son étape
+      // de déclenchement est conclue, ce qu'il livre est figé sans la cible,
+      // mergée après : la cible attend la fin du run (voir l'appelant). Un run
+      // qui porte la cible elle-même la livrera, quoi qu'il en soit.
+      const attendre = enAttente.some(
+        (r) => r.head_sha !== commit && lireEtapesReleaseDb(r.id).some((e) => e.name === ETAPE_DECLENCHEMENT && e.conclusion),
+      );
       return {
         code: SORTIE_OK,
         etat: 'retenu-release-db',
-        motif: `${qui} porte un run release-db non conclu (${statuts}) — release-db déploiera la tête à l'approbation`,
+        attendre,
+        motif: attendre
+          ? `${qui} porte un run release-db en exécution (${statuts}) qui a lu la tête de main avant ${commit} et ne le livrera pas`
+          : `${qui} porte un run release-db non conclu (${statuts}) — release-db déploiera la tête à l'approbation`,
       };
     }
     if (etats.includes('inconnu')) {
@@ -258,8 +279,30 @@ export async function deployer({
       motif: `${qui} touche un chemin de release-db mais aucun run release-db n'est visible — retenu jusqu'à ce qu'il existe et soit approuvé`,
     };
   };
-  const retenuAvant = retenue(cible);
-  if (retenuAvant) return retenuAvant;
+  // Le drapeau `attendre` ne sort pas du noyau ; passé la borne, ou après le
+  // calme, un run encore en exécution laisse la cible à relancer à la main.
+  const sansAttendre = ({ attendre, ...verdict }) => verdict;
+  const avertirAttente = (verdict) => ({
+    ...sansAttendre(verdict),
+    avertissement: true,
+    motif: `${verdict.motif} ; toujours en exécution après ${Math.round((essais * intervalleMs) / 60000)} min — relancer le déployeur (action=deployer) après la fin du run, sinon le prochain merge livrera cette tête`,
+  });
+
+  // UN RUN EN EXÉCUTION SUR UN ANCÊTRE A DÉJÀ LU LA TÊTE (revue de #1713).
+  // Approuvé, release-db lit la tête une fois, à son déclenchement, puis
+  // applique pendant plusieurs minutes. Un commit mergé après cette lecture
+  // n'est livré par personne : le run finit sans le redéployer, et ce run-ci,
+  // retenu au vert, ne repart pas. D'où une attente bornée de la conclusion du
+  // run, puis un nouveau jugement — la phase 2 de D-374 §2, tenue par l'outil.
+  // Un run qui n'a pas encore lu la tête (approbation en attente) la livrera :
+  // aucune attente.
+  let retenuAvant = retenue(cible);
+  for (let i = 0; retenuAvant?.attendre && i < essais; i += 1) {
+    journal(`… ${retenuAvant.motif} — attente de sa fin (${i + 1}/${essais}).`);
+    await dormir(intervalleMs);
+    retenuAvant = retenue(cible);
+  }
+  if (retenuAvant) return retenuAvant.attendre ? avertirAttente(retenuAvant) : sansAttendre(retenuAvant);
 
   // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
   // build, c'est en lancer un second en parallèle — et laisser l'ordre de fin
@@ -296,7 +339,7 @@ export async function deployer({
   // vingt minutes. Une tête nouvelle est prise par le contrôle qui précède ;
   // cette relecture est défensive, et une lecture en échec ici ne s'écrit pas.
   const retenuApres = retenue(cible);
-  if (retenuApres) return retenuApres;
+  if (retenuApres) return retenuApres.attendre ? avertirAttente(retenuApres) : sansAttendre(retenuApres);
   try {
     declencher();
   } catch (err) {
