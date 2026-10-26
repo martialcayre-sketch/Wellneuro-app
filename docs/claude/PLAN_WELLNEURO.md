@@ -56,8 +56,8 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
    et release-db ; décisions et textes (par leurs identifiants) ; critère de
    fin. L'objet détaillé, l'effet visible, le coût et la provenance restent
    hors dépôt.
-4. Deux séries de fiches. Fnn : les 79 fiches de la feuille de route BioFlow.
-   Hnn : les 84 fiches hors biologie. Quand une fiche et sa table d'entrée
+4. Deux séries de fiches. Fnn : les 80 fiches de la feuille de route BioFlow.
+   Hnn : les 92 fiches hors biologie. Quand une fiche et sa table d'entrée
    diffèrent, la table d'entrée fait foi.
 5. Les files. File A : cosmétique et noyau, c'est-à-dire tout le code hors
    biologie. File B : biologie structurelle (BIO-PARCOURS, BIO-INGEST, panels,
@@ -84,13 +84,13 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
 
 ### Le décompte
 
-- Fiches : 163, soit 79 fiches Fnn et 84 fiches Hnn. Gelées en §6 : 7 fiches
+- Fiches : 172, soit 80 fiches Fnn et 92 fiches Hnn. Gelées en §6 : 7 fiches
   Fnn ; closes : 2 (F42, F43, G3 clos par #1416), rangées après la table
   « Livré ».
-- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 29 ;
-  rang 2 : 11 ; rang 3 : 7 ; rang 4 : 16 ; rang 5 : 17 ; rang 6 : 9 ;
+- Fiches par rang de première apparition : rang 0 : 42 ; rang 1 : 37 ;
+  rang 2 : 11 ; rang 3 : 7 ; rang 4 : 17 ; rang 5 : 17 ; rang 6 : 9 ;
   rang 7 : 8 ; rang 8 : 4 ; rang 9 : 3 ; rang 10 : 6 ; rang T : 2 ; gelées : 7.
-- Lignes des tables d'entrée des rangs : 210. Fiches de gestes du responsable
+- Lignes des tables d'entrée des rangs : 218. Fiches de gestes du responsable
   dans les rangs : 65.
 - Portes : 30 (§1). Gelés : 33 lignes et 7 fiches (§6). Abandonnés :
   32 lignes (§7). Dettes : 64 lignes (§8), dont 10 soldées.
@@ -757,7 +757,14 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | aq | contrôle bloquant des modifications cliniques en CI | A | 28 | non | H21 |
 | ar | montée de version datée des briques | A | 28 | non | H22 |
 | E56 | contrôle de clôture contre l'auto-merge | A | 27 | non | H23 |
-| D-374 §1 | déployeur : la tête retenue jusqu'à l'application attestée (livré le 2026-10-26 ; déploiement à constater) | A | aucune | non | H85 |
+| D-374 §1 | déployeur : la tête retenue jusqu'à l'application attestée (livré le 2026-10-26 ; déploiement constaté le 2026-10-26) | A | aucune | non | H85 |
+| D-373 §1, D-375 §1 | sessions libérées dès le merge, journal du crochet de fraîcheur, mesure de référence | A | aucune | non | H86 |
+| D-370 | numéro de décision réservé à la rédaction | A | aucune | non | H87 |
+| D-374 §4 | sonde release-db par phases ; lève le gel intégral | A | après H85 (fait) et la mesure de H86 | non | H88 |
+| D-373 | intégrateur en essai | A | après H23 (D-372) et H88 | non | H89 |
+| D-371 | journal du plan en fragments | A | après H23 (D-372) | non | H90 |
+| CI | job `controles` en deux, puis cache de compilation | A | aucune | non | H91 |
+| D-375 §2, bilan | tolérance du crochet, bilan des trois essais | A | après H86, H89 et H90 | non | H92 |
 | af | référence de fiche conseil sur l'action | A | 28 | non | H24 |
 | ag | rédaction assistée des zones du protocole | A | 5, 28 | non | H25 |
 | D-281, étape 3 | portail et pause, hors file C | A | 9 (fait) | non | F66 |
@@ -1092,11 +1099,67 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 #### H85 · Déployeur : la tête retenue jusqu'à l'application attestée
 - **Identifiant, piste** : D-374 §1 ; outillage ; file A ; première étape de la séquence « Quatre files en parallèle » (D-370 à D-375).
 - **Rang** : 1.
-- **Portes, préalables** : aucune ; préalable du gel par phases (D-374 §2 et §5), qui entre en vigueur avec la sonde (D-374 §4, fiche à poser à l'ouverture de ce lot).
+- **Portes, préalables** : aucune ; préalable du gel par phases (D-374 §2 et §5), qui entre en vigueur avec la sonde (D-374 §4, fiche H88).
 - **Migration, release-db** : non ; touche le déployeur (`scripts/wn-deploiement-deployer.mjs`), gelé pendant la phase 1 d'une release-db.
 - **Décisions, textes** : D-374 §1 ; D-248, paragraphe « Inchangé, et à connaître » retiré par ligne datée.
 - **Critère de fin** : banc « migration portée par un ancêtre, tête de code verte » vert ; `retenue()` à quatre états ; revue `wn-reviewer` ; déploiement constaté.
-- **Mise à jour (2026-10-26)** : livré par la PR du jour ; critère de fin : revue `wn-reviewer` faite, déploiement à constater au premier run du déployeur après le merge. La retenue part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne jusqu'à la tête (push et `workflow_dispatch` relancés) ; un run rouge dont le one-off et la contre-épreuve sont verts se lit « appliquée » (forme vérifiée sur le run de l'incident du 2026-10-19) ; en attente, inconnu et échec avant application retiennent, les deux derniers avec avertissement ; un seul run appliqué libère la tête. Revue `wn-reviewer` : un run en exécution sur un ancêtre qui a déjà lu la tête est attendu (borne de vingt minutes, délai du job 70 min) avant un nouveau jugement. Choix signalé au responsable : un commit clinique non approuvé retient aussi ses descendants (D-044 §3). Le gel reste intégral jusqu'à la sonde (D-374 §4 et §5).
+- **Mise à jour (2026-10-26)** : livré par la PR du jour ; critère de fin : revue `wn-reviewer` faite, déploiement constaté le 2026-10-26 au premier run du déployeur après le merge (run 40322732625, « Tête de `main` déployée » sur 91f53ad7 ; porteur d645bfd8, dont le run release-db 40309999072 est vert : tête libérée sans retenue). La retenue part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne jusqu'à la tête (push et `workflow_dispatch` relancés) ; un run rouge dont le one-off et la contre-épreuve sont verts se lit « appliquée » (forme vérifiée sur le run de l'incident du 2026-10-19) ; en attente, inconnu et échec avant application retiennent, les deux derniers avec avertissement ; un seul run appliqué libère la tête. Revue `wn-reviewer` : un run en exécution sur un ancêtre qui a déjà lu la tête est attendu (borne de vingt minutes, délai du job 70 min) avant un nouveau jugement. Choix signalé au responsable : un commit clinique non approuvé retient aussi ses descendants (D-044 §3). Le gel reste intégral jusqu'à la sonde (D-374 §4 et §5).
+
+#### H86 · Sessions libérées dès le merge, journal du crochet, mesure de référence
+- **Identifiant, piste** : D-373 §1 et D-375 §1 ; consignes et outillage ; file A ; deuxième étape de la séquence « Quatre files en parallèle » (D-370 à D-375).
+- **Rang** : 1.
+- **Portes, préalables** : aucune ; joué en parallèle des autres lots, la mesure ne retarde rien (D-375 §1).
+- **Migration, release-db** : non ; touche `CLAUDE.md` et `.claude/hooks/git-freshness.mjs` (garde-fou du responsable) : revue `wn-reviewer` pour le crochet.
+- **Décisions, textes** : D-373 §1 et D-375 §1 ; aucune décision neuve. Consigne écrite dans `CLAUDE.md` (§ Début de session, § PR, CI, merge) : une session fait `/clear` dès que sa PR est mergée, sauf migration, authentification ou `.coderabbit.yaml` ; plus d'attente du CI de `main` ni du déploiement pour une PR ordinaire ; le gel de D-374 §5 et, après une migration, « un merge à la fois, déploiement constaté avant le merge suivant » demeurent. Journal du crochet : une ligne par verdict (date, outil, cible interne ou externe au dépôt, `HEAD`, `origin/main`, verdict, motif), jamais de contenu de fichier, dans un fichier distinct du marqueur, persistant et hors suivi Git (le dossier temporaire du marqueur se purge) ; une semaine de comptage.
+- **Critère de fin** : consigne écrite ; journal en service, banc du crochet vert, revue faite ; semaine de journal close, dates de début et de fin écrites ; mesure de référence publiée dans cette fiche, en lecture seule (`git`, `gh`, journal du crochet) : fusions de `main` et renumérotations des soixante dernières PR mergées avant le lot, ventilées par cause (crochet de fraîcheur, numéro de décision, conflit de texte, autre) ; attentes release-db (environnement prêt → approbation, approbation → application, PR prêtes en attente pendant un run) ; délais question → réponse des arbitrages. La mesure est tenue par la session principale et s'écrit dans cette fiche (mise à jour datée, puis journal du plan une fois H90 livrée), jamais dans `SESSION_LOG.md` ; elle sert de « avant » à H88, H89 et H92.
+
+#### H87 · Numéro de décision réservé à la rédaction
+- **Identifiant, piste** : D-370 ; outillage ; file A ; cinquième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : aucune ; amorçage écrit (D-370 §5) : D-370 à D-375, et toute décision jusqu'à la livraison du script, numérotées à la main au merge, sur la tête de `docs/DECISIONS.md` relue juste avant. Le ruleset GitHub qui protégerait `refs/tags/reserve/D-*` est un réglage du responsable, reporté après usage du script, hors lot.
+- **Migration, release-db** : non ; touche le garde du CI (`scripts/lib/decisions-numerotation.mjs`) et une étape non bloquante de `ci.yml` : revue `wn-reviewer` (D-370 §6).
+- **Décisions, textes** : D-370 ; aucune décision neuve. Amendements listés par D-370 : en-tête du garde (réservation à la rédaction, trou réservé en avertissement, désordre jugé au rang numérique, pierre tombale d'un numéro réservé puis abandonné comme quatrième geste de retrait) ; consigne d'en-tête de `docs/DECISIONS.md` (« à son rang numérique, du plus haut au plus bas ») ; table du §2 de `.claude/rules/pr-revue-et-release-db.md` ; section du sujet à poser de `docs/claude/REGLES_PR_MERGE.md` ; D-287 §2 par ligne datée ; plan §0 « La base », §5 point 2, N-5 et §10.
+- **Critère de fin** : script de réservation livré, banc vert (référence créée par l'API sur le premier numéro libre ; référence déjà existante → numéro suivant ; tout autre refus rendu « inconnu », sans nouvel essai ; réservations créées conservées et résultat partiel rendu pour plusieurs numéros ; réservation qui ne porte que le numéro) ; garde, banc vert (trou réservé toléré en avertissement sur une PR ; trou sans réservation refusé ; trou jamais rouge sur `main`, sans lecture distante ; doublon et désordre refusés) ; avertissement non bloquant en CI pour une décision ajoutée sans réservation par une PR non documentaire ; une première décision numérotée par le script mergée.
+
+#### H88 · Sonde release-db par phases : le gel intégral levé
+- **Identifiant, piste** : D-374 §4 et §5 ; outillage ; file A ; sixième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : après H85 et H86, au même rang. H85 (D-374 §1), livrée, déploiement constaté le 2026-10-26 ; mesure de référence de H86 publiée, au moins sa part release-db : le « avant » de D-374 §5 se prend sous le gel intégral, avant que ce lot ne le lève.
+- **Migration, release-db** : non ; touche le skill `wn-merge` et `.claude/rules/pr-revue-et-release-db.md` §5 ; lecture seule de l'API Actions, aucune écriture.
+- **Décisions, textes** : D-374 §2 à §5 ; aucune décision neuve.
+- **Critère de fin** : sonde en lecture seule, appelée par `wn-merge` et appelable directement par `node` pour les sessions sans `/wn-*`, banc vert : elle lit tous les runs non conclus de `release-db.yml` (filtre par statut, toutes pages, pas une fenêtre des derniers runs), distingue attente d'approbation et exécution, et rend le verdict de D-374 §2 (phase 1 : gelés les seuls merges qui touchent `web/prisma/migrations/**`, `web/src/lib/clinical/**`, `release-db.yml` ou le déployeur ; phase 2 : aucun merge) et de D-374 §3 (l'ancien run n'est rejeté que si la tête apporte une migration nouvelle) ; piège 2 de §5 réécrit (un merge de code seul pendant l'attente ne tue pas le run : fin rouge volontaire, lue « appliquée ») ; bloc de `wn-merge` écrit. Au merge, le gel intégral de D-374 §5 est levé et le gel par phases entre en vigueur : mise à jour datée de cette fiche, de D-374 et du plan §5. Mesure « avant » = référence de H86 ; mesure « après » au bilan (H92).
+
+#### H89 · Intégrateur en essai
+- **Identifiant, piste** : D-373 §2 à §7 ; outillage et organisation des sessions ; file A ; septième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : après H23 et H88, au même rang. H23 (D-372, clôture par le handoff seul) livrée, pour que l'intégrateur ne reçoive qu'un régime de clôture ; H88 livrée (sonde jouée avant chaque merge) ; auto-merge coupé par le responsable (`allow_auto_merge` à faux, constaté sur le dépôt, D-373 §6) avant le premier merge de l'essai.
+- **Migration, release-db** : non ; touche `wn-merge`, `CLAUDE.md`, `docs/ROLES_MACHINES.md`, `docs/claude/REGLES_PR_MERGE.md`, `.claude/rules/pr-revue-et-release-db.md` §1.10 et §2.
+- **Décisions, textes** : D-373 (amende D-290 §1 et D-287 §2) ; aucune décision neuve ; liste commune de questions et guichet : consigne sans décision (arbitrage du 2026-10-25).
+- **Critère de fin** : quatre PR, dans cet ordre. (a) Scripts en lecture seule avec bancs : contrôle conditionnel sur l'arbre fusionné (`git merge-tree --write-tree`, sans checkout, merge ni push ; joué seulement si `main` a bougé depuis la base du dernier vert ; cache par couple de sha ; empreinte d'environnement vérifiée avant de relier `node_modules` ; « indéterminé » distinct d'un défaut ; PR de réparation admise sans `main` vert) et signal de chevauchement (PR ouvertes sur les mêmes chemins, documents communs en résumé distinct, jamais de refus). (b) Sondes appelées par `wn-merge` : release-db (H88), déploiement, CI de la PR. (c) Règles et rôles : D-290 §1 et D-287 §2 par lignes datées, `CLAUDE.md`, `REGLES_PR_MERGE.md`, `ROLES_MACHINES.md`, §1.10 et §2 ; déclaration « prête @<sha> » portant le chemin du handoff et les exceptions (migration, authentification, `.coderabbit.yaml` restent à leur file) ; avance de la copie principale par `git merge --ff-only`, après T1 si le lot touche les crochets. (d) Liste commune de questions et guichet (réponse directe permise à une question complète ; arrivée, réponse et merge horodatés). Puis l'essai : sept jours actifs et trente PR ordinaires, délai de prise en charge de cinq minutes, repli sans nouvel arbitrage dès trois dépassements ; mesures publiées dans cette fiche : attente imputable à l'intégrateur entre « prête » et le merge (médiane visée deux minutes, p95 cinq), contrôle avant merge sur trente passages (durée p50 et p95, part de rejeux, défauts utiles, faux refus), merges hors liste.
+
+#### H90 · Journal du plan en fragments
+- **Identifiant, piste** : D-371 ; outillage ; file A ; huitième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : après H23, au même rang. H23 (D-372) livrée : la bascule modifie le même geste de clôture, sans exigence nouvelle au contrôle (D-371 §2).
+- **Migration, release-db** : non ; touche le plan (bascule), `docs/claude/plan-journal/` et le geste de clôture (`.claude/rules/docs-changelog.md`, skills de clôture).
+- **Décisions, textes** : D-371 (annexe à D-285 §1) ; aucune décision neuve.
+- **Critère de fin** : script de bascule joué une fois, contrôle aller-retour à l'octet près (le plan se reconstruit des fragments, les lignes « Mise à jour » hors fiche restent en place) ; fragments `docs/claude/plan-journal/<Fnn|Hnn>/<date>-<slug>.md`, un par mise à jour, sans pilote de fusion « union », jamais réécrits ; une ligne de renvoi permanente par fiche, posée une fois ; lecture d'une fiche avec son journal en une commande, banc vert ; garde en avertissement sur une modification ou une suppression de fragment ; règle d'écriture des « Mise à jour » changée dans le geste de clôture. Réexamen de la sortie des états « livré » au bilan (H92), après deux semaines et au moins quarante PR de code : reposé au responsable si au moins deux CI complets ont été rejoués pour le seul plan, ou si au moins 5 % des PR ont subi une réparation du plan (D-371 §4) ; le lot n'attend pas ce réexamen.
+
+#### H91 · CI : job `controles` en deux, puis cache de compilation
+- **Identifiant, piste** : chemin critique du CI (`.github/workflows/ci.yml`) ; outillage ; file A ; neuvième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : aucune, indépendant des autres lots.
+- **Migration, release-db** : non ; touche `ci.yml`, que chaque migration édite aussi : PR courtes, rebasées juste avant le merge pour ne pas croiser une migration ; revue `wn-reviewer`.
+- **Décisions, textes** : aucune décision neuve, sauf si un arbitrage apparaît.
+- **Critère de fin** : temps 1, une PR qui ne touche que `ci.yml` : `controles` coupé en deux jobs (base et contrats SQL d'un côté, dans leur ordre actuel ; type-check, Vitest et lint de l'autre), bancs Node avant le premier `setup-node`, `needs` du nouveau job, `verify` qui déclare et teste chacun, `ci-invariants` vert ; chemin critique mesuré avant et après et publié dans cette fiche. Temps 2, une semaine après : cache de `web/.next/cache` (clé du lock et de la configuration Next, restauration partielle admise), mesuré restauration comprise. Découpage de l'e2e en shards seulement si l'e2e devient seul le chemin critique. Objectif chiffré posé après la première mesure, pas avant.
+
+#### H92 · Après mesures : tolérance du crochet, bilan des trois essais
+- **Identifiant, piste** : D-375 §2 ; bilan des essais de D-371, D-373 ; outillage ; file A ; dixième étape de la séquence.
+- **Rang** : 1.
+- **Portes, préalables** : après H86, H89 et H90, au même rang : les mesures de H86 (semaine de journal close, référence publiée), H89 (essai clos) et H90 (deux semaines de journal).
+- **Migration, release-db** : non ; la tolérance touche le crochet de fraîcheur : revue `wn-reviewer` (D-375 §3).
+- **Décisions, textes** : D-375 §2 ; aucune décision neuve pour le bilan. Les lots optionnels (registre des décisions en fragments, sortie des états « livré » du plan, fichiers dérivés et drapeaux, contrats SQL joués par un script partagé, racine Git de l'appelant pour les outils de lecture, ruleset des réservations) se posent chacun en fiche à leur ouverture, selon les effets observés.
+- **Critère de fin** : tolérance en service, banc du crochet vert (retard sans chevauchement ni conflit : édition permise, avertissement une fois par état ; chevauchement ou conflit : refus ; état illisible : refus ; mode dégradé inchangé), revue faite ; bilan chiffré à deux semaines des trois essais (intégrateur, contrôle avant merge, journal du plan) publié dans cette fiche, sur les événements existants ; mesure « après » du gel par phases (D-374 §5) ; réexamen de la sortie des états « livré » tranché selon les seuils de D-371 §4.
 
 ### Rang 2
 
