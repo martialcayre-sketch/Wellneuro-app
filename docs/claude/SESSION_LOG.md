@@ -11760,3 +11760,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Lot r3_09, puis F9a (textes relus avant le code).
 
 **Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
+
+## 2026-10-26 — Quatre files en parallèle : six décisions (D-370 à D-375)
+
+**Fait.** Arbitrages des 25 et 26 octobre au registre : D-370 numéro réservé à la rédaction ; D-371 mises à jour du plan en fragments ; D-372 clôture par le handoff seul ; D-373 intégrateur unique en essai, libération dès le merge ; D-374 release-db par phases, déployeur retenu tant qu'une migration attend (question D-248 n° 2 rouverte) ; D-375 crochet de fraîcheur, journal puis tolérance. Plan : H23, §5, §10. Documentation seule.
+
+**Écarté.** Gel intégral permanent ; états « livré » hors du plan ; registre en fragments ; check requis de plus ; file de merge.
+
+**Prochaine action.** Banc puis correctif du déployeur (D-374 §1) ; en parallèle, D-373 §1 et journal du crochet (D-375 §1).
+
+**Ouvert.** #1704 (D-370) et #1709 (D-370 à D-372) prennent les mêmes numéros : la dernière à merger renumérote.
