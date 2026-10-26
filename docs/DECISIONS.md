@@ -137,7 +137,8 @@ réduisent les écritures concurrentes sur ces fichiers.
   par machine, banc puis correctif du déployeur) et du 2026-10-26 (portée du
   gel : par phases, contre un gel intégral), sur questions à options ;
   précisé par la contre-revue Codex (lecture de `release-db.yml`) ; texte de
-  registre rédigé dans le lot. **§1 livré le 2026-10-26** (fiche H85) : banc
+  registre rédigé dans le lot. **§1 livré le 2026-10-26** (fiche H85 ;
+  déploiement à constater au premier run du déployeur après le merge) : banc
   « migration portée par un ancêtre, tête de code verte » joué rouge sur
   l'ancienne lecture, puis `retenue()` à quatre états ; la fin rouge
   volontaire se lit « appliquée » par les étapes du run (one-off et

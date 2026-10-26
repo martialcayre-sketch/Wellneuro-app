@@ -757,7 +757,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | aq | contrôle bloquant des modifications cliniques en CI | A | 28 | non | H21 |
 | ar | montée de version datée des briques | A | 28 | non | H22 |
 | E56 | contrôle de clôture contre l'auto-merge | A | 27 | non | H23 |
-| D-374 §1 | déployeur : la tête retenue jusqu'à l'application attestée (fait le 2026-10-26) | A | aucune | non | H85 |
+| D-374 §1 | déployeur : la tête retenue jusqu'à l'application attestée (livré le 2026-10-26 ; déploiement à constater) | A | aucune | non | H85 |
 | af | référence de fiche conseil sur l'action | A | 28 | non | H24 |
 | ag | rédaction assistée des zones du protocole | A | 5, 28 | non | H25 |
 | D-281, étape 3 | portail et pause, hors file C | A | 9 (fait) | non | F66 |
@@ -1091,7 +1091,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non ; touche le déployeur (`scripts/wn-deploiement-deployer.mjs`), gelé pendant la phase 1 d'une release-db.
 - **Décisions, textes** : D-374 §1 ; D-248, paragraphe « Inchangé, et à connaître » retiré par ligne datée.
 - **Critère de fin** : banc « migration portée par un ancêtre, tête de code verte » vert ; `retenue()` à quatre états ; revue `wn-reviewer` ; déploiement constaté.
-- **Mise à jour (2026-10-26)** : livré. La retenue part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne jusqu'à la tête (push et `workflow_dispatch` relancés) ; un run rouge dont le one-off et la contre-épreuve sont verts se lit « appliquée » (forme vérifiée sur le run de l'incident du 2026-10-19) ; en attente, inconnu et échec avant application retiennent, les deux derniers avec avertissement ; un seul run appliqué libère la tête. Revue `wn-reviewer` : un run en exécution sur un ancêtre qui a déjà lu la tête est attendu (borne de vingt minutes, délai du job 70 min) avant un nouveau jugement. Choix signalé au responsable : un commit clinique non approuvé retient aussi ses descendants (D-044 §3). Le gel reste intégral jusqu'à la sonde (D-374 §4 et §5).
+- **Mise à jour (2026-10-26)** : livré par la PR du jour ; critère de fin : revue `wn-reviewer` faite, déploiement à constater au premier run du déployeur après le merge. La retenue part du dernier commit de la ligne qui touche un chemin de release-db et lit les runs créés depuis lui, sur cette ligne jusqu'à la tête (push et `workflow_dispatch` relancés) ; un run rouge dont le one-off et la contre-épreuve sont verts se lit « appliquée » (forme vérifiée sur le run de l'incident du 2026-10-19) ; en attente, inconnu et échec avant application retiennent, les deux derniers avec avertissement ; un seul run appliqué libère la tête. Revue `wn-reviewer` : un run en exécution sur un ancêtre qui a déjà lu la tête est attendu (borne de vingt minutes, délai du job 70 min) avant un nouveau jugement. Choix signalé au responsable : un commit clinique non approuvé retient aussi ses descendants (D-044 §3). Le gel reste intégral jusqu'à la sonde (D-374 §4 et §5).
 
 ### Rang 2
 

@@ -233,8 +233,16 @@ export async function deployer({
     const porteur = dernierCommitReleaseDb(commit);
     if (!porteur) return null;
     const runs = lireRunsReleaseDb(porteur).filter((r) => estAncetre(porteur, r.head_sha) && estAncetre(r.head_sha, commit));
-    const etats = runs.map((r) => classerRunReleaseDb(r, lireEtapesReleaseDb));
-    if (etats.includes('appliquee')) return null;
+    // Dans l'ordre rendu par l'API, du plus récent au plus ancien : un run
+    // « appliquée » libère sans lire les étapes des runs plus anciens (revue
+    // CodeRabbit de #1713) — moins de lectures, et une panne de lecture sur
+    // un vieux run rouge sans objet ne bloque pas.
+    const etats = [];
+    for (const r of runs) {
+      const etat = classerRunReleaseDb(r, lireEtapesReleaseDb);
+      if (etat === 'appliquee') return null;
+      etats.push(etat);
+    }
     const qui = porteur === commit ? commit : `${commit} contient ${porteur}, qui`;
     if (etats.includes('en-attente')) {
       const enAttente = runs.filter((_, i) => etats[i] === 'en-attente');

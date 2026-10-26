@@ -597,6 +597,27 @@ test('D-374 §1 — un run attesté sur un descendant du commit porteur atteste 
   assert.equal(v.etat, 'deploye', v.motif);
 });
 
+// Revue CodeRabbit de #1713 : les runs se classent dans l'ordre rendu par
+// l'API, du plus récent au plus ancien, et le premier « appliquée » libère
+// sans lire les étapes des runs plus anciens — une lecture en panne sur un
+// vieux run rouge sans objet ne bloque pas le déploiement.
+test('revue #1713 — un run appliqué en tête de liste épargne la lecture des étapes des runs plus anciens', async () => {
+  const m = monde({
+    tetes: [C],
+    lectures: [tableau(EN_SERVICE_A), tableau(ligne('dep-c', '2026/09/25 11:00:00', '5m0s', C), EN_SERVICE_A)],
+  });
+  const v = await deployer({
+    sha: C,
+    ...m.deps,
+    dernierCommitReleaseDb: () => B,
+    lireRunsReleaseDb: () => [run(C, 'completed', 'success', 2), run(B, 'completed', 'failure', 1)],
+    lireEtapesReleaseDb: () => {
+      throw new Error('api 502');
+    },
+  });
+  assert.equal(v.etat, 'deploye', v.motif);
+});
+
 // Un run vert sur un commit ANTÉRIEUR au porteur date d'avant sa migration :
 // il n'atteste rien pour elle. Sans cette borne, le dernier run vert de
 // l'historique libérerait toute migration.
