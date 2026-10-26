@@ -22,6 +22,9 @@
 //   - le run n'est plus la tête de `main` → abstention ; son run déploiera.
 //   - la version en service, sur un tableau calme, contient déjà ce commit →
 //     abstention, sauf `WN_FORCER=true` (répétition à vide).
+//   - la tête porte ou CONTIENT une migration (ou un chemin clinique) dont
+//     release-db n'a pas attesté l'application → retenue ; release-db déploie
+//     la tête à l'approbation (D-087 ; D-248, lot 3 ; D-374 §1).
 // TANT QUE L'AUTO-DÉPLOIEMENT EST ACTIF, la garde finale rend rouge tout run
 // qui n'est plus la tête à sa fin — son vert réveillerait l'auto-déploiement
 // d'un vieux commit (incident 1).
@@ -96,8 +99,36 @@ export function classerCi(runs) {
  */
 export const CHEMINS_RELEASE_DB = ['web/prisma/migrations', 'web/src/lib/clinical'];
 
-/** Les runs release-db d'un commit qui ne sont PAS conclus au vert. */
-const releaseDbNonConclus = (runs) => runs.filter((r) => !(r.status === 'completed' && r.conclusion === 'success'));
+/**
+ * Les deux étapes de `release-db.yml` dont le succès ATTESTE l'application :
+ * le one-off (sentinelle `WN_RELEASE_DB_OK id=…`, liée au run) et la
+ * contre-épreuve `migrate status` sur un second conteneur. Un run rouge dont
+ * ces deux étapes sont vertes a échoué APRÈS l'application : la garde
+ * anti-recul, échec volontaire (D-374 §2, phase 3). Un banc tient la parité
+ * avec les noms d'étapes du workflow, et leur ordre.
+ */
+export const ETAPES_ATTESTATION = ['Release en one-off (préflights + migrate deploy)', 'Vérification — migrate status sur conteneur'];
+
+/**
+ * L'état d'application que révèle UN run release-db (D-374 §1) :
+ *   - 'appliquee' : run vert ; ou run rouge dont les deux étapes d'attestation
+ *     sont vertes — fin rouge volontaire après application ;
+ *   - 'en-attente' : run non conclu (approbation, puis exécution) ;
+ *   - 'echec' : run conclu sans que le one-off ait tourné — rien n'a touché la
+ *     base (approbation rejetée, garde, build en échec) ; à relancer ;
+ *   - 'inconnu' : le one-off a tourné sans attestation complète (étape rouge,
+ *     annulée, ou contre-épreuve absente) — la base se lit par conteneur.
+ * Les étapes ne sont lues que pour un run conclu non vert.
+ */
+export function classerRunReleaseDb(run, lireEtapes) {
+  if (run.status !== 'completed') return 'en-attente';
+  if (run.conclusion === 'success') return 'appliquee';
+  const etapes = lireEtapes(run.id);
+  const [oneOff, verification] = ETAPES_ATTESTATION.map((nom) => etapes.find((e) => e.name === nom)?.conclusion ?? null);
+  if (oneOff === 'success' && verification === 'success') return 'appliquee';
+  if (oneOff === null || oneOff === 'skipped') return 'echec';
+  return 'inconnu';
+}
 
 const decrire = (lignes) => lignes.map((l) => `${l.id} ${l.statut}`).join(', ');
 const premiereLigne = (err) => String(err?.message ?? err).split('\n')[0];
@@ -115,14 +146,21 @@ export async function deployer({
   journal = () => {},
   // SANS valeur par défaut : un câblage qui l'oublierait retomberait sur
   // « aucun run release-db » et déploierait un commit de migration avant son
-  // approbation. Oubliée, elle doit faire planter, pas ouvrir la porte.
+  // approbation. Oubliée, elle doit faire planter, pas ouvrir la porte. Les
+  // runs release-db CRÉÉS DEPUIS un commit — `{ id, head_sha, status,
+  // conclusion }` —, toutes pages confondues ; le noyau garde ceux de sa ligne.
   lireRunsReleaseDb,
   // Même règle : sans repli. L'état du CI de `main` d'un commit (via
   // `classerCi`) — 'success', 'en-cours', 'echec' ou 'absent'.
   lireCi,
-  // Idem, sans repli : ce commit touche-t-il un chemin qui déclenche
-  // release-db ? Sert à ne jamais lire « aucun run » comme « rien à attendre ».
-  toucheReleaseDb,
+  // Idem, sans repli : les étapes d'un run release-db (`{ name, conclusion }`),
+  // pour lire l'application derrière une fin rouge.
+  lireEtapesReleaseDb,
+  // Idem, sans repli : le DERNIER commit de la ligne de `commit` qui touche un
+  // chemin déclenchant release-db (`null` : aucun). Sert à ne jamais lire
+  // « aucun run » comme « rien à attendre », et à voir la migration qu'un
+  // commit de code CONTIENT sans la porter.
+  dernierCommitReleaseDb,
 }) {
   // UN RUN DÉPASSÉ JUGE LA TÊTE À SA PLACE (revue du lot 3). La concurrence
   // GitHub ne garde qu'UN run en attente : le run de la tête peut être ÉVINCÉ
@@ -155,40 +193,72 @@ export async function deployer({
     cible = teteInitiale;
   }
 
-  // UN COMMIT QUI PORTE UN RUN release-db ATTEND SON APPROBATION (D-087, lot 3
-  // de D-248). Sous l'auto-déploiement, ce run était un CHECK du commit, et
-  // Scalingo attendait qu'il conclue : un commit de migration n'était déployé
-  // qu'à l'approbation, par release-db lui-même ([[D-102]]). Le déployer dès la
-  // fin du CI servirait un code qui lit des colonnes absentes de la base, pour
-  // toute la durée de l'attente humaine. Retenu, donc — vert, sans écriture :
-  // release-db déploiera à l'approbation. Une lecture en échec propage : aucune
-  // écriture n'a eu lieu.
+  // UNE MIGRATION EN ATTENTE RETIENT LA TÊTE, pas seulement son commit (D-087 ;
+  // lot 3 de D-248 ; D-374 §1). Sous l'auto-déploiement, le run release-db
+  // était un CHECK du commit, et Scalingo attendait qu'il conclue : un commit
+  // de migration n'était déployé qu'à l'approbation, par release-db lui-même
+  // ([[D-102]]). Le déployer dès la fin du CI servirait un code qui lit des
+  // colonnes absentes de la base, pour toute la durée de l'attente humaine.
+  // Retenu, donc — vert, sans écriture : release-db déploiera à l'approbation.
   //
-  // UNE LISTE VIDE N'EST PAS UNE PERMISSION (revue #1222) : le run release-db
-  // du même push peut ne pas être encore visible dans l'API. Si le commit
-  // touche un chemin qui déclenche release-db, on exige un run conclu au vert.
-  const retenue = () => {
-    const runs = lireRunsReleaseDb(cible);
-    const nonConclus = releaseDbNonConclus(runs);
-    if (nonConclus.length > 0) {
-      const etats = nonConclus.map((r) => r.conclusion || r.status).join(', ');
+  // Jusqu'à D-374 §1, la retenue ne lisait que les runs du commit CIBLE : un
+  // commit SANS migration mergé au-dessus d'une migration en attente partait
+  // en production avec le code de cette migration — comportement décrit et
+  // gardé par D-248 (arbitrage n° 2), retiré ici. La retenue part désormais du
+  // DERNIER commit de la ligne qui touche un chemin de release-db, et lit les
+  // runs release-db créés depuis lui, sur sa ligne jusqu'à la cible : le run
+  // de son push, et tout `workflow_dispatch` relancé sur une tête postérieure.
+  // `migrate deploy` appliquant tout ce qui est en attente, un run attesté sur
+  // ce commit ou sur un descendant atteste aussi les migrations plus anciennes.
+  //
+  // QUATRE ÉTATS, et la base ne recule jamais : un seul run 'appliquee' libère
+  // la cible, quels que soient les runs plus anciens — une fin rouge volontaire
+  // après application ne devient jamais un verrou permanent. Sinon, dans cet
+  // ordre : en attente (release-db déploiera), inconnu (lire la base par
+  // conteneur), échec avant application (relancer), aucun run visible. UNE
+  // LISTE VIDE N'EST PAS UNE PERMISSION (revue #1222) : le run du même push
+  // peut ne pas être encore visible dans l'API. Une lecture en échec propage :
+  // aucune écriture n'a eu lieu.
+  const retenue = (commit) => {
+    const porteur = dernierCommitReleaseDb(commit);
+    if (!porteur) return null;
+    const runs = lireRunsReleaseDb(porteur).filter((r) => estAncetre(porteur, r.head_sha) && estAncetre(r.head_sha, commit));
+    const etats = runs.map((r) => classerRunReleaseDb(r, lireEtapesReleaseDb));
+    if (etats.includes('appliquee')) return null;
+    const qui = porteur === commit ? commit : `${commit} contient ${porteur}, qui`;
+    if (etats.includes('en-attente')) {
+      const statuts = runs.filter((_, i) => etats[i] === 'en-attente').map((r) => r.status).join(', ');
       return {
         code: SORTIE_OK,
         etat: 'retenu-release-db',
-        motif: `${cible} porte un run release-db non conclu au vert (${etats}) — release-db le déploiera à l'approbation`,
+        motif: `${qui} porte un run release-db non conclu (${statuts}) — release-db déploiera la tête à l'approbation`,
       };
     }
-    if (runs.length === 0 && toucheReleaseDb(cible)) {
+    if (etats.includes('inconnu')) {
       return {
         code: SORTIE_OK,
         etat: 'retenu-release-db',
         avertissement: true,
-        motif: `${cible} touche un chemin de release-db mais aucun run release-db n'est visible — retenu jusqu'à ce qu'il existe et soit approuvé`,
+        motif: `${qui} porte un run release-db en échec APRÈS le départ du one-off : état de la base INCONNU — lire \`_prisma_migrations\` par conteneur avant tout geste`,
       };
     }
-    return null;
+    if (etats.length > 0) {
+      const conclusions = runs.map((r) => r.conclusion).join(', ');
+      return {
+        code: SORTIE_OK,
+        etat: 'retenu-release-db',
+        avertissement: true,
+        motif: `${qui} porte un run release-db en échec avant toute application (${conclusions}) — relancer release-db en workflow_dispatch sur main, puis approuver`,
+      };
+    }
+    return {
+      code: SORTIE_OK,
+      etat: 'retenu-release-db',
+      avertissement: true,
+      motif: `${qui} touche un chemin de release-db mais aucun run release-db n'est visible — retenu jusqu'à ce qu'il existe et soit approuvé`,
+    };
   };
-  const retenuAvant = retenue();
+  const retenuAvant = retenue(cible);
   if (retenuAvant) return retenuAvant;
 
   // CALME AVANT L'ÉCRITURE : aucun build en vol. Déclencher pendant un autre
@@ -223,8 +293,9 @@ export async function deployer({
     return { code: SORTIE_OK, etat: 'depasse', motif: `la tête de main a dépassé ${cible} juste avant le déclenchement` };
   }
   // RELUE juste avant l'écriture (revue #1222) : l'attente du calme a pu durer
-  // vingt minutes, et un run release-db apparaître entre-temps.
-  const retenuApres = retenue();
+  // vingt minutes. Une tête nouvelle est prise par le contrôle qui précède ;
+  // cette relecture est défensive, et une lecture en échec ici ne s'écrit pas.
+  const retenuApres = retenue(cible);
   if (retenuApres) return retenuApres;
   try {
     declencher();
@@ -291,18 +362,18 @@ export async function deployer({
     // l'empêcher (on déploie une branche), on le DIT (revue du lot 3).
     if (service.sha !== cible) {
       let ciLivre;
-      let releaseLivre;
+      let retenuLivre;
       try {
         ciLivre = lireCi(service.sha);
-        releaseLivre = releaseDbNonConclus(lireRunsReleaseDb(service.sha));
+        retenuLivre = retenue(service.sha);
       } catch (err) {
         return { code: SORTIE_ECHEC, etat: 'livre-non-verifie', motif: `${service.sha} (plus neuf que ${cible}) est en service, et sa vérification est illisible — ${premiereLigne(err)}` };
       }
-      if (ciLivre !== 'success' || releaseLivre.length > 0) {
+      if (ciLivre !== 'success' || retenuLivre) {
         return {
           code: SORTIE_ECHEC,
           etat: 'livre-non-verifie',
-          motif: `${service.sha}, plus neuf que ${cible}, est en service sans être vérifié (CI : ${ciLivre} ; release-db non conclus : ${releaseLivre.length}) — approuver release-db ou constater son CI`,
+          motif: `${service.sha}, plus neuf que ${cible}, est en service sans être vérifié (CI : ${ciLivre}${retenuLivre ? ` ; release-db : ${retenuLivre.motif}` : ''}) — approuver release-db ou constater son CI`,
         };
       }
     }
@@ -349,7 +420,7 @@ const TITRES = {
   illisible: '## ❌ Production illisible après déploiement',
   'en-vol': '## ❌ Un build reste en vol — aucune écriture',
   'garde-finale': '## ❌ Échec volontaire — ce run n’est plus la tête de `main`',
-  'retenu-release-db': '## ✓ Retenu — ce commit attend l’approbation de release-db',
+  'retenu-release-db': '## ✓ Retenu — la tête attend l’application d’une release-db',
   'depasse-tete-rouge': '## ⚠️ Dépassé par une tête au CI rouge — ce commit reste hors production',
   'livre-non-verifie': '## ❌ Un commit plus neuf, non vérifié, a été livré avec la branche',
   delai: '## ❌ Aucune conclusion — état inconnu',
@@ -376,14 +447,25 @@ async function principal(env = process.env) {
   const brut = await deployer({
     sha,
     forcer: env.WN_FORCER === 'true',
-    // LECTURE SEULE de l'API Actions (`actions: read`) : les runs release-db du
-    // commit. Jamais d'autre verbe que GET.
-    lireRunsReleaseDb: (commit) =>
-      JSON.parse(
-        lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?head_sha=${commit}&per_page=100`]),
-      ).workflow_runs.map((r) => ({ status: r.status, conclusion: r.conclusion })),
-    toucheReleaseDb: (commit) =>
-      lancer('git', ['diff', '--name-only', `${commit}^`, commit, '--', ...CHEMINS_RELEASE_DB]).trim() !== '',
+    // LECTURE SEULE de l'API Actions (`actions: read`) : les runs release-db
+    // créés depuis le commit (toutes pages ; marge d'une heure, le run de son
+    // push naissant après lui, en UTC), puis les étapes d'un run. Jamais
+    // d'autre verbe que GET.
+    lireRunsReleaseDb: (commit) => {
+      const secondes = Number(lancer('git', ['show', '-s', '--format=%ct', commit]).trim());
+      const depuis = new Date((secondes - 3600) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+      return JSON.parse(
+        lancer('gh', ['api', '--paginate', '--slurp', `repos/${env.GITHUB_REPOSITORY}/actions/workflows/release-db.yml/runs?created=>=${depuis}&per_page=100`]),
+      )
+        .flatMap((page) => page.workflow_runs)
+        .map((r) => ({ id: r.id, head_sha: r.head_sha, status: r.status, conclusion: r.conclusion }));
+    },
+    lireEtapesReleaseDb: (id) =>
+      JSON.parse(lancer('gh', ['api', `repos/${env.GITHUB_REPOSITORY}/actions/runs/${id}/jobs?per_page=100`]))
+        .jobs.flatMap((j) => j.steps ?? [])
+        .map((e) => ({ name: e.name, conclusion: e.conclusion })),
+    dernierCommitReleaseDb: (commit) =>
+      lancer('git', ['log', '-1', '--first-parent', '--format=%H', commit, '--', ...CHEMINS_RELEASE_DB]).trim() || null,
     lireCi: (commit) =>
       classerCi(
         JSON.parse(
