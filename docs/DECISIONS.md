@@ -4,6 +4,121 @@
 
 ## Décisions actives
 
+### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
+
+- Date : 2026-10-26
+- Statut : accepté — réponse 6.4 de la séance du 2026-10-11 (comptes internes
+  du cabinet) ; deux arbitrages du responsable du 2026-10-26 sur questions à
+  options ; lettre validée telle quelle le même jour.
+- Domaine : espace praticien, page des comptes du cabinet ; fiche H58, puis
+  J3-cabinet. Effectif : [[D-298]] ; doctrine : [[D-334]], [[D-333]].
+  Préalables levés : d (D-334), porte 6 (M-2, 2026-10-23), effectif (D-298,
+  appliqué au code par t24).
+- Ne touche pas : aucun seuil clinique, aucun état ni calcul nouveau d'un
+  dossier, aucun texte patient, aucune migration ; le repère de cabinet
+  existant (Momentum) ne change pas.
+
+**§1 — Ce que compte la page.** Deux tableaux, chacun avec son effectif.
+- **Prochaine étape** : pour chacune des sept phases du rail de la fiche
+  patient (Patient, Données fiables, Compréhension, Décision 21 j, Actions,
+  Suivi, Réévaluation), le nombre de dossiers qui l'ont pour prochaine étape,
+  et le nombre de dossiers où « rien n'attend ». Même calcul que « Prochaine
+  étape » sur la fiche (`phaseDue`, règle D5).
+- **Protocole** : le nombre de dossiers sans protocole diffusé, avec un
+  protocole diffusé et un cycle en cours, et à la fin de leur cycle — d'après
+  les signaux que le portail sert déjà (`protocoleDiffuse`, `finDeCycle`).
+
+Aucun état n'est inventé. Un dossier dont l'état n'a pas pu être établi est
+compté à part, « indéterminé », jamais rangé ailleurs.
+
+**§2 — Effectif et masquage.** L'unité est le dossier (D-298 §1). L'effectif
+total de chaque tableau reste toujours affiché ; sous cinq dossiers distincts,
+la répartition est masquée (D-298 §2), et l'écran dit pourquoi. Un compte nul
+n'est pas masqué.
+
+**§3 — Ce que la page ne montre jamais.** Ni moyenne, ni médiane, ni
+pourcentage, ni prédiction, ni classement, ni comparaison à une norme (D-334
+§7 ; esquisse 1 : « jamais une moyenne ni une prédiction ») ; aucun mot qui
+juge sans seuil signé (D-333). Aucun dossier n'est nommé : la page compte,
+elle ne liste pas.
+
+**§4 — Les dossiers comptés.** Tous les dossiers du cabinet, dossiers de test
+compris : ils sont réels en production ([[D-075]]). Aucune marque ne les
+distingue, et aucune n'est créée.
+
+**§5 — L'usage.** Agrégats internes, pour le praticien seul : jamais publiés,
+exportés ni transmis ; pas une recherche au sens légal. Tout constat versé
+dans un fichier durable suit D-298 §3.
+
+**§6 — Le code.** Lot J3-cabinet, file A, rang 4 : revue ordinaire, T2, banc
+« sous cinq » pour chaque tableau. Porte 6 levée ; si une migration se
+révélait nécessaire : G-7, porte 9.
+
+**Ce qu'elle ne décide pas.** La forme visuelle de la page, son emplacement
+dans la navigation, la façon dont le lot calcule la prochaine étape pour
+plusieurs dossiers à la fois, toute autre famille de comptes.
+
+**Effet sur le plan.** H58 : y faite ; J3-cabinet jouable. Registre « Lettres
+à écrire » : y faite.
+
+### D-384 — Les trois plans de chaque geste au patient : « Selon votre journée », dans le détail du protocole ; le plan de secours répond au jour difficile ; seulement pour les versions relues par la garde étendue (lettre bb)
+
+- Date : 2026-10-26
+- Statut : accepté — réponse du 2026-10-13 (pièce de cadrage des protocoles de
+  21 jours, question 5 : les trois plans, lus) ; quatre arbitrages du
+  responsable du 2026-10-26 sur questions à options ; texte patient validé mot
+  pour mot le même jour.
+- Domaine : protocole de 21 jours, lecture patient ; fiche H49 ; détail du
+  protocole ([[D-315]]) ; carte des gardes du vocabulaire
+  (`web/src/lib/documents/vocabulaire.ts`). Préalable : ba ([[D-369]]).
+- Ne touche pas : aucun champ du contrat de protocole, aucune règle clinique,
+  aucune charge, aucun choix du patient enregistré, aucune migration décidée
+  ici ; rien n'est servi avant l'activation (§6).
+
+**§1 — Ce que lit le patient.** Les trois plans de chaque action : idéal,
+minimal, secours. Il choisit seul selon sa journée ; rien n'est enregistré, ni
+le plan choisi ni un clic.
+
+**§2 — Le texte, mot pour mot.** Un chapeau, « Selon votre journée : », puis,
+dans cet ordre, pour chaque action :
+- « Si tout va bien » : le plan idéal ;
+- « Au quotidien » : le plan minimal ;
+- « Si c'est plus dur » : le plan de secours.
+
+Aucune couleur, aucun chiffre, aucun rang. Les intitulés en couleurs (vert,
+orange, rouge) sont écartés : ils se liraient comme une zone ou une alerte.
+
+**§3 — L'emplacement.** L'accueil ne change pas : titre de l'action et plan
+minimal, sans intitulé. Les trois plans, sous §2, se lisent dans le détail du
+protocole (dépli de D-315), et de même dans sa version imprimable quand elle
+existera (bh). Une action en attente de bilan ou en pause garde son régime
+actuel : ses plans ne se lisent pas tant qu'elle n'est pas ferme.
+
+**§4 — Le jour difficile.** Le bouton « Jour difficile ? » propose le plan de
+secours de la même action (première action ferme hors pause) : « Si vous le
+pouvez aujourd'hui : [plan de secours]. » Pour une version que §5 n'admet pas,
+il garde le plan minimal, comme aujourd'hui.
+
+**§5 — La garde et les versions antérieures.** Les plans idéal et de secours
+entrent dans la carte des gardes : `termeAnxiogene` à l'enregistrement d'une
+version, refus confirmable, comme le plan minimal. Seules les versions
+enregistrées sous cette garde étendue servent les trois plans. Une version
+antérieure reste servie comme aujourd'hui (plan minimal seul) jusqu'à la
+version suivante du praticien : aucun texte non relu par la garde n'atteint le
+patient.
+
+**§6 — L'activation.** Une place de la file C, porte 18, après l'encart
+« quand ralentir » ; constat sur un vrai dossier.
+
+**Ce qu'elle ne décide pas.** Comment le lot reconnaît une version
+enregistrée sous la garde étendue (si une marque persistée est nécessaire :
+migration, G-7, porte 9) ; la forme visuelle du détail ; la place exacte dans
+la file C ; le rendu imprimable (bh).
+
+**Effet sur le plan.** H49 : texte écrit ; critère de fin restant :
+activation constatée sur un vrai dossier. Registre « Lettres à écrire » : bb
+fait. Lot de code à venir (file C) : §2 à §5.
+
 ### D-383 — Courrier complément : chaque ligne est l'intitulé saisi par le praticien, seul ; le nom d'ingrédient du catalogue sort du texte (amende D-358 §1 ; P1-3 de la revue Codex de #1701)
 
 - Date : 2026-10-26
