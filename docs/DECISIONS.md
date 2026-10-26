@@ -15,8 +15,10 @@
   patient du protocole servi ; fiche H49. Tranche la question que [[D-384]]
   laisse ouverte.
 - Ne touche pas : aucune migration, aucun champ du contrat de protocole,
-  aucune empreinte ; aucune règle clinique ; rien n'est servi au patient avant
-  l'activation de bb ([[D-384]] §6).
+  aucune empreinte persistée (`inputHash` inchangé ; seul le jeton de
+  confirmation, jamais stocké, couvre deux textes de plus) ; aucune règle
+  clinique ; rien n'est servi au patient avant l'activation de bb
+  ([[D-384]] §6).
 
 **§1 — La garde étendue.** À l'enregistrement d'une version, `termeAnxiogene`
 lit aussi le plan idéal et le plan de secours de chaque action, au même régime
@@ -27,7 +29,13 @@ dès sa mise en service, côté praticien, indépendamment de l'activation de bb
 quand sa date de création (colonne `created_at` de `protocol_drafts`, posée à
 l'insertion de la ligne) est postérieure à l'instant de mise en service de la
 garde, constaté sur Scalingo après le déploiement. Cet instant s'écrit dans le
-code de la lecture, au lot suivant, une fois constaté.
+code de la lecture, au lot suivant, une fois constaté. Deux précisions :
+- l'horloge est celle de l'application (la valeur par défaut est posée côté
+  client par Prisma, en UTC) : l'instant s'écrit en UTC, relevé après la fin
+  de la bascule, quand plus aucun conteneur de l'ancien code ne sert ;
+- un recul de la production sous ce commit après l'instant (redéploiement
+  d'un commit antérieur) invalide la marque pour les versions créées pendant
+  le recul : à constater et à traiter avant toute activation de bb.
 
 **§3 — Le doute se lit comme un refus.** Une version créée avant cet instant
 sert le plan minimal seul ([[D-384]] §5), même si ses plans passeraient la

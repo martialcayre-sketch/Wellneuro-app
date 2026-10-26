@@ -816,7 +816,23 @@ describe('POST /api/praticien/protocoles/versions', () => {
         actions: [{ ...action, rescuePlan: 'En cas de danger, appeler le cabinet.' }],
       };
       const refus = await POST(postRequest({ episode, decisionCard, submission: soumission }));
+      expect(refus.status).toBe(409);
       const { texteSha256 } = await refus.json();
+
+      // Le jeton est lié AU PLAN : un plan de secours réécrit entre les deux
+      // clics re-refuse. Un jeton calculé sur les seuls champs historiques
+      // laisserait passer cette réécriture.
+      const reecrit = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          actions: [{ ...action, rescuePlan: 'Si la situation devient urgente, appeler.' }],
+          confirmerRegistre: texteSha256,
+        },
+      }));
+      expect(reecrit.status).toBe(409);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
 
       const accepte = await POST(postRequest({
         episode,

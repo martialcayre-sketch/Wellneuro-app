@@ -37,7 +37,15 @@ son lot de code commence par la garde étendue de D-384 §5.
 
 - Bancs ciblés (route des versions, garde de refus atteignable,
   `lib/documents`) : 167 tests verts.
-- T1 (`check:rapide`) vert ; T2 en cours au moment de ce handoff.
+- T1 (`check:rapide`) vert ; T2 (`test:worktree -- --fast`) vert avant la
+  fusion de main : 15 163 tests Vitest, 300 E2E.
+- `wn-reviewer` : GO, ni P0 ni P1. P2 repris : le cas du jeton prouve
+  maintenant le lien au plan (plan réécrit, ancien jeton, 409) ; D-386 précise
+  l'horloge (UTC, applicative), le recul sous ce commit et « aucune empreinte
+  persistée ». P2 hors diff laissé : commentaire périmé de
+  `lib/protocol/versioning.ts` sur une « route LOT-02 » qui n'écrit plus.
+- Après la fusion de main (#1723, documentation) : banc de la route rejoué,
+  65 tests verts.
 - Fixtures E2E qui portent des plans idéal et de secours : textes neutres.
 
 ## Problèmes ouverts
