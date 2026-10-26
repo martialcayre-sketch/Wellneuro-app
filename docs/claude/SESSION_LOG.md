@@ -11876,3 +11876,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
 
 **Ouvert.** Dettes de #1701 ; drapeau éteint, conditions 2 à 4.
+
+## 2026-10-26 — File D : lettres bb et y (D-384, D-385)
+
+**Fait.** aw reprise par la session file B. bb : trois plans lus dans le détail du protocole, intitulés « Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c'est plus dur » (validés mot pour mot) ; secours derrière « Jour difficile ? » ; plans idéal et secours sous la garde, versions antérieures en plan minimal seul. y : deux tableaux (prochaine étape, état du protocole), effectif affiché, masqué sous cinq, dossiers de test comptés. Renumérotées après D-383 (J3-12h).
+
+**Écarté.** Intitulés en couleurs ; trois plans à l'accueil ; marque « dossier de test » (migration).
+
+**Prochaine action.** Lots de code : file C pour bb, J3-cabinet (file A) pour y.
+
+**Ouvert.** Comment le lot de bb reconnaît une version sous garde étendue.

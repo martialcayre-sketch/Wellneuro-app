@@ -1278,6 +1278,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non [A verifier].
 - **Décisions, textes** : lettre bb ; intitulés des trois plans, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
+- **Mise à jour (2026-10-26, texte écrit)** : D-384. Le patient lit les trois plans dans le détail du protocole, sous « Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c'est plus dur » (texte validé mot pour mot), pour les actions fermes hors pause ; une action en attente de bilan ou en pause garde son régime actuel, sans ses plans ; l'accueil ne change pas ; « Jour difficile ? » propose le plan de secours. Les plans idéal et de secours entrent dans la carte des gardes ; seules les versions enregistrées sous cette garde les servent. Reste : le lot de code (file C), puis l'activation constatée.
 
 **File D : gestes du responsable**
 
@@ -1380,6 +1381,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : J3-cabinet : [A verifier].
 - **Décisions, textes** : lettre y, de la main du responsable ; « cinq dossiers » ou « cinq cycles » se règle dans F25 : cinq dossiers distincts (D-298).
 - **Critère de fin** : page masquée en banc sous cinq.
+- **Mise à jour (2026-10-26, y écrite)** : D-385. Deux tableaux : dossiers par prochaine étape (sept phases du rail et « rien n'attend ») et par état du protocole (sans protocole diffusé, cycle en cours, fin de cycle), « indéterminé » à part ; effectif toujours affiché, répartition masquée sous cinq dossiers ; jamais une moyenne, une prédiction ni une liste de dossiers ; dossiers de test comptés (D-075). J3-cabinet jouable.
 
 ### Rang 4 : première vague de migrations après BP-09
 
@@ -2337,7 +2339,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | comptage T0 en conteneur (fait le 2026-10-24 : constat versé en H07 ; reste la D-xxx du délai, tenue en H07) | H07 | effectif de masquage (F25) : levé par D-298 |
 | texte de l'avis rendu au patient après verdict (D-281 §2 b) : signé le 2026-10-14 (D-281 §4), servi au portail par la seconde PR de l'étape 4 (fait ; inerte avant la signature) | F66 | étape 4 de D-281 |
 | M-1, signature de SAF-EI-01 amendée | F66 | étape 4 de D-281 et les trois préalables de D-281 §2 (§8) |
-| al ; y ; au | H57, H58, H56 | porte 4 et J2-alim (al) ; d, porte 6 et F25 (y) ; porte 16, c et porte 6 (au) |
+| al ; y ; au | H57, H58, H56 | porte 4 et J2-alim (al) ; d, porte 6 et F25 (y) ; porte 16, c et porte 6 (au) ; y faite le 2026-10-26 (D-385) |
 | contenus de BP-12a, BP-12b, BP-17 (porte 23) ; indications v2 ; liens analyte-axe | F05, F09, F11, F53, F79 | lots de la file B |
 | ch ; texte de bd ; ah | H72, H71, H68 | rang 5 |
 | cycle réel jusqu'au jalon de fin | F26 | BP-21a |
@@ -2884,7 +2886,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | v | bandes de bruit par instrument | la main du responsable | 1 | H13 |
 | w | guide des 12 besoins sur sources ; méthode écrite le 2026-10-15 (D-312), guide à réécrire | la main du responsable | 0 | H15 |
 | x | posture d'API, aucune clé | la main du responsable | 1 ; après ci | H29 |
-| y | comptes du cabinet | la main du responsable | 3 | H58 |
+| y | comptes du cabinet ; fait le 2026-10-26 (D-385) | la main du responsable | 3 | H58 |
 | z | mineurs, garde d'âge (seuil 18 ans acquis par D-284 §4 ; garde = date demandée à la connexion, lot (h) de H26) ; fait le 2026-10-15 (D-302 : date obligatoire à la création) | la main du responsable | 0 | F45 |
 | aa | courrier de remboursement ; fait le 2026-10-15 (D-309) | la main du responsable | 0 | F55 |
 | ab | EF-0, trancher Q3 ; fait le 2026-10-15 (D-310) | la main du responsable | 0 | H14 |
@@ -2913,7 +2915,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan ; texte fait le 2026-10-26 (D-380) | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
 | ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) | la main du responsable | 1 [Hypothese] | H35 |
-| bb | trois plans de chaque geste | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
+| bb | trois plans de chaque geste ; texte fait le 2026-10-26 (D-384) | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
 | bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
