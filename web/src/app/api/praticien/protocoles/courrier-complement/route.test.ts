@@ -11,6 +11,14 @@ import type { EntreeGardeComplement } from '@/lib/clinical/gardeComplementCible'
 const { prisma, tx, getServerSession, entrees, reconstruire } = vi.hoisted(() => {
   const tx = {
     $queryRaw: vi.fn(async () => [{ id: 'PAT_1' }]),
+    // Le fil relu SOUS VERROU (revue Codex de #1701, P1-2) : par défaut le même
+    // que celui de la route.
+    protocolDraft: {
+      findMany: vi.fn(async (): Promise<unknown[]> => [{
+        id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+        status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'),
+      }]),
+    },
     patient: { findUnique: vi.fn(async (): Promise<{ dateNaissance: string | null }> => ({ dateNaissance: '1985-03-14' })) },
     trustChoiceEvent: {
       findMany: vi.fn(async () => [{ finalite: 'partage_medecin_traitant', statut: 'accorde', enregistreLe: new Date('2026-10-01T00:00:00Z') }]),
@@ -232,6 +240,41 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('version_non_relue');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('revue Codex de #1701, P1-2 — supplantée entre la route et le verrou : le fil relu sous verrou refuse, rien d’écrit', async () => {
+    tx.protocolDraft.findMany.mockResolvedValueOnce([
+      {
+        id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+        status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'),
+      },
+      {
+        id: 'pd_v2', inputHash: 'HASH_V2', supersedesDraftId: 'pd_v1', createdAt: new Date('2026-10-21T00:00:00.000Z'),
+        status: 'draft', reviewedAt: null,
+      },
+    ]);
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('version_stale');
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    // Le fil se relit sur CE dossier et CETTE carte, après le verrou.
+    expect(tx.protocolDraft.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { idPatient: 'PAT_1', decisionCardId: 'DEC_1' },
+    }));
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.protocolDraft.findMany.mock.invocationCallOrder[0]);
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
+    expect(tx.courrierComplementListe.create).not.toHaveBeenCalled();
+  });
+
+  it('revue Codex de #1701, P1-2 — relecture retirée entre la route et le verrou : refus sous verrou, rien d’écrit', async () => {
+    tx.protocolDraft.findMany.mockResolvedValueOnce([{
+      id: 'pd_v1', inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-10-20T00:00:00.000Z'),
+      status: 'draft', reviewedAt: null,
+    }]);
+    const res = await preparer();
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('version_non_relue');
+    expect(tx.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
   it.each([
