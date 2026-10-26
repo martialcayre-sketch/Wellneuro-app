@@ -38,7 +38,10 @@ attend l'application constatée.
   fiches ligne par ligne, rien d'autre sur elles, aucun item de panel).
 - `web/src/lib/biology-library/candidatsNabm.ts` (+ test : 116, comptes) ;
   `compositionsPreparees.ts` (LA/DGLA et oméga 6/oméga 3 en « opérandes
-  absents », + test) ;
+  absents » ; motifs d'AA/EPA et de LA/DGLA « Composition à venir », vrais
+  avant et après la release — remarque CodeRabbit ; + test) ;
+  `compositionsAnalytes.test.ts` (exemple « opérandes absents » porté sur
+  KYN/TRP) ;
   `import/resolverLibellesV1.test.ts` (116 unités lues) — la table et la
   signature du résolveur **inchangées**.
 - `docs/DECISIONS.md` (D-370), `docs/claude/PLAN_WELLNEURO.md`,

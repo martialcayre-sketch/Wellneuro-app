@@ -237,8 +237,8 @@ describe('lireCompositionAnalyte', () => {
   });
 
   it('un calculé sans opérandes au catalogue le dit, sans liste à signer', async () => {
-    prisma.biologyAnalyte.findUnique.mockResolvedValue({ code: 'BIO_RATIO_AA_EPA', compositions: [], elementsComposition: [] });
-    const r = await lireCompositionAnalyte('BIO_RATIO_AA_EPA');
+    prisma.biologyAnalyte.findUnique.mockResolvedValue({ code: 'BIO_RATIO_KYN_TRP', compositions: [], elementsComposition: [] });
+    const r = await lireCompositionAnalyte('BIO_RATIO_KYN_TRP');
     if (!r.ok) throw new Error('attendu ok');
     expect(r.preparee).toBeNull();
     expect(r.operandesAbsents).toMatch(/pas au catalogue/);
