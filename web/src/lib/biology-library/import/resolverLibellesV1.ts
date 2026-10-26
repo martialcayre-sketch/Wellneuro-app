@@ -36,7 +36,7 @@ import { unitesConcordent } from './valeurLue';
 // lus sur le premier compte rendu de production ; puis par [[D-263]] : les
 // analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]] ;
 // puis par [[D-336]] (six fiches de D-323 §6), [[D-356]] (libellés réels),
-// [[D-363]] (le TP et l'INR de D-361 §6) et [[D-377]] (les acides gras de
+// [[D-363]] (le TP et l'INR de D-361 §6) et [[D-380]] (les acides gras de
 // D-376 §7).
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
@@ -310,7 +310,7 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-377]] — RE-SIGNER REMPLACE : la signature de [[D-363]]
+  // RE-SIGNÉE PAR [[D-380]] — RE-SIGNER REMPLACE : la signature de [[D-363]]
   // (2026-10-25, SHA `b4007b9c…`, 177 entrées, 87 analytes) portait la table
   // sans les acides gras de [[D-376]] §7 ; celles de [[D-356]] (`ebe7179e…`),
   // [[D-336]] (`3e084667…`), [[D-263]] (`be9a463c…`), [[D-260]] (`5f95d167…`)

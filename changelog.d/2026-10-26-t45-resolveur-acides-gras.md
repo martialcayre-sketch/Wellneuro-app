@@ -1,4 +1,4 @@
-### Biologie : les acides gras sont reconnus à l'import (t45, D-377)
+### Biologie : les acides gras sont reconnus à l'import (t45, D-380)
 
 - Les vingt acides gras et les rapports « linoléique / DGLA » et « oméga 6 /
   oméga 3 » d'un profil d'acides gras sont proposés automatiquement à la
