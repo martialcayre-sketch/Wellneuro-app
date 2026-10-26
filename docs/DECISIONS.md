@@ -596,9 +596,15 @@ réduisent les écritures concurrentes sur ces fichiers.
   l'ancienne lecture, puis `retenue()` à quatre états ; la fin rouge
   volontaire se lit « appliquée » par les étapes du run (one-off et
   contre-épreuve vertes), vérifiée sur le run de l'incident du 2026-10-19.
-  Gel intégral maintenu jusqu'à la sonde (§4).
+  Gel intégral maintenu jusqu'à la sonde (§4). **Arbitrage du 2026-10-26**,
+  après un contre-avis Codex vérifié dans le code : la retenue d'un commit
+  clinique non approuvé s'étend à ses descendants (§1, confirmé) ; et la
+  comparaison de la tête dépassante dans `release-db.yml`, qui ne regarde
+  que les migrations, couvrira aussi `web/src/lib/clinical/**`, au lot de
+  la sonde (§4, fiche H88), en défense derrière le gel du §2. Le §3 se lit
+  alors « migration nouvelle ou changement clinique nouveau ».
 - Domaine : `.github/workflows/release-db.yml` (lu, non modifié par cette
-  décision), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
+  décision jusqu'à l'arbitrage du 2026-10-26), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
   `.claude/rules/pr-revue-et-release-db.md` §3 à §5 (§1.10 : [[D-373]] §7),
   skill `wn-merge` ; [[D-087]] (l'approbation humaine, unique porte
   d'écriture du schéma) ; [[D-044]] §3 (le chemin clinique déclenche
