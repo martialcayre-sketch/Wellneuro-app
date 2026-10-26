@@ -84,6 +84,13 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(compositionPrepareePour('BIO_NFS')?.composants).toHaveLength(20);
   });
 
+  it('les rapports d’acides gras de D-376 : aucune liste avant la migration constatée (D-087)', () => {
+    for (const code of ['BIO_RATIO_AA_EPA', 'BIO_RATIO_LA_DGLA', 'BIO_RATIO_OMEGA6_OMEGA3']) {
+      expect(compositionPrepareePour(code), code).toBeNull();
+    }
+    expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toMatch(/pas au catalogue/);
+  });
+
   it('une clé héritée de l’objet ne passe pas pour une composition', () => {
     expect(compositionPrepareePour('toString')).toBeNull();
     expect(operandesAbsentsPour('constructor')).toBeNull();

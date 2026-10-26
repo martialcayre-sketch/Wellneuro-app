@@ -11779,3 +11779,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Banc puis correctif du déployeur (D-374 §1) ; en parallèle, D-373 §1 et journal du crochet (D-375 §1).
 
 **Ouvert.** #1704 (D-370) et #1709 (D-370 à D-372) prennent les mêmes numéros : la dernière à merger renumérote.
+
+## 2026-10-25 — t45 : fiches des acides gras au catalogue, migration (D-376)
+
+**Fait.** Constat par conteneur (agrégats ; effectif : 1 dossier, répartition masquée (moins de cinq dossiers), D-298 §3) : libellés de 20 acides en %, l'indice oméga 3 et trois rapports sans unité, tous « inconnu » ; aucun acte V105. Le responsable a tranché par questions à options : 22 fiches (20 acides sous leur nom courant, LA/DGLA et oméga 6/oméga 3 en « ratio »), `saisie_praticien`, sans plage ni acte ; AA/EPA et LA/DGLA préparés par leurs opérandes au second lot (remarque CodeRabbit, D-087). Migration de données seule.
+
+**Écarté.** La notation lipidique au libellé ; un panel dans ce lot (clinique : lot et décision à part) ; une composition d'oméga 6/oméga 3 (familles non imprimées).
+
+**Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (compositions des deux rapports, libellés imprimés et noms usuels, re-signature).
+
+**Ouvert.** La source des panels ; la liste des noms usuels.
