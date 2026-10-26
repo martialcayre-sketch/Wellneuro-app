@@ -35,6 +35,53 @@ façon le texte figé qu'elle porte (lot 4, [[D-362]]).
 **Conséquence acceptée.** L'intitulé seul doit suffire au médecin : un
 intitulé vague n'est plus précisé par le nom au catalogue.
 
+### D-381 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-25 ([[D-376]] §6
+  et §7) et du 2026-10-26 (liste des sigles), sur questions à options.
+  Déclaration de conformité du responsable rendue le 2026-10-26, sur
+  question à options, après la surface de relecture présentée avant la
+  demande : les vingt-huit entrées, leur code, le compte (205 entrées,
+  109 analytes) et l'empreinte. La frappe de la signature, transcrite par
+  l'assistant, ne vaut que portée par cette déclaration ([[D-195]] §1-§2).
+- Domaine : staging d'import ([[D-256]] A4) ; remplace la signature de
+  [[D-363]] ; applique [[D-376]] §6 et §7. Aucune migration dans ce lot,
+  aucun seuil, aucune conversion ([[D-157]]).
+
+**§1 — Préalable.** Migration `20261025140000_catalogue_biologie_acides_gras`
+appliquée par la release-db `40309999072` (sentinelle liée au run) et
+constatée par conteneur le 2026-10-26 : 116 analytes, les 22 fiches
+conformes, rien d'attaché. Les codes proposés existent donc au catalogue
+(clé étrangère d'`analyte_propose`).
+
+**§2 — Les entrées** (28) : les vingt-deux libellés lus en production, tels
+qu'imprimés, chacun vers sa fiche — dont « Acide PentaDécanoïque_C15 »,
+« Rapport A. Linoléique / A. DGLA » (concorde sans unité avec « ratio »,
+[[D-356]] §4) et « Rapport Oméga 6 / Oméga 3 » ; puis « EPA », « DHA »,
+« DGLA », seuls ou dans « Acide eicosapentaénoïque (EPA) », « Acide
+docosahexaénoïque (DHA) », « Acide dihomo-gamma-linolénique (DGLA) ».
+
+**§3 — Écartés, sur choix explicite.** « AA » (trop court, ambigu) ;
+« ALA » (aussi l'acide delta-aminolévulinique urinaire) ; « Acide
+linolénique » nu (alpha ou gamma) ; les noms sans suffixe carboné et les
+variantes des rapports (« Ratio oméga 6 / oméga 3 ») : ils restent
+« inconnu » et se rattachent à la main.
+
+**§4 — Signature.** Nouvelle empreinte
+`8ede2a9e3e35a8cd4accad288d1a3b99b3a235cd4363c6430fc6bc25aaa797c9`
+(205 entrées, 109 analytes), datée `2026-10-26T12:23:19.000Z`. Elle
+remplace celle de [[D-363]].
+
+**§5 — Compositions préparées** (`compositionsPreparees.ts`, rien en base
+sans la signature du praticien dans la Bibliothèque) : `BIO_RATIO_AA_EPA` =
+acide arachidonique + EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA.
+`BIO_RATIO_OMEGA6_OMEGA3` reste « opérandes absents ».
+
+**§6 — Hors de cette décision.** Les lignes déjà lues restent « inconnu »
+([[D-356]] §6) ; l'entrée d'un acide dans un panel (décision à part, source
+à désigner) ; le constat des prochains imports d'un profil d'acides gras.
+
 ### D-380 — Bilan composé : la notice patient, partie séparée de celle du médecin ; texte signé, consignes générées depuis le catalogue (lettre az)
 
 - Date : 2026-10-26

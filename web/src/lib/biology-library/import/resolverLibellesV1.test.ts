@@ -325,8 +325,8 @@ describe('resolver — libellés réels restés « inconnu » ([[D-356]], t36)',
     expect(resoudreLibelle('CRP (Protéine C Réactive)')).toEqual({ statut: 'resolu', code: 'BIO_CRP' });
     // Le TP et l'INR en sont sortis avec leurs fiches ([[D-361]] §6) ; le temps
     // de Quick n'a pas de fiche et n'en sort pas.
-    for (const libelle of ['Temps de Quick patient', 'Temps de Quick témoin',
-      'Acide Eicosapentaenoique', 'Rapport Oméga 6 / Oméga 3', 'Rapport A. Linoléique / A. DGLA', 'Plaquettes (citrate)']) {
+    // Les acides gras en sont sortis avec leurs fiches ([[D-376]] §7).
+    for (const libelle of ['Temps de Quick patient', 'Temps de Quick témoin', 'Plaquettes (citrate)']) {
       expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
     }
   });
@@ -352,6 +352,36 @@ describe('resolver — le TP et l’INR, libellés imprimés ([[D-361]] §6, t44
   it('aucun synonyme : « TP » nu et « Temps de prothrombine » restent « inconnu »', () => {
     // Libellé ENTIER : un INR qualifié (cible, sous AVK) n'est pas l'INR lu.
     for (const libelle of ['TP', 'Temps de prothrombine', 'INR cible', 'INR (patient)']) {
+      expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
+    }
+  });
+});
+
+describe('resolver — les acides gras, libellés imprimés et sigles ([[D-376]] §7, t45)', () => {
+  const UNITES = unitesDuCatalogue();
+  it.each([
+    ['Acide Oléique', '%', 'BIO_AG_OLEIQUE'],
+    ['Acide PentaDécanoïque_C15', '%', 'BIO_AG_PENTADECANOIQUE'],
+    ['Acide Rumènique', '%', 'BIO_AG_RUMENIQUE'],
+    ['Acide Dihomo Gamma Linolénique', '%', 'BIO_AG_DGLA'],
+    ['Acide Eicosapentaenoique', '%', 'BIO_AG_EPA'],
+    ['Acide Docosahexaenoique', '%', 'BIO_AG_DHA'],
+    // Imprimés sans unité : l'absence concorde avec « ratio » ([[D-356]] §4).
+    ['Rapport A. Linoléique / A. DGLA', null, 'BIO_RATIO_LA_DGLA'],
+    ['Rapport Oméga 6 / Oméga 3', null, 'BIO_RATIO_OMEGA6_OMEGA3'],
+    ['EPA', '%', 'BIO_AG_EPA'],
+    ['DHA', '%', 'BIO_AG_DHA'],
+    ['DGLA', '%', 'BIO_AG_DGLA'],
+    ['Acide eicosapentaénoïque (EPA)', '%', 'BIO_AG_EPA'],
+    ['Acide docosahexaénoïque (DHA)', '%', 'BIO_AG_DHA'],
+    ['Acide dihomo-gamma-linolénique (DGLA)', '%', 'BIO_AG_DGLA'],
+  ])('« %s » en %s → %s, unité concordante', (libelle, unite, code) => {
+    expect(resoudreLigne(libelle, unite, UNITES)).toEqual({ statut: 'resolu', code });
+    expect(unitesConcordent(unite, UNITES.get(code) ?? null)).toBe(true);
+  });
+
+  it('les libellés écartés — ambigus (AA, ALA, linolénique nu) ou non arbitrés (sans suffixe, variante de rapport) — restent « inconnu »', () => {
+    for (const libelle of ['AA', 'ALA', 'Acide linolénique', 'Acide pentadécanoïque', 'Ratio oméga 6 / oméga 3']) {
       expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
     }
   });

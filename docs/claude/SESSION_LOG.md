@@ -11800,6 +11800,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
 
+## 2026-10-26 — File C : ba, « Validé par votre praticien le … » (D-369, H35)
+
+**Fait.** Place 7 (ak) : la fenêtre du constat D-353 §5 n'est pas ouverte (du 1er au 7 novembre) ; relu par conteneur que le renvoi existe toujours sur le dossier de test (une assignation ouverte depuis le jour 0, agendas exclus, sans réponse depuis). Les activations restent tenues par la porte 18 jusqu'à ce constat. Lot de code de ba, hors file C : la route du protocole servi sert la date de l'approbation de diffusion de la version servie, la page la dit en tête, en toutes lettres, au jour civil de Paris ; sans drapeau ni migration.
+
+**Écarté.** Un drapeau (D-369 n'en pose pas) ; l'emplacement dans le sous-titre (le but du protocole y reste).
+
+**Prochaine action.** CI, CodeRabbit sur la tête, sonde release-db (gel de D-374 §5), merge, déploiement constaté, puis constat par lecture sur la page servie d'un dossier de test ; place 7 dans sa fenêtre.
+
+**Ouvert.** D-369 §2 « aucun chiffre » lu comme « aucun score » : la date, imposée par §1, en porte.
 ## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
 
 **Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
@@ -11839,6 +11848,16 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
 
 **Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
+
+## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-381)
+
+**Fait.** Migration de #1704 appliquée (release-db 40309999072) et constatée par conteneur. Vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) au résolveur ; re-signature sur l'instruction du responsable (205 entrées, SHA `8ede2a9e…`). AA/EPA et LA/DGLA préparés par leurs opérandes. Dette des bancs agenda inscrite au plan (#1712).
+
+**Écarté.** « AA », « ALA », « acide linolénique » nu, noms sans suffixe, variantes des rapports.
+
+**Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
+
+**Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
 
 ## 2026-10-26 — J3-12h : courrier complément sans nom d'ingrédient (D-382)
 

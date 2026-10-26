@@ -480,3 +480,54 @@ describe('PatientCompanionHome — encart de conduite', () => {
     expect(screen.queryByText(TITRE_ENCART_CONDUITE)).toBeNull();
   });
 });
+
+describe('PatientCompanionHome — mention de validation (D-369)', () => {
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+  const vueServie = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };
+  const MENTION = 'Validé par votre praticien le 24 octobre 2026';
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('en tête de la page, une fois, la date de l’approbation servie', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, valideLe: '2026-10-24T09:30:00.000Z' },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findAllByText(MENTION)).toHaveLength(1);
+  });
+
+  it('hors du détail replié : lue avant le clic qui date la lecture', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie,
+        valideLe: '2026-10-24T09:30:00.000Z', lectureDuDetail: { dejaOuvert: false },
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Voir le détail de mon protocole')).toBeTruthy();
+    expect(screen.getByText(MENTION)).toBeTruthy();
+  });
+
+  it('en fin de cycle aussi : elle date la page servie', async () => {
+    mockFetch(
+      { ok: true, protocoleDiffuse: true, finDeCycle: true, vue: vueServie, valideLe: '2026-10-24T09:30:00.000Z' },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
+    expect(screen.getByText(MENTION)).toBeTruthy();
+  });
+
+  it.each([
+    ['sans date servie', { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie }, 'Petit-déjeuner protéiné'],
+    ['date illisible', { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, valideLe: 'x' }, 'Petit-déjeuner protéiné'],
+    ['sans protocole diffusé', { ok: true, protocoleDiffuse: false, finDeCycle: false, vue: null }, /arrivera bientôt/],
+  ])('%s : aucune mention', async (_cas, proto, attendu) => {
+    mockFetch(proto, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(attendu)).toBeTruthy();
+    expect(screen.queryByText(/Validé par votre praticien/)).toBeNull();
+  });
+});
