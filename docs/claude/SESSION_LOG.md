@@ -11740,3 +11740,32 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
 
 **Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
+## 2026-10-24 — File D : lettres bg, h, bf (D-364 à D-366)
+
+**Fait.** Inventaire des lettres en attente, en lecture seule. Trois lettres de rang 0 écrites sur arbitrages du responsable : bg (export vers un outil d'IA externe déclaré, version pseudonymisée seule, réserve « sans accord de sous-traitance » écrite), h (Boussole retirée du portail, exception nommée à D-276 §1), bf (cadre des indicateurs hebdomadaires). Lignes périmées du registre et de D.3 remises à jour.
+
+**Écarté.** Arrêt ou suspension du flux bg ; registre des violations ; suppression du code C5 ; liste des indicateurs bf avant le cadre.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis ad + bc et ba.
+
+**Ouvert.** Lot de code de bg sans rang ; J1-alim à ouvrir.
+
+## 2026-10-25 — File D : lettres ad, bc, ba (D-367 à D-369)
+
+**Fait.** #1693 mergée (bg, h, bf sous D-364 à D-366, après trois renumérotations et cinq passes CodeRabbit) ; page D remise à jour. Second lot écrit : ad (un cycle, `phases` fermé, « programme » défini), bc (ajout par version datée approuvée, seul un pivot relance), ba (« Validé par votre praticien le … »).
+
+**Écarté.** Message de départ dans ba ; NIR dans le texte patient de bg (plus recueilli depuis D-284 §2).
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis cb, (a) et (e) de D-283, aw, az.
+
+**Ouvert.** Lot de code de ba (rang 1) ; #1704 doit renuméroter.
+
+## 2026-10-25 — Restes de l'audit des instruments : D-354 confirmée, r3_09 et F9a détachés
+
+**Fait.** D-354 : « Confirmé le 2026-10-25 », le compte des besoins mesurés et « Compléter la mesure » restent en mode consultation. Plan : r3_09 (Q1) et F9a détachés de J3-12b, à faire sur l'onglet actuel (F59, H15, H64) ; r3_12 (Q7) reste avec J2-mom (H30). Documentation seule.
+
+**Écarté.** Masquer le compte ou le bouton (D-354 §2 tel qu'écrit) ; attendre J3-12b, car w n'a pas de date ; une phrase de résumé du radar.
+
+**Prochaine action.** Lot r3_09, puis F9a (textes relus avant le code).
+
+**Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.

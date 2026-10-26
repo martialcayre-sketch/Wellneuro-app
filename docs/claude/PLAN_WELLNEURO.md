@@ -534,6 +534,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Mise à jour (2026-10-20, lots des 12 besoins répartis par file)** : quatre arbitrages du responsable du 2026-10-19 (questions à options, après une contre-expertise externe des quatre points restés ouverts, vérifiée au code avant d'être posée). (1) Les badges de niveau de preuve sont masqués sur les deux écrans praticien qui les affichent, sans toucher la table : les grades entrent dans le snapshot clinique, donc dans l'empreinte des cartes de décision, et modifier la table ferait dériver les protocoles diffusés ; une table révisée sera soumise à la signature avec le changement de sources. (2) Le changement de version du score s'accompagne de la réapprobation des protocoles diffusés (option retenue pour la dette de D-329 §4), dossier par dossier, préparée avant le déploiement : chaque clic peut remettre des fiches et une lettre et déclenche une annonce neutre au patient ; entre le déploiement et le clic, le patient lit que son accompagnement n'est pas consultable, sans perte de données. (3) Le résidu de D-329 §2 (complétude de l'agenda du sommeil jugée par le snapshot) reste en l'état ; il se traite en lot séparé, après l'inventaire de ce que le moteur lit de l'agenda (le marquage « hors barème » n'agit que sur le prédicat du snapshot, mais le rideau T0 lit l'agenda). (4) Ordre : badges, puis ingestion des sources de mesure en accès libre, puis changement de sources ; le responsable fournit les sources fermées en parallèle. Le changement de sources attend aussi la signature du guide (w), avec laquelle il part en un seul changement de version (arbitrage du 2026-10-15). Depuis la mise à jour précédente : étiquetage en lot du dossier de la vitamine D fait le 2026-10-19 et rejets appliqués, constatés par conteneur ; l'étiquetage du fer reste à faire. Lots des 12 besoins par file, état au 2026-10-20 (les identifiants J3-12d à J3-12h sont neufs) :
 - **Mise à jour (2026-10-21, état des gestes et chaîne besoin → leviers, D-338)** : depuis la mise à jour précédente, trois gestes sont faits et constatés par conteneur : l'étiquetage du fer le 2026-10-20 (la liste finale du dossier BP-07 compte 84 claims après verdicts — rejetés et hors parcours retirés, brouillons et claims d'une position ajoutés —, 82 étiquetés et 2 déjà porteurs ; un claim rejeté ; 84 sur 84 conformes à la relecture du 2026-10-21 ; l'écart avec les « 92 claims cités » de la clôture se réconcilie au dossier privé) ; les sources fermées fournies et ingérées (`WN-SRC-0567` à `0570`, #1615, lots `LOT_047` à `LOT_050`), ce qui lève ce préalable de J3-12f ; le dossier du zinc clos le 2026-10-21 (`LOT_021`, #1612, claims étiquetés). Le 2026-10-21, un cadrage de la suite des 12 besoins (architecte, contre-revue adverse, version corrigée ; faits de production lus par conteneur, agrégats seuls) a établi que l'aval ne lit les besoins qu'à travers les `needIds` de deux tables signées (besoins 1, 3, 4, 5, 8, 9) et que les besoins 2, 6, 7, 10, 11 et 12 ne commandent aucun levier ; il a aussi relevé que toute retouche d'une table signée re-signe son périmètre entier et fait dériver les cartes de décision diffusées, au même coût qu'un changement de version. Sept arbitrages du responsable (questions à options, recommandations suivies) en découlent, consignés par D-338 et portés par la fiche H84 ; les lots des 12 besoins ci-dessous ne changent pas, sauf que les règles aval par besoin et toute clé posée sur une table signée existante partent regroupées avec J3-12f et sa réapprobation.
 - **Mise à jour (2026-10-22, dossier du magnésium érythrocytaire clos)** : forme opaque (`D-251` §4), identifiants, mécanismes et agrégats seulement. Séances de décisions du responsable des 2026-10-21 et 2026-10-22 (questions à options) : dix décisions de dossier, quatre écarts ouverts par les sources externes, quatre claims « à relire » ; aucun point ne reste ouvert. Sources externes : 3 notices au registre (`WN-SRC-0571` à `0573`, #1632), deux sources déjà au registre relues pour leurs lignes du magnésium ; 1 lot ingéré sur approbation (`LOT_051_2026-10-21`, 10 passages, 25 claims) ; brouillons de l'assistant : 6 déposés sur accord de chaque envoi, dont un réduit aux teneurs concordantes après confrontation à la table Ciqual 2025 (non ingérée) ; contre-revues `wn-reviewer` et Codex consignées au dossier privé ; tous les claims déposés signés par le responsable dans l'atelier. Étiquetage en lot par délégation (D-325 §5), constaté par conteneur : 206 claims en deux gestes, 559 claims `VALIDE` portent désormais le besoin 2 ; un rejet motivé appliqué en base. Positions d'expert : 8, en v0.1, v0.2 puis v0.3 au dossier privé, v0.2 et v0.3 signées par l'assistant sur instruction écrite du responsable ; la v0.3 fait foi. Les quatre dossiers attendus par D-314 §10 (fer, vitamine D, zinc, magnésium érythrocytaire) sont clos : la structure des fiches d'usage (F05, BP-12a) peut s'écrire et se signer. Suite : cette structure, puis le dossier B9 et B12 (ordre du 2026-10-16).
+- **Mise à jour (2026-10-25, r3_09 et F9a détachés)** : sur arbitrage du responsable du 2026-10-25, Q1 de l'audit des instruments (r3_09, ordre fixe B1 à B12 par strate) et F9a (H64, accessibilité du radar et de la table) ne suivent plus J3-12b. Ils se font maintenant, sur l'onglet actuel (F59). J3-12b les reprendra quand il réorganisera l'onglet ; son préalable w ne change pas.
 
 | lot | objet | file | rang | préalables | migration | état |
 |---|---|---|---|---|---|---|
@@ -595,6 +596,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : selon ; migration non écrite.
 - **Décisions, textes** : lettre h, de la main du responsable.
 - **Critère de fin** : page retirée, constatée ; D-C5-01 à 04 soldées à la livraison (`DETTE_C5.md:10-13`).
+- **Mise à jour (2026-10-24, lettre écrite)** : h écrite par D-365 : démontage côté portail seul (résumé dans le protocole, page de l'aliment, route patient) ; code praticien et contrats V2 et V4 en place, `WN_C5_ENABLED` allumé ; avant livraison, constat par conteneur des protocoles diffusés qui portent une Boussole, arrêt au-dessus de zéro ; D-C5-01 à 04 soldées à la livraison constatée, D-C5-05 reste. J1-alim peut s'ouvrir, sans migration.
 
 #### F33 · av : contenu biologique du document remis au médecin
 - **Identifiant, piste** : lettre av ; contenu, voie de remise, régime documentaire ; complète q et ae ; trackc.
@@ -712,15 +714,17 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre bg, de la main du responsable.
 - **Critère de fin** : flux listé, puis déclaré ou arrêté, consigné.
+- **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-364 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance), déclaration décidée, version pseudonymisée seule ; constat des envois antérieurs tenu hors dépôt. La déclaration n'est pas encore livrée : la ligne de la rubrique 6 (réserve écrite) et la nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-364 §4) partent dans un lot de code distinct ; critère de fin atteint à sa livraison.
 
 #### H19 · bf : indicateurs hebdomadaires
 - **Identifiant, piste** : lettre bf.
 - **Rang** : instruction au rang 0 ; code au rang 3 au plus tôt, la porte 15 se levant au plus tôt au rang 2 (règle) ; 4 si migration [Hypothese] ; ouverture en file C au-delà de la place 11, dans l'ordre de préparation après l'encart.
-- **Portes, préalables** : instruction (rang 0) : aucune ; code (rang 3 au plus tôt) : une D-xxx par indicateur, porte 6, porte 11 pour tout mot, porte 15 (lecture proposée, à confirmer) ; ouverture (file C) : texte patient, porte 18. Moment tranché : au point d'étape, par une nouvelle version de son contrat, trois fois par cycle, sans chiffre en retour ; aucune saisie à part ; charge du 21e jour à constater.
+- **Portes, préalables** : instruction (rang 0) : aucune ; code (rang 3 au plus tôt) : une D-xxx par indicateur, porte 6, porte 11 pour tout mot, porte 15 (lecture confirmée le 2026-10-14) ; ouverture (file C) : texte patient, porte 18. Moment tranché : au point d'étape, par une nouvelle version de son contrat, trois fois par cycle, sans chiffre en retour au patient ; aucune saisie à part ; charge du 21e jour à constater.
 - **Migration, release-db** : selon (4 si le contrat du point d'étape se versionne) [A verifier].
 - **Décisions, textes** : une D-xxx clinique et son fragment par indicateur, de la main du responsable ; aucune échelle proposée par l'assistant ; nouvelle version du contrat du point d'étape [A verifier : migration].
 - **Critère de fin** : instruction : décisions signées ; code : réponses constatées en agrégats ; ouverture constatée.
 - **Mise à jour (2026-10-14)** : lecture « porte 15 » du code de bf confirmée par le responsable : porte 15 pour le code, instruction au rang 0 (handoff de la PR 2, #1419). Les [A verifier] sur la migration du contrat du point d'étape restent.
+- **Mise à jour (2026-10-24, cadre écrit)** : D-366 écrit le cadre de l'instruction (moment, contenu de chaque décision d'indicateur, portes du code, charge du 21e jour) ; la liste des indicateurs reste de la main du responsable ; critère de fin inchangé.
 
 #### H20 · Gestes RGPD consignés au registre
 - **Identifiant, piste** : archivage de l'annexe d'hébergement signée et de l'accord de sous-traitance de l'hébergeur ; confiance ; geste du responsable.
@@ -767,7 +771,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | D-284 (j) | identité retirée du document avant l'envoi à Anthropic ; analyse d'impact du transfert (code mergé : #1426, #1428, #1431 ; analyse d'impact non versée, F47) | B | aucune ; G3 clos (#1416) | oui (#1426), release-db consignée (porte 9, 2026-10-15) | H26 |
 | G-7 | essai de restauration réussi | geste | lève 8 | non | F04, rang 0 |
 | v | bandes de bruit par instrument | geste | 11 | non | H13, rang 0 |
-| M-3 | signature des 8 liaisons NABM (écran praticien livré le 2026-10-15 ; 5 signées le 2026-10-15, les 3 sans acte attendent M-3c ; F54) | geste | 10 | non | F54, rang 0 |
+| M-3 | signature des 8 liaisons NABM (écran praticien livré le 2026-10-15 ; 5 signées le 2026-10-15, les 3 sans acte couvertes par un constat « aucun acte » signé (2026-10-16 et 2026-10-17) ; 8 sur 8 le 2026-10-17 ; F54) | geste | 10 | non | F54, rang 0 |
 | M-3b | liste des candidats NABM affichée pré-remplie dans la fiche d'analyte (lot de code livré le 2026-10-15, F54) | A | 10 | non | F54, rang 1 |
 | M-3c | journal des signatures NABM (R1) et constat signé « aucun acte » (PR 1 #1493 mergée et appliquée le 2026-10-16, constatée par conteneur ; PR 2, code consommateur, livrée par #1496 et #1499 le 2026-10-16 ; critère de fin atteint le 2026-10-16 : constat de l'homocystéine relu par conteneur) | A | 10, 9 | oui | F54, rang 2 |
 | c | cockpit chiffré : provenance, formule, nature | geste | 4 | non | F59 |
@@ -907,6 +911,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
   3. **Lots de l'audit des instruments des 12 besoins** (Q1 à Q12, tranchées le 2026-10-22), chacun après son préalable : Q2, Q3, Q4 d'abord (composant des cercles propre au cockpit ; motif sur une ligne dépliable ; six motifs, libellés relus par le responsable avant le code) ; Q1 (ordre fixe B1 à B12 par strate) après J3-12b ; Q5 (le motif décrit les routes de calcul, écart avec le snapshot nommé) avec J3-12g ; Q6 (« Calculé sur n besoins mesurés sur 12 ») et Q8 (compléter la mesure) après une D-xxx produit commune ; Q7 (entier 0 à 100 sans « % », écarts en points) avec J2-mom (H30) ; Q11 (« Points à explorer », acté ou retiré) après sa D-xxx, sur relecture de la fiche SP-CONV LOT-05 ; Q12 (accessibilité : passe humaine, banc AxeBuilder, « Mon équilibre ») aux étapes E67 et H64.
   4. **y** (H58), geste du responsable, en parallèle.
   Restent tenus par une autre porte : J2-jourN (lettre o), ce et au (porte 16), BF-5 (porte 25), page de santé de BioFlow (G-3, axes).
+- **Mise à jour (2026-10-25, restes de l'audit des instruments)** : arbitrages du responsable du 2026-10-25, par questions à options. Q1 (r3_09 : ordre fixe B1 à B12 par strate, clé « Bn · libellé », provenance du tableau et du radar de l'onglet) est détaché de J3-12b et se fait maintenant, sur l'onglet actuel. Motif : le tri « creux d'abord » du tiroir contredit son sous-titre (D-333 §2 r4, exécutoire depuis M-2), et w n'a pas de date. F9a (H64) est détaché lui aussi : le radar devient décoratif (masqué au lecteur d'écran, la table porte tout) ; les graduations 25, 50 et 75 perdent leurs nombres et gardent leurs anneaux. La légende de la table, une éventuelle phrase d'état au-dessus du radar et le `role="status"` du chargement seront relus au lot F9a. J3-12b les reprendra. Q7 (r3_12) ne change pas : il part avec J2-mom, après la lettre o (H30). Q6 et Q8 restent affichés en mode consultation (D-354, confirmé le 2026-10-25).
 
 #### F34 · aw : signature des familles
 - **Identifiant, piste** : lettre aw ; re-signature de la table des quinze règles ; trackc.
@@ -982,6 +987,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre o, de la main du responsable.
 - **Critère de fin** : banc D-058 réécrit ; une seule date de départ partout.
 - **Mise à jour (2026-10-21, file D)** : la troisième divergence de la section « Mesure » de l'audit de D-312 (Momentum compté depuis la première mesure du dossier, non depuis l'ancre du cycle) est rattachée à la lettre o sur arbitrage du responsable : elle se règle avec « une seule date de départ partout », rien avant.
+- **Mise à jour (2026-10-25)** : Q7 de l'audit des instruments des 12 besoins (r3_12 : entier de 0 à 100 sans « % », écarts en points) reste avec J2-mom, après la lettre o, pour un seul changement visuel. Les arbitrages du 2026-10-25 n'y changent rien (F59).
 
 #### H31 · t : point d'étape, rappel nommé, invitation lue au portail
 - **Identifiant, piste** : lettre t (D-t, R:t, T-1, RK-2) ; protocole ; geste du responsable.
@@ -1016,6 +1022,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettres ad et bc, registre.
 - **Critère de fin** : deux textes mergés ; aucun lot ne rouvre `phases` sans décision.
+- **Mise à jour (2026-10-25, lettres écrites)** : ad écrite par D-367 (un protocole sert un cycle, `phases` reste fermé, « programme » = les éléments de la version servie) ; bc écrite par D-368 (tout ajout passe par une nouvelle version datée, approuvée avant d'être servie ; seul un pivot relance le suivi). Critère de fin atteint au merge.
 
 #### H35 · ba : mention « validé par votre praticien »
 - **Identifiant, piste** : lettre ba ; message de départ facultatif [A verifier] ; protocole ; geste du responsable.
@@ -1024,6 +1031,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre ba, texte à signer une fois, de la main du responsable.
 - **Critère de fin** : texte signé et mergé ; mention constatée sur la page servie.
+- **Mise à jour (2026-10-25, lettre écrite)** : ba écrite par D-369 : « Validé par votre praticien le … », date de l'approbation de diffusion de la version servie, en toutes lettres, en tête de la page du protocole servi ; message de départ hors de ba. Reste le lot de code (rang 1, petit) et le constat par lecture.
 
 #### H36 · R:Drive : extraction du Drive de formation
 - **Identifiant, piste** : R:Drive ; notices comptées d'abord, hors dépôt ; droits notice par notice (D-251 §2) ; jamais de donnée patient ; références validées une à une ; fiches conseils ; geste du responsable.
@@ -1187,6 +1195,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre bb ; protocole ; geste du responsable (intitulés), puis file C.
 - **Rang** : 2 au plus tôt [Hypothese], par ses préalables ; une ouverture, servie au-delà de la place 11, dans l'ordre de préparation après l'encart.
 - **Portes, préalables** : ba (H35) ; texte patient accepté ; porte 18.
+- **Mise à jour (2026-10-25)** : préalable ba levé (D-369).
 - **Migration, release-db** : non [A verifier].
 - **Décisions, textes** : lettre bb ; intitulés des trois plans, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
@@ -1246,6 +1255,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre aj (R:aj) ; protocole ; file A.
 - **Rang** : 3 ; 4 au plus tôt si une table se confirme.
 - **Portes, préalables** : ad (H34) ; d (H32) ; porte 15 (rang 2 au plus tôt) ; si table : G-7, porte 9.
+- **Mise à jour (2026-10-25)** : préalable ad levé (D-367) ; d l’était (D-334).
 - **Migration, release-db** : non, ou oui si table.
 - **Décisions, textes** : lettre aj, de la main du responsable.
 - **Critère de fin** : champ hors projection patient, banc.
@@ -1389,6 +1399,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Critère de fin** : passe réelle jouée ; contrôles visuels verts.
 - **Mise à jour (2026-10-21)** : arbitrage du responsable : la passe au lecteur d'écran sur appareil physique est un geste humain, requalifié en file D ; l'assistant prépare le parcours à suivre et la grille de constat. Parcours et grille versés : `docs/PASSE_ACCESSIBILITE_E67.md` (8 étapes, 4 postes, 9 critères).
 - **Mise à jour (2026-10-25, r3_14)** : audit des instruments des 12 besoins, Q12 « oui aux trois ». Le parcours reçoit l'étape 9 (« Mon équilibre » depuis un questionnaire verrouillé, choix C) et, au poste B, l'onglet et le tiroir « Les 12 besoins » (choix A) : 9 étapes, 3 écrans praticien. Banc automatique posé (choix B) : `web/e2e/fiche-besoins-accessibilite.spec.ts`, axe-core WCAG 2.1 A et AA sur le panneau de l'onglet et le tiroir, zéro violation, aucune règle désactivée. La passe humaine reste le geste de la file D ; F9a (caption, radar nommé ou décoratif, graduations, `role="status"`) suit J3-12b.
+- **Mise à jour (2026-10-25, F9a)** : F9a ne suit plus J3-12b (F59, H15) : le radar devient décoratif et les graduations perdent leurs nombres. La passe humaine reste un geste de la file D ; après J3-12b, il ne restera que l'onglet à repasser.
 
 #### H65 · J2-nf5 : comparer deux versions de score
 - **Identifiant, piste** : J2-nf5 ; cockpit ; file A.
@@ -2021,6 +2032,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : texte du geste, de la main du responsable.
 - **Critère de fin** : activation constatée.
 - **Mise à jour (2026-10-25)** : arbitrages du responsable, sur questions à options. Le geste est un message au patient, sous son carnet alimentaire, au terme des 21 jours ; il ne porte ni chiffre (« n jours sur m » reste au cockpit, H74) ni jugement, et ne fusionne pas avec le message de la place 7. **Texte accepté** : « Votre carnet alimentaire touche à sa fin. Votre praticien le relira avec vous : il n’y a ni bonne ni mauvaise journée. » **Point de départ (h3)** : le 21e jour se compte depuis le premier jour noté du carnet, et non depuis le jour 0 de D-255. Restent : la fenêtre de service autour du terme (non fixée), H74, puis le lot et sa D-xxx.
+- **Mise à jour (2026-10-25, fenêtre)** : arbitrage du responsable, sur questions à options. Le message est servi du 18e au 21e jour de calendrier comptés depuis le premier jour noté (non la 18e saisie), jamais après la date de fin du carnet (21 jours depuis la diffusion, bornes incluses : `debutCycle` + 20 jours, soit `DUREE_EPISODE_JOURS - 1`, `web/src/lib/food-observation/episodeDepuisProtocole.ts`) : la fenêtre s'arrête au premier des deux termes. Conséquence acceptée telle quelle : le premier jour noté ne précédant pas le début de la période (le portail ne propose que ses jours, `joursObservables`, `web/src/lib/food-observation/journee.ts` ; garde serveur [A verifier]), la fenêtre finit toujours à la date de fin du carnet, et un patient qui commence à noter après le 4e jour de la période ne reçoit pas le message. Reste : H74, puis le lot et sa D-xxx.
 
 #### H82 · ap : place 10, bibliothèque pédagogique
 - **Identifiant, piste** : lettre ap (R:ap) ; bibliothèque pédagogique au portail ; fiches conseils ; file C, place 10.
@@ -2173,7 +2185,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 5 | h3 | ch : trois phrases de tendance, règle de comparaison d'un agenda fini au précédent et marge « stable » à signer | H72 | phrase en fin d'agenda |
 | 6 | h2 | indications v2, re-signées | F53 | bilan par axe |
 | 8 | h2 | constater un cycle réel jusqu'au jalon de fin, par identifiant | F26 | fin de BIO-PARCOURS |
-| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 confirmé le 2026-10-25 (premier jour noté du carnet ; fenêtre de service non fixée) | H80, H81 | places 7 et 9 |
+| 10 | h3 | confirmer les points de départ des deux messages du 21e jour ; celui de ak confirmé le 2026-10-23 (jour 0 de D-255, jours 18 à 24) ; celui de la place 9 confirmé le 2026-10-25 (premier jour noté du carnet ; fenêtre de service fixée le 2026-10-25 : du 18e au 21e jour de calendrier comptés depuis le premier jour noté, jamais après la fin du carnet, H81) | H80, H81 | places 7 et 9 |
 | T | h1 | chaque release-db, une à une ; chaque contre-revue P0 | §5 | codes consommateurs ; merges des lots P0 |
 
 ### La file D au 2026-10-14
@@ -2190,15 +2202,15 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | lettres m, n, ac, z : faites le 2026-10-15 (D-303, D-304, D-301, D-302) | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
 | h1 | sources de fidélité (G-10) : instruments arrêtés le 2026-10-15, références test-retest à fournir (H13) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) | H08 | c, am, al, cm, seuils_points |
-| h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
+| h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg (fait le 2026-10-24 : D-364) | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable ; remplacée le 2026-10-22, D-342 §3) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
 | h2 | liste des 8 analytes NABM (S-7) : fait le 2026-10-15 (F54) ; véhicule de M-3 arrêté le 2026-10-15 : écran praticien, lot de code livré le 2026-10-15 ; 5 des 8 signées le 2026-10-15 ; candidats des 77 autres analytes préparés et deux arbitrages pris le 2026-10-15 (liste pré-remplie, constat signé « aucun acte ») | F54, porte 10 | M-3b, M-3c, f, G-3 |
 | h2 | lettres j, q, s, aa, ab, av ; guide w ; ca (fait le 2026-10-15 : D-300) ; j, q, s, aa, ab, av faits le 2026-10-15 (D-306 à D-311) ; w : méthode écrite (D-312), dossiers de preuve par besoin puis guide de la main du responsable ; huit arbitrages rendus le 2026-10-15 (H15), deuxième dossier après J3-12c ; liste des statuts posés de s à écrire | F63, F38, F57, F55, H14, F33, H15, H17 | porte 12 ; ba ; ad et bc ; aw et az ; cb |
 | h2 | cj (D-296 rédigée et acceptée, D/7) ; co (fait le 2026-10-15 : D-313 ; neuf critères à cocher de la main du responsable) | F49, F68 | cm ; AIPD |
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge (tranché le 2026-10-21 : le barème ignore les actions vides ; correctif en file A, F76) | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) | H42, H41 | table d'arrêt complète ; axes |
-| h3 | h, la Boussole retirée | H16 | J1-alim ; D-C5-01 à 04 |
-| h3 | instruction de bf | H19 | indicateurs hebdomadaires |
+| h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-365) | H16 | J1-alim ; D-C5-01 à 04 |
+| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | H19 | indicateurs hebdomadaires |
 | h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) | H26 | durées, information du médecin |
 | h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
@@ -2229,20 +2241,20 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 
 | geste | fiche | ce qu'il attend |
 |---|---|---|
-| c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c |
+| c, d, puis M-2 | F59, H32 | S-2 (H01, file A) ; porte 4 pour c ; faits : D-333 et D-334 le 2026-10-20, M-2 signée le 2026-10-23 (#1658) |
 | v | H13 | G-10 |
-| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte attendent le constat signé de M-3c |
-| f | F54 | M-3 ; M-3c (journal R1) |
+| M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte couvertes par un constat « aucun acte » signé (2026-10-16 et 2026-10-17) ; fait : 8 sur 8 le 2026-10-17, M-3c clos le 2026-10-16 (#1493, #1496, #1499) |
+| f | F54 | M-3 ; M-3c (journal R1) ; fait le 2026-10-17 (D-316) |
 | G-3 | F54 | f ; M-3b (liste pré-remplie) ; M-3c pour les analytes sans acte |
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
-| ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge |
-| ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge |
+| ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
+| ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
 | aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge |
-| cm | F51 | cj |
+| cm | F51 | cj ; fait le 2026-10-23 (D-348) |
 | at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; reportés en D.1 le 2026-10-15 |
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
 | x | H29 | porte 28 |
-| r, o, t | H28, H30, H31 | S-1 (H06) |
+| r, o, t | H28, H30, H31 | S-1 (H06) ; r fait (D-341 §2), t fait (D-317) ; reste o |
 | comptage T0 en conteneur (fait le 2026-10-24 : constat versé en H07 ; reste la D-xxx du délai, tenue en H07) | H07 | effectif de masquage (F25) : levé par D-298 |
 | texte de l'avis rendu au patient après verdict (D-281 §2 b) : signé le 2026-10-14 (D-281 §4), servi au portail par la seconde PR de l'étape 4 (fait ; inerte avant la signature) | F66 | étape 4 de D-281 |
 | M-1, signature de SAF-EI-01 amendée | F66 | étape 4 de D-281 et les trois préalables de D-281 §2 (§8) |
@@ -2769,14 +2781,14 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 |---|---|---|---|---|
 | a | décisions d'ordre ; pilotage réaligné (écrite : D-287, #1430) | la main du responsable | 0 | F01 |
 | b | une activation à la fois ; second compte fermé un an (écrite : D-288, #1430) | la main du responsable | 0 | H05 |
-| c | cockpit chiffré sous provenance | la main du responsable | 1 ; M-2 au rang 2 | F59 |
-| d | doctrine d'adhésion | la main du responsable | 1 | H32 |
-| e | signature de SAF-EI-01 amendée | la main du responsable | M-1 au rang 3, J1-sécu au rang 4 | F66 |
-| f | NABM : 8 liaisons, puis liste étendue | la main du responsable | 2 | F54 |
+| c | cockpit chiffré sous provenance ; fait le 2026-10-20 (D-333), M-2 signée le 2026-10-23 | la main du responsable | 1 ; M-2 au rang 2 | F59 |
+| d | doctrine d'adhésion ; fait le 2026-10-20 (D-334) | la main du responsable | 1 | H32 |
+| e | signature de SAF-EI-01 amendée ; faite le 2026-10-17 (M-1, D-281 §6) | la main du responsable | M-1 au rang 3, J1-sécu au rang 4 | F66 |
+| f | NABM : 8 liaisons, puis liste étendue ; fait le 2026-10-17 (D-316), G-3 en cours | la main du responsable | 2 | F54 |
 | g | essai de restauration, procédure et portée (écrite : D-289, #1430) | la main du responsable | 0 | F04 |
-| h | Boussole retirée ; exception à D-276 §1 | la main du responsable | 0 | H16 |
+| h | Boussole retirée ; exception à D-276 §1 ; fait le 2026-10-24 (D-365) | la main du responsable | 0 | H16 |
 | j | D2, règle de dépendance ; module publié ; fait le 2026-10-15 (D-306) | registre | 0 | F63 |
-| k | CGU unique ; texte de l'IA v7 | la main du responsable | 0 | F77 |
+| k | CGU unique ; texte de l'IA v7 ; fait le 2026-10-14 (D-292) | la main du responsable | 0 | F77 |
 | m | encart de sécurité sur les CAB_ ; fait le 2026-10-15 (D-303) | la main du responsable | 0 | H10 |
 | n | garde de dose resserrée ; fait le 2026-10-15 (D-304) | la main du responsable | 0 | H11 |
 | o | Momentum à remesure libre | la main du responsable | 1 | H30 |
@@ -2785,7 +2797,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | r | droits d'usage des instruments ; fait le 2026-10-21 (D-341 §2) | registre | 1 | H28 |
 | s | onglet Biologie, statut posé, deux marques ; fait le 2026-10-15 (D-308 ; la liste des statuts reste à écrire) | la main du responsable | 0 | F57 |
 | t | point d'étape, rappel nommé ; fait le 2026-10-17 (D-317) | la main du responsable | 1 | H31 |
-| u | Patient Hub, collecte, « Mes échanges » | la main du responsable | 1 | H37 |
+| u | Patient Hub, collecte, « Mes échanges » ; fait le 2026-10-14 (D-293) | la main du responsable | 1 | H37 |
 | v | bandes de bruit par instrument | la main du responsable | 1 | H13 |
 | w | guide des 12 besoins sur sources ; méthode écrite le 2026-10-15 (D-312), guide à réécrire | la main du responsable | 0 | H15 |
 | x | posture d'API, aucune clé | la main du responsable | 1 ; après ci | H29 |
@@ -2794,14 +2806,14 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | aa | courrier de remboursement ; fait le 2026-10-15 (D-309) | la main du responsable | 0 | F55 |
 | ab | EF-0, trancher Q3 ; fait le 2026-10-15 (D-310) | la main du responsable | 0 | H14 |
 | ac | radar sans zéro ; fait le 2026-10-15 (D-301) | la main du responsable | 0 | H12 |
-| ad, bc | un cycle, pas un programme ; ajouts par version datée | registre | 1 | H34 |
+| ad, bc | un cycle, pas un programme ; ajouts par version datée ; faits le 2026-10-25 (D-367, D-368) | registre | 1 | H34 |
 | ae | bloc Protocole du document médecin | la main du responsable | 5 | F39 |
 | af | référence de fiche conseil sur l'action | la main du responsable | 1 | H24 |
 | ag | rédaction assistée des zones du protocole | la main du responsable | 1 | H25 |
 | ah | familles de fiches conseils par thème | la main du responsable | 5 | H68 |
-| ai | accusé de lecture de « Mes échanges » | la main du responsable | 2 | H51 |
+| ai | accusé de lecture de « Mes échanges » ; fait le 2026-10-14 (D-297) | la main du responsable | 2 | H51 |
 | aj | encadré « Envisagé ensuite » | la main du responsable | 3 | H53 |
-| ak | invitation d'autoévaluation au 21e jour | la main du responsable | 10, place 7 | H80 |
+| ak | invitation d'autoévaluation au 21e jour ; fait le 2026-10-24 (D-353) | la main du responsable | 10, place 7 | H80 |
 | al | axes alimentaires | la main du responsable | 3 | H57 |
 | am | table de quantités | la main du responsable | 1, fermé sans source | H33 |
 | an | photo ou dictée des repas | la main du responsable | 10, place 11 | H83 |
@@ -2817,12 +2829,12 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
-| ba | mention « validé par votre praticien », ajout à la page servie | la main du responsable | 1 [Hypothese] | H35 |
+| ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) | la main du responsable | 1 [Hypothese] | H35 |
 | bb | trois plans de chaque geste | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
-| bd | encart « quand ralentir ou demander avis » | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
+| bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
-| bf | indicateurs hebdomadaires, au point d'étape | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
-| bg | flux de l'export vers l'assistant externe | la main du responsable | 0 | H18 |
+| bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
+| bg | flux de l'export vers l'assistant externe ; fait le 2026-10-24 (D-364) | la main du responsable | 0 | H18 |
 | bh | rendu imprimable du protocole | registre | 5 au plus tôt [Hypothese] | H69 |
 | ca | cadrage de la refonte du sommeil ; fait le 2026-10-15 (D-300) | la main du responsable | 0 | H17 |
 | cb | textes de l'écran de fin | la main du responsable | 1 [Hypothese] | H39 |
@@ -2833,9 +2845,9 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | cg | ses nuits par semaine, avec la frise | registre | 4 | H63 |
 | ch | tendance non chiffrée de ses nuits : une phrase en fin d'agenda | la main du responsable | 5 au plus tôt [Hypothese] | H72 |
 | ci | amendement de D-276 : cinq déclencheurs (écrite : D-286, #1425) | la main du responsable | 0 [Hypothese] | F67 |
-| cj | rationalisation des packs biologiques | la main du responsable | 0 [Hypothese] | F49 |
+| cj | rationalisation des packs biologiques ; fait le 2026-10-14 (D-296) | la main du responsable | 0 [Hypothese] | F49 |
 | cl | cadrage de l'adaptateur du laboratoire | registre ; rôles RGPD de la main du responsable | gelé ; 0 dès la porte 29 | F41 |
-| cm | axes biologiques, liste fermée | la main du responsable | 1 [Hypothese] | F51 |
+| cm | axes biologiques, liste fermée ; fait le 2026-10-23 (D-348) | la main du responsable | 1 [Hypothese] | F51 |
 | cn | courbe d'analyte | registre, sous c | 5 au plus tôt [Hypothese] | F56 |
 | co | réexamen de l'AIPD ; fait le 2026-10-15 (D-313) | la main du responsable (conclusion) | 0 [Hypothese] | F68 |
 
@@ -2863,7 +2875,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | de cq | forme du plan unique : D-285, écrite | registre | 0 | H04 |
 | du délai avant T0 | délai, après le comptage ; lettre cr si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
 | de cadrage ca | refonte du sommeil, présentation seule | la main du responsable | 0 | H17 |
-| par indicateur hebdomadaire | nom, source, échelle, nature | la main du responsable | 0 (instruction) | H19 |
+| par indicateur hebdomadaire | nom, source, échelle, nature, ce que le praticien en lit (D-366 §2) | la main du responsable | 0 (instruction) | H19 |
 | de seuils_points de Q_ALI_01 | décision clinique sourcée | la main du responsable | 1 [Hypothese] | H40 |
 | des règles orphelines | réécriture des trois restes | registre | 1 [Hypothese] | H41 |
 | de la table d'arrêt | grilles citées, signature | la main du responsable | 1 [Hypothese] | H42 |
