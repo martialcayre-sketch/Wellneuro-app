@@ -11886,3 +11886,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Lots de code : file C pour bb, J3-cabinet (file A) pour y.
 
 **Ouvert.** Comment le lot de bb reconnaît une version sous garde étendue.
+
+## 2026-10-26 — File C : ba constatée sur la page servie (D-369, H35)
+
+**Fait.** #1714 déployée. La mention s'est d'abord dérobée : la carte du dossier de test avait dérivé après J3-12g, page « pas consultable » (motif `carte_derivee` aux logs). Réapprobation par le responsable, puis lecture en ligne : « Validé par votre praticien le 26 octobre 2026 », en tête du bloc du protocole, date de la réapprobation relue en conteneur. H35 faite.
+
+**Écarté.** Sortir le bloc du protocole du repli « Mon accompagnement » : mise en page hors de D-369, non demandée.
+
+**Prochaine action.** Place 7 (ak) dans sa fenêtre, du 2026-11-01 au 2026-11-07.
+
+**Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).

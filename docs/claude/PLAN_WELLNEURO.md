@@ -1045,6 +1045,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Critère de fin** : texte signé et mergé ; mention constatée sur la page servie.
 - **Mise à jour (2026-10-25, lettre écrite)** : ba écrite par D-369 : « Validé par votre praticien le … », date de l'approbation de diffusion de la version servie, en toutes lettres, en tête de la page du protocole servi ; message de départ hors de ba. Reste le lot de code (rang 1, petit) et le constat par lecture.
 - **Mise à jour (2026-10-26, lot de code)** : la route du protocole servi sert la date de l'approbation de diffusion de la version servie ; la page la dit en tête, en toutes lettres, au jour civil de Paris, sans drapeau ni migration. Reste, après le déploiement, le constat par lecture sur la page servie d'un dossier de test.
+- **Mise à jour (2026-10-26, constat)** : lot mergé (#1714) et déployé le 2026-10-26. Mention lue en ligne par le responsable sur la page servie d'un dossier de test : « Validé par votre praticien le 26 octobre 2026 », en tête du bloc du protocole, une fois. La date est celle de la réapprobation du même jour (carte dérivée après J3-12g, D-359 §3), relue par identifiant en conteneur. Critère de fin atteint : H35 faite.
 
 #### H36 · R:Drive : extraction du Drive de formation
 - **Identifiant, piste** : R:Drive ; notices comptées d'abord, hors dépôt ; droits notice par notice (D-251 §2) ; jamais de donnée patient ; références validées une à une ; fiches conseils ; geste du responsable.
@@ -2914,7 +2915,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan ; texte fait le 2026-10-26 (D-380) | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
-| ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) | la main du responsable | 1 [Hypothese] | H35 |
+| ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) ; code en service et constaté le 2026-10-26 (#1714) | la main du responsable | 1 [Hypothese] | H35 |
 | bb | trois plans de chaque geste ; texte fait le 2026-10-26 (D-384) | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
