@@ -22,6 +22,7 @@ import {
 import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import { provenanceDesSources } from '@/lib/praticien/provenanceSources';
 import type { PresenceSourceStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
 import type { EcartDecisionServi, MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 import type { ProvenanceChiffre, ProvenanceMomentum } from '@/lib/praticien/provenanceChiffre';
@@ -168,26 +169,14 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       }
     }
 
-    // PROVENANCE DATÉE ([[D-333]] §2 règle 1) : les questionnaires que la
-    // formule a RÉELLEMENT lus — mêmes listes, même fonction que le calcul —,
-    // chacun à la date de la passation retenue (même sélection que
-    // `construireReponsesParQuestionnaire`). Rien n'est inféré : un chiffre
-    // dont la provenance ne s'établit pas n'est pas affiché par le panneau.
+    // PROVENANCE DATÉE ([[D-333]] §2 règle 1) : `provenanceDesSources`, la
+    // même règle que la route de l'onglet (r3_09).
     const datesRetenues = datesDesReponsesRetenues(reponsesDb);
     const provenanceDe = (
       valeur: number | null,
       sources: SourceQuestionnaire[],
       versionCalcul: string | null
-    ): ProvenanceChiffre | null => {
-      if (valeur === null) return null;
-      const lues = [
-        ...new Set(sources.filter(s => calculerCouvertureSource(s, reponses) !== null).map(s => s.idQuestionnaire)),
-      ];
-      return {
-        sources: lues.map(id => ({ idQuestionnaire: id, dateReponse: datesRetenues[id]?.toISOString() ?? null })),
-        versionCalcul,
-      };
-    };
+    ): ProvenanceChiffre | null => provenanceDesSources(valeur, sources, reponses, datesRetenues, versionCalcul);
     const versionScore = objets.indiceGlobal.versionScore;
 
     const couverturesParBesoin = new Map(
@@ -196,6 +185,9 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
 
     const contexteMotifs = { ecartes: questionnairesEcartesParValidite(reponsesDb), datesRetenues };
 
+    // Ordre fixe, B1 à B12 par strate — celui de `BESOINS` (Q1, r3_09). Aucun
+    // tri sur la valeur : un rang qui juge un chiffre exige un seuil signé
+    // ([[D-333]] §2 règle 4), et le tiroir dit qu'aucune priorité n'est déduite.
     const priorites: PrioriteBesoin[] = BESOINS.map(b => ({
       besoin: b.id,
       libellePraticien: b.libellePraticien,
@@ -207,13 +199,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
       provenance: provenanceDe(couverturesParBesoin.get(b.id) ?? null, BESOIN_SOURCES[b.id] ?? [], versionScore),
       carteLiee:
         b.id === BESOIN_RESERVE_ADAPTATION ? ('reserveAdaptation' as const) : b.id === BESOIN_CLARTE ? ('clarte' as const) : null,
-    })).sort((a, b) => {
-      // Non mesurés en dernier ; sinon couverture croissante (creux d'abord).
-      if (a.couverture === null && b.couverture === null) return 0;
-      if (a.couverture === null) return 1;
-      if (b.couverture === null) return -1;
-      return a.couverture - b.couverture;
-    });
+    }));
 
     return NextResponse.json({
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom, email: patient.email },

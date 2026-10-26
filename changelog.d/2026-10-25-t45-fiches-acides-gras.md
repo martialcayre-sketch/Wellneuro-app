@@ -1,4 +1,4 @@
-### Biologie : vingt acides gras et deux rapports entrent au catalogue (t45, D-370, migration)
+### Biologie : vingt acides gras et deux rapports entrent au catalogue (t45, D-376, migration)
 
 - Vingt fiches d'acides gras en %, sous leur nom courant (acide oléique,
   EPA, DHA, acide arachidonique…), et deux rapports en « ratio » :

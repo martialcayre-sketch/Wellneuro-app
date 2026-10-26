@@ -1,4 +1,4 @@
-# Handoff — t45 : fiches des acides gras au catalogue, migration (D-370)
+# Handoff — t45 : fiches des acides gras au catalogue, migration (D-376)
 
 ## Branche et état du dépôt
 
@@ -21,7 +21,7 @@ attend l'application constatée.
   1 dossier, répartition masquée (moins de cinq dossiers), D-298 §3) :
   libellés de 20 acides en %, indice oméga 3 et trois rapports sans unité ;
   94 analytes ; aucun acte V105 sur les acides gras.
-- Arbitrages du responsable (questions à options), consignés dans `D-370` :
+- Arbitrages du responsable (questions à options), consignés dans `D-376` :
   provenance `saisie_praticien` ; 20 acides + 2 rapports ; nom courant seul ;
   rapports en « ratio », « autre » comme AA/EPA ; aucun panel (lot et
   décision à part, source à désigner) ; NABM « aucun acte » / « valeur
@@ -45,7 +45,7 @@ attend l'application constatée.
   KYN/TRP) ;
   `import/resolverLibellesV1.test.ts` (116 unités lues) — la table et la
   signature du résolveur **inchangées**.
-- `docs/DECISIONS.md` (D-370), `docs/claude/PLAN_WELLNEURO.md`,
+- `docs/DECISIONS.md` (D-376), `docs/claude/PLAN_WELLNEURO.md`,
   `changelog.d/2026-10-25-t45-fiches-acides-gras.md`, SESSION_LOG.
 
 ## Validations exécutées
@@ -55,7 +55,7 @@ attend l'application constatée.
 
 ## Problèmes ouverts
 
-- D-370 : libre sur main et dans le diff de #1693 (D-361 à D-363, à
+- D-376 : libre sur main et dans le diff de #1693 (D-361 à D-363, à
   renuméroter par sa session) au commit ; revérifier juste avant le merge.
 - Second lot : compositions AA/EPA et LA/DGLA ; libellés imprimés et noms
   usuels au résolveur, re-signature sur instruction — après la release-db

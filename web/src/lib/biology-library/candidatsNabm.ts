@@ -73,7 +73,7 @@ const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 const AUCUN_AG = 'Aucun libellé de la V105 ne nomme les acides gras.';
 
 /** La liste, par code d'analyte. Les 116 analytes du catalogue y figurent
- *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361, 22 par D-370). */
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361, 22 par D-376). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -399,7 +399,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     ],
   },
 
-  // ── Les vingt acides gras de D-370 (V105 relue par conteneur le 2026-10-25 :
+  // ── Les vingt acides gras de D-376 (V105 relue par conteneur le 2026-10-25 :
   // aucun libellé ne nomme les acides gras, comme pour le profil).
   BIO_AG_MYRISTIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
   BIO_AG_PALMITIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },

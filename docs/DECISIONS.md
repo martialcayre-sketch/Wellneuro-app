@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-370 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les compositions AA/EPA et LA/DGLA arbitrées, livrées au second lot
+### D-376 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les compositions AA/EPA et LA/DGLA arbitrées, livrées au second lot
 
 - Date : 2026-10-25
 - Statut : accepté — arbitrages du responsable du 2026-10-25 (file A, t45),
@@ -65,6 +65,511 @@ au responsable avec le second lot. Ils n'entrent au résolveur, avec sa
 re-signature (décision distincte, sur instruction), qu'après l'application
 **constatée** de la migration (clé étrangère d'`analyte_propose`, comme
 [[D-361]] §6). Les lignes déjà lues restent « inconnu » ([[D-356]] §6).
+
+### D-375 — Le crochet de fraîcheur Git journalise ses verdicts une semaine, puis tolère un retard sans chevauchement ni conflit
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrage du responsable du 2026-10-25, sur question à
+  options (journal d'abord, tolérance ensuite), dans l'audit du travail de
+  plusieurs sessions en parallèle (dossier tenu hors dépôt) ; précisé par la
+  contre-revue Codex des 25 et 26 octobre 2026 ; texte de registre rédigé dans le
+  lot.
+- Domaine : `.claude/hooks/git-freshness.mjs` (garde-fou du responsable) et
+  son banc, `.claude/rules/hooks-garde-fous.md`, `CLAUDE.md` § Début de
+  session.
+- **Ne touche pas** : la règle « ni pull, ni merge, ni rebase automatique » ;
+  le constat au démarrage de session, qui reste un message sans refus et dont
+  seul le libellé s'aligne sur la tolérance ; le mode dégradé quand le fetch
+  est impossible ; le crochet d'écriture, qui juge les formes `Bash`
+  reconnues et reste hors périmètre.
+- Contexte : le crochet refuse toute édition (`Edit`, `Write`, `MultiEdit`,
+  `NotebookEdit`) dès que `HEAD` ne contient plus `origin/main`, sans
+  tolérance. Avec une vingtaine de pushs par jour sur `main`, une branche de
+  lot est en retard moins d'une heure après sa création : chaque session
+  fusionne `main` plusieurs fois par lot pour pouvoir écrire, et ces fusions
+  sont celles qui rangent `SESSION_LOG.md` au milieu, déplacent les numéros
+  et rejouent le CI. Sur les branches de lot, environ trois commits sur dix
+  sont des fusions de `main` depuis le 2026-10-18 (219 sur 703 dans les 175
+  PR mergées) ; `main`, squashée, n'en porte aucune. Le crochet n'écrit pas
+  ses verdicts : la part des fusions qu'il impose est inconnue.
+
+**§1 — Le journal.** Une ligne par verdict, dans un fichier de journal
+distinct du marqueur de session : date, outil, cible interne ou externe au
+dépôt, `HEAD`, `origin/main`, verdict, motif ; jamais de contenu de fichier.
+Une semaine de comptage, en parallèle des autres lots : la mesure ne retarde
+rien.
+
+**§2 — La tolérance.** Après la semaine : le crochet juge toujours chaque
+édition (`Edit`, `Write`, `MultiEdit`, `NotebookEdit`, comme aujourd'hui),
+mais tolère un retard « sans chevauchement ». Il calcule la base de fusion,
+liste les fichiers que `origin/main` a touchés depuis, les compare aux
+fichiers de la branche et au fichier visé ; si rien ne se recoupe et que
+`git merge-tree --write-tree` ne signale aucun conflit, l'édition passe avec
+un avertissement « en retard de N commits sur `origin/main` », affiché une
+fois par état. Au moindre chevauchement ou conflit, refus entier, comme
+aujourd'hui. Calcul mis en cache par couple de sha. Si `HEAD` ou
+`origin/main` est illisible dans le dépôt, l'état est inconnu et l'édition
+est refusée, comme aujourd'hui ; si le fetch est impossible, le mode dégradé
+ne change pas (dernière référence connue, signalée avec son âge), mais la
+tolérance ne s'y applique pas : seule une branche qui contient cette
+référence passe. Un fichier hors de la racine du worktree du répertoire
+courant (scratchpad, mémoire) ne recoupe rien par lui-même : il passe avec
+l'avertissement dès que la branche ne recoupe pas `origin/main` et que
+`git merge-tree` ne signale aucun conflit ; la portée du crochet reste celle
+du répertoire courant (`hooks-garde-fous.md`).
+
+**§3 — Le lot.** Crochet, banc, `hooks-garde-fous.md` et `CLAUDE.md` § Début
+de session ; revue `wn-reviewer`, parce que c'est un crochet. Réversibilité
+totale : rétablir la condition « contient `origin/main` » seule.
+
+**Ce qu'elle ne décide pas.** Le conflit sémantique entre deux PR vertes
+(contrôle avant merge, [[D-373]] §4). Les registres partagés : une branche en
+retard sur `docs/DECISIONS.md` ou sur le plan reste en chevauchement, donc
+refusée ; le gain grandit avec [[D-370]], [[D-371]] et [[D-372]], qui
+réduisent les écritures concurrentes sur ces fichiers.
+
+**Effet sur le plan.** Aucune fiche dans cette PR ; lot d'outillage.
+
+### D-374 — Une release-db se lit par phases : pendant l'attente d'approbation, seuls les merges qui touchent une migration, un chemin déclencheur ou l'outillage de release sont gelés ; le déployeur retient la tête tant qu'une migration attend (D-087 précisée)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-25 (gel écrit et lu
+  par machine, banc puis correctif du déployeur) et du 2026-10-26 (portée du
+  gel : par phases, contre un gel intégral), sur questions à options ;
+  précisé par la contre-revue Codex (lecture de `release-db.yml`) ; texte de
+  registre rédigé dans le lot.
+- Domaine : `.github/workflows/release-db.yml` (lu, non modifié par cette
+  décision), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
+  `.claude/rules/pr-revue-et-release-db.md` §3 à §5 (§1.10 : [[D-373]] §7),
+  skill `wn-merge` ; [[D-087]] (l'approbation humaine, unique porte
+  d'écriture du schéma) ; [[D-044]] §3 (le chemin clinique déclenche
+  `release-db`).
+- **Précise** [[D-087]] : phases écrites, état du run distinct de l'état
+  d'application ; réécrit le piège 2 de `pr-revue-et-release-db.md` §5.
+- **Rouvre** la question [[D-087]] routée par l'arbitrage n° 2 de [[D-248]].
+  Le paragraphe « Inchangé, et à connaître » de [[D-248]] décrivait ce
+  comportement et le gardait : un commit sans migration mergé au-dessus
+  d'une migration en attente d'approbation part au déploiement, comme sous
+  l'auto-déploiement, et le retenir changerait le régime code/schéma. Le §1
+  le retire, sur arbitrage du responsable du 2026-10-25.
+- **Ne touche pas** : l'approbation humaine, unique et sans approbation
+  supplémentaire ; le code consommateur d'une migration, qui attend toujours
+  le constat par conteneur ; une seule migration en vol ; l'ordre de
+  [[D-087]] au sein d'une release (le code du commit approuvé se déploie
+  avant le one-off approuvé) — la retenue de la tête jusqu'à l'application,
+  elle, le restreint ; la garde anti-recul de `release-db` (son retrait est
+  le lot 4 de [[D-248]], à venir).
+- Contexte : une PR qui touche `web/prisma/migrations/**` ou
+  `web/src/lib/clinical/**` lance un run qui attend l'approbation puis
+  s'exécute (durée totale, de la création à la fin : médiane 17 min, jusqu'à
+  103 min sur les trente derniers runs, dont environ 8 à 9 min d'exécution).
+  Le 2026-10-19, #1577 a été mergée pendant la release de #1572 : fin rouge
+  par la garde anti-recul, base à jour ; depuis, quatorze runs verts, les
+  sessions attendant la fin de chaque run sur une consigne qui n'existait
+  qu'en mémoire. Lecture du code, confirmée par la contre-revue, non
+  rejouée : `release-db.yml` tolère une tête descendante du commit approuvé
+  sans migration nouvelle et déploie cette tête ; la fin rouge volontaire
+  survient après l'application ; et le déployeur ne retient que le commit
+  cible (`retenue()` ne lit que la cible), si bien que du code arrivé en tête
+  au-dessus d'une migration en attente part en production avec des colonnes
+  absentes de la base — comportement décrit et gardé par [[D-248]]. Le
+  piège 2 écrit (« toute écriture sur `main` pendant l'attente tue le run »)
+  ne tient pas compte de cette tolérance.
+
+**§1 — Le déployeur d'abord.** Un cas de banc dans
+`scripts/wn-deploiement-deployer.test.mjs` rejoue « migration portée par un
+ancêtre, tête de code verte », le comportement décrit par [[D-248]]. Puis
+`retenue()` retient la tête tant que la migration en attente n'est pas
+attestée appliquée. La retenue distingue quatre états d'application sur la
+plage de migrations pertinente : appliquée attestée, en attente, échec avant
+application, inconnu ; une fin rouge volontaire après application ne devient
+jamais un verrou permanent. Code de production : revue `wn-reviewer`.
+Préalable du gel par phases (§2 et §5) ; le gel intégral du §5 s'écrit sans
+l'attendre.
+
+**§2 — Les phases.** Une release-db se lit en quatre phases, chacune avec ce
+qu'elle gèle et la preuve qui en sort.
+
+1. Attente d'approbation (run `waiting`) : gelés, les merges qui touchent
+   `web/prisma/migrations/**`, `web/src/lib/clinical/**`, `release-db.yml`
+   et le déployeur ; les autres PR mergent, et le code consommateur reste
+   soumis à [[D-087]]. Preuve : la liste des runs actifs.
+2. Exécution et déploiement : dès que le run sort de `waiting`
+   (approbation), et jusqu'à la fin vérifiée de l'application, aucun merge ;
+   la fenêtre couvre la dernière lecture de la tête par le workflow.
+   Preuve : la sentinelle liée au run (`WN_RELEASE_DB_OK id=…`).
+3. Fin du run : un run rouge après application se lit « appliquée » (garde
+   anti-recul, piège 6), jamais « à relancer ». L'état du run n'est pas
+   l'état de la base.
+4. Constat : `_prisma_migrations` lue par conteneur, agrégée par nom ; seul
+   le code consommateur de cette migration l'attend. Preuve : le constat
+   écrit au handoff.
+
+**§3 — Deux runs.** Si deux runs se suivent, l'ancien n'est rejeté que si la
+tête apporte une migration nouvelle. Sinon il s'approuve tel quel : il
+déploie la tête, et sa fin rouge volontaire se lit « appliquée » (§2,
+phase 3). Un recul ne se rattrape jamais en réapprouvant un ancien run
+([[D-248]], piège 6).
+
+**§4 — La sonde.** Avant chaque merge, `wn-merge` — donc l'intégrateur,
+[[D-373]] — lit tous les runs non conclus de `release-db.yml` (filtre par
+statut, avec pagination), pas une fenêtre fixe des derniers runs, et
+distingue l'attente d'approbation de l'exécution ; le verdict applique §2.
+La règle s'écrit dans `pr-revue-et-release-db.md` §5 (piège 2 réécrit) et
+dans un bloc de `wn-merge`, lus aussi par les sessions sans `/wn-*`. Jamais
+d'auto-merge.
+
+**§5 — Entrée en vigueur.** Tant que §1 n'est pas livré et que la sonde ne
+lit pas les phases, le gel est intégral : aucun merge, ni code ni doc, tant
+qu'un run n'est pas conclu ; c'est la pratique actuelle, écrite. Un run
+coincé gèle les merges : la sortie est le rejet du run par le responsable,
+jamais un merge qui le contourne. Le gel par phases entre en vigueur au lot
+qui livre §1 et §4. L'attente des PR prêtes se mesure avant et après (délais
+environnement prêt → approbation, approbation → application, attente des PR
+prêtes pendant un run), avant de tenir le gain pour acquis.
+
+**Ce qu'elle ne décide pas.** La durée de l'approbation ; des fenêtres fixes
+de migration (écartées) ; le retrait de la garde anti-recul (lot 4 de
+[[D-248]]).
+
+**Effet sur le plan.** §5 « Ce qui ne s'accélère jamais » : « release-db
+humaine, une à une ; merger une migration ne l'applique pas » inchangés ;
+« un merge à la fois » et « déploiement constaté avant le merge suivant »
+(G-6, N-7) ne visent, pendant la phase 1, que les merges gelés par le §2 ;
+les autres PR mergent, et leur déploiement, retenu par le §1, se constate
+après l'application. Mise à jour datée.
+
+### D-373 — Un intégrateur unique merge les PR ordinaires depuis la copie principale, en essai borné ; les files gardent migrations et authentification ; les sessions se libèrent dès le merge (D-290 amendée)
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrages du responsable du 2026-10-25 sur questions à
+  options : intégrateur unique, contre la recommandation de l'audit (chaque
+  session merge, avec une vérification lue par machine) ; contrôle local
+  avant merge sans check requis de plus ; précisés par la contre-revue Codex
+  (service continu, essai borné, repli écrit, contrôle conditionnel) ; texte
+  de registre rédigé dans le lot.
+- Domaine : gouvernance des PR et des sessions ; `CLAUDE.md` § Début de
+  session et § PR, CI, merge ; `docs/ROLES_MACHINES.md` ;
+  `docs/claude/REGLES_PR_MERGE.md` (« Revue par CodeRabbit, merge par
+  l'assistant » et « Cycle PR complet côté assistant ») ;
+  `.claude/rules/pr-revue-et-release-db.md` §1.10 et §2 ; skill `wn-merge` ;
+  réglage `allow_auto_merge` du dépôt.
+- **Amende** [[D-290]] §1 (« l'assistant merge ») : la délégation du merge ne
+  change pas, son porteur change ; la consigne « `/clear` après le merge » de
+  `CLAUDE.md`, qui gagne ses exceptions et perd l'attente du CI de `main` et
+  du déploiement ; [[D-287]] §2 et le plan (§5, point 2 et « Ce qui ne
+  s'accélère jamais », N-5) pour « un merge à la fois, le déploiement
+  constaté avant le merge suivant », désormais bornés aux lots de migration,
+  hors phase 1 de [[D-374]]. **Devance** le lot 4 de [[D-248]] pour sa seule
+  partie « discipline » : « un merge à la fois, constater le déploiement »
+  reste autour d'une migration et ne vaut plus pour le code ordinaire, le
+  déployeur (lots 1 à 3, en service depuis le 2026-09-25) ne livrant que la
+  tête de `main`. L'écart connu de [[D-248]] est assumé : un commit vert
+  dépassé par une tête rouge n'est livré qu'à la prochaine tête verte. La
+  garde anti-recul de `release-db` reste en place jusqu'au lot 4.
+- **Ne touche pas** : la protection de `main`, `enforce_admins`, les checks
+  requis ; aucun hook de garde ([[D-290]]) ; la revue CodeRabbit sur le sha
+  de tête et le verdict de chaque remarque (règles 1.2 et 1.6) ; le barème de
+  `docs/claude/POLITIQUE_REVUE.md` ; [[D-087]] ; un lot = une session.
+- Contexte : plusieurs sessions vivent sur la machine et chacune peut
+  merger ; les conditions du merge (revue sur la tête, aucune release-db en
+  vol, `main` vert) sont de la prose qu'aucun verrou n'impose ; l'auto-merge
+  est autorisé sur le dépôt et a contourné la clôture le 2026-10-05
+  (#1315) ; une session reste immobilisée environ un quart d'heure après son
+  merge à attendre le CI de `main` et le déploiement (#1697, 2026-10-25),
+  comme l'exige la règle générale « un merge à la fois, le déploiement
+  constaté avant le merge suivant » ([[D-287]] §2, plan §5), héritée de la
+  parade de [[D-248]] au temps de l'auto-déploiement ; le 2026-10-20, #1590 a
+  été mergée sur un vert vieux de sept heures et `main` est resté rouge
+  trois quarts d'heure.
+
+**§1 — Libération dès le merge.** Dès maintenant, sans outillage, et de
+nouveau en repli (§5) : sauf migration, authentification ou
+`.coderabbit.yaml`, une session fait `/clear` dès que sa PR est mergée ; le
+déploiement converge seul sur la prochaine tête verte ([[D-248]]). Aucune
+attente du CI de `main` ni du déploiement ordinaire entre deux merges.
+Pendant l'essai de l'intégrateur, la session se libère dès « prête » (§2).
+Cette libération ne lève ni le gel de [[D-374]] §5 (aucun merge tant qu'un
+run `release-db` n'est pas conclu, jusqu'à la livraison du §1 et du §4 de
+[[D-374]]), ni, après le merge d'une migration, « un merge à la fois,
+déploiement constaté avant le merge suivant ».
+
+**§2 — L'intégrateur.** Une session « intégrateur », seule occupante de la
+copie principale, merge les PR que les files déclarent prêtes. Une file
+déclare sa PR par un commentaire « prête @<sha> » qui porte le chemin de son
+fragment de handoff et ses exceptions ; puis elle fait `/clear`. Une PR n'a
+qu'un responsable actif à la fois. Avant chaque merge, l'intégrateur joue :
+la sonde release-db ([[D-374]] §4) et celle du déploiement, le contrôle
+conditionnel sur l'arbre fusionné (§4), la relecture de la tête de
+`docs/DECISIONS.md`, la revue CodeRabbit sur le sha déclaré et le verdict de
+chaque remarque ; puis `gh pr merge --squash --match-head-commit <sha>` avec
+le sujet posé, et la suppression de la branche. Il avance la copie
+principale par `git merge --ff-only`, après T1 si le lot touche les
+crochets ; une avance rapide ne réconcilie aucun historique divergent et ne
+relève pas de l'interdit de fusion automatique, et un refus de `--ff-only`
+s'arbitre. Il sert en continu, avec un délai de prise en charge écrit (§5) ;
+sa charge estimée est une charge, pas une plage d'ouverture.
+
+**§3 — Ce qui reste à la file.** Les lots de migration (avec leur release-db
+et leur code consommateur), d'authentification et de `.coderabbit.yaml`
+restent mergés par leur file jusqu'au bout : un lot = une session. Une
+remarque CodeRabbit arrivée après « prête » revient à la file, qui reprend
+depuis son handoff ; l'intégrateur ne corrige pas une PR.
+
+**§4 — Le contrôle avant merge.** Un script local en lecture seule, appelé
+par `wn-merge`, joué seulement si `main` a bougé depuis la base du dernier
+vert de la PR : arbre fusionné par `git merge-tree --write-tree` (un conflit
+fait échouer), sans checkout, sans merge, sans push ; empreinte
+d'environnement vérifiée (lock, client Prisma) avant de relier
+`node_modules` ; gardes rapides sur liste explicite (numérotation, matrice,
+invariants CI, bancs `*.guard.test.*` et bancs de balayage) ; « indéterminé »
+distinct d'un défaut ; verdict mis en cache par couple (base, tête),
+invalidé si un sha change ; une PR qui répare `main` passe sans `main`
+vert ; un signal de chevauchement, sans refus, liste les PR ouvertes qui
+touchent les mêmes chemins. Aucun check requis ajouté : la protection de
+`main` ne change pas. Mesure sur trente passages (durée p50 et p95, part de
+rejeux, défauts utiles, faux refus) avant toute extension ; un faux refus
+d'une PR de réparation impose de corriger le mécanisme avant d'étendre.
+
+**§5 — Essai et repli.** Essai de sept jours actifs et trente PR ordinaires.
+Mesure : attente imputable à l'intégrateur entre « prête » et le merge,
+médiane visée deux minutes, p95 cinq minutes ; le délai de prise en charge
+écrit est de cinq minutes, et un dépassement est une PR prête qui attend
+au-delà faute d'intégrateur disponible. Trois dépassements déclenchent le
+repli, sans nouvel arbitrage : les sessions reprennent leurs merges avec la
+même liste de sondes et le même contrôle. Un merge hors liste constaté
+pendant l'essai est consigné au bilan.
+
+**§6 — Auto-merge.** `allow_auto_merge` passe à faux : réglage du
+responsable, constaté sur le dépôt ; jamais d'auto-merge sur une PR de lot
+([[D-287]] §2 ; arbitrage du 2026-10-05 après #1315).
+
+**§7 — Les textes.** `docs/ROLES_MACHINES.md`, `CLAUDE.md` (§ Début de
+session, § PR, CI, merge), `docs/claude/REGLES_PR_MERGE.md` et
+`pr-revue-et-release-db.md` §1.10 et §2 mis d'accord sur le rôle de la copie
+principale ; `wn-merge` porte les sondes et le contrôle. Lot d'outillage
+joué après [[D-372]], pour que l'intégrateur ne reçoive qu'un régime de
+clôture, et après la sonde `release-db` de [[D-374]] §4, qu'il joue avant
+chaque merge.
+
+**Ce qu'elle ne décide pas.** Un check requis supplémentaire (option du
+responsable) ; une file de merge GitHub (fermée à un dépôt de compte
+personnel) ; la protection `strict` (écartée, `REGLES_PR_MERGE.md`) ; des
+worktrees permanents ; les conflits de texte entre PR.
+
+**Effet sur le plan.** §5 : « un merge à la fois » et « déploiement constaté
+avant le merge suivant » restent autour d'une migration, hors phase 1 de
+[[D-374]] ; mise à jour datée. Aucune fiche dans cette PR.
+
+### D-372 — Le contrôle de clôture n'exige plus que le fragment de handoff créé par la PR ; le journal de session redevient un résumé sur demande (H23 amendée)
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrage du responsable du 2026-10-25, sur question à
+  options, qui rouvre son arbitrage du 2026-10-18 (fiche H23 : « les deux
+  éléments restent exigés ») sur des faits postérieurs ; précisé par la
+  contre-revue Codex (lecteurs du journal, lot unique) ; texte de registre
+  rédigé dans le lot.
+- Domaine : `scripts/wn-controle-cloture.mjs` (E56, H23), son étape
+  « Contrôle de clôture » dans `.github/workflows/ci.yml` (nom et
+  commentaire) et `scripts/wn-cycle.mjs` ; skills `wn-finish`, `wn-lot`,
+  `wn-merge`, `wn-pr`, `wn-handoff` ; prompt
+  `.github/prompts/wn-finish.prompt.md` ; lecteurs du journal (`wn-docs`,
+  `wn-hygiene`, skill de reprise `wn`, qui en lit la « prochaine action »,
+  agent `wn-fable`, `scripts/wn-context-pack.mjs` et son banc
+  `context-pack-density.test.mjs`, `CLAUDE.md` § Début de session) ;
+  convention du handoff courant (`docs/claude/handoffs/README.md`) ;
+  `.claude/rules/docs-changelog.md`,
+  `.claude/rules/pr-revue-et-release-db.md` ; `.coderabbit.yaml` (contrôle
+  d'accompagnement `pre_merge_checks`).
+- **Amende** H23 (plan) ; pour la part `SESSION_LOG.md`, la règle « la
+  clôture passe avant la PR » de `docs-changelog.md` ; et la convention « le
+  handoff courant est le dernier au tri » (`docs-changelog.md`,
+  `docs/claude/handoffs/README.md`), qui devient « le dernier handoff de la
+  branche ».
+- **Ne touche pas** : le handoff, toujours exigé, en huit rubriques ; la
+  dispense des PR purement documentaires ; le caractère bloquant du
+  contrôle ; `SESSION_LOG.md`, qui reste au dépôt, append-only.
+- Faits postérieurs au 2026-10-18 : du 2026-10-18 au 2026-10-26, 128 commits
+  et 1 281 lignes ajoutées (aucune retirée) dans `SESSION_LOG.md` ; le
+  2026-10-24, l'entrée de #1673 rangée deux fois au milieu du fichier par
+  des fusions de `main` ; dans les squashes de #1590 et #1674, une entrée
+  insérée en silence au milieu du fichier ; le handoff porte déjà
+  l'information, sans conflit.
+
+**§1 — La règle.** Le contrôle de clôture (`verdictCloture`) n'exige que le
+fragment de handoff créé par la PR — créé, pas retouché. L'entrée de
+`SESSION_LOG.md` n'est plus exigée. Le contrôle reste bloquant pour toute PR
+qui touche du code, avec la même dispense pour une PR documentaire.
+
+**§2 — Le journal de session.** `SESSION_LOG.md` redevient un résumé écrit
+sur demande (« résumé de session », `CLAUDE.md` § Fin de session),
+append-only. `/wn-finish` et `/wn-lot` n'y écrivent plus que sur demande. Sa
+compaction (`/wn-compact-sessionlog`) est gelée. `/wn`, `wn-context-pack` et
+le début de session lisent le dernier handoff créé par la branche courante ;
+sur une branche qui n'en a pas encore créé, le dernier handoff du lot
+repris, désigné par la tâche, et à défaut le dernier au tri sur `main`.
+
+**§3 — Un seul lot.** Producteurs, consommateurs, bancs
+(`wn-controle-cloture.test.mjs`, `wn-cycle.test.mjs`), messages et libellés
+CI changent dans le même lot, pour qu'aucune session ne reçoive deux régimes
+de clôture ; joué avant la mise en place de l'intégrateur ([[D-373]]). La PR
+touche `.coderabbit.yaml` : revue `wn-reviewer` avant le merge ([[D-291]]
+§4). Réversibilité totale : rétablir la condition sur `SESSION_LOG.md` dans
+`verdictCloture` et `wn-cycle.mjs`, puis l'écriture par `/wn-finish` et
+`/wn-lot`.
+
+**Ce qu'elle ne décide pas.** Le plan, le registre, `FEATURE_FLAGS` ; un
+journal de session en fragments (écarté).
+
+**Effet sur le plan.** H23 : mise à jour datée ; critère de fin inchangé
+(« une PR de lot sans clôture est refusée »), la clôture se réduisant au
+fragment de handoff créé par la PR.
+
+### D-371 — Les mises à jour datées du plan sortent en fragments, un fichier par mise à jour ; le plan reste unique, fiches et tables comprises (annexe à D-285 §1)
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrage du responsable du 2026-10-25, sur question à
+  options, contre la recommandation de l'audit (qui proposait de sortir aussi
+  les états « livré » des tables) ; précisé par la contre-revue Codex ; texte
+  de registre rédigé dans le lot.
+- Domaine : `docs/claude/PLAN_WELLNEURO.md` et un dossier de journal
+  `docs/claude/plan-journal/<fiche>/` ; [[D-285]] §1 et §2.
+- **Annexe à [[D-285]] §1** : le plan reste le seul fichier de plan ; ses
+  lignes « Mise à jour » datées deviennent des fragments annexés.
+- **Ne touche pas** : la place des fiches et des tables, qui restent dans le
+  fichier unique et que les PR de code continuent d'écrire (états
+  « livré ») ; seules les lignes « Mise à jour » datées sortent des fiches,
+  remplacées par une ligne de renvoi (§1) ; la forme opaque ([[D-285]] §2) ;
+  aucun code applicatif.
+- Contexte : le plan fait 480 Ko, dont un tiers en lignes « Mise à jour » ;
+  plusieurs PR ajoutent des lignes dans la même fiche (neuf PR en trois jours
+  dans H15) ; 123 des 170 commits mergés sur `main` depuis le 2026-10-18,
+  code et doc confondus, touchent le plan.
+
+**§1 — Le journal.** Chaque « Mise à jour (date…) » d'une fiche s'écrit dans
+un fichier `docs/claude/plan-journal/<Fnn|Hnn>/<date>-<slug>.md`, un fichier
+par mise à jour, sans pilote de fusion « union », identifiant unique, jamais
+réécrit : on ajoute un fragment, on n'en modifie pas. La fiche garde une
+ligne de renvoi permanente vers son dossier, posée une fois et jamais
+rééditée. Les lignes « Mise à jour » posées hors d'une fiche (en-tête, §0 à
+§11) restent en place : le journal ne vise que les fiches Fnn et Hnn. Un
+script nouveau, livré au lot, lit une fiche avec son journal.
+
+**§2 — La bascule.** Un script unique sort les lignes existantes des fiches
+vers les fragments, avec un contrôle aller-retour à l'octet près (le plan se
+reconstruit à partir des fragments, les lignes hors fiche inchangées). Les
+fragments s'écrivent ensuite dans le geste de clôture existant du lot, en
+copie principale comme en worktree, ou dans la PR de doc qui met le plan à
+jour, au format du §1 ; aucune commande d'écriture nouvelle. La bascule se
+joue après le lot de [[D-372]] : elle modifie le même geste de clôture sans
+ajouter d'exigence au contrôle de clôture.
+
+**§3 — Le garde.** Un garde avertit d'une modification ou d'une suppression
+dans le journal, sans bloquer : une donnée sensible doit pouvoir être retirée
+d'urgence.
+
+**§4 — Ce qui reste dans le plan, et sa mesure.** Les PR de code continuent
+d'écrire les états « livré » dans les fiches et les tables ; les conflits sur
+les tables restent. Réexamen après deux semaines et au moins quarante PR de
+code : si au moins deux CI complets ont été rejoués pour le seul plan, ou si
+au moins 5 % des PR ont subi une réparation du plan, la sortie des états
+« livré » (écartée aujourd'hui) est reposée au responsable. Le lot du
+journal n'attend pas ce réexamen.
+
+**Ce qu'elle ne décide pas.** Un découpage du plan en un fichier par fiche,
+ni des tables générées (écartés) ; les numéros `D-xxx` ([[D-370]]).
+
+**Effet sur le plan.** Pas de fiche dans cette PR : celle du lot de bascule
+se pose à son ouverture ; la règle d'écriture des « Mise à jour » change à
+ce lot, le fichier reste.
+
+### D-370 — Le numéro d'une décision se réserve à la rédaction, par une référence créée sur GitHub ; le garde tolère un trou réservé, en avertissement ; le registre se range par numéro
+
+- Date : 2026-10-25
+- Statut : accepté — arbitrage du responsable du 2026-10-25, sur question à
+  options (réservation à la rédaction, trou toléré), dans l'audit du travail
+  de plusieurs sessions en parallèle (dossier tenu hors dépôt) ; précisé par
+  la contre-revue Codex ; texte de registre rédigé dans le lot.
+- Domaine : gouvernance du registre (`docs/DECISIONS.md`) ; garde
+  `scripts/lib/decisions-numerotation.mjs` ; règle « le numéro se prend au
+  merge » (`docs/claude/REGLES_PR_MERGE.md`,
+  `.claude/rules/pr-revue-et-release-db.md` §2,
+  `docs/claude/PLAN_WELLNEURO.md` §0, §5 et §10, [[D-287]] §2).
+- **Amende** l'en-tête de `decisions-numerotation.mjs` : la phrase « un
+  numéro ne se réserve qu'au merge », la consigne « annoncer le numéro qu'on
+  prend », le refus du trou (un trou réservé devient un avertissement), le
+  commentaire et le message du refus « désordre » (rang numérique, plus « en
+  tête ») et la liste des gestes de retrait, qui reçoit un quatrième geste :
+  la pierre tombale d'un numéro réservé puis abandonné. Amende aussi la
+  consigne d'en-tête de `docs/DECISIONS.md`, qui devient « à son rang
+  numérique, du plus haut au plus bas » ; la ligne correspondante de la
+  table du §2 de `pr-revue-et-release-db.md` ; la section « le sujet est à
+  poser » de `REGLES_PR_MERGE.md` pour sa cause ; [[D-287]] §2 et le plan
+  aux endroits qui écrivent « réservé dans main » (§0 « La base », §5
+  point 2, N-5, §10).
+- **Ne touche pas** : aucun workflow ne part d'une référence de réservation ;
+  aucun droit d'écriture neuf pour le CI ; la protection de `main` ; aucune
+  donnée autre qu'un numéro dans une réservation (dépôt public) ; les trois
+  gestes de retrait d'une décision déjà écrits dans l'en-tête du garde.
+- Contexte : le numéro est choisi à la main sur `main` et n'est sûr qu'au
+  merge. Le 2026-10-24, cinq PR ont pris D-357 en treize minutes ; le
+  2026-10-25, deux PR ont pris D-361 à une minute d'écart depuis la même
+  version de `main` ; #1693 a renuméroté au moins quatre fois avant d'être
+  mergée sous D-364. Chaque renumérotation reprend des renvois et rejoue un
+  CI, complet pour une PR de code, avec T3 pour une migration.
+
+**§1 — La réservation.** Au moment d'écrire une décision, un script lit le
+dernier numéro sur `main` et les réservations existantes, et crée par l'API
+GitHub la référence `refs/tags/reserve/D-N` du premier numéro libre. Seule
+la lecture d'une référence déjà existante fait passer au numéro suivant ; un
+refus de création pour une autre cause (indisponibilité, délai réseau,
+droit) rend « inconnu », sans nouvel essai automatique : le rédacteur
+relance. Pour plusieurs numéros, ceux qui ont été créés restent réservés
+même si une création suivante échoue ; le script rend le résultat partiel.
+Une réservation ne porte que le numéro. Quand une question est tranchée par
+le responsable, celui qui en rédige la décision réserve le numéro à ce
+moment et le réutilise.
+
+**§2 — Le garde.** `decisions-numerotation.mjs` continue de refuser doublon
+et désordre. Sur une PR, un trou couvert par une réservation est toléré et
+s'affiche en avertissement « en vol » ; un trou sans réservation est refusé.
+Sur `main`, un trou n'est jamais rouge : son verdict ne dépend d'aucune
+référence distante et il s'affiche en avertissement. Trois trous est un
+seuil d'affichage du garde, pas une capacité. Un numéro réservé puis
+abandonné se ferme dans le registre par une pierre tombale (« numéro non
+utilisé », datée) et ne se réutilise jamais.
+
+**§3 — Le registre.** Une décision s'insère à son rang numérique dans la
+section active, rangée du numéro le plus haut au plus bas ; le registre est
+rangé par numéro, plus strictement par date, et chaque entrée porte sa date
+d'adoption sur sa ligne « Date ». Un conflit de texte en tête du registre
+reste possible et se résout à la main ; un registre en fragments se
+réexamine après deux semaines de mesure.
+
+**§4 — L'avertissement d'accompagnement.** Une étape non bloquante du job
+`controles`, sur `pull_request` et pour une PR non documentaire seulement,
+signale une décision ajoutée sans réservation : une renumérotation coûtera
+un CI complet. Elle ne vise que ce cas ; aucune PR de doc préalable n'est
+prescrite ; aucun refus bloquant ; tout durcissement exigerait une nouvelle
+décision, au vu de deux semaines de mesure.
+
+**§5 — Amorçage.** Jusqu'à la livraison du script, le numéro se prend comme
+aujourd'hui, au merge, sur la tête de `docs/DECISIONS.md` relue juste
+avant ; il s'annonce au moment où on le prend, et le sujet du squash se pose
+par `--subject`. La présente décision et les cinq qui la suivent sont
+numérotées à la main.
+
+**§6 — Le lot.** Script, banc, garde, l'étape d'avertissement de `ci.yml`,
+les deux règles, [[D-287]] §2 et le plan ; aucun job de nettoyage : une
+réservation reste après le merge. Revue `wn-reviewer` (garde du CI).
+Réversibilité totale : supprimer les réservations, revenir au garde
+précédent.
+
+**Ce qu'elle ne décide pas.** Le conflit de texte en tête du registre ; un
+registre en fragments ; un ruleset GitHub qui protège `reserve/D-*` (réglage
+du responsable, après le lot).
+
+**Effet sur le plan.** §10 : mise à jour datée ; aucune fiche dans cette PR.
 
 ### D-369 — La page du protocole servi porte « Validé par votre praticien le … » (lettre ba)
 
