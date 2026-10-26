@@ -8,7 +8,7 @@
 
 ## Objectif
 
-Écrire au registre les arbitrages du responsable des 2026-10-25 et 26 sur le
+Écrire au registre les arbitrages du responsable des 25 et 26 octobre 2026 sur le
 travail en parallèle de quatre sessions (neuf questions à options), après la
 contre-revue du dossier d'audit ; le dossier lui-même reste hors dépôt.
 

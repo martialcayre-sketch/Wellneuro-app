@@ -1,6 +1,6 @@
 ### Six décisions sur le travail de plusieurs sessions en parallèle (D-370 à D-375, 2026-10-26)
 
-Arbitrages du responsable des 2026-10-25 et 26, sur questions à options, après
+Arbitrages du responsable des 25 et 26 octobre 2026, sur questions à options, après
 un audit du travail en parallèle de quatre sessions (dossier tenu hors dépôt)
 et sa contre-revue. Documentation seule : aucun code, aucune migration, aucun
 drapeau.

@@ -10,7 +10,7 @@
 - Statut : accepté — arbitrage du responsable du 2026-10-25, sur question à
   options (journal d'abord, tolérance ensuite), dans l'audit du travail de
   plusieurs sessions en parallèle (dossier tenu hors dépôt) ; précisé par la
-  contre-revue Codex des 2026-10-25 et 26 ; texte de registre rédigé dans le
+  contre-revue Codex des 25 et 26 octobre 2026 ; texte de registre rédigé dans le
   lot.
 - Domaine : `.claude/hooks/git-freshness.mjs` (garde-fou du responsable) et
   son banc, `.claude/rules/hooks-garde-fous.md`, `CLAUDE.md` § Début de
