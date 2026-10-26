@@ -111,9 +111,9 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
 - Dernière décision au registre avant ce plan : D-284. Ce plan entre avec
   D-285. Toute décision neuve s'écrit « D-xxx » avec sa lettre ; son numéro se
   réserve dans main au moment de l'écrire.
-- Lettres prises : a à az, ba à bh, ca à cq. Lettres déjà écrites en D-xxx : i
+- Lettres prises : a à az, ba à bh, ca à cr (cr par D-382, 2026-10-26). Lettres déjà écrites en D-xxx : i
   (D-280, pour les seuils de 8B seulement), ck (D-282, G3 clos par #1416), cp et l pour
-  l'essentiel (D-283), cq (D-285). Prochaine lettre libre : cr.
+  l'essentiel (D-283), cq (D-285). Prochaine lettre libre : cs.
 - Production : 105 migrations appliquées, schéma à jour, aucune migration en
   vol (constat du 2026-10-13) ; aucune branche distante ne porte de migration
   absente de main.
@@ -351,7 +351,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Rang** : 0.
 - **Portes, préalables** : aucun ; effectif de masquage acquis ; sa décision (F25), geste de rang 0, se merge avant le comptage : D-298.
 - **Migration, release-db** : non.
-- **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
+- **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, la prochaine lettre libre si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
 - **Mise à jour (2026-10-24, outil livré)** : script de conteneur `web/scripts/constatAvantT0.ts`, en lecture seule (il refuse de lire hors `default_transaction_read_only`). Population : dossiers actifs portant au moins une assignation, sans épisode T0. Les préconditions s'évaluent par le chemin des trois routes (`preconditionsT0PourPatient`, jalon T0). Sortie en agrégats, masquée par `agregerConstatAvantT0` (D-298) : effectif, avec et sans T0, bloqués et prêts, dossiers par condition dure manquante, quartiles d'ancienneté des bloqués, sans tranche. Reste : le constat en conteneur après déploiement, puis la D-xxx du délai.
 - **Mise à jour (2026-10-24, constat versé)** : lecture par conteneur en lecture seule (one-off-5061, image 172c4672), agrégats D-298, dossiers de test réels compris (D-075).
@@ -922,6 +922,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : une signature par famille, de la main du responsable.
 - **Critère de fin** : familles signées ; aucune borne inventée.
+- **Mise à jour (2026-10-26, cadre écrit)** : D-382 pose le cadre. La famille est le bloc de justification d'un des quinze panels hérités, sous son libellé ; les deux non indiqués entrent comme blocs d'exclusion signés. Chaque fiche exige « ce que la famille explore », tiré d'un claim relu ; la prudence n'y entre que sourcée. Les textes sont tenus hors dépôt, au dépôt la date et l'empreinte de chaque fiche signée ; contrôle logiciel avec ax. Re-signature de la table ensuite, sans changer de règle, par un lot propre. L'ordre des niveaux et le niveau des examens partagés sortent d'aw (lettre cr, avant ax). Restent dus : les quinze fiches et leurs signatures, puis la re-signature.
 
 #### F37 · az : notice patient du bilan, et remise du document
 - **Identifiant, piste** : lettre az ; trackc.
@@ -1782,7 +1783,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F35 · ax : lot du bilan hiérarchisé
 - **Identifiant, piste** : lettre ax ; le médecin ne saisit rien ; trackc.
 - **Rang** : 6 proposé [Hypothese] ; le rang antérieur était « 4 au plus tôt, après BP-04 et BP-16 » ; BP-16 au rang 5 le repousse.
-- **Portes, préalables** : av, aw ; vue par analyte (F50) ; BP-04, BP-16 ; D-q et J2-med (F38) ; si migration, G-7 et porte 9 ; registre et note patient avant la table, TRUST avant le drapeau qui la lit ; BP-13 s'il porte des traitements structurés ou un IMC, sans effet sur le rang 6 proposé.
+- **Portes, préalables** : av, aw ; cr (D-382 §7) ; vue par analyte (F50) ; BP-04, BP-16 ; D-q et J2-med (F38) ; si migration, G-7 et porte 9 ; registre et note patient avant la table, TRUST avant le drapeau qui la lit ; BP-13 s'il porte des traitements structurés ou un IMC, sans effet sur le rang 6 proposé.
 - **Migration, release-db** : selon ; si oui, au rang 6.
 - **Décisions, textes** : D-xxx du lot ; tout composeur au-delà de D-190 §3 demande sa décision ; les questions écartées se tranchent dans le texte de la lettre (voir Mise à jour). La version « pour le laboratoire » n'est pas proposée tant que la question du destinataire n'est pas lue ; un radar dans le document attendrait la liste fermée des axes et la correction « non mesuré » (lettre ac).
 - **Critère de fin** : bilan composé sur fixture ; garde non prescriptive tenue ; aucun mot proscrit sur aucune surface.
@@ -2264,7 +2265,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd ; cb fait le 2026-10-26 (D-379), le jeu d'illustrations reste à valider avant cc |
 | ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
 | ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
-| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge ; texte d'az fait le 2026-10-26 (D-380) ; aw attend la liste des familles et leurs claims, de la main du responsable |
+| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge ; texte d'az fait le 2026-10-26 (D-380) ; cadre d'aw fait le 2026-10-26 (D-382) ; restent les quinze fiches signées, hors dépôt, puis la re-signature de la table |
 | cm | F51 | cj ; fait le 2026-10-23 (D-348) |
 | at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; reportés en D.1 le 2026-10-15 |
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
@@ -2776,7 +2777,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 
 ## §10 Décisions et textes à écrire, consolidés
 
-« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est cr, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
+« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est la prochaine lettre libre, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
 
 **Mise à jour (2026-10-26)** : D-370. Le numéro se réserve à la rédaction par une référence `refs/tags/reserve/D-N` créée sur GitHub ; le garde tolère un trou réservé, en avertissement, et le registre est rangé par numéro. Jusqu'à la livraison du script, le numéro se prend au merge, sur la tête de `docs/DECISIONS.md` relue juste avant ; il s'annonce au moment où on le prend, et le sujet du squash se pose par `--subject`. La phrase « se réserve dans main au moment de l'écrire » ne vaut qu'après la livraison.
 
@@ -2844,7 +2845,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | at | date de naissance lue par l'extraction ; remplacée le 2026-10-22 (D-342 §3) | registre ; texte patient de la main du responsable | 1 au plus tôt [Hypothese] | F45 |
 | au | drapeaux du sommeil à l'écran | la main du responsable | 3 au plus tôt [Hypothese] | H56 |
 | av | contenu biologique du document médecin ; fait le 2026-10-15 (D-311) | la main du responsable | 0 | F33 |
-| aw | familles du bilan | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
+| aw | familles du bilan ; cadre fait le 2026-10-26 (D-382) | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan ; texte fait le 2026-10-26 (D-380) | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
@@ -2869,6 +2870,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | cm | axes biologiques, liste fermée ; fait le 2026-10-23 (D-348) | la main du responsable | 1 [Hypothese] | F51 |
 | cn | courbe d'analyte | registre, sous c | 5 au plus tôt [Hypothese] | F56 |
 | co | réexamen de l'AIPD ; fait le 2026-10-15 (D-313) | la main du responsable (conclusion) | 0 [Hypothese] | F68 |
+| cr | ordre des niveaux du bilan et niveau des examens partagés (D-382 §7) | la main du responsable | avant ax [Hypothese] | F35 |
 
 ### D-xxx de lot et de fonction (biologie)
 
@@ -2892,7 +2894,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | D-xxx | objet | de qui | rang | fiche |
 |---|---|---|---|---|
 | de cq | forme du plan unique : D-285, écrite | registre | 0 | H04 |
-| du délai avant T0 | délai, après le comptage ; lettre cr si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
+| du délai avant T0 | délai, après le comptage ; prochaine lettre libre si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
 | de cadrage ca | refonte du sommeil, présentation seule | la main du responsable | 0 | H17 |
 | par indicateur hebdomadaire | nom, source, échelle, nature, ce que le praticien en lit (D-366 §2) | la main du responsable | 0 (instruction) | H19 |
 | de seuils_points de Q_ALI_01 | décision clinique sourcée | la main du responsable | 1 [Hypothese] | H40 |

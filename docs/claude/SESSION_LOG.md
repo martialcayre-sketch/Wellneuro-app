@@ -11858,3 +11858,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
 
 **Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
+
+## 2026-10-26 — File D : lettre aw, cadre des familles (D-382)
+
+**Fait.** Dossier de propositions sur les familles (Codex, hors dépôt) vérifié contre main : inventaire des quinze panels et des quinze règles exact ; trois décisions dites absentes, à tort (commit antérieur). Six arbitrages : famille = bloc hérité du panel, libellés gardés, deux blocs d'exclusion, exploration exigée et prudence seulement sourcée, empreinte au registre avec contrôle à ax, niveaux hors d'aw (lettre cr). Lettre validée telle quelle.
+
+**Écarté.** Familles par axes (attendrait F53) ; regroupements de panels (packs sous un autre nom, D-296 §3) ; constat lexical du document patient (phrase « ni une ordonnance » voulue et testée).
+
+**Prochaine action.** Dossier privé des quinze fiches, claims relus par conteneur.
+
+**Ouvert.** Signatures des fiches ; re-signature de la table ; lettre cr.
