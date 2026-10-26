@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
+import { INFORMATION_MEDECIN } from './informationMedecin';
 import { SIGNATURE_PRATICIEN } from './signature';
 import { genererCourrierComplement, PREFIXE_ANCRAGE_COMPLEMENT } from './courrierComplement';
 
@@ -15,7 +16,7 @@ function generer(lignes: { intitule: string }[], patientNom = 'Sophie Nicola') {
   });
 }
 
-describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7), lignes revalidées le 2026-10-26 (D-383)', () => {
+describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7), lignes revalidées le 2026-10-26 (D-383), information du médecin (D-377)', () => {
   it('rend exactement le texte validé, liste comprise', () => {
     const genere = generer([
       { intitule: 'Explorer un apport ciblé' },
@@ -32,6 +33,7 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
       '- Explorer un apport ciblé.\n- Seconde intention.',
       'Ce courrier vous est remis par la personne elle-même. Vos observations éventuelles seront les bienvenues ; '
         + 'il ne remplace pas une consultation sans délai si son état le demande.',
+      INFORMATION_MEDECIN,
       'Avec mes remerciements pour votre lecture. Courrier préparé le 2026-10-24.',
       SIGNATURE_PRATICIEN,
     ].join('\n\n'));

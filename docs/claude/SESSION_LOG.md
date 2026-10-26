@@ -11896,3 +11896,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Place 7 (ak) dans sa fenêtre, du 2026-11-01 au 2026-11-07.
 
 **Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).
+
+## 2026-10-26 — Lot (e) de D-283 : l'information du médecin dans chaque lettre (D-377)
+
+**Fait.** La phrase de D-377 entre dans les trois lettres au médecin (adressage, biologie, compléments), avant la formule de politesse, depuis une constante unique qui lit l'adresse des droits. Aussi : t45 trouvé déjà livré par sa session (#1716), page des instruments des 12 besoins close (v13), ligne t33 de la page file A remise à jour.
+
+**Écarté.** La phrase juste avant la signature, après la politesse ; la constante dans `signature.ts`, atteint côté client.
+
+**Prochaine action.** T3, CI, CodeRabbit, merge, release-db approuvée (chemin clinique), déploiement observé.
+
+**Ouvert.** Code de (a) (D-378), lié à bg.
