@@ -60,6 +60,26 @@ export function provenanceMomentumEtablie(p: ProvenanceMomentum | null | undefin
   return !!p && !!p.depart.date && !!p.arrivee.date;
 }
 
+/**
+ * La provenance d'une figure qui porte plusieurs chiffres (le radar des 12
+ * besoins, r3_09) : les questionnaires de chacun, une fois, dans l'ordre reçu.
+ * Seules les provenances établies y entrent — ce sont celles des valeurs
+ * tracées. Deux versions ne se résument pas en une : chacune est dite
+ * (A8-3 interdit de les soustraire, pas de les nommer) — sans quoi la figure
+ * resterait tracée sans source.
+ */
+export function fusionnerProvenances(ps: readonly (ProvenanceChiffre | null | undefined)[]): ProvenanceChiffre | null {
+  const etablies = ps.filter(provenanceEtablie);
+  if (etablies.length === 0) return null;
+  const sources = new Map<string, SourceDatee>();
+  for (const p of etablies) for (const s of p.sources) if (!sources.has(s.idQuestionnaire)) sources.set(s.idQuestionnaire, s);
+  const versions = [...new Set(etablies.map(p => p.versionCalcul))];
+  return {
+    sources: [...sources.values()],
+    versionCalcul: versions.length === 1 ? versions[0] : versions.map(v => v ?? VERSION_ABSENTE).join(', '),
+  };
+}
+
 export function lignesProvenance(p: ProvenanceChiffre): string[] {
   const sources = p.sources.map(s => `${s.idQuestionnaire} (réponse du ${dateCourte(s.dateReponse as string)})`);
   return [`${sources.length > 1 ? 'Questionnaires' : 'Questionnaire'} : ${sources.join(', ')}`, ligneVersion(p.versionCalcul)];
