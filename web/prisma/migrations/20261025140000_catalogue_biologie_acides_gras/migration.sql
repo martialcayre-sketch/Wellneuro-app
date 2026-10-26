@@ -4,12 +4,13 @@
 -- au vocabulaire (« % » et « ratio » y sont déjà).
 --
 -- Lus en production et restés « inconnu » (constat par conteneur du
--- 2026-10-25, agrégats) : un profil, sur un seul import, de vingt acides en %
--- (l'intervalle du laboratoire imprimé), l'indice oméga 3, et trois rapports
--- sans unité. L'indice oméga 3 et le rapport AA/EPA ont déjà leur fiche
--- (D-245 §5) : seuls entrent les vingt acides et les deux rapports restants
--- (arbitrage du responsable, 2026-10-25). Le compte rendu ne nomme pas la
--- matrice : la fiche ne la nomme pas non plus.
+-- 2026-10-25, agrégats ; effectif : 1 dossier, répartition masquée (moins
+-- de cinq dossiers), D-298 §3) : un profil de vingt acides en %, l'indice
+-- oméga 3, et trois rapports sans unité. L'indice oméga 3 et le rapport
+-- AA/EPA ont déjà leur fiche (D-245 §5) : seuls entrent les vingt acides et
+-- les deux rapports restants (arbitrage du responsable, 2026-10-25). Le
+-- compte rendu ne nomme pas la fraction sanguine analysée : la fiche ne la
+-- nomme pas non plus.
 --
 -- Libellé = nom courant de l'acide, rien de plus (ni notation lipidique, ni
 -- famille) : ce que le compte rendu imprime, orthographié. Les deux rapports

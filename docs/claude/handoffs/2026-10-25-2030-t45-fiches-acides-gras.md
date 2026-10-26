@@ -17,8 +17,9 @@ attend l'application constatée.
 
 ## Décisions prises
 
-- Constat par conteneur du 2026-10-25 (lecture seule, agrégats) : un profil,
-  un import, 20 acides en %, indice oméga 3 et trois rapports sans unité ;
+- Constat par conteneur du 2026-10-25 (lecture seule, agrégats ; effectif :
+  1 dossier, répartition masquée (moins de cinq dossiers), D-298 §3) :
+  libellés de 20 acides en %, indice oméga 3 et trois rapports sans unité ;
   94 analytes ; aucun acte V105 sur les acides gras.
 - Arbitrages du responsable (questions à options), consignés dans `D-370` :
   provenance `saisie_praticien` ; 20 acides + 2 rapports ; nom courant seul ;

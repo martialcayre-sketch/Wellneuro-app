@@ -14,18 +14,19 @@
   aucune borne, aucune plage ([[D-059]]), aucune conversion ([[D-157]]).
 
 **§1 — Source.** Constat par conteneur du 2026-10-25 (lecture seule,
-agrégats, aucun identifiant) : un profil sur un seul import, extrait le
-2026-10-13 — vingt acides en %, chacun avec l'intervalle du laboratoire
-imprimé, puis « Indice Oméga 3 » (%), « Rapport A. Arachidonique / EPA »,
-« Rapport A. Linoléique / A. DGLA » et « Rapport Oméga 6 / Oméga 3 », ces
-trois sans unité ; 24 lignes « inconnu ». Le compte rendu ne nomme pas la
-matrice. Catalogue : 94 analytes, dont `BIO_AG_ERYTHROCYTAIRES` (profil,
+agrégats, aucun identifiant ; effectif : 1 dossier, répartition masquée
+(moins de cinq dossiers), [[D-298]] §3). Libellés lus, tous « inconnu » :
+vingt acides en %, l'intervalle du laboratoire imprimé, puis « Indice
+Oméga 3 » (%), « Rapport A. Arachidonique / EPA », « Rapport A. Linoléique
+/ A. DGLA » et « Rapport Oméga 6 / Oméga 3 », ces trois sans unité. Le
+compte rendu ne nomme pas la fraction sanguine analysée (membrane
+érythrocytaire ou plasma). Catalogue : 94 analytes, dont `BIO_AG_ERYTHROCYTAIRES` (profil,
 cité par quatre panels, sans composition), `BIO_INDEX_OMEGA3` et
 `BIO_RATIO_AA_EPA`. En V105, aucun acte ne nomme les acides gras.
 
 **§2 — Provenance.** Patron de [[D-261]] et de [[D-361]] :
-`saisie_praticien`, « partielle », la source étant le compte rendu lu en
-production. Aucune plage : les intervalles imprimés restent ceux du
+`saisie_praticien`, « partielle », prélèvement « sang » arbitré, la source
+étant le compte rendu lu en production. Aucune plage : les intervalles imprimés restent ceux du
 laboratoire, jamais copiés au catalogue.
 
 **§3 — Vingt-deux fiches** (migration
@@ -63,7 +64,7 @@ des noms usuels (« EPA », « DHA »…), dont la liste sera préparée et soum
 au responsable avec le second lot. Ils n'entrent au résolveur, avec sa
 re-signature (décision distincte, sur instruction), qu'après l'application
 **constatée** de la migration (clé étrangère d'`analyte_propose`, comme
-[[D-361]] §6). Les 24 lignes déjà lues restent « inconnu » ([[D-356]] §6).
+[[D-361]] §6). Les lignes déjà lues restent « inconnu » ([[D-356]] §6).
 
 ### D-369 — La page du protocole servi porte « Validé par votre praticien le … » (lettre ba)
 
