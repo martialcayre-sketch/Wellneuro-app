@@ -11830,15 +11830,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** aw (familles de la main du responsable) ; lots de code des lettres de la séance.
 
-## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-381)
-
-**Fait.** Migration de #1704 appliquée (release-db 40309999072) et constatée par conteneur. Vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) au résolveur ; re-signature sur l'instruction du responsable (205 entrées, SHA `8ede2a9e…`). AA/EPA et LA/DGLA préparés par leurs opérandes. Dette des bancs agenda inscrite au plan (#1712).
-
-**Écarté.** « AA », « ALA », « acide linolénique » nu, noms sans suffixe, variantes des rapports.
-
-**Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
-
-**Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
 ## 2026-10-25 — J3-12h lot 4 : revue Codex reçue après le merge (D-362)
 
 **Fait.** Codex BLOQUER sur #1701, mergée sans attendre la passe. P1-1 : accusé `courrier_complement` en 404 avant la session, drapeau fermé. P1-2 : fil relu et règle de version rejouée sous le verrou du patient ; la clé étrangère `protocol_drafts → patients` fait attendre toute version neuve (banc 55P03). Contre-épreuves rouges.
@@ -11848,3 +11839,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
 
 **Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
+
+## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-381)
+
+**Fait.** Migration de #1704 appliquée (release-db 40309999072) et constatée par conteneur. Vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) au résolveur ; re-signature sur l'instruction du responsable (205 entrées, SHA `8ede2a9e…`). AA/EPA et LA/DGLA préparés par leurs opérandes. Dette des bancs agenda inscrite au plan (#1712).
+
+**Écarté.** « AA », « ALA », « acide linolénique » nu, noms sans suffixe, variantes des rapports.
+
+**Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
+
+**Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
