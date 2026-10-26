@@ -10,6 +10,9 @@ import { praticienSessionCookie } from './helpers/auth';
 
 const PATIENT_ID = 'PAT_SEED_01';
 const NON_MESURES = new Set([2, 6]);
+// r3_09 : un besoin mesuré servi SANS provenance n'est pas tracé ([[D-333]]
+// §2 règle 1), et son axe ne se dit pas « non mesuré ».
+const SANS_PROVENANCE = 12;
 
 const besoins = Array.from({ length: 12 }, (_, i) => {
   const id = i + 1;
@@ -21,6 +24,10 @@ const besoins = Array.from({ length: 12 }, (_, i) => {
     couverture: mesure ? 40 + id : null,
     niveauPreuve: mesure ? 'B' : 'NON_MESURE',
     sources: [],
+    provenance:
+      mesure && id !== SANS_PROVENANCE
+        ? { sources: [{ idQuestionnaire: 'Q_TEST', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v15' }
+        : null,
     // r3_08 : le motif du non mesuré, servi par la route.
     motifNonMesure: mesure
       ? null
@@ -40,8 +47,11 @@ test.describe('Radar des besoins — un besoin non mesuré n’est pas un zéro 
     const panneau = page.locator('#panneau-besoins');
     const axes = panneau.locator('.recharts-polar-angle-axis');
     await expect(axes.locator('tspan', { hasText: 'non mesuré' })).toHaveCount(2);
-    // Un point par besoin MESURÉ, aucun pour les deux autres.
-    await expect(panneau.locator('.recharts-radar-dots circle')).toHaveCount(10);
+    await expect(axes.locator('tspan', { hasText: 'source non enregistrée' })).toHaveCount(1);
+    // Un point par besoin mesuré À PROVENANCE ÉTABLIE, aucun pour les trois autres.
+    await expect(panneau.locator('.recharts-radar-dots circle')).toHaveCount(9);
+    // La figure ouvre la provenance de ses valeurs tracées (r3_09).
+    await expect(panneau.getByLabel('Source — radar des 12 besoins')).toBeVisible();
     // Le tableau voisin dit toujours « — » pour les deux mêmes besoins
     // ([[D-301]] §1) ; le motif se déplie dessous (r3_08).
     await expect(panneau.getByRole('cell', { name: /^—/ })).toHaveCount(2);

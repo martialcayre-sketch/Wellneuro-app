@@ -11761,6 +11761,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
 
+## 2026-10-26 — r3_09 : ordre fixe des 12 besoins, provenance de l'onglet (Q1)
+
+**Fait.** Tiroir et onglet en ordre fixe B1 à B12, une ligne par strate (Corps, Ancrage, Esprit), clé « Bn · libellé ». Tri « creux d'abord » retiré de la route d'équilibre (D-333 §2 r4). L'onglet sert et ouvre la provenance de chaque valeur. Le radar ne trace pas une valeur sans provenance (« source non enregistrée ») et ouvre ses sources d'un seul geste. Textes validés avant le code.
+
+**Écarté.** Nouvelle D-xxx (Q1 et D-333 suffisent) ; drapeau ; composant de ligne partagé entre les deux tableaux (J3-12b réorganise l'onglet).
+
+**Prochaine action.** CI, bases visuelles si refusées, CodeRabbit, merge ; pages file A et Instruments.
+
+**Ouvert.** r3_15 (F9a), r3_12 (attend o).
 ## 2026-10-26 — Quatre files en parallèle : six décisions (D-370 à D-375)
 
 **Fait.** Arbitrages des 25 et 26 octobre au registre : D-370 numéro réservé à la rédaction ; D-371 mises à jour du plan en fragments ; D-372 clôture par le handoff seul ; D-373 intégrateur unique en essai, libération dès le merge ; D-374 release-db par phases, déployeur retenu tant qu'une migration attend (question D-248 n° 2 rouverte) ; D-375 crochet de fraîcheur, journal puis tolérance. Plan : H23, §5, §10. Documentation seule.

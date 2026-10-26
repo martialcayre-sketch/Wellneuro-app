@@ -351,6 +351,18 @@ describe('GET /api/praticien/equilibre', () => {
       for (const l of json.priorites) expect(l.motifNonMesure === null).toBe(l.couverture !== null);
     });
 
+    // r3_09 (Q1) : ordre fixe, B1 à B12. Seul B9 est mesuré ici : le tri
+    // « creux d'abord » le mettait en tête ([[D-333]] §2 règle 4).
+    it('lignes des 12 besoins : ordre fixe B1 à B12, jamais un tri sur la valeur', async () => {
+      const pss = { P1: '2', P2: '2', P3: '3', P4: '3', P5: '3', P6: '2', P7: '3', P8: '3', P9: '2', P10: '3' };
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-09-12T08:00:00Z'), scoresJson: { rawAnswers: pss }, statutValidite: null },
+      ]);
+      const json = (await (await GET(request())).json()) as { priorites: { besoin: number; couverture: number | null }[] };
+      expect(json.priorites.find(l => l.besoin === 9)?.couverture).not.toBeNull();
+      expect(json.priorites.map(l => l.besoin)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    });
+
     it('plafond appliqué : le booléen seul, ni besoin ni valeur avant plafond (Q9)', async () => {
       plafond.force = true;
       prisma.questionnaireReponse.findMany.mockResolvedValue([had(new Date('2026-10-01T10:00:00Z'))]);
