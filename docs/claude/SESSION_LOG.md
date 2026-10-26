@@ -11761,7 +11761,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
 
-## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-370 à D-372)
+## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
 
 **Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
 

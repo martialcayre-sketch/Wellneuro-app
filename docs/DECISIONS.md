@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-372 — Agenda du sommeil, écran de fin : le merci porte sur l'acte de noter, sans chiffre ; critère des illustrations, indépendantes de la nuit déclarée (lettre cb)
+### D-379 — Agenda du sommeil, écran de fin : le merci porte sur l'acte de noter, sans chiffre ; critère des illustrations, indépendantes de la nuit déclarée (lettre cb)
 
 - Date : 2026-10-26
 - Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
@@ -57,7 +57,7 @@ est petit, hors file C (texte d'un écran existant). cc (H48) perd le
 préalable cb pour le texte ; le jeu validé image par image reste son préalable. Registre
 « Lettres à écrire » : cb fait.
 
-### D-371 — Durées de conservation : le texte patient de D-283 §2, nouvelle version de « Vos données personnelles » (lot (a) de D-283 §10)
+### D-378 — Durées de conservation : le texte patient de D-283 §2, nouvelle version de « Vos données personnelles » (lot (a) de D-283 §10)
 
 - Date : 2026-10-26
 - Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
@@ -99,7 +99,7 @@ clôture automatique et l'archive (lot (b)) ; tout autre texte.
 **Effet sur le plan.** H26 : texte (a) signé ; le lot de code (nouvelle
 version, accusé) reste à ranger, avec celui de bg.
 
-### D-370 — Information du médecin : une phrase au gabarit de chaque lettre (lot (e) de D-283 §10)
+### D-377 — Information du médecin : une phrase au gabarit de chaque lettre (lot (e) de D-283 §10)
 
 - Date : 2026-10-26
 - Statut : accepté — arbitrage du responsable du 2026-10-26, sur question à
