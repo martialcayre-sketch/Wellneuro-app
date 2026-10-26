@@ -10,7 +10,7 @@ import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 // complément ciblé entre à son programme ; la réponse n'est pas attendue.
 //
 // TEXTE VALIDÉ PAR LE RESPONSABLE le 2026-10-24 (arbitrage du lot 3), lignes
-// revalidées le 2026-10-26 ([[D-382]]) : il ne se retouche pas sans nouvelle
+// revalidées le 2026-10-26 ([[D-383]]) : il ne se retouche pas sans nouvelle
 // validation. Chaque ligne est l'intitulé saisi par le praticien, seul — le nom
 // d'ingrédient du catalogue n'y figure plus. Il ne nomme ni la population ni la
 // situation qui appelle le courrier — forme opaque : les situations propres à
@@ -76,7 +76,7 @@ export function genererCourrierComplement(entree: EntreeCourrierComplement): Pre
   const texte = [
     'Docteur,',
     OUVERTURE,
-    // Deux lignes identiques n'en font qu'une, à la première place ([[D-382]]).
+    // Deux lignes identiques n'en font qu'une, à la première place ([[D-383]]).
     [...new Set(lignes.map(ligneDuCourrier))].join('\n'),
     REMISE,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,

@@ -1,4 +1,4 @@
-# Handoff — 2026-10-26 — J3-12h : le courrier complément sans nom d'ingrédient (D-382)
+# Handoff — 2026-10-26 — J3-12h : le courrier complément sans nom d'ingrédient (D-383)
 
 ## Branche et état Git
 
@@ -11,7 +11,7 @@ Livrer le P1-3 de la revue Codex de #1701, écarté dans #1708 tant que le texte
 
 ## Décisions prises
 
-- **D-382** (amende D-358 §1, pour la liste seule) : chaque ligne est `- {intitulé}.`, l'intitulé saisi par le praticien, sans ajout.
+- **D-383** (amende D-358 §1, pour la liste seule) : chaque ligne est `- {intitulé}.`, l'intitulé saisi par le praticien, sans ajout.
 - Deux lignes identiques, espaces de bord retirés, n'en font qu'une, à la première place.
 - La liste tracée (D-358 §2) garde la référence catalogue ; seul le texte change.
 - Numéro pris en max(main)+1 : la réservation de D-370 n'est pas encore outillée. À revérifier avant le merge.
@@ -21,7 +21,7 @@ Livrer le P1-3 de la revue Codex de #1701, écarté dans #1708 tant que le texte
 - `web/src/lib/correspondance/courrierComplement.ts` : `LigneComplement` sans `ingredient`, ligne à l'intitulé seul, fusion des doublons.
 - `web/src/app/api/praticien/protocoles/courrier-complement/route.ts` : `lignesDuCourrier` et la lecture `supplementIngredient` retirées.
 - Tests : `courrierComplement.test.ts` (texte épinglé, doublons), `route.test.ts` (ligne, mock du catalogue retiré).
-- `docs/DECISIONS.md` (D-382), `changelog.d/2026-10-26-j3-12h-courrier-sans-ingredient.md`, `docs/claude/SESSION_LOG.md`.
+- `docs/DECISIONS.md` (D-383), `changelog.d/2026-10-26-j3-12h-courrier-sans-ingredient.md`, `docs/claude/SESSION_LOG.md`.
 
 ## Validations exécutées
 
@@ -39,13 +39,13 @@ Livrer le P1-3 de la revue Codex de #1701, écarté dans #1708 tant que le texte
 
 1. Ouvrir la PR, `wn-attendre-ci` en fond, revue CodeRabbit sur la tête, un verdict par commentaire.
 2. Remettre le bloc Codex et attendre son verdict.
-3. Revérifier le numéro D-382 et l'absence de run release-db en attente, puis merger avec `--match-head-commit`.
+3. Revérifier le numéro D-383 et l'absence de run release-db en attente, puis merger avec `--match-head-commit`.
 4. Constater le déploiement de la tête de main et l'absence du drapeau.
 
 ## Interdits encore actifs
 
 - `WN_COURRIER_COMPLEMENT` reste éteint.
-- Le texte du courrier ne se retouche plus sans nouvelle validation (D-358 §1, D-382).
+- Le texte du courrier ne se retouche plus sans nouvelle validation (D-358 §1, D-383).
 - Forme opaque.
 - Pas de `prisma format`, de migration ni de schéma sans arbitrage.
 - Fixtures Sophie Nicola, Jennifer Martin et Michel Dogné seules.

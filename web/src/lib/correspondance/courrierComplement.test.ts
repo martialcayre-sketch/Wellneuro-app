@@ -15,7 +15,7 @@ function generer(lignes: { intitule: string }[], patientNom = 'Sophie Nicola') {
   });
 }
 
-describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7), lignes revalidées le 2026-10-26 (D-382)', () => {
+describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7), lignes revalidées le 2026-10-26 (D-383)', () => {
   it('rend exactement le texte validé, liste comprise', () => {
     const genere = generer([
       { intitule: 'Explorer un apport ciblé' },
@@ -66,7 +66,7 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
     expect(generer([{ intitule: 'Posologie à revoir' }])).toEqual({ ok: false, raison: 'terme_prescriptif' });
   });
 
-  it('D-382 — deux lignes identiques n’en font qu’une, à la première place', () => {
+  it('D-383 — deux lignes identiques n’en font qu’une, à la première place', () => {
     const genere = generer([
       { intitule: 'Magnésium' },
       { intitule: 'Seconde intention' },

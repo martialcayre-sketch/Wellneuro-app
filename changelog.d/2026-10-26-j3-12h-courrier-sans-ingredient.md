@@ -1,4 +1,4 @@
-### J3-12h : le courrier complément sans nom d'ingrédient (D-382, 2026-10-26)
+### J3-12h : le courrier complément sans nom d'ingrédient (D-383, 2026-10-26)
 
 - Chaque ligne du courrier au médecin est l'intitulé saisi par le praticien,
   seul : le nom d'ingrédient du catalogue n'y figure plus, et la préparation
