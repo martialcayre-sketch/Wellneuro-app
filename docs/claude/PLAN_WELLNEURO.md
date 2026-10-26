@@ -1282,6 +1282,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre bb ; intitulés des trois plans, de la main du responsable.
 - **Critère de fin** : texte accepté ; activation constatée sur un vrai dossier.
 - **Mise à jour (2026-10-26, texte écrit)** : D-384. Le patient lit les trois plans dans le détail du protocole, sous « Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c'est plus dur » (texte validé mot pour mot), pour les actions fermes hors pause ; une action en attente de bilan ou en pause garde son régime actuel, sans ses plans ; l'accueil ne change pas ; « Jour difficile ? » propose le plan de secours. Les plans idéal et de secours entrent dans la carte des gardes ; seules les versions enregistrées sous cette garde les servent. Reste : le lot de code (file C), puis l'activation constatée.
+- **Mise à jour (2026-10-26, marque tranchée, lot 1)** : D-386. Une version sert ses trois plans si elle a été créée après la mise en service constatée de la garde étendue (date de création de la ligne, sans migration ni champ de contrat). Lot 1 : la garde lit aussi les plans idéal et de secours à l'enregistrement, même régime confirmable. Reste le lot 2 (lecture sous drapeau éteint, avec l'instant constaté), puis l'activation.
 
 **File D : gestes du responsable**
 
