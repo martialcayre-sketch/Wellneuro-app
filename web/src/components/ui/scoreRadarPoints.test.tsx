@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { Polygon } from 'recharts';
 
-import { LIBELLE_NON_MESURE, donneesRadarBesoins, estMesure, pointsAvecTrous } from './scoreRadarPoints';
+import {
+  LIBELLE_NON_MESURE,
+  LIBELLE_SOURCE_NON_ENREGISTREE,
+  donneesRadarBesoins,
+  estMesure,
+  pointsAvecTrous,
+} from './scoreRadarPoints';
+
+const SOURCE = { sources: [{ idQuestionnaire: 'Q_TEST', dateReponse: '2026-10-01T10:00:00.000Z' }], versionCalcul: 'v1' };
 
 // [[D-301]] (lettre ac, `DC-24`) : un besoin non mesuré n'est jamais tracé à
 // zéro. Le banc tient la règle à ses deux bouts — la donnée garde l'absence,
@@ -12,14 +20,29 @@ import { LIBELLE_NON_MESURE, donneesRadarBesoins, estMesure, pointsAvecTrous } f
 describe('les données du radar gardent l’absence', () => {
   it('une couverture absente reste absente — jamais 0', () => {
     expect(donneesRadarBesoins([
-      { id: 1, couverture: 62 },
-      { id: 2, couverture: null },
-      { id: 3, couverture: 0 },
+      { id: 1, couverture: 62, provenance: SOURCE },
+      { id: 2, couverture: null, provenance: null },
+      { id: 3, couverture: 0, provenance: SOURCE },
     ])).toEqual([
       { axe: 'B1', value: 62 },
       { axe: 'B2', value: null },
       { axe: 'B3', value: 0 },
     ]);
+  });
+
+  // [[D-333]] §2 règle 1 (r3_09) : une valeur sans provenance n'est pas
+  // tracée, et son axe ne se dit pas « non mesuré ».
+  it('une couverture sans provenance établie n’est pas tracée, et se nomme autrement', () => {
+    expect(donneesRadarBesoins([
+      { id: 1, couverture: 62, provenance: null },
+      { id: 2, couverture: 40, provenance: { ...SOURCE, sources: [{ idQuestionnaire: 'Q_TEST', dateReponse: null }] } },
+      { id: 3, couverture: null, provenance: null },
+    ])).toEqual([
+      { axe: 'B1', value: null, absence: LIBELLE_SOURCE_NON_ENREGISTREE },
+      { axe: 'B2', value: null, absence: LIBELLE_SOURCE_NON_ENREGISTREE },
+      { axe: 'B3', value: null },
+    ]);
+    expect(LIBELLE_SOURCE_NON_ENREGISTREE).toBe('source non enregistrée');
   });
 
   it('un 0 mesuré est une mesure ; ni null ni NaN n’en sont', () => {

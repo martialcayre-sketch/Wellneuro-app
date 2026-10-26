@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  fusionnerProvenances,
   lignesProvenance,
   lignesProvenanceMomentum,
   provenanceEtablie,
@@ -66,5 +67,33 @@ describe('provenanceChiffre', () => {
     ]);
     expect(provenanceMomentumEtablie({ ...p, arrivee: { jalon: 'J21', date: null } })).toBe(false);
     expect(provenanceMomentumEtablie(undefined)).toBe(false);
+  });
+
+  // r3_09 : la provenance du radar, figure de plusieurs chiffres.
+  it('fusion : les sources établies, une fois chacune, dans l’ordre reçu', () => {
+    const a = { sources: [source('Q_SOM_01', '2026-10-10T08:00:00.000Z')], versionCalcul: 'v15' };
+    const b = {
+      sources: [source('Q_INF_03', '2026-10-12T08:00:00.000Z'), source('Q_SOM_01', '2026-10-10T08:00:00.000Z')],
+      versionCalcul: 'v15',
+    };
+    const sansDate = { sources: [source('Q_STR_02', null)], versionCalcul: 'v15' };
+    expect(fusionnerProvenances([a, null, sansDate, b, undefined])).toEqual({
+      sources: [source('Q_SOM_01', '2026-10-10T08:00:00.000Z'), source('Q_INF_03', '2026-10-12T08:00:00.000Z')],
+      versionCalcul: 'v15',
+    });
+  });
+
+  it('fusion : rien d’établi ne se fusionne pas', () => {
+    expect(fusionnerProvenances([null, undefined])).toBeNull();
+  });
+
+  // Revue r3_09 : deux versions ne rendent pas la figure muette — chacune est dite.
+  it('fusion : deux versions sont dites toutes deux, jamais résumées', () => {
+    const p = fusionnerProvenances([
+      { sources: [source('Q_SOM_01', '2026-10-10T08:00:00.000Z')], versionCalcul: 'v14' },
+      { sources: [source('Q_INF_03', '2026-10-12T08:00:00.000Z')], versionCalcul: 'v15' },
+    ]);
+    expect(p?.versionCalcul).toBe('v14, v15');
+    expect(lignesProvenance(p!)[1]).toBe('Version du calcul : v14, v15');
   });
 });

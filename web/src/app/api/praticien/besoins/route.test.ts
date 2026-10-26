@@ -108,6 +108,25 @@ describe('GET /api/praticien/besoins', () => {
     }
   });
 
+  // r3_09 : la provenance de l'onglet, établie par la même règle que le
+  // tiroir (`provenanceDesSources`) ; ordre fixe B1 à B12.
+  it('chaque besoin mesuré porte sa provenance datée, un non mesuré aucune ; ordre fixe B1 à B12 (r3_09)', async () => {
+    const pss = { P1: '2', P2: '2', P3: '3', P4: '3', P5: '3', P6: '2', P7: '3', P8: '3', P9: '2', P10: '3' };
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-09-12T08:00:00Z'), scoresJson: { rawAnswers: pss }, statutValidite: null },
+    ]);
+    const json = (await (await GET(request())).json()) as {
+      besoins: { id: number; couverture: number | null; provenance: unknown }[];
+    };
+    expect(json.besoins.map(b => b.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(json.besoins.find(b => b.id === 9)?.provenance).toEqual({
+      sources: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-09-12T08:00:00.000Z' }],
+      // La version dépend de la forme alimentaire servie : sa forme, pas sa valeur.
+      versionCalcul: expect.stringMatching(/^v\d+$/),
+    });
+    for (const b of json.besoins) expect(b.provenance === null).toBe(b.couverture === null);
+  });
+
   it('GET accessible journalise la lecture au gabarit littéral (G-TRUST-04)', async () => {
     await GET(request());
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);

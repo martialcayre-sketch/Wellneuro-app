@@ -69,6 +69,7 @@ import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { Badge, varianteInterpretation } from '@/components/ui/Badge';
 import { CerclesBesoinsCockpit, MENTION_CARTE_LIEE } from '@/components/patient-cockpit/CerclesBesoinsCockpit';
+import { cleBesoin, grouperBesoinsParStrate } from '@/lib/praticien/ordreBesoins';
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { Chip } from '@/components/ui/Chip';
@@ -1512,61 +1513,73 @@ export function FichePatientPanel({
             <th className="px-4 py-2 text-left">Couverture</th>
           </tr>
         </thead>
-        <tbody>
-          {priorites.map((p: PrioriteBesoin) => (
-            <tr key={p.besoin} className="border-t border-border">
-              <td className="px-4 py-2">{p.libellePraticien}</td>
-              <td className="px-4 py-2 text-muted-foreground">
-                {p.couverture === null ? (
-                  /* Le tiret reste ([[D-301]] §1) ; le motif se déplie dessous
-                     (r3_08). Un ancien conteneur sans le champ : le tiret seul. */
-                  <>
-                    —
-                    {p.motifNonMesure && p.motifNonMesure.length > 0 && (
-                      <DetailMotifNonMesure
-                        besoin={p.libellePraticien}
-                        motifs={p.motifNonMesure}
-                        emailPatient={emailPatientAffiche}
-                      />
-                    )}
-                  </>
-                ) : !provenanceEtablie(p.provenance) ? (
-                  /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1) ;
-                     l'écart avec la décision (r3_10), lui, n'en porte aucun. */
-                  <>
-                    {MENTION_SOURCE_NON_ENREGISTREE}
-                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
-                  </>
-                ) : modeConsultationActif ? (
-                  <>
-                    <ValeurMasquee />
-                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
-                  </>
-                ) : (
-                  <>
-                    {/* Piste neutre (sans zones) : la couverture n'a pas de bornes
-                        de référentiel — aucun seuil n'est suggéré, le chiffre
-                        reste affiché à côté du point. */}
-                    <span className="flex items-center gap-2">
-                      <ScoreZones
-                        value={p.couverture}
-                        max={100}
-                        ariaLabel={`Couverture ${p.couverture} %`}
-                        className="w-16"
-                      />
-                      {p.couverture}%
-                    </span>
-                    {p.carteLiee && <span className="mt-0.5 block text-xs">{MENTION_CARTE_LIEE[p.carteLiee]}</span>}
-                    <DetailProvenance objet={p.libellePraticien} lignes={lignesProvenance(p.provenance)} aGauche />
-                    {/* L'écart avec la décision (r3_10) : un ancien conteneur
-                        sans le champ n'affiche rien. */}
-                    <DetailEcartDecision besoin={p.libellePraticien} ecarts={p.ecartDecision} />
-                  </>
-                )}
-              </td>
+        {/* Ordre fixe, B1 à B12 groupé par strate (Q1, r3_09) : jamais l'ordre
+            reçu, jamais un tri sur la valeur ([[D-333]] §2 règle 4). */}
+        {grouperBesoinsParStrate(priorites, p => p.besoin).map(groupe => (
+          <tbody key={groupe.code}>
+            <tr className="border-t border-border bg-muted/40">
+              <th scope="rowgroup" colSpan={2} className="px-4 py-1.5 text-left text-xs font-semibold text-muted-foreground">
+                {groupe.nom}
+              </th>
             </tr>
-          ))}
-        </tbody>
+            {groupe.besoins.map((p: PrioriteBesoin) => {
+              const cle = cleBesoin(p.besoin, p.libellePraticien);
+              return (
+                <tr key={p.besoin} className="border-t border-border">
+                  <td className="px-4 py-2">{cle}</td>
+                  <td className="px-4 py-2 text-muted-foreground">
+                    {p.couverture === null ? (
+                      /* Le tiret reste ([[D-301]] §1) ; le motif se déplie dessous
+                         (r3_08). Un ancien conteneur sans le champ : le tiret seul. */
+                      <>
+                        —
+                        {p.motifNonMesure && p.motifNonMesure.length > 0 && (
+                          <DetailMotifNonMesure
+                            besoin={cle}
+                            motifs={p.motifNonMesure}
+                            emailPatient={emailPatientAffiche}
+                          />
+                        )}
+                      </>
+                    ) : !provenanceEtablie(p.provenance) ? (
+                      /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1) ;
+                         l'écart avec la décision (r3_10), lui, n'en porte aucun. */
+                      <>
+                        {MENTION_SOURCE_NON_ENREGISTREE}
+                        <DetailEcartDecision besoin={cle} ecarts={p.ecartDecision} />
+                      </>
+                    ) : modeConsultationActif ? (
+                      <>
+                        <ValeurMasquee />
+                        <DetailEcartDecision besoin={cle} ecarts={p.ecartDecision} />
+                      </>
+                    ) : (
+                      <>
+                        {/* Piste neutre (sans zones) : la couverture n'a pas de bornes
+                            de référentiel — aucun seuil n'est suggéré, le chiffre
+                            reste affiché à côté du point. */}
+                        <span className="flex items-center gap-2">
+                          <ScoreZones
+                            value={p.couverture}
+                            max={100}
+                            ariaLabel={`Couverture ${p.couverture} %`}
+                            className="w-16"
+                          />
+                          {p.couverture}%
+                        </span>
+                        {p.carteLiee && <span className="mt-0.5 block text-xs">{MENTION_CARTE_LIEE[p.carteLiee]}</span>}
+                        <DetailProvenance objet={cle} lignes={lignesProvenance(p.provenance)} aGauche />
+                        {/* L'écart avec la décision (r3_10) : un ancien conteneur
+                            sans le champ n'affiche rien. */}
+                        <DetailEcartDecision besoin={cle} ecarts={p.ecartDecision} />
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        ))}
       </table>
     </div>
   );

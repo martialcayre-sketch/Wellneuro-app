@@ -8,12 +8,18 @@ import { DetailBesoinsPanel } from './DetailBesoinsPanel';
 // est jugé.
 vi.mock('@/components/ui/ScoreRadar', () => ({ ScoreRadar: () => null }));
 
+const provenance = (id: string, date: string) => ({
+  sources: [{ idQuestionnaire: id, dateReponse: date }],
+  versionCalcul: 'equilibre-v3',
+});
+
+// Reçus hors de l'ordre fixe, comme d'un ancien conteneur qui triait encore.
 const reponse = {
   patient: { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
   besoins: [
-    { id: 1, libellePraticien: 'Sommeil réparateur', strate: 'CORPS', couverture: 40, niveauPreuve: 'A', sources: [] },
-    { id: 2, libellePraticien: 'Ancrage du matin', strate: 'ANCRAGE', couverture: null, niveauPreuve: 'NON_MESURE', sources: [] },
-    { id: 3, libellePraticien: 'Énergie stable', strate: 'CORPS', couverture: 70, niveauPreuve: 'D', sources: [] },
+    { id: 3, libellePraticien: 'Énergie stable', strate: 'CORPS', couverture: 70, niveauPreuve: 'D', sources: [], provenance: provenance('Q_INF_03', '2026-10-12T08:00:00.000Z') },
+    { id: 2, libellePraticien: 'Ancrage du matin', strate: 'ANCRAGE', couverture: null, niveauPreuve: 'NON_MESURE', sources: [], provenance: null },
+    { id: 1, libellePraticien: 'Sommeil réparateur', strate: 'CORPS', couverture: 40, niveauPreuve: 'A', sources: [], provenance: provenance('Q_SOM_01', '2026-10-10T08:00:00.000Z') },
   ],
 };
 
@@ -62,13 +68,13 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
 
     await screen.findByRole('table');
-    const titres = screen.getAllByRole('row').slice(1).map(r => r.getAttribute('title'));
+    const titres = screen.getAllByRole('row').filter(r => r.querySelector('td')).map(r => r.getAttribute('title'));
     expect(titres).toEqual([null, null, null]);
     expect(document.body.innerHTML).not.toContain('Aucun questionnaire source');
     expect(document.body.innerHTML).not.toContain('Aucune réponse de questionnaire exploitable');
 
     const geste = screen.getByText('Motif', { selector: 'summary' });
-    expect(geste.getAttribute('aria-label')).toBe('Motif — Ancrage du matin');
+    expect(geste.getAttribute('aria-label')).toBe('Motif — B2 · Ancrage du matin');
     expect(document.body.textContent).toContain('Non mesuré · aucune passation exploitable (Q_STR_01)');
   });
 
@@ -95,7 +101,7 @@ describe('DetailBesoinsPanel — textes exacts', () => {
 
     await screen.findByRole('table');
     const geste = screen.getByText('Écart avec la décision', { selector: 'summary' });
-    expect(geste.getAttribute('aria-label')).toBe('Écart avec la décision — Énergie stable');
+    expect(geste.getAttribute('aria-label')).toBe('Écart avec la décision — B3 · Énergie stable');
     const ligne = within(geste.closest('details')!).getByRole('listitem');
     expect(ligne.textContent).toBe(
       'N’entre pas dans la décision · passation incomplète hors des items lus, du 12/10/2026 (Q_INF_03)'
@@ -127,6 +133,73 @@ describe('DetailBesoinsPanel — textes exacts', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Q1 de l'audit des instruments (r3_09) : ordre fixe, B1 à B12 groupé par
+// strate, clé « Bn · libellé » ; provenance du tableau et du radar
+// ([[D-333]] §2 règle 1).
+describe('DetailBesoinsPanel — ordre fixe et provenance (r3_09)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('l’ordre reçu n’est pas cru : B1 à B12, groupés sous le nom de leur strate', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    const lignes = screen.getAllByRole('row').slice(1).map(r => r.querySelector('th, td')?.textContent);
+    expect(lignes).toEqual(['Corps', 'B1 · Sommeil réparateur', 'B3 · Énergie stable', 'Ancrage', 'B2 · Ancrage du matin']);
+    expect(screen.getAllByRole('rowheader').map(h => h.getAttribute('scope'))).toEqual(['rowgroup', 'rowgroup']);
+  });
+
+  it('chaque valeur ouvre sa source d’un geste, au nom de sa clé', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    const geste = screen.getByLabelText('Source — B1 · Sommeil réparateur');
+    expect(geste.closest('td')!.textContent).toContain('40%');
+    expect(geste.closest('details')!.textContent).toContain('Questionnaire : Q_SOM_01 (réponse du 10/10/2026)');
+    expect(geste.closest('details')!.textContent).toContain('Version du calcul : equilibre-v3');
+  });
+
+  it('sans provenance établie, pas de chiffre : « Source non enregistrée »', async () => {
+    const sansProvenance = {
+      ...reponse,
+      besoins: reponse.besoins.map(b => (b.id === 1 ? { ...b, provenance: undefined } : b)),
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => sansProvenance })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    const tableau = await screen.findByRole('table');
+    const ligne = within(tableau).getByText('B1 · Sommeil réparateur').closest('tr')!;
+    expect(ligne.textContent).toContain('Source non enregistrée');
+    expect(ligne.textContent).not.toContain('40');
+    expect(screen.queryByLabelText('Source — B1 · Sommeil réparateur')).toBeNull();
+  });
+
+  it('le radar ouvre la provenance de ses valeurs tracées, une fois chacune', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => reponse })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    const details = screen.getByLabelText('Source — radar des 12 besoins').closest('details')!;
+    expect(details.textContent).toContain(
+      'Questionnaires : Q_SOM_01 (réponse du 10/10/2026), Q_INF_03 (réponse du 12/10/2026)'
+    );
+    expect(details.textContent).toContain('Version du calcul : equilibre-v3');
+  });
+
+  it('aucune valeur tracée : le radar n’a pas de geste « Source »', async () => {
+    const sansProvenance = { ...reponse, besoins: reponse.besoins.map(b => ({ ...b, provenance: null })) };
+    vi.stubGlobal('fetch', vi.fn(async () => ({ json: async () => sansProvenance })));
+    render(<DetailBesoinsPanel idPatient="PAT_SEED_01" />);
+
+    await screen.findByRole('table');
+    expect(screen.queryByLabelText('Source — radar des 12 besoins')).toBeNull();
   });
 });
 

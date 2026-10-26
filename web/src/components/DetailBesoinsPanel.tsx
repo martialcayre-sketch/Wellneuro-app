@@ -6,7 +6,15 @@ import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoi
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
 import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
+import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
+import { cleBesoin, grouperBesoinsParStrate } from '@/lib/praticien/ordreBesoins';
+import {
+  fusionnerProvenances,
+  lignesProvenance,
+  MENTION_SOURCE_NON_ENREGISTREE,
+  provenanceEtablie,
+} from '@/lib/praticien/provenanceChiffre';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
 // `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
@@ -72,10 +80,16 @@ export function DetailBesoinsPanel({
     );
   }
 
-  const { patient, besoins, besoinsMesures, besoinsTotal } = data;
+  const { patient, besoinsMesures, besoinsTotal } = data;
+  // Ordre fixe, B1 à B12 groupé par strate (Q1, r3_09) — jamais l'ordre reçu,
+  // jamais un tri sur la valeur ([[D-333]] §2 règle 4). Le radar suit le même.
+  const groupes = grouperBesoinsParStrate(data.besoins, b => b.id);
+  const besoins = groupes.flatMap(g => g.besoins);
   // Un besoin non mesuré n'est pas tracé à zéro : son axe reste, nommé « non
-  // mesuré » ([[D-301]]).
+  // mesuré » ([[D-301]]). Une valeur sans provenance n'est pas tracée non plus
+  // ([[D-333]] §2 règle 1) ; le radar ouvre la provenance des valeurs tracées.
   const radarData = donneesRadarBesoins(besoins);
+  const provenanceRadar = fusionnerProvenances(besoins.map(b => b.provenance));
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,6 +119,9 @@ export function DetailBesoinsPanel({
         <div className="flex flex-col gap-1">
           <ScoreRadar data={radarData} valeursMasquees={chiffresMasques} />
           {chiffresMasques && <ValeurMasquee className="text-center text-sm" />}
+          {!chiffresMasques && provenanceRadar && (
+            <DetailProvenance objet="radar des 12 besoins" lignes={lignesProvenance(provenanceRadar)} />
+          )}
         </div>
 
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -115,37 +132,57 @@ export function DetailBesoinsPanel({
                 <th className="px-4 py-2 text-left">Couverture</th>
               </tr>
             </thead>
-            <tbody>
-              {besoins.map((b: BesoinDetail) => (
-                // Le pourquoi d'un non mesuré n'est plus une infobulle : il se
-                // déplie sous le tiret, d'un geste (r3_08). L'infobulle ne garde
-                // que les titres des sources lues.
-                <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || undefined}>
-                  <td className="px-4 py-2">{b.libellePraticien}</td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {b.couverture !== null ? (
-                      <>
-                        {chiffresMasques ? <ValeurMasquee /> : `${b.couverture}%`}
-                        {/* L'écart avec la décision (r3_10) : un ancien
-                            conteneur sans le champ n'affiche rien. */}
-                        <DetailEcartDecision besoin={b.libellePraticien} ecarts={b.ecartDecision} />
-                      </>
-                    ) : (
-                      <>
-                        —
-                        {b.motifNonMesure && b.motifNonMesure.length > 0 && (
-                          <DetailMotifNonMesure
-                            besoin={b.libellePraticien}
-                            motifs={b.motifNonMesure}
-                            emailPatient={emailPatient}
-                          />
-                        )}
-                      </>
-                    )}
-                  </td>
+            {groupes.map(groupe => (
+              <tbody key={groupe.code}>
+                <tr className="border-t border-border bg-muted/40">
+                  <th scope="rowgroup" colSpan={2} className="px-4 py-1.5 text-left text-xs font-semibold text-muted-foreground">
+                    {groupe.nom}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
+                {groupe.besoins.map((b: BesoinDetail) => {
+                  const cle = cleBesoin(b.id, b.libellePraticien);
+                  return (
+                    // Le pourquoi d'un non mesuré n'est plus une infobulle : il se
+                    // déplie sous le tiret, d'un geste (r3_08). L'infobulle ne garde
+                    // que les titres des sources lues.
+                    <tr key={b.id} className="border-t border-border" title={b.sources.map(s => s.titre).join(', ') || undefined}>
+                      <td className="px-4 py-2">{cle}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {b.couverture === null ? (
+                          <>
+                            —
+                            {b.motifNonMesure && b.motifNonMesure.length > 0 && (
+                              <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} emailPatient={emailPatient} />
+                            )}
+                          </>
+                        ) : !provenanceEtablie(b.provenance) ? (
+                          /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1,
+                             r3_09) — comme au tiroir. Un ancien conteneur sans le
+                             champ : la même mention. */
+                          <>
+                            {MENTION_SOURCE_NON_ENREGISTREE}
+                            <DetailEcartDecision besoin={cle} ecarts={b.ecartDecision} />
+                          </>
+                        ) : chiffresMasques ? (
+                          <>
+                            <ValeurMasquee />
+                            <DetailEcartDecision besoin={cle} ecarts={b.ecartDecision} />
+                          </>
+                        ) : (
+                          <>
+                            {`${b.couverture}%`}
+                            <DetailProvenance objet={cle} lignes={lignesProvenance(b.provenance)} aGauche />
+                            {/* L'écart avec la décision (r3_10) : un ancien
+                                conteneur sans le champ n'affiche rien. */}
+                            <DetailEcartDecision besoin={cle} ecarts={b.ecartDecision} />
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            ))}
           </table>
         </div>
       </div>

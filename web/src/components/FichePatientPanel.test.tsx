@@ -165,6 +165,9 @@ type Options = {
   prioritesCartesLiees?: boolean;
   /** r3_11 : un besoin dont la source n'a aucune passation exploitable. */
   prioritesAucunePassation?: boolean;
+  /** r3_09 : trois strates servies hors de l'ordre fixe, comme le tri
+   *  « creux d'abord » d'un ancien conteneur. */
+  prioritesDesordre?: boolean;
   /** r3_10 : un besoin mesuré dont la passation n'entre pas dans la décision. */
   prioritesEcartDecision?: boolean;
   /** r3_10 : le même, servi sans provenance (« Source non enregistrée »). */
@@ -583,6 +586,16 @@ function stubFetch(options: Options = {}) {
       if (options.compteAbsent) {
         const { besoinsMesures: _m, besoinsTotal: _t, ...objets } = EQUILIBRE.objetsCliniques;
         return ok({ ...EQUILIBRE, objetsCliniques: objets });
+      }
+      if (options.prioritesDesordre) {
+        return ok({
+          ...EQUILIBRE,
+          priorites: [
+            { ...EQUILIBRE.priorites[0], besoin: 10, libellePraticien: 'Pensées stables', strate: 'ESPRIT', couverture: 20 },
+            EQUILIBRE.priorites[0],
+            EQUILIBRE.priorites[1],
+          ],
+        });
       }
       if (options.prioritesAucunePassation) {
         return ok({
@@ -1192,13 +1205,13 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
     const motif = within(tiroir).getByText('Motif', { selector: 'summary' });
-    expect(motif.getAttribute('aria-label')).toBe('Motif — Ancrage du matin');
+    expect(motif.getAttribute('aria-label')).toBe('Motif — B2 · Ancrage du matin');
     expect(motif.closest('details')?.hasAttribute('open')).toBe(false);
     expect(tiroir.textContent).toContain('Non mesuré · hors score (D-122)');
     expect(within(tiroir).getByRole('cell', { name: /^—/ })).toBeTruthy();
 
     const source = within(tiroir).getByText('Source', { selector: 'summary' });
-    expect(source.getAttribute('aria-label')).toBe('Source — Sommeil réparateur');
+    expect(source.getAttribute('aria-label')).toBe('Source — B1 · Sommeil réparateur');
     expect(tiroir.textContent).toContain('Questionnaire : Q_ALI_01 (réponse du 01/10/2026)');
     expect(tiroir.textContent).toContain('Version du calcul : v15');
   });
@@ -1255,13 +1268,32 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
-    const stress = within(tiroir).getByLabelText('Motif — Stress').closest('details') as HTMLElement;
+    const stress = within(tiroir).getByLabelText('Motif — B9 · Stress').closest('details') as HTMLElement;
     expect(stress.hasAttribute('open')).toBe(false);
     expect(within(stress).getByText('Compléter la mesure')).toBeTruthy();
     expect(within(stress).getByRole('button', { name: 'Ajouter à la file d’envoi' })).toBeTruthy();
-    const ancrage = within(tiroir).getByLabelText('Motif — Ancrage du matin').closest('details') as HTMLElement;
+    const ancrage = within(tiroir).getByLabelText('Motif — B2 · Ancrage du matin').closest('details') as HTMLElement;
     expect(within(ancrage).queryByText('Compléter la mesure')).toBeNull();
     expect(within(tiroir).getAllByRole('button', { name: 'Ajouter à la file d’envoi' })).toHaveLength(1);
+  });
+
+  // r3_09 (Q1) : ordre fixe, B1 à B12 groupé par strate, clé « Bn · libellé » —
+  // jamais l'ordre reçu, jamais un tri sur la valeur ([[D-333]] §2 règle 4).
+  it('tiroir des 12 besoins : l’ordre reçu n’est pas cru, B1 à B12 groupés sous le nom de leur strate', async () => {
+    await rendreFiche({ prioritesDesordre: true });
+
+    fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
+    const tiroir = await screen.findByRole('dialog');
+    const lignes = within(tiroir).getAllByRole('row').slice(1).map(r => r.querySelector('th, td')?.textContent);
+    expect(lignes).toEqual([
+      'Corps',
+      'B1 · Sommeil réparateur',
+      'Ancrage',
+      'B2 · Ancrage du matin',
+      'Esprit',
+      'B10 · Pensées stables',
+    ]);
+    expect(tiroir.textContent).toContain('Aucune priorité clinique n’est déduite ici.');
   });
 
   it('tiroir des 12 besoins : B9 et B10 disent servir la même valeur que leur carte (un seul nom par objet)', async () => {
@@ -1279,14 +1311,14 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
-    const ecart = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('details') as HTMLElement;
+    const ecart = within(tiroir).getByLabelText('Écart avec la décision — B1 · Sommeil réparateur').closest('details') as HTMLElement;
     expect(ecart.hasAttribute('open')).toBe(false);
     expect(within(ecart).getByRole('listitem').textContent).toBe(
       'N’entre pas dans la décision · passation incomplète hors des items lus, du 12/10/2026 (Q_NEU_11)'
     );
     expect((ecart.closest('td') as HTMLElement).textContent).toContain('40%');
     // Le non mesuré garde son motif, sans écart.
-    expect(within(tiroir).queryByLabelText('Écart avec la décision — Ancrage du matin')).toBeNull();
+    expect(within(tiroir).queryByLabelText('Écart avec la décision — B2 · Ancrage du matin')).toBeNull();
   });
 
   it('tiroir des 12 besoins : sans provenance, « Source non enregistrée » garde l’écart, sans chiffre', async () => {
@@ -1294,7 +1326,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
-    const cellule = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('td') as HTMLElement;
+    const cellule = within(tiroir).getByLabelText('Écart avec la décision — B1 · Sommeil réparateur').closest('td') as HTMLElement;
     expect(cellule.textContent).toContain('Source non enregistrée');
     expect(cellule.textContent).not.toContain('40%');
   });
@@ -3287,7 +3319,7 @@ describe('FichePatientPanel — mode consultation : masqué ≠ absent (D-354 §
     activer();
     fireEvent.click(screen.getByRole('button', { name: /Les 12 besoins/i }));
     const tiroir = await screen.findByRole('dialog');
-    const cellule = within(tiroir).getByLabelText('Écart avec la décision — Sommeil réparateur').closest('td') as HTMLElement;
+    const cellule = within(tiroir).getByLabelText('Écart avec la décision — B1 · Sommeil réparateur').closest('td') as HTMLElement;
     expect(cellule.textContent).toContain(MENTION);
     expect(cellule.textContent).not.toContain('40%');
     expect(cellule.textContent).toContain('N’entre pas dans la décision');

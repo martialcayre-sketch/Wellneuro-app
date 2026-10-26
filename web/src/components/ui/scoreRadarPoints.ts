@@ -6,8 +6,13 @@
 // rendre recharts.
 
 import type { BesoinDetail } from '@/app/api/praticien/besoins/route';
+import { provenanceEtablie } from '@/lib/praticien/provenanceChiffre';
 
 export const LIBELLE_NON_MESURE = 'non mesuré';
+
+/** Une valeur mesurée sans provenance établie n'est pas tracée ([[D-333]] §2
+ *  règle 1, r3_09) — et son axe ne dit pas « non mesuré », qui serait faux. */
+export const LIBELLE_SOURCE_NON_ENREGISTREE = 'source non enregistrée';
 
 /** Une valeur mesurée : un nombre fini. Un `0` mesuré EST une mesure. */
 export function estMesure(value: unknown): value is number {
@@ -16,12 +21,18 @@ export function estMesure(value: unknown): value is number {
 
 /**
  * Les points du radar, un par besoin, dans l'ordre reçu. La couverture
- * absente reste absente (`null`) : c'est le radar qui en fait un trou.
+ * absente reste absente (`null`) : c'est le radar qui en fait un trou. Une
+ * couverture sans provenance établie aussi, avec son propre libellé d'axe.
  */
 export function donneesRadarBesoins(
-  besoins: readonly Pick<BesoinDetail, 'id' | 'couverture'>[],
-): { axe: string; value: number | null }[] {
-  return besoins.map(b => ({ axe: `B${b.id}`, value: estMesure(b.couverture) ? b.couverture : null }));
+  besoins: readonly Pick<BesoinDetail, 'id' | 'couverture' | 'provenance'>[],
+): { axe: string; value: number | null; absence?: string }[] {
+  return besoins.map(b => {
+    const axe = `B${b.id}`;
+    if (!estMesure(b.couverture)) return { axe, value: null };
+    if (!provenanceEtablie(b.provenance)) return { axe, value: null, absence: LIBELLE_SOURCE_NON_ENREGISTREE };
+    return { axe, value: b.couverture };
+  });
 }
 
 /**
