@@ -11799,3 +11799,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge hors run release-db en vol, déploiement constaté ; puis D-373 §1 et D-375 §1.
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
+
+## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
+
+**Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
+
+**Écarté.** Merci de chaque nuit dans cb ; jeu d'illustrations dans cb ; durées sans chiffre ; information à la première lettre seule (mémoire par médecin, migration).
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis aw et texte d'az.
+
+**Ouvert.** Lots de code de cb, (a) avec bg, (e) ; jeu d'illustrations.
