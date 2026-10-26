@@ -11799,3 +11799,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge hors run release-db en vol, déploiement constaté ; puis D-373 §1 et D-375 §1.
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
+
+## 2026-10-26 — r3_15 (F9a, H64) : radar des 12 besoins décoratif
+
+**Fait.** Radar de l'onglet masqué au lecteur d'écran et hors tabulation (couche d'accessibilité de recharts coupée) ; graduations sans nombre, anneaux gardés. Table : légende sr-only, tiret lu « non mesuré » ; repli « Source — ensemble des valeurs du tableau » ; `role="status"` au chargement. Textes validés avant le code.
+
+**Écarté.** Phrase d'état au-dessus du radar ; légende visible ; D-xxx (H64 et arbitrages du 2026-10-25 suffisent).
+
+**Prochaine action.** CodeRabbit, merge, déploiement ; pages file A et Instruments (v12).
+
+**Ouvert.** r3_12 (attend o) ; passe humaine E67 (file D).
