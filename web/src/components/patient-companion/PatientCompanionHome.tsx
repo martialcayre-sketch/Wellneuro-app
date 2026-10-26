@@ -17,6 +17,7 @@ import {
   type ElementEnPause,
 } from '@/lib/trust/pauseEffetIndesirable';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
+import { mentionValidation } from '@/lib/portail/texteMentionValidation';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -44,6 +45,8 @@ type ProtocoleResponse =
       lectureDuDetail?: { dejaOuvert: boolean };
       /** Encart « quand ralentir ou demander avis » ([[D-349]]) ; absent = drapeau fermé. */
       encartConduite?: true;
+      /** Instant de l'approbation de diffusion de la version servie ([[D-369]]). */
+      valideLe?: string;
     }
   | { ok: false };
 type CheckinResponse =
@@ -172,6 +175,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   }
 
   const { vue, finDeCycle } = protocole;
+  const mention = protocole.valideLe ? mentionValidation(protocole.valideLe) : null;
   // LA PAUSE SUR EFFET INDÉSIRABLE ([[D-281]] §3-4) : les textes SIGNÉS, jamais
   // reformulés. Celui des compléments se lit une fois, au-dessus des actions.
   const pauseDe = new Map((protocole.pauses ?? []).map((p) => [p.actionId, p.texte]));
@@ -223,6 +227,11 @@ export function PatientCompanionHome({ token }: { token: string }) {
             : vue.purpose
         }
       />
+
+      {/* « VALIDÉ PAR VOTRE PRATICIEN LE … » ([[D-369]], lettre ba) — en tête,
+          une fois, la date de l'approbation de diffusion de la version servie.
+          Hors du détail replié, et en fin de cycle aussi : elle date la page. */}
+      {mention && <p className="text-sm text-muted-foreground">{mention}</p>}
 
       {/* CE SUR QUOI ON TRAVAILLE — le libellé d'axe SIGNÉ, recopié du registre
           des priorités par le serveur. Le patient lisait jusqu'ici sa raison

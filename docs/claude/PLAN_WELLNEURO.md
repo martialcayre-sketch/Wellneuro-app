@@ -1033,6 +1033,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre ba, texte à signer une fois, de la main du responsable.
 - **Critère de fin** : texte signé et mergé ; mention constatée sur la page servie.
 - **Mise à jour (2026-10-25, lettre écrite)** : ba écrite par D-369 : « Validé par votre praticien le … », date de l'approbation de diffusion de la version servie, en toutes lettres, en tête de la page du protocole servi ; message de départ hors de ba. Reste le lot de code (rang 1, petit) et le constat par lecture.
+- **Mise à jour (2026-10-26, lot de code)** : la route du protocole servi sert la date de l'approbation de diffusion de la version servie ; la page la dit en tête, en toutes lettres, au jour civil de Paris, sans drapeau ni migration. Reste, après le déploiement, le constat par lecture sur la page servie d'un dossier de test.
 
 #### H36 · R:Drive : extraction du Drive de formation
 - **Identifiant, piste** : R:Drive ; notices comptées d'abord, hors dépôt ; droits notice par notice (D-251 §2) ; jamais de donnée patient ; références validées une à une ; fiches conseils ; geste du responsable.

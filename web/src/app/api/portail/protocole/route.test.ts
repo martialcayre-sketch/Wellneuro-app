@@ -431,6 +431,37 @@ describe('GET /api/portail/protocole', () => {
     });
   });
 
+  // « VALIDÉ PAR VOTRE PRATICIEN LE … » ([[D-369]], lettre ba) : la date de
+  // l'approbation de diffusion de la version servie, sans drapeau.
+  describe('valideLe', () => {
+    it('vue servie : l’instant de l’approbation de diffusion servie', async () => {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+        approbation({ approvedAt: new Date('2026-10-24T09:30:00.000Z') }),
+      ]);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json.valideLe).toBe('2026-10-24T09:30:00.000Z');
+    });
+
+    it('protocole indisponible : aucune date', async () => {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.indisponible).toBe(true);
+      expect(json).not.toHaveProperty('valideLe');
+    });
+
+    it('sans protocole servi : aucune date', async () => {
+      mockOwnerAuth();
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json).not.toHaveProperty('valideLe');
+    });
+  });
+
   // L'ENCART « QUAND RALENTIR OU DEMANDER AVIS » ([[D-349]], lettre bd).
   describe('encartConduite', () => {
     afterEach(() => {
