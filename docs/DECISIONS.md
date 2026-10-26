@@ -476,7 +476,7 @@ réduisent les écritures concurrentes sur ces fichiers.
   gel : par phases, contre un gel intégral), sur questions à options ;
   précisé par la contre-revue Codex (lecture de `release-db.yml`) ; texte de
   registre rédigé dans le lot. **§1 livré le 2026-10-26** (fiche H85 ;
-  déploiement à constater au premier run du déployeur après le merge) : banc
+  déploiement constaté le même jour, run 40322732625) : banc
   « migration portée par un ancêtre, tête de code verte » joué rouge sur
   l'ancienne lecture, puis `retenue()` à quatre états ; la fin rouge
   volontaire se lit « appliquée » par les étapes du run (one-off et
