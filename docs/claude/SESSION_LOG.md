@@ -11820,7 +11820,17 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** r3_12 (attend o) ; passe humaine E67 (file D).
 
-## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-380)
+## 2026-10-26 — File D : lettre az (D-380), fin de séance
+
+**Fait.** #1709 mergée (cb, (a), (e)). Question 9 de la pièce du bilan hiérarchisé posée et tranchée (deux parties séparées) ; az écrite : notice « Pour préparer votre bilan », consignes sourcées seules.
+
+**Écarté.** Consignes de tube et de transport sans claim ; toute famille proposée pour aw.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; séance close.
+
+**Ouvert.** aw (familles de la main du responsable) ; lots de code des lettres de la séance.
+
+## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-381)
 
 **Fait.** Migration de #1704 appliquée (release-db 40309999072) et constatée par conteneur. Vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) au résolveur ; re-signature sur l'instruction du responsable (205 entrées, SHA `8ede2a9e…`). AA/EPA et LA/DGLA préparés par leurs opérandes. Dette des bancs agenda inscrite au plan (#1712).
 

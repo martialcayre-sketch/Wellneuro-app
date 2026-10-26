@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-380 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
+### D-381 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
 
 - Date : 2026-10-26
 - Statut : accepté — arbitrages du responsable du 2026-10-25 ([[D-376]] §6
@@ -50,6 +50,67 @@ acide arachidonique + EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA.
 **§6 — Hors de cette décision.** Les lignes déjà lues restent « inconnu »
 ([[D-356]] §6) ; l'entrée d'un acide dans un panel (décision à part, source
 à désigner) ; le constat des prochains imports d'un profil d'acides gras.
+
+### D-380 — Bilan composé : la notice patient, partie séparée de celle du médecin ; texte signé, consignes générées depuis le catalogue (lettre az)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (question 9 de la pièce de cadrage : deux parties séparées ;
+  consignes sourcées seules) ; texte validé mot pour mot le même jour.
+- Domaine : bilan biologique composé (lot ax, Track C, non ouvert) ; pièce de
+  cadrage du bilan hiérarchisé (hors dépôt), §4 et question 9 ; [[D-311]] ;
+  [[D-269]] ; consignes préanalytiques (`BiologyPreanalytic`,
+  `schema.prisma:2418`) ; garde `termeAnxiogene`
+  (`web/src/lib/documents/vocabulaire.ts`) ; fiche F37 du plan.
+- Ne touche pas : aucune règle clinique, aucune consigne écrite à la main,
+  aucune migration ; la partie du médecin et le courrier de D-311.
+
+**§1 — Deux parties.** Le bilan composé remis au patient porte deux parties
+séparées : la partie pour le médecin, sous la règle des documents médecin
+(garde non prescriptive), et une notice pour le patient, sous la règle des
+textes patient (garde `termeAnxiogene`, ni « prescription », ni
+« posologie », ni « dosage », « ordonnance » interdit partout). Le patient lit
+sa notice sans avoir à lire la partie du médecin ; il porte les deux
+(arbitrage du responsable du 2026-10-26, question 9).
+
+**§2 — Le texte de la notice.**
+
+> Titre : « Pour préparer votre bilan »
+>
+> « Ce bilan vous est proposé par votre praticien. La partie destinée à votre
+> médecin est à lui remettre : c'est lui qui décide des examens à faire
+> réaliser.
+>
+> Avant le prélèvement, suivez les consignes ci-dessous, données examen par
+> examen.
+>
+> [consignes générées, §3]
+>
+> Le jour du prélèvement, dites au laboratoire quels traitements et quels
+> compléments vous prenez. Apportez la demande d'examens remise par votre
+> médecin et votre carte Vitale.
+>
+> Quand vous recevez vos résultats, vous pouvez les déposer dans votre espace :
+> votre praticien en prendra connaissance.
+>
+> Pour toute question, adressez-vous à votre praticien. »
+
+**§3 — Les consignes.** Générées depuis le catalogue pour les seuls examens
+retenus, groupées par type de prélèvement ; aucune consigne écrite à la main.
+Seules les consignes qui portent leur source entrent ; les consignes de tube
+ou de transport, sans claim par construction, n'y entrent pas.
+
+**§4 — Avant le service.** La notice n'est servie qu'avec le bilan composé
+(lot ax). Avant son activation : couverture des consignes des examens
+retenus constatée par conteneur, en lecture seule ; place dans la file des
+activations et constat de la précédente (porte 18).
+
+**Ce qu'elle ne décide pas.** Les familles et leurs conditions (aw) ; la
+partie du médecin ; l'ouverture d'ax ; les neuf autres questions de la pièce
+de cadrage.
+
+**Effet sur le plan.** F37 : texte signé ; activation en file C, après ax.
+Registre « Lettres à écrire » : az fait (texte).
 
 ### D-379 — Agenda du sommeil, écran de fin : le merci porte sur l'acte de noter, sans chiffre ; critère des illustrations, indépendantes de la nuit déclarée (lettre cb)
 

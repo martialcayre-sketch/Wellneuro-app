@@ -1,4 +1,4 @@
-# Handoff — t45, second lot : les acides gras au résolveur (D-380)
+# Handoff — t45, second lot : les acides gras au résolveur (D-381)
 
 ## Branche et état du dépôt
 
@@ -23,7 +23,7 @@ LA/DGLA, après l'application constatée de la migration du premier lot.
   des rapports.
 - Re-signature posée sur l'instruction du responsable : 205 entrées,
   109 analytes, SHA `8ede2a9e…`, datée `2026-10-26T12:23:19.000Z` ; remplace
-  celle de D-363. Consignée dans `D-380`.
+  celle de D-363. Consignée dans `D-381`.
 
 ## Fichiers modifiés
 
@@ -31,7 +31,7 @@ LA/DGLA, après l'application constatée de la migration du premier lot.
   signature) et son banc (résolus, unités concordantes, écartés inconnus).
 - `web/src/lib/biology-library/compositionsPreparees.ts` (AA/EPA, LA/DGLA)
   et son banc.
-- `docs/FEATURE_FLAGS.md` (date de signature), `docs/DECISIONS.md` (D-380),
+- `docs/FEATURE_FLAGS.md` (date de signature), `docs/DECISIONS.md` (D-381),
   `docs/claude/PLAN_WELLNEURO.md` (ligne t45 soldée),
   `changelog.d/2026-10-26-t45-resolveur-acides-gras.md`, SESSION_LOG.
 
@@ -42,7 +42,7 @@ LA/DGLA, après l'application constatée de la migration du premier lot.
 
 ## Problèmes ouverts
 
-- Le numéro D-380 se revérifie juste avant le merge (#1709 revendique
+- Le numéro D-381 se revérifie juste avant le merge (#1709 revendique
   encore D-370 à D-372, à renuméroter par sa session).
 - Entrée d'acides gras dans des panels : décision à part, source à désigner.
 - Constat par conteneur au prochain import d'un profil d'acides gras.
