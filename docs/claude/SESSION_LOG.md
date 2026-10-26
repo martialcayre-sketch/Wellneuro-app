@@ -11868,3 +11868,11 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Dossier privé des quinze fiches, claims relus par conteneur.
 
 **Ouvert.** Signatures des fiches ; re-signature de la table ; lettre cr.
+
+## 2026-10-26 — J3-12h : courrier complément sans nom d'ingrédient (D-383)
+
+**Fait.** #1708 mergée (d356e83a) après la passe Codex ACCEPTER et deux corrections CodeRabbit : corps de l'accusé borné à 64 Kio, lu en flux. P1-3 livré sur demande du responsable : chaque ligne du courrier est l'intitulé seul, doublons fusionnés ; D-383 amende D-358 §1.
+
+**Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
+
+**Ouvert.** Dettes de #1701 ; drapeau éteint, conditions 2 à 4.

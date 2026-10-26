@@ -4,6 +4,37 @@
 
 ## Décisions actives
 
+### D-383 — Courrier complément : chaque ligne est l'intitulé saisi par le praticien, seul ; le nom d'ingrédient du catalogue sort du texte (amende D-358 §1 ; P1-3 de la revue Codex de #1701)
+
+- Date : 2026-10-26
+- Statut : accepté — le responsable a demandé le retrait le 2026-10-26
+  (P1-3 de la revue Codex de #1701, écarté dans #1708 tant que le texte
+  validé le prévoyait), puis validé le même jour la forme de la ligne
+  proposée par l'assistant.
+- Domaine : `lib/correspondance/courrierComplement.ts`
+  (`genererCourrierComplement`), route
+  `api/praticien/protocoles/courrier-complement`.
+- **Amende** [[D-358]] §1, pour la seule liste : « intitulé, et ingrédient du
+  catalogue s'il est renseigné » devient « intitulé ».
+- **Ne touche pas** : le reste du texte validé (ouverture, paragraphe de
+  remise, date, signature) ; la liste tracée de [[D-358]] §2, qui garde la
+  référence catalogue ; la table signée des déclencheurs ; aucune migration,
+  aucun `schema.prisma` ; `WN_COURRIER_COMPLEMENT` reste éteint.
+
+**§1 — La ligne.** Chaque complément ciblé s'écrit `- {intitulé}.`,
+l'intitulé saisi par le praticien, sans ajout. Le courrier ne lit plus le
+catalogue des ingrédients.
+
+**§2 — Les doublons.** Deux lignes identiques, une fois l'intitulé débarrassé
+de ses espaces de bord, n'en font qu'une, à la place de la première.
+
+**§3 — Ce qui est déjà remis.** Aucun courrier n'a été consigné en
+production : le drapeau n'y a jamais été ouvert. Une remise garde de toute
+façon le texte figé qu'elle porte (lot 4, [[D-362]]).
+
+**Conséquence acceptée.** L'intitulé seul doit suffire au médecin : un
+intitulé vague n'est plus précisé par le nom au catalogue.
+
 ### D-382 — Familles du bilan biologique : chacune est le bloc de justification d'un des quinze panels hérités, signée sur un dossier tenu hors dépôt ; le niveau et son ordre attendent une lettre propre avant ax (lettre aw, cadre)
 
 - Date : 2026-10-26
