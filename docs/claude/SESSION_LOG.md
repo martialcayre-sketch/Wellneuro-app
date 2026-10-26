@@ -11800,15 +11800,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
 
-## 2026-10-26 — r3_15 (F9a, H64) : radar des 12 besoins décoratif
-
-**Fait.** Radar de l'onglet masqué au lecteur d'écran et hors tabulation (couche d'accessibilité de recharts coupée) ; graduations sans nombre, anneaux gardés. Table : légende sr-only, tiret lu « non mesuré » ; repli « Source — ensemble des valeurs du tableau » ; `role="status"` au chargement. Textes validés avant le code.
-
-**Écarté.** Phrase d'état au-dessus du radar ; légende visible ; D-xxx (H64 et arbitrages du 2026-10-25 suffisent).
-
-**Prochaine action.** CodeRabbit, merge, déploiement ; pages file A et Instruments (v12).
-
-**Ouvert.** r3_12 (attend o) ; passe humaine E67 (file D).
 ## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
 
 **Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
@@ -11818,3 +11809,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, page D ; puis aw et texte d'az.
 
 **Ouvert.** Lots de code de cb, (a) avec bg, (e) ; jeu d'illustrations.
+
+## 2026-10-26 — r3_15 (F9a, H64) : radar des 12 besoins décoratif
+
+**Fait.** Radar de l'onglet masqué au lecteur d'écran et hors tabulation (couche d'accessibilité de recharts coupée) ; graduations sans nombre, anneaux gardés. Table : légende sr-only, tiret lu « non mesuré » ; repli « Source — ensemble des valeurs du tableau » ; `role="status"` au chargement. Textes validés avant le code.
+
+**Écarté.** Phrase d'état au-dessus du radar ; légende visible ; D-xxx (H64 et arbitrages du 2026-10-25 suffisent).
+
+**Prochaine action.** CodeRabbit, merge, déploiement ; pages file A et Instruments (v12).
+
+**Ouvert.** r3_12 (attend o) ; passe humaine E67 (file D).
