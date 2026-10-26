@@ -70,7 +70,7 @@ describe('candidats NABM — la liste préparée (M-3b)', () => {
     }
   });
 
-  it('les comptes relus le 2026-10-15, le 2026-10-18, le 2026-10-24 et le 2026-10-25 tiennent (millésime V105, D-323 §6, D-361, D-364)', () => {
+  it('les comptes relus le 2026-10-15, le 2026-10-18, le 2026-10-24 et le 2026-10-25 tiennent (millésime V105, D-323 §6, D-361, D-370)', () => {
     expect(MILLESIME_LISTE_NABM).toBe('V105');
     const parSituation = Object.fromEntries(SITUATIONS_NABM.map(s => [s, 0])) as Record<string, number>;
     for (const [, fiche] of entrees) parSituation[fiche.situation] += 1;

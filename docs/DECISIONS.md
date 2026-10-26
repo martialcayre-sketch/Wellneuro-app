@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-364 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
+### D-370 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les compositions AA/EPA et LA/DGLA arbitrées, livrées au second lot
 
 - Date : 2026-10-25
 - Statut : accepté — arbitrages du responsable du 2026-10-25 (file A, t45),
@@ -64,6 +64,248 @@ au responsable avec le second lot. Ils n'entrent au résolveur, avec sa
 re-signature (décision distincte, sur instruction), qu'après l'application
 **constatée** de la migration (clé étrangère d'`analyte_propose`, comme
 [[D-361]] §6). Les 24 lignes déjà lues restent « inconnu » ([[D-356]] §6).
+
+### D-369 — La page du protocole servi porte « Validé par votre praticien le … » (lettre ba)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (libellé daté ; message de départ hors de ba) ; texte validé mot pour
+  mot le même jour.
+- Domaine : portail, page du protocole servi
+  (`web/src/components/patient-companion/PatientCompanionHome.tsx`) ; complète
+  [[D-307]] (lettre q) ; fiche H35 du plan.
+- Ne touche pas : aucune migration, aucun drapeau, aucune règle clinique ; le
+  badge des documents remis (`web/src/lib/documents/rendu.ts`) est inchangé.
+
+**§1 — La mention.** En tête de la page du protocole servi, une fois :
+« Validé par votre praticien le 24 octobre 2026 » — la date de l'approbation
+de diffusion de la version servie, en toutes lettres. Une nouvelle version
+approuvée porte sa propre date ([[D-368]] §4).
+
+**§2 — Portée.** Ajout à la page servie, hors file C, constaté par lecture.
+Aucun chiffre, aucun mot qui juge.
+
+**§3 — Le message de départ.** Il n'entre pas dans ba : un mot libre du
+praticien joint à la diffusion demanderait sa propre lettre.
+
+**Ce qu'elle ne décide pas.** Le message de départ ; tout autre texte du
+portail.
+
+**Effet sur le plan.** H35 : texte signé ; lot de code au rang 1, petit.
+bb (H49) perd le préalable ba. Registre « Lettres à écrire » : ba fait.
+
+### D-368 — Ajouts par version datée : rien ne s'ajoute à un protocole diffusé sans une nouvelle version, approuvée avant d'être servie (lettre bc)
+
+- Date : 2026-10-24
+- Statut : accepté — texte de registre validé par le responsable le
+  2026-10-24.
+- Domaine : versions de protocole
+  (`web/src/app/api/praticien/protocoles/versions/route.ts`, en ajout seul) ;
+  diffusion (`web/src/app/api/praticien/protocoles/diffusion/route.ts`) ;
+  [[D-207]], [[D-255]], [[D-317]] ; fiche H34 du plan.
+- Ne touche pas : aucun code ; la règle décrit le comportement en place et le
+  rend opposable aux lots futurs.
+
+**§1 — La règle.** Tout ajout à un protocole diffusé (action, fiche,
+complément, attente biologique) passe par une nouvelle version datée, qui
+remplace la précédente dans la chaîne sans la modifier. Une version diffusée ne
+se modifie jamais en place. La relecture d'un brouillon non diffusé (BP-23)
+n'est pas visée.
+
+**§2 — L'approbation.** La nouvelle version n'est servie qu'après sa propre
+approbation de diffusion, liée à cette version ; jusque-là, le patient lit la
+précédente.
+
+**§3 — Le calendrier.** Un ajout ne relance pas le suivi : seul un pivot le
+relance (D-255).
+
+**§4 — La date.** La version servie porte sa date de validation au portail
+([[D-369]]).
+
+**Ce qu'elle ne décide pas.** Aucun code.
+
+**Effet sur le plan.** H34 : second texte mergé. Registre « Lettres à
+écrire » : bc fait.
+
+### D-367 — Un protocole est un cycle, pas un programme : il ne s'enchaîne pas en phases ; `phases` reste fermé (lettre ad)
+
+- Date : 2026-10-24
+- Statut : accepté — texte de registre validé par le responsable le
+  2026-10-24, sur une question à options (définir « programme »).
+- Domaine : protocole 21 jours, contrat V4 (`ProtocolPhase`,
+  `web/src/lib/clinical-engine/types.ts`) ; [[D-056]], [[D-166]], [[D-207]],
+  [[D-255]] ; lettre j ([[D-306]]) ; fiche H34 du plan.
+- Ne touche pas : aucun code, aucune migration, aucun texte servi.
+
+**§1 — Un cycle.** Un protocole sert un cycle, ouvert par son ancre (D-166)
+et suivi depuis sa première diffusion (D-255). Il n'enchaîne ni phases ni
+étapes. La suite d'un accompagnement passe par une nouvelle version
+([[D-368]]) ou par un nouveau cycle, ouvert par une nouvelle ancre.
+
+**§2 — `phases` fermé.** Le champ `phases` du contrat V4 reste sans
+producteur ni lecteur ; il reste dans l'empreinte (D-207) et
+`reviseProtocolDraft` le reporte. Un lot qui l'écrirait ou l'afficherait
+demande une décision.
+
+**§3 — Le mot.** Au portail, « programme » désigne l'ensemble des éléments de
+la version servie ([[D-281]], [[D-345]]), jamais un enchaînement de phases.
+Rien ne change au portail.
+
+**Ce qu'elle ne décide pas.** La fin d'un cycle, que le dépôt ne tranche pas ;
+le retrait du champ du contrat.
+
+**Effet sur le plan.** H34 : premier texte mergé ; critère de fin tenu avec
+bc. aj (H53) perd le préalable ad. Registre « Lettres à écrire » : ad fait.
+
+### D-366 — Indicateurs hebdomadaires : chacun naît de sa propre décision clinique — nom, source, échelle, nature ; recueil au point d'étape, sans chiffre en retour ; aucune échelle proposée par l'assistant (lettre bf, instruction)
+
+- Date : 2026-10-24
+- Statut : accepté — cadre seul, sur arbitrage du responsable du 2026-10-24
+  (« cadre d'abord, liste plus tard ») ; le moment était tranché (H19) ;
+  lettre validée telle quelle le même jour.
+- Domaine : point d'étape ([[D-317]], H31) ; doctrine d'adhésion ([[D-334]]) ;
+  cockpit chiffré ([[D-333]]) ; fiche H19 du plan.
+- Ne touche pas : aucun indicateur, aucune échelle, aucun seuil, aucune
+  migration, aucun texte patient.
+
+**§1 — Le moment.** Les indicateurs hebdomadaires se recueillent au point
+d'étape, par une nouvelle version de son contrat, aux trois points d'étape du
+cycle (D-317). Aucune saisie à part. Aucun chiffre ne revient au patient
+(règle du portail, D-333).
+
+**§2 — Ce que porte chaque décision d'indicateur.** Un indicateur n'existe que
+par sa propre D-xxx clinique et son fragment `changelog.d/`, de la main du
+responsable : son nom ; sa source (référence certifiée de l'instrument ou de
+l'item) ; son échelle, reprise de la source, jamais construite ; sa nature,
+clinique ou technique (DC-20) ; ce que le praticien en lit. L'assistant ne
+propose ni indicateur, ni échelle, ni borne ; une valeur absente s'écrit « à
+fournir ».
+
+**§3 — La lecture du praticien.** Elle suit D-333 : calculé et montré sous
+provenance, qualifié seulement par un seuil signé ; tout mot qui juge passe par
+la porte 11 ; un agrégat sur plusieurs dossiers suit [[D-298]].
+
+**§4 — Le code.** Rang 3 au plus tôt. Préalables : une D-xxx par indicateur ;
+porte 6 (levée le 2026-10-23) ; porte 11 pour tout mot ; porte 15 (premier
+check-in sur un protocole approuvé). Si le contrat du point d'étape se
+versionne par migration [A verifier] : rang 4, G-7, porte 9. Ouverture en
+file C, au-delà de la place 11, après l'encart, avec un texte patient accepté et
+la porte 18.
+
+**§5 — La charge.** Ce que ces questions ajoutent au point d'étape du
+21e jour se constate avant l'ouverture.
+
+**Ce qu'elle ne décide pas.** La liste des indicateurs, leurs sources, leurs
+échelles, leurs seuils, la forme du contrat, les textes patient.
+
+**Effet sur le plan.** H19 : cadre de l'instruction écrit ; l'instruction
+reste ouverte jusqu'aux décisions par indicateur (critère de fin inchangé).
+Registre « Lettres à écrire » : bf, cadre écrit.
+
+### D-365 — La Boussole alimentaire quitte le portail : démontage côté patient, seule exception nommée à D-276 §1 ; amende D-250 (lettre h)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (portée, protocoles existants, dettes) ; lettre validée telle quelle
+  le même jour.
+- Domaine : portail patient, alimentation (C5B) ; fiche H16, puis J1-alim
+  (FC-4). Amende [[D-250]] §3 pour la Boussole patient ; exception à
+  [[D-276]] §1.
+- Ne touche pas : aucune règle clinique, aucun seuil, aucune table signée,
+  aucune migration ; `WN_C5_ENABLED` reste allumé.
+
+**§1 — Le retrait.** Le portail ne sert plus la Boussole alimentaire : ni son
+résumé dans le protocole, ni la page de l'aliment, ni la route patient. C'est un
+démontage, comme celui de D-250 côté praticien ; le code praticien, déjà non
+monté, reste en place.
+
+**§2 — L'exception.** D-276 §1 (« aucune fonction retirée ni réduite »)
+reçoit cette seule exception, nommée ici ; elle ne s'étend à aucune autre
+fonction.
+
+**§3 — Les protocoles qui en portent une.** Les contrats V2 et V4 lisent
+toujours `foodCompassRef` : aucun protocole ne devient illisible. Avant de
+livrer, le lot compte par conteneur, en agrégats, les protocoles diffusés qui
+portent une Boussole. À zéro, il livre ; au-dessus, il s'arrête et revient au
+responsable, sans toucher un protocole servi.
+
+**§4 — Les dettes.** D-C5-01 à D-C5-04 sont soldées sans objet le jour où le
+retrait est constaté en production. D-C5-05 reste ouverte, opportuniste.
+
+**Ce qu'elle ne décide pas.** La suppression du code C5 côté praticien et des
+contrats ; l'extinction de `WN_C5_ENABLED` ; le sort des tables C5A.
+
+**Effet sur le plan.** J1-alim (file A, rang 1) peut s'ouvrir, sans
+migration ; son critère de fin : page retirée et constatée, constat du §3
+versé, D-C5-01 à 04 soldées. Registre « Lettres à écrire » : h fait.
+
+### D-364 — Export du dossier vers un outil d'IA externe : la version pseudonymisée seule part vers ChatGPT ; la déclaration au registre et au patient est décidée, livrée par un lot de code distinct ; sans accord de sous-traitance, réserve écrite (lettre bg)
+
+- Date : 2026-10-24
+- Statut : accepté — arbitrages du responsable du 2026-10-24, sur questions à
+  options (outil et offre, version envoyée, issue, cadre contractuel, envois
+  passés, entraînement, texte patient, forme du constat) ; lettre validée par
+  lui le même jour.
+- Domaine : export PDF du dossier ([[D-252]],
+  `web/src/components/patient-cockpit/ExportDossierPanel.tsx`) ; registre RGPD
+  (`docs/DOSSIER_RGPD.md`, rubrique 6) ; document patient
+  `donnees_confidentialite` ; fiche H18 du plan. Répond à la question laissée
+  ouverte par D-252 §3.
+- Ne touche pas : aucune migration, aucun drapeau, aucune règle clinique ;
+  l'application n'envoie toujours rien à un tiers.
+
+**§1 — Le constat (2026-10-24).** Le responsable soumet l'export PDF du
+dossier à ChatGPT (OpenAI), sur une offre individuelle. Cette offre ne comporte
+pas d'accord de sous-traitance (RGPD art. 28). L'option qui permet
+l'entraînement des modèles sur les conversations est désactivée sur ce compte.
+Ce flux n'était inscrit ni au registre ni dans « Vos données personnelles ».
+Avant le 2026-10-24, la règle du §2 n'était pas écrite ; le constat détaillé
+des envois antérieurs est tenu hors dépôt.
+
+**§2 — La règle d'envoi.** À partir du 2026-10-24, seule la version « Pour une
+IA externe » (pseudonymisée, D-252 §2) part vers un outil d'IA externe. La
+version « Complète » reste téléchargeable pour un autre usage ; elle n'est plus
+soumise à aucun outil d'IA. Pseudonymisé n'est pas anonyme : le document envoyé
+reste une donnée de santé à caractère personnel. Le praticien relit le PDF avant
+tout envoi : le masquage des textes libres (`masquage.ts`) ne retire que les
+valeurs enregistrées au dossier, et un nom écrit autrement peut y rester.
+
+**§3 — La déclaration au registre.** Une ligne entre au tableau de la
+rubrique 6 : « analyse du dossier par un outil d'IA externe choisi par le
+praticien » ; destinataire OpenAI (ChatGPT, offre individuelle) ; données :
+l'export pseudonymisé ; geste : téléchargement, puis envoi par le praticien
+lui-même ; transfert hors de l'Union. La ligne écrit la réserve en clair :
+aucun accord de sous-traitance, aucun mécanisme de transfert contractuel ; base
+légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de
+[[D-283]] §9, à l'échéance du 2027-06-30 ([[D-265]]).
+
+**§4 — L'information du patient.** « Vos données personnelles » reçoit une
+nouvelle version, accusé exigé (motif de [[D-299]] §3), qui dit le flux en ces
+termes, validés mot pour mot par le responsable (complétés le 2026-10-25 :
+le texte dit aussi ce que la version garde, `sectionAdministrative.ts`, et
+« retire » remplace une promesse d'absence que le masquage ne tient pas) :
+
+> « Votre praticien peut soumettre une version de votre dossier à ChatGPT
+> (OpenAI), un outil d'intelligence artificielle, pour l'aider dans son
+> analyse. Il le fait lui-même : l'application ne l'envoie pas. Cette version
+> retire vos nom et prénom, vos coordonnées, votre date de naissance et le
+> nom de votre médecin traitant. Elle garde votre âge et un
+> numéro de dossier propre à l'application. Ce document reste une information
+> sur votre santé. OpenAI est situé hors de l'Union européenne, et aucun
+> contrat ne l'engage envers nous sur le traitement de ce document. »
+
+**§5 — Les envois passés.** Le constat du §1 suffit ; rien n'est versé au
+registre des violations (arbitrage du responsable).
+
+**Ce qu'elle ne décide pas.** La levée de la réserve (passage à une offre
+avec accord de sous-traitance), consignée par une lettre ; la base légale ;
+aucun verrou dans le code sur la version « Complète » — le §2 est une règle de
+pratique.
+
+**Effet sur le plan.** H18 : flux listé et déclaré par cette lettre ; la
+déclaration est servie par un lot de code distinct (nouvelle version du
+document patient, ligne de la rubrique 6), hors de cette lettre. D-252 §3
+soldé. Registre « Lettres à écrire » : bg fait.
 
 ### D-363 — t44 : le résolveur des libellés est re-signé sur le taux de prothrombine et l'INR — imprimés seuls, sans synonyme ; le temps de Quick, patient ou témoin, n'est jamais rattaché
 

@@ -84,7 +84,7 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(compositionPrepareePour('BIO_NFS')?.composants).toHaveLength(20);
   });
 
-  it('les rapports d’acides gras de D-364 : aucune liste avant la migration constatée (D-087)', () => {
+  it('les rapports d’acides gras de D-370 : aucune liste avant la migration constatée (D-087)', () => {
     for (const code of ['BIO_RATIO_AA_EPA', 'BIO_RATIO_LA_DGLA', 'BIO_RATIO_OMEGA6_OMEGA3']) {
       expect(compositionPrepareePour(code), code).toBeNull();
     }

@@ -1,5 +1,5 @@
 -- Catalogue biologie — vingt acides gras et deux rapports du profil d'acides
--- gras (D-364, t45 ; D-356 §6). DONNÉES SEULES : aucune plage, aucune borne,
+-- gras (D-370, t45 ; D-356 §6). DONNÉES SEULES : aucune plage, aucune borne,
 -- aucune indication (D-059), aucune conversion (D-157), aucune unité ajoutée
 -- au vocabulaire (« % » et « ratio » y sont déjà).
 --
