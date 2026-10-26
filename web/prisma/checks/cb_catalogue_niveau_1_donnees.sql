@@ -76,11 +76,66 @@ BEGIN
   -- rapport AA/EPA, migration 20260924090000), + 36 le 2026-10-03 (D-261 :
   -- analyses d'un compte rendu courant, migration 20261003150000), + 7 le
   -- 2026-10-18 (D-323 §6 : analyses groupées, migration 20261018100100), + 2
-  -- le 2026-10-24 (D-361 : TP et INR, migration 20261024220000).
+  -- le 2026-10-24 (D-361 : TP et INR, migration 20261024220000), + 22 le
+  -- 2026-10-25 (D-376 : acides gras, migration 20261025140000).
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
-    IF nb <> 94 THEN
-      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361: % analyte(s) saisie_praticien au lieu des 94 du catalogue', nb;
+    IF nb <> 116 THEN
+      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361/D-376: % analyte(s) saisie_praticien au lieu des 116 du catalogue', nb;
+    END IF;
+
+    -- Les vingt acides gras et les deux rapports de D-376, LIGNE PAR LIGNE
+    -- (aucun panel ne les cite : le total des items de panels, plus bas, le
+    -- tient), et AUCUNE plage, aucune correspondance signée, aucune
+    -- composition à leur entrée. Les acides en %, sang ; les rapports en
+    -- « ratio », « autre », comme BIO_RATIO_AA_EPA (D-245 §5, D-356 §4).
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE NOT validation_medicale_requise
+      AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
+      AND (code, libelle, unite, type_prelevement) IN (
+        ('BIO_AG_MYRISTIQUE', 'Acide myristique', '%', 'sang'),
+        ('BIO_AG_PALMITIQUE', 'Acide palmitique', '%', 'sang'),
+        ('BIO_AG_STEARIQUE', 'Acide stéarique', '%', 'sang'),
+        ('BIO_AG_LAURIQUE', 'Acide laurique', '%', 'sang'),
+        ('BIO_AG_PENTADECANOIQUE', 'Acide pentadécanoïque', '%', 'sang'),
+        ('BIO_AG_HEPTADECANOIQUE', 'Acide heptadécanoïque', '%', 'sang'),
+        ('BIO_AG_PALMITOLEIQUE', 'Acide palmitoléique', '%', 'sang'),
+        ('BIO_AG_CIS_VACCENIQUE', 'Acide cis-vaccénique', '%', 'sang'),
+        ('BIO_AG_TRANS_VACCENIQUE', 'Acide trans-vaccénique', '%', 'sang'),
+        ('BIO_AG_RUMENIQUE', 'Acide ruménique', '%', 'sang'),
+        ('BIO_AG_OLEIQUE', 'Acide oléique', '%', 'sang'),
+        ('BIO_AG_NERVONIQUE', 'Acide nervonique', '%', 'sang'),
+        ('BIO_AG_ELAIDIQUE', 'Acide élaïdique', '%', 'sang'),
+        ('BIO_AG_LINOLEIQUE', 'Acide linoléique', '%', 'sang'),
+        ('BIO_AG_GAMMA_LINOLENIQUE', 'Acide gamma-linolénique', '%', 'sang'),
+        ('BIO_AG_DGLA', 'Acide dihomo-gamma-linolénique', '%', 'sang'),
+        ('BIO_AG_ARACHIDONIQUE', 'Acide arachidonique', '%', 'sang'),
+        ('BIO_AG_ALPHA_LINOLENIQUE', 'Acide alpha-linolénique', '%', 'sang'),
+        ('BIO_AG_EPA', 'Acide eicosapentaénoïque', '%', 'sang'),
+        ('BIO_AG_DHA', 'Acide docosahexaénoïque', '%', 'sang'),
+        ('BIO_RATIO_LA_DGLA', 'Rapport acide linoléique / DGLA', 'ratio', 'autre'),
+        ('BIO_RATIO_OMEGA6_OMEGA3', 'Rapport oméga 6 / oméga 3', 'ratio', 'autre'));
+    IF nb <> 22 THEN
+      RAISE EXCEPTION 'D-376: % fiche(s) d''acides gras conformes au lieu de 22 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
+    END IF;
+    SELECT count(*) INTO nb FROM (
+      SELECT analyte_code FROM biology_reference_ranges
+      UNION ALL SELECT analyte_code FROM biology_functional_ranges
+      UNION ALL SELECT analyte_code FROM biology_analyte_links
+      UNION ALL SELECT analyte_code FROM biology_analyte_nabm WHERE verifie_par IS NOT NULL
+      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
+      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
+      UNION ALL SELECT analyte_code FROM biology_panel_items
+    ) p WHERE p.analyte_code IN (
+      'BIO_AG_MYRISTIQUE', 'BIO_AG_PALMITIQUE', 'BIO_AG_STEARIQUE', 'BIO_AG_LAURIQUE',
+      'BIO_AG_PENTADECANOIQUE', 'BIO_AG_HEPTADECANOIQUE', 'BIO_AG_PALMITOLEIQUE',
+      'BIO_AG_CIS_VACCENIQUE', 'BIO_AG_TRANS_VACCENIQUE', 'BIO_AG_RUMENIQUE',
+      'BIO_AG_OLEIQUE', 'BIO_AG_NERVONIQUE', 'BIO_AG_ELAIDIQUE', 'BIO_AG_LINOLEIQUE',
+      'BIO_AG_GAMMA_LINOLENIQUE', 'BIO_AG_DGLA', 'BIO_AG_ARACHIDONIQUE',
+      'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
+      'BIO_RATIO_LA_DGLA', 'BIO_RATIO_OMEGA6_OMEGA3');
+    IF nb > 0 THEN
+      RAISE EXCEPTION 'D-376: % plage, lien clinique, correspondance signée, composition ou item de panel sur une fiche d''acide gras — aucun ne s''écrit par migration', nb;
     END IF;
 
     -- Les deux fiches de coagulation de D-361, LIGNE PAR LIGNE (aucun panel

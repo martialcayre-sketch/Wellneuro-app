@@ -23,7 +23,8 @@ function besoin(id: number, couverture: number | null): BesoinCercle {
   };
 }
 
-// Reçus dans l'ordre « creux d'abord » de la route, comme aujourd'hui.
+// Reçus dans l'ordre « creux d'abord » d'un ancien conteneur (la route sert
+// l'ordre fixe depuis r3_09) : les cercles ne croient pas l'ordre reçu.
 const RECUS = [besoin(9, 12), besoin(4, 30), besoin(1, 62), besoin(12, 80), besoin(2, null), besoin(6, null)];
 
 describe('CerclesBesoinsCockpit', () => {

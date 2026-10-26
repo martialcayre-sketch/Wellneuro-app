@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { BESOINS } from '@/lib/equilibre/constants';
+import { BESOIN_SOURCES, BESOINS } from '@/lib/equilibre/constants';
 import {
   construireReponsesParQuestionnaire,
   datesDesReponsesRetenues,
@@ -16,6 +16,8 @@ import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import type { EcartDecisionServi, MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
+import type { ProvenanceChiffre } from '@/lib/praticien/provenanceChiffre';
+import { provenanceDesSources } from '@/lib/praticien/provenanceSources';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/besoins';
@@ -35,6 +37,9 @@ export type BesoinDetail = {
   motifNonMesure: MotifNonMesureServi[] | null;
   /** Écart avec la décision d'un besoin mesuré (r3_10, Q5) ; `null` sans écart. */
   ecartDecision: EcartDecisionServi[] | null;
+  /** Provenance datée de la couverture ([[D-333]] §2 règle 1, r3_09) — la
+   *  même règle que le tiroir ; `null` quand elle est absente. */
+  provenance: ProvenanceChiffre | null;
 };
 
 export type BesoinsApiResponse =
@@ -97,6 +102,9 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
       datesRetenues: datesDesReponsesRetenues(reponsesDb),
     };
 
+    const equilibre = agregerEquilibre(couvertures);
+
+    // Ordre fixe, B1 à B12 par strate — celui de `BESOINS` (Q1, r3_09).
     const besoinsDetail: BesoinDetail[] = BESOINS.map(b => ({
       id: b.id,
       libellePraticien: b.libellePraticien,
@@ -109,12 +117,19 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
       })),
       motifNonMesure: motifsNonMesureBesoin(b.id, reponses, contexteMotifs),
       ecartDecision: ecartsDecisionBesoin(b.id, reponses, contexteMotifs),
+      provenance: provenanceDesSources(
+        couvertures[b.id] ?? null,
+        BESOIN_SOURCES[b.id] ?? [],
+        reponses,
+        contexteMotifs.datesRetenues,
+        equilibre.versionScore
+      ),
     }));
 
     return NextResponse.json({
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom },
       besoins: besoinsDetail,
-      besoinsMesures: compterBesoinsMesures(agregerEquilibre(couvertures)),
+      besoinsMesures: compterBesoinsMesures(equilibre),
       besoinsTotal: BESOINS.length,
     });
   } catch (err) {

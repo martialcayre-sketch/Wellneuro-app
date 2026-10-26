@@ -13,8 +13,9 @@ import {
 import { LIBELLE_NON_MESURE, estMesure, pointsAvecTrous } from './scoreRadarPoints';
 
 // `value: null` = non mesuré ([[D-301]]) : l'axe reste, sans point, nommé
-// « non mesuré » ; le contour s'y interrompt.
-export type ScoreRadarPoint = { axe: string; value: number | null };
+// « non mesuré » ; le contour s'y interrompt. `absence` nomme un autre manque
+// (une valeur sans provenance, r3_09) à la place de « non mesuré ».
+export type ScoreRadarPoint = { axe: string; value: number | null; absence?: string };
 
 type PointRadar = { x: number; y: number; value?: unknown };
 
@@ -30,7 +31,7 @@ export function ScoreRadar({
   max?: number;
   valeursMasquees?: boolean;
 }) {
-  const nonMesures = new Set(data.filter(d => !estMesure(d.value)).map(d => d.axe));
+  const absences = new Map(data.filter(d => !estMesure(d.value)).map(d => [d.axe, d.absence ?? LIBELLE_NON_MESURE]));
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
       <ResponsiveContainer width="100%" height={260}>
@@ -43,8 +44,8 @@ export function ScoreRadar({
               return (
                 <text x={x} y={y} textAnchor={textAnchor} fill="var(--muted-foreground)" fontSize={12}>
                   <tspan x={x}>{axe}</tspan>
-                  {nonMesures.has(axe) && (
-                    <tspan x={x} dy="1.2em" fontSize={10}>{LIBELLE_NON_MESURE}</tspan>
+                  {absences.has(axe) && (
+                    <tspan x={x} dy="1.2em" fontSize={10}>{absences.get(axe)}</tspan>
                   )}
                 </text>
               );
