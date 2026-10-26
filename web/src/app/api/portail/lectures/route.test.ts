@@ -502,10 +502,30 @@ describe('le courrier à remettre au médecin avant un complément ciblé (D-345
         headers: { 'Content-Type': 'application/json', 'content-length': String(64 * 1024 + 1) },
         body: '{}',
       });
-      const lecture = vi.spyOn(req, 'text');
       const reponse = await POST(req);
       expect(reponse.status).toBe(401);
-      expect(lecture).not.toHaveBeenCalled();
+      expect(req.bodyUsed).toBe(false);
+    });
+
+    it('flux sans annonce et sans fin : la lecture s’arrête au plafond, 400 après la garde', async () => {
+      mockCompteActif();
+      let morceauxTires = 0;
+      const fluxSansFin = new ReadableStream<Uint8Array>({
+        pull(controleur) {
+          morceauxTires += 1;
+          controleur.enqueue(new Uint8Array(16 * 1024).fill(0x20));
+        },
+      });
+      const req = new Request('http://localhost/api/portail/lectures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookieProprio())}` },
+        body: fluxSansFin,
+        duplex: 'half',
+      } as RequestInit);
+      const reponse = await POST(req);
+      expect(reponse.status).toBe(400);
+      expect(morceauxTires).toBeLessThanOrEqual(8);
+      expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
     });
 
     it('non annoncé et lu au-delà du plafond : illisible, 400 après la garde, rien n’est écrit', async () => {

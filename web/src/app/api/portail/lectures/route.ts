@@ -265,10 +265,30 @@ const ESPECES: readonly EspeceConsignee[] = [
 /**
  * BORNE TECHNIQUE DE TRANSPORT — 64 Kio, en octets. Ce n'est PAS un seuil
  * (`DC-20`) : le corps est lu AVANT la session (revue CodeRabbit de #1708), il
- * ne se lit donc pas sans plafond. Même chiffre et même motif à deux étages
- * que `api/portail/ce-qui-compte/route.ts`.
+ * ne se lit donc pas sans plafond. Même chiffre que
+ * `api/portail/ce-qui-compte/route.ts` ; la lecture s'arrête au plafond au lieu
+ * de tout charger puis mesurer (seconde revue CodeRabbit de #1708).
  */
 const TAILLE_CORPS_MAX_OCTETS = 64 * 1024;
+
+/** Le corps en texte, ou `null` dès que les octets reçus dépassent le plafond. */
+async function lireCorpsBorne(req: Request): Promise<string | null> {
+  if (!req.body) return '';
+  const lecteur = req.body.getReader();
+  const morceaux: Uint8Array[] = [];
+  let recus = 0;
+  for (;;) {
+    const { done, value } = await lecteur.read();
+    if (done) break;
+    recus += value.byteLength;
+    if (recus > TAILLE_CORPS_MAX_OCTETS) {
+      await lecteur.cancel();
+      return null;
+    }
+    morceaux.push(value);
+  }
+  return Buffer.concat(morceaux).toString('utf8');
+}
 
 function especeValide(valeur: unknown): valeur is EspeceConsignee {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
@@ -343,7 +363,8 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
   // Le corps est lu AVANT la session : l'accusé d'une surface fermée répond 404
   // sans résoudre de compte (revue Codex de #1701, P1-1). Un corps illisible
   // garde son verdict après la garde, comme avant. Un corps au-delà de
-  // `TAILLE_CORPS_MAX_OCTETS` est illisible : annoncé, il n'est pas lu.
+  // `TAILLE_CORPS_MAX_OCTETS` est illisible : annoncé, il n'est pas lu ; reçu,
+  // la lecture s'arrête au plafond.
   let corps: unknown;
   let corpsLisible = true;
   const annonce = Number(req.headers.get('content-length'));
@@ -351,8 +372,8 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
     corpsLisible = false;
   } else {
     try {
-      const brut = await req.text();
-      if (brut.length > TAILLE_CORPS_MAX_OCTETS) corpsLisible = false;
+      const brut = await lireCorpsBorne(req);
+      if (brut === null) corpsLisible = false;
       else corps = JSON.parse(brut);
     } catch {
       corpsLisible = false;
