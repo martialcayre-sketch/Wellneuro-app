@@ -4,6 +4,75 @@
 
 ## Décisions actives
 
+### D-382 — Familles du bilan biologique : chacune est le bloc de justification d'un des quinze panels hérités, signée sur un dossier tenu hors dépôt ; le niveau et son ordre attendent une lettre propre avant ax (lettre aw, cadre)
+
+- Date : 2026-10-26
+- Statut : accepté — cadre seul, sur six arbitrages du responsable du
+  2026-10-26 (questions à options, à partir d'un dossier de propositions
+  vérifié contre le dépôt) ; lettre validée telle quelle le même jour.
+- Domaine : bilan biologique hiérarchisé, Track C ; fiche F34 du plan ; panels
+  hérités ([[D-296]]) ; table signée `indicationsBiologieV1` ([[D-063]],
+  [[D-187]]).
+- Ne touche pas : aucune règle d'indication, aucun déclencheur, seuil ou délai,
+  aucune composition, aucun panel créé ou désactivé, aucune migration, aucun
+  code, aucun texte servi au médecin ou au patient.
+
+**§1 — La famille.** Une famille est le bloc de justification que porte l'un
+des quinze panels hérités, sous son code (D-296 §2). L'analyse reste l'unité
+canonique : un examen présent dans plusieurs familles est une seule analyse,
+qui garde toutes ses familles et toutes leurs justifications. Aucun pack ne se
+crée (D-296 §3). Le périmètre est celui des quinze codes de la table signée.
+
+**§2 — Le nom.** Chaque famille garde le libellé de son panel au catalogue,
+signé tel quel. Le courrier et le document patient actuels ne changent pas.
+
+**§3 — Les deux exclusions.** `PANEL_MG_PLASMATIQUE` et `PANEL_CORTISOL_ISOLE`
+entrent au dossier comme blocs d'exclusion signés, avec leur motif verbatim et
+leur claim : ils disent pourquoi l'examen n'est pas proposé, et ne deviennent
+jamais une exploration proposée. Leur régime reste celui de D-296 §4 et de
+[[D-320]].
+
+**§4 — Ce que porte une fiche.** Le nom (§2) ; la condition et le motif de la
+règle signée, mot pour mot ; ses lignes (analyses) ; ses claims, avec leur
+version ; et « ce que la famille explore », tiré d'un claim relu dans le
+corpus. Le point de prudence n'y entre que s'il a sa source ; sinon la fiche
+porte « aucune prudence sourcée », sans texte. Une fiche à laquelle manque
+l'exploration n'est pas signable.
+
+**§5 — Le dossier et la signature.** Les textes des fiches sont tenus hors
+dépôt, au modèle du dossier de preuve de [[D-312]] §2 : claims lus en
+production par conteneur, en lecture seule ; le responsable valide chaque
+texte et signe chaque famille. Au dépôt : codes, date de signature et
+empreinte SHA-256 de la version signée de chaque fiche, et rien d'autre
+([[D-251]] §4). La signature suit [[D-195]] : la déclaration du responsable
+précède la frappe. Aucun contrôle logiciel n'est ajouté avant que ces textes
+ne soient servis ; jusque-là, la vérification consiste à recalculer
+l'empreinte. Le lot qui les servira (ax) ajoute ce contrôle.
+
+**§6 — La table des quinze règles.** Une fois les familles signées, le
+responsable relit et re-signe la table (F34), sans en changer aucune règle. La
+surface complète — règles, grilles et calculs (D-187) — lui est produite avant
+l'attestation. La nouvelle date de signature est un changement de code sur un
+chemin clinique : lot propre, release-db retenue jusqu'à son approbation
+([[D-044]]).
+
+**§7 — Le niveau.** Les niveaux du catalogue restent des métadonnées héritées,
+sans valeur d'ordre clinique (DC-20). L'ordre des trois niveaux et le niveau
+unique de chaque examen partagé entre familles se signent dans une lettre
+propre, préalable du bilan composé (ax). Aucun ordre n'est servi avant elle.
+
+**Ce qu'elle ne décide pas.** Les textes des fiches ; l'ordre des niveaux et le
+niveau des examens partagés ; la conversion des panels, les indications par
+axe et le devenir du gabarit optionnel (F53) ; le rendu des familles au
+médecin ou au patient (ax, [[D-311]], [[D-380]]) ; les lacunes de composition
+nommées (apoprotéine, IgA sécrétoires) ; la réserve du panel fatigue et le
+conflit CS-BIO-01, relus à la re-signature sans être tranchés ici.
+
+**Effet sur le plan.** F34 : cadre écrit ; critère de fin inchangé (quinze
+familles signées, table re-signée, aucune borne inventée). Registre « Lettres à
+écrire » : aw, cadre écrit ; nouvelle lettre cr, « ordre des niveaux et niveau
+des examens partagés », préalable de F35 (ax).
+
 ### D-381 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
 
 - Date : 2026-10-26
