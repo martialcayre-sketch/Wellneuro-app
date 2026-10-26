@@ -11760,3 +11760,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Lot r3_09, puis F9a (textes relus avant le code).
 
 **Ouvert.** La légende de la table, la phrase d'état du radar et le `role="status"` du chargement, à relire au lot F9a.
+
+## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-370 à D-372)
+
+**Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
+
+**Écarté.** Merci de chaque nuit dans cb ; jeu d'illustrations dans cb ; durées sans chiffre ; information à la première lettre seule (mémoire par médecin, migration).
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; puis aw et texte d'az.
+
+**Ouvert.** Lots de code de cb, (a) avec bg, (e) ; jeu d'illustrations.

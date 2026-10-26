@@ -952,6 +952,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Mise à jour (2026-10-14, suite)** : (g) déployé et constaté (#1434 : v16 dans l'image, champ absent, 0 NIR). (h) livré dans sa PR : date demandée au portail après « Avant de commencer », confirmée, jamais écrasée ; pause tenue par les routes (questionnaires, anamnèse, agendas, dépôt biologique) ; mineur en pause jusqu'à (i) ; `donnees_confidentialite` v17 avec accusé. Critère de fin restant : pause constatée sur un dossier de test.
 - **Mise à jour (2026-10-14, clôture de (h))** : (h) mergé (#1437) et déployé (90743acf) ; constaté dans l'image (v17, refus `date_naissance_requise` et `circuit_mineur_requis`, route de saisie) ; parcours essayé au portail par le responsable ; au constat par conteneur, aucune date encore enregistrée par le portail (31 dossiers ouverts, 15 sans date, 0 mineur). Import et lecture de biologie par le praticien restent ouverts pour un dossier sans date ou mineur (arbitrage du 2026-10-14). (i) fondu dans J3-mineurs (H79, rang 10), avec le consentement complet ; d'ici là, un mineur reste en pause et se traite à la main (arbitrage du 2026-10-14). Textes de G-11 (H38) : premier jet à proposer par l'assistant (non commencé), puis à corriger et valider par le responsable (arbitrage du 2026-10-14).
 - **Mise à jour (2026-10-14, (j))** : trois lots de (j) mergés : migration `bio_ingest_masquage_identite_v1` (#1426) ; écran de masquage et lecture des seules pages masquées, `bio-extraction-v5`, sans repli sur le document (#1428) ; `usage_ia` v8 et `donnees_confidentialite` v15 (#1431), cette dernière remplacée depuis par v16 (#1434) puis v17 (#1437). Le code a mergé avant l'analyse d'impact que la ligne « Rang » plaçait avant (j) [A verifier]. Consignés le 2026-10-15 : la release-db du lot 1 (porte 9) et le déploiement du lot 2 (49df90f1, #1428, avec succès le 2026-10-14 à 08:40 UTC). Restent : l'analyse d'impact (F47) ; le critère « identité absente du document envoyé, constaté sur un import » (premier masquage réel puis import v5, par conteneur, sur un dossier de test, par identifiant). Les textes de G-11 sont acceptés depuis (H38, #1441).
+- **Mise à jour (2026-10-26, textes (a) et (e))** : (a) écrit par D-371 (durées en lettres, archive de dix ans dite avec sa réserve, rien n'est effacé au titre de cette règle avant l'avis) ; (e) écrit par D-370 (phrase au médecin dans chaque lettre, sans migration). Lots de code à ranger : nouvelle version de « Vos données personnelles » (avec celle de D-364), nouvelles versions des trois gabarits signés.
 
 #### H27 · LOT-02 de l'agenda du sommeil : la re-mesure (porte 16)
 - **Identifiant, piste** : LOT-02 de la campagne 2026-10-07-agenda-sommeil-adhesion : re-mesure de l'adhésion par cohortes avant et après, en agrégats ; sa clôture lève la porte 16 ; sommeil ; geste du responsable (constat).
@@ -1057,6 +1058,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre cb, de la main du responsable.
 - **Critère de fin** : textes et jeu acceptés avant l'activation de cc.
+- **Mise à jour (2026-10-26, lettre écrite)** : cb écrite par D-372 : écran de fin seul, « Merci d'avoir noté vos nuits » sans chiffre, le même pour tous ; critère des illustrations (indépendantes de la nuit déclarée et du nombre de nuits, libellé écrit, ni récompense ni couleur qui juge, provenance et droits à fournir). Le jeu reste à fournir puis à valider image par image avant l'activation de cc. Lot de code du texte : petit, hors file C.
 
 #### H40 · seuils_points de Q_ALI_01 : décision clinique sourcée
 - **Identifiant, piste** : E31 ; décision clinique sourcée ; alimentation ; geste du responsable.
@@ -2211,7 +2213,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) | H42, H41 | table d'arrêt complète ; axes |
 | h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-365) | H16 | J1-alim ; D-C5-01 à 04 |
 | h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | H19 | indicateurs hebdomadaires |
-| h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) | H26 | durées, information du médecin |
+| h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) ; faits le 2026-10-26 (D-371, D-370) | H26 | durées, information du médecin |
 | h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
 | h3 | gestes RGPD : archivages, relance d'effacement, dossier resté sur une version antérieure du texte | H20 | registre RGPD à jour |
@@ -2246,7 +2248,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | M-3 | F54 | 5 des 8 signées le 2026-10-15 ; les 3 sans acte couvertes par un constat « aucun acte » signé (2026-10-16 et 2026-10-17) ; fait : 8 sur 8 le 2026-10-17, M-3c clos le 2026-10-16 (#1493, #1496, #1499) |
 | f | F54 | M-3 ; M-3c (journal R1) ; fait le 2026-10-17 (D-316) |
 | G-3 | F54 | f ; M-3b (liste pré-remplie) ; M-3c pour les analytes sans acte |
-| cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd |
+| cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd ; cb fait le 2026-10-26 (D-372), le jeu d'illustrations reste à valider avant cc |
 | ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
 | ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
 | aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge |
@@ -2837,7 +2839,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | bg | flux de l'export vers l'assistant externe ; fait le 2026-10-24 (D-364) | la main du responsable | 0 | H18 |
 | bh | rendu imprimable du protocole | registre | 5 au plus tôt [Hypothese] | H69 |
 | ca | cadrage de la refonte du sommeil ; fait le 2026-10-15 (D-300) | la main du responsable | 0 | H17 |
-| cb | textes de l'écran de fin | la main du responsable | 1 [Hypothese] | H39 |
+| cb | textes de l'écran de fin ; fait le 2026-10-26 (D-372) | la main du responsable | 1 [Hypothese] | H39 |
 | cc | habillage de la saisie du sommeil | la main du responsable (jeu d'illustrations) | 2 au plus tôt [Hypothese] | H48 |
 | cd | rituel du soir rattaché au protocole | la main du responsable (échelle) | 3 au plus tôt, 4 si migration [Hypothese] | H54 |
 | ce | comptes des facteurs et de la forme | registre | 3 au plus tôt [Hypothese] | H55 |

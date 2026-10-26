@@ -4,6 +4,133 @@
 
 ## Décisions actives
 
+### D-372 — Agenda du sommeil, écran de fin : le merci porte sur l'acte de noter, sans chiffre ; critère des illustrations, indépendantes de la nuit déclarée (lettre cb)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (écran de fin seul ; critère seul, jeu plus tard) ; texte validé mot
+  pour mot le même jour.
+- Domaine : agenda du sommeil (`Q_SOM_09`), écran de fin
+  (`web/src/components/patient/agenda-sommeil/AgendaSommeilJournal.tsx`,
+  branche `mode === 'clos'`) ; [[D-300]] §1, §3.4, §4 ; [[D-333]] §1 ; fiche
+  H39 du plan ; préalable de cc (H48).
+- Ne touche pas : aucune migration, aucun contrat, aucun drapeau, aucune règle
+  clinique ; la saisie, la frise et les autres textes de l'agenda.
+
+**§1 — Le texte de l'écran de fin.** Quand l'agenda est transmis, l'écran
+de fin dit, pour tout patient et quel que soit le nombre de nuits notées :
+
+> Titre : « Merci d'avoir noté vos nuits 🌙 »
+> Texte : « Votre praticien a reçu votre agenda. Voici vos nuits, telles que
+> vous les avez notées. »
+
+Il remplace « Merci pour vos trois semaines 🌙 » et « Votre agenda a été
+transmis à votre praticien. Voici la frise de vos nuits. »
+
+**§2 — Ce que le texte ne dit pas.** Aucun chiffre, aucun compte, aucune
+appréciation de la nuit, de la régularité ou de l'assiduité ; ni « bravo »,
+ni « petit pas », ni conseil ([[D-300]] §3.4 ; garde
+`gamification-patient.guard.test.ts`). Le merci est le même pour tous.
+
+**§3 — Le critère des illustrations.** Une illustration de l'agenda (saisie
+de cc ou écran de fin) :
+1. ne dépend jamais de la nuit déclarée, ni du nombre de nuits notées
+   ([[D-300]] §4) : la même image pour tous au même endroit ;
+2. accompagne toujours un libellé écrit, jamais seule (WCAG 2.5.3, fiche
+   LOT-12) ;
+3. ne représente ni une bonne ni une mauvaise nuit, ni récompense (étoile,
+   trophée), ni tendance, ni couleur qui juge (rouge, vert) — écartés le
+   2026-10-12 (fiche LOT-12 ; `REGISTRE_FRONTIERES.md:285`) ;
+4. a une provenance et des droits d'usage écrits : à fournir.
+
+**§4 — Le jeu.** cb n'écrit que le critère. Le jeu d'illustrations est fourni
+avec sa provenance et ses droits, puis validé par le responsable image par
+image, avant l'activation de cc ; ce geste est consigné. Le bandeau de chaque
+nuit et la phrase sous la frise restent tels quels : ils portent déjà sur
+l'acte de noter.
+
+**Ce qu'elle ne décide pas.** La saisie illustrée (cc) ; le rituel du soir
+(cd) ; les textes de la saisie et de la frise.
+
+**Effet sur le plan.** H39 : texte et critère écrits ; le lot de code du §1
+est petit, hors file C (texte d'un écran existant). cc (H48) perd le
+préalable cb pour le texte ; le jeu validé image par image reste son préalable. Registre
+« Lettres à écrire » : cb fait.
+
+### D-371 — Durées de conservation : le texte patient de D-283 §2, nouvelle version de « Vos données personnelles » (lot (a) de D-283 §10)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (durées en lettres ; archive dite avec sa réserve) ; texte validé mot
+  pour mot le même jour, proposé par l'assistant comme le veut D-283 §10 (a).
+- Domaine : `web/src/lib/trust/contenus/registre.ts` (rubrique de
+  conservation, « en cours de formalisation » jusqu'à la v20) ;
+  `web/src/lib/trust/gouvernance.ts:53` ; [[D-283]] §2, §10 (a) ; [[D-284]] §6 ;
+  [[D-318]] ; fiche H26 du plan.
+- Ne touche pas : aucune durée (celles de D-283 §2, inchangées) ; aucun code
+  d'effacement (lots (b), (c)).
+
+**§1 — Le texte.** La phrase « La politique détaillée de durées de
+conservation est en cours de formalisation. Vos données sont conservées le
+temps de votre accompagnement ; vous pouvez à tout moment demander des
+précisions ou l'exercice de vos droits. » est remplacée par :
+
+> « Votre dossier reste actif pendant votre accompagnement. Celui-ci prend fin
+> quand votre praticien clôt votre dossier, quand vous le lui demandez, ou,
+> sans nouvelles de votre part, cinq ans après votre dernier contact. Votre
+> dossier est ensuite gardé à part, avec un accès restreint, pendant dix ans :
+> c'est le temps pendant lequel une responsabilité peut être recherchée. Il est
+> ensuite effacé. Le point de départ de ces dix ans est en cours de
+> vérification avec un juriste ; d'ici sa réponse, rien n'est effacé au titre
+> de cette règle. Les comptes rendus de biologie que vous déposez sont effacés
+> trente jours après leur dépôt ; seuls les résultats retenus par votre
+> praticien restent dans votre dossier. Le journal des accès est gardé douze
+> mois. Une donnée supprimée peut rester dans les sauvegardes douze mois au
+> plus. Vous pouvez à tout moment demander des précisions ou exercer vos
+> droits. »
+
+**§2 — La version.** Nouvelle version de « Vos données personnelles », accusé
+exigé ([[D-283]] §10 (a)). Elle peut partir avec celle de [[D-364]] §4 en une
+seule version : un seul accusé pour le patient.
+
+**Ce qu'elle ne décide pas.** Le point de départ de l'archive (conseil) ; la
+clôture automatique et l'archive (lot (b)) ; tout autre texte.
+
+**Effet sur le plan.** H26 : texte (a) signé ; le lot de code (nouvelle
+version, accusé) reste à ranger, avec celui de bg.
+
+### D-370 — Information du médecin : une phrase au gabarit de chaque lettre (lot (e) de D-283 §10)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrage du responsable du 2026-10-26, sur question à
+  options (dans chaque lettre) ; phrase validée mot pour mot le même jour.
+- Domaine : gabarits de lettre au médecin (`courrierAdressage.ts`,
+  `biology-library/courrier.ts`, `correspondance/courrierComplement.ts`,
+  registre des gabarits signé, empreintes) ; [[D-283]] §3, §10 (e) ; fiche
+  H26.
+- Ne touche pas : aucune donnée recueillie ; le bloc de signature.
+
+**§1 — La phrase.** Avant la signature, chaque lettre adressée à un médecin
+porte :
+
+> « Vos coordonnées professionnelles m'ont été communiquées par notre patient
+> commun. Je les conserve dans son dossier, le temps de son accompagnement,
+> pour vous adresser ce type de courrier. Vous pouvez y accéder, les faire
+> rectifier ou effacer, ou vous opposer à leur usage, en m'écrivant à
+> [adresse de contact déjà servie, `gouvernance.ts:50`]. »
+
+**§2 — Chaque lettre.** La phrase figure dans chaque lettre, pas seulement la
+première : rien ne retient aujourd'hui qu'un médecin a déjà été informé, et
+la répéter couvre la première lettre sans migration. Les crochets désignent
+l'adresse de contact déjà servie au patient (`gouvernance.ts`), reprise telle
+quelle.
+
+**Ce qu'elle ne décide pas.** Le texte des lettres ; le lien patient-médecin,
+qui reste une donnée de santé du patient (D-283 §3).
+
+**Effet sur le plan.** H26 : texte (e) signé ; lot de code : nouvelles
+versions des gabarits signés.
+
 ### D-369 — La page du protocole servi porte « Validé par votre praticien le … » (lettre ba)
 
 - Date : 2026-10-24
