@@ -14,11 +14,7 @@ import {
   listeComplementsCibles,
   MOTIFS_REFUS_LISTE,
 } from '@/lib/correspondance/courrierComplementListe';
-import {
-  genererCourrierComplement,
-  PREFIXE_ANCRAGE_COMPLEMENT,
-  type LigneComplement,
-} from '@/lib/correspondance/courrierComplement';
+import { genererCourrierComplement, PREFIXE_ANCRAGE_COMPLEMENT } from '@/lib/correspondance/courrierComplement';
 import { courrierComplementOuvert } from '@/lib/correspondance/courrierComplementRemise';
 import { consignerCourrierComplement, verdictVersionCourrier } from '@/lib/correspondance/courrierComplementConsignation';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
@@ -82,32 +78,6 @@ function echec(reason: string, error: string, status: number) {
 }
 
 type PostBody = { idPatient?: unknown; decisionCardId?: unknown; protocolDraftId?: unknown; medecinLibelle?: unknown };
-
-/** Une ligne par complément ciblé, dans l'ordre du protocole, sans doublon d'identité. */
-async function lignesDuCourrier(
-  actions: ReturnType<typeof complementsCibles>,
-): Promise<LigneComplement[]> {
-  const ingredientIds = [...new Set(actions
-    .map(action => action.supplementCatalogRef?.ingredientId)
-    .filter((id): id is string => typeof id === 'string'))];
-  const ingredients = ingredientIds.length === 0
-    ? []
-    : await prisma.supplementIngredient.findMany({
-      where: { id: { in: ingredientIds } },
-      select: { id: true, nomFr: true },
-    });
-  const nomDe = new Map(ingredients.map(ingredient => [ingredient.id, ingredient.nomFr]));
-  const vues = new Set<string>();
-  const lignes: LigneComplement[] = [];
-  for (const action of actions) {
-    const ingredientId = action.supplementCatalogRef?.ingredientId ?? null;
-    const cle = `${action.actionId}\u0000${action.title}\u0000${ingredientId ?? ''}`;
-    if (vues.has(cle)) continue;
-    vues.add(cle);
-    lignes.push({ intitule: action.title, ingredient: ingredientId ? nomDe.get(ingredientId) ?? null : null });
-  }
-  return lignes;
-}
 
 export async function POST(req: Request) {
   try {
@@ -198,7 +168,9 @@ export async function POST(req: Request) {
     if (!shaTable) return echec('garde_table_non_signee', 'La table des déclencheurs n’est pas signée.', 409);
     const genere = genererCourrierComplement({
       patientId: idPatient,
-      lignes: await lignesDuCourrier(complementsCibles(actions)),
+      // L'intitulé saisi par le praticien, seul ([[D-381]]) ; le générateur
+      // fusionne les lignes identiques.
+      lignes: complementsCibles(actions).map(action => ({ intitule: action.title })),
       ancrage: { version: `${PREFIXE_ANCRAGE_COMPLEMENT}${shaTable}`, sha256: shaTable },
       dateCourrier: maintenant.toISOString(),
       patientNom: `${patient.prenom} ${patient.nom}`.trim(),
