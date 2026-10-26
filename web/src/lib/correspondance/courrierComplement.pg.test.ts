@@ -94,6 +94,9 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
   let ecrirePhysio: typeof import('@/lib/physio-traitements/ecriture').ecrirePhysio;
   let observateur: pg.Client;
   let numero = 0;
+  /** La version relue posée par `dossier()`, par dossier. */
+  const versions = new Map<string, string>();
+  const versionDe = (idPatient: string) => ({ decisionCardId: 'dc', protocolDraftId: versions.get(idPatient) ?? '' });
 
   /** Une anamnèse ENVOYÉE qui déclare une grossesse : la garde rend « requis ». */
   async function anamneseGrossesse(idPatient: string): Promise<void> {
@@ -145,13 +148,18 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
        VALUES ($1, $2, $3, 'Sophie', 'Nicola', $4, '1985-03-14', CURRENT_TIMESTAMP)`,
       [`pat_banc_ccr_${suffixe}`, idPatient, `sophie.nicola+banc-ccr-${suffixe}@example.test`, PRATICIEN],
     );
+    // Relue et datée : la consignation relit la tête de fil sous verrou
+    // (revue Codex de #1701, P1-2).
     await observateur.query(
       `INSERT INTO protocol_drafts
          (id, id_patient, decision_card_id, decision_card_input_hash, snapshot_input_hash,
-          review_input_hash, selected_priority_id, payload, input_hash, contract_version, updated_at)
-       VALUES ($1, $2, 'dc', $3, $3, $3, 'prio', $4::jsonb, $3, $5, CURRENT_TIMESTAMP)`,
+          review_input_hash, selected_priority_id, payload, input_hash, contract_version,
+          status, reviewed_at, updated_at)
+       VALUES ($1, $2, 'dc', $3, $3, $3, 'prio', $4::jsonb, $3, $5,
+          'practitioner_reviewed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [`pd_banc_ccr_${suffixe}`, idPatient, H, JSON.stringify({ actions }), V4],
     );
+    versions.set(idPatient, `pd_banc_ccr_${suffixe}`);
     await observateur.query(
       `INSERT INTO protocol_diffusion_approvals
          (id, id_patient, protocol_draft_id, decision_card_input_hash, protocol_draft_input_hash, approved_at, confirmation)
@@ -209,7 +217,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     expect(liste.elements.some(e => e.split(':').length === 3)).toBe(true);
 
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du banc.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du banc.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     expect(consigne.ok).toBe(true);
     if (!consigne.ok) return;
@@ -249,7 +257,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     expect(sansIngredient.ok).toBe(true);
     if (!sansIngredient.ok) return;
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, autre courrier.'), ancrage: ANCRAGE, liste: sansIngredient, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, autre courrier.'), ancrage: ANCRAGE, liste: sansIngredient, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     expect(consigne.ok).toBe(true);
     if (!consigne.ok) return;
@@ -277,7 +285,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
       idPatient,
       donnees: donnees(idPatient, 'Docteur, courrier refusé.'),
       ancrage: ANCRAGE,
-      maintenantMs: Date.now(),
+      maintenantMs: Date.now(), version: versionDe(idPatient),
       liste: {
         elements: desordre,
         sha256: sha(desordre.join('\n')),
@@ -292,7 +300,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier du clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     if (!consigne.ok) throw new Error('consignation');
     const entrees = {
@@ -313,7 +321,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier refusé au clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier refusé au clic.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     if (!consigne.ok) throw new Error('consignation');
     // Une approbation dont la version ne porte AUCUN complément ciblé : le
@@ -362,7 +370,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     if (!liste.ok) throw new Error('fixture');
     expect(liste.elements.map(e => e.split(':')[0])).toEqual(['A-quatre', 'B-deux', 'a-trois', 'b-un']);
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, collation.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, collation.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     if (!consigne.ok) throw new Error('consignation');
     const remise = await prisma.courrierComplementRemise.createMany({
@@ -383,7 +391,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const forgee = listeComplementsCibles([action('ref-nulle', 'Référence nulle')], V4);
     if (!forgee.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, référence nulle.'), ancrage: ANCRAGE, liste: forgee, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, référence nulle.'), ancrage: ANCRAGE, liste: forgee, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     if (!consigne.ok) throw new Error('consignation');
     await expect(prisma.courrierComplementRemise.createMany({
@@ -405,7 +413,7 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
     const liste = listeComplementsCibles(ACTIONS, V4);
     if (!liste.ok) throw new Error('fixture');
     const consigne = await consigner(prisma, {
-      idPatient, donnees: donnees(idPatient, 'Docteur, courrier sans accord.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(),
+      idPatient, donnees: donnees(idPatient, 'Docteur, courrier sans accord.'), ancrage: ANCRAGE, liste, maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     expect(consigne.ok).toBe(false);
     expect(await courriers(idPatient)).toBe(0);
@@ -425,10 +433,55 @@ describe.skipIf(!ACTIF)('courrier complément — base réelle (parité de la li
       donnees: donnees(idPatient, 'Docteur, courrier pour un dossier devenu mineur.'),
       ancrage: ANCRAGE,
       liste,
-      maintenantMs: Date.now(),
+      maintenantMs: Date.now(), version: versionDe(idPatient),
     });
     expect(consigne).toMatchObject({ ok: false, raison: 'garde_mineur' });
     expect(await courriers(idPatient)).toBe(0);
+  });
+
+  /** Une version neuve qui supplante `tete` sur la carte `dc`. */
+  const INSERER_VERSION_NEUVE =
+    `INSERT INTO protocol_drafts
+       (id, id_patient, decision_card_id, decision_card_input_hash, snapshot_input_hash,
+        review_input_hash, selected_priority_id, payload, input_hash, contract_version,
+        supersedes_draft_id, updated_at)
+     VALUES ($1, $2, 'dc', $3, $3, $3, 'prio', $4::jsonb, $3, $5, $6, CURRENT_TIMESTAMP)`;
+
+  it('TÊTE DE FIL (revue Codex de #1701, P1-2) — supplantée avant le verrou : la consignation refuse, aucun courrier', async () => {
+    const { idPatient } = await dossier();
+    const liste = listeComplementsCibles(ACTIONS, V4);
+    if (!liste.ok) throw new Error('fixture');
+    const tete = versionDe(idPatient).protocolDraftId;
+    await observateur.query(INSERER_VERSION_NEUVE,
+      [`${tete}_v2`, idPatient, H, JSON.stringify({ actions: ACTIONS }), V4, tete]);
+    const consigne = await consigner(prisma, {
+      idPatient,
+      donnees: donnees(idPatient, 'Docteur, courrier sur une version supplantée.'),
+      ancrage: ANCRAGE,
+      liste,
+      maintenantMs: Date.now(),
+      version: versionDe(idPatient),
+    });
+    expect(consigne).toMatchObject({ ok: false, raison: 'version_stale' });
+    expect(await courriers(idPatient)).toBe(0);
+  });
+
+  it('TÊTE DE FIL — sous le verrou du patient, aucune version neuve ne s’insère : la clé étrangère attend la transaction', async () => {
+    const { idPatient } = await dossier();
+    const tete = versionDe(idPatient).protocolDraftId;
+    const ecrivain = new pg.Client({ connectionString: URL_BASE });
+    await ecrivain.connect();
+    try {
+      await observateur.query('BEGIN');
+      await observateur.query('SELECT id FROM patients WHERE id_patient = $1 FOR UPDATE', [idPatient]);
+      await ecrivain.query("SET lock_timeout = '500ms'");
+      await expect(ecrivain.query(INSERER_VERSION_NEUVE,
+        [`${tete}_v2`, idPatient, H, JSON.stringify({ actions: ACTIONS }), V4, tete]))
+        .rejects.toMatchObject({ code: '55P03' });
+    } finally {
+      await observateur.query('ROLLBACK');
+      await ecrivain.end();
+    }
   });
 
   it('FRAÎCHEUR — un « oui » envoyé en 2019 tient : aucune déclaration n’expire, le courrier est requis', async () => {

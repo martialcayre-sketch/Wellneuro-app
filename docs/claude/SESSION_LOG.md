@@ -11839,3 +11839,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
 
 **Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
+## 2026-10-25 — J3-12h lot 4 : revue Codex reçue après le merge (D-362)
+
+**Fait.** Codex BLOQUER sur #1701, mergée sans attendre la passe. P1-1 : accusé `courrier_complement` en 404 avant la session, drapeau fermé. P1-2 : fil relu et règle de version rejouée sous le verrou du patient ; la clé étrangère `protocol_drafts → patients` fait attendre toute version neuve (banc 55P03). Contre-épreuves rouges.
+
+**Écarté.** P1-3 (retirer l’ingrédient du courrier) : texte validé par D-358 §1, l’ingrédient n’est ni population ni situation.
+
+**Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
+
+**Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
