@@ -11829,3 +11829,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
 
 **Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
+## 2026-10-26 — File D : lettre az (D-380), fin de séance
+
+**Fait.** #1709 mergée (cb, (a), (e)). Question 9 de la pièce du bilan hiérarchisé posée et tranchée (deux parties séparées) ; az écrite : notice « Pour préparer votre bilan », consignes sourcées seules.
+
+**Écarté.** Consignes de tube et de transport sans claim ; toute famille proposée pour aw.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; séance close.
+
+**Ouvert.** aw (familles de la main du responsable) ; lots de code des lettres de la séance.

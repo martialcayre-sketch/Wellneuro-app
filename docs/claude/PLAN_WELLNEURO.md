@@ -931,6 +931,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : texte patient de la main du responsable, signé, versionné ; il se décide avec une question encore ouverte, non posée ; une ou deux ouvertures [A verifier].
 - **Critère de fin** : texte signé ; chaque activation constatée avant la suivante.
 - **Mise à jour (2026-10-13)** : les questions écartées ne se reposent pas : l'objet d'az se tranche dans son texte, de la main du responsable [Hypothese], en deux parties séparées [Hypothese].
+- **Mise à jour (2026-10-26, texte écrit)** : question 9 de la pièce de cadrage posée et tranchée par le responsable : deux parties séparées. Texte de la notice validé mot pour mot, écrit par D-380 ; consignes générées, sourcées seules (tube et transport exclus). Service avec le bilan composé (ax) seulement ; avant l'activation, couverture des consignes constatée par conteneur, puis porte 18. Les [Hypothese] de la ligne précédente sont levés.
 
 #### F51 · Décision des axes biologiques
 - **Identifiant, piste** : liste fermée neuve, distincte de NeuroAxis (arbitré le 2026-10-05), devenue un lot BIO-PARCOURS ; panels.
@@ -2262,7 +2263,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd ; cb fait le 2026-10-26 (D-379), le jeu d'illustrations reste à valider avant cc |
 | ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
 | ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
-| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge |
+| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge ; texte d'az fait le 2026-10-26 (D-380) ; aw attend la liste des familles et leurs claims, de la main du responsable |
 | cm | F51 | cj ; fait le 2026-10-23 (D-348) |
 | at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; reportés en D.1 le 2026-10-15 |
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
@@ -2845,7 +2846,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | aw | familles du bilan | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
-| az | notice patient du bilan | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
+| az | notice patient du bilan ; texte fait le 2026-10-26 (D-380) | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |
 | ba | mention « validé par votre praticien », ajout à la page servie ; fait le 2026-10-25 (D-369) | la main du responsable | 1 [Hypothese] | H35 |
 | bb | trois plans de chaque geste | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
