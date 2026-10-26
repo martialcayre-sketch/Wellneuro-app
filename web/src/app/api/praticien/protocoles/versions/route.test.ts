@@ -784,6 +784,49 @@ describe('POST /api/praticien/protocoles/versions', () => {
       expect(corps.error).toContain('plan minimal de l’action 1');
     });
 
+    // GARDE ÉTENDUE ([[D-384]] §5, lettre bb) : les plans idéal et de secours
+    // seront lus par le patient ; ils passent sous la même garde, au même
+    // régime. Débrancher l'une des deux lignes de la route fait rougir son cas.
+    it.each([
+      ['idealPlan', 'plan idéal de l’action 1'],
+      ['rescuePlan', 'plan de secours de l’action 1'],
+    ] as const)('refuse aussi sur %s, et nomme le champ', async (champ, libelle) => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          actions: [{ ...action, [champ]: 'En cas de danger, appeler le cabinet.' }],
+        },
+      }));
+      expect(res.status).toBe(409);
+      const corps = await res.json();
+      expect(corps.reason).toBe('REGISTRE_ANXIOGENE');
+      expect(corps.error).toContain(libelle);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('le jeton rendu sur un plan de secours lève le refus de ce texte-là', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const soumission = {
+        ...submission,
+        actions: [{ ...action, rescuePlan: 'En cas de danger, appeler le cabinet.' }],
+      };
+      const refus = await POST(postRequest({ episode, decisionCard, submission: soumission }));
+      const { texteSha256 } = await refus.json();
+
+      const accepte = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...soumission, confirmerRegistre: texteSha256 },
+      }));
+      expect(accepte.status).toBe(200);
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
     it('laisse passer le jeton RENDU pour ce texte — la confirmation est un second geste', async () => {
       getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
       prisma.protocolDraft.findMany.mockResolvedValue([]);
