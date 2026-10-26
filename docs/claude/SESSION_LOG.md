@@ -11896,3 +11896,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Place 7 (ak) dans sa fenêtre, du 2026-11-01 au 2026-11-07.
 
 **Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).
+
+## 2026-10-26 — File C : bb, lot 1 — garde étendue aux plans idéal et de secours (D-386)
+
+**Fait.** Question ouverte de D-384 tranchée par le responsable : la marque d'une version « sous garde étendue » est sa date de création, postérieure à la mise en service constatée de la garde (D-386). Lot 1 : la route d'enregistrement d'une version lit aussi les plans idéal et de secours (refus confirmable, jeton lié au texte) ; carte des gardes à jour ; trois cas de banc.
+
+**Écarté.** Garde rejouée à la lecture (servirait les versions antérieures, contraire à D-384 §5) ; marque dans le contenu (champ de contrat) ; confirmation persistée (migration).
+
+**Prochaine action.** Merge, déploiement constaté, instant relevé ; puis lot 2 sous drapeau éteint.
+
+**Ouvert.** Nom du drapeau et forme du détail, au lot 2.

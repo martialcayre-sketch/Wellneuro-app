@@ -36,7 +36,7 @@
 // | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |
 // | Dossier à deux voix (service portail) | `termeAnxiogene` sur les TROIS textes praticien servis — reformulation, priorité, synthèse (`api/portail/dossier/route.ts`) | journalisant (`PORTAIL_DOSSIER_REGISTRE_ANXIOGENE`) | `api/portail/dossier/route.test.ts` |
 // | Document patient biologie (génération, décision F/D-122) | `termeAnxiogene` sur le texte généré avant consignation (`api/praticien/biologie/proposition/document-patient/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/biologie/proposition/document-patient/route.test.ts` |
-// | Protocole 21 jours (enregistrement d'une version) | `termeAnxiogene` sur les quatre champs servis au patient — `purpose`, `followUpCriterion`, et `title` + `minimalPlan` de CHAQUE action (`api/praticien/protocoles/versions/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`, jeton lié au texte) | `api/praticien/protocoles/versions/route.test.ts` |
+// | Protocole 21 jours (enregistrement d'une version) | `termeAnxiogene` sur les champs servis au patient — `purpose`, `followUpCriterion`, et `title` + `minimalPlan` + `idealPlan` + `rescuePlan` de CHAQUE action, les deux derniers depuis [[D-384]] §5 (`api/praticien/protocoles/versions/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`, jeton lié au texte) | `api/praticien/protocoles/versions/route.test.ts` |
 // | Export PDF du dossier (téléchargement praticien, [[D-252]]) | `creerMasqueur(patient)` appliqué à TOUS les textes libres au point d'entrée de l'assembleur, pour la version « IA externe », cochée par défaut (`lib/export-dossier/assembler.ts`, `masquage.ts`) | masquage (transforme, ne refuse pas) ; version « complète » sans masquage, sur choix explicite du praticien | `lib/export-dossier/assembler.test.ts` (parcours exhaustif de tous les textes du document, vu rouge au débranchement) |
 //
 // L'EXPORT SORT VERS UN TIERS QUE L'APPLICATION NE CONNAÎT PAS ([[D-252]]).
@@ -65,10 +65,13 @@
 // PRATICIEN, texte praticien gardé ici mais À SON ÉCRITURE
 // (`cockpit/priorite/route.ts`, refus sans confirmation : c'est l'intitulé que
 // le patient lit seul en tête de son protocole). `adviceSheetRef` est FERMÉ à
-// l'écriture depuis [[D-200]], la route le force à `null`. `idealPlan`, `rescuePlan` et les
-// limitations internes ne sont pas gardés ici : ils ne franchissent aucune
-// route patient — s'ils le faisaient un jour, ce serait un chemin neuf, et il
-// s'inscrirait ici.
+// l'écriture depuis [[D-200]], la route le force à `null`. `idealPlan` et
+// `rescuePlan` SONT gardés depuis [[D-384]] §5 (lettre bb, garde étendue) :
+// même route, même régime confirmable, avant qu'une route patient ne les
+// serve — et seulement pour les versions créées sous cette garde ([[D-386]]).
+// Les limitations internes ne sont pas gardées ici : elles ne franchissent
+// aucune route patient — si elles le faisaient un jour, ce serait un chemin
+// neuf, et il s'inscrirait ici.
 //
 // LE DOSSIER À DEUX VOIX EST UN CHEMIN NEUF, PAS UN DOUBLON (Alliance LOT-06).
 // Il sert au patient un texte praticien que RIEN d'autre ne lui sert — la
