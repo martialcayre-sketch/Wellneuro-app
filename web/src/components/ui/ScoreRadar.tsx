@@ -20,8 +20,13 @@ export type ScoreRadarPoint = { axe: string; value: number | null; absence?: str
 type PointRadar = { x: number; y: number; value?: unknown };
 
 // `valeursMasquees` : mode consultation de la fiche ([[D-354]] §3). Les axes et
-// leur « non mesuré » restent ; ni contour, ni points, ni graduation — rien
-// qui dise une valeur, et aucun axe mesuré ramené à zéro.
+// leur « non mesuré » restent ; ni contour, ni points — rien qui dise une
+// valeur, et aucun axe mesuré ramené à zéro.
+//
+// Figure DÉCORATIVE (H64, F9a, arbitrage du 2026-10-25) : masquée au lecteur
+// d'écran, sans arrêt de tabulation (`accessibilityLayer` coupé) ; le tableau
+// voisin porte tout. Les graduations gardent leurs anneaux, jamais leurs
+// nombres — dans les deux modes.
 export function ScoreRadar({
   data,
   max = 100,
@@ -33,9 +38,9 @@ export function ScoreRadar({
 }) {
   const absences = new Map(data.filter(d => !estMesure(d.value)).map(d => [d.axe, d.absence ?? LIBELLE_NON_MESURE]));
   return (
-    <div className="bg-surface border border-border rounded-xl p-4">
+    <div aria-hidden="true" className="bg-surface border border-border rounded-xl p-4">
       <ResponsiveContainer width="100%" height={260}>
-        <RadarChart data={data}>
+        <RadarChart data={data} accessibilityLayer={false}>
           <PolarGrid stroke="var(--border)" />
           <PolarAngleAxis
             dataKey="axe"
@@ -54,8 +59,8 @@ export function ScoreRadar({
           <PolarRadiusAxis
             angle={30}
             domain={[0, max]}
-            tick={valeursMasquees ? false : { fill: 'var(--muted-foreground)', fontSize: 10 }}
-            axisLine={!valeursMasquees}
+            tick={false}
+            axisLine={false}
           />
           {!valeursMasquees && (
           <Radar
