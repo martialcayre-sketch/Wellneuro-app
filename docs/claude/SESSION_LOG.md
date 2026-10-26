@@ -11789,3 +11789,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (compositions des deux rapports, libellés imprimés et noms usuels, re-signature).
 
 **Ouvert.** La source des panels ; la liste des noms usuels.
+
+## 2026-10-26 — t45, second lot : les acides gras au résolveur (D-377)
+
+**Fait.** Migration de #1704 appliquée (release-db 40309999072) et constatée par conteneur. Vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) au résolveur ; re-signature sur l'instruction du responsable (205 entrées, SHA `8ede2a9e…`). AA/EPA et LA/DGLA préparés par leurs opérandes. Dette des bancs agenda inscrite au plan (#1712).
+
+**Écarté.** « AA », « ALA », « acide linolénique » nu, noms sans suffixe, variantes des rapports.
+
+**Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
+
+**Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.

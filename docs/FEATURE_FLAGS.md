@@ -376,7 +376,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/indicationsAssiettesV1.ts` | `true` | `2026-09-19T18:27:15.000Z` |
 | `clinical/replisAssietteV1.ts` | `false` | `null` |
 | `clinical/portesBiologiquesAssiettesV1.ts` | `true` | `2026-09-24T06:44:55.000Z` |
-| `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-10-25T10:52:31.000Z` |
+| `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-10-26T12:23:19.000Z` |
 | `fiches-usage/ficheUsageBesoin2V1.ts` | `false` | `null` |
 | `clinical/declencheursComplementCibleV1.ts` | `true` | `2026-10-23T17:32:07.000Z` |
 
