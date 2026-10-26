@@ -2,7 +2,8 @@
 
 - Drapeau `WN_COURRIER_COMPLEMENT` fermé, l'accusé de lecture
   `courrier_complement` répond 404 avant toute session : aucun compte patient
-  n'est résolu pour une surface fermée.
+  n'est résolu pour une surface fermée. Lu avant la session, le corps est
+  borné à 64 Kio (borne technique, même motif que `ce-qui-compte`).
 - La préparation du courrier relit la tête de fil de la carte sous le verrou
   du patient, juste avant l'insertion : une version supplantée ou dont la
   relecture est retirée entre la route et la consignation est refusée, et rien

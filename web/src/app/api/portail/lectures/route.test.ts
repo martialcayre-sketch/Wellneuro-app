@@ -493,6 +493,30 @@ describe('le courrier à remettre au médecin avant un complément ciblé (D-345
     expect(reponse.status).toBe(401);
   });
 
+  describe('revue CodeRabbit de #1708 — le corps lu avant la session est borné (64 Kio)', () => {
+    const corpsGeant = JSON.stringify({ espece: 'courrier_complement', idObjet: 'ccr_servi', bourre: 'x'.repeat(64 * 1024) });
+
+    it('annoncé au-delà du plafond : il n’est pas lu, et sans session la garde répond 401', async () => {
+      const req = new Request('http://localhost/api/portail/lectures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'content-length': String(64 * 1024 + 1) },
+        body: '{}',
+      });
+      const lecture = vi.spyOn(req, 'text');
+      const reponse = await POST(req);
+      expect(reponse.status).toBe(401);
+      expect(lecture).not.toHaveBeenCalled();
+    });
+
+    it('non annoncé et lu au-delà du plafond : illisible, 400 après la garde, rien n’est écrit', async () => {
+      mockCompteActif();
+      const reponse = await POST(requete(cookieProprio(), corpsGeant));
+      expect(reponse.status).toBe(400);
+      expect(courrierComplementALire).not.toHaveBeenCalled();
+      expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+    });
+  });
+
   it('POST : l’identifiant d’un courrier complément ne s’acquitte pas sous l’espèce de la lettre', async () => {
     process.env.WN_COURRIER_COMPLEMENT = 'true';
     process.env.WN_LETTRE_ADRESSAGE_PATIENT = 'true';

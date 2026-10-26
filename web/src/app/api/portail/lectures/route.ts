@@ -262,6 +262,14 @@ const ESPECES: readonly EspeceConsignee[] = [
   'bilan', 'synthese', 'fiche_assiette', 'lettre_adressage', 'courrier_complement', 'protocole',
 ];
 
+/**
+ * BORNE TECHNIQUE DE TRANSPORT — 64 Kio, en octets. Ce n'est PAS un seuil
+ * (`DC-20`) : le corps est lu AVANT la session (revue CodeRabbit de #1708), il
+ * ne se lit donc pas sans plafond. Même chiffre et même motif à deux étages
+ * que `api/portail/ce-qui-compte/route.ts`.
+ */
+const TAILLE_CORPS_MAX_OCTETS = 64 * 1024;
+
 function especeValide(valeur: unknown): valeur is EspeceConsignee {
   return typeof valeur === 'string' && (ESPECES as readonly string[]).includes(valeur);
 }
@@ -334,13 +342,21 @@ export async function POST(req: Request): Promise<NextResponse<PortailLecturesRe
 
   // Le corps est lu AVANT la session : l'accusé d'une surface fermée répond 404
   // sans résoudre de compte (revue Codex de #1701, P1-1). Un corps illisible
-  // garde son verdict après la garde, comme avant.
+  // garde son verdict après la garde, comme avant. Un corps au-delà de
+  // `TAILLE_CORPS_MAX_OCTETS` est illisible : annoncé, il n'est pas lu.
   let corps: unknown;
   let corpsLisible = true;
-  try {
-    corps = await req.json();
-  } catch {
+  const annonce = Number(req.headers.get('content-length'));
+  if (Number.isFinite(annonce) && annonce > TAILLE_CORPS_MAX_OCTETS) {
     corpsLisible = false;
+  } else {
+    try {
+      const brut = await req.text();
+      if (brut.length > TAILLE_CORPS_MAX_OCTETS) corpsLisible = false;
+      else corps = JSON.parse(brut);
+    } catch {
+      corpsLisible = false;
+    }
   }
   if (
     corpsLisible
