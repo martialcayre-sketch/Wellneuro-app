@@ -11789,3 +11789,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, release-db, constat ; puis le second lot (compositions des deux rapports, libellés imprimés et noms usuels, re-signature).
 
 **Ouvert.** La source des panels ; la liste des noms usuels.
+
+## 2026-10-26 — Déployeur : la tête retenue jusqu'à l'application attestée (D-374 §1)
+
+**Fait.** `retenue()` part du dernier commit de la ligne touchant un chemin de release-db et lit les runs créés depuis lui ; quatre états lus aux étapes du run, la fin rouge volontaire comptée « appliquée » (vérifié sur un run réel). Revue `wn-reviewer` : un run en exécution sur un ancêtre ayant déjà lu la tête est attendu (vingt minutes, délai du job 70 min). Banc : 67 cas, huit mutations attrapées. D-248 amendée, fiche H85.
+
+**Écarté.** Journaux du run plutôt que ses étapes ; fenêtre aux cent derniers runs ; porteur limité aux migrations.
+
+**Prochaine action.** CI, CodeRabbit, merge hors run release-db en vol, déploiement constaté ; puis D-373 §1 et D-375 §1.
+
+**Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
