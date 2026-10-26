@@ -111,9 +111,9 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
 - Dernière décision au registre avant ce plan : D-284. Ce plan entre avec
   D-285. Toute décision neuve s'écrit « D-xxx » avec sa lettre ; son numéro se
   réserve dans main au moment de l'écrire.
-- Lettres prises : a à az, ba à bh, ca à cq. Lettres déjà écrites en D-xxx : i
+- Lettres prises : a à az, ba à bh, ca à cr (cr par D-382, 2026-10-26). Lettres déjà écrites en D-xxx : i
   (D-280, pour les seuils de 8B seulement), ck (D-282, G3 clos par #1416), cp et l pour
-  l'essentiel (D-283), cq (D-285). Prochaine lettre libre : cr.
+  l'essentiel (D-283), cq (D-285). Prochaine lettre libre : cs.
 - Production : 105 migrations appliquées, schéma à jour, aucune migration en
   vol (constat du 2026-10-13) ; aucune branche distante ne porte de migration
   absente de main.
@@ -351,7 +351,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 - **Rang** : 0.
 - **Portes, préalables** : aucun ; effectif de masquage acquis ; sa décision (F25), geste de rang 0, se merge avant le comptage : D-298.
 - **Migration, release-db** : non.
-- **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, cr si aucune ne couvre l'objet.
+- **Décisions, textes** : une D-xxx du délai, après le comptage ; sa lettre se prend alors, la prochaine lettre libre si aucune ne couvre l'objet.
 - **Critère de fin** : un nombre agrégé versé ; aucune carte avant le délai décidé.
 - **Mise à jour (2026-10-24, outil livré)** : script de conteneur `web/scripts/constatAvantT0.ts`, en lecture seule (il refuse de lire hors `default_transaction_read_only`). Population : dossiers actifs portant au moins une assignation, sans épisode T0. Les préconditions s'évaluent par le chemin des trois routes (`preconditionsT0PourPatient`, jalon T0). Sortie en agrégats, masquée par `agregerConstatAvantT0` (D-298) : effectif, avec et sans T0, bloqués et prêts, dossiers par condition dure manquante, quartiles d'ancienneté des bloqués, sans tranche. Reste : le constat en conteneur après déploiement, puis la D-xxx du délai.
 - **Mise à jour (2026-10-24, constat versé)** : lecture par conteneur en lecture seule (one-off-5061, image 172c4672), agrégats D-298, dossiers de test réels compris (D-075).
@@ -2777,7 +2777,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 
 ## §10 Décisions et textes à écrire, consolidés
 
-« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est cr, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
+« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est la prochaine lettre libre, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
 
 **Mise à jour (2026-10-26)** : D-370. Le numéro se réserve à la rédaction par une référence `refs/tags/reserve/D-N` créée sur GitHub ; le garde tolère un trou réservé, en avertissement, et le registre est rangé par numéro. Jusqu'à la livraison du script, le numéro se prend au merge, sur la tête de `docs/DECISIONS.md` relue juste avant ; il s'annonce au moment où on le prend, et le sujet du squash se pose par `--subject`. La phrase « se réserve dans main au moment de l'écrire » ne vaut qu'après la livraison.
 
@@ -2894,7 +2894,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | D-xxx | objet | de qui | rang | fiche |
 |---|---|---|---|---|
 | de cq | forme du plan unique : D-285, écrite | registre | 0 | H04 |
-| du délai avant T0 | délai, après le comptage ; lettre cr si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
+| du délai avant T0 | délai, après le comptage ; prochaine lettre libre si aucune ne couvre l'objet | la main du responsable | après le comptage | H07 |
 | de cadrage ca | refonte du sommeil, présentation seule | la main du responsable | 0 | H17 |
 | par indicateur hebdomadaire | nom, source, échelle, nature, ce que le praticien en lit (D-366 §2) | la main du responsable | 0 (instruction) | H19 |
 | de seuils_points de Q_ALI_01 | décision clinique sourcée | la main du responsable | 1 [Hypothese] | H40 |

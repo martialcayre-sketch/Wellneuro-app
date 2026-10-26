@@ -37,7 +37,10 @@ règle signée, mot pour mot ; ses lignes (analyses) ; ses claims, avec leur
 version ; et « ce que la famille explore », tiré d'un claim relu dans le
 corpus. Le point de prudence n'y entre que s'il a sa source ; sinon la fiche
 porte « aucune prudence sourcée », sans texte. Une fiche à laquelle manque
-l'exploration n'est pas signable.
+l'exploration n'est pas signable. Cette exigence vaut pour les treize fiches
+ordinaires. Un bloc d'exclusion (§3) porte son motif et son claim de
+non-indication, sans exploration ; l'exploration pertinente qu'il nomme reste
+sur la fiche de son alternative (D-320).
 
 **§5 — Le dossier et la signature.** Les textes des fiches sont tenus hors
 dépôt, au modèle du dossier de preuve de [[D-312]] §2 : claims lus en
