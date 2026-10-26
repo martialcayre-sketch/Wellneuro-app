@@ -11840,9 +11840,9 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
 
-## 2026-10-26 — J3-12h : courrier complément sans nom d'ingrédient (D-381)
+## 2026-10-26 — J3-12h : courrier complément sans nom d'ingrédient (D-382)
 
-**Fait.** #1708 mergée (d356e83a) après la passe Codex ACCEPTER et deux corrections CodeRabbit : corps de l'accusé borné à 64 Kio, lu en flux. P1-3 livré sur demande du responsable : chaque ligne du courrier est l'intitulé seul, doublons fusionnés ; D-381 amende D-358 §1.
+**Fait.** #1708 mergée (d356e83a) après la passe Codex ACCEPTER et deux corrections CodeRabbit : corps de l'accusé borné à 64 Kio, lu en flux. P1-3 livré sur demande du responsable : chaque ligne du courrier est l'intitulé seul, doublons fusionnés ; D-382 amende D-358 §1.
 
 **Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
 

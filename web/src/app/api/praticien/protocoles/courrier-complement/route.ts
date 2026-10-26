@@ -168,7 +168,7 @@ export async function POST(req: Request) {
     if (!shaTable) return echec('garde_table_non_signee', 'La table des déclencheurs n’est pas signée.', 409);
     const genere = genererCourrierComplement({
       patientId: idPatient,
-      // L'intitulé saisi par le praticien, seul ([[D-381]]) ; le générateur
+      // L'intitulé saisi par le praticien, seul ([[D-382]]) ; le générateur
       // fusionne les lignes identiques.
       lignes: complementsCibles(actions).map(action => ({ intitule: action.title })),
       ancrage: { version: `${PREFIXE_ANCRAGE_COMPLEMENT}${shaTable}`, sha256: shaTable },

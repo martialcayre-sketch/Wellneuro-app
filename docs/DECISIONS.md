@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-381 — Courrier complément : chaque ligne est l'intitulé saisi par le praticien, seul ; le nom d'ingrédient du catalogue sort du texte (amende D-358 §1 ; P1-3 de la revue Codex de #1701)
+### D-382 — Courrier complément : chaque ligne est l'intitulé saisi par le praticien, seul ; le nom d'ingrédient du catalogue sort du texte (amende D-358 §1 ; P1-3 de la revue Codex de #1701)
 
 - Date : 2026-10-26
 - Statut : accepté — le responsable a demandé le retrait le 2026-10-26
