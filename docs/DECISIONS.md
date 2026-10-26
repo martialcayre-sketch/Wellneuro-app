@@ -8,8 +8,12 @@
 
 - Date : 2026-10-26
 - Statut : accepté — arbitrages du responsable du 2026-10-25 ([[D-376]] §6
-  et §7) et du 2026-10-26 (liste des sigles), sur questions à options ;
-  signature transcrite par l'assistant sur son instruction.
+  et §7) et du 2026-10-26 (liste des sigles), sur questions à options.
+  Déclaration de conformité du responsable rendue le 2026-10-26, sur
+  question à options, après la surface de relecture présentée avant la
+  demande : les vingt-huit entrées, leur code, le compte (205 entrées,
+  109 analytes) et l'empreinte. La frappe de la signature, transcrite par
+  l'assistant, ne vaut que portée par cette déclaration ([[D-195]] §1-§2).
 - Domaine : staging d'import ([[D-256]] A4) ; remplace la signature de
   [[D-363]] ; applique [[D-376]] §6 et §7. Aucune migration dans ce lot,
   aucun seuil, aucune conversion ([[D-157]]).
