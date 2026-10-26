@@ -16,8 +16,10 @@ name: Déploiement production
 #     LOT 3, l'auto-déploiement Scalingo est COUPÉ et ce job est le déployeur :
 #     il part quand le CI de `main` a conclu VERT (`workflow_run`) — la porte
 #     que Scalingo tenait en attendant tous les checks —, et à la main
-#     (`action=deployer`). Un commit qui porte un run release-db non conclu au
-#     vert est RETENU : release-db le déploie à l'approbation (D-087, D-102).
+#     (`action=deployer`). Une tête dont le dernier commit touchant un chemin
+#     de release-db n'est pas attesté appliqué — qu'elle le porte ou le
+#     contienne — est RETENUE : release-db déploie la tête à l'approbation
+#     (D-087, D-102, D-374 §1).
 #   Les invariants (scripts/wn-deploiement-deployer.test.mjs) tiennent : une
 #   seule écriture Scalingo, dans le seul script du déployeur, sur une BRANCHE.
 #
@@ -136,16 +138,19 @@ jobs:
     if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && inputs.action == 'deployer'))
     runs-on: ubuntu-latest
     environment: deploy-production
-    # LECTURE SEULE de l'API Actions : les runs release-db du commit, pour
-    # retenir un commit de migration jusqu'à l'approbation. Ce bloc REMPLACE
-    # les permissions par défaut du job : rien d'autre n'est accordé.
+    # LECTURE SEULE de l'API Actions : les runs release-db depuis le dernier
+    # commit de migration de la ligne, et les étapes d'un run rouge, pour
+    # retenir la tête jusqu'à l'application attestée (D-374 §1). Ce bloc
+    # REMPLACE les permissions par défaut du job : rien d'autre n'est accordé.
     permissions:
       contents: read
       actions: read
-    # DEUX bornes de 20 min s'additionnent (revue #1220) : le calme AVANT
-    # l'écriture, puis la conclusion APRÈS. Un job tué entre les deux
-    # laisserait un build en vol et un état inconnu. 40 + installation + marge.
-    timeout-minutes: 50
+    # TROIS bornes de 20 min s'additionnent : la fin d'un run release-db en
+    # exécution sur un ancêtre (D-374 §1, revue de #1713), le calme AVANT
+    # l'écriture (revue #1220), puis la conclusion APRÈS. Un job tué entre les
+    # deux dernières laisserait un build en vol et un état inconnu.
+    # 60 + installation + marge.
+    timeout-minutes: 70
     # SÉRIALISÉ : deux déploiements ne s'entrelacent pas, et un déploiement
     # déclenché n'est pas abandonné en plein build. MAIS un seul run ATTEND :
     # un nouvel arrivant évince celui qui attendait — y compris celui de la

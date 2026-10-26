@@ -137,7 +137,13 @@ réduisent les écritures concurrentes sur ces fichiers.
   par machine, banc puis correctif du déployeur) et du 2026-10-26 (portée du
   gel : par phases, contre un gel intégral), sur questions à options ;
   précisé par la contre-revue Codex (lecture de `release-db.yml`) ; texte de
-  registre rédigé dans le lot.
+  registre rédigé dans le lot. **§1 livré le 2026-10-26** (fiche H85 ;
+  déploiement à constater au premier run du déployeur après le merge) : banc
+  « migration portée par un ancêtre, tête de code verte » joué rouge sur
+  l'ancienne lecture, puis `retenue()` à quatre états ; la fin rouge
+  volontaire se lit « appliquée » par les étapes du run (one-off et
+  contre-épreuve vertes), vérifiée sur le run de l'incident du 2026-10-19.
+  Gel intégral maintenu jusqu'à la sonde (§4).
 - Domaine : `.github/workflows/release-db.yml` (lu, non modifié par cette
   décision), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
   `.claude/rules/pr-revue-et-release-db.md` §3 à §5 (§1.10 : [[D-373]] §7),
@@ -10810,6 +10816,11 @@ lot 4 ne pourra la lever pour le code pur qu'en tenant compte de cet écart.**
 un commit SANS migration mergé après un commit de migration en attente
 d'approbation contient le code de ce dernier, et part au déploiement — comme
 sous l'auto-déploiement. Le retenir aussi changerait le régime code/schéma.
+**Retiré le 2026-10-26** par [[D-374]] §1 (arbitrage du responsable du
+2026-10-25) : le déployeur retient la tête tant que le dernier commit de sa
+ligne qui touche un chemin de release-db n'est pas attesté appliqué — qu'elle
+le porte ou le contienne ; une fin rouge volontaire après application se lit
+« appliquée » par les étapes du run.
 
 **Classifieur de permissions.** L'édition du workflow qui rend le déploiement
 automatique a été refusée à Claude (« Protected-Scope IaC Apply ») ; le
