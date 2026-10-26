@@ -11800,15 +11800,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
 
-## 2026-10-25 — J3-12h lot 4 : revue Codex reçue après le merge (D-362)
-
-**Fait.** Codex BLOQUER sur #1701, mergée sans attendre la passe. P1-1 : accusé `courrier_complement` en 404 avant la session, drapeau fermé. P1-2 : fil relu et règle de version rejouée sous le verrou du patient ; la clé étrangère `protocol_drafts → patients` fait attendre toute version neuve (banc 55P03). Contre-épreuves rouges.
-
-**Écarté.** P1-3 (retirer l’ingrédient du courrier) : texte validé par D-358 §1, l’ingrédient n’est ni population ni situation.
-
-**Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
-
-**Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
 ## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
 
 **Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
@@ -11818,3 +11809,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, page D ; puis aw et texte d'az.
 
 **Ouvert.** Lots de code de cb, (a) avec bg, (e) ; jeu d'illustrations.
+
+## 2026-10-25 — J3-12h lot 4 : revue Codex reçue après le merge (D-362)
+
+**Fait.** Codex BLOQUER sur #1701, mergée sans attendre la passe. P1-1 : accusé `courrier_complement` en 404 avant la session, drapeau fermé. P1-2 : fil relu et règle de version rejouée sous le verrou du patient ; la clé étrangère `protocol_drafts → patients` fait attendre toute version neuve (banc 55P03). Contre-épreuves rouges.
+
+**Écarté.** P1-3 (retirer l’ingrédient du courrier) : texte validé par D-358 §1, l’ingrédient n’est ni population ni situation.
+
+**Prochaine action.** T1, T3, PR, CodeRabbit, passe Codex de correction AVANT le merge.
+
+**Ouvert.** P1-3 sur arbitrage seulement ; dettes de #1701.
