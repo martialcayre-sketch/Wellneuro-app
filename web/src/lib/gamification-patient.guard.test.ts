@@ -61,6 +61,8 @@ const SURFACES_PATIENT = [
   'lib/portail/texteEncartConduite.ts',
   // ak ([[D-353]]) : la phrase d'appui du questionnaire renvoyé, même raison.
   'lib/portail/texteAppuiRenvoi.ts',
+  // ba ([[D-369]]) : la mention « Validé par votre praticien le … », même raison.
+  'lib/portail/texteMentionValidation.ts',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.

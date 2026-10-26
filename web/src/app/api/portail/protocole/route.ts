@@ -120,6 +120,13 @@ type GetResponse =
        * qu'une vue est servie. Absent, l'accueil ne le rend pas.
        */
       encartConduite?: true;
+      /**
+       * « VALIDÉ PAR VOTRE PRATICIEN LE … » ([[D-369]], lettre ba) : l'instant
+       * de l'approbation de diffusion de la version servie, en ISO. Présent
+       * seulement quand une vue est servie ; une nouvelle version approuvée
+       * porte sa propre date ([[D-368]] §4). L'accueil le dit en toutes lettres.
+       */
+      valideLe?: string;
     }
   | ErrorResponse;
 
@@ -269,6 +276,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
+      valideLe: diffuse.approvedAt.toISOString(),
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
     });

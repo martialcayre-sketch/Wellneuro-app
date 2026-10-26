@@ -11800,6 +11800,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Gel intégral jusqu'à la sonde (D-374 §4) ; retenue clinique étendue aux descendants, à confirmer.
 
+## 2026-10-26 — File C : ba, « Validé par votre praticien le … » (D-369, H35)
+
+**Fait.** Place 7 (ak) : la fenêtre du constat D-353 §5 n'est pas ouverte (du 1er au 7 novembre) ; relu par conteneur que le renvoi existe toujours sur le dossier de test (une assignation ouverte depuis le jour 0, agendas exclus, sans réponse depuis). Les activations restent tenues par la porte 18 jusqu'à ce constat. Lot de code de ba, hors file C : la route du protocole servi sert la date de l'approbation de diffusion de la version servie, la page la dit en tête, en toutes lettres, au jour civil de Paris ; sans drapeau ni migration.
+
+**Écarté.** Un drapeau (D-369 n'en pose pas) ; l'emplacement dans le sous-titre (le but du protocole y reste).
+
+**Prochaine action.** CI, CodeRabbit sur la tête, sonde release-db (gel de D-374 §5), merge, déploiement constaté, puis constat par lecture sur la page servie d'un dossier de test ; place 7 dans sa fenêtre.
+
+**Ouvert.** D-369 §2 « aucun chiffre » lu comme « aucun score » : la date, imposée par §1, en porte.
 ## 2026-10-26 — File D : lettre cb, textes (a) et (e) de D-283 (D-377 à D-379)
 
 **Fait.** #1707 mergée (ad, bc, ba). Troisième lot écrit sur arbitrages : cb (écran de fin du sommeil, « Merci d'avoir noté vos nuits », critère des illustrations), (a) (durées de conservation en lettres, archive dite avec sa réserve), (e) (phrase au médecin dans chaque lettre).
