@@ -373,12 +373,14 @@ describe('resolver — les acides gras, libellés imprimés et sigles ([[D-376]]
     ['DHA', '%', 'BIO_AG_DHA'],
     ['DGLA', '%', 'BIO_AG_DGLA'],
     ['Acide eicosapentaénoïque (EPA)', '%', 'BIO_AG_EPA'],
+    ['Acide docosahexaénoïque (DHA)', '%', 'BIO_AG_DHA'],
+    ['Acide dihomo-gamma-linolénique (DGLA)', '%', 'BIO_AG_DGLA'],
   ])('« %s » en %s → %s, unité concordante', (libelle, unite, code) => {
     expect(resoudreLigne(libelle, unite, UNITES)).toEqual({ statut: 'resolu', code });
     expect(unitesConcordent(unite, UNITES.get(code) ?? null)).toBe(true);
   });
 
-  it('les sigles et noms ambigus écartés restent « inconnu »', () => {
+  it('les libellés écartés — ambigus (AA, ALA, linolénique nu) ou non arbitrés (sans suffixe, variante de rapport) — restent « inconnu »', () => {
     for (const libelle of ['AA', 'ALA', 'Acide linolénique', 'Acide pentadécanoïque', 'Ratio oméga 6 / oméga 3']) {
       expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
     }
