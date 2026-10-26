@@ -35,8 +35,9 @@ import { unitesConcordent } from './valeurLue';
 // puis RE-SIGNÉE par [[D-260]] le même jour : trois libellés réels ajoutés,
 // lus sur le premier compte rendu de production ; puis par [[D-263]] : les
 // analyses d'un compte rendu courant, ajoutées au catalogue par [[D-261]] ;
-// puis par [[D-336]] (six fiches de D-323 §6), [[D-356]] (libellés réels) et
-// [[D-363]] (le TP et l'INR de D-361 §6).
+// puis par [[D-336]] (six fiches de D-323 §6), [[D-356]] (libellés réels),
+// [[D-363]] (le TP et l'INR de D-361 §6) et [[D-381]] (les acides gras de
+// D-376 §7).
 // Toute entrée ajoutée, retirée ou retouchée change le SHA calculé et referme
 // le verrou : `resoudreLibelle` rend alors `inconnu` partout jusqu'à une
 // nouvelle signature, avec sa décision `D-xxx`.
@@ -256,6 +257,39 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   // secondes, ils dépendent du réactif, et le catalogue n'a pas de fiche.
   { libelle: 'Taux de prothrombine', code: 'BIO_TP' },
   { libelle: 'INR', code: 'BIO_INR' },
+  // [[D-376]] §7 (t45) : les vingt acides gras et les deux rapports de D-376,
+  // sous le libellé LU en production (constat par conteneur du 2026-10-25),
+  // puis trois sigles et leurs formes à sigle. Ni « AA » (trop court), ni
+  // « ALA » (aussi l'acide delta-aminolévulinique urinaire), ni « Acide
+  // linolénique » nu (alpha ou gamma) : ils restent « inconnu ».
+  { libelle: 'Acide Myristique', code: 'BIO_AG_MYRISTIQUE' },
+  { libelle: 'Acide Palmitique', code: 'BIO_AG_PALMITIQUE' },
+  { libelle: 'Acide Stéarique', code: 'BIO_AG_STEARIQUE' },
+  { libelle: 'Acide Laurique', code: 'BIO_AG_LAURIQUE' },
+  { libelle: 'Acide PentaDécanoïque_C15', code: 'BIO_AG_PENTADECANOIQUE' },
+  { libelle: 'Acide HeptaDécanoïque_C17', code: 'BIO_AG_HEPTADECANOIQUE' },
+  { libelle: 'Acide Palmitoléique', code: 'BIO_AG_PALMITOLEIQUE' },
+  { libelle: 'Acide Cis-Vaccénique', code: 'BIO_AG_CIS_VACCENIQUE' },
+  { libelle: 'Acide Trans-Vaccénique', code: 'BIO_AG_TRANS_VACCENIQUE' },
+  { libelle: 'Acide Rumènique', code: 'BIO_AG_RUMENIQUE' },
+  { libelle: 'Acide Oléique', code: 'BIO_AG_OLEIQUE' },
+  { libelle: 'Acide Nervonique', code: 'BIO_AG_NERVONIQUE' },
+  { libelle: 'Acide Elaidique', code: 'BIO_AG_ELAIDIQUE' },
+  { libelle: 'Acide Linoléique', code: 'BIO_AG_LINOLEIQUE' },
+  { libelle: 'Acide Gamma Linolénique', code: 'BIO_AG_GAMMA_LINOLENIQUE' },
+  { libelle: 'Acide Dihomo Gamma Linolénique', code: 'BIO_AG_DGLA' },
+  { libelle: 'Acide Arachidonique', code: 'BIO_AG_ARACHIDONIQUE' },
+  { libelle: 'Acide Alpha Linolénique', code: 'BIO_AG_ALPHA_LINOLENIQUE' },
+  { libelle: 'Acide Eicosapentaenoique', code: 'BIO_AG_EPA' },
+  { libelle: 'Acide Docosahexaenoique', code: 'BIO_AG_DHA' },
+  { libelle: 'Rapport A. Linoléique / A. DGLA', code: 'BIO_RATIO_LA_DGLA' },
+  { libelle: 'Rapport Oméga 6 / Oméga 3', code: 'BIO_RATIO_OMEGA6_OMEGA3' },
+  { libelle: 'EPA', code: 'BIO_AG_EPA' },
+  { libelle: 'DHA', code: 'BIO_AG_DHA' },
+  { libelle: 'DGLA', code: 'BIO_AG_DGLA' },
+  { libelle: 'Acide eicosapentaénoïque (EPA)', code: 'BIO_AG_EPA' },
+  { libelle: 'Acide docosahexaénoïque (DHA)', code: 'BIO_AG_DHA' },
+  { libelle: 'Acide dihomo-gamma-linolénique (DGLA)', code: 'BIO_AG_DGLA' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -276,18 +310,18 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-363]] — RE-SIGNER REMPLACE : la signature de [[D-356]]
-  // (2026-10-24, SHA `ebe7179e…`, 175 entrées, 85 analytes) portait la table
-  // sans le TP ni l'INR de [[D-361]] §6 ; celles de [[D-336]] (`3e084667…`),
-  // [[D-263]] (`be9a463c…`), [[D-260]] (`5f95d167…`) et [[D-259]]
-  // (`ccbd8008…`) étaient déjà remplacées. 177 entrées, 87 analytes. Signature
-  // du responsable transcrite par l'assistant sur son instruction, le
-  // 2026-10-25.
+  // RE-SIGNÉE PAR [[D-381]] — RE-SIGNER REMPLACE : la signature de [[D-363]]
+  // (2026-10-25, SHA `b4007b9c…`, 177 entrées, 87 analytes) portait la table
+  // sans les acides gras de [[D-376]] §7 ; celles de [[D-356]] (`ebe7179e…`),
+  // [[D-336]] (`3e084667…`), [[D-263]] (`be9a463c…`), [[D-260]] (`5f95d167…`)
+  // et [[D-259]] (`ccbd8008…`) étaient déjà remplacées. 205 entrées,
+  // 109 analytes. Signature du responsable transcrite par l'assistant sur son
+  // instruction, le 2026-10-26.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-25T10:52:31.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-25, des deux libellés de D-361 §6 lus en production (constat par conteneur du 2026-10-24) — « Taux de prothrombine » → BIO_TP, « INR » → BIO_INR, imprimés seuls, sans synonyme ; temps de Quick patient et témoin jamais rattachés',
-  shaPerimetre: 'b4007b9c931b8a93f6fe095778b50a4a8eecdfb368371fe4c5cd7fcfb4dcf4d2',
+  dateValidation: '2026-10-26T12:23:19.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-10-26, des vingt-deux libellés de D-376 §7 lus en production (constat par conteneur du 2026-10-25) — vingt acides gras et deux rapports, chacun vers sa fiche — et de trois sigles arbitrés (EPA, DHA, DGLA, seuls ou avec le nom) ; AA, ALA et « Acide linolénique » nu jamais rattachés',
+  shaPerimetre: '8ede2a9e3e35a8cd4accad288d1a3b99b3a235cd4363c6430fc6bc25aaa797c9',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

@@ -4,6 +4,241 @@
 
 ## Décisions actives
 
+### D-381 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-25 ([[D-376]] §6
+  et §7) et du 2026-10-26 (liste des sigles), sur questions à options.
+  Déclaration de conformité du responsable rendue le 2026-10-26, sur
+  question à options, après la surface de relecture présentée avant la
+  demande : les vingt-huit entrées, leur code, le compte (205 entrées,
+  109 analytes) et l'empreinte. La frappe de la signature, transcrite par
+  l'assistant, ne vaut que portée par cette déclaration ([[D-195]] §1-§2).
+- Domaine : staging d'import ([[D-256]] A4) ; remplace la signature de
+  [[D-363]] ; applique [[D-376]] §6 et §7. Aucune migration dans ce lot,
+  aucun seuil, aucune conversion ([[D-157]]).
+
+**§1 — Préalable.** Migration `20261025140000_catalogue_biologie_acides_gras`
+appliquée par la release-db `40309999072` (sentinelle liée au run) et
+constatée par conteneur le 2026-10-26 : 116 analytes, les 22 fiches
+conformes, rien d'attaché. Les codes proposés existent donc au catalogue
+(clé étrangère d'`analyte_propose`).
+
+**§2 — Les entrées** (28) : les vingt-deux libellés lus en production, tels
+qu'imprimés, chacun vers sa fiche — dont « Acide PentaDécanoïque_C15 »,
+« Rapport A. Linoléique / A. DGLA » (concorde sans unité avec « ratio »,
+[[D-356]] §4) et « Rapport Oméga 6 / Oméga 3 » ; puis « EPA », « DHA »,
+« DGLA », seuls ou dans « Acide eicosapentaénoïque (EPA) », « Acide
+docosahexaénoïque (DHA) », « Acide dihomo-gamma-linolénique (DGLA) ».
+
+**§3 — Écartés, sur choix explicite.** « AA » (trop court, ambigu) ;
+« ALA » (aussi l'acide delta-aminolévulinique urinaire) ; « Acide
+linolénique » nu (alpha ou gamma) ; les noms sans suffixe carboné et les
+variantes des rapports (« Ratio oméga 6 / oméga 3 ») : ils restent
+« inconnu » et se rattachent à la main.
+
+**§4 — Signature.** Nouvelle empreinte
+`8ede2a9e3e35a8cd4accad288d1a3b99b3a235cd4363c6430fc6bc25aaa797c9`
+(205 entrées, 109 analytes), datée `2026-10-26T12:23:19.000Z`. Elle
+remplace celle de [[D-363]].
+
+**§5 — Compositions préparées** (`compositionsPreparees.ts`, rien en base
+sans la signature du praticien dans la Bibliothèque) : `BIO_RATIO_AA_EPA` =
+acide arachidonique + EPA, `BIO_RATIO_LA_DGLA` = acide linoléique + DGLA.
+`BIO_RATIO_OMEGA6_OMEGA3` reste « opérandes absents ».
+
+**§6 — Hors de cette décision.** Les lignes déjà lues restent « inconnu »
+([[D-356]] §6) ; l'entrée d'un acide dans un panel (décision à part, source
+à désigner) ; le constat des prochains imports d'un profil d'acides gras.
+
+### D-380 — Bilan composé : la notice patient, partie séparée de celle du médecin ; texte signé, consignes générées depuis le catalogue (lettre az)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (question 9 de la pièce de cadrage : deux parties séparées ;
+  consignes sourcées seules) ; texte validé mot pour mot le même jour.
+- Domaine : bilan biologique composé (lot ax, Track C, non ouvert) ; pièce de
+  cadrage du bilan hiérarchisé (hors dépôt), §4 et question 9 ; [[D-311]] ;
+  [[D-269]] ; consignes préanalytiques (`BiologyPreanalytic`,
+  `schema.prisma:2418`) ; garde `termeAnxiogene`
+  (`web/src/lib/documents/vocabulaire.ts`) ; fiche F37 du plan.
+- Ne touche pas : aucune règle clinique, aucune consigne écrite à la main,
+  aucune migration ; la partie du médecin et le courrier de D-311.
+
+**§1 — Deux parties.** Le bilan composé remis au patient porte deux parties
+séparées : la partie pour le médecin, sous la règle des documents médecin
+(garde non prescriptive), et une notice pour le patient, sous la règle des
+textes patient (garde `termeAnxiogene`, ni « prescription », ni
+« posologie », ni « dosage », « ordonnance » interdit partout). Le patient lit
+sa notice sans avoir à lire la partie du médecin ; il porte les deux
+(arbitrage du responsable du 2026-10-26, question 9).
+
+**§2 — Le texte de la notice.**
+
+> Titre : « Pour préparer votre bilan »
+>
+> « Ce bilan vous est proposé par votre praticien. La partie destinée à votre
+> médecin est à lui remettre : c'est lui qui décide des examens à faire
+> réaliser.
+>
+> Avant le prélèvement, suivez les consignes ci-dessous, données examen par
+> examen.
+>
+> [consignes générées, §3]
+>
+> Le jour du prélèvement, dites au laboratoire quels traitements et quels
+> compléments vous prenez. Apportez la demande d'examens remise par votre
+> médecin et votre carte Vitale.
+>
+> Quand vous recevez vos résultats, vous pouvez les déposer dans votre espace :
+> votre praticien en prendra connaissance.
+>
+> Pour toute question, adressez-vous à votre praticien. »
+
+**§3 — Les consignes.** Générées depuis le catalogue pour les seuls examens
+retenus, groupées par type de prélèvement ; aucune consigne écrite à la main.
+Seules les consignes qui portent leur source entrent ; les consignes de tube
+ou de transport, sans claim par construction, n'y entrent pas.
+
+**§4 — Avant le service.** La notice n'est servie qu'avec le bilan composé
+(lot ax). Avant son activation : couverture des consignes des examens
+retenus constatée par conteneur, en lecture seule ; place dans la file des
+activations et constat de la précédente (porte 18).
+
+**Ce qu'elle ne décide pas.** Les familles et leurs conditions (aw) ; la
+partie du médecin ; l'ouverture d'ax ; les neuf autres questions de la pièce
+de cadrage.
+
+**Effet sur le plan.** F37 : texte signé ; activation en file C, après ax.
+Registre « Lettres à écrire » : az fait (texte).
+
+### D-379 — Agenda du sommeil, écran de fin : le merci porte sur l'acte de noter, sans chiffre ; critère des illustrations, indépendantes de la nuit déclarée (lettre cb)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (écran de fin seul ; critère seul, jeu plus tard) ; texte validé mot
+  pour mot le même jour.
+- Domaine : agenda du sommeil (`Q_SOM_09`), écran de fin
+  (`web/src/components/patient/agenda-sommeil/AgendaSommeilJournal.tsx`,
+  branche `mode === 'clos'`) ; [[D-300]] §1, §3.4, §4 ; [[D-333]] §1 ; fiche
+  H39 du plan ; préalable de cc (H48).
+- Ne touche pas : aucune migration, aucun contrat, aucun drapeau, aucune règle
+  clinique ; la saisie, la frise et les autres textes de l'agenda.
+
+**§1 — Le texte de l'écran de fin.** Quand l'agenda est transmis, l'écran
+de fin dit, pour tout patient et quel que soit le nombre de nuits notées :
+
+> Titre : « Merci d'avoir noté vos nuits 🌙 »
+> Texte : « Votre praticien a reçu votre agenda. Voici vos nuits, telles que
+> vous les avez notées. »
+
+Il remplace « Merci pour vos trois semaines 🌙 » et « Votre agenda a été
+transmis à votre praticien. Voici la frise de vos nuits. »
+
+**§2 — Ce que le texte ne dit pas.** Aucun chiffre, aucun compte, aucune
+appréciation de la nuit, de la régularité ou de l'assiduité ; ni « bravo »,
+ni « petit pas », ni conseil ([[D-300]] §3.4 ; garde
+`gamification-patient.guard.test.ts`). Le merci est le même pour tous.
+
+**§3 — Le critère des illustrations.** Une illustration de l'agenda (saisie
+de cc ou écran de fin) :
+1. ne dépend jamais de la nuit déclarée, ni du nombre de nuits notées
+   ([[D-300]] §4) : la même image pour tous au même endroit ;
+2. accompagne toujours un libellé écrit, jamais seule (critère de produit,
+   fiche LOT-12) ;
+3. ne représente ni une bonne ni une mauvaise nuit, ni récompense (étoile,
+   trophée), ni tendance, ni couleur qui juge (rouge, vert) — écartés le
+   2026-10-12 (fiche LOT-12 ; `REGISTRE_FRONTIERES.md:285`) ;
+4. a une provenance et des droits d'usage écrits : à fournir.
+
+**§4 — Le jeu.** cb n'écrit que le critère. Le jeu d'illustrations est fourni
+avec sa provenance et ses droits, puis validé par le responsable image par
+image, avant l'activation de cc ; ce geste est consigné. Le bandeau de chaque
+nuit et la phrase sous la frise restent tels quels : ils portent déjà sur
+l'acte de noter.
+
+**Ce qu'elle ne décide pas.** La saisie illustrée (cc) ; le rituel du soir
+(cd) ; les textes de la saisie et de la frise.
+
+**Effet sur le plan.** H39 : texte et critère écrits ; le lot de code du §1
+est petit, hors file C (texte d'un écran existant). cc (H48) perd le
+préalable cb pour le texte ; le jeu validé image par image reste son préalable. Registre
+« Lettres à écrire » : cb fait.
+
+### D-378 — Durées de conservation : le texte patient de D-283 §2, nouvelle version de « Vos données personnelles » (lot (a) de D-283 §10)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrages du responsable du 2026-10-26, sur questions à
+  options (durées en lettres ; archive dite avec sa réserve) ; texte validé mot
+  pour mot le même jour, proposé par l'assistant comme le veut D-283 §10 (a).
+- Domaine : `web/src/lib/trust/contenus/registre.ts` (rubrique de
+  conservation, « en cours de formalisation » jusqu'à la v20) ;
+  `web/src/lib/trust/gouvernance.ts:53` ; [[D-283]] §2, §10 (a) ; [[D-284]] §6 ;
+  [[D-318]] ; fiche H26 du plan.
+- Ne touche pas : aucune durée (celles de D-283 §2, inchangées) ; aucun code
+  d'effacement (lots (b), (c)).
+
+**§1 — Le texte.** La phrase « La politique détaillée de durées de
+conservation est en cours de formalisation. Vos données sont conservées le
+temps de votre accompagnement ; vous pouvez à tout moment demander des
+précisions ou l'exercice de vos droits. » est remplacée par :
+
+> « Votre dossier reste actif pendant votre accompagnement. Celui-ci prend fin
+> quand votre praticien clôt votre dossier, quand vous le lui demandez, ou,
+> sans nouvelles de votre part, cinq ans après votre dernier contact. Votre
+> dossier est ensuite gardé à part, avec un accès restreint, pendant dix ans :
+> c'est le temps pendant lequel une responsabilité peut être recherchée. Il est
+> ensuite effacé. Le point de départ de ces dix ans est en cours de
+> vérification avec un juriste ; d'ici sa réponse, rien n'est effacé au titre
+> de cette règle. Les comptes rendus de biologie que vous déposez sont effacés
+> trente jours après leur dépôt ; seuls les résultats retenus par votre
+> praticien restent dans votre dossier. Le journal des accès est gardé douze
+> mois. Une donnée supprimée peut rester dans les sauvegardes douze mois au
+> plus. Vous pouvez à tout moment demander des précisions ou exercer vos
+> droits. »
+
+**§2 — La version.** Nouvelle version de « Vos données personnelles », accusé
+exigé ([[D-283]] §10 (a)). Elle peut partir avec celle de [[D-364]] §4 en une
+seule version : un seul accusé pour le patient.
+
+**Ce qu'elle ne décide pas.** Le point de départ de l'archive (conseil) ; la
+clôture automatique et l'archive (lot (b)) ; tout autre texte.
+
+**Effet sur le plan.** H26 : texte (a) signé ; le lot de code (nouvelle
+version, accusé) reste à ranger, avec celui de bg.
+
+### D-377 — Information du médecin : une phrase au gabarit de chaque lettre (lot (e) de D-283 §10)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrage du responsable du 2026-10-26, sur question à
+  options (dans chaque lettre) ; phrase validée mot pour mot le même jour.
+- Domaine : gabarits de lettre au médecin (`courrierAdressage.ts`,
+  `biology-library/courrier.ts`, `correspondance/courrierComplement.ts`,
+  registre des gabarits signé, empreintes) ; [[D-283]] §3, §10 (e) ; fiche
+  H26.
+- Ne touche pas : aucune donnée recueillie ; le bloc de signature.
+
+**§1 — La phrase.** Avant la signature, chaque lettre adressée à un médecin
+porte :
+
+> « Vos coordonnées professionnelles m'ont été communiquées par notre patient
+> commun. Je les conserve dans son dossier, le temps de son accompagnement,
+> pour vous adresser ce type de courrier. Vous pouvez y accéder, les faire
+> rectifier ou effacer, ou vous opposer à leur usage, en m'écrivant à
+> [adresse de contact déjà servie, `gouvernance.ts:50`]. »
+
+**§2 — Chaque lettre.** La phrase figure dans chaque lettre, pas seulement la
+première : rien ne retient aujourd'hui qu'un médecin a déjà été informé, et
+la répéter couvre la première lettre sans migration. Les crochets désignent
+l'adresse de contact déjà servie au patient (`gouvernance.ts`), reprise telle
+quelle.
+
+**Ce qu'elle ne décide pas.** Le texte des lettres ; le lien patient-médecin,
+qui reste une donnée de santé du patient (D-283 §3).
+
+**Effet sur le plan.** H26 : texte (e) signé ; lot de code : nouvelles
+versions des gabarits signés.
+
 ### D-376 — t45 : vingt acides gras et deux rapports entrent au catalogue sous leur nom courant ; aucun panel, aucun acte, aucune plage ; les compositions AA/EPA et LA/DGLA arbitrées, livrées au second lot
 
 - Date : 2026-10-25
@@ -928,6 +1163,22 @@ est vue par l'aperçu suivant, qui bloque le clic. Lu en production le
 **Ouverture du drapeau.** La condition « écran du portail » est levée.
 Restent un passage de bout en bout sur un dossier de test, par identifiant,
 `WN_FICHES_ASSIETTE` ouvert et `WN_PHYSIO_TRAITEMENTS` ouvert.
+
+**Revue Codex (2026-10-25), reçue après le merge de #1701 : deux corrections
+dans une PR de suite, un point écarté.** (a) Drapeau fermé, l'accusé
+`courrier_complement` du POST lectures répond 404 avant toute session : le
+corps est lu d'abord, aucun compte n'est résolu. Les autres espèces gardent
+leur ordre. (b) La consignation relit le fil `(idPatient, decisionCardId)`
+sous le verrou du patient et rejoue la règle de version (tête de fil,
+`practitioner_reviewed`, `reviewedAt`) avant toute insertion. Le verrou
+suffit pour une version neuve : `protocol_drafts.id_patient` référence
+`patients`, et l'insertion prend FOR KEY SHARE sur la ligne que la
+consignation tient en FOR UPDATE. Le banc PostgreSQL le constate.
+(c) Écarté : retirer l'ingrédient du catalogue des lignes du courrier. Le
+texte validé par [[D-358]] §1 liste « intitulé, et ingrédient du catalogue
+s'il est renseigné », et le retoucher demande une nouvelle validation. Un nom
+d'ingrédient ne désigne ni la population ni la situation : ce n'est pas la
+forme opaque qui est visée.
 
 ### D-361 — t44 : le taux de prothrombine et l'INR entrent au catalogue, le temps de Quick n'y entre pas ; l'INR en « ratio », les actes 0126, 0127 et 1128 proposés, jamais signés par migration
 

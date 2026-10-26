@@ -477,6 +477,66 @@ describe('le courrier à remettre au médecin avant un complément ciblé (D-345
     expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['avec la session du patient', true],
+    ['sans aucune session', false],
+  ])('revue Codex de #1701, P1-1 — surface fermée : 404 AVANT la session (%s), aucun compte résolu', async (_cas, avecCookie) => {
+    const reponse = await POST(requete(avecCookie ? cookieProprio() : undefined, { espece: 'courrier_complement', idObjet: 'ccr_servi' }));
+    expect(reponse.status).toBe(404);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    expect(courrierComplementALire).not.toHaveBeenCalled();
+    expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('surface fermée : une AUTRE espèce sans session garde son 401 (l’ordre ne change que pour le courrier)', async () => {
+    const reponse = await POST(requete(undefined, { espece: 'bilan', idObjet: 'b1' }));
+    expect(reponse.status).toBe(401);
+  });
+
+  describe('revue CodeRabbit de #1708 — le corps lu avant la session est borné (64 Kio)', () => {
+    const corpsGeant = JSON.stringify({ espece: 'courrier_complement', idObjet: 'ccr_servi', bourre: 'x'.repeat(64 * 1024) });
+
+    it('annoncé au-delà du plafond : il n’est pas lu, et sans session la garde répond 401', async () => {
+      const req = new Request('http://localhost/api/portail/lectures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'content-length': String(64 * 1024 + 1) },
+        body: '{}',
+      });
+      const reponse = await POST(req);
+      expect(reponse.status).toBe(401);
+      expect(req.bodyUsed).toBe(false);
+    });
+
+    it('flux sans annonce et sans fin : la lecture s’arrête au plafond, 400 après la garde', async () => {
+      mockCompteActif();
+      let morceauxTires = 0;
+      const fluxSansFin = new ReadableStream<Uint8Array>({
+        pull(controleur) {
+          morceauxTires += 1;
+          controleur.enqueue(new Uint8Array(16 * 1024).fill(0x20));
+        },
+      });
+      const req = new Request('http://localhost/api/portail/lectures', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookieProprio())}` },
+        body: fluxSansFin,
+        duplex: 'half',
+      } as RequestInit);
+      const reponse = await POST(req);
+      expect(reponse.status).toBe(400);
+      expect(morceauxTires).toBeLessThanOrEqual(8);
+      expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+    });
+
+    it('non annoncé et lu au-delà du plafond : illisible, 400 après la garde, rien n’est écrit', async () => {
+      mockCompteActif();
+      const reponse = await POST(requete(cookieProprio(), corpsGeant));
+      expect(reponse.status).toBe(400);
+      expect(courrierComplementALire).not.toHaveBeenCalled();
+      expect(prisma.portailLecturePatient.create).not.toHaveBeenCalled();
+    });
+  });
+
   it('POST : l’identifiant d’un courrier complément ne s’acquitte pas sous l’espèce de la lettre', async () => {
     process.env.WN_COURRIER_COMPLEMENT = 'true';
     process.env.WN_LETTRE_ADRESSAGE_PATIENT = 'true';

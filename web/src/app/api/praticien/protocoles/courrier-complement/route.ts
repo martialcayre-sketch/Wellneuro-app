@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
-import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import { lireEntreesGardeComplement } from '@/lib/clinical/entreesGardeComplement';
 import { courrierComplementRequis } from '@/lib/clinical/gardeComplementCible';
@@ -21,7 +20,7 @@ import {
   type LigneComplement,
 } from '@/lib/correspondance/courrierComplement';
 import { courrierComplementOuvert } from '@/lib/correspondance/courrierComplementRemise';
-import { consignerCourrierComplement } from '@/lib/correspondance/courrierComplementConsignation';
+import { consignerCourrierComplement, verdictVersionCourrier } from '@/lib/correspondance/courrierComplementConsignation';
 import { classeEtCode } from '@/lib/observability/classeEtCode';
 
 // LE COURRIER COMPLÉMENT, PRÉPARÉ ET CONSIGNÉ — [[D-345]] §4-§7, J3-12h, lot 3
@@ -171,24 +170,13 @@ export async function POST(req: Request) {
         contractVersion: true,
       },
     });
-    const version = fil.find(ligne => ligne.id === protocolDraftId);
-    if (!version) return echec('not_found', 'Version de protocole introuvable.', 404);
-    // La tête de fil, relue : celle que le clic de diffusion validera.
-    if (resolveActiveVersion(fil)?.id !== version.id) {
-      return echec(
-        'version_stale',
-        'Cette version n’est plus la version active du protocole : rechargez avant de préparer le courrier.',
-        409,
-      );
+    // La tête de fil, relue : celle que le clic de diffusion validera. La même
+    // règle se rejoue sous verrou à la consignation (revue Codex de #1701, P1-2).
+    const verdictVersion = verdictVersionCourrier(fil, protocolDraftId);
+    if (!verdictVersion.ok) {
+      return echec(verdictVersion.raison, verdictVersion.message, verdictVersion.raison === 'not_found' ? 404 : 409);
     }
-    // La règle du clic (`validateDiffusionApproval`) : statut ET date de relecture.
-    if (version.status !== 'practitioner_reviewed' || version.reviewedAt === null) {
-      return echec(
-        'version_non_relue',
-        'La version active n’est pas encore relue : aucun courrier ne peut être préparé.',
-        409,
-      );
-    }
+    const { version } = verdictVersion;
     let actions;
     try {
       actions = reconstructProtocolDraft(version.payload, version.inputHash).actions;
@@ -246,6 +234,7 @@ export async function POST(req: Request) {
         ancrage: { sha256: provenance.ancrageHash, version: provenance.version },
         liste,
         maintenantMs: maintenant.getTime(),
+        version: { decisionCardId, protocolDraftId },
       });
     } catch (err) {
       // JAMAIS `err.message` : il peut recopier le texte du courrier.

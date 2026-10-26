@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { BesoinDetail, BesoinsApiResponse } from '@/app/api/praticien/besoins/route';
 import { ScoreRadar } from '@/components/ui/ScoreRadar';
-import { donneesRadarBesoins } from '@/components/ui/scoreRadarPoints';
+import { donneesRadarBesoins, LIBELLE_NON_MESURE } from '@/components/ui/scoreRadarPoints';
 import { DetailEcartDecision, DetailMotifNonMesure } from '@/components/patient-cockpit/DetailMotifNonMesure';
 import { DetailProvenance } from '@/components/patient-cockpit/DetailProvenance';
 import { mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
@@ -52,7 +52,7 @@ export function DetailBesoinsPanel({
   }, [charger]);
 
   if (loading) {
-    return <div className="text-base text-muted-foreground">Chargement du détail des besoins...</div>;
+    return <div role="status" className="text-base text-muted-foreground">Chargement du détail des besoins...</div>;
   }
 
   if (!data || 'unavailable' in data) {
@@ -88,6 +88,8 @@ export function DetailBesoinsPanel({
   // Un besoin non mesuré n'est pas tracé à zéro : son axe reste, nommé « non
   // mesuré » ([[D-301]]). Une valeur sans provenance n'est pas tracée non plus
   // ([[D-333]] §2 règle 1) ; le radar ouvre la provenance des valeurs tracées.
+  // Le radar est décoratif (H64, F9a) : le tableau dit tout ce que disent ses
+  // axes, et le geste « Source » se nomme sans lui.
   const radarData = donneesRadarBesoins(besoins);
   const provenanceRadar = fusionnerProvenances(besoins.map(b => b.provenance));
 
@@ -120,12 +122,13 @@ export function DetailBesoinsPanel({
           <ScoreRadar data={radarData} valeursMasquees={chiffresMasques} />
           {chiffresMasques && <ValeurMasquee className="text-center text-sm" />}
           {!chiffresMasques && provenanceRadar && (
-            <DetailProvenance objet="radar des 12 besoins" lignes={lignesProvenance(provenanceRadar)} />
+            <DetailProvenance objet="ensemble des valeurs du tableau" lignes={lignesProvenance(provenanceRadar)} />
           )}
         </div>
 
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <table className="min-w-full text-sm">
+            <caption className="sr-only">Couverture des 12 besoins, de B1 à B12, par strate</caption>
             <thead className="bg-muted text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Besoin</th>
@@ -150,7 +153,10 @@ export function DetailBesoinsPanel({
                       <td className="px-4 py-2 text-muted-foreground">
                         {b.couverture === null ? (
                           <>
-                            —
+                            {/* Le tiret reste à l'écran ([[D-301]] §1) ; le
+                                lecteur d'écran lit ce que disait l'axe du radar. */}
+                            <span aria-hidden="true">—</span>
+                            <span className="sr-only">{LIBELLE_NON_MESURE}</span>
                             {b.motifNonMesure && b.motifNonMesure.length > 0 && (
                               <DetailMotifNonMesure besoin={cle} motifs={b.motifNonMesure} emailPatient={emailPatient} />
                             )}
