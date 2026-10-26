@@ -11810,15 +11810,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Lots de code de cb, (a) avec bg, (e) ; jeu d'illustrations.
 
-## 2026-10-26 — File D : lettre az (D-380), fin de séance
-
-**Fait.** #1709 mergée (cb, (a), (e)). Question 9 de la pièce du bilan hiérarchisé posée et tranchée (deux parties séparées) ; az écrite : notice « Pour préparer votre bilan », consignes sourcées seules.
-
-**Écarté.** Consignes de tube et de transport sans claim ; toute famille proposée pour aw.
-
-**Prochaine action.** CI, CodeRabbit, merge, page D ; séance close.
-
-**Ouvert.** aw (familles de la main du responsable) ; lots de code des lettres de la séance.
 ## 2026-10-26 — r3_15 (F9a, H64) : radar des 12 besoins décoratif
 
 **Fait.** Radar de l'onglet masqué au lecteur d'écran et hors tabulation (couche d'accessibilité de recharts coupée) ; graduations sans nombre, anneaux gardés. Table : légende sr-only, tiret lu « non mesuré » ; repli « Source — ensemble des valeurs du tableau » ; `role="status"` au chargement. Textes validés avant le code.
@@ -11828,3 +11819,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CodeRabbit, merge, déploiement ; pages file A et Instruments (v12).
 
 **Ouvert.** r3_12 (attend o) ; passe humaine E67 (file D).
+
+## 2026-10-26 — File D : lettre az (D-380), fin de séance
+
+**Fait.** #1709 mergée (cb, (a), (e)). Question 9 de la pièce du bilan hiérarchisé posée et tranchée (deux parties séparées) ; az écrite : notice « Pour préparer votre bilan », consignes sourcées seules.
+
+**Écarté.** Consignes de tube et de transport sans claim ; toute famille proposée pour aw.
+
+**Prochaine action.** CI, CodeRabbit, merge, page D ; séance close.
+
+**Ouvert.** aw (familles de la main du responsable) ; lots de code des lettres de la séance.
