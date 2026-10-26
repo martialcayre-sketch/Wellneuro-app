@@ -42,7 +42,12 @@ Code du lot (e) de D-283 §10, texte écrit par D-377 : chaque lettre adressée
 
 - Vitest ciblé (correspondance, lettres, trust, documents, routes des trois
   courriers, composants patient) : 3283 verts.
-- T1 : vert. T3 et `/code-review medium` : résultat dans la PR.
+- T1 : vert. T3 : séquence CI complète verte en 9 min 5 s (E2E Chromium et
+  WebKit, 300 verts), sur 58bb608d ; main fusionnée ensuite (#1723, docs
+  seules).
+- `/code-review medium` : six constats, tous écartés avec motif (PR) — dont
+  le bundle client : les trois générateurs ne sont importés que par des
+  routes et des modules serveur qui chargent déjà `node:crypto`.
 
 ## Problèmes ouverts
 
