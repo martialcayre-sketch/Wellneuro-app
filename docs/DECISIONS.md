@@ -36,8 +36,8 @@ ni « petit pas », ni conseil ([[D-300]] §3.4 ; garde
 de cc ou écran de fin) :
 1. ne dépend jamais de la nuit déclarée, ni du nombre de nuits notées
    ([[D-300]] §4) : la même image pour tous au même endroit ;
-2. accompagne toujours un libellé écrit, jamais seule (WCAG 2.5.3, fiche
-   LOT-12) ;
+2. accompagne toujours un libellé écrit, jamais seule (critère de produit,
+   fiche LOT-12) ;
 3. ne représente ni une bonne ni une mauvaise nuit, ni récompense (étoile,
    trophée), ni tendance, ni couleur qui juge (rouge, vert) — écartés le
    2026-10-12 (fiche LOT-12 ; `REGISTRE_FRONTIERES.md:285`) ;
