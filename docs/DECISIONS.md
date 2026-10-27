@@ -52,8 +52,11 @@ mention « hors nomenclature ». Inverser (1) et (2) rendrait le profil « non
 
 **§5 — Ce que la signature change.** Les quatre panels qui citent le profil
 restent identiques ; rien de nouveau n'est proposé à prescrire. Le profil
-proposé fait une ligne, ses vingt acides dessous ([[D-323]] §2), au courrier,
-au document patient et à l'écran.
+proposé fait une ligne, les acides de la composition signée dessous
+([[D-323]] §2), au courrier, au document patient et à l'écran. La liste
+préparée se signe toute cochée ; un acide que le praticien décoche n'entre
+pas dans la composition, ne s'affiche pas sous le profil et ne compte pas
+dans sa mention de remboursement.
 
 **Ce qu'elle ne décide pas.** L'entrée d'un acide seul dans un panel ; les
 plages ([[D-059]]) ; l'indice oméga 3 ; le constat des prochains imports d'un
