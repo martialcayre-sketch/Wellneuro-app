@@ -31,7 +31,8 @@ branche. Préalable de H89 (intégrateur).
   réexporte sous le nom `fichiersCrees` (revue CodeRabbit).
 - `wn-context-pack.mjs` : `sessionTail` remplacé par `handoff` (chemin,
   origine, « Prochaine action exacte » bornée à 32 lignes), lu depuis la racine
-  du dépôt. Le lot repris « désigné par la tâche » (D-372 §2) se lit à la main :
+  du dépôt ; même règle des renommages que le CI ; repli sur le dernier au tri
+  dans l'arbre d'`origin/main`, lu dans cet arbre (revue CodeRabbit). Le lot repris « désigné par la tâche » (D-372 §2) se lit à la main :
   un script ne peut pas le deviner.
 - Skills `wn`, `wn-docs`, `wn-hygiene` : leur bloc `!` qui lisait la queue du
   journal charge le context-pack, avec la commande déjà autorisée dans

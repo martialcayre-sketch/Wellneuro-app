@@ -158,7 +158,7 @@ contourner.
    déjà faite ou restant à faire.
 4. **Commentaires de revue** : leur nombre, et pour chacun son verdict — corrigé
    (commit), écarté (motif), routé (adresse). Aucun sans verdict.
-5. Clôture opposable : fragment de handoff présent dans la PR, ou merge refusé
+5. Clôture opposable : fragment de handoff créé par la PR, ou merge refusé
    avec le geste de rattrapage.
 6. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.

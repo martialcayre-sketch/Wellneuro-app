@@ -122,3 +122,35 @@ test("le handoff créé par la branche prime sur le dernier au tri", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+// Repli : sans handoff créé par la branche, le dernier au tri dans l'arbre
+// d'`origin/main`, lu dans cet arbre — ni un handoff de main rebaptisé sur la
+// branche, ni la copie locale retouchée d'un handoff de main (revue CodeRabbit
+// #1732).
+test("sans handoff créé par la branche, le dernier de main, lu dans son arbre", () => {
+  const root = setupRepo();
+  const handoffs = path.join(root, "docs", "claude", "handoffs");
+  const g = (...args) =>
+    execFileSync("git", ["-c", "user.name=banc", "-c", "user.email=banc@example.test", ...args], { cwd: root, encoding: "utf8" });
+  try {
+    g("init", "-q");
+    g("add", ".");
+    g("commit", "-q", "-m", "main");
+    g("update-ref", "refs/remotes/origin/main", "HEAD");
+    g("checkout", "-q", "-b", "lot");
+    g("mv", "docs/claude/handoffs/2026-07-14-1000-ancien.md", "docs/claude/handoffs/2026-07-20-0900-rebaptise.md");
+    g("commit", "-q", "-m", "rebaptise");
+    fs.writeFileSync(
+      path.join(handoffs, "2026-07-14-1015-courant.md"),
+      "# Handoff\n\n## Prochaine action exacte\n\nRETOUCHE LOCALE\n",
+      "utf8"
+    );
+    const data = JSON.parse(runContextPack(root).stdout);
+    assert.equal(data.handoff.chemin, "docs/claude/handoffs/2026-07-14-1015-courant.md", "un handoff rebaptisé n'est pas créé");
+    assert.match(data.handoff.origine, /main/);
+    assert.equal(data.handoff.prochaineAction.split(/\r?\n/)[0], "TRACE 01 | action simulée", "lu dans l'arbre de main");
+    assert.ok(!JSON.stringify(data).includes("RETOUCHE LOCALE"));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
