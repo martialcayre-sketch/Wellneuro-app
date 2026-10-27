@@ -11936,15 +11936,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat au prochain profil importé.
 
-## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
-
-**Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2).
-
-**Écarté.** Les plans dans la vue signée (contrat inchangé) ; un chapeau unique pour toutes les actions (une action sans plans le contredirait).
-
-**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
-
-**Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
 ## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
 
 **Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
@@ -11954,3 +11945,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
 
 **Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
+
+## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
+
+**Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2). L'orientation vers le médecin (D-257) en est exclue, sur arbitrage du responsable.
+
+**Écarté.** Les plans dans la vue signée (contrat inchangé) ; un chapeau unique pour toutes les actions (une action sans plans le contredirait).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
+
+**Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
