@@ -11965,6 +11965,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
 
+## 2026-10-27 — F34 : contre-revue Codex intégrée, exclusions amendées (D-389)
+
+**Fait.** Dossier aw corrigé sur six constats Codex (rev 26) : reformulation retirée, précisions de libellé nommées, R6/R7 bornées. Second dossier Codex sur les deux exclusions, revérifié dans l'arbre : le motif est servi aussi dans la proposition de bilan (et la colonne « objectif » dit « verbatim ») ; la retenue release-db ne couvre pas la table signée ; l'empreinte ne porte que règles et grilles. Quatre arbitrages du responsable : lecture signée, seconde phrase d'E1 gardée, migration de correction, retenue étendue au fichier de la table. D-389 écrite.
+
+**Écarté.** Statu quo (attribution fausse maintenue) ; claim mot pour mot à la place du motif (deux règles changées, banc rouge, F53 le refera) ; deux textes à l'écran ; retenue manuelle.
+
+**Prochaine action.** CI, CodeRabbit, merge de D-389 ; doc aw mis à jour (E1, E2, R6, R7) ; puis lot retenue, lot écran, migration.
+
+**Ouvert.** R1 à R5 ; signatures des quinze fiches (étape 2) ; re-signature (étape 3).
 ## 2026-10-27 — File D, lots de code : J1-alim, la Boussole quitte le portail (D-365, H16)
 
 **Fait.** Constat préalable par conteneur, en agrégats : 0 protocole diffusé sur 5 ne porte une Boussole. Démontage côté portail : route patient, page de l'aliment, composants, montage dans l'accueil et la page alimentation ; la route du protocole ne sert plus aucune lecture. Contrats, code praticien, `lib/food-compass` et `WN_C5_ENABLED` en place.
@@ -11984,3 +11993,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
 
 **Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
+## 2026-10-27 — File D, lots de code : J3-cabinet planifié (D-385, H58)
+
+**Fait.** Plan d'architecte : le moteur des statuts de phase sort dans un module pur partagé par la fiche et la page ; lectures groupées ; rejeu par dossier ; banc de parité ; trois PR sans migration. Quatre arbitrages du responsable : dossiers désactivés comptés ; « indéterminé » = échec ou phase nulle avec inconnu ; même effectif pour les deux tableaux ; l'écart des plus de 40 envois documenté.
+
+**Écarté.** Un E2E de parité, illisible à trois fixtures, puisque la répartition y est masquée ; une extraction serveur sous `lib/clinical/`, qui déclencherait la release-db.
+
+**Prochaine action.** Session dédiée : PR 1, l'extraction côté fiche.
+
+**Ouvert.** Le texte d'attente de la page ; le constat du retrait de J1-alim, puis D-C5-01 à 04.
