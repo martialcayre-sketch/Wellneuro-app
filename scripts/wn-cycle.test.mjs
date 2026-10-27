@@ -211,7 +211,12 @@ test('fichiersCreesDeLaPr : un handoff passé retouché dans une PR mergée n’
       [{ filename: 'web/a.ts', status: 'modified' }],
       [
         { filename: HANDOFF, status: 'added' },
-        { filename: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', status: 'renamed' },
+        { filename: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', status: 'renamed', previous_filename: 'docs/a.md' },
+        {
+          filename: 'docs/claude/handoffs/2026-10-04-0900-rebaptise.md',
+          status: 'renamed',
+          previous_filename: 'docs/claude/handoffs/2026-09-02-0900-passe.md',
+        },
         { filename: 'docs/claude/handoffs/2026-09-01-0900-efface.md', status: 'removed' },
       ],
     ]),
@@ -226,6 +231,7 @@ test('creesDuPorcelain : non suivi, ajouté, renommé ; ni modifié, ni supprim�
     `?? ${HANDOFF}`,
     'A  docs/claude/handoffs/2026-10-02-0900-indexe.md',
     'R  docs/a.md -> docs/claude/handoffs/2026-10-03-0900-renomme.md',
+    'R  docs/claude/handoffs/2026-09-02-0900-passe.md -> docs/claude/handoffs/2026-10-04-0900-rebaptise.md',
     ' M docs/claude/handoffs/2026-10-01-0900-ancien.md',
     'D  docs/claude/handoffs/2026-09-01-0900-efface.md',
   ].join('\n');

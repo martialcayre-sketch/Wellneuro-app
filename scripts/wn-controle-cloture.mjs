@@ -31,7 +31,7 @@
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-import { estFragmentDeHandoff } from './wn-cycle.mjs';
+import { creesDuNameStatus, estFragmentDeHandoff } from './wn-cycle.mjs';
 
 /**
  * Le verdict, à partir des fichiers CRÉÉS par la PR (statut A, ou R sous leur
@@ -50,16 +50,12 @@ export function verdictCloture({ crees }) {
   return { ok: manques.length === 0, manques };
 }
 
-/** Les fichiers créés, lus dans le même `--name-status` : statut A, ou R. */
-export function fichiersCrees(nameStatus) {
-  const crees = [];
-  for (const ligne of nameStatus.split('\n')) {
-    const champs = ligne.split('\t');
-    const statut = champs[0];
-    if (statut === 'A' || statut?.startsWith('R')) crees.push(champs[champs.length - 1]);
-  }
-  return crees;
-}
+/**
+ * Les fichiers créés, lus dans un `--name-status` : statut A, ou R — sauf le
+ * renommage d'un handoff passé, qui le retouche (D-372). La définition vit dans
+ * `wn-cycle.mjs`, pour que le cycle et le CI jugent sous un seul régime.
+ */
+export const fichiersCrees = creesDuNameStatus;
 
 // `core.quotePath=false` : sans lui, git rend un chemin accentué entre
 // guillemets et en octets échappés (« "docs/claude/handoffs/...\303\251.md" »),

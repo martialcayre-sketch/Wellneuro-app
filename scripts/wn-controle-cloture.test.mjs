@@ -58,6 +58,11 @@ test('un handoff seulement modifié ne clôt pas la PR ; créé (A) ou renommé 
   const modifie = `M\t${CODE}\nM\t${ancien}`;
   assert.deepEqual(fichiersCrees(modifie), []);
   assert.equal(verdictCloture({ crees: fichiersCrees(modifie) }).ok, false);
+  // Renommer un handoff passé sous un nom neuf le retouche : pas une création
+  // (revue CodeRabbit #1732).
+  const renommeAncien = `M\t${CODE}\nR100\t${ancien}\t${HANDOFF}`;
+  assert.deepEqual(fichiersCrees(renommeAncien), []);
+  assert.equal(verdictCloture({ crees: fichiersCrees(renommeAncien) }).ok, false);
   const cree = `M\t${CODE}\nA\t${HANDOFF}\nR090\tdocs/a.md\tdocs/b.md`;
   assert.deepEqual(fichiersCrees(cree), [HANDOFF, 'docs/b.md']);
   assert.equal(verdictCloture({ crees: fichiersCrees(cree) }).ok, true);

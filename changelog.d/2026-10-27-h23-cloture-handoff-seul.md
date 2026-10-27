@@ -7,7 +7,10 @@
   (fragment de handoff) » ; contrôle CodeRabbit « Clôture de la PR » aligné.
 - `scripts/wn-cycle.mjs` : la clôture d'un lot se réduit au fragment de
   handoff CRÉÉ par le lot (`cloture: { handoff }`, `fichiersCrees`), même
-  régime que le CI : un handoff passé retouché ne clôt plus rien.
+  régime que le CI : un handoff passé retouché ou rebaptisé ne clôt plus
+  rien, ni sur la branche, ni dans une PR mergée (fichiers REST paginés) ;
+  une seule définition des fichiers créés (`creesDuNameStatus`), réexportée
+  par le contrôle du CI.
 - `scripts/wn-context-pack.mjs` : le bloc « Dernier handoff » remplace la queue
   du journal — dernier fragment créé par la branche, à défaut le dernier au
   tri ; sa rubrique « Prochaine action exacte », bornée.

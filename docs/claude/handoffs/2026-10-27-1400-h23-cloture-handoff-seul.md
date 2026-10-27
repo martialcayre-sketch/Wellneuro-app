@@ -25,6 +25,10 @@ branche. Préalable de H89 (intégrateur).
   rendu. Une PR mergée n'embarque la clôture que par un fichier `added` ou
   `renamed` (`fichiersCreesDeLaPr`, sur les `files` REST paginés), et l'étape 7
   de `/wn-merge` lit le même statut, par la même route (revue CodeRabbit).
+- Un renommage ne crée un handoff que si sa source n'en était pas déjà un
+  (`renommageCree`) : rebaptiser un handoff passé le retouche. Une seule
+  définition (`creesDuNameStatus`, dans `wn-cycle.mjs`), que le contrôle du CI
+  réexporte sous le nom `fichiersCrees` (revue CodeRabbit).
 - `wn-context-pack.mjs` : `sessionTail` remplacé par `handoff` (chemin,
   origine, « Prochaine action exacte » bornée à 32 lignes), lu depuis la racine
   du dépôt. Le lot repris « désigné par la tâche » (D-372 §2) se lit à la main :
@@ -62,6 +66,8 @@ branche. Préalable de H89 (intégrateur).
   passé retouché (sortie 1), et accepte un handoff au nom accentué sans entrée
   du journal. Mutation jouée : un script qui lit tous les fichiers présents au
   lieu des créés rougit ce cas.
+- Bancs `wn-cycle` + `wn-controle-cloture` : 55/55 après le dernier correctif
+  (handoff passé rebaptisé : ni création, ni clôture).
 - `node --test scripts/wn-cycle.test.mjs` : 47/47 (handoff passé retouché :
   pas de clôture, sur la branche comme dans une PR mergée ;
   `creesDuPorcelain`, `fichiersCreesDeLaPr`). T1 complet `npm run check` vert.

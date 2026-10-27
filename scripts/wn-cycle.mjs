@@ -436,7 +436,7 @@ export function fichiersCreesDeLaPr(pages) {
   if (!Array.isArray(pages) || !pages.every(Array.isArray)) return null;
   return pages
     .flat()
-    .filter((f) => f.status === 'added' || f.status === 'renamed')
+    .filter((f) => f.status === 'added' || (f.status === 'renamed' && renommageCree(f.previous_filename)))
     .map((f) => f.filename);
 }
 
@@ -463,9 +463,36 @@ export function cheminsDuPorcelain(porcelain) {
 }
 
 /**
+ * Un renommage crée-t-il un fichier ? Oui, sauf quand sa source est déjà un
+ * fragment de handoff : renommer un handoff passé sous un nom neuf le RETOUCHE,
+ * il ne clôt pas le lot (D-372 : « créé, pas retouché » ; revue CodeRabbit
+ * #1732). Seule définition, partagée par le cycle et le contrôle du CI.
+ */
+export function renommageCree(source) {
+  return !estFragmentDeHandoff(source ?? '');
+}
+
+/**
+ * Les fichiers CRÉÉS, lus dans un `git diff --name-status` : statut `A`, ou
+ * `R` sous son nouveau nom quand `renommageCree` l'admet. Un `M` ou un `D` n'en
+ * est pas. Le contrôle de clôture du CI l'exporte sous le nom `fichiersCrees`.
+ */
+export function creesDuNameStatus(nameStatus) {
+  const crees = [];
+  for (const ligne of (nameStatus || '').split('\n')) {
+    const champs = ligne.split('\t');
+    const statut = champs[0];
+    if (statut === 'A') crees.push(champs[champs.length - 1]);
+    else if (statut?.startsWith('R') && renommageCree(champs[1])) crees.push(champs[champs.length - 1]);
+  }
+  return crees;
+}
+
+/**
  * Les chemins CRÉÉS dans l'arbre de travail : non suivis (`??`), ajoutés à
- * l'index (`A`), renommés (`R`, sous leur nouveau nom). Un `M` ou un `D` n'en
- * est pas — c'est la règle du contrôle de clôture du CI (D-372).
+ * l'index (`A`), renommés (`R`, sous leur nouveau nom, si `renommageCree`). Un
+ * `M` ou un `D` n'en est pas — c'est la règle du contrôle de clôture du CI
+ * (D-372).
  */
 export function creesDuPorcelain(porcelain) {
   if (!porcelain) return [];
@@ -473,6 +500,11 @@ export function creesDuPorcelain(porcelain) {
   for (const ligne of porcelain.split('\n')) {
     const m = /^([ MADRCU?!]{1,2}) /.exec(ligne);
     if (!m || !/[A?R]/.test(m[1])) continue;
+    const fleche = ligne.indexOf(' -> ');
+    if (fleche !== -1) {
+      const source = ligne.slice(m[0].length, fleche).replace(/^"|"$/g, '');
+      if (!renommageCree(source)) continue;
+    }
     crees.push(...cheminsDuPorcelain(ligne));
   }
   return crees;
@@ -498,7 +530,7 @@ function collecterFaits(options = {}) {
   const porcelain = gitBrut(['status', '--porcelain', '--untracked-files=all']);
   const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(porcelain)])];
   const creesCommittes = diff
-    ? (git(['diff', '--name-only', '--diff-filter=AR', `${base}...HEAD`]) || '').split('\n').filter(Boolean)
+    ? creesDuNameStatus(git(['-c', 'core.quotePath=false', 'diff', '--name-status', '--diff-filter=AR', `${base}...HEAD`]))
     : [];
   const fichiersCrees = [...new Set([...creesCommittes, ...creesDuPorcelain(porcelain)])];
 

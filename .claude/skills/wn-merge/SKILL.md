@@ -105,12 +105,14 @@ dernière session.
    `.claude/rules/pr-revue-et-release-db.md`.
 7. **Clôture opposable — se lit dans les `files` de la PR, pas en local.** Le
    snapshot de l'étape 2 ne porte pas les `files` : les lire en un seul
-   `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/files > files.json`
-   au moment de ce contrôle, puis relire le fichier en aplatissant les pages
-   (`gh pr view --json files` peut s'arrêter à 100 fichiers). La
+   `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/files` au moment
+   de ce contrôle, sortie écrite dans le scratchpad de la session — jamais dans
+   le worktree —, puis relue en aplatissant les pages (`gh pr view --json
+   files` peut s'arrêter à 100 fichiers). La
    PR doit porter un fragment `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`
-   **créé** par elle — `status` `added` ou `renamed` ; un handoff passé
-   `modified` ne compte pas, le `README.md` du dossier non plus ;
+   **créé** par elle — `status` `added`, ou `renamed` depuis un fichier qui
+   n'était pas déjà un handoff (`previous_filename`) ; un handoff passé
+   `modified` ou rebaptisé ne compte pas, le `README.md` du dossier non plus ;
    l'entrée `SESSION_LOG.md` n'est plus exigée depuis D-372. Il manque → **ne pas merger, même CI vert** :
    demander `/wn-finish` puis `/wn-handoff write`, poussés sur la branche de la <!-- mention-seule: wn-finish, wn-handoff -->
    PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
