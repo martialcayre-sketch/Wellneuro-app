@@ -288,8 +288,8 @@ approbations est la seule preuve de qui a ouvert la porte.
    reste gelé se lit par phases, **avant chaque merge** :
    `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise. Attente
    d'approbation (`waiting`, phase 1) : gelés, les seuls merges qui touchent
-   une migration, un chemin clinique, `release-db.yml` et ce que son run
-   exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
+   une migration, un chemin clinique, la table signée (`D-389` §5),
+   `release-db.yml` et ce que son run exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
    ou démarrage avant la porte — : aucun merge jusqu'à la conclusion du run.
    Lecture impossible : gel. Deux runs à la fois — un second en file derrière
    un run en attente — gèlent donc tout merge jusqu'à la décision du
