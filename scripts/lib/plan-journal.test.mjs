@@ -174,6 +174,25 @@ test("mise à jour après un paragraphe de groupe dans la plage d'une fiche : fi
   assert.match(r.ecartees[0].motifs[0], /hors de la suite des puces de tête/);
 });
 
+test("date hors du calendrier : fiche écartée, jamais un nom de fragment", () => {
+  const texte = "#### H01 · a\n- **Rang** : 1.\n- **Mise à jour (2026-02-30)** : impossible.\n";
+  const { r, reconstruit } = allerRetour(texte);
+  assert.equal(reconstruit, texte);
+  assert.equal(r.fragments.length, 0);
+  assert.match(r.ecartees[0].motifs[0], /hors du calendrier/);
+});
+
+test("plan absent : code 2 ; journal illisible sous --ecrire : code 1, rien n'est écrit", () => {
+  const d = temp();
+  assert.equal(principal(["--plan", path.join(d, "absent.md"), "--journal", path.join(d, "j")], muet), 2);
+  const plan = path.join(d, "PLAN.md");
+  fs.writeFileSync(plan, FABRIQUE);
+  fs.mkdirSync(path.join(d, "j", "divers"), { recursive: true });
+  const avant = instantane(d);
+  assert.equal(principal(["--plan", plan, "--journal", path.join(d, "j"), "--ecrire"], muet), 1);
+  assert.deepEqual(instantane(d), avant);
+});
+
 test("plus de 99 mises à jour le même jour : fiche écartée, aller-retour exact", () => {
   const majs = Array.from({ length: 100 }, (_, i) => `- **Mise à jour (2026-10-01)** : ${i}.`).join("\n");
   const texte = `#### H01 · a\n- **Rang** : 1.\n${majs}\n`;

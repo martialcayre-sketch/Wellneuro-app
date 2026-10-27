@@ -61,8 +61,17 @@ export function principal(argv, env = process.env, racine = RACINE, sortie = con
   }
   try {
     if (base === null) base = enCI ? "HEAD^1" : git(racine, ["merge-base", "HEAD", "origin/main"]).trim();
-    const diff = git(racine, ["diff", "--name-status", "-M", base, "--", JOURNAL]);
-    const changes = changementsInterdits(diff);
+    // L'arbre de travail ET l'index : un fragment modifié, indexé puis
+    // restauré dans l'arbre ne se voit que du second.
+    const arbre = git(racine, ["diff", "--name-status", "-M", base, "--", JOURNAL]);
+    const index = git(racine, ["diff", "--cached", "--name-status", "-M", base, "--", JOURNAL]);
+    const vus = new Set();
+    const changes = changementsInterdits(`${arbre}\n${index}`).filter((c) => {
+      const cle = `${c.statut}\t${c.chemin}\t${c.vers ?? ""}`;
+      if (vus.has(cle)) return false;
+      vus.add(cle);
+      return true;
+    });
     if (changes.length === 0) {
       sortie.log("✓ Journal du plan : aucun fragment existant modifié, renommé ou supprimé.");
       return 0;

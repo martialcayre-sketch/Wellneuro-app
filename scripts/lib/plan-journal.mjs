@@ -88,6 +88,12 @@ function finDeBloc(lignes, i, borne) {
   return fin;
 }
 
+/** Vrai si `AAAA-MM-JJ` désigne un jour qui existe (le nom d'un fragment la garde à jamais). */
+function dateReelle(date) {
+  const d = new Date(`${date}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === date;
+}
+
 /** Slug ASCII d'un libellé de mise à jour. */
 export function slug(libelle) {
   const s = (libelle ?? "")
@@ -128,6 +134,7 @@ export function analyserFiches(lignes) {
       const mm = MISE_A_JOUR.exec(lignes[j]);
       const f = finDeBloc(lignes, j, fin);
       if (!mm) fiche.anomalies.push(`ligne ${j + 1} : mise à jour sans date lisible`);
+      else if (!dateReelle(mm[1])) fiche.anomalies.push(`ligne ${j + 1} : date ${mm[1]} hors du calendrier`);
       fiche.majs.push({ debut: j, fin: f, date: mm?.[1] ?? null, libelle: mm?.[2] ?? mm?.[3] ?? null });
       j = f;
     }

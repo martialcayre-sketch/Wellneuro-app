@@ -84,7 +84,13 @@ export function principal(argv, sortie = console) {
     sortie.error("Usage : node scripts/wn-plan-bascule.mjs [--ecrire] [--plan P] [--journal J]");
     return 2;
   }
-  const texte = fs.readFileSync(opts.plan, "utf8");
+  let texte;
+  try {
+    texte = fs.readFileSync(opts.plan, "utf8");
+  } catch (e) {
+    sortie.error(`✗ Plan illisible : ${e.message}`);
+    return 2;
+  }
   const r = basculer(texte);
   if (r.refus.length > 0) {
     sortie.error(`✗ Bascule refusée :\n${r.refus.map((x) => `  - ${x}`).join("\n")}`);
@@ -102,7 +108,13 @@ export function principal(argv, sortie = console) {
   }
   // La bascule se joue sur un journal vierge : l'aller-retour en mémoire
   // n'a été jugé que sur les fragments neufs.
-  const existant = lireJournal(opts.journal);
+  let existant;
+  try {
+    existant = lireJournal(opts.journal);
+  } catch (e) {
+    sortie.error(`✗ Journal illisible : ${e.message} — rien n'est écrit.`);
+    return 1;
+  }
   if (existant.size > 0) {
     sortie.error(`✗ Journal déjà présent (${[...existant.keys()].join(", ")}) — la bascule se joue sur un journal vierge ; rien n'est écrit.`);
     return 1;

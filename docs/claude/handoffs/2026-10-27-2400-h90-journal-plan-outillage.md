@@ -37,7 +37,7 @@ trois bancs (`scripts/lib/plan-journal.test.mjs`,
 
 ## Validations exécutées
 
-- Bancs : 23, 4 et 7 cas verts. Mutations vérifiées : sans la suite sur ligne
+- Bancs : 25, 4 et 8 cas verts. Mutations vérifiées : sans la suite sur ligne
   vide, ou sans le contrôle de date, le banc rougit.
 - À blanc sur le plan réel : 251 fragments sur 103 fiches, plan de 542 448 à
   394 342 octets, aller-retour exact. Quatre fiches sont écartées : F44 et
@@ -53,6 +53,14 @@ trois bancs (`scripts/lib/plan-journal.test.mjs`,
   - P2-6 : deux mutations restent non vues, le retrait de `wx` (masqué par le
     refus du journal présent) et le retrait de la relecture depuis le disque.
     Acceptées, défense en profondeur.
+
+- Revue CodeRabbit (49f4ce6d), cinq remarques en ligne :
+  - corrigées : date hors du calendrier écartée, lectures rattrapées dans les
+    codes de sortie, index lu par le garde, signature des commits du banc
+    coupée ;
+  - écartée : base `github.event.before` sur `push` — `main` ne reçoit que des
+    squash, un commit par poussée, et sur une PR `HEAD^1` du commit de fusion
+    couvre tout le diff.
 
 ## Problèmes ouverts
 

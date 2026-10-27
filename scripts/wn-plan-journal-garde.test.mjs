@@ -15,7 +15,7 @@ import { JOURNAL } from "./lib/plan-journal.mjs";
 import { changementsInterdits, principal } from "./wn-plan-journal-garde.mjs";
 
 function git(d, ...args) {
-  return execFileSync("git", ["-c", "user.email=banc@exemple.invalid", "-c", "user.name=banc", ...args], {
+  return execFileSync("git", ["-c", "user.email=banc@exemple.invalid", "-c", "user.name=banc", "-c", "commit.gpgSign=false", ...args], {
     cwd: d,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -60,6 +60,22 @@ test("fragment modifié : avertissement nommant le fichier, code 0", () => {
   const r = jouer(d, ["--base", base]);
   assert.equal(r.code, 0);
   assert.match(r.texte, /⚠ Fragment du journal du plan modifié : docs\/claude\/plan-journal\/H01\/2026-10-01-01-a\.md/);
+});
+
+test("fragment modifié dans l'index puis restauré dans l'arbre : avertissement, une seule fois", () => {
+  const { d, base } = depot();
+  const f = path.join(d, JOURNAL, "H01", "2026-10-01-01-a.md");
+  const original = fs.readFileSync(f, "utf8");
+  fs.writeFileSync(f, "modifié\n");
+  git(d, "add", "-A");
+  fs.writeFileSync(f, original);
+  let r = jouer(d, ["--base", base]);
+  assert.equal(r.code, 0);
+  assert.equal(r.texte.match(/modifié : /g)?.length, 1, r.texte);
+  // Modifié dans l'index ET dans l'arbre : toujours une seule ligne.
+  fs.writeFileSync(f, "modifié\n");
+  r = jouer(d, ["--base", base]);
+  assert.equal(r.texte.match(/modifié : /g)?.length, 1, r.texte);
 });
 
 test("fragment supprimé (commité) : avertissement, code 0", () => {
