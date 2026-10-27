@@ -23,12 +23,12 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # Trois jobs depuis le 2026-09-30. `controles` et `e2e` tournent en
-  # PARALLÈLE ; `verify` les agrège et reste le SEUL check exigé par la
-  # protection de `main` (et attendu par `wn-attendre-ci`). Mesure du
-  # 2026-09-30 sur `main` : 664 s en un job, dont 321 s pour la seule chaîne
-  # E2E (build 88 s, navigateurs 30 s, Playwright 203 s) — en série derrière
-  # des contrôles qui n'en dépendent pas.
+  # Trois jobs depuis le 2026-09-30, quatre depuis le 2026-10-27 (H91) :
+  # `controles`, `typage-tests` et `e2e` tournent en PARALLÈLE ; `verify` les
+  # agrège et reste le SEUL check exigé par la protection de `main` (et
+  # attendu par `wn-attendre-ci`). Mesure du 2026-09-30 sur `main` : 664 s en
+  # un job, dont 321 s pour la seule chaîne E2E (build 88 s, navigateurs 30 s,
+  # Playwright 203 s) — en série derrière des contrôles qui n'en dépendent pas.
   controles:
     runs-on: ubuntu-latest
     services: &services
@@ -1836,6 +1836,43 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/packs_instruments_suspendus_v1.sql
 
+  # Type-check, Vitest et lint, détachés de `controles` le 2026-10-27 (H91) :
+  # ils attendaient en série derrière la base et les contrats SQL, dont ils ne
+  # dépendent pas. Même ordre qu'avant, mêmes conditions de périmètre.
+  # Sans service PostgreSQL : aucun spec Vitest n'ouvre de base sans variable
+  # explicite. Les trois bancs `*.pg.test.ts` sont joués dans `controles`,
+  # après les contrats, par leur étape propre ; les deux passes Vitest les
+  # sautaient déjà avant le découpage. `DATABASE_URL` reste posée par l'ancre
+  # `env` : un spec qui tenterait une connexion échouerait, il ne sauterait pas.
+  # Ce job n'a aucune étape avant `setup-node` : les bancs node restent dans
+  # `controles`, que lit le banc de parité avec `npm run check`.
+  typage-tests:
+    runs-on: ubuntu-latest
+    env: *env
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - *perimetre
+
+      - uses: actions/setup-node@v4
+        if: steps.scope.outputs.docs_only != 'true'
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm ci
+
+      - name: Generate Prisma client
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma generate
+
       - name: Type-check
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -1887,9 +1924,10 @@ jobs:
         working-directory: web
         run: npm run lint
 
-  # E2E contre le build de production, en PARALLÈLE de `controles`. Sa propre
-  # base — même service, mêmes migrations, même seed : deux jobs ne partagent
-  # pas de conteneur. Une PR documentaire y saute tout, comme dans `controles`.
+  # E2E contre le build de production, en PARALLÈLE de `controles` et de
+  # `typage-tests`. Sa propre base — même service, mêmes migrations, même
+  # seed : deux jobs ne partagent pas de conteneur. Une PR documentaire y saute
+  # tout, comme dans `controles`.
   e2e:
     runs-on: ubuntu-latest
     services: *services
@@ -2010,13 +2048,15 @@ jobs:
   # Un CI rouge passerait pour vert, pour `wn-attendre-ci` comme pour Scalingo.
   # Un run annulé rend donc `verify` rouge, jamais vert.
   verify:
-    needs: [controles, e2e]
+    needs: [controles, typage-tests, e2e]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Contrôles et E2E ont réussi
+      - name: Contrôles, typage-tests et E2E ont réussi
         run: |
-          echo "controles : ${{ needs.controles.result }}"
-          echo "e2e       : ${{ needs.e2e.result }}"
+          echo "controles    : ${{ needs.controles.result }}"
+          echo "typage-tests : ${{ needs.typage-tests.result }}"
+          echo "e2e          : ${{ needs.e2e.result }}"
           test "${{ needs.controles.result }}" = success
+          test "${{ needs.typage-tests.result }}" = success
           test "${{ needs.e2e.result }}" = success
