@@ -4,7 +4,6 @@ import {
   type PatientProtocolAction,
   type PatientProtocolView,
 } from '@/lib/clinical-engine/types';
-import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
 import { projeterSurLeFil } from './vuePatientSurLeFil';
 
 // BANC DE LA PROJECTION SUR LE FIL (dette (2) de [[D-200]]). `projeterSurLeFil`
@@ -54,8 +53,9 @@ const SORT_D_UNE_ACTION: Record<keyof PatientProtocolAction, Sort> = {
   attente: 'servi',
 };
 
-/** Ce que la route donne au fil en propre, hors contrat. */
-const PROPRES_AU_FIL = ['boussoles', 'cycleRef', 'debutCycle'] as const;
+/** Ce que la route donne au fil en propre, hors contrat. La Boussole n'en est
+ *  plus : le portail ne la sert plus ([[D-365]] §1). */
+const PROPRES_AU_FIL = ['cycleRef', 'debutCycle'] as const;
 
 const ACTION_COMPLETE: Required<PatientProtocolAction> = {
   actionId: 'act_1',
@@ -85,10 +85,8 @@ const VUE: Required<PatientProtocolView> = {
   inputHash: 'c'.repeat(64),
 };
 
-const BOUSSOLES: PatientFoodCompassSafeView[] = [];
-
 function projeter() {
-  return projeterSurLeFil({ vue: VUE, boussoles: BOUSSOLES, cycleRef: 'ref_cycle_opaque', debutCycle: VUE.approvedAt });
+  return projeterSurLeFil({ vue: VUE, cycleRef: 'ref_cycle_opaque', debutCycle: VUE.approvedAt });
 }
 
 describe('projeterSurLeFil — chaque champ du contrat est un choix écrit (D-200, dette 2)', () => {

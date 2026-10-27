@@ -1,9 +1,9 @@
-# Handoff — t45, quatrième lot : le rapport oméga 6 / oméga 3 et l'indice oméga 3 calculés de leurs acides (D-389)
+# Handoff — t45, quatrième lot : le rapport oméga 6 / oméga 3 et l'indice oméga 3 calculés de leurs acides (D-390)
 
 ## Branche et état du dépôt
 
 - Branche `lot/t45-rapport-omega-indice`, worktree `d281-lot3-portail`,
-  partie d'`origin/main` (1fd2a4b9 fusionné). Aucune migration, aucun schéma.
+  partie d'`origin/main` (13fc0965 fusionné). Aucune migration, aucun schéma.
 
 ## Objectif
 
@@ -15,7 +15,7 @@ s'affichent avec eux, sans plage ni seuil.
 
 - Arbitrage du responsable du 2026-10-27 : le rapport est indispensable,
   l'indice se calcule aussi, les claims sont au corpus SIIN ; « go » sur la
-  proposition. Consigné dans `D-389`, qui amende D-376 §6.
+  proposition. Consigné dans `D-390`, qui amende D-376 §6.
 - Rapport : quatre oméga 6 sur trois oméga 3, comme le compte rendu les
   range sous ses titres de section ; l'arithmétique redonne la valeur
   imprimée au centième (valeurs non versées). Indice : EPA + DHA
@@ -27,7 +27,7 @@ s'affichent avec eux, sans plage ni seuil.
   rapport sort des « opérandes absents ») et son banc.
 - `web/src/lib/biology-library/candidatsNabm.ts` (l'indice en « valeur
   calculée ») et son banc (38 « aucun acte », 10 valeurs calculées).
-- `docs/DECISIONS.md` (D-389), `docs/claude/PLAN_WELLNEURO.md` (ligne t45),
+- `docs/DECISIONS.md` (D-390), `docs/claude/PLAN_WELLNEURO.md` (ligne t45),
   `changelog.d/2026-10-27-t45-rapport-omega-indice.md`, SESSION_LOG.
 
 ## Validations exécutées
@@ -40,8 +40,8 @@ s'affichent avec eux, sans plage ni seuil.
 
 ## Problèmes ouverts
 
-- D-389 se revérifie juste avant le merge : renuméroté depuis D-388, pris
-  par #1727 mergée avant nous.
+- D-390 se revérifie juste avant le merge : renuméroté deux fois (D-388 pris par
+  #1727, D-389 par #1738).
 - Au praticien, après le déploiement : les constats des acides, puis les
   compositions (profil, rapport, indice), puis le contrôle des rendus.
 - Écart à instruire avant toute plage : seuil AA/EPA du corpus contre

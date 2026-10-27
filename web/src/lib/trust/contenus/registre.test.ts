@@ -8,6 +8,7 @@ import {
   PARTIES_REPRISES_CONDITIONS_V1,
   PARTIES_REPRISES_CONDITIONS_V2,
   PARTIES_REPRISES_CONDITIONS_V3,
+  PARTIES_REPRISES_CONDITIONS_V4,
   REGISTRE_DOCUMENTS_TRUST,
   sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
@@ -27,7 +28,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les trente-six documents attendus', () => {
+  it('expose les trente-huit documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -70,6 +71,8 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v19',
       // `D-318` (b25) — ce qui reste d'un compte rendu après sa lecture.
       'donnees_confidentialite@v20',
+      // `D-364` §4 — l'envoi d'une version du dossier à ChatGPT par le praticien.
+      'donnees_confidentialite@v21',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -96,6 +99,8 @@ describe('registre des documents TRUST', () => {
       'conditions_utilisation@v2',
       // `D-292` §5 — la partie 3 passe à la v20 (b25).
       'conditions_utilisation@v3',
+      // `D-292` §5 — la partie 3 passe à la v21 (`D-364` §4).
+      'conditions_utilisation@v4',
     ]);
   });
 
@@ -141,7 +146,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v20');
+    expect(courant.version).toBe('v21');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -771,7 +776,7 @@ describe('registre des documents TRUST', () => {
   // efface les valeurs écartées ou sans décision (`purge.ts`).
   it('la v20 dit ce qui reste d’un compte rendu après sa lecture, mot pour mot, et rien d’autre', () => {
     const v19 = getVersion('donnees_confidentialite', 'v19')!;
-    const v20 = getDocumentCourant('donnees_confidentialite');
+    const v20 = getVersion('donnees_confidentialite', 'v20')!;
     expect(v20.version).toBe('v20');
     const ancienne =
       'Pour savoir d’où vient chaque résultat, nous conservons une empreinte du document, qui ne permet pas de le reconstituer, et la trace de sa lecture : outil utilisé, valeurs relevées et décisions.';
@@ -789,6 +794,54 @@ describe('registre des documents TRUST', () => {
       'Cette version précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
     );
     expect(v20.requiresAcknowledgement).toBe(true);
+  });
+
+  // D-364 §4, RELU DANS `docs/DECISIONS.md`, à l'apostrophe typographique du
+  // registre près : un écart d'un caractère rougit ici. Les durées de D-378
+  // n'y sont pas (arbitrage du 2026-10-27) : la phrase « en cours de
+  // formalisation » reste, et le banc le tient.
+  it('la v21 porte le texte de D-364 §4, mot pour mot, et rien d’autre', () => {
+    const decisions = fs.readFileSync(path.resolve(__dirname, '../../../../../docs/DECISIONS.md'), 'utf8');
+    const citation = (decision: string, suivante: string, debut: string, fin: string) => {
+      const section = decisions.slice(decisions.indexOf(`### ${decision} `), decisions.indexOf(`### ${suivante} `));
+      const bloc = section.slice(section.indexOf(debut), section.indexOf(fin));
+      expect(bloc.length, `${decision} ${debut} introuvable`).toBeGreaterThan(0);
+      return bloc
+        .split('\n')
+        .filter(ligne => ligne.startsWith('>'))
+        .map(ligne => ligne.replace(/^>\s?/, ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/^« /, '')
+        .replace(/ »$/, '')
+        .replaceAll("'", '’');
+    };
+    const texteD364 = citation('D-364', 'D-363', '**§4', '**§5');
+
+    const v20 = getVersion('donnees_confidentialite', 'v20')!;
+    const v21 = getDocumentCourant('donnees_confidentialite');
+    expect(v21.version).toBe('v21');
+
+    const acces = v21.sections.find(s => s.titre === 'Qui peut accéder à vos données ?')!;
+    const rang = acces.paragraphes.findIndex(p => p.startsWith('L’application n’envoie rien à un tiers'));
+    expect(rang).toBeGreaterThanOrEqual(0);
+    expect(acces.paragraphes[rang + 1]).toBe(texteD364);
+
+    const conservation = v21.sections.find(s => s.titre === 'Combien de temps sont-elles conservées ?')!;
+    expect(conservation.paragraphes.join(' ')).toContain('en cours de formalisation');
+
+    // Rien d'autre : sans le paragraphe neuf, la v21 redevient la v20 — la
+    // liste des prestataires et la conservation comprises.
+    expect(
+      v21.sections.map(s => ({ ...s, paragraphes: s.paragraphes.filter(p => p !== texteD364) })),
+    ).toEqual(v20.sections);
+
+    expect(v21.changeSummary).toBe(
+      'Cette version dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
+    );
+    expect(v21.requiresAcknowledgement).toBe(true);
+    expect(v21.publieLe > v20.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {
@@ -825,7 +878,7 @@ describe('registre des documents TRUST', () => {
     const conditions = getDocumentCourant('conditions_utilisation');
 
     it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
-      expect(conditions.version).toBe('v3');
+      expect(conditions.version).toBe('v4');
       expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
@@ -846,6 +899,13 @@ describe('registre des documents TRUST', () => {
         'donnees_confidentialite@v20',
         'usage_ia@v8',
       ]);
+      // La v4 aussi, vers la v21 (`D-364` §4).
+      expect(PARTIES_REPRISES_CONDITIONS_V4.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v21',
+        'usage_ia@v8',
+      ]);
       expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
         'Le cadre de votre accompagnement',
         'Limites et sécurité médicale',
@@ -860,7 +920,7 @@ describe('registre des documents TRUST', () => {
     // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
     // hash) ; après, publier une nouvelle version des conditions.
     it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
-      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V3) {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V4) {
         const courant = getDocumentCourant(source.key);
         expect(
           courant.version,
@@ -919,11 +979,20 @@ describe('registre des documents TRUST', () => {
       );
       expect(conditionsV2.changeSummary).toBe(citations('### B3. Résumé des conditions v2')[0]);
       // La v3 garde la partie 5 de la v2 ; son résumé, validé le 2026-10-24 (b25).
-      expect(partie5(conditions)).toEqual(partie5(conditionsV2));
-      expect(conditions.titre).toBe(conditionsV2.titre);
-      expect(conditions.resume).toBe(conditionsV2.resume);
-      expect(conditions.changeSummary).toBe(
+      const conditionsV3 = getVersion('conditions_utilisation', 'v3')!;
+      expect(partie5(conditionsV3)).toEqual(partie5(conditionsV2));
+      expect(conditionsV3.titre).toBe(conditionsV2.titre);
+      expect(conditionsV3.resume).toBe(conditionsV2.resume);
+      expect(conditionsV3.changeSummary).toBe(
         'La partie « Vos données personnelles » précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
+      );
+      // La v4 garde la partie 5 de la v3 ; son résumé, validé le 2026-10-27
+      // (`D-364` §4).
+      expect(partie5(conditions)).toEqual(partie5(conditionsV3));
+      expect(conditions.titre).toBe(conditionsV3.titre);
+      expect(conditions.resume).toBe(conditionsV3.resume);
+      expect(conditions.changeSummary).toBe(
+        'La partie « Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
       );
     });
 

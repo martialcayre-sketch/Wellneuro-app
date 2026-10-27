@@ -11936,6 +11936,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat au prochain profil importé.
 
+## 2026-10-27 — File A : H86, consigne de libération et journal du crochet (D-373 §1, D-375 §1)
+
+**Fait.** Consigne de D-373 §1 dans `CLAUDE.md` (§ Début de session, § PR, CI, merge). Journal des verdicts du crochet de fraîcheur : une ligne par verdict, sans contenu ni chemin, dans `.claude/logs/` de la copie principale ; écrit après le verdict, appels Git bornés à 2 s ; huit cas de banc. Revue `wn-reviewer` : ordre verdict-journal et worktrees imbriqués corrigés.
+
+**Écarté.** Journal dans le dossier temporaire du marqueur (purgé) ; chemin de la cible dans la ligne ; entrée `.gitignore` dédiée (`*.log` couvre).
+
+**Prochaine action.** CI, CodeRabbit, merge ; semaine de journal datée du merge ; PR de doc : mesure de référence, part release-db d'abord (débloque H88).
+
+**Ouvert.** Sort du journal après H92 ; consigne à reprendre à l'ouverture de l'essai de l'intégrateur et à H88.
 ## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
 
 **Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
@@ -11946,7 +11955,56 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
 
-## 2026-10-27 — File A : t45, rapport oméga 6 / oméga 3 et indice oméga 3 calculés de leurs acides (D-389)
+## 2026-10-27 — File D, lots de code : bg, « Vos données personnelles » v21 (D-364)
+
+**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? ». Accusé exigé. Les durées de D-378 sont retenues : sur la revue, le texte dit au présent une archive non en service et contredit la v20 sur les comptes rendus. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
+
+**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
+
+**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
+
+## 2026-10-27 — F34 : contre-revue Codex intégrée, exclusions amendées (D-389)
+
+**Fait.** Dossier aw corrigé sur six constats Codex (rev 26) : reformulation retirée, précisions de libellé nommées, R6/R7 bornées. Second dossier Codex sur les deux exclusions, revérifié dans l'arbre : le motif est servi aussi dans la proposition de bilan (et la colonne « objectif » dit « verbatim ») ; la retenue release-db ne couvre pas la table signée ; l'empreinte ne porte que règles et grilles. Quatre arbitrages du responsable : lecture signée, seconde phrase d'E1 gardée, migration de correction, retenue étendue au fichier de la table. D-389 écrite.
+
+**Écarté.** Statu quo (attribution fausse maintenue) ; claim mot pour mot à la place du motif (deux règles changées, banc rouge, F53 le refera) ; deux textes à l'écran ; retenue manuelle.
+
+**Prochaine action.** CI, CodeRabbit, merge de D-389 ; doc aw mis à jour (E1, E2, R6, R7) ; puis lot retenue, lot écran, migration.
+
+**Ouvert.** R1 à R5 ; signatures des quinze fiches (étape 2) ; re-signature (étape 3).
+## 2026-10-27 — File D, lots de code : J1-alim, la Boussole quitte le portail (D-365, H16)
+
+**Fait.** Constat préalable par conteneur, en agrégats : 0 protocole diffusé sur 5 ne porte une Boussole. Démontage côté portail : route patient, page de l'aliment, composants, montage dans l'accueil et la page alimentation ; la route du protocole ne sert plus aucune lecture. Contrats, code praticien, `lib/food-compass` et `WN_C5_ENABLED` en place.
+
+**Écarté.** Supprimer les modules `lib/food-compass` devenus orphelins côté patient (hors D-365).
+
+**Prochaine action.** CI, CodeRabbit, merge ; constat du retrait, puis D-C5-01 à 04 soldées.
+
+**Ouvert.** Sort des modules orphelins, avec la suppression du code C5.
+
+## 2026-10-27 — File D, lots de code : J3-cabinet planifié (D-385, H58)
+
+**Fait.** Plan d'architecte : le moteur des statuts de phase sort dans un module pur partagé par la fiche et la page ; lectures groupées ; rejeu par dossier ; banc de parité ; trois PR sans migration. Quatre arbitrages du responsable : dossiers désactivés comptés ; « indéterminé » = échec ou phase nulle avec inconnu ; même effectif pour les deux tableaux ; l'écart des plus de 40 envois documenté.
+
+**Écarté.** Un E2E de parité, illisible à trois fixtures, puisque la répartition y est masquée ; une extraction serveur sous `lib/clinical/`, qui déclencherait la release-db.
+
+**Prochaine action.** Session dédiée : PR 1, l'extraction côté fiche.
+
+**Ouvert.** Le texte d'attente de la page ; le constat du retrait de J1-alim, puis D-C5-01 à 04.
+
+## 2026-10-27 — File D : retrait de la Boussole constaté, D-C5-01 à 04 soldées (D-365 §4)
+
+**Fait.** J1-alim est en production par cf76ed14. La route patient de la Boussole et la page de l'aliment rendent 404, et leurs témoins répondent. D-C5-01 à 04 sont soldées sans objet au plan (H16, §8). La dette de la colonne « Patient » de la matrice est posée au §8.
+
+**Écarté.** Mettre à jour `DETTE_C5.md` : le plan fait foi depuis le 2026-10-14.
+
+**Prochaine action.** PR 1 de J3-cabinet, dans une session dédiée.
+
+**Ouvert.** Les modules `lib/food-compass` orphelins côté patient ; D-C5-05.
+
+## 2026-10-27 — File A : t45, rapport oméga 6 / oméga 3 et indice oméga 3 calculés de leurs acides (D-390)
 
 **Fait.** Le rapport oméga 6 / oméga 3 sort des « opérandes absents » : calcul de ses sept acides, d’après les titres de section du compte rendu (arithmétique vérifiée au centième, valeurs non versées). L’indice oméga 3 devient le calcul de l’EPA et du DHA (claim SIIN WN-CL-0045-008), passé en « valeur calculée » dans la liste NABM. Sens du rapport fondé par les claims des voies de l’inflammation.
 

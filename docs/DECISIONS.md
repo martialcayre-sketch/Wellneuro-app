@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-389 — t45 : le rapport oméga 6 / oméga 3 et l'indice oméga 3 sont préparés comme valeurs calculées de leurs acides — sept pour le rapport, d'après le compte rendu du laboratoire ; EPA et DHA pour l'indice, d'après le corpus SIIN (amende D-376 §6, tranche l'indice laissé par D-387)
+### D-390 — t45 : le rapport oméga 6 / oméga 3 et l'indice oméga 3 sont préparés comme valeurs calculées de leurs acides — sept pour le rapport, d'après le compte rendu du laboratoire ; EPA et DHA pour l'indice, d'après le corpus SIIN (amende D-376 §6, tranche l'indice laissé par D-387)
 
 - Date : 2026-10-27
 - Statut : accepté — arbitrage du responsable du 2026-10-27 (« le ratio
@@ -56,6 +56,146 @@ WN-CL-0045-009, -0125-041, -0390-011) et du rapport ([[D-059]]) ; l'écart
 entre le seuil AA/EPA du corpus (« > 1,2 », WN-CL-0293-013) et la référence
 imprimée par le laboratoire, à instruire avant toute plage ; l'entrée de ces
 calculs dans un panel.
+
+### D-389 — Les deux exclusions du bilan : leur motif est une lecture signée du responsable, le claim est cité à part ; la colonne « objectif » se corrige par migration ; la table signée devient un chemin déclencheur de release-db (amende D-320 §3 et D-382 §3)
+
+- Date : 2026-10-27
+- Statut : accepté — quatre arbitrages du responsable du 2026-10-27, sur
+  questions à options (régime des exclusions, sort de la seconde phrase du
+  motif magnésium, colonne « objectif », retenue du déploiement), à partir
+  d'un dossier de propositions Codex (quatre options, neuf affirmations)
+  revérifié dans le dépôt par l'assistant (`origin/main` 1fd2a4b9) ; texte de
+  registre rédigé dans le lot.
+- Domaine : table signée `indicationsBiologieV1` (règles `BIO-NIA-01`,
+  `BIO-NIA-02`) ; `lib/biology-library/nonIndiquesBibliotheque.ts` ; fiche
+  d'analyte de la Bibliothèque et proposition de bilan du cockpit ; colonne
+  `objectif` de `biology_panels` ; `.github/workflows/release-db.yml` et
+  `scripts/wn-deploiement-deployer.mjs` ([[D-374]]) ; dossier aw ([[D-382]]) ;
+  registre CS-MAG-02 ([[D-104]]).
+- **Amende** [[D-320]] §3 et [[D-382]] §3 (§1 et §2) ; **outille** la retenue
+  que [[D-382]] §6 promet (§5) ; **dépasse** [[D-068]] §5 et [[D-069]] §1 sur
+  l'attribution « verbatim » des deux motifs, qui restent écrits tels quels
+  comme historique.
+- **Ne touche pas** : aucune règle de la table — motifs, claims, modes,
+  déclencheurs inchangés, donc ni son empreinte (`JSON.stringify({ regles,
+  grilles })`) ni sa signature du 2026-09-16 ; aucun texte clinique nouveau ;
+  le courrier au médecin et le document patient, qui ne servent pas les
+  exclusions ; [[D-296]] §4 (les deux panels restent actifs et portent leur
+  motif) ; les six arbitrages de [[D-382]] ; l'ordre des niveaux (lettre
+  cr) ; les réserves R1 à R5 du dossier aw ; les textes des claims.
+- Contexte : le dossier privé des quinze fiches (F34, étape 1, 2026-10-26) a
+  relevé que les deux motifs « non indiqué actuellement » ne sont pas le
+  texte de leur claim. `BIO-NIA-01` (`WN-CL-0242-007` v1.0) : la première
+  phrase du motif diffère du claim par deux mots ; la seconde, « L’exploration
+  pertinente est le magnésium érythrocytaire. », n'est dans aucun claim, et
+  c'est elle que le code lit pour rattacher la règle à son analyte alternatif.
+  `BIO-NIA-02` (`WN-CL-0042-007` v1.0) : première proposition identique, suite
+  condensée, l'alternative (deux mesures matinales, cortisol awakening
+  response) étant bien dans le claim. Le dépôt annonce pourtant « verbatim »
+  en neuf endroits (commentaire §D de la table, en-tête du module des
+  exclusions, tests, fiche d'analyte, fixture, migration d'août, proposition
+  validée d'août, [[D-068]] §5, [[D-069]] §1), et la production aussi : la
+  colonne `objectif` des deux panels écrit « Non indiqué actuellement —
+  WN-CL-…, verbatim : « … » » autour du motif. Le praticien lit cette
+  attribution deux fois : sur la fiche d'analyte (motif entre guillemets,
+  puis « Source : » et l'identifiant du claim) et dans la proposition de
+  bilan (motif dans la justification, colonne `objectif` sous la ligne). Les
+  textes des deux claims ont été relus en production le 2026-10-26 (lecture
+  seule) : VALIDE, actifs, v1.0, sans remplaçant. Enfin, la retenue de
+  déploiement de [[D-044]] ne surveille que `web/prisma/migrations/**` et
+  `web/src/lib/clinical/**` : la table, sous `web/src/lib/biology-library/`,
+  se déploie sans approbation, alors que [[D-382]] §6 promet une release-db
+  retenue pour sa re-signature.
+
+**§1 — Le motif est une lecture signée.** Pour les deux règles non indiquées,
+le motif de la table est la lecture que le responsable fait du claim cité :
+écrite dans la proposition du 2026-08-15, validée ligne à ligne ([[D-068]]),
+re-signée avec la table ([[D-187]]). Ce n'est pas une citation. Le mot
+« verbatim », dans [[D-320]] §3 comme dans [[D-382]] §3, ne qualifie plus
+que la reproduction mot pour mot du motif de la table — par l'écran, par le
+dossier — jamais une identité avec le texte du claim. [[D-320]] §3 se lit
+désormais : chaque exclusion s'affiche sur la fiche de l'exploration que son
+motif nomme pertinente, avec le motif de la table signée, reproduit mot pour
+mot et présenté comme lecture signée du responsable, et le claim cité à part,
+par son identifiant et sa version. [[D-382]] §3 se lit : les deux exclusions
+entrent au dossier comme blocs d'exclusion signés portant trois pièces — le
+motif de la table, reproduit mot pour mot ; le texte intégral du claim de
+non-indication, avec son identifiant et sa version ; la déclaration du
+responsable que ce motif est sa lecture signée de ce claim, les écarts
+nommés. Le reste des deux paragraphes ne change pas : rattachement éteint si
+la signature ne tient plus, banc rouge pour une règle sans rattachement,
+aucune exploration proposée.
+
+**§2 — La seconde phrase du motif magnésium.** « L’exploration pertinente est
+le magnésium érythrocytaire. » reste dans le motif, comme lecture signée du
+responsable : sa provenance est la validation de [[D-068]] et la signature de
+la table, et le registre CS-MAG-02 documente le rapprochement entre le dosage
+plasmatique écarté (`WN-CL-0242-007`) et le magnésium érythrocytaire conseillé
+(`WN-CL-0333-020`) sans être un claim. Aucun claim n'est présenté comme
+contenant cette phrase. E1 se signe maintenant, avec cette déclaration ; E2 de
+même, le motif y étant la première proposition du claim puis un condensé dont
+l'alternative est dans le claim.
+
+**§3 — L'écran et les commentaires.** La fiche d'analyte ne présente plus le
+motif comme une citation attribuée au claim : il s'affiche sous l'étiquette
+« Motif de la table signée (lecture du responsable) », et le claim sous
+« Claim cité : » avec son identifiant et sa version, à part. Les deux
+étiquettes sont celles de l'option validée ; elles s'épinglent dans les
+tests au lot qui les livre. Le commentaire §D de la table (« motifs VERBATIM
+des claims, jamais reformulés »), l'en-tête du module des exclusions et le
+commentaire de la fixture disent désormais « lecture signée du claim,
+reproduite mot pour mot de la table ». Les tests qui écrivent « verbatim de
+la table signée » sont exacts et gardent leur nom. La migration d'août, la
+proposition validée, [[D-068]] et [[D-069]] ne se réécrivent pas. Ce lot ne
+change aucune règle : l'empreinte ne porte que règles et grilles.
+
+**§4 — La colonne « objectif ».** Une migration de données réécrit, pour les
+deux panels seulement, la colonne `objectif` de `biology_panels` sans le mot
+« verbatim », en gardant le motif et le claim : `Non indiqué actuellement —
+WN-CL-0242-007, lecture signée du responsable : « <motif de la table, mot
+pour mot> »`, et de même pour `WN-CL-0042-007`. Mise à jour ciblée par code
+de panel, idempotente ; la migration d'août reste intacte. Release-db
+approuvée ([[D-087]]), constat par conteneur (les deux valeurs relues), puis
+rien d'autre : aucun code n'en dépend.
+
+**§5 — La retenue.** Le fichier de la table signée,
+`web/src/lib/biology-library/indicationsBiologieV1.ts`, s'ajoute aux chemins
+déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du déployeur. Le
+banc de parité (`scripts/wn-deploiement-deployer.test.mjs`, revue #1222) ne
+lit aujourd'hui que les entrées du filtre terminées par `/**` : son parseur
+apprend à lire un chemin de fichier exact, sinon il ignore l'entrée et la
+parité échoue. La comparaison de la tête dépassante le couvre comme elle
+couvre `clinical/**` ([[D-374]], arbitrage du 2026-10-26). Le fichier
+seul, pas le dossier : `biology-library/` porte aussi des services et des
+écrans dont le merge ne doit pas geler la chaîne du schéma. Ce lot précède
+la re-signature de la table (F34, étape 3). L'inventaire des autres tables
+signées hors `clinical/` n'est pas fait ici.
+
+**§6 — Ordre des lots.** Cette décision (doc) ; le lot de retenue (§5, code
+court, revue ordinaire) ; le lot d'écran et de commentaires (§3, code hors
+chemin déclencheur, aucune règle changée) ; la migration (§4, release-db
+approuvée, constat) ; puis F34 reprend : signature des quinze fiches, E1 et
+E2 sous §1 et §2 dès le merge de cette décision, sans attendre le lot
+d'écran ; re-signature de la table retenue par §5.
+
+**Écarté.** Le statu quo cadré : le praticien aurait continué de lire le
+motif comme une citation du claim. Le claim mot pour mot à la place du
+motif : il change deux règles (empreinte, re-signature, [[D-382]] §6 et
+[[D-296]] §4 à rouvrir), fait rougir le banc de rattachement des deux
+exclusions, retire à E1 sa phrase d'alternative sans claim qui la porte, et
+F53 refera ce travail en convertissant les panels ; il n'est pas interdit à
+F53. Les deux textes intégraux à l'écran : lecture du corpus à chaque
+affichage, écran plus long. La retenue manuelle : non automatique, à refaire
+à chaque re-signature.
+
+**Ce qu'elle ne décide pas.** Le devenir des deux panels aux indications v2
+(F53) ; l'inventaire des tables signées hors `clinical/` ; les réserves R1 à
+R5 et les treize fiches ordinaires, qui ne dépendent pas d'elle ; le texte
+exact des tests qui épinglent les étiquettes (lot d'écran).
+
+**Effet sur le plan.** F34 : mise à jour datée ; trois lots courts sous F34
+(retenue, écran et commentaires, migration), avant la re-signature ; critère
+de fin inchangé. Registre « Lettres à écrire » : aw, exclusions amendées.
 
 ### D-388 — Deux textes corrigés : l'annonce du cockpit après le clic dit « Documents remis », et la lettre d'adressage écrit « Remettez-le-lui » (dettes de la revue de #1701)
 

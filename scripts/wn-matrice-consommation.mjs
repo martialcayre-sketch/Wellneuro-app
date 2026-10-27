@@ -194,7 +194,7 @@ export const SOURCES_DE_SAVOIR = [
     module: 'web/src/lib/food-compass/distribution.ts',
     symboles: ['getSignedFoodCompassDistribution', 'C5_OFFICIAL_FOOD_COUNT'],
     modulesGardes: ['web/src/lib/food-compass/featureFlag.ts'],
-    decisionProduite: 'Lecture PRAL/densité d’un aliment servie au patient et au praticien.',
+    decisionProduite: 'Lecture PRAL/densité d’un aliment servie au praticien (le portail ne la sert plus, D-365).',
   },
   {
     id: 'catalogue-biologie',

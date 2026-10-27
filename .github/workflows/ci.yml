@@ -400,14 +400,15 @@ jobs:
         run: npm ci
 
       # E56 (plan, fiche H23) : une PR qui touche du code porte sa clôture —
-      # une entrée ajoutée à SESSION_LOG.md et un fragment de handoff daté.
-      # La règle est celle de `wn-merge` (étape 7) ; jusqu'au 2026-10-14, seule
-      # la revue Copilot la réclamait, et l'auto-merge la contournait (#1315).
+      # un fragment de handoff daté créé par la PR ; l'entrée SESSION_LOG.md
+      # n'est plus exigée depuis D-372. La règle est celle de `wn-merge`
+      # (étape 7) ; jusqu'au 2026-10-14, seule la revue Copilot la réclamait,
+      # et l'auto-merge la contournait (#1315).
       # Une PR purement documentaire (rattrapage de clôture compris) en est
       # dispensée par le périmètre du diff. Placée après `setup-node` : elle
       # dépend de la base de la PR, qu'aucun palier local n'a — le banc de
       # parité ne la réclame donc pas à `check`, son banc si (plus haut).
-      - name: Contrôle de clôture (SESSION_LOG et handoff)
+      - name: Contrôle de clôture (fragment de handoff)
         if: github.event_name == 'pull_request' && steps.scope.outputs.docs_only != 'true'
         run: node scripts/wn-controle-cloture.mjs "${{ github.event.pull_request.base.sha }}"
 

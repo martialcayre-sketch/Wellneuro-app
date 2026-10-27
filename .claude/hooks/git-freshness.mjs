@@ -4,6 +4,7 @@
 // est toujours recalculée à chaud, en local ; seul le fetch réseau est limité à
 // une tentative toutes les 15 minutes. Le verdict est porté par l'état Git réel,
 // jamais par l'absence du marqueur. Aucun pull, merge, rebase ni checkout.
+// Chaque verdict laisse une ligne dans un journal persistant (D-375 §1).
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -33,12 +34,15 @@ const markerPath = path.join(markerDir, `${key}.json`);
 // invite d'identifiants, bloquerait `fetch` indéfiniment — le délai le
 // transforme en échec de fetch, qui a déjà son chemin de décision.
 const DELAI_GIT_MS = 10_000;
+// Le journal passe après le verdict et ne doit pas pousser le crochet vers le
+// délai de Claude Code : ses appels Git ont un budget court.
+const DELAI_GIT_JOURNAL_MS = 2_000;
 
-function git(args) {
+function git(args, { dans = cwd, delai = DELAI_GIT_MS } = {}) {
   return spawnSync("git", args, {
-    cwd,
+    cwd: dans,
     encoding: "utf8",
-    timeout: DELAI_GIT_MS,
+    timeout: delai,
     killSignal: "SIGKILL",
     env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
   });
@@ -97,6 +101,70 @@ function sha(ref) {
   return resultat.status === 0 ? resultat.stdout.trim() : null;
 }
 
+// Plus proche dossier existant au-dessus d'un fichier qui n'existe peut-être
+// pas encore (Write d'un fichier neuf dans un dossier neuf).
+function dossierExistant(chemin) {
+  let courant = path.dirname(path.resolve(cwd, chemin));
+  while (!fs.existsSync(courant)) {
+    const parent = path.dirname(courant);
+    if (parent === courant) return null;
+    courant = parent;
+  }
+  return courant;
+}
+
+function racineReelle(dans) {
+  const racine = git(["rev-parse", "--show-toplevel"], { dans, delai: DELAI_GIT_JOURNAL_MS });
+  if (racine.status !== 0) return null;
+  try {
+    return fs.realpathSync.native(racine.stdout.trim());
+  } catch {
+    return null;
+  }
+}
+
+// La cible n'est jamais nommée : seulement « interne » ou « externe » au
+// worktree du répertoire courant, qui est la portée du garde. Le fichier est
+// interne si le worktree qui le contient est celui du `cwd` — un worktree
+// imbriqué sous la copie principale (`.claude/worktrees/…`) est externe.
+function cible() {
+  if (event === "SessionStart") return null;
+  const fichier = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
+  if (typeof fichier !== "string" || !fichier) return "inconnue";
+  const ici = racineReelle(cwd);
+  if (!ici) return "inconnue";
+  const dossier = dossierExistant(fichier);
+  return dossier && racineReelle(dossier) === ici ? "interne" : "externe";
+}
+
+// Journal des verdicts (D-375 §1) : une ligne JSON par verdict, pour compter
+// la part des fusions de `main` que le garde impose. Jamais de contenu de
+// fichier ni de chemin. Il vit dans `.claude/logs/` de la copie principale
+// (parent du dossier Git commun, partagé par tous les worktrees), ignoré par
+// Git (`*.log`) et persistant — distinct du marqueur, que le dossier
+// temporaire purge. Journaliser ne décide de rien : appelé après le verdict
+// émis, un échec est muet, et une session hors dépôt n'a pas de journal.
+function journaliser(verdict, motif, constat) {
+  try {
+    const commun = git(["rev-parse", "--git-common-dir"], { delai: DELAI_GIT_JOURNAL_MS });
+    if (commun.status !== 0) return;
+    const dossier = path.join(path.dirname(path.resolve(cwd, commun.stdout.trim())), ".claude", "logs");
+    const ligne = {
+      date: new Date().toISOString(),
+      outil: event === "SessionStart" ? event : String(input.tool_name),
+      cible: cible(),
+      head: constat.head,
+      originMain: constat.originMain,
+      verdict,
+      motif,
+    };
+    fs.mkdirSync(dossier, { recursive: true });
+    fs.appendFileSync(path.join(dossier, "git-freshness.log"), `${JSON.stringify(ligne)}\n`);
+  } catch {
+    // rien : un journal non écrit coûte une ligne de mesure, jamais un verdict
+  }
+}
+
 // Constat local, sans réseau : c'est lui qui décide, pas le marqueur.
 function constater() {
   const head = sha("HEAD");
@@ -152,20 +220,24 @@ if (event === "SessionStart") {
 
   if (!fetchOk && verifiedAt === null) {
     process.stdout.write("Freshness Git non vérifiée : `git fetch origin main` a échoué et aucune vérification n'a jamais abouti. Aucune édition avant résolution.\n");
+    journaliser("constat", "fetch-jamais-abouti", constat);
     process.exit(0);
   }
   if (!constat.head || !constat.originMain) {
     process.stdout.write("Freshness Git non vérifiée : `HEAD` ou `origin/main` est illisible. Aucune édition avant résolution.\n");
+    journaliser("constat", "illisible", constat);
     process.exit(0);
   }
   if (!constat.contient) {
     const source = fetchOk ? "le nouvel `origin/main`" : "l'`origin/main` connu (fetch impossible)";
     process.stdout.write(`Freshness Git : la branche ne contient pas ${source} (HEAD ${constat.head.slice(0, 12)} · origin/main ${constat.originMain.slice(0, 12)}). Aucune édition avant arbitrage ; le garde réévalue à chaque tentative d'édition, sans reprise de session.\n`);
+    journaliser("constat", "retard", constat);
     process.exit(0);
   }
 
   const degrade = fetchOk ? "" : ` (mode dégradé : fetch impossible, référence vérifiée ${age(verifiedAt)})`;
   process.stdout.write(`Freshness Git vérifiée : HEAD contient origin/main ${constat.originMain.slice(0, 12)}${degrade}.\n`);
+  journaliser("constat", fetchOk ? "a-jour" : "degrade", constat);
   process.exit(0);
 }
 
@@ -177,14 +249,17 @@ if (event === "PreToolUse" && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(Strin
 
   if (!constat.head || !constat.originMain) {
     deny(`Édition bloquée : ${constat.head ? "`origin/main`" : "`HEAD`"} est illisible dans ce dépôt${fetchOk ? "" : ", et `git fetch origin main` a échoué"}. Aucune édition avant résolution.`);
+    journaliser("refus", "illisible", constat);
     process.exit(0);
   }
   if (!constat.contient) {
     deny(`Édition bloquée : la branche ne contient pas \`origin/main\` (HEAD ${constat.head} · origin/main ${constat.originMain}). Remettre la branche à niveau par arbitrage humain — ni pull, ni merge, ni rebase automatique. L'édition est réévaluée dès la tentative suivante, sans reprise de session.`);
+    journaliser("refus", "retard", constat);
     process.exit(0);
   }
   if (!fetchOk && verifiedAt === null) {
     deny("Édition bloquée : `git fetch origin main` a échoué et aucune vérification n'a jamais abouti dans cette session. La fraîcheur d'`origin/main` n'est pas établie. Aucune édition avant résolution.");
+    journaliser("refus", "fetch-jamais-abouti", constat);
     process.exit(0);
   }
   if (!fetchOk) {
@@ -192,5 +267,6 @@ if (event === "PreToolUse" && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(Strin
       systemMessage: `Freshness Git en mode dégradé : \`git fetch origin main\` a échoué, la vérification porte sur la dernière référence connue (origin/main ${constat.originMain.slice(0, 12)}, vérifiée ${age(verifiedAt)}), que HEAD contient.`,
     }));
   }
+  journaliser("autorise", fetchOk ? "a-jour" : "degrade", constat);
   process.exit(0);
 }

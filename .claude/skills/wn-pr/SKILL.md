@@ -29,9 +29,10 @@ Sans `apply` : ne créer ni branche, ni commit, ni push, ni PR.
 Avec `apply` : branche et commit locaux autorisés. Le push, la création ou le merge d’une PR nécessitent encore une demande explicite claire.
 
 **La clôture est opposable, dès l'ouverture.** Le verdict de cycle chargé
-ci-dessus (`fait ✓/✗`) dit si `docs/claude/SESSION_LOG.md` et un fragment
-`docs/claude/handoffs/` sont dans le diff. L'un des deux manque → ne pas ouvrir
-la PR : `/wn-finish` puis `/wn-handoff write` d'abord, la PR ensuite. Ouvrir <!-- mention-seule: wn-finish, wn-handoff -->
+ci-dessus (`fait ✓/✗`) dit si un fragment `docs/claude/handoffs/` est dans le
+diff — la clôture se réduit à lui depuis D-372, l'entrée `SESSION_LOG.md` n'est
+plus exigée. Il manque → ne pas ouvrir la PR :
+`/wn-finish` puis `/wn-handoff write` d'abord, la PR ensuite. Ouvrir <!-- mention-seule: wn-finish, wn-handoff -->
 sans la clôture, c'est fabriquer la « fenêtre ratée » que `/wn-merge` refusera — <!-- mention-seule: wn-merge -->
 le squash fermera la fenêtre et coûtera une seconde PR de doc depuis `main`.
 (La PR de rattrapage d'une fenêtre déjà ratée porte la clôture par construction
