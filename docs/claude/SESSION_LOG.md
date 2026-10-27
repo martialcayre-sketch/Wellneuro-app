@@ -11926,15 +11926,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.
 
-## 2026-10-27 — File D, lots de code : bg + (a), « Vos données personnelles » v21 (D-364, D-378)
-
-**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? », et les durées de D-378. Un seul accusé. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
-
-**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
-
-**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
-
-**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT.
 ## 2026-10-27 — File A : t45, le profil érythrocytaire composé de ses vingt acides (D-387)
 
 **Fait.** Reste « panels » de t45 tranché : aucun acide n'entre seul dans un panel ; le profil `BIO_AG_ERYTHROCYTAIRES` (quatre panels) est préparé comme un regroupement de ses vingt acides, passé en « regroupement » dans la liste NABM. Source : le compte rendu du laboratoire, qui les imprime sous « membrane Érythrocytaire » (D-376 §1 corrigé). V105 relue : aucun acte.
@@ -11944,3 +11935,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : vingt constats, composition, contrôle des rendus.
 
 **Ouvert.** Constat au prochain profil importé.
+
+## 2026-10-27 — File D, lots de code : bg + (a), « Vos données personnelles » v21 (D-364, D-378)
+
+**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? », et les durées de D-378. Un seul accusé. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
+
+**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
+
+**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT.
