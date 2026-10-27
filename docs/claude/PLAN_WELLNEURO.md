@@ -722,6 +722,16 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Critère de fin** : flux listé, puis déclaré ou arrêté, consigné.
 - **Mise à jour (2026-10-24, lettre écrite)** : bg écrite par D-364 : flux listé (export de D-252 vers un outil d'IA externe, sans accord de sous-traitance), déclaration décidée, version pseudonymisée seule ; constat des envois antérieurs tenu hors dépôt. La déclaration n'est pas encore livrée : la ligne de la rubrique 6 (réserve écrite) et la nouvelle version de « Vos données personnelles » (accusé exigé, texte de D-364 §4) partent dans un lot de code distinct ; critère de fin atteint à sa livraison.
 - **Mise à jour (2026-10-27, lot de code)** : la déclaration est livrée. « Vos données personnelles » v21 porte le texte de D-364 §4 mot pour mot, dans « Qui peut accéder à vos données ? », après « L’application n’envoie rien à un tiers » (arbitrage du 2026-10-27 : ChatGPT n'est pas un prestataire de l'application). Accusé exigé ; les durées de D-378 n'y sont pas (voir H26). En rubrique 6 du registre RGPD, un second tableau, « Destinataire choisi par le praticien, hors de l'application », porte la ligne de §3 et sa réserve ; le tableau des sous-traitants et son banc restent inchangés. Les conditions passent en v4, avec l'e-mail `conditions_utilisation@4`, qui remplace la @3, jamais partie. Critère de fin atteint au merge ; reste l'envoi de l'e-mail, geste du responsable.
+- **Mise à jour (2026-10-27, e-mail envoyé ; correction)** : le responsable a envoyé l'e-mail des conditions v4 depuis le cockpit. Constat par conteneur, en lecture seule et en agrégats (`correspondances_patient`, par version du document) :
+
+  | Version | Envoyés | Date |
+  |---|---|---|
+  | v1 | 15 | 2026-10-16 |
+  | v2 | 15 | 2026-10-20 |
+  | v3 | 15 | 2026-10-24 |
+  | v4 | 15 | 2026-10-27 |
+
+  Aucun échec, aucune clé libérée. **Correction** : la mise à jour précédente, la PR #1728, son handoff et l'entrée du `SESSION_LOG` disent la @3 « jamais partie », et annoncent un seul e-mail. C'est faux. La @3 est née avec les conditions v3 (#1677, 2026-10-24), et elle est partie le même jour. L'affirmation a été écrite sans relire l'historique des envois. L'erreur ne change ni le code ni l'envoi : un dossier reçoit un e-mail par version, comme prévu. Les patients suivis ont reçu quatre e-mails de conditions en onze jours. La v22 de D-378 (H26) en enverrait un cinquième : la grouper avec d'autres changements, si possible.
 
 #### H19 · bf : indicateurs hebdomadaires
 - **Identifiant, piste** : lettre bf.
