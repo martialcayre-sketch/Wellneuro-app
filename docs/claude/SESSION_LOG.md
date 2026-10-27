@@ -11925,3 +11925,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
 
 **Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.
+
+## 2026-10-27 — File A : t45, le profil érythrocytaire composé de ses vingt acides (D-387)
+
+**Fait.** Reste « panels » de t45 tranché : aucun acide n'entre seul dans un panel ; le profil `BIO_AG_ERYTHROCYTAIRES` (quatre panels) est préparé comme un regroupement de ses vingt acides, passé en « regroupement » dans la liste NABM. Source : le compte rendu du laboratoire, qui les imprime sous « membrane Érythrocytaire » (D-376 §1 corrigé). V105 relue : aucun acte.
+
+**Écarté.** Acides ajoutés aux panels (change les indications) ; type `groupe` (cotation fausse) ; rapports dans la composition ; une fiche d'un autre laboratoire (seize acides, non rattachée).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : vingt constats, composition, contrôle des rendus.
+
+**Ouvert.** Constat au prochain profil importé.
