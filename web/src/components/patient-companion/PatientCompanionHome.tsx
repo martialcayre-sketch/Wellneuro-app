@@ -405,9 +405,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
               {actionFerme && (
                 <p className="text-sm text-muted-foreground">
                   {/* Le plan de secours de la même action, s'il est servi ([[D-384]] §4),
-                      sans son point final : le gabarit pose le sien. Sinon le plan
-                      minimal, exactement comme avant — drapeau éteint, rien ne change. */}
-                  Si vous le pouvez aujourd’hui : {plansDe.get(actionFerme.actionId)?.rescuePlan.replace(/\.\s*$/, '') ?? actionFerme.minimalPlan}.
+                      sinon le plan minimal, comme avant. L'un comme l'autre sans son
+                      point final : le gabarit pose le sien (plus de « .. »). */}
+                  Si vous le pouvez aujourd’hui : {(plansDe.get(actionFerme.actionId)?.rescuePlan ?? actionFerme.minimalPlan).replace(/\.\s*$/, '')}.
                 </p>
               )}
               {checkinDu && (

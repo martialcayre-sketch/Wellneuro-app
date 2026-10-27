@@ -700,6 +700,56 @@ describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
     const json = (await (await GET(requete())).json()) as { apercu: unknown };
     expect(json.apercu).toBeNull();
   });
+
+  // LES TROIS PLANS DU MIROIR ([[D-386]]) : la règle du portail, sur la version
+  // de l'aperçu — drapeau, colonne `created_at` postérieure à l'instant, action
+  // ferme hors pause. Le miroir ne montre ni plus ni moins que le portail.
+  describe('troisPlans', () => {
+    const actionFerme = {
+      actionId: 'a2', type: 'food', title: 'Petit-déjeuner',
+      idealPlan: 'Idéal a2.', minimalPlan: 'Minimal a2.', rescuePlan: 'Secours a2.', limitations: [],
+    };
+    function version(createdAt: string) {
+      return [{ id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date(createdAt), payload: { p: 1 } }];
+    }
+    beforeEach(() => {
+      reconstructProtocolDraft.mockReturnValue(draft({ actions: [...draft().actions, actionFerme] }));
+    });
+    afterEach(() => {
+      delete process.env.WN_PORTAIL_TROIS_PLANS;
+    });
+
+    it('drapeau ouvert, version postérieure : sert les plans des seules actions fermes', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      prisma.protocolDraft.findMany.mockResolvedValue(version('2026-10-27T08:00:00.000Z'));
+      const json = (await (await GET(requete())).json()) as { troisPlans?: unknown };
+      expect(json.troisPlans).toEqual([{ actionId: 'a2', idealPlan: 'Idéal a2.', rescuePlan: 'Secours a2.' }]);
+    });
+
+    it('drapeau fermé : la clé n’existe pas, la réponse est celle d’avant', async () => {
+      prisma.protocolDraft.findMany.mockResolvedValue(version('2026-10-27T08:00:00.000Z'));
+      const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean } };
+      expect(json.apercu.ok).toBe(true);
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+
+    it('version créée à l’instant ou avant : plan minimal seul', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      prisma.protocolDraft.findMany.mockResolvedValue(version('2026-10-27T00:00:00.000Z'));
+      const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean } };
+      expect(json.apercu.ok).toBe(true);
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+
+    it('une action en pause garde son plan minimal seul', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      prisma.protocolDraft.findMany.mockResolvedValue(version('2026-10-27T08:00:00.000Z'));
+      pausesServies.mockResolvedValue([{ actionId: 'a2', texte: 'element' }]);
+      const json = (await (await GET(requete())).json()) as { pauses?: unknown };
+      expect(json.pauses).toEqual([{ actionId: 'a2', texte: 'element' }]);
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+  });
 });
 
 // ── LES FICHES D'ASSIETTE AU CLIC ([[D-251]] §7, lot 8) ────────────────────
