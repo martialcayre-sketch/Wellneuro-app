@@ -312,37 +312,11 @@ describe('GET /api/portail/protocole', () => {
     );
   });
 
-  it('ajoute uniquement le résumé Boussole patient-safe du protocole approuvé', async () => {
-    process.env.WN_C5_ENABLED = 'true';
-    mockOwnerAuth();
-    mockProtocoleDiffuse();
-    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([approbation({ approvedAt: new Date() })]);
-    const foodCompassRef = { foodRef: 'ciqual-2025-v1:26034', refHash: 'ref-hash' };
-    reconstructProtocolDraft.mockReturnValue({
-      ...draftDerive,
-      actions: [
-        { ...draftDerive.actions[0], foodCompassRef },
-        { ...draftDerive.actions[0], actionId: 'a2', foodCompassRef },
-      ],
-    });
-    const safe = {
-      foodRef: '26034', foodLabel: 'Sardine', qualitativeSummary: 'Lecture qualitative.',
-      reasons: ['Raison qualitative.'], sourceLabel: 'Table Ciqual, Anses',
-      limitations: ['Limite qualitative.'], alternative: null,
-    };
-    resolvePatientFoodCompassView.mockResolvedValue(safe);
-    const response = await GET(request(proprioCookie()));
-    const payload = await response.json();
-    expect(payload.vue.boussoles).toEqual([safe]);
-    expect(resolvePatientFoodCompassView).toHaveBeenCalledTimes(1);
-    expect(JSON.stringify(payload.vue.boussoles)).not.toMatch(/score|inputHash|refHash|%/i);
-    // Règle amendée non signée : aucune lecture marquée.
-    expect(payload.boussolesEnPause).toEqual([]);
-  });
-
-  // EN PAUSE, JAMAIS MASQUÉE ([[D-281]] §2, arbitrage du 2026-10-16) : la
-  // lecture reste dans la vue, et sa marque arrive hors de la vue signée.
-  it('marque la lecture Boussole dont l’aliment est porté par un élément en pause', async () => {
+  // LA BOUSSOLE QUITTE LE PORTAIL ([[D-365]] §1, §3) : un protocole qui porte
+  // encore un `foodCompassRef` reste servi et lisible, mais aucune lecture de
+  // l'aliment n'est résolue ni servie, drapeau C5 allumé compris — en pause ou
+  // non.
+  it('sert un protocole qui porte une Boussole sans jamais la résoudre ni la servir', async () => {
     process.env.WN_C5_ENABLED = 'true';
     mockOwnerAuth();
     mockProtocoleDiffuse();
@@ -352,17 +326,15 @@ describe('GET /api/portail/protocole', () => {
       ...draftDerive,
       actions: [{ ...draftDerive.actions[0], foodCompassRef }, ...draftDerive.actions.slice(1)],
     });
-    const safe = {
-      foodRef: '26034', foodLabel: 'Sardine', qualitativeSummary: 'Lecture qualitative.',
-      reasons: ['Raison qualitative.'], sourceLabel: 'Table Ciqual, Anses',
-      limitations: ['Limite qualitative.'], alternative: null,
-    };
-    resolvePatientFoodCompassView.mockResolvedValue(safe);
     pausesPosees.valeur = [{ actionId: draftDerive.actions[0].actionId, texte: 'element' }];
     try {
       const payload = await (await GET(request(proprioCookie()))).json();
-      expect(payload.vue.boussoles).toEqual([safe]);
-      expect(payload.boussolesEnPause).toEqual([{ foodRef: '26034', texte: 'element' }]);
+      expect(payload.indisponible).toBe(false);
+      expect(payload.vue).not.toBeNull();
+      expect(payload.vue).not.toHaveProperty('boussoles');
+      expect(payload).not.toHaveProperty('boussolesEnPause');
+      expect(resolvePatientFoodCompassView).not.toHaveBeenCalled();
+      expect(JSON.stringify(payload)).not.toMatch(/26034|Boussole/);
     } finally {
       pausesPosees.valeur = null;
     }

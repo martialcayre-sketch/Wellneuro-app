@@ -97,6 +97,17 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
 - Portée : le dépôt du `cwd` de la session, pas celui du fichier édité. Une
   écriture par chemin absolu vers un **autre** worktree n'est pas gardée — la
   convention « une session = un worktree » est ce qui tient cette limite.
+- **Journal des verdicts** (`D-375` §1, depuis H86) : une ligne JSON par
+  verdict — date, outil, cible `interne`/`externe`/`inconnue` au worktree du
+  `cwd` (jamais le chemin ; un worktree imbriqué sous `.claude/worktrees/`
+  est externe), `HEAD`, `origin/main`, verdict (`constat` au démarrage,
+  `autorise`, `refus`), motif (`a-jour`, `degrade`, `retard`, `illisible`,
+  `fetch-jamais-abouti`) ; jamais de contenu de fichier. Fichier
+  `.claude/logs/git-freshness.log` de la **copie principale** (parent du
+  dossier Git commun : tous les worktrees y écrivent), ignoré par Git et
+  persistant, distinct du marqueur. Écrit **après** le verdict émis, avec des
+  appels Git bornés à 2 s ; un échec est muet et ne change aucun verdict ; une
+  session hors dépôt n'a pas de journal.
 
 **Lanceur fermé.** Chaque garde bloquant est lancé par une ligne qui cherche le
 script sous `$CLAUDE_PROJECT_DIR`, puis sous la racine Git du répertoire

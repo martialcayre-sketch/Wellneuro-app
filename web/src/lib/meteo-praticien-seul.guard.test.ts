@@ -13,7 +13,6 @@ const RACINE = join(__dirname, '..');
 const SURFACES_PATIENT = [
   'components/patient',
   'components/patient-companion',
-  'components/patient-food-compass',
   'components/patient-food-observation',
   'components/food-observation',
   'app/portail',

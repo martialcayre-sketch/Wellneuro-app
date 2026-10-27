@@ -33,7 +33,6 @@ const RACINE = join(__dirname, '..');
 // dans un écran praticien serait déplacé, pas interdit.
 const SURFACES_PATIENT = [
   'components/patient',
-  'components/patient-food-compass',
   'components/patient-food-observation',
   'components/food-observation',
   'app/portail',

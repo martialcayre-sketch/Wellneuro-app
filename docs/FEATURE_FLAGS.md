@@ -22,7 +22,7 @@ datée **par feature**.
 | Flag | Valeur ON | Ouvre | Si absent |
 |---|---|---|---|
 | `WN_C4_ENABLED` | `true` | rayon compléments | fermé |
-| `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
+| `WN_C5_ENABLED` | `true` | alimentation / CIQUAL, côté praticien seulement : depuis [[D-365]], le portail ne sert plus la Boussole alimentaire (ni résumé, ni page de l'aliment, ni route patient), drapeau allumé ou non | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
 | `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
 | `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (**sept rayons** depuis [[D-188]] : cognition, douleur, intestin, sommeil, stress, humeur, nutrition — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
