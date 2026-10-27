@@ -11916,15 +11916,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Nom du drapeau et forme du détail, au lot 2.
 
-## 2026-10-27 — File D, lots de code : bg + (a), « Vos données personnelles » v21 (D-364, D-378)
-
-**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? », et les durées de D-378. Un seul accusé. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
-
-**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
-
-**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
-
-**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT.
 ## 2026-10-26 — File D, lots de code : cb, écran de fin de l'agenda du sommeil (D-379, H39)
 
 **Fait.** ba trouvée déjà livrée et constatée (#1714, #1722). Lot cb : l'écran de fin de l'agenda du sommeil dit « Merci d’avoir noté vos nuits 🌙 » et la phrase de D-379 §1, mot pour mot, le même pour tous, sans chiffre ; banc posé.
@@ -11934,3 +11925,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
 
 **Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.
+
+## 2026-10-27 — File D, lots de code : bg + (a), « Vos données personnelles » v21 (D-364, D-378)
+
+**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? », et les durées de D-378. Un seul accusé. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
+
+**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
+
+**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT.
