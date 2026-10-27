@@ -11946,15 +11946,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
 
-## 2026-10-27 — File C : bb lot 2, les trois plans au patient sous drapeau éteint (D-386, amendement)
-
-**Fait.** `api/portail/protocole` sert les plans idéal et de secours des actions fermes hors pause, hors de la vue signée, sous `WN_PORTAIL_TROIS_PLANS` et pour une version créée (ligne) après 2026-10-27T00:00:00Z. Accueil : « Selon votre journée : » une fois, trois intitulés de D-384 §2 ; « Jour difficile ? » au plan de secours, l'orientation gardant son minimal. Aucune migration.
-
-**Écarté.** Champs ajoutés au contrat patient (empreinte) ; chapeau répété par carte ; secours de l'orientation au jour difficile (phrase incohérente).
-
-**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté.
-
-**Ouvert.** Activation en file C, porte 18, après contrôle d'absence de recul sous #1725.
 ## 2026-10-27 — File D, lots de code : bg, « Vos données personnelles » v21 (D-364)
 
 **Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? ». Accusé exigé. Les durées de D-378 sont retenues : sur la revue, le texte dit au présent une archive non en service et contredit la v20 sur les comptes rendus. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
@@ -11964,3 +11955,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
 
 **Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
+
+## 2026-10-27 — File C : bb lot 2, les trois plans au patient sous drapeau éteint (D-386, amendement)
+
+**Fait.** `api/portail/protocole` sert les plans idéal et de secours des actions fermes hors pause, hors de la vue signée, sous `WN_PORTAIL_TROIS_PLANS` et pour une version créée (ligne) après 2026-10-27T00:00:00Z. Accueil : « Selon votre journée : » une fois, trois intitulés de D-384 §2 ; « Jour difficile ? » au plan de secours, l'orientation gardant son minimal. Aucune migration.
+
+**Écarté.** Champs ajoutés au contrat patient (empreinte) ; chapeau répété par carte ; secours de l'orientation au jour difficile (phrase incohérente).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** Activation en file C, porte 18, après contrôle d'absence de recul sous #1725.
