@@ -102,6 +102,25 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     composants: ['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA'],
     motif: 'Rapport de l’acide linoléique et du DGLA.',
   },
+  // [[D-388]] §1 : le compte rendu du laboratoire imprime ces quatre acides
+  // sous « Oméga 6 » et ces trois sous « Oméga 3 » ; leurs sommes redonnent son
+  // rapport au centième. L'ordre est le sien.
+  BIO_RATIO_OMEGA6_OMEGA3: {
+    type: 'calcul',
+    composants: [
+      'BIO_AG_LINOLEIQUE', 'BIO_AG_GAMMA_LINOLENIQUE', 'BIO_AG_DGLA', 'BIO_AG_ARACHIDONIQUE',
+      'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
+    ],
+    motif:
+      'Rapport de la somme des quatre oméga 6 (linoléique, gamma-linolénique, DGLA, arachidonique) à celle des trois oméga 3 (alpha-linolénique, EPA, DHA), comme le compte rendu du laboratoire les range.',
+  },
+  // [[D-388]] §2 : « L'index oméga 3 correspond au pourcentage d'EPA + DHA »
+  // (claim WN-CL-0045-008) ; le compte rendu en redonne la somme au centième.
+  BIO_INDEX_OMEGA3: {
+    type: 'calcul',
+    composants: ['BIO_AG_EPA', 'BIO_AG_DHA'],
+    motif: 'Pourcentage d’EPA et de DHA.',
+  },
   // [[D-387]] §1-§2 : les vingt acides que le compte rendu du laboratoire
   // imprime sous « Profil des Acides Gras de la membrane Érythrocytaire », dans
   // son ordre ; ses rapports, imprimés sous « RAPPORTS », restent à part.
@@ -123,9 +142,6 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
  *  signer, ils restent « non évalués », et l'écran le dit. */
 export const OPERANDES_ABSENTS: Readonly<Record<string, string>> = {
   BIO_RATIO_CORTISOL_DHEA: 'La DHEA n’est pas au catalogue.',
-  // Le laboratoire additionne des familles ; lesquelles de ses acides il y
-  // compte n'est pas imprimé, et ne s'invente pas (D-376).
-  BIO_RATIO_OMEGA6_OMEGA3: 'Les totaux oméga 6 et oméga 3 ne sont pas au catalogue.',
   BIO_RATIO_KYN_TRP: 'La kynurénine et le tryptophane ne sont pas au catalogue.',
 };
 

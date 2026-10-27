@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-388 — t45 : le rapport oméga 6 / oméga 3 et l'indice oméga 3 sont préparés comme valeurs calculées de leurs acides — sept pour le rapport, d'après le compte rendu du laboratoire ; EPA et DHA pour l'indice, d'après le corpus SIIN (amende D-376 §6, tranche l'indice laissé par D-387)
+
+- Date : 2026-10-27
+- Statut : accepté — arbitrage du responsable du 2026-10-27 (« le ratio
+  oméga 6/oméga 3 est indispensable » ; l'indice « se calcule aussi » ; les
+  claims sont au corpus SIIN ; « go » sur la proposition), transcrit par
+  l'assistant.
+- Domaine : catalogue biologie, compositions (F80, [[D-323]] §1 et §4) ;
+  amende [[D-376]] §6 (le rapport oméga 6 / oméga 3 restait « opérandes
+  absents ») ; tranche l'indice oméga 3, que [[D-387]] ne décidait pas.
+  Aucune migration, aucune plage, aucun seuil ; rien en base sans la
+  signature du praticien.
+
+**§1 — Le rapport oméga 6 / oméga 3** (`compositionsPreparees.ts`) : type
+`calcul`, sept composants, rangés comme le compte rendu : acide linoléique,
+gamma-linolénique, DGLA, arachidonique, puis alpha-linolénique, EPA, DHA.
+Source du calcul : le compte rendu complet de [[D-387]] §1 imprime ces quatre
+acides sous « Acides gras polyinsaturés oméga 6 » et ces trois sous « Acides
+gras polyinsaturés oméga 3 » ; la somme des premiers divisée par celle des
+seconds redonne au centième le rapport qu'il imprime (vérifié par
+l'assistant le 2026-10-27, valeurs non versées). [[D-376]] §6 tenait la
+liste pour non imprimée : seules les lignes avaient été lues, pas les titres
+de section. Cette formule est celle de ce laboratoire ; un autre peut
+additionner d'autres acides (un laboratoire américain en compte sept et
+quatre, sur sang total). Le sens du rapport est fondé au corpus (claims
+validés) : les voies opposées des deux familles — l'acide arachidonique vers
+les prostaglandines et leucotriènes pro-inflammatoires (WN-CL-0030-018),
+l'EPA et le DHA vers les médiateurs de la résolution (WN-CL-0030-020,
+WN-CL-0155-054) ; le ratio pro- et anti-inflammatoire (WN-CL-0132-015) ; le
+statut en acides gras « permet d'identifier le rapport oméga 6/oméga 3 »
+(WN-CL-0174-016). Aucun claim ne donne de seuil sanguin du rapport.
+
+**§2 — L'indice oméga 3** : type `calcul`, EPA et DHA. Source : « L'index
+oméga 3 correspond au pourcentage d'EPA + DHA » (WN-CL-0045-008, support
+SIIN « Les biomarqueurs nutritionnels ») ; c'est la définition de Harris et
+von Schacky (2004) ; le compte rendu en redonne la somme au centième.
+
+**§3 — NABM** (`candidatsNabm.ts`) : l'indice passe de « aucun acte » à
+« valeur calculée » ; le rapport y était déjà. Le constat « aucun acte » de
+l'indice, signé sur V105 le 2026-10-17, reste en base.
+
+**§4 — L'ordre des signatures**, celui de [[D-387]] §4 : les constats
+« aucun acte » des acides d'abord (ceux de ces deux calculs sont parmi les
+vingt), les compositions ensuite. Signée avant, une composition rend son
+calcul « non évalué » : sa mention est la plus faible de ses mesures
+([[D-323]] §4).
+
+**Ce qu'elle ne décide pas.** Les plages et seuils de l'indice (claims à 8 %,
+WN-CL-0045-009, -0125-041, -0390-011) et du rapport ([[D-059]]) ; l'écart
+entre le seuil AA/EPA du corpus (« > 1,2 », WN-CL-0293-013) et la référence
+imprimée par le laboratoire, à instruire avant toute plage ; l'entrée de ces
+calculs dans un panel.
+
 ### D-387 — t45 : le profil des acides gras érythrocytaires est préparé comme un regroupement de ses vingt acides, d'après le compte rendu du laboratoire ; aucun acide n'entre seul dans un panel (amende D-376 §1 et §4)
 
 - Date : 2026-10-27
