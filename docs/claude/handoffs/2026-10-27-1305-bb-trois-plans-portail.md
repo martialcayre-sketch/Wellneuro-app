@@ -61,9 +61,10 @@ pour les seules versions créées sous la garde étendue du lot 1 (#1725).
 
 - Avant l'activation : le miroir praticien (`ApercuPatientProtocole`) et la
   version imprimable (bh) lisent encore le plan minimal seul.
-- « Jour difficile ? » ajoute un point après le plan : un plan qui finit déjà
-  par un point s'affiche « .. » (défaut antérieur au lot, reconduit pour le
-  plan de secours ; non corrigé ici, rien ne change drapeau éteint).
+- « Jour difficile ? » ajoute un point après le plan : un plan minimal qui
+  finit déjà par un point s'affiche « .. » (défaut antérieur au lot, relevé par
+  la revue et par CodeRabbit ; non corrigé ici pour que rien ne change drapeau
+  éteint). Le plan de secours, lui, perd son point final avant le gabarit.
 - Constat d'activation : vérifier que les plans apparaissent bien sur une
   version récente (un refus silencieux de la marque passerait inaperçu), et
   qu'aucun recul de production sous 39131a45 n'a eu lieu après l'instant.

@@ -561,6 +561,21 @@ describe('PatientCompanionHome — les trois plans', () => {
     expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Trois matins/)).toBeNull();
   });
 
+  it('un plan de secours qui finit par un point ne double pas la ponctuation', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue,
+        troisPlans: [{ actionId: 'a1', idealPlan: 'Chaque matin.', rescuePlan: 'Un fruit et un yaourt.' }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Un fruit et un yaourt.')).toBeTruthy();
+    // Dans le détail, le plan est rendu tel qu'écrit.
+    expect(screen.getByText('Un fruit et un yaourt.')).toBeTruthy();
+  });
+
   it('absents (drapeau fermé ou version antérieure) : rien ne change', async () => {
     mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue }, checkinVide);
     const { container } = render(<PatientCompanionHome token="TOK" />);
