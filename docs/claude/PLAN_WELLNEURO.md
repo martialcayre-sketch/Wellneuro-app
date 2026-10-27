@@ -1075,6 +1075,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre cb, de la main du responsable.
 - **Critère de fin** : textes et jeu acceptés avant l'activation de cc.
 - **Mise à jour (2026-10-26, lettre écrite)** : cb écrite par D-379 : écran de fin seul, « Merci d'avoir noté vos nuits » sans chiffre, le même pour tous ; critère des illustrations (indépendantes de la nuit déclarée et du nombre de nuits, libellé écrit, ni récompense ni couleur qui juge, provenance et droits à fournir). Le jeu reste à fournir puis à valider image par image avant l'activation de cc. Lot de code du texte : petit, hors file C.
+- **Mise à jour (2026-10-26, lot de code)** : l'écran de fin de l'agenda du sommeil dit le titre et la phrase de D-379 §1, mot pour mot, le même pour tous, sans chiffre ; banc posé. Sans illustration, drapeau ni migration. Reste le constat par lecture sur un agenda transmis, après le déploiement, et le jeu d'illustrations avant cc.
 
 #### H40 · seuils_points de Q_ALI_01 : décision clinique sourcée
 - **Identifiant, piste** : E31 ; décision clinique sourcée ; alimentation ; geste du responsable.

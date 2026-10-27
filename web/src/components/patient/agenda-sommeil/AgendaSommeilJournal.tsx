@@ -176,14 +176,16 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
       <RappelDuMatin premierMatin={decalerDate(aujourdHui, 1)} nombreDeMatins={matinsRestants} />
     ) : null;
 
-  // Agenda clôturé : frise en consultation seule, sans aucune saisie.
+  // Agenda clôturé : frise en consultation seule, sans aucune saisie. Le merci
+  // porte sur l'acte de noter, le même pour tous, sans chiffre ni appréciation
+  // (D-379 §1-§2).
   if (mode === 'clos') {
     return (
       <div className="space-y-4">
         <PatientCard>
-          <h2 className="font-display text-lg font-bold text-foreground mb-1">Merci pour vos trois semaines 🌙</h2>
+          <h2 className="font-display text-lg font-bold text-foreground mb-1">Merci d’avoir noté vos nuits 🌙</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Votre agenda a été transmis à votre praticien. Voici la frise de vos nuits.
+            Votre praticien a reçu votre agenda. Voici vos nuits, telles que vous les avez notées.
           </p>
           <FriseNuits emplacements={fenetre.emplacements} nuitsParDate={nuitsParDate} />
         </PatientCard>
