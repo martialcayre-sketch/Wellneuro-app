@@ -4,6 +4,35 @@
 
 ## Décisions actives
 
+### D-388 — Deux textes corrigés : l'annonce du cockpit après le clic dit « Documents remis », et la lettre d'adressage écrit « Remettez-le-lui » (dettes de la revue de #1701)
+
+- Date : 2026-10-27
+- Statut : accepté — les deux textes ont été proposés avant/après et validés
+  tels quels par le responsable, en session, le 2026-10-27.
+- Domaine : J3-12h ([[D-345]]), dettes routées par la revue `wn-reviewer` du
+  lot 4 (P2-1) et par la revue Codex de #1701 ([[D-362]]). Lettre :
+  [[D-262]], cadrage du 2026-10-03 §4.
+- Ne touche pas : aucune logique, aucun seuil, aucune migration ; quand
+  l'e-mail part, quel gabarit, plafond de 24 heures : inchangés ([[D-317]]) ;
+  le courrier complément ne change pas ([[D-358]] §1, [[D-383]]).
+
+**§1 — L'annonce du cockpit.** Le clic « Valider pour diffusion » annonce le
+document remis par un e-mail dès qu'une fiche, la lettre d'adressage ou le
+courrier complément part. Les cinq textes qui disent ensuite au praticien le
+sort de cet e-mail (`TEXTE_ANNONCE`) commençaient par « Fiches remises », même
+sans aucune fiche. Ils commencent désormais par « Documents remis », le reste
+de chaque phrase inchangé. Option retenue : ce mot partout, plutôt qu'un texte
+par cas (fiche, un document, deux documents). Il est juste dans tous les cas et
+n'ajoute aucune logique ; l'aperçu, avant le clic, liste déjà les fiches.
+
+**§2 — La lettre d'adressage.** Dans la phrase d'accompagnement signée le
+2026-10-03, « Remettez-le lui » devient « Remettez-le-lui », trait d'union
+seul. C'est la forme du courrier complément. La citation du cadrage est
+corrigée avec une note datée, et le banc qui la relit reste en place.
+
+**§3 — Épinglage.** Les cinq textes et la phrase sont épinglés au caractère
+près dans les tests.
+
 ### D-387 — t45 : le profil des acides gras érythrocytaires est préparé comme un regroupement de ses vingt acides, d'après le compte rendu du laboratoire ; aucun acide n'entre seul dans un panel (amende D-376 §1 et §4)
 
 - Date : 2026-10-27
