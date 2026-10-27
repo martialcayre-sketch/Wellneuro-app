@@ -363,7 +363,7 @@ au lot, fixé par lui :
 
 Hors du lot : l'activation (file C, porte 18, [[D-384]] §6) ; le miroir
 praticien (`ApercuPatientProtocole`) et la version imprimable (bh), qui
-lisent encore le plan minimal seul.
+lisent encore le plan minimal seul (le miroir : réglé au paragraphe suivant).
 
 **Préparation de l'activation (2026-10-27).** Trois arbitrages du responsable
 du 2026-10-27, sur questions à options :
