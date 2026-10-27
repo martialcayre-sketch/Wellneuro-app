@@ -63,6 +63,9 @@ export const CHEMINS_GELES = [
   'web/scripts/release-db-scalingo.sh',
   'web/scripts/release-db-statut.sh',
   'web/prisma.config.ts',
+  // Importé par `prisma.config.ts` : fixe l'URL de connexion et le mode SSL
+  // du one-off (revue CodeRabbit de #1742).
+  'web/src/lib/postgres.ts',
   'web/prisma/checks/c5_ciqual_production_preflight.sql',
   'web/prisma/checks/packs_registre_coherence_v1.sql',
   'web/prisma/checks/rag_pgvector_structure_v1.sql',

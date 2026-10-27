@@ -310,6 +310,12 @@ test('parité : les chemins gelés couvrent les déclencheurs et tout ce que le 
     if (/\bprisma\.config\.ts\b/.test(source)) executes.add('web/prisma.config.ts');
   }
   assert.ok([...executes].some((c) => c.startsWith('web/prisma/checks/')), 'aucun préflight trouvé : la dérivation a perdu sa cible');
+  // Ce que la configuration Prisma importe en relatif tourne avec elle dans le
+  // one-off (URL de connexion, mode SSL).
+  const config = lire('web/prisma.config.ts');
+  const imports = [...config.matchAll(/from ["']\.\/([^"']+)["']/g)].map((m) => `web/${m[1]}.ts`);
+  assert.ok(imports.length > 0, 'la configuration Prisma n’importe plus rien en relatif : revoir la dérivation');
+  for (const c of imports) executes.add(c);
   for (const c of executes) assert.ok(estGele(c), `exécuté par release-db sans être gelé : ${c}`);
 });
 

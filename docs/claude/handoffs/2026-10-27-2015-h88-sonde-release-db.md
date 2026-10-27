@@ -30,7 +30,8 @@ strictes que la lettre de D-374, jamais plus ouvertes :
   phase 1.
 - **Chemins gelés.** Les déclencheurs, `release-db.yml`, ce que son run
   exécute contre la production (script du one-off, cinq préflights SQL,
-  contre-épreuve, `web/prisma.config.ts`) et le déployeur (script, module
+  contre-épreuve, `web/prisma.config.ts` et `web/src/lib/postgres.ts` qu'il
+  importe) et le déployeur (script, module
   d'observation, `deploiement-production.yml`). C'est une lecture de
   « l'outillage de release », titre de D-374.
 - **Commit déclencheur sans run.** Une PR gelable reste gelée tant que le
@@ -71,6 +72,12 @@ strictes que la lettre de D-374, jamais plus ouvertes :
   écartés du contrôle « commit sans run » ; « deux runs » écrit au piège 2).
 - CodeRabbit (2981622d) : une remarque, corrigée (`maxBuffer` de `gh`, banc
   CLI de bout en bout à 2 Mio). Les deux correctifs mordent en mutation.
+- CodeRabbit, têtes suivantes : runs de `main` lus par leur propre requête
+  (corrigé) ; pagination intégrale des runs non filtrés (écartée, motif
+  accepté par CodeRabbit) ; `web/src/lib/postgres.ts` gelé (corrigé, banc de
+  parité suivant les imports de `prisma.config.ts`). Fusions de `main` :
+  #1731, #1741, puis #1743 (conflit `web/package.json` résolu en gardant les
+  deux bancs).
 
 ## Problèmes ouverts
 
