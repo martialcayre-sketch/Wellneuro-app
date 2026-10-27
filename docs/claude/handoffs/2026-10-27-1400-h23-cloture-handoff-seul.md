@@ -22,9 +22,9 @@ branche. Préalable de H89 (intégrateur).
 - `wn-cycle.mjs` : `cloture` réduite à `{ handoff }`, jugée sur les seuls
   fichiers CRÉÉS (`fichiersCrees` : diff `--diff-filter=AR` et porcelain `??`,
   `A`, `R`), même régime que le CI ; la ligne « SESSION_LOG.md » disparaît du
-  rendu. Une PR mergée n'embarque la clôture que par un fichier `ADDED` ou
-  `RENAMED` (`fichiersCreesDeLaPr`), et l'étape 7 de `/wn-merge` lit le même
-  `changeType` (revue CodeRabbit).
+  rendu. Une PR mergée n'embarque la clôture que par un fichier `added` ou
+  `renamed` (`fichiersCreesDeLaPr`, sur les `files` REST paginés), et l'étape 7
+  de `/wn-merge` lit le même statut, par la même route (revue CodeRabbit).
 - `wn-context-pack.mjs` : `sessionTail` remplacé par `handoff` (chemin,
   origine, « Prochaine action exacte » bornée à 32 lignes), lu depuis la racine
   du dépôt. Le lot repris « désigné par la tâche » (D-372 §2) se lit à la main :

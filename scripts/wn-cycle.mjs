@@ -416,19 +416,28 @@ function chercherPrMergee(branche, tip) {
   );
   if (!candidat) return null;
 
-  const vue = jsonOuNull(gh(['pr', 'view', String(candidat.number), '--json', 'files']));
-  return { numero: candidat.number, fichiers: fichiersCreesDeLaPr(vue?.files) };
+  // REST paginé, pas `gh pr view --json files` : ce dernier peut s'arrêter à
+  // 100 fichiers, et un handoff au-delà passerait pour absent (revue
+  // CodeRabbit #1732). `--slurp` rend un tableau de pages.
+  const pages = jsonOuNull(
+    gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/pulls/${candidat.number}/files`]),
+  );
+  return { numero: candidat.number, fichiers: fichiersCreesDeLaPr(pages) };
 }
 
 /**
- * Les fichiers CRÉÉS par une PR, lus dans `gh pr view --json files` :
- * `changeType` ADDED, ou RENAMED (sous son nouveau nom). Un handoff passé
- * seulement retouché n'embarque pas la clôture — même régime que le CI
- * (D-372 ; revue CodeRabbit #1732). Liste illisible : `null`, on ne conclut pas.
+ * Les fichiers CRÉÉS par une PR, lus dans les pages de
+ * `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/files` : `status`
+ * `added`, ou `renamed` (sous son nouveau nom). Un handoff passé seulement
+ * retouché n'embarque pas la clôture — même régime que le CI (D-372 ; revue
+ * CodeRabbit #1732). Réponse illisible : `null`, on ne conclut pas.
  */
-export function fichiersCreesDeLaPr(files) {
-  if (!Array.isArray(files)) return null;
-  return files.filter((f) => f.changeType === 'ADDED' || f.changeType === 'RENAMED').map((f) => f.path);
+export function fichiersCreesDeLaPr(pages) {
+  if (!Array.isArray(pages) || !pages.every(Array.isArray)) return null;
+  return pages
+    .flat()
+    .filter((f) => f.status === 'added' || f.status === 'renamed')
+    .map((f) => f.filename);
 }
 
 /**

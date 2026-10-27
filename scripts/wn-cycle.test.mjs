@@ -198,22 +198,27 @@ test('un handoff passé retouché ne clôt pas le lot : même régime que le CI 
 
 test('fichiersCreesDeLaPr : un handoff passé retouché dans une PR mergée n’embarque pas la clôture', () => {
   const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
-  const files = [
-    { path: 'web/src/lib/questions.ts', changeType: 'MODIFIED' },
-    { path: ancien, changeType: 'MODIFIED' },
-  ];
-  assert.deepEqual(fichiersCreesDeLaPr(files), []);
-  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: fichiersCreesDeLaPr(files) } }));
+  const pages = [[
+    { filename: 'web/src/lib/questions.ts', status: 'modified' },
+    { filename: ancien, status: 'modified' },
+  ]];
+  assert.deepEqual(fichiersCreesDeLaPr(pages), []);
+  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: fichiersCreesDeLaPr(pages) } }));
   assert.equal(v.fenetreRatee, true);
+  // Pages aplaties : le handoff de la seconde page compte (au-delà de 100 fichiers).
   assert.deepEqual(
     fichiersCreesDeLaPr([
-      { path: HANDOFF, changeType: 'ADDED' },
-      { path: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', changeType: 'RENAMED' },
-      { path: 'docs/claude/handoffs/2026-09-01-0900-efface.md', changeType: 'DELETED' },
+      [{ filename: 'web/a.ts', status: 'modified' }],
+      [
+        { filename: HANDOFF, status: 'added' },
+        { filename: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', status: 'renamed' },
+        { filename: 'docs/claude/handoffs/2026-09-01-0900-efface.md', status: 'removed' },
+      ],
     ]),
     [HANDOFF, 'docs/claude/handoffs/2026-10-03-0900-renomme.md'],
   );
   assert.equal(fichiersCreesDeLaPr(undefined), null);
+  assert.equal(fichiersCreesDeLaPr({ message: 'Not Found' }), null);
 });
 
 test('creesDuPorcelain : non suivi, ajouté, renommé ; ni modifié, ni supprimé', () => {
