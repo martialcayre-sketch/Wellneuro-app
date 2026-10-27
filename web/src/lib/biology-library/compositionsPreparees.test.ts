@@ -92,6 +92,14 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toMatch(/pas au catalogue/);
   });
 
+  it('le profil érythrocytaire de D-383 : un regroupement de ses vingt acides, sans rapport', () => {
+    const profil = compositionPrepareePour('BIO_AG_ERYTHROCYTAIRES');
+    expect(profil?.type).toBe('regroupement');
+    expect(profil?.composants).toHaveLength(20);
+    expect(profil?.composants.every(c => c.startsWith('BIO_AG_'))).toBe(true);
+    expect(profil?.composants.every(c => CANDIDATS_NABM[c]?.situation === 'aucun_acte')).toBe(true);
+  });
+
   it('une clé héritée de l’objet ne passe pas pour une composition', () => {
     expect(compositionPrepareePour('toString')).toBeNull();
     expect(operandesAbsentsPour('constructor')).toBeNull();
