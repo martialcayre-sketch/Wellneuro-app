@@ -5,14 +5,14 @@
 // le 2026-10-03) et recopiée ici AU CARACTÈRE PRÈS, à la typographie des
 // apostrophes près (droites au cadrage, courbes à l'écran) : un banc relit le
 // cadrage et rougit au premier autre écart, et un autre la passe à
-// `termeAnxiogene`. C'est la
+// `termeAnxiogene`. Amendée le 2026-10-27 ([[D-386]]) : « Remettez-le-lui ». C'est la
 // seule prose patient de la surface ; le texte de la lettre, adressé au médecin,
 // est exempté par décision (cadrage §3.4, carte de `lib/documents/vocabulaire.ts`).
 
 export const TITRE_LETTRE = 'Courrier pour votre médecin';
 
 export const PHRASE_ACCOMPAGNEMENT =
-  'Voici le courrier que je vous ai préparé pour votre médecin traitant. Remettez-le lui lors de votre rendez-vous : vous pouvez l’imprimer ou le montrer depuis ce portail.';
+  'Voici le courrier que je vous ai préparé pour votre médecin traitant. Remettez-le-lui lors de votre rendez-vous : vous pouvez l’imprimer ou le montrer depuis ce portail.';
 
 /** Révoqué après remise (cadrage §3.5) : aucun motif servi. */
 export const MENTION_RETIREE = 'Votre praticien a retiré ce courrier. Son texte n’est plus affiché.';

@@ -4,6 +4,7 @@ import {
   empreinteDeLApercu,
   fichesARemettre,
   planifierApercuFiches,
+  TEXTE_ANNONCE,
   type ActionPourApercu,
   type FaitsFiche,
 } from './apercuRemise';
@@ -179,5 +180,29 @@ describe('fichesARemettre', () => {
     const f = faits({ 'WN-SRC-0001': { reference: V2, enCours: null } });
     expect(fichesARemettre(planifier([alimentation('a1', 'ASSIETTE_A')], f))).toBe(true);
     expect(fichesARemettre(null)).toBe(false);
+  });
+});
+
+describe('TEXTE_ANNONCE — le sort de l’e-mail, dit après le clic (D-386)', () => {
+  it('dit « Documents remis », au caractère près : le clic peut ne remettre aucune fiche', () => {
+    expect(TEXTE_ANNONCE).toEqual({
+      envoye: { texte: 'Documents remis : votre patient a été averti par e-mail.', alerte: false },
+      echoue: {
+        texte: 'Documents remis, mais l’e-mail n’est pas parti. L’échec est tracé dans la correspondance du dossier.',
+        alerte: true,
+      },
+      non_configure: {
+        texte: 'Documents remis, mais l’envoi d’e-mails n’est pas configuré : votre patient n’a pas été averti.',
+        alerte: true,
+      },
+      portail_ferme: {
+        texte: 'Documents remis, mais l’espace de ce patient est fermé : aucun e-mail n’est parti.',
+        alerte: true,
+      },
+      plafond: {
+        texte: 'Documents remis, sans nouvel e-mail : un e-mail d’annonce est déjà parti vers ce patient dans les dernières 24 heures.',
+        alerte: true,
+      },
+    });
   });
 });
