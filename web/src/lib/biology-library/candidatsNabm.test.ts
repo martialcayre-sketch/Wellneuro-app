@@ -78,9 +78,9 @@ describe('candidats NABM — la liste préparée (M-3b)', () => {
       libelle_explicite: 35,
       acte_de_groupe: 21,
       a_juger: 10,
-      aucun_acte: 40,
+      aucun_acte: 39,
       valeur_calculee: 9,
-      regroupement: 1,
+      regroupement: 2,
     });
   });
 

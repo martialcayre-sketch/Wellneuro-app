@@ -11935,3 +11935,32 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; constat du retrait, puis D-C5-01 à 04 soldées.
 
 **Ouvert.** Sort des modules orphelins, avec la suppression du code C5.
+## 2026-10-27 — File A : t45, le profil érythrocytaire composé de ses vingt acides (D-387)
+
+**Fait.** Reste « panels » de t45 tranché : aucun acide n'entre seul dans un panel ; le profil `BIO_AG_ERYTHROCYTAIRES` (quatre panels) est préparé comme un regroupement de ses vingt acides, passé en « regroupement » dans la liste NABM. Source : le compte rendu du laboratoire, qui les imprime sous « membrane Érythrocytaire » (D-376 §1 corrigé). V105 relue : aucun acte.
+
+**Écarté.** Acides ajoutés aux panels (change les indications) ; type `groupe` (cotation fausse) ; rapports dans la composition ; une fiche d'un autre laboratoire (seize acides, non rattachée).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : vingt constats, composition, contrôle des rendus.
+
+**Ouvert.** Constat au prochain profil importé.
+
+## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
+
+**Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
+
+**Écarté.** Un texte par cas (fiche, un document, deux documents) : plus de logique pour un gain faible, puisque l'aperçu liste déjà les fiches.
+
+**Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
+
+**Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
+
+## 2026-10-27 — File D, lots de code : bg, « Vos données personnelles » v21 (D-364)
+
+**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? ». Accusé exigé. Les durées de D-378 sont retenues : sur la revue, le texte dit au présent une archive non en service et contredit la v20 sur les comptes rendus. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
+
+**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
+
+**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
