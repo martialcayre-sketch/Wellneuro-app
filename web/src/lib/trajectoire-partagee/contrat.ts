@@ -6,8 +6,10 @@
 // qu'a-t-on le droit d'en montrer au patient ? ».
 //
 // Frontières (CAMPAGNE.md SP-CONV) :
-// - le moteur de statuts de phase reste dans `FichePatientPanel` (`statutPhase`)
-//   — ce module PREND les statuts en entrée, il ne les recalcule pas ;
+// - le moteur de statuts de phase vit dans `statutsPhases.ts`, sorti de
+//   `FichePatientPanel` pour que la fiche et la page des comptes du cabinet
+//   fassent le même calcul ([[D-385]]) — ce module PREND les statuts en
+//   entrée, il ne les recalcule pas ;
 // - le score et les jalons restent à `lib/equilibre` — jamais réimplémentés ;
 // - deux cycles de `versionScore` différents ne sont jamais comparés (A8-3) ;
 // - la séparation praticien/patient est portée par les TYPES : la surface

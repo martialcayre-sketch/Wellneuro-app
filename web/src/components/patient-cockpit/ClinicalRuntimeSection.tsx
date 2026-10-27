@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-import { isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
-import { isPrioriteLibreOuverte } from '@/lib/clinical-engine/prioriteLibre';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
@@ -36,7 +34,8 @@ import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
-import { estAncreDeCycle, estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
+import { estAncreDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
+import { deriverEtatRuntimePourPhases } from '@/lib/trajectoire-partagee/etatRuntimeDerive';
 import { besoinsDeRepassation } from '@/lib/protocol/repassationCiblee';
 import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
@@ -1407,33 +1406,10 @@ export function ClinicalRuntimeSection({
   }, [propositionLignes]);
 
   // Remontée de l'état observable (rail des phases). Dépendances primitives
-  // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
-  // les booléens `mesure` déjà calculés par lib/protocol/trajectoire — aucune
+  // uniquement : aucune boucle de rendu. Ce que les statuts de phase lisent est
+  // dérivé par `deriverEtatRuntimePourPhases` (lib/trajectoire-partagee), le
+  // calcul même que la page des comptes du cabinet refait ([[D-385]]) — aucune
   // logique clinique nouvelle.
-  // « Une ré-évaluation a-t-elle été MESURÉE ? » — donc un jalon de MESURE, et
-  // jamais l'ancre, qui est le point de départ. Le test excluait le littéral
-  // `T0` : sur un cycle ancré en `T1`, l'ouverture du cycle aurait compté comme
-  // une ré-évaluation, et le rail des phases aurait avancé d'un cran tout seul.
-  const reevaluationMesuree = (trajectoire?.cycles ?? []).some(cycle =>
-    cycle.jalons.some(jalon => estJalonMesure(jalon.jalon) && jalon.mesure),
-  );
-  // UN RÉSUMÉ LU N'EST PAS UN SUIVI RENSEIGNÉ ([[D-255]], lot 4). La route rend
-  // un résumé sur tout dossier, protocole ou non : le rail disait « renseignée »
-  // sur un suivi qui n'avait jamais commencé.
-  // Et un résumé NON LU n'est pas un suivi vide : `null` tant que la lecture de
-  // la carte servie n'a pas abouti.
-  const suiviRenseigne = checkinsLusPour !== null && checkinsLusPour === readyDecisionCardId
-    ? (resumeJ21?.pointsRenseignes ?? 0) > 0
-    : null;
-  // Le jour 0 du cycle COURANT, servi par la trajectoire : la même date que
-  // le jalon dû et le bandeau, jamais recalculée ici.
-  const suiviOuvert = statutTrajectoire === 'chargee'
-    ? (trajectoire?.cycles.at(-1)?.jourZero ?? null) !== null
-    : null;
-  const nombreVersions = versions.length;
-  // Drapeaux dérivés (booléens value-stables : aucune boucle de rendu).
-  const trajectoireErreur = statutTrajectoire === 'erreur';
-  const trajectoireEnLecture = statutTrajectoire === 'inconnue' || statutTrajectoire === 'chargement';
   // Remonté ici (et non plus bas avec `review`) parce que le tableau de
   // dépendances de l'effet ci-dessous est évalué au rendu : une déclaration
   // postérieure tomberait dans la zone morte temporelle.
@@ -1449,15 +1425,35 @@ export function ClinicalRuntimeSection({
   // toujours par se contredire. Elles se lisent maintenant l'une sous l'autre.
   const sourceRefsEpisode = fixture?.snapshot.sourceRefs
     ?? (runtime?.status === 'ready' ? runtime.snapshot?.sourceRefs ?? [] : []);
-  // « AUCUN PROTOCOLE NE PEUT ÊTRE PROPOSÉ » — depuis [[D-279]], seul un constat
-  // de sécurité le dit : sans candidat, ou sous abstention pour recueil
-  // incomplet, la priorité posée par le praticien ouvre encore le protocole, et
-  // c'est `selectionPrioriteDue` qui conduit au geste. Avant, ces dossiers
-  // affichaient « Protocole bloqué ».
-  const decisionBloquee = decisionCard !== null && !isPrioriteLibreOuverte(decisionCard);
-  // `null` quand la carte n'est pas lisible — jamais `false`, qui affirmerait
-  // qu'il n'y a rien à faire. Voir la doctrine sur le champ du même nom.
-  const selectionPrioriteDue = decisionCard === null ? null : isSelectionPrioriteDue(decisionCard);
+  // Les champs du rail des phases : `decisionBloquee` (constat de sécurité,
+  // [[D-279]]), `selectionPrioriteDue` (`null` quand la carte n'est pas
+  // lisible), l'épisode confirmé en base (`D-118`), le verdict du rideau tel
+  // que la route l'a calculé, et les drapeaux de suivi et de trajectoire. La
+  // doctrine de chacun est au module et sur le champ du même nom.
+  const {
+    episodeConfirme,
+    nombreVersions,
+    suiviRenseigne,
+    suiviOuvert,
+    trajectoireErreur,
+    trajectoireEnLecture,
+    reevaluationMesuree,
+    decisionBloquee,
+    rideauT0Satisfait,
+    selectionPrioriteDue,
+  } = deriverEtatRuntimePourPhases({
+    chargement: loading,
+    erreur: error,
+    carte: decisionCard,
+    idCarteServie: readyDecisionCardId,
+    preconditionsProposition: runtime?.status === 'proposal_required' ? runtime.preconditions : null,
+    versions: { luesPourLaCarte: versionsLues, nombre: versions.length },
+    checkins: {
+      lusPourLaCarte: checkinsLusPour !== null && checkinsLusPour === readyDecisionCardId,
+      pointsRenseignes: resumeJ21?.pointsRenseignes ?? 0,
+    },
+    trajectoire: { statut: statutTrajectoire, cycles: trajectoire?.cycles ?? null },
+  });
   // Combien de réponses le dossier a reçues APRÈS l'acte confirmé. Lu tel quel
   // depuis le serveur, jamais dérivé ici : l'écran n'a pas l'épisode sous la
   // main, et compter « les réponses absentes de la carte » confondrait ce qui
@@ -1517,22 +1513,6 @@ export function ClinicalRuntimeSection({
       needIds: candidatVise.provenance.needIds,
     }
     : null;
-  // « Un épisode a-t-il été confirmé ? » ne dépend plus du seul écran
-  // (`D-118`) : un cycle présent dans la trajectoire vient d'une ligne
-  // d'`assessment_episodes`, donc d'une confirmation persistée — l'état
-  // survit au rechargement de page même quand l'écran affiche la proposition
-  // d'un AUTRE jalon (le `J21` dû d'un `T0` confirmé). Booléen value-stable.
-  const episodeConfirmeEnBase = (trajectoire?.cycles.length ?? 0) > 0;
-  // Le verdict du rideau, tel que la route l'a calculé — jamais recalculé ici.
-  //
-  // Il n'existe QUE sur la branche `proposal_required` : une fois l'épisode
-  // confirmé, la route ne calcule plus de préconditions, et c'est cohérent —
-  // il n'y a plus rien à autoriser. `null` dans tous les autres cas, y compris
-  // en lecture datée où la checklist est délibérément absente. Le lecteur en
-  // tire ce qu'il veut ; ici on ne remonte que ce que le serveur a dit.
-  const rideauT0Satisfait = runtime?.status === 'proposal_required'
-    ? (runtime.preconditions?.dures.find(c => c.id === 'rideau_t0')?.satisfaite ?? null)
-    : null;
   const actionsEnAttenteArbitrage = useMemo(() => {
     if (!cbEnabled || fixture || !arbitragesLus || !contenuActif || !activeVersionId) return null;
     const arbitrees = new Set(
@@ -1546,7 +1526,7 @@ export function ClinicalRuntimeSection({
     onEtatChange?.({
       chargement: loading,
       erreur: error,
-      episodeConfirme: readyDecisionCardId !== null || episodeConfirmeEnBase,
+      episodeConfirme,
       nombreVersions,
       versionsLues,
       suiviRenseigne,
@@ -1566,7 +1546,7 @@ export function ClinicalRuntimeSection({
     loading,
     error,
     readyDecisionCardId,
-    episodeConfirmeEnBase,
+    episodeConfirme,
     nombreVersions,
     versionsLues,
     suiviRenseigne,
