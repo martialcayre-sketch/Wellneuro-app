@@ -371,6 +371,15 @@ function lireRegistreA(racine, ref) {
   }
 }
 
+/** L'ancêtre commun de `HEAD` et de `ref`, ou `null`. */
+function ancetreCommun(racine, ref) {
+  try {
+    return execFileSync("git", ["merge-base", "HEAD", ref], { cwd: racine, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 // L'étape d'accompagnement de `ci.yml` (D-370 §4) : sur une PR non
 // documentaire, signale une décision ajoutée sans réservation — sa
 // renumérotation coûterait un CI complet. Jamais bloquante : elle sort 0 dans
@@ -456,15 +465,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   if (surPR) {
     // La base, lue localement (`git show`, aucun appel distant) : `HEAD^1`,
-    // premier parent du commit de fusion de la PR, en CI ; `origin/main` au
-    // poste local, sans garantie qu'elle soit à jour.
-    const base = enCIdePR ? "HEAD^1" : "origin/main";
-    const texteBase = lireRegistreA(racine, base);
-    if (texteBase !== null) surBase = new Set(extraireDecisions(texteBase).map((d) => d.numero));
-    else if (enCIdePR) {
-      console.error(`✗ ${FICHIER} illisible sur ${base} — décision supprimée non vérifiable sur une PR.`);
+    // premier parent du commit de fusion de la PR, en CI ; au poste local,
+    // l'ancêtre commun avec `origin/main` — `origin/main` lui-même ferait lire
+    // comme supprimée une décision mergée après la création de la branche
+    // (revue CodeRabbit de #1743). Base illisible ⇒ refus, en CI comme avec
+    // `--pr` : la suppression n'est pas vérifiable.
+    const base = enCIdePR ? "HEAD^1" : ancetreCommun(racine, "origin/main");
+    const texteBase = base === null ? null : lireRegistreA(racine, base);
+    if (texteBase === null) {
+      console.error(`✗ ${FICHIER} illisible sur ${base ?? "l'ancêtre commun avec origin/main"} — décision supprimée non vérifiable sur une PR.`);
       process.exit(1);
     }
+    surBase = new Set(extraireDecisions(texteBase).map((d) => d.numero));
   }
 
   const { violations, avertissements, comptees, max } = auditerDecisions(decisions, {

@@ -441,6 +441,29 @@ test("code 1 sur une PR — base illisible et trou présent", () => {
   });
 });
 
+test("`--pr` au poste local : la base est l'ancêtre commun avec origin/main", () => {
+  // `origin/main` a reçu D-003 après la création de la branche, arrêtée à
+  // D-002 : rien n'a été supprimé par la branche (revue CodeRabbit de #1743).
+  avecDepot(BASE, registre(decision(2) + decision(1)), (tmp) => {
+    const git = (...a) => execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", ...a], { cwd: tmp, stdio: "pipe" });
+    git("checkout", "-q", "-b", "principale", "HEAD^1");
+    fs.writeFileSync(path.join(tmp, FICHIER), registre(decision(3) + decision(2) + decision(1)));
+    git("commit", "-qam", "D-003 sur main");
+    git("update-ref", "refs/remotes/origin/main", "HEAD");
+    git("checkout", "-q", "-");
+    const r = executer(tmp, ["--pr"], fauxGh(tmp, []).env({}));
+    assert.equal(r.code, 0, r.sortie);
+  });
+});
+
+test("`--pr` au poste local : base illisible ⇒ refus, pas un vert", () => {
+  avecRegistre(registre(decision(2) + decision(1)), (tmp) => {
+    const r = executer(tmp, ["--pr"], fauxGh(tmp, []).env({}));
+    assert.equal(r.code, 1, r.sortie);
+    assert.match(r.sortie, /non vérifiable/);
+  });
+});
+
 test("`--pr` au poste local juge le trou comme sur une PR", () => {
   avecRegistre(TROUE, (tmp) => {
     const gh = fauxGh(tmp, []);
