@@ -128,8 +128,10 @@ GitHub prend le titre du **commit** quand la branche ne porte qu'un seul commit
 *réel*, les commits de fusion ne comptant pas. **Éditer le titre de la PR ne
 change donc rien**, et `gh pr edit --title` donne l'illusion inverse.
 
-Le cas où ça mord : une décision renumérotée en cours de route (fréquent — le
-numéro ne se réserve qu'au merge, voir l'en-tête de
+Le cas où ça mord : une décision renumérotée en cours de route — fréquent
+tant que le numéro se prenait au merge, plus rare depuis qu'il se réserve à la
+rédaction (`D-370`, `node scripts/wn-reserver-decision.mjs`), mais pas exclu
+pour une décision posée sans réservation (voir l'en-tête de
 `scripts/lib/decisions-numerotation.mjs`). Le registre porte `D-147`, le sujet
 du commit annonce `D-145`, et `main` ne se réécrit pas. Trois PR en portent la
 trace : #943, #949, #950 — celle de #949 citant un `D-145` qui **existe** et
