@@ -4,6 +4,61 @@
 
 ## Décisions actives
 
+### D-387 — t45 : le profil des acides gras érythrocytaires est préparé comme un regroupement de ses vingt acides, d'après le compte rendu du laboratoire ; aucun acide n'entre seul dans un panel (amende D-376 §1 et §4)
+
+- Date : 2026-10-27
+- Statut : accepté — arbitrages du responsable du 2026-10-26 et du
+  2026-10-27, sur questions à options (composer le profil plutôt qu'ajouter
+  des acides aux panels ; type `regroupement` précédé des constats ; les
+  acides seuls, sans les rapports ; une liste du laboratoire qui nomme la
+  fraction et la composition, sans compléter les écarts), transcrits par
+  l'assistant.
+- Domaine : catalogue biologie, compositions (F80, [[D-323]] §1 et §4) ;
+  amende [[D-376]] §1 (fraction) et §4 (aucune composition du profil). Aucune
+  migration, aucune plage, aucun seuil ; rien en base sans la signature du
+  praticien.
+
+**§1 — Source.** Le compte rendu complet du laboratoire BioAvenir (groupe
+Atoutbio), présenté par le responsable le 2026-10-27 (effectif : 1 dossier,
+répartition masquée (moins de cinq dossiers), [[D-298]] §3 ; aucun élément
+d'identité versé au dépôt). Il imprime, sous la section « Profil des Acides
+Gras de la membrane Érythrocytaire » (méthode « GC-FID »), les vingt acides
+de [[D-376]] §3, C15 et C17 compris, puis, sous « RAPPORTS », l'indice
+oméga 3 et les trois rapports. [[D-376]] §1 disait la fraction non nommée :
+l'import n'avait gardé que les lignes, pas le titre de section. La fiche en
+ligne de l'examen (« Statut en Acides Gras Erythrocytaires », consultée le
+2026-10-27, non datée) en liste dix-huit, sans C15 ni C17 : elle corrobore,
+le compte rendu de l'examen prévaut. Une fiche d'un autre laboratoire
+(seize acides) a été écartée : rien ne la rattache à ce compte rendu.
+
+**§2 — La composition préparée** (`compositionsPreparees.ts`) :
+`BIO_AG_ERYTHROCYTAIRES`, type `regroupement`, les vingt acides dans l'ordre
+du compte rendu. Les rapports restent des calculés à part (AA/EPA et LA/DGLA
+signés le 2026-10-26 ; oméga 6 / oméga 3 sans opérandes). Le type `groupe`
+est écarté : il dirait le profil « coté par un seul acte », ce qui est faux.
+
+**§3 — NABM** (`candidatsNabm.ts`) : le profil passe de « aucun acte » à
+« regroupement ». V105 relue par conteneur le 2026-10-26 : 987 actes, aucun
+libellé ne nomme l'un des vingt acides (« DHA » ne sort que pour la DHEA,
+actes 1802 et 7414). Le constat déjà signé du profil reste en base.
+
+**§4 — L'ordre des signatures, dans la Bibliothèque.** (1) Les vingt
+constats « aucun acte », chacun vérifié pour son acide sur le millésime
+courant — le constat du profil ne vaut pas pour ses constituants ; (2) la
+composition ; (3) le contrôle, au courrier et au document patient, de la
+mention « hors nomenclature ». Inverser (1) et (2) rendrait le profil « non
+évalué » : la mention d'un regroupement est la plus faible de ses mesures
+([[D-323]] §4).
+
+**§5 — Ce que la signature change.** Les quatre panels qui citent le profil
+restent identiques ; rien de nouveau n'est proposé à prescrire. Le profil
+proposé fait une ligne, ses vingt acides dessous ([[D-323]] §2), au courrier,
+au document patient et à l'écran.
+
+**Ce qu'elle ne décide pas.** L'entrée d'un acide seul dans un panel ; les
+plages ([[D-059]]) ; l'indice oméga 3 ; le constat des prochains imports d'un
+profil d'acides gras.
+
 ### D-386 — bb : une version sert ses trois plans si elle a été créée après la mise en service constatée de la garde étendue ; la marque est la date de création, sans migration (complète D-384 §5)
 
 - Date : 2026-10-26

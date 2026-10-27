@@ -437,7 +437,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     situation: 'regroupement',
     motif: 'La V105 cote ses composants un à un (0516, 0517, 0522, 0519, 0514).',
   },
-  // [[D-383]] §2 : le profil est fait de ses vingt acides, que la V105 ne nomme
+  // [[D-387]] §3 : le profil est fait de ses vingt acides, que la V105 ne nomme
   // pas plus que lui (relue par conteneur le 2026-10-26) ; chacun se constate.
   BIO_AG_ERYTHROCYTAIRES: {
     situation: 'regroupement',

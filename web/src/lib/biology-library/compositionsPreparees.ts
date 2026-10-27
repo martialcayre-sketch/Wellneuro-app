@@ -102,9 +102,9 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     composants: ['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA'],
     motif: 'Rapport de l’acide linoléique et du DGLA.',
   },
-  // [[D-383]] §1 : les vingt acides que le compte rendu imprime sous le profil
-  // (provenance de [[D-376]] §2), dans l'ordre de la migration ; les rapports
-  // restent des calculés à part.
+  // [[D-387]] §1-§2 : les vingt acides que le compte rendu du laboratoire
+  // imprime sous « Profil des Acides Gras de la membrane Érythrocytaire », dans
+  // son ordre ; ses rapports, imprimés sous « RAPPORTS », restent à part.
   BIO_AG_ERYTHROCYTAIRES: {
     type: 'regroupement',
     composants: [
@@ -115,7 +115,7 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
       'BIO_AG_ARACHIDONIQUE', 'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
     ],
     motif:
-      'Les vingt acides que le compte rendu imprime sous le profil ; aucun acte de la V105 ne nomme le profil ni ses acides, chacun se constate seul.',
+      'Les vingt acides que le compte rendu imprime sous « Profil des Acides Gras de la membrane Érythrocytaire » ; aucun acte de la V105 ne nomme le profil ni ses acides, chacun se constate seul.',
   },
 };
 
