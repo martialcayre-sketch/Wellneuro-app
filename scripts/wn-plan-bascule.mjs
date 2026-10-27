@@ -20,7 +20,10 @@
 // Codes de sortie : 0 = aller-retour exact (et, avec `--ecrire`, bascule
 // écrite et reconstatée) ; 1 = bascule refusée ou aller-retour faux, rien
 // écrit ; 2 = usage ; 3 = écriture commencée puis échec — l'état se lit au
-// `git status`, le plan d'avant se reprend par `git checkout`.
+// `git status` ; reprise : `git checkout -- docs/claude/PLAN_WELLNEURO.md`,
+// puis retrait des fragments non suivis de `docs/claude/plan-journal/`
+// (`git clean -fd` sur ce dossier) et d'un `PLAN_WELLNEURO.md.bascule-<pid>`
+// resté sur place.
 //
 // Usage :
 //   node scripts/wn-plan-bascule.mjs                    à blanc, sur le plan du dépôt
@@ -51,6 +54,11 @@ export function lireArguments(argv) {
   // L'un sans l'autre écrirait les fragments d'une copie dans le journal du
   // dépôt, ou ceux du dépôt hors de lui.
   if (argv.includes("--plan") !== argv.includes("--journal")) throw new Error("--plan et --journal vont ensemble");
+  const dansDepot = (p) => {
+    const r = path.relative(RACINE, p);
+    return !r.startsWith("..") && !path.isAbsolute(r);
+  };
+  if (dansDepot(opts.plan) !== dansDepot(opts.journal)) throw new Error("--plan et --journal doivent être tous deux dans le dépôt, ou tous deux hors de lui");
   return opts;
 }
 
@@ -92,10 +100,11 @@ export function principal(argv, sortie = console) {
     sortie.log("À blanc : rien n'est écrit. `--ecrire` joue la bascule.");
     return 0;
   }
+  // La bascule se joue sur un journal vierge : l'aller-retour en mémoire
+  // n'a été jugé que sur les fragments neufs.
   const existant = lireJournal(opts.journal);
-  const occupes = r.fragments.filter((f) => existant.has(f.fiche));
-  if (occupes.length > 0) {
-    sortie.error(`✗ Journal déjà présent pour ${[...new Set(occupes.map((f) => f.fiche))].join(", ")} — rien n'est écrit.`);
+  if (existant.size > 0) {
+    sortie.error(`✗ Journal déjà présent (${[...existant.keys()].join(", ")}) — la bascule se joue sur un journal vierge ; rien n'est écrit.`);
     return 1;
   }
   try {
@@ -110,7 +119,13 @@ export function principal(argv, sortie = console) {
     sortie.error(`✗ Écriture interrompue : ${e.message}`);
     return 3;
   }
-  const relu = reconstruire(fs.readFileSync(opts.plan, "utf8"), lireJournal(opts.journal));
+  let relu;
+  try {
+    relu = reconstruire(fs.readFileSync(opts.plan, "utf8"), lireJournal(opts.journal));
+  } catch (e) {
+    sortie.error(`✗ Relecture impossible après écriture : ${e.message}`);
+    return 3;
+  }
   if (relu !== texte) {
     sortie.error("✗ Aller-retour faux depuis le disque après écriture.");
     return 3;

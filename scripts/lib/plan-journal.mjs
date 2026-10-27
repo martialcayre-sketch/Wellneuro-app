@@ -46,7 +46,9 @@ const RENVOI = /^- \*\*Journal\*\* : `docs\/claude\/plan-journal\/([^/`]+)\/`/;
 const PUCE = /^- /;
 const SUITE = /^\s+\S/;
 const VIDE = /^\s*$/;
-export const NOM_FRAGMENT = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
+// Le rang `nn` est exigé : sans lui, deux fragments du même jour se liraient
+// dans l'ordre alphabétique de leur slug, pas dans l'ordre d'écriture.
+export const NOM_FRAGMENT = /^\d{4}-\d{2}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 export const ID_FICHE = /^[FH]\d+$/;
 
 export function ligneDeRenvoi(fiche) {
@@ -148,8 +150,17 @@ function placeSansMiseAJour(lignes, fiche) {
 }
 
 /** Ce qui empêche de reconstruire une fiche à sa place exacte. */
-function irregularites(f) {
+function irregularites(f, lignes) {
   const motifs = [...f.anomalies];
+  // Une mise à jour que la suite des puces de tête n'atteint pas suit un
+  // paragraphe (« **File D : …** ») : elle peut être celle du groupe, pas de
+  // la fiche.
+  if (f.majs.length > 0 && placeSansMiseAJour(lignes, f) <= f.majs[0].debut) {
+    motifs.push(`mise à jour hors de la suite des puces de tête (ligne ${f.majs[0].debut + 1})`);
+  }
+  const parDate = new Map();
+  for (const m of f.majs) parDate.set(m.date, (parDate.get(m.date) ?? 0) + 1);
+  for (const [date, n] of parDate) if (n > 99) motifs.push(`${n} mises à jour le ${date} — le rang tient sur deux chiffres`);
   for (let k = 1; k < f.majs.length; k++) {
     const avant = f.majs[k - 1];
     const m = f.majs[k];
@@ -183,7 +194,7 @@ export function basculer(texte) {
   const ecartees = [];
   let curseur = 0;
   for (const f of fiches) {
-    const motifs = irregularites(f);
+    const motifs = irregularites(f, lignes);
     if (motifs.length > 0) {
       ecartees.push({ fiche: f.id, motifs });
       continue;
@@ -240,7 +251,7 @@ export function lireJournal(dossier) {
     const liste = [];
     for (const f of fs.readdirSync(path.join(dossier, entree.name), { withFileTypes: true })) {
       if (!f.isFile() || !NOM_FRAGMENT.test(f.name)) {
-        throw new Error(`${path.join(dossier, entree.name, f.name)} : nom de fragment non conforme (attendu : AAAA-MM-JJ-slug.md)`);
+        throw new Error(`${path.join(dossier, entree.name, f.name)} : nom de fragment non conforme (attendu : AAAA-MM-JJ-nn-slug.md)`);
       }
       liste.push({ nom: f.name, contenu: fs.readFileSync(path.join(dossier, entree.name, f.name), "utf8") });
     }

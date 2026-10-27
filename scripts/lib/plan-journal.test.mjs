@@ -144,16 +144,47 @@ test("argument inconnu, ou --plan sans --journal : usage, rien n'est écrit", ()
   assert.deepEqual(instantane(d), avant);
 });
 
-test("un fragment déjà présent sur le disque : refus avant toute écriture, plan intact", () => {
+test("un journal déjà présent, pour toute fiche (avec mises à jour, sans, ou écartée) : refus avant toute écriture", () => {
+  for (const fiche of ["H02", "H01", "F01"]) {
+    const d = temp();
+    const plan = path.join(d, "PLAN.md");
+    const journal = path.join(d, "plan-journal");
+    fs.writeFileSync(plan, FABRIQUE);
+    fs.mkdirSync(path.join(journal, fiche), { recursive: true });
+    fs.writeFileSync(path.join(journal, fiche, "2026-10-01-01-mise-a-jour.md"), "autre\n");
+    const avant = instantane(d);
+    assert.equal(principal(["--plan", plan, "--journal", journal, "--ecrire"], muet), 1, fiche);
+    assert.deepEqual(instantane(d), avant, fiche);
+  }
+});
+
+test("--plan dans le dépôt et --journal hors de lui (ou l'inverse) : usage, rien n'est écrit", () => {
   const d = temp();
-  const plan = path.join(d, "PLAN.md");
-  const journal = path.join(d, "plan-journal");
-  fs.writeFileSync(plan, FABRIQUE);
-  fs.mkdirSync(path.join(journal, "H02"), { recursive: true });
-  fs.writeFileSync(path.join(journal, "H02", "2026-10-01-01-mise-a-jour.md"), "autre\n");
   const avant = instantane(d);
-  assert.equal(principal(["--plan", plan, "--journal", journal, "--ecrire"], muet), 1);
+  assert.equal(principal(["--plan", path.join(RACINE, PLAN), "--journal", path.join(d, "j"), "--ecrire"], muet), 2);
+  assert.equal(principal(["--plan", path.join(d, "P.md"), "--journal", path.join(RACINE, JOURNAL), "--ecrire"], muet), 2);
   assert.deepEqual(instantane(d), avant);
+});
+
+test("mise à jour après un paragraphe de groupe dans la plage d'une fiche : fiche écartée, ligne en place", () => {
+  const texte = "#### H01 · a\n- **Rang** : 1.\n\n**File D : gestes du responsable**\n\n- **Mise à jour (2026-10-01, file D)** : du groupe.\n";
+  const { r, reconstruit } = allerRetour(texte);
+  assert.equal(reconstruit, texte);
+  assert.equal(r.plan, texte);
+  assert.match(r.ecartees[0].motifs[0], /hors de la suite des puces de tête/);
+});
+
+test("plus de 99 mises à jour le même jour : fiche écartée, aller-retour exact", () => {
+  const majs = Array.from({ length: 100 }, (_, i) => `- **Mise à jour (2026-10-01)** : ${i}.`).join("\n");
+  const texte = `#### H01 · a\n- **Rang** : 1.\n${majs}\n`;
+  const { r, reconstruit } = allerRetour(texte);
+  assert.equal(reconstruit, texte);
+  assert.match(r.ecartees[0].motifs.join(" "), /100 mises à jour/);
+});
+
+test("plan en CRLF et sans fin de ligne finale : aller-retour exact", () => {
+  const texte = FABRIQUE.replace(/\n/g, "\r\n").replace(/\r\n$/, "");
+  assert.equal(allerRetour(texte).reconstruit, texte);
 });
 
 // ── Cas fabriqués ───────────────────────────────────────────────────────────
@@ -281,7 +312,7 @@ test("un fragment ajouté après la bascule se lit à sa place, et un fragment s
   const { r } = allerRetour(FABRIQUE);
   const journal = journalDepuisFragments([
     ...r.fragments,
-    { fiche: "H01", nom: "2026-10-28-premiere.md", contenu: "- **Mise à jour (2026-10-28)** : neuve." },
+    { fiche: "H01", nom: "2026-10-28-01-premiere.md", contenu: "- **Mise à jour (2026-10-28)** : neuve." },
   ]);
   const fiche = lireFiche(r.plan, journal, "H01");
   assert.equal(
@@ -295,12 +326,15 @@ test("lireJournal : nom non conforme ou entrée inattendue refusés ; README rac
   assert.equal(lireJournal(path.join(d, "absent")).size, 0);
   fs.writeFileSync(path.join(d, "README.md"), "lisez-moi\n");
   fs.mkdirSync(path.join(d, "H01"));
-  fs.writeFileSync(path.join(d, "H01", "2026-10-02-b.md"), "b\n");
-  fs.writeFileSync(path.join(d, "H01", "2026-10-01-a.md"), "a\n");
-  assert.deepEqual(lireJournal(d).get("H01").map((f) => f.nom), ["2026-10-01-a.md", "2026-10-02-b.md"]);
-  fs.writeFileSync(path.join(d, "H01", "note.md"), "x\n");
-  assert.throws(() => lireJournal(d), /non conforme/);
-  fs.rmSync(path.join(d, "H01", "note.md"));
+  fs.writeFileSync(path.join(d, "H01", "2026-10-02-01-b.md"), "b\n");
+  fs.writeFileSync(path.join(d, "H01", "2026-10-01-02-a.md"), "a\n");
+  fs.writeFileSync(path.join(d, "H01", "2026-10-01-01-z.md"), "z\n");
+  assert.deepEqual(lireJournal(d).get("H01").map((f) => f.nom), ["2026-10-01-01-z.md", "2026-10-01-02-a.md", "2026-10-02-01-b.md"]);
+  for (const nom of ["note.md", "2026-10-01-sans-rang.md"]) {
+    fs.writeFileSync(path.join(d, "H01", nom), "x\n");
+    assert.throws(() => lireJournal(d), /non conforme/, nom);
+    fs.rmSync(path.join(d, "H01", nom));
+  }
   fs.mkdirSync(path.join(d, "divers"));
   assert.throws(() => lireJournal(d), /entrée inattendue/);
 });
