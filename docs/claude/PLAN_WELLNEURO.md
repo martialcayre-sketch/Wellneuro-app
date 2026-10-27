@@ -110,7 +110,7 @@ constat de production hors agrégat déjà publié au registre `docs/DECISIONS.m
   f3ddbd3d », « sur 26706d17 » ou « sur 193b614c ».
 - Dernière décision au registre avant ce plan : D-284. Ce plan entre avec
   D-285. Toute décision neuve s'écrit « D-xxx » avec sa lettre ; son numéro se
-  réserve dans main au moment de l'écrire.
+  réserve à la rédaction, par `node scripts/wn-reserver-decision.mjs` (D-370).
 - Lettres prises : a à az, ba à bh, ca à cr (cr par D-382, 2026-10-26). Lettres déjà écrites en D-xxx : i
   (D-280, pour les seuils de 8B seulement), ck (D-282, G3 clos par #1416), cp et l pour
   l'essentiel (D-283), cq (D-285). Prochaine lettre libre : cs.
@@ -1152,6 +1152,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non ; touche le garde du CI (`scripts/lib/decisions-numerotation.mjs`) et une étape non bloquante de `ci.yml` : revue `wn-reviewer` (D-370 §6).
 - **Décisions, textes** : D-370 ; aucune décision neuve. Amendements listés par D-370 : en-tête du garde (réservation à la rédaction, trou réservé en avertissement, désordre jugé au rang numérique, pierre tombale d'un numéro réservé puis abandonné comme quatrième geste de retrait) ; consigne d'en-tête de `docs/DECISIONS.md` (« à son rang numérique, du plus haut au plus bas ») ; table du §2 de `.claude/rules/pr-revue-et-release-db.md` ; section du sujet à poser de `docs/claude/REGLES_PR_MERGE.md` ; D-287 §2 par ligne datée ; plan §0 « La base », §5 point 2, N-5 et §10.
 - **Critère de fin** : script de réservation livré, banc vert (référence créée par l'API sur le premier numéro libre ; référence déjà existante → numéro suivant ; tout autre refus rendu « inconnu », sans nouvel essai ; réservations créées conservées et résultat partiel rendu pour plusieurs numéros ; réservation qui ne porte que le numéro) ; garde, banc vert (trou réservé toléré en avertissement sur une PR ; trou sans réservation refusé ; trou jamais rouge sur `main`, sans lecture distante ; doublon et désordre refusés) ; avertissement non bloquant en CI pour une décision ajoutée sans réservation par une PR non documentaire ; une première décision numérotée par le script mergée.
+- **Mise à jour (2026-10-27, lot livré)** : script `scripts/wn-reserver-decision.mjs`, banc vert sur une API simulée par un faux `gh` (premier numéro libre au-dessus de `main` et des réservations ; « déjà existante », seule cause de passage au numéro suivant ; tout autre refus « inconnu », un seul essai, code 3 ; plusieurs numéros : réservés gardés, résultat partiel rendu ; la création ne porte que le nom de la référence et le sha de `main`). Garde `decisions-numerotation.mjs`, banc vert : trou réservé toléré en avertissement sur une PR ; trou sans réservation refusé, réservations ou base illisibles comprises ; décision de la base supprimée refusée même réservée (une réservation ne se nettoie jamais) ; trou jamais rouge sur `main`, sans lecture distante (journal du faux `gh` vide) ; doublon et désordre au rang numérique refusés ; rappel de la pierre tombale à partir de trois trous. Le mode PR se lit sur `GITHUB_EVENT_NAME`, la commande reste celle de `npm run check`. Étape d'avertissement non bloquante dans `ci.yml`, sur les PR non documentaires, base `HEAD^1`. Contre-épreuve : six mutations du script et du garde rougissent les bancs (« 422 » lu comme « déjà existante », inconnu traité comme suivant, réservations ignorées, lecture distante hors PR, tout trou toléré sur PR, décision supprimée tolérée). Revue `wn-reviewer` : GO avec réserves ; P1 (décision mergée puis supprimée lue « en vol » à vie) et quatre P2 corrigés dans le lot. Amendements de D-370 faits : en-tête du garde, consigne d'en-tête du registre, table du §2 de `pr-revue-et-release-db.md`, section du sujet de `REGLES_PR_MERGE.md`, D-287 §2 par ligne datée, plan §0, §5 point 2, N-5 (table et §5) et §10. Aucune référence réelle créée pendant le lot. L'amorçage (D-370 §5) prend fin au merge. **Critère ouvert** : une première décision numérotée par le script mergée, à constater sur la prochaine décision. Le ruleset de `refs/tags/reserve/D-*` reste hors lot.
 
 #### H88 · Sonde release-db par phases : le gel intégral levé
 - **Identifiant, piste** : D-374 §4 et §5 ; outillage ; file A ; sixième étape de la séquence.
@@ -2181,7 +2182,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | N-1, N-2 | chemins propres ; fichiers de BP-09 dans sa fiche (listés le 2026-10-14, #1442) | A et B | 28 | non | règle, §5 |
 | T-4, N-4, RK-1 | frontière commune : une PR à la fois | A et B | aucune | non | règle, §5 |
 | N-3 | L5 jamais pendant une PR BIO-PARCOURS | A | aucune | non | règle, §5 |
-| N-5 | numéro D-xxx réservé dans main ; merge un à un | toutes | aucune | non | règle, §5 |
+| N-5 | numéro D-xxx réservé à la rédaction (D-370) ; merge un à un | toutes | aucune | non | règle, §5 |
 | N-6 | titre du Fil et K-10 hors PR biologie sur le Fil | A | aucune | non | règle, §5 |
 | N-8 | frise et chronogramme intouchés avant la porte 16 | A | 16 | non | règle, §5 |
 | Clinical Core | nom informatif seulement | toutes | aucune | non | règle, §5 |
@@ -2457,7 +2458,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 ### Fronts parallèles dès le rang 0, sous la règle de non-collision
 
 1. Constats : S-1 (F40, H06) et le comptage avant T0 (H07) ; lecture seule en conteneur, agrégats, par identifiant ; K-18a écrite.
-2. Textes courts : S-2, ci puis S-3 (faits le 2026-10-14, #1425, #1430), cq, puis les lettres sans préalable ; un merge à la fois ; numéro D-xxx réservé dans main (N-5).
+2. Textes courts : S-2, ci puis S-3 (faits le 2026-10-14, #1425, #1430), cq, puis les lettres sans préalable ; un merge à la fois ; numéro D-xxx réservé à la rédaction (N-5, D-370).
 3. Cosmétique sans migration (file A) : S-4, la graphie, puis les parts de J1-base sans préalable, hors frontière occupée.
 4. Biologie (file B) : BP-07 dès a mergée (clos le 2026-10-14, #1438), puis BP-09, seule migration en vol, puis sa release-db constatée avant toute autre migration. La migration du lot 2 de D-281 est passée en tête par le fait, constatée le 2026-10-13. La migration du lot 2 de D-282 (file du G3) est passée ensuite, le même jour, par le fait (#1412, release-db approuvée et constatée, attestation du handoff 2026-10-13-0500) : la collision envisagée avant ces deux migrations ne s'est pas produite. Le plan tient l'ordre acquis pour la suite : release-db de BP-09 au rang 3, puis l'essai de restauration, puis le rang 4. Une seule migration en vol (D-087) : la session parallèle lit le plan avant d'ouvrir toute migration ; le versement (PR 1) le lui donne.
 5. Paquets du responsable : CGU, Patient Hub, mineurs, sources de fidélité, sources de la porte 4 ; préparés en parallèle, rien ne s'active.
@@ -2499,7 +2500,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 - N-1, N-2 : chemins propres à la cosmétique et à la biologie ; fichiers de BP-09 écrits dans sa fiche avant ouverture.
 - T-4, N-4, RK-1 : frontière commune (Fil, fiche, `DetailBesoinsPanel`, instantanés) : une PR à la fois ; branche vérifiée après toute revue.
 - N-3 : L5 suit la file biologie, jamais pendant une PR BIO-PARCOURS. N-6 : titre du Fil et K-10 dans une fenêtre sans PR biologie sur le Fil. N-8 : frise et chronogramme du sommeil intouchés avant la clôture du LOT-02 ; la porte est la clôture, pas une date.
-- N-5 : numéro D-xxx réservé dans main ; merge un à un.
+- N-5 : numéro D-xxx réservé à la rédaction (D-370) ; merge un à un.
 - Clinical Core est un nom informatif ; le code ne bouge pas.
 - R:Délestage : si la relecture déborde, retirer dans l'ordre comptes du cabinet, accès externe, frise unique, « Protocole personnalisé » remis ; la biologie de niveau 3 garde sa place ; jamais la sécurité ni la vérité. R:Repli : pour alléger le palier 1, reporter d'abord « Jour N sur 21 » et la frise, puis l'esquisse de la page du cabinet.
 - S-8 : BF-4 livré ; côté patient, jamais un chiffre.
@@ -2880,9 +2881,11 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 
 ## §10 Décisions et textes à écrire, consolidés
 
-« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve dans main au moment de l'écrire ; le prochain numéro libre se lit en tête de `docs/DECISIONS.md`. Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est la prochaine lettre libre, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
+« La main du responsable » : texte ou signature du responsable. « Registre » : texte rédigé dans le lot et accepté par le responsable, sans contenu clinique neuf. Chaque D-xxx se réserve à la rédaction par `node scripts/wn-reserver-decision.mjs`, qui crée la référence `refs/tags/reserve/D-N` du premier numéro libre (D-370). Ce plan ne prend aucune lettre : toutes les lignes ci-dessous ont une lettre existante ou sont des D-xxx de lot. La seule lettre neuve envisagée est la prochaine lettre libre, pour le délai des dossiers bloqués avant T0, et seulement après le comptage (H07).
 
 **Mise à jour (2026-10-26)** : D-370. Le numéro se réserve à la rédaction par une référence `refs/tags/reserve/D-N` créée sur GitHub ; le garde tolère un trou réservé, en avertissement, et le registre est rangé par numéro. Jusqu'à la livraison du script, le numéro se prend au merge, sur la tête de `docs/DECISIONS.md` relue juste avant ; il s'annonce au moment où on le prend, et le sujet du squash se pose par `--subject`. La phrase « se réserve dans main au moment de l'écrire » ne vaut qu'après la livraison.
+
+**Mise à jour (2026-10-27, H87)** : script livré ; l'amorçage de D-370 §5 prend fin au merge de H87. La règle de ce paragraphe devient « se réserve à la rédaction » ; une décision posée sans réservation reste permise, signalée en avertissement sur une PR non documentaire.
 
 ### Lettres déjà écrites (ne se réécrivent pas)
 

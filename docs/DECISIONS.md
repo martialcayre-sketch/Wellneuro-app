@@ -1,6 +1,8 @@
 # Registre des décisions Wellneuro
 
-> Append-only. Ajouter une nouvelle décision en tête de la section active.
+> Append-only. Insérer une nouvelle décision dans la section active à son rang
+> numérique, du plus haut au plus bas ; son numéro se réserve à la rédaction,
+> par `node scripts/wn-reserver-decision.mjs` ([[D-370]]).
 
 ## Décisions actives
 
@@ -7338,6 +7340,12 @@ une seule migration en vol ([[D-087]]) ; un merge à la fois, le déploiement
 constaté avant le merge suivant ([[D-248]]) ; jamais d'auto-merge sur une PR
 de lot ; un numéro D-xxx se réserve dans `main`. Le nombre de fronts ouverts
 est borné par l'attention du responsable, relecteur unique, non par le code.
+
+- **Mise à jour (2026-10-27, [[D-370]], H87)** : « un numéro D-xxx se réserve
+  dans `main` » se lit désormais : il se réserve à la rédaction, par
+  `node scripts/wn-reserver-decision.mjs`, qui crée la référence
+  `refs/tags/reserve/D-N` du premier numéro libre ; le garde tolère un trou
+  réservé, en avertissement.
 
 **§3 — L'ordre se lit au plan.** Les rangs et les portes du plan unique
 ([[D-285]]) font foi ; une date n'est qu'un repère. Un rang ne s'ouvre que
