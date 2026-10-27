@@ -48,17 +48,26 @@ function sousTraitantsDuDocumentCourant(): readonly { nom: string; role: string 
   );
 }
 
+/** La section « Combien de temps sont-elles conservées ? » du document COURANT. */
+function dureesConservationDuDocumentCourant(): string {
+  const section = getDocumentCourant('donnees_confidentialite').sections.find(
+    s => s.titre === 'Combien de temps sont-elles conservées ?',
+  );
+  return (section?.paragraphes ?? []).join(' ');
+}
+
 export const GOUVERNANCE_TRUST = Object.freeze({
   /** Responsable du traitement (décision G-TRUST-02, 2026-07-16). */
   responsable: 'Votre praticien Wellneuro',
   contactDroits: 'martialcayre@wellneuro.fr',
   /** DÉRIVÉ du document servi au patient — jamais recopié (voir l'en-tête). */
   sousTraitants: sousTraitantsDuDocumentCourant(),
-  /** Politique de conservation : en cours de formalisation — dit honnêtement. */
-  dureesConservation:
-    'La politique détaillée de durées de conservation est en cours de formalisation. ' +
-    'Vos données sont conservées le temps de votre accompagnement ; vous pouvez à tout ' +
-    'moment demander des précisions ou l’exercice de vos droits au contact ci-dessous.',
+  /**
+   * Politique de conservation : DÉRIVÉE du document servi, comme les
+   * prestataires, jamais recopiée. Elle suivra d'elle-même le texte de
+   * [[D-378]] le jour où une version le servira.
+   */
+  dureesConservation: dureesConservationDuDocumentCourant(),
   juridiction: 'FR',
 } as const);
 

@@ -1743,6 +1743,49 @@ const DONNEES_CONFIDENTIALITE_V20: VersionDocumentTrust = {
   hash: '1c1f62005fad1f499103511e5b6431ac094715cb789e150622fedb2f0a77a4ee',
 };
 
+// LA v21 DIT L'ENVOI D'UNE VERSION DU DOSSIER À CHATGPT PAR LE PRATICIEN
+// ([[D-364]] §4), mot pour mot, à l'apostrophe typographique du registre près ;
+// `registre.test.ts` le relit dans `docs/DECISIONS.md`. Il entre dans « Qui peut
+// accéder à vos données ? », juste après « L'application n'envoie rien à un
+// tiers » : ChatGPT n'est pas un prestataire de l'application, que la liste des
+// prestataires décrit (arbitrage du responsable du 2026-10-27). Un paragraphe
+// ajouté, rien d'autre. Accusé EXIGÉ ([[D-364]] §4, motif de [[D-299]] §3) ;
+// résumé validé le 2026-10-27.
+//
+// LES DURÉES DE [[D-378]] N'Y SONT PAS (arbitrage du 2026-10-27) : le texte
+// signé dit au présent une archive et une fin à cinq ans que le lot (b) n'a pas
+// mises en service, et une échéance des comptes rendus qui contredit la v20.
+// Elles attendent un texte amendé, en v22.
+const PARAGRAPHE_IA_EXTERNE_D364 =
+  'Votre praticien peut soumettre une version de votre dossier à ChatGPT (OpenAI), un outil d’intelligence artificielle, pour l’aider dans son analyse. Il le fait lui-même : l’application ne l’envoie pas. Cette version retire vos nom et prénom, vos coordonnées, votre date de naissance et le nom de votre médecin traitant. Elle garde votre âge et un numéro de dossier propre à l’application. Ce document reste une information sur votre santé. OpenAI est situé hors de l’Union européenne, et aucun contrat ne l’engage envers nous sur le traitement de ce document.';
+const DONNEES_CONFIDENTIALITE_V21: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v21',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V20.sections.map(section => {
+    if (section.titre === 'Qui peut accéder à vos données ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.flatMap(paragraphe =>
+          paragraphe.startsWith('L’application n’envoie rien à un tiers')
+            ? [paragraphe, PARAGRAPHE_IA_EXTERNE_D364]
+            : [paragraphe],
+        ),
+      };
+    }
+    return section;
+  }),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Cette version dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
+  publieLe: '2026-10-27',
+  requiresAcknowledgement: true,
+  hash: 'ab7951ae1db8db6bdb6d22887821532afeca6459f8c95934e67191854efa7af5',
+};
+
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
 // d'information repris mot pour mot, dans leur version en vigueur au jour de
 // l'assemblage, puis une cinquième partie neuve. Texte validé par le
@@ -1906,6 +1949,39 @@ const CONDITIONS_UTILISATION_V3: VersionDocumentTrust = {
   hash: '453f2605d8b38d71e208815edd27bceb1d9ee18c6304a29f1b1892a5460e2343',
 };
 
+// LES CONDITIONS v4 ([[D-292]] §5) : la partie 3 reprend « Vos données
+// personnelles » v21 ([[D-364]] §4) ; les trois autres parties et
+// la partie 5 sont celles de la v3. Titre et résumé inchangés. Résumé du
+// changement validé par le responsable le 2026-10-27. Accusé par l'e-mail
+// `conditions_utilisation@4`, qui remplace celui de la @3, jamais parti
+// (patients suivis, envoi en une fois par le responsable), par l'accueil
+// (nouveau patient majeur) ou au filet du dépôt du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V4: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V21 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V4: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v4',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V4.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V3.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie « Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
+  publieLe: '2026-10-27',
+  requiresAcknowledgement: true,
+  hash: '9e263c166bb449eeaa421f40a3040e800b89cfa1ce0192e4cf482f97371e13cf',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1930,6 +2006,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V18,
   DONNEES_CONFIDENTIALITE_V19,
   DONNEES_CONFIDENTIALITE_V20,
+  DONNEES_CONFIDENTIALITE_V21,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -1944,6 +2021,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONDITIONS_UTILISATION_V1,
   CONDITIONS_UTILISATION_V2,
   CONDITIONS_UTILISATION_V3,
+  CONDITIONS_UTILISATION_V4,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

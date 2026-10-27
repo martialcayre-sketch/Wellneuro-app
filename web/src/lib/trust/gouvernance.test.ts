@@ -48,3 +48,13 @@ describe('GOUVERNANCE_TRUST.sousTraitants — dérivée, jamais recopiée', () =
     expect(scalingo?.role).toContain('hébergement');
   });
 });
+
+describe('GOUVERNANCE_TRUST.dureesConservation — dérivée, jamais recopiée (D-378)', () => {
+  it('reprend la section de conservation du document COURANT', () => {
+    const section = getDocumentCourant('donnees_confidentialite').sections.find(
+      s => s.titre === 'Combien de temps sont-elles conservées ?',
+    );
+    expect(section?.paragraphes.length).toBeGreaterThan(0);
+    expect(GOUVERNANCE_TRUST.dureesConservation).toBe(section?.paragraphes.join(' '));
+  });
+});
