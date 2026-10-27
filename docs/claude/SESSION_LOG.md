@@ -11984,15 +11984,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Sort des modules orphelins, avec la suppression du code C5.
 
-## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
-
-**Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2). L'orientation vers le médecin (D-257) en est exclue, sur arbitrage du responsable.
-
-**Écarté.** Les plans dans la vue signée (contrat inchangé) ; un chapeau unique pour toutes les actions (une action sans plans le contredirait).
-
-**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
-
-**Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
 ## 2026-10-27 — File D, lots de code : J3-cabinet planifié (D-385, H58)
 
 **Fait.** Plan d'architecte : le moteur des statuts de phase sort dans un module pur partagé par la fiche et la page ; lectures groupées ; rejeu par dossier ; banc de parité ; trois PR sans migration. Quatre arbitrages du responsable : dossiers désactivés comptés ; « indéterminé » = échec ou phase nulle avec inconnu ; même effectif pour les deux tableaux ; l'écart des plus de 40 envois documenté.
@@ -12002,3 +11993,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Session dédiée : PR 1, l'extraction côté fiche.
 
 **Ouvert.** Le texte d'attente de la page ; le constat du retrait de J1-alim, puis D-C5-01 à 04.
+
+## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
+
+**Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2). L'orientation vers le médecin (D-257) en est exclue, sur arbitrage du responsable.
+
+**Écarté.** Les plans dans la vue signée (contrat inchangé) ; un chapeau unique pour toutes les actions (une action sans plans le contredirait).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
+
+**Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
