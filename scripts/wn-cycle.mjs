@@ -120,6 +120,8 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  *                                               suivis) ; par défaut `fichiersDuLot`.
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
+ *                                               `fichiers` : les seuls fichiers CRÉÉS par la PR
+ *                                               (`fichiersCreesDeLaPr`).
  * @param {boolean} faits.ghDisponible
  * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {handoff: boolean},
@@ -415,8 +417,18 @@ function chercherPrMergee(branche, tip) {
   if (!candidat) return null;
 
   const vue = jsonOuNull(gh(['pr', 'view', String(candidat.number), '--json', 'files']));
-  const fichiers = Array.isArray(vue?.files) ? vue.files.map((f) => f.path) : null;
-  return { numero: candidat.number, fichiers };
+  return { numero: candidat.number, fichiers: fichiersCreesDeLaPr(vue?.files) };
+}
+
+/**
+ * Les fichiers CRÉÉS par une PR, lus dans `gh pr view --json files` :
+ * `changeType` ADDED, ou RENAMED (sous son nouveau nom). Un handoff passé
+ * seulement retouché n'embarque pas la clôture — même régime que le CI
+ * (D-372 ; revue CodeRabbit #1732). Liste illisible : `null`, on ne conclut pas.
+ */
+export function fichiersCreesDeLaPr(files) {
+  if (!Array.isArray(files)) return null;
+  return files.filter((f) => f.changeType === 'ADDED' || f.changeType === 'RENAMED').map((f) => f.path);
 }
 
 /**

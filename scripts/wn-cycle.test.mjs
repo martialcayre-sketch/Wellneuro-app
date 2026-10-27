@@ -18,6 +18,7 @@ import {
   analyserArguments,
   cheminsDuPorcelain,
   creesDuPorcelain,
+  fichiersCreesDeLaPr,
   diagnostiquer,
   estFragmentDeHandoff,
   extraireDecisionsRecentes,
@@ -193,6 +194,26 @@ test('un handoff passé retouché ne clôt pas le lot : même régime que le CI 
   );
   assert.equal(v.cloture.handoff, false);
   assert.equal(v.phase, 'travail');
+});
+
+test('fichiersCreesDeLaPr : un handoff passé retouché dans une PR mergée n’embarque pas la clôture', () => {
+  const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
+  const files = [
+    { path: 'web/src/lib/questions.ts', changeType: 'MODIFIED' },
+    { path: ancien, changeType: 'MODIFIED' },
+  ];
+  assert.deepEqual(fichiersCreesDeLaPr(files), []);
+  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: fichiersCreesDeLaPr(files) } }));
+  assert.equal(v.fenetreRatee, true);
+  assert.deepEqual(
+    fichiersCreesDeLaPr([
+      { path: HANDOFF, changeType: 'ADDED' },
+      { path: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', changeType: 'RENAMED' },
+      { path: 'docs/claude/handoffs/2026-09-01-0900-efface.md', changeType: 'DELETED' },
+    ]),
+    [HANDOFF, 'docs/claude/handoffs/2026-10-03-0900-renomme.md'],
+  );
+  assert.equal(fichiersCreesDeLaPr(undefined), null);
 });
 
 test('creesDuPorcelain : non suivi, ajouté, renommé ; ni modifié, ni supprimé', () => {

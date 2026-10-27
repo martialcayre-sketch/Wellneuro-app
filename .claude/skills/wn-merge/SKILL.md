@@ -108,8 +108,9 @@ dernière session.
    `gh pr view <N> --json files` au moment de ce contrôle — c'est le seul
    `gh pr view` du cycle. La
    PR doit porter un fragment `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`
-   (le `README.md` du dossier ne compte pas) ; l'entrée `SESSION_LOG.md` n'est
-   plus exigée depuis D-372. Il manque → **ne pas merger, même CI vert** :
+   **créé** par elle — `changeType` `ADDED` ou `RENAMED` dans `files` ; un
+   handoff passé `MODIFIED` ne compte pas, le `README.md` du dossier non plus ;
+   l'entrée `SESSION_LOG.md` n'est plus exigée depuis D-372. Il manque → **ne pas merger, même CI vert** :
    demander `/wn-finish` puis `/wn-handoff write`, poussés sur la branche de la <!-- mention-seule: wn-finish, wn-handoff -->
    PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte

@@ -22,8 +22,9 @@ branche. Préalable de H89 (intégrateur).
 - `wn-cycle.mjs` : `cloture` réduite à `{ handoff }`, jugée sur les seuls
   fichiers CRÉÉS (`fichiersCrees` : diff `--diff-filter=AR` et porcelain `??`,
   `A`, `R`), même régime que le CI ; la ligne « SESSION_LOG.md » disparaît du
-  rendu. Les fichiers d'une PR mergée (`gh`) restent sans statut : ce
-  contrôle-là, comme l'étape 7 de `/wn-merge`, reste plus large que le CI.
+  rendu. Une PR mergée n'embarque la clôture que par un fichier `ADDED` ou
+  `RENAMED` (`fichiersCreesDeLaPr`), et l'étape 7 de `/wn-merge` lit le même
+  `changeType` (revue CodeRabbit).
 - `wn-context-pack.mjs` : `sessionTail` remplacé par `handoff` (chemin,
   origine, « Prochaine action exacte » bornée à 32 lignes), lu depuis la racine
   du dépôt. Le lot repris « désigné par la tâche » (D-372 §2) se lit à la main :
@@ -61,8 +62,9 @@ branche. Préalable de H89 (intégrateur).
   passé retouché (sortie 1), et accepte un handoff au nom accentué sans entrée
   du journal. Mutation jouée : un script qui lit tous les fichiers présents au
   lieu des créés rougit ce cas.
-- `node --test scripts/wn-cycle.test.mjs` : 46/46 (handoff passé retouché :
-  pas de clôture ; `creesDuPorcelain`).
+- `node --test scripts/wn-cycle.test.mjs` : 47/47 (handoff passé retouché :
+  pas de clôture, sur la branche comme dans une PR mergée ;
+  `creesDuPorcelain`, `fichiersCreesDeLaPr`). T1 complet `npm run check` vert.
 - `context-pack-density.test.mjs` branché dans `bancs-outillage-check` (il ne
   tournait nulle part) : `npm run bancs-outillage-check` 536/536.
 - Bancs du context-pack (`context-pack-corpus`, `source-of-truth`,
