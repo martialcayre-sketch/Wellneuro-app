@@ -82,7 +82,7 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@2',
       // [[D-292]] §5 — l'annonce des conditions v3 (b25, [[D-318]]).
       'conditions_utilisation@3',
-      // [[D-292]] §5 — l'annonce des conditions v4 ([[D-364]] §4, [[D-378]]).
+      // [[D-292]] §5 — l'annonce des conditions v4 ([[D-364]] §4).
       'conditions_utilisation@4',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
@@ -187,7 +187,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(fin(g.corps)).toBe(fin(v2.corps));
   });
 
-  // D-364 §4 et D-378 : phrase de tête choisie par le responsable le
+  // D-364 §4 : phrase de tête choisie par le responsable le
   // 2026-10-27, en session ; le reste est celui de la @3 au caractère près.
   // Elle remplace la @3, jamais partie : c'est la version la plus haute.
   it('conditions_utilisation@4 : le texte validé mot pour mot, la fin de la @3 au caractère près', () => {
@@ -198,7 +198,7 @@ describe('registre des gabarits patient — intégrité', () => {
       'Bonjour,\n\n' +
         'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie « Vos données personnelles » ' +
         'dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre ' +
-        'nom et vos coordonnées. Elle précise aussi combien de temps vos données sont conservées.\n\n',
+        'nom et vos coordonnées.\n\n',
     )).toBe(true);
     expect([...g.variables]).toEqual(['lien']);
     const v3 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 3)!;
@@ -278,7 +278,7 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@2',
       // [[D-292]] §5, conditions v3 — né validé le 2026-10-24 (b25).
       'conditions_utilisation@3',
-      // [[D-292]] §5, conditions v4 — né validé le 2026-10-27 ([[D-364]] §4, [[D-378]]).
+      // [[D-292]] §5, conditions v4 — né validé le 2026-10-27 ([[D-364]] §4).
       'conditions_utilisation@4',
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.

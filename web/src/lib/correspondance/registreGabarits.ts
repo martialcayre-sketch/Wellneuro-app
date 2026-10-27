@@ -675,7 +675,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     hash: 'c6989d6667b0d0de58349ae58ff5ba2c0e44376de90ab9969e07fba69ebfb60c',
   },
   // [[D-292]] §5 — conditions v4 : la partie « Vos données personnelles » passe
-  // en v21 ([[D-364]] §4, [[D-378]]). Même patron que la @3 : la phrase de tête
+  // en v21 ([[D-364]] §4). Même patron que la @3 : la phrase de tête
   // dit ce qui change, puis les paragraphes de la @3 au caractère près. Elle
   // remplace la @3, jamais partie. VALIDÉ le jour de sa rédaction, en session,
   // sur le texte exact choisi par le responsable (2026-10-27).
@@ -688,8 +688,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
       'Bonjour,\n\n' +
       'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie ' +
       '« Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT ' +
-      '(OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. ' +
-      'Elle précise aussi combien de temps vos données sont conservées.\n\n' +
+      '(OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées.\n\n' +
       'Rien d’autre ne change dans votre accompagnement.\n\n' +
       'Pour lire cette nouvelle version et la valider, ouvrez ce lien : {{lien}}\n\n' +
       'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ' +
@@ -703,7 +702,7 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     donneesSante: { statut: 'conforme' },
     redigeLe: '2026-10-27',
     valideLe: '2026-10-27',
-    hash: '1a974022c92c0fbb6e854dabed6ebec69172db008beacd00f6e9d73347ea9301',
+    hash: '48cbce1a194b1d3b82e452a7522713f0b474947b890993031ce315c39164a207',
   },
   // ── PROTOCOLE DIFFUSÉ ───────────────────────────────────────────────────
   // [[D-317]] §3 (PA-2) — part au clic « Valider pour diffusion » qui diffuse

@@ -57,9 +57,4 @@ describe('GOUVERNANCE_TRUST.dureesConservation — dérivée, jamais recopiée (
     expect(section?.paragraphes.length).toBeGreaterThan(0);
     expect(GOUVERNANCE_TRUST.dureesConservation).toBe(section?.paragraphes.join(' '));
   });
-
-  it('ne dit plus « en cours de formalisation »', () => {
-    expect(GOUVERNANCE_TRUST.dureesConservation).not.toContain('en cours de formalisation');
-    expect(GOUVERNANCE_TRUST.dureesConservation).toContain('cinq ans après votre dernier contact');
-  });
 });

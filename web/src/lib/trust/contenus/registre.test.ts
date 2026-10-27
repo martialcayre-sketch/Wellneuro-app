@@ -71,7 +71,7 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v19',
       // `D-318` (b25) — ce qui reste d'un compte rendu après sa lecture.
       'donnees_confidentialite@v20',
-      // `D-364` §4 et `D-378` — l'envoi à ChatGPT par le praticien, et les durées de conservation.
+      // `D-364` §4 — l'envoi d'une version du dossier à ChatGPT par le praticien.
       'donnees_confidentialite@v21',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
@@ -99,7 +99,7 @@ describe('registre des documents TRUST', () => {
       'conditions_utilisation@v2',
       // `D-292` §5 — la partie 3 passe à la v20 (b25).
       'conditions_utilisation@v3',
-      // `D-292` §5 — la partie 3 passe à la v21 (`D-364` §4, `D-378`).
+      // `D-292` §5 — la partie 3 passe à la v21 (`D-364` §4).
       'conditions_utilisation@v4',
     ]);
   });
@@ -796,10 +796,11 @@ describe('registre des documents TRUST', () => {
     expect(v20.requiresAcknowledgement).toBe(true);
   });
 
-  // D-364 §4 ET D-378 §1, EN UNE VERSION POUR UN SEUL ACCUSÉ (D-378 §2). Les
-  // deux textes sont relus dans `docs/DECISIONS.md`, à l'apostrophe
-  // typographique du registre près : un écart d'un caractère rougit ici.
-  it('la v21 porte les textes de D-364 §4 et de D-378 §1, mot pour mot, et rien d’autre', () => {
+  // D-364 §4, RELU DANS `docs/DECISIONS.md`, à l'apostrophe typographique du
+  // registre près : un écart d'un caractère rougit ici. Les durées de D-378
+  // n'y sont pas (arbitrage du 2026-10-27) : la phrase « en cours de
+  // formalisation » reste, et le banc le tient.
+  it('la v21 porte le texte de D-364 §4, mot pour mot, et rien d’autre', () => {
     const decisions = fs.readFileSync(path.resolve(__dirname, '../../../../../docs/DECISIONS.md'), 'utf8');
     const citation = (decision: string, suivante: string, debut: string, fin: string) => {
       const section = decisions.slice(decisions.indexOf(`### ${decision} `), decisions.indexOf(`### ${suivante} `));
@@ -817,7 +818,6 @@ describe('registre des documents TRUST', () => {
         .replaceAll("'", '’');
     };
     const texteD364 = citation('D-364', 'D-363', '**§4', '**§5');
-    const texteD378 = citation('D-378', 'D-377', '**§1', '**§2');
 
     const v20 = getVersion('donnees_confidentialite', 'v20')!;
     const v21 = getDocumentCourant('donnees_confidentialite');
@@ -829,21 +829,16 @@ describe('registre des documents TRUST', () => {
     expect(acces.paragraphes[rang + 1]).toBe(texteD364);
 
     const conservation = v21.sections.find(s => s.titre === 'Combien de temps sont-elles conservées ?')!;
-    expect(conservation.paragraphes).toEqual([texteD378]);
+    expect(conservation.paragraphes.join(' ')).toContain('en cours de formalisation');
 
-    // Rien d'autre : sans le paragraphe neuf et avec l'ancienne phrase, la v21
-    // redevient la v20 — la liste des prestataires comprise.
-    const ancienne = v20.sections.find(s => s.titre === 'Combien de temps sont-elles conservées ?')!.paragraphes;
+    // Rien d'autre : sans le paragraphe neuf, la v21 redevient la v20 — la
+    // liste des prestataires et la conservation comprises.
     expect(
-      v21.sections.map(s => ({
-        ...s,
-        paragraphes:
-          s.titre === 'Combien de temps sont-elles conservées ?' ? ancienne : s.paragraphes.filter(p => p !== texteD364),
-      })),
+      v21.sections.map(s => ({ ...s, paragraphes: s.paragraphes.filter(p => p !== texteD364) })),
     ).toEqual(v20.sections);
 
     expect(v21.changeSummary).toBe(
-      'Cette version dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées, et elle précise combien de temps vos données sont conservées. Le reste ne change pas.',
+      'Cette version dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
     );
     expect(v21.requiresAcknowledgement).toBe(true);
     expect(v21.publieLe > v20.publieLe).toBe(true);
@@ -904,7 +899,7 @@ describe('registre des documents TRUST', () => {
         'donnees_confidentialite@v20',
         'usage_ia@v8',
       ]);
-      // La v4 aussi, vers la v21 (`D-364` §4, `D-378`).
+      // La v4 aussi, vers la v21 (`D-364` §4).
       expect(PARTIES_REPRISES_CONDITIONS_V4.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
@@ -992,12 +987,12 @@ describe('registre des documents TRUST', () => {
         'La partie « Vos données personnelles » précise ce qui reste d’un compte rendu d’analyses après sa lecture : seules les valeurs validées par votre praticien sont gardées, avec la trace de leur lecture. Le reste ne change pas.',
       );
       // La v4 garde la partie 5 de la v3 ; son résumé, validé le 2026-10-27
-      // (`D-364` §4, `D-378`).
+      // (`D-364` §4).
       expect(partie5(conditions)).toEqual(partie5(conditionsV3));
       expect(conditions.titre).toBe(conditionsV3.titre);
       expect(conditions.resume).toBe(conditionsV3.resume);
       expect(conditions.changeSummary).toBe(
-        'La partie « Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées, et précise combien de temps vos données sont conservées. Le reste ne change pas.',
+        'La partie « Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées. Le reste ne change pas.',
       );
     });
 

@@ -64,8 +64,8 @@ export const GOUVERNANCE_TRUST = Object.freeze({
   sousTraitants: sousTraitantsDuDocumentCourant(),
   /**
    * Politique de conservation : DÉRIVÉE du document servi, comme les
-   * prestataires — le texte de [[D-378]] §1 depuis la v21. La copie recopiée
-   * disait encore « en cours de formalisation ».
+   * prestataires, jamais recopiée. Elle suivra d'elle-même le texte de
+   * [[D-378]] le jour où une version le servira.
    */
   dureesConservation: dureesConservationDuDocumentCourant(),
   juridiction: 'FR',
