@@ -11936,6 +11936,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat au prochain profil importé.
 
+## 2026-10-27 — File A : H86, consigne de libération et journal du crochet (D-373 §1, D-375 §1)
+
+**Fait.** Consigne de D-373 §1 dans `CLAUDE.md` (§ Début de session, § PR, CI, merge). Journal des verdicts du crochet de fraîcheur : une ligne par verdict, sans contenu ni chemin, dans `.claude/logs/` de la copie principale ; écrit après le verdict, appels Git bornés à 2 s ; huit cas de banc. Revue `wn-reviewer` : ordre verdict-journal et worktrees imbriqués corrigés.
+
+**Écarté.** Journal dans le dossier temporaire du marqueur (purgé) ; chemin de la cible dans la ligne ; entrée `.gitignore` dédiée (`*.log` couvre).
+
+**Prochaine action.** CI, CodeRabbit, merge ; semaine de journal datée du merge ; PR de doc : mesure de référence, part release-db d'abord (débloque H88).
+
+**Ouvert.** Sort du journal après H92 ; consigne à reprendre à l'ouverture de l'essai de l'intégrateur et à H88.
 ## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
 
 **Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
