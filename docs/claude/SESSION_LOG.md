@@ -11993,3 +11993,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Session dédiée : PR 1, l'extraction côté fiche.
 
 **Ouvert.** Le texte d'attente de la page ; le constat du retrait de J1-alim, puis D-C5-01 à 04.
+
+## 2026-10-27 — File D : retrait de la Boussole constaté, D-C5-01 à 04 soldées (D-365 §4)
+
+**Fait.** J1-alim est en production par cf76ed14. La route patient de la Boussole et la page de l'aliment rendent 404, et leurs témoins répondent. D-C5-01 à 04 sont soldées sans objet au plan (H16, §8). La dette de la colonne « Patient » de la matrice est posée au §8.
+
+**Écarté.** Mettre à jour `DETTE_C5.md` : le plan fait foi depuis le 2026-10-14.
+
+**Prochaine action.** PR 1 de J3-cabinet, dans une session dédiée.
+
+**Ouvert.** Les modules `lib/food-compass` orphelins côté patient ; D-C5-05.
