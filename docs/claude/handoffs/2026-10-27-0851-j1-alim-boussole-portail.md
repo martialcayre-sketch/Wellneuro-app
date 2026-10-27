@@ -3,10 +3,10 @@
 ## Branche et état du dépôt
 
 - Branche `lot/j1-alim-boussole-portail`, partie de `origin/main` (eca887d8,
-  #1726) ; worktree `file-d1-suite`, session concurrente, cycle en
+  #1726), `origin/main` fusionné dedans (jusqu'à #1728) ; worktree `file-d1-suite`, session concurrente, cycle en
   `git`/`gh` direct.
 - Ni migration, ni drapeau, ni chemin clinique : pas de release-db.
-- PR précédente de la séance : #1728 (bg + (a)).
+- PR précédente de la séance : #1728 (bg), mergée.
 
 ## Objectif
 
@@ -48,6 +48,8 @@ reste en place, et `WN_C5_ENABLED` reste allumé.
   - `web/src/app/portail/[token]/alimentation/page.tsx` ;
   - `web/src/lib/observability/masquageChemin.ts` ;
   - trois gardes ;
+  - `scripts/wn-matrice-consommation.mjs` (description de la Boussole : servie
+    au praticien seul) et `docs/claude/MATRICE_CONSOMMATION.md`, régénéré ;
   - `docs/FEATURE_FLAGS.md`, `docs/claude/PLAN_WELLNEURO.md` (H16), le
     fragment `changelog.d/`, `SESSION_LOG.md` et ce handoff.
 
@@ -55,7 +57,9 @@ reste en place, et `WN_C5_ENABLED` reste allumé.
 
 - `tsc` vert ; suites du portail, du protocole, de l'observabilité, de
   food-compass et des gardes : 1 888 tests verts.
-- T1 et T2 : résultats portés dans la PR.
+- T1 vert. T2 (`test:worktree -- --fast`) vert en 7 min 27 s, après une
+  première passe rouge sur la matrice de consommation générée, régénérée
+  depuis le code.
 
 ## Problèmes ouverts
 
