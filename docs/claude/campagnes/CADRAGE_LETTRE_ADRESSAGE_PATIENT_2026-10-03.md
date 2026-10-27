@@ -97,7 +97,7 @@ Ni « alerte », ni signal nommé, ni délai chiffré (même contrainte que [[D-
 porte l'écran, la recopie au caractère près et la passe au banc
 `termeAnxiogene` (le LOT-02 n'a aucune prose patient).
 
-**Amendée le 2026-10-27** ([[D-387]]) : « Remettez-le lui » devient
+**Amendée le 2026-10-27** ([[D-388]]) : « Remettez-le lui » devient
 « Remettez-le-lui », trait d'union seul, validé par le responsable en session.
 
 ## 5. Découpage proposé

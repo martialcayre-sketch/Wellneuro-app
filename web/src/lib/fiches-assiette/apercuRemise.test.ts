@@ -183,7 +183,7 @@ describe('fichesARemettre', () => {
   });
 });
 
-describe('TEXTE_ANNONCE — le sort de l’e-mail, dit après le clic (D-387)', () => {
+describe('TEXTE_ANNONCE — le sort de l’e-mail, dit après le clic (D-388)', () => {
   it('dit « Documents remis », au caractère près : le clic peut ne remettre aucune fiche', () => {
     expect(TEXTE_ANNONCE).toEqual({
       envoye: { texte: 'Documents remis : votre patient a été averti par e-mail.', alerte: false },

@@ -108,7 +108,6 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
     situation: 'aucun_acte',
     motif: 'La V105 cote le cortisol sanguin (0462) et urinaire (0476), aucun cortisol salivaire.',
   },
-  BIO_AG_ERYTHROCYTAIRES: { situation: 'aucun_acte', motif: AUCUN_AG },
   BIO_HOMOCYSTEINE: { situation: 'aucun_acte', motif: AUCUN },
 
   // ── Libellé explicite.
@@ -437,6 +436,12 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_BILAN_HEPATIQUE: {
     situation: 'regroupement',
     motif: 'La V105 cote ses composants un à un (0516, 0517, 0522, 0519, 0514).',
+  },
+  // [[D-387]] §3 : le profil est fait de ses vingt acides, que la V105 ne nomme
+  // pas plus que lui (relue par conteneur le 2026-10-26) ; chacun se constate.
+  BIO_AG_ERYTHROCYTAIRES: {
+    situation: 'regroupement',
+    motif: 'Ni le profil ni aucun de ses vingt acides n’a d’acte dans la V105 : chaque acide se constate seul.',
   },
 };
 
