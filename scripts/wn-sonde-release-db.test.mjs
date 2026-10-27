@@ -120,7 +120,7 @@ test('deux runs : l’ancien n’est rejeté que si la tête apporte une migrati
  * consomme l'état courant, puis avance d'un cran (le run bouge entre deux
  * appels). `recents` : page non filtrée. `fichiers` : pages de la PR.
  */
-function simuler({ etats = [[]], recents = [], fichiers = [[]], panne = null, git = {} } = {}) {
+function simuler({ etats = [[]], recents = [], deMain = null, fichiers = [[]], panne = null, git = {} } = {}) {
   const appels = [];
   let i = 0;
   const lireJson = (chemin, paginer) => {
@@ -132,6 +132,8 @@ function simuler({ etats = [[]], recents = [], fichiers = [[]], panne = null, gi
       return [{ workflow_runs: etat.filter((r) => r.status === statut) }];
     }
     if (chemin.includes('/pulls/')) return fichiers;
+    // Sans `deMain` explicite, l'API filtre la page récente sur `main`.
+    if (chemin.includes('branch=main')) return { workflow_runs: deMain ?? recents.filter((x) => x.head_branch === 'main') };
     return { workflow_runs: recents };
   };
   const gitSimule = (args) => {
@@ -161,6 +163,7 @@ test('collecte : deux passes dans l’ordre de vie d’un run, chaque statut pag
   assert.ok(filtres.every((a) => a.paginer && /per_page=100/.test(a.chemin)), 'chaque statut se lit toutes pages');
   assert.deepEqual(STATUTS_NON_CONCLUS, ['requested', 'pending', 'queued', 'in_progress', 'waiting']);
   assert.ok(s.appels.some((a) => !a.paginer && /runs\?per_page=30$/.test(a.chemin)), 'la page non filtrée est lue en plus');
+  assert.ok(s.appels.some((a) => !a.paginer && /runs\?branch=main&per_page=30$/.test(a.chemin)), 'les runs de main sont lus à part');
 });
 
 test('collecte : un run qui passe de in_progress à waiting entre deux appels est vu — et gèle', () => {
@@ -209,6 +212,17 @@ test('collecte : commit déclencheur de main sans run — gèle une PR de migrat
   // Un run d'une autre branche ne porte rien vers la production (contre-revue de H88).
   const ailleurs = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR, 'essai')], fichiers: migration }) });
   assert.equal(ailleurs.code, SORTIE_GELE);
+  // Trente dispatchs hors `main` remplissent la page non filtrée : le run de
+  // `main` qui porte le commit se lit quand même, par sa requête dédiée.
+  const noye = sonder({
+    pr: 1,
+    ...simuler({
+      recents: Array.from({ length: 30 }, (_, k) => r(100 + k, 'completed', SHA, 'essai')),
+      deMain: [r(5, 'completed', DECLENCHEUR)],
+      fichiers: migration,
+    }),
+  });
+  assert.equal(noye.code, SORTIE_PERMIS);
   // Tête illisible : la vérification ne se fait pas, la PR gelable gèle.
   const aveugle = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR)], fichiers: migration, git: { fetch: new Error('réseau') } }) });
   assert.equal(aveugle.code, SORTIE_ILLISIBLE);

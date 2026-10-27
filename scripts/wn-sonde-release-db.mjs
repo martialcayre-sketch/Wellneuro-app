@@ -179,7 +179,11 @@ export function sonder({ pr, lireJson, git }) {
         for (const page of lireJson(`${RUNS}?status=${statut}&per_page=100`, true)) page.workflow_runs.forEach(noter);
       }
     }
-    recents = lireJson(`${RUNS}?per_page=30`, false).workflow_runs;
+    lireJson(`${RUNS}?per_page=30`, false).workflow_runs.forEach(noter);
+    // Les derniers runs de `main`, lus à part : trente dispatchs hors `main`
+    // pousseraient sinon le dernier run de `main` hors de la page non filtrée
+    // (revue CodeRabbit de #1742). Ils servent au contrôle « commit sans run ».
+    recents = lireJson(`${RUNS}?branch=main&per_page=30`, false).workflow_runs;
     recents.forEach(noter);
     if (pr !== null) {
       const objets = lireJson(`repos/{owner}/{repo}/pulls/${pr}/files?per_page=100`, true).flat();
