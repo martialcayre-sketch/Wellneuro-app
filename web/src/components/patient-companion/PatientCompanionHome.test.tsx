@@ -626,6 +626,22 @@ describe('PatientCompanionHome — les trois plans', () => {
     expect(screen.queryByText(/en attente$/)).toBeNull();
   });
 
+  it('des plans servis pour une action en pause sont ignorés, et le jour difficile passe à la suivante', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans,
+        pauses: [{ actionId: 'a1', texte: 'element' }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    const carte = (await screen.findByText('Petit-déjeuner protéiné')).parentElement;
+    expect(carte?.querySelector('dl')).toBeNull();
+    expect(screen.queryByText('Un fruit et un yaourt')).toBeNull();
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Éteindre les écrans au coucher.')).toBeTruthy();
+  });
+
   it('aucune action servie avec ses trois plans : ni chapeau, ni intitulé', async () => {
     mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans: [] }, checkinVide);
     render(<PatientCompanionHome token="TOK" />);

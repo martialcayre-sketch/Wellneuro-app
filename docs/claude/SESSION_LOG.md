@@ -11936,15 +11936,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat au prochain profil importé.
 
-## 2026-10-27 — File C : bb lot 2, les trois plans au patient sous drapeau éteint (D-386, amendement)
-
-**Fait.** `api/portail/protocole` sert les plans idéal et de secours des actions fermes hors pause, hors de la vue signée, sous `WN_PORTAIL_TROIS_PLANS` et pour une version créée (ligne) après 2026-10-27T00:00:00Z. Accueil : « Selon votre journée : » une fois, trois intitulés de D-384 §2 ; « Jour difficile ? » au plan de secours, l'orientation gardant son minimal. Aucune migration.
-
-**Écarté.** Champs ajoutés au contrat patient (empreinte) ; chapeau répété par carte ; secours de l'orientation au jour difficile (phrase incohérente).
-
-**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté.
-
-**Ouvert.** Activation en file C, porte 18, après contrôle d'absence de recul sous #1725.
 ## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
 
 **Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
@@ -11954,3 +11945,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
 
 **Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
+
+## 2026-10-27 — File C : bb lot 2, les trois plans au patient sous drapeau éteint (D-386, amendement)
+
+**Fait.** `api/portail/protocole` sert les plans idéal et de secours des actions fermes hors pause, hors de la vue signée, sous `WN_PORTAIL_TROIS_PLANS` et pour une version créée (ligne) après 2026-10-27T00:00:00Z. Accueil : « Selon votre journée : » une fois, trois intitulés de D-384 §2 ; « Jour difficile ? » au plan de secours, l'orientation gardant son minimal. Aucune migration.
+
+**Écarté.** Champs ajoutés au contrat patient (empreinte) ; chapeau répété par carte ; secours de l'orientation au jour difficile (phrase incohérente).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté.
+
+**Ouvert.** Activation en file C, porte 18, après contrôle d'absence de recul sous #1725.

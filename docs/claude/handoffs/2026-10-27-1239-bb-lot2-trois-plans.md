@@ -35,8 +35,14 @@ seules versions créées sous la garde étendue (lot 1, #1725).
 
 ## Validations exécutées
 
-- Bancs ciblés : 102 tests verts (route 35, accueil et modules 67).
-- T1 (`check:rapide`) vert. T3 et `/code-review medium` : voir la PR.
+- Bancs ciblés verts (route 35, accueil 50, modules).
+- T1 (`check:rapide`) vert ; T3 (`test:worktree`) vert, séquence complète,
+  300 E2E (après regénération de `MATRICE_CONSOMMATION.md`).
+- `/code-review medium` : trois constats corrigés (plans rognés comme le
+  minimal, filtre rejoué à l'écran, boucle typée), cinq écartés avec motif
+  (instant vérifié : déploiement de #1725 fini avant minuit UTC, aucun recul ;
+  orientation = arbitrage ; garde à la lecture écartée par D-386).
+- `wn-reviewer` : GO, ni P0 ni P1 ; P2-1 repris (test d'écran de la pause).
 
 ## Problèmes ouverts
 
@@ -44,6 +50,11 @@ seules versions créées sous la garde étendue (lot 1, #1725).
   il n'alimente que l'épisode du carnet, hors de ce lot.
 - Le double point final de « Si vous le pouvez aujourd'hui : … » (plan déjà
   ponctué) existe en production avant ce lot ; non traité.
+
+- À trancher avant l'activation (`wn-reviewer`, P2) : le miroir praticien
+  ne montrera que le plan minimal quand le patient lit trois plans ; et tant
+  que `WN_PORTAIL_LECTURE_PROTOCOLE` est fermé, le détail est déplié d'office,
+  donc les trois plans se lisent dès l'arrivée (régime de D-315).
 
 ## Prochaine action exacte
 
