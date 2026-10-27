@@ -330,7 +330,6 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_LBP: { situation: 'aucun_acte', motif: AUCUN },
   BIO_COENZYME_Q10: { situation: 'aucun_acte', motif: AUCUN },
   BIO_GLUTATHION: { situation: 'aucun_acte', motif: AUCUN },
-  BIO_INDEX_OMEGA3: { situation: 'aucun_acte', motif: AUCUN },
   BIO_T3_REVERSE: { situation: 'aucun_acte', motif: AUCUN },
   BIO_ZONULINE: { situation: 'aucun_acte', motif: AUCUN },
 
@@ -429,6 +428,9 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_RATIO_AA_EPA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_LA_DGLA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_OMEGA6_OMEGA3: { situation: 'valeur_calculee', motif: CALCUL },
+  // [[D-390]] §3 : la somme de l'EPA et du DHA ; le constat « aucun acte »
+  // signé le 2026-10-17 reste en base.
+  BIO_INDEX_OMEGA3: { situation: 'valeur_calculee', motif: 'Calculé à partir de l’EPA et du DHA.' },
   BIO_RATIO_KYN_TRP: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_ZINC_CUIVRE: { situation: 'valeur_calculee', motif: CALCUL },
 
