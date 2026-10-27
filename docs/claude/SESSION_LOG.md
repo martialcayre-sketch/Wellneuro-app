@@ -11945,3 +11945,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; semaine de journal datée du merge ; PR de doc : mesure de référence, part release-db d'abord (débloque H88).
 
 **Ouvert.** Sort du journal après H92 ; consigne à reprendre à l'ouverture de l'essai de l'intégrateur et à H88.
+## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
+
+**Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
+
+**Écarté.** Un texte par cas (fiche, un document, deux documents) : plus de logique pour un gain faible, puisque l'aperçu liste déjà les fiches.
+
+**Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
+
+**Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
