@@ -11983,3 +11983,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; constat du retrait, puis D-C5-01 à 04 soldées.
 
 **Ouvert.** Sort des modules orphelins, avec la suppression du code C5.
+
+## 2026-10-27 — File D, lots de code : J3-cabinet planifié (D-385, H58)
+
+**Fait.** Plan d'architecte : le moteur des statuts de phase sort dans un module pur partagé par la fiche et la page ; lectures groupées ; rejeu par dossier ; banc de parité ; trois PR sans migration. Quatre arbitrages du responsable : dossiers désactivés comptés ; « indéterminé » = échec ou phase nulle avec inconnu ; même effectif pour les deux tableaux ; l'écart des plus de 40 envois documenté.
+
+**Écarté.** Un E2E de parité, illisible à trois fixtures, puisque la répartition y est masquée ; une extraction serveur sous `lib/clinical/`, qui déclencherait la release-db.
+
+**Prochaine action.** Session dédiée : PR 1, l'extraction côté fiche.
+
+**Ouvert.** Le texte d'attente de la page ; le constat du retrait de J1-alim, puis D-C5-01 à 04.
