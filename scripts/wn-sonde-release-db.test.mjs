@@ -197,6 +197,15 @@ test('collecte : une lecture en panne gèle (code 2) — runs, page non filtrée
   }
 });
 
+test('collecte : un fichier de PR sans chemin, ou aucun commit déclencheur lisible, gèle (code 2)', () => {
+  const sansChemin = sonder({ pr: 1, ...simuler({ fichiers: [[{ filename: 'docs/a.md' }, { status: 'modified' }]] }) });
+  assert.equal(sansChemin.code, SORTIE_ILLISIBLE);
+  // Clone superficiel : `git log` ne rend rien — une PR gelable ne passe pas.
+  const migration = [[{ filename: 'web/prisma/migrations/y/migration.sql' }]];
+  const vide = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR)], fichiers: migration, git: { log: () => '' } }) });
+  assert.equal(vide.code, SORTIE_ILLISIBLE);
+});
+
 test('collecte : une PR au plafond de l’API gèle — sa liste est tronquée', () => {
   const fichiers = [Array.from({ length: PLAFOND_FICHIERS_PR }, (_, k) => ({ filename: `docs/f${k}.md` }))];
   assert.equal(sonder({ pr: 1, ...simuler({ fichiers }) }).code, SORTIE_ILLISIBLE);

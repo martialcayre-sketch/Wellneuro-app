@@ -193,7 +193,11 @@ export function sonder({ pr, lireJson, git }) {
       if (objets.length >= PLAFOND_FICHIERS_PR) {
         throw new Error(`${objets.length} fichiers : la liste de l'API est tronquée à ${PLAFOND_FICHIERS_PR}`);
       }
-      fichiers = objets.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean));
+      fichiers = objets.flatMap((f) => {
+        const chemins = [f.filename, f.previous_filename].filter(Boolean);
+        if (chemins.length === 0) throw new Error('un fichier de la PR est rendu sans chemin');
+        return chemins;
+      });
     }
   } catch (err) {
     lignes.push(`❌ Lecture impossible — gel par prudence (D-374 §5) : ${String(err?.message ?? err).split('\n')[0]}`);
@@ -226,6 +230,8 @@ export function sonder({ pr, lireJson, git }) {
     try {
       if (tete === null) throw new Error('tête de main illisible');
       dernier = git(['log', '-1', '--format=%H', tete, '--', ...CHEMINS_RELEASE_DB]).trim();
+      // Vide : clone superficiel ou historique illisible — rien n'est vérifié.
+      if (!dernier) throw new Error('aucun commit déclencheur trouvé sur main');
     } catch (err) {
       lignes.push(`❌ Lecture impossible — dernier commit déclencheur de main non vérifié, gel par prudence : ${String(err?.message ?? err).split('\n')[0]}`);
       return { code: SORTIE_ILLISIBLE, lignes };
@@ -233,7 +239,7 @@ export function sonder({ pr, lireJson, git }) {
     // Un run d'une autre branche (dispatch hors `main`, refusé par `ref-refusee`)
     // ne porte rien vers la production : il ne lève pas cette vérification.
     const portent = recents.filter((r) => r.head_branch === 'main');
-    if (dernier && !portent.some((r) => r.head_sha === dernier || estAncetre(dernier, r.head_sha))) sansRun = dernier;
+    if (!portent.some((r) => r.head_sha === dernier || estAncetre(dernier, r.head_sha))) sansRun = dernier;
   }
 
   const verdict = juger({ runs, fichiers, sansRun });
