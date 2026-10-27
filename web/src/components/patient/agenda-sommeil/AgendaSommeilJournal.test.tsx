@@ -169,6 +169,27 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
   });
 });
 
+// L'ÉCRAN DE FIN DIT LE MÊME MERCI À TOUS (D-379 §1-§2) : il porte sur l'acte
+// de noter, jamais sur le nombre de nuits, et ne contient aucun chiffre. Une
+// nuit notée ou deux : le même texte.
+describe('AgendaSommeilJournal — écran de fin (D-379)', () => {
+  const TITRE = 'Merci d’avoir noté vos nuits 🌙';
+  const TEXTE = 'Votre praticien a reçu votre agenda. Voici vos nuits, telles que vous les avez notées.';
+
+  it.each([
+    ['une nuit notée', [{ dateNuit: '2026-09-02', reponses: NUIT }]],
+    ['deux nuits notées', CHARGEMENT_OK.nuits],
+  ])('le même titre et le même texte, sans chiffre — %s', async (_cas, nuits) => {
+    fetchMock.mockImplementation(() => reponse({ ...CHARGEMENT_OK, nuits, statutReponses: 'verrouille' }));
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    const titre = await screen.findByRole('heading', { name: TITRE });
+    const texte = titre.nextElementSibling;
+    expect(texte?.textContent?.trim()).toBe(TEXTE);
+    expect(`${titre.textContent} ${texte?.textContent}`).not.toMatch(/\d/);
+    expect(screen.queryByText(/trois semaines/i)).toBeNull();
+  });
+});
+
 describe('AgendaSommeilJournal — rappel du matin posé sur l’appareil (LOT-05)', () => {
   const createObjectURL = vi.fn((_blob: Blob) => 'blob:rappel');
   const revokeObjectURL = vi.fn();
