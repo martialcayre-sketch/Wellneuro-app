@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { PatientFoodObservationPanel } from '@/components/food-observation/PatientFoodObservationPanel';
-import { PatientFoodCompassProtocolSection } from '@/components/patient-food-compass/PatientFoodCompassProtocolSection';
 import { PORTAIL_COOKIE_NAME, verifyPatientSession } from '@/lib/patient-session';
 
 // Le brouillon local du Journal Alimentaire est nommé d'après l'identité de la
@@ -17,7 +16,6 @@ export default async function PortailAlimentationPage({ params }: { params: Prom
       <Link href={`/portail/${token}/questionnaires`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
         ← Mon parcours
       </Link>
-      <PatientFoodCompassProtocolSection token={token} />
       <PatientFoodObservationPanel idPatient={session?.idPatient ?? null} />
     </div>
   );

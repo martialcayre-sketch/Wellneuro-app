@@ -33,7 +33,6 @@ const RACINES_PATIENT = [
   'app/portail',
   'components/patient',
   'components/patient-companion',
-  'components/patient-food-compass',
   'components/patient-food-observation',
   'components/portail',
 ];
