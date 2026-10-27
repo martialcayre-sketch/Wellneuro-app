@@ -589,6 +589,22 @@ describe('PatientCompanionHome — les trois plans', () => {
     expect(screen.getByText('Si vous le pouvez aujourd’hui : Trois matins cette semaine.')).toBeTruthy();
   });
 
+  // LE « .. » ANTÉRIEUR AU LOT (revue de #1735, arbitrage du 2026-10-27) : le
+  // plan minimal perd lui aussi son point final avant le gabarit, drapeau fermé
+  // compris. Dans le détail, il reste tel qu'écrit.
+  it('un plan minimal qui finit par un point ne double pas la ponctuation', async () => {
+    const vuePonctuee = {
+      ...vue,
+      actions: vue.actions.map((a) => (a.actionId === 'a1' ? { ...a, minimalPlan: 'Trois matins cette semaine.' } : a)),
+    };
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vuePonctuee }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Trois matins cette semaine.')).toBeTruthy();
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Trois matins cette semaine.')).toBeTruthy();
+    expect(screen.queryByText(/\.\.$/)).toBeNull();
+  });
+
   it('une action en attente de bilan garde son régime, même si des plans arrivaient', async () => {
     mockFetch(
       {

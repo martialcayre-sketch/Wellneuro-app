@@ -171,7 +171,10 @@ enchaîner en un minimum d'allers-retours :
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
    ou le statut `CodeRabbit` (effet de bord `action_required` décrit plus haut) ;
    sans `verify`, ne pas merger.
-2. `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+2. Juste avant, la sonde release-db (`D-374` §2 à §4) :
+   `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise ; `1` gelé,
+   `2` lecture impossible (gel). Puis
+   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
    merge et suppression de la branche distante en un geste, **lié au sha que la
    revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
    contrôles se rejouent sur la nouvelle tête.

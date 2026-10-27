@@ -270,13 +270,29 @@ approbations est la seule preuve de qui a ouvert la porte.
 
 1. **Un run `queued` sans un seul job** n'est pas un run lent — 45 min à
    `jobs: []` observées. Rouvrir la PR ; ne pas chercher dans le diff.
-2. **Toute écriture sur `main` pendant l'attente d'approbation tue le run.** Le
-   job déploie une *branche*, pas un SHA : il refuse si la tête de `main` n'est
-   plus le commit approuvé — y compris pour un handoff (constaté le 2026-09-06).
-   **Aucune écriture en base n'a eu lieu.** Comparer
-   `git diff --name-only <sha-approuvé>..origin/main` — une AUTRE migration
-   changerait ce qui serait appliqué —, puis relancer en `workflow_dispatch` et
-   approuver sans attendre. Ne rien improviser.
+2. **Un merge de code seul pendant l'attente d'approbation ne tue pas le run**
+   (réécrit le 2026-10-27, `D-374` §2-§4, fiche H88). Le job déploie une
+   *branche*, pas un SHA : à l'approbation, si la tête de `main` a dépassé le
+   commit approuvé **sans migration ni changement clinique nouveau**, il
+   déploie la tête — l'ensemble à écrire est celui approuvé —, applique, puis
+   finit en **rouge volontaire** (garde anti-recul, piège 6), qui se lit
+   « appliquée », jamais « à relancer ». Si la tête apporte une migration ou
+   un changement clinique nouveau (`web/prisma/migrations/**`,
+   `web/src/lib/clinical/**`), le déclenchement ne déploie rien — en
+   `workflow_dispatch` il refuse ; en `push` l'étape se dit obsolète, mais le
+   job continue (dette au plan §8) — et c'est le run de la tête qui
+   s'approuve ; l'ancien se rejette (`D-374` §3). Le refus du 2026-09-06 (un
+   handoff mergé pendant l'attente) n'a plus lieu depuis ce même jour ; ce qui
+   reste gelé se lit par phases, **avant chaque merge** :
+   `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise. Attente
+   d'approbation (`waiting`, phase 1) : gelés, les seuls merges qui touchent
+   une migration, un chemin clinique, `release-db.yml` et ce que son run
+   exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
+   ou démarrage avant la porte — : aucun merge jusqu'à la conclusion du run.
+   Lecture impossible : gel. Deux runs à la fois — un second en file derrière
+   un run en attente — gèlent donc tout merge jusqu'à la décision du
+   responsable sur l'ancien. Un run coincé ne se contourne pas : sa sortie est
+   le rejet par le responsable (`D-374` §5).
 3. **Annuler le job GitHub n'arrête pas le one-off** (`--detached`) : la migration
    continue pendant que le workflow s'affiche annulé. Seul
    `scalingo one-off-stop <conteneur>` l'arrête.

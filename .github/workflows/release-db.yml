@@ -507,7 +507,7 @@ jobs:
       - name: "Déclenchement du déploiement du commit approuvé"
         run: |
           # Par défaut, la release attend le commit approuvé. Réécrit plus bas si
-          # la tête a dépassé ce commit sans toucher aux migrations.
+          # la tête a dépassé ce commit sans toucher aux migrations ni aux chemins cliniques.
           SHA_ATTENDU="$GITHUB_SHA"
           # CALME AVANT TOUT DÉCLENCHEMENT (D-248, prérequis du lot 3). Le job
           # `deploiement` de deploiement-production.yml déclenche lui aussi le
@@ -603,6 +603,13 @@ jobs:
           # 33966114073) : un push documentaire (b40e699) a fait échouer la
           # release de 7d8e997 après 20 h d'attente d'approbation, sans
           # qu'aucune migration non approuvée n'existe sur main.
+          #
+          # LES CHEMINS CLINIQUES COMPTENT COMME UNE MIGRATION (D-374, arbitrage
+          # du 2026-10-26 ; fiche H88). Ils déclenchent ce workflow ([[D-044]]) :
+          # un changement clinique arrivé pendant l'attente, déployé avec la
+          # branche, partirait sous une approbation qui ne l'a pas jugé. Défense
+          # derrière le gel de la phase 1 (D-374 §2), qui l'empêche déjà de
+          # merger ; même liste que `CHEMINS_RELEASE_DB` du déployeur (banc).
           if ! git fetch --quiet origin main; then
             echo '❌ "git fetch origin main" a échoué : impossible de constater que la' >&2
             echo "   tête est bien le commit approuvé. Aucun déploiement déclenché." >&2
@@ -616,24 +623,27 @@ jobs:
               echo "   ne dit plus rien de ce que déploierait la branche. Aucune écriture." >&2
               exit 1
             fi
-            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/; then
+            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/clinical/; then
               if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
                 echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
-                echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles." >&2
+                echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles ou un" >&2
+                echo "   changement clinique nouveau." >&2
                 echo "   Ce run push est désormais obsolète : un run plus récent sur main" >&2
                 echo "   porte déjà cette nouvelle tête et doit être approuvé à sa place." >&2
                 echo "   Aucune écriture n'a eu lieu dans ce run." >&2
                 exit 0
               fi
               echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
-              echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles : déployer la" >&2
-              echo "   branche déploierait du SQL que personne n'a approuvé." >&2
+              echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles ou un changement" >&2
+              echo "   clinique nouveau : déployer la branche déploierait ce que personne" >&2
+              echo "   n'a approuvé." >&2
               echo "   Rejeter ce run, puis relancer release-db en workflow_dispatch" >&2
               echo "   sur main, dont la tête sera alors le commit jugé. Aucune écriture." >&2
               exit 1
             fi
             echo "… la tête de main ($TETE) a dépassé le commit approuvé sans"
-            echo "  toucher aux migrations : l'ensemble à écrire est celui approuvé."
+            echo "  toucher aux migrations ni aux chemins cliniques : l'ensemble à"
+            echo "  écrire est celui approuvé."
           fi
           echo "→ Déploiement de la tête de main ($TETE ; approuvé : $GITHUB_SHA)…"
           if ! scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
@@ -671,7 +681,7 @@ jobs:
       #
       # Depuis le 2026-09-06, cette boucle peut juger la TÊTE de main plutôt
       # que le commit approuvé : quand la tête n'a fait que dépasser un commit
-      # approuvé sans toucher aux migrations, l'étape de déclenchement déploie
+      # approuvé sans toucher aux migrations ni au clinique, l'étape de déclenchement déploie
       # la tête et publie son SHA dans `WN_SHA_ATTENDU` — un refus (b) peut alors
       # suivre une écriture, qu'il faut vérifier à la main comme un run muet.
       #
@@ -695,7 +705,7 @@ jobs:
           MAIN_TETE=$(git rev-parse origin/main)
           if [ "$ATTENDU" != "$GITHUB_SHA" ]; then
             echo "→ La garde juge la tête déployée ($ATTENDU) ; commit approuvé :"
-            echo "  $GITHUB_SHA — elle l'a dépassé sans toucher aux migrations."
+            echo "  $GITHUB_SHA — elle l'a dépassé sans migration ni changement clinique."
           fi
           for i in $(seq 1 40); do
             SUCCES=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null \
