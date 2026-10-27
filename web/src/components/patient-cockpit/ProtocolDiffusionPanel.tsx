@@ -431,7 +431,7 @@ export function ProtocolDiffusionPanel({
       )}
 
       {/* LE SORT DE L'E-MAIL, DIT APRÈS LE GESTE : un échec ne doit pas
-          ressembler à un succès. Il ne bloque rien — les fiches sont remises. */}
+          ressembler à un succès. Il ne bloque rien — les documents sont remis. */}
       {annonce && (
         <p
           role={TEXTE_ANNONCE[annonce].alerte ? 'alert' : 'status'}

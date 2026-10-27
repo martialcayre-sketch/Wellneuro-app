@@ -235,23 +235,27 @@ export const TEXTE_ANNONCE_A_VENIR =
   'Si une fiche part, votre patient reçoit un e-mail neutre, sans nom d’assiette : « Un document de votre praticien vous attend ». '
   + 'Au plus un e-mail d’annonce par 24 heures pour ce patient.';
 
-/** Ce que l'écran dit après le clic. Seul `envoye` n'est pas une alerte. */
+/**
+ * Ce que l'écran dit après le clic. Seul `envoye` n'est pas une alerte.
+ * « Documents remis » ([[D-388]]) : l'e-mail part aussi pour la seule lettre
+ * ou le seul courrier complément, sans aucune fiche.
+ */
 export const TEXTE_ANNONCE: Record<AnnonceFiches, { texte: string; alerte: boolean }> = {
-  envoye: { texte: 'Fiches remises : votre patient a été averti par e-mail.', alerte: false },
+  envoye: { texte: 'Documents remis : votre patient a été averti par e-mail.', alerte: false },
   echoue: {
-    texte: 'Fiches remises, mais l’e-mail n’est pas parti. L’échec est tracé dans la correspondance du dossier.',
+    texte: 'Documents remis, mais l’e-mail n’est pas parti. L’échec est tracé dans la correspondance du dossier.',
     alerte: true,
   },
   non_configure: {
-    texte: 'Fiches remises, mais l’envoi d’e-mails n’est pas configuré : votre patient n’a pas été averti.',
+    texte: 'Documents remis, mais l’envoi d’e-mails n’est pas configuré : votre patient n’a pas été averti.',
     alerte: true,
   },
   portail_ferme: {
-    texte: 'Fiches remises, mais l’espace de ce patient est fermé : aucun e-mail n’est parti.',
+    texte: 'Documents remis, mais l’espace de ce patient est fermé : aucun e-mail n’est parti.',
     alerte: true,
   },
   plafond: {
-    texte: 'Fiches remises, sans nouvel e-mail : un e-mail d’annonce est déjà parti vers ce patient dans les dernières 24 heures.',
+    texte: 'Documents remis, sans nouvel e-mail : un e-mail d’annonce est déjà parti vers ce patient dans les dernières 24 heures.',
     alerte: true,
   },
 };

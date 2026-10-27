@@ -89,13 +89,16 @@ constatée, phrase signée, constat sur un dossier de test.
 > **Courrier pour votre médecin**
 >
 > Voici le courrier que je vous ai préparé pour votre médecin traitant.
-> Remettez-le lui lors de votre rendez-vous : vous pouvez l'imprimer ou le
+> Remettez-le-lui lors de votre rendez-vous : vous pouvez l'imprimer ou le
 > montrer depuis ce portail.
 
 Ni « alerte », ni signal nommé, ni délai chiffré (même contrainte que [[D-257]]
 §9). **Signée par le responsable le 2026-10-03, en session** ; le LOT-03, qui
 porte l'écran, la recopie au caractère près et la passe au banc
 `termeAnxiogene` (le LOT-02 n'a aucune prose patient).
+
+**Amendée le 2026-10-27** ([[D-388]]) : « Remettez-le lui » devient
+« Remettez-le-lui », trait d'union seul, validé par le responsable en session.
 
 ## 5. Découpage proposé
 
