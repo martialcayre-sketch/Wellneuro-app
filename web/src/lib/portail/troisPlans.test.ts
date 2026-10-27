@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { ACTION_ID_ORIENTATION, actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import { creeeSousGardeEtendue, MISE_EN_SERVICE_GARDE_ETENDUE, troisPlansOuverts, troisPlansServis } from './troisPlans';
 
 describe('WN_PORTAIL_TROIS_PLANS', () => {
@@ -51,7 +52,7 @@ describe('troisPlansServis', () => {
 
   it('les actions fermes, dans l’ordre des actions servies', () => {
     expect(troisPlansServis({
-      actionsServies: [{ actionId: 'a2' }, { actionId: 'a1' }],
+      actionsServies: [{ actionId: 'a2', type: 'food' }, { actionId: 'a1', type: 'food' }],
       actionsDuProtocole,
       pauses: [],
     })).toEqual([
@@ -62,7 +63,7 @@ describe('troisPlansServis', () => {
 
   it('écarte une action en attente de bilan et une action en pause ([[D-384]] §3)', () => {
     expect(troisPlansServis({
-      actionsServies: [{ actionId: 'a1', interventionStatus: 'conditionnelle_biologie' }, { actionId: 'a2' }, { actionId: 'a3' }],
+      actionsServies: [{ actionId: 'a1', type: 'food', interventionStatus: 'conditionnelle_biologie' }, { actionId: 'a2', type: 'food' }, { actionId: 'a3', type: 'food' }],
       actionsDuProtocole,
       pauses: [{ actionId: 'a3' }],
     })).toEqual([{ actionId: 'a2', idealPlan: 'Idéal 2', rescuePlan: 'Secours 2' }]);
@@ -73,10 +74,20 @@ describe('troisPlansServis', () => {
     ['plan de secours absent', { actionId: 'a1', idealPlan: 'Idéal 1' }],
     ['plan de secours non textuel', { actionId: 'a1', idealPlan: 'Idéal 1', rescuePlan: 3 }],
   ])('%s : l’action garde son plan minimal seul', (_cas, action) => {
-    expect(troisPlansServis({ actionsServies: [{ actionId: 'a1' }], actionsDuProtocole: [action], pauses: [] })).toEqual([]);
+    expect(troisPlansServis({ actionsServies: [{ actionId: 'a1', type: 'food' }], actionsDuProtocole: [action], pauses: [] })).toEqual([]);
   });
 
   it('une action servie absente du protocole relu n’y entre pas', () => {
-    expect(troisPlansServis({ actionsServies: [{ actionId: 'a9' }], actionsDuProtocole, pauses: [] })).toEqual([]);
+    expect(troisPlansServis({ actionsServies: [{ actionId: 'a9', type: 'food' }], actionsDuProtocole, pauses: [] })).toEqual([]);
+  });
+
+  // Arbitrage du 2026-10-27 ([[D-386]] lot 2) : l'orientation garde son régime.
+  it('l’orientation vers le médecin n’y entre jamais, ses deux plans fussent-ils lus', () => {
+    const orientation = actionOrientation(true);
+    expect(troisPlansServis({
+      actionsServies: [{ actionId: ACTION_ID_ORIENTATION, type: 'medical_referral' }, { actionId: 'a1', type: 'food' }],
+      actionsDuProtocole: [orientation, ...actionsDuProtocole],
+      pauses: [],
+    })).toEqual([{ actionId: 'a1', idealPlan: 'Idéal 1', rescuePlan: 'Secours 1' }]);
   });
 });

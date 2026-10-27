@@ -49,6 +49,7 @@ vi.mock('@/lib/trust/pauseEffetIndesirableServeur', async orig => {
 });
 
 import { signPatientSession } from '@/lib/patient-session';
+import { ACTION_ID_ORIENTATION, actionOrientation, TEXTE_ORIENTATION } from '@/lib/clinical-engine/orientationAdressage';
 import { GET } from './route';
 
 const assignation = { idAssignation: 'ASS_1', idPatient: 'PAT_PROPRIO', emailPatient: 'proprio@example.test' };
@@ -573,8 +574,10 @@ describe('GET /api/portail/protocole', () => {
         { actionId: 'a2', idealPlan: 'Idéal a2', rescuePlan: 'Secours a2' },
       ]);
       expect(JSON.stringify(json)).not.toContain('Secours a3');
-      // La vue signée, elle, ne change pas.
+      // La vue signée, elle, ne change pas, et les limitations internes ne
+      // traversent toujours pas.
       expect(json.vue.actions[0]).not.toHaveProperty('rescuePlan');
+      expect(JSON.stringify(json)).not.toContain('INTERNE');
     });
 
     it.each([
@@ -591,11 +594,30 @@ describe('GET /api/portail/protocole', () => {
       expect(json).not.toHaveProperty('troisPlans');
     });
 
-    it('le createdAt du payload, hérité, n’est jamais lu', async () => {
+    it.each([
+      ['colonne avant, payload après : refus', AVANT, '2026-11-01T00:00:00.000Z', false],
+      ['colonne après, payload avant : servis', APRES, '2026-10-01T00:00:00.000Z', true],
+    ])('le createdAt du payload, hérité, n’est jamais lu — %s', async (_cas, colonne, payload, servis) => {
       process.env.WN_PORTAIL_TROIS_PLANS = 'true';
-      mockVersion(AVANT, { ...plansLisibles, createdAt: '2026-11-01T00:00:00.000Z' });
+      mockVersion(colonne, { ...plansLisibles, createdAt: payload });
       const json = await (await GET(request(proprioCookie()))).json();
-      expect(json).not.toHaveProperty('troisPlans');
+      expect('troisPlans' in json).toBe(servis);
+    });
+
+    // Arbitrage du 2026-10-27 ([[D-386]] lot 2) : l'orientation vers le médecin
+    // ([[D-257]]) garde son régime, même ferme et en tête du protocole.
+    it('l’orientation vers le médecin ne reçoit jamais ses trois plans', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES, { ...plansLisibles, actions: [actionOrientation(true), ...plansLisibles.actions] });
+      // Le contrat exige l'orientation en tête quand la carte porte un constat adressé.
+      rejouerCarteDecision.mockResolvedValue({
+        ok: true, decisionCard: { ...CARTE_REJOUEE, safetyFindingAdresseIds: ['constat-adresse'] }, selectionEcartee: false,
+      });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue.actions[0].actionId).toBe(ACTION_ID_ORIENTATION);
+      expect(json.troisPlans.map((p: { actionId: string }) => p.actionId)).toEqual(['a1', 'a2']);
+      expect(JSON.stringify(json)).not.toContain(TEXTE_ORIENTATION.rescuePlan);
+      expect(JSON.stringify(json)).not.toContain(TEXTE_ORIENTATION.idealPlan);
     });
 
     it('une action en pause garde son régime actuel', async () => {

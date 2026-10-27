@@ -7,6 +7,9 @@
   sous la garde étendue : colonne `protocol_drafts.created_at` strictement
   postérieure à `2026-10-27T00:00:00.000Z`. Le `createdAt` du contenu, hérité,
   n'est jamais lu ; date absente ou illisible, ou plan vide : refus.
+  L'orientation vers le médecin (D-257) n'y entre jamais (arbitrage du
+  responsable du 2026-10-27) : elle garde son plan minimal seul, que le jour
+  difficile continue de proposer.
 - Le détail du protocole lit alors, pour ces actions, « Selon votre journée : »
   puis « Si tout va bien », « Au quotidien », « Si c’est plus dur », chacun
   devant son plan (texte de D-384 §2, relu par un banc) ; « Jour difficile ? »

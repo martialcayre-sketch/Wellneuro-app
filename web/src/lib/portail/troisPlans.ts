@@ -14,6 +14,7 @@
 // exacte `'true'`, absent = fermé. Variable serveur : un composant client ne la
 // lit pas, c'est la route du protocole qui le lui dit.
 
+import { estActionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 
 export function troisPlansOuverts(): boolean {
@@ -54,16 +55,22 @@ function texteLisible(valeur: unknown): valeur is string {
  * pas. Une action absente du protocole relu, ou dont l'un des deux plans est
  * vide, n'y entre pas non plus — le doute vaut refus, et le détail lui garde
  * son plan minimal seul.
+ *
+ * L'ORIENTATION VERS LE MÉDECIN ([[D-257]]) N'Y ENTRE JAMAIS (arbitrage du
+ * responsable du 2026-10-27, [[D-386]] lot 2) : ferme et en tête du protocole,
+ * elle recevrait « Au quotidien » sur un rendez-vous à prendre une fois, et
+ * « Jour difficile ? » proposerait son repli au lieu de l'appel au médecin. Elle
+ * garde son régime actuel — plan minimal seul, proposé au jour difficile.
  */
 export function troisPlansServis(input: {
-  actionsServies: readonly { actionId: string; interventionStatus?: unknown }[];
+  actionsServies: readonly { actionId: string; type: string; interventionStatus?: unknown }[];
   actionsDuProtocole: readonly { actionId: string; idealPlan?: unknown; rescuePlan?: unknown }[];
   pauses: readonly Pick<ElementEnPause, 'actionId'>[];
 }): TroisPlansAction[] {
   const enPause = new Set(input.pauses.map((p) => p.actionId));
   const duProtocole = new Map(input.actionsDuProtocole.map((a) => [a.actionId, a]));
   return input.actionsServies.flatMap((servie) => {
-    if (servie.interventionStatus || enPause.has(servie.actionId)) return [];
+    if (servie.interventionStatus || enPause.has(servie.actionId) || estActionOrientation(servie)) return [];
     const action = duProtocole.get(servie.actionId);
     if (!action || !texteLisible(action.idealPlan) || !texteLisible(action.rescuePlan)) return [];
     return [{ actionId: servie.actionId, idealPlan: action.idealPlan, rescuePlan: action.rescuePlan }];

@@ -126,6 +126,14 @@ au lot, fixé par lui :
   le chapeau puis une liste de définitions, intitulé au-dessus de son plan,
   dans l'ordre de [[D-384]] §2, aux couleurs neutres du portail ; une action
   dont l'un des deux plans est vide garde son plan minimal seul ;
+- **l'orientation vers le médecin** ([[D-257]]), arbitrage du responsable du
+  2026-10-27 sur question à options : elle n'entre jamais dans les trois
+  plans. Ferme et en tête du protocole, elle aurait reçu « Au quotidien » sur
+  un rendez-vous à prendre une fois, et « Jour difficile ? » aurait proposé son
+  repli au lieu de l'appel au médecin. Elle garde son régime actuel : plan
+  minimal seul, et c'est lui que le jour difficile propose quand elle est la
+  première action ferme. Écartés : passer au geste suivant au jour difficile ;
+  la lettre de [[D-384]] (trois plans pour elle aussi) ;
 - **le circuit** : la route `api/portail/protocole` sert `troisPlans`
   (plans idéal et de secours, par action) hors de la vue signée
   `c1-patient-protocol-view-v2`, inchangée, comme les pauses ; le composant

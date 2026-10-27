@@ -585,6 +585,41 @@ describe('PatientCompanionHome — les trois plans', () => {
     expect(screen.queryByText(/retenu/)).toBeNull();
   });
 
+  it('détail replié : aucun plan avant le clic, les trois après', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, cycleRef: 'a1b2c3d4e5f60718' }, troisPlans,
+        lectureDuDetail: { dejaOuvert: false },
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText('Voir le détail de mon protocole'));
+    expect(screen.getByText(CHAPEAU_TROIS_PLANS)).toBeTruthy();
+  });
+
+  it('détail replié : rien avant le clic', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: { ...vue, cycleRef: 'a1b2c3d4e5f60718' }, troisPlans,
+        lectureDuDetail: { dejaOuvert: false },
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Voir le détail de mon protocole')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText('Chaque matin')).toBeNull();
+  });
+
+  it('fin de cycle : aucun plan, ni « Jour difficile ? »', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: true, vue, troisPlans }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText(/Jour difficile/)).toBeNull();
+  });
+
   it('une action en pause garde son régime, même si des plans arrivaient', async () => {
     mockFetch(
       {
