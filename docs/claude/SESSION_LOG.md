@@ -11897,15 +11897,6 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).
 
-## 2026-10-26 — File D, lots de code : cb, écran de fin de l'agenda du sommeil (D-379, H39)
-
-**Fait.** ba trouvée déjà livrée et constatée (#1714, #1722). Lot cb : l'écran de fin de l'agenda du sommeil dit « Merci d’avoir noté vos nuits 🌙 » et la phrase de D-379 §1, mot pour mot, le même pour tous, sans chiffre ; banc posé.
-
-**Écarté.** (e) et bb dans cette séance : d'autres sessions les portent (arbitrage du responsable) ; toute illustration (cc).
-
-**Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
-
-**Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.
 ## 2026-10-26 — Lot (e) de D-283 : l'information du médecin dans chaque lettre (D-377)
 
 **Fait.** La phrase de D-377 entre dans les trois lettres au médecin (adressage, biologie, compléments), avant la formule de politesse, depuis une constante unique qui lit l'adresse des droits. Aussi : t45 trouvé déjà livré par sa session (#1716), page des instruments des 12 besoins close (v13), ligne t33 de la page file A remise à jour.
@@ -11924,3 +11915,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** Merge, déploiement constaté, instant relevé ; puis lot 2 sous drapeau éteint.
 
 **Ouvert.** Nom du drapeau et forme du détail, au lot 2.
+
+## 2026-10-26 — File D, lots de code : cb, écran de fin de l'agenda du sommeil (D-379, H39)
+
+**Fait.** ba trouvée déjà livrée et constatée (#1714, #1722). Lot cb : l'écran de fin de l'agenda du sommeil dit « Merci d’avoir noté vos nuits 🌙 » et la phrase de D-379 §1, mot pour mot, le même pour tous, sans chiffre ; banc posé.
+
+**Écarté.** (e) et bb dans cette séance : d'autres sessions les portent (arbitrage du responsable) ; toute illustration (cc).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
+
+**Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.

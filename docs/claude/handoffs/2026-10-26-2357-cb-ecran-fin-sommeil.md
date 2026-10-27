@@ -3,7 +3,8 @@
 ## Branche et état du dépôt
 
 - Branche `lot/cb-ecran-fin-sommeil`, partie de `origin/main` (58bb608d,
-  #1722), avancée sur `origin/main` (6b0f8040, #1723, docs) ; worktree
+  #1722), `origin/main` fusionné dedans (fb7d61b2 : #1723, #1724 (e),
+  #1725 bb lot 1) ; worktree
   `file-d1-suite`, session concurrente, cycle en `git`/`gh` direct.
 - Ni migration, ni drapeau, ni chemin clinique : pas de release-db.
 
@@ -36,7 +37,8 @@ du sommeil.
 
 - Banc du composant : 18 tests verts.
 - T1 (`check:rapide`) vert.
-- T2 (`test:worktree -- --fast`) : résultat porté dans la PR.
+- T2 (`test:worktree -- --fast`) vert avant la fusion de main, en 9 min 8 s
+  (15 162 tests Vitest, E2E Chromium et WebKit) ; T1 complet vert.
 - Le garde de gamification couvre déjà `components/patient`.
 
 ## Problèmes ouverts
