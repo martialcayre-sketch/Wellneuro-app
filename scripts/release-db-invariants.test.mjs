@@ -293,6 +293,23 @@ test('le déclenchement exige que la tête de main soit le commit approuvé', ()
   assert.match(etape, /exit 1/, 'le refus doit être franc, pas un avertissement');
 });
 
+// D-374, arbitrage du 2026-10-26 (fiche H88) : la comparaison de la tête
+// dépassante couvre aussi les chemins cliniques, en défense derrière le gel de
+// la phase 1. Même liste que `CHEMINS_RELEASE_DB` du déployeur — et donc que
+// le filtre `paths` du workflow, dont un autre banc tient la parité.
+test('la comparaison de la tête dépassante couvre exactement les chemins déclencheurs', async () => {
+  const { CHEMINS_RELEASE_DB } = await import('./wn-deploiement-deployer.mjs');
+  const bloc = JOBS.get('release');
+  const etape = bloc.slice(bloc.indexOf('Déclenchement du déploiement'), bloc.indexOf('Release en one-off'));
+  const comparaison = etape.match(/git diff --quiet "\$GITHUB_SHA" "\$TETE" -- ([^;]+);/);
+  assert.ok(comparaison, 'la comparaison de la tête dépassante a disparu ou changé de forme');
+  assert.deepEqual(
+    comparaison[1].trim().split(/\s+/).map((c) => c.replace(/\/$/, '')).sort(),
+    [...CHEMINS_RELEASE_DB].sort(),
+    'un chemin déclencheur absent de la comparaison laisserait le run approuvé déployer ce qu’il n’a pas jugé',
+  );
+});
+
 // Quand la tête acceptée n'est pas le commit approuvé, c'est ELLE que le
 // build déploie : sans repointage, la garde suivante attendrait 20 minutes
 // un déploiement du commit approuvé qui ne viendra jamais.

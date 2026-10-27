@@ -201,8 +201,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   CI de `main` ni le déploiement — il converge seul sur la prochaine tête
   verte (`D-248`) ; la session fait `/clear` aussitôt. Sauf migration,
   authentification ou `.coderabbit.yaml`, que la session suit jusqu'au
-  constat. Demeurent : le gel de `D-374` §5 (aucun merge tant qu'un run
-  `release-db` n'est pas conclu, jusqu'à la sonde de `D-374` §4) et, après
+  constat. Demeurent : le gel par phases de `D-374` (avant chaque merge,
+  `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise) et, après
   une migration, un merge à la fois, déploiement constaté avant le merge
   suivant.
 
