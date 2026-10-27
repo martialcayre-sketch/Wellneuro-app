@@ -912,6 +912,11 @@ réduisent les écritures concurrentes sur ces fichiers.
   que les migrations, couvrira aussi `web/src/lib/clinical/**`, au lot de
   la sonde (§4, fiche H88), en défense derrière le gel du §2. Le §3 se lit
   alors « migration nouvelle ou changement clinique nouveau ».
+  **§4 livré le 2026-10-27** (fiche H88) : sonde
+  `scripts/wn-sonde-release-db.mjs`, appelée par `wn-merge` et par `node` ;
+  piège 2 de `pr-revue-et-release-db.md` §5 réécrit ; comparaison de la
+  tête dépassante étendue à `web/src/lib/clinical/**`. **Gel intégral du §5
+  levé au merge de ce lot ; gel par phases en vigueur.**
 - Domaine : `.github/workflows/release-db.yml` (lu, non modifié par cette
   décision jusqu'à l'arbitrage du 2026-10-26), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
   `.claude/rules/pr-revue-et-release-db.md` §3 à §5 (§1.10 : [[D-373]] §7),

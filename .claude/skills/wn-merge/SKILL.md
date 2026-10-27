@@ -122,6 +122,21 @@ dernière session.
    l'étape « Contrôle de clôture » du CI refuse la même absence sur toute PR
    qui touche du code — un fragment CRÉÉ par la PR, pas un handoff passé
    retouché ; ce contrôle-ci reste, et couvre aussi les PR de doc.
+7 bis. **Sonde release-db — juste avant le merge, et bloquante** (`D-374` §2 à
+   §4) : `node scripts/wn-sonde-release-db.mjs <N>`, un appel, code lu
+   directement — jamais dans un tube. Elle lit tous les runs non conclus de
+   `release-db.yml` (filtre par statut, toutes pages) et rend **`0` seul pour
+   autoriser le merge** : aucun run non conclu, ou runs tous en attente
+   d'approbation (`waiting`, phase 1) et la PR ne touche ni
+   `web/prisma/migrations/**`, ni `web/src/lib/clinical/**`, ni
+   `release-db.yml` et ce que son run exécute, ni le déployeur (liste :
+   `CHEMINS_GELES` du script). **`1`** = gelé — un run hors de l'attente
+   (exécution, phase 2, ou démarrage avant la porte : aucun merge), ou PR qui
+   touche un chemin gelé ; **`2`** = lecture impossible, gel par prudence. Un run coincé ne se contourne pas : sa sortie est le rejet du
+   run par le responsable (`D-374` §5). Les lignes `·` disent, pour un ancien
+   run en attente, s'il s'approuve tel quel ou se rejette (`D-374` §3) :
+   conseil au responsable, jamais un geste de l'assistant. Une session sans
+   `/wn-*` lance la même commande avant son `gh pr merge`. <!-- mention-seule: wn -->
 8. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
    présence de `verify`, régime déduit, applicabilité de l'exception, verdicts de
    revue (étape 6), verdict de clôture (étape 7) — puis la commande exacte à
@@ -130,7 +145,8 @@ dernière session.
    la passe **avant le merge** de l'étape 5 est faite quand elle s'applique (la
    vérification de production, elle, est due **après** et ne conditionne rien),
    si tout commentaire de revue
-   porte son verdict (étape 6) et si l'étape 7 est satisfaite :
+   porte son verdict (étape 6), si l'étape 7 est satisfaite et si la sonde
+   de l'étape 7 bis vient de rendre `0` :
    ```bash
    gh pr merge <N> --squash --delete-branch --match-head-commit <sha>
    ```
@@ -160,5 +176,7 @@ contourner.
    (commit), écarté (motif), routé (adresse). Aucun sans verdict.
 5. Clôture opposable : fragment de handoff créé par la PR, ou merge refusé
    avec le geste de rattrapage.
+5 bis. Sonde release-db : code, phase, runs non conclus, et ses conseils
+   `D-374` §3 s'il y en a.
 6. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.
