@@ -197,6 +197,14 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   pas** — `release-db` approuvée, sentinelle, constat par conteneur, puis
   seulement le code consommateur. Détail :
   `.claude/rules/pr-revue-et-release-db.md`.
+- **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le
+  CI de `main` ni le déploiement — il converge seul sur la prochaine tête
+  verte (`D-248`) ; la session fait `/clear` aussitôt. Sauf migration,
+  authentification ou `.coderabbit.yaml`, que la session suit jusqu'au
+  constat. Demeurent : le gel de `D-374` §5 (aucun merge tant qu'un run
+  `release-db` n'est pas conclu, jusqu'à la sonde de `D-374` §4) et, après
+  une migration, un merge à la fois, déploiement constaté avant le merge
+  suivant.
 
 ## Documentation de référence
 
@@ -222,7 +230,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   `git`/`gh` direct — les `/wn-*` n'y tournent pas. Jamais de
   `checkout`/`switch` dans la copie d'une autre session.
 - **Un lot = une session** : handoff dans la PR du lot (fenêtre de
-  clôture), puis `/clear` après le merge ;
+  clôture), puis `/clear` dès que la PR est mergée — sauf migration,
+  authentification ou `.coderabbit.yaml` (`D-373` §1, voir § PR, CI, merge) ;
   `/compact` seulement dans un lot (une migration et son code consommateur
   forment un lot). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
