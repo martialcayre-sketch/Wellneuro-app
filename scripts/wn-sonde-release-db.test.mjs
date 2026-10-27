@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -148,7 +148,7 @@ function simuler({ etats = [[]], recents = [], fichiers = [[]], panne = null, gi
   return { lireJson, git: gitSimule, appels };
 }
 
-const r = (id, status, head_sha = SHA) => ({ id, status, head_sha });
+const r = (id, status, head_sha = SHA, head_branch = 'main') => ({ id, status, head_sha, head_branch });
 
 test('collecte : deux passes dans l’ordre de vie d’un run, chaque statut paginé, plus une page non filtrée', () => {
   const s = simuler();
@@ -206,6 +206,9 @@ test('collecte : commit déclencheur de main sans run — gèle une PR de migrat
   assert.match(sansRun.lignes.join('\n'), /aucun run release-db/);
   const porte = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR)], fichiers: migration }) });
   assert.equal(porte.code, SORTIE_PERMIS);
+  // Un run d'une autre branche ne porte rien vers la production (contre-revue de H88).
+  const ailleurs = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR, 'essai')], fichiers: migration }) });
+  assert.equal(ailleurs.code, SORTIE_GELE);
   // Tête illisible : la vérification ne se fait pas, la PR gelable gèle.
   const aveugle = sonder({ pr: 1, ...simuler({ recents: [r(5, 'completed', DECLENCHEUR)], fichiers: migration, git: { fetch: new Error('réseau') } }) });
   assert.equal(aveugle.code, SORTIE_ILLISIBLE);
@@ -245,6 +248,34 @@ test('lancée par un lien symbolique, la sonde juge encore — pas de sortie 0 m
       code = err.status;
     }
     assert.equal(code, SORTIE_USAGE);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test('CLI de bout en bout : une PR dont la liste dépasse 1 Mio se juge, sans ENOBUFS lu « illisible »', () => {
+  // `gh` et `git` jetables en tête du PATH : aucun réseau. La liste des
+  // fichiers de la PR pèse ~2 Mio (champ `patch`), au-delà du tampon par
+  // défaut d'`execFileSync` (revue CodeRabbit de #1742).
+  const dossier = mkdtempSync(join(tmpdir(), 'wn-sonde-cli-'));
+  try {
+    const bin = join(dossier, 'bin');
+    mkdirSync(bin);
+    const gros = join(dossier, 'fichiers.json');
+    writeFileSync(gros, JSON.stringify([[{ filename: 'docs/x.md', patch: 'x'.repeat(2 * 1024 * 1024) }]]));
+    writeFileSync(
+      join(bin, 'gh'),
+      `#!/bin/sh\ncase "$*" in\n  *pulls/*) cat '${gros}' ;;\n  *status=*) echo '[{"workflow_runs":[]}]' ;;\n  *) echo '{"workflow_runs":[]}' ;;\nesac\n`,
+    );
+    writeFileSync(join(bin, 'git'), `#!/bin/sh\n[ "$1" = rev-parse ] && echo ${TETE}\nexit 0\n`);
+    chmodSync(join(bin, 'gh'), 0o755);
+    chmodSync(join(bin, 'git'), 0o755);
+    const sortie = execFileSync(process.execPath, [join(RACINE, 'scripts/wn-sonde-release-db.mjs'), '1'], {
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    assert.match(sortie, /^SONDE release-db code=0 phase=aucune runs=0 pr=1$/m);
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }

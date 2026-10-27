@@ -6,6 +6,9 @@
   (session concurrente, cycle en `git`/`gh` direct). Partie de 13fc0965, puis
   avancée en `--ff-only` sur `origin/main` 8990cd1e (#1735). Les deux fichiers
   de doc qui se recoupaient ont été réappliqués par patch, sans conflit.
+- Après l'ouverture de #1742, `origin/main` a reçu #1731 et #1741 : fusion
+  de `origin/main` dans la branche, sur accord explicite du responsable
+  (fusion propre, sans conflit).
 - Ni migration, ni chemin clinique. La PR touche `release-db.yml` : elle est
   suivie jusqu'au déploiement constaté.
 
@@ -63,8 +66,11 @@ strictes que la lettre de D-374, jamais plus ouvertes :
   - aucun run, code 0 ;
   - jeton invalide, code 2 ;
   - argument invalide, code 3.
-- Revue `wn-reviewer` : NO-GO, un bloquant et cinq à corriger, tous corrigés,
-  puis contre-vérification. CodeRabbit : verdicts dans la PR.
+- Revue `wn-reviewer` : NO-GO, un bloquant et cinq à corriger, tous corrigés ;
+  contre-vérification GO, ses deux mineurs corrigés (runs d'une autre branche
+  écartés du contrôle « commit sans run » ; « deux runs » écrit au piège 2).
+- CodeRabbit (2981622d) : une remarque, corrigée (`maxBuffer` de `gh`, banc
+  CLI de bout en bout à 2 Mio). Les deux correctifs mordent en mutation.
 
 ## Problèmes ouverts
 

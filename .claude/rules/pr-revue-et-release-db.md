@@ -289,7 +289,9 @@ approbations est la seule preuve de qui a ouvert la porte.
    une migration, un chemin clinique, `release-db.yml` et ce que son run
    exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
    ou démarrage avant la porte — : aucun merge jusqu'à la conclusion du run.
-   Lecture impossible : gel. Un run coincé ne se contourne pas : sa sortie est
+   Lecture impossible : gel. Deux runs à la fois — un second en file derrière
+   un run en attente — gèlent donc tout merge jusqu'à la décision du
+   responsable sur l'ancien. Un run coincé ne se contourne pas : sa sortie est
    le rejet par le responsable (`D-374` §5).
 3. **Annuler le job GitHub n'arrête pas le one-off** (`--detached`) : la migration
    continue pendant que le workflow s'affiche annulé. Seul

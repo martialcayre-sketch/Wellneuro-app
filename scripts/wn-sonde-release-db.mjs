@@ -223,7 +223,10 @@ export function sonder({ pr, lireJson, git }) {
       lignes.push(`❌ Lecture impossible — dernier commit déclencheur de main non vérifié, gel par prudence : ${String(err?.message ?? err).split('\n')[0]}`);
       return { code: SORTIE_ILLISIBLE, lignes };
     }
-    if (dernier && !recents.some((r) => r.head_sha === dernier || estAncetre(dernier, r.head_sha))) sansRun = dernier;
+    // Un run d'une autre branche (dispatch hors `main`, refusé par `ref-refusee`)
+    // ne porte rien vers la production : il ne lève pas cette vérification.
+    const portent = recents.filter((r) => r.head_branch === 'main');
+    if (dernier && !portent.some((r) => r.head_sha === dernier || estAncetre(dernier, r.head_sha))) sansRun = dernier;
   }
 
   const verdict = juger({ runs, fichiers, sansRun });
@@ -248,8 +251,11 @@ export function sonder({ pr, lireJson, git }) {
 
 // ── Câblage CLI ─────────────────────────────────────────────────────────────
 
+// Le tampon par défaut d'`execFileSync` est de 1 Mio : la liste des fichiers
+// d'une grosse PR (champ `patch` compris) le dépasse, et `ENOBUFS` se lirait
+// « lecture impossible » — un gel sans issue (revue CodeRabbit de #1742).
 function lancer(cmd, args) {
-  return execFileSync(cmd, args, { cwd: RACINE, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return execFileSync(cmd, args, { cwd: RACINE, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 256 * 1024 * 1024 });
 }
 
 function principal(argv) {
