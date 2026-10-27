@@ -3,9 +3,9 @@
 //
 // Pourquoi ce script existe : le merge d'une PR de lot est un squash
 // (`gh pr merge --squash --delete-branch`). Tout ce qui s'écrit après lui n'est
-// plus dans l'ascendance de `main` — la clôture (`SESSION_LOG.md`) et le
-// handoff (un fragment de `docs/claude/handoffs/`) doivent alors repartir de
-// `main` dans une seconde PR. L'ordre correct est déjà écrit dans `/wn-lot`
+// plus dans l'ascendance de `main` — la clôture, un fragment de handoff dans
+// `docs/claude/handoffs/` (l'entrée `SESSION_LOG.md` n'en est plus depuis
+// D-372), doit alors repartir de `main` dans une seconde PR. L'ordre correct est déjà écrit dans `/wn-lot`
 // (clôture en étape 6, PR en étape 7) ; ce qui manquait, c'est de le *vérifier*.
 // Une règle qu'on oublie deux fois ne se réécrit pas une troisième : elle
 // devient exécutable.
@@ -29,7 +29,6 @@ import { readCampaignTruth, readMachineState, writeMachineState } from './wn-sta
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
 const HANDOFFS = 'docs/claude/handoffs/';
 
 /**
@@ -43,7 +42,7 @@ const HANDOFFS = 'docs/claude/handoffs/';
  * toucher dans un lot ne clôt rien.
  *
  * **L'horodatage est EXIGÉ, pas conseillé.** Le README du dossier désigne le
- * handoff courant comme « le dernier au tri » ; sans contrainte de nom, un
+ * handoff courant comme le dernier de la branche, au tri (D-372) ; sans contrainte de nom, un
  * `notes.md` déposé là serait accepté comme handoff et, les lettres passant
  * après les chiffres en tri C, désigné comme le plus récent. La règle du README
  * n'était donc vraie que tant que personne ne posait un autre fichier — c'est
@@ -117,11 +116,15 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  * @param {string} faits.brancheParDefaut        Généralement `main`.
  * @param {boolean} faits.arbrePropre
  * @param {string[]} faits.fichiersDuLot         `git diff --name-only <base>...HEAD`.
+ * @param {string[]} [faits.fichiersCrees]       Les seuls fichiers CRÉÉS par le lot (A, R, non
+ *                                               suivis) ; par défaut `fichiersDuLot`.
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
+ *                                               `fichiers` : les seuls fichiers CRÉÉS par la PR
+ *                                               (`fichiersCreesDeLaPr`).
  * @param {boolean} faits.ghDisponible
  * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
- * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
+ * @returns {{phase: string, cloture: {handoff: boolean},
  *           fenetreRatee: boolean, suivant: string[], sortie: number,
  *           sync: object|null, avertissements: string[]}}
  */
@@ -137,6 +140,7 @@ function diagnostiquerPhase(faits) {
     brancheParDefaut = 'main',
     arbrePropre = true,
     fichiersDuLot = [],
+    fichiersCrees = fichiersDuLot,
     prOuverte = null,
     prMergee = null,
     ghDisponible = true,
@@ -145,18 +149,19 @@ function diagnostiquerPhase(faits) {
   if (!dansUnDepot) {
     return {
       phase: 'hors-depot',
-      cloture: { sessionLog: false, handoff: false },
+      cloture: { handoff: false },
       fenetreRatee: false,
       suivant: ['Hors dépôt git — aucun verdict de cycle possible.'],
       sortie: SORTIE_PRECONDITION,
     };
   }
 
-  const cloture = {
-    sessionLog: fichiersDuLot.includes(SESSION_LOG),
-    handoff: fichiersDuLot.some(estFragmentDeHandoff),
-  };
-  const clotureComplete = cloture.sessionLog && cloture.handoff;
+  // D-372 : la clôture se réduit au fragment de handoff CRÉÉ par le lot — le
+  // même régime que `verdictCloture` du CI : un handoff passé retouché ou
+  // supprimé ne clôt rien. L'entrée `SESSION_LOG.md` ne s'écrit plus que sur
+  // demande.
+  const cloture = { handoff: fichiersCrees.some(estFragmentDeHandoff) };
+  const clotureComplete = cloture.handoff;
 
   // La preuve de merge prime sur tout le reste : sous squash-merge la branche
   // locale survit intacte au merge, et rien dans git seul ne la distingue d'une
@@ -166,7 +171,7 @@ function diagnostiquerPhase(faits) {
     // lot. `null` = information indisponible (gh muet) : on ne conclut pas.
     const portes = prMergee.fichiers;
     const clotureEmbarquee =
-      portes === null ? null : portes.includes(SESSION_LOG) && portes.some(estFragmentDeHandoff);
+      portes === null ? null : portes.some(estFragmentDeHandoff);
 
     if (clotureEmbarquee === true) {
       return {
@@ -174,7 +179,7 @@ function diagnostiquerPhase(faits) {
         cloture,
         fenetreRatee: false,
         suivant: [
-          `PR #${prMergee.numero} mergée, clôture et handoff embarqués — rien à reprendre.`,
+          `PR #${prMergee.numero} mergée, handoff embarqué — rien à reprendre.`,
           'Lot suivant : repartir de `main`, jamais de cette branche squashée.',
         ],
         sortie: SORTIE_OK,
@@ -188,7 +193,7 @@ function diagnostiquerPhase(faits) {
         fenetreRatee: false,
         suivant: [
           `PR #${prMergee.numero} mergée ; ses fichiers sont inconnus (gh muet).`,
-          'Vérifier à la main que SESSION_LOG.md et un fragment docs/claude/handoffs/ y étaient.',
+          'Vérifier à la main qu’un fragment docs/claude/handoffs/ y était.',
         ],
         sortie: SORTIE_OK,
       };
@@ -200,7 +205,7 @@ function diagnostiquerPhase(faits) {
       fenetreRatee: true,
       suivant: [
         `Fenêtre de clôture ratée : PR #${prMergee.numero} mergée en squash sans la clôture.`,
-        'Écrire depuis `main` — SESSION_LOG.md et le fragment de handoff en PR de doc séparée.',
+        'Écrire depuis `main` — le fragment de handoff en PR de doc séparée.',
         'Ne pas rebrancher sur cette branche : son contenu ne remonte plus vers `main`.',
       ],
       sortie: SORTIE_FENETRE_RATEE,
@@ -411,9 +416,28 @@ function chercherPrMergee(branche, tip) {
   );
   if (!candidat) return null;
 
-  const vue = jsonOuNull(gh(['pr', 'view', String(candidat.number), '--json', 'files']));
-  const fichiers = Array.isArray(vue?.files) ? vue.files.map((f) => f.path) : null;
-  return { numero: candidat.number, fichiers };
+  // REST paginé, pas `gh pr view --json files` : ce dernier peut s'arrêter à
+  // 100 fichiers, et un handoff au-delà passerait pour absent (revue
+  // CodeRabbit #1732). `--slurp` rend un tableau de pages.
+  const pages = jsonOuNull(
+    gh(['api', '--paginate', '--slurp', `repos/{owner}/{repo}/pulls/${candidat.number}/files`]),
+  );
+  return { numero: candidat.number, fichiers: fichiersCreesDeLaPr(pages) };
+}
+
+/**
+ * Les fichiers CRÉÉS par une PR, lus dans les pages de
+ * `gh api --paginate --slurp repos/{owner}/{repo}/pulls/<N>/files` : `status`
+ * `added`, ou `renamed` (sous son nouveau nom). Un handoff passé seulement
+ * retouché n'embarque pas la clôture — même régime que le CI (D-372 ; revue
+ * CodeRabbit #1732). Réponse illisible : `null`, on ne conclut pas.
+ */
+export function fichiersCreesDeLaPr(pages) {
+  if (!Array.isArray(pages) || !pages.every(Array.isArray)) return null;
+  return pages
+    .flat()
+    .filter((f) => f.status === 'added' || (f.status === 'renamed' && renommageCree(f.previous_filename)))
+    .map((f) => f.filename);
 }
 
 /**
@@ -438,6 +462,54 @@ export function cheminsDuPorcelain(porcelain) {
     .map((chemin) => chemin.replace(/^"|"$/g, ''));
 }
 
+/**
+ * Un renommage crée-t-il un fichier ? Oui, sauf quand sa source est déjà un
+ * fragment de handoff : renommer un handoff passé sous un nom neuf le RETOUCHE,
+ * il ne clôt pas le lot (D-372 : « créé, pas retouché » ; revue CodeRabbit
+ * #1732). Seule définition, partagée par le cycle et le contrôle du CI.
+ */
+export function renommageCree(source) {
+  return !estFragmentDeHandoff(source ?? '');
+}
+
+/**
+ * Les fichiers CRÉÉS, lus dans un `git diff --name-status` : statut `A`, ou
+ * `R` sous son nouveau nom quand `renommageCree` l'admet. Un `M` ou un `D` n'en
+ * est pas. Le contrôle de clôture du CI l'exporte sous le nom `fichiersCrees`.
+ */
+export function creesDuNameStatus(nameStatus) {
+  const crees = [];
+  for (const ligne of (nameStatus || '').split('\n')) {
+    const champs = ligne.split('\t');
+    const statut = champs[0];
+    if (statut === 'A') crees.push(champs[champs.length - 1]);
+    else if (statut?.startsWith('R') && renommageCree(champs[1])) crees.push(champs[champs.length - 1]);
+  }
+  return crees;
+}
+
+/**
+ * Les chemins CRÉÉS dans l'arbre de travail : non suivis (`??`), ajoutés à
+ * l'index (`A`), renommés (`R`, sous leur nouveau nom, si `renommageCree`). Un
+ * `M` ou un `D` n'en est pas — c'est la règle du contrôle de clôture du CI
+ * (D-372).
+ */
+export function creesDuPorcelain(porcelain) {
+  if (!porcelain) return [];
+  const crees = [];
+  for (const ligne of porcelain.split('\n')) {
+    const m = /^([ MADRCU?!]{1,2}) /.exec(ligne);
+    if (!m || !/[A?R]/.test(m[1])) continue;
+    const fleche = ligne.indexOf(' -> ');
+    if (fleche !== -1) {
+      const source = ligne.slice(m[0].length, fleche).replace(/^"|"$/g, '');
+      if (!renommageCree(source)) continue;
+    }
+    crees.push(...cheminsDuPorcelain(ligne));
+  }
+  return crees;
+}
+
 function collecterFaits(options = {}) {
   const local = options.local === true;
   if (!git(['rev-parse', '--git-dir'])) return { dansUnDepot: false };
@@ -457,6 +529,10 @@ function collecterFaits(options = {}) {
   // script existe pour supprimer. Vu sur le lot qui a créé le dossier.
   const porcelain = gitBrut(['status', '--porcelain', '--untracked-files=all']);
   const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(porcelain)])];
+  const creesCommittes = diff
+    ? creesDuNameStatus(git(['-c', 'core.quotePath=false', 'diff', '--name-status', '--diff-filter=AR', `${base}...HEAD`]))
+    : [];
+  const fichiersCrees = [...new Set([...creesCommittes, ...creesDuPorcelain(porcelain)])];
 
   // La disponibilité de `gh` se déduit du premier appel réel — plus de sonde
   // `gh --version`. Un retour non-liste (binaire absent, non authentifié,
@@ -484,6 +560,7 @@ function collecterFaits(options = {}) {
     // la vacuité de la sortie, seulement l'éclatement des répertoires.
     arbrePropre: (porcelain || '') === '',
     fichiersDuLot,
+    fichiersCrees,
     prOuverte,
     prMergee,
     ghDisponible,
@@ -616,7 +693,6 @@ export function rendre(faits, verdict) {
     out.push('');
     const marque = (ok) => (ok ? '✓' : '✗');
     out.push(`fait     ${marque(faits.fichiersDuLot.length > 0)} diff du lot (${faits.fichiersDuLot.length} fichier(s))`);
-    out.push(`         ${marque(verdict.cloture.sessionLog)} SESSION_LOG.md`);
     out.push(`         ${marque(verdict.cloture.handoff)} fragment docs/claude/handoffs/`);
   }
 

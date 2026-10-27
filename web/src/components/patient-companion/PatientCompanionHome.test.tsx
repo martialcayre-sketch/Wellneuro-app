@@ -196,7 +196,9 @@ describe('PatientCompanionHome', () => {
     });
   });
 
-  it('intègre le résumé Boussole qualitatif du protocole approuvé', async () => {
+  // LA BOUSSOLE QUITTE LE PORTAIL ([[D-365]] §1) : même si une réponse
+  // ancienne en portait encore une, la page n'en rend rien.
+  it('ne rend aucune Boussole alimentaire, même reçue', async () => {
     mockFetch(
       {
         ok: true, protocoleDiffuse: true, finDeCycle: false,
@@ -213,9 +215,10 @@ describe('PatientCompanionHome', () => {
       { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] },
     );
     render(<PatientCompanionHome token="TOK" />);
-    expect(await screen.findByRole('heading', { name: 'Ma Boussole alimentaire' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Comprendre cette lecture' }).getAttribute('href'))
-      .toBe('/portail/TOK/alimentation/boussole/26034');
+    expect(await screen.findByText(vue.purpose)).toBeTruthy();
+    expect(screen.queryByText(/Boussole/)).toBeNull();
+    expect(screen.queryByText('Sardine')).toBeNull();
+    expect(document.querySelector('a[href*="/alimentation/boussole/"]')).toBeNull();
   });
 
   it('révèle un message rassurant en mode « jour difficile »', async () => {

@@ -8,7 +8,6 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
-import { PatientFoodCompassSummary } from '@/components/patient-food-compass/PatientFoodCompassSummary';
 import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
 import {
   TEXTE_PAUSE_AVIS_RENDU,
@@ -48,7 +47,6 @@ type ProtocoleResponse =
       /** Éléments en pause sur effet indésirable ([[D-281]] §3) ; vide avant la signature. */
       pauses?: ElementEnPause[];
       /** Lectures de la Boussole dont l'aliment est en pause ([[D-281]] §2) ; vide avant la signature. */
-      boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
       /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
       lectureDuDetail?: { dejaOuvert: boolean };
       /** Encart « quand ralentir ou demander avis » ([[D-349]]) ; absent = drapeau fermé. */
@@ -364,8 +362,6 @@ export function PatientCompanionHome({ token }: { token: string }) {
           <p className="mt-1 text-sm text-foreground">{vue.followUpCriterion}</p>
         </div>
       )}
-
-      <PatientFoodCompassSummary token={token} items={vue.boussoles ?? []} enPause={protocole.boussolesEnPause ?? []} />
 
       {/* Accès : rendez-vous de suivi (mis en avant si dû) + fiche. */}
       <div className="flex flex-wrap gap-2.5">

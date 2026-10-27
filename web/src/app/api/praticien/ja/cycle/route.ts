@@ -133,7 +133,6 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         }),
         // Le carnet praticien ne rend aucune boussole : elles vivent sur la
         // surface patient, sous le drapeau C5.
-        boussoles: [],
         cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
         debutCycle: jourZero.toISOString(),
       });

@@ -54,18 +54,20 @@ deux d'une minute plutôt que de s'en remettre au tri.
 
 ## Quel est le handoff courant
 
-**Le fichier le plus récent du dossier**, c'est-à-dire le dernier au tri. La
-commande s'ancre à la racine : tapée depuis `web/` — le répertoire courant
-habituel des sessions —, elle ne rend rien.
+**Le dernier handoff de la branche** (D-372 §2) : le dernier au tri parmi les
+fragments que la branche courante a créés. Sur une branche qui n'en a pas encore
+créé, le dernier handoff du lot repris, quand la tâche le désigne ; à défaut, le
+dernier au tri sur `main`. Le dernier au tri du dossier entier ne suffit plus :
+avec plusieurs sessions en parallèle, c'est celui d'un autre lot.
 
-```bash
-cd "$(git rev-parse --show-toplevel)" && ls docs/claude/handoffs/*.md | grep -v README | tail -1
-```
+`scripts/wn-context-pack.mjs` applique cette règle (bloc « Dernier handoff »,
+hors le lot repris, qui se désigne à la main) ; ses bancs la prouvent
+(`tests/wellneuro/evals/context-pack-density.test.mjs`).
 
 Il n'existe **aucun fichier « courant » généré et committé**. En poser un
 recréerait exactement le créneau unique qu'on vient de supprimer : deux branches
 le régénéreraient, et le conflit reviendrait par la porte de derrière. Le prix de
-cette absence est une commande à taper ; le prix de sa présence était une PR de
+cette absence est un script à lancer ; le prix de sa présence était une PR de
 réparation par lot.
 
 ## Ce que le cycle de lot vérifie
@@ -73,7 +75,10 @@ réparation par lot.
 `scripts/wn-cycle.mjs` ne contrôle plus qu'un chemin littéral ait été touché,
 mais qu'**un fragment ait été ajouté dans la branche courante**. La clôture reste
 donc exigée avant la PR — le merge est un squash, ce qui s'écrit après lui ne
-remonte plus vers `main` —, sans qu'aucun fichier partagé ne soit réécrit.
+remonte plus vers `main` —, sans qu'aucun fichier partagé ne soit réécrit. Depuis
+D-372, ce fragment est **toute** la clôture : l'entrée `SESSION_LOG.md` n'est
+plus exigée, ni par `wn-cycle.mjs` ni par le contrôle de clôture du CI
+(`scripts/wn-controle-cloture.mjs`), qui veut un fragment créé par la PR.
 
 ## Ce que ce répertoire ne garantit pas
 

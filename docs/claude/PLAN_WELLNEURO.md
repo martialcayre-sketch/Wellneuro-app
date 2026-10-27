@@ -597,6 +597,12 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre h, de la main du responsable.
 - **Critère de fin** : page retirée, constatée ; D-C5-01 à 04 soldées à la livraison (`DETTE_C5.md:10-13`).
 - **Mise à jour (2026-10-24, lettre écrite)** : h écrite par D-365 : démontage côté portail seul (résumé dans le protocole, page de l'aliment, route patient) ; code praticien et contrats V2 et V4 en place, `WN_C5_ENABLED` allumé ; avant livraison, constat par conteneur des protocoles diffusés qui portent une Boussole, arrêt au-dessus de zéro ; D-C5-01 à 04 soldées à la livraison constatée, D-C5-05 reste. J1-alim peut s'ouvrir, sans migration.
+- **Mise à jour (2026-10-27, code de J1-alim)** : constat préalable par conteneur, en agrégats (D-365 §3) : 5 versions de protocole diffusées, 0 portant une Boussole, donc le lot se livre. Démontage côté portail : route `api/portail/boussole`, page de l'aliment et composants `patient-food-compass` retirés ; la route du protocole servi ne résout ni ne sert plus aucune lecture de la Boussole, en pause ou non ; la projection `projeterSurLeFil` perd son champ `boussoles`. Contrats V2 et V4, code praticien, modules `lib/food-compass` et `WN_C5_ENABLED` en place. Sans migration. Reste : constat du retrait en production, puis D-C5-01 à 04 soldées sans objet (§4).
+- **Mise à jour (2026-10-27, retrait constaté)** : J1-alim mergé (#1736, 60d694b2), en production par le déploiement de cf76ed14, qui le contient. Constaté par requêtes HTTP :
+  - la route `api/portail/boussole/…` rend 404, quand le témoin `api/portail/protocole` rend 401 ;
+  - la page de l'aliment rend 404, quand le témoin, la page alimentation, rend 200.
+
+  **D-C5-01 à 04 soldées sans objet** (D-365 §4) ; D-C5-05 reste ouverte, opportuniste. Critère de fin tenu. Reste hors de D-365 : le sort des modules `lib/food-compass` sans consommateur patient, avec la suppression du code C5.
 
 #### F33 · av : contenu biologique du document remis au médecin
 - **Identifiant, piste** : lettre av ; contenu, voie de remise, régime documentaire ; complète q et ae ; trackc.
@@ -838,6 +844,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Critère de fin** : check en CI vert ; une PR de lot sans clôture est refusée.
 - **Mise à jour (2026-10-18)** : livré. L'étape « Contrôle de clôture » du job `controles` (`scripts/wn-controle-cloture.mjs`, banc `wn-controle-cloture.test.mjs`) refuse une PR qui touche du code sans une entrée ajoutée à `SESSION_LOG.md` et un fragment de handoff daté ; une PR purement documentaire en est dispensée. Constat qui l'a motivé : jusqu'au 2026-10-14, la revue Copilot réclamait l'entrée SESSION_LOG ; après D-290, elle a disparu de 71 PR sur 75 du 15 au 18 octobre. CodeRabbit porte la même consigne en avertissement (`pre_merge_checks.custom_checks`). Arbitrage du responsable du 2026-10-18 : les deux éléments restent exigés.
 - **Mise à jour (2026-10-26)** : amendée par D-372 — le contrôle n'exige plus que le fragment de handoff créé par la PR ; l'entrée `SESSION_LOG.md` n'est plus exigée, le journal redevient un résumé sur demande, sa compaction est gelée ; producteurs, consommateurs, bancs et libellés CI changent dans un seul lot, joué avant l'intégrateur (D-373) ; critère de fin inchangé. La PR touche `.coderabbit.yaml` : revue `wn-reviewer`.
+- **Mise à jour (2026-10-27)** : amendement livré en un lot. `verdictCloture` n'exige plus que le fragment de handoff créé par la PR ; `wn-cycle.mjs` réduit la clôture au handoff ; l'étape CI devient « Contrôle de clôture (fragment de handoff) » ; le contrôle CodeRabbit « Clôture de la PR » suit ; `/wn-finish` et `/wn-lot` n'écrivent plus le journal que sur demande ; `wn-context-pack`, `/wn`, `/wn-docs`, `/wn-hygiene`, `wn-fable` et le début de session lisent le dernier handoff de la branche. Bancs : `wn-controle-cloture.test.mjs` (une PR de code sans handoff créé refusée, script réel), `wn-cycle.test.mjs`, `context-pack-density.test.mjs`. Compaction du journal toujours gelée. Le préalable H23 de H89 est levé ; reste H88.
 
 #### H24 · R:af : référence de fiche conseil sur l'action
 - **Identifiant, piste** : lettre af ; protocole ; file A.
@@ -927,10 +934,11 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre aw ; re-signature de la table des quinze règles ; trackc.
 - **Rang** : 1 au plus tôt [Hypothese].
 - **Portes, préalables** : av ; claims certifiés. Il se raccorde aux axes (F51) et aux indications v2 (F53) sans en dépendre : F53 vient après lui.
-- **Migration, release-db** : non.
+- **Migration, release-db** : non pour les fiches et leurs signatures ; oui pour la migration de correction de la colonne « objectif » des deux exclusions, encore à écrire et à exécuter (D-389 §4 : release-db à approuver, constat par conteneur après exécution) ; la re-signature de la table passe par release-db une fois le fichier de la table chemin déclencheur (D-389 §5, lot encore à livrer).
 - **Décisions, textes** : une signature par famille, de la main du responsable.
 - **Critère de fin** : familles signées ; aucune borne inventée.
 - **Mise à jour (2026-10-26, cadre écrit)** : D-382 pose le cadre. La famille est le bloc de justification d'un des quinze panels hérités, sous son libellé ; les deux non indiqués entrent comme blocs d'exclusion signés. Chaque fiche exige « ce que la famille explore », tiré d'un claim relu ; la prudence n'y entre que sourcée. Les textes sont tenus hors dépôt, au dépôt la date et l'empreinte de chaque fiche signée ; contrôle logiciel avec ax. Re-signature de la table ensuite, sans changer de règle, par un lot propre. L'ordre des niveaux et le niveau des examens partagés sortent d'aw (lettre cr, avant ax). Restent dus : les quinze fiches et leurs signatures, puis la re-signature.
+- **Mise à jour (2026-10-27, exclusions amendées)** : le dossier privé des quinze fiches est préparé (étape 1), contre-revu par Codex et corrigé ; aucune fiche non signable, sept réserves. D-389 amende D-320 §3 et D-382 §3 : le motif des deux exclusions est la lecture signée du responsable, reproduite mot pour mot de la table, le claim cité à part ; la seconde phrase du motif magnésium reste comme lecture signée ; E1 et E2 se signent sous ce régime. Trois lots courts sous F34, avant la re-signature : la table signée devient un chemin déclencheur de release-db (la retenue promise par D-382 §6 ne couvrait pas `biology-library/`) ; la fiche d'analyte étiquette motif et claim séparément, commentaires « verbatim des claims » corrigés ; une migration de données retire « verbatim » de la colonne « objectif » des deux panels. Restent dus : les quinze signatures (étape 2), puis la re-signature (étape 3).
 
 #### F37 · az : notice patient du bilan, et remise du document
 - **Identifiant, piste** : lettre az ; trackc.
@@ -1118,6 +1126,24 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Migration, release-db** : non ; touche `CLAUDE.md` et `.claude/hooks/git-freshness.mjs` (garde-fou du responsable) : revue `wn-reviewer` pour le crochet.
 - **Décisions, textes** : D-373 §1 et D-375 §1 ; aucune décision neuve. Consigne écrite dans `CLAUDE.md` (§ Début de session, § PR, CI, merge) : une session fait `/clear` dès que sa PR est mergée, sauf migration, authentification ou `.coderabbit.yaml` ; plus d'attente du CI de `main` ni du déploiement pour une PR ordinaire ; le gel de D-374 §5 et, après une migration, « un merge à la fois, déploiement constaté avant le merge suivant » demeurent. Journal du crochet : une ligne par verdict (date, outil, cible interne ou externe au dépôt, `HEAD`, `origin/main`, verdict, motif), jamais de contenu de fichier, dans un fichier distinct du marqueur, persistant et hors suivi Git (le dossier temporaire du marqueur se purge) ; une semaine de comptage.
 - **Critère de fin** : consigne écrite ; journal en service, banc du crochet vert, revue faite ; semaine de journal close, dates de début et de fin écrites ; mesure de référence publiée dans cette fiche, en lecture seule (`git`, `gh`, journal du crochet) : fusions de `main` et renumérotations des soixante dernières PR mergées avant le lot, ventilées par cause (crochet de fraîcheur, numéro de décision, conflit de texte, autre) ; attentes release-db (environnement prêt → approbation, approbation → application, PR prêtes en attente pendant un run) ; délais question → réponse des arbitrages. La mesure est tenue par la session principale et s'écrit dans cette fiche (mise à jour datée, puis journal du plan une fois H90 livrée), jamais dans `SESSION_LOG.md` ; elle sert de « avant » à H88, H89 et H92.
+- **Mise à jour (2026-10-27), consigne et journal** : consigne et journal mergés le 2026-10-27 (#1733). Banc du crochet vert : 24 cas, dont 8 cas « journal ». Revue `wn-reviewer` faite ; deux points corrigés dans le lot : verdict émis avant le journal, et worktree imbriqué compté « externe ». Le journal tient dans `.claude/logs/git-freshness.log` de la copie principale. **Semaine de journal : du 2026-10-27 à 12:31 UTC (merge) au 2026-11-03 à 12:31 UTC.** Les lignes antérieures au merge sont écartées : la copie principale servait déjà le crochet de la branche du lot aux autres sessions.
+- **Mise à jour (2026-10-27), mesure de référence** : lecture seule (`git`, `gh`) des soixante dernières PR mergées avant le lot, #1669 à #1730, du 2026-10-24 à 03:34 UTC au 2026-10-27 à 11:28 UTC. La part release-db vient d'abord : elle débloque H88.
+  - **Release-db** : sept runs sur la période, tous déclenchés par push et tous verts. Ils sont portés par #1671, #1679, #1687, #1691, #1692, #1704 et #1724.
+    - Environnement prêt → approbation (fin du job `resume` → départ du job `release`) : 5,0, 5,0, 5,0, 14,0, 30,4, 32,0 et 388,3 min. Médiane 14 min ; 479,7 min au total, dont 388,3 min pour un seul run, créé dans la nuit (00:05 UTC) et approuvé à 06:34 UTC.
+    - Approbation → application (départ → fin du job `release`, one-off compris) : de 5,8 à 7,8 min, médiane 7,4 min.
+    - PR prêtes pendant un run non conclu, puis mergées après lui : 2 sur 60, soit #1692 (0,7 min) et #1698 (25 min, sur deux runs enchaînés). En trois jours, 26 min de retard imputable au gel. « Prête » = fin du dernier check et, quand elle existe, revue CodeRabbit sur la tête. De « prête » au merge, toutes PR confondues : médiane 3,5 min.
+  - **Fusions de `main`** : 80 commits de fusion sur 269 commits de branche, présents dans 37 PR sur 60. La cause est inférée par rejeu de `git merge-tree` sur les deux parents, puis par le commit qui suit la fusion :
+    - numéro de décision : 24 (conflit sur `docs/DECISIONS.md`, une fois aussi sur le plan) ;
+    - crochet de fraîcheur, présumé : 43 (fusion sans conflit suivie d'une édition sur la branche ; le journal le confirmera ou non) ;
+    - conflit de texte : 0 ;
+    - autre : 13 (fusion sans conflit en dernier commit, ou fusions enchaînées, c'est-à-dire mise à niveau avant le merge).
+  - **Renumérotations** :
+    - neuf commits de numéro de décision, dans cinq PR : #1693 (quatre fois de suite), #1694 (deux fois), #1682, #1690 et #1709 ;
+    - une migration renommée après le merge d'une PR voisine (#1679), classée « autre ».
+  - **Délais question → réponse des arbitrages** : non mesurables depuis `git`, `gh` et le journal. Le statut d'une décision date l'arbitrage, jamais la question, et les questions vivent hors dépôt. Renvoi à H92 : dater la question dans le statut de la décision, ou mesurer hors dépôt.
+  - **Limites** :
+    - 33 PR sur 60 n'ont aucun objet revue CodeRabbit sur leur tête (une revue incrémentale sans remarque n'en crée pas). Leur « prête » est donc la fin du dernier check : c'est une borne basse.
+    - L'approbation est lue au départ du job, file du runner comprise.
 
 #### H87 · Numéro de décision réservé à la rédaction
 - **Identifiant, piste** : D-370 ; outillage ; file A ; cinquième étape de la séquence.
@@ -1387,10 +1413,11 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre y (D-y, R:y), puis J3-cabinet.
 - **Rang** : y au rang 3 ; J3-cabinet au rang 4.
 - **Portes, préalables** : y : d (H32), porte 6 (F59), effectif (F25) ; J3-cabinet : y ; si migration : G-7, porte 9.
-- **Migration, release-db** : J3-cabinet : [A verifier].
+- **Migration, release-db** : J3-cabinet : non (plan du 2026-10-27).
 - **Décisions, textes** : lettre y, de la main du responsable ; « cinq dossiers » ou « cinq cycles » se règle dans F25 : cinq dossiers distincts (D-298).
 - **Critère de fin** : page masquée en banc sous cinq.
 - **Mise à jour (2026-10-26, y écrite)** : D-385. Deux tableaux : dossiers par prochaine étape (sept phases du rail et « rien n'attend ») et par état du protocole (sans protocole diffusé, cycle en cours, fin de cycle), « indéterminé » à part ; effectif toujours affiché, répartition masquée sous cinq dossiers ; jamais une moyenne, une prédiction ni une liste de dossiers ; dossiers de test comptés (D-075). J3-cabinet jouable.
+- **Mise à jour (2026-10-27, J3-cabinet planifié)** : plan d'extraction et arbitrages du responsable dans `docs/claude/propositions/2026-10-27-j3-cabinet-plan/`. Approche hybride : le moteur `statutPhase` sort de la fiche dans un module pur partagé, et la page `/dashboard/cabinet` a une entrée de rail. Dossiers désactivés comptés ; même effectif pour les deux tableaux. « Indéterminé » couvre une lecture en échec, ou une phase nulle avec un statut inconnu. L'écart à plus de 40 envois est accepté et documenté. Trois PR sans migration : extraction côté fiche, extraction côté serveur hors `lib/clinical/`, puis chargeur et page. Migration, release-db : non. Le lot se code dans une session dédiée.
 
 ### Rang 4 : première vague de migrations après BP-09
 
@@ -2339,7 +2366,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | cb ; illustrations de cc ; cd | H39, H48, H54 | ca fait le 2026-10-15 (D-300) ; porte 16 pour cc ; porte 15 pour cd ; cb fait le 2026-10-26 (D-379), le jeu d'illustrations reste à valider avant cc |
 | ad et bc | H34 | j : écrite le 2026-10-15 (D-306) ; préalable levé au merge ; faits le 2026-10-25 (D-367, D-368) |
 | ba | H35 | q : écrite le 2026-10-15 (D-307) ; préalable levé au merge ; fait le 2026-10-25 (D-369) |
-| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge ; texte d'az fait le 2026-10-26 (D-380) ; cadre d'aw fait le 2026-10-26 (D-382) ; restent les quinze fiches signées, hors dépôt, puis la re-signature de la table |
+| aw ; texte de az | F34, F37 | av : écrite le 2026-10-15 (D-311) ; préalable levé au merge ; texte d'az fait le 2026-10-26 (D-380) ; cadre d'aw fait le 2026-10-26 (D-382) ; exclusions amendées le 2026-10-27 (D-389, trois lots courts avant la re-signature) ; restent les quinze fiches signées, hors dépôt, puis la re-signature de la table |
 | cm | F51 | cj ; fait le 2026-10-23 (D-348) |
 | at ; R:Drive | F45, H36 | K-05a (F46) : levé le 2026-10-15 avec D4 (D-299) et la liste fermée ; reportés en D.1 le 2026-10-15 |
 | am ; seuils_points (E31) | H33, H40 | porte 4 |
@@ -2675,6 +2702,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Écran de masquage de l'identité : deux canevas pleine résolution par page, gardés en mémoire (≈ 280 Mio à 20 pages A4), risque d'épuisement sur Safari mobile | revue Copilot de #1428 ; `web/src/components/patient-cockpit/MasquageIdentite.tsx` | rendre la page courante seule et rerendre à l'envoi ; au premier compte rendu de plus de 6 pages, ou au premier usage sur téléphone [Hypothese] |
 | Masquage lu par une lecture non tracé : l'import ne garde pas l'identifiant du masquage envoyé | revue `wn-reviewer` du lot 2 de D-284 §5 (P2-5) ; `lancerExtraction.ts` | une colonne, donc une migration ; question au responsable, avec le lot 3 du masquage |
 | Banc `ProtocolMiniBuilder.test.tsx` « 4 typée(s) + 3 vierge(s) » : dépasse son délai de 5 s dans la suite entière locale, deux fois de suite le 2026-10-27, vert seul (94/94) et vert au CI | T2 de #1728 (2026-10-27), tête a7d20520 ; fichier hors du diff | mesurer le temps du cas, puis alléger le cas ou lui donner un délai propre, sa propre PR ; à reprendre s'il rougit un T2 de plus [Hypothese] |
+| Matrice de consommation : la colonne « Patient » dit l'atteignabilité par imports, pas l'affichage. La Boussole y reste « oui » après J1-alim, par le seul chemin `lib/protocol/fromPrisma.ts` → `food-compass/refValidation`, qui valide le `foodCompassRef` d'un protocole reconstruit. Aucune lecture n'est servie. | revue CodeRabbit de #1736 (2026-10-27) ; `scripts/wn-matrice-consommation.mjs` (`visibilitePatientDeLaSurface`) | distinguer validation et affichage dans le générateur, pour toute la matrice : son propre lot, outillage, sans rang [Hypothese] |
 | Agenda alimentaire : LOT-06 gaté, recueil arrêté au premier jour | historique Git, next_action[50-54] | barème gelé (§6) ; relance du recueil, geste du responsable (H45) |
 | « Suspendu » est un état de drapeau, pas une propriété de l'instrument (D-033) | historique Git, next_action[55] | règle de lecture, gardée |
 | Couverture E2E de l'envoi bornée : une règle, une cible, envoi du courriel non asséré (SMTP vide sur le banc) | historique Git, next_action[56] | note de banc ; à étendre au premier lot qui touche l'envoi [Hypothese] |
@@ -2693,7 +2721,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Repli localhost ; verrou de diffusion | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:38-39` | repli localhost **soldé le 2026-10-18** dans J1-base (H43) : base unique des liens de courriel, démarrage refusé en production sans `NEXTAUTH_URL` ; verrou de diffusion : posé en production depuis le 2026-09-28 (même source, ligne 40) |
 | Auto-merge sans contrôle de clôture | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:40` | H23 |
 | Contenu en clair au stockage local | `DETTE_UX_RESIDUELLE.md:10` | constat au premier S-1 (H06) |
-| D-C5-01 à D-C5-04 ; D-JA-01 à D-JA-03 | `DETTE_C5.md:10-13` ; `DETTE_JA.md:16-18` | dans H16 et H45 |
+| D-C5-01 à D-C5-04 ; D-JA-01 à D-JA-03 | `DETTE_C5.md:10-13` ; `DETTE_JA.md:16-18` | dans H16 et H45 ; **D-C5-01 à 04 soldées sans objet le 2026-10-27** (D-365 §4, retrait du portail constaté en production, H16) |
 | Curation de `QuestionnaireDefinition.niveau` et `.publicCible` : statut « surveillance », aucun usage applicatif (R10, 2026-07-10) | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:78` ; `docs/claude/PROJET_CONTEXTE.md:195` | surveillance, sans action ni échéance ; se solde au premier usage applicatif ou au retrait des champs [Hypothese] |
 | D-TRUST-05 passe réelle d'accessibilité : lecteur d'écran (NVDA, VoiceOver), zoom 200 %, appareil mobile physique, sur le centre d'information et la séquence ; même objet que D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` | `DETTE_TRUST.md:13` | portée par H64 (rang 4) ; périmètre précisé le 2026-10-14 |
 | Lecture par la file (G3) : un dossier clos pendant l'attente n'est pas rejugé par la réclamation (un motif neuf demanderait une migration) | handoff 2026-10-13-1110:80-81 | soldée le 2026-10-14 par #1418 (D-282 §9.1), sans migration ; la ligne reste pour les renvois |
@@ -2920,7 +2948,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | at | date de naissance lue par l'extraction ; remplacée le 2026-10-22 (D-342 §3) | registre ; texte patient de la main du responsable | 1 au plus tôt [Hypothese] | F45 |
 | au | drapeaux du sommeil à l'écran | la main du responsable | 3 au plus tôt [Hypothese] | H56 |
 | av | contenu biologique du document médecin ; fait le 2026-10-15 (D-311) | la main du responsable | 0 | F33 |
-| aw | familles du bilan ; cadre fait le 2026-10-26 (D-382) | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
+| aw | familles du bilan ; cadre fait le 2026-10-26 (D-382), exclusions amendées le 2026-10-27 (D-389) | la main du responsable | 1 au plus tôt [Hypothese] | F34 |
 | ax | lot du bilan hiérarchisé | registre | 6 [Hypothese] | F35 |
 | ay | rédaction assistée du bilan | registre | 7 [Hypothese] | F36 |
 | az | notice patient du bilan ; texte fait le 2026-10-26 (D-380) | la main du responsable | texte 1 [Hypothese] ; activation file C | F37 |

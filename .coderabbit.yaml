@@ -61,10 +61,11 @@ reviews:
     docstrings:
       mode: "off"
     # E56 : la clôture d'une PR qui touche du code. Jusqu'au 2026-10-14, la
-    # revue Copilot réclamait l'entrée SESSION_LOG ; elle a disparu des PR
-    # quand rien ne l'a plus demandée. Le garde bloquant est l'étape « Contrôle
-    # de clôture » de `ci.yml` ; ce contrôle-ci le double dans la revue, en
-    # avertissement, comme le faisait Copilot.
+    # revue Copilot la réclamait ; elle a disparu des PR quand rien ne l'a
+    # plus demandée. Le garde bloquant est l'étape « Contrôle de clôture » de
+    # `ci.yml` ; ce contrôle-ci le double dans la revue, en avertissement,
+    # comme le faisait Copilot. Depuis D-372, la clôture se réduit au fragment
+    # de handoff créé par la PR : l'entrée SESSION_LOG n'est plus exigée.
     custom_checks:
       - name: "Clôture de la PR"
         mode: warning
@@ -76,16 +77,17 @@ reviews:
           `docs/claude/corpus/instrument_registry.json`, les preuves
           `docs/claude/corpus/measurement_evidence.json` et les consignes
           `tools/corpus/fiches*/consignes/` —, elle doit
-          porter les deux éléments de clôture
-          (`.claude/rules/docs-changelog.md`, skill `wn-merge` étape 7) :
-          une entrée AJOUTÉE à la fin de `docs/claude/SESSION_LOG.md`
-          (append-only, jamais une réécriture), et un fragment de handoff daté
-          `docs/claude/handoffs/AAAA-MM-JJ-HHMM-sujet.md` (le README du dossier
-          ne compte pas). Le handoff porte ses huit rubriques : branche et état
+          porter sa clôture (`.claude/rules/docs-changelog.md`, skill
+          `wn-merge` étape 7, D-372) : un fragment de handoff daté
+          `docs/claude/handoffs/AAAA-MM-JJ-HHMM-sujet.md` CRÉÉ par la PR (le
+          README du dossier ne compte pas, un handoff passé retouché non plus).
+          Une entrée de `docs/claude/SESSION_LOG.md` n'est plus exigée ; si la
+          PR en porte une, elle est AJOUTÉE à la fin (append-only, jamais une
+          réécriture). Le handoff porte ses huit rubriques : branche et état
           du dépôt, objectif, décisions prises, fichiers modifiés, validations
           exécutées, problèmes ouverts, prochaine action exacte, interdits
           encore actifs. Une PR purement documentaire en est dispensée.
-          Signaler chaque élément absent.
+          Signaler le handoff absent et chaque rubrique manquante.
 
   path_filters:
     - "!CHANGELOG.md"

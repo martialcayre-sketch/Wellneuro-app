@@ -44,7 +44,6 @@ const ROUTES: readonly string[] = [
   '/portail/google/retour',
   '/portail/:idPatient',
   '/portail/:idPatient/alimentation',
-  '/portail/:idPatient/alimentation/boussole/:foodRef',
   '/portail/:idPatient/bibliotheque',
   '/portail/:idPatient/bilan',
   '/portail/:idPatient/ce-qui-compte',
@@ -71,7 +70,6 @@ const ROUTES: readonly string[] = [
   // API.
   '/api/auth/:...action',
   '/api/dev/:...action',
-  '/api/portail/boussole/:foodRef',
   '/api/portail/:...action',
   '/api/praticien/:...action',
   '/api/patient/:...action',

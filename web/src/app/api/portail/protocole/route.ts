@@ -8,7 +8,7 @@ import {
 import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { servirAuPatient } from '@/lib/protocol/servirAuPatientServeur';
-import { pausesParReference, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import { pausesServies } from '@/lib/trust/pauseEffetIndesirableServeur';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
 import {
@@ -16,10 +16,6 @@ import {
   projeterSurLeFil,
   type VuePatientSurLeFil,
 } from '@/lib/protocol/vuePatientSurLeFil';
-import { isC5Enabled } from '@/lib/food-compass/featureFlag';
-import { resolvePatientFoodCompassView } from '@/lib/food-compass/patientReference';
-import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
-import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
 import {
@@ -106,13 +102,6 @@ type GetResponse =
        * seulement (§6).
        */
       pauses?: ElementEnPause[];
-      /**
-       * LES LECTURES DE LA BOUSSOLE DONT L'ALIMENT EST PORTÉ PAR UN ÉLÉMENT EN
-       * PAUSE, par `foodRef` de la lecture servie. Elles restent servies et
-       * marquées « en pause » avec le texte signé (D-281 §2, arbitrage du
-       * 2026-10-16). Vide avant la signature, comme `pauses`.
-       */
-      boussolesEnPause?: { foodRef: string; texte: ElementEnPause['texte'] }[];
       /**
        * LE JOURNAL DE LECTURE DU PROTOCOLE ([[D-315]], CC-8). Présent seulement
        * quand `WN_PORTAIL_LECTURE_PROTOCOLE` est ouvert et qu'une vue est
@@ -215,30 +204,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       approvedBy: diffuse.approvedBy as 'practitioner',
       confirmation: diffuse.confirmation as 'content_approved_for_diffusion',
     };
-    const seenFoodRefs = new Set<string>();
-    const actionRefs = draft.actions
-      .map(action => action.foodCompassRef)
-      .filter((ref): ref is FoodCompassActionRef => {
-        if (!ref || seenFoodRefs.has(ref.foodRef)) return false;
-        seenFoodRefs.add(ref.foodRef);
-        return true;
-      });
-    // La référence de l'action reste attachée à sa lecture : c'est par elle
-    // qu'une lecture se marque en pause, plus bas.
-    const lectures = isC5Enabled(process.env.WN_C5_ENABLED)
-      ? await Promise.all(actionRefs.map(async actionRef => ({
-          actionRef,
-          view: await resolvePatientFoodCompassView({
-            idPatient: auth.idPatient,
-            approvedDraft: draft,
-            approval,
-            actionRef,
-          }),
-        })))
-      : [];
-    const boussoles = lectures
-      .map(lecture => lecture.view)
-      .filter((view): view is PatientFoodCompassSafeView => view !== null);
+    // LA BOUSSOLE ALIMENTAIRE N'EST PLUS SERVIE AU PATIENT ([[D-365]] §1) :
+    // ni lecture, ni pause d'aliment. Un protocole qui porte encore un
+    // `foodCompassRef` reste lisible (§3) ; la référence n'est simplement plus
+    // résolue ici.
 
     // Le cycle se compte depuis son jour 0, pas depuis la dernière
     // rediffusion ([[D-255]]).
@@ -273,17 +242,11 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const vue = projeterSurLeFil({
       vue: service.vue,
-      boussoles,
       cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
       debutCycle: jourZero.toISOString(),
     });
 
     const pauses = await pausesServies(auth.idPatient, diffuse.protocolDraftId, draft.actions);
-    const pauseParAliment = pausesParReference(draft.actions, pauses, action => action.foodCompassRef?.foodRef);
-    const boussolesEnPause = lectures.flatMap(({ actionRef, view }) => {
-      const texte = view ? pauseParAliment.get(actionRef.foodRef) : undefined;
-      return view && texte ? [{ foodRef: view.foodRef, texte }] : [];
-    });
     const lectureDuDetail = lectureProtocoleOuverte()
       ? { dejaOuvert: await detailDejaOuvert(auth.idPatient, diffuse.approbationId) }
       : undefined;
@@ -299,7 +262,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       : undefined;
 
     return NextResponse.json({
-      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
+      ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
       valideLe: diffuse.approvedAt.toISOString(),
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),

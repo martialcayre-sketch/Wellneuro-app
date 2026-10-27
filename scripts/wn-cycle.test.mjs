@@ -17,6 +17,8 @@ import { fileURLToPath } from 'node:url';
 import {
   analyserArguments,
   cheminsDuPorcelain,
+  creesDuPorcelain,
+  fichiersCreesDeLaPr,
   diagnostiquer,
   estFragmentDeHandoff,
   extraireDecisionsRecentes,
@@ -64,19 +66,19 @@ test('sur la branche par défaut : hors-lot', () => {
 test('branche de lot sans clôture ni PR : travail, la clôture est annoncée avant la PR', () => {
   const v = diagnostiquer(faits());
   assert.equal(v.phase, 'travail');
-  assert.deepEqual(v.cloture, { sessionLog: false, handoff: false });
+  assert.deepEqual(v.cloture, { handoff: false });
   assert.equal(v.sortie, SORTIE_OK);
   assert.ok(v.suivant.some((l) => l.includes('/wn-handoff write')));
 });
 
-test('SESSION_LOG seul ne suffit pas : le handoff manquant maintient la phase travail', () => {
+test('une entrée SESSION_LOG ne clôt rien : le handoff manquant maintient la phase travail (D-372)', () => {
   const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG] }));
   assert.equal(v.phase, 'travail');
-  assert.deepEqual(v.cloture, { sessionLog: true, handoff: false });
+  assert.deepEqual(v.cloture, { handoff: false });
 });
 
-test('clôture complète sur la branche, aucune PR : pret-pr', () => {
-  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] }));
+test('clôture complète sur la branche — le handoff seul, sans SESSION_LOG (D-372) —, aucune PR : pret-pr', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', HANDOFF] }));
   assert.equal(v.phase, 'pret-pr');
   assert.equal(v.sortie, SORTIE_OK);
   assert.ok(v.suivant.some((l) => l.includes('/wn-pr apply')));
@@ -100,7 +102,7 @@ test('PR ouverte sans la clôture : dernière fenêtre, la clôture est réclam�
 
 test('PR mergée avec la clôture embarquée : rien à reprendre', () => {
   const v = diagnostiquer(
-    faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] } }),
+    faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts', HANDOFF] } }),
   );
   assert.equal(v.phase, 'apres-merge');
   assert.equal(v.fenetreRatee, false);
@@ -181,6 +183,63 @@ test('un fragment de handoff, quel que soit son nom, clôt la fenêtre', () => {
   );
   assert.equal(v.cloture.handoff, true);
   assert.equal(v.phase, 'pret-pr');
+});
+
+// D-372 §3 : un seul régime de clôture. Un handoff passé seulement retouché
+// est dans le diff, mais le CI le refuse (`fichiersCrees`) : le cycle aussi.
+test('un handoff passé retouché ne clôt pas le lot : même régime que le CI (D-372)', () => {
+  const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
+  const v = diagnostiquer(
+    faits({ fichiersDuLot: ['web/src/lib/questions.ts', ancien], fichiersCrees: [] }),
+  );
+  assert.equal(v.cloture.handoff, false);
+  assert.equal(v.phase, 'travail');
+});
+
+test('fichiersCreesDeLaPr : un handoff passé retouché dans une PR mergée n’embarque pas la clôture', () => {
+  const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
+  const pages = [[
+    { filename: 'web/src/lib/questions.ts', status: 'modified' },
+    { filename: ancien, status: 'modified' },
+  ]];
+  assert.deepEqual(fichiersCreesDeLaPr(pages), []);
+  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: fichiersCreesDeLaPr(pages) } }));
+  assert.equal(v.fenetreRatee, true);
+  // Pages aplaties : le handoff de la seconde page compte (au-delà de 100 fichiers).
+  assert.deepEqual(
+    fichiersCreesDeLaPr([
+      [{ filename: 'web/a.ts', status: 'modified' }],
+      [
+        { filename: HANDOFF, status: 'added' },
+        { filename: 'docs/claude/handoffs/2026-10-03-0900-renomme.md', status: 'renamed', previous_filename: 'docs/a.md' },
+        {
+          filename: 'docs/claude/handoffs/2026-10-04-0900-rebaptise.md',
+          status: 'renamed',
+          previous_filename: 'docs/claude/handoffs/2026-09-02-0900-passe.md',
+        },
+        { filename: 'docs/claude/handoffs/2026-09-01-0900-efface.md', status: 'removed' },
+      ],
+    ]),
+    [HANDOFF, 'docs/claude/handoffs/2026-10-03-0900-renomme.md'],
+  );
+  assert.equal(fichiersCreesDeLaPr(undefined), null);
+  assert.equal(fichiersCreesDeLaPr({ message: 'Not Found' }), null);
+});
+
+test('creesDuPorcelain : non suivi, ajouté, renommé ; ni modifié, ni supprimé', () => {
+  const porcelain = [
+    `?? ${HANDOFF}`,
+    'A  docs/claude/handoffs/2026-10-02-0900-indexe.md',
+    'R  docs/a.md -> docs/claude/handoffs/2026-10-03-0900-renomme.md',
+    'R  docs/claude/handoffs/2026-09-02-0900-passe.md -> docs/claude/handoffs/2026-10-04-0900-rebaptise.md',
+    ' M docs/claude/handoffs/2026-10-01-0900-ancien.md',
+    'D  docs/claude/handoffs/2026-09-01-0900-efface.md',
+  ].join('\n');
+  assert.deepEqual(creesDuPorcelain(porcelain), [
+    HANDOFF,
+    'docs/claude/handoffs/2026-10-02-0900-indexe.md',
+    'docs/claude/handoffs/2026-10-03-0900-renomme.md',
+  ]);
 });
 
 test('le README du dossier n’est pas un handoff : la fenêtre reste ouverte', () => {

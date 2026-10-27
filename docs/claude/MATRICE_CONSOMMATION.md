@@ -21,12 +21,12 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 
 | Source de savoir | Surface qui la consomme | Décision produite | Drapeau(x) | Verrou donnée | Patient | Arbitrage |
 |---|---|---|---|---|---|---|
-| Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 21 indirecte(s) | Lecture PRAL/densité d’un aliment servie au patient et au praticien. | WN_C5_ENABLED | — | oui | — |
+| Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 19 indirecte(s) | Lecture PRAL/densité d’un aliment servie au praticien (le portail ne la sert plus, D-365). | WN_C5_ENABLED | — | oui | — |
 | Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | 14 surface(s) indirecte(s) seulement | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_PROPOSITION, WN_CB_RESULTS_ENABLED | — | non | — |
 | Catalogue des compléments alimentaires (C4) | `web/src/app/api/praticien/complements/route.ts` (route-api)<br>`web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api) | Fiche complément : composition, cumuls, compatibilités. | WN_C4_ENABLED | — | non | — |
 | Tableau de compatibilité et de cumul entre compléments | 23 surface(s) indirecte(s) seulement | Cumul signalé ou absence de cumul, affichés sur la fiche. | WN_C4_ENABLED | — | non | — |
 | Table de contradictions NNPP2 (règles signées) | 4 surface(s) indirecte(s) seulement | Constat de contradiction entre instruments, affiché au cockpit praticien (table non signée : rien ne sort). | WN_ENABLE_CONTRADICTIONS_NNPP2 | tableSignee, validationExterne | non | — |
-| Corpus clinique de synthèse V1 | 45 surface(s) indirecte(s) seulement | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1 | validationExterne | oui | — |
+| Corpus clinique de synthèse V1 | 44 surface(s) indirecte(s) seulement | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1 | validationExterne | oui | — |
 | Structure des fiches d’usage du besoin 2 (identifiants signés) | 7 surface(s) indirecte(s) seulement | Quelles fiches d’usage et quels termes se rédigent et se valident, rubrique par rubrique, à l’écran praticien. | — | validationExterne | non | — |
 | Table d’indications d’assiette (11 lignes signées, 7 servables) | 4 surface(s) indirecte(s) seulement | Assiettes indiquées pour un dossier, servies en lecture au cockpit praticien — et ce que le dossier n’a pas permis d’évaluer. | WN_ASSIETTES_INDIQUEES | validationExterne | non | — |
 | Table d’indications biologiques (15 règles signées) | 5 surface(s) indirecte(s) seulement | Proposition de bilan hiérarchisée et sourcée, servie au cockpit praticien. | WN_CB_ENABLED, WN_CB_PROPOSITION, WN_CB_RESULTS_ENABLED | validationExterne | non | — |

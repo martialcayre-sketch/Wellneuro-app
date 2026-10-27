@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { creesDuNameStatus, estFragmentDeHandoff } from "./wn-cycle.mjs";
 import { readCampaignTruth } from "./wn-state.mjs";
 
 const cwd = process.cwd();
@@ -17,10 +18,71 @@ function run(args) {
     return "";
   }
 }
-function tail(file, lines) {
-  const p = path.join(cwd, file);
-  if (!fs.existsSync(p)) return "";
-  return fs.readFileSync(p, "utf8").split(/\r?\n/).slice(-lines).join("\n").trim();
+// D-372 §2 : la trace de session est le dernier handoff créé par la branche
+// courante — `SESSION_LOG.md` n'est plus écrit qu'en résumé sur demande. Sur
+// une branche qui n'en a pas encore créé, le dernier au tri dans l'arbre
+// d'`origin/main`, lu dans cet arbre et non dans la copie de travail ; hors
+// dépôt, le dernier au tri du dossier. Le handoff du lot repris, quand la tâche
+// le désigne, se lit à la main.
+const HANDOFFS = "docs/claude/handoffs";
+
+function lignes(texte) {
+  return texte ? texte.split(/\r?\n/).filter(Boolean) : [];
+}
+
+function dernierFragment(chemins) {
+  return chemins.filter(estFragmentDeHandoff).sort().at(-1) || null;
+}
+
+// Racine du dépôt, pas le répertoire courant : une session lancée depuis
+// `web/` lirait sinon un dossier de handoffs qui n'existe pas.
+const racine = run(["rev-parse", "--show-toplevel"]) || cwd;
+
+function handoffCourant() {
+  const base = run(["merge-base", "HEAD", "origin/main"]);
+  if (base) {
+    // Même règle que le cycle et le CI : un handoff passé rebaptisé n'est pas
+    // créé par la branche (`creesDuNameStatus`).
+    const crees = [
+      ...creesDuNameStatus(run(["-C", racine, "-c", "core.quotePath=false", "diff", "--name-status", "--diff-filter=AR", base, "--", HANDOFFS])),
+      ...lignes(run(["-C", racine, "-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "--", HANDOFFS])),
+    ];
+    const chemin = dernierFragment(crees);
+    if (chemin) return { chemin, origine: "créé par la branche" };
+    const surMain = dernierFragment(
+      lignes(run(["-C", racine, "-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", "origin/main", "--", HANDOFFS])),
+    );
+    if (surMain) return { chemin: surMain, origine: "dernier au tri sur main, aucun créé par la branche", ref: "origin/main" };
+  }
+  const dossier = path.join(racine, HANDOFFS);
+  if (!fs.existsSync(dossier)) return null;
+  const chemin = dernierFragment(fs.readdirSync(dossier).map((nom) => `${HANDOFFS}/${nom}`));
+  return chemin ? { chemin, origine: "dernier au tri, aucun créé par la branche" } : null;
+}
+
+// La rubrique « Prochaine action exacte », bornée : c'est elle que la reprise
+// lit (skill `wn`), pas le handoff entier.
+function prochaineAction(chemin, max, ref) {
+  let texte;
+  try {
+    texte = ref
+      ? run(["-C", racine, "show", `${ref}:${chemin}`])
+      : fs.readFileSync(path.join(racine, chemin), "utf8");
+  } catch {
+    return "";
+  }
+  const debut = texte.search(/^## Prochaine action/m);
+  if (debut < 0) return "";
+  const corps = texte.slice(debut).split(/\r?\n/);
+  const fin = corps.findIndex((ligne, i) => i > 0 && ligne.startsWith("## "));
+  return corps.slice(1, fin < 0 ? undefined : fin).join("\n").trim().split(/\r?\n/).slice(0, max).join("\n");
+}
+
+function traceDeSession() {
+  const handoff = handoffCourant();
+  if (!handoff) return { chemin: null, origine: null, prochaineAction: "aucun handoff disponible" };
+  const { ref, ...trace } = handoff;
+  return { ...trace, prochaineAction: prochaineAction(handoff.chemin, 32, ref) || "rubrique absente du handoff" };
 }
 
 function parseFrontmatter(text) {
@@ -174,7 +236,7 @@ const data = {
   openSourceConflicts: corpusRegistry.openSourceConflicts,
   pendingClinicalGates: corpusRegistry.pendingClinicalGates,
   pilotDomain: corpusRegistry.pilotDomain,
-  sessionTail: tail("docs/claude/SESSION_LOG.md", 32) || "aucune entrée disponible"
+  handoff: traceDeSession()
 };
 
 if (format === "json") {
@@ -230,8 +292,10 @@ ${data.diffStat}
 ${data.recentCommits}
 \`\`\`
 
-## Dernière trace de session
+## Dernier handoff
 
-${data.sessionTail}
+- Fichier : ${data.handoff.chemin || "aucun"}${data.handoff.origine ? ` (${data.handoff.origine})` : ""}
+
+${data.handoff.prochaineAction}
 `);
 }
