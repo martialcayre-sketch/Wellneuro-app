@@ -142,7 +142,8 @@ foulée.** Un commentaire qui touche à l'un des trois remonte en **arbitrage**.
 Corriger pour obtenir un vert ferait du vert la raison du changement.
 
 **1.9 La clôture passe avant la PR** — et l'étape « Contrôle de clôture » du
-CI refuse depuis E56 une PR de code à laquelle manque l’entrée SESSION_LOG ou le handoff. Fragment `changelog.d/`, handoff, verdicts
+CI refuse depuis E56 une PR de code qui ne crée pas de fragment de handoff
+(l'entrée SESSION_LOG n'est plus exigée depuis `D-372`). Fragment `changelog.d/`, handoff, verdicts
 de revue : ils s'écrivent sur la branche vivante. Ce qui s'écrit après le squash
 coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 

@@ -10,7 +10,7 @@ effort: medium
 ## Contexte
 
 !`git status --short --untracked-files=all`
-!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && tail -n 40 ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
 

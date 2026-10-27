@@ -7,7 +7,7 @@ effort: medium
 
 # WellNeuro — maintenance documentaire
 
-!`test -f ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md && tail -n 70 ${CLAUDE_PROJECT_DIR}/docs/claude/SESSION_LOG.md || true`
+!`node ${CLAUDE_PROJECT_DIR}/scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
 !`git status --short --untracked-files=all`
 !`git log -n 10 --date=short --pretty='format:%h %ad %s' -- '*.md' '*.mdx' 2>/dev/null || true`
 
@@ -26,7 +26,8 @@ Arguments : `$ARGUMENTS`
 3. `docs/claude/PROJET_CONTEXTE.md` ;
 4. roadmaps actives ;
 5. `CHANGELOG.md` (entrées à venir : fragments dans `changelog.d/`) ;
-6. `SESSION_LOG.md` ;
+6. handoffs de `docs/claude/handoffs/` (le dernier de la branche, D-372) ;
+   `SESSION_LOG.md`, résumé sur demande, en historique ;
 7. documents datés comme historique.
 
 ## Contrôles

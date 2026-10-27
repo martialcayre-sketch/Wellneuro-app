@@ -20,7 +20,8 @@ paths:
   sentinelle de `scripts/changelog-collate.test.mjs` ne ferme la porte.
 - **Handoff par fragments** : `/wn-handoff write` pose
   `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md` ; le handoff courant est le
-  dernier au tri. Jamais de créneau unique réécrit par deux branches.
+  dernier handoff de la branche (`D-372` §2). Jamais de créneau unique réécrit
+  par deux branches.
   Convention : `docs/claude/handoffs/README.md`.
   **Huit rubriques, et aucune n'est optionnelle** : branche et état Git ;
   objectif ; décisions prises ; fichiers modifiés ; **validations exécutées** ;
@@ -34,14 +35,16 @@ paths:
   s'arrête à la prochaine action laisse la session suivante sans ce qui a été
   vérifié, ni ce qui reste ouvert.
 - **La clôture passe avant la PR**, et le CI la contrôle depuis E56
-  (2026-10-18) : une PR qui touche du code à laquelle manque l’entrée ajoutée à
-  `SESSION_LOG.md` ou le fragment de handoff est rouge (`scripts/wn-controle-cloture.mjs`).
-  `/wn-finish` puis `/wn-handoff write`
+  (2026-10-18) : une PR qui touche du code sans fragment de handoff créé par
+  elle est rouge (`scripts/wn-controle-cloture.mjs`). Depuis `D-372`, l'entrée
+  `SESSION_LOG.md` n'est plus exigée : elle s'écrit sur demande (« résumé de
+  session »). `/wn-finish` puis `/wn-handoff write`
   s'écrivent sur la branche vivante et partent dans la PR du lot. Le merge
   étant un squash, ce qui s'écrit ensuite coûte une seconde PR de doc. Fenêtre
   fermée → écrire depuis `main`, jamais en rebranchant sur la branche
   squashée.
-- `docs/claude/SESSION_LOG.md` est append-only.
+- `docs/claude/SESSION_LOG.md` est append-only ; sa compaction est gelée
+  (`D-372` §2).
 - **Identifiant de dossier sans métrique** (arbitrage du 2026-10-05) : dans
   un fichier durable (`.wn/state.json`, handoff, `SESSION_LOG`, fiche, `D-xxx`),
   un identifiant de dossier réel ne s'accompagne jamais de mesures qui en
