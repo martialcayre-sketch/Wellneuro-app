@@ -674,6 +674,36 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-10-24',
     hash: 'c6989d6667b0d0de58349ae58ff5ba2c0e44376de90ab9969e07fba69ebfb60c',
   },
+  // [[D-292]] §5 — conditions v4 : la partie « Vos données personnelles » passe
+  // en v21 ([[D-364]] §4). Même patron que la @3 : la phrase de tête
+  // dit ce qui change, puis les paragraphes de la @3 au caractère près. Elle
+  // remplace la @3, jamais partie. VALIDÉ le jour de sa rédaction, en session,
+  // sur le texte exact choisi par le responsable (2026-10-27).
+  {
+    key: 'conditions_utilisation',
+    version: 4,
+    titre: "Annonce d'une nouvelle version des conditions d'utilisation aux patients suivis",
+    sujet: 'Wellneuro — les conditions d’utilisation de votre espace évoluent',
+    corps:
+      'Bonjour,\n\n' +
+      'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie ' +
+      '« Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT ' +
+      '(OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées.\n\n' +
+      'Rien d’autre ne change dans votre accompagnement.\n\n' +
+      'Pour lire cette nouvelle version et la valider, ouvrez ce lien : {{lien}}\n\n' +
+      'Ce lien est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ' +
+      'connectez-vous à votre espace comme d’habitude : le document vous attend ' +
+      'dans « Informations, confidentialité et droits ».\n\n' +
+      'Le lien ouvre le texte. Rien n’est validé tant que vous n’avez pas cliqué ' +
+      'sur « J’en ai pris connaissance ».\n\n' +
+      'Pour toute question, répondez simplement à ce message.\n\n' +
+      'Wellneuro',
+    variables: ['lien'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-10-27',
+    valideLe: '2026-10-27',
+    hash: '48cbce1a194b1d3b82e452a7522713f0b474947b890993031ce315c39164a207',
+  },
   // ── PROTOCOLE DIFFUSÉ ───────────────────────────────────────────────────
   // [[D-317]] §3 (PA-2) — part au clic « Valider pour diffusion » qui diffuse
   // une NOUVELLE version, et vaut alors l'annonce des fiches et du courrier

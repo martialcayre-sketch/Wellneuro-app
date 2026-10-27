@@ -11955,3 +11955,12 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
 
 **Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
+## 2026-10-27 — File D, lots de code : bg, « Vos données personnelles » v21 (D-364)
+
+**Fait.** La v21 porte mot pour mot le texte ChatGPT de D-364 §4, placé dans « Qui peut accéder à vos données ? ». Accusé exigé. Les durées de D-378 sont retenues : sur la revue, le texte dit au présent une archive non en service et contredit la v20 sur les comptes rendus. Conditions v4 et e-mail @4, qui remplace la @3, jamais partie. Rubrique 6 : un second tableau, celui du destinataire hors application. Constat de J1-alim : 0 protocole diffusé sur 5 ne porte une Boussole.
+
+**Écarté.** ChatGPT dans la liste des prestataires (ce n'en est pas un) ; deux e-mails (v3 puis v4).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
+
+**Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
