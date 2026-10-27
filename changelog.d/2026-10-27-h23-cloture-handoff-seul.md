@@ -6,7 +6,8 @@
   documentaires est inchangée. Étape CI renommée « Contrôle de clôture
   (fragment de handoff) » ; contrôle CodeRabbit « Clôture de la PR » aligné.
 - `scripts/wn-cycle.mjs` : la clôture d'un lot se réduit au fragment de
-  handoff (`cloture: { handoff }`).
+  handoff CRÉÉ par le lot (`cloture: { handoff }`, `fichiersCrees`), même
+  régime que le CI : un handoff passé retouché ne clôt plus rien.
 - `scripts/wn-context-pack.mjs` : le bloc « Dernier handoff » remplace la queue
   du journal — dernier fragment créé par la branche, à défaut le dernier au
   tri ; sa rubrique « Prochaine action exacte », bornée.
@@ -15,7 +16,8 @@
   § Début de session, règles `docs-changelog.md` et `pr-revue-et-release-db.md`,
   README des handoffs : le journal s'écrit sur demande, le handoff courant est
   le dernier de la branche.
-- Bancs : une PR de code sans handoff créé est refusée (script réel) ; une
+- Bancs : une PR de code sans handoff créé est refusée (script réel) ;
+  `context-pack-density.test.mjs` entre dans `bancs-outillage-check` ; une
   entrée SESSION_LOG seule ne clôt rien ; le handoff créé par la branche prime
   sur le dernier au tri. Compaction du journal toujours gelée. Aucune
   décision nouvelle, aucune migration, aucun chemin clinique.

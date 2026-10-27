@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import {
   analyserArguments,
   cheminsDuPorcelain,
+  creesDuPorcelain,
   diagnostiquer,
   estFragmentDeHandoff,
   extraireDecisionsRecentes,
@@ -181,6 +182,32 @@ test('un fragment de handoff, quel que soit son nom, clôt la fenêtre', () => {
   );
   assert.equal(v.cloture.handoff, true);
   assert.equal(v.phase, 'pret-pr');
+});
+
+// D-372 §3 : un seul régime de clôture. Un handoff passé seulement retouché
+// est dans le diff, mais le CI le refuse (`fichiersCrees`) : le cycle aussi.
+test('un handoff passé retouché ne clôt pas le lot : même régime que le CI (D-372)', () => {
+  const ancien = 'docs/claude/handoffs/2026-10-01-0900-ancien.md';
+  const v = diagnostiquer(
+    faits({ fichiersDuLot: ['web/src/lib/questions.ts', ancien], fichiersCrees: [] }),
+  );
+  assert.equal(v.cloture.handoff, false);
+  assert.equal(v.phase, 'travail');
+});
+
+test('creesDuPorcelain : non suivi, ajouté, renommé ; ni modifié, ni supprimé', () => {
+  const porcelain = [
+    `?? ${HANDOFF}`,
+    'A  docs/claude/handoffs/2026-10-02-0900-indexe.md',
+    'R  docs/a.md -> docs/claude/handoffs/2026-10-03-0900-renomme.md',
+    ' M docs/claude/handoffs/2026-10-01-0900-ancien.md',
+    'D  docs/claude/handoffs/2026-09-01-0900-efface.md',
+  ].join('\n');
+  assert.deepEqual(creesDuPorcelain(porcelain), [
+    HANDOFF,
+    'docs/claude/handoffs/2026-10-02-0900-indexe.md',
+    'docs/claude/handoffs/2026-10-03-0900-renomme.md',
+  ]);
 });
 
 test('le README du dossier n’est pas un handoff : la fenêtre reste ouverte', () => {

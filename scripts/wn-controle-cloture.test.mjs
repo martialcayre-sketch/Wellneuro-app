@@ -92,7 +92,10 @@ test('script réel : un handoff au nom accentué est reconnu', () => {
 });
 
 // Le script entier, refus : sans fragment créé, la sortie est 1 et le manque
-// est dit — un garde redevenu muet resterait vert.
+// est dit — un garde redevenu muet resterait vert. Le cas porte une entrée
+// SESSION_LOG ET un handoff passé retouché : ni l'une ni l'autre ne clôt la
+// PR. Un script qui lirait tous les fichiers présents, et non les créés,
+// rougirait ici (revue wn-reviewer du lot H23).
 test('script réel : une PR de code sans handoff créé est refusée', () => {
   const depot = mkdtempSync(join(tmpdir(), 'cloture-'));
   const g = (...a) =>
@@ -102,14 +105,16 @@ test('script réel : une PR de code sans handoff créé est refusée', () => {
     });
   try {
     g('init', '-q');
-    mkdirSync(join(depot, 'docs/claude'), { recursive: true });
+    mkdirSync(join(depot, 'docs/claude/handoffs'), { recursive: true });
     writeFileSync(join(depot, SESSION_LOG), '# Journal\n');
+    writeFileSync(join(depot, 'docs/claude/handoffs/2026-10-01-0900-ancien.md'), '# h\n');
     g('add', '.');
     g('commit', '-q', '-m', 'base');
     const base = g('rev-parse', 'HEAD').trim();
     mkdirSync(join(depot, 'web'), { recursive: true });
     writeFileSync(join(depot, 'web/code.ts'), 'export {};\n');
     writeFileSync(join(depot, SESSION_LOG), '# Journal\n\n## entrée\n');
+    writeFileSync(join(depot, 'docs/claude/handoffs/2026-10-01-0900-ancien.md'), '# h\n\nretouche\n');
     g('add', '.');
     g('commit', '-q', '-m', 'lot');
     const r = spawnSync('node', [SCRIPT, base], { cwd: depot, encoding: 'utf8' });

@@ -56,7 +56,12 @@ function handoffCourant() {
 // La rubrique « Prochaine action exacte », bornée : c'est elle que la reprise
 // lit (skill `wn`), pas le handoff entier.
 function prochaineAction(chemin, max) {
-  const texte = fs.readFileSync(path.join(racine, chemin), "utf8");
+  let texte;
+  try {
+    texte = fs.readFileSync(path.join(racine, chemin), "utf8");
+  } catch {
+    return "";
+  }
   const debut = texte.search(/^## Prochaine action/m);
   if (debut < 0) return "";
   const corps = texte.slice(debut).split(/\r?\n/);

@@ -41,7 +41,7 @@ lot précédent à la PR suivante.
 7. Si le lot clos relevait d'une classe à risque (scoring/clinique,
    Prisma/migration, auth), faire relire le handoff — et l'entrée `SESSION_LOG`
    si elle est demandée — par `Agent(subagent_type: "wn-reviewer")` avant de
-   les poser — une clôture
+   les pousser — une clôture
    inexacte sur ce périmètre coûte plus cher qu'une relecture.
 
 ## Deux promotions à examiner à chaque clôture

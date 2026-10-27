@@ -116,6 +116,8 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  * @param {string} faits.brancheParDefaut        Généralement `main`.
  * @param {boolean} faits.arbrePropre
  * @param {string[]} faits.fichiersDuLot         `git diff --name-only <base>...HEAD`.
+ * @param {string[]} [faits.fichiersCrees]       Les seuls fichiers CRÉÉS par le lot (A, R, non
+ *                                               suivis) ; par défaut `fichiersDuLot`.
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
@@ -136,6 +138,7 @@ function diagnostiquerPhase(faits) {
     brancheParDefaut = 'main',
     arbrePropre = true,
     fichiersDuLot = [],
+    fichiersCrees = fichiersDuLot,
     prOuverte = null,
     prMergee = null,
     ghDisponible = true,
@@ -151,9 +154,11 @@ function diagnostiquerPhase(faits) {
     };
   }
 
-  // D-372 : la clôture se réduit au fragment de handoff ; l'entrée
-  // `SESSION_LOG.md` ne s'écrit plus que sur demande.
-  const cloture = { handoff: fichiersDuLot.some(estFragmentDeHandoff) };
+  // D-372 : la clôture se réduit au fragment de handoff CRÉÉ par le lot — le
+  // même régime que `verdictCloture` du CI : un handoff passé retouché ou
+  // supprimé ne clôt rien. L'entrée `SESSION_LOG.md` ne s'écrit plus que sur
+  // demande.
+  const cloture = { handoff: fichiersCrees.some(estFragmentDeHandoff) };
   const clotureComplete = cloture.handoff;
 
   // La preuve de merge prime sur tout le reste : sous squash-merge la branche
@@ -436,6 +441,22 @@ export function cheminsDuPorcelain(porcelain) {
     .map((chemin) => chemin.replace(/^"|"$/g, ''));
 }
 
+/**
+ * Les chemins CRÉÉS dans l'arbre de travail : non suivis (`??`), ajoutés à
+ * l'index (`A`), renommés (`R`, sous leur nouveau nom). Un `M` ou un `D` n'en
+ * est pas — c'est la règle du contrôle de clôture du CI (D-372).
+ */
+export function creesDuPorcelain(porcelain) {
+  if (!porcelain) return [];
+  const crees = [];
+  for (const ligne of porcelain.split('\n')) {
+    const m = /^([ MADRCU?!]{1,2}) /.exec(ligne);
+    if (!m || !/[A?R]/.test(m[1])) continue;
+    crees.push(...cheminsDuPorcelain(ligne));
+  }
+  return crees;
+}
+
 function collecterFaits(options = {}) {
   const local = options.local === true;
   if (!git(['rev-parse', '--git-dir'])) return { dansUnDepot: false };
@@ -455,6 +476,10 @@ function collecterFaits(options = {}) {
   // script existe pour supprimer. Vu sur le lot qui a créé le dossier.
   const porcelain = gitBrut(['status', '--porcelain', '--untracked-files=all']);
   const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(porcelain)])];
+  const creesCommittes = diff
+    ? (git(['diff', '--name-only', '--diff-filter=AR', `${base}...HEAD`]) || '').split('\n').filter(Boolean)
+    : [];
+  const fichiersCrees = [...new Set([...creesCommittes, ...creesDuPorcelain(porcelain)])];
 
   // La disponibilité de `gh` se déduit du premier appel réel — plus de sonde
   // `gh --version`. Un retour non-liste (binaire absent, non authentifié,
@@ -482,6 +507,7 @@ function collecterFaits(options = {}) {
     // la vacuité de la sortie, seulement l'éclatement des répertoires.
     arbrePropre: (porcelain || '') === '',
     fichiersDuLot,
+    fichiersCrees,
     prOuverte,
     prMergee,
     ghDisponible,
