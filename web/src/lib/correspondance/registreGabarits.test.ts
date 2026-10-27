@@ -82,6 +82,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@2',
       // [[D-292]] §5 — l'annonce des conditions v3 (b25, [[D-318]]).
       'conditions_utilisation@3',
+      // [[D-292]] §5 — l'annonce des conditions v4 ([[D-364]] §4, [[D-378]]).
+      'conditions_utilisation@4',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
       // Décision du praticien du 2026-10-23 (D/39 du plan) : les quatre
@@ -170,7 +172,7 @@ describe('registre des gabarits patient — intégrité', () => {
   // b25 : texte validé par le responsable le 2026-10-24, en session. Une phrase
   // dit ce qui change ; le reste est celui de la @2 au caractère près.
   it('conditions_utilisation@3 : le texte validé mot pour mot, la fin de la @2 au caractère près', () => {
-    const g = getGabarit('conditions_utilisation');
+    const g = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 3)!;
     expect(g.version).toBe(3);
     expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
     expect(g.corps.startsWith(
@@ -183,6 +185,25 @@ describe('registre des gabarits patient — intégrité', () => {
     const v2 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 2)!;
     const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
     expect(fin(g.corps)).toBe(fin(v2.corps));
+  });
+
+  // D-364 §4 et D-378 : phrase de tête choisie par le responsable le
+  // 2026-10-27, en session ; le reste est celui de la @3 au caractère près.
+  // Elle remplace la @3, jamais partie : c'est la version la plus haute.
+  it('conditions_utilisation@4 : le texte validé mot pour mot, la fin de la @3 au caractère près', () => {
+    const g = getGabarit('conditions_utilisation');
+    expect(g.version).toBe(4);
+    expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
+    expect(g.corps.startsWith(
+      'Bonjour,\n\n' +
+        'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie « Vos données personnelles » ' +
+        'dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre ' +
+        'nom et vos coordonnées. Elle précise aussi combien de temps vos données sont conservées.\n\n',
+    )).toBe(true);
+    expect([...g.variables]).toEqual(['lien']);
+    const v3 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 3)!;
+    const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
+    expect(fin(g.corps)).toBe(fin(v3.corps));
   });
 
   it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
@@ -221,7 +242,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les dix-sept validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les dix-huit validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -257,6 +278,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@2',
       // [[D-292]] §5, conditions v3 — né validé le 2026-10-24 (b25).
       'conditions_utilisation@3',
+      // [[D-292]] §5, conditions v4 — né validé le 2026-10-27 ([[D-364]] §4, [[D-378]]).
+      'conditions_utilisation@4',
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.
       'protocole_diffuse@1',
@@ -280,6 +303,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-10-16',
       '2026-10-20',
       '2026-10-24',
+      '2026-10-27',
       '2026-10-17',
       '2026-10-23',
       '2026-10-23',

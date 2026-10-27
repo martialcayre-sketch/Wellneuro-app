@@ -1743,6 +1743,59 @@ const DONNEES_CONFIDENTIALITE_V20: VersionDocumentTrust = {
   hash: '1c1f62005fad1f499103511e5b6431ac094715cb789e150622fedb2f0a77a4ee',
 };
 
+// LA v21 PORTE DEUX TEXTES EN UNE VERSION, POUR UN SEUL ACCUSÉ ([[D-378]] §2) :
+// l'envoi d'une version du dossier à ChatGPT par le praticien ([[D-364]] §4),
+// et les durées de conservation ([[D-378]] §1, texte (a) de [[D-283]] §10).
+// Les deux mot pour mot, à l'apostrophe typographique du registre près ;
+// `registre.test.ts` les relit dans `docs/DECISIONS.md`. Le premier entre dans
+// « Qui peut accéder à vos données ? », juste après « L'application n'envoie
+// rien à un tiers » : ChatGPT n'est pas un prestataire de l'application, que
+// la liste des prestataires décrit (arbitrage du responsable du 2026-10-27).
+// Le second remplace la phrase « en cours de formalisation ». Accusé EXIGÉ
+// ([[D-364]] §4, motif de [[D-299]] §3) ; résumé validé le 2026-10-27.
+const PARAGRAPHE_IA_EXTERNE_D364 =
+  'Votre praticien peut soumettre une version de votre dossier à ChatGPT (OpenAI), un outil d’intelligence artificielle, pour l’aider dans son analyse. Il le fait lui-même : l’application ne l’envoie pas. Cette version retire vos nom et prénom, vos coordonnées, votre date de naissance et le nom de votre médecin traitant. Elle garde votre âge et un numéro de dossier propre à l’application. Ce document reste une information sur votre santé. OpenAI est situé hors de l’Union européenne, et aucun contrat ne l’engage envers nous sur le traitement de ce document.';
+const PHRASE_CONSERVATION_V1 =
+  'La politique détaillée de durées de conservation est en cours de formalisation. Vos données sont conservées le temps de votre accompagnement ; vous pouvez à tout moment demander des précisions ou l’exercice de vos droits.';
+const TEXTE_CONSERVATION_D378 =
+  'Votre dossier reste actif pendant votre accompagnement. Celui-ci prend fin quand votre praticien clôt votre dossier, quand vous le lui demandez, ou, sans nouvelles de votre part, cinq ans après votre dernier contact. Votre dossier est ensuite gardé à part, avec un accès restreint, pendant dix ans : c’est le temps pendant lequel une responsabilité peut être recherchée. Il est ensuite effacé. Le point de départ de ces dix ans est en cours de vérification avec un juriste ; d’ici sa réponse, rien n’est effacé au titre de cette règle. Les comptes rendus de biologie que vous déposez sont effacés trente jours après leur dépôt ; seuls les résultats retenus par votre praticien restent dans votre dossier. Le journal des accès est gardé douze mois. Une donnée supprimée peut rester dans les sauvegardes douze mois au plus. Vous pouvez à tout moment demander des précisions ou exercer vos droits.';
+
+const DONNEES_CONFIDENTIALITE_V21: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v21',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V20.sections.map(section => {
+    if (section.titre === 'Qui peut accéder à vos données ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.flatMap(paragraphe =>
+          paragraphe.startsWith('L’application n’envoie rien à un tiers')
+            ? [paragraphe, PARAGRAPHE_IA_EXTERNE_D364]
+            : [paragraphe],
+        ),
+      };
+    }
+    if (section.titre === 'Combien de temps sont-elles conservées ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.map(paragraphe =>
+          paragraphe === PHRASE_CONSERVATION_V1 ? TEXTE_CONSERVATION_D378 : paragraphe,
+        ),
+      };
+    }
+    return section;
+  }),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Cette version dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées, et elle précise combien de temps vos données sont conservées. Le reste ne change pas.',
+  publieLe: '2026-10-27',
+  requiresAcknowledgement: true,
+  hash: '994483d32b6fa8cdcd665eb1fc96175cbd6f06c390efe3ed042a1ea11749faf3',
+};
+
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
 // d'information repris mot pour mot, dans leur version en vigueur au jour de
 // l'assemblage, puis une cinquième partie neuve. Texte validé par le
@@ -1906,6 +1959,39 @@ const CONDITIONS_UTILISATION_V3: VersionDocumentTrust = {
   hash: '453f2605d8b38d71e208815edd27bceb1d9ee18c6304a29f1b1892a5460e2343',
 };
 
+// LES CONDITIONS v4 ([[D-292]] §5) : la partie 3 reprend « Vos données
+// personnelles » v21 ([[D-364]] §4, [[D-378]]) ; les trois autres parties et
+// la partie 5 sont celles de la v3. Titre et résumé inchangés. Résumé du
+// changement validé par le responsable le 2026-10-27. Accusé par l'e-mail
+// `conditions_utilisation@4`, qui remplace celui de la @3, jamais parti
+// (patients suivis, envoi en une fois par le responsable), par l'accueil
+// (nouveau patient majeur) ou au filet du dépôt du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V4: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V21 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V4: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v4',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V4.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V3.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie « Vos données personnelles » dit que votre praticien peut soumettre à ChatGPT (OpenAI) une version de votre dossier qui retire votre nom et vos coordonnées, et précise combien de temps vos données sont conservées. Le reste ne change pas.',
+  publieLe: '2026-10-27',
+  requiresAcknowledgement: true,
+  hash: '35153f3b3764b29e81e1e3204a0261d71733856e7b7cddf528f67fedee9c483e',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -1930,6 +2016,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V18,
   DONNEES_CONFIDENTIALITE_V19,
   DONNEES_CONFIDENTIALITE_V20,
+  DONNEES_CONFIDENTIALITE_V21,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -1944,6 +2031,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONDITIONS_UTILISATION_V1,
   CONDITIONS_UTILISATION_V2,
   CONDITIONS_UTILISATION_V3,
+  CONDITIONS_UTILISATION_V4,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {
