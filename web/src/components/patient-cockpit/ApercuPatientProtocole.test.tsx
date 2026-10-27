@@ -9,6 +9,7 @@ import {
   TEXTE_PAUSE_COMPLEMENTS,
   TEXTE_PAUSE_ELEMENT,
 } from '@/lib/trust/pauseEffetIndesirable';
+import { CHAPEAU_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
 
 // LE DÉFAUT DE CLASSE QUE CE BANC TIENT. `followUpCriterion` a voyagé des mois
 // dans le contrat patient sans qu'aucun écran ne le rende ([[D-191]]), et
@@ -111,5 +112,39 @@ describe('ApercuPatientProtocole — éléments en pause', () => {
     render(<ApercuPatientProtocole contenu={contenu} />);
     expect(screen.queryByText('En pause')).toBeNull();
     expect(screen.queryByText(TEXTE_PAUSE_ELEMENT)).toBeNull();
+  });
+});
+
+// LES TROIS PLANS ([[D-384]] §2, [[D-386]]), LUS COMME AU PORTAIL : ceux que la
+// route sert, sous les intitulés validés ; rien d'autre ne les fait paraître.
+describe('ApercuPatientProtocole — trois plans', () => {
+  const contenu = buildContenuPatientProtocole({ decisionCard: card(), protocolDraft: protocol() });
+  const troisPlans = [{ actionId: 'a1', idealPlan: 'IDÉAL-INTERNE', rescuePlan: 'SECOURS-INTERNE' }];
+
+  it('servis : « Selon votre journée : » puis les trois plans, dans l’ordre', () => {
+    const { container } = render(<ApercuPatientProtocole contenu={contenu} troisPlans={troisPlans} />);
+    expect(screen.getAllByText(CHAPEAU_TROIS_PLANS)).toHaveLength(1);
+    expect([...container.querySelectorAll('dt')].map(dt => dt.textContent))
+      .toEqual(['Si tout va bien', 'Au quotidien', 'Si c’est plus dur']);
+    expect([...container.querySelectorAll('dd')].map(dd => dd.textContent))
+      .toEqual(['IDÉAL-INTERNE', 'MINIMAL-FERME', 'SECOURS-INTERNE']);
+  });
+
+  it('absents : plan minimal seul, sans intitulé', () => {
+    const { container } = render(<ApercuPatientProtocole contenu={contenu} />);
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(container.querySelectorAll('dt')).toHaveLength(0);
+  });
+
+  it('une action en attente ou en pause garde son plan minimal, même si des plans arrivaient', () => {
+    const pourLaSuspendue = [{ actionId: 'a2', idealPlan: 'IDÉAL-INTERNE-2', rescuePlan: 'SECOURS-INTERNE-2' }];
+    const { container, unmount } = render(<ApercuPatientProtocole contenu={contenu} troisPlans={pourLaSuspendue} />);
+    expect(container.querySelectorAll('dt')).toHaveLength(0);
+    unmount();
+    const enPause = render(
+      <ApercuPatientProtocole contenu={contenu} troisPlans={troisPlans} pauses={[{ actionId: 'a1', texte: 'element' }]} />,
+    );
+    expect(enPause.container.querySelectorAll('dt')).toHaveLength(0);
+    expect(screen.queryByText('SECOURS-INTERNE')).toBeNull();
   });
 });

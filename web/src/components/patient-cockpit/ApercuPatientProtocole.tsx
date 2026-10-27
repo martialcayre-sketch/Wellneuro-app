@@ -7,6 +7,8 @@ import {
   TEXTE_PAUSE_ELEMENT,
   type ElementEnPause,
 } from '@/lib/trust/pauseEffetIndesirable';
+import type { TroisPlansAction } from '@/lib/portail/troisPlans';
+import { CHAPEAU_TROIS_PLANS, INTITULES_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
 
 // CE QUE LE PATIENT LIRA, MONTRÉ AU PRATICIEN AVANT QU'IL NE DIFFUSE.
 //
@@ -30,15 +32,22 @@ import {
 // LES PAUSES SUR EFFET INDÉSIRABLE ([[D-281]] §2-4) se marquent comme sur
 // l'écran patient : « En pause » et le texte SIGNÉ de l'élément, celui des
 // compléments une fois au-dessus des actions. Vides avant la signature.
+//
+// LES TROIS PLANS ([[D-384]] §2, [[D-386]]) : ceux que la route sert, par la
+// règle du portail — drapeau, version créée sous la garde étendue, action
+// ferme hors pause. Une action absente de la liste garde son plan minimal seul.
 
 export function ApercuPatientProtocole({
   contenu,
   pauses = [],
+  troisPlans = [],
 }: {
   contenu: ContenuPatientProtocole;
   pauses?: readonly ElementEnPause[];
+  troisPlans?: readonly TroisPlansAction[];
 }) {
   const pauseDe = new Map(pauses.map(pause => [pause.actionId, pause.texte]));
+  const plansDe = new Map(troisPlans.map(plans => [plans.actionId, plans]));
   const complementsEnPause = [...pauseDe.values()].includes('complements');
   return (
     <div className="grid gap-3 rounded-lg bg-muted p-4 text-base">
@@ -62,7 +71,12 @@ export function ApercuPatientProtocole({
             {pauseDe.has(action.actionId) && (
               <p className="mt-1 text-xs font-semibold uppercase tracking-wide">En pause</p>
             )}
-            <p className="mt-1">{action.minimalPlan}</p>
+            {/* Défense en profondeur, comme au portail : une action en attente
+                ou en pause garde son plan minimal seul ([[D-384]] §3). */}
+            <PlansDeLAction
+              plans={action.interventionStatus || pauseDe.has(action.actionId) ? undefined : plansDe.get(action.actionId)}
+              minimalPlan={action.minimalPlan}
+            />
             {pauseDe.get(action.actionId) === 'element' && (
               <p className="mt-2 border-t border-border pt-2">{TEXTE_PAUSE_ELEMENT}</p>
             )}
@@ -87,6 +101,32 @@ export function ApercuPatientProtocole({
           <span className="font-medium">Fiche conseil :</span> {contenu.adviceSheetRef}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Le plan minimal seul, ou « Selon votre journée : » puis les trois plans sous
+ * les intitulés du portail, dans l'ordre de [[D-384]] §2.
+ */
+function PlansDeLAction({ plans, minimalPlan }: { plans: TroisPlansAction | undefined; minimalPlan: string }) {
+  if (!plans) return <p className="mt-1">{minimalPlan}</p>;
+  const lignes = [
+    ['idealPlan', plans.idealPlan],
+    ['minimalPlan', minimalPlan],
+    ['rescuePlan', plans.rescuePlan],
+  ] as const;
+  return (
+    <div className="mt-1 grid gap-1">
+      <p>{CHAPEAU_TROIS_PLANS}</p>
+      <dl className="grid gap-1">
+        {lignes.map(([cle, texte]) => (
+          <div key={cle}>
+            <dt className="font-medium">{INTITULES_TROIS_PLANS[cle]}</dt>
+            <dd>{texte}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

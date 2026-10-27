@@ -56,6 +56,12 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { interruptionEffetIndesirableActive } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { messageDiffusionEnAttente, type ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
 import { pausesServies, signalementsEnAttenteDuDossier } from '@/lib/trust/pauseEffetIndesirableServeur';
+import {
+  creeeSousGardeEtendue,
+  troisPlansOuverts,
+  troisPlansServis,
+  type TroisPlansAction,
+} from '@/lib/portail/troisPlans';
 
 // Validation « pour diffusion » du protocole (C2A LOT-03 Part B). Persiste
 // l'approbation praticien (contrat ProtocolDiffusionApproval), distincte de la
@@ -684,6 +690,14 @@ type GetResponse =
        */
       pauses?: ElementEnPause[];
       /**
+       * LES TROIS PLANS QUE LE PORTAIL SERVIRAIT ([[D-384]] §2-§4, [[D-386]]),
+       * sur la version de l'aperçu, par la même règle que la route du portail :
+       * drapeau `WN_PORTAIL_TROIS_PLANS`, colonne `created_at` de la version,
+       * actions fermes hors pause, orientation exclue. Hors de `apercu`, comme
+       * `pauses`. Absent : plan minimal seul, comme au portail.
+       */
+      troisPlans?: TroisPlansAction[];
+      /**
        * LES FICHES D'ASSIETTE QUE LE CLIC REMETTRAIT ([[D-251]] §7), sur la
        * version ACTIVE comme `apercu` : celles qui partiront, celles déjà
        * remises, et celles qui ne partiront pas, avec leur motif. Son `jeton`
@@ -963,6 +977,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         servieAuPatient = null;
       }
     }
+    // LES TROIS PLANS DE L'APERÇU ([[D-386]]) : la règle du portail, sur la
+    // version de l'aperçu — un miroir qui en montrerait plus ou moins que le
+    // portail ne serait plus un miroir ([[D-200]]).
+    const troisPlans = apercu?.ok && activeVersion && actionsDeLApercu
+      && troisPlansOuverts() && creeeSousGardeEtendue(activeVersion.createdAt)
+      ? troisPlansServis({ actionsServies: apercu.contenu.actions, actionsDuProtocole: actionsDeLApercu, pauses: pauses ?? [] })
+      : [];
 
     // ── LES FICHES QUE LE CLIC REMETTRAIT, DRAPEAU OUVERT ([[D-251]] §7) ─────
     //
@@ -1075,6 +1096,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       servieAuPatient,
       apercu,
       ...(pauses ? { pauses } : {}),
+      ...(troisPlans.length > 0 ? { troisPlans } : {}),
       fiches,
       // Drapeau fermé : la clé n'existe pas, la réponse est celle d'avant.
       ...(lettreAdressagePatientOuverte() ? { lettre } : {}),

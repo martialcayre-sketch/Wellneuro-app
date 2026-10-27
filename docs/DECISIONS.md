@@ -363,6 +363,34 @@ Hors du lot : l'activation (file C, porte 18, [[D-384]] §6) ; le miroir
 praticien (`ApercuPatientProtocole`) et la version imprimable (bh), qui
 lisent encore le plan minimal seul.
 
+**Préparation de l'activation (2026-10-27).** Trois arbitrages du responsable
+du 2026-10-27, sur questions à options :
+- **le miroir praticien suit le portail** : l'aperçu de la sous-vue
+  « Diffusion » (`ApercuPatientProtocole`) lit les trois plans par la même
+  règle (drapeau, colonne `created_at` de la version de l'aperçu, actions
+  fermes hors pause, orientation exclue), servis par la route
+  `api/praticien/protocoles/diffusion` hors de `apercu`, comme les pauses, et
+  sous les mêmes intitulés. Le panneau de consultation
+  (`ProtocolConsultationPanel`) garde le plan minimal seul : il n'est monté
+  que sur fixture depuis le 2026-10-18 (t13), sur un contenu qu'aucune version
+  enregistrée ne porte. Écartés : le miroir aux trois plans drapeau éteint
+  ([[D-200]] : il montrerait ce que le patient ne lit pas) ; l'activation avec
+  le miroir en l'état ;
+- **le détail déplié d'office est le détail** : [[D-384]] §3 se lit ainsi.
+  Une version déjà ouverte (`WN_PORTAIL_LECTURE_PROTOCOLE`, posé en production
+  depuis le 2026-10-17), ou dont une action est en pause, se déplie d'office
+  ([[D-315]]) ; ses trois plans se lisent alors dès l'arrivée. L'accueil
+  replié (titre, raison, axe) ne change pas. Écarté : un second dépli propre
+  aux trois plans (un texte de bouton et un comportement de plus) ;
+- **« Jour difficile ? » ne double plus le point** : le plan minimal perd lui
+  aussi son point final avant le gabarit, comme le plan de secours, drapeau
+  fermé compris. C'est le seul changement visible drapeau éteint ; aucun texte
+  n'est modifié. Écartés : la correction drapeau ouvert seulement ; le statu
+  quo.
+
+La version imprimable (bh) n'existe pas encore : elle lira les trois plans
+quand elle sera construite ([[D-384]] §3). Reste l'activation, hors lot.
+
 ### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
 
 - Date : 2026-10-26
