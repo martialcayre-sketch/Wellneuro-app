@@ -230,10 +230,13 @@ export function auditerDecisions(decisions, contexte = {}) {
         rappelPierreTombale,
     });
   }
-  const supprimees = surPR && surBase ? manquants.filter((n) => surBase.has(n)) : [];
+  // Contre les numéros présents, pas les seuls trous : la suppression du plus
+  // haut ne laisse aucun trou (revue CodeRabbit de #1743).
+  const presents = new Set(decisions.map((d) => d.numero));
+  const supprimees = surPR && surBase ? [...surBase].filter((n) => !presents.has(n)).sort((a, b) => a - b) : [];
   if (supprimees.length > 0) {
     violations.push({
-      genre: "trou",
+      genre: "supprimée",
       ligne: 0,
       message:
         `${liste(supprimees)} existe${accord(supprimees)} sur la base de la PR et manque${accord(supprimees)} ` +
@@ -450,13 +453,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     } catch (e) {
       erreurReservations = messageErreur(e);
     }
-    // La base : `HEAD^1`, premier parent du commit de fusion de la PR, en CI ;
-    // `origin/main` au poste local, sans garantie qu'elle soit à jour.
+  }
+  if (surPR) {
+    // La base, lue localement (`git show`, aucun appel distant) : `HEAD^1`,
+    // premier parent du commit de fusion de la PR, en CI ; `origin/main` au
+    // poste local, sans garantie qu'elle soit à jour.
     const base = enCIdePR ? "HEAD^1" : "origin/main";
     const texteBase = lireRegistreA(racine, base);
     if (texteBase !== null) surBase = new Set(extraireDecisions(texteBase).map((d) => d.numero));
     else if (enCIdePR) {
-      console.error(`✗ ${FICHIER} illisible sur ${base} — décision supprimée non vérifiable sur une PR ; relancer le CI.`);
+      console.error(`✗ ${FICHIER} illisible sur ${base} — décision supprimée non vérifiable sur une PR.`);
       process.exit(1);
     }
   }

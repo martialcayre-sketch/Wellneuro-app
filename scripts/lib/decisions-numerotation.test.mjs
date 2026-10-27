@@ -346,7 +346,7 @@ function avecDepot(avant, apres, corps) {
   const tmp = dossierTemporaire();
   try {
     depotGit(tmp, avant, apres);
-    execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", "commit", "-qam", "tête"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", "commit", "--allow-empty", "-qam", "tête"], { cwd: tmp, stdio: "pipe" });
     return corps(tmp);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -395,7 +395,7 @@ test("code 1 sur une PR — réservations illisibles et trou présent", () => {
 });
 
 test("sur une PR sans trou, aucune lecture distante", () => {
-  avecRegistre(registre(decision(2) + decision(1)), (tmp) => {
+  avecDepot(BASE, registre(decision(2) + decision(1)), (tmp) => {
     const gh = fauxGh(tmp, []);
     const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 0, r.sortie);
@@ -411,6 +411,24 @@ test("code 1 sur une PR — une décision de la base supprimée, même réservé
     const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /D-002 existe sur la base.*décision supprimée/);
+  });
+});
+
+test("code 1 sur une PR — la décision au numéro le plus haut supprimée, sans trou", () => {
+  // Aucun trou n'apparaît : la base se lit quand même (revue CodeRabbit).
+  avecDepot(registre(decision(3) + decision(2) + decision(1)), registre(decision(2) + decision(1)), (tmp) => {
+    const gh = fauxGh(tmp, [3]);
+    const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
+    assert.equal(r.code, 1, r.sortie);
+    assert.match(r.sortie, /D-003 existe sur la base/);
+    assert.deepEqual(gh.appels(), [], "sans trou, les réservations ne se lisent pas");
+  });
+});
+
+test("sur une PR, une décision déplacée sous « archivées » n'est pas supprimée", () => {
+  avecDepot(registre(decision(3) + decision(2) + decision(1)), registre(decision(3) + decision(1), decision(2)), (tmp) => {
+    const r = executer(tmp, [], fauxGh(tmp, []).env({ GITHUB_EVENT_NAME: "pull_request" }));
+    assert.equal(r.code, 0, r.sortie);
   });
 });
 
@@ -512,7 +530,7 @@ test("audit : une décision de la base supprimée est refusée même réservée"
     reservations: new Set([2]),
     surBase: new Set([1, 2, 3]),
   });
-  assert.match(r.violations.find((v) => v.genre === "trou").message, /D-002 existe sur la base/);
+  assert.match(r.violations.find((v) => v.genre === "supprimée").message, /D-002 existe sur la base/);
   assert.deepEqual(r.avertissements, []);
 });
 
