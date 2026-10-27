@@ -3,6 +3,7 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_BIOLOGIE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
@@ -170,6 +171,7 @@ export function genererCourrierBiologie(
         + 'notre outil par le praticien.'
       : 'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
         + 'bilan se fait directement auprès du patient et de votre cabinet.',
+    INFORMATION_MEDECIN,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
     // LE SIGNATAIRE FAIT PARTIE DU TEXTE, pas du gabarit d'impression : la
     // lettre a deux chemins de remise — l'impression et la transcription à

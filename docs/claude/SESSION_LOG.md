@@ -11897,6 +11897,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).
 
+## 2026-10-26 — Lot (e) de D-283 : l'information du médecin dans chaque lettre (D-377)
+
+**Fait.** La phrase de D-377 entre dans les trois lettres au médecin (adressage, biologie, compléments), avant la formule de politesse, depuis une constante unique qui lit l'adresse des droits. Aussi : t45 trouvé déjà livré par sa session (#1716), page des instruments des 12 besoins close (v13), ligne t33 de la page file A remise à jour.
+
+**Écarté.** La phrase juste avant la signature, après la politesse ; la constante dans `signature.ts`, atteint côté client.
+
+**Prochaine action.** T3, CI, CodeRabbit, merge, release-db approuvée (chemin clinique), déploiement observé.
+
+**Ouvert.** Code de (a) (D-378), lié à bg.
 ## 2026-10-26 — File C : bb, lot 1 — garde étendue aux plans idéal et de secours (D-386)
 
 **Fait.** Question ouverte de D-384 tranchée par le responsable : la marque d'une version « sous garde étendue » est sa date de création, postérieure à la mise en service constatée de la garde (D-386). Lot 1 : la route d'enregistrement d'une version lit aussi les plans idéal et de secours (refus confirmable, jeton lié au texte) ; carte des gardes à jour ; trois cas de banc.

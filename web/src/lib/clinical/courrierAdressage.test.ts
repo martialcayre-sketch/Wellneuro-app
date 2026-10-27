@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
 import { SAFETY_SIGNAL_CONDUITES, SAFETY_SIGNALS_V1 } from './safetySignalsV1';
@@ -113,6 +114,15 @@ describe('genererCourrierAdressage — ce que la lettre porte', () => {
     if (!resultat.ok) throw new Error('refus inattendu');
     expect(resultat.courrier.texte.endsWith(SIGNATURE_PRATICIEN)).toBe(true);
     expect(resultat.courrier.html).toContain('Docteur en Pharmacie');
+  });
+
+  it('informe le médecin sur ses coordonnées, juste avant la politesse ([[D-377]])', () => {
+    const resultat = genererCourrierAdressage(entree([ADRESSAGE]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    const paragraphes = resultat.courrier.texte.split('\n\n');
+    expect(paragraphes.at(-3)).toBe(INFORMATION_MEDECIN);
+    expect(paragraphes.at(-2)).toMatch(/^Avec mes remerciements pour votre lecture\./);
+    expect(resultat.courrier.html).toContain('martialcayre@wellneuro.fr');
   });
 
   it('l’en-tête du rendu nomme le patient ; le texte consigné, lui, ne le nomme pas', () => {
