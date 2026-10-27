@@ -48,10 +48,11 @@ branche. Préalable de H89 (intégrateur).
   `wn-fable` ; prompt `.github/prompts/wn-finish.prompt.md` ;
   `docs/claude/handoffs/README.md`.
 - Clôture : `docs/claude/PLAN_WELLNEURO.md` (H23, mise à jour datée),
-  `changelog.d/2026-10-27-h23-cloture-handoff-seul.md`, entrée
-  `SESSION_LOG.md` (posée sur consigne du responsable, par prudence : sur un
-  `pull_request`, le CI joue le script de la PR, qui ne l'exige plus), ce
-  handoff.
+  `changelog.d/2026-10-27-h23-cloture-handoff-seul.md`, ce handoff. L'entrée
+  `SESSION_LOG.md` demandée par la consigne a été posée puis retirée : sur
+  GitHub (sans le pilote `merge=union`), elle entrait en conflit avec celle de
+  #1727, et la consigne interdit toute fusion de `main`. Sur un
+  `pull_request`, le CI joue le script de la PR, qui ne l'exige plus.
 
 ## Validations exécutées
 

@@ -11935,13 +11935,3 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : vingt constats, composition, contrôle des rendus.
 
 **Ouvert.** Constat au prochain profil importé.
-
-## 2026-10-27 — File A : H23 amendée, la clôture par le handoff seul (D-372)
-
-**Fait.** Contrôle de clôture, `wn-cycle`, étape CI, contrôle CodeRabbit : seul le fragment de handoff créé par la PR est exigé. `wn-context-pack` et les lecteurs du journal (`/wn`, `/wn-docs`, `/wn-hygiene`, `wn-fable`, début de session) lisent le dernier handoff de la branche. Skills, règles et README alignés ; bancs refaits.
-
-**Écarté.** Mode `--handoff` du context-pack (règle de permission nouvelle) ; compaction du journal (gelée).
-
-**Prochaine action.** wn-reviewer, CI, CodeRabbit, merge ; puis H88, dernier préalable de H89.
-
-**Ouvert.** Le lot repris désigné par la tâche se lit à la main.
