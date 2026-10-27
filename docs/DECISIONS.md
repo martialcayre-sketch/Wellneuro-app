@@ -4,6 +4,55 @@
 
 ## Décisions actives
 
+### D-386 — bb : une version sert ses trois plans si elle a été créée après la mise en service constatée de la garde étendue ; la marque est la date de création, sans migration (complète D-384 §5)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrage du responsable du 2026-10-26 sur question à
+  options (date de création ; écartés : garde rejouée à la lecture, marque
+  dans le contenu, confirmation persistée).
+- Domaine : protocole de 21 jours ; route d'enregistrement d'une version
+  (`web/src/app/api/praticien/protocoles/versions/route.ts`) ; lecture
+  patient du protocole servi ; fiche H49. Tranche la question que [[D-384]]
+  laisse ouverte.
+- Ne touche pas : aucune migration, aucun champ du contrat de protocole,
+  aucune empreinte persistée (`inputHash` inchangé ; seul le jeton de
+  confirmation, jamais stocké, couvre deux textes de plus) ; aucune règle
+  clinique ; rien n'est servi au patient avant l'activation de bb
+  ([[D-384]] §6).
+
+**§1 — La garde étendue.** À l'enregistrement d'une version, `termeAnxiogene`
+lit aussi le plan idéal et le plan de secours de chaque action, au même régime
+que le plan minimal : refus confirmable, jeton lié au texte. Elle s'applique
+dès sa mise en service, côté praticien, indépendamment de l'activation de bb.
+
+**§2 — La marque.** Une version est réputée enregistrée sous la garde étendue
+quand sa date de création (colonne `created_at` de `protocol_drafts`, posée à
+l'insertion de la ligne) est postérieure à l'instant de mise en service de la
+garde, constaté sur Scalingo après le déploiement. Cet instant s'écrit dans le
+code de la lecture, au lot suivant, une fois constaté. Deux précisions :
+- l'horloge est celle de l'application (la valeur par défaut est posée côté
+  client par Prisma, en UTC) : l'instant s'écrit en UTC, relevé après la fin
+  de la bascule, quand plus aucun conteneur de l'ancien code ne sert ;
+- un recul de la production sous ce commit après l'instant (redéploiement
+  d'un commit antérieur) invalide la marque pour les versions créées pendant
+  le recul : à constater et à traiter avant toute activation de bb.
+
+**§3 — Le doute se lit comme un refus.** Une version créée avant cet instant
+sert le plan minimal seul ([[D-384]] §5), même si ses plans passeraient la
+garde aujourd'hui. Une confirmation donnée à l'enregistrement n'est pas
+persistée : la marque ne dit pas qu'un texte est sans terme, elle dit qu'il a
+été relu par la garde, et que le praticien a tranché s'il y en avait un.
+
+**§4 — Deux lots.** (1) La garde étendue, déployée et constatée. (2) La
+lecture des trois plans et « Jour difficile ? », sous drapeau éteint, avec
+l'instant de §2 ; activation en file C, porte 18 ([[D-384]] §6).
+
+**Ce qu'elle ne décide pas.** La forme visuelle du détail ; le nom du
+drapeau ; la place exacte de bb dans la file C.
+
+**Effet sur le plan.** H49 : la question ouverte de D-384 est tranchée ; lot 1
+de code en cours.
+
 ### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
 
 - Date : 2026-10-26
