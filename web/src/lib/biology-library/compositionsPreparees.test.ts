@@ -84,12 +84,27 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(compositionPrepareePour('BIO_NFS')?.composants).toHaveLength(20);
   });
 
-  it('les rapports d’acides gras de D-376 : deux nommés par leurs opérandes, le troisième sans liste', () => {
+  it('les rapports d’acides gras de D-376 : deux nommés par leurs opérandes', () => {
     expect(compositionPrepareePour('BIO_RATIO_AA_EPA')?.composants).toEqual(['BIO_AG_ARACHIDONIQUE', 'BIO_AG_EPA']);
     expect(compositionPrepareePour('BIO_RATIO_LA_DGLA')?.composants).toEqual(['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA']);
     expect(operandesAbsentsPour('BIO_RATIO_AA_EPA')).toBeNull();
-    expect(compositionPrepareePour('BIO_RATIO_OMEGA6_OMEGA3')).toBeNull();
-    expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toMatch(/pas au catalogue/);
+  });
+
+  it('D-390 : le rapport oméga 6 / oméga 3 et l’indice oméga 3, calculés de leurs acides', () => {
+    // Les quatre oméga 6 puis les trois oméga 3, rangés comme le compte rendu
+    // du laboratoire ; tous parmi les acides du profil.
+    const rapport = compositionPrepareePour('BIO_RATIO_OMEGA6_OMEGA3');
+    expect(rapport?.type).toBe('calcul');
+    expect(rapport?.composants).toEqual([
+      'BIO_AG_LINOLEIQUE', 'BIO_AG_GAMMA_LINOLENIQUE', 'BIO_AG_DGLA', 'BIO_AG_ARACHIDONIQUE',
+      'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
+    ]);
+    expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toBeNull();
+    const indice = compositionPrepareePour('BIO_INDEX_OMEGA3');
+    expect(indice?.type).toBe('calcul');
+    expect(indice?.composants).toEqual(['BIO_AG_EPA', 'BIO_AG_DHA']);
+    const profil = compositionPrepareePour('BIO_AG_ERYTHROCYTAIRES')?.composants ?? [];
+    for (const c of [...(rapport?.composants ?? []), ...(indice?.composants ?? [])]) expect(profil, c).toContain(c);
   });
 
   it('le profil érythrocytaire de D-387 : un regroupement de ses vingt acides, sans rapport', () => {

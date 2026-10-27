@@ -12004,6 +12004,15 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Les modules `lib/food-compass` orphelins côté patient ; D-C5-05.
 
+## 2026-10-27 — File A : t45, rapport oméga 6 / oméga 3 et indice oméga 3 calculés de leurs acides (D-390)
+
+**Fait.** Le rapport oméga 6 / oméga 3 sort des « opérandes absents » : calcul de ses sept acides, d’après les titres de section du compte rendu (arithmétique vérifiée au centième, valeurs non versées). L’indice oméga 3 devient le calcul de l’EPA et du DHA (claim SIIN WN-CL-0045-008), passé en « valeur calculée » dans la liste NABM. Sens du rapport fondé par les claims des voies de l’inflammation.
+
+**Écarté.** Toute plage ou seuil (claims de seuil, référence du laboratoire) ; les sept et quatre acides d’un autre laboratoire.
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : constats des acides, compositions, contrôle des rendus.
+
+**Ouvert.** Écart du seuil AA/EPA du corpus contre la référence imprimée.
 ## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
 
 **Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2). L'orientation vers le médecin (D-257) en est exclue, sur arbitrage du responsable.
