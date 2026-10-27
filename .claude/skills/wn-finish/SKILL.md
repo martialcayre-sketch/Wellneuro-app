@@ -1,5 +1,5 @@
 ---
-description: Clôture un lot WellNeuro : validations, mise à jour du statut de campagne et entrée courte dans SESSION_LOG.
+description: Clôture un lot WellNeuro : validations, mise à jour du statut de campagne, promotions, puis handoff ; entrée SESSION_LOG sur demande seulement (D-372).
 argument-hint: "[sujet]"
 disable-model-invocation: true
 effort: medium
@@ -25,22 +25,23 @@ lot précédent à la PR suivante.
 1. Vérifier que le périmètre est respecté.
 2. Résumer les validations réellement exécutées.
 3. Mettre à jour le lot actif s’il existe.
-4. Ajouter à `docs/claude/SESSION_LOG.md` une entrée de moins de 150 mots :
-   - décisions prises ;
-   - options écartées et raison ;
-   - prochaine action prioritaire ;
-   - questions ouvertes.
-5. Ne jamais réécrire les entrées précédentes.
+4. **Sur demande seulement** (« résumé de session », D-372) : ajouter à
+   `docs/claude/SESSION_LOG.md` une entrée de moins de 150 mots — décisions
+   prises, options écartées et raison, prochaine action prioritaire, questions
+   ouvertes. La clôture n'en dépend plus : le CI n'exige que le handoff.
+5. Ne jamais réécrire les entrées précédentes du journal (append-only).
 6. Écrire ensuite le handoff du lot : un fragment
    `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, dans la foulée et sur la même
    branche (convention : `docs/claude/handoffs/README.md`). C'est
    `/wn-handoff write` <!-- mention-seule: wn-handoff --> qui le produit ; depuis le 2026-09-30 le
-   modèle peut l'invoquer dans la foulée (exemption, comme `/wn-reprompt`). Le handoff part
+   modèle peut l'invoquer dans la foulée (exemption, comme `/wn-reprompt`). C'est
+   le seul élément de clôture que le CI exige (D-372). Le handoff part
    **dans la PR du lot**, jamais après le merge — le squash ferme la fenêtre, et
    une clôture écrite après coup coûte une seconde PR.
 7. Si le lot clos relevait d'une classe à risque (scoring/clinique,
-   Prisma/migration, auth), faire relire l'entrée `SESSION_LOG` par
-   `Agent(subagent_type: "wn-reviewer")` avant de l'ajouter — une clôture
+   Prisma/migration, auth), faire relire le handoff — et l'entrée `SESSION_LOG`
+   si elle est demandée — par `Agent(subagent_type: "wn-reviewer")` avant de
+   les poser — une clôture
    inexacte sur ce périmètre coûte plus cher qu'une relecture.
 
 ## Deux promotions à examiner à chaque clôture

@@ -3,9 +3,9 @@
 //
 // Pourquoi ce script existe : le merge d'une PR de lot est un squash
 // (`gh pr merge --squash --delete-branch`). Tout ce qui s'écrit après lui n'est
-// plus dans l'ascendance de `main` — la clôture (`SESSION_LOG.md`) et le
-// handoff (un fragment de `docs/claude/handoffs/`) doivent alors repartir de
-// `main` dans une seconde PR. L'ordre correct est déjà écrit dans `/wn-lot`
+// plus dans l'ascendance de `main` — la clôture, un fragment de handoff dans
+// `docs/claude/handoffs/` (l'entrée `SESSION_LOG.md` n'en est plus depuis
+// D-372), doit alors repartir de `main` dans une seconde PR. L'ordre correct est déjà écrit dans `/wn-lot`
 // (clôture en étape 6, PR en étape 7) ; ce qui manquait, c'est de le *vérifier*.
 // Une règle qu'on oublie deux fois ne se réécrit pas une troisième : elle
 // devient exécutable.
@@ -29,7 +29,6 @@ import { readCampaignTruth, readMachineState, writeMachineState } from './wn-sta
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
 const HANDOFFS = 'docs/claude/handoffs/';
 
 /**
@@ -43,7 +42,7 @@ const HANDOFFS = 'docs/claude/handoffs/';
  * toucher dans un lot ne clôt rien.
  *
  * **L'horodatage est EXIGÉ, pas conseillé.** Le README du dossier désigne le
- * handoff courant comme « le dernier au tri » ; sans contrainte de nom, un
+ * handoff courant comme le dernier de la branche, au tri (D-372) ; sans contrainte de nom, un
  * `notes.md` déposé là serait accepté comme handoff et, les lettres passant
  * après les chiffres en tri C, désigné comme le plus récent. La règle du README
  * n'était donc vraie que tant que personne ne posait un autre fichier — c'est
@@ -121,7 +120,7 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
  * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
- * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
+ * @returns {{phase: string, cloture: {handoff: boolean},
  *           fenetreRatee: boolean, suivant: string[], sortie: number,
  *           sync: object|null, avertissements: string[]}}
  */
@@ -145,18 +144,17 @@ function diagnostiquerPhase(faits) {
   if (!dansUnDepot) {
     return {
       phase: 'hors-depot',
-      cloture: { sessionLog: false, handoff: false },
+      cloture: { handoff: false },
       fenetreRatee: false,
       suivant: ['Hors dépôt git — aucun verdict de cycle possible.'],
       sortie: SORTIE_PRECONDITION,
     };
   }
 
-  const cloture = {
-    sessionLog: fichiersDuLot.includes(SESSION_LOG),
-    handoff: fichiersDuLot.some(estFragmentDeHandoff),
-  };
-  const clotureComplete = cloture.sessionLog && cloture.handoff;
+  // D-372 : la clôture se réduit au fragment de handoff ; l'entrée
+  // `SESSION_LOG.md` ne s'écrit plus que sur demande.
+  const cloture = { handoff: fichiersDuLot.some(estFragmentDeHandoff) };
+  const clotureComplete = cloture.handoff;
 
   // La preuve de merge prime sur tout le reste : sous squash-merge la branche
   // locale survit intacte au merge, et rien dans git seul ne la distingue d'une
@@ -166,7 +164,7 @@ function diagnostiquerPhase(faits) {
     // lot. `null` = information indisponible (gh muet) : on ne conclut pas.
     const portes = prMergee.fichiers;
     const clotureEmbarquee =
-      portes === null ? null : portes.includes(SESSION_LOG) && portes.some(estFragmentDeHandoff);
+      portes === null ? null : portes.some(estFragmentDeHandoff);
 
     if (clotureEmbarquee === true) {
       return {
@@ -174,7 +172,7 @@ function diagnostiquerPhase(faits) {
         cloture,
         fenetreRatee: false,
         suivant: [
-          `PR #${prMergee.numero} mergée, clôture et handoff embarqués — rien à reprendre.`,
+          `PR #${prMergee.numero} mergée, handoff embarqué — rien à reprendre.`,
           'Lot suivant : repartir de `main`, jamais de cette branche squashée.',
         ],
         sortie: SORTIE_OK,
@@ -188,7 +186,7 @@ function diagnostiquerPhase(faits) {
         fenetreRatee: false,
         suivant: [
           `PR #${prMergee.numero} mergée ; ses fichiers sont inconnus (gh muet).`,
-          'Vérifier à la main que SESSION_LOG.md et un fragment docs/claude/handoffs/ y étaient.',
+          'Vérifier à la main qu’un fragment docs/claude/handoffs/ y était.',
         ],
         sortie: SORTIE_OK,
       };
@@ -200,7 +198,7 @@ function diagnostiquerPhase(faits) {
       fenetreRatee: true,
       suivant: [
         `Fenêtre de clôture ratée : PR #${prMergee.numero} mergée en squash sans la clôture.`,
-        'Écrire depuis `main` — SESSION_LOG.md et le fragment de handoff en PR de doc séparée.',
+        'Écrire depuis `main` — le fragment de handoff en PR de doc séparée.',
         'Ne pas rebrancher sur cette branche : son contenu ne remonte plus vers `main`.',
       ],
       sortie: SORTIE_FENETRE_RATEE,
@@ -616,7 +614,6 @@ export function rendre(faits, verdict) {
     out.push('');
     const marque = (ok) => (ok ? '✓' : '✗');
     out.push(`fait     ${marque(faits.fichiersDuLot.length > 0)} diff du lot (${faits.fichiersDuLot.length} fichier(s))`);
-    out.push(`         ${marque(verdict.cloture.sessionLog)} SESSION_LOG.md`);
     out.push(`         ${marque(verdict.cloture.handoff)} fragment docs/claude/handoffs/`);
   }
 

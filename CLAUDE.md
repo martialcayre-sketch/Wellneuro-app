@@ -212,8 +212,9 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 
 ## Début de session
 
-- Si `docs/claude/SESSION_LOG.md` existe, lire silencieusement sa dernière
-  entrée avant de répondre à la première question.
+- Lire silencieusement, avant la première réponse, le dernier handoff créé
+  par la branche courante (`docs/claude/handoffs/`) ; à défaut, celui du lot
+  repris que désigne la tâche, sinon le dernier au tri sur `main` (`D-372`).
 - **Lancer à la racine du dépôt** (VS Code ouvert sur
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.

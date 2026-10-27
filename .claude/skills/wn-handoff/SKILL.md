@@ -22,9 +22,9 @@ c'est lui qui détecte une branche squashée avant d'écrire, raison pour laquel
 ce skill n'utilise pas `--local`. Il tranche où ce handoff doit atterrir :
 
 - `travail`, `pret-pr`, `pr-ouverte` — branche vivante, **fenêtre ouverte** : le
-  handoff part dans la PR du lot, en même temps que l'entrée `SESSION_LOG` que
-  produit `/wn-finish` <!-- mention-seule: wn-finish --> (skill à invoquer à la main).
-  Aucune PR à créer ici.
+  handoff part dans la PR du lot ; il est le seul élément de clôture exigé
+  (D-372), l'entrée `SESSION_LOG` de `/wn-finish` <!-- mention-seule: wn-finish --> ne s'écrivant plus que
+  sur demande. Aucune PR à créer ici.
 - `apres-merge` avec « fenêtre de clôture ratée » — trop tard. Écrire depuis
   `main`, en PR de doc séparée. Ne jamais rebrancher sur la branche squashée :
   la PR suivante ré-embarquerait le lot précédent et GitHub ne créerait aucun

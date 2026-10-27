@@ -107,16 +107,17 @@ dernière session.
    snapshot de l'étape 2 ne porte pas les `files` : les lire en un seul
    `gh pr view <N> --json files` au moment de ce contrôle — c'est le seul
    `gh pr view` du cycle. La
-   PR doit porter `docs/claude/SESSION_LOG.md` **et** un fragment
-   `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md` (le `README.md` du dossier ne
-   compte pas). L'un des deux manque → **ne pas merger, même CI vert** :
+   PR doit porter un fragment `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`
+   (le `README.md` du dossier ne compte pas) ; l'entrée `SESSION_LOG.md` n'est
+   plus exigée depuis D-372. Il manque → **ne pas merger, même CI vert** :
    demander `/wn-finish` puis `/wn-handoff write`, poussés sur la branche de la <!-- mention-seule: wn-finish, wn-handoff -->
    PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
    précisément cette clôture, donc elle passe le contrôle par construction — et
    c'est la seule forme acceptée de PR de rattrapage. Depuis E56 (2026-10-18),
    l'étape « Contrôle de clôture » du CI refuse la même absence sur toute PR
-   qui touche du code ; ce contrôle-ci reste, et couvre aussi les PR de doc.
+   qui touche du code — un fragment CRÉÉ par la PR, pas un handoff passé
+   retouché ; ce contrôle-ci reste, et couvre aussi les PR de doc.
 8. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
    présence de `verify`, régime déduit, applicabilité de l'exception, verdicts de
    revue (étape 6), verdict de clôture (étape 7) — puis la commande exacte à
@@ -153,7 +154,7 @@ contourner.
    déjà faite ou restant à faire.
 4. **Commentaires de revue** : leur nombre, et pour chacun son verdict — corrigé
    (commit), écarté (motif), routé (adresse). Aucun sans verdict.
-5. Clôture opposable : `SESSION_LOG.md` et fragment de handoff présents dans la
-   PR, ou merge refusé avec le geste de rattrapage.
+5. Clôture opposable : fragment de handoff présent dans la PR, ou merge refusé
+   avec le geste de rattrapage.
 6. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.

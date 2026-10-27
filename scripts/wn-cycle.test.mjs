@@ -64,19 +64,19 @@ test('sur la branche par défaut : hors-lot', () => {
 test('branche de lot sans clôture ni PR : travail, la clôture est annoncée avant la PR', () => {
   const v = diagnostiquer(faits());
   assert.equal(v.phase, 'travail');
-  assert.deepEqual(v.cloture, { sessionLog: false, handoff: false });
+  assert.deepEqual(v.cloture, { handoff: false });
   assert.equal(v.sortie, SORTIE_OK);
   assert.ok(v.suivant.some((l) => l.includes('/wn-handoff write')));
 });
 
-test('SESSION_LOG seul ne suffit pas : le handoff manquant maintient la phase travail', () => {
+test('une entrée SESSION_LOG ne clôt rien : le handoff manquant maintient la phase travail (D-372)', () => {
   const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG] }));
   assert.equal(v.phase, 'travail');
-  assert.deepEqual(v.cloture, { sessionLog: true, handoff: false });
+  assert.deepEqual(v.cloture, { handoff: false });
 });
 
-test('clôture complète sur la branche, aucune PR : pret-pr', () => {
-  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] }));
+test('clôture complète sur la branche — le handoff seul, sans SESSION_LOG (D-372) —, aucune PR : pret-pr', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', HANDOFF] }));
   assert.equal(v.phase, 'pret-pr');
   assert.equal(v.sortie, SORTIE_OK);
   assert.ok(v.suivant.some((l) => l.includes('/wn-pr apply')));
@@ -100,7 +100,7 @@ test('PR ouverte sans la clôture : dernière fenêtre, la clôture est réclam�
 
 test('PR mergée avec la clôture embarquée : rien à reprendre', () => {
   const v = diagnostiquer(
-    faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] } }),
+    faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts', HANDOFF] } }),
   );
   assert.equal(v.phase, 'apres-merge');
   assert.equal(v.fenetreRatee, false);
