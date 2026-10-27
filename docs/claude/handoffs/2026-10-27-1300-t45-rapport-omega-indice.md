@@ -51,8 +51,8 @@ s'affichent avec eux, sans plage ni seuil.
   minimum les indicateurs principaux et les rapports majeurs. Arbitré le
   même jour : cockpit seul ; radar ; les quatre rapports, leurs sept
   acides et tout acide de valeur remarquable (trans, saturés) ; repères en
-  plages fonctionnelles sourcées. Seul l'indice oméga 3 en a (claim SIIN
-  8 % ; Harris et von Schacky 2004 : 4 et 8 %). Le responsable a choisi
+  plages fonctionnelles sourcées. Seul l'indice oméga 3 en a (claim
+  WN-CL-0045-009 ; Harris et von Schacky 2004). Le responsable a choisi
   d'attendre les sources (référentiel et formules de BioAvenir, originaux
   vérifiés) avant de construire ; le dossier GPT du jour reste à vérifier
   (chiffres OmegaQuant non retrouvés tels quels).

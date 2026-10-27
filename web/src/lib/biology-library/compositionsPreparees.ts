@@ -114,8 +114,8 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     motif:
       'Rapport de la somme des quatre oméga 6 (linoléique, gamma-linolénique, DGLA, arachidonique) à celle des trois oméga 3 (alpha-linolénique, EPA, DHA), comme le compte rendu du laboratoire les range.',
   },
-  // [[D-390]] §2 : « L'index oméga 3 correspond au pourcentage d'EPA + DHA »
-  // (claim WN-CL-0045-008) ; le compte rendu en redonne la somme au centième.
+  // [[D-390]] §2 : claim WN-CL-0045-008 et définition de Harris et von
+  // Schacky (2004) ; le compte rendu en redonne la somme au centième.
   BIO_INDEX_OMEGA3: {
     type: 'calcul',
     composants: ['BIO_AG_EPA', 'BIO_AG_DHA'],

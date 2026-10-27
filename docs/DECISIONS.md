@@ -28,18 +28,15 @@ l'assistant le 2026-10-27, valeurs non versées). [[D-376]] §6 tenait la
 liste pour non imprimée : seules les lignes avaient été lues, pas les titres
 de section. Cette formule est celle de ce laboratoire ; un autre peut
 additionner d'autres acides (un laboratoire américain en compte sept et
-quatre, sur sang total). Le sens du rapport est fondé au corpus (claims
-validés) : les voies opposées des deux familles — l'acide arachidonique vers
-les prostaglandines et leucotriènes pro-inflammatoires (WN-CL-0030-018),
-l'EPA et le DHA vers les médiateurs de la résolution (WN-CL-0030-020,
-WN-CL-0155-054) ; le ratio pro- et anti-inflammatoire (WN-CL-0132-015) ; le
-statut en acides gras « permet d'identifier le rapport oméga 6/oméga 3 »
-(WN-CL-0174-016). Aucun claim ne donne de seuil sanguin du rapport.
+quatre, sur sang total). Le sens du rapport est fondé au corpus, claims
+validés WN-CL-0030-018, WN-CL-0030-020, WN-CL-0132-015, WN-CL-0155-054 et
+WN-CL-0174-016 (mécanisme : les deux familles ont des médiateurs lipidiques
+de voies opposées). Aucun claim ne donne de seuil sanguin du rapport.
 
-**§2 — L'indice oméga 3** : type `calcul`, EPA et DHA. Source : « L'index
-oméga 3 correspond au pourcentage d'EPA + DHA » (WN-CL-0045-008, support
-SIIN « Les biomarqueurs nutritionnels ») ; c'est la définition de Harris et
-von Schacky (2004) ; le compte rendu en redonne la somme au centième.
+**§2 — L'indice oméga 3** : type `calcul`, EPA et DHA. Source : claim
+validé WN-CL-0045-008 (support SIIN « Les biomarqueurs nutritionnels ») et
+la définition publiée de Harris et von Schacky (2004) ; le compte rendu en
+redonne la somme au centième.
 
 **§3 — NABM** (`candidatsNabm.ts`) : l'indice passe de « aucun acte » à
 « valeur calculée » ; le rapport y était déjà. Le constat « aucun acte » de
@@ -51,9 +48,9 @@ vingt), les compositions ensuite. Signée avant, une composition rend son
 calcul « non évalué » : sa mention est la plus faible de ses mesures
 ([[D-323]] §4).
 
-**Ce qu'elle ne décide pas.** Les plages et seuils de l'indice (claims à 8 %,
-WN-CL-0045-009, -0125-041, -0390-011) et du rapport ([[D-059]]) ; l'écart
-entre le seuil AA/EPA du corpus (« > 1,2 », WN-CL-0293-013) et la référence
+**Ce qu'elle ne décide pas.** Les plages et seuils de l'indice (claims
+WN-CL-0045-009, WN-CL-0125-041, WN-CL-0390-011) et du rapport ([[D-059]]) ;
+l'écart entre un seuil AA/EPA du corpus (WN-CL-0293-013) et la référence
 imprimée par le laboratoire, à instruire avant toute plage ; l'entrée de ces
 calculs dans un panel.
 

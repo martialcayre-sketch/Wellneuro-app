@@ -12008,7 +12008,7 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Fait.** Le rapport oméga 6 / oméga 3 sort des « opérandes absents » : calcul de ses sept acides, d’après les titres de section du compte rendu (arithmétique vérifiée au centième, valeurs non versées). L’indice oméga 3 devient le calcul de l’EPA et du DHA (claim SIIN WN-CL-0045-008), passé en « valeur calculée » dans la liste NABM. Sens du rapport fondé par les claims des voies de l’inflammation.
 
-**Écarté.** Toute plage ou seuil (claims à 8 %, référence du laboratoire) ; les sept et quatre acides d’un autre laboratoire.
+**Écarté.** Toute plage ou seuil (claims de seuil, référence du laboratoire) ; les sept et quatre acides d’un autre laboratoire.
 
 **Prochaine action.** CI, CodeRabbit, merge, déploiement ; puis au praticien : constats des acides, compositions, contrôle des rendus.
 
