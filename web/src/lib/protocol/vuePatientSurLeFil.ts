@@ -1,4 +1,3 @@
-import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
 import type {
   PatientProtocolView,
   ProtocolActionType,
@@ -52,7 +51,6 @@ export type VuePatientSurLeFil = {
   /** LES TROIS, dans l'ordre du protocole relu. */
   actions: ActionPatient[];
   limitations: string[];
-  boussoles: PatientFoodCompassSafeView[];
   /**
    * Référence opaque du cycle diffusé (préfixe du hash d'ancrage du protocole) :
    * elle ne porte aucun contenu clinique et sert à donner au carnet alimentaire
@@ -75,7 +73,6 @@ export type VuePatientSurLeFil = {
  */
 export function projeterSurLeFil(input: {
   vue: PatientProtocolView;
-  boussoles: PatientFoodCompassSafeView[];
   cycleRef: string;
   debutCycle: string;
 }): VuePatientSurLeFil {
@@ -93,7 +90,6 @@ export function projeterSurLeFil(input: {
       ...(action.attente ? { attente: action.attente } : {}),
     })),
     limitations: input.vue.limitations,
-    boussoles: input.boussoles,
     cycleRef: input.cycleRef,
     debutCycle: input.debutCycle,
   };

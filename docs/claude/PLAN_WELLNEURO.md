@@ -597,6 +597,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : lettre h, de la main du responsable.
 - **Critère de fin** : page retirée, constatée ; D-C5-01 à 04 soldées à la livraison (`DETTE_C5.md:10-13`).
 - **Mise à jour (2026-10-24, lettre écrite)** : h écrite par D-365 : démontage côté portail seul (résumé dans le protocole, page de l'aliment, route patient) ; code praticien et contrats V2 et V4 en place, `WN_C5_ENABLED` allumé ; avant livraison, constat par conteneur des protocoles diffusés qui portent une Boussole, arrêt au-dessus de zéro ; D-C5-01 à 04 soldées à la livraison constatée, D-C5-05 reste. J1-alim peut s'ouvrir, sans migration.
+- **Mise à jour (2026-10-27, code de J1-alim)** : constat préalable par conteneur, en agrégats (D-365 §3) : 5 versions de protocole diffusées, 0 portant une Boussole, donc le lot se livre. Démontage côté portail : route `api/portail/boussole`, page de l'aliment et composants `patient-food-compass` retirés ; la route du protocole servi ne résout ni ne sert plus aucune lecture de la Boussole, en pause ou non ; la projection `projeterSurLeFil` perd son champ `boussoles`. Contrats V2 et V4, code praticien, modules `lib/food-compass` et `WN_C5_ENABLED` en place. Sans migration. Reste : constat du retrait en production, puis D-C5-01 à 04 soldées sans objet (§4).
 
 #### F33 · av : contenu biologique du document remis au médecin
 - **Identifiant, piste** : lettre av ; contenu, voie de remise, régime documentaire ; complète q et ae ; trackc.
