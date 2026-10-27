@@ -184,6 +184,25 @@ describe('ProtocolDiffusionPanel — l’aperçu de ce que le patient lira', () 
     expect(screen.getByText('En attente de confirmation par votre bilan.')).toBeTruthy();
   });
 
+  // LES TROIS PLANS SERVIS PAR LA ROUTE ([[D-386]]) atteignent l'aperçu : une
+  // prop oubliée en chemin montrerait le plan minimal seul quand le patient lit
+  // les trois (revue `wn-reviewer`, P2-1).
+  it('transmet les trois plans servis à l’aperçu', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove
+        approved={false}
+        stale={false}
+        approvedAt={null}
+        apercu={{ ok: true, contenu }}
+        troisPlansApercu={[{ actionId: 'a1', idealPlan: 'Plan idéal.', rescuePlan: 'Plan de secours.' }]}
+      />,
+    );
+    expect(screen.getByText('Selon votre journée :')).toBeTruthy();
+    expect(screen.getByText('Plan idéal.')).toBeTruthy();
+    expect(screen.getByText('Plan de secours.')).toBeTruthy();
+  });
+
   // UN REFUS DIT POURQUOI. Un aperçu vide apprendrait au praticien qu'il n'a
   // rien à montrer, jamais qu'il a quelque chose à lever.
   it('affiche le motif quand le contrat refuse', () => {
