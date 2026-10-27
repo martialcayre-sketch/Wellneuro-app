@@ -107,9 +107,12 @@ rien d'autre : aucun code n'en dépend.
 
 **§5 — La retenue.** Le fichier de la table signée,
 `web/src/lib/biology-library/indicationsBiologieV1.ts`, s'ajoute aux chemins
-déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du déployeur, avec
-leur banc de parité ; la comparaison de la tête dépassante le couvre comme
-elle couvre `clinical/**` ([[D-374]], arbitrage du 2026-10-26). Le fichier
+déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du déployeur. Le
+banc de parité (`scripts/wn-deploiement-deployer.test.mjs`, revue #1222) ne
+lit aujourd'hui que les entrées du filtre terminées par `/**` : son parseur
+apprend à lire un chemin de fichier exact, sinon il ignore l'entrée et la
+parité échoue. La comparaison de la tête dépassante le couvre comme elle
+couvre `clinical/**` ([[D-374]], arbitrage du 2026-10-26). Le fichier
 seul, pas le dossier : `biology-library/` porte aussi des services et des
 écrans dont le merge ne doit pas geler la chaîne du schéma. Ce lot précède
 la re-signature de la table (F34, étape 3). L'inventaire des autres tables

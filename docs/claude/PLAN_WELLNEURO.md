@@ -928,7 +928,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre aw ; re-signature de la table des quinze règles ; trackc.
 - **Rang** : 1 au plus tôt [Hypothese].
 - **Portes, préalables** : av ; claims certifiés. Il se raccorde aux axes (F51) et aux indications v2 (F53) sans en dépendre : F53 vient après lui.
-- **Migration, release-db** : non.
+- **Migration, release-db** : non pour les fiches et leurs signatures ; oui pour la migration de correction de la colonne « objectif » des deux exclusions (D-389 §4, release-db approuvée, constat par conteneur) ; la re-signature de la table passe par release-db une fois le fichier de la table chemin déclencheur (D-389 §5).
 - **Décisions, textes** : une signature par famille, de la main du responsable.
 - **Critère de fin** : familles signées ; aucune borne inventée.
 - **Mise à jour (2026-10-26, cadre écrit)** : D-382 pose le cadre. La famille est le bloc de justification d'un des quinze panels hérités, sous son libellé ; les deux non indiqués entrent comme blocs d'exclusion signés. Chaque fiche exige « ce que la famille explore », tiré d'un claim relu ; la prudence n'y entre que sourcée. Les textes sont tenus hors dépôt, au dépôt la date et l'empreinte de chaque fiche signée ; contrôle logiciel avec ax. Re-signature de la table ensuite, sans changer de règle, par un lot propre. L'ordre des niveaux et le niveau des examens partagés sortent d'aw (lettre cr, avant ax). Restent dus : les quinze fiches et leurs signatures, puis la re-signature.
