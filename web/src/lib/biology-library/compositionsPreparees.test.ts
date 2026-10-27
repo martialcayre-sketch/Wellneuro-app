@@ -92,6 +92,21 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(operandesAbsentsPour('BIO_RATIO_OMEGA6_OMEGA3')).toMatch(/pas au catalogue/);
   });
 
+  it('le profil érythrocytaire de D-387 : un regroupement de ses vingt acides, sans rapport', () => {
+    const profil = compositionPrepareePour('BIO_AG_ERYTHROCYTAIRES');
+    expect(profil?.type).toBe('regroupement');
+    // L'ordre du compte rendu, sous « Profil des Acides Gras de la membrane
+    // Érythrocytaire » : c'est celui de la ligne et de ses acides au courrier.
+    expect(profil?.composants).toEqual([
+      'BIO_AG_MYRISTIQUE', 'BIO_AG_PALMITIQUE', 'BIO_AG_STEARIQUE', 'BIO_AG_LAURIQUE',
+      'BIO_AG_PENTADECANOIQUE', 'BIO_AG_HEPTADECANOIQUE', 'BIO_AG_PALMITOLEIQUE', 'BIO_AG_CIS_VACCENIQUE',
+      'BIO_AG_TRANS_VACCENIQUE', 'BIO_AG_RUMENIQUE', 'BIO_AG_OLEIQUE', 'BIO_AG_NERVONIQUE',
+      'BIO_AG_ELAIDIQUE', 'BIO_AG_LINOLEIQUE', 'BIO_AG_GAMMA_LINOLENIQUE', 'BIO_AG_DGLA',
+      'BIO_AG_ARACHIDONIQUE', 'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
+    ]);
+    expect(profil?.composants.every(c => CANDIDATS_NABM[c]?.situation === 'aucun_acte')).toBe(true);
+  });
+
   it('une clé héritée de l’objet ne passe pas pour une composition', () => {
     expect(compositionPrepareePour('toString')).toBeNull();
     expect(operandesAbsentsPour('constructor')).toBeNull();
