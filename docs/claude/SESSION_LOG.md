@@ -11925,3 +11925,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
 
 **Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.
+
+## 2026-10-27 — File D, lots de code : J1-alim, la Boussole quitte le portail (D-365, H16)
+
+**Fait.** Constat préalable par conteneur, en agrégats : 0 protocole diffusé sur 5 ne porte une Boussole. Démontage côté portail : route patient, page de l'aliment, composants, montage dans l'accueil et la page alimentation ; la route du protocole ne sert plus aucune lecture. Contrats, code praticien, `lib/food-compass` et `WN_C5_ENABLED` en place.
+
+**Écarté.** Supprimer les modules `lib/food-compass` devenus orphelins côté patient (hors D-365).
+
+**Prochaine action.** CI, CodeRabbit, merge ; constat du retrait, puis D-C5-01 à 04 soldées.
+
+**Ouvert.** Sort des modules orphelins, avec la suppression du code C5.
