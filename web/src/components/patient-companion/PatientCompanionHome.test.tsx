@@ -5,6 +5,7 @@ import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } 
 import { PatientCompanionHome } from './PatientCompanionHome';
 import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
+import { CHAPEAU_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
 // portail n'en servait qu'une — le banc ne pouvait donc rien constater de ce que
@@ -529,5 +530,75 @@ describe('PatientCompanionHome — mention de validation (D-369)', () => {
     render(<PatientCompanionHome token="TOK" />);
     expect(await screen.findByText(attendu)).toBeTruthy();
     expect(screen.queryByText(/Validé par votre praticien/)).toBeNull();
+  });
+});
+
+// LES TROIS PLANS ([[D-384]] §2-§4, lettre bb). Le composant ne juge ni le
+// drapeau ni la marque : il rend ce que la route sert, et rien d'autre.
+describe('PatientCompanionHome — les trois plans', () => {
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+  const troisPlans = [{ actionId: 'a1', idealPlan: 'Chaque matin', rescuePlan: 'Un fruit et un yaourt' }];
+
+  it('servis : « Selon votre journée : » puis les trois plans, dans l’ordre', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue, troisPlans }, checkinVide);
+    const { container } = render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(CHAPEAU_TROIS_PLANS)).toBeTruthy();
+    const intitules = [...container.querySelectorAll('dt')].map((dt) => dt.textContent);
+    expect(intitules).toEqual(['Si tout va bien', 'Au quotidien', 'Si c’est plus dur']);
+    const plans = [...container.querySelectorAll('dd')].map((dd) => dd.textContent);
+    expect(plans).toEqual(['Chaque matin', 'Trois matins cette semaine', 'Un fruit et un yaourt']);
+    // Une seule action servie avec ses plans : un seul chapeau ; les autres
+    // gardent leur plan minimal, sans intitulé.
+    expect(screen.getAllByText(CHAPEAU_TROIS_PLANS)).toHaveLength(1);
+    expect(screen.getByText('Vingt minutes plus tôt')).toBeTruthy();
+  });
+
+  it('servis : « Jour difficile ? » propose le plan de secours de la même action', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue, troisPlans }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Un fruit et un yaourt.')).toBeTruthy();
+    expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Trois matins/)).toBeNull();
+  });
+
+  it('absents (drapeau fermé ou version antérieure) : rien ne change', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue }, checkinVide);
+    const { container } = render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Trois matins cette semaine')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(container.querySelectorAll('dt')).toHaveLength(0);
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Trois matins cette semaine.')).toBeTruthy();
+  });
+
+  it('une action en attente de bilan garde son régime, même si des plans arrivaient', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue,
+        troisPlans: [{ actionId: 'a3', idealPlan: 'Idéal retenu', rescuePlan: 'Secours retenu' }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Rien à faire pour l’instant')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText(/retenu/)).toBeNull();
+  });
+
+  it('une action en pause garde son régime, même si des plans arrivaient', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue, troisPlans,
+        pauses: [{ actionId: 'a1', texte: 'element' }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Trois matins cette semaine')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText('Un fruit et un yaourt')).toBeNull();
+    // Le jour difficile passe à l'action ferme suivante, au plan minimal.
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Vingt minutes plus tôt.')).toBeTruthy();
   });
 });

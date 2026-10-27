@@ -22,6 +22,12 @@ import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe'
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
+import {
+  creeeSousGardeEtendue,
+  troisPlansOuverts,
+  troisPlansServis,
+  type TroisPlansAction,
+} from '@/lib/portail/troisPlans';
 
 // Vue patient du protocole diffusé actif (C2A LOT-05, compagnon minimal). DÉRIVÉE
 // À LA VOLÉE côté serveur (§8.3) : le patient ne lit jamais `protocol_drafts`.
@@ -127,6 +133,15 @@ type GetResponse =
        * porte sa propre date ([[D-368]] §4). L'accueil le dit en toutes lettres.
        */
       valideLe?: string;
+      /**
+       * LES PLANS IDÉAL ET DE SECOURS des actions fermes ([[D-384]] §2-§4),
+       * HORS de la vue signée (`c1-patient-protocol-view-v2`, inchangée), comme
+       * `pauses`. Présent seulement quand `WN_PORTAIL_TROIS_PLANS` est ouvert,
+       * que la version servie a été créée sous la garde étendue ([[D-386]] §2)
+       * et qu'au moins une action ferme les porte. Absent, l'accueil sert le
+       * plan minimal seul, comme avant.
+       */
+      troisPlans?: TroisPlansAction[];
     }
   | ErrorResponse;
 
@@ -178,7 +193,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const row = await prisma.protocolDraft.findUnique({
       where: { id: diffuse.protocolDraftId },
-      select: { payload: true, inputHash: true, assessmentEpisodeId: true },
+      select: { payload: true, inputHash: true, assessmentEpisodeId: true, createdAt: true },
     });
     if (!row) {
       // Approbation orpheline (ne devrait pas arriver) : dégradation propre.
@@ -273,12 +288,19 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const lectureDuDetail = lectureProtocoleOuverte()
       ? { dejaOuvert: await detailDejaOuvert(auth.idPatient, diffuse.approbationId) }
       : undefined;
+    // LA MARQUE EST LA COLONNE DE LA LIGNE ([[D-386]] §2), jamais le `createdAt`
+    // du payload, hérité d'une version à l'autre. Avant l'instant, ou dans le
+    // doute : plan minimal seul (§3).
+    const troisPlans = troisPlansOuverts() && creeeSousGardeEtendue(row.createdAt)
+      ? troisPlansServis({ actionsServies: vue.actions, actionsDuProtocole: draft.actions, pauses })
+      : [];
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
       valideLe: diffuse.approvedAt.toISOString(),
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
+      ...(troisPlans.length > 0 ? { troisPlans } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {

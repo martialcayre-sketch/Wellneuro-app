@@ -18,6 +18,8 @@ import {
 } from '@/lib/trust/pauseEffetIndesirable';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
 import { mentionValidation } from '@/lib/portail/texteMentionValidation';
+import { CHAPEAU_TROIS_PLANS, INTITULES_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
+import type { TroisPlansAction } from '@/lib/portail/troisPlans';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -47,6 +49,8 @@ type ProtocoleResponse =
       encartConduite?: true;
       /** Instant de l'approbation de diffusion de la version servie ([[D-369]]). */
       valideLe?: string;
+      /** Plans idéal et de secours des actions fermes ([[D-384]], [[D-386]]) ; absent = plan minimal seul. */
+      troisPlans?: TroisPlansAction[];
     }
   | { ok: false };
 type CheckinResponse =
@@ -180,6 +184,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // reformulés. Celui des compléments se lit une fois, au-dessus des actions.
   const pauseDe = new Map((protocole.pauses ?? []).map((p) => [p.actionId, p.texte]));
   const complementsEnPause = [...pauseDe.values()].includes('complements');
+  // LES TROIS PLANS ([[D-384]] §2-§4) : seulement ceux que la route sert — drapeau
+  // ouvert, version créée sous la garde étendue ([[D-386]]), action ferme. Une
+  // action absente de la liste garde son plan minimal seul, sans intitulé.
+  const plansDe = new Map((protocole.troisPlans ?? []).map((p) => [p.actionId, p]));
   // LE JOUR DIFFICILE PROPOSE UN SEUL PAS, ET JAMAIS UN PAS SUSPENDU. Une action
   // en attente de bilan porte sa phrase d'attente : la proposer « si vous le
   // pouvez aujourd'hui » dirait au patient le contraire de ce que son praticien
@@ -282,7 +290,12 @@ export function PatientCompanionHome({ token }: { token: string }) {
               {pauseDe.has(action.actionId) && (
                 <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
               )}
-              <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
+              {/* Défense en profondeur : une action en attente ou en pause garde
+                  son régime actuel, même si la route servait ses plans (§3). */}
+              <PlansDeLAction
+                plans={action.interventionStatus || pauseDe.has(action.actionId) ? undefined : plansDe.get(action.actionId)}
+                minimalPlan={action.minimalPlan}
+              />
               {pauseDe.get(action.actionId) === 'element' && (
                 <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
               )}
@@ -395,7 +408,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
               </p>
               {actionFerme && (
                 <p className="text-sm text-muted-foreground">
-                  Si vous le pouvez aujourd’hui : {actionFerme.minimalPlan}.
+                  {/* Le plan de secours de la même action, s'il est servi ([[D-384]] §4) ;
+                      sinon le plan minimal, comme avant. */}
+                  Si vous le pouvez aujourd’hui : {plansDe.get(actionFerme.actionId)?.rescuePlan ?? actionFerme.minimalPlan}.
                 </p>
               )}
               {checkinDu && (
@@ -411,5 +426,33 @@ export function PatientCompanionHome({ token }: { token: string }) {
         </div>
       )}
     </PatientCard>
+  );
+}
+
+/**
+ * Sans plans servis : le plan minimal seul, sans intitulé, comme avant. Avec :
+ * « Selon votre journée : » puis, dans cet ordre, les trois plans sous leurs
+ * intitulés validés ([[D-384]] §2). Aucune couleur, aucun chiffre, aucun rang :
+ * le patient choisit seul, et rien n'est enregistré (§1).
+ */
+function PlansDeLAction({ plans, minimalPlan }: { plans: TroisPlansAction | undefined; minimalPlan: string }) {
+  if (!plans) return <p className="mt-1 text-sm text-muted-foreground">{minimalPlan}</p>;
+  const lignes = [
+    ['idealPlan', plans.idealPlan],
+    ['minimalPlan', minimalPlan],
+    ['rescuePlan', plans.rescuePlan],
+  ] as const;
+  return (
+    <div className="mt-1 space-y-1 text-sm">
+      <p className="text-muted-foreground">{CHAPEAU_TROIS_PLANS}</p>
+      <dl className="space-y-1">
+        {lignes.map(([cle, texte]) => (
+          <div key={cle}>
+            <dt className="font-medium text-foreground">{INTITULES_TROIS_PLANS[cle]}</dt>
+            <dd className="text-muted-foreground">{texte}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
