@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { contientTermePrescriptif } from '@/lib/documents/vocabulaire';
+import { INFORMATION_MEDECIN } from './informationMedecin';
 import { SIGNATURE_PRATICIEN } from './signature';
 import { genererCourrierComplement, PREFIXE_ANCRAGE_COMPLEMENT } from './courrierComplement';
 
 const ANCRAGE = { version: `${PREFIXE_ANCRAGE_COMPLEMENT}${'a'.repeat(64)}`, sha256: 'a'.repeat(64) };
 
-function generer(lignes: { intitule: string; ingredient: string | null }[], patientNom = 'Sophie Nicola') {
+function generer(lignes: { intitule: string }[], patientNom = 'Sophie Nicola') {
   return genererCourrierComplement({
     patientId: 'pat-fixture',
     lignes,
@@ -15,11 +16,11 @@ function generer(lignes: { intitule: string; ingredient: string | null }[], pati
   });
 }
 
-describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7)', () => {
+describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §7), lignes revalidées le 2026-10-26 (D-383), information du médecin (D-377)', () => {
   it('rend exactement le texte validé, liste comprise', () => {
     const genere = generer([
-      { intitule: 'Explorer un apport ciblé', ingredient: 'Magnésium' },
-      { intitule: 'Seconde intention', ingredient: null },
+      { intitule: 'Explorer un apport ciblé' },
+      { intitule: 'Seconde intention' },
     ]);
     expect(genere.ok).toBe(true);
     if (!genere.ok) return;
@@ -29,16 +30,17 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
         + 'les compléments alimentaires ci-dessous. Sa situation justifie que vous en soyez informé avant qu’ils '
         + 'n’entrent à son programme : je vous les transmets pour votre appréciation, la décision médicale vous '
         + 'appartenant pleinement.',
-      '- Explorer un apport ciblé — Magnésium.\n- Seconde intention.',
+      '- Explorer un apport ciblé.\n- Seconde intention.',
       'Ce courrier vous est remis par la personne elle-même. Vos observations éventuelles seront les bienvenues ; '
         + 'il ne remplace pas une consultation sans délai si son état le demande.',
+      INFORMATION_MEDECIN,
       'Avec mes remerciements pour votre lecture. Courrier préparé le 2026-10-24.',
       SIGNATURE_PRATICIEN,
     ].join('\n\n'));
   });
 
   it('le nom du patient est dans l’en-tête du rendu, jamais dans le texte consigné', () => {
-    const genere = generer([{ intitule: 'Intention', ingredient: null }]);
+    const genere = generer([{ intitule: 'Intention' }]);
     expect(genere.ok).toBe(true);
     if (!genere.ok) return;
     expect(genere.courrier.texte).not.toContain('Sophie');
@@ -46,7 +48,7 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
   });
 
   it('ne nomme ni population ni situation (forme opaque), et passe la garde non prescriptive', () => {
-    const genere = generer([{ intitule: 'Intention', ingredient: null }]);
+    const genere = generer([{ intitule: 'Intention' }]);
     expect(genere.ok).toBe(true);
     if (!genere.ok) return;
     expect(genere.courrier.texte).not.toMatch(/grossesse|allaitement|mineur|enceinte|S-MG/i);
@@ -54,7 +56,7 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
   });
 
   it('porte l’ancrage de la table signée dans la provenance du bloc rendu', () => {
-    const genere = generer([{ intitule: 'Intention', ingredient: null }]);
+    const genere = generer([{ intitule: 'Intention' }]);
     expect(genere.ok && genere.courrier.document.blocs[0]?.provenance).toEqual({
       source: 'complement_cible',
       ancrageHash: ANCRAGE.sha256,
@@ -63,11 +65,20 @@ describe('genererCourrierComplement — le texte validé du 2026-10-24 (D-345 §
   });
 
   it('un intitulé prescriptif refuse le courrier — jamais un rendu contourné', () => {
-    expect(generer([{ intitule: 'Posologie à revoir', ingredient: null }])).toEqual({ ok: false, raison: 'terme_prescriptif' });
+    expect(generer([{ intitule: 'Posologie à revoir' }])).toEqual({ ok: false, raison: 'terme_prescriptif' });
+  });
+
+  it('D-383 — deux lignes identiques n’en font qu’une, à la première place', () => {
+    const genere = generer([
+      { intitule: 'Magnésium' },
+      { intitule: 'Seconde intention' },
+      { intitule: ' Magnésium ' },
+    ]);
+    expect(genere.ok && genere.courrier.texte).toContain('- Magnésium.\n- Seconde intention.\n\nCe courrier');
   });
 
   it('aucun complément : aucun courrier', () => {
     expect(generer([])).toEqual({ ok: false, raison: 'aucun_complement' });
-    expect(generer([{ intitule: '  ', ingredient: null }])).toEqual({ ok: false, raison: 'aucun_complement' });
+    expect(generer([{ intitule: '  ' }])).toEqual({ ok: false, raison: 'aucun_complement' });
   });
 });

@@ -3,14 +3,17 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_COMPLEMENT } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 
 // LE COURRIER COMPLÉMENT — [[D-345]] §7, J3-12h, lot 3 (G4 de la fiche de
 // cadrage). Un papier que le PATIENT remet lui-même au médecin, avant qu'un
 // complément ciblé entre à son programme ; la réponse n'est pas attendue.
 //
-// TEXTE VALIDÉ PAR LE RESPONSABLE le 2026-10-24 (arbitrage du lot 3) : il ne se
-// retouche pas sans nouvelle validation. Il ne nomme ni la population ni la
+// TEXTE VALIDÉ PAR LE RESPONSABLE le 2026-10-24 (arbitrage du lot 3), lignes
+// revalidées le 2026-10-26 ([[D-383]]) : il ne se retouche pas sans nouvelle
+// validation. Chaque ligne est l'intitulé saisi par le praticien, seul — le nom
+// d'ingrédient du catalogue n'y figure plus. Il ne nomme ni la population ni la
 // situation qui appelle le courrier — forme opaque : les situations propres à
 // un nutriment n'ont pas de libellé au dépôt, et dire « grossesse » au médecin
 // d'une personne qui ne l'a pas annoncée serait une divulgation que personne
@@ -22,14 +25,11 @@ import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 // praticien peut porter « posologie » ou « dosage » : la garde lève, le courrier
 // se refuse — jamais un rendu contourné.
 //
-// PUR : ni horloge, ni base. L'appelant pose la date, la liste et les libellés
-// d'ingrédient lus au catalogue.
+// PUR : ni horloge, ni base. L'appelant pose la date et la liste.
 
 export type LigneComplement = {
   /** Intitulé de l'action du protocole, tel que persisté. */
   intitule: string;
-  /** Nom de l'ingrédient au catalogue, si la référence catalogue est renseignée. */
-  ingredient: string | null;
 };
 
 export type EntreeCourrierComplement = {
@@ -66,9 +66,7 @@ const REMISE =
   + 'il ne remplace pas une consultation sans délai si son état le demande.';
 
 function ligneDuCourrier(ligne: LigneComplement): string {
-  const intitule = ligne.intitule.trim();
-  const ingredient = ligne.ingredient?.trim();
-  return ingredient ? `- ${intitule} — ${ingredient}.` : `- ${intitule}.`;
+  return `- ${ligne.intitule.trim()}.`;
 }
 
 export function genererCourrierComplement(entree: EntreeCourrierComplement): PreparationCourrierComplement {
@@ -79,8 +77,10 @@ export function genererCourrierComplement(entree: EntreeCourrierComplement): Pre
   const texte = [
     'Docteur,',
     OUVERTURE,
-    lignes.map(ligneDuCourrier).join('\n'),
+    // Deux lignes identiques n'en font qu'une, à la première place ([[D-383]]).
+    [...new Set(lignes.map(ligneDuCourrier))].join('\n'),
     REMISE,
+    INFORMATION_MEDECIN,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
     SIGNATURE_PRATICIEN,
   ].join('\n\n');

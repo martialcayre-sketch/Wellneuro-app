@@ -434,12 +434,20 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       // re-refuse. Préfixe de domaine plutôt qu'empreinte nue, patron du
       // document patient biologie — deux gardes qui hacheraient le même texte
       // deviendraient interchangeables.
+      //
+      // LES PLANS IDÉAL ET DE SECOURS AUSSI ([[D-384]] §5, garde étendue). Ils
+      // seront lus par le patient dans le détail du protocole (lettre bb) ; la
+      // lecture ne les servira que pour une version créée après la mise en
+      // service constatée de cette garde ([[D-386]]) — aucun texte non relu
+      // ici n'atteint le patient.
       const champsServisAuPatient: { champ: string; texte: string }[] = [
         { champ: 'la raison d’être', texte: submission.purpose ?? '' },
         { champ: 'le critère J21', texte: submission.followUpCriterion ?? '' },
         ...verifiedActions.flatMap((action, index) => [
           { champ: `l’intitulé de l’action ${index + 1}`, texte: action.title ?? '' },
           { champ: `le plan minimal de l’action ${index + 1}`, texte: action.minimalPlan ?? '' },
+          { champ: `le plan idéal de l’action ${index + 1}`, texte: action.idealPlan ?? '' },
+          { champ: `le plan de secours de l’action ${index + 1}`, texte: action.rescuePlan ?? '' },
         ]),
       ];
       const premierTerme = champsServisAuPatient

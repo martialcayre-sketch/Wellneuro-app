@@ -41,7 +41,6 @@ const { prisma, tx, getServerSession, entrees, reconstruire } = vi.hoisted(() =>
         status: 'practitioner_reviewed', reviewedAt: new Date('2026-10-20T00:00:00.000Z'), payload: {}, contractVersion: 'c1-protocol-draft-v4',
       }]),
     },
-    supplementIngredient: { findMany: vi.fn(async () => [{ id: 'ing_1', nomFr: 'Magnésium' }]) },
     $transaction: vi.fn(async (fn: (client: unknown) => unknown) => fn(tx)),
   };
   const entrees = { valeur: null as EntreeGardeComplement | null };
@@ -117,7 +116,7 @@ describe('POST /api/praticien/protocoles/courrier-complement (D-345, J3-12h lot 
         sens: 'sortant',
         medecinLibelle: 'Médecin traitant',
         ancrageVersion: expect.stringMatching(/^complement-cible-[0-9a-f]{64}$/),
-        texte: expect.stringContaining('- Intention ciblée — Magnésium.'),
+        texte: expect.stringContaining('- Intention ciblée.\n\n'),
       }),
     }));
     expect(tx.courrierComplementListe.create).toHaveBeenCalledWith({

@@ -4,6 +4,273 @@
 
 ## Décisions actives
 
+### D-386 — bb : une version sert ses trois plans si elle a été créée après la mise en service constatée de la garde étendue ; la marque est la date de création, sans migration (complète D-384 §5)
+
+- Date : 2026-10-26
+- Statut : accepté — arbitrage du responsable du 2026-10-26 sur question à
+  options (date de création ; écartés : garde rejouée à la lecture, marque
+  dans le contenu, confirmation persistée).
+- Domaine : protocole de 21 jours ; route d'enregistrement d'une version
+  (`web/src/app/api/praticien/protocoles/versions/route.ts`) ; lecture
+  patient du protocole servi ; fiche H49. Tranche la question que [[D-384]]
+  laisse ouverte.
+- Ne touche pas : aucune migration, aucun champ du contrat de protocole,
+  aucune empreinte persistée (`inputHash` inchangé ; seul le jeton de
+  confirmation, jamais stocké, couvre deux textes de plus) ; aucune règle
+  clinique ; rien n'est servi au patient avant l'activation de bb
+  ([[D-384]] §6).
+
+**§1 — La garde étendue.** À l'enregistrement d'une version, `termeAnxiogene`
+lit aussi le plan idéal et le plan de secours de chaque action, au même régime
+que le plan minimal : refus confirmable, jeton lié au texte. Elle s'applique
+dès sa mise en service, côté praticien, indépendamment de l'activation de bb.
+
+**§2 — La marque.** Une version est réputée enregistrée sous la garde étendue
+quand sa date de création (colonne `created_at` de `protocol_drafts`, posée à
+l'insertion de la ligne) est postérieure à l'instant de mise en service de la
+garde, constaté sur Scalingo après le déploiement. Cet instant s'écrit dans le
+code de la lecture, au lot suivant, une fois constaté. Deux précisions :
+- l'horloge est celle de l'application (la valeur par défaut est posée côté
+  client par Prisma, en UTC) : l'instant s'écrit en UTC, relevé après la fin
+  de la bascule, quand plus aucun conteneur de l'ancien code ne sert ;
+- un recul de la production sous ce commit après l'instant (redéploiement
+  d'un commit antérieur) invalide la marque pour les versions créées pendant
+  le recul : à constater et à traiter avant toute activation de bb.
+
+**§3 — Le doute se lit comme un refus.** Une version créée avant cet instant
+sert le plan minimal seul ([[D-384]] §5), même si ses plans passeraient la
+garde aujourd'hui. Une confirmation donnée à l'enregistrement n'est pas
+persistée : la marque ne dit pas qu'un texte est sans terme, elle dit qu'il a
+été relu par la garde, et que le praticien a tranché s'il y en avait un.
+
+**§4 — Deux lots.** (1) La garde étendue, déployée et constatée. (2) La
+lecture des trois plans et « Jour difficile ? », sous drapeau éteint, avec
+l'instant de §2 ; activation en file C, porte 18 ([[D-384]] §6).
+
+**Ce qu'elle ne décide pas.** La forme visuelle du détail ; le nom du
+drapeau ; la place exacte de bb dans la file C.
+
+**Effet sur le plan.** H49 : la question ouverte de D-384 est tranchée ; lot 1
+de code en cours.
+
+### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
+
+- Date : 2026-10-26
+- Statut : accepté — réponse 6.4 de la séance du 2026-10-11 (comptes internes
+  du cabinet) ; deux arbitrages du responsable du 2026-10-26 sur questions à
+  options ; lettre validée telle quelle le même jour.
+- Domaine : espace praticien, page des comptes du cabinet ; fiche H58, puis
+  J3-cabinet. Effectif : [[D-298]] ; doctrine : [[D-334]], [[D-333]].
+  Préalables levés : d (D-334), porte 6 (M-2, 2026-10-23), effectif (D-298,
+  appliqué au code par t24).
+- Ne touche pas : aucun seuil clinique, aucun état ni calcul nouveau d'un
+  dossier, aucun texte patient, aucune migration ; le repère de cabinet
+  existant (Momentum) ne change pas.
+
+**§1 — Ce que compte la page.** Deux tableaux, chacun avec son effectif.
+- **Prochaine étape** : pour chacune des sept phases du rail de la fiche
+  patient (Patient, Données fiables, Compréhension, Décision 21 j, Actions,
+  Suivi, Réévaluation), le nombre de dossiers qui l'ont pour prochaine étape,
+  et le nombre de dossiers où « rien n'attend ». Même calcul que « Prochaine
+  étape » sur la fiche (`phaseDue`, règle D5).
+- **Protocole** : le nombre de dossiers sans protocole diffusé, avec un
+  protocole diffusé et un cycle en cours, et à la fin de leur cycle — d'après
+  les signaux que le portail sert déjà (`protocoleDiffuse`, `finDeCycle`).
+
+Aucun état n'est inventé. Un dossier dont l'état n'a pas pu être établi est
+compté à part, « indéterminé », jamais rangé ailleurs.
+
+**§2 — Effectif et masquage.** L'unité est le dossier (D-298 §1). L'effectif
+total de chaque tableau reste toujours affiché ; sous cinq dossiers distincts,
+la répartition est masquée (D-298 §2), et l'écran dit pourquoi. Un compte nul
+n'est pas masqué.
+
+**§3 — Ce que la page ne montre jamais.** Ni moyenne, ni médiane, ni
+pourcentage, ni prédiction, ni classement, ni comparaison à une norme (D-334
+§7 ; esquisse 1 : « jamais une moyenne ni une prédiction ») ; aucun mot qui
+juge sans seuil signé (D-333). Aucun dossier n'est nommé : la page compte,
+elle ne liste pas.
+
+**§4 — Les dossiers comptés.** Tous les dossiers du cabinet, dossiers de test
+compris : ils sont réels en production ([[D-075]]). Aucune marque ne les
+distingue, et aucune n'est créée.
+
+**§5 — L'usage.** Agrégats internes, pour le praticien seul : jamais publiés,
+exportés ni transmis ; pas une recherche au sens légal. Tout constat versé
+dans un fichier durable suit D-298 §3.
+
+**§6 — Le code.** Lot J3-cabinet, file A, rang 4 : revue ordinaire, T2, banc
+« sous cinq » pour chaque tableau. Porte 6 levée ; si une migration se
+révélait nécessaire : G-7, porte 9.
+
+**Ce qu'elle ne décide pas.** La forme visuelle de la page, son emplacement
+dans la navigation, la façon dont le lot calcule la prochaine étape pour
+plusieurs dossiers à la fois, toute autre famille de comptes.
+
+**Effet sur le plan.** H58 : y faite ; J3-cabinet jouable. Registre « Lettres
+à écrire » : y faite.
+
+### D-384 — Les trois plans de chaque geste au patient : « Selon votre journée », dans le détail du protocole ; le plan de secours répond au jour difficile ; seulement pour les versions relues par la garde étendue (lettre bb)
+
+- Date : 2026-10-26
+- Statut : accepté — réponse du 2026-10-13 (pièce de cadrage des protocoles de
+  21 jours, question 5 : les trois plans, lus) ; quatre arbitrages du
+  responsable du 2026-10-26 sur questions à options ; texte patient validé mot
+  pour mot le même jour.
+- Domaine : protocole de 21 jours, lecture patient ; fiche H49 ; détail du
+  protocole ([[D-315]]) ; carte des gardes du vocabulaire
+  (`web/src/lib/documents/vocabulaire.ts`). Préalable : ba ([[D-369]]).
+- Ne touche pas : aucun champ du contrat de protocole, aucune règle clinique,
+  aucune charge, aucun choix du patient enregistré, aucune migration décidée
+  ici ; rien n'est servi avant l'activation (§6).
+
+**§1 — Ce que lit le patient.** Les trois plans de chaque action : idéal,
+minimal, secours. Il choisit seul selon sa journée ; rien n'est enregistré, ni
+le plan choisi ni un clic.
+
+**§2 — Le texte, mot pour mot.** Un chapeau, « Selon votre journée : », puis,
+dans cet ordre, pour chaque action :
+- « Si tout va bien » : le plan idéal ;
+- « Au quotidien » : le plan minimal ;
+- « Si c'est plus dur » : le plan de secours.
+
+Aucune couleur, aucun chiffre, aucun rang. Les intitulés en couleurs (vert,
+orange, rouge) sont écartés : ils se liraient comme une zone ou une alerte.
+
+**§3 — L'emplacement.** L'accueil ne change pas : titre de l'action et plan
+minimal, sans intitulé. Les trois plans, sous §2, se lisent dans le détail du
+protocole (dépli de D-315), et de même dans sa version imprimable quand elle
+existera (bh). Une action en attente de bilan ou en pause garde son régime
+actuel : ses plans ne se lisent pas tant qu'elle n'est pas ferme.
+
+**§4 — Le jour difficile.** Le bouton « Jour difficile ? » propose le plan de
+secours de la même action (première action ferme hors pause) : « Si vous le
+pouvez aujourd'hui : [plan de secours]. » Pour une version que §5 n'admet pas,
+il garde le plan minimal, comme aujourd'hui.
+
+**§5 — La garde et les versions antérieures.** Les plans idéal et de secours
+entrent dans la carte des gardes : `termeAnxiogene` à l'enregistrement d'une
+version, refus confirmable, comme le plan minimal. Seules les versions
+enregistrées sous cette garde étendue servent les trois plans. Une version
+antérieure reste servie comme aujourd'hui (plan minimal seul) jusqu'à la
+version suivante du praticien : aucun texte non relu par la garde n'atteint le
+patient.
+
+**§6 — L'activation.** Une place de la file C, porte 18, après l'encart
+« quand ralentir » ; constat sur un vrai dossier.
+
+**Ce qu'elle ne décide pas.** Comment le lot reconnaît une version
+enregistrée sous la garde étendue (si une marque persistée est nécessaire :
+migration, G-7, porte 9) ; la forme visuelle du détail ; la place exacte dans
+la file C ; le rendu imprimable (bh).
+
+**Effet sur le plan.** H49 : texte écrit ; critère de fin restant :
+activation constatée sur un vrai dossier. Registre « Lettres à écrire » : bb
+fait. Lot de code à venir (file C) : §2 à §5.
+
+### D-383 — Courrier complément : chaque ligne est l'intitulé saisi par le praticien, seul ; le nom d'ingrédient du catalogue sort du texte (amende D-358 §1 ; P1-3 de la revue Codex de #1701)
+
+- Date : 2026-10-26
+- Statut : accepté — le responsable a demandé le retrait le 2026-10-26
+  (P1-3 de la revue Codex de #1701, écarté dans #1708 tant que le texte
+  validé le prévoyait), puis validé le même jour la forme de la ligne
+  proposée par l'assistant.
+- Domaine : `lib/correspondance/courrierComplement.ts`
+  (`genererCourrierComplement`), route
+  `api/praticien/protocoles/courrier-complement`.
+- **Amende** [[D-358]] §1, pour la seule liste : « intitulé, et ingrédient du
+  catalogue s'il est renseigné » devient « intitulé ».
+- **Ne touche pas** : le reste du texte validé (ouverture, paragraphe de
+  remise, date, signature) ; la liste tracée de [[D-358]] §2, qui garde la
+  référence catalogue ; la table signée des déclencheurs ; aucune migration,
+  aucun `schema.prisma` ; `WN_COURRIER_COMPLEMENT` reste éteint.
+
+**§1 — La ligne.** Chaque complément ciblé s'écrit `- {intitulé}.`,
+l'intitulé saisi par le praticien, sans ajout. Le courrier ne lit plus le
+catalogue des ingrédients.
+
+**§2 — Les doublons.** Deux lignes identiques, une fois l'intitulé débarrassé
+de ses espaces de bord, n'en font qu'une, à la place de la première.
+
+**§3 — Ce qui est déjà remis.** Aucun courrier n'a été consigné en
+production : le drapeau n'y a jamais été ouvert. Une remise garde de toute
+façon le texte figé qu'elle porte (lot 4, [[D-362]]).
+
+**Conséquence acceptée.** L'intitulé seul doit suffire au médecin : un
+intitulé vague n'est plus précisé par le nom au catalogue.
+
+### D-382 — Familles du bilan biologique : chacune est le bloc de justification d'un des quinze panels hérités, signée sur un dossier tenu hors dépôt ; le niveau et son ordre attendent une lettre propre avant ax (lettre aw, cadre)
+
+- Date : 2026-10-26
+- Statut : accepté — cadre seul, sur six arbitrages du responsable du
+  2026-10-26 (questions à options, à partir d'un dossier de propositions
+  vérifié contre le dépôt) ; lettre validée telle quelle le même jour.
+- Domaine : bilan biologique hiérarchisé, Track C ; fiche F34 du plan ; panels
+  hérités ([[D-296]]) ; table signée `indicationsBiologieV1` ([[D-063]],
+  [[D-187]]).
+- Ne touche pas : aucune règle d'indication, aucun déclencheur, seuil ou délai,
+  aucune composition, aucun panel créé ou désactivé, aucune migration, aucun
+  code, aucun texte servi au médecin ou au patient.
+
+**§1 — La famille.** Une famille est le bloc de justification que porte l'un
+des quinze panels hérités, sous son code (D-296 §2). L'analyse reste l'unité
+canonique : un examen présent dans plusieurs familles est une seule analyse,
+qui garde toutes ses familles et toutes leurs justifications. Aucun pack ne se
+crée (D-296 §3). Le périmètre est celui des quinze codes de la table signée.
+
+**§2 — Le nom.** Chaque famille garde le libellé de son panel au catalogue,
+signé tel quel. Le courrier et le document patient actuels ne changent pas.
+
+**§3 — Les deux exclusions.** `PANEL_MG_PLASMATIQUE` et `PANEL_CORTISOL_ISOLE`
+entrent au dossier comme blocs d'exclusion signés, avec leur motif verbatim et
+leur claim : ils disent pourquoi l'examen n'est pas proposé, et ne deviennent
+jamais une exploration proposée. Leur régime reste celui de D-296 §4 et de
+[[D-320]].
+
+**§4 — Ce que porte une fiche.** Le nom (§2) ; la condition et le motif de la
+règle signée, mot pour mot ; ses lignes (analyses) ; ses claims, avec leur
+version ; et « ce que la famille explore », tiré d'un claim relu dans le
+corpus. Le point de prudence n'y entre que s'il a sa source ; sinon la fiche
+porte « aucune prudence sourcée », sans texte. Une fiche à laquelle manque
+l'exploration n'est pas signable. Cette exigence vaut pour les treize fiches
+ordinaires. Un bloc d'exclusion (§3) porte son motif et son claim de
+non-indication, sans exploration ; l'exploration pertinente qu'il nomme reste
+sur la fiche de son alternative (D-320).
+
+**§5 — Le dossier et la signature.** Les textes des fiches sont tenus hors
+dépôt, au modèle du dossier de preuve de [[D-312]] §2 : claims lus en
+production par conteneur, en lecture seule ; le responsable valide chaque
+texte et signe chaque famille. Au dépôt : codes, date de signature et
+empreinte SHA-256 de la version signée de chaque fiche, et rien d'autre
+([[D-251]] §4). La signature suit [[D-195]] : la déclaration du responsable
+précède la frappe. Aucun contrôle logiciel n'est ajouté avant que ces textes
+ne soient servis ; jusque-là, la vérification consiste à recalculer
+l'empreinte. Le lot qui les servira (ax) ajoute ce contrôle.
+
+**§6 — La table des quinze règles.** Une fois les familles signées, le
+responsable relit et re-signe la table (F34), sans en changer aucune règle. La
+surface complète — règles, grilles et calculs (D-187) — lui est produite avant
+l'attestation. La nouvelle date de signature est un changement de code sur un
+chemin clinique : lot propre, release-db retenue jusqu'à son approbation
+([[D-044]]).
+
+**§7 — Le niveau.** Les niveaux du catalogue restent des métadonnées héritées,
+sans valeur d'ordre clinique (DC-20). L'ordre des trois niveaux et le niveau
+unique de chaque examen partagé entre familles se signent dans une lettre
+propre, préalable du bilan composé (ax). Aucun ordre n'est servi avant elle.
+
+**Ce qu'elle ne décide pas.** Les textes des fiches ; l'ordre des niveaux et le
+niveau des examens partagés ; la conversion des panels, les indications par
+axe et le devenir du gabarit optionnel (F53) ; le rendu des familles au
+médecin ou au patient (ax, [[D-311]], [[D-380]]) ; les lacunes de composition
+nommées (apoprotéine, IgA sécrétoires) ; la réserve du panel fatigue et le
+conflit CS-BIO-01, relus à la re-signature sans être tranchés ici.
+
+**Effet sur le plan.** F34 : cadre écrit ; critère de fin inchangé (quinze
+familles signées, table re-signée, aucune borne inventée). Registre « Lettres à
+écrire » : aw, cadre écrit ; nouvelle lettre cr, « ordre des niveaux et niveau
+des examens partagés », préalable de F35 (ax).
+
 ### D-381 — t45 : le résolveur des libellés est re-signé sur les acides gras — vingt-deux libellés imprimés et trois sigles (EPA, DHA, DGLA) ; AA, ALA et « acide linolénique » nu jamais rattachés ; les rapports AA/EPA et LA/DGLA préparés par leurs opérandes
 
 - Date : 2026-10-26
@@ -373,14 +640,20 @@ réduisent les écritures concurrentes sur ces fichiers.
   gel : par phases, contre un gel intégral), sur questions à options ;
   précisé par la contre-revue Codex (lecture de `release-db.yml`) ; texte de
   registre rédigé dans le lot. **§1 livré le 2026-10-26** (fiche H85 ;
-  déploiement à constater au premier run du déployeur après le merge) : banc
+  déploiement constaté le même jour, run 40322732625) : banc
   « migration portée par un ancêtre, tête de code verte » joué rouge sur
   l'ancienne lecture, puis `retenue()` à quatre états ; la fin rouge
   volontaire se lit « appliquée » par les étapes du run (one-off et
   contre-épreuve vertes), vérifiée sur le run de l'incident du 2026-10-19.
-  Gel intégral maintenu jusqu'à la sonde (§4).
+  Gel intégral maintenu jusqu'à la sonde (§4). **Arbitrage du 2026-10-26**,
+  après un contre-avis Codex vérifié dans le code : la retenue d'un commit
+  clinique non approuvé s'étend à ses descendants (§1, confirmé) ; et la
+  comparaison de la tête dépassante dans `release-db.yml`, qui ne regarde
+  que les migrations, couvrira aussi `web/src/lib/clinical/**`, au lot de
+  la sonde (§4, fiche H88), en défense derrière le gel du §2. Le §3 se lit
+  alors « migration nouvelle ou changement clinique nouveau ».
 - Domaine : `.github/workflows/release-db.yml` (lu, non modifié par cette
-  décision), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
+  décision jusqu'à l'arbitrage du 2026-10-26), `scripts/wn-deploiement-deployer.mjs` ([[D-248]]),
   `.claude/rules/pr-revue-et-release-db.md` §3 à §5 (§1.10 : [[D-373]] §7),
   skill `wn-merge` ; [[D-087]] (l'approbation humaine, unique porte
   d'écriture du schéma) ; [[D-044]] §3 (le chemin clinique déclenche

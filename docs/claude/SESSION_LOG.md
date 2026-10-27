@@ -11858,3 +11858,70 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, constat du déploiement.
 
 **Ouvert.** L'entrée d'acides gras en panel ; le constat du prochain profil importé.
+
+## 2026-10-26 — File D : lettre aw, cadre des familles (D-382)
+
+**Fait.** Dossier de propositions sur les familles (Codex, hors dépôt) vérifié contre main : inventaire des quinze panels et des quinze règles exact ; trois décisions dites absentes, à tort (commit antérieur). Six arbitrages : famille = bloc hérité du panel, libellés gardés, deux blocs d'exclusion, exploration exigée et prudence seulement sourcée, empreinte au registre avec contrôle à ax, niveaux hors d'aw (lettre cr). Lettre validée telle quelle.
+
+**Écarté.** Familles par axes (attendrait F53) ; regroupements de panels (packs sous un autre nom, D-296 §3) ; constat lexical du document patient (phrase « ni une ordonnance » voulue et testée).
+
+**Prochaine action.** Dossier privé des quinze fiches, claims relus par conteneur.
+
+**Ouvert.** Signatures des fiches ; re-signature de la table ; lettre cr.
+
+## 2026-10-26 — J3-12h : courrier complément sans nom d'ingrédient (D-383)
+
+**Fait.** #1708 mergée (d356e83a) après la passe Codex ACCEPTER et deux corrections CodeRabbit : corps de l'accusé borné à 64 Kio, lu en flux. P1-3 livré sur demande du responsable : chaque ligne du courrier est l'intitulé seul, doublons fusionnés ; D-383 amende D-358 §1.
+
+**Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
+
+**Ouvert.** Dettes de #1701 ; drapeau éteint, conditions 2 à 4.
+
+## 2026-10-26 — File D : lettres bb et y (D-384, D-385)
+
+**Fait.** aw reprise par la session file B. bb : trois plans lus dans le détail du protocole, intitulés « Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c'est plus dur » (validés mot pour mot) ; secours derrière « Jour difficile ? » ; plans idéal et secours sous la garde, versions antérieures en plan minimal seul. y : deux tableaux (prochaine étape, état du protocole), effectif affiché, masqué sous cinq, dossiers de test comptés. Renumérotées après D-383 (J3-12h).
+
+**Écarté.** Intitulés en couleurs ; trois plans à l'accueil ; marque « dossier de test » (migration).
+
+**Prochaine action.** Lots de code : file C pour bb, J3-cabinet (file A) pour y.
+
+**Ouvert.** Comment le lot de bb reconnaît une version sous garde étendue.
+
+## 2026-10-26 — File C : ba constatée sur la page servie (D-369, H35)
+
+**Fait.** #1714 déployée. La mention s'est d'abord dérobée : la carte du dossier de test avait dérivé après J3-12g, page « pas consultable » (motif `carte_derivee` aux logs). Réapprobation par le responsable, puis lecture en ligne : « Validé par votre praticien le 26 octobre 2026 », en tête du bloc du protocole, date de la réapprobation relue en conteneur. H35 faite.
+
+**Écarté.** Sortir le bloc du protocole du repli « Mon accompagnement » : mise en page hors de D-369, non demandée.
+
+**Prochaine action.** Place 7 (ak) dans sa fenêtre, du 2026-11-01 au 2026-11-07.
+
+**Ouvert.** Un second dossier de test attend sa réapprobation (D-359 §3).
+
+## 2026-10-26 — Lot (e) de D-283 : l'information du médecin dans chaque lettre (D-377)
+
+**Fait.** La phrase de D-377 entre dans les trois lettres au médecin (adressage, biologie, compléments), avant la formule de politesse, depuis une constante unique qui lit l'adresse des droits. Aussi : t45 trouvé déjà livré par sa session (#1716), page des instruments des 12 besoins close (v13), ligne t33 de la page file A remise à jour.
+
+**Écarté.** La phrase juste avant la signature, après la politesse ; la constante dans `signature.ts`, atteint côté client.
+
+**Prochaine action.** T3, CI, CodeRabbit, merge, release-db approuvée (chemin clinique), déploiement observé.
+
+**Ouvert.** Code de (a) (D-378), lié à bg.
+## 2026-10-26 — File C : bb, lot 1 — garde étendue aux plans idéal et de secours (D-386)
+
+**Fait.** Question ouverte de D-384 tranchée par le responsable : la marque d'une version « sous garde étendue » est sa date de création, postérieure à la mise en service constatée de la garde (D-386). Lot 1 : la route d'enregistrement d'une version lit aussi les plans idéal et de secours (refus confirmable, jeton lié au texte) ; carte des gardes à jour ; trois cas de banc.
+
+**Écarté.** Garde rejouée à la lecture (servirait les versions antérieures, contraire à D-384 §5) ; marque dans le contenu (champ de contrat) ; confirmation persistée (migration).
+
+**Prochaine action.** Merge, déploiement constaté, instant relevé ; puis lot 2 sous drapeau éteint.
+
+**Ouvert.** Nom du drapeau et forme du détail, au lot 2.
+
+## 2026-10-26 — File D, lots de code : cb, écran de fin de l'agenda du sommeil (D-379, H39)
+
+**Fait.** ba trouvée déjà livrée et constatée (#1714, #1722). Lot cb : l'écran de fin de l'agenda du sommeil dit « Merci d’avoir noté vos nuits 🌙 » et la phrase de D-379 §1, mot pour mot, le même pour tous, sans chiffre ; banc posé.
+
+**Écarté.** (e) et bb dans cette séance : d'autres sessions les portent (arbitrage du responsable) ; toute illustration (cc).
+
+**Prochaine action.** CI, CodeRabbit, merge ; puis bg + (a) (D-364 §4, D-378).
+
+**Ouvert.** Constat par lecture sur un agenda transmis ; jeu d'illustrations de cc.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { genererCourrierBiologie } from './courrier';
 import type { LignePanelProposition } from './statuts';
@@ -206,6 +207,17 @@ describe('couplage rendu ↔ consigné (revue M1, D-073)', () => {
 });
 
 describe('le papier — signataire et en-tête (LOT-03)', () => {
+  it('informe le médecin sur ses coordonnées, juste avant la politesse ([[D-377]])', () => {
+    const resultat = genererCourrierBiologie(entree([
+      ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' }),
+    ]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    const paragraphes = resultat.courrier.texte.split('\n\n');
+    expect(paragraphes.at(-3)).toBe(INFORMATION_MEDECIN);
+    expect(paragraphes.at(-2)).toMatch(/^Avec mes remerciements pour votre lecture\./);
+    expect(resultat.courrier.html).toContain('martialcayre@wellneuro.fr');
+  });
+
   it('signe la lettre, et la signature part par les DEUX chemins de remise', () => {
     // Le courrier allait du littéral « Docteur, » à une date, sans signataire :
     // imprimé et remis à un médecin, il ne disait ni qui l'écrit ni à quel

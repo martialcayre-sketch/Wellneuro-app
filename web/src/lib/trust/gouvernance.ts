@@ -19,6 +19,10 @@
  * D'où le geste : `sousTraitants` n'est plus recopié, il est DÉRIVÉ du document
  * courant. Une liste qui se recopie diverge ; une liste qui se calcule ne le
  * peut pas.
+ *
+ * PREMIER CONSOMMATEUR depuis [[D-377]] : `contactDroits` est l'adresse que
+ * la phrase d'information du médecin cite dans chaque lettre
+ * (`correspondance/informationMedecin.ts`). Le reste du module n'en a pas.
  */
 
 import { getDocumentCourant } from './contenus/registre';
