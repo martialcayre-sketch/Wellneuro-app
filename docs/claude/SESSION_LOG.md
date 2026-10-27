@@ -11955,3 +11955,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge ; puis J1-alim.
 
 **Ouvert.** L'e-mail v4, geste du responsable ; la base légale du flux ChatGPT ; le texte amendé de D-378, puis la v22.
+
+## 2026-10-27 — F34 : contre-revue Codex intégrée, exclusions amendées (D-389)
+
+**Fait.** Dossier aw corrigé sur six constats Codex (rev 26) : reformulation retirée, précisions de libellé nommées, R6/R7 bornées. Second dossier Codex sur les deux exclusions, revérifié dans l'arbre : le motif est servi aussi dans la proposition de bilan (et la colonne « objectif » dit « verbatim ») ; la retenue release-db ne couvre pas la table signée ; l'empreinte ne porte que règles et grilles. Quatre arbitrages du responsable : lecture signée, seconde phrase d'E1 gardée, migration de correction, retenue étendue au fichier de la table. D-389 écrite.
+
+**Écarté.** Statu quo (attribution fausse maintenue) ; claim mot pour mot à la place du motif (deux règles changées, banc rouge, F53 le refera) ; deux textes à l'écran ; retenue manuelle.
+
+**Prochaine action.** CI, CodeRabbit, merge de D-389 ; doc aw mis à jour (E1, E2, R6, R7) ; puis lot retenue, lot écran, migration.
+
+**Ouvert.** R1 à R5 ; signatures des quinze fiches (étape 2) ; re-signature (étape 3).
