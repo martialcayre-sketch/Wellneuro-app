@@ -236,15 +236,33 @@ jobs:
       # numéro est silencieux et se propage.
       # Même absence de filtre `docs_only` que les étapes ci-dessus, et pour la
       # même raison — le fichier gardé EST un `.md`. Ni npm ni build.
+      # Depuis D-370, le numéro se réserve à la rédaction : sur une PR
+      # (`GITHUB_EVENT_NAME`, posé par Actions), un trou couvert par une
+      # réservation `refs/tags/reserve/D-NNN` passe en avertissement, et le
+      # garde ne lit les réservations — en lecture seule, d'où le jeton — que
+      # s'il y a un trou. Sur `main`, un trou n'est jamais rouge et rien n'est
+      # lu à distance. La commande reste celle de `npm run check` (parité).
       - name: Numérotation du registre des décisions (blocking)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/lib/decisions-numerotation.mjs
 
       # Banc du contrôle ci-dessus. Il prouve les trois morsures séparément —
-      # doublon, trou, désordre — et le silence sur l'état réel du dépôt. Un
-      # garde qui n'attrape qu'une des trois ressemblerait aux deux fois où la
-      # collision est passée.
+      # doublon, trou sans réservation sur une PR, désordre au rang
+      # numérique —, la tolérance du trou réservé ou hors PR, et le silence sur
+      # l'état réel du dépôt. Un garde qui n'attrape qu'une des trois
+      # ressemblerait aux deux fois où la collision est passée.
       - name: Numérotation du registre des décisions (banc du contrôle)
         run: node --test scripts/lib/decisions-numerotation.test.mjs
+
+      # Banc de `scripts/wn-reserver-decision.mjs` (D-370 §1), sur une API
+      # simulée par un faux `gh` : aucune référence réelle créée, ni jeton ni
+      # réseau. Ce qu'il protège : « déjà existante » est la SEULE cause qui
+      # fait passer au numéro suivant ; tout autre refus rend « inconnu » sans
+      # nouvel essai — un second essai sur une création peut-être réussie
+      # réserverait deux numéros pour une décision.
+      - name: Réservation d'un numéro de décision (banc du script)
+        run: node --test scripts/wn-reserver-decision.test.mjs
 
       # Invariants de sûreté de `release-db`, le seul chemin d'écriture de la base
       # de production. Depuis que ce workflow est proposé automatiquement, il ne
@@ -411,6 +429,22 @@ jobs:
       - name: Contrôle de clôture (fragment de handoff)
         if: github.event_name == 'pull_request' && steps.scope.outputs.docs_only != 'true'
         run: node scripts/wn-controle-cloture.mjs "${{ github.event.pull_request.base.sha }}"
+
+      # D-370 §4 : sur une PR non documentaire, signale une décision ajoutée
+      # sans réservation — si une autre PR prend le numéro d'abord, la
+      # renumérotation coûtera un CI complet. JAMAIS bloquante : le script sort
+      # 0 dans tous les cas, et `continue-on-error` en filet ; tout durcissement
+      # exigerait une nouvelle décision. La base est `HEAD^1`, premier parent
+      # du commit de fusion de la PR : la tête de la branche de base contre
+      # laquelle elle est jugée, si bien qu'une décision mergée entre-temps sur
+      # la base ne passe pas pour ajoutée par la PR. Jeton en lecture seule : la lecture
+      # des réservations.
+      - name: Décision ajoutée sans réservation (avertissement)
+        if: github.event_name == 'pull_request' && steps.scope.outputs.docs_only != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/lib/decisions-numerotation.mjs --accompagnement HEAD^1
 
       # Protège la logique clinique : les 63 questionnaires doivent rester
       # conformes à leurs fixtures de scoring certifiées. Après `npm ci` : le

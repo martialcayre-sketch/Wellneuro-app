@@ -128,8 +128,10 @@ GitHub prend le titre du **commit** quand la branche ne porte qu'un seul commit
 *réel*, les commits de fusion ne comptant pas. **Éditer le titre de la PR ne
 change donc rien**, et `gh pr edit --title` donne l'illusion inverse.
 
-Le cas où ça mord : une décision renumérotée en cours de route (fréquent — le
-numéro ne se réserve qu'au merge, voir l'en-tête de
+Le cas où ça mord : une décision renumérotée en cours de route — fréquent
+tant que le numéro se prenait au merge, plus rare depuis qu'il se réserve à la
+rédaction (`D-370`, `node scripts/wn-reserver-decision.mjs`), mais pas exclu
+pour une décision posée sans réservation (voir l'en-tête de
 `scripts/lib/decisions-numerotation.mjs`). Le registre porte `D-147`, le sujet
 du commit annonce `D-145`, et `main` ne se réécrit pas. Trois PR en portent la
 trace : #943, #949, #950 — celle de #949 citant un `D-145` qui **existe** et
@@ -169,7 +171,10 @@ enchaîner en un minimum d'allers-retours :
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
    ou le statut `CodeRabbit` (effet de bord `action_required` décrit plus haut) ;
    sans `verify`, ne pas merger.
-2. `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+2. Juste avant, la sonde release-db (`D-374` §2 à §4) :
+   `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise ; `1` gelé,
+   `2` lecture impossible (gel). Puis
+   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
    merge et suppression de la branche distante en un geste, **lié au sha que la
    revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
    contrôles se rejouent sur la nouvelle tête.

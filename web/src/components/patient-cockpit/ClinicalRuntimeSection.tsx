@@ -24,6 +24,7 @@ import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import type { TroisPlansAction } from '@/lib/portail/troisPlans';
 import type { AnnonceFiches, ApercuFiches } from '@/lib/fiches-assiette/apercuRemise';
 import type { ApercuLettreAdressage } from '@/lib/correspondance/lettreAdressageRemise';
 import type { ApercuCourrierComplement } from '@/lib/correspondance/courrierComplementRemise';
@@ -118,6 +119,8 @@ type DiffusionApiResponse = {
   apercu?: ApercuPatientServi | null;
   /** Les éléments de l'aperçu en pause sur effet indésirable ([[D-281]] §2) ; vide avant la signature. */
   pauses?: ElementEnPause[];
+  /** Les trois plans que le portail servirait sur la version de l'aperçu ([[D-386]]) ; absent = plan minimal seul. */
+  troisPlans?: TroisPlansAction[];
   /** Les fiches d'assiette que le clic remettrait ([[D-251]] §7) ; `null` drapeau fermé. */
   fiches?: ApercuFiches | null;
   /** Une fiche remise serait annoncée par l'e-mail neutre ([[D-251]] §9, lot 11). */
@@ -486,6 +489,7 @@ export function ClinicalRuntimeSection({
    */
   const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
   const [pausesApercu, setPausesApercu] = useState<ElementEnPause[]>([]);
+  const [troisPlansApercu, setTroisPlansApercu] = useState<TroisPlansAction[]>([]);
   const [apercuFiches, setApercuFiches] = useState<ApercuFiches | null>(null);
   const [apercuLettre, setApercuLettre] = useState<ApercuLettreAdressage | null>(null);
   /**
@@ -668,6 +672,7 @@ export function ClinicalRuntimeSection({
         // affiché sans ses pauses relues montrerait actif un élément en pause.
         setApercuPatient(null);
         setPausesApercu([]);
+        setTroisPlansApercu([]);
         setApercuFiches(null);
         setApercuLettre(null);
         setCourrierComplement(null);
@@ -689,6 +694,7 @@ export function ClinicalRuntimeSection({
       setServieAuPatient(payload.servieAuPatient ?? null);
       setApercuPatient(payload.apercu ?? null);
       setPausesApercu(payload.pauses ?? []);
+      setTroisPlansApercu(payload.troisPlans ?? []);
       setApercuFiches(payload.fiches ?? null);
       setApercuLettre(payload.lettre ?? null);
       setComplementCibleOuvert(Object.hasOwn(payload, 'courrierComplement'));
@@ -700,6 +706,7 @@ export function ClinicalRuntimeSection({
       if (seq !== seqDiffusion.current) return;
       setApercuPatient(null);
       setPausesApercu([]);
+      setTroisPlansApercu([]);
       setApercuFiches(null);
       setApercuLettre(null);
       setCourrierComplement(null);
@@ -2495,6 +2502,7 @@ export function ClinicalRuntimeSection({
             servieAuPatient={servieAuPatient}
             apercu={apercuPatient}
             pausesApercu={pausesApercu}
+            troisPlansApercu={troisPlansApercu}
             fiches={apercuFiches}
             lettre={apercuLettre}
             courrierComplement={courrierComplement}

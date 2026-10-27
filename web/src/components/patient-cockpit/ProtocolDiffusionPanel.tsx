@@ -13,6 +13,7 @@
 
 import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
+import type { TroisPlansAction } from '@/lib/portail/troisPlans';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import {
   fichesARemettre,
@@ -273,6 +274,7 @@ export function ProtocolDiffusionPanel({
   servieAuPatient = null,
   apercu = null,
   pausesApercu = [],
+  troisPlansApercu = [],
   fiches = null,
   lettre = null,
   courrierComplement = null,
@@ -318,6 +320,8 @@ export function ProtocolDiffusionPanel({
   apercu?: ApercuPatientServi | null;
   /** Les éléments de l'aperçu en pause ([[D-281]] §2), marqués comme au portail. */
   pausesApercu?: readonly ElementEnPause[];
+  /** Les trois plans que le portail servirait ([[D-386]]), lus comme au portail. */
+  troisPlansApercu?: readonly TroisPlansAction[];
   /**
    * Les fiches d'assiette que le clic remettrait ([[D-251]] §7). `null` :
    * `WN_FICHES_ASSIETTE` fermé, ou lecture non aboutie — l'écran n'en dit rien.
@@ -462,7 +466,7 @@ export function ProtocolDiffusionPanel({
       {apercu && (
         <div className="mt-4">
           {apercu.ok ? (
-            <ApercuPatientProtocole contenu={apercu.contenu} pauses={pausesApercu} />
+            <ApercuPatientProtocole contenu={apercu.contenu} pauses={pausesApercu} troisPlans={troisPlansApercu} />
           ) : (
             <p className="rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
               Aucun aperçu patient pour la version active : {apercu.detail}

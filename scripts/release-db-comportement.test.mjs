@@ -102,10 +102,10 @@ function git(cwd, ...args) {
  * `migrations` dit si le SECOND commit touche `web/prisma/migrations/` — c'est la
  * distinction sur laquelle le workflow arbitre : une tête qui a dépassé le commit
  * approuvé SANS migration nouvelle se déploie, avec migration nouvelle se refuse.
- * `table` fait toucher au second commit le fichier de la table signée des
- * indications, que la comparaison tient comme une migration (D-389 §5).
+ * `clinique` fait toucher au second commit `web/src/lib/clinical/` : même
+ * arbitrage que pour une migration (D-374, arbitrage du 2026-10-26).
  */
-function depotJouet({ migrations, table = false }) {
+function depotJouet({ migrations, clinique = false }) {
   const base = mkdtempSync(join(tmpdir(), 'wn-release-db-'));
   const amont = join(base, 'amont');
   const local = join(base, 'local');
@@ -120,14 +120,14 @@ function depotJouet({ migrations, table = false }) {
   if (migrations) {
     mkdirSync(join(amont, 'web/prisma/migrations/20260202000000_neuve'), { recursive: true });
     writeFileSync(join(amont, 'web/prisma/migrations/20260202000000_neuve/migration.sql'), '-- neuve\n');
-  } else if (table) {
-    mkdirSync(join(amont, 'web/src/lib/biology-library'), { recursive: true });
-    writeFileSync(join(amont, 'web/src/lib/biology-library/indicationsBiologieV1.ts'), '// re-signée\n');
+  } else if (clinique) {
+    mkdirSync(join(amont, 'web/src/lib/clinical'), { recursive: true });
+    writeFileSync(join(amont, 'web/src/lib/clinical/regle.ts'), 'export const jouet = 1;\n');
   } else {
     writeFileSync(join(amont, 'LISEZMOI.md'), 'un push documentaire\n');
   }
   git(amont, 'add', '-A');
-  git(amont, 'commit', '--quiet', '-m', migrations ? 'migration neuve' : table ? 'table signée' : 'doc seule');
+  git(amont, 'commit', '--quiet', '-m', migrations ? 'migration neuve' : clinique ? 'clinique neuf' : 'doc seule');
   const tete = git(amont, 'rev-parse', 'HEAD');
 
   git(base, 'clone', '--quiet', amont, local);
@@ -235,40 +235,34 @@ test('une tête apportant des migrations NON approuvées arrête le déclencheme
   }
 });
 
-test('D-389 §5 — une tête modifiant la table signée des indications arrête le déclenchement', () => {
-  const { base, local, approuve } = depotJouet({ migrations: false, table: true });
+// D-374, arbitrage du 2026-10-26 (fiche H88) : un changement clinique arrivé
+// pendant l'attente n'a pas été jugé par l'approbation — même refus qu'une
+// migration, et le chemin `push` se dit obsolète comme pour elle.
+test('une tête apportant un changement clinique NON approuvé arrête le déclenchement', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false, clinique: true });
   try {
     const bin = poserScalingo(base, 'aucun déploiement connu');
     const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
       cwd: local,
       bin,
-      env: { GITHUB_SHA: approuve },
+      env: { GITHUB_SHA: approuve, GITHUB_EVENT_NAME: 'workflow_dispatch' },
     });
-    assert.notEqual(r.code, 0, 'une table signée non approuvée ne doit jamais partir');
-    assert.match(r.sortie, /table signée modifiée/);
-    assert.equal(r.ecrit, '', 'une étape qui refuse ne doit rien reporter');
+    assert.notEqual(r.code, 0, 'un changement clinique non approuvé ne doit jamais partir avec la branche');
+    assert.match(r.sortie, /changement\s+clinique nouveau/);
     assert.doesNotMatch(r.sortie, /build déclenché/, 'aucun déploiement ne doit être déclenché');
-  } finally {
-    rmSync(base, { recursive: true, force: true });
-  }
-});
+    assert.equal(r.ecrit, '', 'une étape qui refuse ne doit rien reporter');
 
-// Le chemin AUTOMATIQUE : sur un push, le run dépassé par la table se déclare
-// obsolète (sortie 0) sans rien déployer — le run plus récent porte la tête.
-test('D-389 §5 — sur un push, un run dépassé par la table signée est obsolète et ne déploie rien', () => {
-  const { base, local, approuve } = depotJouet({ migrations: false, table: true });
-  try {
-    const bin = poserScalingo(base, 'aucun déploiement connu');
-    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
+    const p = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
       cwd: local,
       bin,
       env: { GITHUB_SHA: approuve, GITHUB_EVENT_NAME: 'push' },
     });
-    // Sur un succès, `jouer` ne rend que stdout ; l'avis « obsolète » part sur
-    // stderr. Ce qui décide est ici : sortie 0, aucun build, rien de reporté.
-    assert.equal(r.code, 0, `le run obsolète sort sans échec : ${r.sortie}`);
-    assert.doesNotMatch(r.sortie, /build déclenché/, 'aucun déploiement ne doit être déclenché');
-    assert.equal(r.ecrit, '', 'un run obsolète ne doit rien reporter');
+    // Sortie 0 : `jouer` ne rend alors que stdout, et le message « obsolète »
+    // part sur stderr. Le chemin se reconnaît à ce qu'il NE fait PAS : aucun
+    // build, aucun report.
+    assert.equal(p.code, 0, `le run push dépassé doit se dire obsolète, sans échec :\n${p.sortie}`);
+    assert.doesNotMatch(p.sortie, /build déclenché/);
+    assert.equal(p.ecrit, '', 'le chemin obsolète ne reporte aucun SHA attendu');
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
