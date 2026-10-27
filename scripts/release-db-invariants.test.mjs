@@ -290,6 +290,11 @@ test('le déclenchement exige que la tête de main soit le commit approuvé', ()
     /git diff --quiet "\$GITHUB_SHA" "\$TETE" -- web\/prisma\/migrations\//,
     'une tête apportant des migrations nouvelles doit arrêter le déclenchement — elles sont non approuvées',
   );
+  assert.match(
+    etape,
+    /git diff --quiet "\$GITHUB_SHA" "\$TETE" -- web\/prisma\/migrations\/ web\/src\/lib\/biology-library\/indicationsBiologieV1\.ts;/,
+    'une tête modifiant la table signée des indications doit arrêter le déclenchement comme une migration (D-389 §5)',
+  );
   assert.match(etape, /exit 1/, 'le refus doit être franc, pas un avertissement');
 });
 
@@ -416,8 +421,9 @@ test('le job release est borné dans le temps', () => {
 // n'a pas disparu, elle a changé de valeur : ce banc la tient à sa nouvelle
 // valeur exacte. Élargir encore reste une décision, pas un geste de passage —
 // chaque chemin ajouté fait proposer une release, donc demande une approbation
-// humaine, à chaque push qui le touche.
-test('le déclencheur automatique est borné à main et aux deux chemins décidés', () => {
+// humaine, à chaque push qui le touche. D-389 §5 l'a élargi une seconde fois, au
+// FICHIER de la table signée des indications de biologie, pas à son dossier.
+test('le déclencheur automatique est borné à main et aux trois chemins décidés', () => {
   const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
   assert.ok(bloc, 'section `on:` introuvable');
   const declencheurs = bloc[1];
@@ -436,8 +442,15 @@ test('le déclencheur automatique est borné à main et aux deux chemins décid�
     /^ {6}- 'web\/src\/lib\/clinical\/\*\*'\s*$/m,
     "le filtre `paths` doit viser les tables de règles cliniques (D-044), sans quoi le contrat de fraîcheur des claims ne se rejoue jamais",
   );
+  // Le fichier exact, sans `/**` : le dossier `biology-library/` porte aussi des
+  // services et des écrans dont le merge ne doit pas geler la chaîne du schéma.
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/src\/lib\/biology-library\/indicationsBiologieV1\.ts'\s*$/m,
+    'le filtre `paths` doit viser le fichier de la table signée des indications (D-389 §5), sans quoi sa re-signature se déploie sans approbation',
+  );
   const chemins = declencheurs.match(/^ {6}- '.*'$/gm) ?? [];
-  assert.equal(chemins.length, 2, `deux chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
+  assert.equal(chemins.length, 3, `trois chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
 });
 
 // Le commentaire de la section `on:` explique au relecteur ce que le filtre laisse
@@ -455,16 +468,19 @@ test('le commentaire du déclencheur nomme le chemin réellement filtré', () =>
   // apparie la backtick fermante d'une citation avec l'ouvrante de la suivante et
   // capture la prose qui les sépare. Première rédaction de ce banc, et il rougissait
   // sur un fichier sain.
-  // Depuis D-044 le filtre porte DEUX chemins : une citation doit être l'un
+  // Depuis D-389 §5 le filtre porte TROIS chemins : une citation doit être l'un
   // d'eux, pas « le » chemin. Un commentaire qui citerait un glob voisin mais
   // faux — `migrations/**` pour `web/prisma/migrations/**` — enseignerait le
   // faux à la seule personne qui relira ce fichier avant d'approuver une
-  // écriture en production.
+  // écriture en production. Une citation est un glob (`/**`) ou un nom de
+  // fichier à extension : la table signée est filtrée par son nom exact, et
+  // une citation tronquée — `indicationsBiologieV1.ts` sans `web/…` — est
+  // captée pour être refusée, comme `migrations/**` l'était.
   const cites = declencheurs
     .split('\n')
     .filter((l) => /^\s*#/.test(l))
     .flatMap((l) => l.match(/`[^`]+`/g) ?? [])
-    .filter((c) => c.includes('/**`'));
+    .filter((c) => c.includes('/**`') || /^`[^`\s]+\.(ts|mjs|js|sql)`$/.test(c));
 
   assert.ok(cites.length > 0, 'le commentaire doit citer les chemins filtrés, pour que le relecteur sache');
   for (const cite of cites) {

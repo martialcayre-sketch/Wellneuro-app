@@ -872,8 +872,15 @@ test('D-374 §1 — parité des étapes d’attestation avec release-db.yml, pla
 test('revue #1222 — parité des chemins de release-db entre release-db.yml et le déployeur', () => {
   const releaseDb = readFileSync(join(RACINE, '.github/workflows/release-db.yml'), 'utf8');
   const bloc = releaseDb.slice(releaseDb.indexOf('\n  push:\n'), releaseDb.indexOf('\n  workflow_dispatch:'));
-  const chemins = [...bloc.matchAll(/^\s+- '([^']+)\/\*\*'\s*$/gm)].map((m) => m[1]).sort();
+  // Un dossier s'écrit `…/**` dans le filtre et sans suffixe au déployeur ; un
+  // fichier exact (D-389 §5, la table signée) s'écrit pareil des deux côtés.
+  // Le parseur lit les deux formes : n'en lire qu'une ignorerait l'entrée.
+  const chemins = [...bloc.matchAll(/^\s+- '([^']+?)(\/\*\*)?'\s*$/gm)].map((m) => m[1]).sort();
   assert.ok(chemins.length > 0, 'filtre paths de release-db.yml introuvable');
+  assert.ok(
+    chemins.includes('web/src/lib/biology-library/indicationsBiologieV1.ts'),
+    'la table signée des indications doit être lue par le parseur (D-389 §5)',
+  );
   assert.deepEqual([...CHEMINS_RELEASE_DB].sort(), chemins);
 });
 

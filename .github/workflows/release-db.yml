@@ -25,11 +25,14 @@ on:
   # automatique EST un `migrate-only` ; le mode `import-cb` exige EN PLUS
   # `github.event_name == 'workflow_dispatch'` — et il est refusé (hors
   # service) tant qu'il n'est pas réécrit pour Scalingo.
-  # Le filtre `paths` voit DEUX chemins, et deux seulement :
+  # Le filtre `paths` voit TROIS chemins, et trois seulement :
   # `web/prisma/migrations/**`, seul chemin légitime d'une migration (doctrine
-  # « registre canonique »), et `web/src/lib/clinical/**` depuis D-044, pour que
+  # « registre canonique ») ; `web/src/lib/clinical/**` depuis D-044, pour que
   # les contrats de lecture soient rejoués sur la production quand une table de
-  # règles signée change. Détail :
+  # règles signée change ; et, depuis D-389 §5, le FICHIER de la table signée
+  # des indications de biologie,
+  # `web/src/lib/biology-library/indicationsBiologieV1.ts` — le fichier seul,
+  # pas son dossier, qui porte aussi des services et des écrans. Détail :
   # docs/adr/2026-08-07-commentaires-workflows.md.
   push:
     branches: [main]
@@ -38,6 +41,9 @@ on:
       # D-044 — un push clinique PROPOSE une release, ne l'approuve jamais ;
       # sur un push, la portée est `migrate-only`. Récit : l'ADR ci-dessus.
       - 'web/src/lib/clinical/**'
+      # D-389 §5 — la table signée des indications vit hors de `clinical/` :
+      # sa re-signature passe par une release approuvée (D-382 §6).
+      - 'web/src/lib/biology-library/indicationsBiologieV1.ts'
 
   workflow_dispatch:
     inputs:
@@ -163,8 +169,10 @@ jobs:
             echo "## Release DB — ce qui est proposé"
             echo
             if [ "$EVENEMENT" = "push" ]; then
-              echo "Déclenchement **automatique** : une migration OU une table de règles"
-              echo "cliniques (\`web/src/lib/clinical/**\`, [[D-044]]) est arrivée sur \`main\`."
+              echo "Déclenchement **automatique** : une migration, une table de règles"
+              echo "cliniques (\`web/src/lib/clinical/**\`, [[D-044]]) OU la table signée des"
+              echo "indications de biologie (\`web/src/lib/biology-library/indicationsBiologieV1.ts\`,"
+              echo "[[D-389]] §5) est arrivée sur \`main\`."
               echo "Un push clinique SANS migration déclenche aussi cette proposition : le"
               echo "préflight de fraîcheur des claims n'a de sens que contre la production."
               echo "Portée : \`migrate-only\` (l'import NABM reste manuel)."
@@ -616,24 +624,26 @@ jobs:
               echo "   ne dit plus rien de ce que déploierait la branche. Aucune écriture." >&2
               exit 1
             fi
-            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/; then
+            # D-389 §5 : la table signée des indications compte comme une
+            # migration — sa modification non approuvée arrête le déclenchement.
+            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/biology-library/indicationsBiologieV1.ts; then
               if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
                 echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
-                echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles." >&2
+                echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles ou une table signée modifiée." >&2
                 echo "   Ce run push est désormais obsolète : un run plus récent sur main" >&2
                 echo "   porte déjà cette nouvelle tête et doit être approuvé à sa place." >&2
                 echo "   Aucune écriture n'a eu lieu dans ce run." >&2
                 exit 0
               fi
               echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
-              echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles : déployer la" >&2
-              echo "   branche déploierait du SQL que personne n'a approuvé." >&2
+              echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles ou une table signée modifiée :" >&2
+              echo "   déployer la branche déploierait du SQL ou une table que personne n'a approuvés." >&2
               echo "   Rejeter ce run, puis relancer release-db en workflow_dispatch" >&2
               echo "   sur main, dont la tête sera alors le commit jugé. Aucune écriture." >&2
               exit 1
             fi
             echo "… la tête de main ($TETE) a dépassé le commit approuvé sans"
-            echo "  toucher aux migrations : l'ensemble à écrire est celui approuvé."
+            echo "  toucher aux migrations ni à la table signée : l'ensemble à écrire est celui approuvé."
           fi
           echo "→ Déploiement de la tête de main ($TETE ; approuvé : $GITHUB_SHA)…"
           if ! scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
