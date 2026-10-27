@@ -5,6 +5,13 @@ import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } 
 import { PatientCompanionHome } from './PatientCompanionHome';
 import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
+import {
+  CHAPEAU_TROIS_PLANS,
+  INTITULE_PLAN_IDEAL,
+  INTITULE_PLAN_MINIMAL,
+  INTITULE_PLAN_SECOURS,
+} from '@/lib/portail/texteTroisPlans';
+import { ACTION_ID_ORIENTATION, TEXTE_ORIENTATION } from '@/lib/clinical-engine/orientationAdressage';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
 // portail n'en servait qu'une — le banc ne pouvait donc rien constater de ce que
@@ -529,5 +536,100 @@ describe('PatientCompanionHome — mention de validation (D-369)', () => {
     render(<PatientCompanionHome token="TOK" />);
     expect(await screen.findByText(attendu)).toBeTruthy();
     expect(screen.queryByText(/Validé par votre praticien/)).toBeNull();
+  });
+});
+
+// LES TROIS PLANS ([[D-384]] §2-§4, [[D-386]]) — la route ne les sert que pour
+// les actions fermes d'une version relue par la garde étendue.
+describe('PatientCompanionHome — les trois plans', () => {
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+  const vueServie = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };
+  const troisPlans = [
+    { actionId: 'a1', idealPlan: 'Chaque matin', rescuePlan: 'Un fruit et un yaourt' },
+    { actionId: 'a2', idealPlan: 'Une heure plus tôt', rescuePlan: 'Éteindre les écrans au coucher' },
+  ];
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('drapeau fermé (aucun troisPlans) : plan minimal seul, ni chapeau ni intitulé', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Trois matins cette semaine')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText(new RegExp(INTITULE_PLAN_IDEAL))).toBeNull();
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Trois matins cette semaine.')).toBeTruthy();
+  });
+
+  it('servis : le chapeau une fois, puis les trois plans de chaque action ferme, dans l’ordre de D-384 §2', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findAllByText(CHAPEAU_TROIS_PLANS)).toHaveLength(1);
+    const carte = screen.getByText('Petit-déjeuner protéiné').parentElement;
+    const lignes = [...(carte?.querySelectorAll('dl > div') ?? [])].map((ligne) => ligne.textContent);
+    expect(lignes).toEqual([
+      `${INTITULE_PLAN_IDEAL} : Chaque matin`,
+      `${INTITULE_PLAN_MINIMAL} : Trois matins cette semaine`,
+      `${INTITULE_PLAN_SECOURS} : Un fruit et un yaourt`,
+    ]);
+  });
+
+  it('une action en attente de bilan garde son régime : plan minimal et phrase d’attente, sans intitulé', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    const carte = (await screen.findByText('Piste fer')).parentElement;
+    expect(carte?.querySelector('dl')).toBeNull();
+    expect(carte?.textContent).toContain('Rien à faire pour l’instant');
+    expect(carte?.textContent).toContain('En attente de confirmation par votre bilan.');
+  });
+
+  it('« Jour difficile ? » propose le plan de secours de la première action ferme', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText(/Jour difficile/i));
+    expect(screen.getByText('Si vous le pouvez aujourd’hui : Un fruit et un yaourt.')).toBeTruthy();
+    expect(screen.queryByText(/Si vous le pouvez aujourd’hui : Trois matins/)).toBeNull();
+  });
+
+  it('l’orientation vers le médecin garde son plan minimal au jour difficile, mais lit ses trois plans au détail', async () => {
+    const orientation = {
+      actionId: ACTION_ID_ORIENTATION, type: 'medical_referral', title: TEXTE_ORIENTATION.title, minimalPlan: TEXTE_ORIENTATION.minimalPlan,
+    };
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false,
+        vue: { ...vueServie, actions: [orientation, ...vue.actions] },
+        troisPlans: [
+          { actionId: ACTION_ID_ORIENTATION, idealPlan: TEXTE_ORIENTATION.idealPlan, rescuePlan: TEXTE_ORIENTATION.rescuePlan },
+          ...troisPlans,
+        ],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(TEXTE_ORIENTATION.rescuePlan)).toBeTruthy();
+    fireEvent.click(screen.getByText(/Jour difficile/i));
+    expect(screen.getByText(`Si vous le pouvez aujourd’hui : ${TEXTE_ORIENTATION.minimalPlan}.`)).toBeTruthy();
+  });
+
+  it('des plans servis pour une action en attente sont ignorés : le filtre est rejoué à l’écran', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie,
+        troisPlans: [{ actionId: 'a3', idealPlan: 'Idéal en attente', rescuePlan: 'Secours en attente' }],
+      },
+      checkinVide,
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Piste fer')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
+    expect(screen.queryByText(/en attente$/)).toBeNull();
+  });
+
+  it('aucune action servie avec ses trois plans : ni chapeau, ni intitulé', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueServie, troisPlans: [] }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Trois matins cette semaine')).toBeTruthy();
+    expect(screen.queryByText(CHAPEAU_TROIS_PLANS)).toBeNull();
   });
 });

@@ -111,6 +111,23 @@ drapeau ; la place exacte de bb dans la file C.
 **Effet sur le plan.** H49 : la question ouverte de D-384 est tranchée ; lot 1
 de code en cours.
 
+**Amendement (2026-10-27) — le lot 2.** Quatre points posés par le
+responsable le 2026-10-27, les trois derniers sur questions à options :
+- l'instant de §2 est `2026-10-27T00:00:00Z`, relevé après le déploiement du
+  lot 1 ; la lecture compare la colonne `created_at` de la ligne, strictement
+  postérieure, jamais une date du contenu ;
+- le drapeau s'appelle `WN_PORTAIL_TROIS_PLANS`, éteint à la livraison ;
+- le chapeau « Selon votre journée : » se lit une fois, sous « Vos actions »,
+  dès qu'une action sert ses trois plans ;
+- « Jour difficile ? » garde le plan minimal de l'orientation vers le médecin
+  quand elle est la première action ferme : son plan de secours ne se lit pas
+  comme un pas à faire aujourd'hui (écart à [[D-384]] §4 limité à cette
+  action ; elle lit ses trois plans dans le détail comme les autres).
+
+Les plans idéal et de secours voyagent hors de la vue signée
+(`c1-patient-protocol-view-v2`, inchangée), seulement pour les actions fermes
+et hors pause.
+
 ### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
 
 - Date : 2026-10-26

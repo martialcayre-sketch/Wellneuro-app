@@ -18,6 +18,14 @@ import {
 } from '@/lib/trust/pauseEffetIndesirable';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
 import { mentionValidation } from '@/lib/portail/texteMentionValidation';
+import {
+  CHAPEAU_TROIS_PLANS,
+  INTITULE_PLAN_IDEAL,
+  INTITULE_PLAN_MINIMAL,
+  INTITULE_PLAN_SECOURS,
+} from '@/lib/portail/texteTroisPlans';
+import type { TroisPlansAction } from '@/lib/portail/troisPlans';
+import { estActionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -47,6 +55,8 @@ type ProtocoleResponse =
       encartConduite?: true;
       /** Instant de l'approbation de diffusion de la version servie ([[D-369]]). */
       valideLe?: string;
+      /** Plans idéal et de secours des actions fermes ([[D-384]], [[D-386]]) ; absent = plan minimal seul. */
+      troisPlans?: TroisPlansAction[];
     }
   | { ok: false };
 type CheckinResponse =
@@ -185,6 +195,26 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // pouvez aujourd'hui » dirait au patient le contraire de ce que son praticien
   // a posé. Un élément en pause non plus. La première action FERME, ou rien.
   const actionFerme = vue.actions.find((item) => !item.interventionStatus && !pauseDe.has(item.actionId)) ?? null;
+  // LES TROIS PLANS ([[D-384]] §2-§4) : la route ne les sert que pour les
+  // actions fermes d'une version relue par la garde étendue ([[D-386]]). Une
+  // action absente de la carte garde son régime, plan minimal seul. Le filtre
+  // est rejoué ici : une action en attente ou en pause ne lit jamais ses plans.
+  const fermes = new Set(
+    vue.actions.filter((item) => !item.interventionStatus && !pauseDe.has(item.actionId)).map((item) => item.actionId),
+  );
+  const plansDe = new Map(
+    (protocole.troisPlans ?? []).filter((plans) => fermes.has(plans.actionId)).map((plans) => [plans.actionId, plans]),
+  );
+  const avecTroisPlans = vue.actions.some((item) => plansDe.has(item.actionId));
+  // LE JOUR DIFFICILE PROPOSE LE PLAN DE SECOURS ([[D-384]] §4), sauf pour
+  // l'orientation vers le médecin, qui garde son plan minimal : son plan de
+  // secours ne se lit pas comme un pas à faire aujourd'hui (arbitrage du
+  // 2026-10-27, [[D-386]]).
+  const planDuJourDifficile = actionFerme
+    ? !estActionOrientation(actionFerme)
+      ? (plansDe.get(actionFerme.actionId)?.rescuePlan ?? actionFerme.minimalPlan)
+      : actionFerme.minimalPlan
+    : null;
   const pointOuvert = checkin?.pointEtapeOuvert ?? null;
   const dejaRenseigne = pointOuvert
     ? (checkin?.points.find((p) => p.pointEtape === pointOuvert)?.renseigne ?? false)
@@ -268,38 +298,57 @@ export function PatientCompanionHome({ token }: { token: string }) {
           <p ref={titreActions} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-primary">
             {vue.actions.length > 1 ? 'Vos actions' : 'Votre action'}
           </p>
+          {avecTroisPlans && <p className="text-sm text-foreground">{CHAPEAU_TROIS_PLANS}</p>}
           {complementsEnPause && (
             <p role="status" className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground">
               {TEXTE_PAUSE_COMPLEMENTS}
             </p>
           )}
-          {vue.actions.map((action) => (
-            <div
-              key={action.actionId}
-              className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
-            >
-              <p className="text-base font-medium text-foreground">{action.title}</p>
-              {pauseDe.has(action.actionId) && (
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
-              )}
-              <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
-              {pauseDe.get(action.actionId) === 'element' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
-              )}
-              {pauseDe.get(action.actionId) === 'avis_rendu' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
-              )}
-              {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
-                  La phrase vient du contrat, jamais de la cible d'attente du
-                  praticien : « ferritine » est son vocabulaire, « votre bilan »
-                  celui du patient (`D-056`, arbitrage 5). */}
-              {action.attente && (
-                <p className="mt-2 text-sm text-foreground/80 border-t border-primary/20 pt-2">
-                  {action.attente}
-                </p>
-              )}
-            </div>
-          ))}
+          {vue.actions.map((action) => {
+            const plans = plansDe.get(action.actionId);
+            return (
+              <div
+                key={action.actionId}
+                className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
+              >
+                <p className="text-base font-medium text-foreground">{action.title}</p>
+                {pauseDe.has(action.actionId) && (
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
+                )}
+                {plans ? (
+                  <dl className="mt-1 space-y-1 text-sm">
+                    {([
+                      [INTITULE_PLAN_IDEAL, plans.idealPlan],
+                      [INTITULE_PLAN_MINIMAL, action.minimalPlan],
+                      [INTITULE_PLAN_SECOURS, plans.rescuePlan],
+                    ] as const).map(([intitule, plan]) => (
+                      <div key={intitule}>
+                        <dt className="inline font-medium text-foreground">{intitule} : </dt>
+                        <dd className="inline text-muted-foreground">{plan}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
+                )}
+                {pauseDe.get(action.actionId) === 'element' && (
+                  <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
+                )}
+                {pauseDe.get(action.actionId) === 'avis_rendu' && (
+                  <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
+                )}
+                {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
+                    La phrase vient du contrat, jamais de la cible d'attente du
+                    praticien : « ferritine » est son vocabulaire, « votre bilan »
+                    celui du patient (`D-056`, arbitrage 5). */}
+                {action.attente && (
+                  <p className="mt-2 text-sm text-foreground/80 border-t border-primary/20 pt-2">
+                    {action.attente}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -393,9 +442,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
               <p className="text-sm text-foreground">
                 Un petit pas compte. Reprenez quand vous pouvez, sans pression.
               </p>
-              {actionFerme && (
+              {planDuJourDifficile && (
                 <p className="text-sm text-muted-foreground">
-                  Si vous le pouvez aujourd’hui : {actionFerme.minimalPlan}.
+                  Si vous le pouvez aujourd’hui : {planDuJourDifficile}.
                 </p>
               )}
               {checkinDu && (

@@ -512,4 +512,95 @@ describe('GET /api/portail/protocole', () => {
       expect(json).not.toHaveProperty('encartConduite');
     });
   });
+
+  // LES TROIS PLANS ([[D-384]], [[D-386]]) : drapeau ET date de la ligne.
+  describe('troisPlans', () => {
+    const APRES = new Date('2026-10-27T08:00:00.000Z');
+    const AVANT = new Date('2026-10-26T23:59:59.000Z');
+    const draftAvecPlans = {
+      ...draftDerive,
+      actions: draftDerive.actions.map(action => ({
+        ...action, idealPlan: `Idéal ${action.actionId}`, rescuePlan: `Secours ${action.actionId}`,
+      })),
+    };
+    function mockVersion(createdAt: Date | undefined): void {
+      mockProtocoleDiffuse();
+      reconstructProtocolDraft.mockReturnValue(draftAvecPlans);
+      prisma.protocolDraft.findUnique.mockResolvedValue({
+        payload: {}, inputHash: HASH_COMPLET, assessmentEpisodeId: 'runtime-episode-PAT_PROPRIO-T0',
+        decisionCardId: ID_CARTE, decisionCardInputHash: EMPREINTE_CARTE, status: 'practitioner_reviewed',
+        reviewedAt: new Date(0), createdAt,
+      });
+    }
+
+    afterEach(() => {
+      delete process.env.WN_PORTAIL_TROIS_PLANS;
+      pausesPosees.valeur = null;
+    });
+
+    it('drapeau fermé, version récente : absent, et aucun plan idéal ou de secours sur le fil', async () => {
+      mockOwnerAuth();
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('troisPlans');
+      expect(JSON.stringify(json)).not.toMatch(/Idéal|Secours/);
+    });
+
+    it('drapeau ouvert, version créée après l’instant : les plans des actions fermes seulement', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockOwnerAuth();
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.troisPlans).toEqual([
+        { actionId: 'a1', idealPlan: 'Idéal a1', rescuePlan: 'Secours a1' },
+        { actionId: 'a2', idealPlan: 'Idéal a2', rescuePlan: 'Secours a2' },
+      ]);
+      // L'action en attente de bilan garde son régime : rien d'elle ne part.
+      expect(JSON.stringify(json)).not.toMatch(/Idéal a3|Secours a3/);
+    });
+
+    it.each([
+      ['créée avant l’instant', AVANT],
+      ['date de création absente', undefined],
+    ])('drapeau ouvert, version %s : absent (plan minimal seul)', async (_cas, createdAt) => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockOwnerAuth();
+      mockVersion(createdAt);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+
+    it('drapeau ouvert : la date est lue sur la ligne, jamais dans le payload', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockOwnerAuth();
+      mockVersion(AVANT);
+      reconstructProtocolDraft.mockReturnValue({ ...draftAvecPlans, createdAt: APRES.toISOString() });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json).not.toHaveProperty('troisPlans');
+      expect(prisma.protocolDraft.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ select: expect.objectContaining({ createdAt: true }) }),
+      );
+    });
+
+    it('drapeau ouvert : une action en pause ne sert pas ses plans', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      pausesPosees.valeur = [{ actionId: 'a1', texte: 'element' }];
+      mockOwnerAuth();
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.troisPlans.map((p: { actionId: string }) => p.actionId)).toEqual(['a2']);
+    });
+
+    it('drapeau ouvert, protocole indisponible : rien n’est servi', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockOwnerAuth();
+      mockVersion(APRES);
+      rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.indisponible).toBe(true);
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+  });
 });

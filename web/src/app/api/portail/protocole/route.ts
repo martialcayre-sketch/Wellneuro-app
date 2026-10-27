@@ -22,6 +22,12 @@ import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe'
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
+import {
+  troisPlansOuverts,
+  troisPlansServis,
+  versionSousGardeEtendue,
+  type TroisPlansAction,
+} from '@/lib/portail/troisPlans';
 
 // Vue patient du protocole diffusé actif (C2A LOT-05, compagnon minimal). DÉRIVÉE
 // À LA VOLÉE côté serveur (§8.3) : le patient ne lit jamais `protocol_drafts`.
@@ -127,6 +133,14 @@ type GetResponse =
        * porte sa propre date ([[D-368]] §4). L'accueil le dit en toutes lettres.
        */
       valideLe?: string;
+      /**
+       * LES PLANS IDÉAL ET DE SECOURS des actions fermes et hors pause
+       * ([[D-384]] §2-§4), HORS de la vue signée (`c1-patient-protocol-view-v2`,
+       * inchangée). Présent seulement quand `WN_PORTAIL_TROIS_PLANS` est ouvert,
+       * qu'une vue est servie et que la version a été créée sous la garde
+       * étendue ([[D-386]] §2). Absent, l'accueil sert le plan minimal seul.
+       */
+      troisPlans?: TroisPlansAction[];
     }
   | ErrorResponse;
 
@@ -178,7 +192,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const row = await prisma.protocolDraft.findUnique({
       where: { id: diffuse.protocolDraftId },
-      select: { payload: true, inputHash: true, assessmentEpisodeId: true },
+      select: { payload: true, inputHash: true, assessmentEpisodeId: true, createdAt: true },
     });
     if (!row) {
       // Approbation orpheline (ne devrait pas arriver) : dégradation propre.
@@ -273,12 +287,23 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const lectureDuDetail = lectureProtocoleOuverte()
       ? { dejaOuvert: await detailDejaOuvert(auth.idPatient, diffuse.approbationId) }
       : undefined;
+    // LA DATE DE LA LIGNE, PAS CELLE DU CONTENU ([[D-386]] §2) : une version
+    // créée avant la garde étendue sert son plan minimal seul, même si ses plans
+    // passeraient la garde aujourd'hui (§3).
+    const troisPlans = troisPlansOuverts() && versionSousGardeEtendue(row.createdAt)
+      ? troisPlansServis({
+          actionsServies: vue.actions,
+          actionsDuProtocole: draft.actions,
+          enPause: new Set(pauses.map(pause => pause.actionId)),
+        })
+      : undefined;
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses, boussolesEnPause,
       valideLe: diffuse.approvedAt.toISOString(),
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
+      ...(troisPlans ? { troisPlans } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {
