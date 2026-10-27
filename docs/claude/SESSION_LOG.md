@@ -12003,3 +12003,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** PR 1 de J3-cabinet, dans une session dédiée.
 
 **Ouvert.** Les modules `lib/food-compass` orphelins côté patient ; D-C5-05.
+
+## 2026-10-27 — File C : bb, lot 2 — les trois plans au portail, sous drapeau éteint (D-384, D-386)
+
+**Fait.** Le détail du protocole lit les trois plans des actions fermes hors pause (« Selon votre journée : », « Si tout va bien », « Au quotidien », « Si c’est plus dur ») ; « Jour difficile ? » propose le plan de secours. Drapeau `WN_PORTAIL_TROIS_PLANS`, neuf et éteint ; marque = colonne `created_at` strictement après 2026-10-27T00:00:00Z ; servis hors de la vue signée. Nom, instant et forme écrits dans D-386 (lot 2). L'orientation vers le médecin (D-257) en est exclue, sur arbitrage du responsable.
+
+**Écarté.** Les plans dans la vue signée (contrat inchangé) ; un chapeau unique pour toutes les actions (une action sans plans le contredirait).
+
+**Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
+
+**Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.

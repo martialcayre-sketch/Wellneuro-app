@@ -49,6 +49,7 @@ vi.mock('@/lib/trust/pauseEffetIndesirableServeur', async orig => {
 });
 
 import { signPatientSession } from '@/lib/patient-session';
+import { ACTION_ID_ORIENTATION, actionOrientation, TEXTE_ORIENTATION } from '@/lib/clinical-engine/orientationAdressage';
 import { GET } from './route';
 
 const assignation = { idAssignation: 'ASS_1', idPatient: 'PAT_PROPRIO', emailPatient: 'proprio@example.test' };
@@ -482,6 +483,130 @@ describe('GET /api/portail/protocole', () => {
       const json = await (await GET(request(proprioCookie()))).json();
       expect(json.vue).toBeNull();
       expect(json).not.toHaveProperty('encartConduite');
+    });
+  });
+
+  // LES TROIS PLANS ([[D-384]] §2-§4, [[D-386]], lettre bb). La marque est la
+  // colonne `created_at` de la ligne — jamais le `createdAt` du payload.
+  describe('troisPlans', () => {
+    const APRES = new Date('2026-10-27T00:00:00.001Z');
+    const AVANT = new Date('2026-10-26T23:59:59.999Z');
+    const plansLisibles = {
+      ...draftDerive,
+      actions: draftDerive.actions.map(action => ({
+        ...action, idealPlan: `Idéal ${action.actionId}`, rescuePlan: `Secours ${action.actionId}`,
+      })),
+    };
+    function mockVersion(createdAt: unknown, draft: unknown = plansLisibles): void {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      prisma.protocolDraft.findUnique.mockResolvedValue({
+        payload: {}, inputHash: HASH_COMPLET, assessmentEpisodeId: 'runtime-episode-PAT_PROPRIO-T0', decisionCardId: ID_CARTE,
+        decisionCardInputHash: EMPREINTE_CARTE, status: 'practitioner_reviewed', reviewedAt: new Date(0), createdAt,
+      });
+      reconstructProtocolDraft.mockReturnValue(draft);
+    }
+    afterEach(() => {
+      delete process.env.WN_PORTAIL_TROIS_PLANS;
+      pausesPosees.valeur = null;
+    });
+
+    it('lit la colonne de la ligne', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES);
+      await GET(request(proprioCookie()));
+      expect(prisma.protocolDraft.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ select: expect.objectContaining({ createdAt: true }) }),
+      );
+    });
+
+    it('drapeau fermé : absents, même sur une version récente — rien ne change', async () => {
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('troisPlans');
+      expect(JSON.stringify(json)).not.toContain('Idéal');
+      expect(JSON.stringify(json)).not.toContain('Secours');
+    });
+
+    it.each(['1', 'TRUE', 'oui'])('valeur « %s » : fermé (seule la chaîne exacte « true » ouvre)', async (valeur) => {
+      process.env.WN_PORTAIL_TROIS_PLANS = valeur;
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+
+    it('drapeau ouvert, version créée après l’instant : les actions fermes, et elles seules', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES);
+      const json = await (await GET(request(proprioCookie()))).json();
+      // a3 est en attente de bilan : son régime ne change pas ([[D-384]] §3).
+      expect(json.troisPlans).toEqual([
+        { actionId: 'a1', idealPlan: 'Idéal a1', rescuePlan: 'Secours a1' },
+        { actionId: 'a2', idealPlan: 'Idéal a2', rescuePlan: 'Secours a2' },
+      ]);
+      expect(JSON.stringify(json)).not.toContain('Secours a3');
+      // La vue signée, elle, ne change pas, et les limitations internes ne
+      // traversent toujours pas.
+      expect(json.vue.actions[0]).not.toHaveProperty('rescuePlan');
+      expect(JSON.stringify(json)).not.toContain('INTERNE');
+    });
+
+    it.each([
+      ['créée avant l’instant', AVANT],
+      ['créée à l’instant même', new Date('2026-10-27T00:00:00.000Z')],
+      ['date absente', undefined],
+      ['date illisible', new Date('pas une date')],
+      ['date en chaîne', '2026-11-01T00:00:00.000Z'],
+    ])('drapeau ouvert, version %s : plan minimal seul (le doute vaut refus)', async (_cas, createdAt) => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(createdAt);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('troisPlans');
+    });
+
+    it.each([
+      ['colonne avant, payload après : refus', AVANT, '2026-11-01T00:00:00.000Z', false],
+      ['colonne après, payload avant : servis', APRES, '2026-10-01T00:00:00.000Z', true],
+    ])('le createdAt du payload, hérité, n’est jamais lu — %s', async (_cas, colonne, payload, servis) => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(colonne, { ...plansLisibles, createdAt: payload });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect('troisPlans' in json).toBe(servis);
+    });
+
+    // Arbitrage du 2026-10-27 ([[D-386]] lot 2) : l'orientation vers le médecin
+    // ([[D-257]]) garde son régime, même ferme et en tête du protocole.
+    it('l’orientation vers le médecin ne reçoit jamais ses trois plans', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES, { ...plansLisibles, actions: [actionOrientation(true), ...plansLisibles.actions] });
+      // Le contrat exige l'orientation en tête quand la carte porte un constat adressé.
+      rejouerCarteDecision.mockResolvedValue({
+        ok: true, decisionCard: { ...CARTE_REJOUEE, safetyFindingAdresseIds: ['constat-adresse'] }, selectionEcartee: false,
+      });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue.actions[0].actionId).toBe(ACTION_ID_ORIENTATION);
+      expect(json.troisPlans.map((p: { actionId: string }) => p.actionId)).toEqual(['a1', 'a2']);
+      expect(JSON.stringify(json)).not.toContain(TEXTE_ORIENTATION.rescuePlan);
+      expect(JSON.stringify(json)).not.toContain(TEXTE_ORIENTATION.idealPlan);
+    });
+
+    it('une action en pause garde son régime actuel', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES);
+      pausesPosees.valeur = [{ actionId: 'a1', texte: 'element' }];
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.troisPlans).toEqual([{ actionId: 'a2', idealPlan: 'Idéal a2', rescuePlan: 'Secours a2' }]);
+    });
+
+    it('drapeau ouvert, protocole indisponible : rien n’est servi', async () => {
+      process.env.WN_PORTAIL_TROIS_PLANS = 'true';
+      mockVersion(APRES);
+      rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.indisponible).toBe(true);
+      expect(json).not.toHaveProperty('troisPlans');
     });
   });
 });
