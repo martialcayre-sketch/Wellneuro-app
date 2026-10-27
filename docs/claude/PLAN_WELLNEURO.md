@@ -1405,10 +1405,11 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Identifiant, piste** : lettre y (D-y, R:y), puis J3-cabinet.
 - **Rang** : y au rang 3 ; J3-cabinet au rang 4.
 - **Portes, préalables** : y : d (H32), porte 6 (F59), effectif (F25) ; J3-cabinet : y ; si migration : G-7, porte 9.
-- **Migration, release-db** : J3-cabinet : [A verifier].
+- **Migration, release-db** : J3-cabinet : non (plan du 2026-10-27).
 - **Décisions, textes** : lettre y, de la main du responsable ; « cinq dossiers » ou « cinq cycles » se règle dans F25 : cinq dossiers distincts (D-298).
 - **Critère de fin** : page masquée en banc sous cinq.
 - **Mise à jour (2026-10-26, y écrite)** : D-385. Deux tableaux : dossiers par prochaine étape (sept phases du rail et « rien n'attend ») et par état du protocole (sans protocole diffusé, cycle en cours, fin de cycle), « indéterminé » à part ; effectif toujours affiché, répartition masquée sous cinq dossiers ; jamais une moyenne, une prédiction ni une liste de dossiers ; dossiers de test comptés (D-075). J3-cabinet jouable.
+- **Mise à jour (2026-10-27, J3-cabinet planifié)** : plan d'extraction et arbitrages du responsable dans `docs/claude/propositions/2026-10-27-j3-cabinet-plan/`. Approche hybride : le moteur `statutPhase` sort de la fiche dans un module pur partagé, et la page `/dashboard/cabinet` a une entrée de rail. Dossiers désactivés comptés ; même effectif pour les deux tableaux. « Indéterminé » couvre une lecture en échec, ou une phase nulle avec un statut inconnu. L'écart à plus de 40 envois est accepté et documenté. Trois PR sans migration : extraction côté fiche, extraction côté serveur hors `lib/clinical/`, puis chargeur et page. Migration, release-db : non. Le lot se code dans une session dédiée.
 
 ### Rang 4 : première vague de migrations après BP-09
 
