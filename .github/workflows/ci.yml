@@ -264,6 +264,21 @@ jobs:
       - name: Réservation d'un numéro de décision (banc du script)
         run: node --test scripts/wn-reserver-decision.test.mjs
 
+      # Journal du plan en fragments (D-371, fiche H90). Le garde AVERTIT d'un
+      # fragment de `docs/claude/plan-journal/` modifié, renommé ou supprimé —
+      # jamais bloquant, une donnée sensible doit pouvoir être retirée
+      # d'urgence (§3) ; tant que le journal n'existe pas, il se tait.
+      - name: Journal du plan (garde, avertissement seul)
+        run: node scripts/wn-plan-journal-garde.mjs
+
+      # Bancs du journal du plan. Ils prouvent que la bascule ne perd, ne
+      # réordonne ni ne réécrit aucune ligne — reconstruire(basculer(P)) === P
+      # à l'octet près, sur une copie du plan réel et sur des cas fabriqués —,
+      # que rien ne s'écrit sans `--ecrire`, qu'une fiche se lit avec son
+      # journal comme avant la bascule, et que le garde n'est jamais bloquant.
+      - name: Journal du plan (bancs de la bascule, de la lecture et du garde)
+        run: node --test scripts/lib/plan-journal.test.mjs scripts/wn-plan-fiche.test.mjs scripts/wn-plan-journal-garde.test.mjs
+
       # Invariants de sûreté de `release-db`, le seul chemin d'écriture de la base
       # de production. Depuis que ce workflow est proposé automatiquement, il ne
       # reste plus qu'UNE barrière entre un merge et une écriture : l'environnement
