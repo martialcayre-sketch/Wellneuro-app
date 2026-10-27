@@ -1,4 +1,4 @@
-### J3-12h : deux textes corrigés, dettes de la revue de #1701 (D-386, 2026-10-27)
+### J3-12h : deux textes corrigés, dettes de la revue de #1701 (D-387, 2026-10-27)
 
 - Cockpit, panneau de diffusion : après le clic, les cinq textes qui disent
   le sort de l'e-mail d'annonce commencent par « Documents remis » au lieu de

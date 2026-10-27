@@ -3,6 +3,7 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_COMPLEMENT } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 
 // LE COURRIER COMPLÉMENT — [[D-345]] §7, J3-12h, lot 3 (G4 de la fiche de
@@ -79,6 +80,7 @@ export function genererCourrierComplement(entree: EntreeCourrierComplement): Pre
     // Deux lignes identiques n'en font qu'une, à la première place ([[D-383]]).
     [...new Set(lignes.map(ligneDuCourrier))].join('\n'),
     REMISE,
+    INFORMATION_MEDECIN,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
     SIGNATURE_PRATICIEN,
   ].join('\n\n');

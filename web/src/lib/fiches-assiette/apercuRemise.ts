@@ -237,7 +237,7 @@ export const TEXTE_ANNONCE_A_VENIR =
 
 /**
  * Ce que l'écran dit après le clic. Seul `envoye` n'est pas une alerte.
- * « Documents remis » ([[D-386]]) : l'e-mail part aussi pour la seule lettre
+ * « Documents remis » ([[D-387]]) : l'e-mail part aussi pour la seule lettre
  * ou le seul courrier complément, sans aucune fiche.
  */
 export const TEXTE_ANNONCE: Record<AnnonceFiches, { texte: string; alerte: boolean }> = {

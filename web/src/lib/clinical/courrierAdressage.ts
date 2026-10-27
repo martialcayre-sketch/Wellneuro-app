@@ -3,6 +3,7 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_ADRESSAGE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { INFORMATION_MEDECIN } from '@/lib/correspondance/informationMedecin';
 import { SIGNATURE_PRATICIEN } from '@/lib/correspondance/signature';
 import { sha256 } from './corpusSyntheseV1';
 import { SAFETY_SIGNALS_SHA256, SAFETY_SIGNAL_CONDUITES, rangDuSignal } from './safetySignalsV1';
@@ -224,6 +225,7 @@ export function genererCourrierAdressage(
     ...(horsCotation ? [PHRASE_HORS_COTATION] : []),
     ...(horsOptions ? [PHRASE_HORS_OPTIONS] : []),
     PHRASE_ABSTENTION,
+    INFORMATION_MEDECIN,
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
     SIGNATURE_PRATICIEN,
   ];

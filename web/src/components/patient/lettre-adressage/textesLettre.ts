@@ -5,7 +5,7 @@
 // le 2026-10-03) et recopiée ici AU CARACTÈRE PRÈS, à la typographie des
 // apostrophes près (droites au cadrage, courbes à l'écran) : un banc relit le
 // cadrage et rougit au premier autre écart, et un autre la passe à
-// `termeAnxiogene`. Amendée le 2026-10-27 ([[D-386]]) : « Remettez-le-lui ». C'est la
+// `termeAnxiogene`. Amendée le 2026-10-27 ([[D-387]]) : « Remettez-le-lui ». C'est la
 // seule prose patient de la surface ; le texte de la lettre, adressé au médecin,
 // est exempté par décision (cadrage §3.4, carte de `lib/documents/vocabulaire.ts`).
 

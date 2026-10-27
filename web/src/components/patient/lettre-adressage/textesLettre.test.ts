@@ -30,7 +30,7 @@ describe('Textes du courrier pour le médecin (D-262, LOT-03a)', () => {
     expect(PHRASE_ACCOMPAGNEMENT.replace(/’/g, "'")).toBe(signee.phrase.replace(/’/g, "'"));
   });
 
-  it('la phrase est épinglée en toutes lettres, trait d’union de « Remettez-le-lui » compris (D-386)', () => {
+  it('la phrase est épinglée en toutes lettres, trait d’union de « Remettez-le-lui » compris (D-387)', () => {
     expect(PHRASE_ACCOMPAGNEMENT).toBe(
       'Voici le courrier que je vous ai préparé pour votre médecin traitant. Remettez-le-lui lors de votre rendez-vous : vous pouvez l’imprimer ou le montrer depuis ce portail.',
     );
