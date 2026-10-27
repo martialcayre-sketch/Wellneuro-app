@@ -49,6 +49,14 @@ export const STATUTS_NON_CONCLUS = ['requested', 'pending', 'queued', 'in_progre
 export const PLAFOND_FICHIERS_PR = 3000;
 
 /**
+ * Un déclencheur de `CHEMINS_RELEASE_DB` est un fichier exact quand son dernier
+ * segment porte une extension (la table signée, D-389 §5) ; sinon un dossier.
+ */
+export function estFichierDeclencheur(chemin) {
+  return /\.[a-z]+$/.test(chemin.split('/').pop());
+}
+
+/**
  * Ce que gèle la phase 1 (D-374 §2) : une migration, un chemin clinique,
  * `release-db.yml` et ce que son run exécute contre la production — le script
  * du one-off, ses préflights SQL, le script de contre-épreuve, la
@@ -58,7 +66,9 @@ export const PLAFOND_FICHIERS_PR = 3000;
  * exécutés du workflow et du script du one-off, et exige qu'ils soient ici.
  */
 export const CHEMINS_GELES = [
-  ...CHEMINS_RELEASE_DB.map((c) => `${c}/`),
+  // Un déclencheur est un dossier, sauf la table signée des indications
+  // (D-389 §5), un fichier exact : lui ajouter `/` le rendrait inatteignable.
+  ...CHEMINS_RELEASE_DB.map((c) => (estFichierDeclencheur(c) ? c : `${c}/`)),
   '.github/workflows/release-db.yml',
   'web/scripts/release-db-scalingo.sh',
   'web/scripts/release-db-statut.sh',

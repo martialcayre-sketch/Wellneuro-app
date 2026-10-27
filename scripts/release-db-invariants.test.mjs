@@ -290,11 +290,6 @@ test('le déclenchement exige que la tête de main soit le commit approuvé', ()
     /git diff --quiet "\$GITHUB_SHA" "\$TETE" -- web\/prisma\/migrations\//,
     'une tête apportant des migrations nouvelles doit arrêter le déclenchement — elles sont non approuvées',
   );
-  assert.match(
-    etape,
-    /git diff --quiet "\$GITHUB_SHA" "\$TETE" -- web\/prisma\/migrations\/ web\/src\/lib\/biology-library\/indicationsBiologieV1\.ts;/,
-    'une tête modifiant la table signée des indications doit arrêter le déclenchement comme une migration (D-389 §5)',
-  );
   assert.match(etape, /exit 1/, 'le refus doit être franc, pas un avertissement');
 });
 

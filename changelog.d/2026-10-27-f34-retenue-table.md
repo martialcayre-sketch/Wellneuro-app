@@ -4,10 +4,15 @@
   chemin déclencheur de `release-db.yml` et de `CHEMINS_RELEASE_DB` du
   déployeur : sa re-signature (F34, étape 3) passera par une release-db
   approuvée ([[D-044]], [[D-382]] §6). Le fichier seul, pas son dossier.
-- La comparaison de la tête dépassante tient ce fichier comme une migration :
-  une tête qui le modifie après l'approbation arrête le déclenchement.
-- Bancs : parité du filtre et du déployeur sur les trois chemins (le parseur
-  lit aussi un fichier exact), borne du filtre portée à trois, commentaire du
-  déclencheur, et un cas joué sur le dépôt jouet (mutation constatée).
+- La comparaison de la tête dépassante le tient comme une migration, à côté
+  de `clinical/**` (H88) : une tête qui le modifie après l'approbation arrête
+  le déclenchement.
+- La sonde de H88 le gèle en phase 1 comme fichier exact : la liste des
+  chemins gelés lui ajoutait un `/` qui ne gelait rien.
+- Le résumé pour l'approbateur nomme la table quand le push la modifie ; il
+  ne lisait que les migrations et affichait « push clinique seul ».
+- Bancs : parité du filtre, du déployeur et de la sonde sur les trois chemins,
+  borne du filtre portée à trois, citations du commentaire, et quatre cas joués
+  sur dépôt jouet (refus, run obsolète, résumé avec et sans table).
 - Sans migration, sans schéma, sans règle d'indication touchée ; la table, son
   empreinte et sa signature sont inchangées.

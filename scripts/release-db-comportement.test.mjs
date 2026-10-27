@@ -104,8 +104,10 @@ function git(cwd, ...args) {
  * approuvé SANS migration nouvelle se déploie, avec migration nouvelle se refuse.
  * `clinique` fait toucher au second commit `web/src/lib/clinical/` : même
  * arbitrage que pour une migration (D-374, arbitrage du 2026-10-26).
+ * `table` fait toucher au second commit le fichier de la table signée des
+ * indications, hors de `clinical/` : même arbitrage encore (D-389 §5).
  */
-function depotJouet({ migrations, clinique = false }) {
+function depotJouet({ migrations, clinique = false, table = false }) {
   const base = mkdtempSync(join(tmpdir(), 'wn-release-db-'));
   const amont = join(base, 'amont');
   const local = join(base, 'local');
@@ -123,11 +125,15 @@ function depotJouet({ migrations, clinique = false }) {
   } else if (clinique) {
     mkdirSync(join(amont, 'web/src/lib/clinical'), { recursive: true });
     writeFileSync(join(amont, 'web/src/lib/clinical/regle.ts'), 'export const jouet = 1;\n');
+  } else if (table) {
+    mkdirSync(join(amont, 'web/src/lib/biology-library'), { recursive: true });
+    writeFileSync(join(amont, 'web/src/lib/biology-library/indicationsBiologieV1.ts'), '// re-signée\n');
   } else {
     writeFileSync(join(amont, 'LISEZMOI.md'), 'un push documentaire\n');
   }
   git(amont, 'add', '-A');
-  git(amont, 'commit', '--quiet', '-m', migrations ? 'migration neuve' : clinique ? 'clinique neuf' : 'doc seule');
+  const message = migrations ? 'migration neuve' : clinique ? 'clinique neuf' : table ? 'table signée' : 'doc seule';
+  git(amont, 'commit', '--quiet', '-m', message);
   const tete = git(amont, 'rev-parse', 'HEAD');
 
   git(base, 'clone', '--quiet', amont, local);
@@ -266,6 +272,71 @@ test('une tête apportant un changement clinique NON approuvé arrête le décle
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
+});
+
+// D-389 §5 : la table signée des indications vit hors de `clinical/` ; arrivée
+// pendant l'attente, elle n'a pas été jugée par l'approbation — même refus,
+// même chemin obsolète sur un push.
+test('D-389 §5 — une tête modifiant la table signée des indications arrête le déclenchement', () => {
+  const { base, local, approuve } = depotJouet({ migrations: false, table: true });
+  try {
+    const bin = poserScalingo(base, 'aucun déploiement connu');
+    const r = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: approuve, GITHUB_EVENT_NAME: 'workflow_dispatch' },
+    });
+    assert.notEqual(r.code, 0, 'une table signée non approuvée ne doit jamais partir avec la branche');
+    assert.match(r.sortie, /table signée modifiée/);
+    assert.doesNotMatch(r.sortie, /build déclenché/, 'aucun déploiement ne doit être déclenché');
+    assert.equal(r.ecrit, '', 'une étape qui refuse ne doit rien reporter');
+
+    const p = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
+      cwd: local,
+      bin,
+      env: { GITHUB_SHA: approuve, GITHUB_EVENT_NAME: 'push' },
+    });
+    assert.equal(p.code, 0, `le run push dépassé doit se dire obsolète, sans échec :\n${p.sortie}`);
+    assert.doesNotMatch(p.sortie, /build déclenché/);
+    assert.equal(p.ecrit, '', 'le chemin obsolète ne reporte aucun SHA attendu');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+// Le résumé pour l'approbateur (revue CodeRabbit de #1744) : la liste des
+// migrations ne peut pas nommer la table signée ; un push qui ne touche
+// qu'elle doit pourtant la montrer, sinon l'approbateur lit « push clinique
+// seul » et ne sait pas qu'il juge une re-signature. `gh` factice en échec :
+// borne inconnue, plage du push (`AVANT..APRES`).
+function resumePour({ table }) {
+  const { base, local, approuve, tete } = depotJouet({ migrations: false, table });
+  try {
+    const bin = poserScalingo(base, '');
+    writeFileSync(join(bin, 'gh'), '#!/bin/sh\necho "(jouet) api muette" >&2\nexit 1\n');
+    chmodSync(join(bin, 'gh'), 0o755);
+    const resume = join(base, 'resume.md');
+    writeFileSync(resume, '');
+    const r = jouer(scriptDeLEtape("Résumé pour l'approbateur"), {
+      cwd: local,
+      bin,
+      env: { AVANT: approuve, APRES: tete, EVENEMENT: 'push', DEPOT: 'jouet/jouet', GITHUB_STEP_SUMMARY: resume },
+    });
+    assert.equal(r.code, 0, `le résumé ne doit pas échouer :\n${r.sortie}`);
+    return readFileSync(resume, 'utf8');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+}
+
+test('D-389 §5 — le résumé nomme la table signée quand le push la modifie', () => {
+  const texte = resumePour({ table: true });
+  assert.match(texte, /### Table signée modifiée/);
+  assert.match(texte, /indicationsBiologieV1\.ts/);
+});
+
+test('D-389 §5 — le résumé ne nomme pas la table signée quand le push ne la touche pas', () => {
+  assert.doesNotMatch(resumePour({ table: false }), /### Table signée modifiée/);
 });
 
 test('un déploiement déjà existant reporte le commit approuvé, et sort sans déclencher', () => {

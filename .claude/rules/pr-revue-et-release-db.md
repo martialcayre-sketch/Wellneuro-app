@@ -278,7 +278,9 @@ approbations est la seule preuve de qui a ouvert la porte.
    finit en **rouge volontaire** (garde anti-recul, piège 6), qui se lit
    « appliquée », jamais « à relancer ». Si la tête apporte une migration ou
    un changement clinique nouveau (`web/prisma/migrations/**`,
-   `web/src/lib/clinical/**`), le déclenchement ne déploie rien — en
+   `web/src/lib/clinical/**`, et le fichier de la table signée
+   `web/src/lib/biology-library/indicationsBiologieV1.ts` depuis `D-389` §5),
+   le déclenchement ne déploie rien — en
    `workflow_dispatch` il refuse ; en `push` l'étape se dit obsolète, mais le
    job continue (dette au plan §8) — et c'est le run de la tête qui
    s'approuve ; l'ancien se rejette (`D-374` §3). Le refus du 2026-09-06 (un

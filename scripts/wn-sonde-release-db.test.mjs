@@ -20,6 +20,7 @@ import {
   SORTIE_USAGE,
   analyserArguments,
   conseilDeuxRuns,
+  estFichierDeclencheur,
   estGele,
   juger,
   phaseDuRun,
@@ -305,7 +306,13 @@ test('CLI de bout en bout : une PR dont la liste dépasse 1 Mio se juge, sans EN
 });
 
 test('parité : les chemins gelés couvrent les déclencheurs et tout ce que le run exécute', () => {
-  for (const c of CHEMINS_RELEASE_DB) assert.ok(CHEMINS_GELES.includes(`${c}/`), c);
+  // Chaque déclencheur est GELÉ en fait, pas seulement listé : la table signée
+  // (D-389 §5) est un fichier, et `fichier.ts/` ne gèlerait rien.
+  for (const c of CHEMINS_RELEASE_DB) {
+    assert.ok(estGele(estFichierDeclencheur(c) ? c : `${c}/x.ts`), `déclencheur non gelé : ${c}`);
+  }
+  assert.ok(estGele('web/src/lib/biology-library/indicationsBiologieV1.ts'), 'la table signée doit être gelée (D-389 §5)');
+  assert.ok(!estGele('web/src/lib/biology-library/autre.ts'), 'le dossier de la table ne doit pas être gelé');
   for (const c of CHEMINS_GELES) assert.ok(existsSync(join(RACINE, c)), `chemin gelé absent du dépôt : ${c}`);
   // Dérivés du workflow et des scripts de release qu'il lance : les scripts
   // `release-db-*.sh`, la configuration Prisma, les préflights SQL. Un fichier
