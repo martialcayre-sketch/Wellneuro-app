@@ -333,6 +333,39 @@ drapeau ; la place exacte de bb dans la file C.
 **Effet sur le plan.** H49 : la question ouverte de D-384 est tranchée ; lot 1
 de code en cours.
 
+**Lot 2 (2026-10-27) — drapeau, instant, forme.** Ce que la décision laissait
+au lot, fixé par lui :
+- **le drapeau** : `WN_PORTAIL_TROIS_PLANS`, la chaîne exacte `true`, absent
+  = fermé ; **neuf et éteint à la livraison**. Fermé, ou version créée avant
+  l'instant : le portail sert le protocole exactement comme avant (plan
+  minimal seul, « Jour difficile ? » au plan minimal) ;
+- **l'instant** : `2026-10-27T00:00:00.000Z`, quatre minutes après la fin de
+  bascule du lot 1 constatée sur Scalingo (#1725, 39131a45, 23:55:49 UTC) ;
+  une version le sert si sa colonne `created_at` lui est strictement
+  postérieure ; date absente ou illisible = refus (§3). Le `createdAt` du
+  contenu n'est jamais lu ;
+- **la forme** : dans chaque action ferme hors pause qui porte ses deux plans,
+  le chapeau puis une liste de définitions, intitulé au-dessus de son plan,
+  dans l'ordre de [[D-384]] §2, aux couleurs neutres du portail ; une action
+  dont l'un des deux plans est vide garde son plan minimal seul ;
+- **l'orientation vers le médecin** ([[D-257]]), arbitrage du responsable du
+  2026-10-27 sur question à options : elle n'entre jamais dans les trois
+  plans. Ferme et en tête du protocole, elle aurait reçu « Au quotidien » sur
+  un rendez-vous à prendre une fois, et « Jour difficile ? » aurait proposé son
+  repli au lieu de l'appel au médecin. Elle garde son régime actuel : plan
+  minimal seul, et c'est lui que le jour difficile propose quand elle est la
+  première action ferme. Écartés : passer au geste suivant au jour difficile ;
+  la lettre de [[D-384]] (trois plans pour elle aussi) ;
+- **le circuit** : la route `api/portail/protocole` sert `troisPlans`
+  (plans idéal et de secours, par action) hors de la vue signée
+  `c1-patient-protocol-view-v2`, inchangée, comme les pauses ; le composant
+  ne lit pas l'environnement. Code : `lib/portail/troisPlans.ts`, textes :
+  `lib/portail/texteTroisPlans.ts`.
+
+Hors du lot : l'activation (file C, porte 18, [[D-384]] §6) ; le miroir
+praticien (`ApercuPatientProtocole`) et la version imprimable (bh), qui
+lisent encore le plan minimal seul.
+
 ### D-385 — Comptes du cabinet : combien de dossiers à chaque étape, et où en est leur protocole ; effectif toujours affiché, répartition masquée sous cinq ; agrégats internes, jamais publiés (lettre y)
 
 - Date : 2026-10-26

@@ -62,6 +62,8 @@ const SURFACES_PATIENT = [
   'lib/portail/texteAppuiRenvoi.ts',
   // ba ([[D-369]]) : la mention « Validé par votre praticien le … », même raison.
   'lib/portail/texteMentionValidation.ts',
+  // bb ([[D-384]]) : les intitulés des trois plans, même raison.
+  'lib/portail/texteTroisPlans.ts',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.
