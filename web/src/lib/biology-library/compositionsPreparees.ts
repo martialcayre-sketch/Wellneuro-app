@@ -102,7 +102,7 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     composants: ['BIO_AG_LINOLEIQUE', 'BIO_AG_DGLA'],
     motif: 'Rapport de l’acide linoléique et du DGLA.',
   },
-  // [[D-388]] §1 : le compte rendu du laboratoire imprime ces quatre acides
+  // [[D-389]] §1 : le compte rendu du laboratoire imprime ces quatre acides
   // sous « Oméga 6 » et ces trois sous « Oméga 3 » ; leurs sommes redonnent son
   // rapport au centième. L'ordre est le sien.
   BIO_RATIO_OMEGA6_OMEGA3: {
@@ -114,7 +114,7 @@ export const COMPOSITIONS_PREPAREES: Readonly<Record<string, CompositionPreparee
     motif:
       'Rapport de la somme des quatre oméga 6 (linoléique, gamma-linolénique, DGLA, arachidonique) à celle des trois oméga 3 (alpha-linolénique, EPA, DHA), comme le compte rendu du laboratoire les range.',
   },
-  // [[D-388]] §2 : « L'index oméga 3 correspond au pourcentage d'EPA + DHA »
+  // [[D-389]] §2 : « L'index oméga 3 correspond au pourcentage d'EPA + DHA »
   // (claim WN-CL-0045-008) ; le compte rendu en redonne la somme au centième.
   BIO_INDEX_OMEGA3: {
     type: 'calcul',

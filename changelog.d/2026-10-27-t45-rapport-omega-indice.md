@@ -1,4 +1,4 @@
-### Biologie : le rapport oméga 6 / oméga 3 et l'indice oméga 3 se lisent sur leurs acides (t45, D-388)
+### Biologie : le rapport oméga 6 / oméga 3 et l'indice oméga 3 se lisent sur leurs acides (t45, D-389)
 
 - Dans la Bibliothèque, le rapport oméga 6 / oméga 3 propose à la signature
   du praticien ses sept acides : les quatre oméga 6 et les trois oméga 3 que

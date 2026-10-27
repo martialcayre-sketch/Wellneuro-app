@@ -428,7 +428,7 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_RATIO_AA_EPA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_LA_DGLA: { situation: 'valeur_calculee', motif: CALCUL },
   BIO_RATIO_OMEGA6_OMEGA3: { situation: 'valeur_calculee', motif: CALCUL },
-  // [[D-388]] §3 : la somme de l'EPA et du DHA ; le constat « aucun acte »
+  // [[D-389]] §3 : la somme de l'EPA et du DHA ; le constat « aucun acte »
   // signé le 2026-10-17 reste en base.
   BIO_INDEX_OMEGA3: { situation: 'valeur_calculee', motif: 'Calculé à partir de l’EPA et du DHA.' },
   BIO_RATIO_KYN_TRP: { situation: 'valeur_calculee', motif: CALCUL },

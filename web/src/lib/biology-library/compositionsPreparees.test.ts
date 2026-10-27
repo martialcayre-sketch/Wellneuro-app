@@ -90,7 +90,7 @@ describe('compositions préparées (F80, D-323)', () => {
     expect(operandesAbsentsPour('BIO_RATIO_AA_EPA')).toBeNull();
   });
 
-  it('D-388 : le rapport oméga 6 / oméga 3 et l’indice oméga 3, calculés de leurs acides', () => {
+  it('D-389 : le rapport oméga 6 / oméga 3 et l’indice oméga 3, calculés de leurs acides', () => {
     // Les quatre oméga 6 puis les trois oméga 3, rangés comme le compte rendu
     // du laboratoire ; tous parmi les acides du profil.
     const rapport = compositionPrepareePour('BIO_RATIO_OMEGA6_OMEGA3');

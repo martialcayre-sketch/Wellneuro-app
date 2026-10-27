@@ -11936,7 +11936,17 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 
 **Ouvert.** Constat au prochain profil importé.
 
-## 2026-10-27 — File A : t45, rapport oméga 6 / oméga 3 et indice oméga 3 calculés de leurs acides (D-388)
+## 2026-10-27 — J3-12h : deux dettes de texte de #1701 (D-388)
+
+**Fait.** P2-1 : le cockpit annonçait « Fiches remises » après un clic qui ne remettait qu'une lettre ou un courrier ; les cinq textes de `TEXTE_ANNONCE` disent « Documents remis ». Lettre d'adressage : « Remettez-le-lui », citation du cadrage corrigée avec une note datée. Textes validés par le responsable, épinglés au caractère près.
+
+**Écarté.** Un texte par cas (fiche, un document, deux documents) : plus de logique pour un gain faible, puisque l'aperçu liste déjà les fiches.
+
+**Prochaine action.** PR, CodeRabbit, passe Codex P0 AVANT le merge.
+
+**Ouvert.** Drapeau éteint, conditions 2 à 4 ; (3) et (4) avant (2).
+
+## 2026-10-27 — File A : t45, rapport oméga 6 / oméga 3 et indice oméga 3 calculés de leurs acides (D-389)
 
 **Fait.** Le rapport oméga 6 / oméga 3 sort des « opérandes absents » : calcul de ses sept acides, d’après les titres de section du compte rendu (arithmétique vérifiée au centième, valeurs non versées). L’indice oméga 3 devient le calcul de l’EPA et du DHA (claim SIIN WN-CL-0045-008), passé en « valeur calculée » dans la liste NABM. Sens du rapport fondé par les claims des voies de l’inflammation.
 
