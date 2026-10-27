@@ -46,6 +46,9 @@ s'affichent avec eux, sans plage ni seuil.
   compositions (profil, rapport, indice), puis le contrôle des rendus.
 - Écart à instruire avant toute plage : seuil AA/EPA du corpus contre
   référence imprimée par le laboratoire.
+- Demande du responsable du 2026-10-27, à cadrer en lot séparé : la
+  représentation visuelle du bilan des acides gras érythrocytaires, au
+  minimum les indicateurs principaux et les rapports majeurs.
 
 ## Prochaine action exacte
 
