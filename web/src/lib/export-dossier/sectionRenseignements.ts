@@ -11,12 +11,26 @@ import {
 } from '@/lib/consultation/anamnese';
 import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
 import { isMotifValide } from '@/lib/consultation/motifs';
+import { formaterDatePeriode, formaterJour } from '@/lib/physio-traitements/dates';
+import {
+  BLOCS_PATIENT,
+  CHAMPS_PATIENT,
+  LIBELLES_CRITERE,
+  LIBELLES_NATURE,
+  LIBELLES_REPONSE,
+  LIBELLES_SOURCE_PRATICIEN,
+  UNITES,
+  type Critere,
+} from '@/lib/physio-traitements/liste';
 import {
   citer,
   dateFr,
   NON_RENSEIGNE,
   type BlocExport,
   type ConsultationExport,
+  type DonneePhysioExport,
+  type DonneesDateesExport,
+  type TraitementExport,
 } from './modele';
 
 const TITRE = '2. Fiche signalétique et anamnèse';
@@ -177,12 +191,92 @@ function blocsConsultation(consultation: ConsultationExport, porteuse: boolean):
   return [...blocs, ...blocsFiche(consultation.ficheSignaletique), ...blocsAnamnese(consultation.anamnese)];
 }
 
-/** Consultations reçues déjà triées, la plus récente d'abord : l'ordre est celui de l'appelant. */
+// ── Les lignes datées du dossier ([[D-391]] §2, [[D-335]] §2-§5) ──────────
+// Seule la TÊTE de chaque fil : un retrait ramène le fil à « non renseigné »,
+// il n'apparaît pas. « inconnu » est une réponse écrite, distincte de
+// « Non renseigné » (DC-24). Aucun calcul (ni IMC, ni variation de poids).
+
+const DATE_INCONNUE = 'date inconnue';
+
+// Distinct de la section « Traitements et compléments » de l'anamnèse, qui suit
+// dans le même document.
+const TITRE_TRAITEMENTS = 'Traitements et compléments, en cours et arrêtés';
+
+const LIGNES_DATEES =
+  "Lignes datées, tenues à part de l'anamnèse : chacune dit sa date et sa source — déclarée par " +
+  'le patient, ou confirmée par le praticien. Seule la ligne en vigueur figure ici. « Non renseigné » : ' +
+  'aucune ligne en vigueur ; « inconnu » est une réponse donnée. Une date de traitement est écrite à la ' +
+  'précision connue : un jour (12/05/2024), un mois (mai 2024), une année (2024), ou « date inconnue ».';
+
+function source(ligne: { source: 'patient' | 'praticien'; acteLe: string }): string {
+  return `${LIBELLES_SOURCE_PRATICIEN[ligne.source]} le ${dateFr(new Date(ligne.acteLe))}`;
+}
+
+/** Valeur fermée par les CHECK de la base : son libellé ; hors liste, citée telle quelle. */
+function ferme(valeur: string | null): string {
+  if (valeur === null) return NON_RENSEIGNE;
+  // `hasOwn` : une clé héritée (`constructor`) n'est pas un libellé.
+  return Object.hasOwn(LIBELLES_REPONSE, valeur) ? LIBELLES_REPONSE[valeur] : citer(valeur);
+}
+
+function valeurPhysio(critere: Critere, tete: DonneePhysioExport | null): string {
+  if (tete === null) return NON_RENSEIGNE;
+  if (tete.mesure !== null) {
+    const unite = critere === 'poids' || critere === 'taille' ? ` ${UNITES[critere]}` : '';
+    const le = tete.mesureLe ? `, mesuré le ${formaterJour(tete.mesureLe)}` : '';
+    return `${tete.mesure.replace('.', ',')}${unite}${le} — ${source(tete)}`;
+  }
+  return `${ferme(tete.reponse)} — ${source(tete)}`;
+}
+
+function texteTraitement(t: TraitementExport): string {
+  const nature = t.nature === 'complement' ? 'complement' : 'medicament';
+  const libelleNature = t.nature === 'medicament' || t.nature === 'complement' ? LIBELLES_NATURE[t.nature] : 'Traitement';
+  const morceaux = [`${libelleNature} : ${t.nom ? citer(t.nom) : NON_RENSEIGNE}`];
+  if (t.dose) morceaux.push(`${CHAMPS_PATIENT.dose} : ${citer(t.dose)}`);
+  if (t.moment) morceaux.push(`${CHAMPS_PATIENT.moment} : ${citer(t.moment)}`);
+  if (t.motif) morceaux.push(`${BLOCS_PATIENT[nature].motif} : ${citer(t.motif)}`);
+  morceaux.push(`Depuis : ${formaterDatePeriode(t.debut, t.debutPrecision, DATE_INCONNUE) || NON_RENSEIGNE}`);
+  morceaux.push(
+    t.finPrecision === null
+      ? 'En cours'
+      : `Arrêté : ${formaterDatePeriode(t.fin, t.finPrecision, DATE_INCONNUE)}`,
+  );
+  morceaux.push(`Prescrit par un autre soignant : ${ferme(t.prescritParTiers)}`);
+  return `${morceaux.join(' · ')} — ${source(t)}`;
+}
+
+function blocsDonneesDatees(donnees: DonneesDateesExport): BlocExport[] {
+  const blocs: BlocExport[] = [
+    { type: 'titre', niveau: 2, texte: 'Données physiologiques et traitements du dossier' },
+    discret(LIGNES_DATEES),
+    { type: 'titre', niveau: 3, texte: 'Données physiologiques' },
+    ...donnees.criteres.map(c => champ(LIBELLES_CRITERE[c.critere], valeurPhysio(c.critere, c.tete))),
+  ];
+  // Sans traitement, le champ seul : pas un titre suivi du même libellé.
+  if (!donnees.traitements.length) {
+    blocs.push(champ(TITRE_TRAITEMENTS, NON_RENSEIGNE));
+  } else {
+    blocs.push(
+      { type: 'titre', niveau: 3, texte: TITRE_TRAITEMENTS },
+      { type: 'liste', elements: donnees.traitements.map(texteTraitement) },
+    );
+  }
+  return blocs;
+}
+
+/**
+ * Consultations reçues déjà triées, la plus récente d'abord : l'ordre est celui
+ * de l'appelant. Les lignes datées du dossier ouvrent la section ; sans aucune
+ * ligne (`null`), la section est celle d'avant [[D-391]].
+ */
 export function sectionRenseignements(
   consultations: ConsultationExport[],
   idConsultationPorteuse: string | null,
+  donneesDatees: DonneesDateesExport | null = null,
 ): BlocExport[] {
   const blocs: BlocExport[] = [{ type: 'titre', niveau: 1, texte: TITRE }];
+  if (donneesDatees) blocs.push(...blocsDonneesDatees(donneesDatees));
   if (!consultations.length) {
     blocs.push({
       type: 'paragraphe',

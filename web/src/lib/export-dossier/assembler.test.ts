@@ -19,6 +19,9 @@ const { prisma } = vi.hoisted(() => ({
     agendaSommeilNuit: { findMany: vi.fn() },
     agendaAlimentaireJour: { findMany: vi.fn() },
     cabinetInstrument: { findUnique: vi.fn() },
+    // Lues par `lireDonneesDuDossier` ([[D-391]] §2) — voir « lignes datées ».
+    donneePhysiologique: { findMany: vi.fn() },
+    traitementEnCours: { findMany: vi.fn() },
   },
 }));
 
@@ -323,6 +326,9 @@ function brancherBase(options: { validee?: typeof SYNTHESE_VALIDEE | null; broui
   prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
     args.where.statut.in.includes('Validee_Praticien') ? validee : brouillon,
   );
+  // Aucune ligne datée : l'état de la production au 2026-10-28.
+  prisma.donneePhysiologique.findMany.mockResolvedValue([]);
+  prisma.traitementEnCours.findMany.mockResolvedValue([]);
 }
 
 function assembler(version: VersionExport): Promise<DocumentExport | null> {
@@ -1110,6 +1116,278 @@ describe('assemblerDossierExport — masquage des textes libres', () => {
       args.where.statut.in.includes('Validee_Praticien') ? validee : null,
     );
   }
+});
+
+// ── Les lignes datées du dossier ([[D-391]] §2) ────────────────────────────
+// Rangées comme Prisma les rend ; `ordre` en BigInt, comme la base.
+
+type RangPhysio = {
+  id: string;
+  ordre: bigint;
+  acte: string;
+  critere: string;
+  reponse: string | null;
+  mesure: string | null;
+  mesureLe: Date | null;
+  source: string;
+  idLigneRemplacee: string | null;
+  praticienEmail: string | null;
+  acteLe: Date;
+};
+
+function rangPhysio(partiel: Partial<RangPhysio> & Pick<RangPhysio, 'id' | 'ordre' | 'critere'>): RangPhysio {
+  return {
+    acte: 'pose',
+    reponse: null,
+    mesure: null,
+    mesureLe: null,
+    source: 'praticien',
+    idLigneRemplacee: null,
+    praticienEmail: PRATICIEN,
+    acteLe: new Date('2026-10-20T09:00:00.000Z'),
+    ...partiel,
+  };
+}
+
+type RangTraitement = {
+  id: string;
+  ordre: bigint;
+  acte: string;
+  nature: string | null;
+  nom: string | null;
+  dose: string | null;
+  moment: string | null;
+  motif: string | null;
+  debut: Date | null;
+  debutPrecision: string | null;
+  fin: Date | null;
+  finPrecision: string | null;
+  prescritParTiers: string | null;
+  source: string;
+  idLigneRemplacee: string | null;
+  praticienEmail: string | null;
+  acteLe: Date;
+};
+
+function rangTraitement(partiel: Partial<RangTraitement> & Pick<RangTraitement, 'id' | 'ordre'>): RangTraitement {
+  return {
+    acte: 'pose',
+    nature: 'complement',
+    nom: 'Complément B',
+    dose: null,
+    moment: null,
+    motif: null,
+    debut: new Date('2026-05-01T00:00:00.000Z'),
+    debutPrecision: 'mois',
+    fin: null,
+    finPrecision: null,
+    prescritParTiers: 'non',
+    source: 'patient',
+    idLigneRemplacee: null,
+    praticienEmail: null,
+    acteLe: new Date('2026-10-12T09:00:00.000Z'),
+    ...partiel,
+  };
+}
+
+/** Un retrait : ni valeur ni motif, il vise la tête. */
+function rangRetrait<R extends { id: string; ordre: bigint }>(base: R, id: string, ordre: bigint): R {
+  return { ...base, id, ordre, acte: 'retrait', idLigneRemplacee: base.id, acteLe: new Date('2026-10-21T09:00:00.000Z') };
+}
+
+/** Les blocs de la section 2, de son titre à celui de la section 3. */
+function blocsSection2(doc: DocumentExport): DocumentExport['blocs'] {
+  const debut = doc.blocs.findIndex(b => b.type === 'titre' && b.texte === '2. Fiche signalétique et anamnèse');
+  const fin = doc.blocs.findIndex(b => b.type === 'titre' && b.texte === '3. Réponses aux questionnaires');
+  return doc.blocs.slice(debut, fin);
+}
+
+function joindre(blocs: DocumentExport['blocs']): string {
+  return textes({ titre: '', sousTitre: '', mentionPied: '', metadonnees: { titre: '', sujet: '' }, blocs }).join('\n');
+}
+
+describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
+    brancherBase();
+  });
+
+  // Textes libres d'un traitement qui portent l'identité exprès (fixture).
+  const TRAITEMENT_A = rangTraitement({
+    id: 'T_A',
+    ordre: BigInt(10),
+    nature: 'medicament',
+    nom: 'Traitement A conseillé par le Dr Martin',
+    dose: '1 mg, flacon au nom de Nicola',
+    moment: 'au coucher, rappel au 06 12 34 56 78',
+    motif: 'Sommeil de Sophie depuis le 14/03/1985',
+    prescritParTiers: 'oui',
+    debut: new Date('2026-03-12T00:00:00.000Z'),
+    debutPrecision: 'jour',
+  });
+  const COMPLEMENT_C_ARRETEE = rangTraitement({
+    id: 'T_C_2',
+    ordre: BigInt(12),
+    nom: 'Complément C',
+    debut: new Date('2025-01-01T00:00:00.000Z'),
+    debutPrecision: 'annee',
+    fin: new Date('2026-06-01T00:00:00.000Z'),
+    finPrecision: 'mois',
+    idLigneRemplacee: 'T_C_1',
+    source: 'praticien',
+    praticienEmail: PRATICIEN,
+    acteLe: new Date('2026-10-15T09:00:00.000Z'),
+  });
+  const COMPLEMENT_C_POSEE = rangTraitement({ id: 'T_C_1', ordre: BigInt(11), nom: 'Complément C', debut: new Date('2025-01-01T00:00:00.000Z'), debutPrecision: 'annee' });
+  const TRAITEMENT_D_RETIRE = rangTraitement({ id: 'T_D', ordre: BigInt(13), nom: 'Traitement D posé par erreur' });
+
+  const SEXE = rangPhysio({ id: 'P_SEXE', ordre: BigInt(1), critere: 'sexe_declare', reponse: 'feminin', source: 'patient', praticienEmail: null });
+  const GROSSESSE = rangPhysio({ id: 'P_GROS', ordre: BigInt(2), critere: 'grossesse', reponse: 'inconnu' });
+  const POIDS = rangPhysio({ id: 'P_POIDS', ordre: BigInt(3), critere: 'poids', mesure: '72.5', mesureLe: new Date('2026-10-19T00:00:00.000Z') });
+  const ALLAITEMENT_RETIRE = rangPhysio({ id: 'P_ALL', ordre: BigInt(4), critere: 'allaitement', reponse: 'oui' });
+
+  function brancherLignes() {
+    prisma.donneePhysiologique.findMany.mockResolvedValue([
+      SEXE, GROSSESSE, POIDS, ALLAITEMENT_RETIRE, rangRetrait(ALLAITEMENT_RETIRE, 'P_ALL_R', BigInt(5)),
+    ]);
+    prisma.traitementEnCours.findMany.mockResolvedValue([
+      TRAITEMENT_A, COMPLEMENT_C_POSEE, COMPLEMENT_C_ARRETEE, TRAITEMENT_D_RETIRE, rangRetrait(TRAITEMENT_D_RETIRE, 'T_D_R', BigInt(14)),
+    ]);
+  }
+
+  it('sans aucune ligne : la section 2 et le préambule sont ceux d’avant les lignes', async () => {
+    for (const version of ['ia-externe', 'complete'] as const) {
+      vi.clearAllMocks();
+      brancherBase();
+      const doc = await assemblerOuEchouer(version);
+      const [consultations, porteuse, donnees] = espionRenseignements.mock.calls[0];
+      expect(donnees).toBeNull();
+      // Même sortie qu'un appel sans le troisième argument : la forme d'avant.
+      expect(blocsSection2(doc)).toEqual(espionRenseignements(consultations, porteuse));
+      expect(doc.blocs).toContainEqual({
+        type: 'paragraphe',
+        texte:
+          'Contenu : 1. renseignements administratifs ; 2. fiche signalétique et anamnèse déposées par le '
+          + 'patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; '
+          + '4. dernière synthèse validée par le praticien.',
+      });
+      expect(joindre(doc.blocs)).not.toMatch(/Données physiologiques|en cours et arrêtés/);
+    }
+  });
+
+  it('lit les deux tables par idPatient, une seule fois', async () => {
+    await assembler('complete');
+    expect(prisma.donneePhysiologique.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.donneePhysiologique.findMany).toHaveBeenCalledWith({ where: { idPatient: 'PAT030' }, orderBy: { ordre: 'asc' } });
+    expect(prisma.traitementEnCours.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.traitementEnCours.findMany).toHaveBeenCalledWith({ where: { idPatient: 'PAT030' }, orderBy: { ordre: 'asc' } });
+  });
+
+  it('une lecture des lignes qui échoue fait échouer l’export — jamais un « non renseigné » de repli', async () => {
+    prisma.traitementEnCours.findMany.mockRejectedValue(new Error('base indisponible'));
+    await expect(assembler('complete')).rejects.toThrow('base indisponible');
+  });
+
+  it('les deux versions portent les lignes, avec leur date, leur source et leur précision', async () => {
+    brancherLignes();
+    for (const version of ['ia-externe', 'complete'] as const) {
+      vi.clearAllMocks();
+      brancherBase();
+      brancherLignes();
+      const doc = await assemblerOuEchouer(version);
+      const section = blocsSection2(doc);
+      expect(section[1]).toEqual({ type: 'titre', niveau: 2, texte: 'Données physiologiques et traitements du dossier' });
+      expect(section).toContainEqual({ type: 'champ', libelle: 'Sexe déclaré', valeur: 'féminin — déclaré par le patient le 20/10/2026' });
+      expect(section).toContainEqual({ type: 'champ', libelle: 'Grossesse', valeur: 'inconnu — confirmé par le praticien le 20/10/2026' });
+      expect(section).toContainEqual({
+        type: 'champ',
+        libelle: 'Poids',
+        valeur: '72,5 kg, mesuré le 19/10/2026 — confirmé par le praticien le 20/10/2026',
+      });
+      expect(section).toContainEqual({ type: 'champ', libelle: 'Taille', valeur: 'Non renseigné' });
+      const joint = joindre(section);
+      // Jamais l'e-mail du praticien qui a posé une ligne, dans aucune version.
+      expect(joint).not.toContain(PRATICIEN);
+      expect(joint).toContain('Depuis : 12/03/2026');
+      expect(joint).toContain('Prescrit par un autre soignant : oui');
+      // Le préambule annonce les lignes et ceux qui les posent.
+      expect(joindre(doc.blocs)).toContain('2. données physiologiques et traitements datés du dossier, déclarés par le patient ou confirmés par le praticien');
+    }
+  });
+
+  it('un retrait n’apparaît pas : le critère revient à « Non renseigné », le traitement retiré ne sort pas', async () => {
+    brancherLignes();
+    const doc = await assemblerOuEchouer('complete');
+    const section = blocsSection2(doc);
+    expect(section).toContainEqual({ type: 'champ', libelle: 'Allaitement', valeur: 'Non renseigné' });
+    const joint = joindre(section);
+    expect(joint).not.toContain('Traitement D posé par erreur');
+    expect(joint).not.toMatch(/retrait/i);
+  });
+
+  it('toutes les lignes retirées : la sous-section ne dit que « Non renseigné », aucune valeur retirée ne revient', async () => {
+    prisma.donneePhysiologique.findMany.mockResolvedValue([ALLAITEMENT_RETIRE, rangRetrait(ALLAITEMENT_RETIRE, 'P_ALL_R', BigInt(5))]);
+    prisma.traitementEnCours.findMany.mockResolvedValue([TRAITEMENT_D_RETIRE, rangRetrait(TRAITEMENT_D_RETIRE, 'T_D_R', BigInt(14))]);
+    const section = blocsSection2(await assemblerOuEchouer('complete'));
+    const debut = section.findIndex(b => b.type === 'titre' && b.texte === 'Données physiologiques et traitements du dossier');
+    const fin = section.findIndex((b, i) => i > debut && b.type === 'titre' && b.niveau === 2);
+    const champs = section.slice(debut, fin).filter(b => b.type === 'champ');
+    expect(champs).toHaveLength(7);
+    for (const c of champs) expect(c.type === 'champ' && c.valeur).toBe('Non renseigné');
+    expect(section.some(b => b.type === 'liste' && b.elements.some(e => e.includes('Traitement D')))).toBe(false);
+    expect(joindre(section)).not.toContain('Traitement D posé par erreur');
+  });
+
+  it('un traitement arrêté sort une fois, avec sa fin à sa précision ; sa ligne remplacée ne sort pas', async () => {
+    brancherLignes();
+    const doc = await assemblerOuEchouer('complete');
+    const liste = blocsSection2(doc).find(b => b.type === 'liste');
+    if (liste?.type !== 'liste') throw new Error('liste des traitements attendue');
+    const vitamine = liste.elements.filter(e => e.includes('Complément C'));
+    expect(vitamine).toEqual([
+      'Complément : « Complément C » · Depuis : 2025 · Arrêté : juin 2026 · Prescrit par un autre soignant : non'
+        + ' — confirmé par le praticien le 15/10/2026',
+    ]);
+    expect(liste.elements.some(e => e.includes('En cours') && e.includes('Traitement A'))).toBe(true);
+  });
+
+  it('version complete : les textes libres d’une ligne sortent cités, intacts', async () => {
+    brancherLignes();
+    const joint = joindre(blocsSection2(await assemblerOuEchouer('complete')));
+    expect(joint).toContain('Médicament : « Traitement A conseillé par le Dr Martin »');
+    expect(joint).toContain('Dose : « 1 mg, flacon au nom de Nicola »');
+    expect(joint).toContain('Moment de prise : « au coucher, rappel au 06 12 34 56 78 »');
+    expect(joint).toContain('Motif : « Sommeil de Sophie depuis le 14/03/1985 »');
+  });
+
+  it('version ia-externe : chaque champ libre d’une ligne est masqué, les valeurs fermées restent', async () => {
+    brancherLignes();
+    const doc = await assemblerOuEchouer('ia-externe');
+    const joint = joindre(blocsSection2(doc));
+    expect(joint).toContain(`Médicament : « Traitement A conseillé par le Dr ${MARQUE_MASQUE} »`);
+    expect(joint).toContain(`Dose : « 1 mg, flacon au nom de ${MARQUE_MASQUE} »`);
+    expect(joint).toContain(`Moment de prise : « au coucher, rappel au ${MARQUE_MASQUE} »`);
+    expect(joint).toContain(`Motif : « Sommeil de ${MARQUE_MASQUE} depuis le ${MARQUE_MASQUE} »`);
+    for (const mot of ['Sophie', 'Nicola', 'Martin']) expect(contientMot(joint, mot), mot).toBe(false);
+    expect(chiffres(joint)).not.toContain('0612345678');
+    expect(joint).not.toContain('14/03/1985');
+    // Fermées : ni masquées ni retirées.
+    expect(joint).toContain('féminin — déclaré par le patient le 20/10/2026');
+    expect(joint).toContain('Prescrit par un autre soignant : oui');
+    // Jamais l'e-mail du praticien qui a posé la ligne.
+    expect(joint).not.toContain(PRATICIEN);
+  });
+
+  it('les lignes se rendent en PDF, et le texte mis en page de la version ia-externe ne porte aucun nom', async () => {
+    brancherLignes();
+    const doc = await assemblerOuEchouer('ia-externe');
+    const octets = await rendrePdf(doc, { maintenant: MAINTENANT });
+    expect(new TextDecoder('latin1').decode(octets.slice(0, 5))).toBe('%PDF-');
+    const lignes = (await planifierPages(doc)).flat().map(l => l.texte).join('\n');
+    expect(lignes).toContain('Traitement A');
+    for (const mot of ['Sophie', 'Nicola', 'Martin']) expect(contientMot(lignes, mot), mot).toBe(false);
+  });
 });
 
 describe('nomFichierExport', () => {

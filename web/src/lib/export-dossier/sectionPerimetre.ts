@@ -29,6 +29,15 @@ const CONTENU =
   'patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; ' +
   '4. dernière synthèse validée par le praticien.';
 
+// Les lignes datées du dossier ([[D-391]] §2) : le praticien en pose aussi.
+// Dit seulement quand le dossier en porte, pour qu'un export sans ligne reste
+// celui d'avant.
+const CONTENU_AVEC_LIGNES =
+  'Contenu : 1. renseignements administratifs ; 2. données physiologiques et traitements datés du ' +
+  'dossier, déclarés par le patient ou confirmés par le praticien, puis fiche signalétique et anamnèse ' +
+  'déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à ' +
+  'la soumission ; 4. dernière synthèse validée par le praticien.';
+
 const ABSENCE =
   "Une donnée absente n'est jamais une valeur normale ni un zéro : « Non renseigné » ou « Sans " +
   "réponse » signifie que rien n'a été déposé ; « Non calculé : données insuffisantes » signifie qu'un " +
@@ -48,7 +57,7 @@ const NON_INCLUS =
   "patient), les saisies d'un agenda non encore clôturé, l'espace « Ce qui compte pour moi », les " +
   'résultats de biologie et les synthèses non validées.';
 
-export function sectionPerimetre(version: VersionExport, maintenant: Date): BlocExport[] {
+export function sectionPerimetre(version: VersionExport, maintenant: Date, avecLignesDatees = false): BlocExport[] {
   return [
     { type: 'titre', niveau: 1, texte: TITRE },
     {
@@ -60,7 +69,7 @@ export function sectionPerimetre(version: VersionExport, maintenant: Date): Bloc
       texte: version === 'ia-externe' ? VERSION_IA_EXTERNE : VERSION_COMPLETE,
       ton: 'alerte',
     },
-    { type: 'paragraphe', texte: CONTENU },
+    { type: 'paragraphe', texte: avecLignesDatees ? CONTENU_AVEC_LIGNES : CONTENU },
     { type: 'paragraphe', texte: ABSENCE },
     { type: 'paragraphe', texte: CITATIONS },
     { type: 'paragraphe', texte: SCORES },

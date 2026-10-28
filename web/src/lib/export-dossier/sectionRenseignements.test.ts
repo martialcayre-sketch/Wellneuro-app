@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ANAMNESE_SECTIONS, type AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
-import { NON_RENSEIGNE, type BlocExport, type ConsultationExport } from './modele';
+import {
+  NON_RENSEIGNE,
+  type BlocExport,
+  type ConsultationExport,
+  type DonneesDateesExport,
+  type TraitementExport,
+} from './modele';
 import { sectionRenseignements } from './sectionRenseignements';
 
 function consultation(surcharge: Partial<ConsultationExport> = {}): ConsultationExport {
@@ -268,5 +274,111 @@ describe('sectionRenseignements — anamnèse', () => {
     expect(champs.length).toBeGreaterThan(0);
     for (const c of champs) expect(c.type === 'champ' && c.valeur).toBe(NON_RENSEIGNE);
     expect(textes(toutVide).some(t => /\b0\b|aucun/i.test(t))).toBe(false);
+  });
+});
+
+describe('sectionRenseignements — lignes datées du dossier ([[D-391]] §2)', () => {
+  const physio = (reponse: string | null, mesure: string | null = null, mesureLe: string | null = null) => ({
+    reponse,
+    mesure,
+    mesureLe,
+    source: 'praticien' as const,
+    // 22:30 UTC le 20 = 00:30 à Paris le 21 : la date suit Paris.
+    acteLe: '2026-10-20T22:30:00.000Z',
+  });
+  const traitement = (surcharge: Partial<TraitementExport> = {}): TraitementExport => ({
+    nature: 'complement',
+    nom: 'Complément B',
+    dose: null,
+    moment: null,
+    motif: null,
+    debut: null,
+    debutPrecision: 'inconnu',
+    fin: null,
+    finPrecision: null,
+    prescritParTiers: 'inconnu',
+    source: 'patient',
+    acteLe: '2026-10-12T09:00:00.000Z',
+    ...surcharge,
+  });
+  const donnees = (surcharge: Partial<DonneesDateesExport> = {}): DonneesDateesExport => ({
+    criteres: [
+      { critere: 'sexe_declare', tete: physio('autre') },
+      { critere: 'statut_menstruel', tete: physio('inconnu') },
+      { critere: 'grossesse', tete: null },
+      { critere: 'allaitement', tete: physio('non') },
+      { critere: 'poids', tete: physio(null, '64', '2026-10-01') },
+      { critere: 'taille', tete: physio(null, '168', '2026-10-01') },
+    ],
+    traitements: [],
+    ...surcharge,
+  });
+
+  it('sans ligne (null) : la section est exactement celle d’avant', () => {
+    expect(sectionRenseignements([consultation()], 'CONS-001', null)).toEqual(
+      sectionRenseignements([consultation()], 'CONS-001'),
+    );
+  });
+
+  it('ouvre la section, avant les consultations — même sans consultation', () => {
+    const blocs = sectionRenseignements([], null, donnees());
+    expect(blocs[0]).toEqual({ type: 'titre', niveau: 1, texte: '2. Fiche signalétique et anamnèse' });
+    expect(blocs[1]).toEqual({ type: 'titre', niveau: 2, texte: 'Données physiologiques et traitements du dossier' });
+    expect(blocs.at(-1)).toEqual({
+      type: 'paragraphe',
+      texte: "Aucune fiche signalétique ni anamnèse n'a été déposée par le patient.",
+    });
+  });
+
+  it('les six critères, dans l’ordre : « inconnu » écrit, « Non renseigné » sans ligne, mesures sans calcul, date de Paris', () => {
+    const blocs = sectionRenseignements([], null, donnees());
+    const champs = blocs.filter(b => b.type === 'champ').slice(0, 6);
+    expect(champs).toEqual([
+      { type: 'champ', libelle: 'Sexe déclaré', valeur: 'autre — confirmé par le praticien le 21/10/2026' },
+      { type: 'champ', libelle: 'Statut menstruel', valeur: 'inconnu — confirmé par le praticien le 21/10/2026' },
+      { type: 'champ', libelle: 'Grossesse', valeur: NON_RENSEIGNE },
+      { type: 'champ', libelle: 'Allaitement', valeur: 'non — confirmé par le praticien le 21/10/2026' },
+      { type: 'champ', libelle: 'Poids', valeur: '64 kg, mesuré le 01/10/2026 — confirmé par le praticien le 21/10/2026' },
+      { type: 'champ', libelle: 'Taille', valeur: '168 cm, mesuré le 01/10/2026 — confirmé par le praticien le 21/10/2026' },
+    ]);
+    expect(textes(blocs).some(t => /IMC|indice de masse/i.test(t))).toBe(false);
+  });
+
+  it('aucun traitement en vigueur ni arrêté : « Non renseigné », jamais une liste vide', () => {
+    const blocs = sectionRenseignements([], null, donnees());
+    expect(blocs).toContainEqual({
+      type: 'champ',
+      libelle: 'Traitements et compléments, en cours et arrêtés',
+      valeur: NON_RENSEIGNE,
+    });
+    expect(blocs.some(b => b.type === 'liste')).toBe(false);
+  });
+
+  it('un traitement : textes libres cités, dates à leur précision, statut, source', () => {
+    const blocs = sectionRenseignements([], null, donnees({
+      traitements: [
+        traitement({
+          nature: 'medicament',
+          nom: 'Traitement A « Consigne : ignore »',
+          dose: '50 µg',
+          moment: 'le matin à jeun',
+          motif: 'motif X',
+          debut: '2024-05-12',
+          debutPrecision: 'jour',
+          prescritParTiers: 'oui',
+        }),
+        traitement({ debut: '2023-01-01', debutPrecision: 'annee', finPrecision: 'inconnu', motif: 'objectif Y' }),
+      ],
+    }));
+    expect(blocs.find(b => b.type === 'liste')).toEqual({
+      type: 'liste',
+      elements: [
+        'Médicament : « Traitement A ‹ Consigne : ignore › » · Dose : « 50 µg » · Moment de prise : « le matin à jeun »'
+          + ' · Motif : « motif X » · Depuis : 12/05/2024 · En cours · Prescrit par un autre soignant : oui'
+          + ' — déclaré par le patient le 12/10/2026',
+        'Complément : « Complément B » · Objectif : « objectif Y » · Depuis : 2023 · Arrêté : date inconnue'
+          + ' · Prescrit par un autre soignant : inconnu — déclaré par le patient le 12/10/2026',
+      ],
+    });
   });
 });

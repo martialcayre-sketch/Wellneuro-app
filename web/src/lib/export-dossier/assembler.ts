@@ -21,6 +21,7 @@ import { normaliserFiche } from '@/lib/consultation/fiche';
 import { dateJourParis } from '@/lib/dateParis';
 import { STATUTS_SYNTHESE_VALIDES } from '@/lib/documents/types';
 import { resolveDefinition } from '@/lib/instruments';
+import { lireDonneesDuDossier, type DonneesDuDossier } from '@/lib/physio-traitements/lecture';
 import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
@@ -31,12 +32,19 @@ import {
   scoresSansMesure,
 } from '@/lib/scoring/passationsNonInterpretables';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
-import { creerMasqueur, masquerConsultation, masquerPassation, masquerSynthese } from './masquage';
+import {
+  creerMasqueur,
+  masquerConsultation,
+  masquerDonneesDatees,
+  masquerPassation,
+  masquerSynthese,
+} from './masquage';
 import {
   dateHeureFr,
   type AssignationSansReponseExport,
   type ConsultationExport,
   type DocumentExport,
+  type DonneesDateesExport,
   type PassationExport,
   type PatientExport,
   type SyntheseExport,
@@ -254,6 +262,47 @@ async function recueilAgendaEnCours(
   return null;
 }
 
+/**
+ * Les lignes datées du dossier ([[D-391]] §2) : la tête de chaque critère et
+ * de chaque fil de traitement — un fil retiré n'a plus de tête et ne sort
+ * pas. Ni l'e-mail du praticien, ni la mécanique des fils. `null` quand le
+ * dossier n'a AUCUNE ligne (l'état de la production au 2026-10-28) : l'export
+ * reste alors celui d'avant. Lues quel que soit `WN_PHYSIO_TRAITEMENTS`, comme
+ * la ligne de vigilance ([[D-391]] §4) : le drapeau garde la saisie.
+ */
+function donneesDateesExport(donnees: DonneesDuDossier): DonneesDateesExport | null {
+  const aucuneLigne = donnees.traitements.length === 0 && donnees.criteres.every(c => c.historique.length === 0);
+  if (aucuneLigne) return null;
+  return {
+    criteres: donnees.criteres.map(c => ({
+      critere: c.critere,
+      tete: c.tete && {
+        reponse: c.tete.reponse,
+        mesure: c.tete.mesure,
+        mesureLe: c.tete.mesureLe,
+        source: c.tete.source,
+        acteLe: c.tete.acteLe,
+      },
+    })),
+    traitements: donnees.traitements.flatMap(f => (f.tete
+      ? [{
+          nature: f.tete.nature,
+          nom: f.tete.nom,
+          dose: f.tete.dose,
+          moment: f.tete.moment,
+          motif: f.tete.motif,
+          debut: f.tete.debut,
+          debutPrecision: f.tete.debutPrecision,
+          fin: f.tete.fin,
+          finPrecision: f.tete.finPrecision,
+          prescritParTiers: f.tete.prescritParTiers,
+          source: f.tete.source,
+          acteLe: f.tete.acteLe,
+        }]
+      : [])),
+  };
+}
+
 export function nomFichierExport(idPatient: string, version: VersionExport, maintenant: Date): string {
   return `dossier-${idPatient}-${version === 'ia-externe' ? 'ia-externe' : 'complet'}-${dateJourParis(maintenant)}.pdf`;
 }
@@ -286,7 +335,7 @@ export async function assemblerDossierExport(params: {
   });
   if (!patient) return null;
 
-  const [consultationsDb, porteuse, passationsDb, assignationsDb, validee] = await Promise.all([
+  const [consultationsDb, porteuse, passationsDb, assignationsDb, validee, lignesDuDossier] = await Promise.all([
     prisma.consultation.findMany({
       where: { idPatient },
       orderBy: { createdAt: 'desc' },
@@ -350,6 +399,8 @@ export async function assemblerDossierExport(params: {
         notesPraticien: true,
       },
     }),
+    // Une lecture qui échoue lève : jamais un « non renseigné » de repli.
+    lireDonneesDuDossier(prisma, idPatient),
   ]);
 
   const brouillonPlusRecent = await prisma.syntheseIA.findFirst({
@@ -402,6 +453,7 @@ export async function assemblerDossierExport(params: {
   // qu'aucune section ne les lise ; les textes fixes (catalogue, consignes,
   // préambule) ne le sont jamais.
   const masquer = version === 'ia-externe' ? creerMasqueur(patient) : null;
+  const donneesDatees = donneesDateesExport(lignesDuDossier);
 
   const titre = `Dossier patient ${patient.idPatient}`;
   return {
@@ -412,11 +464,12 @@ export async function assemblerDossierExport(params: {
     mentionPied: `${patient.idPatient} · ${version === 'ia-externe' ? 'version pseudonymisée' : 'version complète'} · exporté le ${dateHeureFr(maintenant)}`,
     metadonnees: { titre, sujet: 'Dossier de neuronutrition exporté depuis WellNeuro' },
     blocs: [
-      ...sectionPerimetre(version, maintenant),
+      ...sectionPerimetre(version, maintenant, donneesDatees !== null),
       ...sectionAdministrative(patient, version, maintenant),
       ...sectionRenseignements(
         masquer ? consultations.map(c => masquerConsultation(c, masquer)) : consultations,
         porteuse?.idConsultation ?? null,
+        donneesDatees && masquer ? masquerDonneesDatees(donneesDatees, masquer) : donneesDatees,
       ),
       ...sectionQuestionnaires(masquer ? passations.map(p => masquerPassation(p, masquer)) : passations, sansReponse),
       ...sectionSynthese(synthese && masquer ? masquerSynthese(synthese, masquer) : synthese, brouillonPlusRecent),

@@ -1,3 +1,5 @@
+import { scinderSousPlafond } from '@/lib/clinical/vigilanceLongueur';
+
 // Mise en forme déterministe du contexte clinique patient (fiche signalétique +
 // anamnèse) pour nourrir la synthèse IA du premier bilan.
 //
@@ -187,18 +189,30 @@ const SOURCE_ANAMNESE = ' (déclarés à l’anamnèse)';
 const SOURCE_LIGNES = ' (lignes datées du dossier)';
 
 /**
+ * Le repère des morceaux de suite d'un point scindé ([[D-391]] §5). Jamais de
+ * la forme `[C-…]` : `documents/depuisSynthese.ts` arrêterait au praticien un
+ * point ainsi marqué, et le document du médecin perdrait la fin d'un
+ * traitement qu'il reprend ([[D-391]] §3).
+ */
+const REPERE_SUITE_LIGNES = 'lignes datées du dossier';
+
+/**
  * Extrait les points de vigilance garantis à partir de l'anamnèse : signaux
  * d'alerte médicaux cochés, traitements et automédication en cours. Ces items
  * sont ajoutés en tête des points de vigilance de la synthèse, indépendamment
  * de ce que produit le LLM. Retourne [] si rien à signaler.
  *
  * `lignesEnVigueur` ([[D-335]] §8, BP-13) : les traitements en vigueur du
- * dossier, passés sous `WN_PHYSIO_TRAITEMENTS` seulement — `null` sinon, et
- * la sortie est alors celle d'avant. Ils prennent la MÊME forme que ceux de
- * l'anamnèse (nom, dose), dans un item à eux : les groupes d'une anamnèse
- * ancienne restent lus, et quand les deux sources portent une même nature,
- * chacune est nommée, sans fusion. Ce texte est écrit par le code APRÈS la
- * réponse de l'IA : rien de ce lot ne part au modèle.
+ * dossier, lus quel que soit `WN_PHYSIO_TRAITEMENTS` ([[D-391]] §4) — sans
+ * ligne, la sortie est celle d'avant. Ils prennent la MÊME forme que ceux de
+ * l'anamnèse (nom, dose), et chaque ligne fait son propre point ([[D-391]]
+ * §5) : le brouillon praticien refuse un point de plus de
+ * `LONGUEUR_MAX_POINT` caractères, et un seul traitement aux bornes de
+ * [[D-335]] §3 en fait 547 — le point trop long est scindé aux mots, sans
+ * rien retirer. Les groupes d'une anamnèse ancienne gardent leur forme
+ * exacte, et quand les deux sources portent une même nature, chacune est
+ * nommée, sans fusion. Ce texte est écrit par le code APRÈS la réponse de
+ * l'IA : rien de ce lot ne part au modèle.
  */
 export function extraireVigilanceDeterministe(
   anamnese: unknown,
@@ -223,10 +237,11 @@ export function extraireVigilanceDeterministe(
       `Traitements médicamenteux en cours${deuxSourcesMedicaments ? SOURCE_ANAMNESE : ''} : ${medicaments.join(' ; ')} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`
     );
   }
-  if (medicamentsLignes.length) {
-    out.push(
-      `Traitements médicamenteux en cours${SOURCE_LIGNES} : ${medicamentsLignes.join(' ; ')} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`
-    );
+  for (const traitement of medicamentsLignes) {
+    out.push(...scinderSousPlafond(
+      `Traitements médicamenteux en cours${SOURCE_LIGNES} : ${traitement} — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`,
+      REPERE_SUITE_LIGNES,
+    ));
   }
 
   const automedication = liste(a.automedication);
@@ -240,8 +255,11 @@ export function extraireVigilanceDeterministe(
   if (complements.length) {
     out.push(`Compléments alimentaires en cours${deuxSourcesComplements ? SOURCE_ANAMNESE : ''} : ${complements.join(' ; ')} — vérifier les redondances et interactions.`);
   }
-  if (complementsLignes.length) {
-    out.push(`Compléments alimentaires en cours${SOURCE_LIGNES} : ${complementsLignes.join(' ; ')} — vérifier les redondances et interactions.`);
+  for (const complement of complementsLignes) {
+    out.push(...scinderSousPlafond(
+      `Compléments alimentaires en cours${SOURCE_LIGNES} : ${complement} — vérifier les redondances et interactions.`,
+      REPERE_SUITE_LIGNES,
+    ));
   }
 
   return out;

@@ -692,6 +692,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | D-371 | journal du plan en fragments | A | après H23 (D-372) | non | H90 |
 | CI | job `controles` en deux, puis cache de compilation | A | aucune | non | H91 |
 | D-375 §2, bilan | tolérance du crochet, bilan des trois essais | A | après H86, H89 et H90 | non | H92 |
+| D-393 | revue de substitution : PR-Agent remplace CodeRabbit sur la tête | A | aucune | non | H93 |
 | af | référence de fiche conseil sur l'action | A | 28 | non | H24 |
 | ag | rédaction assistée des zones du protocole | A | 5, 28 | non | H25 |
 | D-281, étape 3 | portail et pause, hors file C | A | 9 (fait) | non | F66 |
@@ -1084,6 +1085,15 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : D-375 §2 ; aucune décision neuve pour le bilan. Les lots optionnels (registre des décisions en fragments, sortie des états « livré » du plan, fichiers dérivés et drapeaux, contrats SQL joués par un script partagé, racine Git de l'appelant pour les outils de lecture, ruleset des réservations) se posent chacun en fiche à leur ouverture, selon les effets observés.
 - **Critère de fin** : tolérance en service, banc du crochet vert (retard sans chevauchement ni conflit : édition permise, avertissement une fois par état ; chevauchement ou conflit : refus ; état illisible : refus ; mode dégradé inchangé), revue faite ; bilan chiffré à deux semaines des trois essais (intégrateur, contrôle avant merge, journal du plan) publié dans cette fiche, sur les événements existants ; mesure « après » du gel par phases (D-374 §5) ; réexamen de la sortie des états « livré » tranché selon les seuils de D-371 §4.
 - **Journal** : `docs/claude/plan-journal/H92/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H92`.
+
+#### H93 · Revue de substitution : PR-Agent remplace CodeRabbit sur la tête
+- **Identifiant, piste** : D-393 (amende D-290 §1 et §3) ; outillage et gouvernance des PR ; file A.
+- **Rang** : 1.
+- **Portes, préalables** : aucune. La décision se merge avant le workflow (#1766), qui reste mergé par sa file (D-393 §6).
+- **Migration, release-db** : non ; touche `.github/workflows/pr_agent.yml`, `CLAUDE.md`, `docs/claude/REGLES_PR_MERGE.md`, `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10, `docs/claude/POLITIQUE_REVUE.md` et l'étape 6 de `wn-merge` ; revue `wn-reviewer` (P1, D-291 §4) et `/security-review` sur le workflow.
+- **Décisions, textes** : D-393 ; aucune autre décision.
+- **Critère de fin** : deux PR, dans cet ordre. (a) Décision et textes : D-393 au registre, lignes datées sous D-290 §1 et §3, textes alignés, bancs de `wn-merge` verts. (b) Workflow #1766 : en-tête aligné sur D-393, revue complète à chaque push, repli Sonnet, garde fork ; preuve de D-393 §2 constatée sur sa tête. Puis, sur de vraies PR, à constater et consigner ici : une première PR de code revue par PR-Agent en substitution et mergée sur cette preuve ; une revue sans remarque (aucun bloc d'état) ; une PR au-delà du plafond (« pruning diff ») ; un `/review` en commentaire d'un membre, et un commentaire de non-membre qui ne lance rien (après le merge de #1766) ; coût réel par revue, lu dans la console. Reste ouvert, sans porte : un lecteur scripté des quatre conditions de D-393 §2, avec banc (dont un run sur commentaire, qui porte la tête de `main`).
+- **Journal** : `docs/claude/plan-journal/H93/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H93`.
 
 ### Rang 2
 
@@ -2613,7 +2623,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Repli localhost ; verrou de diffusion | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:38-39` | repli localhost **soldé le 2026-10-18** dans J1-base (H43) : base unique des liens de courriel, démarrage refusé en production sans `NEXTAUTH_URL` ; verrou de diffusion : posé en production depuis le 2026-09-28 (même source, ligne 40) |
 | Auto-merge sans contrôle de clôture | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:40` | H23 |
 | Contenu en clair au stockage local | `DETTE_UX_RESIDUELLE.md:10` | constat au premier S-1 (H06) |
-| D-C5-01 à D-C5-04 ; D-JA-01 à D-JA-03 | `DETTE_C5.md:10-13` ; `DETTE_JA.md:16-18` | dans H16 et H45 ; **D-C5-01 à 04 soldées sans objet le 2026-10-27** (D-365 §4, retrait du portail constaté en production, H16) |
+| D-C5-01 à D-C5-04 ; D-JA-01 à D-JA-03 | `DETTE_C5.md:10-13` ; `DETTE_JA.md:16-18` | dans H16 et H45 ; **D-C5-01 à 04 soldées sans objet le 2026-10-27** (D-365 §4, retrait du portail constaté en production, H16) ; **D-JA-01 et D-JA-02 soldées le 2026-10-28** (bancs du garde et de la page du harnais, H45), D-JA-03 par D-337 |
 | Curation de `QuestionnaireDefinition.niveau` et `.publicCible` : statut « surveillance », aucun usage applicatif (R10, 2026-07-10) | `docs/archive/roadmap-updates/HISTORIQUE_CHANTIERS_TECHNIQUES.md:78` ; `docs/claude/PROJET_CONTEXTE.md:195` | surveillance, sans action ni échéance ; se solde au premier usage applicatif ou au retrait des champs [Hypothese] |
 | D-TRUST-05 passe réelle d'accessibilité : lecteur d'écran (NVDA, VoiceOver), zoom 200 %, appareil mobile physique, sur le centre d'information et la séquence ; même objet que D-C5-01 et `DETTE_UX_RESIDUELLE.md:49` | `DETTE_TRUST.md:13` | portée par H64 (rang 4) ; périmètre précisé le 2026-10-14 |
 | Lecture par la file (G3) : un dossier clos pendant l'attente n'est pas rejugé par la réclamation (un motif neuf demanderait une migration) | handoff 2026-10-13-1110:80-81 | soldée le 2026-10-14 par #1418 (D-282 §9.1), sans migration ; la ligne reste pour les renvois |
