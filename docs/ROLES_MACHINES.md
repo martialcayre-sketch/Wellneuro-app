@@ -66,7 +66,9 @@ question et la réponse.
 - **Ce qu'on y écrit :**
   - la file et le lot bloqué ;
   - la question, avec deux à quatre options, chacune suivie de sa conséquence ;
-  - la nature : `ordinaire`, `clinique` ou `migration` ;
+  - la nature : `ordinaire`, `clinique` ou `migration`. Une question qui
+    touche une règle, un seuil, un texte ou une donnée cliniques est
+    `clinique` ; en cas de doute, elle est `clinique` ;
   - la date utile ;
   - le statut : `ouverte`, `en_seance`, `repondue` ou `close` ;
   - la réponse, le numéro `D-xxx` et la PR.
@@ -75,16 +77,21 @@ question et la réponse.
   réponse ; le merge.
 - **Réponse directe permise.** Une question complète, c'est-à-dire aux faits
   vérifiés contre le code et aux options lisibles par ce qui se voit à
-  l'écran, se pose directement au responsable par la session qui agit. Cette
-  session écrit la ligne, puis la réponse. Le guichet prépare, il n'autorise
-  pas : aucune approbation intermédiaire.
+  l'écran, se pose directement au responsable par la session qui agit. C'est
+  cette session qui juge la question complète ; le responsable peut la
+  renvoyer au guichet. Elle écrit la ligne, puis la réponse. Le guichet
+  prépare, il n'autorise pas : aucune approbation intermédiaire.
 - **Le guichet.** C'est la session existante « Questions générales et
   audits ». Il prépare des séances d'au plus huit questions, sans heure fixe :
   il vérifie les faits et reformule les options. Il renvoie les réponses dans
-  les lignes. Un numéro de décision se réserve par
-  `node scripts/wn-reserver-decision.mjs`, une seule fois par question, et
-  son rédacteur le réutilise. Le guichet ne code pas et ne merge pas. Il ne
-  relaie pas non plus une réponse clinique comme si c'était un accord.
+  les lignes. Il ne code pas et ne merge pas. Il ne relaie pas non plus une
+  réponse clinique comme si c'était un accord.
+- **Le numéro de décision.** Il se réserve à la rédaction de la décision,
+  après la réponse, par `node scripts/wn-reserver-decision.mjs`. La session
+  qui rédige la décision fait la réservation, qu'il s'agisse du guichet ou
+  de la session qui agit. La réservation est unique par question : le
+  numéro s'inscrit dans la ligne, et quiconque reprend la question le
+  réutilise au lieu d'en réserver un autre.
 - **Une session qui attend** écrit son handoff et fait `/clear`. Elle n'ouvre
   pas d'autre lot en attendant la réponse.
 - **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
@@ -93,6 +100,8 @@ question et la réponse.
   décision, ou de la PR qui écrit la réponse. Cette PR nomme sa ligne dans sa
   déclaration « prête @<sha> » (`question <identifiant>`). Celui qui merge,
   l'intégrateur, ou la file en repli, horodate alors le merge dans la ligne.
+  Une réponse qui n'appelle ni décision ni PR passe à `close` dès qu'elle est
+  écrite, par la session qui l'écrit. Son horodatage de merge reste vide.
 - **Hors liste.** Les urgences, la sécurité et les release-db restent
   immédiates.
 
