@@ -87,9 +87,11 @@ dernière session.
    un journal qui dit « returning full diff », jamais « pruning diff » ;
    le commentaire persistant de `github-actions[bot]` écrit pendant ce run,
    avec un bloc d'état unique (`head_sha` = tête, `excluded_files` vide),
-   ou sans bloc ; aucune autre revue de PR-Agent pendant ce run (l'avis
-   « Persistent review … updated to latest commit » n'en est pas une), ni
-   commande PR-Agent postée sur la PR après son début. Un run sur commentaire ou une
+   ou sans bloc ; à côté de lui, pendant ce run, au plus la description
+   (`pr-agent:describe:persistent`) et l'avis d'une ligne « **[Persistent
+   review](…)** updated to latest commit », tout autre commentaire
+   (« ## Standalone PR Review » compris) faisant échouer ; ni commande
+   PR-Agent postée sur la PR après son début. Un run sur commentaire ou une
    revue `-i` ne compte pas. Si aucun bot ne remplit sa condition, ne pas merger. Les remarques
    de PR-Agent (corps du commentaire, et `findings` du bloc) reçoivent leur
    verdict dans un commentaire de PR distinct. CodeRabbit écrit à **trois** endroits,
