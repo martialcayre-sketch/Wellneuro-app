@@ -1,0 +1,157 @@
+# Revue automatique des PR par PR-Agent (Qodo, open source), sur l'API
+# Anthropic. Condition de merge (D-393, qui amende D-290 §1 et §3) : une
+# revue de CodeRabbit sur la tête ; s'il la saute ou bute sur son quota, la
+# revue de PR-Agent sur la tête la remplace. Une seule revue exigée par PR,
+# et toute remarque reçue garde son verdict. Une PR de clôture seule
+# (`paths-ignore` ci-dessous) reçoit CodeRabbit, demandé à la main.
+# Ce fichier est gardé par sa file, comme `.coderabbit.yaml` (D-393, P1).
+#
+# Choix du responsable (2026-10-28) :
+# - image ÉPINGLÉE par empreinte (v0.49.0) : l'action reçoit la clé Anthropic
+#   et un jeton d'écriture sur les PR ; une montée de version passe par une PR
+#   relue, jamais par la tête de `main` du dépôt tiers ;
+# - la description générée part EN COMMENTAIRE : le corps des PR, rédigé par
+#   `--body-file` (objet, D-xxx, validations), n'est jamais écrasé ;
+# - réglages d'économie : Sonnet 5.5 relit, Haiku 5.5 fait les tâches
+#   simples ; les fichiers de clôture ne sont pas envoyés au modèle. Ordre
+#   de grandeur estimé : 0,30 $ par revue, non mesuré.
+# - au push, revue COMPLÈTE (D-393) : seule elle tient à jour le bloc
+#   d'état du commentaire persistant (`last_run.head_sha`).
+# Ce qui prouve une revue de la tête (D-393, règle 1.6) : un run de CE
+# workflow, événement `pull_request`, sur le sha de tête, conclu `success`,
+# dont le journal dit « returning full diff » ; et, si le commentaire
+# persistant porte un bloc d'état, `head_sha` = tête et `excluded_files`
+# vide. Une revue sans remarque ne laisse pas de bloc : le run fait foi.
+#
+# Secret requis : `ANTHROPIC_API_KEY` (Settings → Secrets and variables →
+# Actions), créé le 2026-10-28. Clé dédiée : sa consommation se lit seule
+# dans la console Anthropic.
+
+name: PR-Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # Une PR qui ne touche QUE des fichiers de clôture n'a rien à relire.
+    paths-ignore:
+      - 'changelog.d/**'
+      - 'docs/claude/handoffs/**'
+      - 'docs/claude/plan-journal/**'
+      - 'docs/claude/SESSION_LOG.md'
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+# Une seule revue à la fois par PR : un push rapproché annule la précédente.
+# Le groupe s'évalue AVANT le `if:` du job : un commentaire (d'un robot, d'un
+# inconnu) ne doit ni annuler une revue en cours ni en évincer une en
+# attente — chaque run sur commentaire a donc son propre groupe.
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request'
+        && format('pr-agent-{0}', github.event.pull_request.number)
+        || format('pr-agent-commentaire-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pr_agent:
+    # Jamais sur l'action d'un robot. Sur un commentaire : seulement sur une
+    # PR, et seulement d'un membre du dépôt — le dépôt est public, et un
+    # commentaire d'inconnu ne doit ni dépenser la clé ni piloter l'agent.
+    # Sur `pull_request`, une PR venue d'un fork (sans clé ni jeton
+    # d'écriture) ne lance pas le job, au lieu d'échouer sur une clé vide.
+    # Un commentaire d'un membre sur une PR de fork, lui, le lance : la
+    # revue lit le diff par l'API, sans exécuter le code de la PR.
+    if: >-
+      github.event.sender.type != 'Bot' &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event.issue.pull_request &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: PR-Agent
+        # pragent/pr-agent:0.49.0-github_action (publiée le 2026-10-25).
+        uses: docker://pragent/pr-agent@sha256:b1ed6e8de56eb4d6e4169ee0d5c209bb5ed1ef071a01c0c042c64b80192a785c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fournisseur Anthropic : la clé seule, aucune clé OpenAI.
+          ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # --- Modèles ---
+          # Claude Sonnet 3.5 (`claude-3-5-sonnet`) est retiré depuis le
+          # 2025-10-28 : la Sonnet courante relit. Haiku 5.5 sert de modèle
+          # faible (description). Le repli est Sonnet elle-même : un repli
+          # Haiku ferait passer une revue de Haiku pour une revue de Sonnet,
+          # sans trace ; le repli par défaut de PR-Agent est un modèle OpenAI.
+          config.model: "anthropic/claude-sonnet-5-5"
+          config.model_weak: "anthropic/claude-haiku-5-5"
+          config.fallback_models: '["anthropic/claude-sonnet-5-5"]'
+          # Haiku 5.5 refuse `temperature` (« deprecated for this model »,
+          # constaté le 2026-10-28 sur #1766) : la description échouait et
+          # faisait tomber le job. Option prévue par v0.49.0.
+          config.no_temperature_models: '["anthropic/claude-haiku-5-5"]'
+          config.custom_model_max_tokens: "200000"
+          # Plafond de contexte envoyé par appel. Au-delà, PR-Agent compresse
+          # le diff (« pruning diff » au journal) et peut omettre sans le dire
+          # des blocs de suppression : une telle revue ne remplace pas
+          # CodeRabbit (D-393). Seuls les jetons envoyés se paient : relever
+          # le plafond ne renchérit que les PR qui le dépassent.
+          config.max_model_tokens: "32000"
+
+          # --- Langue ---
+          config.response_language: "fr-FR"
+
+          # --- Déclenchement ---
+          # À l'ouverture : revue et description. Suggestions de code non
+          # demandées.
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "false"
+          # Au push (`synchronize`) : revue COMPLÈTE du diff de la PR, sans
+          # régénérer la description. `/review -i` a été écarté sur constat
+          # (#1766, 2026-10-28) : il ne nomme pas la tête, ne met pas à jour
+          # le bloc d'état, et après une fusion de `main` il relit le code
+          # de `main` comme s'il venait de la PR.
+          github_action_config.handle_push_trigger: "true"
+          github_action_config.push_commands: '["/review"]'
+
+          # --- Description ---
+          # En commentaire, jamais à la place du corps ; pas d'étiquettes.
+          pr_description.publish_description_as_comment: "true"
+          pr_description.publish_labels: "false"
+
+          # --- Revue ---
+          pr_reviewer.num_max_findings: "5"
+          pr_reviewer.require_estimate_effort_to_review: "false"
+          pr_reviewer.enable_review_labels_effort: "false"
+          pr_reviewer.enable_review_labels_security: "false"
+          pr_reviewer.extra_instructions: >-
+            Application de consultation en neuronutrition, en production
+            (Next.js 15, Prisma, PostgreSQL). Vérifiez en priorité :
+            (1) tout texte visible par le patient ou le praticien est en
+            français, et aucun texte patient nouveau n'apparaît sans une
+            décision D-xxx qui le cite ;
+            (2) aucun secret en dur, aucune donnée patient réelle (nom,
+            e-mail, identifiant accompagné de mesures) dans le code, les
+            tests, les fixtures ou les commentaires ;
+            (3) aucune règle, aucun seuil, aucune dose ni borne clinique
+            sans décision D-xxx et fragment changelog.d/ ;
+            (4) routes API : authentification et autorisation avant toute
+            lecture, validation côté serveur, aucune journalisation de
+            jeton, d'e-mail ou de contenu clinique ;
+            (5) migrations Prisma : séparées du code qui les consomme ou
+            protégées par un drapeau éteint, RLS activée sur toute table
+            patient neuve ;
+            (6) drapeaux WN_* : valeur exacte 'true', absent = fermé, et
+            drapeau fermé = comportement inchangé ;
+            (7) aucun refactoring hors du périmètre de la PR.
+            Ne signalez ni le style ni les préférences de formulation.
+
+          # --- Fichiers non envoyés au modèle ---
+          ignore.glob: '["changelog.d/**", "docs/claude/handoffs/**", "docs/claude/plan-journal/**", "docs/claude/SESSION_LOG.md", "**/package-lock.json", "**/*.png", "**/*.snap"]'

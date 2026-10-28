@@ -78,7 +78,29 @@ dernière session.
 6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
    `verify` vert ne dit rien d'eux. **Pas de merge avant qu'une revue de
    `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
-   commentaire de synthèse qui le nomme). CodeRabbit écrit à **trois** endroits,
+   commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
+   (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
+   la revue de **PR-Agent** sur la tête le remplace (`D-393` §1). Elle ne
+   vaut que si les quatre conditions de `D-393` §2 tiennent, que lit
+   `node scripts/wn-revue-pr-agent.mjs <N>` — un appel, code lu directement,
+   jamais dans un tube ; **`0` seul** vaut revue de la tête, **`1`** = preuve
+   absente ou défaut (la ligne `❌` nomme la condition), **`2`** = lecture
+   impossible, jamais lue comme un `0`. Le `tete=` de sa ligne `REVUE`
+   (sha entier) est la tête que le merge vise par `--match-head-commit`. Il
+   ne vérifie pas que CodeRabbit a sauté la PR : cette précondition se lit
+   avant de l'appeler. Ce qu'il vérifie :
+   un run `pull_request` de `pr_agent.yml` conclu `success` sur la tête ;
+   un journal qui dit « returning full diff », jamais « pruning diff » ;
+   le commentaire persistant de `github-actions[bot]` écrit pendant ce run,
+   avec un bloc d'état unique (`head_sha` = tête, `excluded_files` vide),
+   ou sans bloc ; à côté de lui, pendant ce run, au plus la description
+   (`pr-agent:describe:persistent`) et l'avis d'une ligne « **[Persistent
+   review](…)** updated to latest commit », tout autre commentaire
+   (« ## Standalone PR Review » compris) faisant échouer ; ni commande
+   PR-Agent postée sur la PR après son début. Un run sur commentaire ou une
+   revue `-i` ne compte pas. Si aucun bot ne remplit sa condition, ne pas merger. Les remarques
+   de PR-Agent (corps du commentaire, et `findings` du bloc) reçoivent leur
+   verdict dans un commentaire de PR distinct. CodeRabbit écrit à **trois** endroits,
    chacun redirigé vers un fichier puis relu : le commentaire de synthèse
    (`gh pr view <N> --json comments`), le **corps** de chaque revue —
    `.reviews[].body`, où logent « Nitpick » et « Outside diff range » —

@@ -246,6 +246,35 @@ Suite : trois PR sans migration (vigilance et banc sur vraie base ; export ;
 texte v22 mergé le jour de l'allumage), puis l'allumage, geste du
 responsable.
 
+- **PR 1 livrée (2026-10-28)** : la synthèse lit les traitements en vigueur
+  hors drapeau, dans son propre `try` (§4) ; chaque ligne de traitement fait
+  son point, scindé par `scinderSousPlafond` au-delà de 500 caractères, les
+  groupes de l'anamnèse inchangés (§5) ; banc `physioTraitements.pg.test.ts`
+  sur `ecriture.ts` — pose, remplacement, retrait, deux remplacements
+  concurrents d'un fil, deux premières poses concurrentes d'un critère — et
+  son étape CI (§7). Condition (2) remplie. Reste : PR 2 (export), PR 3
+  (v22).
+- **PR 2 livrée (2026-10-28)** : la section 2 de l'export du dossier
+  ([[D-252]]) s'ouvre sur les lignes datées — les six critères et les
+  traitements en cours et arrêtés, la tête de chaque fil, avec date, source
+  et précision —, dans les deux versions ; un retrait ramène à « Non
+  renseigné » ; dans la version « IA externe », nom, dose, moment et motif
+  d'un traitement passent par le masqueur. Une seule lecture
+  (`lireDonneesDuDossier`, dans l'assembleur, inscrit au banc des lecteurs).
+  Lecture de mise en œuvre : lignes lues quel que soit le drapeau, comme
+  §4 ; un dossier sans ligne s'exporte à l'identique (préambule compris),
+  épinglé par un banc. Condition (3) remplie. Reste : PR 3 (v22).
+- **PR 3 prête (2026-10-28)** : « Vos données personnelles » v22 — le
+  paragraphe validé le 2026-10-21, sa phrase « aucun outil d'IA ne les
+  reçoit, transmises à personne » remplacée (l'application ne les envoie à
+  aucun outil d'IA ; elles figurent dans la version du dossier soumise à
+  ChatGPT ; les traitements peuvent figurer dans un document destiné à un
+  médecin) —, conditions v5, e-mail `conditions_utilisation@5`, déclaration
+  du dossier RGPD corrigée ; textes validés tels quels par le responsable le
+  2026-10-28 (`docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/`).
+  Durées de [[D-378]] en v23. Merge et allumage avancés au 2026-10-28 :
+  condition (4) remplie au merge.
+
 ## Hors périmètre
 
 D-335 §12 : classe de traitement ; IMC et toute dérivée ; garde de

@@ -89,6 +89,8 @@ décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
   l'exécuter, sauf fait nouveau qui change réellement le choix.
 - Ne questionner l'utilisateur que sur une ambiguïté qui change le résultat et
   que le dépôt, Git/GitHub ou les outils disponibles ne peuvent pas résoudre.
+  Une question d'arbitrage s'écrit aussi dans la liste commune
+  (`docs/ROLES_MACHINES.md`, « La liste commune de questions et le guichet »).
 - Narration limitée aux résultats intermédiaires utiles, blocages, risques
   nouveaux et changements de plan — pas ses propres évidences.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
@@ -185,9 +187,13 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
 - **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
-  des branches par délégation du responsable. Pas de merge avant une revue de
+  des branches par délégation du responsable. Pendant l'essai de `D-373`,
+  l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
+  handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
+  `pr_agent.yml` restent à leur file. Pas de merge avant une revue de
   `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
-  une. Détail : `docs/claude/REGLES_PR_MERGE.md`.
+  une —, ou, s'il saute ou bute sur son quota, celle de PR-Agent, prouvée
+  par son run sur la tête (`D-393` §2). Détail : `docs/claude/REGLES_PR_MERGE.md`.
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
   Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
   *en ligne*, absents du rollup et de `gh pr view --comments` :
@@ -199,12 +205,14 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   `.claude/rules/pr-revue-et-release-db.md`.
 - **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le
   CI de `main` ni le déploiement — il converge seul sur la prochaine tête
-  verte (`D-248`) ; la session fait `/clear` aussitôt. Sauf migration,
-  authentification ou `.coderabbit.yaml`, que la session suit jusqu'au
-  constat. Demeurent : le gel par phases de `D-374` (avant chaque merge,
-  `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise) et, après
-  une migration, un merge à la fois, déploiement constaté avant le merge
-  suivant.
+  verte (`D-248`) ; la session fait `/clear` aussitôt — dès « prête »
+  pendant l'essai. Sauf migration, authentification ou `.coderabbit.yaml`,
+  que la session suit jusqu'au constat. Demeurent, avant chaque merge :
+  l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné,
+  registre, chevauchement, `main` inchangé), puis sa 7 ter, le gel par
+  phases de `D-374` (`node scripts/wn-sonde-release-db.mjs <N>` — `0` seul
+  autorise) ; et, après une migration hors phase 1 de `D-374`, un merge à
+  la fois, déploiement constaté avant le merge suivant.
 
 ## Documentation de référence
 
@@ -226,20 +234,23 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Lancer à la racine du dépôt** (VS Code ouvert sur
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.
-- **Session principale : la copie principale**, où tournent les `/wn-*`.
-  **Session concurrente : son propre worktree** (`EnterWorktree`), cycle en
+- **Session principale : la copie principale**, où tournent les `/wn-*` —
+  l'intégrateur seul pendant l'essai (`D-373` §2), qui l'avance par
+  `git merge --ff-only`, après T1 si le lot touche les crochets ; un refus
+  s'arbitre. **Session concurrente : son propre worktree** (`EnterWorktree`), cycle en
   `git`/`gh` direct — les `/wn-*` n'y tournent pas. Jamais de
   `checkout`/`switch` dans la copie d'une autre session.
 - **Un lot = une session** : handoff dans la PR du lot (fenêtre de
-  clôture), puis `/clear` dès que la PR est mergée — sauf migration,
+  clôture), puis `/clear` dès que la PR est mergée (dès « prête » pendant
+  l'essai) — sauf migration,
   authentification ou `.coderabbit.yaml` (`D-373` §1, voir § PR, CI, merge) ;
   `/compact` seulement dans un lot (une migration et son code consommateur
   forment un lot). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
-  pull/merge/rebase automatique ; un historique divergent se réconcilie par
-  arbitrage humain.
+  pull/merge/rebase automatique (l'avance `--ff-only` n'en est pas une) ;
+  un historique divergent se réconcilie par arbitrage humain.
 
 ## Fin de session
 

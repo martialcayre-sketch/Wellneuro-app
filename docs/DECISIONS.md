@@ -6,6 +6,136 @@
 
 ## Décisions actives
 
+### D-393 — Revue de substitution : quand CodeRabbit saute une PR ou bute sur son quota, la revue de PR-Agent sur la tête le remplace ; une seule revue de bot exigée, prouvée par le run sur la tête ; `pr_agent.yml` gardé par sa file (amende D-290 §1 et §3)
+
+- Date : 2026-10-28
+- Statut : accepté — arbitrages du responsable du 2026-10-28, rendus en
+  conversation : quatre questions à options (revue exigée, Copilot, PR de
+  clôture seule, mesure de l'essai), puis une cinquième après le constat sur
+  #1766 (revue complète au push). Texte rédigé par l'assistant à partir de
+  ces réponses et des constats ci-dessous.
+- Domaine : gouvernance des PR ; `CLAUDE.md` § PR, CI, merge ;
+  `docs/claude/REGLES_PR_MERGE.md` ; `.claude/rules/pr-revue-et-release-db.md`
+  §1.6 et §1.10 ; `docs/claude/POLITIQUE_REVUE.md` ; skill `wn-merge`,
+  étape 6 ; `.github/workflows/pr_agent.yml` (#1766) ; plan, fiche H93.
+- **Amende** [[D-290]] §1 (« CodeRabbit revoit ») et §3 (« pas de merge
+  avant qu'une revue de `coderabbitai[bot]` porte sur le sha de tête »), par
+  lignes datées sous chacun. **Étend** [[D-373]] §3 et [[D-291]] §4 au
+  workflow de PR-Agent.
+- **Ne touche pas** : la protection de `main`, `enforce_admins`, les checks
+  requis (PR-Agent n'en devient pas un, pour le motif de [[D-291]] §1) ;
+  `.coderabbit.yaml` ; le barème de `POLITIQUE_REVUE.md` ; le verdict de
+  chaque remarque (règle 1.2) ; le reste de [[D-373]].
+- Contexte, constaté le 2026-10-28 :
+  - CodeRabbit ne revoit plus seul. Le dépôt a moins de dix étoiles : le
+    statut est `skipping`. Son quota gratuit tient à environ une revue par
+    heure (« Review rate limited ») : #1758 a attendu environ quarante-cinq
+    minutes une revue de sa tête. Ses réponses dans les fils créent des
+    objets « revue » au corps vide, qui ne sont pas des revues.
+  - L'essai de [[D-373]] vise deux minutes en médiane entre « prête » et
+    le merge.
+  - Aucun script ne dépend de CodeRabbit : seuls `wn-merge` (étape 6) et
+    les textes le nomment.
+  - Sur #1766, PR-Agent v0.49.0 :
+    - la revue complète publie un commentaire persistant dont un bloc
+      caché `pr-agent-review-state:v1` nomme `last_run.head_sha` ;
+    - `/review -i` ne nomme que le premier commit nouveau et ne met pas
+      ce bloc à jour ; après une fusion de `main`, il a relu le code de
+      `main` comme s'il venait de la PR ;
+    - une revue sans remarque, première de sa PR, ne laisse pas de bloc ;
+    - au-delà du plafond de contexte, le diff est compressé (« pruning
+      diff ») et des blocs de suppression peuvent en sortir sans trace ;
+    - `complete` passe à faux dès que la revue atteint son nombre maximal
+      de remarques.
+
+**§1 — La revue exigée : une seule, sur la tête.** CodeRabbit, comme avant
+(règle 1.6). S'il saute la PR (statut `skipping`, « fewer than 10 stars »)
+ou bute sur son quota (« Review rate limited »), la revue de PR-Agent sur la
+tête le remplace, prouvée selon le §2. Il n'est pas nécessaire de redemander
+CodeRabbit ni d'attendre la remise à zéro de son quota. Toute remarque reçue
+d'un bot, quel qu'il soit, garde son verdict (règle 1.2). Copilot reste
+écarté : il ne relisait qu'une fois, et son quota épuisé a fondé [[D-290]].
+
+**§2 — Ce qui prouve une revue de PR-Agent sur la tête.** Les quatre
+conditions, ensemble :
+- (a) un run du workflow `PR-Agent`, événement `pull_request`, dont le
+  `head_sha` est la tête, conclu `success`. Un run lancé par un commentaire
+  ne compte pas : ses arguments peuvent alléger la revue, par exemple
+  `--ignore.glob=`. Un run rouge ne prouve rien, même si un commentaire a
+  été publié ;
+- (b) le journal de ce run dit « returning full diff », jamais « pruning
+  diff ». Une PR plus grosse que le plafond n'est pas revue en entier par
+  PR-Agent : elle attend CodeRabbit ;
+- (c) le commentaire persistant de `github-actions[bot]` (marqueur
+  `pr-agent:review:full`) a été écrit pendant ce run : sa date de mise à
+  jour, ou de création à la première revue, est postérieure au début du
+  run. S'il porte un bloc `pr-agent-review-state:v1`, ce bloc est unique,
+  son `last_run.head_sha` est la tête et son `excluded_files` est vide.
+  `complete` et `kind` ne s'exigent pas. Sans bloc (aucune remarque depuis
+  l'ouverture), l'écriture pendant le run suffit ;
+- (d) aucun autre commentaire de PR-Agent n'a été publié pendant ce run (il
+  publie à part une revue « non autoritative » quand il ne peut pas lire
+  son état), et aucune commande PR-Agent (`/review`, `/describe`…) n'a été
+  postée sur la PR après son début. Cela se lit dans les commentaires de la
+  PR : un run sur commentaire porte la tête de `main`, pas celle de la
+  PR.
+
+- **Mise à jour (2026-10-28, correction, H93)** : dans (d), « aucun autre
+  commentaire de PR-Agent » vise une **revue** publiée à part, et se lit en
+  liste fermée. À côté du commentaire persistant, seuls deux commentaires
+  de `github-actions[bot]` écrits pendant le run sont admis, reconnus à
+  leur gabarit :
+  - la description, marqueur `pr-agent:describe:persistent` (à
+    l'ouverture) ;
+  - l'avis de mise à jour, une ligne qui commence par « **[Persistent
+    review](…)** updated to latest commit » (aux revues suivantes).
+
+  Tout autre commentaire de PR-Agent fait échouer (d). C'est le cas
+  notamment d'une revue « non autoritative », qui commence par
+  « ## Standalone PR Review ». Pris à la lettre, l'ancien texte faisait
+  échouer (d) à chaque PR. Constaté sur #1766 (avis, tête 58a9f790) et
+  #1769 (description, tête 904fb3b6).
+
+`/review -i` ne compte jamais. Une PR dont tous les fichiers sont exclus du
+modèle (images, instantanés, `package-lock.json`) ne produit pas de revue :
+comme une PR de clôture seule, elle reçoit CodeRabbit demandé à la main
+(§4). Si ni CodeRabbit ni PR-Agent ne remplit sa
+condition, la PR attend. Une dérogation du responsable reste possible, par
+PR et jamais reportée, avec `wn-reviewer` en remplacement.
+
+**§3 — Les remarques de PR-Agent.** Elles se lisent dans le commentaire
+persistant, qui est réécrit à chaque revue. Celles des têtes précédentes ne
+restent que dans le champ `findings` du bloc d'état, actives ou résolues.
+Chacune reçoit son verdict (règle 1.2). PR-Agent ne publie pas de remarque
+en ligne : les verdicts vont dans un commentaire de PR distinct, qui cite
+chaque remarque. Une remarque que PR-Agent marque lui-même « résolue » n'a
+pas reçu de verdict. Clinique, migration et signature de périmètre
+remontent en arbitrage (règle 1.8).
+
+**§4 — PR de clôture seule.** `paths-ignore` reste : une PR qui ne touche
+que la clôture (`changelog.d/`, handoffs, journal du plan, `SESSION_LOG.md`)
+ne lance pas PR-Agent. Elle reçoit une revue CodeRabbit demandée à la main
+(`@coderabbitai full review`), et attend son quota s'il le faut.
+
+**§5 — L'essai de [[D-373]].** L'attente de la revue de bot se compte à
+part dans la fiche H89. Deux durées se relèvent pour chaque PR : de
+« prête » à la revue de la tête disponible, puis de là au merge. Seule la
+seconde est imputable à l'intégrateur et compte dans les dépassements de
+[[D-373]] §5.
+
+**§6 — Le workflow est gardé par sa file.** Comme `.coderabbit.yaml`
+([[D-373]] §3), une PR qui modifie `.github/workflows/pr_agent.yml` reste
+mergée par sa file, jamais par l'intégrateur. Elle est P1 ([[D-291]] §4) :
+`wn-reviewer` passe avant le merge, avec la mission nommée « la PR
+affaiblit-elle la revue ? ». La revue de PR-Agent sur cette PR ne compte pas
+pour cette question : elle tourne sous le workflow de la branche, celui
+qu'elle juge. L'image reste épinglée par empreinte ; toute montée de version
+passe par une telle PR.
+
+**Ce qu'elle ne décide pas.** Un lecteur scripté des conditions du §2, avec
+banc (fiche H93) ; PR-Agent en check requis ; le plafond de dépense mensuel
+de la console Anthropic, qui reste un geste du responsable.
+
 ### D-391 — BP-13 : les conditions de l'allumage de `WN_PHYSIO_TRAITEMENTS` — la garde de population reste sur l'anamnèse jusqu'à la première exclusion curée ; l'export du dossier porte les lignes ; la vigilance les lit hors drapeau, un point par traitement ; texte patient en v22 (précise D-335 §8 et §9)
 
 - Date : 2026-10-28
@@ -1287,6 +1417,11 @@ et leur code consommateur), d'authentification et de `.coderabbit.yaml`
 restent mergés par leur file jusqu'au bout : un lot = une session. Une
 remarque CodeRabbit arrivée après « prête » revient à la file, qui reprend
 depuis son handoff ; l'intégrateur ne corrige pas une PR.
+
+- **Mise à jour (2026-10-28, [[D-393]], H93)** : `.github/workflows/pr_agent.yml`
+  rejoint `.coderabbit.yaml` parmi les lots qui restent à leur file
+  ([[D-393]] §6), et « une remarque CodeRabbit » se lit « une remarque de
+  bot », PR-Agent compris.
 
 **§4 — Le contrôle avant merge.** Un script local en lecture seule, appelé
 par `wn-merge`, joué seulement si `main` a bougé depuis la base du dernier
@@ -7304,6 +7439,11 @@ imposée — avec un seul relecteur, chacune de ces PR attendrait le responsable
 Le garde-fou est déclaratif ; la dette du plan §8 reste ouverte tant qu'aucun
 verrou ne la ferme.
 
+- **Mise à jour (2026-10-28, [[D-393]], H93)** : une PR qui modifie
+  `.github/workflows/pr_agent.yml` est P1 au même titre, avec la même
+  mission ; la revue de PR-Agent sur cette PR ne compte pas pour cette
+  question ([[D-393]] §6).
+
 ### D-290 — La revue des PR passe de Copilot à CodeRabbit ; l'assistant merge
 
 - Date : 2026-10-14
@@ -7327,6 +7467,20 @@ approbation n'est pas requise. Le barème ne change pas : `/code-review medium`
 en P2, `wn-reviewer` en P1, Codex manuel obligatoire en P0 ; la revue de
 CodeRabbit s'y ajoute, elle n'en remplace aucune ligne.
 
+- **Mise à jour (2026-10-28, [[D-373]], H89)** : « l'assistant merge » se
+  lit désormais ainsi : la délégation du merge ne change pas, son porteur
+  change. Pendant l'essai, l'intégrateur, seul occupant de la copie
+  principale, merge les PR ordinaires que les files déclarent par un
+  commentaire « prête @<sha> » ([[D-373]] §2). Les lots de migration,
+  d'authentification et de `.coderabbit.yaml` restent mergés par leur file
+  ([[D-373]] §3). En repli ([[D-373]] §5), chaque session reprend ses
+  merges, avec les mêmes sondes et le même contrôle (skill `wn-merge`,
+  étapes 7 bis et 7 ter).
+- **Mise à jour (2026-10-28, [[D-393]], H93)** : « CodeRabbit revoit » se
+  lit désormais ainsi : CodeRabbit revoit ; s'il saute une PR ou bute sur
+  son quota, la revue de PR-Agent sur la tête le remplace ([[D-393]] §1).
+  Copilot reste écarté.
+
 **§2 — La configuration** (`.coderabbit.yaml`, chaque clé validée sur le
 schéma officiel `schema.v2.json`). Français, profil `chill`, résumé de haut
 niveau, sans poème, diagrammes, labels ni relecteurs suggérés. Revue
@@ -7348,6 +7502,13 @@ Chaque remarque reçoit son verdict (corrigé, écarté avec motif, routé avec
 adresse) en réponse dans son fil ; les nitpicks se trient, ils ne s'appliquent
 pas d'office ; clinique, migration et signature de périmètre remontent en
 arbitrage. Détail : `.claude/rules/pr-revue-et-release-db.md` §1.
+
+- **Mise à jour (2026-10-28, [[D-393]], H93)** : la condition de merge
+  devient « une revue de bot sur le sha de tête, une seule » : celle de
+  CodeRabbit, ou, s'il saute la PR ou bute sur son quota, celle de
+  PR-Agent, prouvée par les quatre conditions de [[D-393]] §2. Les remarques
+  de PR-Agent n'ont pas de fil : leurs verdicts vont dans un commentaire de
+  PR distinct ([[D-393]] §3).
 
 **§4 — Pourquoi #1438 n'a pas été revue.** Le message « Auto reviews are
 disabled on base/target branches other than the default branch » visait une PR
@@ -7542,6 +7703,14 @@ est borné par l'attention du responsable, relecteur unique, non par le code.
   `node scripts/wn-reserver-decision.mjs`, qui crée la référence
   `refs/tags/reserve/D-N` du premier numéro libre ; le garde tolère un trou
   réservé, en avertissement.
+- **Mise à jour (2026-10-28, [[D-373]], H89)** : « un merge à la fois, le
+  déploiement constaté avant le merge suivant » se lit désormais : borné aux
+  lots de migration, hors phase 1 de [[D-374]]. Une PR ordinaire merge sans
+  attendre le CI de `main` ni le déploiement ordinaire, qui converge seul
+  sur la prochaine tête verte ([[D-373]] §1, [[D-248]]). Les gestes d'avant
+  merge sont ceux du skill `wn-merge` (étapes 7 bis et 7 ter). « Jamais
+  d'auto-merge » : `allow_auto_merge` passé à faux le 2026-10-27, constaté
+  sur le dépôt (fiche H89, [[D-373]] §6).
 
 **§3 — L'ordre se lit au plan.** Les rangs et les portes du plan unique
 ([[D-285]]) font foi ; une date n'est qu'un repère. Un rang ne s'ouvre que
