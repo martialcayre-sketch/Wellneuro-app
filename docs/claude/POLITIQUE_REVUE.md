@@ -16,8 +16,8 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 - **P2 — courant** : Docs, UI ordinaire, tests simples, correction localisée,
   CRUD sans surface sensible, scripts de dev à faible risque.
 - **P1 — sensible** : permissions, Prisma sans migration, orchestration
-  CI/GitHub, hooks, configuration du bot de revue (`.coderabbit.yaml`,
-  `D-291`), logique métier importante, transverse modéré, bug difficile à
+  CI/GitHub, hooks, configuration des bots de revue (`.coderabbit.yaml`,
+  `D-291` ; `.github/workflows/pr_agent.yml`, `D-393`), logique métier importante, transverse modéré, bug difficile à
   risque de régression.
 - **P0 — critique** : sécurité, auth/autorisation (périmètre de l'exception
   `wn-merge` : `lib/auth.ts`, middleware portail, lien magique, cookie de
@@ -128,6 +128,7 @@ Les classes et paliers vivent dans `wn-lot` ; l'exception migration/auth et
 la vérification base après merge dans `wn-merge`/`REGLES_PR_MERGE.md` ; les
 contrôles cliniques opposables dans `.claude/rules/clinique-scoring.md` ; la
 revue de CodeRabbit précède le merge par l'assistant (`D-290`, qui a pris la
-suite de Copilot le 2026-10-14) ; elle s'ajoute au barème ci-dessus sans en
-remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
+suite de Copilot le 2026-10-14) ; s'il saute la PR ou bute sur son quota,
+celle de PR-Agent sur la tête le remplace (`D-393`). L'une ou l'autre
+s'ajoute au barème ci-dessus sans en remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
 il fixe **quand** chacun s'engage et quand il ne s'engage pas.
