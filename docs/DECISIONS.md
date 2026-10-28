@@ -80,6 +80,14 @@ conditions, ensemble :
   PR : un run sur commentaire porte la tête de `main`, pas celle de la
   PR.
 
+- **Mise à jour (2026-10-28, correction, H93)** : dans (d), « aucun autre
+  commentaire de PR-Agent » vise une **revue** publiée à part. L'avis
+  « Persistent review … updated to latest commit <sha> », que PR-Agent
+  publie à chaque mise à jour du commentaire persistant, n'en est pas une :
+  il ne porte aucune remarque et ne fait pas échouer (d). Pris à la lettre,
+  le texte faisait échouer (d) à chaque revue après la première. Constaté
+  sur #1766, tête 58a9f790.
+
 `/review -i` ne compte jamais. Une PR dont tous les fichiers sont exclus du
 modèle (images, instantanés, `package-lock.json`) ne produit pas de revue :
 comme une PR de clôture seule, elle reçoit CodeRabbit demandé à la main

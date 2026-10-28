@@ -148,8 +148,10 @@ conditions tiennent ensemble :
   s'exige pas : il passe à faux dès que la revue atteint son nombre
   maximal de remarques. Sans bloc (aucune remarque depuis l'ouverture),
   l'écriture pendant le run suffit ;
-- (d) aucun autre commentaire de PR-Agent publié pendant ce run (revue
-  « non autoritative », publiée à part quand l'état est illisible), et
+- (d) aucune autre revue de PR-Agent publiée pendant ce run (revue « non
+  autoritative », publiée à part quand l'état est illisible). L'avis
+  « Persistent review … updated to latest commit <sha> », publié à chaque
+  mise à jour, n'est pas une revue et ne compte pas. Et
   aucune commande PR-Agent (`/review`, `/describe`…) postée sur la PR
   après le `startedAt` du run. Cela se lit dans `commentaires.json`, pas
   dans la liste des runs : un run sur commentaire porte la tête de `main`

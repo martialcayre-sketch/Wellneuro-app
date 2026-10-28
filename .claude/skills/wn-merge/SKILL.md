@@ -87,7 +87,8 @@ dernière session.
    un journal qui dit « returning full diff », jamais « pruning diff » ;
    le commentaire persistant de `github-actions[bot]` écrit pendant ce run,
    avec un bloc d'état unique (`head_sha` = tête, `excluded_files` vide),
-   ou sans bloc ; aucun autre commentaire de PR-Agent pendant ce run, ni
+   ou sans bloc ; aucune autre revue de PR-Agent pendant ce run (l'avis
+   « Persistent review … updated to latest commit » n'en est pas une), ni
    commande PR-Agent postée sur la PR après son début. Un run sur commentaire ou une
    revue `-i` ne compte pas. Si aucun bot ne remplit sa condition, ne pas merger. Les remarques
    de PR-Agent (corps du commentaire, et `findings` du bloc) reçoivent leur
