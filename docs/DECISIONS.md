@@ -6,6 +6,119 @@
 
 ## Décisions actives
 
+### D-391 — BP-13 : les conditions de l'allumage de `WN_PHYSIO_TRAITEMENTS` — la garde de population reste sur l'anamnèse jusqu'à la première exclusion curée ; l'export du dossier porte les lignes ; la vigilance les lit hors drapeau, un point par traitement ; texte patient en v22 (précise D-335 §8 et §9)
+
+- Date : 2026-10-28
+- Statut : accepté — six arbitrages du responsable du 2026-10-27, sur
+  questions à options, après un inventaire de l'assistant vérifié contre
+  `main` (adab6625) et contre Scalingo (`WN_PHYSIO_TRAITEMENTS` et
+  `WN_COURRIER_COMPLEMENT` absents, donc éteints). Texte rédigé par
+  l'assistant à partir de ces réponses. Décision de cadrage : aucun code,
+  aucune migration, aucun drapeau posé.
+- Domaine : BIO-PARCOURS BP-13 (LOT-13, plan F07) ; condition (4)
+  d'ouverture de `WN_COURRIER_COMPLEMENT` (J3-12h, [[D-345]]). Précise
+  [[D-335]] §8 (qui lit) et §9 (drapeau et conditions de l'allumage).
+- Ne touche pas : la garde de population ([[D-101]], `gatePopulationV1.ts`,
+  `etatPopulation.ts`) et ses quatre appelants de la chaîne C1 ; la garde du
+  complément ciblé ([[D-345]] §3, qui lit déjà les lignes) ; le texte transmis
+  à l'IA (`buildContexteClinique`) ; aucune migration, aucun seuil, aucune
+  dose, aucune règle clinique.
+
+**§1 — La garde de population reste sur l'anamnèse** (condition de
+[[D-335]] §9). Fait : la table d'exclusions de [[D-101]] est vide ; la garde
+n'écarte aucun candidat, et grossesse et allaitement n'y produisent qu'une
+mention, « état intégralement inconnu », sur la carte de décision. La garde
+continue de lire l'anamnèse seule. La question se rouvre à la curation de la
+**première exclusion** : la source de l'état (anamnèse, lignes du praticien,
+ou la règle de [[D-345]] §3) se tranche alors avec l'exclusion sous les
+yeux, comme l'état inconnu que [[D-101]] laisse au même moment. L'écart est
+assumé : [[D-345]] §3 n'accepte qu'un « non » posé par le praticien, la garde
+de population accepte celui de l'anamnèse ; elle n'écarte rien. Une
+discordance entre l'anamnèse et une ligne reste affichée au cockpit
+([[D-335]] §2). Cette condition est levée par la présente décision.
+
+**§2 — L'export du dossier porte les lignes.** L'export de [[D-252]] contient
+l'anamnèse, donc aujourd'hui les traitements en texte libre ; le patient ne
+voit au portail ni grossesse, ni allaitement, ni les mesures posées par le
+praticien. Sa section « fiche signalétique et anamnèse » reçoit les lignes du
+dossier — sexe déclaré, statut menstruel, grossesse, allaitement, poids,
+taille, traitements en cours et arrêtés — chacune avec sa date, sa source et
+sa précision, dans les **deux** versions. Dans la version « Pour une IA
+externe », le masquage s'applique aux champs libres d'une ligne (nom, dose,
+moment, motif ou objectif), comme aux autres textes libres. Un retrait
+n'apparaît pas : il ramène le fil à « non renseigné ».
+
+**§3 — Le document destiné au médecin** (précise [[D-335]] §8). Il ne lit
+pas les lignes. Il reprend la ligne de vigilance de la synthèse validée, qui
+les nomme (« Signal à discuter : … », `documents/depuisSynthese.ts`) —
+exactement comme il reprend aujourd'hui les traitements de l'anamnèse. Aucun
+code.
+
+**§4 — La vigilance lit les lignes quel que soit le drapeau** (amende
+[[D-335]] §9 : « éteint, la synthèse lit l'anamnèse comme aujourd'hui »). Fait :
+drapeau éteint après un allumage, les traitements déclarés en lignes
+disparaîtraient en silence de la vigilance, puisque les anamnèses envoyées
+pendant l'allumage n'ont plus les groupes de texte libre. Désormais, le
+drapeau garde la saisie et l'affichage ; la ligne de vigilance lit les
+traitements en vigueur dès qu'il en existe. Sans ligne — l'état de la
+production au 2026-10-27 —, sa sortie est identique à aujourd'hui. Une
+extinction ne retire plus rien d'une synthèse. Le texte transmis à l'IA ne
+change pas.
+
+**§5 — Un point de vigilance par traitement.** Fait : le brouillon praticien
+refuse un point de plus de 500 caractères (`LONGUEUR_MAX_POINT`), et la
+ligne de vigilance met tous les traitements en vigueur bout à bout, sans
+limite de nombre. Chaque ligne de traitement devient son propre point, avec
+sa source et la phrase d'avertissement inchangées. Mesuré : un seul
+traitement aux bornes de [[D-335]] §3 (nom et dose de 200 caractères) fait
+encore 547 caractères ; le point trop long passe par `scinderSousPlafond`
+([[D-107]]), qui coupe aux mots sans rien retirer. Les groupes d'une
+anamnèse ancienne gardent leur forme exacte d'avant (option écartée : les
+changer aussi).
+
+**§6 — Le texte patient en v22, les durées en v23.** Le paragraphe de
+[[D-335]] (validé le 2026-10-21 sous le numéro v20, depuis pris par
+[[D-318]], la v21 par [[D-364]]) entre dans « Vos données personnelles »
+**v22** ; les durées de [[D-378]], que le registre réservait pour la v22,
+passent en **v23**. La v22 entraîne les conditions d'utilisation **v5** et
+leur e-mail aux patients suivis ([[D-292]] §5). Sa phrase « Aucun outil
+d'intelligence artificielle ne les reçoit, et elles ne sont transmises à
+personne » est fausse au regard de §2 et §3, et de la v21 : elle est
+remplacée par un texte qui dit que l'application ne les envoie à aucun outil
+d'IA, qu'elles figurent dans la version du dossier que le praticien peut
+soumettre à ChatGPT, et qu'elles peuvent figurer dans un document destiné au
+médecin. Texte proposé puis **validé par le responsable avant le merge** ;
+déclaration du dossier RGPD corrigée dans la même PR. La v22 est publiée le
+jour de l'allumage, pas avant ([[D-335]] §9).
+
+**§7 — Le test d'intégration** (condition de [[D-335]] §9). Le banc SQL à
+deux sessions de la migration tient les verrous ; aucun banc ne joue
+l'écriture du code sur une vraie base. Un banc `*.pg.test.ts`, sur le patron
+de `courrierComplement.pg.test.ts`, joue `physio-traitements/ecriture.ts` :
+pose, remplacement, retrait, et deux poses concurrentes sur un même fil
+(une seule passe). Sauté par défaut, joué au CI après le contrat SQL.
+
+**§8 — Ordre.** Trois PR sans migration, puis l'allumage :
+1. la vigilance (§4, §5) et le banc (§7) ;
+2. l'export (§2) ;
+3. le texte v22, les conditions v5 et la déclaration RGPD (§6), mergée le
+   jour de l'allumage.
+
+Allumage : geste du responsable, constaté par son effet (`401` sans session
+au lieu de `503`). Il lève la condition (4) de `WN_COURRIER_COMPLEMENT`. Le
+passage de bout en bout de [[D-345]] §8 (condition (2)) le suit : le
+praticien y pose « non » à grossesse et à allaitement sur un dossier de test.
+
+**§9 — Conséquence à connaître** ([[D-345]] §3, inchangé). Drapeau allumé,
+aucun complément ciblé ne passe tant que le praticien n'a pas posé « non » à
+grossesse et à allaitement sur le dossier, homme compris : aucune déduction
+par le sexe déclaré.
+
+- Conséquences : fragment `changelog.d/2026-10-28-d391-physio-allumage-conditions.md` ;
+  ligne `WN_PHYSIO_TRAITEMENTS` de `docs/FEATURE_FLAGS.md` ; fiche LOT-13 ;
+  plan, fiche F07 ; commentaire de la v21 du registre (v22 → v23) corrigé
+  avec le lot 3.
+
 ### D-390 — t45 : le rapport oméga 6 / oméga 3 et l'indice oméga 3 sont préparés comme valeurs calculées de leurs acides — sept pour le rapport, d'après le compte rendu du laboratoire ; EPA et DHA pour l'indice, d'après le corpus SIIN (amende D-376 §6, tranche l'indice laissé par D-387)
 
 - Date : 2026-10-27
