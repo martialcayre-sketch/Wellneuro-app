@@ -401,6 +401,11 @@ test("lireJournal : nom non conforme ou entrée inattendue refusés ; README rac
   fs.writeFileSync(path.join(d, "H01", "2026-10-01-02-a.md"), "a\n");
   fs.writeFileSync(path.join(d, "H01", "2026-10-01-01-z.md"), "z\n");
   assert.deepEqual(lireJournal(d).get("H01").map((f) => f.nom), ["2026-10-01-01-z.md", "2026-10-01-02-a.md", "2026-10-02-01-b.md"]);
+  for (const nom of ["2026-10-01-00-nul.md", "2026-10-01-01-autre.md"]) {
+    fs.writeFileSync(path.join(d, "H01", nom), "x\n");
+    assert.throws(() => lireJournal(d), /couple date-rang/, nom);
+    fs.rmSync(path.join(d, "H01", nom));
+  }
   fs.writeFileSync(path.join(d, "H01", "2026-02-30-01-impossible.md"), "x\n");
   assert.throws(() => lireJournal(d), /hors du calendrier/);
   fs.rmSync(path.join(d, "H01", "2026-02-30-01-impossible.md"));

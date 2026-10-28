@@ -256,6 +256,7 @@ export function lireJournal(dossier) {
       throw new Error(`${path.join(dossier, entree.name)} : entrée inattendue dans le journal (attendu : un dossier Fnn ou Hnn)`);
     }
     const liste = [];
+    const datesRangs = new Set();
     for (const f of fs.readdirSync(path.join(dossier, entree.name), { withFileTypes: true })) {
       if (!f.isFile() || !NOM_FRAGMENT.test(f.name)) {
         throw new Error(`${path.join(dossier, entree.name, f.name)} : nom de fragment non conforme (attendu : AAAA-MM-JJ-nn-slug.md)`);
@@ -263,6 +264,13 @@ export function lireJournal(dossier) {
       if (!dateReelle(f.name.slice(0, 10))) {
         throw new Error(`${path.join(dossier, entree.name, f.name)} : date du nom hors du calendrier`);
       }
+      // Un couple date-rang ne sert qu'une fois par fiche, quel que soit le
+      // slug : sinon l'ordre du jour suivrait l'alphabet du slug.
+      const dateRang = f.name.slice(0, 13);
+      if (f.name.slice(11, 13) === "00" || datesRangs.has(dateRang)) {
+        throw new Error(`${path.join(dossier, entree.name, f.name)} : rang 00 ou couple date-rang déjà pris dans la fiche`);
+      }
+      datesRangs.add(dateRang);
       const contenu = fs.readFileSync(path.join(dossier, entree.name, f.name), "utf8");
       // Un titre dans un fragment couperait la fiche à la reconstruction, ou y
       // ferait naître une fiche fantôme.
