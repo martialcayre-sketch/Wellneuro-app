@@ -21,6 +21,15 @@
   dépôt : textes de l'interface en français, ni secret ni donnée patient,
   aucun seuil clinique sans D-xxx, contrôle d'accès des routes API,
   migrations et RLS, drapeaux `WN_*`, rien hors du périmètre.
-- `.coderabbit.yaml` inchangé. D-290 n'est pas amendé : la revue de
-  `coderabbitai[bot]` sur la tête reste la condition du merge. PR-Agent
-  s'ajoute, il ne remplace rien.
+- `.coderabbit.yaml` inchangé. Condition de merge (D-393, qui amende
+  D-290 §1 et §3) : CodeRabbit sur la tête ; s'il la saute ou bute sur son
+  quota, la revue de PR-Agent sur la tête le remplace. Le workflow est gardé
+  par sa file, comme `.coderabbit.yaml`.
+- Premier run constaté sur la PR elle-même : la revue est publiée et son bloc
+  d'état caché nomme le sha revu. Trois correctifs suivent :
+  - Haiku 5.5 refuse `temperature`, ce qui faisait échouer la description et
+    tomber le job ; il est déclaré dans `no_temperature_models` ;
+  - un commentaire ne peut plus annuler une revue en cours : chaque run sur
+    commentaire a son propre groupe de concurrence ;
+  - une PR venue d'un fork ne lance plus le job, qui n'y aurait ni clé ni
+    jeton d'écriture.

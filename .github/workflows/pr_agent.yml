@@ -1,6 +1,10 @@
 # Revue automatique des PR par PR-Agent (Qodo, open source), sur l'API
-# Anthropic. CodeRabbit (`.coderabbit.yaml`, inchangé) reste en place comme
-# revue de secours, déclenchée à la main par « @coderabbitai review ».
+# Anthropic. Condition de merge (D-393, qui amende D-290 §1 et §3) : une
+# revue de CodeRabbit sur la tête ; s'il la saute ou bute sur son quota, la
+# revue de PR-Agent sur la tête la remplace. Une seule revue exigée par PR,
+# et toute remarque reçue garde son verdict. Une PR de clôture seule
+# (`paths-ignore` ci-dessous) reçoit CodeRabbit, demandé à la main.
+# Ce fichier est gardé par sa file, comme `.coderabbit.yaml` (D-393, P1).
 #
 # Choix du responsable (2026-10-28) :
 # - image ÉPINGLÉE par empreinte (v0.49.0) : l'action reçoit la clé Anthropic
@@ -36,18 +40,27 @@ permissions:
   pull-requests: write
 
 # Une seule revue à la fois par PR : un push rapproché annule la précédente.
+# Le groupe s'évalue AVANT le `if:` du job : un commentaire (d'un robot, d'un
+# inconnu) ne doit ni annuler une revue en cours ni en évincer une en
+# attente — chaque run sur commentaire a donc son propre groupe.
 concurrency:
-  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.event_name == 'pull_request'
+        && format('pr-agent-{0}', github.event.pull_request.number)
+        || format('pr-agent-commentaire-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pr_agent:
     # Jamais sur l'action d'un robot. Sur un commentaire : seulement sur une
     # PR, et seulement d'un membre du dépôt — le dépôt est public, et un
     # commentaire d'inconnu ne doit ni dépenser la clé ni piloter l'agent.
+    # Une PR venue d'un fork ne reçoit ni la clé ni le jeton d'écriture : le
+    # job ne démarre pas, au lieu d'échouer sur une clé vide.
     if: >-
       github.event.sender.type != 'Bot' &&
-      (github.event_name == 'pull_request' ||
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
        (github.event.issue.pull_request &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
     runs-on: ubuntu-latest
@@ -69,6 +82,10 @@ jobs:
           config.model: "anthropic/claude-sonnet-5-5"
           config.model_weak: "anthropic/claude-haiku-5-5"
           config.fallback_models: '["anthropic/claude-haiku-5-5"]'
+          # Haiku 5.5 refuse `temperature` (« deprecated for this model »,
+          # constaté le 2026-10-28 sur #1766) : la description échouait et
+          # faisait tomber le job. Option prévue par v0.49.0.
+          config.no_temperature_models: '["anthropic/claude-haiku-5-5"]'
           config.custom_model_max_tokens: "200000"
           # Plafond de contexte envoyé par appel : le levier principal du
           # coût. Une très grosse PR est relue en partie ; 64000 lève la
