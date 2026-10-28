@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
 import { PatientCompanionHome } from './PatientCompanionHome';
 import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
 import { CHAPEAU_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
+import { LIEN_PROTOCOLE_IMPRIMABLE } from '@/lib/portail/texteProtocoleImprimable';
 
 // TROIS ACTIONS, dont une RETENUE : la fixture n'en portait qu'une, et le
 // portail n'en servait qu'une — le banc ne pouvait donc rien constater de ce que
@@ -669,5 +670,70 @@ describe('PatientCompanionHome — les trois plans', () => {
     // Le jour difficile passe à l'action ferme suivante, au plan minimal.
     fireEvent.click(screen.getByText(/Jour difficile/i));
     expect(screen.getByText('Si vous le pouvez aujourd’hui : Vingt minutes plus tôt.')).toBeTruthy();
+  });
+});
+
+// L'IMPRIMABLE DU PROTOCOLE ([[D-392]], lettre bh). Le composant ne juge ni le
+// drapeau ni l'âge : il rend le lien quand la route dit `imprimable`, dans le
+// détail déplié seulement.
+describe('PatientCompanionHome — « Imprimer mon protocole »', () => {
+  const checkinVide = { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] };
+  const vueRepliable = { ...vue, cycleRef: 'a1b2c3d4e5f60718' };
+
+  it('annoncé par la route : le lien mène à la page imprimable', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue, imprimable: true }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    const lien = (await screen.findByText(LIEN_PROTOCOLE_IMPRIMABLE)) as HTMLAnchorElement;
+    expect(lien.getAttribute('href')).toBe('/portail/TOK/protocole');
+  });
+
+  it('non annoncé (drapeau fermé, dossier non majeur) : aucun lien', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: false, vue }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
+  });
+
+  // Le lien attend la réponse du POST de lecture : l'imprimable renvoie à
+  // l'accueil une version dont la première ouverture n'est pas encore datée.
+  function mockFetchAvecLecture(proto: unknown, reponseLecture: Promise<Response>) {
+    global.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+      const href = String(url);
+      if (href === '/api/portail/lectures' && init?.method === 'POST') return reponseLecture;
+      const body = href.endsWith('/checkin') ? checkinVide : proto;
+      return Promise.resolve({ json: () => Promise.resolve(body) } as Response);
+    }) as unknown as typeof fetch;
+  }
+  const protoReplie = {
+    ok: true, protocoleDiffuse: true, finDeCycle: false, vue: vueRepliable, lectureDuDetail: { dejaOuvert: false }, imprimable: true,
+  };
+
+  it('détail replié : aucun lien avant le clic, ni avant la consignation ; le lien après', async () => {
+    let consigner: (r: Response) => void = () => {};
+    mockFetchAvecLecture(protoReplie, new Promise<Response>((r) => { consigner = r; }));
+    render(<PatientCompanionHome token="TOK" />);
+    const bouton = await screen.findByText('Voir le détail de mon protocole');
+    expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
+    fireEvent.click(bouton);
+    expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
+    consigner({ ok: true } as Response);
+    expect(await screen.findByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeTruthy();
+  });
+
+  it('consignation refusée : aucun lien, la page renverrait à l’accueil', async () => {
+    mockFetchAvecLecture(protoReplie, Promise.resolve({ ok: false } as Response));
+    render(<PatientCompanionHome token="TOK" />);
+    fireEvent.click(await screen.findByText('Voir le détail de mon protocole'));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/portail/lectures', expect.anything()));
+    // La réponse du POST est traitée avant de constater l'absence du lien.
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
+  });
+
+  it('fin de cycle : aucun lien', async () => {
+    mockFetch({ ok: true, protocoleDiffuse: true, finDeCycle: true, vue, imprimable: true }, checkinVide);
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText(/terme de ce cycle/)).toBeTruthy();
+    expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
   });
 });

@@ -64,6 +64,8 @@ const SURFACES_PATIENT = [
   'lib/portail/texteMentionValidation.ts',
   // bb ([[D-384]]) : les intitulés des trois plans, même raison.
   'lib/portail/texteTroisPlans.ts',
+  // bh ([[D-392]]) : le lien et le pied de l'imprimable du protocole, même raison.
+  'lib/portail/texteProtocoleImprimable.ts',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.

@@ -19,6 +19,7 @@ import {
 } from '@/lib/protocol/vuePatientSurLeFil';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
+import { protocoleImprimableOuvert, protocoleImprimableServi } from '@/lib/portail/protocoleImprimable';
 import {
   creeeSousGardeEtendue,
   troisPlansOuverts,
@@ -132,6 +133,12 @@ type GetResponse =
        * plan minimal seul, comme avant.
        */
       troisPlans?: TroisPlansAction[];
+      /**
+       * L'IMPRIMABLE DU PROTOCOLE ([[D-392]], lettre bh). Présent seulement
+       * quand `WN_PORTAIL_PROTOCOLE_IMPRIMABLE` est ouvert, qu'une vue est
+       * servie et que le dossier est majeur (§3). Absent, ni lien ni page.
+       */
+      imprimable?: true;
     }
   | ErrorResponse;
 
@@ -150,6 +157,22 @@ async function detailDejaOuvert(idPatient: string, approbationId: string): Promi
     return ligne !== null;
   } catch (err) {
     console.warn('[portail/protocole GET] lecture du détail illisible', err instanceof Error ? err.name : 'inconnu');
+    return false;
+  }
+}
+
+/**
+ * L'imprimable est-il servi à ce dossier ? MAJEURS SEULS ([[D-392]] §3) : la
+ * date de naissance n'est lue que drapeau ouvert (l'appelant le juge d'abord) ;
+ * absente ou illisible, rien n'est servi. Une lecture en échec ne prive que
+ * l'imprimable, jamais le protocole : le doute vaut refus.
+ */
+async function imprimableServi(idPatient: string): Promise<boolean> {
+  try {
+    const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { dateNaissance: true } });
+    return protocoleImprimableServi(patient?.dateNaissance, Date.now());
+  } catch (err) {
+    console.warn('[portail/protocole GET] date de naissance illisible', err instanceof Error ? err.name : 'inconnu');
     return false;
   }
 }
@@ -252,6 +275,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const troisPlans = troisPlansOuverts() && creeeSousGardeEtendue(row.createdAt)
       ? troisPlansServis({ actionsServies: vue.actions, actionsDuProtocole: draft.actions, pauses })
       : [];
+    const imprimable = protocoleImprimableOuvert() && (await imprimableServi(auth.idPatient));
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
@@ -259,6 +283,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
       ...(troisPlans.length > 0 ? { troisPlans } : {}),
+      ...(imprimable ? { imprimable: true as const } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {

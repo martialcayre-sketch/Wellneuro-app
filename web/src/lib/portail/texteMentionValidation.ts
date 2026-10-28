@@ -20,13 +20,20 @@ const DATE_EN_LETTRES = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 });
 
+/**
+ * « 24 octobre 2026 », en heure de Paris. Partagé avec le pied de l'imprimable
+ * ([[D-392]] §2) : les deux dates de la feuille se lisent au même format.
+ */
+export function dateEnLettres(instant: Date): string {
+  // Usage typographique : « le 1er janvier », jamais « le 1 janvier ».
+  return DATE_EN_LETTRES.formatToParts(instant)
+    .map((part) => (part.type === 'day' && part.value === '1' ? '1er' : part.value))
+    .join('');
+}
+
 /** « Validé par votre praticien le 24 octobre 2026 » ; `null` sur un instant illisible. */
 export function mentionValidation(valideLe: string): string | null {
   const instant = new Date(valideLe);
   if (Number.isNaN(instant.getTime())) return null;
-  // Usage typographique : « le 1er janvier », jamais « le 1 janvier ».
-  const date = DATE_EN_LETTRES.formatToParts(instant)
-    .map((part) => (part.type === 'day' && part.value === '1' ? '1er' : part.value))
-    .join('');
-  return `${PREFIXE_MENTION_VALIDATION} ${date}`;
+  return `${PREFIXE_MENTION_VALIDATION} ${dateEnLettres(instant)}`;
 }

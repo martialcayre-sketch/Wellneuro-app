@@ -8,17 +8,9 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
-import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
-import {
-  TEXTE_PAUSE_AVIS_RENDU,
-  TEXTE_PAUSE_COMPLEMENTS,
-  TEXTE_PAUSE_ELEMENT,
-  type ElementEnPause,
-} from '@/lib/trust/pauseEffetIndesirable';
-import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
+import { DetailDuProtocole, EncartConduite, type ProtocoleResponse } from './DetailDuProtocole';
 import { mentionValidation } from '@/lib/portail/texteMentionValidation';
-import { CHAPEAU_TROIS_PLANS, INTITULES_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
-import type { TroisPlansAction } from '@/lib/portail/troisPlans';
+import { LIEN_PROTOCOLE_IMPRIMABLE } from '@/lib/portail/texteProtocoleImprimable';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -26,31 +18,7 @@ import type { TroisPlansAction } from '@/lib/portail/troisPlans';
 // et un mode « jour difficile » rassurant. Ce N'EST PAS un accueil de trajectoire
 // « Ma spirale » (= SP-SPI, Phase B). Aucun score, aucun détail clinique.
 
-// LE TYPE VIENT DE LA ROUTE ([[D-191]]). Il était redéclaré ici, en plus pauvre,
-// et le JSON y était casté : `tsc` restait vert pendant que `followUpCriterion`
-// voyageait sans qu'aucun écran ne le rende, et que deux des trois actions du
-// protocole n'atteignaient jamais le patient.
-type ProtocoleResponse =
-  | {
-      ok: true;
-      protocoleDiffuse: boolean;
-      finDeCycle: boolean;
-      vue: VuePatientSurLeFil | null;
-      /** Un protocole est diffusé et ne peut pas être servi — distinct d'une attente. */
-      indisponible?: boolean;
-      /** Éléments en pause sur effet indésirable ([[D-281]] §3) ; vide avant la signature. */
-      pauses?: ElementEnPause[];
-      /** Lectures de la Boussole dont l'aliment est en pause ([[D-281]] §2) ; vide avant la signature. */
-      /** Journal de lecture du protocole ([[D-315]]) ; absent = drapeau fermé, détail déplié. */
-      lectureDuDetail?: { dejaOuvert: boolean };
-      /** Encart « quand ralentir ou demander avis » ([[D-349]]) ; absent = drapeau fermé. */
-      encartConduite?: true;
-      /** Instant de l'approbation de diffusion de la version servie ([[D-369]]). */
-      valideLe?: string;
-      /** Plans idéal et de secours des actions fermes ([[D-384]], [[D-386]]) ; absent = plan minimal seul. */
-      troisPlans?: TroisPlansAction[];
-    }
-  | { ok: false };
+// Le type de la réponse vit avec le détail qu'il nourrit (`DetailDuProtocole`).
 type CheckinResponse =
   | { ok: true; protocoleDiffuse: boolean; pointEtapeOuvert: PointEtape | null; points: PointEtat[] }
   | { ok: false };
@@ -71,6 +39,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // déplié d'office sinon.
   const [detailDeplie, setDetailDeplie] = useState(true);
   const lectureEnvoyee = useRef(false);
+  // LA LECTURE EST CONSIGNÉE ? ([[D-392]] §1) L'imprimable renvoie à l'accueil
+  // une version dont la première ouverture n'est pas datée : son lien attend
+  // la réponse du POST de lecture, sinon un clic rapide y ferait rebondir.
+  const [lectureConsignee, setLectureConsignee] = useState(true);
   // Le bouton disparaît au clic : le focus clavier passe aux actions dépliées
   // plutôt que de retomber sur la page.
   const titreActions = useRef<HTMLParagraphElement>(null);
@@ -94,9 +66,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
       // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
       // signé est dans le détail, donc le détail s'ouvre. Ce dépli n'est pas un
       // geste du patient, et rien n'est consigné ([[D-315]] §1).
-      setDetailDeplie(
-        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0,
-      );
+      const dejaDeplie =
+        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0;
+      setDetailDeplie(dejaDeplie);
+      setLectureConsignee(dejaDeplie);
       setCheckin(dc.ok ? dc : null);
     } catch {
       setProtocole(null);
@@ -178,13 +151,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
 
   const { vue, finDeCycle } = protocole;
   const mention = protocole.valideLe ? mentionValidation(protocole.valideLe) : null;
-  // LA PAUSE SUR EFFET INDÉSIRABLE ([[D-281]] §3-4) : les textes SIGNÉS, jamais
-  // reformulés. Celui des compléments se lit une fois, au-dessus des actions.
+  // Pauses et plans : le détail les lit lui-même ; l'accueil en garde ce qu'il
+  // faut au jour difficile.
   const pauseDe = new Map((protocole.pauses ?? []).map((p) => [p.actionId, p.texte]));
-  const complementsEnPause = [...pauseDe.values()].includes('complements');
-  // LES TROIS PLANS ([[D-384]] §2-§4) : seulement ceux que la route sert — drapeau
-  // ouvert, version créée sous la garde étendue ([[D-386]]), action ferme. Une
-  // action absente de la liste garde son plan minimal seul, sans intitulé.
   const plansDe = new Map((protocole.troisPlans ?? []).map((p) => [p.actionId, p]));
   // LE JOUR DIFFICILE PROPOSE UN SEUL PAS, ET JAMAIS UN PAS SUSPENDU. Une action
   // en attente de bilan porte sa phrase d'attente : la proposer « si vous le
@@ -212,6 +181,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ espece: 'protocole', cycleRef: vue.cycleRef }),
+    }).then((res) => {
+      if (res.ok) setLectureConsignee(true);
     }).catch(() => {
       // Silence délibéré : le patient a ouvert son protocole, rien d'autre.
     });
@@ -266,65 +237,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
         </button>
       )}
 
-      {/* LES ACTIONS — les trois, et plus « la première ». Le constructeur en
-          fait saisir jusqu'à trois ; le portail n'en servait qu'une, élue par
-          l'ordre d'insertion ([[D-191]]). */}
-      {!finDeCycle && detailDeplie && vue.actions.length > 0 && (
-        <div className="space-y-2.5">
-          <p ref={titreActions} tabIndex={-1} className="text-xs font-semibold uppercase tracking-wide text-primary">
-            {vue.actions.length > 1 ? 'Vos actions' : 'Votre action'}
-          </p>
-          {complementsEnPause && (
-            <p role="status" className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground">
-              {TEXTE_PAUSE_COMPLEMENTS}
-            </p>
-          )}
-          {vue.actions.map((action) => (
-            <div
-              key={action.actionId}
-              className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
-            >
-              <p className="text-base font-medium text-foreground">{action.title}</p>
-              {pauseDe.has(action.actionId) && (
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-foreground">En pause</p>
-              )}
-              {/* Défense en profondeur : une action en attente ou en pause garde
-                  son régime actuel, même si la route servait ses plans (§3). */}
-              <PlansDeLAction
-                plans={action.interventionStatus || pauseDe.has(action.actionId) ? undefined : plansDe.get(action.actionId)}
-                minimalPlan={action.minimalPlan}
-              />
-              {pauseDe.get(action.actionId) === 'element' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_ELEMENT}</p>
-              )}
-              {pauseDe.get(action.actionId) === 'avis_rendu' && (
-                <p className="mt-2 text-sm text-foreground border-t border-primary/20 pt-2">{TEXTE_PAUSE_AVIS_RENDU}</p>
-              )}
-              {/* UNE INTERVENTION NON FERME NE SE LIT JAMAIS COMME UN CONSEIL.
-                  La phrase vient du contrat, jamais de la cible d'attente du
-                  praticien : « ferritine » est son vocabulaire, « votre bilan »
-                  celui du patient (`D-056`, arbitrage 5). */}
-              {action.attente && (
-                <p className="mt-2 text-sm text-foreground/80 border-t border-primary/20 pt-2">
-                  {action.attente}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* LE CRITÈRE À TROIS SEMAINES — servi dans le JSON depuis toujours, rendu
-          par aucun écran jusqu'ici. C'est ce que le patient et son praticien
-          regarderont ensemble : le lui cacher faisait du point d'étape une
-          évaluation dont lui seul ignorait la règle. */}
-      {!finDeCycle && detailDeplie && vue.followUpCriterion && (
-        <div className="rounded-xl border border-border px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Ce qu’on regardera ensemble à trois semaines
-          </p>
-          <p className="mt-1 text-sm text-foreground">{vue.followUpCriterion}</p>
-        </div>
+      {/* LES ACTIONS ET LE CRITÈRE À TROIS SEMAINES — le même composant que
+          l'imprimable ([[D-392]] §1). */}
+      {!finDeCycle && detailDeplie && (
+        <DetailDuProtocole vue={vue} pauses={protocole.pauses} troisPlans={protocole.troisPlans} titreRef={titreActions} />
       )}
 
       {/* Accès : rendez-vous de suivi (mis en avant si dû) + fiche. */}
@@ -335,6 +251,14 @@ export function PatientCompanionHome({ token }: { token: string }) {
         >
           {checkinDu ? 'Mon rendez-vous de suivi' : 'Mes rendez-vous de suivi'}
         </Link>
+        {/* « IMPRIMER MON PROTOCOLE » ([[D-392]], lettre bh) — dans le détail
+            déplié seulement : il imprime ce détail-là. La route décide
+            (drapeau, dossier majeur) ; absent, aucun lien. */}
+        {protocole.imprimable && !finDeCycle && detailDeplie && lectureConsignee && (vue.actions.length > 0 || vue.followUpCriterion) && (
+          <Link href={`/portail/${token}/protocole`} className={patientButtonClassName('ghost')}>
+            {LIEN_PROTOCOLE_IMPRIMABLE}
+          </Link>
+        )}
         {/* LE BOUTON DIT CE QU'IL FAIT ([[D-191]]). « Ma fiche conseils »
             promettait une fiche : il mène au centre TRUST — documents, droits,
             confidentialité —, et `adviceSheetRef`, la vraie fiche du contrat,
@@ -373,18 +297,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
       {/* QUAND RALENTIR OU DEMANDER AVIS ([[D-349]], lettre bd) — le texte
           ACCEPTÉ, jamais reformulé. Hors du détail replié et servi en fin de
           cycle aussi : la conduite vaut tant qu'un protocole est servi. */}
-      {protocole.encartConduite && (
-        <section aria-labelledby="encart-conduite-titre" className="rounded-xl border border-border px-4 py-3 space-y-2">
-          <h3 id="encart-conduite-titre" className="text-sm font-semibold text-foreground">
-            {TITRE_ENCART_CONDUITE}
-          </h3>
-          {PARAGRAPHES_ENCART_CONDUITE.map((paragraphe) => (
-            <p key={paragraphe} className="text-sm text-foreground">
-              {paragraphe}
-            </p>
-          ))}
-        </section>
-      )}
+      {protocole.encartConduite && <EncartConduite />}
 
       {/* Mode « jour difficile » — rassurant, non culpabilisant. */}
       {!finDeCycle && (
@@ -423,33 +336,5 @@ export function PatientCompanionHome({ token }: { token: string }) {
         </div>
       )}
     </PatientCard>
-  );
-}
-
-/**
- * Sans plans servis : le plan minimal seul, sans intitulé, comme avant. Avec :
- * « Selon votre journée : » puis, dans cet ordre, les trois plans sous leurs
- * intitulés validés ([[D-384]] §2). Aucune couleur, aucun chiffre, aucun rang :
- * le patient choisit seul, et rien n'est enregistré (§1).
- */
-function PlansDeLAction({ plans, minimalPlan }: { plans: TroisPlansAction | undefined; minimalPlan: string }) {
-  if (!plans) return <p className="mt-1 text-sm text-muted-foreground">{minimalPlan}</p>;
-  const lignes = [
-    ['idealPlan', plans.idealPlan],
-    ['minimalPlan', minimalPlan],
-    ['rescuePlan', plans.rescuePlan],
-  ] as const;
-  return (
-    <div className="mt-1 space-y-1 text-sm">
-      <p className="text-muted-foreground">{CHAPEAU_TROIS_PLANS}</p>
-      <dl className="space-y-1">
-        {lignes.map(([cle, texte]) => (
-          <div key={cle}>
-            <dt className="font-medium text-foreground">{INTITULES_TROIS_PLANS[cle]}</dt>
-            <dd className="text-muted-foreground">{texte}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
   );
 }
