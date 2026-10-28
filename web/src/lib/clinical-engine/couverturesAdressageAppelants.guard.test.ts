@@ -10,8 +10,11 @@ import { describe, expect, it } from 'vitest';
 // honnête — ou éteindrait l'écran du patient. Ce banc compte, fichier par
 // fichier, les constructions et les couvertures qui les accompagnent.
 
+// Le rejeu du cockpit est sorti de sa route en J3-cabinet PR 2 ([[D-385]]) :
+// la construction qu'il porte a déménagé, elle ne s'est pas ajoutée.
 const APPELANTS = [
   path.join('src', 'app', 'api', 'praticien', 'cockpit', 'route.ts'),
+  path.join('src', 'lib', 'clinical-engine', 'rejeuEpisodeCockpit.ts'),
   path.join('src', 'lib', 'clinical-engine', 'verifierChaineC1.ts'),
   path.join('src', 'lib', 'clinical-engine', 'rejeuCarteDecision.ts'),
 ];
@@ -63,7 +66,7 @@ describe('couvertures d’adressage — les quatre constructions de la chaîne C
     expect(nue).toEqual([path.join('src', 'lib', 'clinical-engine', 'selectionPrioritePrisma.ts')]);
   });
 
-  it('le compte total est quatre : cockpit ×2, vérificateur, rejeu', () => {
+  it('le compte total est quatre : cockpit, rejeu du cockpit, vérificateur, rejeu', () => {
     const total = APPELANTS
       .map(fichier => readFileSync(path.join(process.cwd(), fichier), 'utf8').match(CONSTRUIRE)?.length ?? 0)
       .reduce((a, b) => a + b, 0);

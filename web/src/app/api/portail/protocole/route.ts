@@ -6,6 +6,7 @@ import {
   resolveProtocoleDiffuse,
 } from '@/lib/protocol/portailProtocol';
 import { calendrierDuProtocoleDiffuse } from '@/lib/protocol/calendriersPersistes';
+import { estFinDeCycle } from '@/lib/protocol/finDeCycle';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { servirAuPatient } from '@/lib/protocol/servirAuPatientServeur';
 import type { ElementEnPause } from '@/lib/trust/pauseEffetIndesirable';
@@ -153,11 +154,6 @@ async function detailDejaOuvert(idPatient: string, approbationId: string): Promi
   }
 }
 
-const JOUR_MS = 24 * 60 * 60 * 1000;
-// Fin de cycle = au-delà de la fenêtre du dernier point d'étape (J21 + tolérance
-// ±3 j). Heuristique V1 déterministe : le modèle n'a pas de flag de cycle de vie.
-const JOURS_FIN_DE_CYCLE = 24;
-
 // GET — vue calme du protocole actif + état de cycle (sans check-in : le
 // compagnon croise avec /api/portail/protocole/checkin pour l'état des RDV).
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
@@ -213,8 +209,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // Le cycle se compte depuis son jour 0, pas depuis la dernière
     // rediffusion ([[D-255]]).
     const { jourZero } = await calendrierDuProtocoleDiffuse(auth.idPatient, diffuse);
-    const finDeCycle =
-      (new Date().getTime() - jourZero.getTime()) / JOUR_MS > JOURS_FIN_DE_CYCLE;
+    const finDeCycle = estFinDeCycle(jourZero, new Date());
 
     // LA CARTE, REJOUÉE, PUIS LE CONTRAT. Si elle a dérivé, ou si le contrat
     // refuse ce que le payload contient, rien n'est servi — et l'écran le DIT.
