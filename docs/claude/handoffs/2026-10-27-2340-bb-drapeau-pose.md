@@ -31,7 +31,7 @@ Restaient le constat d'absence de recul, la pose du drapeau (porte 18) et son
 - Lecture agrégée par conteneur (transaction en lecture seule) : aucune version
   de protocole n'a de `created_at` postérieure à `2026-10-27T00:00:00Z`.
   Le drapeau n'a donc encore aucun effet visible.
-- T1 (`check:rapide`) vert.
+- `check:rapide` vert, puis T1 complet (`cd web && npm run check`) vert.
 
 ## Problèmes ouverts
 
