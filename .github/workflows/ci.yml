@@ -1636,6 +1636,18 @@ jobs:
           WN_PHYSIO_BANC_BASE: wellneuro_ci
         run: node scripts/banc-physio-traitements-deux-sessions.test.mjs
 
+      # L'écriture DU CODE sur base réelle (D-391 §7) : `ecriture.ts` pose,
+      # remplace et retire un traitement, relu par le lecteur de la vigilance ;
+      # deux remplacements concurrents d'un fil, deux premières poses
+      # concurrentes d'un critère : une seule passe, l'autre refusée nommément.
+      - name: Donnees physiologiques et traitements real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_PHYSIO_ECRITURE_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/physio-traitements/physioTraitements.pg.test.ts
+
       # Décisions de parcours (D-343, BP-15) : la tête d'un fil ne tient que
       # par son verrou. Deux premières révisions, un remplacement contre un
       # retrait, deux remplacements d'un événement, le refus de REPEATABLE
@@ -1855,7 +1867,7 @@ jobs:
   # ils attendaient en série derrière la base et les contrats SQL, dont ils ne
   # dépendent pas. Même ordre qu'avant, mêmes conditions de périmètre.
   # Sans service PostgreSQL : aucun spec Vitest n'ouvre de base sans variable
-  # explicite. Les trois bancs `*.pg.test.ts` sont joués dans `controles`,
+  # explicite. Les quatre bancs `*.pg.test.ts` sont joués dans `controles`,
   # après les contrats, par leur étape propre ; les deux passes Vitest les
   # sautaient déjà avant le découpage. `DATABASE_URL` reste posée par l'ancre
   # `env` : un spec qui tenterait une connexion échouerait, il ne sauterait pas.
