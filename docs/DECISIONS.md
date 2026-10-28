@@ -80,6 +80,22 @@ conditions, ensemble :
   PR : un run sur commentaire porte la tête de `main`, pas celle de la
   PR.
 
+- **Mise à jour (2026-10-28, correction, H93)** : dans (d), « aucun autre
+  commentaire de PR-Agent » vise une **revue** publiée à part, et se lit en
+  liste fermée. À côté du commentaire persistant, seuls deux commentaires
+  de `github-actions[bot]` écrits pendant le run sont admis, reconnus à
+  leur gabarit :
+  - la description, marqueur `pr-agent:describe:persistent` (à
+    l'ouverture) ;
+  - l'avis de mise à jour, une ligne qui commence par « **[Persistent
+    review](…)** updated to latest commit » (aux revues suivantes).
+
+  Tout autre commentaire de PR-Agent fait échouer (d). C'est le cas
+  notamment d'une revue « non autoritative », qui commence par
+  « ## Standalone PR Review ». Pris à la lettre, l'ancien texte faisait
+  échouer (d) à chaque PR. Constaté sur #1766 (avis, tête 58a9f790) et
+  #1769 (description, tête 904fb3b6).
+
 `/review -i` ne compte jamais. Une PR dont tous les fichiers sont exclus du
 modèle (images, instantanés, `package-lock.json`) ne produit pas de revue :
 comme une PR de clôture seule, elle reçoit CodeRabbit demandé à la main
