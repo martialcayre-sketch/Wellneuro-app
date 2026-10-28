@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-18, libellé du menu)** : le libellé « Compléments alimentaires » (D-324 §4) dépassait les 252 px du rail déplié et s'affichait « Compléments aliment… ». Les libellés du rail passent désormais à la ligne au lieu d'être coupés ; le libellé décidé reste entier.

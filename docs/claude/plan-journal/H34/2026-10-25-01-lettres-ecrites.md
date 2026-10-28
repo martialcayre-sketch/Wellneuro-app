@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-25, lettres écrites)** : ad écrite par D-367 (un protocole sert un cycle, `phases` reste fermé, « programme » = les éléments de la version servie) ; bc écrite par D-368 (tout ajout passe par une nouvelle version datée, approuvée avant d'être servie ; seul un pivot relance le suivi). Critère de fin atteint au merge.

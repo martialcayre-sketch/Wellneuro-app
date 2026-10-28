@@ -106,6 +106,38 @@ test("plan réel : chaque fiche porte une seule ligne de renvoi, sauf les écart
   }
 });
 
+// Après la bascule (2026-10-28, H90 PR 2), une « Mise à jour » s'écrit en
+// fragment, jamais dans la fiche (`.claude/rules/docs-changelog.md`). Seules
+// les quatre fiches écartées gardent leurs mises à jour en ligne, avant leur
+// éventuel renvoi. Ce banc bloque : il ne retire rien, la tolérance du garde
+// (D-371 §3) ne le vise pas.
+const ECARTEES_A_LA_BASCULE = new Set(["F44", "H26", "H49", "F79"]);
+
+function majsEnLigneInterdites(texte) {
+  const ecarts = [];
+  for (const f of analyserFiches(texte.split("\n"))) {
+    if (ECARTEES_A_LA_BASCULE.has(f.id)) {
+      if (f.renvois.length > 0) for (const m of f.majs) if (m.debut > f.renvois[0]) ecarts.push(`${f.id} : mise à jour en ligne après le renvoi (ligne ${m.debut + 1})`);
+      continue;
+    }
+    if (f.renvois.length === 0) ecarts.push(`${f.id} : fiche sans ligne de renvoi`);
+    for (const m of f.majs) ecarts.push(`${f.id} : mise à jour en ligne (ligne ${m.debut + 1}) — l'écrire en fragment`);
+  }
+  return ecarts;
+}
+
+test("plan réel basculé : aucune « Mise à jour » écrite dans une fiche, et chaque fiche a son renvoi", { skip: !DEJA_BASCULE }, () => {
+  assert.deepEqual(majsEnLigneInterdites(PLAN_REEL), []);
+  // Le banc voit une mise à jour ajoutée à la main, avant ou après le renvoi.
+  const lignes = PLAN_REEL.split("\n");
+  const h90 = analyserFiches(lignes).find((f) => f.id === "H90");
+  const maj = "- **Mise à jour (2026-10-29, en ligne)** : écrite dans la fiche.";
+  for (const ou of [h90.renvois[0], h90.renvois[0] + 1]) {
+    const copie = [...lignes.slice(0, ou), maj, ...lignes.slice(ou)].join("\n");
+    assert.ok(majsEnLigneInterdites(copie).some((e) => e.startsWith("H90 : mise à jour en ligne")), `insertion ligne ${ou + 1} non vue`);
+  }
+});
+
 test("plan réel : bascule écrite sur une copie, reconstituée depuis le disque à l'octet près", () => {
   const d = temp();
   const plan = path.join(d, "PLAN.md");
@@ -354,6 +386,9 @@ test("lireJournal : nom non conforme ou entrée inattendue refusés ; README rac
     assert.throws(() => lireJournal(d), /non conforme/, nom);
     fs.rmSync(path.join(d, "H01", nom));
   }
+  fs.writeFileSync(path.join(d, "H01", "2026-10-03-01-titre.md"), "- **Mise à jour (2026-10-03)** : a\n#### H99 · Fantôme\n");
+  assert.throws(() => lireJournal(d), /ligne de titre/);
+  fs.rmSync(path.join(d, "H01", "2026-10-03-01-titre.md"));
   fs.mkdirSync(path.join(d, "divers"));
   assert.throws(() => lireJournal(d), /entrée inattendue/);
 });

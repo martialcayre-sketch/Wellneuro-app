@@ -24,7 +24,10 @@ lot précédent à la PR suivante.
 
 1. Vérifier que le périmètre est respecté.
 2. Résumer les validations réellement exécutées.
-3. Mettre à jour le lot actif s’il existe.
+3. Mettre à jour le lot actif s’il existe. La « Mise à jour » datée de sa
+   fiche du plan s'écrit en fragment de `docs/claude/plan-journal/<id>/`,
+   jamais dans la fiche (`D-371` ; règle :
+   `.claude/rules/docs-changelog.md`).
 4. **Sur demande seulement** (« résumé de session », D-372) : ajouter à
    `docs/claude/SESSION_LOG.md` une entrée de moins de 150 mots — décisions
    prises, options écartées et raison, prochaine action prioritaire, questions

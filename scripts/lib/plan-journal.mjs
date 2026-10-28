@@ -260,7 +260,13 @@ export function lireJournal(dossier) {
       if (!f.isFile() || !NOM_FRAGMENT.test(f.name)) {
         throw new Error(`${path.join(dossier, entree.name, f.name)} : nom de fragment non conforme (attendu : AAAA-MM-JJ-nn-slug.md)`);
       }
-      liste.push({ nom: f.name, contenu: fs.readFileSync(path.join(dossier, entree.name, f.name), "utf8") });
+      const contenu = fs.readFileSync(path.join(dossier, entree.name, f.name), "utf8");
+      // Un titre dans un fragment couperait la fiche à la reconstruction, ou y
+      // ferait naître une fiche fantôme.
+      if (contenu.split("\n").some((l) => TITRE.test(l))) {
+        throw new Error(`${path.join(dossier, entree.name, f.name)} : ligne de titre dans un fragment (une mise à jour n'ouvre pas de section)`);
+      }
+      liste.push({ nom: f.name, contenu });
     }
     liste.sort((a, b) => comparerNoms(a.nom, b.nom));
     j.set(entree.name, liste);

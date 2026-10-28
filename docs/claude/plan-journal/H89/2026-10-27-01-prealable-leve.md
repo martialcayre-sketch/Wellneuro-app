@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-27, préalable levé)** : auto-merge coupé par le responsable le 2026-10-27 à 12 h 18, heure de Paris (`allow_auto_merge` passé de vrai à faux, constaté sur le dépôt ; les quatre autres réglages de merge inchangés ; aucune PR ouverte n'avait d'auto-merge armé). Le préalable de D-373 §6 est levé ; restent H23 et H88.

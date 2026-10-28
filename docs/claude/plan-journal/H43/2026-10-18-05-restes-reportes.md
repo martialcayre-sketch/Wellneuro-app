@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-18, restes reportés)** : les 8 gestes cosmétiques, les jetons, K-10, NF-6 et NU-2a ne sont définis nulle part dans le dépôt (pièce privée jamais versée). Arbitrage du responsable du même jour : ils restent au plan **en attente, sans date** ; la file A passe au lot suivant. J1-base ne se rouvre que sur leur définition.
