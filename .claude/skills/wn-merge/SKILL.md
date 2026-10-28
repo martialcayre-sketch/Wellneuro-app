@@ -81,8 +81,14 @@ dernière session.
    commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
    (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
    la revue de **PR-Agent** sur la tête le remplace (`D-393` §1). Elle ne
-   vaut que si les quatre conditions de `D-393` §2 tiennent, lues dans des
-   fichiers (commandes : `.claude/rules/pr-revue-et-release-db.md` §1.6) :
+   vaut que si les quatre conditions de `D-393` §2 tiennent, que lit
+   `node scripts/wn-revue-pr-agent.mjs <N>` — un appel, code lu directement,
+   jamais dans un tube ; **`0` seul** vaut revue de la tête, **`1`** = preuve
+   absente ou défaut (la ligne `❌` nomme la condition), **`2`** = lecture
+   impossible, jamais lue comme un `0`. Le `tete=` de sa ligne `REVUE`
+   (sha entier) est la tête que le merge vise par `--match-head-commit`. Il
+   ne vérifie pas que CodeRabbit a sauté la PR : cette précondition se lit
+   avant de l'appeler. Ce qu'il vérifie :
    un run `pull_request` de `pr_agent.yml` conclu `success` sur la tête ;
    un journal qui dit « returning full diff », jamais « pruning diff » ;
    le commentaire persistant de `github-actions[bot]` écrit pendant ce run,
