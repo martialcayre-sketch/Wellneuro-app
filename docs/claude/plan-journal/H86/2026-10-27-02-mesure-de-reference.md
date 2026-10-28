@@ -1,0 +1,17 @@
+- **Mise à jour (2026-10-27), mesure de référence** : lecture seule (`git`, `gh`) des soixante dernières PR mergées avant le lot, #1669 à #1730, du 2026-10-24 à 03:34 UTC au 2026-10-27 à 11:28 UTC. La part release-db vient d'abord : elle débloque H88.
+  - **Release-db** : sept runs sur la période, tous déclenchés par push et tous verts. Ils sont portés par #1671, #1679, #1687, #1691, #1692, #1704 et #1724.
+    - Environnement prêt → approbation (fin du job `resume` → départ du job `release`) : 5,0, 5,0, 5,0, 14,0, 30,4, 32,0 et 388,3 min. Médiane 14 min ; 479,7 min au total, dont 388,3 min pour un seul run, créé dans la nuit (00:05 UTC) et approuvé à 06:34 UTC.
+    - Approbation → application (départ → fin du job `release`, one-off compris) : de 5,8 à 7,8 min, médiane 7,4 min.
+    - PR prêtes pendant un run non conclu, puis mergées après lui : 2 sur 60, soit #1692 (0,7 min) et #1698 (25 min, sur deux runs enchaînés). En trois jours, 26 min de retard imputable au gel. « Prête » = fin du dernier check et, quand elle existe, revue CodeRabbit sur la tête. De « prête » au merge, toutes PR confondues : médiane 3,5 min.
+  - **Fusions de `main`** : 80 commits de fusion sur 269 commits de branche, présents dans 37 PR sur 60. La cause est inférée par rejeu de `git merge-tree` sur les deux parents, puis par le commit qui suit la fusion :
+    - numéro de décision : 24 (conflit sur `docs/DECISIONS.md`, une fois aussi sur le plan) ;
+    - crochet de fraîcheur, présumé : 43 (fusion sans conflit suivie d'une édition sur la branche ; le journal le confirmera ou non) ;
+    - conflit de texte : 0 ;
+    - autre : 13 (fusion sans conflit en dernier commit, ou fusions enchaînées, c'est-à-dire mise à niveau avant le merge).
+  - **Renumérotations** :
+    - neuf commits de numéro de décision, dans cinq PR : #1693 (quatre fois de suite), #1694 (deux fois), #1682, #1690 et #1709 ;
+    - une migration renommée après le merge d'une PR voisine (#1679), classée « autre ».
+  - **Délais question → réponse des arbitrages** : non mesurables depuis `git`, `gh` et le journal. Le statut d'une décision date l'arbitrage, jamais la question, et les questions vivent hors dépôt. Renvoi à H92 : dater la question dans le statut de la décision, ou mesurer hors dépôt.
+  - **Limites** :
+    - 33 PR sur 60 n'ont aucun objet revue CodeRabbit sur leur tête (une revue incrémentale sans remarque n'en crée pas). Leur « prête » est donc la fin du dernier check : c'est une borne basse.
+    - L'approbation est lue au départ du job, file du runner comprise.

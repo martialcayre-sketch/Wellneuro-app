@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-21, comportement voulu)** : tranché par le responsable : le barème de charge ignore les actions vides. Le correctif passe en file A, avec sa D-xxx et son fragment ; critère de fin inchangé.

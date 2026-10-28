@@ -34,6 +34,33 @@ paths:
   21 h 54, non réécrit — un handoff passé ne se réinterprète pas. Un handoff qui
   s'arrête à la prochaine action laisse la session suivante sans ce qui a été
   vérifié, ni ce qui reste ouvert.
+- **Journal du plan par fragments** (`D-371`, bascule du 2026-10-28, H90) :
+  une nouvelle « Mise à jour » datée d'une fiche Fnn ou Hnn de
+  `docs/claude/PLAN_WELLNEURO.md` s'écrit en fragment
+  `docs/claude/plan-journal/<id>/AAAA-MM-JJ-nn-slug.md`, un fichier par mise
+  à jour, au contenu de la ligne d'avant (`- **Mise à jour (date, libellé)** :
+  …`) ; **on n'édite plus la fiche pour ça** — le banc
+  `scripts/lib/plan-journal.test.mjs` rougit le CI sur une mise à jour en
+  ligne. Un constat, une clôture ou une correction neufs s'écrivent aussi en
+  fragment, libellés `Mise à jour (date, constat…)` ; les puces datées
+  « Constat », « Clôture », « Correction » d'avant la bascule restent dans
+  leur fiche, après le renvoi, comme les états « livré ».
+  `nn` = le plus grand rang du même jour dans le journal de la fiche, plus
+  un, sinon `01`, compté sur `origin/main` relu juste avant d'écrire ; un
+  couple date-rang est unique par fiche, quel que soit le slug (le banc le
+  rougit) : deux PR parallèles qui prennent le même rang, la seconde
+  renumérote son fragment avant son merge ; `slug` = mots en minuscules ASCII et chiffres séparés d'un seul
+  tiret (la lecture refuse tout autre nom). Un fragment n'est jamais renommé
+  ni réécrit (le garde avertit). Une fiche créée après la bascule reçoit à sa
+  création, après sa dernière puce de tête, sa ligne de renvoi, sur une seule
+  ligne : ``- **Journal** : `docs/claude/plan-journal/<id>/` — mises à jour
+  datées, un fichier par mise à jour, jamais réécrit ; lecture : `node
+  scripts/wn-plan-fiche.mjs <id>`.`` Les quatre fiches écartées (F44, H26,
+  H49, F79) gardent leurs mises à jour en ligne, intactes ; à leur prochaine
+  mise à jour, la ligne de renvoi se pose juste après la dernière d'entre
+  elles et ses lignes de suite, et la mise à jour part en fragment (le banc
+  gèle leur nombre en ligne). Lecture d'une fiche avec son journal :
+  `node scripts/wn-plan-fiche.mjs <id>`.
 - **La clôture passe avant la PR**, et le CI la contrôle depuis E56
   (2026-10-18) : une PR qui touche du code sans fragment de handoff créé par
   elle est rouge (`scripts/wn-controle-cloture.mjs`). Depuis `D-372`, l'entrée

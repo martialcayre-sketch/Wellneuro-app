@@ -62,7 +62,9 @@ un tableau **de pages** (`[[…],[…]]`) : l'aplatir à la lecture.
   n'est pas un motif.
 - **Routé** — le défaut est réel mais hors périmètre du lot ; il part au plan
   unique `docs/claude/PLAN_WELLNEURO.md` (dette nommée du §8, ou fiche qui le
-  porte), **avec son adresse**. Un « on verra » n'est pas un routage. Depuis
+  porte ; vers une fiche, une mise à jour datée s'écrit en fragment de
+  `docs/claude/plan-journal/<id>/`, `D-371`), **avec son adresse**. Un « on
+  verra » n'est pas un routage. Depuis
   `D-285` (2026-10-14), la file d'attente est supprimée et l'historique de
   `docs/ROADMAP_TECHNIQUE.md` est archivé : le plan est la seule adresse.
 

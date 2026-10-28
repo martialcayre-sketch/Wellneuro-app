@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-18, minute d'après)** : la minute d'après affiche le libellé de la priorité retenue (règle du registre signé, ou libellé écrit par le praticien sur la sélection de cet identifiant) au lieu de l'identifiant brut ; l'identifiant ne reste qu'en repli, si le libellé ne se relit pas.

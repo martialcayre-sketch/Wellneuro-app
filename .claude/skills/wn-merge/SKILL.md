@@ -98,7 +98,8 @@ dernière session.
    **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
    seul n'en est pas un), ou **routé** (vers le plan unique
    `docs/claude/PLAN_WELLNEURO.md`, dette nommée du §8 ou fiche, avec son
-   adresse ; `D-285`). Aucun commentaire sans verdict ne passe le merge : le squash
+   adresse ; `D-285` ; vers une fiche, une mise à jour datée s'écrit en
+   fragment de `docs/claude/plan-journal/<id>/`, `D-371`). Aucun commentaire sans verdict ne passe le merge : le squash
    efface la branche. Un constat touchant au clinique, à une signature de
    périmètre ou à une migration **remonte en arbitrage**, il ne se corrige pas
    dans la foulée. Détail et précédents :

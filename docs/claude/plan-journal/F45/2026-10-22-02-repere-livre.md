@@ -1,0 +1,1 @@
+- **Mise à jour (2026-10-22, repère livré)** : la ligne d'un dossier en suivi dont la date dit un mineur porte « Mineur, accord parental attendu » dans la liste des patients (`components/ui/PatientRow.tsx`, même règle que l'écran du mineur au portail ; banc `PatientRow.test.tsx`) ; sans migration ni drapeau (D-342 §2). Reste la date au masquage (D-342 §3) et la rubrique 4.

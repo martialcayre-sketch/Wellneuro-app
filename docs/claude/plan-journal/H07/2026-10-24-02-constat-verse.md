@@ -1,0 +1,6 @@
+- **Mise à jour (2026-10-24, constat versé)** : lecture par conteneur en lecture seule (one-off-5061, image 172c4672), agrégats D-298, dossiers de test réels compris (D-075).
+  - **Effectif** : 24 dossiers actifs portant au moins une assignation, dont 12 avec T0 et 12 sans T0.
+  - **Bloqués** : les 12 dossiers sans T0 le sont tous ; aucun n'est prêt à confirmer.
+  - **Conditions dures manquantes** : second rideau 12, rideau T0 9, synthèse validée 5, anamnèse consignée 0.
+  - **Ancienneté des bloqués**, depuis la première assignation : premier quartile 31 jours, médiane 48, troisième quartile 83.
+  - **Critère de fin atteint** (un nombre agrégé versé). Aucune carte et aucun délai proposés : la D-xxx du délai revient au responsable, sur ce compte.
