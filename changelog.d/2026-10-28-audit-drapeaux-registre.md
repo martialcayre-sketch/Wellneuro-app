@@ -1,7 +1,7 @@
 ### Documentation
 
 - **Registre des drapeaux réaligné sur la production (audit des drapeaux du
-  2026-10-28)** — `docs/FEATURE_FLAGS.md` §A à §D comparé à `scalingo env` et
+  2026-10-28)** — `docs/FEATURE_FLAGS.md` §A à §E comparé à `scalingo env` et
   à `scalingo timeline`, en lecture seule. Les corrections :
   - les poses jusqu'ici consignées ailleurs que dans le registre (conditions
     d'utilisation, lecture du protocole, import par IA) ;

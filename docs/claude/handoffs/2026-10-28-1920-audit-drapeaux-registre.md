@@ -71,7 +71,9 @@ T1 et anti-secrets : voir la PR.
 
 ## Prochaine action exacte
 
-CI (`wn-attendre-ci`), revue CodeRabbit de la tête, sonde
+CI (`wn-attendre-ci`), revue de la tête (faite par `wn-reviewer` en
+dérogation à D-290/D-393 : CodeRabbit en quota, PR-Agent a élagué le
+registre de son diff), sonde
 `wn-sonde-release-db`, merge `--match-head-commit`. Puis, du 2026-11-01 au
 2026-11-07, le constat de la place 7 (D-353 §5).
 
