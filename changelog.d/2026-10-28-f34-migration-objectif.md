@@ -1,4 +1,4 @@
-### F34 : la colonne « objectif » des deux panels non indiqués cesse de dire « verbatim » (D-389 §4)
+### F34 : la colonne « objectif » des deux panels non indiqués cesse de dire « verbatim » (D-389 §4) (2026-10-28)
 
 - Migration de données `20261028120000_biology_panels_objectif_lecture_signee` :
   la colonne `objectif` de `PANEL_MG_PLASMATIQUE` et `PANEL_CORTISOL_ISOLE`
@@ -16,7 +16,7 @@
   présente avant elles ; « verbatim » absent ; aucun DDL ; empreintes de cette
   migration et de celle d'août épinglées (une migration appliquée ne se
   réécrit pas : un motif re-signé appellera une nouvelle migration).
-- Application par release-db approuvée ([[D-087]]), constat des deux valeurs
-  par conteneur. Aucune logique n'en dépend ; la proposition de bilan du
+- Reste à faire après le merge : l'application par release-db approuvée
+  ([[D-087]]), puis le constat des deux valeurs par conteneur. Aucune logique n'en dépend ; la proposition de bilan du
   cockpit affiche la nouvelle valeur telle quelle ; le courrier et le document
   patient ne servent pas ces deux panels.
