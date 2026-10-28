@@ -99,14 +99,30 @@ racine) ; le merge des PR et la suppression des branches appartiennent à
 merge pas : son approbation n'est pas requise. Comment lire ce qu'il écrit,
 l'attendre et rendre les verdicts : `.claude/rules/pr-revue-et-release-db.md` §1.
 
+**La revue de substitution (`D-393`, qui amende `D-290` §1 et §3).** Une
+seule revue de bot est exigée sur la tête. Si CodeRabbit saute la PR (statut
+`skipping`, moins de dix étoiles) ou bute sur son quota (« Review rate
+limited »), la revue de **PR-Agent** (`.github/workflows/pr_agent.yml`,
+commentaire de `github-actions[bot]`) le remplace, sans redemander
+CodeRabbit. Elle n'est prouvée sur la tête que par les quatre conditions
+de `D-393` §2 : run `pull_request` conclu `success` sur la tête, diff
+entier (« returning full diff »), commentaire persistant écrit pendant ce
+run (bloc d'état avec `head_sha` = tête et `excluded_files` vide, ou, sans
+remarque, aucun bloc), aucune autre revue de PR-Agent pendant ce run ni
+commande PR-Agent postée sur la PR après son début. Une PR de clôture seule, ou
+faite seulement de fichiers exclus du modèle, ne produit pas de revue
+PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts :
+`.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.
+
 **L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
 change pas, son porteur change. Pendant l'essai (fiche H89 du plan), une
 session « intégrateur », seule occupante de la copie principale, merge les
 PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
 qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
 `/clear`. Une PR n'a qu'un responsable actif à la fois. Les lots de
-migration, d'authentification et de `.coderabbit.yaml` ne se déclarent pas :
-leur file les merge jusqu'au bout. Une remarque CodeRabbit arrivée après
+migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
+(`D-393` §6) ne se déclarent pas :
+leur file les merge jusqu'au bout. Une remarque de bot arrivée après
 « prête » revient à la file, qui reprend depuis son handoff : l'intégrateur
 ne corrige pas une PR. En repli (`D-373` §5), chaque session reprend ses
 merges selon le même cycle, plus bas.
@@ -176,8 +192,9 @@ La délégation du responsable (2026-09-30) confie le suivi du CI, le merge et l
 nettoyage à l'assistant ; `D-290` en fait le régime en vigueur, la revue restant
 à CodeRabbit. Si le responsable retire cette délégation, cette section se retire
 avec elle, et `/wn-merge` s'arrête à l'annonce du CI. Une fois le CI vert lu
-(idiome d'attente ci-dessus) **et la revue de CodeRabbit lue sur le sha de tête,
-chaque remarque tranchée** (`.claude/rules/pr-revue-et-release-db.md` §1),
+(idiome d'attente ci-dessus) **et la revue de bot lue sur le sha de tête
+— CodeRabbit, ou PR-Agent en substitution (`D-393`) —, chaque remarque
+tranchée** (`.claude/rules/pr-revue-et-release-db.md` §1),
 enchaîner en un minimum d'allers-retours :
 
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
