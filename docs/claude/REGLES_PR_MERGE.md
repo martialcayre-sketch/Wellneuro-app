@@ -99,6 +99,18 @@ racine) ; le merge des PR et la suppression des branches appartiennent à
 merge pas : son approbation n'est pas requise. Comment lire ce qu'il écrit,
 l'attendre et rendre les verdicts : `.claude/rules/pr-revue-et-release-db.md` §1.
 
+**L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
+change pas, son porteur change. Pendant l'essai (fiche H89 du plan), une
+session « intégrateur », seule occupante de la copie principale, merge les
+PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
+qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
+`/clear`. Une PR n'a qu'un responsable actif à la fois. Les lots de
+migration, d'authentification et de `.coderabbit.yaml` ne se déclarent pas :
+leur file les merge jusqu'au bout. Une remarque CodeRabbit arrivée après
+« prête » revient à la file, qui reprend depuis son handoff : l'intégrateur
+ne corrige pas une PR. En repli (`D-373` §5), chaque session reprend ses
+merges selon le même cycle, plus bas.
+
 La raison de fond tient toujours, et c'est elle qui fait garder un bot de revue
 plutôt que d'en reprendre la charge : un **regard différent** sur le code — une
 revue par l'agent qui vient de l'écrire est une relecture, pas une revue.
@@ -171,18 +183,29 @@ enchaîner en un minimum d'allers-retours :
 1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
    ou le statut `CodeRabbit` (effet de bord `action_required` décrit plus haut) ;
    sans `verify`, ne pas merger.
-2. Juste avant, la sonde release-db (`D-374` §2 à §4) :
+2. **Avant chaque merge, l'étape 7 bis du skill `wn-merge`** (`D-373` §2, §4
+   et §7) : sonde du déploiement, contrôle sur l'arbre fusionné, relecture du
+   registre `docs/DECISIONS.md`, signal de chevauchement, `main` inchangé.
+   Les commandes, les codes et ce que chacun arrête sont dans le skill ; ce
+   texte ne les recopie pas.
+3. Juste avant le merge, l'étape 7 ter : la sonde release-db (`D-374` §2 à §4)
    `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise ; `1` gelé,
-   `2` lecture impossible (gel). Puis
-   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+   `2` lecture impossible (gel). Tout rejeu de 7 bis est suivi de celui de
+   7 ter. Puis
+   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet exact>"` —
    merge et suppression de la branche distante en un geste, **lié au sha que la
    revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
    contrôles se rejouent sur la nouvelle tête.
-3. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
+4. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
    `git worktree remove`).
-4. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
+5. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
    sinon la PR suivante ré-embarque le lot précédent, la fusion conflictue et
    GitHub ne crée aucun run.
+6. **L'intégrateur avance la copie principale par `git merge --ff-only`**
+   (`D-373` §2),
+   après T1 si le lot touche les crochets. Une avance rapide ne réconcilie
+   aucun historique divergent : elle ne relève pas de l'interdit de fusion
+   automatique, et un refus de `--ff-only` s'arbitre.
 
 `enforce_admins` reste actif et `verify` obligatoire (plus haut) : une PR gelée
 bloque le merge au lieu de ressembler à un succès — ne jamais forcer. Sur une PR
