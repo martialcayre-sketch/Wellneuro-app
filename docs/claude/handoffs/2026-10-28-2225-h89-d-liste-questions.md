@@ -25,6 +25,18 @@ les horodatages.
   ligne (`question <identifiant>`), et celui qui merge horodate le merge.
   La phrase est dans `REGLES_PR_MERGE.md`. `wn-merge` reste inchangé.
 - Le dépôt est public : on écrit le nom de la page, jamais son lien.
+- CodeRabbit a sauté la PR. La revue de substitution de PR-Agent (D-393 §2,
+  quatre conditions vérifiées sur 725af755) a fait trois remarques, toutes
+  corrigées :
+  - une réponse qui n'appelle ni décision ni PR passe à `close` dès
+    qu'elle est écrite ;
+  - le numéro de décision se réserve à la rédaction, par la session qui
+    rédige, une fois par question, puis s'inscrit dans la ligne ;
+  - une question qui touche une règle, un seuil, un texte ou une donnée
+    cliniques est `clinique`, et l'est aussi en cas de doute ; c'est la
+    session qui pose la question qui juge si elle est complète.
+
+  La page en est à sa version 4, qui ajoute « Clore sans PR ».
 
 ## Fichiers modifiés
 
