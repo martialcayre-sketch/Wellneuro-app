@@ -58,10 +58,25 @@ describe('rattachement des explorations non indiquées (D-320 §3)', () => {
     const parAnalyte = explorationsNonIndiqueesParAnalyte(LIBELLES, INDICATIONS_BIOLOGIE_V1, true);
     const regle = INDICATIONS_BIOLOGIE_V1.find(r => r.id === 'BIO-NIA-01')!;
     expect(parAnalyte.get('BIO_MAGNESIUM_ERYTHROCYTAIRE')).toEqual([
-      { exploration: 'Magnésium plasmatique', motif: regle.motif, claimId: 'WN-CL-0242-007' },
+      {
+        exploration: 'Magnésium plasmatique',
+        motif: regle.motif,
+        claimId: 'WN-CL-0242-007',
+        versionClaim: regle.justificationClaims[0].versionClaim,
+      },
     ]);
     expect(parAnalyte.get('BIO_CAR')?.[0].exploration).toBe('Cortisol matinal isolé');
     expect([...parAnalyte.keys()].sort()).toEqual(['BIO_CAR', 'BIO_MAGNESIUM_ERYTHROCYTAIRE']);
+  });
+
+  it('le claim est cité avec sa version, lue dans la table signée, jamais écrite ici (D-389 §3)', () => {
+    const parAnalyte = explorationsNonIndiqueesParAnalyte(LIBELLES, INDICATIONS_BIOLOGIE_V1, true);
+    for (const regle of reglesNonIndiquees()) {
+      const [item] = parAnalyte.get(ANALYTE_ALTERNATIF_NON_INDIQUE[regle.id]) ?? [];
+      expect(item?.claimId).toBe(regle.justificationClaims[0].claimId);
+      expect(item?.versionClaim).toBe(regle.justificationClaims[0].versionClaim);
+      expect(item?.versionClaim).toMatch(/^v\d+\.\d+$/);
+    }
   });
 
   it('table non signée : rien ne s’affiche (fail-closed)', () => {

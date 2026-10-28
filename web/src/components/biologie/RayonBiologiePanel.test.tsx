@@ -98,16 +98,18 @@ const CATALOGUE = {
       plagesFonctionnelles: [],
       remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
       preanalytiques: [],
-      // La donnée RÉELLE de la table signée porte ce verbatim de claim
-      // (BIO-NIA-01) : l'écran rend la source telle quelle, et le banc de
-      // vocabulaire ne doit PAS l'interdire — « dosage » cité par un claim
-      // n'est pas un terme d'acte de l'outil.
+      // La donnée RÉELLE de la table signée porte ce motif (BIO-NIA-01) :
+      // lecture signée du claim, reproduite mot pour mot de la table (D-389
+      // §1). L'écran le rend tel quel, et le banc de vocabulaire ne doit PAS
+      // l'interdire — « dosage » lu dans un claim n'est pas un terme d'acte de
+      // l'outil.
       nonIndiques: [
         {
           exploration: 'Magnésium plasmatique',
           motif:
             'Le dosage plasmatique du magnésium circulant n’est pas recommandé en première intention : seulement 1 % du pool magnésien se trouve sous cette forme. L’exploration pertinente est le magnésium érythrocytaire.',
           claimId: 'WN-CL-0242-007',
+          versionClaim: 'v1.0',
         },
       ],
       liensAxe: [],
@@ -209,7 +211,7 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(screen.getByText('Validation médicale')).toBeTruthy();
   });
 
-  it('la fiche de l’alternative dit l’exploration non indiquée, motif verbatim et claim (D-320 §3)', async () => {
+  it('la fiche de l’alternative dit l’exploration non indiquée, le motif de la table signée et le claim cité à part (D-320 §3, D-389 §3)', async () => {
     mockFetch(CATALOGUE);
     render(<RayonBiologiePanel />);
     await waitFor(() => expect(screen.getByText('Magnésium érythrocytaire')).toBeTruthy());
@@ -219,8 +221,17 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Magnésium érythrocytaire/ }));
     await waitFor(() => expect(screen.getByText('Exploration non indiquée')).toBeTruthy());
     expect(screen.getByText('Magnésium plasmatique : non indiqué actuellement')).toBeTruthy();
-    expect(screen.getByText(/Le dosage plasmatique du magnésium circulant/)).toBeTruthy();
-    expect(screen.getByText('Source : WN-CL-0242-007')).toBeTruthy();
+    // Les deux étiquettes de D-389 §3, au caractère près : le motif n'est plus
+    // présenté comme une citation du claim, ni entre guillemets.
+    expect(screen.getByText('Motif de la table signée (lecture du responsable)')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Le dosage plasmatique du magnésium circulant n’est pas recommandé en première intention : seulement 1 % du pool magnésien se trouve sous cette forme. L’exploration pertinente est le magnésium érythrocytaire.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('Claim cité : WN-CL-0242-007 (v1.0)')).toBeTruthy();
+    expect(screen.queryByText(/^Source :/)).toBeNull();
+    expect(document.body.textContent).not.toContain('« Le dosage plasmatique');
     expect(screen.queryByText('Présent dans les bilans')).toBeNull();
     // « dosage » cité par le claim n'est pas un terme d'acte de l'outil : le
     // banc de vocabulaire ne l'interdit pas.

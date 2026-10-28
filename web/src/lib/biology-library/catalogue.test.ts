@@ -297,10 +297,20 @@ describe('fiches — passage fidèle, absences comprises', () => {
     const [mg, car, ferritine] = catalogue.analytes;
 
     expect(mg.nonIndiques).toEqual([
-      { exploration: 'Magnésium plasmatique', motif: motif('BIO-NIA-01'), claimId: 'WN-CL-0242-007' },
+      {
+        exploration: 'Magnésium plasmatique',
+        motif: motif('BIO-NIA-01'),
+        claimId: 'WN-CL-0242-007',
+        versionClaim: 'v1.0',
+      },
     ]);
     expect(car.nonIndiques).toEqual([
-      { exploration: 'Cortisol matinal isolé', motif: motif('BIO-NIA-02'), claimId: 'WN-CL-0042-007' },
+      {
+        exploration: 'Cortisol matinal isolé',
+        motif: motif('BIO-NIA-02'),
+        claimId: 'WN-CL-0042-007',
+        versionClaim: 'v1.0',
+      },
     ]);
     expect(ferritine.nonIndiques).toEqual([]);
   });
