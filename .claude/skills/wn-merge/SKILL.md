@@ -1,5 +1,5 @@
 ---
-description: Termine le cycle d'une PR WellNeuro déjà ouverte par /wn-pr — lit le CI, déduit le régime de merge courant depuis CLAUDE.md, applique l'exception migration/auth si besoin, merge et nettoie. Sans `apply`, n'exécute rien.
+description: Termine le cycle d'une PR WellNeuro déjà ouverte par /wn-pr — lit le CI, joue les sondes et le contrôle sur l'arbre fusionné, déduit le régime de merge courant depuis CLAUDE.md, applique l'exception migration/auth si besoin, merge et nettoie. Sans `apply`, n'exécute rien.
 argument-hint: "[numéro de PR] [apply]"
 disable-model-invocation: true
 effort: medium
@@ -123,7 +123,68 @@ dernière session.
    l'étape « Contrôle de clôture » du CI refuse la même absence sur toute PR
    qui touche du code — un fragment CRÉÉ par la PR, pas un handoff passé
    retouché ; ce contrôle-ci reste, et couvre aussi les PR de doc.
-7 bis. **Sonde release-db — juste avant le merge, et bloquante** (`D-374` §2 à
+7 bis. **Déploiement, registre, arbre fusionné, chevauchement — avant chaque
+   merge** (`D-373` §2, §4 et §7). Quatre gestes, dans cet ordre, chaque code
+   lu directement — jamais dans un tube.
+   - **Sonde du déploiement** : `node scripts/wn-deploiement-observation.mjs`
+     (lecture seule : `scalingo deployments` et l'ascendance d'`origin/main`).
+     **`1`** = recul de production, **`2`** = production illisible (aucun recul
+     ne peut être exclu) : pas de merge, arrêt et question au responsable — le
+     redéploiement est son geste. **`0`** : la tête est en service, ou son
+     déploiement est en cours, ou en retard (avertissement, rapporté) ; une PR
+     ordinaire merge sans attendre le déploiement (`D-373` §1). Une seule
+     retenue : une migration de `main` pas encore en service —
+     `git diff --name-only <en service> origin/main -- web/prisma/migrations`
+     non vide, `<en service>` lu sur la ligne « En service » de la sonde.
+     Lire alors d'abord la sonde de l'étape 7 ter (elle se rejoue de toute
+     façon juste avant le merge) : si un run `release-db` attend
+     l'approbation (phase 1) sur un commit qui contient la migration
+     (`git merge-base --is-ancestor <commit de la migration> <commit du run>`),
+     ce n'est pas une retenue — le déployeur retient la tête et les PR non
+     gelées mergent (`D-374`, « Effet sur le plan ») ; l'exception ne vaut
+     que tant que ce run attend : si la sonde de l'étape 7 ter ne le montre
+     plus en attente, rejouer 7 bis (la migration, toujours hors service,
+     retient alors). Sinon (appliquée et
+     pas encore déployée, run rejeté, état inconnu) : **pas de merge, arrêt et
+     question au responsable**, avec l'état lu (« un merge à la fois »,
+     `D-373` §1). La retenue ne vise que les migrations : un commit clinique
+     ou de la table signée en attente de déploiement ne retient rien ici, sa
+     phase 2 est gelée par la sonde release-db.
+   - **Contrôle sur l'arbre fusionné** : `node scripts/wn-controle-fusion.mjs <N>`
+     (`--source <copie principale>` hors de la copie principale : il emprunte
+     `node_modules` et le client Prisma de la source). Il juge la tête que
+     GitHub porte à cet instant et la tête d'`origin/main`, qu'il nomme sur sa
+     dernière ligne `CONTROLE fusion code=… main=<8> tete=<8>`. **`0`** = sain,
+     ou contrôle non requis (`main` n'a pas bougé depuis la base de la PR) :
+     seul il autorise la suite. **`1`** = défaut (conflit, garde rouge
+     imputable à la PR) : pas de merge, la PR revient à sa file (`D-373` §3 :
+     l'intégrateur ne corrige pas une PR). **`2`** = indéterminé — empreinte
+     d'environnement qui ne concorde pas (schéma, dépendance), rouge instable,
+     lecture impossible : **pas de merge, arrêt et question au responsable**
+     avec le motif rendu ; jamais lu comme un sain. **`3`** = usage. La tête
+     jugée doit être celle de la revue : `tete=` est le préfixe du `head=` du
+     SNAPSHOT de l'étape 2 et du sha lu à l'étape 6, sinon les étapes 2, 6 et
+     ce contrôle se rejouent sur la nouvelle tête.
+   - **Relecture de la tête de `docs/DECISIONS.md`** : les décisions entrées
+     dans `main` depuis la base de la PR — `git merge-base <sha> origin/main`,
+     puis `git diff <base> origin/main -- docs/DECISIONS.md`, lu en entier :
+     les titres `+### D-` nouveaux, et tout changement dans le texte d'une
+     décision existante (statut, gel levé, repli consigné). Une décision qui
+     amende le régime du merge (`D-290`, `D-373`, `D-374`, ce skill,
+     `REGLES_PR_MERGE.md`) ou le domaine de la PR : arrêt et question. La
+     numérotation de l'arbre fusionné, elle, est jugée par le contrôle.
+   - **Signal de chevauchement** : `node scripts/wn-chevauchement.mjs <N>`.
+     Affiché dans la sortie, **jamais bloquant** — il sort en `0` quoi qu'il
+     trouve ; seul le contrôle refuse.
+   - **`main` n'a pas bougé** : la tête de `main` que la sonde du
+     déploiement a lue (ligne « Tête ») et
+     `git ls-remote origin refs/heads/main` doivent commencer par le `main=`
+     du contrôle. Sinon, **rejouer toute l'étape
+     7 bis**, déploiement compris — ce qui a fait bouger `main` peut être une
+     migration —, jamais passer au merge directement. Reste une course entre
+     cette lecture et `gh pr merge` : `--match-head-commit` lie la tête, pas
+     la base ; elle est assumée.
+7 ter. **Sonde release-db — juste avant le merge, et bloquante** (`D-374` §2 à
    §4) : `node scripts/wn-sonde-release-db.mjs <N>`, un appel, code lu
    directement — jamais dans un tube. Elle lit tous les runs non conclus de
    `release-db.yml` (filtre par statut, toutes pages) et rend **`0` seul pour
@@ -146,14 +207,20 @@ dernière session.
    la passe **avant le merge** de l'étape 5 est faite quand elle s'applique (la
    vérification de production, elle, est due **après** et ne conditionne rien),
    si tout commentaire de revue
-   porte son verdict (étape 6), si l'étape 7 est satisfaite et si la sonde
-   de l'étape 7 bis vient de rendre `0` :
+   porte son verdict (étape 6), si l'étape 7 est satisfaite, si les gestes
+   de l'étape 7 bis le permettent (déploiement `0` sans retenue, contrôle
+   `0`, aucune décision à arbitrer, `main` inchangé) et si la sonde de
+   l'étape 7 ter vient de
+   rendre `0` :
    ```bash
    gh pr merge <N> --squash --delete-branch --match-head-commit <sha>
    ```
    où `<sha>` est le `head=` du SNAPSHOT de l'étape 2, celui que la revue de
-   l'étape 6 a lu : si la tête a bougé depuis, GitHub refuse le merge, et les
-   étapes 2 et 6 se rejouent sur la nouvelle tête. Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
+   l'étape 6 a lu et dont le `tete=` du contrôle est le préfixe : si la tête
+   a bougé depuis, GitHub refuse le merge, et les étapes 2, 6, 7 bis et
+   7 ter se rejouent sur la nouvelle tête. Tout rejeu de 7 bis est suivi de
+   celui de 7 ter : la sonde release-db reste le dernier geste avant le
+   merge. Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
    ou `git worktree remove`), et repartir de `main` — jamais de la branche
    squashée — pour le lot suivant. **Le merge vient de faire avancer
    `origin/main`** : tant que le worktree reste sur la branche squashée, le
@@ -177,7 +244,11 @@ contourner.
    (commit), écarté (motif), routé (adresse). Aucun sans verdict.
 5. Clôture opposable : fragment de handoff créé par la PR, ou merge refusé
    avec le geste de rattrapage.
-5 bis. Sonde release-db : code, phase, runs non conclus, et ses conseils
+5 bis. Sonde du déploiement (code, état, retenue de migration ou non) ;
+   contrôle sur l'arbre fusionné (sa ligne `CONTROLE fusion`, et le motif
+   d'un `1` ou d'un `2`) ; décisions entrées dans `main` depuis la base de la
+   PR ; chevauchement, tel que le signal le rend.
+5 ter. Sonde release-db : code, phase, runs non conclus, et ses conseils
    `D-374` §3 s'il y en a.
 6. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.

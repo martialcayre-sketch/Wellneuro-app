@@ -18,6 +18,7 @@ import {
   analyserTableau,
   diagnostiquer,
   dureeEnSecondes,
+  rediger,
   SORTIE_CONFORME,
   SORTIE_RECUL,
   SORTIE_ILLISIBLE,
@@ -282,4 +283,28 @@ test('workflow : jeton confiné à main et à l’environnement dédié', () => 
 
 test('workflow : il joue bien ce script', () => {
   assert.match(WORKFLOW, /node scripts\/wn-deploiement-observation\.mjs/);
+});
+
+// `wn-merge` lit la version en service sur la ligne « En service » pour
+// retenir un merge derrière une migration pas encore en service (H89, PR (b) ;
+// D-373 §1). Les trois états conformes la portent, sha entier.
+test('wn-merge : chaque état conforme nomme la version en service, sha entier', () => {
+  const enService = { sha: 'a'.repeat(40), fin: Date.UTC(2026, 9, 28, 12, 0, 0) };
+  for (const etat of ['a-jour', 'en-cours', 'retard']) {
+    const { resume } = rediger({ code: SORTIE_CONFORME, etat, enService, ageTeteMin: 50 }, 'b'.repeat(40));
+    assert.ok(resume.some((l) => l.startsWith(`- En service : \`${enService.sha}\``)), etat);
+  }
+  const skill = readFileSync(join(RACINE, '.claude/skills/wn-merge/SKILL.md'), 'utf8');
+  assert.match(skill, /node scripts\/wn-deploiement-observation\.mjs/);
+  assert.match(skill, /git diff --name-only <en service> origin\/main -- web\/prisma\/migrations/);
+  // La retenue : phase 1 sur un commit qui contient la migration, sinon arrêt et question.
+  assert.match(skill, /`git merge-base --is-ancestor <commit de la migration> <commit du run>`\),\s+ce n'est pas une retenue/);
+  assert.match(skill, /Sinon \(appliquée et\s+pas encore déployée, run rejeté, état inconnu\) : \*\*pas de merge, arrêt et\s+question au responsable\*\*/);
+  assert.match(skill, /l'exception ne vaut\s+que tant que ce run attend : si la sonde de l'étape 7 ter ne le montre\s+plus en attente, rejouer 7 bis/);
+  // La ligne « Tête » que `wn-merge` compare au `main=` du contrôle : présente dans chaque état conforme.
+  for (const etat of ['a-jour', 'en-cours', 'retard']) {
+    const { resume } = rediger({ code: SORTIE_CONFORME, etat, enService, ageTeteMin: 50 }, 'b'.repeat(40));
+    assert.ok(resume.some((l) => /^- Tête( de `main`)? : `b{40}`/.test(l)), etat);
+  }
+  assert.match(skill, /\*\*`1`\*\* = recul de production, \*\*`2`\*\* = production illisible \(aucun recul\s+ne peut être exclu\) : pas de merge, arrêt et question/);
 });

@@ -634,3 +634,42 @@ test('CLI : un usage invalide sort en 3 sans rien lire', () => {
   assert.equal(r.status, SORTIE_USAGE);
   assert.match(r.stderr, /usage/);
 });
+
+// Le câblage dans `wn-merge` (H89, PR (b) ; D-373 §2, §4 et §7) : le skill
+// est de la prose, ce banc en tient les points qui décident d'un merge.
+test('wn-merge joue déploiement, contrôle, registre et chevauchement avant la sonde release-db, puis merge la tête contrôlée', () => {
+  const skill = lire('.claude/skills/wn-merge/SKILL.md');
+  const rang = (motif) => {
+    const i = skill.search(motif);
+    assert.ok(i >= 0, String(motif));
+    return i;
+  };
+  const deploiement = rang(/node scripts\/wn-deploiement-observation\.mjs/);
+  const controle = rang(/node scripts\/wn-controle-fusion\.mjs <N>/);
+  const registre = rang(/git diff <base> origin\/main -- docs\/DECISIONS\.md/);
+  const chevauchement = rang(/node scripts\/wn-chevauchement\.mjs <N>/);
+  const mainInchange = rang(/git ls-remote origin refs\/heads\/main/);
+  const sonde = rang(/node scripts\/wn-sonde-release-db\.mjs <N>/);
+  const merge = rang(/gh pr merge <N> --squash --delete-branch --match-head-commit <sha>/);
+  assert.ok(
+    deploiement < controle && controle < registre && registre < chevauchement && chevauchement < mainInchange && mainInchange < sonde && sonde < merge,
+  );
+  // Codes du contrôle : `0` seul autorise ; `1` et `2` ne mergent jamais.
+  assert.match(skill, /seul il autorise la suite\. \*\*`1`\*\* = défaut \([^)]*\) : pas de merge, la PR revient à sa file/);
+  assert.match(skill, /\*\*`2`\*\* = indéterminé[^]*?\*\*pas de merge, arrêt et question au responsable\*\*/);
+  // Le signal ne refuse jamais.
+  assert.match(skill, /wn-chevauchement\.mjs <N>`\.\s+Affiché dans la sortie, \*\*jamais bloquant\*\*/);
+  // La tête mergée est celle que le contrôle a jugée ; `main` bougé rejoue tout 7 bis, puis 7 ter.
+  assert.match(skill, /dont le `tete=` du contrôle est le préfixe/);
+  assert.match(skill, /Sinon, \*\*rejouer toute l'étape\s+7 bis\*\*, déploiement compris/);
+  assert.match(skill, /la tête de `main` que la sonde du\s+déploiement a lue \(ligne « Tête »\) et\s+`git ls-remote/);
+  assert.match(skill, /Tout rejeu de 7 bis est suivi de\s+celui de 7 ter/);
+  // Les conditions du merge, à l'étape 9.
+  assert.match(skill, /déploiement `0` sans retenue, contrôle\s+`0`, aucune décision à arbitrer, `main` inchangé\) et si la sonde de\s+l'étape 7 ter vient de\s+rendre `0`/);
+});
+
+test('wn-merge lit la ligne `CONTROLE fusion` que le contrôle écrit', () => {
+  const skill = lire('.claude/skills/wn-merge/SKILL.md');
+  assert.match(skill, /`CONTROLE fusion code=… main=<8> tete=<8>`/);
+  assert.match(lire('scripts/wn-controle-fusion.mjs'), /`CONTROLE fusion code=\$\{code\} pr=\$\{pr\}\$\{main \? ` main=\$\{main\.slice\(0, 8\)\}` : ''\}\$\{tete \? ` tete=\$\{tete\.slice\(0, 8\)\}` : ''\}`/);
+});
