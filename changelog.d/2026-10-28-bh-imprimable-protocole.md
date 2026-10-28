@@ -6,7 +6,8 @@
   - actions sous leur régime, trois plans compris quand la version les porte ;
   - critère à trois semaines ;
   - encart « quand ralentir » ;
-  - pied daté.
+  - pied daté, puis les numéros d'urgence du portail (D-293 §3), qui
+    paraissent à l'impression seulement.
   Ni « Jour difficile ? », ni liens, ni boutons à l'impression.
 - La route sert `imprimable` drapeau ouvert, vue servie et dossier majeur
   seulement. La date de naissance n'est lue que drapeau ouvert.

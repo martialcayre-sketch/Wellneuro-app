@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PiedDePageUrgence } from '@/components/patient/PiedDePageUrgence';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
@@ -89,6 +90,13 @@ export function MonProtocoleImprimable({ token }: { token: string }) {
         <footer className="border-t border-border pt-5 text-sm text-muted-foreground">
           {mention && <p>{mention}</p>}
           {impression && <p className="mt-1">{impression}</p>}
+          {/* LES NUMÉROS D'URGENCE SUR LA FEUILLE ([[D-392]] §2, arbitrage du
+              2026-10-28) : le pied du portail ([[D-293]] §3) est masqué à
+              l'impression ; celui-ci ne paraît qu'imprimé, pour ne pas les
+              doubler à l'écran. Texte et composant inchangés. */}
+          <div data-urgence-imprimee className="mt-3 hidden print:block">
+            <PiedDePageUrgence />
+          </div>
         </footer>
       </PatientCard>
 

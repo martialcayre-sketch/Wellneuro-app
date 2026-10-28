@@ -13,6 +13,7 @@ import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portai
 import { CHAPEAU_TROIS_PLANS } from '@/lib/portail/texteTroisPlans';
 import { PREFIXE_MENTION_VALIDATION } from '@/lib/portail/texteMentionValidation';
 import { PREFIXE_MENTION_IMPRESSION } from '@/lib/portail/texteProtocoleImprimable';
+import { PIED_URGENCE_PORTAIL } from '@/lib/securite/urgenceSuicide';
 
 // L'IMPRIMABLE DU PROTOCOLE ([[D-392]], lettre bh). Fixture : trois actions —
 // une avec ses trois plans, une en pause, une en attente de bilan — pour que la
@@ -72,18 +73,34 @@ describe('MonProtocoleImprimable', () => {
     mockFetch(servi);
     const { container } = render(<MonProtocoleImprimable token="TOK" />);
     await screen.findByText('Petit-déjeuner protéiné');
-    const pied = [...container.querySelectorAll('footer p')].map((p) => p.textContent ?? '');
+    const pied = [...container.querySelectorAll('footer > p')].map((p) => p.textContent ?? '');
     expect(pied).toHaveLength(2);
     expect(pied[0]).toBe(`${PREFIXE_MENTION_VALIDATION} 24 octobre 2026`);
     expect(pied[1].startsWith(`${PREFIXE_MENTION_IMPRESSION} `)).toBe(true);
   });
 
-  it('ni « Jour difficile ? », ni liens, ni suivi ; un bouton d’impression masqué à l’impression', async () => {
+  it('les numéros d’urgence du portail, tels quels, visibles à l’impression seulement', async () => {
+    mockFetch(servi);
+    const { container } = render(<MonProtocoleImprimable token="TOK" />);
+    await screen.findByText('Petit-déjeuner protéiné');
+    const urgence = container.querySelector('footer [data-urgence-imprimee]');
+    expect(urgence).not.toBeNull();
+    expect(urgence?.className).toContain('hidden');
+    expect(urgence?.className).toContain('print:block');
+    expect(urgence?.textContent).toContain(PIED_URGENCE_PORTAIL.titre);
+    for (const ligne of PIED_URGENCE_PORTAIL.lignes) {
+      for (const numero of ligne.numeros) expect(urgence?.querySelector(`a[href="tel:${numero}"]`)).not.toBeNull();
+    }
+  });
+
+  it('ni « Jour difficile ? », ni liens de navigation, ni suivi ; un bouton d’impression masqué à l’impression', async () => {
     mockFetch(servi);
     const { container } = render(<MonProtocoleImprimable token="TOK" />);
     await screen.findByText('Petit-déjeuner protéiné');
     expect(screen.queryByText(/Jour difficile/)).toBeNull();
-    expect(container.querySelectorAll('a')).toHaveLength(0);
+    // Les seuls liens sont les numéros d'urgence (tel:).
+    const liens = [...container.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '');
+    expect(liens.every((href) => href.startsWith('tel:'))).toBe(true);
     const bouton = screen.getByText('Imprimer ou enregistrer en PDF');
     expect(bouton.closest('.print\\:hidden')).not.toBeNull();
   });

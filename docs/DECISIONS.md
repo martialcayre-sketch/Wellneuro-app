@@ -9,8 +9,9 @@
 ### D-392 — bh : le protocole servi s'imprime depuis une page « Imprimer mon protocole », identique au détail, datée en pied, sans trace, majeurs seuls, sans place dans la file C (lettre bh, H69)
 
 - Date : 2026-10-28
-- Statut : accepté — sept arbitrages du responsable du 2026-10-28 sur
-  questions à options (quatre de forme, deux textes, l'encart).
+- Statut : accepté — huit arbitrages du responsable du 2026-10-28 sur
+  questions à options (quatre de forme, deux textes, l'encart, les numéros
+  d'urgence).
 - Domaine : portail patient, protocole de 21 jours ; route
   `api/portail/protocole` ; fiche H69 ; ouverture sans place numérotée de la
   file C. Applique [[D-384]] §3 (l'imprimable lit les trois plans) et
@@ -37,9 +38,12 @@ porte d'autres blocs à masquer un par un.
 **§2 — Ce qui s'imprime en plus, ce qui ne s'imprime pas.** L'encart « quand
 ralentir ou demander avis » ([[D-349]]) figure sur l'imprimé, tel que servi.
 Le pied porte la mention « Validé par votre praticien le … » ([[D-369]]),
-puis « Imprimé le … » (date en lettres, heure de Paris). Ni « Jour difficile ? »,
-ni les liens, ni les boutons, ni la progression du suivi : le plan de secours
-se lit déjà sous « Si c'est plus dur ».
+puis « Imprimé le … » (date en lettres, heure de Paris), puis les numéros
+d'urgence du pied du portail ([[D-293]] §3, amendement du 2026-10-21), texte
+inchangé : le pied du portail est masqué à l'impression, celui de la feuille
+ne paraît qu'imprimé (arbitrage du 2026-10-28). Ni « Jour difficile ? », ni
+les liens de navigation, ni les boutons, ni la progression du suivi : le plan
+de secours se lit déjà sous « Si c'est plus dur ».
 
 **§3 — Aucune trace, majeurs seuls.** Imprimer n'écrit rien (écarté : une
 route `impression` journalisée, comme les courriers). La page et son lien sont

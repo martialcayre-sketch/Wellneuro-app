@@ -60,11 +60,11 @@ livrer son lot sous drapeau éteint.
 
 ## Problèmes ouverts
 
-- Question au responsable avant l'ouverture, soulevée par la revue :
-  l'imprimé ne porte pas les numéros d'urgence du pied du portail (D-293 §3,
-  amendement du 2026-10-21), comme le bilan imprimé (pied du layout en
-  `print:hidden`). L'encart « quand ralentir » y figure. Les reprendre sur
-  l'imprimé demanderait un arbitrage ; aucun texte n'a été ajouté.
+- Numéros d'urgence (question soulevée par la revue) : tranché le 2026-10-28,
+  après l'ouverture de la PR. Le pied d'urgence du portail (D-293 §3) figure
+  sur la feuille, texte et composant inchangés, visible à l'impression
+  seulement. Écrit dans D-392 §2 (huitième arbitrage). Le bilan imprimé ne
+  change pas.
 - Ouverture : drapeau à poser sur accord, puis constat sur un dossier de test
   majeur. Le patient ouvre la page depuis son détail, et l'imprimé porte le
   détail servi, daté.
@@ -73,7 +73,7 @@ livrer son lot sous drapeau éteint.
 
 T2 vert, PR, CI (`wn-attendre-ci`), revue CodeRabbit de la tête, sonde
 `wn-sonde-release-db.mjs`, merge `--match-head-commit`, constat du
-déploiement. Puis la question des numéros d'urgence, et l'ouverture.
+déploiement. Puis l'ouverture, sur accord, et son constat.
 
 ## Interdits encore actifs
 
