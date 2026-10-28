@@ -71,7 +71,8 @@ y est fusionnée.
   garde fork. Le reste est porté par D-393.
 - En-tête aligné sur D-393 : CodeRabbit sur la tête, PR-Agent en
   remplacement ; fichier gardé par sa file.
-- Elle se merge après la PR de D-393, par sa file.
+- Elle se merge après la PR de D-393, par sa file. D-393 est mergée
+  (#1767, f92861f2), et `origin/main` est fusionnée de nouveau.
 
 ## Problèmes ouverts
 
@@ -81,8 +82,7 @@ y est fusionnée.
 - Coût réel par PR : à lire dans la console Anthropic. L'estimation
   (environ 0,30 $) n'a pas été mesurée. Plafond de dépense mensuel : geste du
   responsable.
-- La décision qui amende D-290 est D-393, écrite dans une PR à part. Cette
-  PR se merge après elle.
+- La décision qui amende D-290 est D-393 (#1767, mergée le 2026-10-28).
 - Constaté au push de la reprise (e3df16c0, run 40758840080) : `/review -i`
   ne nomme que le premier commit nouveau, ne met pas à jour le bloc d'état,
   et après la fusion de `main` il a relu le code de D-391 et de JA. Le
@@ -91,12 +91,12 @@ y est fusionnée.
 
 ## Prochaine action exacte
 
-1. Lire le run du push qui passe à `/review` et le bloc d'état.
-2. `/security-review`, puis `wn-reviewer`, mission « le workflow
-   affaiblit-il la revue ? » (D-393, P1).
-3. CI par `node scripts/wn-attendre-ci.mjs <N>` en fond ; revue de bot sur
-   la tête, selon D-393 une fois mergée, et un verdict par remarque.
-4. Après le merge de D-393 : étape 7 bis de `wn-merge`, sonde
+1. CI par `node scripts/wn-attendre-ci.mjs <N>` en fond. Revue de bot sur
+   la tête selon D-393 : CodeRabbit saute la PR, donc PR-Agent, prouvé par
+   les quatre conditions du §2. Un verdict par remarque.
+2. Faits : `/security-review` (aucun constat), `wn-reviewer` (GO sous
+   réserve, réserves corrigées dans e9bd57fa).
+3. Étape 7 bis de `wn-merge`, puis la sonde
    `node scripts/wn-sonde-release-db.mjs <N>` à 0, puis merge
    `--squash --delete-branch --match-head-commit`.
 
