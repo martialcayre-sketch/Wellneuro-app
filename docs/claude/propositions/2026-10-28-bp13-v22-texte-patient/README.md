@@ -116,3 +116,12 @@ Le 2026-10-28, sur question à options : la v22 (A1, A2), le résumé des
 conditions v5 (B1), la phrase de tête de l'e-mail @5 (B2) et la déclaration
 du dossier RGPD (C) sont **validés tels quels**. Allumage fixé au
 **2026-10-29** : la PR se merge ce jour-là, `publieLe` porte cette date.
+
+**Retouche de la déclaration RGPD, même jour** (revue `wn-reviewer`) : l'export
+porte aussi les traitements arrêtés ; le document destiné au médecin est
+imprimé par le praticien, téléchargé par le patient dans son portail et remis
+par lui ([[D-307]]) ; le masquage ne retire que les identifiants connus.
+**Revalidée corrigée par le responsable.** Deux remarques de la revue sur le
+texte patient sont **gardées telles quelles**, choix assumé : les résumés et
+l'e-mail ne disent que la saisie (le paragraphe complet dit les sorties) ;
+« vous voyez les vôtres » vise ce que le patient déclare.
