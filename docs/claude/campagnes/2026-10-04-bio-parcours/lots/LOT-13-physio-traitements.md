@@ -254,6 +254,16 @@ responsable.
   concurrents d'un fil, deux premières poses concurrentes d'un critère — et
   son étape CI (§7). Condition (2) remplie. Reste : PR 2 (export), PR 3
   (v22).
+- **PR 2 livrée (2026-10-28)** : la section 2 de l'export du dossier
+  ([[D-252]]) s'ouvre sur les lignes datées — les six critères et les
+  traitements en cours et arrêtés, la tête de chaque fil, avec date, source
+  et précision —, dans les deux versions ; un retrait ramène à « Non
+  renseigné » ; dans la version « IA externe », nom, dose, moment et motif
+  d'un traitement passent par le masqueur. Une seule lecture
+  (`lireDonneesDuDossier`, dans l'assembleur, inscrit au banc des lecteurs).
+  Lecture de mise en œuvre : lignes lues quel que soit le drapeau, comme
+  §4 ; un dossier sans ligne s'exporte à l'identique (préambule compris),
+  épinglé par un banc. Condition (3) remplie. Reste : PR 3 (v22).
 
 ## Hors périmètre
 
