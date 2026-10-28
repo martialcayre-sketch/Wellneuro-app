@@ -486,6 +486,100 @@ describe('GET /api/portail/protocole', () => {
     });
   });
 
+  // L'IMPRIMABLE DU PROTOCOLE ([[D-392]], lettre bh) : drapeau ouvert, vue
+  // servie, dossier majeur — sinon absent.
+  describe('imprimable', () => {
+    function avecNaissance(dateNaissance: string | null): void {
+      prisma.patient.findUnique.mockResolvedValue({
+        idPatient: assignation.idPatient, actif: true, accessTokenRevoked: false,
+        email: assignation.emailPatient, dateNaissance,
+      });
+    }
+    // Drapeau absent au départ de chaque cas, quel que soit l'environnement du
+    // poste ; la valeur d'origine est rendue après.
+    beforeEach(() => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', undefined);
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('drapeau fermé : absent, et la date de naissance n’est pas lue', async () => {
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      avecNaissance('1980-05-12');
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('imprimable');
+      expect(prisma.patient.findUnique).not.toHaveBeenCalledWith(
+        expect.objectContaining({ select: { dateNaissance: true } }),
+      );
+    });
+
+    it('drapeau ouvert, dossier majeur : annoncé', async () => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      avecNaissance('1980-05-12');
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.imprimable).toBe(true);
+    });
+
+    it.each([
+      ['mineur', '2015-01-01'],
+      ['date manquante', null],
+    ])('drapeau ouvert, dossier %s : absent', async (_cas, date) => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      avecNaissance(date);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('imprimable');
+    });
+
+    it('drapeau ouvert, sans protocole servi : absent', async () => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
+      mockOwnerAuth();
+      avecNaissance('1980-05-12');
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.vue).toBeNull();
+      expect(json).not.toHaveProperty('imprimable');
+    });
+
+    it('drapeau ouvert, date de naissance illisible en base : le protocole est servi, sans imprimable', async () => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const proprietaire = {
+        idPatient: assignation.idPatient, actif: true, accessTokenRevoked: false, email: assignation.emailPatient,
+      };
+      prisma.patient.findUnique.mockImplementation((args: { select?: { dateNaissance?: boolean } }) =>
+        (args?.select?.dateNaissance ? Promise.reject(new Error('panne')) : Promise.resolve(proprietaire)),
+      );
+      const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const res = await GET(request(proprioCookie()));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('imprimable');
+      expect(avertissement).toHaveBeenCalledWith('[portail/protocole GET] date de naissance illisible', 'Error');
+      avertissement.mockRestore();
+    });
+
+    it('drapeau ouvert, protocole indisponible : absent', async () => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      avecNaissance('1980-05-12');
+      rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+      const json = await (await GET(request(proprioCookie()))).json();
+      expect(json.indisponible).toBe(true);
+      expect(json).not.toHaveProperty('imprimable');
+    });
+  });
+
   // LES TROIS PLANS ([[D-384]] §2-§4, [[D-386]], lettre bb). La marque est la
   // colonne `created_at` de la ligne — jamais le `createdAt` du payload.
   describe('troisPlans', () => {
