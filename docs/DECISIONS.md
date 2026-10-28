@@ -26,8 +26,13 @@ navigation masquée à l'impression. La page lit la même route que l'accueil
 (`api/portail/protocole`) et rend le détail par le même composant : titre,
 raison, axe, actions sous leur régime (trois plans si la version les porte,
 [[D-386]] ; attente de bilan ; pause et ses textes signés, [[D-281]]), critère
-à trois semaines. Rien n'est recalculé à part. Écarté : une feuille de style
-d'impression sur l'accueil, qui porte d'autres blocs à masquer un par un.
+à trois semaines. Rien n'est recalculé à part. Ce que l'accueil ne sert pas
+déplié ne s'imprime pas : sans protocole servi, en fin de cycle, ou pour une
+version dont le détail n'a pas encore été ouvert ([[D-315]] §1, même condition
+que le repli de l'accueil), la page renvoie à l'accueil, sans texte neuf. La
+première ouverture se date donc toujours à l'accueil, et l'imprimable n'y
+écrit rien. Écarté : une feuille de style d'impression sur l'accueil, qui
+porte d'autres blocs à masquer un par un.
 
 **§2 — Ce qui s'imprime en plus, ce qui ne s'imprime pas.** L'encart « quand
 ralentir ou demander avis » ([[D-349]]) figure sur l'imprimé, tel que servi.

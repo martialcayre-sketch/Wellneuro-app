@@ -543,6 +543,26 @@ describe('GET /api/portail/protocole', () => {
       expect(json).not.toHaveProperty('imprimable');
     });
 
+    it('drapeau ouvert, date de naissance illisible en base : le protocole est servi, sans imprimable', async () => {
+      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      mockOwnerAuth();
+      mockProtocoleDiffuse();
+      const proprietaire = {
+        idPatient: assignation.idPatient, actif: true, accessTokenRevoked: false, email: assignation.emailPatient,
+      };
+      prisma.patient.findUnique.mockImplementation((args: { select?: { dateNaissance?: boolean } }) =>
+        (args?.select?.dateNaissance ? Promise.reject(new Error('panne')) : Promise.resolve(proprietaire)),
+      );
+      const avertissement = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const res = await GET(request(proprioCookie()));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.vue).not.toBeNull();
+      expect(json).not.toHaveProperty('imprimable');
+      expect(avertissement).toHaveBeenCalledWith('[portail/protocole GET] date de naissance illisible', 'Error');
+      avertissement.mockRestore();
+    });
+
     it('drapeau ouvert, protocole indisponible : absent', async () => {
       process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
       mockOwnerAuth();

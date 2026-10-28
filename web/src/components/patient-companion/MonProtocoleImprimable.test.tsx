@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ReactElement } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -105,6 +106,9 @@ describe('MonProtocoleImprimable', () => {
     ['protocole indisponible', { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: null, indisponible: true }],
     ['fin de cycle', { ...servi, finDeCycle: true }],
     ['réponse en échec', { ok: false }],
+    // Le détail n'a pas encore été ouvert (D-315) : l'accueil le replie, la
+    // page ne le fait pas lire à sa place (D-392 §1).
+    ['détail jamais ouvert, sans pause', { ...servi, pauses: [], lectureDuDetail: { dejaOuvert: false } }],
   ])('%s : renvoie à l’accueil, sans rien imprimer', async (_cas, reponse) => {
     mockFetch(reponse);
     render(<MonProtocoleImprimable token="TOK" />);
@@ -113,24 +117,45 @@ describe('MonProtocoleImprimable', () => {
   });
 });
 
+describe('MonProtocoleImprimable — détail déjà ouvert ou déplié d’office', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    ['détail déjà ouvert', { ...servi, lectureDuDetail: { dejaOuvert: true } }],
+    ['détail jamais ouvert mais une action en pause (déplié d’office)', { ...servi, lectureDuDetail: { dejaOuvert: false } }],
+  ])('%s : imprimé', async (_cas, reponse) => {
+    mockFetch(reponse);
+    render(<MonProtocoleImprimable token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
+  });
+});
+
 // LE BANC DE CONCORDANCE (critère de fin de H69, [[D-392]] §5) : pour la même
 // réponse de la route, l'imprimable porte, bloc pour bloc, le détail que
-// l'accueil sert déplié.
+// l'accueil sert déplié — sur chaque régime de pause.
 describe('concordance : l’imprimé est la page servie', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('les blocs du détail sont identiques à ceux de l’accueil', async () => {
-    mockFetch(servi);
-    const accueil = render(<PatientCompanionHome token="TOK" />);
-    await accueil.findByText('Petit-déjeuner protéiné');
-    const blocsAccueil = [...accueil.container.querySelectorAll('[data-detail-protocole]')].map((n) => n.outerHTML);
+  async function blocs(element: ReactElement): Promise<string[]> {
+    const rendu = render(element);
+    await rendu.findByText('Petit-déjeuner protéiné');
+    const html = [...rendu.container.querySelectorAll('[data-detail-protocole]')].map((n) => n.outerHTML);
     cleanup();
+    return html;
+  }
 
-    mockFetch(servi);
-    const imprime = render(<MonProtocoleImprimable token="TOK" />);
-    await imprime.findByText('Petit-déjeuner protéiné');
-    const blocsImprime = [...imprime.container.querySelectorAll('[data-detail-protocole]')].map((n) => n.outerHTML);
-
+  it.each([
+    ['trois plans, pause d’un élément, attente de bilan', servi],
+    ['pause des compléments et avis rendu', {
+      ...servi,
+      pauses: [{ actionId: 'a1', texte: 'complements' }, { actionId: 'a2', texte: 'avis_rendu' }],
+    }],
+  ])('%s : les blocs du détail sont identiques à ceux de l’accueil', async (_cas, reponse) => {
+    mockFetch(reponse);
+    const blocsAccueil = await blocs(<PatientCompanionHome token="TOK" />);
+    mockFetch(reponse);
+    const blocsImprime = await blocs(<MonProtocoleImprimable token="TOK" />);
     expect(blocsAccueil).toHaveLength(2);
     expect(blocsImprime).toEqual(blocsAccueil);
   });

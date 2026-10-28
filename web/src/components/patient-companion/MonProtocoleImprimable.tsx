@@ -43,6 +43,11 @@ export function MonProtocoleImprimable({ token }: { token: string }) {
         || servi.finDeCycle
         || !servi.vue
         || (servi.vue.actions.length === 0 && !servi.vue.followUpCriterion)
+        // UNE VERSION DONT LE DÉTAIL N'A PAS ENCORE ÉTÉ OUVERT ([[D-315]]) : la
+        // même condition que le repli de l'accueil. Le lien n'y existe pas, et
+        // la page, qui n'écrit rien, ne doit pas faire lire une version sans
+        // que sa première ouverture soit datée ([[D-392]] §1).
+        || (servi.lectureDuDetail && !servi.lectureDuDetail.dejaOuvert && (servi.pauses ?? []).length === 0)
       ) {
         router.replace(`/portail/${token}/questionnaires`);
         return;

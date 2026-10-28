@@ -160,6 +160,22 @@ async function detailDejaOuvert(idPatient: string, approbationId: string): Promi
   }
 }
 
+/**
+ * L'imprimable est-il servi à ce dossier ? MAJEURS SEULS ([[D-392]] §3) : la
+ * date de naissance n'est lue que drapeau ouvert (l'appelant le juge d'abord) ;
+ * absente ou illisible, rien n'est servi. Une lecture en échec ne prive que
+ * l'imprimable, jamais le protocole : le doute vaut refus.
+ */
+async function imprimableServi(idPatient: string): Promise<boolean> {
+  try {
+    const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { dateNaissance: true } });
+    return protocoleImprimableServi(patient?.dateNaissance, Date.now());
+  } catch (err) {
+    console.warn('[portail/protocole GET] date de naissance illisible', err instanceof Error ? err.name : 'inconnu');
+    return false;
+  }
+}
+
 const JOUR_MS = 24 * 60 * 60 * 1000;
 // Fin de cycle = au-delà de la fenêtre du dernier point d'étape (J21 + tolérance
 // ±3 j). Heuristique V1 déterministe : le modèle n'a pas de flag de cycle de vie.
@@ -264,13 +280,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const troisPlans = troisPlansOuverts() && creeeSousGardeEtendue(row.createdAt)
       ? troisPlansServis({ actionsServies: vue.actions, actionsDuProtocole: draft.actions, pauses })
       : [];
-    // MAJEURS SEULS ([[D-392]] §3) : la date de naissance n'est lue que
-    // drapeau ouvert ; absente ou illisible, rien n'est servi.
-    const imprimable = protocoleImprimableOuvert()
-      && protocoleImprimableServi(
-        (await prisma.patient.findUnique({ where: { idPatient: auth.idPatient }, select: { dateNaissance: true } }))?.dateNaissance,
-        Date.now(),
-      );
+    const imprimable = protocoleImprimableOuvert() && (await imprimableServi(auth.idPatient));
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
