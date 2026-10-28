@@ -148,8 +148,14 @@ conditions tiennent ensemble :
   s'exige pas : il passe à faux dès que la revue atteint son nombre
   maximal de remarques. Sans bloc (aucune remarque depuis l'ouverture),
   l'écriture pendant le run suffit ;
-- (d) aucun autre commentaire de PR-Agent publié pendant ce run (revue
-  « non autoritative », publiée à part quand l'état est illisible), et
+- (d) à côté du commentaire persistant, les commentaires de
+  `github-actions[bot]` écrits pendant ce run sont, au plus, la
+  description (marqueur `pr-agent:describe:persistent`) et l'avis de mise
+  à jour (une ligne qui commence par « **[Persistent review](…)** updated
+  to latest commit »). Tout autre commentaire fait échouer (d) : en liste
+  fermée, rien ne passe sur son seul libellé. C'est le cas notamment d'une
+  revue « non autoritative », qui commence par « ## Standalone PR Review »
+  et que PR-Agent publie à part quand l'état est illisible. Et
   aucune commande PR-Agent (`/review`, `/describe`…) postée sur la PR
   après le `startedAt` du run. Cela se lit dans `commentaires.json`, pas
   dans la liste des runs : un run sur commentaire porte la tête de `main`

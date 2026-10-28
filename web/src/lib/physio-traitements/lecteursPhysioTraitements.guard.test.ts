@@ -4,8 +4,9 @@ import { estUnTest, fichiersSource, lire, retirerLignesDeCommentaire } from '@/l
 // [[D-335]] §8 (BP-13) — les données physiologiques et les traitements en
 // cours ne sont lus QUE par le cockpit du praticien, le portail du patient
 // (ses lignes), la ligne de vigilance de la synthèse (les traitements en
-// vigueur) et les pièces de constat (§7). Ni l'orientation, ni le scoring, ni
-// le courrier, ni la garde de population, ni le texte transmis à l'IA. Ce
+// vigueur), les pièces de constat (§7) et l'export du dossier ([[D-391]] §2).
+// Ni l'orientation, ni le scoring, ni le courrier, ni la garde de population,
+// ni le texte transmis à l'IA. Ce
 // banc épingle tout accès de production, sur le patron de `lecteursConstats`.
 //
 // CE QUI EST VU : les délégués Prisma, les relations inverses du dossier, les
@@ -30,6 +31,10 @@ const ACCES_ADMIS = [
   // La ligne de vigilance (§8) : les traitements en vigueur, quel que soit
   // le drapeau ([[D-391]] §4) ; le texte transmis à l'IA ne les reçoit pas.
   'web/src/lib/synthese/generation.ts',
+  // L'export du dossier ([[D-391]] §2) : la tête de chaque critère et de chaque
+  // fil de traitement, dans les deux versions, textes libres masqués dans la
+  // version « IA externe ». Une seule lecture, dans l'assembleur.
+  'web/src/lib/export-dossier/assembler.ts',
   // La pièce de constat qui cite un traitement (§7) : vérifiée sous verrou,
   // décodée et dite « à relire » quand sa ligne n'est plus la tête.
   'web/src/lib/bio-parcours/constats/ecriture.ts',

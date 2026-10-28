@@ -2,7 +2,8 @@
 //
 // Un FILET sur les TEXTES LIBRES, posé au point d'entrée (`assembler.ts`) :
 // fiche, anamnèse, réponses en texte et clés de réponses hors définition,
-// motif d'invalidation, synthèse, note du praticien. Les sections
+// motif d'invalidation, synthèse, note du praticien, textes d'une ligne de
+// traitement ([[D-391]] §2). Les sections
 // pseudonymisées n'écrivent déjà aucune valeur identifiante, mais un patient ou
 // un praticien a pu en taper une. Les textes FIXES (libellés du catalogue,
 // consignes, préambule) ne passent jamais ici : un nom qui est aussi un mot
@@ -34,7 +35,13 @@ import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { definitionLectureAgendaAli } from './libellesAgendas';
-import type { ConsultationExport, PassationExport, PatientExport, SyntheseExport } from './modele';
+import type {
+  ConsultationExport,
+  DonneesDateesExport,
+  PassationExport,
+  PatientExport,
+  SyntheseExport,
+} from './modele';
 
 export const MARQUE_MASQUE = '[masqué]';
 
@@ -761,6 +768,24 @@ export function masquerConsultation(c: ConsultationExport, masquer: Masqueur): C
     motif: c.motif !== null && !isMotifValide(c.motif.trim()) ? masquer(c.motif) : c.motif,
     ficheSignaletique: c.ficheSignaletique && masquerValeurs(c.ficheSignaletique, OPTIONS_FICHE, masquer),
     anamnese: c.anamnese && masquerValeurs(c.anamnese, OPTIONS_ANAMNESE, masquer),
+  };
+}
+
+/**
+ * Les lignes datées du dossier ([[D-391]] §2) : les quatre textes libres d'un
+ * traitement. Critères, nature, dates, précisions et « prescrit par un autre
+ * soignant » sont des valeurs fermées par les CHECK de la base, jamais masquées.
+ */
+export function masquerDonneesDatees(d: DonneesDateesExport, masquer: Masqueur): DonneesDateesExport {
+  return {
+    ...d,
+    traitements: d.traitements.map(t => ({
+      ...t,
+      nom: masquerOuNull(t.nom, masquer),
+      dose: masquerOuNull(t.dose, masquer),
+      moment: masquerOuNull(t.moment, masquer),
+      motif: masquerOuNull(t.motif, masquer),
+    })),
   };
 }
 

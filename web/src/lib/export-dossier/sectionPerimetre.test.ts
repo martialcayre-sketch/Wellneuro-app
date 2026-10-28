@@ -81,6 +81,22 @@ describe('sectionPerimetre', () => {
     expect(minuit[1]).toMatchObject({ texte: expect.stringContaining('le 01/01/2027 à 00:30') });
   });
 
+  it('lignes datées dans le dossier ([[D-391]] §2) : le contenu les annonce, avec ceux qui les posent ; seul ce paragraphe change', () => {
+    for (const version of ['ia-externe', 'complete'] as const) {
+      const sans = sectionPerimetre(version, MAINTENANT);
+      expect(sectionPerimetre(version, MAINTENANT, false)).toEqual(sans);
+      const avec = sectionPerimetre(version, MAINTENANT, true);
+      const differents = avec.flatMap((bloc, i) => (JSON.stringify(bloc) === JSON.stringify(sans[i]) ? [] : [bloc]));
+      expect(differents).toEqual([
+        {
+          type: 'paragraphe',
+          texte:
+            'Contenu : 1. renseignements administratifs ; 2. données physiologiques et traitements datés du dossier, déclarés par le patient ou confirmés par le praticien, puis fiche signalétique et anamnèse déposées par le patient ; 3. réponses à tous les questionnaires soumis, avec les scores calculés à la soumission ; 4. dernière synthèse validée par le praticien.',
+        },
+      ]);
+    }
+  });
+
   it("aucune espace fine insécable dans les textes (typographie de l'export)", () => {
     for (const version of ['ia-externe', 'complete'] as const) {
       const texte = JSON.stringify(sectionPerimetre(version, MAINTENANT));
