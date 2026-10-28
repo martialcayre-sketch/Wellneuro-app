@@ -260,6 +260,9 @@ export function lireJournal(dossier) {
       if (!f.isFile() || !NOM_FRAGMENT.test(f.name)) {
         throw new Error(`${path.join(dossier, entree.name, f.name)} : nom de fragment non conforme (attendu : AAAA-MM-JJ-nn-slug.md)`);
       }
+      if (!dateReelle(f.name.slice(0, 10))) {
+        throw new Error(`${path.join(dossier, entree.name, f.name)} : date du nom hors du calendrier`);
+      }
       const contenu = fs.readFileSync(path.join(dossier, entree.name, f.name), "utf8");
       // Un titre dans un fragment couperait la fiche à la reconstruction, ou y
       // ferait naître une fiche fantôme.
