@@ -92,6 +92,23 @@ export const JOURNAL_ECARTS = [
 ];
 /** Ce que l'action journalise quand un commentaire n'est pas une commande. */
 export const JOURNAL_IGNORE = 'Ignoring comment not starting with /';
+// `gh run view --log` rend les codes de couleur en clair (« ^[[32m »), pas
+// en caractère d'échappement : les deux formes se retirent.
+const ANSI_RE = /(?:\x1b|\^\[)\[[0-9;]*m/g;
+/** La ligne entière, émise par l'action elle-même (constatée, run 40768374290). */
+const LIGNE_IGNORE_RE = /\| INFO\s+\| __main__:run_action:\d+ - Ignoring comment not starting with \/\s*$/m;
+/** Toute commande exécutée passe par ces modules (constaté, run 40774401403). */
+const EXECUTION_RE = /\| \w+\s+\| pr_agent\.(agent\.pr_agent|tools\.\w+):/m;
+
+/**
+ * Un run sur commentaire a-t-il ignoré son commentaire ? La phrase seule ne
+ * suffit pas : un corps de commande peut la recopier. Il faut la ligne de
+ * l'action, ancrée, et aucune trace d'exécution (revue PR-Agent de #1772).
+ */
+export function aIgnore(journal) {
+  const net = journal.replace(ANSI_RE, '');
+  return LIGNE_IGNORE_RE.test(net) && !EXECUTION_RE.test(net);
+}
 /** Depuis quand chercher un run sur commentaire encore actif au début du run. */
 export const AVANCE_RUNS_COMMENTAIRE_MS = 60 * 60 * 1000;
 
@@ -257,7 +274,7 @@ export function juger({ pr, depot, tete, run, journal, commentaires, revuesPr = 
   if (apres.length > 0) defautsD.push(`${apres.length} commande(s) PR-Agent postée(s) après le début du run (${apres.map((c) => c.id).join(', ')})`);
   for (const r of runsCommentaire) {
     if (r.journal === null) defautsD.push(`run sur commentaire ${r.id} non conclu pendant le run`);
-    else if (!r.journal.includes(JOURNAL_IGNORE)) defautsD.push(`run sur commentaire ${r.id}, actif pendant le run, a lancé une commande (« ${r.display_title ?? '?'} »)`);
+    else if (!aIgnore(r.journal)) defautsD.push(`run sur commentaire ${r.id}, actif pendant le run, a lancé une commande (« ${r.display_title ?? '?'} »)`);
   }
   if (defautsD.length > 0) noter('d', false, `${defautsD.join(' ; ')}.`);
   else noter('d', true, `depuis le début du run : ${pendant.length === 0 ? 'aucun autre commentaire' : pendant.map((c) => gabarit(c.body)).join(' et ')} ; aucune commande en cours ni postée après lui.`);

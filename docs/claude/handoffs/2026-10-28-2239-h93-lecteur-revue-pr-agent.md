@@ -57,6 +57,14 @@ fait sans la modifier.
   - Écartés avec motif : contrefaçon par un autre workflow (hors modèle de
     menace, dite dans la règle 1.6) ; précondition CodeRabbit (dite à
     l'étape 6, lue avant l'appel).
+- Revue PR-Agent de cette PR (CodeRabbit saute : « fewer than 10 stars »),
+  une remarque sur d763e7c3 : la phrase « Ignoring comment… » cherchée
+  n'importe où dans le journal d'un run sur commentaire pouvait être
+  recopiée par le corps d'une commande. Corrigé : ligne de l'action ancrée
+  (`__main__:run_action`, en fin de ligne) et aucune trace d'exécution
+  (`pr_agent.agent.pr_agent`, `pr_agent.tools.*`). Trouvé en corrigeant :
+  `gh run view --log` rend les codes de couleur en clair (« ^[ ») ; vérifié
+  sur les deux journaux réels (commentaire ignoré, `/review` exécuté).
 
 ## Problèmes ouverts
 
@@ -64,8 +72,13 @@ fait sans la modifier.
   - lecteur sur #1766 et #1769 (`0`) ;
   - PR au-delà du plafond : #1764, « pruning diff », revue sans remarque
     rognée (pied « Review coverage », sans bloc) — à consigner ;
-  - revue sans remarque non rognée (aucun bloc) : à saisir quand elle passe ;
-  - `/review` d'un membre sur une PR ouverte : à faire ;
+  - revue sans remarque non rognée (aucun bloc) : faite sur cette PR, tête
+    0e57f999, run 40774074520 — lecteur à `0`, à consigner ;
+  - `/review` d'un membre : fait sur cette PR à 21:44:13 UTC, run
+    40774401403 `issue_comment` sur la tête de `main` ; il a réécrit le
+    commentaire persistant à 21:45:19, le lecteur a refusé 0e57f999 par
+    (c) et (d) ; le push d763e7c3 (fusion de `main`) a relancé un run
+    `pull_request`, lecteur à `0` — à consigner ;
   - commentaire de non-membre : non constaté (ne se provoque pas) ;
   - coût réel par revue : à demander au responsable (console).
 - Le plafond de 32 000 jetons est atteint par une PR de doc de 5 fichiers

@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import {
   JOURNAL_ECARTS,
   JOURNAL_IGNORE,
+  aIgnore,
   SORTIE_DEFAUT,
   SORTIE_ILLISIBLE,
   SORTIE_PREUVE,
@@ -55,6 +56,12 @@ const run = (champs = {}) => ({
 const runCommentaire = (champs = {}) => run({ id: 200, event: 'issue_comment', head_sha: MAIN, head_branch: 'main', created_at: PENDANT, updated_at: PENDANT, ...champs });
 const nommer = (n = PR_N) => `pr_reviewer:run - Reviewing PR: https://api.github.com/repos/${DEPOT}/pulls/${n} ...`;
 const JOURNAL = `${nommer()}\nget_pr_diff - Tokens: 6257, total tokens under limit: 32000, returning full diff.\npublish_persistent_comment_full - Persistent mode - updating comment`;
+// Lignes réelles des journaux sur commentaire (runs 40768374290 et 40774401403) : `gh run view --log`
+// rend les codes de couleur en clair (« ^[ ») ; la forme en caractère d'échappement est jouée aussi.
+const ligne = (module, fonction, message, E = '^[') =>
+  `pr_agent\tPR-Agent\t2026-10-28T21:01:44.4943820Z ${E}[32m2026-10-28 21:01:44.494${E}[0m | ${E}[1mINFO    ${E}[0m | ${E}[36m${module}${E}[0m:${E}[36m${fonction}${E}[0m:${E}[36m401${E}[0m - ${E}[1m${message}${E}[0m`;
+const IGNORE_REEL = ligne('__main__', 'run_action', JOURNAL_IGNORE);
+const EXECUTION_REELLE = ligne('pr_agent.agent.pr_agent', '_run_command', 'User has set the response language to: fr-FR');
 const bloc = (lastRun = {}) =>
   `<!-- pr-agent-review-state:v1\n${JSON.stringify({
     findings: [],
@@ -282,18 +289,34 @@ test('(d) seule : une commande `/review` postée après le début du run, par qu
 });
 
 test('(d) : un run sur commentaire actif pendant le run qui a ignoré son commentaire — preuve tenue (constaté sur #1769)', () => {
-  const v = juger(base({ runsCommentaire: [{ id: 200, journal: JOURNAL_IGNORE }] }));
+  const v = juger(base({ runsCommentaire: [{ id: 200, journal: IGNORE_REEL }] }));
   assert.equal(v.code, SORTIE_PREUVE, JSON.stringify(v));
 });
 
 test('(d) seule : un run sur commentaire actif pendant le run qui a lancé une commande, ou encore en cours', () => {
   // Commande postée avant le début, éditée ou supprimée : seul son run en garde la trace.
-  let v = juger(base({ runsCommentaire: [{ id: 200, display_title: 'titre', journal: nommer() }] }));
+  let v = juger(base({ runsCommentaire: [{ id: 200, display_title: 'titre', journal: `${IGNORE_REEL}\n${EXECUTION_REELLE}` }] }));
   seuleEchoue(v, 'd');
   assert.match(etat(v, 'd').motif, /a lancé une commande/);
   v = juger(base({ runsCommentaire: [{ id: 200, journal: null }] }));
   seuleEchoue(v, 'd');
   assert.match(etat(v, 'd').motif, /non conclu/);
+});
+
+test('aIgnore : la ligne de l’action, ancrée, sans trace d’exécution — une phrase recopiée ne suffit pas (revue PR-Agent de #1772)', () => {
+  assert.ok(aIgnore(IGNORE_REEL));
+  assert.ok(aIgnore(ligne('__main__', 'run_action', JOURNAL_IGNORE, '\x1b')));
+  assert.ok(!aIgnore(EXECUTION_REELLE));
+  assert.ok(!aIgnore(`${IGNORE_REEL}\n${ligne('pr_agent.agent.pr_agent', '_run_command', 'x', '\x1b')}`));
+  // La phrase seule, ou recopiée dans le corps d'une commande, n'est pas la ligne de l'action.
+  assert.ok(!aIgnore(JOURNAL_IGNORE));
+  assert.ok(!aIgnore(`Handling /review --ignore.glob=["web/**"] ${JOURNAL_IGNORE}`));
+  // Même la ligne entière recopiée ne couvre pas une commande exécutée.
+  assert.ok(!aIgnore(`${IGNORE_REEL}\n${EXECUTION_REELLE}`));
+  assert.ok(!aIgnore(`${IGNORE_REEL}\n${ligne('pr_agent.tools.pr_reviewer', 'run', 'Reviewing PR: …')}`));
+  // Une ligne d'un autre module, ou suivie d'un texte, ne compte pas.
+  assert.ok(!aIgnore(ligne('autre', 'run_action', JOURNAL_IGNORE)));
+  assert.ok(!aIgnore(ligne('__main__', 'run_action', `${JOURNAL_IGNORE} sauf /review`)));
 });
 
 test('commande : ce que v0.49.0 lance', () => {
@@ -388,7 +411,7 @@ test('collecte : runs sur commentaire — seuls ceux actifs pendant le run et no
     runCommentaire({ id: 204, created_at: '2026-10-28T21:00:59Z', updated_at: APRES }), // commande d'avant le début, encore active
   ];
   const { lireJson, appels } = api({ 'event=issue_comment': [{ workflow_runs: runs }] });
-  const { lus, lireJournal } = journaux({ 203: JOURNAL_IGNORE, 204: nommer() });
+  const { lus, lireJournal } = journaux({ 203: IGNORE_REEL, 204: nommer() });
   const r = lire({ pr: PR_N, lireJson, lireJournal });
   assert.equal(r.code, SORTIE_DEFAUT, r.lignes.join('\n'));
   assert.match(r.lignes.find((l) => l.startsWith('❌ (d)')), /run sur commentaire 204/);
