@@ -57,7 +57,15 @@ Aucune décision nouvelle, aucun numéro pris. Lectures de mise en œuvre :
     « déploiement ordinaire » (D-373 §1) dans la ligne de D-287 ; borne
     « hors phase 1 de D-374 » dans `CLAUDE.md` ; `allow_auto_merge` daté ;
     avance `--ff-only` attribuée à l'intégrateur.
-- CodeRabbit : verdicts dans la PR.
+- CodeRabbit : revue sautée à l'ouverture (« moins de dix étoiles », statut
+  vert sans revue), demandée par `@coderabbitai full review`. Revue sur
+  09fa53ab : deux remarques en ligne, toutes deux corrigées.
+  - `--subject` manquait à la commande de merge du « Cycle PR complet »
+    (D-373 §2 : « avec le sujet posé »).
+  - Le tableau des rôles et le garde-fou 3 de `ROLES_MACHINES.md` laissaient
+    le PC merger sans réserve. Ils sont bornés à l'essai, sans retirer aux
+    files les lots qu'elles gardent. La suggestion « en repli seulement »
+    n'a pas été reprise telle quelle : elle les leur retirait.
 
 ## Problèmes ouverts
 

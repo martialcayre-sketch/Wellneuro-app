@@ -69,7 +69,7 @@ alors du temps à chasser un bug qui n'existe pas.
 | Statut | Poste principal | Appoint / secours |
 | Rôle | **Validation et intégration** | **Édition et rédaction** |
 | E2E Playwright **local** | **Exclusivité** | Interdit |
-| Merge vers `main` | Oui | Oui, **via PR au CI vert** |
+| Merge vers `main` | Oui | Oui, **via PR au CI vert** ; pendant l'essai de `D-373`, une PR ordinaire passe par l'intégrateur |
 
 Cette répartition n'est pas une hiérarchie : c'est une **spécialisation**. Le PC
 reste pleinement utile pour écrire du code, de la documentation, relire un diff
@@ -100,7 +100,9 @@ Le 🚫 est la seule interdiction stricte de ce document.
 3. **Le gardien de `main`, c'est le CI — pas la machine.** Le check `verify`
    (E2E compris) tourne sur les runners GitHub à chaque PR, avec sa propre base
    éphémère, quelle que soit la machine qui a poussé. Le PC peut donc merger une
-   PR dont `verify` est vert. En revanche, **ne jamais pousser directement sur
+   PR dont `verify` est vert — pendant l'essai de `D-373`, les seules PR que
+   leur file garde (migration, authentification, `.coderabbit.yaml`), ou
+   toutes en repli (`D-373` §5). En revanche, **ne jamais pousser directement sur
    `main`** : la branche est protégée, `verify` y est le seul check obligatoire
    et `enforce_admins` est **actif** depuis le 2026-07-21 — personne ne passe
    outre, propriétaire compris (réglage relu sur GitHub le 2026-08-03 ; ce

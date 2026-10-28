@@ -192,7 +192,7 @@ enchaîner en un minimum d'allers-retours :
    `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise ; `1` gelé,
    `2` lecture impossible (gel). Tout rejeu de 7 bis est suivi de celui de
    7 ter. Puis
-   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu>` —
+   `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet exact>"` —
    merge et suppression de la branche distante en un geste, **lié au sha que la
    revue et le CI ont vu** : si la tête a bougé depuis, GitHub refuse, et les
    contrôles se rejouent sur la nouvelle tête.
