@@ -125,7 +125,10 @@ migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
 leur file les merge jusqu'au bout. Une remarque de bot arrivée après
 « prête » revient à la file, qui reprend depuis son handoff : l'intégrateur
 ne corrige pas une PR. En repli (`D-373` §5), chaque session reprend ses
-merges selon le même cycle, plus bas.
+merges selon le même cycle, plus bas. Une PR qui écrit la réponse à une
+question de la liste commune la nomme dans sa déclaration
+(`question <identifiant>`). Celui qui la merge horodate le merge dans la ligne
+(`docs/ROLES_MACHINES.md`, « La liste commune de questions et le guichet »).
 
 La raison de fond tient toujours, et c'est elle qui fait garder un bot de revue
 plutôt que d'en reprendre la charge : un **regard différent** sur le code — une
