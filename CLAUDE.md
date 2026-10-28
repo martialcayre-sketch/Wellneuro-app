@@ -89,6 +89,8 @@ décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
   l'exécuter, sauf fait nouveau qui change réellement le choix.
 - Ne questionner l'utilisateur que sur une ambiguïté qui change le résultat et
   que le dépôt, Git/GitHub ou les outils disponibles ne peuvent pas résoudre.
+  Une question d'arbitrage s'écrit aussi dans la liste commune
+  (`docs/ROLES_MACHINES.md`, « La liste commune de questions et le guichet »).
 - Narration limitée aux résultats intermédiaires utiles, blocages, risques
   nouveaux et changements de plan — pas ses propres évidences.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
