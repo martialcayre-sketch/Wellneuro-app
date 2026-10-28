@@ -43,6 +43,10 @@ vi.mock('@/lib/consultation/contexteClinique', () => ({
   buildContexteClinique: () => '',
   extraireVigilanceDeterministe: () => [] as string[],
 }));
+// Les traitements en vigueur se lisent quel que soit le drapeau ([[D-391]]
+// §4) : sans ce mock, leur lecture sur ce Prisma simulé journaliserait un
+// avertissement avant ceux du schéma, que ce banc compte.
+vi.mock('@/lib/physio-traitements/lecture', () => ({ lireTraitementsEnVigueur: async () => [] }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { error: loggerError, warn: loggerWarn, security: vi.fn() },
 }));
