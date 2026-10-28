@@ -52,6 +52,50 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
 - **En repli** (`D-373` §5), chaque session reprend ses merges, avec les
   mêmes sondes et le même contrôle.
 
+### La liste commune de questions et le guichet (H89)
+
+Consigne sans décision (arbitrages du responsable des 2026-10-25 et
+2026-10-26). Une question d'arbitrage ne vit plus seulement dans la session
+qui la pose. Elle s'écrit dans une liste commune, qui mesure le délai entre la
+question et la réponse.
+
+- **Où.** La liste est la collection `questions` de la page privée de suivi
+  de la file D. Son adresse est dans la mémoire des sessions, jamais dans le
+  dépôt. Chaque question tient sur une ligne, d'identifiant
+  `AAAAMMJJ-HHMM-<file>` (heure de Paris).
+- **Ce qu'on y écrit :**
+  - la file et le lot bloqué ;
+  - la question, avec deux à quatre options, chacune suivie de sa conséquence ;
+  - la nature : `ordinaire`, `clinique` ou `migration` ;
+  - la date utile ;
+  - le statut : `ouverte`, `en_seance`, `repondue` ou `close` ;
+  - la réponse, le numéro `D-xxx` et la PR.
+
+  Trois moments sont horodatés : l'arrivée, à l'écriture de la ligne ; la
+  réponse ; le merge.
+- **Réponse directe permise.** Une question complète, c'est-à-dire aux faits
+  vérifiés contre le code et aux options lisibles par ce qui se voit à
+  l'écran, se pose directement au responsable par la session qui agit. Cette
+  session écrit la ligne, puis la réponse. Le guichet prépare, il n'autorise
+  pas : aucune approbation intermédiaire.
+- **Le guichet.** C'est la session existante « Questions générales et
+  audits ». Il prépare des séances d'au plus huit questions, sans heure fixe :
+  il vérifie les faits et reformule les options. Il renvoie les réponses dans
+  les lignes. Un numéro de décision se réserve par
+  `node scripts/wn-reserver-decision.mjs`, une seule fois par question, et
+  son rédacteur le réutilise. Le guichet ne code pas et ne merge pas. Il ne
+  relaie pas non plus une réponse clinique comme si c'était un accord.
+- **Une session qui attend** écrit son handoff et fait `/clear`. Elle n'ouvre
+  pas d'autre lot en attendant la réponse.
+- **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
+  vient du responsable dans la session qui agit, ou de la décision mergée.
+- **Sortie de la liste.** Une ligne ne passe à `close` qu'au merge de la
+  décision, ou de la PR qui écrit la réponse. Cette PR nomme sa ligne dans sa
+  déclaration « prête @<sha> » (`question <identifiant>`). Celui qui merge,
+  l'intégrateur, ou la file en repli, horodate alors le merge dans la ligne.
+- **Hors liste.** Les urgences, la sécurité et les release-db restent
+  immédiates.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
