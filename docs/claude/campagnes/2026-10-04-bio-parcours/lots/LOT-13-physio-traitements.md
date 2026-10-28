@@ -223,6 +223,29 @@ médecin peut reprendre la ligne de vigilance qui les nomme ; une procédure
 d'extinction qui dise que les traitements déclarés en lignes deviennent
 invisibles à la vigilance.
 
+## Allumage — conditions tranchées ([[D-391]], 2026-10-28)
+
+Six arbitrages du responsable du 2026-10-27, sur l'inventaire des
+conditions de [[D-335]] §9 et des quatre points ajoutés par la revue de la
+PR 2 :
+
+- **Garde de population** : elle reste sur l'anamnèse jusqu'à la première
+  exclusion curée (table de [[D-101]] vide) — condition levée.
+- **Export du dossier** : il porte les lignes, dans les deux versions,
+  masquage compris.
+- **Document destiné au médecin** : il reprend la vigilance qui nomme les
+  traitements, comme pour l'anamnèse ; aucun code.
+- **Extinction** : la vigilance lit les lignes quel que soit le drapeau.
+- **Plafond de 500** : un point de vigilance par traitement ; un point encore
+  trop long (547 caractères aux bornes) passe par `scinderSousPlafond`.
+- **Texte patient** : « Vos données personnelles » v22 (les durées de
+  [[D-378]] passent en v23), conditions v5 ; la phrase « aucun outil d'IA
+  ne les reçoit, transmises à personne » est corrigée et revalidée.
+
+Suite : trois PR sans migration (vigilance et banc sur vraie base ; export ;
+texte v22 mergé le jour de l'allumage), puis l'allumage, geste du
+responsable.
+
 ## Hors périmètre
 
 D-335 §12 : classe de traitement ; IMC et toute dérivée ; garde de
