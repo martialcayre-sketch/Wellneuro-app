@@ -9,6 +9,7 @@
 
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import type { AnamneseValeurs } from '@/lib/consultation/anamnese';
+import type { Critere } from '@/lib/physio-traitements/liste';
 
 export type VersionExport = 'ia-externe' | 'complete';
 
@@ -140,6 +141,60 @@ export type SyntheseExport = {
   notesPraticien: string | null;
   /** `avertissementSyntheseAnterieure(...)`, ou null. */
   avertissementMesureRetiree: string | null;
+};
+
+/**
+ * La ligne en vigueur d'un critère physiologique ([[D-335]] §2) : la TÊTE de
+ * son fil. Valeur fermée (CHECK de la base) ou mesure ; aucun texte libre.
+ */
+export type DonneePhysioExport = {
+  /** Valeur fermée (`feminin`, `oui`, `inconnu`…), ou `null` pour une mesure. */
+  reponse: string | null;
+  /** Chaîne décimale (`72.5`), ou `null`. */
+  mesure: string | null;
+  /** AAAA-MM-JJ, ou `null`. */
+  mesureLe: string | null;
+  source: 'patient' | 'praticien';
+  /** ISO, posé par la base. */
+  acteLe: string;
+};
+
+/**
+ * La tête d'un fil de traitement ([[D-335]] §3-§4), en cours ou arrêté.
+ * `nom`, `dose`, `moment` et `motif` sont des TEXTES LIBRES, saisis sans liste
+ * par le patient ou le praticien (`physio-traitements/demande.ts`) : masqués
+ * dans la version « IA externe ». Le reste est fermé par les CHECK de la base.
+ */
+export type TraitementExport = {
+  /** `medicament` | `complement` */
+  nature: string | null;
+  nom: string | null;
+  dose: string | null;
+  moment: string | null;
+  motif: string | null;
+  /** AAAA-MM-JJ, premier jour de la période, ou `null`. */
+  debut: string | null;
+  /** `jour` | `mois` | `annee` | `inconnu` */
+  debutPrecision: string | null;
+  fin: string | null;
+  /** `null` : en cours. */
+  finPrecision: string | null;
+  /** `oui` | `non` | `inconnu` */
+  prescritParTiers: string | null;
+  source: 'patient' | 'praticien';
+  /** ISO, posé par la base. */
+  acteLe: string;
+};
+
+/**
+ * Les lignes datées du dossier ([[D-391]] §2) : pour chaque critère sa tête
+ * (`null` : non renseigné, retrait compris), et la tête de chaque fil de
+ * traitement encore posé. L'objet entier vaut `null` quand le dossier n'a
+ * AUCUNE ligne : la section reste alors celle d'avant les lignes.
+ */
+export type DonneesDateesExport = {
+  criteres: { critere: Critere; tete: DonneePhysioExport | null }[];
+  traitements: TraitementExport[];
 };
 
 export type BrouillonPlusRecentExport = { statut: string; dateGeneration: Date } | null;

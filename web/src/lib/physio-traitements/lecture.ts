@@ -1,9 +1,10 @@
 // LA LECTURE DES LIGNES D'UN DOSSIER ([[D-335]] §8, BP-13) : par critère, la
 // tête et l'historique ; par traitement, son fil. Le praticien du dossier les
 // lit au cockpit, le patient les siennes au portail (`pourLePatient`), la
-// ligne de vigilance de la synthèse les traitements en vigueur. Ni
-// l'orientation, ni le scoring, ni le courrier, ni la garde de population, ni
-// l'IA ne les lisent (`lecteursPhysioTraitements.guard.test.ts`).
+// ligne de vigilance de la synthèse les traitements en vigueur, l'export du
+// dossier la tête de chaque fil ([[D-391]] §2). Ni l'orientation, ni le
+// scoring, ni le courrier, ni la garde de population, ni l'IA ne les lisent
+// (`lecteursPhysioTraitements.guard.test.ts`).
 //
 // Un échec de lecture lève : il ne se replie jamais sur « non renseigné ».
 

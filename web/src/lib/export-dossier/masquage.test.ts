@@ -5,11 +5,18 @@ import {
   creerMasqueur,
   MARQUE_MASQUE,
   masquerConsultation,
+  masquerDonneesDatees,
   masquerPassation,
   masquerSynthese,
   plier,
 } from './masquage';
-import type { ConsultationExport, PassationExport, PatientExport, SyntheseExport } from './modele';
+import type {
+  ConsultationExport,
+  DonneesDateesExport,
+  PassationExport,
+  PatientExport,
+  SyntheseExport,
+} from './modele';
 import { versWinAnsi } from './pdf';
 
 const M = MARQUE_MASQUE;
@@ -810,6 +817,67 @@ describe('masquerConsultation', () => {
       ficheSignaletique: null,
       anamnese: null,
     });
+  });
+});
+
+describe('masquerDonneesDatees ([[D-391]] §2)', () => {
+  const donnees: DonneesDateesExport = {
+    criteres: [
+      {
+        critere: 'sexe_declare',
+        tete: { reponse: 'feminin', mesure: null, mesureLe: null, source: 'patient', acteLe: '2026-10-20T09:00:00.000Z' },
+      },
+      { critere: 'taille', tete: null },
+    ],
+    traitements: [
+      {
+        nature: 'medicament',
+        nom: 'Traitement A prescrit par le Dr Dogné',
+        dose: '5 ml pour Sophie',
+        moment: 'le soir, appeler le 0612345678',
+        motif: 'Suivi de Mme Nicola',
+        debut: '2026-05-01',
+        debutPrecision: 'mois',
+        fin: null,
+        finPrecision: null,
+        prescritParTiers: 'oui',
+        source: 'praticien',
+        acteLe: '2026-10-21T09:00:00.000Z',
+      },
+      {
+        nature: 'complement',
+        nom: 'Complément B',
+        dose: null,
+        moment: null,
+        motif: null,
+        debut: null,
+        debutPrecision: 'inconnu',
+        fin: '2026-01-01',
+        finPrecision: 'annee',
+        prescritParTiers: 'inconnu',
+        source: 'patient',
+        acteLe: '2026-10-22T09:00:00.000Z',
+      },
+    ],
+  };
+
+  it('masque les quatre textes libres d’un traitement — nom, dose, moment, motif', () => {
+    const [premier] = masquerDonneesDatees(donnees, masquer).traitements;
+    expect(premier).toMatchObject({
+      nom: `Traitement A prescrit par le Dr ${M}`,
+      dose: `5 ml pour ${M}`,
+      moment: `le soir, appeler le ${M}`,
+      motif: `Suivi de Mme ${M}`,
+    });
+  });
+
+  it('les valeurs fermées, les dates et les critères restent intacts ; un champ absent reste absent', () => {
+    const masque = masquerDonneesDatees(donnees, masquer);
+    expect(masque.criteres).toEqual(donnees.criteres);
+    const [premier, second] = masque.traitements;
+    const { nom: _n, dose: _d, moment: _m, motif: _o, ...fermes } = donnees.traitements[0];
+    expect(premier).toMatchObject(fermes);
+    expect(second).toEqual(donnees.traitements[1]);
   });
 });
 
