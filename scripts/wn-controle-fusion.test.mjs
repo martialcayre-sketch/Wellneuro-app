@@ -662,6 +662,7 @@ test('wn-merge joue déploiement, contrôle, registre et chevauchement avant la 
   // La tête mergée est celle que le contrôle a jugée ; `main` bougé rejoue tout 7 bis, puis 7 ter.
   assert.match(skill, /dont le `tete=` du contrôle est le préfixe/);
   assert.match(skill, /Sinon, \*\*rejouer toute l'étape\s+7 bis\*\*, déploiement compris/);
+  assert.match(skill, /la tête de `main` que la sonde du\s+déploiement a lue \(ligne « Tête »\) et\s+`git ls-remote/);
   assert.match(skill, /Tout rejeu de 7 bis est suivi de\s+celui de 7 ter/);
   // Les conditions du merge, à l'étape 9.
   assert.match(skill, /déploiement `0` sans retenue, contrôle\s+`0`, aucune décision à arbitrer, `main` inchangé\) et si la sonde de\s+l'étape 7 ter vient de\s+rendre `0`/);

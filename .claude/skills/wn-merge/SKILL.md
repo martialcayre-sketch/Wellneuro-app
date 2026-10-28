@@ -141,7 +141,10 @@ dernière session.
      l'approbation (phase 1) sur un commit qui contient la migration
      (`git merge-base --is-ancestor <commit de la migration> <commit du run>`),
      ce n'est pas une retenue — le déployeur retient la tête et les PR non
-     gelées mergent (`D-374`, « Effet sur le plan »). Sinon (appliquée et
+     gelées mergent (`D-374`, « Effet sur le plan ») ; l'exception ne vaut
+     que tant que ce run attend : si la sonde de l'étape 7 ter ne le montre
+     plus en attente, rejouer 7 bis (la migration, toujours hors service,
+     retient alors). Sinon (appliquée et
      pas encore déployée, run rejeté, état inconnu) : **pas de merge, arrêt et
      question au responsable**, avec l'état lu (« un merge à la fois »,
      `D-373` §1). La retenue ne vise que les migrations : un commit clinique
@@ -173,8 +176,10 @@ dernière session.
    - **Signal de chevauchement** : `node scripts/wn-chevauchement.mjs <N>`.
      Affiché dans la sortie, **jamais bloquant** — il sort en `0` quoi qu'il
      trouve ; seul le contrôle refuse.
-   - **`main` n'a pas bougé** : `git ls-remote origin refs/heads/main` doit
-     commencer par le `main=` du contrôle. Sinon, **rejouer toute l'étape
+   - **`main` n'a pas bougé** : la tête de `main` que la sonde du
+     déploiement a lue (ligne « Tête ») et
+     `git ls-remote origin refs/heads/main` doivent commencer par le `main=`
+     du contrôle. Sinon, **rejouer toute l'étape
      7 bis**, déploiement compris — ce qui a fait bouger `main` peut être une
      migration —, jamais passer au merge directement. Reste une course entre
      cette lecture et `gh pr merge` : `--match-head-commit` lie la tête, pas

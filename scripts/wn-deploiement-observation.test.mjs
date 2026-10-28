@@ -300,5 +300,11 @@ test('wn-merge : chaque état conforme nomme la version en service, sha entier',
   // La retenue : phase 1 sur un commit qui contient la migration, sinon arrêt et question.
   assert.match(skill, /`git merge-base --is-ancestor <commit de la migration> <commit du run>`\),\s+ce n'est pas une retenue/);
   assert.match(skill, /Sinon \(appliquée et\s+pas encore déployée, run rejeté, état inconnu\) : \*\*pas de merge, arrêt et\s+question au responsable\*\*/);
+  assert.match(skill, /l'exception ne vaut\s+que tant que ce run attend : si la sonde de l'étape 7 ter ne le montre\s+plus en attente, rejouer 7 bis/);
+  // La ligne « Tête » que `wn-merge` compare au `main=` du contrôle : présente dans chaque état conforme.
+  for (const etat of ['a-jour', 'en-cours', 'retard']) {
+    const { resume } = rediger({ code: SORTIE_CONFORME, etat, enService, ageTeteMin: 50 }, 'b'.repeat(40));
+    assert.ok(resume.some((l) => /^- Tête( de `main`)? : `b{40}`/.test(l)), etat);
+  }
   assert.match(skill, /\*\*`1`\*\* = recul de production, \*\*`2`\*\* = production illisible \(aucun recul\s+ne peut être exclu\) : pas de merge, arrêt et question/);
 });

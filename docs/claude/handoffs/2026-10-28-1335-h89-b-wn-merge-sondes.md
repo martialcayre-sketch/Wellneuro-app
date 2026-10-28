@@ -72,6 +72,13 @@ Aucune décision nouvelle. Lectures de mise en œuvre :
   - Acceptés sans changement : M5, liaison sur 8 caractères ; M7,
     `REGLES_PR_MERGE.md` ne nomme pas encore les nouveaux gestes, à reprendre
     en PR (c).
+- Contrôle et signal réels sur #1756 : non requis en 1,5 s (`tete=` égale
+  à la tête de la PR), aucun chevauchement.
+- CodeRabbit (473ecc17) : deux remarques, toutes deux corrigées.
+  - L'exception de phase 1 ne vaut que tant que son run attend : si la
+    sonde de 7 ter ne le montre plus en attente, 7 bis se rejoue.
+  - La tête lue par la sonde du déploiement est comparée au `main=` du
+    contrôle, comme `ls-remote`.
 
 ## Problèmes ouverts
 
