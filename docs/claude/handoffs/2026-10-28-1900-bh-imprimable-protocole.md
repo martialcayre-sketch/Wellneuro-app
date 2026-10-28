@@ -58,13 +58,23 @@ livrer son lot sous drapeau éteint.
   neuf n'était pas déclaré. Corrigé, puis T2 (`test:worktree -- --fast`)
   vert en 7 min 28 s, E2E Chromium et WebKit compris (300 passés).
 
+## Revue CodeRabbit (ea661dda, 2026-10-28)
+
+Trois remarques en ligne, toutes corrigées :
+- la date d'impression est reprise à `beforeprint`, Ctrl+P compris : une
+  page ouverte avant minuit et imprimée après ne porte plus la veille ;
+- le lien « Imprimer mon protocole » attend la réponse du POST de lecture.
+  Sans elle, un clic rapide faisait rebondir l'imprimable vers l'accueil.
+  Deux bancs : avant la consignation, et consignation refusée ;
+- les bancs du drapeau partent d'un drapeau absent et rendent la valeur
+  d'origine (`vi.stubEnv`).
+Mineure : l'item des numéros d'urgence, déjà tranché, est sorti des
+problèmes ouverts. Il est écrit dans D-392 §2, huitième arbitrage.
+Après les correctifs : `origin/main` fusionnée, bancs touchés 270/270, T1
+complet vert, T2 vert en 7 min 45 s (E2E compris).
+
 ## Problèmes ouverts
 
-- Numéros d'urgence (question soulevée par la revue) : tranché le 2026-10-28,
-  après l'ouverture de la PR. Le pied d'urgence du portail (D-293 §3) figure
-  sur la feuille, texte et composant inchangés, visible à l'impression
-  seulement. Écrit dans D-392 §2 (huitième arbitrage). Le bilan imprimé ne
-  change pas.
 - Ouverture : drapeau à poser sur accord, puis constat sur un dossier de test
   majeur. Le patient ouvre la page depuis son détail, et l'imprimé porte le
   détail servi, daté.

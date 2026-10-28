@@ -39,6 +39,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // déplié d'office sinon.
   const [detailDeplie, setDetailDeplie] = useState(true);
   const lectureEnvoyee = useRef(false);
+  // LA LECTURE EST CONSIGNÉE ? ([[D-392]] §1) L'imprimable renvoie à l'accueil
+  // une version dont la première ouverture n'est pas datée : son lien attend
+  // la réponse du POST de lecture, sinon un clic rapide y ferait rebondir.
+  const [lectureConsignee, setLectureConsignee] = useState(true);
   // Le bouton disparaît au clic : le focus clavier passe aux actions dépliées
   // plutôt que de retomber sur la page.
   const titreActions = useRef<HTMLParagraphElement>(null);
@@ -62,9 +66,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
       // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
       // signé est dans le détail, donc le détail s'ouvre. Ce dépli n'est pas un
       // geste du patient, et rien n'est consigné ([[D-315]] §1).
-      setDetailDeplie(
-        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0,
-      );
+      const dejaDeplie =
+        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0;
+      setDetailDeplie(dejaDeplie);
+      setLectureConsignee(dejaDeplie);
       setCheckin(dc.ok ? dc : null);
     } catch {
       setProtocole(null);
@@ -176,6 +181,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ espece: 'protocole', cycleRef: vue.cycleRef }),
+    }).then((res) => {
+      if (res.ok) setLectureConsignee(true);
     }).catch(() => {
       // Silence délibéré : le patient a ouvert son protocole, rien d'autre.
     });
@@ -247,7 +254,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
         {/* « IMPRIMER MON PROTOCOLE » ([[D-392]], lettre bh) — dans le détail
             déplié seulement : il imprime ce détail-là. La route décide
             (drapeau, dossier majeur) ; absent, aucun lien. */}
-        {protocole.imprimable && !finDeCycle && detailDeplie && (vue.actions.length > 0 || vue.followUpCriterion) && (
+        {protocole.imprimable && !finDeCycle && detailDeplie && lectureConsignee && (vue.actions.length > 0 || vue.followUpCriterion) && (
           <Link href={`/portail/${token}/protocole`} className={patientButtonClassName('ghost')}>
             {LIEN_PROTOCOLE_IMPRIMABLE}
           </Link>

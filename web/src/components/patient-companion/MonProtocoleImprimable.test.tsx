@@ -79,6 +79,25 @@ describe('MonProtocoleImprimable', () => {
     expect(pied[1].startsWith(`${PREFIXE_MENTION_IMPRESSION} `)).toBe(true);
   });
 
+  it('la date d’impression est reprise à l’impression : ouverte avant minuit, imprimée après', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 23 h 30 à Paris le 28 octobre (UTC+1 depuis le 25).
+      vi.setSystemTime(new Date('2026-10-28T22:30:00Z'));
+      mockFetch(servi);
+      const { container } = render(<MonProtocoleImprimable token="TOK" />);
+      await screen.findByText('Petit-déjeuner protéiné');
+      const impression = () => container.querySelectorAll('footer > p')[1]?.textContent;
+      expect(impression()).toBe(`${PREFIXE_MENTION_IMPRESSION} 28 octobre 2026.`);
+      // 0 h 30 à Paris le 29 : Ctrl+P déclenche `beforeprint`.
+      vi.setSystemTime(new Date('2026-10-28T23:30:00Z'));
+      window.dispatchEvent(new Event('beforeprint'));
+      expect(impression()).toBe(`${PREFIXE_MENTION_IMPRESSION} 29 octobre 2026.`);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('les numéros d’urgence du portail, tels quels, visibles à l’impression seulement', async () => {
     mockFetch(servi);
     const { container } = render(<MonProtocoleImprimable token="TOK" />);

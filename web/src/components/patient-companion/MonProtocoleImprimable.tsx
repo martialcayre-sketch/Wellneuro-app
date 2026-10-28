@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { PiedDePageUrgence } from '@/components/patient/PiedDePageUrgence';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -23,6 +24,15 @@ import { DetailDuProtocole, EncartConduite, type ProtocoleResponse, type Protoco
 export function MonProtocoleImprimable({ token }: { token: string }) {
   const router = useRouter();
   const [protocole, setProtocole] = useState<ProtocoleServi | null>(null);
+  // LA DATE D'IMPRESSION EST CELLE DE L'IMPRESSION ([[D-392]] §2) : une page
+  // ouverte avant minuit et imprimée après porterait la veille. `beforeprint`
+  // part aussi sur Ctrl+P ; `flushSync` rend la date avant la mise en page.
+  const [instantImpression, setInstantImpression] = useState(() => new Date());
+  useEffect(() => {
+    const avantImpression = () => flushSync(() => setInstantImpression(new Date()));
+    window.addEventListener('beforeprint', avantImpression);
+    return () => window.removeEventListener('beforeprint', avantImpression);
+  }, []);
 
   useEffect(() => {
     let actif = true;
@@ -70,7 +80,7 @@ export function MonProtocoleImprimable({ token }: { token: string }) {
 
   const { vue } = protocole;
   const mention = protocole.valideLe ? mentionValidation(protocole.valideLe) : null;
-  const impression = mentionImpression(new Date());
+  const impression = mentionImpression(instantImpression);
 
   return (
     <article className="space-y-4">

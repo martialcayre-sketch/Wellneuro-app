@@ -1,12 +1,18 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { protocoleImprimableOuvert, protocoleImprimableServi } from './protocoleImprimable';
 
 const MAINTENANT = Date.parse('2026-10-28T12:00:00Z');
 
+// Drapeau absent au départ de chaque cas, quel que soit l'environnement du
+// poste ; la valeur d'origine est rendue après.
+beforeEach(() => {
+  vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', undefined);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe('WN_PORTAIL_PROTOCOLE_IMPRIMABLE ([[D-392]] §5)', () => {
-  afterEach(() => {
-    delete process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE;
-  });
 
   it('absent : fermé', () => {
     expect(protocoleImprimableOuvert()).toBe(false);
@@ -22,16 +28,12 @@ describe('WN_PORTAIL_PROTOCOLE_IMPRIMABLE ([[D-392]] §5)', () => {
 });
 
 describe('servi aux seuls majeurs ([[D-392]] §3)', () => {
-  afterEach(() => {
-    delete process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE;
-  });
-
   it('drapeau fermé : jamais servi, même à un majeur', () => {
     expect(protocoleImprimableServi('1980-05-12', MAINTENANT)).toBe(false);
   });
 
   it('drapeau ouvert : servi au majeur', () => {
-    process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+    vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
     expect(protocoleImprimableServi('1980-05-12', MAINTENANT)).toBe(true);
   });
 
@@ -41,7 +43,7 @@ describe('servi aux seuls majeurs ([[D-392]] §3)', () => {
     ['date vide', ''],
     ['date illisible', '12/05/1980'],
   ])('drapeau ouvert, %s : refusé', (_cas, date) => {
-    process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+    vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
     expect(protocoleImprimableServi(date, MAINTENANT)).toBe(false);
   });
 });

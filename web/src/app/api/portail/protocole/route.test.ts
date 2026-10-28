@@ -495,8 +495,13 @@ describe('GET /api/portail/protocole', () => {
         email: assignation.emailPatient, dateNaissance,
       });
     }
+    // Drapeau absent au départ de chaque cas, quel que soit l'environnement du
+    // poste ; la valeur d'origine est rendue après.
+    beforeEach(() => {
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', undefined);
+    });
     afterEach(() => {
-      delete process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE;
+      vi.unstubAllEnvs();
     });
 
     it('drapeau fermé : absent, et la date de naissance n’est pas lue', async () => {
@@ -512,7 +517,7 @@ describe('GET /api/portail/protocole', () => {
     });
 
     it('drapeau ouvert, dossier majeur : annoncé', async () => {
-      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
       mockOwnerAuth();
       mockProtocoleDiffuse();
       avecNaissance('1980-05-12');
@@ -524,7 +529,7 @@ describe('GET /api/portail/protocole', () => {
       ['mineur', '2015-01-01'],
       ['date manquante', null],
     ])('drapeau ouvert, dossier %s : absent', async (_cas, date) => {
-      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
       mockOwnerAuth();
       mockProtocoleDiffuse();
       avecNaissance(date);
@@ -534,7 +539,7 @@ describe('GET /api/portail/protocole', () => {
     });
 
     it('drapeau ouvert, sans protocole servi : absent', async () => {
-      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
       mockOwnerAuth();
       avecNaissance('1980-05-12');
       prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
@@ -544,7 +549,7 @@ describe('GET /api/portail/protocole', () => {
     });
 
     it('drapeau ouvert, date de naissance illisible en base : le protocole est servi, sans imprimable', async () => {
-      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
       mockOwnerAuth();
       mockProtocoleDiffuse();
       const proprietaire = {
@@ -564,7 +569,7 @@ describe('GET /api/portail/protocole', () => {
     });
 
     it('drapeau ouvert, protocole indisponible : absent', async () => {
-      process.env.WN_PORTAIL_PROTOCOLE_IMPRIMABLE = 'true';
+      vi.stubEnv('WN_PORTAIL_PROTOCOLE_IMPRIMABLE', 'true');
       mockOwnerAuth();
       mockProtocoleDiffuse();
       avecNaissance('1980-05-12');
