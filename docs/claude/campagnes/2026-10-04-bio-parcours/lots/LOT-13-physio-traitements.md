@@ -272,7 +272,7 @@ responsable.
   médecin) —, conditions v5, e-mail `conditions_utilisation@5`, déclaration
   du dossier RGPD corrigée ; textes validés tels quels par le responsable le
   2026-10-28 (`docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/`).
-  Durées de [[D-378]] en v23. Merge et allumage fixés au 2026-10-29 :
+  Durées de [[D-378]] en v23. Merge et allumage avancés au 2026-10-28 :
   condition (4) remplie au merge.
 
 ## Hors périmètre

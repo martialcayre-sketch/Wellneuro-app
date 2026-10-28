@@ -116,6 +116,8 @@ Le 2026-10-28, sur question à options : la v22 (A1, A2), le résumé des
 conditions v5 (B1), la phrase de tête de l'e-mail @5 (B2) et la déclaration
 du dossier RGPD (C) sont **validés tels quels**. Allumage fixé au
 **2026-10-29** : la PR se merge ce jour-là, `publieLe` porte cette date.
+Le même soir, le responsable avance le merge et l'allumage au **2026-10-28**
+(« feu maintenant ») : `publieLe` porte cette date.
 
 **Retouche de la déclaration RGPD, même jour** (revue `wn-reviewer`) : l'export
 porte aussi les traitements arrêtés ; le document destiné au médecin est

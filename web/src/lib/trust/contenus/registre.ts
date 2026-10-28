@@ -1799,7 +1799,7 @@ const DONNEES_CONFIDENTIALITE_V21: VersionDocumentTrust = {
 //
 // Texte et résumé validés tels quels par le responsable le 2026-10-28, en session.
 //
-// PUBLIÉE LE JOUR DE L'ALLUMAGE de `WN_PHYSIO_TRAITEMENTS` (2026-10-29), pas
+// PUBLIÉE LE JOUR DE L'ALLUMAGE de `WN_PHYSIO_TRAITEMENTS` (2026-10-28), pas
 // avant ([[D-335]] §9) : elle décrit une saisie qui n'existe pas drapeau éteint.
 // Elle entraîne les conditions v5 ([[D-292]] §5).
 const PARAGRAPHE_PHYSIO_TRAITEMENTS_D335 =
@@ -1827,7 +1827,7 @@ const DONNEES_CONFIDENTIALITE_V22: VersionDocumentTrust = {
   changeLevel: 'information_substantielle',
   changeSummary:
     'Votre fiche de renseignements vous demande désormais votre sexe et, s’il y a lieu, où en sont vos cycles ; vos médicaments et compléments s’y notent un par un, et votre praticien peut les confirmer ou les corriger. Cette version dit ce qui en est gardé et qui le voit. Le reste ne change pas.',
-  publieLe: '2026-10-29',
+  publieLe: '2026-10-28',
   requiresAcknowledgement: true,
   hash: 'f4d3078b312e0033c9eddc21b700c2888733a868ad6172a8223147718d597600',
 };
@@ -2057,7 +2057,7 @@ const CONDITIONS_UTILISATION_V5: VersionDocumentTrust = {
   changeLevel: 'information_substantielle',
   changeSummary:
     'La partie « Vos données personnelles » dit que votre fiche de renseignements vous demande désormais votre sexe et, s’il y a lieu, où en sont vos cycles, et que vos médicaments et compléments s’y notent un par un. Le reste ne change pas.',
-  publieLe: '2026-10-29',
+  publieLe: '2026-10-28',
   requiresAcknowledgement: true,
   hash: 'a5e5ee163a7a6797ebebe13369bd9222ed7d5fa292ccc5b1dd757649dd12d8a1',
 };
