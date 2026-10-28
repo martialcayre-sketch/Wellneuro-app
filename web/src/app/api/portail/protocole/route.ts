@@ -18,6 +18,7 @@ import {
 } from '@/lib/protocol/vuePatientSurLeFil';
 import { lectureProtocoleOuverte } from '@/lib/portail/lectureProtocole';
 import { encartConduiteOuvert } from '@/lib/portail/encartConduite';
+import { protocoleImprimableOuvert, protocoleImprimableServi } from '@/lib/portail/protocoleImprimable';
 import {
   creeeSousGardeEtendue,
   troisPlansOuverts,
@@ -131,6 +132,12 @@ type GetResponse =
        * plan minimal seul, comme avant.
        */
       troisPlans?: TroisPlansAction[];
+      /**
+       * L'IMPRIMABLE DU PROTOCOLE ([[D-392]], lettre bh). Présent seulement
+       * quand `WN_PORTAIL_PROTOCOLE_IMPRIMABLE` est ouvert, qu'une vue est
+       * servie et que le dossier est majeur (§3). Absent, ni lien ni page.
+       */
+      imprimable?: true;
     }
   | ErrorResponse;
 
@@ -257,6 +264,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const troisPlans = troisPlansOuverts() && creeeSousGardeEtendue(row.createdAt)
       ? troisPlansServis({ actionsServies: vue.actions, actionsDuProtocole: draft.actions, pauses })
       : [];
+    // MAJEURS SEULS ([[D-392]] §3) : la date de naissance n'est lue que
+    // drapeau ouvert ; absente ou illisible, rien n'est servi.
+    const imprimable = protocoleImprimableOuvert()
+      && protocoleImprimableServi(
+        (await prisma.patient.findUnique({ where: { idPatient: auth.idPatient }, select: { dateNaissance: true } }))?.dateNaissance,
+        Date.now(),
+      );
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null, pauses,
@@ -264,6 +278,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       ...(lectureDuDetail ? { lectureDuDetail } : {}),
       ...(encartConduiteOuvert() ? { encartConduite: true as const } : {}),
       ...(troisPlans.length > 0 ? { troisPlans } : {}),
+      ...(imprimable ? { imprimable: true as const } : {}),
     });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {

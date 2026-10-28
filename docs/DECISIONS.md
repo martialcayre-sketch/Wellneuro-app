@@ -6,6 +6,60 @@
 
 ## Décisions actives
 
+### D-392 — bh : le protocole servi s'imprime depuis une page « Imprimer mon protocole », identique au détail, datée en pied, sans trace, majeurs seuls, sans place dans la file C (lettre bh, H69)
+
+- Date : 2026-10-28
+- Statut : accepté — sept arbitrages du responsable du 2026-10-28 sur
+  questions à options (quatre de forme, deux textes, l'encart).
+- Domaine : portail patient, protocole de 21 jours ; route
+  `api/portail/protocole` ; fiche H69 ; ouverture sans place numérotée de la
+  file C. Applique [[D-384]] §3 (l'imprimable lit les trois plans) et
+  [[D-311]] (bh garde son propre gabarit, distinct de celui de av).
+- Ne touche pas : aucune migration, aucune table, aucune écriture ; aucune
+  règle clinique ; aucun texte neuf hors des deux de §4 ; le journal de
+  lecture du protocole ([[D-315]]) est inchangé.
+
+**§1 — Une page, la même décision serveur.** Le patient imprime son protocole
+depuis une page dédiée du portail (`/portail/[token]/protocole`), sur le modèle
+du bilan et des fiches : un bouton « Imprimer ou enregistrer en PDF », la
+navigation masquée à l'impression. La page lit la même route que l'accueil
+(`api/portail/protocole`) et rend le détail par le même composant : titre,
+raison, axe, actions sous leur régime (trois plans si la version les porte,
+[[D-386]] ; attente de bilan ; pause et ses textes signés, [[D-281]]), critère
+à trois semaines. Rien n'est recalculé à part. Écarté : une feuille de style
+d'impression sur l'accueil, qui porte d'autres blocs à masquer un par un.
+
+**§2 — Ce qui s'imprime en plus, ce qui ne s'imprime pas.** L'encart « quand
+ralentir ou demander avis » ([[D-349]]) figure sur l'imprimé, tel que servi.
+Le pied porte la mention « Validé par votre praticien le … » ([[D-369]]),
+puis « Imprimé le … » (date en lettres, heure de Paris). Ni « Jour difficile ? »,
+ni les liens, ni les boutons, ni la progression du suivi : le plan de secours
+se lit déjà sous « Si c'est plus dur ».
+
+**§3 — Aucune trace, majeurs seuls.** Imprimer n'écrit rien (écarté : une
+route `impression` journalisée, comme les courriers). La page et son lien sont
+servis aux seuls dossiers majeurs (garde de « Mes échanges » et de la
+bibliothèque, [[D-357]] §5) : un dossier mineur ou d'âge inconnu ne reçoit
+aucune surface neuve ([[D-283]] §5).
+
+**§4 — Textes.** Deux textes neufs, acceptés le 2026-10-28 :
+- le lien, dans le détail déplié : « Imprimer mon protocole » ;
+- le pied, après la mention de validation : « Imprimé le … » (« Imprimé le
+  28 octobre 2026. »).
+
+Textes réutilisés tels quels : le bouton du bilan et des fiches (« Imprimer ou
+enregistrer en PDF »), le retour « ← Mon parcours », le titre « Votre
+accompagnement », la mention de [[D-369]], les intitulés de [[D-384]] §2,
+l'encart de [[D-349]].
+
+**§5 — Drapeau, ouverture.** `WN_PORTAIL_PROTOCOLE_IMPRIMABLE`, valeur exacte
+`true`, neuf et éteint à la livraison. Fermé : ni lien ni page (404). bh ne
+prend pas de place dans la file C (arbitrage du 2026-10-28) : elle s'ouvre
+sous son drapeau, constatée sur un vrai dossier, sans rang devant ni derrière
+une autre ouverture. Critère de fin de H69 : l'imprimé est la page servie ce
+jour-là, avec sa date de validation ; un banc de concordance en tient la
+preuve.
+
 ### D-391 — BP-13 : les conditions de l'allumage de `WN_PHYSIO_TRAITEMENTS` — la garde de population reste sur l'anamnèse jusqu'à la première exclusion curée ; l'export du dossier porte les lignes ; la vigilance les lit hors drapeau, un point par traitement ; texte patient en v22 (précise D-335 §8 et §9)
 
 - Date : 2026-10-28
