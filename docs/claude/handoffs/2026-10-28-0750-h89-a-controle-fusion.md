@@ -94,6 +94,12 @@ la lettre de D-373 §4 :
 - CodeRabbit (eba2e608) : une remarque, corrigée. Un « sain » en cache
   masquait `mergeable` à faux ; le contrôle passe avant la lecture du cache,
   et le banc couvre le cas.
+- CodeRabbit (5f74a750) : trois remarques, toutes corrigées.
+  - Un fichier Vitest vert sans assertion réussie rend « indéterminé ».
+    Aucun banc réel dans ce cas : 0 sur 144 `guard` et 0 sur 12 bancs de
+    balayage, mesuré le 2026-10-28.
+  - Formulation du code 2 précisée dans ce handoff.
+  - `globSync` ajouté à la limite du banc de parité.
 - Fusions de `main` pendant la PR : #1751, puis #1749 et #1752, toutes
   propres.
 
@@ -102,14 +108,19 @@ la lettre de D-373 §4 :
 - **`wn-merge` n'appelle pas encore les scripts** : c'est la PR (b).
 - **Questions de la revue pour la PR (b) :**
   - Merge par `--match-head-commit` sur la tête contrôlée.
-  - Conduite sur le code 2 : une PR qui change le verrou ou le schéma rend
-    toujours « indéterminé » avec la copie principale comme source.
+  - Conduite sur le code 2. Avec la copie principale comme source, rend
+    « indéterminé » :
+    - une PR qui change le schéma ;
+    - une PR qui change une dépendance installée (version, intégrité) ;
+    - une PR qui ajoute ou retire un paquet non optionnel du verrou.
+
+    Un paquet optionnel absent n'est pas un écart.
   - Le `fetch` d'`origin/main`, partagé par les worktrees, avance le garde
     de fraîcheur des sessions concurrentes. Ce n'est pas nouveau : la sonde
     H88 le fait déjà.
 - **Limites connues :**
-  - Banc de parité : un balayage hors `readdirSync`, `opendirSync`, `glob`
-    ou `readdir`, ou caché dans un module d'aide, n'est pas vu. Aucun cas
+  - Banc de parité : un balayage hors `readdirSync`, `opendirSync`,
+    `globSync`, `glob` ou `readdir`, ou caché dans un module d'aide, n'est pas vu. Aucun cas
     aujourd'hui.
   - Un `.package-lock.json` caché périmé (installation interrompue) passerait
     l'empreinte.

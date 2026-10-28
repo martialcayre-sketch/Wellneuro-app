@@ -114,6 +114,9 @@ test('rapport Vitest : états et assertions en échec ; absent du rapport = ind�
   // Un fichier rouge sans assertion rouge (import cassé) : rouge au niveau du fichier.
   assert.deepEqual(etats.get('vitest:web/src/d.guard.test.ts'), { etat: 'echec', signatures: ['(fichier)'] });
   assert.equal(lireRapportVitest(null, ['web/src/a.guard.test.ts'], '/tmp/arbre', 1).get('vitest:web/src/a.guard.test.ts').etat, 'indetermine');
+  // Vert sans assertion réussie (tout sauté) : rien n'est prouvé.
+  const saute = { testResults: [{ name: '/tmp/arbre/web/src/a.guard.test.ts', status: 'passed', assertionResults: [{ fullName: 'x', status: 'skipped' }] }] };
+  assert.equal(lireRapportVitest(saute, ['web/src/a.guard.test.ts'], '/tmp/arbre', 0).get('vitest:web/src/a.guard.test.ts').etat, 'indetermine');
 });
 
 test('rapport Vitest : sortie en erreur sans aucun fichier rouge — tout indéterminé, jamais vert', () => {
@@ -316,7 +319,7 @@ function gardesSimules(regle, appels = []) {
           testResults: fichiers.map((f) => ({
             name: join(cwd, f),
             status: echecs.length ? 'failed' : 'passed',
-            assertionResults: echecs.map((fullName) => ({ fullName, status: 'failed' })),
+            assertionResults: [{ fullName: 'passe', status: 'passed' }, ...echecs.map((fullName) => ({ fullName, status: 'failed' }))],
           })),
         }),
       );

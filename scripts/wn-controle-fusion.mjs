@@ -194,7 +194,12 @@ export function lireRapportVitest(rapport, attendus, dossier, code) {
       continue;
     }
     const enEchec = (r.assertionResults ?? []).filter((a) => a.status === 'failed').map((a) => `test : ${a.fullName ?? a.title}`);
-    etats.set(`vitest:${f}`, r.status === 'passed' ? { etat: 'ok', signatures: [] } : { etat: 'echec', signatures: enEchec.length ? [...new Set(enEchec)].sort() : ['(fichier)'] });
+    if (r.status === 'passed') {
+      // Vert sans aucune assertion réussie (tout sauté) : rien n'est prouvé
+      // (revue CodeRabbit de #1753 ; aucun banc dans ce cas le 2026-10-28).
+      const prouve = (r.assertionResults ?? []).some((a) => a.status === 'passed');
+      etats.set(`vitest:${f}`, prouve ? { etat: 'ok', signatures: [] } : { etat: 'indetermine', signatures: [] });
+    } else etats.set(`vitest:${f}`, { etat: 'echec', signatures: enEchec.length ? [...new Set(enEchec)].sort() : ['(fichier)'] });
   }
   const aucunEchec = [...etats.values()].every((e) => e.etat !== 'echec');
   if ((code !== 0 || rapport?.success === false) && aucunEchec) {
