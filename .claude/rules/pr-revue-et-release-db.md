@@ -161,6 +161,30 @@ conditions tiennent ensemble :
   dans la liste des runs : un run sur commentaire porte la tête de `main`
   et aucun numéro de PR.
 
+Le lecteur `node scripts/wn-revue-pr-agent.mjs <N>` rend les quatre
+conditions une à une : `0` seul vaut preuve, `1` défaut, `2` lecture
+impossible (jamais un `0`). Il est plus strict que la lettre, jamais plus
+ouvert (détail en tête du script) :
+- (a) le dernier run `pull_request` de la tête fait foi, et son journal
+  doit nommer cette PR seule (« Reviewing PR: …/pulls/<N> ») ;
+- (b) un fichier écarté sans compression (extension refusée, patch non
+  étendu ou trop gros, fichier illisible) fait échouer ;
+- (c) l'écriture est bornée par la fin du run ; l'en-tête « Review updated
+  until commit » doit nommer la tête ; un pied « Review coverage » ou
+  « Chunked review » fait échouer — sans remarque, une revue rognée n'a pas
+  de bloc, donc pas d'`excluded_files`, et ce pied est sa seule trace
+  (constaté sur #1764) ;
+- (d) la fenêtre n'a pas de fin ; revues et commentaires en ligne de
+  PR-Agent comptent ; l'avis doit nommer la tête ; la commande d'un robot
+  compte ; tout run sur commentaire du dépôt actif pendant le run, dont le
+  journal ne dit pas qu'il a ignoré son commentaire, fait échouer (une
+  commande postée avant le début, éditée ou supprimée).
+
+Il ne vérifie pas que CodeRabbit a sauté la PR, et ne distingue pas un
+commentaire contrefait par un autre workflow muni d'un jeton d'écriture :
+une PR qui en ajoute un relève de la revue humaine. Lecture à la main, pour
+un constat :
+
 ```bash
 gh run list --workflow pr_agent.yml --event pull_request --commit <tête> --json databaseId,conclusion > run.json
 gh run view <id> --log > run.log        # chercher « returning full diff » et « pruning diff »
