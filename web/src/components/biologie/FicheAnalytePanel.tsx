@@ -117,8 +117,10 @@ export function FicheAnalytePanel({
         )}
       </dl>
 
-      {/* D-320 §3 : la règle non indiquée dont cet analyte est l'alternative,
-          motif verbatim de la table signée, jamais reformulé. */}
+      {/* D-320 §3 : la règle non indiquée dont cet analyte est l'alternative.
+          D-389 §3 : le motif, reproduit mot pour mot de la table signée, est
+          la lecture signée du responsable, pas une citation du claim ; le
+          claim est cité à part, par son identifiant et sa version. */}
       {fiche.nonIndiques.length > 0 && (
         <section aria-label="Exploration non indiquée" className="flex flex-col gap-2">
           <h5 className="text-sm font-semibold text-foreground">Exploration non indiquée</h5>
@@ -130,8 +132,13 @@ export function FicheAnalytePanel({
               <p className="text-sm font-medium text-foreground">
                 {item.exploration} : non indiqué actuellement
               </p>
-              <p className="mt-1 text-sm text-foreground">« {item.motif} »</p>
-              <p className="mt-1 text-xs text-muted-foreground">Source : {item.claimId}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Motif de la table signée (lecture du responsable)
+              </p>
+              <p className="text-sm text-foreground">{item.motif}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Claim cité : {item.claimId} ({item.versionClaim})
+              </p>
             </div>
           ))}
         </section>

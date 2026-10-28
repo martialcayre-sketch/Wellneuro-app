@@ -3,12 +3,15 @@
 // (D-320 §2), les deux règles `non_indique_actuellement` de la table signée
 // — magnésium plasmatique, cortisol matinal isolé — n'avaient plus d'écran :
 // leurs bilans ne portent aucun analyte. Elles s'affichent sur la fiche de
-// l'exploration que leur motif VERBATIM désigne comme pertinente.
+// l'exploration que leur motif désigne comme pertinente.
 //
-// Le rattachement ci-dessous est le seul texte écrit ici. Le motif et le claim
-// viennent tels quels de la table signée (`indicationsBiologieV1.ts`, jamais
-// reformulés), et rien ne s'affiche si sa signature ne tient plus. Une règle
-// non indiquée ajoutée à la table sans rattachement fait rougir le banc.
+// Le motif est la lecture signée du claim, reproduite mot pour mot de la table
+// (D-389 §1) : ce n'est pas une citation du claim, qui est cité à part par son
+// identifiant et sa version. Le rattachement ci-dessous est le seul texte
+// écrit ici. Le motif, le claim et sa version viennent tels quels de la table
+// signée (`indicationsBiologieV1.ts`, jamais reformulés), et rien ne s'affiche
+// si sa signature ne tient plus. Une règle non indiquée ajoutée à la table
+// sans rattachement fait rougir le banc.
 import {
   INDICATIONS_BIOLOGIE_METADATA,
   INDICATIONS_BIOLOGIE_V1,
@@ -28,9 +31,12 @@ export const ANALYTE_ALTERNATIF_NON_INDIQUE: Readonly<Record<string, string>> = 
 export type ExplorationNonIndiquee = {
   /** Libellé du bilan visé par la règle (« Magnésium plasmatique »). */
   exploration: string;
-  /** Motif verbatim de la table signée. */
+  /** Motif de la table signée, reproduit mot pour mot : lecture signée du
+   *  responsable, pas une citation du claim (D-389 §1). */
   motif: string;
+  /** Claim cité à part, par son identifiant et sa version (D-389 §3). */
   claimId: string;
+  versionClaim: string;
 };
 
 /** Les règles non indiquées publiées de la table signée. */
@@ -58,10 +64,17 @@ export function explorationsNonIndiqueesParAnalyte(
   for (const regle of reglesNonIndiquees(regles)) {
     const analyteCode = ANALYTE_ALTERNATIF_NON_INDIQUE[regle.id];
     const exploration = libellesBilans.get(regle.panelCode);
-    const claimId = regle.justificationClaims[0]?.claimId;
-    if (!analyteCode || !exploration || !regle.motif || !claimId) continue;
+    const claim = regle.justificationClaims[0];
+    if (!analyteCode || !exploration || !regle.motif || !claim?.claimId || !claim.versionClaim) {
+      continue;
+    }
     const liste = parAnalyte.get(analyteCode) ?? [];
-    liste.push({ exploration, motif: regle.motif, claimId });
+    liste.push({
+      exploration,
+      motif: regle.motif,
+      claimId: claim.claimId,
+      versionClaim: claim.versionClaim,
+    });
     parAnalyte.set(analyteCode, liste);
   }
   return parAnalyte;
