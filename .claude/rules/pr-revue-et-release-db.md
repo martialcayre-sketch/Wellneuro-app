@@ -131,6 +131,46 @@ la tête n'a pas été relue. Un
 correctif poussé après la dernière revue n'est pas relu tant qu'une revue
 neuve ne le dit pas.
 
+**PR-Agent en substitution** (`D-393` §1 et §2). Si CodeRabbit saute la PR
+(statut `skipping`) ou bute sur son quota (« Review rate limited »), la
+revue de PR-Agent sur la tête le remplace, et seulement si les quatre
+conditions tiennent ensemble :
+
+- (a) un run du workflow `PR-Agent`, événement `pull_request`, `head_sha`
+  = tête, conclu `success`. Un run lancé par un commentaire ne compte pas,
+  et un run rouge ne prouve rien ;
+- (b) son journal dit « returning full diff », jamais « pruning diff » ;
+- (c) le commentaire persistant de `github-actions[bot]` (marqueur
+  `pr-agent:review:full`) existe. S'il porte un bloc
+  `pr-agent-review-state:v1`, il n'en porte qu'un, avec `last_run.head_sha`
+  = tête et `excluded_files` vide. `complete` ne s'exige pas : il passe à
+  faux dès que la revue atteint son nombre maximal de remarques. Sans bloc
+  (aucune remarque depuis l'ouverture), le commentaire a été écrit pendant
+  ce run : `updated_at` (ou `created_at` à la première revue) postérieur
+  au `run_started_at` du run ;
+- (d) aucun autre commentaire de PR-Agent publié pendant ce run (revue
+  « non autoritative », publiée à part quand l'état est illisible), et
+  aucun run sur commentaire après lui, sur la même tête.
+
+```bash
+gh run list --workflow pr_agent.yml --event pull_request --commit <tête> --json databaseId,conclusion > run.json
+gh run view <id> --log > run.log        # chercher « returning full diff » et « pruning diff »
+gh run view <id> --json startedAt > debut.json
+gh api --paginate --slurp repos/{owner}/{repo}/issues/<N>/comments > commentaires.json  # github-actions : bloc, dates
+gh run list --workflow pr_agent.yml --event issue_comment --json createdAt,conclusion > sur-commentaire.json
+```
+
+Constaté sur #1766 (2026-10-28), v0.49.0 : `/review -i` ne nomme que le
+premier commit nouveau, ne met pas le bloc à jour et, après une fusion de
+`main`, relit le code de `main` comme s'il venait de la PR. **Il ne compte
+jamais** : le workflow fait une revue complète à chaque push. Au-delà du
+plafond de contexte, le diff compressé peut omettre des blocs de
+suppression sans le dire : une telle PR attend CodeRabbit, comme une PR
+dont tous les fichiers sont exclus du modèle (images, instantanés, lock),
+qui ne produit pas de revue (`D-393` §2 et §4). Si aucun bot ne
+remplit sa condition, la PR attend, sauf dérogation du responsable, par PR
+et jamais reportée.
+
 **1.7 Ce qu'un bot a poussé se relit, toujours.** Il peut avoir aligné le
 littéral d'un banc sur le code plutôt que l'inverse. Un banc ainsi « réparé » est
 vert et **ne mesure plus rien**. **CodeRabbit ne commite jamais** : ni
@@ -203,13 +243,23 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   aucune approbation automatique, et son approbation n'est pas requise. Le
   merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`) : pendant
   l'essai de `D-373`, l'intégrateur, pour les PR déclarées « prête @<sha> » ;
-  leur file, pour la migration, l'authentification et `.coderabbit.yaml`.
+  leur file, pour la migration, l'authentification, `.coderabbit.yaml` et
+  `pr_agent.yml` (`D-393` §6).
 - **Une remarque arrivée après « prête » revient à la file** (`D-373` §3),
   qui reprend depuis son handoff : l'intégrateur ne corrige pas une PR. Il
   lit la revue sur le sha déclaré et vérifie le verdict de chaque remarque.
 - **Le barème ne change pas.** CodeRabbit s'ajoute à `POLITIQUE_REVUE.md` sans
   remplacer aucune ligne : `/code-review medium` en P2, `wn-reviewer` en P1,
   Codex manuel obligatoire en P0.
+- **PR-Agent, quand il remplace CodeRabbit** (`D-393` §3 et §6). Il ne
+  publie pas de remarque en ligne. Ses remarques sont dans le commentaire
+  persistant, réécrit à chaque revue ; celles des têtes précédentes restent
+  dans le champ `findings` du bloc d'état. Leurs verdicts vont dans un
+  commentaire de PR distinct, qui cite chacune. Une remarque que PR-Agent
+  marque lui-même « résolue » n'a pas reçu de verdict. Une PR qui modifie
+  `.github/workflows/pr_agent.yml` est P1, comme `.coderabbit.yaml` :
+  `wn-reviewer` passe avant le merge, mission « la PR affaiblit-elle la
+  revue ? ». La revue de PR-Agent n'y compte pas pour cette question.
 
 ## 2. Merger
 
@@ -218,7 +268,7 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 | `--base main`, toujours | Une PR empilée sur une autre branche meurt au merge de sa base |
 | `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet>"` | Le sujet du squash vient du **commit**, pas du titre de la PR : trois `D-NNN` faux sur `main` (#943, #949, #950). Et sans `--match-head-commit`, un push arrivé après la revue part au merge sans revue — le statut `CodeRabbit` n'étant pas un check obligatoire, rien d'autre ne l'arrête (revue CodeRabbit de #1440) |
 | Avant chaque merge, l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné, registre, chevauchement, `main` inchangé), puis sa 7 ter, `node scripts/wn-sonde-release-db.mjs <N>` : `0` seul autorise (`D-373` §2 et §4, `D-374`) | #1590 mergée sur un vert vieux de sept heures, `main` rouge trois quarts d'heure (2026-10-20) ; #1577 mergée pendant la release de #1572 (2026-10-19, `D-374`) |
-| Une PR ordinaire se déclare « prête @<sha> », avec le chemin de son handoff et ses exceptions ; migration, authentification et `.coderabbit.yaml` restent à leur file (`D-373` §2 et §3) | Plusieurs sessions pouvaient merger, sur des conditions en prose qu'aucun verrou n'impose ; #1697, une session immobilisée un quart d'heure après son merge (2026-10-25) |
+| Une PR ordinaire se déclare « prête @<sha> », avec le chemin de son handoff et ses exceptions ; migration, authentification, `.coderabbit.yaml` et `pr_agent.yml` restent à leur file (`D-373` §2 et §3, `D-393` §6) | Plusieurs sessions pouvaient merger, sur des conditions en prose qu'aucun verrou n'impose ; #1697, une session immobilisée un quart d'heure après son merge (2026-10-25) |
 | L'intégrateur avance la copie principale par `git merge --ff-only`, après T1 si le lot touche les crochets ; un refus s'arbitre (`D-373` §2) | Une avance rapide ne réconcilie aucun historique divergent : l'interdit de fusion automatique tient |
 | `node scripts/wn-attendre-ci.mjs <N>`, un seul appel bloquant | `gh pr checks` en boucle ; et **jamais dans un tube** — un tube rend le code de `tail`, pas celui du script : un feu vert de merge fabriqué |
 | Comparer le `head=` du SNAPSHOT à la tête réelle | Enchaîné à un push, le script peut juger la tête **précédente** et rendre `0` |

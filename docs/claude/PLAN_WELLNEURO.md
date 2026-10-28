@@ -692,6 +692,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | D-371 | journal du plan en fragments | A | après H23 (D-372) | non | H90 |
 | CI | job `controles` en deux, puis cache de compilation | A | aucune | non | H91 |
 | D-375 §2, bilan | tolérance du crochet, bilan des trois essais | A | après H86, H89 et H90 | non | H92 |
+| D-393 | revue de substitution : PR-Agent remplace CodeRabbit sur la tête | A | aucune | non | H93 |
 | af | référence de fiche conseil sur l'action | A | 28 | non | H24 |
 | ag | rédaction assistée des zones du protocole | A | 5, 28 | non | H25 |
 | D-281, étape 3 | portail et pause, hors file C | A | 9 (fait) | non | F66 |
@@ -1084,6 +1085,15 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Décisions, textes** : D-375 §2 ; aucune décision neuve pour le bilan. Les lots optionnels (registre des décisions en fragments, sortie des états « livré » du plan, fichiers dérivés et drapeaux, contrats SQL joués par un script partagé, racine Git de l'appelant pour les outils de lecture, ruleset des réservations) se posent chacun en fiche à leur ouverture, selon les effets observés.
 - **Critère de fin** : tolérance en service, banc du crochet vert (retard sans chevauchement ni conflit : édition permise, avertissement une fois par état ; chevauchement ou conflit : refus ; état illisible : refus ; mode dégradé inchangé), revue faite ; bilan chiffré à deux semaines des trois essais (intégrateur, contrôle avant merge, journal du plan) publié dans cette fiche, sur les événements existants ; mesure « après » du gel par phases (D-374 §5) ; réexamen de la sortie des états « livré » tranché selon les seuils de D-371 §4.
 - **Journal** : `docs/claude/plan-journal/H92/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H92`.
+
+#### H93 · Revue de substitution : PR-Agent remplace CodeRabbit sur la tête
+- **Identifiant, piste** : D-393 (amende D-290 §1 et §3) ; outillage et gouvernance des PR ; file A.
+- **Rang** : 1.
+- **Portes, préalables** : aucune. La décision se merge avant le workflow (#1766), qui reste mergé par sa file (D-393 §6).
+- **Migration, release-db** : non ; touche `.github/workflows/pr_agent.yml`, `CLAUDE.md`, `docs/claude/REGLES_PR_MERGE.md`, `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10, `docs/claude/POLITIQUE_REVUE.md` et l'étape 6 de `wn-merge` ; revue `wn-reviewer` (P1, D-291 §4) et `/security-review` sur le workflow.
+- **Décisions, textes** : D-393 ; aucune autre décision.
+- **Critère de fin** : deux PR, dans cet ordre. (a) Décision et textes : D-393 au registre, lignes datées sous D-290 §1 et §3, textes alignés, bancs de `wn-merge` verts. (b) Workflow #1766 : en-tête aligné sur D-393, revue complète à chaque push, repli Sonnet, garde fork ; preuve de D-393 §2 constatée sur sa tête. Puis, sur de vraies PR, à constater et consigner ici : une première PR de code revue par PR-Agent en substitution et mergée sur cette preuve ; une revue sans remarque (aucun bloc d'état) ; une PR au-delà du plafond (« pruning diff ») ; un `/review` en commentaire d'un membre, et un commentaire de non-membre qui ne lance rien (après le merge de #1766) ; coût réel par revue, lu dans la console. Reste ouvert, sans porte : un lecteur scripté des trois conditions de D-393 §2, avec banc.
+- **Journal** : `docs/claude/plan-journal/H93/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H93`.
 
 ### Rang 2
 

@@ -78,7 +78,20 @@ dernière session.
 6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
    `verify` vert ne dit rien d'eux. **Pas de merge avant qu'une revue de
    `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
-   commentaire de synthèse qui le nomme). CodeRabbit écrit à **trois** endroits,
+   commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
+   (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
+   la revue de **PR-Agent** sur la tête le remplace (`D-393` §1). Elle ne
+   vaut que si les quatre conditions de `D-393` §2 tiennent, lues dans des
+   fichiers (commandes : `.claude/rules/pr-revue-et-release-db.md` §1.6) :
+   un run `pull_request` de `pr_agent.yml` conclu `success` sur la tête ;
+   un journal qui dit « returning full diff », jamais « pruning diff » ;
+   le commentaire persistant de `github-actions[bot]`, avec un bloc d'état
+   unique (`head_sha` = tête, `excluded_files` vide), ou sans bloc mais
+   écrit pendant ce run ; aucun autre commentaire de PR-Agent pendant ce
+   run ni run sur commentaire après lui. Un run sur commentaire ou une
+   revue `-i` ne compte pas. Si aucun bot ne remplit sa condition, ne pas merger. Les remarques
+   de PR-Agent (corps du commentaire, et `findings` du bloc) reçoivent leur
+   verdict dans un commentaire de PR distinct. CodeRabbit écrit à **trois** endroits,
    chacun redirigé vers un fichier puis relu : le commentaire de synthèse
    (`gh pr view <N> --json comments`), le **corps** de chaque revue —
    `.reviews[].body`, où logent « Nitpick » et « Outside diff range » —

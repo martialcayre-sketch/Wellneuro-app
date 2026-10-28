@@ -187,10 +187,11 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
   des branches par délégation du responsable. Pendant l'essai de `D-373`,
   l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
-  handoff, exceptions) ; migration, authentification et `.coderabbit.yaml`
-  restent à leur file. Pas de merge avant une revue de
+  handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
+  `pr_agent.yml` restent à leur file. Pas de merge avant une revue de
   `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
-  une. Détail : `docs/claude/REGLES_PR_MERGE.md`.
+  une —, ou, s'il saute ou bute sur son quota, celle de PR-Agent, prouvée
+  par son run sur la tête (`D-393` §2). Détail : `docs/claude/REGLES_PR_MERGE.md`.
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
   Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
   *en ligne*, absents du rollup et de `gh pr view --comments` :
