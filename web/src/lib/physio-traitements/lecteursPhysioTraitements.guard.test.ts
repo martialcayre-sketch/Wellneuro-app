@@ -27,8 +27,8 @@ const ACCES_ADMIS = [
   'web/src/components/physio-traitements/DeclarationsPatient.tsx',
   'web/src/components/physio-traitements/LienFicheRenseignements.tsx',
   'web/src/app/portail/[token]/page.tsx',
-  // La ligne de vigilance (§8) : les traitements en vigueur, sous drapeau ;
-  // le texte transmis à l'IA ne les reçoit pas.
+  // La ligne de vigilance (§8) : les traitements en vigueur, quel que soit
+  // le drapeau ([[D-391]] §4) ; le texte transmis à l'IA ne les reçoit pas.
   'web/src/lib/synthese/generation.ts',
   // La pièce de constat qui cite un traitement (§7) : vérifiée sous verrou,
   // décodée et dite « à relire » quand sa ligne n'est plus la tête.

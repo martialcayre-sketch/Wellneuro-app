@@ -7390,6 +7390,16 @@ approbation n'est pas requise. Le barème ne change pas : `/code-review medium`
 en P2, `wn-reviewer` en P1, Codex manuel obligatoire en P0 ; la revue de
 CodeRabbit s'y ajoute, elle n'en remplace aucune ligne.
 
+- **Mise à jour (2026-10-28, [[D-373]], H89)** : « l'assistant merge » se
+  lit désormais ainsi : la délégation du merge ne change pas, son porteur
+  change. Pendant l'essai, l'intégrateur, seul occupant de la copie
+  principale, merge les PR ordinaires que les files déclarent par un
+  commentaire « prête @<sha> » ([[D-373]] §2). Les lots de migration,
+  d'authentification et de `.coderabbit.yaml` restent mergés par leur file
+  ([[D-373]] §3). En repli ([[D-373]] §5), chaque session reprend ses
+  merges, avec les mêmes sondes et le même contrôle (skill `wn-merge`,
+  étapes 7 bis et 7 ter).
+
 **§2 — La configuration** (`.coderabbit.yaml`, chaque clé validée sur le
 schéma officiel `schema.v2.json`). Français, profil `chill`, résumé de haut
 niveau, sans poème, diagrammes, labels ni relecteurs suggérés. Revue
@@ -7605,6 +7615,14 @@ est borné par l'attention du responsable, relecteur unique, non par le code.
   `node scripts/wn-reserver-decision.mjs`, qui crée la référence
   `refs/tags/reserve/D-N` du premier numéro libre ; le garde tolère un trou
   réservé, en avertissement.
+- **Mise à jour (2026-10-28, [[D-373]], H89)** : « un merge à la fois, le
+  déploiement constaté avant le merge suivant » se lit désormais : borné aux
+  lots de migration, hors phase 1 de [[D-374]]. Une PR ordinaire merge sans
+  attendre le CI de `main` ni le déploiement ordinaire, qui converge seul
+  sur la prochaine tête verte ([[D-373]] §1, [[D-248]]). Les gestes d'avant
+  merge sont ceux du skill `wn-merge` (étapes 7 bis et 7 ter). « Jamais
+  d'auto-merge » : `allow_auto_merge` passé à faux le 2026-10-27, constaté
+  sur le dépôt (fiche H89, [[D-373]] §6).
 
 **§3 — L'ordre se lit au plan.** Les rangs et les portes du plan unique
 ([[D-285]]) font foi ; une date n'est qu'un repère. Un rang ne s'ouvre que
