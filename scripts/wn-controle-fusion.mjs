@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Contrôle avant merge sur l'arbre fusionné (D-373 §4). LECTURE SEULE pour le
-// dépôt : ni checkout, ni merge, ni push, aucune ref écrite. `git fetch` met à
-// jour `origin/main` et `FETCH_HEAD` ; `git merge-tree --write-tree` écrit des
+// dépôt : ni checkout, ni merge, ni push. Une seule ref bouge, `origin/main`,
+// par `git fetch` (avec `FETCH_HEAD`) ; `git merge-tree --write-tree` écrit des
 // objets d'arbre, jamais une ref ; le seul fichier écrit est le cache, sous le
 // répertoire Git commun.
 //
@@ -16,16 +16,23 @@
 // contrôle joue donc parfois sans nécessité, jamais à tort en moins. Il ne lit
 // pas l'état du CI de `main` : une PR qui répare `main` passe sans `main` vert.
 //
-// CE QU'IL JOUE. L'arbre fusionné (`main` + tête) : un conflit est un défaut.
-// Puis, si l'empreinte d'environnement concorde (verrou installé, schéma du
-// client Prisma), les gardes rapides de la liste explicite, sur l'arbre extrait
-// par `git archive` dans un dossier temporaire indexé (quelques bancs lisent
-// `git ls-files` ou `git grep`). Un garde rouge sur l'arbre fusionné est rejoué
-// sur `main` seul : rouge des deux côtés, il est préexistant, non imputable à
-// la PR — sinon une PR de réparation partielle serait refusée à tort.
+// CE QU'IL JOUE. L'arbre fusionné (`main` + tête) : un conflit est un défaut,
+// et un conflit que GitHub voit (`mergeable` à faux) aussi — `merge-tree`
+// applique `merge=union` de `.gitattributes`, GitHub non. Puis, si l'empreinte
+// d'environnement concorde (verrou installé, schéma du client Prisma), les
+// gardes rapides de la liste explicite, sur l'arbre extrait par `git archive`
+// dans un dossier temporaire indexé (quelques bancs lisent `git ls-files` ou
+// `git grep`). La numérotation y joue en mode local : sans base de PR, la
+// vérification « décision supprimée » du CI n'y est pas.
 //
-// CACHE. Un verdict déterminé (sain ou défaut) est gardé par couple
-// (`main`, tête) et par version de la liste ; un sha qui change l'invalide.
+// UN ROUGE NE SUFFIT PAS. Rejoué seul sur l'arbre fusionné, il doit le rester
+// (sinon : instable, indéterminé) ; puis rejoué dans les mêmes conditions sur
+// `main` seul. Vert sur `main`, ou absent de `main` : défaut. Rouge des deux
+// côtés : défaut seulement s'il porte un test ou une violation de plus que sur
+// `main` — sinon préexistant, non imputable, et une PR de réparation passe.
+//
+// CACHE. Un verdict déterminé (sain ou défaut confirmé) est gardé par couple
+// (`main`, tête) et par version du script ; un sha qui change l'invalide.
 // « Indéterminé » ne se met jamais en cache.
 //
 // CODES DE SORTIE — `0` seul autorise le merge :
@@ -33,7 +40,20 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,12 +68,13 @@ export const SORTIE_USAGE = 3;
 /**
  * Les gardes rapides de D-373 §4, sur liste explicite : numérotation du
  * registre, matrice de consommation, invariants du CI. Lancés par `node`
- * depuis la racine de l'arbre extrait.
+ * depuis la racine de l'arbre extrait. `sansVerdict` : codes de sortie qui
+ * disent « je ne peux pas juger » (le refus d'être vert de la numérotation).
  */
 export const GARDES_NODE = [
-  { id: 'numerotation', args: ['scripts/lib/decisions-numerotation.mjs'] },
-  { id: 'matrice', args: ['--test', 'scripts/wn-matrice-consommation.test.mjs'] },
-  { id: 'invariants-ci', args: ['--test', 'scripts/ci-invariants.test.mjs'] },
+  { id: 'numerotation', args: ['scripts/lib/decisions-numerotation.mjs'], sansVerdict: [2] },
+  { id: 'matrice', args: ['--test', '--test-reporter=tap', 'scripts/wn-matrice-consommation.test.mjs'], sansVerdict: [] },
+  { id: 'invariants-ci', args: ['--test', '--test-reporter=tap', 'scripts/ci-invariants.test.mjs'], sansVerdict: [] },
 ];
 
 /** Les bancs `*.guard.test.*` que Vitest collecte (son `include`, `web/vitest.config.ts`). */
@@ -80,14 +101,13 @@ export const BANCS_BALAYAGE = [
   'web/src/lib/supplement-library/uniteDosesVerrou.test.ts',
 ];
 
-/** Toute modification de la liste invalide le cache. */
-export const VERSION_LISTE = createHash('sha256')
-  .update(JSON.stringify({ GARDES_NODE, motif: MOTIF_GUARD.source, BANCS_BALAYAGE }))
-  .digest('hex')
-  .slice(0, 12);
+/** Toute modification du script — liste ou logique — invalide le cache. */
+export const VERSION_SCRIPT = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url))).digest('hex').slice(0, 12);
 
 const DELAI_NODE_MS = 3 * 60 * 1000;
 const DELAI_VITEST_MS = 15 * 60 * 1000;
+const PREFIXE_TMP = 'wn-controle-fusion-';
+const PURGE_MS = 6 * 60 * 60 * 1000;
 const TAMPON = 256 * 1024 * 1024;
 
 // ── Empreinte d'environnement ───────────────────────────────────────────────
@@ -116,13 +136,15 @@ export function comparerVerrous(verrou, installe) {
 }
 
 /**
- * L'empreinte (D-373 §4 : verrou, client Prisma). `verrouInstalle` `null` :
- * pas de `node_modules`. `schemaArbre`, `schemaSource` : oid du schéma dans
- * l'arbre et dans la copie source. `client` : `{ present, aJour }`, le client
- * généré n'étant pas plus ancien que le schéma de la source.
+ * L'empreinte (D-373 §4 : verrou, client Prisma). `verrouInstalle` : `null`
+ * si `node_modules` manque, `undefined` s'il est là sans le verrou caché de
+ * npm. `schemaArbre`, `schemaSource` : oid du schéma dans l'arbre et dans la
+ * copie source. `client` : `{ present, aJour }`, le client généré n'étant pas
+ * plus ancien que le schéma de la source.
  */
 export function ecartsEnvironnement({ verrouArbre, verrouInstalle, schemaArbre, schemaSource, client }) {
   if (verrouInstalle === null) return ['node_modules absent de la copie source'];
+  if (verrouInstalle === undefined) return ['node_modules sans node_modules/.package-lock.json dans la copie source (`npm ci`)'];
   const ecarts = comparerVerrous(verrouArbre, verrouInstalle);
   const resume = ecarts.length > 3 ? [...ecarts.slice(0, 3), `… ${ecarts.length - 3} autre(s)`] : ecarts;
   if (schemaArbre !== schemaSource) resume.push('schéma Prisma de l’arbre différent de celui de la copie source');
@@ -140,17 +162,43 @@ export function bancsVitest(fichiers) {
 }
 
 /**
- * Lit le rapport JSON de Vitest : un état par banc attendu. Un banc absent du
- * rapport est « indéterminé » — Vitest ignore sans erreur un filtre qui ne
- * correspond à rien.
+ * Ce qui rougit dans la sortie d'un garde `node` : les tests `not ok` (TAP),
+ * les violations `✗` de la numérotation, sans leur numéro de ligne — une
+ * décision ajoutée en tête décale les lignes d'une violation préexistante.
  */
-export function lireRapportVitest(rapport, attendus, dossier) {
-  const etats = new Map();
+export function signaturesNode(sortie) {
+  const s = new Set();
+  for (const ligne of String(sortie ?? '').split('\n')) {
+    const tap = /^\s*not ok \d+ - (.+)$/.exec(ligne);
+    if (tap) s.add(`test : ${tap[1].trim()}`);
+    else if (ligne.startsWith('✗ ')) s.add(ligne.replace(/(\.md):\d+/g, '$1').trim());
+  }
+  return [...s].sort();
+}
+
+/**
+ * Lit le rapport JSON de Vitest : un état et des signatures (assertions en
+ * échec) par banc attendu. Indéterminé : un banc absent du rapport (Vitest
+ * ignore sans erreur un filtre qui ne correspond à rien), ou tout banc sans
+ * échec quand Vitest sort en erreur sans en nommer aucun — une erreur hors
+ * test laisse le fichier « passed » dans le rapport.
+ */
+export function lireRapportVitest(rapport, attendus, dossier, code) {
   const vus = new Map();
-  for (const r of rapport?.testResults ?? []) vus.set(relative(dossier, r.name).split('\\').join('/'), r.status);
+  for (const r of rapport?.testResults ?? []) vus.set(relative(dossier, r.name).split('\\').join('/'), r);
+  const etats = new Map();
   for (const f of attendus) {
-    const s = vus.get(f);
-    etats.set(`vitest:${f}`, s === 'passed' ? 'ok' : s === 'failed' ? 'echec' : 'indetermine');
+    const r = vus.get(f);
+    if (!r || (r.status !== 'passed' && r.status !== 'failed')) {
+      etats.set(`vitest:${f}`, { etat: 'indetermine', signatures: [] });
+      continue;
+    }
+    const enEchec = (r.assertionResults ?? []).filter((a) => a.status === 'failed').map((a) => `test : ${a.fullName ?? a.title}`);
+    etats.set(`vitest:${f}`, r.status === 'passed' ? { etat: 'ok', signatures: [] } : { etat: 'echec', signatures: enEchec.length ? [...new Set(enEchec)].sort() : ['(fichier)'] });
+  }
+  const aucunEchec = [...etats.values()].every((e) => e.etat !== 'echec');
+  if ((code !== 0 || rapport?.success === false) && aucunEchec) {
+    for (const id of etats.keys()) etats.set(id, { etat: 'indetermine', signatures: [] });
   }
   return etats;
 }
@@ -158,7 +206,8 @@ export function lireRapportVitest(rapport, attendus, dossier) {
 /**
  * Joue les gardes dans `dossier` (arbre extrait). `seulement` : ids à
  * rejouer, ou `null` pour tous. `executer(cmd, args, { cwd, timeout })` rend
- * `{ code, signal, erreur }`. Rend une Map id → 'ok' | 'echec' | 'indetermine'.
+ * `{ code, signal, erreur, sortie }`. Rend une Map id → `{ etat, signatures }`,
+ * `etat` valant 'ok', 'echec' ou 'indetermine'.
  */
 export function jouerGardes({ dossier, vitest, seulement = null, executer, lireFichier }) {
   const etats = new Map();
@@ -166,14 +215,22 @@ export function jouerGardes({ dossier, vitest, seulement = null, executer, lireF
   for (const g of GARDES_NODE) {
     if (!voulu(g.id)) continue;
     const r = executer('node', g.args, { cwd: dossier, timeout: DELAI_NODE_MS });
-    etats.set(g.id, r.erreur || r.signal || r.code === null ? 'indetermine' : r.code === 0 ? 'ok' : 'echec');
+    if (r.erreur || r.signal || r.code === null || g.sansVerdict.includes(r.code)) etats.set(g.id, { etat: 'indetermine', signatures: [] });
+    else if (r.code === 0) etats.set(g.id, { etat: 'ok', signatures: [] });
+    else {
+      const s = signaturesNode(r.sortie);
+      etats.set(g.id, { etat: 'echec', signatures: s.length ? s : ['(sans détail)'] });
+    }
   }
   const bancs = vitest.filter((f) => voulu(`vitest:${f}`));
   if (bancs.length > 0) {
     const sortie = join(dossier, '.wn-vitest.json');
+    rmSync(sortie, { force: true });
+    // `--no-cache` : Vitest écrirait sinon son cache dans le `node_modules`
+    // relié, c'est-à-dire dans la copie source.
     const r = executer(
       'node',
-      ['node_modules/vitest/vitest.mjs', 'run', '--reporter=json', `--outputFile=${sortie}`, ...bancs.map((f) => f.slice('web/'.length))],
+      ['node_modules/vitest/vitest.mjs', 'run', '--no-cache', '--reporter=json', `--outputFile=${sortie}`, ...bancs.map((f) => f.slice('web/'.length))],
       { cwd: join(dossier, 'web'), timeout: DELAI_VITEST_MS },
     );
     let rapport = null;
@@ -184,7 +241,7 @@ export function jouerGardes({ dossier, vitest, seulement = null, executer, lireF
         rapport = null;
       }
     }
-    for (const [id, e] of lireRapportVitest(rapport, bancs, dossier)) etats.set(id, e);
+    for (const [id, e] of lireRapportVitest(rapport, bancs, dossier, r.code)) etats.set(id, e);
   }
   return etats;
 }
@@ -194,29 +251,52 @@ export function jouerGardes({ dossier, vitest, seulement = null, executer, lireF
 const liste = (xs) => `${xs.slice(0, 5).join(', ')}${xs.length > 5 ? `, … (${xs.length})` : ''}`;
 
 /**
- * Le verdict. `conflits` : chemins en conflit (vide sinon). `fusionne` : états
- * des gardes sur l'arbre fusionné. `principal` : états des gardes rouges
- * rejoués sur `main` seul (absents : non rejoués).
+ * Le verdict. `conflits` : chemins en conflit (vide sinon). `fusionne` : Map
+ * id → `{ etat, signatures }` sur l'arbre fusionné, les rouges déjà confirmés
+ * (`etat` 'instable' : rouge puis vert au rejeu). `principal` : les rouges
+ * rejoués sur `main` seul. `absents` : rouges sans équivalent sur `main`.
+ * Rend `{ code, motif, notes, preexistants }`.
  */
-export function juger({ conflits = [], fusionne = new Map(), principal = new Map() }) {
+export function juger({ conflits = [], fusionne = new Map(), principal = new Map(), absents = new Set() }) {
   if (conflits.length > 0) {
-    return { code: SORTIE_DEFAUT, motif: `l'arbre fusionné est en conflit sur ${conflits.length} chemin(s) : ${liste(conflits)}.`, notes: [] };
+    return { code: SORTIE_DEFAUT, motif: `l'arbre fusionné est en conflit sur ${conflits.length} chemin(s) : ${liste(conflits)}.`, notes: [], preexistants: 0 };
   }
-  const echecs = [...fusionne].filter(([, e]) => e === 'echec').map(([id]) => id);
-  const imputables = echecs.filter((id) => principal.get(id) === 'ok');
-  const preexistants = echecs.filter((id) => principal.get(id) === 'echec');
-  const incertains = [
-    ...[...fusionne].filter(([, e]) => e === 'indetermine').map(([id]) => id),
-    ...echecs.filter((id) => !imputables.includes(id) && !preexistants.includes(id)),
-  ];
-  const notes = preexistants.length > 0 ? [`garde(s) rouge(s) aussi sur main seul, non imputable(s) à la PR : ${liste(preexistants)}.`] : [];
+  const imputables = [];
+  const preexistants = [];
+  const incertains = [];
+  for (const [id, e] of fusionne) {
+    if (e.etat === 'indetermine' || e.etat === 'instable') {
+      incertains.push(e.etat === 'instable' ? `${id} (instable)` : id);
+      continue;
+    }
+    if (e.etat !== 'echec') continue;
+    if (absents.has(id)) {
+      imputables.push(`${id} (absent de main)`);
+      continue;
+    }
+    const p = principal.get(id);
+    if (!p || p.etat === 'indetermine' || p.etat === 'instable') incertains.push(`${id} (main non rejoué)`);
+    else if (p.etat === 'ok') imputables.push(id);
+    else {
+      const neuves = e.signatures.filter((s) => !p.signatures.includes(s));
+      if (neuves.length > 0) imputables.push(`${id} (${liste(neuves)})`);
+      else preexistants.push(id);
+    }
+  }
+  const notes = preexistants.length > 0 ? [`garde(s) rouge(s) à l'identique sur main seul, non imputable(s) à la PR : ${liste(preexistants)}.`] : [];
+  const n = preexistants.length;
   if (imputables.length > 0) {
-    return { code: SORTIE_DEFAUT, motif: `${imputables.length} garde(s) rouge(s) sur l'arbre fusionné, vert(s) sur main seul : ${liste(imputables)}.`, notes };
+    return { code: SORTIE_DEFAUT, motif: `${imputables.length} garde(s) rouge(s) sur l'arbre fusionné, imputable(s) à la PR : ${liste(imputables)}.`, notes, preexistants: n };
   }
   if (incertains.length > 0) {
-    return { code: SORTIE_INDETERMINE, motif: `indéterminé — ${incertains.length} garde(s) sans verdict (délai, lancement, rapport illisible ou main non rejoué) : ${liste(incertains)}.`, notes };
+    return {
+      code: SORTIE_INDETERMINE,
+      motif: `indéterminé — ${incertains.length} garde(s) sans verdict (délai, lancement, rapport illisible, rouge instable ou main non rejoué) : ${liste(incertains)}.`,
+      notes,
+      preexistants: n,
+    };
   }
-  return { code: SORTIE_SAIN, motif: `arbre fusionné sans conflit, ${fusionne.size} garde(s) jouée(s)${preexistants.length ? ', aucun défaut imputable' : ', toutes vertes'}.`, notes };
+  return { code: SORTIE_SAIN, motif: `arbre fusionné sans conflit, ${fusionne.size} garde(s) jouée(s)${n ? ', aucun défaut imputable' : ', toutes vertes'}.`, notes, preexistants: n };
 }
 
 // ── Collecte ────────────────────────────────────────────────────────────────
@@ -228,9 +308,20 @@ export function materialiser({ racine, arbre, dossier, source }) {
     encoding: 'utf8',
   });
   if (extraire.status !== 0) throw new Error(`extraction de l'arbre impossible : ${(extraire.stderr ?? '').trim().split('\n')[0]}`);
-  for (const args of [['init', '--quiet'], ['add', '-A']]) {
+  // `-f` : l'archive ne porte que des fichiers suivis, ignorés compris
+  // (`.env.example`) ; l'index doit les porter tous.
+  for (const args of [['init', '--quiet'], ['add', '-A', '-f']]) {
     const r = spawnSync('git', args, { cwd: dossier, stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
     if (r.status !== 0) throw new Error(`git ${args[0]} dans l'arbre extrait : ${(r.stderr ?? '').trim().split('\n')[0]}`);
+  }
+  // Un dossier parent suivi comme lien symbolique ferait poser les liens
+  // hors du dossier temporaire.
+  for (const parent of ['web', 'web/src', 'web/src/generated']) {
+    const chemin = join(dossier, parent);
+    if (existsSync(chemin) && !lstatSync(chemin).isDirectory()) throw new Error(`${parent} n'est pas un dossier dans l'arbre extrait`);
+  }
+  for (const lien of ['web/node_modules', 'web/src/generated/prisma']) {
+    if (existsSync(join(dossier, lien))) throw new Error(`${lien} est suivi dans l'arbre : rien n'y sera relié`);
   }
   // Reliés APRÈS l'index : ni l'un ni l'autre n'entre dans `git ls-files`.
   symlinkSync(join(source, 'web/node_modules'), join(dossier, 'web/node_modules'));
@@ -238,8 +329,28 @@ export function materialiser({ racine, arbre, dossier, source }) {
   symlinkSync(join(source, 'web/src/generated/prisma'), join(dossier, 'web/src/generated/prisma'));
 }
 
+/** Retire les dossiers temporaires d'un contrôle interrompu (signal, arrêt). */
+export function purgerAnciens(racineTmp = tmpdir(), maintenant = Date.now()) {
+  let entrees = [];
+  try {
+    entrees = readdirSync(racineTmp);
+  } catch {
+    return;
+  }
+  for (const nom of entrees) {
+    if (!nom.startsWith(PREFIXE_TMP)) continue;
+    const chemin = join(racineTmp, nom);
+    try {
+      if (maintenant - lstatSync(chemin).mtimeMs > PURGE_MS) rmSync(chemin, { recursive: true, force: true });
+    } catch {
+      // Un autre contrôle le retire au même instant : rien à faire.
+    }
+  }
+}
+
 /** Le cache par fichier, sous le répertoire Git commun (partagé par les worktrees). */
 export function cacheFichiers(dossier) {
+  if (dossier === null) return { lire: () => null, ecrire: () => {} };
   return {
     lire(cle) {
       try {
@@ -271,12 +382,13 @@ function lireEnvironnement({ git, arbre, source }) {
     if (r.code !== 0) throw new Error(`git ${args.join(' ')} : ${erreurGit(r)}`);
     return r.stdout;
   };
-  const installe = join(source, 'web/node_modules/.package-lock.json');
+  const modules = join(source, 'web/node_modules');
+  const installe = join(modules, '.package-lock.json');
   const schema = join(source, 'web/prisma/schema.prisma');
   const client = join(source, 'web/src/generated/prisma/index.js');
   return ecartsEnvironnement({
     verrouArbre: JSON.parse(lire(['show', `${arbre}:web/package-lock.json`])),
-    verrouInstalle: existsSync(installe) ? JSON.parse(readFileSync(installe, 'utf8')) : null,
+    verrouInstalle: !existsSync(modules) ? null : existsSync(installe) ? JSON.parse(readFileSync(installe, 'utf8')) : undefined,
     schemaArbre: lire(['rev-parse', `${arbre}:web/prisma/schema.prisma`]).trim(),
     schemaSource: existsSync(schema) ? lire(['hash-object', schema]).trim() : null,
     client: existsSync(client)
@@ -296,23 +408,28 @@ export function controler({ pr, racine, source, lireJson, git, executer, cache, 
   const lignes = [];
   let main = null;
   let tete = null;
-  const fin = (code, motif, { notes = [], enCache = false } = {}) => {
+  let requis = false;
+  let rouges = 0;
+  const fin = (code, motif, { notes = [], enCache = false, preexistants = 0 } = {}) => {
     lignes.push(`${code === SORTIE_SAIN ? '✓' : '❌'} ${motif}`);
     for (const n of notes) lignes.push(`· ${n}`);
     const duree = ((maintenant() - debut) / 1000).toFixed(1);
     lignes.push(
-      `CONTROLE fusion code=${code} pr=${pr}${main ? ` main=${main.slice(0, 8)}` : ''}${tete ? ` tete=${tete.slice(0, 8)}` : ''} cache=${enCache ? 'oui' : 'non'} duree=${duree}s`,
+      `CONTROLE fusion code=${code} pr=${pr}${main ? ` main=${main.slice(0, 8)}` : ''}${tete ? ` tete=${tete.slice(0, 8)}` : ''}` +
+        ` requis=${requis ? 'oui' : 'non'} cache=${enCache ? 'oui' : 'non'} rouges=${rouges} preexistants=${preexistants} duree=${duree}s`,
     );
     return { code, lignes };
   };
   const indetermine = (motif) => fin(SORTIE_INDETERMINE, `indéterminé — ${motif}`);
 
+  let mergeable;
   try {
     const p = lireJson(`repos/{owner}/{repo}/pulls/${pr}`);
     if (p.state !== 'open') return indetermine(`la PR #${pr} n'est pas ouverte (${p.state}).`);
     if (p.base?.ref !== 'main') return indetermine(`la PR #${pr} vise ${p.base?.ref}, pas main.`);
     if (!/^[0-9a-f]{40}$/.test(p.head?.sha ?? '')) throw new Error('tête de la PR illisible');
     tete = p.head.sha;
+    mergeable = p.mergeable;
   } catch (err) {
     return indetermine(`lecture de la PR impossible : ${premiereLigne(err)}`);
   }
@@ -329,25 +446,32 @@ export function controler({ pr, racine, source, lireJson, git, executer, cache, 
   const base = git(['merge-base', tete, main]);
   if (base.code !== 0) return indetermine('aucun ancêtre commun entre la tête et main.');
   if (base.stdout.trim() === main) return fin(SORTIE_SAIN, 'contrôle non requis : main n’a pas bougé depuis la base de la PR.');
+  requis = true;
 
-  const cle = `${main}-${tete}-${VERSION_LISTE}`;
+  const cle = `${main}-${tete}-${VERSION_SCRIPT}`;
   const garde = cache.lire(cle);
   if (garde && (garde.code === SORTIE_SAIN || garde.code === SORTIE_DEFAUT)) {
-    return fin(garde.code, `${garde.motif} (verdict en cache)`, { notes: garde.notes ?? [], enCache: true });
+    return fin(garde.code, `${garde.motif} (verdict en cache)`, { notes: garde.notes ?? [], enCache: true, preexistants: garde.preexistants ?? 0 });
   }
   const conclure = (verdict) => {
     if (verdict.code === SORTIE_SAIN || verdict.code === SORTIE_DEFAUT) cache.ecrire(cle, verdict);
-    return fin(verdict.code, verdict.motif, { notes: verdict.notes });
+    return fin(verdict.code, verdict.motif, verdict);
   };
 
   const fusion = git(['merge-tree', '--write-tree', '--name-only', '--no-messages', main, tete]);
   if (fusion.code !== 0 && fusion.code !== 1) return indetermine(`git merge-tree : ${erreurGit(fusion)}`);
   const [arbre, ...enConflit] = fusion.stdout.split('\n').filter(Boolean);
   if (fusion.code === 1) return conclure(juger({ conflits: [...new Set(enConflit)].sort() }));
+  if (mergeable === false) {
+    // Lu au moment de la lecture de la PR, pas mis en cache : GitHub le
+    // recalcule de façon asynchrone après chaque mouvement de `main`.
+    return fin(SORTIE_DEFAUT, 'GitHub signale un conflit (`mergeable` à faux) que `merge-tree` ne voit pas — `merge=union` de `.gitattributes`, appliqué en local seulement.');
+  }
 
+  purgerAnciens();
   const dossiers = [];
   const extrait = (a) => {
-    const d = realpathSync(mkdtempSync(join(tmpdir(), 'wn-controle-fusion-')));
+    const d = realpathSync(mkdtempSync(join(tmpdir(), PREFIXE_TMP)));
     dossiers.push(d);
     extraire({ racine, arbre: a, dossier: d, source });
     return d;
@@ -368,27 +492,49 @@ export function controler({ pr, racine, source, lireJson, git, executer, cache, 
     if (ecarts.length > 0) {
       return indetermine(`l'environnement prêté par ${source} ne correspond pas à l'arbre fusionné : ${ecarts.join(' ; ')}.`);
     }
+    let dossier;
+    let vitest;
     let fusionne;
     try {
-      fusionne = jouerGardes({ dossier: extrait(arbre), vitest: bancsVitest(fichiersDe(arbre)), executer, lireFichier });
+      vitest = bancsVitest(fichiersDe(arbre));
+      dossier = extrait(arbre);
+      fusionne = jouerGardes({ dossier, vitest, executer, lireFichier });
     } catch (err) {
       return indetermine(premiereLigne(err));
     }
-    const rouges = [...fusionne].filter(([, e]) => e === 'echec').map(([id]) => id);
+    const echecs = [...fusionne].filter(([, e]) => e.etat === 'echec').map(([id]) => id);
+    rouges = echecs.length;
     let principal = new Map();
-    if (rouges.length > 0) {
-      // Rejeu sur `main` seul, avec la même exigence d'empreinte ; une lecture
-      // impossible laisse les rouges sans contre-épreuve : indéterminé.
+    const absents = new Set();
+    if (echecs.length > 0) {
+      // Confirmation : chaque rouge rejoué seul sur l'arbre fusionné, dans
+      // les conditions du rejeu sur `main` — un rouge de charge (délai sous
+      // une autre suite) ne devient jamais un défaut. Puis `main` seul.
       try {
-        const arbreMain = git(['rev-parse', `${main}^{tree}`]).stdout.trim();
-        if (lireEnvironnement({ git, arbre: arbreMain, source }).length === 0) {
-          principal = jouerGardes({ dossier: extrait(arbreMain), vitest: bancsVitest(fichiersDe(arbreMain)), seulement: rouges, executer, lireFichier });
+        const confirmes = jouerGardes({ dossier, vitest, seulement: echecs, executer, lireFichier });
+        for (const id of echecs) {
+          const c = confirmes.get(id);
+          fusionne.set(id, c?.etat === 'ok' ? { etat: 'instable', signatures: [] } : c ?? { etat: 'indetermine', signatures: [] });
+        }
+        const tenus = echecs.filter((id) => fusionne.get(id).etat === 'echec');
+        if (tenus.length > 0) {
+          const lu = git(['rev-parse', `${main}^{tree}`]);
+          if (lu.code !== 0) throw new Error(`arbre de main illisible : ${erreurGit(lu)}`);
+          const arbreMain = lu.stdout.trim();
+          const fichiersMain = fichiersDe(arbreMain);
+          const vitestMain = bancsVitest(fichiersMain);
+          const surMain = (id) => (id.startsWith('vitest:') ? vitestMain.includes(id.slice('vitest:'.length)) : fichiersMain.includes(GARDES_NODE.find((g) => g.id === id).args.at(-1)));
+          for (const id of tenus) if (!surMain(id)) absents.add(id);
+          const aRejouer = tenus.filter((id) => !absents.has(id));
+          if (aRejouer.length > 0 && lireEnvironnement({ git, arbre: arbreMain, source }).length === 0) {
+            principal = jouerGardes({ dossier: extrait(arbreMain), vitest: vitestMain, seulement: aRejouer, executer, lireFichier });
+          }
         }
       } catch {
-        principal = new Map();
+        // Contre-épreuve impossible : les rouges restent sans verdict.
       }
     }
-    return conclure(juger({ fusionne, principal }));
+    return conclure(juger({ fusionne, principal, absents }));
   } finally {
     // `rmSync` retire les liens symboliques, jamais leur cible.
     for (const d of dossiers) rmSync(d, { recursive: true, force: true });
@@ -420,7 +566,8 @@ function principal(argv) {
     const r = spawnSync('git', a, { cwd: RACINE, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: TAMPON });
     return { code: r.status, stdout: r.stdout ?? '', stderr: r.stderr || String(r.error ?? '') };
   };
-  const commun = git(['rev-parse', '--git-common-dir']).stdout.trim();
+  const commun = git(['rev-parse', '--git-common-dir']);
+  const dossierCache = commun.code === 0 && commun.stdout.trim() ? join(resolve(RACINE, commun.stdout.trim()), 'wn-controle-fusion') : null;
   // Les gardes ne lisent ni GitHub ni l'évènement du CI : sans
   // `GITHUB_EVENT_NAME`, la numérotation reste locale.
   const env = { ...process.env };
@@ -436,10 +583,10 @@ function principal(argv) {
     },
     git,
     executer: (cmd, a, { cwd, timeout }) => {
-      const r = spawnSync(cmd, a, { cwd, timeout, env, stdio: 'ignore' });
-      return { code: r.status, signal: r.signal, erreur: r.error ?? null };
+      const r = spawnSync(cmd, a, { cwd, timeout, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: TAMPON });
+      return { code: r.status, signal: r.signal, erreur: r.error ?? null, sortie: `${r.stdout ?? ''}\n${r.stderr ?? ''}` };
     },
-    cache: cacheFichiers(join(isAbsolute(commun) ? commun : join(RACINE, commun), 'wn-controle-fusion')),
+    cache: cacheFichiers(dossierCache),
   });
   for (const l of lignes) console.log(l);
   return code;

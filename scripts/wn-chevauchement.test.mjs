@@ -86,6 +86,17 @@ test('collecte : une liste tronquée est dite, le signal reste rendu', () => {
   assert.ok(r.lignes.some((l) => /#6 : liste de fichiers tronquée/.test(l)));
 });
 
+test('collecte : une PR voisine illisible est dite, les autres restent croisées', () => {
+  const lireJson = (chemin) => {
+    if (chemin.includes('pulls/6/files')) throw new Error('HTTP 502');
+    return api({ fichiers: { 5: [{ filename: 'web/src/a.ts' }], 7: [{ filename: 'web/src/a.ts' }] }, ouvertes: [{ number: 6, title: 'illisible' }, { number: 7, title: 'voisine' }] })(chemin);
+  };
+  const r = signaler({ pr: 5, lireJson });
+  assert.equal(r.code, SORTIE_SIGNAL);
+  assert.match(r.lignes[1], /#7 voisine/);
+  assert.ok(r.lignes.includes('· fichiers illisibles, PR non croisée(s) : #6.'));
+});
+
 test('collecte : lecture impossible — dit, et sort en 0 (jamais de refus)', () => {
   const r = signaler({
     pr: 5,

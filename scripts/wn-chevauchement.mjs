@@ -52,7 +52,7 @@ export function croiser(fichiers, autres) {
 }
 
 /** Le rendu : chevauchement de code PR par PR, puis le résumé des documents. */
-export function rendre(pr, { code, documents }, tronquees = []) {
+export function rendre(pr, { code, documents }, tronquees = [], illisibles = []) {
   const lignes = [];
   const marque = (x) => `#${x.numero}${x.brouillon ? ' (brouillon)' : ''}`;
   if (code.length === 0) lignes.push(`✓ aucune PR ouverte ne touche les mêmes fichiers de code que #${pr}.`);
@@ -67,6 +67,7 @@ export function rendre(pr, { code, documents }, tronquees = []) {
     lignes.push(`· documents communs, ${documents.length} PR : ${liste(resume, 8)}`);
   }
   for (const n of tronquees) lignes.push(`· #${n} : liste de fichiers tronquée par l'API (${PLAFOND_FICHIERS_PR} et plus), croisement partiel.`);
+  if (illisibles.length > 0) lignes.push(`· fichiers illisibles, PR non croisée(s) : ${illisibles.map((n) => `#${n}`).join(', ')}.`);
   const total = code.reduce((s, x) => s + x.chemins.length, 0);
   lignes.push(`CHEVAUCHEMENT pr=${pr} prs_code=${code.length} chemins_code=${total} prs_documents=${documents.length}`);
   return lignes;
@@ -83,6 +84,7 @@ export function analyserArguments(argv) {
  */
 export function signaler({ pr, lireJson }) {
   const tronquees = [];
+  const illisibles = [];
   const fichiersDe = (n) => {
     const objets = lireJson(`repos/{owner}/{repo}/pulls/${n}/files?per_page=100`).flat();
     if (objets.length >= PLAFOND_FICHIERS_PR) tronquees.push(n);
@@ -94,7 +96,15 @@ export function signaler({ pr, lireJson }) {
     const ouvertes = lireJson('repos/{owner}/{repo}/pulls?state=open&per_page=100')
       .flat()
       .filter((p) => p.number !== pr);
-    const autres = ouvertes.map((p) => ({ numero: p.number, titre: p.title ?? '', brouillon: Boolean(p.draft), fichiers: fichiersDe(p.number) }));
+    // Une PR voisine illisible n'éteint pas le signal : elle est dite à part.
+    const autres = [];
+    for (const p of ouvertes) {
+      try {
+        autres.push({ numero: p.number, titre: p.title ?? '', brouillon: Boolean(p.draft), fichiers: fichiersDe(p.number) });
+      } catch {
+        illisibles.push(p.number);
+      }
+    }
     resultat = croiser(miens, autres);
   } catch (err) {
     return {
@@ -102,7 +112,7 @@ export function signaler({ pr, lireJson }) {
       lignes: [`⚠ signal de chevauchement indisponible (lecture impossible) : ${String(err?.message ?? err).split('\n')[0]}`, `CHEVAUCHEMENT pr=${pr} illisible`],
     };
   }
-  return { code: SORTIE_SIGNAL, lignes: rendre(pr, resultat, tronquees) };
+  return { code: SORTIE_SIGNAL, lignes: rendre(pr, resultat, tronquees, illisibles) };
 }
 
 // ── Câblage CLI ─────────────────────────────────────────────────────────────
