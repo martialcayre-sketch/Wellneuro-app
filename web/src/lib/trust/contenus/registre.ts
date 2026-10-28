@@ -1755,7 +1755,7 @@ const DONNEES_CONFIDENTIALITE_V20: VersionDocumentTrust = {
 // LES DURÉES DE [[D-378]] N'Y SONT PAS (arbitrage du 2026-10-27) : le texte
 // signé dit au présent une archive et une fin à cinq ans que le lot (b) n'a pas
 // mises en service, et une échéance des comptes rendus qui contredit la v20.
-// Elles attendent un texte amendé, en v22.
+// Elles attendent un texte amendé, en v23 ([[D-391]] §6 : la v22 porte BP-13).
 const PARAGRAPHE_IA_EXTERNE_D364 =
   'Votre praticien peut soumettre une version de votre dossier à ChatGPT (OpenAI), un outil d’intelligence artificielle, pour l’aider dans son analyse. Il le fait lui-même : l’application ne l’envoie pas. Cette version retire vos nom et prénom, vos coordonnées, votre date de naissance et le nom de votre médecin traitant. Elle garde votre âge et un numéro de dossier propre à l’application. Ce document reste une information sur votre santé. OpenAI est situé hors de l’Union européenne, et aucun contrat ne l’engage envers nous sur le traitement de ce document.';
 const DONNEES_CONFIDENTIALITE_V21: VersionDocumentTrust = {
@@ -1784,6 +1784,52 @@ const DONNEES_CONFIDENTIALITE_V21: VersionDocumentTrust = {
   publieLe: '2026-10-27',
   requiresAcknowledgement: true,
   hash: 'ab7951ae1db8db6bdb6d22887821532afeca6459f8c95934e67191854efa7af5',
+};
+
+// LA v22 DIT LES DONNÉES PHYSIOLOGIQUES DÉCLARÉES ET LES TRAITEMENTS EN LIGNES
+// ([[D-335]], BP-13), mot pour mot, à l'apostrophe typographique du registre
+// près ; `registre.test.ts` le relit dans la proposition
+// `docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/README.md`. Le
+// paragraphe validé le 2026-10-21 sous le numéro v20, une phrase remplacée
+// ([[D-391]] §6) : l'export du dossier porte les lignes (§2) et le document
+// destiné au médecin reprend la ligne de vigilance qui nomme les traitements
+// (§3). Il entre dans « Quelles données sont recueillies ? », juste après celui
+// des documents déposés (v19). Un paragraphe ajouté, rien d'autre. Accusé EXIGÉ
+// (motif de [[D-299]] §3).
+//
+// Texte et résumé validés tels quels par le responsable le 2026-10-28, en session.
+//
+// PUBLIÉE LE JOUR DE L'ALLUMAGE de `WN_PHYSIO_TRAITEMENTS` (2026-10-28), pas
+// avant ([[D-335]] §9) : elle décrit une saisie qui n'existe pas drapeau éteint.
+// Elle entraîne les conditions v5 ([[D-292]] §5).
+const PARAGRAPHE_PHYSIO_TRAITEMENTS_D335 =
+  'Votre fiche de renseignements vous demande aussi votre sexe et, s’il y a lieu, où en sont vos cycles (réguliers, irréguliers, absents, ménopause) ; vous pouvez toujours répondre que vous ne savez pas ou préférez ne pas répondre. Vos médicaments et vos compléments alimentaires en cours y sont notés un par un : leur nom, leur dose, le moment de la prise, depuis quand, s’ils vous ont été prescrits par un autre soignant et, si vous l’indiquez, le motif d’un médicament ou l’objectif d’un complément ; quand vous en arrêtez un, l’arrêt y est noté, avec sa date si vous la connaissez (au jour, au mois ou à l’année). Votre praticien peut confirmer ou corriger chacune de ces informations, ainsi que votre taille, votre poids, une grossesse ou un allaitement : rien n’est effacé, chaque information garde sa date et dit si elle vient de vous ou de votre praticien. Dans votre dossier, seul votre praticien les voit, et vous voyez les vôtres. L’application ne les envoie à aucun outil d’intelligence artificielle. Elles figurent toutefois dans la version de votre dossier que votre praticien peut soumettre à ChatGPT (voir « Qui peut accéder à vos données ? »), et vos médicaments et compléments en cours peuvent figurer dans un document que votre praticien destine à un médecin. Ces informations sont conservées et effacées avec votre dossier.';
+const DONNEES_CONFIDENTIALITE_V22: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v22',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V21.sections.map(section => {
+    if (section.titre === 'Quelles données sont recueillies ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.flatMap(paragraphe =>
+          paragraphe.startsWith('Vous pouvez aussi déposer dans votre espace d’autres documents')
+            ? [paragraphe, PARAGRAPHE_PHYSIO_TRAITEMENTS_D335]
+            : [paragraphe],
+        ),
+      };
+    }
+    return section;
+  }),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Votre fiche de renseignements vous demande désormais votre sexe et, s’il y a lieu, où en sont vos cycles ; vos médicaments et compléments s’y notent un par un, et votre praticien peut les confirmer ou les corriger. Cette version dit ce qui en est gardé et qui le voit. Le reste ne change pas.',
+  publieLe: '2026-10-28',
+  requiresAcknowledgement: true,
+  hash: 'f4d3078b312e0033c9eddc21b700c2888733a868ad6172a8223147718d597600',
 };
 
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
@@ -1982,6 +2028,40 @@ const CONDITIONS_UTILISATION_V4: VersionDocumentTrust = {
   hash: '9e263c166bb449eeaa421f40a3040e800b89cfa1ce0192e4cf482f97371e13cf',
 };
 
+// LES CONDITIONS v5 ([[D-292]] §5) : la partie 3 reprend « Vos données
+// personnelles » v22 ([[D-335]], [[D-391]] §6) ; les trois autres parties et la
+// partie 5 sont celles de la v4. Titre et résumé inchangés ; résumé du
+// changement validé par le responsable le 2026-10-28. Publiées avec la v22, le
+// jour de l'allumage de `WN_PHYSIO_TRAITEMENTS`. Accusé par l'e-mail
+// `conditions_utilisation@5` (patients suivis, envoi en une fois par le
+// responsable ; la @4 est partie le 2026-10-27), par l'accueil (nouveau patient
+// majeur) ou au filet du dépôt du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V5: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V22 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V5: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v5',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V5.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V4.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie « Vos données personnelles » dit que votre fiche de renseignements vous demande désormais votre sexe et, s’il y a lieu, où en sont vos cycles, et que vos médicaments et compléments s’y notent un par un. Le reste ne change pas.',
+  publieLe: '2026-10-28',
+  requiresAcknowledgement: true,
+  hash: 'a5e5ee163a7a6797ebebe13369bd9222ed7d5fa292ccc5b1dd757649dd12d8a1',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -2007,6 +2087,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V19,
   DONNEES_CONFIDENTIALITE_V20,
   DONNEES_CONFIDENTIALITE_V21,
+  DONNEES_CONFIDENTIALITE_V22,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -2022,6 +2103,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONDITIONS_UTILISATION_V2,
   CONDITIONS_UTILISATION_V3,
   CONDITIONS_UTILISATION_V4,
+  CONDITIONS_UTILISATION_V5,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

@@ -264,6 +264,16 @@ responsable.
   Lecture de mise en œuvre : lignes lues quel que soit le drapeau, comme
   §4 ; un dossier sans ligne s'exporte à l'identique (préambule compris),
   épinglé par un banc. Condition (3) remplie. Reste : PR 3 (v22).
+- **PR 3 prête (2026-10-28)** : « Vos données personnelles » v22 — le
+  paragraphe validé le 2026-10-21, sa phrase « aucun outil d'IA ne les
+  reçoit, transmises à personne » remplacée (l'application ne les envoie à
+  aucun outil d'IA ; elles figurent dans la version du dossier soumise à
+  ChatGPT ; les traitements peuvent figurer dans un document destiné à un
+  médecin) —, conditions v5, e-mail `conditions_utilisation@5`, déclaration
+  du dossier RGPD corrigée ; textes validés tels quels par le responsable le
+  2026-10-28 (`docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/`).
+  Durées de [[D-378]] en v23. Merge et allumage avancés au 2026-10-28 :
+  condition (4) remplie au merge.
 
 ## Hors périmètre
 
