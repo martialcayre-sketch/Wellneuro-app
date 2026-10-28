@@ -8,10 +8,11 @@
   conditions ensemble :
   - un run `pull_request` du workflow, conclu `success` sur la tête ;
   - un journal qui dit « returning full diff » ;
-  - un bloc d'état unique avec `head_sha` = tête et `excluded_files` vide,
-    ou, sans aucune remarque, un commentaire écrit pendant ce run ;
-  - aucune autre revue de PR-Agent pendant ce run, ni aucun run sur
-    commentaire après lui.
+  - le commentaire persistant écrit pendant ce run, avec un bloc d'état
+    unique (`head_sha` = tête, `excluded_files` vide), ou sans bloc pour
+    une revue sans remarque ;
+  - aucune autre revue de PR-Agent pendant ce run, ni commande PR-Agent
+    postée sur la PR après son début.
   Un run sur commentaire et une revue `-i` ne comptent pas.
 - Chaque remarque de PR-Agent reçoit son verdict, dans un commentaire de PR
   distinct.

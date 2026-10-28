@@ -106,10 +106,10 @@ limited »), la revue de **PR-Agent** (`.github/workflows/pr_agent.yml`,
 commentaire de `github-actions[bot]`) le remplace, sans redemander
 CodeRabbit. Elle n'est prouvée sur la tête que par les quatre conditions
 de `D-393` §2 : run `pull_request` conclu `success` sur la tête, diff
-entier (« returning full diff »), commentaire persistant écrit sur la tête
-(bloc d'état avec `head_sha` = tête et `excluded_files` vide, ou, sans
-remarque, aucun bloc mais une écriture pendant le run), aucune autre revue
-de PR-Agent ni run sur commentaire à côté. Une PR de clôture seule, ou
+entier (« returning full diff »), commentaire persistant écrit pendant ce
+run (bloc d'état avec `head_sha` = tête et `excluded_files` vide, ou, sans
+remarque, aucun bloc), aucune autre revue de PR-Agent pendant ce run ni
+commande PR-Agent postée sur la PR après son début. Une PR de clôture seule, ou
 faite seulement de fichiers exclus du modèle, ne produit pas de revue
 PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts :
 `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.

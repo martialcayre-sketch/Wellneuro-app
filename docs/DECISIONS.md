@@ -67,15 +67,18 @@ conditions, ensemble :
   diff ». Une PR plus grosse que le plafond n'est pas revue en entier par
   PR-Agent : elle attend CodeRabbit ;
 - (c) le commentaire persistant de `github-actions[bot]` (marqueur
-  `pr-agent:review:full`) existe. S'il porte un bloc
-  `pr-agent-review-state:v1`, ce bloc est unique, son `last_run.head_sha`
-  est la tête et son `excluded_files` est vide. `complete` et `kind` ne
-  s'exigent pas. Sans bloc (aucune remarque depuis l'ouverture), le
-  commentaire doit avoir été écrit pendant ce run : sa date de mise à jour,
-  ou de création à la première revue, est postérieure au début du run ;
+  `pr-agent:review:full`) a été écrit pendant ce run : sa date de mise à
+  jour, ou de création à la première revue, est postérieure au début du
+  run. S'il porte un bloc `pr-agent-review-state:v1`, ce bloc est unique,
+  son `last_run.head_sha` est la tête et son `excluded_files` est vide.
+  `complete` et `kind` ne s'exigent pas. Sans bloc (aucune remarque depuis
+  l'ouverture), l'écriture pendant le run suffit ;
 - (d) aucun autre commentaire de PR-Agent n'a été publié pendant ce run (il
   publie à part une revue « non autoritative » quand il ne peut pas lire
-  son état), et aucun run sur commentaire n'a suivi, sur la même tête.
+  son état), et aucune commande PR-Agent (`/review`, `/describe`…) n'a été
+  postée sur la PR après son début. Cela se lit dans les commentaires de la
+  PR : un run sur commentaire porte la tête de `main`, pas celle de la
+  PR.
 
 `/review -i` ne compte jamais. Une PR dont tous les fichiers sont exclus du
 modèle (images, instantanés, `package-lock.json`) ne produit pas de revue :
@@ -7487,7 +7490,7 @@ arbitrage. Détail : `.claude/rules/pr-revue-et-release-db.md` §1.
 - **Mise à jour (2026-10-28, [[D-393]], H93)** : la condition de merge
   devient « une revue de bot sur le sha de tête, une seule » : celle de
   CodeRabbit, ou, s'il saute la PR ou bute sur son quota, celle de
-  PR-Agent, prouvée par les trois conditions de [[D-393]] §2. Les remarques
+  PR-Agent, prouvée par les quatre conditions de [[D-393]] §2. Les remarques
   de PR-Agent n'ont pas de fil : leurs verdicts vont dans un commentaire de
   PR distinct ([[D-393]] §3).
 

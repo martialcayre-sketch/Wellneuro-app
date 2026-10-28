@@ -141,23 +141,25 @@ conditions tiennent ensemble :
   et un run rouge ne prouve rien ;
 - (b) son journal dit « returning full diff », jamais « pruning diff » ;
 - (c) le commentaire persistant de `github-actions[bot]` (marqueur
-  `pr-agent:review:full`) existe. S'il porte un bloc
-  `pr-agent-review-state:v1`, il n'en porte qu'un, avec `last_run.head_sha`
-  = tête et `excluded_files` vide. `complete` ne s'exige pas : il passe à
-  faux dès que la revue atteint son nombre maximal de remarques. Sans bloc
-  (aucune remarque depuis l'ouverture), le commentaire a été écrit pendant
-  ce run : `updated_at` (ou `created_at` à la première revue) postérieur
-  au `run_started_at` du run ;
+  `pr-agent:review:full`) a été écrit pendant ce run : `updated_at` (ou
+  `created_at` à la première revue) postérieur au `startedAt` du run.
+  S'il porte un bloc `pr-agent-review-state:v1`, il n'en porte qu'un, avec
+  `last_run.head_sha` = tête et `excluded_files` vide. `complete` ne
+  s'exige pas : il passe à faux dès que la revue atteint son nombre
+  maximal de remarques. Sans bloc (aucune remarque depuis l'ouverture),
+  l'écriture pendant le run suffit ;
 - (d) aucun autre commentaire de PR-Agent publié pendant ce run (revue
   « non autoritative », publiée à part quand l'état est illisible), et
-  aucun run sur commentaire après lui, sur la même tête.
+  aucune commande PR-Agent (`/review`, `/describe`…) postée sur la PR
+  après le `startedAt` du run. Cela se lit dans `commentaires.json`, pas
+  dans la liste des runs : un run sur commentaire porte la tête de `main`
+  et aucun numéro de PR.
 
 ```bash
 gh run list --workflow pr_agent.yml --event pull_request --commit <tête> --json databaseId,conclusion > run.json
 gh run view <id> --log > run.log        # chercher « returning full diff » et « pruning diff »
 gh run view <id> --json startedAt > debut.json
-gh api --paginate --slurp repos/{owner}/{repo}/issues/<N>/comments > commentaires.json  # github-actions : bloc, dates
-gh run list --workflow pr_agent.yml --event issue_comment --json createdAt,conclusion > sur-commentaire.json
+gh api --paginate --slurp repos/{owner}/{repo}/issues/<N>/comments > commentaires.json  # bloc, dates, commandes /…
 ```
 
 Constaté sur #1766 (2026-10-28), v0.49.0 : `/review -i` ne nomme que le

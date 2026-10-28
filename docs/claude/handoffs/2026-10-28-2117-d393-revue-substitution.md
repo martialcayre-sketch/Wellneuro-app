@@ -32,8 +32,11 @@ La preuve (D-393 §2) vient du constat sur #1766 et de la revue
 `wn-reviewer` sur les sources de v0.49.0 :
 - un run `pull_request` conclu `success` sur la tête ;
 - un journal qui dit « returning full diff » ;
-- un bloc d'état unique, avec `head_sha` = tête et `excluded_files` vide,
-  ou aucun bloc pour une revue sans remarque.
+- le commentaire persistant écrit pendant ce run, avec un bloc d'état
+  unique (`head_sha` = tête, `excluded_files` vide), ou sans bloc pour une
+  revue sans remarque ;
+- aucune autre revue de PR-Agent pendant ce run, ni commande PR-Agent
+  postée sur la PR après son début.
 
 ## Fichiers modifiés
 
@@ -90,7 +93,10 @@ La preuve (D-393 §2) vient du constat sur #1766 et de la revue
   - une PR au-delà du plafond ;
   - un `/review` en commentaire, après le merge de #1766 ;
   - le coût réel d'une revue.
-- Non construit : un lecteur scripté des trois conditions, avec banc.
+- Non construit : un lecteur scripté des quatre conditions, avec banc.
+- CodeRabbit en quota sur #1767 (« Review limit reached », 20:24 UTC) :
+  dérogation du responsable pour cette PR seule, `wn-reviewer` en
+  remplacement (GO sous réserve, réserves corrigées).
 
 ## Prochaine action exacte
 
