@@ -108,15 +108,17 @@ test("plan réel : chaque fiche porte une seule ligne de renvoi, sauf les écart
 
 // Après la bascule (2026-10-28, H90 PR 2), une « Mise à jour » s'écrit en
 // fragment, jamais dans la fiche (`.claude/rules/docs-changelog.md`). Seules
-// les quatre fiches écartées gardent leurs mises à jour en ligne, avant leur
-// éventuel renvoi. Ce banc bloque : il ne retire rien, la tolérance du garde
-// (D-371 §3) ne le vise pas.
-const ECARTEES_A_LA_BASCULE = new Set(["F44", "H26", "H49", "F79"]);
+// les quatre fiches écartées gardent leurs mises à jour en ligne — leur
+// nombre à la bascule, ni plus, toutes avant leur éventuel renvoi. Ce banc
+// bloque : il ne retire rien, la tolérance du garde (D-371 §3) ne le vise pas.
+const ECARTEES_A_LA_BASCULE = new Map([["F44", 4], ["H26", 9], ["H49", 6], ["F79", 3]]);
 
 function majsEnLigneInterdites(texte) {
   const ecarts = [];
   for (const f of analyserFiches(texte.split("\n"))) {
     if (ECARTEES_A_LA_BASCULE.has(f.id)) {
+      const gelees = ECARTEES_A_LA_BASCULE.get(f.id);
+      if (f.majs.length > gelees) ecarts.push(`${f.id} : ${f.majs.length} mises à jour en ligne, ${gelees} à la bascule — l'écrire en fragment`);
       if (f.renvois.length > 0) for (const m of f.majs) if (m.debut > f.renvois[0]) ecarts.push(`${f.id} : mise à jour en ligne après le renvoi (ligne ${m.debut + 1})`);
       continue;
     }
@@ -136,6 +138,24 @@ test("plan réel basculé : aucune « Mise à jour » écrite dans une fiche, et
     const copie = [...lignes.slice(0, ou), maj, ...lignes.slice(ou)].join("\n");
     assert.ok(majsEnLigneInterdites(copie).some((e) => e.startsWith("H90 : mise à jour en ligne")), `insertion ligne ${ou + 1} non vue`);
   }
+  // Une fiche écartée n'en reçoit pas davantage en ligne, même avant un renvoi.
+  const h49 = analyserFiches(lignes).find((f) => f.id === "H49");
+  const ou = h49.majs.at(-1).fin + 1;
+  const copie = [...lignes.slice(0, ou), maj, ...lignes.slice(ou)].join("\n");
+  assert.ok(majsEnLigneInterdites(copie).some((e) => e.startsWith("H49 : 7 mises à jour en ligne")), "ajout en ligne dans H49 non vu");
+});
+
+test("journal réel : un couple date-rang n'apparaît qu'une fois par fiche, quel que soit le slug", () => {
+  const doublons = [];
+  for (const [id, liste] of lireJournal(path.join(RACINE, JOURNAL))) {
+    const vus = new Set();
+    for (const { nom } of liste) {
+      const cle = nom.slice(0, 13);
+      if (vus.has(cle)) doublons.push(`${id}/${nom}`);
+      vus.add(cle);
+    }
+  }
+  assert.deepEqual(doublons, [], "rang déjà pris ce jour-là : renuméroter le fragment non encore mergé");
 });
 
 test("plan réel : bascule écrite sur une copie, reconstituée depuis le disque à l'octet près", () => {

@@ -48,8 +48,12 @@ d'écriture des « Mise à jour ». Aucune décision neuve.
   invisible) corrigé par banc ; P2 a, b, c, d, e (titre), f corrigés ; P2-e
   second point (`lireFiche` inclut le paragraphe de groupe suivant) écarté :
   antérieur, lecture seule, même plage que la bascule.
-- Bancs du journal : 38/38. T1 complet vert (rc 0) avant les correctifs ;
-  rejoué après, voir la PR.
+- Revue CodeRabbit (926bf410), deux remarques en ligne, corrigées : couple
+  date-rang unique par fiche (banc, mutation vérifiée) ; nombre de mises à
+  jour en ligne des fiches écartées gelé à la bascule (F44 4, H26 9, H49 6,
+  F79 3).
+- Bancs du journal verts ; T1 complet vert (rc 0, 707 tests) après les
+  correctifs.
 
 ## Problèmes ouverts
 
