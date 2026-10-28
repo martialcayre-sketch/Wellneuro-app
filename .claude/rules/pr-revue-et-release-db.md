@@ -201,7 +201,12 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   arbitrage (1.8), même formulée en suggestion prête à copier.
 - **Il n'approuve pas, il ne merge pas.** `request_changes_workflow: false` :
   aucune approbation automatique, et son approbation n'est pas requise. Le
-  merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`).
+  merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`) : pendant
+  l'essai de `D-373`, l'intégrateur, pour les PR déclarées « prête @<sha> » ;
+  leur file, pour la migration, l'authentification et `.coderabbit.yaml`.
+- **Une remarque arrivée après « prête » revient à la file** (`D-373` §3),
+  qui reprend depuis son handoff : l'intégrateur ne corrige pas une PR. Il
+  lit la revue sur le sha déclaré et vérifie le verdict de chaque remarque.
 - **Le barème ne change pas.** CodeRabbit s'ajoute à `POLITIQUE_REVUE.md` sans
   remplacer aucune ligne : `/code-review medium` en P2, `wn-reviewer` en P1,
   Codex manuel obligatoire en P0.
@@ -212,6 +217,9 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
 |---|---|
 | `--base main`, toujours | Une PR empilée sur une autre branche meurt au merge de sa base |
 | `gh pr merge <N> --squash --delete-branch --match-head-commit <sha revu> --subject "<sujet>"` | Le sujet du squash vient du **commit**, pas du titre de la PR : trois `D-NNN` faux sur `main` (#943, #949, #950). Et sans `--match-head-commit`, un push arrivé après la revue part au merge sans revue — le statut `CodeRabbit` n'étant pas un check obligatoire, rien d'autre ne l'arrête (revue CodeRabbit de #1440) |
+| Avant chaque merge, l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné, registre, chevauchement, `main` inchangé), puis sa 7 ter, `node scripts/wn-sonde-release-db.mjs <N>` : `0` seul autorise (`D-373` §2 et §4, `D-374`) | #1590 mergée sur un vert vieux de sept heures, `main` rouge trois quarts d'heure (2026-10-20) ; #1577 mergée pendant la release de #1572 (2026-10-19, `D-374`) |
+| Une PR ordinaire se déclare « prête @<sha> », avec le chemin de son handoff et ses exceptions ; migration, authentification et `.coderabbit.yaml` restent à leur file (`D-373` §2 et §3) | Plusieurs sessions pouvaient merger, sur des conditions en prose qu'aucun verrou n'impose ; #1697, une session immobilisée un quart d'heure après son merge (2026-10-25) |
+| L'intégrateur avance la copie principale par `git merge --ff-only`, après T1 si le lot touche les crochets ; un refus s'arbitre (`D-373` §2) | Une avance rapide ne réconcilie aucun historique divergent : l'interdit de fusion automatique tient |
 | `node scripts/wn-attendre-ci.mjs <N>`, un seul appel bloquant | `gh pr checks` en boucle ; et **jamais dans un tube** — un tube rend le code de `tail`, pas celui du script : un feu vert de merge fabriqué |
 | Comparer le `head=` du SNAPSHOT à la tête réelle | Enchaîné à un push, le script peut juger la tête **précédente** et rendre `0` |
 | Après un échec de `gh`, **constater l'état** | « main is already used by worktree » est trompeur : la PR est mergée quand même. Vérifier, jamais relancer |
