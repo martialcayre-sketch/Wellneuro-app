@@ -25,12 +25,12 @@ Aucune décision D-xxx. Arbitrages du responsable en conversation, le
 - description publiée en commentaire, corps de PR jamais écrasé ;
 - modèle Sonnet 5.5, modèle faible et repli Haiku 5.5. La demande citait
   `claude-3-5-sonnet`, retiré depuis le 2025-10-28 ;
-- « tous les réglages optimaux » : revue incrémentale au push, fichiers de
+- « tous les réglages optimaux » : revue incrémentale au push (remplacée par
+  la revue complète à la reprise), fichiers de
   clôture ignorés, consignes de revue reprises des règles non négociables,
   étiquettes coupées, cinq remarques au plus.
-- D-290 non amendé : CodeRabbit reste la revue exigée avant le merge. Une
-  décision qui ferait de PR-Agent la revue suffisante en P2 a été proposée,
-  pas écrite.
+- D-290 non amendé par cette PR : l'amendement est D-393, écrit à la
+  reprise dans une PR à part.
 
 ## Fichiers modifiés
 
@@ -60,7 +60,15 @@ y est fusionnée.
   (`temperature`).
 - Correctifs : `no_temperature_models` pour Haiku ; concurrence séparée pour
   les runs sur commentaire ; garde fork. Ces deux derniers correctifs
-  viennent des deux remarques de PR-Agent.
+  viennent des deux remarques de PR-Agent. Puis revue complète au push et
+  repli Sonnet.
+- `/security-review` : aucun constat. `wn-reviewer` (mission « le workflow
+  affaiblit-il la revue ? ») : GO sous réserve. Le YAML n'affaiblit rien,
+  mais `head_sha` seul ne prouve pas une revue complète ; d'où la preuve
+  posée par D-393 : run `pull_request` à `success` sur la tête, journal
+  « returning full diff », bloc d'état sur la tête et `excluded_files` vide.
+  Corrigés dans le YAML : repli Haiku, commentaire du plafond, portée de la
+  garde fork. Le reste est porté par D-393.
 - En-tête aligné sur D-393 : CodeRabbit sur la tête, PR-Agent en
   remplacement ; fichier gardé par sa file.
 - Elle se merge après la PR de D-393, par sa file.
@@ -70,19 +78,20 @@ y est fusionnée.
 - À constater sur cette PR : le job tourne, le rapport est en français, la
   description arrive en commentaire. Une erreur 401 voudrait dire secret
   absent ou mal nommé.
-- À constater au premier push : `/review -i` fait bien une revue
-  incrémentale avec v0.49.0.
 - Coût réel par PR : à lire dans la console Anthropic. L'estimation
   (environ 0,30 $) n'a pas été mesurée. Plafond de dépense mensuel : geste du
   responsable.
 - La décision qui amende D-290 est D-393, écrite dans une PR à part. Cette
   PR se merge après elle.
-- À constater au push de la reprise : `/review -i` relit-il bien la nouvelle
-  tête, et le bloc d'état nomme-t-il ce sha ?
+- Constaté au push de la reprise (e3df16c0, run 40758840080) : `/review -i`
+  ne nomme que le premier commit nouveau, ne met pas à jour le bloc d'état,
+  et après la fusion de `main` il a relu le code de D-391 et de JA. Le
+  responsable a tranché : revue complète à chaque push (`/review`). Reste à
+  constater au push suivant que le bloc d'état nomme la nouvelle tête.
 
 ## Prochaine action exacte
 
-1. Lire le run `-i` du push de reprise et le bloc d'état.
+1. Lire le run du push qui passe à `/review` et le bloc d'état.
 2. `/security-review`, puis `wn-reviewer`, mission « le workflow
    affaiblit-il la revue ? » (D-393, P1).
 3. CI par `node scripts/wn-attendre-ci.mjs <N>` en fond ; revue de bot sur

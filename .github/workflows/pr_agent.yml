@@ -13,8 +13,15 @@
 # - la description générée part EN COMMENTAIRE : le corps des PR, rédigé par
 #   `--body-file` (objet, D-xxx, validations), n'est jamais écrasé ;
 # - réglages d'économie : Sonnet 5.5 relit, Haiku 5.5 fait les tâches
-#   simples ; au push, revue incrémentale seule ; les fichiers de clôture ne
-#   sont pas envoyés au modèle. Ordre de grandeur estimé : 0,30 $ par PR.
+#   simples ; les fichiers de clôture ne sont pas envoyés au modèle. Ordre
+#   de grandeur estimé : 0,30 $ par revue, non mesuré.
+# - au push, revue COMPLÈTE (D-393) : seule elle tient à jour le bloc
+#   d'état du commentaire persistant (`last_run.head_sha`).
+# Ce qui prouve une revue de la tête (D-393, règle 1.6) : un run de CE
+# workflow, événement `pull_request`, sur le sha de tête, conclu `success`,
+# dont le journal dit « returning full diff » ; et, si le commentaire
+# persistant porte un bloc d'état, `head_sha` = tête et `excluded_files`
+# vide. Une revue sans remarque ne laisse pas de bloc : le run fait foi.
 #
 # Secret requis : `ANTHROPIC_API_KEY` (Settings → Secrets and variables →
 # Actions), créé le 2026-10-28. Clé dédiée : sa consommation se lit seule
@@ -55,8 +62,10 @@ jobs:
     # Jamais sur l'action d'un robot. Sur un commentaire : seulement sur une
     # PR, et seulement d'un membre du dépôt — le dépôt est public, et un
     # commentaire d'inconnu ne doit ni dépenser la clé ni piloter l'agent.
-    # Une PR venue d'un fork ne reçoit ni la clé ni le jeton d'écriture : le
-    # job ne démarre pas, au lieu d'échouer sur une clé vide.
+    # Sur `pull_request`, une PR venue d'un fork (sans clé ni jeton
+    # d'écriture) ne lance pas le job, au lieu d'échouer sur une clé vide.
+    # Un commentaire d'un membre sur une PR de fork, lui, le lance : la
+    # revue lit le diff par l'API, sans exécuter le code de la PR.
     if: >-
       github.event.sender.type != 'Bot' &&
       ((github.event_name == 'pull_request' &&
@@ -77,19 +86,22 @@ jobs:
           # --- Modèles ---
           # Claude Sonnet 3.5 (`claude-3-5-sonnet`) est retiré depuis le
           # 2025-10-28 : la Sonnet courante relit. Haiku 5.5 sert de modèle
-          # faible (tâches simples) et de repli — le repli par défaut de
-          # PR-Agent est un modèle OpenAI.
+          # faible (description). Le repli est Sonnet elle-même : un repli
+          # Haiku ferait passer une revue de Haiku pour une revue de Sonnet,
+          # sans trace ; le repli par défaut de PR-Agent est un modèle OpenAI.
           config.model: "anthropic/claude-sonnet-5-5"
           config.model_weak: "anthropic/claude-haiku-5-5"
-          config.fallback_models: '["anthropic/claude-haiku-5-5"]'
+          config.fallback_models: '["anthropic/claude-sonnet-5-5"]'
           # Haiku 5.5 refuse `temperature` (« deprecated for this model »,
           # constaté le 2026-10-28 sur #1766) : la description échouait et
           # faisait tomber le job. Option prévue par v0.49.0.
           config.no_temperature_models: '["anthropic/claude-haiku-5-5"]'
           config.custom_model_max_tokens: "200000"
-          # Plafond de contexte envoyé par appel : le levier principal du
-          # coût. Une très grosse PR est relue en partie ; 64000 lève la
-          # limite au prix d'un coût double.
+          # Plafond de contexte envoyé par appel. Au-delà, PR-Agent compresse
+          # le diff (« pruning diff » au journal) et peut omettre sans le dire
+          # des blocs de suppression : une telle revue ne remplace pas
+          # CodeRabbit (D-393). Seuls les jetons envoyés se paient : relever
+          # le plafond ne renchérit que les PR qui le dépassent.
           config.max_model_tokens: "32000"
 
           # --- Langue ---
@@ -101,10 +113,13 @@ jobs:
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
           github_action_config.auto_improve: "false"
-          # Au push (`synchronize`) : revue INCRÉMENTALE des seuls nouveaux
-          # commits, sans régénérer la description.
+          # Au push (`synchronize`) : revue COMPLÈTE du diff de la PR, sans
+          # régénérer la description. `/review -i` a été écarté sur constat
+          # (#1766, 2026-10-28) : il ne nomme pas la tête, ne met pas à jour
+          # le bloc d'état, et après une fusion de `main` il relit le code
+          # de `main` comme s'il venait de la PR.
           github_action_config.handle_push_trigger: "true"
-          github_action_config.push_commands: '["/review -i"]'
+          github_action_config.push_commands: '["/review"]'
 
           # --- Description ---
           # En commentaire, jamais à la place du corps ; pas d'étiquettes.
