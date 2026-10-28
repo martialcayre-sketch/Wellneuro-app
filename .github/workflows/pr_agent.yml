@@ -1,0 +1,125 @@
+# Revue automatique des PR par PR-Agent (Qodo, open source), sur l'API
+# Anthropic. CodeRabbit (`.coderabbit.yaml`, inchangé) reste en place comme
+# revue de secours, déclenchée à la main par « @coderabbitai review ».
+#
+# Choix du responsable (2026-10-28) :
+# - image ÉPINGLÉE par empreinte (v0.49.0) : l'action reçoit la clé Anthropic
+#   et un jeton d'écriture sur les PR ; une montée de version passe par une PR
+#   relue, jamais par la tête de `main` du dépôt tiers ;
+# - la description générée part EN COMMENTAIRE : le corps des PR, rédigé par
+#   `--body-file` (objet, D-xxx, validations), n'est jamais écrasé ;
+# - réglages d'économie : Sonnet 5.5 relit, Haiku 5.5 fait les tâches
+#   simples ; au push, revue incrémentale seule ; les fichiers de clôture ne
+#   sont pas envoyés au modèle. Ordre de grandeur estimé : 0,30 $ par PR.
+#
+# Secret requis : `ANTHROPIC_API_KEY` (Settings → Secrets and variables →
+# Actions), créé le 2026-10-28. Clé dédiée : sa consommation se lit seule
+# dans la console Anthropic.
+
+name: PR-Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # Une PR qui ne touche QUE des fichiers de clôture n'a rien à relire.
+    paths-ignore:
+      - 'changelog.d/**'
+      - 'docs/claude/handoffs/**'
+      - 'docs/claude/plan-journal/**'
+      - 'docs/claude/SESSION_LOG.md'
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+# Une seule revue à la fois par PR : un push rapproché annule la précédente.
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr_agent:
+    # Jamais sur l'action d'un robot. Sur un commentaire : seulement sur une
+    # PR, et seulement d'un membre du dépôt — le dépôt est public, et un
+    # commentaire d'inconnu ne doit ni dépenser la clé ni piloter l'agent.
+    if: >-
+      github.event.sender.type != 'Bot' &&
+      (github.event_name == 'pull_request' ||
+       (github.event.issue.pull_request &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: PR-Agent
+        # pragent/pr-agent:0.49.0-github_action (publiée le 2026-10-25).
+        uses: docker://pragent/pr-agent@sha256:b1ed6e8de56eb4d6e4169ee0d5c209bb5ed1ef071a01c0c042c64b80192a785c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fournisseur Anthropic : la clé seule, aucune clé OpenAI.
+          ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # --- Modèles ---
+          # Claude Sonnet 3.5 (`claude-3-5-sonnet`) est retiré depuis le
+          # 2025-10-28 : la Sonnet courante relit. Haiku 5.5 sert de modèle
+          # faible (tâches simples) et de repli — le repli par défaut de
+          # PR-Agent est un modèle OpenAI.
+          config.model: "anthropic/claude-sonnet-5-5"
+          config.model_weak: "anthropic/claude-haiku-5-5"
+          config.fallback_models: '["anthropic/claude-haiku-5-5"]'
+          config.custom_model_max_tokens: "200000"
+          # Plafond de contexte envoyé par appel : le levier principal du
+          # coût. Une très grosse PR est relue en partie ; 64000 lève la
+          # limite au prix d'un coût double.
+          config.max_model_tokens: "32000"
+
+          # --- Langue ---
+          config.response_language: "fr-FR"
+
+          # --- Déclenchement ---
+          # À l'ouverture : revue et description. Suggestions de code non
+          # demandées.
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "false"
+          # Au push (`synchronize`) : revue INCRÉMENTALE des seuls nouveaux
+          # commits, sans régénérer la description.
+          github_action_config.handle_push_trigger: "true"
+          github_action_config.push_commands: '["/review -i"]'
+
+          # --- Description ---
+          # En commentaire, jamais à la place du corps ; pas d'étiquettes.
+          pr_description.publish_description_as_comment: "true"
+          pr_description.publish_labels: "false"
+
+          # --- Revue ---
+          pr_reviewer.num_max_findings: "5"
+          pr_reviewer.require_estimate_effort_to_review: "false"
+          pr_reviewer.enable_review_labels_effort: "false"
+          pr_reviewer.enable_review_labels_security: "false"
+          pr_reviewer.extra_instructions: >-
+            Application de consultation en neuronutrition, en production
+            (Next.js 15, Prisma, PostgreSQL). Vérifiez en priorité :
+            (1) tout texte visible par le patient ou le praticien est en
+            français, et aucun texte patient nouveau n'apparaît sans une
+            décision D-xxx qui le cite ;
+            (2) aucun secret en dur, aucune donnée patient réelle (nom,
+            e-mail, identifiant accompagné de mesures) dans le code, les
+            tests, les fixtures ou les commentaires ;
+            (3) aucune règle, aucun seuil, aucune dose ni borne clinique
+            sans décision D-xxx et fragment changelog.d/ ;
+            (4) routes API : authentification et autorisation avant toute
+            lecture, validation côté serveur, aucune journalisation de
+            jeton, d'e-mail ou de contenu clinique ;
+            (5) migrations Prisma : séparées du code qui les consomme ou
+            protégées par un drapeau éteint, RLS activée sur toute table
+            patient neuve ;
+            (6) drapeaux WN_* : valeur exacte 'true', absent = fermé, et
+            drapeau fermé = comportement inchangé ;
+            (7) aucun refactoring hors du périmètre de la PR.
+            Ne signalez ni le style ni les préférences de formulation.
+
+          # --- Fichiers non envoyés au modèle ---
+          ignore.glob: '["changelog.d/**", "docs/claude/handoffs/**", "docs/claude/plan-journal/**", "docs/claude/SESSION_LOG.md", "**/package-lock.json", "**/*.png", "**/*.snap"]'
