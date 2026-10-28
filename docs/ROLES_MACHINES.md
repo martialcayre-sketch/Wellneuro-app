@@ -32,6 +32,26 @@ suivante.
 - Le checkout principal reste sur `main`, à jour, et ne sert pas de plan de
   travail.
 
+### La copie principale et l'intégrateur (`D-373`)
+
+Pendant l'essai de `D-373` (fiche H89 du plan), la copie principale a un seul
+occupant : la session **intégrateur**. Elle merge les PR ordinaires que les
+files déclarent prêtes ; les files travaillent chacune dans leur worktree.
+
+- **Une file déclare, elle ne merge pas.** Son commentaire « prête @<sha> »
+  porte le chemin de son fragment de handoff et ses exceptions ; puis la file
+  fait `/clear`. Les lots de migration, d'authentification et de
+  `.coderabbit.yaml` restent mergés par leur file, jusqu'au bout.
+- **L'intégrateur joue, avant chaque merge, les étapes 7 bis et 7 ter du
+  skill `wn-merge`** : sonde du déploiement, contrôle sur l'arbre fusionné,
+  relecture du registre, chevauchement, `main` inchangé (7 bis), puis la
+  sonde release-db, dernier geste avant le merge (7 ter). Le détail vit dans le skill et dans `docs/claude/REGLES_PR_MERGE.md`.
+- **L'intégrateur avance la copie principale par `git merge --ff-only`**,
+  après T1 si le lot touche les crochets. Un refus de `--ff-only` s'arbitre, il ne se
+  contourne pas.
+- **En repli** (`D-373` §5), chaque session reprend ses merges, avec les
+  mêmes sondes et le même contrôle.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
@@ -49,7 +69,7 @@ alors du temps à chasser un bug qui n'existe pas.
 | Statut | Poste principal | Appoint / secours |
 | Rôle | **Validation et intégration** | **Édition et rédaction** |
 | E2E Playwright **local** | **Exclusivité** | Interdit |
-| Merge vers `main` | Oui | Oui, **via PR au CI vert** |
+| Merge vers `main` | Oui | Oui, **via PR au CI vert** ; pendant l'essai de `D-373`, une PR ordinaire passe par l'intégrateur |
 
 Cette répartition n'est pas une hiérarchie : c'est une **spécialisation**. Le PC
 reste pleinement utile pour écrire du code, de la documentation, relire un diff
@@ -80,7 +100,9 @@ Le 🚫 est la seule interdiction stricte de ce document.
 3. **Le gardien de `main`, c'est le CI — pas la machine.** Le check `verify`
    (E2E compris) tourne sur les runners GitHub à chaque PR, avec sa propre base
    éphémère, quelle que soit la machine qui a poussé. Le PC peut donc merger une
-   PR dont `verify` est vert. En revanche, **ne jamais pousser directement sur
+   PR dont `verify` est vert — pendant l'essai de `D-373`, les seules PR que
+   leur file garde (migration, authentification, `.coderabbit.yaml`), ou
+   toutes en repli (`D-373` §5). En revanche, **ne jamais pousser directement sur
    `main`** : la branche est protégée, `verify` y est le seul check obligatoire
    et `enforce_admins` est **actif** depuis le 2026-07-21 — personne ne passe
    outre, propriétaire compris (réglage relu sur GitHub le 2026-08-03 ; ce
@@ -104,6 +126,8 @@ Le mode de travail nominal, quand les deux machines servent :
 4. **Mac** — lire le CI (`node scripts/wn-attendre-ci.mjs 〈n°〉`), puis merger.
    C'est le poste qui merge : `gh pr checks` seul y était le plus coûteux, en
    lisant les checks présents sans vérifier que `verify` en fasse partie.
+   Pendant l'essai de `D-373`, c'est l'intégrateur qui merge (« La copie
+   principale et l'intégrateur », plus haut).
 
 Un seul principe à retenir : **le PC propose, le Mac valide vite.**
 
@@ -119,7 +143,10 @@ Le PC n'est jamais bloqué. La validation locale du Mac est un **accélérateur*
 3. **PC** — attendre le vert (`node scripts/wn-attendre-ci.mjs 〈n°〉`), puis
    merger. Le script tourne sur les deux machines (node + `gh`, rien d'autre) et
    remplace `gh pr checks --watch`, qui suit les checks présents sans jamais
-   vérifier que `verify` en fait partie.
+   vérifier que `verify` en fait partie. Pendant l'essai de `D-373`, une PR
+   ordinaire se déclare « prête @<sha> » et c'est l'intégrateur qui la merge
+   (plus haut) ; migration, authentification et `.coderabbit.yaml` restent à
+   leur file.
 
 C'est plus lent, pas moins sûr : la PR franchit exactement le même contrôle.
 Le seul interdit reste le push direct sur `main`, qui contournerait ce contrôle.
