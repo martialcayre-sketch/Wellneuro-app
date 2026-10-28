@@ -431,7 +431,8 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
     motif: null,
     justificationClaims: [{ claimId: 'WN-CL-0282-014', versionClaim: 'v1.0' }],
   },
-  // ── §D Non indiqués — motifs VERBATIM des claims, jamais reformulés ───────
+  // ── §D Non indiqués — motif : lecture signée du claim, reproduite mot pour
+  //    mot de la table ; le claim est cité à part (D-389 §1) ───────────────
   {
     id: 'BIO-NIA-01',
     statut: 'publiee',
