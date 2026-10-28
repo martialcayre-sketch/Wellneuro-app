@@ -10,8 +10,13 @@
   deux panels ; idempotente (rejouée, elle ne change aucune ligne). Aucun DDL,
   aucun schéma, aucune règle, empreinte ni signature touchée ; la migration
   d'août reste intacte.
-- Banc `objectifLectureSignee.migration.test.ts` : chaque valeur écrite égale
-  claim et motif lus dans `INDICATIONS_BIOLOGIE_V1` ; « verbatim » absent ;
-  aucun DDL ; empreinte de la migration d'août épinglée.
+- Banc `objectifLectureSignee.migration.test.ts`, lu sur le SQL sans ses
+  commentaires : chaque valeur écrite égale claim et motif lus dans
+  `INDICATIONS_BIOLOGIE_V1` ; deux écritures exactement ; garde d'existence
+  présente avant elles ; « verbatim » absent ; aucun DDL ; empreintes de cette
+  migration et de celle d'août épinglées (une migration appliquée ne se
+  réécrit pas : un motif re-signé appellera une nouvelle migration).
 - Application par release-db approuvée ([[D-087]]), constat des deux valeurs
-  par conteneur. Aucun code n'en dépend.
+  par conteneur. Aucune logique n'en dépend ; la proposition de bilan du
+  cockpit affiche la nouvelle valeur telle quelle ; le courrier et le document
+  patient ne servent pas ces deux panels.
