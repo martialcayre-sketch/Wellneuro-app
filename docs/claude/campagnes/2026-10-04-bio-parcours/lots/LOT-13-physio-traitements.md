@@ -246,6 +246,15 @@ Suite : trois PR sans migration (vigilance et banc sur vraie base ; export ;
 texte v22 mergé le jour de l'allumage), puis l'allumage, geste du
 responsable.
 
+- **PR 1 livrée (2026-10-28)** : la synthèse lit les traitements en vigueur
+  hors drapeau, dans son propre `try` (§4) ; chaque ligne de traitement fait
+  son point, scindé par `scinderSousPlafond` au-delà de 500 caractères, les
+  groupes de l'anamnèse inchangés (§5) ; banc `physioTraitements.pg.test.ts`
+  sur `ecriture.ts` — pose, remplacement, retrait, deux remplacements
+  concurrents d'un fil, deux premières poses concurrentes d'un critère — et
+  son étape CI (§7). Condition (2) remplie. Reste : PR 2 (export), PR 3
+  (v22).
+
 ## Hors périmètre
 
 D-335 §12 : classe de traitement ; IMC et toute dérivée ; garde de

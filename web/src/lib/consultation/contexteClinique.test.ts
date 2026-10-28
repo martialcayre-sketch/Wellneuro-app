@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildContexteClinique, extraireVigilanceDeterministe } from './contexteClinique';
+import { DOSE_MAX, NOM_MAX } from '@/lib/physio-traitements/liste';
+import { LONGUEUR_MAX_POINT } from '@/lib/synthese-praticien';
 
 describe('buildContexteClinique', () => {
   it('renvoie une chaîne vide sans throw pour fiche/anamnese null', () => {
@@ -121,11 +123,11 @@ describe('extraireVigilanceDeterministe', () => {
   });
 });
 
-// [[D-335]] §8 (BP-13) : sous `WN_PHYSIO_TRAITEMENTS`, la ligne de vigilance
-// lit AUSSI les traitements en vigueur du dossier, sous la même forme (nom,
-// dose). Une anamnèse ancienne rend exactement ce qu'elle rendait ; deux
-// sources d'une même nature sont nommées, sans fusion. Traitements
-// synthétiques : aucun nom réel.
+// [[D-335]] §8 (BP-13) : la ligne de vigilance lit AUSSI les traitements en
+// vigueur du dossier, sous la même forme (nom, dose), quel que soit le drapeau
+// ([[D-391]] §4), un point par ligne ([[D-391]] §5). Une anamnèse ancienne
+// rend exactement ce qu'elle rendait ; deux sources d'une même nature sont
+// nommées, sans fusion. Traitements synthétiques : aucun nom réel.
 describe('extraireVigilanceDeterministe — lignes en vigueur (D-335 §8)', () => {
   const ANCIENNE = {
     signaux_alerte: ['Signal X'],
@@ -134,7 +136,7 @@ describe('extraireVigilanceDeterministe — lignes en vigueur (D-335 §8)', () =
     complements: [{ nom: 'Complément B' }],
   };
 
-  it('drapeau éteint (`null`) ou aucune ligne : sortie identique à aujourd’hui', () => {
+  it('aucune ligne (`null` ou vide) : sortie identique à aujourd’hui', () => {
     const avant = extraireVigilanceDeterministe(ANCIENNE);
     expect(extraireVigilanceDeterministe(ANCIENNE, null)).toEqual(avant);
     expect(extraireVigilanceDeterministe(ANCIENNE, [])).toEqual(avant);
@@ -162,6 +164,42 @@ describe('extraireVigilanceDeterministe — lignes en vigueur (D-335 §8)', () =
     expect(result[3]).toContain('Antalgiques');
     // Aucune ligne de complément : l'item de l'anamnèse garde sa forme d'avant.
     expect(result[4]).toBe('Compléments alimentaires en cours : Complément B — vérifier les redondances et interactions.');
+  });
+
+  it('un point par ligne ; les groupes de l’anamnèse gardent leur forme d’avant ([[D-391]] §5)', () => {
+    const result = extraireVigilanceDeterministe(
+      { medicaments: [{ nom: 'Traitement A', dose: '1 cp' }, { nom: 'Traitement B' }] },
+      [
+        { nature: 'medicament', nom: 'Traitement C', dose: '2 mg' },
+        { nature: 'medicament', nom: 'Traitement E', dose: null },
+        { nature: 'complement', nom: 'Complément D', dose: null },
+        { nature: 'complement', nom: 'Complément F', dose: '1 gélule' },
+      ],
+    );
+    expect(result).toEqual([
+      'Traitements médicamenteux en cours (déclarés à l’anamnèse) : Traitement A (1 cp) ; Traitement B — vérifier les interactions, sans proposer d\'ajustement posologique ni d\'arrêt.',
+      'Traitements médicamenteux en cours (lignes datées du dossier) : Traitement C (2 mg) — vérifier les interactions, sans proposer d\'ajustement posologique ni d\'arrêt.',
+      'Traitements médicamenteux en cours (lignes datées du dossier) : Traitement E — vérifier les interactions, sans proposer d\'ajustement posologique ni d\'arrêt.',
+      'Compléments alimentaires en cours (lignes datées du dossier) : Complément D — vérifier les redondances et interactions.',
+      'Compléments alimentaires en cours (lignes datées du dossier) : Complément F (1 gélule) — vérifier les redondances et interactions.',
+    ]);
+  });
+
+  it('un traitement aux bornes de [[D-335]] §3 est scindé sous le plafond, sans rien retirer ni marquer `[C-…]`', () => {
+    const nom = `${'Nomlong '.repeat(25).slice(0, NOM_MAX - 1)}X`;
+    const dose = Array.from({ length: 40 }, () => 'Doselong').join(' ').slice(0, DOSE_MAX);
+    const entier = `Traitements médicamenteux en cours (lignes datées du dossier) : ${nom} (${dose}) — vérifier les interactions, sans proposer d'ajustement posologique ni d'arrêt.`;
+    expect(entier.length).toBe(547);
+
+    const result = extraireVigilanceDeterministe({}, [{ nature: 'medicament', nom, dose }]);
+    expect(result.length).toBeGreaterThan(1);
+    for (const point of result) {
+      expect(point.length).toBeLessThanOrEqual(LONGUEUR_MAX_POINT);
+      expect(point).not.toMatch(/\[C-[A-Z0-9_-]+\]/);
+    }
+    const suite = '[lignes datées du dossier] (suite) ';
+    expect(result.slice(1).every(p => p.startsWith(suite))).toBe(true);
+    expect([result[0], ...result.slice(1).map(p => p.slice(suite.length))].join(' ')).toBe(entier);
   });
 
   it('le texte transmis à l’IA ne reçoit aucune ligne : `buildContexteClinique` n’en prend pas', () => {
