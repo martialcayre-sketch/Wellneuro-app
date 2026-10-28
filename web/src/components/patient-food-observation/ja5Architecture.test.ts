@@ -7,17 +7,33 @@ import {
   LABEL_PAUSE_PATIENT,
 } from '@/lib/food-observation';
 
-const COMPONENT_PATH = resolve(process.cwd(), 'src/components/patient-food-observation/FoodObservationJourney.tsx');
+// D-JA-01 : le parcours, le harnais qui le monte et sa fixture.
+const LOCAL_PATHS = ['FoodObservationJourney.tsx', 'ValidationJaHarness.tsx', 'ja5ValidationFixture.ts'].map(file =>
+  resolve(process.cwd(), 'src/components/patient-food-observation', file),
+);
+const FORBIDDEN = [
+  'fetch(',
+  'XMLHttpRequest',
+  'sendBeacon',
+  'WebSocket',
+  'EventSource',
+  'import(',
+  'localStorage',
+  'sessionStorage',
+  'indexedDB',
+  'document.cookie',
+  '/api/',
+];
 const CARD_PATH = resolve(
   process.cwd(),
   '../docs/claude/campagnes/2026-07-13-journal-alimentaire-21j-v1/supports/carte-a6-essai.html',
 );
 
 describe('architecture et parité JA5-02', () => {
-  it('garde le parcours sans réseau, stockage navigateur, cookie ni API', () => {
-    const source = readFileSync(COMPONENT_PATH, 'utf8');
-    for (const forbidden of ['fetch(', 'localStorage', 'sessionStorage', 'document.cookie', '/api/']) {
-      expect(source).not.toContain(forbidden);
+  it.each(LOCAL_PATHS)('garde %s sans réseau, stockage navigateur, cookie ni API', path => {
+    const source = readFileSync(path, 'utf8');
+    for (const forbidden of FORBIDDEN) {
+      expect(source, forbidden).not.toContain(forbidden);
     }
   });
 
