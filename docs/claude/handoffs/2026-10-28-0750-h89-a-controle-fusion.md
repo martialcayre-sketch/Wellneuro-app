@@ -91,6 +91,11 @@ la lettre de D-373 §4 :
     - mineurs M1, M2, M3, M5 à M10, M12 et M13.
   - M4 traité par `--no-cache` de Vitest (accepté au run réel).
   - M11 laissé (heuristique de date, voir « Décisions prises »).
+- CodeRabbit (eba2e608) : une remarque, corrigée. Un « sain » en cache
+  masquait `mergeable` à faux ; le contrôle passe avant la lecture du cache,
+  et le banc couvre le cas.
+- Fusions de `main` pendant la PR : #1751, puis #1749 et #1752, toutes
+  propres.
 
 ## Problèmes ouverts
 

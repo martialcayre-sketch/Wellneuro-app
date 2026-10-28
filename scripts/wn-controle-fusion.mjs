@@ -447,6 +447,13 @@ export function controler({ pr, racine, source, lireJson, git, executer, cache, 
   if (base.code !== 0) return indetermine('aucun ancêtre commun entre la tête et main.');
   if (base.stdout.trim() === main) return fin(SORTIE_SAIN, 'contrôle non requis : main n’a pas bougé depuis la base de la PR.');
   requis = true;
+  if (mergeable === false) {
+    // Avant le cache, et jamais mis en cache : GitHub recalcule `mergeable`
+    // de façon asynchrone, et un « sain » gardé ne doit pas le masquer
+    // (revue CodeRabbit de #1753). `merge-tree` applique `merge=union` de
+    // `.gitattributes`, GitHub non.
+    return fin(SORTIE_DEFAUT, 'GitHub signale un conflit (`mergeable` à faux) — `merge-tree` peut ne pas le voir, `merge=union` de `.gitattributes` ne jouant qu’en local.');
+  }
 
   const cle = `${main}-${tete}-${VERSION_SCRIPT}`;
   const garde = cache.lire(cle);
@@ -462,11 +469,6 @@ export function controler({ pr, racine, source, lireJson, git, executer, cache, 
   if (fusion.code !== 0 && fusion.code !== 1) return indetermine(`git merge-tree : ${erreurGit(fusion)}`);
   const [arbre, ...enConflit] = fusion.stdout.split('\n').filter(Boolean);
   if (fusion.code === 1) return conclure(juger({ conflits: [...new Set(enConflit)].sort() }));
-  if (mergeable === false) {
-    // Lu au moment de la lecture de la PR, pas mis en cache : GitHub le
-    // recalcule de façon asynchrone après chaque mouvement de `main`.
-    return fin(SORTIE_DEFAUT, 'GitHub signale un conflit (`mergeable` à faux) que `merge-tree` ne voit pas — `merge=union` de `.gitattributes`, appliqué en local seulement.');
-  }
 
   purgerAnciens();
   const dossiers = [];

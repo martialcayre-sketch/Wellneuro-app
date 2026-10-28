@@ -430,6 +430,12 @@ test('collecte : GitHub voit un conflit que merge-tree ne voit pas — défaut, 
   assert.equal(r.code, SORTIE_DEFAUT);
   assert.match(r.lignes[0], /mergeable/);
   assert.equal(cache.m.size, 0);
+  // Un « sain » déjà en cache ne masque pas le conflit vu par GitHub (revue CodeRabbit de #1753).
+  assert.equal(jouer(d, { cache }).code, SORTIE_SAIN);
+  assert.equal(cache.m.size, 1);
+  const apres = jouer(d, { mergeable: false, cache });
+  assert.equal(apres.code, SORTIE_DEFAUT);
+  assert.match(derniere(apres), /cache=non/);
 });
 
 test('collecte : deux vertes séparément, rouge ensemble — défaut imputable (conflit sémantique)', (t) => {
