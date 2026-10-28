@@ -1204,6 +1204,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Mise à jour (2026-10-27, lot 2)** : D-386, lot 2. Le détail du protocole lit les trois plans et « Jour difficile ? » propose le plan de secours, sous `WN_PORTAIL_TROIS_PLANS`, neuf et éteint, pour les versions créées après `2026-10-27T00:00:00Z` (colonne de la ligne). Sans migration. Reste l'activation constatée sur un vrai dossier (file C, porte 18).
 - **Mise à jour (2026-10-27, préparation de l'activation)** : D-386, trois arbitrages du responsable. Le miroir de la sous-vue « Diffusion » lit les trois plans par la règle du portail (le panneau de consultation, monté sur fixture seule, garde le plan minimal) ; le détail déplié d'office est le détail (D-384 §3) ; « Jour difficile ? » ne double plus le point. Encart « quand ralentir » constaté (H71) ; bh pas encore construite. Drapeau toujours éteint ; reste l'activation constatée sur un vrai dossier, précédée du constat d'absence de recul de la production sous 39131a45 (D-386 §2).
 - **Mise à jour (2026-10-27, drapeau posé)** : absence de recul constatée (les seize déploiements postérieurs à 39131a45 descendent de lui). `WN_PORTAIL_TROIS_PLANS=true` posé par le responsable, `web` redémarré à 22:28:34 UTC. Aucune version de protocole n'est encore postérieure à l'instant : rien ne change à l'écran tant qu'une version n'est pas enregistrée puis diffusée. Reste le constat sur un vrai dossier, au portail et dans l'aperçu « Diffusion », à la première telle version.
+- **Journal** : `docs/claude/plan-journal/H49/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H49`.
 
 **File D : gestes du responsable**
 
@@ -2126,7 +2127,7 @@ Mise à jour (2026-10-23, D-346, amende D-288 §3) : l'encart bd n'attend plus l
 |---|---|---|---|
 | Bloc « Protocole » du document médecin, sans la charge déclarée | F39 | 5 | J2-med, p ; « avant le premier check-in » reste une visée que la file peut mettre en défaut |
 | Encart « quand ralentir ou demander avis » | H71 | 5 [Hypothese] | porte 7 (rang 4, levée le 2026-10-18) ; passe devant dès qu'il est prêt, après la place 5 (D-346) ; prêt le 2026-10-23 (D-349) ; **ouvert et constaté le 2026-10-24** (#1669, drapeau posé à 07 h 17 UTC) ; porte 18 levée pour l'ouverture suivante |
-| Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart |
+| Lecture patient des trois plans | H49 | 2 [Hypothese], servie après la place 11 | ba ; ordre de préparation après l'encart ; **ouvert le 2026-10-27 et constaté le 2026-10-28** (drapeau posé à 22:28:34 UTC, #1749 ; constat sur un dossier de test) ; porte 18 levée pour l'ouverture suivante |
 | Nouvelle saisie du sommeil, si elle compte comme une place | H48 | 2 [Hypothese] | ca, cb, porte 16 ; ordre de préparation après l'encart ; compte-t-elle comme une place : oui (arbitrage du 2026-10-14, D-288 §3, #1430) |
 | Ses nuits par semaine | H63 | 4 | porte 16, N-8 ; ordre de préparation après l'encart |
 | Indicateurs de la semaine, au point d'étape | H19 | 3 au plus tôt [Hypothese] pour le code | une D-xxx par indicateur ; moment : au point d'étape ; ordre : après l'encart |
