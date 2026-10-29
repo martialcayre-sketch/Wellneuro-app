@@ -274,6 +274,15 @@ responsable.
   2026-10-28 (`docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/`).
   Durées de [[D-378]] en v23. Merge et allumage avancés au 2026-10-28 :
   condition (4) remplie au merge.
+- **Allumé, constaté (2026-10-29)** : PR 3 mergée (#1770), v22 et
+  conditions v5 servies en production ; `WN_PHYSIO_TRAITEMENTS` allumé le
+  2026-10-28 par le responsable, puis restart ; constaté le 2026-10-29 par
+  son effet — les routes `api/praticien/physio-traitements` et
+  `api/portail/physio-traitements` répondent `401` sans session au lieu de
+  `503` (production sur a4bb77ee). **À faire par le responsable**, non
+  constatés : l'e-mail `conditions_utilisation@5` aux patients suivis ; le
+  passage de bout en bout de [[D-345]] §8 (« non » à grossesse et à
+  allaitement sur un dossier de test).
 
 ## Hors périmètre
 
