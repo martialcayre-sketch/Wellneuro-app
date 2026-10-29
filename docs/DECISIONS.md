@@ -6,6 +6,48 @@
 
 ## Décisions actives
 
+### D-395 — D/51 : `questionnaires.actif` rattrape le catalogue de code en production pour six instruments — les cinq de D-066 et `Q_ALI_09`, par migration de données
+
+- Date : 2026-10-29
+- Statut : accepté — arbitrage du responsable du 2026-10-29, sur question à
+  options dans la session du lot (question `20261029-2319-d` de la liste
+  commune, nature migration) ; appliqué par release-db (D-087).
+- Domaine : registre relationnel des questionnaires (table `questionnaires`),
+  contrat `packs_instruments_suspendus_v1` ; plan, file D, ligne sans rang
+  D/51, et dette du §8.
+- Ne touche pas : ni `schema.prisma` ni aucune table ; aucune donnée patient ;
+  aucun pack ; les routes, qui lisent `IDS_SUSPENDUS` au catalogue de code ;
+  les quatre instruments que le catalogue suspend encore (`Q_FIB_03`,
+  `Q_PED_02`, `Q_PED_03`, `Q_URO_02`).
+- Contexte, lu en production le 2026-10-29 par conteneur (lecture seule, en
+  agrégats) : les 67 lignes de `questionnaires` datent toutes du backfill du
+  2026-08-06, qui n'a pas été rejoué depuis. Dix d'entre elles sont
+  suspendues. Six ne le sont plus au catalogue de code : `Q_GEO_03` à
+  `Q_GEO_06` et `Q_NEU_06`, réactivés par [[D-066]], et `Q_ALI_09`, dont
+  `actif` suit le drapeau `WN_AGENDA_ALI`, allumé en production. Aucun des
+  huit packs ne porte l'un des cinq. La colonne n'a qu'un lecteur, le
+  contrat des packs, qui prend la base pour source.
+
+**§1 — Écrire plutôt que consigner l'écart.** Une migration de données passe
+les six à `actif = true`. Elle tient en un seul UPDATE, filtré sur les six
+identifiants et sur `NOT "actif"`, donc idempotent. Écartés : consigner
+l'écart par écrit (proposé en recommandation, puisque le service n'en dépend
+pas), et corriger les cinq sans `Q_ALI_09`.
+
+**§2 — `Q_ALI_09` suit le drapeau tel qu'il est à la date de la migration.**
+Si `WN_AGENDA_ALI` s'éteint un jour, la base redira « actif » pour un
+instrument que le catalogue suspend, et le contrat des packs ne le verra pas.
+Cette borne est acceptée ; un tel retour se traite par une nouvelle décision.
+
+**§3 — Preuve.** Le banc
+`web/src/lib/questionnaires-actif-rattrapage.migration.test.ts` lit le SQL
+livré. Il épingle les six identifiants, vérifie que les cinq de D-066 sont
+actifs au catalogue et qu'aucun instrument suspendu sans drapeau n'est visé,
+et exige une seule instruction hors commentaires, cet UPDATE, sans aucun mot
+destructif. Après la release-db, un constat par conteneur doit montrer
+exactement quatre lignes suspendues, nommées : `Q_FIB_03`, `Q_PED_02`,
+`Q_PED_03` et `Q_URO_02`.
+
 ### D-394 — D/55 : deux actions en double dans une même version de protocole se refusent à l'enregistrement — même type et même intitulé, ou même fiche d'assiette
 
 - Date : 2026-10-29
