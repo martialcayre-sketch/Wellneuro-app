@@ -18,6 +18,7 @@ import {
   FlaskConical,
   Lightbulb,
   Pill,
+  Tally5,
   type LucideIcon,
 } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
@@ -81,6 +82,9 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
         icon: Users,
         prefixesActifs: ['/dashboard/patients/'],
       },
+      // Les comptes du cabinet ([[D-385]], J3-cabinet) : près de la porte
+      // Trajectoires, même population. La page compte, elle n'ouvre aucun dossier.
+      { href: '/dashboard/cabinet', label: 'Comptes du cabinet', icon: Tally5 },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
       // L'agenda reste une entrée du menu, sans encart à l'accueil (D-324 §2) :
       // aucun rendez-vous n'était saisi en production le 2026-10-18.
