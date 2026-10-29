@@ -126,11 +126,17 @@ dans `c_apres` : aucun (relevé du responsable, 2026-10-29).
 |---|---|---|
 | Taux de réponse | 87 / 315 nuits = 27,6 % (15 fenêtres échues) | 40 / 44 nuits écoulées = 90,9 % (3 fenêtres en cours) |
 | Délai assignation → première saisie (médiane, maximum) | 0 j, 28 j (18 agendas) | 4,5 j, 9 j (2 agendas) |
-| « Je ne sais pas » (R08) | — | 0 sur 41 nuits v4 |
+| « Je ne sais pas » (R08) | — | 0 sur 41 lignes v4 |
 | Corrections / saisies le lendemain | 5 / 7, sur 92 lignes | 1 / 6, sur 41 lignes |
 | Saisies entre 5 h et 11 h (Paris) | 46 / 92 | 24 / 41 |
 
 `b_transition` : 3 fenêtres échues, 9 / 63 nuits (14,3 %).
+
+Deux dénominateurs : une **ligne** est une saisie enregistrée, correction
+comprise (R06 à R09) ; une **nuit** est une date distincte (R01 à R04). Les
+corrections font l'écart, et les comptes se réconcilient : `c_apres`
+41 lignes − 1 correction = 40 nuits ; `a_avant` 92 − 5 = 87. À la seconde
+lecture, reprendre le même dénominateur que la mesure comparée.
 
 Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
 
