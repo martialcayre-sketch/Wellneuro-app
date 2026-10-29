@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Re-mesure de l'adhésion, par cohortes avant / après"
-statut: "en_cours (2026-10-08) — requête prête, première lecture au 2026-10-29"
+statut: "en_cours (2026-10-29) — première lecture jouée, seconde au 2026-11-12"
 dépend_de: "LOT-04"
 ---
 
@@ -104,6 +104,50 @@ référence : part des agendas à une seule nuit (8 / 15), nuits médianes (1),
 agendas ≥ 14 nuits (2 / 15), et R08. Les agendas créés pendant la recette sur
 appareil tomberont dans `c_apres` : leur nombre est à relever pour les retirer
 du compte.
+
+## Première lecture (jouée le 2026-10-29)
+
+Même requête, mêmes bornes (`av` 2026-10-07, `ap` 2026-10-09), par conteneur
+`scalingo run -d`, horloge de la base au 2026-10-29 12:48 UTC. Agrégats seuls ;
+la sortie brute n'est pas versée. Les dossiers de test sont compris dans les
+comptes (`D-075`).
+
+**Contrôle des bornes (R07) : conforme.** `a_avant` : v2 et v3 seulement ;
+`b_transition` : v3 ; `c_apres` : v4 seulement (41 lignes).
+
+**Aucune fenêtre `c_apres` n'est encore échue.** Aucun agenda `c_apres`
+n'a commencé le 2026-10-09 : les trois agendas de la cohorte sont en
+cours. La comparaison annoncée plus haut (part des agendas à une seule nuit,
+nuits médianes, agendas ≥ 14 nuits, sur fenêtres échues) ne se lit donc pas
+encore ; elle revient à la seconde lecture. Agendas de recette sur appareil
+dans `c_apres` : aucun (relevé du responsable, 2026-10-29).
+
+| Mesure | `a_avant` | `c_apres` |
+|---|---|---|
+| Taux de réponse | 87 / 315 nuits = 27,6 % (15 fenêtres échues) | 40 / 44 nuits écoulées = 90,9 % (3 fenêtres en cours) |
+| Délai assignation → première saisie (médiane, maximum) | 0 j, 28 j (18 agendas) | 4,5 j, 9 j (2 agendas) |
+| « Je ne sais pas » (R08) | — | 0 sur 41 nuits v4 |
+| Corrections / saisies le lendemain | 5 / 7, sur 92 lignes | 1 / 6, sur 41 lignes |
+| Saisies entre 5 h et 11 h (Paris) | 46 / 92 | 24 / 41 |
+
+`b_transition` : 3 fenêtres échues, 9 / 63 nuits (14,3 %).
+
+Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
+
+- **Trois fenêtres en cours, tenues à neuf nuits sur dix jusqu'ici** : rien ne
+  dit encore qu'elles iront au 21e jour ; c'est la question que la référence
+  pose (décrochage après la première nuit), et elle ne se tranche que sur
+  fenêtres échues.
+- **La référence a bougé depuis le 2026-10-09**, alors que ses fenêtres
+  étaient closes : 87 nuits au lieu de 85, médiane 2 au lieu de 1, agendas
+  ≥ 14 nuits 3 au lieu de 2 ; décrochage à la 1re nuit 7 au lieu de 8, en
+  3e semaine 8 au lieu de 7 ; assignations d'au moins 7 jours, commencées :
+  18 / 22 au lieu de 16 / 20. Deux lectures possibles, aucune prouvée : des
+  nuits passées saisies après coup, ou des assignations dont le statut a
+  changé. Seconde lecture : relire la référence avant de comparer.
+
+**Seconde lecture : 2026-11-12, maintenue.** La porte 16 ne se lève qu'à la
+clôture du lot, après elle.
 
 ## Correction apportée au constat
 
