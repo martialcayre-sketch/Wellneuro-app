@@ -11,3 +11,7 @@
   permet de la recalculer. Les textes restent hors dépôt (D-382 §5).
 - Rien ne change à l'écran, dans la table des quinze règles ni dans son
   empreinte. La re-signature de la table forme l'étape 3, un lot propre.
+- Après une contre-revue adverse revérifiée dans le dépôt, trois fiches
+  (le syndrome des jambes sans repos et les deux exclusions) ont vu leur
+  texte descriptif corrigé, puis ont été signées à nouveau le même jour ;
+  le registre porte leurs nouvelles empreintes.

@@ -16,7 +16,9 @@ Validée par le responsable le 2026-10-29, avant le premier calcul :
 1. Source : export Markdown (moteur md-v1) du dossier privé, à la révision
    signée de la fiche (colonne « Révision » : numéro de version du dossier
    privé ; F05 et F09, rectifiées avant signature, l'ont été à une révision
-   ultérieure ; les révisions intermédiaires ne portent aucune signature).
+   ultérieure, et F11, E1 et E2, corrigées après une contre-revue adverse,
+   ont été signées à nouveau à la révision 64 ; les révisions intermédiaires
+   ne portent aucune signature en vigueur).
 2. Découpe : de la ligne de titre de la fiche (`### <code> — …`) incluse
    jusqu'avant la ligne du titre suivant, de niveau `##` ou `###` ; pour E2,
    dernière fiche, ce titre est celui de la section qui suit les exclusions.
@@ -45,11 +47,11 @@ avant que ces textes soient servis, et le lot ax l'ajoutera (D-382 §5).
 | F08 | `PANEL_NEURODEG_1` | BIO-NEU-01 | 2026-10-28 | 57 | `41e9e4935f788785364003dd525606b8220d874182b656f00e370e96b6d3e9da` |
 | F09 | `PANEL_METABOLIQUE_1` | BIO-MET-01 | 2026-10-29 | 60 | `c18414435719857316af968f9c4a41f83f765cc23865562f3801674563148a27` |
 | F10 | `PANEL_METABOLIQUE_OPT` | BIO-MET-02 | 2026-10-29 | 58 | `2eb7db93ecbe0b76e1f87956e50bbd3bc69f3f43752d8c3142c5f3ff5d1d209e` |
-| F11 | `PANEL_SJSR` | BIO-SJS-01 | 2026-10-29 | 58 | `ee589ef2f709b7fd2ecc133c056ecd886b47474fe3157ac0edd36c948e180909` |
+| F11 | `PANEL_SJSR` | BIO-SJS-01 | 2026-10-29 | 64 | `4673a8b92b8f4b545081667a3780cf21af9cfea7fd41b16656ba94577cc91a93` |
 | F12 | `PANEL_POP_FEMME` | BIO-POP-01 | 2026-10-29 | 60 | `227ca4a513f152f6ff9363e1a68d3b504450209b3add1ebb910dce757e9ee8dd` |
 | F13 | `PANEL_POP_AGEE` | BIO-POP-02 | 2026-10-29 | 60 | `87191cd94e308e6b3419f695124412c90c91005f892e274cdbb83f5f7118bb5a` |
-| E1 | `PANEL_MG_PLASMATIQUE` | BIO-NIA-01 | 2026-10-29 | 60 | `888528964d57e8305f938ce0ba2edc5661a61346dcab81a1e8f5aaec873e2191` |
-| E2 | `PANEL_CORTISOL_ISOLE` | BIO-NIA-02 | 2026-10-29 | 60 | `53d794ca1cdbf1c600e378a371dce9430be69bffbe2db87f94216fd721543f7e` |
+| E1 | `PANEL_MG_PLASMATIQUE` | BIO-NIA-01 | 2026-10-29 | 64 | `38d013f283cd7ee12dcd787db19e4497ef5fadd89686b82bcbc4dc659159661c` |
+| E2 | `PANEL_CORTISOL_ISOLE` | BIO-NIA-02 | 2026-10-29 | 64 | `b0f9ac313a6526928a5c114ad86448a8f9fdbee7cb416cdac58f7b5e51113578` |
 
 ## Ce que ce registre ne fait pas
 
