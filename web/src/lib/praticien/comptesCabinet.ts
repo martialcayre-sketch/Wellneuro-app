@@ -246,6 +246,15 @@ export async function etapeDuDossier(
 }
 
 /**
+ * Le NOM d'une erreur, jamais son message : une erreur de validation Prisma
+ * recopie les arguments de la requête, dont l'identifiant du dossier (revue
+ * CodeRabbit de #1780). Le journal dit qu'une lecture a échoué, pas sur qui.
+ */
+function nomErreur(erreur: unknown): string {
+  return erreur instanceof Error ? erreur.name : 'erreur inconnue';
+}
+
+/**
  * Le GET du cockpit au présent, sans `asOf`, réduit à ce que les phases
  * lisent : même enchaînement que la route (ancre du cycle, proposition,
  * épisode persisté, rejeu), et le même repli — un rejeu qui jette rend la
@@ -271,7 +280,7 @@ async function lireCockpitAuPresent(
       // affiche, et la parité l'exige.
       console.warn(
         '[comptes-cabinet] rejeu impossible, proposition retenue :',
-        erreurRejeu instanceof Error ? erreurRejeu.message : String(erreurRejeu),
+        nomErreur(erreurRejeu),
       );
     }
   }
@@ -465,15 +474,15 @@ export async function compterCabinet(emailPraticien: string, maintenant: Date): 
     } catch (erreur) {
       // « Indéterminé » sur l'écran, et la cause dans le journal : sans cette
       // ligne, une panne se lirait « indéterminé » partout, sans trace. Le
-      // message de l'erreur, jamais le dossier.
-      console.warn('[comptes-cabinet] étape indéterminée :', erreur instanceof Error ? erreur.message : String(erreur));
+      // NOM de l'erreur seul (`nomErreur`).
+      console.warn('[comptes-cabinet] étape indéterminée :', nomErreur(erreur));
       etape = 'indetermine';
     }
     let protocole: EtatProtocoleCompte;
     try {
       protocole = await etatProtocole(idPatient, maintenant);
     } catch (erreur) {
-      console.warn('[comptes-cabinet] protocole indéterminé :', erreur instanceof Error ? erreur.message : String(erreur));
+      console.warn('[comptes-cabinet] protocole indéterminé :', nomErreur(erreur));
       protocole = 'indetermine';
     }
     return { etape, protocole };

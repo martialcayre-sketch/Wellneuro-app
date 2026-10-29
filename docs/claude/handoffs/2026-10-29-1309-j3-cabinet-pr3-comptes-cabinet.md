@@ -105,6 +105,28 @@ Choix d'exécution :
     - `prefixesActifs` : l'entrée s'allume par préfixe par défaut ;
     - `Tally5` existe dans lucide-react 1.24.0.
 
+- **CI de la PR** :
+  - premier passage rouge sur trois bases visuelles Desktop de la fiche
+    (entrée du rail). Elles ont été régénérées par `visual-baselines` (run
+    40873998113), relues image par image, et seules les trois refusées ont
+    été committées ;
+  - second passage vert sur 07d2cff7.
+- **Revue CodeRabbit sur 07d2cff7**, trois remarques :
+  - **corrigée** : la journalisation ne donne plus que le nom de l'erreur.
+    Une erreur de validation Prisma recopie ses arguments, `idPatient`
+    compris ;
+  - **écartées avec motif**, les deux remarques sur l'échec d'une lecture
+    groupée (chargeur partagé, `Promise.all`). Une panne de lecture groupée
+    est une panne technique, pas l'état d'un dossier. La page le dit par son
+    message d'erreur validé, au lieu de compter tout le cabinet en
+    « Indéterminé ». L'arbitrage du 2026-10-27 vise les lectures et le rejeu
+    d'UN dossier.
+- **PR-Agent**, deux remarques écartées avec motif :
+  - charge en production : le plan §7 demande la mesure d'abord, voir
+    Problèmes ouverts ;
+  - absence de drapeau : ni D-385 ni le plan n'en prévoient pour une page
+    interne en lecture seule.
+
 ## Problèmes ouverts
 
 - **Le coût réel n'est pas mesuré** sur des données de production. La ligne
