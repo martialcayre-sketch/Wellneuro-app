@@ -28,7 +28,9 @@ export async function GET(): Promise<NextResponse<ComptesCabinetApiResponse>> {
     const lignes = await compterCabinet(email, new Date());
     return NextResponse.json({ ok: true, comptes: agregerComptesCabinet(lignes) });
   } catch (err) {
-    console.error('[praticien/comptes-cabinet GET]', err instanceof Error ? err.message : String(err));
+    // Le NOM seul, comme le chargeur : une erreur Prisma peut recopier les
+    // identifiants des dossiers lus (revue PR-Agent de #1780).
+    console.error('[praticien/comptes-cabinet GET]', err instanceof Error ? err.name : 'erreur inconnue');
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
   }
 }

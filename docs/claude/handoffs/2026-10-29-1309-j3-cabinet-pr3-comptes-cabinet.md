@@ -121,6 +121,9 @@ Choix d'exécution :
     message d'erreur validé, au lieu de compter tout le cabinet en
     « Indéterminé ». L'arbitrage du 2026-10-27 vise les lectures et le rejeu
     d'UN dossier.
+- **PR-Agent sur 2411493a** : une remarque **corrigée**, « Journalisation de
+  données ». Le `catch` de la route ne journalise plus que le nom de
+  l'erreur, comme le chargeur.
 - **PR-Agent**, deux remarques écartées avec motif :
   - charge en production : le plan §7 demande la mesure d'abord, voir
     Problèmes ouverts ;
