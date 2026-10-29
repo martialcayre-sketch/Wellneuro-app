@@ -2124,7 +2124,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25 (H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
-| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
+| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation, après le constat de la place 7, devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
 | 11 | Photo ou dictée des repas | H83 | registre IA, porte 5, D-269, code | information patient | 10 |
 
 ### Ouvertures sans place numérotée
