@@ -3,9 +3,11 @@
 Les quinze fiches des familles du bilan sont signées par le responsable,
 les 2026-10-28 et 2026-10-29 : treize familles ordinaires et deux blocs
 d'exclusion. Ce registre en porte les codes, la date de signature et
-l'empreinte SHA-256 de la version signée, et rien d'autre (D-382 §5,
-D-251 §4). Les textes restent hors dépôt, dans le dossier privé du
-responsable (patron D-312 §2).
+l'empreinte SHA-256 de la version signée (D-382 §5), avec la forme
+canonique qui permet de la recalculer : des identifiants et un mécanisme,
+jamais un texte de fiche (D-251 §4, D-312 §2). Les textes restent hors
+dépôt, dans le dossier privé du responsable. Le déroulé des signatures et
+des réserves est au journal de F34 (`docs/claude/plan-journal/F34/`).
 
 ## Forme canonique
 
@@ -44,20 +46,6 @@ avant que ces textes soient servis, et le lot ax l'ajoutera (D-382 §5).
 | F13 | `PANEL_POP_AGEE` | BIO-POP-02 | 2026-10-29 | 60 | `87191cd94e308e6b3419f695124412c90c91005f892e274cdbb83f5f7118bb5a` |
 | E1 | `PANEL_MG_PLASMATIQUE` | BIO-NIA-01 | 2026-10-29 | 60 | `888528964d57e8305f938ce0ba2edc5661a61346dcab81a1e8f5aaec873e2191` |
 | E2 | `PANEL_CORTISOL_ISOLE` | BIO-NIA-02 | 2026-10-29 | 60 | `53d794ca1cdbf1c600e378a371dce9430be69bffbe2db87f94216fd721543f7e` |
-
-## Comment les signatures ont été données
-
-- Chaque fiche a été présentée au responsable en texte intégral, à sa
-  révision, avant la demande ; sa déclaration a précédé le calcul de
-  l'empreinte (D-195 §1-§2).
-- E1 et E2 : la déclaration de lecture signée de D-389 §2 a été prononcée
-  avant la signature, écarts nommés.
-- Réserves du dossier tranchées par le responsable le 2026-10-28 : R1
-  levée après relecture du claim en production (conteneur, lecture seule) ;
-  R2 à R5 acceptées et écrites dans la fiche qu'elles touchent ; R6 et R7
-  l'étaient par D-389. Aucun texte clinique nouveau, aucune borne.
-- F05 et F09 : provenance de trois claims rectifiée avant signature. Comme
-  pour R1, l'étiquette de section du chunk n'était que son dernier titre.
 
 ## Ce que ce registre ne fait pas
 
