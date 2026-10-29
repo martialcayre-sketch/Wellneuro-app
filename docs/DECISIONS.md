@@ -2302,7 +2302,8 @@ montre que son titre. Aucun texte d'état neuf : les messages viennent des
 routes et de l'espace des fiches, déjà servis.
 
 **§4 — L'activation** reste celle de [[D-357]] §7, après le constat de la
-place 9. Son constat s'étend au lien : sur le dossier de test majeur, la
+place 9 — après celui de la place 7 depuis l'amendement du 2026-10-29 de
+[[D-357]] §7. Son constat s'étend au lien : sur le dossier de test majeur, la
 bibliothèque est servie et le lien des fiches s'efface ; sur un dossier
 mineur, le lien des fiches reste et celui de la bibliothèque n'existe pas.
 
@@ -2530,6 +2531,16 @@ praticien », « Pour mieux comprendre votre démarche ».
 ([[D-288]] §2) par identifiant, lu depuis un conteneur : un dossier de test
 majeur ouvre la bibliothèque et y lit sa fiche remise ; un dossier mineur
 n'en voit pas l'entrée. Consigné en agrégats.
+
+**Amendement (2026-10-29) — l'activation après le constat de la place 7.**
+Arbitrage du responsable, sur question à options (liste commune de
+questions) : « après le constat de la place 9 » devient « après le constat
+de la place 7 ». La bibliothèque est prête depuis le 2026-10-25 ([[D-360]],
+#1697, déployée éteinte), alors que la place 8 attend les portes 19 et 28
+et la place 9 la chaîne de H74. [[D-346]] §3 s'applique : une place de 6 à
+11 prête avant une autre passe devant. Le reste du §7 ne change pas : porte
+18, drapeau posé sur accord du responsable, même constat. Les places 8 et 9
+gardent leurs préalables et s'ouvrent après la bibliothèque.
 
 - Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
   plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).
