@@ -14,12 +14,16 @@ des réserves est au journal de F34 (`docs/claude/plan-journal/F34/`).
 Validée par le responsable le 2026-10-29, avant le premier calcul :
 
 1. Source : export Markdown (moteur md-v1) du dossier privé, à la révision
-   signée de la fiche.
+   signée de la fiche (colonne « Révision » : numéro de version du dossier
+   privé ; F05 et F09, rectifiées avant signature, l'ont été à une révision
+   ultérieure ; les révisions intermédiaires ne portent aucune signature).
 2. Découpe : de la ligne de titre de la fiche (`### <code> — …`) incluse
-   jusqu'avant le titre suivant.
+   jusqu'avant la ligne du titre suivant, de niveau `##` ou `###` ; pour E2,
+   dernière fiche, ce titre est celui de la section qui suit les exclusions.
 3. Normalisation : l'échappement `\_` de l'export est rendu `_` (seul
-   échappement présent) ; Unicode NFC ; fins de ligne LF ; blancs finaux
-   ramenés à un seul saut de ligne.
+   échappement présent) ; Unicode NFC ; fins de ligne LF ; lignes internes,
+   vides comprises, conservées telles quelles ; blancs finaux ramenés à un
+   seul saut de ligne.
 4. Empreinte : SHA-256 des octets UTF-8, en hexadécimal minuscule.
 
 Chaque texte canonique est déposé à l'octet dans les fichiers du dossier
