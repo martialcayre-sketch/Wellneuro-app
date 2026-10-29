@@ -6,6 +6,54 @@
 
 ## Décisions actives
 
+### D-394 — D/55 : deux actions en double dans une même version de protocole se refusent à l'enregistrement — même type et même intitulé, ou même fiche d'assiette
+
+- Date : 2026-10-29
+- Statut : accepté — trois arbitrages du responsable du 2026-10-29, rendus sur
+  questions à options dans la session du lot (question `20261028-2247-d` de la
+  liste commune, nature clinique) : le régime, le critère, les textes.
+- Domaine : construction des versions de protocole, route
+  `api/praticien/protocoles/versions` (POST) ; plan, file D, ligne sans rang
+  D/55.
+- Ne touche pas : aucune migration ni table ; aucun fichier sous
+  `web/src/lib/clinical/` ; aucun seuil ; les versions déjà enregistrées ne
+  sont ni relues ni retirées ; les gardes existantes (au moins une action,
+  références C5, registre anxiogène de [[D-189]] §4) sont inchangées.
+- Contexte, constaté le 2026-10-28 à l'activation de bb ([[D-386]]) : la
+  seule version postérieure à la mise en service portait deux actions
+  alimentaires distinctes sous le même intitulé, servies fidèlement en deux
+  cartes. La route ne comparait aucune action à une autre.
+
+**§1 — Refuser, pas signaler.** Une version qui porte deux actions en double
+ne s'enregistre pas ; le praticien en retire une ou la modifie. Écartés : le
+régime confirmable de [[D-090]] (proposé en recommandation), et laisser
+passer. Le refus est un 400 `draft_invalid`, affiché par le cockpit comme les
+autres refus de la route. Il est jugé avant la garde de registre : un texte à
+reformuler ne se confirme pas sur une version qui sera refusée.
+
+**§2 — Deux critères, l'un ou l'autre.** Deux actions sont en double si elles
+ont **le même type et le même intitulé**, ou si elles indiquent **la même
+fiche d'assiette** (`recommendedPlateRef.plateCode`, action alimentaire en V4,
+[[D-240]]). L'intitulé se compare sans la casse ni les espaces (bords et
+suites), accents compris, en forme Unicode NFC ; un intitulé vide n'est pas
+comparé. Ce sont des
+règles techniques de saisie, pas des seuils. Écartés : l'intitulé seul (il
+signalerait un même mot sous deux types), l'assiette seule (facultative, elle
+n'aurait pas couvert le constat).
+
+**§3 — Textes.** Validés mot pour mot le 2026-10-29. Les actions se nomment
+par leur intitulé, pas par un numéro : le constructeur place l'action
+d'orientation en tête de la soumission, et un rang serveur serait faux à
+l'écran.
+- même type et même intitulé : « Deux actions portent le même intitulé,
+  « … », et le même type. Retirez-en une, ou changez son intitulé, puis
+  enregistrez. » ;
+- même assiette : « Les actions « … » et « … » indiquent la même assiette.
+  Retirez-en une, ou changez son assiette, puis enregistrez. ».
+
+Une paire qui répond aux deux critères rend le premier texte ; les paires se
+lisent dans l'ordre de la soumission.
+
 ### D-393 — Revue de substitution : quand CodeRabbit saute une PR ou bute sur son quota, la revue de PR-Agent sur la tête le remplace ; une seule revue de bot exigée, prouvée par le run sur la tête ; `pr_agent.yml` gardé par sa file (amende D-290 §1 et §3)
 
 - Date : 2026-10-28
