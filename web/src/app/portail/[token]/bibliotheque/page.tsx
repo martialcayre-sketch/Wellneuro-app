@@ -8,7 +8,7 @@ import { bibliothequeOuverte } from '@/lib/portail/bibliothequeDrapeau';
 // l'accès (dossier majeur seul, §5).
 //
 // Le drapeau garde l'écran ET la route. `notFound()` : tant que la surface n'est
-// pas ouverte (après le constat de la place 9, §7), elle n'existe pas pour le
+// pas ouverte (après le constat de la place 7, §7), elle n'existe pas pour le
 // patient.
 export default async function PortailBibliothequePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
