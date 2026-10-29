@@ -26,6 +26,7 @@ import {
   toEpisodeCreateInput,
 } from '@/lib/protocol/versioning';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
+import { refusActionsEnDouble } from '@/lib/protocol/actionsEnDouble';
 import {
   C5_DATASET_VERSION,
   C5_PRACTITIONER_FOODS,
@@ -336,6 +337,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       // ne doit pas en profiter pour naître vide.
       if (submittedActions.length === 0) {
         throw new TypeError('Un protocole enregistré exige au moins une action.');
+      }
+      // DEUX ACTIONS EN DOUBLE SE REFUSENT ([[D-394]]) : même type et même
+      // intitulé, ou même fiche d'assiette. Avant le registre : un texte à
+      // reformuler ne se confirme pas sur une version qui sera refusée.
+      const doublon = refusActionsEnDouble(submittedActions);
+      if (doublon !== null) {
+        throw new TypeError(doublon);
       }
       const hasC5Reference = submittedActions.some(action => action.foodCompassRef !== undefined);
       // Le chemin V2 exige une cible relue : le dire, plutôt que « cible invalide ».
