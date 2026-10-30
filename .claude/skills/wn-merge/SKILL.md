@@ -138,13 +138,19 @@ dernière session.
    `modified` ou rebaptisé ne compte pas, le `README.md` du dossier non plus ;
    l'entrée `SESSION_LOG.md` n'est plus exigée depuis D-372. Il manque → **ne pas merger, même CI vert** :
    demander `/wn-finish` puis `/wn-handoff write`, poussés sur la branche de la <!-- mention-seule: wn-finish, wn-handoff -->
-   PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
+   PR tant qu'elle est ouverte. Une seule dispense, `D-396` §1 : une PR
+   documentaire (`docs_only=true`, l'étape « Contrôle de clôture (fragment
+   de handoff) » sautée sur sa tête) peut citer dans sa déclaration le
+   handoff de son lot, présent sur `origin/main` (`git cat-file -e`), si son
+   titre et ce handoff nomment une même décision `D-xxx` ou une même fiche ;
+   sinon, renvoi. Aucune autre dérogation : la PR de
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
    précisément cette clôture, donc elle passe le contrôle par construction — et
    c'est la seule forme acceptée de PR de rattrapage. Depuis E56 (2026-10-18),
    l'étape « Contrôle de clôture » du CI refuse la même absence sur toute PR
    qui touche du code — un fragment CRÉÉ par la PR, pas un handoff passé
-   retouché ; ce contrôle-ci reste, et couvre aussi les PR de doc.
+   retouché ; ce contrôle-ci reste, et couvre aussi les PR de doc, à la
+   dispense de `D-396` près.
 7 bis. **Déploiement, registre, arbre fusionné, chevauchement — avant chaque
    merge** (`D-373` §2, §4 et §7). Quatre gestes, dans cet ordre, chaque code
    lu directement — jamais dans un tube.
@@ -264,8 +270,9 @@ contourner.
    déjà faite ou restant à faire.
 4. **Commentaires de revue** : leur nombre, et pour chacun son verdict — corrigé
    (commit), écarté (motif), routé (adresse). Aucun sans verdict.
-5. Clôture opposable : fragment de handoff créé par la PR, ou merge refusé
-   avec le geste de rattrapage.
+5. Clôture opposable : fragment de handoff créé par la PR, ou handoff du lot
+   cité par une PR documentaire (`D-396` §1), ou merge refusé avec le geste de
+   rattrapage.
 5 bis. Sonde du déploiement (code, état, retenue de migration ou non) ;
    contrôle sur l'arbre fusionné (sa ligne `CONTROLE fusion`, et le motif
    d'un `1` ou d'un `2`) ; décisions entrées dans `main` depuis la base de la
