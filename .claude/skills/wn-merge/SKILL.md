@@ -143,7 +143,8 @@ dernière session.
    de handoff) » sautée sur sa tête) peut citer dans sa déclaration le
    handoff de son lot, présent sur `origin/main` (`git cat-file -e`), si son
    titre et ce handoff nomment une même décision `D-xxx` ou une même fiche ;
-   sinon, renvoi. Aucune autre dérogation : la PR de
+   sinon, renvoi. La PR de rattrapage n'en bénéficie pas. Aucune autre
+   dérogation : la PR de
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
    précisément cette clôture, donc elle passe le contrôle par construction — et
    c'est la seule forme acceptée de PR de rattrapage. Depuis E56 (2026-10-18),

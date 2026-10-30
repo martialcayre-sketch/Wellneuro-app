@@ -50,9 +50,12 @@ conditions sont réunies :
 - (c) le titre de la PR et le handoff cité nomment une même décision
   `D-xxx` ou une même fiche du plan.
 
-Une PR qui ne cite aucun handoff, ou dont une condition manque, est
-renvoyée, au même motif qu'avant. Une PR qui crée son handoff passe
-l'étape 7 comme avant.
+La dispense ne vaut pas pour une PR de rattrapage d'une fenêtre de clôture
+ratée (verdict de cycle de `wn-cycle.mjs` en sortie `1`) : elle existe pour
+porter la clôture qui manque, et la crée elle-même, même si elle remplit
+les trois conditions. Une PR qui ne cite aucun handoff, ou dont une
+condition manque, est renvoyée, au même motif qu'avant. Une PR qui crée
+son handoff passe l'étape 7 comme avant.
 
 **§2 — Ce que l'intégrateur vérifie.** Il lit les `files` de la PR comme
 le demande l'étape 7. Il vérifie (a) dans les check-runs de la tête,
