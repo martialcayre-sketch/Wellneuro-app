@@ -6,6 +6,69 @@
 
 ## Décisions actives
 
+### D-396 — Clôture d'une PR documentaire : elle peut citer le handoff de son lot, déjà sur `main`, au lieu d'en créer un (amende l'étape 7 de `wn-merge`)
+
+- Date : 2026-10-30
+- Statut : accepté — arbitrages du responsable du 2026-10-30, rendus en
+  conversation sur deux questions à options : garder l'étape 7 telle
+  qu'écrite ou l'amender (« amender »), puis la portée de l'amendement
+  (« PR documentaire citant un handoff »). Texte rédigé par l'intégrateur
+  de l'essai de [[D-373]] (fiche H89).
+- Domaine : gouvernance des PR ; skill `wn-merge`, étape 7.
+- **Amende** l'étape 7 de `wn-merge` : « il n'y a pas de dérogation à
+  accorder » et « ce contrôle-ci […] couvre aussi les PR de doc ».
+- **Ne touche pas** :
+  - le contrôle de clôture du CI (`scripts/wn-controle-cloture.mjs`), qui
+    ne vise que les PR qui touchent du code : une telle PR crée toujours
+    son handoff ;
+  - le handoff en huit rubriques ;
+  - [[D-372]] ;
+  - la PR de rattrapage d'une fenêtre de clôture ratée, qui crée toujours
+    le sien ;
+  - le verdict de cycle de `wn-cycle.mjs`.
+- Contexte, constaté pendant l'essai de [[D-373]], du 2026-10-29 au
+  2026-10-30 : trois PR documentaires déclarées « prête » ont été renvoyées
+  pour ce seul motif. Revue de la tête, `verify` et checks étaient bons sur
+  les trois, et le CI les laissait vertes.
+  - #1779 consigne l'ouverture constatée d'un drapeau (D-392) et cite le
+    handoff de son lot, venu de #1763.
+  - #1786 consigne le constat d'une migration (D-395) et cite le handoff
+    de son lot, venu de #1785.
+  - #1781 consigne une première lecture de campagne, sans citer de
+    handoff.
+
+**§1 — La règle.** Une PR peut, au lieu de créer un fragment de handoff,
+citer dans sa déclaration « prête » le handoff de son lot, si trois
+conditions sont réunies :
+
+- (a) elle est documentaire au sens de l'étape « Périmètre du diff » de
+  `ci.yml` (`docs_only=true`). L'étape « Contrôle de clôture (fragment de
+  handoff) » est alors sautée dans le run de sa tête ;
+- (b) le fragment cité est un handoff daté
+  `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, présent sur `origin/main`
+  au moment du contrôle ;
+- (c) le titre de la PR et le handoff cité nomment une même décision
+  `D-xxx` ou une même fiche du plan.
+
+La dispense ne vaut pas pour une PR de rattrapage d'une fenêtre de clôture
+ratée (verdict de cycle de `wn-cycle.mjs` en sortie `1`) : elle existe pour
+porter la clôture qui manque, et la crée elle-même, même si elle remplit
+les trois conditions. Une PR qui ne cite aucun handoff, ou dont une
+condition manque, est renvoyée, au même motif qu'avant. Une PR qui crée
+son handoff passe l'étape 7 comme avant.
+
+**§2 — Ce que l'intégrateur vérifie.** Il lit les `files` de la PR comme
+le demande l'étape 7. Il vérifie (a) dans les check-runs de la tête,
+(b) par `git cat-file -e origin/main:<chemin>`, et (c) en lisant le titre
+et le handoff cité. Une PR de doc qui clôt un lot neuf n'a pas de handoff
+antérieur à citer : elle crée le sien.
+
+**§3 — Les PR déjà renvoyées.** #1779 et #1786 peuvent être redéclarées
+par leur file une fois cette décision sur `main` ; l'intégrateur rejoue
+alors le cycle entier sur la tête déclarée. #1781 ne cite aucun handoff :
+elle reste renvoyée jusqu'à ce qu'elle en crée un ou en cite un qui
+remplit le §1.
+
 ### D-395 — D/51 : `questionnaires.actif` rattrape le catalogue de code en production pour six instruments — les cinq de D-066 et `Q_ALI_09`, par migration de données
 
 - Date : 2026-10-29
