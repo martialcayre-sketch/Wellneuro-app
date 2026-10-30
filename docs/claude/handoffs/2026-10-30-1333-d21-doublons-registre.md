@@ -17,9 +17,12 @@ Solder la ligne D/21 de la file D : deux sources `deprecated` dont la
 ## Décisions prises
 
 - Aucune décision D-xxx : l'étape de vérification n'en a révélé aucun besoin.
-- Sources canoniques : WN-SRC-0059 (copie binaire, SHA-256 identique selon
-  LOT-02b) et WN-SRC-0218 (titre quasi identique ; identité binaire non
-  vérifiée au dépôt, le `comment` le dit).
+- Sources canoniques : WN-SRC-0059 et WN-SRC-0218. Les deux paires sont des
+  copies binaires : SHA-256 identiques, constatés le 2026-10-30 sur le
+  snapshot local du corpus (`~/.wellneuro/corpus/drive-dump/`, hors dépôt).
+  Pour 0058 = 0059, la note LOT-02b le disait déjà. Pour 0188 = 0218, le
+  constat a été fait sur la remarque de PR-Agent : la première tête disait
+  « identité binaire non vérifiée ».
 - Forme du solde : celle de WN-SRC-0546 (« Remplacée par … »), sans le mot
   « dédupliquer », que le comptage cherche. Aucun champ `doublon_de` ajouté :
   le comptage le lirait aussi comme conflit ouvert.
@@ -42,7 +45,10 @@ Solder la ligne D/21 de la file D : deux sources `deprecated` dont la
   une fixture temporaire et ne lit pas le vrai registre. Le constat s'est donc
   fait par la sortie de `node scripts/wn-context-pack.mjs` : « Conflits
   ouverts » passe de 2 à 0.
-- T1 (`npm run check:rapide`) : voir la PR.
+- `shasum -a 256` sur les deux paires de PDF du snapshot local : identiques.
+- T1 (`npm run check:rapide`) et T1 complet (`npm run check`) verts sur la
+  première tête ; T1 rejoué après la correction.
+- CI vert sur la première tête 477b44f2 (`wn-attendre-ci.mjs`, sortie 0).
 
 ## Problèmes ouverts
 
