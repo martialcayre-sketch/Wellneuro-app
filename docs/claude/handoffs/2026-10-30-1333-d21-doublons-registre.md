@@ -38,8 +38,9 @@ Solder la ligne D/21 de la file D : deux sources `deprecated` dont la
 
 ## Validations exécutées
 
-- `git grep` des deux ids hors du registre : seules la ligne D/21 du plan et
-  la note LOT-02b les citent. Aucun claim, lien analyte-axe, fiche, entrée de
+- `git grep` des deux ids hors du registre, joué avant la création de ce
+  handoff : seules la ligne D/21 du plan et la note LOT-02b les citaient.
+  Depuis, ce handoff les cite aussi. Aucun claim, lien analyte-axe, fiche, entrée de
   `consommation_decisions.json` ni banc.
 - Le banc `tests/wellneuro/evals/context-pack-corpus.test.mjs` travaille sur
   une fixture temporaire et ne lit pas le vrai registre. Le constat s'est donc
