@@ -81,6 +81,7 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     'Le Fil du jour',
     'Patients',
     'Fiche-trajectoire',
+    'Comptes du cabinet',
     'Consultation copilote',
     'Agenda & consultations',
     'Correspondance',
@@ -103,7 +104,7 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     }
   });
 
-  it('trois groupes, quatorze entrées, dans l’ordre décidé', () => {
+  it('trois groupes, quinze entrées, dans l’ordre décidé', () => {
     const { container } = rendreSur('/dashboard');
 
     expect(within(container).getByText('La Spirale')).toBeTruthy();

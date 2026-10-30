@@ -536,6 +536,90 @@ describe('POST /api/praticien/protocoles/versions', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  // ACTIONS EN DOUBLE ([[D-394]]) : refusées, sur deux critères — même type et
+  // même intitulé, ou même fiche d'assiette. Deux actions distinctes passent.
+  describe('actions en double (`D-394`)', () => {
+    const actionV4Active: ProtocolAction = { ...action, interventionStatus: 'active' };
+
+    it('refuse deux actions de même type et de même intitulé, casse et espaces mis à part (400)', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          actions: [action, { ...action, actionId: 'A2', title: '  petit-déjeuner   PROTÉINÉ ', idealPlan: 'Autre plan' }],
+        },
+      }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({
+        reason: 'draft_invalid',
+        error: 'Deux actions portent le même intitulé, « Petit-déjeuner protéiné », et le même type. '
+          + 'Retirez-en une, ou changez son intitulé, puis enregistrez.',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.protocolDraft.upsert).not.toHaveBeenCalled();
+    });
+
+    it('refuse deux actions qui indiquent la même assiette, sous deux intitulés (400)', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const assiette = getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE');
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          version: VERSION_PROTOCOL_DRAFT_V4,
+          actions: [
+            { ...actionV4Active, recommendedPlateRef: assiette },
+            { ...actionV4Active, actionId: 'A2', title: 'Déjeuner coloré', recommendedPlateRef: assiette },
+          ],
+        },
+      }));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({
+        reason: 'draft_invalid',
+        error: 'Les actions « Petit-déjeuner protéiné » et « Déjeuner coloré » indiquent la même assiette. '
+          + 'Retirez-en une, ou changez son assiette, puis enregistrez.',
+      });
+      expect(prisma.protocolDraft.upsert).not.toHaveBeenCalled();
+    });
+
+    it('enregistre deux actions distinctes : même intitulé sous deux types, ou deux intitulés d’un même type', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const actions: ProtocolAction[] = [
+        action,
+        { ...action, actionId: 'A2', type: 'chronobiology' },
+        { ...action, actionId: 'A3', title: 'Dîner léger' },
+      ];
+      const res = await POST(postRequest({ episode, decisionCard, submission: { ...submission, actions } }));
+      expect(res.status).toBe(200);
+      const create = prisma.protocolDraft.upsert.mock.calls[0][0].create;
+      expect(create.payload.actions.map((a: ProtocolAction) => a.actionId)).toEqual(['A1', 'A2', 'A3']);
+    });
+
+    it('enregistre deux actions alimentaires dont une seule indique une assiette (V4)', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          version: VERSION_PROTOCOL_DRAFT_V4,
+          actions: [
+            { ...actionV4Active, recommendedPlateRef: getCurrentRecommendedPlateRef('ASSIETTE_DOPAMINERGIQUE') },
+            { ...actionV4Active, actionId: 'A2', title: 'Déjeuner coloré' },
+          ],
+        },
+      }));
+      expect(res.status).toBe(200);
+    });
+  });
+
   it('insère manuellement une référence C5 dans une nouvelle version V2', async () => {
     process.env.WN_C5_ENABLED = 'true';
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });

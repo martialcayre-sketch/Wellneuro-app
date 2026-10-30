@@ -6,6 +6,96 @@
 
 ## Décisions actives
 
+### D-395 — D/51 : `questionnaires.actif` rattrape le catalogue de code en production pour six instruments — les cinq de D-066 et `Q_ALI_09`, par migration de données
+
+- Date : 2026-10-29
+- Statut : accepté — arbitrage du responsable du 2026-10-29, sur question à
+  options dans la session du lot (question `20261029-2319-d` de la liste
+  commune, nature migration) ; appliqué par release-db (D-087).
+- Domaine : registre relationnel des questionnaires (table `questionnaires`),
+  contrat `packs_instruments_suspendus_v1` ; plan, file D, ligne sans rang
+  D/51, et dette du §8.
+- Ne touche pas : ni `schema.prisma` ni aucune table ; aucune donnée patient ;
+  aucun pack ; les routes, qui lisent `IDS_SUSPENDUS` au catalogue de code ;
+  les quatre instruments que le catalogue suspend encore (`Q_FIB_03`,
+  `Q_PED_02`, `Q_PED_03`, `Q_URO_02`).
+- Contexte, lu en production le 2026-10-29 par conteneur (lecture seule, en
+  agrégats) : les 67 lignes de `questionnaires` datent toutes du backfill du
+  2026-08-06, qui n'a pas été rejoué depuis. Dix d'entre elles sont
+  suspendues. Six ne le sont plus au catalogue de code : `Q_GEO_03` à
+  `Q_GEO_06` et `Q_NEU_06`, réactivés par [[D-066]], et `Q_ALI_09`, dont
+  `actif` suit le drapeau `WN_AGENDA_ALI`, allumé en production. Aucun des
+  huit packs ne porte l'un des cinq. La colonne n'a qu'un lecteur, le
+  contrat des packs, qui prend la base pour source.
+
+**§1 — Écrire plutôt que consigner l'écart.** Une migration de données passe
+les six à `actif = true`. Elle tient en un seul UPDATE, filtré sur les six
+identifiants et sur `NOT "actif"`, donc idempotent. Écartés : consigner
+l'écart par écrit (proposé en recommandation, puisque le service n'en dépend
+pas), et corriger les cinq sans `Q_ALI_09`.
+
+**§2 — `Q_ALI_09` suit le drapeau tel qu'il est à la date de la migration.**
+Si `WN_AGENDA_ALI` s'éteint un jour, la base redira « actif » pour un
+instrument que le catalogue suspend, et le contrat des packs ne le verra pas.
+Cette borne est acceptée ; un tel retour se traite par une nouvelle décision.
+
+**§3 — Preuve.** Le banc
+`web/src/lib/questionnaires-actif-rattrapage.migration.test.ts` lit le SQL
+livré. Il épingle les six identifiants, vérifie que les cinq de D-066 sont
+actifs au catalogue et qu'aucun instrument suspendu sans drapeau n'est visé,
+et exige une seule instruction hors commentaires, cet UPDATE, sans aucun mot
+destructif. Après la release-db, un constat par conteneur doit montrer
+exactement quatre lignes suspendues, nommées : `Q_FIB_03`, `Q_PED_02`,
+`Q_PED_03` et `Q_URO_02`.
+
+### D-394 — D/55 : deux actions en double dans une même version de protocole se refusent à l'enregistrement — même type et même intitulé, ou même fiche d'assiette
+
+- Date : 2026-10-29
+- Statut : accepté — trois arbitrages du responsable du 2026-10-29, rendus sur
+  questions à options dans la session du lot (question `20261028-2247-d` de la
+  liste commune, nature clinique) : le régime, le critère, les textes.
+- Domaine : construction des versions de protocole, route
+  `api/praticien/protocoles/versions` (POST) ; plan, file D, ligne sans rang
+  D/55.
+- Ne touche pas : aucune migration ni table ; aucun fichier sous
+  `web/src/lib/clinical/` ; aucun seuil ; les versions déjà enregistrées ne
+  sont ni relues ni retirées ; les gardes existantes (au moins une action,
+  références C5, registre anxiogène de [[D-189]] §4) sont inchangées.
+- Contexte, constaté le 2026-10-28 à l'activation de bb ([[D-386]]) : la
+  seule version postérieure à la mise en service portait deux actions
+  alimentaires distinctes sous le même intitulé, servies fidèlement en deux
+  cartes. La route ne comparait aucune action à une autre.
+
+**§1 — Refuser, pas signaler.** Une version qui porte deux actions en double
+ne s'enregistre pas ; le praticien en retire une ou la modifie. Écartés : le
+régime confirmable de [[D-090]] (proposé en recommandation), et laisser
+passer. Le refus est un 400 `draft_invalid`, affiché par le cockpit comme les
+autres refus de la route. Il est jugé avant la garde de registre : un texte à
+reformuler ne se confirme pas sur une version qui sera refusée.
+
+**§2 — Deux critères, l'un ou l'autre.** Deux actions sont en double si elles
+ont **le même type et le même intitulé**, ou si elles indiquent **la même
+fiche d'assiette** (`recommendedPlateRef.plateCode`, action alimentaire en V4,
+[[D-240]]). L'intitulé se compare sans la casse ni les espaces (bords et
+suites), accents compris, en forme Unicode NFC ; un intitulé vide n'est pas
+comparé. Ce sont des
+règles techniques de saisie, pas des seuils. Écartés : l'intitulé seul (il
+signalerait un même mot sous deux types), l'assiette seule (facultative, elle
+n'aurait pas couvert le constat).
+
+**§3 — Textes.** Validés mot pour mot le 2026-10-29. Les actions se nomment
+par leur intitulé, pas par un numéro : le constructeur place l'action
+d'orientation en tête de la soumission, et un rang serveur serait faux à
+l'écran.
+- même type et même intitulé : « Deux actions portent le même intitulé,
+  « … », et le même type. Retirez-en une, ou changez son intitulé, puis
+  enregistrez. » ;
+- même assiette : « Les actions « … » et « … » indiquent la même assiette.
+  Retirez-en une, ou changez son assiette, puis enregistrez. ».
+
+Une paire qui répond aux deux critères rend le premier texte ; les paires se
+lisent dans l'ordre de la soumission.
+
 ### D-393 — Revue de substitution : quand CodeRabbit saute une PR ou bute sur son quota, la revue de PR-Agent sur la tête le remplace ; une seule revue de bot exigée, prouvée par le run sur la tête ; `pr_agent.yml` gardé par sa file (amende D-290 §1 et §3)
 
 - Date : 2026-10-28
@@ -2212,7 +2302,8 @@ montre que son titre. Aucun texte d'état neuf : les messages viennent des
 routes et de l'espace des fiches, déjà servis.
 
 **§4 — L'activation** reste celle de [[D-357]] §7, après le constat de la
-place 9. Son constat s'étend au lien : sur le dossier de test majeur, la
+place 9 — après celui de la place 7 depuis l'amendement du 2026-10-29 de
+[[D-357]] §7. Son constat s'étend au lien : sur le dossier de test majeur, la
 bibliothèque est servie et le lien des fiches s'efface ; sur un dossier
 mineur, le lien des fiches reste et celui de la bibliothèque n'existe pas.
 
@@ -2440,6 +2531,16 @@ praticien », « Pour mieux comprendre votre démarche ».
 ([[D-288]] §2) par identifiant, lu depuis un conteneur : un dossier de test
 majeur ouvre la bibliothèque et y lit sa fiche remise ; un dossier mineur
 n'en voit pas l'entrée. Consigné en agrégats.
+
+**Amendement (2026-10-29) — l'activation après le constat de la place 7.**
+Arbitrage du responsable, sur question à options (liste commune de
+questions) : « après le constat de la place 9 » devient « après le constat
+de la place 7 ». La bibliothèque est prête depuis le 2026-10-25 ([[D-360]],
+#1697, déployée éteinte), alors que la place 8 attend les portes 19 et 28
+et la place 9 la chaîne de H74. [[D-346]] §3 s'applique : une place de 6 à
+11 prête avant une autre passe devant. Le reste du §7 ne change pas : porte
+18, drapeau posé sur accord du responsable, même constat. Les places 8 et 9
+gardent leurs préalables et s'ouvrent après la bibliothèque.
 
 - Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
   plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).

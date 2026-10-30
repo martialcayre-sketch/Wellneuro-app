@@ -4,8 +4,8 @@ import { statutAge } from '@/lib/patient/gardeAge';
 // H82) — valeur exacte `'true'`, absent = fermé. Variable serveur : la page et
 // les routes la lisent, un composant client ne la voit pas.
 //
-// NEUF ET ÉTEINT à la livraison. Il s'ouvre après le constat de la place 9
-// (porte 18, [[D-357]] §7).
+// NEUF ET ÉTEINT à la livraison. Il s'ouvre après le constat de la place 7
+// (porte 18, [[D-357]] §7, amendé le 2026-10-29).
 
 export function bibliothequeOuverte(value = process.env.WN_PORTAIL_BIBLIOTHEQUE): boolean {
   return value === 'true';
