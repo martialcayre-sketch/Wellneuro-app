@@ -359,7 +359,12 @@
   Sous 2 jalons mesurés, pas de courbe — repli sur le texte momentum
   existant. **Étendu le 2026-10-20** (`D-333` §4, à la signature M-2) : le
   même principe vaut pour tout instrument de visualisation praticien. La Spirale reste l'index de navigation (A6) ; la courbe est un
-  instrument de lecture du cycle, **invisible côté patient**.
+  instrument de lecture du cycle, **invisible côté patient**. **Étendu le 2026-10-31** (`D-397` §4) : une courbe
+  du cockpit peut aussi porter des points de remesure libre réellement mesurés dans le cycle
+  courant, sans interpolation ni pronostic : pour ces courbes, chaque point est un jalon
+  réellement mesuré ou une remesure libre réellement mesurée ; avant la porte 22, une liste chronologique sans
+  position quantitative ; après, au moins deux lectures admissibles du besoin, ancre comprise.
+  Pour ces courbes, ce seuil remplace celui de deux jalons mesurés ; en dessous, pas de courbe.
 - Avance le **repère de cabinet** (périmètre ex-SP-CAB) : médiane
   **descriptive** des momentums par jalon, calculée sur les cycles du cabinet
   de **même `versionScore`** que le cycle lu (A8-3 étendu à l'agrégat — un
