@@ -87,6 +87,7 @@ describe('une seule date de départ — portail, cockpit, fil (D-397 §1)', () =
       tendance: direct.tendance,
       delta: direct.delta,
       dateArrivee: direct.arrivee.date.toISOString(),
+      etiquetteArrivee: 'remesure',
     });
 
     // Portail (et aperçu praticien) : la tendance seule, du même calcul.
@@ -175,6 +176,7 @@ describe('dossier rouvert : le momentum part de l’ancre T1, aucune paire T0–
       tendance: direct.tendance,
       delta: direct.delta,
       dateArrivee: remesure.toISOString(),
+      etiquetteArrivee: direct.etiquetteArrivee,
     });
   });
 });

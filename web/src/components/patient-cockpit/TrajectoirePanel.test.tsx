@@ -709,7 +709,7 @@ describe('TrajectoirePanel — momentum du cycle courant ([[D-397]])', () => {
           ...base,
           cycles: [{
             ...cycle,
-            momentum: { tendance: 'hausse', delta: 4, dateArrivee: '2026-02-05T00:00:00.000Z' },
+            momentum: { tendance: 'hausse', delta: 4, dateArrivee: '2026-02-05T00:00:00.000Z', etiquetteArrivee: 'remesure' },
             motifMomentum: null,
             momentumParBesoin: [
               {
@@ -742,6 +742,35 @@ describe('TrajectoirePanel — momentum du cycle courant ([[D-397]])', () => {
     // Les lectures, dans l'ordre, sans valeur (R:o).
     expect(screen.getByText('Lectures : T0 du 01/01/2026 · J21 du 23/01/2026 · remesure du 05/02/2026')).toBeTruthy();
     expect(screen.getByText('Aucun questionnaire du bilan ne mesure ce besoin : pas de momentum.')).toBeTruthy();
+  });
+
+  it('r3_12 : écarts négatifs, nuls et inférieurs au point, depuis le delta brut', () => {
+    const paire = (besoin: number, depart: number, arrivee: number) => ({
+      besoin, mesure: true, delta: arrivee - depart,
+      depart: { jalon: 'T0' as const, date: new Date('2026-01-01T00:00:00.000Z'), couverture: depart },
+      arrivee: { jalon: 'remesure' as const, date: new Date('2026-02-05T00:00:00.000Z'), couverture: arrivee },
+      qualification: null, motif: 'Écart non qualifié.', motifAbsence: null, lectures: [],
+    });
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...base,
+          cycles: [{
+            ...cycle,
+            momentum: null,
+            motifMomentum: 'sans_remesure',
+            momentumParBesoin: [paire(1, 0.62, 0.5), paire(3, 0.5, 0.5), paire(4, 0.5, 0.496), paire(5, 0.5, 0.51)],
+          }],
+        }}
+      />,
+    );
+    expect(screen.getByText(/écart −12 points/)).toBeTruthy();
+    expect(screen.getByText(/écart 0 point/)).toBeTruthy();
+    expect(screen.getByText(/écart inférieur à un point/)).toBeTruthy();
+    expect(screen.getByText(/écart \+1 point(?!s)/)).toBeTruthy();
+    expect(
+      screen.getByText('Momentum non calculé : aucune passation nouvelle depuis l’ancre T0. Ce n’est pas une stabilité.'),
+    ).toBeTruthy();
   });
 
   it('sans jour 0 : le motif C-1 au scalaire, et B-0 une seule fois sur le bloc', () => {

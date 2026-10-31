@@ -307,7 +307,9 @@ describe('GET /api/praticien/equilibre', () => {
       const json = (await (await GET(request())).json()) as Provenance;
       expect(json.objetsCliniques.provenance.momentum).toEqual({
         depart: { jalon: 'T0', date: ancre.toISOString() },
-        arrivee: { jalon: 'remesure', date: remesure.toISOString() },
+        // Sept jours avant le centre du J21 (jour 0 + 21 j), dans sa fenêtre de
+        // ± 8 j : l'arrivée porte le nom du jalon.
+        arrivee: { jalon: 'J21', date: remesure.toISOString() },
         versionCalcul: VERSION_DU_CALCUL,
       });
     });

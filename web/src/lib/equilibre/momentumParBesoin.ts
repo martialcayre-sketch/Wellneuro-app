@@ -3,8 +3,10 @@ import { BESOIN_SOURCES, JOURS_JALON, ORDRE_JALONS_MESURE } from './constants';
 import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
 import { calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum } from './types';
-import { fenetreDuJalon, joursDepuisAncre } from '../protocol/fenetreJalon';
-import { datesPassationsSources } from './momentumDuCycle';
+import { joursDepuisAncre } from '../protocol/fenetreJalon';
+import { datesPassationsSources, etiquetteLecture, sourcesMesureesAu } from './momentumDuCycle';
+// Réexportée : les bancs et le rendu la lisent ici, avec les séries.
+export { etiquetteLecture };
 import type { MotifAbsenceMomentum } from './motifsMomentum';
 
 // Momentum PAR BESOIN (LOT-07, `D-058`).
@@ -297,20 +299,6 @@ export function calculerMomentumParBesoin(input: {
 // Les formules, le mapping `BESOIN_SOURCES` et les bandes ne changent pas. Les
 // cycles passés gardent leur lecture v1 (§2 : l'historique reste consultable).
 
-/**
- * Le jalon de mesure dont la fenêtre (jour 0 + cadence ± tolérance) contient la
- * date, sinon `remesure`. Une étiquette de lecture, jamais une confirmation :
- * la passation ne crée aucun épisode (§3).
- */
-export function etiquetteLecture(date: Date, jourZero: Date | null): JalonMomentum | 'remesure' {
-  if (!jourZero) return 'remesure';
-  for (const jalon of ORDRE_JALONS_MESURE) {
-    const { debut, fin } = fenetreDuJalon(jourZero, jalon);
-    if (date >= debut && date <= fin) return jalon;
-  }
-  return 'remesure';
-}
-
 export function construireSeriesParBesoinDuCycle(input: {
   brutes: ReponseBrute[];
   ancre: { ancre: AncreCycle; date: Date };
@@ -331,6 +319,10 @@ export function construireSeriesParBesoinDuCycle(input: {
     return etat;
   };
 
+  // Une remesure porte sur une source déjà exploitable à l'ancre (arbitrage du
+  // 2026-10-31) : la première passation d'une source absente du bilan d'ancre
+  // n'ouvre pas de lecture à elle seule.
+  const connues = sourcesMesureesAu(brutes, ancre.date);
   const series = new Map<number, LectureBesoin[]>();
   for (const [besoinCle, sources] of Object.entries(BESOIN_SOURCES)) {
     const besoin = Number(besoinCle);
@@ -339,7 +331,7 @@ export function construireSeriesParBesoinDuCycle(input: {
     const auDepart = couverturesAu(ancre.date).get(besoin) ?? null;
     if (auDepart !== null) serie.push({ jalon: ancre.ancre, date: ancre.date, couverture: auDepart });
 
-    const ids = new Set(sources.map(source => source.idQuestionnaire));
+    const ids = new Set(sources.map(source => source.idQuestionnaire).filter(id => connues.has(id)));
     const dates = [...new Set(
       datesPassationsSources(brutes, ids)
         .filter(date => date > ancre.date && date <= maintenant)
@@ -376,6 +368,11 @@ export function texteMotifBesoin(motif: MotifAbsenceBesoin, ancre: AncreCycle | 
  * (§4). Paire : la lecture d'ancre et la dernière lecture (Q5). Le delta reste
  * la soustraction brute ; l'arrondi est l'affaire du rendu (§5).
  */
+//
+// LES BANDES DE BRUIT ONT ÉTÉ PENSÉES POUR LES PAIRES v1 (jalon → jalon). Les
+// paires du cycle courant se construisent autrement depuis [[D-397]] §4 : une
+// bande publiée devra dire si elle vaut pour elles. Le banc
+// `momentumDuCycle.test.ts` rougit le jour où la table est publiée.
 export function calculerMomentumParBesoinDuCycle(input: {
   series: Map<number, LectureBesoin[]>;
   ancre: AncreCycle | null;
@@ -388,11 +385,14 @@ export function calculerMomentumParBesoinDuCycle(input: {
     .sort((gauche, droite) => gauche - droite)
     .map((besoin): MomentumBesoin => {
       const lectures = input.series.get(besoin) ?? [];
+      // Un départ n'est jamais qu'une lecture d'ANCRE : une première lecture
+      // postérieure ne se présente pas comme le point de départ.
+      const lectureAncre = lectures[0]?.jalon === input.ancre ? lectures[0] : null;
       const absent = (motifAbsence: MotifAbsenceBesoin): MomentumBesoin => ({
         besoin,
         mesure: false,
         delta: null,
-        depart: lectures[0] ?? null,
+        depart: lectureAncre,
         arrivee: null,
         qualification: null,
         motif: texteMotifBesoin(motifAbsence, input.ancre),

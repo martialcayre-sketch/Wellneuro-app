@@ -158,13 +158,13 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     const momentum: ResultatMomentum | null =
       calcul.statut === 'disponible' ? { delta: calcul.delta, tendance: calcul.tendance } : null;
     // Les deux lectures que le delta a soustraites, recalculées à la version
-    // courante (A8-3 : jamais deux versions). L'arrivée est une remesure : sa
-    // date est celle de la passation.
+    // courante (A8-3 : jamais deux versions). L'arrivée est datée de sa
+    // passation, nommée par son jalon quand elle tombe dans sa fenêtre.
     const provenanceMomentum: ProvenanceMomentum | null =
       calcul.statut === 'disponible' && ancreMomentum
         ? {
             depart: { jalon: ancreMomentum, date: calcul.depart.date.toISOString() },
-            arrivee: { jalon: 'remesure', date: calcul.arrivee.date.toISOString() },
+            arrivee: { jalon: calcul.etiquetteArrivee, date: calcul.arrivee.date.toISOString() },
             versionCalcul: objets.indiceGlobal.versionScore,
           }
         : null;

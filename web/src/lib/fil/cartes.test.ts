@@ -257,6 +257,15 @@ describe('cartesJalons', () => {
     );
     expect(stable.pourquoi).toContain('Momentum stable');
   });
+
+  it('sans momentum, la carte dit pourquoi ([[D-397]] §2) — F-1 à F-3', () => {
+    const [carte] = cartesJalons(
+      [{ idCheckin: 'CHK_3', idPatient: 'P-JENNIFER', soumisLe: new Date('2026-07-14T08:00:00'), momentum: null, motifMomentum: 'sans_jour_zero' }],
+      NOMS,
+    );
+    expect(carte.pourquoi).toContain('Momentum non calculé : aucun protocole diffusé.');
+    expect(carte.pourquoi).not.toMatch(/Momentum (stable|en )/);
+  });
 });
 
 describe('cartesAssignationsEnRetard', () => {

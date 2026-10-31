@@ -22,6 +22,14 @@ function cycle(version: string | null, t0: number | null, j21: number | null, j4
 }
 
 describe('calculerMedianesCabinet (A6-R2)', () => {
+  it('un cycle courant sans jour 0 n’entre pas dans le repère ([[D-397]] §2)', () => {
+    const avec = Array.from({ length: 5 }, (_, i) => [cycle('v1', 40 + i, 50 + i)]);
+    const sansJourZero = { ...cycle('v1', 10, 90), jourZero: null, motifMomentum: 'sans_jour_zero' as const };
+    const resultat = calculerMedianesCabinet([...avec, [sansJourZero]], 'v1');
+    expect(resultat.nTotal).toBe(5);
+    expect(resultat.parJalon.find(m => m.jalon === 'J21')?.mediane).toBe(10);
+  });
+
   it('version de référence inconnue : aucune cohorte, jamais une version supposée (A8-3)', () => {
     const resultat = calculerMedianesCabinet([[cycle('v1', 40, 50)]], null);
     expect(resultat.masque).toBe(true);
@@ -161,6 +169,9 @@ describe('repère de cabinet — une cohorte silencieuse ne sert aucune médiane
             scoresJson: { rawAnswers: RAW },
           },
         ],
+        // Diffusés : un cycle sans jour 0 sort du repère ([[D-397]] §2), et ce
+        // cas porte sur la cohorte silencieuse, pas sur la diffusion.
+        joursZero: new Map([[`cy_${i}`, new Date('2026-01-01T00:00:00.000Z')]]),
       }).cycles,
     );
 

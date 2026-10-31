@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReponseBrute } from './depuisPrisma';
 import { calculerMomentumDuCycle } from './momentumDuCycle';
 import {
+  BANDES_DE_BRUIT,
   calculerMomentumParBesoinDuCycle,
   construireSeriesParBesoinDuCycle,
   etiquetteLecture,
@@ -85,6 +86,23 @@ describe('momentum du cycle courant — scalaire (D-397 §1-§3)', () => {
     expect(resultat).toMatchObject({ statut: 'disponible', arrivee: { date: apresZero(50) } });
   });
 
+  it('la première passation d’un questionnaire absent du bilan d’ancre n’est pas une remesure (arbitrage 2026-10-31)', () => {
+    // HADS rempli le lendemain de l'ancre, PSS jamais repassé : l'écart ne
+    // mesurerait qu'un besoin ajouté au calcul.
+    const reponses = [passation(avantAncre, '1'), passation(new Date(ANCRE.getTime() + JOUR), '1', 'Q_NEU_11')];
+    expect(calcul(reponses)).toEqual({ statut: 'absent', motif: 'sans_remesure' });
+    // Une remesure du PSS ensuite forme la paire — le HADS entre alors au calcul.
+    const resultat = calcul([...reponses, passation(apresZero(33), '3')]);
+    expect(resultat).toMatchObject({ statut: 'disponible', arrivee: { date: apresZero(33) }, etiquetteArrivee: 'remesure' });
+  });
+
+  it('l’arrivée tombée dans la fenêtre d’un jalon porte son nom', () => {
+    expect(calcul([passation(avantAncre, '1'), passation(apresZero(21), '3')])).toMatchObject({
+      statut: 'disponible',
+      etiquetteArrivee: 'J21',
+    });
+  });
+
   it('la référence est la lecture d’ancre, pas la première réponse du dossier', () => {
     // Première réponse haute, réponse du bilan d'ancre basse, remesure haute :
     // depuis la première réponse, l'écart serait nul ; depuis l'ancre, non.
@@ -144,5 +162,18 @@ describe('momentum du cycle courant — par besoin (D-397 §4)', () => {
 
     const sansZero = momentum([passation(avantAncre, '1'), passation(apresZero(21), '3')], null);
     expect(sansZero.every(l => l.motifAbsence === 'sans_jour_zero' && !l.mesure)).toBe(true);
+  });
+
+  it('sans lecture d’ancre, aucun départ ne se présente, et la source neuve n’ouvre pas de lecture', () => {
+    const lignes = momentum([passation(avantAncre, '1'), passation(apresZero(21), '1', 'Q_NEU_11')]);
+    expect(ligne(lignes, 8).depart).toBeNull();
+    expect(ligne(lignes, 8).lectures).toEqual([]);
+  });
+
+  it('les bandes de bruit ne sont pas publiées : leur publication devra dire si elles valent pour les paires D-397', () => {
+    // Les paires du cycle courant ne sont plus les paires jalon → jalon pour
+    // lesquelles `momentum-par-besoin-v1` a été pensé (§4). Ce cas rougit le
+    // jour où la table est publiée : la publication tranche alors, par écrit.
+    expect(BANDES_DE_BRUIT.publiee).toBe(false);
   });
 });

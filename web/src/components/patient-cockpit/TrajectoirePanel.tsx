@@ -480,7 +480,7 @@ export function TrajectoirePanel({
                     <p className="mt-2 text-base text-foreground">
                       Momentum {cycle.ancre} →{' '}
                       {cycle.momentum.dateArrivee
-                        ? `remesure du ${formatDate(cycle.momentum.dateArrivee)}`
+                        ? `${cycle.momentum.etiquetteArrivee ?? 'remesure'} du ${formatDate(cycle.momentum.dateArrivee)}`
                         : 'dernier jalon mesuré'}{' '}
                       :{' '}
                       <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
@@ -523,7 +523,7 @@ export function TrajectoirePanel({
                                   <>
                                     {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
                                     ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
-                                    ({duCycle ? `remesure du ${formatDateLecture(ligne.arrivee.date)}` : ligne.arrivee.jalon}){' '}
+                                    ({duCycle ? `${ligne.arrivee.jalon} du ${formatDateLecture(ligne.arrivee.date)}` : ligne.arrivee.jalon}){' '}
                                     · {formatEcart(ligne.delta)}
                                   </>
                                 )}

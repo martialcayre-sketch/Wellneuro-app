@@ -81,7 +81,13 @@ export type TrajectoireCycle = {
    * motif le dit (`motifMomentum`). Cycle PASSÉ : ancre → dernier jalon
    * mesuré, inchangé (§2, l'historique reste consultable).
    */
-  momentum: { tendance: TendanceMomentum; delta: number; dateArrivee?: string } | null;
+  momentum: {
+    tendance: TendanceMomentum;
+    delta: number;
+    dateArrivee?: string;
+    /** Le jalon dont la fenêtre contient l'arrivée, sinon `remesure`. */
+    etiquetteArrivee?: JalonMomentum | 'remesure';
+  } | null;
   /** Cycle courant seulement : pourquoi `momentum` est absent. `null` sinon. */
   motifMomentum?: MotifAbsenceMomentum | null;
   /**
@@ -243,6 +249,7 @@ export function construireTrajectoire(input: {
                 tendance: momentumCourant.tendance,
                 delta: momentumCourant.delta,
                 dateArrivee: momentumCourant.arrivee.date.toISOString(),
+                etiquetteArrivee: momentumCourant.etiquetteArrivee,
               }
             : null
           : momentumHistorique

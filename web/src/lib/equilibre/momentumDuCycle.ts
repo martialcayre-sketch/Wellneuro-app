@@ -1,9 +1,10 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
-import { BESOIN_SOURCES } from './constants';
+import { BESOIN_SOURCES, ORDRE_JALONS_MESURE } from './constants';
+import { fenetreDuJalon } from '../protocol/fenetreJalon';
 import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
 import { calculerDeltaMomentum } from './momentum';
 import { calculerEquilibre } from './score';
-import type { AncreCycle, LectureDatee, TendanceMomentum } from './types';
+import type { AncreCycle, JalonMomentum, LectureDatee, TendanceMomentum } from './types';
 import type { MotifAbsenceMomentum } from './motifsMomentum';
 
 // LE MOMENTUM DU CYCLE COURANT, UN SEUL CALCUL ([[D-397]]).
@@ -21,6 +22,11 @@ import type { MotifAbsenceMomentum } from './motifsMomentum';
 // - Arrivée : la dernière passation exploitable nouvelle d'une source, après
 //   l'ancre (§3, Q5). Une remesure libre forme la paire sans confirmer ni
 //   créer de jalon.
+// - UNE REMESURE PORTE SUR UN INSTRUMENT DÉJÀ MESURÉ À L'ANCRE (arbitrage du
+//   responsable du 2026-10-31, revue `wn-reviewer` P1-3) : la première
+//   passation d'un questionnaire absent du bilan d'ancre entre au calcul, mais
+//   ne forme pas la paire à elle seule — sinon l'écart mesurerait un besoin
+//   ajouté, pas un changement chez le patient.
 //
 // Ni formule, ni seuil, ni `versionScore`, ni mapping ne changent ici : la
 // valeur se lit par `calculerEquilibre`, à la date de la passation retenue.
@@ -32,6 +38,8 @@ export type MomentumDuCycle =
       statut: 'disponible';
       depart: LectureDatee;
       arrivee: LectureDatee;
+      /** Le jalon dont la fenêtre contient l'arrivée, sinon `remesure`. */
+      etiquetteArrivee: JalonMomentum | 'remesure';
       delta: number;
       tendance: TendanceMomentum;
     }
@@ -52,6 +60,33 @@ export function datesPassationsSources(
   return filtrerPassationsExploitables(brutes)
     .filter(r => idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
     .map(r => r.dateReponse);
+}
+
+/**
+ * Les sources exploitables À L'ANCRE : celles dont une passation exploitable
+ * est connue à cette date. Seules leurs passations ultérieures sont des
+ * remesures (arbitrage du 2026-10-31).
+ */
+export function sourcesMesureesAu(brutes: ReponseBrute[], date: Date): Set<string> {
+  return new Set(
+    filtrerPassationsExploitables(brutes)
+      .filter(r => r.dateReponse <= date && extraireRawAnswers(r.scoresJson) !== null)
+      .map(r => r.idQuestionnaire),
+  );
+}
+
+/**
+ * Le jalon de mesure dont la fenêtre (jour 0 + cadence ± tolérance) contient la
+ * date, sinon `remesure`. Une étiquette de lecture, jamais une confirmation :
+ * la passation ne crée aucun épisode (§3).
+ */
+export function etiquetteLecture(date: Date, jourZero: Date | null): JalonMomentum | 'remesure' {
+  if (!jourZero) return 'remesure';
+  for (const jalon of ORDRE_JALONS_MESURE) {
+    const { debut, fin } = fenetreDuJalon(jourZero, jalon);
+    if (date >= debut && date <= fin) return jalon;
+  }
+  return 'remesure';
 }
 
 /** La dernière date strictement postérieure à `apres` et au plus `maintenant`. */
@@ -85,10 +120,20 @@ export function calculerMomentumDuCycle(input: {
   const depart = lectureIndiceAu(input.reponses, input.ancre.date);
   if (!depart) return { statut: 'absent', motif: 'sans_lecture_ancre' };
 
-  const dateArrivee = derniereDateApres(datesPassationsSources(input.reponses), input.ancre.date, maintenant);
+  const toutesSources = Object.values(BESOIN_SOURCES).flatMap(sources => sources.map(source => source.idQuestionnaire));
+  const connues = sourcesMesureesAu(input.reponses, input.ancre.date);
+  const remesurables = new Set(toutesSources.filter(id => connues.has(id)));
+  const dateArrivee = derniereDateApres(datesPassationsSources(input.reponses, remesurables), input.ancre.date, maintenant);
   const arrivee = dateArrivee ? lectureIndiceAu(input.reponses, dateArrivee) : null;
   const resultat = calculerDeltaMomentum(depart, arrivee);
   if (!arrivee || !resultat) return { statut: 'absent', motif: 'sans_remesure' };
 
-  return { statut: 'disponible', depart, arrivee, delta: resultat.delta, tendance: resultat.tendance };
+  return {
+    statut: 'disponible',
+    depart,
+    arrivee,
+    etiquetteArrivee: etiquetteLecture(arrivee.date, input.jourZero),
+    delta: resultat.delta,
+    tendance: resultat.tendance,
+  };
 }
