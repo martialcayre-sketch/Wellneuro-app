@@ -1528,8 +1528,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "deprecated",
     "vigilance": "Élevée",
-    "requiredAction": "Dédupliquer",
-    "comment": "Copie binaire/titre quasi identique repérée dans le même corpus.",
+    "requiredAction": "Doublon retiré au profit de la source canonique WN-SRC-0059 (plan, file D, ligne D/21, 2026-10-30)",
+    "comment": "Copie binaire de WN-SRC-0059 (« 19 Les vitamines du groupe B.pdf », même corpus), SHA-256 identique (LOT-02b, 2026-07-24 ; reconstaté le 2026-10-30 sur le snapshot local du corpus, hors dépôt) ; la source canonique est WN-SRC-0059. Aucun claim, lien analyte-axe ni fiche ne cite cette entrée (vérifié au dépôt le 2026-10-30).",
     "auditDate": "2026-07-12"
   },
   {
@@ -4977,8 +4977,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "deprecated",
     "vigilance": "Faible",
-    "requiredAction": "Dédupliquer",
-    "comment": "Copie binaire/titre quasi identique repérée dans le même corpus.",
+    "requiredAction": "Doublon retiré au profit de la source canonique WN-SRC-0218 (plan, file D, ligne D/21, 2026-10-30)",
+    "comment": "Copie binaire de WN-SRC-0218 (« Fiche Chocolat noir-SIIN.pdf », même corpus), repérée à l'audit du 2026-07-12 ; SHA-256 identique, constaté le 2026-10-30 sur le snapshot local du corpus, hors dépôt ; la source canonique est WN-SRC-0218. Aucun claim, lien analyte-axe ni fiche ne cite cette entrée (vérifié au dépôt le 2026-10-30).",
     "auditDate": "2026-07-12"
   },
   {
