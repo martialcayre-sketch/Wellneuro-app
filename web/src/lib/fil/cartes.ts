@@ -14,6 +14,7 @@ import {
   estFindingAnamnese,
   estFindingQuestionnaire,
 } from '@/lib/clinical-engine/safetyFindingSource';
+import { TEXTE_MOTIF_MOMENTUM_FIL, type MotifAbsenceMomentum } from '@/lib/equilibre/motifsMomentum';
 import {
   LIBELLES_CODE_REVOCATION,
   MENTION_PAS_UN_FILET,
@@ -170,6 +171,8 @@ export type JalonRow = {
   soumisLe: Date;
   adhesion?: string | null;
   momentum?: { tendance: TendanceMomentumCarte; delta: number } | null;
+  /** Pourquoi `momentum` est absent ([[D-397]] §2) : la carte le dit (F-1 à F-3). */
+  motifMomentum?: MotifAbsenceMomentum | null;
 };
 
 /** Inactivité au-delà de laquelle un patient est signalé en reprise. */
@@ -722,6 +725,8 @@ export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): Car
             ? 'Momentum stable.'
             : `Momentum en ${j.momentum.tendance} de ${Math.abs(j.momentum.delta)}.`,
         );
+      } else if (j.motifMomentum) {
+        morceaux.push(TEXTE_MOTIF_MOMENTUM_FIL[j.motifMomentum]);
       }
       return {
         type: 'jalon_j21' as const,

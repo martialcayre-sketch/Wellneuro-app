@@ -4,14 +4,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { BESOIN_SOURCES, BESOINS } from '@/lib/equilibre/constants';
 import {
-  construireHistoriqueEquilibre,
   construireReponsesParQuestionnaire,
   datesDesReponsesRetenues,
   questionnairesEcartesParValidite,
-  resoudreDateT0,
 } from '@/lib/equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
-import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
+import { calculerMomentumDuCycle, type MotifAbsenceMomentum } from '@/lib/equilibre/momentumDuCycle';
 import { ecartsDecisionBesoin, motifsNonMesureBesoin } from '@/lib/equilibre/motifsBesoins';
 import {
   BESOIN_CLARTE,
@@ -21,13 +19,15 @@ import {
 } from '@/lib/equilibre/objetsCliniques';
 import { calculerCouvertureSource, compterBesoinsMesures } from '@/lib/equilibre/score';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { provenanceDesSources } from '@/lib/praticien/provenanceSources';
 import type { PresenceSourceStabilite } from '@/lib/praticien/mentionStabiliteMetabolique';
 import type { EcartDecisionServi, MotifNonMesureServi } from '@/lib/praticien/motifNonMesure';
 import type { ProvenanceChiffre, ProvenanceMomentum } from '@/lib/praticien/provenanceChiffre';
 import type {
-  JalonMomentum,
+  AncreCycle,
   NiveauPreuveBesoin,
   ResultatMomentum,
   SourceQuestionnaire,
@@ -66,6 +66,10 @@ export type ObjetsCliniquesReponse = {
   reserveAdaptation: number | null; // 0-100
   clarte: number | null; // 0-100
   momentum: ResultatMomentum | null;
+  /** Pourquoi `momentum` est absent ([[D-397]]) ; `null` quand il est servi. */
+  motifMomentum: MotifAbsenceMomentum | null;
+  /** L'ancre du cycle courant, que nomment les motifs ; `null` sans cycle. */
+  ancreMomentum: AncreCycle | null;
   /** Le total a été ramené au plafond des fondations critiques ([[D-106]]) :
    *  le fait seul — ni le besoin, ni la valeur avant plafond (Q9). */
   plafondApplique: boolean;
@@ -138,36 +142,32 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     const objets = calculerObjetsCliniques(reponses);
     const niveauxPreuve = calculerNiveauxPreuveTousLesBesoins(reponses);
 
-    // Momentum : delta entre la première mesure et le jalon le plus avancé
-    // déjà atteint. « T0 » DÉSIGNE ICI LA TOUTE PREMIÈRE MESURE, pas l'ancre
-    // d'un cycle (`D-113` §2, site relu) : cette route ne lit aucun épisode,
-    // sa référence est `resoudreDateT0`. Même limite reconduite que la route
-    // patient — sur un dossier rouvert, le compte part de l'historique, pas du
-    // cycle courant.
-    const dateT0 = resoudreDateT0(reponsesDb);
-    let momentum: ResultatMomentum | null = null;
-    let provenanceMomentum: ProvenanceMomentum | null = null;
-    if (dateT0) {
-      const historique = construireHistoriqueEquilibre(reponsesDb);
-      const lectureT0 = resoudreLectureJalon(dateT0, 'T0', historique);
-      const jalonsDecroissants: JalonMomentum[] = ['J90', 'J42', 'J21'];
-      const dernierJalonAtteint = jalonsDecroissants.find(
-        jalon => resoudreLectureJalon(dateT0, jalon, historique) !== null
-      );
-      const lectureRecente = dernierJalonAtteint
-        ? resoudreLectureJalon(dateT0, dernierJalonAtteint, historique)
+    // Momentum ([[D-397]]) : le même calcul qu'au portail, au cockpit et au
+    // fil — de la lecture d'ancre du cycle courant à la dernière remesure, et
+    // rien sans jour 0. La référence était la toute première réponse du
+    // dossier (`resoudreDateT0`), sans épisode ni cycle.
+    const ancres = await lireAncresPersistees(idPatient);
+    const ancre = ancreCourante(ancres);
+    const ancreMomentum = ancre ? (ancre.milestone as AncreCycle) : null;
+    const jourZero = ancre ? await jourZeroDuCycleCourant(idPatient, ancres) : null;
+    const calcul = calculerMomentumDuCycle({
+      reponses: reponsesDb,
+      ancre: ancre && ancreMomentum ? { ancre: ancreMomentum, date: ancre.confirmedAt } : null,
+      jourZero,
+    });
+    const momentum: ResultatMomentum | null =
+      calcul.statut === 'disponible' ? { delta: calcul.delta, tendance: calcul.tendance } : null;
+    // Les deux lectures que le delta a soustraites, recalculées à la version
+    // courante (A8-3 : jamais deux versions). L'arrivée est datée de sa
+    // passation, nommée par son jalon quand elle tombe dans sa fenêtre.
+    const provenanceMomentum: ProvenanceMomentum | null =
+      calcul.statut === 'disponible' && ancreMomentum
+        ? {
+            depart: { jalon: ancreMomentum, date: calcul.depart.date.toISOString() },
+            arrivee: { jalon: calcul.etiquetteArrivee, date: calcul.arrivee.date.toISOString() },
+            versionCalcul: objets.indiceGlobal.versionScore,
+          }
         : null;
-      momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
-      // Les deux lectures que le delta a soustraites, à la date de leur jalon,
-      // recalculées à la version courante (A8-3 : jamais deux versions).
-      if (momentum && lectureT0 && lectureRecente && dernierJalonAtteint) {
-        provenanceMomentum = {
-          depart: { jalon: 'T0', date: lectureT0.date.toISOString() },
-          arrivee: { jalon: dernierJalonAtteint, date: lectureRecente.date.toISOString() },
-          versionCalcul: objets.indiceGlobal.versionScore,
-        };
-      }
-    }
 
     // PROVENANCE DATÉE ([[D-333]] §2 règle 1) : `provenanceDesSources`, la
     // même règle que la route de l'onglet (r3_09).
@@ -217,6 +217,8 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
         reserveAdaptation: versCent(objets.reserveAdaptation),
         clarte: versCent(objets.clarte),
         momentum,
+        motifMomentum: calcul.statut === 'absent' ? calcul.motif : null,
+        ancreMomentum,
         plafondApplique: objets.indiceGlobal.plafondApplique,
         versionCalcul: versionScore,
         provenance: {

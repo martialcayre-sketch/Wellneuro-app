@@ -4,6 +4,10 @@ import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBru
 import { calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum } from './types';
 import { joursDepuisAncre } from '../protocol/fenetreJalon';
+import { datesPassationsSources, etiquetteLecture, sourcesMesureesAu } from './momentumDuCycle';
+// Réexportée : les bancs et le rendu la lisent ici, avec les séries.
+export { etiquetteLecture };
+import type { MotifAbsenceMomentum } from './motifsMomentum';
 
 // Momentum PAR BESOIN (LOT-07, `D-058`).
 //
@@ -70,7 +74,15 @@ export function bandePourBesoin(
   return metadata.bandes.find(bande => bande.besoin === besoin) ?? null;
 }
 
-export type LectureBesoin = { jalon: JalonMomentum; date: Date; couverture: number };
+/**
+ * `remesure` ([[D-397]] §3) : une passation exploitable nouvelle, faite après
+ * l'ancre hors de la fenêtre de tout jalon de mesure. Elle forme une paire,
+ * elle ne confirme ni ne crée aucun jalon.
+ */
+export type LectureBesoin = { jalon: JalonMomentum | 'remesure'; date: Date; couverture: number };
+
+/** Les motifs d'absence d'une paire par besoin ([[D-397]] §4) : jamais zéro ni « stable ». */
+export type MotifAbsenceBesoin = MotifAbsenceMomentum | 'sans_source';
 
 export type MomentumBesoin = {
   besoin: number;
@@ -88,6 +100,13 @@ export type MomentumBesoin = {
   qualification: 'au_dessus_de_la_bande' | 'dans_la_bande' | null;
   /** Toujours renseigné, y compris quand tout va bien : une sortie s'explique. */
   motif: string;
+  /**
+   * Cycle courant seulement ([[D-397]]) : le motif d'absence, énuméré, et les
+   * lectures admissibles du besoin dans l'ordre chronologique — les douze
+   * emplacements du cockpit. Absents sur un cycle passé (`momentum-par-besoin-v1`).
+   */
+  motifAbsence?: MotifAbsenceBesoin | null;
+  lectures?: LectureBesoin[];
 };
 
 /**
@@ -266,5 +285,138 @@ export function calculerMomentumParBesoin(input: {
 
       const delta = arrivee.couverture - depart.couverture;
       return { besoin, mesure: true, delta, depart, arrivee, ...qualifier(delta, besoin, metadata) };
+    });
+}
+
+// ---------------------------------------------------------------------------
+// CYCLE COURANT — [[D-397]] §1 à §4
+// ---------------------------------------------------------------------------
+//
+// Les séries v1 ci-dessus échantillonnent l'état aux dates des jalons. Sur le
+// cycle courant, D-397 change la construction et le choix des paires : chaque
+// passation exploitable nouvelle d'une source du besoin, faite après l'ancre,
+// est une lecture, à SA date ; la paire relie la lecture d'ancre à la dernière.
+// Les formules, le mapping `BESOIN_SOURCES` et les bandes ne changent pas. Les
+// cycles passés gardent leur lecture v1 (§2 : l'historique reste consultable).
+
+export function construireSeriesParBesoinDuCycle(input: {
+  brutes: ReponseBrute[];
+  ancre: { ancre: AncreCycle; date: Date };
+  jourZero: Date | null;
+  maintenant: Date;
+}): Map<number, LectureBesoin[]> {
+  const { brutes, ancre, jourZero, maintenant } = input;
+  // Un état par date lue : plusieurs besoins partagent souvent une passation.
+  const etats = new Map<number, Map<number, number | null>>();
+  const couverturesAu = (date: Date) => {
+    const cle = date.getTime();
+    let etat = etats.get(cle);
+    if (!etat) {
+      const resultat = calculerEquilibre(construireReponsesParQuestionnaire(brutes, date));
+      etat = new Map(resultat.strates.flatMap(s => s.besoins).map(b => [b.besoin, b.couverture]));
+      etats.set(cle, etat);
+    }
+    return etat;
+  };
+
+  // Une remesure porte sur une source déjà exploitable à l'ancre (arbitrage du
+  // 2026-10-31) : la première passation d'une source absente du bilan d'ancre
+  // n'ouvre pas de lecture à elle seule.
+  const connues = sourcesMesureesAu(brutes, ancre.date);
+  const series = new Map<number, LectureBesoin[]>();
+  for (const [besoinCle, sources] of Object.entries(BESOIN_SOURCES)) {
+    const besoin = Number(besoinCle);
+    if (sources.length === 0) continue;
+    const serie: LectureBesoin[] = [];
+    const auDepart = couverturesAu(ancre.date).get(besoin) ?? null;
+    if (auDepart !== null) serie.push({ jalon: ancre.ancre, date: ancre.date, couverture: auDepart });
+
+    const ids = new Set(sources.map(source => source.idQuestionnaire).filter(id => connues.has(id)));
+    const dates = [...new Set(
+      datesPassationsSources(brutes, ids)
+        .filter(date => date > ancre.date && date <= maintenant)
+        .map(date => date.getTime()),
+    )].sort((a, b) => a - b);
+    for (const instant of dates) {
+      const date = new Date(instant);
+      const couverture = couverturesAu(date).get(besoin) ?? null;
+      if (couverture === null) continue;
+      serie.push({ jalon: etiquetteLecture(date, jourZero), date, couverture });
+    }
+    if (serie.length > 0) series.set(besoin, serie);
+  }
+  return series;
+}
+
+/** Textes B-0 à B-3, validés mot pour mot le 2026-10-31 ([[D-397]] §7). */
+export function texteMotifBesoin(motif: MotifAbsenceBesoin, ancre: AncreCycle | null): string {
+  switch (motif) {
+    case 'sans_jour_zero':
+      return 'Momentum par besoin non calculé : aucun protocole n’est diffusé sur ce cycle.';
+    case 'sans_source':
+      return 'Aucun questionnaire du bilan ne mesure ce besoin : pas de momentum.';
+    case 'sans_lecture_ancre':
+      return `Besoin non mesuré à l’ancre ${ancre ?? ''} : aucun momentum. Ce n’est pas une stabilité.`;
+    case 'sans_remesure':
+      return `Aucune passation nouvelle de ses questionnaires depuis l’ancre ${ancre ?? ''} : aucun momentum. Ce n’est pas une stabilité.`;
+  }
+}
+
+/**
+ * Les douze besoins du cycle courant, TOUS nommés — ceux sans source au
+ * mapping (2, 6, 7, 11) portent le motif « sans source », pas une courbe
+ * (§4). Paire : la lecture d'ancre et la dernière lecture (Q5). Le delta reste
+ * la soustraction brute ; l'arrondi est l'affaire du rendu (§5).
+ */
+//
+// LES BANDES DE BRUIT ONT ÉTÉ PENSÉES POUR LES PAIRES v1 (jalon → jalon). Les
+// paires du cycle courant se construisent autrement depuis [[D-397]] §4 : une
+// bande publiée devra dire si elle vaut pour elles. Le banc
+// `momentumDuCycle.test.ts` rougit le jour où la table est publiée.
+export function calculerMomentumParBesoinDuCycle(input: {
+  series: Map<number, LectureBesoin[]>;
+  ancre: AncreCycle | null;
+  jourZero: Date | null;
+  metadata?: BandesMetadata;
+}): MomentumBesoin[] {
+  const metadata = input.metadata ?? BANDES_DE_BRUIT;
+  return Object.keys(BESOIN_SOURCES)
+    .map(Number)
+    .sort((gauche, droite) => gauche - droite)
+    .map((besoin): MomentumBesoin => {
+      const lectures = input.series.get(besoin) ?? [];
+      // Un départ n'est jamais qu'une lecture d'ANCRE : une première lecture
+      // postérieure ne se présente pas comme le point de départ.
+      const lectureAncre = lectures[0]?.jalon === input.ancre ? lectures[0] : null;
+      const absent = (motifAbsence: MotifAbsenceBesoin): MomentumBesoin => ({
+        besoin,
+        mesure: false,
+        delta: null,
+        depart: lectureAncre,
+        arrivee: null,
+        qualification: null,
+        motif: texteMotifBesoin(motifAbsence, input.ancre),
+        motifAbsence,
+        lectures,
+      });
+
+      if (!input.ancre || !input.jourZero) return absent('sans_jour_zero');
+      if (BESOIN_SOURCES[besoin].length === 0) return absent('sans_source');
+      const depart = lectures[0];
+      if (!depart || depart.jalon !== input.ancre) return absent('sans_lecture_ancre');
+      if (lectures.length < 2) return absent('sans_remesure');
+
+      const arrivee = lectures[lectures.length - 1];
+      const delta = arrivee.couverture - depart.couverture;
+      return {
+        besoin,
+        mesure: true,
+        delta,
+        depart,
+        arrivee,
+        ...qualifier(delta, besoin, metadata),
+        motifAbsence: null,
+        lectures,
+      };
     });
 }

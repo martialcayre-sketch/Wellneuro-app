@@ -43,10 +43,25 @@ describe('buildResumeJ21', () => {
 
     const resume = buildResumeJ21({
       checkins: [checkin('c1', 'J21', '2026-01-22T00:00:00.000Z')],
-      momentum: { ancre: 'T0', dateAncre: dateT0, lectures },
+      momentum: { ancre: 'T0', dateAncre: dateT0, jourZero: dateT0, lectures },
     });
 
     expect(resume.score).toEqual({ tendance: 'hausse', delta: 15 });
+  });
+
+  it('sans jour 0, aucun score : le repli sur l’ancre est supprimé ([[D-397]] §2)', () => {
+    const dateT0 = new Date('2026-01-01T00:00:00.000Z');
+    const lectures: LectureDatee[] = [
+      { date: dateT0, valeur: 40 },
+      { date: new Date('2026-01-22T00:00:00.000Z'), valeur: 55 },
+    ];
+    for (const jourZero of [undefined, null]) {
+      const resume = buildResumeJ21({
+        checkins: [checkin('c1', 'J21', '2026-01-22T00:00:00.000Z')],
+        momentum: { ancre: 'T0', dateAncre: dateT0, jourZero, lectures },
+      });
+      expect(resume.score).toBeNull();
+    }
   });
 
   it('retient la correction (tête de chaîne) d’un point d’étape', () => {

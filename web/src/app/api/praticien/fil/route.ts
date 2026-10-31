@@ -441,7 +441,11 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     }
     const jalonsBruts = jalonsSansDecision(checkinsJ21, dernierEpisodeJ21ParPatient, actifs);
     const momentums = await momentumJalonsParPatient(jalonsBruts.map(j => j.idPatient));
-    const jalons = jalonsBruts.map(j => ({ ...j, momentum: momentums.get(j.idPatient) ?? null }));
+    const jalons = jalonsBruts.map(j => ({
+      ...j,
+      momentum: momentums.get(j.idPatient)?.momentum ?? null,
+      motifMomentum: momentums.get(j.idPatient)?.motif ?? null,
+    }));
 
     // LE RETOUR DU PATIENT SUR SON OBJECTIF, quatre gestes confondus et
     // ordonnés par le producteur. AUCUN DÉCOMPTE : une carte par geste, ancrée

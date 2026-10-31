@@ -3,22 +3,29 @@ import { prisma } from '@/lib/prisma';
 import { construireTrajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
 import type { ReponseBrute } from '@/lib/equilibre/depuisPrisma';
 import type { JalonMomentum } from '@/lib/equilibre/types';
+import type { MotifAbsenceMomentum } from '@/lib/equilibre/motifsMomentum';
 import { estJalonMomentum } from '@/lib/protocol/cycles';
 import type { TendanceMomentumCarte } from './cartes';
 
 // Momentum des patients au jalon J21 (accueil-observatoire LOT-03) —
 // enrichissement FACTUEL et optionnel de la carte jalon. Réutilise
-// `construireTrajectoire` : le momentum d'un cycle est T0 → dernier jalon
-// mesuré. Souvent indisponible (le check-in J21 de pilotage et la re-mesure
+// `construireTrajectoire` : le momentum du cycle courant va de son ancre à la
+// dernière remesure ([[D-397]]) ; absent, il porte son motif. Souvent indisponible (le check-in J21 de pilotage et la re-mesure
 // d'équilibre à J21 sont deux choses distinctes, A1) : dans ce cas la valeur
 // est `null` et la carte n'affiche RIEN — jamais un 0 (A8-2).
 //
 // Bornée aux patients-jalon (petit sous-ensemble) : deux requêtes, pas de N+1.
 
+export type MomentumFil = {
+  momentum: { tendance: TendanceMomentumCarte; delta: number } | null;
+  /** Pourquoi `momentum` est absent ([[D-397]]) ; `null` quand il est servi. */
+  motif: MotifAbsenceMomentum | null;
+};
+
 export async function momentumJalonsParPatient(
   idsJalon: string[],
-): Promise<Map<string, { tendance: TendanceMomentumCarte; delta: number } | null>> {
-  const resultat = new Map<string, { tendance: TendanceMomentumCarte; delta: number } | null>();
+): Promise<Map<string, MomentumFil>> {
+  const resultat = new Map<string, MomentumFil>();
   if (idsJalon.length === 0) return resultat;
 
   const [episodes, reponses] = await Promise.all([
@@ -77,7 +84,13 @@ export async function momentumJalonsParPatient(
     });
     // Le cycle courant = le dernier T0 confirmé (cycles triés par date).
     const cycleCourant = trajectoire.cycles.at(-1);
-    resultat.set(idPatient, cycleCourant?.momentum ?? null);
+    resultat.set(idPatient, {
+      momentum: cycleCourant?.momentum
+        ? { tendance: cycleCourant.momentum.tendance, delta: cycleCourant.momentum.delta }
+        : null,
+      // Sans cycle, pas de jour 0 non plus : le même motif qu'au portail.
+      motif: cycleCourant ? cycleCourant.motifMomentum ?? null : 'sans_jour_zero',
+    });
   }
 
   return resultat;

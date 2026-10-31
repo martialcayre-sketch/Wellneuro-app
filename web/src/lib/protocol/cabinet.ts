@@ -61,6 +61,9 @@ export function calculerMedianesCabinet(
   for (const [dossier, cycles] of cyclesParPatient.entries()) {
     for (const cycle of cycles) {
       if (cycle.versionScore !== versionScoreReference) continue;
+      // [[D-397]] §2 : un cycle courant sans jour 0 n'a pas de momentum ; ses
+      // jalons, lus par le repli sur l'ancre, n'entrent pas dans le repère.
+      if (cycle.motifMomentum === 'sans_jour_zero') continue;
       // La référence est l'ancre DE CE CYCLE, lue par son nom. Chercher `T0`
       // dans les jalons d'un cycle ancré en `T1` n'aurait rien trouvé : le
       // cycle serait sorti de la cohorte en silence, et la médiane du cabinet

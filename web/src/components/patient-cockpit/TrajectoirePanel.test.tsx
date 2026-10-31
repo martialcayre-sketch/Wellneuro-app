@@ -670,10 +670,11 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
     );
 
     // Les deux jalons comparés sont nommés : un J21→J42 ne se lit pas comme
-    // un T0→J90.
-    expect(screen.getByText(/couverture 0,5 \(J21\) → 0,7 \(J42\)/)).toBeTruthy();
-    // L'écart porte son unité — le scalaire au-dessus est sur l'indice 0–100.
-    expect(screen.getByText(/écart \+0,2\s*— échelle de couverture 0–1/)).toBeTruthy();
+    // un T0→J90. r3_12 ([[D-397]] §5) : `Math.round(100 × c)`, sans « % ».
+    expect(screen.getByText(/couverture 50 \(J21\) → 70 \(J42\)/)).toBeTruthy();
+    // L'écart porte son unité — en points, depuis le delta brut ; le scalaire
+    // au-dessus est sur l'indice 0–100.
+    expect(screen.getByText(/écart \+20 points/)).toBeTruthy();
     expect(screen.getByText(/écart 15 — indice 0–100/)).toBeTruthy();
     // Le motif est rendu sur les DEUX lignes.
     expect(screen.getByText(/aucune bande de bruit n’est publiée/)).toBeTruthy();
@@ -683,6 +684,118 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
     expect(screen.getByText(/Sensations-émotions fondamentales \(stress\)/)).toBeTruthy();
     // Aucune ligne mesurée ne se présente « non re-mesuré » (revue B1).
     expect(screen.queryByText(/non re-mesuré/)).toBeNull();
+  });
+});
+
+describe('TrajectoirePanel — momentum du cycle courant ([[D-397]])', () => {
+  const base = {
+    index: [{ milestone: 'T0' as const, date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' }],
+    discordanceOrdreCycles: false,
+    comparaison: { disponible: false, raison: 'un_seul_cycle' as const },
+  };
+  const cycle = {
+    cycleId: 'ep_a',
+    ancre: 'T0' as const,
+    dateAncre: '2026-01-01T00:00:00.000Z',
+    jourZero: '2026-01-02T00:00:00.000Z',
+    versionScore: 'v1',
+    jalons: [],
+  };
+
+  it('arrivée = remesure datée ; douze emplacements avec lectures, paire en points, motifs nommés', () => {
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...base,
+          cycles: [{
+            ...cycle,
+            momentum: { tendance: 'hausse', delta: 4, dateArrivee: '2026-02-05T00:00:00.000Z', etiquetteArrivee: 'remesure' },
+            motifMomentum: null,
+            momentumParBesoin: [
+              {
+                besoin: 9, mesure: true, delta: 0.004,
+                depart: { jalon: 'T0', date: new Date('2026-01-01T00:00:00.000Z'), couverture: 0.5 },
+                arrivee: { jalon: 'remesure', date: new Date('2026-02-05T00:00:00.000Z'), couverture: 0.504 },
+                qualification: null,
+                motif: 'Écart non qualifié : aucune bande de bruit n’est publiée pour ce besoin.',
+                motifAbsence: null,
+                lectures: [
+                  { jalon: 'T0', date: new Date('2026-01-01T00:00:00.000Z'), couverture: 0.5 },
+                  { jalon: 'J21', date: new Date('2026-01-23T00:00:00.000Z'), couverture: 0.6 },
+                  { jalon: 'remesure', date: new Date('2026-02-05T00:00:00.000Z'), couverture: 0.504 },
+                ],
+              },
+              {
+                besoin: 2, mesure: false, delta: null, depart: null, arrivee: null, qualification: null,
+                motif: 'Aucun questionnaire du bilan ne mesure ce besoin : pas de momentum.',
+                motifAbsence: 'sans_source', lectures: [],
+              },
+            ],
+          }],
+        }}
+      />,
+    );
+    expect(screen.getByText(/Momentum T0 → remesure du 05\/02\/2026/)).toBeTruthy();
+    expect(screen.getByText(/couverture 50 \(T0\) → 50 \(remesure du 05\/02\/2026\)/)).toBeTruthy();
+    // Un mouvement réel ne s'écrit jamais « 0 ».
+    expect(screen.getByText(/écart inférieur à un point/)).toBeTruthy();
+    // Les lectures, dans l'ordre, sans valeur (R:o).
+    expect(screen.getByText('Lectures : T0 du 01/01/2026 · J21 du 23/01/2026 · remesure du 05/02/2026')).toBeTruthy();
+    expect(screen.getByText('Aucun questionnaire du bilan ne mesure ce besoin : pas de momentum.')).toBeTruthy();
+  });
+
+  it('r3_12 : écarts négatifs, nuls et inférieurs au point, depuis le delta brut', () => {
+    const paire = (besoin: number, depart: number, arrivee: number) => ({
+      besoin, mesure: true, delta: arrivee - depart,
+      depart: { jalon: 'T0' as const, date: new Date('2026-01-01T00:00:00.000Z'), couverture: depart },
+      arrivee: { jalon: 'remesure' as const, date: new Date('2026-02-05T00:00:00.000Z'), couverture: arrivee },
+      qualification: null, motif: 'Écart non qualifié.', motifAbsence: null, lectures: [],
+    });
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...base,
+          cycles: [{
+            ...cycle,
+            momentum: null,
+            motifMomentum: 'sans_remesure',
+            momentumParBesoin: [paire(1, 0.62, 0.5), paire(3, 0.5, 0.5), paire(4, 0.5, 0.496), paire(5, 0.5, 0.51)],
+          }],
+        }}
+      />,
+    );
+    expect(screen.getByText(/écart −12 points/)).toBeTruthy();
+    expect(screen.getByText(/écart 0 point/)).toBeTruthy();
+    expect(screen.getByText(/écart inférieur à un point/)).toBeTruthy();
+    expect(screen.getByText(/écart \+1 point(?!s)/)).toBeTruthy();
+    expect(
+      screen.getByText('Momentum non calculé : aucune passation nouvelle depuis l’ancre T0. Ce n’est pas une stabilité.'),
+    ).toBeTruthy();
+  });
+
+  it('sans jour 0 : le motif C-1 au scalaire, et B-0 une seule fois sur le bloc', () => {
+    const motifB0 = 'Momentum par besoin non calculé : aucun protocole n’est diffusé sur ce cycle.';
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...base,
+          cycles: [{
+            ...cycle,
+            jourZero: null,
+            momentum: null,
+            motifMomentum: 'sans_jour_zero',
+            momentumParBesoin: [1, 9].map(besoin => ({
+              besoin, mesure: false, delta: null, depart: null, arrivee: null, qualification: null,
+              motif: motifB0, motifAbsence: 'sans_jour_zero' as const, lectures: [],
+            })),
+          }],
+        }}
+      />,
+    );
+    expect(
+      screen.getByText('Momentum non calculé : aucun protocole n’est diffusé sur ce cycle, les jalons n’ont pas de jour 0.'),
+    ).toBeTruthy();
+    expect(screen.getAllByText(motifB0)).toHaveLength(1);
   });
 });
 

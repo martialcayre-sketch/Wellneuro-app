@@ -89,7 +89,10 @@ export function lignesProvenanceMomentum(p: ProvenanceMomentum): string[] {
   return [
     // La date est celle du JALON (l'état connu à cette date), pas celle d'une
     // passation : le libellé le dit, pour ne pas se lire comme une réponse.
-    `Écart de l'indice global entre l'état au ${p.depart.jalon} (${dateCourte(p.depart.date as string)}) et l'état au ${p.arrivee.jalon} (${dateCourte(p.arrivee.date as string)})`,
+    // Une arrivée `remesure` ([[D-397]]) est, elle, datée de sa passation.
+    `Écart de l'indice global entre l'état au ${p.depart.jalon} (${dateCourte(p.depart.date as string)}) et ${
+      p.arrivee.jalon === 'remesure' ? "l'état à la remesure" : `l'état au ${p.arrivee.jalon}`
+    } (${dateCourte(p.arrivee.date as string)})`,
     ligneVersion(p.versionCalcul),
   ];
 }
