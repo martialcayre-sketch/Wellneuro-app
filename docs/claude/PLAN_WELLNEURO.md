@@ -500,7 +500,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | attente |
 | réapprobation | protocoles diffusés, dossier par dossier, juste après le déploiement de J3-12f | geste | 2 | J3-12f | non | attente |
 | dossiers des autres besoins | 1, 4, 5, 9, puis 3, 8, 10, 12, puis 6, 7, 11 (ordre du 2026-10-15) ; définitions signées des besoins 6, 7 et 11, qui restent « non mesuré » d'ici là | geste | sans rang | besoin 2 achevé | non | attente |
-| momentum | référence de la première mesure du dossier, troisième divergence de la section « Mesure » (limite nommée par D-113 §2) | geste | sans rang | lettre o (H30) | non | rattaché à la lettre o le 2026-10-21 (« une seule date de départ partout ») ; rien avant elle, la limite reste écrite au code |
+| momentum | référence de la première mesure du dossier, troisième divergence de la section « Mesure » (limite nommée par D-113 §2) | geste | sans rang | lettre o (H30) | non | tranché par D-397 le 2026-10-31 (lettre o signée) ; appliqué par J2-mom, la limite reste écrite au code jusque-là |
 
 File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; aucune activation patient ne dépend de ces lots.
 

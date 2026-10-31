@@ -6,6 +6,136 @@
 
 ## Décisions actives
 
+### D-397 — Momentum : une seule date de départ, l'ancre du cycle courant ; une remesure libre forme une paire sans toucher aux jalons (lettre o, H30 ; amende A6-R2)
+
+- Date : 2026-10-31
+- Statut : accepté — lettre o signée pour le responsable le 2026-10-31,
+  sur son instruction (« signe pour moi »). Brouillon rédigé par
+  l'assistant le 2026-10-30. Six arbitrages sur questions à options, rendus
+  le 2026-10-30, tous sur la recommandation. Contre-revue Codex le
+  2026-10-31 sur `main @ d2cd2f37` : verdict « amender », neuf corrections
+  reportées avant la signature, sans rouvrir les arbitrages. Texte signé
+  au Claude Doc privé.
+- Domaine : momentum du portail « Mon équilibre », du cockpit et du fil ;
+  fiche H30 du plan unique (`docs/claude/PLAN_WELLNEURO.md`) ; lot J2-mom
+  (file A), qui embarque r3_12.
+- **Ferme** : la troisième divergence de la section « Mesure » de l'audit
+  [[D-312]] (ligne « momentum » du plan) ; l'exception de « Mon équilibre »
+  laissée par [[D-255]] ; la limite nommée par [[D-113]] §2 et écrite dans
+  `web/src/lib/equilibre/lecturePatient.ts`.
+- **Amende** A6-R2 (`docs/claude/REGISTRE_FRONTIERES.md`) : voir §4.
+- **Changement de lecture clinique** (précédent [[D-329]], DC-18) : la
+  référence du momentum et les conditions d'une paire changent. L'ancienne
+  règle, la nouvelle, l'impact et la validation sont écrits ci-dessous ;
+  relecture clinique, palier T3 et `wn-reviewer` au lot J2-mom.
+- **Aucune migration. Aucun code avant J2-mom** : la décision s'applique
+  avec son lot ; la limite reste écrite au code jusque-là.
+- **Ne touche pas** : les formules de score, les seuils, `versionScore`,
+  les bandes de bruit, le mapping des sources des besoins
+  (`BESOIN_SOURCES`) ; les cadences J21, J42, J90 et la fenêtre de
+  ±8 jours ([[D-113]] §4) ; le jour 0 de [[D-255]], son pivot, et « une
+  mesure par jalon et par cycle » ; la dette « stable à écart nul » de
+  [[D-058]] §3 ; la garde A8-3 ; aucune comparaison entre cycles ni entre
+  versions de score ([[D-113]] §9).
+
+**Ancienne règle.** Trois dates de départ coexistent. Au portail, la
+référence est la première réponse exploitable du dossier, comparée au
+dernier jalon atteint, compté depuis elle (`lecturePatient.ts`). Au cockpit
+et au fil, la référence est la lecture d'ancre du cycle et les jalons se
+comptent depuis le jour 0, avec un repli historique sur l'ancre quand le
+cycle n'a pas de jour 0 (`protocol/trajectoire.ts`, [[D-255]] lot 3a ;
+consommé par `fil/momentumJ21.ts`). Seules les mesures de jalon forment des
+paires : le momentum par besoin (`momentum-par-besoin-v1`) échantillonne
+l'ancre puis J21, J42 et J90.
+
+**§1 — Une seule date de départ.** Au portail, au cockpit, au fil et dans
+les bancs, la lecture de référence du momentum est la lecture d'ancre du
+cycle courant. Les jalons J21, J42 et J90 se comptent depuis le jour 0 du
+calendrier courant : la première diffusion recevable du cycle, remplacée
+par la diffusion du dernier pivot recevable. Un pivot ne crée pas de cycle
+et ne déplace pas l'ancre de référence. La première mesure du dossier cesse
+d'être une référence.
+
+**§2 — Avant la diffusion.** Tant que le cycle courant n'a pas de jour 0,
+aucun momentum n'est calculé, au portail, au cockpit ni au fil : le repli
+historique sur l'ancre est supprimé pour le momentum du cycle courant.
+C'est un retrait observable, pas une harmonisation sans effet. Les mesures
+et les épisodes historiques restent consultables. L'écran dit pourquoi au
+lieu de montrer un écart.
+
+**§3 — Remesure libre.** Une passation exploitable nouvelle d'un
+instrument, faite dans le cycle courant après l'ancre (par exemple après
+réassignation par le praticien), compte comme remesure, qu'elle tombe ou
+non dans la fenêtre d'un jalon. Elle ne confirme ni ne crée aucun jalon.
+
+**§4 — Paires et mini-courbes.** Pour chaque besoin, une paire exige une
+couverture disponible à l'ancre et une couverture recalculée à la date de
+la dernière passation exploitable nouvelle de l'une de ses sources,
+postérieure à l'ancre et dans le cycle courant. Les formules et le mapping
+existants sont conservés ; la construction des séries et le choix des
+paires de `momentum-par-besoin-v1` changent. Sans lecture d'ancre, sans
+source ou sans remesure exploitable, aucun momentum n'est produit, et le
+motif d'absence distingue ces trois cas : jamais zéro ni « stable »
+([[D-058]] §2). Les douze emplacements de J2-mom sont réservés au cockpit
+praticien : aucune mini-courbe ni valeur de point au portail. Les besoins
+sans source au mapping portent le motif « sans source », pas une courbe.
+A6-R2 est amendé : une courbe peut porter des points de remesure libre
+réellement mesurés, sans interpolation ni pronostic. Avant la porte 22,
+une liste chronologique sans position quantitative ; après, une courbe
+exige au moins deux lectures admissibles du besoin, et les absences restent
+visibles.
+
+**§5 — Écriture des valeurs (r3_12).** Au cockpit, une couverture `c`
+calculée sur 0–1 s'affiche `Math.round(100 × c)`, sans « % » ; un écart
+s'affiche en points, `Math.round(100 × delta)`, à partir du delta brut,
+avant arrondi des valeurs affichées. Ces opérations restent dans le rendu :
+ni les données de calcul, ni les qualifications, ni `versionScore` ne
+changent ; aucun qualificatif clinique ([[D-058]] §4). Au portail, la règle
+d'affichage en vigueur ne change pas : aucun chiffre.
+
+**§6 — Dossier rouvert.** Sur un dossier rouvert en T1, le momentum part de
+l'ancre T1. Les mesures du cycle T0 restent dans la trajectoire, sans paire
+avec celles de T1 ([[D-113]] §9).
+
+**§7 — Textes patient.** La décision prescrit des motifs d'absence (§2,
+§4) sans en arrêter la rédaction. Tout texte nouveau ou modifié au portail
+est validé mot pour mot par le responsable avant le code.
+
+**§8 — Réserve, bancs, risque.** Les quatre sigles de H30, que le plan
+énumère sans les définir :
+
+- **R:o** : les valeurs aux points ne s'affichent pas avant le constat de
+  la porte 22 (premier dossier à deux jalons mesurés), par identifiant, en
+  conteneur.
+- **T-2** : le banc [[D-058]] réécrit — portail, cockpit et fil, client et
+  serveur, donnent la même référence et les mêmes bornes depuis le jour 0,
+  à la milliseconde.
+- **T-3** : le banc des paires — remesure hors fenêtre sans jalon confirmé ;
+  motif distinct sans ancre, sans source, sans remesure ; aucune paire
+  T0–T1 ; aucun momentum sans jour 0, même là où l'ancien calcul en
+  produisait un.
+- **RK-3** : avant l'activation, en conteneur et en agrégats seulement,
+  compter les dossiers dont la disponibilité, la référence, la mesure
+  d'arrivée ou le résultat du momentum diffèrent entre l'ancien et le
+  nouveau calcul : rouverts, sans diffusion, pivotés, à première réponse
+  antérieure à l'ancre, touchés par l'admission des remesures libres.
+
+**§9 — Arbitrages (2026-10-30).** Q1 : l'ancre pour la référence, le
+jour 0 pour les jalons (écartés : la première mesure partout ; le jour 0
+pour tout). Q2 : aucun momentum avant la diffusion, avec un motif (écarté :
+une bascule à la diffusion). Q3 : toute remesure du cycle forme une paire
+(écarté : les seules mesures de jalon). Q4 : un dossier rouvert repart de
+l'ancre T1 (écarté : T0 reste la référence). Q5 : la seconde mesure est la
+dernière remesure (écarté : le dernier jalon atteint). Q6 : les définitions
+du §8.
+
+**§10 — Suite.** Mesure de RK-3, puis lot J2-mom (§1 à §7, bancs T-2 et
+T-3, textes relus avant le code), valeurs aux points après la porte 22.
+En aval, la décision appliquée remplit le préalable o de J2-jourN (H52) ;
+d/H32 et M-2/porte 6 restent requis. J2-mom précède K-11 : la porte 20 ne
+se lève que par la revue du premier écran comparant deux passations du même
+instrument.
+
 ### D-396 — Clôture d'une PR documentaire : elle peut citer le handoff de son lot, déjà sur `main`, au lieu d'en créer un (amende l'étape 7 de `wn-merge`)
 
 - Date : 2026-10-30
