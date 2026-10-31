@@ -266,19 +266,20 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    const transporter = creerTransportSmtp(smtpUrl);
-
-    // Corps `text` au registre des gabarits (Socle LOT-03, DC-26) ; le corps
-    // `html` est le booklet rendu, gardé par le registre anxiogène plus haut.
-    const gabarit = rendreGabarit(getGabarit('envoi_bilan'), {});
     // Un refus du relais SMTP tombait dans le `catch` général, qui n'écrit
     // qu'un `logger.error` : ni ligne d'audit, ni ligne de journal. Un bilan
     // réellement perdu ne laissait donc AUCUNE trace lisible sur la fiche,
     // pendant qu'une simple demande de confirmation, elle, s'y affichait en
     // « Échec d'envoi ». Le patron appliqué ici est celui que le dépôt tient
     // déjà un dossier plus loin (`file-envoi/envoyer`) : journaliser l'échec
-    // avec le vocabulaire du domaine, puis rendre la main.
+    // avec le vocabulaire du domaine, puis rendre la main. Transport et
+    // gabarit sont préparés DANS ce bloc ([[D-398]] §1, Q4) : préparés avant,
+    // leur exception reprenait le chemin du `catch` général, sans trace.
     try {
+      const transporter = creerTransportSmtp(smtpUrl);
+      // Corps `text` au registre des gabarits (Socle LOT-03, DC-26) ; le corps
+      // `html` est le booklet rendu, gardé par le registre anxiogène plus haut.
+      const gabarit = rendreGabarit(getGabarit('envoi_bilan'), {});
       await transporter.sendMail({
         from: '"Wellneuro" <noreply@wellneuro.fr>',
         to: synthese.emailPatient,

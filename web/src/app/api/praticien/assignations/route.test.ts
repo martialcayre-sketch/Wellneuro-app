@@ -8,6 +8,7 @@ const { sendMail, prisma } = vi.hoisted(() => ({
     // Lue SEULEMENT sous `WN_ECHEANCE_OBLIGATOIRE` : c'est elle qui dit si
     // l'assignation qu'on pose compose le second rideau.
     syntheseIA: { findFirst: vi.fn() },
+    correspondancePatient: { create: vi.fn() },
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
@@ -18,6 +19,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 
+import nodemailer from 'nodemailer';
 import { PATCH, POST } from './route';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 
@@ -69,6 +71,24 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(message.text).not.toContain(titre);
     expect(message.text).not.toContain('« ');
     expect(message.text).not.toContain('Note de votre praticien');
+  });
+
+  // [[D-398]] §1 (Q4) : une exception à la PRÉPARATION du transport s'écrit
+  // « Erreur » avec son motif, comme un refus SMTP — elle ne laissait aucune trace.
+  it('un transport qui lève à sa préparation : trace « Erreur » avec son motif, l’assignation reste', async () => {
+    vi.spyOn(nodemailer, 'createTransport').mockImplementationOnce(() => {
+      throw new Error('transport indisponible');
+    });
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+    expect(prisma.correspondancePatient.create.mock.calls[0][0].data).toMatchObject({
+      type: 'questionnaire',
+      statut: 'Erreur',
+      erreurCourte: expect.stringContaining('transport indisponible'),
+      referenceType: 'assignation',
+    });
   });
 
   // Le refus doit être DANS la route, pas dans l'écran : retirer l'entrée du

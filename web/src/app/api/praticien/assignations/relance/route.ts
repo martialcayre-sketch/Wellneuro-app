@@ -197,11 +197,14 @@ async function envoyerRappel(
     return 'Non_envoye';
   }
 
-  const gabarit = rendreGabarit(getGabarit('relance_questionnaire'), {
-    dateInfo: rendreSegment('dateLimite', dateLimite),
-    portalUrl: buildGoogleConnexionUrl(),
-  });
+  // Le gabarit DANS le bloc qui consigne l'échec ([[D-398]] §1, Q4) : rendu
+  // dehors, son exception remontait en 500 sans trace — et la cadence, qui
+  // relit les traces, ne la voyait pas. Le motif accompagne l'« Erreur ».
   try {
+    const gabarit = rendreGabarit(getGabarit('relance_questionnaire'), {
+      dateInfo: rendreSegment('dateLimite', dateLimite),
+      portalUrl: buildGoogleConnexionUrl(),
+    });
     await creerTransportSmtp(smtpUrl).sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: emailPatient,
@@ -210,8 +213,8 @@ async function envoyerRappel(
     });
     await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
     return 'Envoye';
-  } catch {
-    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur' });
+  } catch (erreur) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
     return 'Erreur';
   }
 }
