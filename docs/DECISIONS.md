@@ -6,6 +6,89 @@
 
 ## Décisions actives
 
+### D-398 — Audit 3 (e-mails patient contre traces) : option A aux quatre questions, garde d'une heure sur les e-mails d'accès et d'objectif, lots Q1 puis Q4 puis Q3 ; les cinq faux « Échec d'envoi » de bilan repris par migration de données
+
+- Date : 2026-10-31
+- Statut : accepté — arbitrages du responsable du 2026-10-31 sur la page de
+  l'audit 3 (v2 validée, v3 arbitrée), sans seconde contre-revue ; §2
+  s'applique par release-db (D-087), après approbation du responsable.
+- Domaine : journal `correspondances_patient` et chemins d'e-mail patient
+  (bilan, accusé, invitation, pack, file d'envoi, rappel, accès, objectif,
+  signalement) ; panneau Correspondance du dossier.
+- Ne touche pas : `schema.prisma`, aucune table, aucune contrainte ;
+  `booklet_envois`, qui reste l'historique ; aucun code d'envoi dans ce
+  premier lot ; le constat D-353 §5 (fenêtre du 1er au 7 novembre).
+- Contexte : l'audit 3 a rapproché chaque type d'e-mail patient du code de
+  ce que la production a consigné (agrégats seuls, par clé quand elle
+  existe). Il relève cinq écarts : E1, cinq bilans affichés « Échec
+  d'envoi » sans avoir échoué ; E2, des accusés en série, un par dépôt ;
+  E3, des rafales et des courses après un geste du praticien ; E4, des
+  échecs, et des succès, qui peuvent rester sans trace ; E5, un constat
+  sans question. Les questions Q1 à Q4 répondent à E1 à E4.
+
+**§1 — Option A aux quatre questions, et trois lots dans cet ordre : Q1,
+puis Q4, puis Q3.** Q3 part de la structure que pose le lot Q4. Chaque lot
+s'ouvre dans sa propre session.
+
+- **Q1 (E1)** : une migration de données relue, ciblée par clé (§2). Écartés :
+  corriger l'affichage seul, par un code de lecture qui ne servirait que ces
+  lignes, et laisser en l'état.
+- **Q2 (E2)** : aucun lot. Un accusé par transmission enregistrée, puisque
+  chacun prouve un dépôt ; il n'y en a jamais eu deux pour une même réponse.
+  La question revient avec l'audit 2 (parcours), qui dira si ces séries
+  gênent les patients. Écartés : regrouper les accusés d'une séance, et
+  supprimer l'accusé par e-mail.
+- **Q3 (E3)** : un lot de code, sans migration, en trois volets : un seul
+  e-mail par dossier quand plusieurs questionnaires sont relancés ensemble ;
+  une garde atomique côté serveur sur les e-mails d'accès et d'objectif
+  (§3) ; la même réservation avant le premier envoi d'un bilan et avant les
+  relances manuelles. Écartés : les gardes seules, et ne rien changer.
+- **Q4 (E4)** : un lot de code, sans migration, en deux volets : sur les six
+  chemins (invitation unitaire, pack, file d'envoi, accusé, rappel, bilan),
+  le transport et le gabarit passent dans le bloc qui consigne l'échec ;
+  l'e-mail de signalement au praticien est tracé au dossier sous un type
+  nouveau, sans l'adresse du praticien, et le libellé du panneau se revoit
+  dans le même lot. `type` n'a aucune contrainte en production (lu le
+  2026-10-31) : le registre TypeScript change, pas le schéma. Écartés : une
+  colonne pour la clé et la version du gabarit (migration), et ne rien
+  changer.
+
+**§2 — Lot Q1 : les lignes de bilan « Erreur » d'une confirmation requise
+passent en « Non envoyé ».** Migration
+`20261031130000_correspondance_bilans_confirmation_non_envoye`, un seul
+UPDATE. Il ne vise que les lignes du journal de type `booklet`, en statut
+`Erreur`, dont la clé de source (`booklet_envoi`, `source_id`) désigne une
+ligne de `booklet_envois` du même dossier en statut `Confirmation_Requise`.
+Elles prennent le statut `Non_envoye` et l'objet que le code écrit depuis le
+2026-09-08, quand [[D-148]] a corrigé la traduction des statuts (« Envoi du bilan neuronutritionnel — en attente de votre
+confirmation », ou « Renvoi … » selon l'opération). `erreur_courte` reste
+telle quelle : elle porte déjà le motif du registre, comme sur les trois
+confirmations récentes. Un échec réel reste `Erreur`. Rejouée, la migration
+ne retrouve plus rien. Lu en production le 2026-10-31 (conteneur,
+REPEATABLE READ READ ONLY, agrégats) : 5 lignes visées, sur 2 dossiers, et
+aucune autre ligne `Erreur` dans le journal ; aucun trigger sur les deux
+tables.
+
+**§3 — Garde d'une heure sur les e-mails d'accès et d'objectif (lot Q3).**
+Un second e-mail d'accès au portail, ou d'objectif proposé, vers le même
+dossier dans l'heure est refusé par une garde atomique côté serveur. Le
+refus est écrit au journal en « Non envoyé », avec son motif, et n'est
+jamais rejoué, comme le plafond d'annonce de [[D-317]]. L'e-mail d'objectif
+ne porte pas l'énoncé : un second dans l'heure n'apprendrait rien au patient,
+et le portail montre toujours la dernière version.
+
+**§4 — Preuve du lot Q1.** Le banc
+`web/src/lib/correspondance/bilans-confirmation-non-envoye.migration.test.ts`
+lit le SQL livré : une seule instruction hors commentaires, cet UPDATE, sans
+mot destructif ; seuls le statut et l'objet assignés ; les six conditions de
+ciblage, en conjonction ; les deux objets, identiques à ceux que
+`logBookletEnvoi` écrit, dans le même sens. Après la release-db, un constat
+par conteneur, par clé : 0 ligne de bilan `Erreur` dont le registre est une
+confirmation requise ; 5 lignes de bilan `Non_envoye`, jointes à une
+confirmation requise, à l'objet suffixé et antérieures au 2026-09-08 ; et
+les comptes par type et statut, relevés juste avant l'approbation, qui ne
+diffèrent que de ces 5 lignes.
+
 ### D-397 — Momentum : une seule date de départ, l'ancre du cycle courant ; une remesure libre forme une paire sans toucher aux jalons (lettre o, H30 ; amende A6-R2)
 
 - Date : 2026-10-31
