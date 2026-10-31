@@ -6,6 +6,7 @@ const { sendMail, prisma } = vi.hoisted(() => ({
     patient: { findFirst: vi.fn() },
     pack: { findUnique: vi.fn() },
     assignation: { create: vi.fn(), findMany: vi.fn() },
+    correspondancePatient: { create: vi.fn() },
     $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
@@ -22,6 +23,7 @@ vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), info: vi.fn(), security: vi.fn(), error: vi.fn() },
 }));
 
+import nodemailer from 'nodemailer';
 import { POST } from './route';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { logger } from '@/lib/observability/logger';
@@ -80,6 +82,24 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(message.text).not.toContain('Note de votre praticien');
     // D/52 : sans note, rien — « Pack <nom> » s'affichait comme une note du praticien.
     expect(prisma.assignation.create.mock.calls[0][0].data.notes).toBeNull();
+  });
+
+  // [[D-398]] §1 (Q4) : une exception à la PRÉPARATION du transport s'écrit
+  // « Erreur » avec son motif, comme un refus SMTP — elle ne laissait aucune trace.
+  it('un transport qui lève à sa préparation : trace « Erreur » avec son motif, le pack reste', async () => {
+    vi.spyOn(nodemailer, 'createTransport').mockImplementationOnce(() => {
+      throw new Error('transport indisponible');
+    });
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+    expect(prisma.correspondancePatient.create.mock.calls[0][0].data).toMatchObject({
+      type: 'questionnaires',
+      statut: 'Erreur',
+      erreurCourte: expect.stringContaining('transport indisponible'),
+      referenceType: 'pack',
+    });
   });
 
   // Cas réel : un pack enregistré en base contient un instrument depuis

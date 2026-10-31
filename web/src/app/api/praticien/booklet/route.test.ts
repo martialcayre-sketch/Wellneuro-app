@@ -43,8 +43,10 @@ vi.mock('@/lib/anthropic', () => ({
 // observée. Le stub ne sert QUE les tests qui posent `SMTP_URL` ; ailleurs la
 // variable reste absente et les 503 attendus tiennent.
 const sendMail = vi.fn(async () => ({}));
+// La fabrique du transport est observable : le banc de [[D-398]] (Q4) la fait lever.
+const creerTransport = vi.fn(() => ({ sendMail: (...a: unknown[]) => sendMail(...(a as [])) }));
 vi.mock('@/lib/email/transportSmtp', () => ({
-  creerTransportSmtp: () => ({ sendMail: (...a: unknown[]) => sendMail(...(a as [])) }),
+  creerTransportSmtp: () => creerTransport(),
 }));
 vi.mock('@/lib/observability/logger', () => ({ logger: { error: vi.fn(), security: vi.fn() } }));
 vi.mock('@/lib/observability/requestContext', () => ({
@@ -495,6 +497,33 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       const corps = await res.json();
       expect(String(corps.error)).not.toContain('Next.js');
       expect(String(corps.error)).toContain('pas parti');
+    } finally {
+      delete process.env.SMTP_URL;
+    }
+  });
+
+  // [[D-398]] §1 (Q4) : préparé AVANT le bloc, un transport qui levait prenait
+  // le chemin du `catch` général — ni audit, ni journal, comme le refus SMTP
+  // d'avant le correctif ci-dessus.
+  it('un transport qui lève à sa préparation écrit l’audit ET le journal, et répond 502', async () => {
+    process.env.SMTP_URL = 'smtp://test:test@localhost:1025';
+    try {
+      findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+      creerTransport.mockImplementationOnce(() => {
+        throw new Error('transport indisponible');
+      });
+
+      const res = await envoyer({});
+      expect(res.status).toBe(502);
+      expect(sendMail).not.toHaveBeenCalled();
+
+      expect(createBookletEnvoi).toHaveBeenCalledTimes(1);
+      const audit = createBookletEnvoi.mock.calls[0][0].data as Record<string, unknown>;
+      expect(audit.statut).toBe('Erreur');
+      expect(String(audit.erreurCourte)).toContain('transport indisponible');
+      expect(audit.noteTransmise).toBeUndefined();
+
+      expect(ligneJournal().statut).toBe('Erreur');
     } finally {
       delete process.env.SMTP_URL;
     }

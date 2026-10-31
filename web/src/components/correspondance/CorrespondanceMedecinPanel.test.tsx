@@ -73,7 +73,7 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
       }),
     );
     await attendreLeFil();
-    expect(screen.getByText('Correspondance avec le patient')).toBeTruthy();
+    expect(screen.getByText('E-mails du dossier')).toBeTruthy();
     expect(screen.getByText('Envoi du bilan neuronutritionnel')).toBeTruthy();
     expect(screen.getByText('Envoyé')).toBeTruthy();
   });
@@ -250,7 +250,7 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
     expect(screen.getAllByRole('button', { name: 'Réessayer' })).toHaveLength(2);
     expect(screen.queryByText(/Aucune correspondance consignée/)).toBeNull();
-    expect(screen.queryByText(/Aucun envoi patient journalisé/)).toBeNull();
+    expect(screen.queryByText(/Aucun e-mail journalisé/)).toBeNull();
   });
 
   it('un échec de lecture ne se rend pas comme un dossier sans envoi patient', async () => {

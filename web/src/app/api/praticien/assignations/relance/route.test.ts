@@ -4,11 +4,13 @@ const {
   getServerSession,
   verifierAppartenancePatient,
   journaliserCorrespondancePatient,
+  rendreGabarit,
   prisma,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   verifierAppartenancePatient: vi.fn(),
   journaliserCorrespondancePatient: vi.fn(),
+  rendreGabarit: vi.fn(),
   prisma: {
     assignation: { findUnique: vi.fn() },
     patient: { findUnique: vi.fn() },
@@ -27,6 +29,12 @@ vi.mock('@/lib/correspondance/patient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/correspondance/patient')>()),
   journaliserCorrespondancePatient,
 }));
+// Le rendu RÉEL, observable : seul le banc de [[D-398]] (Q4) le fait lever.
+vi.mock('@/lib/correspondance/registreGabarits', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/correspondance/registreGabarits')>();
+  rendreGabarit.mockImplementation(reel.rendreGabarit);
+  return { ...reel, rendreGabarit };
+});
 
 import { POST } from './route';
 
@@ -96,6 +104,27 @@ describe('/api/praticien/assignations/relance', () => {
         referenceId: 'ASS_1',
       }),
     );
+  });
+
+  // [[D-398]] §1 (Q4) : rendu hors du bloc, le gabarit qui lève remontait en
+  // 500 sans trace — et la cadence, qui relit les traces, ne le voyait pas.
+  it('un gabarit qui lève : trace « Erreur » avec son motif, et la route le dit', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    rendreGabarit.mockImplementationOnce(() => {
+      throw new Error('gabarit introuvable');
+    });
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, statut: 'Erreur' });
+    expect(journaliserCorrespondancePatient).toHaveBeenCalledTimes(1);
+    const trace = journaliserCorrespondancePatient.mock.calls[0][0];
+    expect(trace).toMatchObject({
+      type: 'relance_questionnaire',
+      statut: 'Erreur',
+      referenceId: 'ASS_1',
+    });
+    expect(String(trace.erreur)).toContain('gabarit introuvable');
   });
 
   it('refuse 409 une assignation sans échéance, en le disant', async () => {

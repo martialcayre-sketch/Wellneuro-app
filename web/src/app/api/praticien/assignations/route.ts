@@ -363,14 +363,17 @@ async function sendAssignmentEmail(
     await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
     return;
   }
-  const transport = creerTransportSmtp(smtpUrl);
-  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne porte
-  // plus ni titre ni note (2026-10-23) : l'échéance et l'adresse seules.
-  const gabarit = rendreGabarit(getGabarit('assignation_questionnaire'), {
-    dateInfo: rendreSegment('dateLimite', dateLimite),
-    portalUrl,
-  });
+  // Transport et gabarit DANS le bloc qui consigne l'échec ([[D-398]] §1,
+  // Q4) : une exception à leur préparation s'écrit « Erreur », comme un refus
+  // SMTP, au lieu de ne laisser aucune trace.
   try {
+    const transport = creerTransportSmtp(smtpUrl);
+    // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne porte
+    // plus ni titre ni note (2026-10-23) : l'échéance et l'adresse seules.
+    const gabarit = rendreGabarit(getGabarit('assignation_questionnaire'), {
+      dateInfo: rendreSegment('dateLimite', dateLimite),
+      portalUrl,
+    });
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: patientEmail,

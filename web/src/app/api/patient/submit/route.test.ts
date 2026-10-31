@@ -26,6 +26,8 @@ const { prisma, after, sendMailAck } = vi.hoisted(() => ({
     syntheseIA: { create: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     // Resolver commun : lu seulement pour les ids CAB_ (instruments cabinet).
     cabinetInstrument: { findUnique: vi.fn() },
+    // Le journal de correspondance, observé par le banc de [[D-398]] (Q4).
+    correspondancePatient: { create: vi.fn() },
   },
 }));
 type Transaction = (tx: typeof prisma) => Promise<unknown>;
@@ -51,6 +53,7 @@ vi.mock('nodemailer', () => ({
   default: { createTransport: () => ({ sendMail: sendMailAck }) },
 }));
 
+import nodemailer from 'nodemailer';
 import { signPatientSession } from '@/lib/patient-session';
 import { notifierPraticienSignalSecurite } from '@/lib/securite/alerteSecuritePraticien';
 import { logger } from '@/lib/observability/logger';
@@ -981,5 +984,51 @@ describe('POST /api/patient/submit — deux transmissions concurrentes : une seu
     expect(prisma.assignation.update).not.toHaveBeenCalled();
     expect(sendMailAck).not.toHaveBeenCalled();
     expect(notifierPraticienSignalSecurite).not.toHaveBeenCalled();
+  });
+});
+
+// [[D-398]] §1 (Q4) : une exception à la PRÉPARATION du transport s'écrit
+// « Erreur » avec son motif, comme un refus SMTP — elle ne laissait aucune trace.
+describe('POST /api/patient/submit — accusé : un échec de préparation se trace', () => {
+  const smtpOrigine = process.env.SMTP_URL;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.SMTP_URL = 'smtp://test';
+    prisma.assignation.findUnique.mockResolvedValue(assignation);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance: '1985-03-14',
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    sendMailAck.mockResolvedValue({});
+  });
+  afterEach(() => {
+    if (smtpOrigine === undefined) delete process.env.SMTP_URL; else process.env.SMTP_URL = smtpOrigine;
+  });
+
+  it('un transport qui lève à sa préparation : trace « Erreur » avec son motif, la réponse reste', async () => {
+    vi.spyOn(nodemailer, 'createTransport').mockImplementationOnce(() => {
+      throw new Error('transport indisponible');
+    });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+    expect(sendMailAck).not.toHaveBeenCalled();
+    const lignes = prisma.correspondancePatient.create.mock.calls
+      .map(([arg]) => (arg as { data: Record<string, unknown> }).data)
+      .filter(data => data.type === 'accuse_questionnaire');
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0]).toMatchObject({
+      statut: 'Erreur',
+      referenceType: 'reponse_questionnaire',
+      erreurCourte: expect.stringContaining('transport indisponible'),
+    });
   });
 });
