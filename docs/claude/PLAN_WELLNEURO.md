@@ -912,7 +912,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 - **Portes, préalables** : o : S-1 (H06) ; relecture clinique, T3, wn-reviewer ; J2-mom : o ; porte 22 pour la courbe aux points.
 - **Migration, release-db** : non.
 - **Décisions, textes** : lettre o, de la main du responsable.
-- **Critère de fin** : banc D-058 réécrit ; une seule date de départ partout.
+- **Critère de fin** : banc D-058 réécrit ; rendu cockpit de `r3_12` livré avec J2-mom ; une seule date de départ partout.
 - **Journal** : `docs/claude/plan-journal/H30/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H30`.
 
 #### H31 · t : point d'étape, rappel nommé, invitation lue au portail

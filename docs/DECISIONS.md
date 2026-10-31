@@ -23,7 +23,9 @@
   [[D-312]] (ligne « momentum » du plan) ; l'exception de « Mon équilibre »
   laissée par [[D-255]] ; la limite nommée par [[D-113]] §2 et écrite dans
   `web/src/lib/equilibre/lecturePatient.ts`.
-- **Amende** A6-R2 (`docs/claude/REGISTRE_FRONTIERES.md`) : voir §4.
+- **Amende** A6-R2 (`docs/claude/REGISTRE_FRONTIERES.md`) et [[D-333]] §2,
+  règle 6, pour les seules courbes de besoin : voir §4. [[D-333]] §4
+  (points réellement mesurés) reste compatible.
 - **Changement de lecture clinique** (précédent [[D-329]], DC-18) : la
   référence du momentum et les conditions d'une paire changent. L'ancienne
   règle, la nouvelle, l'impact et la validation sont écrits ci-dessous ;
@@ -79,8 +81,9 @@ motif d'absence distingue ces trois cas : jamais zéro ni « stable »
 ([[D-058]] §2). Les douze emplacements de J2-mom sont réservés au cockpit
 praticien : aucune mini-courbe ni valeur de point au portail. Les besoins
 sans source au mapping portent le motif « sans source », pas une courbe.
-A6-R2 est amendé : une courbe peut porter des points de remesure libre
-réellement mesurés, sans interpolation ni pronostic. Avant la porte 22,
+A6-R2 est amendé : sur ces courbes, chaque point est un jalon réellement
+mesuré ou une remesure libre réellement mesurée, sans interpolation ni
+pronostic. Avant la porte 22,
 une liste chronologique sans position quantitative ; après, une courbe
 exige au moins deux lectures admissibles du besoin, ancre comprise. Pour
 ces courbes, ce seuil remplace celui de deux jalons mesurés d'A6-R2 ; en
