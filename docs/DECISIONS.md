@@ -82,8 +82,9 @@ sans source au mapping portent le motif « sans source », pas une courbe.
 A6-R2 est amendé : une courbe peut porter des points de remesure libre
 réellement mesurés, sans interpolation ni pronostic. Avant la porte 22,
 une liste chronologique sans position quantitative ; après, une courbe
-exige au moins deux lectures admissibles du besoin, et les absences restent
-visibles.
+exige au moins deux lectures admissibles du besoin, ancre comprise. Pour
+ces courbes, ce seuil remplace celui de deux jalons mesurés d'A6-R2 ; en
+dessous, pas de courbe. Les absences restent visibles.
 
 **§5 — Écriture des valeurs (r3_12).** Au cockpit, une couverture `c`
 calculée sur 0–1 s'affiche `Math.round(100 × c)`, sans « % » ; un écart
