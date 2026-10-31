@@ -103,6 +103,10 @@ sur-complexifier une interface pensée pour rester calme).
 - Le "momentum" (delta entre deux mesures) doit être traité comme un objet
   à part entière, pas comme un simple recalcul du score global — il porte
   la dimension motivationnelle de l'outil.
+- Depuis D-397 (lot J2-mom, 2026-10-31), un seul calcul au portail, au
+  cockpit et au fil (`lib/equilibre/momentumDuCycle.ts`) : référence = lecture
+  d'ancre du cycle courant, arrivée = dernière remesure, aucun momentum sans
+  jour 0 ; l'absence dit son motif.
 
 ---
 

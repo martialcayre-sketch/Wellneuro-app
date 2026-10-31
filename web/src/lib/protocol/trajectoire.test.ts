@@ -73,12 +73,28 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     const tr = construireTrajectoire({
       episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
       reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
     });
     const cycle = tr.cycles[0];
     expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
-    expect(cycle.momentum).not.toBeNull();
+    // [[D-397]] : l'arrivée est la remesure, datée de sa passation.
+    expect(cycle.momentum).toMatchObject({ dateArrivee: '2026-01-22T00:00:00.000Z' });
+    expect(cycle.motifMomentum).toBeNull();
     // Aucune réponse après J21 : les jalons suivants restent non mesurés.
     expect(cycle.jalons.find((j) => j.jalon === 'J42')?.mesure).toBe(false);
+  });
+
+  // ── [[D-397]] §2 : aucun momentum sans jour 0, même là où le repli en donnait un ──
+  it('cycle courant sans diffusion : ses jalons restent lisibles, son momentum est retiré avec son motif (D-397)', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+    });
+    const cycle = tr.cycles[0];
+    // L'historique reste consultable : le J21 compté depuis l'ancre est lu.
+    expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(cycle.momentum).toBeNull();
+    expect(cycle.motifMomentum).toBe('sans_jour_zero');
   });
 
   // ── [[D-255]] : les mesures se lisent depuis le jour 0 du suivi ────────
@@ -248,6 +264,7 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
       episodes: [t0('ep_a', '2026-01-01T00:00:00.000Z', { versionScore: 'v1' })],
       reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-20T00:00:00.000Z')],
       avecMomentumParBesoin: true,
+      joursZero: new Map([['ep_a', new Date('2026-01-01T00:00:00.000Z')]]),
     });
     const besoin9 = tr.cycles[0].momentumParBesoin.find((ligne) => ligne.besoin === 9);
     expect(besoin9).toBeTruthy();

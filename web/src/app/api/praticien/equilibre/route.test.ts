@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
-const { getServerSession, prisma } = vi.hoisted(() => ({
+const { getServerSession, prisma, jourZeroDuCycleCourant } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     patient: { findFirst: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
+  jourZeroDuCycleCourant: vi.fn(),
 }));
 
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+// [[D-397]] : le momentum part de l'ancre du cycle courant et exige son jour 0.
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ jourZeroDuCycleCourant }));
 
 // Le plafond des fondations critiques ne se fabrique pas sans une fixture
 // clinique complète : le banc force le seul booléen que la route recopie.
@@ -37,6 +41,8 @@ describe('GET /api/praticien/equilibre', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     plafond.force = false;
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    jourZeroDuCycleCourant.mockResolvedValue(null);
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue({
       idPatient: 'PAT_1',
@@ -288,19 +294,40 @@ describe('GET /api/praticien/equilibre', () => {
       });
     });
 
-    it('momentum : les deux jalons soustraits, à leur date', async () => {
+    it('momentum ([[D-397]]) : de la lecture d’ancre à la dernière remesure, à leur date', async () => {
       const jour = 24 * 60 * 60 * 1000;
-      const t0 = new Date(Date.now() - 60 * jour);
-      prisma.questionnaireReponse.findMany.mockResolvedValue([
-        had(t0, '0'),
-        had(new Date(Date.now() - 45 * jour), '3'),
+      const premiere = new Date(Date.now() - 60 * jour);
+      const ancre = new Date(premiere.getTime() + 60_000);
+      const remesure = new Date(Date.now() - 45 * jour);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
+        { id: 'EP_T0', cycleId: 'CY_1', confirmedAt: ancre, milestone: 'T0' },
       ]);
+      jourZeroDuCycleCourant.mockResolvedValue(new Date(ancre.getTime() + jour));
+      prisma.questionnaireReponse.findMany.mockResolvedValue([had(premiere, '0'), had(remesure, '3')]);
       const json = (await (await GET(request())).json()) as Provenance;
       expect(json.objetsCliniques.provenance.momentum).toEqual({
-        depart: { jalon: 'T0', date: t0.toISOString() },
-        arrivee: { jalon: 'J21', date: new Date(t0.getTime() + 21 * jour).toISOString() },
+        depart: { jalon: 'T0', date: ancre.toISOString() },
+        arrivee: { jalon: 'remesure', date: remesure.toISOString() },
         versionCalcul: VERSION_DU_CALCUL,
       });
+    });
+
+    it('momentum ([[D-397]] §2) : sans jour 0, aucun momentum, et le motif le dit', async () => {
+      const jour = 24 * 60 * 60 * 1000;
+      const premiere = new Date(Date.now() - 60 * jour);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
+        { id: 'EP_T0', cycleId: 'CY_1', confirmedAt: new Date(premiere.getTime() + 60_000), milestone: 'T0' },
+      ]);
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        had(premiere, '0'),
+        had(new Date(Date.now() - 45 * jour), '3'),
+      ]);
+      const json = (await (await GET(request())).json()) as {
+        objetsCliniques: { momentum: unknown; motifMomentum: string | null; ancreMomentum: string | null };
+      };
+      expect(json.objetsCliniques.momentum).toBeNull();
+      expect(json.objetsCliniques.motifMomentum).toBe('sans_jour_zero');
+      expect(json.objetsCliniques.ancreMomentum).toBe('T0');
     });
 
     it('réserve d’adaptation : les sources du besoin que la formule lit', async () => {

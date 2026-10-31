@@ -42,7 +42,8 @@ export type ResumeJ21Input = {
   // littéral aurait lu le mauvais point sans rien signaler.
   //
   // `jourZero` : le jour 0 du suivi du cycle ([[D-255]]). Le J21 se lit depuis
-  // lui ; la lecture d'ancre, depuis `dateAncre`. Absent → repli sur l'ancre.
+  // lui ; la lecture d'ancre, depuis `dateAncre`. Absent → score null : sans
+  // diffusion, aucun momentum, et plus de repli sur l'ancre ([[D-397]] §2).
   momentum?: { ancre: AncreCycle; dateAncre: Date; jourZero?: Date | null; lectures: LectureDatee[] } | null;
 };
 
@@ -59,10 +60,10 @@ export function buildResumeJ21(input: ResumeJ21Input): ResumeJ21 {
   });
 
   let score: ResumeScore = null;
-  if (input.momentum) {
+  if (input.momentum?.jourZero) {
     const { ancre, dateAncre, jourZero, lectures } = input.momentum;
     const lectureAncre = resoudreLectureJalon(dateAncre, ancre, lectures);
-    const lectureJ21 = resoudreLectureJalon(jourZero ?? dateAncre, 'J21', lectures);
+    const lectureJ21 = resoudreLectureJalon(jourZero, 'J21', lectures);
     const resultat = calculerDeltaMomentum(lectureAncre, lectureJ21);
     if (resultat) score = { tendance: resultat.tendance, delta: resultat.delta };
   }

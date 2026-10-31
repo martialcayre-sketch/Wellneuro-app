@@ -1,13 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { BESOINS } from '@/lib/equilibre/constants';
-import {
-  construireHistoriqueEquilibre,
-  construireReponsesParQuestionnaire,
-  resoudreDateT0,
-} from '@/lib/equilibre/depuisPrisma';
-import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
+import { construireHistoriqueEquilibre, construireReponsesParQuestionnaire } from '@/lib/equilibre/depuisPrisma';
+import { calculerMomentumDuCycle, type MotifAbsenceMomentum } from '@/lib/equilibre/momentumDuCycle';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
-import type { JalonMomentum, LectureDatee, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
+import type { AncreCycle, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { jourZeroDuCycleCourant } from '@/lib/protocol/calendriersPersistes';
 
 // « Mon équilibre » tel que le PATIENT le lit — une seule composition pour les
 // deux lecteurs : la route du portail (session patient) et l'aperçu praticien
@@ -30,6 +28,8 @@ export type BesoinPatient = { id: number; libellePatient: string; strate: Strate
 export type EquilibrePatient = {
   indiceGlobal: number | null; // 0-100
   momentum: Pick<ResultatMomentum, 'tendance'> | null;
+  /** Pourquoi `momentum` est absent ([[D-397]] §2, §4) — un énuméré, aucun nombre. */
+  motifMomentum: MotifAbsenceMomentum | null;
   trajectoire: { date: string }[]; // T0 -> J90
   besoins: BesoinPatient[];
 };
@@ -48,29 +48,21 @@ export async function lireEquilibrePatient(idPatient: string): Promise<Equilibre
   const reponses = construireReponsesParQuestionnaire(reponsesDb);
   const objets = calculerObjetsCliniques(reponses);
 
-  // « T0 » DÉSIGNE ICI LA TOUTE PREMIÈRE MESURE, pas l'ancre d'un cycle
-  // (`D-113` §2, site relu). Cette route ne lit AUCUN épisode : sa référence
-  // est la première réponse exploitable du dossier (`resoudreDateT0`), et
-  // l'offset d'une ancre étant nul, le littéral y nomme le décalage zéro.
-  // Limite reconduite telle quelle : sur un dossier rouvert en `T1`, ce
-  // momentum reste compté depuis la première mesure de l'historique et non
-  // depuis le cycle courant. Le brancher sur les cycles est un changement de
-  // lecture patient, pas une conséquence du renommage.
-  const dateT0 = resoudreDateT0(reponsesDb);
-  let momentum: ResultatMomentum | null = null;
-  let historique: LectureDatee[] = [];
-  if (dateT0) {
-    historique = construireHistoriqueEquilibre(reponsesDb);
-    const lectureT0 = resoudreLectureJalon(dateT0, 'T0', historique);
-    const jalonsDecroissants: JalonMomentum[] = ['J90', 'J42', 'J21'];
-    const dernierJalonAtteint = jalonsDecroissants.find(
-      jalon => resoudreLectureJalon(dateT0, jalon, historique) !== null
-    );
-    const lectureRecente = dernierJalonAtteint
-      ? resoudreLectureJalon(dateT0, dernierJalonAtteint, historique)
-      : null;
-    momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
-  }
+  // [[D-397]] : LE MÊME MOMENTUM QU'AU COCKPIT ET AU FIL. La référence était
+  // la toute première réponse du dossier, comptée sans épisode ni cycle (la
+  // limite de `D-113` §2) ; c'est désormais la lecture d'ancre du cycle
+  // courant, l'arrivée la dernière remesure, et rien sans jour 0.
+  const ancres = await lireAncresPersistees(idPatient);
+  const ancre = ancreCourante(ancres);
+  const jourZero = ancre ? await jourZeroDuCycleCourant(idPatient, ancres) : null;
+  const momentum = calculerMomentumDuCycle({
+    reponses: reponsesDb,
+    ancre: ancre ? { ancre: ancre.milestone as AncreCycle, date: ancre.confirmedAt } : null,
+    jourZero,
+  });
+  // La frise ne compte que des points (aucune valeur ne traverse) : elle reste
+  // l'historique du dossier, que §2 laisse consultable.
+  const historique = construireHistoriqueEquilibre(reponsesDb);
 
   const couverturesParBesoin = new Map(
     objets.indiceGlobal.strates.flatMap(s => s.besoins).map(b => [b.besoin, b.couverture])
@@ -85,7 +77,8 @@ export async function lireEquilibrePatient(idPatient: string): Promise<Equilibre
 
   return {
     indiceGlobal: objets.indiceGlobal.scoreGlobal,
-    momentum: momentum ? { tendance: momentum.tendance } : null,
+    momentum: momentum.statut === 'disponible' ? { tendance: momentum.tendance } : null,
+    motifMomentum: momentum.statut === 'absent' ? momentum.motif : null,
     trajectoire: historique.map(l => ({ date: l.date.toISOString() })),
     besoins,
   };

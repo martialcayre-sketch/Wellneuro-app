@@ -2,9 +2,12 @@ import { construireHistoriqueEquilibre, type ReponseBrute } from '@/lib/equilibr
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import {
   calculerMomentumParBesoin,
+  calculerMomentumParBesoinDuCycle,
   construireHistoriqueParBesoin,
+  construireSeriesParBesoinDuCycle,
   type MomentumBesoin,
 } from '@/lib/equilibre/momentumParBesoin';
+import { calculerMomentumDuCycle, type MotifAbsenceMomentum } from '@/lib/equilibre/momentumDuCycle';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 import {
   ancresOrdonnees,
@@ -72,7 +75,15 @@ export type TrajectoireCycle = {
   // assimilée à la version courante : ce serait rendre A8-3 indéclenchable.
   versionScore: string | null;
   jalons: TrajectoireJalonLecture[];
-  momentum: { tendance: TendanceMomentum; delta: number } | null; // ancre → dernier jalon mesuré
+  /**
+   * Cycle COURANT : ancre → dernière remesure ([[D-397]]), `dateArrivee` en
+   * ISO ; absent sans jour 0, sans lecture d'ancre ou sans remesure, et le
+   * motif le dit (`motifMomentum`). Cycle PASSÉ : ancre → dernier jalon
+   * mesuré, inchangé (§2, l'historique reste consultable).
+   */
+  momentum: { tendance: TendanceMomentum; delta: number; dateArrivee?: string } | null;
+  /** Cycle courant seulement : pourquoi `momentum` est absent. `null` sinon. */
+  motifMomentum?: MotifAbsenceMomentum | null;
   /**
    * Momentum PAR BESOIN (LOT-07, `D-058`) : delta factuel, jamais qualifié
    * tant qu'aucune bande de bruit n'est publiée. Le scalaire ci-dessus reste
@@ -142,8 +153,12 @@ export function construireTrajectoire(input: {
 
   // Un cycle par ANCRE, ordonnés par rang (`D-113` §6). L'ordre venait de la
   // date de confirmation ; il vient du nom, qui seul identifie le cycle.
-  const cycles: TrajectoireCycle[] = ancresOrdonnees(episodesTriees)
-    .map((episodeAncre) => {
+  const ancres = ancresOrdonnees(episodesTriees);
+  const cycles: TrajectoireCycle[] = ancres
+    .map((episodeAncre, rang) => {
+      // Le cycle courant est celui de l'ancre du rang le plus haut — celui que
+      // lisent le fil (`cycles.at(-1)`) et `jourZeroDuCycleCourant`.
+      const estCourant = rang === ancres.length - 1;
       // `ancresOrdonnees` a déjà filtré sur `estAncreDeCycle` : le transtypage
       // ne fait que porter au type ce que le filtre garantit.
       const ancre = episodeAncre.milestone as AncreCycle;
@@ -179,7 +194,12 @@ export function construireTrajectoire(input: {
       const lectureRecente = dernierJalonMesure
         ? resoudreLectureJalon(baseMesures, dernierJalonMesure, historique)
         : null;
-      const momentum = calculerDeltaMomentum(lectureAncre, lectureRecente);
+      const momentumHistorique = calculerDeltaMomentum(lectureAncre, lectureRecente);
+      // [[D-397]] : le momentum du cycle courant part de son ancre et s'arrête
+      // à la dernière remesure, sans repli sur l'ancre quand le jour 0 manque.
+      const momentumCourant = estCourant
+        ? calculerMomentumDuCycle({ reponses: input.reponses, ancre: { ancre, date: dateAncre }, jourZero })
+        : null;
 
       // Par besoin : même ancre, même « maintenant » implicite que l'historique
       // scalaire (les jalons futurs sont omis pareil). Les deux lectures d'une
@@ -191,11 +211,22 @@ export function construireTrajectoire(input: {
       // dit provisoire (`D-113`, PR 1) : chaque `LectureBesoin` PORTE son
       // jalon, et ce nom est restitué au praticien — « T0 » sous une lecture
       // du cycle `T1` la daterait d'un départ qui n'est pas le sien.
-      const momentumParBesoin = input.avecMomentumParBesoin
-        ? calculerMomentumParBesoin({
-            series: construireHistoriqueParBesoin(input.reponses, dateAncre, new Date(), ancre, jourZero),
-          })
-        : [];
+      const momentumParBesoin = !input.avecMomentumParBesoin
+        ? []
+        : estCourant
+          ? calculerMomentumParBesoinDuCycle({
+              series: construireSeriesParBesoinDuCycle({
+                brutes: input.reponses,
+                ancre: { ancre, date: dateAncre },
+                jourZero,
+                maintenant: new Date(),
+              }),
+              ancre,
+              jourZero,
+            })
+          : calculerMomentumParBesoin({
+              series: construireHistoriqueParBesoin(input.reponses, dateAncre, new Date(), ancre, jourZero),
+            });
 
       return {
         // Le cycle d'une ancre est le sien : id stocké quand il existe, sinon
@@ -206,7 +237,18 @@ export function construireTrajectoire(input: {
         jourZero: jourZero ? jourZero.toISOString() : null,
         versionScore: episodeAncre.versionScore,
         jalons,
-        momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,
+        momentum: momentumCourant
+          ? momentumCourant.statut === 'disponible'
+            ? {
+                tendance: momentumCourant.tendance,
+                delta: momentumCourant.delta,
+                dateArrivee: momentumCourant.arrivee.date.toISOString(),
+              }
+            : null
+          : momentumHistorique
+            ? { tendance: momentumHistorique.tendance, delta: momentumHistorique.delta }
+            : null,
+        motifMomentum: momentumCourant?.statut === 'absent' ? momentumCourant.motif : null,
         momentumParBesoin,
       };
     });
