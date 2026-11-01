@@ -1,4 +1,4 @@
-### Corpus
+### Corpus : besoin 2, vitamines B9 et B12 — six sources externes au registre (2026-11-01)
 
 - **Besoin 2, vitamines B9 et B12 : six sources externes entrent au registre
   des sources** (`WN-SRC-0577` à `0582`, corpus `SOURCES_EXTERNES`), titre
