@@ -6,6 +6,109 @@
 
 ## Décisions actives
 
+### D-403 — Porte 4 : poids égal motivé, bornes et planchers de l'indice du sommeil déclarés (sources de contexte là où elles existent), palier « bien couvert » repère du cabinet, enquête alimentaire incomplète non calculée, table des quantités aux seuls repères officiels
+
+- Date : 2026-11-01
+- Statut : accepté — fiche d'arbitrage m06 retenue telle quelle par le
+  responsable le 2026-11-01, en séance de gestes de la file D (n° 4). Fiche
+  préparée avec un assistant conversationnel externe, qui n'est source
+  d'aucune valeur : la nature de chaque ligne est déclarée par le
+  responsable (`DC-19`, `DC-20`, `DC-21`).
+- Domaine : porte 4 (H08) — c (F59), am (H33), E31 (H40), al (H57) ;
+  `equilibre/score.ts`, indice de l'agenda du sommeil (`questions.ts`,
+  `questionnaires/sommeil.ts`), palier de « Mon équilibre », barème de
+  l'enquête alimentaire SiiN.
+- Ne touche pas : aucun code dans cette décision ; aucune valeur en service
+  ne change, sauf la règle de complétude du §6 et les mentions du §7, qui
+  partent en lots de code à part. Les axes biologiques (cm) sont déjà
+  tranchés (D-348) ; la fidélité relève de D-402.
+- Contexte : la recherche du responsable, vérifiée par la session, ne trouve
+  aucune source pour le poids égal, le palier « bien couvert » ni la règle
+  d'une enquête SiiN incomplète ; des sources de contexte pour deux bornes
+  du sommeil (`WN-SRC-0574`, `0575`) ; des sources par mesure pour les
+  planchers de nuits (Borba et al. 2020, temps total seulement ; Aili et al.
+  2017, qualité perçue ; Leota et al. 2026, régularité au bracelet) ; des
+  repères officiels de consommation (`WN-SRC-0576`).
+
+**§1 — Poids égal des besoins dans une strate : motif (`DC-21`).** « Je
+conserve des poids égaux faute de justification probante d'une pondération
+différente. » Ce motif n'établit pas une égale importance clinique des
+besoins.
+
+**§2 — Bornes de l'indice de l'agenda du sommeil, valeurs en service
+maintenues.**
+
+| Réf. | Borne | Valeur | Nature | Motif | Réserve |
+|---|---|---|---|---|---|
+| D1 | durée, 0 point | ≤ 240 min | paramètre technique | borne inférieure de normalisation, sans valeur diagnostique | aucun seuil clinique applicable |
+| D2 | durée, plein | ≥ 420 min | source de contexte (`WN-SRC-0574`) + paramètre technique | la référence adulte de sept heures ; le plein score reste conventionnel | la source ne valide ni l'interpolation ni le plateau |
+| E1 | efficacité, 0 point | ≤ 65 % | paramètre technique | borne inférieure de normalisation | aucun seuil clinique démontré |
+| E2 | efficacité, plein | ≥ 85 % | paramètre technique, source de contexte (`WN-SRC-0575`) | borne de calcul inspirée d'un contexte thérapeutique publié | « > 85 % » y est une cible de traitement de l'insomnie chronique |
+| R1 | régularité, plein | ≤ 30 min | paramètre technique | borne de normalisation de l'agenda | la seule source trouvée (Tighe 2021) : autre population, actigraphie |
+| R2 | régularité, nul | ≥ 120 min | paramètre technique | borne de saturation de l'axe | aucune validation clinique |
+| Q1 | qualité, minimum | 1 → 0 | paramètre technique | la plus faible catégorie au minimum de l'axe | échelle ordinale, interpolation non validée |
+| Q2 | qualité, maximum | 5 → plein | paramètre technique | la meilleure catégorie au maximum de l'axe | idem |
+
+**§3 — Planchers de nuits, paramètres techniques.** 14 nuits pour calculer
+l'indice : un minimum opérationnel d'observation, qui ne valide pas la
+fiabilité de l'indice. 7 nuits pour qu'un axe compte, avec un avertissement :
+la fiabilité de la régularité sur si peu de nuits est particulièrement
+incertaine.
+
+**§4 — Trois paramètres de l'indice relevés hors de la liste de H08.**
+Contribution égale des axes couverts (un quart chacun) : paramètre technique.
+Indice calculé à partir de trois axes couverts : paramètre technique, calcul
+partiel sans imputer les axes absents, axes présents affichés,
+comparabilité limitée. Bandes 0-49, 50-74, 75-100 : **repère du cabinet**,
+réservées à une lecture descriptive interne ; valeurs maintenues, libellés à
+remplacer par « bas », « intermédiaire », « haut » (arrondis à préciser au
+lot, §7).
+
+**§5 — Palier « bien couvert » de « Mon équilibre » : repère du cabinet.**
+Valeur maintenue, 70 sur 100 : « Je retiens ce niveau pour faciliter la
+lecture du suivi, sans le présenter comme un seuil clinique validé. » Non
+diagnostique ; une mention explicite l'accompagne là où il s'affiche (§7).
+
+**§6 — Enquête alimentaire SiiN incomplète (E31) : paramètre technique,
+N = 0.** Le total ne se calcule que lorsque tous les items requis sont
+renseignés ; une réponse absente n'est jamais imputée à zéro. Le moteur
+actuel score dès une réponse et laisse sans points un item manquant : la
+règle change en lot de code à part (instantané `seuilsCatalogue`), après
+quoi une passation partielle ne nourrit plus les besoins 1 et 3.
+
+**§7 — Lots de code.** Deux lots, file A : (a) la règle de complétude du §6 ;
+(b) les mentions d'affichage — avertissement de régularité (§3), axes
+présents (§4), libellés des bandes (§4), mention du palier (§5).
+
+**§8 — Table des quantités du protocole (am) : les seuls repères officiels
+vérifiés, signés ligne à ligne** (`WN-SRC-0576`, adultes) :
+
+| Groupe | Repère |
+|---|---|
+| Fruits et légumes | au moins 5 par jour |
+| Légumes secs | au moins 2 fois par semaine |
+| Poisson | au moins 2 fois par semaine |
+| Viandes hors volaille | au maximum 500 g par semaine |
+| Produits laitiers, avant 55 ans | 2 par jour |
+| Produits laitiers, après 55 ans | 3 à 4 par jour |
+| Fruits à coque | une petite poignée par jour |
+
+Reproduits dans leur population et leur unité ; aucune conversion (une
+« poignée » ne devient pas des grammes), aucune portion inventée. La table
+n'est pas une prescription personnalisée.
+
+**§9 — Axes alimentaires (al) : définitions qualitatives seulement.** « Je
+documente les liens alimentaires décrits par les sources sans déduire un
+niveau fonctionnel de neurotransmission ou d'inflammation. » Aucune bande
+quantitative ; al reste fermé aussi par la porte 28.
+
+**Ce que la décision ne fait pas.** Elle ne fonde aucune pondération
+clinique des besoins, aucun seuil clinique de bonne couverture, aucun prorata
+de l'enquête SiiN, aucune quantité personnalisée, aucune bande des axes
+alimentaires, aucune bande validée de l'indice du sommeil ; elle ne règle
+pas l'arrondi ni la comparabilité d'un indice calculé sur trois axes
+différents selon la passation.
+
 ### D-399 — Audit 3, lot Q3 : la ligne du journal se réserve avant l'envoi, sous un verrou par dossier ; un rappel couvre les questionnaires rappelables du dossier ; seuls les envois partis comptent
 
 - Date : 2026-11-01
