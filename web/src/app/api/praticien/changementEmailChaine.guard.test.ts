@@ -80,6 +80,8 @@ const { getServerSession, prisma, magasin } = vi.hoisted(() => {
       portailMagicLink: { updateMany: vi.fn(async () => ({ count: 0 })) },
       journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
       agendaAlimentaireJour: { findMany: vi.fn() },
+      // Lue par la route des réponses pour le cycle en cours (D-406).
+      assessmentEpisode: { findMany: vi.fn(async () => []) },
       // LES `$transaction` SONT EXÉCUTÉES, pas simplement comptées : les
       // constructeurs Prisma sont déjà évalués au moment où le tableau se
       // construit, donc les écritures ont réellement eu lieu sur le magasin.
