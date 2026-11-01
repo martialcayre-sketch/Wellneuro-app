@@ -68,8 +68,13 @@ for (const ref of ["origin/main", "main"]) {
 // risque. Fail-open — ce hook est un rappel, pas un verrou de sécurité.
 if (!mergeBase) process.exit(0);
 
-const committed = git(["diff", "--name-only", `${mergeBase}...HEAD`]);
-const nonCommitte = git(["diff", "--name-only", "HEAD"]);
+// `--no-renames` : un renommage se lit en suppression + ajout, et l'ancien
+// chemin — celui qui portait le marqueur à la base — reste examiné (relecture
+// adversariale de #1821). `core.quotePath=false` : un nom non ASCII sort tel
+// quel, sans guillemets ni octets échappés, que ni l'extension ni `git show`
+// ne reconnaîtraient.
+const committed = git(["-c", "core.quotePath=false", "diff", "--name-only", "--no-renames", `${mergeBase}...HEAD`]);
+const nonCommitte = git(["-c", "core.quotePath=false", "diff", "--name-only", "--no-renames", "HEAD"]);
 if (committed.status !== 0 && nonCommitte.status !== 0) process.exit(0);
 
 const fichiers = new Set(
@@ -108,10 +113,73 @@ const motifsP0 = [
   "lib/questions.ts",
 ];
 
-const toucheP0 = [...fichiers].filter((f) => {
-  const n = normalise(f);
-  return motifsP0.some((motif) => n.includes(motif));
-});
+// TOUTE TABLE SIGNÉE, RÉCENTE OU FUTURE — même critère que
+// `protect-wellneuro-files.mjs` depuis BP-01 ([[D-266]]), arbitrage du
+// responsable du 2026-11-01 (revue de #1816). La liste ci-dessus est
+// littérale : la structure des fiches d'usage, les signaux de sécurité, les
+// conduites, les portes biologiques… n'y étaient pas. Le critère est le
+// marqueur `validationExterne: true` hors commentaire, lu dans le fichier sur
+// disque, à la base de comparaison et à la tête (une table supprimée ou
+// renommée par la branche reste une table signée touchée). Compagnons de test exclus : leurs fixtures
+// portent le marqueur. La structure des fiches d'usage compte verrou posé OU
+// éteint ([[D-314]] §2), comme dans le crochet d'édition. Logique recopiée à
+// dessein, comme la liste : un hook lit un diff, l'autre un chemin d'édition.
+const racine = git(["rev-parse", "--show-toplevel"]).stdout.trim() || cwd;
+
+function retirerFinDeLigne(ligne) {
+  let guillemet = null;
+  for (let i = 0; i < ligne.length; i++) {
+    const c = ligne[i];
+    if (guillemet) {
+      if (c === "\\") i++;
+      else if (c === guillemet) guillemet = null;
+    } else if (c === "'" || c === '"' || c === "`") guillemet = c;
+    else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
+  }
+  return ligne;
+}
+
+function sansCommentaires(texte) {
+  return String(texte)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map(retirerFinDeLigne)
+    .join("\n");
+}
+
+function estTableSignee(fichier) {
+  const n = normalise(fichier);
+  if (!/\.([cm]?[tj]sx?|json)$/.test(n) || /\.(test|spec)\.[a-z]+$/.test(n)) return false;
+  const marqueur = /(^|\/)web\/src\/lib\/fiches-usage\//.test(n)
+    ? /["']?validationExterne["']?\s*:\s*(true|false)/
+    : /["']?validationExterne["']?\s*:\s*true/;
+  const textes = [];
+  try {
+    textes.push(fs.readFileSync(path.join(racine, fichier), "utf8"));
+  } catch {
+    // Supprimé ou illisible sur disque : la base est lue ci-dessous.
+  }
+  // La base ET la tête : une table signée dans un commit de la branche, puis
+  // privée de son marqueur sur disque sans commit, reste dans la PR (revue
+  // Copilot de #1821).
+  for (const rev of [mergeBase, "HEAD"]) {
+    const version = git(["show", `${rev}:${fichier}`]);
+    if (version.status === 0) textes.push(version.stdout);
+  }
+  return textes.some((texte) => marqueur.test(sansCommentaires(texte)));
+}
+
+// PLAFOND : chaque fichier lu coûte deux `git show`. Au-delà, le hook risque
+// d'être tué par le délai du harnais — et un hook tué ne rend aucun verdict,
+// donc se tait. Un diff aussi large demande par prudence : c'est un rappel, une
+// fausse alerte ne coûte qu'une confirmation.
+const PLAFOND_LECTURES = 200;
+const horsMotifs = [...fichiers].filter((f) => !motifsP0.some((motif) => normalise(f).includes(motif)));
+const parMotif = [...fichiers].filter((f) => !horsMotifs.includes(f));
+const toucheP0 =
+  horsMotifs.length > PLAFOND_LECTURES
+    ? [...parMotif, `${horsMotifs.length} fichiers non lus (plafond de ${PLAFOND_LECTURES})`]
+    : [...parMotif, ...horsMotifs.filter(estTableSignee)];
 if (toucheP0.length === 0) process.exit(0);
 
 // Recherche de trace Codex : fragments changelog/handoff touchés par la
@@ -125,7 +193,9 @@ const fragmentsPertinents = [...fichiers].filter((f) =>
 
 let traceCodex = fragmentsPertinents.some((f) => {
   try {
-    return /codex/i.test(fs.readFileSync(path.join(cwd, f), "utf8"));
+    // `f` est relatif à la racine du dépôt, pas au `cwd` — depuis `web/`, le
+    // fragment n'était jamais trouvé (relecture adversariale de #1821).
+    return /codex/i.test(fs.readFileSync(path.join(racine, f), "utf8"));
   } catch {
     return false;
   }
