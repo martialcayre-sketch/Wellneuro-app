@@ -6,6 +6,72 @@
 
 ## Décisions actives
 
+### D-415 — Fiches conseils, thème « respiration et apaisement » : le responsable propriétaire et seul signataire ; exercices respiratoires et d'apaisement corporel de la Fiche MY « Gestion du stress » et vidéos transcrites ; précautions par recherche, avant toute ouverture (lettre ah, m23)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (questions à
+  options, puis fiche validée telle quelle), en séance de gestes de la file D
+  (n° 4).
+- Domaine : premier thème de fiche conseil après l'assiette (lettre ah, H68 ;
+  ordre fixé à la séance du 2026-10-13) ; type de geste `calming_routine`
+  (`web/src/lib/clinical-engine/protocolDraft.ts:29`), auquel la fiche se
+  rattache (R:af).
+- Ne touche pas : aucun code dans cette décision ; la fiche d'assiette
+  ([[D-251]]) ; la fiche du sommeil, qui attend toujours son préalable ;
+  l'encart « quand ralentir ou demander avis » (bd, H71). Le texte des
+  sources, les brouillons et les versions validées n'entrent jamais au dépôt
+  ([[D-251]] §4).
+- Contexte, vérifié au registre du corpus et sur le Drive de formation le
+  2026-11-01 : `WN-SRC-0245` (Fiche MY « Gestion du stress », support
+  patient) décrit des exercices respiratoires et d'apaisement avec leurs
+  durées et fréquences, et aussi des huiles essentielles, la luminothérapie,
+  les écrans, le yoga et une alimentation antistress ; `WN-SRC-0082` (cours)
+  donne un mode d'emploi de la cohérence cardiaque et cite apnées et
+  bandhas. **Ni `0245` ni `0082` ne donnent de précaution ni de
+  contre-indication**, alors que l'une et l'autre décrivent une rétention du
+  souffle ou des apnées ; les vidéos guidées, non transcrites, n'ont pas été
+  lues (relevé de la revue Copilot de #1813). Aucune source externe du
+  registre ne porte sur ces exercices : celles qui touchent la respiration
+  (`WN-SRC-0551`, `0552`, `0560`, `0566`, `0570`) mesurent.
+
+**§1 — Propriétaire.** Le responsable, seul signataire. Chaque version de la
+fiche est validée par un acte distinct et daté, après relecture intégrale,
+source et adaptation côte à côte (régime de [[D-251]] §5). Une contre-lecture
+par un modèle d'OpenAI signale les écarts ; elle ne fonde aucune durée, aucun
+mode d'emploi ni aucune précaution, et n'atteste rien ([[D-195]] §1). Aucune
+donnée patient n'entre dans une consigne. Écarté : un relecteur humain nommé,
+dont l'avis serait versé au registre (porte 28).
+
+**§2 — Périmètre de la première fiche.** Les exercices respiratoires et
+d'apaisement corporel de `WN-SRC-0245` : respiration, pandiculation,
+contraction-décontraction, relaxation, pleine conscience. Hors fiche : huiles
+essentielles, luminothérapie, écrans, yoga, alimentation antistress — autres
+thèmes, ou fiche du sommeil. Écartés : la respiration seule ; tout le volet
+non alimentaire de `0245`.
+
+**§3 — Sources des durées et des modes d'emploi.** `WN-SRC-0245`, puis les
+vidéos du périmètre une fois transcrites et leurs droits établis, notice par
+notice : `WN-SRC-0268`, `0269`, `0272`, `0273`, `0274`, `0275`, `0278`,
+`0280`, `0281`. `WN-SRC-0082` sert de contrôle de concordance, côté
+praticien. Aucun nombre absent de ces sources (`DC-19`). La transcription est
+un préalable de la fiche. Les droits de `0245` relèvent de la déclaration de
+[[D-251]] §2 (Fiches MY) ; ceux des vidéos restent à établir. Écartés : la
+Fiche MY seule ; une confrontation à des sources externes ; les exemples du
+responsable déclarés comme arbitrage.
+
+**§4 — Précautions.** Elles viennent d'une recherche : chaque source
+rapportée est vérifiée et inscrite au registre du corpus, puis le texte des
+précautions est signé par le responsable. **La fiche n'ouvre pas avant.**
+Le lot de la fiche (H68) le tient par la technique, pas par la seule
+discipline : un verrou fermé par défaut, et la présence des précautions
+signées contrôlée à la validation, puis rejouée au moment de servir (patron
+de [[D-251]] §6). Le nom du drapeau se fixe au lot (arbitrage du 2026-11-01
+sur une remarque de PR-Agent, #1813). Écartés : le seul renvoi à l'encart
+bd ; des précautions déclarées comme arbitrage, sans source.
+
+**§5 — Suites.** Transcription des vidéos du §3 ; recherche des précautions
+(§4) ; puis le lot de la fiche, au rang 5 (H68 : porte 5, EF-3b).
+
 ### D-414 — Audit 3, lot Q3 ter : au Fil, un questionnaire échu non déverrouillé se débloque avant de se rappeler ; la relance juge le lendemain par le calendrier
 
 - Date : 2026-11-01
