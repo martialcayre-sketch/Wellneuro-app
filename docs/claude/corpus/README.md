@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 563 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 575 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 56 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 68 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -25,7 +25,11 @@ repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
 extrait ingéré ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
 l'EFSA, une recommandation de pratique du NICE, une fiche des CDC et un
 document de la HAS, `WN-SRC-0577` à `0582`, les lignes des vitamines B9 et B12
-de la DGCCRF étant lues dans `0521`),
+de la DGCCRF étant lues dans `0521` ; point d'étape (D-407 à D-413, m16) : huit
+articles et quatre documentations d'instruments, sources de contexte des
+candidats écartés pour le point d'étape, `WN-SRC-0589` à `0600` (numérotées
+d'abord `0577` à `0588`, plage déjà portée en base par les extraits des
+vitamines B9 et B12 ; renumérotées le 2026-11-01), sans extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont

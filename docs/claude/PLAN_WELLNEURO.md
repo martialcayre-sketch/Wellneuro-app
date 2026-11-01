@@ -255,7 +255,8 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | cp | revue des trous RGPD (écrite par D-283) | geste | aucune | non | F69 |
 | ca | cadrage de la refonte de l'agenda du sommeil (fait le 2026-10-15 : D-300) | geste | aucune | non | H17 |
 | bg | flux de l'export vers l'assistant externe du responsable | geste | avec 5 | non | H18 |
-| bf, instruction | une décision par indicateur hebdomadaire | geste | aucune | non | H19 |
+| bf, instruction | une décision par indicateur hebdomadaire ; fait le 2026-11-01 (D-407 à D-413) : point d'étape de pilotage, cinq questions en paramètres techniques transitoires, motif retiré (lot au §8) | geste | aucune | non | H19 |
+| mesure distincte | fatigue et sommeil hors du point d'étape (D-407 §2-3) : instruire d'abord les questionnaires du catalogue et le renvoi autour de J21 (D-353) — version française, sensibilité au changement, droits ; PROMIS seulement si rien ne convient | geste | aucune | non | H19 |
 | gestes RGPD | archivages, relance d'effacement, dossier v8 | geste | aucune | non | H20 |
 | relance du laboratoire | relance écrite du laboratoire pilote | geste | 29 | non | F41, en §6 |
 | G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) ; fait, validés le 2026-10-14 | geste | aucune | non | H38 |
@@ -2006,7 +2007,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | ak | place 7 : invitation d'autoévaluation au 21e jour ; close le 2026-11-01, activation constatée (D-353 §5) | C | 18 | non | H80 |
 | ao | place 8 : fiche compléments remise | C | 18, 19, 28 | non | F78 |
 | R:FC-5 (2/2) | place 9 : geste du 21e jour de l'agenda | C | 18 | non | H81 |
-| ap | place 10 : bibliothèque pédagogique | C | 17, 18, 28 | selon | H82 |
+| ap | place 10 : bibliothèque pédagogique ; close le 2026-11-01, activation constatée (D-357 §7) | C | 17, 18, 28 | selon | H82 |
 | an | place 11 : photo ou dictée des repas | C | 5, 18 | selon | H83 |
 
 **File A**
@@ -2124,7 +2125,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; drapeau posé le 2026-10-24, **constaté le 2026-11-01** (D-353 §5) : place close ; la porte 18 libère la place 10 (D-357 §7 amendé le 2026-10-29) | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25 (H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
-| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation, après le constat de la place 7, devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
+| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : drapeau posé le 2026-11-01, **constaté le 2026-11-01** (D-357 §7, D-360 §4 ; moitié mineur prouvée par le mécanisme, amendement du 2026-11-01 de D-357 §7) : place close ; passée devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
 | 11 | Photo ou dictée des repas | H83 | registre IA, porte 5, D-269, code | information patient | 10 |
 
 ### Ouvertures sans place numérotée
@@ -2198,7 +2199,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 4 | h1 | approuver, une à une, les release-db du rang 4 (EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes, BF-8, collecte, D-283 b, retrait du NIR ; CC-8 dès qu'elle est prête, avant ai : D-315 §6-7) | fiches du rang 4 | codes consommateurs |
 | 4 à 10 | h1 à h3 | signer les contenus de BP-12a, BP-12b, BP-17 (porte 23) ; accepter chaque texte patient avant son activation ; consigner la lecture de chaque ouverture qui ne vise que certains dossiers | F05, F09, F11, §3 | J3-bio ; file C |
 | 5 | h1 | dire le sens d'« anomalie » au vu du premier constat d'activation | H05, §3 | porte 18 |
-| 5 | h3 | texte de l'encart (bd) ; propriétaire et sources du thème « respiration et apaisement » (ah) | H71, H68 | encart ; fiches par thème |
+| 5 | h3 | texte de l'encart (bd) ; propriétaire et sources du thème « respiration et apaisement » (ah ; arrêtés le 2026-11-01, D-415 ; restent les vidéos transcrites et le texte des précautions à signer) | H71, H68 | encart ; fiches par thème |
 | 5 | h3 | ch : trois phrases de tendance, règle de comparaison d'un agenda fini au précédent et marge « stable » à signer | H72 | phrase en fin d'agenda |
 | 6 | h2 | indications v2, re-signées | F53 | bilan par axe |
 | 8 | h2 | constater un cycle réel jusqu'au jalon de fin, par identifiant | F26 | fin de BIO-PARCOURS |
@@ -2227,14 +2228,14 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge (tranché le 2026-10-21 : le barème ignore les actions vides ; correctif en file A, F76) | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) ; **arbitrées le 2026-11-01 (D-400)** : E32 close, porteurs nommés (BP-12a pour DC-11 et DC-45, lot neuf du moteur d'orientation pour DC-36) ; E64 décidée, reste le lot de code et la re-signature (§8) | H42, H41 | table d'arrêt complète ; axes |
 | h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-365) | H16 | J1-alim ; D-C5-01 à 04 |
-| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | H19 | indicateurs hebdomadaires |
+| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur écrites le 2026-11-01 (D-407 à D-413) ; reste l'instruction de la mesure distincte (D-407 §3) | H19 | indicateurs hebdomadaires |
 | h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) ; faits le 2026-10-26 (D-378, D-377) | H26 | durées, information du médecin |
 | h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
 | h3 | gestes RGPD : archivages, relance d'effacement, dossier resté sur une version antérieure du texte | H20 | registre RGPD à jour |
 | h3 | relance écrite du laboratoire pilote | F41 | porte 29 |
 | h3 | relance du recueil réel de 21 jours [Hypothese] | H45 | barème gelé |
-| h3 | préparation des sources du thème « respiration et apaisement » | H68 | ah (rang 5) |
+| h3 | préparation des sources du thème « respiration et apaisement » ; **tranchée le 2026-11-01 (D-415)** : le responsable propriétaire et seul signataire, exercices respiratoires et d'apaisement corporel de `WN-SRC-0245` ; restent la transcription et les droits des neuf vidéos du périmètre (D-415 §3), puis la recherche des précautions, à vérifier et inscrire au registre avant signature (D-415 §4) | H68 | ah (rang 5) |
 | h5 | retirer `WN_BIO_EXTRACTION_ASYNC` de Scalingo (`env-unset`, variable inerte depuis #1416) | F42 (mise à jour de G3) ; `docs/FEATURE_FLAGS.md:469-476` | ménage, sans effet sur le service |
 | h2 | sources fermées des dossiers de mesure des besoins 6 à 12, deux d'abord (2026-10-18, décision 7) ; fait le 2026-10-21 (`WN-SRC-0567` à `0570`, #1615) | H15 | J3-12f |
 | h2 | amendement v0.3 d'une position d'expert du dossier du fer, en conflit avec une règle du responsable du 2026-10-17 ; fait, signé le 2026-10-21 | H15, F02 | J3-12h |
@@ -2686,7 +2687,7 @@ Ex-file d'attente, registres de dettes, `.wn/state.json` et handoffs de main. Un
 | Mentions de la porte 4 (textes validés mot pour mot par le responsable avant le code) : avertissement de fiabilité de la régularité (agenda de 14 à 21 nuits ; le plancher de 7 nuits ne vaut que pour la durée et l'efficacité), axes présents de l'indice du sommeil, libellés « bas », « intermédiaire », « haut » des bandes (arrondis à préciser), mention « repère du cabinet » du palier « bien couvert » | `web/src/lib/questionnaires/sommeil.ts` ; `web/src/components/patient/MonEquilibreDetail.tsx` ; D-403 §3-5, §7 ; H08 | lot d'écran et de scoring, file A ; ligne ajoutée le 2026-11-01 |
 | Table d'arrêt : l'empreinte signée ne hache que `STOP_RULES_V1`, pas les grilles citées (Q_STR_01, Q_STR_03, Q_STR_04 S/A/D) ; étendre au périmètre `{ règles, grilles }` de `grillesSignees.ts`, sans changement de comportement, puis re-signature par le responsable dans le lot | `web/src/lib/clinical/stopRulesV1.ts:245-294` ; D-400 §1 ; H42 (E64) | lot de code, file A ; chemin clinique (déploiement retenu jusqu'à l'approbation) ; ligne ajoutée le 2026-11-01 |
 | `DC-36` : aucune pondération « information attendue ÷ charge patient » dans le choix du questionnaire suivant ; porteur nommé, lot à cadrer | `web/src/lib/clinical/orientationEngine.ts` ; D-400 §2 ; H41 (E32) | lot neuf, file A, à cadrer ; ligne ajoutée le 2026-11-01 |
-| Point d'étape (bf) : la question du motif de non-prise est posée dès qu'un complément est prescrit, quelle que soit la réponse sur la prise ; « depuis le début » (énergie, sommeil) ne correspond pas au rappel de 7 jours des instruments apparentés | `web/src/lib/protocol/checkinDomain.ts` (`resolveCheckinQuestions`) ; H19 ; recherche du responsable du 2026-11-01 (hors dépôt) | à cadrer avec le remplacement des items par des instruments (H19) : texte patient, porte 11, nouvelle version du contrat du point d'étape ; ligne ajoutée le 2026-11-01 |
+| Point d'étape (bf) : retrait de la question du motif de non-prise (D-413), aujourd'hui posée dès qu'un complément est prescrit, quelle que soit la réponse sur la prise ; « depuis le début » (énergie, sommeil) gardé comme paramètre technique (D-410, D-411) | `web/src/lib/protocol/checkinDomain.ts` (`resolveCheckinQuestions`) ; lecteurs `adhesion.ts`, `trajectoireIntentions.ts` ; D-413 §3 ; H19 | lot de code, file A : nouvelle version du catalogue, réponses passées lisibles selon leur version, tests de non-régression, migration vérifiée au lot ; ligne ajoutée le 2026-11-01, mise à jour par D-413 le même jour |
 | Contrat de fraîcheur des claims épinglés : `portes_biologiques` (8 paires) et `indications_assiettes` (20 paires) n'ont pas de cas négatif propre — un prédicat qui les exempterait de toutes les propriétés passerait le négatif et le banc ; `fiches_usage` a reçu le sien (`N12`) sur la contre-revue de F05 | `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql` (en-tête) ; D-401 | PR de banc, file A, sans porteur : un cas `N13` et un `N14` sur le patron de `N12` ; ligne ajoutée le 2026-11-01 |
 | Release-db : ni `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` ni le contrat de fraîcheur ne déclenchent la release ; F05 n'est retenu que parce qu'il touche aussi un banc sous `web/src/lib/clinical/`. La re-signature suivante (B9/B12, puis iode et sélénium) ajoutera des claims sans toucher ce banc : elle se déploierait sans que le préflight rejoue ses paires contre la production — le trou que D-389 §5 a fermé pour `indicationsBiologieV1.ts` | `.github/workflows/release-db.yml` (`paths`) ; `scripts/wn-deploiement-deployer.mjs` (`CHEMINS_RELEASE_DB`) ; revue `wn-reviewer` de #1806 | décision et PR d'outillage avant la re-signature B9/B12 (patron D-389 §5 : le fichier de la table signée aux deux listes) ; ligne ajoutée le 2026-11-01 |
 
@@ -2846,7 +2847,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ae | bloc Protocole du document médecin | la main du responsable | 5 | F39 |
 | af | référence de fiche conseil sur l'action | la main du responsable | 1 | H24 |
 | ag | rédaction assistée des zones du protocole | la main du responsable | 1 | H25 |
-| ah | familles de fiches conseils par thème | la main du responsable | 5 | H68 |
+| ah | familles de fiches conseils par thème ; premier thème « respiration et apaisement » : propriétaire, périmètre et sources arrêtés le 2026-11-01 (D-415) | la main du responsable | 5 | H68 |
 | ai | accusé de lecture de « Mes échanges » ; fait le 2026-10-14 (D-297) | la main du responsable | 2 | H51 |
 | aj | encadré « Envisagé ensuite » | la main du responsable | 3 | H53 |
 | ak | invitation d'autoévaluation au 21e jour ; fait le 2026-10-24 (D-353) ; activation constatée le 2026-11-01 | la main du responsable | 10, place 7 | H80 |
@@ -2854,7 +2855,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | am | table de quantités | la main du responsable | 1, fermé sans source | H33 |
 | an | photo ou dictée des repas | la main du responsable | 10, place 11 | H83 |
 | ao | fiche compléments remise au patient | la main du responsable | 10, place 8 | F78 |
-| ap | bibliothèque pédagogique (écrite : D-357, 2026-10-24) | la main du responsable | 10, place 10 | H82 |
+| ap | bibliothèque pédagogique (écrite : D-357, 2026-10-24) ; activation constatée le 2026-11-01 | la main du responsable | 10, place 10 | H82 |
 | aq | contrôle bloquant des modifications cliniques | registre | 1 | H21 |
 | ar | montée de version datée des briques | registre | 1 | H22 |
 | as | fiche signalétique, date de naissance ; close le 2026-10-22 (D-342 §4) | la main du responsable | 10, place 6 | F45 |
@@ -2869,7 +2870,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | bb | trois plans de chaque geste ; texte fait le 2026-10-26 (D-384) | la main du responsable | 2 au plus tôt [Hypothese] | H49 |
 | bd | encart « quand ralentir ou demander avis » ; fait le 2026-10-23 (D-349) | la main du responsable | 5 au plus tôt [Hypothese] | H71 |
 | be | gestes communs au catalogue | la main du responsable | 2 [Hypothese] | H47 |
-| bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur à écrire | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
+| bf | indicateurs hebdomadaires, au point d'étape ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur écrites le 2026-11-01 (D-407 à D-413) | la main du responsable | instruction 0 ; code 3 au plus tôt, 4 si le contrat du point d'étape migre [Hypothese] | H19 |
 | bg | flux de l'export vers l'assistant externe ; fait le 2026-10-24 (D-364) | la main du responsable | 0 | H18 |
 | bh | rendu imprimable du protocole | registre | 5 au plus tôt [Hypothese] | H69 |
 | ca | cadrage de la refonte du sommeil ; fait le 2026-10-15 (D-300) | la main du responsable | 0 | H17 |
