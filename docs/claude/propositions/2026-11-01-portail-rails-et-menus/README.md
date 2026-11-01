@@ -9,6 +9,8 @@ recommandation (chapitres 8 à 10), un plan de lots (chapitre 11), les risques
 (chapitre 12) et les questions à trancher (chapitre 13). Statut : **proposition,
 rien n'est engagé** ; aucune ligne de code, aucune décision, aucun drapeau ne
 change avec ce document. Les lots s'ouvrent après les réponses du chapitre 13.
+Q1 à Q3 ont été tranchées le 2026-11-01 (chapitre 14) : A puis B, l'organisation
+seule, et une frise des étapes navigable en plus du menu.
 
 Abréviations : LOT-05 et LOT-07 désignent
 `docs/claude/campagnes/2026-09-12-vie-du-portail-patient/lots/LOT-05-les-deux-portes.md`
@@ -53,7 +55,7 @@ et `web/src/app/portail/layout.tsx`, sauf mention d'un autre dossier.
 7. À ne pas copier : les compteurs et le « ! » (D-333), le rail nuit et les jetons `--rail-*`, la feuille « Plus » à plat, le bloc de marque, le repli mémorisé, les Dialog Radix posés sous `data-theme="praticien"`, le rail des phases comme menu.
 8. La doctrine freine : A6-R1 pose côté patient un « principe inverse » (REGISTRE_FRONTIERES.md:334-336) et un avis non signé écrit « ne doivent surtout pas devenir la même interface » ; A5-R2 et « pas de rail » n'interdisent qu'un rail nuit et une bascule de thème, pas un rail clair. Deux antécédents non signés vont dans l'autre sens (UX-5, maquette 4.0). Aucune décision signée n'autorise un menu patient.
 9. Le plan demande de regrouper ou hiérarchiser la ligne de liens sans retirer d'accès (PLAN_WELLNEURO.md:2684) : c'est le seul lot demandé.
-10. Recommandation : organisation A (regroupement dans le hub, quatre groupes sans collision de nom) d'abord ; B (bouton « Menu » et tiroir) après constat et arbitrage ; C (rail) non engagée ; rail des phases écarté comme menu. Les arbitrages précèdent tout code ; la D-xxx s'écrit dans le lot, comme D-324.
+10. Recommandation : organisation A (regroupement dans le hub, quatre groupes sans collision de nom) d'abord ; B (bouton « Menu » et tiroir) après constat et arbitrage ; C (rail) non engagée ; rail des phases écarté comme menu. Les arbitrages précèdent tout code ; la D-xxx s'écrit dans le lot, comme D-324. Arbitrage du 2026-11-01 (chapitre 14) : Q1 et Q2 suivent cette recommandation ; Q3 retient au contraire une frise des étapes navigable en plus du menu, qui devient le lot L2b.
 
 ## 3. L'espace praticien aujourd'hui
 
@@ -440,6 +442,7 @@ Les trois sont nommées A, B, C. Elles répondent à « la même organisation »
 - Contredit : A6-R1 côté patient, lu littéralement (« une étape à la fois »), et l'avis non signé sur « la même interface ». Une première lecture y ajoutait « pas de rail » du design system et A5-R2 : ces deux textes ne l'interdisent pas (EP-11). Les risques de B s'y ajoutent sans gain de lecture.
 
 ### Écartée : l'organisation par étapes du parcours (analogue du rail des sept phases)
+- Arbitrage du 2026-11-01 (Q3, chapitre 14) : le responsable retient « menu + étapes ». Cette section reste comme évaluation : ses coûts deviennent ceux du lot L2b, et ses manques les questions Q27 à Q30.
 - Ce que ce serait : une frise ou un rail cliquable des six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution), chaque étape ouvrant sa zone, comme le rail des phases ouvre la sienne (FichePatientPanel.tsx:2638-2700).
 - Ce qui existe : la frise du hub, non cliquable (EP-21), et le fil du jour, qui porte déjà « l'étape du moment » (MonParcoursAccueil.tsx:72) ; cela respecte A6-R1 côté patient.
 - Pourquoi elle ne répond pas à la demande : les treize entrées sont des documents et des outils permanents, pas des étapes ; les étapes 5 et 6 n'ont aucune page propre ; aucun rattachement entrée-étape n'est écrit. Rendre la frise navigable demande des rôles, `aria-current="step"`, des cibles de 44 px (la frise est en `text-2xs`, `overflow-x-auto`), une cible pour 5 et 6, et ne réduit pas la ligne de liens.
@@ -550,7 +553,7 @@ Menu → PanneauSuperpose theme="patient", tiroir : même liste, même ordre,
 - Les captures `fullPage` laissent un élément `position: fixed` flotter (visual.spec.ts:182-185) ; le hub est en `pixel: false` (visual.spec.ts:438, 455) et la seule base portail est `portail-connexion` (chrome compris).
 
 ## 11. Plan de lots
-Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable avant le suivant. Ordre : L0, L1, L2, puis L3 sur arbitrage, L4 facultatif, L5 non engagé.
+Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable avant le suivant. Ordre : L0, L1, L2, L2b (frise navigable, arbitrage Q3 du 2026-11-01), puis L3 sur constat de l'écran, L4 facultatif, L5 non engagé.
 
 ### L0 — Arbitrages et texte de la décision
 - Périmètre : réponses aux questions du chapitre 13 et texte de la D-xxx « Menu patient », sans code, sans drapeau, sans route. Le texte voyage avec L2, comme D-324 (« écrite dans ce lot », handoff 2026-10-18-1300:15) ; PLAN:705 (« D-xxx et fragment avec le lot ») est un précédent voisin, pour un autre objet, non pour D-324.
@@ -572,6 +575,14 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Drapeau : non (retour arrière : revert). Décision : la D-xxx de L0, écrite dans ce lot. Validation : T1, T1 complet, T2 sur le Mac seul (docs/ROLES_MACHINES.md:147).
 - Clôture (D-371, D-372, docs-changelog.md) : handoff, fragment `changelog.d`, ligne §8 du plan (PLAN:2684, ligne de dette que le plan solde en ligne, comme PLAN:2680) ; aucune édition en ligne d'une fiche Fnn ou Hnn : une fiche neuve (plus haut Hnn lu : H93, PLAN:1089 ; numéro à relire sur origin/main juste avant d'écrire) avec sa ligne « Journal », puis les mises à jour par fragments `docs/claude/plan-journal/<id>/AAAA-MM-JJ-nn-slug.md` (le banc `scripts/lib/plan-journal.test.mjs` rougit sinon). L'historique ne retrouve aucune fiche dédiée à un menu patient.
 - Fin : bancs verts ; constat à l'écran sur un dossier de test majeur, mineur et clos ; ligne 2684 solde ou renvoi à la fiche. Arrêt : le responsable constate l'écran avant L3.
+
+### L2b — Frise des étapes navigable (arbitrage Q3 du 2026-11-01)
+- Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape : aucune route neuve tant que Q27 et Q28 ne sont pas tranchées.
+- Ce lot ne réduit pas la ligne de liens : le menu des espaces reste L2. Les deux navigations coexistent comme rail-menu et rail des phases côté praticien, et répondent à deux questions distinctes (« où vais-je ? », « où en suis-je ? »).
+- Bancs : ordre des six étapes ; un seul `aria-current="step"` ; cible de chaque étape, étapes 5 et 6 comprises ; étape passée, courante, à venir ; état mineur et dossier clos. E2E : 390 px (défilement horizontal de la frise, cibles ≥ 44 px) et Desktop ; `axe` sur le hub.
+- Drapeau : serveur, livré éteint (surface patient modifiée visiblement, D-288 §1 par analogie), entrée dans `docs/FEATURE_FLAGS.md`.
+- Décision : la D-xxx de L0 dit comment une frise navigable s'accorde avec A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler » ; l'étape à venir ne s'ouvre pas).
+- Validation : T1, T1 complet, T2. Fin : constat à l'écran sur un dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 %.
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
 - Périmètre : composant client sous `components/patient/` lisant `useParams`, monté dans `portail/layout.tsx`, rendu seulement session ouverte et murs franchis ; `PanneauSuperpose theme="patient"` ; liens en `<Link>` ; sondes en contexte ; `print:hidden` ; `aria-current`.
@@ -615,7 +626,7 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Non mesuré : tout rendu, tout contraste en production, toute largeur à 390 px est calculé ; aucun CSS compilé n'a été lu.
 
 ## 13. Questions au responsable
-Chaque question appelle une réponse fermée, avec la recommandation de l'audit. Q1 à Q3 fixent la direction ; les autres se tranchent dans L0, avant tout code.
+Chaque question appelle une réponse fermée, avec la recommandation de l'audit. Q1 à Q3 fixent la direction (tranchées le 2026-11-01, chapitre 14) ; les autres se tranchent dans L0, avant tout code.
 1. Q1 Périmètre : retenez-vous, en premier lot, le regroupement dans le hub seul (A), le menu en tiroir (B) restant ouvert après constat de l'écran ? Recommandation : oui.
 2. Q2 Sens de « même organisation » : confirmez-vous que la reprise porte sur l'organisation (groupes nommés, ordre, un seul actif, liste unique, primitive de superposition) et non sur l'apparence ni les compteurs ? Recommandation : oui.
 3. Q3 « Rails » : confirmez-vous que le rail des sept phases de la fiche n'est pas repris comme menu patient, la frise des six étapes restant un repère non cliquable ? Recommandation : oui.
@@ -642,3 +653,19 @@ Chaque question appelle une réponse fermée, avec la recommandation de l'audit.
 24. Q24 Mot-symbole : devient-il un lien d'accueil, et vers où (hub quand le segment est connu, connexion sinon) ? `/portail` seul n'a pas de page.
 25. Q25 Barre basse (L4) : reprenez-vous les quatre entrées de la maquette 4.0 (Accueil, Journal, Suivi, Documents), dont « Journal » et « Documents » posent des collisions, ou laissez-vous L4 sans entrées nommées ? Recommandation : sans entrées nommées tant que B n'est pas livré.
 26. Q26 Côté praticien, hors périmètre : l'absence de « Comptes du cabinet » dans la feuille « Plus » est-elle un oubli ou un choix ?
+
+## 14. Réponses du responsable (2026-11-01)
+
+Q1 à Q3 ont été tranchées le 2026-11-01, à options fermées, sur la seule lecture de ce document ; aucun écran n'a été constaté.
+
+| Question | Réponse | Effet sur le plan |
+|---|---|---|
+| Q1 Périmètre | **A d'abord, B ensuite** : le regroupement dans le hub (L2) en premier ; le bouton « Menu » et le tiroir (L3) restent ouverts, décidés après constat de l'écran de L2 | L2 engagé après L0 et L1 ; L3 conditionné au constat ; C non engagée |
+| Q2 Sens de « même organisation » | **L'organisation seule** : groupes nommés, ordre, un seul élément actif (`aria-current`), liste déclarée une fois, primitive de superposition ; ni l'apparence (rail nuit, jetons `--rail-*`), ni les compteurs (D-333) | confirme le chapitre 10 : aucun jeton de rail côté patient, `PanneauSuperpose theme="patient"` pour B |
+| Q3 « Rails » | **Menu + étapes** : un menu des espaces permanents *et* une frise des étapes navigable, sur le modèle du couple rail-menu / rail des sept phases du praticien | nouveau lot L2b entre L2 et L3 (chapitre 11) ; la section « Écartée » du chapitre 8 reste comme évaluation des coûts |
+
+### Questions ouvertes par Q3, à trancher dans L0
+27. Q27 Étapes 5 et 6 : « Analyse du praticien » et « Restitution » n'ont aucune page propre (elles sont « côté praticien », `journeyCurrentId: 5 | 6`, trajectoire-partagee/contrat.ts:277). Que fait un clic : rien (étape non cliquable, mais annoncée), un texte d'attente, ou le bilan quand il est consultable ? Recommandation : un texte d'attente court, jamais un chiffre ni une date promise.
+28. Q28 Rattachement : quelle zone ouvre chaque étape ? Aucun rattachement entrée-étape n'existe dans le code lu. À écrire étape par étape dans la D-xxx, en nommant la cible existante (page, section du hub) sans créer de route.
+29. Q29 Étapes passées et à venir : une étape franchie s'ouvre-t-elle en relecture (consentement, renseignements) ? Une étape à venir reste-t-elle fermée ? Recommandation : passée ouverte en lecture, à venir fermée, pour rester dans A6-R1 « une étape à la fois ».
+30. Q30 Accessibilité et bancs : `aria-current="step"`, cibles 44 px en `rem`, rôle de la liste (`nav` nommée distincte de « Autres espaces ») ; un seul `<nav>` nommé par fonction. Recommandation : `nav aria-label="Étapes de votre parcours"` (libellé déjà porté par la liste, PatientJourneyProgress.tsx:56).
