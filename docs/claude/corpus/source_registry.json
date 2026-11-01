@@ -1632,11 +1632,11 @@
     "rightsStatus": "to_verify",
     "clinicalReviewStatus": "not_reviewed",
     "practitionerReviewRequired": true,
-    "lifecycleStatus": "quarantined",
+    "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Relecture scientifique et sécurité",
+    "requiredAction": "Relecture scientifique et sécurité de la source entière attestée par le responsable le 2026-11-01 ; quarantaine levée (D-405)",
     "comment": "Vérifier interactions, contre-indications, statut réglementaire, posologie et limites de rôle.",
-    "auditDate": "2026-07-12"
+    "auditDate": "2026-11-01"
   },
   {
     "sourceId": "WN-SRC-0063",
@@ -6368,11 +6368,11 @@
     "rightsStatus": "to_verify",
     "clinicalReviewStatus": "not_reviewed",
     "practitionerReviewRequired": true,
-    "lifecycleStatus": "quarantined",
+    "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Relecture scientifique et sécurité",
+    "requiredAction": "Relecture scientifique et sécurité de la source entière attestée par le responsable le 2026-11-01 ; quarantaine levée (D-405)",
     "comment": "Vérifier interactions, contre-indications, statut réglementaire, posologie et limites de rôle.",
-    "auditDate": "2026-07-12"
+    "auditDate": "2026-11-01"
   },
   {
     "sourceId": "WN-SRC-0242",
@@ -9608,11 +9608,11 @@
     "rightsStatus": "to_verify",
     "clinicalReviewStatus": "not_reviewed",
     "practitionerReviewRequired": true,
-    "lifecycleStatus": "quarantined",
+    "lifecycleStatus": "raw",
     "vigilance": "Élevée",
-    "requiredAction": "Relecture scientifique et sécurité",
+    "requiredAction": "Relecture scientifique et sécurité de la source entière attestée par le responsable le 2026-11-01 ; quarantaine levée (D-405)",
     "comment": "Vérifier interactions, contre-indications, statut réglementaire, posologie et limites de rôle.",
-    "auditDate": "2026-07-12"
+    "auditDate": "2026-11-01"
   },
   {
     "sourceId": "WN-SRC-0359",

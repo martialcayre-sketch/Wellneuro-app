@@ -40,6 +40,17 @@ export function pointEtapeCourant(anchorDate: Date, now: Date): PointEtape | nul
   return null;
 }
 
+export type EtatFenetrePointEtape = 'a_venir' | 'ouverte' | 'passee';
+
+// État de la fenêtre d'un point d'étape à `now`, par les bornes mêmes de
+// `pointEtapeCourant` : « ouverte » ici ⇔ point ouvert au portail (échelle E4,
+// `D-334` §2 ; J2-jourN, H52). Aucune borne de plus.
+export function etatFenetrePointEtape(pointEtape: PointEtape, anchorDate: Date, now: Date): EtatFenetrePointEtape {
+  if (pointEtapeCourant(anchorDate, now) === pointEtape) return 'ouverte';
+  const jours = (now.getTime() - anchorDate.getTime()) / JOUR_MS;
+  return jours < JOURS_POINT_ETAPE[pointEtape] ? 'a_venir' : 'passee';
+}
+
 // ─── Catalogue des questions (gelé, français, non culpabilisant) ─────────────
 // Identifiants du catalogue de base (gelés). L'extension additive C4 (§ plus
 // bas) déclare ses propres identifiants ; les deux sont réunis dans

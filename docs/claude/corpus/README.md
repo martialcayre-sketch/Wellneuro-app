@@ -67,6 +67,11 @@ corpus runtime.
   la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
   extrait court est ingéré pour usage interne sur arbitrage du responsable,
   reste à vérifier.
+- Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre
+  à chaque déploiement, elle retire la source du rayon du corpus, jamais de
+  la file de revue. Au 2026-11-01, 25 notices la portent : celles de
+  `WN-SRC-0062`, `0241` et `0358` ont été levées sur relecture de la source
+  entière attestée par le responsable (`D-405`).
 - `contentHash` reste nul tant que le contenu probant n'a pas été obtenu,
   vérifié et autorisé.
 - Aucune notice ne peut alimenter un prompt, un RAG, une règle, un document

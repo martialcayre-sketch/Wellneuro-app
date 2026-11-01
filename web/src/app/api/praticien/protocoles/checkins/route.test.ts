@@ -195,8 +195,9 @@ describe('GET /api/praticien/protocoles/checkins', () => {
       { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-31T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
 
-    const sansDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown } };
+    const sansDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown; suivi: unknown } };
     expect(sansDiffusion.resume.score).toBeNull();
+    expect(sansDiffusion.resume.suivi).toBeNull();
 
     const approvedAt = new Date('2026-01-10T00:00:00.000Z');
     prisma.protocolDiffusionApproval.findMany.mockResolvedValueOnce([{
@@ -209,8 +210,12 @@ describe('GET /api/praticien/protocoles/checkins', () => {
         episode: { id: 'EPI_T0', milestone: 'T0', cycleId: 'EPI_T0' },
       },
     }]);
-    const avecDiffusion = (await (await GET(request())).json()) as { resume: { score: unknown } };
+    const avecDiffusion = (await (await GET(request())).json()) as {
+      resume: { score: unknown; suivi: { jourZero: string; jour: number } | null };
+    };
     expect(avecDiffusion.resume.score).not.toBeNull();
+    // J2-jourN (H52) : le jour du cycle part du même jour 0 que le momentum.
+    expect(avecDiffusion.resume.suivi?.jourZero).toBe(approvedAt.toISOString());
   });
 
   // [[D-255]], lot 4 (revue Copilot de #1273) : les check-ins se lisent sur les
