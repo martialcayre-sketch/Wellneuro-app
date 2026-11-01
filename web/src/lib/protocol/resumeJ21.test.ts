@@ -91,4 +91,41 @@ describe('buildResumeJ21', () => {
 
     expect(resume.points.find((p) => p.pointEtape === 'J7')?.reponses?.adhesion).toBe('tous_les_jours');
   });
+  // J2-jourN (H52) : les marques E4 (`D-334` §2) et le jour du cycle.
+  describe('marques E4 et jour du cycle', () => {
+    const JOUR_ZERO = new Date('2026-01-01T10:00:00.000Z');
+    const a = (jours: number) => new Date(JOUR_ZERO.getTime() + jours * 24 * 60 * 60 * 1000);
+
+    it('sans jour 0 : ni jour du cycle ni marque, même avec une réponse', () => {
+      const resume = buildResumeJ21({ checkins: [checkin('c1', 'J7', '2026-01-08T00:00:00.000Z')], maintenant: a(8) });
+      expect(resume.suivi).toBeNull();
+      expect(resume.points.map((p) => p.marque)).toEqual([null, null, null]);
+    });
+
+    it('une réponse fait la marque, datée ; sinon l’état de la fenêtre du portail', () => {
+      const resume = buildResumeJ21({
+        checkins: [checkin('c1', 'J7', '2026-01-08T09:00:00.000Z')],
+        jourZero: JOUR_ZERO,
+        maintenant: a(12),
+      });
+      expect(resume.points).toEqual([
+        expect.objectContaining({ pointEtape: 'J7', marque: 'repondu', soumisLe: '2026-01-08T09:00:00.000Z' }),
+        expect.objectContaining({ pointEtape: 'J14', marque: 'en_cours', soumisLe: null }),
+        expect.objectContaining({ pointEtape: 'J21', marque: 'a_venir', soumisLe: null }),
+      ]);
+      expect(resume.suivi).toEqual({ jourZero: JOUR_ZERO.toISOString(), jour: 12 });
+    });
+
+    it('une fenêtre passée sans réponse dit « pas de réponse », jamais un niveau', () => {
+      const resume = buildResumeJ21({ checkins: [], jourZero: JOUR_ZERO, maintenant: a(19) });
+      expect(resume.points.map((p) => p.marque)).toEqual(['pas_de_reponse', 'pas_de_reponse', 'en_cours']);
+      expect(resume.points.every((p) => p.reponses === null)).toBe(true);
+    });
+
+    it('après la fenêtre J21 : trois marques passées', () => {
+      const resume = buildResumeJ21({ checkins: [], jourZero: JOUR_ZERO, maintenant: a(25) });
+      expect(resume.points.map((p) => p.marque)).toEqual(['pas_de_reponse', 'pas_de_reponse', 'pas_de_reponse']);
+      expect(resume.suivi?.jour).toBe(25);
+    });
+  });
 });
