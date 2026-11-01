@@ -515,6 +515,11 @@ Menu → PanneauSuperpose theme="patient", tiroir : même liste, même ordre,
        un seul aria-current ; fermeture au changement de chemin
 ```
 
+### Maquette (2026-11-02)
+- Quatre artboards sur le design system Wellneuro (jetons patient), patiente fictive Sophie Nicola : https://claude.ai/artifact/Ctd39xWczp37kd7SKDnvHw (lien privé tant qu'il n'est pas partagé).
+- 1 : hub à 390 px, organisation A et frise navigable (L2b) ; 2 : bouton « Menu » et tiroir (B), ouvert depuis le carnet alimentaire, un seul `aria-current="page"` ; 3 : états de la frise et texte d'attente de Q27 ; 4 : hub au bureau, colonne de 672 px, les quatre groupes sur deux colonnes (Q17).
+- Balisage aux valeurs des jetons, sans composant du bundle (la liste à groupes et la frise cliquable n'existent pas encore) ; aucun rendu constaté. Les libellés du fil et du pied de page sont ceux de l'application ; « Lire mon bilan » et le texte d'attente sont des propositions à faire accepter mot pour mot.
+
 ## 10. Composants, tokens, accessibilité
 
 ### Réutiliser, adapter, créer
