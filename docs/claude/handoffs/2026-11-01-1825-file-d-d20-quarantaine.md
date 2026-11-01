@@ -47,7 +47,11 @@ séance.
 - Lecture en production par conteneur (one-off détaché, transaction en
   lecture seule, agrégats seulement) : claims par source et statut des sept
   notices.
-- `WN_RECHERCHE_CORPUS_ENABLED=true` en production, lu sur cette seule clé.
+- `WN_C4_ENABLED=true` en production, lu sur cette seule clé : le rayon
+  « micronutrition » est servi par la bibliothèque des compléments, pas par
+  la recherche générale du corpus (remarque Copilot de #1807, corrigée).
+  Remarque PR-Agent sur les droits des trois sources : écartée avec motif
+  par le responsable (D-405 §4).
 - Europe PMC : aucune licence pour 0509 (PMID 42747316) ni 0510 (PMC3414597).
 - Code relu : `checkinDomain.ts` (contrat `c2a-checkin-v1`),
   `notebooks.ts`, `rayonCorpus.ts` (correspondance des rayons : le carnet 11

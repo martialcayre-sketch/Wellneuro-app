@@ -23,8 +23,10 @@
   `WN-SRC-0508` et `0511` un VALIDE chacune, `0509` et `0510` aucun. La
   quarantaine est relue au registre à chaque déploiement et retire la source
   du seul chemin qui sert le claim comme contenu (le rayon du corpus),
-  jamais de la file de revue. La recherche du corpus est allumée en
-  production (`WN_RECHERCHE_CORPUS_ENABLED`). Europe PMC n'indique aucune
+  jamais de la file de revue. Le rayon « micronutrition » n'est pas servi
+  par la recherche générale du corpus : il l'est par la bibliothèque des
+  compléments (`/api/praticien/complements/corpus`), derrière
+  `WN_C4_ENABLED`, allumé en production. Europe PMC n'indique aucune
   licence pour `0509` ni `0510`.
 
 **§1 — Quarantaine levée.** `WN-SRC-0062`, `0241` et `0358` passent de
@@ -37,7 +39,8 @@ BP-07. `requiredAction` renvoie à cette décision ; la vigilance reste
 
 **§2 — Effet en service.** Au déploiement suivant, sans release-db (le
 registre n'est pas un chemin clinique) : les 69 claims VALIDE de `0062` et
-`0241` entrent dans le rayon « micronutrition » (carnet 10) ; ceux de
+`0241` entrent dans le rayon « micronutrition » de la bibliothèque des
+compléments (carnet 10, sous `WN_C4_ENABLED`) ; ceux de
 `0358` (carnet 11) restent sans effet visible tant qu'aucun rayon ne vise
 ce carnet ; un claim REJETE n'est jamais servi.
 
@@ -47,6 +50,11 @@ ce carnet ; un claim REJETE n'est jamais servi.
 reste portée par les verdicts de l'atelier, claim par claim.
 
 **§4 — Droits.** `WN-SRC-0509` et `0510` restent `rightsStatus: to_verify`.
+Les droits de `0062`, `0241` et `0358` restent aussi `to_verify`, sous le
+verdict global G0 sur les supports SIIN (2026-07-21) : au même régime que
+les 40 sources du carnet 10 en `raw / to_verify / not_reviewed`, dont les
+claims VALIDE sont déjà servis dans ce rayon (remarque de revue de #1807
+écartée sur ce motif par le responsable).
 
 **Ce que la décision ne fait pas.** Elle ne valide aucun claim neuf, ne
 rattache le carnet 11 à aucun rayon, ne change aucune autre quarantaine
