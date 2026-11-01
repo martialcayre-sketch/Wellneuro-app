@@ -53,10 +53,11 @@ l'uniformité des claims.
 
 **§3 — Preuve.** Le cas négatif `N15`, sur le patron de `N12`, mute la version
 de `WN-CL-0389-004`, que seule cette table épingle. Un mutant du prédicat qui
-exempte `indications_biologie` rougit sur `N15` seul. Trois claims de la table
-sont aussi épinglés par `conduites`, dont `WN-CL-0320-003`, que mute `N10` : ce
-cas, et avec lui `N7` à `N11`, exige désormais le nom de sa table dans le
-message (revue Copilot de #1820). Neuf mutants, un par table, rougissent
+exempte `indications_biologie` rougit sur `N15` seul. Treize claims de la
+table sont aussi épinglés ailleurs (deux par `conduites`, un par
+`conflits_sources`, onze par `fiches_usage`), dont `WN-CL-0320-003`, que mute
+`N10` : ce cas, et avec lui `N7` à `N11`, exige désormais le nom de sa table
+dans le message (revue Copilot de #1820). Neuf mutants, un par table, rougissent
 chacun sur son seul cas. La release qui suivra le
 merge est retenue jusqu'à l'approbation du responsable ([[D-044]] : le lot
 touche un banc sous `clinical/`). Son préflight rejouera les vingt-neuf paires
