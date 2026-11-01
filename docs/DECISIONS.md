@@ -6,6 +6,75 @@
 
 ## Décisions actives
 
+### D-402 — G-10 : aucune donnée test-retest pour les versions servies ; écarts minimaux déclarés paramètres techniques, 5 % du maximum arrondi à l'entier supérieur, au moins un point, comparaison sur une même version seulement
+
+- Date : 2026-11-01
+- Statut : accepté — fiche d'arbitrage m05 retenue telle quelle par le
+  responsable le 2026-11-01, en séance de gestes de la file D (n° 4). Fiche
+  préparée avec un assistant conversationnel externe, qui n'est source
+  d'aucune valeur : chaque valeur est un paramètre technique déclaré par le
+  responsable (`DC-20`), chaque motif est le sien (`DC-21`).
+- Domaine : bandes de bruit du momentum par besoin (`BANDES_DE_BRUIT`,
+  `equilibre/momentumParBesoin.ts`) ; G-10, fiche H13.
+- Ne touche pas : aucun code ; `BANDES_DE_BRUIT` reste vide et non publiée,
+  la publication restant la lettre v ; aucun seuil d'interprétation, aucune
+  cotation.
+- Contexte : G-10 demandait, par instrument arrêté le 2026-10-15, une source
+  test-retest ou un paramètre technique déclaré comme tel. La recherche
+  (vérifiée en texte intégral là où il est libre) ne trouve aucune donnée
+  pour la version servie des cinq instruments. Questionnaires SiiN
+  alimentaire, DNST, hyperexcitabilité et mode de vie : aucune donnée ; la
+  fiche praticien de l'hyperexcitabilité (`WN-SRC-0446`) écrit « Il n'a pas
+  fait l'objet d'évaluation ». HADS : la validation française de
+  `WN-SRC-0545` écrit « it is impossible to do a test and retest » ; des
+  données existent pour des adaptations apparentées seulement (version
+  canadienne-française, Savard et al. 1998, lue de seconde main ; version
+  grecque, Michopoulos et al. 2008), sans écart-type permettant une erreur
+  de mesure pour la version servie. Le MEDAS (Papadaki et al. 2018) est un
+  instrument distinct de l'enquête SiiN.
+
+**§1 — Unité : les points du score brut, par instrument.** L'écart minimal se
+déclare dans l'unité native du score lu, pour en garder la résolution. Aucune
+bande n'est déduite pour l'agrégat d'un besoin : le passage à la couverture,
+et la règle d'un besoin lu par plusieurs instruments (besoins 4, 5, 10), se
+tranchent dans la lettre v.
+
+**§2 — Méthode commune, paramètre technique.** Écart minimal =
+`max(1, ⌈0,05 × M⌉)`, où `M` est le maximum du score. Les 5 % sont une
+convention de filtrage des petites variations, ni une erreur standard de
+mesure, ni une plus petite différence détectable.
+
+| Réf. | Instrument, score lu | Besoin | Écart minimal | Réserve |
+|---|---|---|---|---|
+| A1 | Enquête alimentaire SiiN (Q_ALI_01), total | 1 | 5 / 90 | même version, passation complète |
+| A2 | Enquête alimentaire SiiN, sous-score `RYTHME_CHRONO` | 3 | 1 / 7 | un point est une variation relative importante |
+| A3 | Hyperexcitabilité SiiN (Q_INF_01), total | 4 | 5 / 96 | score inversé |
+| A4 | Mode de vie SiiN (Q_MOD_01), `ACTIVITE_PHYSIQUE` | 5 | 1 / 20 | sens direct |
+| A5 | HADS (Q_NEU_11), sous-échelle D | 8 | 2 / 21 | **provisoire** : retirée au changement de sources du besoin 8 (J3-12f) |
+| A6 | DNST SiiN (Q_INF_03), DA, NA, SE | 10 | 2 / 40 chacun | inversés ; aucune bande du besoin 10 déduite |
+| A7 | DNST SiiN, ME | 12 | 2 / 40 | **provisoire** : retirée au changement de sources du besoin 12 (J3-12f) |
+| A8 | TFD SiiN 2021 (Q_GAS_01), total | 4 | 5 / 93 | ajouté à la liste du 2026-10-15 ; version, maximum et complétude à vérifier |
+| A9 | PSQI (Q_SOM_01), score global | 5 | 2 / 21 | **provisoire**, ajouté ; littérature test-retest à vérifier, aucune valeur publiée adoptée |
+| A10 | Indice de l'agenda du sommeil (Q_SOM_09) | 5 | aucune bande | différée jusqu'à la stabilisation de l'indice (décisions de la porte 4) |
+
+**§3 — Lecture.** Deux scores complets, comparables et de même version sont
+« dans la bande technique » quand la valeur absolue de leur différence est
+inférieure ou égale à l'écart minimal, sinon « au-dessus de la bande
+technique ». Ces mentions ne concluent pas à un changement cliniquement réel.
+
+**§4 — Comparaison sur une même version seulement.** Deux scores de versions
+différentes d'un instrument, ou de deux instruments dont l'un remplace
+l'autre, ne se comparent jamais automatiquement sans équivalence documentée.
+
+**Ce que la décision ne fait pas.** Elle ne publie aucune bande (lettre v),
+ne fixe aucune règle pour les besoins lus par plusieurs instruments et ne
+complète pas G-10 des sources que J3-12f installera pour les besoins 8, 9 et
+12 : ce complément reste dû après le changement de version. Restent sans
+réponse scientifique, et le restent : une erreur de mesure vraie (SEM, SDC,
+MDC) des versions servies, une table d'équivalence entre instruments, une
+bande validée de l'indice de l'agenda du sommeil, la fidélité du PSQI dans la
+population du cabinet.
+
 ### D-400 — Table d'arrêt signée avec les grilles qu'elle cite (E64) ; un porteur pour chacune des trois dernières règles orphelines (E32) : BP-12a pour DC-11 et DC-45, un lot neuf du moteur d'orientation pour DC-36
 
 - Date : 2026-11-01
