@@ -408,6 +408,9 @@ async function logBookletEnvoi(
   // jamais doublée d'une seconde — un envoi, une ligne, une clé de source.
   idReservation?: string,
 ) {
+  // Gardé hors du `try` : si l'audit est créé puis que le solde échoue, le
+  // solde de secours garde sa clé de source (revue CodeRabbit de #1798).
+  let idAudit: string | undefined;
   try {
     const audit = await prisma.bookletEnvoi.create({
       data: {
@@ -421,6 +424,7 @@ async function logBookletEnvoi(
         noteTransmise: noteTransmise?.trim() ? noteTransmise : undefined,
       },
     });
+    idAudit = audit.id;
     // Le journal ne connaît que trois états ; l'audit du booklet en connaît
     // davantage. La traduction est faite par `statutJournalDepuisAuditBooklet`,
     // et une confirmation en attente n'y est PAS une erreur : rien n'est parti,
@@ -468,6 +472,7 @@ async function logBookletEnvoi(
         where: { id: idReservation },
         data: {
           statut: statutJournalDepuisAuditBooklet(statut),
+          ...(idAudit ? { sourceType: 'booklet_envoi', sourceId: idAudit } : {}),
           erreurCourte: erreur ? sanitizeAuditError(erreur).slice(0, 200) : null,
         },
       }).catch(() => { /* la ligne reste marquée : sens prudent */ });

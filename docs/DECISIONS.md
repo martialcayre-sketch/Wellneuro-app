@@ -83,7 +83,9 @@ pouvaient le manquer entre elles (revue Copilot de #1798). L'audit
 ligne du journal naît réservée, et `logBookletEnvoi` la solde avec la clé de
 source de l'audit : un envoi, une ligne. Le renvoi confirmé n'est pas
 réservé, geste explicite. Un audit qui échoue n'empêche pas le solde (revue
-PR-Agent de #1798) : la ligne est soldée, sans clé de source. Une réservation
+PR-Agent de #1798) : la ligne est soldée, sans clé de source ; un audit
+créé dont le solde échoue garde sa clé dans le solde de secours (revue
+CodeRabbit de #1798). Une réservation
 de bilan restée marquée (processus arrêté, base indisponible au solde) n'a
 pas de fenêtre : le premier envoi renvoie alors à la
 confirmation, sans limite de temps, et le renvoi confirmé reste la sortie —

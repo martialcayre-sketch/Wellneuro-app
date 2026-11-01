@@ -127,6 +127,11 @@ quatre volets :
     modules, en lot à part.
   - Après ces corrections : T1 complet code 0, puis T2 `--fast` code 0
     (Vitest : 15 483 passés ; E2E : 303 passés).
+- CodeRabbit, revue sur d0f50f65, une remarque mineure, corrigée : quand
+  l'audit est créé mais que le solde échoue, le solde de secours garde la
+  clé de source de l'audit. Banc de route neuf, rouge quand on retire la
+  clé (mutation), vert sinon. T1 complet code 0, puis T2 `--fast` code 0
+  (Vitest : 15 484 passés ; E2E : 303 passés).
 
 ## Problèmes ouverts
 

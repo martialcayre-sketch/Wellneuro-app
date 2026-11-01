@@ -661,6 +661,20 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       });
     });
 
+    // Revue CodeRabbit de #1798 : l'audit créé, c'est le solde qui échoue ;
+    // le solde de secours garde la clé de source — un envoi, une ligne.
+    it('un solde qui échoue après l’audit : le secours garde la clé de source', async () => {
+      updateCorrespondance.mockRejectedValueOnce(new Error('délai dépassé'));
+      const res = await envoyer({});
+
+      expect(res.status).toBe(200);
+      expect(updateCorrespondance).toHaveBeenCalledTimes(2);
+      expect(updateCorrespondance.mock.calls[1][0]).toEqual({
+        where: { id: 'RES_1' },
+        data: { statut: 'Envoye', sourceType: 'booklet_envoi', sourceId: 'AUDIT_1', erreurCourte: null },
+      });
+    });
+
     it('le renvoi confirmé ne se réserve pas : c’est un geste explicite', async () => {
       const res = await envoyer({ forceSend: true });
 
