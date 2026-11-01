@@ -99,6 +99,8 @@ import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPa
 import { DocumentsRemisPanel } from '@/components/patient-cockpit/DocumentsRemisPanel';
 import { DocumentsDeposesPanel } from '@/components/patient-cockpit/DocumentsDeposesPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { ComparaisonPassationsPanel } from '@/components/patient-cockpit/ComparaisonPassationsPanel';
+import type { ComparaisonsPassations } from '@/lib/scoring/comparaisonPassations';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { ConstatsParcoursPanel } from '@/components/biologie/ConstatsParcoursPanel';
 import { PhysioTraitementsPanel } from '@/components/physio-traitements/PhysioTraitementsPanel';
@@ -562,6 +564,7 @@ export function FichePatientPanel({
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
+  const [comparaisons, setComparaisons] = useState<ComparaisonsPassations | null>(null);
   const [loadingReponses, setLoadingReponses] = useState(true);
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   // Un échec de lecture n'est JAMAIS rendu comme « aucune demande » : ce serait
@@ -887,8 +890,14 @@ export function FichePatientPanel({
     setLoadingReponses(true);
     fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`)
       .then(r => r.json())
-      .then((d: ReponsesApiResponse) => setReponses(d.reponses ?? []))
-      .catch(() => setReponses([]))
+      .then((d: ReponsesApiResponse) => {
+        setReponses(d.reponses ?? []);
+        setComparaisons(d.comparaisons ?? null);
+      })
+      .catch(() => {
+        setReponses([]);
+        setComparaisons(null);
+      })
       .finally(() => setLoadingReponses(false));
   }, [data]);
 
@@ -2831,6 +2840,11 @@ export function FichePatientPanel({
                 icone={FileText}
                 large
               >
+                {!loadingReponses && comparaisons && (
+                  <div className="mb-3">
+                    <ComparaisonPassationsPanel comparaisons={comparaisons} />
+                  </div>
+                )}
                 {tableauReponses}
               </InstrumentTiroir>
               <p className="px-1 text-xs text-muted-foreground">

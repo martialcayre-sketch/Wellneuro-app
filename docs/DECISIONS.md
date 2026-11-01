@@ -6,6 +6,82 @@
 
 ## Décisions actives
 
+### D-406 — J2-nf5 (H65, porte 20) : deux passations du même instrument comparées au cockpit ; même version établie par un registre déclaré, sans migration ; cycle en cours ouvert à la confirmation de l'ancre précédente ; écart en points bruts, sans bande
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01, rendus en
+  conversation sur quatre questions à options, tous sur la recommandation :
+  l'objet (deux passations du même instrument, et non deux versions de
+  score), la façon d'établir la version (registre déclaré), les dates du
+  registre et la règle de paire, la fenêtre du cycle en cours. Textes
+  visibles validés mot pour mot le même jour.
+- Domaine : cockpit praticien, tiroir « Détail des réponses »
+  (`components/patient-cockpit/ComparaisonPassationsPanel.tsx`) ; route
+  `api/praticien/reponses` ; module `lib/scoring/comparaisonPassations.ts`.
+  Fiche H65 ; porte 20 (K-11).
+- Ne touche pas : aucune formule de score, aucun seuil, aucune
+  interprétation, aucune bande (`BANDES_DE_BRUIT` reste vide, lettre v) ;
+  ni `versionScore`, ni le momentum ([[D-397]]), ni la trajectoire ;
+  aucune migration, aucune écriture en base ; le portail patient.
+- Contexte : la fiche H65 nommait l'objet « deux versions de score
+  comparées » ; [[D-113]] §9, [[D-397]] et [[D-402]] §4 interdisent de
+  comparer deux versions différentes sans équivalence documentée. La porte 20
+  nomme, elle, « le premier écran qui compare deux passations du même
+  instrument ». Aucun écran n'affichait jusqu'ici d'écart entre deux
+  passations. Aucune version d'instrument n'est stockée par passation :
+  `certification` est une provenance du calcul, `versionScore` n'existe que
+  sur les épisodes de l'équilibre. Constat par conteneur, en agrégats, le
+  2026-11-01 : 8 dossiers réels portent au moins deux passations
+  exploitables d'un même instrument, sur 10 instruments ; 4 couples
+  instrument × dossier passent la règle ci-dessous.
+
+**§1 — Objet.** Deux passations du même instrument, dans le même dossier,
+VALID ou AMBIGUOUS, comparées par leur score principal enregistré
+(`score_principal`, le `total` ou à défaut le `count` du calcul). Les
+sous-scores restent hors de ce lot. Pour chaque instrument qui compte au
+moins deux telles passations dans le cycle en cours, ses deux plus
+récentes ; jamais une paire plus ancienne à leur place.
+
+**§2 — Même version : registre déclaré.** La date depuis laquelle la grille
+et le calcul servis sont inchangés, paramètre technique déclaré par le
+responsable (`DC-20`), établi sur l'historique Git des définitions (texte
+normalisé, métadonnées `certification` et `note` exclues) et du moteur (la
+série de corrections du recueil partiel close le 2026-08-05, le badge de
+certification de [[D-038]] le 2026-08-10) :
+
+| Instrument | Comparable si les deux passations datent du ou après le |
+|---|---|
+| `Q_ALI_01`, `Q_MOD_01`, `Q_MOD_03`, `Q_INF_01`, `Q_INF_03`, `Q_STR_02`, `Q_STR_04`, `Q_FIB_02`, `Q_SOM_07` | 2026-08-11 |
+| `Q_SOM_01` (PSQI ; bandes retouchées le 2026-09-13) | 2026-09-14 |
+| tout autre instrument | jamais comparé |
+
+**§3 — Cycle en cours.** Il s'ouvre à la confirmation de l'ancre qui précède
+l'ancre de rang le plus haut (`T0`, `T1`… ; le rang ordonne, pas la date).
+Sans ancre précédente — une seule ancre, ou aucune —, toutes les passations
+du dossier en font partie. Les deux passations doivent s'y trouver.
+**Limite nommée** : sur un dossier rouvert, une remesure tardive du cycle
+`T0` (après la confirmation de `T0`) peut être comparée à une passation du
+bilan `T1`. Écartée : la convention du momentum ([[D-397]] §1), qui n'aurait
+servi aucune paire réelle à ce jour.
+
+**§4 — Paire refusée, motif dit.** Dans cet ordre : « interprétation
+retirée » (une passation sous `motifNonInterpretable`) ; « version non
+établie » (instrument hors registre, ou une passation antérieure à sa
+date) ; « une passation est incomplète » (score principal absent, `missing`
+non nul ou `missingIds` non vide) ; « grille différente » (maximums
+`maxTotal` distincts, ou un seul connu — la variante courte de `Q_ALI_01`
+sur 42 contre la forme source sur 90).
+
+**§5 — Lecture.** L'écart est `b − a` en points du score, arrondi au
+centième : « en hausse de N points », « en baisse de N points », « même
+score ». Aucune mention de bande ni « stable » (la porte 11 reste fermée,
+[[D-402]] §3) ; l'écart ne conclut à aucun changement cliniquement réel
+(`DC-27`). En mode consultation, la valeur cède à « masqué en mode
+consultation » ([[D-354]]).
+
+**§6 — Porte 20.** Cet écran est le premier qui compare deux passations du
+même instrument : la revue de sa PR lève la porte 20 ([[D-397]] §10).
+
 ### D-405 — Restes de BP-07 au registre du corpus (D/20) : quarantaine levée pour WN-SRC-0062, 0241 et 0358 sur relecture attestée des sources entières ; revue clinique au registre gardée `not_reviewed` ; droits de 0509 et 0510 laissés à vérifier
 
 - Date : 2026-11-01

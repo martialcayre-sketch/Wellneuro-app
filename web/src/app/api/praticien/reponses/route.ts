@@ -6,6 +6,8 @@ import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { motifNonInterpretable, scoresSansMesure } from '@/lib/scoring/passationsNonInterpretables';
+import { comparerPassations, debutDuCycleEnCours, type ComparaisonsPassations } from '@/lib/scoring/comparaisonPassations';
+import { indexDeCycle } from '@/lib/protocol/cycles';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/reponses';
@@ -33,6 +35,9 @@ export type ReponseQuestionnaire = {
 
 export type ReponsesApiResponse = {
   reponses: ReponseQuestionnaire[];
+  /* Deux passations du même instrument, comparées dans le cycle en cours
+   * (D-406). Absent sur une erreur ou une liste vide. */
+  comparaisons?: ComparaisonsPassations;
   error?: string;
 };
 
@@ -63,12 +68,35 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       orderBy: { dateReponse: 'desc' },
     });
 
-    if (pgReponses.length > 0) {
-      // Liste non vide = appartenance prouvée ; l'idPatient vient de la ligne
-      // (l'e-mail seul ne nomme pas un dossier). Liste vide = rien
-      // (anti-oracle) — limite assumée (LOT-00).
-      await journaliserAccesDossier({ idPatient: pgReponses[0].idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+    if (pgReponses.length === 0) {
+      // Liste vide = rien (anti-oracle) — limite assumée (LOT-00).
+      return NextResponse.json({ reponses: [] });
     }
+    // Liste non vide = appartenance prouvée ; l'idPatient vient de la ligne
+    // (l'e-mail seul ne nomme pas un dossier).
+    await journaliserAccesDossier({ idPatient: pgReponses[0].idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+
+    // D-406 §3 : le cycle en cours commence à la confirmation de l'ancre qui
+    // précède l'ancre de rang le plus haut.
+    const episodes = await prisma.assessmentEpisode.findMany({
+      where: { idPatient: pgReponses[0].idPatient },
+      select: { milestone: true, confirmedAt: true },
+    });
+    const ancres = episodes.flatMap(e => {
+      const rang = indexDeCycle(e.milestone);
+      return rang === null ? [] : [{ rang, confirmedAt: e.confirmedAt }];
+    });
+    const comparaisons = comparerPassations(
+      pgReponses.map(pg => ({
+        idQuestionnaire: pg.idQuestionnaire,
+        titre: pg.titre,
+        dateReponse: pg.dateReponse,
+        statutValidite: pg.statutValidite,
+        scorePrincipal: pg.scorePrincipal ?? null,
+        scoresJson: pg.scoresJson,
+      })),
+      debutDuCycleEnCours(ancres),
+    );
 
     const reponses: ReponseQuestionnaire[] = pgReponses.map(pg => {
       // Le retrait se fait ICI, pas dans l'écran. Une donnée que la route livre
@@ -111,7 +139,7 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       };
     });
 
-    return NextResponse.json({ reponses });
+    return NextResponse.json({ reponses, comparaisons });
   } catch (err) {
     console.error('[reponses GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ reponses: [], error: 'Erreur technique.' }, { status: 500 });
