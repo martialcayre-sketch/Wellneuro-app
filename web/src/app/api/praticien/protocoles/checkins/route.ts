@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { construireHistoriqueEquilibre, resoudreDateT0 } from '@/lib/equilibre/depuisPrisma';
+import { calculerMomentumDuCycle } from '@/lib/equilibre/momentumDuCycle';
 import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import type { AncreCycle } from '@/lib/protocol/cycles';
 import { listCheckins, type CheckinRow } from '@/lib/protocol/checkins';
@@ -75,24 +75,22 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       );
     }
 
-    // C2B LOT-07/08 : brancher le momentum réel du patient (jalons de mesure lus
-    // via l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
-    // couverture est omis par construireHistoriqueEquilibre (jamais un 0) ; sans
-    // ancre, momentum = null et le résumé conserve un score null honnête.
+    // [[D-397]] : le score du résumé est le momentum du cycle courant, le même
+    // calcul qu'au portail, à l'onglet Équilibre et au fil (contre-revue Codex
+    // P1-2) — ancre du cycle, dernière remesure, rien sans jour 0. Il ne
+    // reconstruit plus sa propre paire ancre → J21.
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     });
     // LOT-08 : l'ancre est celle du CYCLE COURANT — le rang le plus haut, et
-    // non plus « le T0 confirmé le plus récent » (`D-113`). Repli sur la
-    // première réponse du dossier quand aucune ancre n'est confirmée : dans ce
-    // cas le cycle n'est pas ouvert, et son nom de repli est `T0`.
+    // non plus « le T0 confirmé le plus récent » (`D-113`). Sans ancre
+    // confirmée, le cycle n'est pas ouvert : aucun momentum.
     const ancres = await lireAncresPersistees(idPatient);
     const ancre = ancreCourante(ancres);
-    const dateAncre = ancre?.confirmedAt ?? resoudreDateT0(reponsesDb);
-    // Le calendrier de suivi du cycle courant ([[D-255]]) : son jour 0 date le
-    // J21 ; sans diffusion sur ce cycle, repli sur l'ancre.
+    // Le calendrier de suivi du cycle courant ([[D-255]]) : son jour 0 date les
+    // jalons ; sans diffusion sur ce cycle, aucun momentum ([[D-397]] §2).
     const calendrier = ancre
       ? (await lireCalendriersSuivi(idPatient, null, ancres)).parCycle.get(ancre.cycleId ?? ancre.id) ?? null
       : null;
@@ -110,14 +108,11 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             .map((v) => v.id),
         );
     const checkins = (await listCheckins(idPatient)).filter((c) => bornes.has(c.protocolDraftId));
-    const momentum = dateAncre
-      ? {
-          ancre: (ancre?.milestone ?? 'T0') as AncreCycle,
-          dateAncre,
-          jourZero,
-          lectures: construireHistoriqueEquilibre(reponsesDb, dateAncre, jourZero),
-        }
-      : null;
+    const momentum = calculerMomentumDuCycle({
+      reponses: reponsesDb,
+      ancre: ancre ? { ancre: ancre.milestone as AncreCycle, date: ancre.confirmedAt } : null,
+      jourZero,
+    });
 
     const resume = buildResumeJ21({ checkins, momentum });
 

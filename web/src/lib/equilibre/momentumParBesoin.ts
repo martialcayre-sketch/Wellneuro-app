@@ -4,7 +4,7 @@ import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBru
 import { calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum } from './types';
 import { joursDepuisAncre } from '../protocol/fenetreJalon';
-import { datesPassationsSources, etiquetteLecture, sourcesMesureesAu } from './momentumDuCycle';
+import { datesRemesures, etiquetteLecture, sourcesMesureesAu } from './momentumDuCycle';
 // Réexportée : les bancs et le rendu la lisent ici, avec les séries.
 export { etiquetteLecture };
 import type { MotifAbsenceMomentum } from './motifsMomentum';
@@ -319,10 +319,11 @@ export function construireSeriesParBesoinDuCycle(input: {
     return etat;
   };
 
-  // Une remesure porte sur une source déjà exploitable à l'ancre (arbitrage du
+  // Une remesure porte sur une source déjà mesurée à l'ancre (arbitrage du
   // 2026-10-31) : la première passation d'une source absente du bilan d'ancre
-  // n'ouvre pas de lecture à elle seule.
-  const connues = sourcesMesureesAu(brutes, ancre.date);
+  // n'ouvre pas de lecture à elle seule, ni une passation dont le moteur ne
+  // tire aucune couverture de ce besoin (contre-revue Codex P1-1).
+  const mesureesAncre = sourcesMesureesAu(brutes, ancre.date);
   const series = new Map<number, LectureBesoin[]>();
   for (const [besoinCle, sources] of Object.entries(BESOIN_SOURCES)) {
     const besoin = Number(besoinCle);
@@ -331,9 +332,8 @@ export function construireSeriesParBesoinDuCycle(input: {
     const auDepart = couverturesAu(ancre.date).get(besoin) ?? null;
     if (auDepart !== null) serie.push({ jalon: ancre.ancre, date: ancre.date, couverture: auDepart });
 
-    const ids = new Set(sources.map(source => source.idQuestionnaire).filter(id => connues.has(id)));
     const dates = [...new Set(
-      datesPassationsSources(brutes, ids)
+      datesRemesures(brutes, mesureesAncre, besoin)
         .filter(date => date > ancre.date && date <= maintenant)
         .map(date => date.getTime()),
     )].sort((a, b) => a - b);

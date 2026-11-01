@@ -84,6 +84,29 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     expect(cycle.jalons.find((j) => j.jalon === 'J42')?.mesure).toBe(false);
   });
 
+  // Contre-revue Codex P1-3 ([[D-397]]) : sur le cycle courant, un jalon ne se
+  // rouvre que sur une remesure — la courbe ne trace pas un écart que le
+  // momentum déclare absent.
+  it('cycle courant : un questionnaire neuf après l’ancre ne mesure aucun jalon, motif « sans remesure »', () => {
+    const had = {
+      idQuestionnaire: 'Q_NEU_11',
+      dateReponse: new Date('2026-01-16T00:00:00.000Z'),
+      scoresJson: { rawAnswers: { D2: '3', D4: '3', D6: '3', D8: '3', D10: '3', D12: '3', D14: '3' } },
+      statutValidite: null,
+    };
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), had],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    expect(cycle.momentum).toBeNull();
+    expect(cycle.motifMomentum).toBe('sans_remesure');
+    for (const jalon of ['J21', 'J42', 'J90'] as const) {
+      expect(cycle.jalons.find((j) => j.jalon === jalon)?.mesure).toBe(false);
+    }
+  });
+
   // ── [[D-397]] §2 : aucun momentum sans jour 0, même là où le repli en donnait un ──
   it('cycle courant sans diffusion : ses jalons restent lisibles, son momentum est retiré avec son motif (D-397)', () => {
     const tr = construireTrajectoire({

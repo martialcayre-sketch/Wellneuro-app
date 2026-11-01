@@ -173,6 +173,12 @@ export function construireHistoriqueEquilibre(
    * pas. Absent → les mesures se comptent depuis l'ancre, comme avant.
    */
   jourZeroMesures?: Date | null,
+  /**
+   * La règle de nouveauté du cycle courant ([[D-397]]) : seule une remesure
+   * rouvre un jalon (`predicatRemesure` de `momentumDuCycle.ts`). Absente :
+   * la règle historique ci-dessous, que gardent les cycles passés.
+   */
+  estNouveaute?: (reponse: ReponseBrute) => boolean,
 ): LectureDatee[] {
   // Filtre de validité en entrée : la règle de nouveauté (ci-dessous) ne doit
   // pas rouvrir un jalon sur l'arrivée d'une passation invalidée.
@@ -211,7 +217,9 @@ export function construireHistoriqueEquilibre(
     Object.values(BESOIN_SOURCES).flatMap((sources) => sources.map((s) => s.idQuestionnaire))
   );
   const datesReponsesRetenues = reponses
-    .filter((r) => idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
+    .filter((r) =>
+      estNouveaute ? estNouveaute(r) : idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null,
+    )
     .map((r) => r.dateReponse);
 
   const lectures: LectureDatee[] = [];

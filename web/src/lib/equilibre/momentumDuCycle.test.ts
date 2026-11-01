@@ -36,6 +36,14 @@ const passation = (date: Date, valeur: string, idQuestionnaire = 'Q_STR_02'): Re
 // HADS, versant dépressif (besoin 8).
 const hadD = (valeur: string) => Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, valeur]));
 
+// Passation partielle : un seul item. Le moteur n'en tire aucune couverture.
+const partielle = (date: Date, idQuestionnaire: 'Q_STR_02' | 'Q_NEU_11'): ReponseBrute => ({
+  idQuestionnaire,
+  dateReponse: date,
+  scoresJson: { rawAnswers: idQuestionnaire === 'Q_STR_02' ? { P1: '3' } : { D2: '1' } },
+  statutValidite: null,
+});
+
 const ancreT0 = { ancre: 'T0' as AncreCycle, date: ANCRE };
 const avantAncre = new Date(ANCRE.getTime() - 60_000);
 
@@ -94,6 +102,36 @@ describe('momentum du cycle courant — scalaire (D-397 §1-§3)', () => {
     // Une remesure du PSS ensuite forme la paire — le HADS entre alors au calcul.
     const resultat = calcul([...reponses, passation(apresZero(33), '3')]);
     expect(resultat).toMatchObject({ statut: 'disponible', arrivee: { date: apresZero(33) }, etiquetteArrivee: 'remesure' });
+  });
+
+  // Contre-revue Codex P1-1 : « mesuré » se juge par la couverture que le
+  // moteur tire de la passation, pas par la présence de `rawAnswers`.
+  it('une passation partielle, avant et après l’ancre, ne forme jamais « stable »', () => {
+    const reponses = [
+      passation(avantAncre, '1'),
+      partielle(new Date(ANCRE.getTime() - 120_000), 'Q_NEU_11'),
+      partielle(apresZero(33), 'Q_NEU_11'),
+    ];
+    expect(calcul(reponses)).toEqual({ statut: 'absent', motif: 'sans_remesure' });
+  });
+
+  it('une remesure partielle d’un questionnaire mesuré à l’ancre n’est pas une remesure', () => {
+    // Le HADS complet à l'ancre garde un indice lisible après le PSS partiel :
+    // l'ancien calcul y formait une paire, qui ne mesurait que la perte du PSS.
+    const hadAncre = passation(new Date(ANCRE.getTime() - 120_000), '1', 'Q_NEU_11');
+    expect(calcul([hadAncre, passation(avantAncre, '1'), partielle(apresZero(21), 'Q_STR_02')])).toEqual({
+      statut: 'absent',
+      motif: 'sans_remesure',
+    });
+  });
+
+  it('un questionnaire partiel à l’ancre puis complet ensuite n’est pas une remesure', () => {
+    const reponses = [
+      passation(avantAncre, '1'),
+      partielle(new Date(ANCRE.getTime() - 120_000), 'Q_NEU_11'),
+      passation(apresZero(21), '3', 'Q_NEU_11'),
+    ];
+    expect(calcul(reponses)).toEqual({ statut: 'absent', motif: 'sans_remesure' });
   });
 
   it('l’arrivée tombée dans la fenêtre d’un jalon porte son nom', () => {
@@ -168,6 +206,23 @@ describe('momentum du cycle courant — par besoin (D-397 §4)', () => {
     const lignes = momentum([passation(avantAncre, '1'), passation(apresZero(21), '1', 'Q_NEU_11')]);
     expect(ligne(lignes, 8).depart).toBeNull();
     expect(ligne(lignes, 8).lectures).toEqual([]);
+  });
+
+  it('une passation partielle n’ouvre aucune lecture de besoin, à l’ancre comme après', () => {
+    const reponses = [
+      passation(avantAncre, '1'),
+      partielle(new Date(ANCRE.getTime() - 120_000), 'Q_NEU_11'),
+      partielle(apresZero(21), 'Q_NEU_11'),
+      passation(apresZero(33), '3', 'Q_NEU_11'),
+      partielle(apresZero(50), 'Q_STR_02'),
+    ];
+    const lignes = momentum(reponses);
+    // Besoin 8 : partiel à l'ancre, donc non mesuré ; le HADS complet ensuite
+    // n'est pas une remesure.
+    expect(ligne(lignes, 8)).toMatchObject({ mesure: false, motifAbsence: 'sans_lecture_ancre', lectures: [] });
+    // Besoin 9 : le PSS partiel n'ouvre aucune lecture.
+    expect(ligne(lignes, 9)).toMatchObject({ mesure: false, motifAbsence: 'sans_remesure' });
+    expect(ligne(lignes, 9).lectures?.map(l => l.jalon)).toEqual(['T0']);
   });
 
   it('les bandes de bruit ne sont pas publiées : leur publication devra dire si elles valent pour les paires D-397', () => {

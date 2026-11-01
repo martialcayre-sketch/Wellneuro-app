@@ -3,8 +3,8 @@ import { BESOIN_SOURCES, ORDRE_JALONS_MESURE } from './constants';
 import { fenetreDuJalon } from '../protocol/fenetreJalon';
 import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
 import { calculerDeltaMomentum } from './momentum';
-import { calculerEquilibre } from './score';
-import type { AncreCycle, JalonMomentum, LectureDatee, TendanceMomentum } from './types';
+import { calculerCouvertureSource, calculerEquilibre } from './score';
+import type { AncreCycle, JalonMomentum, LectureDatee, ReponsesParQuestionnaire, TendanceMomentum } from './types';
 import type { MotifAbsenceMomentum } from './motifsMomentum';
 
 // LE MOMENTUM DU CYCLE COURANT, UN SEUL CALCUL ([[D-397]]).
@@ -27,6 +27,12 @@ import type { MotifAbsenceMomentum } from './motifsMomentum';
 //   passation d'un questionnaire absent du bilan d'ancre entre au calcul, mais
 //   ne forme pas la paire à elle seule — sinon l'écart mesurerait un besoin
 //   ajouté, pas un changement chez le patient.
+// - « MESURÉ », C'EST CE QUE LE MOTEUR EN TIRE (contre-revue Codex P1-1) : la
+//   présence de `rawAnswers` ne suffit pas. Une passation partielle dont le
+//   moteur ne tire aucune couverture n'est ni mesurée à l'ancre ni une
+//   remesure — sinon elle produirait une « stabilité » sans mesure (DC-24).
+//   Le grain est la source du mapping (questionnaire et sous-score), pas le
+//   questionnaire.
 //
 // Ni formule, ni seuil, ni `versionScore`, ni mapping ne changent ici : la
 // valeur se lit par `calculerEquilibre`, à la date de la passation retenue.
@@ -46,33 +52,62 @@ export type MomentumDuCycle =
   | { statut: 'absent'; motif: MotifAbsenceMomentum };
 
 /**
- * Les dates des passations exploitables que le moteur lit RÉELLEMENT :
- * statut exploitable, `rawAnswers` présent, questionnaire source d'un besoin.
- * Le même prédicat que la règle de nouveauté de `construireHistoriqueEquilibre`.
- * `idsSources` absent : les sources de tous les besoins.
+ * Les sources du mapping dont le moteur tire une couverture sur ces réponses,
+ * par clé `besoin:rang` dans `BESOIN_SOURCES`. `besoin` : un seul besoin.
  */
-export function datesPassationsSources(
-  brutes: ReponseBrute[],
-  idsSources: ReadonlySet<string> = new Set(
-    Object.values(BESOIN_SOURCES).flatMap(sources => sources.map(source => source.idQuestionnaire)),
-  ),
-): Date[] {
+function sourcesMesurees(reponses: ReponsesParQuestionnaire, besoin?: number): Set<string> {
+  const cles = new Set<string>();
+  for (const [cle, sources] of Object.entries(BESOIN_SOURCES)) {
+    if (besoin !== undefined && Number(cle) !== besoin) continue;
+    sources.forEach((source, rang) => {
+      if (source.idQuestionnaire in reponses && calculerCouvertureSource(source, reponses) !== null) {
+        cles.add(`${cle}:${rang}`);
+      }
+    });
+  }
+  return cles;
+}
+
+/**
+ * Les sources mesurées À L'ANCRE : celles dont le moteur tire une couverture
+ * de l'état des réponses connu à cette date — l'état même de la lecture
+ * d'ancre. Seules leurs passations ultérieures sont des remesures (arbitrage
+ * du 2026-10-31).
+ */
+export function sourcesMesureesAu(brutes: ReponseBrute[], date: Date): Set<string> {
+  return sourcesMesurees(construireReponsesParQuestionnaire(brutes, date));
+}
+
+/**
+ * Une passation est une remesure quand le moteur tire de ses propres réponses
+ * la couverture d'au moins une source déjà mesurée à l'ancre (de ce besoin,
+ * si `besoin` est donné). Le statut de validité se filtre en amont.
+ */
+export function estRemesure(reponse: ReponseBrute, mesureesAncre: ReadonlySet<string>, besoin?: number): boolean {
+  const rawAnswers = extraireRawAnswers(reponse.scoresJson);
+  if (!rawAnswers) return false;
+  for (const cle of sourcesMesurees({ [reponse.idQuestionnaire]: rawAnswers }, besoin)) {
+    if (mesureesAncre.has(cle)) return true;
+  }
+  return false;
+}
+
+/** Les dates des remesures exploitables (voir `estRemesure`). */
+export function datesRemesures(brutes: ReponseBrute[], mesureesAncre: ReadonlySet<string>, besoin?: number): Date[] {
   return filtrerPassationsExploitables(brutes)
-    .filter(r => idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
+    .filter(r => estRemesure(r, mesureesAncre, besoin))
     .map(r => r.dateReponse);
 }
 
 /**
- * Les sources exploitables À L'ANCRE : celles dont une passation exploitable
- * est connue à cette date. Seules leurs passations ultérieures sont des
- * remesures (arbitrage du 2026-10-31).
+ * La règle de nouveauté du cycle courant, à passer à
+ * `construireHistoriqueEquilibre` : ses points de jalon (courbe du cockpit,
+ * repère de cabinet) ne s'ouvrent que sur une remesure, comme le momentum
+ * (contre-revue Codex P1-3).
  */
-export function sourcesMesureesAu(brutes: ReponseBrute[], date: Date): Set<string> {
-  return new Set(
-    filtrerPassationsExploitables(brutes)
-      .filter(r => r.dateReponse <= date && extraireRawAnswers(r.scoresJson) !== null)
-      .map(r => r.idQuestionnaire),
-  );
+export function predicatRemesure(brutes: ReponseBrute[], dateAncre: Date): (reponse: ReponseBrute) => boolean {
+  const mesureesAncre = sourcesMesureesAu(brutes, dateAncre);
+  return reponse => estRemesure(reponse, mesureesAncre);
 }
 
 /**
@@ -120,10 +155,8 @@ export function calculerMomentumDuCycle(input: {
   const depart = lectureIndiceAu(input.reponses, input.ancre.date);
   if (!depart) return { statut: 'absent', motif: 'sans_lecture_ancre' };
 
-  const toutesSources = Object.values(BESOIN_SOURCES).flatMap(sources => sources.map(source => source.idQuestionnaire));
-  const connues = sourcesMesureesAu(input.reponses, input.ancre.date);
-  const remesurables = new Set(toutesSources.filter(id => connues.has(id)));
-  const dateArrivee = derniereDateApres(datesPassationsSources(input.reponses, remesurables), input.ancre.date, maintenant);
+  const mesureesAncre = sourcesMesureesAu(input.reponses, input.ancre.date);
+  const dateArrivee = derniereDateApres(datesRemesures(input.reponses, mesureesAncre), input.ancre.date, maintenant);
   const arrivee = dateArrivee ? lectureIndiceAu(input.reponses, dateArrivee) : null;
   const resultat = calculerDeltaMomentum(depart, arrivee);
   if (!arrivee || !resultat) return { statut: 'absent', motif: 'sans_remesure' };
