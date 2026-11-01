@@ -253,11 +253,15 @@ le dépôt n'en porte que les identifiants.
 (`QC_EXPLORATION_BESOIN2`), cinq populations, aucune hypothèse, 277 claims
 distincts en 334 paires fiche-claim ; `claimsSource` égale leur union. Les
 277 paires entrent au contrat de fraîcheur (`fiches_usage`, `false`) dès la
-structure écrite, signature ou non. Toute re-signature (B9 et B12, puis iode
+structure écrite, signature ou non, avec leur cas négatif (`N12`, une
+re-version d'un claim que seule la structure épingle — ajouté sur la
+contre-revue du lot). Toute re-signature (B9 et B12, puis iode
 et sélénium) rendra textes et libellés « à relire » ([[D-314]] §5, §8).
 
 - Conséquences : fragment `changelog.d/2026-11-01-d401-structure-fiches-usage.md` ;
-  fiche LOT-12 (arbitrages 29 à 40) ; journal F05.
+  fiche LOT-12 (arbitrages 29 à 40) ; journal F05. Routé : `portes_biologiques`
+  et `indications_assiettes` n'ont pas encore de cas négatif propre (constaté
+  le 2026-11-01, en tête du fichier négatif).
 
 ### D-400 — Table d'arrêt signée avec les grilles qu'elle cite (E64) ; un porteur pour chacune des trois dernières règles orphelines (E32) : BP-12a pour DC-11 et DC-45, un lot neuf du moteur d'orientation pour DC-36
 

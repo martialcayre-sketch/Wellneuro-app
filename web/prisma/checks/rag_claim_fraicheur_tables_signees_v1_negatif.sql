@@ -20,15 +20,16 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` À `N11` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- `N7` À `N12` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
 -- ([[D-053]]), priorités d'intervention ([[D-054]]), catalogue de conduites
 -- ([[D-224]], ajouté le jour où la table entre au contrat : une revue a constaté
--- que ses deux paires n'étaient exercées qu'à l'état SAIN), et registre des
+-- que ses deux paires n'étaient exercées qu'à l'état SAIN), registre des
 -- conflits de sources ([[D-103]], ajouté au lendemain : le même trou y était
--- ouvert depuis le 2026-08-24, et c'est en écrivant `N10` qu'il s'est vu).
--- **Chaque table signée a désormais son cas négatif**, et cette phrase est
--- vérifiable plutôt que rassurante : la liste des tables du contrat et celle des
--- cas `N7+` se comparent à l'œil, table par table.
+-- ouvert depuis le 2026-08-24, et c'est en écrivant `N10` qu'il s'est vu), et
+-- fiches d'usage ([[D-401]], ajouté sur la contre-revue du lot).
+-- La liste des tables du contrat et celle des cas `N7+` se comparent à l'œil,
+-- table par table — et la comparaison du 2026-11-01 dit que deux tables n'ont
+-- pas encore le leur : `portes_biologiques` et `indications_assiettes`.
 -- N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
@@ -37,11 +38,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les onze ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les douze ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les douze cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les treize cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui

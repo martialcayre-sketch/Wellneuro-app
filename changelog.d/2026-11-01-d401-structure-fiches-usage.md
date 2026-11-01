@@ -8,4 +8,5 @@
   rubriques, axes, claims) et ce qui attend la re-signature suivante (fer P7
   et P8, hypothèses).
 - Les 277 paires entrent au contrat de fraîcheur (`fiches_usage`, sans
-  exigence de `prescriptif`). Aucune migration ; rien n'est servi au patient.
+  exigence de `prescriptif`), avec leur cas négatif `N12`. Aucune migration ;
+  rien n'est servi au patient.
