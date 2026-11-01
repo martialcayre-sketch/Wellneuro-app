@@ -40,7 +40,9 @@ BP-07. `requiredAction` renvoie à cette décision ; la vigilance reste
 **§2 — Effet en service.** Au déploiement suivant, sans release-db (le
 registre n'est pas un chemin clinique) : les 69 claims VALIDE de `0062` et
 `0241` entrent dans le rayon « micronutrition » de la bibliothèque des
-compléments (carnet 10, sous `WN_C4_ENABLED`) ; ceux de
+compléments (carnet 10, sous `WN_C4_ENABLED`), comme candidats : une
+requête en sert au plus 24 par défaut, au-dessus d'une similarité de 0,5 ;
+ceux de
 `0358` (carnet 11) restent sans effet visible tant qu'aucun rayon ne vise
 ce carnet ; un claim REJETE n'est jamais servi.
 
