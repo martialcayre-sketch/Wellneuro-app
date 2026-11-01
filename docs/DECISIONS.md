@@ -188,14 +188,17 @@ MDC) des versions servies, une table d'équivalence entre instruments, une
 bande validée de l'indice de l'agenda du sommeil, la fidélité du PSQI dans la
 population du cabinet.
 
-### D-401 — F05 (BP-12a) : la structure des fiches d'usage du besoin 2 est écrite — une fiche par position d'expert signée des quatre dossiers clos, trente fiches ; ses claims, ses rubriques et ses axes suivent douze arbitrages du responsable (porte 23)
+### D-401 — F05 (BP-12a) : la structure des fiches d'usage du besoin 2 est écrite et signée — une fiche par position d'expert signée des quatre dossiers clos, trente fiches ; ses claims, ses rubriques et ses axes suivent douze arbitrages du responsable (porte 23)
 
 - Date : 2026-11-01
 - Statut : accepté — douze arbitrages du responsable rendus en session le
   2026-11-01, par questions à options (faits vérifiés, conséquence de chaque
-  réponse), tous sur l'option recommandée. Signature de la structure :
-  **à poser** — elle suit la déclaration du responsable sur la surface de
-  relecture ([[D-195]] §1-2), jamais l'outillage (§3).
+  réponse), tous sur l'option recommandée. Structure **signée le 2026-11-01**
+  (`dateValidation` 2026-11-01T16:25:47.000Z, `shaPerimetre` = l'empreinte
+  `f34eda4d…ba1d4`) : déclaration du responsable rendue en session après
+  lecture de la surface de relecture, aucune case d'axe corrigée, consignée
+  sur cette surface avant la frappe ; l'outil n'a fait que recopier
+  ([[D-195]] §1-3).
 - Domaine : clinique — structure signée des fiches d'usage
   (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`) ; contrat de fraîcheur
   des claims épinglés ; campagne bio-parcours, LOT-12 ; plan, fiche F05.

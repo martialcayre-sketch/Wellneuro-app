@@ -25,7 +25,7 @@ import {
 // libellés vivent en base, validés par acte (D-314 §3), et ne touchent jamais
 // le dépôt, qui est public ([[D-251]] §4).
 //
-// ÉCRITE LE 2026-11-01, VERROU ÉTEINT JUSQU'À LA SIGNATURE. Écrire la structure
+// ÉCRITE ET SIGNÉE LE 2026-11-01 ([[D-401]]). Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
 // nommée par lui, arbitrage 7). Matière : les positions d'expert signées des
@@ -907,8 +907,11 @@ export type FichesUsageMetadata = {
 
 export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
   version: 'fiches-usage-besoin2-v1',
-  validationExterne: false,
-  dateValidation: null,
+  // Signée le 2026-11-01 sur la déclaration du responsable, rendue après
+  // lecture de la surface de signature, aucune case corrigée ([[D-401]],
+  // [[D-195]] §1) : la date et le sha ci-dessous en sont la recopie.
+  validationExterne: true,
+  dateValidation: '2026-11-01T16:25:47.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0031-052', versionClaim: 'v1.0' },
@@ -1188,7 +1191,7 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
     { claimId: 'WN-CL-0573-004', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0573-005', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: null,
+  shaPerimetre: 'f34eda4d16b480bb32a78cf6431f6a9a884293f84d0c3f51b0ed6e5d729ba1d4',
 };
 
 /**
