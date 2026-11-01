@@ -1,7 +1,8 @@
 // La structure signée que les constats consomment ([[D-314]], [[D-331]] §1,
-// §2) : ses hypothèses, son empreinte, sa signature. Livrée vide, verrou
-// éteint : tant qu'elle n'est pas signée, aucune pose n'est possible
-// (`structureSignee()` rend `false`). Un seul point de lecture, que les bancs
+// §2) : ses hypothèses, son empreinte, sa signature. Signée le 2026-11-01
+// ([[D-401]]) sans hypothèse : aucune pose n'est possible tant que la
+// re-signature suivante n'en déclare pas ; non signée (`structureSignee()` rend
+// `false`), aucune pose non plus. Un seul point de lecture, que les bancs
 // remplacent par une structure synthétique.
 
 import {

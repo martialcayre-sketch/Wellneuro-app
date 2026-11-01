@@ -34,24 +34,35 @@ const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
   hypotheses: ['HYP_SYNTH'],
   populations: ['POP_SYNTH'],
 });
-/** Un verrou posé, daté — la structure du dépôt n'épingle aucun claim. */
+/** Un verrou posé, daté, sur les claims de la structure du dépôt — l'empreinte se passe à part. */
 const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, dateValidation: '2026-10-16T09:00:00.000Z' };
 
-// La structure est livrée VIDE et verrou ÉTEINT (porte 23 : ses contenus sont
-// ceux du responsable). Ce banc épingle l'empreinte : toute fiche ajoutée la
-// change, et la sortie est de RE-SIGNER, jamais de mettre le littéral à jour en
-// silence. Identifiants SYNTHÉTIQUES dans les cas ci-dessous.
+// La structure est ÉCRITE et SIGNÉE (2026-11-01, D-401) : verrou posé sur
+// l'empreinte relue par le responsable (porte 23 : ses contenus sont les siens). Ce banc
+// épingle l'empreinte : toute fiche ajoutée ou retouchée la change, et la sortie
+// est de RE-SIGNER, jamais de mettre le littéral à jour en silence. Identifiants
+// SYNTHÉTIQUES dans les cas ci-dessous.
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
-  it('épingle l’empreinte de la structure livrée', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('d1b994dd00ef9c9fbbc36de4f64763b72e1e6b7e4abbd4fd375f2ede524b5369');
+  it('épingle l’empreinte de la structure écrite', () => {
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('f34eda4d16b480bb32a78cf6431f6a9a884293f84d0c3f51b0ed6e5d729ba1d4');
   });
 
-  it('est livrée vide, verrou éteint, sans signature : rien ne se valide ni ne se sert', () => {
-    expect(FICHES_USAGE_BESOIN2_V1.fiches).toEqual([]);
-    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(false);
-    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBeNull();
-    expect(structureSignee()).toBe(false);
+  it('est signée le 2026-11-01 (D-401) : verrou posé sur l’empreinte relue', () => {
+    expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(30);
+    expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual([]);
+    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(true);
+    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-01T16:25:47.000Z');
+    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(
+      'f34eda4d16b480bb32a78cf6431f6a9a884293f84d0c3f51b0ed6e5d729ba1d4',
+    );
+    expect(structureSignee()).toBe(true);
+  });
+
+  it('claimsSource est exactement l’union des claims des fiches de la structure', () => {
+    const cle = (c: { claimId: string; versionClaim: string }) => `${c.claimId}@${c.versionClaim}`;
+    const cites = [...new Set(FICHES_USAGE_BESOIN2_V1.fiches.flatMap(f => f.claims.map(cle)))].sort();
+    expect(FICHES_USAGE_BESOIN2_METADATA.claimsSource.map(cle).sort()).toEqual(cites);
   });
 
   it('une signature ne vaut que sur le périmètre relu : retouchée après signature, la structure ne l’est plus', () => {
