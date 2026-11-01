@@ -54,6 +54,90 @@ rattache le carnet 11 à aucun rayon, ne change aucune autre quarantaine
 
 **Effet sur le plan.** D/20 soldée.
 
+### D-404 — Audit 3, lot Q3 bis : un questionnaire échu non déverrouillé ne se rappelle pas ; le Fil dit un rappel non parti ; un accès rétabli passe la garde d'une heure ; le rendu d'un bilan qui échoue se trace
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01 sur les restes
+  du lot Q3 (handoff `2026-11-01-1150-audit3-q3-rafales-courses.md`),
+  textes validés mot pour mot. Amende [[D-398]] §3 (§3 ci-dessous) ; les
+  autres paragraphes précisent [[D-399]] §3 et [[D-398]] §1 (Q4).
+- Domaine : rappel de questionnaire (`relanceAssignation.ts`, route
+  `praticien/assignations/relance`, Fil) ; garde d'une heure sur l'e-mail
+  d'accès (`correspondance/reservation.ts`, `consultation/email.ts`, route
+  `praticien/token`) ; envoi et renvoi d'un bilan (route `praticien/booklet`).
+- Ne touche pas : `schema.prisma`, aucune migration ; la garde de l'e-mail
+  d'objectif ; la route `praticien/consultations`, dont le rétablissement
+  confirmé reste sous la garde (l'arbitrage nomme la route `praticien/token`
+  seule, limite au §3) ; l'aperçu du bilan (`GET`) ; Q2.
+
+**§1 — Un questionnaire échu non déverrouillé ne se rappelle pas.** Le
+rappel n'est permis qu'après l'échéance ; or, passé le jour dit, le portail
+affiche « Expiré » et la soumission rend 410 (`patient/submit`), sauf
+déverrouillage du praticien (`statut_reponses = deverrouille`). Rappeler
+envoyait donc le patient vers une porte fermée. `deciderRelanceAssignation`
+refuse désormais, après le contrôle d'échéance, toute assignation dont les
+réponses ne sont pas déverrouillées (`echeance_expiree`, 409) : « Ce
+questionnaire a expiré : déverrouillez-le avant de le rappeler. » Le rappel
+groupé de [[D-399]] §3 ne couvre que les déverrouillées. La route n'écrit
+toujours rien au dossier : le refus ne déverrouille rien.
+
+**§2 — Le Fil dit un rappel non parti.** La route rend 200 avec le statut
+de la trace. Le Fil affichait « Rappel envoyé. » sur tout 200. Il dit
+désormais, sur `Erreur` : « Rappel non parti : l'envoi a échoué. Vous pouvez
+réessayer. » ; sur `Non_envoye` (messagerie absente, seul cas de ce statut
+sur cette route) : « Rappel non parti : l'envoi d'e-mails n'est pas
+configuré. » « Rappel envoyé. » ne se dit plus que de `Envoye`.
+
+**§3 — Amendement de [[D-398]] §3 : un accès rétabli passe la garde.** Après
+une révocation, le lien magique de l'e-mail d'accès précédent est mort
+([[D-128]]) ; refuser l'e-mail du rétablissement dans l'heure laissait le
+patient devant la page de connexion. Le rétablissement **confirmé**
+(`retablirAcces: true`, route `praticien/token`) passe la garde : la fenêtre
+ne compte que les e-mails partis depuis la révocation levée
+(`sessions_invalides_avant`, posé par `DELETE`, seul écrivain de la
+révocation ; à défaut, l'instant du rétablissement). Cet instant précède le
+rétablissement et les envois concurrents de toute la durée d'un geste
+humain : un écart d'horloge entre conteneurs ne fait pas sortir de la
+fenêtre une réservation concurrente (revue Copilot de #1804, qui ancrait la
+fenêtre sur l'instant du rétablissement). La levée de la révocation devient
+une bascule atomique (`updateMany … where accessTokenRevoked = true`) :
+seule la requête qui la lève porte cet instant. Une seconde confirmation
+simultanée reste sous la garde, et les e-mails partis depuis la révocation
+comptent : un double clic reste refusé. Partout ailleurs, la garde tient, et un refus n'est
+jamais rejoué. **Deux limites connues** (revue `wn-reviewer`) : l'instant
+ne passe que dans la requête du rétablissement — si son e-mail échoue, le
+nouvel essai (`resend`, accès déjà rétabli) retombe sous la fenêtre pleine
+et peut rendre « déjà envoyé » pendant au plus une heure ; et la création
+d'une consultation qui rétablit l'accès (`praticien/consultations`) reste
+sous la garde. Appliquer la même borne à tout envoi d'accès qui suit une
+révocation couvrirait les deux ; ce serait étendre l'arbitrage, donc une
+autre décision. Écartés : lever la garde sans borne au rétablissement (deux
+confirmations simultanées partaient toutes deux) ; borner la fenêtre à
+l'instant du rétablissement (sensible à l'écart d'horloge) ; une garde par adresse
+(une heure d'attente au plus) ; le lien magique orphelin d'un accès refusé,
+déjà consigné ([[D-399]] §4).
+
+**§4 — Le rendu d'un bilan qui échoue se trace.** `buildBookletHTML` levait
+avant tout bloc qui consigne : un 500 sans trace, septième chemin muet après
+les six de [[D-398]] §1 (Q4). Son exception écrit désormais l'audit
+`booklet_envois` et la ligne du journal en `Erreur`, opération
+`Preparation`, sous un motif fixe — « Rendu du bilan impossible. » —, jamais
+le message de l'exception, qui pourrait citer un fragment de la synthèse ;
+le `catch` général le journalise et rend la main (500, message inchangé).
+La garde du dossier clos passe désormais avant le rendu : un dossier clos
+reçoit son refus sans la trace d'une tentative refusée (revue PR-Agent de
+#1804). Rien n'est parti, rien n'est réservé : la préparation précède la
+réservation du premier envoi.
+
+**§5 — Preuve.** Bancs unitaires et de route, et banc sur base réelle
+`correspondance/reservation.pg.test.ts` (CI). Chacun rougit sous mutation :
+contrôle du déverrouillage retiré (4 bancs) ; branches `Erreur` et
+`Non_envoye` du Fil retirées (2 bancs) ; borne ignorée par la garde (banc
+base réelle) ; borne prise au rétablissement plutôt qu'à la révocation
+(banc de route) ; bascule non atomique (banc de route — le banc base réelle
+reste vert, la borne du §3 protégeant déjà le double clic) ; trace du rendu
+retirée (banc de route).
+
 ### D-403 — Porte 4 : poids égal motivé, bornes et planchers de l'indice du sommeil déclarés (sources de contexte là où elles existent), palier « bien couvert » repère du cabinet, enquête alimentaire incomplète non calculée, table des quantités aux seuls repères officiels
 
 - Date : 2026-11-01

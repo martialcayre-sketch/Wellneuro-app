@@ -78,6 +78,8 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
   let MARQUE_ENVOI_EN_COURS: typeof import('./reservation').MARQUE_ENVOI_EN_COURS;
   let relance: typeof import('@/app/api/praticien/assignations/relance/route').POST;
   let booklet: typeof import('@/app/api/praticien/booklet/route').POST;
+  let acces: typeof import('@/app/api/praticien/token/route').POST;
+  let revoquer: typeof import('@/app/api/praticien/token/route').DELETE;
   let observateur: pg.Client;
   let numero = 0;
 
@@ -93,12 +95,14 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     return idPatient;
   }
 
-  async function assignationEnRetard(idPatient: string, rang: number): Promise<string> {
+  // Échue, et DÉVERROUILLÉE par défaut : seule une échue déverrouillée se
+  // rappelle ([[D-404]]).
+  async function assignationEnRetard(idPatient: string, rang: number, statutReponses = 'deverrouille'): Promise<string> {
     const idAssignation = `ASG_BANC_RES_${RUN}_${numero}_${rang}`;
     await observateur.query(
-      `INSERT INTO assignations (id, id_assignation, id_patient, email_patient, id_questionnaire, titre, date_limite, updated_at)
-       VALUES ($1, $2, $3, 'banc@example.test', $4, 'Questionnaire banc', '2026-01-01', CURRENT_TIMESTAMP)`,
-      [idAssignation.toLowerCase(), idAssignation, idPatient, `Q_BANC_${rang}`],
+      `INSERT INTO assignations (id, id_assignation, id_patient, email_patient, id_questionnaire, titre, date_limite, statut_reponses, updated_at)
+       VALUES ($1, $2, $3, 'banc@example.test', $4, 'Questionnaire banc', '2026-01-01', $5, CURRENT_TIMESTAMP)`,
+      [idAssignation.toLowerCase(), idAssignation, idPatient, `Q_BANC_${rang}`, statutReponses],
     );
     return idAssignation;
   }
@@ -163,6 +167,7 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     ({ reserverSousGarde, FILTRE_ENVOIS_PARTIS, MOTIFS_GARDE_ENVOI, MARQUE_ENVOI_EN_COURS } = await import('./reservation'));
     ({ POST: relance } = await import('@/app/api/praticien/assignations/relance/route'));
     ({ POST: booklet } = await import('@/app/api/praticien/booklet/route'));
+    ({ POST: acces, DELETE: revoquer } = await import('@/app/api/praticien/token/route'));
   });
 
   afterAll(async () => {
@@ -197,6 +202,40 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
       new Date(Date.now() + 61 * 60_000),
     );
     expect(plusTard.refusee).toBe(false);
+  });
+
+  it('garde : un accès révoqué puis rétabli dans l’heure repart ; ailleurs la garde tient ([[D-404]])', async () => {
+    const idPatient = await dossier();
+    const url = 'http://localhost/api/praticien/token';
+    const revoquerAcces = async () => {
+      const res = await revoquer(new Request(`${url}?idPatient=${idPatient}`, { method: 'DELETE' }));
+      expect(res.status).toBe(200);
+    };
+
+    await expect(sendPortailLinkEmail('banc@example.test', 'Michel', idPatient)).resolves.toBe('Envoye');
+    await revoquerAcces();
+
+    // Le rétablissement confirmé passe la garde : le lien d'avant est mort.
+    const retabli = await (await acces(requete(url, { idPatient, action: 'resend', retablirAcces: true }))).json();
+    expect(retabli).toMatchObject({ success: true, envoi: 'envoye' });
+    // Sans révocation à lever, la garde tient.
+    const renvoi = await (await acces(requete(url, { idPatient, action: 'resend' }))).json();
+    expect(renvoi).toMatchObject({ success: true, envoi: 'deja_envoye' });
+    expect(sendMail).toHaveBeenCalledTimes(2);
+
+    // Deux confirmations simultanées : une seule lève la révocation, et
+    // l'autre reste sous la garde.
+    await revoquerAcces();
+    const doubles = valeurs(await croisees(`envoi_patient:acces_portail:${idPatient}`, [
+      () => acces(requete(url, { idPatient, action: 'resend', retablirAcces: true })),
+      () => acces(requete(url, { idPatient, action: 'resend', retablirAcces: true })),
+    ]));
+    const envois = await Promise.all(doubles.map(async r => (await r.json()).envoi));
+    expect(envois.sort()).toEqual(['deja_envoye', 'envoye']);
+    expect(sendMail).toHaveBeenCalledTimes(3);
+    expect((await lignesJournal(idPatient, 'acces_portail')).map(l => l.statut).sort()).toEqual([
+      'Envoye', 'Envoye', 'Envoye', 'Non_envoye', 'Non_envoye',
+    ]);
   });
 
   it('garde : un envoi en échec ne compte pas — le praticien peut réessayer tout de suite', async () => {
@@ -241,6 +280,29 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
       () => relance(requete(url, { idAssignation: a })),
     ]));
     expect(reponses.map(r => r.status).sort()).toEqual([200, 429]);
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it('rappel : une échue non déverrouillée est refusée, et le groupe la laisse de côté ([[D-404]])', async () => {
+    const idPatient = await dossier();
+    const ouverte = await assignationEnRetard(idPatient, 1);
+    const expiree = await assignationEnRetard(idPatient, 2, 'non_rempli');
+    const url = 'http://localhost/api/praticien/assignations/relance';
+
+    const refus = await relance(requete(url, { idAssignation: expiree }));
+    expect(refus.status).toBe(409);
+    expect(await refus.json()).toMatchObject({ reason: 'echeance_expiree' });
+    expect(await lignesJournal(idPatient, 'relance_questionnaire')).toEqual([]);
+
+    const servie = await relance(requete(url, { idAssignation: ouverte }));
+    expect(await servie.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 1 });
+    expect((await lignesJournal(idPatient, 'relance_questionnaire')).map(l => l.reference_id)).toEqual([ouverte]);
+    // La route n'écrit rien au dossier : l'expirée reste fermée.
+    const { rows } = await observateur.query(
+      'SELECT statut_reponses FROM assignations WHERE id_assignation = $1',
+      [expiree],
+    );
+    expect(rows[0].statut_reponses).toBe('non_rempli');
     expect(sendMail).toHaveBeenCalledTimes(1);
   });
 

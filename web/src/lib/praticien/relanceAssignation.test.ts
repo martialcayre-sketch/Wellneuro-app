@@ -13,6 +13,7 @@ const MS_PAR_JOUR = 24 * 60 * 60 * 1000;
 function entree(surcharge: Partial<EntreeRelanceAssignation> = {}): EntreeRelanceAssignation {
   return {
     statut: 'En attente',
+    statutReponses: 'deverrouille',
     dateLimite: LE_20,
     envoisPrecedents: [],
     maintenant: new Date('2026-03-25T09:00:00'),
@@ -59,6 +60,25 @@ describe('deciderRelanceAssignation', () => {
 
     expect(deciderRelanceAssignation(entree({ maintenant: new Date('2026-03-21T00:00:00') })))
       .toEqual({ ok: true });
+  });
+
+  // ÉCHUE = EXPIRÉE, SAUF DÉVERROUILLAGE ([[D-404]]) : passé le jour dit, la
+  // soumission rend 410. Rappeler enverrait le patient vers une porte fermée.
+  it('refuse une échéance passée tant que le questionnaire n’est pas déverrouillé', () => {
+    for (const statutReponses of ['non_rempli', 'verrouille', 'modification_demandee']) {
+      expect(deciderRelanceAssignation(entree({ statutReponses })))
+        .toEqual({ ok: false, raison: 'echeance_expiree', possibleLe: null });
+    }
+    // Avant le terme, le refus reste celui de l'échéance : rien n'a expiré.
+    expect(deciderRelanceAssignation(entree({
+      statutReponses: 'non_rempli',
+      maintenant: new Date('2026-03-20T12:00:00'),
+    }))).toMatchObject({ raison: 'echeance_non_depassee' });
+    // L'expiration prime sur la cadence : la raison à lever est le verrou.
+    expect(deciderRelanceAssignation(entree({
+      statutReponses: 'non_rempli',
+      envoisPrecedents: [{ enregistreLe: new Date('2026-03-25T08:00:00') }],
+    }))).toMatchObject({ raison: 'echeance_expiree' });
   });
 
   it('tient la cadence entre deux rappels, et dit quand le prochain sera possible', () => {
