@@ -168,9 +168,17 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
       sessionsInvalidesAvant: new Date('2026-07-21T10:00:00.000Z'),
     });
 
+    // La levée réussit : sans valeur de retour, la déstructuration de
+    // `{ count }` lèverait et la route rendrait `success: false` — les
+    // assertions ci-dessous resteraient vertes sans rien prouver (revue
+    // Copilot de #1804).
+    prisma.patient.updateMany.mockResolvedValueOnce({ count: 1 });
+    vi.mocked(sendPortailLinkEmail).mockResolvedValueOnce('Envoye');
+
     // L'accord de rétablissement est désormais requis : sans lui la route
     // refuse en 409 et n'écrit rien — le banc mesurerait alors une absence.
-    await POST(postRequest({ idPatient: 'PAT_1', action: 'issue', retablirAcces: true }));
+    const res = await POST(postRequest({ idPatient: 'PAT_1', action: 'issue', retablirAcces: true }));
+    expect((await res.json()).success).toBe(true);
 
     // La contre-épreuve d'existence d'abord : sans elle, une route qui
     // n'écrirait rien rendrait la boucle vide et le test menteur.
@@ -343,14 +351,30 @@ describe('POST /api/praticien/token — rétablissement d’accès', () => {
   });
 
   // [[D-404]] : le rétablissement confirmé passe la garde d'une heure — la
-  // route transmet l'instant de la levée, et la garde ne compte que depuis.
-  it('renvoi confirmé : l’instant du rétablissement voyage jusqu’à la garde', async () => {
+  // route transmet l'instant de la révocation levée, et la garde ne compte
+  // que depuis.
+  it('renvoi confirmé : l’instant de la révocation voyage jusqu’à la garde', async () => {
+    const revoqueLe = new Date('2026-11-01T09:00:00.000Z');
+    prisma.patient.findUnique.mockResolvedValueOnce({
+      idPatient: 'PAT_1',
+      email: 'sophie.nicola@example.test',
+      prenom: 'Sophie',
+      praticienEmail: 'p@wellneuro.fr',
+      actif: true,
+      accessTokenRevoked: true,
+      sessionsInvalidesAvant: revoqueLe,
+    });
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: true }));
+    expect(vi.mocked(sendPortailLinkEmail).mock.calls[0][5]).toEqual(revoqueLe);
+  });
+
+  it('révocation sans date persistée : l’instant du rétablissement la remplace', async () => {
     const avant = Date.now();
     await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: true }));
-    const retabliLe = vi.mocked(sendPortailLinkEmail).mock.calls[0][5];
-    expect(retabliLe).toBeInstanceOf(Date);
-    expect(retabliLe!.getTime()).toBeGreaterThanOrEqual(avant);
-    expect(retabliLe!.getTime()).toBeLessThanOrEqual(Date.now());
+    const depuis = vi.mocked(sendPortailLinkEmail).mock.calls[0][5];
+    expect(depuis).toBeInstanceOf(Date);
+    expect(depuis!.getTime()).toBeGreaterThanOrEqual(avant);
+    expect(depuis!.getTime()).toBeLessThanOrEqual(Date.now());
   });
 
   // Bascule atomique : deux confirmations simultanées ne rétablissent qu'une

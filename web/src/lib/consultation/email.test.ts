@@ -186,12 +186,12 @@ describe('garde d’une heure — accès et objectif ([[D-398]] §3)', () => {
   });
 
   // [[D-404]] : un rétablissement d'accès confirmé borne la fenêtre de la
-  // garde à son instant. Seul l'e-mail d'accès le porte.
-  it('l’instant d’un rétablissement confirmé est transmis à la garde', async () => {
-    const retabliLe = new Date('2026-11-01T10:00:00Z');
-    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', undefined, undefined, retabliLe);
+  // garde à l'instant de la révocation levée. Seul l'e-mail d'accès le porte.
+  it('l’instant de la révocation levée est transmis à la garde', async () => {
+    const revoqueLe = new Date('2026-11-01T10:00:00Z');
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', undefined, undefined, revoqueLe);
     expect(reserverSousGarde).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'acces_portail' }), expect.any(Date), retabliLe,
+      expect.objectContaining({ type: 'acces_portail' }), expect.any(Date), revoqueLe,
     );
   });
 

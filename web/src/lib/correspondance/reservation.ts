@@ -122,8 +122,8 @@ export async function reserverSousGarde(
   entree: { idPatient: string; type: TypeSousGarde; objet: string },
   maintenant: Date = new Date(),
   /** Rétablissement d'accès confirmé ([[D-404]]) : la fenêtre ne remonte pas
-   *  avant lui. Les liens des e-mails antérieurs sont morts (révocation,
-   *  [[D-128]]) ; ceux partis depuis comptent, et un double clic reste refusé. */
+   *  avant la révocation levée. Les liens des e-mails antérieurs sont morts
+   *  ([[D-128]]) ; ceux partis depuis comptent, et un double clic reste refusé. */
   depuis?: Date,
 ): Promise<{ id: string; refusee: boolean }> {
   const prisma = await clientPrisma();

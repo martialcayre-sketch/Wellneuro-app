@@ -215,10 +215,10 @@ export async function sendPortailLinkEmail(
    * même sujet, même type journalisé. C'est ce qui rend le lot inerte drapeau
    * éteint — le seul état où le lien mènerait à un 404 nu. */
   lienMagique?: string,
-  /** Instant d'un rétablissement d'accès confirmé ([[D-404]]) : la garde
-   * d'une heure ne compte que les e-mails partis depuis. Absent partout
-   * ailleurs, où la garde tient. */
-  retabliLe?: Date,
+  /** Rétablissement d'accès confirmé ([[D-404]]) : l'instant de la
+   * révocation levée. La garde d'une heure ne compte que les e-mails partis
+   * depuis. Absent partout ailleurs, où la garde tient. */
+  revoqueLe?: Date,
 ): Promise<StatutEnvoiAcces> {
   const smtpUrl = process.env.SMTP_URL;
   const connexion = buildGoogleConnexionUrl();
@@ -226,7 +226,7 @@ export async function sendPortailLinkEmail(
     idPatient,
     type: TYPES_CORRESPONDANCE_PATIENT.accesPortail,
     objet: 'Accès à l’espace patient',
-    gardeDepuis: retabliLe,
+    gardeDepuis: revoqueLe,
     envoyer: async () => {
       if (!smtpUrl) return;
       const transport = creerTransportSmtp(smtpUrl);

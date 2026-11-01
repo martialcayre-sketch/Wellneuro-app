@@ -26,12 +26,14 @@ Les quatre restes du lot Q3 (#1798), tranchés par le responsable le
     `statut_reponses = deverrouille` ; le groupe de D-399 §3 ne couvre que
     les déverrouillées ;
   - §2 : textes du Fil sur `Erreur` et `Non_envoye` ;
-  - §3 : la garde ne compte que les e-mails partis depuis l'instant du
-    rétablissement (paramètre `depuis` de `reserverSousGarde`) ; levée de
-    révocation en `updateMany … accessTokenRevoked = true`, seule la requête
-    qui lève porte l'instant ;
-  - §4 : trace `Erreur`/`Preparation` (audit + journal), puis le `catch`
-    général (500, message inchangé).
+  - §3 : la garde ne compte que les e-mails partis depuis la révocation
+    levée (`sessionsInvalidesAvant`, à défaut l'instant du rétablissement ;
+    paramètre `depuis` de `reserverSousGarde`) ; levée de révocation en
+    `updateMany … accessTokenRevoked = true`, seule la requête qui lève
+    porte l'instant ;
+  - §4 : trace `Erreur`/`Preparation` (audit + journal) sous le motif fixe
+    « Rendu du bilan impossible. », puis le `catch` général (500, message
+    inchangé) ; la garde du dossier clos passe avant le rendu.
 - Textes validés mot pour mot par le responsable :
   - « Ce questionnaire a expiré : déverrouillez-le avant de le rappeler. »
   - « Rappel non parti : l’envoi a échoué. Vous pouvez réessayer. »
@@ -46,11 +48,12 @@ Les quatre restes du lot Q3 (#1798), tranchés par le responsable le
   lu, message du refus.
 - `components/fil/FilDuJour.tsx` (+ test) — deux textes.
 - `lib/correspondance/reservation.ts` — `depuis` borne la fenêtre.
-- `lib/consultation/email.ts` (+ test) — `retabliLe`, sixième argument de
+- `lib/consultation/email.ts` (+ test) — `revoqueLe`, sixième argument de
   `sendPortailLinkEmail`, transmis à la garde.
 - `api/praticien/token/route.ts` (+ test) — bascule atomique, instant
   transmis.
-- `api/praticien/booklet/route.ts` (+ test) — rendu tracé. **Fichier en
+- `api/praticien/booklet/route.ts` (+ test) — rendu tracé, garde du
+  dossier clos remontée avant le rendu. **Fichier en
   CRLF** : l'éditer en préservant les fins de ligne (un premier essai les
   avait normalisées, rétabli depuis Git).
 - `lib/correspondance/reservation.pg.test.ts` — deux bancs neufs (échue non
@@ -81,6 +84,22 @@ Les quatre restes du lot Q3 (#1798), tranchés par le responsable le
   §3). Routés : voir problèmes ouverts. Écarté : apostrophes ASCII dans
   D-404 et le changelog (le code porte les textes typographiques, comme
   D-399). Après corrections : T1 complet code 0.
+- PR #1804, tête e737039d : CI code 0. CodeRabbit en quota épuisé ;
+  PR-Agent (run sur la tête) et Copilot :
+  - Copilot, horloge (élevé) : corrigé — la borne passe de l'instant du
+    rétablissement à celui de la révocation persisté, qui précède les
+    envois concurrents de toute la durée d'un geste humain. Prémisse en
+    partie inexacte : `enregistre_le` est posé par Prisma côté client, pas
+    par PostgreSQL ; l'écart entre conteneurs reste, et la nouvelle borne
+    le neutralise. Mutation (borne au rétablissement) : banc de route rouge ;
+  - Copilot, banc vacant (moyen) : corrigé — `updateMany` rend `{ count: 1 }`
+    et la réponse est vérifiée `success: true` ;
+  - PR-Agent, trace avant la garde de clôture : corrigé — garde remontée
+    avant le rendu, banc neuf (409, aucune trace) ;
+  - PR-Agent, message brut persisté : corrigé — motif fixe « Rendu du bilan
+    impossible. » (texte interne, non arbitré, à signaler au responsable).
+  - Après ces corrections : T1 complet code 0, puis T2 `--fast` code 0
+    (Vitest : 15 533 passés ; E2E : 303 passés).
 
 ## Problèmes ouverts
 

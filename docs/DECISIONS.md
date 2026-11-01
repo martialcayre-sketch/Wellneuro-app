@@ -45,21 +45,27 @@ une révocation, le lien magique de l'e-mail d'accès précédent est mort
 ([[D-128]]) ; refuser l'e-mail du rétablissement dans l'heure laissait le
 patient devant la page de connexion. Le rétablissement **confirmé**
 (`retablirAcces: true`, route `praticien/token`) passe la garde : la fenêtre
-ne compte que les e-mails partis depuis l'instant du rétablissement. La
-levée de la révocation devient une bascule atomique
-(`updateMany … where accessTokenRevoked = true`) : seule la requête qui la
-lève porte cet instant. Une seconde confirmation simultanée reste sous la
-garde, et les e-mails partis depuis le rétablissement comptent : un double
-clic reste refusé. Partout ailleurs, la garde tient, et un refus n'est
+ne compte que les e-mails partis depuis la révocation levée
+(`sessions_invalides_avant`, posé par `DELETE`, seul écrivain de la
+révocation ; à défaut, l'instant du rétablissement). Cet instant précède le
+rétablissement et les envois concurrents de toute la durée d'un geste
+humain : un écart d'horloge entre conteneurs ne fait pas sortir de la
+fenêtre une réservation concurrente (revue Copilot de #1804, qui ancrait la
+fenêtre sur l'instant du rétablissement). La levée de la révocation devient
+une bascule atomique (`updateMany … where accessTokenRevoked = true`) :
+seule la requête qui la lève porte cet instant. Une seconde confirmation
+simultanée reste sous la garde, et les e-mails partis depuis la révocation
+comptent : un double clic reste refusé. Partout ailleurs, la garde tient, et un refus n'est
 jamais rejoué. **Deux limites connues** (revue `wn-reviewer`) : l'instant
-ne vit que dans la requête du rétablissement — si son e-mail échoue, le
+ne passe que dans la requête du rétablissement — si son e-mail échoue, le
 nouvel essai (`resend`, accès déjà rétabli) retombe sous la fenêtre pleine
 et peut rendre « déjà envoyé » pendant au plus une heure ; et la création
 d'une consultation qui rétablit l'accès (`praticien/consultations`) reste
-sous la garde. Borner la fenêtre par l'instant de révocation persisté
-(`sessions_invalides_avant`) couvrirait les deux ; ce serait étendre
-l'arbitrage, donc une autre décision. Écartés : lever la garde sans borne au rétablissement (deux
-confirmations simultanées partaient toutes deux) ; une garde par adresse
+sous la garde. Appliquer la même borne à tout envoi d'accès qui suit une
+révocation couvrirait les deux ; ce serait étendre l'arbitrage, donc une
+autre décision. Écartés : lever la garde sans borne au rétablissement (deux
+confirmations simultanées partaient toutes deux) ; borner la fenêtre à
+l'instant du rétablissement (sensible à l'écart d'horloge) ; une garde par adresse
 (une heure d'attente au plus) ; le lien magique orphelin d'un accès refusé,
 déjà consigné ([[D-399]] §4).
 
@@ -67,17 +73,22 @@ déjà consigné ([[D-399]] §4).
 avant tout bloc qui consigne : un 500 sans trace, septième chemin muet après
 les six de [[D-398]] §1 (Q4). Son exception écrit désormais l'audit
 `booklet_envois` et la ligne du journal en `Erreur`, opération
-`Preparation`, puis le `catch` général rend la main (500, message
-inchangé). Rien n'est parti, rien n'est réservé : la préparation précède la
+`Preparation`, sous un motif fixe — « Rendu du bilan impossible. » —, jamais
+le message de l'exception, qui pourrait citer un fragment de la synthèse ;
+le `catch` général le journalise et rend la main (500, message inchangé).
+La garde du dossier clos passe désormais avant le rendu : un dossier clos
+reçoit son refus sans la trace d'une tentative refusée (revue PR-Agent de
+#1804). Rien n'est parti, rien n'est réservé : la préparation précède la
 réservation du premier envoi.
 
 **§5 — Preuve.** Bancs unitaires et de route, et banc sur base réelle
 `correspondance/reservation.pg.test.ts` (CI). Chacun rougit sous mutation :
 contrôle du déverrouillage retiré (4 bancs) ; branches `Erreur` et
-`Non_envoye` du Fil retirées (2 bancs) ; borne du rétablissement ignorée
-par la garde (banc base réelle) ; bascule non atomique (banc de route — le
-banc base réelle reste vert, la borne du §3 protégeant déjà le double clic) ;
-trace du rendu retirée (banc de route).
+`Non_envoye` du Fil retirées (2 bancs) ; borne ignorée par la garde (banc
+base réelle) ; borne prise au rétablissement plutôt qu'à la révocation
+(banc de route) ; bascule non atomique (banc de route — le banc base réelle
+reste vert, la borne du §3 protégeant déjà le double clic) ; trace du rendu
+retirée (banc de route).
 
 ### D-403 — Porte 4 : poids égal motivé, bornes et planchers de l'indice du sommeil déclarés (sources de contexte là où elles existent), palier « bien couvert » repère du cabinet, enquête alimentaire incomplète non calculée, table des quantités aux seuls repères officiels
 

@@ -598,15 +598,33 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       const audit = createBookletEnvoi.mock.calls[0][0].data as Record<string, unknown>;
       expect(audit.statut).toBe('Erreur');
       expect(audit.operation).toBe('Preparation');
-      expect(audit.erreurCourte).toBeTruthy();
+      // Un libellé fixe, jamais le message de l'exception : il pourrait citer
+      // un fragment de la synthèse (revue PR-Agent de #1804).
+      expect(audit.erreurCourte).toBe('Rendu du bilan impossible.');
       expect(audit.noteTransmise).toBeUndefined();
 
       expect(ligneJournal().statut).toBe('Erreur');
+      expect(ligneJournal().erreurCourte).toBe('Rendu du bilan impossible.');
       // Rien n'a été réservé : la préparation précède la réservation.
       expect(updateCorrespondance).not.toHaveBeenCalled();
     } finally {
       delete process.env.SMTP_URL;
     }
+  });
+
+  // La garde de clôture passe AVANT le rendu : un dossier clos ne reçoit
+  // pas la trace d'une tentative que la route aurait refusée.
+  it('un dossier clos dont le rendu lèverait reçoit le refus, sans trace', async () => {
+    findFirst.mockResolvedValue({ ...syntheseFixture('Validee_Praticien'), syntheseJson: null });
+    findUniquePatient.mockResolvedValue({
+      prenom: 'Sophie', nom: 'Nicola', actif: true,
+      suiviClotureLe: new Date('2026-07-01T00:00:00.000Z'), effaceLe: null,
+    });
+
+    const res = await envoyer({});
+    expect(res.status).toBe(409);
+    expect(createBookletEnvoi).not.toHaveBeenCalled();
+    expect(createCorrespondance).not.toHaveBeenCalled();
   });
 
   // [[D-398]] §1 (Q3) : la lecture du registre, en tête de requête, ne voyait
