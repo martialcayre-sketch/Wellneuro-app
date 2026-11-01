@@ -50,6 +50,15 @@ vingt-neuf claims épinglés par `indicationsBiologieV1.ts`, signée le
   `conduites` passait donc. Corrigé : `N7` à `N11` exigent le nom de leur
   table. Neuf mutants, un par table de `N7` à `N15`, rougissent chacun sur son
   propre cas.
+- Revue `wn-reviewer` de #1820 : GO, trois P2, tous corrigés.
+  - N1 à N6 exigent `[orientation]`, parce que leur cible est aussi épinglée
+    par `indications_assiettes`.
+  - Le commentaire de N15 est corrigé.
+  - Le banc a une nouvelle assertion : aucune liste `claimsSource` ne doit
+    vivre dans un sous-dossier non balayé. Elle a été prouvée par un fichier
+    sonde temporaire dans `biology-library/import/`, retiré ensuite.
+  - Dix mutants, un par table, rougissent chacun sur son propre cas : N1 pour
+    l'orientation, puis N7 à N15.
 - Vitest : garde de fraîcheur et garde de la table des indications, 21 verts.
 - T1 complet et revue : voir la PR.
 

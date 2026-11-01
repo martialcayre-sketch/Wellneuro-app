@@ -1133,7 +1133,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('absent du corpus' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N1: un claim epingle ABSENT n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1146,7 +1146,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('statut REJETE' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N2: un claim epingle NON VALIDE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1159,7 +1159,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N3: un claim epingle DESACTIVE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1172,7 +1172,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('remplacé (superseded_at)' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N4: un claim epingle REMPLACE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1193,7 +1193,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('non prescriptif' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('non prescriptif' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N5: un claim epingle NON PRESCRIPTIF n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1209,7 +1209,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('absent du corpus' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N6: une VERSION DIVERGENTE du claim epingle n''a pas ete detectee — %', msg;
   END IF;
 
@@ -1297,7 +1297,9 @@ BEGIN
   -- des indications de biologie épingle aussi `WN-CL-0320-003`, et un prédicat
   -- exemptant `conduites` levait encore — pour l'autre table, avec le même
   -- identifiant et le même motif (revue Copilot de #1820). `N7` à `N11`
-  -- exigent désormais tous le nom de leur table, comme `N12` à `N15`.
+  -- exigent désormais tous le nom de leur table, comme `N12` à `N15` ; `N1` à
+  -- `N6` exigent `[orientation]` : leur cible, `WN-CL-0287-009`, est aussi
+  -- épinglée par `indications_assiettes` (revue `wn-reviewer` de #1820).
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims
@@ -1407,7 +1409,7 @@ BEGIN
   -- signée depuis le 2026-09-16 sans aucune garde de fraîcheur. Patron de
   -- `N12` ; le claim muté, `WN-CL-0389-004`, n'est épinglé par aucune autre
   -- table (`WN-CL-0312-018`, son voisin de la répétition annuelle, l'est aussi
-  -- par `conflits_sources`).
+  -- par `conflits_sources` et par `fiches_usage`).
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0389-004';

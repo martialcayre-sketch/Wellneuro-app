@@ -356,6 +356,34 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
     expect(fichiersCitantDesClaimsHorsBalayage()).toEqual([]);
   });
 
+  // LE BALAYAGE N'EST PAS RÉCURSIF, et ce banc le dit plutôt que de le taire
+  // (revue `wn-reviewer` de #1820) : une table signée posée dans un
+  // sous-dossier d'une racine — `biology-library/import/` par exemple —
+  // resterait hors contrat sans que rien ne rougisse, le trou que [[D-419]]
+  // vient de fermer, un niveau plus bas. Toute liste `claimsSource: [` sous
+  // une racine doit donc vivre dans un fichier balayé.
+  it('aucune liste `claimsSource` ne vit dans un sous-dossier non balayé', () => {
+    const balayes = new Set(sourcesBalayees().map(s => s.chemin));
+    const horsBalayage: string[] = [];
+    const parcourir = (dossier: string) => {
+      for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+        const chemin = path.join(dossier, entree.name);
+        if (entree.isDirectory()) parcourir(chemin);
+        else if (
+          entree.name.endsWith('.ts') &&
+          !entree.name.endsWith('.test.ts') &&
+          !entree.name.endsWith('.d.ts') &&
+          !balayes.has(chemin) &&
+          /claimsSource:\s*\[/.test(readFileSync(chemin, 'utf8'))
+        ) {
+          horsBalayage.push(path.relative(RACINE, chemin));
+        }
+      }
+    };
+    RACINES_BALAYEES.forEach(parcourir);
+    expect(horsBalayage).toEqual([]);
+  });
+
   // LE CŒUR DE D-046. Chaque ligne du contrat porte l'exigence de `prescriptif`
   // qui lui est propre, et cette exigence doit correspondre à un arbitrage
   // déclaré. Une table qui entrerait au contrat sans le sien serait dispensée en
