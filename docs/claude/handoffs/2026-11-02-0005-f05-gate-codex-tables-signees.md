@@ -24,18 +24,20 @@ signée des fiches d'usage était absente des listes des crochets.
   - le marqueur doit être hors commentaire ;
   - les compagnons de test sont exclus ;
   - la structure des fiches d'usage compte même verrou éteint.
-  Le fichier est lu sur disque et à la base de comparaison, pour qu'une table
-  supprimée compte aussi. La logique est recopiée à dessein, comme la liste.
+  Le fichier est lu sur disque, à la base de comparaison et à `HEAD`, pour
+  qu'une table supprimée, ou privée de son marqueur sur disque sans commit
+  (revue Copilot de #1821), compte aussi. La logique est recopiée à dessein,
+  comme la liste.
 
 ## Fichiers modifiés
 
 - `.claude/hooks/gate-codex-p0.mjs` et son banc `gate-codex-p0.test.mjs`
-  (sept cas : quatre demandes, trois silences).
+  (huit cas : cinq demandes, trois silences).
 - Fragment `changelog.d/2026-11-01-gate-codex-tables-signees.md`, ce handoff.
 
 ## Validations exécutées
 
-- `node --test .claude/hooks/gate-codex-p0.test.mjs` : 16 verts.
+- `node --test .claude/hooks/gate-codex-p0.test.mjs` : 17 verts.
 - Sonde du crochet d'édition sur la structure signée : « demande », par le
   marqueur.
 - T1 complet et revue : voir la PR.

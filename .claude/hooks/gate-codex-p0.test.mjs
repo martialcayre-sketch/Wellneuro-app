@@ -145,6 +145,15 @@ test("demande : une table signée SUPPRIMÉE par la branche reste touchée", () 
   assertDemande(invoke(work, "gh pr create --title x --body y"));
 });
 
+test("demande : table signée dans un commit, marqueur retiré sur disque sans commit", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "table"], work);
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", "export const M = {};\n");
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
 for (const [nom, chemin, contenu] of [
   ["marqueur en commentaire", "web/src/lib/clinical/autreV1.ts", `// ${marqueur}: true\nexport const x = 1;\n`],
   ["verrou éteint hors fiches d'usage", "web/src/lib/clinical/autreV1.ts", `export const M = { ${marqueur}: false };\n`],

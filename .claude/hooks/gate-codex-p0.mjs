@@ -154,8 +154,13 @@ function estTableSignee(fichier) {
   } catch {
     // Supprimé ou illisible sur disque : la base est lue ci-dessous.
   }
-  const aLaBase = git(["show", `${mergeBase}:${fichier}`]);
-  if (aLaBase.status === 0) textes.push(aLaBase.stdout);
+  // La base ET la tête : une table signée dans un commit de la branche, puis
+  // privée de son marqueur sur disque sans commit, reste dans la PR (revue
+  // Copilot de #1821).
+  for (const rev of [mergeBase, "HEAD"]) {
+    const version = git(["show", `${rev}:${fichier}`]);
+    if (version.status === 0) textes.push(version.stdout);
+  }
   return textes.some((texte) => marqueur.test(sansCommentaires(texte)));
 }
 
