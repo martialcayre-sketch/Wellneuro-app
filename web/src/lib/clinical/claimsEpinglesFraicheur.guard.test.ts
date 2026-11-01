@@ -119,10 +119,10 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // responsable est faite, seule l'attestation reste à poser.
   'portesBiologiquesAssiettesV1.ts': 'portes_biologiques',
   // Structure des fiches d'usage du besoin 2 ([[D-314]] §5). Entrée le jour où le
-  // fichier est POSÉ, livré vide et verrou éteint ; ses paires sont entrées au
-  // contrat SQL le jour où la structure a été ÉCRITE (2026-11-01), patron des
-  // portes biologiques : `claimsSource` rempli avant la signature, l'attestation
-  // seule reste à poser. SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
+  // fichier a été posé (2026-10-16, alors vide) ; ses paires sont entrées au
+  // contrat SQL le jour où la structure a été écrite puis signée (2026-11-01,
+  // [[D-401]]), patron des portes biologiques : `claimsSource` rempli avant
+  // l'attestation. SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
   // [[D-314]] §9, qui répond à la question que [[D-046]] réserve à chaque table
   // nouvelle) : `fiches_usage: false`. Une fiche d'usage décrit ce qu'une mesure
   // permet d'interpréter — préanalytique, interprétations permises et
