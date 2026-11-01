@@ -6,6 +6,75 @@
 
 ## Décisions actives
 
+### D-417 — BP-12a après la signature de sa structure : DC-11 partagée avec BP-17, DC-45 en quatrième axe « niveau de mesure », plafond de l'information contributive aligné sur D-266 §3, application à la re-signature B9/B12 (b23)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01 (questions à
+  options, puis fiche validée telle quelle), en séance de gestes de la file D
+  (n° 4, ligne b23).
+- Domaine : clinique — structure signée des fiches d'usage
+  (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`, `vocabulaire.ts`) ;
+  constitution clinique (`DC-11`, `DC-45`) ; plan, fiches F05 (BP-12a) et
+  F11 (BP-17).
+- Amende : [[D-400]] §2 (porteur de `DC-11`) ; [[D-314]] §9, arbitrage 17
+  (correspondance nature ↔ statut).
+- Ne touche pas : aucun code dans cette décision ; la structure signée le
+  2026-11-01 ([[D-401]]), ni son empreinte, ni ses trente fiches ; aucune
+  migration ; aucun texte de fiche, aucune valeur, aucun seuil, aucune dose.
+- Contexte, lu au dépôt le 2026-11-01 : [[D-400]] §2 a confié à BP-12a la
+  part de `DC-11` hors exclusions et `DC-45`, avant que [[D-401]] écrive et
+  signe la structure, qui n'en dit rien. Les rubriques attendues des trente
+  fiches : `question` et `population` 30, `precautions` 20, `options` 17,
+  `interpretations` 10, `surveillance_arret` 7, `argument_preference` 6,
+  `limites` 5, `preanalytique_contexte` 4, `resultats_consequences` 1 ; une
+  rubrique n'est attendue que si un claim la porte ([[D-401]] §2.3). Aucune
+  rubrique ne porte la dose, les interactions ni le rôle du praticien.
+  `DC-11` vise un claim d'intervention ; une fiche d'usage décrit l'usage
+  d'une mesure. Les niveaux A/B/C de `DC-45` ne figurent pas dans la
+  structure. [[D-266]] §3 plafonne l'information contributive à « preuves
+  limitées » ; `STATUTS_ADMIS_PAR_NATURE` lui admet aussi « étayé et
+  validé » ; les trente fiches sont en « preuves limitées ».
+
+**§1 — `DC-11` hors exclusions, partagée.** BP-12a porte la population
+(identifiant et rubrique, obligatoires), l'indication et les conditions
+d'entrée (`question`, `preanalytique_contexte`). BP-17 (F11) porte la dose,
+la durée, les contre-indications, les interactions et le rôle du praticien,
+avec les produits, le statut réglementaire et les renvois aux précautions
+qu'il porte déjà ([[D-314]] §9, arbitrage 20). Les rubriques `precautions` et
+`surveillance_arret` de BP-12a restent ce qu'elles sont : elles portent sur
+l'usage de la mesure et ne tiennent pas `DC-11`. Écartés : tout dans BP-12a
+par des rubriques neuves (migration, et une rubrique sans claim resterait non
+attendue) ; une correspondance écrite qui laisserait dose, interactions et
+rôle sans porteur effectif.
+
+**§2 — `DC-45` : un quatrième axe de la structure, « niveau de mesure ».**
+Ses valeurs sont les trois de `DC-45` — mesure standard ou conventionnelle,
+exploration fonctionnelle, marqueur expérimental ou débattu —, en
+identifiants. Une valeur par fiche, pré-remplie par une règle écrite sur la
+surface de relecture, puis corrigée par le responsable avant sa déclaration
+(régime de [[D-401]] §2.2). L'axe reste distinct des trois axes de [[D-266]]
+§3, sans fusion. Il ne vit que dans la structure : aucune migration.
+Écartés : le niveau porté par l'analyte, hors fiche ; le niveau porté par la
+nature du lien, qui fusionnerait deux axes contre [[D-266]] §3.
+
+**§3 — Le plafond : [[D-266]] §3 fait foi.** Une information contributive
+admet au plus « preuves limitées ». Un lot de code aligne
+`STATUTS_ADMIS_PAR_NATURE` : une structure qui dépasse ce plafond ne se signe
+pas. L'empreinte ne couvre que la structure, pas cette constante : la
+structure signée le 2026-11-01 reste valide. Écarté : amender [[D-266]] §3
+pour admettre les trois statuts.
+
+**§4 — Application.** L'axe du §2 entre à la re-signature de B9 et B12, avec
+leurs fiches ([[D-314]] §10) : textes et libellés ne repassent « à relire »
+qu'une fois. Le lot du §3 peut partir avant. Écartée : une re-signature
+dédiée des trente fiches.
+
+**§5 — Suites.** Au §8 du plan, file A : le lot du plafond (§3) ; le lot de
+l'axe « niveau de mesure » (type, contrôle de cohérence, surface de
+relecture), avant la re-signature de B9 et B12. Fiches F05 et F11 : fragments
+de journal. Constitution : `DC-11` et le paragraphe des statuts orphelins
+nomment les deux porteurs.
+
 ### D-415 — Fiches conseils, thème « respiration et apaisement » : le responsable propriétaire et seul signataire ; exercices respiratoires et d'apaisement corporel de la Fiche MY « Gestion du stress » et vidéos transcrites ; précautions par recherche, avant toute ouverture (lettre ah, m23)
 
 - Date : 2026-11-01
