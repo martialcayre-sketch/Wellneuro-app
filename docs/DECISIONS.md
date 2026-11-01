@@ -141,6 +141,61 @@ bd ; des précautions déclarées comme arbitrage, sans source.
 **§5 — Suites.** Transcription des vidéos du §3 ; recherche des précautions
 (§4) ; puis le lot de la fiche, au rang 5 (H68 : porte 5, EF-3b).
 
+### D-414 — Audit 3, lot Q3 ter : au Fil, un questionnaire échu non déverrouillé se débloque avant de se rappeler ; la relance juge le lendemain par le calendrier
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01 sur les restes
+  du lot Q3 bis (handoff `2026-11-01-1732-audit3-q3bis-restes.md`).
+  Précise [[D-404]] §1 ; geste neuf au Fil.
+- Domaine : Fil du jour (`components/fil/FilDuJour.tsx`, `lib/fil/cartes.ts`,
+  route `praticien/fil`) ; décision de relance (`relanceAssignation.ts`).
+- Ne touche pas : `schema.prisma`, aucune migration ; la route de déblocage
+  (`PATCH praticien/assignations`), réutilisée telle quelle ; la route de
+  relance et ses refus ; l'échéance de l'assignation ; le dossier.
+
+**§1 — Au Fil, « Débloquer » avant « Rappeler ».** Depuis [[D-404]] §1, le
+serveur refuse de rappeler un questionnaire échu dont les réponses ne sont
+pas déverrouillées : le bouton « Rappeler » de la carte « Échéance
+dépassée » menait donc presque toujours à un refus. Sur ces cartes, le
+bouton devient « Débloquer » (« Déblocage… » pendant l'appel). Il appelle la
+route du dossier, `PATCH /api/praticien/assignations`, sans confirmation,
+comme dans le dossier ; l'échéance ne change pas. Après le déblocage, la
+carte reste et le même bouton devient « Rappeler » : deux gestes distincts,
+car débloquer ne prévient pas le patient. Un refus du déblocage s'affiche
+tel que la route l'écrit. Pour choisir le geste, la carte porte
+`statut_reponses` tel que la base le porte (`cartesAssignationsEnRetard`) ;
+sans lui (serveur antérieur), le bouton reste « Rappeler ». Une assignation
+annulée échue paraît encore au Fil (lecture antérieure, `statut` différent
+de `Complété`) : sa carte ne porte pas ce statut et garde « Rappeler », que
+le serveur refuse sans rien écrire — le déblocage d'une annulée dirait un
+succès que le portail ignore (revue `wn-reviewer`). De même pour un suivi
+clôturé, que le Fil garde : le rappel y est refusé (`accepteNouvelEnvoi`),
+et le déblocage y écrirait sans garde (revue Copilot de #1812). La route
+`PATCH`, elle, ne refuse ni annulée ni suivi clos : la garder côté serveur
+toucherait aussi le dossier, autre décision. Écartés
+(arbitrage) : une confirmation ; « Débloquer et rappeler » en un seul
+geste ; repousser l'échéance (lot à part si un jour demandé).
+
+**§2 — La relance juge le lendemain par le calendrier.** Une échéance est
+dépassée le lendemain du jour dit. La relance le calculait par minuit + 24 h ;
+le jour du passage à l'heure d'hiver dure 25 h, et la relance devenait
+possible à 23 h le jour dit, une heure avant que le portail ne dise
+« Expiré » (`isDeadlineExpired`, 23:59:59.999 locale) ; le jour du passage
+à l'heure d'été, une heure après. Le lendemain se calcule désormais par le
+calendrier (`setDate(+1)`) : minuit local du lendemain, l'instant qui suit
+la borne du portail. La cadence entre deux rappels reste comptée en durée.
+
+**§3 — Preuve.** Bancs du composant, des cartes et de la décision, dont un
+banc à Paris aux deux changements d'heure de 2026, aligné sur
+`isDeadlineExpired`. Chacun rougit sous mutation : bouton toujours
+« Rappeler » (3 bancs) ; bouton qui ne bascule pas après le déblocage
+(1) ; « Débloquer » sans statut (5) ; statut absent de la carte (1) ;
+statut porté par une annulée (1) ; statut porté par un suivi clos (2 bancs
+des cartes et de la route ; 1 si la route ne marque pas le suivi clos) ;
+échec réseau du déblocage muet (1) ;
+statut absent de la lecture du Fil (typage) ; lendemain par minuit + 24 h
+(2).
+
 ### D-413 — Point d'étape, motif de non-prise : retiré du questionnaire ; réponses passées gardées lisibles ; retrait appliqué par un lot de code versionné (lettre bf, m16)
 
 - Date : 2026-11-01

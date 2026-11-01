@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { isDeadlineExpired } from '@/lib/patient-access';
 import {
   JOURS_ENTRE_RELANCES_ASSIGNATION,
   deciderRelanceAssignation,
@@ -60,6 +61,41 @@ describe('deciderRelanceAssignation', () => {
 
     expect(deciderRelanceAssignation(entree({ maintenant: new Date('2026-03-21T00:00:00') })))
       .toEqual({ ok: true });
+  });
+
+  // LE LENDEMAIN PAR LE CALENDRIER ([[D-414]] §2). Le fuseau du serveur est
+  // celui de Paris pour la durée de ces bancs : le 25 octobre 2026 dure 25 h
+  // (heure d'hiver), le 29 mars 2026 en dure 23. Minuit + 24 h tombait à 23 h
+  // le jour dit en octobre — une heure avant que le portail ne dise « Expiré ».
+  describe('aux changements d’heure (Europe/Paris)', () => {
+    const tzAvant = process.env.TZ;
+    afterEach(() => {
+      if (tzAvant === undefined) delete process.env.TZ;
+      else process.env.TZ = tzAvant;
+    });
+
+    for (const [jour, lendemain] of [
+      ['2026-10-25', '2026-10-26'],
+      ['2026-03-29', '2026-03-30'],
+    ] as const) {
+      it(`tient la journée entière du ${jour}, ni plus ni moins que le portail`, () => {
+        process.env.TZ = 'Europe/Paris';
+        const minuitLendemain = new Date(`${lendemain}T00:00:00`);
+        // Le banc ne vaut que si le fuseau a bien pris : 23 ou 25 h dans la journée.
+        expect(minuitLendemain.getTime() - new Date(`${jour}T00:00:00`).getTime())
+          .not.toBe(MS_PAR_JOUR);
+
+        const justeAvant = new Date(minuitLendemain.getTime() - 1);
+        const avant = deciderRelanceAssignation(entree({ dateLimite: jour, maintenant: justeAvant }));
+        expect(avant).toMatchObject({ ok: false, raison: 'echeance_non_depassee' });
+        expect((avant as { possibleLe: Date }).possibleLe.getTime()).toBe(minuitLendemain.getTime());
+        expect(isDeadlineExpired(jour, justeAvant)).toBe(false);
+
+        expect(deciderRelanceAssignation(entree({ dateLimite: jour, maintenant: minuitLendemain })))
+          .toEqual({ ok: true });
+        expect(isDeadlineExpired(jour, minuitLendemain)).toBe(true);
+      });
+    }
   });
 
   // ÉCHUE = EXPIRÉE, SAUF DÉVERROUILLAGE ([[D-404]]) : passé le jour dit, la

@@ -100,6 +100,13 @@ export type CarteFil = {
    * appel d'écriture du FORMAT d'une clé de refus, dont ce n'est pas le rôle.
    */
   idAssignation?: string;
+  /**
+   * `assignations.statut_reponses`, tel que la base le porte —
+   * `assignation_en_retard` SEULEMENT ([[D-414]] §1). Il choisit le geste de
+   * la carte : passé l'échéance, seul un questionnaire déverrouillé se
+   * rappelle (`deciderRelanceAssignation`) ; les autres se débloquent d'abord.
+   */
+  statutReponses?: string;
 };
 
 /**
@@ -138,6 +145,10 @@ export type AssignationRow = {
   titre: string;
   dateLimite: string | null;
   statut: string;
+  statutReponses: string;
+  /** Suivi clôturé : l'assignation paraît, mais aucun geste n'y écrit
+   *  ([[D-414]] §1). Absent = suivi ouvert. */
+  suiviClos?: boolean;
 };
 export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
 /**
@@ -920,6 +931,12 @@ export function cartesAssignationsEnRetard(
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
         idAssignation: a.idAssignation,
+        // NI UNE ANNULÉE NI UN SUIVI CLOS NE SE DÉBLOQUENT ([[D-414]] §1) :
+        // le portail ignore une annulée même déverrouillée, et un suivi clos
+        // n'accepte plus d'envoi (`accepteNouvelEnvoi`). Sans statut, la carte
+        // garde « Rappeler », que le serveur refuse (`assignation_annulee`,
+        // `dossier_clos`) sans rien écrire — comme avant.
+        statutReponses: a.statut === 'Annulée' || a.suiviClos ? undefined : a.statutReponses,
       };
     });
 }
