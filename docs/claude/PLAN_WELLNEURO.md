@@ -2199,7 +2199,7 @@ Table par rang : rang d'abord, hiérarchie ensuite. Un geste qui a une fiche n'a
 | 4 | h1 | approuver, une à une, les release-db du rang 4 (EF-3b, BP-12a, BP-11, BP-13, BP-15, CC-8, axes, BF-8, collecte, D-283 b, retrait du NIR ; CC-8 dès qu'elle est prête, avant ai : D-315 §6-7) | fiches du rang 4 | codes consommateurs |
 | 4 à 10 | h1 à h3 | signer les contenus de BP-12a, BP-12b, BP-17 (porte 23) ; accepter chaque texte patient avant son activation ; consigner la lecture de chaque ouverture qui ne vise que certains dossiers | F05, F09, F11, §3 | J3-bio ; file C |
 | 5 | h1 | dire le sens d'« anomalie » au vu du premier constat d'activation | H05, §3 | porte 18 |
-| 5 | h3 | texte de l'encart (bd) ; propriétaire et sources du thème « respiration et apaisement » (ah) | H71, H68 | encart ; fiches par thème |
+| 5 | h3 | texte de l'encart (bd) ; propriétaire et sources du thème « respiration et apaisement » (ah ; arrêtés le 2026-11-01, D-415 ; restent les vidéos transcrites et le texte des précautions à signer) | H71, H68 | encart ; fiches par thème |
 | 5 | h3 | ch : trois phrases de tendance, règle de comparaison d'un agenda fini au précédent et marge « stable » à signer | H72 | phrase en fin d'agenda |
 | 6 | h2 | indications v2, re-signées | F53 | bilan par axe |
 | 8 | h2 | constater un cycle réel jusqu'au jalon de fin, par identifiant | F26 | fin de BIO-PARCOURS |
@@ -2235,7 +2235,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h3 | gestes RGPD : archivages, relance d'effacement, dossier resté sur une version antérieure du texte | H20 | registre RGPD à jour |
 | h3 | relance écrite du laboratoire pilote | F41 | porte 29 |
 | h3 | relance du recueil réel de 21 jours [Hypothese] | H45 | barème gelé |
-| h3 | préparation des sources du thème « respiration et apaisement » | H68 | ah (rang 5) |
+| h3 | préparation des sources du thème « respiration et apaisement » ; **tranchée le 2026-11-01 (D-415)** : le responsable propriétaire et seul signataire, exercices respiratoires et d'apaisement corporel de `WN-SRC-0245` ; restent la transcription et les droits des neuf vidéos du périmètre (D-415 §3), puis la recherche des précautions, à vérifier et inscrire au registre avant signature (D-415 §4) | H68 | ah (rang 5) |
 | h5 | retirer `WN_BIO_EXTRACTION_ASYNC` de Scalingo (`env-unset`, variable inerte depuis #1416) | F42 (mise à jour de G3) ; `docs/FEATURE_FLAGS.md:469-476` | ménage, sans effet sur le service |
 | h2 | sources fermées des dossiers de mesure des besoins 6 à 12, deux d'abord (2026-10-18, décision 7) ; fait le 2026-10-21 (`WN-SRC-0567` à `0570`, #1615) | H15 | J3-12f |
 | h2 | amendement v0.3 d'une position d'expert du dossier du fer, en conflit avec une règle du responsable du 2026-10-17 ; fait, signé le 2026-10-21 | H15, F02 | J3-12h |
@@ -2847,7 +2847,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ae | bloc Protocole du document médecin | la main du responsable | 5 | F39 |
 | af | référence de fiche conseil sur l'action | la main du responsable | 1 | H24 |
 | ag | rédaction assistée des zones du protocole | la main du responsable | 1 | H25 |
-| ah | familles de fiches conseils par thème | la main du responsable | 5 | H68 |
+| ah | familles de fiches conseils par thème ; premier thème « respiration et apaisement » : propriétaire, périmètre et sources arrêtés le 2026-11-01 (D-415) | la main du responsable | 5 | H68 |
 | ai | accusé de lecture de « Mes échanges » ; fait le 2026-10-14 (D-297) | la main du responsable | 2 | H51 |
 | aj | encadré « Envisagé ensuite » | la main du responsable | 3 | H53 |
 | ak | invitation d'autoévaluation au 21e jour ; fait le 2026-10-24 (D-353) ; activation constatée le 2026-11-01 | la main du responsable | 10, place 7 | H80 |
