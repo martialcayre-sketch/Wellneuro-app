@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 568 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 569 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 61 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 62 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -22,9 +22,9 @@ résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
 `0521` et `0524` ; porte 4 (D-403) : deux recommandations de pratique sur le
 sommeil, sources de contexte de deux bornes déclarées techniques, et les
 repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
-extrait ingéré ; point d'étape (D-407 à D-413, m16) : sept articles et quatre
+extrait ingéré ; point d'étape (D-407 à D-413, m16) : huit articles et quatre
 documentations d'instruments, sources de contexte des candidats écartés pour le
-point d'étape, `WN-SRC-0577` à `0587`, sans extrait ingéré),
+point d'étape, `WN-SRC-0577` à `0588`, sans extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont

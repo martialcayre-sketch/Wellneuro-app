@@ -15123,5 +15123,31 @@
     "requiredAction": "Source de contexte d'un candidat écarté pour le point d'étape (D-407, D-410, D-411, m16) ; aucun extrait ingéré",
     "comment": "Pages lues (mises à jour les 28 septembre et 1er octobre 2026) : PROMIS-29 non recommandé pour l'évaluation individuelle ; en évaluation individuelle, Fatigue 13a (FACIT-Fatigue) et Sleep Disturbance 8a ; mesure traduite existante 1 100 USD par mesure et par langue (durée d'étude ou trois ans).",
     "auditDate": "2026-11-01"
+  },
+  {
+    "sourceId": "WN-SRC-0588",
+    "title": "Matza LS, Park J, Coyne KS, Skinner EP, Malley KG, Wolever RQ (2009). Derivation and validation of the ASK-12 adherence barrier survey. Ann Pharmacother 43(10):1621-1630, DOI 10.1345/aph.1M174",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_PRIMARY_STUDY",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Source de contexte d'un candidat écarté pour le point d'étape (D-413, m16) ; aucun extrait ingéré",
+    "comment": "PMID 19776298, résumé lu sur Europe PMC : version courte (12 items) de l'ASK-20, mesure déclarée des obstacles à l'observance médicamenteuse ; patients asthmatiques, diabétiques et insuffisants cardiaques (n = 112). Médicaments, non compléments. Aucune validation française trouvée sur Europe PMC (recherche du 2026-11-01). Droits non vérifiés.",
+    "auditDate": "2026-11-01"
   }
 ]

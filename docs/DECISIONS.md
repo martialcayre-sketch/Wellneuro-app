@@ -18,7 +18,8 @@
   complément ([[D-412]]) ; le signalement d'un problème, indépendant.
 - Contexte : aucun instrument français validé, court et adapté aux
   compléments n'a été trouvé (MAR-Scale, Voils et al. 2012, ASK-12 :
-  médicaments, sans version française ; `WN-SRC-0583`, `0585`). La question
+  médicaments ; aucune version française trouvée ; `WN-SRC-0583`, `0585`,
+  `0588`). La question
   est posée dès qu'un complément est prescrit, quelle que soit la réponse sur
   la prise, et n'admet qu'un motif.
 
