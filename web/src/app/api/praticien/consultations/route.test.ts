@@ -310,6 +310,16 @@ describe('POST /api/praticien/consultations', () => {
     expect(json.envoi).toBe('non_configure');
   });
 
+  it('un refus de la garde d’une heure : consultation créée, accès déjà parti ([[D-398]] §3)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessTokenRevoked: false });
+    sendPortailLinkEmail.mockResolvedValueOnce('Refuse_garde');
+    const res = await POST(postRequest({ idPatient: 'PAT_1' }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(json.envoi).toBe('deja_envoye');
+  });
+
   it('un envoi réussi le dit explicitement', async () => {
     // Ce banc porte sur l'ENVOI, pas sur la révocation : le dossier est ouvert,
     // sinon la route refuserait en 409 avant d'atteindre l'e-mail.

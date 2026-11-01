@@ -429,6 +429,29 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     expect(JSON.parse(String((appel?.[1] as { body?: string })?.body))).toEqual({ idAssignation: 'ASG_1' });
   });
 
+  // [[D-399]] : un e-mail couvre les questionnaires rappelables du dossier. Le
+  // dire, sans quoi le refus de cadence des autres cartes paraîtrait inexpliqué.
+  it('dit qu’un rappel groupé couvre plusieurs questionnaires', async () => {
+    stubAvecRelance(async () => ({ ok: true, statut: 'Envoye', questionnaires: 3 }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Rappel envoyé. Il couvre les 3 questionnaires en retard de ce dossier.')).toBeTruthy(),
+    );
+  });
+
+  it('n’annonce pas un rappel groupé qui n’est pas parti', async () => {
+    stubAvecRelance(async () => ({ ok: true, statut: 'Erreur', questionnaires: 3 }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+
+    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    expect(screen.queryByText(/Il couvre les 3 questionnaires/)).toBeNull();
+  });
+
   // LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL : « un rappel est déjà parti il y
   // a moins de 3 jours » se lit ; « Rappel impossible » n'apprendrait rien.
   it('affiche le refus du serveur tel quel, sans le traduire en panne', async () => {

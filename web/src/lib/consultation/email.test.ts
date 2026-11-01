@@ -15,11 +15,29 @@ vi.mock('@/lib/correspondance/patient', async orig => ({
   journaliserCorrespondancePatient: journaliser,
 }));
 
+// LA GARDE D'UNE HEURE ([[D-398]] §3) réserve sa ligne en base : simulée ici,
+// éprouvée sur base réelle par `correspondance/reservation.pg.test.ts`.
+const { reserverSousGarde, solderReservation } = vi.hoisted(() => ({
+  reserverSousGarde: vi.fn(),
+  solderReservation: vi.fn(),
+}));
+vi.mock('@/lib/correspondance/reservation', async orig => ({
+  ...(await orig<typeof import('@/lib/correspondance/reservation')>()),
+  reserverSousGarde,
+  solderReservation,
+}));
+
+beforeEach(() => {
+  reserverSousGarde.mockReset().mockResolvedValue({ id: 'RES_1', refusee: false });
+  solderReservation.mockReset().mockResolvedValue(undefined);
+});
+
 import {
   buildMagicLinkUrl,
   sendConditionsUtilisationEmail,
   sendDocumentRemisEmail,
   sendMagicLinkEmail,
+  sendObjectifProposeEmail,
   sendPortailLinkEmail,
 } from './email';
 
@@ -115,6 +133,8 @@ describe('sendPortailLinkEmail', () => {
     delete process.env.SMTP_URL;
     await expect(sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST')).resolves.toBe('Non_envoye');
     expect(sendMail).not.toHaveBeenCalled();
+    // La réservation est soldée « Non envoyé » : elle ne bloquera pas l'heure.
+    expect(solderReservation).toHaveBeenCalledWith('RES_1', 'Non_envoye');
   });
 
   it('RELANCE sur échec SMTP — elle ne rend pas un statut', async () => {
@@ -126,6 +146,62 @@ describe('sendPortailLinkEmail', () => {
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
     sendMail.mockRejectedValueOnce(new Error('smtp down'));
     await expect(sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST')).rejects.toThrow('smtp down');
+    expect(solderReservation).toHaveBeenCalledWith('RES_1', 'Erreur', expect.any(Error));
+  });
+});
+
+describe('garde d’une heure — accès et objectif ([[D-398]] §3)', () => {
+  const env = { ...process.env };
+
+  beforeEach(() => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+  });
+
+  afterEach(() => {
+    process.env = { ...env };
+    sendMail.mockClear();
+    journaliser.mockClear();
+  });
+
+  it('réserve AVANT d’envoyer, puis solde « Envoyé » — sans seconde ligne', async () => {
+    await expect(sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST')).resolves.toBe('Envoye');
+    expect(reserverSousGarde).toHaveBeenCalledWith({
+      idPatient: 'PAT_TEST',
+      type: 'acces_portail',
+      objet: 'Accès à l’espace patient',
+    });
+    expect(reserverSousGarde.mock.invocationCallOrder[0]).toBeLessThan(sendMail.mock.invocationCallOrder[0]);
+    expect(solderReservation).toHaveBeenCalledWith('RES_1', 'Envoye');
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('refusée : rien ne part, rien n’est soldé, et l’appelant le sait', async () => {
+    reserverSousGarde.mockResolvedValueOnce({ id: 'RES_2', refusee: true });
+    await expect(sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST')).resolves.toBe('Refuse_garde');
+    expect(sendMail).not.toHaveBeenCalled();
+    // Le refus est déjà juste en base, sous son motif : il n'est jamais rejoué.
+    expect(solderReservation).not.toHaveBeenCalled();
+    expect(journaliser).not.toHaveBeenCalled();
+  });
+
+  it('l’e-mail d’objectif est gardé de même', async () => {
+    reserverSousGarde.mockResolvedValueOnce({ id: 'RES_3', refusee: true });
+    await expect(sendObjectifProposeEmail('patient@example.com', 'Michel', 'PAT_TEST')).resolves.toBe('Refuse_garde');
+    expect(reserverSousGarde).toHaveBeenCalledWith(expect.objectContaining({ type: 'objectif_propose' }));
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('une réservation impossible n’envoie rien : l’échec remonte à l’appelant', async () => {
+    reserverSousGarde.mockRejectedValueOnce(new Error('base indisponible'));
+    await expect(sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST')).rejects.toThrow('base indisponible');
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('le lien magique n’est pas sous la garde : D-398 §3 ne vise que l’accès et l’objectif', async () => {
+    await sendMagicLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/lien/JETON', 'PAT_TEST');
+    expect(reserverSousGarde).not.toHaveBeenCalled();
+    expect(journaliser).toHaveBeenCalledWith(expect.objectContaining({ type: 'lien_magique', statut: 'Envoye' }));
   });
 });
 
@@ -222,7 +298,8 @@ describe('sendPortailLinkEmail — le lien qui ouvre, quand il existe', () => {
       undefined,
       'https://app.wellneuro.fr/portail/lien/JETON',
     );
-    const types = journaliser.mock.calls.map(c => (c[0] as { type: string }).type);
+    // La ligne est RÉSERVÉE sous ce type, avant l'envoi ([[D-398]] §3).
+    const types = reserverSousGarde.mock.calls.map(c => (c[0] as { type: string }).type);
     expect(types).toEqual(['acces_portail', 'acces_portail']);
   });
 });

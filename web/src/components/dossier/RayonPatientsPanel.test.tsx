@@ -593,6 +593,18 @@ describe('RayonPatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByText(/la messagerie n’est pas configurée/)).toBeTruthy();
   });
+
+  // [[D-398]] §3 : un accès est parti il y a moins d'une heure — rien n'est
+  // mort, et rien n'est reparti. Ni « envoyé », ni « réessayez ».
+  it('un refus de la garde d’une heure se dit tel quel', async () => {
+    stubFetch({ surConsultations: () => ({ success: true, envoi: 'deja_envoye' }) });
+    await creerConsultation();
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByText(
+      'Consultation créée, sans nouvel e-mail : un e-mail d’accès est déjà parti vers ce patient il y a moins d’une heure.',
+    )).toBeTruthy();
+  });
 });
 
 describe('RayonPatientsPanel — rétablissement d’un accès révoqué', () => {
