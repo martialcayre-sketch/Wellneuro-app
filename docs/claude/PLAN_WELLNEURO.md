@@ -2003,7 +2003,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 |---|---|---|---|---|---|
 | J3-mineurs | consentement du titulaire de l'autorité parentale | A | 9 | oui | H79 |
 | as | place 6 : fiche signalétique, date de naissance ; close le 2026-10-22 sans activation (D-342 §4) | C | 18 | selon | F45, rang 0 |
-| ak | place 7 : invitation d'autoévaluation au 21e jour | C | 18 | non | H80 |
+| ak | place 7 : invitation d'autoévaluation au 21e jour ; close le 2026-11-01, activation constatée (D-353 §5) | C | 18 | non | H80 |
 | ao | place 8 : fiche compléments remise | C | 18, 19, 28 | non | F78 |
 | R:FC-5 (2/2) | place 9 : geste du 21e jour de l'agenda | C | 18 | non | H81 |
 | ap | place 10 : bibliothèque pédagogique | C | 17, 18, 28 | selon | H82 |
@@ -2121,7 +2121,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 4 | Dépôt de documents | H77 | porte 17 (levée), registre, J3-collecte, J2-conf | texte de collecte (G-11, accepté le 2026-10-14, #1441) | 8 |
 | 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11, acceptés le 2026-10-14, #1441) ; constat par lecture consignée | 9 |
 | 6 | Fiche signalétique (date de naissance, invitation au dépôt) ; close le 2026-10-22 sans activation (D-342 §4) : la saisie initiale de la date d'un dossier ouvert sans date reste en service (lot (h), D-284 §3) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
-| 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; reste l'activation et son constat | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
+| 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; drapeau posé le 2026-10-24, **constaté le 2026-11-01** (D-353 §5) : place close ; la porte 18 libère la place 10 (D-357 §7 amendé le 2026-10-29) | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25 (H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
 | 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation, après le constat de la place 7, devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
@@ -2847,7 +2847,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | ah | familles de fiches conseils par thème | la main du responsable | 5 | H68 |
 | ai | accusé de lecture de « Mes échanges » ; fait le 2026-10-14 (D-297) | la main du responsable | 2 | H51 |
 | aj | encadré « Envisagé ensuite » | la main du responsable | 3 | H53 |
-| ak | invitation d'autoévaluation au 21e jour ; fait le 2026-10-24 (D-353) | la main du responsable | 10, place 7 | H80 |
+| ak | invitation d'autoévaluation au 21e jour ; fait le 2026-10-24 (D-353) ; activation constatée le 2026-11-01 | la main du responsable | 10, place 7 | H80 |
 | al | axes alimentaires | la main du responsable | 3 | H57 |
 | am | table de quantités | la main du responsable | 1, fermé sans source | H33 |
 | an | photo ou dictée des repas | la main du responsable | 10, place 11 | H83 |
