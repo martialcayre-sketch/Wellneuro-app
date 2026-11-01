@@ -100,12 +100,16 @@ export function classerCi(runs) {
  * `paths` de `.github/workflows/release-db.yml` (un banc tient la parité).
  * Deux dossiers et, depuis D-389 §5, le FICHIER de la table signée des
  * indications de biologie — le fichier seul, pas son dossier : il passe tel
- * quel au pathspec de `git log`, comme les deux dossiers.
+ * quel au pathspec de `git log`, comme les deux dossiers. Depuis D-416, deux
+ * fichiers encore, sur le même patron : la structure signée des fiches
+ * d'usage et le contrat positif de fraîcheur que rejoue le préflight.
  */
 export const CHEMINS_RELEASE_DB = [
   'web/prisma/migrations',
   'web/src/lib/clinical',
   'web/src/lib/biology-library/indicationsBiologieV1.ts',
+  'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
+  'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
 ];
 
 /**

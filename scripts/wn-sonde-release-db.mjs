@@ -66,8 +66,10 @@ export function estFichierDeclencheur(chemin) {
  * exécutés du workflow et du script du one-off, et exige qu'ils soient ici.
  */
 export const CHEMINS_GELES = [
-  // Un déclencheur est un dossier, sauf la table signée des indications
-  // (D-389 §5), un fichier exact : lui ajouter `/` le rendrait inatteignable.
+  // Un déclencheur est un dossier, sauf les fichiers exacts — tables signées
+  // hors de `clinical/` et contrat de fraîcheur (D-389 §5, D-416) : leur
+  // ajouter `/` les rendrait inatteignables. Le contrat figure aussi plus bas,
+  // parmi les préflights : le doublon est sans effet sur `estGele`.
   ...CHEMINS_RELEASE_DB.map((c) => (estFichierDeclencheur(c) ? c : `${c}/`)),
   '.github/workflows/release-db.yml',
   'web/scripts/release-db-scalingo.sh',

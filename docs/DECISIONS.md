@@ -62,6 +62,139 @@ contre la production.
 valides seraient rejetées. Laisser la table hors contrat : sa signature
 resterait muette sur ce que le corpus devient.
 
+### D-418 — Le registre des décisions passe à un fichier par décision (`docs/decisions/D-NNN.md`) ; `docs/DECISIONS.md` devient une page fixe ; bascule en une PR après l'essai de D-373
+
+- Date : 2026-11-01
+- Statut : accepté. Le responsable a retenu le principe le 2026-11-01, en
+  conversation (« décision 1 ok »), sur une recommandation de l'intégrateur
+  de l'essai de [[D-373]] (fiche H89). L'intégrateur a rédigé la forme des
+  §1 à §6, et le responsable l'a confirmée le même jour (« tout confirmé »).
+  Le §7 n'est pas décidé : il signale une question ouverte.
+- Domaine : gouvernance du registre (`docs/DECISIONS.md`) ; gardes
+  `scripts/lib/decisions-numerotation.mjs` et
+  `scripts/wn-reserver-decision.mjs` ; tests qui lisent une décision ;
+  skills `wn-merge` (étape 7 bis), `wn-finish` et `wn-lot`.
+- **Amende** :
+  - [[D-370]], sur un point : « le registre se range par numéro » devient
+    « un fichier par numéro ». La réservation à la rédaction est inchangée ;
+  - le choix écrit dans le commentaire de l'étape « Numérotation du
+    registre des décisions » de `ci.yml` (« `docs/DECISIONS.md` reste
+    délibérément à créneau unique ») et dans l'en-tête du registre
+    (« Append-only. Insérer une nouvelle décision […] à son rang »).
+- **Ne touche pas** :
+  - le texte des 414 décisions existantes, repris à l'identique, sauf les
+    deux exceptions du §3 (niveau du titre, cibles des liens relatifs) ;
+  - la convention `[[D-NNN]]`, qu'aucun outil ne résout ;
+  - les documents datés qui citent `docs/DECISIONS.md` (handoffs, campagnes,
+    fragments, journal), qu'on ne réécrit pas ;
+  - le runtime de l'application, qui ne lit pas le registre.
+- **Contexte, constaté le 2026-11-01 pendant l'essai de [[D-373]].** Trois
+  PR déclarées « prête » ont été renvoyées pour un conflit sur
+  `docs/DECISIONS.md` : #1800 (D-400 contre D-399), #1801 (D-402 contre
+  D-400) et #1809 (D-406 contre D-407 à D-413).
+  - Chaque nouvelle décision s'écrit en tête de la section active. Deux PR
+    ouvertes qui en ajoutent une se heurtent donc toujours au même endroit.
+  - Chaque conflit oblige la file à fusionner `main`. Cela crée une nouvelle
+    tête, qui doit repasser par le CI (environ quinze minutes avec l'e2e) et
+    par la revue, alors que le quota de CodeRabbit est épuisé.
+  - Les handoffs, les fragments de changelog et les journaux de fiche, qui
+    sont un fichier par lot, n'ont produit aucun conflit le même jour.
+  - Le fichier unique avait été gardé pour rendre visibles les doublons de
+    numéro (`D-013` le 2026-08-03, `D-014` le 2026-08-04). Depuis [[D-370]],
+    un numéro se réserve à la rédaction, et ce risque est couvert
+    autrement. De plus, deux fichiers au même nom donnent un conflit
+    d'ajout que Git signale toujours.
+
+**§1 — La règle.** Une décision vit dans son propre fichier,
+`docs/decisions/D-NNN.md`, nommé par son seul numéro.
+- La première ligne du fichier est `# D-NNN — <titre>`. Les rubriques sont
+  les mêmes qu'aujourd'hui (`- Date :`, `- Statut :`, `- Domaine :`,
+  « Amende », « Ne touche pas », contexte, paragraphes).
+- Le numéro se réserve par `node scripts/wn-reserver-decision.mjs`
+  ([[D-370]]).
+- Une PR qui ajoute une décision crée son fichier. Elle n'édite aucun
+  fichier commun pour la référencer.
+- Écartés :
+  - un nom avec un intitulé (`D-NNN-intitule.md`) : deux intitulés
+    différents sous le même numéro passeraient sans conflit, ce qui
+    rouvrirait le doublon silencieux ;
+  - un rangement par date.
+
+**§2 — Les amendements.** Un amendement s'écrit dans le fichier de la
+décision qu'il amende, en paragraphe daté, comme aujourd'hui.
+- Deux PR n'entrent alors en conflit que si elles amendent la même décision.
+  Ce conflit-là est réel, et il doit se trancher.
+- Une décision nouvelle qui en amende une ancienne garde sa ligne
+  « Amende ».
+
+**§3 — La migration se fait en une fois.** Un script découpe les 414
+entrées.
+- Les décisions actives vont dans `docs/decisions/`, les archivées dans
+  `docs/decisions/archivees/`.
+- Le texte est repris à l'identique, à deux exceptions près :
+  - le niveau du titre (`###` devient `#`) ;
+  - les liens écrits relativement au fichier (`../web/…`, une trentaine au
+    2026-11-01). Leur cible est réécrite pour la profondeur du répertoire
+    de destination, `docs/decisions/` ou `docs/decisions/archivees/`. Les
+    ancres écrites depuis la racine du dépôt, que lit
+    `scripts/wn-ancres-doctrine.mjs`, ne changent pas.
+- Un banc vérifie le découpage :
+  - la concaténation des fichiers rend le registre d'origine, aux titres
+    près, et aux liens près une fois leurs cibles résolues ;
+  - chaque lien réécrit désigne la même ressource qu'avant ;
+  - aucune entrée n'est perdue ni dupliquée.
+- Écartée : une migration progressive, avec les nouvelles décisions en
+  fichiers et les anciennes dans le registre. Chaque outil devrait lire les
+  deux formes, et l'en-tête du registre continuerait d'attirer des ajouts.
+
+**§4 — `docs/DECISIONS.md` devient une page fixe.** Elle dit où vit le
+registre et comment le lire. Elle n'est plus jamais écrite par une PR.
+- La lecture d'ensemble se fait par une commande (`node scripts/wn-decisions.mjs`,
+  du plus récent au plus ancien, ou une décision par son numéro), sans
+  fichier généré au dépôt.
+- Écartés :
+  - un index généré et versionné : chaque PR qui ajoute une décision le
+    régénérerait, et il redeviendrait le point de conflit ;
+  - la suppression du fichier : des centaines de documents datés le citent.
+
+**§5 — L'outillage.** La PR de bascule adapte tout ce qui lit le registre.
+L'inventaire du 2026-11-01 en relève trois sortes.
+- **Ce qui rougit dès la bascule** : le garde de numérotation et son banc,
+  qui jugeront par nom de fichier (trous réservés tolérés, titre accordé au
+  nom) ; la réservation (le dernier numéro se lit dans la liste du
+  répertoire) ; les dix tests web qui lisent une décision par son texte,
+  réécrits sur une aide commune `lireDecision(id)` ; les messages attendus
+  de `wn-controle-fusion.test.mjs`.
+- **Ce qui se viderait en silence**, et doit désormais rougir quand il ne
+  trouve aucune décision, avec un cas de test qui prouve cet échec :
+  - `recent_decision_ids` de `scripts/wn-cycle.mjs` ;
+  - le périmètre de `scripts/wn-ancres-doctrine.mjs` ;
+  - `scripts/version-prompt-documents.test.mjs`, qui passe aujourd'hui sur
+    une liste de décisions vide. Sur une page fixe sans titres, il ne
+    contrôlerait donc plus rien.
+- **Ce qui ne demande qu'un texte à jour** :
+  - `scripts/wn-kit-doctor.mjs` et `.wn/documentation.yml` ;
+  - les commentaires de `ci.yml`, de `.gitattributes` et de
+    `.coderabbit.yaml` ;
+  - les skills `wn-merge` (relecture du registre en 7 bis : diff sur
+    `docs/decisions/`), `wn-finish` et `wn-lot` ;
+  - `AGENTS.md`, `REGLES_PR_MERGE.md`, `PROJET_CONTEXTE.md`,
+    `doctrine/README.md` et `CONSTITUTION_CLINIQUE.md`.
+- Aucun garde n'est retiré : chacun change de forme d'entrée.
+
+**§6 — La bascule.** La migration, l'outillage et les bancs partent ensemble,
+dans une seule PR de la file A.
+- Elle part après la fin de l'essai de [[D-373]] (sept jours actifs). Elle
+  est mergée quand aucune PR ouverte ne touche `docs/DECISIONS.md`, ou quand
+  ces PR ont converti leur entrée avec le script de migration.
+- À partir du merge, une PR qui écrit encore dans `docs/DECISIONS.md` est
+  renvoyée, avec ce motif.
+
+**§7 — Hors de cette décision.** Les numéros `WN-SRC` du registre du corpus
+ont produit le même jour une collision de même nature (#1810, renumérotée
+sur arbitrage). Leur réservation à la rédaction est proposée, mais pas
+arbitrée.
+
 ### D-417 — BP-12a après la signature de sa structure : DC-11 partagée avec BP-17, DC-45 en quatrième axe « niveau de mesure », plafond de l'information contributive aligné sur D-266 §3, application à la re-signature B9/B12 (b23)
 
 - Date : 2026-11-01
@@ -130,6 +263,59 @@ l'axe « niveau de mesure » (type, contrôle de cohérence, surface de
 relecture), avant la re-signature de B9 et B12. Fiches F05 et F11 : fragments
 de journal. Constitution : `DC-11` et le paragraphe des statuts orphelins
 nomment les deux porteurs.
+
+### D-416 — La structure signée des fiches d'usage et le contrat positif de fraîcheur deviennent des chemins déclencheurs de la release-db, sur le patron de D-389 §5 (amende D-044)
+
+- Date : 2026-11-01
+- Statut : accepté — trois arbitrages du responsable du 2026-11-01 soir, sur
+  questions à options, après le constat de la release de #1806 (portée des
+  chemins, forme de la décision, livraison en deux PR).
+- Domaine : `.github/workflows/release-db.yml` (`paths`, résumé pour
+  l'approbateur, comparaison de la tête dépassante) ;
+  `scripts/wn-deploiement-deployer.mjs` (`CHEMINS_RELEASE_DB`) et, par lui,
+  les chemins gelés de `scripts/wn-sonde-release-db.mjs` ([[D-374]]) ; leurs
+  bancs.
+- **Amende** [[D-044]] (portée de la retenue) ; **étend** [[D-389]] §5 à deux
+  fichiers.
+- **Ne touche pas** : la structure signée de [[D-401]], ni son empreinte ni
+  sa signature ; le contrat de fraîcheur lui-même (paires et prédicat
+  inchangés) ; le fichier négatif, qui ne tourne qu'en CI ; aucune migration.
+- Contexte : la revue `wn-reviewer` de #1806 a relevé que la release de F05
+  n'était retenue que parce que le lot touchait aussi un banc sous
+  `web/src/lib/clinical/`. La re-signature suivante de la structure (B9/B12,
+  puis iode et sélénium) ajoutera des claims dans
+  `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` et dans le contrat, sans
+  toucher `clinical/` : elle se serait déployée sans que le préflight rejoue
+  ses paires contre la production. Le trou de retenue est celui que
+  [[D-389]] §5 a fermé pour `indicationsBiologieV1.ts` (motif : la retenue
+  promise par [[D-382]] §6 ; cette table n'a pas de paires au contrat de
+  fraîcheur). Un prédicat retouché seul dans le contrat serait parti de même,
+  sans être rejoué avant la release suivante.
+
+**§1 — Les deux chemins.** `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`
+et `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` s'ajoutent
+aux chemins déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du
+déployeur. Des fichiers, pas des dossiers : `fiches-usage/` recevra les
+textes des fiches et leurs outils, dont le merge ne doit pas attendre une
+approbation ; `web/prisma/checks/` porte des contrats qui ne tournent qu'en
+CI, dont le négatif.
+
+**§2 — Ce que voit l'approbateur.** Le résumé du run nomme chaque table
+signée hors de `clinical/` et le contrat quand le push les modifie ; la
+comparaison de la tête dépassante les compte comme une migration (refus en
+`workflow_dispatch`, run obsolète en `push`), comme la table des indications.
+
+**§3 — Hors de cette décision.** `biology-library/import/resolverLibellesV1.ts`,
+la dernière table signée hors de `clinical/`, n'épingle aucun claim : le
+préflight de fraîcheur ne la concerne pas, et elle reste hors des chemins.
+Une table signée neuve hors de `clinical/` qui épingle des claims entre aux
+chemins avec ses paires.
+
+**Écarté.** Le dossier `fiches-usage/**` : il retiendrait chaque texte et
+chaque outil des fiches jusqu'à une approbation. Le fichier seul, sans le
+contrat : le banc de parité empêche d'en changer les paires seul, pas d'en
+retoucher le prédicat. Un paragraphe ajouté à [[D-401]] : il retouchait une
+décision mergée qui porte une signature.
 
 ### D-415 — Fiches conseils, thème « respiration et apaisement » : le responsable propriétaire et seul signataire ; exercices respiratoires et d'apaisement corporel de la Fiche MY « Gestion du stress » et vidéos transcrites ; précautions par recherche, avant toute ouverture (lettre ah, m23)
 
