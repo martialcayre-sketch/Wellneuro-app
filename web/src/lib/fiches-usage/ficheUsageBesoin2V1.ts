@@ -31,10 +31,12 @@ import {
 // nommée par lui, arbitrage 7). Matière : les positions d'expert signées des
 // quatre dossiers du besoin 2 clos (D-314 §10) — une fiche par position, ses
 // claims ceux que la position cite ; les arbitrages du 2026-11-01 (fiche
-// LOT-12) disent ce qui entre et ce qui attend la re-signature suivante. Tant que
-// `validationExterne` est `false`, aucun acte de validation ne se pose et rien
-// ne se sert (`structureSignee()`). Une signature clinique ne se pose jamais par
-// l'outil : le responsable relit le périmètre et recopie son sha à la main.
+// LOT-12) disent ce qui entre et ce qui attend la re-signature suivante. Une
+// fiche retouchée change l'empreinte et ferme le verrou seule : jusqu'à la
+// re-signature, aucun acte de validation ne se pose et rien ne se sert
+// (`structureSignee()`). Une signature clinique ne se pose jamais par l'outil :
+// la déclaration du responsable, après lecture du périmètre, précède la
+// recopie de la date et du sha ([[D-195]]).
 //
 // LES CHAMPS ARBITRÉS LE 2026-10-16 : la question (identifiant `QC_…` d'une
 // liste fermée déclarée ici, en attendant la table signée du cadrage v3 §3.3),
