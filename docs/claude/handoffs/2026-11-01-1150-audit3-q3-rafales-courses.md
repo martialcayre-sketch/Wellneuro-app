@@ -102,7 +102,11 @@ quatre volets :
   - sous le verrou du bilan, deux lectures séparées (audit `Envoye`, puis
     réservation marquée) pouvaient manquer le solde d'un envoi concurrent ;
   - le journal se lit désormais en une seule requête (`Envoye` ou marquée) ;
-  - banc pg neuf, rouge sur l'ancien code, vert sur le correctif.
+  - banc pg neuf, rouge sur l'ancien code, vert sur le correctif ;
+  - T1 complet code 0, puis T2 `--fast` code 0 (Vitest : 15 481 passés ;
+    E2E : 303 passés) ;
+  - `origin/main` 67ab0108 (#1799, docs seuls) fusionné ensuite dans la
+    branche, par délégation du 2026-10-16.
 - CodeRabbit : quota atteint à la première tête.
 
 ## Problèmes ouverts
