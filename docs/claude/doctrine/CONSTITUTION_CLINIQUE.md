@@ -196,6 +196,11 @@ huit autres champs, et il leur faut d'abord un objet d'intervention exécutable.
 **reprise**, porteur BP-12a (fiches d'usage). Un porteur nommé n'arme rien
 tant que son lot n'est pas livré.*
 
+*Amendée par [[D-417]] §1 (2026-11-01) : cette part est **partagée**.
+BP-12a porte population, indication et conditions d'entrée ; BP-17 (options
+par hypothèse) porte dose, durée, contre-indications, interactions et rôle du
+praticien, avec les produits.*
+
 **DC-12 — Un claim de sécurité prime sur tous les autres et peut inhiber une
 proposition** issue de plusieurs claims favorables. Red flag médical,
 contre-indication, interaction, grossesse, pathologie, médicament, symptôme
@@ -868,6 +873,11 @@ taxonomie A/B/C : la règle **est restée orpheline** jusqu'au 2026-11-01 ([[D-2
 d'usage), sur la nomenclature unique de [[D-266]] §3. Un porteur nommé
 n'arme rien tant que son lot n'est pas livré.*
 
+*Précisée par [[D-417]] §2 (2026-11-01) : un quatrième axe de la structure
+des fiches d'usage, « niveau de mesure », aux trois valeurs de cette règle,
+une par fiche, distinct des trois axes de [[D-266]] §3 ; il entre à la
+re-signature suivante de la structure.*
+
 **DC-46 — Une valeur de laboratoire ne s'interprète pas isolément.** Unités,
 référence du laboratoire, sexe et âge lorsque pertinent, contexte, traitements,
 état inflammatoire, jeûne, temporalité.
@@ -1186,6 +1196,10 @@ banc qui tourne dans la suite du CI, un statut basculé :
   un lot neuf du moteur d'orientation pour `DC-36`. Aucune règle ne reste
   orpheline ; la campagne dédiée de [[D-107]] n'a plus d'objet. Recompte au
   grep le 2026-11-01 : **2** occurrences du marqueur, toutes deux en en-tête.
+  **Amendé par [[D-417]] §1 (2026-11-01)** : la part de `DC-11` hors
+  exclusions est partagée entre BP-12a (population, indication, conditions
+  d'entrée) et BP-17 (dose, durée, contre-indications, interactions, rôle du
+  praticien).
 - **`DC-50`**, **`DC-51`** : **renvoyées** à la campagne
   `2026-08-10-chaine-alimentaire`, qui est leur matière. Un renvoi est un
   routage, pas une fermeture.
