@@ -279,8 +279,9 @@ jobs:
                 # AVEC LA BORNE, CETTE PHRASE DIT BEAUCOUP PLUS : rien n'est en
                 # attente, reliquat compris.
                 echo "_Aucune migration AJOUTÉE depuis la dernière release réussie."
-                echo "Ce run est alors un push clinique ou de la table signée seul ([[D-044]],"
-                echo "[[D-389]] §5) : les préflights et les contrats de lecture sont rejoués"
+                echo "Ce run est alors un push clinique, d'une table signée ou du contrat de"
+                echo "fraîcheur seul ([[D-044]], [[D-389]] §5, [[D-416]]) : les préflights et les"
+                echo "contrats de lecture sont rejoués"
                 echo "contre la production._"
                 echo
                 # LE TROU DE CETTE PHRASE, DIT PLUTÔT QUE TU : le filtre écarte les
@@ -293,8 +294,9 @@ jobs:
                 echo "> liste, par construction. \`migrate deploy\` refuserait alors sur la"
                 echo "> dérive — sans écrire."
               else
-                echo "_Aucune migration ajoutée par ce push — push clinique ou de la table"
-                echo "signée seul ([[D-044]], [[D-389]] §5), suppression seule, ou"
+                echo "_Aucune migration ajoutée par ce push — push clinique, d'une table"
+                echo "signée ou du contrat de fraîcheur seul ([[D-044]], [[D-389]] §5,"
+                echo "[[D-416]]), suppression seule, ou"
                 echo "\`migration_lock.toml\` seul. Rien"
                 echo "de neuf à appliquer de ce fait ; un reliquat antérieur peut"
                 echo "néanmoins partir (voir l'avertissement)._"
@@ -671,7 +673,8 @@ jobs:
               if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
                 echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
                 echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles, un" >&2
-                echo "   changement clinique nouveau ou une table signée modifiée." >&2
+                echo "   changement clinique nouveau, une table signée modifiée ou le" >&2
+                echo "   contrat de fraîcheur modifié." >&2
                 echo "   Ce run push est désormais obsolète : un run plus récent sur main" >&2
                 echo "   porte déjà cette nouvelle tête et doit être approuvé à sa place." >&2
                 echo "   Aucune écriture n'a eu lieu dans ce run." >&2
@@ -679,7 +682,8 @@ jobs:
               fi
               echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
               echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles, un changement" >&2
-              echo "   clinique nouveau ou une table signée modifiée : déployer la branche" >&2
+              echo "   clinique nouveau, une table signée modifiée ou le contrat de" >&2
+              echo "   fraîcheur modifié : déployer la branche" >&2
               echo "   déploierait ce que personne n'a approuvé." >&2
               echo "   Rejeter ce run, puis relancer release-db en workflow_dispatch" >&2
               echo "   sur main, dont la tête sera alors le commit jugé. Aucune écriture." >&2

@@ -28,9 +28,11 @@
   puis iode et sélénium) ajoutera des claims dans
   `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` et dans le contrat, sans
   toucher `clinical/` : elle se serait déployée sans que le préflight rejoue
-  ses paires contre la production — le trou que [[D-389]] §5 a fermé pour
-  `indicationsBiologieV1.ts`. Un prédicat retouché seul dans le contrat
-  serait parti de même, sans être rejoué avant la release suivante.
+  ses paires contre la production. Le trou de retenue est celui que
+  [[D-389]] §5 a fermé pour `indicationsBiologieV1.ts` (motif : la retenue
+  promise par [[D-382]] §6 ; cette table n'a pas de paires au contrat de
+  fraîcheur). Un prédicat retouché seul dans le contrat serait parti de même,
+  sans être rejoué avant la release suivante.
 
 **§1 — Les deux chemins.** `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`
 et `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` s'ajoutent

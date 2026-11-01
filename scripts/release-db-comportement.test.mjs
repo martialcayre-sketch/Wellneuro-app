@@ -106,9 +106,11 @@ function git(cwd, ...args) {
  * arbitrage que pour une migration (D-374, arbitrage du 2026-10-26).
  * `table` fait toucher au second commit le fichier de la table signée des
  * indications, hors de `clinical/` : même arbitrage encore (D-389 §5). Un
- * chemin à la place de `true` vise un autre fichier déclencheur exact (D-416).
+ * chemin (ou une liste) à la place de `true` vise d'autres fichiers
+ * déclencheurs exacts (D-416).
  */
 function depotJouet({ migrations, clinique = false, table = false }) {
+  const fichiersTable = table === true ? ['web/src/lib/biology-library/indicationsBiologieV1.ts'] : [table].flat();
   const base = mkdtempSync(join(tmpdir(), 'wn-release-db-'));
   const amont = join(base, 'amont');
   const local = join(base, 'local');
@@ -127,9 +129,10 @@ function depotJouet({ migrations, clinique = false, table = false }) {
     mkdirSync(join(amont, 'web/src/lib/clinical'), { recursive: true });
     writeFileSync(join(amont, 'web/src/lib/clinical/regle.ts'), 'export const jouet = 1;\n');
   } else if (table) {
-    const fichier = table === true ? 'web/src/lib/biology-library/indicationsBiologieV1.ts' : table;
-    mkdirSync(join(amont, dirname(fichier)), { recursive: true });
-    writeFileSync(join(amont, fichier), '// re-signée\n');
+    for (const fichier of fichiersTable) {
+      mkdirSync(join(amont, dirname(fichier)), { recursive: true });
+      writeFileSync(join(amont, fichier), '// re-signée\n');
+    }
   } else {
     writeFileSync(join(amont, 'LISEZMOI.md'), 'un push documentaire\n');
   }
@@ -360,6 +363,15 @@ for (const fichier of [
       assert.notEqual(r.code, 0, `${fichier} non approuvé ne doit jamais partir avec la branche`);
       assert.doesNotMatch(r.sortie, /build déclenché/, 'aucun déploiement ne doit être déclenché');
       assert.equal(r.ecrit, '', 'une étape qui refuse ne doit rien reporter');
+
+      const p = jouer(scriptDeLEtape('Déclenchement du déploiement'), {
+        cwd: local,
+        bin,
+        env: { GITHUB_SHA: approuve, GITHUB_EVENT_NAME: 'push' },
+      });
+      assert.equal(p.code, 0, `le run push dépassé doit se dire obsolète, sans échec :\n${p.sortie}`);
+      assert.doesNotMatch(p.sortie, /build déclenché/);
+      assert.equal(p.ecrit, '', 'le chemin obsolète ne reporte aucun SHA attendu');
     } finally {
       rmSync(base, { recursive: true, force: true });
     }
@@ -371,6 +383,18 @@ for (const fichier of [
     assert.ok(texte.includes(fichier), texte);
   });
 }
+
+test('D-416 — le résumé nomme chaque fichier signé quand un push en modifie plusieurs', () => {
+  const fichiers = [
+    'web/src/lib/biology-library/indicationsBiologieV1.ts',
+    'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
+    'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+  ];
+  const texte = resumePour({ table: fichiers });
+  for (const fichier of fichiers) {
+    assert.ok(texte.includes(`- \`${fichier}\` : part avec cette approbation.`), texte);
+  }
+});
 
 test('un déploiement déjà existant reporte le commit approuvé, et sort sans déclencher', () => {
   const { base, local, approuve } = depotJouet({ migrations: false });
