@@ -32,12 +32,26 @@ signée des fiches d'usage était absente des listes des crochets.
 ## Fichiers modifiés
 
 - `.claude/hooks/gate-codex-p0.mjs` et son banc `gate-codex-p0.test.mjs`
-  (huit cas : cinq demandes, trois silences).
+  (quatorze cas : onze demandes ou traces, trois silences).
 - Fragment `changelog.d/2026-11-01-gate-codex-tables-signees.md`, ce handoff.
 
 ## Validations exécutées
 
-- `node --test .claude/hooks/gate-codex-p0.test.mjs` : 17 verts.
+- `node --test .claude/hooks/gate-codex-p0.test.mjs` : 23 verts.
+- Relecture adversariale `wn-reviewer` : GO, un P1 corrigé et trois P2
+  corrigés.
+  - P1 : un renommage échappait à la lecture de la base. Corrigé par
+    `--no-renames`.
+  - Les noms non ASCII sortaient entre guillemets. Corrigé par
+    `core.quotePath=false`.
+  - Au-delà de 200 fichiers lus, le rappel demande par prudence, pour qu'un
+    hook tué par le délai ne se taise plus.
+  - La trace Codex est cherchée depuis la racine du dépôt : depuis `web/`,
+    elle n'était jamais trouvée. Ce défaut existait avant la PR.
+  Les tests ajoutés couvrent le renommage, la lecture disque seule, la clé
+  JSON, le nom accentué, le plafond et la trace depuis `web/`. Une limite
+  reste acceptée, et elle est partagée avec le crochet d'édition : une chaîne
+  contenant `/*` ouvre un faux commentaire.
 - Sonde du crochet d'édition sur la structure signée : « demande », par le
   marqueur.
 - T1 complet et revue : voir la PR.
