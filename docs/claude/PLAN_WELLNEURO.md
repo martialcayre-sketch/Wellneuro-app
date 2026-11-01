@@ -2006,7 +2006,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | ak | place 7 : invitation d'autoévaluation au 21e jour ; close le 2026-11-01, activation constatée (D-353 §5) | C | 18 | non | H80 |
 | ao | place 8 : fiche compléments remise | C | 18, 19, 28 | non | F78 |
 | R:FC-5 (2/2) | place 9 : geste du 21e jour de l'agenda | C | 18 | non | H81 |
-| ap | place 10 : bibliothèque pédagogique | C | 17, 18, 28 | selon | H82 |
+| ap | place 10 : bibliothèque pédagogique ; close le 2026-11-01, activation constatée (D-357 §7) | C | 17, 18, 28 | selon | H82 |
 | an | place 11 : photo ou dictée des repas | C | 5, 18 | selon | H83 |
 
 **File A**
@@ -2124,7 +2124,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; drapeau posé le 2026-10-24, **constaté le 2026-11-01** (D-353 §5) : place close ; la porte 18 libère la place 10 (D-357 §7 amendé le 2026-10-29) | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
 | 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25 (H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
-| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : reste l'activation, après le constat de la place 7, devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
+| 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : drapeau posé le 2026-11-01, **constaté le 2026-11-01** (D-357 §7, D-360 §4 ; moitié mineur prouvée par le mécanisme, amendement du 2026-11-01 de D-357 §7) : place close ; passée devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
 | 11 | Photo ou dictée des repas | H83 | registre IA, porte 5, D-269, code | information patient | 10 |
 
 ### Ouvertures sans place numérotée
@@ -2854,7 +2854,7 @@ Destination proposée [Hypothese] : `docs/archive/roadmap-updates/` pour les feu
 | am | table de quantités | la main du responsable | 1, fermé sans source | H33 |
 | an | photo ou dictée des repas | la main du responsable | 10, place 11 | H83 |
 | ao | fiche compléments remise au patient | la main du responsable | 10, place 8 | F78 |
-| ap | bibliothèque pédagogique (écrite : D-357, 2026-10-24) | la main du responsable | 10, place 10 | H82 |
+| ap | bibliothèque pédagogique (écrite : D-357, 2026-10-24) ; activation constatée le 2026-11-01 | la main du responsable | 10, place 10 | H82 |
 | aq | contrôle bloquant des modifications cliniques | registre | 1 | H21 |
 | ar | montée de version datée des briques | registre | 1 | H22 |
 | as | fiche signalétique, date de naissance ; close le 2026-10-22 (D-342 §4) | la main du responsable | 10, place 6 | F45 |
