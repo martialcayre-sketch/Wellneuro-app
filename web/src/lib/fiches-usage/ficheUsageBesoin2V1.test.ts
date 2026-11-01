@@ -34,11 +34,11 @@ const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
   hypotheses: ['HYP_SYNTH'],
   populations: ['POP_SYNTH'],
 });
-/** Un verrou posé, daté — la structure du dépôt n'épingle aucun claim. */
+/** Un verrou posé, daté, sur les claims de la structure du dépôt — l'empreinte se passe à part. */
 const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, dateValidation: '2026-10-16T09:00:00.000Z' };
 
-// La structure est ÉCRITE (2026-11-01) et son verrou ÉTEINT jusqu'à la
-// signature du responsable (porte 23 : ses contenus sont les siens). Ce banc
+// La structure est ÉCRITE et SIGNÉE (2026-11-01, D-401) : verrou posé sur
+// l'empreinte relue par le responsable (porte 23 : ses contenus sont les siens). Ce banc
 // épingle l'empreinte : toute fiche ajoutée ou retouchée la change, et la sortie
 // est de RE-SIGNER, jamais de mettre le littéral à jour en silence. Identifiants
 // SYNTHÉTIQUES dans les cas ci-dessous.
