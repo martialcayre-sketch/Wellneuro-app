@@ -108,9 +108,60 @@ const motifsP0 = [
   "lib/questions.ts",
 ];
 
+// TOUTE TABLE SIGNÉE, RÉCENTE OU FUTURE — même critère que
+// `protect-wellneuro-files.mjs` depuis BP-01 ([[D-266]]), arbitrage du
+// responsable du 2026-11-01 (revue de #1816). La liste ci-dessus est
+// littérale : la structure des fiches d'usage, les signaux de sécurité, les
+// conduites, les portes biologiques… n'y étaient pas. Le critère est le
+// marqueur `validationExterne: true` hors commentaire, lu dans le fichier sur
+// disque ET à la base de comparaison (une table supprimée par la branche reste
+// une table signée touchée). Compagnons de test exclus : leurs fixtures
+// portent le marqueur. La structure des fiches d'usage compte verrou posé OU
+// éteint ([[D-314]] §2), comme dans le crochet d'édition. Logique recopiée à
+// dessein, comme la liste : un hook lit un diff, l'autre un chemin d'édition.
+const racine = git(["rev-parse", "--show-toplevel"]).stdout.trim() || cwd;
+
+function retirerFinDeLigne(ligne) {
+  let guillemet = null;
+  for (let i = 0; i < ligne.length; i++) {
+    const c = ligne[i];
+    if (guillemet) {
+      if (c === "\\") i++;
+      else if (c === guillemet) guillemet = null;
+    } else if (c === "'" || c === '"' || c === "`") guillemet = c;
+    else if (c === "/" && ligne[i + 1] === "/") return ligne.slice(0, i);
+  }
+  return ligne;
+}
+
+function sansCommentaires(texte) {
+  return String(texte)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map(retirerFinDeLigne)
+    .join("\n");
+}
+
+function estTableSignee(fichier) {
+  const n = normalise(fichier);
+  if (!/\.([cm]?[tj]sx?|json)$/.test(n) || /\.(test|spec)\.[a-z]+$/.test(n)) return false;
+  const marqueur = /(^|\/)web\/src\/lib\/fiches-usage\//.test(n)
+    ? /["']?validationExterne["']?\s*:\s*(true|false)/
+    : /["']?validationExterne["']?\s*:\s*true/;
+  const textes = [];
+  try {
+    textes.push(fs.readFileSync(path.join(racine, fichier), "utf8"));
+  } catch {
+    // Supprimé ou illisible sur disque : la base est lue ci-dessous.
+  }
+  const aLaBase = git(["show", `${mergeBase}:${fichier}`]);
+  if (aLaBase.status === 0) textes.push(aLaBase.stdout);
+  return textes.some((texte) => marqueur.test(sansCommentaires(texte)));
+}
+
 const toucheP0 = [...fichiers].filter((f) => {
   const n = normalise(f);
-  return motifsP0.some((motif) => n.includes(motif));
+  return motifsP0.some((motif) => n.includes(motif)) || estTableSignee(f);
 });
 if (toucheP0.length === 0) process.exit(0);
 

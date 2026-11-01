@@ -114,6 +114,51 @@ for (const [nom, chemin] of [
   });
 }
 
+// TOUTE TABLE SIGNÉE, par son marqueur ([[D-266]], arbitrage du 2026-11-01) :
+// la structure des fiches d'usage et une table signée hors de la liste
+// littérale. Un marqueur en commentaire, ou porté par un compagnon de test,
+// reste en silence.
+const marqueur = ["validation", "Externe"].join("");
+for (const [nom, chemin, contenu] of [
+  ["structure signée des fiches d'usage", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: true };\n`],
+  ["structure des fiches d'usage, verrou éteint", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: false };\n`],
+  ["table signée hors liste", "web/src/lib/clinical/catalogueConduitesV1.ts", `export const M = { ${marqueur}: true };\n`],
+]) {
+  test(`demande : ${nom}, aucune trace Codex`, () => {
+    const work = repo();
+    ecrire(work, chemin, contenu);
+    run(["add", "-A"], work);
+    run(["commit", "-m", "feat: table"], work);
+    assertDemande(invoke(work, "gh pr create --title x --body y"));
+  });
+}
+
+test("demande : une table signée SUPPRIMÉE par la branche reste touchée", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "table"], work);
+  run(["push", "origin", "feature:main"], work);
+  run(["fetch", "origin"], work);
+  run(["rm", "-q", "web/src/lib/clinical/tableV1.ts"], work);
+  run(["commit", "-m", "suppression"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+for (const [nom, chemin, contenu] of [
+  ["marqueur en commentaire", "web/src/lib/clinical/autreV1.ts", `// ${marqueur}: true\nexport const x = 1;\n`],
+  ["verrou éteint hors fiches d'usage", "web/src/lib/clinical/autreV1.ts", `export const M = { ${marqueur}: false };\n`],
+  ["compagnon de test", "web/src/lib/clinical/autreV1.test.ts", `const M = { ${marqueur}: true };\n`],
+]) {
+  test(`silence : ${nom}`, () => {
+    const work = repo();
+    ecrire(work, chemin, contenu);
+    run(["add", "-A"], work);
+    run(["commit", "-m", "feat: x"], work);
+    assertSilence(invoke(work, "gh pr create --title x --body y"));
+  });
+}
+
 test("demande : gh pr merge déclenche la même classification", () => {
   const work = repo();
   ecrire(work, "web/src/app/api/portail/dossier/route.ts", "x");
