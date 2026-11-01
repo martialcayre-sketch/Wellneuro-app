@@ -154,6 +154,17 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     expect(cycle.momentum?.delta).not.toBe(0);
   });
 
+  it('cycle courant sans lecture d’ancre : un premier HADS à J15 ne mesure pas J21 (revue Copilot)', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [passationDe('Q_NEU_11', '2026-01-16T00:00:00.000Z', HAD_COMPLET)],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    expect(cycle.motifMomentum).toBe('sans_lecture_ancre');
+    expect(cycle.jalons.every((j) => !j.mesure)).toBe(true);
+  });
+
   // ── [[D-397]] §2 : aucun momentum sans jour 0, même là où le repli en donnait un ──
   it('cycle courant sans diffusion : ses jalons restent lisibles, son momentum est retiré avec son motif (D-397)', () => {
     const tr = construireTrajectoire({

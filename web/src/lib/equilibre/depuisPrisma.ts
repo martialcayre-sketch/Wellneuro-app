@@ -231,8 +231,11 @@ export function construireHistoriqueEquilibre(
     if (dateJalon > maintenant) continue;
 
     let dateValeur = dateJalon;
-    if (dateDerniereLecture) {
-      const borneBasse = dateDerniereLecture;
+    // Avec la règle du cycle courant, la garde vaut aussi quand l'ancre n'a pas
+    // de lecture scorée : un jalon postérieur ne s'ouvre que sur une remesure,
+    // jamais sur la première passation d'un questionnaire (revue Copilot).
+    const borneBasse = dateDerniereLecture ?? (estNouveaute && dateJalon > dateT0 ? dateT0 : null);
+    if (borneBasse) {
       const nouvelles = datesReponsesRetenues.filter(
         (date) => date > borneBasse && date <= dateJalon
       );
