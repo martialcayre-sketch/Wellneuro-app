@@ -55,12 +55,16 @@ maintenues.**
 
 **§3 — Planchers de nuits, paramètres techniques.** 14 nuits pour calculer
 l'indice : un minimum opérationnel d'observation, qui ne valide pas la
-fiabilité de l'indice. 7 nuits pour qu'un axe compte, avec un avertissement :
-la fiabilité de la régularité sur si peu de nuits est particulièrement
-incertaine.
+fiabilité de l'indice. 7 nuits pour que la durée et l'efficacité comptent
+(le plancher par axe ne s'applique qu'à elles ; la régularité et la qualité
+utilisent toutes les nuits plausibles, soit au moins 14 quand l'indice
+existe). Un avertissement accompagne la régularité elle-même : sa fiabilité
+reste incertaine sur un agenda de 14 à 21 nuits, sans rapport avec le
+plancher de 7 (arbitrage du responsable sur la revue de la PR, même jour).
 
 **§4 — Trois paramètres de l'indice relevés hors de la liste de H08.**
-Contribution égale des axes couverts (un quart chacun) : paramètre technique.
+Poids égal entre les axes couverts (1/N : un quart avec quatre axes, un tiers
+avec trois), comme le moteur en service : paramètre technique.
 Indice calculé à partir de trois axes couverts : paramètre technique, calcul
 partiel sans imputer les axes absents, axes présents affichés,
 comparabilité limitée. Bandes 0-49, 50-74, 75-100 : **repère du cabinet**,
@@ -82,7 +86,9 @@ quoi une passation partielle ne nourrit plus les besoins 1 et 3.
 
 **§7 — Lots de code.** Deux lots, file A : (a) la règle de complétude du §6 ;
 (b) les mentions d'affichage — avertissement de régularité (§3), axes
-présents (§4), libellés des bandes (§4), mention du palier (§5).
+présents (§4), libellés des bandes (§4), mention du palier (§5). Le texte de
+l'avertissement et celui de la mention ne sont pas fixés ici : le lot (b) les
+propose, et le responsable les valide mot pour mot avant le code.
 
 **§8 — Table des quantités du protocole (am) : les seuls repères officiels
 vérifiés, signés ligne à ligne** (`WN-SRC-0576`, adultes) :
