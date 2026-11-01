@@ -25,6 +25,12 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
    */
   alerteSecuritePraticien: 'alerte_securite_praticien',
   /**
+   * Courriel au PRATICIEN sur un signalement déposé par le patient (effet
+   * indésirable, incident de confidentialité, demande de droit) : tracé au
+   * dossier, sans l'adresse du praticien ([[D-398]] §1, Q4).
+   */
+  signalementPraticien: 'signalement_praticien',
+  /**
    * Les conditions d'utilisation annoncées à un patient suivi ([[D-292]] §3),
    * envoi groupé du cockpit. `reference_id` porte la version annoncée : c'est
    * lui qui retire le dossier de la liste une fois l'e-mail parti.

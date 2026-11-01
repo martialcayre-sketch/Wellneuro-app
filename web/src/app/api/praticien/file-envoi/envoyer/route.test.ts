@@ -7,6 +7,7 @@ const { sendMail, prisma } = vi.hoisted(() => ({
     envoiBrouillon: { findFirst: vi.fn() },
     // idsAssignablesPour / resolveDefinition : aucun instrument du cabinet ici.
     cabinetInstrument: { findMany: vi.fn().mockResolvedValue([]), findUnique: vi.fn() },
+    correspondancePatient: { create: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -25,6 +26,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 
+import nodemailer from 'nodemailer';
 import { POST } from './route';
 
 const BROUILLON = {
@@ -95,6 +97,25 @@ describe('file-envoi/envoyer POST', () => {
     // file_envoi@2 (2026-10-23) : ni titre d'instrument ni note dans l'e-mail.
     expect(message.text).not.toContain('PSS-10');
     expect(message.text).not.toContain('Note de votre praticien');
+  });
+
+  // [[D-398]] §1 (Q4) : une exception à la PRÉPARATION du transport s'écrit
+  // « Erreur » avec son motif, comme un refus SMTP — elle ne laissait aucune trace.
+  it('un transport qui lève à sa préparation : trace « Erreur » avec son motif, le brouillon reste parti', async () => {
+    vi.spyOn(nodemailer, 'createTransport').mockImplementationOnce(() => {
+      throw new Error('transport indisponible');
+    });
+    const response = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(response.status).toBe(200);
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledTimes(1);
+    expect(prisma.correspondancePatient.create.mock.calls[0][0].data).toMatchObject({
+      type: 'questionnaires',
+      statut: 'Erreur',
+      erreurCourte: expect.stringContaining('transport indisponible'),
+      sourceType: 'envoi_brouillon',
+      sourceId: 'ENV_1',
+    });
   });
 
   it('révocation portail : 409, aucune assignation, brouillon intact', async () => {

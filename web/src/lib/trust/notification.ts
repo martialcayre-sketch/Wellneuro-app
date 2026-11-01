@@ -1,4 +1,6 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { sanitizeAuditError } from '@/lib/anthropic';
+import { TYPES_CORRESPONDANCE_PATIENT, journaliserCorrespondancePatient } from '@/lib/correspondance/patient';
 import { prisma } from '@/lib/prisma';
 
 /** Fenêtre de l'e-mail praticien des signalements : l'heure CIVILE en cours ([[D-328]]). */
@@ -45,6 +47,12 @@ export async function premierSignalementDeLHeure(idPatient: string, maintenant: 
   }
 }
 
+/** Objet de la ligne de journal, lue par le praticien dans le dossier ([[D-398]] §1, Q4). */
+export const OBJET_JOURNAL_SIGNALEMENT = 'Signalement déposé — courriel au praticien';
+
+/** Les trois sortes de signalement, au vocabulaire de la route (`categorie`). */
+export type CategorieSignalementNotifie = 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
+
 /**
  * Notification praticien à la réception d'un signalement TRUST.
  * Règle du cadrage (décision 13) : les notifications externes sont
@@ -52,15 +60,36 @@ export async function premierSignalementDeLHeure(idPatient: string, maintenant: 
  * santé. Le détail se consulte dans le dashboard. Échec silencieux comme
  * les autres emails non critiques (sendAck) : l'enregistrement du
  * signalement ne dépend jamais de l'email.
+ *
+ * TRACÉ AU DOSSIER ([[D-398]] §1, Q4) : sans ligne de journal, rien ne
+ * prouvait qu'un e-mail était parti, ni qu'il avait échoué. La ligne porte la
+ * sorte et l'identifiant du signalement, jamais l'adresse du praticien : elle
+ * ne passe que dans `to:`, et le motif d'un échec est masqué, au journal comme
+ * dans le log.
  */
-export async function notifierPraticienSignalement(praticienEmail: string): Promise<void> {
+export async function notifierPraticienSignalement(entree: {
+  idPatient: string;
+  praticienEmail: string | null | undefined;
+  signalement: { categorie: CategorieSignalementNotifie; id: string | undefined };
+}): Promise<void> {
+  const trace = {
+    idPatient: entree.idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.signalementPraticien,
+    objet: OBJET_JOURNAL_SIGNALEMENT,
+    referenceType: entree.signalement.categorie,
+    referenceId: entree.signalement.id,
+  } as const;
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl || !praticienEmail) return;
+  const destinataire = (entree.praticienEmail ?? '').trim();
+  if (!smtpUrl || !destinataire) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    return;
+  }
   try {
     const transporter = creerTransportSmtp(smtpUrl);
     await transporter.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
-      to: praticienEmail,
+      to: destinataire,
       subject: 'Un signalement a été déposé dans votre espace — Wellneuro',
       text:
         'Bonjour,\n\n' +
@@ -69,6 +98,10 @@ export async function notifierPraticienSignalement(praticienEmail: string): Prom
         'Cet email ne contient volontairement aucun détail.\n',
     });
   } catch (err) {
-    console.error('[trust notification]', err instanceof Error ? err.message : String(err));
+    // Masqué : un refus SMTP peut citer l'adresse du destinataire.
+    console.error('[trust notification]', sanitizeAuditError(err instanceof Error ? err.message : err));
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur: err });
+    return;
   }
+  await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
 }

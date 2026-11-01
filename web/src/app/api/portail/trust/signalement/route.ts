@@ -268,7 +268,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
       // vaut que pour une gêne légère (« revue praticien »).
       const prevenir = orientation.orientation !== 'revue_praticien'
         || await premierSignalementDeLHeure(patient.idPatient);
-      await prisma.trustAdverseEffectReport.create({
+      const rapport = await prisma.trustAdverseEffectReport.create({
         data: {
           idPatient: patient.idPatient,
           produitLibelle,
@@ -289,7 +289,13 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           ...association,
         },
       });
-      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) {
+        void notifierPraticienSignalement({
+          idPatient: patient.idPatient,
+          praticienEmail: patient.praticienEmail,
+          signalement: { categorie: 'effet_indesirable', id: rapport.id },
+        });
+      }
       return NextResponse.json({ ok: true, messagePatient: orientation.messagePatient });
     }
 
@@ -303,10 +309,16 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         );
       }
       const prevenir = await premierSignalementDeLHeure(patient.idPatient);
-      await prisma.trustPrivacyIncident.create({
+      const incident = await prisma.trustPrivacyIncident.create({
         data: { idPatient: patient.idPatient, categorie: categorieIncident, description },
       });
-      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) {
+        void notifierPraticienSignalement({
+          idPatient: patient.idPatient,
+          praticienEmail: patient.praticienEmail,
+          signalement: { categorie: 'incident_confidentialite', id: incident.id },
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -319,14 +331,20 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
         );
       }
       const prevenir = await premierSignalementDeLHeure(patient.idPatient);
-      await prisma.trustRightsRequest.create({
+      const demande = await prisma.trustRightsRequest.create({
         data: {
           idPatient: patient.idPatient,
           type: typeDemande,
           description: tronque(payload.description, 2000) || null,
         },
       });
-      if (prevenir) void notifierPraticienSignalement(patient.praticienEmail);
+      if (prevenir) {
+        void notifierPraticienSignalement({
+          idPatient: patient.idPatient,
+          praticienEmail: patient.praticienEmail,
+          signalement: { categorie: 'demande_droit', id: demande.id },
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 

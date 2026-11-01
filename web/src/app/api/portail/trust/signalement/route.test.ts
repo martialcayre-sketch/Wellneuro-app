@@ -68,7 +68,7 @@ describe('POST /api/portail/trust/signalement', () => {
         severiteDeclaree: 'severe',
       }),
     });
-    expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
+    expect(notifierPraticienSignalement).toHaveBeenCalledWith(expect.objectContaining({ idPatient: 'PAT_TEST', praticienEmail: 'praticien@wellneuro.fr' }));
   });
 
   it('effet indésirable sans produit ou sévérité invalide : 400, rien n’est écrit', async () => {
@@ -100,6 +100,22 @@ describe('POST /api/portail/trust/signalement', () => {
     });
   });
 
+  // D-398 §1 (Q4) : la trace au dossier nomme la sorte et l'identifiant du
+  // signalement — la route les passe, la notification les écrit.
+  it.each([
+    ['effet_indesirable', prisma.trustAdverseEffectReport, { produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree: 'severe' }],
+    ['incident_confidentialite', prisma.trustPrivacyIncident, { categorieIncident: 'connexion_non_reconnue', description: 'Connexion inconnue.' }],
+    ['demande_droit', prisma.trustRightsRequest, { typeDemande: 'rectification' }],
+  ])('%s : la notification reçoit le dossier, la sorte et l’identifiant du signalement (D-398)', async (categorie, table, champs) => {
+    table.create.mockResolvedValueOnce({ id: 'signalement-1' });
+    expect((await POST(request({ categorie, ...champs }))).status).toBe(200);
+    expect(notifierPraticienSignalement).toHaveBeenCalledWith({
+      idPatient: 'PAT_TEST',
+      praticienEmail: 'praticien@wellneuro.fr',
+      signalement: { categorie, id: 'signalement-1' },
+    });
+  });
+
   // D-328 : un e-mail par heure et par dossier. Le signalement, lui,
   // s'enregistre TOUJOURS — c'est seulement l'e-mail qui se tait.
   it.each(['severe', 'moderee', 'incertaine'])(
@@ -110,7 +126,7 @@ describe('POST /api/portail/trust/signalement', () => {
         request({ categorie: 'effet_indesirable', produitLibelle: 'Complément X', symptomes: 'Palpitations', severiteDeclaree }),
       );
       expect(response.status).toBe(200);
-      expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
+      expect(notifierPraticienSignalement).toHaveBeenCalledWith(expect.objectContaining({ idPatient: 'PAT_TEST', praticienEmail: 'praticien@wellneuro.fr' }));
       premierSignalementDeLHeure.mockResolvedValue(true);
     },
   );
@@ -136,6 +152,6 @@ describe('POST /api/portail/trust/signalement', () => {
     expect(premierSignalementDeLHeure.mock.invocationCallOrder[0]).toBeLessThan(
       prisma.trustRightsRequest.create.mock.invocationCallOrder[0],
     );
-    expect(notifierPraticienSignalement).toHaveBeenCalledWith('praticien@wellneuro.fr');
+    expect(notifierPraticienSignalement).toHaveBeenCalledWith(expect.objectContaining({ idPatient: 'PAT_TEST', praticienEmail: 'praticien@wellneuro.fr' }));
   });
 });

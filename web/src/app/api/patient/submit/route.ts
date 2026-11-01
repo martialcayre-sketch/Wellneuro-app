@@ -490,11 +490,14 @@ async function sendAck(
     await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
     return;
   }
-  const transport = creerTransportSmtp(smtpUrl);
-  // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne nomme
-  // plus le questionnaire (2026-10-23).
-  const gabarit = rendreGabarit(getGabarit('accuse_reception'), {});
+  // Transport et gabarit DANS le bloc qui consigne l'échec ([[D-398]] §1,
+  // Q4) : une exception à leur préparation s'écrit « Erreur », comme un refus
+  // SMTP, au lieu de ne laisser aucune trace.
   try {
+    const transport = creerTransportSmtp(smtpUrl);
+    // Texte au registre des gabarits (Socle LOT-03, DC-26). La v2 ne nomme
+    // plus le questionnaire (2026-10-23).
+    const gabarit = rendreGabarit(getGabarit('accuse_reception'), {});
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: patientEmail,

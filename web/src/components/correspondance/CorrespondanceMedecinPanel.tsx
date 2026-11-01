@@ -162,11 +162,13 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
     <div className="flex flex-col gap-4">
     <section aria-labelledby="correspondance-patient" className="rounded-xl border border-border bg-surface p-4">
       <h3 id="correspondance-patient" className="text-sm font-semibold text-foreground">
-        Correspondance avec le patient
+        {/* Le patient n'est plus le seul destinataire : l'alerte de sécurité et le
+            signalement vous écrivent au sujet du dossier ([[D-398]] §1, Q4). */}
+        E-mails du dossier
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Historique des e-mails envoyés par Wellneuro. Le contenu des messages et l’adresse du patient ne
-        sont pas recopiés dans ce journal.
+        Historique des e-mails envoyés par Wellneuro : au patient, et à vous au sujet de ce dossier. Le
+        contenu des messages et les adresses ne sont pas recopiés dans ce journal.
       </p>
 
       {etat === 'chargement' && (
@@ -187,7 +189,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
           role="alert"
           className="mt-3 flex flex-col gap-3 rounded-lg border border-accent bg-status-warning/10 p-3 text-base text-status-warning"
         >
-          <span>Les envois au patient n’ont pas pu être lus. Ce n’est pas un dossier sans envoi.</span>
+          <span>Les e-mails du dossier n’ont pas pu être lus. Ce n’est pas un dossier sans envoi.</span>
           <button
             type="button"
             onClick={() => void chargerFil()}
@@ -200,7 +202,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
 
       {etat === 'chargee' && correspondancesPatient.length === 0 && (
         <p className="mt-3 text-base text-muted-foreground">
-          Aucun envoi patient journalisé pour l’instant.
+          Aucun e-mail journalisé pour l’instant.
         </p>
       )}
 
