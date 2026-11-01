@@ -52,7 +52,7 @@ export function sourcesDuNotebook(notebook: string): string[] {
  * Une source sous QUARANTAINE SANITAIRE au registre — `lifecycleStatus:
  * 'quarantined'`, posé quand une notice attend une relecture scientifique ou de
  * sécurité (WN-SRC-0318 « premières ordonnances », vigilance Élevée, en est le
- * cas type). 28 notices le portent aujourd'hui.
+ * cas type). 25 notices le portent au 2026-11-01 (trois levées par D-405).
  *
  * CE QUE CE PRÉDICAT NE DOIT PAS FILTRER, et c'est la moitié de son intérêt :
  * la FILE DE REVUE. Le praticien doit continuer d'y voir les claims des sources
