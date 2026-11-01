@@ -89,13 +89,20 @@ function BoutonRelance({ idAssignation, titre }: { idAssignation: string; titre:
       // refus de cadence des autres cartes du dossier paraîtrait inexpliqué.
       // SEULEMENT S'IL EST PARTI : en échec, les autres cartes restent
       // rappelables, et la phrase affirmerait un fait faux.
+      //
+      // UN 200 N'EST PAS UN ENVOI ([[D-404]]) : la route rend 200 avec le
+      // statut de la trace. « Rappel envoyé. » ne se dit que de « Envoye ».
       const nombre = charge.questionnaires ?? 1;
       setMessage(
-        charge.ok
-          ? nombre > 1 && charge.statut === 'Envoye'
-            ? `Rappel envoyé. Il couvre les ${nombre} questionnaires en retard de ce dossier.`
-            : 'Rappel envoyé.'
-          : charge.error ?? 'Rappel impossible.',
+        !charge.ok
+          ? charge.error ?? 'Rappel impossible.'
+          : charge.statut === 'Erreur'
+            ? 'Rappel non parti : l’envoi a échoué. Vous pouvez réessayer.'
+            : charge.statut === 'Non_envoye'
+              ? 'Rappel non parti : l’envoi d’e-mails n’est pas configuré.'
+              : nombre > 1 && charge.statut === 'Envoye'
+                ? `Rappel envoyé. Il couvre les ${nombre} questionnaires en retard de ce dossier.`
+                : 'Rappel envoyé.',
       );
     } catch {
       setMessage('Rappel impossible : le serveur n’a pas répondu.');

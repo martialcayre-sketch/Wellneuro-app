@@ -582,6 +582,33 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
     }
   });
 
+  // [[D-404]] : une synthèse que le gabarit ne sait pas rendre partait en 500
+  // sans trace — le septième chemin muet. Elle se consigne en préparation.
+  it('un rendu du bilan qui lève écrit l’audit ET le journal en préparation, sans rien envoyer', async () => {
+    process.env.SMTP_URL = 'smtp://test:test@localhost:1025';
+    try {
+      // `syntheseJson` absent : le gabarit lit `narratif_patient` et lève.
+      findFirst.mockResolvedValue({ ...syntheseFixture('Validee_Praticien'), syntheseJson: null });
+
+      const res = await envoyer({});
+      expect(res.status).toBe(500);
+      expect(sendMail).not.toHaveBeenCalled();
+
+      expect(createBookletEnvoi).toHaveBeenCalledTimes(1);
+      const audit = createBookletEnvoi.mock.calls[0][0].data as Record<string, unknown>;
+      expect(audit.statut).toBe('Erreur');
+      expect(audit.operation).toBe('Preparation');
+      expect(audit.erreurCourte).toBeTruthy();
+      expect(audit.noteTransmise).toBeUndefined();
+
+      expect(ligneJournal().statut).toBe('Erreur');
+      // Rien n'a été réservé : la préparation précède la réservation.
+      expect(updateCorrespondance).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.SMTP_URL;
+    }
+  });
+
   // [[D-398]] §1 (Q3) : la lecture du registre, en tête de requête, ne voyait
   // pas un envoi en vol — deux clics simultanés sur un bilan jamais envoyé
   // partaient tous les deux.

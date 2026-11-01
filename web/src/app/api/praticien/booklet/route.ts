@@ -224,13 +224,25 @@ export async function POST(req: Request) {
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
-    const html = buildBookletHTML(
-      patientNom,
-      dateDocument,
-      syntheseData,
-      synthese.notesPraticien ?? '',
-      { assistanceIA: !estRedactionPraticien(synthese.modele) },
-    );
+    // LE RENDU AUSSI SE TRACE ([[D-404]]) : une synthèse que le gabarit ne sait
+    // pas rendre partait en 500 sans trace — le septième chemin muet de
+    // [[D-398]] §1, Q4. L'échec est consigné en préparation, puis le `catch`
+    // général rend la main : rien n'est parti, rien n'a été réservé.
+    let html: string;
+    try {
+      html = buildBookletHTML(
+        patientNom,
+        dateDocument,
+        syntheseData,
+        synthese.notesPraticien ?? '',
+        { assistanceIA: !estRedactionPraticien(synthese.modele) },
+      );
+    } catch (erreurRendu) {
+      await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
+        'Erreur', 'Preparation', relectureConfirmee,
+        erreurRendu instanceof Error ? erreurRendu.message : String(erreurRendu));
+      throw erreurRendu;
+    }
 
     // Dossier au suivi clôturé : plus aucun document ne part. La garde porte
     // sur l'ENVOI, pas sur l'aperçu — consulter le document d'un dossier clos

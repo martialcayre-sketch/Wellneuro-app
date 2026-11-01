@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma, verifierAppartenancePatient, emettreLienMagiquePourPraticien } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
-    patient: { findUnique: vi.fn(), update: vi.fn() },
+    patient: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     portailMagicLink: { create: vi.fn(), updateMany: vi.fn() },
     // `$transaction` reçoit un tableau de promesses déjà construites : les
     // exécuter suffit, et les appels sont enregistrés sur les mocks ci-dessus.
@@ -174,8 +174,8 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
 
     // La contre-épreuve d'existence d'abord : sans elle, une route qui
     // n'écrirait rien rendrait la boucle vide et le test menteur.
-    expect(prisma.patient.update).toHaveBeenCalled();
-    const appels = prisma.patient.update.mock.calls as [{ data: Record<string, unknown> }][];
+    expect(prisma.patient.updateMany).toHaveBeenCalled();
+    const appels = prisma.patient.updateMany.mock.calls as [{ data: Record<string, unknown> }][];
     for (const [appel] of appels) {
       expect(appel.data).not.toHaveProperty('sessionsInvalidesAvant');
     }
@@ -206,6 +206,8 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
       'Sophie',
       'PAT_1',
       'p@wellneuro.fr',
+      undefined,
+      // Pas de rétablissement : la garde d'une heure tient ([[D-404]]).
       undefined,
     );
   });
@@ -312,6 +314,7 @@ describe('POST /api/praticien/token — rétablissement d’accès', () => {
       accessTokenRevoked: true,
     });
     prisma.patient.update.mockResolvedValue({});
+    prisma.patient.updateMany.mockResolvedValue({ count: 1 });
     vi.mocked(sendPortailLinkEmail).mockResolvedValue('Envoye');
   });
 
@@ -319,24 +322,43 @@ describe('POST /api/praticien/token — rétablissement d’accès', () => {
     const res = await POST(postRequest({ idPatient: 'PAT_1', action: 'resend' }));
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('retablissement_non_confirme');
-    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.patient.updateMany).not.toHaveBeenCalled();
     expect(sendPortailLinkEmail).not.toHaveBeenCalled();
   });
 
   it('accord non booléen : refusé comme s’il était absent', async () => {
     const res = await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: 'oui' }));
     expect(res.status).toBe(409);
-    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.patient.updateMany).not.toHaveBeenCalled();
   });
 
   it('renvoi confirmé : lève et envoie', async () => {
     const res = await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: true }));
     expect(res.status).toBe(200);
-    expect(prisma.patient.update).toHaveBeenCalledWith({
-      where: { idPatient: 'PAT_1' },
+    expect(prisma.patient.updateMany).toHaveBeenCalledWith({
+      where: { idPatient: 'PAT_1', accessTokenRevoked: true },
       data: { accessTokenRevoked: false },
     });
     expect(sendPortailLinkEmail).toHaveBeenCalledOnce();
+  });
+
+  // [[D-404]] : le rétablissement confirmé passe la garde d'une heure — la
+  // route transmet l'instant de la levée, et la garde ne compte que depuis.
+  it('renvoi confirmé : l’instant du rétablissement voyage jusqu’à la garde', async () => {
+    const avant = Date.now();
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: true }));
+    const retabliLe = vi.mocked(sendPortailLinkEmail).mock.calls[0][5];
+    expect(retabliLe).toBeInstanceOf(Date);
+    expect(retabliLe!.getTime()).toBeGreaterThanOrEqual(avant);
+    expect(retabliLe!.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  // Bascule atomique : deux confirmations simultanées ne rétablissent qu'une
+  // fois. Celle qui ne lève rien reste sous la garde.
+  it('une confirmation qui ne lève rien ne passe pas la garde', async () => {
+    prisma.patient.updateMany.mockResolvedValueOnce({ count: 0 });
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'resend', retablirAcces: true }));
+    expect(vi.mocked(sendPortailLinkEmail).mock.calls[0][5]).toBeUndefined();
   });
 
   it('la copie du lien reste en lecture seule sur un dossier révoqué', async () => {
@@ -345,7 +367,7 @@ describe('POST /api/praticien/token — rétablissement d’accès', () => {
     // confirmer, et un 409 y serait une régression pure.
     const res = await POST(postRequest({ idPatient: 'PAT_1', action: 'lien' }));
     expect(res.status).toBe(200);
-    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.patient.updateMany).not.toHaveBeenCalled();
     expect(sendPortailLinkEmail).not.toHaveBeenCalled();
   });
 
@@ -399,6 +421,7 @@ describe('POST /api/praticien/token — le renvoi porte le lien qui ouvre', () =
       'PAT_SEED_03',
       'p@wellneuro.fr',
       'https://app.wellneuro.fr/portail/lien/JETON',
+      undefined,
     );
   });
 });
