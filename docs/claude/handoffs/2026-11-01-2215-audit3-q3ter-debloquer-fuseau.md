@@ -88,7 +88,11 @@ Les restes de Q3 bis tranchés par le responsable le 2026-11-01 :
     serveur du `PATCH`, demandée aussi, est routée (voir problèmes
     ouverts) : elle toucherait le dossier, hors de l'arbitrage.
 - `origin/main` avancé (#1811) : fusionné dans la branche sur arbitrage du
-  responsable (de98fb87), sans conflit.
+  responsable (de98fb87), sans conflit ; puis de nouveau (#1813, D-415),
+  conflit de registre résolu en ajouts seuls (D-415 au-dessus de D-414).
+- Après la correction Copilot et la première fusion : T1 complet code 0 ;
+  T2 `--fast` code 0 (Vitest : 15 560 passés, 40 sautés ; E2E : 303
+  passés, 7 sautés). La seconde fusion n'apporte que des docs.
 
 ## Problèmes ouverts
 
