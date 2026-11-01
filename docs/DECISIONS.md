@@ -264,7 +264,7 @@ et sélénium) rendra textes et libellés « à relire » ([[D-314]] §5, §8).
 - Conséquences : fragment `changelog.d/2026-11-01-d401-structure-fiches-usage.md` ;
   fiche LOT-12 (arbitrages 29 à 40) ; journal F05. Routé : `portes_biologiques`
   et `indications_assiettes` n'ont pas encore de cas négatif propre (constaté
-  le 2026-11-01, en tête du fichier négatif).
+  le 2026-11-01, en tête du fichier négatif ; routé au plan, §8, dettes techniques).
 
 ### D-400 — Table d'arrêt signée avec les grilles qu'elle cite (E64) ; un porteur pour chacune des trois dernières règles orphelines (E32) : BP-12a pour DC-11 et DC-45, un lot neuf du moteur d'orientation pour DC-36
 
