@@ -10,7 +10,8 @@ recommandation (chapitres 8 à 10), un plan de lots (chapitre 11), les risques
 rien n'est engagé** ; aucune ligne de code, aucune décision, aucun drapeau ne
 change avec ce document. Les lots s'ouvrent après les réponses du chapitre 13.
 Q1 à Q3 ont été tranchées le 2026-11-01 (chapitre 14) : A puis B, l'organisation
-seule, et une frise des étapes navigable en plus du menu.
+seule, et une frise des étapes navigable en plus du menu ; Q27 à Q30, ouvertes par
+ce dernier choix, le sont aussi.
 
 Abréviations : LOT-05 et LOT-07 désignent
 `docs/claude/campagnes/2026-09-12-vie-du-portail-patient/lots/LOT-05-les-deux-portes.md`
@@ -577,11 +578,11 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Fin : bancs verts ; constat à l'écran sur un dossier de test majeur, mineur et clos ; ligne 2684 solde ou renvoi à la fiche. Arrêt : le responsable constate l'écran avant L3.
 
 ### L2b — Frise des étapes navigable (arbitrage Q3 du 2026-11-01)
-- Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape : aucune route neuve tant que Q27 et Q28 ne sont pas tranchées.
+- Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape ; Q27 et Q28 (chapitre 14) fixent : aucune route neuve, une étape sans cible existante n'est pas cliquable, les étapes 5 et 6 ouvrent un texte d'attente court.
 - Ce lot ne réduit pas la ligne de liens : le menu des espaces reste L2. Les deux navigations coexistent comme rail-menu et rail des phases côté praticien, et répondent à deux questions distinctes (« où vais-je ? », « où en suis-je ? »).
 - Bancs : ordre des six étapes ; un seul `aria-current="step"` ; cible de chaque étape, étapes 5 et 6 comprises ; étape passée, courante, à venir ; état mineur et dossier clos. E2E : 390 px (défilement horizontal de la frise, cibles ≥ 44 px) et Desktop ; `axe` sur le hub.
 - Drapeau : serveur, livré éteint (surface patient modifiée visiblement, D-288 §1 par analogie), entrée dans `docs/FEATURE_FLAGS.md`.
-- Décision : la D-xxx de L0 dit comment une frise navigable s'accorde avec A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler » ; l'étape à venir ne s'ouvre pas).
+- Décision : la D-xxx de L0 écrit le tableau étape → cible (Q28), le texte d'attente des étapes 5 et 6 (Q27, libellé patient accepté mot pour mot), et la règle de Q29 : étape passée en relecture, étape à venir fermée, ce qui reste dans A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler »). Forme : `<nav aria-label="Étapes de votre parcours">` distincte de « Autres espaces » (Q30).
 - Validation : T1, T1 complet, T2. Fin : constat à l'écran sur un dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 %.
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
@@ -664,8 +665,15 @@ Q1 à Q3 ont été tranchées le 2026-11-01, à options fermées, sur la seule l
 | Q2 Sens de « même organisation » | **L'organisation seule** : groupes nommés, ordre, un seul élément actif (`aria-current`), liste déclarée une fois, primitive de superposition ; ni l'apparence (rail nuit, jetons `--rail-*`), ni les compteurs (D-333) | confirme le chapitre 10 : aucun jeton de rail côté patient, `PanneauSuperpose theme="patient"` pour B |
 | Q3 « Rails » | **Menu + étapes** : un menu des espaces permanents *et* une frise des étapes navigable, sur le modèle du couple rail-menu / rail des sept phases du praticien | nouveau lot L2b entre L2 et L3 (chapitre 11) ; la section « Écartée » du chapitre 8 reste comme évaluation des coûts |
 
-### Questions ouvertes par Q3, à trancher dans L0
+### Questions ouvertes par Q3, tranchées le 2026-11-01
 27. Q27 Étapes 5 et 6 : « Analyse du praticien » et « Restitution » n'ont aucune page propre (elles sont « côté praticien », `journeyCurrentId: 5 | 6`, trajectoire-partagee/contrat.ts:277). Que fait un clic : rien (étape non cliquable, mais annoncée), un texte d'attente, ou le bilan quand il est consultable ? Recommandation : un texte d'attente court, jamais un chiffre ni une date promise.
 28. Q28 Rattachement : quelle zone ouvre chaque étape ? Aucun rattachement entrée-étape n'existe dans le code lu. À écrire étape par étape dans la D-xxx, en nommant la cible existante (page, section du hub) sans créer de route.
 29. Q29 Étapes passées et à venir : une étape franchie s'ouvre-t-elle en relecture (consentement, renseignements) ? Une étape à venir reste-t-elle fermée ? Recommandation : passée ouverte en lecture, à venir fermée, pour rester dans A6-R1 « une étape à la fois ».
 30. Q30 Accessibilité et bancs : `aria-current="step"`, cibles 44 px en `rem`, rôle de la liste (`nav` nommée distincte de « Autres espaces ») ; un seul `<nav>` nommé par fonction. Recommandation : `nav aria-label="Étapes de votre parcours"` (libellé déjà porté par la liste, PatientJourneyProgress.tsx:56).
+
+| Question | Réponse | Effet sur L2b |
+|---|---|---|
+| Q27 Étapes 5 et 6 | **Texte d'attente court** : un clic sur « Analyse du praticien » ou « Restitution » ouvre une phrase d'attente, sans chiffre ni date promise (D-333) | le texte est un libellé patient, accepté mot pour mot avant le merge (D-360 §1 par analogie) ; aucune route |
+| Q28 Rattachement | **Cibles existantes seulement** : la D-xxx nomme pour chaque étape une page ou une section existante ; une étape sans cible existante n'est pas cliquable ; aucune route neuve | le tableau étape → cible s'écrit dans L0 ; à vérifier alors pour « Situation », saisie à l'accueil (`[token]/page.tsx`) : si aucune surface existante ne la relit, l'étape reste non cliquable |
+| Q29 Passées et à venir | **Passée en relecture, à venir fermée** | bancs : étape passée → lien, courante → `aria-current="step"`, à venir → annoncée, non cliquable ; reste dans A6-R1 |
+| Q30 Forme | **`<nav aria-label="Étapes de votre parcours">`**, distincte de « Autres espaces » | un seul `aria-current="step"`, cibles 44 px en `rem`, bancs d'ordre des six étapes, E2E 390 px et Desktop, `axe` sur le hub ; l'`aria-label` actuel de l'`<ol>` (PatientJourneyProgress.tsx:56) monte sur la `nav` |
