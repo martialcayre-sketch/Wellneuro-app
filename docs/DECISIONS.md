@@ -73,11 +73,18 @@ décision qu'il amende, en paragraphe daté, comme aujourd'hui.
 entrées.
 - Les décisions actives vont dans `docs/decisions/`, les archivées dans
   `docs/decisions/archivees/`.
-- Le texte est repris à l'identique, sauf le niveau du titre (`###` devient
-  `#`).
-- Un banc vérifie le découpage : la concaténation des fichiers rend le
-  registre d'origine à ces titres près, et aucune entrée n'est perdue ni
-  dupliquée.
+- Le texte est repris à l'identique, à deux exceptions près :
+  - le niveau du titre (`###` devient `#`) ;
+  - les liens écrits relativement au fichier (`../web/…`, une trentaine au
+    2026-11-01). Leur cible est réécrite pour la profondeur du répertoire
+    de destination, `docs/decisions/` ou `docs/decisions/archivees/`. Les
+    ancres écrites depuis la racine du dépôt, que lit
+    `scripts/wn-ancres-doctrine.mjs`, ne changent pas.
+- Un banc vérifie le découpage :
+  - la concaténation des fichiers rend le registre d'origine, aux titres
+    près, et aux liens près une fois leurs cibles résolues ;
+  - chaque lien réécrit désigne la même ressource qu'avant ;
+  - aucune entrée n'est perdue ni dupliquée.
 - Écartée : une migration progressive, avec les nouvelles décisions en
   fichiers et les anciennes dans le registre. Chaque outil devrait lire les
   deux formes, et l'en-tête du registre continuerait d'attirer des ajouts.
@@ -97,12 +104,16 @@ L'inventaire du 2026-11-01 en relève trois sortes.
 - **Ce qui rougit dès la bascule** : le garde de numérotation et son banc,
   qui jugeront par nom de fichier (trous réservés tolérés, titre accordé au
   nom) ; la réservation (le dernier numéro se lit dans la liste du
-  répertoire) ; `scripts/version-prompt-documents.test.mjs` ; les dix tests
-  web qui lisent une décision par son texte, réécrits sur une aide commune
-  `lireDecision(id)` ; les messages attendus de `wn-controle-fusion.test.mjs`.
-- **Ce qui se viderait en silence**, et doit désormais rougir sur un
-  répertoire vide : `recent_decision_ids` de `scripts/wn-cycle.mjs`, et le
-  périmètre de `scripts/wn-ancres-doctrine.mjs`.
+  répertoire) ; les dix tests web qui lisent une décision par son texte,
+  réécrits sur une aide commune `lireDecision(id)` ; les messages attendus
+  de `wn-controle-fusion.test.mjs`.
+- **Ce qui se viderait en silence**, et doit désormais rougir quand il ne
+  trouve aucune décision, avec un cas de test qui prouve cet échec :
+  - `recent_decision_ids` de `scripts/wn-cycle.mjs` ;
+  - le périmètre de `scripts/wn-ancres-doctrine.mjs` ;
+  - `scripts/version-prompt-documents.test.mjs`, qui passe aujourd'hui sur
+    une liste de décisions vide. Sur une page fixe sans titres, il ne
+    contrôlerait donc plus rien.
 - **Ce qui ne demande qu'un texte à jour** :
   - `scripts/wn-kit-doctor.mjs` et `.wn/documentation.yml` ;
   - les commentaires de `ci.yml`, de `.gitattributes` et de
