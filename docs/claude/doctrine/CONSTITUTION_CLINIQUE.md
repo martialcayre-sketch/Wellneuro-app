@@ -862,7 +862,7 @@ porte un `CHECK` A-D de **niveau de preuve** — deux vocabulaires différents.*
 sans fusion sur la nomenclature unique de BIO-PARCOURS (nature du lien, usage
 décisionnel, statut d'usage). Un troisième vocabulaire s'ajoute donc aux deux
 ci-dessus ; aucune lettre partagée n'a le même sens. Aucun lot ne porte la
-taxonomie A/B/C : la règle **reste orpheline** ([[D-266]] §7).*
+taxonomie A/B/C : la règle **est restée orpheline** jusqu'au 2026-11-01 ([[D-266]] §7).*
 
 *Amendée par [[D-400]] §2 (2026-11-01) : **reprise**, porteur BP-12a (fiches
 d'usage), sur la nomenclature unique de [[D-266]] §3. Un porteur nommé
