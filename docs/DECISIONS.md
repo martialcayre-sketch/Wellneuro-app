@@ -29,8 +29,10 @@ comme `reserverAnnonce` ([[D-317]]). La seconde de deux requêtes simultanées
 attend le commit de la première, puis lit sa ligne. L'e-mail part après le
 commit. Aucune colonne ne dit « en cours » : la ligne réservée naît
 `Non_envoye`, sous la marque « réservé : envoi en cours » dans
-`erreur_courte`, que le solde efface. Une ligne restée marquée (processus
-arrêté entre l'envoi et le solde) compte comme partie : sens prudent. La
+`erreur_courte`, que le solde efface. Une ligne reste marquée si le
+processus s'arrête après le commit de la réservation : avant l'appel SMTP,
+aucun e-mail n'est parti ; après, il a pu partir. La marque ne prouve donc
+pas une livraison, mais la ligne compte comme partie : sens prudent. La
 réservation lève si la base ne répond pas, et rien ne part alors. Écartés :
 une clé de source par fenêtre horaire (fenêtre fixe, pas glissante), le
 verrou tenu pendant l'envoi SMTP (connexion immobilisée, trace perdue si le
@@ -85,7 +87,8 @@ PR-Agent de #1798) : la ligne est soldée, sans clé de source. Une réservation
 de bilan restée marquée (processus arrêté, base indisponible au solde) n'a
 pas de fenêtre : le premier envoi renvoie alors à la
 confirmation, sans limite de temps, et le renvoi confirmé reste la sortie —
-sens prudent, à la différence de la garde (1 h) et des cadences (3 jours).
+la prévisualisation lit donc le journal aussi, pour offrir la case « Confirmer
+le renvoi » (revue CodeRabbit de #1798) — ; sens prudent, à la différence de la garde (1 h) et des cadences (3 jours).
 
 **§6 — Textes validés le 2026-11-01, mot pour mot :** le gabarit
 `relance_questionnaires@1` (sujet « Des questionnaires vous attendent

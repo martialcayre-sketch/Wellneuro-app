@@ -111,7 +111,22 @@ quatre volets :
   `booklet_envois` qui lève n'empêche plus de solder la réservation (banc de
   route neuf). T1 complet code 0, puis T2 `--fast` code 0 (Vitest : 15 482
   passés ; E2E : 303 passés).
-- CodeRabbit : quota atteint à la première tête.
+- CodeRabbit : quota atteint à la première tête ; revue sur f40a9717, deux
+  remarques en ligne et un nitpick :
+  - P1, corrigé : une réservation de bilan sans audit renvoyait à la
+    confirmation, mais la prévisualisation (`GET`) ne lisait que l'audit et
+    cachait la case « Confirmer le renvoi ». Elle lit désormais le journal
+    aussi (banc de route neuf) ;
+  - mineur, corrigé : D-399 §1 distingue l'arrêt avant et après l'appel
+    SMTP ; une marque ne prouve pas une livraison ;
+  - nitpick, écarté : extraire `sanitizeAuditError` de `lib/anthropic` pour
+    ne pas charger le SDK. Refactoring hors périmètre : `reservation.ts`
+    suit le module du journal existant (`correspondance/patient.ts`, même
+    import), que quatre de ses cinq importeurs chargeaient déjà ; seul
+    `nouveaux-patients` s'y ajoute. L'extraction vaudrait pour les deux
+    modules, en lot à part.
+  - Après ces corrections : T1 complet code 0, puis T2 `--fast` code 0
+    (Vitest : 15 483 passés ; E2E : 303 passés).
 
 ## Problèmes ouverts
 

@@ -19,6 +19,7 @@ const createCorrespondance = vi.fn();
 // (`correspondance/reservation.pg.test.ts`).
 const updateCorrespondance = vi.fn();
 const countCorrespondance = vi.fn();
+const findFirstCorrespondance = vi.fn();
 const countBookletEnvoi = vi.fn();
 const executeRaw = vi.fn();
 // Le booklet part au patient : la prévisualisation qualifie la synthèse dont il
@@ -44,6 +45,7 @@ vi.mock('@/lib/prisma', () => {
       create: (...a: unknown[]) => createCorrespondance(...a),
       update: (...a: unknown[]) => updateCorrespondance(...a),
       count: (...a: unknown[]) => countCorrespondance(...a),
+      findFirst: (...a: unknown[]) => findFirstCorrespondance(...a),
     },
     questionnaireReponse: { findMany: (...a: unknown[]) => findManyReponses(...(a as [])) },
     $executeRaw: (...a: unknown[]) => executeRaw(...a),
@@ -114,6 +116,8 @@ beforeEach(() => {
   updateCorrespondance.mockResolvedValue({});
   countCorrespondance.mockReset();
   countCorrespondance.mockResolvedValue(0);
+  findFirstCorrespondance.mockReset();
+  findFirstCorrespondance.mockResolvedValue(null);
   countBookletEnvoi.mockReset();
   countBookletEnvoi.mockResolvedValue(0);
   executeRaw.mockReset();
@@ -187,6 +191,22 @@ describe('GET /api/praticien/booklet', () => {
     // Dossier sain : aucune mention. C'est le contrôle négatif des deux tests
     // qui suivent.
     expect(body.avertissementMesureRetiree).toBeNull();
+    expect(body.dejaEnvoye).toBe(false);
+  });
+
+  it('journal parti ou marqué sans audit : la prévisualisation offre le renvoi (D-399 §5)', async () => {
+    // Le POST renvoie à la confirmation sur cette ligne ; sans `dejaEnvoye`,
+    // l'écran cachait la case « Confirmer le renvoi » et le bilan ne
+    // repartait plus.
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    findFirstCorrespondance.mockResolvedValue({ enregistreLe: new Date('2026-11-01T10:00:00.000Z') });
+    const body = await (await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'))).json();
+    expect(body.dejaEnvoye).toBe(true);
+    expect(body.dernierEnvoiDate).toBe('2026-11-01T10:00:00.000Z');
+    expect(body.dernierEnvoiEmailMasque).not.toBeNull();
+    const where = findFirstCorrespondance.mock.calls[0][0].where;
+    expect(where).toMatchObject({ type: 'booklet', referenceId: 'SYN_1' });
+    expect(where.OR).toBeDefined();
   });
 
   it('booklet tiré d’une synthèse antérieure au retrait : la prévisualisation le dit', async () => {

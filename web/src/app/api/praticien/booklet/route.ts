@@ -86,6 +86,22 @@ export async function GET(req: Request) {
     );
 
     const dernierEnvoi = synthese.bookletEnvois[0];
+    // LE JOURNAL AUSSI ([[D-399]] §5) : le POST renvoie à la confirmation du
+    // renvoi sur une ligne partie ou restée marquée, même sans audit (audit
+    // perdu, processus arrêté). Sans elle, la case « Confirmer le renvoi »
+    // manquait à l'écran et le bilan ne pouvait plus partir (revue CodeRabbit
+    // de #1798).
+    const envoiJournal = dernierEnvoi ? null : await prisma.correspondancePatient.findFirst({
+      where: {
+        idPatient: synthese.idPatient,
+        type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+        referenceId: idSynthese,
+        ...FILTRE_ENVOIS_PARTIS,
+      },
+      orderBy: { enregistreLe: 'desc' },
+      select: { enregistreLe: true },
+    });
+    const dejaEnvoye = !!dernierEnvoi || !!envoiJournal;
 
     // Le booklet part au PATIENT. Si la synthèse dont il est tiré précède le
     // retrait d'interprétation, le praticien doit le savoir AVANT d'envoyer,
@@ -107,9 +123,9 @@ export async function GET(req: Request) {
       patientEmail: synthese.emailPatient,
       idPatient: synthese.idPatient,
       dateDocument,
-      dejaEnvoye: !!dernierEnvoi,
-      dernierEnvoiDate: dernierEnvoi?.dateEnvoi?.toISOString() ?? null,
-      dernierEnvoiEmailMasque: dernierEnvoi ? maskEmail(synthese.emailPatient) : null,
+      dejaEnvoye,
+      dernierEnvoiDate: (dernierEnvoi?.dateEnvoi ?? envoiJournal?.enregistreLe)?.toISOString() ?? null,
+      dernierEnvoiEmailMasque: dejaEnvoye ? maskEmail(synthese.emailPatient) : null,
       avertissementMesureRetiree,
     }), requestContext);
   } catch (err) {
