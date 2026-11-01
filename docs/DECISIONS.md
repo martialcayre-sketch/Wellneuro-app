@@ -3595,6 +3595,27 @@ et la place 9 la chaîne de H74. [[D-346]] §3 s'applique : une place de 6 à
 18, drapeau posé sur accord du responsable, même constat. Les places 8 et 9
 gardent leurs préalables et s'ouvrent après la bibliothèque.
 
+**Amendement (2026-11-01) — la moitié mineur du constat, prouvée par le
+mécanisme.** Arbitrage du responsable, sur question à options (liste commune
+de questions) : la production ne compte aucun dossier mineur le jour du
+constat (relecture par conteneur), si bien que « un dossier mineur n'en voit
+pas l'entrée » ne peut pas s'observer. Cette moitié se prouve par le
+mécanisme : la route rend 409 à un dossier mineur ou sans date, la page n'a
+alors aucun rayon, et le lien des fiches reste, puisque les deux sondes
+appellent la même fonction (`bibliothequeServie`, [[D-360]] §2). Les tests
+qui le couvrent sont rejoués verts le même jour (4 fichiers, 42 tests) :
+`api/portail/bibliotheque/route.test.ts` (409 « hors_majeur » au mineur et
+à la date manquante), `api/portail/fiches-assiette/route.test.ts` (la sonde
+des fiches répond `bibliotheque` selon le drapeau et l'âge),
+`patient-companion/LienBibliotheque.test.tsx` et
+`patient/bibliotheque/Bibliotheque.test.tsx` (mineur : aucun rayon). Le
+constat consigne
+« aucun dossier mineur » ; le relevé se refait sur le premier dossier mineur.
+La moitié majeur reste constatée sur un vrai dossier. Option écartée : créer
+un dossier de test mineur, qui laisserait en production un dossier réel sous
+le circuit mineur de [[D-284]]. Option écartée : laisser la moitié mineur en
+attente, ce qui garderait la porte 18 fermée sans terme connu.
+
 - Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
   plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).
 
