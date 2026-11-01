@@ -27,9 +27,10 @@
   durées et fréquences, et aussi des huiles essentielles, la luminothérapie,
   les écrans, le yoga et une alimentation antistress ; `WN-SRC-0082` (cours)
   donne un mode d'emploi de la cohérence cardiaque et cite apnées et
-  bandhas ; les vidéos guidées ne sont pas transcrites. **Aucune de ces
-  sources ne donne de précaution ni de contre-indication**, alors que
-  certaines décrivent une rétention du souffle. Aucune source externe du
+  bandhas. **Ni `0245` ni `0082` ne donnent de précaution ni de
+  contre-indication**, alors que l'une et l'autre décrivent une rétention du
+  souffle ou des apnées ; les vidéos guidées, non transcrites, n'ont pas été
+  lues (relevé de la revue Copilot de #1813). Aucune source externe du
   registre ne porte sur ces exercices : celles qui touchent la respiration
   (`WN-SRC-0551`, `0552`, `0560`, `0566`, `0570`) mesurent.
 
@@ -61,8 +62,12 @@ responsable déclarés comme arbitrage.
 **§4 — Précautions.** Elles viennent d'une recherche : chaque source
 rapportée est vérifiée et inscrite au registre du corpus, puis le texte des
 précautions est signé par le responsable. **La fiche n'ouvre pas avant.**
-Écartés : le seul renvoi à l'encart bd ; des précautions déclarées comme
-arbitrage, sans source.
+Le lot de la fiche (H68) le tient par la technique, pas par la seule
+discipline : un verrou fermé par défaut, et la présence des précautions
+signées contrôlée à la validation, puis rejouée au moment de servir (patron
+de [[D-251]] §6). Le nom du drapeau se fixe au lot (arbitrage du 2026-11-01
+sur une remarque de PR-Agent, #1813). Écartés : le seul renvoi à l'encart
+bd ; des précautions déclarées comme arbitrage, sans source.
 
 **§5 — Suites.** Transcription des vidéos du §3 ; recherche des précautions
 (§4) ; puis le lot de la fiche, au rang 5 (H68 : porte 5, EF-3b).

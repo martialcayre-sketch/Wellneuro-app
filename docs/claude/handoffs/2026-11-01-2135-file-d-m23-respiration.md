@@ -32,6 +32,15 @@ Clore m23 : propriétaire et sources du thème « respiration et apaisement »
     avant.
 - Le prompt de recherche des précautions a été remis au responsable en
   séance ; aucune source n'est encore rapportée.
+- Revue (CodeRabbit limité par son quota ; PR-Agent prouvé sur la tête,
+  D-393) :
+  - PR-Agent, « fragment changelog manquant » : écarté, les trois fichiers
+    sont dans la PR ;
+  - Copilot, absence de précautions affirmée pour des vidéos non lues :
+    corrigé (contexte de D-415 et journal H68 bornés à `0245` et `0082`) ;
+  - PR-Agent, « fiche non verrouillée par drapeau » : arbitrée par le
+    responsable ; D-415 §4 précisé (verrou fermé par défaut, précautions
+    signées contrôlées à la validation et au service, nom au lot).
 
 ## Fichiers modifiés
 
