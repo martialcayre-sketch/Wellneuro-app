@@ -3602,8 +3602,14 @@ constat (relecture par conteneur), si bien que « un dossier mineur n'en voit
 pas l'entrée » ne peut pas s'observer. Cette moitié se prouve par le
 mécanisme : la route rend 409 à un dossier mineur ou sans date, la page n'a
 alors aucun rayon, et le lien des fiches reste, puisque les deux sondes
-appellent la même fonction (`bibliothequeServie`, [[D-360]] §2) ; les tests
-qui le couvrent sont rejoués verts le même jour. Le constat consigne
+appellent la même fonction (`bibliothequeServie`, [[D-360]] §2). Les tests
+qui le couvrent sont rejoués verts le même jour (4 fichiers, 42 tests) :
+`api/portail/bibliotheque/route.test.ts` (409 « hors_majeur » au mineur et
+à la date manquante), `api/portail/fiches-assiette/route.test.ts` (la sonde
+des fiches répond `bibliotheque` selon le drapeau et l'âge),
+`patient-companion/LienBibliotheque.test.tsx` et
+`patient/bibliotheque/Bibliotheque.test.tsx` (mineur : aucun rayon). Le
+constat consigne
 « aucun dossier mineur » ; le relevé se refait sur le premier dossier mineur.
 La moitié majeur reste constatée sur un vrai dossier. Option écartée : créer
 un dossier de test mineur, qui laisserait en production un dossier réel sous
