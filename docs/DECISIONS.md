@@ -1880,6 +1880,18 @@ repli, sans nouvel arbitrage : les sessions reprennent leurs merges avec la
 même liste de sondes et le même contrôle. Un merge hors liste constaté
 pendant l'essai est consigné au bilan.
 
+**Amendement (2026-11-01) — le compte après une reprise.** Arbitrage du
+responsable, sur question à options, après la reprise de l'essai du
+2026-10-31 et une contre-revue Codex : lors d'une reprise décidée par le
+responsable, le délai de service de l'arriéré se mesure depuis l'heure de
+reprise ; le temps passé sous le régime de repli n'est pas imputable à
+l'intégrateur, et les attentes et dépassements acquis auparavant restent au
+bilan. Le compteur qui déclenche le prochain repli repart de zéro à la
+reprise et le déclenche au troisième dépassement de cette nouvelle période,
+sans remettre à zéro les autres mesures de l'essai (trente PR, sept jours
+actifs). Écartés : le cumul des dépassements d'avant la reprise, qui
+replierait l'essai aussitôt, et la clôture de l'essai sur son bilan.
+
 **§6 — Auto-merge.** `allow_auto_merge` passe à faux : réglage du
 responsable, constaté sur le dépôt ; jamais d'auto-merge sur une PR de lot
 ([[D-287]] §2 ; arbitrage du 2026-10-05 après #1315).
