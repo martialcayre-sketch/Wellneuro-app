@@ -34,8 +34,8 @@
   `certification` est une provenance du calcul, `versionScore` n'existe que
   sur les épisodes de l'équilibre. Constat par conteneur, en agrégats, le
   2026-11-01 : 8 dossiers réels portent au moins deux passations
-  exploitables d'un même instrument, sur 10 instruments ; 2 couples
-  instrument × dossier passent la règle ci-dessous (`Q_ALI_01`, `Q_MOD_03`).
+  exploitables d'un même instrument ; au moins une paire réelle passe la
+  règle ci-dessous (répartition masquée, moins de cinq dossiers, [[D-298]]).
 
 **§1 — Objet.** Deux passations du même instrument, dans le même dossier,
 VALID ou AMBIGUOUS, comparées par leur score principal enregistré
