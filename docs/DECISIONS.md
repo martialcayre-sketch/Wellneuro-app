@@ -143,7 +143,11 @@ Pas encore / Quelques jours / La plupart des jours / Tous les jours, échelle
 locale gardée telle quelle. **Source** : aucune. **Nature** : paramètre
 technique (DC-20), transitoire. **Lecture du praticien** : la réponse telle
 quelle, sans conversion en jours ni en pourcentage, sans qualification ;
-elle ne dit pas si l'action a suivi sa fréquence prévue.
+elle ne dit pas si l'action a suivi sa fréquence prévue. « Sans
+qualification » vise la lecture de l'item lui-même : la météo d'adhésion
+([[D-334]] §3, SP-MET) reste inchangée et continue de dériver son état
+d'ensemble de cette réponse, par sa table signée ; la présente décision ne
+la touche pas.
 
 **Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0577` : diabète,
 sans version française, droits non établis) ; item unique de Milton et al.
@@ -157,12 +161,16 @@ sans version française, droits non établis) ; item unique de Milton et al.
   aide à la décision préparées par le responsable avec un assistant
   conversationnel externe, qui n'est source d'aucune valeur ; faits
   vérifiés par la session (Europe PMC, textes intégraux, pages
-  institutionnelles).
+  institutionnelles). Dérogation à [[D-366]] §2 et maintien de la météo
+  ([[D-334]] §3) arbitrés le même jour sur deux remarques de revue de la PR,
+  avant son merge.
 - Domaine : [[D-366]] §1 et §2 ; point d'étape ([[D-317]], H19) ; renvoi
   des questionnaires autour de J21 ([[D-353]]) ; questionnaires du sommeil
   et de la fatigue déjà servis.
 - Amende : [[D-366]] §1 (« Aucune saisie à part ») pour la seule mesure de
-  la fatigue et du sommeil.
+  la fatigue et du sommeil ; [[D-366]] §2 (source certifiée, échelle reprise
+  de la source) pour les seules cinq questions de [[D-408]] à [[D-412]],
+  à titre transitoire (§1 ci-dessous).
 - Ne touche pas : aucun code ; aucun instrument choisi ; aucun calendrier
   fixé ; aucune licence engagée.
 - Contexte : les six questions du point d'étape sont toutes
@@ -177,7 +185,13 @@ sans version française, droits non établis) ; item unique de Milton et al.
 **§1 — Le point d'étape pilote.** Il reste bref et déclaratif, sans score,
 sans pourcentage, sans chiffre au patient. Ses questions sont des paramètres
 techniques déclarés un à un ([[D-408]] à [[D-412]]) ; le motif de non-prise
-est retiré ([[D-413]]). [[D-366]] §2 s'applique à chacune.
+est retiré ([[D-413]]). Chacune de ces décisions porte ce que demande
+[[D-366]] §2 (nom, nature, lecture du praticien), sauf la source et
+l'échelle reprise de la source : par dérogation à [[D-366]] §2, les cinq
+questions gardent leur échelle existante, déjà servie (contrat
+`c2a-checkin-v1`), sans source, tant qu'aucun remplacement n'est décidé.
+La dérogation ne vaut que pour elles : toute autre mesure, dont le
+dispositif distinct du §2, reste sous [[D-366]] §2 entier.
 
 **§2 — La mesure va à un dispositif distinct.** La mesure clinique de la
 fatigue et du sommeil se fait hors du point d'étape, par un dispositif à

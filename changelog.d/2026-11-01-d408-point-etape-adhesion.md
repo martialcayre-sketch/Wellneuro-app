@@ -2,5 +2,5 @@
 
 - Décision D-408 : la question d'adhésion reste telle quelle, déclarée
   paramètre technique transitoire, lue sans score ni qualification. SDSCA et
-  l'item de Milton sont écartés (`WN-SRC-0577`, `0578`). Aucun changement en
-  service.
+  l'item de Milton sont écartés (`WN-SRC-0577`, `0578`). La météo
+  d'adhésion (D-334 §3) reste inchangée. Aucun changement en service.
