@@ -755,6 +755,54 @@ describe('ClinicalRuntimeSection', () => {
     expect(screen.getByRole('button', { name: 'Diffusion' }).getAttribute('aria-pressed')).toBe('true');
   });
 
+  // J2-jourN (H52 ; revue Copilot de #1802) : une diffusion pose un jour 0
+  // neuf. Sur une carte inchangée, aucun effet ne relit le résumé ni la
+  // trajectoire : le geste doit les relire lui-même.
+  it('après une diffusion réussie, le résumé du suivi et la trajectoire se relisent', async () => {
+    const urls = (mock: { mock: { calls: unknown[][] } }, route: string, methode = 'GET') =>
+      mock.mock.calls.filter(
+        (appel) =>
+          String(appel[0]).includes(route)
+          && ((appel[1] as { method?: string } | undefined)?.method ?? 'GET') === methode,
+      ).length;
+    const fetchMock = fetchParRoute({
+      cockpitGet: Array.from({ length: 4 }, () => rep(readyAvecCandidats())),
+      protocolesVersions: rep({
+        ok: true,
+        active: { versionId: 'v1' },
+        history: [{
+          versionId: 'v1', status: 'practitioner_reviewed', createdAt: '2026-10-14T10:00:00.000Z',
+          reviewedAt: '2026-10-14T10:05:00.000Z', inputHash: 'h1', isActive: true,
+        }],
+      }),
+      protocolesDiffusionGet: rep({ ok: true, approval: null, stale: false }),
+      protocolesDiffusionPost: rep({ ok: true }),
+      protocolesCheckins: rep({ ok: true, checkins: [], resume: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="actions"
+      />,
+    );
+    await screen.findByText('Actions (0/7)');
+    fireEvent.click(screen.getByRole('button', { name: 'Diffusion' }));
+    const valider = await screen.findByRole('button', { name: 'Valider pour diffusion' });
+    await waitFor(() => expect(urls(fetchMock, '/api/praticien/protocoles/checkins')).toBeGreaterThan(0));
+    const checkinsAvant = urls(fetchMock, '/api/praticien/protocoles/checkins');
+    const trajectoireAvant = urls(fetchMock, '/api/praticien/trajectoire');
+
+    fireEvent.click(valider);
+
+    await waitFor(() => expect(urls(fetchMock, '/api/praticien/protocoles/diffusion', 'POST')).toBe(1));
+    await waitFor(() => expect(urls(fetchMock, '/api/praticien/protocoles/checkins')).toBe(checkinsAvant + 1));
+    expect(urls(fetchMock, '/api/praticien/trajectoire')).toBe(trajectoireAvant + 1);
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;

@@ -1722,7 +1722,12 @@ export function ClinicalRuntimeSection({
       // ressembler à un succès (revue Copilot de #1249).
       setAnnonceFiches(payload.annonceFiches ?? null);
       setAnnonceProtocole(payload.annonceProtocole ?? null);
-      await loadDiffusion(readyDecisionCardId);
+      // UNE DIFFUSION DATE LE SUIVI (J2-jourN, H52 ; revue Copilot de #1802) :
+      // une première diffusion ou un pivot posent un jour 0 neuf. Le résumé
+      // (jour du cycle, marques E4) et la trajectoire (suivi ouvert) se relisent,
+      // sinon l'onglet Suivi garde l'état d'avant jusqu'au rechargement.
+      rechargerTrajectoire();
+      await Promise.all([loadDiffusion(readyDecisionCardId), loadCheckins(readyDecisionCardId)]);
     } catch {
       setDiffusionState('error');
       setDiffusionError('Erreur technique lors de la validation.');
