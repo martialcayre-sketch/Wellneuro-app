@@ -7,7 +7,7 @@
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- QUINZE CAS. Quatorze formes de rupture doivent lever ; le quinzième — joué EN
+-- SEIZE CAS. Quinze formes de rupture doivent lever ; le seizième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,7 +20,7 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` À `N14` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- `N7` À `N15` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
 -- ([[D-053]]), priorités d'intervention ([[D-054]]), catalogue de conduites
 -- ([[D-224]], ajouté le jour où la table entre au contrat : une revue a constaté
 -- que ses deux paires n'étaient exercées qu'à l'état SAIN), registre des
@@ -29,8 +29,10 @@
 -- fiches d'usage ([[D-401]], ajouté sur la contre-revue du lot), puis
 -- portes biologiques et indications d'assiette (`N13`, `N14`, le même jour :
 -- la comparaison qui a fait écrire `N12` a montré qu'elles n'avaient pas le
--- leur). La liste des tables du contrat et celle des cas `N7+` se comparent à
--- l'œil, table par table : depuis le 2026-11-01, chaque table a son cas.
+-- leur), et indications de biologie (`N15`, entrée au contrat avec son cas,
+-- [[D-419]]). La liste des tables du contrat et celle des cas `N7+` se
+-- comparent à l'œil, table par table : depuis le 2026-11-01, chaque table a son
+-- cas.
 -- N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
@@ -39,11 +41,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les quatorze ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les quinze ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les quinze cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les seize cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui
@@ -256,6 +258,41 @@ BEGIN
     ('WN-CL-0293-013', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-004', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-005', 'v1.0', 'portes_biologiques', false),
+    -- TABLE DES INDICATIONS DE BIOLOGIE ([[D-069]], signée le 2026-09-16) —
+    -- quinze règles, vingt-neuf claims distincts (`claimsSource`),
+    -- `exige_prescriptif` à `false` (régime arbitré le 2026-11-01, [[D-419]] :
+    -- deux claims de `BIO-STR-01` donnent la lecture d'un seuil, pas une
+    -- conduite). Entrée au contrat le 2026-11-01, relue le même jour en
+    -- production : 29/29 VALIDE, actifs, non remplacés, v1.0.
+    ('WN-CL-0042-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0042-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0106-027', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-032', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0112-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0125-045', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-022', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-023', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-053', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-054', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-055', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0242-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-014', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-015', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-016', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-017', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0312-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0318-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0320-003', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0323-011', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0333-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0334-005', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0348-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0361-009', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0388-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0389-004', 'v1.0', 'indications_biologie', false),
     -- STRUCTURE DES FICHES D'USAGE DU BESOIN 2 ([[D-314]] §5) — trente fiches,
     -- 277 claims distincts, `exige_prescriptif` à `false` (régime arbitré,
     -- [[D-314]] §9). Épinglés dès la structure ÉCRITE, signature ou non : ils
@@ -739,6 +776,41 @@ BEGIN
     ('WN-CL-0293-013', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-004', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-005', 'v1.0', 'portes_biologiques', false),
+    -- TABLE DES INDICATIONS DE BIOLOGIE ([[D-069]], signée le 2026-09-16) —
+    -- quinze règles, vingt-neuf claims distincts (`claimsSource`),
+    -- `exige_prescriptif` à `false` (régime arbitré le 2026-11-01, [[D-419]] :
+    -- deux claims de `BIO-STR-01` donnent la lecture d'un seuil, pas une
+    -- conduite). Entrée au contrat le 2026-11-01, relue le même jour en
+    -- production : 29/29 VALIDE, actifs, non remplacés, v1.0.
+    ('WN-CL-0042-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0042-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0106-027', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-032', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0112-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0125-045', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-022', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-023', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-053', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-054', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-055', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0242-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-014', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-015', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-016', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-017', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0312-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0318-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0320-003', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0323-011', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0333-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0334-005', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0348-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0361-009', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0388-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0389-004', 'v1.0', 'indications_biologie', false),
     -- STRUCTURE DES FICHES D'USAGE DU BESOIN 2 ([[D-314]] §5) — trente fiches,
     -- 277 claims distincts, `exige_prescriptif` à `false` (régime arbitré,
     -- [[D-314]] §9). Épinglés dès la structure ÉCRITE, signature ou non : ils
@@ -1061,7 +1133,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('absent du corpus' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N1: un claim epingle ABSENT n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1074,7 +1146,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('statut REJETE' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N2: un claim epingle NON VALIDE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1087,7 +1159,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N3: un claim epingle DESACTIVE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1100,7 +1172,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('remplacé (superseded_at)' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N4: un claim epingle REMPLACE n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1121,7 +1193,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('non prescriptif' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('non prescriptif' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N5: un claim epingle NON PRESCRIPTIF n''a pas ete detecte — %', msg;
   END IF;
 
@@ -1137,7 +1209,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('absent du corpus' in msg) = 0 THEN
+  IF NOT a_leve OR position('[orientation]' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N6: une VERSION DIVERGENTE du claim epingle n''a pas ete detectee — %', msg;
   END IF;
 
@@ -1157,7 +1229,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0238-002' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0238-002' in msg) = 0 OR position('[contradictions]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N7: la ligne contradictions n''est gardee par rien — %', msg;
   END IF;
 
@@ -1180,7 +1252,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0051-033' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0051-033' in msg) = 0 OR position('[arret]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N8: la ligne arret n''est gardee par rien — %', msg;
   END IF;
 
@@ -1201,7 +1273,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0025-016' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0025-016' in msg) = 0 OR position('[priorites]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N9: la ligne priorites n''est gardee par rien — %', msg;
   END IF;
 
@@ -1220,6 +1292,14 @@ BEGIN
   --
   -- Le claim muté est `WN-CL-0320-003`, celui qui fonde à la fois l'indication
   -- et la conduite de la seule ligne signée : sa disparition doit fermer.
+  --
+  -- LE NOM DE LA TABLE EST EXIGÉ depuis le 2026-11-01 ([[D-419]]) : la table
+  -- des indications de biologie épingle aussi `WN-CL-0320-003`, et un prédicat
+  -- exemptant `conduites` levait encore — pour l'autre table, avec le même
+  -- identifiant et le même motif (revue Copilot de #1820). `N7` à `N11`
+  -- exigent désormais tous le nom de leur table, comme `N12` à `N15` ; `N1` à
+  -- `N6` exigent `[orientation]` : leur cible, `WN-CL-0287-009`, est aussi
+  -- épinglée par `indications_assiettes` (revue `wn-reviewer` de #1820).
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims
@@ -1228,7 +1308,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0320-003' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0320-003' in msg) = 0 OR position('[conduites]' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N10: la ligne conduites n''est gardee par rien — %', msg;
   END IF;
 
@@ -1264,7 +1344,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0387-013' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0387-013' in msg) = 0 OR position('[conflits_sources]' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N11: la ligne conflits_sources n''est gardee par rien — %', msg;
   END IF;
 
@@ -1324,7 +1404,24 @@ BEGIN
     RAISE EXCEPTION 'negatif N14: la ligne indications_assiettes n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 14 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette et 277 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
+  -- ── N15 — LA LIGNE `indications_biologie` EST GARDÉE, ELLE AUSSI ─────────
+  -- Vingt-neuf paires ([[D-419]]), entrées avec leur cas : la table était
+  -- signée depuis le 2026-09-16 sans aucune garde de fraîcheur. Patron de
+  -- `N12` ; le claim muté, `WN-CL-0389-004`, n'est épinglé par aucune autre
+  -- table (`WN-CL-0312-018`, son voisin de la répétition annuelle, l'est aussi
+  -- par `conflits_sources` et par `fiches_usage`).
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0389-004';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0389-004' in msg) = 0 OR position('[indications_biologie]' in msg) = 0
+     OR position('absent du corpus' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N15: la ligne indications_biologie n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 277 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;
