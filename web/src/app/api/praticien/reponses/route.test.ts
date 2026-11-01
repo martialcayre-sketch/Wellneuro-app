@@ -258,6 +258,16 @@ describe('GET /api/praticien/reponses — passation non interprétable', () => {
       expect(comparaisons).toEqual({ paires: [], nonComparees: [] });
     });
 
+    it('un échec des épisodes retire le panneau, jamais la liste des réponses', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([passation('2026-10-20T08:00:00.000Z', 30)]);
+      prisma.assessmentEpisode.findMany.mockRejectedValue(new Error('panne'));
+      const res = await GET(request());
+      expect(res.status).toBe(200);
+      const corps = await res.json();
+      expect(corps.reponses).toHaveLength(1);
+      expect(corps.comparaisons).toBeUndefined();
+    });
+
     it('liste vide : ni comparaison, ni lecture des épisodes (anti-oracle)', async () => {
       const corps = await (await GET(request())).json();
       expect(corps).toEqual({ reponses: [] });

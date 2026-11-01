@@ -161,6 +161,12 @@ const ALLOWLIST = new Map([
     'compare à VERSION_SCORE_EQUILIBRE importé, que la production lit aussi : vert par construction dans les deux positions',
   ],
   ['src/lib/clinical-engine/clinicalSnapshot.test.ts', 'même motif tautologique que versioning.test.ts'],
+  [
+    'src/lib/scoring/comparaisonPassations.test.ts',
+    'ne nomme Q_ALI_01 que comme CLÉ du registre de comparabilité (D-406 §2) : les passations y sont '
+      + 'fabriquées, sans catalogue ni forme servie ; une variante courte face à la forme source se '
+      + 'refuse par leurs maximums, « grille différente », sous les deux drapeaux',
+  ],
   ['src/app/api/praticien/protocoles/route.test.ts', 'même motif tautologique que versioning.test.ts'],
   [
     'src/lib/doctrine/seuilsCatalogue.guard.test.ts',

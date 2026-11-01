@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('./passationsNonInterpretables', () => ({
+  motifNonInterpretable: (id: string, date: Date) =>
+    id === 'Q_INF_01' && date.toISOString().startsWith('2026-08-01') ? 'motif simulé' : null,
+}));
 
 import {
   COMPARABLE_DEPUIS,
@@ -70,12 +75,18 @@ describe('comparerPassations (D-406)', () => {
   });
 
   describe('motifs, dans l’ordre', () => {
-    it('version non établie : instrument hors registre', () => {
-      const r = comparerPassations(
-        [p('2026-09-01T08:00:00Z', 1, { idQuestionnaire: 'Q_NEU_11' }), p('2026-09-02T08:00:00Z', 2, { idQuestionnaire: 'Q_NEU_11' })],
-        null,
-      );
-      expect(r.nonComparees).toEqual([{ idQuestionnaire: 'Q_NEU_11', titre: 'Mes plaintes actuelles et troubles ressentis', motif: 'version_non_etablie' }]);
+    it('instrument hors registre : ni paire ni motif, le panneau n’en dit rien', () => {
+      for (const id of ['Q_NEU_11', 'Q_SOM_07', 'Q_INF_03', 'Q_MOD_01', 'Q_STR_04', 'Q_FIB_02']) {
+        const r = comparerPassations(
+          [p('2026-09-01T08:00:00Z', 1, { idQuestionnaire: id }), p('2026-09-02T08:00:00Z', 2, { idQuestionnaire: id })],
+          null,
+        );
+        expect(r).toEqual({ paires: [], nonComparees: [] });
+      }
+    });
+
+    it('le registre : cinq instruments à total défini et complétude lisible', () => {
+      expect([...COMPARABLE_DEPUIS.keys()].sort()).toEqual(['Q_ALI_01', 'Q_INF_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02']);
     });
 
     it('version non établie : une passation antérieure à la date du registre', () => {
@@ -91,9 +102,21 @@ describe('comparerPassations (D-406)', () => {
       expect(comparerPassations([psqi('2026-09-14T08:00:00Z'), psqi('2026-09-20T08:00:00Z')], null).paires).toHaveLength(1);
     });
 
-    it('interprétation retirée prime : MFI-20 antérieur à sa reconstruction', () => {
-      const mfi = (date: string) => p(date, 40, { idQuestionnaire: 'Q_SOM_07' });
-      expect(comparerPassations([mfi('2026-07-21T08:00:00Z'), mfi('2026-07-22T08:00:00Z')], null).nonComparees[0].motif).toBe('interpretation_retiree');
+    it('interprétation retirée prime sur tout autre motif', () => {
+      // Aucun instrument du registre ne porte aujourd'hui de motif ; le module
+      // simulé en pose un sur une passation par ailleurs hors date.
+      const r = comparerPassations(
+        [p('2026-08-01T08:00:00Z', 20, { idQuestionnaire: 'Q_INF_01' }), p('2026-09-02T08:00:00Z', 22, { idQuestionnaire: 'Q_INF_01' })],
+        null,
+      );
+      expect(r.nonComparees[0].motif).toBe('interpretation_retiree');
+    });
+
+    it('une passation est incomplète : un axe dont les comptes ne se rejoignent pas', () => {
+      const partielle = p('2026-09-01T08:00:00Z', 20, {}, { maxTotal: 70, subScores: [{ repondus: 3, items: 3 }, { repondus: 2, items: 4 }] });
+      expect(comparerPassations([partielle, p('2026-09-02T08:00:00Z', 22)], null).nonComparees[0].motif).toBe('incomplete');
+      const entiere = p('2026-09-01T08:00:00Z', 20, {}, { maxTotal: 70, subScores: [{ repondus: 4, items: 4 }, { label: 'sans comptes' }] });
+      expect(comparerPassations([entiere, p('2026-09-02T08:00:00Z', 22)], null).paires).toHaveLength(1);
     });
 
     it('une passation est incomplète : score absent, items manquants déclarés', () => {

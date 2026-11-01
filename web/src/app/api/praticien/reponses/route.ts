@@ -77,26 +77,32 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
     await journaliserAccesDossier({ idPatient: pgReponses[0].idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
 
     // D-406 §3 : le cycle en cours commence à la confirmation de l'ancre qui
-    // précède l'ancre de rang le plus haut.
-    const episodes = await prisma.assessmentEpisode.findMany({
-      where: { idPatient: pgReponses[0].idPatient },
-      select: { milestone: true, confirmedAt: true },
-    });
-    const ancres = episodes.flatMap(e => {
-      const rang = indexDeCycle(e.milestone);
-      return rang === null ? [] : [{ rang, confirmedAt: e.confirmedAt }];
-    });
-    const comparaisons = comparerPassations(
-      pgReponses.map(pg => ({
-        idQuestionnaire: pg.idQuestionnaire,
-        titre: pg.titre,
-        dateReponse: pg.dateReponse,
-        statutValidite: pg.statutValidite,
-        scorePrincipal: pg.scorePrincipal ?? null,
-        scoresJson: pg.scoresJson,
-      })),
-      debutDuCycleEnCours(ancres),
-    );
+    // précède l'ancre de rang le plus haut. Un échec ici retire le panneau,
+    // jamais la liste des réponses, servie avant lui.
+    let comparaisons: ComparaisonsPassations | undefined;
+    try {
+      const episodes = await prisma.assessmentEpisode.findMany({
+        where: { idPatient: pgReponses[0].idPatient },
+        select: { milestone: true, confirmedAt: true },
+      });
+      const ancres = episodes.flatMap(e => {
+        const rang = indexDeCycle(e.milestone);
+        return rang === null ? [] : [{ rang, confirmedAt: e.confirmedAt }];
+      });
+      comparaisons = comparerPassations(
+        pgReponses.map(pg => ({
+          idQuestionnaire: pg.idQuestionnaire,
+          titre: pg.titre,
+          dateReponse: pg.dateReponse,
+          statutValidite: pg.statutValidite,
+          scorePrincipal: pg.scorePrincipal ?? null,
+          scoresJson: pg.scoresJson,
+        })),
+        debutDuCycleEnCours(ancres),
+      );
+    } catch (err) {
+      console.error('[reponses GET comparaisons]', err instanceof Error ? err.message : String(err));
+    }
 
     const reponses: ReponseQuestionnaire[] = pgReponses.map(pg => {
       // Le retrait se fait ICI, pas dans l'écran. Une donnée que la route livre

@@ -14,7 +14,9 @@
   l'objet (deux passations du même instrument, et non deux versions de
   score), la façon d'établir la version (registre déclaré), les dates du
   registre et la règle de paire, la fenêtre du cycle en cours. Textes
-  visibles validés mot pour mot le même jour.
+  visibles validés mot pour mot le même jour. Registre réduit de dix à cinq
+  instruments le même jour, avant le merge, sur la revue `wn-reviewer` et
+  l'arbitrage du responsable (« livrer à cinq, ouvrir un lot »).
 - Domaine : cockpit praticien, tiroir « Détail des réponses »
   (`components/patient-cockpit/ComparaisonPassationsPanel.tsx`) ; route
   `api/praticien/reponses` ; module `lib/scoring/comparaisonPassations.ts`.
@@ -32,8 +34,8 @@
   `certification` est une provenance du calcul, `versionScore` n'existe que
   sur les épisodes de l'équilibre. Constat par conteneur, en agrégats, le
   2026-11-01 : 8 dossiers réels portent au moins deux passations
-  exploitables d'un même instrument, sur 10 instruments ; 4 couples
-  instrument × dossier passent la règle ci-dessous.
+  exploitables d'un même instrument, sur 10 instruments ; 2 couples
+  instrument × dossier passent la règle ci-dessous (`Q_ALI_01`, `Q_MOD_03`).
 
 **§1 — Objet.** Deux passations du même instrument, dans le même dossier,
 VALID ou AMBIGUOUS, comparées par leur score principal enregistré
@@ -47,13 +49,21 @@ et le calcul servis sont inchangés, paramètre technique déclaré par le
 responsable (`DC-20`), établi sur l'historique Git des définitions (texte
 normalisé, métadonnées `certification` et `note` exclues) et du moteur (la
 série de corrections du recueil partiel close le 2026-08-05, le badge de
-certification de [[D-038]] le 2026-08-10) :
+certification de [[D-038]] le 2026-08-10). N'y entrent que les instruments
+dont la source définit un total et dont le moteur publie sa complétude :
 
 | Instrument | Comparable si les deux passations datent du ou après le |
 |---|---|
-| `Q_ALI_01`, `Q_MOD_01`, `Q_MOD_03`, `Q_INF_01`, `Q_INF_03`, `Q_STR_02`, `Q_STR_04`, `Q_FIB_02`, `Q_SOM_07` | 2026-08-11 |
-| `Q_SOM_01` (PSQI ; bandes retouchées le 2026-09-13) | 2026-09-14 |
-| tout autre instrument | jamais comparé |
+| `Q_ALI_01` (/90), `Q_MOD_03` (/70), `Q_INF_01` (/96), `Q_STR_02` (PSS-10, /50) | 2026-08-11 |
+| `Q_SOM_01` (PSQI, /21 ; bandes retouchées le 2026-09-13) | 2026-09-14 |
+| tout autre instrument | jamais comparé, et le panneau n'en dit rien |
+
+Écartés à la revue : `Q_SOM_07` (MFI-20 : sa source ne totalise pas ses
+sous-échelles, `sansTotalGlobal`, score principal toujours vide) ;
+`Q_INF_03` (DNST), `Q_MOD_01` (mode de vie SIIN) et `Q_STR_04` (DASS-21),
+dont le total est une somme des axes faite par l'application, sans source
+qui le définisse ([[D-402]] les lit par sous-échelle) ; `Q_FIB_02` (QIF),
+dont le moteur ne publie aucun compte de complétude.
 
 **§3 — Cycle en cours.** Il s'ouvre à la confirmation de l'ancre qui précède
 l'ancre de rang le plus haut (`T0`, `T1`… ; le rang ordonne, pas la date).
@@ -66,9 +76,10 @@ servi aucune paire réelle à ce jour.
 
 **§4 — Paire refusée, motif dit.** Dans cet ordre : « interprétation
 retirée » (une passation sous `motifNonInterpretable`) ; « version non
-établie » (instrument hors registre, ou une passation antérieure à sa
-date) ; « une passation est incomplète » (score principal absent, `missing`
-non nul ou `missingIds` non vide) ; « grille différente » (maximums
+établie » (une passation antérieure à la date du registre) ; « une
+passation est incomplète » (score principal absent, `missing` non nul,
+`missingIds` non vide, ou un axe dont `repondus` diffère de `items`) ;
+« grille différente » (maximums
 `maxTotal` distincts, ou un seul connu — la variante courte de `Q_ALI_01`
 sur 42 contre la forme source sur 90).
 
@@ -81,6 +92,15 @@ consultation » ([[D-354]]).
 
 **§6 — Porte 20.** Cet écran est le premier qui compare deux passations du
 même instrument : la revue de sa PR lève la porte 20 ([[D-397]] §10).
+
+**§7 — Lot à ouvrir.** Le responsable souhaite un score global pour les
+instruments écartés au §2. Chacun est un acte clinique propre, avec sa
+source et sa décision (`DC-01`, `DC-19`) : le DASS-21 d'abord (un total est
+d'usage dans la littérature, source à verser au corpus) ; le DNST et le
+mode de vie SIIN, sans source connue à ce jour ; le compte de complétude du
+QIF, au moteur (`questions.ts`, sous instantané). Le MFI-20 reste exclu tant
+que sa source refuse un total. Un instrument n'entre au registre qu'après
+cette décision.
 
 ### D-405 — Restes de BP-07 au registre du corpus (D/20) : quarantaine levée pour WN-SRC-0062, 0241 et 0358 sur relecture attestée des sources entières ; revue clinique au registre gardée `not_reviewed` ; droits de 0509 et 0510 laissés à vérifier
 

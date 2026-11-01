@@ -6,7 +6,8 @@
 // est une provenance du calcul, `versionScore` n'existe que sur les épisodes
 // de l'équilibre. D-406 tranche sans migration : un REGISTRE DÉCLARÉ, par
 // instrument, de la date depuis laquelle la grille et le calcul servis sont
-// inchangés. Un instrument absent du registre n'est jamais comparé.
+// inchangés. Un instrument absent du registre n'est jamais comparé, et le
+// panneau n'en dit rien.
 //
 // Module pur, sans dépendance serveur : la route calcule, l'écran importe les
 // libellés.
@@ -15,17 +16,16 @@ import { motifNonInterpretable } from './passationsNonInterpretables';
 
 /** D-406 §2 — date depuis laquelle la grille et le calcul servis sont
  *  inchangés. Paramètres techniques déclarés par le responsable (`DC-20`),
- *  établis sur l'historique Git des définitions et du moteur. */
+ *  établis sur l'historique Git des définitions et du moteur. Seuls les
+ *  instruments dont la source définit un total et dont le moteur publie sa
+ *  complétude : ni MFI-20 (pas de total, par sa source), ni DNST, mode de vie
+ *  SIIN ou DASS-21 (total sommé par l'application), ni QIF (aucun compte de
+ *  complétude) — lot à ouvrir, avec ses sources (D-406 §7). */
 export const COMPARABLE_DEPUIS: ReadonlyMap<string, Date> = new Map([
   ['Q_ALI_01', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_MOD_01', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_MOD_03', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_INF_01', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_INF_03', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_STR_02', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_STR_04', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_FIB_02', new Date('2026-08-11T00:00:00.000Z')],
-  ['Q_SOM_07', new Date('2026-08-11T00:00:00.000Z')],
   // PSQI : bandes retouchées le 2026-09-13 (#1079, #1085).
   ['Q_SOM_01', new Date('2026-09-14T00:00:00.000Z')],
 ]);
@@ -83,13 +83,21 @@ function maximumDe(p: PassationLue): number | null {
   return typeof m === 'number' && Number.isFinite(m) ? m : null;
 }
 
-/** Complète : un score principal, aucun item manquant déclaré. */
+/** Complète : un score principal, aucun item manquant déclaré, à la racine
+ *  comme sur chaque axe qui publie ses comptes. */
 function estComplete(p: PassationLue): boolean {
   if (p.scorePrincipal === null || !Number.isFinite(p.scorePrincipal)) return false;
   const missing = champ(p.scoresJson, 'missing');
   if (missing !== undefined && missing !== null && missing !== 0) return false;
   const missingIds = champ(p.scoresJson, 'missingIds');
   if (Array.isArray(missingIds) && missingIds.length > 0) return false;
+  const axes = champ(p.scoresJson, 'subScores');
+  if (Array.isArray(axes)) {
+    for (const axe of axes) {
+      const { repondus, items } = (axe ?? {}) as { repondus?: unknown; items?: unknown };
+      if (typeof repondus === 'number' && typeof items === 'number' && repondus !== items) return false;
+    }
+  }
   return true;
 }
 
@@ -110,13 +118,14 @@ function motifDe(a: PassationLue, b: PassationLue): MotifNonComparaison | null {
   }
   const depuis = COMPARABLE_DEPUIS.get(a.idQuestionnaire);
   if (!depuis || a.dateReponse < depuis || b.dateReponse < depuis) return 'version_non_etablie';
+  // (`!depuis` ne se produit pas : seuls les instruments du registre arrivent ici.)
   if (!estComplete(a) || !estComplete(b)) return 'incomplete';
   if (maximumDe(a) !== maximumDe(b)) return 'grille_differente';
   return null;
 }
 
 /**
- * D-406 §1-§4 — pour chaque instrument qui compte au moins deux passations
+ * D-406 §1-§4 — pour chaque instrument du registre qui compte au moins deux passations
  * VALID ou AMBIGUOUS dans le cycle en cours, ses deux plus récentes : une
  * paire comparée, ou le motif qui l'empêche. Aucune bande, aucune lecture
  * clinique de l'écart.
@@ -127,6 +136,7 @@ export function comparerPassations(
 ): ComparaisonsPassations {
   const parInstrument = new Map<string, PassationLue[]>();
   for (const p of passations) {
+    if (!COMPARABLE_DEPUIS.has(p.idQuestionnaire)) continue;
     if (!STATUTS_LUS.has(p.statutValidite)) continue;
     if (debutCycle && p.dateReponse <= debutCycle) continue;
     const liste = parInstrument.get(p.idQuestionnaire) ?? [];
