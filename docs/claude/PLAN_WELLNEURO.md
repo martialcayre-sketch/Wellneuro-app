@@ -2217,7 +2217,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h1 | effectif de masquage des agrégats (D-298 rédigée et acceptée : cinq dossiers distincts) | F25 | S-1 sur plusieurs dossiers, H07, y, BP-21a |
 | h1 | essai de restauration G-7 : fait le 2026-10-14, réussi, porte 8 levée (#1462 ; portée écrite par D-289, #1430) | F04, porte 8 | toute migration après BP-09 |
 | h1 | lettres m, n, ac, z : faites le 2026-10-15 (D-303, D-304, D-301, D-302) | H10, H11, H12, F45 | NF-7, EF-3b, radar, garde d'âge |
-| h1 | sources de fidélité (G-10) : instruments arrêtés le 2026-10-15, références test-retest à fournir (H13) | H13, porte 11 | v |
+| h1 | sources de fidélité (G-10) : instruments arrêtés le 2026-10-15, références test-retest à fournir (H13) ; **tranché le 2026-11-01 (D-402)** : aucune source pour les versions servies, écarts minimaux déclarés paramètres techniques ; reste le complément des sources de J3-12f (besoins 8, 9, 12) | H13, porte 11 | v |
 | h1 | sources restantes de la porte 4 : poids égal, seuils du sommeil hors 8B et de « Mon équilibre », fidélité, quantités, axes ; liste de ce qu'il faut fournir préparée le 2026-10-15 (H08) | H08 | c, am, al, cm, seuils_points |
 | h2 | K-05a et D4 (faits le 2026-10-15 : D-299, liste fermée ; porte 5 levée) ; bg (fait le 2026-10-24 : D-364) | F46, porte 5 ; H18 | at, R:Drive, ag, ah, an, ay |
 | h2 | at, date de naissance lue par l'extraction (texte patient de la main du responsable ; remplacée le 2026-10-22, D-342 §3) ; R:Drive, références du Drive de formation validées une à une : préalable K-05a levé le 2026-10-15 (D-299, liste fermée), reportés de D.3 le 2026-10-15 | F45, H36 | J2-conf (at) ; fiches conseils (R:Drive) |
