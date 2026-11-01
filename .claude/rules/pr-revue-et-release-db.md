@@ -371,7 +371,9 @@ approbations est la seule preuve de qui a ouvert la porte.
    « appliquée », jamais « à relancer ». Si la tête apporte une migration ou
    un changement clinique nouveau (`web/prisma/migrations/**`,
    `web/src/lib/clinical/**`, et le fichier de la table signée
-   `web/src/lib/biology-library/indicationsBiologieV1.ts` depuis `D-389` §5),
+   `web/src/lib/biology-library/indicationsBiologieV1.ts` depuis `D-389` §5,
+   puis la structure signée des fiches d'usage et le contrat positif de
+   fraîcheur depuis `D-416`),
    le déclenchement ne déploie rien — en
    `workflow_dispatch` il refuse ; en `push` l'étape se dit obsolète, mais le
    job continue (dette au plan §8) — et c'est le run de la tête qui
@@ -380,7 +382,8 @@ approbations est la seule preuve de qui a ouvert la porte.
    reste gelé se lit par phases, **avant chaque merge** :
    `node scripts/wn-sonde-release-db.mjs <N>` — `0` seul autorise. Attente
    d'approbation (`waiting`, phase 1) : gelés, les seuls merges qui touchent
-   une migration, un chemin clinique, la table signée (`D-389` §5),
+   une migration, un chemin clinique, une table signée hors de `clinical/` ou
+   le contrat de fraîcheur (`D-389` §5, `D-416`),
    `release-db.yml` et ce que son run exécute, ou le déployeur. Tout autre état non conclu — exécution (phase 2),
    ou démarrage avant la porte — : aucun merge jusqu'à la conclusion du run.
    Lecture impossible : gel. Deux runs à la fois — un second en file derrière
