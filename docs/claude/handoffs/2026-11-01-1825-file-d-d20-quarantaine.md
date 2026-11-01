@@ -61,8 +61,12 @@ séance.
 
 ## Problèmes ouverts
 
-- m16 : liste et sources des indicateurs, du responsable, après sa recherche ;
-  puis une D-xxx par indicateur.
+- m16 : recherche du responsable reçue et vérifiée en séance (six objets
+  « apparentés ») ; forme arbitrée : remplacer les items par des instruments
+  (fragment H19 n° 2). Restent le choix de l'instrument objet par objet (un
+  prompt d'aide à la décision a été remis au responsable, hors dépôt), les
+  permissions d'usage, puis une D-xxx par objet et les notices de contexte au
+  registre. Deux écarts de forme inscrits au §8.
 - m10 : guide w bloqué par les dossiers de preuve.
 - Lignes non abordées : m23 (H68), b23 (BP-12a, D-314 §10), b26 (J3-12d,
   J3-12f).
