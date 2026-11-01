@@ -10,5 +10,7 @@
   sont ingérés en base (lot `LOT_052_2026-11-01`, 21 passages), sur accord du
   responsable, et constatés par lecture. Les 40 claims qui en sont tirés, et
   quatre autres tirés de passages déjà en base, sont entrés en attente de
-  validation, sans clé de lien ; leur signature appartient au responsable.
-  Les six notices restent `rightsStatus: to_verify`.
+  validation, sans clé de lien, puis signés par le responsable dans
+  l'atelier. Les six notices restent `rightsStatus: to_verify`. Les douze
+  notices du point d'étape (D-407 à D-413), sans extrait ingéré, qui avaient
+  pris la même plage, passent à `WN-SRC-0589` à `0600`.
