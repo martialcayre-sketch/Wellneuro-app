@@ -881,6 +881,12 @@ test('revue #1222 — parité des chemins de release-db entre release-db.yml et 
     chemins.includes('web/src/lib/biology-library/indicationsBiologieV1.ts'),
     'la table signée des indications doit être lue par le parseur (D-389 §5)',
   );
+  for (const fichier of [
+    'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
+    'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+  ]) {
+    assert.ok(chemins.includes(fichier), `${fichier} doit être lu par le parseur (D-416)`);
+  }
   assert.deepEqual([...CHEMINS_RELEASE_DB].sort(), chemins);
 });
 

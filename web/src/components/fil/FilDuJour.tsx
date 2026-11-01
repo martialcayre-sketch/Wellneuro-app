@@ -41,6 +41,10 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   geste_objectif: { libelle: 'Réponse du patient', icon: MessageSquare },
 };
 
+/** Le seul `statut_reponses` qui rouvre une assignation échue — le même que
+ *  `deciderRelanceAssignation` lit côté serveur. */
+const REPONSES_DEVERROUILLEES = 'deverrouille';
+
 /** Grille timeline de la maquette : heure | pastille | carte. Partagée entre
  * carte active et carte écartée pour que l'axe vertical ne « saute » pas. */
 const GRILLE_TIMELINE =
@@ -65,10 +69,51 @@ const GRILLE_TIMELINE =
  * n'écrit rien dans le dossier, donc rien n'a changé de ce que la carte
  * constate. Le questionnaire est toujours en retard — c'est le patient qui a
  * la main, pas nous.
+ *
+ * DÉBLOQUER D'ABORD ([[D-414]] §1). Passé l'échéance, seul un questionnaire
+ * déverrouillé se rappelle : le serveur refuse les autres (`echeance_expiree`,
+ * [[D-404]]). Sur ces cartes, le bouton est « Débloquer » — la route du
+ * dossier (`PATCH /api/praticien/assignations`), sans confirmation, comme dans
+ * le dossier, échéance inchangée. Après le déblocage, la carte reste et le
+ * MÊME bouton devient « Rappeler » : deux gestes distincts, car débloquer ne
+ * prévient pas le patient. Le même élément garde le focus au clavier.
+ *
+ * SANS STATUT (réponse d'un serveur antérieur), le geste reste « Rappeler » :
+ * le serveur dit non s'il le faut, l'écran n'écrit rien qu'il ne sache pas.
  */
-function BoutonRelance({ idAssignation, titre }: { idAssignation: string; titre: string }) {
+function BoutonRelance({
+  idAssignation,
+  titre,
+  statutReponses,
+}: {
+  idAssignation: string;
+  titre: string;
+  statutReponses: string | undefined;
+}) {
   const [enCours, setEnCours] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [aDebloquer, setADebloquer] = useState(
+    statutReponses !== undefined && statutReponses !== REPONSES_DEVERROUILLEES,
+  );
+
+  const debloquer = useCallback(async () => {
+    setEnCours(true);
+    setMessage(null);
+    try {
+      const reponse = await fetch('/api/praticien/assignations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation }),
+      });
+      const charge = (await reponse.json()) as { success?: boolean; error?: string };
+      if (charge.success) setADebloquer(false);
+      else setMessage(charge.error ?? 'Déblocage impossible.');
+    } catch {
+      setMessage('Déblocage impossible : le serveur n’a pas répondu.');
+    } finally {
+      setEnCours(false);
+    }
+  }, [idAssignation]);
 
   const relancer = useCallback(async () => {
     setEnCours(true);
@@ -115,12 +160,16 @@ function BoutonRelance({ idAssignation, titre }: { idAssignation: string; titre:
     <>
       <button
         type="button"
-        onClick={() => void relancer()}
+        onClick={() => void (aDebloquer ? debloquer() : relancer())}
         disabled={enCours}
-        aria-label={`Rappeler au patient le questionnaire en retard — ${titre}`}
+        aria-label={
+          aDebloquer
+            ? `Débloquer le questionnaire en retard — ${titre}`
+            : `Rappeler au patient le questionnaire en retard — ${titre}`
+        }
         className="inline-flex min-h-9 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        {enCours ? 'Envoi…' : 'Rappeler'}
+        {aDebloquer ? (enCours ? 'Déblocage…' : 'Débloquer') : enCours ? 'Envoi…' : 'Rappeler'}
       </button>
       {/* `role="status"` et non `alert` : un refus de cadence n'est pas une
           erreur, c'est une réponse. Le lecteur d'écran l'annonce sans
@@ -209,7 +258,11 @@ function CarteDuFil({
               {carte.actionLabel} →
             </Link>
             {carte.type === 'assignation_en_retard' && carte.idAssignation && (
-              <BoutonRelance idAssignation={carte.idAssignation} titre={carte.titre} />
+              <BoutonRelance
+                idAssignation={carte.idAssignation}
+                titre={carte.titre}
+                statutReponses={carte.statutReponses}
+              />
             )}
             <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full border border-border bg-muted px-3 py-0.5 text-13 text-muted-foreground">
               <span>Pourquoi maintenant :</span>

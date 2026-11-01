@@ -499,6 +499,119 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
   });
 });
 
+// ── DÉBLOQUER, PUIS RAPPELER ([[D-414]] §1) ─────────────────────────────────
+//
+// Passé l'échéance, le serveur refuse de rappeler un questionnaire non
+// déverrouillé ([[D-404]]). La carte offre donc d'abord le déblocage — la
+// route du dossier, sans confirmation —, puis le rappel : deux gestes, car
+// débloquer ne prévient pas le patient.
+describe('FilDuJour — débloquer un questionnaire échu', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function stubAvecDeblocage(
+    statutReponses: string,
+    deblocage: () => Promise<unknown>,
+    relance: () => Promise<unknown> = async () => ({ ok: true, statut: 'Envoye' }),
+  ) {
+    const poste = vi.fn(async (url: string, options?: { method?: string }) => {
+      if (url.includes('meteo-adhesion')) {
+        return { json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response;
+      }
+      if (url.includes('assignations/relance')) {
+        return { json: relance } as unknown as Response;
+      }
+      if (url.endsWith('/api/praticien/assignations')) {
+        expect(options?.method).toBe('PATCH');
+        return { json: deblocage } as unknown as Response;
+      }
+      return {
+        json: async () => ({
+          ok: true,
+          cartes: [carte({ idAssignation: 'ASG_1', statutReponses })],
+          refusees: [],
+          lues: [],
+        }),
+      } as unknown as Response;
+    });
+    vi.stubGlobal('fetch', poste);
+    return poste;
+  }
+
+  const appels = (poste: ReturnType<typeof vi.fn>, fin: string) =>
+    poste.mock.calls.filter(([url]) => String(url).endsWith(fin));
+
+  it('offre « Débloquer » à la place de « Rappeler » tant que le questionnaire n’est pas déverrouillé', async () => {
+    for (const statutReponses of ['non_rempli', 'verrouille', 'modification_demandee']) {
+      stubAvecDeblocage(statutReponses, async () => ({ success: true }));
+      render(<FilDuJour />);
+      expect(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /Rappeler au patient/i })).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('débloque l’assignation de la carte, sans rien rappeler, puis le même bouton devient « Rappeler »', async () => {
+    let resoudre: (v: unknown) => void = () => {};
+    const poste = stubAvecDeblocage('non_rempli', () => new Promise(r => { resoudre = r; }));
+    render(<FilDuJour />);
+
+    const bouton = await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i });
+    fireEvent.click(bouton);
+    await waitFor(() => expect(bouton.textContent).toBe('Déblocage…'));
+    resoudre({ success: true });
+
+    await waitFor(() => expect(bouton.textContent).toBe('Rappeler'));
+    expect(bouton.getAttribute('aria-label')).toMatch(/^Rappeler au patient/);
+    // La carte reste : seul le geste a changé.
+    expect(screen.getByText('Questionnaire en retard')).toBeTruthy();
+    const [deblocage] = appels(poste, '/api/praticien/assignations');
+    expect(JSON.parse(String((deblocage?.[1] as { body?: string })?.body))).toEqual({ idAssignation: 'ASG_1' });
+    // Débloquer ne prévient pas le patient : aucun rappel n'est parti.
+    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(0);
+
+    fireEvent.click(bouton);
+    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(1);
+    expect(appels(poste, '/api/praticien/assignations')).toHaveLength(1);
+  });
+
+  it('un refus du déblocage s’affiche tel quel, et le bouton reste « Débloquer »', async () => {
+    const poste = stubAvecDeblocage('non_rempli', async () => ({
+      success: false,
+      reason: 'not_found',
+      error: 'Assignation introuvable.',
+    }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i }));
+
+    await waitFor(() => expect(screen.getByText('Assignation introuvable.')).toBeTruthy());
+    expect(screen.getByRole('button', { name: /Débloquer le questionnaire en retard/i }).textContent).toBe('Débloquer');
+    expect(appels(poste, '/api/praticien/assignations/relance')).toHaveLength(0);
+  });
+
+  it('dit qu’un déblocage sans réponse du serveur n’a pas eu lieu', async () => {
+    stubAvecDeblocage('non_rempli', async () => { throw new Error('réseau'); });
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Débloquer le questionnaire en retard/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Déblocage impossible : le serveur n’a pas répondu.')).toBeTruthy());
+    expect(screen.getByRole('button', { name: /Débloquer le questionnaire en retard/i }).textContent).toBe('Débloquer');
+  });
+
+  it('un questionnaire déjà déverrouillé se rappelle directement', async () => {
+    const poste = stubAvecDeblocage('deverrouille', async () => ({ success: true }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+
+    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    expect(appels(poste, '/api/praticien/assignations')).toHaveLength(0);
+  });
+});
+
 describe('FilDuJour — compte rendu biologique à lire (D-268, BP-10)', () => {
   beforeEach(() => vi.clearAllMocks());
 

@@ -4,6 +4,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     questionnaireReponse: { findMany: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -38,6 +39,7 @@ describe('GET /api/praticien/reponses', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   });
 
   it('refuse sans session (401)', async () => {
@@ -115,6 +117,7 @@ describe('GET /api/praticien/reponses — passation non interprétable', () => {
 
   beforeEach(() => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   });
 
   it('ne livre ni score principal ni interprétation, et donne le motif', async () => {
@@ -194,5 +197,81 @@ describe('GET /api/praticien/reponses — passation non interprétable', () => {
     expect(reponses[0].nonInterpretable).toBeNull();
     expect(reponses[0].scorePrincipal).toBe(3);
     expect(reponses[0].interpretation).toBe('Faible');
+  });
+
+  describe('comparaisons (D-406)', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    });
+
+    function passation(date: string, score: number) {
+      return {
+        ...reponseRow(),
+        idReponse: `REP_${date}`,
+        idQuestionnaire: 'Q_MOD_03',
+        titre: 'Mes plaintes actuelles et troubles ressentis',
+        dateReponse: new Date(date),
+        statutValidite: 'VALID',
+        scoresJson: { total: score, maxTotal: 70 },
+        scorePrincipal: score,
+      };
+    }
+
+    it('compare les deux plus récentes du cycle en cours', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        passation('2026-10-20T08:00:00.000Z', 30),
+        passation('2026-09-20T08:00:00.000Z', 34),
+      ]);
+      const { comparaisons } = await (await GET(request())).json();
+      expect(comparaisons.paires).toHaveLength(1);
+      expect(comparaisons.paires[0]).toMatchObject({ ecart: -4, maximum: 70, a: { score: 34 }, b: { score: 30 } });
+      expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith({
+        where: { idPatient: 'PAT_1' },
+        select: { milestone: true, confirmedAt: true },
+      });
+    });
+
+    it('le cycle en cours commence à la confirmation de l’ancre précédente : rien entre deux cycles', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        passation('2026-10-20T08:00:00.000Z', 30),
+        passation('2026-09-20T08:00:00.000Z', 34),
+      ]);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
+        { milestone: 'T0', confirmedAt: new Date('2026-09-01T00:00:00.000Z') },
+        { milestone: 'J21', confirmedAt: new Date('2026-09-25T00:00:00.000Z') },
+        { milestone: 'T1', confirmedAt: new Date('2026-10-01T00:00:00.000Z') },
+      ]);
+      // Fenêtre ouverte après T0 : les deux passations y sont.
+      expect((await (await GET(request())).json()).comparaisons.paires).toHaveLength(1);
+
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
+        { milestone: 'T0', confirmedAt: new Date('2026-08-15T00:00:00.000Z') },
+        { milestone: 'T1', confirmedAt: new Date('2026-10-01T00:00:00.000Z') },
+        { milestone: 'T2', confirmedAt: new Date('2026-10-10T00:00:00.000Z') },
+      ]);
+      // Fenêtre ouverte après T1 : la passation de septembre appartient à un
+      // cycle clos, la paire ne se forme pas.
+      const { comparaisons } = await (await GET(request())).json();
+      expect(comparaisons).toEqual({ paires: [], nonComparees: [] });
+    });
+
+    it('un échec des épisodes retire le panneau, jamais la liste des réponses', async () => {
+      prisma.questionnaireReponse.findMany.mockResolvedValue([passation('2026-10-20T08:00:00.000Z', 30)]);
+      prisma.assessmentEpisode.findMany.mockRejectedValue(new Error('panne'));
+      const res = await GET(request());
+      expect(res.status).toBe(200);
+      const corps = await res.json();
+      expect(corps.reponses).toHaveLength(1);
+      expect(corps.comparaisons).toBeUndefined();
+    });
+
+    it('liste vide : ni comparaison, ni lecture des épisodes (anti-oracle)', async () => {
+      const corps = await (await GET(request())).json();
+      expect(corps).toEqual({ reponses: [] });
+      expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+    });
   });
 });

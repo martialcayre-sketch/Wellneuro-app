@@ -313,6 +313,13 @@ test('parité : les chemins gelés couvrent les déclencheurs et tout ce que le 
   }
   assert.ok(estGele('web/src/lib/biology-library/indicationsBiologieV1.ts'), 'la table signée doit être gelée (D-389 §5)');
   assert.ok(!estGele('web/src/lib/biology-library/autre.ts'), 'le dossier de la table ne doit pas être gelé');
+  assert.ok(estGele('web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts'), 'la structure signée doit être gelée (D-416)');
+  assert.ok(!estGele('web/src/lib/fiches-usage/autre.ts'), 'le dossier de la structure ne doit pas être gelé (D-416)');
+  assert.ok(estGele('web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql'), 'le contrat positif doit être gelé (D-416)');
+  assert.ok(
+    !estGele('web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql'),
+    'le négatif, joué en CI seulement, ne doit pas être gelé (D-416)',
+  );
   for (const c of CHEMINS_GELES) assert.ok(existsSync(join(RACINE, c)), `chemin gelé absent du dépôt : ${c}`);
   // Dérivés du workflow et des scripts de release qu'il lance : les scripts
   // `release-db-*.sh`, la configuration Prisma, les préflights SQL. Un fichier

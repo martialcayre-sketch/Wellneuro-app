@@ -6,6 +6,139 @@
 
 ## Décisions actives
 
+### D-418 — Le registre des décisions passe à un fichier par décision (`docs/decisions/D-NNN.md`) ; `docs/DECISIONS.md` devient une page fixe ; bascule en une PR après l'essai de D-373
+
+- Date : 2026-11-01
+- Statut : accepté. Le responsable a retenu le principe le 2026-11-01, en
+  conversation (« décision 1 ok »), sur une recommandation de l'intégrateur
+  de l'essai de [[D-373]] (fiche H89). L'intégrateur a rédigé la forme des
+  §1 à §6, et le responsable l'a confirmée le même jour (« tout confirmé »).
+  Le §7 n'est pas décidé : il signale une question ouverte.
+- Domaine : gouvernance du registre (`docs/DECISIONS.md`) ; gardes
+  `scripts/lib/decisions-numerotation.mjs` et
+  `scripts/wn-reserver-decision.mjs` ; tests qui lisent une décision ;
+  skills `wn-merge` (étape 7 bis), `wn-finish` et `wn-lot`.
+- **Amende** :
+  - [[D-370]], sur un point : « le registre se range par numéro » devient
+    « un fichier par numéro ». La réservation à la rédaction est inchangée ;
+  - le choix écrit dans le commentaire de l'étape « Numérotation du
+    registre des décisions » de `ci.yml` (« `docs/DECISIONS.md` reste
+    délibérément à créneau unique ») et dans l'en-tête du registre
+    (« Append-only. Insérer une nouvelle décision […] à son rang »).
+- **Ne touche pas** :
+  - le texte des 414 décisions existantes, repris à l'identique, sauf les
+    deux exceptions du §3 (niveau du titre, cibles des liens relatifs) ;
+  - la convention `[[D-NNN]]`, qu'aucun outil ne résout ;
+  - les documents datés qui citent `docs/DECISIONS.md` (handoffs, campagnes,
+    fragments, journal), qu'on ne réécrit pas ;
+  - le runtime de l'application, qui ne lit pas le registre.
+- **Contexte, constaté le 2026-11-01 pendant l'essai de [[D-373]].** Trois
+  PR déclarées « prête » ont été renvoyées pour un conflit sur
+  `docs/DECISIONS.md` : #1800 (D-400 contre D-399), #1801 (D-402 contre
+  D-400) et #1809 (D-406 contre D-407 à D-413).
+  - Chaque nouvelle décision s'écrit en tête de la section active. Deux PR
+    ouvertes qui en ajoutent une se heurtent donc toujours au même endroit.
+  - Chaque conflit oblige la file à fusionner `main`. Cela crée une nouvelle
+    tête, qui doit repasser par le CI (environ quinze minutes avec l'e2e) et
+    par la revue, alors que le quota de CodeRabbit est épuisé.
+  - Les handoffs, les fragments de changelog et les journaux de fiche, qui
+    sont un fichier par lot, n'ont produit aucun conflit le même jour.
+  - Le fichier unique avait été gardé pour rendre visibles les doublons de
+    numéro (`D-013` le 2026-08-03, `D-014` le 2026-08-04). Depuis [[D-370]],
+    un numéro se réserve à la rédaction, et ce risque est couvert
+    autrement. De plus, deux fichiers au même nom donnent un conflit
+    d'ajout que Git signale toujours.
+
+**§1 — La règle.** Une décision vit dans son propre fichier,
+`docs/decisions/D-NNN.md`, nommé par son seul numéro.
+- La première ligne du fichier est `# D-NNN — <titre>`. Les rubriques sont
+  les mêmes qu'aujourd'hui (`- Date :`, `- Statut :`, `- Domaine :`,
+  « Amende », « Ne touche pas », contexte, paragraphes).
+- Le numéro se réserve par `node scripts/wn-reserver-decision.mjs`
+  ([[D-370]]).
+- Une PR qui ajoute une décision crée son fichier. Elle n'édite aucun
+  fichier commun pour la référencer.
+- Écartés :
+  - un nom avec un intitulé (`D-NNN-intitule.md`) : deux intitulés
+    différents sous le même numéro passeraient sans conflit, ce qui
+    rouvrirait le doublon silencieux ;
+  - un rangement par date.
+
+**§2 — Les amendements.** Un amendement s'écrit dans le fichier de la
+décision qu'il amende, en paragraphe daté, comme aujourd'hui.
+- Deux PR n'entrent alors en conflit que si elles amendent la même décision.
+  Ce conflit-là est réel, et il doit se trancher.
+- Une décision nouvelle qui en amende une ancienne garde sa ligne
+  « Amende ».
+
+**§3 — La migration se fait en une fois.** Un script découpe les 414
+entrées.
+- Les décisions actives vont dans `docs/decisions/`, les archivées dans
+  `docs/decisions/archivees/`.
+- Le texte est repris à l'identique, à deux exceptions près :
+  - le niveau du titre (`###` devient `#`) ;
+  - les liens écrits relativement au fichier (`../web/…`, une trentaine au
+    2026-11-01). Leur cible est réécrite pour la profondeur du répertoire
+    de destination, `docs/decisions/` ou `docs/decisions/archivees/`. Les
+    ancres écrites depuis la racine du dépôt, que lit
+    `scripts/wn-ancres-doctrine.mjs`, ne changent pas.
+- Un banc vérifie le découpage :
+  - la concaténation des fichiers rend le registre d'origine, aux titres
+    près, et aux liens près une fois leurs cibles résolues ;
+  - chaque lien réécrit désigne la même ressource qu'avant ;
+  - aucune entrée n'est perdue ni dupliquée.
+- Écartée : une migration progressive, avec les nouvelles décisions en
+  fichiers et les anciennes dans le registre. Chaque outil devrait lire les
+  deux formes, et l'en-tête du registre continuerait d'attirer des ajouts.
+
+**§4 — `docs/DECISIONS.md` devient une page fixe.** Elle dit où vit le
+registre et comment le lire. Elle n'est plus jamais écrite par une PR.
+- La lecture d'ensemble se fait par une commande (`node scripts/wn-decisions.mjs`,
+  du plus récent au plus ancien, ou une décision par son numéro), sans
+  fichier généré au dépôt.
+- Écartés :
+  - un index généré et versionné : chaque PR qui ajoute une décision le
+    régénérerait, et il redeviendrait le point de conflit ;
+  - la suppression du fichier : des centaines de documents datés le citent.
+
+**§5 — L'outillage.** La PR de bascule adapte tout ce qui lit le registre.
+L'inventaire du 2026-11-01 en relève trois sortes.
+- **Ce qui rougit dès la bascule** : le garde de numérotation et son banc,
+  qui jugeront par nom de fichier (trous réservés tolérés, titre accordé au
+  nom) ; la réservation (le dernier numéro se lit dans la liste du
+  répertoire) ; les dix tests web qui lisent une décision par son texte,
+  réécrits sur une aide commune `lireDecision(id)` ; les messages attendus
+  de `wn-controle-fusion.test.mjs`.
+- **Ce qui se viderait en silence**, et doit désormais rougir quand il ne
+  trouve aucune décision, avec un cas de test qui prouve cet échec :
+  - `recent_decision_ids` de `scripts/wn-cycle.mjs` ;
+  - le périmètre de `scripts/wn-ancres-doctrine.mjs` ;
+  - `scripts/version-prompt-documents.test.mjs`, qui passe aujourd'hui sur
+    une liste de décisions vide. Sur une page fixe sans titres, il ne
+    contrôlerait donc plus rien.
+- **Ce qui ne demande qu'un texte à jour** :
+  - `scripts/wn-kit-doctor.mjs` et `.wn/documentation.yml` ;
+  - les commentaires de `ci.yml`, de `.gitattributes` et de
+    `.coderabbit.yaml` ;
+  - les skills `wn-merge` (relecture du registre en 7 bis : diff sur
+    `docs/decisions/`), `wn-finish` et `wn-lot` ;
+  - `AGENTS.md`, `REGLES_PR_MERGE.md`, `PROJET_CONTEXTE.md`,
+    `doctrine/README.md` et `CONSTITUTION_CLINIQUE.md`.
+- Aucun garde n'est retiré : chacun change de forme d'entrée.
+
+**§6 — La bascule.** La migration, l'outillage et les bancs partent ensemble,
+dans une seule PR de la file A.
+- Elle part après la fin de l'essai de [[D-373]] (sept jours actifs). Elle
+  est mergée quand aucune PR ouverte ne touche `docs/DECISIONS.md`, ou quand
+  ces PR ont converti leur entrée avec le script de migration.
+- À partir du merge, une PR qui écrit encore dans `docs/DECISIONS.md` est
+  renvoyée, avec ce motif.
+
+**§7 — Hors de cette décision.** Les numéros `WN-SRC` du registre du corpus
+ont produit le même jour une collision de même nature (#1810, renumérotée
+sur arbitrage). Leur réservation à la rédaction est proposée, mais pas
+arbitrée.
+
 ### D-417 — BP-12a après la signature de sa structure : DC-11 partagée avec BP-17, DC-45 en quatrième axe « niveau de mesure », plafond de l'information contributive aligné sur D-266 §3, application à la re-signature B9/B12 (b23)
 
 - Date : 2026-11-01
@@ -75,6 +208,59 @@ relecture), avant la re-signature de B9 et B12. Fiches F05 et F11 : fragments
 de journal. Constitution : `DC-11` et le paragraphe des statuts orphelins
 nomment les deux porteurs.
 
+### D-416 — La structure signée des fiches d'usage et le contrat positif de fraîcheur deviennent des chemins déclencheurs de la release-db, sur le patron de D-389 §5 (amende D-044)
+
+- Date : 2026-11-01
+- Statut : accepté — trois arbitrages du responsable du 2026-11-01 soir, sur
+  questions à options, après le constat de la release de #1806 (portée des
+  chemins, forme de la décision, livraison en deux PR).
+- Domaine : `.github/workflows/release-db.yml` (`paths`, résumé pour
+  l'approbateur, comparaison de la tête dépassante) ;
+  `scripts/wn-deploiement-deployer.mjs` (`CHEMINS_RELEASE_DB`) et, par lui,
+  les chemins gelés de `scripts/wn-sonde-release-db.mjs` ([[D-374]]) ; leurs
+  bancs.
+- **Amende** [[D-044]] (portée de la retenue) ; **étend** [[D-389]] §5 à deux
+  fichiers.
+- **Ne touche pas** : la structure signée de [[D-401]], ni son empreinte ni
+  sa signature ; le contrat de fraîcheur lui-même (paires et prédicat
+  inchangés) ; le fichier négatif, qui ne tourne qu'en CI ; aucune migration.
+- Contexte : la revue `wn-reviewer` de #1806 a relevé que la release de F05
+  n'était retenue que parce que le lot touchait aussi un banc sous
+  `web/src/lib/clinical/`. La re-signature suivante de la structure (B9/B12,
+  puis iode et sélénium) ajoutera des claims dans
+  `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` et dans le contrat, sans
+  toucher `clinical/` : elle se serait déployée sans que le préflight rejoue
+  ses paires contre la production. Le trou de retenue est celui que
+  [[D-389]] §5 a fermé pour `indicationsBiologieV1.ts` (motif : la retenue
+  promise par [[D-382]] §6 ; cette table n'a pas de paires au contrat de
+  fraîcheur). Un prédicat retouché seul dans le contrat serait parti de même,
+  sans être rejoué avant la release suivante.
+
+**§1 — Les deux chemins.** `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`
+et `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` s'ajoutent
+aux chemins déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du
+déployeur. Des fichiers, pas des dossiers : `fiches-usage/` recevra les
+textes des fiches et leurs outils, dont le merge ne doit pas attendre une
+approbation ; `web/prisma/checks/` porte des contrats qui ne tournent qu'en
+CI, dont le négatif.
+
+**§2 — Ce que voit l'approbateur.** Le résumé du run nomme chaque table
+signée hors de `clinical/` et le contrat quand le push les modifie ; la
+comparaison de la tête dépassante les compte comme une migration (refus en
+`workflow_dispatch`, run obsolète en `push`), comme la table des indications.
+
+**§3 — Hors de cette décision.** `biology-library/import/resolverLibellesV1.ts`,
+la dernière table signée hors de `clinical/`, n'épingle aucun claim : le
+préflight de fraîcheur ne la concerne pas, et elle reste hors des chemins.
+Une table signée neuve hors de `clinical/` qui épingle des claims entre aux
+chemins avec ses paires.
+
+**Écarté.** Le dossier `fiches-usage/**` : il retiendrait chaque texte et
+chaque outil des fiches jusqu'à une approbation. Le fichier seul, sans le
+contrat : le banc de parité empêche d'en changer les paires seul, pas d'en
+retoucher le prédicat. Un paragraphe ajouté à [[D-401]] : il retouchait une
+décision mergée qui porte une signature.
+
 ### D-415 — Fiches conseils, thème « respiration et apaisement » : le responsable propriétaire et seul signataire ; exercices respiratoires et d'apaisement corporel de la Fiche MY « Gestion du stress » et vidéos transcrites ; précautions par recherche, avant toute ouverture (lettre ah, m23)
 
 - Date : 2026-11-01
@@ -140,6 +326,61 @@ bd ; des précautions déclarées comme arbitrage, sans source.
 
 **§5 — Suites.** Transcription des vidéos du §3 ; recherche des précautions
 (§4) ; puis le lot de la fiche, au rang 5 (H68 : porte 5, EF-3b).
+
+### D-414 — Audit 3, lot Q3 ter : au Fil, un questionnaire échu non déverrouillé se débloque avant de se rappeler ; la relance juge le lendemain par le calendrier
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01 sur les restes
+  du lot Q3 bis (handoff `2026-11-01-1732-audit3-q3bis-restes.md`).
+  Précise [[D-404]] §1 ; geste neuf au Fil.
+- Domaine : Fil du jour (`components/fil/FilDuJour.tsx`, `lib/fil/cartes.ts`,
+  route `praticien/fil`) ; décision de relance (`relanceAssignation.ts`).
+- Ne touche pas : `schema.prisma`, aucune migration ; la route de déblocage
+  (`PATCH praticien/assignations`), réutilisée telle quelle ; la route de
+  relance et ses refus ; l'échéance de l'assignation ; le dossier.
+
+**§1 — Au Fil, « Débloquer » avant « Rappeler ».** Depuis [[D-404]] §1, le
+serveur refuse de rappeler un questionnaire échu dont les réponses ne sont
+pas déverrouillées : le bouton « Rappeler » de la carte « Échéance
+dépassée » menait donc presque toujours à un refus. Sur ces cartes, le
+bouton devient « Débloquer » (« Déblocage… » pendant l'appel). Il appelle la
+route du dossier, `PATCH /api/praticien/assignations`, sans confirmation,
+comme dans le dossier ; l'échéance ne change pas. Après le déblocage, la
+carte reste et le même bouton devient « Rappeler » : deux gestes distincts,
+car débloquer ne prévient pas le patient. Un refus du déblocage s'affiche
+tel que la route l'écrit. Pour choisir le geste, la carte porte
+`statut_reponses` tel que la base le porte (`cartesAssignationsEnRetard`) ;
+sans lui (serveur antérieur), le bouton reste « Rappeler ». Une assignation
+annulée échue paraît encore au Fil (lecture antérieure, `statut` différent
+de `Complété`) : sa carte ne porte pas ce statut et garde « Rappeler », que
+le serveur refuse sans rien écrire — le déblocage d'une annulée dirait un
+succès que le portail ignore (revue `wn-reviewer`). De même pour un suivi
+clôturé, que le Fil garde : le rappel y est refusé (`accepteNouvelEnvoi`),
+et le déblocage y écrirait sans garde (revue Copilot de #1812). La route
+`PATCH`, elle, ne refuse ni annulée ni suivi clos : la garder côté serveur
+toucherait aussi le dossier, autre décision. Écartés
+(arbitrage) : une confirmation ; « Débloquer et rappeler » en un seul
+geste ; repousser l'échéance (lot à part si un jour demandé).
+
+**§2 — La relance juge le lendemain par le calendrier.** Une échéance est
+dépassée le lendemain du jour dit. La relance le calculait par minuit + 24 h ;
+le jour du passage à l'heure d'hiver dure 25 h, et la relance devenait
+possible à 23 h le jour dit, une heure avant que le portail ne dise
+« Expiré » (`isDeadlineExpired`, 23:59:59.999 locale) ; le jour du passage
+à l'heure d'été, une heure après. Le lendemain se calcule désormais par le
+calendrier (`setDate(+1)`) : minuit local du lendemain, l'instant qui suit
+la borne du portail. La cadence entre deux rappels reste comptée en durée.
+
+**§3 — Preuve.** Bancs du composant, des cartes et de la décision, dont un
+banc à Paris aux deux changements d'heure de 2026, aligné sur
+`isDeadlineExpired`. Chacun rougit sous mutation : bouton toujours
+« Rappeler » (3 bancs) ; bouton qui ne bascule pas après le déblocage
+(1) ; « Débloquer » sans statut (5) ; statut absent de la carte (1) ;
+statut porté par une annulée (1) ; statut porté par un suivi clos (2 bancs
+des cartes et de la route ; 1 si la route ne marque pas le suivi clos) ;
+échec réseau du déblocage muet (1) ;
+statut absent de la lecture du Fil (typage) ; lendemain par minuit + 24 h
+(2).
 
 ### D-413 — Point d'étape, motif de non-prise : retiré du questionnaire ; réponses passées gardées lisibles ; retrait appliqué par un lot de code versionné (lettre bf, m16)
 
@@ -344,6 +585,102 @@ HealthMeasures (forme, usage individuel répété, traduction) et devis
 **Effet sur le plan.** H19 : l'instruction de bf est close (une décision par
 question). Une ligne neuve de la file D porte l'instruction du dispositif
 distinct ; le retrait du motif part en lot de code au §8.
+
+### D-406 — J2-nf5 (H65, porte 20) : deux passations du même instrument comparées au cockpit ; même version établie par un registre déclaré, sans migration ; cycle en cours ouvert à la confirmation de l'ancre précédente ; écart en points bruts, sans bande
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01, rendus en
+  conversation sur quatre questions à options, tous sur la recommandation :
+  l'objet (deux passations du même instrument, et non deux versions de
+  score), la façon d'établir la version (registre déclaré), les dates du
+  registre et la règle de paire, la fenêtre du cycle en cours. Textes
+  visibles validés mot pour mot le même jour. Registre réduit de dix à cinq
+  instruments le même jour, avant le merge, sur la revue `wn-reviewer` et
+  l'arbitrage du responsable (« livrer à cinq, ouvrir un lot »).
+- Domaine : cockpit praticien, tiroir « Détail des réponses »
+  (`components/patient-cockpit/ComparaisonPassationsPanel.tsx`) ; route
+  `api/praticien/reponses` ; module `lib/scoring/comparaisonPassations.ts`.
+  Fiche H65 ; porte 20 (K-11).
+- Ne touche pas : aucune formule de score, aucun seuil, aucune
+  interprétation, aucune bande (`BANDES_DE_BRUIT` reste vide, lettre v) ;
+  ni `versionScore`, ni le momentum ([[D-397]]), ni la trajectoire ;
+  aucune migration, aucune écriture en base ; le portail patient.
+- Contexte : la fiche H65 nommait l'objet « deux versions de score
+  comparées » ; [[D-113]] §9, [[D-397]] et [[D-402]] §4 interdisent de
+  comparer deux versions différentes sans équivalence documentée. La porte 20
+  nomme, elle, « le premier écran qui compare deux passations du même
+  instrument ». Aucun écran n'affichait jusqu'ici d'écart entre deux
+  passations. Aucune version d'instrument n'est stockée par passation :
+  `certification` est une provenance du calcul, `versionScore` n'existe que
+  sur les épisodes de l'équilibre. Constat par conteneur, en agrégats, le
+  2026-11-01 : 8 dossiers réels portent au moins deux passations
+  exploitables d'un même instrument ; au moins une paire réelle passe la
+  règle ci-dessous (répartition masquée, moins de cinq dossiers, [[D-298]]).
+
+**§1 — Objet.** Deux passations du même instrument, dans le même dossier,
+VALID ou AMBIGUOUS, comparées par leur score principal enregistré
+(`score_principal`, le `total` ou à défaut le `count` du calcul). Les
+sous-scores restent hors de ce lot. Pour chaque instrument qui compte au
+moins deux telles passations dans le cycle en cours, ses deux plus
+récentes ; jamais une paire plus ancienne à leur place.
+
+**§2 — Même version : registre déclaré.** La date depuis laquelle la grille
+et le calcul servis sont inchangés, paramètre technique déclaré par le
+responsable (`DC-20`), établi sur l'historique Git des définitions (texte
+normalisé, métadonnées `certification` et `note` exclues) et du moteur (la
+série de corrections du recueil partiel close le 2026-08-05, le badge de
+certification de [[D-038]] le 2026-08-10). N'y entrent que les instruments
+dont la source définit un total et dont le moteur publie sa complétude :
+
+| Instrument | Comparable si les deux passations datent du ou après le |
+|---|---|
+| `Q_ALI_01` (/90), `Q_MOD_03` (/70), `Q_INF_01` (/96), `Q_STR_02` (PSS-10, /50) | 2026-08-11 |
+| `Q_SOM_01` (PSQI, /21 ; bandes retouchées le 2026-09-13) | 2026-09-14 |
+| tout autre instrument | jamais comparé, et le panneau n'en dit rien |
+
+Écartés à la revue : `Q_SOM_07` (MFI-20 : sa source ne totalise pas ses
+sous-échelles, `sansTotalGlobal`, score principal toujours vide) ;
+`Q_INF_03` (DNST), `Q_MOD_01` (mode de vie SIIN) et `Q_STR_04` (DASS-21),
+dont le total est une somme des axes faite par l'application, sans source
+qui le définisse ([[D-402]] les lit par sous-échelle) ; `Q_FIB_02` (QIF),
+dont le moteur ne publie aucun compte de complétude.
+
+**§3 — Cycle en cours.** Il s'ouvre à la confirmation de l'ancre qui précède
+l'ancre de rang le plus haut (`T0`, `T1`… ; le rang ordonne, pas la date).
+Sans ancre précédente — une seule ancre, ou aucune —, toutes les passations
+du dossier en font partie. Les deux passations doivent s'y trouver.
+**Limite nommée** : sur un dossier rouvert, une remesure tardive du cycle
+`T0` (après la confirmation de `T0`) peut être comparée à une passation du
+bilan `T1`. Écartée : la convention du momentum ([[D-397]] §1), qui n'aurait
+servi aucune paire réelle à ce jour.
+
+**§4 — Paire refusée, motif dit.** Dans cet ordre : « interprétation
+retirée » (une passation sous `motifNonInterpretable`) ; « version non
+établie » (une passation antérieure à la date du registre) ; « une
+passation est incomplète » (score principal absent, `missing` non nul,
+`missingIds` non vide, ou un axe dont `repondus` diffère de `items`) ;
+« grille différente » (maximums
+`maxTotal` distincts, ou un seul connu — la variante courte de `Q_ALI_01`
+sur 42 contre la forme source sur 90).
+
+**§5 — Lecture.** L'écart est `b − a` en points du score, arrondi au
+centième : « en hausse de N points », « en baisse de N points », « même
+score ». Aucune mention de bande ni « stable » (la porte 11 reste fermée,
+[[D-402]] §3) ; l'écart ne conclut à aucun changement cliniquement réel
+(`DC-27`). En mode consultation, la valeur cède à « masqué en mode
+consultation » ([[D-354]]).
+
+**§6 — Porte 20.** Cet écran est le premier qui compare deux passations du
+même instrument : la revue de sa PR lève la porte 20 ([[D-397]] §10).
+
+**§7 — Lot à ouvrir.** Le responsable souhaite un score global pour les
+instruments écartés au §2. Chacun est un acte clinique propre, avec sa
+source et sa décision (`DC-01`, `DC-19`) : le DASS-21 d'abord (un total est
+d'usage dans la littérature, source à verser au corpus) ; le DNST et le
+mode de vie SIIN, sans source connue à ce jour ; le compte de complétude du
+QIF, au moteur (`questions.ts`, sous instantané). Le MFI-20 reste exclu tant
+que sa source refuse un total. Un instrument n'entre au registre qu'après
+cette décision.
 
 ### D-405 — Restes de BP-07 au registre du corpus (D/20) : quarantaine levée pour WN-SRC-0062, 0241 et 0358 sur relecture attestée des sources entières ; revue clinique au registre gardée `not_reviewed` ; droits de 0509 et 0510 laissés à vérifier
 

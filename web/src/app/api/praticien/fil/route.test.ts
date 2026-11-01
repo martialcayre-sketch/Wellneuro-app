@@ -181,6 +181,27 @@ describe('GET /api/praticien/fil', () => {
   // « …:undefined » : toutes les cartes d'un même type se confondraient, et un
   // refus persisté en emporterait d'autres. Le contrat se vérifie ici, à
   // l'endroit où il peut être cassé par inadvertance.
+  // [[D-414]] §1 : un suivi clos garde sa carte de retard, mais sans le statut
+  // qui ferait offrir « Débloquer » — la route de rappel le refuse déjà.
+  it('carte en retard : statut des réponses servi au suivi ouvert, retenu au suivi clos', async () => {
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'ASG_OUVERT', idPatient: 'PAT_SOPHIE', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', statutReponses: 'non_rempli' },
+      { idAssignation: 'ASG_CLOS', idPatient: 'PAT_MICHEL', titre: 'Q', dateLimite: '2026-01-11', statut: 'En attente', statutReponses: 'non_rempli' },
+    ]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+      { idPatient: 'PAT_MICHEL', prenom: 'Michel', nom: 'Dogné', suiviClotureLe: new Date('2026-02-01T00:00:00Z') },
+    ]);
+    const payload = await (await GET()).json();
+    const retards = payload.cartes
+      .filter((c: { type: string }) => c.type === 'assignation_en_retard')
+      .map((c: { idAssignation: string; statutReponses?: string }) => [c.idAssignation, c.statutReponses ?? null]);
+    expect(retards).toEqual([
+      ['ASG_OUVERT', 'non_rempli'],
+      ['ASG_CLOS', null],
+    ]);
+  });
+
   it('chaque requête du Fil sélectionne l’identifiant de sa ligne source', async () => {
     await GET();
     const selectDe = (mock: { mock: { calls: { select?: Record<string, boolean> }[][] } }) =>
