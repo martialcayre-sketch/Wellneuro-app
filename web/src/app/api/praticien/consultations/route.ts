@@ -279,6 +279,9 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
         lienMagique ?? undefined,
       );
       if (statut === 'Non_envoye') envoi = 'non_configure';
+      // Garde d'une heure ([[D-398]] §3) : la consultation est créée, l'accès
+      // est déjà parti — rien n'est mort, rien n'est reparti.
+      if (statut === 'Refuse_garde') envoi = 'deja_envoye';
     } catch (e) {
       envoi = 'echoue';
       console.error('[praticien/consultations POST] email:', (e as Error).message);

@@ -197,6 +197,8 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
           lienMagique ?? undefined,
         );
         if (statut === 'Non_envoye') envoi = 'non_configure';
+        // Garde d'une heure ([[D-398]] §3) : un e-mail d'accès est déjà parti.
+        if (statut === 'Refuse_garde') envoi = 'deja_envoye';
       } catch (e) {
         envoi = 'echoue';
         console.error('[praticien/token POST] email:', (e as Error).message);

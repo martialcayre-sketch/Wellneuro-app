@@ -24,9 +24,16 @@ import {
   statutJournalDepuisAuditBooklet,
   TYPES_CORRESPONDANCE_PATIENT,
 } from '@/lib/correspondance/patient';
+import {
+  MARQUE_ENVOI_EN_COURS,
+  donneesReservation,
+  verrouillerEnvois,
+} from '@/lib/correspondance/reservation';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/booklet';
+// Objet du premier envoi : la réservation et son solde portent le même.
+const OBJET_ENVOI_BILAN = 'Envoi du bilan neuronutritionnel';
 
 // GET /api/praticien/booklet?idSynthese=SYN...
 // Génère et retourne le HTML du booklet (prévisualisation praticien)
@@ -180,7 +187,7 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    if (!forceSend && synthese.bookletEnvois.length > 0) {
+    const demanderConfirmationRenvoi = async () => {
       await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
         'Confirmation_Requise', 'Renvoi', relectureConfirmee, 'Booklet déjà envoyé.');
       return withCorrelationHeader(NextResponse.json({
@@ -192,7 +199,8 @@ export async function POST(req: Request) {
         warning: 'Ce booklet a déjà été envoyé. Cochez « Confirmer le renvoi » pour l’envoyer de nouveau.',
         emailMasque: maskEmail(synthese.emailPatient),
       }), requestContext);
-    }
+    };
+    if (!forceSend && synthese.bookletEnvois.length > 0) return demanderConfirmationRenvoi();
 
     const patient = await prisma.patient.findUnique({ where: { idPatient: synthese.idPatient } });
     const patientNom = patient ? `${patient.prenom} ${patient.nom}` : '';
@@ -266,6 +274,44 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
+    // LE PREMIER ENVOI SE RÉSERVE ([[D-398]] §1, Q3). La lecture du registre,
+    // en tête de requête, ne voyait pas un envoi en vol : deux clics
+    // simultanés sur un bilan jamais envoyé partaient tous les deux. Sous le
+    // verrou du bilan, un envoi parti ou en partance renvoie à la confirmation
+    // du renvoi ; sinon la ligne du journal naît réservée, et le solde
+    // (`logBookletEnvoi`) la reprend. Le renvoi confirmé n'est pas réservé :
+    // c'est un geste explicite, qui part même si un autre vient de partir.
+    let reservation: string | undefined;
+    if (!forceSend) {
+      const reservee = await prisma.$transaction(async tx => {
+        await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
+        const dejaParti = await tx.bookletEnvoi.count({ where: { idSynthese, statut: 'Envoye' } });
+        const enVol = await tx.correspondancePatient.count({
+          where: {
+            idPatient: synthese.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            referenceId: idSynthese,
+            statut: 'Non_envoye',
+            erreurCourte: MARQUE_ENVOI_EN_COURS,
+          },
+        });
+        if (dejaParti + enVol > 0) return null;
+        const { id } = await tx.correspondancePatient.create({
+          data: donneesReservation({
+            idPatient: synthese.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            objet: OBJET_ENVOI_BILAN,
+            referenceType: 'synthese',
+            referenceId: idSynthese,
+          }),
+          select: { id: true },
+        });
+        return id;
+      });
+      if (reservee === null) return demanderConfirmationRenvoi();
+      reservation = reservee;
+    }
+
     // Un refus du relais SMTP tombait dans le `catch` général, qui n'écrit
     // qu'un `logger.error` : ni ligne d'audit, ni ligne de journal. Un bilan
     // réellement perdu ne laissait donc AUCUNE trace lisible sur la fiche,
@@ -290,7 +336,7 @@ export async function POST(req: Request) {
     } catch (erreurEnvoi) {
       const detail = erreurEnvoi instanceof Error ? erreurEnvoi.message : String(erreurEnvoi);
       await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
-        'Erreur', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, detail);
+        'Erreur', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, detail, undefined, reservation);
       logger.error({
         event: EVENT_CODES.BOOKLET_SEND_EXCEPTION,
         domain: 'BOOKLET',
@@ -309,7 +355,7 @@ export async function POST(req: Request) {
     // objet. C'est ce que le portail servira.
     await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
       'Envoye', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, '',
-      synthese.notesPraticien);
+      synthese.notesPraticien, reservation);
 
     return withCorrelationHeader(NextResponse.json({ success: true, emailMasque: maskEmail(synthese.emailPatient) }), requestContext);
   } catch (err) {
@@ -337,6 +383,9 @@ async function logBookletEnvoi(
   // garde de cycle de vie) — la page « Mon bilan » du portail sert cet
   // instantané, jamais le champ vivant.
   noteTransmise?: string | null,
+  // La ligne du journal réservée avant le premier envoi : elle est SOLDÉE ici,
+  // jamais doublée d'une seconde — un envoi, une ligne, une clé de source.
+  idReservation?: string,
 ) {
   try {
     const audit = await prisma.bookletEnvoi.create({
@@ -359,7 +408,7 @@ async function logBookletEnvoi(
     const objet = operation === 'Renvoi'
       ? 'Renvoi du bilan neuronutritionnel'
       : 'Envoi du bilan neuronutritionnel';
-    await journaliserCorrespondancePatient({
+    const trace = {
       idPatient,
       type: TYPES_CORRESPONDANCE_PATIENT.booklet,
       objet: statut === 'Confirmation_Requise'
@@ -371,6 +420,22 @@ async function logBookletEnvoi(
       sourceType: 'booklet_envoi',
       sourceId: audit.id,
       erreur,
-    });
+    };
+    if (idReservation) {
+      // Une mise à jour perdue laisse la ligne marquée : le premier envoi de
+      // ce bilan renvoie alors à la confirmation — sens prudent.
+      await prisma.correspondancePatient.update({
+        where: { id: idReservation },
+        data: {
+          objet: trace.objet,
+          statut: trace.statut,
+          sourceType: trace.sourceType,
+          sourceId: trace.sourceId,
+          erreurCourte: erreur ? sanitizeAuditError(erreur).slice(0, 200) : null,
+        },
+      });
+    } else {
+      await journaliserCorrespondancePatient(trace);
+    }
   } catch { /* audit non bloquant */ }
 }

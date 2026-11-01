@@ -6,6 +6,100 @@
 
 ## Décisions actives
 
+### D-399 — Audit 3, lot Q3 : la ligne du journal se réserve avant l'envoi, sous un verrou par dossier ; un rappel couvre les questionnaires rappelables du dossier ; seuls les envois partis comptent
+
+- Date : 2026-11-01
+- Statut : accepté — mise en œuvre de [[D-398]] §1 (puce Q3) et §3. Deux
+  choix du responsable en session le 2026-11-01 : le regroupement par
+  balayage côté serveur, et les textes nouveaux, validés mot pour mot. Le
+  reste, ce que [[D-398]] ne fixe pas, est le choix de mise en œuvre écrit
+  ci-dessous.
+- Domaine : journal `correspondances_patient` ; e-mails d'accès au portail,
+  d'objectif proposé, de rappel de questionnaire et de premier envoi d'un
+  bilan ; panneau « E-mails du dossier », encart des nouveaux dossiers, Fil.
+- Ne touche pas : `schema.prisma`, aucune migration, aucune contrainte ;
+  le plafond d'annonce de [[D-317]] ; le lien magique, l'accusé et
+  l'invitation, hors de la garde ; le renvoi confirmé d'un bilan ; Q2.
+
+**§1 — Le mécanisme : un verrou par dossier, puis une ligne réservée.** La
+lecture qui décide (cadence, fenêtre, envoi déjà parti) et l'écriture de la
+ligne se font dans une transaction courte, sous
+`pg_advisory_xact_lock(hashtext('envoi_patient:<sorte>:<dossier ou bilan>'))`,
+comme `reserverAnnonce` ([[D-317]]). La seconde de deux requêtes simultanées
+attend le commit de la première, puis lit sa ligne. L'e-mail part après le
+commit. Aucune colonne ne dit « en cours » : la ligne réservée naît
+`Non_envoye`, sous la marque « réservé : envoi en cours » dans
+`erreur_courte`, que le solde efface. Une ligne restée marquée (processus
+arrêté entre l'envoi et le solde) compte comme partie : sens prudent. La
+réservation lève si la base ne répond pas, et rien ne part alors. Écartés :
+une clé de source par fenêtre horaire (fenêtre fixe, pas glissante), le
+verrou tenu pendant l'envoi SMTP (connexion immobilisée, trace perdue si le
+commit échoue), une colonne d'état (migration).
+
+**§2 — Ce qui compte comme envoi.** Pour la garde d'une heure comme pour les
+cadences des rappels de questionnaire et d'objectif : un e-mail parti
+(`Envoye`) ou en partance (marqué). Ne comptent pas : `Erreur`, le
+`Non_envoye` d'une messagerie absente, ni un refus de garde. Avant, la
+cadence comptait toute ligne : après un échec, le praticien recevait un 429
+alors qu'aucun envoi n'était attesté (relevé au lot Q4 ; volet demandé par
+le responsable au cadrage du lot : « seuls les envois réellement partis
+doivent compter »). **Limite connue** : une « Erreur » n'est pas une preuve
+de non-livraison. Un relais lent peut accepter le message après le délai du
+socket (20 s, `transportSmtp.ts`), et le raisonnement de l'agenda du sommeil,
+qui compte toute tentative sous un plafond de deux, le dit déjà. Un second
+clic après un tel délai peut alors doubler l'e-mail. Le compte des envois
+attestés est retenu, parce qu'il rend la main au geste qui répare un échec
+franc. Compter « Erreur » sous un plafond reste l'autre voie si le cas
+s'observe.
+
+**§3 — Un rappel couvre les questionnaires rappelables du dossier.** Le
+rappel d'une carte du Fil envoie un seul e-mail pour toutes les assignations
+du dossier que `deciderRelanceAssignation` accepte à cet instant. Leurs
+identifiants sont dans la `reference_id` de l'unique ligne, séparés par une
+virgule (`reference_type` = `assignations` dès deux). La cadence reste par
+assignation : une carte déjà couverte reçoit le refus de cadence. Le gabarit
+`relance_questionnaires@1` est neuf, sans échéance, nombre ni titre ; le
+rappel d'un seul questionnaire garde `relance_questionnaire@1`. Écartés : un
+bouton par dossier au Fil, et une fenêtre de regroupement après le premier
+envoi, dont l'e-mail n'aurait parlé que d'un questionnaire.
+
+**§4 — La garde d'une heure ([[D-398]] §3).** Un refus est écrit
+`Non_envoye`, sous le motif « garde : un e-mail d'accès par heure » ou
+« garde : un e-mail d'objectif par heure », et n'est jamais rejoué. La route
+d'accès le rend `deja_envoye` et l'écran le dit ; la relance d'objectif le
+rend comme sa cadence (429) ; l'objectif écrit le tait, comme ses autres
+issues. Le lien magique émis pour un e-mail d'accès refusé reste en base,
+non envoyé, et expire en 24 heures. L'encart des nouveaux dossiers ignore les
+refus et les réservations en vol : un refus dit qu'un accès vient de partir.
+
+**§5 — Le premier envoi d'un bilan.** Sous le verrou du bilan, un envoi parti
+ou en partance renvoie à la confirmation du renvoi, chemin existant. Sinon la
+ligne du journal naît réservée, et `logBookletEnvoi` la solde avec la clé de
+source de l'audit : un envoi, une ligne. Le renvoi confirmé n'est pas
+réservé, geste explicite. Une réservation de bilan restée marquée (processus
+arrêté, audit perdu) n'a pas de fenêtre : le premier envoi renvoie alors à la
+confirmation, sans limite de temps, et le renvoi confirmé reste la sortie —
+sens prudent, à la différence de la garde (1 h) et des cadences (3 jours).
+
+**§6 — Textes validés le 2026-11-01, mot pour mot :** le gabarit
+`relance_questionnaires@1` (sujet « Des questionnaires vous attendent
+toujours — Wellneuro ») ; l'objet « Rappel — des questionnaires attendent
+toujours » ; « Rappel envoyé. Il couvre les {n} questionnaires en retard de
+ce dossier. » ; les deux motifs du §4 ; quatre messages d'écran de l'accès
+refusé ; la marque du §1.
+
+**§7 — Preuve.** Banc sur base réelle
+`web/src/lib/correspondance/reservation.pg.test.ts`, joué en CI : le
+croisement de deux requêtes est forcé par un observateur qui tient le verrou
+jusqu'à ce que les deux l'attendent. Accès : un envoi et un refus motivé,
+puis un envoi une heure plus tard. Rappel : un e-mail pour deux cartes, un
+pour deux clics. Bilan : un envoi. Et ni « Erreur » ni « Non envoyé » ne
+déclenchent de 429. Verrou retiré, les quatre bancs de concurrence
+rougissent ; filtre des envois partis retiré, les trois bancs de cadence
+rougissent. Le croisement exige plus d'une connexion (`DB_POOL_MAX`) : à une
+seule, le pool sérialise déjà les requêtes d'un même conteneur, et le verrou
+ferme la course entre conteneurs.
+
 ### D-398 — Audit 3 (e-mails patient contre traces) : option A aux quatre questions, garde d'une heure sur les e-mails d'accès et d'objectif, lots Q1 puis Q4 puis Q3 ; les cinq faux « Échec d'envoi » de bilan repris par migration de données
 
 - Date : 2026-10-31

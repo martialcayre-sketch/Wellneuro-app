@@ -51,13 +51,18 @@ export type EtatConfirmation = {
  */
 function libelleEnvoi(
   envoi: CreateConsultationResponse['envoi'],
-  textes: { envoye: string; echoue: string; nonConfigure: string },
+  // `dejaEnvoye` : refus de la garde d'une heure ([[D-398]] §3). Facultatif,
+  // parce que seul l'e-mail d'accès y est soumis — le lien magique ne le rend
+  // jamais.
+  textes: { envoye: string; echoue: string; nonConfigure: string; dejaEnvoye?: string },
 ): string {
   return envoi === 'echoue'
     ? textes.echoue
     : envoi === 'non_configure'
       ? textes.nonConfigure
-      : textes.envoye;
+      : envoi === 'deja_envoye' && textes.dejaEnvoye
+        ? textes.dejaEnvoye
+        : textes.envoye;
 }
 
 /** Vrai tant qu'aucun envoi n'est mort : sert la COULEUR de la ligne de statut. */
@@ -129,6 +134,9 @@ export function usePatientGestesDossier({
           nonConfigure: retablirAcces
             ? 'Accès rétabli, mais le lien n’est pas parti : la messagerie n’est pas configurée.'
             : 'Le lien n’est pas parti : la messagerie n’est pas configurée.',
+          dejaEnvoye: retablirAcces
+            ? 'Accès rétabli, mais le lien n’est pas reparti : un e-mail d’accès est déjà parti vers ce patient il y a moins d’une heure.'
+            : 'Le lien n’est pas reparti : un e-mail d’accès est déjà parti vers ce patient il y a moins d’une heure.',
         }),
       });
       if (retablirAcces) {
