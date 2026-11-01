@@ -119,16 +119,15 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // responsable est faite, seule l'attestation reste à poser.
   'portesBiologiquesAssiettesV1.ts': 'portes_biologiques',
   // Structure des fiches d'usage du besoin 2 ([[D-314]] §5). Entrée le jour où le
-  // fichier est POSÉ, livré vide et verrou éteint — patron des indications
-  // d'assiette ci-dessus : aucune paire au contrat SQL, donc aucune entrée dans
-  // `TABLE_EXIGE_PRESCRIPTIF` avant la première fiche (le banc refuse une table
-  // déclarée sans paire). SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
+  // fichier est POSÉ, livré vide et verrou éteint ; ses paires sont entrées au
+  // contrat SQL le jour où la structure a été ÉCRITE (2026-11-01), patron des
+  // portes biologiques : `claimsSource` rempli avant la signature, l'attestation
+  // seule reste à poser. SON RÉGIME EST ARBITRÉ (responsable, 2026-10-16,
   // [[D-314]] §9, qui répond à la question que [[D-046]] réserve à chaque table
   // nouvelle) : `fiches_usage: false`. Une fiche d'usage décrit ce qu'une mesure
   // permet d'interpréter — préanalytique, interprétations permises et
   // interdites, limites —, pas une conduite : ses claims tiennent le régime des
-  // contradictions (validé, actif, non remplacé), sans `prescriptif`. L'entrée
-  // se pose avec la première paire, à cette valeur-là.
+  // contradictions (validé, actif, non remplacé), sans `prescriptif`.
   'ficheUsageBesoin2V1.ts': 'fiches_usage',
 };
 
@@ -244,6 +243,11 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // pas une conduite. Rejeter ces claims amputerait la discordance que la table
   // existe pour montrer (`DC-30`).
   portes_biologiques: false,
+  // UNE FICHE D'USAGE NE PRESCRIT PAS — elle dit ce qu'une mesure permet
+  // d'interpréter ([[D-314]] §9, arbitrage du 2026-10-16, la question que
+  // [[D-046]] réserve à chaque table nouvelle). Entrée avec la première paire,
+  // le jour où la structure est écrite (2026-11-01).
+  fiches_usage: false,
 };
 
 interface TableSignee {

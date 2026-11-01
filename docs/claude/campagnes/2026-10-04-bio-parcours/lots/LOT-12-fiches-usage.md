@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "BP-12a — Fiches d'usage : structure signée, texte en base"
-statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16 ; code mergé (#1498) et déployé le 2026-10-16, structure vide ; validateur posé en production le 2026-10-16 ; première signature à quatre dossiers clos, arbitrage 28)"
+statut: "à_faire (fiche proposée le 2026-10-15 ; dix arbitrages rendus le 2026-10-15 ; décision du lot D-314 écrite ; cinq arbitrages de forme rendus le 2026-10-16, D-314 §8 ; migration mergée (#1488) et appliquée en production le 2026-10-16, constat par conteneur ; code consommateur écrit sur branche, douze arbitrages rendus le 2026-10-16 ; code mergé (#1498) et déployé le 2026-10-16, structure vide ; validateur posé en production le 2026-10-16 ; première signature à quatre dossiers clos, arbitrage 28 ; structure écrite le 2026-11-01, D-401, arbitrages 29 à 40, signature à poser)"
 dépend_de: "LOT-07, LOT-09"
 ---
 
@@ -339,6 +339,32 @@ libellés « à relire » (arbitrage 15).
     magnésium érythrocytaire**, signés en une fois ; B9 et B12, iode et
     sélénium par re-signature. Précise l'arbitrage 1. (Recommandé : fer et
     vitamine D.)
+
+### Arbitrages de l'écriture de la structure (rendus le 2026-11-01, D-401)
+
+Posés quand les quatre dossiers étaient clos, sur un inventaire des positions
+signées et de leurs claims relus en production (tous `VALIDE`, `v1.0`).
+Rendus par questions à options, tous sur l'option recommandée ; le détail est
+dans D-401 §2.
+
+29. **Découpage** : une fiche par position signée — et non par analyte et
+    population, ni par analyte et usage.
+30. **Axes de D-266 §3** : pré-remplis par l'assistant selon une règle
+    écrite, corrigés par le responsable sur la surface.
+31. **Rubriques** : `question`, `population` et celles des étiquettes des
+    claims de la fiche.
+32. **Fer P7 et P8** (aucun claim) : pas de fiche avant la re-signature
+    suivante.
+33. **Fer P4** (précaution) : dans la structure, marqueur sécurité posé.
+34. **Hypothèses** : vocabulaire vide pour cette signature.
+35. **Populations** : cinq identifiants, nommés par le responsable.
+36. **Codes d'analyte** : celui du dossier seul.
+37. **Claims contraires affichés** : épinglés.
+38. **Claims cités en exclusion** : non épinglés.
+39. **Renvois du zinc** : les douze claims désignés sans identifiant et le
+    brouillon cité en P5 épinglés ; les autres brouillons non.
+40. **Claims sans étiquette** : le claim hors parcours retiré, les deux
+    autres épinglés.
 
 ## Périmètre
 

@@ -6,6 +6,77 @@
 
 ## Décisions actives
 
+### D-401 — F05 (BP-12a) : la structure des fiches d'usage du besoin 2 est écrite — une fiche par position d'expert signée des quatre dossiers clos, trente fiches ; ses claims, ses rubriques et ses axes suivent douze arbitrages du responsable (porte 23)
+
+- Date : 2026-11-01
+- Statut : accepté — douze arbitrages du responsable rendus en session le
+  2026-11-01, par questions à options (faits vérifiés, conséquence de chaque
+  réponse), tous sur l'option recommandée. Signature de la structure :
+  **à poser** — elle suit la déclaration du responsable sur la surface de
+  relecture ([[D-195]] §1-2), jamais l'outillage (§3).
+- Domaine : clinique — structure signée des fiches d'usage
+  (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`) ; contrat de fraîcheur
+  des claims épinglés ; campagne bio-parcours, LOT-12 ; plan, fiche F05.
+- Applique : [[D-314]] §2, §9 et §10 ; [[D-266]] §3 ; [[D-312]] ;
+  [[D-046]] (régime `fiches_usage: false`, déjà arbitré par D-314 §9).
+- **Ne touche pas** : `schema.prisma`, aucune migration (la base ne ferme que
+  le format `FU_…` des fiches) ; aucun texte de fiche, aucun libellé, aucune
+  valeur, aucun seuil, aucune dose ; aucun claim (leur validation reste à la
+  Curation signée) ; aucun drapeau ; aucune surface patient ; les positions
+  d'expert elles-mêmes, versionnées par BP-12b.
+
+**§1 — La matière.** Les positions d'expert signées des quatre dossiers du
+besoin 2 clos ([[D-314]] §10) : fer (v0.2, P5 en v0.3), vitamine D (v0.2),
+zinc (v0.2), magnésium érythrocytaire (v0.4) ; et les claims qu'elles citent,
+relus en production par conteneur le 2026-11-01 : `VALIDE`, actifs, non
+remplacés, en `v1.0`, chacun en une seule version. Les dossiers sont privés ;
+le dépôt n'en porte que les identifiants.
+
+**§2 — Douze arbitrages.**
+
+1. **Une fiche par position signée** (et non par analyte, ni par analyte et
+   usage) : la population de la fiche est celle de la position, ses claims
+   ceux qu'elle cite. Identifiants `FU_<ANALYTE>_P<n>`.
+2. **Les trois axes de [[D-266]] §3** sont pré-remplis par l'assistant selon
+   une règle écrite sur la surface, puis corrigés par le responsable avant sa
+   déclaration — la signature porte la valeur relue, pas la règle.
+3. **Rubriques attendues** : `question`, `population`, et les rubriques que
+   portent les étiquettes ([[D-321]]) des claims de la fiche ; une rubrique
+   sans claim n'est pas attendue (le préanalytique n'entre que là où un claim
+   le porte).
+4. **Fer P7 et P8 n'ont pas de fiche** : elles ne citent aucun claim ; elles
+   entreront à la re-signature suivante, après des claims tirés de leurs
+   passages.
+5. **Fer P4 (précaution) entre**, marqueur sécurité posé, comme les autres
+   positions de précaution des trois autres dossiers ; le renvoi aux
+   précautions reste à BP-17 ([[D-314]] §9).
+6. **Vocabulaire d'hypothèses vide** pour cette signature : aucune position
+   n'en nomme ; BP-11 n'en offre aucune jusqu'à la re-signature suivante.
+7. **Cinq populations** : `POP_FEMME_REGLEE_NON_ANEMIQUE`,
+   `POP_GROSSESSE_ALLAITEMENT`, `POP_ADULTE`,
+   `POP_ENFANT_GROSSESSE_ALLAITEMENT`, `POP_GENERALE` ; leurs libellés en
+   clair sont rédigés puis validés en base.
+8. **Code d'analyte** : celui du dossier seul (`BIO_FERRITINE`,
+   `BIO_VITAMINE_D_25OH`, `BIO_ZINC_PLASMATIQUE`,
+   `BIO_MAGNESIUM_ERYTHROCYTAIRE`) ; les analytes lus à côté attendent BP-27.
+9. **Les claims contraires affichés** par une position sont épinglés.
+10. **Les claims cités pour dire qu'ils ne s'appliquent pas** ne le sont pas.
+11. **Les claims désignés par renvoi** (sans identifiant) sont épinglés, une
+    fois identifiés au dossier ; les brouillons signés après la position et
+    qu'elle ne cite pas, non.
+12. **Un claim classé hors parcours** par sa position n'est pas épinglé ;
+    deux claims cités sans étiquette de besoin le sont.
+
+**§3 — Ce qui en sort.** Trente fiches, une question
+(`QC_EXPLORATION_BESOIN2`), cinq populations, aucune hypothèse, 277 claims
+distincts en 334 paires fiche-claim ; `claimsSource` égale leur union. Les
+277 paires entrent au contrat de fraîcheur (`fiches_usage`, `false`) dès la
+structure écrite, signature ou non. Toute re-signature (B9 et B12, puis iode
+et sélénium) rendra textes et libellés « à relire » ([[D-314]] §5, §8).
+
+- Conséquences : fragment `changelog.d/2026-11-01-d401-structure-fiches-usage.md` ;
+  fiche LOT-12 (arbitrages 29 à 40) ; journal F05.
+
 ### D-399 — Audit 3, lot Q3 : la ligne du journal se réserve avant l'envoi, sous un verrou par dossier ; un rappel couvre les questionnaires rappelables du dossier ; seuls les envois partis comptent
 
 - Date : 2026-11-01
