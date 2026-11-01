@@ -153,8 +153,8 @@ bd ; des précautions déclarées comme arbitrage, sans source.
   complément ([[D-412]]) ; le signalement d'un problème, indépendant.
 - Contexte : aucun instrument français validé, court et adapté aux
   compléments n'a été trouvé (MAR-Scale, Voils et al. 2012, ASK-12 :
-  médicaments ; aucune version française trouvée ; `WN-SRC-0583`, `0585`,
-  `0588`). La question
+  médicaments ; aucune version française trouvée ; `WN-SRC-0595`, `0597`,
+  `0600`). La question
   est posée dès qu'un complément est prescrit, quelle que soit la réponse sur
   la prise, et n'admet qu'un motif.
 
@@ -193,8 +193,8 @@ qualification ([[D-333]]) ; elle ne dit rien de la posologie ni de
 plusieurs compléments.
 
 **Candidats écartés** : item de fréquence de la MAR-Scale (Unni, Sternbach,
-Goren 2019, `WN-SRC-0583` : médicaments, 7 jours, sans version française) ;
-NHANES DSD103 (`WN-SRC-0584` : 30 jours, sans version française). Le
+Goren 2019, `WN-SRC-0595` : médicaments, 7 jours, sans version française) ;
+NHANES DSD103 (`WN-SRC-0596` : 30 jours, sans version française). Le
 remplacement reste ouvert : une nouvelle décision le portera si un
 instrument admissible apparaît.
 
@@ -214,10 +214,10 @@ réponse telle quelle, sans score ni qualification ; elle ne mesure pas un
 changement clinique.
 
 **Candidats écartés pour le point d'étape** : PROMIS Sleep Disturbance
-(Coste et al. 2018, `WN-SRC-0581` ; HealthMeasures recommande pour
+(Coste et al. 2018, `WN-SRC-0593` ; HealthMeasures recommande pour
 l'évaluation individuelle la forme à 8 items et non le profil PROMIS-29,
-`WN-SRC-0587`) ; ISI (Stern et al. 2026, `WN-SRC-0586` : rappel de deux
-semaines, permission du développeur) ; PGIC (`WN-SRC-0582` : traduction
+`WN-SRC-0599`) ; ISI (Stern et al. 2026, `WN-SRC-0598` : rappel de deux
+semaines, permission du développeur) ; PGIC (`WN-SRC-0594` : traduction
 d'étude, autre construit). La mesure du sommeil relève du dispositif
 distinct ([[D-407]] §2).
 
@@ -237,9 +237,9 @@ réponse telle quelle, sans score ni qualification ; elle ne mesure pas la
 fatigue.
 
 **Candidats écartés pour le point d'étape** : PROMIS Fatigue (Coste et al.
-2018, `WN-SRC-0581`, sensibilité au changement non évaluée ; HealthMeasures
+2018, `WN-SRC-0593`, sensibilité au changement non évaluée ; HealthMeasures
 recommande pour l'évaluation individuelle la forme à 13 items,
-`WN-SRC-0587`) ; PGIC (`WN-SRC-0582` : activités quotidiennes, non
+`WN-SRC-0599`) ; PGIC (`WN-SRC-0594` : activités quotidiennes, non
 l'énergie). La mesure de la fatigue relève du dispositif distinct
 ([[D-407]] §2).
 
@@ -260,9 +260,9 @@ réponse telle quelle, sans classement ; « Bien » n'exclut aucun événement
 indésirable, « Difficilement » n'attribue aucune cause. Aucune réponse ne
 lève une pause ni ne remplace un signalement.
 
-**Candidats écartés** : PRO-CTCAE (`WN-SRC-0580` : traduction française
+**Candidats écartés** : PRO-CTCAE (`WN-SRC-0592` : traduction française
 certifiée, mais items par symptôme, oncologie, adaptation interdite sans
-accord écrit) ; FIBSER (Wisniewski et al. 2006, `WN-SRC-0579` : effets d'un
+accord écrit) ; FIBSER (Wisniewski et al. 2006, `WN-SRC-0591` : effets d'un
 médicament, sans version française). Remplacement ouvert.
 
 ### D-408 — Point d'étape, adhésion : item gardé, déclaré paramètre technique transitoire ; SDSCA et Milton écartés (lettre bf, m16)
@@ -285,9 +285,9 @@ qualification » vise la lecture de l'item lui-même : la météo d'adhésion
 d'ensemble de cette réponse, par sa table signée ; la présente décision ne
 la touche pas.
 
-**Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0577` : diabète,
+**Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0589` : diabète,
 sans version française, droits non établis) ; item unique de Milton et al.
-2011 (`WN-SRC-0578` : activité physique seule). Remplacement ouvert.
+2011 (`WN-SRC-0590` : activité physique seule). Remplacement ouvert.
 
 ### D-407 — Point d'étape : outil de pilotage, bref et déclaratif, sans score ; la mesure clinique de la fatigue et du sommeil va à un dispositif distinct, instruit d'abord sur le catalogue existant (amende D-366 §1 ; lettre bf, m16)
 
@@ -339,7 +339,7 @@ questionnaires du sommeil et de la fatigue du catalogue et le renvoi autour
 de J21 ([[D-353]]) — version française, sensibilité au changement, droits.
 PROMIS seulement si rien ne convient, après confirmation écrite de
 HealthMeasures (forme, usage individuel répété, traduction) et devis
-(`WN-SRC-0587`).
+(`WN-SRC-0599`).
 
 **Effet sur le plan.** H19 : l'instruction de bf est close (une décision par
 question). Une ligne neuve de la file D porte l'instruction du dispositif

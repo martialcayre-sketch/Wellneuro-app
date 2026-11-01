@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 569 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 575 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 62 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 68 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -22,9 +22,14 @@ résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
 `0521` et `0524` ; porte 4 (D-403) : deux recommandations de pratique sur le
 sommeil, sources de contexte de deux bornes déclarées techniques, et les
 repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
-extrait ingéré ; point d'étape (D-407 à D-413, m16) : huit articles et quatre
-documentations d'instruments, sources de contexte des candidats écartés pour le
-point d'étape, `WN-SRC-0577` à `0588`, sans extrait ingéré),
+extrait ingéré ; besoin 2, vitamines B9 et B12 : deux fiches du NIH, un avis de
+l'EFSA, une recommandation de pratique du NICE, une fiche des CDC et un
+document de la HAS, `WN-SRC-0577` à `0582`, les lignes des vitamines B9 et B12
+de la DGCCRF étant lues dans `0521` ; point d'étape (D-407 à D-413, m16) : huit
+articles et quatre documentations d'instruments, sources de contexte des
+candidats écartés pour le point d'étape, `WN-SRC-0589` à `0600` (numérotées
+d'abord `0577` à `0588`, plage déjà portée en base par les extraits des
+vitamines B9 et B12 ; renumérotées le 2026-11-01), sans extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -65,7 +70,8 @@ corpus runtime.
   et `0570` (droits de l'éditeur) restent à vérifier ; au 2026-10-21 encore,
   pour le magnésium (`WN-SRC-0571` à `0573`), une de plus : le résumé des
   caractéristiques du produit MAG 2 (`WN-SRC-0572`, Licence Ouverte
-  etalab-2.0) ; `0571` et `0573` restent à vérifier ;
+  etalab-2.0) ; `0571` et `0573` restent à vérifier ; au 2026-11-01, les six
+  sources des vitamines B9 et B12 (`WN-SRC-0577` à `0582`) restent à vérifier ;
   la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
   extrait court est ingéré pour usage interne sur arbitrage du responsable,
   reste à vérifier.
