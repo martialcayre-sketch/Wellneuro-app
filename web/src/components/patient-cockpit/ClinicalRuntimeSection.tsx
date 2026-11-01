@@ -628,12 +628,18 @@ export function ClinicalRuntimeSection({
     else void loadTrajectoire();
   }, [onRechargerTrajectoire, loadTrajectoire]);
 
+  // Jeton d'obsolescence du résumé (revue CodeRabbit de #1802) : la relecture
+  // qui suit une diffusion ne doit pas être écrasée par une lecture partie
+  // avant elle et arrivée après. Seule la DERNIÈRE demande écrit l'état.
+  const seqCheckins = useRef(0);
   const loadCheckins = useCallback(async (decisionCardId: string) => {
+    const seq = ++seqCheckins.current;
     try {
       const response = await fetch(
         `/api/praticien/protocoles/checkins?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
       const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21; checkins?: CheckinRow[] };
+      if (seq !== seqCheckins.current) return;
       if (!response.ok || !payload.ok) {
         setCheckinsLusPour(null);
         return;
@@ -642,6 +648,7 @@ export function ClinicalRuntimeSection({
       setCheckins(payload.checkins ?? []);
       setCheckinsLusPour(payload.resume ? decisionCardId : null);
     } catch {
+      if (seq !== seqCheckins.current) return;
       // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit,
       // mais le rail ne dit plus rien du suivi.
       setCheckinsLusPour(null);
