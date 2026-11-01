@@ -40,6 +40,17 @@ const t0 = (
   versionScore: overrides.versionScore === undefined ? 'v1' : overrides.versionScore,
 });
 
+// Seconde passe Codex ([[D-397]]) : sur le cycle courant, la valeur d'un point
+// se lit à la dernière remesure, sur des réponses où une passation partielle
+// postérieure à l'ancre n'évince pas la passation complète.
+const HAD_COMPLET = { D2: '1', D4: '1', D6: '1', D8: '1', D10: '1', D12: '1', D14: '1' };
+const passationDe = (idQuestionnaire: string, iso: string, rawAnswers: Record<string, string>) => ({
+  idQuestionnaire,
+  dateReponse: new Date(iso),
+  scoresJson: { rawAnswers },
+  statutValidite: null,
+});
+
 describe('construireTrajectoire (C2B LOT-09)', () => {
   it('aucun épisode → aucun cycle, comparaison indisponible', () => {
     const tr = construireTrajectoire({ episodes: [], reponses: [] });
@@ -105,6 +116,42 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     for (const jalon of ['J21', 'J42', 'J90'] as const) {
       expect(cycle.jalons.find((j) => j.jalon === jalon)?.mesure).toBe(false);
     }
+  });
+
+  it('cycle courant : un PSS partiel après la remesure ne fait pas baisser le point J21', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [
+        reponse('2026-01-01T00:00:00.000Z'),
+        passationDe('Q_NEU_11', '2026-01-01T00:00:00.000Z', HAD_COMPLET),
+        reponse('2026-01-16T00:00:00.000Z'),
+        passationDe('Q_STR_02', '2026-01-21T00:00:00.000Z', { P1: '1' }),
+      ],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    const valeur = (jalon: string) => cycle.jalons.find((j) => j.jalon === jalon)?.valeur;
+    expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(valeur('J21')).toBe(valeur('T0'));
+    expect(cycle.momentum).toMatchObject({ delta: 0, tendance: 'stable' });
+  });
+
+  it('cycle courant : le point J21 se lit à la dernière remesure, comme l’arrivée du momentum', () => {
+    // Un HADS neuf après la remesure n'est pas une remesure : il n'entre ni
+    // dans l'arrivée ni dans le point.
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [
+        reponse('2026-01-01T00:00:00.000Z'),
+        passationDe('Q_STR_02', '2026-01-16T00:00:00.000Z', { ...RAW, P1: '4', P2: '4' }),
+        passationDe('Q_NEU_11', '2026-01-20T00:00:00.000Z', HAD_COMPLET),
+      ],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    const valeur = (jalon: string) => cycle.jalons.find((j) => j.jalon === jalon)?.valeur ?? NaN;
+    expect(cycle.momentum?.delta).toBe(valeur('J21') - valeur('T0'));
+    expect(cycle.momentum?.delta).not.toBe(0);
   });
 
   // ── [[D-397]] §2 : aucun momentum sans jour 0, même là où le repli en donnait un ──

@@ -7,7 +7,12 @@ import {
   construireSeriesParBesoinDuCycle,
   type MomentumBesoin,
 } from '@/lib/equilibre/momentumParBesoin';
-import { calculerMomentumDuCycle, predicatRemesure, type MotifAbsenceMomentum } from '@/lib/equilibre/momentumDuCycle';
+import {
+  calculerMomentumDuCycle,
+  predicatRemesure,
+  reponsesDuCycle,
+  type MotifAbsenceMomentum,
+} from '@/lib/equilibre/momentumDuCycle';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 import {
   ancresOrdonnees,
@@ -182,12 +187,16 @@ export function construireTrajectoire(input: {
       // Cycle courant ([[D-397]], contre-revue Codex P1-3) : un jalon ne s'y
       // rouvre que sur une remesure, la règle du momentum. Sans elle, la
       // première passation d'une source neuve tracerait à la courbe et au
-      // repère de cabinet un écart que le momentum déclare absent.
+      // repère de cabinet un écart que le momentum déclare absent. La valeur
+      // du point se lit sur les réponses du cycle (`reponsesDuCycle` : aucune
+      // passation sans mesure après l'ancre), à la date de la dernière
+      // remesure (seconde passe Codex).
+      const reponsesLues = estCourant ? reponsesDuCycle(input.reponses, dateAncre) : input.reponses;
       const historique = construireHistoriqueEquilibre(
-        input.reponses,
+        reponsesLues,
         dateAncre,
         jourZero,
-        estCourant ? predicatRemesure(input.reponses, dateAncre) : undefined,
+        estCourant ? predicatRemesure(reponsesLues, dateAncre) : undefined,
       );
 
       const jalons: TrajectoireJalonLecture[] = jalonsDuCycle(ancre).map((jalon) => {

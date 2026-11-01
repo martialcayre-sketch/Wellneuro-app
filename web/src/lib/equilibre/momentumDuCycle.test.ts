@@ -134,6 +134,19 @@ describe('momentum du cycle courant — scalaire (D-397 §1-§3)', () => {
     expect(calcul(reponses)).toEqual({ statut: 'absent', motif: 'sans_remesure' });
   });
 
+  // Seconde passe Codex : après l'ancre, une passation sans mesure n'évince
+  // pas la passation complète qui la précède dans l'état lu.
+  it('une passation partielle avant la remesure ne fait pas baisser l’arrivée', () => {
+    const hadAncre = passation(new Date(ANCRE.getTime() - 120_000), '1', 'Q_NEU_11');
+    const resultat = calcul([
+      hadAncre,
+      passation(avantAncre, '1'),
+      partielle(apresZero(10), 'Q_STR_02'),
+      passation(apresZero(15), '1', 'Q_NEU_11'),
+    ]);
+    expect(resultat).toMatchObject({ statut: 'disponible', delta: 0, tendance: 'stable' });
+  });
+
   it('l’arrivée tombée dans la fenêtre d’un jalon porte son nom', () => {
     expect(calcul([passation(avantAncre, '1'), passation(apresZero(21), '3')])).toMatchObject({
       statut: 'disponible',

@@ -33,6 +33,11 @@ import type { MotifAbsenceMomentum } from './motifsMomentum';
 //   remesure — sinon elle produirait une « stabilité » sans mesure (DC-24).
 //   Le grain est la source du mapping (questionnaire et sous-score), pas le
 //   questionnaire.
+// - APRÈS L'ANCRE, UNE PASSATION SANS MESURE N'ENTRE PAS DANS L'ÉTAT LU
+//   (seconde passe Codex) : le moteur retient la passation la plus récente
+//   d'un questionnaire ; une passation partielle évincerait la passation
+//   complète qui la précède, et l'écart dirait la perte d'une couverture, pas
+//   un changement chez le patient (`reponsesDuCycle`).
 //
 // Ni formule, ni seuil, ni `versionScore`, ni mapping ne changent ici : la
 // valeur se lit par `calculerEquilibre`, à la date de la passation retenue.
@@ -66,6 +71,19 @@ function sourcesMesurees(reponses: ReponsesParQuestionnaire, besoin?: number): S
     });
   }
   return cles;
+}
+
+/**
+ * Les réponses que lit le momentum du cycle courant : toutes celles connues à
+ * l'ancre, puis, après elle, les seules passations dont le moteur tire au
+ * moins une couverture. L'état d'ancre n'est pas touché.
+ */
+export function reponsesDuCycle(brutes: ReponseBrute[], dateAncre: Date): ReponseBrute[] {
+  return brutes.filter(r => {
+    if (r.dateReponse <= dateAncre) return true;
+    const rawAnswers = extraireRawAnswers(r.scoresJson);
+    return rawAnswers !== null && sourcesMesurees({ [r.idQuestionnaire]: rawAnswers }).size > 0;
+  });
 }
 
 /**
@@ -155,9 +173,10 @@ export function calculerMomentumDuCycle(input: {
   const depart = lectureIndiceAu(input.reponses, input.ancre.date);
   if (!depart) return { statut: 'absent', motif: 'sans_lecture_ancre' };
 
-  const mesureesAncre = sourcesMesureesAu(input.reponses, input.ancre.date);
-  const dateArrivee = derniereDateApres(datesRemesures(input.reponses, mesureesAncre), input.ancre.date, maintenant);
-  const arrivee = dateArrivee ? lectureIndiceAu(input.reponses, dateArrivee) : null;
+  const reponses = reponsesDuCycle(input.reponses, input.ancre.date);
+  const mesureesAncre = sourcesMesureesAu(reponses, input.ancre.date);
+  const dateArrivee = derniereDateApres(datesRemesures(reponses, mesureesAncre), input.ancre.date, maintenant);
+  const arrivee = dateArrivee ? lectureIndiceAu(reponses, dateArrivee) : null;
   const resultat = calculerDeltaMomentum(depart, arrivee);
   if (!arrivee || !resultat) return { statut: 'absent', motif: 'sans_remesure' };
 

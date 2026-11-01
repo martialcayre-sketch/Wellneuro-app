@@ -4,7 +4,7 @@ import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBru
 import { calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum } from './types';
 import { joursDepuisAncre } from '../protocol/fenetreJalon';
-import { datesRemesures, etiquetteLecture, sourcesMesureesAu } from './momentumDuCycle';
+import { datesRemesures, etiquetteLecture, reponsesDuCycle, sourcesMesureesAu } from './momentumDuCycle';
 // Réexportée : les bancs et le rendu la lisent ici, avec les séries.
 export { etiquetteLecture };
 import type { MotifAbsenceMomentum } from './motifsMomentum';
@@ -305,7 +305,10 @@ export function construireSeriesParBesoinDuCycle(input: {
   jourZero: Date | null;
   maintenant: Date;
 }): Map<number, LectureBesoin[]> {
-  const { brutes, ancre, jourZero, maintenant } = input;
+  const { ancre, jourZero, maintenant } = input;
+  // Après l'ancre, une passation sans mesure n'entre pas dans l'état lu
+  // (seconde passe Codex) : elle évincerait une passation complète.
+  const brutes = reponsesDuCycle(input.brutes, ancre.date);
   // Un état par date lue : plusieurs besoins partagent souvent une passation.
   const etats = new Map<number, Map<number, number | null>>();
   const couverturesAu = (date: Date) => {
