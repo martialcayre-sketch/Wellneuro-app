@@ -28,7 +28,11 @@
   du sommeil (`WN-SRC-0574`, `0575`) ; des sources par mesure pour les
   planchers de nuits (Borba et al. 2020, temps total seulement ; Aili et al.
   2017, qualité perçue ; Leota et al. 2026, régularité au bracelet) ; des
-  repères officiels de consommation (`WN-SRC-0576`).
+  repères officiels de consommation (`WN-SRC-0576`). Borba, Aili, Leota et
+  Tighe et al. 2021 sont cités comme contexte non retenu : aucune valeur de
+  cette décision ne repose sur eux, et ils n'entrent pas au registre du
+  corpus ; seules `0574` à `0576`, retenues comme contexte d'une borne ou
+  comme repères signés, y sont ajoutées.
 
 **§1 — Poids égal des besoins dans une strate : motif (`DC-21`).** « Je
 conserve des poids égaux faute de justification probante d'une pondération
