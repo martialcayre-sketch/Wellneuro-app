@@ -852,6 +852,33 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-10-23',
     hash: '3a18f994746053008a87d0ceddfb782733156f833fc6a5608009312778d9a2b4',
   },
+  // ── LE RAPPEL GROUPÉ ([[D-398]] §1, Q3 ; [[D-399]]) ─────────────────────────
+  // Un seul e-mail quand plusieurs questionnaires du dossier sont en retard :
+  // le rappel d'une carte couvre toutes les assignations rappelables à cet
+  // instant. CLÉ DISTINCTE, et non une v2 : `getGabarit` rend la version la
+  // plus haute, et le rappel d'un seul questionnaire garde son texte.
+  //
+  // SANS ÉCHÉANCE, elles diffèrent d'un questionnaire à l'autre ; sans nombre
+  // ni titre, comme `relance_questionnaire@1`.
+  {
+    key: 'relance_questionnaires',
+    version: 1,
+    titre: 'Rappel — des questionnaires attendent toujours',
+    sujet: 'Des questionnaires vous attendent toujours — Wellneuro',
+    corps:
+      'Bonjour,\n\n' +
+      'Des questionnaires vous attendent toujours dans votre espace patient.\n\n' +
+      'Les compléter permet à votre praticien de préparer votre consultation.\n\n' +
+      'Accéder à votre espace :\n{{portalUrl}}\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['portalUrl'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-11-01',
+    // NÉ VALIDÉ : texte relu mot pour mot par le responsable en session, le
+    // jour de sa rédaction.
+    valideLe: '2026-11-01',
+    hash: 'd9cb936d2c4bd6933b9f228b0e44be5722fe15a3ce147b9e379dade795e4f34d',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

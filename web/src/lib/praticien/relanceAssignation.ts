@@ -56,6 +56,23 @@ export type EntreeRelanceAssignation = {
 };
 
 /**
+ * LES RAPPELS QUI ONT COUVERT CETTE ASSIGNATION ([[D-399]]). Un rappel groupé
+ * part une fois pour plusieurs assignations : sa trace porte leurs
+ * identifiants, séparés par une virgule — un caractère qu'un identifiant
+ * d'assignation ne contient jamais. Une trace ancienne n'en porte qu'un.
+ */
+export const SEPARATEUR_ASSIGNATIONS = ',';
+
+export function envoisDeLAssignation<T extends { referenceId: string | null }>(
+  envois: readonly T[],
+  idAssignation: string,
+): T[] {
+  return envois.filter(envoi =>
+    (envoi.referenceId ?? '').split(SEPARATEUR_ASSIGNATIONS).includes(idAssignation),
+  );
+}
+
+/**
  * `AAAA-MM-JJ` → minuit LOCAL de ce jour, ou `null` si la forme n'est pas celle
  * que la base écrit.
  *

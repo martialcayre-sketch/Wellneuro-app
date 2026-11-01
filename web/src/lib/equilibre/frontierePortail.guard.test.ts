@@ -145,20 +145,23 @@ describe('frontière du portail — rendu', () => {
 
 // ─── Contrat : la réponse réellement servie par la route du portail ─────────
 
-const { prisma, readPatientSession, isSessionAuthorizedForAssignment } = vi.hoisted(() => ({
+const { prisma, readPatientSession, isSessionAuthorizedForAssignment, jourZeroDuCycleCourant } = vi.hoisted(() => ({
   prisma: {
     assignation: { findUnique: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
   },
   readPatientSession: vi.fn(),
   isSessionAuthorizedForAssignment: vi.fn(),
+  jourZeroDuCycleCourant: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/protocol/calendriersPersistes', () => ({ jourZeroDuCycleCourant }));
 vi.mock('@/lib/patient-session', () => ({ readPatientSession, isSessionAuthorizedForAssignment }));
 
 /** Clés permises, par chemin (`[]` = élément de liste). Liste fermée. */
 const CLES_PERMISES: Record<string, string[]> = {
-  '': ['indiceGlobal', 'momentum', 'trajectoire', 'besoins'],
+  '': ['indiceGlobal', 'momentum', 'motifMomentum', 'trajectoire', 'besoins'],
   momentum: ['tendance'],
   'trajectoire[]': ['date'],
   'besoins[]': ['id', 'libellePatient', 'strate', 'couverture'],
@@ -188,6 +191,12 @@ describe('frontière du portail — contrat de api/patient/equilibre', () => {
     // Un champ absent de la réponse ne prouverait pas qu'il est retiré.
     const jour = 24 * 60 * 60 * 1000;
     const axeD = (v: string) => Object.fromEntries(['D2', 'D4', 'D6', 'D8', 'D10', 'D12', 'D14'].map(id => [id, v]));
+    // [[D-397]] : le momentum part de l'ancre du cycle courant et exige un
+    // jour 0 — ancre juste après la première passation, diffusion le lendemain.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EP_T0', cycleId: 'CY_1', confirmedAt: new Date(Date.now() - 60 * jour + 60_000), milestone: 'T0' },
+    ]);
+    jourZeroDuCycleCourant.mockResolvedValue(new Date(Date.now() - 59 * jour));
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       { idQuestionnaire: 'Q_NEU_11', dateReponse: new Date(Date.now() - 60 * jour), scoresJson: { rawAnswers: axeD('0') }, statutValidite: null },
       { idQuestionnaire: 'Q_NEU_11', dateReponse: new Date(Date.now() - 45 * jour), scoresJson: { rawAnswers: axeD('3') }, statutValidite: null },

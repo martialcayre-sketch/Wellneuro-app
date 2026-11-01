@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } fro
 import { estAncreDeCycle, jalonsDuCycle } from '@/lib/protocol/cycles';
 import type { TrajectoireCycle } from '@/lib/protocol/trajectoire';
 import type { MedianesCabinet } from '@/lib/protocol/cabinet';
+import { texteMotifMomentumCockpit } from '@/lib/equilibre/motifsMomentum';
 
 // Momentum en courbe (A6-R2, décision utilisateur 2026-07-23) — surface
 // praticien seule. Chaque point est un jalon RÉELLEMENT mesuré (Δ vs l'ancre
@@ -50,7 +51,11 @@ export function MomentumPanel({
   });
 
   const jalonsMesures = points.filter((p) => p.patient !== null);
-  const courbePossible = jalonsMesures.length >= 2;
+  // [[D-397]] §2 : sur le cycle courant sans jour 0, aucun momentum — ni en
+  // texte, ni en courbe. Les jalons lus par le repli restent consultables dans
+  // la carte du cycle ; ils ne se soustraient plus à l'ancre ici.
+  const sansJourZero = cycle?.motifMomentum === 'sans_jour_zero';
+  const courbePossible = !sansJourZero && jalonsMesures.length >= 2;
 
   return (
     <section
@@ -64,7 +69,9 @@ export function MomentumPanel({
         </span>
       </div>
 
-      {!courbePossible ? (
+      {sansJourZero ? (
+        <p className="mt-2 text-base text-muted-foreground">{texteMotifMomentumCockpit('sans_jour_zero', nomAncre)}</p>
+      ) : !courbePossible ? (
         <p className="mt-2 text-base text-muted-foreground">
           Courbe indisponible : moins de deux jalons mesurés sur ce cycle. Le momentum textuel des cartes de cycle
           reste la lecture de référence.

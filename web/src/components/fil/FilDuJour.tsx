@@ -79,8 +79,24 @@ function BoutonRelance({ idAssignation, titre }: { idAssignation: string; titre:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idAssignation }),
       });
-      const charge = (await reponse.json()) as { ok?: boolean; error?: string };
-      setMessage(charge.ok ? 'Rappel envoyé.' : charge.error ?? 'Rappel impossible.');
+      const charge = (await reponse.json()) as {
+        ok?: boolean;
+        error?: string;
+        statut?: string;
+        questionnaires?: number;
+      };
+      // UN E-MAIL PEUT EN COUVRIR PLUSIEURS ([[D-399]]) : le dire, sans quoi le
+      // refus de cadence des autres cartes du dossier paraîtrait inexpliqué.
+      // SEULEMENT S'IL EST PARTI : en échec, les autres cartes restent
+      // rappelables, et la phrase affirmerait un fait faux.
+      const nombre = charge.questionnaires ?? 1;
+      setMessage(
+        charge.ok
+          ? nombre > 1 && charge.statut === 'Envoye'
+            ? `Rappel envoyé. Il couvre les ${nombre} questionnaires en retard de ce dossier.`
+            : 'Rappel envoyé.'
+          : charge.error ?? 'Rappel impossible.',
+      );
     } catch {
       setMessage('Rappel impossible : le serveur n’a pas répondu.');
     } finally {

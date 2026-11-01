@@ -1795,6 +1795,18 @@ jobs:
           DB_POOL_MAX: '4'
         run: npx vitest run src/lib/correspondance/courrierComplement.pg.test.ts
 
+      # La réservation avant l'envoi sur base réelle (D-398 §1 Q3 et §3,
+      # D-399) : deux requêtes simultanées, croisées sous le verrou du dossier,
+      # donnent un seul e-mail — accès, rappel de questionnaire, premier envoi
+      # d'un bilan ; un échec ne compte pas comme envoi.
+      - name: Reservation before send real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_RESERVATION_ENVOI_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/correspondance/reservation.pg.test.ts
+
       # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
       # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
       # servait une liste déjà dédupliquée — il simulait la déduplication au lieu

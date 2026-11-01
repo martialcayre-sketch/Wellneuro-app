@@ -6,6 +6,7 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import { isDossierDeuxVoixEnabled } from '@/lib/patient/featureFlag';
 import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
+import { FILTRE_ENVOIS_PARTIS } from '@/lib/correspondance/reservation';
 import { sendObjectifProposeEmail } from '@/lib/consultation/email';
 import {
   etatRatification,
@@ -141,8 +142,11 @@ export async function POST(req: Request): Promise<NextResponse<RelanceApiRespons
       // LES ENVOIS DÉJÀ TRACÉS, tous types de courrier confondus ? NON : le seul
       // type `objectifPropose`. Une relance d'agenda ou un pack de
       // questionnaires n'a rien à voir avec ce qu'on s'apprête à redire.
+      // ET LES SEULS PARTIS ([[D-399]]) : un échec, une messagerie absente ou
+      // un refus de garde n'ont rien dit au patient — les compter refuserait
+      // le geste qui les répare.
       prisma.correspondancePatient.findMany({
-        where: { idPatient, type: TYPES_CORRESPONDANCE_PATIENT.objectifPropose },
+        where: { idPatient, type: TYPES_CORRESPONDANCE_PATIENT.objectifPropose, ...FILTRE_ENVOIS_PARTIS },
         select: { enregistreLe: true },
       }),
     ]);
@@ -184,6 +188,12 @@ export async function POST(req: Request): Promise<NextResponse<RelanceApiRespons
       patientCourrier.prenom,
       idPatient,
     );
+    // LA GARDE D'UNE HEURE a refusé ([[D-398]] §3) : un second clic simultané,
+    // le premier encore en vol — la cadence lue plus haut ne pouvait pas le
+    // voir. Même réponse que la cadence : un courrier vient de partir.
+    if (statut === 'Refuse_garde') {
+      return echec('cadence', MESSAGES_REFUS.cadence, 429);
+    }
 
     return NextResponse.json<RelanceApiResponse>({ ok: true, statut }, { status: 200 });
   } catch {

@@ -15,6 +15,7 @@ import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel'
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 import { BESOINS } from '@/lib/equilibre/constants';
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
+import { texteMotifMomentumCockpit } from '@/lib/equilibre/motifsMomentum';
 import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
 import { estAncreDeCycle, JALONS_MESURE, numeroEpisodeDeCycle } from '@/lib/protocol/cycles';
 import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
@@ -55,14 +56,26 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Arrondi d'AFFICHAGE seulement — la donnée (`MomentumBesoin.delta`) reste la
-// soustraction brute. Un mouvement réel ne s'affiche jamais « 0 » : en deçà du
-// centième, la valeur passe en chiffres significatifs plutôt que d'être écrasée.
+// r3_12 ([[D-397]] §5) — arrondi d'AFFICHAGE seulement : la donnée
+// (`MomentumBesoin.delta`, les couvertures) reste sur 0–1, brute. Une
+// couverture s'écrit `Math.round(100 × c)`, sans « % » ; un écart, en points,
+// depuis le delta BRUT, jamais depuis la différence des valeurs arrondies.
 function formatCouverture(valeur: number): string {
-  if (valeur !== 0 && Math.abs(valeur) < 0.005) {
-    return valeur.toLocaleString('fr-FR', { maximumSignificantDigits: 2 });
-  }
-  return valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  return String(Math.round(100 * valeur));
+}
+
+function formatEcart(delta: number): string {
+  if (delta === 0) return 'écart 0 point';
+  const points = Math.round(100 * delta);
+  // Un mouvement réel ne s'écrit jamais « 0 » : il est dit plus petit qu'un point.
+  if (points === 0) return 'écart inférieur à un point';
+  const valeur = Math.abs(points);
+  return `écart ${points > 0 ? '+' : '−'}${valeur} ${valeur === 1 ? 'point' : 'points'}`;
+}
+
+/** Une date de lecture servie en JSON (chaîne) ou construite en test (Date). */
+function formatDateLecture(date: Date | string): string {
+  return formatDate(new Date(date).toISOString());
 }
 
 export function TrajectoirePanel({
@@ -456,13 +469,24 @@ export function TrajectoirePanel({
                       </li>
                     ))}
                   </ul>
+                  {/* [[D-397]] : sur le cycle courant, l'arrivée est la dernière
+                      remesure, et une absence dit son motif (C-1 à C-3). */}
+                  {!cycle.momentum && cycle.motifMomentum && (
+                    <p className="mt-2 text-base text-muted-foreground italic">
+                      {texteMotifMomentumCockpit(cycle.motifMomentum, cycle.ancre)}
+                    </p>
+                  )}
                   {cycle.momentum && (
                     <p className="mt-2 text-base text-foreground">
-                      Momentum {cycle.ancre} → dernier jalon mesuré :{' '}
+                      Momentum {cycle.ancre} →{' '}
+                      {cycle.momentum.dateArrivee
+                        ? `${cycle.momentum.etiquetteArrivee ?? 'remesure'} du ${formatDate(cycle.momentum.dateArrivee)}`
+                        : 'dernier jalon mesuré'}{' '}
+                      :{' '}
                       <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
-                      {/* L'unité est nommée : l'écart par besoin, trois lignes plus
-                          bas, est sur l'échelle de couverture 0–1 — deux « écart »
-                          nus se liraient comme comparables (revue LOT-07, M4). */}
+                      {/* L'unité est nommée : l'écart par besoin, plus bas, est en
+                          points de couverture (r3_12) — deux « écart » nus se
+                          liraient comme comparables (revue LOT-07, M4). */}
                       <span className="text-muted-foreground">
                         (écart {Math.abs(cycle.momentum.delta)} — indice 0–100)
                       </span>
@@ -473,34 +497,54 @@ export function TrajectoirePanel({
                       et le MOTIF est toujours restitué (DC-34/DC-35) — un delta,
                       qualifié ou non, ne s'affiche jamais comme une tendance nue,
                       et les deux jalons comparés sont nommés. */}
-                  {cycle.momentumParBesoin.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Momentum par besoin
-                      </p>
-                      <ul className="mt-1 space-y-1.5">
-                        {cycle.momentumParBesoin.map((ligne) => {
-                          const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
-                            ?? `Besoin ${ligne.besoin}`;
-                          return (
-                            <li key={ligne.besoin} className="text-sm text-muted-foreground">
-                              <span className="font-medium text-foreground">{libelle}</span>
-                              {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
-                                <>
-                                  {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
-                                  ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
-                                  ({ligne.arrivee.jalon}) · écart{' '}
-                                  {ligne.delta > 0 ? `+${formatCouverture(ligne.delta)}` : formatCouverture(ligne.delta)}
-                                  {' '}— échelle de couverture 0–1
-                                </>
-                              )}
-                              <span className="block text-xs italic">{ligne.motif}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  )}
+                  {cycle.momentumParBesoin.length > 0 && (() => {
+                    // Cycle courant ([[D-397]] §4) : douze emplacements, chacun avec
+                    // ses lectures admissibles dans l'ordre chronologique — sans
+                    // position quantitative avant la porte 22 (R:o) —, puis la paire
+                    // ou le motif d'absence. Sans jour 0, le motif se dit une fois.
+                    const sansJourZero = cycle.momentumParBesoin.every(l => l.motifAbsence === 'sans_jour_zero');
+                    return (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Momentum par besoin
+                        </p>
+                        {sansJourZero && (
+                          <p className="mt-1 text-sm italic text-muted-foreground">{cycle.momentumParBesoin[0].motif}</p>
+                        )}
+                        <ul className="mt-1 space-y-1.5">
+                          {cycle.momentumParBesoin.map((ligne) => {
+                            const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
+                              ?? `Besoin ${ligne.besoin}`;
+                            const duCycle = ligne.lectures !== undefined;
+                            return (
+                              <li key={ligne.besoin} className="text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground">{libelle}</span>
+                                {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
+                                  <>
+                                    {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
+                                    ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
+                                    ({duCycle ? `${ligne.arrivee.jalon} du ${formatDateLecture(ligne.arrivee.date)}` : ligne.arrivee.jalon}){' '}
+                                    · {formatEcart(ligne.delta)}
+                                  </>
+                                )}
+                                {ligne.lectures && ligne.lectures.length > 0 && (
+                                  <span className="block text-xs">
+                                    Lectures :{' '}
+                                    {ligne.lectures
+                                      .map(lecture => `${lecture.jalon} du ${formatDateLecture(lecture.date)}`)
+                                      .join(' · ')}
+                                  </span>
+                                )}
+                                {!(sansJourZero && ligne.motifAbsence === 'sans_jour_zero') && (
+                                  <span className="block text-xs italic">{ligne.motif}</span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                 </details>
               </div>
             );

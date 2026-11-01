@@ -129,6 +129,7 @@ import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDo
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
 import { MenuActions } from '@/components/ui/MenuActions';
+import { texteMotifMomentumCockpit } from '@/lib/equilibre/motifsMomentum';
 
 // Un chiffre dont la provenance n'est pas établie ne s'affiche pas
 // ([[D-333]] §2 règle 1) — et ne se confond pas avec « Non mesuré ».
@@ -202,14 +203,23 @@ function ObjetGauge({
   );
 }
 
-function MomentumCard({ momentum, provenance }: { momentum: ResultatMomentum | null; provenance: string[] | null }) {
+function MomentumCard({
+  momentum,
+  motif,
+  provenance,
+}: {
+  momentum: ResultatMomentum | null;
+  /** Le motif d'absence ([[D-397]]) déjà rédigé ; `null` : réponse antérieure au lot. */
+  motif: string | null;
+  provenance: string[] | null;
+}) {
   const chiffresMasques = useChiffresMasques();
   if (!momentum) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
+      <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 min-h-[148px]">
         <span className="text-sm text-muted-foreground">Non mesuré</span>
         <span className="text-xs text-muted-foreground uppercase tracking-wide">Momentum</span>
-        <span className="text-xs text-muted-foreground text-center">Historique insuffisant</span>
+        <span className="text-xs text-muted-foreground text-center">{motif ?? 'Historique insuffisant'}</span>
       </div>
     );
   }
@@ -1517,6 +1527,11 @@ export function FichePatientPanel({
       />
       <MomentumCard
         momentum={objetsCliniques.momentum}
+        motif={
+          objetsCliniques.motifMomentum
+            ? texteMotifMomentumCockpit(objetsCliniques.motifMomentum, objetsCliniques.ancreMomentum)
+            : null
+        }
         provenance={
           provenanceMomentumEtablie(provenance?.momentum) ? lignesProvenanceMomentum(provenance.momentum) : null
         }

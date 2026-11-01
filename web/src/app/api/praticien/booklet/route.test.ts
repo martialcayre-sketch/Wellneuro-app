@@ -13,6 +13,15 @@ const createBookletEnvoi = vi.fn();
 // exception. Le banc observait donc la ligne d'audit (juste) sans jamais voir
 // la ligne dérivée (fausse).
 const createCorrespondance = vi.fn();
+// LA RÉSERVATION DU PREMIER ENVOI ([[D-398]] §1, Q3) : la ligne du journal
+// naît sous le verrou du bilan, puis le solde la met à jour. Le croisement
+// réel de deux requêtes est éprouvé sur base réelle
+// (`correspondance/reservation.pg.test.ts`).
+const updateCorrespondance = vi.fn();
+const countCorrespondance = vi.fn();
+const findFirstCorrespondance = vi.fn();
+const countBookletEnvoi = vi.fn();
+const executeRaw = vi.fn();
 // Le booklet part au patient : la prévisualisation qualifie la synthèse dont il
 // est tiré (antérieure au retrait d'interprétation ?), d'où cette lecture des
 // passations du dossier, en sélection minimale.
@@ -20,19 +29,31 @@ const findManyReponses = vi.fn(async () => [] as Array<{ idQuestionnaire: string
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { email: 'p@wellneuro.fr' } })) }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/prisma', () => {
+  const prisma = {
     syntheseIA: { findFirst: (...a: unknown[]) => findFirst(...a) },
     patient: { findUnique: (...a: unknown[]) => findUniquePatient(...a) },
     journalAccesDossier: {
       create: (...a: unknown[]) => createJournal(...a),
       deleteMany: (...a: unknown[]) => deleteManyJournal(...a),
     },
-    bookletEnvoi: { create: (...a: unknown[]) => createBookletEnvoi(...a) },
-    correspondancePatient: { create: (...a: unknown[]) => createCorrespondance(...a) },
+    bookletEnvoi: {
+      create: (...a: unknown[]) => createBookletEnvoi(...a),
+      count: (...a: unknown[]) => countBookletEnvoi(...a),
+    },
+    correspondancePatient: {
+      create: (...a: unknown[]) => createCorrespondance(...a),
+      update: (...a: unknown[]) => updateCorrespondance(...a),
+      count: (...a: unknown[]) => countCorrespondance(...a),
+      findFirst: (...a: unknown[]) => findFirstCorrespondance(...a),
+    },
     questionnaireReponse: { findMany: (...a: unknown[]) => findManyReponses(...(a as [])) },
-  },
-}));
+    $executeRaw: (...a: unknown[]) => executeRaw(...a),
+    // La transaction joue son corps sur le même client.
+    $transaction: (corps: (tx: unknown) => unknown) => corps(prisma),
+  };
+  return { prisma };
+});
 vi.mock('@/lib/anthropic', () => ({
   maskEmail: (e: string) => `masqué(${e})`,
   sanitizeAuditError: (m: string) => m,
@@ -90,7 +111,17 @@ beforeEach(() => {
   deleteManyJournal.mockReset();
   createBookletEnvoi.mockReset();
   createCorrespondance.mockReset();
-  createCorrespondance.mockResolvedValue({});
+  createCorrespondance.mockResolvedValue({ id: 'RES_1' });
+  updateCorrespondance.mockReset();
+  updateCorrespondance.mockResolvedValue({});
+  countCorrespondance.mockReset();
+  countCorrespondance.mockResolvedValue(0);
+  findFirstCorrespondance.mockReset();
+  findFirstCorrespondance.mockResolvedValue(null);
+  countBookletEnvoi.mockReset();
+  countBookletEnvoi.mockResolvedValue(0);
+  executeRaw.mockReset();
+  executeRaw.mockResolvedValue(1);
   // `actif` manquait : `phaseDossier` lit `!etat.actif` et concluait
   // « désactivé » sur un dossier censé être en suivi. Aucun test n'allait
   // jusque-là, donc le fixture pouvait rester faux sans que rien ne rougisse.
@@ -160,6 +191,22 @@ describe('GET /api/praticien/booklet', () => {
     // Dossier sain : aucune mention. C'est le contrôle négatif des deux tests
     // qui suivent.
     expect(body.avertissementMesureRetiree).toBeNull();
+    expect(body.dejaEnvoye).toBe(false);
+  });
+
+  it('journal parti ou marqué sans audit : la prévisualisation offre le renvoi (D-399 §5)', async () => {
+    // Le POST renvoie à la confirmation sur cette ligne ; sans `dejaEnvoye`,
+    // l'écran cachait la case « Confirmer le renvoi » et le bilan ne
+    // repartait plus.
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    findFirstCorrespondance.mockResolvedValue({ enregistreLe: new Date('2026-11-01T10:00:00.000Z') });
+    const body = await (await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'))).json();
+    expect(body.dejaEnvoye).toBe(true);
+    expect(body.dernierEnvoiDate).toBe('2026-11-01T10:00:00.000Z');
+    expect(body.dernierEnvoiEmailMasque).not.toBeNull();
+    const where = findFirstCorrespondance.mock.calls[0][0].where;
+    expect(where).toMatchObject({ type: 'booklet', referenceId: 'SYN_1' });
+    expect(where.OR).toBeDefined();
   });
 
   it('booklet tiré d’une synthèse antérieure au retrait : la prévisualisation le dit', async () => {
@@ -425,9 +472,15 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
     );
   }
 
+  // LA LIGNE TELLE QU'ELLE FINIT : née par `create` (réservée au premier envoi,
+  // ou écrite d'un coup ailleurs), puis soldée par `update` s'il y en a un.
   function ligneJournal() {
     const appels = createCorrespondance.mock.calls;
-    return (appels[appels.length - 1][0] as { data: Record<string, unknown> }).data;
+    const nee = (appels[appels.length - 1][0] as { data: Record<string, unknown> }).data;
+    const soldes = updateCorrespondance.mock.calls;
+    return soldes.length === 0
+      ? nee
+      : { ...nee, ...(soldes[soldes.length - 1][0] as { data: Record<string, unknown> }).data };
   }
 
   function avecNarratif(narratif: string) {
@@ -527,6 +580,109 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
     } finally {
       delete process.env.SMTP_URL;
     }
+  });
+
+  // [[D-398]] §1 (Q3) : la lecture du registre, en tête de requête, ne voyait
+  // pas un envoi en vol — deux clics simultanés sur un bilan jamais envoyé
+  // partaient tous les deux.
+  describe('réservation du premier envoi', () => {
+    beforeEach(() => {
+      process.env.SMTP_URL = 'smtp://test:test@localhost:1025';
+      findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+      createBookletEnvoi.mockResolvedValue({ id: 'AUDIT_1' });
+    });
+    afterEach(() => {
+      delete process.env.SMTP_URL;
+    });
+
+    it('réserve sous le verrou du bilan AVANT l’envoi, puis solde la même ligne', async () => {
+      const res = await envoyer({});
+      expect(res.status).toBe(200);
+
+      expect(executeRaw.mock.calls[0].slice(1)).toEqual(['envoi_patient:booklet:SYN_1']);
+      expect(createCorrespondance).toHaveBeenCalledTimes(1);
+      expect(createCorrespondance.mock.calls[0][0].data).toMatchObject({
+        type: 'booklet',
+        statut: 'Non_envoye',
+        erreurCourte: 'réservé : envoi en cours',
+        referenceType: 'synthese',
+        referenceId: 'SYN_1',
+      });
+      expect(createCorrespondance.mock.invocationCallOrder[0]).toBeLessThan(sendMail.mock.invocationCallOrder[0]);
+      // UN ENVOI, UNE LIGNE, UNE CLÉ DE SOURCE : le solde reprend la réservée.
+      expect(updateCorrespondance).toHaveBeenCalledWith({
+        where: { id: 'RES_1' },
+        data: {
+          objet: 'Envoi du bilan neuronutritionnel',
+          statut: 'Envoye',
+          sourceType: 'booklet_envoi',
+          sourceId: 'AUDIT_1',
+          erreurCourte: null,
+        },
+      });
+    });
+
+    it('un premier envoi en vol, ou déjà soldé, renvoie à la confirmation, et rien ne part', async () => {
+      countCorrespondance.mockResolvedValueOnce(1);
+      const res = await envoyer({});
+
+      // UNE SEULE LECTURE du journal, parti OU en partance : le solde d'un
+      // envoi concurrent ne peut pas glisser entre deux lectures (#1798).
+      expect(countCorrespondance.mock.calls[0][0].where).toMatchObject({
+        type: 'booklet',
+        referenceId: 'SYN_1',
+        OR: [{ statut: 'Envoye' }, { statut: 'Non_envoye', erreurCourte: 'réservé : envoi en cours' }],
+      });
+
+      expect((await res.json()).needsConfirmation).toBe(true);
+      expect(sendMail).not.toHaveBeenCalled();
+      expect(createBookletEnvoi.mock.calls[0][0].data.statut).toBe('Confirmation_Requise');
+    });
+
+    it('un envoi parti depuis la première lecture renvoie aussi à la confirmation', async () => {
+      countBookletEnvoi.mockResolvedValueOnce(1);
+      const res = await envoyer({});
+
+      expect((await res.json()).needsConfirmation).toBe(true);
+      expect(sendMail).not.toHaveBeenCalled();
+    });
+
+    // Revue PR-Agent de #1798 : restée marquée, la réservation compterait
+    // comme partie et retiendrait le premier envoi d'un bilan non parti.
+    it('un audit qui lève n’empêche pas de solder la réservation', async () => {
+      sendMail.mockRejectedValueOnce(new Error('550 relais refusé'));
+      createBookletEnvoi.mockRejectedValueOnce(new Error('base indisponible'));
+      const res = await envoyer({});
+
+      expect(res.status).toBe(502);
+      expect(updateCorrespondance).toHaveBeenCalledWith({
+        where: { id: 'RES_1' },
+        data: { statut: 'Erreur', erreurCourte: '550 relais refusé' },
+      });
+    });
+
+    // Revue CodeRabbit de #1798 : l'audit créé, c'est le solde qui échoue ;
+    // le solde de secours garde la clé de source — un envoi, une ligne.
+    it('un solde qui échoue après l’audit : le secours garde la clé de source', async () => {
+      updateCorrespondance.mockRejectedValueOnce(new Error('délai dépassé'));
+      const res = await envoyer({});
+
+      expect(res.status).toBe(200);
+      expect(updateCorrespondance).toHaveBeenCalledTimes(2);
+      expect(updateCorrespondance.mock.calls[1][0]).toEqual({
+        where: { id: 'RES_1' },
+        data: { statut: 'Envoye', sourceType: 'booklet_envoi', sourceId: 'AUDIT_1', erreurCourte: null },
+      });
+    });
+
+    it('le renvoi confirmé ne se réserve pas : c’est un geste explicite', async () => {
+      const res = await envoyer({ forceSend: true });
+
+      expect(res.status).toBe(200);
+      expect(executeRaw).not.toHaveBeenCalled();
+      expect(updateCorrespondance).not.toHaveBeenCalled();
+      expect(ligneJournal()).toMatchObject({ statut: 'Envoye', sourceId: 'AUDIT_1' });
+    });
   });
 
   // Les deux avertissements sont RENDUS TELS QUELS au praticien : ils ne

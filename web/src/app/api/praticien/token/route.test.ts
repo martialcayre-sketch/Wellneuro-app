@@ -262,6 +262,13 @@ describe('POST /api/praticien/token — ce que la réponse dit de l’envoi', ()
     expect(json.envoi).toBe('non_configure');
   });
 
+  it('un refus de la garde d’une heure se distingue d’une messagerie absente ([[D-398]] §3)', async () => {
+    vi.mocked(sendPortailLinkEmail).mockResolvedValueOnce('Refuse_garde');
+    const json = await (await POST(postRequest({ idPatient: 'PAT_1', action: 'resend' }))).json();
+    expect(json.success).toBe(true);
+    expect(json.envoi).toBe('deja_envoye');
+  });
+
   it('le lien à usage unique est ÉMIS même quand son e-mail échoue', async () => {
     // Deux faits distincts, et l'écran doit dire les deux : le lien existe en
     // base (il est rendu), et le patient ne l'a pas reçu.

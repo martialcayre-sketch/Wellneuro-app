@@ -41,7 +41,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les vingt-trois versions attendues, dans cet ordre', () => {
+  it('expose les vingt-quatre versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -95,6 +95,9 @@ describe('registre des gabarits patient — intégrité', () => {
       'assignation_pack@2',
       'file_envoi@2',
       'accuse_reception@2',
+      // [[D-398]] §1 (Q3), [[D-399]] — le rappel groupé : un e-mail pour
+      // plusieurs questionnaires en retard. Clé distincte, sans nombre ni titre.
+      'relance_questionnaires@1',
     ]);
   });
 
@@ -272,7 +275,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
   });
 
-  it('les dix-neuf validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les vingt validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -321,6 +324,9 @@ describe('registre des gabarits patient — intégrité', () => {
       'assignation_pack@2',
       'file_envoi@2',
       'accuse_reception@2',
+      // Né validé : texte relu mot pour mot en session, le jour de sa
+      // rédaction ([[D-399]]).
+      'relance_questionnaires@1',
     ]);
     expect(valides.map(g => g.valideLe)).toEqual([
       '2026-10-23',
@@ -342,6 +348,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-10-23',
       '2026-10-23',
       '2026-10-23',
+      '2026-11-01',
     ]);
   });
 

@@ -8,13 +8,18 @@ import {
   TYPES_CORRESPONDANCE_PATIENT,
   type TypeCorrespondancePatient,
 } from '@/lib/correspondance/patient';
+import { reserverSousGarde, solderReservation, type TypeSousGarde } from '@/lib/correspondance/reservation';
 
 /**
  * Ce que l'appelant peut affirmer à l'écran. `Erreur` n'y figure pas : ce cas
  * relance (il ne se rend pas), et c'est le `catch` de la route qui le nomme.
  * Projection observable des statuts du journal de correspondance.
+ *
+ * `Refuse_garde` : la garde d'une heure ([[D-398]] §3) a refusé l'e-mail —
+ * rien n'est parti, le refus est tracé `Non_envoye` sous son motif. Distinct de
+ * `Non_envoye`, qui dit une messagerie absente.
  */
-export type StatutEnvoiAcces = 'Envoye' | 'Non_envoye';
+export type StatutEnvoiAcces = 'Envoye' | 'Non_envoye' | 'Refuse_garde';
 
 /**
  * Ce que la RÉPONSE d'API dit de l'envoi. Trois cas, pas deux : trois `catch`
@@ -26,8 +31,11 @@ export type StatutEnvoiAcces = 'Envoye' | 'Non_envoye';
  * transaction acceptée (`info.rejected` de nodemailer) résout et reste compté
  * 'envoye'. Ce résidu est antérieur et hors périmètre — il est nommé ici pour
  * que personne ne lise ce champ comme un accusé de réception.
+ *
+ * 'deja_envoye' : refus de la garde d'une heure ([[D-398]] §3) — un e-mail
+ * d'accès est déjà parti vers ce dossier ; rien n'est mort, rien n'est reparti.
  */
-export type EnvoiAcces = 'envoye' | 'echoue' | 'non_configure';
+export type EnvoiAcces = 'envoye' | 'echoue' | 'non_configure' | 'deja_envoye';
 
 async function envoyerAccesTrace({
   idPatient,
@@ -40,6 +48,9 @@ async function envoyerAccesTrace({
   objet: string;
   envoyer: () => Promise<unknown>;
 }): Promise<StatutEnvoiAcces> {
+  if (idPatient && estSousGarde(type)) {
+    return envoyerSousGarde({ idPatient, type, objet, envoyer });
+  }
   if (!process.env.SMTP_URL) {
     if (idPatient) {
       await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye' });
@@ -59,6 +70,45 @@ async function envoyerAccesTrace({
     }
     throw erreur;
   }
+}
+
+function estSousGarde(type: TypeCorrespondancePatient): type is TypeSousGarde {
+  return type === TYPES_CORRESPONDANCE_PATIENT.accesPortail
+    || type === TYPES_CORRESPONDANCE_PATIENT.objectifPropose;
+}
+
+/**
+ * LE MÊME TRIPLET, SOUS LA GARDE D'UNE HEURE ([[D-398]] §3). La ligne est
+ * réservée AVANT l'envoi, sous le verrou du dossier : deux clics simultanés ne
+ * passent plus tous les deux. Un refus n'envoie rien, et sa ligne est déjà
+ * juste ; il n'est jamais rejoué. La réservation lève si la base ne répond
+ * pas — rien ne part alors, et l'appelant le dit comme un échec d'envoi.
+ */
+async function envoyerSousGarde({
+  idPatient,
+  type,
+  objet,
+  envoyer,
+}: {
+  idPatient: string;
+  type: TypeSousGarde;
+  objet: string;
+  envoyer: () => Promise<unknown>;
+}): Promise<StatutEnvoiAcces> {
+  const reservation = await reserverSousGarde({ idPatient, type, objet });
+  if (reservation.refusee) return 'Refuse_garde';
+  if (!process.env.SMTP_URL) {
+    await solderReservation(reservation.id, 'Non_envoye');
+    return 'Non_envoye';
+  }
+  try {
+    await envoyer();
+  } catch (erreur) {
+    await solderReservation(reservation.id, 'Erreur', erreur);
+    throw erreur;
+  }
+  await solderReservation(reservation.id, 'Envoye');
+  return 'Envoye';
 }
 
 /**

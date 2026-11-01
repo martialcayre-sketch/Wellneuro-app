@@ -43,10 +43,12 @@ type SortBy = 'nom' | 'email';
  */
 function libelleEnvoi(
   envoi: CreateConsultationResponse['envoi'],
-  textes: { envoye: string; echoue: string; nonConfigure: string },
+  textes: { envoye: string; echoue: string; nonConfigure: string; dejaEnvoye: string },
 ): string {
   return envoi === 'echoue' ? textes.echoue
     : envoi === 'non_configure' ? textes.nonConfigure
+    // Refus de la garde d'une heure ([[D-398]] §3) : l'accès est déjà parti.
+    : envoi === 'deja_envoye' ? textes.dejaEnvoye
     : textes.envoye;
 }
 
@@ -239,6 +241,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
           nonConfigure: retablirAcces
             ? 'Accès rétabli et consultation créée. Aucun e-mail n’est parti : la messagerie n’est pas configurée.'
             : 'Consultation créée. Aucun e-mail n’est parti : la messagerie n’est pas configurée.',
+          dejaEnvoye: retablirAcces
+            ? 'Accès rétabli et consultation créée, sans nouvel e-mail : un e-mail d’accès est déjà parti vers ce patient il y a moins d’une heure.'
+            : 'Consultation créée, sans nouvel e-mail : un e-mail d’accès est déjà parti vers ce patient il y a moins d’une heure.',
         }),
       });
       setConsultationForm({ idPatient: '', motif: '' });

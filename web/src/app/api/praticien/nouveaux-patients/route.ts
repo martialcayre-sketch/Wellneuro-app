@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { lignesNouveauxPatients, type LigneNouveauPatient } from '@/lib/fil/nouveauxPatients';
+import { MARQUE_ENVOI_EN_COURS, MOTIFS_GARDE_ENVOI } from '@/lib/correspondance/reservation';
 
 export type NouveauxPatientsApiResponse = {
   ok: boolean;
@@ -109,7 +110,7 @@ export async function GET(): Promise<NextResponse<NouveauxPatientsApiResponse>> 
         // filtre : ils ne prouvent rien de l'ouverture de l'accès.
         prisma.correspondancePatient.findMany({
           where: { idPatient: { in: ids }, type: { in: ['acces_portail', 'lien_magique'] } },
-          select: { idPatient: true, statut: true, enregistreLe: true },
+          select: { idPatient: true, statut: true, enregistreLe: true, erreurCourte: true },
           orderBy: { enregistreLe: 'asc' },
         }),
         // Entrée effective par lien magique : `consommeLe`, jamais `creeLe` —
@@ -167,6 +168,13 @@ export async function GET(): Promise<NextResponse<NouveauxPatientsApiResponse>> 
     const dernierEnvoi = new Map<string, Date>();
     const dernierStatut = new Map<string, string>();
     for (const c of correspondances) {
+      // UN REFUS DE GARDE N'EST PAS UN ÉCHEC ([[D-398]] §3) : il dit qu'un
+      // accès vient de partir. Le compter comme dernier statut afficherait
+      // « accès en échec » au dossier qu'il protège — et inviterait au renvoi
+      // qu'il refuse. Une réservation en vol ne dit encore rien.
+      if (c.erreurCourte === MOTIFS_GARDE_ENVOI.acces_portail || c.erreurCourte === MARQUE_ENVOI_EN_COURS) {
+        continue;
+      }
       dernierStatut.set(c.idPatient, c.statut);
       if (c.statut === 'Envoye') dernierEnvoi.set(c.idPatient, c.enregistreLe);
     }

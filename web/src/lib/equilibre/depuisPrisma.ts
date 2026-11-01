@@ -173,6 +173,15 @@ export function construireHistoriqueEquilibre(
    * pas. Absent → les mesures se comptent depuis l'ancre, comme avant.
    */
   jourZeroMesures?: Date | null,
+  /**
+   * La règle de nouveauté du cycle courant ([[D-397]]) : seule une remesure
+   * rouvre un jalon (`predicatRemesure` de `momentumDuCycle.ts`), et la valeur
+   * du point se lit à la date de la dernière remesure, comme l'arrivée du
+   * momentum — un état plus tardif mêlerait des passations qui n'en sont pas
+   * (contre-revue Codex, seconde passe). Absente : la règle historique
+   * ci-dessous, que gardent les cycles passés.
+   */
+  estNouveaute?: (reponse: ReponseBrute) => boolean,
 ): LectureDatee[] {
   // Filtre de validité en entrée : la règle de nouveauté (ci-dessous) ne doit
   // pas rouvrir un jalon sur l'arrivée d'une passation invalidée.
@@ -211,7 +220,9 @@ export function construireHistoriqueEquilibre(
     Object.values(BESOIN_SOURCES).flatMap((sources) => sources.map((s) => s.idQuestionnaire))
   );
   const datesReponsesRetenues = reponses
-    .filter((r) => idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
+    .filter((r) =>
+      estNouveaute ? estNouveaute(r) : idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null,
+    )
     .map((r) => r.dateReponse);
 
   const lectures: LectureDatee[] = [];
@@ -219,15 +230,20 @@ export function construireHistoriqueEquilibre(
   for (const dateJalon of datesDesJalons) {
     if (dateJalon > maintenant) continue;
 
-    if (dateDerniereLecture) {
-      const borneBasse = dateDerniereLecture;
-      const nouveaute = datesReponsesRetenues.some(
+    let dateValeur = dateJalon;
+    // Avec la règle du cycle courant, la garde vaut aussi quand l'ancre n'a pas
+    // de lecture scorée : un jalon postérieur ne s'ouvre que sur une remesure,
+    // jamais sur la première passation d'un questionnaire (revue Copilot).
+    const borneBasse = dateDerniereLecture ?? (estNouveaute && dateJalon > dateT0 ? dateT0 : null);
+    if (borneBasse) {
+      const nouvelles = datesReponsesRetenues.filter(
         (date) => date > borneBasse && date <= dateJalon
       );
-      if (!nouveaute) continue;
+      if (nouvelles.length === 0) continue;
+      if (estNouveaute) dateValeur = new Date(Math.max(...nouvelles.map((date) => date.getTime())));
     }
 
-    const reponsesConnues = construireReponsesParQuestionnaire(reponses, dateJalon);
+    const reponsesConnues = construireReponsesParQuestionnaire(reponses, dateValeur);
     const resultat = calculerEquilibre(reponsesConnues);
     if (resultat.scoreGlobal !== null) {
       lectures.push({ date: dateJalon, valeur: resultat.scoreGlobal });

@@ -5,16 +5,20 @@ const {
   verifierAppartenancePatient,
   journaliserCorrespondancePatient,
   rendreGabarit,
+  sendMail,
   prisma,
 } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   verifierAppartenancePatient: vi.fn(),
   journaliserCorrespondancePatient: vi.fn(),
   rendreGabarit: vi.fn(),
+  sendMail: vi.fn(),
   prisma: {
-    assignation: { findUnique: vi.fn() },
+    $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
+    assignation: { findUnique: vi.fn(), findMany: vi.fn() },
     patient: { findUnique: vi.fn() },
-    correspondancePatient: { findMany: vi.fn() },
+    correspondancePatient: { findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
 }));
 
@@ -25,6 +29,7 @@ vi.mock('@/lib/praticien/appartenance', () => ({
   verifierAppartenancePatient,
   emailPraticien: () => 'praticien@wellneuro.fr',
 }));
+vi.mock('@/lib/email/transportSmtp', () => ({ creerTransportSmtp: () => ({ sendMail }) }));
 vi.mock('@/lib/correspondance/patient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/correspondance/patient')>()),
   journaliserCorrespondancePatient,
@@ -37,6 +42,7 @@ vi.mock('@/lib/correspondance/registreGabarits', async (importOriginal) => {
 });
 
 import { POST } from './route';
+import { MARQUE_ENVOI_EN_COURS } from '@/lib/correspondance/reservation';
 
 function requete(corps: unknown): Request {
   return new Request('http://localhost/api/praticien/assignations/relance', {
@@ -52,8 +58,8 @@ describe('/api/praticien/assignations/relance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('WN_RELANCE_QUESTIONNAIRE', 'true');
-    // Sans SMTP, l'envoi TRACE quand même : c'est cette trace que la cadence
-    // relira. Un envoi non tracé rouvrirait la porte à l'appel suivant.
+    // Sans SMTP, la réservation se SOLDE quand même : c'est cette ligne que la
+    // cadence relira — et, « Non envoyé », elle ne la bloque pas ([[D-399]]).
     vi.stubEnv('SMTP_URL', '');
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     verifierAppartenancePatient.mockResolvedValue('ok');
@@ -63,7 +69,19 @@ describe('/api/praticien/assignations/relance', () => {
     prisma.patient.findUnique.mockResolvedValue({
       actif: true, suiviClotureLe: null, email: 'patient@example.test',
     });
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_1', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+    ]);
     prisma.correspondancePatient.findMany.mockResolvedValue([]);
+    // La transaction joue son corps sur le même client : le verrou, la
+    // lecture et la réservation y sont observables dans l'ordre. Le vrai
+    // croisement de deux requêtes est éprouvé sur base réelle
+    // (`correspondance/reservation.pg.test.ts`).
+    prisma.$transaction.mockImplementation(async (corps: (tx: typeof prisma) => unknown) => corps(prisma));
+    prisma.$executeRaw.mockResolvedValue(1);
+    prisma.correspondancePatient.create.mockResolvedValue({ id: 'RES_1' });
+    prisma.correspondancePatient.update.mockResolvedValue({});
+    sendMail.mockResolvedValue({});
   });
 
   // DRAPEAU D'ABORD, et AVANT toute lecture : ce qui s'ouvre est un courrier de
@@ -89,26 +107,92 @@ describe('/api/praticien/assignations/relance', () => {
     expect((await POST(requete({ idAssignation: 'ASS_1' }))).status).toBe(403);
   });
 
-  it('envoie le rappel et le trace, sans rien écrire dans le dossier', async () => {
+  it('réserve le rappel puis le solde, sans rien écrire dans le dossier', async () => {
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, statut: 'Non_envoye' });
-    // LA TRACE PORTE L'ASSIGNATION : c'est par elle que la cadence du prochain
-    // appel distingue ce questionnaire des autres du même dossier.
-    expect(journaliserCorrespondancePatient).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(await res.json()).toMatchObject({ ok: true, statut: 'Non_envoye', questionnaires: 1 });
+    // LA LIGNE PORTE L'ASSIGNATION : c'est par elle que la cadence du prochain
+    // appel distingue ce questionnaire des autres du même dossier. Elle naît
+    // réservée ([[D-398]] §1, Q3), puis se solde — une seule ligne.
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
         idPatient: 'PAT_TEST',
         type: 'relance_questionnaire',
+        objet: 'Rappel — un questionnaire attend toujours',
+        statut: 'Non_envoye',
+        erreurCourte: MARQUE_ENVOI_EN_COURS,
         referenceType: 'assignation',
         referenceId: 'ASS_1',
       }),
-    );
+      select: { id: true },
+    });
+    expect(prisma.correspondancePatient.update).toHaveBeenCalledWith({
+      where: { id: 'RES_1' },
+      data: { statut: 'Non_envoye', erreurCourte: null },
+    });
+    expect(journaliserCorrespondancePatient).not.toHaveBeenCalled();
+  });
+
+  it('le verrou du dossier est pris AVANT la lecture de la cadence', async () => {
+    await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(prisma.$executeRaw.mock.calls[0].slice(1)).toEqual(['envoi_patient:relance_questionnaire:PAT_TEST']);
+    expect(prisma.$executeRaw.mock.invocationCallOrder[0])
+      .toBeLessThan(prisma.correspondancePatient.findMany.mock.invocationCallOrder[0]);
+  });
+
+  it('ne compte que les rappels partis ou en partance ([[D-399]])', async () => {
+    await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(prisma.correspondancePatient.findMany.mock.calls[0][0].where).toMatchObject({
+      OR: [{ statut: 'Envoye' }, { statut: 'Non_envoye', erreurCourte: MARQUE_ENVOI_EN_COURS }],
+    });
+  });
+
+  it('un seul e-mail pour les questionnaires rappelables du dossier ([[D-399]])', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    prisma.assignation.findMany.mockResolvedValueOnce([
+      { idAssignation: 'ASS_1', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_3', statut: 'Complété', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_4', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_5', statut: 'En attente', dateLimite: null },
+    ]);
+    // ASS_4 a été rappelée il y a une heure, par un rappel groupé.
+    prisma.correspondancePatient.findMany.mockResolvedValueOnce([
+      { enregistreLe: new Date(Date.now() - 3600_000), referenceId: 'ASS_9,ASS_4' },
+    ]);
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(await res.json()).toMatchObject({ ok: true, statut: 'Envoye', questionnaires: 2 });
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(sendMail.mock.calls[0][0].subject).toBe('Des questionnaires vous attendent toujours — Wellneuro');
+    expect(prisma.correspondancePatient.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        objet: 'Rappel — des questionnaires attendent toujours',
+        referenceType: 'assignations',
+        referenceId: 'ASS_1,ASS_2',
+      }),
+      select: { id: true },
+    });
+    expect(prisma.correspondancePatient.update).toHaveBeenCalledWith({
+      where: { id: 'RES_1' },
+      data: { statut: 'Envoye', erreurCourte: null },
+    });
+  });
+
+  it('un rappel seul garde son gabarit et son échéance', async () => {
+    vi.stubEnv('SMTP_URL', 'smtp://test');
+    await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(sendMail.mock.calls[0][0].subject).toBe('Un questionnaire vous attend toujours — Wellneuro');
+    expect(sendMail.mock.calls[0][0].text).toContain('À compléter avant le : 2026-01-01');
   });
 
   // [[D-398]] §1 (Q4) : rendu hors du bloc, le gabarit qui lève remontait en
   // 500 sans trace — et la cadence, qui relit les traces, ne le voyait pas.
-  it('un gabarit qui lève : trace « Erreur » avec son motif, et la route le dit', async () => {
+  it('un gabarit qui lève : la réservation est soldée « Erreur » avec son motif', async () => {
     vi.stubEnv('SMTP_URL', 'smtp://test');
     rendreGabarit.mockImplementationOnce(() => {
       throw new Error('gabarit introuvable');
@@ -117,32 +201,32 @@ describe('/api/praticien/assignations/relance', () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, statut: 'Erreur' });
-    expect(journaliserCorrespondancePatient).toHaveBeenCalledTimes(1);
-    const trace = journaliserCorrespondancePatient.mock.calls[0][0];
-    expect(trace).toMatchObject({
-      type: 'relance_questionnaire',
-      statut: 'Erreur',
-      referenceId: 'ASS_1',
-    });
-    expect(String(trace.erreur)).toContain('gabarit introuvable');
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.update).toHaveBeenCalledTimes(1);
+    const { data } = prisma.correspondancePatient.update.mock.calls[0][0];
+    expect(data.statut).toBe('Erreur');
+    expect(String(data.erreurCourte)).toContain('gabarit introuvable');
   });
 
   it('refuse 409 une assignation sans échéance, en le disant', async () => {
     prisma.assignation.findUnique.mockResolvedValueOnce({
       idPatient: 'PAT_TEST', statut: 'En attente', dateLimite: null,
     });
+    prisma.assignation.findMany.mockResolvedValueOnce([
+      { idAssignation: 'ASS_1', statut: 'En attente', dateLimite: null },
+    ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({ ok: false, reason: 'sans_echeance' });
-    expect(journaliserCorrespondancePatient).not.toHaveBeenCalled();
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
   // 429 ET NON 409 : ce n'est pas l'état du dossier qui refuse, c'est le
   // rythme — et l'écran peut dire quand ce sera possible.
   it('refuse 429 sur la cadence, et dit quand le prochain rappel sera possible', async () => {
     prisma.correspondancePatient.findMany.mockResolvedValueOnce([
-      { enregistreLe: new Date() },
+      { enregistreLe: new Date(), referenceId: 'ASS_1' },
     ]);
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
@@ -150,6 +234,29 @@ describe('/api/praticien/assignations/relance', () => {
     const charge = await res.json();
     expect(charge).toMatchObject({ ok: false, reason: 'cadence' });
     expect(typeof charge.possibleLe).toBe('string');
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('la carte cliquée est jugée sur sa lecture sous le verrou : rendue entre-temps, rien ne part', async () => {
+    prisma.assignation.findMany.mockResolvedValueOnce([
+      { idAssignation: 'ASS_1', statut: 'Complété', dateLimite: DEMAIN_DU_RETARD },
+      { idAssignation: 'ASS_2', statut: 'En attente', dateLimite: DEMAIN_DU_RETARD },
+    ]);
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ reason: 'assignation_rendue' });
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('une carte déjà couverte par un rappel groupé reçoit le refus de cadence', async () => {
+    prisma.correspondancePatient.findMany.mockResolvedValueOnce([
+      { enregistreLe: new Date(), referenceId: 'ASS_0,ASS_1' },
+    ]);
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(429);
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 
   it('refuse 409 sur un dossier au suivi clôturé', async () => {
@@ -159,6 +266,15 @@ describe('/api/praticien/assignations/relance', () => {
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(409);
-    expect(journaliserCorrespondancePatient).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuse 409 un dossier sans adresse, sans rien réserver', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({ actif: true, suiviClotureLe: null, email: null });
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ reason: 'sans_email' });
+    expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
   });
 });

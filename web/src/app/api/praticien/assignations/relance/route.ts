@@ -8,13 +8,18 @@ import { isRelanceQuestionnaireEnabled } from '@/lib/patient/featureFlag';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
+import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
 import {
-  journaliserCorrespondancePatient,
-  TYPES_CORRESPONDANCE_PATIENT,
-} from '@/lib/correspondance/patient';
+  FILTRE_ENVOIS_PARTIS,
+  donneesReservation,
+  solderReservation,
+  verrouillerEnvois,
+} from '@/lib/correspondance/reservation';
 import {
   JOURS_ENTRE_RELANCES_ASSIGNATION,
+  SEPARATEUR_ASSIGNATIONS,
   deciderRelanceAssignation,
+  envoisDeLAssignation,
   type RefusRelanceAssignation,
 } from '@/lib/praticien/relanceAssignation';
 
@@ -44,7 +49,8 @@ const LONGUEUR_MAX_ID = 64;
 const TAILLE_CORPS_MAX_OCTETS = 8 * 1024;
 
 export type RelanceAssignationApiResponse =
-  | { ok: true; statut: string }
+  // `questionnaires` : le nombre d'assignations que l'e-mail couvre ([[D-399]]).
+  | { ok: true; statut: string; questionnaires: number }
   | { ok: false; reason: string; error: string; possibleLe?: string };
 
 const MESSAGES_REFUS: Record<RefusRelanceAssignation, string> = {
@@ -124,26 +130,75 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
     }
 
-    // LES RAPPELS DÉJÀ TRACÉS POUR CETTE ASSIGNATION, et eux seuls : la
-    // référence porte l'assignation. Compter tous les rappels du dossier ferait
-    // qu'un questionnaire relancé hier empêcherait d'en rappeler un autre.
-    const envoisPrecedents = await prisma.correspondancePatient.findMany({
-      where: {
-        idPatient: assignation.idPatient,
-        type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire,
-        referenceId: idAssignation,
-      },
-      select: { enregistreLe: true },
+    // LA CADENCE ET LA RÉSERVATION, SOUS LE VERROU DU DOSSIER ([[D-398]] §1,
+    // Q3). Lire les rappels, puis envoyer, laissait deux clics simultanés lire
+    // tous deux un journal vide : la ligne est maintenant RÉSERVÉE dans la
+    // même transaction que la lecture, et la seconde requête la lit.
+    //
+    // UN SEUL E-MAIL POUR LE DOSSIER ([[D-399]]) : le rappel d'une carte
+    // couvre TOUTES les assignations du dossier rappelables à cet instant —
+    // quatre cartes rappelées l'une après l'autre envoyaient quatre e-mails en
+    // cinq secondes. La cadence reste PAR ASSIGNATION : un questionnaire
+    // rappelé hier n'empêche pas d'en rappeler un autre, et une carte déjà
+    // couverte reçoit le refus de cadence.
+    const maintenant = new Date();
+    const issue = await prisma.$transaction(async tx => {
+      await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire}:${assignation.idPatient}`);
+      const assignationsDossier = await tx.assignation.findMany({
+        where: { idPatient: assignation.idPatient },
+        select: { idAssignation: true, statut: true, dateLimite: true },
+        orderBy: { idAssignation: 'asc' },
+      });
+      // LES SEULS RAPPELS PARTIS, ou en partance ([[D-399]]) : un échec, une
+      // messagerie absente n'ont rien dit au patient. Les compter rendait un
+      // 429 au praticien après un échec, alors que rien n'était parti.
+      const envois = await tx.correspondancePatient.findMany({
+        where: {
+          idPatient: assignation.idPatient,
+          type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire,
+          ...FILTRE_ENVOIS_PARTIS,
+        },
+        select: { enregistreLe: true, referenceId: true },
+      });
+      const decider = (a: { idAssignation: string; statut: string; dateLimite: string | null }) =>
+        deciderRelanceAssignation({
+          statut: a.statut,
+          dateLimite: a.dateLimite,
+          envoisPrecedents: envoisDeLAssignation(envois, a.idAssignation),
+          // L'INSTANT EST POSÉ ICI, jamais dans le module.
+          maintenant,
+        });
+
+      // LA CARTE CLIQUÉE, RELUE SOUS LE VERROU : un questionnaire rendu
+      // pendant le clic ne se rappelle pas sur sa lecture d'avant.
+      const cliquee = assignationsDossier.find(a => a.idAssignation === idAssignation)
+        ?? { idAssignation, ...assignation };
+      const decision = decider(cliquee);
+      if (!decision.ok) return { sorte: 'refus', decision } as const;
+      if (!patient?.email) return { sorte: 'sans_email' } as const;
+
+      const couvertes = [
+        idAssignation,
+        ...assignationsDossier
+          .filter(a => a.idAssignation !== idAssignation && decider(a).ok)
+          .map(a => a.idAssignation),
+      ];
+      const groupe = couvertes.length > 1;
+      const { id } = await tx.correspondancePatient.create({
+        data: donneesReservation({
+          idPatient: assignation.idPatient,
+          type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire,
+          objet: groupe ? OBJET_RAPPEL_GROUPE : OBJET_RAPPEL,
+          referenceType: groupe ? 'assignations' : 'assignation',
+          referenceId: couvertes.join(SEPARATEUR_ASSIGNATIONS),
+        }),
+        select: { id: true },
+      });
+      return { sorte: 'reservee', reservation: id, couvertes, email: patient.email } as const;
     });
 
-    const decision = deciderRelanceAssignation({
-      statut: assignation.statut,
-      dateLimite: assignation.dateLimite,
-      envoisPrecedents,
-      // L'INSTANT EST POSÉ ICI, jamais dans le module.
-      maintenant: new Date(),
-    });
-    if (!decision.ok) {
+    if (issue.sorte === 'refus') {
+      const { decision } = issue;
       const statut = decision.raison === 'cadence' ? 429 : 409;
       return echec(
         decision.raison,
@@ -152,48 +207,47 @@ export async function POST(req: Request): Promise<NextResponse<RelanceAssignatio
         decision.possibleLe ?? undefined,
       );
     }
-
-    if (!patient?.email) {
+    if (issue.sorte === 'sans_email') {
       return echec('sans_email', 'Ce dossier ne porte pas d’adresse e-mail.', 409);
     }
 
     const statut = await envoyerRappel(
-      assignation.idPatient,
-      idAssignation,
-      patient.email,
+      issue.reservation,
+      issue.couvertes.length,
+      issue.email,
       assignation.dateLimite,
     );
-    return NextResponse.json<RelanceAssignationApiResponse>({ ok: true, statut }, { status: 200 });
+    return NextResponse.json<RelanceAssignationApiResponse>(
+      { ok: true, statut, questionnaires: issue.couvertes.length },
+      { status: 200 },
+    );
   } catch {
     return echec('server_error', 'Erreur serveur.', 500);
   }
 }
 
+const OBJET_RAPPEL = 'Rappel — un questionnaire attend toujours';
+const OBJET_RAPPEL_GROUPE = 'Rappel — des questionnaires attendent toujours';
+
 /**
- * L'ENVOI TRACE LUI-MÊME — et c'est cette trace que la cadence relira au
- * prochain appel. Un envoi non tracé rouvrirait la porte à l'appel suivant.
+ * L'ENVOI SOLDE SA RÉSERVATION — et c'est cette ligne que la cadence relira au
+ * prochain appel. Une ligne qui ne se solde pas reste marquée, et compte
+ * comme partie : sens prudent.
  *
  * LE GABARIT NE NOMME PAS L'INSTRUMENT (`relance_questionnaire@1`) : un rappel
  * part seul, plusieurs jours après l'invitation, et le titre d'un questionnaire
- * révèle le domaine exploré. Seule l'échéance l'accompagne.
+ * révèle le domaine exploré. Seule l'échéance l'accompagne — sauf au rappel
+ * groupé (`relance_questionnaires@1`), dont les échéances diffèrent.
  */
 async function envoyerRappel(
-  idPatient: string,
-  idAssignation: string,
+  idReservation: string,
+  nombre: number,
   emailPatient: string,
   dateLimite: string | null,
 ): Promise<string> {
-  const trace = {
-    idPatient,
-    type: TYPES_CORRESPONDANCE_PATIENT.relanceQuestionnaire,
-    objet: 'Rappel — un questionnaire attend toujours',
-    referenceType: 'assignation',
-    referenceId: idAssignation,
-  } as const;
-
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) {
-    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    await solderReservation(idReservation, 'Non_envoye');
     return 'Non_envoye';
   }
 
@@ -201,20 +255,22 @@ async function envoyerRappel(
   // dehors, son exception remontait en 500 sans trace — et la cadence, qui
   // relit les traces, ne la voyait pas. Le motif accompagne l'« Erreur ».
   try {
-    const gabarit = rendreGabarit(getGabarit('relance_questionnaire'), {
-      dateInfo: rendreSegment('dateLimite', dateLimite),
-      portalUrl: buildGoogleConnexionUrl(),
-    });
+    const gabarit = nombre > 1
+      ? rendreGabarit(getGabarit('relance_questionnaires'), { portalUrl: buildGoogleConnexionUrl() })
+      : rendreGabarit(getGabarit('relance_questionnaire'), {
+        dateInfo: rendreSegment('dateLimite', dateLimite),
+        portalUrl: buildGoogleConnexionUrl(),
+      });
     await creerTransportSmtp(smtpUrl).sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: emailPatient,
       subject: gabarit.sujet,
       text: gabarit.corps,
     });
-    await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
-    return 'Envoye';
   } catch (erreur) {
-    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
+    await solderReservation(idReservation, 'Erreur', erreur);
     return 'Erreur';
   }
+  await solderReservation(idReservation, 'Envoye');
+  return 'Envoye';
 }

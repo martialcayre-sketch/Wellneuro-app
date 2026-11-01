@@ -24,9 +24,16 @@ import {
   statutJournalDepuisAuditBooklet,
   TYPES_CORRESPONDANCE_PATIENT,
 } from '@/lib/correspondance/patient';
+import {
+  FILTRE_ENVOIS_PARTIS,
+  donneesReservation,
+  verrouillerEnvois,
+} from '@/lib/correspondance/reservation';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/booklet';
+// Objet du premier envoi : la réservation et son solde portent le même.
+const OBJET_ENVOI_BILAN = 'Envoi du bilan neuronutritionnel';
 
 // GET /api/praticien/booklet?idSynthese=SYN...
 // Génère et retourne le HTML du booklet (prévisualisation praticien)
@@ -79,6 +86,22 @@ export async function GET(req: Request) {
     );
 
     const dernierEnvoi = synthese.bookletEnvois[0];
+    // LE JOURNAL AUSSI ([[D-399]] §5) : le POST renvoie à la confirmation du
+    // renvoi sur une ligne partie ou restée marquée, même sans audit (audit
+    // perdu, processus arrêté). Sans elle, la case « Confirmer le renvoi »
+    // manquait à l'écran et le bilan ne pouvait plus partir (revue CodeRabbit
+    // de #1798).
+    const envoiJournal = dernierEnvoi ? null : await prisma.correspondancePatient.findFirst({
+      where: {
+        idPatient: synthese.idPatient,
+        type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+        referenceId: idSynthese,
+        ...FILTRE_ENVOIS_PARTIS,
+      },
+      orderBy: { enregistreLe: 'desc' },
+      select: { enregistreLe: true },
+    });
+    const dejaEnvoye = !!dernierEnvoi || !!envoiJournal;
 
     // Le booklet part au PATIENT. Si la synthèse dont il est tiré précède le
     // retrait d'interprétation, le praticien doit le savoir AVANT d'envoyer,
@@ -100,9 +123,9 @@ export async function GET(req: Request) {
       patientEmail: synthese.emailPatient,
       idPatient: synthese.idPatient,
       dateDocument,
-      dejaEnvoye: !!dernierEnvoi,
-      dernierEnvoiDate: dernierEnvoi?.dateEnvoi?.toISOString() ?? null,
-      dernierEnvoiEmailMasque: dernierEnvoi ? maskEmail(synthese.emailPatient) : null,
+      dejaEnvoye,
+      dernierEnvoiDate: (dernierEnvoi?.dateEnvoi ?? envoiJournal?.enregistreLe)?.toISOString() ?? null,
+      dernierEnvoiEmailMasque: dejaEnvoye ? maskEmail(synthese.emailPatient) : null,
       avertissementMesureRetiree,
     }), requestContext);
   } catch (err) {
@@ -180,7 +203,7 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    if (!forceSend && synthese.bookletEnvois.length > 0) {
+    const demanderConfirmationRenvoi = async () => {
       await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
         'Confirmation_Requise', 'Renvoi', relectureConfirmee, 'Booklet déjà envoyé.');
       return withCorrelationHeader(NextResponse.json({
@@ -192,7 +215,8 @@ export async function POST(req: Request) {
         warning: 'Ce booklet a déjà été envoyé. Cochez « Confirmer le renvoi » pour l’envoyer de nouveau.',
         emailMasque: maskEmail(synthese.emailPatient),
       }), requestContext);
-    }
+    };
+    if (!forceSend && synthese.bookletEnvois.length > 0) return demanderConfirmationRenvoi();
 
     const patient = await prisma.patient.findUnique({ where: { idPatient: synthese.idPatient } });
     const patientNom = patient ? `${patient.prenom} ${patient.nom}` : '';
@@ -266,6 +290,49 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
+    // LE PREMIER ENVOI SE RÉSERVE ([[D-398]] §1, Q3). La lecture du registre,
+    // en tête de requête, ne voyait pas un envoi en vol : deux clics
+    // simultanés sur un bilan jamais envoyé partaient tous les deux. Sous le
+    // verrou du bilan, un envoi parti ou en partance renvoie à la confirmation
+    // du renvoi ; sinon la ligne du journal naît réservée, et le solde
+    // (`logBookletEnvoi`) la reprend. Le renvoi confirmé n'est pas réservé :
+    // c'est un geste explicite, qui part même si un autre vient de partir.
+    let reservation: string | undefined;
+    if (!forceSend) {
+      const reservee = await prisma.$transaction(async tx => {
+        await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
+        // LE JOURNAL EN UNE SEULE LECTURE, parti OU en partance : le solde
+        // d'un envoi concurrent (marquée → `Envoye`) ne prend pas ce verrou,
+        // et deux lectures séparées pouvaient le manquer entre elles (revue
+        // Copilot de #1798). L'audit couvre les envois d'avant le journal.
+        const journal = await tx.correspondancePatient.count({
+          where: {
+            idPatient: synthese.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            referenceId: idSynthese,
+            ...FILTRE_ENVOIS_PARTIS,
+          },
+        });
+        const dejaParti = journal > 0
+          ? journal
+          : await tx.bookletEnvoi.count({ where: { idSynthese, statut: 'Envoye' } });
+        if (dejaParti > 0) return null;
+        const { id } = await tx.correspondancePatient.create({
+          data: donneesReservation({
+            idPatient: synthese.idPatient,
+            type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+            objet: OBJET_ENVOI_BILAN,
+            referenceType: 'synthese',
+            referenceId: idSynthese,
+          }),
+          select: { id: true },
+        });
+        return id;
+      });
+      if (reservee === null) return demanderConfirmationRenvoi();
+      reservation = reservee;
+    }
+
     // Un refus du relais SMTP tombait dans le `catch` général, qui n'écrit
     // qu'un `logger.error` : ni ligne d'audit, ni ligne de journal. Un bilan
     // réellement perdu ne laissait donc AUCUNE trace lisible sur la fiche,
@@ -290,7 +357,7 @@ export async function POST(req: Request) {
     } catch (erreurEnvoi) {
       const detail = erreurEnvoi instanceof Error ? erreurEnvoi.message : String(erreurEnvoi);
       await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
-        'Erreur', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, detail);
+        'Erreur', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, detail, undefined, reservation);
       logger.error({
         event: EVENT_CODES.BOOKLET_SEND_EXCEPTION,
         domain: 'BOOKLET',
@@ -309,7 +376,7 @@ export async function POST(req: Request) {
     // objet. C'est ce que le portail servira.
     await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
       'Envoye', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, '',
-      synthese.notesPraticien);
+      synthese.notesPraticien, reservation);
 
     return withCorrelationHeader(NextResponse.json({ success: true, emailMasque: maskEmail(synthese.emailPatient) }), requestContext);
   } catch (err) {
@@ -337,7 +404,13 @@ async function logBookletEnvoi(
   // garde de cycle de vie) — la page « Mon bilan » du portail sert cet
   // instantané, jamais le champ vivant.
   noteTransmise?: string | null,
+  // La ligne du journal réservée avant le premier envoi : elle est SOLDÉE ici,
+  // jamais doublée d'une seconde — un envoi, une ligne, une clé de source.
+  idReservation?: string,
 ) {
+  // Gardé hors du `try` : si l'audit est créé puis que le solde échoue, le
+  // solde de secours garde sa clé de source (revue CodeRabbit de #1798).
+  let idAudit: string | undefined;
   try {
     const audit = await prisma.bookletEnvoi.create({
       data: {
@@ -351,6 +424,7 @@ async function logBookletEnvoi(
         noteTransmise: noteTransmise?.trim() ? noteTransmise : undefined,
       },
     });
+    idAudit = audit.id;
     // Le journal ne connaît que trois états ; l'audit du booklet en connaît
     // davantage. La traduction est faite par `statutJournalDepuisAuditBooklet`,
     // et une confirmation en attente n'y est PAS une erreur : rien n'est parti,
@@ -359,7 +433,7 @@ async function logBookletEnvoi(
     const objet = operation === 'Renvoi'
       ? 'Renvoi du bilan neuronutritionnel'
       : 'Envoi du bilan neuronutritionnel';
-    await journaliserCorrespondancePatient({
+    const trace = {
       idPatient,
       type: TYPES_CORRESPONDANCE_PATIENT.booklet,
       objet: statut === 'Confirmation_Requise'
@@ -371,6 +445,37 @@ async function logBookletEnvoi(
       sourceType: 'booklet_envoi',
       sourceId: audit.id,
       erreur,
-    });
-  } catch { /* audit non bloquant */ }
+    };
+    if (idReservation) {
+      // Une mise à jour perdue laisse la ligne marquée : le premier envoi de
+      // ce bilan renvoie alors à la confirmation — sens prudent.
+      await prisma.correspondancePatient.update({
+        where: { id: idReservation },
+        data: {
+          objet: trace.objet,
+          statut: trace.statut,
+          sourceType: trace.sourceType,
+          sourceId: trace.sourceId,
+          erreurCourte: erreur ? sanitizeAuditError(erreur).slice(0, 200) : null,
+        },
+      });
+    } else {
+      await journaliserCorrespondancePatient(trace);
+    }
+  } catch {
+    // Audit non bloquant — mais la réservation se SOLDE quand même (revue
+    // PR-Agent de #1798) : restée marquée, elle compterait comme partie et
+    // retiendrait le premier envoi d'un bilan qui n'est peut-être pas parti.
+    // Sans audit, la ligne reste sans clé de source.
+    if (idReservation) {
+      await prisma.correspondancePatient.update({
+        where: { id: idReservation },
+        data: {
+          statut: statutJournalDepuisAuditBooklet(statut),
+          ...(idAudit ? { sourceType: 'booklet_envoi', sourceId: idAudit } : {}),
+          erreurCourte: erreur ? sanitizeAuditError(erreur).slice(0, 200) : null,
+        },
+      }).catch(() => { /* la ligne reste marquée : sens prudent */ });
+    }
+  }
 }

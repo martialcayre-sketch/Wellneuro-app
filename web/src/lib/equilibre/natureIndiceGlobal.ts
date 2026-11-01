@@ -1,3 +1,4 @@
+
 // LA NATURE DU TOTAL DE « MON ÉQUILIBRE », DITE UNE FOIS — [[D-106]], `DC-22`.
 //
 // `DC-22` pose que la question précède le calcul : *existe-t-il une
@@ -105,4 +106,18 @@ export const TENDANCE_INDICE_GLOBAL_PATIENT: Record<'hausse' | 'stable' | 'baiss
   stable: 'Votre indice « Mon équilibre » est stable depuis votre dernier bilan',
   baisse:
     'Des repères ont évolué depuis votre dernier bilan — votre praticien les regarde avec vous',
+};
+
+/**
+ * Pourquoi le portail ne dit pas d'évolution ([[D-397]] §2, §4) — textes P-1 à
+ * P-3, validés mot pour mot par le responsable le 2026-10-31 (§7). Sans
+ * chiffre ; « sans source » ne concerne que les besoins, au cockpit.
+ */
+// Clés de `MotifAbsenceMomentum` (`motifsMomentum.ts`), écrites ici : ce module
+// reste une feuille, sans import (garde `natureIndiceGlobal.guard.test.ts`).
+export const MOTIF_MOMENTUM_PATIENT: Record<'sans_jour_zero' | 'sans_lecture_ancre' | 'sans_remesure', string> = {
+  sans_jour_zero: "L'évolution de votre équilibre sera suivie à partir du début de votre protocole.",
+  sans_lecture_ancre:
+    "L'évolution de votre équilibre ne peut pas être suivie : votre bilan de départ ne contient pas assez de réponses.",
+  sans_remesure: "L'évolution de votre équilibre apparaîtra après vos prochaines réponses aux questionnaires.",
 };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { LectureDatee } from '@/lib/equilibre/types';
+import type { ReponseBrute } from '@/lib/equilibre/depuisPrisma';
+import { calculerMomentumDuCycle } from '@/lib/equilibre/momentumDuCycle';
 import { buildResumeJ21 } from './resumeJ21';
 import type { CheckinReponses, CheckinRow, PointEtape } from './checkinDomain';
 
@@ -34,19 +35,50 @@ describe('buildResumeJ21', () => {
     expect(resume.points.find((p) => p.pointEtape === 'J7')?.reponses).toEqual(reponses);
   });
 
-  it('croise le score via momentum.ts (point de jonction) quand des lectures existent', () => {
-    const dateT0 = new Date('2026-01-01T00:00:00.000Z');
-    const lectures: LectureDatee[] = [
-      { date: dateT0, valeur: 40 },
-      { date: new Date('2026-01-22T00:00:00.000Z'), valeur: 55 }, // ~J21
-    ];
+  // Le score est le momentum du cycle courant, le même calcul que les autres
+  // surfaces ([[D-397]], contre-revue Codex P1-2). Données synthétiques.
+  const JOUR = 24 * 60 * 60 * 1000;
+  const ANCRE = new Date('2026-01-01T09:00:00.000Z');
+  const JOUR_ZERO = new Date('2026-01-03T09:00:00.000Z');
+  const apresZero = (jours: number) => new Date(JOUR_ZERO.getTime() + jours * JOUR);
+  const items = (prefixe: string, ids: number[], valeur: string) =>
+    Object.fromEntries(ids.map((n) => [`${prefixe}${n}`, valeur]));
+  const pss = (date: Date, valeur: string): ReponseBrute => ({
+    idQuestionnaire: 'Q_STR_02',
+    dateReponse: date,
+    scoresJson: { rawAnswers: items('P', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], valeur) },
+    statutValidite: null,
+  });
+  const had = (date: Date, valeur: string): ReponseBrute => ({
+    idQuestionnaire: 'Q_NEU_11',
+    dateReponse: date,
+    scoresJson: { rawAnswers: items('D', [2, 4, 6, 8, 10, 12, 14], valeur) },
+    statutValidite: null,
+  });
+  const momentumDe = (reponses: ReponseBrute[], jourZero: Date | null = JOUR_ZERO) =>
+    calculerMomentumDuCycle({ reponses, ancre: { ancre: 'T0', date: ANCRE }, jourZero, maintenant: apresZero(60) });
+  const avantAncre = new Date(ANCRE.getTime() - 60_000);
 
-    const resume = buildResumeJ21({
-      checkins: [checkin('c1', 'J21', '2026-01-22T00:00:00.000Z')],
-      momentum: { ancre: 'T0', dateAncre: dateT0, lectures },
-    });
+  it('reprend le momentum du cycle courant tel quel, arrivée à la dernière remesure (Q5)', () => {
+    const momentum = momentumDe([pss(avantAncre, '1'), pss(apresZero(21), '2'), pss(apresZero(33), '3')]);
+    if (momentum.statut !== 'disponible') throw new Error('attendu : disponible');
+    expect(momentum.arrivee.date).toEqual(apresZero(33));
+    const resume = buildResumeJ21({ checkins: [checkin('c1', 'J21', '2026-01-24T00:00:00.000Z')], momentum });
+    expect(resume.score).toEqual({ tendance: momentum.tendance, delta: momentum.delta });
+  });
 
-    expect(resume.score).toEqual({ tendance: 'hausse', delta: 15 });
+  it('la première passation d’un questionnaire absent à l’ancre ne donne aucun score', () => {
+    // PSS seul à l'ancre, premier HADS à J15, rien de repassé : l'ancienne
+    // paire ancre → J21 annonçait une baisse ; le calcul commun, aucune.
+    const momentum = momentumDe([pss(avantAncre, '1'), had(apresZero(15), '3')]);
+    expect(momentum).toEqual({ statut: 'absent', motif: 'sans_remesure' });
+    expect(buildResumeJ21({ checkins: [], momentum }).score).toBeNull();
+  });
+
+  it('sans jour 0, aucun score : le repli sur l’ancre est supprimé ([[D-397]] §2)', () => {
+    const momentum = momentumDe([pss(avantAncre, '1'), pss(apresZero(21), '3')], null);
+    expect(momentum).toEqual({ statut: 'absent', motif: 'sans_jour_zero' });
+    expect(buildResumeJ21({ checkins: [checkin('c1', 'J21', '2026-01-22T00:00:00.000Z')], momentum }).score).toBeNull();
   });
 
   it('retient la correction (tête de chaîne) d’un point d’étape', () => {

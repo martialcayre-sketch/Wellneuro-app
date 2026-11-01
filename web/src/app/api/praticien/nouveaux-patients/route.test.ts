@@ -104,6 +104,26 @@ describe('GET /api/praticien/nouveaux-patients', () => {
     expect(ligne.etape).toBe('acces_non_envoye');
   });
 
+  // [[D-398]] §3 : le refus de la garde d'une heure dit qu'un accès VIENT de
+  // partir. Lu comme dernier statut, il afficherait « accès en échec » au
+  // dossier même qu'il protège — et inviterait au renvoi qu'il refuse.
+  it('un refus de garde, ou une réservation en vol, ne remet pas le dossier en échec', async () => {
+    prisma.correspondancePatient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_1', statut: 'Envoye', enregistreLe: new Date('2026-09-01T08:01:00.000Z'), erreurCourte: null },
+      {
+        idPatient: 'PAT_1', statut: 'Non_envoye', enregistreLe: new Date('2026-09-01T08:02:00.000Z'),
+        erreurCourte: 'garde : un e-mail d’accès par heure',
+      },
+      {
+        idPatient: 'PAT_1', statut: 'Non_envoye', enregistreLe: new Date('2026-09-01T08:03:00.000Z'),
+        erreurCourte: 'réservé : envoi en cours',
+      },
+    ]);
+    const [ligne] = await lignes();
+    expect(ligne.accesEnEchec).toBe(false);
+    expect(ligne.etape).toBe('jamais_connecte');
+  });
+
   it('compte les DEUX e-mails d’ouverture d’accès, et dans l’ordre chronologique', async () => {
     // LE BANC QUI TIENT LE CORRECTIF, ET LE SEUL QUI PUISSE LE TENIR. Le double
     // de `prisma` rend ce qu'on lui a posé sans regarder ni le `where` ni
