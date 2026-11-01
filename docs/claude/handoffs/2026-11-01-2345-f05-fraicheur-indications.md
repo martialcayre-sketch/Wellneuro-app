@@ -45,6 +45,11 @@ vingt-neuf claims épinglés par `indicationsBiologieV1.ts`, signée le
 - Négatif joué sur Postgres local :
   - fichier sain vert, 15 formes détectées ;
   - mutant qui exempte `indications_biologie` : rouge sur `N15`.
+- Revue Copilot de #1820 : `N10` mutait `WN-CL-0320-003`, que la table des
+  indications épingle aussi, sans exiger le nom de sa table. Une exemption de
+  `conduites` passait donc. Corrigé : `N7` à `N11` exigent le nom de leur
+  table. Neuf mutants, un par table de `N7` à `N15`, rougissent chacun sur son
+  propre cas.
 - Vitest : garde de fraîcheur et garde de la table des indications, 21 verts.
 - T1 complet et revue : voir la PR.
 

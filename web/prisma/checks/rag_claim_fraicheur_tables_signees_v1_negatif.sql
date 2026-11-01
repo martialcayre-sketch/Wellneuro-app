@@ -1229,7 +1229,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0238-002' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0238-002' in msg) = 0 OR position('[contradictions]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N7: la ligne contradictions n''est gardee par rien — %', msg;
   END IF;
 
@@ -1252,7 +1252,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0051-033' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0051-033' in msg) = 0 OR position('[arret]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N8: la ligne arret n''est gardee par rien — %', msg;
   END IF;
 
@@ -1273,7 +1273,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0025-016' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0025-016' in msg) = 0 OR position('[priorites]' in msg) = 0 OR position('active = false' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N9: la ligne priorites n''est gardee par rien — %', msg;
   END IF;
 
@@ -1292,6 +1292,12 @@ BEGIN
   --
   -- Le claim muté est `WN-CL-0320-003`, celui qui fonde à la fois l'indication
   -- et la conduite de la seule ligne signée : sa disparition doit fermer.
+  --
+  -- LE NOM DE LA TABLE EST EXIGÉ depuis le 2026-11-01 ([[D-419]]) : la table
+  -- des indications de biologie épingle aussi `WN-CL-0320-003`, et un prédicat
+  -- exemptant `conduites` levait encore — pour l'autre table, avec le même
+  -- identifiant et le même motif (revue Copilot de #1820). `N7` à `N11`
+  -- exigent désormais tous le nom de leur table, comme `N12` à `N15`.
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims
@@ -1300,7 +1306,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0320-003' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0320-003' in msg) = 0 OR position('[conduites]' in msg) = 0 OR position('statut REJETE' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N10: la ligne conduites n''est gardee par rien — %', msg;
   END IF;
 
@@ -1336,7 +1342,7 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0387-013' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0387-013' in msg) = 0 OR position('[conflits_sources]' in msg) = 0 OR position('remplacé (superseded_at)' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N11: la ligne conflits_sources n''est gardee par rien — %', msg;
   END IF;
 
