@@ -100,6 +100,13 @@ export type CarteFil = {
    * appel d'écriture du FORMAT d'une clé de refus, dont ce n'est pas le rôle.
    */
   idAssignation?: string;
+  /**
+   * `assignations.statut_reponses`, tel que la base le porte —
+   * `assignation_en_retard` SEULEMENT ([[D-414]] §1). Il choisit le geste de
+   * la carte : passé l'échéance, seul un questionnaire déverrouillé se
+   * rappelle (`deciderRelanceAssignation`) ; les autres se débloquent d'abord.
+   */
+  statutReponses?: string;
 };
 
 /**
@@ -138,6 +145,7 @@ export type AssignationRow = {
   titre: string;
   dateLimite: string | null;
   statut: string;
+  statutReponses: string;
 };
 export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
 /**
@@ -920,6 +928,11 @@ export function cartesAssignationsEnRetard(
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
         idAssignation: a.idAssignation,
+        // UNE ANNULÉE NE SE DÉBLOQUE PAS ([[D-414]] §1) : le portail l'ignore
+        // même déverrouillée, et le déblocage dirait un succès qui ne rouvre
+        // rien. Sans statut, la carte garde « Rappeler », que le serveur
+        // refuse (`assignation_annulee`) sans rien écrire — comme avant.
+        statutReponses: a.statut === 'Annulée' ? undefined : a.statutReponses,
       };
     });
 }

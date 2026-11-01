@@ -121,7 +121,14 @@ export function deciderRelanceAssignation(
   // DÉPASSÉE = LE JOUR D'APRÈS, jamais « l'instant d'après minuit le jour
   // même » : la date annonce une journée entière au patient, et le relancer à
   // 00 h 01 du jour dit lui reprocherait un retard qu'il n'a pas encore.
-  const depasseeLe = new Date(limite.getTime() + MS_PAR_JOUR);
+  //
+  // LE LENDEMAIN PAR LE CALENDRIER, PAS MINUIT + 24 H ([[D-414]] §2) : le jour
+  // du passage à l'heure d'hiver dure 25 h, et minuit + 24 h tombait à 23 h le
+  // jour dit — une heure avant que le portail ne dise « Expiré »
+  // (`isDeadlineExpired`, 23:59:59.999 locale). Le lendemain minuit local est
+  // l'instant qui suit cette borne.
+  const depasseeLe = new Date(limite);
+  depasseeLe.setDate(depasseeLe.getDate() + 1);
   if (entree.maintenant.getTime() < depasseeLe.getTime()) {
     return { ok: false, raison: 'echeance_non_depassee', possibleLe: depasseeLe };
   }
