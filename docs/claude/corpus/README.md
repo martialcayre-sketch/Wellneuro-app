@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 554 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 557 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 47 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 50 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -19,7 +19,10 @@ par le responsable pour les besoins 6, 8, 11 et 12, `WN-SRC-0567` à `0570` ;
 besoin 2, magnésium : un avis du comité scientifique de l'alimentation, un
 résumé des caractéristiques du produit et une fiche du NIH, `WN-SRC-0571` à
 `0573`, les lignes du magnésium de la DGCCRF et de l'annexe XIII étant lues dans
-`0521` et `0524`),
+`0521` et `0524` ; porte 4 (D-403) : deux recommandations de pratique sur le
+sommeil, sources de contexte de deux bornes déclarées techniques, et les
+repères de consommation de l'Assurance Maladie, `WN-SRC-0574` à `0576`, sans
+extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
