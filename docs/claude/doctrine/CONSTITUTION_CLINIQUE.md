@@ -175,7 +175,7 @@ deuxième rideau ; il ne conclut rien.
 exécutable :** indication, conditions d'entrée, dose éventuelle, durée,
 population, contre-indications, interactions, niveau de preuve, source, rôle du
 praticien.
-*Proposition — **Orpheline**. Le LOT-05 de la chaîne T0 la portait, ce lot est
+*Proposition — orpheline jusqu'au 2026-11-01 (voir l'amendement ci-dessous). Le LOT-05 de la chaîne T0 la portait, ce lot est
 livré ; le registre d'interventions compte 95 entrées et ne porte **aucun** des
 neuf champs exigés, sa facette `interactions` est inerte depuis le 2026-08-01.
 Seules les **exclusions** (`neCouvrePas`, `null` sur les 95) ont un véhicule :
@@ -191,6 +191,10 @@ seuls consommateurs sont un script de vérification, qui ne lit même pas ce
 champ, et un commentaire. Le LOT-05 a livré le MÉCANISME de gate et son aveu de
 non-curation ; les exclusions elles-mêmes restent **sans porteur**, comme les
 huit autres champs, et il leur faut d'abord un objet d'intervention exécutable.*
+
+*Amendée par [[D-400]] §2 (2026-11-01) : sa part hors exclusions est
+**reprise**, porteur BP-12a (fiches d'usage). Un porteur nommé n'arme rien
+tant que son lot n'est pas livré.*
 
 **DC-12 — Un claim de sécurité prime sur tous les autres et peut inhiber une
 proposition** issue de plusieurs claims favorables. Red flag médical,
@@ -619,11 +623,15 @@ pèse : pertinence clinique × information nouvelle attendue × capacité à
 départager les hypothèses × impact sur la prise en charge ÷ charge patient.
 Jamais « même thème donc on l'envoie », mais « cela changera-t-il ce que nous
 ferons ensuite ? ».
-*Proposition — **Orpheline**. Les LOT-01 et LOT-03 de la chaîne T0 la
+*Proposition — orpheline jusqu'au 2026-11-01 (voir l'amendement ci-dessous). Les LOT-01 et LOT-03 de la chaîne T0 la
 portaient, les deux sont livrés ; aucune pondération « information nouvelle
 attendue ÷ charge patient » n'existe au dépôt (zéro occurrence du
 vocabulaire). Seule la moitié négative — ne pas re-proposer — est livrée, et
 elle relève de `DC-37`. Aucune des trois preuves, aucun véhicule.*
+
+*Amendée par [[D-400]] §2 (2026-11-01) : **reprise**, porteur un lot neuf du
+moteur d'orientation (`orientationEngine.ts`, file A, à cadrer).
+Un porteur nommé n'arme rien tant que son lot n'est pas livré.*
 
 **DC-37 — Un questionnaire redondant ne s'assigne pas.** Si deux instruments
 mesurent pratiquement le même signal, le moteur justifie l'utilité du second
@@ -843,7 +851,7 @@ rouvert par cette reprise.*
 **DC-45 — Trois niveaux de mesure, jamais présentés au même degré de
 certitude.** `A` mesure standard ou conventionnelle · `B` exploration
 fonctionnelle · `C` marqueur expérimental ou débattu.
-*Proposition — **Orpheline**. Le LOT-06 de la chaîne T0 la portait et il est
+*Proposition — orpheline jusqu'au 2026-11-01 (voir l'amendement ci-dessous). Le LOT-06 de la chaîne T0 la portait et il est
 livré : le catalogue est peuplé (47 analytes, 15 panels) et ses surfaces sont
 branchées, mais la taxonomie A/B/C de **niveaux de mesure** n'existe nulle
 part. **Homonymie à ne pas confondre** : les lettres A/B/C de cette règle
@@ -854,7 +862,11 @@ porte un `CHECK` A-D de **niveau de preuve** — deux vocabulaires différents.*
 sans fusion sur la nomenclature unique de BIO-PARCOURS (nature du lien, usage
 décisionnel, statut d'usage). Un troisième vocabulaire s'ajoute donc aux deux
 ci-dessus ; aucune lettre partagée n'a le même sens. Aucun lot ne porte la
-taxonomie A/B/C : la règle **reste orpheline** ([[D-266]] §7).*
+taxonomie A/B/C : la règle **est restée orpheline** jusqu'au 2026-11-01 ([[D-266]] §7).*
+
+*Amendée par [[D-400]] §2 (2026-11-01) : **reprise**, porteur BP-12a (fiches
+d'usage), sur la nomenclature unique de [[D-266]] §3. Un porteur nommé
+n'arme rien tant que son lot n'est pas livré.*
 
 **DC-46 — Une valeur de laboratoire ne s'interprète pas isolément.** Unités,
 référence du laboratoire, sexe et âge lorsque pertinent, contexte, traitements,
@@ -1169,6 +1181,11 @@ banc qui tourne dans la suite du CI, un statut basculé :
   règle nomme son porteur. Restent orphelines et à la campagne dédiée : la
   part de `DC-11` hors exclusions, `DC-36` et `DC-45`. Recompte au grep le
   2026-10-04 : **5** occurrences du marqueur, dont deux en en-tête.
+  **Amendé par [[D-400]] §2 (2026-11-01)** : les trois dernières reçoivent un
+  porteur — BP-12a pour la part de `DC-11` hors exclusions et pour `DC-45`,
+  un lot neuf du moteur d'orientation pour `DC-36`. Aucune règle ne reste
+  orpheline ; la campagne dédiée de [[D-107]] n'a plus d'objet. Recompte au
+  grep le 2026-11-01 : **2** occurrences du marqueur, toutes deux en en-tête.
 - **`DC-50`**, **`DC-51`** : **renvoyées** à la campagne
   `2026-08-10-chaine-alimentaire`, qui est leur matière. Un renvoi est un
   routage, pas une fermeture.
