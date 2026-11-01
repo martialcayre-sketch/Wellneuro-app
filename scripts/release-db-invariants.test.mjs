@@ -435,7 +435,7 @@ test('le job release est borné dans le temps', () => {
 // chaque chemin ajouté fait proposer une release, donc demande une approbation
 // humaine, à chaque push qui le touche. D-389 §5 l'a élargi une seconde fois, au
 // FICHIER de la table signée des indications de biologie, pas à son dossier.
-test('le déclencheur automatique est borné à main et aux trois chemins décidés', () => {
+test('le déclencheur automatique est borné à main et aux cinq chemins décidés', () => {
   const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
   assert.ok(bloc, 'section `on:` introuvable');
   const declencheurs = bloc[1];
@@ -461,8 +461,21 @@ test('le déclencheur automatique est borné à main et aux trois chemins décid
     /^ {6}- 'web\/src\/lib\/biology-library\/indicationsBiologieV1\.ts'\s*$/m,
     'le filtre `paths` doit viser le fichier de la table signée des indications (D-389 §5), sans quoi sa re-signature se déploie sans approbation',
   );
+  // D-416 : la structure signée des fiches d'usage et le contrat positif de
+  // fraîcheur, fichiers exacts eux aussi — ni `fiches-usage/`, qui recevra les
+  // textes, ni `web/prisma/checks/`, où vit le négatif joué en CI.
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/src\/lib\/fiches-usage\/ficheUsageBesoin2V1\.ts'\s*$/m,
+    'le filtre `paths` doit viser le fichier de la structure signée des fiches d’usage (D-416)',
+  );
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/prisma\/checks\/rag_claim_fraicheur_tables_signees_v1\.sql'\s*$/m,
+    'le filtre `paths` doit viser le contrat positif de fraîcheur (D-416), sans quoi un prédicat retouché part sans être rejoué',
+  );
   const chemins = declencheurs.match(/^ {6}- '.*'$/gm) ?? [];
-  assert.equal(chemins.length, 3, `trois chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
+  assert.equal(chemins.length, 5, `cinq chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
 });
 
 // Le commentaire de la section `on:` explique au relecteur ce que le filtre laisse
@@ -480,7 +493,7 @@ test('le commentaire du déclencheur nomme le chemin réellement filtré', () =>
   // apparie la backtick fermante d'une citation avec l'ouvrante de la suivante et
   // capture la prose qui les sépare. Première rédaction de ce banc, et il rougissait
   // sur un fichier sain.
-  // Depuis D-389 §5 le filtre porte TROIS chemins : une citation doit être l'un
+  // Depuis D-416 le filtre porte CINQ chemins : une citation doit être l'un
   // d'eux, pas « le » chemin. Un commentaire qui citerait un glob voisin mais
   // faux — `migrations/**` pour `web/prisma/migrations/**` — enseignerait le
   // faux à la seule personne qui relira ce fichier avant d'approuver une

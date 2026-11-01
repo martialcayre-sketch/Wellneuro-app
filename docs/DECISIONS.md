@@ -75,6 +75,59 @@ relecture), avant la re-signature de B9 et B12. Fiches F05 et F11 : fragments
 de journal. Constitution : `DC-11` et le paragraphe des statuts orphelins
 nomment les deux porteurs.
 
+### D-416 — La structure signée des fiches d'usage et le contrat positif de fraîcheur deviennent des chemins déclencheurs de la release-db, sur le patron de D-389 §5 (amende D-044)
+
+- Date : 2026-11-01
+- Statut : accepté — trois arbitrages du responsable du 2026-11-01 soir, sur
+  questions à options, après le constat de la release de #1806 (portée des
+  chemins, forme de la décision, livraison en deux PR).
+- Domaine : `.github/workflows/release-db.yml` (`paths`, résumé pour
+  l'approbateur, comparaison de la tête dépassante) ;
+  `scripts/wn-deploiement-deployer.mjs` (`CHEMINS_RELEASE_DB`) et, par lui,
+  les chemins gelés de `scripts/wn-sonde-release-db.mjs` ([[D-374]]) ; leurs
+  bancs.
+- **Amende** [[D-044]] (portée de la retenue) ; **étend** [[D-389]] §5 à deux
+  fichiers.
+- **Ne touche pas** : la structure signée de [[D-401]], ni son empreinte ni
+  sa signature ; le contrat de fraîcheur lui-même (paires et prédicat
+  inchangés) ; le fichier négatif, qui ne tourne qu'en CI ; aucune migration.
+- Contexte : la revue `wn-reviewer` de #1806 a relevé que la release de F05
+  n'était retenue que parce que le lot touchait aussi un banc sous
+  `web/src/lib/clinical/`. La re-signature suivante de la structure (B9/B12,
+  puis iode et sélénium) ajoutera des claims dans
+  `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` et dans le contrat, sans
+  toucher `clinical/` : elle se serait déployée sans que le préflight rejoue
+  ses paires contre la production. Le trou de retenue est celui que
+  [[D-389]] §5 a fermé pour `indicationsBiologieV1.ts` (motif : la retenue
+  promise par [[D-382]] §6 ; cette table n'a pas de paires au contrat de
+  fraîcheur). Un prédicat retouché seul dans le contrat serait parti de même,
+  sans être rejoué avant la release suivante.
+
+**§1 — Les deux chemins.** `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`
+et `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` s'ajoutent
+aux chemins déclencheurs de `release-db.yml` et à `CHEMINS_RELEASE_DB` du
+déployeur. Des fichiers, pas des dossiers : `fiches-usage/` recevra les
+textes des fiches et leurs outils, dont le merge ne doit pas attendre une
+approbation ; `web/prisma/checks/` porte des contrats qui ne tournent qu'en
+CI, dont le négatif.
+
+**§2 — Ce que voit l'approbateur.** Le résumé du run nomme chaque table
+signée hors de `clinical/` et le contrat quand le push les modifie ; la
+comparaison de la tête dépassante les compte comme une migration (refus en
+`workflow_dispatch`, run obsolète en `push`), comme la table des indications.
+
+**§3 — Hors de cette décision.** `biology-library/import/resolverLibellesV1.ts`,
+la dernière table signée hors de `clinical/`, n'épingle aucun claim : le
+préflight de fraîcheur ne la concerne pas, et elle reste hors des chemins.
+Une table signée neuve hors de `clinical/` qui épingle des claims entre aux
+chemins avec ses paires.
+
+**Écarté.** Le dossier `fiches-usage/**` : il retiendrait chaque texte et
+chaque outil des fiches jusqu'à une approbation. Le fichier seul, sans le
+contrat : le banc de parité empêche d'en changer les paires seul, pas d'en
+retoucher le prédicat. Un paragraphe ajouté à [[D-401]] : il retouchait une
+décision mergée qui porte une signature.
+
 ### D-415 — Fiches conseils, thème « respiration et apaisement » : le responsable propriétaire et seul signataire ; exercices respiratoires et d'apaisement corporel de la Fiche MY « Gestion du stress » et vidéos transcrites ; précautions par recherche, avant toute ouverture (lettre ah, m23)
 
 - Date : 2026-11-01

@@ -25,14 +25,18 @@ on:
   # automatique EST un `migrate-only` ; le mode `import-cb` exige EN PLUS
   # `github.event_name == 'workflow_dispatch'` — et il est refusé (hors
   # service) tant qu'il n'est pas réécrit pour Scalingo.
-  # Le filtre `paths` voit TROIS chemins, et trois seulement :
+  # Le filtre `paths` voit CINQ chemins, et cinq seulement :
   # `web/prisma/migrations/**`, seul chemin légitime d'une migration (doctrine
   # « registre canonique ») ; `web/src/lib/clinical/**` depuis D-044, pour que
   # les contrats de lecture soient rejoués sur la production quand une table de
   # règles signée change ; et, depuis D-389 §5, le FICHIER de la table signée
   # des indications de biologie,
   # `web/src/lib/biology-library/indicationsBiologieV1.ts` — le fichier seul,
-  # pas son dossier, qui porte aussi des services et des écrans. Détail :
+  # pas son dossier, qui porte aussi des services et des écrans ; et, depuis
+  # D-416, sur le même patron, le FICHIER de la structure signée des fiches
+  # d'usage (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`) et le contrat
+  # positif de fraîcheur que rejoue le préflight
+  # (`web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql`). Détail :
   # docs/adr/2026-08-07-commentaires-workflows.md.
   push:
     branches: [main]
@@ -44,6 +48,12 @@ on:
       # D-389 §5 — la table signée des indications vit hors de `clinical/` :
       # sa re-signature passe par une release approuvée (D-382 §6).
       - 'web/src/lib/biology-library/indicationsBiologieV1.ts'
+      # D-416 — la structure signée des fiches d'usage vit hors de `clinical/`,
+      # et le contrat de fraîcheur hors de `web/src` : une re-signature qui
+      # ajoute des claims, ou un prédicat retouché, part par une release
+      # approuvée dont le préflight rejoue le contrat contre la production.
+      - 'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts'
+      - 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql'
 
   workflow_dispatch:
     inputs:
@@ -170,9 +180,9 @@ jobs:
             echo
             if [ "$EVENEMENT" = "push" ]; then
               echo "Déclenchement **automatique** : une migration, une table de règles"
-              echo "cliniques (\`web/src/lib/clinical/**\`, [[D-044]]) OU la table signée des"
-              echo "indications de biologie (\`web/src/lib/biology-library/indicationsBiologieV1.ts\`,"
-              echo "[[D-389]] §5) est arrivée sur \`main\`."
+              echo "cliniques (\`web/src/lib/clinical/**\`, [[D-044]]), une table signée hors de"
+              echo "\`clinical/\` ([[D-389]] §5, [[D-416]]) OU le contrat de fraîcheur des claims"
+              echo "([[D-416]]) est arrivé sur \`main\`."
               echo "Un push clinique SANS migration déclenche aussi cette proposition : le"
               echo "préflight de fraîcheur des claims n'a de sens que contre la production."
               echo "Portée : \`migrate-only\` (l'import NABM reste manuel)."
@@ -269,8 +279,9 @@ jobs:
                 # AVEC LA BORNE, CETTE PHRASE DIT BEAUCOUP PLUS : rien n'est en
                 # attente, reliquat compris.
                 echo "_Aucune migration AJOUTÉE depuis la dernière release réussie."
-                echo "Ce run est alors un push clinique ou de la table signée seul ([[D-044]],"
-                echo "[[D-389]] §5) : les préflights et les contrats de lecture sont rejoués"
+                echo "Ce run est alors un push clinique, d'une table signée ou du contrat de"
+                echo "fraîcheur seul ([[D-044]], [[D-389]] §5, [[D-416]]) : les préflights et les"
+                echo "contrats de lecture sont rejoués"
                 echo "contre la production._"
                 echo
                 # LE TROU DE CETTE PHRASE, DIT PLUTÔT QUE TU : le filtre écarte les
@@ -283,8 +294,9 @@ jobs:
                 echo "> liste, par construction. \`migrate deploy\` refuserait alors sur la"
                 echo "> dérive — sans écrire."
               else
-                echo "_Aucune migration ajoutée par ce push — push clinique ou de la table"
-                echo "signée seul ([[D-044]], [[D-389]] §5), suppression seule, ou"
+                echo "_Aucune migration ajoutée par ce push — push clinique, d'une table"
+                echo "signée ou du contrat de fraîcheur seul ([[D-044]], [[D-389]] §5,"
+                echo "[[D-416]]), suppression seule, ou"
                 echo "\`migration_lock.toml\` seul. Rien"
                 echo "de neuf à appliquer de ce fait ; un reliquat antérieur peut"
                 echo "néanmoins partir (voir l'avertissement)._"
@@ -294,21 +306,26 @@ jobs:
               echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
               echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
             fi
-            # D-389 §5 : la table signée des indications n'est pas une migration,
-            # et la liste ci-dessus ne peut pas la nommer. Elle se signale à part,
-            # sur la même plage : l'approbation doit savoir qu'elle la juge (revue
+            # D-389 §5, D-416 : les tables signées hors de `clinical/` et le
+            # contrat de fraîcheur ne sont pas des migrations, et la liste
+            # ci-dessus ne peut pas les nommer. Ils se signalent à part, sur la
+            # même plage : l'approbation doit savoir qu'elle les juge (revue
             # CodeRabbit de #1744). Même isolement du statut que plus haut.
-            if TABLE=$(git diff --name-only "$PLAGE" -- web/src/lib/biology-library/indicationsBiologieV1.ts); then
-              if [ -n "$TABLE" ]; then
+            if SIGNES=$(git diff --name-only "$PLAGE" -- \
+                web/src/lib/biology-library/indicationsBiologieV1.ts \
+                web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts \
+                web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql); then
+              if [ -n "$SIGNES" ]; then
                 echo
-                echo "### Table signée modifiée ([[D-389]] §5)"
+                echo "### Table signée ou contrat de fraîcheur modifié ([[D-389]] §5, [[D-416]])"
                 echo
-                echo "- \`web/src/lib/biology-library/indicationsBiologieV1.ts\` : la table"
-                echo "  part avec cette approbation."
+                for FICHIER in $SIGNES; do
+                  echo "- \`$FICHIER\` : part avec cette approbation."
+                done
               fi
             else
               echo
-              echo "**Le diff de la table signée a échoué** — regarder le push à la main."
+              echo "**Le diff des tables signées a échoué** — regarder le push à la main."
             fi
             echo
             echo "### Avant d'approuver"
@@ -649,13 +666,15 @@ jobs:
               echo "   ne dit plus rien de ce que déploierait la branche. Aucune écriture." >&2
               exit 1
             fi
-            # D-389 §5 : la table signée des indications, hors de `clinical/`,
-            # compte aussi comme une migration.
-            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/clinical/ web/src/lib/biology-library/indicationsBiologieV1.ts; then
+            # D-389 §5, D-416 : les tables signées hors de `clinical/` et le
+            # contrat de fraîcheur comptent aussi comme une migration. Une seule
+            # ligne : un banc la compare à `CHEMINS_RELEASE_DB`.
+            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/clinical/ web/src/lib/biology-library/indicationsBiologieV1.ts web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql; then
               if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
                 echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
                 echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles, un" >&2
-                echo "   changement clinique nouveau ou une table signée modifiée." >&2
+                echo "   changement clinique nouveau, une table signée modifiée ou le" >&2
+                echo "   contrat de fraîcheur modifié." >&2
                 echo "   Ce run push est désormais obsolète : un run plus récent sur main" >&2
                 echo "   porte déjà cette nouvelle tête et doit être approuvé à sa place." >&2
                 echo "   Aucune écriture n'a eu lieu dans ce run." >&2
@@ -663,7 +682,8 @@ jobs:
               fi
               echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
               echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles, un changement" >&2
-              echo "   clinique nouveau ou une table signée modifiée : déployer la branche" >&2
+              echo "   clinique nouveau, une table signée modifiée ou le contrat de" >&2
+              echo "   fraîcheur modifié : déployer la branche" >&2
               echo "   déploierait ce que personne n'a approuvé." >&2
               echo "   Rejeter ce run, puis relancer release-db en workflow_dispatch" >&2
               echo "   sur main, dont la tête sera alors le commit jugé. Aucune écriture." >&2
