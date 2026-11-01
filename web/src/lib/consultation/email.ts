@@ -42,14 +42,16 @@ async function envoyerAccesTrace({
   type,
   objet,
   envoyer,
+  gardeDepuis,
 }: {
   idPatient?: string;
   type: TypeCorrespondancePatient;
   objet: string;
   envoyer: () => Promise<unknown>;
+  gardeDepuis?: Date;
 }): Promise<StatutEnvoiAcces> {
   if (idPatient && estSousGarde(type)) {
-    return envoyerSousGarde({ idPatient, type, objet, envoyer });
+    return envoyerSousGarde({ idPatient, type, objet, envoyer, gardeDepuis });
   }
   if (!process.env.SMTP_URL) {
     if (idPatient) {
@@ -89,13 +91,15 @@ async function envoyerSousGarde({
   type,
   objet,
   envoyer,
+  gardeDepuis,
 }: {
   idPatient: string;
   type: TypeSousGarde;
   objet: string;
   envoyer: () => Promise<unknown>;
+  gardeDepuis?: Date;
 }): Promise<StatutEnvoiAcces> {
-  const reservation = await reserverSousGarde({ idPatient, type, objet });
+  const reservation = await reserverSousGarde({ idPatient, type, objet }, new Date(), gardeDepuis);
   if (reservation.refusee) return 'Refuse_garde';
   if (!process.env.SMTP_URL) {
     await solderReservation(reservation.id, 'Non_envoye');
@@ -211,6 +215,10 @@ export async function sendPortailLinkEmail(
    * même sujet, même type journalisé. C'est ce qui rend le lot inerte drapeau
    * éteint — le seul état où le lien mènerait à un 404 nu. */
   lienMagique?: string,
+  /** Rétablissement d'accès confirmé ([[D-404]]) : l'instant de la
+   * révocation levée. La garde d'une heure ne compte que les e-mails partis
+   * depuis. Absent partout ailleurs, où la garde tient. */
+  revoqueLe?: Date,
 ): Promise<StatutEnvoiAcces> {
   const smtpUrl = process.env.SMTP_URL;
   const connexion = buildGoogleConnexionUrl();
@@ -218,6 +226,7 @@ export async function sendPortailLinkEmail(
     idPatient,
     type: TYPES_CORRESPONDANCE_PATIENT.accesPortail,
     objet: 'Accès à l’espace patient',
+    gardeDepuis: revoqueLe,
     envoyer: async () => {
       if (!smtpUrl) return;
       const transport = creerTransportSmtp(smtpUrl);

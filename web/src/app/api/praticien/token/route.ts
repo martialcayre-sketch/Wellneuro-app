@@ -147,6 +147,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
     // patient, on lève la révocation (LOT-04 — plus de jeton à créer). « lien »
     // (copie) est en lecture seule : il renvoie l'URL de connexion sans rien
     // réactiver ni écrire.
+    let revoqueLe: Date | undefined;
     if (action !== 'lien' && patient.accessTokenRevoked) {
       // PLUS EN SILENCE : même refus et même mot qu'`api/praticien/
       // consultations`. Le praticien peut toujours lever sa révocation par ce
@@ -163,7 +164,23 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
           { status: 409 }
         );
       }
-      await prisma.patient.update({ where: { idPatient }, data: { accessTokenRevoked: false } });
+      // LE RÉTABLISSEMENT PASSE LA GARDE D'UNE HEURE ([[D-404]]) : l'e-mail
+      // d'accès parti avant la révocation porte un lien mort ([[D-128]]), et
+      // le patient resterait devant la page de connexion. La garde ne compte
+      // alors que les e-mails partis DEPUIS LA RÉVOCATION — instant persisté
+      // par `DELETE`, son seul écrivain : il précède le rétablissement et les
+      // envois concurrents de toute la durée d'un geste humain, et un écart
+      // d'horloge entre conteneurs n'y change rien. Seule la requête qui lève
+      // la révocation en profite — bascule atomique : un double clic de
+      // confirmation ne rétablit qu'une fois, et le second reste sous la garde.
+      const instant = new Date();
+      const { count } = await prisma.patient.updateMany({
+        where: { idPatient, accessTokenRevoked: true },
+        data: { accessTokenRevoked: false },
+      });
+      // Une révocation antérieure à `sessionsInvalidesAvant` n'en porte pas :
+      // l'instant du rétablissement la remplace.
+      if (count === 1) revoqueLe = patient.sessionsInvalidesAvant ?? instant;
     }
 
     const lien = buildGoogleConnexionUrl();
@@ -195,6 +212,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
           patient.idPatient,
           patient.praticienEmail,
           lienMagique ?? undefined,
+          revoqueLe,
         );
         if (statut === 'Non_envoye') envoi = 'non_configure';
         // Garde d'une heure ([[D-398]] §3) : un e-mail d'accès est déjà parti.

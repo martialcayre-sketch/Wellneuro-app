@@ -30,6 +30,9 @@ export const JOURS_ENTRE_RELANCES_ASSIGNATION = JOURS_ENTRE_RELANCES;
 /** Les deux statuts terminaux que la base tient déjà (`assignations.statut`). */
 const STATUT_RENDUE = 'Complété';
 const STATUT_ANNULEE = 'Annulée';
+/** Le seul `statut_reponses` qui rouvre une assignation échue : le
+ *  déverrouillage du praticien (`PUT /api/praticien/assignations`). */
+const REPONSES_DEVERROUILLEES = 'deverrouille';
 
 const MS_PAR_JOUR = 24 * 60 * 60 * 1000;
 
@@ -38,6 +41,7 @@ export type RefusRelanceAssignation =
   | 'assignation_annulee'
   | 'sans_echeance'
   | 'echeance_non_depassee'
+  | 'echeance_expiree'
   | 'cadence';
 
 export type DecisionRelanceAssignation =
@@ -47,6 +51,8 @@ export type DecisionRelanceAssignation =
 export type EntreeRelanceAssignation = {
   /** Le statut tel que la base le porte, jamais un booléen dérivé. */
   statut: string;
+  /** `assignations.statut_reponses`, tel que la base le porte. */
+  statutReponses: string;
   /** `AAAA-MM-JJ` — la forme exacte de `assignations.date_limite`, ou `null`. */
   dateLimite: string | null;
   /** Les relances déjà tracées pour CETTE assignation, dans un ordre non
@@ -118,6 +124,14 @@ export function deciderRelanceAssignation(
   const depasseeLe = new Date(limite.getTime() + MS_PAR_JOUR);
   if (entree.maintenant.getTime() < depasseeLe.getTime()) {
     return { ok: false, raison: 'echeance_non_depassee', possibleLe: depasseeLe };
+  }
+
+  // ÉCHUE = EXPIRÉE, SAUF DÉVERROUILLAGE ([[D-404]]). Passé le jour dit, le
+  // portail affiche « Expiré » et la soumission rend 410 (`patient/submit`) :
+  // rappeler ce questionnaire enverrait le patient vers une porte fermée. Le
+  // refus ne déverrouille rien — la route n'écrit toujours rien au dossier.
+  if (entree.statutReponses !== REPONSES_DEVERROUILLEES) {
+    return { ok: false, raison: 'echeance_expiree', possibleLe: null };
   }
 
   // LE PLUS RÉCENT, pas le premier trouvé : l'appelant n'est pas tenu de trier,
