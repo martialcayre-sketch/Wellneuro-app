@@ -602,9 +602,17 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       });
     });
 
-    it('un premier envoi en vol renvoie à la confirmation, et rien ne part', async () => {
+    it('un premier envoi en vol, ou déjà soldé, renvoie à la confirmation, et rien ne part', async () => {
       countCorrespondance.mockResolvedValueOnce(1);
       const res = await envoyer({});
+
+      // UNE SEULE LECTURE du journal, parti OU en partance : le solde d'un
+      // envoi concurrent ne peut pas glisser entre deux lectures (#1798).
+      expect(countCorrespondance.mock.calls[0][0].where).toMatchObject({
+        type: 'booklet',
+        referenceId: 'SYN_1',
+        OR: [{ statut: 'Envoye' }, { statut: 'Non_envoye', erreurCourte: 'réservé : envoi en cours' }],
+      });
 
       expect((await res.json()).needsConfirmation).toBe(true);
       expect(sendMail).not.toHaveBeenCalled();

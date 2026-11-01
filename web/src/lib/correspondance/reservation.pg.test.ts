@@ -300,6 +300,37 @@ describe.skipIf(!ACTIF)('réservation avant l’envoi — base réelle ([[D-398]
     expect(lignes.filter(l => l.erreur_courte === MARQUE_ENVOI_EN_COURS)).toHaveLength(0);
   });
 
+  // Revue Copilot de #1798 : le solde d'un envoi concurrent ne prend pas le
+  // verrou. Une réservation déjà soldée « Envoyé », dont l'audit n'est pas
+  // (encore) écrit, doit suffire à retenir le premier envoi.
+  it('bilan : une réservation soldée « Envoyé » sans audit retient le premier envoi', async () => {
+    const idPatient = await dossier();
+    const idSynthese = `SYN_BANC_RES_${RUN}_${numero}`;
+    await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: 'banc@example.test',
+        modele: 'banc',
+        donneesEntree: {},
+        syntheseJson: SYNTHESE_JSON,
+        statut: 'Validee_Praticien',
+        dateValidation: new Date(),
+      },
+    });
+    await prisma.correspondancePatient.create({
+      data: {
+        idPatient, canal: 'email', sens: 'sortant', type: 'booklet',
+        objet: 'Envoi du bilan neuronutritionnel', statut: 'Envoye',
+        referenceType: 'synthese', referenceId: idSynthese,
+      },
+    });
+
+    const res = await booklet(requete('http://localhost/api/praticien/booklet', { idSynthese, relectureConfirmee: true }));
+    expect((await res.json()).needsConfirmation).toBe(true);
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
   it('ce qui compte comme envoi : parti ou en partance ; ni échec, ni messagerie absente, ni refus de garde', async () => {
     const idPatient = await dossier();
     const ligne = (statut: string, erreurCourte: string | null) => ({

@@ -98,6 +98,12 @@ quatre volets :
     - réservation de bilan restée marquée, sans fenêtre (§5).
   - Acceptés, précédent D-317 : un refus de garde s'affiche « Non envoyé »
     au panneau, sans motif.
+- PR #1798, revue Copilot (tête 15f70d24), une remarque en ligne, corrigée :
+  - sous le verrou du bilan, deux lectures séparées (audit `Envoye`, puis
+    réservation marquée) pouvaient manquer le solde d'un envoi concurrent ;
+  - le journal se lit désormais en une seule requête (`Envoye` ou marquée) ;
+  - banc pg neuf, rouge sur l'ancien code, vert sur le correctif.
+- CodeRabbit : quota atteint à la première tête.
 
 ## Problèmes ouverts
 

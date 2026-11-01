@@ -25,7 +25,7 @@ import {
   TYPES_CORRESPONDANCE_PATIENT,
 } from '@/lib/correspondance/patient';
 import {
-  MARQUE_ENVOI_EN_COURS,
+  FILTRE_ENVOIS_PARTIS,
   donneesReservation,
   verrouillerEnvois,
 } from '@/lib/correspondance/reservation';
@@ -285,17 +285,22 @@ export async function POST(req: Request) {
     if (!forceSend) {
       const reservee = await prisma.$transaction(async tx => {
         await verrouillerEnvois(tx, `${TYPES_CORRESPONDANCE_PATIENT.booklet}:${idSynthese}`);
-        const dejaParti = await tx.bookletEnvoi.count({ where: { idSynthese, statut: 'Envoye' } });
-        const enVol = await tx.correspondancePatient.count({
+        // LE JOURNAL EN UNE SEULE LECTURE, parti OU en partance : le solde
+        // d'un envoi concurrent (marquée → `Envoye`) ne prend pas ce verrou,
+        // et deux lectures séparées pouvaient le manquer entre elles (revue
+        // Copilot de #1798). L'audit couvre les envois d'avant le journal.
+        const journal = await tx.correspondancePatient.count({
           where: {
             idPatient: synthese.idPatient,
             type: TYPES_CORRESPONDANCE_PATIENT.booklet,
             referenceId: idSynthese,
-            statut: 'Non_envoye',
-            erreurCourte: MARQUE_ENVOI_EN_COURS,
+            ...FILTRE_ENVOIS_PARTIS,
           },
         });
-        if (dejaParti + enVol > 0) return null;
+        const dejaParti = journal > 0
+          ? journal
+          : await tx.bookletEnvoi.count({ where: { idSynthese, statut: 'Envoye' } });
+        if (dejaParti > 0) return null;
         const { id } = await tx.correspondancePatient.create({
           data: donneesReservation({
             idPatient: synthese.idPatient,

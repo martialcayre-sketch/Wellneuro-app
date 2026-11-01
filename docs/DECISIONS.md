@@ -73,7 +73,11 @@ non envoyé, et expire en 24 heures. L'encart des nouveaux dossiers ignore les
 refus et les réservations en vol : un refus dit qu'un accès vient de partir.
 
 **§5 — Le premier envoi d'un bilan.** Sous le verrou du bilan, un envoi parti
-ou en partance renvoie à la confirmation du renvoi, chemin existant. Sinon la
+ou en partance renvoie à la confirmation du renvoi, chemin existant. Le
+journal se lit en une seule requête (`Envoye` ou marquée) : le solde d'un
+envoi concurrent ne prend pas le verrou, et deux lectures séparées
+pouvaient le manquer entre elles (revue Copilot de #1798). L'audit
+`booklet_envois` ne se lit qu'à défaut, pour les envois d'avant le journal. Sinon la
 ligne du journal naît réservée, et `logBookletEnvoi` la solde avec la clé de
 source de l'audit : un envoi, une ligne. Le renvoi confirmé n'est pas
 réservé, geste explicite. Une réservation de bilan restée marquée (processus
