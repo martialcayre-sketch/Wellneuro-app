@@ -44,6 +44,15 @@ const CABINET_MASQUE: MedianesCabinet = {
 };
 
 describe('MomentumPanel (A6-R2)', () => {
+  it('cycle courant sans jour 0 : aucune courbe, même avec deux jalons lus par le repli ([[D-397]] §2)', () => {
+    const sansJourZero = { ...cycle(40, 50, 60), jourZero: null, motifMomentum: 'sans_jour_zero' as const };
+    render(<MomentumPanel cycle={sansJourZero} cabinet={CABINET_OK} />);
+    expect(screen.queryByRole('img')).toBeNull();
+    expect(
+      screen.getByText('Momentum non calculé : aucun protocole n’est diffusé sur ce cycle, les jalons n’ont pas de jour 0.'),
+    ).toBeTruthy();
+  });
+
   it('moins de deux jalons mesurés : pas de courbe, un repli textuel', () => {
     render(<MomentumPanel cycle={cycle(40, null)} />);
     expect(screen.getByText(/Courbe indisponible : moins de deux jalons mesurés/)).toBeTruthy();

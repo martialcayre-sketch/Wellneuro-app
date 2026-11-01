@@ -110,7 +110,10 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     expect(json.resume.pointsRenseignes).toBe(1);
   });
 
-  it('branche le momentum réel : score non-null quand un cycle T0+J21 est mesuré (C2B LOT-07)', async () => {
+  // [[D-397]] §2 : ce cas produisait un score par le repli sur la première
+  // réponse ; sans ancre ni diffusion, il n'y a plus de momentum. Le volet
+  // score branché est prouvé par le cas « jour 0 du suivi » ci-dessous.
+  it('sans ancre ni diffusion, aucun score : plus de repli ([[D-397]] §2)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC_1#h' }]);
     prisma.protocolCheckin.findMany.mockResolvedValue([
@@ -135,8 +138,7 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     expect(prisma.questionnaireReponse.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { idPatient: 'PAT_1' } }),
     );
-    expect(json.resume.score).not.toBeNull();
-    expect(typeof json.resume.score?.delta).toBe('number');
+    expect(json.resume.score).toBeNull();
   });
 
   it('ancre sur l’épisode d’ancre confirmé quand il existe (C2B LOT-08)', async () => {
@@ -154,6 +156,19 @@ describe('GET /api/praticien/protocoles/checkins', () => {
       { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
       { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-22T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
+    // [[D-397]] §2 : sans jour 0, aucun score — la diffusion du jour de l'ancre
+    // ouvre le calendrier, et le J21 tombe le 22 janvier.
+    const approvedAt = new Date('2026-01-01T00:00:00.000Z');
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValueOnce([{
+      id: 'APPR_1', idPatient: 'PAT_1', approvedAt, createdAt: approvedAt, approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion', decisionCardInputHash: 'carte', protocolDraftInputHash: 'version',
+      protocolDraftId: 'proto_DEC_1#h',
+      draft: {
+        idPatient: 'PAT_1', inputHash: 'version', decisionCardInputHash: 'carte', status: 'practitioner_reviewed',
+        reviewedAt: new Date(approvedAt.getTime() - 60_000), selectedPriorityId: 'PRIO_1',
+        episode: { id: 'EPI_T0', milestone: 'T0', cycleId: 'EPI_T0' },
+      },
+    }]);
 
     const res = await GET(request());
     const json = (await res.json()) as { resume: { score: { delta: number } | null } };

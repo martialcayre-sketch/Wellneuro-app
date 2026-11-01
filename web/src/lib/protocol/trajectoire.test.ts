@@ -40,6 +40,17 @@ const t0 = (
   versionScore: overrides.versionScore === undefined ? 'v1' : overrides.versionScore,
 });
 
+// Seconde passe Codex ([[D-397]]) : sur le cycle courant, la valeur d'un point
+// se lit à la dernière remesure, sur des réponses où une passation partielle
+// postérieure à l'ancre n'évince pas la passation complète.
+const HAD_COMPLET = { D2: '1', D4: '1', D6: '1', D8: '1', D10: '1', D12: '1', D14: '1' };
+const passationDe = (idQuestionnaire: string, iso: string, rawAnswers: Record<string, string>) => ({
+  idQuestionnaire,
+  dateReponse: new Date(iso),
+  scoresJson: { rawAnswers },
+  statutValidite: null,
+});
+
 describe('construireTrajectoire (C2B LOT-09)', () => {
   it('aucun épisode → aucun cycle, comparaison indisponible', () => {
     const tr = construireTrajectoire({ episodes: [], reponses: [] });
@@ -73,12 +84,98 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     const tr = construireTrajectoire({
       episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
       reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
     });
     const cycle = tr.cycles[0];
     expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
-    expect(cycle.momentum).not.toBeNull();
+    // [[D-397]] : l'arrivée est la remesure, datée de sa passation.
+    expect(cycle.momentum).toMatchObject({ dateArrivee: '2026-01-22T00:00:00.000Z' });
+    expect(cycle.motifMomentum).toBeNull();
     // Aucune réponse après J21 : les jalons suivants restent non mesurés.
     expect(cycle.jalons.find((j) => j.jalon === 'J42')?.mesure).toBe(false);
+  });
+
+  // Contre-revue Codex P1-3 ([[D-397]]) : sur le cycle courant, un jalon ne se
+  // rouvre que sur une remesure — la courbe ne trace pas un écart que le
+  // momentum déclare absent.
+  it('cycle courant : un questionnaire neuf après l’ancre ne mesure aucun jalon, motif « sans remesure »', () => {
+    const had = {
+      idQuestionnaire: 'Q_NEU_11',
+      dateReponse: new Date('2026-01-16T00:00:00.000Z'),
+      scoresJson: { rawAnswers: { D2: '3', D4: '3', D6: '3', D8: '3', D10: '3', D12: '3', D14: '3' } },
+      statutValidite: null,
+    };
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), had],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    expect(cycle.momentum).toBeNull();
+    expect(cycle.motifMomentum).toBe('sans_remesure');
+    for (const jalon of ['J21', 'J42', 'J90'] as const) {
+      expect(cycle.jalons.find((j) => j.jalon === jalon)?.mesure).toBe(false);
+    }
+  });
+
+  it('cycle courant : un PSS partiel après la remesure ne fait pas baisser le point J21', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [
+        reponse('2026-01-01T00:00:00.000Z'),
+        passationDe('Q_NEU_11', '2026-01-01T00:00:00.000Z', HAD_COMPLET),
+        reponse('2026-01-16T00:00:00.000Z'),
+        passationDe('Q_STR_02', '2026-01-21T00:00:00.000Z', { P1: '1' }),
+      ],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    const valeur = (jalon: string) => cycle.jalons.find((j) => j.jalon === jalon)?.valeur;
+    expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(valeur('J21')).toBe(valeur('T0'));
+    expect(cycle.momentum).toMatchObject({ delta: 0, tendance: 'stable' });
+  });
+
+  it('cycle courant : le point J21 se lit à la dernière remesure, comme l’arrivée du momentum', () => {
+    // Un HADS neuf après la remesure n'est pas une remesure : il n'entre ni
+    // dans l'arrivée ni dans le point.
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [
+        reponse('2026-01-01T00:00:00.000Z'),
+        passationDe('Q_STR_02', '2026-01-16T00:00:00.000Z', { ...RAW, P1: '4', P2: '4' }),
+        passationDe('Q_NEU_11', '2026-01-20T00:00:00.000Z', HAD_COMPLET),
+      ],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    const valeur = (jalon: string) => cycle.jalons.find((j) => j.jalon === jalon)?.valeur ?? NaN;
+    expect(cycle.momentum?.delta).toBe(valeur('J21') - valeur('T0'));
+    expect(cycle.momentum?.delta).not.toBe(0);
+  });
+
+  it('cycle courant sans lecture d’ancre : un premier HADS à J15 ne mesure pas J21 (revue Copilot)', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [passationDe('Q_NEU_11', '2026-01-16T00:00:00.000Z', HAD_COMPLET)],
+      joursZero: new Map([['ep_T0', new Date('2026-01-01T00:00:00.000Z')]]),
+    });
+    const cycle = tr.cycles[0];
+    expect(cycle.motifMomentum).toBe('sans_lecture_ancre');
+    expect(cycle.jalons.every((j) => !j.mesure)).toBe(true);
+  });
+
+  // ── [[D-397]] §2 : aucun momentum sans jour 0, même là où le repli en donnait un ──
+  it('cycle courant sans diffusion : ses jalons restent lisibles, son momentum est retiré avec son motif (D-397)', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+    });
+    const cycle = tr.cycles[0];
+    // L'historique reste consultable : le J21 compté depuis l'ancre est lu.
+    expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(cycle.momentum).toBeNull();
+    expect(cycle.motifMomentum).toBe('sans_jour_zero');
   });
 
   // ── [[D-255]] : les mesures se lisent depuis le jour 0 du suivi ────────
@@ -248,6 +345,7 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
       episodes: [t0('ep_a', '2026-01-01T00:00:00.000Z', { versionScore: 'v1' })],
       reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-20T00:00:00.000Z')],
       avecMomentumParBesoin: true,
+      joursZero: new Map([['ep_a', new Date('2026-01-01T00:00:00.000Z')]]),
     });
     const besoin9 = tr.cycles[0].momentumParBesoin.find((ligne) => ligne.besoin === 9);
     expect(besoin9).toBeTruthy();

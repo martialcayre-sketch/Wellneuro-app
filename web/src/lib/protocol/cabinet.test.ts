@@ -22,6 +22,14 @@ function cycle(version: string | null, t0: number | null, j21: number | null, j4
 }
 
 describe('calculerMedianesCabinet (A6-R2)', () => {
+  it('un cycle courant sans jour 0 n’entre pas dans le repère ([[D-397]] §2)', () => {
+    const avec = Array.from({ length: 5 }, (_, i) => [cycle('v1', 40 + i, 50 + i)]);
+    const sansJourZero = { ...cycle('v1', 10, 90), jourZero: null, motifMomentum: 'sans_jour_zero' as const };
+    const resultat = calculerMedianesCabinet([...avec, [sansJourZero]], 'v1');
+    expect(resultat.nTotal).toBe(5);
+    expect(resultat.parJalon.find(m => m.jalon === 'J21')?.mediane).toBe(10);
+  });
+
   it('version de référence inconnue : aucune cohorte, jamais une version supposée (A8-3)', () => {
     const resultat = calculerMedianesCabinet([[cycle('v1', 40, 50)]], null);
     expect(resultat.masque).toBe(true);
@@ -161,6 +169,9 @@ describe('repère de cabinet — une cohorte silencieuse ne sert aucune médiane
             scoresJson: { rawAnswers: RAW },
           },
         ],
+        // Diffusés : un cycle sans jour 0 sort du repère ([[D-397]] §2), et ce
+        // cas porte sur la cohorte silencieuse, pas sur la diffusion.
+        joursZero: new Map([[`cy_${i}`, new Date('2026-01-01T00:00:00.000Z')]]),
       }).cycles,
     );
 
@@ -169,5 +180,79 @@ describe('repère de cabinet — une cohorte silencieuse ne sert aucune médiane
     expect(resultat.masque).toBe(false);
     // Le seuil est franchi, mais plus aucun delta fabriqué ne l'alimente.
     expect(resultat.parJalon).toEqual([]);
+  });
+
+  // Contre-revue Codex P1-3 ([[D-397]]) : la première passation d'un
+  // questionnaire absent à l'ancre n'est pas une remesure. Elle ne trace aucun
+  // point du cycle courant, et n'entre donc pas au repère de cabinet.
+  it('cinq cycles dont la seule passation nouvelle est un questionnaire neuf : aucun jalon agrégé', () => {
+    const HAD = { D2: '3', D4: '3', D6: '3', D8: '3', D10: '3', D12: '3', D14: '3' };
+    const cabinet = Array.from({ length: 5 }, (_, i) =>
+      construireTrajectoire({
+        episodes: [
+          {
+            id: `ep_${i}`,
+            milestone: 'T0' as const,
+            confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+            cycleId: `cy_${i}`,
+            versionScore: 'v1',
+          },
+        ],
+        reponses: [
+          {
+            statutValidite: null,
+            idQuestionnaire: 'Q_STR_02',
+            dateReponse: new Date('2026-01-01T00:00:00.000Z'),
+            scoresJson: { rawAnswers: RAW },
+          },
+          {
+            statutValidite: null,
+            idQuestionnaire: 'Q_NEU_11',
+            dateReponse: new Date('2026-01-16T00:00:00.000Z'),
+            scoresJson: { rawAnswers: HAD },
+          },
+        ],
+        joursZero: new Map([[`cy_${i}`, new Date('2026-01-01T00:00:00.000Z')]]),
+      }).cycles,
+    );
+
+    expect(cabinet.every(([cycle]) => cycle.motifMomentum === 'sans_remesure')).toBe(true);
+    expect(calculerMedianesCabinet(cabinet, 'v1').parJalon).toEqual([]);
+  });
+
+  // Seconde passe Codex : un PSS partiel après une remesure inchangée ne doit
+  // pas fabriquer une baisse au repère de cabinet.
+  it('cinq cycles à remesure inchangée puis PSS partiel : médiane J21 nulle', () => {
+    const HAD = { D2: '1', D4: '1', D6: '1', D8: '1', D10: '1', D12: '1', D14: '1' };
+    const passationDe = (idQuestionnaire: string, iso: string, rawAnswers: Record<string, string>) => ({
+      statutValidite: null,
+      idQuestionnaire,
+      dateReponse: new Date(iso),
+      scoresJson: { rawAnswers },
+    });
+    const cabinet = Array.from({ length: 5 }, (_, i) =>
+      construireTrajectoire({
+        episodes: [
+          {
+            id: `ep_${i}`,
+            milestone: 'T0' as const,
+            confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+            cycleId: `cy_${i}`,
+            versionScore: 'v1',
+          },
+        ],
+        reponses: [
+          passationDe('Q_STR_02', '2026-01-01T00:00:00.000Z', RAW),
+          passationDe('Q_NEU_11', '2026-01-01T00:00:00.000Z', HAD),
+          passationDe('Q_STR_02', '2026-01-16T00:00:00.000Z', RAW),
+          passationDe('Q_STR_02', '2026-01-21T00:00:00.000Z', { P1: '1' }),
+        ],
+        joursZero: new Map([[`cy_${i}`, new Date('2026-01-01T00:00:00.000Z')]]),
+      }).cycles,
+    );
+
+    expect(calculerMedianesCabinet(cabinet, 'v1').parJalon).toEqual([
+      expect.objectContaining({ jalon: 'J21', mediane: 0 }),
+    ]);
   });
 });

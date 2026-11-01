@@ -5,6 +5,8 @@ const { prisma } = vi.hoisted(() => ({
     assignation: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
     questionnaireReponse: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
+    // « Mon équilibre » lit l'ancre du cycle courant ([[D-397]]) : aucune ici.
+    assessmentEpisode: { findMany: vi.fn(async (): Promise<unknown[]> => []) },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
