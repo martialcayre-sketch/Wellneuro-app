@@ -107,6 +107,10 @@ quatre volets :
     E2E : 303 passés) ;
   - `origin/main` 67ab0108 (#1799, docs seuls) fusionné ensuite dans la
     branche, par délégation du 2026-10-16.
+- PR-Agent (tête f40a9717), « Réservation non soldée », corrigé : un audit
+  `booklet_envois` qui lève n'empêche plus de solder la réservation (banc de
+  route neuf). T1 complet code 0, puis T2 `--fast` code 0 (Vitest : 15 482
+  passés ; E2E : 303 passés).
 - CodeRabbit : quota atteint à la première tête.
 
 ## Problèmes ouverts

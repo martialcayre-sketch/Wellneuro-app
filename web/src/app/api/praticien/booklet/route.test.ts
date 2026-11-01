@@ -627,6 +627,20 @@ describe('POST /api/praticien/booklet — ce que le journal de correspondance di
       expect(sendMail).not.toHaveBeenCalled();
     });
 
+    // Revue PR-Agent de #1798 : restée marquée, la réservation compterait
+    // comme partie et retiendrait le premier envoi d'un bilan non parti.
+    it('un audit qui lève n’empêche pas de solder la réservation', async () => {
+      sendMail.mockRejectedValueOnce(new Error('550 relais refusé'));
+      createBookletEnvoi.mockRejectedValueOnce(new Error('base indisponible'));
+      const res = await envoyer({});
+
+      expect(res.status).toBe(502);
+      expect(updateCorrespondance).toHaveBeenCalledWith({
+        where: { id: 'RES_1' },
+        data: { statut: 'Erreur', erreurCourte: '550 relais refusé' },
+      });
+    });
+
     it('le renvoi confirmé ne se réserve pas : c’est un geste explicite', async () => {
       const res = await envoyer({ forceSend: true });
 

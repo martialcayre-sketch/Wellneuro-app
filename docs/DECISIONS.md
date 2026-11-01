@@ -80,8 +80,10 @@ pouvaient le manquer entre elles (revue Copilot de #1798). L'audit
 `booklet_envois` ne se lit qu'à défaut, pour les envois d'avant le journal. Sinon la
 ligne du journal naît réservée, et `logBookletEnvoi` la solde avec la clé de
 source de l'audit : un envoi, une ligne. Le renvoi confirmé n'est pas
-réservé, geste explicite. Une réservation de bilan restée marquée (processus
-arrêté, audit perdu) n'a pas de fenêtre : le premier envoi renvoie alors à la
+réservé, geste explicite. Un audit qui échoue n'empêche pas le solde (revue
+PR-Agent de #1798) : la ligne est soldée, sans clé de source. Une réservation
+de bilan restée marquée (processus arrêté, base indisponible au solde) n'a
+pas de fenêtre : le premier envoi renvoie alors à la
 confirmation, sans limite de temps, et le renvoi confirmé reste la sortie —
 sens prudent, à la différence de la garde (1 h) et des cadences (3 jours).
 

@@ -442,5 +442,19 @@ async function logBookletEnvoi(
     } else {
       await journaliserCorrespondancePatient(trace);
     }
-  } catch { /* audit non bloquant */ }
+  } catch {
+    // Audit non bloquant — mais la réservation se SOLDE quand même (revue
+    // PR-Agent de #1798) : restée marquée, elle compterait comme partie et
+    // retiendrait le premier envoi d'un bilan qui n'est peut-être pas parti.
+    // Sans audit, la ligne reste sans clé de source.
+    if (idReservation) {
+      await prisma.correspondancePatient.update({
+        where: { id: idReservation },
+        data: {
+          statut: statutJournalDepuisAuditBooklet(statut),
+          erreurCourte: erreur ? sanitizeAuditError(erreur).slice(0, 200) : null,
+        },
+      }).catch(() => { /* la ligne reste marquée : sens prudent */ });
+    }
+  }
 }
