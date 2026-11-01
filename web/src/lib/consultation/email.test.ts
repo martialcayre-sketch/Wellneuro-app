@@ -170,7 +170,7 @@ describe('garde d’une heure — accès et objectif ([[D-398]] §3)', () => {
       idPatient: 'PAT_TEST',
       type: 'acces_portail',
       objet: 'Accès à l’espace patient',
-    });
+    }, expect.any(Date), undefined);
     expect(reserverSousGarde.mock.invocationCallOrder[0]).toBeLessThan(sendMail.mock.invocationCallOrder[0]);
     expect(solderReservation).toHaveBeenCalledWith('RES_1', 'Envoye');
     expect(journaliser).not.toHaveBeenCalled();
@@ -185,10 +185,22 @@ describe('garde d’une heure — accès et objectif ([[D-398]] §3)', () => {
     expect(journaliser).not.toHaveBeenCalled();
   });
 
+  // [[D-404]] : un rétablissement d'accès confirmé borne la fenêtre de la
+  // garde à l'instant de la révocation levée. Seul l'e-mail d'accès le porte.
+  it('l’instant de la révocation levée est transmis à la garde', async () => {
+    const revoqueLe = new Date('2026-11-01T10:00:00Z');
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', undefined, undefined, revoqueLe);
+    expect(reserverSousGarde).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: 'acces_portail' }), expect.any(Date), revoqueLe,
+    );
+  });
+
   it('l’e-mail d’objectif est gardé de même', async () => {
     reserverSousGarde.mockResolvedValueOnce({ id: 'RES_3', refusee: true });
     await expect(sendObjectifProposeEmail('patient@example.com', 'Michel', 'PAT_TEST')).resolves.toBe('Refuse_garde');
-    expect(reserverSousGarde).toHaveBeenCalledWith(expect.objectContaining({ type: 'objectif_propose' }));
+    expect(reserverSousGarde).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'objectif_propose' }), expect.any(Date), undefined,
+    );
     expect(sendMail).not.toHaveBeenCalled();
   });
 

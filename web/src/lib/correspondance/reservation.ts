@@ -121,15 +121,20 @@ export async function solderReservation(
 export async function reserverSousGarde(
   entree: { idPatient: string; type: TypeSousGarde; objet: string },
   maintenant: Date = new Date(),
+  /** Rétablissement d'accès confirmé ([[D-404]]) : la fenêtre ne remonte pas
+   *  avant la révocation levée. Les liens des e-mails antérieurs sont morts
+   *  ([[D-128]]) ; ceux partis depuis comptent, et un double clic reste refusé. */
+  depuis?: Date,
 ): Promise<{ id: string; refusee: boolean }> {
   const prisma = await clientPrisma();
+  const debutFenetre = Math.max(maintenant.getTime() - FENETRE_GARDE_ENVOI_MS, depuis?.getTime() ?? 0);
   return prisma.$transaction(async tx => {
     await verrouillerEnvois(tx, `${entree.type}:${entree.idPatient}`);
     const recents = await tx.correspondancePatient.count({
       where: {
         idPatient: entree.idPatient,
         type: entree.type,
-        enregistreLe: { gte: new Date(maintenant.getTime() - FENETRE_GARDE_ENVOI_MS) },
+        enregistreLe: { gte: new Date(debutFenetre) },
         ...FILTRE_ENVOIS_PARTIS,
       },
     });

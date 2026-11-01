@@ -34,6 +34,8 @@ import {
 const ROUTE_JOURNAL = '/api/praticien/booklet';
 // Objet du premier envoi : la réservation et son solde portent le même.
 const OBJET_ENVOI_BILAN = 'Envoi du bilan neuronutritionnel';
+// Motif d'une préparation qui échoue au rendu ([[D-404]]).
+const MOTIF_RENDU_IMPOSSIBLE = 'Rendu du bilan impossible.';
 
 // GET /api/praticien/booklet?idSynthese=SYN...
 // Génère et retourne le HTML du booklet (prévisualisation praticien)
@@ -223,15 +225,6 @@ export async function POST(req: Request) {
     const dateDocument = (synthese.dateValidation ?? synthese.dateGeneration)
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
-    const html = buildBookletHTML(
-      patientNom,
-      dateDocument,
-      syntheseData,
-      synthese.notesPraticien ?? '',
-      { assistanceIA: !estRedactionPraticien(synthese.modele) },
-    );
-
     // Dossier au suivi clôturé : plus aucun document ne part. La garde porte
     // sur l'ENVOI, pas sur l'aperçu — consulter le document d'un dossier clos
     // reste légitime. Elle est dans la route et non dans l'écran, sinon un
@@ -243,6 +236,29 @@ export async function POST(req: Request) {
         { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
         { status: 409 }
       ), requestContext);
+    }
+
+    const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
+    // LE RENDU AUSSI SE TRACE ([[D-404]]) : une synthèse que le gabarit ne sait
+    // pas rendre partait en 500 sans trace — le septième chemin muet de
+    // [[D-398]] §1, Q4. L'échec est consigné en préparation, puis le `catch`
+    // général rend la main : rien n'est parti, rien n'a été réservé.
+    let html: string;
+    try {
+      html = buildBookletHTML(
+        patientNom,
+        dateDocument,
+        syntheseData,
+        synthese.notesPraticien ?? '',
+        { assistanceIA: !estRedactionPraticien(synthese.modele) },
+      );
+    } catch (erreurRendu) {
+      // UN LIBELLÉ FIXE, PAS LE MESSAGE : le gabarit manipule la synthèse, et
+      // son exception pourrait en citer un fragment (revue PR-Agent de
+      // #1804). Le message part au journal applicatif par le `catch` général.
+      await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
+        'Erreur', 'Preparation', relectureConfirmee, MOTIF_RENDU_IMPOSSIBLE);
+      throw erreurRendu;
     }
 
     // Registre anxiogène : le narratif est le seul texte libre qui parte au

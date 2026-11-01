@@ -442,14 +442,29 @@ describe('FilDuJour — rappeler un questionnaire en retard', () => {
     );
   });
 
-  it('n’annonce pas un rappel groupé qui n’est pas parti', async () => {
+  // [[D-404]] : la route rend 200 avec le statut de la trace. Un rappel en
+  // échec ou sans messagerie n'est pas « envoyé » — textes validés mot pour mot.
+  it('dit qu’un rappel en échec n’est pas parti, et qu’on peut réessayer', async () => {
     stubAvecRelance(async () => ({ ok: true, statut: 'Erreur', questionnaires: 3 }));
     render(<FilDuJour />);
 
     fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
 
-    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText('Rappel non parti : l’envoi a échoué. Vous pouvez réessayer.')).toBeTruthy());
+    expect(screen.queryByText(/Rappel envoyé/)).toBeNull();
     expect(screen.queryByText(/Il couvre les 3 questionnaires/)).toBeNull();
+  });
+
+  it('dit qu’un rappel n’est pas parti quand l’envoi d’e-mails n’est pas configuré', async () => {
+    stubAvecRelance(async () => ({ ok: true, statut: 'Non_envoye', questionnaires: 1 }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Rappel non parti : l’envoi d’e-mails n’est pas configuré.')).toBeTruthy());
+    expect(screen.queryByText(/Rappel envoyé/)).toBeNull();
   });
 
   // LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL : « un rappel est déjà parti il y
