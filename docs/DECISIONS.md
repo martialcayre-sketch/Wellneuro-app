@@ -33,7 +33,11 @@ sans lui (serveur antérieur), le bouton reste « Rappeler ». Une assignation
 annulée échue paraît encore au Fil (lecture antérieure, `statut` différent
 de `Complété`) : sa carte ne porte pas ce statut et garde « Rappeler », que
 le serveur refuse sans rien écrire — le déblocage d'une annulée dirait un
-succès que le portail ignore (revue `wn-reviewer`). Écartés
+succès que le portail ignore (revue `wn-reviewer`). De même pour un suivi
+clôturé, que le Fil garde : le rappel y est refusé (`accepteNouvelEnvoi`),
+et le déblocage y écrirait sans garde (revue Copilot de #1812). La route
+`PATCH`, elle, ne refuse ni annulée ni suivi clos : la garder côté serveur
+toucherait aussi le dossier, autre décision. Écartés
 (arbitrage) : une confirmation ; « Débloquer et rappeler » en un seul
 geste ; repousser l'échéance (lot à part si un jour demandé).
 
@@ -51,7 +55,9 @@ banc à Paris aux deux changements d'heure de 2026, aligné sur
 `isDeadlineExpired`. Chacun rougit sous mutation : bouton toujours
 « Rappeler » (3 bancs) ; bouton qui ne bascule pas après le déblocage
 (1) ; « Débloquer » sans statut (5) ; statut absent de la carte (1) ;
-statut porté par une annulée (1) ; échec réseau du déblocage muet (1) ;
+statut porté par une annulée (1) ; statut porté par un suivi clos (2 bancs
+des cartes et de la route ; 1 si la route ne marque pas le suivi clos) ;
+échec réseau du déblocage muet (1) ;
 statut absent de la lecture du Fil (typage) ; lendemain par minuit + 24 h
 (2).
 

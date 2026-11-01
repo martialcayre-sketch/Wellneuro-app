@@ -513,7 +513,10 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         idPatient => servables.has(idPatient),
       ),
       comptesRendusTransmis: comptesRendusTransmis.filter(t => actifs.has(t.idPatient)),
-      assignations: assignations.filter(a => actifs.has(a.idPatient)),
+      // Suivi clos : la carte du retard reste, sans geste qui écrive ([[D-414]] §1).
+      assignations: assignations
+        .filter(a => actifs.has(a.idPatient))
+        .map(a => ({ ...a, suiviClos: !servables.has(a.idPatient) })),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)
         .map(a => ({ idPatient: a.idPatient, derniereReponse: a._max.dateReponse as Date })),

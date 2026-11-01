@@ -146,6 +146,9 @@ export type AssignationRow = {
   dateLimite: string | null;
   statut: string;
   statutReponses: string;
+  /** Suivi clôturé : l'assignation paraît, mais aucun geste n'y écrit
+   *  ([[D-414]] §1). Absent = suivi ouvert. */
+  suiviClos?: boolean;
 };
 export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
 /**
@@ -928,11 +931,12 @@ export function cartesAssignationsEnRetard(
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
         idAssignation: a.idAssignation,
-        // UNE ANNULÉE NE SE DÉBLOQUE PAS ([[D-414]] §1) : le portail l'ignore
-        // même déverrouillée, et le déblocage dirait un succès qui ne rouvre
-        // rien. Sans statut, la carte garde « Rappeler », que le serveur
-        // refuse (`assignation_annulee`) sans rien écrire — comme avant.
-        statutReponses: a.statut === 'Annulée' ? undefined : a.statutReponses,
+        // NI UNE ANNULÉE NI UN SUIVI CLOS NE SE DÉBLOQUENT ([[D-414]] §1) :
+        // le portail ignore une annulée même déverrouillée, et un suivi clos
+        // n'accepte plus d'envoi (`accepteNouvelEnvoi`). Sans statut, la carte
+        // garde « Rappeler », que le serveur refuse (`assignation_annulee`,
+        // `dossier_clos`) sans rien écrire — comme avant.
+        statutReponses: a.statut === 'Annulée' || a.suiviClos ? undefined : a.statutReponses,
       };
     });
 }

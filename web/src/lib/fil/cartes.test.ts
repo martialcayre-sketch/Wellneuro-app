@@ -315,6 +315,21 @@ describe('cartesAssignationsEnRetard', () => {
     expect(carteAnnulee.statutReponses).toBeUndefined();
   });
 
+  it('ne porte pas le statut des réponses d’un suivi clos', () => {
+    const cartes = cartesAssignationsEnRetard(
+      [
+        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'non_rempli', suiviClos: true },
+        { idAssignation: 'ASG_10', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-11', statut: 'En attente', statutReponses: 'non_rempli', suiviClos: false },
+      ],
+      NOMS,
+      MAINTENANT,
+    );
+    expect(cartes.map(c => [c.idAssignation, c.statutReponses])).toEqual([
+      ['ASG_9', undefined],
+      ['ASG_10', 'non_rempli'],
+    ]);
+  });
+
   it('ignore les dates limites invalides', () => {
     const cartes = cartesAssignationsEnRetard(
       [{ idAssignation: 'ASG_5', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: 'hier', statut: 'En attente', statutReponses: 'non_rempli' }],

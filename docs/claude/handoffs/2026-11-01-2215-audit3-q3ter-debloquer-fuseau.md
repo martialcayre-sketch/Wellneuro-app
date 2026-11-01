@@ -78,6 +78,17 @@ Les restes de Q3 bis tranchés par le responsable le 2026-11-01 :
     tient de toute façon.
 - Après corrections : T1 complet code 0 ; T2 `--fast` code 0 (Vitest :
   15 558 passés, 40 sautés ; E2E : 303 passés, 7 sautés).
+- PR #1812, tête 7db1967a : CI code 0. CodeRabbit en quota épuisé ;
+  PR-Agent (run 41351606723 sur la tête, « No major issues ») et Copilot :
+  - Copilot, suivi clos (élevé) : corrigé — le Fil garde les suivis
+    clôturés, et « Débloquer » y aurait écrit alors que le rappel y est
+    refusé (`accepteNouvelEnvoi`) ; la route marque `suiviClos`, la carte
+    ne porte plus le statut et garde « Rappeler ». Mutations : cartes qui
+    ignorent la marque (2 bancs), route qui ne marque pas (1). La garde
+    serveur du `PATCH`, demandée aussi, est routée (voir problèmes
+    ouverts) : elle toucherait le dossier, hors de l'arbitrage.
+- `origin/main` avancé (#1811) : fusionné dans la branche sur arbitrage du
+  responsable (de98fb87), sans conflit.
 
 ## Problèmes ouverts
 
@@ -86,6 +97,10 @@ Les restes de Q3 bis tranchés par le responsable le 2026-11-01 :
   bloc « échu » du dossier lui offre « Débloquer » (la route `PATCH` ne
   refuse ni annulée ni complétée). Écarter les annulées des deux surfaces,
   ou garder la route ? Question au responsable.
+- Même question pour un suivi clôturé : la route `PATCH` déverrouille sans
+  `accepteNouvelEnvoi` (Copilot, #1812). Le Fil ne l'offre plus ; le bloc
+  « échu » du dossier peut l'offrir encore. Garde serveur dans le `PATCH` ?
+  Question au responsable.
 - Q2 revient avec l'audit 2.
 
 ## Prochaine action exacte

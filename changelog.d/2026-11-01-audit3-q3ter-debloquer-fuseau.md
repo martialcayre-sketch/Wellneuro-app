@@ -4,7 +4,8 @@
   pas déverrouillé, le bouton est « Débloquer » (« Déblocage… » pendant
   l'appel), sans confirmation, comme dans le dossier ; l'échéance ne change
   pas. Après le déblocage, la carte reste et le bouton devient « Rappeler » :
-  débloquer ne prévient pas le patient.
+  débloquer ne prévient pas le patient. Une assignation annulée ou un suivi
+  clôturé ne se débloquent pas depuis le Fil.
 - Rappel de questionnaire : le lendemain de l'échéance se calcule par le
   calendrier. Le soir du passage à l'heure d'hiver, le rappel n'est plus
   possible une heure avant que le portail ne dise « Expiré ».
