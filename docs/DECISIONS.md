@@ -11,8 +11,9 @@
 - Date : 2026-11-01
 - Statut : accepté. Le responsable a retenu le principe le 2026-11-01, en
   conversation (« décision 1 ok »), sur une recommandation de l'intégrateur
-  de l'essai de [[D-373]] (fiche H89). La forme des §1 à §6 a été rédigée
-  par l'intégrateur ; le responsable la relit à la revue de la PR.
+  de l'essai de [[D-373]] (fiche H89). L'intégrateur a rédigé la forme des
+  §1 à §6, et le responsable l'a confirmée le même jour (« tout confirmé »).
+  Le §7 n'est pas décidé : il signale une question ouverte.
 - Domaine : gouvernance du registre (`docs/DECISIONS.md`) ; gardes
   `scripts/lib/decisions-numerotation.mjs` et
   `scripts/wn-reserver-decision.mjs` ; tests qui lisent une décision ;
@@ -25,7 +26,8 @@
     délibérément à créneau unique ») et dans l'en-tête du registre
     (« Append-only. Insérer une nouvelle décision […] à son rang »).
 - **Ne touche pas** :
-  - le texte des 414 décisions existantes ;
+  - le texte des 414 décisions existantes, repris à l'identique, sauf les
+    deux exceptions du §3 (niveau du titre, cibles des liens relatifs) ;
   - la convention `[[D-NNN]]`, qu'aucun outil ne résout ;
   - les documents datés qui citent `docs/DECISIONS.md` (handoffs, campagnes,
     fragments, journal), qu'on ne réécrit pas ;
