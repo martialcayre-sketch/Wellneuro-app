@@ -6,6 +6,210 @@
 
 ## Décisions actives
 
+### D-413 — Point d'étape, motif de non-prise : retiré du questionnaire ; réponses passées gardées lisibles ; retrait appliqué par un lot de code versionné (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16
+  validée telle quelle), en séance de gestes de la file D (n° 4).
+- Domaine : point d'étape J7/J14/J21 ([[D-366]], H19) ; question
+  `observance_complements_motif` de `web/src/lib/protocol/checkinDomain.ts` ;
+  ses lecteurs `adhesion.ts` et `trajectoireIntentions.ts`.
+- Ne touche pas : aucun code dans cette décision ; la question de prise du
+  complément ([[D-412]]) ; le signalement d'un problème, indépendant.
+- Contexte : aucun instrument français validé, court et adapté aux
+  compléments n'a été trouvé (MAR-Scale, Voils et al. 2012, ASK-12 :
+  médicaments ; aucune version française trouvée ; `WN-SRC-0583`, `0585`,
+  `0588`). La question
+  est posée dès qu'un complément est prescrit, quelle que soit la réponse sur
+  la prise, et n'admet qu'un motif.
+
+**§1 — Retrait.** La question « S'il y a eu un frein, lequel ? (facultatif) »
+et ses modalités (Oubli, Gêne digestive, Doute, Autre) sortent du point
+d'étape. La question de prise reste.
+
+**§2 — Historique.** Les réponses déjà enregistrées restent lisibles selon la
+version de contrat sous laquelle elles l'ont été ; aucune n'est supprimée ni
+convertie. L'absence de motif dans une réponse nouvelle ne signifie ni
+absence de difficulté, ni absence d'effet indésirable.
+
+**§3 — Application.** Par un lot de code à part (§8 du plan) : nouvelle
+version du catalogue, validation des réponses selon leur version, lecteurs
+historiques préservés, tests de non-régression, besoin de migration vérifié
+au lot (aucune absence présumée). Rien ne change en service avant ce lot.
+
+### D-412 — Point d'étape, prise du complément : item gardé, déclaré paramètre technique transitoire ; MAR-Scale et NHANES écartés (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16).
+- Domaine : point d'étape ([[D-366]], H19) ; question
+  `observance_complements` (`checkinDomain.ts`, extension
+  `checkin-catalogue-v2-observance-complements`).
+- Ne touche pas : aucun code ; la condition d'affichage (complément
+  prescrit) ; aucune décision de prescription, d'arrêt ou de reprise.
+
+**Nom** : prise déclarée du complément proposé. **Item** : « Avez-vous pu
+prendre le complément proposé cette semaine ? ». **Échelle** : Pas encore
+commencé / Quelques prises / La plupart des jours / Tous les jours, échelle
+locale gardée telle quelle. **Source** : aucune source ne certifie l'item ni
+son échelle. **Nature** : paramètre technique (DC-20), transitoire : une
+observation de pilotage, non une mesure de l'observance. **Lecture du
+praticien** : la réponse telle quelle, sans score, pourcentage, seuil ni
+qualification ([[D-333]]) ; elle ne dit rien de la posologie ni de
+plusieurs compléments.
+
+**Candidats écartés** : item de fréquence de la MAR-Scale (Unni, Sternbach,
+Goren 2019, `WN-SRC-0583` : médicaments, 7 jours, sans version française) ;
+NHANES DSD103 (`WN-SRC-0584` : 30 jours, sans version française). Le
+remplacement reste ouvert : une nouvelle décision le portera si un
+instrument admissible apparaît.
+
+### D-411 — Point d'étape, sommeil : item gardé, déclaré paramètre technique transitoire ; la mesure du sommeil va au dispositif distinct (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16).
+- Domaine : point d'étape ([[D-366]], H19) ; question `sommeil`
+  (`checkinDomain.ts`) ; dispositif distinct de [[D-407]].
+- Ne touche pas : aucun code ; l'agenda du sommeil et son indice ([[D-403]]).
+
+**Nom** : impression du patient sur son sommeil depuis le début. **Item** :
+« Votre sommeil depuis le début ? ». **Échelle** : Mieux / Stable / Moins
+bien, échelle locale gardée telle quelle. **Source** : aucune. **Nature** :
+paramètre technique (DC-20), transitoire. **Lecture du praticien** : la
+réponse telle quelle, sans score ni qualification ; elle ne mesure pas un
+changement clinique.
+
+**Candidats écartés pour le point d'étape** : PROMIS Sleep Disturbance
+(Coste et al. 2018, `WN-SRC-0581` ; HealthMeasures recommande pour
+l'évaluation individuelle la forme à 8 items et non le profil PROMIS-29,
+`WN-SRC-0587`) ; ISI (Stern et al. 2026, `WN-SRC-0586` : rappel de deux
+semaines, permission du développeur) ; PGIC (`WN-SRC-0582` : traduction
+d'étude, autre construit). La mesure du sommeil relève du dispositif
+distinct ([[D-407]] §2).
+
+### D-410 — Point d'étape, énergie : item gardé, déclaré paramètre technique transitoire ; la mesure de la fatigue va au dispositif distinct (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16).
+- Domaine : point d'étape ([[D-366]], H19) ; question `energie`
+  (`checkinDomain.ts`) ; dispositif distinct de [[D-407]].
+- Ne touche pas : aucun code.
+
+**Nom** : impression du patient sur son énergie depuis le début. **Item** :
+« Votre énergie depuis le début ? ». **Échelle** : Mieux / Stable / Moins
+bien, échelle locale gardée telle quelle. **Source** : aucune. **Nature** :
+paramètre technique (DC-20), transitoire. **Lecture du praticien** : la
+réponse telle quelle, sans score ni qualification ; elle ne mesure pas la
+fatigue.
+
+**Candidats écartés pour le point d'étape** : PROMIS Fatigue (Coste et al.
+2018, `WN-SRC-0581`, sensibilité au changement non évaluée ; HealthMeasures
+recommande pour l'évaluation individuelle la forme à 13 items,
+`WN-SRC-0587`) ; PGIC (`WN-SRC-0582` : activités quotidiennes, non
+l'énergie). La mesure de la fatigue relève du dispositif distinct
+([[D-407]] §2).
+
+### D-409 — Point d'étape, tolérance : item gardé, déclaré paramètre technique transitoire ; PRO-CTCAE et FIBSER écartés ; le signalement reste indépendant (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16).
+- Domaine : point d'étape ([[D-366]], H19) ; question `tolerance`
+  (`checkinDomain.ts`).
+- Ne touche pas : aucun code ; le signalement d'un problème, ses pauses et
+  leur traitement, qui gardent leurs règles propres.
+
+**Nom** : tolérance déclarée de l'action principale. **Item** : « Comment
+l'avez-vous tolérée ? ». **Échelle** : Bien / Quelques gênes / Difficilement,
+échelle locale gardée telle quelle. **Source** : aucune. **Nature** :
+paramètre technique (DC-20), transitoire. **Lecture du praticien** : la
+réponse telle quelle, sans classement ; « Bien » n'exclut aucun événement
+indésirable, « Difficilement » n'attribue aucune cause. Aucune réponse ne
+lève une pause ni ne remplace un signalement.
+
+**Candidats écartés** : PRO-CTCAE (`WN-SRC-0580` : traduction française
+certifiée, mais items par symptôme, oncologie, adaptation interdite sans
+accord écrit) ; FIBSER (Wisniewski et al. 2006, `WN-SRC-0579` : effets d'un
+médicament, sans version française). Remplacement ouvert.
+
+### D-408 — Point d'étape, adhésion : item gardé, déclaré paramètre technique transitoire ; SDSCA et Milton écartés (lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01 (fiche m16).
+- Domaine : point d'étape ([[D-366]], H19) ; question `adhesion`
+  (`checkinDomain.ts`).
+- Ne touche pas : aucun code.
+
+**Nom** : réalisation déclarée de l'action principale. **Item** :
+« Avez-vous pu réaliser l'action principale cette semaine ? ». **Échelle** :
+Pas encore / Quelques jours / La plupart des jours / Tous les jours, échelle
+locale gardée telle quelle. **Source** : aucune. **Nature** : paramètre
+technique (DC-20), transitoire. **Lecture du praticien** : la réponse telle
+quelle, sans conversion en jours ni en pourcentage, sans qualification ;
+elle ne dit pas si l'action a suivi sa fréquence prévue. « Sans
+qualification » vise la lecture de l'item lui-même : la météo d'adhésion
+([[D-334]] §3, SP-MET) reste inchangée et continue de dériver son état
+d'ensemble de cette réponse, par sa table signée ; la présente décision ne
+la touche pas.
+
+**Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0577` : diabète,
+sans version française, droits non établis) ; item unique de Milton et al.
+2011 (`WN-SRC-0578` : activité physique seule). Remplacement ouvert.
+
+### D-407 — Point d'étape : outil de pilotage, bref et déclaratif, sans score ; la mesure clinique de la fatigue et du sommeil va à un dispositif distinct, instruit d'abord sur le catalogue existant (amende D-366 §1 ; lettre bf, m16)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrage du responsable du 2026-11-01, sur questions
+  à options (Q1 à Q5) puis fiche m16 validée telle quelle. Recherche et
+  aide à la décision préparées par le responsable avec un assistant
+  conversationnel externe, qui n'est source d'aucune valeur ; faits
+  vérifiés par la session (Europe PMC, textes intégraux, pages
+  institutionnelles). Dérogation à [[D-366]] §2 et maintien de la météo
+  ([[D-334]] §3) arbitrés le même jour sur deux remarques de revue de la PR,
+  avant son merge.
+- Domaine : [[D-366]] §1 et §2 ; point d'étape ([[D-317]], H19) ; renvoi
+  des questionnaires autour de J21 ([[D-353]]) ; questionnaires du sommeil
+  et de la fatigue déjà servis.
+- Amende : [[D-366]] §1 (« Aucune saisie à part ») pour la seule mesure de
+  la fatigue et du sommeil ; [[D-366]] §2 (source certifiée, échelle reprise
+  de la source) pour les seules cinq questions de [[D-408]] à [[D-412]],
+  à titre transitoire (§1 ci-dessous).
+- Ne touche pas : aucun code ; aucun instrument choisi ; aucun calendrier
+  fixé ; aucune licence engagée.
+- Contexte : les six questions du point d'étape sont toutes
+  « apparentées » à des instruments publiés, jamais reprises d'eux. Les
+  candidats pour la fatigue et le sommeil (PROMIS) portent un score, que le
+  contrat du point d'étape exclut ; HealthMeasures ne recommande pas
+  PROMIS-29 pour l'évaluation individuelle et recommande des formes de 13 et
+  8 items, ce qui porterait le point d'étape de 4-6 à 23-24 items ; la
+  sensibilité au changement de PROMIS-29 en français n'est pas évaluée
+  (Coste et al. 2018).
+
+**§1 — Le point d'étape pilote.** Il reste bref et déclaratif, sans score,
+sans pourcentage, sans chiffre au patient. Ses questions sont des paramètres
+techniques déclarés un à un ([[D-408]] à [[D-412]]) ; le motif de non-prise
+est retiré ([[D-413]]). Chacune de ces décisions porte ce que demande
+[[D-366]] §2 (nom, nature, lecture du praticien), sauf la source et
+l'échelle reprise de la source : par dérogation à [[D-366]] §2, les cinq
+questions gardent leur échelle existante, déjà servie (contrat
+`c2a-checkin-v1`), sans source, tant qu'aucun remplacement n'est décidé.
+La dérogation ne vaut que pour elles : toute autre mesure, dont le
+dispositif distinct du §2, reste sous [[D-366]] §2 entier.
+
+**§2 — La mesure va à un dispositif distinct.** La mesure clinique de la
+fatigue et du sommeil se fait hors du point d'étape, par un dispositif à
+part (amende [[D-366]] §1 sur ce seul point). Son instrument et son
+calendrier ne sont pas décidés ici.
+
+**§3 — L'ordre d'instruction.** D'abord ce qui est déjà servi : les
+questionnaires du sommeil et de la fatigue du catalogue et le renvoi autour
+de J21 ([[D-353]]) — version française, sensibilité au changement, droits.
+PROMIS seulement si rien ne convient, après confirmation écrite de
+HealthMeasures (forme, usage individuel répété, traduction) et devis
+(`WN-SRC-0587`).
+
+**Effet sur le plan.** H19 : l'instruction de bf est close (une décision par
+question). Une ligne neuve de la file D porte l'instruction du dispositif
+distinct ; le retrait du motif part en lot de code au §8.
+
 ### D-406 — J2-nf5 (H65, porte 20) : deux passations du même instrument comparées au cockpit ; même version établie par un registre déclaré, sans migration ; cycle en cours ouvert à la confirmation de l'ancre précédente ; écart en points bruts, sans bande
 
 - Date : 2026-11-01
@@ -3486,6 +3690,27 @@ et la place 9 la chaîne de H74. [[D-346]] §3 s'applique : une place de 6 à
 11 prête avant une autre passe devant. Le reste du §7 ne change pas : porte
 18, drapeau posé sur accord du responsable, même constat. Les places 8 et 9
 gardent leurs préalables et s'ouvrent après la bibliothèque.
+
+**Amendement (2026-11-01) — la moitié mineur du constat, prouvée par le
+mécanisme.** Arbitrage du responsable, sur question à options (liste commune
+de questions) : la production ne compte aucun dossier mineur le jour du
+constat (relecture par conteneur), si bien que « un dossier mineur n'en voit
+pas l'entrée » ne peut pas s'observer. Cette moitié se prouve par le
+mécanisme : la route rend 409 à un dossier mineur ou sans date, la page n'a
+alors aucun rayon, et le lien des fiches reste, puisque les deux sondes
+appellent la même fonction (`bibliothequeServie`, [[D-360]] §2). Les tests
+qui le couvrent sont rejoués verts le même jour (4 fichiers, 42 tests) :
+`api/portail/bibliotheque/route.test.ts` (409 « hors_majeur » au mineur et
+à la date manquante), `api/portail/fiches-assiette/route.test.ts` (la sonde
+des fiches répond `bibliotheque` selon le drapeau et l'âge),
+`patient-companion/LienBibliotheque.test.tsx` et
+`patient/bibliotheque/Bibliotheque.test.tsx` (mineur : aucun rayon). Le
+constat consigne
+« aucun dossier mineur » ; le relevé se refait sur le premier dossier mineur.
+La moitié majeur reste constatée sur un vrai dossier. Option écartée : créer
+un dossier de test mineur, qui laisserait en production un dossier réel sous
+le circuit mineur de [[D-284]]. Option écartée : laisser la moitié mineur en
+attente, ce qui garderait la porte 18 fermée sans terme connu.
 
 - Conséquences : fragment `changelog.d/2026-10-24-lettre-ap-bibliotheque.md` ;
   plan, fiche H82, ligne de la place 10 (§3) et table des lettres (§10).
