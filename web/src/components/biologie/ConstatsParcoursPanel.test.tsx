@@ -101,6 +101,14 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect(screen.getByRole('button', { name: 'Retirer le constat' })).toBeTruthy();
   });
 
+  it('structure signée sans hypothèse ni constat : le dit, n’offre aucune pose (D-401)', async () => {
+    stubFetch({ ...LECTURE, structureSignee: true, offertes: [], hypotheses: [] });
+    rendre();
+    expect(await screen.findByText(/ne déclare encore aucune hypothèse : aucun constat ne se pose/)).toBeTruthy();
+    expect(screen.queryByText(/n’est pas encore signée/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Poser un constat|Remplacer le constat/ })).toBeNull();
+  });
+
   it('remplace la tête : verdict, pièce, avertissement de la note ; envoie le geste puis relit', async () => {
     const fetchMock = stubFetch(LECTURE);
     rendre();

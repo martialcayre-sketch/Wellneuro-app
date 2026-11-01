@@ -393,6 +393,11 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
           La structure des fiches d’usage n’est pas encore signée : aucun constat ne se pose.
         </p>
       )}
+      {donnees && donnees.structureSignee && codes.length === 0 && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          La structure signée des fiches d’usage ne déclare encore aucune hypothèse : aucun constat ne se pose.
+        </p>
+      )}
       {donnees && codes.length > 0 && (
         <ul className="mt-3 space-y-4">
           {codes.map(code => {

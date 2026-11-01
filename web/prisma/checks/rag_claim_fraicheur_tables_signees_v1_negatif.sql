@@ -1287,7 +1287,8 @@ BEGIN
     PERFORM pg_temp.predicat_fraicheur_claims();
   EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
   END;
-  IF NOT a_leve OR position('WN-CL-0061-037' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
+  IF NOT a_leve OR position('WN-CL-0061-037' in msg) = 0 OR position('[fiches_usage]' in msg) = 0
+     OR position('absent du corpus' in msg) = 0 THEN
     RAISE EXCEPTION 'negatif N12: la ligne fiches_usage n''est gardee par rien — %', msg;
   END IF;
 

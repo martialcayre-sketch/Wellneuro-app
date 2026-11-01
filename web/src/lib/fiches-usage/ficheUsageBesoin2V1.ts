@@ -48,8 +48,8 @@ import {
 //
 // CE QUE CETTE V1 NE PORTE PAS : le statut réglementaire du produit proposé et
 // les renvois aux précautions (cadrage v3, §3.2) — reportés à BP-17, où
-// produits et précautions existent. Ajouter un champ change l'empreinte : tant
-// que la table est vide, rien ne repasse « à relire ».
+// produits et précautions existent. Ajouter un champ change l'empreinte, et
+// donc appelle une re-signature.
 //
 // L'EMPREINTE DE LA STRUCTURE porte le texte : chaque version d'une fiche et
 // chaque libellé portent `structureSha256`, celle de la structure qu'ils

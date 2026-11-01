@@ -10,6 +10,8 @@
 - Signée le même jour, sur la déclaration du responsable après lecture de la
   surface de relecture : le verrou de la structure est posé. Les textes des
   fiches restent à écrire et à valider par acte, dans leur lot.
+- Panneau « Constats du parcours » (praticien) : signée sans hypothèse, la
+  structure n'offre aucune pose, et l'écran le dit désormais.
 - Les 277 paires entrent au contrat de fraîcheur (`fiches_usage`, sans
   exigence de `prescriptif`), avec leur cas négatif `N12`. Aucune migration ;
   rien n'est servi au patient.
