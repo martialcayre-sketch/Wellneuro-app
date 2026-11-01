@@ -6,6 +6,56 @@
 
 ## Décisions actives
 
+### D-400 — Table d'arrêt signée avec les grilles qu'elle cite (E64) ; un porteur pour chacune des trois dernières règles orphelines (E32) : BP-12a pour DC-11 et DC-45, un lot neuf du moteur d'orientation pour DC-36
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01, en séance de
+  gestes de la file D (n° 4, ligne m14), par questions à options.
+- Domaine : signature de la table d'arrêt (`clinical/stopRulesV1.ts`,
+  `orientationService.tableArretSignee()`) ; constitution clinique (`DC-11`,
+  `DC-36`, `DC-45`).
+- Ne touche pas : aucun code dans cette décision ; aucune règle d'arrêt,
+  aucune grille, aucun seuil ; la signature du 2026-10-10 ([[D-278]] §2)
+  reste valide à sa portée actuelle jusqu'au lot du §1 ; le texte des trois
+  règles est inchangé.
+- Contexte : une revue de #1396 (2026-10-10) a relevé que l'empreinte signée
+  de la table d'arrêt ne hache que `STOP_RULES_V1`. Les règles citent des
+  libellés de zone (STOP-STR : Q_STR_01, Q_STR_03, Q_STR_04 sous-échelles S,
+  A et D) : la borne qui les allume est écrite dans l'instrument, hors de la
+  signature. Le même défaut, constaté le 2026-09-13 ([[D-180]]) sur les tables
+  d'orientation et de biologie, y est réparé par `grillesSignees.ts`. Par
+  ailleurs, [[D-266]] §7 a repris huit des onze règles orphelines ; la
+  campagne dédiée de [[D-107]] n'a jamais été ouverte, et trois règles
+  restaient sans porteur.
+
+**§1 — La signature de la table d'arrêt couvre les grilles qu'elle cite.** Le
+périmètre signé devient `{ règles, grilles }` : les règles de `STOP_RULES_V1`
+et les grilles des instruments qu'elles citent, au périmètre que
+`grillesSignees.ts` hache pour les tables d'orientation et de biologie. Un lot
+de code à part l'applique, sans changement de comportement ; le responsable
+re-signe l'empreinte composite dans ce lot, avant son merge (date et littéral
+de `STOP_RULES_METADATA`). Conséquence acceptée : après ce lot, une borne
+déplacée sur l'une de ces grilles ferme `tableArretSignee()`, et les
+extinctions se suspendent jusqu'à la re-signature (fail-closed).
+
+**§2 — Un porteur pour chacune des trois dernières règles orphelines.** Même
+régime que [[D-266]] §7 : un porteur nommé n'arme rien tant que son lot n'est
+pas livré.
+
+| Règle | Porteur |
+|---|---|
+| `DC-11`, part hors exclusions (indication, conditions d'entrée, dose, durée, population, contre-indications, interactions, rôle du praticien) | BP-12a (fiches d'usage, F05) |
+| `DC-36` | lot neuf du moteur d'orientation (`orientationEngine.ts`), file A, à cadrer (§8 du plan) |
+| `DC-45` | BP-12a (fiches d'usage, F05), sur la nomenclature unique de [[D-266]] §3 |
+
+Aucune règle de la constitution ne reste orpheline. La campagne dédiée de
+[[D-107]] n'a plus d'objet.
+
+**Ce que la décision ne fait pas.** Elle ne rédige aucun champ de fiche
+d'usage et ne fixe aucune pondération de choix de questionnaire ; ces contenus
+restent à la main du responsable, dans leur lot. Elle ne change pas la
+structure de BP-12a, qui se signe à part (b23, [[D-314]] §10).
+
 ### D-399 — Audit 3, lot Q3 : la ligne du journal se réserve avant l'envoi, sous un verrou par dossier ; un rappel couvre les questionnaires rappelables du dossier ; seuls les envois partis comptent
 
 - Date : 2026-11-01
