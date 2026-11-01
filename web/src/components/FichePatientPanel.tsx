@@ -883,23 +883,34 @@ export function FichePatientPanel({
       });
   }, [idPatient]);
 
-  useEffect(() => {
-    if (!data || 'unavailable' in data) return;
-    const email = data.patient.email;
-
+  // Les comparaisons dépendent des ancres de cycle (D-406 §3) : la liste se
+  // relit aussi après un geste qui relit la trajectoire (confirmation d'une
+  // ancre). Une lecture antérieure encore en vol n'écrase pas la plus récente.
+  const emailReponses = data && !('unavailable' in data) ? data.patient.email : null;
+  const generationReponses = useRef(0);
+  const chargerReponses = useCallback(async () => {
+    if (!emailReponses) return;
+    const generation = ++generationReponses.current;
     setLoadingReponses(true);
-    fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`)
-      .then(r => r.json())
-      .then((d: ReponsesApiResponse) => {
-        setReponses(d.reponses ?? []);
-        setComparaisons(d.comparaisons ?? null);
-      })
-      .catch(() => {
-        setReponses([]);
-        setComparaisons(null);
-      })
-      .finally(() => setLoadingReponses(false));
-  }, [data]);
+    try {
+      const d = (await (await fetch(`/api/praticien/reponses?email=${encodeURIComponent(emailReponses)}`)).json()) as ReponsesApiResponse;
+      if (generation !== generationReponses.current) return;
+      setReponses(d.reponses ?? []);
+      setComparaisons(d.comparaisons ?? null);
+    } catch {
+      if (generation !== generationReponses.current) return;
+      setReponses([]);
+      setComparaisons(null);
+    } finally {
+      if (generation === generationReponses.current) setLoadingReponses(false);
+    }
+  }, [emailReponses]);
+
+  // `data` reste une dépendance : toute relecture du dossier relit la liste,
+  // comme avant.
+  useEffect(() => {
+    void chargerReponses();
+  }, [data, chargerReponses]);
 
   // Demandes de correction du dossier affiché. Les deux filtres partent au
   // serveur : appliqués en mémoire, ils l'étaient APRÈS la troncature à 40 de la
@@ -1199,6 +1210,13 @@ export function FichePatientPanel({
       );
     }
   }, [idPatient]);
+
+  // Un geste qui relit la trajectoire (confirmation d'une ancre) relit aussi
+  // les comparaisons, dont le cycle en cours en dépend (D-406 §3).
+  const rechargerTrajectoireEtReponses = useCallback(() => {
+    void chargerTrajectoire();
+    void chargerReponses();
+  }, [chargerTrajectoire, chargerReponses]);
 
   // Lecture désormais engagée dès l'ouverture de la fiche (SP-CONV LOT-02) :
   // le bandeau d'épisode (« Épisode N en cours · Jour X du protocole », D-255) en a besoin au
@@ -2741,7 +2759,7 @@ export function FichePatientPanel({
                 onEtatChange={setEtatRuntime}
                 trajectoirePartagee={trajectoire}
                 statutTrajectoirePartage={etatTrajectoire}
-                onRechargerTrajectoire={chargerTrajectoire}
+                onRechargerTrajectoire={rechargerTrajectoireEtReponses}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
                 demandeAssemblage={demandesAssemblage}
                 demandeSousVueBiologie={demandesArbitrage}
