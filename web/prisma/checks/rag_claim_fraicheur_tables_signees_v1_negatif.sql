@@ -7,7 +7,7 @@
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- TREIZE CAS. Douze formes de rupture doivent lever ; le treizième — joué EN
+-- QUINZE CAS. Quatorze formes de rupture doivent lever ; le quinzième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,16 +20,17 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` À `N12` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- `N7` À `N14` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
 -- ([[D-053]]), priorités d'intervention ([[D-054]]), catalogue de conduites
 -- ([[D-224]], ajouté le jour où la table entre au contrat : une revue a constaté
 -- que ses deux paires n'étaient exercées qu'à l'état SAIN), registre des
 -- conflits de sources ([[D-103]], ajouté au lendemain : le même trou y était
 -- ouvert depuis le 2026-08-24, et c'est en écrivant `N10` qu'il s'est vu), et
--- fiches d'usage ([[D-401]], ajouté sur la contre-revue du lot).
--- La liste des tables du contrat et celle des cas `N7+` se comparent à l'œil,
--- table par table — et la comparaison du 2026-11-01 dit que deux tables n'ont
--- pas encore le leur : `portes_biologiques` et `indications_assiettes`.
+-- fiches d'usage ([[D-401]], ajouté sur la contre-revue du lot), puis
+-- portes biologiques et indications d'assiette (`N13`, `N14`, le même jour :
+-- la comparaison qui a fait écrire `N12` a montré qu'elles n'avaient pas le
+-- leur). La liste des tables du contrat et celle des cas `N7+` se comparent à
+-- l'œil, table par table : depuis le 2026-11-01, chaque table a son cas.
 -- N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
@@ -38,11 +39,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les douze ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les quatorze ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les treize cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les quinze cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui
@@ -1292,7 +1293,38 @@ BEGIN
     RAISE EXCEPTION 'negatif N12: la ligne fiches_usage n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 12 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources et 277 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
+  -- ── N13 — LA LIGNE `portes_biologiques` EST GARDÉE, ELLE AUSSI ───────────
+  -- Huit paires ([[D-245]]), exercées jusqu'ici à l'état SAIN seulement : un
+  -- prédicat exemptant `table_signee = 'portes_biologiques'` de TOUTES les
+  -- propriétés passait `N0` à `N12`. Même mutation que `N12`, la version, pour
+  -- la même raison ; le claim muté, `WN-CL-0043-013`, n'est épinglé par
+  -- aucune autre table.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0043-013';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0043-013' in msg) = 0 OR position('[portes_biologiques]' in msg) = 0
+     OR position('absent du corpus' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N13: la ligne portes_biologiques n''est gardee par rien — %', msg;
+  END IF;
+
+  -- ── N14 — LA LIGNE `indications_assiettes` EST GARDÉE, ELLE AUSSI ────────
+  -- Vingt paires ([[D-225]]), même trou, même patron ; le claim muté,
+  -- `WN-CL-0285-001`, n'est épinglé par aucune autre table.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0285-001';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0285-001' in msg) = 0 OR position('[indications_assiettes]' in msg) = 0
+     OR position('absent du corpus' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N14: la ligne indications_assiettes n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 14 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette et 277 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;
