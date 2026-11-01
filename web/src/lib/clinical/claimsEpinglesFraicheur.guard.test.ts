@@ -29,7 +29,16 @@ const RACINE = path.resolve(__dirname, '../../../..');
 const CLINIQUE = path.join(RACINE, 'web/src/lib/clinical');
 // La structure signée des fiches d'usage vit hors de `clinical/` par décision
 // ([[D-314]] §2, [[D-266]] §6) ; son contrat de fraîcheur s'étend à elle (§5).
-const RACINES_BALAYEES = [CLINIQUE, path.join(RACINE, 'web/src/lib/fiches-usage')];
+// La table des indications de biologie aussi ([[D-069]]) : signée le
+// 2026-09-16, elle est restée hors balayage jusqu'au 2026-11-01 ([[D-419]],
+// revue de #1816) — ses vingt-neuf claims n'étaient gardés par rien. Le
+// balayage n'est pas récursif : `biology-library/import/`, dont la table signée
+// n'épingle aucun claim, n'y entre pas.
+const RACINES_BALAYEES = [
+  CLINIQUE,
+  path.join(RACINE, 'web/src/lib/fiches-usage'),
+  path.join(RACINE, 'web/src/lib/biology-library'),
+];
 
 /** Les sources de production des racines balayées, par nom de fichier et chemin. */
 function sourcesBalayees(): { fichier: string; chemin: string }[] {
@@ -129,6 +138,9 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // interdites, limites —, pas une conduite : ses claims tiennent le régime des
   // contradictions (validé, actif, non remplacé), sans `prescriptif`.
   'ficheUsageBesoin2V1.ts': 'fiches_usage',
+  // Table des indications de biologie ([[D-069]], signée le 2026-09-16), entrée
+  // le 2026-11-01 avec ses vingt-neuf paires ([[D-419]]).
+  'indicationsBiologieV1.ts': 'indications_biologie',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -248,6 +260,16 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // [[D-046]] réserve à chaque table nouvelle). Entrée avec la première paire,
   // le jour où la structure est écrite (2026-11-01).
   fiches_usage: false,
+  // UNE INDICATION DE BIOLOGIE N'EXIGE PAS LE PRESCRIPTIF — arbitrage du
+  // responsable, 2026-11-01 ([[D-419]]), la question que [[D-046]] réserve à
+  // chaque table nouvelle. Elle ressemble à l'orientation — elle fait proposer
+  // un panel —, mais son périmètre signé porte deux claims descriptifs
+  // (`WN-CL-0106-027`, `WN-CL-0107-012`, relus `prescriptif = false` en
+  // production le 2026-09-14 et le 2026-11-01) : ils donnent la LECTURE d'un
+  // seuil de `BIO-STR-01`, pas une conduite. Les exiger prescriptifs bloquerait
+  // toute release, ou forcerait à retoucher une table signée. Motif de fond de
+  // [[D-236]] : la prescription vient de la SIGNATURE praticien.
+  indications_biologie: false,
 };
 
 interface TableSignee {
