@@ -6,6 +6,75 @@
 
 ## Décisions actives
 
+### D-417 — BP-12a après la signature de sa structure : DC-11 partagée avec BP-17, DC-45 en quatrième axe « niveau de mesure », plafond de l'information contributive aligné sur D-266 §3, application à la re-signature B9/B12 (b23)
+
+- Date : 2026-11-01
+- Statut : accepté — arbitrages du responsable du 2026-11-01 (questions à
+  options, puis fiche validée telle quelle), en séance de gestes de la file D
+  (n° 4, ligne b23).
+- Domaine : clinique — structure signée des fiches d'usage
+  (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`, `vocabulaire.ts`) ;
+  constitution clinique (`DC-11`, `DC-45`) ; plan, fiches F05 (BP-12a) et
+  F11 (BP-17).
+- Amende : [[D-400]] §2 (porteur de `DC-11`) ; [[D-314]] §9, arbitrage 17
+  (correspondance nature ↔ statut).
+- Ne touche pas : aucun code dans cette décision ; la structure signée le
+  2026-11-01 ([[D-401]]), ni son empreinte, ni ses trente fiches ; aucune
+  migration ; aucun texte de fiche, aucune valeur, aucun seuil, aucune dose.
+- Contexte, lu au dépôt le 2026-11-01 : [[D-400]] §2 a confié à BP-12a la
+  part de `DC-11` hors exclusions et `DC-45`, avant que [[D-401]] écrive et
+  signe la structure, qui n'en dit rien. Les rubriques attendues des trente
+  fiches : `question` et `population` 30, `precautions` 20, `options` 17,
+  `interpretations` 10, `surveillance_arret` 7, `argument_preference` 6,
+  `limites` 5, `preanalytique_contexte` 4, `resultats_consequences` 1 ; une
+  rubrique n'est attendue que si un claim la porte ([[D-401]] §2.3). Aucune
+  rubrique ne porte la dose, les interactions ni le rôle du praticien.
+  `DC-11` vise un claim d'intervention ; une fiche d'usage décrit l'usage
+  d'une mesure. Les niveaux A/B/C de `DC-45` ne figurent pas dans la
+  structure. [[D-266]] §3 plafonne l'information contributive à « preuves
+  limitées » ; `STATUTS_ADMIS_PAR_NATURE` lui admet aussi « étayé et
+  validé » ; les trente fiches sont en « preuves limitées ».
+
+**§1 — `DC-11` hors exclusions, partagée.** BP-12a porte la population
+(identifiant et rubrique, obligatoires), l'indication et les conditions
+d'entrée (`question`, `preanalytique_contexte`). BP-17 (F11) porte la dose,
+la durée, les contre-indications, les interactions et le rôle du praticien,
+avec les produits, le statut réglementaire et les renvois aux précautions
+qu'il porte déjà ([[D-314]] §9, arbitrage 20). Les rubriques `precautions` et
+`surveillance_arret` de BP-12a restent ce qu'elles sont : elles portent sur
+l'usage de la mesure et ne tiennent pas `DC-11`. Écartés : tout dans BP-12a
+par des rubriques neuves (migration, et une rubrique sans claim resterait non
+attendue) ; une correspondance écrite qui laisserait dose, interactions et
+rôle sans porteur effectif.
+
+**§2 — `DC-45` : un quatrième axe de la structure, « niveau de mesure ».**
+Ses valeurs sont les trois de `DC-45` — mesure standard ou conventionnelle,
+exploration fonctionnelle, marqueur expérimental ou débattu —, en
+identifiants. Une valeur par fiche, pré-remplie par une règle écrite sur la
+surface de relecture, puis corrigée par le responsable avant sa déclaration
+(régime de [[D-401]] §2.2). L'axe reste distinct des trois axes de [[D-266]]
+§3, sans fusion. Il ne vit que dans la structure : aucune migration.
+Écartés : le niveau porté par l'analyte, hors fiche ; le niveau porté par la
+nature du lien, qui fusionnerait deux axes contre [[D-266]] §3.
+
+**§3 — Le plafond : [[D-266]] §3 fait foi.** Une information contributive
+admet au plus « preuves limitées ». Un lot de code aligne
+`STATUTS_ADMIS_PAR_NATURE` : une structure qui dépasse ce plafond ne se signe
+pas. L'empreinte ne couvre que la structure, pas cette constante : la
+structure signée le 2026-11-01 reste valide. Écarté : amender [[D-266]] §3
+pour admettre les trois statuts.
+
+**§4 — Application.** L'axe du §2 entre à la re-signature de B9 et B12, avec
+leurs fiches ([[D-314]] §10) : textes et libellés ne repassent « à relire »
+qu'une fois. Le lot du §3 peut partir avant. Écartée : une re-signature
+dédiée des trente fiches.
+
+**§5 — Suites.** Au §8 du plan, file A : le lot du plafond (§3) ; le lot de
+l'axe « niveau de mesure » (type, contrôle de cohérence, surface de
+relecture), avant la re-signature de B9 et B12. Fiches F05 et F11 : fragments
+de journal. Constitution : `DC-11` et le paragraphe des statuts orphelins
+nomment les deux porteurs.
+
 ### D-416 — La structure signée des fiches d'usage et le contrat positif de fraîcheur deviennent des chemins déclencheurs de la release-db, sur le patron de D-389 §5 (amende D-044)
 
 - Date : 2026-11-01
@@ -137,8 +206,8 @@ bd ; des précautions déclarées comme arbitrage, sans source.
   complément ([[D-412]]) ; le signalement d'un problème, indépendant.
 - Contexte : aucun instrument français validé, court et adapté aux
   compléments n'a été trouvé (MAR-Scale, Voils et al. 2012, ASK-12 :
-  médicaments ; aucune version française trouvée ; `WN-SRC-0583`, `0585`,
-  `0588`). La question
+  médicaments ; aucune version française trouvée ; `WN-SRC-0595`, `0597`,
+  `0600`). La question
   est posée dès qu'un complément est prescrit, quelle que soit la réponse sur
   la prise, et n'admet qu'un motif.
 
@@ -177,8 +246,8 @@ qualification ([[D-333]]) ; elle ne dit rien de la posologie ni de
 plusieurs compléments.
 
 **Candidats écartés** : item de fréquence de la MAR-Scale (Unni, Sternbach,
-Goren 2019, `WN-SRC-0583` : médicaments, 7 jours, sans version française) ;
-NHANES DSD103 (`WN-SRC-0584` : 30 jours, sans version française). Le
+Goren 2019, `WN-SRC-0595` : médicaments, 7 jours, sans version française) ;
+NHANES DSD103 (`WN-SRC-0596` : 30 jours, sans version française). Le
 remplacement reste ouvert : une nouvelle décision le portera si un
 instrument admissible apparaît.
 
@@ -198,10 +267,10 @@ réponse telle quelle, sans score ni qualification ; elle ne mesure pas un
 changement clinique.
 
 **Candidats écartés pour le point d'étape** : PROMIS Sleep Disturbance
-(Coste et al. 2018, `WN-SRC-0581` ; HealthMeasures recommande pour
+(Coste et al. 2018, `WN-SRC-0593` ; HealthMeasures recommande pour
 l'évaluation individuelle la forme à 8 items et non le profil PROMIS-29,
-`WN-SRC-0587`) ; ISI (Stern et al. 2026, `WN-SRC-0586` : rappel de deux
-semaines, permission du développeur) ; PGIC (`WN-SRC-0582` : traduction
+`WN-SRC-0599`) ; ISI (Stern et al. 2026, `WN-SRC-0598` : rappel de deux
+semaines, permission du développeur) ; PGIC (`WN-SRC-0594` : traduction
 d'étude, autre construit). La mesure du sommeil relève du dispositif
 distinct ([[D-407]] §2).
 
@@ -221,9 +290,9 @@ réponse telle quelle, sans score ni qualification ; elle ne mesure pas la
 fatigue.
 
 **Candidats écartés pour le point d'étape** : PROMIS Fatigue (Coste et al.
-2018, `WN-SRC-0581`, sensibilité au changement non évaluée ; HealthMeasures
+2018, `WN-SRC-0593`, sensibilité au changement non évaluée ; HealthMeasures
 recommande pour l'évaluation individuelle la forme à 13 items,
-`WN-SRC-0587`) ; PGIC (`WN-SRC-0582` : activités quotidiennes, non
+`WN-SRC-0599`) ; PGIC (`WN-SRC-0594` : activités quotidiennes, non
 l'énergie). La mesure de la fatigue relève du dispositif distinct
 ([[D-407]] §2).
 
@@ -244,9 +313,9 @@ réponse telle quelle, sans classement ; « Bien » n'exclut aucun événement
 indésirable, « Difficilement » n'attribue aucune cause. Aucune réponse ne
 lève une pause ni ne remplace un signalement.
 
-**Candidats écartés** : PRO-CTCAE (`WN-SRC-0580` : traduction française
+**Candidats écartés** : PRO-CTCAE (`WN-SRC-0592` : traduction française
 certifiée, mais items par symptôme, oncologie, adaptation interdite sans
-accord écrit) ; FIBSER (Wisniewski et al. 2006, `WN-SRC-0579` : effets d'un
+accord écrit) ; FIBSER (Wisniewski et al. 2006, `WN-SRC-0591` : effets d'un
 médicament, sans version française). Remplacement ouvert.
 
 ### D-408 — Point d'étape, adhésion : item gardé, déclaré paramètre technique transitoire ; SDSCA et Milton écartés (lettre bf, m16)
@@ -269,9 +338,9 @@ qualification » vise la lecture de l'item lui-même : la météo d'adhésion
 d'ensemble de cette réponse, par sa table signée ; la présente décision ne
 la touche pas.
 
-**Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0577` : diabète,
+**Candidats écartés** : SDSCA (Toobert et al. 2000, `WN-SRC-0589` : diabète,
 sans version française, droits non établis) ; item unique de Milton et al.
-2011 (`WN-SRC-0578` : activité physique seule). Remplacement ouvert.
+2011 (`WN-SRC-0590` : activité physique seule). Remplacement ouvert.
 
 ### D-407 — Point d'étape : outil de pilotage, bref et déclaratif, sans score ; la mesure clinique de la fatigue et du sommeil va à un dispositif distinct, instruit d'abord sur le catalogue existant (amende D-366 §1 ; lettre bf, m16)
 
@@ -323,7 +392,7 @@ questionnaires du sommeil et de la fatigue du catalogue et le renvoi autour
 de J21 ([[D-353]]) — version française, sensibilité au changement, droits.
 PROMIS seulement si rien ne convient, après confirmation écrite de
 HealthMeasures (forme, usage individuel répété, traduction) et devis
-(`WN-SRC-0587`).
+(`WN-SRC-0599`).
 
 **Effet sur le plan.** H19 : l'instruction de bf est close (une décision par
 question). Une ligne neuve de la file D porte l'instruction du dispositif
