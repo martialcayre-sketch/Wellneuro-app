@@ -7,7 +7,7 @@
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- DOUZE CAS. Onze formes de rupture doivent lever ; le douzième — joué EN
+-- TREIZE CAS. Douze formes de rupture doivent lever ; le treizième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -1266,7 +1266,31 @@ BEGIN
     RAISE EXCEPTION 'negatif N11: la ligne conflits_sources n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 11 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites et deux claims de conflits de sources non exiges prescriptifs) laisse passer.';
+  -- ── N12 — LA LIGNE `fiches_usage` EST GARDÉE, ELLE AUSSI ─────────────────
+  -- LA TABLE LA PLUS LARGE DU CONTRAT, ENTRÉE AVEC [[D-401]] : 277 paires, et
+  -- sans ce cas aucune n'était exercée hors de l'état SAIN. La contre-revue du
+  -- lot l'a montré par mutation : un prédicat exemptant
+  -- `table_signee = 'fiches_usage'` de TOUTES les propriétés passait les douze
+  -- cas précédents et le banc de garde.
+  --
+  -- LA MUTATION EST LA VERSION, ET C'EST DÉLIBÉRÉ. Les paires de la structure
+  -- sont toutes épinglées en `v1.0` : la dérive la plus probable n'est pas une
+  -- disparition mais une re-version du claim dans le corpus, que la structure
+  -- signée n'a jamais relue. `N6` ne l'éprouve que sur un claim d'orientation.
+  --
+  -- Le claim muté, `WN-CL-0061-037`, n'est épinglé par aucune autre table : le
+  -- prédicat ne peut le nommer qu'en lisant la ligne `fiches_usage`.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET version_claim = 'v2.0' WHERE claim_id = 'WN-CL-0061-037';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0061-037' in msg) = 0 OR position('absent du corpus' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N12: la ligne fiches_usage n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 12 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources et 277 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;
