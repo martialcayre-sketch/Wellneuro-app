@@ -114,7 +114,9 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       jourZero,
     });
 
-    const resume = buildResumeJ21({ checkins, momentum });
+    // J2-jourN (H52) : le jour du cycle et les marques E4 partent du MÊME
+    // jour 0 que le momentum ci-dessus — une seule date de départ.
+    const resume = buildResumeJ21({ checkins, momentum, jourZero });
 
     return NextResponse.json({ ok: true, checkins, resume });
   } catch (err) {

@@ -1,7 +1,8 @@
 'use client';
 
 import { optionLibelle, type PointEtape } from '@/lib/protocol/checkinDomain';
-import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import { JOURS_DU_CYCLE } from '@/lib/protocol/jourDuCycle';
+import type { ResumeJ21, ResumePointEtape } from '@/lib/protocol/resumeJ21';
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
 
@@ -20,6 +21,70 @@ const LABEL_TENDANCE: Record<'hausse' | 'stable' | 'baisse', string> = {
   stable: 'stable',
   baisse: 'en baisse',
 };
+
+// ÉCHELLE E4 (`D-334` §2 ; J2-jourN, H52) : une marque datée par point d'étape.
+// Le pictogramme suit l'ordre des quatre niveaux, sans chiffre (§1 : un ordre,
+// pas une mesure) ; il est masqué au lecteur d'écran, le mot porte le sens.
+// Pictogrammes et textes validés par le responsable le 2026-11-01.
+const PICTO_ADHESION: Readonly<Record<string, string>> = {
+  pas_encore: '○',
+  quelques_jours: '◔',
+  plupart_des_jours: '◕',
+  tous_les_jours: '●',
+};
+
+const LIBELLE_MARQUE_SANS_REPONSE = {
+  en_cours: 'en cours',
+  a_venir: 'à venir',
+  pas_de_reponse: 'pas de réponse',
+} as const;
+
+/** Une date au calendrier de Paris, JJ/MM/AAAA. */
+function formatJourParis(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function ligneJourDuCycle(suivi: NonNullable<ResumeJ21['suivi']>): string {
+  const diffusion = formatJourParis(suivi.jourZero);
+  return suivi.jour <= JOURS_DU_CYCLE
+    ? `Jour ${suivi.jour} sur ${JOURS_DU_CYCLE} — protocole diffusé le ${diffusion}`
+    : `Jour ${suivi.jour} — au-delà des ${JOURS_DU_CYCLE} jours du cycle (protocole diffusé le ${diffusion})`;
+}
+
+function AutresReponses({ reponses }: { reponses: NonNullable<ResumePointEtape['reponses']> }) {
+  return (
+    <>
+      {' · tolérance : '}
+      {optionLibelle('tolerance', reponses.tolerance)}
+      {' · énergie : '}
+      {optionLibelle('energie', reponses.energie)}
+      {' · sommeil : '}
+      {optionLibelle('sommeil', reponses.sommeil)}
+    </>
+  );
+}
+
+function MarqueE4({ point }: { point: ResumePointEtape }) {
+  if (point.marque === 'repondu' && point.reponses) {
+    const picto = PICTO_ADHESION[point.reponses.adhesion];
+    return (
+      <>
+        {'· '}
+        {picto && <span aria-hidden="true">{picto} </span>}
+        {optionLibelle('adhesion', point.reponses.adhesion)}
+        {point.soumisLe && <> · le {formatJourParis(point.soumisLe)}</>}
+        <AutresReponses reponses={point.reponses} />
+      </>
+    );
+  }
+  if (point.marque && point.marque !== 'repondu') return <>{`· ${LIBELLE_MARQUE_SANS_REPONSE[point.marque]}`}</>;
+  return null;
+}
 
 const AJUSTEMENTS: { titre: string; description: string }[] = [
   { titre: 'Alléger', description: "Réduire la charge de l'action principale." },
@@ -70,6 +135,9 @@ export function J21DecisionPanel({
       <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
         Point d’étape J21 — résumé et décision
       </h3>
+      {/* J2-jourN (H52) : le jour du cycle, compté depuis le jour 0 du momentum
+          et des jalons. Sans jour 0, rien : aucun jour n'est inventé. */}
+      {resume?.suivi && <p className="mt-1 text-sm text-foreground">{ligneJourDuCycle(resume.suivi)}</p>}
 
       {/* Point de jonction : score (momentum) + action (check-ins). */}
       <div className="mt-3 space-y-1 text-base">
@@ -92,7 +160,9 @@ export function J21DecisionPanel({
           {(resume?.points ?? []).map((point) => (
             <li key={point.pointEtape} className="text-muted-foreground">
               <span className="font-medium text-foreground">{LABEL_POINT[point.pointEtape]}</span>{' '}
-              {point.renseigne && point.reponses ? (
+              {point.marque ? (
+                <MarqueE4 point={point} />
+              ) : point.renseigne && point.reponses ? (
                 <>
                   · action : {optionLibelle('adhesion', point.reponses.adhesion)} · tolérance :{' '}
                   {optionLibelle('tolerance', point.reponses.tolerance)} · énergie :{' '}
