@@ -375,27 +375,36 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     // SOUS LE VERROU DU DOSSIER : la clôture écrit la ligne patient dans une
     // transaction ; sans verrou, le filtre relationnel lirait encore le suivi
     // ouvert pendant qu'elle s'achève (revue Copilot de #1825).
-    const count = await prisma.$transaction(async tx => {
-      await verrouillerPatient(tx, ass.idPatient);
-      const { count: lignes } = await tx.assignation.updateMany({
-        where: {
-          idAssignation,
-          statut: { not: 'Annulée' },
-          patient: { actif: true, suiviClotureLe: null },
-        },
-        data: { statutReponses: 'deverrouille' },
+    const ecrire = () =>
+      prisma.$transaction(async tx => {
+        await verrouillerPatient(tx, ass.idPatient);
+        const { count: lignes } = await tx.assignation.updateMany({
+          where: {
+            idAssignation,
+            statut: { not: 'Annulée' },
+            patient: { actif: true, suiviClotureLe: null },
+          },
+          data: { statutReponses: 'deverrouille' },
+        });
+        return lignes;
       });
-      return lignes;
-    });
-    if (count === 0) {
-      // L'état a bougé : relire pour dire le refus juste, jamais un succès.
+    // Zéro ligne écrite : l'état a bougé. On relit pour dire le refus juste,
+    // jamais un succès ; si rien ne s'y oppose plus (suivi rouvert entre-temps),
+    // un second essai, un seul — jamais « introuvable » pour une ligne qui
+    // existe (revue PR-Agent de #1825).
+    for (let essai = 0; essai < 2; essai += 1) {
+      if ((await ecrire()) > 0) return NextResponse.json({ success: true });
       const relue = await lire();
-      return (
-        (relue && refusDeblocage(relue))
-        ?? NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 })
-      );
+      if (!relue) {
+        return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
+      }
+      const refus = refusDeblocage(relue);
+      if (refus) return refus;
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: false, reason: 'exception', error: 'Erreur technique lors du déverrouillage.' },
+      { status: 409 }
+    );
   } catch {
     return NextResponse.json({
       success: false,

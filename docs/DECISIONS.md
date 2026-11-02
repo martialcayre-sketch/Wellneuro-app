@@ -49,7 +49,9 @@ clôture écrit la ligne patient en transaction, revue Copilot) : une
 annulation ou une clôture passée entre la lecture et l'écriture ne laisse
 ni annulée déverrouillée ni succès sans effet ; zéro ligne écrite relit
 l'assignation et rend le refus juste, ou 404 si elle a disparu (revue
-`wn-reviewer`).
+`wn-reviewer`) ; si plus rien ne s'y oppose (suivi rouvert entre-temps),
+un second essai, un seul, puis l'erreur technique existante — jamais
+« introuvable » pour une ligne qui existe (revue PR-Agent).
 
 Aucun texte neuf. Enjeu accepté par le responsable : sur un suivi clôturé,
 une demande de correction ne se débloque plus ; il faut d'abord rouvrir le
@@ -61,7 +63,9 @@ Au Fil, la carte d'un suivi clos garde « Rappeler » ([[D-414]] §1),
 inchangé.
 
 **§3 — Preuve.** Bancs des cartes, de la lecture des assignations, de la
-route de déblocage et du dossier. Seize mutations en trois séries (initiale, puis après chaque revue), chacune rougit : verrou du dossier retiré ; annulée
+route de déblocage et du dossier. Dix-sept mutations jouées en quatre séries (initiale, puis après chaque
+revue) : quinze défauts distincts, deux rejoués après le regroupement des
+refus. Chacune rougit : second essai retiré ; verrou du dossier retiré ; annulée
 gardée au Fil ; `NOT` retiré de la lecture échue ; défense de l'écran
 retirée ; annulée non refusée ; suivi clos non refusé ; ordre des refus
 inversé ; état du dossier non lu ; écriture sans garde de statut ; sans

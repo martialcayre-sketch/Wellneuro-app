@@ -60,8 +60,9 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
 
 ## Validations exécutées
 
-- Mutations (source restaurée après chacune), seize en trois séries, toutes
-  rougissent : verrou du dossier retiré ; annulée gardée au Fil ; `NOT` retiré ; défense client
+- Mutations (source restaurée après chacune), dix-sept jouées en quatre
+  séries (quinze défauts distincts), toutes rougissent : second essai
+  retiré ; verrou du dossier retiré ; annulée gardée au Fil ; `NOT` retiré ; défense client
   retirée ; annulée non refusée ; suivi clos non refusé ; ordre inversé ;
   `include` retiré ; écriture sans garde de statut ; sans garde du
   dossier ; `count` ignoré ; refus muet (bloc échues, bloc corrections) ;
@@ -90,6 +91,10 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
     réécrit » — **corrigé** : fins de ligne CRLF rendues à `route.ts` ;
   - Copilot : filtre relationnel sans le verrou de la clôture — **corrigé** :
     `verrouillerPatient` dans une transaction avant l'écriture, banc d'ordre.
+- Revue PR-Agent sur 23007b1c (CodeRabbit en quota épuisé, D-393 §2) :
+  - « Repli 404 trompeur » — **corrigé** : second essai borné, puis l'erreur
+    technique existante ; deux bancs ;
+  - « Décompte de preuves incohérent » — **corrigé** dans D-422 §3 et ici.
 
 ## Problèmes ouverts
 

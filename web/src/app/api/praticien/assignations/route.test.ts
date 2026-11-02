@@ -278,6 +278,26 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
     expect(await response.json()).toMatchObject({ success: false, reason: 'assignation_annulee' });
   });
 
+  // Revue PR-Agent de #1825 : zéro ligne écrite puis un état redevenu bon
+  // (suivi rouvert) ne doit jamais répondre « introuvable ».
+  it('un état redevenu bon entre-temps : un second essai, qui réussit', async () => {
+    prisma.assignation.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true });
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('deux essais sans effet : une erreur technique, jamais « introuvable »', async () => {
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: 'exception' });
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
+  });
+
   it('une ligne disparue entre lecture et écriture rend 404', async () => {
     prisma.assignation.findFirst
       .mockResolvedValueOnce({
