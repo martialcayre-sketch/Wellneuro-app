@@ -3,9 +3,9 @@
 ## Branche et état du dépôt
 
 - Branche `fix/audit3-q3-quinquies-dossier-ferme`, partie de `origin/main`
-  f5cbf461 (#1825, Q3 quater, mergée), `origin/main` 97951315 (#1828, D-424)
-  fusionnée — conflit de `docs/DECISIONS.md` résolu, D-427 au-dessus de
-  D-424 ; worktree `audit3-q3-quater`, session concurrente, cycle en
+  f5cbf461 (#1825, Q3 quater, mergée), `origin/main` fusionnée deux fois
+  (97951315 puis d4d72d67, documentaires) — conflit de `docs/DECISIONS.md`
+  résolu, D-427 en tête ; worktree `audit3-q3-quater`, session concurrente, cycle en
   `git`/`gh` direct.
 - Lot de code sans migration : aucun changement de `schema.prisma`, aucun
   fichier sous `web/src/lib/clinical/`, ni `indicationsBiologieV1.ts`. Pas
@@ -71,7 +71,17 @@ Les deux restes de Q3 quater tranchés par le responsable le 2026-11-02 :
     lecture — le motif est visible à côté ;
   - routé (problèmes ouverts) : `packs/assign` répond encore
     `patient_not_found` pour un dossier désactivé.
-- VALIDATIONS
+- T1 complet : code 0, joué seul après la fusion de `main` et les bancs de
+  revue. Deux passages antérieurs rouges hors diff : une coupure réseau
+  (banc du crochet de fraîcheur, 922 s) puis la charge machine (délai Vitest
+  de l'agenda alimentaire, workers non démarrés, revue en parallèle).
+- T2 `--fast` : rouge une fois sur un E2E WebKit étranger au diff
+  (`mode-consultation-sans-chiffre.spec.ts:147`, tiroir non ouvert — même
+  intermittence que celle du handoff H65 du 2026-11-01), puis code 0 au
+  rejeu entier (Vitest : 15 650 passés, 40 sautés ; E2E : 303 passés,
+  7 sautés).
+- Fusions de `main` (D-424 #1828, D-425) : documentaires seulement ; conflit
+  de `docs/DECISIONS.md` résolu à chaque fois, D-427 en tête.
 
 ## Problèmes ouverts
 
