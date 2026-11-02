@@ -149,7 +149,7 @@ Trente portes. Une porte de geste compte au rang 0 ; une porte de constat ou de 
 | 17 | Durée du dossier patient fixée | le responsable, sur conseil (porte 28) | **levée le 2026-10-13 par D-283 §2 (#1411)** pour la base active (jusqu'à la clôture, ou 5 ans après le dernier contact) et l'archive intermédiaire (10 ans) ; le point de départ de l'archive reste à valider par un conseil avant toute mise en œuvre (D-283 §2, §10 b) |
 | 18 | Texte patient accepté, puis activation précédente constatée | b (rang 0), à chaque activation : H05 | critère : un premier vrai dossier servi, sans anomalie, constaté par identifiant en conteneur, jamais une fixture ; pour une ouverture qui ne vise que certains dossiers : lecture consignée du texte en ligne ; aucune activation faite ; places 12 et suivantes : l'encart bd dès qu'il est prêt, puis l'ordre de préparation ; règle écrite par D-288 (#1430) |
 | 19 | BP-18a puis BP-18b livrés | campagne, J3-bio (rang 5) : F12, F13 | non levée |
-| 20 | K-11 : premier écran qui compare deux passations du même instrument | revue de PR, après J2-mom (rang 2), donc rang 3 au plus tôt | fermée ; tient cf et la phrase de tendance ch (H72) |
+| 20 | K-11 : premier écran qui compare deux passations du même instrument | revue de PR, après J2-mom (rang 2), donc rang 3 au plus tôt | **levée le 2026-11-01** par la revue de #1809 (J2-nf5, H65 ; D-406 §6, D-397 §10) ; ce qu'elle tenait : cf (H66) attend encore la porte 11 ; la phrase de tendance ch (H72) attend encore cg (H63, porte 16) et la porte 11 |
 | 21 | K-22 : premier lecteur d'épisode hors domaine | revue de PR, au fait | fermée |
 | 22 | Premier dossier à deux jalons mesurés | constat, au fait | fermée |
 | 23 | Signature des contenus de BP-12a, BP-12b, BP-17 | le responsable, dans le lot, avant son merge | non levée |
@@ -1336,6 +1336,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | E67 | lot accessibilité | A | aucune | non | H64 |
 | J2-nf5 | deux versions de score comparées | A | 20 | non | H65 |
 | cf | indices de clôture côte à côte | A | 20, 11 | non | H66 |
+| D-406 §7 | scores globaux des instruments écartés du registre de comparaison, chacun sur sa source | A | aucune ; source et décision par instrument | non | H94 |
 | J3-cabinet | page des comptes du cabinet, masquée sous cinq | A | 6 ; 9 si migration | selon | H58, rang 3 |
 | D-281, J1-sécu | commit de signature, déploiement constaté | A | lève 7 | non | F66, rang 1 |
 | D-283 (b) | clôture après 5 ans sans contact, archive | A | 28, 8, 9 | oui | H26, rang 1 |
@@ -1429,6 +1430,15 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Décisions, textes** : aucune règle clinique neuve ; règles de comparaison acquises (D-152).
 - **Critère de fin** : deux agendas clos comparés selon D-152.
 - **Journal** : `docs/claude/plan-journal/H66/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H66`.
+
+#### H94 · D-406 §7 : scores globaux des instruments écartés, sur source
+- **Identifiant, piste** : D-406 §7 ; cockpit ; file A.
+- **Rang** : 4 [Hypothese], après J2-nf5 (H65).
+- **Portes, préalables** : aucune porte du §1 ; pour chaque instrument, sa source versée au corpus (`DC-01`, `DC-19`) et sa décision avant tout code. Le DASS-21 (`Q_STR_04`) d'abord : un total est d'usage dans la littérature, source à verser ; le DNST (`Q_INF_03`) et le mode de vie SIIN (`Q_MOD_01`), sans source connue au 2026-11-01 ; le compte de complétude du QIF (`Q_FIB_02`), au moteur (`web/src/lib/questions.ts`, sous instantané). Le MFI-20 (`Q_SOM_07`) reste exclu tant que sa source refuse un total.
+- **Migration, release-db** : non.
+- **Décisions, textes** : une D-xxx clinique par instrument et un fragment `changelog.d/` ; pour le QIF, une D-xxx propre et son étape dans `seuilsCatalogue.instantane.json`.
+- **Critère de fin** : chaque instrument retenu entre au registre de D-406 §2 par sa décision, sur sa source ; pour un instrument sans source, l'absence est consignée et il reste hors du registre.
+- **Journal** : `docs/claude/plan-journal/H94/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H94`.
 
 #### F80 · Analyses groupées et valeurs calculées : composition
 - **Identifiant, piste** : retour du responsable du 2026-10-17 (« il faut réfléchir aux analyses groupées qui ne sont pas répertoriées ») ; D-320 §4 ; catalogue biologie et NABM ; file A.
