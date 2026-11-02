@@ -6,6 +6,67 @@
 
 ## Décisions actives
 
+### D-419 — La table des indications de biologie entre au contrat de fraîcheur des claims épinglés : vingt-neuf paires, `prescriptif` non exigé, cas négatif `N15`
+
+- Date : 2026-11-01
+- Statut : accepté. Deux arbitrages du responsable du 2026-11-01 au soir, sur
+  questions à options : faire le lot dans la session F05, et ne pas exiger
+  `prescriptif` (la question que [[D-046]] réserve à chaque table nouvelle).
+  Les vingt-neuf claims ont été relus en production le même jour, dans un
+  conteneur détaché en lecture seule.
+- Domaine :
+  - `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql` et son
+    négatif ;
+  - le banc `web/src/lib/clinical/claimsEpinglesFraicheur.guard.test.ts`
+    (racines balayées, correspondance des fichiers, exigence par table).
+- **Complète** [[D-042]] et [[D-044]], dont le contrat s'arrêtait aux tables
+  de `clinical/` et à la structure des fiches d'usage. **Applique** [[D-046]]
+  à une table neuve au contrat.
+- **Ne touche pas** :
+  - la table elle-même (`indicationsBiologieV1.ts`) : ni règle, ni claim, ni
+    empreinte, ni signature du 2026-09-16 ;
+  - le prédicat du contrat ;
+  - les autres tables du contrat ;
+  - la base : aucune migration.
+- Contexte : la revue `wn-reviewer` de #1816 a relevé que la table, signée
+  depuis le 2026-09-16, épingle vingt-neuf claims (`claimsSource`) qu'aucun
+  contrat de fraîcheur ne garde. Le banc ne balayait que `clinical/` et
+  `fiches-usage/`. Un claim re-versionné, désactivé ou remplacé dans le corpus
+  laissait la table et sa signature muettes, sans rien de rouge ni en CI ni
+  au préflight.
+
+**§1 — Entrée.** Les vingt-neuf paires de `claimsSource` entrent au contrat
+sous la table `indications_biologie`. Le banc de fraîcheur balaie désormais
+aussi `web/src/lib/biology-library/`, sans récursion :
+`biology-library/import/resolverLibellesV1.ts`, signée mais sans claim épinglé,
+n'y entre pas ([[D-416]] §3). Une paire ajoutée à la table sans le contrat, ou
+l'inverse, fait rougir le banc.
+
+**§2 — Régime.** `exige_prescriptif = false`. La relecture du 2026-11-01 donne
+29/29 claims `VALIDE`, actifs, non remplacés, en `v1.0`. Vingt-sept sont
+prescriptifs ; deux ne le sont pas (`WN-CL-0106-027`, `WN-CL-0107-012`, sur
+`BIO-STR-01`) : ils donnent la lecture d'un seuil, pas une conduite, comme la
+table l'écrit depuis le 2026-09-14. Les exiger prescriptifs bloquerait toute
+release, ou forcerait à retoucher une table signée. Le motif de fond est celui
+de [[D-236]] : la force prescriptive vient de la signature praticien, pas de
+l'uniformité des claims.
+
+**§3 — Preuve.** Le cas négatif `N15`, sur le patron de `N12`, mute la version
+de `WN-CL-0389-004`, que seule cette table épingle. Un mutant du prédicat qui
+exempte `indications_biologie` rougit sur `N15` seul. Treize claims de la
+table sont aussi épinglés ailleurs (deux par `conduites`, un par
+`conflits_sources`, onze par `fiches_usage`), dont `WN-CL-0320-003`, que mute
+`N10` : ce cas, et avec lui `N7` à `N11`, exige désormais le nom de sa table
+dans le message (revue Copilot de #1820). Neuf mutants, un par table, rougissent
+chacun sur son seul cas. La release qui suivra le
+merge est retenue jusqu'à l'approbation du responsable ([[D-044]] : le lot
+touche un banc sous `clinical/`). Son préflight rejouera les vingt-neuf paires
+contre la production.
+
+**Écarté.** Exiger `prescriptif` comme pour l'orientation : deux désignations
+valides seraient rejetées. Laisser la table hors contrat : sa signature
+resterait muette sur ce que le corpus devient.
+
 ### D-418 — Le registre des décisions passe à un fichier par décision (`docs/decisions/D-NNN.md`) ; `docs/DECISIONS.md` devient une page fixe ; bascule en une PR après l'essai de D-373
 
 - Date : 2026-11-01

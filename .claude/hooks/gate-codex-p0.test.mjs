@@ -114,6 +114,120 @@ for (const [nom, chemin] of [
   });
 }
 
+// TOUTE TABLE SIGNÉE, par son marqueur ([[D-266]], arbitrage du 2026-11-01) :
+// la structure des fiches d'usage et une table signée hors de la liste
+// littérale. Un marqueur en commentaire, ou porté par un compagnon de test,
+// reste en silence.
+const marqueur = ["validation", "Externe"].join("");
+for (const [nom, chemin, contenu] of [
+  ["structure signée des fiches d'usage", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: true };\n`],
+  ["structure des fiches d'usage, verrou éteint", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: false };\n`],
+  ["table signée hors liste", "web/src/lib/clinical/catalogueConduitesV1.ts", `export const M = { ${marqueur}: true };\n`],
+]) {
+  test(`demande : ${nom}, aucune trace Codex`, () => {
+    const work = repo();
+    ecrire(work, chemin, contenu);
+    run(["add", "-A"], work);
+    run(["commit", "-m", "feat: table"], work);
+    assertDemande(invoke(work, "gh pr create --title x --body y"));
+  });
+}
+
+test("demande : une table signée SUPPRIMÉE par la branche reste touchée", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "table"], work);
+  run(["push", "origin", "feature:main"], work);
+  run(["fetch", "origin"], work);
+  run(["rm", "-q", "web/src/lib/clinical/tableV1.ts"], work);
+  run(["commit", "-m", "suppression"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("demande : table signée dans un commit, marqueur retiré sur disque sans commit", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "table"], work);
+  ecrire(work, "web/src/lib/clinical/tableV1.ts", "export const M = {};\n");
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+// Relecture adversariale de #1821 : renommage, lecture disque seule, clé
+// JSON entre guillemets, nom non ASCII, plafond, trace depuis `web/`.
+function tableSigneeSurMain(work, chemin) {
+  ecrire(work, chemin, `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "table"], work);
+  run(["push", "origin", "feature:main"], work);
+  run(["fetch", "origin"], work);
+}
+
+test("demande : table signée RENOMMÉE, verrou éteint sous le nouveau nom", () => {
+  const work = repo();
+  tableSigneeSurMain(work, "web/src/lib/clinical/tableV1.ts");
+  run(["mv", "web/src/lib/clinical/tableV1.ts", "web/src/lib/clinical/tableV2.ts"], work);
+  ecrire(work, "web/src/lib/clinical/tableV2.ts", `export const M = { ${marqueur}: false };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "renommage"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("demande : table signée neuve indexée, jamais commitée (lecture disque seule)", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/neuveV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("demande : clé JSON entre guillemets", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableV1.json", `{ "${marqueur}": true }\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "json"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("demande : nom de fichier non ASCII", () => {
+  const work = repo();
+  ecrire(work, "web/src/lib/clinical/tableÉtéV1.ts", `export const M = { ${marqueur}: true };\n`);
+  run(["add", "-A"], work);
+  run(["commit", "-m", "accent"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("demande : au-delà du plafond de lectures, par prudence", () => {
+  const work = repo();
+  for (let i = 0; i < 201; i++) ecrire(work, `web/src/lib/divers/f${i}.ts`, "export const x = 1;\n");
+  run(["add", "-A"], work);
+  run(["commit", "-m", "large"], work);
+  assertDemande(invoke(work, "gh pr create --title x --body y"));
+});
+
+test("autorisé avec trace : fragment mentionnant Codex, commande lancée depuis web/", () => {
+  const work = repo();
+  ecrire(work, "web/src/app/api/portail/dossier/route.ts", "x");
+  ecrire(work, "changelog.d/2026-11-02-x.md", "Revue Codex faite.\n");
+  run(["add", "-A"], work);
+  run(["commit", "-m", "feat: portail"], work);
+  assertAutoriseAvecTrace(invoke(path.join(work, "web"), "gh pr create --title x --body y"));
+});
+
+for (const [nom, chemin, contenu] of [
+  ["marqueur en commentaire", "web/src/lib/clinical/autreV1.ts", `// ${marqueur}: true\nexport const x = 1;\n`],
+  ["verrou éteint hors fiches d'usage", "web/src/lib/clinical/autreV1.ts", `export const M = { ${marqueur}: false };\n`],
+  ["compagnon de test", "web/src/lib/clinical/autreV1.test.ts", `const M = { ${marqueur}: true };\n`],
+]) {
+  test(`silence : ${nom}`, () => {
+    const work = repo();
+    ecrire(work, chemin, contenu);
+    run(["add", "-A"], work);
+    run(["commit", "-m", "feat: x"], work);
+    assertSilence(invoke(work, "gh pr create --title x --body y"));
+  });
+}
+
 test("demande : gh pr merge déclenche la même classification", () => {
   const work = repo();
   ecrire(work, "web/src/app/api/portail/dossier/route.ts", "x");

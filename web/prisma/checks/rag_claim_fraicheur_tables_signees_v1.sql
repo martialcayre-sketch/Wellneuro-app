@@ -78,6 +78,14 @@
 -- n'atteignent cette classe d'erreur : ils gardent ce qui est épinglé, jamais
 -- ce qui manque. La liste en compte 65.
 --
+-- Les VINGT-NEUF PAIRES `indications_biologie` ajoutées le 2026-11-01
+-- ([[D-419]]) ont été relues le même jour, sur la production (conteneur
+-- détaché, lecture seule) : toutes VALIDE, actives, non remplacées, en v1.0 ;
+-- vingt-sept `prescriptif = true`, deux `false` (`WN-CL-0106-027`,
+-- `WN-CL-0107-012`), d'où `exige_prescriptif = false`. La table était signée
+-- depuis le 2026-09-16 hors de toute garde de fraîcheur : son fichier vit hors
+-- de `clinical/`, que le banc balayait seul (revue de #1816).
+--
 -- UN ÉCART DE JOURNAL, CONSTATÉ LE 2026-09-17 ET NON RÉÉCRIT. Les entrées
 -- ci-dessus annoncent ONZE paires `priorites` ; la liste en porte VINGT. Neuf
 -- ont donc été ajoutées sans entrée. Le journal n'est gardé par aucun banc — il
@@ -287,6 +295,41 @@ BEGIN
     ('WN-CL-0293-013', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-004', 'v1.0', 'portes_biologiques', false),
     ('WN-CL-0294-005', 'v1.0', 'portes_biologiques', false),
+    -- TABLE DES INDICATIONS DE BIOLOGIE ([[D-069]], signée le 2026-09-16) —
+    -- quinze règles, vingt-neuf claims distincts (`claimsSource`),
+    -- `exige_prescriptif` à `false` (régime arbitré le 2026-11-01, [[D-419]] :
+    -- deux claims de `BIO-STR-01` donnent la lecture d'un seuil, pas une
+    -- conduite). Entrée au contrat le 2026-11-01, relue le même jour en
+    -- production : 29/29 VALIDE, actifs, non remplacés, v1.0.
+    ('WN-CL-0042-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0042-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0106-027', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0107-032', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0112-012', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0125-045', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-022', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0167-023', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-053', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-054', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0178-055', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0242-007', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-014', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-015', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-016', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-017', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0282-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0312-018', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0318-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0320-003', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0323-011', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0333-020', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0334-005', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0348-013', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0361-009', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0388-008', 'v1.0', 'indications_biologie', false),
+    ('WN-CL-0389-004', 'v1.0', 'indications_biologie', false),
     -- STRUCTURE DES FICHES D'USAGE DU BESOIN 2 ([[D-314]] §5) — trente fiches,
     -- 277 claims distincts, `exige_prescriptif` à `false` (régime arbitré,
     -- [[D-314]] §9). Épinglés dès la structure ÉCRITE, signature ou non : ils
