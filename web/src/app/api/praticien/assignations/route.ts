@@ -26,6 +26,7 @@ import {
   qidsDejaOuverts,
   verrouillerPatient,
 } from '@/lib/assignations/dedup';
+import { MESSAGE_ASSIGNATION_ANNULEE } from '@/lib/praticien/relanceAssignation';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -273,8 +274,40 @@ export type PatchAssignationResponse = {
     | 'invalid_payload'
     | 'not_found'
     | 'exception'
-    | typeof RAISON_QUESTIONNAIRE_SUSPENDU;
+    | typeof RAISON_QUESTIONNAIRE_SUSPENDU
+    // [[D-422]] §2 : mêmes raisons et mêmes messages que la relance.
+    | typeof RAISON_ASSIGNATION_ANNULEE
+    | typeof RAISON_DOSSIER_CLOS;
 };
+
+const RAISON_ASSIGNATION_ANNULEE = 'assignation_annulee';
+
+/**
+ * NI UNE ANNULÉE NI UN SUIVI CLOS NE SE DÉBLOQUENT ([[D-422]] §2), avant
+ * toute écriture. Le portail ignore une annulée même déverrouillée : le succès
+ * serait un leurre. Un suivi clos n'accepte plus d'envoi ; rouvrir sa saisie,
+ * même pour une demande de correction, passe d'abord par la réouverture du
+ * suivi. Mêmes refus que la relance, dans son ordre : le dossier d'abord,
+ * l'assignation ensuite. `null` = rien ne s'y oppose.
+ */
+function refusDeblocage(ass: {
+  statut: string;
+  patient: { actif: boolean; suiviClotureLe: Date | null };
+}): NextResponse<PatchAssignationResponse> | null {
+  if (!accepteNouvelEnvoi(ass.patient)) {
+    return NextResponse.json(
+      { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+      { status: 409 }
+    );
+  }
+  if (ass.statut === 'Annulée') {
+    return NextResponse.json(
+      { success: false, reason: RAISON_ASSIGNATION_ANNULEE, error: MESSAGE_ASSIGNATION_ANNULEE },
+      { status: 409 }
+    );
+  }
+  return null;
+}
 
 // PATCH /api/praticien/assignations — déverrouillage manuel des réponses (R8-lite)
 export async function PATCH(req: Request): Promise<NextResponse<PatchAssignationResponse>> {
@@ -309,12 +342,17 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
   try {
     // Garde d'appartenance : déverrouiller rouvre la saisie d'un questionnaire.
     // L'assignation d'un autre praticien est introuvable.
-    const ass = await prisma.assignation.findFirst({
-      where: { idAssignation, patient: filtrePatientsDuPraticien(emailSession) },
-    });
+    const lire = () =>
+      prisma.assignation.findFirst({
+        where: { idAssignation, patient: filtrePatientsDuPraticien(emailSession) },
+        include: { patient: { select: { actif: true, suiviClotureLe: true } } },
+      });
+    const ass = await lire();
     if (!ass) {
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
     }
+    const refusEtat = refusDeblocage(ass);
+    if (refusEtat) return refusEtat;
     // Déverrouiller ROUVRE la saisie : c'est un chemin d'envoi de plus, et
     // c'était le dernier par lequel un instrument suspendu pouvait encore être
     // re-servi. Le lot #406 l'avait nommé sans le fermer (« geste délibéré,
@@ -330,10 +368,26 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
         { status: 409 }
       );
     }
-    await prisma.assignation.update({
-      where: { idAssignation },
+    // `updateMany` qui RÉPÈTE les deux gardes d'état : une annulation ou une
+    // clôture passée entre la lecture et l'écriture laisserait sinon une
+    // annulée `deverrouille` et un succès sans effet — même patron que la
+    // route d'annulation. `idAssignation` est `@unique` : une ligne au plus.
+    const { count } = await prisma.assignation.updateMany({
+      where: {
+        idAssignation,
+        statut: { not: 'Annulée' },
+        patient: { actif: true, suiviClotureLe: null },
+      },
       data: { statutReponses: 'deverrouille' },
     });
+    if (count === 0) {
+      // L'état a bougé : relire pour dire le refus juste, jamais un succès.
+      const relue = await lire();
+      return (
+        (relue && refusDeblocage(relue))
+        ?? NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 })
+      );
+    }
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({

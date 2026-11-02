@@ -913,7 +913,9 @@ export function cartesAssignationsEnRetard(
   debutJour.setHours(0, 0, 0, 0);
 
   return assignations
-    .filter(a => a.statut !== 'Complété')
+    // UNE ANNULÉE N'EST PAS EN RETARD ([[D-422]] §1) : le praticien ne
+    // l'attend plus, et la relance comme le déblocage la refusent.
+    .filter(a => a.statut !== 'Complété' && a.statut !== 'Annulée')
     .map(a => ({ a, limite: parseDateLimite(a.dateLimite) }))
     .filter((x): x is { a: AssignationRow; limite: Date } => x.limite !== null && x.limite < debutJour)
     .sort((x, y) => x.limite.getTime() - y.limite.getTime())
@@ -931,12 +933,11 @@ export function cartesAssignationsEnRetard(
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
         idAssignation: a.idAssignation,
-        // NI UNE ANNULÉE NI UN SUIVI CLOS NE SE DÉBLOQUENT ([[D-414]] §1) :
-        // le portail ignore une annulée même déverrouillée, et un suivi clos
+        // UN SUIVI CLOS NE SE DÉBLOQUE PAS ([[D-414]] §1, [[D-422]] §2) : il
         // n'accepte plus d'envoi (`accepteNouvelEnvoi`). Sans statut, la carte
-        // garde « Rappeler », que le serveur refuse (`assignation_annulee`,
-        // `dossier_clos`) sans rien écrire — comme avant.
-        statutReponses: a.statut === 'Annulée' || a.suiviClos ? undefined : a.statutReponses,
+        // garde « Rappeler », que le serveur refuse (`dossier_cloture`) sans
+        // rien écrire — comme avant.
+        statutReponses: a.suiviClos ? undefined : a.statutReponses,
       };
     });
 }
