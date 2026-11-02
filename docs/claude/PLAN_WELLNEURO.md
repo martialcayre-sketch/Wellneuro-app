@@ -498,7 +498,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | sources fermées | sources des dossiers de mesure à fournir par le responsable, deux d'abord (liste au dossier privé) | geste | 1 | aucun | non | fait (`WN-SRC-0567` à `0570`, #1615) |
 | position d'expert du fer | amendement v0.3, en conflit avec la règle du 2026-10-17 (au dossier privé) | geste | 1 | aucun | non | fait : P5 v0.3 signée le 2026-10-21 |
 | position d'expert du magnésium | amendement v0.4 de P6 : la seconde situation propre au magnésium passe d'un adressage à « courrier, puis complément » (D-345 §2, au dossier privé) | geste | 1 | aucun | non | fait : v0.4 signée pour le responsable le 2026-10-23 (préalable de J3-12h levé) |
-| table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | attente |
+| table des niveaux de preuve | signature d'une table révisée | geste | 2 | J3-12e, fait | non | fait : signée le 2026-11-02 (D-424), appliquée avec J3-12f |
 | réapprobation | protocoles diffusés, dossier par dossier, juste après le déploiement de J3-12f | geste | 2 | J3-12f | non | attente |
 | dossiers des autres besoins | 1, 4, 5, 9, puis 3, 8, 10, 12, puis 6, 7, 11 (ordre du 2026-10-15) ; définitions signées des besoins 6, 7 et 11, qui restent « non mesuré » d'ici là | geste | sans rang | besoin 2 achevé | non | attente |
 | momentum | référence de la première mesure du dossier, troisième divergence de la section « Mesure » (limite nommée par D-113 §2) | geste | sans rang | lettre o (H30) | non | tranché par D-397 le 2026-10-31 (lettre o signée) ; appliqué par J2-mom, la limite reste écrite au code jusque-là |
@@ -1110,7 +1110,7 @@ File C : aucun lot. La phrase sans chiffre du portail est livrée par D-329 ; au
 | J2-bandes | bandes : alimentation et humeur d'abord | A | 11 | non | H13, rang 0 |
 | J3-api | rôles de connexion, aucune clé | A | 9 si migration | selon | H29, rang 1 |
 | D-281, étape 4 | validation de l'implication ; banc de cas fictifs refait | A | aucune | non | F66, rang 1 |
-| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée ; retouches regroupées des tables signées (D-338 §2) | A | aucune ; après J3-12e, w et la signature de la table des niveaux de preuve (les sources fermées sont fournies, #1615) | non | H15, rang 2 |
+| J3-12f | changement de sources des besoins 8, 9 et 12, un seul changement de version, réapprobation préparée ; retouches regroupées des tables signées (D-338 §2) | A | aucune ; après J3-12e, w et la signature de la table des niveaux de preuve (signée le 2026-11-02, D-424 : `RANG_PREUVE` perd C, l'en-tête renvoie à la décision ; les sources fermées sont fournies, #1615) | non | H15, rang 2 |
 | BP-09 | annulation d'un résultat, ajout seul (fiche du lot validée le 2026-10-14, #1442 ; migration mergée sous D-294, #1448) | B | 28 ; 9 | oui | F03 |
 | fiche LOT-25 | « quatre termes », cases corrigées | B | aucune | non | F14 |
 | J2-conf | garde d'âge ; registre des droits | B | aucune | non | F45, rang 0 |

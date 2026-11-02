@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 581 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 583 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 74 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 76 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -30,6 +30,8 @@ articles et quatre documentations d'instruments, sources de contexte des
 candidats écartés pour le point d'étape, `WN-SRC-0589` à `0600` (numérotées
 d'abord `0577` à `0588`, plage déjà portée en base par les extraits des
 vitamines B9 et B12 ; renumérotées le 2026-11-01), sans extrait ingéré ;
+table des niveaux de preuve (D-424, b26) : les versions françaises du PSQI et
+de la PSS-10, `WN-SRC-0604` et `0605`, sans extrait ingéré ;
 borne des axes prioritaires et `DC-29` (D-426, D/45) : six sources de
 contexte, `WN-SRC-0615` à `0620`, sans extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`

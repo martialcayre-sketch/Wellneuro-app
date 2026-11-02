@@ -50,6 +50,60 @@ vide sans suite ; un critère d'indépendance seul, sans graduation.
 **§3 — Suites.** Ligne D/45 : soldée pour la borne ; `DC-29` passe à une
 ligne neuve de la file D, en attente des niveaux dictés.
 
+### D-424 — Table des niveaux de preuve de « Mon équilibre » : trois niveaux A, B, D, C retiré, un niveau par clé ; les neuf sources après J3-12f signées telles quelles ; application avec J3-12f (b26)
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 (questions à
+  options, puis fiche validée telle quelle), en séance de gestes de la file D
+  (n° 5, ligne b26). Recherche documentaire préparée par le responsable avec
+  un assistant conversationnel externe, qui n'est source d'aucune valeur ;
+  chaque référence vérifiée par la session (Europe PMC, Crossref, pages des
+  ayants droit).
+- Domaine : clinique — `NIVEAU_PREUVE_PAR_SOURCE` et `RANG_PREUVE`
+  (`web/src/lib/equilibre/constants.ts`) ; lot J3-12f (H15) ; réapprobation
+  des protocoles diffusés (b27).
+- Ne touche pas : aucun code dans cette décision ; la table servie reste
+  intacte jusqu'à J3-12f, parce que les niveaux entrent dans l'empreinte des
+  cartes de décision (arbitrage du 2026-10-19) ; les badges restent masqués
+  ([[D-332]]) ; aucune valeur, aucun seuil.
+- Contexte, lu au dépôt le 2026-11-02 : la table porte « proposition
+  initiale, pas encore validée cliniquement » ; ses quatre définitions ont été
+  écrites par le rédacteur du code ; le niveau d'un besoin est celui de sa
+  source la plus faible (`RANG_PREUVE`). Aucune source n'est en C. Après
+  J3-12f, neuf sources (décisions 1 à 4 du 2026-10-18, [[D-329]]) ; le
+  besoin 12 passe sur la sous-échelle « Relation aux autres » de `Q_MOD_01`,
+  que le dossier de mesure du 2026-10-18 qualifie de « repère de l'école, pas
+  mesure validée ».
+
+**§1 — Trois niveaux.** A (questionnaire clinique internationalement validé),
+B (référentiel SIIN ou DNST, sans validation psychométrique tierce) et D
+(hypothèse WellNeuro) gardent les définitions écrites dans `constants.ts`, qui
+deviennent signées. C (« biologie fonctionnelle ») est retiré : aucune source
+n'y est classée, et il désigne un type de mesure, pas un niveau de preuve,
+homonyme du vocabulaire de `DC-45` et de [[D-266]] §3. Écartés : exiger une
+validation française pour A ; garder C réservé.
+
+**§2 — Un niveau par clé.** La table garde un niveau par questionnaire.
+`Q_MOD_01` en reçoit un seul, valable pour le besoin 5 (« Activité physique »)
+et le besoin 12 (« Relation aux autres »). Écarté : un niveau par
+sous-échelle, qui demandait de changer la lecture de `evidence.ts`.
+
+**§3 — Les neuf niveaux.** `Q_SOM_01` (PSQI) A, version française Blais et al.
+1997 (`WN-SRC-0604`) ; `Q_NEU_11` (HAD) A, Bocéréan et al. 2014
+(`WN-SRC-0545`) ; `Q_STR_02` (PSS-10) A, Lesage et al. 2012 (`WN-SRC-0540`),
+la traduction servie restant « Bellinghausen et al. 2009, à confirmer »
+(`WN-SRC-0605`) ; `Q_ALI_01`, `Q_GAS_01`, `Q_INF_01`, `Q_MOD_01` et
+`Q_INF_03` B ; `Q_SOM_09` (agenda du sommeil, indice /100) D.
+
+**§4 — Application.** La table signée entre avec J3-12f, dans le même
+changement de version et la même réapprobation des protocoles diffusés :
+`RANG_PREUVE` perd C, l'en-tête « proposition initiale » cède la place au
+renvoi à cette décision. Rien ne change avant.
+
+**§5 — Suites.** L'Epworth et le MFI-20 reçoivent leur niveau à leur entrée
+dans « Mon équilibre » ([[D-425]] §4). Fiche H15 : fragment de journal ; la
+ligne J3-12f du §8 renvoie à cette décision.
+
 ### D-422 — Audit 3, lot Q3 quater : une assignation annulée sort du Fil et du bloc « échu » du dossier ; le déblocage refuse une annulée et un suivi clôturé
 
 - Date : 2026-11-02
