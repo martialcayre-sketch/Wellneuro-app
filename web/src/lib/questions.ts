@@ -3763,8 +3763,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       const v = getVal(id);
       return v === null || Number.isNaN(v);
     };
+    // Item 1 : vide = retrait permis par la source ; non numérique = manquant.
+    const nonNumerique = (id: string) => getVal(id) !== null && manque(id);
     const missingIds = [
-      ...(funcItems.some(id => !manque(id)) ? [] : funcItems),
+      ...(funcItems.some(id => !manque(id)) ? funcItems.filter(nonNumerique) : funcItems),
       ...['Q12', 'Q13', ...evaItems].filter(manque),
     ];
 

@@ -103,15 +103,17 @@ Q12 à Q20 sont exigés chacun. `missing` compte des questions, jamais des
 composantes (sens de la consigne de synthèse) : un item 1 entièrement vide
 compte ses onze sous-items, et un sous-item retiré quand un autre est noté
 n'est pas une question manquante. Une valeur non numérique compte comme
-manquante, comme dans le moteur `sum`, item 1 compris (jugé sur ses seules
-valeurs numériques).
+manquante, comme dans le moteur `sum`, item 1 compris : un sous-item vide
+est un retrait permis, un sous-item non numérique est une question
+manquante, et l'item 1 sans aucune valeur numérique compte ses onze
+sous-items.
 
 **§2 — Maximum.** `maxTotal` reste 100. Le moteur plafonne à 99,9 parce que
 la fiche du cabinet multiplie l'item 1 par 3,3 là où Bennett multiplie par
 3,33 : écart consigné, non corrigé (acte clinique distinct).
 
 **§3 — Défaut consigné.** Une composante entièrement absente (l'item 1, Q12,
-Q13, ou les sept EVA ensemble) rend déjà le total nul, sans bande. Mais
+Q13, ou les sept EVA ensemble) rend déjà `total: null`, sans bande. Mais
 quand une partie seulement des EVA Q14 à Q20 manque — par exemple Q14,
 laissé vide par une personne sans emploi —, le moteur additionne les EVA
 restantes, sans correction 10/x, et sert une bande sur un total tiré vers
@@ -122,7 +124,7 @@ aucune occurrence observée. Sa correction — retirer
 la bande ou appliquer 10/x — appelle une décision propre. Elle aura deux
 points à traiter :
 - la bande du zéro exige vingt questions sur vingt, alors que `missing`
-  vaut 0 dès que les dix composantes sont mesurées : un total nul, avec un
+  vaut 0 dès que les dix composantes sont mesurées : `total = 0`, avec un
   sous-item retiré, rend un recueil complet sans bande ;
 - chez une personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la
   correction 10/x. Sous §1, elles manquent, et la passation restera
@@ -167,7 +169,7 @@ brute des trois sous-échelles, de 0 à 63.
 **§2 — Complétude.** Sept items sur sept par axe, déjà lus par [[D-406]] §4
 (`repondus` égal à `items`) : plus strict que la tolérance de Q27, qui
 changerait le calcul du total. Aucun maximum n'est publié, des deux côtés :
-la paire passe la règle de grille, maximum nul.
+la paire passe la règle de grille, avec `maximum: null`.
 
 **§3 — Lecture.** Écart en points bruts, sans bande ni seuil (aucune grille
 du total, porte 11 fermée) ; au cockpit seul, conforme à Q9.
