@@ -17,6 +17,7 @@ import {
 } from '@/lib/correspondance/reservation';
 import {
   JOURS_ENTRE_RELANCES_ASSIGNATION,
+  MESSAGE_ASSIGNATION_ANNULEE,
   SEPARATEUR_ASSIGNATIONS,
   deciderRelanceAssignation,
   envoisDeLAssignation,
@@ -55,7 +56,7 @@ export type RelanceAssignationApiResponse =
 
 const MESSAGES_REFUS: Record<RefusRelanceAssignation, string> = {
   assignation_rendue: 'Ce questionnaire est déjà revenu : il n’y a rien à rappeler.',
-  assignation_annulee: 'Cette assignation est annulée : vous ne l’attendez plus.',
+  assignation_annulee: MESSAGE_ASSIGNATION_ANNULEE,
   sans_echeance:
     'Cette assignation ne porte aucune échéance. Un rappel sans date ne dirait rien de plus que l’invitation.',
   echeance_non_depassee:

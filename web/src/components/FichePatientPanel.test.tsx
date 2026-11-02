@@ -120,7 +120,9 @@ type Options = {
   /** Le dossier administratif servi : surcharges, ou `'absent'` pour aucun. */
   dossier?: 'absent' | Partial<typeof DOSSIER_ADMINISTRATIF>;
   /** Le dossier porte un questionnaire JAMAIS REMPLI dont l'échéance est passée. */
-  assignationEchue?: boolean;
+  assignationEchue?: boolean | 'annulee';
+  /** Le déblocage (`PATCH`) est refusé : 409, avec ce motif ([[D-422]] §2). */
+  deblocageRefuse?: { reason: string; error: string } | 'reseau';
   /** L'indice global n'est pas calculable (aucun besoin mesuré, [[D-329]] §3). */
   indiceGlobalNul?: boolean;
   /** Sources présentes de la stabilité métabolique ([[D-333]] §3) ; absente =
@@ -750,7 +752,10 @@ function stubFetch(options: Options = {}) {
       // par leurs paramètres — jamais par leur ordre d'arrivée.
       const recherche = new URL(url, 'http://test.local').searchParams;
       if (recherche.get('echeanceDepassee') === '1') {
-        const echues = assignationEchue ? [ASSIGNATION_ECHUE] : [];
+        const echues =
+          assignationEchue === 'annulee'
+            ? [{ ...ASSIGNATION_ECHUE, statut: 'Annulée' }]
+            : assignationEchue ? [ASSIGNATION_ECHUE] : [];
         return ok({
           assignations: echues,
           assignationsMeta: {
@@ -960,7 +965,11 @@ function stubFetch(options: Options = {}) {
     // Déblocage d'une assignation (`PATCH`). Sans cette branche, la réponse
     // par défaut ne porte pas `success` et l'écran ne retire jamais la ligne :
     // le test du geste ne prouverait rien.
-    if (url.includes('/api/praticien/assignations')) return ok({ success: true });
+    if (url.includes('/api/praticien/assignations')) {
+      if (options.deblocageRefuse === 'reseau') return Promise.reject(new TypeError('Failed to fetch'));
+      if (options.deblocageRefuse) return ok({ success: false, ...options.deblocageRefuse }, 409);
+      return ok({ success: true });
+    }
     return ok({});
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -2649,6 +2658,73 @@ describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
     await waitFor(() =>
       expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull(),
     );
+  });
+
+  // [[D-422]] §2 : le refus de la route s'affiche tel qu'elle l'écrit, et la
+  // ligne reste — sans lui, le bouton revenait sans rien dire.
+  it('un déblocage refusé laisse la ligne et dit le motif de la route', async () => {
+    const motif =
+      'Le suivi de ce dossier est clôturé : aucun questionnaire ne peut être assigné, aucun document de suivi envoyé. Rouvrez le suivi pour reprendre.';
+    await rendreFiche({
+      assignationEchue: true,
+      phaseDemandee: 'patient',
+      deblocageRefuse: { reason: 'dossier_cloture', error: motif },
+    });
+    const section = await screen.findByRole('region', {
+      name: /Questionnaires jamais remplis dont l’échéance est dépassée/i,
+    });
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Débloquer' }));
+    const alerte = await within(section).findByRole('alert');
+    expect(alerte.textContent).toBe(motif);
+    expect(within(section).getByText(/Jamais rempli, échéance dépassée/i)).toBeTruthy();
+    expect(within(section).getByRole('button', { name: 'Débloquer' })).toBeTruthy();
+  });
+
+  // L'enjeu accepté de [[D-422]] §2 : sur un suivi clos, une demande de
+  // correction ne se débloque plus — le dossier le dit.
+  it('une demande de correction refusée dit le motif sous sa ligne', async () => {
+    await rendreFiche({
+      assignationsModif: true,
+      phaseDemandee: 'patient',
+      deblocageRefuse: { reason: 'dossier_cloture', error: 'Motif de la route.' },
+    });
+    const section = await screen.findByRole('region', {
+      name: /Demandes de correction de questionnaire en attente/i,
+    });
+    fireEvent.click(within(section).getByRole('button', { name: 'Débloquer' }));
+    expect((await within(section).findByRole('alert')).textContent).toBe('Motif de la route.');
+  });
+
+  it('un serveur muet : « le serveur n’a pas répondu »', async () => {
+    await rendreFiche({ assignationEchue: true, phaseDemandee: 'patient', deblocageRefuse: 'reseau' });
+    const section = await screen.findByRole('region', {
+      name: /Questionnaires jamais remplis dont l’échéance est dépassée/i,
+    });
+    fireEvent.click(within(section).getByRole('button', { name: 'Débloquer' }));
+    expect((await within(section).findByRole('alert')).textContent).toBe(
+      'Déblocage impossible : le serveur n’a pas répondu.',
+    );
+  });
+
+  it('contrôle négatif — un déblocage réussi n’affiche aucun refus', async () => {
+    await rendreFiche({ assignationEchue: true, phaseDemandee: 'patient' });
+    const section = await screen.findByRole('region', {
+      name: /Questionnaires jamais remplis dont l’échéance est dépassée/i,
+    });
+    fireEvent.click(within(section).getByRole('button', { name: 'Débloquer' }));
+    await waitFor(() =>
+      expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull(),
+    );
+    expect(screen.queryByText(/Déblocage impossible/i)).toBeNull();
+  });
+
+  // [[D-422]] §1, en défense : un serveur antérieur au lot servirait encore
+  // l'annulée ; l'écran ne l'offre pas au déblocage.
+  it('une annulée servie par le serveur n’entre pas au bloc des échues', async () => {
+    await rendreFiche({ assignationEchue: 'annulee', phaseDemandee: 'patient' });
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+    expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull();
   });
 
   it('contrôle négatif — rien ne s’affiche quand le dossier n’a aucun échu', async () => {

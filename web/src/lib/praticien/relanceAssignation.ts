@@ -30,6 +30,9 @@ export const JOURS_ENTRE_RELANCES_ASSIGNATION = JOURS_ENTRE_RELANCES;
 /** Les deux statuts terminaux que la base tient déjà (`assignations.statut`). */
 const STATUT_RENDUE = 'Complété';
 const STATUT_ANNULEE = 'Annulée';
+/** Le refus d'une annulée, partagé par la relance et le déblocage
+ *  (`PATCH /api/praticien/assignations`, [[D-422]] §2) : une seule phrase. */
+export const MESSAGE_ASSIGNATION_ANNULEE = 'Cette assignation est annulée : vous ne l’attendez plus.';
 /** Le seul `statut_reponses` qui rouvre une assignation échue : le
  *  déverrouillage du praticien (`PUT /api/praticien/assignations`). */
 const REPONSES_DEVERROUILLEES = 'deverrouille';

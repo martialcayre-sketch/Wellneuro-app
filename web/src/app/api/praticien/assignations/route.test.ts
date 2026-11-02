@@ -4,7 +4,7 @@ const { sendMail, prisma } = vi.hoisted(() => ({
   sendMail: vi.fn(),
   prisma: {
     patient: { findFirst: vi.fn() },
-    assignation: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    assignation: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     // Lue SEULEMENT sous `WN_ECHEANCE_OBLIGATOIRE` : c'est elle qui dit si
     // l'assignation qu'on pose compose le second rideau.
     syntheseIA: { findFirst: vi.fn() },
@@ -22,6 +22,7 @@ vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) 
 import nodemailer from 'nodemailer';
 import { PATCH, POST } from './route';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -148,30 +149,172 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       body: JSON.stringify({ idAssignation }),
     });
   }
+  const suiviOuvert = { actif: true, suiviClotureLe: null };
 
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.assignation.findFirst.mockResolvedValue({
-      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1',
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+      patient: suiviOuvert,
     });
-    prisma.assignation.update.mockResolvedValue({});
+    prisma.assignation.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
   });
 
   it('refuse de rouvrir la saisie d’un instrument suspendu, avant toute écriture', async () => {
     prisma.assignation.findFirst.mockResolvedValue({
-      idAssignation: 'ASS_1', idQuestionnaire: 'Q_FIB_03', idPatient: 'PAT_1',
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_FIB_03', idPatient: 'PAT_1', statut: 'En attente',
+      patient: suiviOuvert,
     });
     const response = await PATCH(patchRequest());
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({ success: false, reason: 'questionnaire_suspendu' });
-    expect(prisma.assignation.update).not.toHaveBeenCalled();
+    expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+  });
+
+  // [[D-422]] §2 : ni une annulée ni un suivi clos ne se débloquent, et le
+  // refus tombe avant toute écriture, avec le message de la relance.
+  it('refuse de débloquer une assignation annulée, avant toute écriture', async () => {
+    prisma.assignation.findFirst.mockResolvedValue({
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'Annulée',
+      patient: suiviOuvert,
+    });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      success: false,
+      reason: 'assignation_annulee',
+      error: 'Cette assignation est annulée : vous ne l’attendez plus.',
+    });
+    expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('refuse de débloquer l’assignation d’un suivi clôturé, même une demande de correction', async () => {
+    prisma.assignation.findFirst.mockResolvedValue({
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+      statutReponses: 'modification_demandee',
+      patient: { actif: true, suiviClotureLe: new Date('2026-10-01T10:00:00Z') },
+    });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      success: false,
+      reason: RAISON_DOSSIER_CLOS,
+      error: MESSAGE_DOSSIER_CLOS,
+    });
+    expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('lit l’état du suivi avec l’assignation, sous la garde d’appartenance', async () => {
+    await PATCH(patchRequest());
+    const args = prisma.assignation.findFirst.mock.calls[0][0];
+    expect(args.where).toMatchObject({ idAssignation: 'ASS_1', patient: expect.anything() });
+    expect(args.include).toEqual({ patient: { select: { actif: true, suiviClotureLe: true } } });
+  });
+
+  it('un dossier désactivé reçoit le refus de la relance', async () => {
+    prisma.assignation.findFirst.mockResolvedValue({
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+      patient: { actif: false, suiviClotureLe: null },
+    });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS });
+    expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('le dossier d’abord : une annulée d’un suivi clos reçoit le refus du dossier', async () => {
+    prisma.assignation.findFirst.mockResolvedValue({
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'Annulée',
+      patient: { actif: true, suiviClotureLe: new Date('2026-10-01T10:00:00Z') },
+    });
+    const response = await PATCH(patchRequest());
+    expect(await response.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS });
+  });
+
+  // L'écriture répète les gardes : une annulation passée entre la lecture et
+  // l'écriture ne laisse ni annulée déverrouillée, ni succès sans effet.
+  it('écrit sous condition des deux gardes d’état', async () => {
+    await PATCH(patchRequest());
+    expect(prisma.assignation.updateMany.mock.calls[0][0]).toEqual({
+      where: {
+        idAssignation: 'ASS_1',
+        statut: { not: 'Annulée' },
+        patient: { actif: true, suiviClotureLe: null },
+      },
+      data: { statutReponses: 'deverrouille' },
+    });
+  });
+
+  // La clôture écrit la ligne patient dans une transaction : sans le verrou
+  // du dossier AVANT l'écriture, le filtre relationnel lirait encore le suivi
+  // ouvert pendant qu'elle s'achève (revue Copilot de #1825).
+  it('prend le verrou du dossier avant l’écriture, dans la même transaction', async () => {
+    await PATCH(patchRequest());
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.assignation.updateMany.mock.invocationCallOrder[0],
+    );
+    expect(prisma.$queryRaw.mock.calls[0].slice(1)).toEqual(['PAT_1']);
+  });
+
+  it('une annulation concurrente rend le refus de l’annulée, jamais un succès', async () => {
+    prisma.assignation.findFirst
+      .mockResolvedValueOnce({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+        patient: suiviOuvert,
+      })
+      .mockResolvedValueOnce({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'Annulée',
+        patient: suiviOuvert,
+      });
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: 'assignation_annulee' });
+  });
+
+  // Revue PR-Agent de #1825 : zéro ligne écrite puis un état redevenu bon
+  // (suivi rouvert) ne doit jamais répondre « introuvable ».
+  it('un état redevenu bon entre-temps : un second essai, qui réussit', async () => {
+    prisma.assignation.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true });
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('deux essais sans effet : une erreur technique, jamais « introuvable »', async () => {
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: 'exception' });
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('une ligne disparue entre lecture et écriture rend 404', async () => {
+    prisma.assignation.findFirst
+      .mockResolvedValueOnce({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+        patient: suiviOuvert,
+      })
+      .mockResolvedValueOnce(null);
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(404);
   });
 
   it('contrôle négatif — un instrument courant se déverrouille toujours', async () => {
     const response = await PATCH(patchRequest());
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ success: true });
-    expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
+    expect(prisma.assignation.updateMany).toHaveBeenCalledTimes(1);
   });
 });
 

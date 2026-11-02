@@ -6,6 +6,72 @@
 
 ## Décisions actives
 
+### D-422 — Audit 3, lot Q3 quater : une assignation annulée sort du Fil et du bloc « échu » du dossier ; le déblocage refuse une annulée et un suivi clôturé
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 sur les restes
+  du lot Q3 ter (liste commune, `20261102-0830-g` et `20261102-0831-g`).
+  Précise [[D-414]] §1.
+- Domaine : Fil du jour (`lib/fil/cartes.ts`, `cartesAssignationsEnRetard`) ;
+  lecture des assignations échues du dossier (`api/praticien/patients`,
+  `echeanceDepassee=1`, `FichePatientPanel`) ; route de déblocage
+  `PATCH /api/praticien/assignations`.
+- Ne touche pas : `schema.prisma`, aucune migration ; la route de relance et
+  sa décision, dont seul le texte du refus d'une annulée est désormais
+  partagé ; l'annulation ; l'échéance ; le portail.
+
+**§1 — Une annulée n'est pas en retard.** Le praticien ne l'attend plus, et
+ni la relance ni le portail ne la servent. Elle ne fait plus de carte
+« Échéance dépassée » au Fil (`cartesAssignationsEnRetard` écarte
+`Annulée` comme `Complété`), et la lecture `echeanceDepassee=1` l'exclut en
+base (`NOT statut = 'Annulée'`, ajouté au filtre de statut sans le
+remplacer) : le bloc « Jamais rempli, échéance dépassée » du dossier ne
+l'offre plus au déblocage ; l'écran l'écarte aussi en défense, comme il
+écarte déjà un autre dossier. Le reste du dossier (passations, compteurs)
+continue de lire les annulées.
+
+**§2 — Le déblocage refuse une annulée et un suivi clôturé, avant toute
+écriture.** `PATCH /api/praticien/assignations` lit l'état du dossier avec
+l'assignation, sous la même garde d'appartenance, et répond 409 sans rien
+écrire, dans l'ordre de la relance :
+
+- dossier qui n'accepte plus d'envoi (`accepteNouvelEnvoi`) :
+  `dossier_cloture`, `MESSAGE_DOSSIER_CLOS` — même refus et même message
+  que la relance, y compris pour un dossier désactivé, comme elle ;
+- assignation `Annulée` : `assignation_annulee`, « Cette assignation est
+  annulée : vous ne l'attendez plus. » — le texte de la relance, désormais
+  partagé (`MESSAGE_ASSIGNATION_ANNULEE`).
+
+L'écriture répète les deux gardes (`updateMany` conditionné sur le statut
+et sur le dossier en suivi, patron de la route d'annulation), sous le
+verrou du dossier (`verrouillerPatient`, dans la même transaction : la
+clôture écrit la ligne patient en transaction, revue Copilot) : une
+annulation ou une clôture passée entre la lecture et l'écriture ne laisse
+ni annulée déverrouillée ni succès sans effet ; zéro ligne écrite relit
+l'assignation et rend le refus juste, ou 404 si elle a disparu (revue
+`wn-reviewer`) ; si plus rien ne s'y oppose (suivi rouvert entre-temps),
+un second essai, un seul, puis l'erreur technique existante — jamais
+« introuvable » pour une ligne qui existe (revue PR-Agent).
+
+Aucun texte neuf. Enjeu accepté par le responsable : sur un suivi clôturé,
+une demande de correction ne se débloque plus ; il faut d'abord rouvrir le
+suivi. Le dossier affichait jusqu'ici un refus du déblocage sans rien dire
+(le bouton revenait) : il l'écrit désormais sous la ligne, tel que la route
+l'écrit, avec les mots du Fil quand la route n'en donne pas (« Déblocage
+impossible. », « Déblocage impossible : le serveur n'a pas répondu. »).
+Au Fil, la carte d'un suivi clos garde « Rappeler » ([[D-414]] §1),
+inchangé.
+
+**§3 — Preuve.** Bancs des cartes, de la lecture des assignations, de la
+route de déblocage et du dossier. Dix-sept mutations jouées en quatre séries (initiale, puis après chaque
+revue) : quinze défauts distincts, deux rejoués après le regroupement des
+refus. Chacune rougit : second essai retiré ; verrou du dossier retiré ; annulée
+gardée au Fil ; `NOT` retiré de la lecture échue ; défense de l'écran
+retirée ; annulée non refusée ; suivi clos non refusé ; ordre des refus
+inversé ; état du dossier non lu ; écriture sans garde de statut ; sans
+garde du dossier ; zéro ligne écrite tenue pour un succès ; refus muet au
+bloc des échues ; au bloc des corrections ; repli réseau muet.
+
 ### D-419 — La table des indications de biologie entre au contrat de fraîcheur des claims épinglés : vingt-neuf paires, `prescriptif` non exigé, cas négatif `N15`
 
 - Date : 2026-11-01
