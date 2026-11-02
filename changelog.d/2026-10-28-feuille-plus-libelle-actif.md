@@ -1,4 +1,4 @@
-### Corrigé
+### Feuille « Plus » du cockpit mobile : le libellé de l'item actif redevient lisible (2026-10-28)
 
 - **Feuille « Plus » du cockpit mobile : le libellé de l'item actif redevient
   lisible.** L'item actif ne posait pas de couleur de texte. Comme `<body>`
