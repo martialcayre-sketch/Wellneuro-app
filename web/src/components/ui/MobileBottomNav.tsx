@@ -141,6 +141,9 @@ export function MobileBottomNav() {
                 {plusItems.map((item) => {
                   const actif = itemPlusActif(item);
                   const Icone = item.icon;
+                  // L'item actif porte sa couleur de texte : <body> n'en pose
+                  // aucune, et le libellé héritait du noir par défaut sur le
+                  // fond nuit du rail.
                   return (
                     <Dialog.Close asChild key={item.href}>
                       <Link
@@ -148,7 +151,7 @@ export function MobileBottomNav() {
                         aria-current={actif ? 'page' : undefined}
                         className={`group mb-1 flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
                           actif
-                            ? 'border-rail-primary/20 bg-rail-primary/10'
+                            ? 'border-rail-primary/20 bg-rail-primary/10 text-rail-foreground'
                             : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
                         }`}
                       >
