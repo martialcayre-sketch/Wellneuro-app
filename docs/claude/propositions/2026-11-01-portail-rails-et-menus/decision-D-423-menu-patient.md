@@ -12,8 +12,9 @@
 - Date : 2026-11-02
 - Statut : brouillon, à accepter. Arbitrages du responsable du 2026-11-01
   (Q1 à Q3, Q27 à Q30, chapitre 14 de l'audit) et du 2026-11-02 (Q4 à Q26,
-  Q31 à Q34, chapitre 15), sur questions à options fermées. Textes patient
-  acceptés mot pour mot le 2026-11-02 (§3, §8).
+  Q31 à Q34, chapitre 15), sur questions à options fermées ; Q19, Q34 et les
+  cibles des étapes 4 et 5 revues le même jour après relecture de la PR.
+  Textes patient acceptés mot pour mot le 2026-11-02 (§3, §8).
 - Domaine : portail patient, hub `web/src/app/portail/[token]/questionnaires/page.tsx`
   (bloc « Autres espaces », compteur, « Mon accompagnement »), retour de
   `informations/page.tsx`, frise `PatientJourneyProgress` sur le hub,
@@ -23,8 +24,8 @@
   **verse** l'arbitrage du responsable du 2026-09-12 (LOT-05 de la campagne
   « vie du portail patient », hors D-xxx jusqu'ici) au §5. **Applique**
   [[D-288]] §1 (§7), [[D-333]] §1 (§6), [[D-360]] §2 (§2), [[D-357]] §2 (§2),
-  [[D-293]] (§6), [[D-276]] §1 tel que [[D-365]] §2 le lit (§6), D7 et D11 de
-  la campagne SP-CONV (§8).
+  [[D-293]] (§6), [[D-276]] §1 tel que [[D-365]] §2 le lit (§6), [[D-315]] et
+  [[D-349]] §2 (§3), D7 et D11 de la campagne SP-CONV (§8).
 - **Ne touche pas** :
   - A6-R1 (REGISTRE_FRONTIERES) et `.claude/rules/frontend-ui.md:36-40` :
     aucun amendement ; le menu du hub et la frise navigable restent dans
@@ -48,8 +49,7 @@
 (organisation A, L2). La frise des étapes devient navigable ensuite (L2b). Le
 bouton « Menu » et le tiroir (organisation B, L3) restent ouverts et se
 décident après constat de l'écran de L2 ; le rail latéral (C) n'est pas
-engagé ; la barre basse (L4) est reportée, sans entrées nommées tant que B
-n'est pas livré.
+engagé ; la barre basse (L4) n'est pas dans cette décision.
 
 **§2 — Groupes, ordre, rang.** Sous `<nav aria-label="Autres espaces">`, nom
 conservé, l'ancre « Mon parcours » puis quatre groupes, dans cet ordre, les
@@ -80,10 +80,12 @@ repli mémorisé, aucun jeton `--rail-*`.
 - retour de `/informations` : « ← Mon parcours », même cible (le hub) ; le
   retour de `/conditions` reste « ← Mon espace », vers l'accueil de
   l'espace ;
-- « Mon accompagnement », quand un protocole est servi : une icône décorative
-  (`aria-hidden`) à côté du titre et le texte lu par le lecteur d'écran
-  « Votre protocole est disponible » ; le bloc reste replié ; aucun
-  changement de couleur, jamais la couleur seule.
+- « Mon accompagnement » : titre inchangé ; le bloc s'affiche déplié d'office
+  quand un protocole est servi, replié sinon. Il n'ajoute pas de second repli
+  autour de celui de [[D-315]] : le titre, la raison et « Ce qu'on
+  travaille » se lisent sans clic, une pause déplie le détail d'office, et
+  l'encart de conduite se lit avant tout clic ([[D-349]] §2). Aucune icône,
+  aucun texte lu ajouté, aucun changement de couleur.
 
 **§4 — Activation.** Un seul élément porte `aria-current="page"` par
 chemin, choisi sur le segment qui suit `/portail/{token}/` :
@@ -122,7 +124,7 @@ commencer », date de naissance) précèdent toujours le hub.
 **§7 — Exécution.** Un regroupement de liens existants n'est pas une surface
 neuve au sens de [[D-288]] §1 : L2 se livre sans drapeau, son retour arrière
 est un revert, il porte aussi le retrait du compteur (§6), l'allègement des
-liens (§2) et le signal de « Mon accompagnement » (§3). La frise navigable
+liens (§2) et le dépli de « Mon accompagnement » (§3). La frise navigable
 (L2b) et le bouton « Menu » (L3) changent visiblement l'écran : chacun est une
 surface neuve, livrée derrière un drapeau serveur éteint, inscrite dans
 `docs/FEATURE_FLAGS.md`, et prend une place dans la file C. Avant L2, un
@@ -134,29 +136,35 @@ composant patient est séparé des composants praticien.
 `<nav aria-label="Étapes de votre parcours">`, distincte de « Autres
 espaces » ; un seul `aria-current="step"` ; cibles de 44 px au moins en
 `rem` ; libellés inchangés, sans rang ni numéro (Q33 : un rang visible
-attendrait une précision de [[D-333]]). Une étape passée s'ouvre en relecture,
-l'étape à venir est annoncée et fermée, ce qui reste dans « une étape à la
+attendrait une précision de [[D-333]]). Une étape passée s'ouvre en relecture
+quand une cible existante la relit, l'étape à venir est annoncée et fermée, ce qui reste dans « une étape à la
 fois » : revenir à une étape franchie n'est pas empiler. Une étape sans cible
 existante n'est pas cliquable ; aucune route n'est créée.
 
 | Étape | Passée | Courante | À venir |
 |---|---|---|---|
-| 1 Consentement | `/conditions`, en relecture | sans objet sur le hub | sans objet |
-| 2 Informations | `/informations`, en relecture | sans objet sur le hub | sans objet |
+| 1 Consentement | non cliquable : aucune page ne relit le consentement au suivi | sans objet sur le hub | sans objet |
+| 2 Informations | non cliquable : aucune page ne relit la fiche signalétique | sans objet sur le hub | sans objet |
 | 3 Situation | non cliquable : aucune surface patient ne relit l'anamnèse | sans objet sur le hub | sans objet |
-| 4 Questionnaires | la liste des questionnaires du hub (section) | la liste des questionnaires du hub (section) | sans objet |
-| 5 Analyse du praticien | non cliquable | texte d'attente (ci-dessous) | fermée |
+| 4 Questionnaires | la liste des questionnaires du hub (section) ; si elle n'est pas rendue, « Mon parcours » | la liste des questionnaires du hub (section) ; si elle n'est pas rendue, « Mon parcours » | sans objet |
+| 5 Analyse du praticien | non cliquable | texte selon l'état (ci-dessous) | fermée |
 | 6 Restitution | sans objet | le bilan quand `bilanConsultable` le sert, sinon non cliquable ; jamais de texte d'attente | fermée |
 
-Les relectures des étapes 1 et 2 ouvrent des pages existantes du pied de
-page : elles ne sont pas des portes au sens de l'arbitrage du 2026-09-12 et
-n'ajoutent aucun lien à « Autres espaces ».
+`/conditions` et `/informations` restent des pages du pied de page, hors
+menu : la frise n'y mène pas.
 
-Texte d'attente de l'étape 5 courante, accepté mot pour mot le 2026-11-02,
-écrit dans `FORMULATIONS_PATIENT` ou à côté, dans le même module, sous la
-garde `formulations.guard.test.ts` (D7) : « Votre praticien prépare votre
-restitution à partir des éléments transmis. Vous la retrouverez ici dès
-qu’elle sera prête. » Il ne porte ni chiffre ni délai promis.
+Texte de l'étape 5 courante, selon l'état dérivé (D7, D11 : la phrase suit
+l'état, jamais au-delà) :
+- `analyse_en_cours` : texte d'attente accepté mot pour mot le 2026-11-02,
+  « Votre praticien prépare votre restitution à partir des éléments
+  transmis. Vous la retrouverez ici dès qu’elle sera prête. » Il ne porte ni
+  chiffre ni délai promis ;
+- `elements_transmis` : la phrase déjà servie de `FORMULATIONS_PATIENT`,
+  « Vos éléments ont été transmis. » ; aucun texte neuf.
+
+Le texte neuf s'écrit dans `formulations.ts` et entre dans les valeurs que
+parcourt `TOUTES` dans `formulations.guard.test.ts` (D7) : un texte exporté
+à côté sans y être ajouté échapperait à la garde.
 
 Les écrans d'entrée de `[token]/page.tsx` gardent leur frise comme repère,
 non navigable.
