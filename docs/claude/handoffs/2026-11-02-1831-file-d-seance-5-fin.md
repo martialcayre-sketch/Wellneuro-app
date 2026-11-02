@@ -3,8 +3,10 @@
 ## Branche et état Git
 
 `docs/file-d-d45-borne`, worktree `.claude/worktrees/file-d1-suite`, créée
-depuis `origin/main` (f5cbf461). Troisième et dernière PR de la séance, après
-#1828 (b26, D-424) et #1829 (m39, D-425).
+depuis `origin/main` (f5cbf461), puis `origin/main` fusionné après le merge de
+#1828 (97951315 ; conflits résolus en gardant les deux côtés, D-426 au-dessus
+de D-424). Troisième et dernière PR de la séance, après #1828 (b26, D-424,
+mergée) et #1829 (m39, D-425).
 
 ## Objectif
 
@@ -70,7 +72,11 @@ lignes neuves prêtes à reprendre.
   catalogue ; quatre dimensions en français), niveau de preuve (D-424 §5) ;
   avec un changement de version (empreinte, réapprobation b27).
 - **Ligne neuve — MFI-20 dans l'orientation** (D-425 §4 b) : claim validé et
-  déclencheur sourcé ; aucun seuil publié du MFI-20 trouvé.
+  déclencheur sourcé. La source du catalogue cite, pour la fatigue générale,
+  des repères par sexe et âge attribués à Schwarz et al. 2003 et Singer et
+  al. 2011, non vérifiés, et que le moteur ne peut pas appliquer (ni sexe ni
+  âge reçus) : la ligne commence par vérifier ces deux références (arbitrage
+  du responsable sur la revue Copilot de #1829).
 - Ordre de merge : #1828, puis #1829 (cite `WN-SRC-0604`), puis cette PR ;
   `source_registry.json`, le README du corpus et l'en-tête de
   `docs/DECISIONS.md` se recoupent entre elles et avec #1826 : chaque fusion
