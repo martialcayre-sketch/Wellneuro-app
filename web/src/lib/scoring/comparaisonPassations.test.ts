@@ -77,7 +77,7 @@ describe('comparerPassations (D-406)', () => {
 
   describe('motifs, dans l’ordre', () => {
     it('instrument hors registre : ni paire ni motif, le panneau n’en dit rien', () => {
-      for (const id of ['Q_NEU_11', 'Q_SOM_07', 'Q_INF_03', 'Q_MOD_01', 'Q_FIB_02']) {
+      for (const id of ['Q_NEU_11', 'Q_SOM_07', 'Q_INF_03', 'Q_MOD_01']) {
         const r = comparerPassations(
           [p('2026-09-01T08:00:00Z', 1, { idQuestionnaire: id }), p('2026-09-02T08:00:00Z', 2, { idQuestionnaire: id })],
           null,
@@ -86,8 +86,28 @@ describe('comparerPassations (D-406)', () => {
       }
     });
 
-    it('le registre : six instruments à total défini et complétude lisible', () => {
-      expect([...COMPARABLE_DEPUIS.keys()].sort()).toEqual(['Q_ALI_01', 'Q_INF_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02', 'Q_STR_04']);
+    it('le registre : sept instruments à total défini et complétude lisible', () => {
+      expect([...COMPARABLE_DEPUIS.keys()].sort()).toEqual(['Q_ALI_01', 'Q_FIB_02', 'Q_INF_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02', 'Q_STR_04']);
+    });
+
+    it('QIF (D-429) : la sortie réelle du moteur, comparée dès le 2026-11-03, sur 100', () => {
+      expect(COMPARABLE_DEPUIS.get('Q_FIB_02')?.toISOString()).toBe('2026-11-03T00:00:00.000Z');
+      const ids = Array.from({ length: 20 }, (_, i) => `Q${i + 1}`);
+      const reel = (date: string, valeur: number, sauf: string[] = []) => {
+        const scores: any = calculateScore('Q_FIB_02', Object.fromEntries(ids.filter(id => !sauf.includes(id)).map(id => [id, valeur])));
+        return p(date, scores.total, { idQuestionnaire: 'Q_FIB_02', titre: 'QIF' }, scores);
+      };
+      const { paires } = comparerPassations([reel('2026-11-10T08:00:00Z', 2), reel('2026-11-20T08:00:00Z', 1)], null);
+      expect(paires).toHaveLength(1);
+      expect(paires[0].maximum).toBe(100);
+      // Sous-item de l'item 1 retiré : permis par la source, la paire passe.
+      expect(comparerPassations([reel('2026-11-10T08:00:00Z', 2, ['Q9']), reel('2026-11-20T08:00:00Z', 1)], null).paires).toHaveLength(1);
+      // Une EVA manque : total partiel servi, paire refusée.
+      expect(comparerPassations([reel('2026-11-10T08:00:00Z', 2, ['Q14']), reel('2026-11-20T08:00:00Z', 1)], null).nonComparees[0].motif).toBe('incomplete');
+      // Q13 et Q14 vides (travail non renseigné) : total null, paire refusée (D-428 §3).
+      expect(comparerPassations([reel('2026-11-10T08:00:00Z', 2, ['Q13', 'Q14']), reel('2026-11-20T08:00:00Z', 1)], null).nonComparees[0].motif).toBe('incomplete');
+      // Le soir du déploiement de D-421 : version non établie.
+      expect(comparerPassations([reel('2026-11-02T23:00:00Z', 2), reel('2026-11-20T08:00:00Z', 1)], null).nonComparees[0].motif).toBe('version_non_etablie');
     });
 
     it('DASS-21 (D-420) : total brut comparé dès le 2026-08-11, sans maximum, complet à 7 sur 7 par axe', () => {

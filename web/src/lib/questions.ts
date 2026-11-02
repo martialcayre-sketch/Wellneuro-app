@@ -3755,10 +3755,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // seules valeurs numériques et non sur `funcCount`, qui sert au calcul et
     // reste tel quel (le total n'est pas touché).
     //
-    // Ce qui NE change PAS ici : `total`, `maxTotal` et `interpretation`. La
-    // source corrige un total incomplet par 10/x ; ce moteur ne le fait pas, et
-    // sert une bande sur un total tiré vers le bas — défaut consigné par D-421,
-    // laissé à une décision propre.
+    // Ce qui NE change PAS ici : `total` et `maxTotal`. La source corrige un
+    // total incomplet par 10/x ; ce moteur ne le fait pas. Le total partiel
+    // reste servi, avec son compte, mais sa BANDE tombe ([[D-428]], modèle de
+    // D-014) : calibrée sur la forme complète, elle ne pouvait que sous-classer
+    // un total tiré vers le bas, et un total NaN (valeur non numérique, comptée
+    // ici) tombait dans la dernière, « Maximum théorique ».
     const manque = (id: string) => {
       const v = getVal(id);
       return v === null || Number.isNaN(v);
@@ -3780,7 +3782,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'AB', label:'Absentéisme (/10)',              val: q13Score},
         {id:'EV', label:'EVA douleur/humeur/fatigue (/70)', val: evaSum},
       ],
-	      interpretation: interp,
+	      interpretation: missingIds.length > 0 ? null : interp,
 	      certification: sc.certification || null,
 	      note:'Drive annonce un score global 0-100 mais mentionne aussi une classe 100-107 ; la tranche 1-34 n’est pas explicitement interprétée.'
 	    };
