@@ -261,13 +261,19 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   // `jourCourantLocal` lit l'horodatage LOCAL du serveur, comme
   // `isDeadlineExpired` lit le sien ; `patient-access.guard.test.ts` tient les
   // deux règles d'accord, et c'est lui seul qui les tient.
+  //
+  // UNE ANNULÉE N'EST PAS ÉCHUE ([[D-422]] §1) : le praticien ne l'attend
+  // plus, et le déblocage la refuse. Le `NOT` s'ajoute au filtre de `statut`
+  // sans le remplacer.
   const echeanceDepassee = searchParams.get('echeanceDepassee') === '1';
   const whereAssignations = {
     patient: filtrePatientsDuPraticien(email),
     ...(statut ? { statut } : {}),
     ...(statutReponses ? { statutReponses } : {}),
     ...(idPatientDemande ? { idPatient: idPatientDemande } : {}),
-    ...(echeanceDepassee ? { dateLimite: { not: null, lt: jourCourantLocal() } } : {}),
+    ...(echeanceDepassee
+      ? { dateLimite: { not: null, lt: jourCourantLocal() }, NOT: { statut: 'Annulée' } }
+      : {}),
   };
 
   try {

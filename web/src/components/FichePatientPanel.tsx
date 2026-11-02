@@ -661,6 +661,9 @@ export function FichePatientPanel({
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
   const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
+  // Le refus du déblocage, tel que la route l'écrit ([[D-422]] §2) : sans lui,
+  // un suivi clos ou une annulée laissaient le bouton revenir sans rien dire.
+  const [refusDeblocage, setRefusDeblocage] = useState<{ idAssignation: string; message: string } | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActifBrut] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
   // MODE CONSULTATION : UN ONGLET MASQUÉ NE S'OUVRE PAS ([[D-354]] §4). Tout
@@ -995,7 +998,8 @@ export function FichePatientPanel({
         && meta.echeanceDepassee === true;
       const liste = filtresHonores
         ? (payload.assignations ?? []).filter(
-            a => a.idPatient === idPatient && a.statutReponses === 'non_rempli',
+            // Une annulée n'est pas échue ([[D-422]] §1) — en défense aussi.
+            a => a.idPatient === idPatient && a.statutReponses === 'non_rempli' && a.statut !== 'Annulée',
           )
         : [];
       setAssignationsEchues(liste);
@@ -1296,6 +1300,7 @@ export function FichePatientPanel({
 
   const onDebloquer = async (idAssignation: string) => {
     setDeverrouillageId(idAssignation);
+    setRefusDeblocage(null);
     try {
       const r = await fetch('/api/praticien/assignations', {
         method: 'PATCH',
@@ -1308,7 +1313,12 @@ export function FichePatientPanel({
         // `deverrouille`, elle n'appartient plus ni à l'une ni à l'autre.
         setAssignationsModif(prev => prev.filter(a => a.idAssignation !== idAssignation));
         setAssignationsEchues(prev => prev.filter(a => a.idAssignation !== idAssignation));
+      } else {
+        // Mêmes mots qu'au Fil (`FilDuJour.tsx`).
+        setRefusDeblocage({ idAssignation, message: json.error ?? 'Déblocage impossible.' });
       }
+    } catch {
+      setRefusDeblocage({ idAssignation, message: 'Déblocage impossible : le serveur n’a pas répondu.' });
     } finally {
       setDeverrouillageId(null);
     }
@@ -1925,6 +1935,9 @@ export function FichePatientPanel({
                     {a.correctionCommentaire && (
                       <p className="text-xs text-status-warning mt-1 italic">« {a.correctionCommentaire} »</p>
                     )}
+                    {refusDeblocage?.idAssignation === a.idAssignation && (
+                      <p role="alert" className="text-xs text-foreground mt-1">{refusDeblocage.message}</p>
+                    )}
                   </div>
                   <button
                     onClick={() => onDebloquer(a.idAssignation)}
@@ -1959,6 +1972,9 @@ export function FichePatientPanel({
                       {a.dateLimite ? `À rendre avant le ${a.dateLimite}. ` : ''}
                       Le portail refuse la saisie ; le déblocage la rouvre.
                     </p>
+                    {refusDeblocage?.idAssignation === a.idAssignation && (
+                      <p role="alert" className="text-xs text-foreground mt-1">{refusDeblocage.message}</p>
+                    )}
                   </div>
                   <button
                     onClick={() => onDebloquer(a.idAssignation)}

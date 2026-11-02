@@ -495,6 +495,23 @@ describe('GET /api/praticien/patients — filtre par dossier et statut de répon
     expect(where.idPatient).toBe('PAT001');
   });
 
+  // [[D-422]] §1 : une annulée sort du bloc « échu » du dossier, qui offrirait
+  // sinon « Débloquer » sur une assignation que le praticien n'attend plus.
+  it('écarte les annulées de l’échéance dépassée, sans ôter le filtre de statut', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=1'));
+    expect(prisma.assignation.findMany.mock.calls[0][0].where.NOT).toEqual({ statut: 'Annulée' });
+    vi.clearAllMocks();
+    await GET(get('idPatient=PAT001&statut=En%20attente&echeanceDepassee=1'));
+    const where = prisma.assignation.findMany.mock.calls[0][0].where;
+    expect(where.statut).toBe('En attente');
+    expect(where.NOT).toEqual({ statut: 'Annulée' });
+  });
+
+  it('sans échéance dépassée, les annulées restent lisibles — contrôle négatif', async () => {
+    await GET(get('idPatient=PAT001'));
+    expect(prisma.assignation.findMany.mock.calls[0][0].where.NOT).toBeUndefined();
+  });
+
   it('le même where part au compte qu’à la liste', async () => {
     await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=1'));
     expect(prisma.assignation.count.mock.calls[0][0].where).toEqual(

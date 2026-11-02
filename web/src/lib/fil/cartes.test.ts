@@ -303,16 +303,18 @@ describe('cartesAssignationsEnRetard', () => {
     ]);
   });
 
-  // Une annulée échue paraît encore au Fil (antérieur) ; elle ne doit pas
-  // offrir un déblocage que le portail ignorerait.
-  it('ne porte pas le statut des réponses d’une assignation annulée', () => {
-    const [carteAnnulee] = cartesAssignationsEnRetard(
-      [{ idAssignation: 'ASG_8', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'Annulée', statutReponses: 'non_rempli' }],
+  // Une annulée échue ne fait plus de carte ([[D-422]] §1) : le praticien ne
+  // l'attend plus, et aucun geste de la carte ne lui serait accordé.
+  it('écarte une assignation annulée, même échue et non remplie', () => {
+    const cartes = cartesAssignationsEnRetard(
+      [
+        { idAssignation: 'ASG_8', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: '2026-07-10', statut: 'Annulée', statutReponses: 'non_rempli' },
+        { idAssignation: 'ASG_11', idPatient: 'P-SOPHIE', titre: 'Q', dateLimite: '2026-07-10', statut: 'En attente', statutReponses: 'non_rempli' },
+      ],
       NOMS,
       MAINTENANT,
     );
-    expect(carteAnnulee.idAssignation).toBe('ASG_8');
-    expect(carteAnnulee.statutReponses).toBeUndefined();
+    expect(cartes.map(c => c.idAssignation)).toEqual(['ASG_11']);
   });
 
   it('ne porte pas le statut des réponses d’un suivi clos', () => {
