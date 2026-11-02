@@ -3737,8 +3737,43 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 	    : total <= 99 ? {label:'Consultation médicale nécessaire pour réévaluer ou modifier le traitement', color:'danger'}
 	    :              {label:'Maximum théorique exceptionnellement atteint selon le document source', color:'danger'};
 
+    // LA COMPLÉTUDE DEVIENT LISIBLE — `missing`/`missingIds` à la racine ([[D-421]]).
+    //
+    // Ce moteur ne publiait aucun compte : la comparaison de deux passations
+    // ([[D-406]] §4) ne pouvait pas dire si l'une était incomplète, et le QIF
+    // restait hors de son registre. Le grain est celui de la SOURCE (Bennett
+    // 2005, WN-SRC-0602) : dix composantes. L'item 1 est la moyenne des
+    // sous-items Q1-Q11 notés, et la source permet au patient d'en retirer ceux
+    // qu'il ne pratique pas : un sous-item laissé vide n'est donc pas une
+    // question manquante, tant qu'un autre est noté — même partage que les
+    // questions non posées de `subscore`. Q12 à Q20 sont exigés chacun.
+    //
+    // `missing` compte des QUESTIONS, jamais des composantes : c'est le sens
+    // que la consigne de synthèse lui donne. L'item 1 entièrement vide compte
+    // donc ses onze sous-items. Une valeur non numérique (NaN) manque aussi,
+    // comme dans le moteur `sum` — y compris pour l'item 1, jugé ici sur ses
+    // seules valeurs numériques et non sur `funcCount`, qui sert au calcul et
+    // reste tel quel (le total n'est pas touché).
+    //
+    // Ce qui NE change PAS ici : `total`, `maxTotal` et `interpretation`. La
+    // source corrige un total incomplet par 10/x ; ce moteur ne le fait pas, et
+    // sert une bande sur un total tiré vers le bas — défaut consigné par D-421,
+    // laissé à une décision propre.
+    const manque = (id: string) => {
+      const v = getVal(id);
+      return v === null || Number.isNaN(v);
+    };
+    // Item 1 : vide = retrait permis par la source ; non numérique = manquant.
+    const nonNumerique = (id: string) => getVal(id) !== null && manque(id);
+    const missingIds = [
+      ...(funcItems.some(id => !manque(id)) ? funcItems.filter(nonNumerique) : funcItems),
+      ...['Q12', 'Q13', ...evaItems].filter(manque),
+    ];
+
     return {
       type:'qif', total, maxTotal:100,
+      missing: missingIds.length,
+      ...(missingIds.length > 0 ? {missingIds} : {}),
       components:[
         {id:'FN', label:'Capacité fonctionnelle (/9.9)', val: funcScaled},
         {id:'JB', label:'Jours ressentis bien (/10)',     val: q12Score},

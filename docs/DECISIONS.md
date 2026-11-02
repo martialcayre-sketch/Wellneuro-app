@@ -53,6 +53,82 @@ vide sans suite ; un critère d'indépendance seul, sans graduation.
 ligne neuve de la file D (d58 de la page « Suivi de la file D »), en attente
 des niveaux dictés.
 
+### D-425 — Mesure distincte de la fatigue et du sommeil : cinq instruments du catalogue (PSQI, MFI-20, Pichot, Epworth, MEQ), calendrier à décider ; droits maintenus sous la déclaration du 2026-07-29, écarts aux pages des ayants droit consignés ; l'Epworth et le MFI-20 entrent dans « Mon équilibre », le MFI-20 dans l'orientation (m39)
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 (questions à
+  options, une précision demandée puis rendue, fiche validée telle quelle),
+  en séance de gestes de la file D (n° 5, ligne m39). Recherche documentaire
+  préparée par le responsable avec un assistant conversationnel externe, qui
+  n'est source d'aucune valeur ; chaque référence vérifiée par la session
+  (Europe PMC, Crossref, pages des ayants droit).
+- Domaine : dispositif distinct de [[D-407]] §2-3 ; registre des instruments
+  (`docs/claude/corpus/instrument_registry.json`) ; « Mon équilibre »
+  (`BESOIN_SOURCES`) et table d'orientation (`ORIENTATION_RULES_V1`), pour le
+  seul principe du §4.
+- Ne touche pas : aucun code ; aucun calendrier, aucune forme, aucune
+  fréquence ; aucune valeur, aucun seuil, aucun poids ; aucune demande de
+  licence engagée.
+- Contexte, lu au dépôt et vérifié le 2026-11-02 : le catalogue sert cinq
+  questionnaires adultes du sommeil et de la fatigue. Les trois registres ne
+  portent aucune donnée de sensibilité au changement. [[D-353]] §2 ne nomme
+  aucun instrument : un questionnaire est renvoyé quand son assignation est
+  ouverte, faite au jour 0 ou après, et que le patient a déjà rempli le même
+  instrument avant le jour 0 ; les agendas du sommeil et alimentaire et une
+  assignation déverrouillée pour correction n'en sont pas (relevé de la revue
+  Copilot de #1829). Les droits reposent sur la déclaration du 2026-07-29 (supports de
+  formation du SIIN, étendue aux instruments tiers qu'ils reproduisent).
+
+**§1 — Cinq instruments.** Le PSQI (`Q_SOM_01`), le MFI-20 (`Q_SOM_07`),
+l'échelle de fatigue de Pichot (`Q_SOM_06`), l'Epworth (`Q_SOM_02`) et le MEQ
+(`Q_SOM_05`), déjà servis, entrent au dispositif distinct. Faits vérifiés :
+versions françaises Blais et al. 1997 (`WN-SRC-0604`), Gentile et al. 2003
+(`0609`, quatre dimensions retrouvées et non cinq), Kaminska et al. 2010
+(`0606`), Taillard et al. 2004 et Bessot et Margas 2024 (`0607`, `0608`) ;
+Pichot francophone d'origine (Pichot et Brun 1984, `0610`). Sensibilité au
+changement : MFI-20 jugée « satisfactory » à un mois (Gentile) ; Epworth,
+différences minimales publiées dans l'apnée du sommeil seulement (Patel et
+al. 2018, Crook et al. 2019, `0611`, `0612`), donc limitées à cette
+population (`DC-14`) ; PSQI non vérifiée ; Pichot et MEQ, rien trouvé.
+PROMIS est sans objet ([[D-407]] §3).
+
+**§2 — Calendrier et forme.** Non décidés. Le dispositif reste sous
+[[D-366]] §2 entier, les échelles reprises des sources ([[D-407]] §1).
+
+**§3 — Droits.** Maintenus par arbitrage du responsable pour le PSQI,
+l'Epworth et le MFI-20, sous la déclaration du 2026-07-29. Les écarts sont
+consignés mot pour mot au registre des instruments : pour le PSQI, la page de
+l'University of Pittsburgh (`0613`) réserve la reproduction gratuite à la
+recherche et à l'enseignement non commerciaux et range l'usage clinique parmi
+les cas soumis à demande, avec une redevance à l'usage ; pour l'Epworth, la
+page des licences (`0614`) exige une licence, payante ou non, gérée par Mapi
+Research Trust ; pour le MFI-20, aucune page officielle, une source secondaire
+seulement, la documentation du logiciel CamCOPS (`0621`). MEQ : « Freely available for non-profit use » (American Thoracic
+Society) ; Pichot : titulaire non identifié. Les versions françaises vérifiées
+entrent au registre, sans affirmer l'identité de la version servie. Les
+notices restent `to_verify`. Écartés : demander les licences en continuant de
+servir ; demander et suspendre.
+
+**§4 — Deux entrées décidées dans leur principe.** (a) L'Epworth et le MFI-20
+entrent dans « Mon équilibre ». Le besoin, le groupe, le poids et, pour le
+MFI-20, qui n'a pas de score global au catalogue, les sous-scores retenus
+sont à dicter par le responsable ; leur niveau de preuve suit [[D-424]] §5 ;
+ils partent avec un changement de version. (b) Le MFI-20 entre dans
+l'orientation : une règle demande un claim validé et un déclencheur sourcé.
+La recherche du 2026-11-02 n'a vérifié aucun seuil publié. La source du
+catalogue cite, pour la seule fatigue générale, des repères qui dépendent du
+sexe et de l'âge, rapportés au 25e percentile de données allemandes et
+attribués à Schwarz et al. 2003 et Singer et al. 2011, deux références non
+vérifiées (`web/src/lib/questionnaires/sommeil.ts`, note du scoring) ; le
+moteur ne reçoit ni le sexe ni l'âge. Ce sont des pistes à vérifier, pas un
+déclencheur validé (arbitrage du responsable du 2026-11-02 sur une remarque
+de la revue Copilot de #1829). Chacune des deux entrées passera par sa propre
+décision, avec ses valeurs.
+
+**§5 — Suites.** File D : deux lignes neuves pour le §4. Fiche H19 : fragment
+de journal. Le lot du dispositif s'inscrit au §8 quand son calendrier sera
+décidé.
+
 ### D-424 — Table des niveaux de preuve de « Mon équilibre » : trois niveaux A, B, D, C retiré, un niveau par clé ; les neuf sources après J3-12f signées telles quelles ; application avec J3-12f (b26)
 
 - Date : 2026-11-02
@@ -172,6 +248,114 @@ retirée ; annulée non refusée ; suivi clos non refusé ; ordre des refus
 inversé ; état du dossier non lu ; écriture sans garde de statut ; sans
 garde du dossier ; zéro ligne écrite tenue pour un succès ; refus muet au
 bloc des échues ; au bloc des corrections ; repli réseau muet.
+
+### D-421 — QIF (`Q_FIB_02`) : le moteur publie sa complétude au grain de sa source, dix composantes ; maximum 100 maintenu ; le total incomplet sans correction 10/x reste un défaut consigné
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02, rendus en
+  conversation sur questions à options, tous sur la recommandation : règle
+  des dix composantes plutôt que vingt items sur vingt ; maximum 100 et non
+  107 ; défaut du total incomplet consigné ici, corrigé par une décision
+  propre.
+- Domaine : moteur `qif` de `web/src/lib/questions.ts` (sous instantané,
+  étape au `moteur` de `seuilsCatalogue.instantane.json`) ; banc
+  `web/src/lib/scoring/qifCompletude.test.ts`. Fiche H94, [[D-406]] §7.
+- **Ne touche pas** : ni `total`, ni `maxTotal`, ni aucune bande ; ni les
+  facteurs de normalisation ; ni le registre de comparaison de [[D-406]] §2,
+  où l'entrée du QIF est une décision à part, après le déploiement de
+  celle-ci ; aucune migration, aucune écriture en base.
+- Contexte : [[D-406]] §2 écartait le QIF parce que son moteur ne publiait
+  aucun compte de complétude. Sources lues sur leur texte intégral le
+  2026-11-02 : Bennett 2005 (WN-SRC-0602) et Perrot 2003 (WN-SRC-0603). Chez
+  Bennett, le score est la somme de dix composantes, chacune de 0 à 10, pour
+  un maximum de 100. L'item 1 est la moyenne des sous-items notés, et le
+  patient peut retirer de son score les tâches qu'il ne pratique pas. Depuis
+  2002, un total incomplet est multiplié par 10/x. Perrot valide la version
+  française item par item, sans total publié. Aucune source ne fonde la
+  classe « 100 à 107 » de la fiche du cabinet.
+
+**§1 — Compte publié.** `missing` et `missingIds` à la racine, comme les
+moteurs à score global. L'item 1 est mesuré dès qu'un de Q1 à Q11 est noté ;
+Q12 à Q20 sont exigés chacun. `missing` compte des questions, jamais des
+composantes (sens de la consigne de synthèse) : un item 1 entièrement vide
+compte ses onze sous-items, et un sous-item retiré quand un autre est noté
+n'est pas une question manquante. Une valeur non numérique compte comme
+manquante, comme dans le moteur `sum`, item 1 compris : un sous-item vide
+est un retrait permis, un sous-item non numérique est une question
+manquante, et l'item 1 sans aucune valeur numérique compte ses onze
+sous-items.
+
+**§2 — Maximum.** `maxTotal` reste 100. Le moteur plafonne à 99,9 parce que
+la fiche du cabinet multiplie l'item 1 par 3,3 là où Bennett multiplie par
+3,33 : écart consigné, non corrigé (acte clinique distinct).
+
+**§3 — Défaut consigné.** Une composante entièrement absente (l'item 1, Q12,
+Q13, ou les sept EVA ensemble) rend déjà `total: null`, sans bande. Mais
+quand une partie seulement des EVA Q14 à Q20 manque — par exemple Q14,
+laissé vide par une personne sans emploi —, le moteur additionne les EVA
+restantes, sans correction 10/x, et sert une bande sur un total tiré vers
+le bas (`DC-24`) ; seule la bande du zéro exige la passation entière. De
+même, une valeur non numérique propage NaN au total ; la route de
+soumission la refuse pour une passation nouvelle. Constaté dans le code,
+aucune occurrence observée. Sa correction — retirer
+la bande ou appliquer 10/x — appelle une décision propre. Elle aura deux
+points à traiter :
+- la bande du zéro exige vingt questions sur vingt, alors que `missing`
+  vaut 0 dès que les dix composantes sont mesurées : `total = 0`, avec un
+  sous-item retiré, rend un recueil complet sans bande ;
+- chez une personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la
+  correction 10/x. Sous §1, elles manquent, et la passation restera
+  incomplète pour l'entrée du QIF au registre de [[D-406]] §2.
+
+**§4 — Effets.** Le badge existant « N manquant(s) » de la fiche patient et
+le compte de l'export du dossier lisent désormais le QIF ; la synthèse
+reçoit `missing`, décrit par sa consigne, et `missingIds`, que les moteurs
+`sum` envoient déjà sans y être décrit (aucune montée de version de la
+consigne). Le QIF n'entre pas dans
+l'équilibre : ni `versionScore` ni protocole touchés.
+
+### D-420 — DASS-21 (`Q_STR_04`) au registre de comparaison de D-406 §2 : total brut des trois sous-échelles (0 à 63), défini par ses auteurs ; complet à sept items sur sept par axe ; comparable depuis le 2026-08-11
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrage du responsable du 2026-11-02, rendu en
+  conversation sur question à options, sur la recommandation.
+- Domaine : `web/src/lib/scoring/comparaisonPassations.ts`
+  (`COMPARABLE_DEPUIS`) et son banc. Fiche H94.
+- **Amende** [[D-406]] §2 (registre et liste des écartés) ; **exécute** pour
+  le DASS-21 son §7.
+- **Ne touche pas** : aucune ligne du moteur ni du catalogue (le total servi
+  est celui d'aujourd'hui) ; aucune bande, aucun seuil, aucune grille du
+  total ; les lectures par sous-échelle de [[D-402]] ; aucune migration.
+- Contexte : [[D-406]] §2 écartait le DASS-21, dont le total est une somme
+  des axes faite par l'application, sans source qui le définisse. La FAQ
+  officielle des auteurs (WN-SRC-0601), lue sur la page le 2026-11-02, le
+  définit : « it is certainly both possible and sensible to add (or average)
+  the three DASS scores together to produce a composite measure of negative
+  emotional symptoms » (Q26). Sa règle des réponses manquantes est indicative :
+  une par échelle de sept items au plus, en moyennant les autres (Q27). Et
+  les scores calculés ne doivent pas être rendus au répondant, sans
+  interprétation automatisée (Q9). La fiche du cabinet (WN-SRC-0404) porte une case
+  « score total » sans grille. Définition inchangée depuis le 2026-07-28,
+  moteur `subscore` depuis le 2026-08-04 (historique Git).
+
+**§1 — Entrée.** `Q_STR_04` est comparable lorsque les deux passations datent
+du ou après le 2026-08-11, même base que les quatre instruments de cette date
+([[D-406]] §2). Le score comparé est le score principal enregistré, somme
+brute des trois sous-échelles, de 0 à 63.
+
+**§2 — Complétude.** Sept items sur sept par axe, déjà lus par [[D-406]] §4
+(`repondus` égal à `items`) : plus strict que la tolérance de Q27, qui
+changerait le calcul du total. Aucun maximum n'est publié, des deux côtés :
+la paire passe la règle de grille, avec `maximum: null`.
+
+**§3 — Lecture.** Écart en points bruts, sans bande ni seuil (aucune grille
+du total, porte 11 fermée) ; au cockpit seul, conforme à Q9.
+
+**§4 — Restent hors registre** (journal de H94) : le DNST (`Q_INF_03`) et le
+mode de vie SIIN (`Q_MOD_01`), sans total publié dans leur source ni dans
+la littérature trouvée ; le MFI-20 (`Q_SOM_07`), dont un total 20-100 est
+décrit par des sources secondaires non lues sur texte intégral — fait à
+instruire, non tranché ici ; le QIF, jusqu'au déploiement de [[D-421]].
 
 ### D-419 — La table des indications de biologie entre au contrat de fraîcheur des claims épinglés : vingt-neuf paires, `prescriptif` non exigé, cas négatif `N15`
 
