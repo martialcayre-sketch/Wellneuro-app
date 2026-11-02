@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import type { ClaimEnRevue, ClaimStatut } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
 import type { CorpusClaimDecisionApiResponse } from '@/app/api/praticien/corpus/claims/decision/route';
 import { clesLienDuClaim } from '@/lib/rag/claims/clesLien';
+import { lireIdentifiantRecherche } from '@/lib/rag/claims/rechercheIdentifiant';
 import { nomRubrique } from '@/components/fiches-usage/libelles';
 import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien } from './ClesLienChamps';
 
@@ -74,6 +76,12 @@ type Etat = 'chargement' | 'chargee' | 'erreur';
 export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const [statut, setStatut] = useState<ClaimStatut>('EN_ATTENTE_VALIDATION');
   const [offset, setOffset] = useState(0);
+  /** Recherche par identifiant appliquée (D/22) — `WN-CL-…` normalisé, ou null. */
+  const [recherche, setRecherche] = useState<string | null>(null);
+  const [saisieRecherche, setSaisieRecherche] = useState('');
+  const [erreurRecherche, setErreurRecherche] = useState('');
+  /** Recherche vide ici : onglets où le claim est actif (renvoi). */
+  const [autresStatuts, setAutresStatuts] = useState<ClaimStatut[]>([]);
   const [claims, setClaims] = useState<ClaimEnRevue[]>([]);
   const [total, setTotal] = useState(0);
   const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
@@ -104,9 +112,10 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   // par `decider` pour recharger CE que l'écran affiche, pas la vue d'origine
   // de la décision ; verrou d'envoi lisible hors re-render.
   const generationRef = useRef(0);
-  const vueRef = useRef<{ statut: ClaimStatut; offset: number }>({
+  const vueRef = useRef<{ statut: ClaimStatut; offset: number; recherche: string | null }>({
     statut: 'EN_ATTENTE_VALIDATION',
     offset: 0,
+    recherche: null,
   });
   const envoiRef = useRef(false);
   const refsOnglets = useRef<Array<HTMLButtonElement | null>>([]);
@@ -119,7 +128,11 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setClesSaisie(SAISIE_CLES_VIDE);
   }, []);
 
-  const charger = useCallback(async (statutCourant: ClaimStatut, offsetCourant: number) => {
+  const charger = useCallback(async (
+    statutCourant: ClaimStatut,
+    offsetCourant: number,
+    rechercheCourante: string | null,
+  ) => {
     const generation = ++generationRef.current;
     setEtat('chargement');
     setConfirmationId(null);
@@ -130,8 +143,9 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setErreurDecision('');
     try {
       const filtreNotebook = notebook ? `&notebook=${encodeURIComponent(notebook)}` : '';
+      const filtreClaim = rechercheCourante ? `&claim=${encodeURIComponent(rechercheCourante)}` : '';
       const reponse = await fetch(
-        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}`,
+        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}${filtreClaim}`,
       );
       const payload = (await reponse.json()) as CorpusClaimsApiResponse;
       if (generation !== generationRef.current) return;
@@ -149,6 +163,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
       setClaims(payload.claims);
       setTotal(payload.total);
       setCompteurs(payload.compteurs);
+      setAutresStatuts(payload.autresStatuts ?? []);
       setEtat('chargee');
     } catch {
       if (generation !== generationRef.current) return;
@@ -158,7 +173,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   }, [notebook]);
 
   useEffect(() => {
-    vueRef.current = { statut, offset };
+    vueRef.current = { statut, offset, recherche };
     // La vue change : les marques d'une page ne valent pas pour une autre.
     // Le résumé de lot, lui, SURVIT à la recharge automatique qui vide la file
     // (une page vidée fait reculer l'offset) — sinon le seul retour d'audit à
@@ -166,8 +181,8 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     // une action explicite : changement d'onglet, bascule de mode, nouveau
     // marquage, ou nouveau run.
     setMarques(new Map());
-    void charger(statut, offset);
-  }, [charger, statut, offset]);
+    void charger(statut, offset, recherche);
+  }, [charger, statut, offset, recherche]);
 
   const changerOnglet = (prochain: ClaimStatut) => {
     // Pas de changement d'onglet pendant une soumission en lot : la vue ne
@@ -176,6 +191,32 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     if (prochain === statut || enCoursLot) return;
     setResumeLot('');
     setStatut(prochain);
+    setOffset(0);
+  };
+
+  // Recherche par identifiant (D/22) : exacte, lue AVANT toute requête ; elle
+  // filtre l'onglet ouvert et survit au changement d'onglet (renvoi).
+  const rechercher = () => {
+    if (enCoursLot) return;
+    const lecture = lireIdentifiantRecherche(saisieRecherche);
+    if (!lecture.ok) {
+      setErreurRecherche('Identifiant attendu : WN-CL-0000-000 ou 0000-000.');
+      return;
+    }
+    setErreurRecherche('');
+    setResumeLot('');
+    setSaisieRecherche(lecture.claimId);
+    setRecherche(lecture.claimId);
+    setOffset(0);
+  };
+
+  const effacerRecherche = () => {
+    if (enCoursLot) return;
+    setSaisieRecherche('');
+    setErreurRecherche('');
+    if (recherche === null) return;
+    setResumeLot('');
+    setRecherche(null);
     setOffset(0);
   };
 
@@ -231,12 +272,12 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
           // État divergent : la liste affichée ment — on recharge pour remettre
           // l'écran d'accord avec la base avant toute nouvelle décision.
           if (!payload.ok && payload.reason === 'etat_divergent') {
-            void charger(vueRef.current.statut, vueRef.current.offset);
+            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
           }
           return;
         }
         // Recharge de la vue COURANTE (l'onglet a pu changer pendant l'envoi).
-        void charger(vueRef.current.statut, vueRef.current.offset);
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
       } catch {
         setErreurDecision('La décision n’a pas pu être enregistrée.');
       } finally {
@@ -273,14 +314,14 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         if (!reponse.ok || !payload.ok) {
           setErreurDecision(payload.ok ? 'L’étiquetage n’a pas pu être enregistré.' : payload.error);
           if (!payload.ok && payload.reason === 'claim_non_valide') {
-            void charger(vueRef.current.statut, vueRef.current.offset);
+            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
           }
           return;
         }
         // Succès seulement : sur un échec transitoire, la saisie reste ouverte.
         setEtiquetageId(null);
         setClesSaisie(SAISIE_CLES_VIDE);
-        void charger(vueRef.current.statut, vueRef.current.offset);
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
       } catch {
         setErreurDecision('L’étiquetage n’a pas pu être enregistré.');
       } finally {
@@ -392,7 +433,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
 
     envoiRef.current = false;
     setEnCoursLot(false);
-    void charger(vueRef.current.statut, vueRef.current.offset);
+    void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
   }, [claims, marques, charger]);
 
   // Groupement par source : la revue se fait document par document.
@@ -483,6 +524,47 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         })}
       </div>
 
+      <form
+        role="search"
+        aria-label="Recherche par identifiant"
+        className="flex flex-col gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          rechercher();
+        }}
+      >
+        <label htmlFor="recherche-claim" className="text-sm font-medium text-foreground">
+          Rechercher un claim par identifiant
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            id="recherche-claim"
+            value={saisieRecherche}
+            onChange={(event) => setSaisieRecherche(event.target.value)}
+            placeholder="WN-CL-0000-000 ou 0000-000"
+            autoComplete="off"
+            spellCheck={false}
+            aria-invalid={erreurRecherche ? true : undefined}
+            aria-describedby={erreurRecherche ? 'recherche-claim-erreur' : undefined}
+            disabled={enEnvoiGlobal}
+            className="w-64 max-w-full font-mono"
+          />
+          <Button type="submit" variant="outline" disabled={enEnvoiGlobal}>
+            Rechercher
+          </Button>
+          {(recherche !== null || saisieRecherche) && (
+            <Button type="button" variant="outline" disabled={enEnvoiGlobal} onClick={effacerRecherche}>
+              Effacer
+            </Button>
+          )}
+        </div>
+        {erreurRecherche && (
+          <p id="recherche-claim-erreur" role="alert" className="text-sm text-status-warning">
+            {erreurRecherche}
+          </p>
+        )}
+      </form>
+
       <div id="panneau-claims" role="tabpanel" aria-labelledby={idOngletActif} className="flex flex-col gap-5">
         {erreurDecision && (
           <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
@@ -512,13 +594,30 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         {etat === 'erreur' && (
           <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>{erreur}</span>
-            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset)}>
+            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset, recherche)}>
               Réessayer
             </Button>
           </div>
         )}
 
-        {etat === 'chargee' && claims.length === 0 && (
+        {etat === 'chargee' && claims.length === 0 && recherche !== null && (
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card">
+            <span>Aucun claim {recherche} actif dans cet onglet.</span>
+            {autresStatuts.map((autre) => {
+              const libelle = ONGLETS.find((onglet) => onglet.statut === autre)?.libelle ?? autre;
+              return (
+                <div key={autre} className="flex flex-wrap items-center gap-3">
+                  <span>Il est dans l’onglet {libelle}.</span>
+                  <Button variant="outline" disabled={enEnvoiGlobal} onClick={() => changerOnglet(autre)}>
+                    Ouvrir l’onglet {libelle}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {etat === 'chargee' && claims.length === 0 && recherche === null && (
           <div className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card">
             {statut === 'EN_ATTENTE_VALIDATION'
               ? 'Aucun claim en attente de validation. La file se remplit à l’ingestion d’un lot rédigé.'

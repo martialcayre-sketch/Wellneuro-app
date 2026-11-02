@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
+import { lireIdentifiantRecherche } from '@/lib/rag/claims/rechercheIdentifiant';
 import { getRagClaimsHealth } from '@/lib/rag/claims/store';
 import {
   compterClaimsRevue,
   estClaimStatut,
   listerClaimsRevue,
+  statutsDuClaim,
   type ClaimEnRevue,
   type ClaimStatut,
 } from '@/lib/rag/claims/revue';
@@ -29,6 +31,8 @@ export type CorpusClaimsApiResponse =
       ok: true;
       statut: ClaimStatut;
       sourceId: string | null;
+      /** Recherche par identifiant appliquée (D/22), normalisée. */
+      claimId: string | null;
       total: number;
       claims: ClaimEnRevue[];
       compteurs: {
@@ -38,6 +42,8 @@ export type CorpusClaimsApiResponse =
         empreintesDerivees: number;
         sourcesSupersedees: number;
       };
+      /** Recherche sans résultat dans cet onglet : statuts où le claim est actif, sinon []. */
+      autresStatuts: ClaimStatut[];
     }
   | { ok: false; reason: string; error: string };
 
@@ -45,7 +51,7 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json<CorpusClaimsApiResponse>({ ok: false, reason, error }, { status });
 }
 
-// GET /api/praticien/corpus/claims?statut=&source=&limit=&offset=
+// GET /api/praticien/corpus/claims?statut=&source=&claim=&limit=&offset=
 export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiResponse>> {
   try {
     const session = await getServerSession(authOptions);
@@ -63,6 +69,14 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
       return echec('source_invalide', 'Identifiant de source invalide.', 400);
     }
 
+    // Recherche par identifiant (D/22) : exacte, jamais un motif.
+    const claimBrut = (searchParams.get('claim') ?? '').trim();
+    const lectureClaim = claimBrut ? lireIdentifiantRecherche(claimBrut) : null;
+    if (lectureClaim && !lectureClaim.ok) {
+      return echec('claim_invalide', 'Identifiant de claim invalide.', 400);
+    }
+    const claimId = lectureClaim?.ok ? lectureClaim.claimId : undefined;
+
     // Filtre notebook (registre sanitaire) — borné pour rester un libellé.
     const notebookBrut = (searchParams.get('notebook') ?? '').trim();
     if (notebookBrut.length > 200) {
@@ -78,22 +92,31 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
     // Les tuiles de statut comptent sur le MÊME périmètre que la liste
     // (active = true, compterClaimsRevue) ; la santé d'ingestion ne fournit
     // que les signaux de dérive des liens.
+    const sourceIds = notebookBrut ? sourcesDuNotebook(notebookBrut) : undefined;
     const [liste, tuiles, sante] = await Promise.all([
       listerClaimsRevue({
         statut: statutBrut,
         sourceId: sourceBrut || undefined,
-        sourceIds: notebookBrut ? sourcesDuNotebook(notebookBrut) : undefined,
+        sourceIds,
+        ...(claimId ? { claimId } : {}),
         limit: limitBrut,
         offset: offsetBrut,
       }),
       compterClaimsRevue(),
       getRagClaimsHealth(),
     ]);
+    // Renvoi vers l'onglet où vit le claim, seulement si la recherche ne
+    // trouve rien ici — jamais une requête de plus hors recherche.
+    const autresStatuts =
+      claimId && liste.total === 0
+        ? await statutsDuClaim({ claimId, sourceId: sourceBrut || undefined, sourceIds })
+        : [];
 
     return NextResponse.json({
       ok: true,
       statut: statutBrut,
       sourceId: sourceBrut || null,
+      claimId: claimId ?? null,
       total: liste.total,
       claims: liste.claims,
       compteurs: {
@@ -103,6 +126,7 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
         empreintesDerivees: sante.liens.empreintesDerivees,
         sourcesSupersedees: sante.liens.sourcesSupersedees,
       },
+      autresStatuts,
     });
   } catch (err) {
     console.error('[praticien/corpus/claims GET]', err instanceof Error ? err.message : String(err));

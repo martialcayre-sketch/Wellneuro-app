@@ -18,7 +18,7 @@ import { lireClesLien } from './clesLien';
 export const MAX_LIGNES_ETIQUETAGE_LOT = 500;
 
 export const CLAIM_ID_RE = /^WN-CL-\d{4}-\d{3}$/;
-const VERSION_RE = /^v?\d+\.\d+$/;
+export const VERSION_RE = /^v?\d+\.\d+$/;
 
 export type LigneEtiquetageLot = {
   claimId: string;
