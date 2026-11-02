@@ -11,7 +11,8 @@ rien n'est engagé** ; aucune ligne de code, aucune décision, aucun drapeau ne
 change avec ce document. Les lots s'ouvrent après les réponses du chapitre 13.
 Q1 à Q3 ont été tranchées le 2026-11-01 (chapitre 14) : A puis B, l'organisation
 seule, et une frise des étapes navigable en plus du menu ; Q27 à Q30, ouvertes par
-ce dernier choix, le sont aussi.
+ce dernier choix, le sont aussi. Q31 à Q34, ouvertes par la relecture du 2026-11-02
+(chapitre 13), se tranchent dans L0.
 
 Abréviations : LOT-05 et LOT-07 désignent
 `docs/claude/campagnes/2026-09-12-vie-du-portail-patient/lots/LOT-05-les-deux-portes.md`
@@ -145,11 +146,11 @@ et `web/src/app/portail/layout.tsx`, sauf mention d'un autre dossier.
 |---|---|---|---|---|---|
 | 1 | Consulter mon bilan | /bilan | aucun lu | sans objet | `bilanConsultable` (page.tsx:452-456 ; api/portail/assignations/route.ts:199-216) |
 | 2 | Fiches remises par mon praticien | /fiches | `WN_FICHES_ASSIETTE_LECTURE` | 2026-09-29 (l.52) | fiches remises et bibliothèque non servie (LienFichesRemises.tsx:32) |
-| 3 | Ma bibliothèque | /bibliotheque | `WN_PORTAIL_BIBLIOTHEQUE` | non : « NEUF ET ÉTEINT à la livraison (2026-10-25) », aucune pose consignée (l.59) | majeur, une fiche remise (LienBibliotheque.tsx:29) |
+| 3 | Ma bibliothèque | /bibliotheque | `WN_PORTAIL_BIBLIOTHEQUE` | non à la base de l'audit : « NEUF ET ÉTEINT à la livraison (2026-10-25) », aucune pose consignée (l.59) ; mise à jour du 2026-11-02 : posé en production et constaté le 2026-11-01 (FEATURE_FLAGS.md:59 sur origin/main@29074ecb) | majeur, une fiche remise (LienBibliotheque.tsx:29) |
 | 4 | Courrier pour votre médecin | /courrier-medecin | `WN_LETTRE_ADRESSAGE_PATIENT` | 2026-10-04 (l.46) | courrier remis (LienCourrierMedecin.tsx:24) |
 | 5 | Courrier à remettre à votre médecin | /courrier-complement | `WN_COURRIER_COMPLEMENT` | allumé le 2026-10-30 (l.47), après le relevé du 2026-10-28 | courrier remis (LienCourrierComplement.tsx:25) |
 | 6 | Pour votre médecin | /pour-votre-medecin | `WN_DOCUMENT_MEDECIN_PATIENT` | allumé le 2026-10-19 (l.48) | document disponible, partage accordé (LienPourVotreMedecin.tsx:24) |
-| 7 | Transmettre un compte rendu d’analyses | /comptes-rendus | `WN_BIO_PORTAIL_ENABLED` ; exige `WN_BIO_INGEST_ENABLED`, `WN_CB_RESULTS_ENABLED`, `WN_CB_ENABLED` | 2026-10-07 (l.500) ; 2026-10-03 (l.498) ; 2026-09-03 (l.497) ; 2026-08-21 (l.29-30) | la route répond `ok` (LienTransmissionCompteRendu.tsx:23) |
+| 7 | Transmettre un compte rendu d’analyses | /comptes-rendus | `WN_BIO_PORTAIL_ENABLED` ; exige `WN_BIO_INGEST_ENABLED`, `WN_CB_RESULTS_ENABLED`, `WN_CB_ENABLED` | 2026-10-07 (l.500) ; 2026-10-03 (l.498) ; 2026-09-09 (l.497) ; 2026-08-21 (l.29-30) | la route répond `ok` (LienTransmissionCompteRendu.tsx:23) |
 | 8 | Déposer un document | /documents | `WN_PORTAIL_DEPOT_DOCUMENTS` | ouvert le 2026-10-20 (l.61) | majeur : sonde 409 sinon (api/portail/documents/route.ts:70-72) |
 | 9 | Ma fiche de renseignements | /renseignements | `WN_PHYSIO_TRAITEMENTS` | allumé le 2026-10-28 (l.502) | aucune sur l'âge (api/portail/physio-traitements/route.ts:56-58) |
 | 10 | Ouvrir Mon carnet alimentaire | /alimentation | aucun | sans objet | aucune (page.tsx:482-484) |
@@ -157,7 +158,7 @@ et `web/src/app/portail/layout.tsx`, sauf mention d'un autre dossier.
 | 12 | Ouvrir mes échanges | /echanges | `WN_PORTAIL_MES_ECHANGES` | 2026-10-18 (l.62) | majeur : 409 sinon (api/portail/echanges/route.ts:36-38) |
 | 13 | Ouvrir mon dossier à deux voix | /dossier | `WN_DOSSIER_DEUX_VOIX` | depuis le 2026-08-23 (l.143) | aucune (api/portail/dossier/route.ts:447-449) |
 - Fiches (2) et bibliothèque (3) s'excluent par la même fonction `bibliothequeServie` : drapeau ouvert et majeur (web/src/lib/portail/bibliothequeDrapeau.ts:22-24 ; docs/DECISIONS.md:3133-3139). Treize emplacements, douze visibles au plus.
-- Selon ce registre, neuf des dix drapeaux de lien sont posés ; seule la bibliothèque est éteinte, donc le lien des fiches paraît dès qu'une fiche est remise. Pour un majeur en production, sept liens sont toujours présents (7, 8, 9, 10, 11, 12, 13) et cinq dépendent des données du patient (1, 2, 4, 5, 6) : de 7 à 12 (calcul sur le registre et le code, non constaté à l'écran). Un premier décompte donnait quatre drapeaux « éteints à la livraison » : trois sont posés (documents, courrier complément, document médecin), un seul ne l'est pas.
+- Selon ce registre, neuf des dix drapeaux de lien sont posés ; seule la bibliothèque est éteinte, donc le lien des fiches paraît dès qu'une fiche est remise (état à la base de l'audit ; posée en production le 2026-11-01, la bibliothèque remplace ce lien sur un dossier majeur, FEATURE_FLAGS.md:59 sur origin/main@29074ecb). Pour un majeur en production, sept liens sont toujours présents (7, 8, 9, 10, 11, 12, 13) et cinq dépendent des données du patient (1, 2, 4, 5, 6) : de 7 à 12 (calcul sur le registre et le code, non constaté à l'écran). Un premier décompte donnait quatre drapeaux « éteints à la livraison » : trois sont posés (documents, courrier complément, document médecin), un seul ne l'est pas.
 - Le plan écrit « jusqu'à quinze » et « treize servis sur un dossier de test le 2026-11-01 » (PLAN_WELLNEURO.md:2684) : le code ne donne que 13 emplacements et 12 visibles. L'écart n'est pas élucidé (hypothèse non vérifiée : 15 = 13 plus les deux portes retirées le 2026-09-12).
 
 ### Retours
@@ -186,16 +187,16 @@ et `web/src/app/portail/layout.tsx`, sauf mention d'un autre dossier.
 - Décompte de lecture, non mesuré : 21 requêtes au montage du hub, dont 3 doublons relancés par `PatientCompanionHome`, monté même replié (page.tsx:152, 178, 206, 226, 258, 290 ; PatientCompanionHome.tsx:59-61, 86, 103, 111-115).
 
 ## 5. Inventaire des surfaces patient
-Chemins relatifs à `web/src/app/portail/`. Vingt-quatre pages (24 fichiers `page.tsx`) : seize espaces permanents, trois tâches périssables, deux étapes, deux utilitaires, un hub. Hors pages : trois route handlers (`lien/[jeton]`, `google`, `google/retour`), `layout.tsx`, `error.tsx`, `not-found.tsx`.
+Chemins relatifs à `web/src/app/portail/`. Vingt-quatre pages (24 fichiers `page.tsx`) : seize espaces permanents, trois tâches du fil (une seule périssable au sens de filDuJour.ts:219-227, le rendez-vous de suivi), deux étapes, deux utilitaires, un hub. Hors pages : trois route handlers (`lien/[jeton]`, `google`, `google/retour`), `layout.tsx`, `error.tsx`, `not-found.tsx`.
 | Chemin | Titre | Nature | Entrée | Garde | Retour |
 |---|---|---|---|---|---|
 | `[token]/page.tsx` | un titre par étape (« Avant de commencer », « Merci ! », …) | étape | e-mail lien magique, retour Google, 401 des autres pages | cookie via `/api/portail/session`, sinon `/portail/connexion` | aucun ; sortie « Accéder à mon parcours » |
 | `[token]/questionnaires/page.tsx` | « Mon parcours » | hub | gate, « ← Mon parcours » (17 pages), « ← Mon espace » (informations) | 401 vers `/portail/{token}` ; retours anticipés avant, date | aucun |
-| `[token]/questionnaires/[idAssignation]/page.tsx` | titre de l'assignation | tâche périssable | hub, fil, Mes échanges | session ; consentement ; verrouillé en lecture seule | « ← Mon parcours » en `<a>` |
+| `[token]/questionnaires/[idAssignation]/page.tsx` | titre de l'assignation | tâche du fil | hub, fil, Mes échanges | session ; consentement ; verrouillé en lecture seule | « ← Mon parcours » en `<a>` |
 | `[token]/alimentation` | « Mon carnet alimentaire » | permanent | nav (inconditionnel) | aucune garde de page ; session facultative | « ← Mon parcours » |
 | `[token]/bibliotheque` | « Ma bibliothèque » | permanent | nav | drapeau, majeur | « ← Mon parcours » |
 | `[token]/bilan` | « Bilan neuronutritionnel » ou « Mon bilan » | permanent | nav, fil, Mes échanges | accès révoqué 403 | « ← Mon parcours » ; impression |
-| `[token]/ce-qui-compte` | « Ce qui compte pour moi aujourd’hui » | tâche périssable | fil, Mon accompagnement, dossier ; pas la nav | `WN_CE_QUI_COMPTE`, fenêtre de dépôt | « ← Mon parcours » |
+| `[token]/ce-qui-compte` | « Ce qui compte pour moi aujourd’hui » | tâche du fil | fil, Mon accompagnement, dossier ; pas la nav | `WN_CE_QUI_COMPTE`, fenêtre de dépôt | « ← Mon parcours » |
 | `[token]/comprehension` | « Ce que votre praticien a compris de vous » | permanent | fil, Mon accompagnement, dossier ; pas la nav | `WN_COMPREHENSION` | « ← Mon parcours » |
 | `[token]/comptes-rendus` | « Transmettre un compte rendu d’analyses » | permanent | nav, Mes échanges | `WN_BIO_PORTAIL_ENABLED` et trois drapeaux bio | « ← Mon parcours » |
 | `[token]/conditions` | « Informations, confidentialité et droits » | étape (accusé) | e-mail `?vers=conditions`, informations | `WN_PORTAIL_CONDITIONS`, majeur, sinon redirection vers informations | « ← Mon espace » vers l'écran d'étapes |
@@ -210,7 +211,7 @@ Chemins relatifs à `web/src/app/portail/`. Vingt-quatre pages (24 fichiers `pag
 | `[token]/pour-votre-medecin` | « Pour votre médecin » | permanent | nav | `WN_DOCUMENT_MEDECIN_PATIENT`, partage accordé | « ← Mon parcours » ; téléchargement .html |
 | `[token]/protocole` | « Votre accompagnement » | permanent | Mon accompagnement seul | `WN_PORTAIL_PROTOCOLE_IMPRIMABLE`, majeur | « ← Mon parcours » ; impression |
 | `[token]/renseignements` | « Ma fiche de renseignements » | permanent | nav | `WN_PHYSIO_TRAITEMENTS` | « ← Mon parcours » |
-| `[token]/suivi` | « Rendez-vous de suivi » | tâche périssable | nav, fil, Mon accompagnement | protocole diffusé exigé pour le contenu | « ← Mon parcours » |
+| `[token]/suivi` | « Rendez-vous de suivi » | tâche du fil (périssable) | nav, fil, Mon accompagnement | protocole diffusé exigé pour le contenu | « ← Mon parcours » |
 | `connexion` | « Accéder à votre espace » | utilitaire | middleware `/patient`, gate sans session, 404 | jamais `notFound()` ; contenu selon drapeaux G4 et G5 | aucun |
 | `lien/indisponible` | « Votre lien n’est plus valable » | utilitaire | refus de lien magique | `WN_G4_LIEN_MAGIQUE`, sinon `notFound()` | aucun |
 - Garde de page, recompté en relecture : 15 pages appellent `notFound()` (14 sous `[token]` plus `lien/indisponible`, `grep` des appels réels) ; `conditions` redirige ; huit pages n'ont aucun garde de page : `[token]/page.tsx`, le hub, `[idAssignation]`, alimentation, bilan, suivi, informations, `connexion`. 15 + 1 + 8 = 24. Un premier décompte en annonçait « quatre » en oubliant `[idAssignation]` et `connexion`.
@@ -254,7 +255,7 @@ Un écart implique un travail ; aucun n'est une correction demandée par l'audit
 - Constat : 17 pages disent « ← Mon parcours » vers le hub ; `informations` dit « ← Mon espace » vers le hub ; `conditions` dit « ← Mon espace » vers l'écran d'étapes ; `fiches/[idRemise]` revient à `/fiches` même si la bibliothèque est servie ; le hub s'intitule « Mon parcours ».
 - Preuve : informations/page.tsx:108 `← Mon espace` ; conditions/page.tsx:87-88 `<Link href={`/portail/${token}`} className="shrink-0 text-sm text-primary hover:underline">` ; conditions/page.test.tsx:70-73 « le retour mène à l’accueil de l’espace, qui choisit l’étape ».
 - Statut : vérifié (décompte et deux « Mon espace » relus). Corrigé : la cible de `/conditions` est une décision de test et de page (conditions/page.tsx:83-86), pas un défaut. Ce qu'un patient venu de la bibliothèque voit sur `/fiches` : non vérifié.
-- Implique : une ancre « Mon parcours » active exige un nom et une cible uniques ; unifier `/conditions` vers le hub pourrait court-circuiter le mur « Avant de commencer » pour un patient qui arrive par l'e-mail `?vers=conditions` (D-292 §3, DECISIONS.md:8314-8318).
+- Implique : une ancre « Mon parcours » active exige un nom et une cible uniques ; unifier `/conditions` vers le hub contournerait le choix d'étape de l'écran d'accueil (conditions/page.tsx:84-86), que le patient venu par l'e-mail `?vers=conditions` n'a pas encore franchi dans la session, et l'effet sur la réémission du cookie reste à vérifier (EP-07) ; le mur « Avant de commencer » n'est pas en cause : le patient suivi n'en a aucun (D-292 §3, DECISIONS.md:8312-8318 ; avantDeCommencer.ts:103-106) et le hub le rend lui-même (questionnaires/page.tsx:337-345).
 
 ### EP-07 — L'écran « Merci ! » et la réémission du cookie
 - Constat : un patient onboardé qui arrive par lien magique ou Google atterrit sur `[token]/page.tsx` et voit « Merci ! » ; le cookie n'est réémis (session glissante) que par cette page ; un hub atteint par son adresse ne fait pas glisser la session.
@@ -331,7 +332,7 @@ Un écart implique un travail ; aucun n'est une correction demandée par l'audit
 ### EP-19 — L'arbitrage du 2026-09-12 n'est consigné dans aucune décision
 - Constat : le responsable a retiré le jour même deux boutons vers « ce qui compte » et « ce que j'ai compris » ; leurs écrans sont déjà atteints par le dossier à deux voix, une tâche du fil et « Mon accompagnement ».
 - Preuve : questionnaires/page.tsx:496-497 `PAS DE PORTE SÉPARÉE VERS « CE QUI COMPTE » NI VERS « CE QUE J'AI` ; LOT-05-les-deux-portes.md:64-65 `ils ajoutaient du bruit à une navigation qui en portait cinq.`
-- Statut : corrigé. Absent de `DECISIONS.md` (D-172, l.20236-20239, liste encore les deux portes comme livrées). Consigné aussi dans LOT-05 (l.4, 55-71), CAMPAGNE.md (66-67, 187), LOT-07 (57-59), SESSION_LOG.md:5650, FEATURE_FLAGS.md:245-249, le handoff 2026-09-12-1630 (12-13), filDuJour.ts:54-56 et page.tsx:103-106.
+- Statut : corrigé. Absent de `DECISIONS.md` (D-172, l.20236-20239, liste encore les deux portes comme livrées). Consigné aussi dans LOT-05 (l.4, 55-71), CAMPAGNE.md (66-67, 187), LOT-07 (57-59), SESSION_LOG.md:5650, FEATURE_FLAGS.md:245-249, le handoff 2026-09-12-1630 (17-18, qui ne consigne que la fusion de #1052), filDuJour.ts:54-56 et page.tsx:103-106.
 - Implique : le commentaire de `page.tsx:496-505` disparaît avec une refonte du JSX ; le verser à une D-xxx.
 
 ### EP-20 — Les sondes n'appliquent pas la même règle d'âge ni de dossier clos
@@ -360,7 +361,7 @@ Un écart implique un travail ; aucun n'est une correction demandée par l'audit
 
 ### EP-24 — « Mon accompagnement » fermé alors que deux décisions veulent la lecture sans clic
 - Constat : le `<details>` « Mon accompagnement » n'a pas d'attribut `open`. D-315 veut la pause d'une action lue sans clic, D-349 §2 l'encart de conduite lu avant tout clic. Les deux dépendent de drapeaux posés en production : `WN_PORTAIL_LECTURE_PROTOCOLE` (2026-10-16, FEATURE_FLAGS.md:54) et `WN_PORTAIL_ENCART_CONDUITE` (2026-10-24, :55). `WN_PORTAIL_TROIS_PLANS` (2026-10-27, :57) et `WN_PORTAIL_APPUI_RENVOI` (2026-10-24, :56) conditionnent le contenu du fil et du détail.
-- Preuve : questionnaires/page.tsx:513 `<details className="rounded-xl border border-border bg-surface p-4">` ; api/portail/protocole/route.ts:269-284 (`lectureDuDetail`, `encartConduite` servis si les drapeaux sont ouverts) ; lib/portail/lectureProtocole.ts:16 `return process.env.WN_PORTAIL_LECTURE_PROTOCOLE === 'true';` ; encartConduite.ts:15 ; troisPlans.ts:21 ; appuiRenvoi.ts:23 ; DECISIONS.md:6920-6922 et 3978-3981.
+- Preuve : questionnaires/page.tsx:514 `<details className="rounded-xl border border-border bg-surface p-4">` ; api/portail/protocole/route.ts:269-284 (`lectureDuDetail`, `encartConduite` servis si les drapeaux sont ouverts) ; lib/portail/lectureProtocole.ts:16 `return process.env.WN_PORTAIL_LECTURE_PROTOCOLE === 'true';` ; encartConduite.ts:15 ; troisPlans.ts:21 ; appuiRenvoi.ts:23 ; DECISIONS.md:6920-6922 et 3978-3981.
 - Statut : corrigé. Un premier constat le laissait « non rouvert » ; le contradicteur ne tient que si les drapeaux sont ouverts, et le registre les donne posés. L'effet à l'écran reste non constaté.
 - Implique : Q19 est posée sur un fait de production, pas sur un cas de laboratoire.
 
@@ -375,7 +376,7 @@ Un écart implique un travail ; aucun n'est une correction demandée par l'audit
 - « La seule landmark » et « de 2 à 14 arrêts Tab » : seule landmark de navigation ; le nombre d'arrêts n'a aucune source.
 - « D-324 : décision signée avant le code, une PR par lot » : la décision est écrite dans le lot, une PR réunit L4 et L5 (chapitre 3) ; « SESSION_LOG en append » n'est plus exigé (D-372 §1-§2, DECISIONS.md:2509-2515).
 - « « Autres espaces » n'apparaît que dans des commentaires » : c'est l'`aria-label` de la nav ; `LienDossierDeuxVoix` a un E2E ; il y a trois liens écrits dans le JSX, pas deux.
-- Réfuté en relecture : « un patient réel voit probablement bien moins de 12 liens, quatre drapeaux étant éteints à la livraison ». Trois de ces quatre sont posés en production (dépôt le 2026-10-20, courrier complément le 2026-10-30, document médecin le 2026-10-19) ; seule la bibliothèque ne l'est pas (FEATURE_FLAGS.md:61, 47, 48, 59). Le nombre vu dépend ensuite des données du patient, non lues.
+- Réfuté en relecture : « un patient réel voit probablement bien moins de 12 liens, quatre drapeaux étant éteints à la livraison ». Trois de ces quatre sont posés en production (dépôt le 2026-10-20, courrier complément le 2026-10-30, document médecin le 2026-10-19) ; seule la bibliothèque ne l'était pas à la base de l'audit (FEATURE_FLAGS.md:61, 47, 48, 59) ; elle est posée en production depuis le 2026-11-01. Le nombre vu dépend ensuite des données du patient, non lues.
 
 ## 7. Ce que la doctrine impose
 Statuts : décidé (décision signée), principe (registre, règle, campagne ou convention de code), dette (plan).
@@ -389,10 +390,11 @@ Statuts : décidé (décision signée), principe (registre, règle, campagne ou 
 | Avis non signé : Observatoire et Jardin « ne doivent surtout pas devenir la même interface », conservé « comme trace » | docs/ai/AUDIT_UX_CONVERGENCE_SPIRALE_5-0.md:254, 17 | principe (non signé) |
 | Antécédents non signés : « ajouter une navigation tactile persistante » (UX-5) ; barre basse patient à 4 entrées (Accueil, Journal, Suivi, Documents), maquette du 2026-07-15 ; UX-2 à UX-5 renvoyées à C1, C3, C4, C5 | docs/claude/UX_WELLNEURO_3_0.md:995-1002 ; propositions/2026-07-15-wellneuro-4-0/maquette-wellneuro-4-0.html:1095-1099 ; campagnes/2026-07-11-refonte-ux-shell-3-0/CAMPAGNE.md:53, 161-162 | principe (aucune campagne ne les porte) |
 | Aucun chiffre au portail, sauf familles nommées ; « aucune autre n'est admise sans décision » ; D-333 §1 en compte deux, D-355 une, D-357 une | DECISIONS.md:5392-5408, 3459, 3296 | décidé |
+| Vocabulaire patient des états 5 et 6 : « Vos éléments ont été transmis » / « Votre praticien les prépare » / « Votre restitution est disponible » ; jamais de score, jamais de délai promis ; les quatre statuts sont montrables au patient | campagnes/2026-07-22-sp-conv-trajectoire-partagee/CAMPAGNE.md:94, 98 (D7, D11) ; lots/LOT-04-parcours-patient-synchronise.md:20-24 ; web/src/lib/trajectoire-partagee/formulations.ts:15-20 ; formulations.guard.test.ts:16-23 | décidé (campagne, garde de code) |
 | Accessibilité : contraste AA, rien au seul survol, cibles ≥ 44x44 px, focus visible, pas de couleur seule | REGISTRE_FRONTIERES.md:102-104 | principe |
 | Mots proscrits dans les libellés patient : « ordonnance », « diagnostic », « NeuroScore », « prescription », « posologie », « dosage » | REGISTRE_FRONTIERES.md:35-37, 48-49 | principe |
 | L'accès permanent est un lien d'« Autres espaces » ; la tâche « à lire » est au fil | DECISIONS.md:12309 (D-251, amendement du 2026-09-29) | décidé |
-| Pas de porte séparée vers ce qui vit dans un autre écran ; une invitation appartient au fil | LOT-05-les-deux-portes.md:55-71 ; questionnaires/page.tsx:496-505 ; handoff 2026-09-12-1630:12-13 | décidé (arbitrage du responsable, hors D-xxx) |
+| Pas de porte séparée vers ce qui vit dans un autre écran ; une invitation appartient au fil | LOT-05-les-deux-portes.md:55-71 ; questionnaires/page.tsx:496-505 | décidé (arbitrage du responsable, hors D-xxx) |
 | Un lien n'existe que si la route dit « ouvert » : « sans un oui franc, pas de lien » | LOT-05:38-39 ; LienMesEchanges.tsx:12 | principe (campagne et code) |
 | Contre-principe : « une porte qui s'explique vaut mieux qu'une porte qui s'efface (DC-24) », « écart assumé » ; la page `/suivi` s'explique | LOT-05:41-46 ; ProtocolCheckinForm.tsx:100-106 | principe (campagne ; DC-24 y est étendu) |
 | Un rayon vide ne s'affiche pas ; mineur ou date manquante : ni page ni lien pour la bibliothèque | DECISIONS.md:3333-3335, 3361-3363 (D-357 §2, §5) | décidé |
@@ -400,13 +402,13 @@ Statuts : décidé (décision signée), principe (registre, règle, campagne ou 
 | Numéros d'urgence au pied de toutes les pages de `/portail`, connexion comprise ; lien repliable et page dédiée écartés | DECISIONS.md:8255, 8268 (D-293, amendement du 2026-10-21) | décidé |
 | « Avant de commencer » avant l'espace ; date de naissance « avant tout autre geste » ; aucune surface neuve au mineur avant le consentement | DECISIONS.md:8312-8318 (D-292 §3), 8971-8972 (D-284 §3), 9108-9109 (D-283 §5) | décidé |
 | La visibilité d'une entrée n'est jamais une autorisation ; refus portés par les routes | layout.tsx:21-22 ; REGISTRE_FRONTIERES.md:883-884 ; cycleDeVie.ts:52 | principe |
-| Sans retirer d'accès : D-276 §1 (portée littérale : le praticien), appliqué au portail par D-365 §2 ; précédent D-360 §2 | DECISIONS.md:9896, 2837-2839, 3135-3136 | décidé |
+| Sans retirer d'accès : D-276 §1 (portée littérale : le praticien), que D-365 §2 traite comme couvrant le portail (il y nomme une exception) ; précédent D-360 §2 | DECISIONS.md:9896, 2837-2839, 3135-3136 | décidé |
 | Libellés patient : textes acceptés par le responsable avant le merge ; analogie pour les noms de groupes ; un nom ne se confond pas avec un autre | DECISIONS.md:3111-3112, 3125-3131 (D-360 §1, D-357 §6) ; 12605-12606 (D-251 §8) | décidé (portée : titres de la bibliothèque et des fiches) |
 | Une surface patient neuve s'ouvre seule : texte accepté, puis registre, puis drapeau | DECISIONS.md:8644-8647 (D-288 §1) | décidé |
 | Vocabulaire « rendez-vous de suivi », jamais « point d'étape » | DECISIONS.md:6739-6741 (D-317 §6) | décidé |
 | Toute clé `wellneuro:` écrite sous le portail est déclarée ; `wn-rail-expanded` n'a pas ce préfixe | web/src/lib/portail/stockageAppareil.ts:16-17 ; NavBar.tsx:13 | principe (garde de code) |
 | La navigation reste hors de la primitive de superposition | .claude/rules/frontend-ui.md:36-40 | principe (tranché le 2026-09-03) |
-| Une décision d'écran s'écrit dans son lot (D-324) ; une fiche Fnn ou Hnn ne se met plus à jour en ligne, mais par fragment `docs/claude/plan-journal/<id>/AAAA-MM-JJ-nn-slug.md` | handoff 2026-10-18-1300:15 ; .claude/rules/docs-changelog.md (D-371) ; scripts/lib/plan-journal.test.mjs ; DECISIONS.md:2509-2515 (D-372) | décidé |
+| Une décision d'écran s'écrit dans son lot (D-324) ; une fiche Fnn ou Hnn ne se met plus à jour en ligne, mais par fragment `docs/claude/plan-journal/<id>/AAAA-MM-JJ-nn-slug.md` | handoff 2026-10-18-1300:15 ; .claude/rules/docs-changelog.md (D-371) ; scripts/lib/plan-journal.test.mjs ; DECISIONS.md:2537 (D-371) ; 2509-2515 (D-372, handoff) | décidé |
 | Regrouper ou hiérarchiser la ligne « Autres espaces » sans retirer d'accès | PLAN_WELLNEURO.md:2684, 2319 (D/30) | dette |
 | D/49 : gel (2026-10-21) des questions du shell 3.0 sur le rail et la recherche ; la ligne §6 ne nomme pas le rail | PLAN_WELLNEURO.md:2338, 2445 | dette (gel) |
 
@@ -429,11 +431,11 @@ Les trois sont nommées A, B, C. Elles répondent à « la même organisation »
 - Limites : aucun groupe replié (E2E, et `visual.spec.ts:443` clique tous les `details > summary`) ; des intertitres n'abaissent pas à coup sûr la hauteur (EP-03) ; les sous-pages gardent leur seul « ← Mon parcours » ; les noms de groupes sont des textes à faire accepter et à garder hors des collisions d'EP-22.
 
 ### B — Bouton « Menu » en en-tête, tiroir patient, barre basse facultative
-- Largeurs servies : le bouton à toutes les largeurs ; le panneau pleine largeur à 390 px et plafonné à `max-w-xl` (576 px, 648 px à 112,5 %, calcul ; PanneauSuperpose.tsx:49) ; une barre basse de 64 px (72 px à 112,5 %) seulement si elle est arbitrée.
+- Largeurs servies : le bouton à toutes les largeurs ; le panneau pleine largeur à 390 px et plafonné à `max-w-xl` avec `largeur="standard"` (576 px, 648 px à 112,5 %, calcul ; PanneauSuperpose.tsx:49 ; le défaut `focale` donne 440 px dès 1024 px et `max-w-2xl` en dessous, :48, :86) ; une barre basse de 64 px (72 px à 112,5 %) seulement si elle est arbitrée.
 - Composants : `PanneauSuperpose` avec `theme="patient"` (existant), un composant client de liste de groupes, un bouton d'en-tête ; une barre basse neuve en jetons sémantiques si elle est retenue.
 - Respecte : un accès à la navigation depuis les sous-pages, aucun rail, aucun jeton `--rail-*` ; la garde de thème devient non vide dès le premier montage. Il rejoint l'idée d'une « navigation tactile persistante » d'UX-5, sans l'imposer.
 - Coûte : un composant client avec `useParams`, un masque explicite sur les murs d'entrée (EP-02), le passage des liens de `<a>` à `<Link>` (le menu serait sinon remonté à chaque page), un état de sondes partagé pour ne pas doubler les dix requêtes, des E2E 390 px et Desktop, la mise en conformité de `frontend-ui.md:36-40`.
-- Risques : le panneau ne doit pas devenir l'unique accès (arbitrage du 2026-09-12, E2E) ; le tiroir de la primitive est à droite ; `ReadingComfortControl` reste dans l'en-tête ; l'en-tête compte déjà trois éléments à 390 px et le bouton est un quatrième ; une barre basse masque le pied d'urgence (EP-14). Les quatre entrées de la maquette 4.0 sont à reprendre avec prudence : « Journal » rappelle le journal du dossier retiré le 2026-09-12 (questionnaires/page.tsx:524-533), « Documents » touche D-251 §8.
+- Risques : le panneau ne doit pas devenir l'unique accès (arbitrage du 2026-09-12, E2E) ; le tiroir de la primitive est à droite ; `ReadingComfortControl` reste dans l'en-tête ; l'en-tête compte déjà trois éléments à 390 px et le bouton est un quatrième ; une barre basse masque le pied d'urgence (EP-14). Les quatre entrées de la maquette 4.0 sont à reprendre avec prudence : « Journal » y désigne le journal alimentaire, c'est-à-dire « Mon carnet alimentaire » (maquette-wellneuro-4-0.html:1063-1066) ; la collision est de mot, avec le journal du dossier retiré le 2026-09-12 (questionnaires/page.tsx:524-533) et avec « Mes échanges (le journal) », « Documents » touche D-251 §8.
 
 ### C — Rail latéral clair dès `lg`, barre basse sous `md`
 - Largeurs servies : rail de 252 px (64 px replié) dès 1024 px, barre basse sous 768 px, un trou de 768 à 1023 px à combler par un tiroir. Sur l'hypothèse d'une mise en page copiée du shell praticien (`gap-6`, `px-6` de chaque côté, NavBar.tsx:92) avec le `px-4` du `main` du portail conservé (layout.tsx:50), la colonne à 1024 px vaut 668 px rail ouvert (1024 − 252 − 24 − 48 − 32) et 856 px rail replié (1024 − 64 − 24 − 48 − 32), contre 672 px pour `max-w-2xl`. Un premier calcul donnait 888 px, en omettant les 32 px du `main`. Les largeurs à 112,5 % ne sont pas recalculées.
@@ -447,7 +449,7 @@ Les trois sont nommées A, B, C. Elles répondent à « la même organisation »
 - Ce que ce serait : une frise ou un rail cliquable des six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution), chaque étape ouvrant sa zone, comme le rail des phases ouvre la sienne (FichePatientPanel.tsx:2638-2700).
 - Ce qui existe : la frise du hub, non cliquable (EP-21), et le fil du jour, qui porte déjà « l'étape du moment » (MonParcoursAccueil.tsx:72) ; cela respecte A6-R1 côté patient.
 - Pourquoi elle ne répond pas à la demande : les treize entrées sont des documents et des outils permanents, pas des étapes ; les étapes 5 et 6 n'ont aucune page propre ; aucun rattachement entrée-étape n'est écrit. Rendre la frise navigable demande des rôles, `aria-current="step"`, des cibles de 44 px (la frise est en `text-2xs`, `overflow-x-auto`), une cible pour 5 et 6, et ne réduit pas la ligne de liens.
-- Conclusion : écartée comme menu ; la frise reste un repère. B peut afficher l'étape courante en tête de son panneau (idée, non chiffrée).
+- Conclusion (avant l'arbitrage Q3) : écartée comme menu ; la frise restait un repère. Depuis Q3, elle devient navigable (L2b) sans devenir un menu. B peut afficher l'étape courante en tête de son panneau (idée, non chiffrée).
 
 ### Recommandation
 - Engager A comme lot L2, après les arbitrages (L0) et le filet L1. Raisons : c'est le seul lot que demande le plan (2684) ; il ne touche ni le layout, ni la session, ni les jetons ; il reste dans A6-R1 ; il préserve l'E2E et l'arbitrage du 2026-09-12 ; il se défait par un revert.
@@ -477,7 +479,7 @@ Ordre et libellés de groupes proposés, non décidés, à faire accepter avant 
 | | Ouvrir mes échanges (le journal, en dernier) | `WN_PORTAIL_MES_ECHANGES`, majeur |
 - Variante à trois groupes (« Mon suivi », « Ce que j'ai reçu », « Mon dossier ») : écartée par défaut à cause des collisions d'EP-22 ; elle reste disponible si le responsable la préfère (Q5).
 - Chaque emplacement actuel retrouve une place ; douze entrées visibles au plus, comme aujourd'hui : aucun accès retiré. Le mineur voit « Au jour le jour », « Ce que j'ai reçu » (selon les remises), « Ce que je transmets » (deux entrées) et « Avec mon praticien » (une entrée).
-- Libellés d'entrée inchangés en L2 : des E2E les épinglent (« Consulter mon bilan », « Ouvrir mon dossier à deux voix ») et des e-mails les citent (registreGabarits.ts:483-484, 762-763). Retirer le verbe « Ouvrir » est la question Q6.
+- Libellés d'entrée inchangés en L2 : des E2E les épinglent (« Consulter mon bilan », « Ouvrir mon dossier à deux voix ») et un gabarit d'e-mail cite « Ouvrir mon dossier à deux voix » (registreGabarits.ts:483-484 ; banc registreGabarits.test.ts:267) ; deux autres passages citent « Accéder à mon parcours » et « Mon accompagnement », hors nav « Autres espaces » (762-763). Retirer le verbe « Ouvrir » est la question Q6.
 - Les noms de groupes sont à la première personne, sans chiffre, sans « ordonnance », « diagnostic », « prescription », « posologie », « dosage ». Ne pas nommer un groupe « Mes documents » ni « Mes informations » (EP-22).
 
 ### Règle d'activation
@@ -488,7 +490,7 @@ Ordre et libellés de groupes proposés, non décidés, à faire accepter avant 
 - `connexion`, `lien/indisponible` et les étapes de `[token]/page.tsx` n'ont pas de menu.
 
 ### Ce qui reste au fil, hors menu, conditionnel
-- Au fil du jour (tâches périssables) : agendas prioritaires, rendez-vous de suivi dû, lectures (bilan, fiches, courriers, compréhension), invitation « Dire ce qui compte pour moi », questionnaires, agendas à commencer (filDuJour.ts:427). La page d'une tâche reste ; la tâche périt.
+- Au fil du jour (tâches du fil) : agendas prioritaires, rendez-vous de suivi dû, lectures (bilan, fiches, courriers, compréhension), invitation « Dire ce qui compte pour moi », questionnaires, agendas à commencer (filDuJour.ts:427). La page d'une tâche reste ; la tâche périt.
 - Hors menu : ce-qui-compte, comprehension, protocole, informations, conditions, et « Signaler un problème » (carte de la page informations, dette PLAN_WELLNEURO.md:2668). Aucune porte nouvelle.
 - Conditionnel : chaque entrée garde sa sonde fail-closed ; un groupe sans entrée ouverte n'a pas d'étiquette ; le menu est absent tant que « Avant de commencer » ou la date de naissance ne sont pas franchis ; les entrées vues par un mineur ou un dossier clos suivent la matrice du chapitre 4, que L1 épingle.
 
@@ -518,7 +520,7 @@ Menu → PanneauSuperpose theme="patient", tiroir : même liste, même ordre,
 ### Maquette (2026-11-02)
 - Quatre artboards sur le design system Wellneuro (jetons patient), patiente fictive Sophie Nicola : https://claude.ai/artifact/Ctd39xWczp37kd7SKDnvHw (lien privé tant qu'il n'est pas partagé).
 - 1 : hub à 390 px, organisation A et frise navigable (L2b) ; 2 : bouton « Menu » et tiroir (B), ouvert depuis le carnet alimentaire, un seul `aria-current="page"` ; 3 : états de la frise et texte d'attente de Q27 ; 4 : hub au bureau, colonne de 672 px, les quatre groupes sur deux colonnes (Q17).
-- Balisage aux valeurs des jetons, sans composant du bundle (la liste à groupes et la frise cliquable n'existent pas encore) ; aucun rendu constaté. Les libellés du fil et du pied de page sont ceux de l'application ; « Lire mon bilan » et le texte d'attente sont des propositions à faire accepter mot pour mot.
+- Balisage aux valeurs des jetons, sans composant du bundle (la liste à groupes et la frise cliquable n'existent pas encore) ; aucun rendu constaté. Les libellés du fil et du pied de page sont ceux de l'application, « Lire mon bilan » compris (lecturesAttendues.ts:151) ; le texte d'attente est une proposition à faire accepter mot pour mot, à rapprocher de « Votre praticien les prépare. » (formulations.ts:17). La maquette numérote les étapes de la frise (« 1. Consentement » à « 6. Restitution »), ce que la frise actuelle ne fait pas et que L2b ne prévoit pas (« libellés inchangés ») : rang visible à trancher en L0 (Q33).
 
 ## 10. Composants, tokens, accessibilité
 
@@ -546,10 +548,10 @@ Menu → PanneauSuperpose theme="patient", tiroir : même liste, même ordre,
 ### Cibles, focus, aria
 - Cibles : 44 px plancher pour tout rail, menu ou feuille ; 48 px pour les boutons patient `primary` et `ghost` ; en `rem`.
 - Focus : règle globale de 3 px, décalage 2 px, forêt ; dans une liste défilante, prévoir au moins 5 px de marge intérieure (déduction).
-- Un seul `<nav>` nommé exposé à la fois ; garder `aria-label="Autres espaces"` en A (continuité des E2E), arbitrer le nom en B (Q15) ; aucune entrée réduite à une icône sans `aria-label` portant le libellé, jamais l'URL.
+- Un seul `<nav>` nommé par fonction, aux noms distincts (Q30) ; garder `aria-label="Autres espaces"` en A (continuité du nom accessible pour les lecteurs d'écran ; aucun E2E ne cible ce nom, le banc d'`aria-label` de L1 est un ajout), arbitrer le nom en B (Q15) ; aucune entrée réduite à une icône sans `aria-label` portant le libellé, jamais l'URL.
 - Ajouter un lien d'évitement « Aller au contenu » et un `id` sur `<main>` (aucun n'existe) ; un titre de page par route.
 - Pour les sondes asynchrones : un état agrégé ou un contexte, pour que le nombre d'entrées et l'ordre de tabulation ne changent pas après le premier rendu. Aucun emplacement réservé cliquable (règle « pas de lien sans un oui franc »).
-- Bancs : un `aria-current` exactement par chemin testé, noms de landmarks uniques, ordre de tabulation, `axe` sur le hub.
+- Bancs : un seul `aria-current="page"` et au plus un `aria-current="step"` par chemin testé, noms de landmarks uniques, ordre de tabulation, `axe` sur le hub.
 
 ### Confort de lecture, 390 px, impression
 - À 112,5 %, `html` passe en `font-size: 112.5%` : tout ce qui est en `rem` grossit. Libellés dans un `<span>`, jamais dans `p`, `li` ou `label` (interligne 1,75 en `!important`, globals.css:247-251).
@@ -563,9 +565,9 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 
 ### L0 — Arbitrages et texte de la décision
 - Périmètre : réponses aux questions du chapitre 13 et texte de la D-xxx « Menu patient », sans code, sans drapeau, sans route. Le texte voyage avec L2, comme D-324 (« écrite dans ce lot », handoff 2026-10-18-1300:15) ; PLAN:705 (« D-xxx et fragment avec le lot ») est un précédent voisin, pour un autre objet, non pour D-324.
-- Contenu de la décision : §1 périmètre retenu (Q1) ; §2 groupes, ordre, rang, groupe vide sans étiquette, exclusion fiches/bibliothèque ; §3 libellés acceptés mot pour mot, groupes compris ; §4 règle d'activation ; §5 ce qui reste au fil et hors menu, en versant l'arbitrage du 2026-09-12 ; §6 ce qui ne change pas (aucun accès retiré, aucune route, aucun chiffre) ; §7 exécution ; classement du regroupement au regard de D-288 §1 ; amendement ou précision d'A6-R1 si B ou C.
+- Contenu de la décision : §1 périmètre retenu (Q1) ; §2 groupes, ordre, rang, groupe vide sans étiquette, exclusion fiches/bibliothèque ; §3 libellés acceptés mot pour mot, groupes compris ; §4 règle d'activation ; §5 ce qui reste au fil et hors menu, en versant l'arbitrage du 2026-09-12 ; §6 ce qui ne change pas (aucun accès retiré, aucune route, aucun chiffre) ; §7 exécution ; classement du regroupement au regard de D-288 §1 ; pour L2b, le tableau étape → cible (Q28), le texte d'attente de l'étape 5 (Q27), la règle de Q29, le rang visible des étapes (Q33), les portes des étapes 1 et 2 (Q34) et le classement de la frise au regard de D-288 §1 ; amendement ou précision d'A6-R1 si B, C ou L2b.
 - Numéro : à réserver par `scripts/wn-reserver-decision.mjs` (D-370 §1) ; D-405 est le dernier numéro du registre (DECISIONS.md:9), des références de réservation au-delà n'ont pas été relues. Validation : T1 puis T1 complet. Drapeau : non.
-- Fin : questions Q1 à Q22 répondues par écrit ; texte de la décision relu et accepté mot pour mot par le responsable avant tout code.
+- Fin : questions Q4 à Q24 et Q31 à Q34 répondues par écrit (Q25 relève de L4, Q26 est hors périmètre ; Q1 à Q3 et Q27 à Q30 sont consignées au chapitre 14) ; texte de la décision relu et accepté mot pour mot par le responsable avant tout code.
 
 ### L1 — Filet sans changement visible
 - Périmètre : liste typée unique (libellé, segment, groupe, condition) ; état des sondes remonté par une prop de rappel optionnelle ou un contexte ; hub rendant la même ligne plate. Fichiers : le bloc nav de `questionnaires/page.tsx`, les dix `Lien*`, un module hors `lib/portail`. Pas de route agrégée.
@@ -583,11 +585,12 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Fin : bancs verts ; constat à l'écran sur un dossier de test majeur, mineur et clos ; ligne 2684 solde ou renvoi à la fiche. Arrêt : le responsable constate l'écran avant L3.
 
 ### L2b — Frise des étapes navigable (arbitrage Q3 du 2026-11-01)
-- Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape ; Q27 et Q28 (chapitre 14) fixent : aucune route neuve, une étape sans cible existante n'est pas cliquable, les étapes 5 et 6 ouvrent un texte d'attente court.
+- Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56, 66), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape ; Q27 et Q28 (chapitre 14) fixent : aucune route neuve, une étape sans cible existante n'est pas cliquable, l'étape 5 courante ouvre un texte d'attente court ; le détail état par état est ci-dessous.
 - Ce lot ne réduit pas la ligne de liens : le menu des espaces reste L2. Les deux navigations coexistent comme rail-menu et rail des phases côté praticien, et répondent à deux questions distinctes (« où vais-je ? », « où en suis-je ? »).
-- Bancs : ordre des six étapes ; un seul `aria-current="step"` ; cible de chaque étape, étapes 5 et 6 comprises ; étape passée, courante, à venir ; état mineur et dossier clos. E2E : 390 px (défilement horizontal de la frise, cibles ≥ 44 px) et Desktop ; `axe` sur le hub.
+- Bancs : ordre des six étapes ; un seul `aria-current="step"` ; cible, ou absence de cible, de chaque étape selon l'état (étapes 5 et 6 comprises) ; étape passée, courante, à venir ; état mineur et dossier clos. E2E : 390 px (défilement horizontal de la frise, cibles ≥ 44 px) et Desktop ; `axe` sur le hub.
 - Drapeau : serveur, livré éteint (surface patient modifiée visiblement, D-288 §1 par analogie), entrée dans `docs/FEATURE_FLAGS.md`.
-- Décision : la D-xxx de L0 écrit le tableau étape → cible (Q28), le texte d'attente des étapes 5 et 6 (Q27, libellé patient accepté mot pour mot), et la règle de Q29 : étape passée en relecture, étape à venir fermée, ce qui reste dans A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler »). Forme : `<nav aria-label="Étapes de votre parcours">` distincte de « Autres espaces » (Q30).
+- Décision : la D-xxx de L0 écrit le tableau étape → cible (Q28), le texte d'attente de l'étape 5 courante (Q27, libellé patient accepté mot pour mot, sous la garde D7), et la règle de Q29 : étape passée en relecture, étape à venir fermée, ce qui reste dans A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler »). Forme : `<nav aria-label="Étapes de votre parcours">` distincte de « Autres espaces » (Q30).
+- Étapes 5 et 6, état par état (`journeyCurrentId` 5 ou 6, dérivé seulement une fois les questionnaires transmis, contrat.ts:277, 302-312) : étape 5 courante (`analyse_en_cours`) → texte d'attente, à écrire dans `FORMULATIONS_PATIENT` ou à côté, dans le même module (formulations.ts:15-20), pour passer sous la garde D7 (formulations.guard.test.ts:16-23), « Votre praticien les prépare. » étant la phrase déjà servie ; étape 6 à venir → fermée (Q29). Étape 6 courante (`restitution_disponible`, `prochaine_etape_prete`) → aucun texte d'attente, la phrase serait fausse ; sa seule cible existante est le bilan quand `bilanConsultable` le sert (contrat.ts:293-298), sinon non cliquable : Q31. Étape 5 passée → cible existante à nommer, sinon non cliquable, comme « Situation » : Q32. Q27 est ainsi une exception assumée à Q28 pour la seule étape 5 courante : sans cible, elle s'ouvre quand même, sur un texte. Les étapes 1 et 2 en relecture visent `/conditions` et `/informations`, que le chapitre 9 laisse hors menu (« Aucune porte nouvelle ») : Q34 dit si une relecture est une porte au sens de l'arbitrage du 2026-09-12.
 - Validation : T1, T1 complet, T2. Fin : constat à l'écran sur un dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 %.
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
@@ -599,7 +602,7 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Fin : bancs et T2 verts sur les deux projets, constat à 390 px et à 112,5 %, impression d'une page vérifiée.
 
 ### L4 — Barre basse (facultatif)
-- Seulement après arbitrage nommé de ses entrées (seules les entrées sans drapeau sont stables : accueil, rendez-vous de suivi, carnet ; la maquette 4.0 propose Accueil, Journal, Suivi, Documents, Q25) et du sort du pied d'urgence. Réserve de bas appliquée au conteneur, `viewport` posé dans `portail/layout.tsx`, `print:hidden`, absente sur les murs d'entrée et les écrans de saisie. Mêmes bancs et E2E que L3, plus la hauteur sous confort agrandi.
+- Seulement après arbitrage nommé de ses entrées (seules les entrées sans drapeau sont stables : accueil, rendez-vous de suivi, carnet ; la maquette 4.0 propose Accueil, Journal, Suivi, Documents, où « Journal » est le carnet alimentaire, entrée stable ; Q25) et du sort du pied d'urgence. Réserve de bas appliquée au conteneur, `viewport` posé dans `portail/layout.tsx`, `print:hidden`, absente sur les murs d'entrée et les écrans de saisie. Mêmes bancs et E2E que L3, plus la hauteur sous confort agrandi.
 
 ### L5 — Rail latéral (non engagé)
 - Conditions de réouverture : décision qui lève « une étape à la fois » pour le patient, jetons patient du rail définis, colonne validée à 1024 px en confort 112,5 %, clé de repli déclarée dans `stockageAppareil.ts` ou rail toujours déplié.
@@ -624,7 +627,7 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - « Mon accompagnement » replié face à D-315 et D-349, dont les drapeaux sont posés en production (EP-24).
 - Arbitrage du 2026-09-12 : sa seule trace vivante attachée au code est un commentaire JSX qui disparaît avec la refonte (EP-19).
 - Noms de groupes : un nom pris (« Mon dossier », « Mes documents ») crée une confusion que D-251 §8 a déjà écartée (EP-22).
-- E-mails : des gabarits envoyés citent des libellés d'entrée et « Accéder à mon parcours » ; les renommer demande une nouvelle version et la réécriture de trois bancs (EP-07, EP-09).
+- E-mails : un gabarit envoyé cite un libellé d'entrée (« Ouvrir mon dossier à deux voix ») et deux citent « Accéder à mon parcours » ; les renommer demande une nouvelle version par gabarit et la réécriture de leurs bancs (un pour le libellé d'entrée, trois pour « Accéder à mon parcours » ; EP-07, EP-09).
 - Confort de lecture : un `ReadingComfortControl` placé dans un contenu Radix démonté perdrait les préférences (déduction du code, non testée) ; un premier rendu à 100 % puis 112,5 % ferait sauter une barre fixe.
 - Session : rendre l'écran d'étapes redirigeant oblige à déplacer la réémission du cookie (EP-07).
 - Documentation : `design-system-d1.md` périmé (lignes 116, 123, 136, 20-21) ; critères A6-R1 et D-175 non alignés dans le registre.
@@ -638,12 +641,12 @@ Chaque question appelle une réponse fermée, avec la recommandation de l'audit.
 3. Q3 « Rails » : confirmez-vous que le rail des sept phases de la fiche n'est pas repris comme menu patient, la frise des six étapes restant un repère non cliquable ? Recommandation : oui.
 4. Q4 Si B ou C est retenu : acceptez-vous d'amender A6-R1 côté patient par une D-xxx, et `frontend-ui.md:36-40` pour la navigation ? A5-R2 n'a pas à l'être. Recommandation : amender seulement si B est retenu ; ne pas amender pour C.
 5. Q5 Groupes : validez-vous quatre groupes (« Au jour le jour », « Ce que j'ai reçu », « Ce que je transmets », « Avec mon praticien »), ou préférez-vous la variante à trois groupes, dont « Mon dossier » entre en collision avec le titre de la page du dossier à deux voix ? Recommandation : quatre.
-6. Q6 Libellés d'entrée : les gardez-vous tels quels en L2 (recommandation), ou retirez-vous le verbe « Ouvrir » des quatre liens, ce qui demande de nouvelles versions de gabarits d'e-mail ?
+6. Q6 Libellés d'entrée : les gardez-vous tels quels en L2 (recommandation), ou retirez-vous le verbe « Ouvrir » des quatre liens, ce qui demande une nouvelle version d'un seul gabarit d'e-mail (`objectif_propose`, registreGabarits.ts:483-484) et l'ajustement de son banc (registreGabarits.test.ts:267), pour un seul des quatre liens ?
 7. Q7 Ordre : acceptez-vous l'ordre proposé (suivi, reçu, transmis, dossier partagé, journal en dernier) ?
 8. Q8 Règle d'activation : ce-qui-compte et comprehension allument-ils « Ouvrir mon dossier à deux voix » ? informations et conditions n'allument-elles rien ?
 9. Q9 Suivi et carnet : restent-ils inconditionnels en L2, la page s'expliquant (« une porte qui s'explique », LOT-05:41-46), ou reçoivent-ils une sonde, au nom de « sans un oui franc, pas de lien » (LOT-05:38-39) ? Recommandation : inconditionnels en L2, puisque retirer le lien serait retirer un accès.
 10. Q10 Groupe vide : confirmez-vous qu'un groupe sans entrée ouverte n'affiche pas d'étiquette ?
-11. Q11 D-288 §1 : un regroupement de liens existants est-il une « surface neuve » ? Recommandation : non pour L2, oui pour L3.
+11. Q11 D-288 §1 : un regroupement de liens existants est-il une « surface neuve » ? Recommandation : non pour L2, oui pour L3 et pour L2b (la frise change visiblement).
 12. Q12 Arbitrage du 2026-09-12 : le versez-vous en D-xxx, avec ce-qui-compte, comprehension et protocole sans porte propre ? Recommandation : oui, avant de toucher au JSX.
 13. Q13 « Signaler un problème » (PLAN:2668) : dans le lot ou hors du lot ? Recommandation : hors du lot.
 14. Q14 D/49 : un menu patient rouvre-t-il les questions du shell 3.0 ? Recommandation : non, composant séparé.
@@ -657,8 +660,14 @@ Chaque question appelle une réponse fermée, avec la recommandation de l'audit.
 22. Q22 Réévaluation : devient-elle une espèce de tâche du fil plutôt qu'un second bouton plein ? L'E2E `portail-pack-reevaluation.spec.ts` exige deux réponses au même niveau.
 23. Q23 Constat à l'écran : autorisez-vous un constat sur dossier de test (majeur, mineur, clos) de la hauteur réelle et de l'écart 13 / 12 / 15 avant L2 ? Recommandation : oui.
 24. Q24 Mot-symbole : devient-il un lien d'accueil, et vers où (hub quand le segment est connu, connexion sinon) ? `/portail` seul n'a pas de page.
-25. Q25 Barre basse (L4) : reprenez-vous les quatre entrées de la maquette 4.0 (Accueil, Journal, Suivi, Documents), dont « Journal » et « Documents » posent des collisions, ou laissez-vous L4 sans entrées nommées ? Recommandation : sans entrées nommées tant que B n'est pas livré.
-26. Q26 Côté praticien, hors périmètre : l'absence de « Comptes du cabinet » dans la feuille « Plus » est-elle un oubli ou un choix ?
+25. Q25 Barre basse (L4) : reprenez-vous les quatre entrées de la maquette 4.0 (Accueil, Journal, Suivi, Documents), dont trois (Accueil, Journal, c'est-à-dire le carnet alimentaire, Suivi) ont un équivalent stable et dont « Journal » et « Documents » posent des collisions de mot, ou laissez-vous L4 sans entrées nommées ? Recommandation : sans entrées nommées tant que B n'est pas livré.
+26. Q26 Côté praticien, hors périmètre : l'absence de « Comptes du cabinet » dans la feuille « Plus » est-elle un oubli ou un choix ? Écart tracé au plan par cette PR (§8, dettes techniques vivantes) ; D-324 §5 veut la parité feuille/rail.
+
+### Questions ouvertes par la relecture du 2026-11-02 (à trancher dans L0)
+31. Q31 Étape 6 courante : quand la restitution est disponible (`restitution_disponible`, `prochaine_etape_prete`, contrat.ts:305-310), « Restitution » ouvre-t-elle le bilan, cible existante gouvernée par `bilanConsultable` (contrat.ts:293-298), ou reste-t-elle non cliquable ? Recommandation : le bilan quand il est consultable, sinon non cliquable.
+32. Q32 Étape 5 passée : quelle surface existante relit « Analyse du praticien » une fois la restitution disponible ? Sans cible, l'étape reste non cliquable (Q28). Recommandation : non cliquable.
+33. Q33 Rang visible des étapes : la maquette numérote les étapes (« 1. Consentement »), la frise actuelle non (PatientJourneyProgress.tsx:56-58). Un rang ordinal est-il un chiffre au sens de D-333 §1 (DECISIONS.md:5392-5408) ? Deux précédents affichent un rang : « Étape N sur 4 » (AvantDeCommencer.tsx:81) et « Jour N sur 7 » (AgendaAlimentaireJournal.tsx:330). Recommandation : libellés inchangés, sans rang, tant que D-333 n'est pas précisée.
+34. Q34 Étapes 1 et 2 en relecture : « Consentement » et « Informations » n'ont pour cibles existantes que `/conditions` et `/informations` (chapitre 5), que le chapitre 9 laisse hors menu, « portes du pied de page » (« Aucune porte nouvelle » ; arbitrage du 2026-09-12, LOT-05:55-71). Une étape passée ouverte en relecture (Q29) est-elle une porte au sens de cet arbitrage, ou une relecture distincte du menu ? Recommandation : une relecture, hors menu, qui ne crée ni route ni lien dans « Autres espaces » ; sinon ces deux étapes restent non cliquables.
 
 ## 14. Réponses du responsable (2026-11-01)
 
@@ -678,7 +687,7 @@ Q1 à Q3 ont été tranchées le 2026-11-01, à options fermées, sur la seule l
 
 | Question | Réponse | Effet sur L2b |
 |---|---|---|
-| Q27 Étapes 5 et 6 | **Texte d'attente court** : un clic sur « Analyse du praticien » ou « Restitution » ouvre une phrase d'attente, sans chiffre ni date promise (D-333) | le texte est un libellé patient, accepté mot pour mot avant le merge (D-360 §1 par analogie) ; aucune route |
-| Q28 Rattachement | **Cibles existantes seulement** : la D-xxx nomme pour chaque étape une page ou une section existante ; une étape sans cible existante n'est pas cliquable ; aucune route neuve | le tableau étape → cible s'écrit dans L0 ; à vérifier alors pour « Situation », saisie à l'accueil (`[token]/page.tsx`) : si aucune surface existante ne la relit, l'étape reste non cliquable |
+| Q27 Étapes 5 et 6 | **Texte d'attente court** : un clic sur « Analyse du praticien » ou « Restitution » ouvre une phrase d'attente, sans chiffre (D-333) ni délai promis (D7, CAMPAGNE.md:94) | le texte est un libellé patient, accepté mot pour mot avant le merge (D-360 §1 par analogie), sous la garde D7 ; aucune route ; précision de la relecture du 2026-11-02 : l'attente ne vaut que pour l'étape courante réellement en attente (étape 5) ; l'étape 6 courante, restitution disponible, n'a pas de texte d'attente et sa cible est Q31 (L2b) |
+| Q28 Rattachement | **Cibles existantes seulement** : la D-xxx nomme pour chaque étape une page ou une section existante ; une étape sans cible existante n'est pas cliquable ; aucune route neuve | le tableau étape → cible s'écrit dans L0 ; à vérifier alors pour « Situation », saisie à l'accueil (`[token]/page.tsx`) : si aucune surface existante ne la relit, l'étape reste non cliquable ; de même pour l'étape 5 passée (Q32) ; l'étape 5 courante est l'exception voulue par Q27 |
 | Q29 Passées et à venir | **Passée en relecture, à venir fermée** | bancs : étape passée → lien, courante → `aria-current="step"`, à venir → annoncée, non cliquable ; reste dans A6-R1 |
 | Q30 Forme | **`<nav aria-label="Étapes de votre parcours">`**, distincte de « Autres espaces » | un seul `aria-current="step"`, cibles 44 px en `rem`, bancs d'ordre des six étapes, E2E 390 px et Desktop, `axe` sur le hub ; l'`aria-label` actuel de l'`<ol>` (PatientJourneyProgress.tsx:56) monte sur la `nav` |
