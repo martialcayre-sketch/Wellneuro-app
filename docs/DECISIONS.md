@@ -43,7 +43,9 @@ l'assignation, sous la même garde d'appartenance, et répond 409 sans rien
   partagé (`MESSAGE_ASSIGNATION_ANNULEE`).
 
 L'écriture répète les deux gardes (`updateMany` conditionné sur le statut
-et sur le dossier en suivi, patron de la route d'annulation) : une
+et sur le dossier en suivi, patron de la route d'annulation), sous le
+verrou du dossier (`verrouillerPatient`, dans la même transaction : la
+clôture écrit la ligne patient en transaction, revue Copilot) : une
 annulation ou une clôture passée entre la lecture et l'écriture ne laisse
 ni annulée déverrouillée ni succès sans effet ; zéro ligne écrite relit
 l'assignation et rend le refus juste, ou 404 si elle a disparu (revue
@@ -59,7 +61,7 @@ Au Fil, la carte d'un suivi clos garde « Rappeler » ([[D-414]] §1),
 inchangé.
 
 **§3 — Preuve.** Bancs des cartes, de la lecture des assignations, de la
-route de déblocage et du dossier. Quinze mutations en deux séries (initiale, puis après revue), chacune rougit : annulée
+route de déblocage et du dossier. Seize mutations en trois séries (initiale, puis après chaque revue), chacune rougit : verrou du dossier retiré ; annulée
 gardée au Fil ; `NOT` retiré de la lecture échue ; défense de l'écran
 retirée ; annulée non refusée ; suivi clos non refusé ; ordre des refus
 inversé ; état du dossier non lu ; écriture sans garde de statut ; sans

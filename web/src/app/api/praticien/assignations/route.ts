@@ -372,13 +372,20 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     // clôture passée entre la lecture et l'écriture laisserait sinon une
     // annulée `deverrouille` et un succès sans effet — même patron que la
     // route d'annulation. `idAssignation` est `@unique` : une ligne au plus.
-    const { count } = await prisma.assignation.updateMany({
-      where: {
-        idAssignation,
-        statut: { not: 'Annulée' },
-        patient: { actif: true, suiviClotureLe: null },
-      },
-      data: { statutReponses: 'deverrouille' },
+    // SOUS LE VERROU DU DOSSIER : la clôture écrit la ligne patient dans une
+    // transaction ; sans verrou, le filtre relationnel lirait encore le suivi
+    // ouvert pendant qu'elle s'achève (revue Copilot de #1825).
+    const count = await prisma.$transaction(async tx => {
+      await verrouillerPatient(tx, ass.idPatient);
+      const { count: lignes } = await tx.assignation.updateMany({
+        where: {
+          idAssignation,
+          statut: { not: 'Annulée' },
+          patient: { actif: true, suiviClotureLe: null },
+        },
+        data: { statutReponses: 'deverrouille' },
+      });
+      return lignes;
     });
     if (count === 0) {
       // L'état a bougé : relire pour dire le refus juste, jamais un succès.

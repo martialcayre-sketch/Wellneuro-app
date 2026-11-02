@@ -158,6 +158,10 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       patient: suiviOuvert,
     });
     prisma.assignation.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
   });
 
   it('refuse de rouvrir la saisie d’un instrument suspendu, avant toute écriture', async () => {
@@ -243,6 +247,19 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
       },
       data: { statutReponses: 'deverrouille' },
     });
+  });
+
+  // La clôture écrit la ligne patient dans une transaction : sans le verrou
+  // du dossier AVANT l'écriture, le filtre relationnel lirait encore le suivi
+  // ouvert pendant qu'elle s'achève (revue Copilot de #1825).
+  it('prend le verrou du dossier avant l’écriture, dans la même transaction', async () => {
+    await PATCH(patchRequest());
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.assignation.updateMany.mock.invocationCallOrder[0],
+    );
+    expect(prisma.$queryRaw.mock.calls[0].slice(1)).toEqual(['PAT_1']);
   });
 
   it('une annulation concurrente rend le refus de l’annulée, jamais un succès', async () => {

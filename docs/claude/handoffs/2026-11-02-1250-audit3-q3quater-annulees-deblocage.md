@@ -30,7 +30,8 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
     `echeanceDepassee=1` ajoute `NOT statut = 'Annulée'` sans remplacer le
     filtre `statut` ; l'écran l'écarte aussi en défense ;
   - §2 : refus dans l'ordre de la relance (dossier, puis assignation) ;
-    `updateMany` conditionné sur les deux gardes, relecture sur zéro ligne ;
+    `updateMany` conditionné sur les deux gardes, sous le verrou du dossier
+    (`verrouillerPatient`, même transaction), relecture sur zéro ligne ;
     le dossier affiche désormais le motif d'un refus sous la ligne.
 - Aucun texte neuf : `MESSAGE_DOSSIER_CLOS`, le refus de l'annulée de la
   relance (désormais partagé, `MESSAGE_ASSIGNATION_ANNULEE` dans
@@ -45,7 +46,10 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
 - `web/src/app/api/praticien/patients/route.ts` (+ test) — `NOT` sous
   `echeanceDepassee`.
 - `web/src/app/api/praticien/assignations/route.ts` (+ test) — `include` de
-  l'état du dossier, `refusDeblocage`, `updateMany` conditionnel.
+  l'état du dossier, `refusDeblocage`, `updateMany` conditionnel sous
+  verrou. **Fichier en CRLF sur `main`** et `.gitattributes` normalise en LF
+  à l'indexation : il s'indexe par `git hash-object -w --no-filters` puis
+  `git update-index --cacheinfo`, sinon le diff le réécrit en entier.
 - `web/src/lib/praticien/relanceAssignation.ts`,
   `web/src/app/api/praticien/assignations/relance/route.ts` — texte du refus
   de l'annulée partagé, inchangé.
@@ -56,8 +60,8 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
 
 ## Validations exécutées
 
-- Mutations (source restaurée après chacune), quinze en deux séries, toutes
-  rougissent : annulée gardée au Fil ; `NOT` retiré ; défense client
+- Mutations (source restaurée après chacune), seize en trois séries, toutes
+  rougissent : verrou du dossier retiré ; annulée gardée au Fil ; `NOT` retiré ; défense client
   retirée ; annulée non refusée ; suivi clos non refusé ; ordre inversé ;
   `include` retiré ; écriture sans garde de statut ; sans garde du
   dossier ; `count` ignoré ; refus muet (bloc échues, bloc corrections) ;
@@ -81,13 +85,25 @@ Les restes de Q3 ter tranchés par le responsable le 2026-11-02 :
   - écarté : état de refus non remis à zéro au changement de patient — clé
     par `idAssignation`, propre à un dossier.
 
+- Revues sur la PR #1825 (tête bd2cd7c4) :
+  - PR-Agent (CodeRabbit a sauté, moins de 10 étoiles) : « fichier entier
+    réécrit » — **corrigé** : fins de ligne CRLF rendues à `route.ts` ;
+  - Copilot : filtre relationnel sans le verrou de la clôture — **corrigé** :
+    `verrouillerPatient` dans une transaction avant l'écriture, banc d'ordre.
+
 ## Problèmes ouverts
 
-- Dette t11 : un dossier désactivé reçoit « Le suivi de ce dossier est
-  clôturé… » au rappel comme au déblocage ; `refusDossierFerme` rendrait le
-  message juste dans les deux routes (texte existant). Non arbitré.
-- Au dossier, « Débloquer » reste offert sur un suivi clos (refusé avec
-  motif). Le masquer demanderait un arbitrage d'écran.
+Les deux restes ont été tranchés le 2026-11-02 par le responsable (liste
+commune `20261102-1300-g`, `20261102-1301-g`, statut `repondue`), **hors de
+ce lot** — un lot « Q3 quinquies », sans migration, D-xxx à réserver,
+session neuve, après le merge de #1825 :
+- dossier désactivé : `refusDossierFerme` (« Ce dossier est désactivé…
+  Réactivez le dossier pour reprendre. », `dossier_desactive`) sur les
+  **trois routes d'assignation** — création (`POST`), déblocage (`PATCH`),
+  rappel (`relance`) ; les ~40 autres routes praticien restent en l'état ;
+- dossier, suivi clôturé : « Débloquer » **grisé**, et `MESSAGE_DOSSIER_CLOS`
+  écrit sous la ligne d'emblée, sans clic (deux blocs : corrections et
+  échues). Aucun texte neuf.
 
 ## Prochaine action exacte
 
