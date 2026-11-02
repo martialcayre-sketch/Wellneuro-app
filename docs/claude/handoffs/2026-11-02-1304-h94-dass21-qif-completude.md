@@ -6,7 +6,9 @@
   `.claude/worktrees/d281-lot3-portail`, partie de `origin/main` b5862ee3
   (#1824).
 - Commits 10800b28 (lot), f43f8e41 (revue `wn-reviewer`), c7aa61c2 (ce
-  handoff), ae2f135f (revues CodeRabbit et Copilot sur #1826).
+  handoff), ae2f135f (revues CodeRabbit et Copilot sur #1826), 3b84709c
+  (fusion de `origin/main`, #1825, sur accord du responsable ; conflit dans
+  `docs/DECISIONS.md` seul), 9610647c (seconde revue CodeRabbit).
 - PR du lot, une seule finalité : D-406 §7, première tranche.
 
 ## Objectif
@@ -24,7 +26,8 @@ les instruments dont la source définit un total, consigner les absences.
   de moteur. Amende D-406 §2.
 - **D-421** : le moteur `qif` publie `missing`/`missingIds` au grain des dix
   composantes de Bennett 2005 (item 1 mesuré dès qu'un sous-item est noté ;
-  Q12-Q20 exigés ; une valeur non numérique manque, item 1 compris) ; maximum 100 maintenu
+  Q12-Q20 exigés ; une valeur non numérique manque, sous-item de l'item 1
+  compris — un sous-item vide reste un retrait permis) ; maximum 100 maintenu
   (107 sans source) ; défaut du total incomplet sans correction 10/x
   consigné (§3), avec ses deux points pour la décision suivante.
 - Arbitrages du responsable du 2026-11-02, quatre questions à options, tous
@@ -62,11 +65,17 @@ les instruments dont la source définit un total, consigner les absences.
   f43f8e41 (NaN, formulation de D-421 §4, deux points consignés en §3,
   tests d'intégration DASS et cas limites QIF).
 - T3 (`npm run test:worktree`) vert sur f43f8e41 (7 min 26 s), puis sur
-  ae2f135f (7 min 32 s ; Vitest 1706 tests, E2E Chromium + WebKit 303).
+  ae2f135f (7 min 32 s) et sur 9610647c (8 min 39 s ; Vitest 1706 tests,
+  E2E Chromium + WebKit 303).
 - #1826 : CI vert sur c7aa61c2 ; revues CodeRabbit, Copilot et PR-Agent
   sur c7aa61c2 traitées dans ae2f135f (item 1 NaN, D-421 §3 précisé) ;
   drapeau `WN_*` demandé par PR-Agent écarté avec motif (praticien seul,
   badge et compte existants, précédent D-055).
+- Seconde revue CodeRabbit (3b84709c) : sous-item non numérique de l'item 1
+  et écriture exacte de `null`/`0` corrigés dans 9610647c ; validation de la
+  chaîne brute (« 1abc ») écartée (`getVal` commun à tous les moteurs, le
+  total lit la même valeur, la soumission la refuse). CodeRabbit a refusé
+  une revue de 7b420cb8 pour quota.
 
 ## Problèmes ouverts
 
