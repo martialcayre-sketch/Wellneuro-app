@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, listerClaimsRevue, compterClaimsRevue, getRagClaimsHealth } = vi.hoisted(
-  () => ({
+const { getServerSession, listerClaimsRevue, compterClaimsRevue, statutsDuClaim, getRagClaimsHealth } =
+  vi.hoisted(() => ({
     getServerSession: vi.fn(),
     listerClaimsRevue: vi.fn(),
     compterClaimsRevue: vi.fn(),
+    statutsDuClaim: vi.fn(),
     getRagClaimsHealth: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
@@ -19,6 +19,7 @@ vi.mock('@/lib/rag/claims/revue', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rag/claims/revue')>()),
   listerClaimsRevue,
   compterClaimsRevue,
+  statutsDuClaim,
 }));
 vi.mock('@/lib/rag/claims/store', () => ({ getRagClaimsHealth }));
 
@@ -47,6 +48,7 @@ describe('/api/praticien/corpus/claims', () => {
     listerClaimsRevue.mockResolvedValue({ total: 0, claims: [] });
     compterClaimsRevue.mockResolvedValue(TUILES);
     getRagClaimsHealth.mockResolvedValue(SANTE);
+    statutsDuClaim.mockResolvedValue([]);
   });
 
   it('exige une session', async () => {
@@ -96,6 +98,52 @@ describe('/api/praticien/corpus/claims', () => {
       limit: 10,
       offset: 20,
     });
+  });
+
+  it('refuse une recherche par identifiant illisible, sans lire la base (D/22)', async () => {
+    for (const claim of ['0061-08', 'WN-CL-0061', 'WN-SRC-0061', '0061-008@x', '%25']) {
+      const reponse = await GET(requete(`claim=${claim}`));
+      expect(reponse.status).toBe(400);
+      expect((await reponse.json()).reason).toBe('claim_invalide');
+    }
+    expect(listerClaimsRevue).not.toHaveBeenCalled();
+    expect(statutsDuClaim).not.toHaveBeenCalled();
+  });
+
+  it('transmet l’identifiant normalisé ; résultat trouvé = aucun renvoi', async () => {
+    listerClaimsRevue.mockResolvedValue({ total: 1, claims: [] });
+    const reponse = await GET(requete('statut=VALIDE&claim=0061-008%40v1.0'));
+    expect(reponse.status).toBe(200);
+    const json = await reponse.json();
+    expect(json.claimId).toBe('WN-CL-0061-008');
+    expect(json.autresStatuts).toEqual([]);
+    expect(listerClaimsRevue).toHaveBeenCalledWith({
+      statut: 'VALIDE',
+      sourceId: undefined,
+      claimId: 'WN-CL-0061-008',
+      limit: 50,
+      offset: 0,
+    });
+    expect(statutsDuClaim).not.toHaveBeenCalled();
+  });
+
+  it('recherche vide dans l’onglet : renvoie les statuts où le claim est actif', async () => {
+    statutsDuClaim.mockResolvedValue(['VALIDE']);
+    const reponse = await GET(requete('claim=WN-CL-0061-008&source=WN-SRC-0061'));
+    const json = await reponse.json();
+    expect(json.autresStatuts).toEqual(['VALIDE']);
+    expect(statutsDuClaim).toHaveBeenCalledWith({
+      claimId: 'WN-CL-0061-008',
+      sourceId: 'WN-SRC-0061',
+      sourceIds: undefined,
+    });
+  });
+
+  it('sans recherche : jamais de requête de renvoi, même sur une liste vide', async () => {
+    const json = await (await GET(requete())).json();
+    expect(json.claimId).toBeNull();
+    expect(json.autresStatuts).toEqual([]);
+    expect(statutsDuClaim).not.toHaveBeenCalled();
   });
 
   it('répond 500 sans détail interne quand la lecture échoue', async () => {

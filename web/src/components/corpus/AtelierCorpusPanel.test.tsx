@@ -669,3 +669,126 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     expect(screen.getByText(/0 décision/)).toBeTruthy();
   });
 });
+
+// D/22 — recherche par identifiant : exacte, dans l'onglet ouvert, renvoi
+// vers l'onglet où vit le claim quand la recherche ne trouve rien ici.
+describe('AtelierCorpusPanel — recherche par identifiant (D/22)', () => {
+  const URL_LISTE = '/api/praticien/corpus/claims?';
+
+  /** Liste selon (statut, claim) : la recherche de 0056-001 n'existe qu'en VALIDE. */
+  function routeurRecherche() {
+    return (url: string, options?: { method?: string }) => {
+      if (options?.method === 'POST') {
+        return Promise.resolve(
+          json({
+            ok: true,
+            claim: { id: CLAIM.id, statut: 'VALIDE', validateur: 'praticien@wellneuro.fr', valideAt: null },
+          }),
+        );
+      }
+      if (!url.startsWith(URL_LISTE)) return Promise.resolve(json({}, false));
+      const params = new URLSearchParams(url.split('?')[1]);
+      const statut = params.get('statut');
+      const claim = params.get('claim');
+      if (claim === null) return Promise.resolve(json(LISTE));
+      if (statut === 'VALIDE') {
+        return Promise.resolve(
+          json({
+            ...LISTE,
+            statut: 'VALIDE',
+            claimId: claim,
+            claims: [{ ...CLAIM, statut: 'VALIDE', validateur: 'praticien@wellneuro.fr', valideAt: '2026-07-22T18:00:00.000Z' }],
+            autresStatuts: [],
+          }),
+        );
+      }
+      return Promise.resolve(
+        json({ ...LISTE, statut, claimId: claim, total: 0, claims: [], autresStatuts: ['VALIDE'] }),
+      );
+    };
+  }
+
+  const urlsGet = () => appelsGet().map(([url]) => url as string);
+
+  function chercher(saisie: string) {
+    fireEvent.change(screen.getByLabelText('Rechercher un claim par identifiant'), {
+      target: { value: saisie },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Rechercher' }));
+  }
+
+  it('lit la forme courte et la transmet normalisée, offset remis à zéro', async () => {
+    fetchMock.mockImplementation(routeurRecherche());
+    await attendreLaFile();
+
+    chercher(' 0056-001 ');
+    await waitFor(() =>
+      expect(urlsGet()).toContain(
+        '/api/praticien/corpus/claims?statut=EN_ATTENTE_VALIDATION&limit=50&offset=0&claim=WN-CL-0056-001',
+      ),
+    );
+    expect((screen.getByLabelText('Rechercher un claim par identifiant') as HTMLInputElement).value).toBe(
+      'WN-CL-0056-001',
+    );
+  });
+
+  it('une saisie illisible est refusée à l’écran, sans requête', async () => {
+    fetchMock.mockImplementation(routeurRecherche());
+    await attendreLaFile();
+    const avant = appelsGet().length;
+
+    chercher('0056-01');
+
+    expect(screen.getByRole('alert').textContent).toContain('Identifiant attendu : WN-CL-0000-000 ou 0000-000.');
+    expect(appelsGet()).toHaveLength(avant);
+    expect(urlsGet().some((url) => url.includes('claim='))).toBe(false);
+  });
+
+  it('recherche vide ici : nomme l’onglet du claim et l’ouvre en gardant la recherche', async () => {
+    fetchMock.mockImplementation(routeurRecherche());
+    await attendreLaFile();
+
+    chercher('WN-CL-0056-001');
+    expect(await screen.findByText('Aucun claim WN-CL-0056-001 actif dans cet onglet.')).toBeTruthy();
+    expect(screen.getByText('Il est dans l’onglet Validés.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir l’onglet Validés' }));
+    await waitFor(() =>
+      expect(urlsGet()).toContain(
+        '/api/praticien/corpus/claims?statut=VALIDE&limit=50&offset=0&claim=WN-CL-0056-001',
+      ),
+    );
+    expect(await screen.findByText(/validé par praticien@wellneuro.fr/)).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Validés' }).getAttribute('aria-selected')).toBe('true');
+    // Le bouton de renvoi a disparu : le focus clavier suit l'onglet ouvert.
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Validés' }));
+  });
+
+  it('« Effacer » retire la recherche et rend la file entière', async () => {
+    fetchMock.mockImplementation(routeurRecherche());
+    await attendreLaFile();
+    chercher('0056-001');
+    await screen.findByText('Aucun claim WN-CL-0056-001 actif dans cet onglet.');
+    const avant = appelsGet().length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer' }));
+    await waitFor(() => expect(appelsGet().length).toBeGreaterThan(avant));
+    expect(urlsGet().at(-1)).toBe('/api/praticien/corpus/claims?statut=EN_ATTENTE_VALIDATION&limit=50&offset=0');
+    expect(await screen.findByText(/WN-CL-0056-001/)).toBeTruthy();
+  });
+
+  it('une décision prise sur un résultat recharge la vue courante, recherche comprise', async () => {
+    fetchMock.mockImplementation(routeurRecherche());
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    chercher('0056-001');
+    const bouton = await screen.findByRole('button', { name: 'Remettre en attente' });
+    const avant = appelsGet().length;
+
+    fireEvent.click(bouton);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la remise en attente' }));
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    await waitFor(() => expect(appelsGet().length).toBeGreaterThan(avant));
+    expect(urlsGet().at(-1)).toBe('/api/praticien/corpus/claims?statut=VALIDE&limit=50&offset=0&claim=WN-CL-0056-001');
+  });
+});

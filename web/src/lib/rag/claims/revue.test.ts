@@ -33,6 +33,7 @@ import {
   listerClaimsRevue,
   listerSourcesEnRevue,
   sanitiserQuestionnaire,
+  statutsDuClaim,
   sanitiserVerdicts,
   tailleEchantillon,
   tirageCaduc,
@@ -158,9 +159,11 @@ describe('listerClaimsRevue', () => {
     const appelPage = prisma.$queryRaw.mock.calls[1];
     expect(sqlDeAppel(appelPage)).toContain('LIMIT');
     // Paramètres de la page : statut, source ×2, sourceIds (notebook) ×2,
-    // limit clampé, offset plancher.
+    // claimId (recherche) ×2, limit clampé, offset plancher.
     expect(parametresDeAppel(appelPage)).toEqual([
       'EN_ATTENTE_VALIDATION',
+      null,
+      null,
       null,
       null,
       null,
@@ -178,7 +181,53 @@ describe('listerClaimsRevue', () => {
     const appelPage = prisma.$queryRaw.mock.calls[1];
     expect(sqlDeAppel(appelPage)).toContain('= ANY(');
     // Le tableau vide est transmis tel quel : le SQL rend zéro ligne.
-    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, [], [], 50, 0]);
+    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, [], [], null, null, 50, 0]);
+  });
+
+  it('recherche par identifiant (D/22) : égalité exacte, au compte ET à la page', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ total: BigInt(0) }]).mockResolvedValueOnce([]);
+
+    await listerClaimsRevue({ statut: 'VALIDE', claimId: 'WN-CL-0061-008' });
+
+    for (const appel of prisma.$queryRaw.mock.calls) {
+      expect(sqlDeAppel(appel)).toContain('c.claim_id = ?');
+      expect(sqlDeAppel(appel)).not.toMatch(/LIKE/i);
+      expect(parametresDeAppel(appel)).toEqual(
+        expect.arrayContaining(['VALIDE', 'WN-CL-0061-008']),
+      );
+    }
+  });
+});
+
+describe('statutsDuClaim — renvoi d’une recherche vide', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+  });
+
+  it('rend les statuts actifs du claim dans l’ordre des onglets', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ statut: 'REJETE' }, { statut: 'VALIDE' }]);
+
+    const statuts = await statutsDuClaim({ claimId: 'WN-CL-0059-010' });
+
+    expect(statuts).toEqual(['VALIDE', 'REJETE']);
+    const appel = prisma.$queryRaw.mock.calls[0];
+    expect(sqlDeAppel(appel)).toContain('c.active = true');
+    expect(parametresDeAppel(appel)).toEqual(['WN-CL-0059-010', null, null, null, null]);
+  });
+
+  it('garde les filtres de source et de notebook de la liste', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+
+    const statuts = await statutsDuClaim({ claimId: 'WN-CL-0059-010', sourceId: 'WN-SRC-0059', sourceIds: [] });
+
+    expect(statuts).toEqual([]);
+    expect(parametresDeAppel(prisma.$queryRaw.mock.calls[0])).toEqual([
+      'WN-CL-0059-010',
+      'WN-SRC-0059',
+      'WN-SRC-0059',
+      [],
+      [],
+    ]);
   });
 });
 

@@ -85,6 +85,8 @@ export type ListerClaimsRevueOptions = {
   sourceId?: string;
   /** Restriction à un ensemble de sources (filtre notebook — résolu registre). */
   sourceIds?: string[];
+  /** Identifiant exact (`WN-CL-…`, lu par lireIdentifiantRecherche) — toutes ses versions actives. */
+  claimId?: string;
   limit?: number;
   offset?: number;
 };
@@ -101,6 +103,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
   // Filtre notebook : une liste vide signifie « notebook sans aucune source »
   // — résultat vide garanti, jamais un filtre silencieusement ignoré.
   const sourceIds = options.sourceIds ?? null;
+  const claimId = options.claimId ?? null;
   const limit = Math.max(1, Math.min(options.limit ?? 50, LIMIT_MAX));
   const offset = Math.max(0, options.offset ?? 0);
 
@@ -112,6 +115,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         AND c.active = true
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
         AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
+        AND (${claimId}::text IS NULL OR c.claim_id = ${claimId})
     `,
     prisma.$queryRaw<Array<{
       id: string;
@@ -151,6 +155,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         AND c.active = true
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
         AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
+        AND (${claimId}::text IS NULL OR c.claim_id = ${claimId})
       ORDER BY c.source_id, c.claim_id, c.version_claim
       LIMIT ${limit} OFFSET ${offset}
     `,
@@ -225,6 +230,30 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
       sources: sourcesParClaim.get(row.id) ?? [],
     })),
   };
+}
+
+/**
+ * Renvoi d'une recherche par identifiant qui ne trouve rien dans l'onglet
+ * ouvert : les statuts où le claim a une ligne active, sous LES MÊMES filtres
+ * de source et de notebook que la liste — le renvoi ne désigne jamais un
+ * onglet où le claim n'apparaîtrait pas.
+ */
+export async function statutsDuClaim(options: {
+  claimId: string;
+  sourceId?: string;
+  sourceIds?: string[];
+}): Promise<ClaimStatut[]> {
+  const sourceId = options.sourceId ?? null;
+  const sourceIds = options.sourceIds ?? null;
+  const rows = await prisma.$queryRaw<Array<{ statut: string }>>`
+    SELECT DISTINCT c.statut
+    FROM public.rag_corpus_claims c
+    WHERE c.claim_id = ${options.claimId}
+      AND c.active = true
+      AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
+      AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
+  `;
+  return CLAIM_STATUTS.filter((statut) => rows.some((row) => row.statut === statut));
 }
 
 /**
