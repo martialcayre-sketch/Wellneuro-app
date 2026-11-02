@@ -118,6 +118,16 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     expect(incoherencesDeStructure(avec({ securiteAdmissibilite: true, besoins: [2, 4] }))).toEqual([]);
   });
 
+  it('niveau de mesure (DC-45, D-417 §2) : les trois valeurs, ou absent jusqu’à la re-signature B9/B12', () => {
+    for (const niveauMesure of ['mesure_standard', 'exploration_fonctionnelle', 'marqueur_experimental'] as const) {
+      expect(incoherencesDeStructure(avec({ niveauMesure }))).toEqual([]);
+    }
+    expect(incoherencesDeStructure(avec({}))).toEqual([]);
+    // La structure signée le 2026-11-01 ne le porte pas : il entre à la
+    // re-signature, qui le rend obligatoire (D-417 §4).
+    expect(FICHES_USAGE_BESOIN2_V1.fiches.filter(f => f.niveauMesure !== undefined)).toEqual([]);
+  });
+
   it.each([
     ['format', { id: 'fu_minuscule' }, 'fu_minuscule:format'],
     ['question non déclarée', { question: 'QC_AUTRE' }, 'FU_SYNTH:question'],
@@ -129,6 +139,7 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     ['nature inconnue', { nature: 'forte' as never }, 'FU_SYNTH:nature'],
     ['usage inconnu', { usageDecisionnel: 'prescrire' as never }, 'FU_SYNTH:usage_decisionnel'],
     ['statut inconnu', { statutUsage: 'valide' as never }, 'FU_SYNTH:statut_usage'],
+    ['niveau de mesure inconnu', { niveauMesure: 'A' as never }, 'FU_SYNTH:niveau_mesure'],
     ['aucune rubrique', { rubriques: [] }, 'FU_SYNTH:rubriques'],
     ['rubrique hors liste', { rubriques: ['explication_patient' as never] }, 'FU_SYNTH:rubriques'],
   ])('refuse : %s', (_cas, fiche, attendu) => {

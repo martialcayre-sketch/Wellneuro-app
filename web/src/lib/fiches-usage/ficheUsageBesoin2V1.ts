@@ -3,6 +3,7 @@ import {
   BESOINS,
   NATURES_LIEN,
   natureDuTerme,
+  NIVEAUX_MESURE,
   RE_FICHE_USAGE,
   RE_QUESTION,
   RUBRIQUES_FICHE_USAGE,
@@ -10,6 +11,7 @@ import {
   STATUTS_USAGE,
   USAGES_DECISIONNELS,
   type NatureLien,
+  type NiveauMesure,
   type RubriqueFicheUsage,
   type StatutUsage,
   type UsageDecisionnel,
@@ -74,6 +76,14 @@ export type FicheUsageStructure = {
   securiteAdmissibilite: boolean;
   /** Ce que l'assistant a le droit d'en faire ([[D-266]] §3), tenu par la nature. */
   statutUsage: StatutUsage;
+  /**
+   * Le niveau de mesure (DC-45, [[D-417]] §2), quatrième axe distinct des trois
+   * de D-266 §3. OPTIONNEL tant que la structure signée le 2026-11-01 sert : un
+   * champ absent laisse son empreinte intacte. Il entre, et devient
+   * obligatoire, à la re-signature de B9 et B12 ([[D-417]] §4, arbitrage du
+   * 2026-11-02), valeur pré-remplie sur la surface puis relue par le responsable.
+   */
+  niveauMesure?: NiveauMesure;
   /** `POP_…` — obligatoire (DC-14, [[D-095]]) : une population déclarée, jamais un silence. */
   population: string;
   /** `HYP_…` — les hypothèses du parcours que la fiche éclaire (BP-11 les consomme). */
@@ -1210,7 +1220,8 @@ const dans = <T>(liste: readonly T[], valeur: unknown): boolean => (liste as rea
  * Les règles que toute structure doit tenir pour se signer, en codes sans
  * texte (`<fiche>:<règle>`) : formats, listes fermées, au moins un besoin, une
  * population et une question déclarées, des rubriques fermées et uniques, et
- * la correspondance nature ↔ statut (arbitrage du 2026-10-16). Vide = cohérente.
+ * la correspondance nature ↔ statut (arbitrage du 2026-10-16), un niveau de
+ * mesure de la liste fermée quand il est posé ([[D-417]] §2). Vide = cohérente.
  */
 export function incoherencesDeStructure(structure: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1): string[] {
   const anomalies: string[] = [];
@@ -1239,6 +1250,7 @@ export function incoherencesDeStructure(structure: StructureFichesUsage = FICHES
     else if (dans(NATURES_LIEN, f.nature) && !STATUTS_ADMIS_PAR_NATURE[f.nature].includes(f.statutUsage)) {
       a('nature_statut');
     }
+    if (f.niveauMesure !== undefined && !dans(NIVEAUX_MESURE, f.niveauMesure)) a('niveau_mesure');
     if (f.rubriques.length === 0 || doublons(f.rubriques) || f.rubriques.some(r => !dans(RUBRIQUES_FICHE_USAGE, r))) {
       a('rubriques');
     }
