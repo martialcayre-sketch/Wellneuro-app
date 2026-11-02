@@ -52,6 +52,7 @@ import { estDuRideauT0 } from '@/lib/clinical-engine/rideauT0';
 // péremption d'un envoi sans échéance.
 import { estAnnulable } from '@/lib/praticien/annulabilite';
 import { anciennete, envoiPerime, JOURS_PEREMPTION_ENVOI } from '@/lib/assignations/peremption';
+import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { AnnulationAssignationDialog } from '@/components/ui/AnnulationAssignationDialog';
 import type { AnnulationAssignationResponse } from '@/app/api/praticien/assignations/annulation/route';
 import type { ScoreSubScore } from '@/lib/scoring/types';
@@ -664,6 +665,10 @@ export function FichePatientPanel({
   // Le refus du déblocage, tel que la route l'écrit ([[D-422]] §2) : sans lui,
   // un suivi clos ou une annulée laissaient le bouton revenir sans rien dire.
   const [refusDeblocage, setRefusDeblocage] = useState<{ idAssignation: string; message: string } | null>(null);
+  // Suivi clôturé ([[D-427]]) : « Débloquer » grisé, et le refus de la route
+  // écrit d'emblée sous chaque ligne — plus besoin d'un clic pour l'apprendre.
+  // Tant que la fiche n'est pas lue, le bouton reste : la route refuse.
+  const suiviClos = Boolean(dossier?.suiviClotureLe);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActifBrut] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
   // MODE CONSULTATION : UN ONGLET MASQUÉ NE S'OUVRE PAS ([[D-354]] §4). Tout
@@ -1935,13 +1940,16 @@ export function FichePatientPanel({
                     {a.correctionCommentaire && (
                       <p className="text-xs text-status-warning mt-1 italic">« {a.correctionCommentaire} »</p>
                     )}
-                    {refusDeblocage?.idAssignation === a.idAssignation && (
+                    {suiviClos ? (
+                      <p id={`motif-clos-${a.idAssignation}`} className="text-xs text-foreground mt-1">{MESSAGE_DOSSIER_CLOS}</p>
+                    ) : refusDeblocage?.idAssignation === a.idAssignation && (
                       <p role="alert" className="text-xs text-foreground mt-1">{refusDeblocage.message}</p>
                     )}
                   </div>
                   <button
                     onClick={() => onDebloquer(a.idAssignation)}
-                    disabled={deverrouillageId === a.idAssignation}
+                    disabled={suiviClos || deverrouillageId === a.idAssignation}
+                    aria-describedby={suiviClos ? `motif-clos-${a.idAssignation}` : undefined}
                     className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-status-warning text-white disabled:opacity-60"
                   >
                     {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
@@ -1972,13 +1980,16 @@ export function FichePatientPanel({
                       {a.dateLimite ? `À rendre avant le ${a.dateLimite}. ` : ''}
                       Le portail refuse la saisie ; le déblocage la rouvre.
                     </p>
-                    {refusDeblocage?.idAssignation === a.idAssignation && (
+                    {suiviClos ? (
+                      <p id={`motif-clos-${a.idAssignation}`} className="text-xs text-foreground mt-1">{MESSAGE_DOSSIER_CLOS}</p>
+                    ) : refusDeblocage?.idAssignation === a.idAssignation && (
                       <p role="alert" className="text-xs text-foreground mt-1">{refusDeblocage.message}</p>
                     )}
                   </div>
                   <button
                     onClick={() => onDebloquer(a.idAssignation)}
-                    disabled={deverrouillageId === a.idAssignation}
+                    disabled={suiviClos || deverrouillageId === a.idAssignation}
+                    aria-describedby={suiviClos ? `motif-clos-${a.idAssignation}` : undefined}
                     className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-accent text-solar-ink hover:bg-accent/10 disabled:opacity-60"
                   >
                     {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}

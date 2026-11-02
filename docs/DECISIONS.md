@@ -6,6 +6,48 @@
 
 ## Décisions actives
 
+### D-427 — Audit 3, lot Q3 quinquies : un dossier désactivé reçoit son propre refus sur les trois routes d'assignation ; sur un suivi clôturé, « Débloquer » est grisé et le motif écrit d'emblée
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 sur les restes
+  du lot Q3 quater (liste commune, `20261102-1300-g` et `20261102-1301-g`).
+  Précise [[D-422]] §2.
+- Domaine : routes d'assignation — création (`POST`) et déblocage (`PATCH`)
+  de `/api/praticien/assignations`, rappel
+  (`POST /api/praticien/assignations/relance`) ; dossier patient
+  (`FichePatientPanel`, blocs « corrections » et « échues ») ;
+  `refusDossierFerme` (`lib/patient/cycleDeVie.ts`), dont seul le type de la
+  raison se resserre.
+- Ne touche pas : `schema.prisma`, aucune migration ; les autres routes
+  praticien, qui restent en l'état ; le Fil ; le portail ; les textes, tous
+  existants.
+
+**§1 — Le dossier désactivé a son propre refus sur les trois routes
+d'assignation.** Création, déblocage et rappel répondent, pour un dossier
+qui n'accepte plus d'envoi, le refus de `refusDossierFerme` : 409,
+`dossier_desactive` et « Ce dossier est désactivé : rien de nouveau ne peut y
+être enregistré. Réactivez le dossier pour reprendre. » pour un dossier
+désactivé ; `dossier_cloture` et `MESSAGE_DOSSIER_CLOS` pour un suivi
+clôturé. La clôture prime (`phaseDossier`) : un dossier clos puis désactivé
+reste « clos ». La création répondait jusqu'ici 404 « Patient introuvable »
+pour un dossier désactivé, que le praticien avait sous les yeux ; le
+déblocage et le rappel répondaient « Rouvrez le suivi » pour un suivi qui
+n'était pas clos ([[D-422]] §2, dette t11). Un dossier absent ou d'un autre
+praticien reste « introuvable ». L'ordre des refus et les gardes
+d'écriture de [[D-422]] §2 ne changent pas.
+
+**§2 — Sur un suivi clôturé, le dossier le dit avant le clic.** Dans les
+blocs « Demandes de correction » et « Jamais rempli, échéance dépassée » de
+`FichePatientPanel`, le bouton « Débloquer » est grisé et `MESSAGE_DOSSIER_CLOS`
+est écrit sous chaque ligne d'emblée, relié au bouton
+(`aria-describedby`). Tant que la fiche du dossier n'est pas lue, le bouton
+reste offert : la route refuse. Un dossier désactivé non clos garde le
+bouton : son refus s'écrit au clic, tel que la route l'écrit
+([[D-422]] §2).
+
+Aucun texte neuf, aucune migration. Bancs des trois routes et des deux
+blocs, chacun prouvé par mutation.
+
 ### D-422 — Audit 3, lot Q3 quater : une assignation annulée sort du Fil et du bloc « échu » du dossier ; le déblocage refuse une annulée et un suivi clôturé
 
 - Date : 2026-11-02
