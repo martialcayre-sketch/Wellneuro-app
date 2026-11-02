@@ -15383,5 +15383,61 @@
     "requiredAction": "Source de la version française du QIF (D-421, H94) ; aucun extrait ingéré",
     "comment": "PDF du journal lu le 2026-11-02 (jrheum.org). 102 femmes, test-retest à sept jours chez 31 ; ICC par question de 0,04 à 0,84 ; validation item par item, aucun total ni règle des réponses manquantes publiés. Adaptations : « aucun » ajouté à Q2, « 5 jours ou plus » à Q3. Droits à vérifier ; aucun item reproduit ici.",
     "auditDate": "2026-11-02"
+  },
+  {
+    "sourceId": "WN-SRC-0604",
+    "title": "Blais FC, Gendron L, Mimeault V, Morin CM (1997). Évaluation de l'insomnie : validation de trois questionnaires. Encéphale 23(6):447-453, PMID 9488928",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "fr",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_PRIMARY_STUDY",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [
+      "02"
+    ],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Version française du PSQI, source du niveau A de `Q_SOM_01` (D-424 §3) et du dispositif distinct (D-425 §1) ; aucun extrait ingéré",
+    "comment": "Résumé lu (Europe PMC) : PSQI, SIRS et BAS traduits ; équivalence vérifiée chez des bilingues, puis échantillon francophone non clinique ; « test-retest fidelity for a two-week interval was acceptable »",
+    "auditDate": "2026-11-02"
+  },
+  {
+    "sourceId": "WN-SRC-0605",
+    "title": "Bellinghausen L, Collange J, Botella M, Emery J-L, Albert É (2009). Validation factorielle de l'échelle française de stress perçu en milieu professionnel. Santé Publique 21(4):365-373, DOI 10.3917/spub.094.0365",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Article scientifique",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "fr",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_PRIMARY_STUDY",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [
+      "02"
+    ],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Traduction servie de la PSS-10 « à confirmer » (D-424 §3) ; aucun extrait ingéré",
+    "comment": "Résumé lu (Crossref) : PSS-10 chez des salariés, deux facteurs (« perception de débordement » et « efficacité personnelle perçue ») ; effectif et texte des items non lus (texte intégral inaccessible). Citée par Lesage et al. 2012 (WN-SRC-0540), sans que la traduction utilisée par Lesage soit établie",
+    "auditDate": "2026-11-02"
   }
 ]
