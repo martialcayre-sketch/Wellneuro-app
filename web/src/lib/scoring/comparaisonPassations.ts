@@ -18,14 +18,18 @@ import { motifNonInterpretable } from './passationsNonInterpretables';
  *  inchangés. Paramètres techniques déclarés par le responsable (`DC-20`),
  *  établis sur l'historique Git des définitions et du moteur. Seuls les
  *  instruments dont la source définit un total et dont le moteur publie sa
- *  complétude : ni MFI-20 (pas de total, par sa source), ni DNST, mode de vie
- *  SIIN ou DASS-21 (total sommé par l'application), ni QIF (aucun compte de
- *  complétude) — lot à ouvrir, avec ses sources (D-406 §7). */
+ *  complétude : ni MFI-20 (pas de total, par sa source), ni DNST ou mode de
+ *  vie SIIN (aucun total publié, journal de H94), ni QIF tant que son compte
+ *  de complétude (D-421) n'est pas déployé — son entrée est une décision à
+ *  part (D-406 §7). */
 export const COMPARABLE_DEPUIS: ReadonlyMap<string, Date> = new Map([
   ['Q_ALI_01', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_MOD_03', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_INF_01', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_STR_02', new Date('2026-08-11T00:00:00.000Z')],
+  // DASS-21 (D-420) : total brut des trois sous-échelles, 0 à 63, défini par
+  // ses auteurs (FAQ Lovibond, Q26, WN-SRC-0601) ; complet à 7 sur 7 par axe.
+  ['Q_STR_04', new Date('2026-08-11T00:00:00.000Z')],
   // PSQI : bandes retouchées le 2026-09-13 (#1079, #1085).
   ['Q_SOM_01', new Date('2026-09-14T00:00:00.000Z')],
 ]);

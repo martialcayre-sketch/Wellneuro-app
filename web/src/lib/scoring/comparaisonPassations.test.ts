@@ -76,7 +76,7 @@ describe('comparerPassations (D-406)', () => {
 
   describe('motifs, dans l’ordre', () => {
     it('instrument hors registre : ni paire ni motif, le panneau n’en dit rien', () => {
-      for (const id of ['Q_NEU_11', 'Q_SOM_07', 'Q_INF_03', 'Q_MOD_01', 'Q_STR_04', 'Q_FIB_02']) {
+      for (const id of ['Q_NEU_11', 'Q_SOM_07', 'Q_INF_03', 'Q_MOD_01', 'Q_FIB_02']) {
         const r = comparerPassations(
           [p('2026-09-01T08:00:00Z', 1, { idQuestionnaire: id }), p('2026-09-02T08:00:00Z', 2, { idQuestionnaire: id })],
           null,
@@ -85,8 +85,22 @@ describe('comparerPassations (D-406)', () => {
       }
     });
 
-    it('le registre : cinq instruments à total défini et complétude lisible', () => {
-      expect([...COMPARABLE_DEPUIS.keys()].sort()).toEqual(['Q_ALI_01', 'Q_INF_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02']);
+    it('le registre : six instruments à total défini et complétude lisible', () => {
+      expect([...COMPARABLE_DEPUIS.keys()].sort()).toEqual(['Q_ALI_01', 'Q_INF_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02', 'Q_STR_04']);
+    });
+
+    it('DASS-21 (D-420) : total brut comparé dès le 2026-08-11, sans maximum, complet à 7 sur 7 par axe', () => {
+      expect(COMPARABLE_DEPUIS.get('Q_STR_04')?.toISOString()).toBe('2026-08-11T00:00:00.000Z');
+      const axes = (repondusD: number) => ({ subScores: [{ repondus: repondusD, items: 7 }, { repondus: 7, items: 7 }, { repondus: 7, items: 7 }] });
+      const dass = (date: string, score: number, repondusD = 7) =>
+        p(date, score, { idQuestionnaire: 'Q_STR_04', titre: 'DASS-21' }, axes(repondusD));
+      const { paires } = comparerPassations([dass('2026-09-01T08:00:00Z', 30), dass('2026-10-01T08:00:00Z', 24)], null);
+      expect(paires).toHaveLength(1);
+      expect(paires[0].maximum).toBeNull();
+      expect(paires[0].ecart).toBe(-6);
+      // Un item sans réponse sur un axe : Q27 de la FAQ le tolérerait, D-420 non.
+      expect(comparerPassations([dass('2026-09-01T08:00:00Z', 30, 6), dass('2026-10-01T08:00:00Z', 24)], null).nonComparees[0].motif).toBe('incomplete');
+      expect(comparerPassations([dass('2026-08-10T08:00:00Z', 30), dass('2026-10-01T08:00:00Z', 24)], null).nonComparees[0].motif).toBe('version_non_etablie');
     });
 
     it('version non établie : une passation antérieure à la date du registre', () => {
