@@ -608,7 +608,16 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
               return (
                 <div key={autre} className="flex flex-wrap items-center gap-3">
                   <span>Il est dans l’onglet {libelle}.</span>
-                  <Button variant="outline" disabled={enEnvoiGlobal} onClick={() => changerOnglet(autre)}>
+                  <Button
+                    variant="outline"
+                    disabled={enEnvoiGlobal}
+                    onClick={() => {
+                      changerOnglet(autre);
+                      // Le bouton disparaît au chargement : le focus suit
+                      // l'onglet ouvert, comme à la navigation clavier.
+                      refsOnglets.current[ONGLETS.findIndex((onglet) => onglet.statut === autre)]?.focus();
+                    }}
+                  >
                     Ouvrir l’onglet {libelle}
                   </Button>
                 </div>

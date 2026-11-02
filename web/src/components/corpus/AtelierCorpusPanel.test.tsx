@@ -760,6 +760,8 @@ describe('AtelierCorpusPanel — recherche par identifiant (D/22)', () => {
     );
     expect(await screen.findByText(/validé par praticien@wellneuro.fr/)).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Validés' }).getAttribute('aria-selected')).toBe('true');
+    // Le bouton de renvoi a disparu : le focus clavier suit l'onglet ouvert.
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Validés' }));
   });
 
   it('« Effacer » retire la recherche et rend la file entière', async () => {
