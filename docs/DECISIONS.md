@@ -6,6 +6,72 @@
 
 ## Décisions actives
 
+### D-425 — Mesure distincte de la fatigue et du sommeil : cinq instruments du catalogue (PSQI, MFI-20, Pichot, Epworth, MEQ), calendrier à décider ; droits maintenus sous la déclaration du 2026-07-29, écarts aux pages des ayants droit consignés ; l'Epworth et le MFI-20 entrent dans « Mon équilibre », le MFI-20 dans l'orientation (m39)
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 (questions à
+  options, une précision demandée puis rendue, fiche validée telle quelle),
+  en séance de gestes de la file D (n° 5, ligne m39). Recherche documentaire
+  préparée par le responsable avec un assistant conversationnel externe, qui
+  n'est source d'aucune valeur ; chaque référence vérifiée par la session
+  (Europe PMC, Crossref, pages des ayants droit).
+- Domaine : dispositif distinct de [[D-407]] §2-3 ; registre des instruments
+  (`docs/claude/corpus/instrument_registry.json`) ; « Mon équilibre »
+  (`BESOIN_SOURCES`) et table d'orientation (`ORIENTATION_RULES_V1`), pour le
+  seul principe du §4.
+- Ne touche pas : aucun code ; aucun calendrier, aucune forme, aucune
+  fréquence ; aucune valeur, aucun seuil, aucun poids ; aucune demande de
+  licence engagée.
+- Contexte, lu au dépôt et vérifié le 2026-11-02 : le catalogue sert cinq
+  questionnaires adultes du sommeil et de la fatigue. Les trois registres ne
+  portent aucune donnée de sensibilité au changement. [[D-353]] ne nomme aucun
+  instrument : tout questionnaire rempli avant le jour 0 puis réassigné est
+  renvoyé. Les droits reposent sur la déclaration du 2026-07-29 (supports de
+  formation du SIIN, étendue aux instruments tiers qu'ils reproduisent).
+
+**§1 — Cinq instruments.** Le PSQI (`Q_SOM_01`), le MFI-20 (`Q_SOM_07`),
+l'échelle de fatigue de Pichot (`Q_SOM_06`), l'Epworth (`Q_SOM_02`) et le MEQ
+(`Q_SOM_05`), déjà servis, entrent au dispositif distinct. Faits vérifiés :
+versions françaises Blais et al. 1997 (`WN-SRC-0604`), Gentile et al. 2003
+(`0609`, quatre dimensions retrouvées et non cinq), Kaminska et al. 2010
+(`0606`), Taillard et al. 2004 et Bessot et Margas 2024 (`0607`, `0608`) ;
+Pichot francophone d'origine (Pichot et Brun 1984, `0610`). Sensibilité au
+changement : MFI-20 jugée « satisfactory » à un mois (Gentile) ; Epworth,
+différences minimales publiées dans l'apnée du sommeil seulement (Patel et
+al. 2018, Crook et al. 2019, `0611`, `0612`), donc limitées à cette
+population (`DC-14`) ; PSQI non vérifiée ; Pichot et MEQ, rien trouvé.
+PROMIS est sans objet ([[D-407]] §3).
+
+**§2 — Calendrier et forme.** Non décidés. Le dispositif reste sous
+[[D-366]] §2 entier, les échelles reprises des sources ([[D-407]] §1).
+
+**§3 — Droits.** Maintenus par arbitrage du responsable pour le PSQI,
+l'Epworth et le MFI-20, sous la déclaration du 2026-07-29. Les écarts sont
+consignés mot pour mot au registre des instruments : pour le PSQI, la page de
+l'University of Pittsburgh (`0613`) réserve la reproduction gratuite à la
+recherche et à l'enseignement non commerciaux et range l'usage clinique parmi
+les cas soumis à demande, avec une redevance à l'usage ; pour l'Epworth, la
+page des licences (`0614`) exige une licence, payante ou non, gérée par Mapi
+Research Trust ; pour le MFI-20, aucune page officielle, une source secondaire
+seulement. MEQ : « Freely available for non-profit use » (American Thoracic
+Society) ; Pichot : titulaire non identifié. Les versions françaises vérifiées
+entrent au registre, sans affirmer l'identité de la version servie. Les
+notices restent `to_verify`. Écartés : demander les licences en continuant de
+servir ; demander et suspendre.
+
+**§4 — Deux entrées décidées dans leur principe.** (a) L'Epworth et le MFI-20
+entrent dans « Mon équilibre ». Le besoin, le groupe, le poids et, pour le
+MFI-20, qui n'a pas de score global au catalogue, les sous-scores retenus
+sont à dicter par le responsable ; leur niveau de preuve suit [[D-424]] §5 ;
+ils partent avec un changement de version. (b) Le MFI-20 entre dans
+l'orientation : une règle demande un claim validé et un déclencheur sourcé,
+et aucun seuil publié du MFI-20 n'a été trouvé. Chacune passera par sa
+propre décision, avec ses valeurs.
+
+**§5 — Suites.** File D : deux lignes neuves pour le §4. Fiche H19 : fragment
+de journal. Le lot du dispositif s'inscrit au §8 quand son calendrier sera
+décidé.
+
 ### D-422 — Audit 3, lot Q3 quater : une assignation annulée sort du Fil et du bloc « échu » du dossier ; le déblocage refuse une annulée et un suivi clôturé
 
 - Date : 2026-11-02

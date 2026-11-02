@@ -2238,7 +2238,7 @@ Photographie au merge de #1446 (85b95dcc). Chaque ligne renvoie à sa fiche, sa 
 | h2 | lecture des écarts d'unité textuels ; comportement voulu de la charge (tranché le 2026-10-21 : le barème ignore les actions vides ; correctif en file A, F76) | F60, F76 | deux unités ; correctif |
 | h1, h2 | signatures des grilles de la table d'arrêt (E64) et des règles orphelines (E32) ; **arbitrées le 2026-11-01 (D-400)** : E32 close, porteurs nommés (BP-12a pour DC-11 et DC-45, lot neuf du moteur d'orientation pour DC-36) ; E64 décidée, reste le lot de code et la re-signature (§8) | H42, H41 | table d'arrêt complète ; axes |
 | h3 | h, la Boussole retirée ; fait le 2026-10-24 (D-365) | H16 | J1-alim ; D-C5-01 à 04 |
-| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur écrites le 2026-11-01 (D-407 à D-413) ; reste l'instruction de la mesure distincte (D-407 §3) | H19 | indicateurs hebdomadaires |
+| h3 | instruction de bf ; cadre écrit le 2026-10-24 (D-366), décisions par indicateur écrites le 2026-11-01 (D-407 à D-413) ; instruction de la mesure distincte close le 2026-11-02 (D-425) : cinq instruments du catalogue, calendrier à décider | H19 | indicateurs hebdomadaires |
 | h3 | textes (a) et (e) de D-283 ((f) fait : G-8, #1446) ; faits le 2026-10-26 (D-378, D-377) | H26 | durées, information du médecin |
 | h3 | ai, accusé de lecture daté de « Mes échanges » (décision faite : D-297, #1459 ; porte 14 levée ; code au rang 4, après G-7) | H51 | porte 14 ; « Mes échanges » ne s'ouvre pas sans lui (D-293 §4) |
 | h3 | analyse d'impact du transfert et copie datée de l'accord d'Anthropic | F47 | registre RGPD ; critère du lot (j) |
