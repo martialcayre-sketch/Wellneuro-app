@@ -15613,5 +15613,33 @@
     "requiredAction": "Page de l'ayant droit, écart consigné au registre des instruments (D-425 §3, m39) ; aucun extrait ingéré",
     "comment": "« A license is required to use the ESS or the ESS-CHAD, whether or not a license fee is payable » ; licences et traductions gérées par Mapi Research Trust, agent mondial du Dr Johns",
     "auditDate": "2026-11-02"
+  },
+  {
+    "sourceId": "WN-SRC-0621",
+    "title": "CamCOPS — documentation du logiciel, tâche « Multidimensional Fatigue Inventory (MFI-20) » (relue le 2026-11-02)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Documentation logicielle (source secondaire)",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_INSTRUMENT_DOCUMENTATION",
+    "audienceOriginal": "Praticien",
+    "importance": "secondary",
+    "prescriptive": false,
+    "primaryNotebook": "13 — Instruments du cabinet",
+    "secondaryNotebooks": [
+      "02"
+    ],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Modérée",
+    "requiredAction": "Source secondaire des droits du MFI-20, faute de page officielle de l'ayant droit (D-425 §3, m39) ; aucun extrait ingéré",
+    "comment": "Documentation d'un logiciel tiers, pas l'ayant droit : « The MFI-20 is copyrighted on the names of the authors » ; « The MFI is free for academic use, charges apply for commercial use » ; y est rapporté un courriel d'E. Smets du 3 février 2020 préférant réserver l'instrument aux chercheurs et enseignants",
+    "auditDate": "2026-11-02"
   }
 ]

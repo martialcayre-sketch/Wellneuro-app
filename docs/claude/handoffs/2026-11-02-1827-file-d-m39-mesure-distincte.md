@@ -3,8 +3,10 @@
 ## Branche et état Git
 
 `docs/file-d-m39-dispositif`, worktree `.claude/worktrees/file-d1-suite`,
-créée depuis `origin/main` (f5cbf461). Deuxième des trois PR de la séance,
-après #1828 (b26, D-424) ; d45 (D-426) suit.
+créée depuis `origin/main` (f5cbf461), puis `origin/main` fusionné après le
+merge de #1828 (97951315 ; conflits de `docs/DECISIONS.md`, du registre et
+de son README résolus en gardant les deux côtés). Deuxième des trois PR de la
+séance, après #1828 (b26, D-424) ; d45 (D-426) suit.
 
 ## Objectif
 
@@ -24,13 +26,14 @@ droits) et faire trancher le responsable.
 ## Fichiers modifiés
 
 - `docs/DECISIONS.md` : D-425.
-- `docs/claude/corpus/source_registry.json` : `WN-SRC-0606` à `0614` ;
-  `README.md` du corpus.
+- `docs/claude/corpus/source_registry.json` : `WN-SRC-0606` à `0614`, et
+  `0621` (source secondaire des droits du MFI-20, ajoutée après la revue
+  Copilot) ; `README.md` du corpus.
 - `docs/claude/corpus/instrument_registry.json` : `traductionValidee` de
   `Q_SOM_01`, `Q_SOM_02`, `Q_SOM_05`, `Q_SOM_07` ; paragraphe daté ajouté à
   `droits.detail` des cinq instruments.
 - `docs/claude/PLAN_WELLNEURO.md` : ligne h3 (instruction de la mesure
-  distincte close).
+  distincte close) et ligne « mesure distincte » du rang 0 (relevé Copilot).
 - Neufs : `docs/claude/plan-journal/H19/2026-11-02-01-mesure-distincte-cinq-instruments.md` ;
   `changelog.d/2026-11-02-d425-mesure-distincte-fatigue-sommeil.md` ; ce
   handoff.
@@ -42,14 +45,21 @@ droits) et faire trancher le responsable.
 - Sept vérifications parallèles de la recherche du responsable ; titres des
   sources retenues recroisés sur Crossref par la session.
 - Registres : réécriture contrôlée à l'identique avant modification.
-- T1 avant le commit.
+- Revue de la première tête (40c921e0) : PR-Agent, statut des droits écarté
+  avec motif (`licence_requise` ferait tomber le barreau `droits_verifies`,
+  contre l'arbitrage) ; Copilot, quatre remarques : exclusions de D-353,
+  ligne du rang 0 et source secondaire du MFI-20 corrigées ; repères de
+  fatigue du catalogue (`sommeil.ts`, Schwarz 2003, Singer 2011, non
+  vérifiés) portés à D-425 §4 (b) sur arbitrage du responsable.
+- T1 avant chaque commit.
 
 ## Problèmes ouverts
 
-- `WN-SRC-0604` (Blais 1997), cité ici, est inscrit par #1828 : merger #1828
-  d'abord. `source_registry.json`, le `README.md` du corpus et l'en-tête de
-  `docs/DECISIONS.md` sont aussi touchés par #1828 et #1826 : le second merge
-  garde les deux côtés (D-425 au-dessus de D-424 ; compte des notices recalculé).
+- `source_registry.json`, le `README.md` du corpus et l'en-tête de
+  `docs/DECISIONS.md` sont aussi touchés par #1830 et #1826 : chaque fusion
+  garde les deux côtés (D-426 au-dessus de D-425).
+- d57 (MFI-20 dans l'orientation) commence par vérifier Schwarz et al. 2003
+  et Singer et al. 2011.
 - Droits : l'usage clinique du PSQI et l'Epworth restent servis sans licence
   de l'ayant droit, par arbitrage du responsable ; consigné, non résolu.
 

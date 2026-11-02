@@ -6,8 +6,8 @@
   instruments, et relecture des pages des ayants droit consignée mot pour mot
   avec l'arbitrage du responsable (usage maintenu sous la déclaration du
   2026-07-29).
-- Neuf notices au registre du corpus, `WN-SRC-0606` à `0614`, sans extrait
-  ingéré.
+- Dix notices au registre du corpus, `WN-SRC-0606` à `0614` et `0621` (source
+  secondaire des droits du MFI-20), sans extrait ingéré.
 - Aucun code. L'entrée de l'Epworth et du MFI-20 dans « Mon équilibre », et
   du MFI-20 dans l'orientation, est décidée dans son principe et passera par
   ses propres décisions.

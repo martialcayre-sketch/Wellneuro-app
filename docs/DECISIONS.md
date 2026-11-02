@@ -24,9 +24,12 @@
   licence engagée.
 - Contexte, lu au dépôt et vérifié le 2026-11-02 : le catalogue sert cinq
   questionnaires adultes du sommeil et de la fatigue. Les trois registres ne
-  portent aucune donnée de sensibilité au changement. [[D-353]] ne nomme aucun
-  instrument : tout questionnaire rempli avant le jour 0 puis réassigné est
-  renvoyé. Les droits reposent sur la déclaration du 2026-07-29 (supports de
+  portent aucune donnée de sensibilité au changement. [[D-353]] §2 ne nomme
+  aucun instrument : un questionnaire est renvoyé quand son assignation est
+  ouverte, faite au jour 0 ou après, et que le patient a déjà rempli le même
+  instrument avant le jour 0 ; les agendas du sommeil et alimentaire et une
+  assignation déverrouillée pour correction n'en sont pas (relevé de la revue
+  Copilot de #1829). Les droits reposent sur la déclaration du 2026-07-29 (supports de
   formation du SIIN, étendue aux instruments tiers qu'ils reproduisent).
 
 **§1 — Cinq instruments.** Le PSQI (`Q_SOM_01`), le MFI-20 (`Q_SOM_07`),
@@ -53,7 +56,7 @@ recherche et à l'enseignement non commerciaux et range l'usage clinique parmi
 les cas soumis à demande, avec une redevance à l'usage ; pour l'Epworth, la
 page des licences (`0614`) exige une licence, payante ou non, gérée par Mapi
 Research Trust ; pour le MFI-20, aucune page officielle, une source secondaire
-seulement. MEQ : « Freely available for non-profit use » (American Thoracic
+seulement, la documentation du logiciel CamCOPS (`0621`). MEQ : « Freely available for non-profit use » (American Thoracic
 Society) ; Pichot : titulaire non identifié. Les versions françaises vérifiées
 entrent au registre, sans affirmer l'identité de la version servie. Les
 notices restent `to_verify`. Écartés : demander les licences en continuant de
@@ -64,9 +67,16 @@ entrent dans « Mon équilibre ». Le besoin, le groupe, le poids et, pour le
 MFI-20, qui n'a pas de score global au catalogue, les sous-scores retenus
 sont à dicter par le responsable ; leur niveau de preuve suit [[D-424]] §5 ;
 ils partent avec un changement de version. (b) Le MFI-20 entre dans
-l'orientation : une règle demande un claim validé et un déclencheur sourcé,
-et aucun seuil publié du MFI-20 n'a été trouvé. Chacune passera par sa
-propre décision, avec ses valeurs.
+l'orientation : une règle demande un claim validé et un déclencheur sourcé.
+La recherche du 2026-11-02 n'a vérifié aucun seuil publié. La source du
+catalogue cite, pour la seule fatigue générale, des repères qui dépendent du
+sexe et de l'âge, rapportés au 25e percentile de données allemandes et
+attribués à Schwarz et al. 2003 et Singer et al. 2011, deux références non
+vérifiées (`web/src/lib/questionnaires/sommeil.ts`, note du scoring) ; le
+moteur ne reçoit ni le sexe ni l'âge. Ce sont des pistes à vérifier, pas un
+déclencheur validé (arbitrage du responsable du 2026-11-02 sur une remarque
+de la revue Copilot de #1829). Chacune des deux entrées passera par sa propre
+décision, avec ses valeurs.
 
 **§5 — Suites.** File D : deux lignes neuves pour le §4. Fiche H19 : fragment
 de journal. Le lot du dispositif s'inscrit au §8 quand son calendrier sera

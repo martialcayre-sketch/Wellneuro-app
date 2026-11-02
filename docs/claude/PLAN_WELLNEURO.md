@@ -256,7 +256,7 @@ Chaque rang porte une table d'entrée, puis ses fiches (file A, file B, file C, 
 | ca | cadrage de la refonte de l'agenda du sommeil (fait le 2026-10-15 : D-300) | geste | aucune | non | H17 |
 | bg | flux de l'export vers l'assistant externe du responsable | geste | avec 5 | non | H18 |
 | bf, instruction | une décision par indicateur hebdomadaire ; fait le 2026-11-01 (D-407 à D-413) : point d'étape de pilotage, cinq questions en paramètres techniques transitoires, motif retiré (lot au §8) | geste | aucune | non | H19 |
-| mesure distincte | fatigue et sommeil hors du point d'étape (D-407 §2-3) : instruire d'abord les questionnaires du catalogue et le renvoi autour de J21 (D-353) — version française, sensibilité au changement, droits ; PROMIS seulement si rien ne convient | geste | aucune | non | H19 |
+| mesure distincte | fatigue et sommeil hors du point d'étape (D-407 §2-3) : instruire d'abord les questionnaires du catalogue et le renvoi autour de J21 (D-353) — version française, sensibilité au changement, droits ; PROMIS seulement si rien ne convient ; instruite le 2026-11-02 (D-425) : cinq instruments du catalogue, PROMIS sans objet ; restent le calendrier et la forme | geste | aucune | non | H19 |
 | gestes RGPD | archivages, relance d'effacement, dossier v8 | geste | aucune | non | H20 |
 | relance du laboratoire | relance écrite du laboratoire pilote | geste | 29 | non | F41, en §6 |
 | G-11 | textes patient de la collecte et des mineurs (l écrite par D-283) ; fait, validés le 2026-10-14 | geste | aucune | non | H38 |
