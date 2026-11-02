@@ -2753,6 +2753,28 @@ describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
     });
   }
 
+  // [[D-427]] §2 : seul le suivi clôturé grise le bouton. Un dossier désactivé
+  // non clos, ou une fiche pas encore lue, le gardent offert — la route refuse.
+  it('dossier désactivé non clos : bouton actif, aucun motif d’emblée', async () => {
+    await rendreFiche({ assignationEchue: true, dossier: { actif: 'NON', suiviClotureLe: null }, phaseDemandee: 'patient' });
+    await screen.findByText(/dossier inactif/i);
+    const section = screen.getByRole('region', { name: BLOCS[0].region });
+    const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(false);
+    expect(within(section).queryByText(MESSAGE_DOSSIER_CLOS)).toBeNull();
+  });
+
+  it('fiche du dossier illisible : bouton offert, aucun motif d’emblée', async () => {
+    await rendreFiche({ assignationEchue: true, dossier: 'absent', phaseDemandee: 'patient' });
+    const section = await screen.findByRole('region', { name: BLOCS[0].region });
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').some(a => /n’a pas pu être lue/i.test(a.textContent ?? ''))).toBe(true),
+    );
+    const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(false);
+    expect(within(section).queryByText(MESSAGE_DOSSIER_CLOS)).toBeNull();
+  });
+
   // [[D-422]] §1, en défense : un serveur antérieur au lot servirait encore
   // l'annulée ; l'écran ne l'offre pas au déblocage.
   it('une annulée servie par le serveur n’entre pas au bloc des échues', async () => {
