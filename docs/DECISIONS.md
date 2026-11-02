@@ -50,7 +50,8 @@ biologie) sous `web/src/lib/clinical/`. Jusque-là, rien ne change. Écartés : 
 vide sans suite ; un critère d'indépendance seul, sans graduation.
 
 **§3 — Suites.** Ligne D/45 : soldée pour la borne ; `DC-29` passe à une
-ligne neuve de la file D, en attente des niveaux dictés.
+ligne neuve de la file D (d58 de la page « Suivi de la file D »), en attente
+des niveaux dictés.
 
 ### D-424 — Table des niveaux de preuve de « Mon équilibre » : trois niveaux A, B, D, C retiré, un niveau par clé ; les neuf sources après J3-12f signées telles quelles ; application avec J3-12f (b26)
 
