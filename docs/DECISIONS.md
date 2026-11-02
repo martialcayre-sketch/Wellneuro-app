@@ -38,8 +38,9 @@ déploiements, non observé à la seconde.
 
 **§2 — Complétude.** Celle de [[D-421]] §1 : l'item 1 mesuré dès qu'un
 sous-item est noté (un sous-item retiré n'empêche pas la comparaison), Q12
-à Q20 exigés chacun. Une passation à total partiel ou nul est refusée
-(« une passation est incomplète », [[D-406]] §4).
+à Q20 exigés chacun. Une passation à total partiel, ou sans total (`null`),
+est refusée (« une passation est incomplète », [[D-406]] §4) ; un total
+complet égal à 0 est comparé.
 
 **§3 — Grille.** `maxTotal` 100 des deux côtés. L'écart de facteur 3,3
 contre 3,33 ([[D-421]] §2) touche les deux passations de la même façon et
@@ -90,7 +91,8 @@ composante d'absentéisme non mesurée, donc `total: null`. Le questionnaire
 servi ne demande pas si la personne travaille, et un champ vide peut être un
 oubli : aucun retrait n'est déduit d'une absence (`DC-24`).
 
-**§4 — Amendement de [[D-421]] §3, second point.** Il écrivait : « chez une
+**§4 — Amendement de [[D-421]] §3** (son exemple « Q14, laissé vide par une
+personne sans emploi » et son second point). Il écrivait : « chez une
 personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la correction
 10/x ». C'est vrai de la version originale seulement. Bennett 2005, section
 « Modifications », relu sur le PDF le 2026-11-02 : « In the original version
@@ -99,6 +101,13 @@ did not work they were instructed to cross out these 2 questions » ; puis
 « In 1997, questions 3 and 4 were modified to include housework ». Le texte
 servi de Q13 et Q14 parle de « travail », sans les tâches ménagères :
 l'écart de libellé est consigné, non corrigé (acte distinct).
+
+**§5 — Limite nommée : aucun recalcul rétroactif.** La règle vaut pour les
+passations scorées après son déploiement. Une passation QIF incomplète déjà
+enregistrée garde la bande stockée avec elle (`interpretation`,
+`scoresJson`), affichée à la fiche, à l'export et à la synthèse. Leur
+nombre n'a pas été compté en production : « aucune occurrence observée »
+([[D-421]] §3) vaut constat de code, pas lecture datée de la base.
 
 ### D-426 — `MAX_AXES_PRIORITAIRES` : la borne de 3 confirmée comme arbitrage, aucune source ne la fonde ; `DC-29` : une graduation de la convergence à dicter par le responsable, arbitrage WellNeuro nommé comme tel (D/45)
 

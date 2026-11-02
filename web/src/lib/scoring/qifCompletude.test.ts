@@ -106,6 +106,10 @@ describe('QIF — compte de complétude (D-421)', () => {
     const s = qif({ ...reponses(), Q15: 'abc' as any });
     expect(s.missing).toBe(1);
     expect(s.interpretation).toBeNull();
+    // Item 1 : un sous-item non numérique, un autre noté — même règle.
+    const item1 = qif({ ...reponses(), Q2: 'abc' as any });
+    expect(item1.missingIds).toEqual(['Q2']);
+    expect(item1.interpretation).toBeNull();
   });
 
   it('sous-item de l’item 1 retiré, total non nul : la bande reste servie (missing 0)', () => {
