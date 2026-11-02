@@ -80,6 +80,11 @@ Les deux restes de Q3 quater tranchés par le responsable le 2026-11-02 :
   intermittence que celle du handoff H65 du 2026-11-01), puis code 0 au
   rejeu entier (Vitest : 15 650 passés, 40 sautés ; E2E : 303 passés,
   7 sautés).
+- Revues sur la PR #1831 (tête be6e74d8) :
+  - Copilot : titre du fragment de changelog sans la date entre
+    parenthèses (`changelog.d/README.md`) — **corrigé** ;
+  - PR-Agent : « No major issues », aucun commentaire en ligne ;
+  - CodeRabbit : sauté (moins de 10 étoiles), revue demandée à la main.
 - Fusions de `main` (D-424 #1828, D-425) : documentaires seulement ; conflit
   de `docs/DECISIONS.md` résolu à chaque fois, D-427 en tête.
 

@@ -1,4 +1,4 @@
-### Audit 3, lot Q3 quinquies : le dossier désactivé a son refus ; sur un suivi clôturé, « Débloquer » est grisé (D-427)
+### Audit 3, lot Q3 quinquies : le dossier désactivé a son refus ; sur un suivi clôturé, « Débloquer » est grisé (D-427) (2026-11-02)
 
 - Assignations : la création, le déblocage et le rappel d'un questionnaire
   sur un dossier désactivé répondent « Ce dossier est désactivé… Réactivez
