@@ -48,6 +48,53 @@ bouton : son refus s'écrit au clic, tel que la route l'écrit
 Aucun texte neuf, aucune migration. Bancs des trois routes et des deux
 blocs, chacun prouvé par mutation.
 
+### D-426 — `MAX_AXES_PRIORITAIRES` : la borne de 3 confirmée comme arbitrage, aucune source ne la fonde ; `DC-29` : une graduation de la convergence à dicter par le responsable, arbitrage WellNeuro nommé comme tel (D/45)
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 (questions à
+  options, puis fiche validée telle quelle), en séance de gestes de la file D
+  (n° 5, ligne d45). Recherche documentaire préparée par le responsable avec
+  un assistant conversationnel externe, qui n'est source d'aucune valeur ;
+  chaque référence vérifiée par la session (Europe PMC, Crossref, NCBI
+  Bookshelf).
+- Domaine : `MAX_AXES_PRIORITAIRES` (`web/src/lib/synthese-praticien.ts`) ;
+  `DC-29` et la forme `CONVERGENCE` (`contradictionFinding.ts`,
+  `contradictionsEngine.ts`).
+- Ne touche pas : aucun code ; la borne reste 3 ; la forme `CONVERGENCE`
+  reste vide et gardée par son banc ; [[D-103]] et [[D-041]] ne sont pas
+  amendées ici.
+- Contexte, lu au dépôt le 2026-11-02 : la ligne D/45 du plan, recopiée de la
+  mesure du LOT-03, précède [[D-107]] décision 4, qui a fait du 3 une borne de
+  charge dont la provenance est l'arbitrage daté du 2026-08-24, et [[D-103]],
+  qui n'a trouvé dans les claims actifs aucun claim de méthode fondant une
+  graduation par nombre de sources indépendantes. Le responsable rouvre les
+  deux le 2026-11-02, recherche d'abord.
+
+**§1 — La borne de 3 confirmée.** [[D-107]] décision 4 reste la provenance.
+Aucune source ne fonde le nombre. Consignées comme contexte : Cowan 2001
+(capacité d'environ quatre éléments en mémoire à court terme, psychologie
+générale ; `WN-SRC-0615`), Sittig et al. 2008 (« prioritize and filter
+recommendations to the user » ; `0616`), Evanoff et al. 2005 (« top three
+priorities » posé en question d'entretien, dont les auteurs disent qu'il a pu
+sous-estimer la concordance ; `0617`). Écartée : une autre valeur.
+
+**§2 — `DC-29` : une graduation à dicter.** La recherche confirme [[D-103]] :
+aucune graduation publiée par nombre de sources. Lawlor et al. 2016 (`0618`)
+et Gutierrez et al. 2025 (`0619`) décrivent la triangulation : des résultats
+issus d'approches dont les biais sont sans lien entre eux renforcent une
+conclusion ; ils ne définissent pas l'indépendance de deux sources (précision
+de la revue Copilot de #1830). Balshem et al. 2011 (`0620`) : GRADE gradue un
+corps de preuves en quatre niveaux, jamais un nombre de sources. Le
+responsable choisit de dicter lui-même la graduation, au titre d'un arbitrage
+WellNeuro nommé comme tel. Ses niveaux viendront dans une décision suivante,
+qui amendera [[D-103]] et [[D-041]], avec un lot de la file A (code hors
+biologie) sous `web/src/lib/clinical/`. Jusque-là, rien ne change. Écartés : garder la forme
+vide sans suite ; un critère d'indépendance seul, sans graduation.
+
+**§3 — Suites.** Ligne D/45 : soldée pour la borne ; `DC-29` passe à une
+ligne neuve de la file D (d58 de la page « Suivi de la file D »), en attente
+des niveaux dictés.
+
 ### D-425 — Mesure distincte de la fatigue et du sommeil : cinq instruments du catalogue (PSQI, MFI-20, Pichot, Epworth, MEQ), calendrier à décider ; droits maintenus sous la déclaration du 2026-07-29, écarts aux pages des ayants droit consignés ; l'Epworth et le MFI-20 entrent dans « Mon équilibre », le MFI-20 dans l'orientation (m39)
 
 - Date : 2026-11-02
@@ -243,6 +290,114 @@ retirée ; annulée non refusée ; suivi clos non refusé ; ordre des refus
 inversé ; état du dossier non lu ; écriture sans garde de statut ; sans
 garde du dossier ; zéro ligne écrite tenue pour un succès ; refus muet au
 bloc des échues ; au bloc des corrections ; repli réseau muet.
+
+### D-421 — QIF (`Q_FIB_02`) : le moteur publie sa complétude au grain de sa source, dix composantes ; maximum 100 maintenu ; le total incomplet sans correction 10/x reste un défaut consigné
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02, rendus en
+  conversation sur questions à options, tous sur la recommandation : règle
+  des dix composantes plutôt que vingt items sur vingt ; maximum 100 et non
+  107 ; défaut du total incomplet consigné ici, corrigé par une décision
+  propre.
+- Domaine : moteur `qif` de `web/src/lib/questions.ts` (sous instantané,
+  étape au `moteur` de `seuilsCatalogue.instantane.json`) ; banc
+  `web/src/lib/scoring/qifCompletude.test.ts`. Fiche H94, [[D-406]] §7.
+- **Ne touche pas** : ni `total`, ni `maxTotal`, ni aucune bande ; ni les
+  facteurs de normalisation ; ni le registre de comparaison de [[D-406]] §2,
+  où l'entrée du QIF est une décision à part, après le déploiement de
+  celle-ci ; aucune migration, aucune écriture en base.
+- Contexte : [[D-406]] §2 écartait le QIF parce que son moteur ne publiait
+  aucun compte de complétude. Sources lues sur leur texte intégral le
+  2026-11-02 : Bennett 2005 (WN-SRC-0602) et Perrot 2003 (WN-SRC-0603). Chez
+  Bennett, le score est la somme de dix composantes, chacune de 0 à 10, pour
+  un maximum de 100. L'item 1 est la moyenne des sous-items notés, et le
+  patient peut retirer de son score les tâches qu'il ne pratique pas. Depuis
+  2002, un total incomplet est multiplié par 10/x. Perrot valide la version
+  française item par item, sans total publié. Aucune source ne fonde la
+  classe « 100 à 107 » de la fiche du cabinet.
+
+**§1 — Compte publié.** `missing` et `missingIds` à la racine, comme les
+moteurs à score global. L'item 1 est mesuré dès qu'un de Q1 à Q11 est noté ;
+Q12 à Q20 sont exigés chacun. `missing` compte des questions, jamais des
+composantes (sens de la consigne de synthèse) : un item 1 entièrement vide
+compte ses onze sous-items, et un sous-item retiré quand un autre est noté
+n'est pas une question manquante. Une valeur non numérique compte comme
+manquante, comme dans le moteur `sum`, item 1 compris : un sous-item vide
+est un retrait permis, un sous-item non numérique est une question
+manquante, et l'item 1 sans aucune valeur numérique compte ses onze
+sous-items.
+
+**§2 — Maximum.** `maxTotal` reste 100. Le moteur plafonne à 99,9 parce que
+la fiche du cabinet multiplie l'item 1 par 3,3 là où Bennett multiplie par
+3,33 : écart consigné, non corrigé (acte clinique distinct).
+
+**§3 — Défaut consigné.** Une composante entièrement absente (l'item 1, Q12,
+Q13, ou les sept EVA ensemble) rend déjà `total: null`, sans bande. Mais
+quand une partie seulement des EVA Q14 à Q20 manque — par exemple Q14,
+laissé vide par une personne sans emploi —, le moteur additionne les EVA
+restantes, sans correction 10/x, et sert une bande sur un total tiré vers
+le bas (`DC-24`) ; seule la bande du zéro exige la passation entière. De
+même, une valeur non numérique propage NaN au total ; la route de
+soumission la refuse pour une passation nouvelle. Constaté dans le code,
+aucune occurrence observée. Sa correction — retirer
+la bande ou appliquer 10/x — appelle une décision propre. Elle aura deux
+points à traiter :
+- la bande du zéro exige vingt questions sur vingt, alors que `missing`
+  vaut 0 dès que les dix composantes sont mesurées : `total = 0`, avec un
+  sous-item retiré, rend un recueil complet sans bande ;
+- chez une personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la
+  correction 10/x. Sous §1, elles manquent, et la passation restera
+  incomplète pour l'entrée du QIF au registre de [[D-406]] §2.
+
+**§4 — Effets.** Le badge existant « N manquant(s) » de la fiche patient et
+le compte de l'export du dossier lisent désormais le QIF ; la synthèse
+reçoit `missing`, décrit par sa consigne, et `missingIds`, que les moteurs
+`sum` envoient déjà sans y être décrit (aucune montée de version de la
+consigne). Le QIF n'entre pas dans
+l'équilibre : ni `versionScore` ni protocole touchés.
+
+### D-420 — DASS-21 (`Q_STR_04`) au registre de comparaison de D-406 §2 : total brut des trois sous-échelles (0 à 63), défini par ses auteurs ; complet à sept items sur sept par axe ; comparable depuis le 2026-08-11
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrage du responsable du 2026-11-02, rendu en
+  conversation sur question à options, sur la recommandation.
+- Domaine : `web/src/lib/scoring/comparaisonPassations.ts`
+  (`COMPARABLE_DEPUIS`) et son banc. Fiche H94.
+- **Amende** [[D-406]] §2 (registre et liste des écartés) ; **exécute** pour
+  le DASS-21 son §7.
+- **Ne touche pas** : aucune ligne du moteur ni du catalogue (le total servi
+  est celui d'aujourd'hui) ; aucune bande, aucun seuil, aucune grille du
+  total ; les lectures par sous-échelle de [[D-402]] ; aucune migration.
+- Contexte : [[D-406]] §2 écartait le DASS-21, dont le total est une somme
+  des axes faite par l'application, sans source qui le définisse. La FAQ
+  officielle des auteurs (WN-SRC-0601), lue sur la page le 2026-11-02, le
+  définit : « it is certainly both possible and sensible to add (or average)
+  the three DASS scores together to produce a composite measure of negative
+  emotional symptoms » (Q26). Sa règle des réponses manquantes est indicative :
+  une par échelle de sept items au plus, en moyennant les autres (Q27). Et
+  les scores calculés ne doivent pas être rendus au répondant, sans
+  interprétation automatisée (Q9). La fiche du cabinet (WN-SRC-0404) porte une case
+  « score total » sans grille. Définition inchangée depuis le 2026-07-28,
+  moteur `subscore` depuis le 2026-08-04 (historique Git).
+
+**§1 — Entrée.** `Q_STR_04` est comparable lorsque les deux passations datent
+du ou après le 2026-08-11, même base que les quatre instruments de cette date
+([[D-406]] §2). Le score comparé est le score principal enregistré, somme
+brute des trois sous-échelles, de 0 à 63.
+
+**§2 — Complétude.** Sept items sur sept par axe, déjà lus par [[D-406]] §4
+(`repondus` égal à `items`) : plus strict que la tolérance de Q27, qui
+changerait le calcul du total. Aucun maximum n'est publié, des deux côtés :
+la paire passe la règle de grille, avec `maximum: null`.
+
+**§3 — Lecture.** Écart en points bruts, sans bande ni seuil (aucune grille
+du total, porte 11 fermée) ; au cockpit seul, conforme à Q9.
+
+**§4 — Restent hors registre** (journal de H94) : le DNST (`Q_INF_03`) et le
+mode de vie SIIN (`Q_MOD_01`), sans total publié dans leur source ni dans
+la littérature trouvée ; le MFI-20 (`Q_SOM_07`), dont un total 20-100 est
+décrit par des sources secondaires non lues sur texte intégral — fait à
+instruire, non tranché ici ; le QIF, jusqu'au déploiement de [[D-421]].
 
 ### D-419 — La table des indications de biologie entre au contrat de fraîcheur des claims épinglés : vingt-neuf paires, `prescriptif` non exigé, cas négatif `N15`
 
