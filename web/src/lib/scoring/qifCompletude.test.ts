@@ -64,6 +64,14 @@ describe('QIF — compte de complétude (D-421)', () => {
     }
   });
 
+  it('item 1 sans aucune valeur numérique (NaN) : ses onze sous-items manquent', () => {
+    const r: Record<string, any> = reponses(FONCTION.slice(1));
+    r.Q1 = 'abc';
+    const s = qif(r);
+    expect(s.missing).toBe(11);
+    expect(s.missingIds).toEqual(FONCTION);
+  });
+
   it('total nul avec un sous-item retiré : recueil complet, mais aucune bande (zéro à 20 sur 20, D-421 §3)', () => {
     const r: Record<string, number> = {};
     for (const id of FONCTION) r[id] = 0;

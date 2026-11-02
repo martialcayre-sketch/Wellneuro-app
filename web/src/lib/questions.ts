@@ -3751,18 +3751,21 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // `missing` compte des QUESTIONS, jamais des composantes : c'est le sens
     // que la consigne de synthèse lui donne. L'item 1 entièrement vide compte
     // donc ses onze sous-items. Une valeur non numérique (NaN) manque aussi,
-    // comme dans le moteur `sum`.
+    // comme dans le moteur `sum` — y compris pour l'item 1, jugé ici sur ses
+    // seules valeurs numériques et non sur `funcCount`, qui sert au calcul et
+    // reste tel quel (le total n'est pas touché).
     //
     // Ce qui NE change PAS ici : `total`, `maxTotal` et `interpretation`. La
     // source corrige un total incomplet par 10/x ; ce moteur ne le fait pas, et
     // sert une bande sur un total tiré vers le bas — défaut consigné par D-421,
     // laissé à une décision propre.
+    const manque = (id: string) => {
+      const v = getVal(id);
+      return v === null || Number.isNaN(v);
+    };
     const missingIds = [
-      ...(funcCount > 0 ? [] : funcItems),
-      ...['Q12', 'Q13', ...evaItems].filter(id => {
-        const v = getVal(id);
-        return v === null || Number.isNaN(v);
-      }),
+      ...(funcItems.some(id => !manque(id)) ? [] : funcItems),
+      ...['Q12', 'Q13', ...evaItems].filter(manque),
     ];
 
     return {

@@ -37,17 +37,22 @@ Q12 à Q20 sont exigés chacun. `missing` compte des questions, jamais des
 composantes (sens de la consigne de synthèse) : un item 1 entièrement vide
 compte ses onze sous-items, et un sous-item retiré quand un autre est noté
 n'est pas une question manquante. Une valeur non numérique compte comme
-manquante, comme dans le moteur `sum`.
+manquante, comme dans le moteur `sum`, item 1 compris (jugé sur ses seules
+valeurs numériques).
 
 **§2 — Maximum.** `maxTotal` reste 100. Le moteur plafonne à 99,9 parce que
 la fiche du cabinet multiplie l'item 1 par 3,3 là où Bennett multiplie par
 3,33 : écart consigné, non corrigé (acte clinique distinct).
 
-**§3 — Défaut consigné.** Quand une composante manque — par exemple Q14,
-laissé vide par une personne sans emploi —, le moteur additionne celles qui
-restent, sans correction 10/x, et sert une bande sur un total tiré vers le
-bas (`DC-24`) ; seule la bande du zéro exige la passation entière.
-Constaté dans le code, aucune occurrence observée. Sa correction — retirer
+**§3 — Défaut consigné.** Une composante entièrement absente (l'item 1, Q12,
+Q13, ou les sept EVA ensemble) rend déjà le total nul, sans bande. Mais
+quand une partie seulement des EVA Q14 à Q20 manque — par exemple Q14,
+laissé vide par une personne sans emploi —, le moteur additionne les EVA
+restantes, sans correction 10/x, et sert une bande sur un total tiré vers
+le bas (`DC-24`) ; seule la bande du zéro exige la passation entière. De
+même, une valeur non numérique propage NaN au total ; la route de
+soumission la refuse pour une passation nouvelle. Constaté dans le code,
+aucune occurrence observée. Sa correction — retirer
 la bande ou appliquer 10/x — appelle une décision propre. Elle aura deux
 points à traiter :
 - la bande du zéro exige vingt questions sur vingt, alors que `missing`
