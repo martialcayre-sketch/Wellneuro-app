@@ -63,10 +63,11 @@ lignes neuves prêtes à reprendre.
   74:926), JCQ 1 à 8 semaines (Choi et al. 2014, Ergonomics 57:897-911),
   Bristol 7,76 jours (Parés et al. 2009, Rev Esp Enferm Dig 101:312-316).
   Ces sources ne sont pas encore au registre. Ensuite : D-xxx amendant D-180
-  §3, re-signature de `ORIENTATION_RULES_V1`, lot de la file B.
+  §3, re-signature de `ORIENTATION_RULES_V1`, lot de la file A.
 - **Ligne neuve — `DC-29`, graduation à dicter** (D-426 §2) : niveaux et
   critère d'indépendance, puis D-xxx amendant D-103 et D-041, lot de la file
-  B.
+  A (code hors biologie, `PLAN_WELLNEURO.md` règle 5 ; routage corrigé sur
+  la revue Copilot de #1830, comme pour d46 et d57).
 - **Ligne neuve — Epworth et MFI-20 dans « Mon équilibre »** (D-425 §4 a) :
   besoin, groupe, poids, sous-scores du MFI-20 (aucun score global au
   catalogue ; quatre dimensions en français), niveau de preuve (D-424 §5) ;

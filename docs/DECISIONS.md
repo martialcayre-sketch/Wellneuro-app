@@ -38,13 +38,15 @@ sous-estimer la concordance ; `0617`). Écartée : une autre valeur.
 
 **§2 — `DC-29` : une graduation à dicter.** La recherche confirme [[D-103]] :
 aucune graduation publiée par nombre de sources. Lawlor et al. 2016 (`0618`)
-et Gutierrez et al. 2025 (`0619`) tiennent deux sources pour indépendantes
-quand leurs biais sont sans lien ; Balshem et al. 2011 (`0620`) : GRADE
-gradue un corps de preuves en quatre niveaux, jamais un nombre de sources.
-Le responsable choisit de dicter lui-même la graduation, au titre d'un
-arbitrage WellNeuro nommé comme tel. Ses niveaux viendront dans une décision
-suivante, qui amendera [[D-103]] et [[D-041]], avec un lot de la file B sous
-`web/src/lib/clinical/`. Jusque-là, rien ne change. Écartés : garder la forme
+et Gutierrez et al. 2025 (`0619`) décrivent la triangulation : des résultats
+issus d'approches dont les biais sont sans lien entre eux renforcent une
+conclusion ; ils ne définissent pas l'indépendance de deux sources (précision
+de la revue Copilot de #1830). Balshem et al. 2011 (`0620`) : GRADE gradue un
+corps de preuves en quatre niveaux, jamais un nombre de sources. Le
+responsable choisit de dicter lui-même la graduation, au titre d'un arbitrage
+WellNeuro nommé comme tel. Ses niveaux viendront dans une décision suivante,
+qui amendera [[D-103]] et [[D-041]], avec un lot de la file A (code hors
+biologie) sous `web/src/lib/clinical/`. Jusque-là, rien ne change. Écartés : garder la forme
 vide sans suite ; un critère d'indépendance seul, sans graduation.
 
 **§3 — Suites.** Ligne D/45 : soldée pour la borne ; `DC-29` passe à une
