@@ -56,6 +56,25 @@ describe('QIF — compte de complétude (D-421)', () => {
     expect(s.missingIds).toEqual([...FONCTION, ...AUTRES.slice(1)]);
   });
 
+  it('forme persistée vide ou non numérique : la question manque', () => {
+    for (const vide of ['', null, 'abc']) {
+      const s = qif({ ...reponses(), Q14: vide as any });
+      expect(s.missing).toBe(1);
+      expect(s.missingIds).toEqual(['Q14']);
+    }
+  });
+
+  it('total nul avec un sous-item retiré : recueil complet, mais aucune bande (zéro à 20 sur 20, D-421 §3)', () => {
+    const r: Record<string, number> = {};
+    for (const id of FONCTION) r[id] = 0;
+    delete r.Q5;
+    Object.assign(r, { Q12: 7, Q13: 0, Q14: 0, Q15: 0, Q16: 0, Q17: 0, Q18: 0, Q19: 0, Q20: 0 });
+    const s = qif(r);
+    expect(s.total).toBe(0);
+    expect(s.missing).toBe(0);
+    expect(s.interpretation).toBeNull();
+  });
+
   it('le maximum reste 100, et la bande d’un total incomplet est inchangée (défaut consigné, D-421)', () => {
     const sansQ14 = qif(reponses(['Q14']));
     expect(sansQ14.maxTotal).toBe(100);

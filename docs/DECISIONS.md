@@ -36,7 +36,8 @@ moteurs à score global. L'item 1 est mesuré dès qu'un de Q1 à Q11 est noté 
 Q12 à Q20 sont exigés chacun. `missing` compte des questions, jamais des
 composantes (sens de la consigne de synthèse) : un item 1 entièrement vide
 compte ses onze sous-items, et un sous-item retiré quand un autre est noté
-n'est pas une question manquante.
+n'est pas une question manquante. Une valeur non numérique compte comme
+manquante, comme dans le moteur `sum`.
 
 **§2 — Maximum.** `maxTotal` reste 100. Le moteur plafonne à 99,9 parce que
 la fiche du cabinet multiplie l'item 1 par 3,3 là où Bennett multiplie par
@@ -47,11 +48,20 @@ laissé vide par une personne sans emploi —, le moteur additionne celles qui
 restent, sans correction 10/x, et sert une bande sur un total tiré vers le
 bas (`DC-24`) ; seule la bande du zéro exige la passation entière.
 Constaté dans le code, aucune occurrence observée. Sa correction — retirer
-la bande ou appliquer 10/x — appelle une décision propre.
+la bande ou appliquer 10/x — appelle une décision propre. Elle aura deux
+points à traiter :
+- la bande du zéro exige vingt questions sur vingt, alors que `missing`
+  vaut 0 dès que les dix composantes sont mesurées : un total nul, avec un
+  sous-item retiré, rend un recueil complet sans bande ;
+- chez une personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la
+  correction 10/x. Sous §1, elles manquent, et la passation restera
+  incomplète pour l'entrée du QIF au registre de [[D-406]] §2.
 
 **§4 — Effets.** Le badge existant « N manquant(s) » de la fiche patient et
 le compte de l'export du dossier lisent désormais le QIF ; la synthèse
-reçoit deux champs déjà décrits par sa consigne. Le QIF n'entre pas dans
+reçoit `missing`, décrit par sa consigne, et `missingIds`, que les moteurs
+`sum` envoient déjà sans y être décrit (aucune montée de version de la
+consigne). Le QIF n'entre pas dans
 l'équilibre : ni `versionScore` ni protocole touchés.
 
 ### D-420 — DASS-21 (`Q_STR_04`) au registre de comparaison de D-406 §2 : total brut des trois sous-échelles (0 à 63), défini par ses auteurs ; complet à sept items sur sept par axe ; comparable depuis le 2026-08-11

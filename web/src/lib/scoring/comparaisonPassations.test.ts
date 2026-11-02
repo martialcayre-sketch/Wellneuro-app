@@ -5,6 +5,7 @@ vi.mock('./passationsNonInterpretables', () => ({
     id === 'Q_INF_01' && date.toISOString().startsWith('2026-08-01') ? 'motif simulé' : null,
 }));
 
+import { calculateScore } from '@/lib/questions';
 import {
   COMPARABLE_DEPUIS,
   comparerPassations,
@@ -101,6 +102,19 @@ describe('comparerPassations (D-406)', () => {
       // Un item sans réponse sur un axe : Q27 de la FAQ le tolérerait, D-420 non.
       expect(comparerPassations([dass('2026-09-01T08:00:00Z', 30, 6), dass('2026-10-01T08:00:00Z', 24)], null).nonComparees[0].motif).toBe('incomplete');
       expect(comparerPassations([dass('2026-08-10T08:00:00Z', 30), dass('2026-10-01T08:00:00Z', 24)], null).nonComparees[0].motif).toBe('version_non_etablie');
+    });
+
+    it('DASS-21 (D-420) : la sortie réelle du moteur, entière puis à 6 sur 7 sur un axe', () => {
+      const ids = Array.from({ length: 21 }, (_, i) => `Q${String(i + 1).padStart(3, '0')}`);
+      const reel = (date: string, valeur: number, sauf?: string) => {
+        const scores: any = calculateScore('Q_STR_04', Object.fromEntries(ids.filter(id => id !== sauf).map(id => [id, valeur])));
+        return p(date, scores.total, { idQuestionnaire: 'Q_STR_04', titre: 'DASS-21' }, scores);
+      };
+      const { paires } = comparerPassations([reel('2026-09-01T08:00:00Z', 2), reel('2026-10-01T08:00:00Z', 1)], null);
+      expect(paires).toHaveLength(1);
+      expect(paires[0]).toMatchObject({ a: { score: 42 }, b: { score: 21 }, ecart: -21, maximum: null });
+      const r = comparerPassations([reel('2026-09-01T08:00:00Z', 2, 'Q003'), reel('2026-10-01T08:00:00Z', 1)], null);
+      expect(r.nonComparees[0].motif).toBe('incomplete');
     });
 
     it('version non établie : une passation antérieure à la date du registre', () => {

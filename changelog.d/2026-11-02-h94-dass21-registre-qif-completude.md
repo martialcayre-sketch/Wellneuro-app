@@ -11,7 +11,8 @@
   - l'item 1 est mesuré dès qu'une de ses onze tâches est notée ;
   - Q12 à Q20 sont exigés chacun.
 
-  Le total, le maximum (100) et les bandes ne changent pas. Sont consignés
+  Une valeur non numérique compte comme manquante. Le total, le maximum
+  (100) et les bandes ne changent pas. Sont consignés
   sans être corrigés : le total incomplet sans correction 10/x, sur lequel
   une bande reste servie, et le facteur 3,3 au lieu de 3,33. L'entrée du
   QIF au registre de comparaison est une décision à part, après le
