@@ -33,6 +33,7 @@ import { LienTransmissionCompteRendu } from '@/components/patient-companion/Lien
 import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
 import { LienDepotDocuments } from '@/components/patient-companion/LienDepotDocuments';
 import { LienFicheRenseignements } from '@/components/physio-traitements/LienFicheRenseignements';
+import { useEtatsSondes } from '@/components/patient/autres-espaces/entreesAutresEspaces';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour, questionnairesRenvoyesDepuis, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
@@ -138,6 +139,10 @@ export default function QuestionnairesHubPage() {
   const [avantRequis, setAvantRequis] = useState(false);
   // Sous `WN_PORTAIL_CONDITIONS`, l'accueil requis présente les conditions seules (D-292 §3).
   const [accueilConditions, setAccueilConditions] = useState(false);
+  // L'état des dix sondes de « Autres espaces » remonte ici (lot L1 de l'audit
+  // « rails et menus », EP-04) ; le rendu ne s'en sert pas encore : la ligne
+  // reste plate jusqu'au regroupement de D-423 (L2).
+  const { rapporteurs: sondesAutresEspaces } = useEtatsSondes();
   // Garde-fou : ignorer une réponse tardive si le composant a été démonté
   // (navigation rapide) pendant que le fetch était en vol.
   const annuleRef = useRef(false);
@@ -457,28 +462,28 @@ export default function QuestionnairesHubPage() {
         {/* Même règle que le bilan : le lien ne paraît que si la surface est
             ouverte ET qu'une fiche au moins a été remise ([[D-251]] §8). C'est
             l'accès permanent ; la tâche « à lire », elle, vit au fil. */}
-        <LienFichesRemises token={token} />
+        <LienFichesRemises token={token} onSonde={sondesAutresEspaces.fiches} />
         {/* « Ma bibliothèque » ([[D-357]]) : sous son propre drapeau, au seul
             dossier majeur ; servie, elle remplace le lien des fiches. */}
-        <LienBibliotheque token={token} />
+        <LienBibliotheque token={token} onSonde={sondesAutresEspaces.bibliotheque} />
         {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
             son propre drapeau. */}
-        <LienCourrierMedecin token={token} />
+        <LienCourrierMedecin token={token} onSonde={sondesAutresEspaces.courrierMedecin} />
         {/* Le courrier à remettre au médecin avant un complément ciblé
             ([[D-345]]) : même règle, sous `WN_COURRIER_COMPLEMENT`. */}
-        <LienCourrierComplement token={token} />
+        <LienCourrierComplement token={token} onSonde={sondesAutresEspaces.courrierComplement} />
         {/* « Pour votre médecin » ([[D-307]] §3) : même règle, sous son propre
             drapeau ; le partage avec le médecin traitant doit être accordé. */}
-        <LienPourVotreMedecin token={token} />
+        <LienPourVotreMedecin token={token} onSonde={sondesAutresEspaces.pourVotreMedecin} />
         {/* La transmission d'un compte rendu d'analyses ([[D-269]]) : sous son
             propre drapeau, le lien n'existe que si la route répond. */}
-        <LienTransmissionCompteRendu token={token} />
+        <LienTransmissionCompteRendu token={token} onSonde={sondesAutresEspaces.compteRendu} />
         {/* Le dépôt d'un document ([[D-330]]) : sous son propre drapeau, le lien
             n'existe que si la route répond « ouvert ». */}
-        <LienDepotDocuments token={token} />
+        <LienDepotDocuments token={token} onSonde={sondesAutresEspaces.depot} />
         {/* La fiche de renseignements en lignes datées ([[D-335]]) : sous son
             propre drapeau, le lien n'existe que si la route répond « ouvert ». */}
-        <LienFicheRenseignements token={token} />
+        <LienFicheRenseignements token={token} onSonde={sondesAutresEspaces.renseignements} />
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>
@@ -487,7 +492,7 @@ export default function QuestionnairesHubPage() {
         </a>
         {/* « Mes échanges » ([[D-293]]) : sous son propre drapeau, le lien
             n'existe que si la route répond « ouvert ». */}
-        <LienMesEchanges token={token} />
+        <LienMesEchanges token={token} onSonde={sondesAutresEspaces.echanges} />
         {/* ICI, et non dans « Mon accompagnement » : ce dernier est replié et
             placé après un retour anticipé qui exige un protocole diffusé — un
             patient sans protocole n'y verrait jamais ce lien. Le composant se
@@ -503,7 +508,7 @@ export default function QuestionnairesHubPage() {
             jamais le patient n'est invité à DIRE ce qui compte pour lui. Cela
             appartient au fil du jour — une tâche qui paraît quand elle est due
             et s'en va quand elle est faite —, pas à une navigation permanente. */}
-        <LienDossierDeuxVoix token={token} />
+        <LienDossierDeuxVoix token={token} onSonde={sondesAutresEspaces.dossier} />
       </nav>
 
       {/*

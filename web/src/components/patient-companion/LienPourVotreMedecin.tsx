@@ -12,7 +12,7 @@ import { TITRE_DOCUMENT_MEDECIN } from '@/components/patient/document-medecin/te
 // FAIL-CLOSED : tant que la sonde n'a pas répondu oui aux deux, le lien
 // n'existe pas.
 
-export function LienPourVotreMedecin({ token }: { token: string }) {
+export function LienPourVotreMedecin({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -21,14 +21,20 @@ export function LienPourVotreMedecin({ token }: { token: string }) {
       try {
         const res = await fetch('/api/portail/document-medecin?interrupteur=1');
         const data = (await res.json()) as { ok?: boolean; ouvert?: boolean; disponible?: boolean };
-        if (vivant && res.ok && data.ok === true && data.ouvert === true && data.disponible === true) setVisible(true);
+        const ouvert = res.ok && data.ok === true && data.ouvert === true && data.disponible === true;
+        if (!vivant) return;
+        if (ouvert) setVisible(true);
+        onSonde?.(ouvert);
       } catch {
         // Silence délibéré, même motif que `LienCourrierMedecin`.
+        if (vivant) onSonde?.(false);
       }
     })();
     return () => {
       vivant = false;
     };
+    // `onSonde` est lu au montage seulement, comme la sonde elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;

@@ -20,7 +20,7 @@ import { TITRE_ESPACE } from '@/components/patient/fiches-assiette/textesFiches'
 // de la bibliothèque le remplace (arbitrage du 2026-10-25). Même sonde, même
 // réponse : les deux liens ne se contredisent jamais.
 
-export function LienFichesRemises({ token }: { token: string }) {
+export function LienFichesRemises({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -29,16 +29,20 @@ export function LienFichesRemises({ token }: { token: string }) {
       try {
         const res = await fetch('/api/portail/fiches-assiette?interrupteur=1');
         const data = (await res.json()) as { ok?: boolean; ouvert?: boolean; fichesRemises?: boolean; bibliotheque?: boolean };
-        if (vivant && res.ok && data.ok === true && data.ouvert === true && data.fichesRemises === true && data.bibliotheque !== true) {
-          setVisible(true);
-        }
+        const ouvert = res.ok && data.ok === true && data.ouvert === true && data.fichesRemises === true && data.bibliotheque !== true;
+        if (!vivant) return;
+        if (ouvert) setVisible(true);
+        onSonde?.(ouvert);
       } catch {
         // Silence délibéré, même motif que `LienDossierDeuxVoix`.
+        if (vivant) onSonde?.(false);
       }
     })();
     return () => {
       vivant = false;
     };
+    // `onSonde` est lu au montage seulement, comme la sonde elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;

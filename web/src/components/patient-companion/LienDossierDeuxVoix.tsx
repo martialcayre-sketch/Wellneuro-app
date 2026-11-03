@@ -22,7 +22,7 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 // retour anticipé qui exige un protocole diffusé. Un patient sans protocole n'y
 // verrait jamais ce lien — l'écran serait livré et jamais ouvert.
 
-export function LienDossierDeuxVoix({ token }: { token: string }) {
+export function LienDossierDeuxVoix({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
   const [ouvert, setOuvert] = useState(false);
 
   useEffect(() => {
@@ -31,16 +31,22 @@ export function LienDossierDeuxVoix({ token }: { token: string }) {
       try {
         const res = await fetch('/api/portail/dossier?interrupteur=1');
         const data = (await res.json()) as { ok?: boolean; ouvert?: boolean };
-        if (vivant && res.ok && data.ok === true && data.ouvert === true) setOuvert(true);
+        const sondeOuverte = res.ok && data.ok === true && data.ouvert === true;
+        if (!vivant) return;
+        if (sondeOuverte) setOuvert(true);
+        onSonde?.(sondeOuverte);
       } catch {
         // Silence délibéré : la surface reste fermée. Afficher un message
         // d'erreur pour une surface que le patient ne connaît pas encore
         // l'informerait d'une panne sur une page qui n'existe pas pour lui.
+        if (vivant) onSonde?.(false);
       }
     })();
     return () => {
       vivant = false;
     };
+    // `onSonde` est lu au montage seulement, comme la sonde elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!ouvert) return null;
