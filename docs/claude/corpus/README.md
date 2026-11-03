@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 599 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 602 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 92 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 95 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -42,7 +42,10 @@ validation, deux études de différence minimale et deux pages d'ayants droit,
 borne des axes prioritaires et `DC-29` (D-426, D/45) : six sources de
 contexte, `WN-SRC-0615` à `0620`, sans extrait ingéré ;
 fenêtres de fraîcheur de l'orientation (D-430, D/46) : trois études de
-validation, sources de contexte, `WN-SRC-0622` à `0624`, sans extrait ingéré),
+validation, sources de contexte, `WN-SRC-0622` à `0624`, sans extrait ingéré ;
+seuils de la fatigue générale du MFI-20 (D-431, d57) : une source de normes,
+une étude qui en tire les seuils et des normes plus récentes, `WN-SRC-0625` à
+`0627`, sans extrait ingéré),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
