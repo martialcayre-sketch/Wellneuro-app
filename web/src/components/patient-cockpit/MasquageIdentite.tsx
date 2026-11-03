@@ -72,7 +72,7 @@ function canevas(largeur: number, hauteur: number): HTMLCanvasElement {
   return c;
 }
 
-async function rendrePdf(octets: ArrayBuffer): Promise<Page[] | 'trop_de_pages'> {
+async function rendrePdf(octets: ArrayBuffer): Promise<Page[] | { tropDePages: number }> {
   const pdfjs = await import('pdfjs-dist');
   pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
   // La TÂCHE porte `destroy()` : elle libère le document et son travailleur.
@@ -81,7 +81,7 @@ async function rendrePdf(octets: ArrayBuffer): Promise<Page[] | 'trop_de_pages'>
   const tache = pdfjs.getDocument({ data: new Uint8Array(octets), enableXfa: false });
   try {
     const document_ = await tache.promise;
-    if (document_.numPages > PAGES_MAX) return 'trop_de_pages';
+    if (document_.numPages > PAGES_MAX) return { tropDePages: document_.numPages };
     const pages: Page[] = [];
     for (let n = 1; n <= document_.numPages; n++) {
       const page = await document_.getPage(n);
@@ -149,6 +149,7 @@ export function MasquageIdentite({
   urlDocument,
   typeMime,
   urlEnregistrement,
+  urlRefus,
   idCompteRendu,
   dateNaissanceDossier,
   onEnregistre,
@@ -157,6 +158,11 @@ export function MasquageIdentite({
   urlDocument: string;
   typeMime: string;
   urlEnregistrement: string;
+  /**
+   * Où signaler un refus « plus de 20 pages » : le seul nombre de pages, pour
+   * le compter au journal (arbitrage du 2026-11-03). Absent : rien n'est signalé.
+   */
+  urlRefus?: string;
   idCompteRendu: string;
   /** La date de naissance du dossier, `AAAA-MM-JJ` ou `null` ([[D-342]] §3). */
   dateNaissanceDossier: string | null;
@@ -184,7 +190,16 @@ export function MasquageIdentite({
         const octets = await response.arrayBuffer();
         const rendues = typeMime === 'application/pdf' ? await rendrePdf(octets) : await rendreImage(octets, typeMime);
         if (annule) return;
-        if (rendues === 'trop_de_pages') {
+        if (!Array.isArray(rendues)) {
+          // Signalé sans attendre ni bloquer l'écran : un échec du signal ne
+          // change rien au refus affiché.
+          if (urlRefus) {
+            fetch(urlRefus, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ nombrePages: rendues.tropDePages }),
+            }).catch(() => {});
+          }
           setErreur(`Un compte rendu de plus de ${PAGES_MAX} pages ne peut pas être masqué ni lu.`);
           setEtat('erreur');
           return;
@@ -200,7 +215,7 @@ export function MasquageIdentite({
     return () => {
       annule = true;
     };
-  }, [urlDocument, typeMime]);
+  }, [urlDocument, typeMime, urlRefus]);
 
   useEffect(() => {
     pages.forEach((page, n) => {
