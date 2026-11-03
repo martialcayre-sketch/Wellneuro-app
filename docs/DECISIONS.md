@@ -39,6 +39,70 @@ comme avant.
 Aucun texte neuf, aucune migration. Bancs des cinq routes, chacun prouvé par
 mutation (route d'origine : de 2 à 3 échecs par banc).
 
+### D-431 — MFI-20 : les seuils de la fatigue générale sont au 75e percentile, non au 25e ; trois sources au registre ; notes déjà stockées laissées ; l'orientation reste une lecture du praticien ; rectifie D-425 §4 (d57)
+
+- Date : 2026-11-03
+- Statut : accepté — arbitrages du responsable du 2026-11-03 (questions à
+  options), en séance de gestes de la file D (n° 6, ligne d57). Un assistant
+  externe a été consulté sur les options. Il n'est source d'aucune valeur, et
+  ses citations du dépôt et ses références ont été vérifiées par la session
+  (code à fbd74707, Europe PMC, PubMed).
+- Domaine : la `note` du bloc `scoring` de `Q_SOM_07`
+  (`web/src/lib/questionnaires/sommeil.ts`) et son étape d'instantané
+  (`seuilsCatalogue.instantane.json`) ; `source_registry.json`.
+- Ne touche pas : aucun calcul, aucun seuil exécuté, aucune bande ; aucune
+  règle d'orientation ; aucune donnée en base ; « Mon équilibre » (ligne
+  d56 de la file D).
+- Contexte, lu au dépôt le 2026-11-03 : la note du scoring et [[D-425]] §4
+  rapportent les seuils de la fatigue générale (hommes ≥ 9 avant 40 ans,
+  ≥ 11 de 40 à 59 ans, ≥ 14 à partir de 60 ans ; femmes ≥ 11, ≥ 12, ≥ 14)
+  au « 25e percentile » de données allemandes, et disent leurs deux
+  références non vérifiées. La note voyage telle quelle dans le résultat du
+  score, stocké avec la passation (`scoresJson`) et affiché par la fiche
+  patient. Le moteur d'orientation reçoit l'âge (`orientationService.ts`,
+  `ageAnnees`), pas le sexe.
+
+**§1 — Rectification.** Singer et al. 2011 (table 1, texte intégral lu)
+publie les bornes du côté « non fatigué » : hommes ≤ 8, ≤ 10, ≤ 13 ; femmes
+≤ 10, ≤ 11, ≤ 13, réglées pour que 75 % de la population générale de même
+sexe et de même âge soit classée non fatiguée, et calculées sur les données
+brutes de Schwarz et al. 2003. Leur complément en scores entiers donne les
+seuils du catalogue. Le « 25e percentile » est une erreur : c'est le 75e.
+[[D-425]] reste écrite telle quelle ; la présente décision la rectifie. Les
+auteurs jugent eux-mêmes ce choix de percentile discutable.
+
+**§2 — Trois sources au registre**, aucune ne fondant de valeur nouvelle :
+`WN-SRC-0625` Schwarz, Krauss, Hinz 2003 (résumé seul lu : normes en
+population générale allemande, N = 2037 ; les seuils n'y ont pas été
+contrôlés) ; `WN-SRC-0626` Singer et al. 2011 (seuils de la table 1) ;
+`WN-SRC-0627` Westenberger et al. 2022 (normes plus récentes, N = 2509,
+percentiles par sexe et par âge en supplément).
+
+**§3 — La note du catalogue corrigée.** Elle cite le 75e percentile, la
+source qui publie les seuils et sa réserve ; nouvelle étape d'instantané de
+`Q_SOM_07` sous la présente décision. Les passations futures portent la note
+corrigée.
+
+**§4 — Notes déjà stockées : laissées.** La correction ne réécrit aucun
+résultat enregistré : le modèle des passations interdit tout UPDATE de leur
+contenu clinique (LOT-00, `schema.prisma`). Une seule passation de
+production porte l'ancienne note (compte par conteneur, lecture seule, le
+2026-11-03). Écartés : une migration de cette ligne (choisie d'abord, puis
+abandonnée au vu du compte et de l'interdit) ; afficher la note du catalogue
+à la place de la note stockée (changement d'affichage pour tous les
+questionnaires).
+
+**§5 — Orientation : lecture du praticien, transitoire.** Aucun déclencheur
+n'est posé sur le MFI-20, et aucune passation n'est requalifiée en « fatigue
+significative ». [[D-425]] §4 b reste ouverte. Pour la reprendre, il faut un
+claim qui relie une fatigue mesurée à une cible à proposer, un seuil validé
+pour cet usage, et le sexe au contrat de l'orientation si le seuil en
+dépend. Écartés pour l'heure : les seuils de Singer et al. 2011 (sexe absent,
+percentile jugé discutable par ses auteurs) ; les normes de 2022 (percentile
+déclencheur sans source).
+
+**§6 — Suites.** File D : la ligne d57 reste ouverte pour le §5.
+
 ### D-430 — Fenêtres de fraîcheur de l'orientation : une par instrument, quinze valeurs arbitrées par le responsable, aucune source ne les fonde ; refus d'une table incomplète ; amende D-180 point 3 (D/46)
 
 - Date : 2026-11-02
@@ -237,6 +301,48 @@ enregistrée garde la bande stockée avec elle (`interpretation`,
 `scoresJson`), affichée à la fiche, à l'export et à la synthèse. Leur
 nombre n'a pas été compté en production : « aucune occurrence observée »
 ([[D-421]] §3) vaut constat de code, pas lecture datée de la base.
+
+### D-427 — Audit 3, lot Q3 quinquies : un dossier désactivé reçoit son propre refus sur les trois routes d'assignation ; sur un suivi clôturé, « Débloquer » est grisé et le motif écrit d'emblée
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 sur les restes
+  du lot Q3 quater (liste commune, `20261102-1300-g` et `20261102-1301-g`).
+  Précise [[D-422]] §2.
+- Domaine : routes d'assignation — création (`POST`) et déblocage (`PATCH`)
+  de `/api/praticien/assignations`, rappel
+  (`POST /api/praticien/assignations/relance`) ; dossier patient
+  (`FichePatientPanel`, blocs « corrections » et « échues ») ;
+  `refusDossierFerme` (`lib/patient/cycleDeVie.ts`), dont seul le type de la
+  raison se resserre.
+- Ne touche pas : `schema.prisma`, aucune migration ; les autres routes
+  praticien, qui restent en l'état ; le Fil ; le portail ; les textes, tous
+  existants.
+
+**§1 — Le dossier désactivé a son propre refus sur les trois routes
+d'assignation.** Création, déblocage et rappel répondent, pour un dossier
+qui n'accepte plus d'envoi, le refus de `refusDossierFerme` : 409,
+`dossier_desactive` et « Ce dossier est désactivé : rien de nouveau ne peut y
+être enregistré. Réactivez le dossier pour reprendre. » pour un dossier
+désactivé ; `dossier_cloture` et `MESSAGE_DOSSIER_CLOS` pour un suivi
+clôturé. La clôture prime (`phaseDossier`) : un dossier clos puis désactivé
+reste « clos ». La création répondait jusqu'ici 404 « Patient introuvable »
+pour un dossier désactivé, que le praticien avait sous les yeux ; le
+déblocage et le rappel répondaient « Rouvrez le suivi » pour un suivi qui
+n'était pas clos ([[D-422]] §2, dette t11). Un dossier absent ou d'un autre
+praticien reste « introuvable ». L'ordre des refus et les gardes
+d'écriture de [[D-422]] §2 ne changent pas.
+
+**§2 — Sur un suivi clôturé, le dossier le dit avant le clic.** Dans les
+blocs « Demandes de correction » et « Jamais rempli, échéance dépassée » de
+`FichePatientPanel`, le bouton « Débloquer » est grisé et `MESSAGE_DOSSIER_CLOS`
+est écrit sous chaque ligne d'emblée, relié au bouton
+(`aria-describedby`). Tant que la fiche du dossier n'est pas lue, le bouton
+reste offert : la route refuse. Un dossier désactivé non clos garde le
+bouton : son refus s'écrit au clic, tel que la route l'écrit
+([[D-422]] §2).
+
+Aucun texte neuf, aucune migration. Bancs des trois routes et des deux
+blocs, chacun prouvé par mutation.
 
 ### D-426 — `MAX_AXES_PRIORITAIRES` : la borne de 3 confirmée comme arbitrage, aucune source ne la fonde ; `DC-29` : une graduation de la convergence à dicter par le responsable, arbitrage WellNeuro nommé comme tel (D/45)
 

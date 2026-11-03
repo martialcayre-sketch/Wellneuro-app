@@ -13,7 +13,12 @@ import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import {
+  RAISON_DOSSIER_CLOS,
+  RAISON_DOSSIER_DESACTIVE,
+  accepteNouvelEnvoi,
+  refusDossierFerme,
+} from '@/lib/patient/cycleDeVie';
 import { isEcheanceObligatoireEnabled } from '@/lib/patient/featureFlag';
 import { STATUTS_SYNTHESE_VALIDEE } from '@/lib/clinical-engine/preconditionsT0';
 import {
@@ -55,6 +60,9 @@ export type CreateAssignationResponse = {
     // Suivi clôturé : distinct de `patient_not_found`, sinon le praticien
     // chercherait un dossier disparu au lieu de le rouvrir.
     | 'dossier_cloture'
+    // Dossier désactivé ([[D-427]]) : son propre refus, plus « introuvable »
+    // sur un dossier que le praticien a sous les yeux.
+    | typeof RAISON_DOSSIER_DESACTIVE
     // Second rideau sans échéance, drapeau `WN_ECHEANCE_OBLIGATOIRE` allumé.
     // Distinct d'`invalid_payload` : la date n'est pas malformée, elle MANQUE
     // là où le dossier l'exige — l'écran doit pouvoir le dire autrement.
@@ -121,7 +129,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       where: { email: emailPatient, ...filtrePatientsDuPraticien(emailSession) },
     });
 
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return NextResponse.json(
         {
           success: false,
@@ -134,9 +142,12 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
 
     // Dossier au suivi clôturé : on n'assigne plus rien. Le refus est ici,
     // dans la route, et non dans l'écran — sinon un appel direct le contourne.
+    // Désactivé : son propre refus ([[D-427]]), plus « introuvable » ; la
+    // clôture prime (`phaseDossier`).
     if (!accepteNouvelEnvoi(patient)) {
+      const refus = refusDossierFerme(patient);
       return NextResponse.json(
-        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { success: false, reason: refus.raison, error: refus.message },
         { status: 409 }
       );
     }
@@ -277,7 +288,8 @@ export type PatchAssignationResponse = {
     | typeof RAISON_QUESTIONNAIRE_SUSPENDU
     // [[D-422]] §2 : mêmes raisons et mêmes messages que la relance.
     | typeof RAISON_ASSIGNATION_ANNULEE
-    | typeof RAISON_DOSSIER_CLOS;
+    | typeof RAISON_DOSSIER_CLOS
+    | typeof RAISON_DOSSIER_DESACTIVE;
 };
 
 const RAISON_ASSIGNATION_ANNULEE = 'assignation_annulee';
@@ -288,15 +300,17 @@ const RAISON_ASSIGNATION_ANNULEE = 'assignation_annulee';
  * serait un leurre. Un suivi clos n'accepte plus d'envoi ; rouvrir sa saisie,
  * même pour une demande de correction, passe d'abord par la réouverture du
  * suivi. Mêmes refus que la relance, dans son ordre : le dossier d'abord,
- * l'assignation ensuite. `null` = rien ne s'y oppose.
+ * l'assignation ensuite. `null` = rien ne s'y oppose. Un dossier désactivé
+ * reçoit son propre refus ([[D-427]]).
  */
 function refusDeblocage(ass: {
   statut: string;
   patient: { actif: boolean; suiviClotureLe: Date | null };
 }): NextResponse<PatchAssignationResponse> | null {
   if (!accepteNouvelEnvoi(ass.patient)) {
+    const refus = refusDossierFerme(ass.patient);
     return NextResponse.json(
-      { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+      { success: false, reason: refus.raison, error: refus.message },
       { status: 409 }
     );
   }

@@ -5,6 +5,7 @@ import { FichePatientPanel } from './FichePatientPanel';
 import { compteRenduDemande, estOngletFiche, estPhaseFiche, type PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
+import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 // La fiche MÉMORISE l'onglet et la phase en localStorage (par patient) : sans
 // purge entre les cas, un test qui navigue vers « Trajectoire » ferait
@@ -2717,6 +2718,61 @@ describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
       expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull(),
     );
     expect(screen.queryByText(/Déblocage impossible/i)).toBeNull();
+  });
+
+  // [[D-427]] : sur un suivi clôturé, « Débloquer » est grisé et le refus est
+  // écrit d'emblée sous la ligne, sans clic — dans les deux blocs.
+  const SUIVI_CLOS = { suiviClotureLe: '2026-10-01T10:00:00.000Z' };
+  const BLOCS = [
+    { nom: 'échues', options: { assignationEchue: true }, region: /Questionnaires jamais remplis dont l’échéance est dépassée/i },
+    { nom: 'corrections', options: { assignationsModif: true }, region: /Demandes de correction de questionnaire en attente/i },
+  ] as const;
+
+  for (const bloc of BLOCS) {
+    it(`suivi clôturé, bloc ${bloc.nom} : bouton grisé et motif écrit d’emblée`, async () => {
+      const fetchMock = await rendreFiche({ ...bloc.options, dossier: SUIVI_CLOS, phaseDemandee: 'patient' });
+      const section = await screen.findByRole('region', { name: bloc.region });
+      const motif = await within(section).findByText(MESSAGE_DOSSIER_CLOS);
+      const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(true);
+      expect(bouton.getAttribute('aria-describedby')).toBe(motif.id);
+      // Aucun déblocage ne part : le bouton grisé n'appelle pas la route.
+      fireEvent.click(bouton);
+      expect(
+        fetchMock.mock.calls.some(appel => ((appel as unknown[])[1] as RequestInit | undefined)?.method === 'PATCH'),
+      ).toBe(false);
+    });
+
+    it(`contrôle négatif — suivi ouvert, bloc ${bloc.nom} : bouton actif, aucun motif`, async () => {
+      await rendreFiche({ ...bloc.options, phaseDemandee: 'patient' });
+      const section = await screen.findByRole('region', { name: bloc.region });
+      const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(false);
+      expect(bouton.getAttribute('aria-describedby')).toBeNull();
+      expect(within(section).queryByText(MESSAGE_DOSSIER_CLOS)).toBeNull();
+    });
+  }
+
+  // [[D-427]] §2 : seul le suivi clôturé grise le bouton. Un dossier désactivé
+  // non clos, ou une fiche pas encore lue, le gardent offert — la route refuse.
+  it('dossier désactivé non clos : bouton actif, aucun motif d’emblée', async () => {
+    await rendreFiche({ assignationEchue: true, dossier: { actif: 'NON', suiviClotureLe: null }, phaseDemandee: 'patient' });
+    await screen.findByText(/dossier inactif/i);
+    const section = screen.getByRole('region', { name: BLOCS[0].region });
+    const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(false);
+    expect(within(section).queryByText(MESSAGE_DOSSIER_CLOS)).toBeNull();
+  });
+
+  it('fiche du dossier illisible : bouton offert, aucun motif d’emblée', async () => {
+    await rendreFiche({ assignationEchue: true, dossier: 'absent', phaseDemandee: 'patient' });
+    const section = await screen.findByRole('region', { name: BLOCS[0].region });
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').some(a => /n’a pas pu être lue/i.test(a.textContent ?? ''))).toBe(true),
+    );
+    const bouton = within(section).getByRole('button', { name: 'Débloquer' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(false);
+    expect(within(section).queryByText(MESSAGE_DOSSIER_CLOS)).toBeNull();
   });
 
   // [[D-422]] §1, en défense : un serveur antérieur au lot servirait encore
