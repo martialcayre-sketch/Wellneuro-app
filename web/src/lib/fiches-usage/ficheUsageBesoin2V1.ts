@@ -27,7 +27,10 @@ import {
 // libellés vivent en base, validés par acte (D-314 §3), et ne touchent jamais
 // le dépôt, qui est public ([[D-251]] §4).
 //
-// ÉCRITE ET SIGNÉE LE 2026-11-01 ([[D-401]]). Écrire la structure
+// ÉCRITE ET SIGNÉE LE 2026-11-01 ([[D-401]]) pour ses trente premières fiches ;
+// RÉÉCRITE LE 2026-11-03 pour la re-signature de B9 et B12 ([[D-417]] §4 :
+// huit fiches et l'axe du niveau de mesure), qui attend la déclaration du
+// responsable — verrou éteint jusque-là (métadonnées). Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
 // nommée par lui, arbitrage 7). Matière : les positions d'expert signées des
@@ -78,10 +81,11 @@ export type FicheUsageStructure = {
   statutUsage: StatutUsage;
   /**
    * Le niveau de mesure (DC-45, [[D-417]] §2), quatrième axe distinct des trois
-   * de D-266 §3. OBLIGATOIRE depuis la re-signature de B9 et B12 ([[D-417]] §4,
-   * arbitrage du 2026-11-03 : toutes les fiches de la structure) : valeur
-   * pré-remplie par une règle écrite sur la surface, puis relue par le
-   * responsable avant sa déclaration.
+   * de D-266 §3. Rendu OBLIGATOIRE en vue de la re-signature de B9 et B12
+   * ([[D-417]] §4, arbitrage du 2026-11-03 : toutes les fiches de la
+   * structure), qui n'est pas encore déclarée : valeur pré-remplie par une
+   * règle écrite sur la surface, puis relue par le responsable avant sa
+   * déclaration.
    */
   niveauMesure: NiveauMesure;
   /** `POP_…` — obligatoire (DC-14, [[D-095]]) : une population déclarée, jamais un silence. */
