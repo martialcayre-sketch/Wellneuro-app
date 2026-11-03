@@ -28,9 +28,9 @@ import {
 // le dépôt, qui est public ([[D-251]] §4).
 //
 // ÉCRITE ET SIGNÉE LE 2026-11-01 ([[D-401]]) pour ses trente premières fiches ;
-// RÉÉCRITE LE 2026-11-03 pour la re-signature de B9 et B12 ([[D-417]] §4 :
-// huit fiches et l'axe du niveau de mesure), qui attend la déclaration du
-// responsable — verrou éteint jusque-là (métadonnées). Écrire la structure
+// RE-SIGNÉE LE 2026-11-03 pour B9 et B12 ([[D-417]] §4 : huit fiches et l'axe
+// du niveau de mesure), sur la déclaration du responsable (métadonnées).
+// Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
 // nommée par lui, arbitrage 7). Matière : les positions d'expert signées des
@@ -81,11 +81,11 @@ export type FicheUsageStructure = {
   statutUsage: StatutUsage;
   /**
    * Le niveau de mesure (DC-45, [[D-417]] §2), quatrième axe distinct des trois
-   * de D-266 §3. Rendu OBLIGATOIRE en vue de la re-signature de B9 et B12
+   * de D-266 §3. OBLIGATOIRE depuis la re-signature de B9 et B12
    * ([[D-417]] §4, arbitrage du 2026-11-03 : toutes les fiches de la
-   * structure), qui n'est pas encore déclarée : valeur pré-remplie par une
-   * règle écrite sur la surface, puis relue par le responsable avant sa
-   * déclaration.
+   * structure) : valeur pré-remplie par une règle écrite sur la surface
+   * (acte NABM de groupe ⇒ exploration fonctionnelle), relue et retenue
+   * telle quelle par le responsable avant sa déclaration.
    */
   niveauMesure: NiveauMesure;
   /** `POP_…` — obligatoire (DC-14, [[D-095]]) : une population déclarée, jamais un silence. */
@@ -1244,12 +1244,12 @@ export type FichesUsageMetadata = {
 
 export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
   version: 'fiches-usage-besoin2-v1',
-  // Signée le 2026-11-01 ([[D-401]]), RÉÉCRITE le 2026-11-03 pour la
-  // re-signature de B9 et B12 ([[D-417]] §4) : verrou éteint jusqu'à la
-  // déclaration du responsable, rendue après lecture de la surface de
-  // signature ; la date et le sha n'en seront que la recopie ([[D-195]] §1).
-  validationExterne: false,
-  dateValidation: null,
+  // Signée le 2026-11-01 ([[D-401]]), RE-SIGNÉE le 2026-11-03 pour B9 et B12
+  // ([[D-417]] §4) sur la déclaration du responsable, rendue après lecture de
+  // la surface de signature, aucune case corrigée ([[D-195]] §1) : la date et
+  // le sha ci-dessous en sont la recopie.
+  validationExterne: true,
+  dateValidation: '2026-11-03T18:27:07.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0025-050', versionClaim: 'v1.0' },
@@ -1643,7 +1643,7 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
     { claimId: 'WN-CL-0582-001', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0582-002', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: null,
+  shaPerimetre: 'bb52d4752e3ea92c89806505c12ab7c2df2c1a618b4a06fbe1fdeebf4ccac926',
 };
 
 /**
