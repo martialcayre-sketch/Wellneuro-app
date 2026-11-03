@@ -578,6 +578,23 @@ Aucun lot ne promet de délai. Chaque lot s'arrête au constat du responsable av
 - Drapeau : non. Décision : L0. Validation : T1, T1 complet, T2.
 - Fin : rendu identique avant et après sur un dossier de test majeur, mineur et clos ; matrice épinglée par des bancs.
 
+#### Constat à l'écran de L1 (2026-11-03, Q23)
+Dev local sur le Mac, navigateur intégré. Base éphémère de `test:worktree --keep-db` (après un T2 vert), patients fictifs du seed : Sophie Nicola majeure avec un bilan consultable (`provisionBilanTransmis`), Jennifer Martin mineure (date de naissance passée à 2012), Michel Dogné majeur et clos (`suiviClotureLe` posé). Les drapeaux des dix liens, et les trois que le compte rendu exige, sont armés côté serveur, comme le registre les dit posés en production (bibliothèque comprise). « Avant » = `origin/main@8ae6c496`, « après » = la branche du lot, servis sur la même base. Mesures prises sur la `<nav aria-label="Autres espaces">` (`getBoundingClientRect`), à 1 024 px (colonne de 672 px) et à 390 px (colonne de 358 px).
+
+| Dossier | Liens servis | Lignes à 1 024 px | Hauteur à 1 024 px | Lignes à 390 px | Hauteur à 390 px | Avant / après |
+|---|---|---|---|---|---|---|
+| majeur ouvert | 8 : bilan, compte rendu, dépôt, renseignements, carnet, suivi, échanges, dossier | 4 | 239,2 px | 8 | 490,4 px | identiques |
+| mineur ouvert | 5 : compte rendu, renseignements, carnet, suivi, dossier ; écran des mineurs affiché | 3 | 176,4 px | 5 | 302,0 px | identiques |
+| majeur clos | 7 : compte rendu, dépôt, renseignements, carnet, suivi, échanges, dossier ; pas d'écran des mineurs | 4 | 239,2 px | 7 | 427,6 px | identiques |
+| majeur, maximum simulé | 12 : les treize emplacements moins les fiches, remplacées par la bibliothèque | 6 | 364,8 px | 12 | 741,6 px | identiques |
+
+- Rendu identique : même ordre, même nombre de liens, une seule classe sur tous les liens, `flex flex-wrap gap-3` sur la nav, avant comme après, dans chaque cas.
+- Le maximum est **simulé** pour cinq sondes de données seulement (fiches, bibliothèque, deux courriers, « Pour votre médecin ») : leurs réponses sont substituées dans le navigateur avant de remonter le hub par navigation client ; drapeaux, routes et autres sondes sont réels. Aucune remise de fiche ni de courrier n'a été écrite en base.
+- Hauteur : un lien mesure 50,8 px, non 48 (`min-h-12` plus l'interligne du libellé). Le plafond calculé d'EP-03 (708 px pour 12 liens) est donc dépassé à 390 px : 741,6 px mesurés, un lien par ligne, aucun libellé sur deux lignes (« Transmettre un compte rendu d’analyses » tient sur une ligne à 358 px). À 1 024 px, deux ou trois liens par ligne.
+- Écart 13 / 12 / 15 : 13 emplacements au code, 12 servis au plus, constaté (fiches et bibliothèque ne paraissent jamais ensemble). Quinze n'est atteint dans aucun état ; « treize servis le 2026-11-01 » (PLAN:2684) n'est pas reproduit. L'hypothèse « 13 plus les deux portes retirées le 2026-09-12 » reste non vérifiée.
+- Matrice d'EP-20 confirmée à l'écran : le mineur perd dépôt, échanges et bibliothèque (409) ; le dossier clos garde les liens de son âge, aucune sonde ne lit la clôture. Un mineur clos garderait donc les liens d'un mineur sans l'écran des mineurs (épinglé au banc, non constaté à l'écran).
+- Constat incident, hors périmètre : le dossier clos de test affiche encore au fil « Commencer « Questionnaire… » » (assignations laissées par les E2E sur ce dossier) ; le hub ne vide les assignations que pour un non-majeur (questionnaires/page.tsx:275-281). À trier séparément.
+
 ### L2 — Regroupement dans le hub
 - Périmètre : le bloc `page.tsx:442-507` devient une ancre et des groupes à étiquette visible, dans l'ordre de L0 ; groupe sans lien ouvert sans étiquette ; aucun repli ; libellés d'entrée inchangés ; aucune route ni donnée.
 - Bancs : ordre exact des groupes et des entrées (modèle `SidebarRail.test.tsx:107`) ; groupe vide sans étiquette ; chaque lien une seule fois ; aucun `bg-rail` ni `data-theme="praticien"` ; « Mon parcours » reste un seul heading.

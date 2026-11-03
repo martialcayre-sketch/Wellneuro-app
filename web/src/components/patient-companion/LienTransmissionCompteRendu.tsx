@@ -11,7 +11,7 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 //
 // FAIL-CLOSED : tant que la route n'a pas répondu `ok`, le lien n'existe pas.
 
-export function LienTransmissionCompteRendu({ token }: { token: string }) {
+export function LienTransmissionCompteRendu({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -20,14 +20,20 @@ export function LienTransmissionCompteRendu({ token }: { token: string }) {
       try {
         const res = await fetch('/api/portail/comptes-rendus', { cache: 'no-store' });
         const data = (await res.json()) as { ok?: boolean };
-        if (vivant && res.ok && data.ok === true) setVisible(true);
+        const ouvert = res.ok && data.ok === true;
+        if (!vivant) return;
+        if (ouvert) setVisible(true);
+        onSonde?.(ouvert);
       } catch {
         // Silence délibéré, même motif que `LienCourrierMedecin`.
+        if (vivant) onSonde?.(false);
       }
     })();
     return () => {
       vivant = false;
     };
+    // `onSonde` est lu au montage seulement, comme la sonde elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;

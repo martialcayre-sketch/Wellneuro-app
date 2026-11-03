@@ -11,7 +11,7 @@ import { LIEN_MES_ECHANGES } from '@/components/patient/mes-echanges/textesMesEc
 //
 // FAIL-CLOSED : tant que la sonde n'a pas répondu « ouvert », le lien n'existe pas.
 
-export function LienMesEchanges({ token }: { token: string }) {
+export function LienMesEchanges({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -20,14 +20,20 @@ export function LienMesEchanges({ token }: { token: string }) {
       try {
         const res = await fetch('/api/portail/echanges?interrupteur=1');
         const data = (await res.json()) as { ok?: boolean; ouvert?: boolean };
-        if (vivant && res.ok && data.ok === true && data.ouvert === true) setVisible(true);
+        const ouvert = res.ok && data.ok === true && data.ouvert === true;
+        if (!vivant) return;
+        if (ouvert) setVisible(true);
+        onSonde?.(ouvert);
       } catch {
         // Silence délibéré, même motif que `LienFichesRemises`.
+        if (vivant) onSonde?.(false);
       }
     })();
     return () => {
       vivant = false;
     };
+    // `onSonde` est lu au montage seulement, comme la sonde elle-même.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;
