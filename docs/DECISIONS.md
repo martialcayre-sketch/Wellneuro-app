@@ -6,6 +6,73 @@
 
 ## Décisions actives
 
+### D-434 — F05 (BP-12a) : la structure des fiches d'usage du besoin 2 est re-signée pour B9 et B12 — trente-huit fiches, le niveau de mesure obligatoire sur toutes, une seule re-signature ; applique D-417 §4
+
+- Date : 2026-11-03
+- Statut : accepté — arbitrages du responsable rendus en session le
+  2026-11-03, par questions à options (faits vérifiés, conséquence de chaque
+  réponse). Structure **re-signée le 2026-11-03** (`dateValidation`
+  2026-11-03T18:27:07.000Z, `shaPerimetre` = l'empreinte `bb52d475…ccac926`) :
+  déclaration du responsable rendue en session après lecture de la surface de
+  relecture, aucune case corrigée, consignée sur cette surface avant la
+  frappe ; l'outil n'a fait que recopier ([[D-195]] §1-3). Contre-revue Codex
+  de la surface avant la déclaration : deux écarts documentaires (P2),
+  corrigés ; aucun P0 ni P1.
+- Domaine : clinique — structure signée des fiches d'usage
+  (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`, chemin de release-db,
+  [[D-416]]) ; contrat de fraîcheur des claims épinglés et son négatif ;
+  plan, fiche F05.
+- Applique : [[D-417]] §2 et §4 ; [[D-401]] §2 (les douze arbitrages valent
+  pour les huit fiches neuves) ; [[D-314]] §5, §8 et §10 ; DC-45.
+- **Ne touche pas** : `schema.prisma`, aucune migration ; aucun texte de
+  fiche, aucun libellé, aucune valeur, aucun seuil, aucune dose ; aucun claim ;
+  aucun drapeau ; aucune surface patient ; les positions d'expert, privées.
+
+**§1 — Périmètre.** Les trente fiches de [[D-401]] et huit fiches neuves,
+`FU_B9B12_P1` à `P8`, une par position signée du dossier B9 et B12 (v0.2,
+clos le 2026-11-02). L'axe « niveau de mesure » est **obligatoire sur les
+trente-huit** : [[D-417]] §2 en pose une valeur par fiche, et son §4 écarte
+une re-signature dédiée des trente. Une seule re-signature, donc ; une fiche
+sans niveau empêche la signature (`niveau_mesure`). Fer P7 et P8 restent hors
+de la structure : aucun claim ne porte leurs passages, relu en production le
+2026-11-03 ([[D-401]] §2, arbitrage 4).
+
+**§2 — Hypothèses.** Le vocabulaire reste vide ; il entre avec le cadrage de
+BP-11 ([[D-401]] §2, arbitrage 6).
+
+**§3 — Le niveau de mesure, par une règle relue.** Pré-rempli selon une
+règle écrite sur la surface, retenue telle quelle par le responsable : une
+mesure dont l'acte de nomenclature est un acte de groupe est une
+« exploration fonctionnelle », les autres une « mesure standard ». Fer et
+vitamine D en `mesure_standard` ; zinc, magnésium érythrocytaire et les huit
+fiches B9 et B12 en `exploration_fonctionnelle` ; aucune en
+`marqueur_experimental`. Le cas du zinc a été soumis à part, et maintenu.
+Aujourd'hui aucun écran ne lit l'axe ; il réglera le degré de certitude
+présenté le jour où un lot l'affichera (DC-45).
+
+**§4 — Population.** Le libellé à venir de
+`POP_ENFANT_GROSSESSE_ALLAITEMENT` couvrira aussi le projet de grossesse :
+une position B9 et B12 la vise, et l'identifiant reste celui de [[D-401]]
+§2 (arbitrage 7). Aucun libellé de population n'existait en base au
+2026-11-03.
+
+**§5 — Ce qui en sort.** Trente-huit fiches, une question
+(`QC_EXPLORATION_BESOIN2`), cinq populations, aucune hypothèse, 391 claims
+distincts, dont un en `v1.1` ; `claimsSource` égale leur union. Les 391
+paires entrent au contrat de fraîcheur (`fiches_usage`) et à son négatif ;
+relues en production le 2026-11-03 : toutes `VALIDE`, actives, non
+remplacées, à leur version. L'empreinte change, donc les textes et libellés
+rédigés sur la structure précédente repasseraient « à relire » ([[D-314]]
+§5, §8) ; il n'y en avait aucun en base au 2026-11-03.
+
+**§6 — Application.** Le fichier est un chemin de release-db ([[D-416]]) :
+le déploiement attend une release-db approuvée par le responsable
+([[D-044]]), puis un constat par conteneur. Ensuite seulement s'ouvre le
+rayon 08 de la bibliothèque (D/23, arbitrage du 2026-11-03).
+
+- Conséquences : fragment `changelog.d/2026-11-03-d434-resignature-b9-b12.md` ;
+  journal F05 ; plan, §8 (ligne des fiches d'usage du besoin 2).
+
 ### D-432 — Audit 3, suite de Q3 quinquies : un dossier désactivé reçoit son propre refus sur cinq routes praticien de plus (pack, file d'envoi et son envoi, rappel de l'agenda de sommeil, consultation) ; précise D-427
 
 - Date : 2026-11-03
