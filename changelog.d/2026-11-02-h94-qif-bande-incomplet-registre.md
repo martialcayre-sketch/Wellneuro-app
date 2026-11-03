@@ -1,8 +1,10 @@
 ### File A, H94 : le QIF incomplet perd sa bande, le QIF entre au registre de comparaison (D-428, D-429, 2026-11-02)
 
-- **QIF, recueil incomplet (D-428).** Dès qu'une question manque, le
-  moteur garde le total partiel et son compte, mais ne sert plus de bande
-  d'interprétation (modèle D-014). Avant, une EVA manquante tirait le
+- **QIF, recueil incomplet (D-428).** Dès qu'une question manque au sens
+  de D-421 (`missing` > 0 ; un sous-item de l'item 1 retiré, quand un
+  autre est noté, n'en est pas une), le moteur ne sert plus de bande
+  d'interprétation (modèle D-014). Le total reste celui d'avant : partiel
+  si seules des EVA manquent, `null` si une composante entière manque. Avant, une EVA manquante tirait le
   total vers le bas sous une bande calibrée sur la forme complète, et une
   valeur non numérique tombait dans la bande « Maximum théorique ». La
   correction 10/x de Bennett 2005 n'est pas appliquée. La bande du zéro

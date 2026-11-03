@@ -6,7 +6,11 @@
   `.claude/worktrees/d281-lot3-portail`, partie de `origin/main` 845a900c
   (#1826), avancée par `--ff-only` à 63d0e8c0 (#1830) avant le premier
   commit (branche vide, aucune fusion).
-- Commits a42b18ce (lot), puis revue `wn-reviewer` et ce handoff.
+- Commits a42b18ce (lot), b6b1527e (revue `wn-reviewer`, ce handoff),
+  52a780e8 (fusion de `origin/main` 8d386376, #1832 et #1835, sur accord du
+  responsable ; conflit dans `docs/DECISIONS.md` seul, résolu par ordre
+  numérique), puis la revue CodeRabbit.
+- PR #1833.
 - PR du lot, une seule finalité : D-406 §7, seconde tranche (QIF).
 
 ## Objectif
@@ -57,7 +61,14 @@ incomplet) et faire entrer le QIF au registre de comparaison de D-406 §2,
 - T3 sur a42b18ce : Vitest vert (1706), E2E 302/303 — un rouge iPhone 13
   `mode-consultation-sans-chiffre.spec.ts:161` (tiroir non ouvert après
   activation du mode consultation ; API moquées, aucun lien avec le QIF).
-  T3 rejoué sur la tête suivante : résultat dans la PR.
+  T3 rejoué sur b6b1527e : vert (Vitest 1706, E2E 303/303).
+- #1833 sur b6b1527e : CI = 0, PR-Agent = 0 (constat « changelog absent »
+  écarté : le fragment est dans la PR) ; Copilot (T3 à confirmer) corrigé.
+  CodeRabbit, après quota levé : précision du changelog et du mapping
+  corrigée (`missing` > 0, total partiel ou `null`) ; noms d'auteurs
+  (Bennett, Perrot) à remplacer par WN-SRC écarté — auteurs publiés, déjà
+  nommés dans D-420, D-421 et le registre ; la règle d'identité vise les
+  patients, la forme opaque le versement de documents privés.
 
 ## Problèmes ouverts
 
