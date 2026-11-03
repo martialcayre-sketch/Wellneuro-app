@@ -26,6 +26,7 @@ Lot L1 de l'audit `docs/claude/propositions/2026-11-01-portail-rails-et-menus/` 
 - T1 (`npm run check`) vert après les éditions de code puis après la doc.
 - Suite Vitest entière : 936 fichiers, 15 749 bancs verts.
 - Trois mutations jouées puis annulées, toutes rouges : classe d'un lien, ordre échanges / dossier, sonde laxiste (`ouvert` ignoré).
+- Revue CodeRabbit de la PR (deux nitpicks, corrigés) : cas « 500 avec corps positif » ajouté à la table fail-closed ; banc de câblage `autresEspaces.cablage.test.tsx` (chaque `Lien*` reçoit le rapporteur de sa clé ; une permutation de deux props le rougit).
 - T2 (`npm run test:worktree -- --fast --keep-db`) vert en 7 min 10 s : Vitest 15 812, E2E 303 passés, 7 ignorés (Chromium + WebKit).
 - Constat à l'écran (Q23), avant (`origin/main@8ae6c496`) et après sur la même base éphémère : rendu identique dans les huit mesures. Chiffres au chapitre 11 de l'audit ; en bref :
   - majeur ouvert : 8 liens ; 239,2 px à 1 024 px ; 490,4 px à 390 px ;

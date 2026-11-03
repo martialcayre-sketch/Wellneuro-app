@@ -85,6 +85,9 @@ describe.each(CAS)('$cle — sonde fail-closed', ({ cle, Composant, url, ouvert,
     ['409 dossier hors majeur', 409, { ok: false, reason: 'hors_majeur', error: 'x' }],
     ['200 partiel', 200, partiel],
     ['500 panne serveur', 500, { ok: false, reason: 'server_error', error: 'x' }],
+    // Le statut HTTP compte autant que le corps : un 500 qui porterait le
+    // « oui » complet ne doit rien ouvrir (garde `res.ok` de chaque `Lien*`).
+    ['500 avec corps positif', 500, ouvert],
   ])('%s : aucun lien, onSonde(false)', async (_cas, status, corps) => {
     const json = repondre(status, corps);
     const onSonde = vi.fn();
