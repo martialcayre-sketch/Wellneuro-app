@@ -78,6 +78,7 @@ describe.skipIf(!ACTIF)('fiches d’usage — base réelle (empreintes, concurre
     usageDecisionnel: 'confirmer_hypothese' as const,
     securiteAdmissibilite: false,
     statutUsage: 'etaye_valide' as const,
+    niveauMesure: 'mesure_standard' as const,
     population: `POP_BANC_${RUN}`,
     hypotheses: [TERME_COURSE],
     codesAnalyte: [],
