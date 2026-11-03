@@ -10,7 +10,7 @@ import { sendPortailLinkEmail, type EnvoiAcces } from '@/lib/consultation/email'
 import { emettreLienMagiquePourPraticien } from '@/lib/portail/emissionLienMagique';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
-import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_DESACTIVE, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 
 export type Consultation = {
   idConsultation: string;
@@ -71,6 +71,8 @@ export type CreateConsultationResponse = {
     // Distinct de `patient_not_found` : le dossier existe et vous est
     // accessible, c'est son suivi qui est clos.
     | 'dossier_cloture'
+    // Désactivé ([[D-432]]) : son propre refus, plus « introuvable ».
+    | typeof RAISON_DOSSIER_DESACTIVE
     // Le dossier existe, vous est accessible, son suivi est ouvert — mais son
     // accès au portail est révoqué, et créer la consultation le RÉTABLIRAIT.
     // Distinct de `portal_revoked` d'`api/praticien/token`, qui est un refus SEC
@@ -187,7 +189,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
 
   try {
     const patient = await prisma.patient.findUnique({ where: { idPatient } });
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable ou inactif.' },
         { status: 404 }
@@ -199,10 +201,12 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
     // clôture interdit. Le garde manquait ici alors qu'assignation, pack et
     // envoi de booklet l'avaient déjà : une interdiction incomplète est une
     // interdiction contournable, et le libellé de la clôture promet au
-    // praticien qu'aucun document ne partira.
+    // praticien qu'aucun document ne partira. Désactivé : son propre refus
+    // ([[D-432]], qui précise [[D-427]]) ; la clôture prime (`phaseDossier`).
     if (!accepteNouvelEnvoi(patient)) {
+      const refus = refusDossierFerme(patient);
       return NextResponse.json(
-        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { success: false, reason: refus.raison, error: refus.message },
         { status: 409 }
       );
     }

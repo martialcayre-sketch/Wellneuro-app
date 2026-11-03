@@ -134,7 +134,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
         {
           success: false,
           reason: 'patient_not_found',
-          error: 'Patient introuvable (email non présent/actif).',
+          error: 'Patient introuvable.',
         },
         { status: 404 }
       );

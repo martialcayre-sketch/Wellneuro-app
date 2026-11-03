@@ -29,6 +29,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 
 import { DELETE, GET, POST } from './route';
+import { MESSAGE_DOSSIER_DESACTIVE } from '@/lib/patient/cycleDeVie';
 
 const PATIENT = {
   idPatient: 'PAT001',
@@ -121,6 +122,38 @@ describe('file-envoi POST', () => {
     );
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('dossier_cloture');
+  });
+
+  // [[D-432]] : un dossier désactivé a son propre refus, plus « introuvable ».
+  it('refuse un dossier désactivé par son propre motif, sans brouillon', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...PATIENT, actif: false });
+    const res = await POST(
+      postRequest({ emailPatient: 'sophie.nicola@example.com', qids: ['Q_STR_02'] }),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({
+      reason: 'dossier_desactive',
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('dossier désactivé et clôturé : la clôture prime', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...PATIENT, actif: false, suiviClotureLe: new Date() });
+    const res = await POST(
+      postRequest({ emailPatient: 'sophie.nicola@example.com', qids: ['Q_STR_02'] }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('dossier_cloture');
+  });
+
+  it('dossier absent ou d’un autre praticien : toujours introuvable', async () => {
+    prisma.patient.findFirst.mockResolvedValue(null);
+    const res = await POST(
+      postRequest({ emailPatient: 'sophie.nicola@example.com', qids: ['Q_STR_02'] }),
+    );
+    expect(res.status).toBe(404);
+    expect((await res.json()).reason).toBe('patient_not_found');
   });
 });
 

@@ -8,7 +8,11 @@ import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/r
 import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import {
+  RAISON_DOSSIER_DESACTIVE,
+  accepteNouvelEnvoi,
+  refusDossierFerme,
+} from '@/lib/patient/cycleDeVie';
 import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
@@ -39,6 +43,7 @@ export type EnvoyerFileResponse = {
     | 'patient_not_found'
     | 'portal_revoked'
     | 'dossier_cloture'
+    | typeof RAISON_DOSSIER_DESACTIVE
     | 'deja_envoye'
     | 'deja_assigne'
     | 'exception';
@@ -89,15 +94,17 @@ export async function POST(request: Request) {
     const patient = await prisma.patient.findFirst({
       where: { idPatient: brouillon.idPatient, ...filtrePatientsDuPraticien(emailSession) },
     });
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return NextResponse.json<EnvoyerFileResponse>(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 },
       );
     }
+    // Clos ou désactivé : chacun son refus ([[D-432]], qui précise [[D-427]]).
     if (!accepteNouvelEnvoi(patient)) {
+      const refus = refusDossierFerme(patient);
       return NextResponse.json<EnvoyerFileResponse>(
-        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { success: false, reason: refus.raison, error: refus.message },
         { status: 409 },
       );
     }

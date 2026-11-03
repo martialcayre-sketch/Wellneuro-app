@@ -29,6 +29,7 @@ import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { MESSAGE_DOSSIER_DESACTIVE } from '@/lib/patient/cycleDeVie';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -184,6 +185,37 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(await response.json()).toMatchObject({ reason: 'portal_revoked' });
     expect(prisma.assignation.create).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // [[D-432]] : un dossier désactivé a son propre refus, plus « introuvable ».
+  it('dossier désactivé : 409 dossier_desactive, ni assignation ni e-mail', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...patient, actif: false });
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      reason: 'dossier_desactive',
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.pack.findUnique).not.toHaveBeenCalled();
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('dossier désactivé et clôturé : la clôture prime', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...patient, actif: false, suiviClotureLe: new Date() });
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ reason: 'dossier_cloture' });
+  });
+
+  it('dossier absent ou d’un autre praticien : toujours introuvable', async () => {
+    prisma.patient.findFirst.mockResolvedValue(null);
+    const response = await POST(request());
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({
+      reason: 'patient_not_found',
+      error: 'Patient introuvable.',
+    });
   });
 
   // --- Dérive du registre de packs (LOT-03) ---

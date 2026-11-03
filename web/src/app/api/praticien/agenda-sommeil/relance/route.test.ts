@@ -127,11 +127,35 @@ describe('POST relance — les refus n’envoient jamais', () => {
       'patient_not_found',
       () => prisma.patient.findFirst.mockResolvedValue(null),
     ],
+    // [[D-432]] : un dossier désactivé a son propre refus, plus « introuvable »,
+    // à la place de l'ancien 404 — donc avant le portail.
     [
-      'patient inactif',
-      404,
-      'patient_not_found',
+      'dossier désactivé',
+      409,
+      'dossier_desactive',
       () => prisma.patient.findFirst.mockResolvedValue({ ...patientOk, actif: false }),
+    ],
+    [
+      'dossier désactivé, accès portail révoqué',
+      409,
+      'dossier_desactive',
+      () =>
+        prisma.patient.findFirst.mockResolvedValue({
+          ...patientOk,
+          actif: false,
+          accessTokenRevoked: true,
+        }),
+    ],
+    [
+      'dossier désactivé et clôturé : la clôture prime',
+      409,
+      'dossier_cloture',
+      () =>
+        prisma.patient.findFirst.mockResolvedValue({
+          ...patientOk,
+          actif: false,
+          suiviClotureLe: new Date('2026-07-01'),
+        }),
     ],
     [
       'accès portail révoqué',

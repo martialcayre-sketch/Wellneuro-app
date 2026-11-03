@@ -13,7 +13,7 @@ import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, refusDossierFerme } from '@/lib/patient/cycleDeVie';
 import {
   MESSAGE_DEJA_ASSIGNE,
   RAISON_DEJA_ASSIGNE,
@@ -114,18 +114,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     const patient = await prisma.patient.findFirst({
       where: { email: emailPatient, ...filtrePatientsDuPraticien(emailSession) },
     });
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return withCorrelationHeader(NextResponse.json(
-        { success: false, reason: 'patient_not_found', error: 'Patient introuvable (email non présent/actif).' },
+        { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 }
       ), requestContext);
     }
 
     // Dossier au suivi clôturé : un pack entier est encore moins assignable
     // qu'un questionnaire seul. Refus porté par la route, pas par l'écran.
+    // Désactivé : son propre refus, plus « introuvable » ([[D-432]], qui
+    // précise [[D-427]]) ; la clôture prime (`phaseDossier`).
     if (!accepteNouvelEnvoi(patient)) {
+      const refus = refusDossierFerme(patient);
       return withCorrelationHeader(NextResponse.json(
-        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { success: false, reason: refus.raison, error: refus.message },
         { status: 409 }
       ), requestContext);
     }
