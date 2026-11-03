@@ -36,6 +36,16 @@
 //      l'effacement les emporte avec le dossier ;
 //  10. LA DÉSACTIVATION ET LA DEMANDE (§9), dans les deux sens : même verrou
 //      que la clôture (cas 8), lu cette fois sur `actif`.
+//  11. LES FANTÔMES (`reconcilierFantomes`, §5.4) : l'import frais reste,
+//      le périmé est clos `delai_depasse` (péremption injectée : `lance_le`
+//      est figé par la base) ;
+//  12. LES REFUS DE L'OUVERTURE, une lecture fraîche d'un autre chemin tenant
+//      le compte rendu : à la réclamation (échec sans import) et à la reprise
+//      (import courant clos, puis échec). Joués après le cas 6, dans l'ordre
+//      d'exécution.
+//
+// La BOUCLE du processus (`boucleFileExtraction.ts`) se joue à part, sans
+// base, sur une horloge simulée (`boucleFileExtraction.test.ts`).
 //
 // LA COURSE EST FORCÉE, PAS ESPÉRÉE. Une session tient le verrou consultatif
 // du compte rendu ; le banc constate les attentes (`pg_stat_activity`, depuis
@@ -292,6 +302,64 @@ async function main() {
     assert.equal((await travail(verrou, neuve.idTravail)).statut, 'termine', 'le travail récent reste');
     assert.equal((await travail(verrou, ID)).statut, 'echec', 'le travail récent reste');
     console.log('ok 6 — purge : le travail terminé depuis 31 jours part, les récents restent');
+
+    // 11. LES FANTÔMES (§5.4, `reconcilierFantomes`) : un import laissé
+    //     `en_cours` par un processus mort. `lance_le` est daté et figé par la
+    //     base : le banc ne vieillit pas l'import, il injecte la péremption.
+    const FANTOME = `imp_banc_file_fantome_${RUN}`;
+    await verrou.query(
+      `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+       VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v4', $4)`,
+      [FANTOME, PATIENT, COMPTE_RENDU, PRATICIEN],
+    );
+    await file.reconcilierFantomes();
+    assert.equal((await importLu(verrou, FANTOME)).statut, 'en_cours', 'un import frais n’est pas un fantôme (péremption réelle)');
+    assert.ok((await file.reconcilierFantomes(0)) >= 1, 'l’import périmé est compté');
+    const fantome = await importLu(verrou, FANTOME);
+    assert.deepEqual({ statut: fantome.statut, motif: fantome.motif_echec }, { statut: 'echec', motif: 'delai_depasse' });
+    assert.equal(await file.reconcilierFantomes(0), 0, 'un import terminé n’est plus jamais touché');
+    console.log('ok 11 — fantôme : l’import frais reste, le périmé est clos `delai_depasse`, une fois');
+
+    // 12. LES REFUS DE L'OUVERTURE, à la réclamation puis à la reprise : une
+    //     lecture fraîche d'un autre chemin tient le compte rendu.
+    //   a) À la réclamation : le travail en attente est clos en échec, sans import.
+    const lectureConcurrente = async (id: string) => {
+      await verrou.query(
+        `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+         VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v4', $4)`,
+        [id, PATIENT, COMPTE_RENDU, PRATICIEN],
+      );
+      return async () =>
+        verrou.query(`UPDATE imports_biologiques SET statut = 'echec', motif_echec = 'erreur_fournisseur' WHERE id = $1`, [id]);
+    };
+    const refusee = await file.demanderExtraction(demande);
+    assert.ok(refusee.ok, JSON.stringify(refusee));
+    const finirConcurrenteA = await lectureConcurrente(`imp_banc_file_concurrente_a_${RUN}`);
+    assert.deepEqual(await file.reclamerTravail(), { type: 'refus', idTravail: refusee.idTravail });
+    const refusA = await travail(verrou, refusee.idTravail);
+    assert.deepEqual(
+      { statut: refusA.statut, motif: refusA.motif_echec, tentatives: refusA.tentatives, import: refusA.id_import_courant, dateFin: refusA.date_fin },
+      { statut: 'echec', motif: 'extraction_en_cours', tentatives: 0, import: null, dateFin: true },
+    );
+    await finirConcurrenteA();
+    //   b) À la reprise : son propre import clos `delai_depasse`, puis le refus.
+    const reprisee = await file.demanderExtraction(demande);
+    assert.ok(reprisee.ok, JSON.stringify(reprisee));
+    const premiere = await file.reclamerTravail();
+    assert.ok(premiere && premiere.type === 'lecture', JSON.stringify(premiere));
+    const finirConcurrenteB = await lectureConcurrente(`imp_banc_file_concurrente_b_${RUN}`);
+    await expirer(verrou, reprisee.idTravail);
+    assert.deepEqual(await file.reclamerTravail(), { type: 'refus', idTravail: reprisee.idTravail });
+    const refusB = await travail(verrou, reprisee.idTravail);
+    assert.deepEqual(
+      { statut: refusB.statut, motif: refusB.motif_echec, tentatives: refusB.tentatives, import: refusB.id_import_courant, dateFin: refusB.date_fin },
+      { statut: 'echec', motif: 'extraction_en_cours', tentatives: 1, import: premiere.idImport, dateFin: true },
+    );
+    const premiereLue = await importLu(verrou, premiere.idImport);
+    assert.deepEqual({ statut: premiereLue.statut, motif: premiereLue.motif_echec }, { statut: 'echec', motif: 'delai_depasse' });
+    await finirConcurrenteB();
+    assert.equal(await file.reclamerTravail(), null, 'un travail refusé n’est plus réclamable');
+    console.log('ok 12 — refus de l’ouverture : à la réclamation (échec sans import), à la reprise (import clos, puis échec)');
 
     // 7. L'effacement réel du dossier contre une réclamation en vol. La
     //    fenêtre dangereuse est celle où la réclamation TIENT le travail et
