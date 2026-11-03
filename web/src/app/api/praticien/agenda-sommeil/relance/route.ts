@@ -6,9 +6,8 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import {
-  MESSAGE_DOSSIER_CLOS,
-  RAISON_DOSSIER_CLOS,
   accepteNouvelEnvoi,
+  refusDossierFerme,
 } from '@/lib/patient/cycleDeVie';
 import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
 import { sanitizeAuditError } from '@/lib/anthropic';
@@ -94,14 +93,21 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         suiviClotureLe: true,
       },
     });
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return refus('patient_not_found', 'Patient introuvable.', 404);
+    }
+    // Désactivé : son propre refus, à la place de l'ancien « introuvable »,
+    // donc avant le portail ([[D-432]], qui précise [[D-427]]).
+    if (!patient.actif) {
+      const r = refusDossierFerme(patient);
+      return refus(r.raison, r.message, 409);
     }
     if (patient.accessTokenRevoked) {
       return refus('portal_revoked', 'Accès portail révoqué pour ce patient.', 409);
     }
     if (!accepteNouvelEnvoi(patient)) {
-      return refus(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+      const r = refusDossierFerme(patient);
+      return refus(r.raison, r.message, 409);
     }
 
     const ass = await prisma.assignation.findUnique({

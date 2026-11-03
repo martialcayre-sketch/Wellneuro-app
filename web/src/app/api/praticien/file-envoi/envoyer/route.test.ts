@@ -28,6 +28,7 @@ vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) 
 
 import nodemailer from 'nodemailer';
 import { POST } from './route';
+import { MESSAGE_DOSSIER_DESACTIVE } from '@/lib/patient/cycleDeVie';
 
 const BROUILLON = {
   idBrouillon: 'ENV_1',
@@ -152,6 +153,32 @@ describe('file-envoi/envoyer POST', () => {
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('dossier_cloture');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // [[D-432]] : un dossier désactivé a son propre refus, plus « introuvable ».
+  it('dossier désactivé : 409 dossier_desactive, rien ne part', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...PATIENT, actif: false });
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({
+      reason: 'dossier_desactive',
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('dossier désactivé et clôturé : la clôture prime', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...PATIENT, actif: false, suiviClotureLe: new Date() });
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('dossier_cloture');
+  });
+
+  it('dossier absent : toujours introuvable', async () => {
+    prisma.patient.findFirst.mockResolvedValue(null);
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(404);
+    expect((await res.json()).reason).toBe('patient_not_found');
   });
 
   // Dédup : un qid déjà porté par une assignation ouverte est écarté ; si tout

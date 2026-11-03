@@ -6,7 +6,11 @@ import { createPublicId } from '@/lib/ids';
 import { CATALOGUE_DEFINITIONS, IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { estInstrumentCabinet, idsAssignablesPour } from '@/lib/instruments';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import {
+  RAISON_DOSSIER_DESACTIVE,
+  accepteNouvelEnvoi,
+  refusDossierFerme,
+} from '@/lib/patient/cycleDeVie';
 
 // File d'envoi de la bibliothèque (arbitrage 2026-07-23 : « file simple,
 // envoi au clic »). Un brouillon par patient accumule des questionnaires ;
@@ -51,6 +55,7 @@ export type MutateFileEnvoiResponse = {
     | 'patient_not_found'
     | 'not_found'
     | 'dossier_cloture'
+    | typeof RAISON_DOSSIER_DESACTIVE
     | 'exception';
 };
 
@@ -170,15 +175,17 @@ export async function POST(request: Request) {
     const patient = await prisma.patient.findFirst({
       where: { email: emailPatient, ...filtrePatientsDuPraticien(emailSession) },
     });
-    if (!patient || !patient.actif) {
+    if (!patient) {
       return NextResponse.json<MutateFileEnvoiResponse>(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 },
       );
     }
+    // Clos ou désactivé : chacun son refus ([[D-432]], qui précise [[D-427]]).
     if (!accepteNouvelEnvoi(patient)) {
+      const refus = refusDossierFerme(patient);
       return NextResponse.json<MutateFileEnvoiResponse>(
-        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { success: false, reason: refus.raison, error: refus.message },
         { status: 409 },
       );
     }

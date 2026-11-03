@@ -24,6 +24,7 @@ vi.mock('@/lib/portail/emissionLienMagique', () => ({ emettreLienMagiquePourPrat
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 
 import { GET, POST } from './route';
+import { MESSAGE_DOSSIER_DESACTIVE } from '@/lib/patient/cycleDeVie';
 
 const patient = {
   idPatient: 'PAT_1',
@@ -342,6 +343,31 @@ describe('POST /api/praticien/consultations', () => {
     expect(prisma.patient.update).not.toHaveBeenCalled();
     expect(prisma.consultation.create).not.toHaveBeenCalled();
     expect(sendPortailLinkEmail).not.toHaveBeenCalled();
+  });
+
+  // [[D-432]] : un dossier désactivé a son propre refus, plus « introuvable ».
+  it('dossier désactivé : 409 dossier_desactive, aucun e-mail, aucun jeton relevé', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...patient, actif: false });
+    const res = await POST(postRequest({ idPatient: 'PAT_1' }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({
+      reason: 'dossier_desactive',
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.consultation.create).not.toHaveBeenCalled();
+    expect(sendPortailLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it('dossier désactivé et clôturé : la clôture prime', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      ...patient,
+      actif: false,
+      suiviClotureLe: new Date('2026-07-21T10:00:00.000Z'),
+    });
+    const res = await POST(postRequest({ idPatient: 'PAT_1' }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason: string }).reason).toBe('dossier_cloture');
   });
 
   it('drapeau allumé : le lien qui ouvre voyage dans l’e-mail, sans rien déplacer', async () => {

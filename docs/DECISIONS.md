@@ -6,6 +6,39 @@
 
 ## Décisions actives
 
+### D-432 — Audit 3, suite de Q3 quinquies : un dossier désactivé reçoit son propre refus sur cinq routes praticien de plus (pack, file d'envoi et son envoi, rappel de l'agenda de sommeil, consultation) ; précise D-427
+
+- Date : 2026-11-03
+- Statut : accepté — arbitrage du responsable du 2026-11-02, après un avis
+  de Codex, sur la dette relevée par la revue du lot Q3 quinquies (#1831) ;
+  l'arbitrage n'a pas de ligne dans la liste commune. Précise [[D-427]] §1.
+- Domaine : `POST /api/praticien/packs/assign`, `POST
+  /api/praticien/file-envoi`, `POST /api/praticien/file-envoi/envoyer`,
+  `POST /api/praticien/agenda-sommeil/relance`, `POST
+  /api/praticien/consultations` ; `refusDossierFerme`
+  (`lib/patient/cycleDeVie.ts`), dont seul le type de la raison se resserre,
+  à l'identique de [[D-427]].
+- Ne touche pas : `schema.prisma`, aucune migration ; `POST
+  /api/praticien/token`, exclu (`refusDossierFerme` parle du suivi, pas de
+  l'accès : un dossier clos garde son lien) ; les autres routes praticien ;
+  l'écran ; les textes, tous existants.
+
+**§1 — Cinq routes de plus.** Pour un dossier désactivé, ces cinq routes
+répondent le refus de `refusDossierFerme` (409, `dossier_desactive`,
+`MESSAGE_DOSSIER_DESACTIVE`) à la place du 404 « Patient introuvable ». La
+clôture prime (`phaseDossier`) : un dossier clos puis désactivé reste
+« clos ». Un dossier absent ou d'un autre praticien reste « introuvable » ;
+le 403 d'appartenance de la consultation est conservé.
+
+**§2 — Le refus prend la place de l'ancien.** Chaque route garde l'ordre de
+ses refus. Sur le rappel de l'agenda de sommeil, le refus du dossier
+désactivé vient donc avant celui du portail révoqué, là où se tenait le 404 ;
+un dossier actif au portail révoqué garde `portal_revoked` avant la clôture,
+comme avant.
+
+Aucun texte neuf, aucune migration. Bancs des cinq routes, chacun prouvé par
+mutation (route d'origine : de 2 à 3 échecs par banc).
+
 ### D-430 — Fenêtres de fraîcheur de l'orientation : une par instrument, quinze valeurs arbitrées par le responsable, aucune source ne les fonde ; refus d'une table incomplète ; amende D-180 point 3 (D/46)
 
 - Date : 2026-11-02
