@@ -43,6 +43,12 @@ vi.mock('@/lib/correspondance/registreGabarits', async (importOriginal) => {
 
 import { POST } from './route';
 import { MARQUE_ENVOI_EN_COURS } from '@/lib/correspondance/reservation';
+import {
+  MESSAGE_DOSSIER_CLOS,
+  MESSAGE_DOSSIER_DESACTIVE,
+  RAISON_DOSSIER_CLOS,
+  RAISON_DOSSIER_DESACTIVE,
+} from '@/lib/patient/cycleDeVie';
 
 function requete(corps: unknown): Request {
   return new Request('http://localhost/api/praticien/assignations/relance', {
@@ -300,7 +306,34 @@ describe('/api/praticien/assignations/relance', () => {
     const res = await POST(requete({ idAssignation: 'ASS_1' }));
 
     expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS });
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // [[D-427]] : un dossier désactivé reçoit son propre refus, plus « Rouvrez le
+  // suivi » sur un suivi qui n'est pas clos.
+  it('refuse 409 un dossier désactivé, avec le refus du dossier désactivé', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({
+      actif: false, suiviClotureLe: null, email: 'patient@example.test',
+    });
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      ok: false, reason: RAISON_DOSSIER_DESACTIVE, error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('un dossier clos puis désactivé reste « clos » : la clôture prime', async () => {
+    prisma.patient.findUnique.mockResolvedValueOnce({
+      actif: false, suiviClotureLe: new Date('2026-02-01'), email: 'patient@example.test',
+    });
+    const res = await POST(requete({ idAssignation: 'ASS_1' }));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS });
   });
 
   it('refuse 409 un dossier sans adresse, sans rien réserver', async () => {

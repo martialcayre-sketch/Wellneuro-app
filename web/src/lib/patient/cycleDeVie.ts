@@ -87,7 +87,10 @@ export const MESSAGE_DOSSIER_DESACTIVE =
 export const RAISON_DOSSIER_DESACTIVE = 'dossier_desactive';
 
 /** Le refus juste pour un dossier qui n'accepte plus rien ; dossier absent = clos. */
-export function refusDossierFerme(etat: EtatDossier | null): { raison: string; message: string } {
+export function refusDossierFerme(etat: EtatDossier | null): {
+  raison: typeof RAISON_DOSSIER_CLOS | typeof RAISON_DOSSIER_DESACTIVE;
+  message: string;
+} {
   if (etat && phaseDossier(etat) === 'desactive') {
     return { raison: RAISON_DOSSIER_DESACTIVE, message: MESSAGE_DOSSIER_DESACTIVE };
   }

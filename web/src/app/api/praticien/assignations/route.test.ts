@@ -22,7 +22,12 @@ vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) 
 import nodemailer from 'nodemailer';
 import { PATCH, POST } from './route';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
-import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import {
+  MESSAGE_DOSSIER_CLOS,
+  MESSAGE_DOSSIER_DESACTIVE,
+  RAISON_DOSSIER_CLOS,
+  RAISON_DOSSIER_DESACTIVE,
+} from '@/lib/patient/cycleDeVie';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -114,6 +119,48 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(await response.json()).toMatchObject({ success: false, reason: 'portal_revoked' });
     expect(prisma.assignation.create).not.toHaveBeenCalled();
     expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  // [[D-427]] : un dossier désactivé n'est pas « introuvable » — le praticien
+  // l'a sous les yeux. Il reçoit son propre refus, avant toute écriture.
+  it('refuse 409 un dossier désactivé, avec son propre refus, avant toute écriture', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...patient, actif: false, suiviClotureLe: null });
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      success: false,
+      reason: RAISON_DOSSIER_DESACTIVE,
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('un suivi clôturé reçoit le refus du dossier clos, avant toute écriture', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...patient, suiviClotureLe: new Date('2026-10-01T10:00:00Z') });
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      success: false,
+      reason: RAISON_DOSSIER_CLOS,
+      error: MESSAGE_DOSSIER_CLOS,
+    });
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
+  it('un dossier clos puis désactivé reste « clos » : la clôture prime', async () => {
+    prisma.patient.findFirst.mockResolvedValue({
+      ...patient, actif: false, suiviClotureLe: new Date('2026-10-01T10:00:00Z'),
+    });
+    const response = await POST(request());
+    expect(await response.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS });
+  });
+
+  it('contrôle négatif — un dossier absent reste « introuvable », en 404', async () => {
+    prisma.patient.findFirst.mockResolvedValue(null);
+    const response = await POST(request());
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ reason: 'patient_not_found' });
   });
 
   // Dédup : une assignation OUVERTE du même questionnaire bloque la création
@@ -215,15 +262,37 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
     expect(args.include).toEqual({ patient: { select: { actif: true, suiviClotureLe: true } } });
   });
 
-  it('un dossier désactivé reçoit le refus de la relance', async () => {
+  // [[D-427]] : le refus du dossier désactivé, comme la relance — plus
+  // « Rouvrez le suivi » sur un suivi qui n'est pas clos.
+  it('un dossier désactivé reçoit son propre refus, comme à la relance', async () => {
     prisma.assignation.findFirst.mockResolvedValue({
       idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
       patient: { actif: false, suiviClotureLe: null },
     });
     const response = await PATCH(patchRequest());
     expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ reason: RAISON_DOSSIER_CLOS });
+    expect(await response.json()).toEqual({
+      success: false,
+      reason: RAISON_DOSSIER_DESACTIVE,
+      error: MESSAGE_DOSSIER_DESACTIVE,
+    });
     expect(prisma.assignation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('une désactivation concurrente rend le refus du dossier désactivé, jamais un succès', async () => {
+    prisma.assignation.findFirst
+      .mockResolvedValueOnce({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+        patient: suiviOuvert,
+      })
+      .mockResolvedValueOnce({
+        idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_06', idPatient: 'PAT_1', statut: 'En attente',
+        patient: { actif: false, suiviClotureLe: null },
+      });
+    prisma.assignation.updateMany.mockResolvedValue({ count: 0 });
+    const response = await PATCH(patchRequest());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: RAISON_DOSSIER_DESACTIVE });
   });
 
   it('le dossier d’abord : une annulée d’un suivi clos reçoit le refus du dossier', async () => {
