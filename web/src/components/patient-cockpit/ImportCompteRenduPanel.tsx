@@ -946,6 +946,7 @@ export function ImportCompteRenduPanel({
               urlDocument={`/api/praticien/biologie/import/document?${urlDossier}&idCompteRendu=${encodeURIComponent(detail.id)}`}
               typeMime={detail.typeMime}
               urlEnregistrement={`/api/praticien/biologie/import/masquage?${urlDossier}`}
+              urlRefus={`/api/praticien/biologie/import/masquage/refus?${urlDossier}`}
               idCompteRendu={detail.id}
               dateNaissanceDossier={detail.dateNaissanceDossier}
               onEnregistre={async () => {

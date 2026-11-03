@@ -196,6 +196,40 @@ describe('MasquageIdentite (D-284 §5)', () => {
     expect(screen.queryByRole('button', { name: 'Enregistrer le masquage' })).toBeNull();
   });
 
+  it('le refus au-delà de 20 pages est signalé une fois, avec le seul nombre de pages ; un signal en échec ne change rien à l’écran', async () => {
+    pdfjs.numPages = 24;
+    const fetchMock = serveur();
+    fetchMock.mockImplementation(async (url: RequestInfo | URL) => {
+      if (String(url).includes('/import/document')) {
+        return { ok: true, status: 200, arrayBuffer: async () => new ArrayBuffer(8) } as Response;
+      }
+      throw new Error('réseau coupé');
+    });
+    render(
+      <MasquageIdentite
+        urlDocument="/api/praticien/biologie/import/document?idPatient=pat_sophie&idCompteRendu=cr_1"
+        typeMime="application/pdf"
+        urlEnregistrement="/api/praticien/biologie/import/masquage?idPatient=pat_sophie"
+        urlRefus="/api/praticien/biologie/import/masquage/refus?idPatient=pat_sophie"
+        idCompteRendu="cr_1"
+        dateNaissanceDossier="1985-03-12"
+        onEnregistre={vi.fn()}
+      />,
+    );
+    expect(await screen.findByText('Un compte rendu de plus de 20 pages ne peut pas être masqué ni lu.')).toBeTruthy();
+    const signaux = fetchMock.mock.calls.filter(([url]) => String(url).includes('/masquage/refus'));
+    expect(signaux).toHaveLength(1);
+    expect(signaux[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ nombrePages: 24 }) });
+  });
+
+  it('sans adresse de signalement, aucun signal ne part', async () => {
+    pdfjs.numPages = 21;
+    const fetchMock = serveur();
+    rendre();
+    await screen.findByText('Un compte rendu de plus de 20 pages ne peut pas être masqué ni lu.');
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/masquage/refus'))).toBe(false);
+  });
+
   it('une photo transparente part sur fond blanc, jamais noir', async () => {
     serveur();
     vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close: vi.fn() })));

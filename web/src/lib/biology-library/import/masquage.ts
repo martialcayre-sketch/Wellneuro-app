@@ -10,6 +10,20 @@
 /** Pages d'un masquage : au-delà de 20 images, le fournisseur refuse toute image de plus de 2 000 px. */
 export const PAGES_MAX = 20;
 
+/** Borne haute du nombre de pages qu'un refus `trop_de_pages` peut signaler (au-delà : invalide). */
+export const PAGES_REFUS_MAX = 10_000;
+
+/**
+ * Le nombre de pages d'un refus `trop_de_pages` signalé par le navigateur
+ * (arbitrage du responsable du 2026-11-03 : compter ces refus). Un entier
+ * strictement au-dessus de `PAGES_MAX`, borné ; `null` sinon.
+ */
+export function nombrePagesRefus(valeur: unknown): number | null {
+  return typeof valeur === 'number' && Number.isInteger(valeur) && valeur > PAGES_MAX && valeur <= PAGES_REFUS_MAX
+    ? valeur
+    : null;
+}
+
 /** Une page : 5 Mio en base64 chez le fournisseur, soit 3,75 Mio d'octets. */
 export const TAILLE_MAX_PAGE_OCTETS = (5 * 1024 * 1024 * 3) / 4;
 
