@@ -8,13 +8,13 @@
 - Lot de code sans migration : aucun changement de `schema.prisma`, aucun
   fichier sous `web/src/lib/clinical/`, ni `indicationsBiologieV1.ts`. Pas
   de release-db.
-- Dépend de #1831 (Q3 quinquies, D-427), encore ouverte : le resserrement du
+- Dépendait de #1831 (Q3 quinquies, D-427), mergée depuis (6c43ec45) : le resserrement du
   type de `refusDossierFerme` (`cycleDeVie.ts`) est repris **à l'identique**,
   octet pour octet, pour que les deux branches fusionnent sans conflit.
   D-432 s'insère en tête du registre, D-427 sous D-428 : pas de conflit
   attendu non plus.
 - Essai `D-373` : PR déclarée « prête @<sha> », **non mergée** par cette
-  session ; l'intégrateur merge, de préférence après #1831.
+  session ; l'intégrateur merge.
 
 ## Objectif
 
@@ -49,7 +49,10 @@ conservé. Aucun texte neuf.
 - `web/src/app/api/praticien/agenda-sommeil/relance/route.ts` (+ test, ligne
   « patient inactif » du tableau adaptée).
 - `web/src/app/api/praticien/consultations/route.ts` (+ test).
-- `web/src/lib/patient/cycleDeVie.ts` — type de retour seul, copie de #1831.
+- `web/src/app/api/praticien/assignations/route.ts` (+ test) — texte du
+  404 seul (CRLF, indexé sans filtre).
+- `web/src/lib/patient/cycleDeVie.ts` — type de retour seul, copie de #1831
+  (identique à `main` depuis son merge).
 - Docs : `docs/DECISIONS.md` (D-432),
   `changelog.d/2026-11-03-audit3-dossier-desactive-cinq-routes.md`, ce
   handoff.
@@ -62,21 +65,27 @@ conservé. Aucun texte neuf.
 - Mutations (route d'origine remise, puis restaurée) : chaque banc rougit,
   2 échecs (pack, file, envoi, consultation), 3 (agenda).
 - T1 complet : code 0.
-- T2 `--fast` : code 0 au premier passage (Vitest : 15 688 passés,
+- Revue CodeRabbit sur 4d0f8964 : un constat, « 404 de `packs/assign`
+  inexact » — **corrigé** par le texte des routes sœurs, « Patient
+  introuvable. » (pas un texte neuf) ; même correction sur la création
+  d'assignation (`assignations/route.ts`, CRLF), constat PR-Agent de #1831
+  d'abord écarté, repris par cohérence (D-432 §3). Bancs : texte exact
+  du 404 asserté sur les deux routes.
+- Fusion de `main` après le merge de #1831 et de D-431 : conflit de
+  `docs/DECISIONS.md` seul, D-432 en tête ; `cycleDeVie.ts` identique à
+  `main`.
+- T2 `--fast` : code 0 avant la revue, puis au rejeu après la correction (Vitest : 15 701 passés,
   40 sautés ; E2E : 303 passés, 7 sautés).
 
 ## Problèmes ouverts
 
-- Texte du 404 de `packs/assign` « Patient introuvable (email non
-  présent/actif). » : le « /actif » devient inexact ; laissé, aucun texte
-  neuf n'est permis (même verdict que sur #1831).
-- Aucun autre reste. Q2 de l'audit 3 revient avec l'audit 2.
+- Aucun reste. Q2 de l'audit 3 revient avec l'audit 2.
 
 ## Prochaine action exacte
 
 Attendre le CI (`node scripts/wn-attendre-ci.mjs <N>`), la revue CodeRabbit
 (sinon PR-Agent, D-393) sur la tête, un verdict par commentaire, puis
-déclarer « prête @<sha> ». L'intégrateur merge, après #1831.
+déclarer « prête @<sha> ». L'intégrateur merge.
 
 ## Interdits encore actifs
 

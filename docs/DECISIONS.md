@@ -20,7 +20,8 @@
   à l'identique de [[D-427]].
 - Ne touche pas : `schema.prisma`, aucune migration ; `POST
   /api/praticien/token`, exclu (`refusDossierFerme` parle du suivi, pas de
-  l'accès : un dossier clos garde son lien) ; les autres routes praticien ;
+  l'accès : un dossier clos garde son lien) ; les autres routes praticien,
+  hormis le texte du 404 de la création d'assignation (§3) ;
   l'écran ; les textes, tous existants.
 
 **§1 — Cinq routes de plus.** Pour un dossier désactivé, ces cinq routes
@@ -35,6 +36,12 @@ ses refus. Sur le rappel de l'agenda de sommeil, le refus du dossier
 désactivé vient donc avant celui du portail révoqué, là où se tenait le 404 ;
 un dossier actif au portail révoqué garde `portal_revoked` avant la clôture,
 comme avant.
+
+**§3 — Le 404 dit ce qu'il dit.** Sur `packs/assign` et sur la création
+d'assignation ([[D-427]] §1), le 404 ne sert plus qu'à un dossier absent ou
+d'un autre praticien : son texte « Patient introuvable (email non
+présent/actif). » devient « Patient introuvable. », celui des routes sœurs
+(revues CodeRabbit sur #1841 et PR-Agent sur #1831).
 
 Aucun texte neuf, aucune migration. Bancs des cinq routes, chacun prouvé par
 mutation (route d'origine : de 2 à 3 échecs par banc).

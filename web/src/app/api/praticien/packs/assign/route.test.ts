@@ -212,7 +212,10 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     prisma.patient.findFirst.mockResolvedValue(null);
     const response = await POST(request());
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ reason: 'patient_not_found' });
+    expect(await response.json()).toMatchObject({
+      reason: 'patient_not_found',
+      error: 'Patient introuvable.',
+    });
   });
 
   // --- Dérive du registre de packs (LOT-03) ---

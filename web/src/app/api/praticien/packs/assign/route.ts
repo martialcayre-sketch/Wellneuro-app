@@ -116,7 +116,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
     if (!patient) {
       return withCorrelationHeader(NextResponse.json(
-        { success: false, reason: 'patient_not_found', error: 'Patient introuvable (email non présent/actif).' },
+        { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 }
       ), requestContext);
     }

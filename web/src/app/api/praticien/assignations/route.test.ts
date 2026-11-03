@@ -160,7 +160,10 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     prisma.patient.findFirst.mockResolvedValue(null);
     const response = await POST(request());
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ reason: 'patient_not_found' });
+    expect(await response.json()).toMatchObject({
+      reason: 'patient_not_found',
+      error: 'Patient introuvable.',
+    });
   });
 
   // Dédup : une assignation OUVERTE du même questionnaire bloque la création
