@@ -29,7 +29,7 @@ const SIGNEE: ContexteDecision = {
   controle: {
     structure: {
       fiches: [
-        { id: 'FU_SYNTH', question: 'QC_SYNTH', besoins: [2], nature: 'mesure_directe', usageDecisionnel: 'confirmer_hypothese', securiteAdmissibilite: false, statutUsage: 'etaye_valide', population: 'POP_SYNTH', hypotheses: ['HYP_SYNTH'], codesAnalyte: [], claims: [], rubriques: ['question', 'population'] },
+        { id: 'FU_SYNTH', question: 'QC_SYNTH', besoins: [2], nature: 'mesure_directe', usageDecisionnel: 'confirmer_hypothese', securiteAdmissibilite: false, statutUsage: 'etaye_valide', niveauMesure: 'mesure_standard', population: 'POP_SYNTH', hypotheses: ['HYP_SYNTH'], codesAnalyte: [], claims: [], rubriques: ['question', 'population'] },
       ],
       questions: ['QC_SYNTH'],
       hypotheses: ['HYP_SYNTH'],

@@ -22,6 +22,7 @@ const FICHE: FicheUsageStructure = {
   usageDecisionnel: 'confirmer_hypothese',
   securiteAdmissibilite: false,
   statutUsage: 'etaye_valide',
+  niveauMesure: 'mesure_standard',
   population: 'POP_SYNTH',
   hypotheses: ['HYP_SYNTH'],
   codesAnalyte: [],
@@ -37,25 +38,24 @@ const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
 /** Un verrou posé, daté, sur les claims de la structure du dépôt — l'empreinte se passe à part. */
 const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, dateValidation: '2026-10-16T09:00:00.000Z' };
 
-// La structure est ÉCRITE et SIGNÉE (2026-11-01, D-401) : verrou posé sur
-// l'empreinte relue par le responsable (porte 23 : ses contenus sont les siens). Ce banc
+// La structure, signée le 2026-11-01 (D-401), est RE-SIGNÉE le 2026-11-03 pour
+// B9 et B12 (D-417 §4) : trente-huit fiches, sur la déclaration du responsable
+// (porte 23 : ses contenus sont les siens). Ce banc
 // épingle l'empreinte : toute fiche ajoutée ou retouchée la change, et la sortie
 // est de RE-SIGNER, jamais de mettre le littéral à jour en silence. Identifiants
 // SYNTHÉTIQUES dans les cas ci-dessous.
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure écrite', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('f34eda4d16b480bb32a78cf6431f6a9a884293f84d0c3f51b0ed6e5d729ba1d4');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('bb52d4752e3ea92c89806505c12ab7c2df2c1a618b4a06fbe1fdeebf4ccac926');
   });
 
-  it('est signée le 2026-11-01 (D-401) : verrou posé sur l’empreinte relue', () => {
-    expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(30);
+  it('re-signée pour B9/B12 (D-417 §4) : verrou posé sur la déclaration du responsable', () => {
+    expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(38);
     expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual([]);
     expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(true);
-    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-01T16:25:47.000Z');
-    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(
-      'f34eda4d16b480bb32a78cf6431f6a9a884293f84d0c3f51b0ed6e5d729ba1d4',
-    );
+    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-03T18:27:07.000Z');
+    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(FICHES_USAGE_BESOIN2_SHA256);
     expect(structureSignee()).toBe(true);
   });
 
@@ -118,14 +118,13 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     expect(incoherencesDeStructure(avec({ securiteAdmissibilite: true, besoins: [2, 4] }))).toEqual([]);
   });
 
-  it('niveau de mesure (DC-45, D-417 §2) : les trois valeurs, ou absent jusqu’à la re-signature B9/B12', () => {
+  it('niveau de mesure (DC-45, D-417 §2, §4) : obligatoire, l’une des trois valeurs', () => {
     for (const niveauMesure of ['mesure_standard', 'exploration_fonctionnelle', 'marqueur_experimental'] as const) {
       expect(incoherencesDeStructure(avec({ niveauMesure }))).toEqual([]);
     }
-    expect(incoherencesDeStructure(avec({}))).toEqual([]);
-    // La structure signée le 2026-11-01 ne le porte pas : il entre à la
-    // re-signature, qui le rend obligatoire (D-417 §4).
-    expect(FICHES_USAGE_BESOIN2_V1.fiches.filter(f => f.niveauMesure !== undefined)).toEqual([]);
+    // Absent : la structure ne se signe pas (re-signature B9/B12, arbitrage du 2026-11-03).
+    expect(incoherencesDeStructure(avec({ niveauMesure: undefined as never }))).toEqual(['FU_SYNTH:niveau_mesure']);
+    expect(FICHES_USAGE_BESOIN2_V1.fiches.filter(f => f.niveauMesure === undefined)).toEqual([]);
   });
 
   it.each([
