@@ -153,11 +153,17 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
         expect(incoherencesDeStructure(avec({ nature, statutUsage }))).toEqual(['FU_SYNTH:nature_statut']);
       }
     }
-    for (const nature of ['mesure_directe', 'information_contributive'] as const) {
-      for (const statutUsage of ['etaye_valide', 'preuves_limitees', 'non_valide'] as const) {
-        expect(incoherencesDeStructure(avec({ nature, statutUsage }))).toEqual([]);
-      }
+    for (const statutUsage of ['etaye_valide', 'preuves_limitees', 'non_valide'] as const) {
+      expect(incoherencesDeStructure(avec({ nature: 'mesure_directe', statutUsage }))).toEqual([]);
     }
+  });
+
+  it('nature ↔ statut : une information contributive admet au plus « preuves limitées » (D-266 §3, D-417 §3)', () => {
+    for (const statutUsage of ['preuves_limitees', 'non_valide'] as const) {
+      expect(incoherencesDeStructure(avec({ nature: 'information_contributive', statutUsage }))).toEqual([]);
+    }
+    expect(incoherencesDeStructure(avec({ nature: 'information_contributive', statutUsage: 'etaye_valide' })))
+      .toEqual(['FU_SYNTH:nature_statut']);
   });
 
   it('refuse les listes de la structure mal formées', () => {

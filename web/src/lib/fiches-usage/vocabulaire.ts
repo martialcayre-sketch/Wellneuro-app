@@ -98,12 +98,13 @@ export type StatutUsage = (typeof STATUTS_USAGE)[number];
 /**
  * La correspondance nature ↔ statut (arbitrage du 2026-10-16, règle du cadrage
  * v3 §3.1) : une piste exploratoire ou un usage non étayé reste en espace de
- * réflexion — « non validé » seulement ; les deux autres natures admettent les
- * trois statuts. Une structure qui l'enfreint ne se signe pas.
+ * réflexion — « non validé » seulement ; une information contributive admet au
+ * plus « preuves limitées » ([[D-266]] §3, aligné par [[D-417]] §3) ; une mesure
+ * directe admet les trois statuts. Une structure qui l'enfreint ne se signe pas.
  */
 export const STATUTS_ADMIS_PAR_NATURE: Record<NatureLien, readonly StatutUsage[]> = {
   mesure_directe: STATUTS_USAGE,
-  information_contributive: STATUTS_USAGE,
+  information_contributive: ['preuves_limitees', 'non_valide'],
   piste_exploratoire: ['non_valide'],
   usage_non_etaye: ['non_valide'],
 };

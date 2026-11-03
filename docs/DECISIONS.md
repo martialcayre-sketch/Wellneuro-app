@@ -6,6 +6,102 @@
 
 ## Décisions actives
 
+### D-430 — Fenêtres de fraîcheur de l'orientation : une par instrument, quinze valeurs arbitrées par le responsable, aucune source ne les fonde ; refus d'une table incomplète ; amende D-180 point 3 (D/46)
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02 (questions à
+  options, puis quinze valeurs acceptées une à une), en séance de gestes de
+  la file D (n° 6, ligne d46). Un assistant conversationnel externe a été
+  consulté sur la forme, puis pour des propositions argumentées. Il n'est
+  source d'aucune valeur. Ses citations du dépôt et ses références ont été
+  vérifiées par la session (code à 63d0e8c0, Europe PMC, Crossref).
+- Domaine : table signée `ORIENTATION_RULES_V1` (`repetition`, empreinte),
+  `orientationEngine.ts` (`cibleDejaCouverte`, `passationExploitable`),
+  `orientationService.ts` (`tableSignee`).
+- Ne touche pas : aucun code dans cette décision ; les 365 jours de
+  [[D-180]] point 3 restent en vigueur jusqu'au lot du §6 ; ni les
+  déclencheurs, ni les claims, ni les priorités ; la biologie
+  (`RepetitionPanel`, [[D-069]]).
+- Contexte, lu au dépôt le 2026-11-02 : la fenêtre vit sur la règle
+  (`repetition.delaiJours`), 365 jours dans les vingt règles, arbitrage faute
+  de source ([[D-180]] point 3). Les vingt règles visent quinze
+  questionnaires, en trente et un couples, aucun pack. Une passation couvre
+  sa cible tant que son âge ne dépasse pas la fenêtre (l'égalité couvre
+  encore). L'empreinte signée hache `{ regles, grilles }`.
+
+**§1 — Une fenêtre par instrument.** Elle est la même dans toutes les règles
+qui proposent l'instrument : le champ quitte la règle. Écartée : une fenêtre
+par couple règle-instrument (une cible reproposée par une règle et tenue pour
+couverte par une autre).
+
+**§2 — Quinze valeurs, en jours.** Ce sont des arbitrages WellNeuro, nommés
+comme tels : aucune source ne fonde une durée de couverture, et une période
+de rappel n'est pas une fenêtre de fraîcheur.
+
+| instrument | fenêtre |
+|---|---|
+| `Q_GAS_01` TFD SIIN | 21 |
+| `Q_GAS_03` Bristol | 21 |
+| `Q_INF_01` hyperexcitabilité SIIN | 21 |
+| `Q_NEU_11` HAD | 7 |
+| `Q_SOM_01` PSQI | 30 |
+| `Q_SOM_02` Epworth | 7 |
+| `Q_SOM_03` Berlin | 90 |
+| `Q_SOM_05` MEQ | 365 |
+| `Q_SOM_06` Pichot | 7 |
+| `Q_STR_02` PSS-10 | 30 |
+| `Q_STR_03` Cungi | 7 |
+| `Q_STR_04` DASS-21 | 7 |
+| `Q_STR_05` BMS-10 | 21 |
+| `Q_STR_06` Karasek | 90 |
+| `Q_STR_08` WART | 90 |
+
+Le jour anniversaire couvre encore, comme aujourd'hui. Écarts consignés à
+l'intérieur d'une même règle, acceptés avec les valeurs : `R2-STR-02` (PSS-10
+à 30, DASS-21 et Cungi à 7 : au jalon J21, les deux derniers peuvent revenir
+sans la PSS-10), `R2-SOM-05` (PSQI à 30, MEQ à 365), `R-STR-02` (DASS-21 à
+7, Karasek et WART à 90). La HAD, visée par cinq règles, peut revenir chaque
+semaine tant que l'une d'elles est déclenchée.
+
+**§3 — Une table incomplète se refuse.** Une règle qui vise un instrument
+sans fenêtre ne se signe pas : un banc le refuse, et le même contrôle entre
+dans `tableSignee()`, de sorte qu'une table incomplète éteint l'orientation
+au lieu d'être servie. Écartés : les 365 jours comme repli implicite ; une
+couverture sans horizon.
+
+**§4 — TFD SIIN : une seule fenêtre.** La consigne porte deux périodes de
+rappel (trois mois à la première consultation, trois semaines en suivi ;
+`mode_assignation: 'double_periode'`, `questions.ts:539`). Aucun code ne lit
+ce champ, et le moteur ne reçoit pas le contexte « premier passage ou
+suivi ». Écartées : deux fenêtres, qui demanderaient de créer ce contexte de
+bout en bout.
+
+**§5 — Faits de contexte.** Ils ne fondent aucune fenêtre. Snaith 2003
+(`WN-SRC-0544`) : consigne d'origine de la HADS « the past week », re-passation
+« at not less than weekly intervals », un intervalle minimal. Retests publiés :
+WART en version française, une semaine (Ravoux et al. 2018, `0622`) ; items du
+JCQ, une à huit semaines, chez 81 pompiers (Choi et al. 2014, `0623`) ; Bristol
+en version espagnole, 7,76 jours en moyenne, sur la concordance entre
+définition et image (Parés et al. 2009, `0624`). Périodes de rappel des
+consignes du catalogue : un mois (PSQI, PSS-10), une semaine (DASS-21) ; la
+HAD dit « ces dernières semaines » dans sa consigne et « cette semaine » dans
+le titre de sa section (`questionnaires/neuropsychologie.ts:5-7`). Écarté :
+Robinson et al. 1992 (Percept Mot Skills 74:926, DOI
+10.2466/pms.1992.74.3.926) : titre vérifié, mais intervalle de retest non lu
+par la session (aucun résumé accessible). Un retest ne dit pas, de toute
+façon, combien de temps une passation couvre une cible.
+
+**§6 — Suites.** Lot de code de la file A (hors biologie, chemin clinique,
+déploiement retenu jusqu'à l'approbation) : registre des fenêtres par
+instrument, entré dans l'empreinte signée ; résolution de la fenêtre par
+instrument dans `cibleDejaCouverte` ; banc d'exhaustivité, avec contre-épreuve,
+et même contrôle dans `tableSignee()` ; re-signature de `ORIENTATION_RULES_V1`
+par le responsable dans le lot (ligne du §8). Limite connue, laissée à un
+arbitrage suivant : le questionnaire qui déclenche une règle (PSQI, PSS-10,
+TFD SIIN) n'a pas de fenêtre, si bien qu'une cible peut être reproposée sur
+un signal ancien ; ligne neuve de la file D (d59 de la page « Suivi de la
+file D »). La discordance de consigne de la HAD est consignée en d60.
+
 ### D-426 — `MAX_AXES_PRIORITAIRES` : la borne de 3 confirmée comme arbitrage, aucune source ne la fonde ; `DC-29` : une graduation de la convergence à dicter par le responsable, arbitrage WellNeuro nommé comme tel (D/45)
 
 - Date : 2026-11-02
