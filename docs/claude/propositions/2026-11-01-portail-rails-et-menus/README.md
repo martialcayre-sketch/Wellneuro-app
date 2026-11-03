@@ -696,7 +696,7 @@ Q1 à Q3 ont été tranchées le 2026-11-01, à options fermées, sur la seule l
 
 ## 15. Réponses du responsable (L0, 2026-11-02)
 
-Q4 à Q26 et Q31 à Q34 ont été tranchées le 2026-11-02, à options fermées (recommandation de l'audit en première option quand elle existe), sur la lecture de ce document et des seules sources citées par chaque question ; aucun écran n'a été constaté. Les réponses se rangent dans l'ordre où elles ont été posées. Le texte de décision qui en découle est `decision-D-423-menu-patient.md`, à côté de ce document ; il entre au registre avec L2 (chapitre 11).
+Q4 à Q26 et Q31 à Q34 ont été tranchées le 2026-11-02, à options fermées (recommandation de l'audit en première option quand elle existe), sur la lecture de ce document et des seules sources citées par chaque question ; aucun écran n'a été constaté. Les réponses se rangent dans l'ordre où elles ont été posées. Le texte de décision qui en découle est `decision-D-423-menu-patient.md`, à côté de ce document ; le responsable l'a relu et accepté mot pour mot le 2026-11-03, avec ce chapitre ; il entre au registre avec L2 (chapitre 11).
 
 | Question | Réponse | Effet sur le lot |
 |---|---|---|
