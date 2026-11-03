@@ -3,10 +3,9 @@
 ## Branche et état Git
 
 Branche `b-comptage-refus-pages`, dans le worktree
-`.claude/worktrees/b-comptage-refus-pages`, partie de `origin/main` e46ac782
-(#1836 mergée). Le lot n'a ni migration, ni `schema.prisma`, ni chemin
-clinique : aucune release-db à suivre. #1837 (bancs du processus de fond)
-a été mergée pendant ce lot (317cf9ea).
+`.claude/worktrees/b-comptage-refus-pages`, partie de `origin/main` 317cf9ea
+(#1836 et #1837 mergées). Le lot n'a ni migration, ni `schema.prisma`, ni
+chemin clinique : aucune release-db à suivre.
 
 ## Objectif
 
@@ -29,6 +28,11 @@ documents longs (plan §8).
   routes d'import (`garderImport` : drapeau, session, appartenance, accès
   journalisé). `idPatient` ne sert qu'à cette garde et n'entre pas dans la
   ligne de journal.
+- Revue de #1838 (Copilot et PR-Agent, même point) : sans `Content-Length`,
+  le corps entier était lu avant la borne. Corrigé comme au masquage : la
+  longueur est exigée (411) et bornée (413), puis le corps est lu en flux
+  et la lecture s'arrête au-delà de 1 Kio. Deux tests (huit au total pour
+  la route).
 
 ## Fichiers modifiés
 

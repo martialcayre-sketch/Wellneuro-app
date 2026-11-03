@@ -65,6 +65,44 @@ describe('POST /api/praticien/biologie/import/masquage/refus (compte des refus a
     expect(info).not.toHaveBeenCalled();
   });
 
+  it('sans longueur annoncée (envoi en morceaux) : 411, le corps n’est pas lu', async () => {
+    let tires = 0;
+    const flux = new ReadableStream<Uint8Array>({
+      pull(c) {
+        tires += 1;
+        c.enqueue(new TextEncoder().encode('{"nombrePages":24}'));
+        c.close();
+      },
+    });
+    const r = await POST(
+      new Request('http://localhost/api/praticien/biologie/import/masquage/refus?idPatient=pat_sophie', {
+        method: 'POST', body: flux, duplex: 'half',
+      } as RequestInit),
+    );
+    expect(r.status).toBe(411);
+    expect(tires).toBeLessThanOrEqual(1); // au plus l'amorce du flux, jamais lu par la route
+    expect(info).not.toHaveBeenCalled();
+  });
+
+  it('une longueur annoncée qui ment : la lecture s’arrête au-delà de 1 Kio, 413', async () => {
+    let tires = 0;
+    const flux = new ReadableStream<Uint8Array>({
+      pull(c) {
+        tires += 1;
+        if (tires > 100) return c.close();
+        c.enqueue(new Uint8Array(512).fill(0x20));
+      },
+    });
+    const r = await POST(
+      new Request('http://localhost/api/praticien/biologie/import/masquage/refus?idPatient=pat_sophie', {
+        method: 'POST', body: flux, duplex: 'half', headers: { 'content-length': '20' },
+      } as RequestInit),
+    );
+    expect(r.status).toBe(413);
+    expect(tires).toBeLessThan(10);
+    expect(info).not.toHaveBeenCalled();
+  });
+
   it('sans session : refusé, rien au journal', async () => {
     getServerSession.mockResolvedValue(null);
     const r = await POST(requete(JSON.stringify({ nombrePages: 24 })));

@@ -18,6 +18,25 @@ export const runtime = 'nodejs';
 
 const CORPS_MAX_OCTETS = 1024;
 
+/** Le corps en texte, lu en flux ; `null` dès que `max` octets sont dépassés (lecture annulée). */
+async function lireBorne(req: Request, max: number): Promise<string | null> {
+  if (!req.body) return '';
+  const lecteur = req.body.getReader();
+  const morceaux: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await lecteur.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await lecteur.cancel();
+      return null;
+    }
+    morceaux.push(value);
+  }
+  return Buffer.concat(morceaux).toString('utf8');
+}
+
 function echec(reason: string, error: string, status: number) {
   return NextResponse.json({ ok: false, reason, error }, { status });
 }
@@ -28,11 +47,15 @@ export async function POST(req: Request) {
     const garde = await garderImport(idPatient);
     if (!garde.ok) return echec(garde.reason, garde.error, garde.status);
 
-    // Borné AVANT la lecture du corps (en-tête annoncé), puis après (corps réel).
-    const enTete = Number(req.headers.get('content-length') ?? '0');
-    if (enTete > CORPS_MAX_OCTETS) return echec('invalid', 'Corps de requête trop long.', 413);
-    const texte = await req.text();
-    if (Buffer.byteLength(texte) > CORPS_MAX_OCTETS) return echec('invalid', 'Corps de requête trop long.', 413);
+    // La longueur est EXIGÉE (411) et bornée (413) avant toute lecture, comme
+    // au masquage ; puis le corps se lit en flux, interrompu au-delà de la
+    // borne — un en-tête qui ment ne fait pas lire plus (revue de #1838).
+    const enTete = req.headers.get('content-length');
+    const longueur = enTete !== null && /^\d+$/.test(enTete) ? Number(enTete) : Number.NaN;
+    if (Number.isNaN(longueur)) return echec('longueur_requise', 'La taille de l’envoi doit être annoncée.', 411);
+    if (longueur > CORPS_MAX_OCTETS) return echec('invalid', 'Corps de requête trop long.', 413);
+    const texte = await lireBorne(req, CORPS_MAX_OCTETS);
+    if (texte === null) return echec('invalid', 'Corps de requête trop long.', 413);
     let corps: unknown;
     try {
       corps = JSON.parse(texte);
