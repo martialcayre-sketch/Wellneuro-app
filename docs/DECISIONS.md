@@ -102,6 +102,109 @@ TFD SIIN) n'a pas de fenêtre, si bien qu'une cible peut être reproposée sur
 un signal ancien ; ligne neuve de la file D (d59 de la page « Suivi de la
 file D »). La discordance de consigne de la HAD est consignée en d60.
 
+### D-429 — QIF (`Q_FIB_02`) au registre de comparaison de D-406 §2 : total sur 100 défini par sa source ; complet au sens de D-421 ; comparable depuis le 2026-11-03
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrage du responsable du 2026-11-02, rendu en
+  conversation sur question à options, sur la recommandation, confirmée par
+  un contre-avis Codex.
+- Domaine : `web/src/lib/scoring/comparaisonPassations.ts`
+  (`COMPARABLE_DEPUIS`) et son banc. Fiche H94.
+- **Amende** [[D-406]] §2 (registre et liste des écartés) ; **exécute** pour
+  le QIF son §7 ; **lève** la réserve de [[D-420]] §4 sur le QIF.
+- **Ne touche pas** : aucune ligne du moteur (la bande relève de [[D-428]],
+  que la comparaison ne lit pas) ; aucune bande ni « stable » sur l'écart
+  (porte 11 fermée) ; aucune migration.
+- Contexte : [[D-406]] §2 écartait le QIF parce que son moteur ne publiait
+  aucun compte de complétude. [[D-421]] le fait publier ; son déploiement
+  (845a900c) est constaté en production le 2026-11-02 à 20:54 UTC, par un
+  conteneur détaché en lecture seule (`CONTAINER_VERSION`), sans lecture de
+  dossier ; la liste des déploiements Scalingo le date de 20:27:44 UTC,
+  pour 4 min 39 s. Bennett 2005 (WN-SRC-0602) définit le total : dix
+  composantes de 0 à 10, maximum 100.
+
+**§1 — Entrée.** `Q_FIB_02` est comparable lorsque les deux passations
+datent du ou après le **2026-11-03T00:00:00Z**. Une passation enregistrée
+avant le déploiement de [[D-421]] ne porte pas de `missing`, et
+`estComplete` lit un `missing` absent comme complet : la date retenue est le
+premier jour entier après le déploiement constaté — marge technique
+(`DC-20`), qui écarte aussi les passations valides du 2 novembre au soir.
+L'instant exact du déploiement est écarté : il est déduit de la liste des
+déploiements, non observé à la seconde.
+
+**§2 — Complétude.** Celle de [[D-421]] §1 : l'item 1 mesuré dès qu'un
+sous-item est noté (un sous-item retiré n'empêche pas la comparaison), Q12
+à Q20 exigés chacun. Une passation à total partiel, ou sans total (`null`),
+est refusée (« une passation est incomplète », [[D-406]] §4) ; un total
+complet égal à 0 est comparé.
+
+**§3 — Grille.** `maxTotal` 100 des deux côtés. L'écart de facteur 3,3
+contre 3,33 ([[D-421]] §2) touche les deux passations de la même façon et
+reste hors de cette décision.
+
+**§4 — Limite nommée.** Une personne qui laisse Q13 et Q14 vides — sans
+emploi ou non — n'a pas de total ([[D-428]] §3) : son QIF n'est jamais
+comparé.
+
+### D-428 — QIF (`Q_FIB_02`) : un recueil incomplet garde son total mais perd sa bande (modèle D-014) ; bande du zéro à vingt sur vingt maintenue ; Q13/Q14 vides restent incomplètes ; amende D-421 §3
+
+- Date : 2026-11-02
+- Statut : accepté — arbitrages du responsable du 2026-11-02, rendus en
+  conversation sur questions à options, tous sur la recommandation, après un
+  contre-avis Codex. Codex recommandait d'aligner la bande du zéro sur
+  `missing` = 0 ; le responsable a maintenu vingt sur vingt.
+- Domaine : moteur `qif` de `web/src/lib/questions.ts` (sous instantané,
+  étape au `moteur` de `seuilsCatalogue.instantane.json`) ; banc
+  `web/src/lib/scoring/qifCompletude.test.ts`. Fiche H94.
+- **Corrige** le défaut consigné par [[D-421]] §3 ; **amende** son second
+  point ; **applique** [[D-014]] au moteur `qif`.
+- **Ne touche pas** : ni `total`, ni `maxTotal`, ni les libellés et bornes
+  des bandes ; ni les facteurs 3,3 et 1,43 ; ni le registre de comparaison
+  ([[D-429]]) ; ni l'équilibre ; aucune migration.
+- Contexte : quand une partie des EVA Q14 à Q20 manquait, le moteur sommait
+  les EVA restantes, sans correction 10/x, et servait une bande calibrée sur
+  la forme complète : sous-classement seul possible (`DC-24`). Une valeur
+  non numérique donnait un total NaN, qui échouait à toutes les bornes et
+  tombait dans la dernière bande, « Maximum théorique ». Démontré dans le
+  code, aucune occurrence observée.
+
+**§1 — Bande retirée.** Dès que `missing` > 0, `interpretation` vaut `null`.
+Le total partiel reste servi, avec `missing` et `missingIds` (badge « N
+manquant(s) » de la fiche) : ce qui tombe est la lecture, pas la mesure
+([[D-014]]). La correction 10/x de Bennett 2005 est écartée : sourcée, mais
+non validée sur la version française (Perrot 2003 ne publie aucun total), elle
+changerait la mesure et servirait un total là où il est `null` aujourd'hui.
+
+**§2 — Bande du zéro.** Elle exige toujours les vingt questions sur vingt :
+un recueil complet au sens de [[D-421]] §1 (`missing` = 0) dont un sous-item
+de l'item 1 est retiré n'en reçoit pas. Écarté : l'alignement sur
+`missing` = 0, conforme à la source, qui servirait une lecture rassurante
+dès qu'un seul sous-item sur onze est noté. Le seul coût est une lecture
+rassurante absente, jamais une lecture fausse (`DC-25`).
+
+**§3 — Q13 et Q14 vides.** Aucune règle nouvelle : Q13 vide laisse la
+composante d'absentéisme non mesurée, donc `total: null`. Le questionnaire
+servi ne demande pas si la personne travaille, et un champ vide peut être un
+oubli : aucun retrait n'est déduit d'une absence (`DC-24`).
+
+**§4 — Amendement de [[D-421]] §3** (son exemple « Q14, laissé vide par une
+personne sans emploi » et son second point). Il écrivait : « chez une
+personne sans emploi, Bennett prévoit Q13 et Q14 vides, avec la correction
+10/x ». C'est vrai de la version originale seulement. Bennett 2005, section
+« Modifications », relu sur le PDF le 2026-11-02 : « In the original version
+of the FIQ, questions 3 and 4 referred to problems with "work". If patients
+did not work they were instructed to cross out these 2 questions » ; puis
+« In 1997, questions 3 and 4 were modified to include housework ». Le texte
+servi de Q13 et Q14 parle de « travail », sans les tâches ménagères :
+l'écart de libellé est consigné, non corrigé (acte distinct).
+
+**§5 — Limite nommée : aucun recalcul rétroactif.** La règle vaut pour les
+passations scorées après son déploiement. Une passation QIF incomplète déjà
+enregistrée garde la bande stockée avec elle (`interpretation`,
+`scoresJson`), affichée à la fiche, à l'export et à la synthèse. Leur
+nombre n'a pas été compté en production : « aucune occurrence observée »
+([[D-421]] §3) vaut constat de code, pas lecture datée de la base.
+
 ### D-426 — `MAX_AXES_PRIORITAIRES` : la borne de 3 confirmée comme arbitrage, aucune source ne la fonde ; `DC-29` : une graduation de la convergence à dicter par le responsable, arbitrage WellNeuro nommé comme tel (D/45)
 
 - Date : 2026-11-02

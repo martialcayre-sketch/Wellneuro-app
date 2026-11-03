@@ -2,8 +2,8 @@
 //
 // Bennett 2005 (WN-SRC-0602) : l'item 1 est la moyenne des sous-items Q1-Q11
 // notés, et le patient peut en retirer ; Q12 à Q20 sont chacun une composante.
-// `missing` compte des questions (sens de la consigne de synthèse) ; le total,
-// le maximum et la bande ne bougent pas.
+// `missing` compte des questions (sens de la consigne de synthèse) ; le total
+// et le maximum ne bougent pas. Un recueil incomplet perd sa bande (D-428).
 import { describe, expect, it } from 'vitest';
 import { calculateScore } from '@/lib/questions';
 
@@ -91,10 +91,30 @@ describe('QIF — compte de complétude (D-421)', () => {
     expect(s.interpretation).toBeNull();
   });
 
-  it('le maximum reste 100, et la bande d’un total incomplet est inchangée (défaut consigné, D-421)', () => {
+  it('le maximum reste 100 ; un total incomplet reste servi, sans bande (D-428)', () => {
+    const entiere = qif(reponses());
     const sansQ14 = qif(reponses(['Q14']));
+    expect(entiere.interpretation).not.toBeNull();
     expect(sansQ14.maxTotal).toBe(100);
     expect(sansQ14.missing).toBe(1);
-    expect(sansQ14.interpretation).not.toBeNull();
+    // Somme des six EVA restantes, sans 10/x : le total est celui d'avant.
+    expect(sansQ14.total).toBe(parseFloat((entiere.total - 3).toFixed(1)));
+    expect(sansQ14.interpretation).toBeNull();
+  });
+
+  it('valeur non numérique : le total NaN ne tombe plus dans la dernière bande (D-428)', () => {
+    const s = qif({ ...reponses(), Q15: 'abc' as any });
+    expect(s.missing).toBe(1);
+    expect(s.interpretation).toBeNull();
+    // Item 1 : un sous-item non numérique, un autre noté — même règle.
+    const item1 = qif({ ...reponses(), Q2: 'abc' as any });
+    expect(item1.missingIds).toEqual(['Q2']);
+    expect(item1.interpretation).toBeNull();
+  });
+
+  it('sous-item de l’item 1 retiré, total non nul : la bande reste servie (missing 0)', () => {
+    const s = qif(reponses(['Q5']));
+    expect(s.missing).toBe(0);
+    expect(s.interpretation).not.toBeNull();
   });
 });

@@ -160,11 +160,18 @@ describe('lectures de grille — un seuil ne se lit que sur un comptage complet'
     expect(complet.total).toBe(0);
     expect(complet.interpretation?.label).toContain('peu compatible');
 
-    // Et une passation partielle NON nulle garde sa bande : la règle ne mord que
-    // sur le plancher, elle ne referme pas l'instrument.
+    // Une passation partielle NON nulle garde son total, mais plus sa bande
+    // depuis D-428 (modèle D-014) : calibrée sur la forme complète, elle
+    // sous-classait un total tiré vers le bas.
     const partielNonNul: any = calculateScore('Q_FIB_02', { Q1: 10, Q12: 0, Q13: 7, Q14: 10 });
     expect(partielNonNul.total).toBeGreaterThan(0);
-    expect(partielNonNul.interpretation?.label).toBeTruthy();
+    expect(partielNonNul.interpretation).toBeNull();
+
+    // La règle ne referme pas l'instrument : complet au sens de D-421 (un
+    // sous-item de l'item 1 retiré), un total non nul garde sa bande.
+    const completNonNul: any = calculateScore('Q_FIB_02', { ...plancher, Q5: undefined, Q12: 0, Q15: 5 });
+    expect(completNonNul.missing).toBe(0);
+    expect(completNonNul.interpretation?.label).toBeTruthy();
   });
 
   it('composite_multi_parties : la grille exige le comptage complet, comme celle d’idtas_ae', () => {
