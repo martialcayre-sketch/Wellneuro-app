@@ -19,9 +19,7 @@ import { motifNonInterpretable } from './passationsNonInterpretables';
  *  établis sur l'historique Git des définitions et du moteur. Seuls les
  *  instruments dont la source définit un total et dont le moteur publie sa
  *  complétude : ni MFI-20 (pas de total, par sa source), ni DNST ou mode de
- *  vie SIIN (aucun total publié, journal de H94), ni QIF tant que son compte
- *  de complétude (D-421) n'est pas déployé — son entrée est une décision à
- *  part (D-406 §7). */
+ *  vie SIIN (aucun total publié, journal de H94). */
 export const COMPARABLE_DEPUIS: ReadonlyMap<string, Date> = new Map([
   ['Q_ALI_01', new Date('2026-08-11T00:00:00.000Z')],
   ['Q_MOD_03', new Date('2026-08-11T00:00:00.000Z')],
@@ -32,6 +30,11 @@ export const COMPARABLE_DEPUIS: ReadonlyMap<string, Date> = new Map([
   ['Q_STR_04', new Date('2026-08-11T00:00:00.000Z')],
   // PSQI : bandes retouchées le 2026-09-13 (#1079, #1085).
   ['Q_SOM_01', new Date('2026-09-14T00:00:00.000Z')],
+  // QIF (D-429) : total sur 100 (Bennett 2005, WN-SRC-0602). Son compte de
+  // complétude (D-421) est en service depuis le 2026-11-02 au soir ; une
+  // passation antérieure n'en porte pas, et un `missing` absent passerait
+  // `estComplete` : d'où le premier jour entier après le déploiement constaté.
+  ['Q_FIB_02', new Date('2026-11-03T00:00:00.000Z')],
 ]);
 
 const STATUTS_LUS = new Set(['VALID', 'AMBIGUOUS']);

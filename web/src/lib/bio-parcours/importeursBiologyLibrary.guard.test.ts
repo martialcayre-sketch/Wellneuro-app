@@ -56,6 +56,10 @@ const IMPORTEURS_ADMIS = [
   // Le masquage de l'identité avant la lecture ([[D-284]] §5, lot j) : des
   // pages noircies, réencodées et consignées — aucune valeur lue.
   'web/src/app/api/praticien/biologie/import/masquage/route.ts',
+  // Le compte des refus « plus de 20 pages » (arbitrage du 2026-11-03) : la
+  // garde de l'import et la borne du nombre de pages — aucune valeur lue,
+  // rien en base, une ligne de journal sans identifiant.
+  'web/src/app/api/praticien/biologie/import/masquage/refus/route.ts',
   'web/src/app/api/praticien/biologie/import/route.ts',
   // La signature des correspondances analyte ↔ acte NABM (M-3, F54) : la
   // nomenclature et le catalogue, globaux au cabinet — aucune donnée patient.

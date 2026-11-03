@@ -98,15 +98,27 @@ export type StatutUsage = (typeof STATUTS_USAGE)[number];
 /**
  * La correspondance nature ↔ statut (arbitrage du 2026-10-16, règle du cadrage
  * v3 §3.1) : une piste exploratoire ou un usage non étayé reste en espace de
- * réflexion — « non validé » seulement ; les deux autres natures admettent les
- * trois statuts. Une structure qui l'enfreint ne se signe pas.
+ * réflexion — « non validé » seulement ; une information contributive admet au
+ * plus « preuves limitées » ([[D-266]] §3, aligné par [[D-417]] §3) ; une mesure
+ * directe admet les trois statuts. Une structure qui l'enfreint ne se signe pas.
  */
 export const STATUTS_ADMIS_PAR_NATURE: Record<NatureLien, readonly StatutUsage[]> = {
   mesure_directe: STATUTS_USAGE,
-  information_contributive: STATUTS_USAGE,
+  information_contributive: ['preuves_limitees', 'non_valide'],
   piste_exploratoire: ['non_valide'],
   usage_non_etaye: ['non_valide'],
 };
+
+/**
+ * Niveau de mesure (DC-45, [[D-417]] §2) : un QUATRIÈME axe par fiche,
+ * distinct des trois de D-266 §3, sans fusion — mesure standard ou
+ * conventionnelle, exploration fonctionnelle, marqueur expérimental ou débattu.
+ * Des identifiants, jamais les lettres A/B/C de DC-45 : elles se confondraient
+ * avec le niveau de preuve A-D de `biology_functional_ranges` (arbitrage du
+ * 2026-11-02). Comme les trois autres axes, il ne vit que dans la structure.
+ */
+export const NIVEAUX_MESURE = ['mesure_standard', 'exploration_fonctionnelle', 'marqueur_experimental'] as const;
+export type NiveauMesure = (typeof NIVEAUX_MESURE)[number];
 
 /** Les 12 besoins du guide ([[D-312]]), par leur numéro — la forme des `needIds` du dépôt. */
 export const BESOINS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;

@@ -314,9 +314,11 @@ export async function traiterProchainTravail(
  * péremption est clos `delai_depasse`, comme le font déjà la relance, l'écart
  * et la purge. Un compte rendu à la fois, sous son verrou ; candidats et
  * clôture jugés par l'horloge de la base. Rend le nombre d'imports clos.
+ * `peremptionMs` est injectable pour le banc seul : `lance_le` est daté et
+ * figé par la base, un import ne s'y vieillit pas.
  */
-export async function reconcilierFantomes(): Promise<number> {
-  const intervalle = `${PEREMPTION_EN_COURS_MS} milliseconds`;
+export async function reconcilierFantomes(peremptionMs: number = PEREMPTION_EN_COURS_MS): Promise<number> {
+  const intervalle = `${peremptionMs} milliseconds`;
   const comptesRendus = await prisma.$queryRaw<{ id_compte_rendu: string }[]>`
     SELECT DISTINCT id_compte_rendu FROM imports_biologiques
     WHERE statut = 'en_cours'
