@@ -151,6 +151,26 @@ describe('orientationActive — le double verrou', () => {
     signerLaTable();
     expect(orientationActive()).toBe(true);
   });
+
+  // SIXIÈME TERME ([[D-430]] §3) : une table dont une suggestion vise un
+  // instrument sans fenêtre de fraîcheur ne se sert pas — signée ou non. Le
+  // registre est le RÉEL (`importOriginal`) : `Q_SOM_07` n'y figure pas,
+  // `Q_SOM_01` y figure. Contre-épreuve sur la même règle.
+  it('reste fermé sur une table qui vise un instrument sans fenêtre — le terme isolé', () => {
+    signerLaTable();
+    const regle = {
+      id: 'R-TEST-FENETRE',
+      statut: 'publiee',
+      declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['danger', 'dark'] } }],
+      suggestions: [{ questionnaireId: 'Q_SOM_07', priorite: 1 }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    };
+    mockRegles.push(regle);
+    expect(orientationActive()).toBe(false);
+    regle.suggestions = [{ questionnaireId: 'Q_SOM_01', priorite: 1 }];
+    expect(orientationActive()).toBe(true);
+  });
 });
 
 describe('evaluerOrientationPourPatient', () => {
@@ -1049,13 +1069,40 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
   // L'EXCLUSION SUIT LE MÊME VERROU, et elle porte sur une passation
   // EXPLOITABLE. `Q_SOM_01` est au dossier avec un recueil complet : la règle qui
   // le viserait ne le proposerait plus une fois la table signée.
+  //
+  // DEPUIS [[D-430]], LA PASSATION DOIT AUSSI ÊTRE FRAÎCHE : le service passe le
+  // registre signé, et le PSQI y vaut 30 jours. La passation du banc est donc
+  // datée relativement à l'horloge du service, pas en dur — une date fixe
+  // ferait changer le verdict selon le jour où le banc tourne.
+  function dossierPsqiVieuxDe(jours: number) {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idReponse: 'REP-1', idQuestionnaire: 'Q_SOM_01', dateReponse: new Date(Date.now() - jours * 24 * 60 * 60 * 1000), statutValidite: 'VALID', scoresJson: { rawAnswers: { Q1: 0, Q2: 90, Q3: 7, Q4: 4, Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3, Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3, Q6: 3, Q7: 3, Q8: 3, Q9: 3 } } },
+    ]);
+  }
+
   it('table d\'arrêt SIGNÉE et contradictions actives : un instrument déjà mesuré n\'est plus proposé', async () => {
     signerLArret();
     armerLesContradictions();
+    dossierPsqiVieuxDe(1);
     mockRegles.length = 0;
     mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
     const resultat = await evaluerOrientationPourPatient('PAT-1');
     expect(resultat.actif === true && resultat.recommandations).toEqual([]);
+  });
+
+  // CONTRE-ÉPREUVE ([[D-430]]) : le service passe bien le registre RÉEL au
+  // moteur. Au-delà des 30 jours du PSQI, la même passation cesse de couvrir et
+  // la cible revient, badge « déjà renseigné » compris.
+  it('table d\'arrêt SIGNÉE : au-delà de la fenêtre de l\'instrument, la cible revient', async () => {
+    signerLArret();
+    armerLesContradictions();
+    dossierPsqiVieuxDe(31);
+    mockRegles.length = 0;
+    mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].dejaRepondu).toBe(true);
   });
 
   it('table d\'arrêt NON signée : le même instrument reste proposé', async () => {

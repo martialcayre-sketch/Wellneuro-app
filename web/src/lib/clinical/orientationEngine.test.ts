@@ -6,6 +6,7 @@ import {
   lacunesDuDeclencheur,
   type ReponseOrientation,
 } from './orientationEngine';
+import { FENETRES_FRAICHEUR_ORIENTATION } from './orientationRulesV1';
 import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule } from './orientationRulesV1';
 import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type { StopRule } from './stopRulesV1';
@@ -769,18 +770,14 @@ describe('evaluerOrientation — une contradiction ouverte interdit l\'extinctio
   });
 });
 
-describe('evaluerOrientation — fenêtre de fraîcheur', () => {
-  // ARBITRAGE PRATICIEN DU 2026-09-13 — 365 jours, uniformes sur les vingt
-  // règles. Sans ce champ, l'exclusion `dejaRepondu` fermait une cible SANS
-  // HORIZON : une passation exploitable de deux ans la fermait encore, sans
-  // badge et sans motif, la ligne n'étant pas produite. La table sœur (biologie)
-  // rouvrait déjà un panel documenté au-delà d'un an.
-  const ANNUELLE = regle({
-    suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
-    repetition: { delaiJours: 365 },
-  });
-  const SANS_FENETRE = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
-  const MAINTENANT = Date.parse('2026-09-13T12:00:00.000Z');
+describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)', () => {
+  // ARBITRAGE DU RESPONSABLE DU 2026-11-02 ([[D-430]]) — une fenêtre PAR
+  // INSTRUMENT, lue dans le registre signé, et non plus sur la règle (les 365
+  // jours uniformes de [[D-180]] point 3). Les bancs lisent le registre RÉEL,
+  // `FENETRES_FRAICHEUR_ORIENTATION`, pour mesurer la valeur signée et non une
+  // valeur de fixture : BMS-10 (`Q_STR_05`) à 21 jours.
+  const CIBLE_BMS = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
+  const MAINTENANT = Date.parse('2026-11-03T12:00:00.000Z');
 
   function servi(dateReponse: string, surcharge: Record<string, unknown> = {}) {
     return evaluerOrientation({
@@ -789,67 +786,127 @@ describe('evaluerOrientation — fenêtre de fraîcheur', () => {
         reponse({ idQuestionnaire: 'Q_STR_05', dateReponse, scores: { total: 12 }, statutValidite: 'VALID' }),
       ],
       idsQuestionnairesAssignes: [],
-      regles: [ANNUELLE],
+      regles: [CIBLE_BMS],
       exclureDejaRepondu: true,
       maintenantMs: MAINTENANT,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
       ...surcharge,
     });
   }
 
-  it('une passation de moins d’un an couvre encore la cible', () => {
-    expect(servi('2026-06-05T12:00:00.000Z')).toEqual([]);
+  it('le banc lit bien 21 jours pour le BMS-10 — sinon les bornes ci-dessous ne mesurent rien', () => {
+    expect(FENETRES_FRAICHEUR_ORIENTATION.Q_STR_05).toEqual({ delaiJours: 21 });
   });
 
-  // BORNE EXACTE, et elle est tenue parce qu'un `>=` avancerait la réouverture
-  // d'un jour sans que rien ne le motive. 2025-09-13 → 2026-09-13 fait 365 jours
-  // pleins (2026 n'est pas bissextile).
-  it('au jour anniversaire pile, elle couvre toujours', () => {
-    expect(servi('2025-09-13T12:00:00.000Z')).toEqual([]);
+  it('une passation de moins de 21 jours couvre encore la cible', () => {
+    expect(servi('2026-10-25T12:00:00.000Z')).toEqual([]);
+  });
+
+  // BORNE EXACTE : le jour anniversaire couvre encore (D-430 §2, « comme
+  // aujourd'hui »). Un `>=` avancerait la réouverture d'un jour.
+  it('au 21e jour pile, elle couvre toujours', () => {
+    expect(servi('2026-10-13T12:00:00.000Z')).toEqual([]);
   });
 
   it('un jour de plus, et la cible est re-proposée', () => {
-    const recos = servi('2025-09-12T12:00:00.000Z');
+    const recos = servi('2026-10-12T12:00:00.000Z');
     expect(recos).toHaveLength(1);
     expect(recos[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_05' });
   });
 
-  // LES TROIS REPLIS, TOUS DANS LE SENS « ON NE RE-PROPOSE PAS ». Re-proposer
-  // une exploration sur la foi d'une date qu'on n'a pas su lire, ou sans savoir
-  // quel jour on est, serait un courrier de plus vers un patient fondé sur rien.
+  // CE QUE L'ANCIEN 365 FAISAIT, ET QUE LE REGISTRE DÉFAIT : à 22 jours, une
+  // fenêtre de 365 jours couvrait encore. Contre-épreuve sur un registre de
+  // banc, pour prouver que le verdict vient bien du registre fourni.
+  it('le verdict suit le registre fourni, pas une constante du moteur', () => {
+    expect(servi('2026-10-12T12:00:00.000Z', { fenetres: { Q_STR_05: { delaiJours: 365 } } })).toEqual([]);
+  });
+
+  // LE CŒUR DE D-430 §1 : la même cible, proposée par deux règles, reçoit le
+  // même verdict — elle ne peut plus être couverte pour l'une et reproposée par
+  // l'autre.
+  it('deux règles qui visent le même instrument lisent la même fenêtre', () => {
+    const autre = regle({ id: 'R-TEST-02', suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 2 }] });
+    expect(servi('2026-10-25T12:00:00.000Z', { regles: [CIBLE_BMS, autre] })).toEqual([]);
+    const perime = servi('2026-10-12T12:00:00.000Z', { regles: [CIBLE_BMS, autre] });
+    expect(perime).toHaveLength(1);
+    expect(perime[0].motifs.map(m => m.regleId)).toEqual(['R-TEST-01', 'R-TEST-02']);
+  });
+
+  // ÉCART À L'INTÉRIEUR D'UNE MÊME RÈGLE, consigné par D-430 §2 (`R2-STR-02` :
+  // DASS-21 à 7, PSS-10 à 30). Ici DASS-21 (7) et PSQI (30), à dix jours.
+  it('dans une même règle, chaque instrument lit sa propre fenêtre', () => {
+    const recos = evaluerOrientation({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_04', dateReponse: '2026-10-24T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'VALID' }),
+        reponse({ idQuestionnaire: 'Q_SOM_01', dateReponse: '2026-10-24T12:00:00.000Z', scores: { total: 8 }, statutValidite: 'VALID' }),
+      ],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({ suggestions: [{ questionnaireId: 'Q_STR_04', priorite: 1 }, { questionnaireId: 'Q_SOM_01', priorite: 2 }] })],
+      exclureDejaRepondu: true,
+      maintenantMs: MAINTENANT,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+    });
+    expect(recos.map(r => r.cible)).toEqual([{ type: 'questionnaire', questionnaireId: 'Q_STR_04' }]);
+  });
+
+  // UN SEUL REPLI, DANS LE SENS « ON NE RE-PROPOSE PAS ».
   it('sans horloge fournie, rien ne périme', () => {
     expect(servi('2020-01-01T00:00:00.000Z', { maintenantMs: undefined })).toEqual([]);
   });
 
-  it('sans fenêtre sur la règle, rien ne périme', () => {
-    expect(servi('2020-01-01T00:00:00.000Z', { regles: [SANS_FENETRE] })).toEqual([]);
+  // L'ANCIEN SECOND REPLI EST RETOURNÉ (D-430 §3) : ni 365 jours implicites, ni
+  // couverture sans horizon. Un instrument sans fenêtre ne couvre pas — même
+  // sur une passation de la veille.
+  it('un instrument sans fenêtre ne couvre jamais, même sur une passation récente', () => {
+    for (const fenetres of [undefined, {}, { Q_STR_05: { delaiJours: 0 } }, { Q_STR_05: { delaiJours: Number.NaN } }]) {
+      const recos = servi('2026-11-02T12:00:00.000Z', { fenetres });
+      expect(recos).toHaveLength(1);
+      expect(recos[0].dejaRepondu).toBe(true);
+    }
   });
 
-  // PAS UN REPLI DE LA FENÊTRE, ET LE BANC LE DIT. Une date illisible ne rend
-  // pas la passation « fraîche » : elle la rend INVISIBLE, parce que
-  // `derniereReponseParQuestionnaire` l'écarte avant tout calcul de fraîcheur.
-  // La cible est donc re-proposée, pour une raison qui précède ce lot. Ce banc
-  // existe pour empêcher qu'on attribue plus tard ce comportement à la fenêtre.
+  it('un membre de pack sans fenêtre rouvre le pack entier', () => {
+    const base = {
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+      compositionPacks: { pack_stress_chronique_burnout: ['Q_STR_02', 'Q_STR_05'] },
+      exclureDejaRepondu: true,
+      maintenantMs: MAINTENANT,
+      reponses: [
+        reponse({ dateReponse: '2026-11-02T12:00:00.000Z', scores: { total: 30 }, statutValidite: 'VALID' }),
+        reponse({ idQuestionnaire: 'Q_STR_05', dateReponse: '2026-11-02T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'VALID' }),
+      ],
+    };
+    expect(evaluerOrientation({ ...base, fenetres: FENETRES_FRAICHEUR_ORIENTATION })).toEqual([]);
+    const recos = evaluerOrientation({ ...base, fenetres: { Q_STR_02: { delaiJours: 30 } } });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].cible).toEqual({ type: 'pack', packId: 'pack_stress_chronique_burnout' });
+  });
+
+  // PAS UN REPLI DE LA FENÊTRE, ET LE BANC LE DIT. Une date illisible rend la
+  // passation INVISIBLE (`derniereReponseParQuestionnaire` l'écarte avant tout
+  // calcul de fraîcheur) : la cible revient pour une raison qui précède D-180.
   it('une date illisible rend la passation invisible, et la cible revient', () => {
     const recos = servi('pas-une-date');
     expect(recos).toHaveLength(1);
     expect(recos[0].dejaRepondu).toBe(false);
   });
 
-  // CONTRE-ÉPREUVE : la péremption ne doit pas court-circuiter les autres
-  // conditions d'exploitabilité. Une passation périmée ET non `VALID` se
-  // re-propose aussi — mais pour l'autre raison, et le banc le distingue en
-  // retirant la fenêtre.
-  it('la péremption n’efface pas les autres motifs de re-proposition', () => {
-    expect(servi('2020-01-01T00:00:00.000Z', { regles: [SANS_FENETRE] })).toEqual([]);
+  // CONTRE-ÉPREUVE : la fraîcheur ne court-circuite pas les autres conditions
+  // d'exploitabilité. Une passation fraîche mais non `VALID` se re-propose.
+  it('une passation fraîche mais non VALID se re-propose quand même', () => {
+    expect(servi('2026-11-02T12:00:00.000Z')).toEqual([]);
     const recos = evaluerOrientation({
       reponses: [
         reponse({ scores: { total: 30 } }),
-        reponse({ idQuestionnaire: 'Q_STR_05', dateReponse: '2026-09-01T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'AMBIGUOUS' }),
+        reponse({ idQuestionnaire: 'Q_STR_05', dateReponse: '2026-11-02T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'AMBIGUOUS' }),
       ],
       idsQuestionnairesAssignes: [],
-      regles: [ANNUELLE],
+      regles: [CIBLE_BMS],
       exclureDejaRepondu: true,
       maintenantMs: MAINTENANT,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
     });
     expect(recos).toHaveLength(1);
   });

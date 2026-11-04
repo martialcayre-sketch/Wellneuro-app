@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
   estFeuilleInstrument,
+  FENETRES_FRAICHEUR_ORIENTATION,
   feuillesDuDeclencheur,
   GRILLES_ORIENTATION,
+  instrumentsSansFenetre,
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
@@ -44,7 +46,10 @@ describe('orientationRulesV1 — verrou v1', () => {
     // les deux formes canoniques de `Q_ALI_01` et les drapeaux du plancher.
     // 52 claims relus en base ce jour-là, les deux tables ensemble — 52/52
     // VALIDE, actifs, v1.0, aucun supplanté.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-09-14T00:00:00.000Z');
+    // RE-SIGNÉE le 2026-11-04 ([[D-430]], t59) : le périmètre porte les quinze
+    // fenêtres de fraîcheur par instrument ; les 365 jours quittent les règles.
+    // 23 claims relus en base le 2026-11-03 — 23/23 VALIDE, actifs, v1.0.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-04T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -202,7 +207,12 @@ describe('orientationRulesV1 — verrou v1', () => {
   //
   // Anciens sha signés :
   //   · 2026-09-13 — `e2f087d6…97e427e` (périmètre RÈGLES SEULES)
-  const SHA_SIGNE_2026_09_14 = '2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd';
+  // RE-SIGNÉE LE 2026-11-04 ([[D-430]], t59), sur attestation du praticien : le
+  // périmètre porte les fenêtres de fraîcheur par instrument.
+  //
+  // Anciens sha signés :
+  //   · 2026-09-14 — `2a1f4840…2d95ddbd` (RÈGLES + GRILLES, 365 jours sur les règles)
+  const SHA_SIGNE_2026_11_04 = 'f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -210,9 +220,17 @@ describe('orientationRulesV1 — verrou v1', () => {
   // laissait hors signature l'objet qui décide du point d'allumage. Forme
   // composite `{ regles, grilles }`, reprise de `PRIORITY_RULES_SHA256`
   // ([[D-062]]).
-  it('le sha publié correspond au contenu de la table, GRILLES COMPRISES', () => {
+  //
+  // ET DE NOUVEAU AVEC [[D-430]] : les fenêtres de fraîcheur ont quitté les
+  // règles pour un registre par instrument, qui entre dans l'empreinte en
+  // troisième terme — `{ regles, grilles, fenetres }`.
+  it('le sha publié correspond au contenu de la table, GRILLES ET FENÊTRES COMPRISES', () => {
     expect(ORIENTATION_RULES_SHA256).toBe(
-      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION })),
+      sha256(JSON.stringify({
+        regles: ORIENTATION_RULES_V1,
+        grilles: GRILLES_ORIENTATION,
+        fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+      })),
     );
   });
 
@@ -242,8 +260,8 @@ describe('orientationRulesV1 — verrou v1', () => {
   // qui prouve ce que le titre annonce ; le banc « recopié à l'identique » plus
   // bas ferme le raisonnement dans l'autre sens.
   const copieProfonde = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-  const shaAvec = (perimetre: unknown) =>
-    sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: perimetre }));
+  const shaAvec = (perimetre: unknown, fenetres: unknown = FENETRES_FRAICHEUR_ORIENTATION) =>
+    sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: perimetre, fenetres }));
 
   it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
     const mute = copieProfonde(GRILLES_ORIENTATION) as any;
@@ -287,13 +305,22 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Un banc de mutation n'établit son propos que si le NON-mutant passe : sans
   // elle, « le sha a changé » reste compatible avec « le sha change à tout
   // coup ». C'est la faute exacte que deux de ces bancs commettaient.
+  // ET UNE FENÊTRE COMPTE AUTANT QU'UNE BORNE ([[D-430]]) : elle décide de ce
+  // que la table re-propose. Une seule valeur mutée, dans la structure réelle.
+  it('retoucher une fenêtre de fraîcheur change le sha', () => {
+    const mute = copieProfonde(FENETRES_FRAICHEUR_ORIENTATION) as any;
+    mute.Q_NEU_11.delaiJours = 8;
+    expect(shaAvec(GRILLES_ORIENTATION, mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
   it('… et un périmètre recopié à l’identique ne le change PAS', () => {
-    expect(shaAvec(copieProfonde(GRILLES_ORIENTATION))).toBe(ORIENTATION_RULES_SHA256);
+    expect(shaAvec(copieProfonde(GRILLES_ORIENTATION), copieProfonde(FENETRES_FRAICHEUR_ORIENTATION)))
+      .toBe(ORIENTATION_RULES_SHA256);
   });
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_09_14);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_04);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP
@@ -518,6 +545,74 @@ describe('orientationRulesV1 — verrou v1', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Gardes anti-dérive (LOT-05). Chacune ferme un silence : une règle mal câblée
 // ne casse rien, elle cesse simplement de se déclencher — et personne ne le voit.
+describe('orientationRulesV1 — fenêtres de fraîcheur par instrument (D-430)', () => {
+  // LES QUINZE VALEURS DE D-430 §2, RECOPIÉES DE LA DÉCISION ET NON DU CODE.
+  // Ce banc est la seule chose qui relie le registre à l'arbitrage : une valeur
+  // arrondie, déplacée ou ajoutée le fait rougir. Les valeurs sont des
+  // arbitrages WellNeuro, aucune source ne les fonde (D-430 §2).
+  it('le registre porte EXACTEMENT les quinze fenêtres arbitrées', () => {
+    expect(FENETRES_FRAICHEUR_ORIENTATION).toEqual({
+      Q_GAS_01: { delaiJours: 21 },
+      Q_GAS_03: { delaiJours: 21 },
+      Q_INF_01: { delaiJours: 21 },
+      Q_NEU_11: { delaiJours: 7 },
+      Q_SOM_01: { delaiJours: 30 },
+      Q_SOM_02: { delaiJours: 7 },
+      Q_SOM_03: { delaiJours: 90 },
+      Q_SOM_05: { delaiJours: 365 },
+      Q_SOM_06: { delaiJours: 7 },
+      Q_STR_02: { delaiJours: 30 },
+      Q_STR_03: { delaiJours: 7 },
+      Q_STR_04: { delaiJours: 7 },
+      Q_STR_05: { delaiJours: 21 },
+      Q_STR_06: { delaiJours: 90 },
+      Q_STR_08: { delaiJours: 90 },
+    });
+  });
+
+  // D-430 §3 : une règle qui vise un instrument sans fenêtre ne se signe pas.
+  it('la table est COMPLÈTE : chaque instrument visé a sa fenêtre', () => {
+    expect(instrumentsSansFenetre(ORIENTATION_RULES_V1, FENETRES_FRAICHEUR_ORIENTATION)).toEqual([]);
+  });
+
+  // ET LE REGISTRE NE PORTE AUCUNE FENÊTRE ORPHELINE : ses clés sont
+  // exactement les instruments que les suggestions visent. Une fenêtre sans
+  // règle serait un arbitrage qui ne décide de rien, et le signe qu'une cible a
+  // changé sans que son registre suive.
+  it('le registre couvre EXACTEMENT les instruments visés, sans orpheline', () => {
+    const vises = new Set(ORIENTATION_RULES_V1.flatMap(r => r.suggestions.flatMap(s => (s.questionnaireId ? [s.questionnaireId] : []))));
+    expect(Object.keys(FENETRES_FRAICHEUR_ORIENTATION).sort()).toEqual([...vises].sort());
+    // La table ne vise aucun pack : le contrôle statique n'en couvre pas.
+    expect(ORIENTATION_RULES_V1.flatMap(r => r.suggestions).some(s => s.packId)).toBe(false);
+  });
+
+  // LA CONTRE-ÉPREUVE, sans laquelle « complète » ne prouve rien : retirer UNE
+  // fenêtre doit faire nommer l'instrument, et lui seul.
+  it('retirer une fenêtre fait nommer l’instrument, et lui seul', () => {
+    const { Q_NEU_11: _retiree, ...amputee } = FENETRES_FRAICHEUR_ORIENTATION;
+    expect(instrumentsSansFenetre(ORIENTATION_RULES_V1, amputee)).toEqual(['Q_NEU_11']);
+  });
+
+  it('une fenêtre illisible vaut une fenêtre absente', () => {
+    for (const delaiJours of [0, -7, 7.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const fenetres = { ...FENETRES_FRAICHEUR_ORIENTATION, Q_STR_03: { delaiJours } };
+      expect(instrumentsSansFenetre(ORIENTATION_RULES_V1, fenetres)).toEqual(['Q_STR_03']);
+    }
+  });
+
+  // TOUTES LES RÈGLES, QUEL QUE SOIT LEUR STATUT : la signature couvre la table
+  // entière. Une clé héritée du prototype n'est pas une fenêtre.
+  it('une règle non publiée compte, et une clé de prototype ne vaut pas fenêtre', () => {
+    const brouillon: OrientationRule = {
+      ...ORIENTATION_RULES_V1[0],
+      id: 'R-BANC-BROUILLON',
+      statut: 'brouillon',
+      suggestions: [{ questionnaireId: 'toString', priorite: 1 }],
+    };
+    expect(instrumentsSansFenetre([...ORIENTATION_RULES_V1, brouillon], FENETRES_FRAICHEUR_ORIENTATION)).toEqual(['toString']);
+  });
+});
+
 describe('orientationRulesV1 — gardes anti-dérive', () => {
   // À PLAT PAR FEUILLES : les gardes de ce bloc valent pour chaque branche
   // d'une disjonction, sinon un `ou` serait la porte de service des interdits
