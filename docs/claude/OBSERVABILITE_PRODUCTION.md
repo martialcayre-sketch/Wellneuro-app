@@ -168,8 +168,10 @@ l'hébergeur :
   alerte par e-mail. Elle voit l'hébergeur ou le routeur tombé, **pas** une
   base en panne derrière une page qui s'affiche encore — choix du responsable,
   sans route de santé à coder ;
-- page d'état `https://wellneuro.betteruptime.com` : sans abonnement (aucune
-  adresse recueillie chez le tiers), masquée des moteurs de recherche ;
+- page d'état `https://wellneuro.betteruptime.com` (Better Stack, page
+  270413, sonde 5185405) : sans abonnement (aucune adresse recueillie chez le
+  tiers), indexable par les moteurs de recherche (choix du responsable),
+  interface du prestataire en anglais ;
 - son adresse est écrite dans les trois e-mails que le patient garde ou reçoit
   en dernier : `acces_portail@3`, `acces_portail_lien@2`, `lien_magique@2`
   (registre des gabarits, textes validés le 2026-11-04). Elle n'existe nulle
