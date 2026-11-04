@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
-import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import {
   ENTREES_AUTRES_ESPACES,
+  GROUPES_AUTRES_ESPACES,
   hrefEntree,
   type CleEntree,
 } from '@/components/patient/autres-espaces/entreesAutresEspaces';
@@ -17,10 +17,11 @@ vi.mock('next/navigation', () => ({
 import QuestionnairesHubPage from './page';
 
 /*
- * FILET DE « AUTRES ESPACES » SUR LE HUB (lot L1 de l'audit « rails et menus »,
- * chapitre 11 ; EP-03, EP-04, EP-17, EP-20). Le rendu doit rester IDENTIQUE :
- * même `<nav aria-label="Autres espaces">`, même ligne plate, même classe sur
- * chaque lien, même ordre — celui de `ENTREES_AUTRES_ESPACES`.
+ * « AUTRES ESPACES » SUR LE HUB, RANGÉS EN GROUPES (lot L2 de l'audit « rails
+ * et menus », chapitre 11 ; [[D-423]] §2 à §6 ; filet posé par L1 : EP-03,
+ * EP-04, EP-17, EP-20). Même `<nav aria-label="Autres espaces">`, l'ancre
+ * « Mon parcours », puis les groupes servis, dans l'ordre de
+ * `ENTREES_AUTRES_ESPACES`.
  *
  * Les réponses des sondes par état sont celles des routes (lues le 2026-11-03,
  * sous `web/src/app/api/portail/`) : bibliotheque/route.ts:40-41,
@@ -72,6 +73,7 @@ function monter(session: {
   sondesFermees?: boolean;
   avantDeCommencerRequis?: boolean;
   statutAge?: string;
+  protocoleDiffuse?: boolean;
 }) {
   const sondes = reponsesSondes(session.age, {
     bibliothequeDrapeau: session.bibliothequeDrapeau ?? true,
@@ -95,6 +97,9 @@ function monter(session: {
           dossierOuvert: session.dossierOuvert,
         }),
       };
+    }
+    if (chemin === '/api/portail/protocole') {
+      return { ok: true, status: 200, json: async () => ({ ok: true, protocoleDiffuse: session.protocoleDiffuse === true, finDeCycle: false }) };
     }
     if (chemin === '/api/portail/trust/etat') {
       return { ok: true, status: 200, json: async () => ({ ok: true, avantDeCommencerRequis: session.avantDeCommencerRequis === true }) };
@@ -120,10 +125,24 @@ async function navApresSondes(fetchMock: ReturnType<typeof vi.fn>) {
   return nav;
 }
 
+/** Les entrées des groupes, à plat, ancre « Mon parcours » exclue. */
 function liensDe(nav: HTMLElement) {
   return within(nav)
     .queryAllByRole('link')
+    .filter(lien => lien.getAttribute('aria-current') !== 'page')
     .map(lien => [lien.textContent, lien.getAttribute('href')]);
+}
+
+/** Chaque groupe rendu : son étiquette, puis ses liens. */
+function groupesDe(nav: HTMLElement) {
+  return within(nav)
+    .queryAllByRole('list')
+    .map(liste => [
+      liste.getAttribute('aria-labelledby') ? document.getElementById(liste.getAttribute('aria-labelledby')!)?.textContent : null,
+      within(liste)
+        .queryAllByRole('link')
+        .map(lien => lien.textContent),
+    ]);
 }
 
 function attendus(cles: CleEntree[]) {
@@ -131,30 +150,30 @@ function attendus(cles: CleEntree[]) {
 }
 
 const MAJEUR_BIBLIOTHEQUE: CleEntree[] = [
+  'suivi',
+  'carnet',
   'bilan',
   'bibliotheque',
   'courrierMedecin',
   'courrierComplement',
   'pourVotreMedecin',
+  'renseignements',
   'compteRendu',
   'depot',
-  'renseignements',
-  'carnet',
-  'suivi',
-  'echanges',
   'dossier',
+  'echanges',
 ];
 
 const MINEUR: CleEntree[] = [
+  'suivi',
+  'carnet',
   'bilan',
   'fiches',
   'courrierMedecin',
   'courrierComplement',
   'pourVotreMedecin',
-  'compteRendu',
   'renseignements',
-  'carnet',
-  'suivi',
+  'compteRendu',
   'dossier',
 ];
 
@@ -165,20 +184,70 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('« Autres espaces » — liste exacte et rendu inchangé', () => {
-  it('sondes ouvertes : douze liens, dans l’ordre de la liste, classe ghost, nav flex-wrap', async () => {
+describe('« Autres espaces » — groupes et ordre exacts (D-423 §2)', () => {
+  it('sondes ouvertes : quatre groupes, entrées dans l’ordre écrit, sur le modèle de SidebarRail', async () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true });
     const nav = await navApresSondes(fetchMock);
     await waitFor(() => expect(liensDe(nav)).toEqual(attendus(MAJEUR_BIBLIOTHEQUE)));
-    expect(nav.getAttribute('aria-label')).toBe('Autres espaces');
-    expect(nav.className).toBe('flex flex-wrap gap-3');
+    expect(groupesDe(nav)).toEqual([
+      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']],
+      [
+        'Ce que j’ai reçu',
+        ['Consulter mon bilan', 'Ma bibliothèque', 'Courrier pour votre médecin', 'Courrier à remettre à votre médecin', 'Pour votre médecin'],
+      ],
+      ['Ce que je transmets', ['Ma fiche de renseignements', 'Transmettre un compte rendu d’analyses', 'Déposer un document']],
+      ['Avec mon praticien', ['Ouvrir mon dossier à deux voix', 'Ouvrir mes échanges']],
+    ]);
+    // Étiquettes de groupe : des titres visibles, dans l'ordre de la décision.
+    expect(within(nav).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(
+      GROUPES_AUTRES_ESPACES.map(g => g.libelle),
+    );
+  });
+
+  it('l’ancre « Mon parcours » ouvre la nav, vers le hub, seul élément actif (§4)', async () => {
+    const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true });
+    const nav = await navApresSondes(fetchMock);
+    await waitFor(() => expect(liensDe(nav)).toHaveLength(12));
+    const liens = within(nav).getAllByRole('link');
+    expect(liens[0].textContent).toBe('Mon parcours');
+    expect(liens[0].getAttribute('href')).toBe('/portail/PAT_TEST/questionnaires');
+    expect(liens.filter(l => l.getAttribute('aria-current') === 'page')).toEqual([liens[0]]);
+    // « Mon parcours » reste UN SEUL titre : l'ancre est un lien, pas un titre.
+    expect(screen.getAllByRole('heading', { name: /^Mon parcours$/ })).toHaveLength(1);
+    expect(within(nav).queryByRole('heading', { name: 'Mon parcours' })).toBeNull();
+  });
+
+  it('chaque lien une seule fois, une seule landmark de ce nom', async () => {
+    const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true });
+    const nav = await navApresSondes(fetchMock);
+    await waitFor(() => expect(liensDe(nav)).toHaveLength(12));
+    const hrefs = within(nav).getAllByRole('link').map(l => l.getAttribute('href'));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(screen.getAllByRole('navigation', { name: 'Autres espaces' })).toHaveLength(1);
+    // Hors de la nav, aucun Lien* ne rend plus le sien (`sondeSeule`).
+    for (const { libelle } of ENTREES_AUTRES_ESPACES) {
+      expect(screen.queryAllByRole('link', { name: libelle }).filter(l => !nav.contains(l))).toEqual([]);
+    }
+  });
+
+  it('liens de liste, cible de 44 px en rem, aucun bouton ghost, rien du rail praticien', async () => {
+    const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true });
+    const nav = await navApresSondes(fetchMock);
+    await waitFor(() => expect(liensDe(nav)).toHaveLength(12));
     for (const lien of within(nav).getAllByRole('link')) {
       expect(lien.tagName).toBe('A');
-      expect(lien.className).toBe(patientButtonClassName('ghost'));
+      // jsdom ne mesure rien : on épingle la règle de rendu. `min-h-11` vaut
+      // 2,75 rem, soit 44 px à 100 % et davantage au confort 112,5 %.
+      expect(lien.className.split(' ')).toContain('min-h-11');
+      expect(lien.className).not.toMatch(/\bmin-h-12\b|\bpx-\[22px\]/);
     }
-    // Une seule landmark de ce nom, aucun titre visible ajouté.
-    expect(screen.getAllByRole('navigation', { name: 'Autres espaces' })).toHaveLength(1);
-    expect(within(nav).queryByRole('heading')).toBeNull();
+    for (const lien of within(nav).getAllByRole('link').filter(l => l.getAttribute('aria-current') !== 'page')) {
+      expect(lien.closest('li')).not.toBeNull();
+    }
+    expect(nav.outerHTML).not.toMatch(/\bbg-rail|rail-|data-theme="praticien"/);
+    expect(nav.closest('[data-theme="praticien"]')).toBeNull();
+    // Aucun repli dans la nav (§2).
+    expect(nav.querySelector('details')).toBeNull();
   });
 
   it('chaque sonde n’est appelée qu’une fois (la remontée d’état ne relance rien)', async () => {
@@ -191,22 +260,21 @@ describe('« Autres espaces » — liste exacte et rendu inchangé', () => {
     }
   });
 
-  it('sondes fermées, bilan non consultable : carnet et suivi seuls', async () => {
+  it('sondes fermées, bilan non consultable : « Au jour le jour » seul, aucune autre étiquette', async () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: false, sondesFermees: true });
     const nav = await navApresSondes(fetchMock);
-    expect(liensDe(nav)).toEqual([
-      ['Ouvrir Mon carnet alimentaire', '/portail/PAT_TEST/alimentation'],
-      ['Ouvrir mes rendez-vous de suivi', '/portail/PAT_TEST/suivi'],
-    ]);
+    expect(groupesDe(nav)).toEqual([['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']]]);
+    for (const libelle of ['Ce que j’ai reçu', 'Ce que je transmets', 'Avec mon praticien']) {
+      expect(screen.queryByText(libelle)).toBeNull();
+    }
   });
 
-  it('les trois liens écrits dans le JSX : bilan sur `bilanConsultable` seul, carnet et suivi toujours', async () => {
+  it('sondes fermées, bilan consultable : « Ce que j’ai reçu » porte le bilan seul', async () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true, sondesFermees: true });
     const nav = await navApresSondes(fetchMock);
-    expect(liensDe(nav)).toEqual([
-      ['Consulter mon bilan', '/portail/PAT_TEST/bilan'],
-      ['Ouvrir Mon carnet alimentaire', '/portail/PAT_TEST/alimentation'],
-      ['Ouvrir mes rendez-vous de suivi', '/portail/PAT_TEST/suivi'],
+    expect(groupesDe(nav)).toEqual([
+      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']],
+      ['Ce que j’ai reçu', ['Consulter mon bilan']],
     ]);
   });
 });
@@ -240,6 +308,28 @@ describe('« Autres espaces » — matrice majeur, mineur, dossier clos (EP-20)'
     const nav = await navApresSondes(fetchMock);
     await waitFor(() => expect(liensDe(nav)).toEqual(attendus(cles)));
     expect(screen.queryByText(TITRE_MINEUR) !== null).toBe(ecranMineur);
+    // Un groupe rendu a toujours au moins un lien.
+    for (const [, liens] of groupesDe(nav)) expect((liens as string[]).length).toBeGreaterThan(0);
+  });
+});
+
+describe('« Mon accompagnement » — déplié d’office quand un protocole est servi (D-423 §3, Q19)', () => {
+  const blocAccompagnement = () => screen.getByText('Mon accompagnement', { selector: 'summary' }).closest('details')!;
+
+  it('protocole servi : déplié', async () => {
+    const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: false, protocoleDiffuse: true });
+    await navApresSondes(fetchMock);
+    await waitFor(() => expect(blocAccompagnement().open).toBe(true));
+  });
+
+  it('sans protocole servi : replié', async () => {
+    const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: false, protocoleDiffuse: false });
+    await navApresSondes(fetchMock);
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([u]) => new URL(String(u), 'http://localhost').pathname === '/api/portail/protocole')).toBe(true),
+    );
+    await new Promise(resoudre => setTimeout(resoudre, 0));
+    expect(blocAccompagnement().open).toBe(false);
   });
 });
 

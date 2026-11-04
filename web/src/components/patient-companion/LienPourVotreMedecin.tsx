@@ -12,7 +12,16 @@ import { TITRE_DOCUMENT_MEDECIN } from '@/components/patient/document-medecin/te
 // FAIL-CLOSED : tant que la sonde n'a pas répondu oui aux deux, le lien
 // n'existe pas.
 
-export function LienPourVotreMedecin({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
+export function LienPourVotreMedecin({
+  token,
+  onSonde,
+  sondeSeule = false,
+}: {
+  token: string;
+  onSonde?: (ouvert: boolean) => void;
+  /** Sonde et rapporte sans rendre de lien : le hub rend la liste ([[D-423]] §2, lot L2). */
+  sondeSeule?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -37,7 +46,7 @@ export function LienPourVotreMedecin({ token, onSonde }: { token: string; onSond
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!visible) return null;
+  if (!visible || sondeSeule) return null;
 
   return (
     <a href={`/portail/${token}/pour-votre-medecin`} className={patientButtonClassName('ghost')}>

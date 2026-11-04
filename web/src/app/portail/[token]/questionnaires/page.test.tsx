@@ -53,13 +53,14 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
   }
 
   const TITRE = 'Avant 18 ans, un parent donne d’abord son accord';
-  const COMPTEUR = /Un questionnaire à compléter/;
+  const lienVersTest = () =>
+    screen.queryAllByRole('link').filter(l => l.getAttribute('href') === '/portail/PAT_TEST/questionnaires/ASS_TEST');
 
   it('★ un dossier mineur ouvert voit le texte des mineurs, numéros appelables', async () => {
     stubAssignations({ statutAge: 'mineur', dossierOuvert: true });
     render(<QuestionnairesHubPage />);
     await waitFor(() => expect(screen.getByText(TITRE)).not.toBeNull());
-    expect(screen.queryByText(COMPTEUR)).toBeNull();
+    expect(lienVersTest()).toHaveLength(0);
     expect(screen.queryByText('Questionnaire de test')).toBeNull();
     for (const numero of ['15', '112', '119']) {
       expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
@@ -77,10 +78,19 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     stubAssignations({ statutAge: 'majeur', dossierOuvert: true });
     render(<QuestionnairesHubPage />);
     // Contre-épreuve de la fixture : servie à un majeur, l'assignation est
-    // comptée à compléter (le compteur reste complet même quand « Mon
-    // parcours » porte la carte).
-    await waitFor(() => expect(screen.getByText(COMPTEUR)).not.toBeNull());
+    // proposée (par « Mon parcours » ou par la liste).
+    await waitFor(() => expect(lienVersTest().length).toBeGreaterThan(0));
     expect(screen.queryByText(TITRE)).toBeNull();
+  });
+
+  // [[D-423]] §6 (Q18) : le compteur « N questionnaires à compléter · ≈ N min »
+  // est retiré ; aucune famille d'exceptions de D-333 ne l'admet.
+  it('★ le compteur des questionnaires à compléter n’est plus rendu', async () => {
+    stubAssignations({ statutAge: 'majeur', dossierOuvert: true });
+    render(<QuestionnairesHubPage />);
+    await waitFor(() => expect(lienVersTest().length).toBeGreaterThan(0));
+    expect(screen.queryByText(/questionnaires? à compléter/)).toBeNull();
+    expect(document.body.textContent).not.toContain('≈');
   });
 });
 
@@ -140,26 +150,22 @@ describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
     await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
   }
 
-  const COMPTEUR = /questionnaire à compléter/;
   const lienVers = (id: string) =>
     screen.queryAllByRole('link').filter(l => l.getAttribute('href') === `/portail/PAT_TEST/questionnaires/${id}`);
 
   it('majeur ouvert : le questionnaire en attente est proposé', async () => {
     await rendre({ statutAge: 'majeur', dossierOuvert: true });
-    expect(screen.getByText(COMPTEUR)).not.toBeNull();
     expect(lienVers('ASS_ATTENTE').length).toBeGreaterThan(0);
   });
 
   it('mineur ouvert : rien n’est proposé (pause du mineur, inchangée)', async () => {
     await rendre({ statutAge: 'mineur', dossierOuvert: true });
-    expect(screen.queryByText(COMPTEUR)).toBeNull();
     expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
     expect(screen.queryByText('Questionnaire en attente')).toBeNull();
   });
 
   it('★ clos majeur : le questionnaire en attente n’est plus proposé, le transmis reste consultable', async () => {
     await rendre({ statutAge: 'majeur', dossierOuvert: false });
-    expect(screen.queryByText(COMPTEUR)).toBeNull();
     expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
     expect(screen.queryByText('Questionnaire en attente')).toBeNull();
     expect(screen.queryByText(/Commencer/)).toBeNull();
@@ -169,7 +175,6 @@ describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
 
   it('★ clos mineur : le questionnaire en attente n’est plus proposé, le transmis reste consultable', async () => {
     await rendre({ statutAge: 'mineur', dossierOuvert: false });
-    expect(screen.queryByText(COMPTEUR)).toBeNull();
     expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
     expect(screen.queryByText('Questionnaire en attente')).toBeNull();
     expect(screen.queryByText(/Commencer/)).toBeNull();
