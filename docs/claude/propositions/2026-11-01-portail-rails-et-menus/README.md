@@ -649,12 +649,33 @@ Même protocole que L1 et L2 : dev local sur le Mac, navigateur intégré, base 
 - Non constaté à l'écran : l'étape 6 courante sans bilan consultable et le bilan rejeté après coup (épinglés au banc de câblage) ; `prochaine_etape_prete` (même cible que `restitution_disponible`, épinglée au banc de la table).
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
+- **État (2026-11-05)** : livré éteint sous `WN_PORTAIL_MENU` après les réponses à Q40–Q43 (chapitre 18), sous [[D-442]] ; servi au seul dossier majeur ([[D-283]] §5). Le même drapeau pose le lien d'accueil du mot-symbole (Q24) et le lien d'évitement (Q43). Les dix sondes sont montées une fois au layout et partagées avec « Autres espaces ». Constat à l'écran consigné ci-dessous.
 - Périmètre : composant client sous `components/patient/` lisant `useParams`, monté dans `portail/layout.tsx`, rendu seulement session ouverte et murs franchis ; `PanneauSuperpose theme="patient"` ; liens en `<Link>` ; sondes en contexte ; `print:hidden` ; `aria-current`.
 - Bancs : parité hub/menu sur une même source ; un `aria-current` sur au moins huit chemins dont `/fiches` contre `/fiches/<id>` ; aucune nav hors session ni pendant un mur ; garde de thème ; cibles.
 - E2E : 390x844 et Desktop (ouverture, Échap, focus rendu, cible ≥ 44 px, pas de recouvrement du pied), `axe` sur le hub, confort 112,5 %.
 - Drapeau : serveur, lu dans `layout.tsx`, livré éteint, entrée dans `docs/FEATURE_FLAGS.md`, armé dans `playwright.config.ts` et la commande de build (Q16).
 - Décision : une D-xxx qui précise A6-R1 côté patient et `frontend-ui.md:36-40`. Bases d'images : `portail-connexion` inclut le chrome ; régénération par `visual-baselines` au premier CI rouge. Validation : T2 ; T3 et `wn-reviewer` si la session est touchée.
 - Fin : bancs et T2 verts sur les deux projets, constat à 390 px et à 112,5 %, impression d'une page vérifiée.
+
+#### Constat à l'écran de L3 (2026-11-05)
+Même protocole que L1 à L2b : dev local sur le Mac, navigateur intégré, base éphémère de `test:worktree --fast --keep-db` (après un T2 vert, 331 E2E passés sur les deux projets). `WN_PORTAIL_MENU` armé côté serveur. Patients fictifs du seed, états posés en base de test : Sophie Nicola majeure ; Jennifer Martin mineure (date de naissance passée à 2012) ; Michel Dogné majeur et clos (`suiviClotureLe` posé), puis ses accusés « Avant de commencer » retirés. Mesures par `getBoundingClientRect` ; « page » = `scrollWidth` / `clientWidth` du document.
+
+| Dossier, page | Largeur | Bouton « Menu » | Mot-symbole | Panneau | Page |
+|---|---|---|---|---|---|
+| Connexion | 390 px | absent | texte | — | 390 / 390 |
+| Sophie, majeure, `/suivi` | 390 px | 44 px de haut, après « Wellneuro » | lien vers le hub | 390 x 844, `data-theme="patient"` ; « Mon parcours », puis rendez-vous de suivi (`aria-current="page"`), carnet, dossier à deux voix ; liens de 44 px | 390 / 390 |
+| Sophie, `/suivi`, confort 112,5 % | 390 px | 50 px | lien vers le hub | liens de 49,5 px | 390 / 390 |
+| Sophie, `/suivi` | 1 024 px | présent | lien vers le hub | 576 x 800, à droite | 1 024 / 1 024 |
+| Sophie, hub | 390 px | présent | lien vers le hub | « Mon parcours » actif | 390 / 390 |
+| Jennifer, mineure | 390 px | absent ([[D-283]] §5) | lien vers le hub | — | 390 / 390 |
+| Michel, majeur clos | 390 px | présent (la garde suit l'âge, Q36) | lien vers le hub | — | 390 / 390 |
+| Michel, « Avant de commencer » requis | 390 px | absent | texte | — | 390 / 390 |
+
+- Ordre de l'en-tête à 390 px : « Wellneuro », « Menu », « Confort de lecture », « Se déconnecter ». **L'en-tête garde sa hauteur** : 133 px avec ou sans le bouton, qui tient sur la ligne du mot-symbole ; 77 px à 1 024 px ; 150 px en confort 112,5 % à 390 px.
+- Échap ferme le panneau et rend le focus au bouton ; un lien suivi le ferme ; « Fermer Mon espace » et la description « Les pages de votre espace. » sont posés par la primitive.
+- Sondes : sur le hub, chacune des dix sondes est appelée une fois ; `assignations` et `trust/etat` deux fois chacune (la lecture du hub, et celle du menu que nomme [[D-442]] §1). Sur une sous-page de la mineure, aucune sonde.
+- Impression : vérifiée par l'émulation `print` de l'E2E (le bouton disparaît), non imprimée sur papier.
+- Non constaté à l'écran : le mineur clos (épinglé au banc, comme en L1 et L2) ; le lien d'évitement au premier Tab et son arrivée sur `main#contenu` (épinglés à l'E2E, sur les deux projets).
 
 ### L4 — Barre basse (facultatif)
 - Seulement après arbitrage nommé de ses entrées (seules les entrées sans drapeau sont stables : accueil, rendez-vous de suivi, carnet ; la maquette 4.0 propose Accueil, Journal, Suivi, Documents, où « Journal » est le carnet alimentaire, entrée stable ; Q25) et du sort du pied d'urgence. Réserve de bas appliquée au conteneur, `viewport` posé dans `portail/layout.tsx`, `print:hidden`, absente sur les murs d'entrée et les écrans de saisie. Mêmes bancs et E2E que L3, plus la hauteur sous confort agrandi.
@@ -823,3 +844,14 @@ Le constat à l'écran de L2 (chapitre 11) lui a été présenté le 2026-11-04 
 
 Appliqué en L2b, sans question nouvelle : la frise navigable est une surface neuve (D-423 §7) ; [[D-283]] §5 n'ouvre aucune surface neuve à un mineur et traite un âge inconnu comme celui d'un mineur. Elle est donc servie au seul dossier majeur, selon l'âge et non la clôture, comme les entrées du menu (Q36) ; un mineur, clos ou non, garde la frise d'avant.
 
+
+## 18. Réponses du responsable à l'ouverture de L3 (2026-11-04)
+
+Après la livraison de L2b (#1865), le responsable a ouvert L3 (« Ouvrir L3 »). Quatre questions ont été posées à options fermées, recommandation en première option ; les quatre recommandations sont retenues. Le texte de décision qui en découle est `decision-D-442-menu-mon-espace.md`, à côté de ce document.
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q40 (Q15) Noms du bouton et du menu | **« Menu » / « Mon espace »** : bouton « Menu » dans l'en-tête ; panneau et navigation nommés « Mon espace », distincts de « Autres espaces » | D-442 §2 et §4 ; même sens que le retour « ← Mon espace » de `/conditions` |
+| Q41 Pages | **Toutes les pages de session**, hub et écrans de saisie compris ; jamais sur la connexion, `lien/indisponible`, les écrans de `[token]/page.tsx`, ni avant les murs d'entrée | D-442 §1 ; conforme à D-423 §4, qui allume « Mon parcours » sur `/questionnaires/[idAssignation]` |
+| Q42 Mineurs | **Majeurs seuls** ([[D-283]] §5), selon l'âge et non la clôture (Q36) | D-442 §1 ; même règle que la frise navigable de L2b |
+| Q43 Lien d'évitement | **Oui, dans L3** : « Aller au contenu », visible au focus, vers `<main id="contenu">` | D-442 §6 ; texte patient à accepter |

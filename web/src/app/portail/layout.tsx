@@ -6,6 +6,9 @@ import { BoutonDeconnexion } from '@/components/patient/BoutonDeconnexion';
 import { PiedDePageInformations } from '@/components/patient/trust/PiedDePageInformations';
 import { PiedDePageUrgence } from '@/components/patient/PiedDePageUrgence';
 import { PORTAIL_COOKIE_NAME, verifyPatientSession } from '@/lib/patient-session';
+import { menuPortailOuvert } from '@/components/patient/menu/menuDrapeau';
+import { BoutonMenuMonEspace, FournisseurMenuPortail, MotSymbole } from '@/components/patient/menu/MenuMonEspace';
+import { LIEN_EVITEMENT } from '@/components/patient/menu/textesMenu';
 
 export const metadata: Metadata = {
   title: 'Wellneuro — Espace patient',
@@ -27,10 +30,24 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   // celui qui nettoie.
   const jar = await cookies();
   const sessionOuverte = verifyPatientSession(jar.get(PORTAIL_COOKIE_NAME)?.value ?? '') !== null;
-  return (
+  // Menu « Mon espace » ([[D-442]]) : drapeau serveur, lu à chaque requête.
+  // Fermé, le portail est exactement celui d'avant — ni lien d'évitement, ni
+  // lien d'accueil, ni bouton, et aucun composant du menu monté.
+  const menu = menuPortailOuvert();
+  const portail = (
     // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
     // sable, pas de dégradé).
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Lien d'évitement ([[D-442]] §6) : premier arrêt de tabulation,
+          visible au focus seulement. */}
+      {menu && (
+        <a
+          href="#contenu"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-primary print:hidden"
+        >
+          {LIEN_EVITEMENT}
+        </a>
+      )}
       {/* À l'impression, le chrome de l'application disparaît : seule la page
           sort. « Mon bilan » se montre au médecin traitant, et une capture
           d'écran de logiciel n'est pas un document. Le contrôle de confort de
@@ -41,13 +58,25 @@ export default async function PortailLayout({ children }: { children: ReactNode 
           lui, l'en-tête déborde ou comprime ses libellés ; avec lui, le groupe
           de droite passe à la ligne et les cibles tactiles gardent leurs 44 px. */}
       <header className="py-4 px-6 border-b border-border bg-surface/80 backdrop-blur flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
+        {menu ? (
+          // Mot-symbole en lien d'accueil, puis le bouton « Menu » ([[D-442]] §1, §5).
+          <div className="flex flex-wrap items-center gap-3">
+            <MotSymbole />
+            <BoutonMenuMonEspace />
+          </div>
+        ) : (
+          <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
+        )}
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ReadingComfortControl />
           {sessionOuverte && <BoutonDeconnexion />}
         </div>
       </header>
-      <main className="flex-1 flex flex-col items-center px-4 py-8">
+      <main
+        id={menu ? 'contenu' : undefined}
+        tabIndex={menu ? -1 : undefined}
+        className={`flex-1 flex flex-col items-center px-4 py-8${menu ? ' focus:outline-none' : ''}`}
+      >
         {children}
       </main>
       <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1 print:hidden">
@@ -64,4 +93,5 @@ export default async function PortailLayout({ children }: { children: ReactNode 
       </footer>
     </div>
   );
+  return menu ? <FournisseurMenuPortail sessionOuverte={sessionOuverte}>{portail}</FournisseurMenuPortail> : portail;
 }

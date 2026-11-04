@@ -334,6 +334,11 @@
 - Côté patient (« le Jardin »), principe **inverse** : une étape à la fois
   (séquentiel, pas de hub empilé), la Spirale montrée comme construction,
   jamais un tableau de bord ni un score.
+  *Précision du 2026-11-04 ([[D-442]] §7)* : « une étape à la fois » règle le
+  contenu d'une page — une seule chose mise en avant, aucune pile d'étapes. Un
+  menu des espaces fermé par défaut, ouvert au seul geste du patient (le menu
+  « Mon espace »), ne l'enfreint pas : il ne met rien en avant et ne fait
+  avancer aucune étape.
 - Typographie : échelle **remontée** (corps 16px, titres de section en
   `font-display`, hiérarchie display ≥ 28px) ; `ReadingComfortControl` monté
   sur les **deux surfaces patient** — portail (`app/portail/layout.tsx`) et

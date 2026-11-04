@@ -2158,6 +2158,7 @@ Mise à jour (2026-10-23, D-346, amende D-288 §3) : l'encart bd n'attend plus l
 | Page « Mes résultats de biologie » | F65 | 9 [Hypothese] | BP-21b ; textes signés |
 | Imprimable du protocole | H69 | 5 [Hypothese] | pas de place à part, lecture à confirmer |
 | Frise des étapes navigable du hub (lot L2b de l'audit « rails et menus ») | D-423 §7 et §8 | livrée éteinte le 2026-11-04 | `WN_PORTAIL_FRISE_NAVIGABLE`, servie au seul dossier majeur (D-283 §5) ; ordre de préparation après l'encart ; porte 18 ; constat sur dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 % |
+| Menu patient « Mon espace » (lot L3 de l'audit « rails et menus ») | D-442 | livré éteint | `WN_PORTAIL_MENU`, servi au seul dossier majeur (D-283 §5) ; ordre de préparation après l'encart ; porte 18 ; constat sur dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 %, une page imprimée |
 
 ### Hors file
 
