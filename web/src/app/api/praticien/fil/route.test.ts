@@ -42,6 +42,17 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   },
 }));
 
+// LA CARTE « SANS AVANCÉE » ([[D-440]]) lit par son propre module : simulé
+// ici, vide par défaut. Ses lectures se jugent par leur forme dans le module
+// pur ; ce banc juge ce que la route en fait — l'ordre, le refus, le repli.
+const { sansAvancee } = vi.hoisted(() => ({
+  sansAvancee: {
+    lireDossiersParcours: vi.fn(async () => ({ dossiers: [] as unknown[], noms: new Map<string, string>() })),
+    ceQuiRetientT0: vi.fn(async (ids: string[]) => new Map<string, string[] | null>(ids.map(id => [id, []]))),
+  },
+}));
+vi.mock('@/lib/fil/sansAvanceeServeur', () => sansAvancee);
+
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -403,6 +414,126 @@ describe('GET /api/praticien/fil', () => {
       const toutes = [...cles(payload.cartes), ...cles(payload.lues)];
       expect(toutes).not.toContain('geste_objectif:RAT_1');
       expect(cles(payload.lues)).toEqual(['geste_objectif:RAT_2']);
+    });
+  });
+
+  describe('carte « Sans avancée » (D-440)', () => {
+    const JOUR = 24 * 60 * 60 * 1000;
+    const ilYa = (jours: number) => new Date(Date.now() - jours * JOUR);
+    const dossier = (idPatient: string, surcharge: Record<string, unknown> = {}) => ({
+      idPatient,
+      actif: true,
+      suiviClos: false,
+      rendezVousAVenir: false,
+      aDesReponses: true,
+      t0ConsigneLe: null,
+      diffuse: false,
+      pas: { reponse: ilYa(45) },
+      questionnairesSansReponse: [],
+      ...surcharge,
+    });
+    const noms = new Map([
+      ['PAT_SOPHIE', 'Sophie Nicola'],
+      ['PAT_JENNIFER', 'Jennifer Martin'],
+      ['PAT_MICHEL', 'Michel Dogné'],
+    ]);
+    const types = (cartes: { type: string }[]) => cartes.map(c => c.type);
+
+    it('placée entre le retard et la reprise, avec ce qui retient le T0', async () => {
+      sansAvancee.lireDossiersParcours.mockResolvedValueOnce({ dossiers: [dossier('PAT_SOPHIE')], noms });
+      sansAvancee.ceQuiRetientT0.mockResolvedValueOnce(new Map([['PAT_SOPHIE', ['Anamnèse consignée']]]));
+      prisma.assignation.findMany.mockResolvedValue([
+        { idAssignation: 'ASG_J', idPatient: 'PAT_JENNIFER', titre: 'Q', dateLimite: '2026-01-10', statut: 'En attente', statutReponses: 'non_rempli' },
+      ]);
+      prisma.questionnaireReponse.groupBy.mockResolvedValue([
+        { idPatient: 'PAT_MICHEL', _max: { dateReponse: ilYa(400) }, _min: { dateReponse: ilYa(400) } },
+      ]);
+      prisma.patient.findMany.mockResolvedValue([
+        { idPatient: 'PAT_JENNIFER', prenom: 'Jennifer', nom: 'Martin', suiviClotureLe: null },
+        { idPatient: 'PAT_MICHEL', prenom: 'Michel', nom: 'Dogné', suiviClotureLe: null },
+      ]);
+
+      const payload = await (await GET()).json();
+      expect(types(payload.cartes)).toEqual(['assignation_en_retard', 'sans_avancee', 'reprise']);
+      const carte = payload.cartes[1];
+      expect(carte).toMatchObject({
+        patient: 'Sophie Nicola',
+        titre: 'Réponses reçues, T0 non consigné',
+        ceQuiRetientT0: 'Ce qui retient le T0 : Anamnèse consignée',
+      });
+      expect(sansAvancee.ceQuiRetientT0).toHaveBeenCalledWith(['PAT_SOPHIE']);
+    });
+
+    it('l’évaluation des préconditions échoue : la carte le dit, elle ne se tait pas', async () => {
+      sansAvancee.lireDossiersParcours.mockResolvedValueOnce({ dossiers: [dossier('PAT_SOPHIE')], noms });
+      sansAvancee.ceQuiRetientT0.mockResolvedValueOnce(new Map([['PAT_SOPHIE', null]]));
+      const payload = await (await GET()).json();
+      expect(payload.cartes[0].ceQuiRetientT0).toBe('Ce qui retient le T0 : non vérifié, voir la fiche.');
+    });
+
+    it('aucune condition dure manquante : pas de ligne', async () => {
+      sansAvancee.lireDossiersParcours.mockResolvedValueOnce({ dossiers: [dossier('PAT_SOPHIE')], noms });
+      const payload = await (await GET()).json();
+      expect(payload.cartes[0].type).toBe('sans_avancee');
+      expect(payload.cartes[0].ceQuiRetientT0).toBeUndefined();
+    });
+
+    it('le T0 ne s’évalue que pour la situation 1', async () => {
+      sansAvancee.lireDossiersParcours.mockResolvedValueOnce({
+        dossiers: [
+          dossier('PAT_SOPHIE', { t0ConsigneLe: ilYa(50), pas: { episode_confirme: ilYa(50) } }),
+          dossier('PAT_JENNIFER', {
+            aDesReponses: false,
+            pas: {},
+            questionnairesSansReponse: [{ dateAssignation: ilYa(40), dateLimite: null }],
+          }),
+        ],
+        noms,
+      });
+      const payload = await (await GET()).json();
+      expect(types(payload.cartes)).toEqual(['sans_avancee', 'sans_avancee']);
+      expect(sansAvancee.ceQuiRetientT0).toHaveBeenCalledWith([]);
+    });
+
+    it('une carte de geste SERVIE retient le dossier ; écartée, elle ne le retient plus', async () => {
+      sansAvancee.lireDossiersParcours.mockResolvedValue({ dossiers: [dossier('PAT_SOPHIE')], noms });
+      prisma.syntheseIA.findMany.mockResolvedValue([
+        { idSynthese: 'SYN_1', idPatient: 'PAT_SOPHIE', dateGeneration: new Date('2026-07-20T09:00:00.000Z') },
+      ]);
+      prisma.patient.findMany.mockResolvedValue([
+        { idPatient: 'PAT_SOPHIE', prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null },
+      ]);
+      expect(types((await (await GET()).json()).cartes)).toEqual(['synthese_a_valider']);
+
+      prisma.filCardRejection.findMany.mockResolvedValue([{
+        id: 'R1',
+        carteCle: 'synthese_a_valider:agregat:PAT_SOPHIE:2026-07-20T09:00:00.000Z',
+        refusee: true,
+        supersedesRejectionId: null,
+        refuseLe: new Date(),
+      }]);
+      expect(types((await (await GET()).json()).cartes)).toEqual(['sans_avancee']);
+      sansAvancee.lireDossiersParcours.mockReset();
+      sansAvancee.lireDossiersParcours.mockResolvedValue({ dossiers: [], noms: new Map() });
+    });
+
+    it('écartée, elle ne revient pas ; le refus est lu pour les dossiers de la carte aussi', async () => {
+      const reponse = new Date('2026-08-01T10:00:00.000Z');
+      sansAvancee.lireDossiersParcours.mockResolvedValueOnce({
+        dossiers: [dossier('PAT_SOPHIE', { pas: { reponse } })],
+        noms,
+      });
+      prisma.filCardRejection.findMany.mockResolvedValue([{
+        id: 'R1',
+        carteCle: `sans_avancee:PAT_SOPHIE:${reponse.toISOString()}`,
+        refusee: true,
+        supersedesRejectionId: null,
+        refuseLe: new Date(),
+      }]);
+      const payload = await (await GET()).json();
+      expect(payload.cartes).toEqual([]);
+      expect(prisma.filCardRejection.findMany.mock.calls[0][0].where).toEqual({ idPatient: { in: ['PAT_SOPHIE'] } });
+      expect(sansAvancee.ceQuiRetientT0).toHaveBeenCalledWith([]);
     });
   });
 

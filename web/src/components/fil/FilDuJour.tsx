@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, FileText, FileUp, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldAlert, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, FileText, FileUp, Flag, FlagTriangleRight, FlaskConical, Hourglass, MailX, MessageSquare, PenLine, RotateCcw, ShieldAlert, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -35,6 +35,8 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   // « TRANSMIS » : un fait (le patient a déposé), pas un verdict sur le document.
   compte_rendu_transmis: { libelle: 'Transmis', icon: FileUp },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
+  // UN SILENCE CONSTATÉ ([[D-440]] §6) : ni qui doit agir, ni « oublié ».
+  sans_avancee: { libelle: 'Sans avancée', icon: Hourglass },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
   // UN LIBELLÉ NEUTRE, jamais « Alerte » : un patient qui conteste fait ce
   // qu'on lui demande, et le dossier à deux voix existe pour cela.
@@ -269,6 +271,10 @@ function CarteDuFil({
               <span>{carte.pourquoi}</span>
             </span>
           </div>
+          {/* [[D-440]] §7 : les conditions dures manquantes, recopiées. */}
+          {carte.ceQuiRetientT0 && (
+            <p className="mt-1.5 text-13 text-muted-foreground">{carte.ceQuiRetientT0}</p>
+          )}
         </div>
         {/* UNE CARTE NE S'ÉCARTE PAS : le compte rendu à lire ([[D-268]] §5),
             ni le compte rendu transmis ([[D-269]] §7). Seul le geste dans le
