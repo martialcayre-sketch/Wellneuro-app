@@ -34,7 +34,7 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Packs de consultation (registre + repli legacy) | `web/src/app/api/portail/valider/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api) | Quels questionnaires composent une consultation. | — | — | oui | — |
 | Portes biologiques des assiettes (5 lignes signées, 8 claims) | 1 surface(s) indirecte(s) seulement | Claims cités entiers et dernier résultat du dossier par marqueur, côte à côte et sans comparaison, sous la carte des assiettes indiquées. | WN_ASSIETTES_INDIQUEES, WN_CB_ENABLED, WN_CB_RESULTS_ENABLED | validationExterne | non | — |
 | Catalogue des questionnaires et scoring | `web/src/app/api/patient/submit/route.ts` (route-api)<br>`web/src/app/api/praticien/assignations/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api)<br>+ 48 indirecte(s) | Score et sous-scores d’un instrument passé par le patient. | WN_ALI_01_SIIN57, WN_ECHEANCE_OBLIGATOIRE | — | oui | — |
-| Rayon de corpus « biologie » → notebook 08 — Biologie fonctionnelle | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-09-01) |
+| Rayon de corpus « biologie » → notebook 08 — Biologie fonctionnelle | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « cognition » → notebook 05 — Cognition et mémoire | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « douleur » → notebook 06 — Douleurs chroniques | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « humeur » → notebook 04 — Humeur | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
@@ -46,5 +46,5 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 2 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 22 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
 
-24 source(s) recensée(s), dont **1 dormante(s)**.
+24 source(s) recensée(s), dont **0 dormante(s)**.
 

@@ -361,15 +361,22 @@ export default function QuestionnairesHubPage() {
     );
   }
 
-  const enriched = assignations.map(a => ({
-    a,
-    aff: affichage(
+  // Un dossier clos garde la lecture de ses archives, mais ne recueille plus
+  // rien (arbitrage du responsable du 2026-11-04) : ce qui reste « à
+  // compléter » sort de la liste, du compteur et du fil. Le mineur clos est
+  // servi en « majeur » plus haut : c'est ce filtre, pas `enPause`, qui le
+  // couvre. Les routes de saisie, elles, ne gardent pas la clôture (dette).
+  const enriched = assignations
+    .map(a => ({
       a,
-      brouillons.has(a.idAssignation),
-      agendas.find(g => g.idAssignation === a.idAssignation),
-      agendasAli.find(g => g.idAssignation === a.idAssignation),
-    ),
-  }));
+      aff: affichage(
+        a,
+        brouillons.has(a.idAssignation),
+        agendas.find(g => g.idAssignation === a.idAssignation),
+        agendasAli.find(g => g.idAssignation === a.idAssignation),
+      ),
+    }))
+    .filter(e => !(recueilsEnPause && e.aff.groupe === 'a_completer'));
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);

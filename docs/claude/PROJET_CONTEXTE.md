@@ -188,6 +188,8 @@ biologie fonctionnelle** — 987 actes NABM en base depuis le 2026-07-26 et
 
 2026-10-14 : constat du 2026-08-05 périmé. La bibliothèque de biologie est branchée depuis le 2026-09-01 (rayon CB-08) et appelée hors de son répertoire (tableau de bord, `api/praticien/biologie/*`, `api/portail/comptes-rendus`) ; seul le rayon CORPUS biologie reste `dormante` dans `docs/claude/corpus/consommation_decisions.json`. L'état courant se lit dans le plan unique (D-285 §7).
 
+2026-11-04 : le rayon CORPUS biologie est branché à la recherche corpus clinique (D-435) ; le registre de dormance est vide.
+
 ## Ce qui reste ouvert
 
 Depuis le 2026-10-13, ce qui reste ouvert se lit dans le plan unique

@@ -97,9 +97,10 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
   // se dérive pas de RAYON_VERS_NOTEBOOK : l'allowlist doit rester PLUS ÉTROITE
   // que la carte, et une liste dérivée validerait silencieusement l'ajout d'un
   // rayon — micronutrition compris, ce qui contournerait WN_C4_ENABLED.
-  it('RAYONS_RECHERCHE_CORPUS ne contient QUE les sept rayons ouverts (allowlist de la route dédiée)', () => {
+  // Élargie de sept à huit le 2026-11-04 : « biologie » (D-435).
+  it('RAYONS_RECHERCHE_CORPUS ne contient QUE les huit rayons ouverts (allowlist de la route dédiée)', () => {
     expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(
-      ['cognition', 'douleur', 'humeur', 'intestin', 'nutrition', 'sommeil', 'stress'],
+      ['biologie', 'cognition', 'douleur', 'humeur', 'intestin', 'nutrition', 'sommeil', 'stress'],
     );
   });
 

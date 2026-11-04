@@ -6,6 +6,555 @@
 
 ## Décisions actives
 
+### D-441 — Un conflit de sources escaladé reste au cockpit : ni extinction ni préconditions T0 ; la dette nommée de D-103 devient une décision, avec sa condition de retour (d44)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable l'a arbitré le 2026-11-04 par questions à
+  options, en séance de gestes de la file D, ligne d44.
+- Domaine : clinique. Conflits entre sources du corpus (`DC-54`, `DC-55`) ;
+  le registre `web/src/lib/clinical/conflitsSourcesV1.ts`, l'extinction
+  (`orientationEngine.ts`) et les préconditions T0
+  (`clinical-engine/preconditionsT0Prisma.ts`).
+- Referme : la dette que [[D-103]] nomme sous « Ce que le lot ne fait pas »
+  (« effet clinique distinct, qui demande son propre arbitrage »), reprise en
+  `LOT-11-actes-en-attente.md` §C.2.
+- **Ne touche pas** :
+  - aucun code : le comportement en production reste celui d'avant ;
+  - le registre des conflits et sa signature ([[D-104]]) ;
+  - la forme `DISCORDANCE`, qui bloque l'extinction ([[D-055]]) et entre
+    au T0 comme aujourd'hui.
+- Contexte, lu au dépôt le 2026-11-04 :
+  - `CS-BIO-01` est le seul conflit publié. Il oppose `WN-CL-0312-018` à
+    `WN-CL-0387-013` sur le caractère systématique du bilan biologique
+    complet.
+  - Le cockpit lui passe les claims cités par la proposition de bilan. Le
+    constat sort donc sur tout dossier dont la proposition cite
+    `WN-CL-0312-018`, la plupart d'après le commentaire de signature.
+  - L'extinction : une seule contradiction ouverte, quel que soit son axe,
+    bloque toutes les extinctions du dossier (`orientationEngine.ts`, garde
+    de `contradictionEstOuverte`). La seule règle d'arrêt publiée,
+    `STOP-STR`, éteint `R2-STR-01` à `03`. Aucune règle d'orientation ni
+    d'arrêt ne cite les deux claims du conflit.
+  - Le T0 : la condition « Aucune contradiction ouverte » est souple, et se
+    contourne avec un motif tracé. `preconditionsT0Prisma` appelle le
+    service sans claims cités, donc sans conflit.
+
+**§1 — Le cockpit seul.** Un conflit de sources escaladé se restitue au
+praticien dans le cockpit. Il ne bloque aucune extinction et n'entre pas aux
+préconditions T0. C'est désormais une décision, et non plus une dette.
+
+Motifs :
+- Branché sans filtre, `CS-BIO-01` empêcherait `STOP-STR` d'éteindre les
+  règles du stress sur la plupart des dossiers. Or le conflit ne parle pas
+  de stress.
+- Au T0, il ajouterait un contournement avec motif sur la plupart des
+  dossiers, à l'étape où le parcours perd déjà le plus (audit 2 du
+  2026-11-04 : médiane de 31,7 jours entre la première réponse et le T0).
+
+**§2 — La condition de retour.** La question se rouvre dès qu'un conflit
+déclaré porte sur un claim cité par une règle d'orientation ou d'arrêt. Elle
+n'est pas mécanisée. La curation du registre, relue en PR comme tout ajout
+([[D-103]]), la vérifie à chaque conflit déclaré.
+
+Écartés :
+- un branchement filtré par objet (le conflit ne bloquerait que les règles
+  qui citent ses claims) : il serait sans effet aujourd'hui, et coûterait un
+  lot de code et une re-signature ;
+- le T0 seul, en condition souple ;
+- un branchement partout, sans filtre.
+
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d441-escalade-cockpit-seul.md` ; page « Suivi de
+  la file D », ligne d44.
+
+### D-440 — Fil du jour : une carte « Sans avancée » signale le dossier qui n'avance plus (réponses sans T0, T0 sans diffusion, questionnaires sans réponse) après 30 jours sans pas du parcours, et dit ce qui retient le T0 ; code dans un lot ultérieur (H07)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable a rendu trois arbitrages le 2026-11-04,
+  par questions à options, dans la session qui agit (liste commune
+  `20261104-1340-d`, suite de `20261104-1302-g`, audit 2, QB). Il a retenu
+  le seuil de 30 jours (options : 21, 30 ou 52 jours) et la ligne « Ce qui
+  retient le T0 » (options : oui ou non). Il a accepté tels quels la règle
+  et les textes proposés (§1 à §6).
+- Domaine : le Fil du jour, soit la production des cartes
+  (`web/src/lib/fil/cartes.ts`) et leurs lectures
+  (`web/src/app/api/praticien/fil/route.ts`).
+- Applique : fiche H07 du plan (`docs/claude/PLAN_WELLNEURO.md`), « une
+  D-xxx du délai, après le comptage ». Le comptage a été versé le
+  2026-10-24.
+- Nature : constante produit, pas un seuil clinique (`DC-20`, nature
+  `technical`, comme [[D-298]]). Elle ne change ni un score, ni une
+  orientation, ni une indication, ni ce que voit le patient.
+- **Ne touche pas** :
+  - aucun code ici : la carte se livre dans un lot ultérieur (§8) ;
+  - les cartes existantes, inchangées : retard, T0 à consigner, reprise,
+    synthèse à relire, à générer ou non transmise ;
+  - les préconditions du T0 ([[D-052]], [[D-158]]) : la carte les lit par
+    leur chemin unique, elle ne les modifie pas ;
+  - aucune surface patient, aucun e-mail, aucune relance automatique ;
+  - aucune migration.
+
+**§1 — Trois situations, une seule carte par dossier.** Un dossier actif,
+au suivi ouvert, relève de la carte dans l'une des situations suivantes :
+1. **Réponses reçues, T0 non consigné** : au moins une réponse à un
+   questionnaire, et aucun épisode T0.
+2. **T0 consigné, protocole non diffusé** : un épisode T0 confirmé, et
+   aucune approbation pour diffusion.
+3. **Questionnaires sans réponse** : à toute étape du dossier, un
+   questionnaire assigné, ni annulé ni complété, reste sans réponse, avec
+   ou sans échéance. Un dossier déjà diffusé n'entre que par cette
+   situation.
+
+Un dossier qui relève de plusieurs situations n'a qu'une carte. Le titre
+est celui de la situation 1 ou 2, et la situation 3 s'y ajoute en phrase.
+
+**§2 — L'ancre : le dernier pas du parcours.** Pour les situations 1 et 2,
+le silence se compte depuis la plus récente des dates suivantes :
+- une réponse à un questionnaire ;
+- une assignation, hors annulée ;
+- une synthèse générée ou validée ;
+- une consultation validée ;
+- un épisode confirmé ;
+- une priorité choisie ;
+- un objectif négocié ;
+- un brouillon de protocole modifié ;
+- un livret envoyé.
+
+Une connexion, une nuit ou un jour d'agenda, un e-mail ou une lecture ne
+comptent pas : ils ne font pas avancer le dossier vers l'étape suivante.
+Pour la situation 3, le silence se compte depuis la date d'assignation du
+plus ancien questionnaire resté sans réponse.
+
+**§3 — Le seuil : plus de 30 jours.** La carte apparaît quand le silence
+dépasse 30 jours. Provenance : la tranche de plus de 30 jours de l'audit 2,
+arbitrée le 2026-11-04 ; elle est proche du délai médian entre la première
+réponse et le T0, soit 31,7 jours, mesuré sur 14 dossiers. Comptes lus le
+2026-11-04 à 13 h 28, en conteneur et en lecture seule, sur les 29
+dossiers actifs au suivi ouvert : 14 dossiers concernés à 30 jours, au plus
+13 après les exclusions mesurables ; à titre de comparaison, 15 à 21 jours
+et 9 à 52 jours. La valeur est une constante nommée du module des cartes.
+Elle ne change que par une décision.
+
+**§4 — Exclusions.**
+- Dossier désactivé ou suivi clos.
+- Rendez-vous planifié à venir.
+- Dossier qui porte déjà, dans le même Fil, une carte qui demande un
+  geste : signal de sécurité, synthèse à relire, à générer ou non
+  transmise, T0 à consigner, retard, reprise. Le Fil ne montre pas deux
+  cartes pour un même dossier. La carte du retard figure dans cette liste
+  par application de ce principe : la page arbitrée ne la nommait pas.
+  Une carte de geste écartée ou plafonnée hors de l'affichage ne compte
+  pas : seule compte une carte présente dans le Fil servi.
+- Les assignations annulées, qui ne sont pas attendues ([[D-422]] §1).
+
+**§5 — Affichage.** Le plus ancien silence vient d'abord. Le plafond de
+cinq cartes par type, commun au Fil, s'applique. La carte s'écarte comme
+les autres (refus persisté). Sa clé est ancrée sur le dossier et sur la
+date de son ancre (§2). Pour les situations 1 et 2, avec ou sans la
+situation 3, c'est la date du dernier pas. Pour la situation 3 seule, c'est
+la date d'assignation du plus ancien questionnaire resté sans réponse. Un
+nouveau pas déplace donc la clé, comme la réponse ou l'annulation de ce
+questionnaire : si le silence reprend, la carte revient. Sa place dans l'ordre du Fil n'est pas
+arbitrée : le lot la propose.
+
+**§6 — Textes.** Ils ont été acceptés tels quels.
+- Badge : « Sans avancée ».
+- Titres : « Réponses reçues, T0 non consigné » (situation 1) ; « T0
+  consigné, aucun protocole diffusé » (situation 2) ; « Questionnaires sans
+  réponse » (situation 3 seule).
+- Pourquoi, situations 1 et 2 : « Aucun pas du dossier depuis le <date>, il
+  y a <n> jours. » En situation 2, la phrase suivante s'ajoute : « Le T0 a
+  été consigné le <date>. »
+- Pourquoi, situation 3, en phrase ajoutée ou seule : « <n> questionnaires
+  assignés restent sans réponse ; le plus ancien date du <date>. » Seule,
+  elle se complète de « il y a <n> jours », et de « Aucun n'a d'échéance. »
+  quand c'est le cas.
+- Action : « Ouvrir la fiche », vers la fiche du dossier.
+- Résumé du panneau « Aujourd'hui » : « dossier sans avancée » au
+  singulier, « dossiers sans avancée » au pluriel.
+- La carte constate un silence. Elle ne dit pas qui doit agir, et ne dit
+  jamais « oublié ».
+
+**§7 — Ce qui retient le T0 (situation 1).** La carte ajoute la ligne « Ce
+qui retient le T0 : », suivie des libellés des conditions dures non
+satisfaites. Les libellés sont recopiés, jamais composés ([[D-119]]). Ils
+viennent de `preconditionsT0PourPatient(idPatient, 'T0')`, le chemin
+unique des trois routes. L'évaluation ne se fait que pour les cartes
+affichées, donc cinq au plus à chaque ouverture du Fil. Constat H07 du
+2026-10-24 : les 12 dossiers sans T0 étaient tous retenus par une condition
+dure.
+
+**§8 — Suite.** Un lot de code livre la carte. Il apporte une constante
+nommée pour le seuil (§3), des bancs par situation, par exclusion et par
+ancre, et la ligne du §7. Le lot propose la place de la carte dans l'ordre
+du Fil (§5), et le comportement si l'évaluation du §7 échoue. Avec ce lot,
+le critère de H07 « aucune carte avant le délai décidé » est levé.
+
+### D-438 — « Mon équilibre », besoin 5 : l'Epworth et la fatigue générale du MFI-20 entrent dans le groupe `repos`, poids 1 chacun, niveau A ; normalisations (24 − score)/24 et (20 − GEN)/16 ; application dans un lot ultérieur (d56)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable a rendu ses arbitrages par questions à
+  options :
+  - le 2026-11-03, la proposition d'un assistant conversationnel externe,
+    acceptée telle quelle. Cet assistant n'est la source d'aucune valeur :
+    le groupe, les poids et la normalisation de GEN sont un arbitrage
+    WellNeuro, nommé comme tel ;
+  - le 2026-11-04, la normalisation de l'Epworth, puis le maintien de GEN
+    après le relevé de la structure française (§3).
+- Domaine : `BESOIN_SOURCES` et `NIVEAU_PREUVE_PAR_SOURCE`
+  (`web/src/lib/equilibre/constants.ts`), et le calcul de couverture
+  (`web/src/lib/equilibre/score.ts`).
+- Applique : [[D-425]] §4 (a), qui a décidé l'entrée dans son principe, et
+  [[D-424]] §5, qui renvoie le niveau de l'Epworth et du MFI-20 à cette
+  entrée.
+- **Ne touche pas** :
+  - aucun code ici, aucun changement de version : le score servi reste
+    celui d'avant jusqu'au lot d'application (§5) ;
+  - aucun item, aucune cotation, aucun seuil, aucune interprétation de
+    l'Epworth (`Q_SOM_02`) ni du MFI-20 (`Q_SOM_07`) ;
+  - le groupe `mouvement`, le poids du PSQI (2) et celui de l'agenda du
+    sommeil (1) ;
+  - l'entrée du MFI-20 dans l'orientation ([[D-425]] §4 (b), [[D-431]] §5),
+    qui reste à décider à part ;
+  - aucune passation (LOT-00), aucune migration.
+
+**§1 — Deux sources dans le groupe `repos` du besoin 5.**
+
+| Source | Valeur lue | Poids | Normalisation (plus haut = mieux) | Niveau |
+| --- | --- | --- | --- | --- |
+| `Q_SOM_02` (Epworth) | score total, 0 à 24 (`maxTotal: 24`) | 1 | (24 − score) / 24 | A |
+| `Q_SOM_07` (MFI-20) | sous-score `GEN` seul (items M1, M5, M12, M16), 4 à 20 | 1 | (20 − GEN) / 16 | A |
+
+- Les quatre autres sous-scores du MFI-20 (`PHY`, `MEN`, `ACT`, `MOT`)
+  n'entrent pas.
+- La borne 24 de l'Epworth est lue au catalogue (`web/src/lib/questions.ts`,
+  bloc `scoring` de `Q_SOM_02`). Sa normalisation est celle que le calcul
+  applique déjà à une échelle où plus haut veut dire pire.
+- La normalisation de GEN part de 4, son minimum, et non de 0 : le calcul
+  actuel divise par `max` sans borne basse, et il rendrait 0,8 à un patient
+  sans aucune fatigue. Le lot d'application ajoute cette borne basse.
+
+**§2 — Ce que deviennent les parts du PSQI.** Le groupe garde sa moyenne
+pondérée des sources disponibles. Avec ses quatre sources présentes, le PSQI
+pèse 2/5 du repos, au lieu de 2/3 avec l'agenda aujourd'hui. Sans agenda
+clôturé, il pèse 2/4, au lieu de la totalité. Le repos garde sa moitié du
+besoin 5.
+
+**§3 — Les deux validations françaises, vérifiées.** Résumés lus sur Europe
+PMC le 2026-11-04. Les textes intégraux n'ont pas été lus.
+- Epworth : Kaminska et al. 2010 (`WN-SRC-0606`, PMID 20422065). Patients
+  consécutifs d'une clinique du sommeil d'un centre tertiaire. La version
+  française « performed similarly to the English version ». Les analyses de
+  validité portent sur des patients apnéiques. Le score obtenu par le médecin
+  est plus bas que l'auto-passation (8,5 contre 9,4). L'Epworth est servie en
+  auto-passation.
+- MFI-20 : Gentile et al. 2003 (`WN-SRC-0609`, PMID 12641557), 225 patients.
+  L'analyse de structure retrouve quatre dimensions : « General Fatigue »,
+  « Mental Fatigue », « Reduced Activities » et « Motivation ». La fatigue
+  physique n'y forme pas une dimension à part. Le résumé ne dit pas quels
+  items composent la « General Fatigue » française. Le catalogue garde le
+  `GEN` d'origine, à quatre items. Ce choix est un arbitrage du responsable
+  (2026-11-04), et cette inconnue est une limite.
+- Le niveau A ne demande pas de validation française ([[D-424]] §1). Ces
+  deux faits sont des limites de population et de structure (`DC-14`). Ils
+  ne changent pas le niveau.
+
+Écartés :
+- suspendre le MFI-20 jusqu'à la lecture du texte intégral de Gentile ;
+- une autre normalisation de l'Epworth.
+
+**§4 — Le niveau du besoin.** La règle reste sans dilution : le besoin prend
+le niveau le plus faible des sources que le patient a remplies
+(`web/src/lib/equilibre/evidence.ts`). Avec un agenda clôturé, le besoin 5
+reste en D. Sans agenda, quand `Q_MOD_01` est rempli, il reste en B. Les deux
+sources A ne font monter le niveau d'aucun patient.
+
+**§5 — Application dans un lot ultérieur.** Le lot porte :
+- `BESOIN_SOURCES` : les deux entrées et leur borne basse ;
+- `NIVEAU_PREUVE_PAR_SOURCE` : `Q_SOM_02` et `Q_SOM_07` en A ;
+- le champ `sourceMonEquilibre` de
+  `docs/claude/corpus/instrument_registry.json`, que le garde
+  `scripts/lib/verifier_registre_instruments.js` contrôle dans les deux sens ;
+- le changement de `VERSION_SCORE_EQUILIBRE` et la réapprobation des
+  protocoles diffusés (b27, J3-12f).
+
+La bascule a lieu au déploiement constaté de ce lot, pas avant.
+
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d438-epworth-mfi20-repos.md` ; page « Suivi de
+  la file D », ligne d56.
+
+### D-437 — an : une photo du repas, prise dans l'application, aide le patient à remplir son agenda alimentaire de 21 jours ; sans IA, jamais transmise au serveur, supprimée à l'enregistrement ou à l'abandon ; la lettre vaut politique TRUST de la photo ; dossiers majeurs seuls (H83, place 11)
+
+- Date : 2026-11-04
+- Statut : accepté. Sur la demande du responsable, l'assistant a rédigé la
+  lettre an. Le brouillon a passé trois contre-revues Codex (BLOQUER,
+  BLOQUER, PASSER) ; pièces au dépôt privé des revues. Le responsable a rendu
+  ses arbitrages par questions à options le 2026-11-03 (circuit, socle,
+  mode de capture, preuve de la boucle simple) et le 2026-11-04
+  (information et motif, politique TRUST, preuve d'usage). Il a retenu le
+  même jour les deux textes du §5, rédigés par l'assistant sur sa demande.
+- Domaine : file C du plan, place 11, fiche H83 (lettre an) ; portail
+  patient, agenda alimentaire de 21 jours (`web/src/lib/agenda-alimentaire/`,
+  `web/src/components/patient/agenda-alimentaire/`, route
+  `/api/portail/agenda-alimentaire`, table `agenda_alimentaire_jours`).
+- Lève : le préalable « lettre an » de H83.
+- Applique : la politique photo actée du journal alimentaire 5.0 (D4 de
+  `docs/claude/propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md`,
+  chaîne « Photo » de `docs/04_ARCHITECTURE_TECHNIQUE_ET_CONTRATS.md` du même
+  dossier, dont « suppression de l'image par défaut ») ; [[D-288]] §1-§3 ;
+  [[D-283]] §5 ; [[D-284]] §4 ; F70 ; porte 5 ; porte 18.
+- Adapte : le lot JA5-07 « capture assistée » de la même proposition,
+  point par point (§8).
+- **Ne touche pas** :
+  - le contrat de données de l'agenda : aucun champ neuf, aucune
+    migration ;
+  - le carnet d'observation JA (`web/src/lib/food-observation/`), servi
+    sans drapeau, qui n'est pas le circuit retenu ;
+  - la politique voix (D5 de la même proposition) : aucune dictée ;
+  - le scoring, l'orientation et les indications ; le cockpit (H74) ; le
+    message du 21e jour (H81, place 9).
+
+**§1 — Ce qu'est la capture.** Une aide-mémoire, jamais une saisie en soi.
+Pendant qu'il renseigne une prise de sa journée d'agenda, le patient peut
+prendre une photo de son repas dans l'application. Elle s'affiche à côté du
+formulaire et l'aide à remplir lui-même la prise ; la journée est ensuite
+enregistrée comme aujourd'hui (création seule). Rien de ce que le patient
+n'a pas lui-même saisi n'entre à l'agenda, au cockpit ou à aucun moteur. La
+capture est facultative et jamais préactivée (D4). Photo seule : ni
+dictée, ni IA.
+
+**§2 — Ce que reçoit le praticien.** La journée d'agenda enregistrée, dans
+sa forme actuelle, et rien d'autre : aucune photo, aucune vignette.
+
+**§3 — Garantie et cycle de vie de la photo.** Aucune photo n'est transmise
+au serveur. La photo n'existe que dans la page : elle n'est jamais écrite
+dans la pellicule du téléphone, ni dans le stockage du navigateur
+(`localStorage`, `sessionStorage`, IndexedDB, cache). Elle est supprimée à
+l'enregistrement de la journée et à l'abandon (page quittée, saisie
+annulée). D4 s'applique tel quel : l'absence de serveur ne dispense pas de
+la suppression. Une photo est perdue si la page se ferme avant la saisie ;
+c'est le prix de la suppression.
+
+**§4 — Mineurs.** Dossiers majeurs seuls. Un dossier mineur ou d'âge
+inconnu ne voit pas la capture ([[D-283]] §5, [[D-284]] §4 ; comme
+[[D-357]] §5). La garde vaut dans la page et, côté serveur, sur toute route
+que le lot toucherait.
+
+**§5 — Information du patient.** Une ligne sous le bouton, sans accusé.
+Textes acceptés :
+- bouton : « Photographier mon repas » ;
+- ligne : « Facultatif — la photo vous aide à vous souvenir de votre repas.
+  Elle n’est envoyée à personne, ne s’enregistre pas dans vos photos, et
+  disparaît dès que vous enregistrez votre journée ou quittez la page. »
+
+**Motif de l'absence de révision documentaire.** La manipulation de la
+photo dans la page est un traitement (consultation, utilisation). Mais la
+photo n'existe que le temps de la saisie, sur l'appareil du patient ; elle
+n'est jamais transmise, ni conservée, ni lue par WellNeuro ou par un tiers.
+« Vos données personnelles » n'est donc pas révisée, et le registre RGPD
+(rubrique 5) ne reçoit pas d'entrée. Toute extension (transmission,
+conservation, vignette, IA, dictée) rouvre ce motif et exige les deux.
+
+**§6 — Le lot.** Sans migration. Le code est livré éteint derrière un
+drapeau neuf, `WN_PORTAIL_CAPTURE_REPAS` : chaîne exacte `'true'`, absent =
+fermé, inscrit à `docs/FEATURE_FLAGS.md` § A. La capture ne s'ouvre jamais
+quand `WN_AGENDA_ALI` est fermé. F70 : aucune table, aucun site d'IA.
+
+**Mécanisme de capture.** La garantie du §3 et la phrase du §5 (« ne
+s'enregistre pas dans vos photos ») tiennent au mécanisme. La photo est
+prise par le flux de la caméra dans la page (`getUserMedia`), puis l'image
+est gardée en mémoire de la page. Le lot n'utilise jamais
+`<input type="file" capture>`, qui confie la prise à l'appareil photo du
+système : selon le téléphone, celui-ci peut l'enregistrer dans la galerie.
+Si la caméra n'est pas accessible (refus du patient, navigateur sans
+`getUserMedia`), le bouton n'est pas proposé ; il n'y a aucun repli vers la
+galerie ou l'appareil photo du système.
+
+Bancs attendus :
+- aucun `<input type="file">` dans la capture (garde de source) ;
+- aucune requête réseau ne porte l'image (garde du type « sans réseau ni
+  stockage » du LOT-05 JA) ;
+- aucune écriture dans le stockage du navigateur ;
+- suppression à l'enregistrement et à l'abandon ;
+- capture absente pour un dossier mineur ou d'âge inconnu.
+
+**§7 — Activation.** Une à la fois, le constat de la précédente avant
+(porte 18). Le passage devant les places 8 et 9 applique [[D-288]] §3 :
+« les places 6 à 11 suivent l'ordre proposé au plan, sauf si l'une est
+prête avant une autre ; la porte 18 reste la seule contrainte entre elles ».
+Au moment de poser le drapeau, vérifier le constat de toute activation
+intervenue depuis celle de la place 10 (2026-11-01). Le drapeau est posé
+par le responsable, pas par l'assistant.
+
+**Constat.** Le responsable observe le geste de capture sur un vrai dossier
+majeur. Sur le téléphone utilisé, il vérifie qu'aucune photo n'est apparue
+dans la galerie (§5), sur au moins un appareil iOS et un appareil Android
+s'il en dispose ; sinon, l'appareil manquant est noté au constat.
+L'écriture de la journée correspondante est ensuite vérifiée par
+identifiant, en conteneur détaché, en agrégats. Jamais sur une fixture.
+
+**§8 — Porte de réouverture de D4.**
+1. **La boucle simple est validée** par la validation terrain JA-0T (GO du
+   2026-07-17), qui suffit. L'usage observé de l'agenda reste faible
+   (constat H45 du 2026-10-28) : la valeur de la capture se jugera après
+   l'ouverture.
+2. **Le choix TRUST** : la présente décision vaut politique TRUST dédiée,
+   pour la seule photo prise dans l'application et jamais transmise. Toute
+   extension demande sa propre politique.
+3. **JA5-07, adapté point par point** :
+   - voix et extraction : sans objet (§1) ;
+   - mesure d'erreur : sans objet, faute d'extraction ;
+   - suppression automatique des actifs : applicable, c'est le cycle du §3,
+     sous banc ;
+   - audit des confirmations : aucune provenance « photo » n'est portée par
+     la journée. La preuve d'usage est le constat du §7, et l'usage de la
+     capture ne se mesure pas dans la durée.
+
+**§9 — Limites connues.**
+- Une photo sans IA ne fait gagner au patient que le moment de la saisie,
+  pas la saisie elle-même ; elle est perdue si la page se ferme avant.
+- L'usage actuel de l'agenda est faible.
+- Sans provenance, l'usage de la capture ne se mesure pas après le constat
+  d'ouverture.
+
+**Options écartées** :
+- le carnet d'observation JA, ou les deux circuits : l'agenda est le seul où
+  la notion de « repas » existe ;
+- la dictée : elle exigerait un amendement exprès de D5, qui réserve la
+  première expérience vocale à la description d'une friction ; la
+  reconnaissance vocale du navigateur peut traiter l'audio à distance ;
+- l'IA : contrôle avant l'envoi ([[D-269]], [[D-284]] §5), TIA à rédiger,
+  réserves sur le DPA d'Anthropic (`docs/DOSSIER_RGPD.md` rubrique 7) ; elle
+  relèverait d'une décision à part ;
+- une photo ou une vignette remise au praticien : il faudrait un régime
+  complet de conservation, d'écart et de purge ;
+- la photo dans la pellicule personnelle : adaptation de D4, et presque rien
+  de livré ;
+- un usage élargi ou un parcours complet exigé avant la signature ;
+- une politique TRUST distincte de cette décision ;
+- une provenance « photo » dans `agenda_alimentaire_jours` (migration) ;
+- les boutons « Prendre une photo » et « Ajouter une photo du repas » :
+  « ajouter » laisserait croire que la photo est jointe à la journée, donc
+  envoyée ; une ligne sans la mention « pas dans vos photos ».
+
+**Réversibilité.** Le drapeau éteint ferme la capture. Les journées déjà
+enregistrées restent, comme toute journée saisie à la main. Aucune photo
+n'a été transmise ni conservée.
+
+### D-436 — HAD : la consigne et le titre de la section portent sur « la semaine écoulée » ; les passations antérieures restent telles quelles, et leur consigne est consignée ici (d60)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable a rendu ses arbitrages par questions à
+  options :
+  - le 2026-11-03, l'alignement sur la semaine écoulée, l'historique gardé
+    et les libellés proposés par le contre-avis Codex ;
+  - le 2026-11-04, la mention de l'ancienne consigne dans cette décision
+    seulement.
+- Domaine : `web/src/lib/questionnaires/neuropsychologie.ts` (`Q_NEU_11`,
+  `instructions` et titre de la section `AD`). Matrice
+  `docs/questionnaires-drive-mapping.md`.
+- Applique : [[D-430]] §5, qui a consigné la discordance.
+- **Ne touche pas** :
+  - aucun item, aucune option, aucune cotation, aucun seuil, aucune
+    interprétation : le bloc `scoring` est inchangé, sans étape
+    d'instantané ;
+  - aucune passation enregistrée (LOT-00), aucune migration ;
+  - aucun affichage nouveau sur la fiche ;
+  - la fenêtre de fraîcheur de la HAD (7 jours, [[D-430]] §2) ;
+  - le prompt de synthèse, qui ne transmet aucune consigne ([[D-183]]).
+- Contexte, lu au dépôt :
+  - La consigne disait « au cours de ces dernières semaines ».
+  - Le titre de la section disait « cette semaine ».
+  - La consigne d'origine de la HADS porte sur « the past week » (Snaith
+    2003, `WN-SRC-0544`).
+
+**§1 — Nouveaux libellés.**
+- Consigne : « Répondez aux questions en cochant la réponse qui correspond le
+  mieux à ce que vous avez ressenti au cours de la semaine écoulée. »
+- Titre de la section : « Votre vécu au cours de la semaine écoulée ».
+
+**§2 — L'ancienne consigne, pour l'historique.** Les passations de la HAD
+enregistrées avant le déploiement de cette décision ont été remplies sous
+la consigne « Répondez aux questions en cochant la réponse qui vous
+correspond le plus, en considérant vos états d'humeur au cours de ces
+dernières semaines. », et sous le titre de section « Questions sur votre
+vécu cette semaine ».
+
+Elles restent telles quelles. La fiche ne les signale pas. La bascule a lieu
+au déploiement constaté de cette décision.
+
+Une comparaison entre une passation antérieure et une passation
+postérieure franchit donc un changement de consigne. Le praticien le lit
+ici, pas à l'écran.
+
+Écartés :
+- un signalement à l'écran, qui demanderait du code d'affichage et un
+  second lot daté après le déploiement ;
+- la réécriture des passations (LOT-00).
+
+**§3 — Les commentaires de mesure restent.** `anthropic.ts` (v30) et
+`promptFenetreRappel.guard.test.ts` citent « ces dernières semaines » comme
+la consigne lue par le patient lors de la mesure du 2026-09-14. Ils
+décrivent ce moment-là et ne se réécrivent pas.
+
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d436-had-semaine-ecoulee.md` ; une note dans la
+  matrice de certification (libellés hors certification) ; page « Suivi de
+  la file D », ligne d60.
+
+### D-435 — Le rayon « 08 — Biologie fonctionnelle » s'ouvre à la recherche corpus clinique : huitième rayon, dernier verdict `dormante` retiré du registre ; applique D/23
+
+- Date : 2026-11-04
+- Statut : accepté — arbitrage D/23 du responsable du 2026-10-21 (levée de
+  la dormance, branchement « comme les sept autres ») ; lot reporté le
+  2026-11-02, rouvert après la re-signature B9/B12 (arbitrage du
+  2026-11-03), dont la release-db a été approuvée et constatée par conteneur
+  le 2026-11-04 ([[D-434]]).
+- Domaine : corpus clinique — allowlist de la recherche corpus
+  (`dashboard/bibliotheque`), file B.
+- Applique : D/23 ; la règle de tenue du registre de dormance posée par
+  [[D-188]].
+- **Ne touche pas** : `schema.prisma`, aucune migration, aucun chemin de
+  release-db ([[D-389]] §5, [[D-416]]) ; aucun drapeau neuf ; aucun claim
+  validé, invalidé ni recoté ; aucun texte servi au patient ; le navigateur de
+  catalogue CB-08 ; la barrière [[D-003]].
+
+**§1 — Décision.** `RAYONS_RECHERCHE_CORPUS` passe de sept à **huit**, par
+ajout de `biologie`. Le sélecteur de l'écran en est le miroir : « Biologie
+fonctionnelle », le libellé du notebook, en dernière position (le premier
+rayon reste celui du montage). Un banc de route vérifie que le rayon est
+accepté et transmis au service.
+
+**§2 — Ce qui s'ouvre, mesuré.** Lecture de production en transaction
+`READ ONLY` le 2026-11-04 : le notebook 08 compte **27 sources** au registre,
+aucune en quarantaine sanitaire, et **759 claims servables** par
+`match_wellneuro_rag_claims` (validés, actifs, non patient, compartiment
+actif, adossés à un verbatim), dont 81 prescriptifs. Ils portent déjà le
+badge « prescriptif » de l'écran.
+
+**§3 — Ce qui ne change pas.** Ouvrir un rayon met des claims sous les yeux
+du praticien ; aucun n'entre dans une action de protocole, une proposition
+ou un texte patient. Le filtrage par notebook reste au niveau SQL
+(`filter_source_ids`), le retrait des sources en quarantaine reste sur le
+chemin qui sert. L'allowlist reste plus étroite que `RAYON_VERS_NOTEBOOK`
+(`micronutrition` reste dehors, sous `WN_C4_ENABLED`), et son banc reste
+littéral.
+
+**§4 — Le registre de dormance.** Le verdict `dormante` de `rayon:biologie`
+part parce que sa source a reçu un appelant ([[D-188]]). Le registre
+`docs/claude/corpus/consommation_decisions.json` est vide ;
+`wn-matrice-consommation --strict` rend 0, et une source qui redeviendrait
+inerte y redemanderait sa décision.
+
+**§5 — Mise en service.** `WN_RECHERCHE_CORPUS_ENABLED` est posé en
+production depuis le 2026-08-22 ([[D-081]]) : le rayon est servi dès le
+déploiement du merge, sans geste de plus.
+
+- Conséquences : fragment `changelog.d/2026-11-04-d435-rayon-08-biologie.md` ;
+  `docs/claude/MATRICE_CONSOMMATION.md` régénérée ; `docs/FEATURE_FLAGS.md`
+  (huit rayons) ; plan, §8 (ligne du rayon 08) et ligne D/23.
+
 ### D-434 — F05 (BP-12a) : la structure des fiches d'usage du besoin 2 est re-signée pour B9 et B12 — trente-huit fiches, le niveau de mesure obligatoire sur toutes, une seule re-signature ; applique D-417 §4
 
 - Date : 2026-11-03
@@ -72,6 +621,139 @@ rayon 08 de la bibliothèque (D/23, arbitrage du 2026-11-03).
 
 - Conséquences : fragment `changelog.d/2026-11-03-d434-resignature-b9-b12.md` ;
   journal F05 ; plan, §8 (ligne des fiches d'usage du besoin 2).
+
+### D-433 — Fenêtre de fraîcheur du déclencheur : un score déclencheur au-delà de la fenêtre de son instrument n'est plus évalué, avec son motif ; quatre valeurs arbitrées sans source ; complète D-430 (d59)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable a rendu ses arbitrages par questions à
+  options : la portée, le sort d'un signal expiré, le jour anniversaire et
+  l'absence d'horloge le 2026-11-03, les quatre valeurs du §2 le 2026-11-04.
+  Un assistant conversationnel externe a été consulté en recherche
+  approfondie sur ces quatre instruments. Il n'est source d'aucune valeur.
+  La session a vérifié ses références sur PubMed, Europe PMC et la page de
+  NICE.
+- Domaine : le registre des fenêtres par instrument de [[D-430]] §1, et la
+  lecture des déclencheurs par le moteur d'orientation
+  (`orientationEngine.ts`, `dernieres.get(declencheur.idQuestionnaire)`,
+  lue sans date).
+- Complète [[D-430]]. Lève la limite connue de son §6.
+- **Ne touche pas** :
+  - aucun code dans cette décision ;
+  - aucun seuil déclencheur, aucun claim, aucune priorité, aucune cible ;
+  - ni les assignations ni les décisions déjà prises, ni l'historique des
+    passations ;
+  - la biologie ;
+  - aucune migration.
+- Contexte, lu au dépôt :
+  - Sept questionnaires déclenchent les règles de `ORIENTATION_RULES_V1` :
+    `Q_SOM_01`, `Q_STR_02` et `Q_GAS_01` (zone ou couleur), `Q_MOD_01`
+    (sept règles), `Q_MOD_03` (cinq), `Q_INF_03` (deux) et `Q_ALI_01` (une).
+  - Le moteur lit la dernière passation du déclencheur sans regarder sa
+    date : une passation de huit mois déclenche encore.
+  - Le moteur reçoit `maintenantMs`, et `passationExploitable` compare
+    `ageJours <= delaiJours` pour la cible seulement.
+
+**§1 — Le déclencheur prend la fenêtre de son instrument.** Elle vient du
+registre de [[D-430]] §1. La même fenêtre vaut quand l'instrument est cible
+et quand il déclenche. Le PSQI garde donc 30 jours, la PSS-10 30 jours et le
+TFD SIIN 21 jours ([[D-430]] §2). Écartée : une fenêtre propre au rôle de
+déclencheur.
+
+**§2 — Quatre valeurs, en jours.** Ce sont des arbitrages WellNeuro, nommés
+comme tels : aucune source ne fonde une durée de fraîcheur. Le registre de
+[[D-430]] §1 passe de quinze à dix-neuf instruments.
+
+| instrument | consigne | fenêtre |
+|---|---|---|
+| `Q_MOD_01` mode de vie SIIN | « sur les dernières semaines » | 21 |
+| `Q_MOD_03` plaintes actuelles | « actuellement ressentis » | 14 |
+| `Q_INF_03` DNST SIIN | « vécu actuel ou habituel » | 14 |
+| `Q_ALI_01` enquête alimentaire SIIN | « habituelles » ou « des 3 derniers mois » | 90 |
+
+L'enquête alimentaire porte deux consignes, mais elle n'a qu'une fenêtre,
+comme le TFD SIIN ([[D-430]] §4). Une période de rappel n'est pas une
+fenêtre de fraîcheur, et les 90 jours n'en découlent pas.
+
+**§3 — Un signal expiré n'est pas évalué, et le praticien voit pourquoi.**
+Au-delà de la fenêtre, la règle n'est ni déclenchée ni écartée : elle est
+« non évaluée », avec un motif visible qui nomme le questionnaire et la date
+de la passation. Le libellé se soumet au responsable dans le lot de code.
+
+Un signal expiré ne vaut ni score normal ni absence de trouble ([[DC-24]]).
+Il ne retire rien de l'historique, et il ne masque pas une plainte déjà
+portée à l'attention du praticien. Une réévaluation avant l'échéance reste
+un geste du praticien.
+
+Écartés :
+- garder le signal et seulement l'annoter ;
+- l'écarter comme un score sous le seuil.
+
+**§4 — Le jour anniversaire reste frais.** La passation reste fraîche tant
+que son âge ne dépasse pas la fenêtre (`<=`), comme pour la cible.
+
+**§5 — Sans horloge, le comportement d'avant.** Quand le moteur ne reçoit
+pas `maintenantMs`, le déclencheur se lit sans date, comme aujourd'hui, et
+comme la cible dans la même situation. Écarté : l'extinction de la règle
+faute d'horloge.
+
+**§6 — Une table incomplète se refuse** ([[D-430]] §3). Un questionnaire
+déclencheur sans fenêtre refuse la signature. Le banc d'exhaustivité couvre
+les déclencheurs comme les cibles, et le même contrôle entre dans
+`tableSignee()`.
+
+**§7 — Faits de contexte.** Ils ne fondent aucune valeur.
+
+Aucune validation publiée des quatre questionnaires SIIN n'a été trouvée.
+Cela ne prouve pas qu'il n'en existe aucune.
+
+Intervalles de test-retest publiés pour des instruments analogues, vérifiés
+par la session :
+- ESAS modifié, 24 heures, ICC 0,69 (Hannon et al. 2015, PMID 25523890,
+  résumé) ;
+- PrimeScreen, deux semaines (Rifas-Shiman et al. 2001, PMID 11299098,
+  résumé) ;
+- questionnaire de fréquence alimentaire français de 50 items, trois semaines
+  (Barrat et al. 2012, PMC3485403, texte intégral) ;
+- MEDAS, un mois, ICC 0,69 (Papadaki et al. 2018, PMC5852714, texte
+  intégral) ;
+- DASS-21 chinoise, six mois, 0,39 à 0,46 (Wang et al. 2016, PMID 26619091,
+  résumé).
+
+Autres faits vérifiés :
+- La méta-analyse de Cui et al. 2021 (PMC7802360) traite la période de
+  rappel alimentaire et le délai entre deux passations comme deux facteurs
+  distincts.
+- STARD 2015, item 22 (Cohen et al. 2016, PMC5128957), sur le délai entre
+  deux tests : « the target condition and alternative conditions can
+  change ».
+- NICE NG222, §1.4.3, prévoit une réévaluation entre deux et quatre semaines
+  après le début du traitement d'une dépression. C'est un intervalle de
+  suivi, non une fraîcheur.
+
+Écartés, faute de lecture par la session :
+- Godwin et al. 2008 (SLIQ, PMID 18208960) : le résumé ne donne pas
+  l'intervalle de retest ;
+- la citation du NCI sur la période de référence des questionnaires de
+  fréquence ;
+- le critère de l'AHRQ de 2023.
+
+Limite connue, non arbitrée : les deux consignes de `Q_ALI_01` ne sont pas
+versionnées. Une évolution du score peut donc refléter un changement de
+consigne.
+
+**§8 — Suites.**
+- Le lot de code de la file A est le même que celui de [[D-430]] §6 : même
+  registre, même empreinte, même re-signature de `ORIENTATION_RULES_V1`. Il
+  est hors biologie, sur le chemin clinique, avec un déploiement retenu
+  jusqu'à l'approbation.
+- Ce lot ajoute :
+  - les quatre fenêtres au registre ;
+  - la lecture datée du déclencheur dans le moteur ;
+  - le statut « non évalué » et son motif au cockpit ;
+  - l'exhaustivité des déclencheurs au banc et à `tableSignee()`.
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d433-fenetre-declencheur.md` ; page « Suivi de la
+  file D », ligne d59.
 
 ### D-432 — Audit 3, suite de Q3 quinquies : un dossier désactivé reçoit son propre refus sur cinq routes praticien de plus (pack, file d'envoi et son envoi, rappel de l'agenda de sommeil, consultation) ; précise D-427
 

@@ -17,7 +17,8 @@ import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 //
 // L'ordre n'est pas décoratif : le premier élément est le rayon sélectionné au
 // montage. Les quatre rayons ouverts le 2026-09-14 sont donc ajoutés APRÈS les
-// trois premiers, qui gardent leur rang.
+// trois premiers, qui gardent leur rang ; « biologie », ouvert le 2026-11-04
+// (D-435), vient en dernier.
 
 const RAYONS_DISPONIBLES: ReadonlyArray<{ valeur: string; libelle: string }> = [
   { valeur: 'cognition', libelle: 'Cognition et mémoire' },
@@ -27,6 +28,7 @@ const RAYONS_DISPONIBLES: ReadonlyArray<{ valeur: string; libelle: string }> = [
   { valeur: 'stress', libelle: 'Stress et burnout' },
   { valeur: 'humeur', libelle: 'Humeur' },
   { valeur: 'nutrition', libelle: 'Nutrition et aliments vedettes' },
+  { valeur: 'biologie', libelle: 'Biologie fonctionnelle' },
 ];
 
 const MESSAGE_REQUETE_ATTENDUE = 'Saisissez une recherche pour afficher les claims validés de ce rayon.';
