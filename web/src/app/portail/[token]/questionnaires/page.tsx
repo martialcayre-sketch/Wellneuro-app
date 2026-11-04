@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/Badge';
 import { PatientCard, patientCardClassName } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
+import { FriseEtapesNavigable, useFriseNavigable } from '@/components/patient/frise/FriseEtapesNavigable';
+import { ANCRE_LISTE_QUESTIONNAIRES, ANCRE_MON_PARCOURS } from '@/components/patient/frise/friseEtapes';
 import {
   affichage,
   GROUPES,
@@ -34,6 +36,13 @@ import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
+  // Frise navigable ([[D-423]] §8) : drapeau serveur servi par le layout.
+  const friseNavigable = useFriseNavigable();
+  // Surface neuve ([[D-423]] §7) : servie au seul dossier majeur, selon l'âge
+  // et non la clôture ([[D-283]] §5 — aucune surface neuve à un mineur, âge
+  // inconnu traité comme mineur). `false` tant que la route n'a pas répondu
+  // `majeur` : un mineur clos, servi « majeur » plus bas, garde la frise d'avant.
+  const [ageMajeur, setAgeMajeur] = useState(false);
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
@@ -258,6 +267,7 @@ export default function QuestionnairesHubPage() {
       // Un dossier clos ne recueille plus rien : aucune date ne lui est demandée.
       const statutServi = data.dossierOuvert === false ? 'majeur' : (data.statutAge ?? 'majeur');
       setStatut(statutServi);
+      setAgeMajeur(data.statutAge === 'majeur');
       const enPause = statutServi !== 'majeur';
       setRecueilsEnPause(enPause || data.dossierOuvert === false);
       setAssignations(enPause ? [] : data.assignations);
@@ -394,6 +404,19 @@ export default function QuestionnairesHubPage() {
   // le fil.
   const clesDuFil = new Set(fil.taches.map(t => t.cle));
 
+  // Dédoublonnage (SP-CONV LOT-04, élargi au fil du jour le 2026-09-12) : ce
+  // que « Mon parcours » porte déjà ne se réaffiche pas dans les listes. Le
+  // compteur qui totalisait « à compléter » est retiré ([[D-423]] §6).
+  // Calculé ici : la frise doit savoir si la liste est rendue (§8).
+  const groupesRendus = GROUPES.map(({ cle, titre }) => ({
+    cle,
+    titre,
+    items: enriched.filter(
+      e => e.aff.groupe === cle && !(cle === 'a_completer' && clesDuFil.has(e.a.idAssignation)),
+    ),
+  })).filter(groupe => groupe.items.length > 0);
+  const steps = buildJourneySteps(etatParcours?.journeyCurrentId ?? 4);
+
   /*
    * Disposition séquentielle (SP-SPI / LOT-01, résorption de l'écart E11).
    *
@@ -412,16 +435,32 @@ export default function QuestionnairesHubPage() {
     <div className="w-full max-w-2xl space-y-6">
       {/* Étapes 5-6 pilotées par le contrat (SP-CONV LOT-04) — jamais
           rétrogrades : les signaux sous-jacents ne reculent pas. */}
-      <PatientJourneyProgress steps={buildJourneySteps(etatParcours?.journeyCurrentId ?? 4)} />
+      {friseNavigable && ageMajeur ? (
+        <FriseEtapesNavigable
+          steps={steps}
+          signaux={{
+            token,
+            etape: etatParcours?.etape ?? null,
+            bilanConsultable: signauxParcours.bilanConsultable,
+            listeQuestionnairesRendue: groupesRendus.length > 0,
+          }}
+        />
+      ) : (
+        <PatientJourneyProgress steps={steps} />
+      )}
 
       {statut === 'mineur' && <EcranCircuitMineur />}
 
-      <MonParcoursAccueil
-        token={token}
-        prenom={patient?.prenom ?? null}
-        derniereReponseLe={derniereReponseLe}
-        fil={fil}
-      />
+      {/* Ancre de la frise navigable quand la liste des questionnaires n'est
+          pas rendue ([[D-423]] §8). */}
+      <div id={ANCRE_MON_PARCOURS}>
+        <MonParcoursAccueil
+          token={token}
+          prenom={patient?.prenom ?? null}
+          derniereReponseLe={derniereReponseLe}
+          fil={fil}
+        />
+      </div>
 
       {/* Proposition de réévaluation : ne s'affiche qu'en reprise, et une seule
           fois — la route décide, le composant ne rend rien sinon. Placée juste
@@ -473,67 +512,65 @@ export default function QuestionnairesHubPage() {
         c'est une réponse, pas un vide.
       */}
 
-      {GROUPES.map(({ cle, titre }) => {
-        // Dédoublonnage (SP-CONV LOT-04, élargi au fil du jour le 2026-09-12) :
-        // ce que « Mon parcours » porte déjà ne se réaffiche pas ici. Le
-        // compteur qui totalisait « à compléter » est retiré ([[D-423]] §6).
-        const items = enriched.filter(
-          e => e.aff.groupe === cle && !(cle === 'a_completer' && clesDuFil.has(e.a.idAssignation)),
-        );
-        if (items.length === 0) return null;
-
-        const liste = (
-          <div className="space-y-3">
-            {items.map(({ a, aff }) => (
-              <div key={a.idAssignation} className={patientCardClassName('sm', 'flex items-center justify-between gap-4')}>
-                <div className={`min-w-0 ${aff.groupe === 'expire' ? 'opacity-60' : ''}`}>
-                  <p className="font-medium text-foreground line-clamp-2">{a.titre || a.idQuestionnaire}</p>
-                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5">
-                    <Badge variant={aff.badgeVariant}>{aff.badge}</Badge>
-                    {(a.duree || a.dateLimite) && (
-                      <span className="text-xs text-muted-foreground">
-                        {a.duree ?? ''}
-                        {a.dateLimite ? `${a.duree ? ' · ' : ''}à rendre avant le ${a.dateLimite}` : ''}
-                      </span>
+      {/* La liste des questionnaires, cible de l'étape « Questionnaires » de la
+          frise navigable ([[D-423]] §8) : une section de la page, sans route. */}
+      {groupesRendus.length > 0 && (
+        <div id={ANCRE_LISTE_QUESTIONNAIRES} className="space-y-6">
+          {groupesRendus.map(({ cle, titre, items }) => {
+            const liste = (
+              <div className="space-y-3">
+                {items.map(({ a, aff }) => (
+                  <div key={a.idAssignation} className={patientCardClassName('sm', 'flex items-center justify-between gap-4')}>
+                    <div className={`min-w-0 ${aff.groupe === 'expire' ? 'opacity-60' : ''}`}>
+                      <p className="font-medium text-foreground line-clamp-2">{a.titre || a.idQuestionnaire}</p>
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5">
+                        <Badge variant={aff.badgeVariant}>{aff.badge}</Badge>
+                        {(a.duree || a.dateLimite) && (
+                          <span className="text-xs text-muted-foreground">
+                            {a.duree ?? ''}
+                            {a.dateLimite ? `${a.duree ? ' · ' : ''}à rendre avant le ${a.dateLimite}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {aff.action ? (
+                      <a
+                        href={`/portail/${token}/questionnaires/${a.idAssignation}`}
+                        className={`inline-flex items-center justify-center shrink-0 ${patientButtonClassName(aff.ghost ? 'ghost' : 'primary')}`}
+                      >
+                        {aff.action}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/70 shrink-0">Indisponible</span>
                     )}
                   </div>
-                </div>
-                {aff.action ? (
-                  <a
-                    href={`/portail/${token}/questionnaires/${a.idAssignation}`}
-                    className={`inline-flex items-center justify-center shrink-0 ${patientButtonClassName(aff.ghost ? 'ghost' : 'primary')}`}
-                  >
-                    {aff.action}
-                  </a>
-                ) : (
-                  <span className="text-xs text-muted-foreground/70 shrink-0">Indisponible</span>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        );
+            );
 
-        // "À compléter" reste toujours visible ; les sections secondaires
-        // (transmis/correction/expiré) sont repliées par défaut sous un
-        // <details> natif — accessible sans JavaScript custom.
-        if (GROUPES_SECONDAIRES.has(cle)) {
-          return (
-            <details key={cle} className="space-y-3">
-              <summary className="text-sm font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer select-none">
-                {titre} ({items.length})
-              </summary>
-              <div className="mt-3">{liste}</div>
-            </details>
-          );
-        }
+            // "À compléter" reste toujours visible ; les sections secondaires
+            // (transmis/correction/expiré) sont repliées par défaut sous un
+            // <details> natif — accessible sans JavaScript custom.
+            if (GROUPES_SECONDAIRES.has(cle)) {
+              return (
+                <details key={cle} className="space-y-3">
+                  <summary className="text-sm font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer select-none">
+                    {titre} ({items.length})
+                  </summary>
+                  <div className="mt-3">{liste}</div>
+                </details>
+              );
+            }
 
-        return (
-          <section key={cle} className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{titre}</h2>
-            {liste}
-          </section>
-        );
-      })}
+            return (
+              <section key={cle} className="space-y-3">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{titre}</h2>
+                {liste}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

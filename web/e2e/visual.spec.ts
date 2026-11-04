@@ -416,20 +416,26 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
     await ouvrirHubPortail(page);
 
     // Frise du parcours : 6 étapes HC-F, structure accessible committée.
-    await expect(page.getByRole('list', { name: 'Étapes de votre parcours' })).toMatchAriaSnapshot(`
-      - list "Étapes de votre parcours":
-        - listitem:
-          - text: /Consentement/
-        - listitem:
-          - text: /Informations/
-        - listitem:
-          - text: /Situation/
-        - listitem:
-          - text: /Questionnaires/
-        - listitem:
-          - text: /Analyse du praticien/
-        - listitem:
-          - text: /Restitution/
+    // Navigable sous `WN_PORTAIL_FRISE_NAVIGABLE`, armé par
+    // `playwright.config.ts` ([[D-423]] §8) : le nom monte de la liste sur la
+    // `nav`. Les étapes gardent leurs libellés ; « Questionnaires », passée ou
+    // courante, est toujours un lien ; le rôle des étapes 5 et 6 dépend de
+    // l'état du dossier, épinglé en Vitest (`frise.cablage.test.tsx`).
+    await expect(page.getByRole('navigation', { name: 'Étapes de votre parcours' })).toMatchAriaSnapshot(`
+      - navigation "Étapes de votre parcours":
+        - list:
+          - listitem:
+            - text: /Consentement/
+          - listitem:
+            - text: /Informations/
+          - listitem:
+            - text: /Situation/
+          - listitem:
+            - link /Questionnaires/
+          - listitem:
+            - text: /Analyse du praticien/
+          - listitem:
+            - text: /Restitution/
     `);
     // Pas de pixel, et le motif est VU, non supposé : le hub affiche « Votre
     // dernier envoi date d'environ 20 mois. » (capture du 2026-09-04). Ce

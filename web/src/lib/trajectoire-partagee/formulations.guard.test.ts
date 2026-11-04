@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { FORMULATIONS_PATIENT, LIBELLES_COURTS_PATIENT } from './formulations';
+import { FORMULATIONS_PATIENT, LIBELLES_COURTS_PATIENT, TEXTES_ETAPE_ANALYSE_COURANTE } from './formulations';
 
 // Garde D7 (SP-CONV LOT-01) — les formulations patient du contrat ne portent
 // jamais : un chiffre ou pourcentage (pas de score, pas de « 3 jours »), un
@@ -11,6 +11,8 @@ import { FORMULATIONS_PATIENT, LIBELLES_COURTS_PATIENT } from './formulations';
 const TOUTES = [
   ...Object.values(FORMULATIONS_PATIENT),
   ...Object.values(LIBELLES_COURTS_PATIENT),
+  // Texte de l'étape 5 courante de la frise navigable ([[D-423]] §8).
+  ...Object.values(TEXTES_ETAPE_ANALYSE_COURANTE),
 ];
 
 const MOTIFS_PROSCRITS: { motif: RegExp; raison: string }[] = [

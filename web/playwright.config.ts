@@ -234,6 +234,12 @@ export default defineConfig({
       // diffusion est active ici comme là-bas. Lu au runtime par les routes
       // TRUST seules : aucune pose au build.
       WN_EI_INTERRUPTION: '1',
+      // Frise des étapes navigable du hub ([[D-423]] §8, lot L2b). N'EST PAS
+      // POSÉ EN PRODUCTION : livré éteint, il ouvre ici la seule position où la
+      // frise est une navigation (`portail-frise-etapes.spec.ts`, et la
+      // structure de `visual.spec.ts`). Lu à chaque requête par le layout du
+      // hub, au rendu serveur dynamique : aucune pose au build.
+      WN_PORTAIL_FRISE_NAVIGABLE: 'true',
       // « aucun secret posé » ci-dessus n'est vrai que si on l'IMPOSE : le
       // `...process.env` plus haut fait fuiter le vrai client patient présent
       // dans `web/.env.local` (nécessaire à `npm run dev`), et la route
