@@ -190,6 +190,143 @@ ancre, et la ligne du §7. Le lot propose la place de la carte dans l'ordre
 du Fil (§5), et le comportement si l'évaluation du §7 échoue. Avec ce lot,
 le critère de H07 « aucune carte avant le délai décidé » est levé.
 
+### D-439 — BP-12b : la position d'expert signée, pièce versionnée en base ; l'arbitrage d'un conflit de sources, acte en ajout seul par question ; `conflitsSourcesV1` re-signé sur les dossiers clos ; versement par l'atelier, jamais par migration (LOT-28)
+
+- Date : 2026-11-04
+- Statut : proposé. Cinq arbitrages du responsable rendus le 2026-11-04 sur
+  questions à options, tous sur l'option recommandée, consignés dans la
+  fiche LOT-28 : le véhicule (§2), la portée de l'arbitrage (§3), le contenu
+  de la re-signature (§4), le périmètre (§5) et, en correction du
+  périmètre, le chemin du versement (§5). Texte rédigé par l'assistant à
+  partir de ces réponses ; il est à retenir par le responsable avant le
+  merge.
+- Domaine : campagne bio-parcours, BP-12b (LOT-28) ; plan, fiche F09 ;
+  trois tables neuves en ajout seul (PR de migration distincte) ;
+  `web/src/lib/clinical/conflitsSourcesV1.ts` (PR de re-signature
+  distincte).
+- Applique : [[D-266]] §8 (rang et contrat de la position d'expert, `DC-06`
+  amendée), §11 (une migration, deux PR) ; cadrage v3, §3.2, §4.2 et ligne
+  BP-12b ; [[D-251]] §4 et §5 (aucun texte clinique au dépôt ; texte en
+  base, validé par acte daté). Respecte : [[D-103]], [[D-104]] (`DC-54`,
+  `DC-55` actées, et leurs deux limites signées) ; [[D-314]] §7 et
+  [[D-401]] (BP-12a renvoie ici les positions et l'arbitrage).
+- **Une migration annoncée**, demandée par le lot (plan, F09 : « migration
+  oui ») et retenue par le responsable le 2026-11-04 (véhicule « table
+  dédiée en base ») ; elle s'écrit dans sa PR, seule, après le merge de
+  cette décision. Cette PR-ci ne touche ni `schema.prisma` ni aucune
+  migration.
+- **Ne touche pas** : aucune valeur, aucun seuil, aucune dose, aucune
+  durée ; aucun texte de position au dépôt ; la structure signée des
+  fiches d'usage ([[D-401]], [[D-434]]) reste identique à l'octet ; ni le
+  portail, ni le courrier au médecin, ni le scoring, ni l'orientation, ni
+  la recherche corpus, ni l'IA ne lisent une position ou un arbitrage.
+
+**§1 — Le manque.** [[D-266]] §8 fixe le rang et le contrat d'une position
+d'expert signée : sous les sources certifiées, au-dessus des données
+observationnelles internes ; pièce versionnée comme un claim
+(`identifiant@version`, auteur, date, périmètre, population, appuis cités,
+révision) ; elle cède devant toute source de rang supérieur qui la
+contredit ; elle s'affiche « position du responsable — preuves limitées »,
+jamais comme un consensus ; elle ne déclenche jamais de règle. Aucun objet
+ne la porte : les positions des dossiers du besoin 2 sont signées dans les
+documents privés du responsable, et la structure des fiches d'usage
+(« une fiche par position ») ne les cite pas comme pièces (fiche LOT-12).
+De même, `conflitsSourcesV1` déclare un conflit (`CS-BIO-01`), la politique
+`politique-resolution-conflit-v1` l'escalade au praticien (`DC-55`), et
+rien ne persiste ce que le praticien en décide (cadrage v3, §1).
+
+**§2 — La position d'expert : deux tables en ajout seul (arbitrage 1).**
+Sur le patron du texte des fiches d'usage (`FicheUsageVersion`,
+`FicheUsageActe`, [[D-251]] §5, [[D-314]]) : clé d'ordre et dates posées
+par la base, inantidatables ; UPDATE et TRUNCATE refusés par trigger ;
+DELETE refusé ; RLS activée sans politique.
+
+- **La version** : identifiant de position `WN-PE-NNNN` et version
+  `vN.M` (formats vérifiés par la base, couple unique), comme un claim ;
+  le dossier de preuve d'origine, en liste fermée (`fer`, `vitamine_d`,
+  `zinc`, `magnesium`, `b9_b12`, puis `iode_selenium` à sa clôture, par
+  migration) ; la fiche d'usage qu'elle fonde (`FU_…`, facultative : une
+  position peut n'avoir aucune fiche) ; le contenu (énoncé, périmètre,
+  population en clair, limites), en base seulement ; les claims d'appui,
+  chacun `identifiant@version`, au moins un ; la version qu'elle révise,
+  du même identifiant ; l'auteur et la date.
+- **L'acte** : une ligne par geste du responsable sur une version,
+  `signee` ou `retiree` ; l'empreinte du contenu, recalculée par la base
+  contre la version (l'acte porte sur ce texte-là) ; la déclaration de
+  relecture intégrale, exigée pour signer ; un motif, exigé pour retirer.
+  Le dernier acte se lit par l'ordre, jamais par la date.
+- **En vigueur** : la dernière version d'un identifiant dont le dernier
+  acte est `signee`. Un claim d'appui remplacé, rejeté ou supplanté rend la
+  position « à relire », dérivé à la lecture, jamais réécrit (contrat de
+  fraîcheur, cadrage v3 §3.2).
+- **Ce qu'elle n'est pas** : pas un claim du corpus — aucune ligne dans
+  `rag_corpus_claims`, aucun embedding, jamais servie par la recherche
+  corpus ni par un rayon ; aucune règle ne la lit pour décider. Elle
+  s'affiche côté praticien seul, sous le libellé de [[D-266]] §8.
+
+**§3 — L'arbitrage d'un conflit : par question, à la curation
+(arbitrage 2).** Une table en ajout seul, même régime qu'au §2. Une ligne
+désigne un conflit déclaré (`CS-…`, appartenance au registre signé
+vérifiée à la route, le registre étant une table TS) et une question,
+c'est-à-dire une fiche d'usage (`FU_…`) ; l'acte (`pose` ou
+`revocation`) ; la position retenue — l'un des deux claims du conflit, ou
+une position d'expert en vigueur (`WN-PE-NNNN@vN.M`) ; le motif, en clair,
+obligatoire, jamais réduit à des espaces ; l'auteur et la date.
+
+- **Une tête par couple conflit × question**, sur le patron de [[D-331]]
+  §2 : une pose sur un couple qui a une tête la remplace ; une révocation
+  ne vise que la tête et ramène le couple à « non arbitré ».
+- **Aucun pré-remplissage, aucune position par défaut** : l'outil ne
+  propose aucune des deux positions. Tant qu'un couple n'est pas arbitré,
+  l'escalade de `DC-55` reste seule (`DC-54` : la position la plus
+  prudente, mesurée sur ce corpus, est de ne pas trancher).
+- **L'arbitrage s'ajoute au constat, il ne le remplace pas** (`DC-30`) :
+  au cockpit, le conflit reste affiché avec ses deux claims et le motif
+  d'escalade, et l'arbitrage se lit à côté, daté, pour sa question. Il ne
+  vaut jamais pour le claim en général, ni pour une autre question.
+- **Les deux limites signées de `DC-55` tiennent** : ni extinction d'une
+  règle, ni précondition T0, ni dossier patient. Aucune donnée patient
+  n'entre dans cette table.
+
+**§4 — La re-signature de `conflitsSourcesV1` (arbitrage 3).** Dans une PR
+à part, sur la déclaration du responsable ([[D-195]]) : les conflits
+déclarés dans les dossiers de preuve clos sont relus ; ceux dont les deux
+claims sont épinglés par une fiche d'usage signée entrent au registre, en
+identifiants et en positions neutres (forme de `CS-BIO-01`) ; les autres
+entrent aux écartés avec leur motif et leur condition de retour (patron
+[[D-042]]). Effet connu et accepté : un conflit publié s'affiche au cockpit
+dès le déploiement, sans drapeau intermédiaire
+(`WN_ENABLE_CONTRADICTIONS_NNPP2` est allumé, [[D-104]]). Le fichier est un
+chemin clinique : son déploiement est retenu jusqu'à l'approbation de
+release-db ([[D-389]] §5).
+
+**§5 — Périmètre et versement (arbitrage 4 et sa correction).** Les
+positions des cinq dossiers clos — fer, vitamine D, zinc, magnésium
+érythrocytaire, B9 et B12. Iode et sélénium entre à la clôture de son
+dossier, avec sa re-signature. **Le versement passe par l'atelier, jamais
+par une migration** : une migration est un fichier du dépôt public, et le
+texte d'une position y serait publié ([[D-251]] §4). La migration crée les
+tables vides ; une surface privée, réservée au responsable (même garde que
+les actes des fiches d'usage, `peutDeciderFichesUsage`), enregistre
+chaque position, que le responsable signe ensuite par un acte daté,
+position par position. Aucune release-db n'accompagne le versement : c'est
+une écriture applicative authentifiée.
+
+**§6 — La séquence.** (1) cette décision et la fiche LOT-28 ; (2) la
+migration seule, avec son contrat négatif et sa ligne de CI, puis
+release-db approuvée et constat par conteneur ; (3) le code de l'atelier et
+de l'affichage praticien, sous un drapeau neuf et éteint
+(`WN_POSITIONS_EXPERT`, [[D-081]]) ; (4) la re-signature de
+`conflitsSourcesV1` et l'affichage de l'arbitrage au cockpit (§4) ; (5) le
+versement, geste du responsable. Une PR structurelle à la fois en file B.
+
+**§7 — Critère de fin.** Release-db constatée ; `conflitsSourcesV1`
+re-signé ; positions des cinq dossiers clos signées à l'atelier, constatées
+par conteneur en agrégat ; contrat négatif vert (identifiant mal formé,
+version sans claim d'appui, acte sans relecture, révocation qui ne vise
+pas la tête, arbitrage d'un conflit inconnu refusés). BP-17 (F11) peut
+alors s'ouvrir.
+
 ### D-438 — « Mon équilibre », besoin 5 : l'Epworth et la fatigue générale du MFI-20 entrent dans le groupe `repos`, poids 1 chacun, niveau A ; normalisations (24 − score)/24 et (20 − GEN)/16 ; application dans un lot ultérieur (d56)
 
 - Date : 2026-11-04
