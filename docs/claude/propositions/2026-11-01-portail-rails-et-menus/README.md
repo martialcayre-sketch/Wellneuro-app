@@ -619,6 +619,7 @@ Même protocole que L1 : dev local sur le Mac, navigateur intégré, base éphé
 - Constat incident, hors périmètre de L2 (frise, L2b) : sur le dossier clos, étape 5 courante, la page déborde à droite à 390 px, avant comme après (largeur de mise en page 494 px). Le texte `sr-only` « (étape actuelle) » de `PatientJourneyProgress` sort du conteneur `overflow-x-auto` de la frise. La colonne de la nav reste à 358 px : les mesures ci-dessus valent.
 
 ### L2b — Frise des étapes navigable (arbitrage Q3 du 2026-11-01)
+- **État (2026-11-04)** : livré éteint sous `WN_PORTAIL_FRISE_NAVIGABLE` après la réponse à Q39 (chapitre 17) ; servi au seul dossier majeur ([[D-283]] §5). Le débordement à 390 px relevé au constat de L2 (le `sr-only` de la frise hors de son défilement) est corrigé dans la frise d'avant comme dans la navigable, sans drapeau. Constat à l'écran consigné ci-dessous.
 - Périmètre : `PatientJourneyProgress` devient une navigation : les six étapes (Consentement, Informations, Situation, Questionnaires, Analyse du praticien, Restitution) deviennent des liens ou des boutons, `aria-current="step"` sur l'étape courante, cibles de 44 px en `rem` (la frise est aujourd'hui en `text-2xs`, `overflow-x-auto`, PatientJourneyProgress.tsx:56, 66), libellés inchangés. Rien n'est écrit dans le code sur ce qu'ouvre une étape ; Q27 et Q28 (chapitre 14) fixent : aucune route neuve, une étape sans cible existante n'est pas cliquable, l'étape 5 courante ouvre un texte d'attente court ; le détail état par état est ci-dessous.
 - Ce lot ne réduit pas la ligne de liens : le menu des espaces reste L2. Les deux navigations coexistent comme rail-menu et rail des phases côté praticien, et répondent à deux questions distinctes (« où vais-je ? », « où en suis-je ? »).
 - Bancs : ordre des six étapes ; un seul `aria-current="step"` ; cible, ou absence de cible, de chaque étape selon l'état (étapes 5 et 6 comprises) ; étape passée, courante, à venir ; état mineur et dossier clos. E2E : 390 px (défilement horizontal de la frise, cibles ≥ 44 px) et Desktop ; `axe` sur le hub.
@@ -626,6 +627,26 @@ Même protocole que L1 : dev local sur le Mac, navigateur intégré, base éphé
 - Décision : la D-xxx de L0 écrit le tableau étape → cible (Q28), le texte d'attente de l'étape 5 courante (Q27, libellé patient accepté mot pour mot, sous la garde D7), et la règle de Q29 : étape passée en relecture, étape à venir fermée, ce qui reste dans A6-R1 « une étape à la fois » (revenir à une étape passée n'est pas « empiler »). Forme : `<nav aria-label="Étapes de votre parcours">` distincte de « Autres espaces » (Q30).
 - Étapes 5 et 6, état par état (`journeyCurrentId` 5 ou 6, dérivé seulement une fois les questionnaires transmis, contrat.ts:277, 302-312) : étape 5 courante (`analyse_en_cours`) → texte d'attente, à écrire dans `FORMULATIONS_PATIENT` ou à côté, dans le même module (formulations.ts:15-20), pour passer sous la garde D7 (formulations.guard.test.ts:16-23), « Votre praticien les prépare. » étant la phrase déjà servie ; étape 6 à venir → fermée (Q29). Étape 6 courante (`restitution_disponible`, `prochaine_etape_prete`) → aucun texte d'attente, la phrase serait fausse ; sa seule cible existante est le bilan quand `bilanConsultable` le sert (contrat.ts:293-298), sinon non cliquable : Q31. Étape 5 passée → cible existante à nommer, sinon non cliquable, comme « Situation » : Q32. Q27 est ainsi une exception assumée à Q28 pour la seule étape 5 courante : sans cible, elle s'ouvre quand même, sur un texte. Les étapes 1 et 2 en relecture visent `/conditions` et `/informations`, que le chapitre 9 laisse hors menu (« Aucune porte nouvelle ») : Q34 dit si une relecture est une porte au sens de l'arbitrage du 2026-09-12.
 - Validation : T1, T1 complet, T2. Fin : constat à l'écran sur un dossier de test majeur, mineur et clos, à 390 px et en confort 112,5 %.
+
+#### Constat à l'écran de L2b (2026-11-04)
+Même protocole que L1 et L2 : dev local sur le Mac, navigateur intégré, base éphémère de `test:worktree --fast --keep-db` (après un T2 vert). `WN_PORTAIL_FRISE_NAVIGABLE` armé côté serveur, puis éteint pour le dernier relevé. Patients fictifs du seed, états posés en base de test : Sophie Nicola majeure sans questionnaire ; Michel Dogné majeur, ses questionnaires passés de « En attente » à transmis, sa consultation à `en_cours`, puis un bilan transmis (`provisionBilanTransmis`), puis `suiviClotureLe` posé ; Jennifer Martin mineure (date de naissance passée à 2012), puis close. Mesures par `getBoundingClientRect` ; « page » = `scrollWidth` / `clientWidth` du document.
+
+| Dossier, état | Largeur | Frise | Cibles | Page |
+|---|---|---|---|---|
+| Sophie, majeure, étape 4 courante, liste non rendue | 390 px | nav ; « Questionnaires » seul lien, vers `#mon-parcours`, `aria-current="step"` | 44 px | 390 / 390 |
+| Michel, majeur, étape 4 courante, liste rendue | 390 px | « Questionnaires » vers `#mes-questionnaires` ; le clic amène « Transmis au praticien » à l'écran | 44 px | 390 / 390 |
+| Michel, étape 5 courante, `elements_transmis` | 390 px | bouton « Analyse du praticien », `aria-expanded` ; ouvre « Vos éléments ont été transmis. » | 44 px | 390 / 390 |
+| Michel, étape 5 courante, `analyse_en_cours` | 390 px | ouvre le texte accepté mot pour mot ; étape courante dans le champ de la frise (défilement 121 px) | 44 px | 390 / 390 |
+| Michel, étape 6 courante, bilan consultable | 390 px | « Restitution » vers `/portail/PAT_SEED_03/bilan`, le clic ouvre le bilan ; étape 5 passée non cliquable ; aucun texte | 44 px | 390 / 390 |
+| Michel, étape 6, dossier clos | 390 px | inchangée : majeur, la frise reste navigable | 44 px | 390 / 390 |
+| Michel, étape 6, confort 112,5 % | 390 px | étape courante dans le champ ; frise 642 / 363 | 49,5 px | 390 / 390 |
+| Michel, étape 6 | 1 024 px | frise entière, 680 / 680, nav de 48 px | 44 px | 1 024 / 1 024 |
+| Jennifer, mineure, ouverte puis close | 390 px | frise d'avant, sans nav, aucun lien ni bouton ([[D-283]] §5) | — | 390 / 390 |
+| Michel, étape 5 courante, **drapeau éteint** | 390 px | frise d'avant | — | 390 / 390 ; 494 / 390 en retirant `relative` à la main |
+
+- **Défaut trouvé et corrigé pendant le constat** : à 390 px, l'étape courante 5 ou 6 restait hors champ, à droite de la frise qui défile ; le texte de l'étape 5 paraissait sous un bouton invisible. La frise navigable amène désormais l'étape courante dans son champ à l'affichage, sans toucher au défilement vertical (banc dédié, mutation rouge).
+- Le débordement incident de L2 (494 px à l'étape 5 courante) est reproduit à l'identique en retirant le correctif, et disparaît avec lui.
+- Non constaté à l'écran : l'étape 6 courante sans bilan consultable et le bilan rejeté après coup (épinglés au banc de câblage) ; `prochaine_etape_prete` (même cible que `restitution_disponible`, épinglée au banc de la table).
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
 - Périmètre : composant client sous `components/patient/` lisant `useParams`, monté dans `portail/layout.tsx`, rendu seulement session ouverte et murs franchis ; `PanneauSuperpose theme="patient"` ; liens en `<Link>` ; sondes en contexte ; `print:hidden` ; `aria-current`.
@@ -791,3 +812,14 @@ Quatre points relevés par L1 (PR #1840, chapitre 11, « Constat à l'écran de 
 | Q36 Mineur au dossier clos | **Les liens d'un mineur** : les entrées suivent l'âge seul, aucune sonde ne lit la clôture (EP-20) | rien à changer en L2 ; D-423 §2 (« Chaque entrée garde sa condition et sa sonde ») le couvre ; le banc de L1 (`questionnaires/autresEspaces.test.tsx`, cas « clos mineur ») l'épingle |
 | Q37 Plafond de hauteur d'EP-03 | **Recalculé** sur le lien mesuré de 50,8 px : 741,6 px pour 12 liens, 427,6 px pour 7 | aucun changement de taille hors L2 ; la hauteur se réduit par l'allègement des liens que L2 porte déjà (Q17, D-423 §2) ; le constat à l'écran de L2 la remesure sur les mêmes dossiers |
 | Q38 Dossier clos majeur : questionnaires encore « à commencer » | **Lot séparé**, hors de ce chantier | constat incident de L1 (questionnaires/page.tsx:275-281) ; diagnostic et correction dans une session et une PR à part, sans toucher au menu « Autres espaces » |
+
+## 17. Réponse du responsable après L2 (2026-11-04)
+
+Le constat à l'écran de L2 (chapitre 11) lui a été présenté le 2026-11-04 : ordre, étiquettes et liens conformes sur les trois dossiers, bloc plus haut qu'avant à 1 024 comme à 390 px. Question posée à options fermées, sans recommandation imposée (l'assistant recommandait de garder).
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q39 La hauteur du bloc après L2 appelle-t-elle une reprise avant L2b ? | **Garder, lancer L2b** : L2 reste tel que livré (#1856) | aucune reprise de hauteur ; L2b s'ouvre ; un allègement éventuel (étiquettes, ancre) relèverait d'un lot à part, non demandé |
+
+Appliqué en L2b, sans question nouvelle : la frise navigable est une surface neuve (D-423 §7) ; [[D-283]] §5 n'ouvre aucune surface neuve à un mineur et traite un âge inconnu comme celui d'un mineur. Elle est donc servie au seul dossier majeur, selon l'âge et non la clôture, comme les entrées du menu (Q36) ; un mineur, clos ou non, garde la frise d'avant.
+
