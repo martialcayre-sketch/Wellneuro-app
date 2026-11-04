@@ -216,6 +216,18 @@ describe('OrientationPanel', () => {
     expect(screen.getByText(/1 règle non évaluée\.$/)).toBeTruthy();
   });
 
+  // La seule combinaison où la phrase des propositions écartées côtoie le bloc :
+  // liste vide, écartées ET règles non évaluées. Les deux faits sont dits.
+  it('liste vide avec écartées et règles non évaluées : les deux faits sont rendus', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], ecartees: [CUNGI_ECARTE], reglesNonEvaluees: NON_EVALUEES });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Plus aucune exploration à examiner/)).toBeTruthy();
+    expect(screen.getByText('Règles non évaluées : passation trop ancienne')).toBeTruthy();
+    expect(screen.getByText(/1 exploration écartée/)).toBeTruthy();
+  });
+
   it('aucun bloc quand toutes les règles sont évaluées', async () => {
     stubFetch({ ...ACTIF, reglesNonEvaluees: [] });
 

@@ -1041,6 +1041,25 @@ describe('evaluerOrientationDetaillee — fenêtre du déclencheur (D-433)', () 
     ]);
   });
 
+  // UNE DES QUATRE FENÊTRES DE D-433 §2, LUE DANS LE REGISTRE RÉEL : plaintes
+  // actuelles (`Q_MOD_03`) à 14 jours. La règle est une fixture ; la fenêtre
+  // est la valeur signée.
+  it('Q_MOD_03 : déclenche à 14 jours, non évaluée à 15, fenêtre 14 au motif', () => {
+    const plaintes = regle({
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_MOD_03', operateur: '>=', valeur: 1 }],
+      suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
+    });
+    const mod03 = (dateReponse: string) => reponse({ idQuestionnaire: 'Q_MOD_03', dateReponse, scores: { total: 5 } });
+    const frais = evaluer([mod03('2026-10-20T12:00:00.000Z')], { regles: [plaintes] });
+    expect(frais.recommandations).toHaveLength(1);
+    expect(frais.reglesNonEvaluees).toEqual([]);
+    const perime = evaluer([mod03('2026-10-19T12:00:00.000Z')], { regles: [plaintes] });
+    expect(perime.recommandations).toEqual([]);
+    expect(perime.reglesNonEvaluees[0].passations).toEqual([
+      { idQuestionnaire: 'Q_MOD_03', dateReponse: '2026-10-19T12:00:00.000Z', fenetreJours: 14 },
+    ]);
+  });
+
   it('un instrument jamais passé n’est pas périmé : la règle n’est simplement pas atteinte', () => {
     expect(evaluer([])).toEqual({ recommandations: [], reglesNonEvaluees: [] });
   });
