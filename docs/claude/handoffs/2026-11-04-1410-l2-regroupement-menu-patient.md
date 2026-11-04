@@ -32,6 +32,8 @@ Lot L2 de l'audit `docs/claude/propositions/2026-11-01-portail-rails-et-menus/` 
 - T1 (`npm run check`) vert après chaque série d'éditions, et en final.
 - T2 (`npm run test:worktree -- --fast --keep-db`), premier passage : Vitest vert, E2E 307 passés et 2 rouges, `visual.spec.ts:441` sur les deux projets, par mon adaptation (un sélecteur `details:not([open])` dont les indices bougeaient). Corrigé en lisant `open` au moment du clic.
 - T2 final (`--fast`) vert : Vitest 15 875 bancs, E2E 309 passés et 7 ignorés (Chromium et WebKit). `portail-autres-espaces` est vert sur Desktop Chromium et iPhone 13.
+- Revue de PR : CodeRabbit sauté (dépôt sans revue automatique), PR-Agent rogné (« pruning diff », `DECISIONS.md` et PLAN hors budget), donc revue CodeRabbit demandée à la main (D-393 §4), après une limite de quota. Un nitpick, corrigé : le test des cibles de `portail-autres-espaces` attend une entrée sondée avant de mesurer. T1 et T2 rejoués verts (E2E 309 passés).
+- Deux mutations jouées puis annulées, rouges : ordre dossier/échanges (7 bancs), `sondeSeule` ignoré (2 bancs).
 - Constat à l'écran (dev local, navigateur intégré, même base, avant = `origin/main@02279f1a`, après = la branche) ; chiffres au chapitre 11 de l'audit. En bref, hauteur de la nav avant → après :
   - majeur : 239,2 → 349,0 px à 1 024 px ; 490,4 → 566,0 px à 390 px ;
   - mineur : 176,4 → 261,0 et 302,0 → 391,5 ;

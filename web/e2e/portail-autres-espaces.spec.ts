@@ -37,6 +37,9 @@ test.describe('Portail — « Autres espaces » en groupes', () => {
     const nav = page.getByRole('navigation', { name: 'Autres espaces' });
     const ancre = nav.getByRole('link', { name: 'Mon parcours', exact: true });
     await expect(ancre).toHaveAttribute('aria-current', 'page');
+    // Une entrée sondée au moins (drapeau armé dans `playwright.config.ts`) :
+    // sans cette attente, la mesure pourrait partir avant toute sonde.
+    await expect(nav.getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true })).toBeVisible();
     const liens = await nav.getByRole('link').all();
     expect(liens.length).toBeGreaterThanOrEqual(3);
     for (const lien of liens) {
