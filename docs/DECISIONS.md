@@ -335,8 +335,8 @@ Les trois constats ont été vérifiés sur pièces et sont tous confirmés. Le
 responsable a tranché le 2026-11-04, sur question à options et sur
 l'option recommandée, le lieu de lecture de l'arbitrage (arbitrage 6 de la
 fiche LOT-28). Les §3, §4, §6 et §7 se lisent avec les trois points
-ci-dessous. Le texte amendé est à retenir par le responsable, comme le
-texte d'origine.
+ci-dessous. Le texte amendé a été retenu par le responsable le
+2026-11-04, avec le texte d'origine (voir le statut).
 
 - **A1 — Publier n'est pas déclencher (P1-1 ; corrige le §4).** Le cockpit
   ne déclenche un conflit que si l'un de ses claims est cité par la
