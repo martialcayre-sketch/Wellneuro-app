@@ -4,6 +4,8 @@ import {
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
+  FENETRES_FRAICHEUR_ORIENTATION,
+  instrumentsSansFenetre,
 } from '@/lib/clinical/orientationRulesV1';
 import { constatsContradictionsPourDossier, contradictionsActives } from '@/lib/clinical/contradictionsService';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
@@ -179,6 +181,11 @@ export type ResultatOrientation =
 // claims qui la fondent, et le SHA du périmètre relu : une règle retouchée
 // après signature change `ORIENTATION_RULES_SHA256`, la concordance casse et
 // le verrou se ferme SEUL (patron [[D-063]]).
+//
+// SIXIÈME TERME ([[D-430]] §3) : une table dont une suggestion vise un
+// instrument sans fenêtre de fraîcheur ne se sert pas. Le banc d'exhaustivité
+// rejoue le même contrôle avant toute signature ; le répéter ici fait qu'une
+// table incomplète ÉTEINT l'orientation au lieu d'être servie avec un repli.
 function tableSignee(): boolean {
   const date = ORIENTATION_METADATA.dateValidation;
   return ORIENTATION_METADATA.validationExterne
@@ -186,7 +193,8 @@ function tableSignee(): boolean {
     && !Number.isNaN(new Date(date).getTime())
     && new Date(date).toISOString() === date
     && ORIENTATION_METADATA.claimsSource.length > 0
-    && ORIENTATION_METADATA.shaPerimetre === ORIENTATION_RULES_SHA256;
+    && ORIENTATION_METADATA.shaPerimetre === ORIENTATION_RULES_SHA256
+    && instrumentsSansFenetre(ORIENTATION_RULES_V1, FENETRES_FRAICHEUR_ORIENTATION).length === 0;
 }
 
 /**
@@ -525,6 +533,9 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // sur une date fixe, et la fenêtre de fraîcheur n'introduit pas un comportement
     // qui dépendrait du jour où le banc tourne.
     maintenantMs,
+    // Le registre même que l'empreinte signée hache ([[D-430]]) : chaque
+    // instrument lit sa fenêtre, quelle que soit la règle qui le propose.
+    fenetres: FENETRES_FRAICHEUR_ORIENTATION,
     // Années révolues à `maintenantMs`, ou `null` — jamais une valeur devinée.
     // Un patient introuvable, une date absente ou illisible donnent le même
     // `null`, et un `null` n'atteint aucune borne d'âge ([[D-231]]).

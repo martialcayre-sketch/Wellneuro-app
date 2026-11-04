@@ -1,6 +1,6 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
-import { estFeuilleInstrument } from './orientationRulesV1';
+import { estFeuilleInstrument, fenetreValide } from './orientationRulesV1';
 import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type {
   OrientationDeclencheur,
@@ -125,8 +125,10 @@ export type RecommandationExploration = {
    * couverte par une passation exploitable n'arrive jamais jusqu'ici : elle est
    * sautée plus haut dans la boucle, AVANT que la ligne ne soit créée — voir le
    * `continue` de `cibleDejaCouverte`. Ce booléen ne décrit donc que les cibles
-   * qui ont SURVÉCU à cette exclusion : passation non `VALID`, non cotable, ou
-   * exclusion éteinte parce que la table d'arrêt n'est pas exploitable.
+   * qui ont SURVÉCU à cette exclusion : passation non `VALID`, non cotable,
+   * passation plus ancienne que la fenêtre de son instrument, instrument sans
+   * fenêtre ([[D-430]]), ou exclusion éteinte parce que la table d'arrêt n'est
+   * pas exploitable.
    */
   dejaRepondu: boolean | null;
   motifs: MotifOrientation[];
@@ -184,6 +186,25 @@ export type EntreeOrientation = {
    * pas une exploration faute de savoir quel jour on est.
    */
   maintenantMs?: number;
+  /**
+   * Fenêtres de fraîcheur PAR INSTRUMENT ([[D-430]]), fournies par l'appelant
+   * comme `regles` — le service passe `FENETRES_FRAICHEUR_ORIENTATION`, le
+   * registre même que l'empreinte signée hache.
+   *
+   * LA RÉPONSE QUE PRESCRIT [[D-430]] §3 À UNE TABLE INCOMPLÈTE EST LE REFUS DE
+   * LA TABLE ENTIÈRE, et elle vit dans le service : `tableSignee()` refuse une
+   * table dont une suggestion vise un instrument sans fenêtre, si bien que le
+   * cas n'atteint pas ce moteur en production.
+   *
+   * CE QUE LE MOTEUR FAIT S'IL LE REÇOIT QUAND MÊME (appelant hors service, ou
+   * membre de pack dont la composition n'arrive qu'à l'exécution) est un choix
+   * d'implémentation, pas une conséquence de la décision : dès qu'une horloge
+   * est fournie, un instrument sans fenêtre NE COUVRE PAS sa cible. Il prend le
+   * parti de « composition de pack inconnue = jamais couverte », et n'adopte
+   * aucun des deux replis que [[D-430]] §3 écarte (les 365 jours implicites, la
+   * couverture sans horizon).
+   */
+  fenetres?: Readonly<Record<string, RepetitionOrientation>>;
   /**
    * Âge du patient en années RÉVOLUES — `undefined` ou `null` = inconnu.
    *
@@ -1168,8 +1189,15 @@ function estAdministrable(entree: EntreeOrientation, questionnaireId: string): b
 /** Un jour, en millisecondes — même constante que `statuts.ts` côté biologie. */
 const JOUR_MS = 24 * 60 * 60 * 1000;
 
-/** L'horloge et le délai, réunis : les deux vont ensemble ou aucun ne vaut. */
-type FraicheurCible = { delaiJours: number; maintenantMs: number };
+/**
+ * L'horloge et le registre des fenêtres, réunis : sans horloge, aucune
+ * péremption ne se calcule ; avec elle, chaque instrument lit SA fenêtre
+ * ([[D-430]] §1).
+ */
+type FraicheurCible = {
+  maintenantMs: number;
+  fenetres: Readonly<Record<string, RepetitionOrientation>> | undefined;
+};
 
 function passationExploitable(
   dernieres: Map<string, ReponseOrientation>,
@@ -1202,12 +1230,19 @@ function passationExploitable(
   // recommandation ; toute autre valeur, y compris absente, la laisse.
   if (reponse.statutValidite !== 'VALID') return false;
 
-  // FENÊTRE DE FRAÎCHEUR — au-delà du délai de la règle, la passation cesse de
-  // COUVRIR la cible, et la recommandation revient avec son motif.
+  // FENÊTRE DE FRAÎCHEUR — au-delà de la fenêtre de l'INSTRUMENT ([[D-430]]),
+  // la passation cesse de COUVRIR la cible, et la recommandation revient avec
+  // son motif.
   //
-  // DEUX REPLIS, TOUS DEUX DANS LE SENS « ON NE RE-PROPOSE PAS » : pas de
-  // fenêtre sur la règle, ou pas d'horloge fournie. Dans les deux cas la
-  // passation continue de couvrir, exactement comme avant ce lot.
+  // UN SEUL REPLI, DANS LE SENS « ON NE RE-PROPOSE PAS » : pas d'horloge
+  // fournie. La passation continue alors de couvrir, comme avant [[D-180]].
+  //
+  // L'ANCIEN SECOND REPLI EST RETOURNÉ. « Pas de fenêtre sur la règle »
+  // couvrait sans horizon, ce que [[D-430]] §3 écarte avec les 365 jours
+  // implicites. La décision prescrit le refus de la table entière, porté par
+  // `tableSignee()` en amont ; si le cas arrive malgré tout ici, l'instrument
+  // sans fenêtre NE COUVRE PAS — choix d'implémentation du moteur, aligné sur
+  // la composition de pack inconnue (voir `EntreeOrientation.fenetres`).
   //
   // IL N'Y EN A PAS DE TROISIÈME, et c'est un banc qui l'a établi. Une première
   // rédaction gardait ici la `dateReponse` illisible — `Number.isFinite` — en
@@ -1219,13 +1254,17 @@ function passationExploitable(
   // comportement précède ce lot. Écrire un garde inatteignable aurait fait
   // croire à une protection qui n'existe pas.
   if (!fraicheur) return true;
+  const fenetre = fraicheur.fenetres && Object.hasOwn(fraicheur.fenetres, questionnaireId)
+    ? fraicheur.fenetres[questionnaireId]
+    : undefined;
+  if (!fenetreValide(fenetre)) return false;
   const faitLeMs = Date.parse(reponse.dateReponse);
 
   // STRICTEMENT SUPÉRIEUR, comme côté biologie : le jour anniversaire du délai
   // couvre encore. Un `>=` avancerait la réouverture d'un jour sans que rien ne
   // le motive, et les deux tables cesseraient de se lire pareil.
   const ageJours = (fraicheur.maintenantMs - faitLeMs) / JOUR_MS;
-  return ageJours <= fraicheur.delaiJours;
+  return ageJours <= fenetre.delaiJours;
 }
 
 /**
@@ -1238,27 +1277,23 @@ function passationExploitable(
 function cibleDejaCouverte(
   entree: EntreeOrientation,
   dernieres: Map<string, ReponseOrientation>,
-  cible: CibleExploration,
-  repetition?: RepetitionOrientation
+  cible: CibleExploration
 ): boolean {
-  // LA FENÊTRE EST CELLE DE LA RÈGLE QUI PROPOSE, et non un minimum sur toutes
-  // les règles qui visent cette cible. Le prédicat est appelé DANS la boucle,
-  // avant toute agrégation : à cet instant une seule règle parle, et c'est sa
-  // périodicité qui dit si sa propre proposition a encore un objet. Une cible
-  // visée par deux règles aux délais différents se rouvrira donc dès que la
-  // plus impatiente le demande — ce qui est le comportement voulu, et ce que la
-  // fusion par `Math.min` fait déjà pour la priorité.
+  // LA FENÊTRE EST CELLE DE L'INSTRUMENT, et non plus celle de la règle qui
+  // propose ([[D-430]] §1, qui amende [[D-180]] point 3). Elle est donc la même
+  // quelle que soit la règle déclenchée : une cible n'est plus tenue pour
+  // couverte par l'une et reproposée par l'autre.
   const fraicheur: FraicheurCible | undefined =
-    repetition && typeof entree.maintenantMs === 'number'
-      ? { delaiJours: repetition.delaiJours, maintenantMs: entree.maintenantMs }
+    typeof entree.maintenantMs === 'number'
+      ? { maintenantMs: entree.maintenantMs, fenetres: entree.fenetres }
       : undefined;
 
   if (cible.type === 'questionnaire') return passationExploitable(dernieres, cible.questionnaireId, fraicheur);
   const composition = entree.compositionPacks?.[cible.packId];
   if (!Array.isArray(composition) || composition.length === 0) return false;
-  // UN PACK N'EST COUVERT QUE SI CHACUN DE SES MEMBRES L'EST — la fenêtre
-  // s'applique donc membre par membre : un seul instrument périmé rouvre le
-  // pack entier, ce qui est le sens de `every`.
+  // UN PACK N'EST COUVERT QUE SI CHACUN DE SES MEMBRES L'EST — chaque membre
+  // lit sa propre fenêtre : un seul instrument périmé, ou sans fenêtre, rouvre
+  // le pack entier, ce qui est le sens de `every`.
   return composition.every(qid => passationExploitable(dernieres, qid, fraicheur));
 }
 
@@ -1338,7 +1373,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
         // replanifier ». La ligne ne porte donc pas d'extinction : elle n'est
         // pas produite du tout, et le badge « déjà renseigné » continue de dire
         // le fait administratif sur les cibles qui, elles, restent proposées.
-        if (entree.exclureDejaRepondu && cibleDejaCouverte(entree, dernieres, cible, regle.repetition)) continue;
+        if (entree.exclureDejaRepondu && cibleDejaCouverte(entree, dernieres, cible)) continue;
 
         const cle = cleCible(cible);
         const existante = parCible.get(cle);

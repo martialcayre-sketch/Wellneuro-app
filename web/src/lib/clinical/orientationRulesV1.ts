@@ -257,7 +257,10 @@ export type OrientationClaimRef = {
   versionClaim: string;
 };
 
-/** Fenêtre au-delà de laquelle une cible déjà mesurée se re-propose. */
+/**
+ * Fenêtre au-delà de laquelle une cible déjà mesurée se re-propose — une par
+ * instrument, dans `FENETRES_FRAICHEUR_ORIENTATION` ([[D-430]]).
+ */
 export type RepetitionOrientation = {
   /**
    * Délai en jours. Chiffre CLINIQUE : il ne se choisit pas pour la commodité
@@ -300,32 +303,11 @@ export type OrientationRule = {
    */
   needIds?: number[];
   categoriesCibles?: FunctionalCategoryId[];
-  /**
-   * FENÊTRE DE FRAÎCHEUR — au-delà de ce délai, une passation déjà faite cesse
-   * de couvrir la cible, et la règle la re-propose.
-   *
-   * POURQUOI CE CHAMP EXISTE. Sans lui, l'exclusion `dejaRepondu` ([[D-053]])
-   * ferme une cible SANS HORIZON : la requête ne pose aucun filtre de date,
-   * `derniereReponseParQuestionnaire` retient la dernière passation quelle que
-   * soit son ancienneté, et `passationExploitable` la déclare couvrante. Une
-   * mesure vieille de deux ans fermait donc la cible, sans badge et sans motif
-   * — la ligne n'étant pas produite, le praticien n'avait rien à voir.
-   *
-   * LE PATRON EST CELUI DE LA TABLE SŒUR, délibérément : `RepetitionPanel`
-   * (`indicationsBiologieV1.ts`) fait exactement cela depuis `D-069`, et la
-   * biologie rouvrait donc un panel documenté là où l'orientation ne rouvrait
-   * rien. La mesure la plus périssable était la mieux protégée.
-   *
-   * LE CHIFFRE EST UN ARBITRAGE WELLNEURO, ET IL EST NOMMÉ COMME TEL. Côté
-   * biologie, le 365 entre dans le périmètre signé adossé à deux claims
-   * (`DC-19`). Ici, AUCUN claim ne fonde une périodicité de re-passation des
-   * questionnaires : le 365 uniforme est l'arbitrage praticien du 2026-09-13,
-   * aligné sur la table sœur faute de source, et il doit se lire ainsi — pas
-   * comme une propriété des instruments. Un affinage instrument par instrument
-   * reste ouvert, et c'est pourquoi le champ vit sur la RÈGLE et non dans une
-   * constante globale.
-   */
-  repetition?: RepetitionOrientation;
+  // LA FENÊTRE DE FRAÎCHEUR A QUITTÉ LA RÈGLE ([[D-430]] §1). Le champ
+  // `repetition` (365 jours sur les vingt règles, [[D-180]] point 3) vit
+  // désormais par INSTRUMENT, dans `FENETRES_FRAICHEUR_ORIENTATION` plus bas :
+  // une même cible ne peut plus être tenue pour couverte par une règle et
+  // reproposée par une autre.
   /**
    * Claims VALIDÉS à l'appui. Jamais vide : une règle sans claim ne serait pas
    * traçable jusqu'à sa source, et le moteur l'ignore (invariant de doctrine,
@@ -648,11 +630,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Mesurer la qualité du sommeil par le PSQI quand le questionnaire contextuel la donne pour insuffisante ou non réparatrice.' },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -685,11 +664,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Objectiver par le PSQI une plainte de sommeil que le patient déclare intense.' },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0234-011', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -719,11 +695,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_05', priorite: 1, objectif: "Situer le chronotype par le questionnaire de Horne quand le rythme biologique est insuffisant, pour ajuster l'hygiène des rythmes." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0315-007', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-025', versionClaim: 'v1.0' },
@@ -762,11 +735,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_03', priorite: 1, objectif: "Dépister le syndrome d'apnées par le questionnaire de Berlin quand un antécédent respiratoire est déclaré et que le sommeil est dégradé." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0312-021', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0359-025', versionClaim: 'v1.0' },
@@ -836,11 +806,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: "Mesurer la qualité du sommeil par le PSQI quand le patient demande à l'améliorer et que le sommeil est non réparateur." },
       { questionnaireId: 'Q_SOM_05', priorite: 2, objectif: "Situer le chronotype par le questionnaire de Horne quand le patient demande à améliorer un sommeil non réparateur." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -876,11 +843,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_SOM_02', priorite: 1, objectif: "Mesurer la somnolence diurne par l'échelle d'Epworth, que la source demande de proposer systématiquement." },
       { questionnaireId: 'Q_SOM_06', priorite: 2, objectif: "Mesurer la fatigue par l'échelle de Pichot, que la source associe à Epworth pour l'impact sur la vitalité." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [5],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-012', versionClaim: 'v1.0' },
     ],
@@ -909,11 +873,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_02', priorite: 1, objectif: "Mesurer l'intensité du stress chronique par le PSS-10 quand l'adaptation au stress est insuffisante ou perturbée." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
@@ -958,11 +919,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_STR_04', priorite: 2, objectif: 'Situer dépression, anxiété et stress par le DASS-21 devant un burn-out déclaré comme facteur déclenchant.' },
       { questionnaireId: 'Q_STR_03', priorite: 3, objectif: "Préciser le vécu du stress par le questionnaire de Cungi quand l'adaptation au stress est insuffisante." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
     ],
@@ -998,11 +956,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_05', priorite: 1, objectif: "Évaluer sans attendre le risque de burnout par le BMS-10 quand l'adaptation au stress est perturbée." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0228-009', versionClaim: 'v1.0' },
@@ -1029,11 +984,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Objectiver l'humeur et l'anxiété par le HAD quand la plainte de moral est intense." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [8],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0154-013', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0234-010', versionClaim: 'v1.0' },
@@ -1065,11 +1017,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Objectiver l'humeur et l'anxiété quand un antécédent psychiatrique est déclaré au bilan initial." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [8],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0339-010', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
@@ -1121,11 +1070,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer l'humeur par le HAD quand l'échelle fonctionnelle sérotonine entre dans la bande « Perturbations probables » de sa grille." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [8],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0136-004', versionClaim: 'v1.0' },
@@ -1161,11 +1107,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer l'humeur par le HAD quand l'échelle fonctionnelle dopamine entre dans la bande « Perturbations probables » de sa grille." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [8],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0136-004', versionClaim: 'v1.0' },
@@ -1191,11 +1134,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: 'Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand la plainte digestive est intense.' },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [4],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
     ],
@@ -1250,11 +1190,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol devant un antécédent digestif déclaré et une plainte au moins modérée." },
       { questionnaireId: 'Q_INF_01', priorite: 3, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand un antécédent digestif est déclaré et que la plainte est au moins modérée." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [4],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
@@ -1371,11 +1308,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: "Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand le score global de l'enquête alimentaire SIIN est défavorable." },
       { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol quand le score global de l'enquête alimentaire SIIN est défavorable." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [4],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
     ],
@@ -1490,11 +1424,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_STR_03', priorite: 1, objectif: "Explorer la dimension du stress par le test de Cungi, que la source juge le plus pertinent dans les troubles du sommeil." },
       { questionnaireId: 'Q_NEU_11', priorite: 2, objectif: "Explorer la dimension de l'humeur, que la source désigne explicitement par le test HAD." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [8, 9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       // « Le test de stress de Cungi est plus pertinent et sensible pour
       // explorer la dimension du stress dans les troubles du sommeil, tandis que
@@ -1550,11 +1481,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_05', priorite: 1, objectif: "Ajouter l'évaluation d'un risque éventuel de burnout à l'intensité du stress chronique." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
@@ -1632,11 +1560,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_STR_06', priorite: 2, objectif: 'Évaluer la contrainte professionnelle par le questionnaire de Karasek quand un burn-out est déclaré et que le stress perçu est élevé.' },
       { questionnaireId: 'Q_STR_08', priorite: 3, objectif: "Évaluer le surinvestissement au travail par le WART quand un burn-out est déclaré et que le stress perçu est élevé." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** arbitrage praticien du 2026-09-14 */
     needIds: [9],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
@@ -1695,11 +1620,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_03', priorite: 1, objectif: "Caractériser le transit par l'échelle de Bristol quand le score de troubles fonctionnels intestinaux est élevé." },
       { questionnaireId: 'Q_INF_01', priorite: 2, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand le score de troubles fonctionnels intestinaux est élevé." },
     ],
-    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
-    // les vingt règles et aligné sur la table sœur faute de source propre.
     /** dérivé de `BESOIN_SOURCES` */
     needIds: [4],
-    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
     ],
@@ -1847,7 +1769,21 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // même défaut, pris par l'autre bout. Un banc interdit déjà d'écrire
   // `shaPerimetre: ORIENTATION_RULES_SHA256` ; rien n'interdit d'y recopier la
   // valeur que la constante vient de prendre, et c'est le geste qui a eu lieu.
-  dateValidation: '2026-09-14T00:00:00.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-04 ([[D-430]], lot t59), SUR ATTESTATION DU PRATICIEN.
+  // Le périmètre a grandi une troisième fois : `{ regles, grilles, fenetres }`.
+  // Les 365 jours uniformes de D-180 point 3 ont quitté les vingt règles ; les
+  // quinze fenêtres de D-430 §2 vivent, une par instrument, dans
+  // `FENETRES_FRAICHEUR_ORIENTATION`, recopiées telles quelles. Ces valeurs sont
+  // des arbitrages du praticien : aucune source ne les fonde, et la décision le
+  // dit. Hormis le retrait de `repetition`, les règles sont inchangées (empreinte
+  // des règles sans `repetition` et des grilles identiques à celles de `main`
+  // avant le lot, recalculées). Une contre-revue Codex a rendu PASSER avant la
+  // signature. Les 23 claims de `claimsSource` ont été relus en base de
+  // production le 2026-11-03 (one-off Scalingo détaché, lecture seule) : 23/23
+  // `VALIDE`, `prescriptif`, actifs, `v1.0`, aucun supplanté. Aucun claim ajouté
+  // ni retiré. Ordre tenu : la relecture a précédé la recopie.
+  dateValidation: '2026-11-04T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1859,6 +1795,9 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //     (périmètre RÈGLES SEULES ; les grilles n'y étaient pas encore)
   //   · 2026-09-14 — `23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db`
   //     (périmètre RÈGLES + GRILLES, attesté le matin sur les dix-sept grilles)
+  //   · 2026-09-14 — `2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd`
+  //     (seconde attestation : RÈGLES + GRILLES + blocs `scoring` entiers ;
+  //     règles à `repetition` de 365 jours)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1874,7 +1813,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: '2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd',
+  shaPerimetre: 'f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
@@ -1914,6 +1853,83 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
 export const GRILLES_ORIENTATION = grillesCitees(ORIENTATION_RULES_V1);
 
 /**
+ * FENÊTRES DE FRAÎCHEUR, UNE PAR INSTRUMENT ([[D-430]]) — au-delà de ce délai,
+ * une passation exploitable cesse de couvrir sa cible, et toute règle
+ * déclenchée qui vise l'instrument le re-propose.
+ *
+ * POURQUOI UNE FENÊTRE EXISTE. Sans elle, l'exclusion `dejaRepondu`
+ * ([[D-053]]) ferme une cible SANS HORIZON : la requête ne pose aucun filtre
+ * de date, et une passation de n'importe quelle ancienneté la déclarait
+ * couverte ([[D-180]] point 3, qui posait 365 jours uniformes sur la règle).
+ *
+ * POURQUOI PAR INSTRUMENT ([[D-430]] §1). La même dans toutes les règles qui
+ * proposent l'instrument : une cible ne peut plus être tenue pour couverte par
+ * une règle et reproposée par une autre.
+ *
+ * LES QUINZE VALEURS SONT DES ARBITRAGES WELLNEURO, ET NOMMÉES COMME TELLES
+ * ([[D-430]] §2) : aucune source ne fonde une durée de couverture, et une
+ * période de rappel n'est pas une fenêtre de fraîcheur. Recopiées telles
+ * quelles de la table de la décision, dans son ordre ; un banc les épingle une
+ * à une. Le jour anniversaire couvre encore (comparaison stricte côté moteur).
+ *
+ * UNE TABLE INCOMPLÈTE SE REFUSE ([[D-430]] §3) : une règle qui vise un
+ * instrument absent d'ici ne se signe pas — `instrumentsSansFenetre` est
+ * rejoué par un banc ET par `tableSignee()`, si bien qu'une telle table éteint
+ * l'orientation au lieu d'être servie. Aucun repli implicite (ni les 365 jours,
+ * ni une couverture sans horizon).
+ *
+ * ENTRE DANS L'EMPREINTE SIGNÉE : retoucher une valeur referme le verrou
+ * jusqu'à re-signature.
+ */
+export const FENETRES_FRAICHEUR_ORIENTATION: Readonly<Record<string, RepetitionOrientation>> = {
+  Q_GAS_01: { delaiJours: 21 }, // TFD SIIN — une seule fenêtre ([[D-430]] §4)
+  Q_GAS_03: { delaiJours: 21 }, // Bristol
+  Q_INF_01: { delaiJours: 21 }, // hyperexcitabilité SIIN
+  Q_NEU_11: { delaiJours: 7 }, // HAD
+  Q_SOM_01: { delaiJours: 30 }, // PSQI
+  Q_SOM_02: { delaiJours: 7 }, // Epworth
+  Q_SOM_03: { delaiJours: 90 }, // Berlin
+  Q_SOM_05: { delaiJours: 365 }, // MEQ
+  Q_SOM_06: { delaiJours: 7 }, // Pichot
+  Q_STR_02: { delaiJours: 30 }, // PSS-10
+  Q_STR_03: { delaiJours: 7 }, // Cungi
+  Q_STR_04: { delaiJours: 7 }, // DASS-21
+  Q_STR_05: { delaiJours: 21 }, // BMS-10
+  Q_STR_06: { delaiJours: 90 }, // Karasek
+  Q_STR_08: { delaiJours: 90 }, // WART
+};
+
+/** Fenêtre lisible : un entier strictement positif de jours, sinon absente. */
+export function fenetreValide(fenetre: RepetitionOrientation | undefined): fenetre is RepetitionOrientation {
+  return fenetre !== undefined && Number.isInteger(fenetre.delaiJours) && fenetre.delaiJours > 0;
+}
+
+/**
+ * Instruments visés par une suggestion de la table et dépourvus de fenêtre
+ * valide — triés, dédoublonnés. Vide = table complète ([[D-430]] §3).
+ *
+ * TOUTES LES RÈGLES, quel que soit leur statut : la signature couvre la table
+ * entière, et une règle repassée en `publiee` ne doit pas rouvrir le défaut.
+ *
+ * LES PACKS N'Y ENTRENT PAS, faute de composition connue ici : elle n'arrive
+ * qu'à l'exécution (`compositionPacks`). Le moteur tient ce cas de son côté —
+ * un membre de pack sans fenêtre ne couvre jamais. La table n'en vise aucun.
+ */
+export function instrumentsSansFenetre(
+  regles: readonly OrientationRule[],
+  fenetres: Readonly<Record<string, RepetitionOrientation>>,
+): string[] {
+  const manquants = new Set<string>();
+  for (const regle of regles) {
+    for (const suggestion of regle.suggestions) {
+      const qid = suggestion.questionnaireId;
+      if (qid && !fenetreValide(Object.hasOwn(fenetres, qid) ? fenetres[qid] : undefined)) manquants.add(qid);
+    }
+  }
+  return [...manquants].sort();
+}
+
+/**
  * LE PÉRIMÈTRE A GRANDI LE 2026-09-13 (second lot du jour) : les grilles
  * d'interprétation y sont entrées, et le sha a donc changé sans qu'aucune règle
  * ne bouge.
@@ -1929,7 +1945,16 @@ export const GRILLES_ORIENTATION = grillesCitees(ORIENTATION_RULES_V1);
  * CONSÉQUENCE À CONNAÎTRE AVANT DE SIGNER : renommer un libellé de bande ou
  * déplacer une borne referme désormais ce verrou. C'est le prix, et c'est
  * l'objet du changement.
+ *
+ * LE PÉRIMÈTRE A GRANDI DE NOUVEAU ([[D-430]]) : les fenêtres de fraîcheur
+ * par instrument y sont entrées (`{ regles, grilles, fenetres }`). Elles ont
+ * quitté les règles ; sans ce troisième terme, elles décideraient de ce que la
+ * table re-propose hors de toute signature.
  */
 export const ORIENTATION_RULES_SHA256 = sha256(
-  JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION }),
+  JSON.stringify({
+    regles: ORIENTATION_RULES_V1,
+    grilles: GRILLES_ORIENTATION,
+    fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+  }),
 );
