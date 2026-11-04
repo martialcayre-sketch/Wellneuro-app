@@ -81,8 +81,20 @@ conservation, vignette, IA, dictée) rouvre ce motif et exige les deux.
 **§6 — Le lot.** Sans migration. Le code est livré éteint derrière un
 drapeau neuf, `WN_PORTAIL_CAPTURE_REPAS` : chaîne exacte `'true'`, absent =
 fermé, inscrit à `docs/FEATURE_FLAGS.md` § A. La capture ne s'ouvre jamais
-quand `WN_AGENDA_ALI` est fermé. F70 : aucune table, aucun site d'IA. Bancs
-attendus :
+quand `WN_AGENDA_ALI` est fermé. F70 : aucune table, aucun site d'IA.
+
+**Mécanisme de capture.** La garantie du §3 et la phrase du §5 (« ne
+s'enregistre pas dans vos photos ») tiennent au mécanisme. La photo est
+prise par le flux de la caméra dans la page (`getUserMedia`), puis l'image
+est gardée en mémoire de la page. Le lot n'utilise jamais
+`<input type="file" capture>`, qui confie la prise à l'appareil photo du
+système : selon le téléphone, celui-ci peut l'enregistrer dans la galerie.
+Si la caméra n'est pas accessible (refus du patient, navigateur sans
+`getUserMedia`), le bouton n'est pas proposé ; il n'y a aucun repli vers la
+galerie ou l'appareil photo du système.
+
+Bancs attendus :
+- aucun `<input type="file">` dans la capture (garde de source) ;
 - aucune requête réseau ne porte l'image (garde du type « sans réseau ni
   stockage » du LOT-05 JA) ;
 - aucune écriture dans le stockage du navigateur ;
@@ -98,7 +110,10 @@ intervenue depuis celle de la place 10 (2026-11-01). Le drapeau est posé
 par le responsable, pas par l'assistant.
 
 **Constat.** Le responsable observe le geste de capture sur un vrai dossier
-majeur. L'écriture de la journée correspondante est ensuite vérifiée par
+majeur. Sur le téléphone utilisé, il vérifie qu'aucune photo n'est apparue
+dans la galerie (§5), sur au moins un appareil iOS et un appareil Android
+s'il en dispose ; sinon, l'appareil manquant est noté au constat.
+L'écriture de la journée correspondante est ensuite vérifiée par
 identifiant, en conteneur détaché, en agrégats. Jamais sur une fixture.
 
 **§8 — Porte de réouverture de D4.**
