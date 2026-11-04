@@ -83,3 +83,97 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     expect(screen.queryByText(TITRE)).toBeNull();
   });
 });
+
+// Arbitrage du 2026-11-04 : un dossier clos ne recueille plus rien. Le hub
+// retire ce qui reste à compléter, et garde ce qui a été transmis (lecture des
+// archives). Quatre cas : majeur, mineur, clos majeur, clos mineur.
+describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const EN_ATTENTE = {
+    idAssignation: 'ASS_ATTENTE',
+    idQuestionnaire: 'Q_ATTENTE',
+    titre: 'Questionnaire en attente',
+    statut: 'En attente',
+    statutReponses: '',
+    dateLimite: null,
+    estEnAttenteSaisie: true,
+    duree: '5 min',
+  };
+  const TRANSMIS = {
+    idAssignation: 'ASS_TRANSMIS',
+    idQuestionnaire: 'Q_TRANSMIS',
+    titre: 'Questionnaire transmis',
+    statut: 'Complété',
+    statutReponses: 'verrouille',
+    dateLimite: null,
+    estEnAttenteSaisie: false,
+    duree: '5 min',
+  };
+
+  function stub(session: Record<string, unknown>) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const corps = url.startsWith('/api/portail/assignations')
+        ? {
+            ok: true,
+            patient: { idPatient: 'PAT_TEST', prenom: 'Michel', nom: 'Dogné' },
+            assignations: [EN_ATTENTE, TRANSMIS],
+            agendas: [],
+            agendasAlimentaires: [],
+            derniereReponseLe: null,
+            parcours: { consultationStatut: null, bookletEnvoye: false, bilanConsultable: false },
+            ...session,
+          }
+        : url.startsWith('/api/portail/trust/etat')
+          ? { ok: true, avantDeCommencerRequis: false }
+          : { ok: false, error: 'indisponible' };
+      return { ok: true, status: 200, json: async () => corps };
+    }));
+  }
+
+  async function rendre(session: Record<string, unknown>) {
+    stub(session);
+    render(<QuestionnairesHubPage />);
+    await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
+  }
+
+  const COMPTEUR = /questionnaire à compléter/;
+  const lienVers = (id: string) =>
+    screen.queryAllByRole('link').filter(l => l.getAttribute('href') === `/portail/PAT_TEST/questionnaires/${id}`);
+
+  it('majeur ouvert : le questionnaire en attente est proposé', async () => {
+    await rendre({ statutAge: 'majeur', dossierOuvert: true });
+    expect(screen.getByText(COMPTEUR)).not.toBeNull();
+    expect(lienVers('ASS_ATTENTE').length).toBeGreaterThan(0);
+  });
+
+  it('mineur ouvert : rien n’est proposé (pause du mineur, inchangée)', async () => {
+    await rendre({ statutAge: 'mineur', dossierOuvert: true });
+    expect(screen.queryByText(COMPTEUR)).toBeNull();
+    expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
+    expect(screen.queryByText('Questionnaire en attente')).toBeNull();
+  });
+
+  it('★ clos majeur : le questionnaire en attente n’est plus proposé, le transmis reste consultable', async () => {
+    await rendre({ statutAge: 'majeur', dossierOuvert: false });
+    expect(screen.queryByText(COMPTEUR)).toBeNull();
+    expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
+    expect(screen.queryByText('Questionnaire en attente')).toBeNull();
+    expect(screen.queryByText(/Commencer/)).toBeNull();
+    expect(screen.getByText('Questionnaire transmis')).not.toBeNull();
+    expect(lienVers('ASS_TRANSMIS')).toHaveLength(1);
+  });
+
+  it('★ clos mineur : le questionnaire en attente n’est plus proposé, le transmis reste consultable', async () => {
+    await rendre({ statutAge: 'mineur', dossierOuvert: false });
+    expect(screen.queryByText(COMPTEUR)).toBeNull();
+    expect(lienVers('ASS_ATTENTE')).toHaveLength(0);
+    expect(screen.queryByText('Questionnaire en attente')).toBeNull();
+    expect(screen.queryByText(/Commencer/)).toBeNull();
+    expect(screen.getByText('Questionnaire transmis')).not.toBeNull();
+    expect(lienVers('ASS_TRANSMIS')).toHaveLength(1);
+  });
+});
