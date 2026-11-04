@@ -12,6 +12,7 @@ import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
+import { refusClotureSuiviPour } from '@/lib/patient/gardeClotureServeur';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import {
   notifierPraticienSignalSecurite,
@@ -187,6 +188,19 @@ export async function POST(req: Request): Promise<NextResponse> {
         { ok: false, reason: RAISON_QUESTIONNAIRE_SUSPENDU, error: MESSAGE_QUESTIONNAIRE_SUSPENDU },
         { status: 409 }
       ), requestContext);
+    }
+
+    // Dossier clos (arbitrage du 2026-11-04, option A) : plus aucune réponse.
+    // AVANT la garde d'âge, pour qu'un mineur clos lise la clôture.
+    const refusCloture = await refusClotureSuiviPour(idPatient);
+    if (refusCloture) {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : dossier clos',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, ...refusCloture }, { status: 409 }), requestContext);
     }
 
     // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur

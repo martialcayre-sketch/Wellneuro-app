@@ -218,4 +218,51 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       },
     );
   });
+
+  describe('dossier clos (arbitrage du 2026-11-04, option A)', () => {
+    const quinzeAns = () => new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const clos = (dateNaissance: string) => ({
+      idPatient: assignation.idPatient,
+      actif: true,
+      accessTokenRevoked: false,
+      email: assignation.emailPatient,
+      dateNaissance,
+      suiviClotureLe: new Date('2026-11-01T09:00:00Z'),
+    });
+
+    it('★ clos majeur : 409 dossier_cloture, avec le message patient', async () => {
+      prisma.patient.findUnique.mockResolvedValue(clos('1985-03-14'));
+      const response = await GET(requeteProprietaire());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({
+        ok: false,
+        reason: 'dossier_cloture',
+        error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.',
+      });
+    });
+
+    it('★ clos mineur : la clôture passe avant la garde d’âge', async () => {
+      prisma.patient.findUnique.mockResolvedValue(clos(quinzeAns()));
+      const response = await GET(requeteProprietaire());
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({ ok: false, reason: 'dossier_cloture' });
+    });
+
+    it.each(['verrouille', 'modification_demandee'])(
+      'des réponses en lecture seule (%s) restent consultables sur un dossier clos',
+      async (statutReponses) => {
+        prisma.patient.findUnique.mockResolvedValue(clos('1985-03-14'));
+        prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statutReponses });
+        const response = await GET(requeteProprietaire());
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ ok: true });
+      },
+    );
+
+    it('reprise du suivi : l’affectation redevient remplissable', async () => {
+      prisma.patient.findUnique.mockResolvedValue({ ...clos('1985-03-14'), suiviClotureLe: null });
+      const response = await GET(requeteProprietaire());
+      expect(response.status).toBe(200);
+    });
+  });
 });

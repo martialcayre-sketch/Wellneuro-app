@@ -145,6 +145,41 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     expect(prisma.assignation.create).not.toHaveBeenCalled();
   });
 
+  // Arbitrage du 2026-11-04, option A (D4 de LOT-01 IDP2) : une consultation
+  // ouverte avant la clôture menait encore à l'assignation du pack de base.
+  it('★ dossier clos : 409 dossier_cloture, ni anamnèse ni pack', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...compte, suiviClotureLe: new Date('2026-11-01T09:00:00Z') });
+    const response = await POST(post(['Q_NEU_03']));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      ok: false,
+      reason: 'dossier_cloture',
+      error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.',
+    });
+    expect(prisma.consultation.update).not.toHaveBeenCalled();
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
+  it('★ dossier clos et mineur : la clôture passe avant la garde d’âge', async () => {
+    const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    prisma.patient.findUnique.mockResolvedValue({
+      ...compte,
+      dateNaissance: quinzeAns,
+      suiviClotureLe: new Date('2026-11-01T09:00:00Z'),
+    });
+    const response = await POST(post(['Q_NEU_03']));
+    expect(response.status).toBe(409);
+    expect(((await response.json()) as { reason: string }).reason).toBe('dossier_cloture');
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
+  it('reprise du suivi : la validation assigne de nouveau le pack', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...compte, suiviClotureLe: null });
+    const response = await POST(post(['Q_NEU_03']));
+    expect(response.status).toBe(200);
+    expect(prisma.assignation.create).toHaveBeenCalledTimes(1);
+  });
+
   it('écarte l’instrument suspendu et n’en assigne pas l’assignation', async () => {
     const response = await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(response.status).toBe(200);

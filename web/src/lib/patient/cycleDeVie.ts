@@ -76,6 +76,16 @@ export const MESSAGE_DOSSIER_CLOS =
 export const RAISON_DOSSIER_CLOS = 'dossier_cloture';
 
 /**
+ * Le refus opposé au PATIENT qui veut répondre sur un dossier clos —
+ * arbitrage du responsable du 2026-11-04, option A. `MESSAGE_DOSSIER_CLOS`
+ * s'adresse au praticien (« Rouvrez le suivi ») et ne se montre pas au portail.
+ * Les affectations en cours restent en l'état : la reprise les rend de nouveau
+ * remplissables, rien n'est annulé à la clôture.
+ */
+export const MESSAGE_DOSSIER_CLOS_PATIENT =
+  'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.';
+
+/**
  * LE DOSSIER DÉSACTIVÉ A SON PROPRE REFUS (dette t11, arbitrage du 2026-10-19).
  * Il recevait « le suivi est clôturé », ce qu'il n'est pas : le praticien
  * cherchait à rouvrir un suivi qui n'était pas clos. La clôture prime toujours

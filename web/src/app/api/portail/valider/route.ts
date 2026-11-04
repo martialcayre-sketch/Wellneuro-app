@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { refusSaisieSante, statutAge } from '@/lib/patient/gardeAge';
+import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS_PATIENT, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 import {
@@ -93,6 +94,15 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
+    }
+    // Dossier clos (arbitrage du 2026-11-04, option A ; D4 de LOT-01 IDP2) :
+    // aucune assignation, donc pas de pack de base. Une consultation ouverte
+    // avant la clôture y menait encore. AVANT la garde d'âge.
+    if (!accepteNouvelEnvoi(patient)) {
+      return NextResponse.json(
+        { ok: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS_PATIENT },
+        { status: 409 }
+      );
     }
     // D-284 §3 : l'anamnèse et le pack de base sont des questionnaires — en
     // pause tant que le patient n'est pas majeur. Refus AVANT toute écriture.
