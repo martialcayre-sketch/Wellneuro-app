@@ -64,6 +64,16 @@ describe('/api/praticien/corpus/rayons', () => {
     expect(res.status).toBe(200);
   });
 
+  // D-435 (2026-11-04) : le rayon « biologie » sort de dormance — la route le
+  // sert, sous le même drapeau que les sept autres.
+  it('accepte le rayon « biologie » et le transmet au service', async () => {
+    const res = await GET(new Request(`${URL_BASE}?rayon=biologie&requete=ferritine`));
+    expect(res.status).toBe(200);
+    expect(servirRayonCorpus).toHaveBeenCalledWith(
+      expect.objectContaining({ rayon: 'biologie', requete: 'ferritine' }),
+    );
+  });
+
   it('refuse un rayon manquant ou syntaxiquement invalide', async () => {
     const res = await GET(new Request(`${URL_BASE}?requete=mémoire`));
     expect(res.status).toBe(400);
