@@ -62,6 +62,10 @@ export type TypeCarteFil =
   // lecture est lancée ou que le document est écarté (ou purgé).
   | 'compte_rendu_transmis'
   | 'assignation_en_retard'
+  // UN DOSSIER QUI N'AVANCE PLUS ([[D-440]]) : réponses sans T0, T0 sans
+  // diffusion, questionnaires sans réponse, après plus de 30 jours sans pas
+  // du parcours. Elle constate un silence ; elle ne dit pas qui doit agir.
+  | 'sans_avancee'
   | 'reprise'
   // LE RETOUR DU PATIENT SUR SON OBJECTIF. Jusqu'au 2026-09-10, ratifier,
   // contester, dire autrement ou raconter une étape n'écrivait qu'une ligne :
@@ -107,6 +111,11 @@ export type CarteFil = {
    * rappelle (`deciderRelanceAssignation`) ; les autres se débloquent d'abord.
    */
   statutReponses?: string;
+  /**
+   * La ligne « Ce qui retient le T0 : » — `sans_avancee` en situation 1
+   * SEULEMENT ([[D-440]] §7). Absente quand aucune condition dure ne manque.
+   */
+  ceQuiRetientT0?: string;
 };
 
 /**
@@ -980,6 +989,226 @@ export function cartesReprise(
 }
 
 /**
+ * Silence au-delà duquel un dossier est « sans avancée » ([[D-440]] §3) :
+ * PLUS DE 30 jours. Constante produit (`DC-20`, nature `technical`), pas un
+ * seuil clinique ; elle ne change que par une décision.
+ */
+export const SEUIL_SANS_AVANCEE_JOURS = 30;
+
+/**
+ * LES PAS DU PARCOURS ([[D-440]] §2) — liste FERMÉE. Une connexion, une nuit
+ * ou un jour d'agenda, un e-mail ou une lecture n'y figurent pas : ils ne font
+ * pas avancer le dossier vers l'étape suivante. Ajouter une source ici est une
+ * décision, pas un détail de lecture.
+ */
+export const SOURCES_PAS_DU_PARCOURS = [
+  'reponse',
+  'assignation',
+  'synthese_generee',
+  'synthese_validee',
+  'consultation_validee',
+  'episode_confirme',
+  'priorite_choisie',
+  'objectif_negocie',
+  'brouillon_protocole',
+  'livret_envoye',
+] as const;
+export type SourcePasDuParcours = (typeof SOURCES_PAS_DU_PARCOURS)[number];
+
+/** Une assignation ni annulée ni complétée, sans aucune réponse rattachée. */
+export type QuestionnaireSansReponseRow = { dateAssignation: Date; dateLimite: string | null };
+
+/** Un dossier du praticien, tel que la carte « Sans avancée » le lit. */
+export type DossierParcoursRow = {
+  idPatient: string;
+  actif: boolean;
+  suiviClos: boolean;
+  /** Un rendez-vous planifié à venir ([[D-440]] §4). */
+  rendezVousAVenir: boolean;
+  aDesReponses: boolean;
+  /** Date du premier épisode T0 confirmé ; `null` sans épisode T0. */
+  t0ConsigneLe: Date | null;
+  /** Au moins une approbation pour diffusion. */
+  diffuse: boolean;
+  /** Date la plus récente de chaque pas ; absente ou `null` = jamais. */
+  pas: Partial<Record<SourcePasDuParcours, Date | null>>;
+  questionnairesSansReponse: QuestionnaireSansReponseRow[];
+};
+
+/** 1 : réponses sans T0 · 2 : T0 sans diffusion · 3 : questionnaires sans réponse, seule. */
+export type SituationSansAvancee = 1 | 2 | 3;
+
+/**
+ * Les cartes qui demandent un geste ([[D-440]] §4). Un dossier qui en porte
+ * une DANS LE FIL SERVI n'a pas de carte « Sans avancée » : le Fil ne montre
+ * pas deux cartes pour un même dossier.
+ */
+export const TYPES_CARTE_DE_GESTE: readonly TypeCarteFil[] = [
+  'signal_securite',
+  'synthese_a_valider',
+  'synthese_a_generer',
+  'synthese_non_servie',
+  't0_a_confirmer',
+  'assignation_en_retard',
+  'reprise',
+];
+
+export const TITRES_SANS_AVANCEE: Record<SituationSansAvancee, string> = {
+  1: 'Réponses reçues, T0 non consigné',
+  2: 'T0 consigné, aucun protocole diffusé',
+  3: 'Questionnaires sans réponse',
+};
+
+/** Le dernier pas du parcours ([[D-440]] §2), ou `null` si aucun. */
+export function dernierPasDuParcours(pas: DossierParcoursRow['pas']): Date | null {
+  let dernier: Date | null = null;
+  for (const source of SOURCES_PAS_DU_PARCOURS) {
+    const date = pas[source];
+    if (date && (!dernier || date.getTime() > dernier.getTime())) dernier = date;
+  }
+  return dernier;
+}
+
+function silenceDepasseSeuil(depuis: Date, maintenant: Date): boolean {
+  return maintenant.getTime() - depuis.getTime() > SEUIL_SANS_AVANCEE_JOURS * JOUR_MS;
+}
+
+function joursEcoules(depuis: Date, maintenant: Date): number {
+  return Math.floor((maintenant.getTime() - depuis.getTime()) / JOUR_MS);
+}
+
+/** La phrase de la situation 3 ([[D-440]] §6), sans son point final. */
+function phraseQuestionnaires(nb: number, plusAncien: Date): string {
+  return nb > 1
+    ? `${nb} questionnaires assignés restent sans réponse ; le plus ancien date du ${formatDateFr(plusAncien)}`
+    : `1 questionnaire assigné reste sans réponse ; il date du ${formatDateFr(plusAncien)}`;
+}
+
+/**
+ * LES DOSSIERS QUI N'AVANCENT PLUS ([[D-440]]) — une carte par dossier.
+ *
+ * SE CALCULE SUR LE FIL SERVI, pas avant : l'exclusion du §4 ne compte qu'une
+ * carte de geste PRÉSENTE — écartée par refus ou plafonnée hors de
+ * l'affichage, elle ne retient pas le dossier. Les refus de cette carte-ci
+ * s'appliquent AVANT le plafond, pour que cinq cartes soient vraiment
+ * affichées : la ligne « Ce qui retient le T0 » ne s'évalue que pour elles.
+ *
+ * Rend la situation avec la carte : seule la situation 1 appelle cette ligne.
+ */
+export function cartesSansAvancee(
+  dossiers: DossierParcoursRow[],
+  filServi: CarteFil[],
+  refusees: Set<string>,
+  noms: Map<string, string>,
+  maintenant: Date,
+): { carte: CarteFil; situation: SituationSansAvancee }[] {
+  const portentUnGeste = new Set(
+    filServi.filter(c => TYPES_CARTE_DE_GESTE.includes(c.type)).map(c => c.idPatient),
+  );
+
+  const retenus: { carte: CarteFil; situation: SituationSansAvancee; ancre: Date }[] = [];
+  for (const d of dossiers) {
+    if (!d.actif || d.suiviClos || d.rendezVousAVenir || portentUnGeste.has(d.idPatient)) continue;
+
+    const situationEtape: 1 | 2 | null =
+      d.aDesReponses && d.t0ConsigneLe === null ? 1
+        : d.t0ConsigneLe !== null && !d.diffuse ? 2
+          : null;
+    const dernierPas = dernierPasDuParcours(d.pas);
+    const etapeSilencieuse =
+      situationEtape !== null && dernierPas !== null && silenceDepasseSeuil(dernierPas, maintenant);
+
+    const ouverts = d.questionnairesSansReponse;
+    let plusAncien: Date | null = null;
+    for (const q of ouverts) {
+      if (!plusAncien || q.dateAssignation.getTime() < plusAncien.getTime()) plusAncien = q.dateAssignation;
+    }
+    const questionnairesSilencieux = plusAncien !== null && silenceDepasseSeuil(plusAncien, maintenant);
+
+    let situation: SituationSansAvancee;
+    let ancre: Date;
+    let pourquoi: string;
+    if (etapeSilencieuse && situationEtape !== null && dernierPas !== null) {
+      situation = situationEtape;
+      ancre = dernierPas;
+      const morceaux = [
+        `Aucun pas du dossier depuis le ${formatDateFr(dernierPas)}, il y a ${joursEcoules(dernierPas, maintenant)} jours.`,
+      ];
+      if (situation === 2 && d.t0ConsigneLe) {
+        morceaux.push(`Le T0 a été consigné le ${formatDateFr(d.t0ConsigneLe)}.`);
+      }
+      if (questionnairesSilencieux && plusAncien) {
+        morceaux.push(`${phraseQuestionnaires(ouverts.length, plusAncien)}.`);
+      }
+      pourquoi = morceaux.join(' ');
+    } else if (questionnairesSilencieux && plusAncien) {
+      situation = 3;
+      ancre = plusAncien;
+      const jours = joursEcoules(plusAncien, maintenant);
+      const morceaux = [`${phraseQuestionnaires(ouverts.length, plusAncien)}, il y a ${jours} jours.`];
+      if (ouverts.every(q => q.dateLimite === null)) {
+        morceaux.push(ouverts.length > 1 ? 'Aucun n’a d’échéance.' : 'Il n’a pas d’échéance.');
+      }
+      pourquoi = morceaux.join(' ');
+    } else {
+      continue;
+    }
+
+    const cle = cleCarte('sans_avancee', `${d.idPatient}:${ancre.toISOString()}`);
+    if (refusees.has(cle)) continue;
+    retenus.push({
+      situation,
+      ancre,
+      carte: {
+        type: 'sans_avancee',
+        idPatient: d.idPatient,
+        patient: nomPatient(noms, d.idPatient),
+        titre: TITRES_SANS_AVANCEE[situation],
+        pourquoi,
+        date: ancre.toISOString(),
+        href: `/dashboard/patients/${encodeURIComponent(d.idPatient)}`,
+        actionLabel: 'Ouvrir la fiche',
+        // Ancrée sur le dossier ET la date de l'ancre (§5) : un nouveau pas
+        // déplace la clé — si le silence reprend, la carte écartée revient.
+        cle,
+      },
+    });
+  }
+
+  return retenus
+    // Le plus ancien silence d'abord (§5).
+    .sort((a, b) => a.ancre.getTime() - b.ancre.getTime()
+      || (a.carte.idPatient < b.carte.idPatient ? -1 : a.carte.idPatient > b.carte.idPatient ? 1 : 0))
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(({ carte, situation }) => ({ carte, situation }));
+}
+
+/** Repli arbitré le 2026-11-04 (liste commune `20261104-2200-d`). */
+export const CE_QUI_RETIENT_T0_NON_VERIFIE = 'Ce qui retient le T0 : non vérifié, voir la fiche.';
+
+/**
+ * La ligne « Ce qui retient le T0 : » ([[D-440]] §7). Les libellés des
+ * conditions dures non satisfaites sont RECOPIÉS, jamais composés
+ * ([[D-119]]). `null` = l'évaluation a échoué : la carte le dit, elle ne se
+ * tait pas. Aucune condition manquante : pas de ligne, rien à lister.
+ */
+export function ligneCeQuiRetientT0(libelles: readonly string[] | null): string | undefined {
+  if (libelles === null) return CE_QUI_RETIENT_T0_NON_VERIFIE;
+  if (libelles.length === 0) return undefined;
+  return `Ce qui retient le T0 : ${libelles.join(' · ')}`;
+}
+
+/**
+ * Place les cartes « Sans avancée » dans le Fil servi : après le retard, avant
+ * la reprise (arbitrage du 2026-11-04, liste commune `20261104-2159-d`).
+ */
+export function placerSansAvancee(filServi: CarteFil[], sansAvancee: CarteFil[]): CarteFil[] {
+  const reprise = filServi.findIndex(c => c.type === 'reprise');
+  const position = reprise === -1 ? filServi.length : reprise;
+  return [...filServi.slice(0, position), ...sansAvancee, ...filServi.slice(position)];
+}
+
+/**
  * Résumé qualitatif du panneau « Aujourd'hui » (maquette : « 3 consultations ·
  * 2 relectures ») — remplace le compteur brut « N cartes ». Les consultations
  * ouvrent le résumé (maquette), même si dans le Fil les signalements passent
@@ -1000,6 +1229,8 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'import_biologique_a_lire', singulier: 'compte rendu à lire', pluriel: 'comptes rendus à lire' },
   { type: 'compte_rendu_transmis', singulier: 'compte rendu transmis', pluriel: 'comptes rendus transmis' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
+  // [[D-440]] §6.
+  { type: 'sans_avancee', singulier: 'dossier sans avancée', pluriel: 'dossiers sans avancée' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
 
