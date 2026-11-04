@@ -4,7 +4,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
+  cartesSansAvancee,
   construireFil,
+  ligneCeQuiRetientT0,
+  placerSansAvancee,
   type CarteFil,
   type CompteRenduTransmisRow,
   type SignalSecuriteRow,
@@ -20,6 +23,7 @@ import { importsALire, type ImportValideRow } from '@/lib/biology-library/import
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 import { bornesJourParis } from '@/lib/fil/fuseau';
 import { lireEffetsNonTraites } from '@/lib/trust/pauseEffetIndesirableServeur';
+import { ceQuiRetientT0, lireDossiersParcours } from '@/lib/fil/sansAvanceeServeur';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -524,20 +528,42 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       maintenant,
     });
 
+    // LES DOSSIERS QUI N'AVANCENT PLUS ([[D-440]]) : lus pour TOUS les
+    // dossiers du praticien — un dossier sans réponse ni échéance n'est dans
+    // aucune des lectures ci-dessus. Pas d'isolement : comme le retard et la
+    // reprise, un échec fait tomber le Fil plutôt que de le servir muet.
+    const parcours = await lireDossiersParcours(email, maintenant);
+    const actifsParcours = parcours.dossiers.filter(d => d.actif).map(d => d.idPatient);
+
     // Point de passage UNIQUE du refus (G1) : sur les cartes déjà construites,
     // jamais dans les fonctions de production — ce serait autant d'endroits à
     // garder cohérents. La lecture est bornée aux patients du praticien, comme
     // le Fil.
     const refus = await prisma.filCardRejection.findMany({
-      where: { idPatient: { in: [...actifs] } },
+      where: { idPatient: { in: [...new Set([...actifs, ...actifsParcours])] } },
       select: { id: true, carteCle: true, refusee: true, supersedesRejectionId: true, refuseLe: true },
+    });
+    const refusees = clesRefusees(refus);
+    const filServi = filtrerCartesRefusees(cartes, refusees);
+
+    // APRÈS LE REFUS des autres cartes ([[D-440]] §4) : seule une carte de
+    // geste PRÉSENTE retient un dossier. La ligne du §7 ne s'évalue que pour
+    // les cartes affichées de la situation 1.
+    const sansAvancee = cartesSansAvancee(parcours.dossiers, filServi, refusees, parcours.noms, maintenant);
+    const retenuesT0 = await ceQuiRetientT0(
+      sansAvancee.filter(s => s.situation === 1).map(s => s.carte.idPatient),
+    );
+    const cartesSansAvanceeServies = sansAvancee.map(({ carte, situation }) => {
+      if (situation !== 1) return carte;
+      const ligne = ligneCeQuiRetientT0(retenuesT0.get(carte.idPatient) ?? null);
+      return ligne ? { ...carte, ceQuiRetientT0: ligne } : carte;
     });
 
     // LA LECTURE VIENT APRÈS LE REFUS, et l'ordre n'est pas indifférent. Le
     // refus est le geste EXPLICITE : une carte écartée reste écartée, même si
     // le dossier a été lu depuis. L'inverse ferait reparaître en « Carte lue »
     // ce qu'un praticien avait délibérément rangé.
-    const retenues = filtrerCartesRefusees(cartes, clesRefusees(refus));
+    const retenues = placerSansAvancee(filServi, cartesSansAvanceeServies);
 
     // `lecturesCartesFil`, ET SURTOUT PAS `lectures` : ce fichier porte déjà un
     // `lectures` à vingt lignes d'ici — la lecture d'une RÉPONSE DE

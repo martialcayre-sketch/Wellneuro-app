@@ -76,6 +76,8 @@ const TYPES_CARTE: readonly TypeCarteFil[] = [
   'synthese_a_generer',
   'jalon_j21',
   'assignation_en_retard',
+  // [[D-440]] §5 : la carte s'écarte comme les autres.
+  'sans_avancee',
   'reprise',
 ];
 
