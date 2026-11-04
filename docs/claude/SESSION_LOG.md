@@ -12022,3 +12022,13 @@ Le responsable a ensuite tranché le groupe de la médiane (un point d'étape) e
 **Prochaine action.** CI, CodeRabbit, merge, déploiement constaté ; activation en file C, porte 18.
 
 **Ouvert.** Miroir praticien et version imprimable lisent encore le plan minimal seul.
+
+## 2026-11-04 — Artefacts de suivi : files A à D et audits remis à jour
+
+**Fait.** Les quatre pages de suivi des files (A, B = BioFlow, C, D) ont reçu les PR mergées du 1er au 4 novembre : statuts, dettes du §8, fiches H85 à H93 en file A, questions de la liste commune closes à leur merge. Audits republiés : drapeaux (suites, nouveaux drapeaux), e-mails patient (lots Q3 ter à quinquies, Q2 close), 12 besoins (§11, décisions D-402 à D-438), parcours réel (suite de QB, D-440). L'audit d58 était déjà à jour.
+
+**Écarté.** Modifier le dépôt : tout vit hors dépôt, dans les bases et pages claude.ai.
+
+**Prochaine action.** Reprendre ces pages après chaque série de merges.
+
+**Ouvert.** D-403 §6 contre le §10.2 de l'audit des 12 besoins (recueil partiel du besoin 1) : à vérifier dans le code. Suivi automatique des pages non activable.
