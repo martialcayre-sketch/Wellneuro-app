@@ -41,7 +41,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les vingt-quatre versions attendues, dans cet ordre', () => {
+  it('expose les vingt-sept versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -98,6 +98,11 @@ describe('registre des gabarits patient — intégrité', () => {
       // [[D-398]] §1 (Q3), [[D-399]] — le rappel groupé : un e-mail pour
       // plusieurs questionnaires en retard. Clé distincte, sans nombre ni titre.
       'relance_questionnaires@1',
+      // d33 (file D) — l'adresse de la page d'état, hébergée hors de Wellneuro.
+      // `acces_portail@3` reste sans `{{lien}}` : le chemin sans lien la sert.
+      'lien_magique@2',
+      'acces_portail@3',
+      'acces_portail_lien@2',
     ]);
   });
 
@@ -271,11 +276,11 @@ describe('registre des gabarits patient — intégrité', () => {
   });
 
   it('acces_portail : c’est la v2 qui est servie, la v1 reste au registre', () => {
-    expect(getGabarit('acces_portail').version).toBe(2);
-    expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
+    expect(getGabarit('acces_portail').version).toBe(3);
+    expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(3);
   });
 
-  it('les vingt validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les vingt-trois validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -327,6 +332,12 @@ describe('registre des gabarits patient — intégrité', () => {
       // Né validé : texte relu mot pour mot en session, le jour de sa
       // rédaction ([[D-399]]).
       'relance_questionnaires@1',
+      // d33 (file D) — nés validés : paragraphe de la page d'état relu et
+      // choisi par le responsable en session, le 2026-11-04 ; le reste est le
+      // texte de la version précédente au caractère près (banc ci-dessous).
+      'lien_magique@2',
+      'acces_portail@3',
+      'acces_portail_lien@2',
     ]);
     expect(valides.map(g => g.valideLe)).toEqual([
       '2026-10-23',
@@ -349,6 +360,9 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-10-23',
       '2026-10-23',
       '2026-11-01',
+      '2026-11-04',
+      '2026-11-04',
+      '2026-11-04',
     ]);
   });
 
@@ -451,7 +465,7 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
   // l'appelant, avec des valeurs d'exemple (fixtures neutres).
 
   it('lien magique', () => {
-    const { sujet, corps } = rendreGabarit(getGabarit('lien_magique'), {
+    const { sujet, corps } = rendreGabarit(version('lien_magique', 1), {
       prenom: 'Sophie',
       lien: 'https://app.wellneuro.fr/lien/abc',
     });
@@ -491,7 +505,7 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
   });
 
   it('accès portail v2 — texte validé le 2026-09-04, au caractère près', () => {
-    const { sujet, corps } = rendreGabarit(getGabarit('acces_portail'), {
+    const { sujet, corps } = rendreGabarit(version('acces_portail', 2), {
       prenom: 'Jennifer',
       connexion: 'https://app.wellneuro.fr/portail/connexion',
     });
@@ -649,5 +663,41 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
     expect(bilan.corps).toBe(
       'Bonjour,\n\nVotre praticien vous transmet votre bilan neuronutritionnel Wellneuro.\nCe document a été préparé après validation humaine et ne constitue pas un diagnostic médical.\n\nBien cordialement,\nL\'équipe Wellneuro',
     );
+  });
+});
+
+describe('registre des gabarits patient — adresse de la page d’état (d33, 2026-11-04)', () => {
+  const PAGE_ETAT = 'https://wellneuro.betteruptime.com';
+  const PARAGRAPHE_PORTAIL =
+    'Si votre espace ne s’ouvre pas, une page tenue hors de Wellneuro, par Better ' +
+    'Stack, le service qui surveille l’application, indique s’il est ' +
+    `momentanément indisponible :\n${PAGE_ETAT}\n\n`;
+  const PARAGRAPHE_LIEN =
+    "Si la page ne s'ouvre pas, une page tenue hors de Wellneuro, par Better Stack, " +
+    "le service qui surveille l'application, indique si votre espace est " +
+    `momentanément indisponible :\n${PAGE_ETAT}\n\n`;
+
+  // Le texte neuf est l'ancien AU CARACTÈRE PRÈS, plus le seul paragraphe
+  // validé, inséré à l'endroit validé : rien d'autre ne bouge.
+  it.each([
+    ['acces_portail', 2, 3, 'À la première connexion', PARAGRAPHE_PORTAIL],
+    ['acces_portail_lien', 1, 2, 'À la première connexion', PARAGRAPHE_PORTAIL],
+    ['lien_magique', 1, 2, "Si vous n'êtes pas à l'origine", PARAGRAPHE_LIEN],
+  ] as const)('%s@%i → v%i : le seul ajout est le paragraphe de la page d’état', (key, avant, apres, ancre, paragraphe) => {
+    const ancien = version(key, avant);
+    const neuf = version(key, apres);
+    expect(ancien.corps.split(ancre)).toHaveLength(2);
+    expect(neuf.corps).toBe(ancien.corps.replace(ancre, paragraphe + ancre));
+    expect(neuf.sujet).toBe(ancien.sujet);
+    expect(neuf.variables).toEqual(ancien.variables);
+    expect(getGabarit(key).version).toBe(apres);
+  });
+
+  it('l’adresse est écrite dans le texte, jamais passée en variable', () => {
+    for (const key of ['acces_portail', 'acces_portail_lien', 'lien_magique']) {
+      const g = getGabarit(key);
+      expect(g.corps).toContain(PAGE_ETAT);
+      expect(g.variables.some(v => !['prenom', 'connexion', 'lien'].includes(v))).toBe(false);
+    }
   });
 });

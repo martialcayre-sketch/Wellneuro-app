@@ -150,12 +150,30 @@ Deux alertes Scalingo sont armées sur `wellneuro`, type `web` :
 - `memory` ≥ 0.85 pendant 5 min (rappel 30 min) — posée après l'incident
   mémoire du 2026-08-31 ;
 - `p95_response_time` ≥ 5000 pendant 5 min (rappel 30 min) — c'est celle qui
-  aurait signalé cet incident avant le 504. Vérifier l'unité affichée dans
-  l'interface : le seuil a été posé en supposant des millisecondes.
+  aurait signalé cet incident avant le 504. **Unité vérifiée le 2026-11-04** :
+  la métrique est en millisecondes (`"suffix": "ms"` dans la liste des
+  métriques de l'API Scalingo, developers.scalingo.com/metrics) — le seuil
+  vaut 5 s.
 
 **Elles sont internes, et c'est leur limite** : si l'hébergeur devient
 indisponible, ses alertes le deviennent avec lui, et aucun écran applicatif ne
-peut s'afficher — la page servie est alors celle du routeur. Une sonde externe
-et une page d'état hébergées ailleurs restent à créer ; l'adresse de cette page
-devra figurer dans l'e-mail du lien magique, sans quoi personne ne saura qu'elle
-existe au moment où elle servirait.
+peut s'afficher — la page servie est alors celle du routeur.
+
+**Sonde externe et page d'état (d33, 2026-11-04)**, chez Better Stack, hors de
+l'hébergeur :
+
+- sonde « Application Wellneuro » : `GET https://app.wellneuro.fr/login`, 200
+  attendu, toutes les 3 min depuis l'Europe, délai 30 s (le plus proche des
+  25 s prévus que l'API admette), incident après 3 min d'échec confirmé,
+  alerte par e-mail. Elle voit l'hébergeur ou le routeur tombé, **pas** une
+  base en panne derrière une page qui s'affiche encore — choix du responsable,
+  sans route de santé à coder ;
+- page d'état `https://wellneuro.betteruptime.com` : sans abonnement (aucune
+  adresse recueillie chez le tiers), masquée des moteurs de recherche ;
+- son adresse est écrite dans les trois e-mails que le patient garde ou reçoit
+  en dernier : `acces_portail@3`, `acces_portail_lien@2`, `lien_magique@2`
+  (registre des gabarits, textes validés le 2026-11-04). Elle n'existe nulle
+  part ailleurs : la changer exige une nouvelle version de chacun.
+
+La sonde de `https://wellneuro.fr` (site vitrine, en pause depuis le
+2026-09-06) n'a pas été touchée.
