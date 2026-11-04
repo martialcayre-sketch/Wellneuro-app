@@ -3,6 +3,7 @@ import type { ContradictionFinding } from './contradictionFinding';
 import {
   evaluerDeclencheur,
   evaluerOrientation,
+  evaluerOrientationDetaillee,
   lacunesDuDeclencheur,
   type ReponseOrientation,
 } from './orientationEngine';
@@ -778,11 +779,15 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
   // valeur de fixture : BMS-10 (`Q_STR_05`) à 21 jours.
   const CIBLE_BMS = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
   const MAINTENANT = Date.parse('2026-11-03T12:00:00.000Z');
+  // Le déclencheur PSS-10 est daté dans sa fenêtre (30 jours) : depuis
+  // [[D-433]], un déclencheur périmé laisserait la règle non évaluée, et ces
+  // bancs ne mesureraient plus la fenêtre de la CIBLE.
+  const DECLENCHEUR_FRAIS = '2026-11-01T12:00:00.000Z';
 
   function servi(dateReponse: string, surcharge: Record<string, unknown> = {}) {
     return evaluerOrientation({
       reponses: [
-        reponse({ scores: { total: 30 } }),
+        reponse({ dateReponse: DECLENCHEUR_FRAIS, scores: { total: 30 } }),
         reponse({ idQuestionnaire: 'Q_STR_05', dateReponse, scores: { total: 12 }, statutValidite: 'VALID' }),
       ],
       idsQuestionnairesAssignes: [],
@@ -837,7 +842,7 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
   it('dans une même règle, chaque instrument lit sa propre fenêtre', () => {
     const recos = evaluerOrientation({
       reponses: [
-        reponse({ scores: { total: 30 } }),
+        reponse({ dateReponse: DECLENCHEUR_FRAIS, scores: { total: 30 } }),
         reponse({ idQuestionnaire: 'Q_STR_04', dateReponse: '2026-10-24T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'VALID' }),
         reponse({ idQuestionnaire: 'Q_SOM_01', dateReponse: '2026-10-24T12:00:00.000Z', scores: { total: 8 }, statutValidite: 'VALID' }),
       ],
@@ -859,7 +864,14 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
   // couverture sans horizon. Un instrument sans fenêtre ne couvre pas — même
   // sur une passation de la veille.
   it('un instrument sans fenêtre ne couvre jamais, même sur une passation récente', () => {
-    for (const fenetres of [undefined, {}, { Q_STR_05: { delaiJours: 0 } }, { Q_STR_05: { delaiJours: Number.NaN } }]) {
+    // Le déclencheur garde sa fenêtre : sans elle, la règle ne serait plus
+    // évaluée ([[D-433]]), et le banc ne mesurerait plus la cible.
+    const declencheur = { Q_STR_02: { delaiJours: 30 } };
+    for (const fenetres of [
+      declencheur,
+      { ...declencheur, Q_STR_05: { delaiJours: 0 } },
+      { ...declencheur, Q_STR_05: { delaiJours: Number.NaN } },
+    ]) {
       const recos = servi('2026-11-02T12:00:00.000Z', { fenetres });
       expect(recos).toHaveLength(1);
       expect(recos[0].dejaRepondu).toBe(true);
@@ -899,7 +911,7 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
     expect(servi('2026-11-02T12:00:00.000Z')).toEqual([]);
     const recos = evaluerOrientation({
       reponses: [
-        reponse({ scores: { total: 30 } }),
+        reponse({ dateReponse: DECLENCHEUR_FRAIS, scores: { total: 30 } }),
         reponse({ idQuestionnaire: 'Q_STR_05', dateReponse: '2026-11-02T12:00:00.000Z', scores: { total: 12 }, statutValidite: 'AMBIGUOUS' }),
       ],
       idsQuestionnairesAssignes: [],
@@ -909,6 +921,156 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
       fenetres: FENETRES_FRAICHEUR_ORIENTATION,
     });
     expect(recos).toHaveLength(1);
+  });
+});
+
+describe('evaluerOrientationDetaillee — fenêtre du déclencheur (D-433)', () => {
+  // Le déclencheur lit la fenêtre de SON instrument, la même que comme cible
+  // ([[D-433]] §1) : PSS-10 (`Q_STR_02`) à 30 jours, lue dans le registre RÉEL.
+  const MAINTENANT = Date.parse('2026-11-03T12:00:00.000Z');
+  const REGLE = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
+
+  function evaluer(reponses: ReponseOrientation[], surcharge: Record<string, unknown> = {}) {
+    return evaluerOrientationDetaillee({
+      reponses,
+      idsQuestionnairesAssignes: [],
+      regles: [REGLE],
+      maintenantMs: MAINTENANT,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+      ...surcharge,
+    });
+  }
+  const pss = (dateReponse: string, total = 30) => reponse({ dateReponse, scores: { total } });
+
+  it('le banc lit bien 30 jours pour la PSS-10 — sinon les bornes ci-dessous ne mesurent rien', () => {
+    expect(FENETRES_FRAICHEUR_ORIENTATION.Q_STR_02).toEqual({ delaiJours: 30 });
+  });
+
+  it('un déclencheur frais déclenche, et aucune règle n’est non évaluée', () => {
+    const r = evaluer([pss('2026-10-20T12:00:00.000Z')]);
+    expect(r.recommandations).toHaveLength(1);
+    expect(r.reglesNonEvaluees).toEqual([]);
+  });
+
+  // §4 : le jour anniversaire reste frais (`<=`), comme pour la cible.
+  it('au 30e jour pile, le déclencheur est encore frais', () => {
+    const r = evaluer([pss('2026-10-04T12:00:00.000Z')]);
+    expect(r.recommandations).toHaveLength(1);
+    expect(r.reglesNonEvaluees).toEqual([]);
+  });
+
+  // §3 : au-delà, la règle n'est ni déclenchée ni écartée, et le motif nomme
+  // le questionnaire, la date de la passation et la fenêtre.
+  it('un jour de plus : aucune recommandation, la règle est non évaluée avec son motif', () => {
+    const r = evaluer([pss('2026-10-03T12:00:00.000Z')]);
+    expect(r.recommandations).toEqual([]);
+    expect(r.reglesNonEvaluees).toEqual([{
+      regleId: 'R-TEST-01',
+      passations: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-10-03T12:00:00.000Z', fenetreJours: 30 }],
+    }]);
+  });
+
+  // `DC-24` : un signal expiré ne vaut pas absence de trouble. Un vieux score
+  // qui n'aurait PAS déclenché n'écarte donc pas la règle non plus.
+  it('un vieux score sous le seuil n’écarte pas la règle : elle est non évaluée', () => {
+    const r = evaluer([pss('2026-08-01T12:00:00.000Z', 10)]);
+    expect(r.recommandations).toEqual([]);
+    expect(r.reglesNonEvaluees.map(n => n.regleId)).toEqual(['R-TEST-01']);
+  });
+
+  // §5 : sans horloge, le déclencheur se lit sans date, comme avant.
+  it('sans horloge, une passation ancienne déclenche comme avant', () => {
+    const r = evaluer([pss('2020-01-01T12:00:00.000Z')], { maintenantMs: undefined });
+    expect(r.recommandations).toHaveLength(1);
+    expect(r.reglesNonEvaluees).toEqual([]);
+  });
+
+  // UN ET LU FAUX SUR UNE DONNÉE FRAÎCHE EST FAUX : la règle est écartée, pas
+  // non évaluée, quel que soit l'autre déclencheur.
+  it('ET : un déclencheur frais non atteint écarte la règle malgré un autre périmé', () => {
+    const et = regle({
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } },
+        { type: 'comparaison', idQuestionnaire: 'Q_SOM_01', operateur: '>=', valeur: 6 },
+      ],
+      suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
+    });
+    const somFrais = (total: number) =>
+      reponse({ idQuestionnaire: 'Q_SOM_01', dateReponse: '2026-10-30T12:00:00.000Z', scores: { total } });
+    const ecartee = evaluer([pss('2026-08-01T12:00:00.000Z'), somFrais(3)], { regles: [et] });
+    expect(ecartee).toEqual({ recommandations: [], reglesNonEvaluees: [] });
+    // Contre-épreuve : le second frais ET atteint, la règle redevient non évaluée.
+    const nonEvaluee = evaluer([pss('2026-08-01T12:00:00.000Z'), somFrais(9)], { regles: [et] });
+    expect(nonEvaluee.recommandations).toEqual([]);
+    expect(nonEvaluee.reglesNonEvaluees.map(n => n.passations.map(p => p.idQuestionnaire))).toEqual([['Q_STR_02']]);
+  });
+
+  it('OU : une branche fraîche atteinte suffit, même à côté d’une branche périmée', () => {
+    const ou = regle({
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'comparaison', idQuestionnaire: 'Q_STR_02', operateur: '>=', valeur: 27 },
+          { type: 'comparaison', idQuestionnaire: 'Q_SOM_01', operateur: '>=', valeur: 6 },
+        ],
+      }],
+      suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
+    });
+    // Les branches d'un `ou` exigent des comptes publiés (D-060 §2).
+    const complet = (total: number) => ({ total, repondus: 10, items: 10 });
+    const stressPerime = reponse({ dateReponse: '2026-08-01T12:00:00.000Z', scores: complet(30) });
+    const som = (total: number) =>
+      reponse({ idQuestionnaire: 'Q_SOM_01', dateReponse: '2026-10-30T12:00:00.000Z', scores: complet(total) });
+    const atteint = evaluer([stressPerime, som(9)], { regles: [ou] });
+    expect(atteint.recommandations).toHaveLength(1);
+    expect(atteint.recommandations[0].motifs[0].conditions[0]).toContain('Q_SOM_01');
+    expect(atteint.reglesNonEvaluees).toEqual([]);
+    // Branche fraîche non atteinte : la branche périmée aurait pu l'ouvrir.
+    const nonEvaluee = evaluer([stressPerime, som(3)], { regles: [ou] });
+    expect(nonEvaluee.recommandations).toEqual([]);
+    expect(nonEvaluee.reglesNonEvaluees.map(n => n.regleId)).toEqual(['R-TEST-01']);
+  });
+
+  // Un déclencheur sans fenêtre (cas que `tableSignee()` refuse en production)
+  // n'est pas évalué, et le motif ne porte aucun nombre inventé.
+  it('avec une horloge, un déclencheur sans fenêtre n’est pas évalué, fenêtre `null`', () => {
+    const r = evaluer([pss('2026-11-02T12:00:00.000Z')], { fenetres: {} });
+    expect(r.recommandations).toEqual([]);
+    expect(r.reglesNonEvaluees[0].passations).toEqual([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: '2026-11-02T12:00:00.000Z', fenetreJours: null },
+    ]);
+  });
+
+  // UNE DES QUATRE FENÊTRES DE D-433 §2, LUE DANS LE REGISTRE RÉEL : plaintes
+  // actuelles (`Q_MOD_03`) à 14 jours. La règle est une fixture ; la fenêtre
+  // est la valeur signée.
+  it('Q_MOD_03 : déclenche à 14 jours, non évaluée à 15, fenêtre 14 au motif', () => {
+    const plaintes = regle({
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_MOD_03', operateur: '>=', valeur: 1 }],
+      suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
+    });
+    const mod03 = (dateReponse: string) => reponse({ idQuestionnaire: 'Q_MOD_03', dateReponse, scores: { total: 5 } });
+    const frais = evaluer([mod03('2026-10-20T12:00:00.000Z')], { regles: [plaintes] });
+    expect(frais.recommandations).toHaveLength(1);
+    expect(frais.reglesNonEvaluees).toEqual([]);
+    const perime = evaluer([mod03('2026-10-19T12:00:00.000Z')], { regles: [plaintes] });
+    expect(perime.recommandations).toEqual([]);
+    expect(perime.reglesNonEvaluees[0].passations).toEqual([
+      { idQuestionnaire: 'Q_MOD_03', dateReponse: '2026-10-19T12:00:00.000Z', fenetreJours: 14 },
+    ]);
+  });
+
+  it('un instrument jamais passé n’est pas périmé : la règle n’est simplement pas atteinte', () => {
+    expect(evaluer([])).toEqual({ recommandations: [], reglesNonEvaluees: [] });
+  });
+
+  it('`evaluerOrientation` rend exactement les recommandations du détail', () => {
+    const reponses = [pss('2026-10-20T12:00:00.000Z')];
+    const entree = {
+      reponses, idsQuestionnairesAssignes: [], regles: [REGLE],
+      maintenantMs: MAINTENANT, fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+    };
+    expect(evaluerOrientation(entree)).toEqual(evaluerOrientationDetaillee(entree).recommandations);
   });
 });
 

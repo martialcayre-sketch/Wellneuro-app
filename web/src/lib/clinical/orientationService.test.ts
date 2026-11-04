@@ -43,12 +43,27 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 // d'âge ou d'un drapeau. Une version fabriquée ici ferait diverger le banc du
 // comportement réel au premier ajout de variante — exactement le défaut que ce
 // prédicat existe pour fermer.
-vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./orientationRulesV1')>()),
-  ORIENTATION_METADATA: mockMeta,
-  ORIENTATION_RULES_V1: mockRegles,
-  ORIENTATION_RULES_SHA256: 'sha-test',
-}));
+//
+// FENÊTRES DE BANC pour les trois instruments que les tables de test lisent en
+// déclencheur sans qu'aucune règle réelle ne les cite ([[D-433]] §6) : sans
+// elles, `tableSignee()` refuserait ces tables, et les cas « ne fonde aucun
+// déclencheur » passeraient sur une orientation éteinte, sans rien mesurer.
+// Valeurs de fixture, sans portée clinique ; le registre réel reste intact.
+vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('./orientationRulesV1')>();
+  return {
+    ...reel,
+    ORIENTATION_METADATA: mockMeta,
+    ORIENTATION_RULES_V1: mockRegles,
+    ORIENTATION_RULES_SHA256: 'sha-test',
+    FENETRES_FRAICHEUR_ORIENTATION: {
+      ...reel.FENETRES_FRAICHEUR_ORIENTATION,
+      Q_SOM_07: { delaiJours: 365 },
+      Q_PED_03: { delaiJours: 365 },
+      Q_INEXISTANT: { delaiJours: 365 },
+    },
+  };
+});
 vi.mock('@/lib/clinical/stopRulesV1', () => ({
   STOP_RULES_METADATA: mockArretMeta,
   STOP_RULES_V1: mockArretRegles,
@@ -106,9 +121,18 @@ beforeEach(() => {
   mockContraMeta.shaPerimetre = null;
   mockContraRegles.length = 0;
   vi.stubEnv('WN_ENABLE_ORIENTATION_NNPP2', '1');
+  // HORLOGE FIGÉE PRÈS DES FIXTURES ([[D-433]]) : le service passe `Date.now()`
+  // au moteur, et un déclencheur lu au-delà de la fenêtre de son instrument
+  // n'est plus évalué. Sans horloge figée, les passations de juillet de ce
+  // banc vieilliraient avec le calendrier et les cas changeraient de verdict
+  // selon le jour où il tourne. `Date` seul est simulé : les promesses des
+  // mocks Prisma ne dépendent d'aucun minuteur.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-07-21T12:00:00.000Z'));
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
 });
 
@@ -162,7 +186,7 @@ describe('orientationActive — le double verrou', () => {
       id: 'R-TEST-FENETRE',
       statut: 'publiee',
       declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['danger', 'dark'] } }],
-      suggestions: [{ questionnaireId: 'Q_SOM_07', priorite: 1 }],
+      suggestions: [{ questionnaireId: 'Q_BANC_SANS_FENETRE', priorite: 1 }],
       justificationClaims: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
       niveau: 'socle',
     };
@@ -170,6 +194,27 @@ describe('orientationActive — le double verrou', () => {
     expect(orientationActive()).toBe(false);
     regle.suggestions = [{ questionnaireId: 'Q_SOM_01', priorite: 1 }];
     expect(orientationActive()).toBe(true);
+  });
+
+  // D-433 §6 : le même terme refuse une table dont un DÉCLENCHEUR lit un
+  // instrument sans fenêtre, et une table qui vise un pack (composition
+  // invérifiable à la signature).
+  it('reste fermé sur un déclencheur sans fenêtre, ou sur une cible pack — le terme isolé', () => {
+    signerLaTable();
+    const regle = {
+      id: 'R-TEST-FENETRE-DECL',
+      statut: 'publiee',
+      declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_BANC_SANS_FENETRE', zone: { type: 'couleur', couleurs: ['danger', 'dark'] } }],
+      suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] as Array<Record<string, unknown>>,
+      justificationClaims: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
+      niveau: 'socle',
+    };
+    mockRegles.push(regle);
+    expect(orientationActive()).toBe(false);
+    regle.declencheurs = [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['danger', 'dark'] } }];
+    expect(orientationActive()).toBe(true);
+    regle.suggestions = [{ packId: 'pack_stress_chronique_burnout', priorite: 1 }];
+    expect(orientationActive()).toBe(false);
   });
 });
 

@@ -209,10 +209,13 @@ describe('orientationRulesV1 — verrou v1', () => {
   //   · 2026-09-13 — `e2f087d6…97e427e` (périmètre RÈGLES SEULES)
   // RE-SIGNÉE LE 2026-11-04 ([[D-430]], t59), sur attestation du praticien : le
   // périmètre porte les fenêtres de fraîcheur par instrument.
+  // RE-SIGNÉE UNE SECONDE FOIS LE 2026-11-04 ([[D-433]], t60), sur attestation
+  // du praticien : le registre porte aussi les quatre fenêtres de déclencheur.
   //
   // Anciens sha signés :
   //   · 2026-09-14 — `2a1f4840…2d95ddbd` (RÈGLES + GRILLES, 365 jours sur les règles)
-  const SHA_SIGNE_2026_11_04 = 'f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7';
+  //   · 2026-11-04 — `f10102a5…f86311ec7` (D-430, quinze fenêtres de cible)
+  const SHA_SIGNE_2026_11_04 = 'a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -545,13 +548,14 @@ describe('orientationRulesV1 — verrou v1', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Gardes anti-dérive (LOT-05). Chacune ferme un silence : une règle mal câblée
 // ne casse rien, elle cesse simplement de se déclencher — et personne ne le voit.
-describe('orientationRulesV1 — fenêtres de fraîcheur par instrument (D-430)', () => {
-  // LES QUINZE VALEURS DE D-430 §2, RECOPIÉES DE LA DÉCISION ET NON DU CODE.
-  // Ce banc est la seule chose qui relie le registre à l'arbitrage : une valeur
-  // arrondie, déplacée ou ajoutée le fait rougir. Les valeurs sont des
-  // arbitrages WellNeuro, aucune source ne les fonde (D-430 §2).
-  it('le registre porte EXACTEMENT les quinze fenêtres arbitrées', () => {
+describe('orientationRulesV1 — fenêtres de fraîcheur par instrument (D-430, D-433)', () => {
+  // LES QUINZE VALEURS DE D-430 §2 ET LES QUATRE DE D-433 §2, RECOPIÉES DES
+  // DÉCISIONS ET NON DU CODE. Ce banc est la seule chose qui relie le registre
+  // aux arbitrages : une valeur arrondie, déplacée ou ajoutée le fait rougir.
+  // Les valeurs sont des arbitrages WellNeuro, aucune source ne les fonde.
+  it('le registre porte EXACTEMENT les dix-neuf fenêtres arbitrées', () => {
     expect(FENETRES_FRAICHEUR_ORIENTATION).toEqual({
+      // D-430 §2 — inchangées par D-433.
       Q_GAS_01: { delaiJours: 21 },
       Q_GAS_03: { delaiJours: 21 },
       Q_INF_01: { delaiJours: 21 },
@@ -567,23 +571,72 @@ describe('orientationRulesV1 — fenêtres de fraîcheur par instrument (D-430)'
       Q_STR_05: { delaiJours: 21 },
       Q_STR_06: { delaiJours: 90 },
       Q_STR_08: { delaiJours: 90 },
+      // D-433 §2 — instruments déclencheurs seulement.
+      Q_MOD_01: { delaiJours: 21 },
+      Q_MOD_03: { delaiJours: 14 },
+      Q_INF_03: { delaiJours: 14 },
+      Q_ALI_01: { delaiJours: 90 },
     });
   });
 
-  // D-430 §3 : une règle qui vise un instrument sans fenêtre ne se signe pas.
-  it('la table est COMPLÈTE : chaque instrument visé a sa fenêtre', () => {
+  // D-430 §3, D-433 §6 : une règle qui vise ou lit un instrument sans fenêtre
+  // ne se signe pas.
+  it('la table est COMPLÈTE : chaque instrument visé ou déclencheur a sa fenêtre', () => {
     expect(instrumentsSansFenetre(ORIENTATION_RULES_V1, FENETRES_FRAICHEUR_ORIENTATION)).toEqual([]);
   });
 
   // ET LE REGISTRE NE PORTE AUCUNE FENÊTRE ORPHELINE : ses clés sont
-  // exactement les instruments que les suggestions visent. Une fenêtre sans
-  // règle serait un arbitrage qui ne décide de rien, et le signe qu'une cible a
-  // changé sans que son registre suive.
-  it('le registre couvre EXACTEMENT les instruments visés, sans orpheline', () => {
-    const vises = new Set(ORIENTATION_RULES_V1.flatMap(r => r.suggestions.flatMap(s => (s.questionnaireId ? [s.questionnaireId] : []))));
-    expect(Object.keys(FENETRES_FRAICHEUR_ORIENTATION).sort()).toEqual([...vises].sort());
-    // La table ne vise aucun pack : le contrôle statique n'en couvre pas.
+  // exactement les instruments que les suggestions visent ou que les
+  // déclencheurs lisent. Une fenêtre sans règle serait un arbitrage qui ne
+  // décide de rien, et le signe qu'une règle a changé sans que son registre
+  // suive.
+  it('le registre couvre EXACTEMENT les instruments visés et déclencheurs, sans orpheline', () => {
+    const vises = ORIENTATION_RULES_V1.flatMap(r => r.suggestions.flatMap(s => (s.questionnaireId ? [s.questionnaireId] : [])));
+    const declencheurs = ORIENTATION_RULES_V1.flatMap(r => r.declencheurs.flatMap(d =>
+      feuillesDuDeclencheur(d).flatMap(f => (estFeuilleInstrument(f) ? [f.idQuestionnaire] : []))));
+    expect(Object.keys(FENETRES_FRAICHEUR_ORIENTATION).sort()).toEqual([...new Set([...vises, ...declencheurs])].sort());
+    // Les sept déclencheurs que D-433 nomme, ni plus ni moins.
+    expect([...new Set(declencheurs)].sort()).toEqual(
+      ['Q_ALI_01', 'Q_GAS_01', 'Q_INF_03', 'Q_MOD_01', 'Q_MOD_03', 'Q_SOM_01', 'Q_STR_02'],
+    );
+  });
+
+  // CONTRE-ÉPREUVE DES DÉCLENCHEURS (D-433 §6) : sans les quatre fenêtres de
+  // D-433, le contrôle nomme exactement ces quatre instruments — la preuve que
+  // l'exhaustivité lit bien les déclencheurs, y compris ceux qu'aucune
+  // suggestion ne vise.
+  it('retirer les quatre fenêtres de D-433 les fait nommer, et elles seules', () => {
+    const { Q_MOD_01: _a, Q_MOD_03: _b, Q_INF_03: _c, Q_ALI_01: _d, ...sansD433 } = FENETRES_FRAICHEUR_ORIENTATION;
+    expect(instrumentsSansFenetre(ORIENTATION_RULES_V1, sansD433)).toEqual(['Q_ALI_01', 'Q_INF_03', 'Q_MOD_01', 'Q_MOD_03']);
+  });
+
+  it('un déclencheur sous un `ou` compte comme une feuille', () => {
+    const regle: OrientationRule = {
+      ...ORIENTATION_RULES_V1[0],
+      id: 'R-BANC-OU',
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'comparaison', idQuestionnaire: 'Q_STR_02', operateur: '>=', valeur: 1 },
+          { type: 'comparaison', idQuestionnaire: 'Q_BANC_SANS_FENETRE', operateur: '>=', valeur: 1 },
+        ],
+      }],
+    };
+    expect(instrumentsSansFenetre([regle], FENETRES_FRAICHEUR_ORIENTATION)).toEqual(['Q_BANC_SANS_FENETRE']);
+  });
+
+  // REMARQUE P2 DE LA REVUE DE #1849 : la composition d'un pack vit en base,
+  // la fenêtre de ses membres ne se vérifie pas à la signature — le pack est
+  // donc nommé, et la table refusée. La table n'en vise aucun aujourd'hui.
+  it('une suggestion de pack se nomme : la fenêtre de ses membres ne se vérifie pas', () => {
     expect(ORIENTATION_RULES_V1.flatMap(r => r.suggestions).some(s => s.packId)).toBe(false);
+    const regle: OrientationRule = {
+      ...ORIENTATION_RULES_V1[0],
+      id: 'R-BANC-PACK',
+      suggestions: [{ packId: 'pack_sommeil_chronobiologie', priorite: 1 }],
+    };
+    expect(instrumentsSansFenetre([...ORIENTATION_RULES_V1, regle], FENETRES_FRAICHEUR_ORIENTATION))
+      .toEqual(['pack_sommeil_chronobiologie']);
   });
 
   // LA CONTRE-ÉPREUVE, sans laquelle « complète » ne prouve rien : retirer UNE
