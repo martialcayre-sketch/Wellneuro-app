@@ -28,11 +28,13 @@ révoque cet arbitrage ; l'arbitrage se lit sur sa fiche, avec la mention
 « à relire » si une de ses références a changé (D-439, A3). Au cockpit,
 seul un conflit déclenché par la proposition de bilan s'affiche, avec son
 escalade ; ses arbitrages éventuels s'y listent étiquetés par fiche, sans
-qu'aucun soit dit applicable au dossier (D-439, A1 et A2). Drapeau éteint, l'atelier et l'affichage
-des arbitrages ne changent rien. **La re-signature de `conflitsSourcesV1`
-n'est pas couverte par ce drapeau** : les conflits des dossiers clos
-qu'elle publie s'affichent au cockpit dès son déploiement, puisque
-`WN_ENABLE_CONTRADICTIONS_NNPP2` est allumé (D-439 §4).
+qu'aucun soit dit applicable au dossier (D-439, A1 et A2). Drapeau
+éteint, l'atelier et l'affichage des arbitrages ne changent rien. **La
+re-signature de `conflitsSourcesV1` n'est pas couverte par ce drapeau** :
+parmi les conflits qu'elle publie, ceux dont un claim est cité par la
+proposition de bilan s'affichent au cockpit dès son déploiement, puisque
+`WN_ENABLE_CONTRADICTIONS_NNPP2` est allumé ; les autres n'y apparaissent
+pas (D-439 §4, corrigé par A1).
 
 ## Socle établi (ne se rediscute pas)
 
@@ -129,8 +131,9 @@ D-439 §7 : release-db constatée ; `conflitsSourcesV1` re-signé ; positions
 des cinq dossiers signées, constatées par conteneur en agrégat ; contrat
 négatif vert. Plus, d'après l'amendement : bancs du conflit déclenchable et
 du non déclenchable (A1) ; deux arbitrages d'un même conflit sur deux
-fiches (A2) ; les cinq cas « à relire », soit retrait, remplacement, appui
-périmé, conflit modifié et fiche retirée (A3).
+fiches (A2) ; un banc par cas « à relire », six en tout : conflit modifié
+ou dépublié, fiche retirée, position retirée, position remplacée, appui
+périmé, claim retenu qui n'est plus frais (A3).
 
 ## Dépendances
 

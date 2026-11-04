@@ -375,9 +375,11 @@ texte d'origine.
   la position retenue n'est plus en vigueur (retirée, ou remplacée par une
   version neuve) ; la position retenue est elle-même « à relire » (appui
   périmé, §2) ; le claim retenu n'est plus frais. L'historique est conservé
-  et jamais réécrit. Le critère de fin du §7 s'étend à ces cinq cas en banc
-  (retrait, remplacement, appui périmé, conflit modifié, fiche retirée) et
-  au banc d'A2.
+  et jamais réécrit. Le critère de fin du §7 s'étend à un banc par cas, six
+  en tout puisque le troisième cas en compte deux : conflit modifié ou
+  dépublié ; fiche retirée ; position retirée ; position remplacée ; appui
+  de la position périmé ; claim retenu qui n'est plus frais. S'y ajoute le
+  banc d'A2.
 
 ### D-438 — « Mon équilibre », besoin 5 : l'Epworth et la fatigue générale du MFI-20 entrent dans le groupe `repos`, poids 1 chacun, niveau A ; normalisations (24 − score)/24 et (20 − GEN)/16 ; application dans un lot ultérieur (d56)
 
