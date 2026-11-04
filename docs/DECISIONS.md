@@ -365,9 +365,12 @@ texte d'origine.
   arbitrages différents pour un même conflit, sur deux fiches : les deux
   sont listés, étiquetés, et aucun n'est retenu. Tout cet affichage, sur la
   fiche comme au cockpit, est sous `WN_POSITIONS_EXPERT`, quelle que soit
-  la PR qui le livre. Drapeau éteint, le cockpit reste celui d'aujourd'hui ;
-  seule la publication des conflits au registre est indépendante du
-  drapeau.
+  la PR qui le livre. Drapeau éteint, aucun arbitrage ne s'affiche. La
+  publication des conflits au registre, elle, ne dépend pas du drapeau : un
+  conflit neuf déclenchable par la proposition de bilan apparaît au cockpit
+  comme constat d'escalade dès le déploiement de la re-signature (A1).
+  C'est un changement de comportement clinique, retenu jusqu'à release-db
+  (§4).
 - **A3 — Validité dans le temps (P1-3 ; précise les §3 et §7).** À la pose,
   l'arbitrage atteste l'empreinte de l'entrée du conflit dans le registre
   signé, l'empreinte de la structure signée des fiches, et la référence
