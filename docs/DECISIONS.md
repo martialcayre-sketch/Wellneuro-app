@@ -327,6 +327,67 @@ version sans claim d'appui, acte sans relecture, révocation qui ne vise
 pas la tête, arbitrage d'un conflit inconnu refusés). BP-17 (F11) peut
 alors s'ouvrir.
 
+**Amendement du 2026-11-04 (contre-revue Codex de #1853, NO-GO, trois
+P1, aucun P0).** #1853 a été mergée (f7c37f26) avant que le responsable ait
+retenu le texte, contrairement à l'exception de sa déclaration « prête ».
+Les trois constats ont été vérifiés sur pièces et sont tous confirmés. Le
+responsable a tranché le 2026-11-04, sur question à options et sur
+l'option recommandée, le lieu de lecture de l'arbitrage (arbitrage 6 de la
+fiche LOT-28). Les §3, §4, §6 et §7 se lisent avec les trois points
+ci-dessous. Le texte amendé est à retenir par le responsable, comme le
+texte d'origine.
+
+- **A1 — Publier n'est pas déclencher (P1-1 ; corrige le §4).** Le cockpit
+  ne déclenche un conflit que si l'un de ses claims est cité par la
+  proposition de bilan du dossier (`claimsCitesParLaPropositionBilan`,
+  `cockpit/route.ts` ; `conflitsSourcesEngine.ts` saute tout conflit dont
+  aucun claim n'est cité). Une fiche d'usage n'entre pas dans cette
+  collecte, et l'étage outil ne sélectionne aucune fiche d'après le
+  dossier. La phrase « un conflit publié s'affiche au cockpit dès le
+  déploiement » ne vaut donc que pour un conflit dont un claim est cité par
+  la proposition de bilan ; elle était fausse pour les autres. Les conflits
+  des dossiers clos entrent bien au registre (arbitrage 3) : leur lecteur
+  est la fiche d'usage à l'atelier (A2), et non le cockpit. Ils ne sont
+  donc pas des entrées inertes au sens de `CS-MAG-01`. La re-signature
+  dit, pour chaque conflit publié, s'il est déclenchable par la proposition
+  de bilan. Un banc démontre qu'un conflit neuf déclenchable atteint le
+  cockpit, et qu'un conflit non déclenchable n'y apparaît pas.
+- **A2 — Rattachement et lieu de lecture (P1-2 ; arbitrage 6 ; précise
+  les §3 et §6).** Chaque conflit du registre porte la liste curée et signée
+  des fiches d'usage (`FU_…`) sur lesquelles il pèse. Un arbitrage n'est
+  admis que pour une fiche de cette liste, ce que la route vérifie.
+  L'arbitrage se lit sur sa fiche, à l'atelier, où la question est connue
+  sans ambiguïté. Au cockpit, rien ne change pour un conflit qui n'est pas
+  déclenché. Pour un conflit déclenché par la proposition de bilan, ses
+  arbitrages éventuels se listent à côté du constat, chacun étiqueté par sa
+  fiche. Aucun n'est désigné comme applicable au dossier, aucun n'est mis
+  en avant, et l'outil ne choisit jamais entre eux. Un banc pose deux
+  arbitrages différents pour un même conflit, sur deux fiches : les deux
+  sont listés, étiquetés, et aucun n'est retenu. Tout cet affichage, sur la
+  fiche comme au cockpit, est sous `WN_POSITIONS_EXPERT`, quelle que soit
+  la PR qui le livre. Drapeau éteint, aucun arbitrage ne s'affiche. La
+  publication des conflits au registre, elle, ne dépend pas du drapeau : un
+  conflit neuf déclenchable par la proposition de bilan apparaît au cockpit
+  comme constat d'escalade dès le déploiement de la re-signature (A1).
+  C'est un changement de comportement clinique, retenu jusqu'à release-db
+  (§4).
+- **A3 — Validité dans le temps (P1-3 ; précise les §3 et §7).** À la pose,
+  l'arbitrage atteste l'empreinte de l'entrée du conflit dans le registre
+  signé, l'empreinte de la structure signée des fiches, et la référence
+  exacte de la position retenue (`WN-PE-NNNN@vN.M`) ou du claim retenu
+  (`identifiant@version`), sur le patron de [[D-331]] §2. À la lecture,
+  une tête d'arbitrage est affichée « à relire », jamais comme courante,
+  dans cinq cas : l'entrée du conflit a changé d'empreinte ou n'est plus
+  publiée ; la fiche a quitté la structure signée ou la liste du conflit ;
+  la position retenue n'est plus en vigueur (retirée, ou remplacée par une
+  version neuve) ; la position retenue est elle-même « à relire » (appui
+  périmé, §2) ; le claim retenu n'est plus frais. L'historique est conservé
+  et jamais réécrit. Le critère de fin du §7 s'étend à un banc par cas, six
+  en tout puisque le troisième cas en compte deux : conflit modifié ou
+  dépublié ; fiche retirée ; position retirée ; position remplacée ; appui
+  de la position périmé ; claim retenu qui n'est plus frais. S'y ajoute le
+  banc d'A2.
+
 ### D-438 — « Mon équilibre », besoin 5 : l'Epworth et la fatigue générale du MFI-20 entrent dans le groupe `repos`, poids 1 chacun, niveau A ; normalisations (24 − score)/24 et (20 − GEN)/16 ; application dans un lot ultérieur (d56)
 
 - Date : 2026-11-04
