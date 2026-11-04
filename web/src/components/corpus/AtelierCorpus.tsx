@@ -89,60 +89,30 @@ export function AtelierCorpus() {
         ) : null}
 
         {etat === 'chargee'
-          ? visibles.map(({ notebook, sources }) => (
-              <div key={notebook} className="mt-4">
-                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
-                  {notebook}
-                </p>
-                <div className="mt-2 overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-muted-foreground">
-                        <th className="py-1.5 pr-3 font-medium">Source</th>
-                        <th className="py-1.5 pr-3 font-medium">En attente</th>
-                        <th className="py-1.5 pr-3 font-medium">Voie rapide</th>
-                        <th className="py-1.5 pr-3 font-medium">Individuelle</th>
-                        <th className="py-1.5 pr-3 font-medium">Validés</th>
-                        <th className="py-1.5 pr-0 font-medium" aria-label="Actions" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sources.map((source) => (
-                        <tr key={source.sourceId} className="border-t border-border">
-                          <td className="max-w-64 py-2 pr-3">
-                            <p className="truncate font-medium text-foreground" title={source.titre}>
-                              {source.titre}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{source.sourceId}</p>
-                          </td>
-                          <td className="py-2 pr-3">{source.enAttente}</td>
-                          <td className="py-2 pr-3">{source.voieRapide}</td>
-                          <td className="py-2 pr-3">{source.voieLente}</td>
-                          <td className="py-2 pr-3">{source.valides}</td>
-                          <td className="py-2 pr-0 text-right">
-                            {source.tirageOuvert ? <Badge variant="warning">Revue en cours</Badge> : null}{' '}
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setModale({ sourceId: source.sourceId, titre: source.titre })
-                              }
-                              disabled={source.voieRapide === 0 && !source.tirageOuvert}
-                              title={
-                                source.voieRapide > 0 || source.tirageOuvert
-                                  ? undefined
-                                  : 'Aucun claim signable par lot — tout est en revue individuelle.'
-                              }
-                            >
-                              Voie rapide
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          ? visibles.map(({ notebook, sources }) => {
+              // Une source sans claim en attente ni tirage ouvert est entièrement
+              // traitée : elle se replie, pour que l'œil tombe sur ce qui reste à revoir.
+              const aRevoir = sources.filter((s) => s.enAttente > 0 || s.tirageOuvert);
+              const traitees = sources.filter((s) => !(s.enAttente > 0 || s.tirageOuvert));
+              return (
+                <div key={notebook} className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+                    {notebook}
+                  </p>
+                  {aRevoir.length > 0 ? tableSources(aRevoir) : null}
+                  {traitees.length > 0 ? (
+                    <details className="mt-1">
+                      <summary className="min-h-11 cursor-pointer py-2 text-sm text-muted-foreground">
+                        {traitees.length === 1
+                          ? '1 source entièrement traitée'
+                          : `${traitees.length} sources entièrement traitées`}
+                      </summary>
+                      {tableSources(traitees)}
+                    </details>
+                  ) : null}
                 </div>
-              </div>
-            ))
+              );
+            })
           : null}
         {etat === 'chargee' && visibles.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Aucune source en revue.</p>
@@ -169,4 +139,56 @@ export function AtelierCorpus() {
       ) : null}
     </div>
   );
+
+  function tableSources(sources: SourceAtelier[]) {
+    return (
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-muted-foreground">
+              <th className="py-1.5 pr-3 font-medium">Source</th>
+              <th className="py-1.5 pr-3 font-medium">En attente</th>
+              <th className="py-1.5 pr-3 font-medium">Voie rapide</th>
+              <th className="py-1.5 pr-3 font-medium">Individuelle</th>
+              <th className="py-1.5 pr-3 font-medium">Validés</th>
+              <th className="py-1.5 pr-0 font-medium" aria-label="Actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((source) => (
+              <tr key={source.sourceId} className="border-t border-border">
+                <td className="max-w-64 py-2 pr-3">
+                  <p className="truncate font-medium text-foreground" title={source.titre}>
+                    {source.titre}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{source.sourceId}</p>
+                </td>
+                <td className="py-2 pr-3">{source.enAttente}</td>
+                <td className="py-2 pr-3">{source.voieRapide}</td>
+                <td className="py-2 pr-3">{source.voieLente}</td>
+                <td className="py-2 pr-3">{source.valides}</td>
+                <td className="py-2 pr-0 text-right">
+                  {source.tirageOuvert ? <Badge variant="warning">Revue en cours</Badge> : null}{' '}
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setModale({ sourceId: source.sourceId, titre: source.titre })
+                    }
+                    disabled={source.voieRapide === 0 && !source.tirageOuvert}
+                    title={
+                      source.voieRapide > 0 || source.tirageOuvert
+                        ? undefined
+                        : 'Aucun claim signable par lot — tout est en revue individuelle.'
+                    }
+                  >
+                    Voie rapide
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 }
