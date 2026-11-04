@@ -20,10 +20,10 @@ Rendre l'arbitrage de d44 : l'escalade d'un conflit de sources s'étend-elle
   - la question se rouvre dès qu'un conflit déclaré porte sur un claim
     cité par une règle d'orientation ou d'arrêt ;
   - la trace prend la forme d'une D-xxx courte.
-- **d54** (délai avant T0) : renvoyée au cadrage de la carte « dossiers
-  bloqués ». Ce cadrage a été décidé ce jour par l'audit 2 (QB option A,
-  liste commune 20261104-1302-g) et le seuil de délai s'y arbitre. La ligne
-  passe en attente, avec ce renvoi.
+- **d54** (délai avant T0) : soldée par D-440 (#1852, H07). C'est la carte
+  « Sans avancée », 30 jours sans pas du parcours, issue du cadrage de
+  l'audit 2 (QB option A, liste commune 20261104-1302-g). Le code part dans
+  un lot ultérieur.
 - **d23** : soldée par D-435 (#1847), déployée le 2026-11-04.
 
 ## Fichiers modifiés
