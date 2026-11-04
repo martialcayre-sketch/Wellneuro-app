@@ -66,6 +66,7 @@ décrivent ce moment-là et ne se réécrivent pas.
   `changelog.d/2026-11-04-d436-had-semaine-ecoulee.md` ; une note dans la
   matrice de certification (libellés hors certification) ; page « Suivi de
   la file D », ligne d60.
+
 ### D-435 — Le rayon « 08 — Biologie fonctionnelle » s'ouvre à la recherche corpus clinique : huitième rayon, dernier verdict `dormante` retiré du registre ; applique D/23
 
 - Date : 2026-11-04
