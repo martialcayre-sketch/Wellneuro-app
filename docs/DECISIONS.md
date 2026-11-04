@@ -193,13 +193,14 @@ le critère de H07 « aucune carte avant le délai décidé » est levé.
 ### D-439 — BP-12b : la position d'expert signée, pièce versionnée en base ; l'arbitrage d'un conflit de sources, acte en ajout seul par question ; `conflitsSourcesV1` re-signé sur les dossiers clos ; versement par l'atelier, jamais par migration (LOT-28)
 
 - Date : 2026-11-04
-- Statut : proposé. Cinq arbitrages du responsable rendus le 2026-11-04 sur
-  questions à options, tous sur l'option recommandée, consignés dans la
-  fiche LOT-28 : le véhicule (§2), la portée de l'arbitrage (§3), le contenu
-  de la re-signature (§4), le périmètre (§5) et, en correction du
-  périmètre, le chemin du versement (§5). Texte rédigé par l'assistant à
-  partir de ces réponses ; il est à retenir par le responsable avant le
-  merge.
+- Statut : accepté. Le responsable a retenu le texte le 2026-11-04,
+  amendement compris (« le texte est validé »). Il avait rendu cinq
+  arbitrages le même jour sur questions à options, tous sur l'option
+  recommandée, consignés dans la fiche LOT-28 : le véhicule (§2), la portée
+  de l'arbitrage (§3), le contenu de la re-signature (§4), le périmètre
+  (§5) et, en correction du périmètre, le chemin du versement (§5). Un
+  sixième arbitrage, le lieu de lecture de l'arbitrage, figure dans
+  l'amendement. Texte rédigé par l'assistant à partir de ces réponses.
 - Domaine : campagne bio-parcours, BP-12b (LOT-28) ; plan, fiche F09 ;
   trois tables neuves en ajout seul (PR de migration distincte) ;
   `web/src/lib/clinical/conflitsSourcesV1.ts` (PR de re-signature
@@ -334,8 +335,8 @@ Les trois constats ont été vérifiés sur pièces et sont tous confirmés. Le
 responsable a tranché le 2026-11-04, sur question à options et sur
 l'option recommandée, le lieu de lecture de l'arbitrage (arbitrage 6 de la
 fiche LOT-28). Les §3, §4, §6 et §7 se lisent avec les trois points
-ci-dessous. Le texte amendé est à retenir par le responsable, comme le
-texte d'origine.
+ci-dessous. Le texte amendé a été retenu par le responsable le
+2026-11-04, avec le texte d'origine (voir le statut).
 
 - **A1 — Publier n'est pas déclencher (P1-1 ; corrige le §4).** Le cockpit
   ne déclenche un conflit que si l'un de ses claims est cité par la
