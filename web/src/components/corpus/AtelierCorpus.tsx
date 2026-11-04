@@ -54,6 +54,18 @@ export function AtelierCorpus() {
     ? notebooks.filter((n) => n.notebook === notebookChoisi)
     : notebooks;
 
+  // Une source sans claim en attente ni tirage ouvert est entièrement traitée :
+  // la vue « Tous » ne montre que le reste, pour que la revue soit en tête de
+  // page ; les sources traitées se consultent en choisissant leur notebook.
+  const aRevoir = (s: SourceAtelier) => s.enAttente > 0 || s.tirageOuvert;
+  const aRevoirParNotebook = notebooks
+    .map((n) => ({ notebook: n.notebook, sources: n.sources.filter(aRevoir) }))
+    .filter((n) => n.sources.length > 0);
+  const nbTraitees = notebooks.reduce(
+    (total, n) => total + n.sources.filter((s) => !aRevoir(s)).length,
+    0,
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-card p-5">
@@ -88,33 +100,40 @@ export function AtelierCorpus() {
           <p className="mt-3 text-sm text-muted-foreground">Chargement…</p>
         ) : null}
 
-        {etat === 'chargee'
-          ? visibles.map(({ notebook, sources }) => {
-              // Une source sans claim en attente ni tirage ouvert est entièrement
-              // traitée : elle se replie, pour que l'œil tombe sur ce qui reste à revoir.
-              const aRevoir = sources.filter((s) => s.enAttente > 0 || s.tirageOuvert);
-              const traitees = sources.filter((s) => !(s.enAttente > 0 || s.tirageOuvert));
-              return (
-                <div key={notebook} className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
-                    {notebook}
-                  </p>
-                  {aRevoir.length > 0 ? tableSources(aRevoir) : null}
-                  {traitees.length > 0 ? (
-                    <details className="mt-1">
-                      <summary className="min-h-11 cursor-pointer py-2 text-sm text-muted-foreground">
-                        {traitees.length === 1
-                          ? '1 source entièrement traitée'
-                          : `${traitees.length} sources entièrement traitées`}
-                      </summary>
-                      {tableSources(traitees)}
-                    </details>
-                  ) : null}
-                </div>
-              );
-            })
+        {etat === 'chargee' && notebookChoisi
+          ? visibles.map(({ notebook, sources }) => (
+              // Consultation d'un notebook choisi : toutes ses sources, traitées comprises.
+              <div key={notebook} className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+                  {notebook}
+                </p>
+                {tableSources(sources)}
+              </div>
+            ))
           : null}
-        {etat === 'chargee' && visibles.length === 0 ? (
+        {etat === 'chargee' && !notebookChoisi
+          ? aRevoirParNotebook.map(({ notebook, sources }) => (
+              // Vue « Tous » : seulement ce qui reste à revoir, en tête de page.
+              <div key={notebook} className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+                  {notebook}
+                </p>
+                {tableSources(sources)}
+              </div>
+            ))
+          : null}
+        {etat === 'chargee' && !notebookChoisi && aRevoirParNotebook.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Aucune source à revoir.</p>
+        ) : null}
+        {etat === 'chargee' && !notebookChoisi && nbTraitees > 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            {nbTraitees === 1
+              ? '1 source entièrement traitée'
+              : `${nbTraitees} sources entièrement traitées`}{' '}
+            — choisir un notebook pour les consulter.
+          </p>
+        ) : null}
+        {etat === 'chargee' && notebooks.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Aucune source en revue.</p>
         ) : null}
       </section>
