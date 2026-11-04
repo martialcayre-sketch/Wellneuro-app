@@ -22,7 +22,16 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 // retour anticipé qui exige un protocole diffusé. Un patient sans protocole n'y
 // verrait jamais ce lien — l'écran serait livré et jamais ouvert.
 
-export function LienDossierDeuxVoix({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
+export function LienDossierDeuxVoix({
+  token,
+  onSonde,
+  sondeSeule = false,
+}: {
+  token: string;
+  onSonde?: (ouvert: boolean) => void;
+  /** Sonde et rapporte sans rendre de lien : le hub rend la liste ([[D-423]] §2, lot L2). */
+  sondeSeule?: boolean;
+}) {
   const [ouvert, setOuvert] = useState(false);
 
   useEffect(() => {
@@ -49,7 +58,7 @@ export function LienDossierDeuxVoix({ token, onSonde }: { token: string; onSonde
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!ouvert) return null;
+  if (!ouvert || sondeSeule) return null;
 
   return (
     <a href={`/portail/${token}/dossier`} className={patientButtonClassName('ghost')}>

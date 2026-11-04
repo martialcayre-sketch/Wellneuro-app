@@ -20,7 +20,16 @@ import { TITRE_ESPACE } from '@/components/patient/fiches-assiette/textesFiches'
 // de la bibliothèque le remplace (arbitrage du 2026-10-25). Même sonde, même
 // réponse : les deux liens ne se contredisent jamais.
 
-export function LienFichesRemises({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
+export function LienFichesRemises({
+  token,
+  onSonde,
+  sondeSeule = false,
+}: {
+  token: string;
+  onSonde?: (ouvert: boolean) => void;
+  /** Sonde et rapporte sans rendre de lien : le hub rend la liste ([[D-423]] §2, lot L2). */
+  sondeSeule?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -45,7 +54,7 @@ export function LienFichesRemises({ token, onSonde }: { token: string; onSonde?:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!visible) return null;
+  if (!visible || sondeSeule) return null;
 
   return (
     <a href={`/portail/${token}/fiches`} className={patientButtonClassName('ghost')}>

@@ -68,11 +68,15 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
   test('l’écran est atteignable depuis la navigation du hub', async ({ page }) => {
     await page.goto(`/portail/${JETON}/questionnaires`);
 
-    // LE POINT DE CE CAS : le lien est dans la nav « Autres espaces », visible
-    // sans rien déplier et sans dépendre d'un protocole diffusé. Le placer dans
-    // « Mon accompagnement » — replié, et après un retour anticipé — aurait
-    // livré un écran que personne n'ouvre.
-    const lien = page.getByRole('link', { name: 'Ouvrir mon dossier à deux voix' });
+    // LE POINT DE CE CAS : le lien est dans la nav « Autres espaces », groupe
+    // « Avec mon praticien » ([[D-423]] §2), visible sans rien déplier et sans
+    // dépendre d'un protocole diffusé. Le placer dans « Mon accompagnement » —
+    // replié sans protocole, et après un retour anticipé — aurait livré un
+    // écran que personne n'ouvre.
+    const lien = page
+      .getByRole('navigation', { name: 'Autres espaces' })
+      .getByRole('list', { name: 'Avec mon praticien' })
+      .getByRole('link', { name: 'Ouvrir mon dossier à deux voix' });
     await expect(lien).toBeVisible();
     await lien.click();
 

@@ -13,7 +13,16 @@ import { TITRE_COURRIER_COMPLEMENT } from '@/components/patient/courrier-complem
 // FAIL-CLOSED : tant que la sonde n'a pas répondu oui aux deux, le lien
 // n'existe pas.
 
-export function LienCourrierComplement({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
+export function LienCourrierComplement({
+  token,
+  onSonde,
+  sondeSeule = false,
+}: {
+  token: string;
+  onSonde?: (ouvert: boolean) => void;
+  /** Sonde et rapporte sans rendre de lien : le hub rend la liste ([[D-423]] §2, lot L2). */
+  sondeSeule?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -38,7 +47,7 @@ export function LienCourrierComplement({ token, onSonde }: { token: string; onSo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!visible) return null;
+  if (!visible || sondeSeule) return null;
 
   return (
     <a href={`/portail/${token}/courrier-complement`} className={patientButtonClassName('ghost')}>

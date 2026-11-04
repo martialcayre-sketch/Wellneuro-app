@@ -3,15 +3,16 @@
 > Brouillon rédigé dans le lot L0 de l'audit « rails et menus »
 > (`README.md`, chapitres 11, 14 et 15). Numéro réservé le 2026-11-02 par
 > `node scripts/wn-reserver-decision.mjs` (`refs/tags/reserve/D-423`, [[D-370]]
-> §1). Le texte n'entre pas dans `docs/DECISIONS.md` dans ce lot : il voyage
-> avec L2, qui l'insère à son rang, comme [[D-324]]. Il a été relu et accepté
-> mot pour mot par le responsable le 2026-11-03, avant tout code.
+> §1). Relu et accepté mot pour mot par le responsable le 2026-11-03, avant
+> tout code. **Entré au registre le 2026-11-04 avec L2**, à son rang, comme
+> [[D-324]] : `docs/DECISIONS.md` fait foi ; ce brouillon reste la trace du
+> lot L0.
 
 ### D-423 — Menu patient : les espaces du hub se rangent en quatre groupes nommés, sans retirer d'accès ; la frise des six étapes devient navigable vers des cibles existantes seulement
 
 - Date : 2026-11-02
-- Statut : accepté mot pour mot par le responsable le 2026-11-03 ; entre au
-  registre avec L2. Arbitrages du responsable du 2026-11-01
+- Statut : accepté mot pour mot par le responsable le 2026-11-03 ; entré au
+  registre avec L2 le 2026-11-04. Arbitrages du responsable du 2026-11-01
   (Q1 à Q3, Q27 à Q30, chapitre 14 de l'audit) et du 2026-11-02 (Q4 à Q26,
   Q31 à Q34, chapitre 15), sur questions à options fermées ; Q19, Q34 et les
   cibles des étapes 4 et 5 revues le même jour après relecture de la PR.

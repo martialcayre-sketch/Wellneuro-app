@@ -105,7 +105,7 @@ export default function InformationsPage() {
           href={`/portail/${token}/questionnaires`}
           className="shrink-0 text-sm text-primary hover:underline"
         >
-          ← Mon espace
+          ← Mon parcours
         </Link>
       </div>
 

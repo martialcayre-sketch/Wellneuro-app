@@ -333,7 +333,9 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
 
     await test.step('Vue verrouillée en lecture seule', async () => {
       await ouvrirSectionSecondaire(page, 'Transmis au praticien');
-      const consulter = page.getByRole('link', { name: 'Consulter' }).first();
+      // `exact` : « Consulter mon bilan », dans « Autres espaces », contient
+      // aussi le mot ; la cible est le bouton de la liste repliée.
+      const consulter = page.getByRole('link', { name: 'Consulter', exact: true }).first();
       const [reponsesReq] = await Promise.all([
         page.waitForRequest(req => req.url().includes('/api/patient/reponses')),
         consulter.click(),
@@ -450,7 +452,8 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await page.getByRole('group').filter({ hasText: 'En cas d’urgence' }).locator('summary').click();
       await expect(page.getByText('15 — SAMU, urgence médicale')).toBeVisible();
       // La séquence ne se représente pas : retour à l'espace sans blocage.
-      await page.getByRole('link', { name: '← Mon espace' }).click();
+      // Retour renommé « ← Mon parcours », même cible ([[D-423]] §3, Q20).
+      await page.getByRole('link', { name: '← Mon parcours' }).click();
       await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
     });
   });

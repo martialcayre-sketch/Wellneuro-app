@@ -21,7 +21,7 @@ import { ENTREES_AUTRES_ESPACES, hrefEntree, type CleSonde } from '@/components/
 // 500, panne réseau ou corps illisible le laissent absent. La prop `onSonde`
 // remonte le même verdict, jamais plus tôt, jamais après le démontage.
 
-type Lien = ComponentType<{ token: string; onSonde?: (ouvert: boolean) => void }>;
+type Lien = ComponentType<{ token: string; onSonde?: (ouvert: boolean) => void; sondeSeule?: boolean }>;
 
 type Cas = {
   cle: CleSonde;
@@ -78,6 +78,20 @@ describe.each(CAS)('$cle — sonde fail-closed', ({ cle, Composant, url, ouvert,
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(url);
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
     expect(onSonde.mock.calls).toEqual([[true]]);
+  });
+
+  // Lot L2 ([[D-423]] §2) : le hub rend la liste, le composant ne fait plus
+  // que sonder. Même requête, même rappel, aucun lien rendu.
+  it('sondeSeule, oui complet : onSonde(true), rien rendu, une seule requête', async () => {
+    const json = repondre(200, ouvert);
+    const onSonde = vi.fn();
+    const { container } = render(<Composant token="TOK" onSonde={onSonde} sondeSeule />);
+    await waitFor(() => expect(json).toHaveBeenCalled());
+    await laisserPartir();
+    expect(onSonde.mock.calls).toEqual([[true]]);
+    expect(container.innerHTML).toBe('');
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(url);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
   it.each([

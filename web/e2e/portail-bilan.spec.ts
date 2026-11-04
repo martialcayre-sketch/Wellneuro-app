@@ -63,8 +63,12 @@ test.describe('Portail — Mon bilan', () => {
 
     // 3. L'accès apparaît dans le hub — en accès secondaire, pas en étape du
     //    moment : un document à relire n'est pas une tâche périssable.
+    //    Il se range dans « Ce que j’ai reçu » ([[D-423]] §2).
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
-    const lien = page.getByRole('link', { name: 'Consulter mon bilan' });
+    const lien = page
+      .getByRole('navigation', { name: 'Autres espaces' })
+      .getByRole('list', { name: 'Ce que j’ai reçu' })
+      .getByRole('link', { name: 'Consulter mon bilan' });
     await expect(lien).toBeVisible();
     await expect(lien).toHaveAttribute('href', `/portail/${PATIENT.idPatient}/bilan`);
 
@@ -153,7 +157,9 @@ test.describe('Portail — Mon bilan', () => {
     // Contrôle : avant le rejet, les deux surfaces proposent le bilan. Sans
     // lui, les assertions d'absence seraient vertes pour une mauvaise raison.
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
-    await expect(page.getByRole('link', { name: 'Consulter mon bilan' })).toBeVisible();
+    await expect(
+      page.getByRole('list', { name: 'Ce que j’ai reçu' }).getByRole('link', { name: 'Consulter mon bilan' }),
+    ).toBeVisible();
 
     await page.goto(`/portail/${PATIENT.idPatient}/bilan`);
     await expect(page.getByText('sommeil fragmenté')).toBeVisible();

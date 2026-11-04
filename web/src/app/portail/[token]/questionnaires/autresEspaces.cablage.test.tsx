@@ -5,11 +5,11 @@ import type { CleSonde } from '@/components/patient/autres-espaces/entreesAutres
 
 /*
  * CÂBLAGE DES RAPPELS `onSonde` DU HUB (lot L1 de l'audit « rails et menus »).
- * Le rendu de L1 ne lit pas encore l'état des sondes : permuter deux props
- * `onSonde` ne changerait ni les requêtes ni l'écran. Ce banc l'épingle
- * directement — chaque `Lien*` reçoit le rapporteur de SA clé —, avant que le
- * regroupement de D-423 (L2) ne s'en serve. Relevé par la revue CodeRabbit de
- * la PR #1840.
+ * Posé quand le rendu ne lisait pas encore l'état des sondes : permuter deux
+ * props `onSonde` ne changeait ni les requêtes ni l'écran. Depuis L2, les
+ * `Lien*` sont montés par `NavAutresEspaces`, qui rend la liste ; ce banc
+ * épingle toujours directement que chaque `Lien*` reçoit le rapporteur de SA
+ * clé. Relevé par la revue CodeRabbit de la PR #1840.
  */
 
 const { routeur, recus, rapporteurs } = vi.hoisted(() => {

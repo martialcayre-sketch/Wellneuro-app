@@ -440,8 +440,12 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
 
   test('portail — hub, sections secondaires dépliées', async ({ page }, testInfo) => {
     await ouvrirHubPortail(page);
+    // Seuls les `details` FERMÉS : « Mon accompagnement » s'ouvre d'office
+    // quand un protocole est servi ([[D-423]] §3) ; un clic le refermerait.
+    // La liste porte sur TOUS les `summary` (indices stables) ; le test d'ouverture
+    // se lit au moment du clic.
     for (const summary of await page.locator('details > summary').all()) {
-      await summary.click();
+      if (!(await summary.evaluate(el => (el.parentElement as HTMLDetailsElement).open))) await summary.click();
     }
     // Le dépliage MONTE « Mon accompagnement », qui part en lecture : la capture
     // du 2026-09-04 gelait son « Chargement de votre accompagnement… ».

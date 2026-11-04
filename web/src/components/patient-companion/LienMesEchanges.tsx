@@ -11,7 +11,16 @@ import { LIEN_MES_ECHANGES } from '@/components/patient/mes-echanges/textesMesEc
 //
 // FAIL-CLOSED : tant que la sonde n'a pas répondu « ouvert », le lien n'existe pas.
 
-export function LienMesEchanges({ token, onSonde }: { token: string; onSonde?: (ouvert: boolean) => void }) {
+export function LienMesEchanges({
+  token,
+  onSonde,
+  sondeSeule = false,
+}: {
+  token: string;
+  onSonde?: (ouvert: boolean) => void;
+  /** Sonde et rapporte sans rendre de lien : le hub rend la liste ([[D-423]] §2, lot L2). */
+  sondeSeule?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -36,7 +45,7 @@ export function LienMesEchanges({ token, onSonde }: { token: string; onSonde?: (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!visible) return null;
+  if (!visible || sondeSeule) return null;
 
   return (
     <a href={`/portail/${token}/echanges`} className={patientButtonClassName('ghost')}>

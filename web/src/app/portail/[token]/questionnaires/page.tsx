@@ -23,30 +23,13 @@ import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisat
 import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
-import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
-import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
-import { LienBibliotheque } from '@/components/patient-companion/LienBibliotheque';
-import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
-import { LienCourrierComplement } from '@/components/patient-companion/LienCourrierComplement';
-import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVotreMedecin';
-import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
-import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
-import { LienDepotDocuments } from '@/components/patient-companion/LienDepotDocuments';
-import { LienFicheRenseignements } from '@/components/physio-traitements/LienFicheRenseignements';
-import { useEtatsSondes } from '@/components/patient/autres-espaces/entreesAutresEspaces';
+import { NavAutresEspaces } from '@/components/patient/autres-espaces/NavAutresEspaces';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour, questionnairesRenvoyesDepuis, rendezVousSuiviAFaire } from '@/lib/portail/filDuJour';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
-
-// Extrait le nombre de minutes d'une durée catalogue du type "5 min".
-function parseDureeMinutes(duree: string | null): number {
-  if (!duree) return 0;
-  const m = duree.match(/(\d+)/);
-  return m ? parseInt(m[1], 10) : 0;
-}
 
 export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
@@ -139,10 +122,6 @@ export default function QuestionnairesHubPage() {
   const [avantRequis, setAvantRequis] = useState(false);
   // Sous `WN_PORTAIL_CONDITIONS`, l'accueil requis présente les conditions seules (D-292 §3).
   const [accueilConditions, setAccueilConditions] = useState(false);
-  // L'état des dix sondes de « Autres espaces » remonte ici (lot L1 de l'audit
-  // « rails et menus », EP-04) ; le rendu ne s'en sert pas encore : la ligne
-  // reste plate jusqu'au regroupement de D-423 (L2).
-  const { rapporteurs: sondesAutresEspaces } = useEtatsSondes();
   // Garde-fou : ignorer une réponse tardive si le composant a été démonté
   // (navigation rapide) pendant que le fetch était en vol.
   const annuleRef = useRef(false);
@@ -363,7 +342,7 @@ export default function QuestionnairesHubPage() {
 
   // Un dossier clos garde la lecture de ses archives, mais ne recueille plus
   // rien (arbitrage du responsable du 2026-11-04) : ce qui reste « à
-  // compléter » sort de la liste, du compteur et du fil. Le mineur clos est
+  // compléter » sort de la liste et du fil. Le mineur clos est
   // servi en « majeur » plus haut : c'est ce filtre, pas `enPause`, qui le
   // couvre. Les routes de saisie, elles, ne gardent pas la clôture (dette).
   const enriched = assignations
@@ -378,8 +357,6 @@ export default function QuestionnairesHubPage() {
     }))
     .filter(e => !(recueilsEnPause && e.aff.groupe === 'a_completer'));
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
-  const aCompleter = aCompleterItems.length;
-  const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
 
   // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
   // dérivées du contrat partagé sur les seuls signaux que le portail sert
@@ -426,7 +403,8 @@ export default function QuestionnairesHubPage() {
    *
    * Après : une seule chose est mise en avant, « Mon parcours », qui porte
    * l'étape du moment. Tout le reste descend d'un cran — les accès secondaires
-   * deviennent une ligne de liens plutôt que des cartes concurrentes, et ce
+   * deviennent des liens rangés en groupes ([[D-423]]) plutôt que des cartes
+   * concurrentes, et ce
    * qui relève du détail passe sous `<details>`. Rien n'est retiré : c'est la
    * hiérarchie qui change, pas le contenu.
    */
@@ -450,80 +428,24 @@ export default function QuestionnairesHubPage() {
           après l'étape du moment pour ne pas la concurrencer. */}
       <PropositionPackReevaluation />
 
-      {/* Accès secondaires : une ligne de liens, plus deux cartes rivales. */}
-      <nav aria-label="Autres espaces" className="flex flex-wrap gap-3">
-        {/* Le bilan n'apparaît que si le praticien en a transmis un ET que le
-            document est encore lisible : `bilanConsultable`, pas
-            `bookletEnvoye`. Les deux se séparent au rejet — l'envoi reste
-            acquis pour la frise (elle ne recule pas), l'accès au document
-            disparaît. C'est la MÊME visibilité que sert `api/portail/bilan`,
-            sinon ce lien mènerait à « votre praticien ne vous a pas encore
-            transmis de bilan ». Il reste un accès secondaire : un document à
-            relire n'est jamais une tâche périssable, et il ne doit pas
-            concurrencer l'étape du moment. */}
-        {signauxParcours.bilanConsultable && (
-          <a href={`/portail/${token}/bilan`} className={patientButtonClassName('ghost')}>
-            Consulter mon bilan
-          </a>
-        )}
-        {/* Même règle que le bilan : le lien ne paraît que si la surface est
-            ouverte ET qu'une fiche au moins a été remise ([[D-251]] §8). C'est
-            l'accès permanent ; la tâche « à lire », elle, vit au fil. */}
-        <LienFichesRemises token={token} onSonde={sondesAutresEspaces.fiches} />
-        {/* « Ma bibliothèque » ([[D-357]]) : sous son propre drapeau, au seul
-            dossier majeur ; servie, elle remplace le lien des fiches. */}
-        <LienBibliotheque token={token} onSonde={sondesAutresEspaces.bibliotheque} />
-        {/* Le courrier pour le médecin traitant ([[D-262]]) : même règle, sous
-            son propre drapeau. */}
-        <LienCourrierMedecin token={token} onSonde={sondesAutresEspaces.courrierMedecin} />
-        {/* Le courrier à remettre au médecin avant un complément ciblé
-            ([[D-345]]) : même règle, sous `WN_COURRIER_COMPLEMENT`. */}
-        <LienCourrierComplement token={token} onSonde={sondesAutresEspaces.courrierComplement} />
-        {/* « Pour votre médecin » ([[D-307]] §3) : même règle, sous son propre
-            drapeau ; le partage avec le médecin traitant doit être accordé. */}
-        <LienPourVotreMedecin token={token} onSonde={sondesAutresEspaces.pourVotreMedecin} />
-        {/* La transmission d'un compte rendu d'analyses ([[D-269]]) : sous son
-            propre drapeau, le lien n'existe que si la route répond. */}
-        <LienTransmissionCompteRendu token={token} onSonde={sondesAutresEspaces.compteRendu} />
-        {/* Le dépôt d'un document ([[D-330]]) : sous son propre drapeau, le lien
-            n'existe que si la route répond « ouvert ». */}
-        <LienDepotDocuments token={token} onSonde={sondesAutresEspaces.depot} />
-        {/* La fiche de renseignements en lignes datées ([[D-335]]) : sous son
-            propre drapeau, le lien n'existe que si la route répond « ouvert ». */}
-        <LienFicheRenseignements token={token} onSonde={sondesAutresEspaces.renseignements} />
-        <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
-          Ouvrir Mon carnet alimentaire
-        </a>
-        <a href={`/portail/${token}/suivi`} className={patientButtonClassName('ghost')}>
-          Ouvrir mes rendez-vous de suivi
-        </a>
-        {/* « Mes échanges » ([[D-293]]) : sous son propre drapeau, le lien
-            n'existe que si la route répond « ouvert ». */}
-        <LienMesEchanges token={token} onSonde={sondesAutresEspaces.echanges} />
-        {/* ICI, et non dans « Mon accompagnement » : ce dernier est replié et
-            placé après un retour anticipé qui exige un protocole diffusé — un
-            patient sans protocole n'y verrait jamais ce lien. Le composant se
-            rend lui-même invisible tant que la route ne dit pas que la surface
-            est ouverte (LOT-06). */}
-        {/* PAS DE PORTE SÉPARÉE VERS « CE QUI COMPTE » NI VERS « CE QUE J'AI
-            COMPRIS », et c'est un arbitrage du responsable (2026-09-12, sur
-            copie d'écran) : les deux vivent DÉJÀ dans le dossier à deux voix,
-            qu'ouvre le lien ci-dessus. Deux boutons de plus ne donnaient pas un
-            accès, ils ajoutaient du bruit à une nav qui en portait déjà cinq.
-
-            CE QUI MANQUE VRAIMENT N'EST PAS UNE PORTE, C'EST UNE INVITATION :
-            jamais le patient n'est invité à DIRE ce qui compte pour lui. Cela
-            appartient au fil du jour — une tâche qui paraît quand elle est due
-            et s'en va quand elle est faite —, pas à une navigation permanente. */}
-        <LienDossierDeuxVoix token={token} onSonde={sondesAutresEspaces.dossier} />
-      </nav>
+      {/* Accès secondaires, rangés en groupes nommés ([[D-423]] §2). Le bilan
+          n'y paraît que si le praticien en a transmis un ET que le document est
+          encore lisible : `bilanConsultable`, pas `bookletEnvoye`. Les deux se
+          séparent au rejet — l'envoi reste acquis pour la frise (elle ne recule
+          pas), l'accès au document disparaît. C'est la MÊME visibilité que sert
+          `api/portail/bilan`. Pas de porte vers « ce qui compte » ni vers « ce
+          que j'ai compris », et une invitation appartient au fil : arbitrage
+          du 2026-09-12, versé dans [[D-423]] §5. */}
+      <NavAutresEspaces token={token} bilanConsultable={signauxParcours.bilanConsultable} />
 
       {/*
         L'accompagnement du protocole actif reste un objet distinct (il est
-        borné R8-lite et n'est pas l'accueil de trajectoire) : on le replie
-        plutôt que de le fondre dans « Mon parcours ».
+        borné R8-lite et n'est pas l'accueil de trajectoire) : il n'est pas
+        fondu dans « Mon parcours ». Déplié d'office quand un protocole est
+        servi, replié sinon ([[D-423]] §3) : aucun second repli autour de celui
+        de [[D-315]], l'encart de conduite se lit avant tout clic ([[D-349]] §2).
       */}
-      <details className="rounded-xl border border-border bg-surface p-4">
+      <details open={signauxProtocole.protocoleDiffuse} className="rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Mon accompagnement
         </summary>
@@ -551,18 +473,10 @@ export default function QuestionnairesHubPage() {
         c'est une réponse, pas un vide.
       */}
 
-      {aCompleter > 0 && (
-        <p className="text-sm text-muted-foreground">
-          {aCompleter === 1 ? 'Un questionnaire à compléter' : `${aCompleter} questionnaires à compléter`}
-          {dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
-        </p>
-      )}
-
       {GROUPES.map(({ cle, titre }) => {
         // Dédoublonnage (SP-CONV LOT-04, élargi au fil du jour le 2026-09-12) :
         // ce que « Mon parcours » porte déjà ne se réaffiche pas ici. Le
-        // compteur, lui, reste complet — il totalise ce qui est à compléter, y
-        // compris ce que le fil a remonté.
+        // compteur qui totalisait « à compléter » est retiré ([[D-423]] §6).
         const items = enriched.filter(
           e => e.aff.groupe === cle && !(cle === 'a_completer' && clesDuFil.has(e.a.idAssignation)),
         );
