@@ -252,6 +252,79 @@ describe('banc 4 — la photo disparaît à l’enregistrement et à l’abandon
     expect(contexte.clearRect).toHaveBeenCalled();
   });
 
+  // P2 de la revue de #1857 : la journée peut être écrite alors que la réponse
+  // du POST se perd. La photo s'efface DÈS l'envoi, sans dépendre ni de la
+  // réponse ni de la relecture, et le POST n'est jamais renvoyé de lui-même.
+  function monterAgendaReseau(post: () => Promise<Response>, getApresPremier?: () => Promise<Response>) {
+    let gets = 0;
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return post();
+      gets += 1;
+      if (gets > 1 && getApresPremier) return getApresPremier();
+      return Promise.resolve({ status: 200, json: () => Promise.resolve(corpsGet(true)) } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AgendaAlimentaireJournal idAssignation="ASS_TEST" onRetourHub={() => {}} />);
+    return fetchMock;
+  }
+
+  const posts = (f: ReturnType<typeof vi.fn>) =>
+    f.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST').length;
+  const gets = (f: ReturnType<typeof vi.fn>) =>
+    f.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method !== 'POST').length;
+
+  async function attendreEffacement(noeud: HTMLCanvasElement) {
+    await waitFor(() => expect(noeud.isConnected).toBe(false));
+    expect(noeud.width).toBe(0);
+    expect(noeud.height).toBe(0);
+    expect(contexte.clearRect).toHaveBeenCalled();
+    // Une capture neuve, vierge, reste offerte : masquée, et aucune seconde
+    // image n'a été peinte.
+    expect(toile()).not.toBe(noeud);
+    expect(toile().hidden).toBe(true);
+    expect(contexte.drawImage).toHaveBeenCalledTimes(1);
+  }
+
+  it('réponse du POST perdue (« Connexion interrompue ») : photo effacée, aucun nouvel envoi', async () => {
+    const fetchMock = monterAgendaReseau(() => Promise.reject(new TypeError('Failed to fetch')));
+    await photographier();
+    const noeud = toile();
+    contexte.clearRect.mockClear();
+    await enregistrerJourneeVide();
+    await screen.findByText('Connexion interrompue. Réessayez.');
+    await attendreEffacement(noeud);
+    expect(contexte.drawImage).toHaveBeenCalledTimes(1);
+    expect(posts(fetchMock)).toBe(1);
+    expect(gets(fetchMock)).toBe(1); // l'effacement n'attend aucune relecture
+  });
+
+  it('réponse du POST qui n’arrive jamais : photo effacée dès l’envoi', async () => {
+    const fetchMock = monterAgendaReseau(() => new Promise<Response>(() => {}));
+    await photographier();
+    const noeud = toile();
+    contexte.clearRect.mockClear();
+    await enregistrerJourneeVide();
+    await attendreEffacement(noeud);
+    expect(posts(fetchMock)).toBe(1);
+  });
+
+  it('journée écrite, relecture en échec : photo effacée, aucun nouvel envoi', async () => {
+    const fetchMock = monterAgendaReseau(
+      () => Promise.resolve({ status: 201, json: () => Promise.resolve({ ok: true, jourId: 'jour_1' }) } as Response),
+      () => Promise.reject(new TypeError('Failed to fetch')),
+    );
+    await photographier();
+    const noeud = toile();
+    contexte.clearRect.mockClear();
+    await enregistrerJourneeVide();
+    await screen.findByText('Connexion interrompue. Réessayez.');
+    await waitFor(() => expect(noeud.isConnected).toBe(false));
+    expect(noeud.width).toBe(0);
+    expect(contexte.clearRect).toHaveBeenCalled();
+    expect(screen.queryByTestId('capture-repas-photo')).toBeNull();
+    expect(posts(fetchMock)).toBe(1);
+  });
+
   it('à l’abandon de la saisie (« Voir ma frise ») : toile vidée', async () => {
     monterAgenda(true);
     await photographier();
