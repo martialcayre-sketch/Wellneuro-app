@@ -161,6 +161,47 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
   });
 
+  describe('dossier clos (arbitrage du 2026-11-04, option A)', () => {
+    const patientClos = (dateNaissance: string, suiviClotureLe: Date | null = new Date('2026-11-01T09:00:00Z')) => ({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance,
+      suiviClotureLe,
+    });
+
+    it('★ clos majeur : 409 dossier_cloture, rien n’est écrit', async () => {
+      prisma.patient.findUnique.mockResolvedValue(patientClos('1985-03-14'));
+      const res = await postSubmit(requeteSoumission());
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({
+        ok: false,
+        reason: 'dossier_cloture',
+        error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.',
+      });
+      expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+      expect(prisma.assignation.update).not.toHaveBeenCalled();
+    });
+
+    it('★ clos mineur : dossier_cloture, la clôture passe avant la garde d’âge', async () => {
+      const quinzeAns = new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+      prisma.patient.findUnique.mockResolvedValue(patientClos(quinzeAns));
+      const res = await postSubmit(requeteSoumission());
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason: string }).reason).toBe('dossier_cloture');
+      expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    });
+
+    it('reprise du suivi : la soumission est de nouveau acceptée', async () => {
+      prisma.patient.findUnique.mockResolvedValue(patientClos('1985-03-14', null));
+      const res = await postSubmit(requeteSoumission());
+      expect(res.status).toBe(200);
+      expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('calcule et persiste le score malgré tout', async () => {
     await postSubmit(requeteSoumission());
 
@@ -791,6 +832,8 @@ describe('POST /api/patient/submit — réponse suicidaire : le praticien est pr
         idPatient: assignation.idPatient, actif: true, email: assignation.emailPatient,
         accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance: '1985-03-14',
       })
+      // Garde de clôture (option A du 2026-11-04) : un dossier en suivi passe.
+      .mockResolvedValueOnce({ actif: true, suiviClotureLe: null })
       // Garde d'âge (D-284 §3) : un patient majeur passe.
       .mockResolvedValueOnce({ dateNaissance: '1985-03-14' })
       .mockRejectedValueOnce(new Error('base indisponible'));

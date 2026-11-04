@@ -93,6 +93,44 @@ describe('POST /api/portail/agenda-sommeil/cloture', () => {
     expect(cloturerAgenda).not.toHaveBeenCalled();
   });
 
+  describe('dossier clos (arbitrage du 2026-11-04, option A)', () => {
+    const quinzeAns = () => new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const proprietaire = (dateNaissance: string, suiviClotureLe: Date | null) => ({
+      idPatient: OWNER.idPatient, actif: true, email: OWNER.email,
+      accessTokenRevoked: false, sessionsInvalidesAvant: null, dateNaissance, suiviClotureLe,
+    });
+    const clotureLe = new Date('2026-07-10T09:00:00.000Z');
+
+    beforeEach(() => {
+      prisma.assignation.findUnique.mockResolvedValue(ASS);
+      prisma.agendaSommeilNuit.findMany.mockResolvedValue([nuit('2026-06-25'), nuit('2026-07-15')]);
+      cloturerAgenda.mockResolvedValue({ idReponse: 'REP_1', titre: ASS.titre, nbNuits: 2, dejaCloture: false });
+    });
+
+    it('★ clos majeur : 409 dossier_cloture, l’agenda ne se clôture pas', async () => {
+      prisma.patient.findUnique.mockResolvedValue(proprietaire('1985-03-14', clotureLe));
+      const res = await POST(post(cookie(), { idAssignation: 'ASS_AGD' }));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('dossier_cloture');
+      expect(cloturerAgenda).not.toHaveBeenCalled();
+    });
+
+    it('★ clos mineur : dossier_cloture, la clôture passe avant la garde d’âge', async () => {
+      prisma.patient.findUnique.mockResolvedValue(proprietaire(quinzeAns(), clotureLe));
+      const res = await POST(post(cookie(), { idAssignation: 'ASS_AGD' }));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('dossier_cloture');
+      expect(cloturerAgenda).not.toHaveBeenCalled();
+    });
+
+    it('reprise du suivi : l’agenda se clôture de nouveau (200)', async () => {
+      prisma.patient.findUnique.mockResolvedValue(proprietaire('1985-03-14', null));
+      const res = await POST(post(cookie(), { idAssignation: 'ASS_AGD' }));
+      expect(res.status).toBe(200);
+      expect(cloturerAgenda).toHaveBeenCalledWith({ idAssignation: 'ASS_AGD' });
+    });
+  });
+
   it('clôture quand la fenêtre de 21 nuits est atteinte (200)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(ASS);
     mockOwner();

@@ -955,6 +955,56 @@ describe('POST /api/portail/agenda-alimentaire', () => {
     expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
   });
 
+  describe('dossier clos (arbitrage du 2026-11-04, option A)', () => {
+    const quinzeAns = () => new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const proprietaire = (dateNaissance: string, suiviClotureLe: Date | null) => ({
+      idPatient: OWNER.idPatient,
+      actif: true,
+      email: OWNER.email,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance,
+      suiviClotureLe,
+    });
+    const clotureLe = new Date('2026-07-10T09:00:00.000Z');
+
+    it('★ clos majeur : 409 dossier_cloture, aucune journée écrite', async () => {
+      const { POST } = await chargerRoute('true');
+      prisma.patient.findUnique.mockResolvedValue(proprietaire('1985-03-14', clotureLe));
+      const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({
+        reason: 'dossier_cloture',
+        error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.',
+      });
+      expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
+    });
+
+    it('★ clos mineur : dossier_cloture, la clôture passe avant la garde d’âge', async () => {
+      const { POST } = await chargerRoute('true');
+      prisma.patient.findUnique.mockResolvedValue(proprietaire(quinzeAns(), clotureLe));
+      const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('dossier_cloture');
+      expect(prisma.agendaAlimentaireJour.create).not.toHaveBeenCalled();
+    });
+
+    it('le GET reste ouvert sur un dossier clos : les archives se relisent', async () => {
+      const { GET } = await chargerRoute('true');
+      prisma.patient.findUnique.mockResolvedValue(proprietaire('1985-03-14', clotureLe));
+      const res = await GET(req('GET', cookieFor(), { query: `?id=${ID_ASSIGNATION}` }));
+      expect(res.status).toBe(200);
+    });
+
+    it('reprise du suivi : la saisie est de nouveau acceptée (201)', async () => {
+      const { POST } = await chargerRoute('true');
+      prisma.patient.findUnique.mockResolvedValue(proprietaire('1985-03-14', null));
+      const res = await POST(req('POST', cookieFor(), { body: corpsPost() }));
+      expect(res.status).toBe(201);
+      expect(prisma.agendaAlimentaireJour.create).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('enregistre la journée du jour (201) avec l’idPatient de la SESSION et la version de contrat', async () => {
     const { POST } = await chargerRoute('true');
     const res = await POST(

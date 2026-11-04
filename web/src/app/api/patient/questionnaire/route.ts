@@ -5,6 +5,8 @@ import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { notePraticienAffichable } from '@/lib/consultation/notePraticien';
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
+import { refusClotureSuiviPour } from '@/lib/patient/gardeClotureServeur';
+import type { RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import type { RaisonRefusAge } from '@/lib/patient/gardeAge';
 import { getRendererPourDefinition, type DefinitionServie, type RendererProfile } from '@/lib/questionnaire-display';
 
@@ -33,7 +35,7 @@ export type PatientQuestionnaireResponse =
       ok: false;
       reason:
         | 'not_found' | 'expired' | 'invalid' | 'unauthorized' | 'annulee' | 'exception'
-        | RaisonRefusAge;
+        | RaisonRefusAge | typeof RAISON_DOSSIER_CLOS;
       error: string;
     };
 
@@ -119,7 +121,14 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     // seule restent consultables — `verrouille` et `modification_demandee`, les
     // deux états où la soumission refuse déjà d'écrire : la pause porte sur la
     // saisie, pas sur la lecture.
+    //
+    // La clôture du suivi (arbitrage du 2026-11-04, option A) suit la même
+    // exemption, et passe AVANT l'âge : un mineur clos lit la clôture.
     if (ass.statutReponses !== 'verrouille' && ass.statutReponses !== 'modification_demandee') {
+      const refusCloture = await refusClotureSuiviPour(ass.idPatient);
+      if (refusCloture) {
+        return NextResponse.json({ ok: false, ...refusCloture }, { status: 409 });
+      }
       const refusAge = await refusSaisieSantePour(ass.idPatient);
       if (refusAge) {
         return NextResponse.json({ ok: false, ...refusAge }, { status: 409 });

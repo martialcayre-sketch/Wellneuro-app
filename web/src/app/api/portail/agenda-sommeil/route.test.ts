@@ -139,6 +139,40 @@ describe('POST /api/portail/agenda-sommeil', () => {
     expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
   });
 
+  describe('dossier clos (arbitrage du 2026-11-04, option A)', () => {
+    const quinzeAns = () => new Date(Date.now() - 15 * 366 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    const proprietaireClos = (dateNaissance: string) => ({
+      idPatient: OWNER.idPatient,
+      actif: true,
+      email: OWNER.email,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance,
+      suiviClotureLe: new Date('2026-07-10T09:00:00.000Z'),
+    });
+
+    it('★ clos majeur : 409 dossier_cloture, aucune nuit écrite', async () => {
+      prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+      prisma.patient.findUnique.mockResolvedValue(proprietaireClos('1985-03-14'));
+      const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({
+        reason: 'dossier_cloture',
+        error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.',
+      });
+      expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+    });
+
+    it('★ clos mineur : dossier_cloture, la clôture passe avant la garde d’âge', async () => {
+      prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+      prisma.patient.findUnique.mockResolvedValue(proprietaireClos(quinzeAns()));
+      const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { reason?: string }).reason).toBe('dossier_cloture');
+      expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+    });
+  });
+
   it('refuse une date antérieure à la veille (409 date_hors_fenetre)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();
