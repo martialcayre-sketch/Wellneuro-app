@@ -25,8 +25,11 @@ position (identifiant `WN-PE-NNNN@vN.M`, claims d'appui, population,
 contenu), la signe par un acte daté, la révise ou la retire ; il arbitre un
 conflit déclaré pour une fiche d'usage, ou révoque cet arbitrage. Au
 cockpit, un conflit déclaré reste affiché avec son escalade, et son
-arbitrage daté se lit à côté. Drapeau éteint, rien ne change.
-`conflitsSourcesV1` est re-signé avec les conflits des dossiers clos.
+arbitrage daté se lit à côté. Drapeau éteint, l'atelier et l'affichage
+des arbitrages ne changent rien. **La re-signature de `conflitsSourcesV1`
+n'est pas couverte par ce drapeau** : les conflits des dossiers clos
+qu'elle publie s'affichent au cockpit dès son déploiement, puisque
+`WN_ENABLE_CONTRADICTIONS_NNPP2` est allumé (D-439 §4).
 
 ## Socle établi (ne se rediscute pas)
 
