@@ -1,0 +1,8 @@
+- **Mise à jour (2026-11-05, dossier iode et sélénium clos)** : forme opaque (`D-251` §4) ; identifiants, mécanismes et agrégats seulement.
+  - **Périmètre.** Un seul dossier pour les deux minéraux (choix du responsable du 2026-11-02) ; deux analytes du catalogue.
+  - **Décisions.** Séances du responsable des 2026-11-02, 2026-11-04 et 2026-11-05, par questions à options : treize décisions de dossier ; trois points d'étiquetage ; trois questions sur l'application des positions. Aucun point ne reste ouvert au dossier. Une question générale, le filtre de la recherche praticien, est versée à la liste commune.
+  - **Sources externes.** 8 notices au registre (`WN-SRC-0631` à `0638`, #1861) ; une source déjà au registre relue pour ses lignes. Un lot ingéré sur approbation : `LOT_053_2026-11-02`, 22 passages, 36 claims, en trois envois, tous signés par le responsable dans l'atelier. Brouillons de l'assistant : aucun déposé (quatre écartés ou différés).
+  - **Étiquetage.** Étiquetage en lot par délégation (D-325 §5), constaté par conteneur. 96 claims sont étiquetés au besoin 2 et 749 claims `VALIDE` le portent désormais. 13 claims sont remis en attente pour relecture ; cinq rejets motivés sont appliqués en base.
+  - **Contre-revues.** Codex sur le dossier, puis `wn-reviewer` en passe ciblée, puis Codex sur la v0.1 des positions. Chacune est consignée au dossier privé avec ses corrections.
+  - **Positions d'expert.** 8, en v0.1 puis v0.2 au dossier privé. Les sources de la v0.2 sont exactement les 96 claims étiquetés. La v0.2, signée par le responsable le 2026-11-05, fait foi.
+  - **Suite.** Huit sous-dossiers du besoin 2 sur dix sont clos. Restent les deux candidats à arbitrer ; la fiche d'usage du dossier se fera dans un lot à part.
