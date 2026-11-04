@@ -1783,6 +1783,16 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // production le 2026-11-03 (one-off Scalingo détaché, lecture seule) : 23/23
   // `VALIDE`, `prescriptif`, actifs, `v1.0`, aucun supplanté. Aucun claim ajouté
   // ni retiré. Ordre tenu : la relecture a précédé la recopie.
+  //
+  // RE-SIGNÉE UNE SECONDE FOIS LE 2026-11-04 ([[D-433]], lot t60), SUR
+  // ATTESTATION DU PRATICIEN (« j'atteste », dans la session du lot). Le
+  // périmètre ne change pas de forme ; seul le registre des fenêtres grandit,
+  // de quinze à dix-neuf instruments : les quatre fenêtres de déclencheur de
+  // D-433 §2 (`Q_MOD_01` 21, `Q_MOD_03` 14, `Q_INF_03` 14, `Q_ALI_01` 90),
+  // recopiées telles quelles. Relu avant la recopie : ces quatre valeurs, et la
+  // contre-preuve que règles, grilles et quinze fenêtres de D-430 hachent
+  // encore exactement l'empreinte précédente (`f10102a5…`). Aucun claim ajouté
+  // ni retiré.
   dateValidation: '2026-11-04T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
@@ -1798,6 +1808,9 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //   · 2026-09-14 — `2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd`
   //     (seconde attestation : RÈGLES + GRILLES + blocs `scoring` entiers ;
   //     règles à `repetition` de 365 jours)
+  //   · 2026-11-04 — `f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7`
+  //     (D-430, lot t59 : `{ regles, grilles, fenetres }`, quinze fenêtres
+  //     de cible ; déclencheur lu sans date)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1813,7 +1826,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: 'f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7',
+  shaPerimetre: 'a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
@@ -1866,14 +1879,19 @@ export const GRILLES_ORIENTATION = grillesCitees(ORIENTATION_RULES_V1);
  * proposent l'instrument : une cible ne peut plus être tenue pour couverte par
  * une règle et reproposée par une autre.
  *
- * LES QUINZE VALEURS SONT DES ARBITRAGES WELLNEURO, ET NOMMÉES COMME TELLES
- * ([[D-430]] §2) : aucune source ne fonde une durée de couverture, et une
- * période de rappel n'est pas une fenêtre de fraîcheur. Recopiées telles
- * quelles de la table de la décision, dans son ordre ; un banc les épingle une
- * à une. Le jour anniversaire couvre encore (comparaison stricte côté moteur).
+ * LES DIX-NEUF VALEURS SONT DES ARBITRAGES WELLNEURO, ET NOMMÉES COMME TELLES
+ * ([[D-430]] §2, [[D-433]] §2) : aucune source ne fonde une durée de
+ * couverture, et une période de rappel n'est pas une fenêtre de fraîcheur.
+ * Recopiées telles quelles des tables des deux décisions, dans leur ordre ; un
+ * banc les épingle une à une. Le jour anniversaire couvre encore (comparaison
+ * stricte côté moteur).
  *
- * UNE TABLE INCOMPLÈTE SE REFUSE ([[D-430]] §3) : une règle qui vise un
- * instrument absent d'ici ne se signe pas — `instrumentsSansFenetre` est
+ * LA MÊME FENÊTRE VAUT POUR L'INSTRUMENT CIBLE ET DÉCLENCHEUR ([[D-433]] §1) :
+ * au-delà, une passation cesse de couvrir sa cible, ET le déclencheur qui la
+ * lit n'est plus évalué — la règle n'est ni déclenchée ni écartée.
+ *
+ * UNE TABLE INCOMPLÈTE SE REFUSE ([[D-430]] §3, [[D-433]] §6) : une règle qui
+ * vise ou lit un instrument absent d'ici ne se signe pas — `instrumentsSansFenetre` est
  * rejoué par un banc ET par `tableSignee()`, si bien qu'une telle table éteint
  * l'orientation au lieu d'être servie. Aucun repli implicite (ni les 365 jours,
  * ni une couverture sans horizon).
@@ -1897,6 +1915,12 @@ export const FENETRES_FRAICHEUR_ORIENTATION: Readonly<Record<string, RepetitionO
   Q_STR_05: { delaiJours: 21 }, // BMS-10
   Q_STR_06: { delaiJours: 90 }, // Karasek
   Q_STR_08: { delaiJours: 90 }, // WART
+  // Quatre instruments qui ne sont que DÉCLENCHEURS ([[D-433]] §2) — mêmes
+  // arbitrages sans source, recopiés tels quels de la table de la décision.
+  Q_MOD_01: { delaiJours: 21 }, // mode de vie SIIN
+  Q_MOD_03: { delaiJours: 14 }, // plaintes actuelles
+  Q_INF_03: { delaiJours: 14 }, // DNST SIIN
+  Q_ALI_01: { delaiJours: 90 }, // enquête alimentaire SIIN — une seule fenêtre
 };
 
 /** Fenêtre lisible : un entier strictement positif de jours, sinon absente. */
@@ -1905,25 +1929,42 @@ export function fenetreValide(fenetre: RepetitionOrientation | undefined): fenet
 }
 
 /**
- * Instruments visés par une suggestion de la table et dépourvus de fenêtre
- * valide — triés, dédoublonnés. Vide = table complète ([[D-430]] §3).
+ * Ce qui, dans la table, devrait avoir une fenêtre valide et n'en a pas —
+ * trié, dédoublonné. Vide = table complète ([[D-430]] §3, [[D-433]] §6).
+ *
+ * TROIS SOURCES, UN SEUL CONTRÔLE, rejoué par le banc ET par `tableSignee()` :
+ * - l'instrument visé par une suggestion (cible, [[D-430]]) ;
+ * - l'instrument lu par un déclencheur, branches d'un `ou` comprises
+ *   ([[D-433]] §6) ;
+ * - le PACK visé par une suggestion, rendu par son `packId`. Sa composition
+ *   vit en base (`packs.qids`) et n'arrive qu'à l'exécution : la fenêtre de
+ *   ses membres NE PEUT PAS se vérifier à la signature, et une exhaustivité
+ *   qu'on ne sait pas prouver se refuse. Remarque P2 de la revue de #1849 :
+ *   la rédaction précédente laissait passer ce cas en silence. Aucune règle
+ *   ne vise un pack depuis le 2026-08-06, donc rien ne change aujourd'hui ;
+ *   en réintroduire une referme le verrou jusqu'à ce que ce contrôle sache
+ *   lire une composition.
  *
  * TOUTES LES RÈGLES, quel que soit leur statut : la signature couvre la table
  * entière, et une règle repassée en `publiee` ne doit pas rouvrir le défaut.
- *
- * LES PACKS N'Y ENTRENT PAS, faute de composition connue ici : elle n'arrive
- * qu'à l'exécution (`compositionPacks`). Le moteur tient ce cas de son côté —
- * un membre de pack sans fenêtre ne couvre jamais. La table n'en vise aucun.
  */
 export function instrumentsSansFenetre(
   regles: readonly OrientationRule[],
   fenetres: Readonly<Record<string, RepetitionOrientation>>,
 ): string[] {
   const manquants = new Set<string>();
+  const verifier = (qid: string) => {
+    if (!fenetreValide(Object.hasOwn(fenetres, qid) ? fenetres[qid] : undefined)) manquants.add(qid);
+  };
   for (const regle of regles) {
     for (const suggestion of regle.suggestions) {
-      const qid = suggestion.questionnaireId;
-      if (qid && !fenetreValide(Object.hasOwn(fenetres, qid) ? fenetres[qid] : undefined)) manquants.add(qid);
+      if (suggestion.questionnaireId) verifier(suggestion.questionnaireId);
+      if (suggestion.packId) manquants.add(suggestion.packId);
+    }
+    for (const declencheur of regle.declencheurs) {
+      for (const feuille of feuillesDuDeclencheur(declencheur)) {
+        if (estFeuilleInstrument(feuille)) verifier(feuille.idQuestionnaire);
+      }
     }
   }
   return [...manquants].sort();

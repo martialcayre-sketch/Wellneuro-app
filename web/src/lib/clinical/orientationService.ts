@@ -8,7 +8,11 @@ import {
   instrumentsSansFenetre,
 } from '@/lib/clinical/orientationRulesV1';
 import { constatsContradictionsPourDossier, contradictionsActives } from '@/lib/clinical/contradictionsService';
-import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import {
+  evaluerOrientationDetaillee,
+  type RecommandationExploration,
+  type RegleNonEvaluee,
+} from '@/lib/clinical/orientationEngine';
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -172,6 +176,12 @@ export type ResultatOrientation =
       recommandations: RecommandationServie[];
       /** Vide quand aucune proposition n'est écartée — jamais absent. */
       ecartees: PropositionEcartee[];
+      /**
+       * Règles ni déclenchées ni écartées : un déclencheur lit une passation
+       * hors de la fenêtre de son instrument ([[D-433]] §3). Vide, jamais
+       * absent — même raison que `ecartees` (`DC-24`).
+       */
+      reglesNonEvaluees: RegleNonEvaluee[];
       arret: ProvenanceArret | null;
     };
 
@@ -501,7 +511,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     ),
   }));
 
-  const recommandations = evaluerOrientation({
+  const { recommandations, reglesNonEvaluees } = evaluerOrientationDetaillee({
     reponses: reponsesRecalculees,
     idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
     regles: ORIENTATION_RULES_V1,
@@ -655,6 +665,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     sha256: ORIENTATION_RULES_SHA256,
     recommandations: recommandationsVisibles,
     ecartees,
+    reglesNonEvaluees,
     // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
     // autrement indiscernables à l'audit — et une extinction est précisément ce
     // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la

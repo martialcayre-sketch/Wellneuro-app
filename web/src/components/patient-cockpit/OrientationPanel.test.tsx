@@ -185,6 +185,46 @@ describe('OrientationPanel', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  // D-433 §3 — libellé validé par le responsable le 2026-11-04 (lot t60). Une
+  // ligne par passation en cause, les règles regroupées sous elle.
+  const NON_EVALUEES = [
+    { regleId: 'R2-MOD-01', passations: [{ idQuestionnaire: 'Q_MOD_01', dateReponse: '2026-09-12T12:00:00.000Z', fenetreJours: 21 }] },
+    { regleId: 'R2-MOD-02', passations: [{ idQuestionnaire: 'Q_MOD_01', dateReponse: '2026-09-12T12:00:00.000Z', fenetreJours: 21 }] },
+  ];
+
+  it('liste vide : ne dit pas « aucune exploration proposée » sur des règles non évaluées', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: NON_EVALUEES });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(
+      'Aucune exploration n’est proposée sur les passations à jour. Certaines règles n’ont pas pu être évaluées (ci-dessous).',
+    )).toBeTruthy();
+    expect(screen.queryByText(/aucune exploration complémentaire/i)).toBeNull();
+    expect(screen.getByText('Règles non évaluées : passation trop ancienne')).toBeTruthy();
+    expect(screen.getByText(/, rempli le 12\/09\/2026 : au-delà de sa fenêtre de 21 jours\. 2 règles non évaluées\.$/)).toBeTruthy();
+    expect(screen.getByText('R2-MOD-01, R2-MOD-02')).toBeTruthy();
+    expect(screen.getByText(/ne vaut ni signal ni absence de trouble : ces règles ne sont ni\s+déclenchées ni écartées\. La faire repasser reste votre décision\./)).toBeTruthy();
+  });
+
+  it('liste non vide : le bloc des règles non évaluées est rendu aussi', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [NON_EVALUEES[0]] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règles non évaluées : passation trop ancienne')).toBeTruthy();
+    expect(screen.getByText(/1 règle non évaluée\.$/)).toBeTruthy();
+  });
+
+  it('aucun bloc quand toutes les règles sont évaluées', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Index de qualité du sommeil de Pittsburgh/i)).toBeTruthy();
+    expect(screen.queryByText(/Règles non évaluées/)).toBeNull();
+  });
+
   it('rend les recommandations dans l’ordre servi, avec le sha256', async () => {
     stubFetch(ACTIF);
 

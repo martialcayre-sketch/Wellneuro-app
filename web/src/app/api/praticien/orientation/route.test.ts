@@ -37,12 +37,25 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 // le moteur s'en sert pour distinguer une feuille d'instrument d'une borne
 // d'âge ou d'un drapeau, et une version fabriquée ici ferait diverger le banc
 // du comportement réel au premier ajout de variante.
-vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/clinical/orientationRulesV1')>()),
-  ORIENTATION_METADATA: mockMeta,
-  ORIENTATION_RULES_V1: mockRegles,
-  ORIENTATION_RULES_SHA256: 'sha-test',
-}));
+//
+// LE CHEMIN PACK EST DORMANT, ET LE VERROU LE REFUSE DEPUIS [[D-433]] §6 : une
+// suggestion de pack ne se signe plus, la fenêtre de ses membres ne se
+// vérifiant pas à la signature (remarque P2 de la revue de #1849). Les cas de
+// ce banc qui servent un pack — traduction `id_pack`, filtre d'administrabilité
+// — protègent un code qui rouvrira avec lui : ici SEULEMENT, le contrôle ignore
+// les packs, et reste réel pour tout le reste. Le refus lui-même est épinglé
+// par `orientationRulesV1.test.ts` et `orientationService.test.ts`.
+vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/orientationRulesV1')>();
+  return {
+    ...reel,
+    ORIENTATION_METADATA: mockMeta,
+    ORIENTATION_RULES_V1: mockRegles,
+    ORIENTATION_RULES_SHA256: 'sha-test',
+    instrumentsSansFenetre: (...args: Parameters<typeof reel.instrumentsSansFenetre>) =>
+      reel.instrumentsSansFenetre(...args).filter(id => !id.startsWith('pack_')),
+  };
+});
 
 import { GET } from './route';
 
@@ -80,9 +93,15 @@ describe('GET /api/praticien/orientation', () => {
     // Par défaut aucune consultation : les déclencheurs `drapeau` ne portent
     // pas, ce qui est le cas fail-closed attendu.
     prisma.consultation.findFirst.mockResolvedValue(null);
+    // Horloge figée près des fixtures ([[D-433]]) : un déclencheur au-delà de
+    // la fenêtre de son instrument n'est plus évalué, et les passations de
+    // juillet de ce banc vieilliraient sinon avec le calendrier.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-21T12:00:00.000Z'));
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllEnvs();
   });
 
@@ -217,6 +236,35 @@ describe('GET /api/praticien/orientation', () => {
       });
       expect(prisma.pack.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+      // Vide, jamais absent ([[D-433]] §3) : le déclencheur est frais.
+      expect(payload.reglesNonEvaluees).toEqual([]);
+    });
+
+    // D-433 §3 : un déclencheur au-delà de la fenêtre de son instrument (PSS-10,
+    // 30 jours) ne fonde rien, et la route sert la règle NON ÉVALUÉE avec la
+    // passation en cause — ni recommandation, ni silence.
+    it('un déclencheur périmé sert la règle non évaluée, sans recommandation', async () => {
+      vi.setSystemTime(new Date('2026-09-01T12:00:00.000Z'));
+      mockRegles.push({
+        id: 'R-TEST-PERIME',
+        statut: 'publiee',
+        declencheurs: [
+          { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } },
+        ],
+        suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'approfondissement',
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.actif).toBe(true);
+      expect(payload.recommandations).toEqual([]);
+      expect(payload.reglesNonEvaluees).toEqual([{
+        regleId: 'R-TEST-PERIME',
+        passations: [{ idQuestionnaire: 'Q_STR_02', dateReponse: '2026-07-20T10:00:00.000Z', fenetreJours: 30 }],
+      }]);
     });
 
     it('aucune réponse : recommandations vides, jamais une erreur', async () => {

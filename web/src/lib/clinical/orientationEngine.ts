@@ -1,6 +1,6 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
-import { estFeuilleInstrument, fenetreValide } from './orientationRulesV1';
+import { estFeuilleInstrument, feuillesDuDeclencheur, fenetreValide } from './orientationRulesV1';
 import type { EtatPopulation } from '@/lib/consultation/etatPopulation';
 import type {
   OrientationDeclencheur,
@@ -156,6 +156,43 @@ export type ExtinctionRecommandation = {
   claims: { claimId: string; versionClaim: string }[];
 };
 
+/**
+ * Une passation qu'un déclencheur lit, et qui a dépassé la fenêtre de son
+ * instrument ([[D-433]] §1).
+ *
+ * `fenetreJours: null` = instrument sans fenêtre valide. `tableSignee()` refuse
+ * une telle table ([[D-433]] §6), le cas n'arrive donc pas en production ; un
+ * appelant hors service qui le produit reçoit le même statut, sans nombre
+ * inventé.
+ */
+export type PassationPerimee = {
+  idQuestionnaire: string;
+  /** ISO 8601 de la dernière passation, celle que le déclencheur lirait. */
+  dateReponse: string;
+  fenetreJours: number | null;
+};
+
+/**
+ * UNE RÈGLE NI DÉCLENCHÉE NI ÉCARTÉE ([[D-433]] §3) : un de ses déclencheurs
+ * lit une passation trop ancienne, et aucun autre n'est lu frais et non
+ * atteint.
+ *
+ * ELLE NE PRODUIT AUCUNE RECOMMANDATION. Un signal expiré ne vaut ni score
+ * normal ni absence de trouble (`DC-24`). Il ne fonde pas non plus une
+ * proposition. Le motif nomme les passations en cause, pour que le praticien
+ * voie pourquoi la règle s'est tue.
+ */
+export type RegleNonEvaluee = {
+  regleId: string;
+  passations: PassationPerimee[];
+};
+
+export type ResultatOrientationDetaille = {
+  recommandations: RecommandationExploration[];
+  /** Dans l'ordre de la table. Vide sans horloge ([[D-433]] §5). */
+  reglesNonEvaluees: RegleNonEvaluee[];
+};
+
 export type EntreeOrientation = {
   reponses: ReponseOrientation[];
   /**
@@ -183,7 +220,9 @@ export type EntreeOrientation = {
    *
    * ABSENT = AUCUNE PÉREMPTION, et c'est le sens fail-closed. Sans horloge, une
    * passation exploitable couvre sa cible comme avant ce lot : on ne re-propose
-   * pas une exploration faute de savoir quel jour on est.
+   * pas une exploration faute de savoir quel jour on est. Le déclencheur se lit
+   * alors sans date, comme la cible ([[D-433]] §5) : aucune règle ne s'éteint
+   * faute d'horloge.
    */
   maintenantMs?: number;
   /**
@@ -203,6 +242,10 @@ export type EntreeOrientation = {
    * parti de « composition de pack inconnue = jamais couverte », et n'adopte
    * aucun des deux replis que [[D-430]] §3 écarte (les 365 jours implicites, la
    * couverture sans horizon).
+   *
+   * LE DÉCLENCHEUR LIT LA MÊME FENÊTRE ([[D-433]] §1). Avec une horloge, un
+   * déclencheur dont la passation la dépasse — ou dont l'instrument n'en a pas
+   * — n'est pas évalué : sa règle part dans `reglesNonEvaluees`.
    */
   fenetres?: Readonly<Record<string, RepetitionOrientation>>;
   /**
@@ -1254,10 +1297,22 @@ function passationExploitable(
   // comportement précède ce lot. Écrire un garde inatteignable aurait fait
   // croire à une protection qui n'existe pas.
   if (!fraicheur) return true;
-  const fenetre = fraicheur.fenetres && Object.hasOwn(fraicheur.fenetres, questionnaireId)
-    ? fraicheur.fenetres[questionnaireId]
+  return dansLaFenetre(reponse, fraicheur) === true;
+}
+
+/**
+ * La passation est-elle dans la fenêtre de SON instrument ? `true`, `false`, ou
+ * `null` quand l'instrument n'a pas de fenêtre valide.
+ *
+ * UNE SEULE COMPARAISON POUR LA CIBLE ET LE DÉCLENCHEUR ([[D-433]] §1, §4) :
+ * les deux lisent la même fenêtre et le même jour anniversaire.
+ */
+function dansLaFenetre(reponse: ReponseOrientation, fraicheur: FraicheurCible): boolean | null {
+  const id = reponse.idQuestionnaire;
+  const fenetre = fraicheur.fenetres && Object.hasOwn(fraicheur.fenetres, id)
+    ? fraicheur.fenetres[id]
     : undefined;
-  if (!fenetreValide(fenetre)) return false;
+  if (!fenetreValide(fenetre)) return null;
   const faitLeMs = Date.parse(reponse.dateReponse);
 
   // STRICTEMENT SUPÉRIEUR, comme côté biologie : le jour anniversaire du délai
@@ -1265,6 +1320,45 @@ function passationExploitable(
   // le motive, et les deux tables cesseraient de se lire pareil.
   const ageJours = (fraicheur.maintenantMs - faitLeMs) / JOUR_MS;
   return ageJours <= fenetre.delaiJours;
+}
+
+/**
+ * Les passations PÉRIMÉES que ce déclencheur lit — vide si aucune, ou sans
+ * horloge ([[D-433]] §5).
+ *
+ * Une branche de `ou` compte comme une feuille : chacune lit son instrument. Un
+ * instrument jamais passé n'est pas périmé, c'est une lacune d'une autre sorte,
+ * que le moteur traite déjà comme avant.
+ */
+function passationsPerimeesDuDeclencheur(
+  declencheur: OrientationDeclencheur,
+  dernieres: Map<string, ReponseOrientation>,
+  fraicheur: FraicheurCible | undefined,
+): PassationPerimee[] {
+  if (!fraicheur) return [];
+  const perimees: PassationPerimee[] = [];
+  for (const feuille of feuillesDuDeclencheur(declencheur)) {
+    if (!estFeuilleInstrument(feuille)) continue;
+    if (perimees.some(p => p.idQuestionnaire === feuille.idQuestionnaire)) continue;
+    const reponse = dernieres.get(feuille.idQuestionnaire);
+    if (!reponse) continue;
+    const fraiche = dansLaFenetre(reponse, fraicheur);
+    if (fraiche === true) continue;
+    const fenetre = fraicheur.fenetres?.[feuille.idQuestionnaire];
+    perimees.push({
+      idQuestionnaire: feuille.idQuestionnaire,
+      dateReponse: reponse.dateReponse,
+      fenetreJours: fraiche === null || !fenetre ? null : fenetre.delaiJours,
+    });
+  }
+  return perimees;
+}
+
+/** Horloge et registre réunis, ou rien sans horloge — cible et déclencheur. */
+function fraicheurDe(entree: EntreeOrientation): FraicheurCible | undefined {
+  return typeof entree.maintenantMs === 'number'
+    ? { maintenantMs: entree.maintenantMs, fenetres: entree.fenetres }
+    : undefined;
 }
 
 /**
@@ -1283,10 +1377,7 @@ function cibleDejaCouverte(
   // propose ([[D-430]] §1, qui amende [[D-180]] point 3). Elle est donc la même
   // quelle que soit la règle déclenchée : une cible n'est plus tenue pour
   // couverte par l'une et reproposée par l'autre.
-  const fraicheur: FraicheurCible | undefined =
-    typeof entree.maintenantMs === 'number'
-      ? { maintenantMs: entree.maintenantMs, fenetres: entree.fenetres }
-      : undefined;
+  const fraicheur = fraicheurDe(entree);
 
   if (cible.type === 'questionnaire') return passationExploitable(dernieres, cible.questionnaireId, fraicheur);
   const composition = entree.compositionPacks?.[cible.packId];
@@ -1318,9 +1409,24 @@ function packAdministrable(entree: EntreeOrientation, packId: PackId): boolean {
 }
 
 export function evaluerOrientation(entree: EntreeOrientation): RecommandationExploration[] {
+  return evaluerOrientationDetaillee(entree).recommandations;
+}
+
+/**
+ * Les recommandations, et les règles NON ÉVALUÉES faute de passation fraîche
+ * ([[D-433]] §3). `evaluerOrientation` n'en rend que la première moitié, pour
+ * ses lecteurs historiques.
+ */
+export function evaluerOrientationDetaillee(entree: EntreeOrientation): ResultatOrientationDetaille {
   const dernieres = derniereReponseParQuestionnaire(entree.reponses);
   const assignes = new Set(entree.idsQuestionnairesAssignes);
   const parCible = new Map<string, RecommandationExploration>();
+  const reglesNonEvaluees: RegleNonEvaluee[] = [];
+  const fraicheur = fraicheurDe(entree);
+  const dossier: ContexteDossier = {
+    ageAnnees: entree.ageAnnees,
+    etatPopulation: entree.etatPopulation,
+  };
 
   for (const regle of entree.regles) {
     if (regle.statut !== 'publiee') continue;
@@ -1331,20 +1437,43 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
 
     // ET logique : tous les déclencheurs doivent être atteints. Un `ou` compte
     // pour UN déclencheur : atteint dès qu'une branche complète l'est.
+    //
+    // TROIS ISSUES PAR DÉCLENCHEUR depuis [[D-433]] : atteint, non atteint, ou
+    // NON ÉVALUÉ parce qu'il lit une passation hors de sa fenêtre. Le
+    // déclencheur se juge alors sur les seules passations fraîches : une
+    // branche fraîche d'un `ou` peut encore l'atteindre. Sinon il n'est ni
+    // atteint ni écarté.
+    //
+    // UN SEUL DÉCLENCHEUR NON ATTEINT ÉCARTE LA RÈGLE, même si un autre n'est
+    // pas évalué : un ET lu faux sur une donnée fraîche est faux quelle que
+    // soit la donnée périmée. La règle n'est NON ÉVALUÉE que si aucun
+    // déclencheur n'est lu faux et qu'au moins un ne l'est pas.
     const conditions: string[] = [];
-    let tousAtteints = true;
+    const perimees: PassationPerimee[] = [];
+    let unNonAtteint = false;
     for (const declencheur of regle.declencheurs) {
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, {
-        ageAnnees: entree.ageAnnees,
-        etatPopulation: entree.etatPopulation,
-      });
-      if (!condition) {
-        tousAtteints = false;
+      const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheur);
+      const lues = perimeesIci.length === 0
+        ? dernieres
+        : new Map([...dernieres].filter(([qid]) => !perimeesIci.some(p => p.idQuestionnaire === qid)));
+      const condition = evaluerDeclencheur(declencheur, lues, entree.drapeaux, dossier);
+      if (condition) {
+        conditions.push(condition.motif);
+        continue;
+      }
+      if (perimeesIci.length === 0) {
+        unNonAtteint = true;
         break;
       }
-      conditions.push(condition.motif);
+      for (const p of perimeesIci) {
+        if (!perimees.some(q => q.idQuestionnaire === p.idQuestionnaire)) perimees.push(p);
+      }
     }
-    if (!tousAtteints) continue;
+    if (unNonAtteint) continue;
+    if (perimees.length > 0) {
+      reglesNonEvaluees.push({ regleId: regle.id, passations: perimees });
+      continue;
+    }
 
     const motif: MotifOrientation = {
       regleId: regle.id,
@@ -1642,9 +1771,10 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
   // Tri déterministe : priorité croissante, puis cibles les plus motivées,
   // puis clé stable. L'extinction ne déplace RIEN dans cet ordre : une ligne
   // éteinte garde sa place et son rang, c'est son affichage qui change.
-  return retenues.sort((a, b) =>
+  const triees = retenues.sort((a, b) =>
     a.priorite - b.priorite
     || b.motifs.length - a.motifs.length
     || cleCible(a.cible).localeCompare(cleCible(b.cible))
   );
+  return { recommandations: triees, reglesNonEvaluees };
 }

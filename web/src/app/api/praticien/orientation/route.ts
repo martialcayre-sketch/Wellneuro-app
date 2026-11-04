@@ -9,6 +9,7 @@ import {
   type PropositionEcartee,
   type RecommandationServie,
 } from '@/lib/clinical/orientationService';
+import type { RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 
 // Orientation des explorations NNPP2 (campagne certification corpus, lot 7) —
 // LECTURE SEULE. Évalue la table de règles signée sur les scores déjà stockés
@@ -43,6 +44,8 @@ export type OrientationApiResponse =
        * le repli sans distinguer les deux (`DC-24`).
        */
       ecartees: PropositionEcartee[];
+      /** Règles non évaluées faute de passation fraîche ([[D-433]] §3) — vide, jamais absent. */
+      reglesNonEvaluees: RegleNonEvaluee[];
     }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
@@ -92,6 +95,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       sha256: resultat.sha256,
       recommandations: resultat.recommandations,
       ecartees: resultat.ecartees,
+      reglesNonEvaluees: resultat.reglesNonEvaluees,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de

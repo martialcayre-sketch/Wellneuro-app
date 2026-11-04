@@ -5,7 +5,7 @@ import type { OrientationApiResponse } from '@/app/api/praticien/orientation/rou
 import type { EcartementPropositionResponse } from '@/app/api/praticien/orientation/ecartement/route';
 import type { PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
 import { cleCibleEcartement, motifRecevable, MOTIF_LONGUEUR_MAX } from '@/lib/orientation/ecartements';
-import type { CibleExploration } from '@/lib/clinical/orientationEngine';
+import type { CibleExploration, PassationPerimee, RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 import type {
   FileEnvoiApiResponse,
   MutateFileEnvoiResponse,
@@ -433,6 +433,56 @@ export function OrientationPanel({
   );
 
   /**
+   * Les règles NON ÉVALUÉES — [[D-433]] §3, libellé validé par le responsable
+   * le 2026-11-04 (lot t60).
+   *
+   * Le moteur rend une ligne par règle ; l'écran les regroupe par passation en
+   * cause, sinon les sept règles de `Q_MOD_01` répéteraient sept fois le même
+   * motif. Le regroupement ne calcule rien : il ne fait que ranger ce que la
+   * route a servi, dans son ordre.
+   *
+   * RENDU DANS LES DEUX BRANCHES, liste vide comprise : c'est là qu'il compte
+   * le plus, puisque l'écran dirait sinon « aucune exploration proposée » sur
+   * des règles qu'il n'a pas pu évaluer (`DC-24`).
+   */
+  const reglesNonEvaluees: RegleNonEvaluee[] =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.reglesNonEvaluees)
+      ? reponse.reglesNonEvaluees
+      : [];
+  const parPassation = new Map<string, { passation: PassationPerimee; regles: string[] }>();
+  for (const regle of reglesNonEvaluees) {
+    for (const passation of regle.passations) {
+      const groupe = parPassation.get(passation.idQuestionnaire);
+      if (groupe) groupe.regles.push(regle.regleId);
+      else parPassation.set(passation.idQuestionnaire, { passation, regles: [regle.regleId] });
+    }
+  }
+  const blocNonEvaluees = parPassation.size > 0 ? (
+    <div className="mt-3 rounded-lg border border-border p-2">
+      <p className="text-xs font-medium text-foreground">Règles non évaluées : passation trop ancienne</p>
+      <ul className="mt-2 space-y-2">
+        {[...parPassation.values()].map(({ passation, regles }) => {
+          const titre = CATALOGUE_DEFINITIONS[passation.idQuestionnaire]?.titre ?? passation.idQuestionnaire;
+          const fenetre = passation.fenetreJours === null
+            ? 'sans fenêtre de fraîcheur connue'
+            : `au-delà de sa fenêtre de ${passation.fenetreJours} jours`;
+          const compte = `${regles.length} règle${regles.length > 1 ? 's' : ''} non évaluée${regles.length > 1 ? 's' : ''}`;
+          return (
+            <li key={passation.idQuestionnaire} className="text-xs text-foreground">
+              <p>{`${titre}, rempli le ${jourLisible(passation.dateReponse)} : ${fenetre}. ${compte}.`}</p>
+              <p className="mt-0.5 font-mono text-2xs text-muted-foreground">{regles.join(', ')}</p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-2xs text-muted-foreground">
+        Une passation trop ancienne ne vaut ni signal ni absence de trouble : ces règles ne sont ni
+        déclenchées ni écartées. La faire repasser reste votre décision.
+      </p>
+    </div>
+  ) : null;
+
+  /**
    * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
    *
    * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
@@ -552,11 +602,14 @@ export function OrientationPanel({
           <p className="mt-2 text-xs text-muted-foreground">
             {ecartees.length > 0
               ? 'Plus aucune exploration à examiner : celles que la table propose pour ce patient ont toutes été écartées.'
-              : 'Aucune exploration complémentaire n’est proposée par la table en vigueur pour ce patient.'}
+              : parPassation.size > 0
+                ? 'Aucune exploration n’est proposée sur les passations à jour. Certaines règles n’ont pas pu être évaluées (ci-dessous).'
+                : 'Aucune exploration complémentaire n’est proposée par la table en vigueur pour ce patient.'}
           </p>
           {issueGeste?.succes && (
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
+          {blocNonEvaluees}
           {blocEcartees}
         </>
       ) : reponse?.ok && reponse.actif === true ? (
@@ -773,6 +826,7 @@ export function OrientationPanel({
             // geste a été enregistré.
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
+          {blocNonEvaluees}
           {blocEcartees}
           {/* Le même bouton que la file de la Bibliothèque, sous les
               suggestions (demande propriétaire 2026-08-09) : il envoie TOUT le
