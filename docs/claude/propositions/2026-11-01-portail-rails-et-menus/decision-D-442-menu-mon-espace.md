@@ -1,0 +1,107 @@
+# Texte de décision — D-442 « Menu Mon espace » (brouillon L3)
+
+> Brouillon rédigé à l'ouverture du lot L3 de l'audit « rails et menus »
+> (`README.md`, chapitres 11, 15 et 18). Numéro réservé le 2026-11-04 par
+> `node scripts/wn-reserver-decision.mjs` (`refs/tags/reserve/D-442`, [[D-370]]
+> §1). Relu et accepté mot pour mot par le responsable le 2026-11-04, avant
+> tout code (« Accepté, coder L3 »). **Entré au registre avec L3**, à son rang,
+> comme [[D-423]] avec L2 : `docs/DECISIONS.md` fait foi ; ce brouillon reste
+> la trace de l'ouverture de L3.
+
+### D-442 — Menu patient « Mon espace » : un bouton « Menu » dans l'en-tête ouvre, sur chaque page de session, la liste des espaces du hub ; majeurs seuls, derrière un drapeau éteint
+
+- Date : 2026-11-04
+- Statut : accepté mot pour mot par le responsable le 2026-11-04 ; entré au
+  registre avec L3. Arbitrages du responsable du
+  2026-11-01 (Q1, chapitre 14 de l'audit), du 2026-11-02 (Q4, Q15, Q16, Q21,
+  Q24, chapitre 15), du 2026-11-04 (Q39, chapitre 17 ; Q40 à Q43,
+  chapitre 18), sur questions à options fermées.
+- Domaine : portail patient, en-tête de `web/src/app/portail/layout.tsx`,
+  composant client neuf sous `web/src/components/patient/`. Lot L3 de l'audit
+  `docs/claude/propositions/2026-11-01-portail-rails-et-menus/`.
+- **Précise** A6-R1 (REGISTRE_FRONTIERES) côté patient et
+  `.claude/rules/frontend-ui.md` (section « Superposition ») au §7.
+  **Applique** [[D-423]] §2 et §4 (contenu et activation, §2 et §3),
+  [[D-283]] §5 (§1), [[D-288]] §1 (§8), [[D-333]] §1 (§2), [[D-293]] (§4).
+- **Ne touche pas** :
+  - les routes, les sondes, les drapeaux existants ; aucune lecture neuve :
+    le menu lit `api/portail/trust/etat` et `api/portail/assignations`, déjà
+    servies au hub, inchangées ;
+  - `[token]/page.tsx`, l'écran « Merci ! » et `/api/portail/session` (Q21) ;
+    le layout ne lit toujours que la signature du cookie, aucune base ;
+  - le rail et le shell praticien (`SidebarRail`, `NavBar`,
+    `MobileBottomNav`) ; le gel de D/49 ;
+  - la barre basse (L4) et le rail latéral (L5) ;
+  - la base : aucune migration.
+
+**§1 — Où paraît le bouton.** Le bouton « Menu » paraît dans l'en-tête, après
+le mot-symbole, sur toutes les pages de session sous `/portail/{token}/`, le
+hub et les écrans de saisie compris (Q41). Il ne paraît jamais sur la
+connexion, `lien/indisponible` ni les écrans de `[token]/page.tsx`, ni tant
+que « Avant de commencer » ou la date de naissance ne sont pas franchis.
+Surface neuve, il est servi au seul dossier **majeur** ([[D-283]] §5 : aucune
+surface neuve à un mineur, âge inconnu traité comme mineur ; Q42) ; la garde
+suit l'âge, pas la clôture (Q36) : un majeur clos a le menu, un mineur clos
+ne l'a pas. Il n'est rendu qu'une fois les deux lectures revenues et
+concordantes ; une lecture en vol ou en échec ne rend pas de bouton.
+
+**§2 — Contenu.** Le panneau porte `<nav aria-label="Mon espace">` et la même
+liste que le hub, de la même source et dans le même ordre ([[D-423]] §2) :
+l'ancre « Mon parcours », puis les groupes « Au jour le jour », « Ce que j’ai
+reçu », « Ce que je transmets », « Avec mon praticien ». Chaque entrée garde
+sa condition et sa sonde, fermées par défaut ; un groupe sans entrée ouverte
+n'a pas d'étiquette. Les sondes sont lues une fois par chargement de page et
+partagées avec le bloc « Autres espaces » du hub : aucune requête n'est
+doublée. Liens de liste, cible de 44 px au moins en `rem` ; aucun compteur,
+aucune icône obligatoire, aucun jeton `--rail-*`. Le menu ne remplace aucun
+accès : « Autres espaces » reste sur le hub, et chaque page garde son retour.
+
+**§3 — Activation.** [[D-423]] §4 s'applique dans le panneau : un seul
+élément porte `aria-current="page"`, choisi sur le segment qui suit
+`/portail/{token}/`. `/questionnaires`, `/questionnaires/[idAssignation]` et
+`/protocole` allument « Mon parcours » ; `/fiches` et `/fiches/[idRemise]`
+l'entrée servie, bibliothèque ou fiches ; `/ce-qui-compte` et
+`/comprehension` « Ouvrir mon dossier à deux voix » ; chaque autre page du
+menu, sa propre entrée ; `/informations` et `/conditions` n'allument rien.
+
+**§4 — Comportement.** Le panneau est un `PanneauSuperpose`
+`theme="patient"`, variante tiroir, largeur `standard`, titré « Mon espace ».
+Il s'ouvre au clic, jamais au survol. Il se ferme par son bouton « Fermer Mon
+espace », par Échap, par un clic sur le voile, au changement de page et avant
+l'impression ; le focus revient au bouton. Le bouton et le panneau ne
+s'impriment pas. Le pied de page, numéros d'urgence compris ([[D-293]]),
+n'est jamais recouvert hors de l'ouverture du panneau.
+
+**§5 — Mot-symbole (Q24).** « Wellneuro » devient un lien d'accueil : vers le
+hub `/portail/{token}/questionnaires` quand le jeton est connu et les murs
+franchis ; vers `/portail/connexion` sur les pages sans jeton, sauf la
+connexion elle-même ; sans lien sur les murs d'entrée et les écrans de
+`[token]/page.tsx`. Son texte ne change pas.
+
+**§6 — Lien d'évitement (Q43).** Chaque page du portail commence par un lien
+« Aller au contenu », visible au focus seulement, vers `<main id="contenu">`.
+
+**§7 — A6-R1 et la règle d'interface.** Côté patient, « une étape à la fois »
+règle le contenu d'une page : une seule chose mise en avant, aucune pile
+d'étapes. Un menu des espaces fermé par défaut, ouvert au seul geste du
+patient, ne l'enfreint pas : il ne met rien en avant et ne fait avancer
+aucune étape. A6-R1 reçoit cette précision, sans autre changement.
+`.claude/rules/frontend-ui.md` reçoit la sienne : le menu « Mon espace » est
+la seule navigation servie par `PanneauSuperpose` ; il en a besoin pour le
+correctif `data-theme` et la garde `theme="patient"`. `NavBar`,
+`MobileBottomNav` et `InboxQuestionnaires` restent dehors.
+
+**§8 — Exécution.** Surface neuve au sens de [[D-288]] §1 : livrée derrière
+le drapeau serveur `WN_PORTAIL_MENU`, éteint, lu par `portail/layout.tsx` à
+chaque requête, inscrit dans `docs/FEATURE_FLAGS.md`. Il prend une place de
+la file C au-delà de la place 11, après le constat de l'activation
+précédente (porte 18) ; il est posé par le responsable. Drapeau fermé, le
+portail est celui d'avant : ni bouton, ni lien d'accueil, ni lien
+d'évitement. Constat attendu : dossier de test majeur, mineur et clos, à
+390 px et en confort 112,5 %, une page imprimée.
+
+Textes patient acceptés mot pour mot le 2026-11-04 : « Menu » (bouton) ; « Mon espace »
+(titre du panneau et nom de la navigation) ; « Les pages de votre espace. »
+(description du panneau, lue par les lecteurs d'écran seulement) ; « Fermer
+Mon espace » (bouton de fermeture, formé par la primitive) ; « Aller au
+contenu ».
