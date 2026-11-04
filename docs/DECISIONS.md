@@ -79,15 +79,21 @@ Elle ne change que par une décision.
 - Rendez-vous planifié à venir.
 - Dossier qui porte déjà, dans le même Fil, une carte qui demande un
   geste : signal de sécurité, synthèse à relire, à générer ou non
-  transmise, T0 à consigner, reprise. Le Fil ne montre pas deux cartes
-  pour un même dossier.
+  transmise, T0 à consigner, retard, reprise. Le Fil ne montre pas deux
+  cartes pour un même dossier. La carte du retard figure dans cette liste
+  par application de ce principe : la page arbitrée ne la nommait pas.
+  Une carte de geste écartée ou plafonnée hors de l'affichage ne compte
+  pas : seule compte une carte présente dans le Fil servi.
 - Les assignations annulées, qui ne sont pas attendues ([[D-422]] §1).
 
 **§5 — Affichage.** Le plus ancien silence vient d'abord. Le plafond de
 cinq cartes par type, commun au Fil, s'applique. La carte s'écarte comme
 les autres (refus persisté). Sa clé est ancrée sur le dossier et sur la
-date de son dernier pas. Un nouveau pas déplace donc la clé : si le silence
-reprend, la carte revient. Sa place dans l'ordre du Fil n'est pas
+date de son ancre (§2). Pour les situations 1 et 2, avec ou sans la
+situation 3, c'est la date du dernier pas. Pour la situation 3 seule, c'est
+la date d'assignation du plus ancien questionnaire resté sans réponse. Un
+nouveau pas déplace donc la clé, comme la réponse ou l'annulation de ce
+questionnaire : si le silence reprend, la carte revient. Sa place dans l'ordre du Fil n'est pas
 arbitrée : le lot la propose.
 
 **§6 — Textes.** Ils ont été acceptés tels quels.

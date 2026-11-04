@@ -13,7 +13,11 @@ Cadrer, avant tout code, la carte du Fil des dossiers qui n'avancent plus. Péri
   - ligne « Ce qui retient le T0 » ajoutée, par `preconditionsT0PourPatient`, pour les cartes affichées seulement ;
   - règle et textes acceptés tels quels.
 - Ancre : le dernier pas du parcours. Une connexion, un agenda, un e-mail ou une lecture ne comptent pas.
-- Exclusions : dossier clos ou désactivé, rendez-vous à venir, dossier qui porte déjà une carte de geste.
+- Exclusions : dossier clos ou désactivé, rendez-vous à venir, dossier qui porte déjà une carte de geste présente dans le Fil servi.
+- Deux précisions apportées sur la revue PR-Agent (#1852) :
+  - la carte du retard compte parmi les cartes de geste, par application du principe accepté « pas deux cartes pour un même dossier », car la page ne la nommait pas ;
+  - la clé de la carte est donnée par situation (D-440 §5).
+  - Le responsable peut revenir sur la première.
 - Écartée : l'ancre « date de l'étape seule », qui signalait 3 dossiers au T0 de plus à 30 jours, alors qu'un pas avait eu lieu depuis. Écartée aussi l'ancre « activité du patient » : un agenda remettait le compteur à zéro, alors que le dossier attend le cabinet.
 - Page de cadrage, privée : https://claude.ai/artifact/91MVD917VUdmffGN15dmuw. La liste commune porte `20261104-1340-d`, au statut `repondue`.
 
