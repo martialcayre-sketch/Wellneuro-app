@@ -136,7 +136,7 @@ export function AtelierCorpus() {
             — choisir un notebook pour les consulter.
           </p>
         ) : null}
-        {etat === 'chargee' && notebooks.length === 0 ? (
+        {etat === 'chargee' && (notebookChoisi ? visibles : notebooks).length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Aucune source en revue.</p>
         ) : null}
       </section>

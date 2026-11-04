@@ -47,7 +47,9 @@ Le responsable a vérifié #1855 en production, puis demandé le 2026-11-04 :
 - Revue : CodeRabbit en quota. PR-Agent, sur 9a0d84dc, a relevé un constat,
   corrigé : avec une base vide, deux messages s'affichaient (« Aucune source
   à revoir » et « Aucune source en revue »). Le premier exige désormais au
-  moins un notebook.
+  moins un notebook. Second constat, sur 719db160, corrigé lui aussi : un
+  notebook choisi qui ne correspond plus à aucune source laissait l'écran
+  vide. « Aucune source en revue » s'affiche désormais dans ce cas.
 
 ## Problèmes ouverts
 
