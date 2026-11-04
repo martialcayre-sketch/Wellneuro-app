@@ -1,7 +1,7 @@
 ---
 id: "LOT-28"
 titre: "BP-12b — Positions d'expert signées ; arbitrage de conflit persisté"
-statut: "en_cours (2026-11-04) — arbitrages rendus le 2026-11-04 ; D-439 proposée"
+statut: "en_cours (2026-11-04) — arbitrages rendus le 2026-11-04 ; D-439 mergée (#1853), amendée après la contre-revue Codex (arbitrage 6)"
 dépend_de: "LOT-12"
 ---
 
@@ -23,9 +23,12 @@ deux.
 Après le lot, drapeau allumé : à l'atelier, le responsable enregistre une
 position (identifiant `WN-PE-NNNN@vN.M`, claims d'appui, population,
 contenu), la signe par un acte daté, la révise ou la retire ; il arbitre un
-conflit déclaré pour une fiche d'usage, ou révoque cet arbitrage. Au
-cockpit, un conflit déclaré reste affiché avec son escalade, et son
-arbitrage daté se lit à côté. Drapeau éteint, l'atelier et l'affichage
+conflit déclaré pour une fiche d'usage de la liste de ce conflit, ou
+révoque cet arbitrage ; l'arbitrage se lit sur sa fiche, avec la mention
+« à relire » si une de ses références a changé (D-439, A3). Au cockpit,
+seul un conflit déclenché par la proposition de bilan s'affiche, avec son
+escalade ; ses arbitrages éventuels s'y listent étiquetés par fiche, sans
+qu'aucun soit dit applicable au dossier (D-439, A1 et A2). Drapeau éteint, l'atelier et l'affichage
 des arbitrages ne changent rien. **La re-signature de `conflitsSourcesV1`
 n'est pas couverte par ce drapeau** : les conflits des dossiers clos
 qu'elle publie s'affichent au cockpit dès son déploiement, puisque
@@ -79,6 +82,16 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
    relecture intégrale ; jamais par migration, qui publierait le texte au
    dépôt. L'assistant avait d'abord proposé une migration de données ; il
    l'a retirée avant toute écriture.
+6. **Lieu de lecture de l'arbitrage (2026-11-04, après la contre-revue
+   Codex de #1853)** : sur la fiche d'usage, à l'atelier ; le cockpit est
+   inchangé. Il n'affiche que les conflits déclenchés par la proposition de
+   bilan, et leurs arbitrages s'y listent étiquetés par fiche, sans
+   applicabilité au dossier. La conséquence annoncée à l'arbitrage 3
+   (« affiché au cockpit dès le déploiement ») était fausse pour les
+   conflits dont aucun claim n'est cité par la proposition. Écartés :
+   n'admettre que les conflits du bilan (leurs arbitrages par fiche
+   n'auraient pas eu de lecteur) ; raccorder les fiches au dossier (règle
+   de l'étage assistant, BP-19).
 
 ## Périmètre
 
@@ -88,8 +101,10 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
 - PR 3 : code de l'atelier et de l'affichage praticien sous
   `WN_POSITIONS_EXPERT`, né éteint ; bancs.
 - PR 4 : re-signature de `conflitsSourcesV1` sur la déclaration du
-  responsable, affichage de l'arbitrage au cockpit ; chemin clinique,
-  déploiement retenu jusqu'à release-db (D-389 §5).
+  responsable. Chaque conflit y porte sa liste curée de fiches et dit s'il
+  est déclenchable par la proposition de bilan. La PR livre la lecture de
+  l'arbitrage sur la fiche et la liste étiquetée au cockpit (D-439, A1 et
+  A2) ; chemin clinique, déploiement retenu jusqu'à release-db (D-389 §5).
 - Geste du responsable : versement et signature des positions à l'atelier.
 
 ## Hors périmètre
@@ -112,7 +127,10 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
 
 D-439 §7 : release-db constatée ; `conflitsSourcesV1` re-signé ; positions
 des cinq dossiers signées, constatées par conteneur en agrégat ; contrat
-négatif vert.
+négatif vert. Plus, d'après l'amendement : bancs du conflit déclenchable et
+du non déclenchable (A1) ; deux arbitrages d'un même conflit sur deux
+fiches (A2) ; les cinq cas « à relire », soit retrait, remplacement, appui
+périmé, conflit modifié et fiche retirée (A3).
 
 ## Dépendances
 
