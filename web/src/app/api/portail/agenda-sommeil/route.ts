@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { refusSaisieSantePour } from '@/lib/patient/gardeAgeServeur';
+import { refusClotureSuiviPour } from '@/lib/patient/gardeClotureServeur';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import {
   authorizeAgendaPortail,
@@ -178,6 +179,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if (ass.statutReponses === 'verrouille') {
       return refuserEcriture('locked', 'Cet agenda est clôturé.', 409, requestContext);
     }
+    // Dossier clos (arbitrage du 2026-11-04, option A), avant l'âge.
+    const refusCloture = await refusClotureSuiviPour(auth.idPatient);
+    if (refusCloture) return refuserEcriture(refusCloture.reason, refusCloture.error, 409, requestContext);
     // D-284 §3 : questionnaires en pause tant que le patient n'est pas majeur
     // (date de naissance manquante, ou mineur en attente de son circuit).
     const refusAge = await refusSaisieSantePour(auth.idPatient);

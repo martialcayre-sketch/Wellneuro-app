@@ -149,6 +149,12 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
   const [cibleDate, setCibleDate] = useState<string>('');
   const [envoi, setEnvoi] = useState(false);
   const [merci, setMerci] = useState(false);
+  // Compte des envois de la journée : il entre dans la clé de la photo
+  // ([[D-437]] §3, §5), qui se démonte donc — et s'efface — DÈS l'envoi, quelle
+  // qu'en soit l'issue. Une réponse perdue alors que la journée est écrite, une
+  // réponse qui n'arrive jamais, une relecture qui échoue : aucun de ces cas ne
+  // laisse la photo à l'écran, et aucun ne relance le POST.
+  const [envois, setEnvois] = useState(0);
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -204,6 +210,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
 
   async function enregistrer(reponses: JourReponses) {
     setEnvoi(true);
+    setEnvois(n => n + 1);
     // Présent SEULEMENT si cette date porte déjà une journée active : la route
     // refuse un `supersedesJourId` sur une date vierge (409
     // `correction_invalide`) autant qu'une écriture NUE sur une date notée (409
@@ -361,11 +368,12 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
               une abstention relue se réaffiche en abstention, pas en « non ». */}
           {/* La photo du repas ([[D-437]]) : montée sous une clé dérivée de la
               date — changer de date la démonte, donc l'efface. Enregistrer
-              recharge l'écran et quitte la saisie : même effet. Le préfixe
-              n'est pas décoratif : le formulaire, son frère, porte déjà la
-              date nue, et deux frères de même clé se confondent (un banc l'a
-              vu — la photo survivait à l'enregistrement). */}
-          {data.captureRepas === true && <CaptureRepas key={`photo-${cibleDate}`} />}
+              l'efface dès l'envoi, par le compte `envois`, sans attendre la
+              réponse ni la relecture. Le préfixe n'est pas décoratif : le
+              formulaire, son frère, porte déjà la date nue, et deux frères de
+              même clé se confondent (un banc l'a vu — la photo survivait à
+              l'enregistrement). */}
+          {data.captureRepas === true && <CaptureRepas key={`photo-${cibleDate}-${envois}`} />}
           <SaisieJourneeForm
             key={cibleDate}
             initial={journeeVisee?.reponses ?? null}

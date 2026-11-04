@@ -87,6 +87,7 @@ export const MOTIF_GUARD = /^web\/(src\/.+\.guard\.test\.tsx?|prisma\/.+\.guard\
  * banc Vitest qui appelle `readdirSync` soit ici ou soit un `guard`.
  */
 export const BANCS_BALAYAGE = [
+  'web/src/components/patient/agenda-alimentaire/CaptureRepas.test.tsx',
   'web/src/lib/biology-library/candidatsNabm.test.ts',
   'web/src/lib/biology-library/compositionsPreparees.test.ts',
   'web/src/lib/biology-library/import/resolverLibellesV1.test.ts',
