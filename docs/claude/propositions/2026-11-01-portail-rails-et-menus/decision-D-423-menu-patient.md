@@ -76,7 +76,9 @@ entrées sont des liens de liste, cible de 44 px au moins en `rem`, et non
 plus des boutons de 48 px. Aucun compteur, aucune icône obligatoire, aucun
 repli mémorisé, aucun jeton `--rail-*`.
 
-**§3 — Libellés.** Acceptés mot pour mot le 2026-11-02 :
+**§3 — Libellés.** Acceptés mot pour mot le 2026-11-02, l'apostrophe
+typographique de « Ce que j’ai reçu » arbitrée le 2026-11-04 (Q35, chapitre 16
+de l'audit) :
 - noms de groupes : « Au jour le jour », « Ce que j’ai reçu », « Ce que je
   transmets », « Avec mon praticien » ;
 - libellés d'entrée : inchangés, tels que servis au 2026-11-02 ;
