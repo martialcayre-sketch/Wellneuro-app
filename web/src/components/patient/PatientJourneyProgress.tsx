@@ -41,8 +41,9 @@ export function buildJourneySteps(currentId: JourneyStep['id']): JourneyStep[] {
 
 // Anatomie journey de la maquette cible : puce 14 px au-dessus du libellé,
 // étape courante en accent avec halo cuivré, barres de liaison 2 px. Le halo
-// n'est jamais seul porteur : le libellé passe en semibold + sr-only.
-const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: string }> = {
+// n'est jamais seul porteur : le libellé passe en semibold + sr-only. Partagé
+// avec la frise navigable du hub ([[D-423]] §8), qui garde la même anatomie.
+export const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: string }> = {
   done: { dot: 'bg-primary', label: 'text-foreground' },
   current: {
     dot: 'bg-accent shadow-[0_0_0_4px_rgba(178,94,56,.18)]',
@@ -53,7 +54,10 @@ const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: string }> = 
 
 export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {
   return (
-    <ol className="flex items-start overflow-x-auto pb-1 -mx-1 px-1" aria-label="Étapes de votre parcours">
+    // `relative` : le `sr-only` de l'étape est positionné en absolu ; sans
+    // ancêtre positionné, il sortait du défilement de la frise et faisait
+    // déborder la page à 390 px (constat de L2, chapitre 11 de l'audit).
+    <ol className="relative flex items-start overflow-x-auto pb-1 -mx-1 px-1" aria-label="Étapes de votre parcours">
       {steps.map((step, index) => {
         const classes = STATE_CLASSES[step.state];
         return (
