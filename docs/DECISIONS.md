@@ -73,6 +73,139 @@ rayon 08 de la bibliothèque (D/23, arbitrage du 2026-11-03).
 - Conséquences : fragment `changelog.d/2026-11-03-d434-resignature-b9-b12.md` ;
   journal F05 ; plan, §8 (ligne des fiches d'usage du besoin 2).
 
+### D-433 — Fenêtre de fraîcheur du déclencheur : un score déclencheur au-delà de la fenêtre de son instrument n'est plus évalué, avec son motif ; quatre valeurs arbitrées sans source ; complète D-430 (d59)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable a rendu ses arbitrages par questions à
+  options : la portée, le sort d'un signal expiré, le jour anniversaire et
+  l'absence d'horloge le 2026-11-03, les quatre valeurs du §2 le 2026-11-04.
+  Un assistant conversationnel externe a été consulté en recherche
+  approfondie sur ces quatre instruments. Il n'est source d'aucune valeur.
+  La session a vérifié ses références sur PubMed, Europe PMC et la page de
+  NICE.
+- Domaine : le registre des fenêtres par instrument de [[D-430]] §1, et la
+  lecture des déclencheurs par le moteur d'orientation
+  (`orientationEngine.ts`, `dernieres.get(declencheur.idQuestionnaire)`,
+  lue sans date).
+- Complète [[D-430]]. Lève la limite connue de son §6.
+- **Ne touche pas** :
+  - aucun code dans cette décision ;
+  - aucun seuil déclencheur, aucun claim, aucune priorité, aucune cible ;
+  - ni les assignations ni les décisions déjà prises, ni l'historique des
+    passations ;
+  - la biologie ;
+  - aucune migration.
+- Contexte, lu au dépôt :
+  - Sept questionnaires déclenchent les règles de `ORIENTATION_RULES_V1` :
+    `Q_SOM_01`, `Q_STR_02` et `Q_GAS_01` (zone ou couleur), `Q_MOD_01`
+    (sept règles), `Q_MOD_03` (cinq), `Q_INF_03` (deux) et `Q_ALI_01` (une).
+  - Le moteur lit la dernière passation du déclencheur sans regarder sa
+    date : une passation de huit mois déclenche encore.
+  - Le moteur reçoit `maintenantMs`, et `passationExploitable` compare
+    `ageJours <= delaiJours` pour la cible seulement.
+
+**§1 — Le déclencheur prend la fenêtre de son instrument.** Elle vient du
+registre de [[D-430]] §1. La même fenêtre vaut quand l'instrument est cible
+et quand il déclenche. Le PSQI garde donc 30 jours, la PSS-10 30 jours et le
+TFD SIIN 21 jours ([[D-430]] §2). Écartée : une fenêtre propre au rôle de
+déclencheur.
+
+**§2 — Quatre valeurs, en jours.** Ce sont des arbitrages WellNeuro, nommés
+comme tels : aucune source ne fonde une durée de fraîcheur. Le registre de
+[[D-430]] §1 passe de quinze à dix-neuf instruments.
+
+| instrument | consigne | fenêtre |
+|---|---|---|
+| `Q_MOD_01` mode de vie SIIN | « sur les dernières semaines » | 21 |
+| `Q_MOD_03` plaintes actuelles | « actuellement ressentis » | 14 |
+| `Q_INF_03` DNST SIIN | « vécu actuel ou habituel » | 14 |
+| `Q_ALI_01` enquête alimentaire SIIN | « habituelles » ou « des 3 derniers mois » | 90 |
+
+L'enquête alimentaire porte deux consignes, mais elle n'a qu'une fenêtre,
+comme le TFD SIIN ([[D-430]] §4). Une période de rappel n'est pas une
+fenêtre de fraîcheur, et les 90 jours n'en découlent pas.
+
+**§3 — Un signal expiré n'est pas évalué, et le praticien voit pourquoi.**
+Au-delà de la fenêtre, la règle n'est ni déclenchée ni écartée : elle est
+« non évaluée », avec un motif visible qui nomme le questionnaire et la date
+de la passation. Le libellé se soumet au responsable dans le lot de code.
+
+Un signal expiré ne vaut ni score normal ni absence de trouble ([[DC-24]]).
+Il ne retire rien de l'historique, et il ne masque pas une plainte déjà
+portée à l'attention du praticien. Une réévaluation avant l'échéance reste
+un geste du praticien.
+
+Écartés :
+- garder le signal et seulement l'annoter ;
+- l'écarter comme un score sous le seuil.
+
+**§4 — Le jour anniversaire reste frais.** La passation reste fraîche tant
+que son âge ne dépasse pas la fenêtre (`<=`), comme pour la cible.
+
+**§5 — Sans horloge, le comportement d'avant.** Quand le moteur ne reçoit
+pas `maintenantMs`, le déclencheur se lit sans date, comme aujourd'hui, et
+comme la cible dans la même situation. Écarté : l'extinction de la règle
+faute d'horloge.
+
+**§6 — Une table incomplète se refuse** ([[D-430]] §3). Un questionnaire
+déclencheur sans fenêtre refuse la signature. Le banc d'exhaustivité couvre
+les déclencheurs comme les cibles, et le même contrôle entre dans
+`tableSignee()`.
+
+**§7 — Faits de contexte.** Ils ne fondent aucune valeur.
+
+Aucune validation publiée des quatre questionnaires SIIN n'a été trouvée.
+Cela ne prouve pas qu'il n'en existe aucune.
+
+Intervalles de test-retest publiés pour des instruments analogues, vérifiés
+par la session :
+- ESAS modifié, 24 heures, ICC 0,69 (Hannon et al. 2015, PMID 25523890,
+  résumé) ;
+- PrimeScreen, deux semaines (Rifas-Shiman et al. 2001, PMID 11299098,
+  résumé) ;
+- questionnaire de fréquence alimentaire français de 50 items, trois semaines
+  (Barrat et al. 2012, PMC3485403, texte intégral) ;
+- MEDAS, un mois, ICC 0,69 (Papadaki et al. 2018, PMC5852714, texte
+  intégral) ;
+- DASS-21 chinoise, six mois, 0,39 à 0,46 (Wang et al. 2016, PMID 26619091,
+  résumé).
+
+Autres faits vérifiés :
+- La méta-analyse de Cui et al. 2021 (PMC7802360) traite la période de
+  rappel alimentaire et le délai entre deux passations comme deux facteurs
+  distincts.
+- STARD 2015, item 22 (Cohen et al. 2016, PMC5128957), sur le délai entre
+  deux tests : « the target condition and alternative conditions can
+  change ».
+- NICE NG222, §1.4.3, prévoit une réévaluation entre deux et quatre semaines
+  après le début du traitement d'une dépression. C'est un intervalle de
+  suivi, non une fraîcheur.
+
+Écartés, faute de lecture par la session :
+- Godwin et al. 2008 (SLIQ, PMID 18208960) : le résumé ne donne pas
+  l'intervalle de retest ;
+- la citation du NCI sur la période de référence des questionnaires de
+  fréquence ;
+- le critère de l'AHRQ de 2023.
+
+Limite connue, non arbitrée : les deux consignes de `Q_ALI_01` ne sont pas
+versionnées. Une évolution du score peut donc refléter un changement de
+consigne.
+
+**§8 — Suites.**
+- Le lot de code de la file A est le même que celui de [[D-430]] §6 : même
+  registre, même empreinte, même re-signature de `ORIENTATION_RULES_V1`. Il
+  est hors biologie, sur le chemin clinique, avec un déploiement retenu
+  jusqu'à l'approbation.
+- Ce lot ajoute :
+  - les quatre fenêtres au registre ;
+  - la lecture datée du déclencheur dans le moteur ;
+  - le statut « non évalué » et son motif au cockpit ;
+  - l'exhaustivité des déclencheurs au banc et à `tableSignee()`.
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d433-fenetre-declencheur.md` ; page « Suivi de la
+  file D », ligne d59.
+
 ### D-432 — Audit 3, suite de Q3 quinquies : un dossier désactivé reçoit son propre refus sur cinq routes praticien de plus (pack, file d'envoi et son envoi, rappel de l'agenda de sommeil, consultation) ; précise D-427
 
 - Date : 2026-11-03
