@@ -6,6 +6,67 @@
 
 ## Décisions actives
 
+### D-441 — Un conflit de sources escaladé reste au cockpit : ni extinction ni préconditions T0 ; la dette nommée de D-103 devient une décision, avec sa condition de retour (d44)
+
+- Date : 2026-11-04
+- Statut : accepté. Le responsable l'a arbitré le 2026-11-04 par questions à
+  options, en séance de gestes de la file D, ligne d44.
+- Domaine : clinique. Conflits entre sources du corpus (`DC-54`, `DC-55`) ;
+  le registre `web/src/lib/clinical/conflitsSourcesV1.ts`, l'extinction
+  (`orientationEngine.ts`) et les préconditions T0
+  (`clinical-engine/preconditionsT0Prisma.ts`).
+- Referme : la dette que [[D-103]] nomme sous « Ce que le lot ne fait pas »
+  (« effet clinique distinct, qui demande son propre arbitrage »), reprise en
+  `LOT-11-actes-en-attente.md` §C.2.
+- **Ne touche pas** :
+  - aucun code : le comportement en production reste celui d'avant ;
+  - le registre des conflits et sa signature ([[D-104]]) ;
+  - la forme `DISCORDANCE`, qui bloque l'extinction ([[D-055]]) et entre
+    au T0 comme aujourd'hui.
+- Contexte, lu au dépôt le 2026-11-04 :
+  - `CS-BIO-01` est le seul conflit publié. Il oppose `WN-CL-0312-018` à
+    `WN-CL-0387-013` sur le caractère systématique du bilan biologique
+    complet.
+  - Le cockpit lui passe les claims cités par la proposition de bilan. Le
+    constat sort donc sur tout dossier dont la proposition cite
+    `WN-CL-0312-018`, la plupart d'après le commentaire de signature.
+  - L'extinction : une seule contradiction ouverte, quel que soit son axe,
+    bloque toutes les extinctions du dossier (`orientationEngine.ts`, garde
+    de `contradictionEstOuverte`). La seule règle d'arrêt publiée,
+    `STOP-STR`, éteint `R2-STR-01` à `03`. Aucune règle d'orientation ni
+    d'arrêt ne cite les deux claims du conflit.
+  - Le T0 : la condition « Aucune contradiction ouverte » est souple, et se
+    contourne avec un motif tracé. `preconditionsT0Prisma` appelle le
+    service sans claims cités, donc sans conflit.
+
+**§1 — Le cockpit seul.** Un conflit de sources escaladé se restitue au
+praticien dans le cockpit. Il ne bloque aucune extinction et n'entre pas aux
+préconditions T0. C'est désormais une décision, et non plus une dette.
+
+Motifs :
+- Branché sans filtre, `CS-BIO-01` empêcherait `STOP-STR` d'éteindre les
+  règles du stress sur la plupart des dossiers. Or le conflit ne parle pas
+  de stress.
+- Au T0, il ajouterait un contournement avec motif sur la plupart des
+  dossiers, à l'étape où le parcours perd déjà le plus (audit 2 du
+  2026-11-04 : médiane de 31,7 jours entre la première réponse et le T0).
+
+**§2 — La condition de retour.** La question se rouvre dès qu'un conflit
+déclaré porte sur un claim cité par une règle d'orientation ou d'arrêt. Elle
+n'est pas mécanisée. La curation du registre, relue en PR comme tout ajout
+([[D-103]]), la vérifie à chaque conflit déclaré.
+
+Écartés :
+- un branchement filtré par objet (le conflit ne bloquerait que les règles
+  qui citent ses claims) : il serait sans effet aujourd'hui, et coûterait un
+  lot de code et une re-signature ;
+- le T0 seul, en condition souple ;
+- un branchement partout, sans filtre.
+
+- Conséquences : fragment
+  `changelog.d/2026-11-04-d441-escalade-cockpit-seul.md` ; page « Suivi de
+  la file D », ligne d44.
+
 ### D-440 — Fil du jour : une carte « Sans avancée » signale le dossier qui n'avance plus (réponses sans T0, T0 sans diffusion, questionnaires sans réponse) après 30 jours sans pas du parcours, et dit ce qui retient le T0 ; code dans un lot ultérieur (H07)
 
 - Date : 2026-11-04
