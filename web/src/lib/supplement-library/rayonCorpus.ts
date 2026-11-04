@@ -30,11 +30,11 @@ export const RAYON_MICRONUTRITION = 'micronutrition' as const;
 
 // Correspondance rayon → notebook (libellé exact du registre sanitaire). Le
 // rayon est une étagère clinique ; le notebook en est l'unité d'organisation.
-// « micronutrition » (C4) a son propre navigateur de catalogue ; les sept
+// « micronutrition » (C4) a son propre navigateur de catalogue ; les huit
 // rayons de RAYONS_RECHERCHE_CORPUS ci-dessous ont la recherche corpus
-// clinique (dashboard/bibliotheque). Seul « biologie » reste déclaré sans
-// consommateur de recherche — il a lui aussi son navigateur dédié depuis
-// CB-08, et sa décision de dormance porte un réexamen au 2026-10-01.
+// clinique (dashboard/bibliotheque). « biologie » y est entré le 2026-11-04
+// (D-435, levée de sa dormance) : son navigateur CB-08 sert le catalogue des
+// actes ; la recherche libre dans les claims du notebook 08 manquait.
 export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
   [RAYON_MICRONUTRITION]: '10 — Micronutrition et compléments',
   biologie: '08 — Biologie fonctionnelle',
@@ -62,8 +62,11 @@ export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
 // praticien ». Leurs quatre notebooks sont ingérés et validés. Ouvrir un rayon
 // met des claims SOUS LES YEUX du praticien ; cela n'en fait entrer aucun dans
 // un protocole, et ne change rien à la barrière D-003.
+//
+// Élargie de sept à huit le 2026-11-04 : « biologie », dernier verdict
+// `dormante` du registre, levé par l'arbitrage D/23 du 2026-10-21 (D-435).
 export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = [
-  'cognition', 'douleur', 'intestin', 'sommeil', 'stress', 'humeur', 'nutrition',
+  'cognition', 'douleur', 'intestin', 'sommeil', 'stress', 'humeur', 'nutrition', 'biologie',
 ];
 
 export type ClaimRayon = {
@@ -125,7 +128,7 @@ type LigneClaim = {
  * notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
  *
  * Le gate produit (quel flag active quel rayon — WN_C4_ENABLED pour
- * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour les sept rayons de
+ * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour les huit rayons de
  * `RAYONS_RECHERCHE_CORPUS` depuis [[D-188]], etc.)
  * n'est PAS ici : il appartient à la couche accès de chaque route appelante
  * (`getPractitionerC4Access`, `getPractitionerRechercheCorpusAccess`…), ET à
