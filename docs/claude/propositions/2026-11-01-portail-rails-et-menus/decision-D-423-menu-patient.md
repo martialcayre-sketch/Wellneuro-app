@@ -15,7 +15,9 @@
   (Q1 à Q3, Q27 à Q30, chapitre 14 de l'audit) et du 2026-11-02 (Q4 à Q26,
   Q31 à Q34, chapitre 15), sur questions à options fermées ; Q19, Q34 et les
   cibles des étapes 4 et 5 revues le même jour après relecture de la PR.
-  Textes patient acceptés mot pour mot le 2026-11-02 (§3, §8).
+  Textes patient acceptés mot pour mot le 2026-11-02 (§3, §8) ; apostrophe
+  typographique de « Ce que j’ai reçu » arbitrée le 2026-11-04 (Q35,
+  chapitre 16).
 - Domaine : portail patient, hub `web/src/app/portail/[token]/questionnaires/page.tsx`
   (bloc « Autres espaces », compteur, « Mon accompagnement »), retour de
   `informations/page.tsx`, frise `PatientJourneyProgress` sur le hub,
@@ -58,7 +60,7 @@ entrées dans l'ordre écrit :
 1. « Au jour le jour » : « Ouvrir mes rendez-vous de suivi », « Ouvrir Mon
    carnet alimentaire » ; les deux sans condition, chaque page disant
    elle-même ce qui manque ;
-2. « Ce que j'ai reçu » : « Consulter mon bilan » (`bilanConsultable`) ; « Ma
+2. « Ce que j’ai reçu » : « Consulter mon bilan » (`bilanConsultable`) ; « Ma
    bibliothèque » ou, à défaut, « Fiches remises par mon praticien », jamais
    les deux ([[D-360]] §2) ; « Courrier pour votre médecin » ; « Courrier à
    remettre à votre médecin » ; « Pour votre médecin » ;
@@ -75,7 +77,7 @@ plus des boutons de 48 px. Aucun compteur, aucune icône obligatoire, aucun
 repli mémorisé, aucun jeton `--rail-*`.
 
 **§3 — Libellés.** Acceptés mot pour mot le 2026-11-02 :
-- noms de groupes : « Au jour le jour », « Ce que j'ai reçu », « Ce que je
+- noms de groupes : « Au jour le jour », « Ce que j’ai reçu », « Ce que je
   transmets », « Avec mon praticien » ;
 - libellés d'entrée : inchangés, tels que servis au 2026-11-02 ;
 - retour de `/informations` : « ← Mon parcours », même cible (le hub) ; le
