@@ -15,6 +15,7 @@ import {
   type JourRow,
 } from '@/lib/agenda-alimentaire';
 import { listJours, saveJour, type LigneIllisible } from '@/lib/agenda-alimentaire/persistence';
+import { captureRepasOuverte, captureRepasServie } from '@/lib/agenda-alimentaire/captureRepas';
 import { prisma } from '@/lib/prisma';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { logger } from '@/lib/observability/logger';
@@ -81,6 +82,14 @@ type GetResponse =
       aujourdHui: string;
       /** Lignes en base qu'on n'a pas su relire. Remonté, jamais avalé. */
       illisibles: number;
+      /**
+       * La photo du repas est-elle proposée à ce dossier ([[D-437]] §4, §6) ?
+       * `WN_PORTAIL_CAPTURE_REPAS` ET `WN_AGENDA_ALI` ouverts, ET dossier
+       * majeur ; mineur, date manquante ou illisible : `false`. Un booléen et
+       * rien d'autre — ni l'âge ni la date de naissance ne sortent par ici.
+       * Aucune route ne reçoit la photo : ce drapeau n'ouvre AUCUNE écriture.
+       */
+      captureRepas: boolean;
     }
   | ErrorResponse;
 
@@ -498,6 +507,25 @@ function datesBloquantes(
   return [...bloquantes];
 }
 
+/**
+ * La garde serveur de la photo du repas ([[D-437]] §4) : drapeaux fermés, le
+ * dossier n'est pas même relu ; sinon, le seul dossier majeur. Un dossier
+ * introuvable rend `false` — fail-closed. Une lecture qui échoue rend `false`
+ * aussi : une aide facultative ne fait pas tomber la lecture de l'agenda.
+ */
+async function captureRepasPour(idPatient: string): Promise<boolean> {
+  if (!captureRepasOuverte()) return false;
+  try {
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient },
+      select: { dateNaissance: true },
+    });
+    return captureRepasServie(patient?.dateNaissance ?? null, Date.now());
+  } catch {
+    return false;
+  }
+}
+
 // GET ?id=ASS…
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
   const requestContext = createRequestContext(req);
@@ -540,6 +568,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // quarantaine, que `resolveJoursActifs` n'a jamais vue.
     const jours = joursActifs.map(j => ({ id: j.id, dateJour: j.dateJour, reponses: j.reponses }));
     const derniereJournee = joursActifs.length > 0 ? joursActifs[joursActifs.length - 1].reponses : null;
+    const captureRepas = await captureRepasPour(auth.idPatient);
 
     return withCorrelationHeader(
       NextResponse.json({
@@ -568,6 +597,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // précisément ce qui rend l'élargissement par la fenêtre acceptable :
         // toute nouvelle clé reste une décision, jamais un effet de bord.
         illisibles,
+        captureRepas,
       }),
       requestContext,
     );

@@ -8,6 +8,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { estAvantFinFenetreAli, type FenetreAgendaAli } from '@/lib/agenda-alimentaire/fenetre';
 import { decalerDate } from '@/lib/agenda-alimentaire/jour';
 import { NB_JOURS_AGENDA_ALI, type JourReponses } from '@/lib/agenda-alimentaire/types';
+import { CaptureRepas } from './CaptureRepas';
 import { FriseJournees } from './FriseJournees';
 import { SaisieJourneeForm } from './SaisieJourneeForm';
 
@@ -60,6 +61,11 @@ type GetOk = {
   statutReponses: string;
   aujourdHui: string;
   illisibles: number;
+  /**
+   * La photo du repas est-elle proposée ([[D-437]]) ? Décidé par la route :
+   * drapeaux ouverts ET dossier majeur. Absent ou faux, aucun bouton.
+   */
+  captureRepas?: boolean;
 };
 
 type Props = { idAssignation: string; onRetourHub: () => void };
@@ -353,6 +359,13 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
               Les états `null` (« je ne sais pas ») traversent tels quels :
               `SaisieJourneeForm` compare explicitement, jamais par véracité —
               une abstention relue se réaffiche en abstention, pas en « non ». */}
+          {/* La photo du repas ([[D-437]]) : montée sous une clé dérivée de la
+              date — changer de date la démonte, donc l'efface. Enregistrer
+              recharge l'écran et quitte la saisie : même effet. Le préfixe
+              n'est pas décoratif : le formulaire, son frère, porte déjà la
+              date nue, et deux frères de même clé se confondent (un banc l'a
+              vu — la photo survivait à l'enregistrement). */}
+          {data.captureRepas === true && <CaptureRepas key={`photo-${cibleDate}`} />}
           <SaisieJourneeForm
             key={cibleDate}
             initial={journeeVisee?.reponses ?? null}

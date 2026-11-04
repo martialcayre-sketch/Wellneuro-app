@@ -1405,7 +1405,8 @@ describe('GET /api/portail/agenda-alimentaire', () => {
     const json = (await res.json()) as Record<string, unknown>;
     // Surface EXACTE de la réponse — un ajout futur devra être décidé ici.
     expect(Object.keys(json).sort()).toEqual(
-      ['aujourdHui', 'derniereJournee', 'fenetre', 'illisibles', 'jours', 'ok', 'statutReponses'].sort(),
+      // `captureRepas` : décidé par [[D-437]] §4 — un booléen, jamais l'âge.
+      ['aujourdHui', 'captureRepas', 'derniereJournee', 'fenetre', 'illisibles', 'jours', 'ok', 'statutReponses'].sort(),
     );
     const brut = JSON.stringify(json);
     for (const cle of [
@@ -1432,6 +1433,105 @@ describe('GET /api/portail/agenda-alimentaire', () => {
     const json = (await res.json()) as { jours: Record<string, unknown>[] };
     expect(json.jours).toHaveLength(1);
     expect(Object.keys(json.jours[0]).sort()).toEqual(['dateJour', 'id', 'reponses']);
+  });
+});
+
+// ── LA PHOTO DU REPAS : GARDE SERVEUR ([[D-437]] §4, §6) ─────────────────────
+// La route ne reçoit jamais la photo ; elle dit seulement au client s'il
+// propose le bouton. Les deux drapeaux ET le dossier majeur, sinon `false`.
+describe('GET — `captureRepas` (D-437)', () => {
+  async function lireCapture(dateNaissance: string | null, capture: string | undefined, agenda = 'true') {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: OWNER.idPatient,
+      actif: true,
+      email: OWNER.email,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+      dateNaissance,
+    });
+    vi.stubEnv('WN_PORTAIL_CAPTURE_REPAS', capture as string);
+    const { GET } = await chargerRoute(agenda);
+    const res = await GET(req('GET', cookieFor(), { query: `?id=${ID_ASSIGNATION}` }));
+    return { res, json: (await res.json()) as { ok: boolean; captureRepas?: boolean } };
+  }
+
+  it('drapeau absent : `false`, même pour un dossier majeur', async () => {
+    const { res, json } = await lireCapture('1985-03-14', undefined);
+    expect(res.status).toBe(200);
+    expect(json.captureRepas).toBe(false);
+  });
+
+  it.each(['1', 'TRUE', 'oui', ''])('valeur « %s » : fermé — seule la chaîne exacte `true` ouvre', async valeur => {
+    const { json } = await lireCapture('1985-03-14', valeur);
+    expect(json.captureRepas).toBe(false);
+  });
+
+  it('drapeau ouvert, dossier majeur : `true`', async () => {
+    const { json } = await lireCapture('1985-03-14', 'true');
+    expect(json.captureRepas).toBe(true);
+  });
+
+  it('drapeau ouvert, dossier mineur : `false`', async () => {
+    // Horloge figée au 2026-07-15 : né en 2010, le patient a 16 ans.
+    const { json } = await lireCapture('2010-01-01', 'true');
+    expect(json.captureRepas).toBe(false);
+  });
+
+  it.each([null, '', '2026-02-31', '2030-01-01'])('drapeau ouvert, âge inconnu (%s) : `false`', async date => {
+    const { json } = await lireCapture(date, 'true');
+    expect(json.captureRepas).toBe(false);
+  });
+
+  // Les lectures de la garde, distinguées de celle de la session par leur
+  // projection : la session relit d'autres colonnes du même dossier.
+  function lecturesDeLaGarde() {
+    return (prisma.patient.findUnique.mock.calls as [{ where: unknown; select: unknown }][]).filter(
+      ([arg]) => JSON.stringify(arg.select) === JSON.stringify({ dateNaissance: true }),
+    );
+  }
+
+  it('drapeau fermé : le dossier n’est pas relu pour la garde', async () => {
+    prisma.patient.findUnique.mockClear();
+    await lireCapture('1985-03-14', undefined);
+    expect(lecturesDeLaGarde()).toHaveLength(0);
+  });
+
+  it('drapeau ouvert : une seule lecture, celle du dossier de la session', async () => {
+    prisma.patient.findUnique.mockClear();
+    await lireCapture('1985-03-14', 'true');
+    const lectures = lecturesDeLaGarde();
+    expect(lectures).toHaveLength(1);
+    expect(lectures[0][0].where).toEqual({ idPatient: OWNER.idPatient });
+  });
+
+  it('la lecture de l’âge échoue : `false`, et l’agenda se lit quand même', async () => {
+    const parDefaut = prisma.patient.findUnique.getMockImplementation();
+    prisma.patient.findUnique.mockImplementation(async (arg: { select?: unknown }) => {
+      if (JSON.stringify(arg.select) === JSON.stringify({ dateNaissance: true })) throw new Error('panne');
+      return {
+        idPatient: OWNER.idPatient,
+        actif: true,
+        email: OWNER.email,
+        accessTokenRevoked: false,
+        sessionsInvalidesAvant: null,
+        dateNaissance: '1985-03-14',
+      };
+    });
+    vi.stubEnv('WN_PORTAIL_CAPTURE_REPAS', 'true');
+    const { GET } = await chargerRoute('true');
+    const res = await GET(req('GET', cookieFor(), { query: `?id=${ID_ASSIGNATION}` }));
+    const json = (await res.json()) as { ok: boolean; captureRepas?: boolean };
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.captureRepas).toBe(false);
+    if (parDefaut) prisma.patient.findUnique.mockImplementation(parDefaut);
+  });
+
+  it('n’expose ni l’âge ni la date de naissance', async () => {
+    const { json } = await lireCapture('1985-03-14', 'true');
+    const brut = JSON.stringify(json);
+    expect(brut).not.toContain('1985');
+    expect(brut).not.toContain('dateNaissance');
   });
 });
 
