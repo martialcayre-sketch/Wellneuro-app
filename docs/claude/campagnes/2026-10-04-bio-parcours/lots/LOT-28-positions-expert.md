@@ -106,7 +106,10 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
   responsable. Chaque conflit y porte sa liste curée de fiches et dit s'il
   est déclenchable par la proposition de bilan. La PR livre la lecture de
   l'arbitrage sur la fiche et la liste étiquetée au cockpit (D-439, A1 et
-  A2) ; chemin clinique, déploiement retenu jusqu'à release-db (D-389 §5).
+  A2), **sous `WN_POSITIONS_EXPERT`** : drapeau éteint, le cockpit ne
+  change pas, et seule la publication au registre est indépendante du
+  drapeau. Chemin clinique, déploiement retenu jusqu'à release-db
+  (D-389 §5).
 - Geste du responsable : versement et signature des positions à l'atelier.
 
 ## Hors périmètre
