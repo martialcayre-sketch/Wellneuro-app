@@ -122,7 +122,10 @@ export function AtelierCorpus() {
               </div>
             ))
           : null}
-        {etat === 'chargee' && !notebookChoisi && aRevoirParNotebook.length === 0 ? (
+        {etat === 'chargee' &&
+        !notebookChoisi &&
+        notebooks.length > 0 &&
+        aRevoirParNotebook.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">Aucune source à revoir.</p>
         ) : null}
         {etat === 'chargee' && !notebookChoisi && nbTraitees > 0 ? (

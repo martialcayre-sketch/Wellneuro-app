@@ -38,7 +38,16 @@ Le responsable a vérifié #1855 en production, puis demandé le 2026-11-04 :
 ## Validations exécutées
 
 - T1 (`npm run check:rapide`) vert.
-- T2 (`npm run test:worktree -- --fast`) et T1 complet : voir la PR.
+- T2 (`npm run test:worktree -- --fast`) vert en 7 min 31 s, E2E Chromium
+  et WebKit compris. CI de #1860 vert sur 9a0d84dc.
+- T1 complet en local : un seul échec, hors de ce diff. Le test de parité
+  `BANCS_BALAYAGE` de `scripts/wn-controle-fusion.test.mjs` signale
+  `CaptureRepas.test.tsx` (#1857) ; le CI de `main` et celui de la PR sont
+  verts.
+- Revue : CodeRabbit en quota. PR-Agent, sur 9a0d84dc, a relevé un constat,
+  corrigé : avec une base vide, deux messages s'affichaient (« Aucune source
+  à revoir » et « Aucune source en revue »). Le premier exige désormais au
+  moins un notebook.
 
 ## Problèmes ouverts
 
