@@ -2,9 +2,9 @@ import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PA
 
 export const Q_NEU_11 = {
   id:'Q_NEU_11', titre:'HAD — Échelle Hospitalière Anxiété-Dépression',
-  instructions:'Répondez aux questions en cochant la réponse qui vous correspond le plus, en considérant vos états d’humeur au cours de ces dernières semaines.',
+  instructions:'Répondez aux questions en cochant la réponse qui correspond le mieux à ce que vous avez ressenti au cours de la semaine écoulée.',
   sections:[
-    { id:'AD', titre:'Questions sur votre vécu cette semaine',
+    { id:'AD', titre:'Votre vécu au cours de la semaine écoulée',
       questions:[
         {id:'A1',texte:"Je me sens tendu(e) ou énervé(e)",type:'likert',options:[{v:3,l:'La plupart du temps'},{v:2,l:'Souvent'},{v:1,l:'De temps en temps'},{v:0,l:'Jamais'}]},
         {id:'D2',texte:"Je prends plaisir aux mêmes choses qu'autrefois",type:'likert',options:[{v:0,l:'Oui, tout autant'},{v:1,l:'Pas autant'},{v:2,l:'Un peu seulement'},{v:3,l:'Presque plus'}]},
