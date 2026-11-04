@@ -1259,6 +1259,17 @@ jobs:
           DB_POOL_MAX: '4'
         run: npx vitest run src/lib/fiches-usage/baseReelle.pg.test.ts
 
+      # Positions d'expert et arbitrages de conflits (D-439, BP-12b). Trois
+      # tables append-only, sans donnée patient : contenu à quatre rubriques,
+      # claims d'appui exigés, révision de la seule version courante, empreinte
+      # recalculée par la base, une tête par couple conflit × fiche, seule une
+      # position en vigueur se retient. Instants éprouvés sous un fuseau de
+      # session Europe/Paris. Transaction annulée.
+      - name: Positions expert negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/positions_expert_v1_negatif.sql
+
       # Staging d'import biologique (D-256 A2/A5, BIO-INGEST LOT-02). Ce que le
       # drift check ne voit pas : le document est ce qu'il dit être (type,
       # 10 Mo, empreinte recalculée), un seul dossier d'un bout à l'autre de la

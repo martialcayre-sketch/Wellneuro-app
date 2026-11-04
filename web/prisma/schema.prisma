@@ -4161,6 +4161,119 @@ model FicheUsageLibelleActe {
   @@map("fiches_usage_libelles_actes")
 }
 
+// ─── Positions d'expert et arbitrages de conflits (D-439, BP-12b) ───────────
+//
+// Trois tables append-only (triggers), sans AUCUNE donnée patient. Le texte
+// d'une position vit ici, en base HDS, jamais au dépôt (D-251 §4) ; il entre
+// par l'atelier, acte daté du responsable, jamais par migration (D-439 §5).
+// L'état (position en vigueur, tête d'un couple, « à relire ») se dérive à la
+// lecture, au sens d'`ordre` ; rien n'est réécrit. Les refus vivent en base
+// (migration `positions_expert_v1`). Ni règle, ni portail, ni courrier, ni
+// recherche corpus, ni IA ne les lisent (D-439, « Ne touche pas »).
+
+/// Une version d'une position d'expert signée ([[D-266]] §8, D-439 §2) :
+/// `WN-PE-NNNN` × `vN.M`, comme un claim, mais jamais un claim du corpus.
+/// La version courante est celle qu'aucune version ne révise.
+model PositionExpertVersion {
+  id               String   @id @default(cuid()) @map("id")
+  /// `WN-PE-NNNN` (CHECK).
+  positionId       String   @map("position_id")
+  /// `vN.M` (CHECK) ; strictement supérieure à la version révisée (trigger).
+  version          String   @map("version")
+  /// Dossier de preuve d'origine, liste fermée (CHECK) ; tenu par une
+  /// révision (trigger).
+  dossier          String   @map("dossier")
+  /// La fiche d'usage qu'elle fonde (`FU_…`), facultative.
+  ficheId          String?  @map("fiche_id")
+  /// Quatre rubriques exactement : `enonce`, `perimetre`, `population`,
+  /// `limites`, chacune un texte visible (trigger).
+  contenu          Json     @map("contenu")
+  /// Claims d'appui, `identifiant@version`, au moins un, sans doublon.
+  claimsAppui      String[] @map("claims_appui")
+  /// La version courante qu'elle révise, de la même position ; une
+  /// successeure au plus.
+  idVersionRevisee String?  @unique @map("id_version_revisee")
+  auteur           String   @map("auteur")
+  /// Posé par la base (trigger), en UTC.
+  creeLe           DateTime @default(now()) @map("cree_le")
+
+  revisee    PositionExpertVersion?   @relation("RevisionPositionExpert", fields: [idVersionRevisee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revisePar  PositionExpertVersion?   @relation("RevisionPositionExpert")
+  actes      PositionExpertActe[]
+  arbitrages ArbitrageConflitSource[]
+
+  @@unique([positionId, version], map: "positions_expert_versions_position_version_key")
+  @@map("positions_expert_versions")
+}
+
+/// Un geste du responsable sur la version courante d'une position : la
+/// signer, ou la retirer. Le dernier acte se lit par `ordre`, jamais par `le`.
+model PositionExpertActe {
+  id                 String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre              BigInt   @default(autoincrement()) @map("ordre")
+  idVersion          String   @map("id_version")
+  /// 'signee' | 'retiree' — fermé par un CHECK en base.
+  acte               String   @map("acte")
+  /// SHA-256 hex de la concaténation des SHA-256 hex des quatre rubriques,
+  /// dans l'ordre fixe ; recalculée par trigger contre la version.
+  empreinte          String   @map("empreinte")
+  auteur             String   @map("auteur")
+  /// Déclaration de relecture intégrale — exigée pour signer.
+  relectureIntegrale Boolean  @map("relecture_integrale")
+  /// Obligatoire pour un retrait (CHECK).
+  motif              String?  @map("motif")
+  /// Posé par la base (trigger), en UTC.
+  le                 DateTime @default(now()) @map("le")
+
+  version PositionExpertVersion @relation(fields: [idVersion], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "positions_expert_actes_ordre_key")
+  @@index([idVersion, ordre], map: "positions_expert_actes_version_ordre_idx")
+  @@map("positions_expert_actes")
+}
+
+/// L'arbitrage d'un conflit de sources déclaré pour une question, ou sa
+/// révocation (D-439 §3, amendement A2-A3). Une tête par couple conflit ×
+/// fiche : la pose que ni un remplacement ni une révocation ne vise.
+/// L'appartenance du conflit au registre signé, de la fiche à sa liste et du
+/// claim retenu au conflit se vérifie à la route.
+model ArbitrageConflitSource {
+  id                  String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre               BigInt   @default(autoincrement()) @map("ordre")
+  /// `CS-…` (CHECK).
+  conflitId           String   @map("conflit_id")
+  /// `FU_…` (CHECK).
+  ficheId             String   @map("fiche_id")
+  /// 'pose' | 'revocation' (CHECK).
+  acte                String   @map("acte")
+  /// La tête remplacée (pose) ou révoquée (révocation) ; un successeur au plus.
+  idArbitrageRemplace String?  @unique @map("id_arbitrage_remplace")
+  /// Pose : l'un des deux claims du conflit (`identifiant@version`), OU…
+  claimRetenu         String?  @map("claim_retenu")
+  /// … une position d'expert en vigueur à la pose (trigger).
+  idPositionVersion   String?  @map("id_position_version")
+  /// Pose : empreinte de l'entrée du conflit au registre signé (A3).
+  conflitSha256       String?  @map("conflit_sha256")
+  /// Pose : empreinte de la structure signée des fiches d'usage (A3).
+  structureSha256     String?  @map("structure_sha256")
+  /// Obligatoire, pose comme révocation (CHECK).
+  motif               String   @map("motif")
+  auteur              String   @map("auteur")
+  /// Posé par la base (trigger), en UTC.
+  le                  DateTime @default(now()) @map("le")
+
+  remplace        ArbitrageConflitSource? @relation("RemplacementArbitrage", fields: [idArbitrageRemplace], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar     ArbitrageConflitSource? @relation("RemplacementArbitrage")
+  positionVersion PositionExpertVersion?  @relation(fields: [idPositionVersion], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "arbitrages_conflits_sources_ordre_key")
+  @@index([conflitId, ficheId, ordre], map: "arbitrages_conflits_sources_couple_ordre_idx")
+  @@index([idPositionVersion], map: "arbitrages_conflits_sources_id_position_version_idx")
+  @@map("arbitrages_conflits_sources")
+}
+
 /// Lettre d'adressage mise à disposition du patient dans son portail ([[D-262]],
 /// LOT-01). Ajout seul : UPDATE et TRUNCATE refusés, DELETE réservé à
 /// l'effacement nommé. Le texte est un instantané figé, son empreinte tenue par
