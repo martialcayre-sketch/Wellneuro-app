@@ -879,7 +879,9 @@ describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)',
       ],
     };
     expect(evaluerOrientation({ ...base, fenetres: FENETRES_FRAICHEUR_ORIENTATION })).toEqual([]);
-    expect(evaluerOrientation({ ...base, fenetres: { Q_STR_02: { delaiJours: 30 } } })).toHaveLength(1);
+    const recos = evaluerOrientation({ ...base, fenetres: { Q_STR_02: { delaiJours: 30 } } });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].cible).toEqual({ type: 'pack', packId: 'pack_stress_chronique_burnout' });
   });
 
   // PAS UN REPLI DE LA FENÊTRE, ET LE BANC LE DIT. Une date illisible rend la

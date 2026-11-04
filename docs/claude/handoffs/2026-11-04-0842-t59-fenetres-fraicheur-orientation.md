@@ -2,9 +2,11 @@
 
 ## Branche et état du dépôt
 
-- Branche `t59-fenetres-fraicheur`, avancée en `--ff-only` sur `origin/main`
-  57f7d2f3 (aucun chevauchement avec #1839 à #1846 ; empreinte recalculée
-  après l'avance, inchangée) ; worktree `.claude/worktrees/t59-fenetres-fraicheur`,
+- Branche `t59-fenetres-fraicheur`, poussée (PR #1849). Après le renvoi de
+  l'intégrateur, `origin/main` 16f038a0 y a été FUSIONNÉ (arbitrage du
+  responsable : fusion plutôt que rebase et force-push), sans conflit ; aucun
+  des commits #1839 à #1854 ne touche les fichiers du lot, et l'empreinte
+  recalculée après la fusion est inchangée ; worktree `.claude/worktrees/t59-fenetres-fraicheur`,
   session concurrente de la file A, cycle en `git`/`gh` direct.
 - **Chemin de release-db** : `web/src/lib/clinical/**`. Le déploiement reste
   retenu jusqu'à une release-db approuvée par le responsable ([[D-044]]),
@@ -68,35 +70,38 @@ registre entre dans l'empreinte signée, et la table est re-signée.
   contre-épreuve, mutation d'une fenêtre, signature), `orientationEngine.test.ts`
   (fenêtre par instrument, jour anniversaire, sans fenêtre, pack),
   `orientationService.test.ts` (terme isolé du verrou, passation périmée).
-- `docs/FEATURE_FLAGS.md` : date de signature de l'orientation au tableau des
-  verrous (épinglé par banc).
+- `docs/FEATURE_FLAGS.md` : date de signature (tableau épinglé), six termes.
 - `changelog.d/2026-11-03-t59-fenetres-fraicheur-orientation.md`, ce handoff.
 
 ## Validations exécutées
 
-- T1 complet (`npm run check`) : vert, 2095 tests.
-- Bancs d'orientation après les retouches de commentaires : 223/223 ;
-  empreinte recalculée inchangée.
-- T3 (`npm run test:worktree`), première passe : 15862 tests passés, 1 rouge,
-  `verrousSignatureDocumentes.guard` — `docs/FEATURE_FLAGS.md` annonçait
-  encore la date de signature du 2026-09-14. Tableau corrigé, banc 4/4, puis
-  T3 rejoué sur l’état final : vert (15863 tests passés, 40 sautés ; seconde suite 1713 passés ; sortie 0).
+- T1 complet vert (2095 tests) ; bancs d'orientation 223/223.
+- T3 : 1 rouge en première passe (`verrousSignatureDocumentes.guard`, date
+  du 2026-09-14 dans `docs/FEATURE_FLAGS.md`), corrigé ; rejoué vert
+  (15863 tests, seconde suite 1713, sortie 0).
 - Contre-revue Codex (dépôt privé des revues) : PASSER ; nuance du point 8
   corrigée (commentaires du moteur).
-- Revue `wn-reviewer` : PASSER, aucun P0 dans le code. P1 « attestation non
-  tracée » : corrigé par ce handoff. P2 commentaires périmés et
-  `dejaRepondu` : corrigés. P2 typage de `fenetres` : écarté (un seul
-  appelant, choix documenté, changement minimal). P2 effet au déploiement :
-  routé à la PR et au constat d'après approbation.
+- `wn-reviewer` : PASSER, aucun P0. P1 attestation non tracée : corrigé (ce
+  handoff) ; P2 commentaires périmés, `dejaRepondu` : corrigés ; P2 typage de
+  `fenetres` : écarté (un seul appelant) ; P2 effet au déploiement : routé.
+- Première déclaration « prête » renvoyée par l'intégrateur : aucune revue
+  opposable (CodeRabbit en quota ; PR-Agent sur diff compressé, sortie 1 de
+  `wn-revue-pr-agent.mjs` — la déclaration disait à tort « run complet »).
+- CodeRabbit sur 6c7cb7d5 (13:05Z), trois remarques, toutes corrigées :
+  exception du MEQ (365 jours) dans la note de déploiement ; six termes de
+  `tableSignee()` dans `docs/FEATURE_FLAGS.md` ; identité de la cible pack
+  dans le test du membre sans fenêtre.
 
 ## Problèmes ouverts
 
 - **Effet au déploiement, voulu par D-430** : si `WN_ENABLE_ORIENTATION_NNPP2`
   vaut `1` et la table d'arrêt est exploitable, les cibles passent de
   365 jours à 7-90 jours (HAD, Epworth, Pichot, Cungi, DASS-21 à 7 jours) et
-  reviennent avec « déjà renseigné ». L'état réel du drapeau n'a pas été
-  constaté (lecture des variables refusée en mode auto) : à relever au
-  constat par conteneur.
+  reviennent avec « déjà renseigné ». Exception : le MEQ (`Q_SOM_05`) garde
+  365 jours. `docs/FEATURE_FLAGS.md` donne le drapeau à `1` en production,
+  relu sur Scalingo le 2026-09-13 ; son état du jour n'a pas été constaté
+  (lecture des variables refusée en mode auto) : à relever au constat par
+  conteneur.
 
 ## Prochaine action exacte
 
