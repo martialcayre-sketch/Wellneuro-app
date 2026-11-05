@@ -200,8 +200,14 @@ plafond de contexte, le diff compressé peut omettre des blocs de
 suppression sans le dire : une telle PR attend CodeRabbit, comme une PR
 dont tous les fichiers sont exclus du modèle (images, instantanés, lock),
 qui ne produit pas de revue (`D-393` §2 et §4). Si aucun bot ne
-remplit sa condition, la PR attend, sauf dérogation du responsable, par PR
-et jamais reportée.
+remplit sa condition, la **dérogation est permanente** (`D-448`, qui amende
+`D-393` §2) : `wn-reviewer` remplace les bots, sans confirmation du
+responsable. Il revoit tout le diff en lecture seule (`git -C`, `diff`,
+`show`, jamais de `checkout`). Son **GO sur le sha de tête** est exigé, et
+un commit poussé ensuite demande une revue de l'écart. Chaque constat reçoit
+un verdict, consigné dans un commentaire de PR. Hors champ : les lots
+gardés par leur file (migration, authentification, `.coderabbit.yaml`,
+`pr_agent.yml`) et l'approbation des release-db (`D-044`).
 
 **1.7 Ce qu'un bot a poussé se relit, toujours.** Il peut avoir aligné le
 littéral d'un banc sur le code plutôt que l'inverse. Un banc ainsi « réparé » est
