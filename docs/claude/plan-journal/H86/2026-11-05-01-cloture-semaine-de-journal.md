@@ -49,9 +49,9 @@
     - conflit de texte : 6 en (a), 4 sans ligne ;
     - autre : 2 en (a), 1 en (b), 1 sans ligne.
   - **Ce que la tolérance de D-375 §2 peut retirer** : elle n'atteint que les fusions « libres », puisqu'elle refuse toujours en cas de chevauchement ou de conflit. Mesure « avant » pour H92 :
-    - **11 fusions sur 69 (16 %)**, libres et précédées d'un verdict de retard. C'est la part mesurée. C'en est aussi une borne haute : le chevauchement avec le fichier visé, que D-375 §2 compte, n'est pas dans le journal ;
+    - **11 fusions sur 69 (16 %)**, libres et précédées d'un verdict de retard. C'est la part mesurée, et c'est une approximation dont les deux biais vont en sens contraires. Le fichier visé, que D-375 §2 compte, n'est pas dans le journal, ce qui la surestime. Le chevauchement est pris sur `main` au moment de la fusion, peut-être plus avancé qu'au moment du refus, ce qui la sous-estime ;
     - 13 sur 69 (19 %) en ajoutant le groupe (c), où le lien avec le crochet est plus lâche ;
-    - le plafond est de 15 sur 69 (22 %), toutes les fusions libres. Il ne vaut que si l'on compte au crochet les fusions présumées spontanées, faites sans refus préalable, peut-être par habitude de le devancer. C'est une définition à arbitrer, pas une mesure ;
+    - le plafond est de 15 sur 69 (22 %), toutes les fusions libres. Il ne vaut que si l'on compte au crochet la fusion libre de (b) et celle de (d), présumée spontanée : faites sans refus préalable, peut-être par habitude de devancer le crochet. C'est une définition à arbitrer, pas une mesure ;
     - les 54 autres fusions (78 %) restent hors de portée de la tolérance, qu'elles aient suivi ou non un verdict de retard : 26 par chevauchement, 28 par conflit. La fusion y révèle un recoupement qui existe de toute façon ;
     - depuis D-418 (#1876, après la fenêtre), chaque décision a son propre fichier, ce qui réduit mécaniquement les chevauchements sur `docs/DECISIONS.md`. La mesure « après » de H92 mêlera l'effet de D-418 et celui de la tolérance, et doit les séparer.
   - **Verdict sur les 43 fusions « crochet présumé » de la mesure de référence** :
