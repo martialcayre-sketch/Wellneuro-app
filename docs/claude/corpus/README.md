@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 602 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 610 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 95 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 103 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -45,11 +45,17 @@ fenêtres de fraîcheur de l'orientation (D-430, D/46) : trois études de
 validation, sources de contexte, `WN-SRC-0622` à `0624`, sans extrait ingéré ;
 seuils de la fatigue générale du MFI-20 (D-431, d57) : une source de normes,
 une étude qui en tire les seuils et des normes plus récentes, `WN-SRC-0625` à
-`0627`, sans extrait ingéré),
+`0627`, sans extrait ingéré ;
+besoin 2, iode et sélénium : une recommandation méthodologique de l'OMS, un
+avis de l'Anses, deux fiches du NIH, deux résumés des caractéristiques du
+produit, la table Ciqual de l'Anses et une valeur de référence de la CIAAW,
+`WN-SRC-0631` à `0638`, les lignes de l'iode et du sélénium de la DGCCRF étant
+lues dans `0521`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
-laissées à une autre session d'ingestion. Il s'agit d'un inventaire documentaire, pas d'un
+laissées à une autre session d'ingestion ; `0628` à `0630` sont restés libres,
+marge prise avant l'ingestion de l'iode et du sélénium. Il s'agit d'un inventaire documentaire, pas d'un
 corpus runtime.
 
 ## Politique de publication
@@ -88,6 +94,11 @@ corpus runtime.
   caractéristiques du produit MAG 2 (`WN-SRC-0572`, Licence Ouverte
   etalab-2.0) ; `0571` et `0573` restent à vérifier ; au 2026-11-01, les six
   sources des vitamines B9 et B12 (`WN-SRC-0577` à `0582`) restent à vérifier ;
+  aux 2026-11-03 et 2026-11-04, pour l'iode et le sélénium (`WN-SRC-0631` à
+  `0638`), trois de plus : les résumés des caractéristiques du produit
+  CORDARONE et TERALITHE (`0635`, `0636`, Licence Ouverte etalab-2.0) et la
+  table Ciqual 2025 (`0637`, Licence Ouverte etalab) ; `0631` à `0634` et
+  `0638` restent à vérifier ;
   la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
   extrait court est ingéré pour usage interne sur arbitrage du responsable,
   reste à vérifier.

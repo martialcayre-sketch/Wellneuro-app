@@ -38,6 +38,9 @@ l'oubli.
 tranchée le 2026-09-03, sur pièces — ne pas la rouvrir sans fait nouveau :
 
 - `NavBar`, `MobileBottomNav`, `InboxQuestionnaires` — navigation, pas densité.
+  Une navigation, une seule, est servie par la primitive : le menu patient
+  « Mon espace » ([[D-442]] §7), qui en a besoin pour le correctif `data-theme`
+  et la garde `theme="patient"`. Les trois ci-dessus restent dehors.
 - Les trois dialogues de confirmation — `DossierConfirmDialog`,
   `AnnulationAssignationDialog`, `PatientConfirmDialog`. **Leur anatomie n'est
   pas celle d'un tiroir** : aucun des trois n'a de bouton de fermeture (on

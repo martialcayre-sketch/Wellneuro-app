@@ -234,6 +234,12 @@ export default defineConfig({
       // diffusion est active ici comme là-bas. Lu au runtime par les routes
       // TRUST seules : aucune pose au build.
       WN_EI_INTERRUPTION: '1',
+      // Menu patient « Mon espace » ([[D-442]], lot L3). N'EST PAS POSÉ EN
+      // PRODUCTION : livré éteint, il ouvre ici la seule position où le bouton
+      // « Menu », le lien d'accueil et le lien d'évitement existent
+      // (`portail-menu.spec.ts`). Lu à chaque requête par `portail/layout.tsx`,
+      // au rendu serveur dynamique : aucune pose au build.
+      WN_PORTAIL_MENU: 'true',
       // Frise des étapes navigable du hub ([[D-423]] §8, lot L2b). N'EST PAS
       // POSÉ EN PRODUCTION : livré éteint, il ouvre ici la seule position où la
       // frise est une navigation (`portail-frise-etapes.spec.ts`, et la

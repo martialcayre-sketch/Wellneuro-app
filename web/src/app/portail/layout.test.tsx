@@ -11,6 +11,11 @@ vi.mock('next/headers', () => ({
   }),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
+// Le menu « Mon espace » ([[D-442]]) lit le chemin quand son drapeau est ouvert.
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ token: 'PAT_1' }),
+  usePathname: () => '/portail/PAT_1/suivi',
+}));
 
 import { signPatientSession } from '@/lib/patient-session';
 import PortailLayout from './layout';
@@ -86,3 +91,47 @@ describe('layout du portail — pied de page et numéros d’urgence', () => {
     }
   });
 });
+
+// MENU « MON ESPACE » ([[D-442]] §6 et §8) : drapeau fermé, le portail est
+// celui d'avant ; ouvert, le lien d'évitement ouvre la page et vise <main>.
+describe('layout du portail — drapeau `WN_PORTAIL_MENU`', () => {
+  beforeEach(() => {
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    cookieStore.valeur = signPatientSession({ idPatient: 'PAT_1', email: 'p@example.test' });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
+  });
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_MENU;
+    vi.unstubAllGlobals();
+  });
+
+  const rendre = async () => render(await PortailLayout({ children: <p>contenu</p> }));
+
+  it('fermé : ni lien d’évitement, ni lien d’accueil, ni `id` sur <main>', async () => {
+    const { container } = await rendre();
+    expect(screen.queryByRole('link', { name: 'Aller au contenu' })).toBeNull();
+    expect(screen.getByText('Wellneuro').closest('a')).toBeNull();
+    expect(screen.getByRole('main').id).toBe('');
+    expect(screen.getByRole('main').getAttribute('tabindex')).toBeNull();
+    expect(container.querySelector('#contenu')).toBeNull();
+  });
+
+  it('ouvert : « Aller au contenu » est le premier lien de la page et vise <main id="contenu">', async () => {
+    process.env.WN_PORTAIL_MENU = 'true';
+    const { container } = await rendre();
+    const evitement = screen.getByRole('link', { name: 'Aller au contenu' });
+    expect(container.querySelector('a, button, summary')).toBe(evitement);
+    expect(evitement.getAttribute('href')).toBe('#contenu');
+    expect(evitement.className).toMatch(/\bsr-only\b/);
+    expect(evitement.className).toMatch(/\bfocus:not-sr-only\b/);
+    expect(screen.getByRole('main').id).toBe('contenu');
+  });
+
+  it('ouvert, lectures en échec : aucun bouton « Menu » (fail-closed)', async () => {
+    process.env.WN_PORTAIL_MENU = 'true';
+    await rendre();
+    await new Promise(r => setTimeout(r, 0));
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+  });
+});
+

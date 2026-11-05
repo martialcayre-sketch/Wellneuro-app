@@ -1,16 +1,7 @@
 'use client';
 
-import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
-import { LienFichesRemises } from '@/components/patient-companion/LienFichesRemises';
-import { LienBibliotheque } from '@/components/patient-companion/LienBibliotheque';
-import { LienCourrierMedecin } from '@/components/patient-companion/LienCourrierMedecin';
-import { LienCourrierComplement } from '@/components/patient-companion/LienCourrierComplement';
-import { LienPourVotreMedecin } from '@/components/patient-companion/LienPourVotreMedecin';
-import { LienTransmissionCompteRendu } from '@/components/patient-companion/LienTransmissionCompteRendu';
-import { LienMesEchanges } from '@/components/patient-companion/LienMesEchanges';
-import { LienDepotDocuments } from '@/components/patient-companion/LienDepotDocuments';
-import { LienFicheRenseignements } from '@/components/physio-traitements/LienFicheRenseignements';
 import { groupesServis, hrefEntree, useEtatsSondes } from './entreesAutresEspaces';
+import { SondesAutresEspaces, useSondesPartagees } from './SondesAutresEspaces';
 
 /*
  * « AUTRES ESPACES » DU HUB, RANGÉS EN GROUPES ([[D-423]] §2, lot L2).
@@ -26,7 +17,8 @@ import { groupesServis, hrefEntree, useEtatsSondes } from './entreesAutresEspace
  *
  * Les dix `Lien*` restent montés pour leur sonde, fail-closed, sans rendre de
  * lien (`sondeSeule`) : chacun rapporte « ouvert » ou non, et la liste décide
- * de l'affichage. Une entrée visible n'est jamais une autorisation : les refus
+ * de l'affichage. Quand le menu « Mon espace » les monte déjà au layout
+ * ([[D-442]] §2), le hub lit leurs réponses partagées et ne les relance pas. Une entrée visible n'est jamais une autorisation : les refus
  * restent portés par les routes (§4).
  *
  * Activation (§4), pour le hub seul : `/questionnaires` allume « Mon
@@ -37,21 +29,13 @@ import { groupesServis, hrefEntree, useEtatsSondes } from './entreesAutresEspace
 const CLASSE_LIEN = 'flex min-h-11 items-center text-primary underline-offset-4 hover:underline';
 
 export function NavAutresEspaces({ token, bilanConsultable }: { token: string; bilanConsultable: boolean }) {
-  const { etats, rapporteurs } = useEtatsSondes();
-  const groupes = groupesServis(etats, { bilanConsultable });
+  const locales = useEtatsSondes();
+  const partagees = useSondesPartagees();
+  const groupes = groupesServis(partagees ?? locales.etats, { bilanConsultable });
 
   return (
     <>
-      <LienFichesRemises token={token} onSonde={rapporteurs.fiches} sondeSeule />
-      <LienBibliotheque token={token} onSonde={rapporteurs.bibliotheque} sondeSeule />
-      <LienCourrierMedecin token={token} onSonde={rapporteurs.courrierMedecin} sondeSeule />
-      <LienCourrierComplement token={token} onSonde={rapporteurs.courrierComplement} sondeSeule />
-      <LienPourVotreMedecin token={token} onSonde={rapporteurs.pourVotreMedecin} sondeSeule />
-      <LienTransmissionCompteRendu token={token} onSonde={rapporteurs.compteRendu} sondeSeule />
-      <LienDepotDocuments token={token} onSonde={rapporteurs.depot} sondeSeule />
-      <LienFicheRenseignements token={token} onSonde={rapporteurs.renseignements} sondeSeule />
-      <LienMesEchanges token={token} onSonde={rapporteurs.echanges} sondeSeule />
-      <LienDossierDeuxVoix token={token} onSonde={rapporteurs.dossier} sondeSeule />
+      {partagees === null && <SondesAutresEspaces token={token} rapporteurs={locales.rapporteurs} />}
 
       <nav aria-label="Autres espaces" className="space-y-4">
         <a
