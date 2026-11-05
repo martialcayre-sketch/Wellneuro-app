@@ -48,7 +48,7 @@ const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, date
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure écrite', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('bb1623fc45e9b7df48931d7967350ea352abe9be1c788025d15e5cd5ac5dd216');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c');
   });
 
   it('réécrite pour l’iode et le sélénium : verrou éteint jusqu’à la déclaration', () => {
