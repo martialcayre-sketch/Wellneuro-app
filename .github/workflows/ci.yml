@@ -226,16 +226,18 @@ jobs:
       - name: Attente du CI d'une PR (banc du verdict)
         run: node --test scripts/wn-attendre-ci.test.mjs
 
-      # `docs/DECISIONS.md` reste délibérément à créneau unique : une décision
-      # se lit dans la suite des autres et huit renvois croisés pointent vers
-      # des `D-NNN` précis. On ne supprime donc pas le conflit — on rend la
-      # collision impossible à manquer. Deux branches parallèles qui posent
-      # chacune leur décision en tête prennent le MÊME numéro : `D-013` le
-      # 2026-08-03, `D-014` le 2026-08-04, huit renvois à renuméroter chaque
-      # fois. Un conflit de merge est bruyant et se résout ; un doublon de
-      # numéro est silencieux et se propage.
+      # Depuis D-418, le registre est un fichier par décision,
+      # `docs/decisions/D-NNN.md`, nommé par son seul numéro ; `docs/DECISIONS.md`
+      # n'est plus qu'une page fixe. Deux PR qui ajoutent chacune une décision
+      # ne se heurtent plus ; deux PR qui prennent le même numéro créent deux
+      # fichiers au même nom, et Git le signale toujours. Le garde rend le
+      # reste impossible à manquer : nom canonique, titre accordé au nom, une
+      # décision par fichier, aucun doublon actif/archivé, aucune décision
+      # écrite dans la page fixe. Un doublon de numéro est silencieux et se
+      # propage (`D-013` le 2026-08-03, `D-014` le 2026-08-04, huit renvois à
+      # renuméroter chaque fois).
       # Même absence de filtre `docs_only` que les étapes ci-dessus, et pour la
-      # même raison — le fichier gardé EST un `.md`. Ni npm ni build.
+      # même raison — les fichiers gardés SONT des `.md`. Ni npm ni build.
       # Depuis D-370, le numéro se réserve à la rédaction : sur une PR
       # (`GITHUB_EVENT_NAME`, posé par Actions), un trou couvert par une
       # réservation `refs/tags/reserve/D-NNN` passe en avertissement, et le
@@ -247,13 +249,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/lib/decisions-numerotation.mjs
 
-      # Banc du contrôle ci-dessus. Il prouve les trois morsures séparément —
-      # doublon, trou sans réservation sur une PR, désordre au rang
-      # numérique —, la tolérance du trou réservé ou hors PR, et le silence sur
-      # l'état réel du dépôt. Un garde qui n'attrape qu'une des trois
-      # ressemblerait aux deux fois où la collision est passée.
+      # Banc du contrôle ci-dessus. Il prouve les morsures séparément —
+      # doublon, trou sans réservation sur une PR, décision supprimée, nom,
+      # titre, une décision par fichier, page fixe —, la tolérance du trou
+      # réservé ou hors PR, et le silence sur l'état réel du dépôt. Un garde
+      # qui n'en attrape qu'une ressemblerait aux deux fois où la collision est
+      # passée.
       - name: Numérotation du registre des décisions (banc du contrôle)
         run: node --test scripts/lib/decisions-numerotation.test.mjs
+
+      # Découpage du registre unique en un fichier par décision (D-418 §3) et
+      # sa lecture (§4). Le banc du découpage juge, tant que la base de la PR
+      # porte encore le registre unique, chaque fichier du dépôt contre son
+      # entrée (titres et liens rebasés près) ; après la bascule, ce cas se
+      # déclare sans objet, les cas sur registre synthétique restent.
+      - name: Registre des décisions (bancs du découpage et de la lecture)
+        run: node --test scripts/wn-decisions-decouper.test.mjs scripts/wn-decisions.test.mjs
 
       # Banc de `scripts/wn-reserver-decision.mjs` (D-370 §1), sur une API
       # simulée par un faux `gh` : aucune référence réelle créée, ni jeton ni

@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { lireDecision } from '@/lib/doctrine/lireDecision';
 import { describe, expect, it } from 'vitest';
 import { actionOrientation } from '@/lib/clinical-engine/orientationAdressage';
 import {
@@ -44,8 +43,7 @@ const enPause = (
 describe('textes signés de la pause', () => {
   // RECOPIE AU CARACTÈRE PRÈS : le banc relit la décision signée.
   it('sont ceux de D-281 §4, mot pour mot', () => {
-    const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const section = decisions.slice(decisions.indexOf('### D-281'), decisions.indexOf('### D-280'));
+    const section = lireDecision('D-281');
     const aplati = section.replace(/\n>\s?/g, ' ').replace(/\s+/g, ' ');
     expect(aplati).toContain(TEXTE_PAUSE_ELEMENT);
     expect(aplati).toContain(TEXTE_PAUSE_COMPLEMENTS);

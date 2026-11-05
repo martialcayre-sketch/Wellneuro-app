@@ -5,7 +5,7 @@ sources_of_truth:
   roadmap_technique: docs/ROADMAP_TECHNIQUE.md
   roadmap_produit: docs/archive/roadmap-updates/ROADMAP_PRODUIT.md
   plan: docs/claude/PLAN_WELLNEURO.md
-  decisions: docs/DECISIONS.md
+  decisions: docs/decisions/  # un fichier par décision (D-418) ; docs/DECISIONS.md, page fixe
   runbook: docs/RUNBOOK.md
   quality_gate: docs/QUALITY_GATE.md
   rules: AGENTS.md
@@ -36,11 +36,16 @@ maintained_documents:
     max_lines: 120
     last_reviewed: "2026-07-11"
 
+  # D-418 : une décision par fichier, nommé par son seul numéro ; la page
+  # docs/DECISIONS.md ne s'écrit plus (lecture : node scripts/wn-decisions.mjs).
   docs/DECISIONS.md:
-    mode: append_archive
-    max_active_entries: 15
-    archive_path: docs/archive/decisions/
-    last_reviewed: "2026-07-11"
+    mode: fixed_page
+    last_reviewed: "2026-11-05"
+
+  docs/decisions/:
+    mode: one_file_per_entry
+    archive_path: docs/decisions/archivees/
+    last_reviewed: "2026-11-05"
 
   docs/RUNBOOK.md:
     mode: protected_sections

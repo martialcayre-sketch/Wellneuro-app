@@ -365,29 +365,37 @@ test('fenêtre ratée et sync dégradée se cumulent sans se masquer', () => {
 
 // ── Décisions récentes : extraction depuis le registre append-en-tête ────────
 
-test('extraireDecisionsRecentes : les premières entrées du registre, dans leur ordre', () => {
-  const registre = [
-    '# Registre des décisions',
-    '## Décisions actives',
-    '### D-031 — Une porte posée par une règle',
-    'prose',
-    '### D-030 — Un seul pack actif',
-    '### D-029 — Autre',
-    '### D-028 — Autre',
-    '### D-027 — Autre',
-    '### D-026 — Autre',
-  ].join('\n');
-  assert.deepEqual(extraireDecisionsRecentes(registre), ['D-031', 'D-030', 'D-029', 'D-028', 'D-027']);
+// Depuis D-418, une décision par fichier (`docs/decisions/D-NNN.md`) : les
+// plus récentes sont les plus hauts numéros, archivées comprises.
+function poserDecisions(racine, numeros, { archivees = [], intrus = [] } = {}) {
+  const nomDe = (n) => `D-${String(n).padStart(3, '0')}.md`;
+  mkdirSync(join(racine, 'docs', 'decisions', 'archivees'), { recursive: true });
+  for (const n of numeros) writeFileSync(join(racine, 'docs', 'decisions', nomDe(n)), `# D-${String(n).padStart(3, '0')} — titre\n`);
+  for (const n of archivees) writeFileSync(join(racine, 'docs', 'decisions', 'archivees', nomDe(n)), `# D-${String(n).padStart(3, '0')} — titre\n`);
+  for (const nom of intrus) writeFileSync(join(racine, 'docs', 'decisions', nom), 'voir [[D-999]]\n');
+  return racine;
+}
+
+test('extraireDecisionsRecentes : les cinq plus hauts numéros, du plus récent au plus ancien', () => {
+  const racine = poserDecisions(mkdtempSync(join(tmpdir(), 'wn-cycle-dec-')), [26, 31, 27, 30, 28, 29]);
+  assert.deepEqual(extraireDecisionsRecentes(racine), ['D-031', 'D-030', 'D-029', 'D-028', 'D-027']);
 });
 
-test('extraireDecisionsRecentes : un D-NNN cité dans la prose ne compte pas', () => {
-  const registre = '### D-031 — Titre\nvoir [[D-018]] et D-025 en réserve\n';
-  assert.deepEqual(extraireDecisionsRecentes(registre), ['D-031']);
+test('extraireDecisionsRecentes : archivées comprises, intrus ignorés', () => {
+  const racine = poserDecisions(mkdtempSync(join(tmpdir(), 'wn-cycle-dec-')), [31], { archivees: [32], intrus: ['README.md', 'D-99.md'] });
+  assert.deepEqual(extraireDecisionsRecentes(racine), ['D-032', 'D-031']);
 });
 
-test('extraireDecisionsRecentes : registre vide ou absent', () => {
-  assert.deepEqual(extraireDecisionsRecentes(''), []);
-  assert.deepEqual(extraireDecisionsRecentes(null), []);
+test('extraireDecisionsRecentes : registre absent ou vide ⇒ lève, jamais une liste vide (D-418 §5)', () => {
+  assert.throws(() => extraireDecisionsRecentes(mkdtempSync(join(tmpdir(), 'wn-cycle-dec-'))), /introuvable/);
+  const vide = poserDecisions(mkdtempSync(join(tmpdir(), 'wn-cycle-dec-')), [], { intrus: ['README.md'] });
+  assert.throws(() => extraireDecisionsRecentes(vide), /aucune décision/);
+});
+
+test('extraireDecisionsRecentes : le dépôt réel rend cinq décisions', () => {
+  const ids = extraireDecisionsRecentes(join(dirname(fileURLToPath(import.meta.url)), '..'));
+  assert.equal(ids.length, 5);
+  assert.ok(ids.every((id) => /^D-\d{3,}$/.test(id)));
 });
 
 // ── Arguments CLI : `--local` saute réseau et gh, il doit être reconnu ───────
@@ -468,12 +476,27 @@ test('synchroniserOrigin en mode local : fetchOk vaut null, même si un fetch r�
 // tourne AVANT le commit) — donc toujours à côté de la réalité.
 // Ces cas fixent le contrat après son retrait.
 
-function racineTemporaire(etatInitial) {
+function racineTemporaire(etatInitial, { sansRegistre = false } = {}) {
   const racine = mkdtempSync(join(tmpdir(), 'wn-cycle-reparer-'));
   mkdirSync(join(racine, '.wn'), { recursive: true });
   writeFileSync(join(racine, '.wn', 'state.json'), `${JSON.stringify(etatInitial, null, 2)}\n`, 'utf8');
+  if (!sansRegistre) poserDecisions(racine, [1, 2]);
   return racine;
 }
+
+test('reparer : recent_decision_ids se lit dans docs/decisions/', () => {
+  const racine = racineTemporaire({ schema_version: 2, recent_decision_ids: [] });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  assert.deepEqual(etatDe(racine).recent_decision_ids, ['D-002', 'D-001']);
+});
+
+test('reparer : registre introuvable ⇒ lève, et l’état n’est pas touché (D-418 §5)', () => {
+  const initial = { schema_version: 2, recent_decision_ids: ['D-417'], git: { dirty: true } };
+  const racine = racineTemporaire(initial, { sansRegistre: true });
+  const avant = readFileSync(join(racine, '.wn', 'state.json'), 'utf8');
+  assert.throws(() => reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' }), /introuvable/);
+  assert.equal(readFileSync(join(racine, '.wn', 'state.json'), 'utf8'), avant);
+});
 
 function etatDe(racine) {
   return JSON.parse(readFileSync(join(racine, '.wn', 'state.json'), 'utf8'));

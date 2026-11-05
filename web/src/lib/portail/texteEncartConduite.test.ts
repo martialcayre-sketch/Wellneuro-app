@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { lireDecision } from '@/lib/doctrine/lireDecision';
 import { describe, expect, it } from 'vitest';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from './texteEncartConduite';
 
@@ -8,12 +7,7 @@ describe('texte accepté de l’encart « quand ralentir ou demander avis »', (
   // ligne. Égalité stricte : un paragraphe tronqué, omis ou ajouté rougit, pas
   // seulement un mot changé.
   it('est la citation de D-349 §1, ni plus ni moins', () => {
-    const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const debut = decisions.indexOf('### D-349');
-    const fin = decisions.indexOf('### D-348');
-    expect(debut).toBeGreaterThanOrEqual(0);
-    expect(fin).toBeGreaterThan(debut);
-    const section = decisions.slice(debut, fin);
+    const section = lireDecision('D-349');
     const paragraphe1 = section.slice(section.indexOf('**§1'), section.indexOf('**§2'));
     const cite = paragraphe1
       .split('\n')

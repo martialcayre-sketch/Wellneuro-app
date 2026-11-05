@@ -20,14 +20,22 @@ import { analyserArguments, apiGitHub, classerRefusCreation, principal, reserver
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), "wn-reserver-decision.mjs");
 const SHA = "a".repeat(40);
 
-function registre(...numeros) {
-  return [
-    "# Registre des décisions Wellneuro",
-    "",
-    "## Décisions actives",
-    "",
-    ...numeros.map((n) => `### D-${String(n).padStart(3, "0")} — titre\n\n- Date : 2026-10-27\n`),
-  ].join("\n");
+const SHA_DOSSIER = "c".repeat(40);
+
+/** L'arbre de `docs/decisions/` tel que l'API le rend (D-418 §5). */
+function arbre(numeros, { archivees = [], tronque = false, intrus = [] } = {}) {
+  const blob = (p) => ({ path: p, type: "blob" });
+  const nom = (n) => `D-${String(n).padStart(3, "0")}.md`;
+  return {
+    sha: SHA_DOSSIER,
+    truncated: tronque,
+    tree: [
+      ...numeros.map((n) => blob(nom(n))),
+      ...(archivees.length ? [{ path: "archivees", type: "tree" }] : []),
+      ...archivees.map((n) => blob(`archivees/${nom(n)}`)),
+      ...intrus.map(blob),
+    ],
+  };
 }
 
 /**
@@ -42,10 +50,10 @@ function apiSimulee({ numeros = [389, 390], reservations = [], issues = {}, pann
       if (panne === "main") throw new Error("gh: Bad credentials (HTTP 401)");
       return SHA;
     },
-    registre(sha) {
+    numeros(sha) {
       assert.equal(sha, SHA, "le registre se lit sur la tête de main lue");
       if (panne === "registre") throw new Error("gh: Not Found (HTTP 404)");
-      return registre(...[...numeros].reverse());
+      return [...numeros];
     },
     reservations() {
       if (panne === "reservations") throw new Error("gh: Service Unavailable (HTTP 503)");
@@ -206,7 +214,8 @@ fs.appendFileSync(${JSON.stringify(journal)}, JSON.stringify(a) + "\\n");
 const s = JSON.parse(fs.readFileSync(${JSON.stringify(fichierScenario)}, "utf8"));
 const chemin = a.find((x) => x.startsWith("repos/")) || "";
 if (chemin.endsWith("/commits/main")) { process.stdout.write(JSON.stringify({ sha: s.sha })); process.exit(0); }
-if (chemin.includes("/contents/docs/DECISIONS.md")) { process.stdout.write(s.registre); process.exit(0); }
+if (chemin.startsWith("repos/{owner}/{repo}/contents/docs?ref=")) { process.stdout.write(JSON.stringify(s.docs)); process.exit(0); }
+if (chemin.includes("/git/trees/")) { process.stdout.write(JSON.stringify(s.arbre)); process.exit(0); }
 if (chemin.includes("/git/matching-refs/")) { process.stdout.write(JSON.stringify([s.reservations.map((r) => ({ ref: r }))])); process.exit(0); }
 if (chemin.endsWith("/git/refs") && a.includes("POST")) {
   const r = (a.find((x) => x.startsWith("ref=")) || "").slice(4);
@@ -236,7 +245,11 @@ process.stderr.write("faux gh : appel imprévu\\n"); process.exit(9);
 
 const SCENARIO = {
   sha: "b".repeat(40),
-  registre: registre(390, 389),
+  docs: [
+    { name: "DECISIONS.md", type: "file", sha: "d".repeat(40) },
+    { name: "decisions", type: "dir", sha: SHA_DOSSIER },
+  ],
+  arbre: arbre([389, 390]),
   reservations: ["refs/tags/reserve/D-391"],
   creation: { "refs/tags/reserve/D-392": "existe" },
 };
@@ -260,12 +273,60 @@ test("bout en bout : 391 réservé ailleurs, 392 pris par une course, 393 créé
   });
 });
 
-test("bout en bout : registre lu sur la tête de main, en brut", () => {
+test("bout en bout : le répertoire se lit sur la tête de main, puis son arbre récursif", () => {
   avecFauxGh(SCENARIO, ({ lancer, appels }) => {
     lancer();
     const lecture = appels().find((a) => a.some((x) => x.includes("/contents/")));
-    assert.ok(lecture.some((x) => x.endsWith(`?ref=${SCENARIO.sha}`)));
-    assert.ok(lecture.includes("Accept: application/vnd.github.raw"));
+    assert.ok(lecture.some((x) => x === `repos/{owner}/{repo}/contents/docs?ref=${SCENARIO.sha}`));
+    const arbreLu = appels().find((a) => a.some((x) => x.includes("/git/trees/")));
+    assert.ok(arbreLu.some((x) => x === `repos/{owner}/{repo}/git/trees/${SHA_DOSSIER}?recursive=1`));
+  });
+});
+
+// ── La lecture du répertoire (D-418 §5) : le plus haut des actives ET des
+//    archivées ; ce qui n'est pas une décision ne compte pas ; une lecture
+//    incomplète n'est jamais un maximum. ─────────────────────────────────────
+
+function apiSurArbre(docs, arbreRendu) {
+  return apiGitHub((args) => {
+    const chemin = args.find((x) => x.startsWith("repos/")) ?? "";
+    if (chemin.includes("/contents/docs?ref=")) return JSON.stringify(docs);
+    if (chemin.includes("/git/trees/")) return JSON.stringify(arbreRendu);
+    throw new Error(`appel imprévu : ${chemin}`);
+  });
+}
+
+test("apiGitHub.numeros : actives et archivées, intrus ignorés", () => {
+  const api = apiSurArbre(SCENARIO.docs, arbre([389, 390], { archivees: [395], intrus: ["D-42.md", "README.md", "D-400-titre.md", "sous/D-401.md"] }));
+  assert.deepEqual(api.numeros(SHA).sort((a, b) => a - b), [389, 390, 395]);
+});
+
+test("apiGitHub.numeros : une archivée au-dessus des actives fixe le maximum", () => {
+  const api = apiSurArbre(SCENARIO.docs, arbre([389, 390], { archivees: [391] }));
+  const reservations = [];
+  const r = reserver({
+    api: { ...api, teteMain: () => SHA, reservations: () => new Set(), creer: (ref) => (reservations.push(ref), { issue: "creee" }) },
+  });
+  assert.equal(r.statut, "ok");
+  assert.deepEqual(reservations, ["refs/tags/reserve/D-392"]);
+});
+
+test("apiGitHub.numeros : arbre tronqué ⇒ illisible, rien n'est créé", () => {
+  const api = apiSurArbre(SCENARIO.docs, arbre([389, 390], { tronque: true }));
+  assert.throws(() => api.numeros(SHA), /tronqué/);
+});
+
+test("apiGitHub.numeros : docs/decisions/ absent sur main ⇒ illisible", () => {
+  const api = apiSurArbre([{ name: "DECISIONS.md", type: "file", sha: "d".repeat(40) }], arbre([1]));
+  assert.throws(() => api.numeros(SHA), /absent sur main/);
+});
+
+test("bout en bout : registre sans décision sur main ⇒ code 2, aucun POST", () => {
+  avecFauxGh({ ...SCENARIO, arbre: arbre([], { intrus: ["README.md"] }) }, ({ lancer, appels }) => {
+    const r = lancer();
+    assert.equal(r.code, 2, r.sortie);
+    assert.match(r.sortie, /aucune décision lue dans docs\/decisions\//);
+    assert.equal(appels().filter((a) => a.includes("POST")).length, 0);
   });
 });
 

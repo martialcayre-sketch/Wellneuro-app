@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { analyser, cibleSansLigne, neutraliserBlocsDeCode, texteAncre } from './wn-ancres-doctrine.mjs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+
+import {
+  analyser, cibleSansLigne, fichiersDuPerimetre, neutraliserBlocsDeCode, PERIMETRE, texteAncre,
+} from './wn-ancres-doctrine.mjs';
 
 // Ce que ce banc garde, et le sens dans lequel il est écrit.
 //
@@ -197,12 +202,51 @@ describe('wn-ancres-doctrine — sentinelle sur le dépôt RÉEL', () => {
     // le contrôle a cherché le texte et ne l'a pas trouvé — pas qu'il a buté
     // sur un chemin absent, ce qui serait un tout autre motif.
     const { readFileSync } = await import('node:fs');
-    const r = analyser(RACINE, 'docs/DECISIONS.md', chemin => (
-      chemin === 'docs/DECISIONS.md'
+    const r = analyser(RACINE, 'docs/decisions/D-100.md', chemin => (
+      chemin === 'docs/decisions/D-100.md'
         ? 'ancre mutée : [« ce texte n’existe dans aucun fichier du dépôt »](web/prisma/seed.ts)'
         : readFileSync(join(RACINE, chemin), 'utf8')
     ));
     strictEqual(r.violations.length, 1);
     match(r.violations[0].motif, /n’existe plus/);
+  });
+});
+
+// Le périmètre ne se vide jamais en silence (D-418 §5) : à la bascule, le
+// registre a quitté `docs/DECISIONS.md` pour `docs/decisions/`. Un périmètre
+// resté sur l'ancien chemin aurait lu une page fixe sans ancre, et rendu « OK ».
+describe('wn-ancres-doctrine — un périmètre vide rougit', () => {
+  it('le périmètre lit le registre là où il vit, un fichier par décision', () => {
+    ok(PERIMETRE.includes('docs/decisions'));
+    ok(!PERIMETRE.includes('docs/DECISIONS.md'), 'la page fixe ne porte plus de décision');
+    const { fichiers, vides } = fichiersDuPerimetre(RACINE);
+    deepStrictEqual(vides, []);
+    ok(fichiers.filter(f => f.startsWith('docs/decisions/')).length >= 442);
+  });
+
+  it('une entrée du périmètre sans fichier est nommée', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wn-ancres-'));
+    try {
+      mkdirSync(join(tmp, 'docs', 'claude', 'doctrine'), { recursive: true });
+      writeFileSync(join(tmp, 'docs', 'claude', 'doctrine', 'a.md'), 'rien\n');
+      deepStrictEqual(fichiersDuPerimetre(tmp).vides, ['docs/decisions']);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('exécuté sur un dépôt sans docs/decisions/, le contrôle sort 2, jamais OK', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wn-ancres-'));
+    try {
+      mkdirSync(join(tmp, 'docs', 'claude', 'doctrine'), { recursive: true });
+      writeFileSync(join(tmp, 'docs', 'claude', 'doctrine', 'a.md'), 'rien\n');
+      writeFileSync(join(tmp, 'docs', 'DECISIONS.md'), '# Registre\n');
+      const res = spawnSync(process.execPath, [SCRIPT], { cwd: tmp, encoding: 'utf8' });
+      strictEqual(res.status, 2, res.stdout + res.stderr);
+      match(res.stderr, /Périmètre vide : docs\/decisions/);
+      ok(!/^OK/m.test(res.stdout));
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

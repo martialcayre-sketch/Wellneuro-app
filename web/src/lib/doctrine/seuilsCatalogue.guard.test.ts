@@ -12,6 +12,7 @@ import {
   FIN_DU_CATALOGUE,
   sourceSansCommentaires,
 } from './empreinteScoring';
+import { lireToutesDecisions } from './lireDecision';
 import INSTANTANE from './seuilsCatalogue.instantane.json';
 
 // GARDE : AUCUN SEUIL DU CATALOGUE NE BOUGE SANS DÉCISION — t23, portée
@@ -90,7 +91,12 @@ const BLOCS: Record<string, Entree> = Object.fromEntries(
   Object.entries(CATALOGUE).flatMap(([id, entree]) => (VARIANTES[id] ? Object.entries(VARIANTES[id]) : [[id, entree]])),
 );
 const SOURCE_QUESTIONS = readFileSync(path.resolve(__dirname, '../questions.ts'), 'utf8');
-const REGISTRE = readFileSync(path.resolve(__dirname, '../../../../docs/DECISIONS.md'), 'utf8');
+// Le registre, un fichier par décision depuis D-418 : leurs textes mis bout à
+// bout, du plus récent au plus ancien. `lireToutesDecisions` lève sur un
+// registre introuvable ou vide.
+const REGISTRE = lireToutesDecisions()
+  .map(d => d.texte)
+  .join('\n');
 
 const numero = (decision: string) => Number(decision.slice(2));
 

@@ -60,10 +60,13 @@ pas tenir : ce qui tient est un hook, une permission, un test ou une étape de
 laissé passer une PR verte en local et rouge en CI ; ce qui l'a réglé est une
 commande, pas un paragraphe. Nommer le mécanisme visé et ce qui reste à écrire.
 
-**Une décision structurante appartient à `docs/DECISIONS.md`,** pas au journal
-de session : architecture, sécurité, RGPD, hébergement, frontière produit,
-choix clinique. Le registre est append-only et porte date, statut, conséquences
-et réserves. Le journal raconte une session ; le registre est ce qu'on relit
+**Une décision structurante appartient au registre des décisions,** pas au
+journal de session : architecture, sécurité, RGPD, hébergement, frontière
+produit, choix clinique. Elle vit dans son propre fichier,
+`docs/decisions/D-NNN.md` (`D-418` ; numéro réservé par
+`node scripts/wn-reserver-decision.mjs`), jamais dans `docs/DECISIONS.md`,
+devenue page fixe. Elle porte date, statut, conséquences et réserves ; un
+amendement s'écrit dans son fichier, en paragraphe daté. Le journal raconte une session ; le registre est ce qu'on relit
 six mois plus tard. Un renvoi depuis l'entrée de journal suffit à faire le lien.
 
 Ces deux gestes sont des **propositions** : ni le hook, ni l'entrée de registre
