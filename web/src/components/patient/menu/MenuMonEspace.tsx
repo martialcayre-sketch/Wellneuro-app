@@ -33,7 +33,7 @@ import { DESCRIPTION_MENU, LIBELLE_BOUTON_MENU, TITRE_MENU } from './textesMenu'
 
 type LectureMurs = { mursFranchis: boolean; majeur: boolean; bilanConsultable: boolean };
 
-type EtatMenu = {
+export type EtatMenu = {
   token: string | null;
   segment: string | null;
   /** Murs franchis : le mot-symbole devient un lien vers le hub (§5). */
@@ -45,6 +45,11 @@ type EtatMenu = {
 };
 
 const MenuContexte = createContext<EtatMenu | null>(null);
+
+/** L'état du menu, pour la barre basse ([[D-444]] §1) : même garde, mêmes sondes. */
+export function useEtatMenuPortail(): EtatMenu | null {
+  return useContext(MenuContexte);
+}
 
 /** Le segment qui suit `/portail/{token}/`, ou `null` (écrans d'entrée, pages sans jeton). */
 export function segmentDeSession(pathname: string, token: string | null): string | null {

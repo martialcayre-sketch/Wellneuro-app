@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { ReadingComfortControl } from '@/components/patient/ReadingComfortControl';
 import { BoutonDeconnexion } from '@/components/patient/BoutonDeconnexion';
@@ -9,6 +9,8 @@ import { PORTAIL_COOKIE_NAME, verifyPatientSession } from '@/lib/patient-session
 import { menuPortailOuvert } from '@/components/patient/menu/menuDrapeau';
 import { BoutonMenuMonEspace, FournisseurMenuPortail, MotSymbole } from '@/components/patient/menu/MenuMonEspace';
 import { LIEN_EVITEMENT } from '@/components/patient/menu/textesMenu';
+import { barreBasseOuverte } from '@/components/patient/barre-basse/barreBasseDrapeau';
+import { BarreBasse } from '@/components/patient/barre-basse/BarreBasse';
 
 export const metadata: Metadata = {
   title: 'Wellneuro — Espace patient',
@@ -19,6 +21,18 @@ export const metadata: Metadata = {
 // va chercher son état au montage, et aucune page du portail n'est la même pour
 // deux personnes. Rien à pré-rendre, donc rien de perdu.
 export const dynamic = 'force-dynamic';
+
+/** La barre basse ([[D-444]]) n'a d'effet que menu ouvert. */
+function barreServie(): boolean {
+  return menuPortailOuvert() && barreBasseOuverte();
+}
+
+// Zone sûre de la barre basse ([[D-444]] §4) : `viewport-fit=cover` donne sa
+// valeur à `env(safe-area-inset-*)`. Posé ici seulement, drapeau ouvert
+// seulement ; fermé, le viewport par défaut de Next est inchangé.
+export function generateViewport(): Viewport {
+  return barreServie() ? { viewportFit: 'cover' } : {};
+}
 
 export default async function PortailLayout({ children }: { children: ReactNode }) {
   // SIGNATURE SEULE, AUCUNE LECTURE EN BASE. Ce booléen ne décide d'aucun accès
@@ -34,10 +48,17 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   // Fermé, le portail est exactement celui d'avant — ni lien d'évitement, ni
   // lien d'accueil, ni bouton, et aucun composant du menu monté.
   const menu = menuPortailOuvert();
+  const barre = barreServie();
   const portail = (
     // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
     // sable, pas de dégradé).
-    <div className="min-h-screen bg-background flex flex-col">
+    // Barre ouverte, `viewport-fit=cover` étend la page sous l'encoche en
+    // paysage : le conteneur rend les zones sûres latérales ([[D-444]] §4).
+    <div
+      className={`min-h-screen bg-background flex flex-col${
+        barre ? ' pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]' : ''
+      }`}
+    >
       {/* Lien d'évitement ([[D-442]] §6) : premier arrêt de tabulation,
           visible au focus seulement. */}
       {menu && (
@@ -91,6 +112,8 @@ export default async function PortailLayout({ children }: { children: ReactNode 
           <PiedDePageInformations />
         </p>
       </footer>
+      {/* Barre basse ([[D-444]]) : après le pied, dont elle réserve la place. */}
+      {barre && <BarreBasse />}
     </div>
   );
   return menu ? <FournisseurMenuPortail sessionOuverte={sessionOuverte}>{portail}</FournisseurMenuPortail> : portail;

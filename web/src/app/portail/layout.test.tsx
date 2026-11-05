@@ -18,7 +18,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import { signPatientSession } from '@/lib/patient-session';
-import PortailLayout from './layout';
+import PortailLayout, { generateViewport } from './layout';
 
 afterEach(cleanup);
 
@@ -135,3 +135,47 @@ describe('layout du portail — drapeau `WN_PORTAIL_MENU`', () => {
   });
 });
 
+
+// BARRE BASSE ([[D-444]] §4, §8) : sans effet menu fermé ; ouverte, le viewport
+// prend `viewport-fit=cover` et le conteneur rend les zones sûres latérales.
+describe('layout du portail — drapeau `WN_PORTAIL_BARRE_BASSE`', () => {
+  beforeEach(() => {
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    cookieStore.valeur = signPatientSession({ idPatient: 'PAT_1', email: 'p@example.test' });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
+  });
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_MENU;
+    delete process.env.WN_PORTAIL_BARRE_BASSE;
+    vi.unstubAllGlobals();
+  });
+
+  const rendre = async () => render(await PortailLayout({ children: <p>contenu</p> }));
+  const zonesSures = (container: HTMLElement) =>
+    (container.firstElementChild as HTMLElement).className.includes('safe-area-inset-left');
+
+  for (const [cas, menu, barre] of [
+    ['les deux fermés', undefined, undefined],
+    ['barre seule, menu fermé', undefined, 'true'],
+    ['menu seul', 'true', undefined],
+  ] as const) {
+    it(`${cas} : viewport par défaut, ni barre, ni zones sûres`, async () => {
+      if (menu) process.env.WN_PORTAIL_MENU = menu;
+      if (barre) process.env.WN_PORTAIL_BARRE_BASSE = barre;
+      expect(generateViewport()).toEqual({});
+      const { container } = await rendre();
+      expect(screen.queryByRole('navigation', { name: 'Accès rapides' })).toBeNull();
+      expect(zonesSures(container)).toBe(false);
+    });
+  }
+
+  it('les deux ouverts : `viewport-fit=cover`, zones sûres ; lectures en échec, pas de barre', async () => {
+    process.env.WN_PORTAIL_MENU = 'true';
+    process.env.WN_PORTAIL_BARRE_BASSE = 'true';
+    expect(generateViewport()).toEqual({ viewportFit: 'cover' });
+    const { container } = await rendre();
+    expect(zonesSures(container)).toBe(true);
+    await new Promise(r => setTimeout(r, 0));
+    expect(screen.queryByRole('navigation', { name: 'Accès rapides' })).toBeNull();
+  });
+});
