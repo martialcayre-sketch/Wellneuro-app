@@ -47,4 +47,7 @@ export const MESSAGES_REFUS_PATIENT: Record<string, string> = {
   statut_sans_sexe: 'Indiquez d’abord votre sexe.',
   refus_base: 'Votre demande n’a pas pu être enregistrée. Rechargez la page et reprenez-la.',
   conflit_concurrent: 'Votre demande n’a pas pu être enregistrée. Rechargez la page et reprenez-la.',
+  // Arbitrage du 2026-11-05 : le patient ne lit plus le texte du praticien
+  // (« Rouvrez le suivi »), la raison reste `dossier_cloture`.
+  dossier_cloture: 'Votre suivi est clôturé : vous ne pouvez plus modifier vos traitements.',
 };

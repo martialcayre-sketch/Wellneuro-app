@@ -16,6 +16,8 @@ import {
   resolveProtocoleDiffuse,
 } from '@/lib/protocol/portailProtocol';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_DOSSIER_CLOS_PATIENT_JOURNAL } from '@/lib/patient/cycleDeVie';
+import { refusClotureSuiviPour } from '@/lib/patient/gardeClotureServeur';
 
 // Miroir de la troncature de `GET /api/portail/protocole`, dont le client tire
 // l'identité du cycle.
@@ -107,6 +109,13 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
         { ok: false, reason: 'unauthorized', error: 'Session portail invalide ou expirée.' },
         { status: 401 },
       );
+    }
+
+    // Dossier clos (arbitrage du 2026-11-05) : le journal ne se transmet plus ;
+    // le GET reste ouvert aux archives.
+    const refusCloture = await refusClotureSuiviPour(auth.idPatient, MESSAGE_DOSSIER_CLOS_PATIENT_JOURNAL);
+    if (refusCloture) {
+      return NextResponse.json({ ok: false, ...refusCloture }, { status: 409 });
     }
 
     let body: unknown;

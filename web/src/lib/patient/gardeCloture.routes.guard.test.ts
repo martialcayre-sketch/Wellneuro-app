@@ -21,6 +21,10 @@ const FERMEES = [
   'portail/agenda-sommeil/cloture',
   // Même arbitrage : le pack de base est une assignation (D4 de LOT-01 IDP2).
   'portail/valider',
+  // Arbitrage du 2026-11-05 : les autres saisies du portail.
+  'portail/fiche',
+  'portail/ja/observations',
+  'portail/protocole/checkin',
   // Refus antérieurs à l'arbitrage.
   'portail/comptes-rendus',
   'portail/date-naissance',
@@ -46,12 +50,9 @@ const OUVERTES: Record<string, string> = {
   'portail/deconnexion': 'session, aucune donnée recueillie',
   'portail/document-medecin/telechargement': 'journal de téléchargement d’un document remis : lecture des archives',
   'portail/dossier': 'dossier à deux voix : la clôture n’est pas un ordre de silence fait au patient',
-  'portail/fiche': 'hors de l’arbitrage du 2026-11-04 (routes de saisie de questionnaire), non tranché',
-  'portail/ja/observations': 'hors de l’arbitrage du 2026-11-04 (routes de saisie de questionnaire), non tranché',
   'portail/lectures': 'accusé de lecture d’un document remis : lecture des archives',
   'portail/lien/demande': 'redemande d’un lien d’accès, envoyable sur un dossier clos (décision du 2026-07-21)',
   'portail/pack-reevaluation': 'réponse à une proposition de réévaluation, n’écrit aucune assignation',
-  'portail/protocole/checkin': 'hors de l’arbitrage du 2026-11-04 (routes de saisie de questionnaire), non tranché',
   'portail/session': 'session, aucune donnée recueillie',
   'portail/trust/choix': 'droits et choix du patient, qui survivent à la clôture',
   'portail/trust/lecture': 'accusé de lecture d’un document d’information',
@@ -177,10 +178,15 @@ describe('garde de clôture — routes d’écriture patient (arbitrage du 2026-
     expect(positionGarde(source)).toBeLessThan(positionGardeAge(source));
   });
 
-  it('les lectures des agendas restent ouvertes : aucune garde de clôture dans leurs GET', () => {
-    for (const r of ['portail/agenda-alimentaire', 'portail/agenda-sommeil']) {
+  it('les lectures restent ouvertes : aucune garde de clôture dans les GET des routes fermées au POST', () => {
+    for (const r of ['portail/agenda-alimentaire', 'portail/agenda-sommeil', 'portail/ja/observations', 'portail/protocole/checkin']) {
       const code = sansCommentaires(routes.get(r) ?? '');
-      const get = code.slice(code.search(/export\s+async\s+function\s+GET\b/), code.search(/export\s+async\s+function\s+POST\b/));
+      // Du GET à l'export suivant, quel que soit l'ordre des deux méthodes.
+      const debut = code.search(/export\s+async\s+function\s+GET\b/);
+      expect(debut, r).toBeGreaterThanOrEqual(0);
+      const suite = code.slice(debut + 1).search(/\nexport\s/);
+      const get = code.slice(debut, suite < 0 ? undefined : debut + 1 + suite);
+      expect(get, r).toMatch(/function\s+GET\b/);
       expect(get, r).not.toMatch(/refusClotureSuiviPour|accepteNouvelEnvoi/);
     }
   });

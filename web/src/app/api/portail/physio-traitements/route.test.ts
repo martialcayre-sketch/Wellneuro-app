@@ -108,16 +108,26 @@ describe('POST — gardes et main du patient', () => {
     expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
   });
 
-  it('dossier clos : 409', async () => {
+  // Arbitrage du 2026-11-05 : le patient lit sa propre formulation, jamais
+  // le texte du praticien (« Rouvrez le suivi »).
+  const REFUS_CLOS = {
+    ok: false,
+    reason: 'dossier_cloture',
+    error: 'Votre suivi est clôturé : vous ne pouvez plus modifier vos traitements.',
+  };
+
+  it('dossier clos : 409, texte patient', async () => {
     auth.mockResolvedValue({ patient: { ...PATIENT, suiviClotureLe: new Date('2026-10-01') } });
-    expect((await POST(requete(SEXE))).status).toBe(409);
+    const reponse = await POST(requete(SEXE));
+    expect(reponse.status).toBe(409);
+    expect(await reponse.json()).toEqual(REFUS_CLOS);
   });
 
   it('une clôture posée entre la session et la transaction : refusée sous le verrou', async () => {
     prisma.patient.findUnique.mockResolvedValue({ actif: true, suiviClotureLe: new Date('2026-10-21') });
     const reponse = await POST(requete(SEXE));
     expect(reponse.status).toBe(409);
-    expect((await reponse.json()).reason).toBe('dossier_cloture');
+    expect(await reponse.json()).toEqual(REFUS_CLOS);
     expect(prisma.donneePhysiologique.create).not.toHaveBeenCalled();
   });
 
