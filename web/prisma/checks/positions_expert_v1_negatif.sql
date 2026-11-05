@@ -357,10 +357,14 @@ BEGIN
     'TRUNCATE positions_expert_actes', ARRAY['P0001']);
   PERFORM pg_temp.doit_refuser('TRUNCATE des arbitrages',
     'TRUNCATE arbitrages_conflits_sources', ARRAY['P0001']);
-  SELECT count(*) INTO nb
+  -- Les TABLES distinctes qui portent un trigger TRUNCATE ACTIF : la cascade
+  -- du TRUNCATE ci-dessus se fait refuser par la première table voisine, si
+  -- bien que le sondage seul ne prouve rien pour `positions_expert_versions`
+  -- (revue CodeRabbit de #1871).
+  SELECT count(DISTINCT c.relname) INTO nb
   FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
   WHERE c.relname IN ('positions_expert_versions', 'positions_expert_actes', 'arbitrages_conflits_sources')
-    AND (t.tgtype & 32) <> 0 AND NOT t.tgisinternal;
+    AND (t.tgtype & 32) <> 0 AND NOT t.tgisinternal AND t.tgenabled <> 'D';
   IF nb <> 3 THEN
     RAISE EXCEPTION 'POSITIONS EXPERT: % trigger(s) TRUNCATE sur 3 — chaque table porte le sien.', nb;
   END IF;
@@ -402,6 +406,28 @@ BEGIN
   IF nb <> 0 THEN
     RAISE EXCEPTION 'POSITIONS EXPERT: % colonne(s) désignent un patient — ces tables ne portent AUCUNE donnée patient.', nb;
   END IF;
+
+  -- ── 6 bis. Numéros à deux chiffres : la comparaison est NUMÉRIQUE ────────
+  -- Une chaîne à part (WN-PE-0003, qu'aucun cas ne lit après) : `v1.10` suit
+  -- `v1.9` et `v10.0` suit `v9.9`, ce qu'une comparaison textuelle refuserait ;
+  -- `v1.9` après `v1.10` est refusé, ce qu'elle accepterait (revue CodeRabbit
+  -- de #1871).
+  BEGIN
+    INSERT INTO positions_expert_versions (id, position_id, version, dossier, contenu, claims_appui, auteur)
+    VALUES ('pev_n1', 'WN-PE-0003', 'v1.9', 'magnesium', C1, ARRAY['WN-CL-0001-001@v1.0'], 'p');
+    INSERT INTO positions_expert_versions (id, position_id, version, dossier, contenu, claims_appui, id_version_revisee, auteur)
+    VALUES ('pev_n2', 'WN-PE-0003', 'v1.10', 'magnesium', C2, ARRAY['WN-CL-0001-001@v1.0'], 'pev_n1', 'p');
+    INSERT INTO positions_expert_versions (id, position_id, version, dossier, contenu, claims_appui, id_version_revisee, auteur)
+    VALUES ('pev_n3', 'WN-PE-0003', 'v9.9', 'magnesium', C2, ARRAY['WN-CL-0001-001@v1.0'], 'pev_n2', 'p');
+    INSERT INTO positions_expert_versions (id, position_id, version, dossier, contenu, claims_appui, id_version_revisee, auteur)
+    VALUES ('pev_n4', 'WN-PE-0003', 'v10.0', 'magnesium', C2, ARRAY['WN-CL-0001-001@v1.0'], 'pev_n3', 'p');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION 'POSITIONS EXPERT: une révision à deux chiffres a été refusée (%)', SQLERRM;
+  END;
+  PERFORM pg_temp.doit_refuser('révision v9.10 après v10.0',
+    V || '(''x30'', ''WN-PE-0003'', ''v9.10'', ''magnesium'', NULL, ' || quote_literal(C2) || ', ' || CL || ', ''pev_n4'', ''p'')',
+    ARRAY['P0001'], 'ne suit pas la version courante');
 
   RAISE NOTICE 'POSITIONS EXPERT: versions, actes, poses, remplacements et révocations valides acceptés ; instants en UTC sous Europe/Paris (trois tables) ; formats et dossier fermés ; contenu à quatre rubriques ; claims d''appui exigés, formés, uniques ; révision de la version courante, même dossier, numéro croissant ; relecture et motif exigés ; empreinte recalculée par la base ; version révisée sans acte ; forme de la pose et de la révocation ; une tête par couple, une par fiche ; seule une position en vigueur se retient ; ordre posé par la base ; UPDATE/DELETE/TRUNCATE refusés, trigger TRUNCATE propre ; FK RESTRICT ; RLS deny-all ; aucune colonne patient.';
 END $$;

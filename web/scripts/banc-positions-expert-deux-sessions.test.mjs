@@ -52,6 +52,14 @@ const BASE_ATTENDUE = process.env.WN_POSITIONS_EXPERT_BANC_BASE;
 const BASE_REELLE = new URL(URL_BASE).pathname.slice(1);
 // Hôte LOCAL seulement (garde-fou de T3) : le banc commet des écritures.
 const HOTE = new URL(URL_BASE).hostname;
+// `pg` lit un paramètre `host` (ou `hostaddr`) AVANT l'autorité de l'URL :
+// `postgresql://localhost/base?host=distant` passerait le contrôle ci-dessous
+// et écrirait ailleurs (revue CodeRabbit de #1871).
+for (const param of ['host', 'hostaddr']) {
+  if (new URL(URL_BASE).searchParams.has(param)) {
+    throw new Error(`REFUS : le paramètre « ${param} » de DATABASE_URL remplace l'hôte visé.`);
+  }
+}
 if (HOTE !== '127.0.0.1' && HOTE !== 'localhost') {
   throw new Error(`REFUS : DATABASE_URL vise l'hôte « ${HOTE} », le banc n'écrit que sur une base locale.`);
 }
@@ -66,6 +74,9 @@ const RUN_MAJ = RUN.toUpperCase();
 const AUTEUR = 'praticien@wellneuro.fr';
 const S = 'a'.repeat(64);
 const id = nom => `${nom}_${RUN}`;
+/** Les lignes du run, et elles seules : le `_` est échappé, sinon `LIKE` y
+ * voit un joker (revue CodeRabbit de #1871). `RUN` n'est fait que d'hexa. */
+const MOTIF_RUN = `%\\_${RUN}`;
 /** Un couple par course : chaque course a sa propre tête. */
 const conflit = n => `CS-BANC${RUN_MAJ}-${n}`;
 const fiche = n => `FU_BANC_${RUN_MAJ}_${n}`;
@@ -190,11 +201,11 @@ after(async () => {
       'ALTER TABLE arbitrages_conflits_sources DISABLE TRIGGER USER',
       'ALTER TABLE positions_expert_actes DISABLE TRIGGER USER',
       'ALTER TABLE positions_expert_versions DISABLE TRIGGER USER',
-      { text: 'DELETE FROM arbitrages_conflits_sources WHERE id LIKE $1', values: [`%_${RUN}`] },
-      { text: 'DELETE FROM positions_expert_actes WHERE id LIKE $1', values: [`%_${RUN}`] },
+      { text: 'DELETE FROM arbitrages_conflits_sources WHERE id LIKE $1', values: [MOTIF_RUN] },
+      { text: 'DELETE FROM positions_expert_actes WHERE id LIKE $1', values: [MOTIF_RUN] },
       // Les révisions avant ce qu'elles révisent (clé auto-référente).
-      { text: 'DELETE FROM positions_expert_versions WHERE id LIKE $1 AND id_version_revisee IS NOT NULL', values: [`%_${RUN}`] },
-      { text: 'DELETE FROM positions_expert_versions WHERE id LIKE $1', values: [`%_${RUN}`] },
+      { text: 'DELETE FROM positions_expert_versions WHERE id LIKE $1 AND id_version_revisee IS NOT NULL', values: [MOTIF_RUN] },
+      { text: 'DELETE FROM positions_expert_versions WHERE id LIKE $1', values: [MOTIF_RUN] },
       'ALTER TABLE positions_expert_versions ENABLE TRIGGER USER',
       'ALTER TABLE positions_expert_actes ENABLE TRIGGER USER',
       'ALTER TABLE arbitrages_conflits_sources ENABLE TRIGGER USER',

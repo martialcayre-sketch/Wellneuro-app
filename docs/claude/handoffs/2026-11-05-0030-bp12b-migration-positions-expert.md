@@ -99,6 +99,16 @@ code consommateur.
     seconde tête a passé en SERIALIZABLE »).
   - Le banc signe aussi avec l'empreinte calculée en JS, et la base
     l'accepte : la formule est la même des deux côtés.
+- Revue CodeRabbit de ea521766 : quatre remarques, toutes corrigées.
+  - Majeure : le garde-fou d'hôte local du banc se contournait par `?host=`
+    (ou `hostaddr`). Le banc refuse désormais ces deux paramètres.
+  - Mineure : le `_` des motifs `LIKE` du nettoyage était un joker. Il est
+    échappé.
+  - Nitpick : le contrat compte les tables dont un trigger TRUNCATE est
+    actif. Contre-épreuve : trigger des versions désactivé ⇒ rouge.
+  - Nitpick : une chaîne de versions à deux chiffres (`v1.9` → `v1.10` →
+    `v9.9` → `v10.0`, puis `v9.10` refusée). Contre-épreuve : avec une
+    comparaison textuelle, le contrat rougit.
 
 ## Problèmes ouverts
 
