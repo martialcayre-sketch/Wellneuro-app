@@ -88,9 +88,9 @@ const lireDepuis = (racine) => (chemin) => {
 
 // ── Les liens ───────────────────────────────────────────────────────────────
 
-test("estRelativeAuFichier : ../, claude/, changelog.d/ oui ; racine, URL, ancre, mot seul non", () => {
-  for (const c of ["../web/a.ts", "claude/x.md", "changelog.d/x.md", "./a/b.md"]) assert.equal(estRelativeAuFichier(c), true, c);
-  for (const c of ["web/a.ts", "docs/a.md", "scripts/a.mjs", "prisma/a", ".claude/a", ".github/a.yml", "https://x/y", "#ancre", "/abs/x", "chemin", "…"]) {
+test("estRelativeAuFichier : ../, claude/ oui ; racine (changelog.d/ compris), URL, ancre, mot seul non", () => {
+  for (const c of ["../web/a.ts", "claude/x.md", "./a/b.md"]) assert.equal(estRelativeAuFichier(c), true, c);
+  for (const c of ["web/a.ts", "docs/a.md", "scripts/a.mjs", "prisma/a", "changelog.d/x.md", ".claude/a", ".github/a.yml", "https://x/y", "#ancre", "/abs/x", "chemin", "…"]) {
     assert.equal(estRelativeAuFichier(c), false, c);
   }
 });
@@ -148,7 +148,8 @@ test("versFichier puis versEntree : aller-retour exact, titre # et liens rebasé
   assert.ok(f4.contenu.includes("[« texte cité »](web/src/a.ts)"), "une ancre écrite depuis la racine ne bouge pas");
   assert.ok(f4.contenu.includes("`[x](../web/dans-du-code.ts)`"));
   assert.ok(f4.contenu.includes("[bloc](../web/dans-un-bloc.ts)"));
-  assert.equal(f4.liens.length, 3);
+  assert.equal(f4.liens.length, 2);
+  assert.ok(f4.contenu.includes("[frag](changelog.d/2026-08-04-x.md)"), "changelog.d/ est écrit depuis la racine : inchangé");
   const d1 = versFichier(decouperRegistre(REGISTRE).entrees[3]);
   assert.equal(d1.chemin, "docs/decisions/archivees/D-001.md");
   assert.ok(d1.contenu.includes("[x](../../../scripts/y.mjs)"));
@@ -162,7 +163,7 @@ test("écriture puis banc : vert, et chaque défaut planté le fait rougir", () 
     const sain = verifierDecoupage(REGISTRE, lire);
     assert.deepEqual(sain.fautes, []);
     assert.equal(sain.entrees, 4);
-    assert.equal(sain.liens, 4);
+    assert.equal(sain.liens, 3);
 
     const d3 = path.join(tmp, "docs/decisions/D-003.md");
     const texteD3 = fs.readFileSync(d3, "utf8");
@@ -183,6 +184,19 @@ test("écriture puis banc : vert, et chaque défaut planté le fait rougir", () 
     fs.writeFileSync(d4, fs.readFileSync(d4, "utf8").replace("../../web/src/a.ts#L12", "../web/src/a.ts#L12"));
     assert.match(verifierDecoupage(REGISTRE, lire).fautes.join("\n"), /D-004 : .* ne rend pas l'entrée/);
   });
+});
+
+test("banc : la contre-épreuve sans rebaserLiens voit un mot changé et une cible racine rebasée", () => {
+  // Un défaut SYMÉTRIQUE de rebaserLiens passerait l'aller-retour : la
+  // contre-épreuve masque les cibles et compare le reste, puis exige qu'une
+  // cible changée ait été relative au fichier (revue wn-reviewer de t58, R3).
+  const fichiers = new Map(decouperRegistre(REGISTRE).entrees.map((e) => versFichier(e)).map((f) => [f.chemin, f.contenu]));
+  const chemin = "docs/decisions/D-004.md";
+  const contenu = fichiers.get(chemin);
+  const fautes = (texte) => verifierDecoupage(REGISTRE, (c) => (c === chemin ? texte : fichiers.get(c) ?? null)).fautes.join("\n");
+  assert.equal(fautes(contenu), "");
+  assert.match(fautes(contenu.replace("La plus récente", "La plus recente")), /D-004 : un texte hors cible de lien a changé/);
+  assert.match(fautes(contenu.replace("[« texte cité »](web/src/a.ts)", "[« texte cité »](../../web/src/a.ts)")), /D-004 : la cible web\/src\/a\.ts, écrite depuis la racine, a changé/);
 });
 
 test("banc : un texte de décision hors de toute entrée est une faute (entrée perdue)", () => {

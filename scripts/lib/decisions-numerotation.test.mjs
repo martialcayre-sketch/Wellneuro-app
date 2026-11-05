@@ -211,6 +211,7 @@ for (const [cas, texte] of [
   ["au numéro d'une autre décision", "# D-003 — titre\n"],
   ["sans zéros de tête", "# D-2 — titre\n"],
   ["sans tiret cadratin ni titre", "# D-002\n"],
+  ["au titre fait d'espaces", "# D-002 —   \n"],
   ["précédé d'une ligne", "\n# D-002 — titre\n"],
 ]) {
   test(`titre : ${cas} est refusé — accordé au nom de fichier`, () => {
@@ -224,6 +225,30 @@ test("une décision par fichier : un second titre de décision est refusé, à s
   const r = auditer({ actives: [3, ["D-002.md", `${contenu(2)}\n### D-004 — glissée ici\n`], 1] });
   assert.deepEqual(genres(r), ["une décision par fichier"]);
   assert.match(r.violations[0].chemin, /D-002\.md:5$/);
+});
+
+test("une décision par fichier : un second titre en retrait (≤ 3 espaces) est refusé aussi", () => {
+  const r = auditer({ actives: [3, ["D-002.md", `${contenu(2)}\n   ### D-004 — en retrait\n`], 1] });
+  assert.deepEqual(genres(r), ["une décision par fichier"]);
+});
+
+test("page fixe : un titre de décision en retrait y est refusé aussi", () => {
+  const r = auditer({ actives: [2, 1], page: `${PAGE_FIXE}\n  ### D-003 — en retrait\n` });
+  assert.deepEqual(genres(r), ["page fixe"]);
+});
+
+test("nom : un lien symbolique est refusé, jamais lu — même s'il désigne une décision bien formée", () => {
+  avecRegistre({ actives: [2, 1] }, (tmp) => {
+    const dehors = path.join(tmp, "ailleurs.md");
+    fs.writeFileSync(dehors, contenu(3));
+    fs.symlinkSync(dehors, path.join(tmp, REPERTOIRE, "D-003.md"));
+    const { entrees } = lireEntrees(tmp);
+    const forme = auditerForme(entrees, lirePage(tmp));
+    assert.deepEqual(forme.map((v) => v.genre), ["nom"]);
+    assert.match(forme[0].message, /lien symbolique/);
+    assert.deepEqual(decisionsDesEntrees(entrees).map((d) => d.numero).sort(), [1, 2]);
+    assert.equal(executer(tmp).code, 1);
+  });
 });
 
 test("une décision par fichier : un renvoi D-NNN dans la prose n'est pas un titre", () => {

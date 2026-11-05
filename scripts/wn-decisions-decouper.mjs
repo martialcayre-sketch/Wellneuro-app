@@ -18,7 +18,7 @@
 //   - les liens écrits relativement au fichier (`../web/…`, `claude/…`) :
 //     leur cible est recalculée pour la profondeur du répertoire de
 //     destination, et désigne la même ressource. Les cibles écrites depuis la
-//     racine du dépôt (`web/…`, `docs/…`, `scripts/…`…), que lit
+//     racine du dépôt (`web/…`, `docs/…`, `scripts/…`, `changelog.d/…`…), que lit
 //     `scripts/wn-ancres-doctrine.mjs`, ne bougent pas ; ni rien de ce qui est
 //     dans un bloc ou un segment de code.
 // Les lignes vides qui séparaient deux entrées ne sont pas du texte de
@@ -48,8 +48,13 @@ const REPERTOIRE_SOURCE = path.posix.dirname(PAGE);
 const TITRE_ANCIEN = /^### D-(\d+) — (.+)$/;
 const SECTION = /^## Décisions (actives|archivées)\s*$/;
 
-/** Une cible écrite depuis la racine du dépôt : elle ne bouge pas (§3). */
-const RACINES = /^(?:web|docs|scripts|prisma|\.claude|\.github)\//;
+/**
+ * Une cible écrite depuis la racine du dépôt : elle ne bouge pas (§3).
+ * `changelog.d/` en est : le répertoire n'existe qu'à la racine, et les deux
+ * liens du registre qui le visent sont écrits à côté de cibles `web/…`
+ * (revue wn-reviewer de t58, A1).
+ */
+const RACINES = /^(?:web|docs|scripts|prisma|changelog\.d|\.claude|\.github)\//;
 
 /**
  * Une cible relative au fichier : ni URL, ni ancre, ni écrite depuis la
@@ -233,6 +238,18 @@ export function verifierDecoupage(texteRegistre, lire) {
     }
     if (lire(autre) !== null) fautes.push(`${e.id} : présent aussi en ${autre} (doublon)`);
     if (versEntree(chemin, contenu) !== e.texte) fautes.push(`${e.id} : ${chemin} ne rend pas l'entrée du registre`);
+    // Contre-épreuve qui ne passe PAS par `rebaserLiens` (revue wn-reviewer de
+    // t58, R3) : cibles de liens masquées, le fichier et l'entrée ne diffèrent
+    // que par le niveau du titre — aucun mot changé ailleurs. Et une cible
+    // changée ne l'est que si elle était relative au fichier.
+    const masquer = (t) => t.replace(/\]\([^)\s]*\)/g, "](·)");
+    const enEntree = sansLignesVidesFinales(contenu).replace(/^# /, "### ");
+    if (masquer(enEntree) !== masquer(e.texte)) fautes.push(`${e.id} : un texte hors cible de lien a changé`);
+    const cibles = (t) => [...t.matchAll(/\]\(([^)\s]*)\)/g)].map((m) => m[1]);
+    const apresCibles = cibles(enEntree);
+    cibles(e.texte).forEach((c, i) => {
+      if (c !== apresCibles[i] && !estRelativeAuFichier(c)) fautes.push(`${e.id} : la cible ${c}, écrite depuis la racine, a changé`);
+    });
     for (const l of reecrits) {
       liens += 1;
       const avant = resoudre(REPERTOIRE_SOURCE, l.avant);

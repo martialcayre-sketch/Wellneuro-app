@@ -25,8 +25,8 @@ export const SECTION_ARCHIVE = "archivées";
 /** `D-NNN.md`, NNN sur trois chiffres au moins. */
 export const NOM_FICHIER = /^D-(\d{3,})\.md$/;
 
-/** La première ligne d'une décision : `# D-NNN — <titre>`. */
-export const TITRE = /^# D-(\d+) — (.+)$/;
+/** La première ligne d'une décision : `# D-NNN — <titre>`, titre non blanc. */
+export const TITRE = /^# D-(\d+) — (.*\S.*)$/;
 
 export const nomDecision = (n) => `D-${String(n).padStart(3, "0")}`;
 
@@ -49,20 +49,29 @@ export function numeroDuNom(nom) {
  * Tout ce que portent les deux répertoires, décision ou non — le garde juge
  * aussi ce qui n'a pas la forme d'une décision.
  * @param {string} racine
- * @returns {{present: boolean, entrees: Array<{chemin: string, nom: string, section: string, dossier: boolean}>}}
+ * `lien` : un lien symbolique, jamais lu comme une décision — il pourrait
+ * désigner un fichier hors du registre (revue wn-reviewer de t58, R1).
+ * @returns {{present: boolean, entrees: Array<{chemin: string, nom: string, section: string, dossier: boolean, lien: boolean}>}}
  */
 export function listerEntrees(racine) {
   const entrees = [];
   const absolu = path.join(racine, REPERTOIRE);
   if (!fs.existsSync(absolu)) return { present: false, entrees };
+  const entree = (e, chemin, section) => ({
+    chemin,
+    nom: e.name,
+    section,
+    dossier: e.isDirectory(),
+    lien: e.isSymbolicLink(),
+  });
   for (const e of fs.readdirSync(absolu, { withFileTypes: true })) {
     if (e.isDirectory() && e.name === SOUS_REPERTOIRE_ARCHIVES) {
       for (const a of fs.readdirSync(path.join(absolu, e.name), { withFileTypes: true })) {
-        entrees.push({ chemin: `${ARCHIVES}/${a.name}`, nom: a.name, section: SECTION_ARCHIVE, dossier: a.isDirectory() });
+        entrees.push(entree(a, `${ARCHIVES}/${a.name}`, SECTION_ARCHIVE));
       }
       continue;
     }
-    entrees.push({ chemin: `${REPERTOIRE}/${e.name}`, nom: e.name, section: SECTION_ACTIVE, dossier: e.isDirectory() });
+    entrees.push(entree(e, `${REPERTOIRE}/${e.name}`, SECTION_ACTIVE));
   }
   entrees.sort((a, b) => a.chemin.localeCompare(b.chemin));
   return { present: true, entrees };
@@ -80,7 +89,7 @@ export function lireDecisions(racine) {
   if (!present) throw new Error(`${REPERTOIRE}/ introuvable depuis ${racine}`);
   const decisions = [];
   for (const e of entrees) {
-    if (e.dossier) continue;
+    if (e.dossier || e.lien) continue;
     const numero = numeroDuNom(e.nom);
     if (numero === null) continue;
     decisions.push({

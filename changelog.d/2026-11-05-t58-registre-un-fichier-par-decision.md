@@ -2,24 +2,27 @@
 
 Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
 
-- Les 442 décisions du registre unique (D-001 à D-442, toutes actives) vivent
+- Les 443 décisions du registre unique (D-001 à D-443, toutes actives) vivent
   chacune dans `docs/decisions/D-NNN.md`, nommé par son seul numéro, première
   ligne `# D-NNN — <titre>` ; les archivées iront sous
   `docs/decisions/archivees/`. Texte repris à l'identique, à deux exceptions
-  près (§3) : le titre (`###` devenu `#`) et 28 liens relatifs au fichier
-  (`../web/…`, `claude/…`, `changelog.d/…`), rebasés vers la même ressource.
-  Les ancres écrites depuis la racine ne bougent pas. Les lignes vides entre
+  près (§3) : le titre (`###` devenu `#`) et 26 liens relatifs au fichier
+  (`../web/…`, `claude/…`), rebasés vers la même ressource. Les cibles
+  écrites depuis la racine ne bougent pas, `changelog.d/…` compris. Les lignes vides entre
   deux entrées ne sont pas reprises : chaque fichier finit par un seul saut
   de ligne.
 - `scripts/wn-decisions-decouper.mjs` (`--depuis <ref>` ou `--fichier`,
-  `--verifier`) découpe et se rejoue sur un `main` plus récent ; son banc
-  juge, tant que la base de la PR porte le registre unique, chaque fichier du
-  dépôt contre son entrée.
+  `--verifier`) découpe et se rejoue sur un `main` plus récent (rejoué une
+  fois pendant le lot : D-443 créée, D-041 et D-103 amendées par #1874) ; son
+  banc juge, tant que la base de la PR porte le registre unique, chaque
+  fichier du dépôt contre son entrée, avec une contre-épreuve qui ne passe pas
+  par la réécriture des liens.
 - `docs/DECISIONS.md` devient une page fixe : où vit le registre, comment le
   lire. Lecture : `node scripts/wn-decisions.mjs` (tout, du plus récent au
   plus ancien), `… D-418` (une décision), `… --titres`. Aucun index versionné.
-- Le garde de numérotation juge par nom de fichier : nom canonique, titre
-  accordé au nom, une décision par fichier, doublon actif/archivé, trou sans
+- Le garde de numérotation juge par nom de fichier : nom canonique (lien
+  symbolique refusé), titre non blanc accordé au nom, une décision par fichier
+  (titre en retrait compris), doublon actif/archivé, trou sans
   réservation et décision supprimée sur une PR (base d'avant la bascule
   comprise), et refuse toute décision écrite dans la page fixe (§6). Le
   « désordre » de D-370 §3 n'a plus d'objet.

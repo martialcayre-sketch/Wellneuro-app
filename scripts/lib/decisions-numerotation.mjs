@@ -148,8 +148,12 @@ export const SEUIL_AFFICHAGE_TROUS = 3;
 const PREFIXE_RESERVATION = "refs/tags/reserve/D-";
 const REFERENCE_RESERVATION = /^refs\/tags\/reserve\/D-(\d+)$/;
 
-/** Un titre de décision, à tout niveau : `# D-NNN`, `### D-NNN`… */
-const TITRE_QUELCONQUE = /^#{1,6}\s+D-\d+\b/;
+/**
+ * Un titre de décision, à tout niveau : `# D-NNN`, `### D-NNN`… — et jusqu'à
+ * trois espaces de retrait, qui restent un titre en Markdown (revue
+ * wn-reviewer de t58, R1).
+ */
+const TITRE_QUELCONQUE = /^ {0,3}#{1,6}\s+D-\d+\b/;
 
 /** Le titre d'une entrée du registre unique, d'avant D-418. */
 const TITRE_REGISTRE_UNIQUE = /^###\s+D-(\d+)\b/;
@@ -167,7 +171,7 @@ export function lireEntrees(racine) {
     present,
     entrees: entrees.map((e) => ({
       ...e,
-      contenu: e.dossier ? null : fs.readFileSync(path.join(racine, e.chemin), "utf8"),
+      contenu: e.dossier || e.lien ? null : fs.readFileSync(path.join(racine, e.chemin), "utf8"),
     })),
   };
 }
@@ -185,7 +189,7 @@ export function lirePage(racine) {
  */
 export function decisionsDesEntrees(entrees) {
   return entrees
-    .filter((e) => !e.dossier && numeroDuNom(e.nom) !== null)
+    .filter((e) => !e.dossier && !e.lien && numeroDuNom(e.nom) !== null)
     .map((e) => {
       const numero = numeroDuNom(e.nom);
       return { numero, brut: nomDecision(numero), chemin: e.chemin, section: e.section };
@@ -201,6 +205,14 @@ export function decisionsDesEntrees(entrees) {
 export function auditerForme(entrees, page) {
   const violations = [];
   for (const e of entrees) {
+    if (e.lien) {
+      violations.push({
+        genre: "nom",
+        chemin: e.chemin,
+        message: `lien symbolique refusé — une décision est un fichier du registre, pas un renvoi vers un autre (D-418 §1).`,
+      });
+      continue;
+    }
     const numero = e.dossier ? null : numeroDuNom(e.nom);
     if (numero === null) {
       const presque = /^D-(\d+)\.md$/.exec(e.nom);
