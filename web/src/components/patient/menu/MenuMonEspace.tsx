@@ -265,12 +265,21 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
   if (!etat?.actif || !etat.token) return null;
 
   // Fermé au seuil du rail, le bouton n'est plus affiché : Radix lui rendrait
-  // un focus qui tomberait sur `body`. Le focus va alors au contenu (§6 de
-  // [[D-442]], `main#contenu`) ; partout ailleurs, il revient au bouton.
+  // un focus qui tomberait sur `body`. Le focus passe alors à la même liste,
+  // dans le rail — son entrée active, sinon sa première —, sous l'anneau de
+  // focus global ; à défaut de rail, au contenu. Partout ailleurs, il revient
+  // au bouton.
   const rendreFocus = (evenement: Event) => {
     if (!remplaceParRail || typeof window.matchMedia !== 'function' || !window.matchMedia(REQUETE_RAIL).matches) return;
     evenement.preventDefault();
-    document.getElementById('contenu')?.focus();
+    const rail = [...document.querySelectorAll<HTMLElement>(`nav[aria-label="${TITRE_MENU}"]`)].find(
+      navigation => !navigation.closest('[role="dialog"]'),
+    );
+    const cible =
+      rail?.querySelector<HTMLElement>('[aria-current="page"]') ??
+      rail?.querySelector<HTMLElement>('a') ??
+      document.getElementById('contenu');
+    cible?.focus();
   };
 
   return (

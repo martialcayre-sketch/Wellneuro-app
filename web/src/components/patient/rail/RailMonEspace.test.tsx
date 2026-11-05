@@ -278,17 +278,28 @@ describe('§2 et §3 — la liste et l’activation', () => {
 });
 
 describe('§4 — comportement', () => {
-  it('au seuil de 1 024 px, un panneau ouvert se ferme, et le focus va au contenu', async () => {
+  it('au seuil de 1 024 px, un panneau ouvert se ferme, et le focus passe à l’entrée active du rail', async () => {
     const ecran = largeur(false);
     servir();
-    const { container } = await rendre();
-    container.querySelector('main')!.id = 'contenu';
-    container.querySelector('main')!.tabIndex = -1;
+    await rendre();
     fireEvent.click(await screen.findByRole('button', { name: 'Menu' }));
     expect(await screen.findByRole('dialog', { name: 'Mon espace' })).toBeTruthy();
     ecran.passer(true);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await waitFor(() => expect(document.activeElement).toBe(container.querySelector('main')));
+    await waitFor(() => expect(document.activeElement).toBe(courant()[0]));
+    expect(document.activeElement?.textContent).toBe('Ouvrir mes rendez-vous de suivi');
+  });
+
+  it('au seuil, sans entrée active dans le rail, le focus passe à sa première entrée', async () => {
+    nav.pathname = '/portail/PAT_TEST/informations';
+    const ecran = largeur(false);
+    servir();
+    await rendre();
+    fireEvent.click(await screen.findByRole('button', { name: 'Menu' }));
+    expect(await screen.findByRole('dialog', { name: 'Mon espace' })).toBeTruthy();
+    ecran.passer(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(within(rail()!).getAllByRole('link')[0]));
   });
 
   it('fermé sous le seuil (Échap), le focus revient au bouton', async () => {
