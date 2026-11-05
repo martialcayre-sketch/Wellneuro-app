@@ -86,6 +86,19 @@ export const MESSAGE_DOSSIER_CLOS_PATIENT =
   'Votre suivi est clôturé : vous ne pouvez plus répondre à ce questionnaire.';
 
 /**
+ * Les mêmes refus pour les autres saisies du portail — arbitrage du
+ * responsable du 2026-11-05 : la fiche d'accueil, le journal alimentaire et
+ * les rendez-vous de suivi se ferment aussi au dossier clos. Leurs lectures
+ * restent ouvertes.
+ */
+export const MESSAGE_DOSSIER_CLOS_PATIENT_FICHE =
+  'Votre suivi est clôturé : vous ne pouvez plus modifier votre fiche.';
+export const MESSAGE_DOSSIER_CLOS_PATIENT_JOURNAL =
+  'Votre suivi est clôturé : vous ne pouvez plus transmettre votre journal.';
+export const MESSAGE_DOSSIER_CLOS_PATIENT_CHECKIN =
+  'Votre suivi est clôturé : vous ne pouvez plus répondre à ce rendez-vous de suivi.';
+
+/**
  * LE DOSSIER DÉSACTIVÉ A SON PROPRE REFUS (dette t11, arbitrage du 2026-10-19).
  * Il recevait « le suivi est clôturé », ce qu'il n'est pas : le praticien
  * cherchait à rouvrir un suivi qui n'était pas clos. La clôture prime toujours

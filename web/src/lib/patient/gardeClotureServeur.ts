@@ -13,14 +13,18 @@ import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS_PATIENT, RAISON_DOSSIER_CLOS }
  * Un dossier introuvable est refusé, comme dans `refusDossierFerme` — la route
  * a de toute façon vérifié la session avant. Un dossier désactivé n'arrive pas
  * jusqu'ici : la session portail exige `actif`.
+ *
+ * `error` nomme le geste refusé quand ce n'est pas un questionnaire — le
+ * journal, le check-in (arbitrage du 2026-11-05).
  */
 export async function refusClotureSuiviPour(
   idPatient: string,
+  error: string = MESSAGE_DOSSIER_CLOS_PATIENT,
 ): Promise<{ reason: typeof RAISON_DOSSIER_CLOS; error: string } | null> {
   const patient = await prisma.patient.findUnique({
     where: { idPatient },
     select: { actif: true, suiviClotureLe: true },
   });
   if (patient && accepteNouvelEnvoi(patient)) return null;
-  return { reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS_PATIENT };
+  return { reason: RAISON_DOSSIER_CLOS, error };
 }

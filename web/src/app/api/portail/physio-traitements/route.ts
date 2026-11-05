@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { dateJourParis } from '@/lib/dateParis';
-import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { accepteNouvelEnvoi, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { refusSaisieSante, statutAge } from '@/lib/patient/gardeAge';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { cadenceAtteinte, MESSAGE_CADENCE_PATIENT } from '@/lib/securite/cadenceEcritures';
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const { patient } = auth;
     const { idPatient } = patient;
 
-    if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, 409, MESSAGE_DOSSIER_CLOS);
+    if (!accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, 409);
     const refusAge = refusSaisieSante(statutAge(patient.dateNaissance, Date.now()));
     if (refusAge) return echec(refusAge.reason, 409, refusAge.error);
 
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     return echec('objet_invalide', 400);
   } catch (err) {
     if (err instanceof RefusLigne) {
-      return err.raison === RAISON_DOSSIER_CLOS ? echec(RAISON_DOSSIER_CLOS, 409, MESSAGE_DOSSIER_CLOS) : echec(err.raison, 409);
+      return echec(err.raison, 409);
     }
     if (estConflitConcurrent(err)) return echec('conflit_concurrent', 409);
     if (estRefusDeLaBase(err)) {
