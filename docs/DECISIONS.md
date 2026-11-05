@@ -93,9 +93,9 @@
   - si `AUTO` est une seule famille, aucun axe ne dépasse deux familles
     (`AUTO` et `ANAMNÈSE`), donc `CONVERGENCE_FAIBLE`, à flux constants ;
     si chaque instrument est une famille, `CONVERGENCE_FORTE` est atteinte
-    dans cinq dossiers sur le sommeil et deux sur le digestif, chaque fois
-    par trois instruments et l'anamnèse, et les deux FORTE digestives
-    tiennent à `Q_ALI_01` ;
+    dans cinq dossiers sur le sommeil, chaque fois par trois instruments et
+    l'anamnèse ; sur le digestif, effectif de deux dossiers, répartition
+    masquée (moins de cinq dossiers, [[D-298]] §3) ;
   - une seule règle de discordance est publiée (`C-STR`), une contradiction
     est ouverte en production ; dans quatorze dossiers sur l'humeur, dix sur
     le digestif, huit sur le sommeil et trois sur le stress, un instrument
@@ -108,8 +108,12 @@
 
 **§1 — La graduation.** La forme `CONVERGENCE` compte, sur un même axe, le
 nombre de **familles de mesure** distinctes dont au moins une source est
-concordante, c'est-à-dire atteint un déclencheur de l'axe. Les quatre
-niveaux de [[D-041]] gardent leur nom :
+concordante, c'est-à-dire atteint un déclencheur de l'axe. L'audit a compté
+les déclencheurs atteints feuille par feuille ; savoir si une source ne
+compte que lorsque toutes les conditions de sa règle sont réunies
+(déclencheurs conjoints, `R2-GAS-02` par exemple, dont le seuil abaissé
+n'a de sens qu'avec l'antécédent) se soumet au responsable avant la
+signature (§8). Les quatre niveaux de [[D-041]] gardent leur nom :
 
 | Familles concordantes sur l'axe | Niveau |
 |---|---|
@@ -200,8 +204,9 @@ l'instrument, et le lot du §8 la porte.
 
 Écartés :
 - la compter comme une famille au même titre que la plainte et le TFD
-  (option 1) : deux des sept FORTE possibles sous une famille par
-  instrument en dépendaient, pour un instrument d'un autre construit ;
+  (option 1) : sous une famille par instrument, l'axe digestif atteignait
+  FORTE dans deux dossiers (répartition masquée, moins de cinq), et
+  l'audit a posé la question au titre du construit de l'instrument ;
 - lui ouvrir un axe propre (option 3).
 
 **§6 — Les lectures rassurantes ne retiennent rien (Q4, option 1).** La
@@ -247,6 +252,14 @@ retenu jusqu'à l'approbation ([[D-044]] point 3 ; retenue de la tête,
   en digestif) ; c'est une convention de méthode, qu'aucun des arbitrages
   ne fixe, et [[D-055]] §4 constate qu'aucun vocabulaire d'axe n'existe
   sur les tables du moteur. La présente décision ne la pose pas.
+- **À soumettre aussi** : le grain du déclencheur compté (feuille atteinte,
+  comme l'audit l'a simulé, ou règle dont toutes les conditions sont
+  réunies, §1) ; et l'injection des constats `CONVERGENCE` dans les
+  vigilances de synthèse ([[D-041]] : un même canal pour les trois formes).
+  Jusqu'à cette réponse, `vigilancesDiscordancePourSynthese` et le garde de
+  restitution les excluent par `contradictionEstOuverte`
+  (`web/src/lib/clinical/contradictionsService.ts`), état gardé par banc
+  (`contradictionsService.test.ts`) : le cockpit seul les affiche.
 - Le lot porte : le registre des familles (§2) et l'exclusion du §5, signés
   et entrés dans l'empreinte, sous la forme que le lot retient ; le
   producteur de la forme `CONVERGENCE` par axe, qui compte les familles des
