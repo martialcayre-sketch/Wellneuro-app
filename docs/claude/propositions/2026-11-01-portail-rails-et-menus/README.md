@@ -614,8 +614,8 @@ Même protocole que L1 : dev local sur le Mac, navigateur intégré, base éphé
 
 - « Avant » reproduit au dixième les mesures de L1 sur les mêmes dossiers.
 - **Le bloc est plus haut après L2, à toutes les largeurs.** Un lien mesure 44 px (au lieu de 50,8), sans espace entre liens d'un même groupe ; mais l'ancre « Mon parcours » ajoute une ligne, chaque étiquette de groupe une autre, et l'écart entre groupes remplace l'écart entre liens. À 1 024 px, les groupes se rangent sur deux colonnes ; l'ancien bloc tenait deux ou trois boutons par ligne. La prévision de Q37 (« la hauteur se réduit par l'allègement des liens ») n'est pas vérifiée ; l'implication d'EP-03 (« des intertitres ajoutent des lignes sans garantir une hauteur moindre ») l'est.
-- Ordre, étiquettes et liens conformes à D-423 §2 sur les trois dossiers ; aucun libellé sur deux lignes à 358 px ; compteur absent ; écran des mineurs présent pour le seul mineur. Dépli de « Mon accompagnement » non constaté à l'écran (aucun des trois dossiers n'a de protocole diffusé) : épinglé au banc, avec et sans protocole.
-- Mineur clos (Q36) : non constaté à l'écran, comme en L1 ; épinglé au banc.
+- Ordre, étiquettes et liens conformes à D-423 §2 sur les trois dossiers ; aucun libellé sur deux lignes à 358 px ; compteur absent ; écran des mineurs présent pour le seul mineur. Dépli de « Mon accompagnement » non constaté à l'écran (aucun des trois dossiers n'a de protocole diffusé) : épinglé au banc, avec et sans protocole. Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
+- Mineur clos (Q36) : non constaté à l'écran, comme en L1 ; épinglé au banc. Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
 - Constat incident, hors périmètre de L2 (frise, L2b) : sur le dossier clos, étape 5 courante, la page déborde à droite à 390 px, avant comme après (largeur de mise en page 494 px). Le texte `sr-only` « (étape actuelle) » de `PatientJourneyProgress` sort du conteneur `overflow-x-auto` de la frise. La colonne de la nav reste à 358 px : les mesures ci-dessus valent.
 
 ### L2b — Frise des étapes navigable (arbitrage Q3 du 2026-11-01)
@@ -646,7 +646,7 @@ Même protocole que L1 et L2 : dev local sur le Mac, navigateur intégré, base 
 
 - **Défaut trouvé et corrigé pendant le constat** : à 390 px, l'étape courante 5 ou 6 restait hors champ, à droite de la frise qui défile ; le texte de l'étape 5 paraissait sous un bouton invisible. La frise navigable amène désormais l'étape courante dans son champ à l'affichage, sans toucher au défilement vertical (banc dédié, mutation rouge).
 - Le débordement incident de L2 (494 px à l'étape 5 courante) est reproduit à l'identique en retirant le correctif, et disparaît avec lui.
-- Non constaté à l'écran : l'étape 6 courante sans bilan consultable et le bilan rejeté après coup (épinglés au banc de câblage) ; `prochaine_etape_prete` (même cible que `restitution_disponible`, épinglée au banc de la table).
+- Non constaté à l'écran : l'étape 6 courante sans bilan consultable et le bilan rejeté après coup (épinglés au banc de câblage) ; `prochaine_etape_prete` (même cible que `restitution_disponible`, épinglée au banc de la table). Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
 
 ### L3 — Bouton « Menu » et tiroir patient (sur arbitrage de Q1)
 - **État (2026-11-05)** : livré éteint sous `WN_PORTAIL_MENU` après les réponses à Q40–Q43 (chapitre 18), sous [[D-442]] ; servi au seul dossier majeur ([[D-283]] §5). Le même drapeau pose le lien d'accueil du mot-symbole (Q24) et le lien d'évitement (Q43). Les dix sondes sont montées une fois au layout et partagées avec « Autres espaces ». Constat à l'écran consigné ci-dessous.
@@ -675,7 +675,7 @@ Même protocole que L1 à L2b : dev local sur le Mac, navigateur intégré, base
 - Échap ferme le panneau et rend le focus au bouton ; un lien suivi le ferme ; « Fermer Mon espace » et la description « Les pages de votre espace. » sont posés par la primitive.
 - Sondes : sur le hub, chacune des dix sondes est appelée une fois ; `assignations` et `trust/etat` deux fois chacune (la lecture du hub, et celle du menu que nomme [[D-442]] §1). Sur une sous-page de la mineure, aucune sonde.
 - Impression : vérifiée par l'émulation `print` de l'E2E (le bouton disparaît), non imprimée sur papier.
-- Non constaté à l'écran : le mineur clos (épinglé au banc, comme en L1 et L2) ; le lien d'évitement au premier Tab et son arrivée sur `main#contenu` (épinglés à l'E2E, sur les deux projets).
+- Non constaté à l'écran : le mineur clos (épinglé au banc, comme en L1 et L2) ; le lien d'évitement au premier Tab et son arrivée sur `main#contenu` (épinglés à l'E2E, sur les deux projets). Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
 
 ### L4 — Barre basse (facultatif)
 - **État (2026-11-05)** : livré éteint sous `WN_PORTAIL_BARRE_BASSE`, sans effet tant que `WN_PORTAIL_MENU` est fermé, après les réponses à Q44–Q51 (chapitre 19), sous [[D-444]] ; servi au seul dossier majeur ([[D-283]] §5), sous 768 px. Cases « Accueil », « Carnet », « Suivi », puis « Bibliothèque » ou « Fiches » ; pas de case « Menu » ; réserve de bas sur le conteneur. Constat à l'écran consigné ci-dessous.
@@ -699,7 +699,7 @@ Même protocole que L1 à L3 : dev local sur le Mac, navigateur intégré, base 
 - Écart trouvé et corrigé pendant le constat : la réserve valait 4 rem, la barre 4 rem plus sa bordure haute d'un pixel ; le pied passait d'un pixel sous la barre. La réserve compte désormais la bordure, et l'E2E ne tolère plus qu'un demi-pixel d'arrondi.
 - Le viewport porte `viewport-fit=cover` sur les pages du portail, connexion comprise, drapeaux ouverts. Après la revue de la PR (#1875), la zone sûre basse passe de la réserve de la barre au conteneur, présente barre ou non : une page sans barre ne laisse pas le pied sous l'indicateur d'accueil ; en émulation (zone sûre nulle) les mesures ci-dessus sont inchangées.
 - Impression : vérifiée par l'émulation `print` de l'E2E (la barre disparaît), non imprimée sur papier.
-- Non constaté à l'écran : la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise dans le seed : une remise demande la chaîne d'approbation et de versions ; épinglée au banc dans ses deux formes, et absente quand rien n'est remis, comme ici) ; le mineur clos (épinglé au banc) ; un appareil à encoche réel (zone sûre nulle en émulation).
+- Non constaté à l'écran : la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise dans le seed : une remise demande la chaîne d'approbation et de versions ; épinglée au banc dans ses deux formes, et absente quand rien n'est remis, comme ici) ; le mineur clos (épinglé au banc) ; un appareil à encoche réel (zone sûre nulle en émulation). Constaté depuis, sauf l'appareil à encoche : « Constats complémentaires de L1 à L5 » ci-dessous.
 
 ### L5 — Rail latéral (non engagé)
 - **État (2026-11-05)** : engagé par Q52 (chapitre 20), avant le constat du menu et de la barre ; les quatre conditions de réouverture sont tranchées par Q53, Q56, Q57 et Q58. Livré éteint sous `WN_PORTAIL_RAIL_LATERAL`, sans effet tant que `WN_PORTAIL_MENU` est fermé, sous [[D-447]] (brouillon `decision-D-447-rail-lateral.md`, accepté mot pour mot le 2026-11-05) ; servi au seul dossier majeur ([[D-283]] §5), dès 1 024 px, à la place du bouton « Menu », hors questionnaire en cours. Constat à l'écran consigné ci-dessous.
@@ -723,9 +723,45 @@ Même protocole que L1 à L4 : dev local sur le Mac, navigateur intégré, base 
 - Les largeurs de colonne mesurées sont celles que le chapitre 20 calculait (668 et 623,5 px).
 - Pied d'urgence : sur le hub à 1 024 px, en fin de défilement, le bas du rail est à 356 px, le haut du pied à 703 px ; « 3114 » reçoit le clic.
 - Premier passage sous `next dev` : le hub a rendu un temps ni rail ni bouton, le temps que la lecture des murs revienne (fail-closed, [[D-442]] §1) ; au rechargement, rail et bouton masqué. Le cadre, rendu dès le premier rendu, ne remonte pas la page (banc Vitest).
-- Fermeture du panneau au seuil de 1 024 px et impression : vérifiées par l'E2E (`portail-rail-lateral.spec.ts`), non constatées à l'écran ; impression en émulation `print`, non imprimée sur papier.
-- Non constaté à l'écran : un vrai questionnaire en cours (aucune assignation sur ce dossier de test ; épinglé au banc et sur chemin) ; le mineur clos (épinglé au banc) ; le rail à 112,5 % sur une liste de plus de quatre entrées (la base n'en servait que quatre).
+- Fermeture du panneau au seuil de 1 024 px et impression : vérifiées par l'E2E (`portail-rail-lateral.spec.ts`), non constatées à l'écran ; impression en émulation `print`, non imprimée sur papier. Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
+- Non constaté à l'écran : un vrai questionnaire en cours (aucune assignation sur ce dossier de test ; épinglé au banc et sur chemin) ; le mineur clos (épinglé au banc) ; le rail à 112,5 % sur une liste de plus de quatre entrées (la base n'en servait que quatre). Constaté depuis : « Constats complémentaires de L1 à L5 » ci-dessous.
 - Conditions de réouverture : décision qui lève « une étape à la fois » pour le patient, jetons patient du rail définis, colonne validée à 1024 px en confort 112,5 %, clé de repli déclarée dans `stockageAppareil.ts` ou rail toujours déplié.
+
+### Constats complémentaires de L1 à L5 (2026-11-05)
+Les points laissés « non constatés à l'écran » par L1 à L5, repris après le merge de L5 (#1881), sur `origin/main@18c21588`. Aucun drapeau de la série n'est posé en production : tout est local. Base éphémère de `test:worktree --fast --keep-db` (après un T2 vert, 345 E2E passés sur les deux projets), servie par le build de production (`next start`). Côté serveur, sont armés :
+- les drapeaux du banc E2E ;
+- les quatre drapeaux de la série (menu, barre basse, rail, frise navigable) ;
+- les fiches en lecture, la bibliothèque, les échanges, le dépôt de documents et les traitements.
+
+États posés par scripts Playwright jetables (non versionnés), uniquement sur les patients fictifs du seed :
+
+- **Sophie Nicola**, majeure :
+  - une version de fiche « Assiette végétale » validée par la route praticien ;
+  - un brouillon et une approbation de banc, sur le modèle de `provisionAncreJalon`, puis une remise de fiche ;
+  - le questionnaire `Q_STR_06` assigné par la route praticien.
+- **Jennifer Martin** : la diffusion d'un protocole par les routes praticien, recette de `portail-signalement-designation.spec.ts`.
+- **Michel Dogné** : un bilan transmis (`provisionBilanTransmis`).
+
+Mesures par Playwright (Chromium 1 280 × 800, 1 024 × 768 en confort 112,5 %, 390 × 844 ; WebKit en émulation iPhone 13), avec `getBoundingClientRect`. Constat à l'écran dans le navigateur intégré, session ouverte par un lien magique émis par la route praticien. Le connecteur Chrome a ouvert le lien, puis ses trois appels suivants (JavaScript, onglet courant, liste des onglets) ont dépassé leur délai : l'observation à l'écran s'est faite dans le navigateur intégré, comme pour L1 à L5.
+
+| Lot | Point resté ouvert | État posé | Constat |
+|---|---|---|---|
+| L1, L2, L3, L4, L5 | mineur clos | Jennifer, date de naissance passée à 2012, `suiviClotureLe` posé | Liens d'un mineur : sept, sans dépôt, échanges ni bibliothèque. Sans l'écran des mineurs : « Avant 18 ans, un parent donne d’abord son accord », « Ton avis compte », « En cas d’urgence » (15 ou 112), présents sur la même mineure non close, sont absents (prévision de L1, Q36). Frise d'avant, sans nav. Ni bouton « Menu », ni barre, ni rail, à 390 comme à 1 280 px. Page 390 / 390 et 1 280 / 1 280. |
+| L2 | dépli de « Mon accompagnement » | Jennifer majeure, protocole diffusé | `<details>` ouvert à l'affichage, avec « Votre accompagnement » (action et critère de suivi de la version de banc) et quatre liens : rendez-vous de suivi, informations et droits, ce qui compte, ce que mon praticien a compris. Sans protocole (Sophie, Michel) : replié et vide. |
+| L2b | étape 6 courante sans bilan consultable | Jennifer, protocole diffusé, sans bilan | « Restitution (étape actuelle) », `aria-current="step"`, non cliquable ; étape 5 passée non cliquable. |
+| L2b | bilan rejeté après coup | Jennifer : bilan transmis, puis `rejeterBilanTransmis` | Avant le rejet, « Restitution » vise `/portail/PAT_SEED_02/bilan` (44 px) et le hub sert « Consulter mon bilan ». Après le rejet, l'étape reste 6 courante, non cliquable, et le lien du bilan disparaît du hub et du rail. La frise ne recule pas (contrat.ts:293-301). |
+| L2b | `prochaine_etape_prete` | Jennifer, approbation et revue reculées de 30 jours en base | `GET /api/portail/protocole` rend `finDeCycle: true`. Sans bilan, « Restitution » reste courante et non cliquable. Avec un bilan transmis à nouveau, elle vise `/bilan`, comme `restitution_disponible`. Voir la note sur le recul de date ci-dessous. |
+| L3 | lien d'évitement au premier Tab | Sophie, hub et `/suivi`, 1 280 px | Le premier Tab porte le focus sur « Aller au contenu » (`#contenu`), visible. « Entrée » le pose sur `main#contenu`. Le Tab suivant reste dans le `main` : la frise sur le hub, « ← Mon parcours » sur `/suivi`. Le rail est passé. |
+| L4 | quatrième case « Bibliothèque » / « Fiches » | Sophie majeure, une fiche remise, bibliothèque ouverte | « Accueil » (actif), « Carnet », « Suivi », « Bibliothèque » ; cases de 64 px, en WebKit iPhone 13 comme en Chromium à 390 px. Sans remise (Jennifer, Michel) : trois cases. La forme « Fiches » (bibliothèque fermée) reste épinglée au banc. |
+| L5 | vrai questionnaire en cours | Sophie, `Q_STR_06` assigné, consentement passé, une réponse cochée | Sur `/questionnaires/<id>`, avant comme après le consentement : bouton « Menu » visible, aucun rail, cadre sans colonne (1 248 px à 1 280). Retour au hub : rail présent, et « Reprendre « Questionnaire de Karasek — Stress professionnel » » dans le contexte où la réponse a été cochée. Dans un autre navigateur : « Commencer ». |
+| L5 | rail à 112,5 % avec plus de quatre entrées | Sophie, neuf entrées en quatre groupes | 1 024 × 768 : rail de 283,5 px et 697 px de haut ; liens de 50 et 54 px ; colonne de 623,5 px ; aucun défilement interne. 1 024 × 600, à l'écran : rail de 564 px de haut (`100vh − 2rem`), défilement interne (695 px de contenu pour 562 visibles), colonne de 623,5 px, page 1 024 / 1 024. À 1 280 × 800 en confort 100 % : 252 × 620 px. |
+| L5 | fermeture du panneau au seuil, à l'écran | Sophie, `/suivi` | À 1 023 px, le bouton « Menu » ouvre le panneau « Mon espace » (neuf entrées, « Ouvrir mes rendez-vous de suivi » active). Passé à 1 024 px : panneau fermé, rail affiché, focus sur « Ouvrir mes rendez-vous de suivi » (`aria-current="page"`, dans le rail). |
+| L5 | impression réelle | Sophie, hub et `/suivi`, `page.pdf()` A4 de Chromium | Une page chacun. `/suivi` imprime « ← Mon parcours », le titre et le texte, sans rail, bouton, barre, en-tête ni pied (le pied est `print:hidden` au layout, layout.tsx:116, comme l'en-tête). Sur le hub, les entrées imprimées sont celles d'« Autres espaces », dans la colonne. Non imprimé sur papier. |
+
+- Les trois hubs, rail ou pas, ne débordent à aucune largeur mesurée (`scrollWidth` = `clientWidth`).
+- Recul de date pour `prochaine_etape_prete` : en reculant l'approbation de 30 jours sans toucher la version, le protocole devient « pas consultable pour le moment ». Le serveur journalise « La validation pour diffusion doit être postérieure à la revue », car la date de revue portée par la version est restée au jour même. C'est un artefact du banc, pas un défaut : un vrai cycle de 24 jours n'a pas cette incohérence. Le signal de fin de cycle, lui, est servi.
+- « Reprendre » contre « Commencer » : observé sur deux navigateurs, mécanisme non instruit ici (hors périmètre du rail, qui se lit sur le chemin).
+- Reste non constaté : un appareil à encoche réel (L4). Ni Playwright ni le navigateur intégré n'ont de zone sûre non nulle. Le simulateur iOS en aurait une, mais ce n'est pas un appareil.
 
 ### Dépendances
 - PR #1765 : ouverte, modifie `MobileBottomNav.tsx` (+4 −1) et y ajoute son premier banc (lue avec `gh`, hors de l'arbre lu). Aucun lot patient ne touche `MobileBottomNav`, `SidebarRail` ni `NavBar` : L0 à L3 en sont indépendants si le composant patient est séparé.
