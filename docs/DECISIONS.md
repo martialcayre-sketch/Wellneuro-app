@@ -6,6 +6,50 @@
 
 ## Décisions actives
 
+### D-445 — « Vos droits et vos choix » v2 : l'historique des choix n'est plus dit « jamais effacé », il est supprimé avec le dossier sur demande d'effacement ; sans accusé (d37)
+
+- Date : 2026-11-05
+- Statut : accepté. Arbitrages du responsable du 2026-11-05, sur questions à
+  options : corriger sans attendre l'avis du conseil, formulation « tant que
+  votre dossier existe », sans accusé, résumé court. Texte proposé par
+  l'assistant, retenu tel quel.
+- Domaine : `web/src/lib/trust/contenus/registre.ts` (`droits_patient`) ;
+  `docs/DOSSIER_RGPD.md`. **Ne touche pas** : aucune règle clinique, aucune
+  durée, aucun code d'effacement, aucune migration.
+
+**Le constat.** La v1 de « Vos droits et vos choix », en service depuis le
+2026-07-16, dit : « votre historique reste consultable et n'est jamais
+effacé ». L'effacement du dossier (`lib/patient/effacement.ts`) supprime
+pourtant les accords et retraits datés (`trust_choice_events`) avec tout le
+reste. Rien d'autre ne les modifie ni ne les supprime. Relevé en préparant la
+note au conseil de d37 (art. 17 §3), contre-lue par Codex le même jour.
+
+**§1 — Le texte.** La phrase est remplacée par :
+
+> « Chaque accord et chaque retrait est enregistré avec sa date et la version
+> du texte présenté : votre historique reste consultable tant que votre
+> dossier existe ; il est supprimé avec lui si vous en demandez
+> l'effacement. »
+
+Résumé de la version : « Cette version précise que l'historique de vos choix
+est supprimé avec votre dossier si vous en demandez l'effacement. Le reste ne
+change pas. »
+
+**§2 — La version.** `droits_patient@v2`, une phrase remplacée et rien
+d'autre, **sans accusé** : la v1 n'en demandait pas, et la correction de même
+nature de `consentement_suivi@v3` ([[D-222]]) n'en a pas demandé. Les
+événements de choix enregistrés après la publication portent la v2 en
+`document_version`.
+
+**§3 — Ce qui reste au conseil.** La question 4 de la note du 2026-11-05 (d37,
+complément à la consultation du 2026-10-22) : les preuves d'information et
+d'accord peuvent-elles survivre à un effacement, et quelle formulation
+définitive retenir ? La réponse peut appeler une v3.
+
+- Options écartées : attendre l'avis pour ne changer le texte qu'une fois (la
+  promesse serait restée fausse jusque-là) ; « jamais modifié », garantie
+  vraie mais non retenue ; un accusé demandé aux patients.
+
 ### D-443 — `DC-29` : la convergence se gradue par familles de mesure concordantes, SIGNAL 1 · FAIBLE 2 · MODÉRÉE 3 · FORTE ≥ 4 ; registre des familles ; une seule famille `AUTO` ; `Q_ALI_01` hors du compte digestif ; amende D-103 et D-041 (d58)
 
 - Date : 2026-11-05
