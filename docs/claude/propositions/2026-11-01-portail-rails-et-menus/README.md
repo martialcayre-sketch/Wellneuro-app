@@ -678,7 +678,28 @@ Même protocole que L1 à L2b : dev local sur le Mac, navigateur intégré, base
 - Non constaté à l'écran : le mineur clos (épinglé au banc, comme en L1 et L2) ; le lien d'évitement au premier Tab et son arrivée sur `main#contenu` (épinglés à l'E2E, sur les deux projets).
 
 ### L4 — Barre basse (facultatif)
+- **État (2026-11-05)** : livré éteint sous `WN_PORTAIL_BARRE_BASSE`, sans effet tant que `WN_PORTAIL_MENU` est fermé, après les réponses à Q44–Q51 (chapitre 19), sous [[D-444]] ; servi au seul dossier majeur ([[D-283]] §5), sous 768 px. Cases « Accueil », « Carnet », « Suivi », puis « Bibliothèque » ou « Fiches » ; pas de case « Menu » ; réserve de bas sur le conteneur. Constat à l'écran consigné ci-dessous.
 - Seulement après arbitrage nommé de ses entrées (seules les entrées sans drapeau sont stables : accueil, rendez-vous de suivi, carnet ; la maquette 4.0 propose Accueil, Journal, Suivi, Documents, où « Journal » est le carnet alimentaire, entrée stable ; Q25) et du sort du pied d'urgence. Réserve de bas appliquée au conteneur, `viewport` posé dans `portail/layout.tsx`, `print:hidden`, absente sur les murs d'entrée et les écrans de saisie. Mêmes bancs et E2E que L3, plus la hauteur sous confort agrandi.
+
+#### Constat à l'écran de L4 (2026-11-05)
+Même protocole que L1 à L3 : dev local sur le Mac, navigateur intégré, base éphémère de `test:worktree --fast --keep-db` (après un T2 vert, 337 E2E passés sur les deux projets). `WN_PORTAIL_MENU` et `WN_PORTAIL_BARRE_BASSE` armés côté serveur. Patients fictifs du seed, états posés en base de test : Sophie Nicola majeure ; Jennifer Martin mineure (date de naissance passée à 2012) ; Michel Dogné majeur et clos (`suiviClotureLe` posé), puis ses accusés « Avant de commencer » retirés. Mesures par `getBoundingClientRect` ; « page » = `scrollWidth` / `clientWidth` du document.
+
+| Dossier, page | Largeur | Bouton « Menu » | Barre « Accès rapides » | Pied en fin de défilement | Page |
+|---|---|---|---|---|---|
+| Connexion | 390 px | absent | absente | — | 390 / 390 |
+| Sophie, majeure, `/suivi` | 390 px | présent | « Accueil », « Carnet », « Suivi » (`aria-current="page"`) ; cases de 64 px, barre de 65 px bordure comprise | bas du pied à 779 px, haut de la barre à 779 px ; « 3114 » reçoit le clic | 390 / 390 |
+| Sophie, `/alimentation`, confort 112,5 % et espacement renforcé | 390 px | présent | « Carnet » actif ; cases de 72 px, une ligne chacune | contact au quart de pixel près (771,2 / 771) | 390 / 390 |
+| Sophie, hub | 390 px | présent | « Accueil » actif | — | 390 / 390 |
+| Sophie, `/questionnaires/<id>` | 390 px | présent | absente, sans réserve | — | — |
+| Sophie, `/suivi` | 1 024 px | présent | rendue, `display: none` ; réserve `display: none` | — | 1 024 / 1 024 |
+| Jennifer, mineure | 390 px | absent ([[D-283]] §5) | absente, sans réserve | — | — |
+| Michel, majeur clos | 390 px | présent (la garde suit l'âge, Q36) | « Suivi » actif | — | — |
+| Michel, « Avant de commencer » requis | 390 px | absent | absente, sans réserve | — | — |
+
+- Écart trouvé et corrigé pendant le constat : la réserve valait 4 rem, la barre 4 rem plus sa bordure haute d'un pixel ; le pied passait d'un pixel sous la barre. La réserve compte désormais la bordure, et l'E2E ne tolère plus qu'un demi-pixel d'arrondi.
+- Le viewport porte `viewport-fit=cover` sur les pages du portail, connexion comprise, drapeaux ouverts. Après la revue de la PR (#1875), la zone sûre basse passe de la réserve de la barre au conteneur, présente barre ou non : une page sans barre ne laisse pas le pied sous l'indicateur d'accueil ; en émulation (zone sûre nulle) les mesures ci-dessus sont inchangées.
+- Impression : vérifiée par l'émulation `print` de l'E2E (la barre disparaît), non imprimée sur papier.
+- Non constaté à l'écran : la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise dans le seed : une remise demande la chaîne d'approbation et de versions ; épinglée au banc dans ses deux formes, et absente quand rien n'est remis, comme ici) ; le mineur clos (épinglé au banc) ; un appareil à encoche réel (zone sûre nulle en émulation).
 
 ### L5 — Rail latéral (non engagé)
 - Conditions de réouverture : décision qui lève « une étape à la fois » pour le patient, jetons patient du rail définis, colonne validée à 1024 px en confort 112,5 %, clé de repli déclarée dans `stockageAppareil.ts` ou rail toujours déplié.
@@ -855,3 +876,18 @@ Après la livraison de L2b (#1865), le responsable a ouvert L3 (« Ouvrir L3 »)
 | Q41 Pages | **Toutes les pages de session**, hub et écrans de saisie compris ; jamais sur la connexion, `lien/indisponible`, les écrans de `[token]/page.tsx`, ni avant les murs d'entrée | D-442 §1 ; conforme à D-423 §4, qui allume « Mon parcours » sur `/questionnaires/[idAssignation]` |
 | Q42 Mineurs | **Majeurs seuls** ([[D-283]] §5), selon l'âge et non la clôture (Q36) | D-442 §1 ; même règle que la frise navigable de L2b |
 | Q43 Lien d'évitement | **Oui, dans L3** : « Aller au contenu », visible au focus, vers `<main id="contenu">` | D-442 §6 ; texte patient à accepter |
+
+## 19. Réponses du responsable à l'ouverture de L4 (2026-11-05)
+
+Après la livraison de L3 (#1870, [[D-442]]), le responsable a ouvert L4, barre basse facultative, pour arbitrage seul, sans code. Huit questions ont été posées à options fermées, recommandation en première option, sur la lecture d'`origin/main@3550e6db` (EP-14, chapitre 8, chapitre 11 L4, chapitre 12, Q25 et sa réponse au chapitre 15, chapitre 18 et [[D-442]] §1 et §4, [[D-293]], [[D-283]] §5, [[D-288]] §1). Q44 a été posée seule, parce que sa réponse décidait des suivantes. Deux réponses s'écartent de la recommandation : Q44, où l'assistant recommandait d'attendre le constat du menu, et Q45, où il recommandait les trois entrées stables. Les deux questions dont la réponse est déjà écrite n'ont pas été posées : la barre est servie au seul dossier majeur ([[D-283]] §5) et derrière un drapeau serveur éteint ([[D-288]] §1). Aucun écran n'a été constaté. Le texte de décision qui en découle est `decision-D-444-barre-basse.md`, à côté de ce document : numéro réservé le 2026-11-05 (`refs/tags/reserve/D-444`), texte à accepter mot pour mot avant tout code.
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q44 (Q25) Quand « B est livré » | **Le merge éteint suffit** : B est livré par #1870, `WN_PORTAIL_MENU` restant éteint ; l'assistant recommandait d'attendre que le menu soit posé et constaté | les entrées de la barre se nomment dès maintenant ; L4 sortira derrière son propre drapeau éteint, à une place de la file C après celle du menu (D-444 §8) |
+| Q45 Entrées | **Les quatre emplacements de la maquette 4.0** : accueil, journal (le carnet alimentaire), suivi, documents ; l'assistant recommandait les trois entrées stables | D-444 §2 ; la cible de « Documents » et les libellés se tranchent en Q49 et Q50 |
+| Q46 Pied d'urgence | **Réserve de bas sur le conteneur**, égale à la barre plus la zone sûre (EP-14) ; le pied ne change pas | D-444 §4 ; export `viewport` dans `portail/layout.tsx` ; E2E de non-recouvrement à 390 px et en confort 112,5 % |
+| Q47 Largeur | **Sous 768 px seulement**, au seuil de la barre praticien ; au-delà, le bouton « Menu » seul | D-444 §1 ; constat à 390 px, bureau vérifié sans barre |
+| Q48 Face au bouton « Menu » | **« Menu » reste dans l'en-tête, la barre n'a pas de case « Plus »** : un seul déclencheur du panneau | D-444 §2 ; [[D-442]] n'est pas amendée |
+| Q49 Cible de « Documents » | **L'entrée servie de « Ce que j’ai reçu »** : Ma bibliothèque, ou à défaut Fiches remises par mon praticien, jamais les deux ([[D-360]] §2), sonde fermée par défaut ; rien de remis, pas de case | D-444 §2 ; aucune route neuve ; `/documents` reste le dépôt |
+| Q50 Libellés | **Lever les deux collisions** : « Accueil » et « Suivi » restent ; « Journal » prend un mot du carnet alimentaire, « Documents » un mot de l'entrée servie, sans « document » ([[D-293]] §1, [[D-251]] §8, EP-22) | D-444 §3 : « Accueil », « Carnet », « Suivi », « Bibliothèque » ou « Fiches », à accepter mot pour mot |
+| Q51 Pages | **Les pages du menu, sauf le questionnaire en cours** (`/questionnaires/[idAssignation]`) : règle de chemin, aucun état de page lu | D-444 §1 ; le suivi et le carnet, cibles de la barre, la gardent |
