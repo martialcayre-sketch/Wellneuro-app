@@ -1,4 +1,7 @@
-- **Mise à jour (2026-11-05), clôture de la semaine de journal** : journal `.claude/logs/git-freshness.log` de la copie principale, lu en lecture seule, du 2026-10-27 à 12:31 UTC au 2026-11-03 à 12:31 UTC. Première ligne à 12:31:13, dernière à 12:29:48. 2 135 lignes, aucune illisible. Les 40 lignes antérieures au début sont écartées. Les 819 lignes postérieures sont hors comptage : le crochet continue d'écrire. Agrégats seulement, sans aucun `HEAD` ni nom de branche.
+- **Mise à jour (2026-11-05), clôture de la semaine de journal** : lecture seule du journal `.claude/logs/git-freshness.log` de la copie principale.
+  - **Fenêtre** : du 2026-10-27 à 12:31 UTC au 2026-11-03 à 12:31 UTC, les bornes de la fiche. La première ligne retenue (12:31:13) précède de 22 s le merge de #1733 (12:31:35), et la dernière date de 12:29:48.
+  - **Lignes** : 2 135, aucune illisible. Les 40 lignes antérieures sont écartées. Les 819 lignes postérieures au moment de la lecture sont hors comptage : le crochet continue d'écrire.
+  - Agrégats seulement : aucun `HEAD`, aucun nom de branche.
   - **Verdicts par type** :
     - autorisations, toutes à jour : 1 807 (`Edit` 1 070, `Write` 737) ;
     - refus pour retard : 176 (`Edit` 88, `Write` 88) ;
@@ -6,39 +9,58 @@
     - mode dégradé, `HEAD` illisible, fetch jamais abouti : 0.
   - **Cibles** :
     - autorisations : 1 165 internes au worktree du répertoire courant, 642 externes ;
-    - refus : 74 internes, 102 externes. Plus d'un refus sur deux vise un fichier hors du worktree jugé (mémoire, scratchpad, autre worktree), que le retard de la branche ne concerne pas.
+    - refus : 74 internes, 102 externes.
+    - Le journal ne nomme pas la cible. « Externe » couvre par exemple la mémoire, le scratchpad, un autre worktree ou la copie principale vue depuis un worktree.
   - **Refus par `HEAD`** : 113 `HEAD` distincts.
     - 83 refus, sur 50 `HEAD`, tombent sur un commit de `main` : une copie ou un worktree restés sur un ancien `main`. La remise à niveau y est une avance, pas une fusion.
     - 93 refus, sur 63 `HEAD`, tombent sur une branche de lot. 53 d'entre eux portent sur le `HEAD` de départ d'une fusion de `main` comptée ci-dessous.
     - Jour le plus chargé : le 2026-11-01, avec 73 refus.
-  - **Fusions de `main` de la semaine** : mêmes bornes UTC que le journal, appliquées à la date de merge des PR et à la date du commit de fusion. 105 PR mergées dans la fenêtre. #1733, dont le merge ouvre la semaine, en est exclue. Ces PR comptent 351 commits de branche et 73 fusions de `main`, dont 69 datées dans la semaine, dans 45 PR. Rejouée sur ces 69 fusions, la règle de la mesure de référence (fragment `2026-10-27-02`) donne :
-    - crochet présumé : 37 ;
-    - numéro de décision : 18, toutes sur `docs/DECISIONS.md` (avec le plan trois fois et le registre des sources du corpus trois fois) ;
-    - conflit de texte : 10 (plan 3, `docs/FEATURE_FLAGS.md` 2, registre des sources du corpus 2, `web/package.json` 1, une route API 1, le workflow release-db 1) ;
-    - autre : 4.
-  - **Confrontation au journal** : pour chaque fusion, on cherche un verdict sur son `HEAD` de départ (le premier parent), au plus tard deux minutes après la date du commit de fusion. 35 fusions suivent un refus pour retard, 3 suivent un constat de retard au démarrage seulement, 5 ne suivent que des autorisations, et 26 n'ont aucune ligne.
-    - Crochet présumé, 37 : 22 confirmées (20 par un refus, 2 par un constat) ; 15 non confirmées (14 sans ligne, 1 autorisée seulement).
-    - Numéro de décision, 18 : 8 suivent un refus ou un constat ; 3 ne suivent que des autorisations ; 7 n'ont aucune ligne.
-    - Conflit de texte, 10 : 6 suivent un refus ; 4 n'ont aucune ligne.
-    - Autre, 4 : 2 suivent un refus.
+  - **Fusions de `main` de la semaine** : mêmes bornes UTC que le journal, appliquées à la date de merge des PR et à la date du commit de fusion.
+    - 105 PR mergées dans la fenêtre. #1733, dont le merge ouvre la semaine, en est exclue.
+    - 351 commits de branche, dont 73 fusions de `main`. 69 sont datées dans la semaine, dans 45 PR.
+    - Ventilées par la règle de la mesure de référence (fragment `2026-10-27-02`) :
+      - crochet présumé : 37 ;
+      - numéro de décision : 18, toutes sur `docs/DECISIONS.md` (avec le plan trois fois et le registre des sources du corpus trois fois) ;
+      - conflit de texte : 10 (plan 3, `docs/FEATURE_FLAGS.md` 2, registre des sources du corpus 2, `web/package.json` 1, une route API 1, le workflow release-db 1) ;
+      - autre : 4.
+    - Soit 41 fusions sans conflit et 28 avec un conflit réel entre la branche et `main`.
+  - **Confrontation au journal** : on cherche un verdict sur le `HEAD` de départ de chaque fusion (son premier parent), au plus tard deux minutes après la date du commit de fusion. Le journal observe une **succession** (un verdict, puis une fusion), pas une cause. Six groupes disjoints :
+
+    | Groupe | Sans conflit | Avec conflit |
+    |---|---|---|
+    | a. un refus ou un constat de retard sur le `HEAD` de départ | 24 | 14 |
+    | b. autorisations seulement sur ce `HEAD` | 2 | 3 |
+    | c. aucune ligne sur ce `HEAD`, mais un refus pour retard sur un autre commit de la PR dans l'heure qui précède | 5 | 1 |
+    | d. aucune ligne avant la fusion, mais le commit de fusion apparaît ensuite comme `HEAD` : une fusion spontanée, dans une session qui journalisait | 8 | 7 |
+    | e. une ligne sur un autre commit de la PR, sans refus dans l'heure | 1 | 0 |
+    | f. aucune ligne sur aucun commit de la PR | 1 | 3 |
+    | Total | 41 | 28 |
+
+    Par catégorie de la règle de référence :
+    - crochet présumé : 22 en (a), 1 en (b) et 14 sans ligne (c à f) ;
+    - numéro de décision : 8 en (a), 3 en (b), 7 sans ligne ;
+    - conflit de texte : 6 en (a), 4 sans ligne ;
+    - autre : 2 en (a), 1 en (b), 1 sans ligne.
+  - **Ce que la tolérance de D-375 §2 peut retirer** : elle n'atteint que les fusions sans conflit, puisqu'elle refuse toujours en cas de chevauchement ou de conflit. Mesure « avant » pour H92 :
+    - **24 fusions sur 69 (35 %)** suivent un verdict de retard sans conflit. C'est la part mesurée ;
+    - 29 sur 69 (42 %) en ajoutant le groupe (c), où le lien avec le crochet est plus lâche ;
+    - le plafond est de 41 sur 69 (59 %), toutes les fusions sans conflit. Il ne vaut que si l'on compte au crochet les fusions spontanées du groupe (d), faites sans refus préalable, peut-être par habitude de le devancer. C'est une définition à arbitrer, pas une mesure ;
+    - les 28 fusions avec conflit (41 %) restent hors de portée de la tolérance, qu'elles aient suivi ou non un verdict de retard. La fusion y révèle un conflit qui existe de toute façon.
   - **Verdict sur les 43 fusions « crochet présumé » de la mesure de référence** :
     - Elles ne se confirment pas une à une : elles précèdent le journal.
-    - Leur règle est **infirmée**. Les deux parts sont voisines : 38 fusions sur 69 (55 %) suivent un verdict de retard du crochet sur leur `HEAD` de départ, contre 43 sur 80 (54 %) attribuées par la règle dans la mesure de référence. Mais elles ne mesurent pas la même chose, et cette proximité ne valide pas la règle.
-    - Les 55 % sont une **borne basse** de la part du crochet. Les 26 fusions sans ligne ne sont pas attribuées : comptées toutes au crochet, la part monterait à 64 sur 69 (93 %). La plage mesurée va donc de 55 % à 93 %.
-    - La règle se trompe dans les deux sens :
-      - elle attribue au crochet 15 fusions présumées sur 37 sans aucun verdict de retard ;
-      - elle range ailleurs 16 fusions que le crochet a déclenchées, dont 8 « numéro de décision », 6 « conflit de texte » et 2 « autre ». Pour celles-là, le conflit est la conséquence de la fusion imposée, pas sa cause.
-    - Le classement par conséquence (conflit ou non) ne mesure donc pas le déclencheur. C'est le journal qui le mesure.
-  - **Délais question → réponse des arbitrages** : non mesurables depuis le dépôt (`git`, `gh`, journal), comme le constatait la mesure de référence. Renvoyés à H92 : dater la question dans le statut de la décision, ou mesurer hors dépôt. Le renvoi est inscrit au journal de H92 (`2026-11-05-01`).
+    - Leur règle n'est **pas validée**. Elle classe chaque fusion par sa conséquence (conflit ou non, commit suivant), alors que le journal observe ce qui la précède, et les deux ne se recouvrent pas.
+    - Sur les 37 fusions présumées de la semaine, 22 suivent un verdict de retard, une seule ne suit que des autorisations, et 14 ne sont pas attribuables.
+    - À l'inverse, 16 fusions rangées ailleurs par la règle suivent aussi un verdict de retard. La part voisine (43 sur 80, soit 54 %) ne mesure donc pas la même chose que les fusions sans conflit qui suivent un retard (35 %).
+  - **Délais question → réponse des arbitrages** : non mesurables depuis le dépôt (`git`, `gh`, journal), comme le constatait la mesure de référence. Depuis H89, la liste commune de questions, tenue hors dépôt, horodate l'arrivée et la réponse de chaque question. Le renvoi à H92 est inscrit à son journal (`2026-11-05-01`).
   - **Limites** :
-    - Les 26 fusions sans ligne ne sont pas attribuées. Hypothèses non mesurées : écriture par `Bash`, que ce crochet ne juge pas ; fusion faite avant toute tentative d'édition ; édition lancée depuis un autre répertoire courant.
-    - Une fusion qui suit un refus sur un `HEAD` antérieur à son premier parent n'est pas attribuée.
-    - La date d'une fusion est celle du commit, posée par la machine locale, d'où la marge de deux minutes.
+    - La date d'une fusion est celle du commit, posée par la machine locale.
     - Les fusions des PR mergées après la fenêtre, ou encore ouvertes, sont hors comptage.
+    - Ce crochet ne juge pas les écritures par `Bash`. Une session qui n'écrit que par `Bash` ne laisse aucune ligne.
+    - La ventilation par catégorie rejoue `git merge-tree --write-tree` sur les deux parents de chaque fusion.
   - **H86 close** au regard de ses critères de fin :
     - consigne écrite et journal en service, avec banc vert et revue faite (#1733) ;
     - mesure de référence publiée (#1737) ;
     - semaine de journal close, dates de début et de fin écrites ci-dessus ;
     - délais question → réponse renvoyés à H92 et nommés comme tels.
 
-    Cette mesure sert d'« avant » à H92 (D-375 §2, tolérance du crochet). La part du crochet y entre comme une plage, de 55 % à 93 %, et non comme une valeur unique.
+    Cette mesure sert d'« avant » à H92 (D-375 §2, tolérance du crochet).
