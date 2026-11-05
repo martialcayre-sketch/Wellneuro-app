@@ -114,6 +114,8 @@ test.describe('Portail — rail latéral', () => {
       await expect(panneau).toHaveCount(0);
       await expect(bouton(page)).toBeHidden();
       await expect(rail(page)).toBeVisible();
+      // Le bouton n'est plus affiché : le focus va au contenu, pas sur `body`.
+      await expect(page.locator('main#contenu')).toBeFocused();
     });
 
     test('jamais sur le pied d’urgence ; le lien d’évitement passe le rail', async ({ page, browserName }) => {

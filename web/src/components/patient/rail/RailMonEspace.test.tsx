@@ -126,10 +126,14 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('drapeau et chemin', () => {
   it('`WN_PORTAIL_RAIL_LATERAL` : la seule valeur exacte `true` ouvre', () => {
+    // `undefined` prend la valeur par défaut, l'environnement : il est isolé.
+    vi.stubEnv('WN_PORTAIL_RAIL_LATERAL', '');
+    expect(railLateralOuvert()).toBe(false);
     expect(railLateralOuvert('true')).toBe(true);
     for (const valeur of [undefined, '', 'false', '1', 'TRUE', ' true']) expect(railLateralOuvert(valeur)).toBe(false);
   });
@@ -258,24 +262,44 @@ describe('§2 et §3 — la liste et l’activation', () => {
   }
 
   it('intertitres aux `id` propres au rail : le panneau ouvert ne les double pas', async () => {
+    largeur(false);
     servir();
     await rendre();
     await waitFor(() => expect(rail()).toBeTruthy());
     const ids = [...rail()!.querySelectorAll('h3')].map(h => h.id);
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(id).toMatch(/^rail-mon-espace-/);
+    // Sous `lg`, le rail reste dans le DOM pendant que le panneau est ouvert.
+    fireEvent.click(await screen.findByRole('button', { name: 'Menu' }));
+    await screen.findByRole('dialog', { name: 'Mon espace' });
+    const tous = [...document.querySelectorAll('[id]')].map(e => e.id);
+    expect(new Set(tous).size).toBe(tous.length);
   });
 });
 
 describe('§4 — comportement', () => {
-  it('au seuil de 1 024 px, un panneau ouvert se ferme', async () => {
+  it('au seuil de 1 024 px, un panneau ouvert se ferme, et le focus va au contenu', async () => {
     const ecran = largeur(false);
     servir();
-    await rendre();
+    const { container } = await rendre();
+    container.querySelector('main')!.id = 'contenu';
+    container.querySelector('main')!.tabIndex = -1;
     fireEvent.click(await screen.findByRole('button', { name: 'Menu' }));
     expect(await screen.findByRole('dialog', { name: 'Mon espace' })).toBeTruthy();
     ecran.passer(true);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(container.querySelector('main')));
+  });
+
+  it('fermé sous le seuil (Échap), le focus revient au bouton', async () => {
+    largeur(false);
+    servir();
+    await rendre();
+    fireEvent.click(await screen.findByRole('button', { name: 'Menu' }));
+    const panneau = await screen.findByRole('dialog', { name: 'Mon espace' });
+    fireEvent.keyDown(panneau, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(bouton()));
   });
 
   it('sur le questionnaire en cours, le seuil ne ferme rien', async () => {

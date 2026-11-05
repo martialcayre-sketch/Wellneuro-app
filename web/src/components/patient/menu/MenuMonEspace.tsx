@@ -264,6 +264,15 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
 
   if (!etat?.actif || !etat.token) return null;
 
+  // Fermé au seuil du rail, le bouton n'est plus affiché : Radix lui rendrait
+  // un focus qui tomberait sur `body`. Le focus va alors au contenu (§6 de
+  // [[D-442]], `main#contenu`) ; partout ailleurs, il revient au bouton.
+  const rendreFocus = (evenement: Event) => {
+    if (!remplaceParRail || typeof window.matchMedia !== 'function' || !window.matchMedia(REQUETE_RAIL).matches) return;
+    evenement.preventDefault();
+    document.getElementById('contenu')?.focus();
+  };
+
   return (
     <PanneauSuperpose
       declencheur={
@@ -282,6 +291,7 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
       theme="patient"
       open={ouvert}
       onOpenChange={setOuvert}
+      onCloseAutoFocus={rendreFocus}
     >
       <ListeMonEspace etat={{ ...etat, token: etat.token }} forme={FORME_PANNEAU} />
     </PanneauSuperpose>
