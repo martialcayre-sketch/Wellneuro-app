@@ -2,7 +2,7 @@
 
 ## Branche et état du dépôt
 
-- La branche `b-fiche-usage-iode-selenium` est rebasée sur `origin/main` 36a095fb. L'arbitrage « rebase » vaut tant que la branche n'est pas poussée.
+- La branche `b-fiche-usage-iode-selenium` est rebasée sur `origin/main` bdba7eb5 (#1880), par arbitrage du responsable (rebase + force-with-lease).
 - Worktree `.claude/worktrees/b-fiche-usage-iode-selenium` : session concurrente de la file B, cycle en `git`/`gh` direct.
 - **Chemin de release-db** : `web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts` ([[D-416]]).
   - Le déploiement reste retenu jusqu'à une release-db approuvée par le responsable ([[D-044]]).
@@ -23,7 +23,7 @@ Re-signer la structure des fiches d'usage du besoin 2 pour l'iode et le séléni
   - §1 : 46 fiches ; les 38 de D-434 sont inchangées à la case près ;
   - §2 : les claims épinglés sont la liste de sources de chaque position plus trois renvois du corps. Les écarts déclarés sont épinglés ; le claim hors parcours et les cinq claims en attente ne le sont pas ;
   - §3 : aucun acte de nomenclature ⇒ exploration fonctionnelle, pour les huit fiches ;
-  - §4 : la nature « information contributive » entre dans la structure. Une seule case est corrigée : P1 passe en « départager des options », avec marqueur de sécurité ;
+  - §4 : six fiches en « information contributive » (nature déjà présente dans la structure), deux en « mesure directe ». Une seule case est corrigée : P1 passe en « départager des options », avec marqueur de sécurité ;
   - §5 : 467 claims, contrat de fraîcheur et négatif. Aucun texte ni libellé en base, donc rien ne passe « à relire » ;
   - §6 : release-db approuvée, puis constat.
 - Arbitrages du responsable du 2026-11-05 :
@@ -78,7 +78,7 @@ Re-signer la structure des fiches d'usage du besoin 2 pour l'iode et le séléni
 ## Prochaine action exacte
 
 1. CI (`node scripts/wn-attendre-ci.mjs <N>`).
-2. Revue CodeRabbit sur la tête, ou PR-Agent à défaut (D-393), avec un verdict par commentaire.
+2. Revue sur la tête avec un verdict par constat : CodeRabbit, sinon PR-Agent si `wn-revue-pr-agent.mjs` rend 0 (D-393 §2), sinon `wn-reviewer` (dérogation permanente du responsable).
 3. Commentaire « prête @<sha> ».
 4. Après le merge par l'intégrateur : release-db **approuvée par le responsable**.
 5. Constat par conteneur : empreinte `116fbf9c…` déployée, verrou posé.
