@@ -24,6 +24,29 @@ const enTetesSecurite = [
 // c'est elle qu'un crawler rencontrerait en suivant un ancien lien e-mail.
 const enTetesSansIndexation = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }];
 
+// LA PHOTO DU REPAS ([[D-437]], H83) prend l'image par `getUserMedia` dans la
+// page de l'agenda alimentaire, servie sous `/portail/<jeton>/questionnaires/
+// <idAssignation>`. `camera=()` l'interdisait à toutes les origines, la page
+// comprise : le navigateur rendait la permission « refusée » quels que soient
+// les réglages du patient, et le composant ne proposait jamais le bouton
+// (constaté en production le 2026-11-05, Chrome macOS et Android). Sur cette
+// seule route, la caméra est rendue à la page elle-même (`self`), jamais à une
+// origine tierce ni à un cadre ; micro et géolocalisation restent fermés, et
+// l'autorisation du patient reste demandée par le navigateur. Next applique la
+// dernière règle qui pose la même clé : cette entrée doit rester APRÈS
+// `/:path*`.
+//
+// La politique est figée au CHARGEMENT du document : toutes les entrées vers
+// cette page sont aujourd'hui des `<a>` simples, qui chargent un document neuf.
+// Un `<Link>` ou un `router.push` depuis une autre page du portail (servie en
+// `camera=()`) y amènerait le patient sans la caméra, et la capture
+// disparaîtrait de nouveau sans bruit.
+//
+// Non liée à `WN_PORTAIL_CAPTURE_REPAS` : ces en-têtes sont figés au build, le
+// drapeau se lit à l'exécution (un redémarrage ne reconstruit pas). Drapeau
+// éteint, la page peut demander la caméra, et aucun code ne le fait.
+const enTetesCameraPage = [{ key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' }];
+
 const nextConfig = {
   reactStrictMode: true,
   // Parcours patient unique : toute navigation vers l'ancienne URL
@@ -111,6 +134,7 @@ const nextConfig = {
     return [
       { source: '/:path*', headers: enTetesSecurite },
       { source: '/portail/:path*', headers: enTetesSansIndexation },
+      { source: '/portail/:token/questionnaires/:idAssignation', headers: enTetesCameraPage },
       // Conservé après la suppression du répertoire, mais SANS l'effet qu'on
       // lui prêtait : Next n'applique pas ces en-têtes à la réponse 307 d'un
       // `redirects()` — mesuré, `X-Robots-Tag` y est absent. Ce qui protège
