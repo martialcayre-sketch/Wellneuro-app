@@ -7,7 +7,12 @@
   88bbfa9c, puis `origin/main` 028039a2 fusionné (arbitrage du responsable,
   « Fusionner main » : #1874 avait ajouté D-443 au registre unique).
 - Commits : e96f29a4 (bascule), 93f3302f (fusion de `main`, rejeu du script),
-  2aa35ada (correctifs de la revue `wn-reviewer`), puis ce handoff.
+  2aa35ada (correctifs de la revue `wn-reviewer`), 22815954 (ce handoff),
+  puis fusion de `main` f3e1bc99 après #1875 (arbitrage « #1875 d'abord ») et
+  rejeu : D-444 créée.
+- PR #1876, CI vert sur 22815954 ; revue bot impossible (CodeRabbit : 488
+  fichiers > 100 ; PR-Agent rogné, « Review coverage ») ⇒ **dérogation du
+  responsable pour #1876 seule** (2026-11-05), consignée dans la PR.
 
 ## Objectif
 
@@ -60,9 +65,9 @@ outillage du §5 en trois catégories, aucun garde retiré.
 ## Validations exécutées
 
 - Découpage : `node scripts/wn-decisions-decouper.mjs --depuis origin/main` →
-  443 entrées, 26 liens, banc OK ; contre-vérification indépendante en shell
-  (recomposition, `cat -s`, diff) sur `main` 028039a2 : 9 lignes diffèrent,
-  toutes porteuses de liens rebasés, rien d'autre.
+  444 entrées, 26 liens, banc OK ; contre-vérification indépendante en shell
+  (recomposition, `cat -s`, diff) sur `main` 028039a2 puis f3e1bc99 : 9 lignes
+  diffèrent, toutes porteuses de liens rebasés, rien d'autre.
 - Garde réel : `node scripts/lib/decisions-numerotation.mjs` → OK (443) ;
   `--pr` → OK ; `wn-ancres-doctrine` → 4 ancres, 308 héritées, identique au
   `main` d'avant (arbre `git archive` de 88bbfa9c).
@@ -76,8 +81,6 @@ outillage du §5 en trois catégories, aucun garde retiré.
 
 ## Problèmes ouverts
 
-- CodeRabbit sur une PR de ~480 fichiers : risque de saut (« too many
-  files ») ou de quota ; deux refus ⇒ proposer la dérogation au responsable.
 - Toute PR qui ajoute une décision dans `docs/DECISIONS.md` avant le merge :
   rejouer `node scripts/wn-decisions-decouper.mjs --depuis origin/main` après
   fusion de `main` (la page fixe gagne le conflit).
@@ -87,10 +90,10 @@ outillage du §5 en trois catégories, aucun garde retiré.
 
 ## Prochaine action exacte
 
-Pousser, ouvrir la PR (`--body-file`), `node scripts/wn-attendre-ci.mjs <N>`
-en fond ; lire la revue CodeRabbit sur la tête (trois sorties) ; rejouer le
-script sur le `main` du moment ; déclarer « prête @<sha> » sans merger ;
-suivre jusqu'au merge et au premier CI vert de `main` (PR qui touche
+CI de #1876 sur la nouvelle tête (`wn-attendre-ci` en fond) ; avant de
+déclarer, rejouer le script sur le `main` du moment et vérifier qu'aucune PR
+ouverte ne touche `docs/DECISIONS.md` ; déclarer « prête @<sha> » sans
+merger ; suivre jusqu'au merge et au premier CI vert de `main` (PR qui touche
 `.coderabbit.yaml` et des skills : pas de `/clear` dès « prête »).
 
 ## Interdits encore actifs

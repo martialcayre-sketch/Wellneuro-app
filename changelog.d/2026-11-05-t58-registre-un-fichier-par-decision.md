@@ -2,7 +2,7 @@
 
 Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
 
-- Les 443 décisions du registre unique (D-001 à D-443, toutes actives) vivent
+- Les 444 décisions du registre unique (D-001 à D-444, toutes actives) vivent
   chacune dans `docs/decisions/D-NNN.md`, nommé par son seul numéro, première
   ligne `# D-NNN — <titre>` ; les archivées iront sous
   `docs/decisions/archivees/`. Texte repris à l'identique, à deux exceptions
@@ -12,8 +12,9 @@ Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
   deux entrées ne sont pas reprises : chaque fichier finit par un seul saut
   de ligne.
 - `scripts/wn-decisions-decouper.mjs` (`--depuis <ref>` ou `--fichier`,
-  `--verifier`) découpe et se rejoue sur un `main` plus récent (rejoué une
-  fois pendant le lot : D-443 créée, D-041 et D-103 amendées par #1874) ; son
+  `--verifier`) découpe et se rejoue sur un `main` plus récent (rejoué deux
+  fois pendant le lot : D-443 créée, D-041 et D-103 amendées par #1874, puis
+  D-444 créée après #1875) ; son
   banc juge, tant que la base de la PR porte le registre unique, chaque
   fichier du dépôt contre son entrée, avec une contre-épreuve qui ne passe pas
   par la réécriture des liens.
