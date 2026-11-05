@@ -39,8 +39,8 @@ const avec = (fiche: Partial<FicheUsageStructure>): StructureFichesUsage => ({
 const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, dateValidation: '2026-10-16T09:00:00.000Z' };
 
 // La structure, signée le 2026-11-01 (D-401), re-signée le 2026-11-03 pour
-// B9 et B12 (D-434), est RÉÉCRITE le 2026-11-05 pour l'iode et le sélénium :
-// quarante-six fiches, verrou éteint jusqu'à la déclaration du responsable
+// B9 et B12 (D-434), est RE-SIGNÉE le 2026-11-05 pour l'iode et le sélénium
+// (D-446) : quarante-six fiches, sur la déclaration du responsable
 // (porte 23 : ses contenus sont les siens). Ce banc
 // épingle l'empreinte : toute fiche ajoutée ou retouchée la change, et la sortie
 // est de RE-SIGNER, jamais de mettre le littéral à jour en silence. Identifiants
@@ -51,13 +51,13 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     expect(FICHES_USAGE_BESOIN2_SHA256).toBe('116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c');
   });
 
-  it('réécrite pour l’iode et le sélénium : verrou éteint jusqu’à la déclaration', () => {
+  it('re-signée pour l’iode et le sélénium (D-446) : verrou posé sur la déclaration du responsable', () => {
     expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(46);
     expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual([]);
-    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(false);
-    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBeNull();
-    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBeNull();
-    expect(structureSignee()).toBe(false);
+    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(true);
+    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-05T12:07:26.000Z');
+    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(FICHES_USAGE_BESOIN2_SHA256);
+    expect(structureSignee()).toBe(true);
   });
 
   it('claimsSource est exactement l’union des claims des fiches de la structure', () => {

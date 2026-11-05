@@ -30,9 +30,8 @@ import {
 // ÉCRITE ET SIGNÉE LE 2026-11-01 ([[D-401]]) pour ses trente premières fiches ;
 // RE-SIGNÉE LE 2026-11-03 pour B9 et B12 ([[D-417]] §4 : huit fiches et l'axe
 // du niveau de mesure), sur la déclaration du responsable ([[D-434]]).
-// RÉÉCRITE LE 2026-11-05 pour l'iode et le sélénium (huit fiches, une par
-// position v0.2 signée) : verrou ÉTEINT jusqu'à la déclaration du responsable
-// (métadonnées) — la re-signature est en attente, pas faite.
+// RE-SIGNÉE LE 2026-11-05 pour l'iode et le sélénium (huit fiches, une par
+// position v0.2 signée), sur la déclaration du responsable ([[D-446]]).
 // Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
@@ -87,8 +86,8 @@ export type FicheUsageStructure = {
    * de D-266 §3. OBLIGATOIRE depuis la re-signature de B9 et B12
    * ([[D-417]] §4, arbitrage du 2026-11-03 : toutes les fiches de la
    * structure) : valeur pré-remplie par une règle écrite sur la surface
-   * (acte NABM de groupe, ou aucun acte, ⇒ exploration fonctionnelle), relue
-   * et retenue telle quelle par le responsable avant sa déclaration.
+   * (acte NABM de groupe, ou aucun acte, ⇒ exploration fonctionnelle, [[D-446]]),
+   * relue et retenue telle quelle par le responsable avant sa déclaration.
    */
   niveauMesure: NiveauMesure;
   /** `POP_…` — obligatoire (DC-14, [[D-095]]) : une population déclarée, jamais un silence. */
@@ -1501,11 +1500,13 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
   version: 'fiches-usage-besoin2-v1',
   // Signée le 2026-11-01 ([[D-401]]), RE-SIGNÉE le 2026-11-03 pour B9 et B12
   // ([[D-417]] §4) sur la déclaration du responsable, rendue après lecture de
-  // la surface de signature, aucune case corrigée ([[D-195]] §1). RÉÉCRITE le
-  // 2026-11-05 pour l'iode et le sélénium : verrou éteint, date et sha remis à
-  // vide jusqu'à la déclaration du responsable, dont ils seront la recopie.
-  validationExterne: false,
-  dateValidation: null,
+  // la surface de signature, aucune case corrigée ([[D-195]] §1). RE-SIGNÉE le
+  // 2026-11-05 pour l'iode et le sélénium ([[D-446]]) sur la déclaration du
+  // responsable, rendue après lecture de la surface et de la contre-revue,
+  // une case corrigée avant (P1, usage et sécurité) : la date et le sha
+  // ci-dessous en sont la recopie.
+  validationExterne: true,
+  dateValidation: '2026-11-05T12:07:26.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0020-019', versionClaim: 'v1.0' },
@@ -1975,7 +1976,7 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
     { claimId: 'WN-CL-0637-004', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0638-001', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: null,
+  shaPerimetre: '116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c',
 };
 
 /**
