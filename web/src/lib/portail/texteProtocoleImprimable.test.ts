@@ -1,17 +1,11 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { lireDecision } from '@/lib/doctrine/lireDecision';
 import { describe, expect, it } from 'vitest';
 import { LIEN_PROTOCOLE_IMPRIMABLE, PREFIXE_MENTION_IMPRESSION, mentionImpression } from './texteProtocoleImprimable';
 
 describe('textes acceptés de l’imprimable du protocole', () => {
   // RECOPIE MOT POUR MOT de D-392 §4 : le lien et le pied.
   it('sont ceux de D-392 §4', () => {
-    const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const debut = decisions.indexOf('### D-392');
-    const fin = decisions.indexOf('### D-391');
-    expect(debut).toBeGreaterThanOrEqual(0);
-    expect(fin).toBeGreaterThan(debut);
-    const section = decisions.slice(debut, fin);
+    const section = lireDecision('D-392');
     const paragraphe4 = section.slice(section.indexOf('**§4'), section.indexOf('**§5'));
     expect(paragraphe4).toContain(`« ${LIEN_PROTOCOLE_IMPRIMABLE} »`);
     expect(paragraphe4).toContain(`« ${PREFIXE_MENTION_IMPRESSION} … »`);

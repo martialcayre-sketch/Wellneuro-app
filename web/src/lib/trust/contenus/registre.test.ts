@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { lireDecision } from '@/lib/doctrine/lireDecision';
 import {
   getDocumentCourant,
   getVersion,
@@ -802,14 +803,13 @@ describe('registre des documents TRUST', () => {
     expect(v20.requiresAcknowledgement).toBe(true);
   });
 
-  // D-364 §4, RELU DANS `docs/DECISIONS.md`, à l'apostrophe typographique du
+  // D-364 §4, RELU DANS LE REGISTRE (`docs/decisions/D-364.md`), à l'apostrophe typographique du
   // registre près : un écart d'un caractère rougit ici. Les durées de D-378
   // n'y sont pas (arbitrage du 2026-10-27) : la phrase « en cours de
   // formalisation » reste, et le banc le tient.
   it('la v21 porte le texte de D-364 §4, mot pour mot, et rien d’autre', () => {
-    const decisions = fs.readFileSync(path.resolve(__dirname, '../../../../../docs/DECISIONS.md'), 'utf8');
-    const citation = (decision: string, suivante: string, debut: string, fin: string) => {
-      const section = decisions.slice(decisions.indexOf(`### ${decision} `), decisions.indexOf(`### ${suivante} `));
+    const citation = (decision: string, debut: string, fin: string) => {
+      const section = lireDecision(decision);
       const bloc = section.slice(section.indexOf(debut), section.indexOf(fin));
       expect(bloc.length, `${decision} ${debut} introuvable`).toBeGreaterThan(0);
       return bloc
@@ -823,7 +823,7 @@ describe('registre des documents TRUST', () => {
         .replace(/ »$/, '')
         .replaceAll("'", '’');
     };
-    const texteD364 = citation('D-364', 'D-363', '**§4', '**§5');
+    const texteD364 = citation('D-364', '**§4', '**§5');
 
     const v20 = getVersion('donnees_confidentialite', 'v20')!;
     const v21 = getVersion('donnees_confidentialite', 'v21')!;

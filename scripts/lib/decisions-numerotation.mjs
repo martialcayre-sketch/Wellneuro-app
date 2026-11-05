@@ -1,33 +1,48 @@
 // Contrôle d'une classe de défaut que rien d'autre ne voit : deux branches
-// parallèles qui posent chacune une décision dans `docs/DECISIONS.md` prennent
-// le MÊME numéro.
+// parallèles qui posent chacune une décision prennent le MÊME numéro, ou une
+// décision mergée disparaît.
 //
-// Ce fichier reste délibérément à créneau unique. Contrairement au journal de
-// session (`merge=union`, `.gitattributes`) et au handoff (un fragment par lot,
-// `docs/claude/handoffs/`), on ne l'éclate pas : une décision se lit dans la
-// suite des autres, s'amende, se contredit, et huit renvois croisés pointent
-// déjà vers des `D-NNN` précis. Le remède n'est donc pas de supprimer le
-// conflit — il est de rendre la collision IMPOSSIBLE À MANQUER. Un conflit de
-// merge sur ce fichier est bruyant et se résout ; un doublon de numéro est
-// silencieux et se propage : le 2026-08-03 puis le 2026-08-04, `D-013` puis
-// `D-014` ont été pris deux fois, et chaque réparation a coûté huit renvois à
-// renuméroter.
+// Depuis D-418 (2026-11-05), le registre est UN FICHIER PAR DÉCISION :
+// `docs/decisions/D-NNN.md`, archivées sous `docs/decisions/archivees/`,
+// nommé par son seul numéro. Deux PR qui ajoutent chacune une décision
+// n'entrent plus en conflit ; deux PR qui prennent le même numéro créent deux
+// fichiers au même nom, et Git le signale toujours (conflit d'ajout). C'est
+// pourquoi le nom ne porte QUE le numéro (D-418 §1) : un intitulé dans le nom
+// ferait passer deux décisions sous le même numéro sans conflit. Jusqu'à
+// D-418, `docs/DECISIONS.md` restait délibérément à créneau unique, pour la
+// même raison — rendre la collision impossible à manquer — : le 2026-08-03
+// puis le 2026-08-04, `D-013` puis `D-014` avaient été pris deux fois, et
+// chaque réparation avait coûté huit renvois à renuméroter.
 //
-// Trois refus, un avertissement, et rien d'autre (D-370 §2) :
-//   - **doublon** — le même `D-NNN` porté par deux titres ;
+// Ce qu'il refuse (D-370 §2, D-418 §5) :
+//   - **nom** — dans `docs/decisions/` (et `archivees/`), tout ce qui n'est pas
+//     un fichier `D-NNN.md` au nom canonique (trois chiffres au moins, sans
+//     zéro de tête en trop) : `D-42.md`, `D-042-intitule.md`, un `README.md`
+//     ou un sous-répertoire passeraient à côté du contrôle ;
+//   - **titre** — la première ligne n'est pas `# D-NNN — <titre>` au numéro du
+//     nom de fichier ;
+//   - **une décision par fichier** — un second titre de décision dans le corps ;
+//   - **doublon** — le même numéro actif et archivé ;
 //   - **trou sans réservation, sur une PR** — un numéro manquant dans la suite,
 //     qu'aucune référence `refs/tags/reserve/D-NNN` ne couvre ; la numérotation
 //     est une suite, pas une étiquette : un tel trou signifie qu'une décision a
 //     été perdue, ou qu'un renvoi pointe vers le vide ;
-//   - **désordre** — la section active est rangée au RANG NUMÉRIQUE, du plus
-//     haut au plus bas. Une entrée insérée au mauvais rang après une résolution
-//     de conflit se voit ici et nulle part ailleurs ;
+//   - **supprimée, sur une PR** — un numéro présent sur la base de la PR et
+//     absent ici, même réservé ;
+//   - **page fixe** — `docs/DECISIONS.md` porte un titre de décision, ou a
+//     disparu : depuis D-418 §6, une PR qui y écrit encore une décision est
+//     renvoyée, et des centaines de documents datés citent la page.
+// Et un avertissement :
 //   - **trou en avertissement** — sur une PR, un trou couvert par une
 //     réservation est « en vol » : une autre branche porte ce numéro et n'a pas
 //     encore mergé. Sur `main` (et hors PR, au poste local), un trou n'est
 //     JAMAIS rouge : son verdict ne dépend d'aucune référence distante, et le
 //     garde n'en lit aucune. À partir de trois trous, l'avertissement rappelle
 //     la pierre tombale — seuil d'affichage, pas une capacité.
+//
+// Le « désordre » de D-370 §3 (section active rangée au rang numérique) n'a
+// plus d'objet : un fichier n'a pas de rang. Il est remplacé par l'accord du
+// titre et du nom, que D-418 §5 nomme.
 //
 // Un trou couvert par une réservation mais dont le numéro existe sur la base
 // de la PR n'est pas en vol : la décision est mergée, et l'en retirer est un
@@ -57,9 +72,8 @@
 // Une décision posée sans réservation reste permise : le garde ne la refuse
 // pas, une étape non bloquante de `ci.yml` la signale sur une PR non
 // documentaire (`--accompagnement`, D-370 §4). Elle retombe alors dans
-// l'ancien régime : relire `origin/main` juste avant le merge, fusionner `main`
-// plutôt que rebaser, renuméroter ici puis reprendre registre, fragment et
-// code.
+// l'ancien régime : relire `origin/main` juste avant le merge, renuméroter
+// (renommer le fichier ET sa première ligne) puis reprendre fragment et code.
 //
 // ── Le numéro écrit dans le SUJET de commit ─────────────────────────────────
 //
@@ -78,44 +92,54 @@
 //
 // Le refus du trou a une conséquence qu'il faut avoir écrite quelque part,
 // faute de quoi le CI bloquera un jour sur une PR sans que personne sache quoi
-// faire : **un numéro ne se libère jamais.** Supprimer le titre `### D-NNN`
-// d'une décision abandonnée, annulée ou remplacée creuse un trou dans la suite,
-// et le garde le refuse — à raison : huit renvois du dépôt pointent vers des
-// `D-NNN` précis, et l'un d'eux désignerait alors le vide.
+// faire : **un numéro ne se libère jamais.** Supprimer le fichier d'une
+// décision abandonnée, annulée ou remplacée creuse un trou dans la suite, et le
+// garde le refuse — à raison : des renvois du dépôt pointent vers des `D-NNN`
+// précis, et l'un d'eux désignerait alors le vide.
 //
 // Quatre gestes, et rien d'autre :
-//   - **la décision est dépassée** → la déplacer sous la section « archivées »,
-//     titre et numéro inchangés. La suite reste pleine, la section active
-//     s'allège, et les renvois continuent de tomber juste.
+//   - **la décision est dépassée** → déplacer son fichier sous
+//     `docs/decisions/archivees/`, nom et première ligne inchangés. La suite
+//     reste pleine, et les renvois continuent de tomber juste.
 //   - **la décision est annulée ou remplacée** → la garder en place et le dire
 //     dans son corps (« annulée le …, remplacée par D-0xx »). Ce garde ne lit
 //     pas le contenu : le statut est affaire humaine, la numérotation non.
-//   - **le titre a été écrit par erreur, avant tout merge sur `main`** → alors
+//   - **le fichier a été créé par erreur, avant tout merge sur `main`** → alors
 //     seulement, le retirer *et* renuméroter ce qui suit, puis reprendre les
 //     renvois. C'est le seul cas où la suite se referme, et il ne concerne
 //     qu'une branche qui n'a jamais été publiée.
 //   - **le numéro a été réservé puis abandonné** → le fermer par une pierre
-//     tombale, à son rang dans la section active : `### D-NNN — Numéro non
-//     utilisé`, avec sa ligne « Date ». Il ne se réutilise jamais, et la
+//     tombale : `docs/decisions/D-NNN.md`, première ligne `# D-NNN — Numéro
+//     non utilisé`, avec sa ligne « Date ». Il ne se réutilise jamais, et la
 //     réservation reste (D-370 §2).
 //
 // Ce que ce contrôle NE fait pas, délibérément : lire le contenu d'une
-// décision. Ni la date, ni le statut, ni les champs. Un garde qui juge le fond
-// d'un arbitrage clinique serait faux dans les deux sens ; celui-ci ne tient
-// que la mécanique de la numérotation, qui est exacte.
+// décision au-delà de ses titres. Ni la date, ni le statut, ni les champs. Un
+// garde qui juge le fond d'un arbitrage clinique serait faux dans les deux
+// sens ; celui-ci ne tient que la mécanique de la numérotation, qui est exacte.
 
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-export const FICHIER = "docs/DECISIONS.md";
+import {
+  NOM_FICHIER,
+  PAGE,
+  REPERTOIRE,
+  SECTION_ARCHIVE,
+  SOUS_REPERTOIRE_ARCHIVES,
+  TITRE,
+  listerEntrees,
+  nomDecision,
+  nomFichier,
+  numeroDuNom,
+} from "./registre-decisions.mjs";
 
-const TITRE_SECTION = /^##\s+(.+?)\s*$/;
-const TITRE_DECISION = /^###\s+D-(\d+)\b\s*(?:—\s*(.*))?$/;
+export { nomDecision };
 
-const SECTION_ACTIVE = "actives";
-const SECTION_ARCHIVE = "archivées";
+/** Ce que le garde juge, pour les messages : le répertoire du registre. */
+export const FICHIER = `${REPERTOIRE}/`;
 
 // À partir de ce nombre de trous, l'avertissement rappelle la pierre tombale.
 // Seuil d'affichage, pas une capacité (D-370 §2) : rien n'est refusé au-delà.
@@ -124,44 +148,115 @@ export const SEUIL_AFFICHAGE_TROUS = 3;
 const PREFIXE_RESERVATION = "refs/tags/reserve/D-";
 const REFERENCE_RESERVATION = /^refs\/tags\/reserve\/D-(\d+)$/;
 
-export const nomDecision = (n) => `D-${String(n).padStart(3, "0")}`;
+/** Un titre de décision, à tout niveau : `# D-NNN`, `### D-NNN`… */
+const TITRE_QUELCONQUE = /^#{1,6}\s+D-\d+\b/;
+
+/** Le titre d'une entrée du registre unique, d'avant D-418. */
+const TITRE_REGISTRE_UNIQUE = /^###\s+D-(\d+)\b/;
 
 /** La référence qui réserve un numéro — elle ne porte que lui (D-370 §1). */
 export const referenceReservation = (n) => `${PREFIXE_RESERVATION}${String(n).padStart(3, "0")}`;
 
 /**
- * Les décisions du fichier, dans l'ordre du texte.
- * @param {string} texte
- * @returns {Array<{numero: number, brut: string, ligne: number, section: string, titre: string}>}
+ * Les entrées des deux répertoires, contenu des fichiers compris.
+ * @param {string} racine
  */
-export function extraireDecisions(texte) {
-  const decisions = [];
-  let section = "";
-  texte.split(/\r?\n/).forEach((ligne, index) => {
-    const s = TITRE_SECTION.exec(ligne);
-    if (s) {
-      const nom = s[1].toLowerCase();
-      if (nom.includes(SECTION_ACTIVE)) section = SECTION_ACTIVE;
-      else if (nom.includes(SECTION_ARCHIVE)) section = SECTION_ARCHIVE;
-      else section = nom;
-      return;
-    }
-    const d = TITRE_DECISION.exec(ligne);
-    if (!d) return;
-    decisions.push({
-      numero: Number.parseInt(d[1], 10),
-      brut: `D-${d[1]}`,
-      ligne: index + 1,
-      section,
-      titre: (d[2] || "").trim(),
+export function lireEntrees(racine) {
+  const { present, entrees } = listerEntrees(racine);
+  return {
+    present,
+    entrees: entrees.map((e) => ({
+      ...e,
+      contenu: e.dossier ? null : fs.readFileSync(path.join(racine, e.chemin), "utf8"),
+    })),
+  };
+}
+
+/** La page fixe, ou `null` si elle a disparu. */
+export function lirePage(racine) {
+  const chemin = path.join(racine, PAGE);
+  return fs.existsSync(chemin) ? fs.readFileSync(chemin, "utf8") : null;
+}
+
+/**
+ * Les décisions que portent les entrées : un fichier au nom canonique.
+ * @param {Array<{chemin: string, nom: string, section: string, dossier: boolean}>} entrees
+ * @returns {Array<{numero: number, brut: string, chemin: string, section: string}>}
+ */
+export function decisionsDesEntrees(entrees) {
+  return entrees
+    .filter((e) => !e.dossier && numeroDuNom(e.nom) !== null)
+    .map((e) => {
+      const numero = numeroDuNom(e.nom);
+      return { numero, brut: nomDecision(numero), chemin: e.chemin, section: e.section };
     });
-  });
-  return decisions;
+}
+
+/**
+ * La forme du registre : noms, titres, une décision par fichier, page fixe.
+ * @param {Array<{chemin: string, nom: string, section: string, dossier: boolean, contenu: string | null}>} entrees
+ * @param {string | null} page le texte de `docs/DECISIONS.md`, `null` s'il manque
+ * @returns {Array<{genre: string, chemin: string, message: string}>}
+ */
+export function auditerForme(entrees, page) {
+  const violations = [];
+  for (const e of entrees) {
+    const numero = e.dossier ? null : numeroDuNom(e.nom);
+    if (numero === null) {
+      const presque = /^D-(\d+)\.md$/.exec(e.nom);
+      const attendu = !e.dossier && presque ? ` (nom canonique : ${nomFichier(Number.parseInt(presque[1], 10))})` : "";
+      violations.push({
+        genre: "nom",
+        chemin: e.chemin,
+        message:
+          `${e.dossier ? "répertoire" : "fichier"} inattendu${attendu} — ${REPERTOIRE}/ et ` +
+          `${SOUS_REPERTOIRE_ARCHIVES}/ ne portent que des décisions, chacune nommée par son seul ` +
+          `numéro, \`D-NNN.md\` (D-418 §1).`,
+      });
+      continue;
+    }
+    const lignes = (e.contenu ?? "").split(/\r?\n/);
+    const t = TITRE.exec(lignes[0] ?? "");
+    if (!t || Number.parseInt(t[1], 10) !== numero || nomDecision(Number.parseInt(t[1], 10)) !== `D-${t[1]}`) {
+      violations.push({
+        genre: "titre",
+        chemin: e.chemin,
+        message: `la première ligne doit être « # ${nomDecision(numero)} — <titre> », au numéro du nom de fichier.`,
+      });
+    }
+    const second = lignes.findIndex((l, i) => i > 0 && TITRE_QUELCONQUE.test(l));
+    if (second !== -1) {
+      violations.push({
+        genre: "une décision par fichier",
+        chemin: `${e.chemin}:${second + 1}`,
+        message: `un second titre de décision (« ${lignes[second].slice(0, 60)} ») — une décision par fichier.`,
+      });
+    }
+  }
+  if (page === null) {
+    violations.push({
+      genre: "page fixe",
+      chemin: PAGE,
+      message: `${PAGE} a disparu : la page fixe reste, des documents datés la citent (D-418 §4).`,
+    });
+  } else {
+    const ligne = page.split(/\r?\n/).findIndex((l) => TITRE_QUELCONQUE.test(l));
+    if (ligne !== -1) {
+      violations.push({
+        genre: "page fixe",
+        chemin: `${PAGE}:${ligne + 1}`,
+        message:
+          `${PAGE} est une page fixe : une décision s'écrit dans son propre fichier ` +
+          `${REPERTOIRE}/D-NNN.md, jamais ici (D-418 §6).`,
+      });
+    }
+  }
+  return violations;
 }
 
 /**
  * Les numéros absents de la suite, de 1 au plus haut.
- * @param {ReturnType<typeof extraireDecisions>} decisions
+ * @param {Array<{numero: number}>} decisions
  * @returns {number[]}
  */
 export function numerosManquants(decisions) {
@@ -173,7 +268,7 @@ export function numerosManquants(decisions) {
 }
 
 /**
- * @param {ReturnType<typeof extraireDecisions>} decisions
+ * @param {ReturnType<typeof decisionsDesEntrees>} decisions
  * @param {{surPR?: boolean, reservations?: Set<number> | null, erreurReservations?: string, surBase?: Set<number> | null}} [contexte]
  *   `surPR` : le trou se juge contre les réservations (`reservations`, lues par
  *   l'appelant ; `null` = illisibles, motif dans `erreurReservations`) et
@@ -182,15 +277,16 @@ export function numerosManquants(decisions) {
  *   supprimée, refusée même réservée — une réservation ne se nettoie jamais,
  *   « en vol » veut dire réservé et pas encore mergé. Hors PR, un trou n'est
  *   qu'un avertissement et rien n'est lu.
- * @returns {{violations: Array<{genre: string, ligne: number, message: string}>, avertissements: Array<{genre: string, ligne: number, message: string}>, comptees: number, max: number}}
+ * @returns {{violations: Array<{genre: string, chemin: string, message: string}>, avertissements: Array<{genre: string, message: string}>, comptees: number, max: number}}
  */
 export function auditerDecisions(decisions, contexte = {}) {
   const { surPR = false, reservations = null, erreurReservations = "", surBase = null } = contexte;
   const violations = [];
   const avertissements = [];
 
-  // 1. Doublons. Le défaut d'origine, et le seul qui se propage en silence :
-  //    deux décisions distinctes rendues indiscernables par leurs renvois.
+  // 1. Doublons. Un même nom dans un même répertoire est impossible ; reste le
+  //    même numéro actif ET archivé — deux décisions indiscernables par leurs
+  //    renvois.
   const parNumero = new Map();
   for (const d of decisions) {
     if (!parNumero.has(d.numero)) parNumero.set(d.numero, []);
@@ -198,13 +294,12 @@ export function auditerDecisions(decisions, contexte = {}) {
   }
   for (const [numero, liste] of [...parNumero.entries()].sort((a, b) => a[0] - b[0])) {
     if (liste.length < 2) continue;
-    const lignes = liste.map((d) => d.ligne).join(", ");
     violations.push({
       genre: "doublon",
-      ligne: liste[1].ligne,
+      chemin: liste.map((d) => d.chemin).join(" et "),
       message:
-        `${nomDecision(numero)} est porté par ${liste.length} décisions ` +
-        `(lignes ${lignes}) — renuméroter la plus récente et reprendre ses renvois.`,
+        `${nomDecision(numero)} est porté par ${liste.length} fichiers — une décision dépassée se ` +
+        `DÉPLACE sous ${SOUS_REPERTOIRE_ARCHIVES}/, elle ne se copie pas.`,
     });
   }
 
@@ -223,7 +318,6 @@ export function auditerDecisions(decisions, contexte = {}) {
   if (manquants.length > 0 && !surPR) {
     avertissements.push({
       genre: "trou",
-      ligne: 0,
       message:
         `${liste(manquants)} manque${accord(manquants)} entre D-001 et ${nomDecision(max)} — ` +
         `numéro en vol (réservé, pas encore mergé) ou abandonné ; jamais rouge hors PR.` +
@@ -237,11 +331,11 @@ export function auditerDecisions(decisions, contexte = {}) {
   if (supprimees.length > 0) {
     violations.push({
       genre: "supprimée",
-      ligne: 0,
+      chemin: FICHIER,
       message:
         `${liste(supprimees)} existe${accord(supprimees)} sur la base de la PR et manque${accord(supprimees)} ` +
         `ici : décision supprimée (résolution de conflit qui perd une entrée ?), refusée même ` +
-        `réservée. Un numéro mergé ne se libère jamais — déplacer sous « archivées », ou ` +
+        `réservée. Un numéro mergé ne se libère jamais — déplacer sous « ${SOUS_REPERTOIRE_ARCHIVES}/ », ou ` +
         `garder en place en disant « annulée ».`,
     });
   }
@@ -250,7 +344,7 @@ export function auditerDecisions(decisions, contexte = {}) {
     if (reservations === null) {
       violations.push({
         genre: "trou",
-        ligne: 0,
+        chemin: FICHIER,
         message:
           `${liste(nonMerges)} manque${accord(nonMerges)} et les réservations sont illisibles ` +
           `(${erreurReservations || "lecture impossible"}) — trou non vérifiable sur une PR ; ` +
@@ -262,7 +356,6 @@ export function auditerDecisions(decisions, contexte = {}) {
       if (enVol.length > 0) {
         avertissements.push({
           genre: "trou",
-          ligne: 0,
           message:
             `${liste(enVol)} en vol : réservé${enVol.length > 1 ? "s" : ""}, pas encore ` +
             `mergé${enVol.length > 1 ? "s" : ""} (refs/tags/reserve/D-…).` +
@@ -272,11 +365,11 @@ export function auditerDecisions(decisions, contexte = {}) {
       if (perdus.length > 0) {
         violations.push({
           genre: "trou",
-          ligne: 0,
+          chemin: FICHIER,
           message:
             `la suite est trouée : ${liste(perdus)} manque${accord(perdus)} entre D-001 et ` +
             `${nomDecision(max)}, sans réservation. Un numéro ne se libère jamais : une ` +
-            `décision dépassée se DÉPLACE sous « archivées » (numéro inchangé), une décision ` +
+            `décision dépassée se DÉPLACE sous « ${SOUS_REPERTOIRE_ARCHIVES}/ » (numéro inchangé), une décision ` +
             `annulée ou remplacée se garde en place en le disant dans son corps, un numéro ` +
             `réservé puis abandonné se ferme par une pierre tombale. Ne renuméroter que sur ` +
             `une branche jamais publiée.`,
@@ -285,32 +378,7 @@ export function auditerDecisions(decisions, contexte = {}) {
     }
   }
 
-  // 3. Ordre de la section active — au rang numérique, du plus haut au plus
-  //    bas (D-370 §3). C'est ce qui casse après une résolution de conflit.
-  const actives = decisions.filter((d) => d.section === SECTION_ACTIVE);
-  for (let i = 1; i < actives.length; i += 1) {
-    const precedente = actives[i - 1];
-    const courante = actives[i];
-    // `<=` et non `<` : deux numéros égaux sont déjà nommés comme doublon.
-    // Les compter une seconde fois en désordre rendrait deux constats pour un
-    // seul défaut, et le second désignerait un remède faux (« déplacer »).
-    if (courante.numero <= precedente.numero) continue;
-    violations.push({
-      genre: "désordre",
-      ligne: courante.ligne,
-      message:
-        `${courante.brut} suit ${precedente.brut} dans la section active, rangée au rang ` +
-        `numérique du plus haut au plus bas — l'insérer à son rang.`,
-    });
-  }
-
   return { violations, avertissements, comptees: decisions.length, max };
-}
-
-export function lireFichier(racine) {
-  const chemin = path.join(racine, FICHIER);
-  if (!fs.existsSync(chemin)) return null;
-  return fs.readFileSync(chemin, "utf8");
 }
 
 /**
@@ -344,37 +412,93 @@ export function lireReservations(gh = ghParDefaut) {
 }
 
 /**
- * Les décisions de `tete` dont le numéro est absent de `base`.
- * @param {string} texteBase
- * @param {string} texteTete
+ * Les numéros que portent des chemins relatifs à `docs/decisions/` (`D-001.md`,
+ * `archivees/D-002.md`) — la forme d'une liste `git ls-tree` ou d'un arbre de
+ * l'API. Ce qui n'a pas la forme d'une décision est ignoré.
+ * @param {string[]} chemins
+ * @returns {number[]}
  */
-export function decisionsAjoutees(texteBase, texteTete) {
-  const avant = new Set(extraireDecisions(texteBase).map((d) => d.numero));
-  return extraireDecisions(texteTete).filter((d) => !avant.has(d.numero));
+export function numerosDesChemins(chemins) {
+  const numeros = [];
+  for (const c of chemins) {
+    const morceaux = c.split("/");
+    const nom = morceaux.at(-1);
+    const ok = morceaux.length === 1 || (morceaux.length === 2 && morceaux[0] === SOUS_REPERTOIRE_ARCHIVES);
+    const n = ok ? numeroDuNom(nom) : null;
+    if (n !== null) numeros.push(n);
+  }
+  return numeros;
+}
+
+/**
+ * Les numéros du registre UNIQUE d'avant D-418 (`### D-NNN` de
+ * `docs/DECISIONS.md`). Ne sert qu'à lire une base antérieure à la bascule :
+ * la PR de bascule elle-même, ou une branche partie avant.
+ * @param {string} texte
+ * @returns {number[]}
+ */
+export function numerosDuRegistreUnique(texte) {
+  return texte
+    .split(/\r?\n/)
+    .map((l) => TITRE_REGISTRE_UNIQUE.exec(l))
+    .filter(Boolean)
+    .map((m) => Number.parseInt(m[1], 10));
+}
+
+function git(racine, args) {
+  return execFileSync("git", args, {
+    cwd: racine,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
+/**
+ * Les numéros du registre à un commit donné, ou `null` s'il est illisible. Un
+ * commit d'avant la bascule n'a pas `docs/decisions/` : son registre unique se
+ * lit alors.
+ * @param {string} racine
+ * @param {string} ref
+ * @returns {Set<number> | null}
+ */
+export function numerosA(racine, ref) {
+  let liste;
+  try {
+    liste = git(racine, ["ls-tree", "-r", "--name-only", ref, "--", `${REPERTOIRE}/`]);
+  } catch {
+    return null;
+  }
+  const chemins = liste
+    .split("\n")
+    .filter(Boolean)
+    .map((c) => c.slice(REPERTOIRE.length + 1));
+  if (chemins.length > 0) return new Set(numerosDesChemins(chemins));
+  try {
+    const n = numerosDuRegistreUnique(git(racine, ["show", `${ref}:${PAGE}`]));
+    return n.length > 0 ? new Set(n) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Les décisions de la tête dont le numéro est absent de la base.
+ * @param {Set<number>} numerosBase
+ * @param {ReturnType<typeof decisionsDesEntrees>} decisionsTete
+ */
+export function decisionsAjoutees(numerosBase, decisionsTete) {
+  return decisionsTete.filter((d) => !numerosBase.has(d.numero)).sort((a, b) => b.numero - a.numero);
 }
 
 function messageErreur(e) {
   return String(e?.stderr || e?.message || e).trim().split(/\r?\n/)[0];
 }
 
-/** Le registre à un commit donné, ou `null` s'il est illisible. */
-function lireRegistreA(racine, ref) {
-  try {
-    return execFileSync("git", ["show", `${ref}:${FICHIER}`], {
-      cwd: racine,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 64 * 1024 * 1024,
-    });
-  } catch {
-    return null;
-  }
-}
-
 /** L'ancêtre commun de `HEAD` et de `ref`, ou `null`. */
 function ancetreCommun(racine, ref) {
   try {
-    return execFileSync("git", ["merge-base", "HEAD", ref], { cwd: racine, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim() || null;
+    return git(racine, ["merge-base", "HEAD", ref]).trim() || null;
   } catch {
     return null;
   }
@@ -385,13 +509,12 @@ function ancetreCommun(racine, ref) {
 // renumérotation coûterait un CI complet. Jamais bloquante : elle sort 0 dans
 // tous les cas, lecture impossible comprise.
 function accompagner(racine, base, gh) {
-  const texteBase = lireRegistreA(racine, base);
-  if (texteBase === null) {
-    console.log(`::warning::Accompagnement des réservations sans objet : ${FICHIER} illisible sur ${base}.`);
+  const numerosBase = numerosA(racine, base);
+  if (numerosBase === null) {
+    console.log(`::warning::Accompagnement des réservations sans objet : registre illisible sur ${base}.`);
     return 0;
   }
-  const texteTete = lireFichier(racine) ?? "";
-  const ajoutees = decisionsAjoutees(texteBase, texteTete);
+  const ajoutees = decisionsAjoutees(numerosBase, decisionsDesEntrees(lireEntrees(racine).entrees));
   if (ajoutees.length === 0) {
     console.log("OK : aucune décision ajoutée par cette PR.");
     return 0;
@@ -409,7 +532,7 @@ function accompagner(racine, base, gh) {
       continue;
     }
     console.log(
-      `::warning file=${FICHIER},line=${d.ligne}::${d.brut} ajouté sans réservation — ` +
+      `::warning file=${d.chemin},line=1::${d.brut} ajouté sans réservation — ` +
         `si une autre PR le prend d'abord, la renumérotation coûtera un CI complet. ` +
         `Réserver : node scripts/wn-reserver-decision.mjs (D-370 §4).`,
     );
@@ -418,7 +541,7 @@ function accompagner(racine, base, gh) {
 }
 
 // Exécuté directement : le contrôle bloquant du CI. Comme ses voisins de
-// `scripts/lib/`, il refuse d'être vert sur un fichier absent ou sans aucune
+// `scripts/lib/`, il refuse d'être vert sur un répertoire absent ou sans aucune
 // décision — un scan qui ne trouve rien rendrait « aucune violation »,
 // c'est-à-dire la même sortie qu'un registre sain.
 //
@@ -440,14 +563,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(accompagner(racine, base, ghParDefaut));
   }
 
-  const texte = lireFichier(racine);
-  if (texte === null) {
-    console.error(`✗ ${FICHIER} introuvable depuis ${racine} — contrôle sans objet, refus d'être vert.`);
+  const { present, entrees } = lireEntrees(racine);
+  if (!present) {
+    console.error(`✗ ${REPERTOIRE}/ introuvable depuis ${racine} — contrôle sans objet, refus d'être vert.`);
     process.exit(2);
   }
-  const decisions = extraireDecisions(texte);
+  const decisions = decisionsDesEntrees(entrees);
   if (decisions.length === 0) {
-    console.error(`✗ Aucune décision lue dans ${FICHIER} — contrôle sans objet, refus d'être vert.`);
+    console.error(`✗ Aucune décision lue dans ${REPERTOIRE}/ — contrôle sans objet, refus d'être vert.`);
     process.exit(2);
   }
 
@@ -464,45 +587,46 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
   }
   if (surPR) {
-    // La base, lue localement (`git show`, aucun appel distant) : `HEAD^1`,
+    // La base, lue localement (`git`, aucun appel distant) : `HEAD^1`,
     // premier parent du commit de fusion de la PR, en CI ; au poste local,
     // l'ancêtre commun avec `origin/main` — `origin/main` lui-même ferait lire
     // comme supprimée une décision mergée après la création de la branche
     // (revue CodeRabbit de #1743). Base illisible ⇒ refus, en CI comme avec
     // `--pr` : la suppression n'est pas vérifiable.
     const base = enCIdePR ? "HEAD^1" : ancetreCommun(racine, "origin/main");
-    const texteBase = base === null ? null : lireRegistreA(racine, base);
-    if (texteBase === null) {
-      console.error(`✗ ${FICHIER} illisible sur ${base ?? "l'ancêtre commun avec origin/main"} — décision supprimée non vérifiable sur une PR.`);
+    surBase = base === null ? null : numerosA(racine, base);
+    if (surBase === null) {
+      console.error(`✗ registre illisible sur ${base ?? "l'ancêtre commun avec origin/main"} — décision supprimée non vérifiable sur une PR.`);
       process.exit(1);
     }
-    surBase = new Set(extraireDecisions(texteBase).map((d) => d.numero));
   }
 
+  const forme = auditerForme(entrees, lirePage(racine));
   const { violations, avertissements, comptees, max } = auditerDecisions(decisions, {
     surPR,
     reservations,
     erreurReservations,
     surBase,
   });
+  const toutes = [...forme, ...violations];
   const enCI = process.env.GITHUB_ACTIONS === "true";
   for (const a of avertissements) {
     console.log(`${enCI ? "::warning::" : "⚠ "}${FICHIER} — ${a.message}`);
   }
-  for (const v of violations) {
-    const ou = v.ligne > 0 ? `${FICHIER}:${v.ligne}` : FICHIER;
-    console.error(`✗ ${ou} — ${v.message}`);
+  for (const v of toutes) {
+    console.error(`✗ ${v.chemin} — ${v.message}`);
   }
-  if (violations.length > 0) {
+  if (toutes.length > 0) {
     console.error(
-      `\n→ La numérotation de ${FICHIER} est une suite : un numéro, une décision, ` +
-        `et la section active rangée au rang numérique, du plus haut au plus bas.`,
+      `\n→ La numérotation de ${FICHIER} est une suite : un numéro, un fichier \`D-NNN.md\` dont la ` +
+        `première ligne porte ce numéro, et ${PAGE} reste une page fixe.`,
     );
     process.exit(1);
   }
   const trous = avertissements.length > 0 ? "trous en avertissement" : "sans trou";
+  const archivees = decisions.filter((d) => d.section === SECTION_ARCHIVE).length;
   console.log(
-    `OK : ${comptees} décisions, D-001 à ${nomDecision(max)}, sans doublon, ${trous}, ` +
-      `section active au rang numérique${surPR ? " (PR)" : ""}.`,
+    `OK : ${comptees} décisions (${archivees} archivée${archivees > 1 ? "s" : ""}), D-001 à ${nomDecision(max)}, ` +
+      `sans doublon, ${trous}, noms et titres accordés, ${PAGE} fixe${surPR ? " (PR)" : ""}.`,
   );
 }

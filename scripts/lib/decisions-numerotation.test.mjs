@@ -1,10 +1,11 @@
 // Banc de `scripts/lib/decisions-numerotation.mjs`.
 //
-// Trois morsures à prouver séparément — doublon, trou sans réservation sur une
-// PR, désordre au rang numérique —, la tolérance du trou réservé ou hors PR
-// (D-370 §2), et le silence sur l'état réel du dépôt. Un garde qui n'attrape
-// que l'une des trois ressemblerait aux deux autres fois où la collision est
-// passée.
+// Depuis D-418, le registre est un fichier par décision. Les morsures à
+// prouver séparément : doublon (actif et archivé), trou sans réservation sur
+// une PR, décision supprimée, et la forme — nom canonique, titre accordé au
+// nom, une décision par fichier, page fixe sans décision. Puis la tolérance du
+// trou réservé ou hors PR (D-370 §2), le refus d'être vert sur un répertoire
+// absent ou vide, et le silence sur l'état réel du dépôt.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -16,223 +17,293 @@ import { fileURLToPath } from "node:url";
 
 import {
   auditerDecisions,
+  auditerForme,
   decisionsAjoutees,
-  extraireDecisions,
-  lireFichier,
+  decisionsDesEntrees,
+  lireEntrees,
+  lirePage,
   lireReservations,
-  FICHIER,
+  numerosDesChemins,
+  numerosDuRegistreUnique,
   SEUIL_AFFICHAGE_TROUS,
 } from "./decisions-numerotation.mjs";
+import { ARCHIVES, PAGE, REPERTOIRE } from "./registre-decisions.mjs";
 
 const ICI = path.dirname(fileURLToPath(import.meta.url));
 const RACINE = path.join(ICI, "..", "..");
 const SCRIPT = path.join(ICI, "decisions-numerotation.mjs");
 
-function registre(corpsActif, corpsArchive = "") {
-  return [
-    "# Registre des décisions Wellneuro",
-    "",
-    "> Append-only. Ajouter une nouvelle décision en tête de la section active.",
-    "",
-    "## Décisions actives",
-    "",
-    corpsActif,
-    "## Décisions archivées",
-    "",
-    corpsArchive,
-  ].join("\n");
+const nom = (n) => `D-${String(n).padStart(3, "0")}`;
+
+/** Le contenu d'un fichier de décision sain. */
+function contenu(n, titre = "titre quelconque") {
+  return `# ${nom(n)} — ${titre}\n\n- Date : 2026-11-05\n`;
 }
 
-function decision(numero, titre = "titre quelconque") {
-  return `### D-${String(numero).padStart(3, "0")} — ${titre}\n\n- Date : 2026-08-04\n`;
+const PAGE_FIXE = "# Registre des décisions Wellneuro\n\n> Page fixe (D-418).\n";
+
+/**
+ * Un registre sur disque. `actives` et `archivees` : des numéros, ou
+ * `[chemin, contenu]` pour un fichier à la main. `page: null` retire la page.
+ */
+function ecrireRegistre(racine, { actives = [], archivees = [], page = PAGE_FIXE, sansRepertoire = false } = {}) {
+  if (page !== null) {
+    fs.mkdirSync(path.join(racine, path.dirname(PAGE)), { recursive: true });
+    fs.writeFileSync(path.join(racine, PAGE), page);
+  }
+  if (sansRepertoire) return;
+  fs.rmSync(path.join(racine, REPERTOIRE), { recursive: true, force: true });
+  fs.mkdirSync(path.join(racine, REPERTOIRE), { recursive: true });
+  const poser = (dossier, x) => {
+    const [nomFichier, texte] = Array.isArray(x) ? x : [`${nom(x)}.md`, contenu(x)];
+    const absolu = path.join(racine, dossier, nomFichier);
+    fs.mkdirSync(path.dirname(absolu), { recursive: true });
+    if (texte === "<dossier>") fs.mkdirSync(absolu, { recursive: true });
+    else fs.writeFileSync(absolu, texte);
+  };
+  for (const x of actives) poser(REPERTOIRE, x);
+  for (const x of archivees) poser(ARCHIVES, x);
 }
 
-function auditer(texte) {
-  return auditerDecisions(extraireDecisions(texte));
+function dossierTemporaire() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "wn-decisions-"));
+}
+
+function avecRegistre(registre, corps) {
+  const tmp = dossierTemporaire();
+  try {
+    ecrireRegistre(tmp, registre);
+    return corps(tmp);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+/** Audit complet (forme et numérotation) d'un registre sur disque. */
+function auditer(registre, contexte = {}) {
+  return avecRegistre(registre, (tmp) => {
+    const { entrees } = lireEntrees(tmp);
+    const forme = auditerForme(entrees, lirePage(tmp));
+    const r = auditerDecisions(decisionsDesEntrees(entrees), contexte);
+    return { ...r, violations: [...forme, ...r.violations] };
+  });
 }
 
 const genres = (r) => r.violations.map((v) => v.genre);
 
+// ── La numérotation ─────────────────────────────────────────────────────────
+
 test("un registre sain ne rend aucune violation", () => {
-  const r = auditer(registre(decision(3) + decision(2) + decision(1)));
+  const r = auditer({ actives: [3, 2, 1] });
   assert.deepEqual(r.violations, []);
+  assert.deepEqual(r.avertissements, []);
   assert.equal(r.comptees, 3);
   assert.equal(r.max, 3);
 });
 
-// ── Morsure 1 : le doublon ──────────────────────────────────────────────────
-// Le défaut d'origine. Deux branches parallèles posent chacune leur décision en
-// tête et prennent le même numéro : D-013 le 2026-08-03, D-014 le 2026-08-04.
-
-test("doublon : le même D-NNN porté par deux titres est refusé", () => {
-  const r = auditer(registre(decision(14, "côté A") + decision(14, "côté B") + decision(13) + decision(12)));
-  assert.ok(genres(r).includes("doublon"));
-  const v = r.violations.find((x) => x.genre === "doublon");
-  assert.match(v.message, /D-014/);
-  assert.match(v.message, /2 décisions/);
+test("doublon : le même numéro actif ET archivé est refusé, les deux chemins nommés", () => {
+  const r = auditer({ actives: [3, 2, 1], archivees: [2] });
+  assert.deepEqual(genres(r), ["doublon"]);
+  assert.match(r.violations[0].chemin, /docs\/decisions\/D-002\.md/);
+  assert.match(r.violations[0].chemin, /archivees\/D-002\.md/);
 });
-
-test("doublon : le constat pointe la SECONDE occurrence, celle à renuméroter", () => {
-  const texte = registre(decision(2, "première") + decision(2, "seconde") + decision(1));
-  const d = extraireDecisions(texte).filter((x) => x.numero === 2);
-  const v = auditerDecisions(extraireDecisions(texte)).violations.find((x) => x.genre === "doublon");
-  assert.equal(v.ligne, d[1].ligne);
-});
-
-test("doublon : il compte même à cheval sur les deux sections", () => {
-  const r = auditer(registre(decision(3) + decision(2), decision(2, "archivée")));
-  assert.ok(genres(r).includes("doublon"));
-});
-
-// ── Morsure 2 : le trou ─────────────────────────────────────────────────────
-// Sur une PR, un numéro absent est soit en vol — réservé par une autre branche,
-// toléré en avertissement —, soit une décision perdue ou un renvoi vers le
-// vide. Hors PR, `main` compris, jamais rouge (D-370 §2).
-
-const surPR = (reservations) => ({ surPR: true, reservations: new Set(reservations) });
 
 test("trou sur une PR : un numéro manquant sans réservation est refusé", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(5) + decision(4) + decision(2) + decision(1))), surPR([]));
-  assert.ok(genres(r).includes("trou"));
-  assert.match(r.violations.find((v) => v.genre === "trou").message, /D-003/);
+  const r = auditer({ actives: [4, 2, 1] }, { surPR: true, reservations: new Set() });
+  assert.deepEqual(genres(r), ["trou"]);
+  assert.match(r.violations[0].message, /D-003 manque/);
 });
 
 test("trou sur une PR : plusieurs manquants sans réservation sont tous nommés", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(6) + decision(3) + decision(1))), surPR([]));
-  const v = r.violations.find((x) => x.genre === "trou");
-  assert.match(v.message, /D-002/);
-  assert.match(v.message, /D-004/);
-  assert.match(v.message, /D-005/);
+  const r = auditer({ actives: [5, 2, 1] }, { surPR: true, reservations: new Set() });
+  assert.match(r.violations[0].message, /D-003, D-004 manquent/);
 });
 
 test("trou sur une PR : un trou réservé est toléré, en avertissement « en vol »", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(5) + decision(4) + decision(2) + decision(1))), surPR([3]));
+  const r = auditer({ actives: [4, 2, 1] }, { surPR: true, reservations: new Set([3]) });
   assert.deepEqual(r.violations, []);
-  assert.equal(r.avertissements.length, 1);
   assert.match(r.avertissements[0].message, /D-003 en vol/);
 });
 
 test("trou sur une PR : réservé et non réservé se jugent chacun pour soi", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(5) + decision(2) + decision(1))), surPR([3]));
-  const v = r.violations.find((x) => x.genre === "trou");
-  assert.match(v.message, /D-004/);
-  assert.doesNotMatch(v.message, /D-003/);
+  const r = auditer({ actives: [5, 2, 1] }, { surPR: true, reservations: new Set([3]) });
   assert.match(r.avertissements[0].message, /D-003 en vol/);
+  assert.match(r.violations[0].message, /D-004 manque/);
+  assert.doesNotMatch(r.violations[0].message, /D-003/);
 });
 
 test("trou sur une PR : réservations illisibles ⇒ refus, jamais un vert présumé", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(3) + decision(1))), {
-    surPR: true,
-    reservations: null,
-    erreurReservations: "HTTP 503",
-  });
-  const v = r.violations.find((x) => x.genre === "trou");
-  assert.match(v.message, /illisibles \(HTTP 503\)/);
+  const r = auditer({ actives: [4, 2, 1] }, { surPR: true, reservations: null, erreurReservations: "HTTP 503" });
+  assert.deepEqual(genres(r), ["trou"]);
+  assert.match(r.violations[0].message, /illisibles \(HTTP 503\)/);
 });
 
 test("trou hors PR (main, poste local) : jamais rouge, en avertissement", () => {
-  const r = auditer(registre(decision(5) + decision(4) + decision(2) + decision(1)));
+  const r = auditer({ actives: [4, 2, 1] });
   assert.deepEqual(r.violations, []);
-  assert.equal(r.avertissements.length, 1);
-  assert.match(r.avertissements[0].message, /D-003 manque/);
+  assert.match(r.avertissements[0].message, /D-003 manque.*jamais rouge hors PR/);
 });
 
 test(`trou : à partir de ${SEUIL_AFFICHAGE_TROUS} trous, l'avertissement rappelle la pierre tombale`, () => {
-  const deux = auditer(registre(decision(4) + decision(1)));
-  assert.doesNotMatch(deux.avertissements[0].message, /pierre tombale/);
-  const trois = auditer(registre(decision(5) + decision(1)));
-  assert.match(trois.avertissements[0].message, /3 trous.*pierre tombale/);
-  // Seuil d'affichage, pas une capacité : rien n'est refusé au-delà.
-  assert.deepEqual(auditerDecisions(extraireDecisions(registre(decision(9) + decision(1))), surPR([2, 3, 4, 5, 6, 7, 8])).violations, []);
+  const sous = auditer({ actives: [4, 1] });
+  assert.doesNotMatch(sous.avertissements[0].message, /pierre tombale/);
+  const au = auditer({ actives: [5, 1] });
+  assert.match(au.avertissements[0].message, /pierre tombale/);
 });
 
-test("trou : la suite pleine à travers les deux sections ne troue pas", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(4) + decision(3), decision(2) + decision(1))), surPR([]));
-  assert.deepEqual(genres(r), []);
+test("trou : la suite pleine à travers actives et archivées ne troue pas", () => {
+  const r = auditer({ actives: [3, 1], archivees: [2] }, { surPR: true, reservations: new Set() });
+  assert.deepEqual(r.violations, []);
   assert.deepEqual(r.avertissements, []);
 });
 
 test("trou : une pierre tombale ferme le trou d'un numéro réservé puis abandonné", () => {
-  const r = auditerDecisions(
-    extraireDecisions(registre(decision(3) + decision(2, "Numéro non utilisé") + decision(1))),
-    surPR([]),
+  const r = auditer(
+    { actives: [3, ["D-002.md", "# D-002 — Numéro non utilisé\n\n- Date : 2026-11-05\n"], 1] },
+    { surPR: true, reservations: new Set() },
   );
   assert.deepEqual(r.violations, []);
+});
+
+test("audit : une décision de la base supprimée est refusée même réservée", () => {
+  const r = auditer({ actives: [3, 1] }, { surPR: true, reservations: new Set([2]), surBase: new Set([1, 2, 3]) });
+  assert.match(r.violations.find((v) => v.genre === "supprimée").message, /D-002 existe sur la base/);
   assert.deepEqual(r.avertissements, []);
 });
 
-// ── Morsure 3 : le désordre ─────────────────────────────────────────────────
-// La section active est rangée au rang numérique, du plus haut au plus bas
-// (D-370 §3). Une entrée insérée au mauvais rang après une résolution de
-// conflit ne se voit qu'ici.
-
-test("désordre : une décision insérée sous une plus ancienne est refusée", () => {
-  const r = auditer(registre(decision(3) + decision(1) + decision(2)));
-  assert.ok(genres(r).includes("désordre"));
-  assert.match(r.violations.find((v) => v.genre === "désordre").message, /D-002 suit D-001/);
+test("audit : hors PR, le rappel dit « trous », pas « en vol »", () => {
+  const r = auditer({ actives: [5, 1] });
+  assert.match(r.avertissements[0].message, /3 trous/);
+  assert.doesNotMatch(r.avertissements[0].message, /numéros en vol/);
 });
 
-test("désordre : jugé au rang numérique, pas à l'ordre d'arrivée", () => {
-  // D-005 mergée avant D-004 (réservée plus tôt, mergée plus tard) : D-004
-  // s'insère à son rang, sous D-005 — pas en tête.
-  assert.deepEqual(genres(auditer(registre(decision(5) + decision(4) + decision(3)))), []);
-  const r = auditer(registre(decision(4) + decision(5) + decision(3)));
-  assert.match(r.violations.find((v) => v.genre === "désordre").message, /D-005 suit D-004.*rang numérique/);
+// ── La forme (D-418 §1, §5, §6) ─────────────────────────────────────────────
+
+for (const [cas, intrus] of [
+  ["un numéro sans zéros de tête", ["D-42.md", contenu(42)]],
+  ["un intitulé dans le nom", ["D-004-intitule.md", contenu(4)]],
+  ["un zéro de tête en trop", ["D-0004.md", contenu(4)]],
+  ["un README", ["README.md", "# Registre\n"]],
+  ["un fichier qui n'est pas du markdown", ["D-004.txt", contenu(4)]],
+  ["un sous-répertoire", ["brouillons", "<dossier>"]],
+]) {
+  test(`nom : ${cas} est refusé — le répertoire ne porte que des décisions`, () => {
+    const r = auditer({ actives: [3, 2, 1, intrus] });
+    assert.deepEqual(genres(r), ["nom"]);
+    assert.match(r.violations[0].message, /nommée par son seul numéro/);
+  });
+}
+
+test("nom : la même règle vaut sous archivees/", () => {
+  const r = auditer({ actives: [3, 2, 1], archivees: [["D-7.md", contenu(7)]] });
+  assert.deepEqual(genres(r), ["nom"]);
+  assert.match(r.violations[0].message, /nom canonique : D-007\.md/);
 });
 
-test("désordre : la section archivée n'est PAS soumise à l'ordre", () => {
-  // Les archives sont un dépôt, pas une pile : leur ordre n'a jamais été tenu.
-  const r = auditer(registre(decision(4) + decision(3), decision(1) + decision(2)));
-  assert.deepEqual(genres(r), []);
+test("nom : un fichier mal nommé ne compte pas comme décision — son numéro reste un trou", () => {
+  const r = auditer({ actives: [3, ["D-2.md", contenu(2)], 1] }, { surPR: true, reservations: new Set() });
+  assert.deepEqual(genres(r).sort(), ["nom", "trou"]);
 });
 
-test("désordre : deux titres égaux en numéro sortent en doublon, pas en désordre", () => {
-  const r = auditer(registre(decision(2) + decision(2) + decision(1)));
-  assert.ok(genres(r).includes("doublon"));
-  assert.ok(!genres(r).includes("désordre"));
+for (const [cas, texte] of [
+  ["absent (fichier vide)", ""],
+  ["au niveau de l'ancien registre (###)", "### D-002 — titre\n"],
+  ["au numéro d'une autre décision", "# D-003 — titre\n"],
+  ["sans zéros de tête", "# D-2 — titre\n"],
+  ["sans tiret cadratin ni titre", "# D-002\n"],
+  ["précédé d'une ligne", "\n# D-002 — titre\n"],
+]) {
+  test(`titre : ${cas} est refusé — accordé au nom de fichier`, () => {
+    const r = auditer({ actives: [3, ["D-002.md", texte], 1] });
+    assert.ok(genres(r).includes("titre"), JSON.stringify(r.violations));
+    assert.match(r.violations.find((v) => v.genre === "titre").message, /« # D-002 — <titre> »/);
+  });
+}
+
+test("une décision par fichier : un second titre de décision est refusé, à sa ligne", () => {
+  const r = auditer({ actives: [3, ["D-002.md", `${contenu(2)}\n### D-004 — glissée ici\n`], 1] });
+  assert.deepEqual(genres(r), ["une décision par fichier"]);
+  assert.match(r.violations[0].chemin, /D-002\.md:5$/);
 });
 
-// ── Ce que le garde ne fait pas ─────────────────────────────────────────────
-
-test("un titre de niveau 3 qui n'est pas une décision est ignoré", () => {
-  const texte = registre(decision(2) + "### Une note quelconque\n\n" + decision(1));
-  assert.equal(extraireDecisions(texte).length, 2);
+test("une décision par fichier : un renvoi D-NNN dans la prose n'est pas un titre", () => {
+  const r = auditer({ actives: [3, ["D-002.md", `${contenu(2)}\nVoir [[D-001]] et D-003 §2.\n## Le terme désigné\n`], 1] });
+  assert.deepEqual(r.violations, []);
 });
 
-test("la section d'appartenance est bien lue", () => {
-  const d = extraireDecisions(registre(decision(2), decision(1)));
-  assert.equal(d[0].section, "actives");
-  assert.equal(d[1].section, "archivées");
+test("page fixe : une décision écrite dans docs/DECISIONS.md est refusée (D-418 §6)", () => {
+  const r = auditer({ actives: [2, 1], page: `${PAGE_FIXE}\n### D-003 — écrite au mauvais endroit\n` });
+  assert.deepEqual(genres(r), ["page fixe"]);
+  assert.match(r.violations[0].message, /page fixe/);
 });
 
-// ── L'état réel du dépôt ────────────────────────────────────────────────────
-// Un garde câblé en CI et dans `npm run check` doit être vert sur ce qu'il
-// garde — sinon il sera débranché avant d'avoir servi.
+test("page fixe : la page supprimée est refusée — des documents datés la citent", () => {
+  const r = auditer({ actives: [2, 1], page: null });
+  assert.deepEqual(genres(r), ["page fixe"]);
+});
 
-test(`${FICHIER} du dépôt : sans doublon, sans trou, section active en ordre`, () => {
-  const texte = lireFichier(RACINE);
-  assert.ok(texte !== null, `${FICHIER} introuvable depuis ${RACINE}`);
-  const decisions = extraireDecisions(texte);
-  assert.ok(decisions.length > 0, "aucune décision lue — le motif de titre a dû dériver");
+// ── Le dépôt réel ───────────────────────────────────────────────────────────
+
+test("le registre du dépôt : sans doublon, sans trou, noms et titres accordés, page fixe", () => {
+  const { present, entrees } = lireEntrees(RACINE);
+  assert.ok(present, `${REPERTOIRE}/ introuvable`);
+  const decisions = decisionsDesEntrees(entrees);
+  assert.ok(decisions.length >= 442, `${decisions.length} décisions seulement : registre tronqué ?`);
+  assert.deepEqual(auditerForme(entrees, lirePage(RACINE)), []);
   assert.deepEqual(auditerDecisions(decisions).violations, []);
 });
 
-test("le fichier gardé n'est PAS déclaré merge=union", () => {
-  // `union` duplique en silence une ligne modifiée des deux côtés. Sur un
-  // fichier dont l'écriture se fait EN TÊTE, ce serait un doublon fabriqué par
-  // la fusion elle-même — exactement ce que ce garde existe pour refuser.
+test("le registre n'est PAS déclaré merge=union", () => {
+  // `union` concatène en silence les deux côtés d'un conflit : deux PR qui
+  // créent le même `D-NNN.md` fusionneraient en un fichier à deux titres —
+  // le doublon que ce garde existe pour refuser, fabriqué par la fusion.
   const attributs = fs.readFileSync(path.join(RACINE, ".gitattributes"), "utf8");
   for (const ligne of attributs.split(/\r?\n/)) {
     if (/^\s*#/.test(ligne) || ligne.trim() === "") continue;
-    if (ligne.includes("merge=union")) assert.ok(!ligne.includes("DECISIONS"), ligne);
+    if (ligne.includes("merge=union")) assert.ok(!/DECISIONS|docs\/decisions|^\s*(?:\*\*\/)?\*\.md\s/.test(ligne), ligne);
   }
+});
+
+// ── Lectures pures ──────────────────────────────────────────────────────────
+
+test("numerosDesChemins : actives et archivees/, rien d'autre", () => {
+  assert.deepEqual(
+    numerosDesChemins(["D-001.md", "archivees/D-002.md", "D-3.md", "README.md", "brouillons/D-004.md", "archivees/x/D-005.md", "D-006-titre.md"]),
+    [1, 2],
+  );
+});
+
+test("numerosDuRegistreUnique : les titres ### de l'ancien registre, et eux seuls", () => {
+  const ancien = "# Registre\n\n## Décisions actives\n\n### D-003 — c\n\nvoir [[D-009]]\n### D-002 — b\n\n## Décisions archivées\n\n### D-001 — a\n";
+  assert.deepEqual(numerosDuRegistreUnique(ancien), [3, 2, 1]);
+});
+
+test("decisionsAjoutees : les numéros de la tête absents de la base, du plus haut au plus bas", () => {
+  const tete = [3, 4, 1, 2].map((n) => ({ numero: n, brut: nom(n), chemin: `${REPERTOIRE}/${nom(n)}.md`, section: "actives" }));
+  assert.deepEqual(decisionsAjoutees(new Set([1, 2]), tete).map((d) => d.numero), [4, 3]);
+});
+
+test("lireReservations : aucune réservation ⇒ ensemble vide, sans erreur", () => {
+  assert.equal(lireReservations(() => "[[]]").size, 0);
+});
+
+test("lireReservations : toutes les pages, seules les références reserve/D-NNN", () => {
+  const pages = [[{ ref: "refs/tags/reserve/D-391" }, { ref: "refs/tags/reserve/D-x" }], [{ ref: "refs/tags/reserve/D-393" }]];
+  const appels = [];
+  const r = lireReservations((args) => {
+    appels.push(args);
+    return JSON.stringify(pages);
+  });
+  assert.deepEqual([...r].sort(), [391, 393]);
+  assert.ok(appels[0].includes("--paginate") && appels[0].includes("--slurp"));
 });
 
 // ── Le contrat de code de sortie ────────────────────────────────────────────
 //
 // Les tests ci-dessus n'exécutent jamais le script : ils appellent ses
 // fonctions. Or ce que le CI lit, lui, est un code de retour — et un garde qui
-// sortirait `0` sur un fichier absent serait indiscernable d'un registre sain.
+// sortirait `0` sur un répertoire absent serait indiscernable d'un registre
+// sain.
 
 // Hors PR par défaut : le banc tourne lui-même dans un run `pull_request`, et
 // `GITHUB_EVENT_NAME` hérité ferait lire les réservations au garde lancé ici.
@@ -251,54 +322,49 @@ function executer(cwd, args = [], env = environnement()) {
   }
 }
 
-function lancer(cwd) {
-  return executer(cwd).code;
-}
-
-function dossierTemporaire() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "wn-decisions-"));
-}
-
-test("code 2 — registre absent : contrôle sans objet, refus d'être vert", () => {
-  const tmp = dossierTemporaire();
-  try {
-    assert.equal(lancer(tmp), 2);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+test("code 2 — répertoire absent : contrôle sans objet, refus d'être vert", () => {
+  avecRegistre({ sansRepertoire: true }, (tmp) => assert.equal(executer(tmp).code, 2));
 });
 
-test("code 2 — registre présent mais sans aucune décision", () => {
-  const tmp = dossierTemporaire();
-  try {
-    fs.mkdirSync(path.join(tmp, path.dirname(FICHIER)), { recursive: true });
-    fs.writeFileSync(path.join(tmp, FICHIER), registre(""));
-    assert.equal(lancer(tmp), 2);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+test("code 2 — répertoire présent mais sans aucune décision", () => {
+  avecRegistre({ actives: [["README.md", "# x\n"]] }, (tmp) => {
+    const r = executer(tmp);
+    assert.equal(r.code, 2, r.sortie);
+    assert.match(r.sortie, /Aucune décision lue/);
+  });
+});
+
+test("code 2 — le registre unique d'avant D-418 seul ne suffit pas : le garde le DIT", () => {
+  // Une branche restée sur l'ancienne forme ne passe pas en vert par défaut.
+  avecRegistre({ sansRepertoire: true, page: "# R\n\n## Décisions actives\n\n### D-001 — a\n" }, (tmp) => {
+    const r = executer(tmp);
+    assert.equal(r.code, 2, r.sortie);
+    assert.match(r.sortie, /docs\/decisions\/ introuvable/);
+  });
 });
 
 test("code 1 — un doublon de numéro", () => {
-  const tmp = dossierTemporaire();
-  try {
-    fs.mkdirSync(path.join(tmp, path.dirname(FICHIER)), { recursive: true });
-    fs.writeFileSync(path.join(tmp, FICHIER), registre(decision(1) + decision(1)));
-    assert.equal(lancer(tmp), 1);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+  avecRegistre({ actives: [2, 1], archivees: [1] }, (tmp) => assert.equal(executer(tmp).code, 1));
+});
+
+test("code 1 — une décision écrite dans la page fixe", () => {
+  avecRegistre({ actives: [2, 1], page: `${PAGE_FIXE}\n### D-003 — ici\n` }, (tmp) => {
+    const r = executer(tmp);
+    assert.equal(r.code, 1, r.sortie);
+    assert.match(r.sortie, /docs\/DECISIONS\.md:\d+ — .*page fixe/);
+  });
 });
 
 test("code 0 — le dépôt, depuis sa racine", () => {
-  assert.equal(lancer(RACINE), 0);
+  const r = executer(RACINE);
+  assert.equal(r.code, 0, r.sortie);
 });
 
 test("code 2 — lancé depuis `web/`, le garde ne trouve rien et le DIT", () => {
-  // Le cas courant : les sessions tournent depuis `web/`, où `docs/DECISIONS.md`
+  // Le cas courant : les sessions tournent depuis `web/`, où `docs/decisions/`
   // n'existe pas. Sortir 0 là-bas reviendrait à annoncer un registre sain sans
   // l'avoir ouvert.
-  assert.equal(lancer(path.join(RACINE, "web")), 2);
+  assert.equal(executer(path.join(RACINE, "web")).code, 2);
 });
 
 // ── Le trou en exécution : sur une PR, hors PR, et l'accompagnement ─────────
@@ -308,9 +374,9 @@ test("code 2 — lancé depuis `web/`, le garde ne trouve rien et le DIT", () =>
 // garde ne fait AUCUNE lecture distante hors PR (D-370 §2).
 
 function fauxGh(tmp, reservations, { echec = false } = {}) {
-  const dossier = path.join(tmp, "bin");
+  const dossier = path.join(tmp, "..", `${path.basename(tmp)}-bin`);
   fs.mkdirSync(dossier, { recursive: true });
-  const journal = path.join(tmp, "appels-gh.log");
+  const journal = path.join(dossier, "appels-gh.log");
   const pages = JSON.stringify([reservations.map((n) => ({ ref: `refs/tags/reserve/D-${String(n).padStart(3, "0")}` }))]);
   fs.writeFileSync(
     path.join(dossier, "gh"),
@@ -327,33 +393,33 @@ function fauxGh(tmp, reservations, { echec = false } = {}) {
   };
 }
 
-function avecRegistre(texte, corps) {
-  const tmp = dossierTemporaire();
-  try {
-    fs.mkdirSync(path.join(tmp, path.dirname(FICHIER)), { recursive: true });
-    fs.writeFileSync(path.join(tmp, FICHIER), texte);
-    return corps(tmp);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-}
+const gitBanc = (tmp, ...a) =>
+  execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", ...a], { cwd: tmp, stdio: "pipe", encoding: "utf8" });
 
-const TROUE = registre(decision(4) + decision(2) + decision(1));
-
-// Sur une PR, le garde lit aussi le registre de la base (`HEAD^1`) : un dépôt
-// git à deux commits, base puis tête, en tient lieu.
+/** Un dépôt à deux commits — base, puis tête — et `corps(tmp)` sur la tête. */
 function avecDepot(avant, apres, corps) {
   const tmp = dossierTemporaire();
   try {
-    depotGit(tmp, avant, apres);
-    execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", "commit", "--allow-empty", "-qam", "tête"], { cwd: tmp, stdio: "pipe" });
-    return corps(tmp);
+    gitBanc(tmp, "init", "-q");
+    if (typeof avant === "string") {
+      fs.mkdirSync(path.join(tmp, "docs"), { recursive: true });
+      fs.writeFileSync(path.join(tmp, PAGE), avant);
+    } else ecrireRegistre(tmp, avant);
+    gitBanc(tmp, "add", "-A");
+    gitBanc(tmp, "commit", "-qm", "base");
+    const base = gitBanc(tmp, "rev-parse", "HEAD").trim();
+    ecrireRegistre(tmp, apres);
+    gitBanc(tmp, "add", "-A");
+    gitBanc(tmp, "commit", "--allow-empty", "-qm", "tête");
+    return corps(tmp, base);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(`${tmp}-bin`, { recursive: true, force: true });
   }
 }
 
-const BASE = registre(decision(2) + decision(1));
+const BASE = { actives: [2, 1] };
+const TROUE = { actives: [4, 2, 1] };
 
 test("code 0 sur main — un trou s'affiche en avertissement, sans AUCUNE lecture distante", () => {
   avecRegistre(TROUE, (tmp) => {
@@ -362,6 +428,7 @@ test("code 0 sur main — un trou s'affiche en avertissement, sans AUCUNE lectur
     assert.equal(r.code, 0, r.sortie);
     assert.match(r.sortie, /D-003 manque/);
     assert.deepEqual(gh.appels(), []);
+    fs.rmSync(`${tmp}-bin`, { recursive: true, force: true });
   });
 });
 
@@ -378,8 +445,7 @@ test("code 0 sur une PR — le trou est réservé : avertissement « en vol »",
 
 test("code 1 sur une PR — le trou n'est pas réservé", () => {
   avecDepot(BASE, TROUE, (tmp) => {
-    const gh = fauxGh(tmp, [7]);
-    const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
+    const r = executer(tmp, [], fauxGh(tmp, [7]).env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /D-003 manque.*sans réservation/);
   });
@@ -387,15 +453,14 @@ test("code 1 sur une PR — le trou n'est pas réservé", () => {
 
 test("code 1 sur une PR — réservations illisibles et trou présent", () => {
   avecDepot(BASE, TROUE, (tmp) => {
-    const gh = fauxGh(tmp, [3], { echec: true });
-    const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
+    const r = executer(tmp, [], fauxGh(tmp, [3], { echec: true }).env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /illisibles/);
   });
 });
 
 test("sur une PR sans trou, aucune lecture distante", () => {
-  avecDepot(BASE, registre(decision(2) + decision(1)), (tmp) => {
+  avecDepot(BASE, { actives: [3, 2, 1] }, (tmp) => {
     const gh = fauxGh(tmp, []);
     const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 0, r.sortie);
@@ -406,9 +471,8 @@ test("sur une PR sans trou, aucune lecture distante", () => {
 test("code 1 sur une PR — une décision de la base supprimée, même réservée", () => {
   // Une réservation ne se nettoie jamais : sans la base, retirer une décision
   // mergée passerait pour « en vol », à vie (revue wn-reviewer, P1-1).
-  avecDepot(registre(decision(3) + decision(2) + decision(1)), registre(decision(3) + decision(1)), (tmp) => {
-    const gh = fauxGh(tmp, [2]);
-    const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
+  avecDepot({ actives: [3, 2, 1] }, { actives: [3, 1] }, (tmp) => {
+    const r = executer(tmp, [], fauxGh(tmp, [2]).env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /D-002 existe sur la base.*décision supprimée/);
   });
@@ -416,7 +480,7 @@ test("code 1 sur une PR — une décision de la base supprimée, même réservé
 
 test("code 1 sur une PR — la décision au numéro le plus haut supprimée, sans trou", () => {
   // Aucun trou n'apparaît : la base se lit quand même (revue CodeRabbit).
-  avecDepot(registre(decision(3) + decision(2) + decision(1)), registre(decision(2) + decision(1)), (tmp) => {
+  avecDepot({ actives: [3, 2, 1] }, BASE, (tmp) => {
     const gh = fauxGh(tmp, [3]);
     const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
@@ -425,151 +489,117 @@ test("code 1 sur une PR — la décision au numéro le plus haut supprimée, san
   });
 });
 
-test("sur une PR, une décision déplacée sous « archivées » n'est pas supprimée", () => {
-  avecDepot(registre(decision(3) + decision(2) + decision(1)), registre(decision(3) + decision(1), decision(2)), (tmp) => {
+test("sur une PR, une décision déplacée sous archivees/ n'est pas supprimée", () => {
+  avecDepot({ actives: [3, 2, 1] }, { actives: [3, 1], archivees: [2] }, (tmp) => {
     const r = executer(tmp, [], fauxGh(tmp, []).env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 0, r.sortie);
   });
 });
 
-test("code 1 sur une PR — base illisible et trou présent", () => {
+test("sur une PR dont la base est le registre UNIQUE d'avant D-418 : ses numéros font la base", () => {
+  // La PR de bascule elle-même, ou une branche partie avant.
+  const ancien = "# R\n\n## Décisions actives\n\n### D-003 — c\n\n### D-002 — b\n\n### D-001 — a\n\n## Décisions archivées\n";
+  avecDepot(ancien, { actives: [3, 2, 1] }, (tmp) => {
+    const r = executer(tmp, [], fauxGh(tmp, []).env({ GITHUB_EVENT_NAME: "pull_request" }));
+    assert.equal(r.code, 0, r.sortie);
+  });
+  avecDepot(ancien, { actives: [3, 1] }, (tmp) => {
+    const r = executer(tmp, [], fauxGh(tmp, [2]).env({ GITHUB_EVENT_NAME: "pull_request" }));
+    assert.equal(r.code, 1, r.sortie);
+    assert.match(r.sortie, /D-002 existe sur la base/);
+  });
+});
+
+test("code 1 sur une PR — base illisible (hors dépôt git)", () => {
   avecRegistre(TROUE, (tmp) => {
-    const gh = fauxGh(tmp, [3]);
-    const r = executer(tmp, [], gh.env({ GITHUB_EVENT_NAME: "pull_request" }));
+    const r = executer(tmp, [], fauxGh(tmp, [3]).env({ GITHUB_EVENT_NAME: "pull_request" }));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /illisible sur HEAD\^1/);
+    fs.rmSync(`${tmp}-bin`, { recursive: true, force: true });
   });
 });
 
 test("`--pr` au poste local : la base est l'ancêtre commun avec origin/main", () => {
   // `origin/main` a reçu D-003 après la création de la branche, arrêtée à
   // D-002 : rien n'a été supprimé par la branche (revue CodeRabbit de #1743).
-  avecDepot(BASE, registre(decision(2) + decision(1)), (tmp) => {
-    const git = (...a) => execFileSync("git", ["-c", "user.email=banc@example.invalid", "-c", "user.name=banc", ...a], { cwd: tmp, stdio: "pipe" });
-    git("checkout", "-q", "-b", "principale", "HEAD^1");
-    fs.writeFileSync(path.join(tmp, FICHIER), registre(decision(3) + decision(2) + decision(1)));
-    git("commit", "-qam", "D-003 sur main");
-    git("update-ref", "refs/remotes/origin/main", "HEAD");
-    git("checkout", "-q", "-");
+  avecDepot(BASE, BASE, (tmp) => {
+    gitBanc(tmp, "checkout", "-q", "-b", "principale", "HEAD^1");
+    ecrireRegistre(tmp, { actives: [3, 2, 1] });
+    gitBanc(tmp, "add", "-A");
+    gitBanc(tmp, "commit", "-qm", "D-003 sur main");
+    gitBanc(tmp, "update-ref", "refs/remotes/origin/main", "HEAD");
+    gitBanc(tmp, "checkout", "-q", "-");
     const r = executer(tmp, ["--pr"], fauxGh(tmp, []).env({}));
     assert.equal(r.code, 0, r.sortie);
   });
 });
 
 test("`--pr` au poste local : base illisible ⇒ refus, pas un vert", () => {
-  avecRegistre(registre(decision(2) + decision(1)), (tmp) => {
+  avecRegistre(BASE, (tmp) => {
     const r = executer(tmp, ["--pr"], fauxGh(tmp, []).env({}));
     assert.equal(r.code, 1, r.sortie);
     assert.match(r.sortie, /non vérifiable/);
+    fs.rmSync(`${tmp}-bin`, { recursive: true, force: true });
   });
 });
 
 test("`--pr` au poste local juge le trou comme sur une PR", () => {
-  avecRegistre(TROUE, (tmp) => {
-    const gh = fauxGh(tmp, []);
-    assert.equal(executer(tmp, ["--pr"], gh.env({})).code, 1);
+  avecDepot(BASE, TROUE, (tmp) => {
+    gitBanc(tmp, "update-ref", "refs/remotes/origin/main", "HEAD^1");
+    assert.equal(executer(tmp, ["--pr"], fauxGh(tmp, []).env({})).code, 1);
   });
 });
 
-test("doublon et désordre restent refusés sur main", () => {
-  avecRegistre(registre(decision(2) + decision(2) + decision(1)), (tmp) => {
-    assert.equal(executer(tmp, [], environnement({ GITHUB_EVENT_NAME: "push" })).code, 1);
-  });
-  avecRegistre(registre(decision(1) + decision(2)), (tmp) => {
-    assert.equal(executer(tmp, [], environnement({ GITHUB_EVENT_NAME: "push" })).code, 1);
-  });
+test("doublon, nom, titre et page fixe restent refusés sur main", () => {
+  const surMain = environnement({ GITHUB_EVENT_NAME: "push" });
+  for (const registre of [
+    { actives: [2, 1], archivees: [2] },
+    { actives: [2, 1, ["D-3.md", contenu(3)]] },
+    { actives: [2, ["D-001.md", "# D-002 — mauvais numéro\n"]] },
+    { actives: [2, 1], page: `${PAGE_FIXE}### D-003 — ici\n` },
+  ]) {
+    avecRegistre(registre, (tmp) => assert.equal(executer(tmp, [], surMain).code, 1, JSON.stringify(registre)));
+  }
 });
 
 // L'accompagnement (D-370 §4) : une décision ajoutée sans réservation est
 // signalée, jamais refusée.
 
-test("decisionsAjoutees : les numéros de la tête absents de la base", () => {
-  const base = registre(decision(2) + decision(1));
-  const tete = registre(decision(4) + decision(3) + decision(2) + decision(1));
-  assert.deepEqual(decisionsAjoutees(base, tete).map((d) => d.numero), [4, 3]);
-});
-
-function depotGit(tmp, avant, apres) {
-  const git = (...a) => execFileSync("git", a, { cwd: tmp, stdio: "pipe", encoding: "utf8" });
-  git("init", "-q");
-  fs.mkdirSync(path.join(tmp, path.dirname(FICHIER)), { recursive: true });
-  fs.writeFileSync(path.join(tmp, FICHIER), avant);
-  git("add", ".");
-  git("-c", "user.email=banc@example.invalid", "-c", "user.name=banc", "commit", "-qm", "base");
-  const base = git("rev-parse", "HEAD").trim();
-  fs.writeFileSync(path.join(tmp, FICHIER), apres);
-  return base;
-}
-
-test("accompagnement : décision ajoutée sans réservation ⇒ avertissement, code 0", () => {
-  const tmp = dossierTemporaire();
-  try {
-    const base = depotGit(tmp, registre(decision(2) + decision(1)), registre(decision(4) + decision(3) + decision(2) + decision(1)));
-    const gh = fauxGh(tmp, [3]);
-    const r = executer(tmp, ["--accompagnement", base], gh.env({}));
+test("accompagnement : décision ajoutée sans réservation ⇒ avertissement sur son fichier, code 0", () => {
+  avecDepot(BASE, { actives: [4, 3, 2, 1] }, (tmp, base) => {
+    const r = executer(tmp, ["--accompagnement", base], fauxGh(tmp, [3]).env({}));
     assert.equal(r.code, 0, r.sortie);
-    assert.match(r.sortie, /::warning file=docs\/DECISIONS\.md,line=\d+::D-004 ajouté sans réservation/);
+    assert.match(r.sortie, /::warning file=docs\/decisions\/D-004\.md,line=1::D-004 ajouté sans réservation/);
     assert.match(r.sortie, /OK : D-003 réservé/);
     assert.doesNotMatch(r.sortie, /D-003 ajouté sans réservation/);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+  });
+});
+
+test("accompagnement : la base d'avant D-418 se lit aussi", () => {
+  const ancien = "# R\n\n## Décisions actives\n\n### D-001 — a\n";
+  avecDepot(ancien, { actives: [2, 1] }, (tmp, base) => {
+    const r = executer(tmp, ["--accompagnement", base], fauxGh(tmp, []).env({}));
+    assert.equal(r.code, 0, r.sortie);
+    assert.match(r.sortie, /D-002 ajouté sans réservation/);
+    assert.doesNotMatch(r.sortie, /D-001 ajouté/);
+  });
 });
 
 test("accompagnement : jamais bloquant, même réservations illisibles ou base absente", () => {
-  const tmp = dossierTemporaire();
-  try {
-    const base = depotGit(tmp, registre(decision(1)), registre(decision(2) + decision(1)));
+  avecDepot({ actives: [1] }, { actives: [2, 1] }, (tmp, base) => {
     const gh = fauxGh(tmp, [], { echec: true });
     const r = executer(tmp, ["--accompagnement", base], gh.env({}));
     assert.equal(r.code, 0, r.sortie);
     assert.match(r.sortie, /::warning::Réservations illisibles/);
     assert.equal(executer(tmp, ["--accompagnement", "0".repeat(40)], gh.env({})).code, 0);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+  });
 });
 
 test("accompagnement : aucune décision ajoutée ⇒ aucune lecture distante", () => {
-  const tmp = dossierTemporaire();
-  try {
-    const base = depotGit(tmp, registre(decision(1)), registre(decision(1)));
+  avecDepot({ actives: [1] }, { actives: [1] }, (tmp, base) => {
     const gh = fauxGh(tmp, []);
     const r = executer(tmp, ["--accompagnement", base], gh.env({}));
     assert.equal(r.code, 0, r.sortie);
     assert.deepEqual(gh.appels(), []);
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-});
-
-test("lireReservations : aucune réservation ⇒ ensemble vide, sans erreur", () => {
-  assert.equal(lireReservations(() => "[[]]").size, 0);
-});
-
-test("audit : une décision de la base supprimée est refusée même réservée", () => {
-  const r = auditerDecisions(extraireDecisions(registre(decision(3) + decision(1))), {
-    surPR: true,
-    reservations: new Set([2]),
-    surBase: new Set([1, 2, 3]),
   });
-  assert.match(r.violations.find((v) => v.genre === "supprimée").message, /D-002 existe sur la base/);
-  assert.deepEqual(r.avertissements, []);
-});
-
-test("audit : hors PR, le rappel dit « trous », pas « en vol »", () => {
-  const r = auditer(registre(decision(5) + decision(1)));
-  assert.match(r.avertissements[0].message, /3 trous/);
-  assert.doesNotMatch(r.avertissements[0].message, /numéros en vol/);
-});
-
-test("lireReservations : toutes les pages, seules les références reserve/D-NNN", () => {
-  const pages = [[{ ref: "refs/tags/reserve/D-391" }, { ref: "refs/tags/reserve/D-x" }], [{ ref: "refs/tags/reserve/D-393" }]];
-  const appels = [];
-  const r = lireReservations((args) => {
-    appels.push(args);
-    return JSON.stringify(pages);
-  });
-  assert.deepEqual([...r].sort(), [391, 393]);
-  assert.ok(appels[0].includes("--paginate") && appels[0].includes("--slurp"));
 });

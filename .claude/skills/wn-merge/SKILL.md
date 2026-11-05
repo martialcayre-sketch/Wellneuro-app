@@ -194,11 +194,12 @@ dernière session.
      jugée doit être celle de la revue : `tete=` est le préfixe du `head=` du
      SNAPSHOT de l'étape 2 et du sha lu à l'étape 6, sinon les étapes 2, 6 et
      ce contrôle se rejouent sur la nouvelle tête.
-   - **Relecture de la tête de `docs/DECISIONS.md`** : les décisions entrées
-     dans `main` depuis la base de la PR — `git merge-base <sha> origin/main`,
-     puis `git diff <base> origin/main -- docs/DECISIONS.md`, lu en entier :
-     les titres `+### D-` nouveaux, et tout changement dans le texte d'une
-     décision existante (statut, gel levé, repli consigné). Une décision qui
+   - **Relecture de la tête du registre `docs/decisions/`** (un fichier par
+     décision, `D-418`) : les décisions entrées dans `main` depuis la base de
+     la PR — `git merge-base <sha> origin/main`, puis
+     `git diff <base> origin/main -- docs/decisions/`, lu en entier : les
+     fichiers `D-NNN.md` nouveaux, et tout changement dans le texte d'une
+     décision existante (statut, gel levé, repli consigné, amendement daté). Une décision qui
      amende le régime du merge (`D-290`, `D-373`, `D-374`, ce skill,
      `REGLES_PR_MERGE.md`) ou le domaine de la PR : arrêt et question. La
      numérotation de l'arbre fusionné, elle, est jugée par le contrôle.

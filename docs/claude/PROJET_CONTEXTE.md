@@ -132,7 +132,8 @@ tâche, avec des rôles disjoints :
   CI.
 - **`node scripts/wn-cycle.mjs --appliquer`** *répare* trois choses, et
   seulement trois : `updated_at` de `.wn/state.json`, `recent_decision_ids`
-  réalimenté depuis `docs/DECISIONS.md` quand ce registre rend des décisions, et
+  réalimenté depuis `docs/decisions/` (les cinq plus hauts numéros ; refus,
+  rien d'écrit, si le registre est introuvable ou vide, `D-418` §5), et
   `ACTIVE_CAMPAIGN.md` régénéré. Il ne
   touche plus `git.*` (ces champs ne se stockent plus depuis le 2026-08-07), ne
   touche **jamais** `active_lot` — l'aligner sur `CAMPAGNE.md` reste un geste
@@ -154,7 +155,7 @@ lot.
 
 Ce qui reste humain, et que ces outils ne touchent pas : les arbitrages
 cliniques, `next_action` (le texte libre, pas les champs structurés), et les
-décisions de campagne (`docs/DECISIONS.md`).
+décisions de campagne (`docs/decisions/D-NNN.md`, `D-418`).
 
 ### Ce qui est consommé, et par quoi — `docs/claude/MATRICE_CONSOMMATION.md`
 

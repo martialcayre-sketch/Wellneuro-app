@@ -3,7 +3,7 @@
 > **Ce document n'est pas encore opposable dans son entier.** Chaque règle
 > porte son statut : **acté** (elle reprend une décision ou un invariant déjà
 > opposable, dont la référence est donnée) ou **proposition** (elle attend une
-> entrée `docs/DECISIONS.md`). Une règle « proposition » informe une revue,
+> entrée du registre `docs/decisions/`, `D-418`). Une règle « proposition » informe une revue,
 > elle ne la tranche pas.
 >
 > **Quatre marqueurs qualifient un statut, et se cherchent au grep :**
@@ -285,7 +285,7 @@ Edit/Write seulement — une écriture par Bash et les scripts
 **DC-18 — Toute modification clinique exige une décision explicite.** Une
 entrée `D-xxx` portant objet, source, raison, ancienne règle, nouvelle règle,
 impact attendu, validation. Plus un fragment `changelog.d/`.
-*Acté — invariant `REGISTRE_FRONTIERES.md` §1 ; registre `docs/DECISIONS.md`.*
+*Acté — invariant `REGISTRE_FRONTIERES.md` §1 ; registre `docs/decisions/`.*
 
 ---
 

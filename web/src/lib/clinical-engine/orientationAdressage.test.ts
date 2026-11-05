@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { lireDecision } from '@/lib/doctrine/lireDecision';
 import { describe, expect, it } from 'vitest';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import {
@@ -16,8 +15,7 @@ describe('texte signé de l’orientation', () => {
   // RECOPIE AU CARACTÈRE PRÈS : le banc relit la décision signée. Un mot changé
   // ici sans décision, ou dans la décision sans ce module, fait rougir.
   it('est celui de D-257 §9, mot pour mot', () => {
-    const decisions = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8');
-    const section = decisions.slice(decisions.indexOf('### D-257'), decisions.indexOf('### D-256'));
+    const section = lireDecision('D-257');
     const aplati = section.replace(/\s+/g, ' ');
     expect(aplati).toContain(`Titre : « ${TEXTE_ORIENTATION.title} »`);
     expect(aplati).toContain(`Plan idéal : « ${TEXTE_ORIENTATION.idealPlan} »`);

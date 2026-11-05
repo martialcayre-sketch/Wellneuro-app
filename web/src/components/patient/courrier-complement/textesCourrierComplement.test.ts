@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { lireToutesDecisions } from '@/lib/doctrine/lireDecision';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import {
   AUCUN_COURRIER_COMPLEMENT,
@@ -11,13 +10,15 @@ import {
 } from './textesCourrierComplement';
 
 // [[D-345]], J3-12h lot 4. Le titre et la phrase sont ARBITRÉS (2026-10-25) et
-// consignés dans la décision du lot : ils sont relus dans `docs/DECISIONS.md`,
+// consignés dans la décision du lot : ils sont relus dans le registre (`docs/decisions/`),
 // au caractère près. Toute la prose patient de la surface passe la garde de
 // registre ([[D-189]] §4) — le courrier, lui, en est exempté (D-358 §1).
 
 // Le registre coupe ses lignes : les blancs se replient en une espace, et les
 // apostrophes se normalisent (courbes à l'écran, droites ou courbes au registre).
-const DECISIONS = readFileSync(path.join(process.cwd(), '..', 'docs', 'DECISIONS.md'), 'utf8')
+const DECISIONS = lireToutesDecisions()
+  .map((d) => d.texte)
+  .join('\n')
   .replace(/’/g, "'")
   .replace(/\s+/g, ' ');
 

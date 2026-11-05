@@ -2,8 +2,9 @@
 // RÉSERVATION D'UN NUMÉRO DE DÉCISION — D-370 §1 (plan, fiche H87).
 //
 // Le numéro d'une décision se réserve à la RÉDACTION, plus au merge. Ce script
-// lit le dernier numéro de `docs/DECISIONS.md` sur `main` et les réservations
-// existantes, puis crée par l'API GitHub la référence
+// lit le dernier numéro du registre sur `main` — le plus haut des fichiers
+// `docs/decisions/D-NNN.md` et `docs/decisions/archivees/D-NNN.md` (D-418
+// §5) — et les réservations existantes, puis crée par l'API GitHub la référence
 // `refs/tags/reserve/D-NNN` du premier numéro libre. La référence pointe sur la
 // tête de `main` et ne porte que le numéro : aucune autre donnée (dépôt
 // public). Elle reste après le merge — aucun nettoyage.
@@ -33,13 +34,13 @@
 import { pathToFileURL } from "node:url";
 
 import {
-  extraireDecisions,
-  FICHIER,
   ghParDefaut,
   lireReservations,
   nomDecision,
+  numerosDesChemins,
   referenceReservation,
 } from "./lib/decisions-numerotation.mjs";
+import { REPERTOIRE } from "./lib/registre-decisions.mjs";
 
 // Garde-fou contre une boucle sans fin si l'API rendait « déjà existante » à
 // chaque numéro : au-delà de ce nombre de refus d'affilée, arrêt.
@@ -63,7 +64,7 @@ function messageErreur(e) {
 }
 
 /**
- * L'API GitHub par `gh` : trois lectures, une création.
+ * L'API GitHub par `gh` : quatre lectures, une création.
  * @param {(args: string[]) => string} gh
  */
 export function apiGitHub(gh = ghParDefaut) {
@@ -73,8 +74,22 @@ export function apiGitHub(gh = ghParDefaut) {
       if (!/^[0-9a-f]{40}$/.test(sha ?? "")) throw new Error("sha de main illisible");
       return sha;
     },
-    registre(sha) {
-      return gh(["api", "-H", "Accept: application/vnd.github.raw", `repos/{owner}/{repo}/contents/${FICHIER}?ref=${sha}`]);
+    // Les numéros du registre à `sha` : l'arbre de `docs/decisions/`, lu en
+    // deux appels (l'entrée du répertoire dans `docs/`, puis son arbre
+    // récursif). L'API `contents` d'un répertoire s'arrête à 1 000 entrées ;
+    // l'arbre, lui, dit s'il est tronqué, et une troncature est une lecture
+    // impossible, jamais un maximum sous-estimé.
+    numeros(sha) {
+      const parent = REPERTOIRE.split("/").slice(0, -1).join("/");
+      const nom = REPERTOIRE.split("/").at(-1);
+      const entrees = JSON.parse(gh(["api", `repos/{owner}/{repo}/contents/${parent}?ref=${sha}`]));
+      const dossier = Array.isArray(entrees) ? entrees.find((e) => e?.name === nom && e?.type === "dir") : null;
+      if (!dossier?.sha) throw new Error(`${REPERTOIRE}/ absent sur main`);
+      const arbre = JSON.parse(gh(["api", `repos/{owner}/{repo}/git/trees/${dossier.sha}?recursive=1`]));
+      if (arbre?.truncated !== false || !Array.isArray(arbre?.tree)) {
+        throw new Error(`arbre de ${REPERTOIRE}/ tronqué ou illisible`);
+      }
+      return numerosDesChemins(arbre.tree.filter((e) => e?.type === "blob").map((e) => e.path));
     },
     reservations() {
       return lireReservations(gh);
@@ -101,8 +116,8 @@ export function reserver({ nombre = 1, api }) {
   let reservations;
   try {
     sha = api.teteMain();
-    const numeros = extraireDecisions(api.registre(sha)).map((d) => d.numero);
-    if (numeros.length === 0) throw new Error(`aucune décision lue dans ${FICHIER} sur main`);
+    const numeros = api.numeros(sha);
+    if (numeros.length === 0) throw new Error(`aucune décision lue dans ${REPERTOIRE}/ sur main`);
     maxMain = Math.max(...numeros);
     reservations = api.reservations();
   } catch (e) {

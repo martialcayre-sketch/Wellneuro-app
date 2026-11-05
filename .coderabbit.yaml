@@ -104,7 +104,7 @@ reviews:
         Chemin clinique (`.claude/rules/clinique-scoring.md`). Aucun seuil,
         dose, poids ou borne sans provenance certifiée (DC-01, DC-19, DC-20).
         Un changement de logique clinique ou de seuil exige une décision D-xxx
-        au registre `docs/DECISIONS.md` et un fragment `changelog.d/` : leur
+        au registre `docs/decisions/D-NNN.md` et un fragment `changelog.d/` : leur
         absence est un constat. Une donnée absente n'est jamais zéro ni
         normale (DC-24). Signaler le défaut ; ne JAMAIS proposer de valeur
         clinique de remplacement — la valeur relève d'une décision signée.

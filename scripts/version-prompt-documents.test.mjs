@@ -4,6 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { lireDecisions } from './lib/registre-decisions.mjs';
+
 // LA VERSION DE CONSIGNE ÉCRITE DANS LES DOCUMENTS DOIT ÊTRE CELLE QUI EST
 // LIVRÉE — et rien ne le vérifiait.
 //
@@ -12,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 // toute édition de la consigne fait rougir tant que `VERSION_PROMPT_SYNTHESE` et
 // l'empreinte n'ont pas été reportés ensemble. Ce garde-là tient.
 //
-// Ce qu'il ne voit pas, c'est le TEXTE OPPOSABLE : `docs/DECISIONS.md` et les
+// Ce qu'il ne voit pas, c'est le TEXTE OPPOSABLE : le registre des décisions
+// (`docs/decisions/D-NNN.md` depuis D-418, `docs/DECISIONS.md` avant) et les
 // fragments `changelog.d/`. Le 2026-08-12, la consigne a été reprise quatre fois
 // dans un même lot ; à chaque reprise, la version citée dans les documents est
 // restée derrière. Trois revues successives ont relevé le même défaut, sous
@@ -164,20 +167,37 @@ test('les décisions du jour ne citent pas une version de consigne périmée', (
   // `synthese-v15` décrit ce qui était livré ce jour-là et dit vrai. Une entrée
   // écrite aujourd'hui, en revanche, décrit le livré d'aujourd'hui, et c'est
   // elle qui est opposable (`DC-17`, `DC-18`).
-  const livree = versionLivree();
-  const registre = fs.readFileSync(path.join(RACINE, 'docs/DECISIONS.md'), 'utf8');
+  assert.deepEqual(
+    decisionsDuJourPerimees(entreesDuRegistre(RACINE), versionLivree()),
+    [],
+    'décision(s) du jour citant une version de consigne périmée — le registre est ce qui '
+      + 'est opposable, il ne peut pas être en retard sur le code.',
+  );
+});
 
-  const entrees = [];
-  const titres = [...registre.matchAll(/^### (D-\d{3}) — .*$/gm)];
-  for (let i = 0; i < titres.length; i += 1) {
-    const debut = titres[i].index;
-    const fin = i + 1 < titres.length ? titres[i + 1].index : registre.length;
-    const corps = registre.slice(debut, fin);
-    const date = corps.match(/^- Date : (\d{4}-\d{2}-\d{2})/m)?.[1] ?? '';
-    entrees.push({ id: titres[i][1], corps, date });
-  }
+/**
+ * Les décisions du registre, un fichier par décision depuis D-418. Lève si le
+ * registre est introuvable ou vide (`lireDecisions`).
+ */
+function entreesDuRegistre(racine) {
+  return lireDecisions(racine).map(d => ({
+    id: d.id,
+    corps: d.contenu,
+    date: d.contenu.match(/^- Date : (\d{4}-\d{2}-\d{2})/m)?.[1] ?? '',
+  }));
+}
+
+/**
+ * Les décisions de la date la plus récente qui citent une version antérieure à
+ * la livrée. LÈVE sur une liste vide ou sans aucune date : jusqu'à D-418, ce
+ * banc lisait les titres `###` de `docs/DECISIONS.md` ; sur la page fixe, il
+ * n'en aurait plus trouvé aucun et serait resté vert sans rien contrôler
+ * (D-418 §5).
+ */
+function decisionsDuJourPerimees(entrees, livree) {
+  if (entrees.length === 0) throw new Error('aucune décision lue : banc sans objet, refus d’être vert');
   const plusRecente = entrees.map(e => e.date).sort().at(-1) ?? '';
-
+  if (plusRecente === '') throw new Error('aucune ligne « - Date : » lue dans le registre : banc sans objet');
   const fautifs = [];
   for (const { id, corps, date } of entrees) {
     if (date !== plusRecente) continue;
@@ -186,12 +206,19 @@ test('les décisions du jour ne citent pas une version de consigne périmée', (
       fautifs.push(`${id} → ${max} (livrée : ${livree})`);
     }
   }
-  assert.deepEqual(
-    fautifs,
-    [],
-    'décision(s) du jour citant une version de consigne périmée — le registre est ce qui '
-      + 'est opposable, il ne peut pas être en retard sur le code.',
-  );
+  return fautifs;
+}
+
+test('les décisions du jour : un registre vide ou sans date rougit, une version périmée est vue', () => {
+  assert.throws(() => decisionsDuJourPerimees([], 'synthese-v9'), /aucune décision lue/);
+  assert.throws(() => decisionsDuJourPerimees([{ id: 'D-001', corps: 'sans date', date: '' }], 'synthese-v9'), /aucune ligne/);
+  const entrees = [
+    { id: 'D-002', corps: 'cite synthese-v8', date: '2026-11-05' },
+    { id: 'D-001', corps: 'cite synthese-v2', date: '2026-11-04' },
+  ];
+  assert.deepEqual(decisionsDuJourPerimees(entrees, 'synthese-v9'), ['D-002 → synthese-v8 (livrée : synthese-v9)']);
+  assert.ok(entreesDuRegistre(RACINE).length >= 442, 'le registre réel se lit en entier');
+  assert.throws(() => entreesDuRegistre(path.join(RACINE, 'web')), /introuvable/);
 });
 
 test('ce banc peut rougir — la détection ne dépend pas d’un fichier absent', () => {
