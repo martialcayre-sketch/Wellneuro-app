@@ -11,7 +11,12 @@
   tête par couple, et une révocation ne vise que la tête. Il retient l'un
   des claims ou une position en vigueur, et atteste à la pose l'empreinte
   du conflit et celle de la structure. Son motif est obligatoire.
-- Contrat SQL négatif `positions_expert_v1_negatif.sql`, joué en CI.
+- Seul READ COMMITTED est admis pour écrire. Une transaction SERIALIZABLE
+  face à une écriture READ COMMITTED aurait pu laisser deux têtes, ce que
+  la contre-revue Codex a relevé.
+- Contrat SQL négatif `positions_expert_v1_negatif.sql` et banc à deux
+  sessions `banc-positions-expert-deux-sessions.test.mjs`, joués en CI et
+  en T3.
 - Migration seule : aucun code ne lit ni n'écrit encore ces tables. Les
   tables naissent vides ; le versement passe par l'atelier, après la
   release-db.

@@ -45,7 +45,10 @@ code consommateur.
   (`PositionExpertVersion`, `PositionExpertActe`,
   `ArbitrageConflitSource`), alignés à la main, sans `prisma format`.
 - `web/prisma/checks/positions_expert_v1_negatif.sql` (neuf).
-- `.github/workflows/ci.yml` : étape « Positions expert negative tests ».
+- `.github/workflows/ci.yml` : étapes « Positions expert negative tests » et
+  « Positions expert two-session bench ».
+- `web/scripts/banc-positions-expert-deux-sessions.test.mjs` (neuf) ;
+  `scripts/wn-test-worktree.sh` : le pas T3 du banc.
 - `changelog.d/2026-11-05-positions-expert-migration.md`,
   `docs/claude/plan-journal/F09/2026-11-05-01-migration-positions-expert.md`,
   ce handoff.
@@ -79,11 +82,36 @@ code consommateur.
 - Après correction, dix mutations font rougir le contrat, dont le CHECK de
   `structure_sha256` et l'auteur blanc d'un acte.
 
+- Contre-revue Codex de 74baec3b : BLOQUER, P1-1 confirmé et reproduit.
+  - Le défaut : une transaction SERIALIZABLE dont l'instantané précède une
+    première pose commise en READ COMMITTED posait une seconde tête. Il en
+    allait de même pour deux premières versions.
+  - La détection de SERIALIZABLE ne joue qu'entre transactions
+    SERIALIZABLE. Le commentaire repris de `wn-reviewer` (P2-4) était faux.
+  - Correctif : les trois triggers n'admettent plus que READ COMMITTED.
+  - Nouveau banc `web/scripts/banc-positions-expert-deux-sessions.test.mjs`,
+    joué en CI et en T3. Il fait sept courses, chacune constatée en attente
+    du verrou : deux premières poses, deux premières versions, révision
+    contre acte, retrait contre arbitrage, révocation contre remplacement,
+    le scénario de Codex, et REPEATABLE READ et SERIALIZABLE refusés sur les
+    trois tables. Il passe 7 sur 7.
+  - Contre-épreuve : avec l'ancienne garde, les cas 6 et 7 rougissent (« une
+    seconde tête a passé en SERIALIZABLE »).
+  - Le banc signe aussi avec l'empreinte calculée en JS, et la base
+    l'accepte : la formule est la même des deux côtés.
+
 ## Problèmes ouverts
 
-- Le refus de REPEATABLE READ n'est pas éprouvé par le contrat, puisque le
-  niveau d'isolation ne change pas dans une transaction déjà commencée. Même
-  limite que `constats_praticien`.
+- Même garde dans quatre migrations déjà en production : REPEATABLE READ
+  refusé, SERIALIZABLE admis.
+  - Tables : `annulations_resultats_biologiques_v1`, `constats_praticien_v1`,
+    `donnees_physiologiques_traitements_v1`, `constats_besoin_praticien_v1`.
+  - Démontré dans le code, sans occurrence observée : aucun écrivain de
+    l'application n'emploie SERIALIZABLE. `physio-traitements/ecriture.ts`
+    le pose en convention, et les transactions nommées sont en
+    `ReadCommitted`.
+  - Hors de ce lot : un correctif est une migration par table, sur
+    demande. Signalé au responsable.
 - Les refus que D-439 place à la route seront éprouvés en PR 3 : conflit
   inconnu mais bien formé, fiche hors de la liste curée, claim retenu hors
   du conflit.

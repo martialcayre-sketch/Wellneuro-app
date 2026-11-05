@@ -95,15 +95,17 @@
 -- sérialisent, et le second lit l'état laissé par le premier. Un verrou par
 -- couple (espace 439, clé `cs|CS-…|FU_…`), pris AVANT celui de la position :
 -- l'ordre « couple, puis position » est le seul qui prenne les deux.
--- REPEATABLE READ est refusé, avec le motif de BP-09 et de [[D-331]] : son
--- instantané masquerait l'acte que le verrou vient de laisser commettre.
--- SERIALIZABLE reste admis, comme dans le patron : deux têtes ou deux
--- versions courantes y sont annulées par la détection des conflits, mais un
--- acte (ou un arbitrage) qui attendait le verrou peut lire l'état d'avant une
--- révision ou un retrait tout juste commis. Sans effet sur l'invariant : la
--- signature d'une version révisée ne la rend pas en vigueur, et un arbitrage
--- sur une position retirée se lit « à relire ». L'application écrit en READ
--- COMMITTED (revue `wn-reviewer` du lot).
+-- READ COMMITTED SEUL est admis : en READ COMMITTED, chaque requête du
+-- trigger prend un instantané neuf, APRÈS le verrou, et voit ce que le
+-- premier vient de commettre. REPEATABLE READ et SERIALIZABLE sont refusés.
+-- Leur instantané précède le verrou et masquerait l'acte que celui-ci vient
+-- de laisser commettre. La détection des conflits de SERIALIZABLE ne joue
+-- qu'entre transactions SERIALIZABLE, et une écriture READ COMMITTED
+-- concurrente lui échappe. Cas réel : une transaction SERIALIZABLE ouverte,
+-- puis une première pose commise en READ COMMITTED sur un couple neuf ; la
+-- seconde pose ne voit pas la première, et le couple a deux têtes. Il en va
+-- de même pour deux premières versions d'une position (contre-revue Codex de
+-- #1871, P1-1 ; banc `banc-positions-expert-deux-sessions.test.mjs`).
 --
 -- ── FIGÉES ─────────────────────────────────────────────────────────────────
 --
@@ -383,8 +385,8 @@ DECLARE
   n_cour integer;
   m_cour integer;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'version de position refusée en REPEATABLE READ : la version courante exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') IN ('repeatable read', 'serializable') THEN
+    RAISE EXCEPTION 'version de position refusée en % : la version courante exige READ COMMITTED.', upper(current_setting('transaction_isolation'));
   END IF;
 
   -- 1. Le contenu : quatre rubriques exactement, chacune un texte visible.
@@ -475,8 +477,8 @@ DECLARE
   cible_position text;
   cible_contenu jsonb;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'acte de position refusé en REPEATABLE READ : la version courante exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') IN ('repeatable read', 'serializable') THEN
+    RAISE EXCEPTION 'acte de position refusé en % : la version courante exige READ COMMITTED.', upper(current_setting('transaction_isolation'));
   END IF;
 
   SELECT v.position_id INTO cible_position
@@ -525,8 +527,8 @@ DECLARE
   retenue_position text;
   dernier_acte text;
 BEGIN
-  IF current_setting('transaction_isolation') = 'repeatable read' THEN
-    RAISE EXCEPTION 'arbitrage refusé en REPEATABLE READ : la tête d''un couple exige READ COMMITTED ou SERIALIZABLE.';
+  IF current_setting('transaction_isolation') IN ('repeatable read', 'serializable') THEN
+    RAISE EXCEPTION 'arbitrage refusé en % : la tête d''un couple exige READ COMMITTED.', upper(current_setting('transaction_isolation'));
   END IF;
 
   -- Les verrous (en-tête, « Les verrous ») : le couple, puis la position.
