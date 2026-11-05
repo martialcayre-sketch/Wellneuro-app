@@ -24,39 +24,47 @@
       - conflit de texte : 10 (plan 3, `docs/FEATURE_FLAGS.md` 2, registre des sources du corpus 2, `web/package.json` 1, une route API 1, le workflow release-db 1) ;
       - autre : 4.
     - Soit 41 fusions sans conflit et 28 avec un conflit réel entre la branche et `main`.
-  - **Confrontation au journal** : on cherche un verdict sur le `HEAD` de départ de chaque fusion (son premier parent), au plus tard deux minutes après la date du commit de fusion. Le journal observe une **succession** (un verdict, puis une fusion), pas une cause. Six groupes disjoints :
+  - **Confrontation au journal** : on cherche un verdict sur le `HEAD` de départ de chaque fusion (son premier parent), au plus tard deux minutes après la date du commit de fusion. Le journal observe une **succession** (un verdict, puis une fusion), pas une cause.
+    - Six groupes disjoints : chaque fusion prend le premier groupe qui s'applique, de (a) à (f).
+    - Trois états, pris entre la base de fusion et chacun des deux parents :
+      - « libre » : aucun fichier touché des deux côtés ;
+      - « chevauchement » : au moins un fichier touché des deux côtés, sans conflit ;
+      - « conflit » : un conflit à la fusion.
 
-    | Groupe | Sans conflit | Avec conflit |
-    |---|---|---|
-    | a. un refus ou un constat de retard sur le `HEAD` de départ | 24 | 14 |
-    | b. autorisations seulement sur ce `HEAD` | 2 | 3 |
-    | c. aucune ligne sur ce `HEAD`, mais un refus pour retard sur un autre commit de la PR dans l'heure qui précède | 5 | 1 |
-    | d. aucune ligne avant la fusion, mais le commit de fusion apparaît ensuite comme `HEAD` : une fusion spontanée, dans une session qui journalisait | 8 | 7 |
-    | e. une ligne sur un autre commit de la PR, sans refus dans l'heure | 1 | 0 |
-    | f. aucune ligne sur aucun commit de la PR | 1 | 3 |
-    | Total | 41 | 28 |
+    | Groupe | Libre | Chevauchement | Conflit | Total |
+    |---|---|---|---|---|
+    | a. un refus ou un constat de retard sur le `HEAD` de départ | 11 | 13 | 14 | 38 |
+    | b. autorisations seulement sur ce `HEAD` | 1 | 1 | 3 | 5 |
+    | c. aucune ligne sur ce `HEAD`, mais un refus pour retard sur un autre commit de la PR dans l'heure qui précède | 2 | 3 | 1 | 6 |
+    | d. aucune ligne sur ce `HEAD`, aucun refus dans l'heure, et le commit de fusion apparaît ensuite comme `HEAD` : fusion présumée spontanée | 1 | 7 | 7 | 15 |
+    | e. une ligne sur un autre commit de la PR, sans refus dans l'heure | 0 | 1 | 0 | 1 |
+    | f. aucune ligne sur aucun commit de la PR | 0 | 1 | 3 | 4 |
+    | Total | 15 | 26 | 28 | 69 |
+
+    Fichiers communs les plus fréquents : `docs/DECISIONS.md` (34 fusions), le plan (33), `docs/FEATURE_FLAGS.md` (7), `SESSION_LOG.md` (6), le registre des sources du corpus (5).
 
     Par catégorie de la règle de référence :
     - crochet présumé : 22 en (a), 1 en (b) et 14 sans ligne (c à f) ;
     - numéro de décision : 8 en (a), 3 en (b), 7 sans ligne ;
     - conflit de texte : 6 en (a), 4 sans ligne ;
     - autre : 2 en (a), 1 en (b), 1 sans ligne.
-  - **Ce que la tolérance de D-375 §2 peut retirer** : elle n'atteint que les fusions sans conflit, puisqu'elle refuse toujours en cas de chevauchement ou de conflit. Mesure « avant » pour H92 :
-    - **24 fusions sur 69 (35 %)** suivent un verdict de retard sans conflit. C'est la part mesurée ;
-    - 29 sur 69 (42 %) en ajoutant le groupe (c), où le lien avec le crochet est plus lâche ;
-    - le plafond est de 41 sur 69 (59 %), toutes les fusions sans conflit. Il ne vaut que si l'on compte au crochet les fusions spontanées du groupe (d), faites sans refus préalable, peut-être par habitude de le devancer. C'est une définition à arbitrer, pas une mesure ;
-    - les 28 fusions avec conflit (41 %) restent hors de portée de la tolérance, qu'elles aient suivi ou non un verdict de retard. La fusion y révèle un conflit qui existe de toute façon.
+  - **Ce que la tolérance de D-375 §2 peut retirer** : elle n'atteint que les fusions « libres », puisqu'elle refuse toujours en cas de chevauchement ou de conflit. Mesure « avant » pour H92 :
+    - **11 fusions sur 69 (16 %)**, libres et précédées d'un verdict de retard. C'est la part mesurée. C'en est aussi une borne haute : le chevauchement avec le fichier visé, que D-375 §2 compte, n'est pas dans le journal ;
+    - 13 sur 69 (19 %) en ajoutant le groupe (c), où le lien avec le crochet est plus lâche ;
+    - le plafond est de 15 sur 69 (22 %), toutes les fusions libres. Il ne vaut que si l'on compte au crochet les fusions présumées spontanées, faites sans refus préalable, peut-être par habitude de le devancer. C'est une définition à arbitrer, pas une mesure ;
+    - les 54 autres fusions (78 %) restent hors de portée de la tolérance, qu'elles aient suivi ou non un verdict de retard : 26 par chevauchement, 28 par conflit. La fusion y révèle un recoupement qui existe de toute façon ;
+    - depuis D-418 (#1876, après la fenêtre), chaque décision a son propre fichier, ce qui réduit mécaniquement les chevauchements sur `docs/DECISIONS.md`. La mesure « après » de H92 mêlera l'effet de D-418 et celui de la tolérance, et doit les séparer.
   - **Verdict sur les 43 fusions « crochet présumé » de la mesure de référence** :
     - Elles ne se confirment pas une à une : elles précèdent le journal.
     - Leur règle n'est **pas validée**. Elle classe chaque fusion par sa conséquence (conflit ou non, commit suivant), alors que le journal observe ce qui la précède, et les deux ne se recouvrent pas.
     - Sur les 37 fusions présumées de la semaine, 22 suivent un verdict de retard, une seule ne suit que des autorisations, et 14 ne sont pas attribuables.
-    - À l'inverse, 16 fusions rangées ailleurs par la règle suivent aussi un verdict de retard. La part voisine (43 sur 80, soit 54 %) ne mesure donc pas la même chose que les fusions sans conflit qui suivent un retard (35 %).
+    - À l'inverse, 16 fusions rangées ailleurs par la règle suivent aussi un verdict de retard. La part voisine (43 sur 80, soit 54 %) ne mesure donc pas ce que la tolérance peut retirer (11 sur 69, soit 16 %).
   - **Délais question → réponse des arbitrages** : non mesurables depuis le dépôt (`git`, `gh`, journal), comme le constatait la mesure de référence. Depuis H89, la liste commune de questions, tenue hors dépôt, horodate l'arrivée et la réponse de chaque question. Le renvoi à H92 est inscrit à son journal (`2026-11-05-01`).
   - **Limites** :
     - La date d'une fusion est celle du commit, posée par la machine locale.
     - Les fusions des PR mergées après la fenêtre, ou encore ouvertes, sont hors comptage.
     - Ce crochet ne juge pas les écritures par `Bash`. Une session qui n'écrit que par `Bash` ne laisse aucune ligne.
-    - La ventilation par catégorie rejoue `git merge-tree --write-tree` sur les deux parents de chaque fusion.
+    - La ventilation par catégorie rejoue `git merge-tree --write-tree` sur les deux parents de chaque fusion. Le chevauchement compare les fichiers listés par `git diff --name-only`, depuis la base de fusion, pour chacun des deux parents.
   - **H86 close** au regard de ses critères de fin :
     - consigne écrite et journal en service, avec banc vert et revue faite (#1733) ;
     - mesure de référence publiée (#1737) ;
