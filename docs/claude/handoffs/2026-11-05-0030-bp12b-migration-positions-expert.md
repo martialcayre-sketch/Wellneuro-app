@@ -17,9 +17,11 @@ code consommateur.
 
 ## Décisions prises
 
-- Demande explicite du responsable, le 2026-11-05 : « PR2 écris la
-  migration ». Registre RGPD inchangé, confirmé le même jour (« rien au
-  rgpd ») : aucune donnée patient n'entre dans ces tables.
+- Demande explicite du responsable, le 2026-11-04 au soir : « PR2 écris la
+  migration ». Le registre RGPD reste inchangé, ce qu'il a confirmé dans le
+  même message (« rien au rgpd ») : aucune donnée patient n'entre dans ces
+  tables. Le lot s'est écrit dans la nuit, d'où les fragments datés du
+  2026-11-05.
 - Aucun D-xxx neuf : la PR applique D-439.
 - Choix d'écriture, dans le cadre de D-439 et sur ses patrons :
   - contenu à quatre rubriques exactement (`enonce`, `perimetre`,
