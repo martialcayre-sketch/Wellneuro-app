@@ -93,6 +93,8 @@ describe('registre des documents TRUST', () => {
       // `D-284` §5 — seules les pages masquées partent.
       'usage_ia@v8',
       'droits_patient@v1',
+      // `D-445` — l'historique des choix n'est plus dit « jamais effacé ».
+      'droits_patient@v2',
       'consentement_suivi@v2',
       // Même correction, dans le texte du consentement lui-même — l'occurrence
       // que `D-222` §3 n'avait pas vue.
@@ -848,6 +850,52 @@ describe('registre des documents TRUST', () => {
     );
     expect(v21.requiresAcknowledgement).toBe(true);
     expect(v21.publieLe > v20.publieLe).toBe(true);
+  });
+
+  // D-445 §1, RELU DANS `docs/DECISIONS.md`, à l'apostrophe typographique du
+  // registre près : la v2 remplace une phrase de la v1, et rien d'autre.
+  it('droits_patient v2 porte la phrase de D-445 §1, mot pour mot, et rien d’autre', () => {
+    const decisions = fs.readFileSync(path.resolve(__dirname, '../../../../../docs/DECISIONS.md'), 'utf8');
+    const debutD445 = decisions.indexOf('### D-445 ');
+    const section = decisions.slice(debutD445, decisions.indexOf('\n### ', debutD445 + 1));
+    const bloc = section.slice(section.indexOf('**§1'), section.indexOf('**§2'));
+    expect(bloc.length, 'D-445 §1 introuvable').toBeGreaterThan(0);
+    const texteD445 = bloc
+      .split('\n')
+      .filter(ligne => ligne.startsWith('>'))
+      .map(ligne => ligne.replace(/^>\s?/, ''))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^« /, '')
+      .replace(/ »$/, '')
+      .replaceAll("'", '’');
+
+    const v1 = getVersion('droits_patient', 'v1')!;
+    const v2 = getVersion('droits_patient', 'v2')!;
+    expect(getDocumentCourant('droits_patient').version).toBe('v2');
+
+    const ancienne = v1.sections.flatMap(s => s.paragraphes).filter(p => p.includes('n’est jamais effacé'));
+    expect(ancienne).toHaveLength(1);
+    const paragraphesV2 = v2.sections.flatMap(s => s.paragraphes);
+    expect(paragraphesV2).toContain(texteD445);
+    expect(JSON.stringify(v2.sections)).not.toContain('jamais effacé');
+
+    // Rien d'autre : la phrase de D-445 remise à l'ancienne, la v2 redevient la v1.
+    expect(
+      v2.sections.map(s => ({ ...s, paragraphes: s.paragraphes.map(p => (p === texteD445 ? ancienne[0] : p)) })),
+    ).toEqual(v1.sections);
+    expect({ titre: v2.titre, resume: v2.resume, type: v2.type }).toEqual({
+      titre: v1.titre,
+      resume: v1.resume,
+      type: v1.type,
+    });
+
+    expect(v2.changeSummary).toBe(
+      'Cette version précise que l’historique de vos choix est supprimé avec votre dossier si vous en demandez l’effacement. Le reste ne change pas.',
+    );
+    expect(v2.requiresAcknowledgement).toBe(false);
+    expect(v2.publieLe > v1.publieLe).toBe(true);
   });
 
   // D-391 §6 : LE TEXTE PUBLIÉ FACE AU TEXTE PROPOSÉ, relu dans la proposition,
