@@ -2,7 +2,7 @@
 
 Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
 
-- Les 444 décisions du registre unique (D-001 à D-444, toutes actives) vivent
+- Les 445 décisions du registre unique (D-001 à D-445, toutes actives) vivent
   chacune dans `docs/decisions/D-NNN.md`, nommé par son seul numéro, première
   ligne `# D-NNN — <titre>` ; les archivées iront sous
   `docs/decisions/archivees/`. Texte repris à l'identique, à deux exceptions
@@ -12,9 +12,9 @@ Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
   deux entrées ne sont pas reprises : chaque fichier finit par un seul saut
   de ligne.
 - `scripts/wn-decisions-decouper.mjs` (`--depuis <ref>` ou `--fichier`,
-  `--verifier`) découpe et se rejoue sur un `main` plus récent (rejoué deux
+  `--verifier`) découpe et se rejoue sur un `main` plus récent (rejoué trois
   fois pendant le lot : D-443 créée, D-041 et D-103 amendées par #1874, puis
-  D-444 créée après #1875) ; son
+  D-444 après #1875, D-445 après #1877) ; son
   banc juge, tant que la base de la PR porte le registre unique, chaque
   fichier du dépôt contre son entrée, avec une contre-épreuve qui ne passe pas
   par la réécriture des liens.
@@ -34,7 +34,8 @@ Lot t58 de la file A, bascule de [[D-418]] (§1 à §6), en une seule PR.
   `recent_decision_ids` de `wn-cycle --appliquer` (refus, rien d'écrit), le
   périmètre de `wn-ancres-doctrine` (code 2 sur un périmètre vide),
   `version-prompt-documents.test.mjs` (lève sur un registre vide ou sans date).
-- Les dix tests web qui relisent un texte opposable passent par
+- Les onze tests web qui relisent un texte opposable (dix, plus celui de
+  D-445 entré par #1877) passent par
   `web/src/lib/doctrine/lireDecision.ts` (`lireDecision`, `lireToutesDecisions`),
   qui lève sur une décision absente.
 - Textes à jour : `wn-kit-doctor`, `.wn/documentation.yml`, commentaires de

@@ -9,7 +9,9 @@
 - Commits : e96f29a4 (bascule), 93f3302f (fusion de `main`, rejeu du script),
   2aa35ada (correctifs de la revue `wn-reviewer`), 22815954 (ce handoff),
   puis fusion de `main` f3e1bc99 après #1875 (arbitrage « #1875 d'abord ») et
-  rejeu : D-444 créée.
+  rejeu : D-444 créée ; puis fusion de `main` 36a095fb après #1877 et rejeu :
+  D-445 créée, et son test neuf (`registre.test.ts`, D-445 §1) converti à
+  `lireDecision`.
 - PR #1876, CI vert sur 22815954 ; revue bot impossible (CodeRabbit : 488
   fichiers > 100 ; PR-Agent rogné, « Review coverage ») ⇒ **dérogation du
   responsable pour #1876 seule** (2026-11-05), consignée dans la PR.
@@ -35,8 +37,8 @@ outillage du §5 en trois catégories, aucun garde retiré.
 - `textesCourrierComplement.test.ts` relit tout le registre, comme avant : ses
   textes sont dans D-362, pas dans D-345 que cite son commentaire ; resserrer
   aurait changé ce que le banc affirme.
-- Deux commentaires de code applicatif citant `docs/DECISIONS.md`
-  (`trust/contenus/registre.ts:1748`, `api/praticien/agenda-alimentaire/route.ts:25`)
+- Trois commentaires de code applicatif citant `docs/DECISIONS.md`
+  (`trust/contenus/registre.ts:581` et `:1776`, `api/praticien/agenda-alimentaire/route.ts:25`)
   laissés : interdit « aucun code applicatif » ; la page fixe y renvoie.
 - Revue R2 (verrouiller tout diff de la page fixe) écartée avec motif dans la
   PR ; R5, R6 sans suite.
@@ -65,8 +67,8 @@ outillage du §5 en trois catégories, aucun garde retiré.
 ## Validations exécutées
 
 - Découpage : `node scripts/wn-decisions-decouper.mjs --depuis origin/main` →
-  444 entrées, 26 liens, banc OK ; contre-vérification indépendante en shell
-  (recomposition, `cat -s`, diff) sur `main` 028039a2 puis f3e1bc99 : 9 lignes
+  445 entrées, 26 liens, banc OK ; contre-vérification indépendante en shell
+  (recomposition, `cat -s`, diff) sur `main` 028039a2, f3e1bc99 puis 36a095fb : 9 lignes
   diffèrent, toutes porteuses de liens rebasés, rien d'autre.
 - Garde réel : `node scripts/lib/decisions-numerotation.mjs` → OK (443) ;
   `--pr` → OK ; `wn-ancres-doctrine` → 4 ancres, 308 héritées, identique au
