@@ -240,6 +240,12 @@ export default defineConfig({
       // (`portail-menu.spec.ts`). Lu à chaque requête par `portail/layout.tsx`,
       // au rendu serveur dynamique : aucune pose au build.
       WN_PORTAIL_MENU: 'true',
+      // Barre basse du portail ([[D-444]], lot L4). N'EST PAS POSÉE EN
+      // PRODUCTION : livrée éteinte, elle n'a d'effet que menu ouvert, et ouvre
+      // ici la seule position où la barre existe, sous 768 px
+      // (`portail-barre-basse.spec.ts`). Lue à chaque requête par
+      // `portail/layout.tsx` : aucune pose au build.
+      WN_PORTAIL_BARRE_BASSE: 'true',
       // Frise des étapes navigable du hub ([[D-423]] §8, lot L2b). N'EST PAS
       // POSÉ EN PRODUCTION : livré éteint, il ouvre ici la seule position où la
       // frise est une navigation (`portail-frise-etapes.spec.ts`, et la

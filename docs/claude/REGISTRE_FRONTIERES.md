@@ -339,6 +339,10 @@
   menu des espaces fermé par défaut, ouvert au seul geste du patient (le menu
   « Mon espace »), ne l'enfreint pas : il ne met rien en avant et ne fait
   avancer aucune étape.
+  *Précision du 2026-11-05 ([[D-444]] §7)* : une barre basse de quatre accès
+  de même poids, sans bouton plein, sans compteur, où seul `aria-current`
+  distingue la page courante, ne l'enfreint pas davantage : elle ne met rien
+  en avant et ne fait avancer aucune étape.
 - Typographie : échelle **remontée** (corps 16px, titres de section en
   `font-display`, hiérarchie display ≥ 28px) ; `ReadingComfortControl` monté
   sur les **deux surfaces patient** — portail (`app/portail/layout.tsx`) et
