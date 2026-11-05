@@ -139,6 +139,14 @@ fichiers pour la session entière ; `WN_ALLOW_RISKY_COMMAND`, qui faisait
 sortir le garde des commandes sans rien lire, l'a été le 2026-10-21, plan
 D/41).
 
+**Serveurs MCP.** Un outil MCP ne passe ni par Bash ni par Edit/Write : il
+a son propre garde. `guard-supabase-mcp.mjs` laisse passer les lectures SQL
+et refuse toute écriture. `guard-prisma-mcp.mjs` (matcher
+`mcp__.*[Pp]risma.*`, plugin `prisma`) est une **liste blanche** : seul
+`migrate-status` passe ; `migrate-dev`, `Prisma-Studio` et tout outil inconnu
+sont refusés — `prisma migrate` en Bash demande, son équivalent MCP ne doit
+pas passer à côté (`D-087`).
+
 Le hook PostToolUse `log-bash-command.mjs` est purement observationnel
 (journal `.claude/logs/`, secrets masqués avant écriture) — il ne décide rien.
 
