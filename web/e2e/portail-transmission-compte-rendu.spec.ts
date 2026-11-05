@@ -117,7 +117,8 @@ test('le patient transmet son compte rendu au clavier, du lien magique au statut
     page = await context.newPage();
     await atterrissage.close();
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
-    const lien = page.getByRole('link', { name: TITRE });
+    // Dans « Autres espaces » : au bureau, le rail latéral ([[D-447]]) porte le même lien.
+    const lien = page.getByRole('navigation', { name: 'Autres espaces' }).getByRole('link', { name: TITRE });
     await expect(lien).toBeVisible();
     await tabulerJusqua(page, lien);
     await page.keyboard.press('Enter');

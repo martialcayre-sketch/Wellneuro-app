@@ -158,7 +158,10 @@ test.describe('Portail — Mon bilan', () => {
     // lui, les assertions d'absence seraient vertes pour une mauvaise raison.
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
     await expect(
-      page.getByRole('list', { name: 'Ce que j’ai reçu' }).getByRole('link', { name: 'Consulter mon bilan' }),
+      page
+        .getByRole('navigation', { name: 'Autres espaces' })
+        .getByRole('list', { name: 'Ce que j’ai reçu' })
+        .getByRole('link', { name: 'Consulter mon bilan' }),
     ).toBeVisible();
 
     await page.goto(`/portail/${PATIENT.idPatient}/bilan`);

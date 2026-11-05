@@ -246,6 +246,13 @@ export default defineConfig({
       // (`portail-barre-basse.spec.ts`). Lue à chaque requête par
       // `portail/layout.tsx` : aucune pose au build.
       WN_PORTAIL_BARRE_BASSE: 'true',
+      // Rail latéral du portail ([[D-447]], lot L5). N'EST PAS POSÉ EN
+      // PRODUCTION : livré éteint, il n'a d'effet que menu ouvert, et ouvre ici
+      // la seule position où le rail existe, dès 1 024 px — le projet Desktop
+      // Chromium, à 1 280 px, y est (`portail-rail-lateral.spec.ts`) ; le menu
+      // et la barre se testent au bureau à 1 000 px, sous le seuil. Lu à chaque
+      // requête par `portail/layout.tsx` : aucune pose au build.
+      WN_PORTAIL_RAIL_LATERAL: 'true',
       // Frise des étapes navigable du hub ([[D-423]] §8, lot L2b). N'EST PAS
       // POSÉ EN PRODUCTION : livré éteint, il ouvre ici la seule position où la
       // frise est une navigation (`portail-frise-etapes.spec.ts`, et la

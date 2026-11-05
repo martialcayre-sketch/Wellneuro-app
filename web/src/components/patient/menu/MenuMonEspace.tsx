@@ -7,6 +7,7 @@ import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { entreesServies, groupesServis, hrefEntree, useEtatsSondes, type EtatsSondes } from '@/components/patient/autres-espaces/entreesAutresEspaces';
 import { SondesAutresEspaces, SondesPartageesContexte } from '@/components/patient/autres-espaces/SondesAutresEspaces';
+import { REQUETE_RAIL, railSurLeChemin } from '@/components/patient/rail/cheminRail';
 import { elementActif } from './activationMenu';
 import { DESCRIPTION_MENU, LIBELLE_BOUTON_MENU, TITRE_MENU } from './textesMenu';
 
@@ -164,10 +165,77 @@ export function MotSymbole() {
 const CLASSE_LIEN = 'flex min-h-11 items-center text-primary underline-offset-4 hover:underline';
 const CLASSE_LIEN_ACTIF = 'flex min-h-11 items-center border-l-[3px] border-primary pl-3 font-semibold text-foreground';
 
-export function BoutonMenuMonEspace() {
+export type FormeListe = {
+  /** Classes de la `<nav>` qui porte la liste. */
+  classe: string;
+  /** Préfixe des `id` d'intertitres : distinct pour le panneau et le rail. */
+  prefixeId: string;
+  classeLien: string;
+  classeLienActif: string;
+  classeIntertitre: string;
+};
+
+const FORME_PANNEAU: FormeListe = {
+  classe: 'space-y-4',
+  prefixeId: 'mon-espace',
+  classeLien: CLASSE_LIEN,
+  classeLienActif: CLASSE_LIEN_ACTIF,
+  classeIntertitre: 'text-sm font-semibold text-muted-foreground',
+};
+
+/**
+ * La liste « Mon espace » (§2, §3), déclarée une fois : le panneau la sert, et
+ * le rail latéral ([[D-447]] §2) la reprend avec sa propre forme.
+ */
+export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: string }; forme: FormeListe }) {
+  const { token } = etat;
+  const signaux = { bilanConsultable: etat.bilanConsultable };
+  const groupes = groupesServis(etat.etats, signaux);
+  const actif = elementActif(etat.segment, entreesServies(etat.etats, signaux));
+
+  return (
+    <nav aria-label={TITRE_MENU} className={forme.classe}>
+      <Link
+        href={`/portail/${token}/questionnaires`}
+        aria-current={actif === 'parcours' ? 'page' : undefined}
+        className={actif === 'parcours' ? forme.classeLienActif : forme.classeLien}
+      >
+        <span>Mon parcours</span>
+      </Link>
+      {groupes.map(groupe => (
+        <div key={groupe.id}>
+          <h3 id={`${forme.prefixeId}-${groupe.id}`} className={forme.classeIntertitre}>
+            {groupe.libelle}
+          </h3>
+          <ul aria-labelledby={`${forme.prefixeId}-${groupe.id}`} className="mt-1">
+            {groupe.entrees.map(entree => (
+              <li key={entree.cle}>
+                <Link
+                  href={hrefEntree(token, entree)}
+                  aria-current={actif === entree.cle ? 'page' : undefined}
+                  className={actif === entree.cle ? forme.classeLienActif : forme.classeLien}
+                >
+                  <span className="break-words">{entree.libelle}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+/**
+ * `railServi` : le rail latéral est servi ([[D-447]], drapeau ouvert). Sur ses
+ * pages, à partir de 1 024 px, il remplace le bouton (§1 amendé le
+ * 2026-11-05) : le bouton s'efface, et un panneau ouvert se ferme au seuil.
+ */
+export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean }) {
   const etat = useContext(MenuContexte);
   const pathname = usePathname();
   const [ouvert, setOuvert] = useState(false);
+  const remplaceParRail = railServi && !!etat?.token && railSurLeChemin(pathname ?? '', etat.token);
 
   // Fermé au changement de page (§4) : un lien suivi referme le panneau.
   useEffect(() => {
@@ -181,16 +249,28 @@ export function BoutonMenuMonEspace() {
     return () => window.removeEventListener('beforeprint', fermer);
   }, []);
 
+  // Fermé au seuil du rail ([[D-447]] §4) : une page n'a jamais qu'une
+  // navigation « Mon espace » visible.
+  useEffect(() => {
+    if (!remplaceParRail || typeof window.matchMedia !== 'function') return;
+    const requete = window.matchMedia(REQUETE_RAIL);
+    const fermer = () => {
+      if (requete.matches) setOuvert(false);
+    };
+    fermer();
+    requete.addEventListener('change', fermer);
+    return () => requete.removeEventListener('change', fermer);
+  }, [remplaceParRail]);
+
   if (!etat?.actif || !etat.token) return null;
-  const { token } = etat;
-  const signaux = { bilanConsultable: etat.bilanConsultable };
-  const groupes = groupesServis(etat.etats, signaux);
-  const actif = elementActif(etat.segment, entreesServies(etat.etats, signaux));
 
   return (
     <PanneauSuperpose
       declencheur={
-        <button type="button" className={`${patientButtonClassName('neutral')} print:hidden`}>
+        <button
+          type="button"
+          className={`${patientButtonClassName('neutral')} print:hidden${remplaceParRail ? ' lg:hidden' : ''}`}
+        >
           {LIBELLE_BOUTON_MENU}
         </button>
       }
@@ -203,35 +283,7 @@ export function BoutonMenuMonEspace() {
       open={ouvert}
       onOpenChange={setOuvert}
     >
-      <nav aria-label={TITRE_MENU} className="space-y-4">
-        <Link
-          href={`/portail/${token}/questionnaires`}
-          aria-current={actif === 'parcours' ? 'page' : undefined}
-          className={actif === 'parcours' ? CLASSE_LIEN_ACTIF : CLASSE_LIEN}
-        >
-          <span>Mon parcours</span>
-        </Link>
-        {groupes.map(groupe => (
-          <div key={groupe.id}>
-            <h3 id={`mon-espace-${groupe.id}`} className="text-sm font-semibold text-muted-foreground">
-              {groupe.libelle}
-            </h3>
-            <ul aria-labelledby={`mon-espace-${groupe.id}`} className="mt-1">
-              {groupe.entrees.map(entree => (
-                <li key={entree.cle}>
-                  <Link
-                    href={hrefEntree(token, entree)}
-                    aria-current={actif === entree.cle ? 'page' : undefined}
-                    className={actif === entree.cle ? CLASSE_LIEN_ACTIF : CLASSE_LIEN}
-                  >
-                    <span className="break-words">{entree.libelle}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </nav>
+      <ListeMonEspace etat={{ ...etat, token: etat.token }} forme={FORME_PANNEAU} />
     </PanneauSuperpose>
   );
 }

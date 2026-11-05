@@ -702,6 +702,29 @@ Même protocole que L1 à L3 : dev local sur le Mac, navigateur intégré, base 
 - Non constaté à l'écran : la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise dans le seed : une remise demande la chaîne d'approbation et de versions ; épinglée au banc dans ses deux formes, et absente quand rien n'est remis, comme ici) ; le mineur clos (épinglé au banc) ; un appareil à encoche réel (zone sûre nulle en émulation).
 
 ### L5 — Rail latéral (non engagé)
+- **État (2026-11-05)** : engagé par Q52 (chapitre 20), avant le constat du menu et de la barre ; les quatre conditions de réouverture sont tranchées par Q53, Q56, Q57 et Q58. Livré éteint sous `WN_PORTAIL_RAIL_LATERAL`, sans effet tant que `WN_PORTAIL_MENU` est fermé, sous [[D-447]] (brouillon `decision-D-447-rail-lateral.md`, accepté mot pour mot le 2026-11-05) ; servi au seul dossier majeur ([[D-283]] §5), dès 1 024 px, à la place du bouton « Menu », hors questionnaire en cours. Constat à l'écran consigné ci-dessous.
+
+#### Constat à l'écran de L5 (2026-11-05)
+Même protocole que L1 à L4 : dev local sur le Mac, navigateur intégré, base éphémère de `test:worktree --fast --keep-db` (après un T2 vert, 345 E2E passés sur les deux projets). `WN_PORTAIL_MENU`, `WN_PORTAIL_BARRE_BASSE` et `WN_PORTAIL_RAIL_LATERAL` armés côté serveur ; session ouverte par un lien magique émis par la route praticien. Patient fictif du seed Sophie Nicola, états posés puis retirés en base de test : majeure ; mineure (date de naissance passée à 2012) ; majeure et close (`suiviClotureLe` posé) ; accusés « Avant de commencer » retirés. Mesures par `getBoundingClientRect` ; « colonne » = largeur du `main` moins son `px-4` ; « page » = `scrollWidth` / `clientWidth` du document.
+
+| Dossier, page | Largeur, confort | Rail | Bouton « Menu » | Colonne | Page |
+|---|---|---|---|---|---|
+| Sophie, majeure, `/suivi` | 1 280 px, 100 % | 252 px, collant (`sticky`) ; « Mon parcours », rendez-vous de suivi (`aria-current="page"`), carnet, dossier à deux voix ; liens de 44 px | masqué | 924 px (contenu à 672 px) | 1 280 / 1 280 |
+| Sophie, `/suivi` | 1 024 px, 100 % | 252 px | masqué | **668 px** | 1 024 / 1 024 |
+| Sophie, `/suivi` | 1 024 px, 112,5 % | 283,5 px ; liens de 49,5 px | masqué | **623,5 px** | 1 024 / 1 024 |
+| Sophie, `/suivi` | 1 023 px | rendu, `display: none` | visible | 991 px (contenu à 672 px) | — |
+| Sophie, hub | 1 024 px | « Mon parcours » actif ; « Autres espaces » visible à côté, mêmes entrées | masqué | — | — |
+| Sophie, questionnaire en cours (identifiant inexistant : la règle se lit sur le chemin) | 1 024 px | absent ; cadre sans colonne | visible | 992 px | — |
+| Sophie, mineure, `/suivi` | 1 280 px | absent ; cadre sans colonne | absent ([[D-283]] §5) | 1 248 px | — |
+| Sophie, majeure close, hub | 1 280 px | présent (la garde suit l'âge, Q36) | masqué | — | — |
+| Sophie, « Avant de commencer » requis | 1 280 px | absent | absent | — | — |
+| Connexion | 1 280 px | absent | absent | — | 1 280 / 1 280 |
+
+- Les largeurs de colonne mesurées sont celles que le chapitre 20 calculait (668 et 623,5 px).
+- Pied d'urgence : sur le hub à 1 024 px, en fin de défilement, le bas du rail est à 356 px, le haut du pied à 703 px ; « 3114 » reçoit le clic.
+- Premier passage sous `next dev` : le hub a rendu un temps ni rail ni bouton, le temps que la lecture des murs revienne (fail-closed, [[D-442]] §1) ; au rechargement, rail et bouton masqué. Le cadre, rendu dès le premier rendu, ne remonte pas la page (banc Vitest).
+- Fermeture du panneau au seuil de 1 024 px et impression : vérifiées par l'E2E (`portail-rail-lateral.spec.ts`), non constatées à l'écran ; impression en émulation `print`, non imprimée sur papier.
+- Non constaté à l'écran : un vrai questionnaire en cours (aucune assignation sur ce dossier de test ; épinglé au banc et sur chemin) ; le mineur clos (épinglé au banc) ; le rail à 112,5 % sur une liste de plus de quatre entrées (la base n'en servait que quatre).
 - Conditions de réouverture : décision qui lève « une étape à la fois » pour le patient, jetons patient du rail définis, colonne validée à 1024 px en confort 112,5 %, clé de repli déclarée dans `stockageAppareil.ts` ou rail toujours déplié.
 
 ### Dépendances
@@ -891,3 +914,32 @@ Après la livraison de L3 (#1870, [[D-442]]), le responsable a ouvert L4, barre 
 | Q49 Cible de « Documents » | **L'entrée servie de « Ce que j’ai reçu »** : Ma bibliothèque, ou à défaut Fiches remises par mon praticien, jamais les deux ([[D-360]] §2), sonde fermée par défaut ; rien de remis, pas de case | D-444 §2 ; aucune route neuve ; `/documents` reste le dépôt |
 | Q50 Libellés | **Lever les deux collisions** : « Accueil » et « Suivi » restent ; « Journal » prend un mot du carnet alimentaire, « Documents » un mot de l'entrée servie, sans « document » ([[D-293]] §1, [[D-251]] §8, EP-22) | D-444 §3 : « Accueil », « Carnet », « Suivi », « Bibliothèque » ou « Fiches », à accepter mot pour mot |
 | Q51 Pages | **Les pages du menu, sauf le questionnaire en cours** (`/questionnaires/[idAssignation]`) : règle de chemin, aucun état de page lu | D-444 §1 ; le suivi et le carnet, cibles de la barre, la gardent |
+
+## 20. Réponses du responsable à l'ouverture de L5 (2026-11-05)
+
+Après la livraison de L4 (#1875, [[D-444]]), le responsable a ouvert L5, rail latéral « non engagé », pour arbitrage seul, sans code. Neuf questions ont été posées à options fermées, recommandation en première option, sur la lecture d'`origin/main@536d00b6` (EP-11, EP-13, chapitre 8 C et « Ne pas engager C », chapitre 11 L5 et ses conditions, chapitre 12, Q2 et Q4 avec leurs réponses, chapitre 19 ; A6-R1 côté patient et ses deux précisions, A5-R2 ; [[D-442]], [[D-444]] §2 ; `web/src/lib/portail/stockageAppareil.ts`). Q52 a été posée seule, parce que sa réponse décidait des suivantes. Trois réponses s'écartent de la recommandation : Q52, où l'assistant recommandait d'attendre que le menu et la barre soient posés et constatés ; Q57, où il recommandait les jetons existants seuls ; Q58, où il recommandait un rail collé au bord. Q59 et Q60 n'étaient pas dans la liste d'ouverture : elles sont nées de la réponse à Q54 et de la lecture de [[D-444]] §1 et [[D-442]] §2.
+
+Questions non posées, parce que leur réponse est déjà écrite : majeurs seuls ([[D-283]] §5) ; drapeau serveur éteint ([[D-288]] §1) ; l'organisation et non l'apparence (Q2) ; ni rail nuit ni bascule (A5-R2) ; focus forêt de la règle globale, jamais `outline-none` (EP-13) ; même garde et mêmes sondes que le menu ([[D-442]]) ; pied d'urgence jamais recouvert ([[D-293]]) ; impression masquée ([[D-392]] §1).
+
+État de la file C au jour de l'arbitrage : `WN_PORTAIL_FRISE_NAVIGABLE`, `WN_PORTAIL_MENU` et `WN_PORTAIL_BARRE_BASSE` sont livrés éteints ; la porte 18 attend le constat de `WN_PORTAIL_CAPTURE_REPAS` (place 11), toujours « neuf et éteint à la livraison » (`docs/FEATURE_FLAGS.md:63`). Ni le menu ni la barre n'ont été constatés en production. Aucun écran n'a été constaté pour cet arbitrage.
+
+Largeurs de colonne (calcul, aucun rendu ; 1 rem = 16 px à 100 %, 18 px à 112,5 %), à 1 024 px, colonne `max-w-2xl` de 42 rem (672 px, 756 px à 112,5 %) :
+
+| Mise en page | Rail | 100 % | 112,5 % |
+|---|---|---|---|
+| Shell praticien : `gap-6`, `px-6` de chaque côté, `px-4` du `main` (NavBar.tsx:92, layout.tsx:103) | 15,75 rem | 668 px (1 024 − 252 − 24 − 48 − 32) | 623,5 px (1 024 − 283,5 − 27 − 54 − 36) |
+| Rail collé au bord : `gap-6`, `px-4` du `main` | 16 rem | 712 px | 673 px |
+
+Le texte de décision qui en découle est `decision-D-447-rail-lateral.md`, à côté de ce document : numéro réservé le 2026-11-05 (`refs/tags/reserve/D-447`), texte à accepter mot pour mot avant tout code.
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q52 Engager L5 | **Engager maintenant** : le merge éteint suffit, comme Q44 pour L4 ; l'assistant recommandait d'attendre que le menu et la barre soient posés et constatés, aucun écran n'ayant montré un manque au bureau | L5 sortira derrière son propre drapeau éteint, à une place de la file C après celle de la barre (D-447 §8) |
+| Q53 Doctrine | **Troisième précision d'A6-R1 par la D-xxx**, de même forme que [[D-442]] §7 et [[D-444]] §7 ; la réponse à Q4 (« ne pas amender pour C ») est tenue | D-447 §7 : une liste des espaces visible en permanence, de même poids, sans bouton plein ni compteur, où seul `aria-current` distingue la page, ne met rien en avant et ne fait avancer aucune étape |
+| Q54 Face au bouton « Menu » | **Le rail remplace « Menu » dès 1 024 px** ; sous 1 024 px, rien ne change (bouton « Menu », barre sous 768 px) | D-447 §1 ; amende [[D-442]] §1 sur la largeur ; [[D-444]] §2 (un seul déclencheur du panneau) n'est pas amendée : là où paraît le rail, il n'y a pas de panneau |
+| Q55 Contenu | **La liste « Mon espace »** : même source et même ordre que le menu et le hub ([[D-423]] §2, [[D-442]] §2), même activation ([[D-423]] §4, [[D-442]] §3) | D-447 §2 et §3 ; `<nav aria-label="Mon espace">`, nom déjà accepté ; aucun texte neuf |
+| Q56 Repli | **Toujours déplié, sans clé** | D-447 §5 ; `stockageAppareil.ts` inchangé ; une seule largeur de rail à tester |
+| Q57 Jetons | **Deux jetons patient neufs** : `nav-rail` (15,75 rem) et `nav-active` (`inset 3px 0 0 var(--color-primary)`), dans le thème patient de `globals.css` ; l'assistant recommandait les jetons existants seuls (`w-64`, filet du menu) | D-447 §5 ; le menu garde son filet (`MenuMonEspace.tsx:165`) : [[D-442]] n'est pas amendée sur ce point |
+| Q58 Colonne | **Mise en page du shell praticien** : `gap-6`, `px-6` de chaque côté, `px-4` du `main` ; colonne de 668 px à 100 % et de 623,5 px à 112,5 % (calcul) ; l'assistant recommandait un rail collé au bord (712 et 673 px) | D-447 §6 ; le constat mesure la largeur réelle à 1 024 px, à 100 % et à 112,5 % |
+| Q59 Pages | **Pas sur le questionnaire en cours** (`/questionnaires/[idAssignation]`) : règle de chemin, comme [[D-444]] §1 (Q51) ; le bouton « Menu » y reste à toute largeur | D-447 §1 ; une seule navigation « Mon espace » par page, un seul déclencheur |
+| Q60 Hub | **Garder les deux** : « Autres espaces » reste sur le hub à toute largeur ([[D-442]] §2) ; le doublon visible dès 1 024 px est assumé | D-447 §2 ; aucune décision antérieure amendée sur ce point ; l'E2E du lien « visible sans rien déplier » (portail-dossier-deux-voix.spec.ts:71-76) reste intact ; le constat montre le hub à 1 024 px |

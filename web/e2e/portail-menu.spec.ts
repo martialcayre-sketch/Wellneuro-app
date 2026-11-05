@@ -6,6 +6,10 @@
 // le confort 112,5 % et `axe`. Les cas d'âge, de murs et de clôture sont
 // épinglés en Vitest (`components/patient/menu/MenuMonEspace.test.tsx`).
 //
+// Au bureau, le projet Desktop Chromium passe à 1 000 px : dès 1 024 px, le rail
+// latéral remplace le bouton ([[D-447]] §1, `WN_PORTAIL_RAIL_LATERAL` armé), et
+// le bouton se teste dans la bande de 768 à 1 023 px où il reste seul.
+//
 // Patient fictif Sophie Nicola (PAT_SEED_01), majeure. Lecture seule, hors
 // l'accusé d'entrée que posent déjà les autres specs du hub.
 import { test, expect, type Page } from '@playwright/test';
@@ -25,8 +29,9 @@ test.describe('Portail — menu « Mon espace »', () => {
     await closePrisma();
   });
 
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, page, isMobile }) => {
     await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+    if (!isMobile) await page.setViewportSize({ width: 1000, height: 800 });
   });
 
   async function surLeSuivi(page: Page) {

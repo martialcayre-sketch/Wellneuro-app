@@ -38,6 +38,9 @@ test.describe('Portail — barre basse', () => {
 
   test('au bureau : aucune barre, le bouton « Menu » seul', async ({ page, isMobile }) => {
     test.skip(isMobile, 'cas du bureau');
+    // Sous le seuil du rail latéral ([[D-447]] §1) : de 768 à 1 023 px, le
+    // bouton reste seul ; au-delà, le rail le remplace.
+    await page.setViewportSize({ width: 1000, height: 800 });
     const barre = await surLeSuivi(page);
     await expect(barre).toBeHidden();
   });

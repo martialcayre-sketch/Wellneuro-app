@@ -147,6 +147,13 @@
   --color-status-info: #1d4ed8;
   --color-focus-ring: var(--forest-600);
 
+  /* Rail latéral « Mon espace » ([[D-447]] §5) : largeur en `rem`, pour
+   * suivre le confort de lecture 112,5 % ; filet de l'entrée active, en forêt.
+   * Jetons du thème patient seulement — jamais `--rail-*`, qui est praticien.
+   * Consommés via les utilitaires Tailwind w-nav-rail et shadow-nav-active. */
+  --nav-rail: 15.75rem;
+  --shadow-nav-active: inset 3px 0 0 var(--color-primary);
+
   /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
   --font-display: var(--font-bricolage), Georgia, 'Times New Roman', serif;
   --font-body: var(--font-albert), system-ui, sans-serif;
