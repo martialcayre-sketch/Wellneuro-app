@@ -202,10 +202,13 @@ dont tous les fichiers sont exclus du modèle (images, instantanés, lock),
 qui ne produit pas de revue (`D-393` §2 et §4). Si aucun bot ne
 remplit sa condition, la **dérogation est permanente** (`D-448`, qui amende
 `D-393` §2) : `wn-reviewer` remplace les bots, sans confirmation du
-responsable. Il revoit tout le diff en lecture seule (`git -C`, `diff`,
-`show`, jamais de `checkout`). Son **GO sur le sha de tête** est exigé, et
-un commit poussé ensuite demande une revue de l'écart. Chaque constat reçoit
-un verdict, consigné dans un commentaire de PR. Hors champ : les lots
+responsable. PR-Agent ne compte que si `node scripts/wn-revue-pr-agent.mjs
+<N>` rend 0 : un run vert ne suffit pas. `wn-reviewer` revoit tout le diff
+en lecture seule (`git -C`, `diff`, `show`, jamais de `checkout`). Son **GO
+sur le sha de tête** est exigé, et un commit poussé ensuite demande une
+revue de l'écart. Chaque constat reçoit un verdict, consigné dans un
+commentaire de PR qui nomme la revue retenue et la raison de l'absence des
+bots. Hors champ : les lots
 gardés par leur file (migration, authentification, `.coderabbit.yaml`,
 `pr_agent.yml`) et l'approbation des release-db (`D-044`).
 
