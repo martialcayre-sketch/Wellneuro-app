@@ -205,7 +205,8 @@ enchaîner en un minimum d'allers-retours :
    sans `verify`, ne pas merger.
 2. **Avant chaque merge, l'étape 7 bis du skill `wn-merge`** (`D-373` §2, §4
    et §7) : sonde du déploiement, contrôle sur l'arbre fusionné, relecture du
-   registre `docs/DECISIONS.md`, signal de chevauchement, `main` inchangé.
+   registre `docs/decisions/` (un fichier par décision, `D-418`), signal de
+   chevauchement, `main` inchangé.
    Les commandes, les codes et ce que chacun arrête sont dans le skill ; ce
    texte ne les recopie pas.
 3. Juste avant le merge, l'étape 7 ter : la sonde release-db (`D-374` §2 à §4)

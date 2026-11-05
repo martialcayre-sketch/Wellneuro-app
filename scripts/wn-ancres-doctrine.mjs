@@ -34,10 +34,16 @@ import { join } from 'node:path';
  * Les fichiers dont les citations sont contrôlées.
  *
  * Le périmètre est celui que la convention déclare — corpus doctrinal et
- * registre des décisions. L'élargir sans écrire la convention ailleurs ferait
- * rougir sur des documents dont personne n'a accepté la règle.
+ * registre des décisions, un fichier par décision depuis D-418. L'élargir sans
+ * écrire la convention ailleurs ferait rougir sur des documents dont personne
+ * n'a accepté la règle.
+ *
+ * Chaque entrée doit fournir au moins un fichier : un répertoire déplacé ou
+ * renommé viderait le contrôle en silence — c'est ce qui serait arrivé au
+ * registre à la bascule de D-418 si le périmètre était resté
+ * `docs/DECISIONS.md`, devenu page fixe (D-418 §5).
  */
-const PERIMETRE = ['docs/claude/doctrine', 'docs/DECISIONS.md'];
+export const PERIMETRE = ['docs/claude/doctrine', 'docs/decisions'];
 
 /** Longueur minimale d'un verbatim : en dessous, il n'ancre rien. */
 const VERBATIM_MINIMUM = 3;
@@ -182,10 +188,29 @@ export function analyser(racine, chemin, lire = p => readFileSync(join(racine, p
   return { conformes, violations, heritees };
 }
 
+/**
+ * Les fichiers du périmètre, et les entrées du périmètre qui n'en ont fourni
+ * aucun.
+ */
+export function fichiersDuPerimetre(racine, perimetre = PERIMETRE) {
+  const parEntree = perimetre.map(p => [p, fichiersMarkdown(racine, p)]);
+  return {
+    fichiers: parEntree.flatMap(([, f]) => f),
+    vides: parEntree.filter(([, f]) => f.length === 0).map(([p]) => p),
+  };
+}
+
 function principal() {
   const racine = process.cwd();
   const json = process.argv.includes('--json');
-  const fichiers = PERIMETRE.flatMap(p => fichiersMarkdown(racine, p));
+  const { fichiers, vides } = fichiersDuPerimetre(racine);
+  if (vides.length > 0) {
+    process.stderr.write(
+      `✗ Périmètre vide : ${vides.join(', ')} — aucun fichier markdown lu depuis ${racine}. `
+      + 'Un contrôle qui ne lit rien rendrait le même « OK » qu’un corpus sain : refus d’être vert.\n',
+    );
+    return 2;
+  }
 
   let conformes = 0;
   let heritees = 0;

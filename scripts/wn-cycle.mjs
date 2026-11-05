@@ -25,6 +25,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { REPERTOIRE as REPERTOIRE_DECISIONS, lireDecisions } from './lib/registre-decisions.mjs';
 import { readCampaignTruth, readMachineState, writeMachineState } from './wn-state.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -98,13 +99,20 @@ export function analyserSync(sync) {
 }
 
 /**
- * Le registre `docs/DECISIONS.md` s'append en tête : les premières entrées
- * `### D-NNN` sont les plus récentes. C'est la seule structure du fichier sur
- * laquelle on s'appuie — le reste est de la prose humaine.
+ * Les décisions les plus récentes : les plus hauts numéros du registre, un
+ * fichier par décision depuis D-418 (`docs/decisions/D-NNN.md`). Le numéro est
+ * la seule structure sur laquelle on s'appuie — le reste est de la prose
+ * humaine. **Lève** si le registre est introuvable ou vide : jusqu'à D-418, la
+ * lecture d'un registre absent rendait `[]`, et `recent_decision_ids` se
+ * serait vidé en silence au premier changement de forme (D-418 §5).
+ *
+ * @param {string} racine
+ * @returns {string[]}
  */
-export function extraireDecisionsRecentes(texte, limite = 5) {
-  if (!texte) return [];
-  return [...texte.matchAll(/^### (D-\d+)\b/gm)].map((m) => m[1]).slice(0, limite);
+export function extraireDecisionsRecentes(racine, limite = 5) {
+  return lireDecisions(racine)
+    .map((d) => d.id)
+    .slice(0, limite);
 }
 
 /**
@@ -594,6 +602,12 @@ function collecterFaits(options = {}) {
 export function reparer(racine = RACINE, options = {}) {
   const lignes = [];
 
+  // `recent_decision_ids` était `[]` depuis sa création : personne ne le
+  // remplit à la main dans un commit de clôture. Le registre fait foi. Lu
+  // AVANT toute écriture : un registre introuvable ou vide lève (D-418 §5), et
+  // l'état n'est pas touché — jamais un `recent_decision_ids` vidé en silence.
+  const decisions = extraireDecisionsRecentes(racine);
+
   // 1. L'état machine d'abord. L'ordre compte — la vue se génère depuis cet
   //    état, la synchroniser avant l'écriture la ferait porter la date du run
   //    précédent.
@@ -601,21 +615,11 @@ export function reparer(racine = RACINE, options = {}) {
   delete etat.git;
   etat.updated_at = (options.maintenant ?? new Date().toISOString()).replace(/\.\d{3}Z$/, 'Z');
 
-  // `recent_decision_ids` était `[]` depuis sa création : personne ne le
-  // remplit à la main dans un commit de clôture. Le registre fait foi.
-  let decisions = [];
-  try {
-    decisions = extraireDecisionsRecentes(readFileSync(join(racine, 'docs', 'DECISIONS.md'), 'utf8'));
-  } catch {
-    decisions = [];
-  }
-  if (decisions.length > 0) etat.recent_decision_ids = decisions;
+  etat.recent_decision_ids = decisions;
 
   writeMachineState(racine, etat);
   lignes.push('.wn/state.json      updated_at renseigné, bloc git retiré (il ne se stocke plus)');
-  if (decisions.length > 0) {
-    lignes.push(`.wn/state.json      recent_decision_ids ← docs/DECISIONS.md (${decisions.join(', ')})`);
-  }
+  lignes.push(`.wn/state.json      recent_decision_ids ← ${REPERTOIRE_DECISIONS}/ (${decisions.join(', ')})`);
 
   // 2. La vue `ACTIVE_CAMPAIGN.md` est générée depuis `.wn/state.json` ; elle
   //    dérive dès que l'état bouge sans que personne ne relance la synchro.
@@ -754,7 +758,14 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
 
   if (options.appliquer) {
     console.error('');
-    for (const ligne of reparer(RACINE)) console.error(ligne);
+    let reparation;
+    try {
+      reparation = reparer(RACINE);
+    } catch (err) {
+      console.error(`✗ --appliquer refusé, rien n'est écrit : ${err.message} (D-418 §5).`);
+      process.exit(SORTIE_PRECONDITION);
+    }
+    for (const ligne of reparation) console.error(ligne);
     console.error(
       'SESSION_LOG.md et les fragments de handoff ne sont pas touchés — relire le diff avant de committer.',
     );

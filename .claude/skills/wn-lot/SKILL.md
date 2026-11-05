@@ -131,7 +131,7 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    `docs/claude/POLITIQUE_REVUE.md` — jamais deux revues à mission identique.
 6. **Clôture** — sur la **branche vivante**, avant la PR : (a) statut du lot,
    (b) les deux promotions examinées (règle oubliée → exécutable, décision →
-   `docs/DECISIONS.md`), (c) fragment `docs/claude/handoffs/` — seul élément
+   son fichier `docs/decisions/D-NNN.md`, `D-418`), (c) fragment `docs/claude/handoffs/` — seul élément
    que le CI exige depuis D-372. L'entrée `SESSION_LOG.md` (< 150 mots) ne
    s'écrit plus que sur demande. Les skills `/wn-finish` et `/wn-handoff write` <!-- mention-seule: wn-finish, wn-handoff -->
    produisent (b) et (c) — le premier s'invoque à la main, le second peut

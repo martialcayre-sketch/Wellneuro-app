@@ -125,7 +125,8 @@ function checkDocumentation() {
   c.add("CLAUDE.md", fileExists("CLAUDE.md"));
   c.add("AGENTS.md", fileExists("AGENTS.md"));
   c.add("docs/PROJECT_STATE.md", fileExists("docs/PROJECT_STATE.md"));
-  c.add("docs/DECISIONS.md", fileExists("docs/DECISIONS.md"));
+  c.add("docs/DECISIONS.md (page fixe, D-418)", fileExists("docs/DECISIONS.md"));
+  c.add("docs/decisions/ (un fichier par décision, D-418)", dirExists("docs/decisions"));
   c.add("docs/RUNBOOK.md", fileExists("docs/RUNBOOK.md"));
   c.add("docs/QUALITY_GATE.md", fileExists("docs/QUALITY_GATE.md"));
   c.add("docs/claude/SESSION_LOG.md", fileExists("docs/claude/SESSION_LOG.md"));

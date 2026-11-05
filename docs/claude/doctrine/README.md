@@ -18,7 +18,7 @@ courant, ni historique.
   tables de règles versionnées (`web/src/lib/clinical/`). La doctrine dit
   comment on s'en sert, jamais ce qu'il dit.
 - **Pas un registre de décisions.** Une règle de doctrine ne devient
-  opposable que par une entrée `docs/DECISIONS.md`. Tant qu'elle porte
+  opposable que par une entrée du registre `docs/decisions/` (`D-418`). Tant qu'elle porte
   « proposition », elle informe une revue, elle ne la tranche pas.
 - **Pas un document chargé en permanence.** Une douzaine de règles seulement
   vivent dans `CLAUDE.md` ; le détail se lit ici, à la demande, ou arrive par
@@ -39,7 +39,7 @@ qui n'est qu'un jeu de principes reste ici.
 
 ## Ancrage des citations
 
-Une citation de ce corpus — et du registre `docs/DECISIONS.md`, qui suit la
+Une citation de ce corpus — et du registre `docs/decisions/`, qui suit la
 même règle — **s'ancre sur du texte, jamais sur un numéro de ligne**.
 
 Le motif est mesuré, pas théorique. Le 2026-08-23, le LOT-09 a décalé un

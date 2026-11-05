@@ -16,9 +16,12 @@
 # Ce fichier et lui seul. `union` concatène les deux côtés d'un hunk conflictuel
 # sans marqueur : sur un fichier où l'on n'ajoute qu'à la fin, c'est exactement
 # la bonne réponse ; partout ailleurs, une ligne modifiée des deux côtés est
-# DUPLIQUÉE en silence. Surtout pas sur `docs/DECISIONS.md`, dont l'écriture se
-# fait en tête — c'est le garde `scripts/lib/decisions-numerotation.mjs` qui
-# tient ce fichier-là, pas une stratégie de fusion.
+# DUPLIQUÉE en silence. Surtout pas sur le registre des décisions,
+# `docs/decisions/D-NNN.md` (un fichier par décision depuis D-418) : deux PR qui
+# créent le même numéro doivent se heurter en conflit d'ajout, et `union` en
+# ferait un fichier à deux titres. C'est le garde
+# `scripts/lib/decisions-numerotation.mjs` qui tient le registre, pas une
+# stratégie de fusion.
 #
 # UNE exception à surveiller, et elle est outillée : `/wn-compact-sessionlog`
 # RÉÉCRIT ce fichier — il en retire des entrées anciennes et en refait le

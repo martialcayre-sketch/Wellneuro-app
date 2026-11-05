@@ -92,10 +92,17 @@ test('signatures node : tests TAP en échec et violations, sans numéro de ligne
     'ok 1 - passe',
     'not ok 2 - la matrice couvre la route',
     '    not ok 3 - sous-test imbriqué',
-    '✗ docs/DECISIONS.md:1204 — D-372 en double',
+    '✗ docs/decisions/D-372.md:12 — un second titre de décision (« ### D-373 — glissée ») — une décision par fichier.',
     'texte quelconque',
   ].join('\n');
-  assert.deepEqual(signaturesNode(sortie), ['test : la matrice couvre la route', 'test : sous-test imbriqué', '✗ docs/DECISIONS.md — D-372 en double'].sort());
+  assert.deepEqual(
+    signaturesNode(sortie),
+    [
+      'test : la matrice couvre la route',
+      'test : sous-test imbriqué',
+      '✗ docs/decisions/D-372.md — un second titre de décision (« ### D-373 — glissée ») — une décision par fichier.',
+    ].sort(),
+  );
   assert.deepEqual(signaturesNode(''), []);
 });
 
@@ -134,9 +141,9 @@ const rouge = (...signatures) => ({ etat: 'echec', signatures });
 const sansVerdict = { etat: 'indetermine', signatures: [] };
 
 test('verdict : un conflit est un défaut', () => {
-  const v = juger({ conflits: ['docs/DECISIONS.md'] });
+  const v = juger({ conflits: ['docs/decisions/D-372.md'] });
   assert.equal(v.code, SORTIE_DEFAUT);
-  assert.match(v.motif, /conflit sur 1 chemin\(s\) : docs\/DECISIONS\.md/);
+  assert.match(v.motif, /conflit sur 1 chemin\(s\) : docs\/decisions\/D-372\.md/);
 });
 
 test('verdict : rouge sur l’arbre fusionné, vert ou absent sur main — défaut imputable', () => {
@@ -646,7 +653,7 @@ test('wn-merge joue déploiement, contrôle, registre et chevauchement avant la 
   };
   const deploiement = rang(/node scripts\/wn-deploiement-observation\.mjs/);
   const controle = rang(/node scripts\/wn-controle-fusion\.mjs <N>/);
-  const registre = rang(/git diff <base> origin\/main -- docs\/DECISIONS\.md/);
+  const registre = rang(/git diff <base> origin\/main -- docs\/decisions\//);
   const chevauchement = rang(/node scripts\/wn-chevauchement\.mjs <N>/);
   const mainInchange = rang(/git ls-remote origin refs\/heads\/main/);
   const sonde = rang(/node scripts\/wn-sonde-release-db\.mjs <N>/);
