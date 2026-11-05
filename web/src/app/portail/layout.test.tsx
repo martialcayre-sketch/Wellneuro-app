@@ -151,8 +151,14 @@ describe('layout du portail — drapeau `WN_PORTAIL_BARRE_BASSE`', () => {
   });
 
   const rendre = async () => render(await PortailLayout({ children: <p>contenu</p> }));
-  const zonesSures = (container: HTMLElement) =>
-    (container.firstElementChild as HTMLElement).className.includes('safe-area-inset-left');
+  // Latérales et basse : sans la basse, une page sans barre (mineur, murs)
+  // passerait sous l'indicateur d'accueil (revue PR-Agent de #1875).
+  const zonesSures = (container: HTMLElement) => {
+    const classe = (container.firstElementChild as HTMLElement).className;
+    const poses = ['left', 'right', 'bottom'].map(cote => classe.includes(`safe-area-inset-${cote}`));
+    expect(new Set(poses).size).toBe(1);
+    return poses[0];
+  };
 
   for (const [cas, menu, barre] of [
     ['les deux fermés', undefined, undefined],

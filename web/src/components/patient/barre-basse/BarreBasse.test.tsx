@@ -227,13 +227,14 @@ describe('§5 — activation', () => {
 });
 
 describe('§4 et §6 — réserve, largeur, impression, cibles', () => {
-  it('la réserve suit le pied dans le flux, à la hauteur de la barre plus la zone sûre', async () => {
+  it('la réserve suit le pied dans le flux, à la hauteur de la barre (la zone sûre est au conteneur)', async () => {
     servir();
     const { container } = await rendre();
     await waitFor(() => expect(barre()).toBeTruthy());
     const reserve = container.querySelector('[aria-hidden="true"]')!;
     expect(reserve.previousElementSibling?.tagName).toBe('FOOTER');
-    expect(reserve.className).toContain('h-[calc(4rem+1px+env(safe-area-inset-bottom))]');
+    expect(reserve.className).toContain('h-[calc(4rem+1px)]');
+    expect(reserve.className).not.toContain('safe-area');
     expect(reserve.className).toMatch(/\bmd:hidden\b/);
     expect(reserve.className).toMatch(/\bprint:hidden\b/);
     expect(within(barre()!).getByRole('list').className).toMatch(/\bh-16\b/);

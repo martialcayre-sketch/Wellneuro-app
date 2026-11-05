@@ -30,8 +30,9 @@ import {
  * « ouvert », et la case est alors absente. Pas de case « Menu » (Q48).
  *
  * PIED D'URGENCE (§4). La barre pose, dans le flux du conteneur, après le pied,
- * une réserve de sa hauteur plus la zone sûre : en fin de défilement, le pied
- * s'affiche en entier au-dessus d'elle. Le `main` n'en porte aucune.
+ * une réserve de sa hauteur ; le conteneur porte la zone sûre basse, barre ou
+ * non (`portail/layout.tsx`). En fin de défilement, le pied s'affiche en entier
+ * au-dessus d'elle. Le `main` n'en porte aucune.
  */
 
 type CleCase = 'parcours' | 'carnet' | 'suivi' | 'bibliotheque' | 'fiches';
@@ -79,8 +80,9 @@ export function BarreBasse() {
 
   return (
     <>
-      {/* Réserve de bas (§4) : hauteur de la barre (bordure comprise) plus la zone sûre. */}
-      <div aria-hidden="true" className="h-[calc(4rem+1px+env(safe-area-inset-bottom))] shrink-0 md:hidden print:hidden" />
+      {/* Réserve de bas (§4) : hauteur de la barre, bordure comprise ; la zone
+          sûre est rendue par le conteneur. */}
+      <div aria-hidden="true" className="h-[calc(4rem+1px)] shrink-0 md:hidden print:hidden" />
       <nav
         aria-label={NOM_BARRE_BASSE}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"

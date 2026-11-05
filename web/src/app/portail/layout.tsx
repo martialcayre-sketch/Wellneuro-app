@@ -52,11 +52,15 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   const portail = (
     // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
     // sable, pas de dégradé).
-    // Barre ouverte, `viewport-fit=cover` étend la page sous l'encoche en
-    // paysage : le conteneur rend les zones sûres latérales ([[D-444]] §4).
+    // Barre ouverte, `viewport-fit=cover` étend la page sous l'encoche et
+    // l'indicateur d'accueil : le conteneur rend les zones sûres latérales et
+    // basse ([[D-444]] §4), que la barre paraisse ou non — sans elle (mineur,
+    // murs, questionnaire en cours), le pied ne passe pas sous l'indicateur.
     <div
       className={`min-h-screen bg-background flex flex-col${
-        barre ? ' pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]' : ''
+        barre
+          ? ' pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]'
+          : ''
       }`}
     >
       {/* Lien d'évitement ([[D-442]] §6) : premier arrêt de tabulation,

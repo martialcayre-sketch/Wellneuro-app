@@ -697,7 +697,7 @@ Même protocole que L1 à L3 : dev local sur le Mac, navigateur intégré, base 
 | Michel, « Avant de commencer » requis | 390 px | absent | absente, sans réserve | — | — |
 
 - Écart trouvé et corrigé pendant le constat : la réserve valait 4 rem, la barre 4 rem plus sa bordure haute d'un pixel ; le pied passait d'un pixel sous la barre. La réserve compte désormais la bordure, et l'E2E ne tolère plus qu'un demi-pixel d'arrondi.
-- Le viewport porte `viewport-fit=cover` sur les pages du portail, connexion comprise, drapeaux ouverts.
+- Le viewport porte `viewport-fit=cover` sur les pages du portail, connexion comprise, drapeaux ouverts. Après la revue de la PR (#1875), la zone sûre basse passe de la réserve de la barre au conteneur, présente barre ou non : une page sans barre ne laisse pas le pied sous l'indicateur d'accueil ; en émulation (zone sûre nulle) les mesures ci-dessus sont inchangées.
 - Impression : vérifiée par l'émulation `print` de l'E2E (la barre disparaît), non imprimée sur papier.
 - Non constaté à l'écran : la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise dans le seed : une remise demande la chaîne d'approbation et de versions ; épinglée au banc dans ses deux formes, et absente quand rien n'est remis, comme ici) ; le mineur clos (épinglé au banc) ; un appareil à encoche réel (zone sûre nulle en émulation).
 
