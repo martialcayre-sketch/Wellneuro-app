@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CANDIDATS_NABM } from '../biology-library/candidatsNabm';
 import {
   FICHES_USAGE_BESOIN2_METADATA,
   FICHES_USAGE_BESOIN2_SHA256,
@@ -126,6 +127,36 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     // Absent : la structure ne se signe pas (re-signature B9/B12, arbitrage du 2026-11-03).
     expect(incoherencesDeStructure(avec({ niveauMesure: undefined as never }))).toEqual(['FU_SYNTH:niveau_mesure']);
     expect(FICHES_USAGE_BESOIN2_V1.fiches.filter(f => f.niveauMesure === undefined)).toEqual([]);
+  });
+
+  it('niveau de mesure (D-434 §3, précisée par D-446 §3) : un analyte sans acte NABM exclut la mesure standard', () => {
+    // Règle de pré-remplissage relue : acte de groupe OU aucun acte ⇒
+    // exploration fonctionnelle. Le banc garde la seule branche que le
+    // catalogue des candidats tranche seul : une fiche dont un analyte est en
+    // `aucun_acte` ne peut pas être une « mesure standard ».
+    const enDefaut = (structure: StructureFichesUsage) =>
+      structure.fiches
+        .filter(
+          f =>
+            f.niveauMesure === 'mesure_standard' &&
+            f.codesAnalyte.some(code => CANDIDATS_NABM[code]?.situation === 'aucun_acte'),
+        )
+        .map(f => f.id);
+    const sansActe = FICHES_USAGE_BESOIN2_V1.fiches.filter(f =>
+      f.codesAnalyte.some(code => CANDIDATS_NABM[code]?.situation === 'aucun_acte'),
+    );
+    // Anti-vacuité : les huit fiches iode et sélénium (D-446) au moins.
+    expect(sansActe.length).toBeGreaterThanOrEqual(8);
+    expect(enDefaut(FICHES_USAGE_BESOIN2_V1)).toEqual([]);
+    // Mutation : une seule de ces fiches passée en mesure standard rougit.
+    const cible = sansActe[0];
+    const mutee: StructureFichesUsage = {
+      ...FICHES_USAGE_BESOIN2_V1,
+      fiches: FICHES_USAGE_BESOIN2_V1.fiches.map(f =>
+        f.id === cible.id ? { ...f, niveauMesure: 'mesure_standard' } : f,
+      ),
+    };
+    expect(enDefaut(mutee)).toEqual([cible.id]);
   });
 
   it.each([
