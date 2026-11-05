@@ -856,7 +856,8 @@ describe('registre des documents TRUST', () => {
   // registre près : la v2 remplace une phrase de la v1, et rien d'autre.
   it('droits_patient v2 porte la phrase de D-445 §1, mot pour mot, et rien d’autre', () => {
     const decisions = fs.readFileSync(path.resolve(__dirname, '../../../../../docs/DECISIONS.md'), 'utf8');
-    const section = decisions.slice(decisions.indexOf('### D-445 '), decisions.indexOf('### D-443 '));
+    const debutD445 = decisions.indexOf('### D-445 ');
+    const section = decisions.slice(debutD445, decisions.indexOf('\n### ', debutD445 + 1));
     const bloc = section.slice(section.indexOf('**§1'), section.indexOf('**§2'));
     expect(bloc.length, 'D-445 §1 introuvable').toBeGreaterThan(0);
     const texteD445 = bloc

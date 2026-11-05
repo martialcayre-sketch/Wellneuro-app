@@ -3,7 +3,8 @@
 ## Branche et état Git
 
 - Branche `feat/file-d-d37-droits-patient-v2`, worktree `file-d1-suite`,
-  partie de `origin/main` @028039a2 (2026-11-05).
+  partie de `origin/main` @028039a2 (2026-11-05), remise à niveau sur
+  @f3e1bc99 (D-444) : registre en conflit de tête, D-445 réinsérée au-dessus.
 - #1868 (d33) reste ouverte, déclarée « prête @43a02129 » ; l'intégrateur
   merge, pas cette file.
 - D-445 réservée (`refs/tags/reserve/D-445`).
