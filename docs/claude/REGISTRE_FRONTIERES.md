@@ -343,6 +343,11 @@
   de même poids, sans bouton plein, sans compteur, où seul `aria-current`
   distingue la page courante, ne l'enfreint pas davantage : elle ne met rien
   en avant et ne fait avancer aucune étape.
+  *Précision du 2026-11-05 ([[D-447]] §7)* : un rail latéral qui montre en
+  permanence, à partir de 1 024 px, la liste des espaces — entrées de même
+  poids, sans bouton plein, sans compteur, où seul `aria-current` distingue
+  la page courante, absent du questionnaire en cours — ne l'enfreint pas
+  non plus : il ne met rien en avant et ne fait avancer aucune étape.
 - Typographie : échelle **remontée** (corps 16px, titres de section en
   `font-display`, hiérarchie display ≥ 28px) ; `ReadingComfortControl` monté
   sur les **deux surfaces patient** — portail (`app/portail/layout.tsx`) et

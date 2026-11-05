@@ -11,6 +11,8 @@ import { BoutonMenuMonEspace, FournisseurMenuPortail, MotSymbole } from '@/compo
 import { LIEN_EVITEMENT } from '@/components/patient/menu/textesMenu';
 import { barreBasseOuverte } from '@/components/patient/barre-basse/barreBasseDrapeau';
 import { BarreBasse } from '@/components/patient/barre-basse/BarreBasse';
+import { railLateralOuvert } from '@/components/patient/rail/railDrapeau';
+import { CadreRailMonEspace } from '@/components/patient/rail/RailMonEspace';
 
 export const metadata: Metadata = {
   title: 'Wellneuro — Espace patient',
@@ -49,6 +51,17 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   // lien d'accueil, ni bouton, et aucun composant du menu monté.
   const menu = menuPortailOuvert();
   const barre = barreServie();
+  // Rail latéral ([[D-447]]) : sans effet menu fermé, dont il reprend la garde.
+  const rail = menu && railLateralOuvert();
+  const contenu = (
+    <main
+      id={menu ? 'contenu' : undefined}
+      tabIndex={menu ? -1 : undefined}
+      className={`flex-1 flex flex-col items-center px-4 py-8${menu ? ' focus:outline-none' : ''}${rail ? ' min-w-0' : ''}`}
+    >
+      {children}
+    </main>
+  );
   const portail = (
     // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
     // sable, pas de dégradé).
@@ -87,7 +100,7 @@ export default async function PortailLayout({ children }: { children: ReactNode 
           // Mot-symbole en lien d'accueil, puis le bouton « Menu » ([[D-442]] §1, §5).
           <div className="flex flex-wrap items-center gap-3">
             <MotSymbole />
-            <BoutonMenuMonEspace />
+            <BoutonMenuMonEspace railServi={rail} />
           </div>
         ) : (
           <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
@@ -97,13 +110,9 @@ export default async function PortailLayout({ children }: { children: ReactNode 
           {sessionOuverte && <BoutonDeconnexion />}
         </div>
       </header>
-      <main
-        id={menu ? 'contenu' : undefined}
-        tabIndex={menu ? -1 : undefined}
-        className={`flex-1 flex flex-col items-center px-4 py-8${menu ? ' focus:outline-none' : ''}`}
-      >
-        {children}
-      </main>
+      {/* Rail ([[D-447]] §6) : dès 1 024 px, sur ses pages, le rail et le
+          `main` passent en deux colonnes ; ailleurs, le `main` seul. */}
+      {rail ? <CadreRailMonEspace>{contenu}</CadreRailMonEspace> : contenu}
       <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1 print:hidden">
         <p>
           Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien,

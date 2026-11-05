@@ -92,7 +92,10 @@ test.describe('Portail — frise des étapes navigable', () => {
   test('le hub, frise navigable comprise, passe axe (WCAG 2.1 AA)', async ({ page }) => {
     await frise(page);
     // Une entrée sondée au moins : la mesure ne part pas avant les sondes.
-    await expect(page.getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true })).toBeVisible();
+    // Dans « Autres espaces » : au bureau, le rail latéral ([[D-447]]) porte le même lien.
+    await expect(
+      page.getByRole('navigation', { name: 'Autres espaces' }).getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true }),
+    ).toBeVisible();
     const { violations } = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();

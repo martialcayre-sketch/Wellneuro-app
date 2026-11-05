@@ -141,6 +141,12 @@ const config: Config = {
       boxShadow: {
         card: 'var(--shadow-card)',
         pop: 'var(--shadow-pop)',
+        // Entrée active du rail patient ([[D-447]] §5).
+        'nav-active': 'var(--shadow-nav-active)',
+      },
+      // Largeur du rail patient ([[D-447]] §5), en `rem` dans globals.css.
+      width: {
+        'nav-rail': 'var(--nav-rail)',
       },
       borderRadius: {
         sm: 'var(--radius-sm)',

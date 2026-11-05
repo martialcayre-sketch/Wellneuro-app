@@ -87,6 +87,7 @@ export function PanneauSuperpose({
   theme = 'praticien',
   open,
   onOpenChange,
+  onCloseAutoFocus,
   children,
 }: {
   /**
@@ -123,6 +124,12 @@ export function PanneauSuperpose({
   theme?: ThemePanneau;
   open?: boolean;
   onOpenChange?: (ouvert: boolean) => void;
+  /**
+   * Transmis à `Dialog.Content` : le parent peut rendre le focus ailleurs qu'au
+   * déclencheur quand celui-ci n'est plus affiché (le menu « Mon espace » fermé
+   * au seuil du rail, [[D-447]] §4). Absent, Radix rend le focus au déclencheur.
+   */
+  onCloseAutoFocus?: (evenement: Event) => void;
   children: ReactNode;
 }) {
   return (
@@ -132,6 +139,7 @@ export function PanneauSuperpose({
         <Dialog.Overlay data-theme={theme} className="fixed inset-0 z-50 bg-foreground/35" />
         <Dialog.Content
           data-theme={theme}
+          onCloseAutoFocus={onCloseAutoFocus}
           className={`${CLASSES_CONTENU[variante]}${variante === 'tiroir' ? ` ${CLASSES_LARGEUR[largeur]}` : ''}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">

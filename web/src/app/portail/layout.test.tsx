@@ -185,3 +185,47 @@ describe('layout du portail — drapeau `WN_PORTAIL_BARRE_BASSE`', () => {
     expect(screen.queryByRole('navigation', { name: 'Accès rapides' })).toBeNull();
   });
 });
+
+// RAIL LATÉRAL ([[D-447]] §8) : sans effet menu fermé ; ouvert, le `main` passe
+// dans le cadre du rail, qui ne fait que l'étirer tant que la garde n'est pas
+// lue — lectures en échec : ni rail, ni colonne.
+describe('layout du portail — drapeau `WN_PORTAIL_RAIL_LATERAL`', () => {
+  beforeEach(() => {
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    cookieStore.valeur = signPatientSession({ idPatient: 'PAT_1', email: 'p@example.test' });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
+  });
+  afterEach(() => {
+    delete process.env.WN_PORTAIL_MENU;
+    delete process.env.WN_PORTAIL_RAIL_LATERAL;
+    vi.unstubAllGlobals();
+  });
+
+  const rendre = async () => render(await PortailLayout({ children: <p>contenu</p> }));
+  const parent = () => screen.getByRole('main').parentElement as HTMLElement;
+
+  for (const [cas, menu, rail] of [
+    ['les deux fermés', undefined, undefined],
+    ['rail seul, menu fermé', undefined, 'true'],
+    ['menu seul', 'true', undefined],
+  ] as const) {
+    it(`${cas} : le \`main\` est enfant direct du conteneur, sans cadre`, async () => {
+      if (menu) process.env.WN_PORTAIL_MENU = menu;
+      if (rail) process.env.WN_PORTAIL_RAIL_LATERAL = rail;
+      const { container } = await rendre();
+      expect(parent()).toBe(container.firstElementChild);
+      expect(screen.getByRole('main').className).not.toMatch(/\bmin-w-0\b/);
+    });
+  }
+
+  it('les deux ouverts, lectures en échec : le cadre étire le `main`, ni rail ni colonne', async () => {
+    process.env.WN_PORTAIL_MENU = 'true';
+    process.env.WN_PORTAIL_RAIL_LATERAL = 'true';
+    await rendre();
+    await new Promise(r => setTimeout(r, 0));
+    expect(parent().className).toBe('flex flex-1 flex-col');
+    expect(screen.getByRole('main').className).toMatch(/\bmin-w-0\b/);
+    expect(screen.queryByRole('navigation', { name: 'Mon espace' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+  });
+});
