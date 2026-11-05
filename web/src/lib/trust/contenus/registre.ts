@@ -573,6 +573,34 @@ const DROITS_PATIENT_V1: VersionDocumentTrust = {
   hash: '84057933a33a5f8b0f80b5b8fee6a4ac04553e0ae77790df86f2566acf117499',
 };
 
+// LA v2 CORRIGE UNE GARANTIE QUE L'APPLICATION NE TENAIT PAS ([[D-445]]) : la v1
+// promettait un historique des choix « jamais effacé », or l'effacement du
+// dossier (`lib/patient/effacement.ts`) supprime `trust_choice_events` avec le
+// reste. Rien d'autre ne le modifie ni ne le supprime. Une phrase remplacée, mot
+// pour mot celle de D-445 §1 ; `registre.test.ts` la relit dans
+// `docs/DECISIONS.md`. Sans accusé, comme la v1 et comme la correction de même
+// nature de `consentement_suivi@v3` ([[D-222]]). Formulation et résumé retenus
+// par le responsable le 2026-11-05.
+const PHRASE_HISTORIQUE_DROITS_V1 =
+  'Chaque accord et chaque retrait est enregistré avec sa date et la version du texte présenté : votre historique reste consultable et n’est jamais effacé.';
+const PHRASE_HISTORIQUE_DROITS_D445 =
+  'Chaque accord et chaque retrait est enregistré avec sa date et la version du texte présenté : votre historique reste consultable tant que votre dossier existe ; il est supprimé avec lui si vous en demandez l’effacement.';
+const DROITS_PATIENT_V2: VersionDocumentTrust = {
+  ...DROITS_PATIENT_V1,
+  version: 'v2',
+  sections: DROITS_PATIENT_V1.sections.map(section => ({
+    ...section,
+    paragraphes: section.paragraphes.map(paragraphe =>
+      paragraphe === PHRASE_HISTORIQUE_DROITS_V1 ? PHRASE_HISTORIQUE_DROITS_D445 : paragraphe,
+    ),
+  })),
+  changeSummary:
+    'Cette version précise que l’historique de vos choix est supprimé avec votre dossier si vous en demandez l’effacement. Le reste ne change pas.',
+  publieLe: '2026-11-05',
+  requiresAcknowledgement: false,
+  hash: 'b0c7730b543f86a550166b41db87873410d1994edf0a017bd6f347225ac02f7d',
+};
+
 const CONSENTEMENT_SUIVI_V2: VersionDocumentTrust = {
   key: 'consentement_suivi',
   type: 'care_framework',
@@ -2097,6 +2125,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   USAGE_IA_V7,
   USAGE_IA_V8,
   DROITS_PATIENT_V1,
+  DROITS_PATIENT_V2,
   CONSENTEMENT_SUIVI_V2,
   CONSENTEMENT_SUIVI_V3,
   CONDITIONS_UTILISATION_V1,
