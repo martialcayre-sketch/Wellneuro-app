@@ -403,3 +403,60 @@ describe('GET /api/portail/protocole/checkin — questionnaires renvoyés (D-353
     erreur.mockRestore();
   });
 });
+
+// Arbitrage du 2026-11-05 : plus de suivi, donc plus de rendez-vous de suivi ;
+// l'état des rendez-vous reste lisible.
+describe('/api/portail/protocole/checkin — dossier clos', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    mockOwnerAuth();
+    mockDiffusedProtocol();
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      accessTokenRevoked: false,
+      email: assignation.emailPatient,
+      suiviClotureLe: new Date('2026-11-01T09:00:00Z'),
+    });
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+  });
+
+  it('★ POST rend 409 dossier_cloture et n’écrit aucun check-in', async () => {
+    const res = await POST(postRequest(proprioCookie(), { idAssignation: 'ASS_1', reponses }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'dossier_cloture',
+      error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce rendez-vous de suivi.',
+    });
+    expect(prisma.protocolCheckin.create).not.toHaveBeenCalled();
+  });
+
+  it('GET reste lisible', async () => {
+    const req = new Request('http://localhost/api/portail/protocole/checkin?id=ASS_1', {
+      headers: { cookie: `wn_portail=${encodeURIComponent(proprioCookie())}` },
+    });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { protocoleDiffuse: boolean }).protocoleDiffuse).toBe(true);
+  });
+
+  it('reprise du suivi : POST accepté de nouveau', async () => {
+    mockOwnerAuth();
+    prisma.protocolCheckin.create.mockResolvedValue({
+      id: 'ck_2',
+      idPatient: assignation.idPatient,
+      idAssignation: 'ASS_1',
+      protocolDraftId: 'proto_DEC_1#hash',
+      pointEtape: 'J7',
+      reponses: { contractVersion: 'c2a-checkin-v1', ...reponses },
+      canal: 'portail',
+      supersedesCheckinId: null,
+      soumisLe: new Date(),
+    });
+    const res = await POST(postRequest(proprioCookie(), { idAssignation: 'ASS_1', reponses }));
+    expect(res.status).toBe(201);
+    expect(prisma.protocolCheckin.create).toHaveBeenCalled();
+  });
+});

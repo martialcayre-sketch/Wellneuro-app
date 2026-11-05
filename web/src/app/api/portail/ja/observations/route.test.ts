@@ -286,4 +286,58 @@ describe('api/portail/ja/observations', () => {
     expect(res.status).toBe(401);
     expect(saveSnapshot).not.toHaveBeenCalled();
   });
+
+  // Arbitrage du 2026-11-05 : le journal ne se transmet plus sur un dossier
+  // clos ; ses archives restent lisibles.
+  describe('dossier clos', () => {
+    const clos = {
+      actif: true,
+      accessTokenRevoked: false,
+      email: 'sophie.nicola@example.test',
+      suiviClotureLe: new Date('2026-11-01T09:00:00Z'),
+    };
+
+    it('★ POST rend 409 dossier_cloture et n’écrit rien', async () => {
+      prisma.patient.findUnique.mockResolvedValue(clos);
+      const res = await POST(
+        new Request('http://localhost/api/portail/ja/observations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }),
+      );
+
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({
+        ok: false,
+        reason: 'dossier_cloture',
+        error: 'Votre suivi est clôturé : vous ne pouvez plus transmettre votre journal.',
+      });
+      expect(saveSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('GET reste ouvert aux archives', async () => {
+      prisma.patient.findUnique.mockResolvedValue(clos);
+      listSnapshots.mockResolvedValue([{ draftId: 'JA_DRAFT_1' }]);
+      const res = await GET(new Request('http://localhost/api/portail/ja/observations'));
+
+      expect(res.status).toBe(200);
+      expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, 'patient');
+    });
+
+    it('reprise du suivi : POST accepté de nouveau', async () => {
+      prisma.patient.findUnique.mockResolvedValue({ ...clos, suiviClotureLe: null });
+      saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_3' });
+      const res = await POST(
+        new Request('http://localhost/api/portail/ja/observations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }),
+      );
+
+      expect(res.status).toBe(201);
+      expect(saveSnapshot).toHaveBeenCalled();
+    });
+  });
 });

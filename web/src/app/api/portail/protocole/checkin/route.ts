@@ -13,6 +13,8 @@ import {
   type PointEtape,
 } from '@/lib/protocol/checkins';
 import { prisma } from '@/lib/prisma';
+import { MESSAGE_DOSSIER_CLOS_PATIENT_CHECKIN } from '@/lib/patient/cycleDeVie';
+import { refusClotureSuiviPour } from '@/lib/patient/gardeClotureServeur';
 import { MESSAGE_CADENCE_PATIENT, cadenceAtteinte } from '@/lib/securite/cadenceEcritures';
 import { appuiRenvoiOuvert, assignationsRenvoyees } from '@/lib/portail/appuiRenvoi';
 
@@ -71,6 +73,13 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     if ('ok' in auth) {
       const status = auth.reason === 'unauthenticated' ? 401 : 404;
       return NextResponse.json(auth, { status });
+    }
+
+    // Dossier clos (arbitrage du 2026-11-05) : plus de suivi, donc plus de
+    // rendez-vous de suivi ; le GET reste lisible.
+    const refusCloture = await refusClotureSuiviPour(auth.idPatient, MESSAGE_DOSSIER_CLOS_PATIENT_CHECKIN);
+    if (refusCloture) {
+      return NextResponse.json({ ok: false, ...refusCloture }, { status: 409 });
     }
 
     const diffuse = await resolveProtocoleDiffuse(auth.idPatient);

@@ -7,6 +7,7 @@ import {
 } from '@/lib/consultation/portail';
 import { normaliserFiche, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
 import { isMotifValide } from '@/lib/consultation/motifs';
+import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS_PATIENT_FICHE, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 export type PortailFicheResponse = { ok: true } | { ok: false; reason: string; error: string };
 
@@ -45,6 +46,14 @@ export async function POST(req: Request): Promise<NextResponse<PortailFicheRespo
     const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
+    }
+    // Dossier clos (arbitrage du 2026-11-05) : `valider` le refuse déjà, une
+    // fiche enregistrée ne mènerait plus à rien.
+    if (!accepteNouvelEnvoi(patient)) {
+      return NextResponse.json(
+        { ok: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS_PATIENT_FICHE },
+        { status: 409 }
+      );
     }
     const consultation = await consultationCourante(patient.idPatient);
     if (!consultation) {
