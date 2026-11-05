@@ -1659,7 +1659,10 @@ le DPA du 2026-10-21, ci-dessous.)*
   `DossierEfface` conserve une preuve non ré-identifiante (année de naissance,
   initiales, date).
 - **Append-only assumé** : `TrustAcknowledgement` et `TrustChoiceEvent` sont des
-  preuves d'information et de choix ; elles ne sont pas réécrites.
+  preuves d'information et de choix ; elles ne sont pas réécrites. Elles sont
+  supprimées avec le dossier sur demande d'effacement, et « Vos droits et vos
+  choix » le dit depuis sa v2 ([[D-445]]) ; leur sort après un effacement est
+  posé au conseil (d37).
 
 **Durées fixées le 2026-10-13 ([[D-283]] §1-2)** — le responsable n'exerce pas
 comme professionnel de santé au sens du Code de la santé publique :
