@@ -49,6 +49,13 @@ import pg from 'pg';
 const URL_BASE = process.env.DATABASE_URL;
 if (!URL_BASE) throw new Error('DATABASE_URL est requise.');
 const BASE_ATTENDUE = process.env.WN_POSITIONS_EXPERT_BANC_BASE;
+// `pg` lit aussi `socket://chemin?db=base` : le chemin n'y est pas la base,
+// et le contrôle du nom ci-dessous serait trompé (contre-revue Codex de
+// #1871, P2-1). Seuls les deux protocoles réseau sont admis.
+const PROTOCOLE = new URL(URL_BASE).protocol;
+if (PROTOCOLE !== 'postgres:' && PROTOCOLE !== 'postgresql:') {
+  throw new Error(`REFUS : DATABASE_URL utilise le protocole « ${PROTOCOLE} », seuls postgres: et postgresql: sont admis.`);
+}
 const BASE_REELLE = new URL(URL_BASE).pathname.slice(1);
 // Hôte LOCAL seulement (garde-fou de T3) : le banc commet des écritures.
 const HOTE = new URL(URL_BASE).hostname;

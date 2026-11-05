@@ -360,11 +360,13 @@ BEGIN
   -- Les TABLES distinctes qui portent un trigger TRUNCATE ACTIF : la cascade
   -- du TRUNCATE ci-dessus se fait refuser par la première table voisine, si
   -- bien que le sondage seul ne prouve rien pour `positions_expert_versions`
-  -- (revue CodeRabbit de #1871).
+  -- (revue CodeRabbit de #1871). Actif = `O` (origine) ou `A` (toujours) :
+  -- un trigger en `R` (ENABLE REPLICA) ne joue pas dans une session normale
+  -- (contre-revue Codex de #1871, P2-2).
   SELECT count(DISTINCT c.relname) INTO nb
   FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
   WHERE c.relname IN ('positions_expert_versions', 'positions_expert_actes', 'arbitrages_conflits_sources')
-    AND (t.tgtype & 32) <> 0 AND NOT t.tgisinternal AND t.tgenabled <> 'D';
+    AND (t.tgtype & 32) <> 0 AND NOT t.tgisinternal AND t.tgenabled IN ('O', 'A');
   IF nb <> 3 THEN
     RAISE EXCEPTION 'POSITIONS EXPERT: % trigger(s) TRUNCATE sur 3 — chaque table porte le sien.', nb;
   END IF;

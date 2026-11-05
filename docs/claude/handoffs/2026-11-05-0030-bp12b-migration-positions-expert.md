@@ -109,6 +109,16 @@ code consommateur.
   - Nitpick : une chaîne de versions à deux chiffres (`v1.9` → `v1.10` →
     `v9.9` → `v10.0`, puis `v9.10` refusée). Contre-épreuve : avec une
     comparaison textuelle, le contrat rougit.
+- Seconde passe Codex (correction) de 74ffd188 : P1-1 fermé (ACCEPTER).
+  Deux P2 sur les contrôles, corrigés :
+  - P2-1 : `socket://…?db=autre` trompait le contrôle du nom de base. Le
+    banc n'admet plus que `postgres:` et `postgresql:` ; refus constaté.
+  - P2-2 : un trigger TRUNCATE en `ENABLE REPLICA` restait compté. Le
+    contrat ne compte plus que `O` et `A`. Contre-épreuve : trigger des
+    versions en REPLICA ⇒ rouge, quand l'ancien filtre restait vert.
+  - Noté par Codex, hors lot : un propriétaire de table (droits DDL) peut
+    désactiver les triggers ; les privilèges effectifs de production ne
+    sont pas vérifiés.
 
 ## Problèmes ouverts
 
