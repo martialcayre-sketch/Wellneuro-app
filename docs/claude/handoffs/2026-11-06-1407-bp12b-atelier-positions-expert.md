@@ -101,6 +101,13 @@ Choix d'écriture, dans le cadre de D-439 :
   - question 3 à la signature sur base réelle (cas 8).
   - Le banc 6 est requalifié en banc de fumée. L'ordre des verrous est
     prouvé en unitaire.
+- PR #1893, CI vert sur efe1a0eb. Aucun bot n'a fait une revue qui compte :
+  - CodeRabbit a sauté la PR (« fewer than 10 stars ») ;
+  - PR-Agent n'a fait qu'une revue partielle : « Review coverage », 20
+    fichiers exclus, donc la condition (c) de D-393 §2 n'est pas remplie.
+  - Son unique remarque est corrigée. Un échec réseau affirmait « rien n'a
+    été écrit » ; le message dit désormais que le résultat est inconnu et
+    renvoie à l'état rechargé.
 
 ## Problèmes ouverts
 

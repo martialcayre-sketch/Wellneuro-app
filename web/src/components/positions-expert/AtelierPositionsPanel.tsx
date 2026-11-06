@@ -56,7 +56,14 @@ async function ecrire(chemin: string, corps: unknown): Promise<ReponseEcriture> 
     });
     return (await res.json()) as ReponseEcriture;
   } catch {
-    return { ok: false, error: 'Le serveur ne répond pas — rien n’a été écrit.' };
+    // Le client ne sait pas si l'écriture a eu lieu : une coupure peut suivre
+    // le commit. L'écran se recharge ; le geste se vérifie sur l'état affiché
+    // (revue PR-Agent de #1893). Un second envoi sur un état périmé est refusé
+    // « état divergent ».
+    return {
+      ok: false,
+      error: 'Réponse du serveur illisible : le résultat est inconnu. Vérifiez l’état affiché, rechargé, avant de recommencer.',
+    };
   }
 }
 
