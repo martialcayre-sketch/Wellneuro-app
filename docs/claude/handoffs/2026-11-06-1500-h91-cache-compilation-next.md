@@ -59,8 +59,10 @@ fragment du journal H91 et proposer un objectif chiffré sans le poser.
   run : l'étape Playwright varie davantage. Le gain d'une restauration
   partielle, cas ordinaire sur `main`, reste à constater sur les premiers
   runs de `main` après le merge.
-- Objectif chiffré proposé dans le fragment (médiane ≤ 630 s, p90 ≤ 720 s sur
-  `main`), non posé : question dans la liste commune, file A.
+- Objectif chiffré proposé dans le fragment (médiane ≤ 640 s, p90 ≤ 720 s sur
+  `main`), non posé : question `20261106-1415-a` de la liste commune, file A.
+- Constat PR-Agent « drapeau `1` contre la convention `'true'` » écarté : même
+  forme que `web/scripts/db-deploy.sh:41`, comparaison fermée par défaut.
 
 ## Prochaine action exacte
 
