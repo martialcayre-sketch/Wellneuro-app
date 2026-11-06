@@ -162,7 +162,8 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     accent_combinant: 'Été composé par diacritique combinant.',
     emoji_et_zwj: 'Soignante 👩🏽‍⚕️, drapeau 🇫🇷, hors BMP 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.',
     fins_de_ligne: 'Ligne une\r\nligne deux\rligne trois\nligne quatre',
-    espaces: 'Insécable fine et\ttabulation, chasse nulle​ici.',
+    // Insécable fine (U+202F), insécable (U+00A0), tabulation, chasse nulle (U+200B).
+    espaces: 'Insécable fine, insécable et\ttabulation, chasse nulle​ici.',
     echappements_json: 'Barre \\ oblique, "guillemets droits", /slash/ et   séparateur.',
     ecritures: 'Ελληνικά, русский, 中文, العربية.',
   };
@@ -213,11 +214,20 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     expect(lue.courante.appuisNonFrais).toEqual([CL_A]);
   });
 
-  async function attendreBloquees(n: number) {
+  /**
+   * Les sessions qui attendent CE verrou-là, dans cette base. Un autre banc qui
+   * attendrait un autre verrou consultatif sur la même base ne compte pas
+   * (revue CodeRabbit de #1893). `pg_advisory_xact_lock(int4, int4)` se lit
+   * dans `pg_locks` en `classid` = 439, `objid` = la clé, `objsubid` = 2.
+   */
+  async function attendreBloquees(n: number, cle: string) {
     for (let i = 0; i < 400; i++) {
       const { rows } = await observateur.query(
-        `SELECT count(*)::int AS n FROM pg_stat_activity
-         WHERE wait_event_type = 'Lock' AND wait_event = 'advisory' AND datname = current_database()`,
+        `SELECT count(*)::int AS n FROM pg_locks l
+         JOIN pg_database d ON d.oid = l.database
+         WHERE l.locktype = 'advisory' AND NOT l.granted AND d.datname = current_database()
+           AND l.classid = 439 AND l.objid = hashtext($1)::oid AND l.objsubid = 2`,
+        [cle],
       );
       if (rows[0].n >= n) return;
       await new Promise(r => setTimeout(r, 25));
@@ -232,7 +242,7 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
       await tenant.query('BEGIN');
       await tenant.query('SELECT pg_advisory_xact_lock(439, hashtext($1))', [cle]);
       const enVol = lancer();
-      await attendreBloquees(enVol.length);
+      await attendreBloquees(enVol.length, cle);
       await tenant.query('COMMIT');
       return await Promise.allSettled(enVol);
     } finally {

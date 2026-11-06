@@ -170,9 +170,20 @@ Choix d'écriture, dans le cadre de D-439 :
 
 ## Prochaine action exacte
 
-CI (`node scripts/wn-attendre-ci.mjs <N>`, en fond). Revue : CodeRabbit,
-sinon PR-Agent prouvée (`wn-revue-pr-agent.mjs`), sinon `wn-reviewer`
-(D-448). Un verdict par commentaire, puis « prête @sha ». Ne pas merger.
+État au 2026-11-06 à 16 h (UTC+1). La PR #1893 a vu passer les têtes
+efe1a0eb, 00e4b9f0, 551717fe (fusion de `main`), 825b8836 et df287cd2. Le CI
+est vert sur chacune, et CodeRabbit a revu 00e4b9f0 puis df287cd2. Ses cinq
+premiers fils sont clos par lui.
+
+Sa revue de df287cd2 a laissé deux remarques en ligne et un nitpick, tous
+corrigés dans le commit qui porte ce paragraphe :
+- le banc compte les attentes sur la clé tenue seulement (`pg_locks`) ;
+- ce paragraphe, qui était périmé ;
+- l'insécable fine du cas « espaces ».
+
+Reste : le CI de la tête neuve, la revue incrémentale de CodeRabbit sur
+celle-ci, un verdict par remarque, puis « prête @sha » avec ce handoff. Ne pas
+merger : c'est l'essai D-373.
 
 ## Interdits encore actifs
 
