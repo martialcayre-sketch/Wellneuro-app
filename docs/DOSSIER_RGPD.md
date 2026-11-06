@@ -1670,8 +1670,8 @@ affirmé sans source officielle citée** (document d'Anthropic daté, ou répons
 | Point | Ce qui est établi au 2026-11-06 | Source officielle à citer |
 |---|---|---|
 | Contrat de sous-traitance (art. 28) | DPA et clauses contractuelles types intégrés aux Conditions commerciales, selon la réponse du 2026-10-02 (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) ; copie datée, date d'opposabilité et couverture des traitements antérieurs non archivées | version datée des Conditions commerciales et du DPA, archivée hors dépôt |
-| Rétention des entrées et des sorties | non établi (prompt caching activé dans ce dépôt) | à citer |
-| Transferts : localisation de l'inférence et mécanisme | localisation non établie ; mécanisme : clauses contractuelles types, selon l'avis du 2026-10-13 ; TIA à rédiger | à citer |
+| Rétention des entrées et des sorties | non établi. Fait du code, constaté le 2026-11-06 : la mise en cache est demandée sur la seule invite système de la synthèse (`web/src/lib/synthese/generation.ts:639`, `cache_control`) | à citer |
+| Transferts : localisation de l'inférence et mécanisme | non établi. L'avis du 2026-10-13 retient les clauses contractuelles types : c'est une pièce du dossier, pas une source d'Anthropic ; la TIA reste à rédiger | à citer |
 
 ## 8. Durées de conservation
 
