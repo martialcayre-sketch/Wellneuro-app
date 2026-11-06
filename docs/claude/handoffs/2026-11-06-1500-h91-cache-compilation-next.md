@@ -2,10 +2,10 @@
 
 ## Branche et état Git
 
-`lot/h91-temps-2-cache-next`, worktree `.claude/worktrees/h91-temps-2`, depuis
-`origin/main` 1987b5c0 (avancée `--ff-only` deux fois en début de lot). Ligne
-r1_22 de la file A. Aucune PR ouverte ne touchait `ci.yml` ni les deux bancs
-au départ.
+`lot/h91-temps-2-cache-next`, worktree `.claude/worktrees/h91-temps-2`, PR
+#1890. Rebasée sur `origin/main` f1943140 (#1891, documentaire, sans
+migration) avant le push du fragment. Ligne r1_22 de la file A. Aucune PR
+ouverte ne touchait `ci.yml` ni les deux bancs au départ.
 
 ## Objectif
 
@@ -34,30 +34,40 @@ fragment du journal H91 et proposer un objectif chiffré sans le poser.
 
 `.github/workflows/ci.yml` (job `e2e` seul) ; `web/scripts/build.sh` ;
 `scripts/parite-check-ci.test.mjs` ; `scripts/ci-invariants.test.mjs` ;
-`changelog.d/2026-11-06-h91-cache-compilation-next.md` ; ce handoff ; le
-fragment `docs/claude/plan-journal/H91/2026-11-06-nn-…` au second push.
+`changelog.d/2026-11-06-h91-cache-compilation-next.md` ; ce handoff ;
+`docs/claude/plan-journal/H91/2026-11-06-01-temps-2-cache-compilation-next.md`.
 
 ## Validations exécutées
 
-- `node --test` sur les deux bancs : 59 sur 59.
+- `node --test` sur les deux bancs : 59 sur 59. Mutations du P1 rejouées :
+  un `export` dans `build.sh`, puis la variable dans `web/package.json`,
+  rougissent chacune un test.
 - `bash -n web/scripts/build.sh` : syntaxe valide.
-- T1 (`check:rapide`) : 17 étapes vertes, 2 sautées.
+- T1 rapide et T1 complet verts.
 - Mesure « après » du temps 1 : 71 runs `push` de `main`, réussis au premier
   essai, depuis le merge de #1747 (2026-10-27 22:19 UTC).
+- Run 1 de la PR (a317da6b), sans cache : vert. Run 2 (3ee2d9fd), avec
+  cache : vert, restauration exacte, compilation de 70 à 36,6 s, build de 161
+  à 135 s. Chiffres dans le fragment H91.
+- `wn-reviewer` : GO avec réserves sur a317da6b. Le P1 (liste fermée de la
+  variable) et les P2-2 à P2-5 sont corrigés, le P2-1 est écarté sur mesure
+  (sauvegarde de 5 s). GO sur 3ee2d9fd, sans constat nouveau.
 
 ## Problèmes ouverts
 
-- Mesure du cache : run 1 de la PR (sans cache), puis run 2 déclenché par le
-  push du fragment (avec cache). Elles sont à reporter dans le fragment.
-- Objectif chiffré : à proposer dans le fragment, à poser dans la liste
-  commune (file A), sans le poser.
+- Le gain du build (−26 s) ne se voit pas sur le chemin critique d'un seul
+  run : l'étape Playwright varie davantage. Le gain d'une restauration
+  partielle, cas ordinaire sur `main`, reste à constater sur les premiers
+  runs de `main` après le merge.
+- Objectif chiffré proposé dans le fragment (médiane ≤ 630 s, p90 ≤ 720 s sur
+  `main`), non posé : question dans la liste commune, file A.
 
 ## Prochaine action exacte
 
-Attendre le run 1 (`wn-attendre-ci`), mesurer, écrire le fragment H91 (nn
-relu sur `origin/main`), pousser, attendre et mesurer le run 2, compléter le
-fragment, revue `wn-reviewer` puis CodeRabbit (ou PR-Agent), verdicts dans la
-PR, rebase sur `main`, puis déclarer « prête @<sha> ».
+Revue CodeRabbit (ou PR-Agent) sur la tête, un verdict par remarque dans la
+PR, revue de l'écart par `wn-reviewer` si la tête change, puis déclarer
+« prête @<sha> » sans merger. Après « prête » : passer r1_22 à « fait » sur
+la page de la file A et mettre à jour la mémoire `suivi-file-a-artefact`.
 
 ## Interdits encore actifs
 
