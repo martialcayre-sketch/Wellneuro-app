@@ -45,7 +45,35 @@ const enTetesSansIndexation = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow,
 // Non liée à `WN_PORTAIL_CAPTURE_REPAS` : ces en-têtes sont figés au build, le
 // drapeau se lit à l'exécution (un redémarrage ne reconstruit pas). Drapeau
 // éteint, la page peut demander la caméra, et aucun code ne le fait.
-const enTetesCameraPage = [{ key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' }];
+//
+// `camera=(self)` ouvre la caméra à TOUT script exécuté dans le document, d'où
+// qu'il vienne : un script d'une autre origine chargé par la page s'exécute
+// sous l'origine de la page, et hériterait de l'accès (constat PR-Agent sur
+// #1878). La garde est donc un `script-src` sur cette même route : le
+// navigateur refuse, à l'exécution, tout script d'une AUTRE ORIGINE, quel que
+// soit le chemin qui l'insère. Une E2E sur les `<script src>` ne verrait qu'un
+// instant du DOM d'une fixture.
+// - `'unsafe-inline'` : Next sert son amorçage et ses charges RSC en scripts
+//   en ligne, sans nonce ici. La garde porte sur l'ORIGINE, pas sur l'en-ligne :
+//   un script injecté EN LIGNE (XSS) s'exécuterait et hériterait de la caméra.
+//   Seul un nonce fermerait ce cas ; il n'est pas posé.
+// - `'unsafe-eval'` en développement seulement : `next dev` évalue ses modules.
+//   L'en-tête est figé au build ; `next build` le fige sans.
+// - Sentry est empaqueté dans `/_next/static` (même origine), Replay est
+//   désactivé (aucun worker `blob:`), et ses envois relèvent de `connect-src`,
+//   que cet en-tête ne pose pas.
+// - `frame-ancestors 'none'` est REPRIS : la même clé remplace celle de
+//   `/:path*`, elle ne s'y ajoute pas.
+// - Aucun `:nom` dans ces valeurs : la route a des paramètres, et Next y
+//   substituerait tout motif `:identifiant` (un `foo:bar` serait réécrit).
+const scriptSrcPageCamera =
+  process.env.NODE_ENV === 'production'
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+const enTetesCameraPage = [
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+  { key: 'Content-Security-Policy', value: `${scriptSrcPageCamera}; frame-ancestors 'none'` },
+];
 
 const nextConfig = {
   reactStrictMode: true,

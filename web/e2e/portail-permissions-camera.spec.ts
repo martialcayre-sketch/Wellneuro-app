@@ -13,20 +13,37 @@
 // - micro et géolocalisation y restent fermés ;
 // - toute autre page garde `camera=()`.
 //
+// Et la garde qui va avec (constat PR-Agent sur #1878) : `camera=(self)` ouvre
+// la caméra à tout script exécuté dans le document, même venu d'une autre
+// origine. Cette route seule porte donc un `script-src 'self'` — le build sous
+// test est celui de production, sans `'unsafe-eval'` — et garde
+// `frame-ancestors 'none'`, que la même clé remplacerait sinon.
+//
 // Aucune session, aucun dossier : l'en-tête ne dépend que du chemin.
 import { test, expect, type APIResponse } from '@playwright/test';
 
-function politique(reponse: APIResponse): string[] {
+function enTete(reponse: APIResponse, nom: string): string[] {
   return reponse
     .headersArray()
-    .filter(h => h.name.toLowerCase() === 'permissions-policy')
+    .filter(h => h.name.toLowerCase() === nom)
     .map(h => h.value);
 }
+
+const politique = (reponse: APIResponse) => enTete(reponse, 'permissions-policy');
+const csp = (reponse: APIResponse) => enTete(reponse, 'content-security-policy');
+
+// `next dev` (mode par défaut de `playwright.config.ts`) charge la configuration
+// en développement et ajoute `'unsafe-eval'` ; T2, T3 et le CI jouent `start`.
+const scriptSrcAttendu =
+  process.env.PLAYWRIGHT_WEB_SERVER === 'start'
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
 test.describe('Permissions-Policy — la caméra, sur la seule page de l’agenda', () => {
   test('la page d’un questionnaire du portail rend la caméra à elle-même, et à elle seule', async ({ request }) => {
     const reponse = await request.get('/portail/JETON_FICTIF/questionnaires/ASS_FICTIF', { maxRedirects: 0 });
     expect(politique(reponse)).toEqual(['camera=(self), microphone=(), geolocation=()']);
+    expect(csp(reponse)).toEqual([`${scriptSrcAttendu}; frame-ancestors 'none'`]);
   });
 
   test('ailleurs, la caméra reste fermée', async ({ request }) => {
@@ -40,6 +57,7 @@ test.describe('Permissions-Policy — la caméra, sur la seule page de l’agend
     ]) {
       const reponse = await request.get(chemin, { maxRedirects: 0 });
       expect(politique(reponse), chemin).toEqual(['camera=(), microphone=(), geolocation=()']);
+      expect(csp(reponse), chemin).toEqual(["frame-ancestors 'none'"]);
     }
   });
 });
