@@ -159,11 +159,11 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     accents_precomposes: 'Été, cœur, Œuvre — « guillemets » ’apostrophe’.',
     // Décomposé, écrit en échappement pour qu'aucun éditeur ne le recompose :
     // une normalisation NFC côté JS ferait rougir ce cas (revue CodeRabbit).
-    accent_combinant: 'Été composé par diacritique combinant.',
+    accent_combinant: 'E\u0301te\u0301 compose\u0301 par diacritique combinant.',
     emoji_et_zwj: 'Soignante 👩🏽‍⚕️, drapeau 🇫🇷, hors BMP 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.',
     fins_de_ligne: 'Ligne une\r\nligne deux\rligne trois\nligne quatre',
     // Insécable fine (U+202F), insécable (U+00A0), tabulation, chasse nulle (U+200B).
-    espaces: 'Insécable fine, insécable et\ttabulation, chasse nulle​ici.',
+    espaces: 'Insécable\u202ffine,\u00a0insécable et\ttabulation, chasse nulle\u200bici.',
     echappements_json: 'Barre \\ oblique, "guillemets droits", /slash/ et   séparateur.',
     ecritures: 'Ελληνικά, русский, 中文, العربية.',
   };
