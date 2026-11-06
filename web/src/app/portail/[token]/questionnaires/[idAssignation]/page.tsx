@@ -263,8 +263,11 @@ export default function PortailQuestionnairePage() {
   }
 
   // 3) Saisie. Bandeau de rappel : consentement déjà couvert par le suivi.
+  // Texte courant, PAS le vert : posé hors carte, sur le fond beige, le vert
+  // sur sa teinte à 10 % donne 4,09:1 (AA : 4,5:1). Même règle que le ton
+  // `success` de PatientInlineMessage : le fond teinté porte seul le ton.
   const rappelConsentement = (
-    <div className="w-full max-w-2xl mb-4 rounded-xl border border-border bg-primary/10 px-4 py-3 text-xs text-primary">
+    <div className="w-full max-w-2xl mb-4 rounded-xl border border-border bg-primary/10 px-4 py-3 text-xs text-foreground">
       Ce questionnaire entre dans le cadre de votre suivi Wellneuro déjà accepté. Vous pouvez demander la modification ou la suppression de vos données auprès de votre praticien.
     </div>
   );

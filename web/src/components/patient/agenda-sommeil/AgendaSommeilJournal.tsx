@@ -268,7 +268,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     <div className="space-y-4">
       {alerteRefus}
       {merci && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary text-center">
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground text-center">
           Merci, à demain matin. ☕
         </div>
       )}

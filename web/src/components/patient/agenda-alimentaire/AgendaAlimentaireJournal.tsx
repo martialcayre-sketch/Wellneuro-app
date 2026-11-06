@@ -401,7 +401,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
   return (
     <div className="space-y-4">
       {merci && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-center text-sm text-primary">
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-center text-sm text-foreground">
           Merci, à demain. 🥗
         </div>
       )}
