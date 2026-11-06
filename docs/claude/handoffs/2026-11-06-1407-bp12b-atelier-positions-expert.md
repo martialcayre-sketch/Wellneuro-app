@@ -115,7 +115,9 @@ Choix d'écriture, dans le cadre de D-439 :
 - Revue CodeRabbit sur 00e4b9f0, demandée par « @coderabbitai review » :
   cinq remarques en ligne et un nitpick.
   - Corrigé : l'entrée `WN_POSITIONS_EXPERT` est déplacée dans la section A
-    des drapeaux produit, qui précise que seule la valeur `1` l'allume.
+    des drapeaux produit. Après la revue PR-Agent de 9da16140, la valeur
+    d'allumage s'aligne sur la convention de cette section : `true`, et non
+    plus `1`.
   - Corrigé : seule la dernière lecture s'applique (génération) ; une
     lecture plus ancienne arrivée après ne remplace plus l'état.
   - Corrigé : une lecture en échec ne démonte plus le brouillon. Un bouton
@@ -181,9 +183,20 @@ corrigés dans le commit qui porte ce paragraphe :
 - ce paragraphe, qui était périmé ;
 - l'insécable fine du cas « espaces ».
 
-Reste : le CI de la tête neuve, la revue incrémentale de CodeRabbit sur
-celle-ci, un verdict par remarque, puis « prête @sha » avec ce handoff. Ne pas
-merger : c'est l'essai D-373.
+Puis, sur 3ba7a180 et 9da16140 :
+- CodeRabbit a d'abord été « rate limited ». Redemandé après la réouverture
+  de son quota, il a revu df287cd2..9da16140 : « No actionable comments ».
+- Il avait relevé que les échappements du banc étaient littéraux dans le
+  fichier. Ils ont été réécrits en vrais `\uXXXX`.
+- PR-Agent ne peut pas le remplacer : diff compressé, 19 fichiers exclus.
+  Ses deux constats neufs sont corrigés dans le commit qui suit ce paragraphe.
+  - Le drapeau s'allume par `true`, la convention de la section A, et non
+    plus par `1`.
+  - La carte d'un couple est indexée par sa tête. Un clic ne peut plus
+    remplacer ou révoquer une tête que l'écran n'a pas montrée.
+
+Reste : le CI et la revue de la tête neuve, un verdict par remarque, puis
+« prête @sha » avec ce handoff. Ne pas merger : c'est l'essai D-373.
 
 ## Interdits encore actifs
 

@@ -433,8 +433,12 @@ function SectionArbitrages({
             </p>
           ) : (
             c.fichesCurees.map(f => (
+              // Clé = le couple ET sa tête : si la tête change au rechargement,
+              // le choix et le motif saisis repartent de zéro, et aucun clic
+              // ne remplace ou ne révoque une tête que l'écran n'a pas montrée
+              // (revue PR-Agent de #1893 ; patron de `CartePosition`).
               <CoupleArbitrage
-                key={f}
+                key={`${f}|${couple(c.id, f)?.tete?.id ?? 'non-arbitre'}`}
                 conflitId={c.id}
                 ficheId={f}
                 claims={c.claims}
@@ -453,7 +457,7 @@ function SectionArbitrages({
           <h4 className="font-semibold text-foreground">Arbitrages enregistrés hors des listes curées du jour</h4>
           {autres.map(k => (
             <CoupleArbitrage
-              key={`${k.conflitId}|${k.ficheId}`}
+              key={`${k.conflitId}|${k.ficheId}|${k.tete?.id ?? 'non-arbitre'}`}
               conflitId={k.conflitId}
               ficheId={k.ficheId}
               claims={null}

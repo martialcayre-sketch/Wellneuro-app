@@ -45,13 +45,13 @@ describe('atelier des positions — drapeau, session, garde du responsable', () 
   afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubEnv('WN_POSITIONS_EXPERT', '1');
+    vi.stubEnv('WN_POSITIONS_EXPERT', 'true');
     vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', 'responsable@exemple.fr');
     getServerSession.mockResolvedValue({ user: { email: 'Responsable@Exemple.fr' } });
   });
 
-  it('drapeau éteint (absent, ou autre que « 1 ») : 404 partout, sans lire la session', async () => {
-    for (const valeur of ['', 'true', '0']) {
+  it('drapeau éteint (absent, ou autre que « true ») : 404 partout, sans lire la session', async () => {
+    for (const valeur of ['', '1', 'TRUE', 'oui']) {
       vi.stubEnv('WN_POSITIONS_EXPERT', valeur);
       expect((await GET()).status).toBe(404);
       expect((await postVersion(requete(VERSION))).status).toBe(404);
@@ -104,7 +104,7 @@ describe('formats refusés à la route (400), avant toute écriture', () => {
   afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubEnv('WN_POSITIONS_EXPERT', '1');
+    vi.stubEnv('WN_POSITIONS_EXPERT', 'true');
     vi.stubEnv('WN_FICHES_USAGE_VALIDATEURS', 'responsable@exemple.fr');
     getServerSession.mockResolvedValue({ user: { email: 'responsable@exemple.fr' } });
   });
