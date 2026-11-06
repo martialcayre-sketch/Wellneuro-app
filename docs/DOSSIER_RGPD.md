@@ -857,6 +857,13 @@ cette voie transmet une donnée de santé à un tiers malgré un refus exprimé,
 ne peut pas reposer sur le consentement qui fonde la voie ordinaire
 (rubrique 6).
 
+**Réserve du 2026-11-05 sur cette ligne ([[D-449]] §2).** L'avis GPT du
+2026-11-05 ne tient pas pour validées 6.1.d et 9.2.h pour un responsable qui
+n'est pas professionnel de santé ([[D-283]] §1). La base déclarée n'est pas
+changée et la voie reste ouverte ; le point ouvre la liste des questions pour
+l'avocat ([[D-449]] §6). Cet avis est celui d'un assistant d'IA, choisi par le
+responsable, et non d'un conseil.
+
 Ce qui existe, et qui n'en tient pas lieu :
 
 - des **consentements recueillis** en phase de test
@@ -1206,6 +1213,12 @@ données ? », accusé exigé ([[D-364]] §4).
 |---|---|---|
 | OpenAI (ChatGPT, offre individuelle) | analyse du dossier par un outil d'IA externe choisi par le praticien ; données : l'export pseudonymisé (version « Pour une IA externe », [[D-252]] §2), qui porte aussi les données physiologiques et les traitements datés du dossier ([[D-391]] §2, déclaré le 2026-10-28 ; patient informé par la v22) ; geste : téléchargement, puis envoi par le praticien lui-même ; transfert hors de l'Union | aucun accord de sous-traitance (art. 28), aucun mécanisme de transfert contractuel ; base légale (art. 6 et 9) à établir avec le conseil. Ce trou rejoint ceux de [[D-283]] §9, à l'échéance du 2027-06-30 ([[D-265]]) |
 
+**Envois suspendus depuis le 2026-11-05 ([[D-449]] §3).** Le responsable
+n'envoie plus d'export de dossier à ChatGPT. C'est son geste : l'application
+sert toujours la version « Pour une IA externe », aucun code ne tient ni ne
+constate la suspension, et les textes patient qui nomment ce destinataire ne
+changent pas.
+
 **Déclaré le 2026-10-15 (D4, [[D-299]]) :** OpenAI figure au tableau ci-dessus et dans « Vos données personnelles » v18, accusé exigé ; le flux est inchangé. La contre-lecture des fiches d'assiette par OpenAI s'exécute hors de l'application, sur le seul texte des fiches, sans donnée personnelle : elle est déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md` et n'est pas un sous-traitant de données patient. Le constat d'origine suit, inchangé.
 
 **Déclaré le 2026-10-16, avant le premier envoi (BP-12a, [[D-314]] §4) :** la rédaction des fiches d'usage du besoin 2 suit le même régime que celle des fiches d'assiette. L'outil `tools/corpus/fiches-usage/` s'exécute hors de l'application et envoie à Anthropic (rédaction) et à OpenAI (contre-lecture) les identifiants de la structure signée et le texte des claims qu'elle épingle : aucune donnée personnelle. Ni l'un ni l'autre n'est un sous-traitant de données patient pour ce flux, déclaré par `docs/TRUST_IA_FICHES_USAGE.md`. Aucun texte n'était encore rédigé à cette date.
@@ -1301,6 +1314,10 @@ la même justification, et la seconde n'en avait aucune d'écrite avant le 2026-
 recréerait le blocage sans fin que [[D-257]] a levé : seule une lettre
 consignée lève une abstention sur signal d'adressage. Sa base est déclarée par
 le responsable dans la trame de la rubrique 3 (6.1.d + 9.2.h, 2026-10-04).
+**Réserve du 2026-11-05** : l'avis GPT du 2026-11-05 ne tient pas cette base
+pour validée chez un responsable qui n'est pas professionnel de santé ; la
+voie est maintenue ([[D-449]] §2, rubrique 3), le point va en tête des
+questions pour l'avocat.
 
 **AUCUN ARTICLE DU RGPD N'EST ÉCRIT ICI**, conformément à la rubrique 3 : la
 qualification revient au **responsable**, dans la trame de la rubrique 3
@@ -1645,6 +1662,17 @@ le DPA du 2026-10-21, ci-dessous.)*
     certification DPF de Sentry et la TIA du repli.
 - **Reste** : les pièces à archiver, et les TIA.
 
+**Fiche Anthropic — à constituer ([[D-449]] §3, 2026-11-06).** La lecture des
+comptes rendus de biologie continue ; ce qui suit se documente. **Rien n'y est
+affirmé sans source officielle citée** (document d'Anthropic daté, ou réponse
+écrite de sa part) ; une case sans source reste « non établi ».
+
+| Point | Ce qui est établi au 2026-11-06 | Source officielle à citer |
+|---|---|---|
+| Contrat de sous-traitance (art. 28) | DPA et clauses contractuelles types intégrés aux Conditions commerciales, selon la réponse du 2026-10-02 (`docs/rgpd/DEMANDE_DPA_ANTHROPIC.md`) ; copie datée, date d'opposabilité et couverture des traitements antérieurs non archivées | version datée des Conditions commerciales et du DPA, archivée hors dépôt |
+| Rétention des entrées et des sorties | non établi (prompt caching activé dans ce dépôt) | à citer |
+| Transferts : localisation de l'inférence et mécanisme | localisation non établie ; mécanisme : clauses contractuelles types, selon l'avis du 2026-10-13 ; TIA à rédiger | à citer |
+
 ## 8. Durées de conservation
 
 **Source — une seule durée est réellement écrite et arbitrée :**
@@ -1674,6 +1702,11 @@ comme professionnel de santé au sens du Code de la santé publique :
 - **Archivage intermédiaire** (support séparé, accès restreint) : **10 ans**
   après la fin de l'accompagnement — prescription de l'action pour dommage
   corporel (Code civil, art. 2226). Puis effacement.
+  **Non mis en service ([[D-449]] §4, 2026-11-06)** : la justification par
+  l'art. 2226 est retirée, ce délai courant à compter de la consolidation du
+  dommage et non de la fin de l'accompagnement. Aucune durée d'archive n'est
+  fixée à sa place ; rien n'est retenu au titre d'une archive, l'effacement
+  reste entier. Le texte patient de [[D-378]] n'est pas servi tel quel.
 - **Trace d'une lecture de compte rendu biologique** : celle des lignes
   validées suit le dossier ; celle des lignes écartées ou jamais décidées
   s'efface 30 jours après le dépôt. Travaux de la file de lecture : 30 jours
@@ -1861,7 +1894,9 @@ ci-dessous (2026-10-14).
    - effacement : l'effacement du dossier, tout ou rien
      (`lib/patient/effacement.ts`), qui efface aussi la demande ; rien n'est
      retenu au titre de l'archive intermédiaire tant que son point de départ
-     n'est pas validé ([[D-283]] §2) ;
+     n'est pas validé ([[D-283]] §2) ; depuis le 2026-11-06, l'archive n'est
+     pas en service et l'effacement reste tout ou rien jusqu'à l'avocat
+     ([[D-449]] §1, §4) ;
    - retrait d'une autorisation : le retrait dans « Mes choix et
      autorisations », s'il n'a pas été fait par le patient lui-même ;
    - limitation, opposition, information : une réponse écrite, motivée au
@@ -2205,9 +2240,10 @@ dossier en garde alors la conclusion, la date et l'emplacement.
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Sentry non déclaré au patient~~ — **déclaré le 2026-09-07** dans `donnees_confidentialite@v5` (`D-141`), résidence UE rendue invariante par `sentryRegion.ts` ; ~~reste dû : le DPA Sentry~~ — **DPA signé le 2026-10-21** (révision de mai 2024, DocuSign, copie hors dépôt) | Responsable | fermé (était 2027-06-30) | `contenus/registre.ts`, rubrique 6 |
 | 6 | Destinataires | **Correspondance médecin — la voie d'EXCEPTION, maintenue ([[D-265]] §2)** — ~~n'a aucune justification écrite~~. Le traitement est inventorié depuis `D-222` et ses quatre termes sont posés ; ce qui manque est la qualification de la seule route non gardée, `api/praticien/adressage/courrier`, qui transmet une donnée de santé à un tiers **malgré un refus exprimé** — les deux autres routes sont fail-closed sur refus, retrait et silence. Les deux voies ne peuvent pas reposer sur la même justification. ~~Sa justification s'écrit dans la trame de la rubrique 3~~ — **base déclarée le 2026-10-04** : 6.1.d + 9.2.h | Responsable | fermé | ici, rubrique 3 |
+| 3 | Base légale | **Réserve du 2026-11-05 ([[D-449]] §2)** : l'avis GPT du 2026-11-05 ne tient pas 6.1.d + 9.2.h pour validées chez un responsable qui n'est pas professionnel de santé. Base déclarée et voie d'exception maintenues ; premier point de la liste pour l'avocat ([[D-449]] §6) | Responsable + avocat | consultation de l'avocat, prévue à la commercialisation | ici, rubriques 3 et 6 |
 | 7 | Transferts | **2026-10-13 ([[D-284]] §5-6) : CCT pour Anthropic, cadre UE–États-Unis pour Google et Sentry s'il les couvre ; restent les preuves à archiver et les TIA.** Sentry : mécanisme contractuel posé par le DPA signé le 2026-10-21 (annexe 3 : Data Privacy Framework, repli sur les CCT module 2) ; restent dus, pour Sentry aussi, la preuve de sa certification DPF et la TIA du repli. Mécanisme invoqué (CCT/DPA) | Responsable | 2027-06-30 (était 2026-10-21) | ici, rubrique 7 |
 | 7 | Transferts | ~~**Demande de DPA à Anthropic non envoyée**~~ — **envoyée le 2026-10-01 à 17:34 UTC (19:34 heure de Paris)** (date établie par capture du message envoyé). La condition de pose du drapeau du LOT-02 est tenue. ~~**Restent dus : la réponse, puis la signature et l'archivage du DPA**~~ — **réponse reçue le 2026-10-02 à 22:23 UTC** : DPA et CCT intégrés aux Conditions commerciales, aucune signature distincte. **Restent dus** : l'archivage d'une copie datée, la date d'opposabilité, la couverture des traitements antérieurs | Responsable | 2027-06-30 (était 2026-10-21, DPA) | `docs/rgpd/DEMANDE_DPA_ANTHROPIC.md` (tableau « Trace à tenir »), puis rubriques 6 et 7 |
-| 8 | Conservation | **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
+| 8 | Conservation | **2026-11-06 ([[D-449]] §4) : archive non mise en service, justification par l'art. 2226 retirée ; sa durée et son point de départ vont à l'avocat ; le texte de [[D-378]] n'est pas servi tel quel.** **2026-10-13 ([[D-283]] §2) : durées fixées (active jusqu'à clôture ou 5 ans sans contact, archive 10 ans) ; restent le texte patient signé et la mise en œuvre (§10).** Durées des données de santé — hors le document des comptes rendus biologiques déposés, fixé par [[D-258]] | Responsable + conseil | 2027-06-30 (était 2026-10-21) | ici, rubrique 8 puis `gouvernance.ts` |
 | 9 | Droits | **Tranché le 2026-10-13 ([[D-283]] §6) ; procédure écrite le 2026-10-14 (G-8) ; mineurs : trois demandeurs reçus (étape 7, [[D-344]] §4) ; le jeune dépose sa demande au portail, identifiée par la session, et seules se traitent à la main les demandes dont la portée attend l'avis de l'avocat (effacement, retrait, opposition à l'information des parents) ou qu'un doute raisonnable sur l'identité ou la qualité du demandeur entoure (art. 12 §6, sans pièce d'identité), sans jamais retarder un retrait ; les demandes d'un parent passent en traitement manuel jusqu'à J3-mineurs.** *Historique — constat d'origine :* Délai, vérification d'identité, circuit interne | Responsable | fermé | ici, rubrique 9 |
 | 10 | Sécurité | **Clos le 2026-10-13 ([[D-283]] §7) : la revue du 2026-08-22 suffit ; test d'intrusion humain obligatoire avant toute offre commerciale ou second compte praticien.** *Historique — constat d'origine :* Pentest / revue externe | Prestataire à engager | fermé | checklist du gate, exigence 7 |
 | 10 | Sécurité | **Clos par constat : ouvert hors dépôt le 2026-08-22 (D-085 §3).** *Historique — constat d'origine :* Registre physique des violations (EX-3) | Responsable | fermé | `PROCEDURE_VIOLATION_DONNEES.md` |
