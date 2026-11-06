@@ -14,7 +14,7 @@ export default async function PortailProtocolePage({ params }: { params: Promise
     <div className="w-full max-w-2xl space-y-4">
       <Link
         href={`/portail/${token}/questionnaires`}
-        className="inline-flex items-center gap-1 text-sm text-primary hover:underline print:hidden"
+        className="inline-flex min-h-11 items-center gap-1 text-sm text-primary hover:underline print:hidden"
       >
         ← Mon parcours
       </Link>

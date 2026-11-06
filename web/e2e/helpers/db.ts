@@ -377,6 +377,29 @@ export async function nettoyerReprise(idPatient: string): Promise<void> {
   }
 }
 
+/**
+ * Une assignation `Q_PLAINTES` ouverte, pour l'audit d'accessibilité du
+ * formulaire à curseurs (`PlaintesForm`). Écrite en base parce que `Q_PLAINTES`
+ * n'est pas au `QUESTIONNAIRE_CATALOGUE` : la route praticien la refuserait en
+ * `questionnaire_not_found`. Aucune réponse n'est posée — le spec ne soumet
+ * rien. `resetPortailState` l'emporte avec les autres assignations du patient.
+ */
+export async function creerAssignationPlaintes(idPatient: string, emailPatient: string): Promise<string> {
+  const idAssignation = `ASS_E2E_PLAINTES_${Date.now()}`;
+  await prisma.assignation.create({
+    data: {
+      idAssignation,
+      idPatient,
+      emailPatient,
+      idQuestionnaire: 'Q_PLAINTES',
+      titre: 'Plaintes',
+      dateAssignation: new Date(),
+      statut: 'En attente',
+    },
+  });
+  return idAssignation;
+}
+
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
 }

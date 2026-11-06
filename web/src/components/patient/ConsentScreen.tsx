@@ -91,7 +91,7 @@ export function ConsentScreen({ idAssignation, email, onAccepted }: {
         </p>
       </div>
 
-      <label className="flex items-start gap-3 mt-6 cursor-pointer">
+      <label className="flex min-h-11 items-start gap-3 mt-6 cursor-pointer">
         <input
           type="checkbox"
           checked={checked}

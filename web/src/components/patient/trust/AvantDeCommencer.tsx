@@ -204,7 +204,7 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
       {progression}
       <div className="space-y-3">
         {LIBELLES.map((libelle, index) => (
-          <label key={libelle} className="flex items-start gap-3 cursor-pointer">
+          <label key={libelle} className="flex min-h-11 items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={confirmations[index]}

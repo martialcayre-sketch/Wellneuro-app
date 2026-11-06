@@ -29,7 +29,7 @@ function EnTete({ token, titre, badge }: { token: string; titre: string; badge?:
     <div className="w-full max-w-2xl mb-4">
       <a
         href={`/portail/${token}/questionnaires`}
-        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        className="inline-flex min-h-11 items-center gap-1 text-sm text-primary hover:underline"
       >
         ← Mon parcours
       </a>

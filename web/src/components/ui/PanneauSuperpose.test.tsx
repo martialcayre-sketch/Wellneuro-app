@@ -81,4 +81,23 @@ describe('PanneauSuperpose', () => {
       cleanup();
     }
   });
+
+  // Une modale sans largeur garde `max-w-lg` (les dialogues de confirmation) ;
+  // une largeur passée la remplace au lieu de s'y ajouter — deux `max-w-*`
+  // laisseraient l'ordre des feuilles CSS décider.
+  it('modale : max-w-lg par défaut, la largeur passée la remplace', () => {
+    monter('modale');
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir le panneau' }));
+    expect(screen.getByRole('dialog').className).toContain('max-w-lg');
+    cleanup();
+
+    render(
+      <PanneauSuperpose open titre="Modifier un pack" description="Modifier un pack" variante="modale" largeur="ample">
+        <p>Formulaire.</p>
+      </PanneauSuperpose>,
+    );
+    const classes = screen.getByRole('dialog').className;
+    expect(classes).toContain('max-w-4xl');
+    expect(classes).not.toContain('max-w-lg');
+  });
 });
