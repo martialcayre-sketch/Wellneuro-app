@@ -65,6 +65,27 @@ H83 :
   ont été écartés : l'écoute CSP ne couvre que le parcours principal, et cela suffit pour
   l'hydratation ; `'self'` et les points de même origine sont couverts par `nosniff` et le JSON.
 
+- Revue de la PR #1898 sur la tête db91c1a3 :
+  - PR-Agent (run 42289402656) : « No security concerns », « No major issues », aucune « focus
+    area », aucun commentaire en ligne.
+  - CodeRabbit : revue sautée (moins de 10 étoiles), puis déclenchée à la main. Elle fait deux
+    remarques, toutes deux corrigées :
+    - en ligne, mineure : `PLAYWRIGHT_WEB_SERVER` dit comment le serveur est lancé, pas quel
+      serveur est réutilisé. En mode `start`, Playwright lance toujours son serveur, et la valeur
+      de production y reste exigée seule. En mode `dev`, l'une des deux valeurs est admise,
+      jamais une troisième ;
+    - nitpick : vérifier la CSP du document atteint par le lien du hub. Une sonde y insère un
+      script d'une origine `.invalid` et exige un refus au titre de `script-src`. Elle est
+      exclue de l'assertion « zéro violation ».
+  - Copilot : quota épuisé, pas de revue.
+- Fusion d'origin/main (#1897, conservation, sans fichier commun), faite pour lever le garde de
+  fraîcheur avant les corrections. Elle relève de la délégation du 2026-10-16.
+- Après les corrections : T1 rapide vert. Le premier T2 et `npm run check`, lancés en parallèle,
+  ont rougi chacun sur un banc d'outillage : `release-db-comportement` et le journal du crochet
+  de fraîcheur. Rejoué seul, `release-db-comportement` passe (30/30). Rejoués seuls ensuite,
+  T2 `--fast` est vert en 7 min 30 s, sonde CSP comprise, sur Chromium et WebKit, et
+  `npm run check` est vert.
+
 ## Problèmes ouverts
 
 - L'en-tête n'a pas encore été constaté sur `app.wellneuro.fr` après le déploiement. Il faut

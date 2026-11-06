@@ -78,6 +78,31 @@ async function cameraAutoriseeParLeDocument(page: Page): Promise<boolean> {
   });
 }
 
+/** Origine fictive, jamais résolue (`.invalid`, RFC 2606) : la sonde ne sort pas. */
+const ORIGINE_SONDE = 'https://sonde-csp.invalid';
+
+/**
+ * Insère un `<script>` d'une autre origine et rend `true` si le navigateur le
+ * refuse au titre de `script-src`. Sans refus dans les 5 s, rend `false`.
+ */
+async function scriptAutreOrigineRefuse(page: Page): Promise<boolean> {
+  return page.evaluate(
+    origine =>
+      new Promise<boolean>(resolve => {
+        const delai = setTimeout(() => resolve(false), 5_000);
+        document.addEventListener('securitypolicyviolation', evenement => {
+          if (!evenement.blockedURI.startsWith(origine)) return;
+          clearTimeout(delai);
+          resolve(evenement.effectiveDirective.startsWith('script-src'));
+        });
+        const script = document.createElement('script');
+        script.src = `${origine}/sonde.js`;
+        document.head.appendChild(script);
+      }),
+    ORIGINE_SONDE,
+  );
+}
+
 test.afterAll(async () => {
   await resetPortailState(PATIENT.idPatient);
   await closePrisma();
@@ -87,10 +112,12 @@ test.describe('Agenda alimentaire — parcours patient', () => {
   test('assigné, l’agenda se voit au hub, s’ouvre, se note et se relit', async ({ page, browserName }) => {
     // La page de l'agenda porte un `script-src` propre ([[D-437]], H83) : un
     // amorçage de Next refusé par cette politique laisserait la page sans
-    // hydratation. Toute violation de CSP signalée en console fait échouer.
+    // hydratation. Toute violation de CSP signalée en console fait échouer — hors
+    // la sonde volontaire de l'étape 2, reconnue à son origine.
     const violationsCsp: string[] = [];
     page.on('console', message => {
-      if (/Content Security Policy/i.test(message.text())) violationsCsp.push(message.text());
+      const texte = message.text();
+      if (/Content Security Policy/i.test(texte) && !texte.includes(ORIGINE_SONDE)) violationsCsp.push(texte);
     });
     await resetPortailState(PATIENT.idPatient);
     // Sans l'accusé, le hub est masqué par « Avant de commencer » (4 écrans).
@@ -138,6 +165,11 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     // lui-même — sans dépendre du drapeau de capture, de l'âge du dossier ni de
     // l'autorisation du patient : c'est la politique, pas la permission.
     if (browserName === 'chromium') expect(await cameraAutoriseeParLeDocument(page)).toBe(true);
+    // Et ce document REFUSE un script d'une autre origine : la garde est
+    // appliquée par le navigateur, pas seulement servie. Si le lien du hub
+    // devenait un `<Link>`, le document garderait la CSP du hub, sans
+    // `script-src`, et la sonde passerait.
+    expect(await scriptAutreOrigineRefuse(page)).toBe(true);
     await expect(page.getByTestId('piste-prises')).toBeVisible();
     await expect(page.getByText('Vos prises de la journée')).toBeVisible();
     // Et surtout PAS le formulaire générique : `/api/patient/questionnaire` ne

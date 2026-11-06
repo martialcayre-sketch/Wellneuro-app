@@ -32,18 +32,23 @@ function enTete(reponse: APIResponse, nom: string): string[] {
 const politique = (reponse: APIResponse) => enTete(reponse, 'permissions-policy');
 const csp = (reponse: APIResponse) => enTete(reponse, 'content-security-policy');
 
-// `next dev` (mode par défaut de `playwright.config.ts`) charge la configuration
-// en développement et ajoute `'unsafe-eval'` ; T2, T3 et le CI jouent `start`.
-const scriptSrcAttendu =
-  process.env.PLAYWRIGHT_WEB_SERVER === 'start'
-    ? "script-src 'self' 'unsafe-inline'"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+// En mode `start` (T2, T3, CI), le serveur est TOUJOURS lancé par Playwright
+// (`reuseExistingServer` faux) : le build de production est exigé, sans
+// `'unsafe-eval'`. En mode `dev` (défaut local), un serveur déjà lancé peut
+// être réutilisé, et il peut être un `next dev` comme un `next start` : les
+// deux valeurs y sont admises, jamais une troisième.
+const CSP_PRODUCTION = "script-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
+const CSP_DEVELOPPEMENT = "script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'none'";
+const cspAdmises =
+  process.env.PLAYWRIGHT_WEB_SERVER === 'start' ? [CSP_PRODUCTION] : [CSP_PRODUCTION, CSP_DEVELOPPEMENT];
 
 test.describe('Permissions-Policy — la caméra, sur la seule page de l’agenda', () => {
   test('la page d’un questionnaire du portail rend la caméra à elle-même, et à elle seule', async ({ request }) => {
     const reponse = await request.get('/portail/JETON_FICTIF/questionnaires/ASS_FICTIF', { maxRedirects: 0 });
     expect(politique(reponse)).toEqual(['camera=(self), microphone=(), geolocation=()']);
-    expect(csp(reponse)).toEqual([`${scriptSrcAttendu}; frame-ancestors 'none'`]);
+    const valeurs = csp(reponse);
+    expect(valeurs).toHaveLength(1);
+    expect(cspAdmises).toContain(valeurs[0]);
   });
 
   test('ailleurs, la caméra reste fermée', async ({ request }) => {
