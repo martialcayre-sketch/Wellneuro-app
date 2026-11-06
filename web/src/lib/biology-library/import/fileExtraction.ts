@@ -6,6 +6,7 @@ import { OUVERTS } from './lectureDemandee';
 import { estTypeCompteRendu } from './depot';
 import { ouvrirExtractionDans, poursuivreExtraction, type IssueExtraction } from './lancerExtraction';
 import { cleVerrouCompteRendu, DELAI_TRANSACTION_LIGNES_MS, PEREMPTION_EN_COURS_MS } from './verrou';
+import { ECHEANCE_DEPOT_JOURS } from './purge';
 
 // LA FILE DURABLE DES LECTURES ([[D-282]], G3, lot 3). La route DEMANDE une
 // lecture (un travail `en_attente`) ; le processus de fond
@@ -65,6 +66,7 @@ export type IssueDemande =
       | 'extraction_en_cours'
       | 'lecture_demandee'
       | 'document_purge'
+      | 'document_echu'
       | 'ligne_validee'
       | 'masquage_absent'
       | 'dossier_clos';
@@ -103,6 +105,14 @@ export async function demanderExtraction(params: {
         return { ok: false as const, reason: 'compte_rendu_introuvable' as const };
       }
       if (compteRendu.purgeLe) return { ok: false as const, reason: 'document_purge' as const };
+      // ÉCHU, PAS ENCORE PURGÉ ([[D-451]], Q3) : la purge horaire n'est pas
+      // encore passée, ou elle diffère. Une lecture demandée ici enverrait chez
+      // Anthropic un document qui devait partir, et son travail différerait la
+      // purge encore. Jugé par l'horloge de la base, celle de la purge.
+      const [echeance] = await tx.$queryRaw<{ echu: boolean }[]>`
+        SELECT depose_le <= (clock_timestamp() AT TIME ZONE 'UTC') - ${`${ECHEANCE_DEPOT_JOURS} days`}::interval AS echu
+        FROM comptes_rendus_biologiques WHERE id = ${idCompteRendu} AND id_patient = ${idPatient}`;
+      if (echeance?.echu === true) return { ok: false as const, reason: 'document_echu' as const };
       // Une lecture déjà demandée, en file ou en reprise : elle suit son cours.
       // Y compris entre 5 et 6 min, quand son import est périmé mais sa
       // réservation encore vive (revue du lot 2).

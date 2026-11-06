@@ -25,9 +25,25 @@ import { cleVerrouCompteRendu, PEREMPTION_EN_COURS_MS } from './verrou';
 // - un import encore frais, ou un travail de la file en attente ou en cours
 //   ([[D-282]]), diffère TOUTE la purge au passage suivant : rien ne s'efface
 //   sous un travail en cours (arbitrage F44 du 2026-10-17, cas 4) ;
+// - MAIS LE REPORT EST BORNÉ ([[D-451]]) : une période du cron passée après
+//   l'échéance, le travail encore ouvert est clos `echec`/`document_purge`, ses
+//   imports en cours `echec`/`delai_depasse`, puis la purge suit dans la même
+//   transaction. Sans cette borne, un processus de fond arrêté, ou une
+//   réclamation qui échoue en boucle, reportait la purge sans fin ;
 // - `contenu: { not: null }` : un document purgé entre-temps n'est pas retouché.
 //
 // JOURNAUX : des compteurs, jamais un identifiant ni un message d'erreur.
+
+/** L'échéance d'un dépôt ([[D-258]]) — la base la tient aussi (trigger `comptes_rendus_biologiques_avant_purge`). */
+export const ECHEANCE_DEPOT_JOURS = 30;
+
+/**
+ * Grâce d'un travail encore ouvert à l'échéance ([[D-451]], arbitrage du
+ * 2026-11-06) : UNE période du cron de cette purge (`web/cron.json`, horaire).
+ * Le premier passage après J30 le tolère, le suivant le clôt. Chiffre
+ * technique (`DC-20`) ; un banc le lie à la cadence du cron.
+ */
+export const GRACE_TRAVAIL_OUVERT_MS = 60 * 60_000;
 
 export type BilanEcheance = {
   candidats: number;
@@ -36,6 +52,7 @@ export type BilanEcheance = {
   differes: number;
   lignesEffacees: number;
   importsEffaces: number;
+  travauxClos: number;
   echecs: number;
 };
 
@@ -83,7 +100,14 @@ export async function effacerNonValide(
   return { lignes, imports };
 }
 
-type Issue = { purge: boolean; differe: boolean; importsClos: number; lignes: number; imports: number };
+type Issue = {
+  purge: boolean;
+  differe: boolean;
+  importsClos: number;
+  travauxClos: number;
+  lignes: number;
+  imports: number;
+};
 
 async function purgerUn(idCompteRendu: string, idPatient: string): Promise<Issue> {
   return prisma.$transaction(async tx => {
@@ -93,30 +117,58 @@ async function purgerUn(idCompteRendu: string, idPatient: string): Promise<Issue
     // interblocage (revue adverse de F44, P2-1).
     await tx.$queryRaw`SELECT 1 FROM patients WHERE id_patient = ${idPatient} FOR KEY SHARE`;
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleVerrouCompteRendu(idCompteRendu)}))`;
-    const perimes = await tx.$queryRaw<{ id: string }[]>`
-      SELECT id FROM imports_biologiques
-      WHERE id_compte_rendu = ${idCompteRendu}
-        AND statut = 'en_cours'
-        AND lance_le < (clock_timestamp() AT TIME ZONE 'UTC') - ${`${PEREMPTION_EN_COURS_MS} milliseconds`}::interval`;
+    // Effacé avec son dossier depuis le choix des candidats : aucune ligne,
+    // aucune grâce — la suite ne trouve plus rien à toucher.
+    const [echeance] = await tx.$queryRaw<{ grace_echue: boolean }[]>`
+      SELECT depose_le <= (clock_timestamp() AT TIME ZONE 'UTC') - ${`${ECHEANCE_DEPOT_JOURS} days`}::interval - ${`${GRACE_TRAVAIL_OUVERT_MS} milliseconds`}::interval AS grace_echue
+      FROM comptes_rendus_biologiques WHERE id = ${idCompteRendu}`;
+    const graceEchue = echeance?.grace_echue === true;
     let importsClos = 0;
-    if (perimes.length > 0) {
+    let travauxClos = 0;
+    if (graceEchue) {
+      // LA BORNE DU REPORT ([[D-451]]). Rien de ce qui est encore ouvert ne
+      // survit à la grâce : chaque import en cours, frais ou non, puis chaque
+      // travail ouvert. Le motif `document_purge` est celui qu'écrirait la
+      // réclamation sur ce document une fois purgé (arbitrage Q4 du
+      // 2026-11-06, aucun motif neuf). Une lecture vivante qui rendrait
+      // ensuite ne s'enregistre plus (import clos) et ne termine plus son
+      // travail (`terminerTravail` exige `en_cours`).
       ({ count: importsClos } = await tx.importBiologique.updateMany({
-        where: { id: { in: perimes.map(p => p.id) }, statut: 'en_cours' },
+        where: { idCompteRendu, statut: 'en_cours' },
         data: { statut: 'echec', motifEchec: 'delai_depasse' },
       }));
+      travauxClos = await tx.$executeRaw`
+        UPDATE travaux_extraction_biologique
+        SET statut = 'echec', motif_echec = 'document_purge', reserve_jusqua = NULL,
+            termine_le = clock_timestamp() AT TIME ZONE 'UTC'
+        WHERE id_compte_rendu = ${idCompteRendu} AND statut IN ('en_attente', 'en_cours')`;
+    } else {
+      const perimes = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM imports_biologiques
+        WHERE id_compte_rendu = ${idCompteRendu}
+          AND statut = 'en_cours'
+          AND lance_le < (clock_timestamp() AT TIME ZONE 'UTC') - ${`${PEREMPTION_EN_COURS_MS} milliseconds`}::interval`;
+      if (perimes.length > 0) {
+        ({ count: importsClos } = await tx.importBiologique.updateMany({
+          where: { id: { in: perimes.map(p => p.id) }, statut: 'en_cours' },
+          data: { statut: 'echec', motifEchec: 'delai_depasse' },
+        }));
+      }
+      const differe = { purge: false, differe: true, importsClos, travauxClos, lignes: 0, imports: 0 };
+      if ((await tx.importBiologique.count({ where: { idCompteRendu, statut: 'en_cours' } })) > 0) return differe;
+      const travauxOuverts = await tx.travailExtractionBiologique.count({
+        where: { idCompteRendu, statut: { in: ['en_attente', 'en_cours'] } },
+      });
+      if (travauxOuverts > 0) return differe;
     }
-    const differe = { purge: false, differe: true, importsClos, lignes: 0, imports: 0 };
-    if ((await tx.importBiologique.count({ where: { idCompteRendu, statut: 'en_cours' } })) > 0) return differe;
-    const travauxOuverts = await tx.travailExtractionBiologique.count({
-      where: { idCompteRendu, statut: { in: ['en_attente', 'en_cours'] } },
-    });
-    if (travauxOuverts > 0) return differe;
     const { count } = await tx.compteRenduBiologique.updateMany({
       where: { id: idCompteRendu, contenu: { not: null } },
       data: { contenu: null, motifPurge: 'echeance' },
     });
     const efface = await effacerNonValide(tx, idCompteRendu);
-    return { purge: count === 1, differe: false, importsClos, lignes: efface.lignes, imports: efface.imports };
+    return {
+      purge: count === 1, differe: false, importsClos, travauxClos, lignes: efface.lignes, imports: efface.imports,
+    };
   }, { timeout: 20_000 });
 }
 
@@ -147,12 +199,14 @@ export async function purgerAEcheance(): Promise<BilanEcheance> {
     differes: 0,
     lignesEffacees: 0,
     importsEffaces: 0,
+    travauxClos: 0,
     echecs: 0,
   };
   for (const { id, id_patient } of candidats) {
     try {
       const issue = await purgerUn(id, id_patient);
       bilan.importsClos += issue.importsClos;
+      bilan.travauxClos += issue.travauxClos;
       bilan.lignesEffacees += issue.lignes;
       bilan.importsEffaces += issue.imports;
       if (issue.purge) bilan.purges += 1;

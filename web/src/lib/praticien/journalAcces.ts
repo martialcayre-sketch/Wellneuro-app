@@ -11,9 +11,10 @@ import type { LogContext } from '@/lib/observability/types';
 // idPatient, praticienEmail, gabarit de route, méthode — JAMAIS l'URL reçue,
 // JAMAIS d'adresse IP, de user-agent, de payload ni de donnée clinique.
 //
-// Purge opportuniste, même patron que `tracer()` de /portail/google/retour :
-// pas de tâche planifiée dans ce dépôt, la purge se fait à chaque écriture,
-// sur les lignes sorties de la fenêtre de conservation.
+// Purge à chaque écriture, sur les lignes sorties de la fenêtre de
+// conservation — même patron que `tracer()` de /portail/google/retour. Depuis
+// [[D-451]], le cron horaire la joue aussi (`lib/conservation/purgeTraces.ts`) :
+// sans nouvel accès, les lignes échues partent quand même.
 
 /**
  * Fenêtre de conservation : 12 mois glissants (décision GD-2 du 2026-07-22,
