@@ -105,6 +105,13 @@ describe('rendu', () => {
     expect(titres[0]).toMatch(/pas pu relire/i);
   });
 
+  it('la région qui défile se prend au clavier, avec un nom (WCAG 2.1.1)', () => {
+    render(<FriseJournees emplacements={[emp({ index: 1 })]} />);
+    const region = screen.getByRole('group', { name: /frise de vos journées/i });
+    expect(region.className).toContain('overflow-x-auto');
+    expect(region.getAttribute('tabindex')).toBe('0');
+  });
+
   it('une frise vide de tout emplacement ne casse pas (fenêtre non ouverte)', () => {
     const { container } = render(<FriseJournees emplacements={[]} />);
     expect(container.querySelectorAll('g[data-etat]')).toHaveLength(0);
