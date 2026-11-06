@@ -36,12 +36,15 @@ Trois corrections de l'audit UI du 2026-11-05 (grille WCAG 2.1 A/AA), en une PR 
 - T1 (`check:rapide`) : vert, après la correction du localisateur « Fermer » de `PacksPanel.test.tsx`.
 - Vitest `components/patient`, `components/ui` et `PacksPanel` : 123 fichiers, 3 088 tests verts. Tests neufs : 11 verts.
 - T1 complet (`npm run check`) : vert (exit 0).
-- T2 (`npm run test:worktree -- --fast`) : le premier passage a échoué avant toute suite, parce que le proxy refusait de télécharger WebKit 2359 (`cdn.playwright.dev`). Les hôtes ont été ajoutés à l'environnement cloud, puis T2 a été relancé. Le résultat est dans la PR.
+- T2 (`npm run test:worktree -- --fast`), en conteneur cloud. Quatre obstacles d'environnement, levés hors dépôt : WebKit 2359 bloqué par le proxy (hôtes Playwright ajoutés à l'environnement), `initdb` refusé en root (enveloppes `runuser -u postgres` passées par `WN_PG_BIN`), locale `en_US.UTF-8` absente et `postgresql-16-pgvector` manquant (installés dans le conteneur). Passage complet : bancs Node, Vitest (952 fichiers, 16 230 tests), migrations, seed et build verts ; E2E 341 passés, 7 échecs :
+  - 5 `visual.spec.ts` (Desktop et iPhone) : seul le tracé des glyphes diffère, la mise en page est identique. C'est le rendu des polices de ce conteneur, pas ce lot ; le CI Ubuntu fait foi.
+  - 2 du spec neuf : des défauts ANTÉRIEURS mis au jour (contraste du bandeau de rappel de consentement, environ 4,1:1 ; `PatientJourneyProgress` qui défile sans focus sur iPhone). Ils sont nommés en « écarts connus » dans le spec, puis T2 a été relancé : le résultat est dans la PR.
 
 ## Problèmes ouverts
 
 - Hors périmètre, à traiter dans leur propre lot : les paliers `text-2xs`/`text-3xs`, le soupçon sur `text-muted-foreground/70` (à constater dans le CSS généré) et le défilement clavier de `FriseJournees`/`FriseNuits`.
 - `Q_PLAINTES` n'est assignable par aucune route praticien (il est absent du catalogue). C'est un constat de passage, sans action ici.
+- Deux écarts connus du spec axe, à corriger dans leur propre lot puis à retirer de `ECARTS_CONNUS` : le contraste du bandeau `bg-primary/10` de `questionnaires/[idAssignation]/page.tsx` (une décision de couleur) et `PatientJourneyProgress`, qui défile sans focus (même famille que le défilement clavier des frises).
 
 ## Prochaine action exacte
 

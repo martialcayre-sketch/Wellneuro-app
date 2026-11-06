@@ -25,7 +25,11 @@ Aucune logique clinique, aucun seuil, aucune donnée collectée ne change.
 - **Garde** : `web/e2e/portail-accessibilite-saisie.spec.ts` passe axe
   (WCAG 2.1 A/AA) sur la fiche de renseignements et sur `PlaintesForm`, patient
   fictif Michel Dogné ; tests Vitest de `PatientField` et de la largeur de
-  modale.
+  modale. Deux défauts antérieurs, mis au jour par ce spec, y sont nommés en
+  « écarts connus » (règle + fragment de HTML, tout autre nœud reste un
+  échec) : le contraste du bandeau de rappel du consentement d'un
+  questionnaire (~4,1:1) et la frise `PatientJourneyProgress`, qui défile
+  sans focus sous 390 px.
 
 Hors périmètre, laissés à leur propre lot : relèvement des paliers
 `text-2xs`/`text-3xs`, soupçon sur `text-muted-foreground/70`, défilement
