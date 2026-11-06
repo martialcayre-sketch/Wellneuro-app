@@ -51,11 +51,16 @@ export function commandesCiAvantNpm(yml) {
   const lignes = yml.split(/\r?\n/);
   const setup = lignes.findIndex((l) => /^\s*-\s*uses:\s*actions\/setup-node@/.test(l));
   assert.ok(setup > 0, "étape `actions/setup-node` introuvable — le découpage du job a changé");
+  return commandesNodeBash(lignes.slice(0, setup));
+}
+
+/** Les appels `node`/`bash` d'une suite de lignes, en `run:` simple ou en bloc. */
+function commandesNodeBash(lignesLues) {
   const commandes = [];
   // Indentation du `run: |` en cours, ou `null` hors bloc. Un bloc scalaire
   // YAML court jusqu'à la première ligne non vide moins indentée que lui.
   let blocIndentation = null;
-  for (const ligne of lignes.slice(0, setup)) {
+  for (const ligne of lignesLues) {
     if (blocIndentation !== null) {
       const indentation = /^[ \t]*/.exec(ligne)[0].length;
       if (ligne.trim() !== "" && indentation <= blocIndentation) blocIndentation = null;
@@ -75,6 +80,56 @@ export function commandesCiAvantNpm(yml) {
     commandes.push(`${m[1]} ${m[2]}`.replace(/\s+/g, " "));
   }
   return commandes;
+}
+
+/**
+ * Ce que `commandesCiAvantNpm` ne voit pas : les autres jobs. Elle ne lit que
+ * ce qui précède le PREMIER `setup-node` du fichier, celui de `controles`.
+ * Depuis le découpage du 2026-10-27 (H91, temps 1), une étape node posée avant
+ * le `setup-node` de `typage-tests` ou d'`e2e` échapperait donc à la parité —
+ * dette routée par la revue `wn-reviewer` du temps 1.
+ *
+ * Le remède est un refus, pas un élargissement de la lecture : dans un job
+ * autre que `controles`, aucune étape `run:` avant `setup-node` — les bancs
+ * node vivent dans `controles`, que la parité lit. Seule exception, l'étape du
+ * périmètre, partagée par l'alias `*perimetre`. Tout autre alias est refusé :
+ * son contenu vit ailleurs dans le fichier, et ce banc ne le verrait pas.
+ *
+ * Un job sans `setup-node` (`verify`) n'a pas d'« avant » : il tourne entier
+ * sur le Node préinstallé du runner. Ses blocs de shell restent admis, mais un
+ * appel `node` ou `bash` y est refusé, pour la même raison qu'ailleurs.
+ *
+ * Rend les étapes fautives de chaque job autre que `controles`, sous la forme
+ * `job : ligne`.
+ */
+export function etapesHorsParite(yml) {
+  const lignes = yml.split(/\r?\n/);
+  const debutJobs = lignes.findIndex((l) => /^jobs:\s*$/.test(l));
+  assert.ok(debutJobs >= 0, "section `jobs:` introuvable");
+  const entetes = [];
+  lignes.forEach((l, i) => {
+    // Un commentaire en fin d'en-tête ne doit pas rattacher le job au précédent.
+    const m = /^  ([a-z0-9_-]+):\s*(?:#.*)?$/.exec(l);
+    if (i > debutJobs && m) entetes.push({ job: m[1], debut: i });
+  });
+  const fautes = [];
+  entetes.forEach(({ job, debut }, k) => {
+    if (job === "controles") return;
+    const corps = lignes.slice(debut + 1, k + 1 < entetes.length ? entetes[k + 1].debut : lignes.length);
+    const setup = corps.findIndex((l) => /^\s*-\s*uses:\s*actions\/setup-node@/.test(l));
+    if (setup < 0) {
+      for (const c of commandesNodeBash(corps)) fautes.push(`${job} : ${c}`);
+      return;
+    }
+    for (const l of corps.slice(0, setup)) {
+      const t = l.trim();
+      if (/^(?:-\s+)?run:/.test(t)) fautes.push(`${job} : ${t}`);
+      else if (/^-\s+\*/.test(t) && t !== "- *perimetre") fautes.push(`${job} : ${t}`);
+      // Une action locale peut lancer `node` sans `run:` visible ici.
+      else if (/^(?:-\s+)?uses:\s*\.\//.test(t)) fautes.push(`${job} : ${t}`);
+    }
+  });
+  return fautes;
 }
 
 /**
@@ -218,6 +273,79 @@ test("le bloc réel du CI n'introduit aucune commande node/bash aujourd'hui", ()
     attendues.filter((c) => /GITHUB_OUTPUT|docs_only/.test(c)),
     [],
   );
+});
+
+// ── Les autres jobs : rien avant leur `setup-node`, hors périmètre ──────────
+
+const YAML_JOBS = `jobs:
+  controles:
+    steps:
+      - &perimetre
+        name: Périmètre du diff
+        run: |
+          echo "docs_only=false" >> "$GITHUB_OUTPUT"
+      - name: Banc de controles, lu par la parité
+        run: node --test scripts/banc.test.mjs
+      - uses: actions/setup-node@v4
+  typage-tests:
+    steps:
+      - uses: actions/checkout@v4
+      - *perimetre
+      - name: Banc glissé avant setup-node
+        run: node --test scripts/glisse.test.mjs
+      - name: Bloc glissé avant setup-node
+        run: |
+          bash scripts/glisse.sh
+      - uses: actions/setup-node@v4
+      - name: Après setup-node, hors périmètre
+        run: npx tsc --noEmit
+  e2e:
+    steps:
+      - uses: actions/checkout@v4
+      - *perimetre
+      - *autre_ancre
+      - uses: ./.github/actions/locale
+      - uses: actions/setup-node@v4
+  nouveau: # job commenté en en-tête
+    steps:
+      - name: Banc d'un job neuf
+        run: node scripts/glisse-nouveau.mjs
+      - uses: actions/setup-node@v4
+  verify:
+    needs: [controles, typage-tests, e2e]
+    steps:
+      - name: Agrégateur, sans setup-node
+        run: |
+          test "\${{ needs.e2e.result }}" = success
+      - name: Garde glissé dans un job sans setup-node
+        run: node scripts/glisse-verify.mjs
+`;
+
+test("une étape `run:` avant le setup-node d'un autre job que `controles` est refusée", () => {
+  // La morsure de la dette : la parité ne lit que `controles`, ces étapes-là
+  // tournaient en CI sans qu'aucun palier local ne les exige.
+  assert.deepEqual(etapesHorsParite(YAML_JOBS), [
+    "typage-tests : run: node --test scripts/glisse.test.mjs",
+    "typage-tests : run: |",
+    "e2e : - *autre_ancre",
+    "e2e : - uses: ./.github/actions/locale",
+    "nouveau : run: node scripts/glisse-nouveau.mjs",
+    "verify : node scripts/glisse-verify.mjs",
+  ]);
+});
+
+test("le périmètre, `controles` et ce qui suit setup-node restent admis", () => {
+  const fautes = etapesHorsParite(YAML_JOBS).join("\n");
+  assert.equal(/perimetre|banc\.test|tsc|needs\.e2e/.test(fautes), false, fautes);
+});
+
+test("aucun autre job du CI réel n'a d'étape avant son setup-node", () => {
+  // Un banc qui ne trouverait aucun job à examiner serait vert sans objet.
+  const examines = [...yml.matchAll(/^  ([a-z0-9_-]+):\s*$/gm)].map((m) => m[1]);
+  for (const job of ["controles", "typage-tests", "e2e", "verify"]) {
+    assert.ok(examines.includes(job), `job ${job} introuvable dans ${CI}`);
+  }
+  assert.deepEqual(etapesHorsParite(yml), []);
 });
 
 test("developper distingue un diamant d'un cycle", () => {

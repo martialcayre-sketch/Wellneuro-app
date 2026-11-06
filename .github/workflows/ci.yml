@@ -2041,6 +2041,23 @@ jobs:
         working-directory: web
         run: npm run prisma:seed
 
+      # Cache de compilation Next (H91, temps 2). La clé porte le lock, la
+      # configuration Next et les sources : des sources inchangées restaurent
+      # le cache à l'identique, sans le sauvegarder de nouveau. `restore-keys`
+      # admet la restauration partielle (même lock, même configuration, autres
+      # sources), et webpack recompile alors seulement ce qui a changé. Le
+      # cache webpack n'existe ici que parce que l'étape Build pose
+      # `WN_GARDER_CACHE_WEBPACK=1` : sans elle, `build.sh` l'efface pour
+      # l'image Scalingo (#1001), et ce cache serait presque vide.
+      - name: Cache de compilation Next
+        if: steps.scope.outputs.docs_only != 'true'
+        uses: actions/cache@v4
+        with:
+          path: web/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('web/package-lock.json', 'web/next.config.mjs') }}-${{ hashFiles('web/src/**', 'web/public/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('web/package-lock.json', 'web/next.config.mjs') }}-
+
       - name: Build
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -2077,6 +2094,9 @@ jobs:
           WN_DOSSIER_DEUX_VOIX: 'true'
           WN_BIO_INGEST_ENABLED: 'true'
           WN_BIO_PORTAIL_ENABLED: 'true'
+          # Garde le cache webpack pour l'étape « Cache de compilation Next ».
+          # Seulement ici : en production, il ferait dépasser 2048 Mo à l'image.
+          WN_GARDER_CACHE_WEBPACK: '1'
         run: npm run build
 
       # Installation des navigateurs placée juste avant les E2E, et non en tête
