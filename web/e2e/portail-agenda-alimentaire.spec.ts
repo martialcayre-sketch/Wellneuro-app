@@ -59,13 +59,66 @@ async function assignerAgenda(page: Page): Promise<string> {
   return idAssignation;
 }
 
+/**
+ * La politique caméra EFFECTIVE du document, lue dans la page, sous Chromium
+ * seul : `document.featurePolicy` (ou son successeur `permissionsPolicy`)
+ * n'existe pas sous WebKit. L'en-tête de réponse est éprouvé par
+ * `portail-permissions-camera.spec.ts` ; ici, c'est le document où le patient
+ * ARRIVE par le lien du hub. La politique est figée au chargement : si ce lien
+ * devenait un `<Link>`, l'agenda hériterait du `camera=()` du hub, et la photo
+ * du repas disparaîtrait sans bruit ([[D-437]], H83).
+ */
+async function cameraAutoriseeParLeDocument(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    type Politique = { allowsFeature(nom: string): boolean };
+    const doc = document as Document & { featurePolicy?: Politique; permissionsPolicy?: Politique };
+    const politique = doc.permissionsPolicy ?? doc.featurePolicy;
+    if (!politique) throw new Error('Aucune API de politique de permissions dans ce navigateur.');
+    return politique.allowsFeature('camera');
+  });
+}
+
+/** Origine fictive, jamais résolue (`.invalid`, RFC 2606) : la sonde ne sort pas. */
+const ORIGINE_SONDE = 'https://sonde-csp.invalid';
+
+/**
+ * Insère un `<script>` d'une autre origine et rend `true` si le navigateur le
+ * refuse au titre de `script-src`. Sans refus dans les 5 s, rend `false`.
+ */
+async function scriptAutreOrigineRefuse(page: Page): Promise<boolean> {
+  return page.evaluate(
+    origine =>
+      new Promise<boolean>(resolve => {
+        const delai = setTimeout(() => resolve(false), 5_000);
+        document.addEventListener('securitypolicyviolation', evenement => {
+          if (!evenement.blockedURI.startsWith(origine)) return;
+          clearTimeout(delai);
+          resolve(evenement.effectiveDirective.startsWith('script-src'));
+        });
+        const script = document.createElement('script');
+        script.src = `${origine}/sonde.js`;
+        document.head.appendChild(script);
+      }),
+    ORIGINE_SONDE,
+  );
+}
+
 test.afterAll(async () => {
   await resetPortailState(PATIENT.idPatient);
   await closePrisma();
 });
 
 test.describe('Agenda alimentaire — parcours patient', () => {
-  test('assigné, l’agenda se voit au hub, s’ouvre, se note et se relit', async ({ page }) => {
+  test('assigné, l’agenda se voit au hub, s’ouvre, se note et se relit', async ({ page, browserName }) => {
+    // La page de l'agenda porte un `script-src` propre ([[D-437]], H83) : un
+    // amorçage de Next refusé par cette politique laisserait la page sans
+    // hydratation. Toute violation de CSP signalée en console fait échouer — hors
+    // la sonde volontaire de l'étape 2, reconnue à son origine.
+    const violationsCsp: string[] = [];
+    page.on('console', message => {
+      const texte = message.text();
+      if (/Content Security Policy/i.test(texte) && !texte.includes(ORIGINE_SONDE)) violationsCsp.push(texte);
+    });
     await resetPortailState(PATIENT.idPatient);
     // Sans l'accusé, le hub est masqué par « Avant de commencer » (4 écrans).
     await accuserPorteTrust(PATIENT.idPatient);
@@ -92,6 +145,9 @@ test.describe('Agenda alimentaire — parcours patient', () => {
       `/portail/${PATIENT.idPatient}/questionnaires/${idAssignation}`,
     );
 
+    // Le hub, lui, n'ouvre pas la caméra.
+    if (browserName === 'chromium') expect(await cameraAutoriseeParLeDocument(page)).toBe(false);
+
     // ── 2. Le patient y entre, et tombe sur la SURFACE D'AGENDA ────────────
     await entree.click();
 
@@ -105,6 +161,15 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     // écran intermédiaire. Le titre est « Votre journée » — ni une correction,
     // ni la veille.
     await expect(page.getByRole('heading', { name: 'Votre journée' })).toBeVisible();
+    // Arrivé par le lien du hub, le document de l'agenda ouvre la caméra à
+    // lui-même — sans dépendre du drapeau de capture, de l'âge du dossier ni de
+    // l'autorisation du patient : c'est la politique, pas la permission.
+    if (browserName === 'chromium') expect(await cameraAutoriseeParLeDocument(page)).toBe(true);
+    // Et ce document REFUSE un script d'une autre origine : la garde est
+    // appliquée par le navigateur, pas seulement servie. Si le lien du hub
+    // devenait un `<Link>`, le document garderait la CSP du hub, sans
+    // `script-src`, et la sonde passerait.
+    expect(await scriptAutreOrigineRefuse(page)).toBe(true);
     await expect(page.getByTestId('piste-prises')).toBeVisible();
     await expect(page.getByText('Vos prises de la journée')).toBeVisible();
     // Et surtout PAS le formulaire générique : `/api/patient/questionnaire` ne
@@ -221,6 +286,8 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     // dit son état plutôt que de le taire.
     await expect(page.getByRole('link', { name: 'Consulter', exact: true })).toBeVisible();
     await expect(page.getByText('Journée notée aujourd’hui')).toBeVisible();
+
+    expect(violationsCsp).toEqual([]);
   });
 
   test('la journée du jour manquante fait passer l’agenda devant, avec son avancement', async ({
