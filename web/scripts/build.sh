@@ -96,4 +96,14 @@ next build
 # Ne pas retirer cette ligne sans avoir mesuré l'image : sans elle, elle repasse
 # au-dessus de la limite et PLUS AUCUN déploiement ne réussit — donc plus aucune
 # `release-db`, dont la garde exige que le commit approuvé soit déployé.
-rm -rf .next/cache/webpack
+#
+# Une exception, et une seule (H91, temps 2, arbitrage du 2026-11-06) : le job
+# `e2e` du CI pose `WN_GARDER_CACHE_WEBPACK=1` sur son étape Build, pour que
+# `actions/cache` sauvegarde ce cache entre deux runs. Aucune image n'en sort.
+# Scalingo ne la pose jamais, et toute autre valeur efface : le défaut reste
+# l'effacement. `scripts/ci-invariants.test.mjs` garde les deux côtés.
+if [ "${WN_GARDER_CACHE_WEBPACK:-}" = "1" ]; then
+  printf 'Cache webpack conservé pour le cache de compilation du CI.\n'
+else
+  rm -rf .next/cache/webpack
+fi
