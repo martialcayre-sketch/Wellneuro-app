@@ -1,0 +1,1 @@
+- **Mise à jour (2026-11-06, arbitrage d61)** : la question `20261106-1200-d` est tranchée : la part B de H95 passe au rang 6, après BP-05. Le rang de H96 se fixe à 7 au plus tôt ; le « 6 ou 7 » est retiré, et sa ligne passe au tableau du rang 7.
