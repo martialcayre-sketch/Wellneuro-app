@@ -39,7 +39,9 @@ Trois corrections de l'audit UI du 2026-11-05 (grille WCAG 2.1 A/AA), en une PR 
 - T1 complet (`npm run check`) : vert (exit 0).
 - T2 (`npm run test:worktree -- --fast`), en conteneur cloud. Quatre obstacles d'environnement, levés hors dépôt : WebKit 2359 bloqué par le proxy (hôtes Playwright ajoutés à l'environnement), `initdb` refusé en root (enveloppes `runuser -u postgres` passées par `WN_PG_BIN`), locale `en_US.UTF-8` absente et `postgresql-16-pgvector` manquant (installés dans le conteneur). Passage complet : bancs Node, Vitest (952 fichiers, 16 230 tests), migrations, seed et build verts ; E2E 341 passés, 7 échecs :
   - 5 `visual.spec.ts` (Desktop et iPhone) : seul le tracé des glyphes diffère, la mise en page est identique. C'est le rendu des polices de ce conteneur, pas ce lot ; le CI Ubuntu fait foi.
-  - 2 du spec neuf : des défauts ANTÉRIEURS mis au jour (contraste du bandeau de rappel de consentement, environ 4,1:1 ; `PatientJourneyProgress` qui défile sans focus sur iPhone). Ils sont nommés en « écarts connus » dans le spec, puis T2 a été relancé : le résultat est dans la PR.
+  - 2 du spec neuf : des défauts ANTÉRIEURS mis au jour (contraste du bandeau de rappel de consentement, environ 4,1:1 ; `PatientJourneyProgress` qui défile sans focus sur iPhone). Ils sont nommés en « écarts connus » dans le spec, puis T2 a été relancé.
+- T2 final (tête f1e705f9, avec `e2e/packs-modale-edition.spec.ts`) : E2E 346 passés, 5 échecs, tous les écarts de police de `visual.spec.ts` ; les deux specs neufs sont verts sur Desktop Chromium et iPhone 13.
+- CI sur f1e705f9 : `controles`, `typage-tests`, `e2e` (`visual.spec.ts` compris, sur Ubuntu) et `verify` verts — les écarts visuels locaux étaient bien ceux du conteneur. PR-Agent : aucun constat majeur ; « Perte de saisie » (clic sur l'overlay) résolu par f1e705f9. Aucun fil de revue ouvert.
 
 ## Problèmes ouverts
 
@@ -49,8 +51,9 @@ Trois corrections de l'audit UI du 2026-11-05 (grille WCAG 2.1 A/AA), en une PR 
 
 ## Prochaine action exacte
 
-1. T2 vert, puis la PR en `--body-file`, puis `node scripts/wn-attendre-ci.mjs <N>` en fond (code 0).
-2. Revue sur la tête : CodeRabbit, sinon PR-Agent. Chaque commentaire reçoit un verdict, puis la PR est déclarée « prête @<sha> ».
+1. PR #1892 sortie du brouillon : relire la revue CodeRabbit sur la tête (sinon PR-Agent fait foi, `D-393` §2), verdict sur chaque commentaire.
+2. « prête @<sha> » ; l'intégrateur merge (essai `D-373`).
+3. Deux lots à part : contraste du bandeau de rappel de consentement ; défilement clavier de `PatientJourneyProgress` et des frises.
 
 ## Interdits encore actifs
 
