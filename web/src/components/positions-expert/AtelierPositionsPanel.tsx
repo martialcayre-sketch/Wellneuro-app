@@ -110,9 +110,14 @@ export function AtelierPositionsPanel() {
       setEnvoi(true);
       setRetour(null);
       const r = await ecrire(chemin, corps);
-      setEnvoi(false);
       setRetour(r.ok ? { type: 'succes', texte: succes } : { type: 'erreur', texte: texteErreur(r) });
-      await charger();
+      // Les gestes restent suspendus jusqu'au RÉSULTAT de la relecture : aucun
+      // geste ne part sur l'état d'avant (revue CodeRabbit de #1893).
+      try {
+        await charger();
+      } finally {
+        setEnvoi(false);
+      }
       return r.ok;
     },
     [charger],

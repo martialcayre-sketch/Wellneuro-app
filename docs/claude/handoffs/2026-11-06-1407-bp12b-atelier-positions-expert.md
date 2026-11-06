@@ -137,6 +137,12 @@ Choix d'écriture, dans le cadre de D-439 :
   - Constat démontré sur ces deux passages, sans cause instruite : le banc
     est intermittent.
   - Le second passage est vert en 7 min 32 s.
+- CodeRabbit a répondu dans les cinq fils. Quatre sont clos, et il retire
+  lui-même le constat sur la fraîcheur après lecture du motif d'écart.
+- Le cinquième fil reste ouvert. Après un geste, `envoi` repassait à faux
+  avant la fin de la relecture, si bien qu'un second geste pouvait partir
+  sur l'état d'avant. Corrigé : les gestes restent suspendus jusqu'au
+  résultat de la relecture.
 
 ## Problèmes ouverts
 
