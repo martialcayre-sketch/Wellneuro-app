@@ -1295,6 +1295,21 @@ jobs:
           WN_POSITIONS_EXPERT_BANC_BASE: wellneuro_ci
         run: node scripts/banc-positions-expert-deux-sessions.test.mjs
 
+      # L'atelier des positions d'expert sur base réelle (D-439, BP-12b PR 3) :
+      # l'empreinte JS est celle de `positions_expert_empreinte_contenu` sur des
+      # textes piégés ; les refus de la route (alternance des actes, même fiche,
+      # conflit inconnu, fiche hors liste curée, claim hors conflit, claim
+      # d'appui absent lu « à relire ») ; une fiche, une position, sous
+      # concurrence constatée ; un retrait contre une pose sans interblocage.
+      # Commet ses lignes (ajout seul) : la base doit être NOMMÉE.
+      - name: Positions expert real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_POSITIONS_EXPERT_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/positions-expert/positionsExpert.pg.test.ts
+
       # Staging d'import biologique (D-256 A2/A5, BIO-INGEST LOT-02). Ce que le
       # drift check ne voit pas : le document est ce qu'il dit être (type,
       # 10 Mo, empreinte recalculée), un seul dossier d'un bout à l'autre de la

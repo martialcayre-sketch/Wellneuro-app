@@ -558,6 +558,21 @@ défaut** : absente ou vide, personne ne décide. À poser sur Scalingo (geste d
 responsable, puis conteneurs web recréés — un `env-set` seul ne change rien),
 jamais au dépôt.
 
+**L'atelier des positions d'expert** (D-439 §6, BP-12b PR 3) :
+`WN_POSITIONS_EXPERT`, lu par `lib/positions-expert/drapeau.ts`. **Éteint par
+défaut** ; seule la valeur `1` l'allume. Éteint, la page
+`/dashboard/bibliotheque/positions-expert` n'existe pas (404) et les quatre
+routes `/api/praticien/positions-expert` (lecture, `versions`, `actes`,
+`arbitrages`) rendent 404 avant même de lire la session ; aucun arbitrage ne
+s'affiche nulle part (A2). Allumé, tout praticien lit l'atelier ; verser,
+signer, retirer et arbitrer restent au responsable, par la même garde que les
+fiches d'usage (`WN_FICHES_USAGE_VALIDATEURS`, 403 sinon). Tant que la
+re-signature de `conflitsSourcesV1` (PR 4) n'a pas posé la liste curée des
+fiches par conflit, toute pose d'arbitrage est refusée « fiche hors de la liste
+curée ». Ni portail, ni courrier, ni scoring, ni recherche corpus, ni IA ne
+lisent ces tables. Allumage : geste du responsable sur Scalingo, avant le
+versement (§5).
+
 **Hors `web/src`** : `WN_MIGRATIONS_PAR_RELEASE_DB` (`web/scripts/db-deploy.sh`)
 sort les migrations du postdeploy pour les confier au workflow `release-db` —
 posée en production seule, décrite dans `docs/DEPLOIEMENT_RELEASE_DB.md`.
