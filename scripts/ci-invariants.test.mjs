@@ -339,7 +339,9 @@ test('le cache Next précède le build d’`e2e`, saute en documentaire et a une
   assert.ok(cle, 'le cache Next n’a plus de `key:`.');
   assert.match(cle[1], /hashFiles\('web\/package-lock\.json', 'web\/next\.config\.[a-z]+'\)/,
     'la clé doit porter le lock et la configuration Next.');
-  const repli = /restore-keys:\s*\|\s*\n\s*(\S+)/.exec(cache.texte);
+  // Toute la ligne, pas `\S+` : la clé contient des espaces (`${{ runner.os }}`),
+  // et un préfixe coupé au premier d'entre eux préfixerait n'importe quelle clé.
+  const repli = /restore-keys:\s*\|\s*\n\s*(.+?)\s*$/m.exec(cache.texte);
   assert.ok(repli, 'la restauration partielle (`restore-keys`) a disparu.');
   assert.ok(cle[1].startsWith(repli[1]), `\`restore-keys\` (${repli[1]}) doit préfixer la clé (${cle[1]}).`);
   // Sans les sources dans la clé, la première entrée serait trouvée pour
