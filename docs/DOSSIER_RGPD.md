@@ -1677,12 +1677,20 @@ affirmé sans source officielle citée** (document d'Anthropic daté, ou répons
 
 **Source — une seule durée est réellement écrite et arbitrée :**
 
-- **Journal d'accès aux dossiers** : **12 mois glissants**, purge opportuniste
-  à l'écriture, plus effacement avec le dossier — règle GD-2, alignée sur un
+- **Journal d'accès aux dossiers** : **12 mois glissants**, purge à
+  l'écriture, plus effacement avec le dossier — règle GD-2, alignée sur un
   arbitrage du responsable du 2026-07-22
   (`docs/claude/campagnes/2026-07-22-g-trust-04-durcissement-et-reliquats/CAMPAGNE.md`).
 - **Traces d'identité Google** : 12 mois
   (`docs/claude/propositions/2026-07-25-audit-identites-google/AUDIT_IDENTITES_GOOGLE.md`).
+- **Tenue de ces durées sans trafic ([[D-451]], 2026-11-06)** : le journal
+  d'accès, les traces Google et les tentatives de demande de lien (24 h) se
+  purgent aussi à chaque passage du cron horaire, sans attendre une
+  écriture. Le document d'un compte rendu biologique (30 jours) ne peut plus
+  être retenu sans limite par une lecture restée ouverte : une heure après
+  l'échéance, ce qui reste ouvert est clos et le document purgé. Le
+  dépassement de l'échéance est donc de deux heures au plus. Après 30 jours,
+  une nouvelle lecture est refusée.
 - **Effacement sur demande** : le dossier et ses tables filles sont effacés, et
   `DossierEfface` conserve une preuve non ré-identifiante (année de naissance,
   initiales, date).
