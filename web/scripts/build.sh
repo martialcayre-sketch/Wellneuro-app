@@ -103,7 +103,7 @@ next build
 # Scalingo ne la pose jamais, et toute autre valeur efface : le défaut reste
 # l'effacement. `scripts/ci-invariants.test.mjs` garde les deux côtés.
 if [ "${WN_GARDER_CACHE_WEBPACK:-}" = "1" ]; then
-  printf 'Cache webpack conservé (WN_GARDER_CACHE_WEBPACK=1, CI seulement).\n'
+  printf 'Cache webpack conservé pour le cache de compilation du CI.\n'
 else
   rm -rf .next/cache/webpack
 fi

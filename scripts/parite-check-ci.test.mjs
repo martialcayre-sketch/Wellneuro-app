@@ -108,7 +108,8 @@ export function etapesHorsParite(yml) {
   assert.ok(debutJobs >= 0, "section `jobs:` introuvable");
   const entetes = [];
   lignes.forEach((l, i) => {
-    const m = /^  ([a-z0-9_-]+):\s*$/.exec(l);
+    // Un commentaire en fin d'en-tête ne doit pas rattacher le job au précédent.
+    const m = /^  ([a-z0-9_-]+):\s*(?:#.*)?$/.exec(l);
     if (i > debutJobs && m) entetes.push({ job: m[1], debut: i });
   });
   const fautes = [];
@@ -124,6 +125,8 @@ export function etapesHorsParite(yml) {
       const t = l.trim();
       if (/^(?:-\s+)?run:/.test(t)) fautes.push(`${job} : ${t}`);
       else if (/^-\s+\*/.test(t) && t !== "- *perimetre") fautes.push(`${job} : ${t}`);
+      // Une action locale peut lancer `node` sans `run:` visible ici.
+      else if (/^(?:-\s+)?uses:\s*\.\//.test(t)) fautes.push(`${job} : ${t}`);
     }
   });
   return fautes;
@@ -301,6 +304,12 @@ const YAML_JOBS = `jobs:
       - uses: actions/checkout@v4
       - *perimetre
       - *autre_ancre
+      - uses: ./.github/actions/locale
+      - uses: actions/setup-node@v4
+  nouveau: # job commenté en en-tête
+    steps:
+      - name: Banc d'un job neuf
+        run: node scripts/glisse-nouveau.mjs
       - uses: actions/setup-node@v4
   verify:
     needs: [controles, typage-tests, e2e]
@@ -319,6 +328,8 @@ test("une étape `run:` avant le setup-node d'un autre job que `controles` est r
     "typage-tests : run: node --test scripts/glisse.test.mjs",
     "typage-tests : run: |",
     "e2e : - *autre_ancre",
+    "e2e : - uses: ./.github/actions/locale",
+    "nouveau : run: node scripts/glisse-nouveau.mjs",
     "verify : node scripts/glisse-verify.mjs",
   ]);
 });
