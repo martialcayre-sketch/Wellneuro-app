@@ -13,7 +13,7 @@ export default async function PortailAlimentationPage({ params }: { params: Prom
 
   return (
     <div className="w-full max-w-2xl space-y-4">
-      <Link href={`/portail/${token}/questionnaires`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+      <Link href={`/portail/${token}/questionnaires`} className="inline-flex min-h-11 items-center gap-1 text-sm text-primary hover:underline">
         ← Mon parcours
       </Link>
       <PatientFoodObservationPanel idPatient={session?.idPatient ?? null} />

@@ -179,7 +179,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
       <div className="mt-2">
         <DocumentTrust document={getDocumentCourant('consentement_suivi')} />
       </div>
-      <label className="flex items-start gap-3 mt-6 cursor-pointer">
+      <label className="flex min-h-11 items-start gap-3 mt-6 cursor-pointer">
         <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
         <span className="text-sm text-foreground">
           J’ai lu ces informations et j’accepte que mes données soient collectées et utilisées dans les conditions décrites ci-dessus.
@@ -283,7 +283,7 @@ function FicheForm({ token, idPatient, email, onDone }: {
       </fieldset>
 
       {isLastSection && (
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex min-h-11 items-start gap-3 cursor-pointer">
           <input type="checkbox" checked={mentions} onChange={e => setMentions(e.target.checked)} className="mt-1 accent-primary" />
           <span className="text-sm text-muted-foreground">
             Je certifie l’exactitude des informations fournies. Elles sont traitées de manière confidentielle et
@@ -327,7 +327,7 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
   if (champ.type === 'radio') {
     const courant = typeof valeur === 'string' ? valeur : '';
     return (
-      <PatientField label={champ.label} requis={requis}>
+      <PatientField label={champ.label} requis={requis} groupe>
         <div className="flex flex-wrap gap-2">
           {(champ.options ?? []).map(opt => {
             const actif = courant === opt;
@@ -335,8 +335,9 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
               <button
                 key={opt}
                 type="button"
+                aria-pressed={actif}
                 onClick={() => onChange(actif ? '' : opt)}
-                className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-surface text-muted-foreground border-border hover:border-primary/60'}`}
+                className={`min-h-11 px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-surface text-muted-foreground border-border hover:border-primary/60'}`}
               >
                 {opt}
               </button>
@@ -352,11 +353,11 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
     const toggle = (opt: string) =>
       onChange(selection.includes(opt) ? selection.filter(o => o !== opt) : [...selection, opt]);
     return (
-      <PatientField label={champ.label} requis={requis}>
+      <PatientField label={champ.label} requis={requis} groupe>
         <div className="flex flex-col gap-1.5">
           {(champ.options ?? []).map(opt => (
-            <label key={opt} className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer">
-              <input type="checkbox" checked={selection.includes(opt)} onChange={() => toggle(opt)} className="mt-0.5 accent-primary" />
+            <label key={opt} className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={selection.includes(opt)} onChange={() => toggle(opt)} className="accent-primary" />
               <span>{opt}</span>
             </label>
           ))}
@@ -552,8 +553,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {groupe.champs.map(champ => (
                     <div key={champ.id}>
-                      <label className="block text-xs text-muted-foreground/70 mb-1">{champ.label}</label>
+                      <label htmlFor={`anamnese-${groupe.id}-${index}-${champ.id}`} className="block text-xs text-muted-foreground/70 mb-1">{champ.label}</label>
                       <input
+                        id={`anamnese-${groupe.id}-${index}-${champ.id}`}
                         type="text"
                         value={entree[champ.id] ?? ''}
                         onChange={e => setEntreeChamp(groupe.id, index, champ.id, e.target.value)}

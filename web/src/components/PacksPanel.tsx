@@ -6,6 +6,7 @@ import type { AssignPackResponse } from '@/app/api/praticien/packs/assign/route'
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
 import { Badge } from '@/components/ui/Badge';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 
 type Questionnaire = QuestionnairesApiResponse['questionnaires'][number];
 type QuestionnaireSuspendu = QuestionnairesApiResponse['suspendus'][number];
@@ -578,16 +579,21 @@ export function PacksPanel({
         </form>
       </div>
 
-      {editModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-surface border border-border rounded-xl p-4 shadow-card max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <h3 className="font-display text-lg font-semibold text-foreground">Modifier un pack de questionnaires</h3>
-              <button type="button" onClick={onCancelEditPack} className="text-xs text-muted-foreground hover:underline">
-                Fermer
-              </button>
-            </div>
-
+      {/* Modale d'édition : `PanneauSuperpose` porte le rôle `dialog`, Échap,
+          le piège et le retour du focus, et un bouton de fermeture de 44 px.
+          Échap et le X repassent par `onCancelEditPack`, comme l'ancien bouton
+          « Fermer » ; un clic sur l'overlay ne ferme PAS — l'ancienne modale ne
+          le faisait pas, et la saisie du pack serait perdue sans recours. */}
+      <PanneauSuperpose
+        variante="modale"
+        largeur="ample"
+        titre="Modifier un pack de questionnaires"
+        description="Modifier un pack de questionnaires"
+        descriptionMasquee
+        open={editModalOpen}
+        onOpenChange={ouvert => { if (!ouvert) onCancelEditPack(); }}
+        onInteractOutside={e => e.preventDefault()}
+      >
             <form className="flex flex-col gap-3" onSubmit={onSubmitEditPack}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input required value={editNom} onChange={e => setEditNom(e.target.value)} placeholder="Nom du pack *" className={inputCls} maxLength={120} />
@@ -714,9 +720,7 @@ export function PacksPanel({
                 )}
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </PanneauSuperpose>
     </div>
   );
 }

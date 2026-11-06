@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -21,6 +21,7 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
   fetchUrl?: string;
   readOnlyPreview?: boolean;
 }) {
+  const idCommentaire = useId();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reponse, setReponse] = useState<{ titre: string; dateReponse: string } | null>(null);
@@ -105,8 +106,9 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
             </p>
           ) : (
             <div className="space-y-2 text-left">
-              <label className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground/70">(facultatif)</span></label>
+              <label htmlFor={idCommentaire} className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground/70">(facultatif)</span></label>
               <textarea
+                id={idCommentaire}
                 value={commentaire}
                 onChange={e => setCommentaire(e.target.value)}
                 rows={3}

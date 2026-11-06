@@ -232,10 +232,7 @@ describe('PacksPanel — les deux portes du pack de base (LOT-03)', () => {
 async function ouvrirModale(nom: string): Promise<HTMLElement> {
   const li = await ligne(nom);
   fireEvent.click(bouton(li, /modifier/i));
-  const titre = await screen.findByText(/modifier un pack de questionnaires/i);
-  const modale = titre.closest('div')?.parentElement;
-  if (!modale) throw new Error('Modale d’édition introuvable');
-  return modale as HTMLElement;
+  return screen.findByRole('dialog', { name: /modifier un pack de questionnaires/i });
 }
 
 /** La case à cocher portée par le label qui contient ce texte. */
@@ -329,7 +326,7 @@ describe('PacksPanel — retirer un instrument suspendu d’un pack', () => {
       expect(appels.filter(a => a.method === 'PATCH')).toHaveLength(1);
     });
     await waitFor(() => {
-      expect(screen.queryByText(/modifier un pack de questionnaires/i)).toBeNull();
+      expect(screen.queryByRole('dialog', { name: /modifier un pack de questionnaires/i })).toBeNull();
     });
 
     const seconde = await ouvrirModale(PACK_ORDINAIRE.nom);
@@ -363,9 +360,9 @@ describe('PacksPanel — un suspendu ne compte pas comme un questionnaire envoy�
     await waitFor(() => {
       expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
     });
-    fireEvent.click(within(modale).getByRole('button', { name: /^fermer$/i }));
+    fireEvent.click(within(modale).getByRole('button', { name: /^fermer modifier un pack de questionnaires$/i }));
     await waitFor(() => {
-      expect(screen.queryByText(/modifier un pack de questionnaires/i)).toBeNull();
+      expect(screen.queryByRole('dialog', { name: /modifier un pack de questionnaires/i })).toBeNull();
     });
 
     const li = await ligne(PACK_AVEC_SUSPENDU.nom);

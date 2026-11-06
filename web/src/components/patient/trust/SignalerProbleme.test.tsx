@@ -29,8 +29,8 @@ function ouvrir(props: Partial<Parameters<typeof SignalerProbleme>[0]>) {
 }
 
 function remplirEtEnvoyer() {
-  // Les libellés du portail ne sont pas reliés à leur champ (`PatientField`) :
-  // les champs se trouvent par leur rôle, dans l'ordre du formulaire.
+  // Les champs se trouvent par leur rôle, dans l'ordre du formulaire (le
+  // libellé « Produit concerné * » porte l'astérisque dans son nom accessible).
   const [produit, ressenti] = screen.getAllByRole('textbox');
   fireEvent.change(produit, { target: { value: 'Magnésium' } });
   fireEvent.change(ressenti, { target: { value: 'Maux de ventre' } });

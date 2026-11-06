@@ -36,25 +36,29 @@ type Variante = 'tiroir' | 'modale' | 'feuille';
  *   `max-w-2xl`, et aucun des quatre n'aurait migré sans changer de largeur.
  *   L'unanimité de l'existant fait loi ici, pas la préférence de la primitive.
  * - `large` : `max-w-2xl`, pour les tableaux denses.
+ * - `ample` : `max-w-4xl`. La modale d'édition de pack (`PacksPanel`), relevée
+ *   à sa migration : son formulaire sur trois colonnes vivait à cette largeur,
+ *   et la ramener à `max-w-lg` l'aurait redessinée.
  *
  * MIGRER À APPARENCE CONSTANTE est la règle du lot : un lot de convergence
  * retire de la duplication, il ne redessine pas des écrans au passage. Sans
  * cette troisième valeur, l'adoption de la primitive aurait déplacé quatre
  * panneaux sans que personne l'ait demandé.
  */
-type LargeurTiroir = 'focale' | 'standard' | 'large';
+type LargeurTiroir = 'focale' | 'standard' | 'large' | 'ample';
 
 const CLASSES_LARGEUR: Record<LargeurTiroir, string> = {
   focale: 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl',
   standard: 'max-w-xl',
   large: 'max-w-2xl',
+  ample: 'max-w-4xl',
 };
 
 const CLASSES_CONTENU: Record<Variante, string> = {
   tiroir:
     'fixed right-0 top-0 z-50 h-full w-full overflow-y-auto border-l border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none',
   modale:
-    'fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl focus:outline-none',
+    'fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl focus:outline-none',
   feuille:
     'fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full overflow-y-auto rounded-t-[1.5rem] border-t border-border bg-surface p-5 shadow-pop focus:outline-none',
 };
@@ -76,6 +80,12 @@ const CLASSES_CONTENU: Record<Variante, string> = {
  */
 type ThemePanneau = 'praticien' | 'patient';
 
+function classeLargeur(variante: Variante, largeur: LargeurTiroir | undefined): string {
+  if (variante === 'tiroir') return ` ${CLASSES_LARGEUR[largeur ?? 'focale']}`;
+  if (variante === 'modale') return ` ${largeur ? CLASSES_LARGEUR[largeur] : 'max-w-lg'}`;
+  return '';
+}
+
 export function PanneauSuperpose({
   declencheur,
   titre,
@@ -83,11 +93,12 @@ export function PanneauSuperpose({
   surtitre,
   descriptionMasquee = false,
   variante = 'tiroir',
-  largeur = 'focale',
+  largeur,
   theme = 'praticien',
   open,
   onOpenChange,
   onCloseAutoFocus,
+  onInteractOutside,
   children,
 }: {
   /**
@@ -118,7 +129,11 @@ export function PanneauSuperpose({
   /** Petit sur-titre en capitales au-dessus du titre (ex. « Instrument »). */
   surtitre?: string;
   variante?: Variante;
-  /** `tiroir` seulement — voir `LargeurTiroir`. */
+  /**
+   * Voir `LargeurTiroir`. Défaut : `focale` pour un `tiroir` ; une `modale`
+   * garde `max-w-lg` tant qu'aucune largeur n'est passée (les dialogues de
+   * confirmation) ; une `feuille` l'ignore.
+   */
   largeur?: LargeurTiroir;
   /** Valeur `data-theme` re-posée sur le portail Radix. */
   theme?: ThemePanneau;
@@ -130,6 +145,13 @@ export function PanneauSuperpose({
    * au seuil du rail, [[D-447]] §4). Absent, Radix rend le focus au déclencheur.
    */
   onCloseAutoFocus?: (evenement: Event) => void;
+  /**
+   * Transmis à `Dialog.Content`. Un formulaire long passe
+   * `e => e.preventDefault()` pour qu'un clic sur l'overlay n'efface pas la
+   * saisie en cours : la modale d'édition de pack (`PacksPanel`) ne se fermait
+   * jamais au clic extérieur avant sa migration. Échap et le X ferment toujours.
+   */
+  onInteractOutside?: (evenement: Event) => void;
   children: ReactNode;
 }) {
   return (
@@ -140,7 +162,8 @@ export function PanneauSuperpose({
         <Dialog.Content
           data-theme={theme}
           onCloseAutoFocus={onCloseAutoFocus}
-          className={`${CLASSES_CONTENU[variante]}${variante === 'tiroir' ? ` ${CLASSES_LARGEUR[largeur]}` : ''}`}
+          onInteractOutside={onInteractOutside}
+          className={`${CLASSES_CONTENU[variante]}${classeLargeur(variante, largeur)}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { AssignationInfo } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
 import { clearDraft, readDraft, readDraftSavedAt, writeDraft } from '@/lib/questionnaire-draft';
@@ -35,6 +35,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
   email: string;
   onDone: () => void;
 }) {
+  const idCurseurs = useId();
   const [values, setValues] = useState<Record<string, number>>(() => valeursInitiales(assignation.idAssignation));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -122,13 +123,15 @@ export function PlaintesForm({ assignation, email, onDone }: {
       {PAGES[page].map(p => (
         <div key={p.key}>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-muted-foreground">{p.icon} {p.label}</span>
+            <span id={`${idCurseurs}-${p.key}`} className="text-sm font-medium text-muted-foreground"><span aria-hidden="true">{p.icon}</span> {p.label}</span>
             <span className="text-sm font-bold text-primary w-6 text-right">{values[p.key]}</span>
           </div>
           <input
             type="range" min={1} max={10} step={1}
             value={values[p.key]}
             onChange={e => { const n = Number(e.target.value); setValues(v => ({ ...v, [p.key]: n })); }}
+            aria-labelledby={`${idCurseurs}-${p.key}`}
+            aria-valuetext={`${values[p.key]} sur 10`}
             className="w-full accent-primary"
           />
           <div className="flex justify-between text-xs text-muted-foreground/70 mt-0.5">
