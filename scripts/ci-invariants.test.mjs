@@ -294,3 +294,80 @@ test('verify agrège TOUS les jobs, tourne toujours et teste chaque résultat', 
       `\`verify\` doit tester explicitement \`needs.${job}.result\` = success.`);
   }
 });
+
+// 6. LE CACHE DE COMPILATION NEXT NE QUITTE PAS LE CI (2026-11-06, H91 temps 2).
+//    `build.sh` efface `.next/cache/webpack` : sans cette ligne, l'image
+//    Scalingo dépasse 2048 Mo et plus aucun déploiement ne passe (#1001). Le
+//    job `e2e` la contourne par `WN_GARDER_CACHE_WEBPACK=1`, posée sur sa seule
+//    étape Build, pour que `actions/cache` ait quelque chose à sauvegarder.
+//    Deux dérives coûteraient en silence : la variable posée ailleurs (une
+//    image qui ne se déploie plus), et une clé qui perd un de ses fichiers
+//    (`hashFiles` d'un fichier absent rend une chaîne vide, sans erreur).
+
+/** Bloc du job `e2e`, de son en-tête au job suivant. */
+function blocE2e() {
+  const debut = SOURCE.indexOf('\n  e2e:\n');
+  assert.ok(debut >= 0, 'ci.yml : job `e2e` introuvable.');
+  const suite = SOURCE.slice(debut + 1);
+  const fin = suite.slice(1).search(/^  [a-z0-9_-]+:\s*$/m);
+  return fin < 0 ? suite : suite.slice(0, fin + 1);
+}
+
+/** Étape d'un bloc de job désignée par son nom, jusqu'à l'étape suivante. */
+function etape(bloc, nom) {
+  const debut = bloc.indexOf(`- name: ${nom}\n`);
+  assert.ok(debut >= 0, `ci.yml : étape « ${nom} » introuvable dans \`e2e\`.`);
+  const suite = bloc.slice(debut);
+  const fin = suite.slice(1).search(/^\s*- (?:name|uses):/m);
+  return { debut, texte: fin < 0 ? suite : suite.slice(0, fin + 1) };
+}
+
+test('le cache Next précède le build d’`e2e`, saute en documentaire et a une clé complète', () => {
+  const e2e = blocE2e();
+  const cache = etape(e2e, 'Cache de compilation Next');
+  const build = etape(e2e, 'Build');
+  assert.ok(cache.debut < build.debut, 'le cache Next doit être restauré AVANT le build, qui le lit.');
+  assert.match(cache.texte, /if:\s*steps\.scope\.outputs\.docs_only != 'true'/,
+    'le cache Next doit sauter quand `docs_only` vaut vrai, comme le cache Playwright.');
+  assert.match(cache.texte, /uses:\s*actions\/cache@v4/);
+  assert.match(cache.texte, /path:\s*web\/\.next\/cache\s*$/m);
+
+  const cle = /^\s*key:\s*(.+)$/m.exec(cache.texte);
+  assert.ok(cle, 'le cache Next n’a plus de `key:`.');
+  assert.match(cle[1], /hashFiles\('web\/package-lock\.json', 'web\/next\.config\.[a-z]+'\)/,
+    'la clé doit porter le lock et la configuration Next.');
+  const repli = /restore-keys:\s*\|\s*\n\s*(\S+)/.exec(cache.texte);
+  assert.ok(repli, 'la restauration partielle (`restore-keys`) a disparu.');
+  assert.ok(cle[1].startsWith(repli[1]), `\`restore-keys\` (${repli[1]}) doit préfixer la clé (${cle[1]}).`);
+
+  // Chaque fichier nommé dans la clé existe : `hashFiles` d'un fichier absent
+  // rend une chaîne vide, et la clé perdrait sa dépendance sans rien dire.
+  for (const m of cle[1].matchAll(/'(web\/[^'*]+)'/g)) {
+    assert.ok(fs.existsSync(path.join(RACINE, m[1])), `clé du cache Next : ${m[1]} n’existe plus.`);
+  }
+});
+
+test('`WN_GARDER_CACHE_WEBPACK` n’est posée que par l’étape Build d’`e2e`', () => {
+  const dossier = path.join(RACINE, '.github/workflows');
+  for (const fichier of fs.readdirSync(dossier)) {
+    const texte = fs.readFileSync(path.join(dossier, fichier), 'utf8');
+    const poses = [...texte.matchAll(/^\s*WN_GARDER_CACHE_WEBPACK\s*:/gm)];
+    assert.equal(poses.length, fichier === 'ci.yml' ? 1 : 0,
+      `${fichier} pose WN_GARDER_CACHE_WEBPACK ${poses.length} fois : posée ailleurs que sur le build `
+        + 'd’`e2e`, elle ferait dépasser 2048 Mo à l’image Scalingo (#1001).');
+  }
+  assert.match(etape(blocE2e(), 'Build').texte, /^\s*WN_GARDER_CACHE_WEBPACK:\s*'1'\s*$/m,
+    'l’étape Build d’`e2e` ne pose plus WN_GARDER_CACHE_WEBPACK : le cache Next serait presque vide.');
+  const procfile = fs.readFileSync(path.join(RACINE, 'web/Procfile'), 'utf8');
+  assert.equal(procfile.includes('WN_GARDER_CACHE_WEBPACK'), false, 'web/Procfile pose la variable.');
+});
+
+test('`build.sh` efface le cache webpack par défaut', () => {
+  const build = fs.readFileSync(path.join(RACINE, 'web/scripts/build.sh'), 'utf8')
+    .split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  assert.match(build,
+    /if \[ "\$\{WN_GARDER_CACHE_WEBPACK:-\}" = "1" \]; then\n[^\n]*\nelse\n\s*rm -rf \.next\/cache\/webpack\nfi/,
+    'build.sh doit effacer `.next/cache/webpack` sauf si WN_GARDER_CACHE_WEBPACK vaut exactement 1 : '
+      + 'sans cet effacement, l’image Scalingo dépasse 2048 Mo (#1001).');
+  assert.equal((build.match(/rm -rf \.next\/cache\/webpack/g) || []).length, 1);
+});
