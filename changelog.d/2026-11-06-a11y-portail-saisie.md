@@ -19,7 +19,10 @@ Aucune logique clinique, aucun seuil, aucune donnée collectée ne change.
   mentions, de choix multiple et d'« Avant de commencer ».
 - **Modale d'édition de pack** (`PacksPanel`, cockpit) migrée vers
   `PanneauSuperpose` (variante `modale`) : rôle `dialog`, Échap, piège et
-  retour du focus, bouton de fermeture de 44 px. Pour la garder à sa largeur,
+  retour du focus, bouton de fermeture de 44 px. Un clic sur l'overlay ne la
+  ferme pas (`onInteractOutside`, désormais transmis par la primitive) :
+  l'ancienne modale ne le faisait pas, et la saisie du pack serait perdue sans
+  recours. Pour la garder à sa largeur,
   la primitive accepte `largeur` sur une `modale` (défaut inchangé :
   `max-w-lg`) et gagne une largeur `ample` (`max-w-4xl`), relevée sur cet écran.
 - **Garde** : `web/e2e/portail-accessibilite-saisie.spec.ts` passe axe

@@ -98,6 +98,7 @@ export function PanneauSuperpose({
   open,
   onOpenChange,
   onCloseAutoFocus,
+  onInteractOutside,
   children,
 }: {
   /**
@@ -144,6 +145,13 @@ export function PanneauSuperpose({
    * au seuil du rail, [[D-447]] §4). Absent, Radix rend le focus au déclencheur.
    */
   onCloseAutoFocus?: (evenement: Event) => void;
+  /**
+   * Transmis à `Dialog.Content`. Un formulaire long passe
+   * `e => e.preventDefault()` pour qu'un clic sur l'overlay n'efface pas la
+   * saisie en cours : la modale d'édition de pack (`PacksPanel`) ne se fermait
+   * jamais au clic extérieur avant sa migration. Échap et le X ferment toujours.
+   */
+  onInteractOutside?: (evenement: Event) => void;
   children: ReactNode;
 }) {
   return (
@@ -154,6 +162,7 @@ export function PanneauSuperpose({
         <Dialog.Content
           data-theme={theme}
           onCloseAutoFocus={onCloseAutoFocus}
+          onInteractOutside={onInteractOutside}
           className={`${CLASSES_CONTENU[variante]}${classeLargeur(variante, largeur)}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">

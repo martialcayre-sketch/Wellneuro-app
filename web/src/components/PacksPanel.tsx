@@ -581,8 +581,9 @@ export function PacksPanel({
 
       {/* Modale d'édition : `PanneauSuperpose` porte le rôle `dialog`, Échap,
           le piège et le retour du focus, et un bouton de fermeture de 44 px.
-          Toute fermeture (Échap, overlay, X) repasse par `onCancelEditPack`,
-          comme l'ancien bouton « Fermer ». */}
+          Échap et le X repassent par `onCancelEditPack`, comme l'ancien bouton
+          « Fermer » ; un clic sur l'overlay ne ferme PAS — l'ancienne modale ne
+          le faisait pas, et la saisie du pack serait perdue sans recours. */}
       <PanneauSuperpose
         variante="modale"
         largeur="ample"
@@ -591,6 +592,7 @@ export function PacksPanel({
         descriptionMasquee
         open={editModalOpen}
         onOpenChange={ouvert => { if (!ouvert) onCancelEditPack(); }}
+        onInteractOutside={e => e.preventDefault()}
       >
             <form className="flex flex-col gap-3" onSubmit={onSubmitEditPack}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
