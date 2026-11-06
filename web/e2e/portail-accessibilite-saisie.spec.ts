@@ -30,14 +30,6 @@ const ECARTS_CONNUS: { regle: string; html: string; motif: string }[] = [
     html: 'rounded-xl border border-border bg-primary/10 px-4 py-3 text-xs text-primary',
     motif: 'bandeau « Ce questionnaire entre dans le cadre… » de questionnaires/[idAssignation]',
   },
-  {
-    // `PatientJourneyProgress` défile horizontalement sous 390 px sans
-    // contenu focalisable : même famille que le défilement clavier des
-    // frises, laissé hors périmètre (WCAG 2.1.1).
-    regle: 'scrollable-region-focusable',
-    html: 'aria-label="Étapes de votre parcours"',
-    motif: 'frise PatientJourneyProgress sur iPhone',
-  },
 ];
 
 async function auditer(page: Page): Promise<void> {

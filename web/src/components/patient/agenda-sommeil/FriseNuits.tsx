@@ -34,7 +34,15 @@ export function FriseNuits({ emplacements, nuitsParDate }: Props) {
   const hauteur = EMOJI_Y + 14;
 
   return (
-    <div className="w-full overflow-x-auto">
+    // La région défile sous 320 px et le SVG n'a rien de focalisable : elle prend
+    // le focus elle-même pour défiler au clavier (WCAG 2.1.1), avec son propre nom.
+    // L'anneau est le `:focus-visible` global de `globals.css`.
+    <div
+      role="group"
+      tabIndex={0}
+      aria-label="Défilement de la frise de vos nuits"
+      className="w-full overflow-x-auto"
+    >
       <svg
         viewBox={`0 0 ${largeur} ${hauteur}`}
         className="w-full min-w-[320px]"

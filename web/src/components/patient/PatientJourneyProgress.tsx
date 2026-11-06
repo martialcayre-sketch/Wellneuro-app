@@ -57,7 +57,14 @@ export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {
     // `relative` : le `sr-only` de l'étape est positionné en absolu ; sans
     // ancêtre positionné, il sortait du défilement de la frise et faisait
     // déborder la page à 390 px (constat de L2, chapitre 11 de l'audit).
-    <ol className="relative flex items-start overflow-x-auto pb-1 -mx-1 px-1" aria-label="Étapes de votre parcours">
+    // `tabIndex` : la frise défile sans contenu focalisable ; sans lui, le clavier
+    // ne pouvait pas la faire défiler (WCAG 2.1.1, règle axe du 2026-11-06).
+    // L'anneau est le `:focus-visible` global de `globals.css`.
+    <ol
+      tabIndex={0}
+      className="relative flex items-start overflow-x-auto pb-1 -mx-1 px-1"
+      aria-label="Étapes de votre parcours"
+    >
       {steps.map((step, index) => {
         const classes = STATE_CLASSES[step.state];
         return (
