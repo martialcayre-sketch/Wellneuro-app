@@ -13,7 +13,7 @@
 // Les types seulement, depuis les modules serveur : un import de valeur tirerait
 // Prisma dans le bundle client.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -78,11 +78,17 @@ export function AtelierPositionsPanel() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [retour, setRetour] = useState<Retour | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  // Seule la réponse du DERNIER chargement s'applique : une lecture plus
+  // ancienne, arrivée après, ne remplace pas un état plus récent (revue
+  // CodeRabbit de #1893).
+  const generation = useRef(0);
 
   const charger = useCallback(async () => {
+    const mienne = ++generation.current;
     try {
       const res = await fetch('/api/praticien/positions-expert', { cache: 'no-store' });
       const data = (await res.json()) as AtelierPositionsApiResponse;
+      if (mienne !== generation.current) return;
       if (!data.ok) {
         setErreur(data.error);
         return;
@@ -91,7 +97,7 @@ export function AtelierPositionsPanel() {
       setAtelier(data.atelier);
       setPeutDecider(data.peutDecider);
     } catch {
-      setErreur('L’atelier n’a pas pu être chargé.');
+      if (mienne === generation.current) setErreur('L’atelier n’a pas pu être chargé.');
     }
   }, []);
 
@@ -112,11 +118,23 @@ export function AtelierPositionsPanel() {
     [charger],
   );
 
-  if (erreur) return <p role="alert" className="text-sm text-status-danger">{erreur}</p>;
-  if (!atelier) return <p className="text-sm text-muted-foreground">Chargement de l’atelier…</p>;
+  const alerteLecture = erreur && (
+    <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-status-danger">
+      <span>{erreur}{atelier ? ' Les gestes sont suspendus tant que l’état n’est pas relu.' : ''}</span>
+      <Button type="button" variant="outline" onClick={() => void charger()}>
+        Recharger
+      </Button>
+    </div>
+  );
+  if (!atelier) return alerteLecture || <p className="text-sm text-muted-foreground">Chargement de l’atelier…</p>;
+  // Une lecture en échec après un premier chargement NE DÉMONTE RIEN : le
+  // brouillon en cours reste à l'écran. Mais aucun geste ne part sur un état
+  // qu'on n'a pas pu relire (revue CodeRabbit de #1893).
+  const bloque = envoi || erreur !== null;
 
   return (
     <div className="flex flex-col gap-6">
+      {alerteLecture}
       <p className="text-sm text-muted-foreground">
         Chaque position s’affiche « {LIBELLE_POSITION} », jamais comme un consensus. Elle cède devant
         toute source de rang supérieur qui la contredit, et ne déclenche aucune règle.
@@ -129,7 +147,7 @@ export function AtelierPositionsPanel() {
         </p>
       )}
 
-      {peutDecider && <FormulaireVersion atelier={atelier} envoi={envoi} soumettre={soumettre} />}
+      {peutDecider && <FormulaireVersion atelier={atelier} envoi={bloque} soumettre={soumettre} />}
 
       <section aria-labelledby="titre-positions" className="flex flex-col gap-4">
         <h3 id="titre-positions" className="font-display text-lg font-semibold text-foreground">
@@ -140,11 +158,11 @@ export function AtelierPositionsPanel() {
           // Clé = la VERSION courante : une version neuve remonte la carte, et
           // la case « J'ai relu » d'une version ne vaut jamais pour la suivante
           // (D-195 §1 ; revue `wn-reviewer`).
-          <CartePosition key={p.courante.id} position={p} peutDecider={peutDecider} envoi={envoi} soumettre={soumettre} />
+          <CartePosition key={p.courante.id} position={p} peutDecider={peutDecider} envoi={bloque} soumettre={soumettre} />
         ))}
       </section>
 
-      <SectionArbitrages atelier={atelier} peutDecider={peutDecider} envoi={envoi} soumettre={soumettre} />
+      <SectionArbitrages atelier={atelier} peutDecider={peutDecider} envoi={bloque} soumettre={soumettre} />
     </div>
   );
 }
@@ -166,6 +184,8 @@ function FormulaireVersion({ atelier, envoi, soumettre }: { atelier: AtelierPosi
   const existante = atelier.positions.find(p => p.positionId === positionId.trim()) ?? null;
 
   const envoyer = async () => {
+    const contenuEnvoye = contenu;
+    const versionEnvoyee = version;
     const ok = await soumettre(
       'versions',
       {
@@ -179,9 +199,11 @@ function FormulaireVersion({ atelier, envoi, soumettre }: { atelier: AtelierPosi
       },
       'Version versée. Elle reste non signée tant que l’acte de signature n’est pas posé.',
     );
+    // Ne vide que ce qui a été envoyé : une saisie faite pendant l'envoi reste
+    // (revue CodeRabbit de #1893).
     if (ok) {
-      setContenu(CONTENU_VIDE);
-      setVersion('');
+      setContenu(c => (c === contenuEnvoye ? CONTENU_VIDE : c));
+      setVersion(v => (v === versionEnvoyee ? '' : v));
     }
   };
 

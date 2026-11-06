@@ -108,6 +108,35 @@ Choix d'écriture, dans le cadre de D-439 :
   - Son unique remarque est corrigée. Un échec réseau affirmait « rien n'a
     été écrit » ; le message dit désormais que le résultat est inconnu et
     renvoie à l'état rechargé.
+- Fusion de `main` (d2f95e5b, #1890), après vérification par `merge-tree`
+  (aucun conflit) et au titre de la délégation du 2026-10-16. Le banc de
+  parité CI est vert : l'étape neuve est dans `controles`, après
+  `setup-node`.
+- Revue CodeRabbit sur 00e4b9f0, demandée par « @coderabbitai review » :
+  cinq remarques en ligne et un nitpick.
+  - Corrigé : l'entrée `WN_POSITIONS_EXPERT` est déplacée dans la section A
+    des drapeaux produit, qui précise que seule la valeur `1` l'allume.
+  - Corrigé : seule la dernière lecture s'applique (génération) ; une
+    lecture plus ancienne arrivée après ne remplace plus l'état.
+  - Corrigé : une lecture en échec ne démonte plus le brouillon. Un bouton
+    « Recharger » s'affiche, et aucun geste ne part tant que l'état n'est pas
+    relu.
+  - Corrigé : après un versement réussi, le formulaire ne vide que ce qui a
+    été envoyé.
+  - Écarté : revalider la fraîcheur des claims sous le verrou. Les verrous
+    sérialisent les écritures de l'atelier, pas le corpus ; une relecture sous
+    verrou ne fermerait pas la fenêtre, puisqu'un claim peut changer juste
+    après le commit. D-439 §2 traite ce cas à la lecture (« à relire, dérivé à
+    la lecture, jamais réécrit »).
+  - Corrigé (nitpick) : l'accent du cas « combinant » était précomposé. Il
+    est maintenant décomposé, écrit en échappement.
+- T2 après ces corrections : un premier passage rouge, puis un second vert.
+  - Le rouge venait du banc de la file des lectures (« l'import périmé est
+    compté »), sans lien avec le lot. Rejoué seul sur la base locale, il est
+    vert.
+  - Constat démontré sur ces deux passages, sans cause instruite : le banc
+    est intermittent.
+  - Le second passage est vert en 7 min 32 s.
 
 ## Problèmes ouverts
 

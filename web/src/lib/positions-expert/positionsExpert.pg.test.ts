@@ -157,7 +157,9 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
 
   const TEXTES_DIFFICILES: Record<string, string> = {
     accents_precomposes: 'Été, cœur, Œuvre — « guillemets » ’apostrophe’.',
-    accent_combinant: 'Été composé par diacritique combinant.',
+    // Décomposé, écrit en échappement pour qu'aucun éditeur ne le recompose :
+    // une normalisation NFC côté JS ferait rougir ce cas (revue CodeRabbit).
+    accent_combinant: 'Été composé par diacritique combinant.',
     emoji_et_zwj: 'Soignante 👩🏽‍⚕️, drapeau 🇫🇷, hors BMP 𝔘𝔫𝔦𝔠𝔬𝔡𝔢.',
     fins_de_ligne: 'Ligne une\r\nligne deux\rligne trois\nligne quatre',
     espaces: 'Insécable fine et\ttabulation, chasse nulle​ici.',
