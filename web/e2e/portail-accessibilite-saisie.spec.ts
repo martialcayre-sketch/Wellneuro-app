@@ -17,32 +17,11 @@ import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/a
 
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
-// ÉCARTS CONNUS, antérieurs à ce lot et relevés par ce spec à sa création
-// (2026-11-06). Chacun est désigné par sa règle ET par un fragment du HTML de
-// l'élément fautif : tout autre nœud de la même règle reste un échec. Leur
-// correctif est une décision de design, hors de la finalité de ce lot
-// (apparence constante) ; les retirer d'ici dès qu'ils sont corrigés.
-const ECARTS_CONNUS: { regle: string; html: string; motif: string }[] = [
-  {
-    // `text-primary` sur `bg-primary/10` posé sur le fond beige de la page
-    // (hors carte) : environ 4,1:1 pour 4,5:1 exigés (WCAG 1.4.3).
-    regle: 'color-contrast',
-    html: 'rounded-xl border border-border bg-primary/10 px-4 py-3 text-xs text-primary',
-    motif: 'bandeau « Ce questionnaire entre dans le cadre… » de questionnaires/[idAssignation]',
-  },
-];
-
 async function auditer(page: Page): Promise<void> {
   const { violations } = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
-  const restantes = violations
-    .map(v => ({
-      ...v,
-      nodes: v.nodes.filter(n => !ECARTS_CONNUS.some(e => e.regle === v.id && n.html.includes(e.html))),
-    }))
-    .filter(v => v.nodes.length > 0);
-  expect(restantes.map(v => `${v.id} (${v.impact}) : ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  expect(violations.map(v => `${v.id} (${v.impact}) : ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
 }
 
 test.describe.serial('Portail — accessibilité des écrans de saisie', () => {
