@@ -88,11 +88,11 @@ type IssueConnexion = 'consomme' | 'refuse';
  * n'est appelée qu'après la vérification du `state`. Un retour forgé n'écrit
  * donc jamais.
  *
- * PURGE OPPORTUNISTE, même patron que `POST /api/portail/lien/demande` pour
- * `portail_demande_tentatives` : pas de tâche planifiée dans ce dépôt, la
- * purge se fait donc à chaque écriture, sur les lignes sorties de la fenêtre
- * de 12 mois (`RETENTION_CONNEXIONS_GOOGLE_MS`, décision du 2026-07-22,
- * `ACTIVATION_RUNBOOK_G5.md`).
+ * PURGE À L'ÉCRITURE, même patron que `POST /api/portail/lien/demande` pour
+ * `portail_demande_tentatives` : à chaque écriture, sur les lignes sorties de
+ * la fenêtre de 12 mois (`RETENTION_CONNEXIONS_GOOGLE_MS`, décision du
+ * 2026-07-22, `ACTIVATION_RUNBOOK_G5.md`). Depuis [[D-451]], le cron horaire
+ * la joue aussi (`lib/conservation/purgeTraces.ts`), sans attendre d'écriture.
  *
  * Pas de `.catch()` propre à la purge, délibérément : le `try/catch` englobant
  * la fait déjà échouer sans bloquer, et surtout la JOURNALISE

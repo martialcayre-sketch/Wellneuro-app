@@ -46,6 +46,7 @@ describe('demanderExtraction', () => {
       ...prisma,
       $queryRaw: vi.fn()
         .mockResolvedValueOnce([{ actif: true, suivi_cloture_le: null }])
+        .mockResolvedValueOnce([{ echu: false }])
         .mockResolvedValueOnce([{ n: 0 }]),
       compteRenduBiologique: { findFirst: vi.fn().mockResolvedValue({ typeMime: 'application/pdf', purgeLe: null }) },
       travailExtractionBiologique: { count: vi.fn().mockResolvedValue(0), create: creer },
@@ -58,6 +59,28 @@ describe('demanderExtraction', () => {
     expect(tx.masquageCompteRendu.count).toHaveBeenCalledWith({
       where: { idCompteRendu: 'cr_1', idPatient: 'pat_sophie', purgeLe: null },
     });
+    expect(creer).not.toHaveBeenCalled();
+  });
+
+  it('un dépôt échu (30 jours, horloge de la base) refuse `document_echu` avant d’enfiler, même non encore purgé (D-451)', async () => {
+    const creer = vi.fn();
+    const tx = {
+      ...prisma,
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ actif: true, suivi_cloture_le: null }])
+        .mockResolvedValueOnce([{ echu: true }]),
+      compteRenduBiologique: { findFirst: vi.fn().mockResolvedValue({ typeMime: 'application/pdf', purgeLe: null }) },
+      travailExtractionBiologique: { count: vi.fn().mockResolvedValue(0), create: creer },
+    };
+    prisma.$transaction.mockImplementationOnce(async (cb: (t: typeof tx) => unknown) => cb(tx));
+    expect(await demanderExtraction({ idPatient: 'pat_sophie', idCompteRendu: 'cr_1', demandePar: 'praticien@wellneuro.fr' }))
+      .toEqual({ ok: false, reason: 'document_echu' });
+    const [gabarit, jours, idCompteRendu, idPatient] = tx.$queryRaw.mock.calls[1] as [string[], string, string, string];
+    expect(gabarit.join('?')).toContain("depose_le <= (clock_timestamp() AT TIME ZONE 'UTC') - ?::interval AS echu");
+    expect([jours, idCompteRendu, idPatient]).toEqual(['30 days', 'cr_1', 'pat_sophie']);
+    // Sous le verrou du compte rendu, comme les autres refus.
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.travailExtractionBiologique.count).not.toHaveBeenCalled();
     expect(creer).not.toHaveBeenCalled();
   });
 

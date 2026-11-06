@@ -61,6 +61,17 @@ describe('POST /api/praticien/biologie/import/extraction — file durable (D-282
     });
   });
 
+  it('un dépôt de plus de 30 jours, pas encore purgé, rend 409 `document_echu` avec le texte validé (D-451)', async () => {
+    demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'document_echu' });
+    const res = await POST(requete(CORPS));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'document_echu',
+      error: 'Ce compte rendu a été déposé il y a plus de 30 jours : son document va être effacé et ne peut plus être relu.',
+    });
+  });
+
   it('une ligne validée (LOT-09) rend 409 `ligne_validee`', async () => {
     demanderExtraction.mockResolvedValueOnce({ ok: false, reason: 'ligne_validee' });
     const res = await POST(requete(CORPS));

@@ -15,12 +15,19 @@
 //      (cas 2) ;
 //   3. un document DÉJÀ PURGÉ à la dernière décision ([[D-258]] §1) : sa ligne
 //      écartée part à l'échéance ;
-//   4. un travail de la file EN ATTENTE : rien n'est effacé, ni le document ni
-//      les lignes (cas 4) ;
+//   4. un travail de la file EN ATTENTE, l'échéance passée depuis moins d'une
+//      période du cron : rien n'est effacé, ni le document ni les lignes
+//      (cas 4) ;
+//   4 bis. la grâce passée ([[D-451]]), un travail en attente que personne ne
+//      réclame est clos `document_purge`, et la purge suit ;
+//   4 ter. la grâce passée, une lecture VIVANTE (import en cours frais,
+//      travail réservé) : import et travail clos, puis effacés ;
 //   5. un dépôt RÉCENT : intouché ;
 //   6. L'ÉCART d'un document transmis par le patient : ses lignes, ses
 //      extractions et ses travaux terminés partent avec lui (cas 3) ;
-//   7. un SECOND PASSAGE ne change plus rien.
+//   7. un SECOND PASSAGE ne change plus rien ;
+//   8. les TRACES ÉCHUES (journal des accès, connexions Google, tentatives de
+//      lien) partent sans aucune écriture neuve ([[D-451]], Q1).
 //
 // Les dépôts anciens sont posés en désarmant, le temps d'une transaction, le
 // trigger qui date le dépôt par la base — patron du contrat
@@ -53,15 +60,26 @@ const id = (nom: string) => `${nom}_banc_purge_${RUN}`;
 
 type Client = pg.Client;
 
-/** Un compte rendu ; `ancien` le date de 30 jours et une heure, trigger désarmé. */
-async function compteRendu(c: Client, nom: string, opts: { ancien: boolean; origine: 'praticien' | 'patient' }) {
+/**
+ * Un compte rendu ; `ancien` le date de 30 jours et une heure (ou de `age`),
+ * trigger désarmé. Trente jours et une heure, c'est déjà la grâce d'un travail
+ * ouvert passée ([[D-451]]) : un dépôt qui doit rester DANS la grâce passe son `age`.
+ */
+async function compteRendu(
+  c: Client,
+  nom: string,
+  opts: { ancien: boolean; origine: 'praticien' | 'patient'; age?: string },
+) {
   await c.query('BEGIN');
   if (opts.ancien) await c.query('ALTER TABLE comptes_rendus_biologiques DISABLE TRIGGER comptes_rendus_biologiques_avant_insertion');
   await c.query(
     `INSERT INTO comptes_rendus_biologiques (id, id_patient, contenu, type_mime, empreinte_sha256, depose_par, origine, depose_le)
      VALUES ($1, $2, convert_to($3, 'UTF8'), 'application/pdf', encode(sha256(convert_to($3, 'UTF8')), 'hex'), $4, $5,
-             (clock_timestamp() AT TIME ZONE 'UTC') - CASE WHEN $6 THEN interval '30 days 1 hour' ELSE interval '0' END)`,
-    [id(nom), PATIENT, `banc ${RUN} ${nom}`, opts.origine === 'praticien' ? PRATICIEN : null, opts.origine, opts.ancien],
+             (clock_timestamp() AT TIME ZONE 'UTC') - $6::interval)`,
+    [
+      id(nom), PATIENT, `banc ${RUN} ${nom}`, opts.origine === 'praticien' ? PRATICIEN : null, opts.origine,
+      opts.ancien ? (opts.age ?? '30 days 1 hour') : '0',
+    ],
   );
   if (opts.ancien) await c.query('ALTER TABLE comptes_rendus_biologiques ENABLE TRIGGER comptes_rendus_biologiques_avant_insertion');
   await c.query('COMMIT');
@@ -137,7 +155,9 @@ async function poserFixtures(c: Client) {
   await compteRendu(c, 'cr_vide', { ancien: true, origine: 'praticien' });
   await compteRendu(c, 'cr_mixte', { ancien: true, origine: 'praticien' });
   await compteRendu(c, 'cr_decide', { ancien: true, origine: 'praticien' });
-  await compteRendu(c, 'cr_attente', { ancien: true, origine: 'praticien' });
+  await compteRendu(c, 'cr_attente', { ancien: true, origine: 'praticien', age: '30 days 30 minutes' });
+  await compteRendu(c, 'cr_bloque', { ancien: true, origine: 'praticien', age: '30 days 2 hours' });
+  await compteRendu(c, 'cr_lecture', { ancien: true, origine: 'praticien', age: '30 days 2 hours' });
   await compteRendu(c, 'cr_recent', { ancien: false, origine: 'praticien' });
   await compteRendu(c, 'cr_patient', { ancien: false, origine: 'patient' });
 
@@ -169,12 +189,36 @@ async function poserFixtures(c: Client) {
     [id('cr_decide')],
   );
 
-  // 4. Un travail de la file en attente.
+  // 4. Un travail de la file en attente, l'échéance passée depuis moins
+  //    d'une période du cron : dans la grâce ([[D-451]]).
   await extraction(c, 'imp_attente', 'cr_attente', ['lig_attente_p']);
   await c.query(
     `INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
      VALUES ($1, $2, $3, $4)`,
     [id('trv_attente'), PATIENT, id('cr_attente'), PRATICIEN],
+  );
+
+  // 4 bis. Un travail en attente que personne ne réclame (processus de fond
+  //    arrêté), la grâce passée.
+  await extraction(c, 'imp_bloque', 'cr_bloque', ['lig_bloque_p']);
+  await c.query(
+    `INSERT INTO travaux_extraction_biologique (id, id_patient, id_compte_rendu, demande_par)
+     VALUES ($1, $2, $3, $4)`,
+    [id('trv_bloque'), PATIENT, id('cr_bloque'), PRATICIEN],
+  );
+
+  // 4 ter. Une lecture VIVANTE, la grâce passée : son import en cours (frais,
+  //    daté par la base) et son travail réservé.
+  await c.query(
+    `INSERT INTO imports_biologiques (id, id_patient, id_compte_rendu, modele, version_prompt, lance_par)
+     VALUES ($1, $2, $3, 'modele-banc', 'bio-extraction-v3', $4)`,
+    [id('imp_lecture'), PATIENT, id('cr_lecture'), PRATICIEN],
+  );
+  await c.query(
+    `INSERT INTO travaux_extraction_biologique
+       (id, id_patient, id_compte_rendu, demande_par, statut, tentatives, id_import_courant, reserve_jusqua)
+     VALUES ($1, $2, $3, $4, 'en_cours', 1, $5, (clock_timestamp() AT TIME ZONE 'UTC') + interval '6 minutes')`,
+    [id('trv_lecture'), PATIENT, id('cr_lecture'), PRATICIEN, id('imp_lecture')],
   );
 
   // 5. Récent.
@@ -186,10 +230,49 @@ async function poserFixtures(c: Client) {
   await travailTermine(c, 'trv_patient', 'cr_patient', 'imp_patient');
 }
 
+const EMPREINTE_BANC = `banc-purge-${RUN}`;
+
+/** Les traces des trois tables à purge opportuniste : une échue, une encore dans sa fenêtre ([[D-451]], Q1). */
+async function poserTraces(c: Client) {
+  const date = `(clock_timestamp() AT TIME ZONE 'UTC') - $3::interval`;
+  for (const [nom, age] of [['acc_echu', '366 days'], ['acc_garde', '364 days']]) {
+    await c.query(
+      `INSERT INTO journal_acces_dossiers (id, id_patient, praticien_email, route, methode, cree_le)
+       VALUES ($1, $2, $4, '/api/praticien/banc', 'GET', ${date})`,
+      [id(nom), PATIENT, age, PRATICIEN],
+    );
+  }
+  for (const [nom, age] of [['ggl_echu', '366 days'], ['ggl_garde', '364 days']]) {
+    await c.query(
+      `INSERT INTO portail_connexions_google (id, id_patient, issue, cree_le) VALUES ($1, $2, 'succes', ${date})`,
+      [id(nom), PATIENT, age],
+    );
+  }
+  for (const [nom, age] of [['tnt_echu', '25 hours'], ['tnt_garde', '23 hours']]) {
+    await c.query(
+      `INSERT INTO portail_demande_tentatives (id, empreinte_ip, cree_le) VALUES ($1, $2, ${date})`,
+      [id(nom), EMPREINTE_BANC, age],
+    );
+  }
+}
+
+async function tracesRestantes(c: Client) {
+  const { rows } = await c.query(
+    `SELECT id FROM journal_acces_dossiers WHERE id_patient = $1
+     UNION ALL SELECT id FROM portail_connexions_google WHERE id_patient = $1
+     UNION ALL SELECT id FROM portail_demande_tentatives WHERE empreinte_ip = $2`,
+    [PATIENT, EMPREINTE_BANC],
+  );
+  return rows.map(r => r.id as string).sort();
+}
+
 async function effacerFixtures(c: Client) {
   // L'ordre de l'effacement nommé du dossier (`patient/effacement.ts`).
   const par = [PATIENT];
   await c.query('BEGIN');
+  await c.query('DELETE FROM journal_acces_dossiers WHERE id_patient = $1', par);
+  await c.query('DELETE FROM portail_connexions_google WHERE id_patient = $1', par);
+  await c.query('DELETE FROM portail_demande_tentatives WHERE empreinte_ip = $1', [EMPREINTE_BANC]);
   await c.query('DELETE FROM lectures_imports_biologiques WHERE id_patient = $1', par);
   await c.query('DELETE FROM travaux_extraction_biologique WHERE id_patient = $1', par);
   await c.query('DELETE FROM lignes_biologiques_candidates WHERE id_patient = $1', par);
@@ -229,12 +312,22 @@ async function main() {
   const { prisma } = await import('@/lib/prisma');
   const { purgerAEcheance } = await import('@/lib/biology-library/import/purge');
   const { ecarterCompteRendu } = await import('@/lib/biology-library/import/ecart');
+  const { purgerTracesEchues } = await import('@/lib/conservation/purgeTraces');
+  const { demanderExtraction } = await import('@/lib/biology-library/import/fileExtraction');
   try {
     await poserFixtures(observateur);
+    await poserTraces(observateur);
     const avant = {
       attente: await etat(observateur, 'cr_attente'),
       recent: await etat(observateur, 'cr_recent'),
     };
+
+    // Échu, pas encore purgé : la demande refuse avant d'enfiler ([[D-451]],
+    // Q3) ; un dépôt récent passe ce refus (et bute ici sur le masquage).
+    const demander = (cr: string) => demanderExtraction({ idPatient: PATIENT, idCompteRendu: id(cr), demandePar: PRATICIEN });
+    assert.deepEqual(await demander('cr_attente'), { ok: false, reason: 'document_echu' });
+    assert.deepEqual(await demander('cr_recent'), { ok: false, reason: 'masquage_absent' });
+    console.log('ok 0 — un dépôt de plus de 30 jours, pas encore purgé : nouvelle lecture refusée `document_echu`');
 
     const bilan = await purgerAEcheance();
     assert.equal(bilan.echecs, 0, `aucun refus de la base : ${JSON.stringify(bilan)}`);
@@ -268,7 +361,30 @@ async function main() {
 
     assert.deepEqual(await etat(observateur, 'cr_attente'), avant.attente);
     assert.equal(avant.attente.purge, false);
-    console.log('ok 4 — un travail de la file en attente : rien n’est effacé, ni le document ni les lignes');
+    console.log('ok 4 — un travail de la file en attente, dans la grâce : rien n’est effacé, ni le document ni les lignes');
+
+    assert.deepEqual(await etat(observateur, 'cr_bloque'), {
+      purge: true,
+      motif_purge: 'echeance',
+      empreinte: true,
+      date: true,
+      imports: [],
+      lignes: [],
+      travaux: [id('trv_bloque')],
+      lectures: [],
+    });
+    const { rows: [bloque] } = await observateur.query(
+      `SELECT statut, motif_echec, termine_le IS NOT NULL AS termine, reserve_jusqua FROM travaux_extraction_biologique WHERE id = $1`,
+      [id('trv_bloque')],
+    );
+    assert.deepEqual(bloque, { statut: 'echec', motif_echec: 'document_purge', termine: true, reserve_jusqua: null });
+    console.log('ok 4 bis — un travail en attente, la grâce passée : clos `document_purge`, le document et les lignes partent');
+
+    assert.deepEqual(await etat(observateur, 'cr_lecture'), {
+      purge: true, motif_purge: 'echeance', empreinte: true, date: true, imports: [], lignes: [], travaux: [], lectures: [],
+    });
+    assert.ok(bilan.travauxClos >= 2, `deux travaux clos au moins : ${JSON.stringify(bilan)}`);
+    console.log('ok 4 ter — une lecture vivante, la grâce passée : import et travail clos, puis effacés avec le document');
 
     assert.deepEqual(await etat(observateur, 'cr_recent'), avant.recent);
     console.log('ok 5 — un dépôt récent est intouché');
@@ -301,6 +417,12 @@ async function main() {
       instantane,
     );
     console.log('ok 7 — un second passage ne change plus rien');
+
+    // Sans aucune écriture neuve dans ces trois tables : le cron seul.
+    const traces = await purgerTracesEchues();
+    assert.equal(traces.echecs, 0, `aucune table de traces en panne : ${JSON.stringify(traces)}`);
+    assert.deepEqual(await tracesRestantes(observateur), [id('acc_garde'), id('ggl_garde'), id('tnt_garde')].sort());
+    console.log('ok 8 — sans nouvel accès, connexion ni demande : les traces échues partent, les autres restent (D-451)');
   } finally {
     try {
       await observateur.query('ROLLBACK').catch(() => {});

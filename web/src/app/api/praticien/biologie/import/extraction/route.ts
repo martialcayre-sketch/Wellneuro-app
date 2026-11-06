@@ -31,6 +31,9 @@ const MESSAGES: Record<string, string> = {
   lecture_demandee:
     'Une lecture de ce compte rendu est déjà demandée, en attente ou en reprise : l’écran en suit l’issue.',
   document_purge: 'Le document de ce compte rendu a été effacé : il ne peut plus être relu.',
+  // Texte validé par le responsable le 2026-11-06 ([[D-451]], Q3).
+  document_echu:
+    'Ce compte rendu a été déposé il y a plus de 30 jours : son document va être effacé et ne peut plus être relu.',
   ligne_validee:
     'Une ligne de ce compte rendu a déjà été validée : il ne peut plus être relu, rien de ce qui est enregistré n’est remplacé.',
   masquage_absent: 'Masquez l’identité du patient sur le document avant de lancer la lecture.',
