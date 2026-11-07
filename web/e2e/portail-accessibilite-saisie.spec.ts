@@ -70,5 +70,15 @@ test.describe.serial('Portail — accessibilité des écrans de saisie', () => {
     await expect(fatigue).toBeVisible();
     await expect(fatigue).toHaveAttribute('aria-valuetext', /sur 10$/);
     await auditer(page);
+
+    // « Suivant » ne doit pas soumettre : avant le correctif, le même <button>
+    // passait à `type="submit"` pendant le clic, et la confirmation de
+    // transmission s'ouvrait dès l'arrivée sur l'étape 2 (audit UI du
+    // 2026-11-07, reproduit dans Chromium). Le dialogue ne s'ouvrant qu'à la
+    // soumission, l'attendre absent juste après le clic suffit.
+    await page.getByRole('button', { name: 'Suivant →' }).click();
+    await expect(page.getByRole('slider', { name: 'Insomnie / sommeil' })).toBeVisible();
+    await expect(page.getByText('Étape 2 sur 2')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
