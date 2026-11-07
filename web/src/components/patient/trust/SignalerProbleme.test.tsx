@@ -97,3 +97,40 @@ describe('SignalerProbleme — désignation', () => {
     expect(screen.queryByText(QUESTION_AVANT)).toBeNull();
   });
 });
+
+// LA REMISE À ZÉRO (audit UI du 2026-11-07) : un second signalement ne reprend
+// rien du premier — ni le rattachement, ni les deux dates.
+describe('SignalerProbleme — remise à zéro', () => {
+  const PRISE = 'Depuis quand le prenez-vous ?';
+  const SYMPTOMES = 'Depuis quand ressentez-vous ces symptômes ?';
+
+  function remplirAssociation() {
+    fireEvent.change(screen.getByRole('combobox', { name: QUESTION_AVANT }), { target: { value: 'oui' } });
+    fireEvent.change(screen.getByLabelText(PRISE), { target: { value: '2026-10-01' } });
+    fireEvent.change(screen.getByLabelText(SYMPTOMES), { target: { value: '2026-10-05' } });
+  }
+
+  function attendreVierge() {
+    expect((screen.getByRole('combobox', { name: QUESTION_AVANT }) as HTMLSelectElement).value).toBe('ne_sait_pas');
+    expect((screen.getByLabelText(PRISE) as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText(SYMPTOMES) as HTMLInputElement).value).toBe('');
+  }
+
+  it('après un envoi, « Faire un autre signalement » repart d’un formulaire vierge', async () => {
+    ouvrir({ elementsProgramme: null });
+    remplirAssociation();
+    remplirEtEnvoyer();
+    expect(corps).toMatchObject({ rattacheAuProgramme: 'oui', debutPriseLe: '2026-10-01', debutSymptomesLe: '2026-10-05' });
+    fireEvent.click(await screen.findByText('Faire un autre signalement'));
+    fireEvent.click(screen.getByText(/Un produit me semble mal toléré/));
+    attendreVierge();
+  });
+
+  it('« Annuler » puis réouverture : rien du brouillon abandonné', () => {
+    ouvrir({ elementsProgramme: null });
+    remplirAssociation();
+    fireEvent.click(screen.getByText('Annuler'));
+    fireEvent.click(screen.getByText(/Un produit me semble mal toléré/));
+    attendreVierge();
+  });
+});
