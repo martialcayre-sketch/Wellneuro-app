@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-07, renvoi du dossier polyphénols et antioxydants)** : forme opaque (`D-251` §4) ; identifiants et mécanismes seulement, détail au dossier privé du responsable (besoin 2, H15).
+  - **Objet.** Le dossier a relevé qu'un lien analyte-axe déjà en base repose sur un claim que contredit une guidance d'agence ingérée au dossier : le claim assimile deux marqueurs distincts, et la guidance juge l'un des deux non fiable. Décision A5 du dossier (2026-11-06) : le lien est routé à ce lot ; le dossier n'y touche pas et le lien reste actif jusqu'à la décision de ce lot.
+  - **Claims à reprendre à la curation.** `WN-CL-0161-070` (fonde le lien contesté) ; `WN-CL-0647-002` (guidance contraire, `VALIDE`, au besoin 2) ; `WN-CL-0161-081` (fonde un autre lien analyte-axe, passé hors parcours au dossier ; son renvoi, ajouté par l'assistant, est confirmé par le responsable).
+  - **Écarts connexes, déjà clos au dossier.** `WN-CL-0043-017`, `WN-CL-0168-025`, `WN-CL-0178-054`, `WN-CL-0376-016`, `WN-CL-0386-003`.
+  - **Effet.** Aucune écriture en base ni en code par cette mise à jour ; rien ne change aux liens en base tant que ce lot n'a pas décidé.

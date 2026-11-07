@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 610 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 623 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 103 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 116 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -50,7 +50,11 @@ besoin 2, iode et sélénium : une recommandation méthodologique de l'OMS, un
 avis de l'Anses, deux fiches du NIH, deux résumés des caractéristiques du
 produit, la table Ciqual de l'Anses et une valeur de référence de la CIAAW,
 `WN-SRC-0631` à `0638`, les lignes de l'iode et du sélénium de la DGCCRF étant
-lues dans `0521`),
+lues dans `0521` ;
+besoin 2, polyphénols et antioxydants : deux avis et un rapport d'expertise de
+l'Anses, quatre avis et une guidance de l'EFSA, un règlement de l'Union, la
+publication d'un essai, une fiche du NCCIH et deux revues Cochrane,
+`WN-SRC-0639` à `0651`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -98,7 +102,9 @@ corpus runtime.
   `0638`), trois de plus : les résumés des caractéristiques du produit
   CORDARONE et TERALITHE (`0635`, `0636`, Licence Ouverte etalab-2.0) et la
   table Ciqual 2025 (`0637`, Licence Ouverte etalab) ; `0631` à `0634` et
-  `0638` restent à vérifier ;
+  `0638` restent à vérifier ; au 2026-11-07, pour les polyphénols et
+  antioxydants (`WN-SRC-0639` à `0651`), une de plus : le règlement (UE)
+  2022/2340 (`0642`, texte de l'Union) ; les douze autres restent à vérifier ;
   la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
   extrait court est ingéré pour usage interne sur arbitrage du responsable,
   reste à vérifier.
