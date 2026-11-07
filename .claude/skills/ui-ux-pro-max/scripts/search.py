@@ -129,6 +129,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Garde WellNeuro, seul écart à l'amont dans ce fichier : relecture seule (SKILL.md, Cadre, règle 3).
+    if (args.design_system or args.persist or args.force or args.project_name is not None
+            or args.page is not None or args.output_dir is not None or args.variance is not None
+            or args.motion is not None or args.density is not None):
+        parser.error("WellNeuro : génération de système de design interdite, ce skill ne fait que relire")
+    if args.domain in {"style", "color", "typography", "google-fonts", "landing", "product", "gsap"}:
+        parser.error(f"WellNeuro : domaine {args.domain} interdit, il sert à choisir une identité")
+    if not args.domain and not args.stack:
+        parser.error("WellNeuro : indiquer --domain ou --stack, la détection automatique peut viser un domaine interdit")
+
     # Design system takes priority
     if args.design_system:
         if args.rtl is not None:
