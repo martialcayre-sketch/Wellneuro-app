@@ -10,7 +10,7 @@ Corriger, à la demande du responsable, les défauts relevés au constat du 2026
 
 ## Décisions prises
 
-- Mineur clos et saut de colonne : le responsable n'a pas répondu aux options posées. Options recommandées retenues, amendements datés à [[D-341]] §5 et [[D-447]] §6, à relire avant le merge.
+- Mineur clos et saut de colonne : le responsable n'a pas répondu aux options posées. Options recommandées, amendements datés à [[D-341]] §5 et [[D-447]] §6, retenus par le responsable le 2026-11-07.
 - « Reprendre » ou « Commencer » : pas un défaut. `hasDraft` lit un brouillon gardé sur l'appareil, et la page le dit au patient. Le corriger exigerait de stocker des réponses de santé côté serveur.
 - `ui-ux-pro-max` : `D-456` le réserve à la relecture. Le catalogue a servi à vérifier ; les corrections sont écrites à la main.
 
@@ -31,7 +31,7 @@ Voir le corps de la PR : Vitest ciblé, T2 rapide local.
 
 ## Prochaine action exacte
 
-CI et revue de la PR, puis relecture des deux amendements par le responsable avant toute déclaration « prête ».
+L'intégrateur prend la PR déclarée prête. Ensuite, recaler #1925 sur `main`.
 
 ## Interdits encore actifs
 
