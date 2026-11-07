@@ -139,7 +139,7 @@ Rendus sur l'option recommandée (liste commune, `20261107-2112-c` à
 
 ## Ordre des PR proposé
 
-1. **D-xxx d'identité d'auteur** : `docs/decisions/D-459.md`, acceptée le
+1. **D-459, identité d'auteur** : `docs/decisions/D-459.md`, acceptée le
    2026-11-07. Elle fixe :
    - le nom des deux colonnes : `creePar` comme le cadrage, et un nom
      distinct de `approuvePar` pour l'approbateur ;
