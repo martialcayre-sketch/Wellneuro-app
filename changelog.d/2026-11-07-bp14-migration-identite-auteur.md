@@ -16,7 +16,8 @@ PR de migration seule de la file C (place 8), sans code consommateur
 - Contrat négatif `identite_auteur_protocoles_v1_negatif.sql` et sa ligne de
   CI : forme des colonnes, insertions sans les colonnes, casse, refus à deux
   praticiens (journal ou dossiers), version relue et approbation remplies,
-  `draft` nul, `updated_at` intact, aucune seconde reprise.
+  `draft` nul, `updated_at` intact, praticien blanc sans auteur, aucune
+  seconde reprise (verrou par la version ou par l'approbation).
 - `schema.prisma` : `creePar` et `validePar`, facultatifs.
 - Suite : release-db approuvée par le responsable, constat par conteneur et
   date seuil inscrite, puis la PR de code et ses trois bancs.

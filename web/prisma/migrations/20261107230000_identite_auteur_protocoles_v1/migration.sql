@@ -63,7 +63,10 @@
 -- AUCUNE SECONDE REPRISE (D-459 §5 : « un nul ne se complète jamais après
 -- coup ») : la fonction de reprise refuse de s'exécuter dès qu'une seule ligne
 -- porte déjà un auteur. Après cette release, la production en porte : un rejeu
--- échoue, il ne complète rien.
+-- échoue, il ne complète rien. LIMITE NOMMÉE (arbitrage du 2026-11-07) : si
+-- toutes les lignes qui portent un auteur disparaissaient (effacement de
+-- dossiers), le verrou se rouvrirait. Seul un appel SQL manuel en production
+-- pourrait alors s'en servir, ce que D-087 interdit déjà.
 
 -- ── 1. La garde, avant toute écriture ───────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.identite_auteur_praticiens_distincts()
@@ -163,8 +166,9 @@ END $$;
 
 -- ── 4. Application ──────────────────────────────────────────────────────────
 -- Les comptes rendus ne sont pas épinglés : ils se relisent en agrégats au
--- constat de la release-db (le 2026-11-07, 10 versions relues et 9
--- approbations, one-off-5223).
+-- constat de la release-db. Pré-lecture du 2026-11-07 (one-off-5223) : 10
+-- versions relues et 9 approbations attendues ; le constat les confirme ou
+-- les dément.
 DO $$
 DECLARE
   r record;

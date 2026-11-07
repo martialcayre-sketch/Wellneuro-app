@@ -22,13 +22,18 @@
 --   5. une approbation est remplie ;
 --   6. une version `draft` reste nulle ;
 --   7. `updated_at` n'est pas touché par la reprise ;
---   8. aucune seconde reprise : rappelée, la fonction refuse.
+--   8. aucune seconde reprise : rappelée, la fonction refuse ;
+--   9. le verrou mord aussi quand seule une approbation porte un auteur ;
+--  10. un dossier dont le `praticien_email` est blanc ne compte pas comme un
+--      praticien, et ses lignes restent nulles.
 --
--- « Sans rien écrire » (3) tient à deux choses : la garde passe AVANT toute
--- écriture, dans la migration comme dans la fonction, et une migration qui
--- lève est annulée en entier. Ici, l'erreur est attrapée dans un sous-bloc,
--- qui annule lui aussi ce qu'il contient ; le banc vérifie ensuite que les
--- lignes sont restées nulles.
+-- CE QUE CE BANC NE PROUVE PAS, sur « sans rien écrire » (3) : il vérifie que
+-- les lignes sont restées nulles après le refus, mais l'erreur est attrapée
+-- dans un sous-bloc, qui annule de toute façon ce qu'il contient. La garantie
+-- tient ailleurs : la garde passe AVANT toute écriture, dans la migration
+-- comme dans la fonction (lecture du code), et une migration qui lève est
+-- annulée en entier par Postgres (transaction implicite du script). Le banc
+-- vérifie le refus et son code, pas l'ordre des instructions.
 --
 -- ERRCODE sentinelle WN459 (celui de la migration), attrapé seulement là où le
 -- refus est attendu.
@@ -81,7 +86,10 @@ BEGIN
   -- ── 1. Fixtures, insérées SANS les deux colonnes ────────────────────────
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at) VALUES
     ('pat_contrat_ida1', 'PAT_CONTRAT_IDA1', 'sophie.nicola+auteur@example.test',
-     'Sophie', 'Nicola', EMAIL_A, CURRENT_TIMESTAMP);
+     'Sophie', 'Nicola', EMAIL_A, CURRENT_TIMESTAMP),
+    -- Praticien blanc (10) : la colonne est NOT NULL sans CHECK « non vide ».
+    ('pat_contrat_ida3', 'PAT_CONTRAT_IDA3', 'jennifer.martin+auteur@example.test',
+     'Jennifer', 'Martin', E' \t ', CURRENT_TIMESTAMP);
 
   INSERT INTO protocol_drafts
     (id, id_patient, decision_card_id, decision_card_input_hash, snapshot_input_hash,
@@ -93,17 +101,22 @@ BEGIN
      CURRENT_TIMESTAMP, TIMESTAMP '2026-01-02 03:04:05'),
     ('pd_contrat_ida_draft', 'PAT_CONTRAT_IDA1', 'dc_contrat', H, H, H, 'prio_contrat',
      'draft', '{"actor": "patient"}'::jsonb, H, 'ja-food-observation-v1',
-     NULL, TIMESTAMP '2026-01-02 03:04:05');
+     NULL, TIMESTAMP '2026-01-02 03:04:05'),
+    ('pd_contrat_ida_blanc', 'PAT_CONTRAT_IDA3', 'dc_contrat', H, H, H, 'prio_contrat',
+     'practitioner_reviewed', '{}'::jsonb, H, 'c1-protocol-draft-v4',
+     CURRENT_TIMESTAMP, TIMESTAMP '2026-01-02 03:04:05');
 
   INSERT INTO protocol_diffusion_approvals
     (id, id_patient, protocol_draft_id, decision_card_input_hash, protocol_draft_input_hash,
      approved_at, confirmation)
   VALUES
     ('pda_contrat_ida', 'PAT_CONTRAT_IDA1', 'pd_contrat_ida_relue', H, H,
+     CURRENT_TIMESTAMP, 'content_approved_for_diffusion'),
+    ('pda_contrat_ida_blanc', 'PAT_CONTRAT_IDA3', 'pd_contrat_ida_blanc', H, H,
      CURRENT_TIMESTAMP, 'content_approved_for_diffusion');
 
   IF EXISTS (SELECT 1 FROM protocol_drafts WHERE id LIKE 'pd_contrat_ida%' AND cree_par IS NOT NULL)
-     OR EXISTS (SELECT 1 FROM protocol_diffusion_approvals WHERE id = 'pda_contrat_ida' AND valide_par IS NOT NULL) THEN
+     OR EXISTS (SELECT 1 FROM protocol_diffusion_approvals WHERE id LIKE 'pda_contrat_ida%' AND valide_par IS NOT NULL) THEN
     RAISE EXCEPTION 'CONTRAT 1 : une insertion sans les colonnes doit les laisser nulles';
   END IF;
   IF (SELECT approved_by FROM protocol_diffusion_approvals WHERE id = 'pda_contrat_ida') <> 'practitioner' THEN
@@ -115,7 +128,7 @@ BEGIN
     ('jad_contrat_ida_casse', 'PAT_CONTRAT_IDA1', upper(EMAIL_A), '/contrat', 'GET');
   nb := public.identite_auteur_praticiens_distincts();
   IF nb <> 1 THEN
-    RAISE EXCEPTION 'CONTRAT 2 : le même e-mail à la casse près doit compter pour un, trouvé %', nb;
+    RAISE EXCEPTION 'CONTRAT 2/10 : le même e-mail à la casse près compte pour un, un praticien blanc pour aucun ; trouvé %', nb;
   END IF;
 
   -- ── 3a. Un second praticien dans le journal d'accès : refus ─────────────
@@ -145,9 +158,9 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT 3b : un second praticien dans les dossiers doit faire refuser la reprise';
   END IF;
 
-  -- … et rien n'a été écrit.
+  -- … et les lignes sont restées nulles (voir l'en-tête : ce que cela prouve).
   IF EXISTS (SELECT 1 FROM protocol_drafts WHERE id LIKE 'pd_contrat_ida%' AND cree_par IS NOT NULL)
-     OR EXISTS (SELECT 1 FROM protocol_diffusion_approvals WHERE id = 'pda_contrat_ida' AND valide_par IS NOT NULL) THEN
+     OR EXISTS (SELECT 1 FROM protocol_diffusion_approvals WHERE id LIKE 'pda_contrat_ida%' AND valide_par IS NOT NULL) THEN
     RAISE EXCEPTION 'CONTRAT 3 : un refus ne doit rien écrire';
   END IF;
 
@@ -178,6 +191,11 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT 7 : la reprise ne doit pas toucher updated_at';
   END IF;
 
+  IF EXISTS (SELECT 1 FROM protocol_drafts WHERE id = 'pd_contrat_ida_blanc' AND cree_par IS NOT NULL)
+     OR EXISTS (SELECT 1 FROM protocol_diffusion_approvals WHERE id = 'pda_contrat_ida_blanc' AND valide_par IS NOT NULL) THEN
+    RAISE EXCEPTION 'CONTRAT 10 : un dossier au praticien blanc doit laisser ses lignes nulles';
+  END IF;
+
   -- ── 8. Aucune seconde reprise ───────────────────────────────────────────
   refuse := false;
   BEGIN
@@ -189,7 +207,19 @@ BEGIN
     RAISE EXCEPTION 'CONTRAT 8 : une seconde reprise doit être refusée';
   END IF;
 
-  RAISE NOTICE 'CONTRAT identite_auteur_protocoles_v1 : les neuf promesses tiennent.';
+  -- ── 9. Le verrou mord sur l'approbation seule ───────────────────────────
+  refuse := false;
+  BEGIN
+    UPDATE protocol_drafts SET cree_par = NULL WHERE id LIKE 'pd_contrat_ida%';
+    PERFORM * FROM public.identite_auteur_protocoles_reprise();
+  EXCEPTION WHEN SQLSTATE 'WN459' THEN
+    refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'CONTRAT 9 : une approbation qui porte un auteur doit suffire à refuser la reprise';
+  END IF;
+
+  RAISE NOTICE 'CONTRAT identite_auteur_protocoles_v1 : les onze promesses tiennent.';
 END $$;
 
 ROLLBACK;

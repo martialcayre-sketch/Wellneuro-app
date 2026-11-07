@@ -30,10 +30,20 @@ consommateur.
     intact, praticien blanc → nul ; elle rejoue la garde et refuse si un
     auteur est déjà posé (aucune seconde reprise, D-459 §5) ;
   - EXECUTE retiré à PUBLIC sur les deux fonctions.
-- **Choix de forme de la session, non tranché par D-459** : la reprise vit
-  dans une fonction conservée en base, pour que le contrat l'éprouve
-  elle-même sur la base vide du CI (patron de `20260728090000`). Signalé
-  dans la PR. Une remarque de revue qui le conteste remonte en arbitrage.
+- **Choix de forme hors D-459, retenu par le responsable** (2026-11-07,
+  après la revue `wn-reviewer`, GO, quatre P2) : la reprise vit dans une
+  fonction conservée en base, pour que le contrat l'éprouve elle-même sur
+  la base vide du CI (patron de `20260728090000`). Limite nommée dans la
+  migration et au journal de F10 : le verrou se rouvrirait si toutes les
+  lignes à auteur disparaissaient ; seul un SQL manuel, interdit par D-087,
+  s'en servirait.
+- Trois retouches retenues par le responsable : commentaire « pré-lecture »
+  au lieu d'un constat annoncé ; deux cas au contrat (praticien blanc,
+  verrou par l'approbation seule) ; en-tête du contrat honnête sur ce que
+  « sans rien écrire » prouve. P2-4 (concurrence théorique garde/insert) :
+  écarté, un seul compte en production.
+- Branche remise à niveau par rebase du commit local, sur arbitrage
+  (#1927 à #1929, sans conflit au `merge-tree`).
 
 ## Fichiers modifiés
 
@@ -51,9 +61,13 @@ consommateur.
 - Sonde release-db à 0 avant d'écrire (après la conclusion du run de
   #1920) ; aucune PR ouverte ne porte de migration.
 - Base locale jetable construite par `migrate deploy` : contrat vert.
-- Cinq mutations de la fonction (filtre de statut, seuil de la garde,
-  verrou de seconde reprise, casse du journal, casse de l'approbation) :
-  chacune rougit le contrat sur sa promesse.
+- Sept mutations de la fonction (filtre de statut, seuil de la garde,
+  verrou de seconde reprise, casse du journal, casse de l'approbation,
+  exclusion des blancs, verrou réduit à `cree_par`) : chacune rougit le
+  contrat sur sa promesse.
+- `wn-reviewer` : GO sur le premier commit, quatre P2 arbitrés ci-dessus.
+- Au constat : comparer les compteurs de la reprise aux attendus (P2-2 a
+  et c), qu'aucun banc du CI ne voit.
 - Migration répétée sur une base jetable peuplée : refus à deux praticiens
   (ni colonne ni fonction créée), puis 1 version et 1 approbation remplies
   avec un seul, `draft` nulle, rejeu de la reprise refusé.
