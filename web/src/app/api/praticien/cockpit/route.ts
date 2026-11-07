@@ -54,6 +54,7 @@ import {
 } from '@/lib/clinical/contradictionsService';
 import { CANAL_PLAINTE, PRIORITY_RULES_METADATA, tablePrioritesSignee } from '@/lib/clinical/priorityRulesV1';
 import { claimsCitesParLaPropositionBilan } from '@/lib/biology-library/propositionService';
+import { lireArbitragesAuCockpit, type ArbitrageAuCockpit } from '@/lib/positions-expert/cockpit';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
 type CockpitUnavailableReason =
@@ -128,6 +129,14 @@ export type CockpitRuntimeApiResponse =
        * dans le service, jamais ici ni chez le client.
        */
       contradictions: ContradictionAffichee[];
+      /**
+       * Les arbitrages des conflits de sources constatés ci-dessus, LISTÉS à
+       * côté de leur constat, chacun étiqueté par sa fiche d'usage ([[D-439]]
+       * A2, [[D-452]] §5). Aucun n'est désigné comme applicable au dossier, et
+       * l'outil ne choisit jamais entre eux. ABSENT drapeau
+       * `WN_POSITIONS_EXPERT` éteint, ou sans arbitrage à lister.
+       */
+      arbitragesConflits?: ArbitrageAuCockpit[];
       /**
        * Le domaine de plainte que le patient déclare le plus intensément
        * ([[D-054]]), ou `null` si le canal de plainte n'est pas mesurable sur
@@ -353,12 +362,26 @@ async function reponsePrete(
     }
   }
   const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
+  // Les arbitrages ne se lisent que pour les conflits DÉJÀ constatés : aucun
+  // n'ajoute ni ne retire un constat, et une lecture en échec ne prive le
+  // praticien que de la liste, jamais du constat d'escalade (`DC-55`).
+  let arbitragesConflits: ArbitrageAuCockpit[] = [];
+  const conflitsConstates = contradictions.filter(c => c.forme === 'CONFLIT_SOURCES').map(c => c.id);
+  try {
+    arbitragesConflits = await lireArbitragesAuCockpit(conflitsConstates);
+  } catch (lectureErr) {
+    console.error(
+      '[cockpit] arbitrages des conflits indisponibles',
+      lectureErr instanceof Error ? lectureErr.message : String(lectureErr),
+    );
+  }
   return NextResponse.json({
     status: 'ready',
     snapshot: chaine.snapshot,
     review: chaine.review,
     decisionCard: chaine.decisionCard,
     contradictions,
+    ...(arbitragesConflits.length > 0 ? { arbitragesConflits } : {}),
     plainteDominante: chaine.plainteDominante,
     perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
     canalPlainte: CANAL_PLAINTE,

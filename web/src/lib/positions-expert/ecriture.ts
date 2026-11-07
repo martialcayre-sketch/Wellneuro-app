@@ -37,6 +37,7 @@
 
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import { CONFLITS_SOURCES_METADATA } from '@/lib/clinical/conflitsSourcesV1';
 import { FICHES_USAGE_BESOIN2_SHA256, FICHES_USAGE_BESOIN2_V1, structureSignee } from '@/lib/fiches-usage/ficheUsageBesoin2V1';
 import { empreinteContenuBrut } from './empreinte';
 import { appuisNonFrais, etatVersion, jetonDernierActe, refusAlternance, type RefusAlternance } from './etat';
@@ -54,6 +55,12 @@ import { versionSuit } from './vocabulaire';
 
 export type ContexteEcriture = {
   registre: RegistreConflits;
+  /**
+   * Les empreintes d'entrée SIGNÉES du registre ([[D-452]] §4), `null` tant
+   * qu'il ne l'est pas. Une pose n'atteste que l'entrée qu'un responsable a
+   * relue : registre non signé, ou entrée retouchée depuis la signature ⇒ refus.
+   */
+  empreintesSignees: Readonly<Record<string, string>> | null;
   structure: { signee: boolean; fiches: ReadonlySet<string>; empreinte: string };
   lireFraicheur: LecteurFraicheur;
 };
@@ -61,6 +68,7 @@ export type ContexteEcriture = {
 export function contexteDuDepot(): ContexteEcriture {
   return {
     registre: REGISTRE_DU_DEPOT,
+    empreintesSignees: CONFLITS_SOURCES_METADATA.validationExterne ? CONFLITS_SOURCES_METADATA.empreintesEntrees : null,
     structure: {
       signee: structureSignee(),
       fiches: new Set(FICHES_USAGE_BESOIN2_V1.fiches.map(f => f.id)),
@@ -309,6 +317,7 @@ export type DemandeRevocation = {
 
 export type RaisonRefusArbitrage =
   | 'conflit_inconnu'
+  | 'registre_non_signe'
   | 'structure_non_signee'
   | 'fiche_hors_structure'
   | 'fiche_hors_liste'
@@ -337,6 +346,12 @@ export async function poserArbitrage(demande: DemandePose, ctx: ContexteEcriture
   // Le conflit : publié au registre signé. Bien formé mais inconnu ⇒ refusé.
   const entree = conflitPublie(demande.conflitId, ctx.registre);
   if (!entree) return { issue: 'refusee', raison: 'conflit_inconnu' };
+  // L'entrée : celle que la signature a relue, à l'octet ([[D-452]] §4). Un
+  // registre non signé, ou une entrée retouchée sans re-signature, n'ouvre
+  // aucune pose — l'arbitrage attesterait une empreinte que personne n'a lue.
+  if (ctx.empreintesSignees?.[entree.id] !== empreinteEntreeConflit(entree)) {
+    return { issue: 'refusee', raison: 'registre_non_signe' };
+  }
   // La fiche : dans la structure signée, ET dans la liste curée du conflit (A2).
   if (!ctx.structure.signee) return { issue: 'refusee', raison: 'structure_non_signee' };
   if (!ctx.structure.fiches.has(demande.ficheId)) return { issue: 'refusee', raison: 'fiche_hors_structure' };

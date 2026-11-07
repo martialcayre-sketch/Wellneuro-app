@@ -728,6 +728,64 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     espion.mockRestore();
   });
 
+  // [[D-439]] A2, [[D-452]] §5 : les arbitrages se lisent pour les conflits
+  // CONSTATÉS seulement, et leur lecture ne peut pas emporter le constat.
+  describe('les arbitrages des conflits constatés', () => {
+    const conflit = {
+      id: 'CS-BIO-01',
+      forme: 'CONFLIT_SOURCES' as const,
+      description: 'Deux claims du corpus certifié se contredisent.',
+      actionSuggeree: 'Trancher.',
+      hypotheses: [],
+      limitations: [],
+      passations: [],
+      ecartJours: null,
+      claims: [{ claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' }, { claimId: 'WN-CL-0387-013', versionClaim: 'v1.0' }],
+      importance: 'useful_not_urgent' as const,
+      resolution: { statut: 'escaladee_praticien' as const, motif: 'Aucun axe comparé.' },
+      regleId: 'CS-BIO-01',
+    };
+    const confirmer = async () => {
+      const proposed = await proposal();
+      return POST(postRequest({
+        idPatient: 'PAT_TEST', milestone: 'T0',
+        includedResponseIds: proposed.proposal.inWindowResponseIds,
+        proposalHash: proposed.proposalHash,
+        overrides: [{ conditionId: 'contradictions_ouvertes', motif: 'Vue en entretien.' }],
+      }));
+    };
+
+    it('lus pour les seuls conflits constatés, et rendus à côté du constat', async () => {
+      const service = await import('@/lib/clinical/contradictionsService');
+      const cockpit = await import('@/lib/positions-expert/cockpit');
+      const espionService = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([conflit]);
+      const arbitrage = { conflitId: 'CS-BIO-01', ficheId: 'FU_MG_P7', retenu: 'WN-CL-0312-018@v1.0', motif: 'm', le: '2026-11-07T10:00:00.000Z', aRelire: false };
+      const espion = vi.spyOn(cockpit, 'lireArbitragesAuCockpit').mockResolvedValue([arbitrage]);
+      const payload = await (await confirmer()).json();
+      expect(espion.mock.calls.at(-1)).toEqual([['CS-BIO-01']]);
+      expect(payload.contradictions).toEqual([conflit]);
+      expect(payload.arbitragesConflits).toEqual([arbitrage]);
+      espion.mockRestore();
+      espionService.mockRestore();
+    });
+
+    it('une lecture en échec ne prive que de la liste : le constat reste, la réponse aussi', async () => {
+      const service = await import('@/lib/clinical/contradictionsService');
+      const cockpit = await import('@/lib/positions-expert/cockpit');
+      const espionService = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([conflit]);
+      const espion = vi.spyOn(cockpit, 'lireArbitragesAuCockpit').mockRejectedValue(new Error('base indisponible'));
+      const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const response = await confirmer();
+      const payload = await response.json();
+      expect(response.status).toBe(200);
+      expect(payload.contradictions).toEqual([conflit]);
+      expect(payload).not.toHaveProperty('arbitragesConflits');
+      erreur.mockRestore();
+      espion.mockRestore();
+      espionService.mockRestore();
+    });
+  });
+
   it('verrou fermé (table non signée) ⇒ la route rend une liste vide', async () => {
     // L'état réel du dépôt : le service n'est pas doublé ici, c'est le vrai
     // double verrou qui répond. Sans ce cas, le banc précédent prouverait la

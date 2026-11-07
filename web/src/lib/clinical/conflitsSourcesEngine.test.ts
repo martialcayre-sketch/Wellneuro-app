@@ -24,6 +24,8 @@ const conflit = (surcharge: Partial<ConflitSourcesDeclare> = {}): ConflitSources
   hypotheses: ['Les deux sources viseraient des situations différentes.'],
   actionSuggeree: 'Trancher pour ce dossier.',
   limitations: ['Le conflit porte sur le caractère systématique, pas sur le fond.'],
+  fichesUsage: ['FU_TEST_P1'],
+  declenchableParBilan: false,
   ...surcharge,
 });
 

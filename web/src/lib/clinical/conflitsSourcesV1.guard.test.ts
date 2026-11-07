@@ -1,12 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
+import { INDICATIONS_BIOLOGIE_V1 } from '@/lib/biology-library/indicationsBiologieV1';
+import { FICHES_USAGE_BESOIN2_V1 } from '@/lib/fiches-usage/ficheUsageBesoin2V1';
 import {
+  CONFLITS_DOSSIERS_CLOS_ECARTES_V1,
   CONFLITS_SOURCES_ECARTES_V1,
   CONFLITS_SOURCES_METADATA,
   CONFLITS_SOURCES_SHA256,
   CONFLITS_SOURCES_V1,
 } from './conflitsSourcesV1';
+import { evaluerConflitsSources } from './conflitsSourcesEngine';
 import { CONTRADICTIONS_RULES_V1 } from './contradictionsV1';
+import { sha256 } from './corpusSyntheseV1';
+
+const cle = (c: { claimId: string; versionClaim: string }) => `${c.claimId}@${c.versionClaim}`;
+const publies = () => CONFLITS_SOURCES_V1.filter(c => c.statut === 'publiee');
 
 // Ce banc garde le registre des conflits déclarés sur trois points : la
 // cohérence de `claimsSource` avec ce que les conflits épinglent, la forme de
@@ -33,6 +41,7 @@ describe('registre des conflits — signature complète ou pas de signature', ()
     if (!CONFLITS_SOURCES_METADATA.validationExterne) {
       expect(CONFLITS_SOURCES_METADATA.dateValidation).toBeNull();
       expect(CONFLITS_SOURCES_METADATA.shaPerimetre).toBeNull();
+      expect(CONFLITS_SOURCES_METADATA.empreintesEntrees).toBeNull();
       return;
     }
     const dateValidation = CONFLITS_SOURCES_METADATA.dateValidation;
@@ -42,6 +51,77 @@ describe('registre des conflits — signature complète ou pas de signature', ()
     expect(new Date(dateValidation as string).toISOString()).toBe(dateValidation);
     // LE TERME QUI COMPTE : le périmètre signé est celui qui est là.
     expect(CONFLITS_SOURCES_METADATA.shaPerimetre).toBe(CONFLITS_SOURCES_SHA256);
+    // [[D-452]] §4 : chaque entrée publiée a son empreinte relue, et rien d'autre.
+    // Une entrée retouchée change d'empreinte ; l'arbitrage qui l'attestait se
+    // lit alors « à relire » ([[D-439]] A3).
+    const attendues = Object.fromEntries(publies().map(c => [c.id, sha256(JSON.stringify(c))]));
+    expect(CONFLITS_SOURCES_METADATA.empreintesEntrees).toEqual(attendues);
+  });
+});
+
+describe('registre des conflits — la liste curée des fiches ([[D-439]] A2, [[D-452]] §2)', () => {
+  // LA RÈGLE DU RESPONSABLE (2026-11-06) : la liste vaut EXACTEMENT les fiches
+  // de la structure signée qui épinglent l'un des deux claims. Une fiche qui
+  // quitte la structure, ou qui cesse d'épingler le claim, rougit ce banc : la
+  // liste se re-signe avec elle.
+  it('chaque conflit publié porte les fiches qui épinglent l’un de ses claims, ni plus ni moins', () => {
+    for (const conflit of publies()) {
+      const siens = new Set(conflit.claims.map(cle));
+      const attendues = FICHES_USAGE_BESOIN2_V1.fiches
+        .filter(f => f.claims.some(c => siens.has(cle(c))))
+        .map(f => f.id)
+        .sort();
+      expect([...conflit.fichesUsage], conflit.id).toEqual(attendues);
+      expect(attendues.length, `${conflit.id} : une liste vide fermerait l’arbitrage`).toBeGreaterThan(0);
+    }
+  });
+
+  // [[D-439]] §4 : un conflit des dossiers clos n'entre au registre que si ses
+  // DEUX claims sont épinglés par une fiche signée. `CS-BIO-01`, antérieur, en
+  // est exempté nommément : `WN-CL-0387-013` n'est épinglé par aucune fiche.
+  it('hors `CS-BIO-01`, les deux claims de chaque conflit publié sont épinglés par une fiche', () => {
+    const epingles = new Set(FICHES_USAGE_BESOIN2_V1.fiches.flatMap(f => f.claims.map(cle)));
+    for (const conflit of publies().filter(c => c.id !== 'CS-BIO-01')) {
+      for (const claim of conflit.claims) expect(epingles.has(cle(claim)), `${conflit.id} ${cle(claim)}`).toBe(true);
+    }
+  });
+});
+
+describe('registre des conflits — publier n’est pas déclencher ([[D-439]] A1)', () => {
+  // LA SEULE SOURCE DU DÉCLENCHEMENT est `claimsCitesParLaPropositionBilan`,
+  // qui ne lit que les `justificationClaims` des règles d'indications de
+  // biologie. Le littéral de chaque entrée doit dire ce que ce calcul rend.
+  it('`declenchableParBilan` vaut : un claim du conflit est cité par une règle d’indication', () => {
+    const cites = new Set(INDICATIONS_BIOLOGIE_V1.flatMap(r => r.justificationClaims.map(cle)));
+    for (const conflit of publies()) {
+      expect(conflit.declenchableParBilan, conflit.id).toBe(conflit.claims.some(c => cites.has(cle(c))));
+    }
+  });
+
+  it('`CS-BIO-01` reste déclenchable ; aucun conflit des dossiers clos ne l’est', () => {
+    expect(publies().filter(c => c.declenchableParBilan).map(c => c.id)).toEqual(['CS-BIO-01']);
+  });
+
+  // LE BANC D'A1, SUR LE MOTEUR RÉEL : nourri de TOUS les claims que la
+  // proposition de bilan peut citer — le pire cas —, il ne fait sortir que les
+  // conflits déclenchables. Les onze conflits des dossiers clos n'atteignent
+  // pas le cockpit, quel que soit le dossier.
+  it('nourri de tout ce que la proposition peut citer, le moteur ne sort que les déclenchables', () => {
+    const claimsCites = [
+      ...new Map(INDICATIONS_BIOLOGIE_V1.flatMap(r => r.justificationClaims).map(c => [cle(c), c])).values(),
+    ];
+    const sortis = evaluerConflitsSources({ claimsCites }).map(c => c.id);
+    expect(sortis).toEqual(publies().filter(c => c.declenchableParBilan).map(c => c.id));
+  });
+
+  it('un conflit neuf déclenchable atteint le cockpit ; le même, non déclenchable, n’y apparaît pas', () => {
+    const [bilan] = INDICATIONS_BIOLOGIE_V1.flatMap(r => r.justificationClaims);
+    const neuf = publies().find(c => c.id === 'CS-ZINC-02');
+    expect(neuf).toBeDefined();
+    const declenchable = { ...neuf!, id: 'CS-TEST-01', claims: [bilan, neuf!.claims[1]] as const };
+    const claimsCites = [bilan];
+    expect(evaluerConflitsSources({ claimsCites, conflits: [declenchable] }).map(c => c.id)).toEqual(['CS-TEST-01']);
+    expect(evaluerConflitsSources({ claimsCites, conflits: [neuf!] })).toEqual([]);
   });
 });
 
@@ -159,6 +239,41 @@ describe('registre des conflits — ce qui a été écarté', () => {
       expect(ecarte.motif.trim().length).toBeGreaterThan(60);
       expect(ecarte.conditionDeRetour.trim()).not.toBe('');
       expect(ecarte.claims[0]).not.toBe(ecarte.claims[1]);
+    }
+  });
+});
+
+describe('les conflits des dossiers clos qui n’entrent pas au registre ([[D-439]] §4, [[D-452]] §1)', () => {
+  it('chaque écarté porte son motif et sa condition de retour, une seule fois par dossier', () => {
+    expect(CONFLITS_DOSSIERS_CLOS_ECARTES_V1.length).toBeGreaterThan(0);
+    const vus = new Set<string>();
+    for (const ecarte of CONFLITS_DOSSIERS_CLOS_ECARTES_V1) {
+      const id = `${ecarte.dossier} ${ecarte.etiquette}`;
+      expect(vus.has(id), id).toBe(false);
+      vus.add(id);
+      expect(ecarte.motif.trim().length, id).toBeGreaterThan(60);
+      expect(ecarte.conditionDeRetour.trim(), id).not.toBe('');
+    }
+  });
+
+  // Le motif et les claims cités se tiennent : « aucune partie épinglée » ne
+  // cite aucun claim ; « une seule partie » en cite au moins un (revue P1).
+  it('le motif générique dit vrai sur les claims cités', () => {
+    for (const ecarte of CONFLITS_DOSSIERS_CLOS_ECARTES_V1) {
+      const id = `${ecarte.dossier} ${ecarte.etiquette}`;
+      if (ecarte.motif.startsWith('Aucune des deux parties')) expect(ecarte.claimsEpingles, id).toEqual([]);
+      if (ecarte.motif.startsWith('Une seule des deux parties')) expect(ecarte.claimsEpingles.length, id).toBeGreaterThan(0);
+    }
+  });
+
+  // Les claims cités sont ceux qu'une fiche signée épingle : le dépôt ne garde
+  // trace d'aucun autre (forme opaque, [[D-251]] §4).
+  it('les claims cités sont épinglés par une fiche signée', () => {
+    const epingles = new Set(FICHES_USAGE_BESOIN2_V1.fiches.flatMap(f => f.claims.map(c => c.claimId)));
+    for (const ecarte of CONFLITS_DOSSIERS_CLOS_ECARTES_V1) {
+      for (const claimId of ecarte.claimsEpingles) {
+        expect(epingles.has(claimId), `${ecarte.dossier} ${ecarte.etiquette} ${claimId}`).toBe(true);
+      }
     }
   });
 });

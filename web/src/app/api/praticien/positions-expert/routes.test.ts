@@ -174,6 +174,7 @@ describe('chaque refus d’un module d’écriture a son message et son statut',
   };
   const ARBITRAGES: Record<RaisonRefusArbitrage, true> = {
     conflit_inconnu: true,
+    registre_non_signe: true,
     structure_non_signee: true,
     fiche_hors_structure: true,
     fiche_hors_liste: true,

@@ -6,13 +6,12 @@ import { FICHE_ID_RE } from './vocabulaire';
 // Ce module LIT `conflitsSourcesV1` et ne le modifie pas : ce fichier est un
 // chemin clinique, et sa re-signature est la PR 4 de BP-12b (§4).
 //
-// LA LISTE CURÉE DES FICHES PAR CONFLIT (A2) N'EXISTE PAS ENCORE AU REGISTRE.
-// Elle y entrera par la re-signature, champ `fichesUsage` d'une entrée.
-// D'ici là, aucune entrée ne la porte, `fichesCurees` rend une liste vide, et
-// TOUTE POSE EST REFUSÉE « fiche hors de la liste curée ». C'est voulu
-// (arbitrage du responsable du 2026-11-06) : l'arbitrage reste fermé
-// jusqu'à ce que le registre dise sur quelles fiches pèse chaque conflit.
-// Les bancs injectent un registre qui porte la liste.
+// LA LISTE CURÉE DES FICHES PAR CONFLIT (A2) est le champ `fichesUsage` de
+// chaque entrée, posé par la re-signature ([[D-452]] §2) : exactement les
+// fiches de la structure signée qui épinglent l'un des deux claims. Avant elle
+// (PR 3), aucune entrée ne la portait et toute pose était refusée « fiche hors
+// de la liste curée ». La lecture reste défensive : une liste mal formée se lit
+// vide, et rien ne s'arbitre sur une liste qu'on ne sait pas lire.
 //
 // L'EMPREINTE D'UNE ENTRÉE (A3) est le SHA-256 du JSON de l'entrée, comme
 // `CONFLITS_SOURCES_SHA256` l'est de toute la liste. Une entrée retouchée

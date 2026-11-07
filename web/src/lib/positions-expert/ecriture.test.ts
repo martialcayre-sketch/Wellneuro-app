@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
+import { CONFLITS_SOURCES_V1, type ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
 
 // Les refus que D-439 et les arbitrages du 2026-11-06 placent à la route, sur
 // base simulée. Le banc sur base réelle (`positionsExpert.pg.test.ts`) rejoue
@@ -47,6 +47,7 @@ const ENTREE = {
 let frais: Set<string>;
 const ctx = (): ContexteEcriture => ({
   registre: [ENTREE],
+  empreintesSignees: { [ENTREE.id]: empreinteEntreeConflit(ENTREE) },
   structure: { signee: true, fiches: new Set(['FU_BANC_A', 'FU_BANC_B']), empreinte: 'f'.repeat(64) },
   lireFraicheur: async refs => new Set(refs.filter(r => frais.has(r))),
 });
@@ -226,11 +227,31 @@ describe('poser un arbitrage', () => {
     tx.arbitrageConflitSource.create.mockResolvedValue({ id: 'ar1', ordre: BigInt(5), acte: 'pose' });
   });
 
-  it('REGISTRE DU DÉPÔT : toute pose est refusée « fiche hors de la liste curée » (fermé jusqu’à la PR 4)', async () => {
+  // Réécrit à la re-signature ([[D-452]]) : le registre porte ses listes, et
+  // c'est désormais la signature de l'entrée qui ouvre ou ferme la pose.
+  it('REGISTRE DU DÉPÔT : signé, chaque entrée publiée franchit le contrôle de signature et celui de sa liste', async () => {
     const depot = { ...contexteDuDepot(), lireFraicheur: ctx().lireFraicheur };
-    const fiche = [...depot.structure.fiches][0];
-    const issue = await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: fiche }, depot);
-    expect(issue).toEqual({ issue: 'refusee', raison: depot.structure.signee ? 'fiche_hors_liste' : 'structure_non_signee' });
+    expect(depot.empreintesSignees).not.toBeNull();
+    expect(depot.structure.signee).toBe(true);
+    const publiees = CONFLITS_SOURCES_V1.filter(c => c.statut === 'publiee');
+    expect(publiees.length).toBeGreaterThan(0);
+    for (const entree of publiees) {
+      // Refus qui vient APRÈS la signature, la structure et la liste, et avant
+      // toute base : l'atteindre prouve que l'entrée est signée telle quelle.
+      const issue = await poserArbitrage({ ...demande, conflitId: entree.id, ficheId: entree.fichesUsage[0] }, depot);
+      expect(issue, entree.id).toEqual({ issue: 'refusee', raison: 'claim_hors_conflit' });
+    }
+    expect(await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1' }, depot))
+      .toEqual({ issue: 'refusee', raison: 'fiche_hors_liste' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('une entrée non signée telle quelle n’ouvre aucune pose : registre non signé, ou entrée retouchée', async () => {
+    const nonSigne = { ...ctx(), empreintesSignees: null };
+    expect(await poserArbitrage(demande, nonSigne)).toEqual({ issue: 'refusee', raison: 'registre_non_signe' });
+    const retouchee = { ...ctx(), empreintesSignees: { [ENTREE.id]: 'a'.repeat(64) } };
+    expect(await poserArbitrage(demande, retouchee)).toEqual({ issue: 'refusee', raison: 'registre_non_signe' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('conflit inconnu mais bien formé ; structure non signée ; fiche hors structure ; fiche hors liste', async () => {
