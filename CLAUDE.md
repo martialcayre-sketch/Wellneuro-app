@@ -187,8 +187,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
 - **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
-  des branches par délégation du responsable. Pendant l'essai de `D-373`,
-  l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
+  des branches par délégation du responsable. Sous `D-373` (adoptée par
+  `D-454`), l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
   handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
   `pr_agent.yml` restent à leur file. Pas de merge avant une revue de
   `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
@@ -206,7 +206,7 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le
   CI de `main` ni le déploiement — il converge seul sur la prochaine tête
   verte (`D-248`) ; la session fait `/clear` aussitôt — dès « prête »
-  pendant l'essai. Sauf migration, authentification ou `.coderabbit.yaml`,
+  pour une PR que merge l'intégrateur. Sauf migration, authentification ou `.coderabbit.yaml`,
   que la session suit jusqu'au constat. Demeurent, avant chaque merge :
   l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné,
   registre, chevauchement, `main` inchangé), puis sa 7 ter, le gel par
@@ -235,14 +235,14 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.
 - **Session principale : la copie principale**, où tournent les `/wn-*` —
-  l'intégrateur seul pendant l'essai (`D-373` §2), qui l'avance par
+  l'intégrateur seul (`D-373` §2, `D-454`), qui l'avance par
   `git merge --ff-only`, après T1 si le lot touche les crochets ; un refus
   s'arbitre. **Session concurrente : son propre worktree** (`EnterWorktree`), cycle en
   `git`/`gh` direct — les `/wn-*` n'y tournent pas. Jamais de
   `checkout`/`switch` dans la copie d'une autre session.
 - **Un lot = une session** : handoff dans la PR du lot (fenêtre de
-  clôture), puis `/clear` dès que la PR est mergée (dès « prête » pendant
-  l'essai) — sauf migration,
+  clôture), puis `/clear` dès que la PR est mergée (dès « prête » pour une
+  PR que merge l'intégrateur) — sauf migration,
   authentification ou `.coderabbit.yaml` (`D-373` §1, voir § PR, CI, merge) ;
   `/compact` seulement dans un lot (une migration et son code consommateur
   forment un lot). Pause de plus d'une heure : `/compact` avant de partir
