@@ -64,7 +64,7 @@ Mémoire `bp12b-pr4-arbitrages-2026-11-06`, et D-452 :
 - Suites `lib/clinical`, `lib/positions-expert`, cockpit et garde des
   verrous, registre signé : 123 fichiers, 2 619 tests verts.
 - T1 complet (`npm run check`) : vert.
-- T3 (`npm run test:worktree`) : voir la PR.
+- T3 (`npm run test:worktree`) : vert en 8 min 28 s — Vitest 962 fichiers, 16 370 tests ; forme courte 1 716 ; E2E Playwright Chromium + WebKit 355 passés, 21 sautés.
 - `bash scripts/check_no_secrets.sh` : propre.
 
 ## Problèmes ouverts
