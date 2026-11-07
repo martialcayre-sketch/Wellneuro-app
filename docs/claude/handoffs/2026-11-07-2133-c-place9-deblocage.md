@@ -2,7 +2,7 @@
 
 ## Branche et état du dépôt
 
-- Branche `docs/c-place9-deblocage`, créée depuis `origin/main` à `b5b4c040` (#1919), puis avancée en `--ff-only` sur `10287a48` (#1921, seconde lecture du LOT-02 : un fait nouveau pour la porte 16, sans chevauchement de fichiers).
+- Branche `docs/c-place9-deblocage`, créée depuis `origin/main` à `b5b4c040` (#1919), puis avancée en `--ff-only` sur `10287a48` (#1921, seconde lecture du LOT-02 : un fait nouveau pour la porte 16, sans chevauchement de fichiers). Après la revue, `origin/main` (`ab7b5257`, #1920 et D-459) a été fusionné dans la branche, sur arbitrage du responsable, pour corriger deux formulations du fragment. Aucun chevauchement.
 - Worktree `.claude/worktrees/c-place9-deblocage` : session concurrente, cycle en `git`/`gh` direct.
 - PR de documentation seule : un fragment de journal du plan (H74) et ce handoff. Ni code, ni `schema.prisma`, ni D-xxx, ni fragment `changelog.d/`.
 - **Pas de release-db attendue** : aucun chemin déclencheur n'est touché.
@@ -17,7 +17,8 @@ Retirer CF-0a des préalables de H74, puis relever l'état des autres préalable
 - CF-0a est retiré de H74 par le fragment de correction. C'est une coquille, selon l'arbitrage du responsable du 2026-11-07 (liste commune `20261107-1829-c`, « Coquille à retirer »). La fiche elle-même n'est pas touchée.
 - Relevé en lecture seule sur `origin/main` (`10287a48`) :
   - H61 : la porte 16 est fermée. La seconde lecture du LOT-02 du sommeil a été avancée au 2026-11-07 et jouée (#1921), mais le LOT-02 reste `en_cours` : sa clôture est posée au responsable, et c'est elle seule qui lève la porte. Même levée, la porte 16 laisserait H74 tenue par la porte 24 et par c.
-  - H67 et H59 : la porte 24 est fermée, le palier 1 n'est pas sorti (ligne 24 du §1).
+  - H67 : la porte 24 est fermée, car H59 (J2-base) n'a pas fait sortir le palier 1 (ligne 24 du §1). H59 n'est préalable de H74 qu'au travers de H67.
+  - Porte 15 : atteinte (fragment H74 du même jour, rang 01).
   - c (F59) : aucun fragment neuf depuis le 2026-11-01. Les lots de l'audit des instruments ne sont pas soldés.
   - Aucune PR ouverte ne porte H74 ou H81.
 - Des préalables restent fermés : aucun texte d'ouverture du lot H74 n'est préparé pour la file A. Les portes toujours fermées ne reçoivent pas d'autre fragment.
