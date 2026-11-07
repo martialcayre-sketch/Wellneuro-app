@@ -1,7 +1,7 @@
 ---
 id: "LOT-14"
 titre: "BP-14 — Identité d'auteur séparée du rôle"
-statut: "en_cours (2026-11-07) — fiche et sept arbitrages du responsable ; D-459 acceptée, cinq arbitrages de forme ; migration seule à écrire"
+statut: "en_cours (2026-11-07) — D-459 acceptée ; migration seule écrite (PR de migration), release-db et constat à venir, puis le code"
 dépend_de: "LOT-00"
 ---
 
