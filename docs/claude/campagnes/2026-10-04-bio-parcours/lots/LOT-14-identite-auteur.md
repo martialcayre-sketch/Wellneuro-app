@@ -56,9 +56,12 @@ le portail, la vue patient et le calendrier lisent `approvedBy` comme avant.
     session praticien disponible (`:120`) ;
   - `lib/food-observation/persistence.ts:208` (instantané JA, statut
     `draft`), appelé par la route praticien `ja/observations` **et** par la
-    route du portail `ja/observations`, avec la session du patient ;
+    route du portail `ja/observations`, avec la session du patient. Le
+    `payload` porte l'origine : `actor`, posé côté serveur (`'praticien'`
+    par la route praticien, `:174` ; `'patient'` par le portail, `:171`) ;
   - `persistence.ts:555` (activation JA, statut `practitioner_reviewed`),
-    appelé par la route praticien `ja/activation`.
+    appelé par la route praticien `ja/activation`. Elle refuse tout
+    instantané dont l'`actor` n'est pas `'praticien'` (`:535`).
 - **Approbations** : `diffusion/route.ts:519` (dans une transaction) et
   `:623`, avec la session praticien disponible (`:259`, `:748`).
 - **Patron du dépôt** : l'e-mail de session est posé côté serveur, jamais
@@ -74,7 +77,8 @@ le portail, la vue patient et le calendrier lisent `approvedBy` comme avant.
 ## Production (lecture seule, agrégats, 2026-11-07, one-off-5223)
 
 - 13 versions de protocole : 10 `c1-protocol-draft-v4` relues, 3
-  `ja-food-observation-v1` au statut `draft`.
+  `ja-food-observation-v1` au statut `draft`, toutes trois d'`actor`
+  `'patient'` (one-off-3000).
 - 9 approbations de diffusion, toutes `practitioner`.
 - Un seul e-mail praticien distinct, dans `patients` comme dans
   `decision_priority_selections`.
@@ -92,13 +96,25 @@ le portail, la vue patient et le calendrier lisent `approvedBy` comme avant.
    (option non recommandée par la session, retenue par le responsable).
    L'auteur se déduit de `patients.praticien_email`, par jointure SQL, sans
    e-mail écrit au dépôt.
-   - **Brouillons JA au statut `draft`** : laissés nuls. Leur origine
-     (route praticien ou portail) ne se lit pas sur la ligne. Seules les
-     lignes qu'une route praticien a forcément créées sont remplies :
-     versions relues et approbations.
+   - **Brouillons JA au statut `draft`** : laissés nuls. Seules les lignes
+     qu'une route praticien a forcément créées sont remplies : versions
+     relues et approbations. *Correction du 2026-11-07, après la revue :*
+     la question posée disait que l'origine d'un brouillon JA ne se lisait
+     pas sur la ligne. C'était inexact, car le `payload` porte `actor`.
+     Les trois brouillons de production sont d'`actor` `'patient'` : ils
+     restent nuls par la règle du périmètre (arbitrage 1), et la décision
+     ne change pas.
    - **Provenance** : par la date, dans la D-xxx. Toute ligne antérieure à
      l'application de la migration porte un auteur déduit. Aucune colonne
-     de provenance n'est ajoutée.
+     de provenance n'est ajoutée. La date seuil n'est connue qu'au constat
+     de la release-db : la D-xxx fixe la règle, et l'horodatage constaté
+     (sentinelle) s'inscrit au journal de F10 puis dans la D-xxx, avant
+     que BP-18a ou BP-24 lisent ces colonnes.
+   - **Praticien du dossier ≠ auteur de l'acte** : la jointure donne le
+     praticien rattaché au dossier au moment de la migration, pas
+     forcément celui qui a agi. Un seul praticien distinct existe en
+     production. La D-xxx dit comment la migration s'en assure au moment
+     de s'appliquer, et ce qu'elle fait sinon.
 3. **Release-db** : dès que la migration est prête. La condition « après
    BP-12b » de F10 est remplie par la release-db de `positions_expert_v1`,
    verte le 2026-11-05. BP-15 a la sienne, constatée le 2026-10-22. Aucune
