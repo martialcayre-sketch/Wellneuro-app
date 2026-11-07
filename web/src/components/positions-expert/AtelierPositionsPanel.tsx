@@ -433,15 +433,18 @@ function SectionArbitrages({
             </p>
           ) : (
             c.fichesCurees.map(f => (
-              // Clé = le couple ET sa tête : si la tête change au rechargement,
-              // le choix et le motif saisis repartent de zéro, et aucun clic
-              // ne remplace ou ne révoque une tête que l'écran n'a pas montrée
-              // (revue PR-Agent de #1893 ; patron de `CartePosition`).
+              // Clé = le couple, sa tête ET l'entrée du conflit : si l'une
+              // change au rechargement (re-signature du registre comprise), le
+              // choix et le motif saisis repartent de zéro, et aucun clic ne
+              // remplace ou ne révoque une tête, ni n'atteste une entrée, que
+              // l'écran n'a pas montrée (revue PR-Agent de #1893 ; renvoi
+              // CodeRabbit de #1908 ; patron de `CartePosition`).
               <CoupleArbitrage
-                key={`${f}|${couple(c.id, f)?.tete?.id ?? 'non-arbitre'}`}
+                key={`${f}|${couple(c.id, f)?.tete?.id ?? 'non-arbitre'}|${c.empreinte}`}
                 conflitId={c.id}
                 ficheId={f}
                 claims={c.claims}
+                entreeVue={c.empreinte}
                 couple={couple(c.id, f)}
                 positions={atelier.positions.filter(p => p.enVigueur && !p.aRelire && p.courante.ficheId === f)}
                 peutDecider={peutDecider}
@@ -461,6 +464,7 @@ function SectionArbitrages({
               conflitId={k.conflitId}
               ficheId={k.ficheId}
               claims={null}
+              entreeVue={null}
               couple={k}
               positions={[]}
               peutDecider={peutDecider}
@@ -478,6 +482,7 @@ function CoupleArbitrage({
   conflitId,
   ficheId,
   claims,
+  entreeVue,
   couple,
   positions,
   peutDecider,
@@ -488,6 +493,8 @@ function CoupleArbitrage({
   ficheId: string;
   /** `null` : le couple n'est plus dans une liste curée — il ne se pose plus, il se révoque. */
   claims: [string, string] | null;
+  /** L'empreinte de l'entrée du conflit affichée ; `null` avec `claims`. */
+  entreeVue: string | null;
   couple: CoupleLu | null;
   positions: PositionLue[];
   peutDecider: boolean;
@@ -501,6 +508,7 @@ function CoupleArbitrage({
   const aRelire = (couple?.causesARelire.length ?? 0) > 0;
 
   const poser = async () => {
+    if (entreeVue === null) return;
     const [type, valeur] = retenu.split('|', 2);
     const ok = await soumettre(
       'arbitrages',
@@ -509,6 +517,7 @@ function CoupleArbitrage({
         conflitId,
         ficheId,
         teteVue: tete?.id ?? null,
+        entreeVue,
         motif,
         ...(type === 'claim' ? { claimRetenu: valeur } : { idPositionVersion: valeur }),
       },

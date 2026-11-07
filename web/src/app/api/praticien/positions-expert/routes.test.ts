@@ -39,7 +39,15 @@ const VERSION = {
   idVersionCouranteVue: null,
 };
 const ACTE = { idVersion: 'version000001', acte: 'signee', empreinteVue: 'a'.repeat(64), dernierActeVu: null, relectureIntegrale: true };
-const POSE = { acte: 'pose', conflitId: 'CS-BANC-01', ficheId: 'FU_BANC_A', teteVue: null, motif: 'm', claimRetenu: 'WN-CL-0001-001@v1.0' };
+const POSE = {
+  acte: 'pose',
+  conflitId: 'CS-BANC-01',
+  ficheId: 'FU_BANC_A',
+  teteVue: null,
+  entreeVue: 'b'.repeat(64),
+  motif: 'm',
+  claimRetenu: 'WN-CL-0001-001@v1.0',
+};
 
 describe('atelier des positions — drapeau, session, garde du responsable', () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -136,6 +144,29 @@ describe('formats refusés à la route (400), avant toute écriture', () => {
     expect(revoquerArbitrage).not.toHaveBeenCalled();
   });
 
+  // Renvoi CodeRabbit de #1908 : la pose porte l'empreinte de l'entrée affichée.
+  it('arbitrage : une pose sans empreinte d’entrée affichée, ou mal formée, est un 400', async () => {
+    const { entreeVue: _e, ...sansEntree } = POSE;
+    expect((await postArbitrage(requete(sansEntree))).status).toBe(400);
+    expect((await postArbitrage(requete({ ...POSE, entreeVue: 'B'.repeat(64) }))).status).toBe(400);
+    expect((await postArbitrage(requete({ ...POSE, entreeVue: 'b'.repeat(63) }))).status).toBe(400);
+    expect(poserArbitrage).not.toHaveBeenCalled();
+  });
+
+  it('arbitrage : l’empreinte affichée va au module ; entrée re-signée depuis l’affichage = 409 et son message', async () => {
+    poserArbitrage.mockResolvedValue({ issue: 'refusee', raison: 'entree_divergente' });
+    const r = await postArbitrage(requete(POSE));
+    expect(poserArbitrage.mock.calls[0][0]).toMatchObject({ entreeVue: 'b'.repeat(64), teteVue: null });
+    expect(r.status).toBe(409);
+    expect(await r.json()).toEqual({ ok: false, reason: 'entree_divergente', error: MESSAGES_REFUS.entree_divergente.message });
+  });
+
+  it('arbitrage : une révocation ne porte pas d’empreinte d’entrée (coupe-circuit)', async () => {
+    revoquerArbitrage.mockResolvedValue({ issue: 'ecrite', arbitrage: { id: 'ar1', ordre: '1', acte: 'revocation' } });
+    const r = await postArbitrage(requete({ acte: 'revocation', conflitId: 'CS-BANC-01', ficheId: 'FU_BANC_A', teteVue: 'tete0001', motif: 'm' }));
+    expect(r.status).toBe(200);
+  });
+
   it('arbitrage : un conflit mal formé est un 400 ; bien formé mais inconnu, c’est le 404 du module', async () => {
     expect((await postArbitrage(requete({ ...POSE, conflitId: 'XX-1' }))).status).toBe(400);
     poserArbitrage.mockResolvedValue({ issue: 'refusee', raison: 'conflit_inconnu' });
@@ -154,7 +185,6 @@ describe('chaque refus d’un module d’écriture a son message et son statut',
     etat_divergent: true,
     version_ne_suit_pas: true,
     dossier_different: true,
-    fiche_deja_fondee: true,
   };
   const ACTES: Record<RaisonRefusActe, true> = {
     relecture_requise: true,
@@ -175,6 +205,7 @@ describe('chaque refus d’un module d’écriture a son message et son statut',
   const ARBITRAGES: Record<RaisonRefusArbitrage, true> = {
     conflit_inconnu: true,
     registre_non_signe: true,
+    entree_divergente: true,
     structure_non_signee: true,
     fiche_hors_structure: true,
     fiche_hors_liste: true,
