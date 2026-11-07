@@ -192,3 +192,39 @@ Chaque lot rejoue sa mutation avant le merge : le banc neuf doit rougir sous
 elle et reverdir après restauration. Le témoin PostgreSQL de d25-b2 suit la
 forme des bancs à deux sessions (variable qui nomme la base, égale au nom de
 la base de `DATABASE_URL`) ; son nom et son pas CI se fixent dans le lot.
+
+## 7. Suite du 2026-11-07 — arbitrages et lots écrits
+
+Arbitrages du responsable du 2026-11-07, dans la session du lot (liste
+commune de questions) :
+
+- `20261107-1158-d` : les deux lots s'écrivent maintenant, en un lot de file D ;
+- `20261107-1753-d` : le constat M7 reste un constat, sans règle ni test ;
+- `20261107-1754-d` : les pièces de la passe sont déposées au dépôt privé des
+  revues Codex (dossier `d25-mutations-2026-11-07/`, 76 fichiers).
+
+Lots écrits sur la branche `test/file-d-d25-bancs-decisions`, sans toucher au
+code de production :
+
+- **d25-b1** (M1) : `decisions.test.ts`, cas « LOT MIXTE » — `l1` validée,
+  puis `l7` au même analyte, à une autre date, avec l'action `attendre`.
+  Attendu : `decision_invalide` pour la seconde entrée, aucune transaction,
+  aucune création. Sous M1 rejouée : 1 échec sur 34, ce cas ; restauré : 34
+  sur 34.
+- **d25-b2** (M2), en deux parties :
+  - `decisions.test.ts`, cas « toutes les écritures passent par le client de
+    la transaction » : la transaction reçoit un client à elle ; résultat,
+    lignes et purge doivent y être écrits, aucun sur le client global. Sous
+    M2 rejouée : 1 échec sur 34, ce cas ; restauré : 34 sur 34.
+  - `scripts/banc-decisions-atomicite-prisma.test.ts` (base nommée
+    `WN_BIO_DECISIONS_BANC_BASE`, pas CI « Bio decisions atomicity bench »,
+    entrée de `test:worktree`) : le vrai `deciderLignes` contre PostgreSQL.
+    Une autre session tient la ligne ; la décision crée le résultat puis
+    bloque sur la ligne ; l'autre session l'écarte et commet ; la décision
+    rend `ligne_deja_traitee`. Attendu : aucun résultat au dossier, ligne non
+    rattachée, document intact ; plus un témoin sans course, qui passe. Sous
+    M2 rejouée : rouge sur « un résultat reste au dossier » ; restauré : vert.
+
+Le refus forcé passe par `count !== 1` et non par une date de fin
+d'extraction postérieure à la saisie : le trigger des extractions date
+lui-même `termine_le`, qui ne se place donc pas dans le futur.
