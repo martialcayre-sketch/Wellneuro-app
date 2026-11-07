@@ -1,7 +1,7 @@
 ---
 id: "LOT-14"
 titre: "BP-14 — Identité d'auteur séparée du rôle"
-statut: "en_cours (2026-11-07) — fiche et sept arbitrages du responsable ; D-xxx d'identité d'auteur à rédiger par la session"
+statut: "en_cours (2026-11-07) — fiche et sept arbitrages du responsable ; D-459 acceptée, cinq arbitrages de forme ; migration seule à écrire"
 dépend_de: "LOT-00"
 ---
 
@@ -124,9 +124,23 @@ le portail, la vue patient et le calendrier lisent `approvedBy` comme avant.
    arbitrages, dans une PR de décision seule, acceptée par le responsable
    avant la migration.
 
-## Ordre des PR proposé (non écrites)
+## Arbitrages de forme (rendus le 2026-11-07, portés par D-459)
 
-1. **D-xxx d'identité d'auteur**. Elle fixe :
+Rendus sur l'option recommandée (liste commune, `20261107-2112-c` à
+`-2116-c`) :
+
+5. **Nom de l'approbateur** : `validePar` (colonne `valide_par`).
+6. **Plus d'un praticien** : la migration refuse de s'appliquer, sans rien
+   écrire. Elle compte les e-mails distincts de `patients` et de
+   `journal_acces_dossiers`.
+7. **Registre RGPD** : une phrase dans la ligne « Santé (art. 9) ».
+8. **Affichage** : aucun écran, aucun drapeau.
+9. **Effacement** : code inchangé ; un banc le tient dans la PR de code.
+
+## Ordre des PR proposé
+
+1. **D-459, identité d'auteur** : `docs/decisions/D-459.md`, acceptée le
+   2026-11-07. Elle fixe :
    - le nom des deux colonnes : `creePar` comme le cadrage, et un nom
      distinct de `approuvePar` pour l'approbateur ;
    - leur caractère facultatif ;
