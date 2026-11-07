@@ -32,9 +32,9 @@ import {
 // du niveau de mesure), sur la déclaration du responsable ([[D-434]]).
 // RE-SIGNÉE LE 2026-11-05 pour l'iode et le sélénium (huit fiches, une par
 // position v0.2 signée), sur la déclaration du responsable ([[D-446]]).
-// ÉCRITE LE 2026-11-07 pour les polyphénols et antioxydants (huit fiches, une
-// par position v0.2 signée), À RE-SIGNER : verrou éteint jusqu'à la
-// déclaration du responsable. Écrire la structure
+// RE-SIGNÉE LE 2026-11-07 pour les polyphénols et antioxydants (huit fiches,
+// une par position v0.2 signée), sur la déclaration du responsable ([[D-457]]).
+// Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
 // nommée par lui, arbitrage 7). Matière : les positions d'expert signées des
@@ -1771,12 +1771,15 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
   // la surface de signature, aucune case corrigée ([[D-195]] §1). RE-SIGNÉE le
   // 2026-11-05 pour l'iode et le sélénium ([[D-446]]) sur la déclaration du
   // responsable, rendue après lecture de la surface et de la contre-revue,
-  // une case corrigée avant (P1, usage et sécurité). Les huit fiches des
-  // polyphénols et antioxydants, écrites le 2026-11-07, attendent la
-  // déclaration du responsable : verrou ÉTEINT, sans date ni périmètre, jusqu'à
-  // leur recopie ([[D-195]]).
-  validationExterne: false,
-  dateValidation: null,
+  // une case corrigée avant (P1, usage et sécurité). RE-SIGNÉE le 2026-11-07
+  // pour les polyphénols et antioxydants ([[D-457]]) sur la déclaration du
+  // responsable, rendue après lecture de la surface et de la contre-revue
+  // traitée (P3 rattachée aux claims que son corps cite), aucune case corrigée
+  // ensuite : la date et le sha ci-dessous en sont la recopie. Signature
+  // remplacée ([[D-195]] §4) : 2026-11-05T12:07:26.000Z, sha
+  // 116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c ([[D-446]]).
+  validationExterne: true,
+  dateValidation: '2026-11-07T20:05:11.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0001-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
@@ -2378,7 +2381,7 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
     { claimId: 'WN-CL-0651-004', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0651-005', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: null,
+  shaPerimetre: '58adcff61f30e13f955988caf55ee7781a6b70902a27c89b0dd95f790df93a86',
 };
 
 /**
