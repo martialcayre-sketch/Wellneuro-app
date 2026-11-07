@@ -91,10 +91,12 @@ Mémoire `bp12b-pr4-arbitrages-2026-11-06`, et D-452 :
 1. Revue CodeRabbit (ou substitution D-393 §2 / D-448) sur le sha de tête,
    verdict par commentaire, puis « prête @sha ».
 2. Après merge : approbation de release-db, déploiement constaté.
-3. Responsable : `WN_POSITIONS_EXPERT=true` (valeur exacte), puis versement
+3. File B : PR séparée « seule une position signée occupe sa fiche », qui
+   porte aussi le contrôle de l'empreinte affichée à la pose (CodeRabbit
+   #1908, P0 maintenu sur l'ordre) — mergée et déployée **avant** l'allumage.
+4. Responsable : `WN_POSITIONS_EXPERT=true` (valeur exacte), puis versement
    et signature des positions des dossiers clos à l'atelier (D-439 §5), puis
    arbitrages fiche par fiche.
-4. File B : PR séparée « seule une position signée occupe sa fiche ».
 
 ## Interdits encore actifs
 
