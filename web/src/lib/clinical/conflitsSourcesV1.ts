@@ -1095,6 +1095,16 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // déclaration du responsable que la structure des fiches d'usage, après
   // lecture de la surface et de la contre-revue ; la date, le sha et les
   // empreintes d'entrée ci-dessous en sont la recopie.
+  //
+  // ÉCARTÉS SIGNÉS LE 2026-11-07 ([[D-461]]) : les huit conflits du dossier
+  // polyphénols et antioxydants entrent aux écartés, et deux listes de claims
+  // cités sont complétées. Aucune entrée publiée ne change : la date, le sha et
+  // les empreintes ci-dessous restent ceux de [[D-457]]. Déclaration du
+  // responsable à 22:13:15 UTC, après lecture de la surface et de la
+  // contre-revue : « Je signe les écartés
+  // 9b3cf379afd1c1ee932cf48413333b2587e0a2bf7a572aa0d6cd9b12a25ecb05 ; le
+  // registre a0da49fd reste signé. » L'empreinte des écartés est
+  // `sha256(JSON.stringify(CONFLITS_DOSSIERS_CLOS_ECARTES_V1))`, 61 entrées.
   validationExterne: true,
   dateValidation: '2026-11-07T20:05:11.000Z',
   // Les claims épinglés par les conflits PUBLIÉS de ce registre. Le contrat de
