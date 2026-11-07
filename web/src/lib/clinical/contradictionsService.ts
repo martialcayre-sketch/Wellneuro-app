@@ -344,6 +344,14 @@ export function constatsContradictionsPourDossier(
    * présent. La discordance ne la lit pas.
    */
   maintenantMs: number = Date.now(),
+  /**
+   * Quelles formes calculer. `tout` par défaut (cockpit). L'orientation ne lit
+   * que les discordances — `contradictionEstOuverte` exclut la convergence —,
+   * et la synthèse calcule chacune dans son propre `try` : une levée du
+   * producteur de convergence n'emporte ainsi ni l'orientation, ni les
+   * vigilances de discordance (revue `wn-reviewer` de #1907, [[D-455]] §7).
+   */
+  portee: 'tout' | 'discordances' | 'convergences' = 'tout',
 ): ContradictionFinding[] {
   if (!contradictionsActives()) return [];
 
@@ -371,8 +379,8 @@ export function constatsContradictionsPourDossier(
   // déclaré (`DC-24`).
   const drapeaux = anamnese == null ? undefined : extraireDrapeauxAnamnese(anamnese);
   return [
-    ...evaluerContradictions({ reponses: reponsesRecalculees, drapeaux }),
-    ...convergencesDuDossier(reponsesRecalculees, drapeaux, maintenantMs),
+    ...(portee === 'convergences' ? [] : evaluerContradictions({ reponses: reponsesRecalculees, drapeaux })),
+    ...(portee === 'discordances' ? [] : convergencesDuDossier(reponsesRecalculees, drapeaux, maintenantMs)),
   ];
 }
 

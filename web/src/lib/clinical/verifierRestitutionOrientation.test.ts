@@ -8,6 +8,9 @@ import {
   verifierRestitutionOrientation,
   type TexteSynthese,
 } from './verifierRestitutionOrientation';
+import { evaluerConvergences } from './convergenceEngine';
+import { FENETRES_FRAICHEUR_ORIENTATION, ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import { lignesDeVigilance } from './vigilanceLongueur';
 
 // Le garde de restitution du LOT-06. Ce qu'il doit prouver n'est pas « le modèle
 // n'invente rien » — indécidable — mais l'énoncé borné qui l'approche : un nom
@@ -670,5 +673,45 @@ describe('verifierRestitutionDiscordances — la prose ne contredit pas la vigil
     // sortie reste journalisée, jamais censurée.
     expect(sur('Le Q_SOM_09 converge avec l’anamnèse et le Q_STR_01 reste à discuter.'))
       .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+});
+
+describe('les gardes ne lisent pas les lignes de convergence (H98, D-455 §5)', () => {
+  // Trouvé en revue `wn-reviewer` de #1907 : les lignes `[CONV-B9]` restaient
+  // dans le texte contrôlé. Elles disent « famille(s) de mesure
+  // concordante(s) » et citent Q_MOD_01, instrument de C-STR : chaque synthèse
+  // où C-STR est ouverte journalisait et persistait `discordance:C-STR`, alors
+  // que le modèle n'avait rien écrit. Le banc lit les lignes RÉELLEMENT servies
+  // — moteur, puis `lignesDeVigilance` — et non une phrase recomposée.
+  const C_STR = { regleId: 'C-STR', instruments: ['Q_STR_01', 'Q_MOD_01'] };
+  const lignes = evaluerConvergences({
+    reponses: [
+      { idQuestionnaire: 'Q_MOD_01', dateReponse: '2026-11-05T10:00:00.000Z', idReponse: 'r1', statutValidite: 'VALID',
+        scores: { subScores: [{ id: 'ADAPTATION_STRESS', label: 'ADAPTATION_STRESS', total: 6, repondus: 5, items: 5 }] } },
+    ],
+    regles: ORIENTATION_RULES_V1,
+    maintenantMs: Date.parse('2026-11-07T12:00:00.000Z'),
+    fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+  }).flatMap(lignesDeVigilance);
+
+  it('anti-vacuité : la ligne CONV-B9 porte bien ce qui accusait', () => {
+    expect(lignes.length).toBeGreaterThan(0);
+    expect(lignes.every(ligne => ligne.includes('[CONV-B9]'))).toBe(true);
+    expect(lignes.join(' ')).toMatch(/concordante/);
+    expect(lignes.join(' ')).toContain('Q_MOD_01');
+  });
+
+  it('le garde des discordances n’accuse pas C-STR sur les lignes CONV', () => {
+    expect(verifierRestitutionDiscordances({ points_de_vigilance: lignes }, [C_STR])).toEqual([]);
+  });
+
+  it('contre-épreuve : une concordance écrite par le modèle à côté reste accusée', () => {
+    expect(verifierRestitutionDiscordances({
+      points_de_vigilance: [...lignes, 'Le Q_STR_01 et le Q_MOD_01 convergent nettement.'],
+    }, [C_STR])).toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  it('le garde d’orientation n’accuse pas un questionnaire cité par une ligne CONV', () => {
+    expect(verifierRestitutionOrientation({ points_de_vigilance: lignes }, RIEN)).toEqual([]);
   });
 });

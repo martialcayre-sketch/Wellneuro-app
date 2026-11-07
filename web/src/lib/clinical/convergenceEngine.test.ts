@@ -267,6 +267,54 @@ describe('ce qui ne compte pas ([[D-450]] §6, `DC-24`)', () => {
   });
 });
 
+describe('textes validés figés (D-455 §6)', () => {
+  // Une partie des textes validés le 2026-11-07 vit dans le MOTEUR (gabarits de
+  // description, « Source partagée… », « Visible sans compter : »), hors de
+  // l'empreinte signée — revue `wn-reviewer` de #1907, P2-3. Les retoucher
+  // changerait ce que lit le praticien sans refermer aucun verrou : cet
+  // instantané les fige mot pour mot. Le rougir appelle une décision et une
+  // nouvelle validation des textes, pas une mise à jour de l'instantané.
+  it('besoin 4 ouvert par sa règle, condition comptée hors de sa règle', () => {
+    const b4 = parId(convergences([
+      passation('Q_GAS_01', global({ color: 'warning' })),
+      passation('Q_MOD_03', plaintes({ digestion: 5 })),
+    ]))['CONV-B4'];
+    expect({ description: b4.description, action: b4.actionSuggeree, limitations: b4.limitations })
+      .toMatchInlineSnapshot(`
+        {
+          "action": "Explorer ce besoin en entretien. Le niveau compte les familles de mesure concordantes : il en relève la priorité, pas la certitude.",
+          "description": "Sur le besoin 4, « Perception et sensations corporelles », 1 famille de mesure concordante (auto-questionnaires : Q_MOD_03, Q_GAS_01). Règle déclenchée sur ce besoin : R-GAS-01. Condition comptée hors de sa règle : Q_MOD_03.",
+          "limitations": [
+            "La convergence relève la priorité de l’exploration ; elle ne rend aucun constat plus certain.",
+            "Seuls les auto-questionnaires et l’anamnèse sont lus : une famille de mesure non recueillie n’est ni concordante ni rassurante.",
+            "Une lecture rassurante d’un autre instrument du besoin n’est pas confrontée ici : seule une règle de discordance signée le ferait.",
+          ],
+        }
+      `);
+  });
+
+  it('besoin 5 : deux familles, source partagée, conditions visibles sans compter', () => {
+    const b5 = parId(convergences(
+      [passation('Q_MOD_01', axes({ SOMMEIL: 10 })), passation('Q_MOD_03', plaintes({ fatigue: 8 }))],
+      drapeaux({ antecedentsDomaines: [RESPIRATOIRE], attentes: ['Améliorer le sommeil'] }),
+    ))['CONV-B5'];
+    expect({ description: b5.description, action: b5.actionSuggeree, limitations: b5.limitations })
+      .toMatchInlineSnapshot(`
+        {
+          "action": "Explorer ce besoin en entretien. Le niveau compte les familles de mesure concordantes : il en relève la priorité, pas la certitude.",
+          "description": "Sur le besoin 5, « Mouvement, fonctions corporelles et repos », 2 familles de mesure concordantes (auto-questionnaires : Q_MOD_01 ; anamnèse : antécédent respiratoire / apnée du sommeil déclaré). Règles déclenchées sur ce besoin : R2-SOM-01, R2-SOM-04.",
+          "limitations": [
+            "La convergence relève la priorité de l’exploration ; elle ne rend aucun constat plus certain.",
+            "Seuls les auto-questionnaires et l’anamnèse sont lus : une famille de mesure non recueillie n’est ni concordante ni rassurante.",
+            "Une lecture rassurante d’un autre instrument du besoin n’est pas confrontée ici : seule une règle de discordance signée le ferait.",
+            "Visible sans compter : plainte « fatigue » actuelle (Q_MOD_03 (fatigue) : score 8 >= 7, le 05/11/2026) — son intensité ne précise pas le besoin concerné ; motif d’explorer, pas mesure.",
+            "Visible sans compter : attente « Améliorer le sommeil », objectif de consultation — elle dit ce que la personne souhaite, sans observation supplémentaire.",
+          ],
+        }
+      `);
+  });
+});
+
 describe('conditions visibles sans compter — cartes (D-455 §2.3)', () => {
   it('fatigue et attente « Améliorer le sommeil » dans la carte du besoin 5', () => {
     const b5 = parId(convergences(

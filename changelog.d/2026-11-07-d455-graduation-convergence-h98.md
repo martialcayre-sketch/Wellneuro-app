@@ -17,7 +17,10 @@
 - En synthèse, ses lignes sont ajoutées en tête des points de vigilance par
   le code. Le modèle ne les reçoit pas, et la consigne v31 lui interdit
   d'affirmer lui-même une convergence. Une ligne de convergence ne part
-  jamais dans le document du médecin.
+  jamais dans le document du médecin. Les gardes de restitution ne lisent
+  pas ces lignes : ils n'accusent plus le modèle de ce qu'il n'a pas écrit.
+  Si le calcul des convergences échoue, la synthèse part sans elles, mais
+  avec ses discordances, et la panne est journalisée sous son propre code.
 - La table de convergence entre dans l'empreinte signée de
   `ORIENTATION_RULES_V1`, qui est re-signée. Aucun seuil, aucune règle et
   aucun claim ne change.

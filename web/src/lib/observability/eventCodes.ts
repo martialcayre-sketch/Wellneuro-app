@@ -157,6 +157,13 @@ export const EVENT_CODES = {
    */
   SYNTHESE_DISCORDANCES_INDISPONIBLES: 'SYNTHESE_IA.DISCORDANCES.INDISPONIBLES',
   /**
+   * H98 ([[D-455]] §7) — les constats de convergence n'ont pas pu être
+   * calculés : la synthèse part sans ses lignes de convergence, et SES
+   * discordances restent. Code distinct du précédent, pour qu'une alerte ne
+   * prenne pas l'une pour l'autre (revue `wn-reviewer` de #1907).
+   */
+  SYNTHESE_CONVERGENCES_INDISPONIBLES: 'SYNTHESE_IA.CONVERGENCES.INDISPONIBLES',
+  /**
    * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
    * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code
    * distinct pour la même raison que le précédent (revue CodeRabbit).

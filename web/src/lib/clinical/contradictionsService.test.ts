@@ -773,4 +773,26 @@ describe('Convergences — double verrou du dossier (H98)', () => {
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
     expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toEqual([]);
   });
+
+  // Revue `wn-reviewer` de #1907 (D-455 §7) : l'orientation ne lit que les
+  // discordances, et la synthèse calcule chaque forme dans son propre `try`.
+  it('portée « discordances » : aucune convergence ; « convergences » : rien d’autre', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')
+      .filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
+    const seules = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences');
+    expect(seules.map(c => c.id)).toEqual(['CONV-B5']);
+  });
+
+  it('une levée du producteur de convergence n’atteint pas la portée « discordances »', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    vi.doMock('./convergenceEngine', () => ({
+      evaluerConvergences: () => { throw new Error('panne simulée du producteur'); },
+    }));
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toThrow('panne simulée');
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')).not.toThrow();
+    vi.doUnmock('./convergenceEngine');
+  });
 });

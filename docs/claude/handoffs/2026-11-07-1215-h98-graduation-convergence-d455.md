@@ -67,12 +67,33 @@ les vigilances de la synthèse (consigne `synthese-v31`), re-signer
   - re-revue GO.
 - T3 avant le rebase : un seul rouge,
   `verrousSignatureDocumentes.guard.test.ts` (date de `FEATURE_FLAGS.md`).
-  Corrigé dans le commit de clôture. T1 et T3 rejoués après : voir la PR.
+  Corrigé dans le commit de clôture. Puis T1 et T3 complets verts sur
+  7ce7dd02 ; CI vert sur #1907.
+- Seconde revue `wn-reviewer` sur 7ce7dd02 (D-448 : CodeRabbit en quota,
+  PR-Agent élagué), rendue NO-GO sur un P1, corrigé après un second rebase
+  sur f52202f5 (#1908, arbitré par le responsable) :
+  - P1 : les gardes de restitution lisaient les lignes `[CONV-…]` et
+    accusaient C-STR. Exclusion dans `morceaux`, banc sur les lignes réelles,
+    qui rougit sans le correctif (vérifié) ;
+  - P2-1 et P2-2 : portée de `constatsContradictionsPourDossier`.
+    L'orientation ne lit que les discordances. La synthèse calcule chaque
+    forme dans son propre `try`, avec le code
+    `SYNTHESE_IA.CONVERGENCES.INDISPONIBLES` ;
+  - P2-3 : instantané des textes du moteur ;
+  - P2-4 : couvert par le P1.
+- T1 et T3 rejoués après ces correctifs : voir la PR.
 
 ## Problèmes ouverts
 
-- Panne couplée : la convergence se calcule dans le même appel que la
-  discordance. Une exception emporte les deux (D-455 §7).
+- Panne couplée au cockpit seul : les deux formes y restent calculées
+  ensemble (D-455 §7). L'orientation et la synthèse en sont isolées.
+- Deux questions de la revue, à poser au responsable :
+  - une convergence cite comme « déclenchée » une règle dont la
+    recommandation peut être éteinte ou déjà répondue au panneau
+    d'orientation ;
+  - la convergence met à `null` les passations écartées, ce que
+    l'orientation ne fait pas (drapeau de validité éteint). L'écart va dans
+    le sens prudent.
 - Feuilles d'âge et d'alimentation : un banc refuse qu'elles comptent.
   Leur rattachement reste une décision à prendre.
 - `MODÉRÉE` et `FORTE` sont atteignables par le type, mais aucun flux actuel
