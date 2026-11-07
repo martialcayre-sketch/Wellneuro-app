@@ -63,9 +63,16 @@ describe('Discordances — la synthèse évalue le même ensemble que le cockpit
     );
   });
 
-  it('un seul site d’appel dans la route — deux ensembles ne peuvent pas coexister', () => {
-    const appels = ROUTE.match(/constatsContradictionsPourDossier\(/g) ?? [];
-    expect(appels).toHaveLength(1);
+  // DEUX SITES DEPUIS H98, UN PAR PORTÉE ([[D-455]] §7, revue `wn-reviewer` de
+  // #1907) : discordances et convergences se calculent chacune dans son propre
+  // `try`, pour qu'une levée de l'une n'emporte pas l'autre. L'invariant gardé
+  // ne change pas — deux ensembles ne coexistent pas : CHAQUE site lit
+  // `reponses`, et chacun nomme sa portée, une fois.
+  it('un site d’appel par portée, et chacun lit l’ensemble non filtré', () => {
+    const appels = [...ROUTE.matchAll(/constatsContradictionsPourDossier\(\s*([A-Za-z_$][\w$]*)[^;]*?'(discordances|convergences)'/g)];
+    expect(ROUTE.match(/constatsContradictionsPourDossier\(/g) ?? []).toHaveLength(2);
+    expect(appels.map(appel => appel[1])).toEqual(['reponses', 'reponses']);
+    expect(appels.map(appel => appel[2])).toEqual(['discordances', 'convergences']);
   });
 
   it('les mêmes constats alimentent la vigilance et le garde, sans second calcul', () => {

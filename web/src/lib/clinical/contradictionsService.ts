@@ -1,18 +1,22 @@
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
-import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import { extraireDrapeauxAnamnese, type DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
 import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from './contradictionsV1';
 import { contradictionEstOuverte } from './contradictionFinding';
 import { evaluerConflitsSources } from './conflitsSourcesEngine';
 import { CONFLITS_SOURCES_METADATA, CONFLITS_SOURCES_SHA256 } from './conflitsSourcesV1';
-import { scoresRecalculesPourRaisonnement } from './orientationService';
+import { evaluerConvergences } from './convergenceEngine';
+import { LIBELLE_GRADUATION } from './convergenceV1';
+import type { ReponseOrientation } from './orientationEngine';
+import { FENETRES_FRAICHEUR_ORIENTATION, ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import { orientationActive, scoresRecalculesPourRaisonnement } from './orientationService';
 // Découpage par position d'une ligne trop longue ([[D-107]]) : fonction PURE,
 // logée à part parce que ce module-ci instancie Prisma au chargement.
 import { lignesDeVigilance } from './vigilanceLongueur';
-import type { ContradictionClaimRef, ContradictionFinding } from './contradictionFinding';
+import type { ContradictionClaimRef, ContradictionFinding, GraduationConvergence } from './contradictionFinding';
 
 /**
  * Ce qui sépare le moteur de contradictions de l'écran.
@@ -194,6 +198,26 @@ export type ContradictionAffichee = {
   regleId: string;
   /** Reprise telle quelle ; absente quand la règle n'en porte pas. */
   recoupementJustifie?: string;
+  /**
+   * Le niveau d'une CONVERGENCE, et lui seul (H98). La projection l'omettait
+   * ([[D-450]] §6, relevé de l'avis externe) : sans lui, le praticien lisait
+   * une convergence sans savoir combien de familles concordent. Absent sur les
+   * deux autres formes.
+   */
+  graduation?: GraduationConvergence;
+  /**
+   * Son libellé, de la table signée (`LIBELLE_GRADUATION`). Servi d'ici parce
+   * qu'un composant client ne peut importer aucune valeur de `lib/clinical`
+   * (`bundleClient.guard.test.ts`) : le recopier dans le panneau aurait fait
+   * deux libellés pour un niveau.
+   */
+  libelleGraduation?: string;
+  /**
+   * Les déclarations d'anamnèse à l'appui, par leur libellé (famille
+   * `ANAMNESE`, [[D-443]] §7). Elles n'ont pas de passation : sans ce champ,
+   * le praticien ne les voyait pas dans le détail. Absent quand il n'y en a pas.
+   */
+  declarations?: string[];
 };
 
 /** `JJ/MM/AAAA` dans le fuseau clinique — le format du reste du cockpit. */
@@ -241,6 +265,10 @@ export function contradictionsPourAffichage(constats: ContradictionFinding[]): C
         });
       }
 
+      const declarations = constat.sources
+        .filter((source): source is Extract<typeof source, { type: 'anamnese' }> => source.type === 'anamnese')
+        .map(source => source.libelle);
+
       return {
         id: constat.id,
         forme: constat.forme,
@@ -257,6 +285,10 @@ export function contradictionsPourAffichage(constats: ContradictionFinding[]): C
         resolution: constat.resolution,
         regleId: constat.regleId,
         ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
+        ...(constat.forme === 'CONVERGENCE'
+          ? { graduation: constat.graduation, libelleGraduation: LIBELLE_GRADUATION[constat.graduation] }
+          : {}),
+        ...(declarations.length > 0 ? { declarations } : {}),
       };
     });
 }
@@ -305,6 +337,21 @@ export type LignePassationDossier = {
 export function constatsContradictionsPourDossier(
   reponses: LignePassationDossier[],
   anamnese: unknown,
+  /**
+   * L'horloge des fenêtres de fraîcheur de la convergence (H98, [[D-453]] §7).
+   * L'orientation passe la sienne, pour que les deux lectures du même dossier
+   * jugent la même péremption ; les autres appelants prennent l'instant
+   * présent. La discordance ne la lit pas.
+   */
+  maintenantMs: number = Date.now(),
+  /**
+   * Quelles formes calculer. `tout` par défaut (cockpit). L'orientation ne lit
+   * que les discordances — `contradictionEstOuverte` exclut la convergence —,
+   * et la synthèse calcule chacune dans son propre `try` : une levée du
+   * producteur de convergence n'emporte ainsi ni l'orientation, ni les
+   * vigilances de discordance (revue `wn-reviewer` de #1907, [[D-455]] §7).
+   */
+  portee: 'tout' | 'discordances' | 'convergences' = 'tout',
 ): ContradictionFinding[] {
   if (!contradictionsActives()) return [];
 
@@ -326,13 +373,41 @@ export function constatsContradictionsPourDossier(
         ),
   }));
 
-  return evaluerContradictions({
-    reponses: reponsesRecalculees,
-    // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
-    // objet aux drapeaux vides. Des drapeaux absents n'atteignent aucun
-    // déclencheur ; des drapeaux vides affirmeraient que le patient n'a rien
-    // déclaré (`DC-24`).
-    drapeaux: anamnese == null ? undefined : extraireDrapeauxAnamnese(anamnese),
+  // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
+  // objet aux drapeaux vides. Des drapeaux absents n'atteignent aucun
+  // déclencheur ; des drapeaux vides affirmeraient que le patient n'a rien
+  // déclaré (`DC-24`).
+  const drapeaux = anamnese == null ? undefined : extraireDrapeauxAnamnese(anamnese);
+  return [
+    ...(portee === 'convergences' ? [] : evaluerContradictions({ reponses: reponsesRecalculees, drapeaux })),
+    ...(portee === 'discordances' ? [] : convergencesDuDossier(reponsesRecalculees, drapeaux, maintenantMs)),
+  ];
+}
+
+/**
+ * Les constats de CONVERGENCE (H98, `DC-29`) — sous DEUX verrous, comme tout
+ * ce qui sort d'ici : celui des contradictions (testé par l'appelant, et par
+ * `formeAutorisee` à l'affichage), et celui de l'ORIENTATION, dont la table
+ * porte la convergence dans son empreinte signée (terme `convergence`). Une
+ * table d'orientation non signée, ou éteinte, ne produit aucune convergence :
+ * le constat nomme des règles d'orientation, et il ne doit pas les nommer quand
+ * le praticien ne peut pas les voir.
+ *
+ * Le moteur reçoit les MÊMES passations recalculées que la discordance, et les
+ * fenêtres de la table signée.
+ */
+function convergencesDuDossier(
+  reponses: ReponseOrientation[],
+  drapeaux: DrapeauxAnamnese | undefined,
+  maintenantMs: number,
+): ContradictionFinding[] {
+  if (!orientationActive()) return [];
+  return evaluerConvergences({
+    reponses,
+    drapeaux,
+    regles: ORIENTATION_RULES_V1,
+    maintenantMs,
+    fenetres: FENETRES_FRAICHEUR_ORIENTATION,
   });
 }
 
@@ -472,6 +547,31 @@ export function vigilancesDiscordancePourSynthese(
   // fonction sait déjà nommer un conflit (`INTITULE_PAR_FORME`), elle ne doit
   // pas pouvoir le publier sous la signature d'une autre table.
   return constats.filter(formeAutorisee).filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
+}
+
+/**
+ * Les constats de CONVERGENCE, en lignes de vigilance pour la synthèse
+ * praticien — [[D-450]] §4 (arbitrage `20261105-0933-d`), lot H98.
+ *
+ * PAR LE MÊME CANAL QUE LA DISCORDANCE, et pas par lui : une fonction SŒUR, et
+ * non un élargissement de `vigilancesDiscordancePourSynthese`. Le filtre de
+ * celle-ci est `contradictionEstOuverte`, LE prédicat du moteur d'arrêt, et
+ * [[D-450]] §4 interdit d'y toucher : une convergence ne bloque aucune
+ * extinction ([[D-055]] M8). Le faire servir ici aurait obligé à le changer.
+ *
+ * Mêmes trois refus que la voisine : rien n'est reformulé (`lignesDeVigilance`
+ * transporte la phrase du déterministe), aucune hiérarchie, et le verrou
+ * reste ici (`formeAutorisee`). Les lignes partent EN TÊTE des vigilances par
+ * `fusionnerVigilance`, insupprimables par la sortie du modèle ([[D-041]],
+ * `DC-02`).
+ */
+export function vigilancesConvergencePourSynthese(
+  constats: ContradictionFinding[],
+): string[] {
+  return constats
+    .filter(formeAutorisee)
+    .filter(constat => constat.forme === 'CONVERGENCE')
+    .flatMap(lignesDeVigilance);
 }
 
 /**

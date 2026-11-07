@@ -394,12 +394,27 @@ function marqueurPresDe(texte: string, position: number, longueur: number): bool
   return MARQUEURS_EXTINCTION.some(marqueur => fenetre.includes(marqueur));
 }
 
+/**
+ * Une ligne de CONVERGENCE porte son identifiant entre crochets — `[CONV-B9]`,
+ * posé par `lignesDeVigilance` sur chaque morceau, « (suite) » compris (H98,
+ * [[D-455]] §5). Même forme que le marqueur reconnu par `depuisSynthese.ts`.
+ */
+const MARQUEUR_CONVERGENCE = /\[CONV-[A-Z0-9_-]+\]/;
+
 function morceaux(synthese: TexteSynthese): string[] {
   const out: string[] = [
     synthese.resume_praticien ?? '',
     synthese.narratif_patient ?? '',
     synthese.limites ?? '',
-    ...(synthese.points_de_vigilance ?? []),
+    // LES GARDES NE LISENT PAS LES CONVERGENCES. Elles sont déterministes,
+    // injectées en tête après la génération, et le modèle ne les reçoit pas :
+    // y chercher une infidélité du modèle, c'est l'accuser de ce qu'il n'a pas
+    // écrit. Sans cette exclusion, `[CONV-B9]` (« famille(s) de mesure
+    // concordante(s) … Q_MOD_01 ») faisait accuser C-STR par le garde des
+    // discordances à chaque dossier où elle est ouverte — trouvé en revue
+    // `wn-reviewer` de #1907. Le même texte citait aussi des questionnaires
+    // hors de la liste citable du garde d'orientation.
+    ...(synthese.points_de_vigilance ?? []).filter(point => !MARQUEUR_CONVERGENCE.test(point)),
     ...(synthese.questions_entretien ?? []),
   ];
   for (const axe of synthese.axes_prioritaires ?? []) {

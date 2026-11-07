@@ -78,6 +78,7 @@ import {
   constatsContradictionsPourDossier,
   contradictionsActives,
   discordancesPourGardeRestitution,
+  vigilancesConvergencePourSynthese,
   vigilancesDiscordancePourSynthese,
 } from '@/lib/clinical/contradictionsService';
 import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from '@/lib/clinical/contradictionsV1';
@@ -1099,7 +1100,9 @@ export async function preparerGeneration(
     // famille, jamais un code inventé.
     let discordancesInjectees: { regleId: string; instruments: string[] }[] = [];
     try {
-      const constats = constatsContradictionsPourDossier(reponses, anamnesePourConstats);
+      const constats = constatsContradictionsPourDossier(
+        reponses, anamnesePourConstats, Date.now(), 'discordances',
+      );
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
         ...vigilancesDiscordancePourSynthese(constats),
@@ -1117,6 +1120,29 @@ export async function preparerGeneration(
         message: 'Constats de discordance indisponibles, vigilances d\'anamnèse seules',
         context: finalizeLogContext(requestContext, { retryable: true }),
         error: discErr,
+      });
+    }
+
+    // Convergences (H98, [[D-450]] §4 amendé par [[D-455]] §3), après les
+    // discordances : un désaccord ouvert se lit avant un accord. DANS LEUR
+    // PROPRE `try`, revue `wn-reviewer` de #1907 : une levée du producteur de
+    // convergence emportait les discordances avec elle, sous un message qui
+    // les en accusait. Elles ne nourrissent pas le garde de restitution — les
+    // gardes ne les lisent pas (`morceaux`).
+    try {
+      vigilanceDeterministe = [
+        ...vigilanceDeterministe,
+        ...vigilancesConvergencePourSynthese(
+          constatsContradictionsPourDossier(reponses, anamnesePourConstats, Date.now(), 'convergences'),
+        ),
+      ];
+    } catch (convErr) {
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_CONVERGENCES_INDISPONIBLES,
+        domain: 'SYNTHESE_IA',
+        message: 'Constats de convergence indisponibles, la synthèse part sans eux',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: convErr,
       });
     }
 

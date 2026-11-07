@@ -12,6 +12,7 @@ import {
   type OrientationRule,
 } from './orientationRulesV1';
 import { BANDES_PSQI } from './bandesPsqi';
+import { TABLE_CONVERGENCE_V1 } from './convergenceV1';
 import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheursAnamnese';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
@@ -49,7 +50,9 @@ describe('orientationRulesV1 — verrou v1', () => {
     // RE-SIGNÉE le 2026-11-04 ([[D-430]], t59) : le périmètre porte les quinze
     // fenêtres de fraîcheur par instrument ; les 365 jours quittent les règles.
     // 23 claims relus en base le 2026-11-03 — 23/23 VALIDE, actifs, v1.0.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-04T00:00:00.000Z');
+    // RE-SIGNÉE le 2026-11-07 ([[D-455]], H98) : le périmètre porte la table de
+    // convergence de `DC-29` ; aucun claim ajouté ni retiré.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-07T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -215,7 +218,8 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-09-14 — `2a1f4840…2d95ddbd` (RÈGLES + GRILLES, 365 jours sur les règles)
   //   · 2026-11-04 — `f10102a5…f86311ec7` (D-430, quinze fenêtres de cible)
-  const SHA_SIGNE_2026_11_04 = 'a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20';
+  //   · 2026-11-04 — `a8630112…a41ebd20` (D-433, dix-neuf fenêtres)
+  const SHA_SIGNE_2026_11_07 = '16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -227,12 +231,13 @@ describe('orientationRulesV1 — verrou v1', () => {
   // ET DE NOUVEAU AVEC [[D-430]] : les fenêtres de fraîcheur ont quitté les
   // règles pour un registre par instrument, qui entre dans l'empreinte en
   // troisième terme — `{ regles, grilles, fenetres }`.
-  it('le sha publié correspond au contenu de la table, GRILLES ET FENÊTRES COMPRISES', () => {
+  it('le sha publié correspond au contenu de la table, GRILLES, FENÊTRES ET CONVERGENCE COMPRISES', () => {
     expect(ORIENTATION_RULES_SHA256).toBe(
       sha256(JSON.stringify({
         regles: ORIENTATION_RULES_V1,
         grilles: GRILLES_ORIENTATION,
         fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+        convergence: TABLE_CONVERGENCE_V1,
       })),
     );
   });
@@ -263,8 +268,26 @@ describe('orientationRulesV1 — verrou v1', () => {
   // qui prouve ce que le titre annonce ; le banc « recopié à l'identique » plus
   // bas ferme le raisonnement dans l'autre sens.
   const copieProfonde = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-  const shaAvec = (perimetre: unknown, fenetres: unknown = FENETRES_FRAICHEUR_ORIENTATION) =>
-    sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: perimetre, fenetres }));
+  const shaAvec = (
+    perimetre: unknown,
+    fenetres: unknown = FENETRES_FRAICHEUR_ORIENTATION,
+    convergence: unknown = TABLE_CONVERGENCE_V1,
+  ) => sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: perimetre, fenetres, convergence }));
+
+  // H98 : la table de convergence est le quatrième terme. Rattacher une
+  // condition à un autre besoin change ce que le praticien lit — le sha doit
+  // le voir.
+  it('déplacer un rattachement de convergence change le sha (H98)', () => {
+    const mute = copieProfonde(TABLE_CONVERGENCE_V1) as any;
+    mute.rattachements[0].besoins = [8];
+    expect(shaAvec(GRILLES_ORIENTATION, FENETRES_FRAICHEUR_ORIENTATION, mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  it('retoucher une borne de graduation change le sha (H98)', () => {
+    const mute = copieProfonde(TABLE_CONVERGENCE_V1) as any;
+    mute.bornes[2].minFamilles = 1;
+    expect(shaAvec(GRILLES_ORIENTATION, FENETRES_FRAICHEUR_ORIENTATION, mute)).not.toBe(ORIENTATION_RULES_SHA256);
+  });
 
   it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
     const mute = copieProfonde(GRILLES_ORIENTATION) as any;
@@ -317,13 +340,16 @@ describe('orientationRulesV1 — verrou v1', () => {
   });
 
   it('… et un périmètre recopié à l’identique ne le change PAS', () => {
-    expect(shaAvec(copieProfonde(GRILLES_ORIENTATION), copieProfonde(FENETRES_FRAICHEUR_ORIENTATION)))
-      .toBe(ORIENTATION_RULES_SHA256);
+    expect(shaAvec(
+      copieProfonde(GRILLES_ORIENTATION),
+      copieProfonde(FENETRES_FRAICHEUR_ORIENTATION),
+      copieProfonde(TABLE_CONVERGENCE_V1),
+    )).toBe(ORIENTATION_RULES_SHA256);
   });
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_04);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_07);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP

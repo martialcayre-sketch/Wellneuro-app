@@ -589,13 +589,62 @@ describe('Discordances — parité de critère avec le moteur d’arrêt', () =>
   // l'exclusion des convergences ; les deux consommateurs auraient divergé dès
   // qu'une règle CONVERGENCE aurait été publiée, et personne ne l'aurait vu.
 
-  it('une CONVERGENCE non résolue n’atteint pas la synthèse', async () => {
+  // RÉÉCRIT PAR H98 ([[D-450]] §4) : ce banc figeait l'exclusion des
+  // convergences de la synthèse, état voulu tant que la forme était vide. La
+  // convergence y entre désormais — par SA fonction, jamais par celle de la
+  // discordance, dont le filtre est le prédicat du moteur d'arrêt.
+  it('une CONVERGENCE n’atteint pas la synthèse par la voie de la discordance', async () => {
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
     const convergence = {
       ...constat(), forme: 'CONVERGENCE' as const, graduation: 'CONVERGENCE_MODEREE' as const,
     };
     expect(vigilancesDiscordancePourSynthese([convergence])).toEqual([]);
+  });
+
+  it('une CONVERGENCE atteint la synthèse par sa propre fonction, et elle seule', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesConvergencePourSynthese } = await service(SIGNEE);
+    const convergence = {
+      ...constat({ id: 'CONV-B5', regleId: 'CONV-B5', description: 'Sur le besoin 5, une famille.' }),
+      forme: 'CONVERGENCE' as const, graduation: 'SIGNAL' as const,
+    };
+    const lignes = vigilancesConvergencePourSynthese([constat(), convergence]);
+    expect(lignes.length).toBeGreaterThan(0);
+    expect(lignes[0].startsWith('Convergence constatée par le déterministe [CONV-B5] : Sur le besoin 5')).toBe(true);
+    // La discordance voisine n'y passe pas.
+    expect(lignes.some(ligne => ligne.includes('[C-STR]'))).toBe(false);
+  });
+
+  it('verrou fermé : aucune convergence n’atteint la synthèse', async () => {
+    const { vigilancesConvergencePourSynthese } = await service(SIGNEE);
+    const convergence = { ...constat(), forme: 'CONVERGENCE' as const, graduation: 'SIGNAL' as const };
+    expect(vigilancesConvergencePourSynthese([convergence])).toEqual([]);
+  });
+
+  it('la projection du cockpit porte le niveau et les déclarations d’une convergence', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { contradictionsPourAffichage } = await service(SIGNEE);
+    const convergence = {
+      ...constat({
+        id: 'CONV-B5',
+        sources: [
+          ...constat().sources.slice(0, 1),
+          { type: 'anamnese' as const, champ: 'antecedentsDomaines', valeur: 'Respiratoire / apnée du sommeil', libelle: 'antécédent respiratoire / apnée du sommeil déclaré' },
+        ],
+      }),
+      forme: 'CONVERGENCE' as const, graduation: 'CONVERGENCE_FAIBLE' as const,
+    };
+    const [affichee, discordance] = contradictionsPourAffichage([convergence, constat()]);
+    expect(affichee).toMatchObject({
+      graduation: 'CONVERGENCE_FAIBLE',
+      libelleGraduation: 'convergence faible — deux familles de mesure',
+      declarations: ['antécédent respiratoire / apnée du sommeil déclaré'],
+    });
+    expect(affichee.passations).toHaveLength(1);
+    // Une discordance ne porte ni niveau ni déclaration.
+    expect(discordance).not.toHaveProperty('graduation');
+    expect(discordance).not.toHaveProperty('declarations');
   });
 
   it('une CONVERGENCE n’entre pas non plus dans le garde de restitution', async () => {
@@ -670,5 +719,80 @@ describe('Discordances — parité de critère avec le moteur d’arrêt', () =>
         expect(ligne.length, `règle ${regle.id}`).toBeLessThanOrEqual(LONGUEUR_MAX_POINT);
       }
     }
+  });
+});
+
+describe('Convergences — double verrou du dossier (H98)', () => {
+  // La convergence nomme des règles d'ORIENTATION : elle ne sort que si le
+  // système de contradictions ET l'orientation sont actifs. Le verrou de
+  // l'orientation est injecté ici — il éprouve le câblage, pas la signature,
+  // qui a ses propres bancs (`orientationRulesV1.test.ts`).
+  async function serviceAvecOrientation(orientationActive: boolean) {
+    vi.resetModules();
+    vi.doMock('./orientationService', async () => {
+      const reel = await vi.importActual<typeof import('./orientationService')>('./orientationService');
+      return {
+        ...reel,
+        orientationActive: () => orientationActive,
+        // Le recalcul n'est pas l'objet : les scores stockés passent tels quels.
+        scoresRecalculesPourRaisonnement: (_id: string, scores: Record<string, unknown> | null) => scores,
+      };
+    });
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...SIGNEE } };
+    });
+    return import('./contradictionsService');
+  }
+
+  const MAINTENANT = Date.parse('2026-11-07T12:00:00.000Z');
+  const lignes = [{
+    idReponse: 'rep-mod-1',
+    idQuestionnaire: 'Q_MOD_01',
+    dateReponse: new Date('2026-11-05T10:00:00.000Z'),
+    scoresJson: { subScores: [{ id: 'SOMMEIL', label: 'SOMMEIL', total: 10, repondus: 5, items: 5 }] },
+    statutValidite: 'VALID',
+  }];
+  const anamnese = { antecedentsDomaines: ['Respiratoire / apnée du sommeil'] };
+
+  it('orientation éteinte : aucune convergence', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(false);
+    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT);
+    expect(constats.filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
+  });
+
+  it('les deux verrous ouverts : la convergence du besoin 5 sort', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT);
+    expect(constats.filter(c => c.forme === 'CONVERGENCE').map(c => c.id)).toEqual(['CONV-B5']);
+  });
+
+  it('système de contradictions éteint : rien, quelle que soit l’orientation', async () => {
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toEqual([]);
+  });
+
+  // Revue `wn-reviewer` de #1907 (D-455 §7) : l'orientation ne lit que les
+  // discordances, et la synthèse calcule chaque forme dans son propre `try`.
+  it('portée « discordances » : aucune convergence ; « convergences » : rien d’autre', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')
+      .filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
+    const seules = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences');
+    expect(seules.map(c => c.id)).toEqual(['CONV-B5']);
+  });
+
+  it('une levée du producteur de convergence n’atteint pas la portée « discordances »', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    vi.doMock('./convergenceEngine', () => ({
+      evaluerConvergences: () => { throw new Error('panne simulée du producteur'); },
+    }));
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toThrow('panne simulée');
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')).not.toThrow();
+    vi.doUnmock('./convergenceEngine');
   });
 });

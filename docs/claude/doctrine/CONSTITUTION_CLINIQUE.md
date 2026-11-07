@@ -489,9 +489,17 @@ de certitude, de probabilité, de score ou de confiance sous quelque nom que ce
 soit, doublé sur l'instance par `contradictionsEngine.test.ts:325-345`.
 Bascule prononcée par [[D-095]] au titre de la condition écrite par `D-041`
 (« elles ne basculent à acté qu'à ce moment »), levant pour cette règle la
-réserve de [[D-043]]. **Portée** : la règle est gardée sur son **interdit**,
-pas sur son obligation — aucune règle de forme `CONVERGENCE` n'existe et le
-moteur les refuse (`contradictionsEngine.ts:188-192`).*
+réserve de [[D-043]]. **Portée** (réécrite par [[D-455]], lot H98) : la règle
+est gardée sur son **interdit** ET sur son **obligation**. La forme
+`CONVERGENCE` est produite par besoin (`convergenceEngine.ts`), sous la
+signature de `ORIENTATION_RULES_V1` (table `convergenceV1.ts` dans
+l'empreinte). Elle compte des **familles de mesure concordantes**, non des
+sources indépendantes ([[D-443]], arbitrage WellNeuro), nomme ses sources et
+porte « la priorité, pas la certitude » dans son action et ses limites. Le
+garde-fou est contre-éprouvé sur l'objet produit
+(`convergenceEngine.test.ts`). Le moteur de contradictions refuse toujours
+cette forme (`contradictionsEngine.ts`, garde `forme !== 'DISCORDANCE'`) :
+le producteur vit hors de sa table.*
 
 ***Descente de provenance faite au LOT-06, verdict NÉGATIF et définitif en
 l'état du corpus ([[D-103]]).** La moitié positive de la règle demandait une
@@ -505,7 +513,9 @@ aucun de méthode. Le corpus est un corpus de neuronutrition, pas
 d'épistémologie. **La forme `CONVERGENCE` reste donc VIDE — état légitime, pas
 une dette**, et `conflitsSourcesV1.guard.test.ts` refuse désormais toute règle
 qui la porterait : sans ce banc, une telle règle serait ignorée en silence par
-le moteur, verte et fausse. La règle rouvrira le jour où le corpus ingérera une
+le moteur, verte et fausse. *(Dépassé par [[D-443]] et [[D-455]] : la forme
+est peuplée par arbitrage WellNeuro nommé, non par une source ; le verdict sur
+le corpus demeure.)* La règle rouvrira le jour où le corpus ingérera une
 source de méthode.*
 
 **DC-30 — Une discordance ne se moyenne ni ne se supprime en silence.** Elle

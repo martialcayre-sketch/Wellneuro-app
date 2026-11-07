@@ -1408,6 +1408,137 @@ function packAdministrable(entree: EntreeOrientation, packId: PackId): boolean {
   return composition.every(qid => estAdministrable(entree, qid));
 }
 
+/**
+ * L'issue des déclencheurs d'UNE règle sur un dossier : déclenchée (avec ses
+ * motifs), non atteinte, ou non évaluée faute de passation fraîche
+ * ([[D-433]] §3).
+ *
+ * EXTRAIT DE LA BOUCLE DE `evaluerOrientationDetaillee` PAR H98, sans rien y
+ * changer, pour un second lecteur : le producteur de convergence
+ * (`convergenceEngine.ts`) doit savoir qu'une règle « a déclenché » au sens
+ * exact du moteur d'orientation ([[D-450]] §3). Recopier ce critère aurait
+ * fait diverger les deux lectures au premier changement de l'une — la leçon de
+ * `contradictionEstOuverte`.
+ *
+ * Ce que l'appelant vérifie avant, et que cette fonction ne vérifie pas :
+ * statut `publiee`, déclencheurs non vides, claims non vides.
+ */
+export type IssueDeclencheursRegle =
+  | { statut: 'declenchee'; conditions: string[] }
+  | { statut: 'non_atteinte' }
+  | { statut: 'non_evaluee'; passations: PassationPerimee[] };
+
+export function evaluerDeclencheursDeRegle(
+  regle: OrientationRule,
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined,
+  dossier: ContexteDossier,
+  fraicheur: FraicheurCible | undefined,
+): IssueDeclencheursRegle {
+  // ET logique : tous les déclencheurs doivent être atteints. Un `ou` compte
+  // pour UN déclencheur : atteint dès qu'une branche complète l'est.
+  //
+  // TROIS ISSUES PAR DÉCLENCHEUR depuis [[D-433]] : atteint, non atteint, ou
+  // NON ÉVALUÉ parce qu'il lit une passation hors de sa fenêtre. Le
+  // déclencheur se juge alors sur les seules passations fraîches : une
+  // branche fraîche d'un `ou` peut encore l'atteindre. Sinon il n'est ni
+  // atteint ni écarté.
+  //
+  // UN SEUL DÉCLENCHEUR NON ATTEINT ÉCARTE LA RÈGLE, même si un autre n'est
+  // pas évalué : un ET lu faux sur une donnée fraîche est faux quelle que
+  // soit la donnée périmée. La règle n'est NON ÉVALUÉE que si aucun
+  // déclencheur n'est lu faux et qu'au moins un ne l'est pas.
+  const conditions: string[] = [];
+  const perimees: PassationPerimee[] = [];
+  for (const declencheur of regle.declencheurs) {
+    const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheur);
+    const lues = sansPassationsPerimees(dernieres, perimeesIci);
+    const condition = evaluerDeclencheur(declencheur, lues, drapeaux, dossier);
+    if (condition) {
+      conditions.push(condition.motif);
+      continue;
+    }
+    if (perimeesIci.length === 0) return { statut: 'non_atteinte' };
+    for (const p of perimeesIci) {
+      if (!perimees.some(q => q.idQuestionnaire === p.idQuestionnaire)) perimees.push(p);
+    }
+  }
+  if (perimees.length > 0) return { statut: 'non_evaluee', passations: perimees };
+  return { statut: 'declenchee', conditions };
+}
+
+/** Les passations lues, privées de celles qui ont dépassé leur fenêtre. */
+function sansPassationsPerimees(
+  dernieres: Map<string, ReponseOrientation>,
+  perimees: readonly PassationPerimee[],
+): Map<string, ReponseOrientation> {
+  return perimees.length === 0
+    ? dernieres
+    : new Map([...dernieres].filter(([qid]) => !perimees.some(p => p.idQuestionnaire === qid)));
+}
+
+/**
+ * Une FEUILLE est-elle atteinte sur une passation fraîche, HORS PLANCHER ?
+ *
+ * Le grain du comptage de convergence ([[D-450]] §3, H98) : une condition
+ * compte dès qu'elle est atteinte, même si l'autre condition de sa règle
+ * manque. Plus strict que `evaluerDeclencheur` sur deux points, et chacun est
+ * un arbitrage :
+ * - la passation hors de sa fenêtre ne compte pas (`DC-24`, [[D-450]] §6) ;
+ * - une zone atteinte sur un recueil INCOMPLET — c'est-à-dire par le plancher,
+ *   seul chemin qui l'allume sans mesure — ne compte pas : arbitrage du
+ *   responsable du 2026-11-07, sur le patron des branches d'un `ou`
+ *   ([[D-060]] §2) et du moteur d'arrêt.
+ *
+ * POURQUOI « INCOMPLET CONNU » ET NON « COMPLET PROUVÉ ». `Q_MOD_03` ne publie
+ * aucun compte (chaque domaine EST un item) : exiger des comptes publiés l'aurait
+ * fait taire en silence, alors que [[D-453]] §3 le rattache. Ce garde ne retire
+ * rien d'autre que le plancher : sans comptes, `extraireCible` lit la valeur
+ * comme une mesure et ne sert jamais de plancher ; avec un recueil incomplet,
+ * une comparaison n'est déjà jamais atteinte (`valeur` reste `null`).
+ *
+ * Une feuille sans instrument (drapeau, âge, alimentation) se juge par
+ * `evaluerFeuille`, comme partout.
+ */
+export function feuilleAtteinteComplete(
+  feuille: OrientationDeclencheurFeuille,
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined,
+  dossier: ContexteDossier,
+  fraicheur: FraicheurCible | undefined,
+): boolean {
+  if (estFeuilleInstrument(feuille)) {
+    const reponse = dernieres.get(feuille.idQuestionnaire);
+    if (!reponse) return false;
+    if (fraicheur && dansLaFenetre(reponse, fraicheur) !== true) return false;
+    const comptes = comptesDuPorteurVise(reponse.scores, feuille.sousScore);
+    if (comptes !== null && comptes.manquants > 0) return false;
+  }
+  return evaluerFeuille(feuille, dernieres, drapeaux, dossier) !== null;
+}
+
+/**
+ * Les dernières passations, privées de celles qui ont dépassé la fenêtre de
+ * leur instrument — ou un instrument sans fenêtre valide. Sans horloge, rien
+ * n'est retiré ([[D-433]] §5).
+ */
+export function dernieresFraiches(
+  dernieres: Map<string, ReponseOrientation>,
+  fraicheur: FraicheurCible | undefined,
+): Map<string, ReponseOrientation> {
+  if (!fraicheur) return dernieres;
+  return new Map([...dernieres].filter(([, reponse]) => dansLaFenetre(reponse, fraicheur) === true));
+}
+
+/** Horloge et fenêtres d'une entrée, pour les lecteurs hors de ce module. */
+export function fraicheurDeLEntree(
+  entree: Pick<EntreeOrientation, 'maintenantMs' | 'fenetres'>,
+): FraicheurCible | undefined {
+  return fraicheurDe(entree as EntreeOrientation);
+}
+
+export type { FraicheurCible };
+
 export function evaluerOrientation(entree: EntreeOrientation): RecommandationExploration[] {
   return evaluerOrientationDetaillee(entree).recommandations;
 }
@@ -1435,45 +1566,15 @@ export function evaluerOrientationDetaillee(entree: EntreeOrientation): Resultat
     // être remontée jusqu'à sa source NNPP2. Elle ne recommande rien.
     if (regle.justificationClaims.length === 0) continue;
 
-    // ET logique : tous les déclencheurs doivent être atteints. Un `ou` compte
-    // pour UN déclencheur : atteint dès qu'une branche complète l'est.
-    //
-    // TROIS ISSUES PAR DÉCLENCHEUR depuis [[D-433]] : atteint, non atteint, ou
-    // NON ÉVALUÉ parce qu'il lit une passation hors de sa fenêtre. Le
-    // déclencheur se juge alors sur les seules passations fraîches : une
-    // branche fraîche d'un `ou` peut encore l'atteindre. Sinon il n'est ni
-    // atteint ni écarté.
-    //
-    // UN SEUL DÉCLENCHEUR NON ATTEINT ÉCARTE LA RÈGLE, même si un autre n'est
-    // pas évalué : un ET lu faux sur une donnée fraîche est faux quelle que
-    // soit la donnée périmée. La règle n'est NON ÉVALUÉE que si aucun
-    // déclencheur n'est lu faux et qu'au moins un ne l'est pas.
-    const conditions: string[] = [];
-    const perimees: PassationPerimee[] = [];
-    let unNonAtteint = false;
-    for (const declencheur of regle.declencheurs) {
-      const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheur);
-      const lues = perimeesIci.length === 0
-        ? dernieres
-        : new Map([...dernieres].filter(([qid]) => !perimeesIci.some(p => p.idQuestionnaire === qid)));
-      const condition = evaluerDeclencheur(declencheur, lues, entree.drapeaux, dossier);
-      if (condition) {
-        conditions.push(condition.motif);
-        continue;
-      }
-      if (perimeesIci.length === 0) {
-        unNonAtteint = true;
-        break;
-      }
-      for (const p of perimeesIci) {
-        if (!perimees.some(q => q.idQuestionnaire === p.idQuestionnaire)) perimees.push(p);
-      }
-    }
-    if (unNonAtteint) continue;
-    if (perimees.length > 0) {
-      reglesNonEvaluees.push({ regleId: regle.id, passations: perimees });
+    // Le critère « déclenchée » vit dans `evaluerDeclencheursDeRegle`, partagé
+    // avec le producteur de convergence (H98) — voir son commentaire.
+    const issue = evaluerDeclencheursDeRegle(regle, dernieres, entree.drapeaux, dossier, fraicheur);
+    if (issue.statut === 'non_atteinte') continue;
+    if (issue.statut === 'non_evaluee') {
+      reglesNonEvaluees.push({ regleId: regle.id, passations: issue.passations });
       continue;
     }
+    const conditions = issue.conditions;
 
     const motif: MotifOrientation = {
       regleId: regle.id,

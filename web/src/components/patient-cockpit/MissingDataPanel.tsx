@@ -118,7 +118,10 @@ export function MissingDataPanel({
                     manquantes — un seul langage de priorité par écran. */}
                 <p>
                   <span className="font-medium">Priorité :</span> {PRIORITY_LABELS[constat.importance]}
-                  {' — '}{ETAT_PAR_STATUT[constat.resolution.statut]}
+                  {/* Une CONVERGENCE n'a rien à résoudre : « non résolue » y
+                      suggérerait une incohérence en attente. Tue sur cette
+                      forme (arbitrage du 2026-11-07, D-455). */}
+                  {constat.forme !== 'CONVERGENCE' && <>{' — '}{ETAT_PAR_STATUT[constat.resolution.statut]}</>}
                 </p>
                 {/* LE MOTIF DE L'ESCALADE, quand il y en a un — [[D-103]].
                     C'est là que la politique de résolution rend des comptes :
@@ -144,6 +147,13 @@ export function MissingDataPanel({
                     {' '}{constat.resolution.motif}
                   </p>
                 )}
+                {/* LE NIVEAU D'UNE CONVERGENCE (H98) : combien de familles de
+                    mesure concordent — une priorité, jamais une certitude
+                    (`DC-29`). Libellé servi par le service, depuis la table
+                    signée : ce composant n'en écrit aucun. */}
+                {constat.libelleGraduation && (
+                  <p><span className="font-medium">Niveau :</span> {constat.libelleGraduation}</p>
+                )}
                 <p><span className="font-medium">Ce qui est proposé :</span> {constat.actionSuggeree}</p>
                 {/* LES PASSATIONS, DATÉES — corrigé après revue. Un delta nu
                     sous un intitulé d'« ancienneté » n'ancre rien : deux
@@ -155,7 +165,8 @@ export function MissingDataPanel({
                 {constat.passations.length > 0 && (
                   <div>
                     <p className="font-medium">
-                      Passations confrontées
+                      {/* Une convergence ne confronte rien : ses passations sont à l'appui. */}
+                      {constat.forme === 'CONVERGENCE' ? 'Passations à l’appui' : 'Passations confrontées'}
                       {constat.ecartJours !== null && ` — ${constat.ecartJours} jour${constat.ecartJours > 1 ? 's' : ''} d'écart`}
                     </p>
                     <ul className="list-disc pl-5">
@@ -164,6 +175,16 @@ export function MissingDataPanel({
                           {p.idQuestionnaire} — {p.dateLisible}
                         </li>
                       ))}
+                    </ul>
+                  </div>
+                )}
+                {/* Les déclarations d'anamnèse à l'appui (famille ANAMNÈSE) :
+                    sans passation, elles n'apparaissaient nulle part. */}
+                {constat.declarations && constat.declarations.length > 0 && (
+                  <div>
+                    <p className="font-medium">Déclarations d’anamnèse</p>
+                    <ul className="list-disc pl-5">
+                      {constat.declarations.map(declaration => <li key={declaration}>{declaration}</li>)}
                     </ul>
                   </div>
                 )}
