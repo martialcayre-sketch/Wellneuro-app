@@ -29,6 +29,8 @@ data/private/
 patients_reels/
 resultats_reels/
 *.csv
+# Seule exception : le catalogue public du skill tiers contrôlé (/wn-tiers, 2026-11-07).
+!.claude/skills/ui-ux-pro-max/data/**/*.csv
 *.xlsx
 # Déploiement local
 .deploy-id
