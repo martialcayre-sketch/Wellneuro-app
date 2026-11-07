@@ -89,6 +89,13 @@ const MARQUEURS = [
 // pas accumuler de sédiments.
 const ALLOWLIST = new Map([
   [
+    'src/lib/clinical/convergenceEngine.test.ts',
+    'nomme Q_ALI_01 comme IDENTIFIANT de condition rattachée (D-453 §3, §5) et lui donne un score '
+      + 'de fixture dont le libellé d’interprétation est posé à la main : le banc ne lit ni le '
+      + 'catalogue, ni une bande, ni un nombre d’items — verdict identique sous les deux formes '
+      + 'servies (H98, D-455)',
+  ],
+  [
     'src/lib/fil/cartes.test.ts',
     'ne nomme Q_ALI_01 que comme IDENTIFIANT d’instrument du rideau T0 (carte « T0 à confirmer », '
       + 'D-150) : la carte compte des instruments distincts, elle ne lit ni score ni forme servie',

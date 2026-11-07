@@ -25,8 +25,14 @@ export type SyntheseSource = {
  * tableau de chaînes, et le contrat de synthèse ne porte pas d'audience par
  * point. Le jour où il en portera une, cette fonction disparaît au profit
  * d'elle.
+ *
+ * `[CONV-B<n>]` AUSSI, depuis H98 ([[D-455]]) : un constat de convergence
+ * porte la même audience `praticien_seul`, et son identifiant ne commence pas
+ * par `C-`. Sans ce terme, la revue `wn-reviewer` l'a montré, la ligne partait
+ * au médecin sous « Signal à discuter » — l'élargissement que [[D-057]],
+ * arbitrage 4, ferme pour la discordance, rouvert par un nom.
  */
-const MARQUEUR_REGLE_CONTRADICTION = /\[C-[A-Z0-9_-]+\]/;
+const MARQUEUR_REGLE_CONTRADICTION = /\[(?:C|CONV)-[A-Z0-9_-]+\]/;
 
 function estVigilanceDiscordance(point: string): boolean {
   return MARQUEUR_REGLE_CONTRADICTION.test(point);

@@ -111,7 +111,14 @@ export async function chargerEntreesPreconditionsT0(idPatient: string): Promise<
     // service, telle quelle ; la passation est son instrument et sa date
     // lisible, joints par un tiret de mise en page. Rien n'est reformulé —
     // la checklist cite, elle n'écrit pas.
-    contradictionsOuvertes: contradictions.map((constat) => ({
+    //
+    // UNE CONVERGENCE N'EST PAS UNE CONTRADICTION OUVERTE (H98, [[D-450]] §6).
+    // Ce chargeur recopiait tous les constats reçus sans lire leur forme : à
+    // l'arrivée de la forme `CONVERGENCE`, un accord de sources serait devenu
+    // une condition souple non satisfaite du T0, sans aucune décision. Le
+    // filtre suit `contradictionEstOuverte` sur la forme ; il ne touche pas
+    // l'état de résolution, que ce chargeur ne lisait pas avant ce lot.
+    contradictionsOuvertes: contradictions.filter((constat) => constat.forme !== 'CONVERGENCE').map((constat) => ({
       description: constat.description,
       passations: constat.passations.map(
         (passation) => `${passation.idQuestionnaire} — ${passation.dateLisible}`,
