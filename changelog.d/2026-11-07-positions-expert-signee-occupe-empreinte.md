@@ -1,4 +1,4 @@
-### Atelier des positions d'expert : seule une position signée occupe sa fiche ; empreinte de l'entrée affichée à la pose (BP-12b PR 5, D-439, D-452, 2026-11-07)
+### Atelier des positions d'expert : seule une position signée occupe sa fiche ; empreinte de l'entrée affichée à la pose (BP-12b PR 5, D-458, D-439, D-452, 2026-11-07)
 
 - **Seule une position signée occupe sa fiche** (option (a), arbitrée le
   2026-11-06). Un brouillon n'occupe plus rien : il se verse même sur une

@@ -25,6 +25,9 @@ Clore les deux suites de la PR 4 (D-452) avant l'allumage de
 
 ## Décisions prises
 
+- **D-458** (numéro réservé par `wn-reserver-decision`) porte la règle et
+  l'empreinte à la pose. Le responsable l'a demandée le 2026-11-07, après la
+  remarque de PR-Agent sur #1918 (« Décision D-xxx manquante »).
 - Option (a), arbitrée le 2026-11-06 (mémoire
   `bp12b-pr4-arbitrages-2026-11-06`, arbitrage 5). `ficheFondeeParUneAutre`
   ne compte que les versions courantes d'une autre position à l'état `signee`
