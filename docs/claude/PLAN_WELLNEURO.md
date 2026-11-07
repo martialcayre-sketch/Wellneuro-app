@@ -1555,7 +1555,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 | bh | rendu imprimable du protocole | A | aucune | non | H69 |
 | blocs (A) | bloc déterministe de la synthèse : besoins (la convergence passe à H98, D-450 §4) | A | aucune | non [A verifier] | H95 |
 | BP-12b | positions d'expert signées | B | 23, 9 | oui | F09 |
-| BP-14 | identité d'auteur séparée du rôle | B | 9 | oui | F10 |
+| BP-14 | identité d'auteur séparée du rôle | C | 9 | oui | F10 |
 | BP-17 | bibliothèque signée des options par hypothèse | B | 23 | non | F11 |
 | BP-18a | niveau 3 figé | B | 7 | oui | F12 |
 | BP-18b | « Protocole personnalisé » remis | B | 7 | selon | F13 |
