@@ -1858,6 +1858,15 @@ jobs:
           DB_POOL_MAX: '4'
         run: npx vitest run src/lib/correspondance/reservation.pg.test.ts
 
+      # d25-b2 (M2) : le résultat et la décision de ligne doivent être atomiques.
+      - name: BIO-INGEST decisions rollback real-database bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_DECISIONS_BANC_BASE: wellneuro_ci
+          DB_POOL_MAX: '4'
+        run: npx vitest run src/lib/biology-library/import/decisions.pg.test.ts
+
       # C3 compteur d'attente du rail (D-210) : la sémantique « la DERNIÈRE
       # ligne du dossier décide » vivait en TypeScript éprouvé par un mock, qui
       # servait une liste déjà dédupliquée — il simulait la déduplication au lieu
