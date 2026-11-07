@@ -41,9 +41,10 @@ bornes (R07), usage de « je ne sais pas » (R08), heure de saisie (R09).
 - **Première lecture : 2026-10-29**, date où les premières fenêtres de la
   cohorte `c_apres` (première nuit le 2026-10-09) sont échues. R03 se lit plus
   tôt, mais sur des fenêtres incomplètes.
-- **Seconde lecture : 2026-11-12**, pour que `c_apres` compte davantage de
-  fenêtres échues. Avancée au 2026-11-07 par le responsable : à cette date
-  comme au 2026-11-12, deux fenêtres échues (voir « Seconde lecture »).
+- **Seconde lecture : jouée le 2026-11-07** (prévue au 2026-11-12, pour que
+  `c_apres` compte davantage de fenêtres échues). Avancée par le responsable :
+  à cette date comme au 2026-11-12, deux fenêtres échues (voir « Seconde
+  lecture »).
 
 ## Comment la lire
 
@@ -154,7 +155,8 @@ Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
   changé. Seconde lecture : relire la référence avant de comparer.
 
 **Seconde lecture : 2026-11-12, maintenue.** La porte 16 ne se lève qu'à la
-clôture du lot, après elle.
+clôture du lot, après elle. *(Note du 2026-11-07 : avancée depuis au
+2026-11-07, voir la section suivante.)*
 
 ## Seconde lecture (jouée le 2026-11-07)
 
