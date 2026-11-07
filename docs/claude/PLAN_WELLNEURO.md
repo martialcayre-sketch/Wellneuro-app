@@ -1994,7 +1994,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F23 · BP-21b : ouverture du protocole personnalisé
 - **Identifiant, piste** : BP-21b (LOT-30 de BIO-PARCOURS, à ne pas confondre avec la porte 30) ; même régime que BP-21a ; parcours.
 - **Rang** : 8 proposé [Hypothese] ; une place dans la file C, non numérotée.
-- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`) ; porte 18. La fiche compléments R:ao (F78) l'attend, ou attend BP-18a et BP-18b (écart non tranché, F78).
+- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`) ; porte 18. La fiche compléments R:ao (F78), livrée éteinte après BP-18b, l'attend pour son activation (tranché le 2026-11-07, journal de F78).
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx d'ouverture, critères écrits avant.
 - **Critère de fin** : critères atteints ; activation constatée avant la suivante.
@@ -2087,7 +2087,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F78 · R:ao : fiche compléments remise au patient
 - **Identifiant, piste** : R:ao ; consommateur patient du niveau 3 ; parcours.
 - **Rang** : 10 ; place 8 de la file C (antérieurement place 7 ; la fiche signalétique en place 6 décale les cinq ajouts aux places 7 à 11).
-- **Portes, préalables** : J3-bio (porte 19) ; CGU constatée (ACT-1) ; règle signée et C4 (porte 28) ; porte 18 après la place précédente. Écart non tranché : BP-18a et BP-18b contre « avec BP-21b ou après » ([A verifier] dans la fiche elle-même) ; sans effet sur le rang 10.
+- **Portes, préalables** : J3-bio (porte 19) ; CGU constatée (ACT-1) ; règle signée et C4 (porte 28) ; porte 18 après la place précédente. Livraison éteinte après BP-18b ; activation et constat avec BP-21b ou après (F23, donc BP-21a et BP-24) ; tranché le 2026-11-07, journal ; sans effet sur le rang 10.
 - **Migration, release-db** : non.
 - **Décisions, textes** : règle signée de la main du responsable ; texte de la fiche accusé avant l'activation.
 - **Critère de fin** : règle signée ; fiche remise et constatée sur un vrai dossier avant l'activation suivante (porte 18).
