@@ -377,6 +377,41 @@ describe('§5 et §6 — forme, jetons, cadre', () => {
     expect(container.querySelector('main')!.parentElement!.className).toBe('flex flex-1 flex-col');
   });
 
+  it('garde en lecture : la place du rail est réservée, vide, puis le rail la prend sans saut', async () => {
+    let repondre: (reponse: unknown) => void = () => {};
+    const enAttente = new Promise(resolve => {
+      repondre = resolve;
+    });
+    vi.stubGlobal('fetch', vi.fn(() => enAttente));
+    const { container } = await rendre();
+    const cadre = container.querySelector('main')!.parentElement!;
+    expect(screen.getByTestId('reserve-rail').getAttribute('aria-hidden')).toBe('true');
+    expect(screen.getByTestId('reserve-rail').className).toContain('w-nav-rail');
+    expect(cadre.className).toContain('lg:flex-row');
+    expect(rail()).toBeNull();
+    await act(async () => {
+      repondre({ ok: false, status: 500, json: async () => ({}) });
+      await new Promise(r => setTimeout(r, 0));
+    });
+    // Fail-closed : sans réponse exploitable, ni réserve, ni rail, ni colonne.
+    expect(screen.queryByTestId('reserve-rail')).toBeNull();
+    expect(cadre.className).toBe('flex flex-1 flex-col');
+  });
+
+  it('garde lue, dossier mineur : la réserve disparaît, sans rail', async () => {
+    servir({ assignations: { statutAge: 'mineur' } });
+    await rendre();
+    await waitFor(() => expect(screen.queryByTestId('reserve-rail')).toBeNull());
+    expect(rail()).toBeNull();
+  });
+
+  it('questionnaire en cours : aucune réserve, même en lecture', async () => {
+    nav.pathname = '/portail/PAT_TEST/questionnaires/ASG_1';
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    await rendre();
+    expect(screen.queryByTestId('reserve-rail')).toBeNull();
+  });
+
   it('la garde lue, le contenu de la page n’est pas remonté', async () => {
     servir();
     await rendre();
