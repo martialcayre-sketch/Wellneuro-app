@@ -155,7 +155,9 @@ test.describe('Portail — rail latéral', () => {
         const liste = page.getByRole('navigation', { name: 'Étapes de votre parcours' }).locator('ol');
         const { defile, largeur } = await liste.evaluate(el => ({ defile: el.scrollWidth, largeur: el.clientWidth }));
         expect(defile).toBeLessThanOrEqual(largeur);
-        for (const cible of await page.getByRole('navigation', { name: 'Étapes de votre parcours' }).locator('[aria-current="step"]').all()) {
+        const cibles = await page.getByRole('navigation', { name: 'Étapes de votre parcours' }).locator('[aria-current="step"]').all();
+        expect(cibles).toHaveLength(1);
+        for (const cible of cibles) {
           expect((await cible.boundingBox())!.height).toBeGreaterThanOrEqual(44);
         }
       });

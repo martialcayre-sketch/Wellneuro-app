@@ -107,7 +107,7 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
           }
 
           return (
-            <li key={step.id} className="flex items-start">
+            <li key={step.id} className="flex shrink-0 items-start sm:shrink">
               {etape}
               {/* Dès `sm`, seule la barre de liaison cède : à côté du rail, à
                   1 024 px, les six étapes tiennent dans leur colonne, confort
