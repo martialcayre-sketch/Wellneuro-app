@@ -42,23 +42,25 @@ const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, date
 // La structure, signée le 2026-11-01 (D-401), re-signée le 2026-11-03 pour
 // B9 et B12 (D-434), est RE-SIGNÉE le 2026-11-05 pour l'iode et le sélénium
 // (D-446) : quarante-six fiches, sur la déclaration du responsable
-// (porte 23 : ses contenus sont les siens). Ce banc
+// (porte 23 : ses contenus sont les siens). Les huit fiches des polyphénols et
+// antioxydants, écrites le 2026-11-07, portent la structure à cinquante-quatre :
+// verrou ÉTEINT jusqu'à la déclaration du responsable. Ce banc
 // épingle l'empreinte : toute fiche ajoutée ou retouchée la change, et la sortie
 // est de RE-SIGNER, jamais de mettre le littéral à jour en silence. Identifiants
 // SYNTHÉTIQUES dans les cas ci-dessous.
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure écrite', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('6e2dbc8b0dd34943d319081566438d05d885f029a831027e1b996407a39dce47');
   });
 
-  it('re-signée pour l’iode et le sélénium (D-446) : verrou posé sur la déclaration du responsable', () => {
-    expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(46);
+  it('écrite pour les polyphénols et antioxydants : verrou éteint jusqu’à la déclaration du responsable', () => {
+    expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(54);
     expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual([]);
-    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(true);
-    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-05T12:07:26.000Z');
-    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(FICHES_USAGE_BESOIN2_SHA256);
-    expect(structureSignee()).toBe(true);
+    expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(false);
+    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBeNull();
+    expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBeNull();
+    expect(structureSignee()).toBe(false);
   });
 
   it('claimsSource est exactement l’union des claims des fiches de la structure', () => {

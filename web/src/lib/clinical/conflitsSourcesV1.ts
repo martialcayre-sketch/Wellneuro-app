@@ -649,7 +649,8 @@ export const CONFLITS_SOURCES_V1: ConflitSourcesDeclare[] = [
       + 'pas et le dit — le constat est remonté, il n’est pas arbitré.',
     ],
     fichesUsage: [
-      'FU_B9B12_P3', 'FU_IODE_SE_P3', 'FU_IODE_SE_P5', 'FU_MG_P4', 'FU_ZINC_P4',
+      'FU_B9B12_P3', 'FU_IODE_SE_P3', 'FU_IODE_SE_P5', 'FU_MG_P4', 'FU_POLY_AOX_P8',
+      'FU_ZINC_P4',
     ],
     declenchableParBilan: false,
   },
@@ -1001,8 +1002,16 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // elle ne s'efface pas ([[D-195]] §4) :
   //   2026-08-24 — sha ea18140366c114d6a51d19f82ecb082c98dab10b07b47effd527e1430fd581e2
   //                ([[D-104]], `CS-BIO-01` seul).
-  validationExterne: true,
-  dateValidation: '2026-11-07T00:00:00.000Z',
+  //
+  // À RE-SIGNER (2026-11-07, fiches d'usage des polyphénols et antioxydants) :
+  // `FU_POLY_AOX_P8` épingle `WN-CL-0062-041`, et la liste curée de
+  // `CS-IODSE-01` la reçoit ([[D-452]] §2). L'entrée et le périmètre changent
+  // d'empreinte : verrou ÉTEINT jusqu'à la déclaration du responsable, qui
+  // couvre aussi la structure des fiches. Signature remplacée, à ranger
+  // ci-dessus à la recopie : 2026-11-07 — sha
+  // 300974d7dadf62b246b977aac45d8977f7aceb57540333daee75a9bff1f5b944 ([[D-452]]).
+  validationExterne: false,
+  dateValidation: null,
   // Les claims épinglés par les conflits PUBLIÉS de ce registre. Le contrat de
   // fraîcheur les contrôle sur la production, et
   // `claimsEpinglesFraicheur.guard.test.ts` refuse que cette liste diverge de
@@ -1039,24 +1048,12 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // telle quelle après la déclaration — JAMAIS la constante, qui est déclarée
   // après cet objet (ReferenceError) et dont la comparaison serait
   // tautologique. Patron [[D-063]], étendu par [[D-067]].
-  shaPerimetre: '300974d7dadf62b246b977aac45d8977f7aceb57540333daee75a9bff1f5b944',
+  shaPerimetre: null,
   // Empreinte de chaque entrée publiée, `sha256(JSON.stringify(entrée))`,
   // recopiée telle quelle après la déclaration. Une pose d'arbitrage n'est
   // admise que sur une entrée dont l'empreinte est celle-ci ([[D-439]] A3).
-  empreintesEntrees: {
-    'CS-BIO-01': 'f0926d88f14bc0f35b9c5e79f9ddb38f11f187e1a3262536428eeb726c6db784',
-    'CS-FER-01': 'fdb3d78e753f82a53b412e3c24f58fb045acfce7ff4fbee99c063a759dc839a6',
-    'CS-VITD-01': 'fa51647a54f0d86f4a6e90889d804e05da7284af6114786511a9ec5835191593',
-    'CS-VITD-02': '0dd7174d6c3a4d7a061b0b9eab1d088a2db8b953d2a1a66ee49e3710921e0292',
-    'CS-VITD-03': '36807afdcf5df916121135d34e7eabc5ae0c8788a315f14a8f9cf450c2864825',
-    'CS-ZINC-01': 'b93871da31c417744584d0cfd4941397f98ee50c0e97e93b62623c2a0cc8ee24',
-    'CS-ZINC-02': '507e174b62262a02e9c1ac3ccc3f46c6c7d502994a9e07323d151e4ad9ed4499',
-    'CS-ZINC-03': '1d201acb8943accc64194bccbfdf3748fd34d0e5c4f4244d16a99564ea0daf8b',
-    'CS-ZINC-04': '4957f9a5fa2e2f80e3f4c3cc38956286db84eb070e8f0af6feb90fe5f3823a64',
-    'CS-MAG-03': 'b2e43a49fa04abde6245afde21e7697c3344f2ab89747f30b2624a35e15dc288',
-    'CS-B9B12-01': '5f31b3cb06ba373ef2d6aeac3370a3454281ec85f1381d7afe20a405de154598',
-    'CS-IODSE-01': '93e3012dbbf69edfa9d685d9cce31f9a0eaa205d6f17b1de36a3bf9531b9bfa2',
-  },
+  // `null` tant que le verrou est éteint.
+  empreintesEntrees: null,
 };
 
 export const CONFLITS_SOURCES_SHA256 = sha256(JSON.stringify(CONFLITS_SOURCES_V1));
