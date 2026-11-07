@@ -92,3 +92,11 @@ réponse les fait rougir aussi.
 - **Lot de clôture** : forme exacte de B2, D4 et dossier RGPD, écarts entre
   fiche et code, constat d'usage (pris le 2026-10-10, en agrégats), suivi
   BioFlow.
+
+## 5. Suite du 2026-11-07
+
+M1 à M11 et M15 ont été joués par Codex sur `4ecad8e1`, énoncé
+`PROMPT_CONTRE_REVUE_CODEX_MUTATIONS_2026-11-07.md`. Résultats versés dans
+`REVUE_CODEX_MUTATIONS_2026-11-07.md`, même dossier : 10 `MORD`, 2 `SURVIT`
+(M1, M2), P1 de couverture de `decisions.test.ts` ; lots de banc d25-b1 et
+d25-b2 proposés, non écrits. Les §1 à §4 ci-dessus restent tels quels.
