@@ -148,7 +148,7 @@ export function jourCivilClinique(iso: string): string | null {
  * Rend `null` en dessous de deux passations distinctes : « non applicable »,
  * jamais « le même jour ».
  */
-function ecartJoursEntreSources(sources: SourceContradiction[]): number | null {
+export function ecartJoursEntreSources(sources: SourceContradiction[]): number | null {
   const parPassation = new Map<string, number>();
   for (const source of sources) {
     if (source.type !== 'instrument') continue;

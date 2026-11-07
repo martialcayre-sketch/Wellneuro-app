@@ -535,7 +535,9 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // signée) que le cockpit : un système de contradictions éteint ne produit
     // aucun constat, donc rien d'« ouvert ». Lus sur les lignes déjà chargées
     // ci-dessus, avec la même sélection d'anamnèse.
-    contradictions: constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
+    // Les convergences y arrivent aussi depuis H98, sous la même horloge, et
+    // n'interdisent rien : `contradictionEstOuverte` les exclut ([[D-055]] M8).
+    contradictions: constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null, maintenantMs),
     exclureDejaRepondu: tableArretExploitable(),
     // L'HORLOGE EST ICI, ET PAS DANS LE MOTEUR — même partage que la table
     // sœur, dont `statuts.ts` reçoit un `referenceMs` de son appelant. Le
