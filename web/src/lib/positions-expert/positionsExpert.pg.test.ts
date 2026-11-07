@@ -9,18 +9,21 @@
 //      (question 1), même fiche (question 2), conflit inconnu, fiche hors de la
 //      liste curée, claim retenu hors du conflit, claim d'appui absent du
 //      corpus, lu « à relire ».
-//   3. LA QUESTION 3 SOUS CONCURRENCE : deux premières versions de deux
-//      positions sur la même fiche, constatées en attente du verrou de la
-//      fiche (`pg_stat_activity`) — une seule passe.
+//   3. LA QUESTION 3 SOUS CONCURRENCE : deux brouillons de deux positions sur
+//      la même fiche se versent tous deux (un brouillon n'occupe rien, option
+//      (a) du 2026-11-06) ; leurs deux signatures, constatées en attente du
+//      verrou de la fiche (`pg_locks`), une seule passe.
 //   4. UNE ÉCRITURE PAR TRANSACTION (P2-3 de #1871) : un retrait et une pose
 //      qui retient la même position, lancés ensemble derrière le verrou de la
 //      position, se sérialisent sans interblocage, et l'état final est l'un des
 //      deux ordres possibles. BANC DE FUMÉE : il ne rougirait que si une
 //      transaction écrivait deux lignes. L'ORDRE des verrous (fiche puis
 //      position, couple puis position) est prouvé par `ecriture.test.ts`.
-//   5. LA QUESTION 3 À LA SIGNATURE : re-signer une version retirée dont la
-//      fiche a été reprise par une autre position est refusé ; une révision
-//      sans fiche de l'autre la libère.
+//   5. LA QUESTION 3 À LA SIGNATURE : un brouillon versé sur une fiche fondée
+//      ne se signe pas tant que l'autre position est signée ; re-signer une
+//      version retirée dont la fiche a été reprise par une autre position
+//      SIGNÉE est refusé ; une révision sans fiche de l'autre la libère, et
+//      toute révision d'une position signée, même sur sa fiche, aussi (cas 9).
 //
 // SAUTÉ PAR DÉFAUT : il écrit et commet. Il ne tourne que si
 // `WN_POSITIONS_EXPERT_BANC_BASE` nomme la base de `DATABASE_URL`, sur un hôte
@@ -32,7 +35,7 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
-import type { ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
+import { CONFLITS_SOURCES_V1, type ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
 import type { ContexteEcriture } from './ecriture';
 import { empreinteEntreeConflit } from './registreConflits';
 
@@ -69,6 +72,7 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
   const FICHE_C = `FU_BANC_PE_${RUN}_C`;
   const FICHE_D = `FU_BANC_PE_${RUN}_D`;
   const FICHE_E = `FU_BANC_PE_${RUN}_E`;
+  const FICHE_F = `FU_BANC_PE_${RUN}_F`;
   const CONFLIT = `CS-BANC${RUN}`;
   // Claims synthétiques : jamais au corpus de la base de banc.
   const CL_A = `WN-CL-9${String(randomInt(0, 1000)).padStart(3, '0')}-001@v1.0`;
@@ -88,12 +92,13 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     limitations: [],
     fichesUsage: [FICHE_A, FICHE_B, FICHE_D],
   } as unknown as ConflitSourcesDeclare;
+  const EMPREINTE_ENTREE = empreinteEntreeConflit(ENTREE);
 
   /** Contexte du banc : structure synthétique signée, registre synthétique, tout claim frais. */
   const ctx = (): ContexteEcriture => ({
     registre: [ENTREE],
     empreintesSignees: { [ENTREE.id]: empreinteEntreeConflit(ENTREE) },
-    structure: { signee: true, fiches: new Set([FICHE_A, FICHE_B, FICHE_C, FICHE_D, FICHE_E]), empreinte: 'b'.repeat(64) },
+    structure: { signee: true, fiches: new Set([FICHE_A, FICHE_B, FICHE_C, FICHE_D, FICHE_E, FICHE_F]), empreinte: 'b'.repeat(64) },
     lireFraicheur: async refs => new Set(refs),
   });
   const AUTEUR = 'responsable@exemple.fr';
@@ -252,28 +257,24 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     }
   }
 
-  it('4. question 3 sous concurrence : deux positions sur la même fiche, une seule passe', async () => {
+  it('4. question 3 sous concurrence : deux brouillons sur la même fiche se versent, une seule signature passe', async () => {
     const [p1, p2] = [await positionLibre(), await positionLibre()];
-    const demande = (positionId: string) => ({
-      positionId,
-      version: 'v1.0',
-      dossier: 'fer' as const,
-      ficheId: FICHE_C,
-      contenu: CONTENU,
-      claimsAppui: [CL_A],
-      idVersionCouranteVue: null,
-      auteur: AUTEUR,
-    });
-    const issues = await sousVerrou(`fu|${FICHE_C}`, () => [m.verserVersion(demande(p1), ctx()), m.verserVersion(demande(p2), ctx())]);
+    // Un brouillon n'occupe pas sa fiche : les deux se versent.
+    const [v1, v2] = [await verser(p1, FICHE_C), await verser(p2, FICHE_C)];
+    const issues = await sousVerrou(`fu|${FICHE_C}`, () => [signer(v1), signer(v2)]);
     const valeurs = issues.map(i => (i.status === 'fulfilled' ? i.value : { issue: 'exception', raison: String(i.reason) }));
     expect(valeurs.filter(v => v.issue === 'ecrite')).toHaveLength(1);
     expect(valeurs.filter(v => v.issue === 'refusee').map(v => ('raison' in v ? v.raison : null))).toEqual(['fiche_deja_fondee']);
-    const { rows } = await observateur.query('SELECT count(*)::int AS n FROM positions_expert_versions WHERE fiche_id = $1', [FICHE_C]);
+    const { rows } = await observateur.query(
+      `SELECT count(*)::int AS n FROM positions_expert_actes a JOIN positions_expert_versions v ON v.id = a.id_version
+       WHERE v.fiche_id = $1 AND a.acte = 'signee'`,
+      [FICHE_C],
+    );
     expect(rows[0].n).toBe(1);
   });
 
   it('5. refus des arbitrages : conflit inconnu, fiche hors liste, claim hors conflit, position d’une autre fiche', async () => {
-    const pose = { conflitId: CONFLIT, ficheId: FICHE_A, teteVue: null, retenu: { claim: CL_A } as { claim: string } | { idPositionVersion: string }, motif: 'm', auteur: AUTEUR };
+    const pose = { conflitId: CONFLIT, ficheId: FICHE_A, teteVue: null, entreeVue: EMPREINTE_ENTREE, retenu: { claim: CL_A } as { claim: string } | { idPositionVersion: string }, motif: 'm', auteur: AUTEUR };
     expect(await m.poserArbitrage({ ...pose, conflitId: `CS-INCONNU${RUN}` }, ctx())).toEqual({ issue: 'refusee', raison: 'conflit_inconnu' });
     expect(await m.poserArbitrage({ ...pose, ficheId: FICHE_C }, ctx())).toEqual({ issue: 'refusee', raison: 'fiche_hors_liste' });
     expect(await m.poserArbitrage({ ...pose, retenu: { claim: 'WN-CL-0000-000@v1.0' } }, ctx())).toEqual({ issue: 'refusee', raison: 'claim_hors_conflit' });
@@ -295,7 +296,7 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
         { idVersion: v, acte: 'retiree', empreinteVue: m.empreinteContenuPosition(CONTENU), dernierActeVu: jeton, relectureIntegrale: false, motif: 'm', auteur: AUTEUR },
         ctx(),
       ),
-      m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_D, teteVue: null, retenu: { idPositionVersion: v }, motif: 'm', auteur: AUTEUR }, ctx()),
+      m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_D, teteVue: null, entreeVue: EMPREINTE_ENTREE, retenu: { idPositionVersion: v }, motif: 'm', auteur: AUTEUR }, ctx()),
     ]);
     // Aucune exception (40P01 compris) : chaque transaction écrit une ligne.
     expect(issues.map(i => i.status)).toEqual(['fulfilled', 'fulfilled']);
@@ -311,19 +312,22 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     else expect(couple).toBeUndefined();
   });
 
-  it('8. question 3 à la signature : une fiche reprise bloque la re-signature, une révision sans fiche la libère', async () => {
+  it('8. question 3 à la signature : seule une position signée tient la fiche ; une révision sans fiche la libère', async () => {
     const [p1, p2] = [await positionLibre(), await positionLibre()];
     const v1 = await verser(p1, FICHE_E);
     const s = await signer(v1);
     const jetonSigne = s.issue === 'ecrite' ? s.acte.ordre : null;
+    // P1 signée : P2 se verse en brouillon sur la même fiche, mais ne se signe pas.
+    const v2 = await verser(p2, FICHE_E);
+    expect(await signer(v2)).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
     const retrait = await m.poserActePosition(
       { idVersion: v1, acte: 'retiree', empreinteVue: m.empreinteContenuPosition(CONTENU), dernierActeVu: jetonSigne, relectureIntegrale: false, motif: 'm', auteur: AUTEUR },
       ctx(),
     );
     expect(retrait.issue).toBe('ecrite');
     const jetonRetire = retrait.issue === 'ecrite' ? retrait.acte.ordre : null;
-    // P1 retirée : la fiche est libre, P2 la reprend (brouillon).
-    const v2 = await verser(p2, FICHE_E);
+    // P1 retirée : la fiche est libre, P2 se signe et la tient.
+    expect((await signer(v2)).issue).toBe('ecrite');
     expect(await signer(v1, jetonRetire)).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
     // P2 se révise sans fiche : FICHE_E est libérée, P1 se re-signe.
     const rev = await m.verserVersion(
@@ -334,14 +338,33 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     expect((await signer(v1, jetonRetire)).issue).toBe('ecrite');
   });
 
+  // Conséquence de l'option (a) : « en vigueur » = version courante signée
+  // (`etat.ts`). Réviser une position signée, même sur la même fiche, la sort
+  // de vigueur et libère sa fiche ; une autre peut s'y signer entre-temps.
+  it('9. une révision de la position signée libère sa fiche : une autre s’y signe, la révision ne se signe plus', async () => {
+    const [p1, p2] = [await positionLibre(), await positionLibre()];
+    const v1 = await verser(p1, FICHE_F);
+    expect((await signer(v1)).issue).toBe('ecrite');
+    const rev = await m.verserVersion(
+      { positionId: p1, version: 'v1.1', dossier: 'fer', ficheId: FICHE_F, contenu: CONTENU, claimsAppui: [CL_A], idVersionCouranteVue: v1, auteur: AUTEUR },
+      ctx(),
+    );
+    if (rev.issue !== 'ecrite') throw new Error(`révision refusée : ${rev.raison}`);
+    const v2 = await verser(p2, FICHE_F);
+    expect((await signer(v2)).issue).toBe('ecrite');
+    expect(await signer(rev.version.id)).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
+  });
+
   it('7. pose sur un claim, remplacement, révocation : la tête suit, l’historique reste', async () => {
     const lire = async () => (await m.lireAtelierPositions(ctx())).couples.find(c => c.conflitId === CONFLIT && c.ficheId === FICHE_A);
-    const p1 = await m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_A, teteVue: null, retenu: { claim: CL_A }, motif: 'm1', auteur: AUTEUR }, ctx());
+    // L'empreinte que l'atelier affiche, et renvoie avec la pose, est celle de l'entrée (renvoi CodeRabbit de #1908).
+    expect((await m.lireAtelierPositions(ctx())).conflits.find(c => c.id === CONFLIT)?.empreinte).toBe(EMPREINTE_ENTREE);
+    const p1 = await m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_A, teteVue: null, entreeVue: EMPREINTE_ENTREE, retenu: { claim: CL_A }, motif: 'm1', auteur: AUTEUR }, ctx());
     expect(p1.issue).toBe('ecrite');
     const t1 = (await lire())!.tete!;
     expect(t1.claimRetenu).toBe(CL_A);
     expect((await lire())!.causesARelire).toEqual([]);
-    const p2 = await m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_A, teteVue: t1.id, retenu: { claim: CL_B }, motif: 'm2', auteur: AUTEUR }, ctx());
+    const p2 = await m.poserArbitrage({ conflitId: CONFLIT, ficheId: FICHE_A, teteVue: t1.id, entreeVue: EMPREINTE_ENTREE, retenu: { claim: CL_B }, motif: 'm2', auteur: AUTEUR }, ctx());
     expect(p2.issue).toBe('ecrite');
     const t2 = (await lire())!.tete!;
     expect(t2.claimRetenu).toBe(CL_B);
@@ -354,10 +377,15 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
     const fin = (await lire())!;
     expect(fin.tete).toBeNull();
     expect(fin.historique).toHaveLength(3);
-    // Avec le registre du jour (sans liste curée, conflit inconnu), aucune pose ne passe.
+    // Avec le registre et la structure du dépôt, signés : l'entrée affichée est
+    // la bonne, mais la fiche synthétique n'est pas dans la structure signée.
     const depot = { ...m.contexteDuDepot(), lireFraicheur: ctx().lireFraicheur };
-    expect((await m.poserArbitrage({ conflitId: 'CS-BIO-01', ficheId: FICHE_A, teteVue: null, retenu: { claim: CL_A }, motif: 'm', auteur: AUTEUR }, depot)).issue).toBe(
-      'refusee',
-    );
+    const bio = CONFLITS_SOURCES_V1.find(c => c.id === 'CS-BIO-01')!;
+    expect(
+      await m.poserArbitrage(
+        { conflitId: 'CS-BIO-01', ficheId: FICHE_A, teteVue: null, entreeVue: empreinteEntreeConflit(bio), retenu: { claim: CL_A }, motif: 'm', auteur: AUTEUR },
+        depot,
+      ),
+    ).toEqual({ issue: 'refusee', raison: 'fiche_hors_structure' });
   });
 });

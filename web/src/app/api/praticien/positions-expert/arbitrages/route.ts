@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { poserArbitrage, revoquerArbitrage } from '@/lib/positions-expert/ecriture';
 import { echec, journaliserEchec, lireDemandeEcriture, reponseRefus, type ReponseEchec } from '@/lib/positions-expert/http';
-import { CLAIM_REF_RE, CONFLIT_ID_RE, FICHE_ID_RE, ID_LIGNE_RE, motifAdmis } from '@/lib/positions-expert/vocabulaire';
+import { CLAIM_REF_RE, CONFLIT_ID_RE, FICHE_ID_RE, ID_LIGNE_RE, motifAdmis, SHA256_RE } from '@/lib/positions-expert/vocabulaire';
 
 // Poser ou révoquer l'arbitrage d'un conflit déclaré pour une fiche d'usage
 // (D-439 §3, A2, A3). Une tête par couple : une pose remplace la tête vue, une
@@ -14,8 +14,9 @@ export const dynamic = 'force-dynamic';
 export type ArbitrageApiResponse = { ok: true; arbitrage: { id: string; ordre: string; acte: string } } | ReponseEchec;
 
 // POST /api/praticien/positions-expert/arbitrages
-//   pose :       { acte: 'pose', conflitId, ficheId, teteVue: string | null, motif,
+//   pose :       { acte: 'pose', conflitId, ficheId, teteVue: string | null, entreeVue, motif,
 //                  claimRetenu: string } | { …, idPositionVersion: string }
+//                (`entreeVue` : l'empreinte de l'entrée du conflit affichée)
 //   révocation : { acte: 'revocation', conflitId, ficheId, teteVue: string, motif }
 export async function POST(req: Request): Promise<NextResponse<ArbitrageApiResponse>> {
   try {
@@ -44,6 +45,11 @@ export async function POST(req: Request): Promise<NextResponse<ArbitrageApiRespo
       return NextResponse.json({ ok: true, arbitrage: issue.arbitrage });
     }
 
+    // L'entrée du conflit que l'écran a affichée (renvoi CodeRabbit de #1908).
+    if (typeof c.entreeVue !== 'string' || !SHA256_RE.test(c.entreeVue)) {
+      return echec('jeton_invalide', 'Empreinte de l’entrée du conflit affichée invalide.', 400);
+    }
+
     // UNE POSE RETIENT UNE CHOSE, UNE SEULE : un claim du conflit, ou une version de position.
     const aClaim = c.claimRetenu !== undefined && c.claimRetenu !== null;
     const aPosition = c.idPositionVersion !== undefined && c.idPositionVersion !== null;
@@ -60,6 +66,7 @@ export async function POST(req: Request): Promise<NextResponse<ArbitrageApiRespo
       conflitId: c.conflitId,
       ficheId: c.ficheId,
       teteVue: teteVue as string | null,
+      entreeVue: c.entreeVue,
       retenu: aClaim ? { claim: c.claimRetenu as string } : { idPositionVersion: c.idPositionVersion as string },
       motif,
       auteur: lue.auteur,
