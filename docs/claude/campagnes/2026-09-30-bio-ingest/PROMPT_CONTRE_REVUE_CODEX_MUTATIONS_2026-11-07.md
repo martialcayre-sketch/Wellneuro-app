@@ -97,7 +97,10 @@ non désigné qui reste vert ne prouve rien.
 Arbitrages du responsable, datés et consignés :
 
 - les valeurs des bornes (240 s, 5 min, 6 min, 20 s, 300/50, 1000/4000,
-  30 jours, 1 h, 3 et 10/24 h) ;
+  30 jours, 1 h, 3 et 10/24 h). **Seule exception** : le fait complémentaire
+  de M7 (§3) demande d'examiner la **relation** entre la réservation de la
+  file (6 min) et la péremption du verrou (5 min), jamais la valeur de l'une
+  ou de l'autre ; il se rend en constat ;
 - les équivalences d'unités de `D-356` §3-§4 (« mL/min » ≡
   « mL/min/1,73 m² » ; une unité absente concorde avec « ratio ») : ce sont
   des règles, pas des failles ;
