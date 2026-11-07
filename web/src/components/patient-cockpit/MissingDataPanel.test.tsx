@@ -202,7 +202,7 @@ describe('MissingDataPanel — conflit entre sources du corpus', () => {
 describe('MissingDataPanel — arbitrages listés sous un conflit', () => {
   const arbitrages = [
     { conflitId: 'CS-BIO-01', ficheId: 'FU_MG_P7', retenu: 'WN-CL-0312-018@v1.0', motif: 'motif un', le: '2026-11-07T10:00:00.000Z', aRelire: false },
-    { conflitId: 'CS-BIO-01', ficheId: 'FU_ZINC_P7', retenu: 'WN-CL-0387-013@v1.0', motif: 'motif deux', le: '2026-11-07T10:00:00.000Z', aRelire: true },
+    { conflitId: 'CS-BIO-01', ficheId: 'FU_ZINC_P7', retenu: 'WN-CL-0387-013@v1.0', motif: 'motif deux', le: '2026-11-05T10:00:00.000Z', aRelire: true },
   ];
 
   it('deux arbitrages sur deux fiches : les deux listés, étiquetés, aucun retenu pour le dossier', () => {
@@ -210,9 +210,18 @@ describe('MissingDataPanel — arbitrages listés sous un conflit', () => {
     deplierLeDetail();
     expect(screen.getByText(/Arbitrages posés par fiche d’usage|Arbitrages posés par fiche d'usage/)).toBeTruthy();
     expect(screen.getByText(/aucun ne vaut pour ce dossier/)).toBeTruthy();
-    expect(screen.getByText('FU_MG_P7')).toBeTruthy();
-    expect(screen.getByText('FU_ZINC_P7')).toBeTruthy();
-    expect(screen.getByText(/à relire : une de ses références a changé/)).toBeTruthy();
+    // Chaque ligne porte SA référence, SON motif, SA date : une permutation
+    // ou une duplication entre fiches rougit.
+    const ligneMg = screen.getByText('FU_MG_P7').closest('li')!.textContent ?? '';
+    const ligneZinc = screen.getByText('FU_ZINC_P7').closest('li')!.textContent ?? '';
+    expect(ligneMg).toContain('WN-CL-0312-018@v1.0');
+    expect(ligneMg).toContain('motif un');
+    expect(ligneMg).toContain('07/11/2026');
+    expect(ligneMg).not.toContain('à relire');
+    expect(ligneZinc).toContain('WN-CL-0387-013@v1.0');
+    expect(ligneZinc).toContain('motif deux');
+    expect(ligneZinc).toContain('05/11/2026');
+    expect(ligneZinc).toContain('à relire : une de ses références a changé');
     // L'escalade reste au-dessus, intacte (`DC-55`).
     expect(screen.getByText(/escaladée — arbitrage praticien attendu/)).toBeTruthy();
   });

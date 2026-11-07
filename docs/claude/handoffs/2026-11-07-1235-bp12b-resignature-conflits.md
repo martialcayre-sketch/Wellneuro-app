@@ -72,6 +72,17 @@ Mémoire `bp12b-pr4-arbitrages-2026-11-06`, et D-452 :
 - P2-12 de la revue (coût de la lecture des arbitrages au cockpit) : écarté
   avec motif — tables minuscules, drapeau éteint.
 - Contre-revue Codex : facultative, geste manuel, non faite.
+- **Routé à la PR séparée de la file B** (« seule une position signée occupe
+  sa fiche ») : CodeRabbit #1908, `ecriture.ts:352` — la pose ne compare pas
+  l'empreinte de l'entrée **affichée** à l'atelier ; après une re-signature,
+  un écran resté ouvert attesterait l'entrée neuve. Correctif : l'atelier
+  transmet l'empreinte lue, la route refuse si elle diffère, le formulaire se
+  vide quand l'entrée change.
+- Écartés avec motif (CodeRabbit #1908) : objets de `CS-ZINC-01` et
+  `CS-B9B12-01` (textes relus et signés par le responsable, limites dites
+  dans les hypothèses ; les reprendre exige une re-signature) ; lecture
+  complète de l'atelier au cockpit (= P2-12) ; contrôle du verrou complet à
+  la pose (= P2-b de `wn-reviewer`, voulu par entrée, D-452 §4).
 - Les 31 couples conflit × fiche restent non arbitrés : c'est voulu
   (`DC-54`), l'arbitrage est un geste du responsable.
 
