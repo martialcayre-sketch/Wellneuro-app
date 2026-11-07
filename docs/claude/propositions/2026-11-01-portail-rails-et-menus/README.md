@@ -763,6 +763,31 @@ Mesures par Playwright (Chromium 1 280 × 800, 1 024 × 768 en confort 112,5 %, 
 - « Reprendre » contre « Commencer » : observé sur deux navigateurs, mécanisme non instruit ici (hors périmètre du rail, qui se lit sur le chemin).
 - Reste non constaté : un appareil à encoche réel (L4). Ni Playwright ni le navigateur intégré n'ont de zone sûre non nulle. Le simulateur iOS en aurait une, mais ce n'est pas un appareil.
 
+### Constat à l'écran en production (2026-11-07) : partiel
+
+Les quatre drapeaux sont posés en production depuis le 2026-11-05. **Ce constat est partiel** : un seul des trois dossiers attendus a été observé. Il a été fait par l'assistant, à la demande du responsable, dans le navigateur intégré, en largeur émulée. Le responsable a ouvert la session par Google sur un dossier de test majeur, à l'étape 4. Rien n'a été saisi ni envoyé. Le confort de lecture, stocké dans ce seul navigateur, a été remis à sa valeur de départ. Étiquettes de [[D-125]].
+
+| Point | Étiquette | Constat |
+|---|---|---|
+| Majeur, 390 px | observé | Hub et `/suivi` : bouton « Menu » de 44 px, mot-symbole vers le hub, barre de quatre cases de 64 px, pas de rail ; page 390 / 390. Hub : frise en `<nav>`, un seul `aria-current="step"`, étape courante dans le champ, cible de 44 px. Panneau de 390 x 844, douze liens de 44 px, Échap le ferme et rend le focus au bouton. |
+| Majeur, 1 024 px, 100 % | observé | `/suivi` : rail de 252 px, colonne de 668 px, ni bouton ni barre ; page 1 024 / 1 024. Hub : rail et « Autres espaces », colonne de 668 px. |
+| Majeur, 1 024 px, 112,5 % | observé | `/suivi` : rail de 283,5 px, liens de 49,5 px, colonne de 623,5 px, ni bouton ni barre ; page 1 024 / 1 024. Hub : rail et « Autres espaces », colonne de 623,5 px. |
+| 1 023 px, bouton seul | observé | Hub : bouton visible, ni rail ni barre ; page 1 023 / 1 023. |
+| Mineur | non constaté | Aucun dossier de test mineur en production. Démontré dans le code seulement (ci-dessous). |
+| Dossier clos | non constaté | Le panneau s'est fermé avant la mesure, et le responsable a renoncé à ce dossier le jour même. Démontré dans le code seulement. |
+| Questionnaire en cours | non constaté ; observé en partie | Un questionnaire ouvert sans réponse, le hub affichant toujours « Commencer » : à 1 024 px, bouton sans rail ni colonne ; à 390 px, bouton sans barre. Aucun questionnaire réellement en cours. |
+| Pied de page lu en entier | observé | À 390 px, le bas du pied touche le haut de la barre (779 / 779 px). À 1 024 px en confort 112,5 %, le pied est entier dans la fenêtre, sous le rail. Le numéro 3114 n'est pas masqué, d'après l'élément au point visé ; il n'a pas été touché. À 1 024 px en confort 100 % : non mesuré. |
+| Page imprimée | non constaté | Le navigateur intégré ne l'imprime ni ne l'émule. Aucune page imprimée sur papier. |
+| 390 px à 112,5 % | observé | Hub : cases de 72 px sur une ligne, bouton de 49,5 px, étape courante dans le champ (frise 642 / 363 px, cible de 49,5 px), pied au contact de la barre (770,9 / 771 px) ; page 390 / 390. |
+| Quatrième case de la barre | non constaté ; observé en partie | « Bibliothèque » servie sur ce dossier. La barre sans fiche remise et la forme « Fiches » : non vues. |
+| Appareil à encoche | non constaté | Il faut un vrai téléphone. |
+
+- **Frise avec le rail à 1 024 px** (observé) : la frise dépasse sa colonne et défile en elle-même, 676 / 668 px à 100 %, 687 / 623,5 px à 112,5 %, où « Restitution » est coupée avant défilement ; la page ne déborde pas. Le constat local de L2b (1 024 px, 680 / 680) a été fait sans rail. Consigné sans être qualifié : à qualifier par le responsable. Rien n'est corrigé.
+- **Largeurs de colonne** : 668 et 623,5 px, les mêmes que le constat local de L5 et que le calcul du chapitre 20.
+- **Démontré dans le code, sans valeur de constat en production** : T2 rapide local sur `origin/main@c0ee6856`, base éphémère et patients fictifs, 355 tests E2E passés, 21 ignorés, aucun échec. Pour la série : menu 12 passés, frise 10, barre basse 6 et 6 ignorés, rail 8 et 8 ignorés, ces ignorés étant les cas réservés à l'autre appareil. Les comportements du mineur et du clos n'ont été vus qu'en local (constats de L1 à L5 et constats complémentaires ci-dessus).
+- **Drapeaux** : les quatre relus à `true` en production le même jour. Aucun drapeau posé ni retiré.
+- **Inconnu faute de preuve** : le rendu chez un vrai patient mineur ou clos. La garde [[D-283]] §5 n'a pas été vue en production.
+
 ### Dépendances
 - PR #1765 : ouverte, modifie `MobileBottomNav.tsx` (+4 −1) et y ajoute son premier banc (lue avec `gh`, hors de l'arbre lu). Aucun lot patient ne touche `MobileBottomNav`, `SidebarRail` ni `NavBar` : L0 à L3 en sont indépendants si le composant patient est séparé.
 - Plan §8 ligne 2684 et D/30 (ligne 2319, « fait le 2026-11-01 ») : dette à mettre à jour à chaque lot.
