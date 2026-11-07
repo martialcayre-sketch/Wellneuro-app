@@ -1,0 +1,55 @@
+# Handoff — 2026-11-07 — Skill tiers `ui-ux-pro-max`, réduit à la relecture
+
+## Branche et état Git
+
+`chore/skill-ui-ux-pro-max`, worktree `.claude/worktrees/skill-ui-ux-pro-max`, partie de `origin/main@2e788656`. Le `main` local n'est pas touché.
+
+## Objectif
+
+Le responsable veut toutes les relectures avec ce skill, posé dans le projet par PR, après le verdict `/wn-tiers`.
+
+## Décisions prises
+
+- Verdict `/wn-tiers` : SOUS RÉSERVE, au commit `b7d5353e` ; détail et réserves dans `changelog.d/2026-11-07-skill-ui-ux-pro-max.md`.
+- Périmètre projet, choisi par le responsable.
+- `disable-model-invocation` non posé, description restreinte à la relecture : recommandation de l'assistant, annoncée au responsable, sans objection à ce stade.
+- Le skill s'ajoute aux relectures bloquantes de `wn-merge`, sans les remplacer. Il n'est pas câblé dans le cycle.
+- Pas de `D-xxx` : même traitement que `frontend-design` (`source` en frontmatter, détail au changelog).
+- Garde ajoutée à `scripts/search.py` après la revue (CodeRabbit et PR-Agent) : l'interdiction de générer une identité n'était qu'une consigne. Ce fichier n'est donc plus identique à l'amont.
+
+## Fichiers modifiés
+
+- `.claude/skills/ui-ux-pro-max/` : 46 fichiers amont, dont `SKILL.md` adapté et `scripts/search.py` doté d'une garde, et `LICENSE.txt`.
+- `.gitignore` : exception limitée à `.claude/skills/ui-ux-pro-max/data/**/*.csv`.
+- `changelog.d/2026-11-07-skill-ui-ux-pro-max.md` et ce handoff.
+
+## Validations exécutées
+
+- Empreinte des 46 fichiers à la copie : `b3485272…`, celle du contenu relu.
+- `diff -rq` avec l'amont : seuls `SKILL.md`, `scripts/search.py` et `LICENSE.txt` diffèrent ; `scripts/tests/` et `validate_data.py` sont absents. `search.py` ne compte que des ajouts (aucune ligne amont retirée).
+- Recherches réelles `--domain ux`, `--domain icons` et `--stack nextjs`, depuis la racine et depuis `web/` : résultats rendus, aucun `__pycache__`, aucun `design-system/`.
+- Garde de `search.py`, jouée à la main sans banc : 18 appels interdits rendent le code 2 (les options de génération, les 7 domaines, la recherche sans domaine), 6 recherches de relecture rendent 0, aucun fichier écrit.
+- `git check-ignore` : `web/foo.csv`, `exports/x.csv` et `.claude/skills/autre/x.csv` restent ignorés.
+- `check_no_secrets.sh` : OK. `skill-bang-cwd` et `skill-cross-invocation`, bancs et contrôles : 66 tests passés, 21 skills.
+- `wn-kit-doctor` : les lignes sur les skills sont vertes ; 40/43 au total, à l'identique sur `origin/main` sans ce skill (un motif de variable de base de données dans un document de campagne, hors de ce diff).
+- `.gitignore` a des fins de ligne mêlées (CRLF et LF). Une première édition y a retiré la règle du cache Compl'Alim, vue au diff avant tout push : l'exception a été réinsérée octet par octet depuis `origin/main`, et le diff final n'y compte que 2 ajouts. Cause exacte de ce retrait non établie : relire ce fichier au diff après toute édition.
+- Non lancés : T1 et T2, le diff ne touchant ni `web/`, ni UI, ni API. Le CI fait foi.
+
+## Problèmes ouverts
+
+- Le rejet du 2026-09-06 est levé par demande du responsable, sans décision écrite : à consigner si le skill reste.
+- `references/quick-reference.md` cite encore `--design-system` ; la garde de `search.py` le refuse et le cadre du `SKILL.md` l'emporte, le fichier restant identique à l'amont.
+- La garde n'a pas de banc : une mise à jour amont de `search.py` la ferait disparaître sans alerte. Elle repasse de toute façon par `/wn-tiers`, qui doit la reposer.
+- La copie de l'environnement cloud n'est pas couverte par le verdict. Elle a été lancée avant tout contrôle, selon le rapport de cette session.
+- Le constat à l'écran de la série « rails et menus » attend toujours le bloc du responsable. Il n'est pas traité ici et ne dépend pas de ce skill.
+
+## Prochaine action exacte
+
+CI et revue de la PR, puis merge sur demande du responsable. Ensuite, reprendre le constat dès que son bloc « Ce que j'ai vu » est fourni.
+
+## Interdits encore actifs
+
+- Ne pas lancer `--persist` ni `--design-system`, ni utiliser le skill pour choisir style, palette ou police.
+- Ne pas copier `stack/`, `cli/` ni passer par `npx ui-ux-pro-max-cli`.
+- Une nouvelle version amont repasse par `/wn-tiers` : le verdict porte sur un commit.
+- Ne pas élargir l'exception de `.gitignore` : `*.csv` y protège les exports de données.
