@@ -769,7 +769,7 @@ Les quatre drapeaux sont posés en production depuis le 2026-11-05. **Ce constat
 
 | Point | Étiquette | Constat |
 |---|---|---|
-| Majeur, 390 px | observé | Hub et `/suivi` : bouton « Menu » de 44 px, mot-symbole vers le hub, barre de quatre cases de 64 px, pas de rail ; page 390 / 390. Panneau de 390 x 844, douze liens de 44 px, Échap le ferme et rend le focus au bouton. |
+| Majeur, 390 px | observé | Hub et `/suivi` : bouton « Menu » de 44 px, mot-symbole vers le hub, barre de quatre cases de 64 px, pas de rail ; page 390 / 390. Hub : frise en `<nav>`, un seul `aria-current="step"`, étape courante dans le champ, cible de 44 px. Panneau de 390 x 844, douze liens de 44 px, Échap le ferme et rend le focus au bouton. |
 | Majeur, 1 024 px, 100 % | observé | `/suivi` : rail de 252 px, colonne de 668 px, ni bouton ni barre ; page 1 024 / 1 024. Hub : rail et « Autres espaces », colonne de 668 px. |
 | Majeur, 1 024 px, 112,5 % | observé | `/suivi` : rail de 283,5 px, liens de 49,5 px, colonne de 623,5 px, ni bouton ni barre ; page 1 024 / 1 024. Hub : rail et « Autres espaces », colonne de 623,5 px. |
 | 1 023 px, bouton seul | observé | Hub : bouton visible, ni rail ni barre ; page 1 023 / 1 023. |
@@ -782,7 +782,7 @@ Les quatre drapeaux sont posés en production depuis le 2026-11-05. **Ce constat
 | Quatrième case de la barre | non constaté ; observé en partie | « Bibliothèque » servie sur ce dossier. La barre sans fiche remise et la forme « Fiches » : non vues. |
 | Appareil à encoche | non constaté | Il faut un vrai téléphone. |
 
-- **Frise avec le rail à 1 024 px** (observé) : la frise dépasse sa colonne et défile en elle-même, 676 / 668 px à 100 %, 687 / 623,5 px à 112,5 %, où « Restitution » est coupée avant défilement ; la page ne déborde pas. Le constat local de L2b (1 024 px, 680 / 680) a été fait sans rail. Consigné sans être qualifié ; rien n'est corrigé.
+- **Frise avec le rail à 1 024 px** (observé) : la frise dépasse sa colonne et défile en elle-même, 676 / 668 px à 100 %, 687 / 623,5 px à 112,5 %, où « Restitution » est coupée avant défilement ; la page ne déborde pas. Le constat local de L2b (1 024 px, 680 / 680) a été fait sans rail. Consigné sans être qualifié : à qualifier par le responsable. Rien n'est corrigé.
 - **Largeurs de colonne** : 668 et 623,5 px, les mêmes que le constat local de L5 et que le calcul du chapitre 20.
 - **Démontré dans le code, sans valeur de constat en production** : T2 rapide local sur `origin/main@c0ee6856`, base éphémère et patients fictifs, 355 tests E2E passés, 21 ignorés, aucun échec. Pour la série : menu 12 passés, frise 10, barre basse 6 et 6 ignorés, rail 8 et 8 ignorés, ces ignorés étant les cas réservés à l'autre appareil. Les comportements du mineur et du clos n'ont été vus qu'en local (constats de L1 à L5 et constats complémentaires ci-dessus).
 - **Drapeaux** : les quatre relus à `true` en production le même jour. Aucun drapeau posé ni retiré.
