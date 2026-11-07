@@ -293,7 +293,7 @@ describe('textes validés figés (D-455 §6)', () => {
       `);
   });
 
-  it('besoin 5 : deux familles, source partagée, conditions visibles sans compter', () => {
+  it('besoin 5 : deux familles, conditions visibles sans compter', () => {
     const b5 = parId(convergences(
       [passation('Q_MOD_01', axes({ SOMMEIL: 10 })), passation('Q_MOD_03', plaintes({ fatigue: 8 }))],
       drapeaux({ antecedentsDomaines: [RESPIRATOIRE], attentes: ['Améliorer le sommeil'] }),
