@@ -245,7 +245,7 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
                   className={actif === entree.cle ? classeLienActif : classeLien}
                 >
                   {etat.icones && <IconeMonEspace cle={entree.cle} />}
-                  <span className="min-w-0 break-words">{entree.libelle}</span>
+                  <span className={etat.icones ? 'min-w-0 break-words' : 'break-words'}>{entree.libelle}</span>
                 </Link>
               </li>
             ))}

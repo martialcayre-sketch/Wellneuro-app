@@ -106,6 +106,7 @@ describe('drapeau', () => {
     await rendre(false);
     expect(rail().querySelectorAll('svg')).toHaveLength(0);
     expect(rail().querySelector('h3')?.className ?? '').not.toContain('uppercase');
+    for (const libelle of rail().querySelectorAll('li a span')) expect(libelle.className).toBe('break-words');
     expect(barre()!.querySelectorAll('svg')).toHaveLength(0);
     expect(onglets()).toBeUndefined();
   });
