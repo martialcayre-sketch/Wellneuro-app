@@ -7,3 +7,9 @@
 export function menuPortailOuvert(value = process.env.WN_PORTAIL_MENU): boolean {
   return value === 'true';
 }
+
+// `WN_PORTAIL_MENU_ICONES` ([[D-460]]) — même règle, sans effet menu fermé. NEUF ET
+// ÉTEINT à la livraison. Fermé, le menu, le rail et la barre sont ceux d'avant.
+export function menuIconesOuvert(value = process.env.WN_PORTAIL_MENU_ICONES): boolean {
+  return value === 'true';
+}

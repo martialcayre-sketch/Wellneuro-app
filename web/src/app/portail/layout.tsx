@@ -6,11 +6,12 @@ import { BoutonDeconnexion } from '@/components/patient/BoutonDeconnexion';
 import { PiedDePageInformations } from '@/components/patient/trust/PiedDePageInformations';
 import { PiedDePageUrgence } from '@/components/patient/PiedDePageUrgence';
 import { PORTAIL_COOKIE_NAME, verifyPatientSession } from '@/lib/patient-session';
-import { menuPortailOuvert } from '@/components/patient/menu/menuDrapeau';
+import { menuIconesOuvert, menuPortailOuvert } from '@/components/patient/menu/menuDrapeau';
 import { BoutonMenuMonEspace, FournisseurMenuPortail, MotSymbole } from '@/components/patient/menu/MenuMonEspace';
 import { LIEN_EVITEMENT } from '@/components/patient/menu/textesMenu';
 import { barreBasseOuverte } from '@/components/patient/barre-basse/barreBasseDrapeau';
 import { BarreBasse } from '@/components/patient/barre-basse/BarreBasse';
+import { VuesRapidesPortail } from '@/components/patient/barre-basse/VuesRapidesPortail';
 import { railLateralOuvert } from '@/components/patient/rail/railDrapeau';
 import { CadreRailMonEspace } from '@/components/patient/rail/RailMonEspace';
 
@@ -53,6 +54,8 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   const barre = barreServie();
   // Rail latéral ([[D-447]]) : sans effet menu fermé, dont il reprend la garde.
   const rail = menu && railLateralOuvert();
+  // Groupes, icônes et onglets ([[D-460]]) : sans effet menu fermé.
+  const icones = menu && menuIconesOuvert();
   const contenu = (
     <main
       id={menu ? 'contenu' : undefined}
@@ -105,6 +108,7 @@ export default async function PortailLayout({ children }: { children: ReactNode 
         ) : (
           <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
         )}
+        {icones && rail && <VuesRapidesPortail />}
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ReadingComfortControl />
           {sessionOuverte && <BoutonDeconnexion />}
@@ -129,5 +133,9 @@ export default async function PortailLayout({ children }: { children: ReactNode 
       {barre && <BarreBasse />}
     </div>
   );
-  return menu ? <FournisseurMenuPortail sessionOuverte={sessionOuverte}>{portail}</FournisseurMenuPortail> : portail;
+  return menu ? (
+    <FournisseurMenuPortail sessionOuverte={sessionOuverte} icones={icones}>
+      {portail}
+    </FournisseurMenuPortail>
+  ) : portail;
 }

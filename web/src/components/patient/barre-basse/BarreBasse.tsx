@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { entreesServies, hrefEntree, type CleEntree } from '@/components/patient/autres-espaces/entreesAutresEspaces';
+import { IconeMonEspace } from '@/components/patient/menu/iconesMonEspace';
 import { elementActif } from '@/components/patient/menu/activationMenu';
 import { useEtatMenuPortail } from '@/components/patient/menu/MenuMonEspace';
 import {
@@ -95,6 +96,8 @@ export function BarreBasse() {
                 aria-current={actif === une.cle ? 'page' : undefined}
                 className={actif === une.cle ? CLASSE_CASE_ACTIVE : CLASSE_CASE}
               >
+                {/* Une icône jamais seule ([[D-444]] §3), sous son drapeau ([[D-460]]). */}
+                {etat.icones && <IconeMonEspace cle={une.cle} />}
                 <span>{une.libelle}</span>
               </Link>
             </li>
