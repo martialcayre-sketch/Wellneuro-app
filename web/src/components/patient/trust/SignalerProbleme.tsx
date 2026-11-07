@@ -124,7 +124,12 @@ export function SignalerProbleme({
     setSymptomes('');
     setSeverite('');
     setActionPrise('ne_sait_pas');
+    // Les trois champs d'association aussi : oubliés ici, ils repartaient
+    // pré-remplis du signalement précédent, comme une réponse non donnée.
+    setRattacheAuProgramme('ne_sait_pas');
     setDesignation('');
+    setDebutPriseLe('');
+    setDebutSymptomesLe('');
     setCategorieIncident('');
     setTypeDroit('');
     setDescription('');
