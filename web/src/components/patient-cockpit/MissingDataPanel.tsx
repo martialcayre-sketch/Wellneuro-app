@@ -109,7 +109,10 @@ export function MissingDataPanel({
                     manquantes — un seul langage de priorité par écran. */}
                 <p>
                   <span className="font-medium">Priorité :</span> {PRIORITY_LABELS[constat.importance]}
-                  {' — '}{ETAT_PAR_STATUT[constat.resolution.statut]}
+                  {/* Une CONVERGENCE n'a rien à résoudre : « non résolue » y
+                      suggérerait une incohérence en attente. Tue sur cette
+                      forme (arbitrage du 2026-11-07, D-455). */}
+                  {constat.forme !== 'CONVERGENCE' && <>{' — '}{ETAT_PAR_STATUT[constat.resolution.statut]}</>}
                 </p>
                 {/* LE MOTIF DE L'ESCALADE, quand il y en a un — [[D-103]].
                     C'est là que la politique de résolution rend des comptes :

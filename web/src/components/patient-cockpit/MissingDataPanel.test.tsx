@@ -195,3 +195,43 @@ describe('MissingDataPanel — conflit entre sources du corpus', () => {
     expect(screen.queryByText(/Q_MOD_01/)).toBeNull();
   });
 });
+
+// H98 (D-455) : une CONVERGENCE porte son niveau et ses déclarations, sous ses
+// propres intitulés, et n'affiche pas d'état de résolution — un accord de
+// sources n'a rien à résoudre (arbitrage du 2026-11-07).
+describe('MissingDataPanel — constat de convergence', () => {
+  const convergence: ContradictionAffichee = {
+    ...constat,
+    id: 'CONV-B5',
+    regleId: 'CONV-B5',
+    forme: 'CONVERGENCE',
+    description: 'Sur le besoin 5, « Mouvement, fonctions corporelles et repos », 2 familles de mesure concordantes.',
+    hypotheses: [],
+    passations: [{ idQuestionnaire: 'Q_MOD_01', date: '2026-11-05', dateLisible: '05/11/2026' }],
+    ecartJours: null,
+    graduation: 'CONVERGENCE_FAIBLE',
+    libelleGraduation: 'convergence faible — deux familles de mesure',
+    declarations: ['antécédent respiratoire / apnée du sommeil déclaré'],
+  };
+  delete (convergence as Partial<ContradictionAffichee>).recoupementJustifie;
+
+  it('affiche le niveau, les passations à l’appui et les déclarations', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[convergence]} />);
+    expect(screen.getByText(/Convergence entre sources/)).toBeTruthy();
+    deplierLeDetail();
+    expect(screen.getByText(/convergence faible — deux familles de mesure/)).toBeTruthy();
+    expect(screen.getByText(/Passations à l’appui/)).toBeTruthy();
+    expect(screen.queryByText(/Passations confrontées/)).toBeNull();
+    expect(screen.getByText(/antécédent respiratoire \/ apnée du sommeil déclaré/)).toBeTruthy();
+  });
+
+  it('n’affiche pas « non résolue » sur une convergence, mais la garde sur une discordance', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[convergence]} />);
+    deplierLeDetail();
+    expect(screen.queryByText(/non résolue/)).toBeNull();
+    cleanup();
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/non résolue/)).toBeTruthy();
+  });
+});

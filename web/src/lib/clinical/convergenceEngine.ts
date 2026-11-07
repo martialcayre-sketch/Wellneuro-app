@@ -15,6 +15,7 @@ import {
   FAMILLES_MESURE_V1,
   IMPORTANCE_CONVERGENCE,
   LIMITATIONS_CONVERGENCE,
+  LIMITATIONS_PAR_BESOIN,
   RATTACHEMENTS_CONVERGENCE_V1,
   type ConditionConvergence,
   type ConditionSansCompte,
@@ -304,7 +305,7 @@ export function evaluerConvergences(entree: EntreeConvergence): ContradictionFin
         + `hors de sa règle : ${horsRegle.join(', ')}.`;
     }
 
-    const limitations = [...LIMITATIONS_CONVERGENCE];
+    const limitations = [...LIMITATIONS_CONVERGENCE, ...(LIMITATIONS_PAR_BESOIN[besoin] ?? [])];
     // Source partagée ([[D-453]] §1) : présente dans plusieurs cartes, elle ne
     // vaut pas plusieurs observations indépendantes.
     for (const c of surLeBesoin) {

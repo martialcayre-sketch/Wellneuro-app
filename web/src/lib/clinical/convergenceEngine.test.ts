@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { ContradictionFinding } from './contradictionFinding';
+import type { StopRule } from './stopRulesV1';
 import {
   BORNES_GRADUATION_CONVERGENCE,
   CONDITIONS_SANS_COMPTE_V1,
@@ -150,6 +151,10 @@ describe('scénarios présentés au responsable ([[D-453]] §8)', () => {
     expect(Object.keys(constats)).toEqual(['CONV-B1']);
     expect(constats['CONV-B1']).toMatchObject({ graduation: 'SIGNAL' });
     expect(constats['CONV-B1'].justificationClaims).toEqual([{ claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' }]);
+    // Limite propre du besoin 1 ([[D-453]] §5, arbitrage du 2026-11-07).
+    expect(constats['CONV-B1'].limitations).toContain(
+      'Le questionnaire alimentaire décrit un profil alimentaire déclaré défavorable ; il n’établit ni carence nutritionnelle ni statut biologique.',
+    );
   });
 
   it('une règle sans condition rattachée n’ouvre rien : « moral » et antécédent psychiatrique seuls', () => {
@@ -262,6 +267,82 @@ describe('ce qui ne compte pas ([[D-450]] §6, `DC-24`)', () => {
   });
 });
 
+describe('conditions visibles sans compter — cartes (D-455 §2.3)', () => {
+  it('fatigue et attente « Améliorer le sommeil » dans la carte du besoin 5', () => {
+    const b5 = parId(convergences(
+      [passation('Q_MOD_01', axes({ SOMMEIL: 10 })), passation('Q_MOD_03', plaintes({ fatigue: 8 }))],
+      drapeaux({ attentes: ['Améliorer le sommeil'] }),
+    ))['CONV-B5'];
+    const visibles = b5.limitations.filter(l => l.startsWith('Visible sans compter'));
+    expect(visibles).toHaveLength(2);
+    expect(visibles[0]).toContain('plainte « fatigue » actuelle');
+    expect(visibles[1]).toContain('attente « Améliorer le sommeil »');
+    // Elles ne comptent pas : une seule famille, AUTO.
+    expect(b5).toMatchObject({ graduation: 'SIGNAL' });
+  });
+
+  it('« moral » aussi dans la carte du besoin 9', () => {
+    const b9 = parId(convergences([
+      passation('Q_MOD_01', axes({ ADAPTATION_STRESS: 5 })),
+      passation('Q_MOD_03', plaintes({ moral: 9 })),
+    ]))['CONV-B9'];
+    expect(b9.limitations.some(l => l.includes('plainte « moral »'))).toBe(true);
+  });
+
+  it('une condition visible mais périmée se tait', () => {
+    const b5 = parId(convergences([
+      passation('Q_SOM_01', global({ color: 'danger' })),
+      passation('Q_MOD_03', plaintes({ fatigue: 8 }), ANCIEN),
+    ]))['CONV-B5'];
+    expect(b5.limitations.some(l => l.startsWith('Visible sans compter'))).toBe(false);
+  });
+});
+
+describe('chemins injectés — source partagée, drapeau à deux valeurs', () => {
+  const base = { regles: ORIENTATION_RULES_V1, maintenantMs: MAINTENANT, fenetres: FENETRES_FRAICHEUR_ORIENTATION };
+
+  it('une condition rattachée à deux besoins est nommée « source partagée » dans chaque carte', () => {
+    const rattachements = RATTACHEMENTS_CONVERGENCE_V1.map(r =>
+      r.condition.type === 'instrument' && r.condition.idQuestionnaire === 'Q_SOM_01' ? { ...r, besoins: [5, 9] } : r);
+    const constats = parId(evaluerConvergences({
+      ...base, rattachements,
+      reponses: [passation('Q_SOM_01', global({ color: 'danger' })), passation('Q_STR_02', global({ color: 'danger' }))],
+    }));
+    expect(constats['CONV-B5'].limitations.some(l => l.startsWith('Source partagée avec le besoin 9'))).toBe(true);
+    expect(constats['CONV-B9'].limitations.some(l => l.startsWith('Source partagée avec le besoin 5'))).toBe(true);
+    // Une famille AUTO, comptée une fois par besoin : la source partagée ne fait pas monter le niveau.
+    expect(constats['CONV-B9']).toMatchObject({ graduation: 'SIGNAL' });
+  });
+
+  it('une feuille drapeau à deux valeurs : chaque valeur se rattache seule', () => {
+    const regle = {
+      ...ORIENTATION_RULES_V1.find(r => r.id === 'R2-SOM-04')!,
+      id: 'R-TEST-DEUX-VALEURS',
+      declencheurs: [
+        { type: 'drapeau' as const, champ: 'antecedentsDomaines' as const, valeurs: ['Psychiatrique (anxiété, dépression, burn-out)', RESPIRATOIRE] },
+        { type: 'comparaison' as const, idQuestionnaire: 'Q_MOD_01', sousScore: 'SOMMEIL', operateur: '<=' as const, valeur: 14 },
+      ],
+    };
+    const constats = parId(evaluerConvergences({
+      ...base, regles: [regle],
+      reponses: [passation('Q_MOD_01', axes({ SOMMEIL: 10 }))],
+      drapeaux: drapeaux({ antecedentsDomaines: [RESPIRATOIRE] }),
+    }));
+    expect(constats['CONV-B5']).toMatchObject({ graduation: 'CONVERGENCE_FAIBLE' });
+    expect(constats['CONV-B5'].sources.filter(s => s.type === 'anamnese')).toHaveLength(1);
+  });
+
+  it('aucune règle publiée ne lit l’âge ni l’alimentation déclarée — le producteur ne reçoit pas ce contexte', () => {
+    // Revue `wn-reviewer`, P2 : le producteur passe un dossier vide. Une règle qui
+    // combinerait une telle feuille avec une condition rattachée déclencherait à
+    // l'orientation et jamais ici, sans que le banc d'alignement le voie.
+    const feuilles = ORIENTATION_RULES_V1.filter(r => r.statut === 'publiee')
+      .flatMap(r => r.declencheurs.flatMap(feuillesDuDeclencheur))
+      .filter(f => f.type === 'age' || f.type === 'exclusionAlimentaire');
+    expect(feuilles).toEqual([]);
+  });
+});
+
 describe('déduplication par famille ([[D-443]] §2, règle 1)', () => {
   it('quatre instruments concordants restent UNE famille AUTO : SIGNAL', () => {
     const constats = parId(convergences([
@@ -317,18 +398,41 @@ describe('garde-fou de [[D-041]] sur l’objet produit (contre-épreuve)', () =>
 });
 
 describe('aucun effet sur l’extinction ([[D-055]] M8)', () => {
-  it('la sortie d’orientation est identique avec et sans les convergences', () => {
-    const reponses = [
-      passation('Q_MOD_01', axes({ SOMMEIL: 10 })),
-      passation('Q_SOM_01', global({ color: 'danger' })),
-    ];
+  // RÉÉCRIT APRÈS REVUE (`wn-reviewer`, P2) : la première version ne passait
+  // aucune règle d'arrêt — aucune extinction n'était possible, et l'égalité
+  // « avec et sans » était vraie d'avance. Le banc fait désormais ÉTEINDRE une
+  // règle, et la contre-épreuve montre qu'une discordance, elle, l'interdit.
+  const ARRET: StopRule = {
+    id: 'STOP-TEST-H98',
+    statut: 'publiee',
+    declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_SOM_02', operateur: '<=', valeur: 5 }],
+    reglesEteintes: ['R-SOM-01'],
+    motif: 'Instrument spécifique rassurant (banc).',
+    justificationClaims: [{ claimId: 'WN-CL-TEST-001', versionClaim: 'v1.0' }],
+  };
+  const reponses = [
+    passation('Q_SOM_01', global({ color: 'danger' })),
+    passation('Q_SOM_02', { total: 3, missing: 0, repondus: 8, interpretation: { color: 'success' } }),
+  ];
+  const entree = {
+    reponses, idsQuestionnairesAssignes: [], regles: ORIENTATION_RULES_V1,
+    maintenantMs: MAINTENANT, fenetres: FENETRES_FRAICHEUR_ORIENTATION, reglesArret: [ARRET],
+  };
+  const eteintes = (contradictions: ContradictionFinding[]) =>
+    evaluerOrientationDetaillee({ ...entree, contradictions }).recommandations
+      .filter(r => r.extinction?.stopRuleId === 'STOP-TEST-H98').length;
+
+  it('une extinction réelle a lieu, et les convergences ne l’empêchent pas', () => {
     const constats = convergences(reponses, drapeaux({ antecedentsDomaines: [RESPIRATOIRE] }));
-    expect(constats.length).toBeGreaterThan(0);
-    const entree = {
-      reponses, idsQuestionnairesAssignes: [], regles: ORIENTATION_RULES_V1,
-      maintenantMs: MAINTENANT, fenetres: FENETRES_FRAICHEUR_ORIENTATION,
-    };
+    expect(constats.map(c => c.id)).toEqual(['CONV-B5']);
+    expect(eteintes([])).toBeGreaterThan(0);
     expect(evaluerOrientationDetaillee({ ...entree, contradictions: constats }))
       .toEqual(evaluerOrientationDetaillee({ ...entree, contradictions: [] }));
+  });
+
+  it('contre-épreuve : une DISCORDANCE ouverte, elle, interdit l’extinction', () => {
+    const [convergence] = convergences(reponses, drapeaux({ antecedentsDomaines: [RESPIRATOIRE] }));
+    const discordance: ContradictionFinding = { ...convergence, forme: 'DISCORDANCE', id: 'C-TEST' } as ContradictionFinding;
+    expect(eteintes([discordance])).toBe(0);
   });
 });

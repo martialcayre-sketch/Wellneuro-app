@@ -1794,7 +1794,17 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // contre-preuve que règles, grilles et quinze fenêtres de D-430 hachent
   // encore exactement l'empreinte précédente (`f10102a5…`). Aucun claim ajouté
   // ni retiré.
-  dateValidation: '2026-11-04T00:00:00.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-07 ([[D-455]], lot H98), SUR ATTESTATION DU
+  // RESPONSABLE (« J'atteste », dans la session du lot). Le périmètre grandit
+  // une quatrième fois : `{ regles, grilles, fenetres, convergence }`, le
+  // dernier terme étant la table de convergence de `DC-29` (`convergenceV1.ts` :
+  // familles, bornes, rattachements de [[D-453]], conditions sans compte,
+  // exclusion de `Q_ALI_01`, importance, action, limites, libellés), dont les
+  // textes ont été validés le même jour. Relu avant la recopie : la
+  // contre-preuve que règles, grilles et fenêtres hachent encore exactement
+  // l'empreinte précédente (`a8630112…`). Aucun claim ajouté ni retiré.
+  dateValidation: '2026-11-07T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1812,6 +1822,8 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //   · 2026-11-04 — `f10102a54de693b52882a69c8a2430c374772ff4a41951e982dfa91f86311ec7`
   //     (D-430, lot t59 : `{ regles, grilles, fenetres }`, quinze fenêtres
   //     de cible ; déclencheur lu sans date)
+  //   · 2026-11-04 — `a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20`
+  //     (D-433, lot t60 : dix-neuf fenêtres, déclencheur lu avec sa fenêtre)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1827,7 +1839,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: 'a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20',
+  shaPerimetre: '16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
