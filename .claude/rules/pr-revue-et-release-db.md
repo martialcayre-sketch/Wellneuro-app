@@ -282,8 +282,8 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   arbitrage (1.8), même formulée en suggestion prête à copier.
 - **Il n'approuve pas, il ne merge pas.** `request_changes_workflow: false` :
   aucune approbation automatique, et son approbation n'est pas requise. Le
-  merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`) : pendant
-  l'essai de `D-373`, l'intégrateur, pour les PR déclarées « prête @<sha> » ;
+  merge reste à l'assistant (`docs/claude/REGLES_PR_MERGE.md`) : sous
+  `D-373`, adoptée par `D-454`, l'intégrateur, pour les PR déclarées « prête @<sha> » ;
   leur file, pour la migration, l'authentification, `.coderabbit.yaml` et
   `pr_agent.yml` (`D-393` §6).
 - **Une remarque arrivée après « prête » revient à la file** (`D-373` §3),

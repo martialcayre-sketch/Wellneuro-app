@@ -115,7 +115,7 @@ PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts 
 `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.
 
 **L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
-change pas, son porteur change. Pendant l'essai (fiche H89 du plan), une
+change pas, son porteur change. Depuis l'adoption de `D-373` (`D-454`), une
 session « intégrateur », seule occupante de la copie principale, merge les
 PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
 qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
