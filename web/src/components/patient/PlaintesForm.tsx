@@ -147,12 +147,17 @@ export function PlaintesForm({ assignation, email, onDone }: {
             ← Précédent
           </PatientButton>
         )}
+        {/* Clés distinctes : sans elles React réutilise le même <button> et
+            passe son type à `submit` pendant le clic sur « Suivant » — le
+            navigateur soumet alors le formulaire et ouvre la confirmation de
+            transmission dès l'arrivée sur l'étape 2 (même piège que
+            SaisieNuitForm). */}
         {isDernierePage ? (
-          <PatientButton type="submit" variant="primary" loading={submitting} loadingLabel="Envoi en cours…" className="flex-1">
+          <PatientButton key="transmettre" type="submit" variant="primary" loading={submitting} loadingLabel="Envoi en cours…" className="flex-1">
             Transmettre au praticien
           </PatientButton>
         ) : (
-          <PatientButton type="button" variant="primary" onClick={() => setPage(p => p + 1)} className="flex-1">
+          <PatientButton key="suivant" type="button" variant="primary" onClick={() => setPage(p => p + 1)} className="flex-1">
             Suivant →
           </PatientButton>
         )}
