@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
+import { CONFLITS_SOURCES_V1, type ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
 
 // Les refus que D-439 et les arbitrages du 2026-11-06 placent à la route, sur
 // base simulée. Le banc sur base réelle (`positionsExpert.pg.test.ts`) rejoue
@@ -229,13 +229,21 @@ describe('poser un arbitrage', () => {
 
   // Réécrit à la re-signature ([[D-452]]) : le registre porte ses listes, et
   // c'est désormais la signature de l'entrée qui ouvre ou ferme la pose.
-  it('REGISTRE DU DÉPÔT : non signé, toute pose est refusée ; signé, une fiche hors de la liste l’est encore', async () => {
+  it('REGISTRE DU DÉPÔT : signé, chaque entrée publiée franchit le contrôle de signature et celui de sa liste', async () => {
     const depot = { ...contexteDuDepot(), lireFraicheur: ctx().lireFraicheur };
-    const issue = await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1' }, depot);
-    const attendue = depot.empreintesSignees === null
-      ? 'registre_non_signe'
-      : depot.structure.signee ? 'fiche_hors_liste' : 'structure_non_signee';
-    expect(issue).toEqual({ issue: 'refusee', raison: attendue });
+    expect(depot.empreintesSignees).not.toBeNull();
+    expect(depot.structure.signee).toBe(true);
+    const publiees = CONFLITS_SOURCES_V1.filter(c => c.statut === 'publiee');
+    expect(publiees.length).toBeGreaterThan(0);
+    for (const entree of publiees) {
+      // Refus qui vient APRÈS la signature, la structure et la liste, et avant
+      // toute base : l'atteindre prouve que l'entrée est signée telle quelle.
+      const issue = await poserArbitrage({ ...demande, conflitId: entree.id, ficheId: entree.fichesUsage[0] }, depot);
+      expect(issue, entree.id).toEqual({ issue: 'refusee', raison: 'claim_hors_conflit' });
+    }
+    expect(await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1' }, depot))
+      .toEqual({ issue: 'refusee', raison: 'fiche_hors_liste' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('une entrée non signée telle quelle n’ouvre aucune pose : registre non signé, ou entrée retouchée', async () => {
