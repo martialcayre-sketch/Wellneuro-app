@@ -172,6 +172,30 @@ BEGIN
     -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
     ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
     ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false),
+    -- Re-signature du 2026-11-07 ([[D-452]]) : les onze conflits des dossiers de
+    -- preuve clos. Relus en production le 2026-11-06 (one-off, lecture seule) :
+    -- tous `VALIDE`, actifs, non supplantés. Même motif pour `false`.
+    ('WN-CL-0044-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0154-051', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0154-054', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-001', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0329-011', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-006', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0517-009', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-010', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0061-019', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0523-001', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0240-013', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0520-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0333-043', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0032-023', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0523-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0520-005', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0312-012', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0058-010', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0512-024', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0062-041', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0387-018', 'v1.0', 'conflits_sources', false),
     -- Catalogue de conduites ([[D-206]] LOT-01), QUATORZE paires en deux
     -- signatures du même jour : les deux premières le 2026-09-17 au matin
     -- ([[D-224]], ligne `insomnie_jambes_sans_repos`), les douze suivantes le
@@ -907,6 +931,30 @@ BEGIN
     -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
     ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
     ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false),
+    -- Re-signature du 2026-11-07 ([[D-452]]) : les onze conflits des dossiers de
+    -- preuve clos. Relus en production le 2026-11-06 (one-off, lecture seule) :
+    -- tous `VALIDE`, actifs, non supplantés. Même motif pour `false`.
+    ('WN-CL-0044-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0154-051', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0154-054', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-001', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0329-011', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-006', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0517-009', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0516-010', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0061-019', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0523-001', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0240-013', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0520-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0333-043', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0032-023', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0523-003', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0520-005', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0312-012', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0058-010', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0512-024', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0062-041', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0387-018', 'v1.0', 'conflits_sources', false),
     -- Catalogue de conduites, DEUX signatures du 2026-09-17 : les deux premières
     -- paires le matin ([[D-224]]), les douze suivantes le soir ([[D-227]]).
     -- `exige_prescriptif = false` — motif complet au bloc du prédicat ci-dessus.

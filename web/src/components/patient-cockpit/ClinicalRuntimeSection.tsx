@@ -2179,6 +2179,7 @@ export function ClinicalRuntimeSection({
           // règles n'est pas signée, et le composant n'a aucune condition à
           // porter.
           contradictions={runtime?.status === 'ready' ? runtime.contradictions : []}
+          arbitragesConflits={runtime?.status === 'ready' ? runtime.arbitragesConflits ?? [] : []}
         />
       )}
       {/* Le relevé de l'épisode accompagne la carte : c'est lui qui traduit un

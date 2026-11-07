@@ -76,6 +76,7 @@ export const MESSAGES_REFUS: Record<string, { message: string; status: number }>
   etat_illisible: { message: 'L’état de cette version est illisible — aucun acte n’est posé.', status: 409 },
   // Arbitrages
   conflit_inconnu: { message: 'Ce conflit n’est pas publié au registre signé.', status: 404 },
+  registre_non_signe: { message: 'Cette entrée du registre des conflits n’est pas signée telle quelle : aucun arbitrage avant sa signature.', status: 409 },
   structure_non_signee: { message: 'La structure des fiches d’usage n’est pas signée : aucun arbitrage avant elle.', status: 409 },
   fiche_hors_liste: { message: 'Cette fiche n’est pas dans la liste curée du conflit.', status: 422 },
   claim_hors_conflit: { message: 'Le claim retenu n’est pas l’un des deux claims du conflit.', status: 422 },

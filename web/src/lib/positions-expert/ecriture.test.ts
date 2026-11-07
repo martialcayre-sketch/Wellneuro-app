@@ -47,6 +47,7 @@ const ENTREE = {
 let frais: Set<string>;
 const ctx = (): ContexteEcriture => ({
   registre: [ENTREE],
+  empreintesSignees: { [ENTREE.id]: empreinteEntreeConflit(ENTREE) },
   structure: { signee: true, fiches: new Set(['FU_BANC_A', 'FU_BANC_B']), empreinte: 'f'.repeat(64) },
   lireFraicheur: async refs => new Set(refs.filter(r => frais.has(r))),
 });
@@ -226,11 +227,23 @@ describe('poser un arbitrage', () => {
     tx.arbitrageConflitSource.create.mockResolvedValue({ id: 'ar1', ordre: BigInt(5), acte: 'pose' });
   });
 
-  it('REGISTRE DU DÉPÔT : toute pose est refusée « fiche hors de la liste curée » (fermé jusqu’à la PR 4)', async () => {
+  // Réécrit à la re-signature ([[D-452]]) : le registre porte ses listes, et
+  // c'est désormais la signature de l'entrée qui ouvre ou ferme la pose.
+  it('REGISTRE DU DÉPÔT : non signé, toute pose est refusée ; signé, une fiche hors de la liste l’est encore', async () => {
     const depot = { ...contexteDuDepot(), lireFraicheur: ctx().lireFraicheur };
-    const fiche = [...depot.structure.fiches][0];
-    const issue = await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: fiche }, depot);
-    expect(issue).toEqual({ issue: 'refusee', raison: depot.structure.signee ? 'fiche_hors_liste' : 'structure_non_signee' });
+    const issue = await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1' }, depot);
+    const attendue = depot.empreintesSignees === null
+      ? 'registre_non_signe'
+      : depot.structure.signee ? 'fiche_hors_liste' : 'structure_non_signee';
+    expect(issue).toEqual({ issue: 'refusee', raison: attendue });
+  });
+
+  it('une entrée non signée telle quelle n’ouvre aucune pose : registre non signé, ou entrée retouchée', async () => {
+    const nonSigne = { ...ctx(), empreintesSignees: null };
+    expect(await poserArbitrage(demande, nonSigne)).toEqual({ issue: 'refusee', raison: 'registre_non_signe' });
+    const retouchee = { ...ctx(), empreintesSignees: { [ENTREE.id]: 'a'.repeat(64) } };
+    expect(await poserArbitrage(demande, retouchee)).toEqual({ issue: 'refusee', raison: 'registre_non_signe' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('conflit inconnu mais bien formé ; structure non signée ; fiche hors structure ; fiche hors liste', async () => {

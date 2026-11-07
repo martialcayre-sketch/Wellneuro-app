@@ -34,6 +34,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import type { ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
 import type { ContexteEcriture } from './ecriture';
+import { empreinteEntreeConflit } from './registreConflits';
 
 const URL_BASE = process.env.DATABASE_URL ?? '';
 const BASE_ANNONCEE = process.env.WN_POSITIONS_EXPERT_BANC_BASE ?? '';
@@ -91,6 +92,7 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
   /** Contexte du banc : structure synthétique signée, registre synthétique, tout claim frais. */
   const ctx = (): ContexteEcriture => ({
     registre: [ENTREE],
+    empreintesSignees: { [ENTREE.id]: empreinteEntreeConflit(ENTREE) },
     structure: { signee: true, fiches: new Set([FICHE_A, FICHE_B, FICHE_C, FICHE_D, FICHE_E]), empreinte: 'b'.repeat(64) },
     lireFraicheur: async refs => new Set(refs),
   });

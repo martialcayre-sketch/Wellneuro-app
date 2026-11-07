@@ -2,6 +2,7 @@
 
 import type { DiscordanceFinding, MissingDataFinding } from '@/lib/clinical-engine/types';
 import type { ContradictionAffichee } from '@/lib/clinical/contradictionsService';
+import type { ArbitrageAuCockpit } from '@/lib/positions-expert/cockpit';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 
 const PRIORITY_LABELS = {
@@ -43,6 +44,7 @@ export function MissingDataPanel({
   missingData,
   discordances,
   contradictions = [],
+  arbitragesConflits = [],
 }: {
   missingData: MissingDataFinding[] | null;
   discordances: DiscordanceFinding[] | null;
@@ -53,6 +55,13 @@ export function MissingDataPanel({
    * `contradictionsPourAffichage`, jamais ici.
    */
   contradictions?: ContradictionAffichee[];
+  /**
+   * Les arbitrages des conflits de sources constatés, déjà filtrés côté
+   * serveur ([[D-439]] A2) : vide drapeau `WN_POSITIONS_EXPERT` éteint. Ils se
+   * listent sous leur constat, étiquetés par fiche, sans qu'aucun soit dit
+   * applicable au dossier.
+   */
+  arbitragesConflits?: ArbitrageAuCockpit[];
 }) {
   return (
     <section aria-labelledby="missing-data-title">
@@ -189,6 +198,31 @@ export function MissingDataPanel({
                   <p className="text-muted-foreground">
                     Règle {constat.regleId} · sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
                   </p>
+                )}
+                {/* LES ARBITRAGES PAR FICHE, LISTÉS SANS ÊTRE APPLIQUÉS —
+                    [[D-439]] A2. Le constat d'escalade reste au-dessus, intact :
+                    un arbitrage répond à la question d'une fiche d'usage, jamais
+                    à ce dossier, et l'écran ne choisit pas entre eux. */}
+                {constat.forme === 'CONFLIT_SOURCES'
+                  && arbitragesConflits.some(a => a.conflitId === constat.id) && (
+                  <div>
+                    <p className="font-medium">Arbitrages posés par fiche d&apos;usage</p>
+                    <p className="text-muted-foreground">
+                      Chacun répond à la question de sa fiche ; aucun ne vaut pour ce dossier.
+                    </p>
+                    <ul className="list-disc pl-5">
+                      {arbitragesConflits.filter(a => a.conflitId === constat.id).map(a => (
+                        <li key={`${a.conflitId}-${a.ficheId}`}>
+                          <span className="font-medium">{a.ficheId}</span>
+                          {' — retenu pour la fiche : '}{a.retenu}
+                          {' — arbitré le '}{new Date(a.le).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}
+                          {a.aRelire && <span className="text-muted-foreground"> — à relire : une de ses références a changé</span>}
+                          <br />
+                          <span className="text-muted-foreground">Motif : {a.motif}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 <p className="text-muted-foreground">Visible uniquement par le praticien.</p>
               </div>

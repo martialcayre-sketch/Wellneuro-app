@@ -7,11 +7,21 @@ describe('le registre lu par l’arbitrage (D-439 A2, A3)', () => {
     expect(REGISTRE_DU_DEPOT).toBe(CONFLITS_SOURCES_V1);
   });
 
-  it('AUJOURD’HUI, AUCUNE ENTRÉE NE PORTE DE LISTE CURÉE : l’arbitrage est fermé jusqu’à la re-signature', () => {
-    // Arbitrage du responsable du 2026-11-06. Ce banc rougit le jour où la
-    // re-signature (PR 4) pose une liste : il faudra alors le réécrire, en
-    // nommant les listes signées.
-    for (const entree of CONFLITS_SOURCES_V1) expect(fichesCurees(entree)).toEqual([]);
+  // RÉÉCRIT À LA RE-SIGNATURE ([[D-452]]) : ce cas disait « aucune entrée ne
+  // porte de liste curée, l'arbitrage est fermé » (PR 3). Chaque entrée publiée
+  // porte désormais sa liste signée, et l'arbitrage lit exactement celle-là.
+  it('chaque conflit publié porte sa liste signée, et l’arbitrage lit exactement celle-là', () => {
+    const publies = CONFLITS_SOURCES_V1.filter(c => c.statut === 'publiee');
+    expect(publies.length).toBeGreaterThan(1);
+    for (const entree of publies) {
+      expect(fichesCurees(entree), entree.id).toEqual([...entree.fichesUsage]);
+      expect(fichesCurees(entree).length, entree.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('`CS-BIO-01`, le conflit que la proposition de bilan déclenche, s’arbitre sur les fiches de WN-CL-0312-018', () => {
+    const bio = conflitPublie('CS-BIO-01');
+    expect(bio && fichesCurees(bio)).toEqual(['FU_B9B12_P8', 'FU_MG_P7', 'FU_VITD_P7', 'FU_ZINC_P7']);
   });
 
   it('une liste mal formée se lit vide, jamais en partie', () => {
