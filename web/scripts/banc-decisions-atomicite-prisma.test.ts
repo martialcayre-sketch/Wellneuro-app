@@ -177,6 +177,10 @@ async function main() {
     // L'ordre de l'effacement nommé du dossier (`patient/effacement.ts`).
     try {
       const par = [PATIENT];
+      // Une fixture échouée en pleine transaction laisserait `c` avortée : le
+      // nettoyage échouerait (25P02) et masquerait l'erreur d'origine (revue
+      // PR-Agent de #1910). Hors transaction, ROLLBACK n'est qu'un avertissement.
+      await c.query('ROLLBACK').catch(() => {});
       await c.query('BEGIN');
       await c.query('DELETE FROM lignes_biologiques_candidates WHERE id_patient = $1', par);
       await c.query('DELETE FROM imports_biologiques WHERE id_patient = $1', par);
