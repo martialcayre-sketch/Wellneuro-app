@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Re-mesure de l'adhésion, par cohortes avant / après"
-statut: "en_cours (2026-10-29) — première lecture jouée, seconde au 2026-11-12"
+statut: "en_cours (2026-11-07) — deux lectures jouées ; clôture au responsable"
 dépend_de: "LOT-04"
 ---
 
@@ -41,8 +41,10 @@ bornes (R07), usage de « je ne sais pas » (R08), heure de saisie (R09).
 - **Première lecture : 2026-10-29**, date où les premières fenêtres de la
   cohorte `c_apres` (première nuit le 2026-10-09) sont échues. R03 se lit plus
   tôt, mais sur des fenêtres incomplètes.
-- **Seconde lecture : 2026-11-12**, pour que `c_apres` compte davantage de
-  fenêtres échues.
+- **Seconde lecture : jouée le 2026-11-07** (prévue au 2026-11-12, pour que
+  `c_apres` compte davantage de fenêtres échues). Avancée par le responsable :
+  à cette date comme au 2026-11-12, deux fenêtres échues (voir « Seconde
+  lecture »).
 
 ## Comment la lire
 
@@ -153,7 +155,88 @@ Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
   changé. Seconde lecture : relire la référence avant de comparer.
 
 **Seconde lecture : 2026-11-12, maintenue.** La porte 16 ne se lève qu'à la
-clôture du lot, après elle.
+clôture du lot, après elle. *(Note du 2026-11-07 : avancée depuis au
+2026-11-07, voir la section suivante.)*
+
+## Seconde lecture (jouée le 2026-11-07)
+
+**Date avancée du 2026-11-12 au 2026-11-07 par le responsable**, le
+2026-11-07, sur un comptage préalable en agrégat. La cohorte `c_apres` comptait
+ce jour-là deux fenêtres échues, et en aurait compté deux le 2026-11-12 : sa
+troisième fenêtre ne s'achève pas avant le 2026-11-13. Attendre n'ajoutait
+aucune fenêtre échue.
+
+Même requête, mêmes bornes (`av` 2026-10-07, `ap` 2026-10-09), par conteneur
+`scalingo run -d`, horloge de la base au 2026-11-07 20:22 UTC. Agrégats seuls ;
+la sortie brute n'est pas versée. Les dossiers de test sont compris dans les
+comptes (`D-075`). La relance de l'agenda est toujours fermée
+(`WN_AGENDA_RELANCE` absente) : les deux cohortes sont mesurées sans elle.
+
+**Contrôle des bornes (R07) : conforme.** `a_avant` : v2 (70 lignes) et v3
+(22) ; `b_transition` : v3 (11) ; `c_apres` : v4 seulement (54).
+
+**La référence, relue d'abord, n'a pas bougé depuis le 2026-10-29.**
+`a_avant` rend les mêmes comptes qu'à la première lecture : 87 / 315 nuits,
+médiane 2, 3 agendas ≥ 14 nuits, décrochage 7 à la 1re nuit et 8 en
+3e semaine, 18 / 22 assignations d'au moins 7 jours commencées, 92 lignes dont
+5 corrections et 7 saisies le lendemain, 46 / 92 saisies entre 5 h et 11 h. Le
+mouvement relevé le 2026-10-29 a donc eu lieu entre le 2026-10-09 et le
+2026-10-29. Pour R01 seul, la requête a une part mécanique : `assignes_7j` se
+compte au jour de la lecture (`current_date - assigne_le >= 7`), si bien
+qu'une assignation du 2026-10-03 au 2026-10-06 n'y entrait pas le 2026-10-09
+et y entre ensuite. Cela n'explique ni R02 ni R04, dont les fenêtres étaient
+closes : leur mouvement reste sans cause établie.
+
+Comparaison sur fenêtres échues (R02, R04) — dénominateur : la **nuit**
+(date distincte) :
+
+| Mesure | `a_avant` (15 fenêtres échues) | `c_apres` (2 fenêtres échues) |
+|---|---|---|
+| Taux de réponse | 87 / 315 nuits = 27,6 % | 38 / 42 nuits = 90,5 % |
+| Nuits par agenda (médiane) | 2 | 19 |
+| Agendas arrêtés après la 1re nuit | 7 / 15 | 0 / 2 |
+| Agendas ≥ 14 nuits | 3 / 15 | 2 / 2 |
+| Agendas à 21 nuits | 0 / 15 | 0 / 2 |
+
+Autres mesures — dénominateur : la **ligne** (saisie enregistrée, correction
+comprise) pour R06 à R09 :
+
+| Mesure | `a_avant` | `c_apres` |
+|---|---|---|
+| Délai assignation → première saisie (médiane, maximum) | 0 j, 28 j (18 agendas) | 4,5 j, 9 j (2 agendas) |
+| « Je ne sais pas » (R08) | — | 0 sur 54 lignes v4 |
+| Corrections / saisies le lendemain | 5 / 7, sur 92 lignes | 1 / 7, sur 54 lignes |
+| Saisies entre 5 h et 11 h (Paris) | 46 / 92 | 35 / 54 (19 à 8 h) |
+
+R01 et R05 rangent par date d'assignation, R02 à R04 par première nuit : des
+trois fenêtres `c_apres`, une relève d'une assignation antérieure au
+2026-10-09, d'où deux agendas seulement en R05. Fenêtre `c_apres` en cours
+(R03) : 1, 15 / 15 nuits écoulées. Assignations postérieures au 2026-10-09
+encore non commencées : 2, toutes de moins de 7 jours. Ce sont les trois mêmes
+agendas `c_apres` que le 2026-10-29 (aucun commencé depuis) : aucun agenda de
+recette sur appareil parmi eux (relevé du responsable, 2026-10-29).
+
+`b_transition` : 3 fenêtres échues, 10 / 63 nuits (15,9 %), contre 9 / 63 le
+2026-10-29 : une nuit de plus sur des fenêtres échues, sans cause établie.
+
+Lecture, au sens de `D-125` — observé en agrégat, causes non établies :
+
+- **Les deux fenêtres `c_apres` échues sont allées au-delà du 15e jour**, sans
+  atteindre 21 nuits. Aucune ne s'est arrêtée après la première nuit, la
+  figure la plus fréquente de la référence (7 / 15).
+- **Deux fenêtres contre quinze** : l'écart se rapporte avec son effectif. Il
+  ne dit pas qu'une cohorte « après » plus large tiendrait de même, ni lequel
+  des lots y serait pour quelque chose (arbitrage du 2026-10-07 : aucun lot
+  isolé).
+- **Saisie du matin** : 35 lignes `c_apres` sur 54 entre 5 h et 11 h, dont 19 à
+  8 h. Le rappel posé sur l'appareil (LOT-05) ne laisse aucune trace serveur :
+  la concentration s'observe, elle ne s'attribue pas.
+
+**Critère de fin de H27** (les deux lectures versées en agrégats) : rempli par
+ce versement. La clôture du LOT-02 et la levée de la porte 16 ne sont pas
+décidées ici ; elles sont posées au responsable dans la liste commune. La
+troisième fenêtre `c_apres` ne se lira relance fermée que si la repose de
+`WN_AGENDA_RELANCE` (d53) attend sa fin.
 
 ## Correction apportée au constat
 
