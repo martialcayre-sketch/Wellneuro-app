@@ -234,6 +234,15 @@ export const LIMITATIONS_CONVERGENCE: readonly string[] = [
 ];
 
 /**
+ * Limites PROPRES à un besoin, en plus des communes. Besoin 1 : [[D-453]] §5,
+ * ajoutée sur arbitrage du responsable du 2026-11-07 (revue `wn-reviewer`) — le
+ * questionnaire alimentaire décrit un profil déclaré, il ne mesure aucun statut.
+ */
+export const LIMITATIONS_PAR_BESOIN: Readonly<Record<number, readonly string[]>> = {
+  1: ['Le questionnaire alimentaire décrit un profil alimentaire déclaré défavorable ; il n’établit ni carence nutritionnelle ni statut biologique.'],
+};
+
+/**
  * Libellés du NIVEAU, pour l'écran et la synthèse. Ce sont des libellés, pas un
  * degré de vérité : ils disent combien de familles concordent.
  */
@@ -254,5 +263,6 @@ export const TABLE_CONVERGENCE_V1 = {
   importance: IMPORTANCE_CONVERGENCE,
   action: ACTION_CONVERGENCE,
   limitations: LIMITATIONS_CONVERGENCE,
+  limitationsParBesoin: LIMITATIONS_PAR_BESOIN,
   libellesGraduation: LIBELLE_GRADUATION,
 } as const;

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { SyntheseSchema } from '@/lib/anthropic';
 import { blocsDepuisSynthese, type SyntheseSource } from './depuisSynthese';
 import { blocsPourDestinataire, contenuPourDestinataire, estBlocDiffusable } from './bloc';
+import { evaluerConvergences } from '@/lib/clinical/convergenceEngine';
+import { FENETRES_FRAICHEUR_ORIENTATION, ORIENTATION_RULES_V1 } from '@/lib/clinical/orientationRulesV1';
+import { lignesDeVigilance } from '@/lib/clinical/vigilanceLongueur';
 
 function synthese(): SyntheseSchema {
   return {
@@ -114,6 +117,49 @@ describe('blocsDepuisSynthese — une discordance ne sort pas du praticien (D-05
   it('aucune vigilance, discordance comprise, n’atteint le patient', () => {
     for (const bloc of blocsVigilance()) {
       expect(contenuPourDestinataire(bloc, 'patient')).toBeNull();
+    }
+  });
+});
+
+describe('blocsDepuisSynthese — une convergence ne sort pas du praticien (H98, D-455)', () => {
+  // Trouvé par `wn-reviewer` : `[CONV-B5]` ne passait pas le marqueur `[C-…]`,
+  // et la ligne partait au médecin. Le banc lit les lignes RÉELLEMENT servies —
+  // produites par le moteur, découpées par `lignesDeVigilance`, morceaux
+  // « (suite) » compris — et non une phrase recomposée.
+  const lignes = evaluerConvergences({
+    reponses: [
+      { idQuestionnaire: 'Q_MOD_01', dateReponse: '2026-11-05T10:00:00.000Z', idReponse: 'r1', statutValidite: 'VALID',
+        scores: { subScores: [{ id: 'SOMMEIL', label: 'SOMMEIL', total: 10, repondus: 5, items: 5 }] } },
+      { idQuestionnaire: 'Q_MOD_03', dateReponse: '2026-11-05T10:00:00.000Z', idReponse: 'r2', statutValidite: 'VALID',
+        scores: { subScores: [{ id: 'fatigue', label: 'fatigue', total: 8, max: 10 }] } },
+    ],
+    drapeaux: {
+      signauxAlerte: [], antecedentsDomaines: ['Respiratoire / apnée du sommeil'], facteursDeclenchants: [],
+      attentes: ['Améliorer le sommeil'], automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+      debut: null, evolution: null, variationPoids: null,
+    },
+    regles: ORIENTATION_RULES_V1,
+    maintenantMs: Date.parse('2026-11-07T12:00:00.000Z'),
+    fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+  }).flatMap(lignesDeVigilance);
+
+  const blocs = () => blocsDepuisSynthese({
+    syntheseJson: { ...synthese(), points_de_vigilance: lignes },
+    statut: 'Validee_Praticien',
+    versionPrompt: 'synthese-v31',
+    dateValidation: '2026-11-07T00:00:00.000Z',
+  }).filter(bloc => bloc.type === 'vigilance');
+
+  it('le moteur produit bien des lignes, suite comprise — anti-vacuité', () => {
+    expect(lignes.length).toBeGreaterThanOrEqual(3);
+    expect(lignes.some(ligne => ligne.includes('[CONV-B5] (suite)'))).toBe(true);
+  });
+
+  it('aucune ligne de convergence n’a de contenu médecin ni patient', () => {
+    for (const bloc of blocs()) {
+      expect(contenuPourDestinataire(bloc, 'medecin')).toBeNull();
+      expect(contenuPourDestinataire(bloc, 'patient')).toBeNull();
+      expect(contenuPourDestinataire(bloc, 'praticien')).toContain('[CONV-B5]');
     }
   });
 });

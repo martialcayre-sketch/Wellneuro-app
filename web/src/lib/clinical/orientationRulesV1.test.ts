@@ -50,7 +50,9 @@ describe('orientationRulesV1 — verrou v1', () => {
     // RE-SIGNÉE le 2026-11-04 ([[D-430]], t59) : le périmètre porte les quinze
     // fenêtres de fraîcheur par instrument ; les 365 jours quittent les règles.
     // 23 claims relus en base le 2026-11-03 — 23/23 VALIDE, actifs, v1.0.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-04T00:00:00.000Z');
+    // RE-SIGNÉE le 2026-11-07 ([[D-455]], H98) : le périmètre porte la table de
+    // convergence de `DC-29` ; aucun claim ajouté ni retiré.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-07T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -216,7 +218,8 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-09-14 — `2a1f4840…2d95ddbd` (RÈGLES + GRILLES, 365 jours sur les règles)
   //   · 2026-11-04 — `f10102a5…f86311ec7` (D-430, quinze fenêtres de cible)
-  const SHA_SIGNE_2026_11_04 = 'a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20';
+  //   · 2026-11-04 — `a8630112…a41ebd20` (D-433, dix-neuf fenêtres)
+  const SHA_SIGNE_2026_11_07 = '16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -346,7 +349,7 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_04);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_07);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP

@@ -11,9 +11,13 @@
 - Importance fixe, « utile mais non urgente » : la convergence relève la
   priorité, jamais la certitude.
 - Au cockpit, le constat porte son niveau, ses passations à l'appui et ses
-  déclarations d'anamnèse. En synthèse, ses lignes sont ajoutées en tête des
-  points de vigilance par le code. Le modèle ne les reçoit pas, et la
-  consigne v31 lui interdit d'affirmer lui-même une convergence.
+  déclarations d'anamnèse, sans état de résolution. Le constat du besoin 1
+  rappelle qu'un profil alimentaire déclaré n'établit ni carence ni statut
+  biologique.
+- En synthèse, ses lignes sont ajoutées en tête des points de vigilance par
+  le code. Le modèle ne les reçoit pas, et la consigne v31 lui interdit
+  d'affirmer lui-même une convergence. Une ligne de convergence ne part
+  jamais dans le document du médecin.
 - La table de convergence entre dans l'empreinte signée de
   `ORIENTATION_RULES_V1`, qui est re-signée. Aucun seuil, aucune règle et
   aucun claim ne change.
