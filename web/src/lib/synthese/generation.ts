@@ -78,6 +78,7 @@ import {
   constatsContradictionsPourDossier,
   contradictionsActives,
   discordancesPourGardeRestitution,
+  vigilancesConvergencePourSynthese,
   vigilancesDiscordancePourSynthese,
 } from '@/lib/clinical/contradictionsService';
 import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from '@/lib/clinical/contradictionsV1';
@@ -1103,6 +1104,9 @@ export async function preparerGeneration(
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
         ...vigilancesDiscordancePourSynthese(constats),
+        // Les convergences des MÊMES constats ([[D-450]] §4, H98), après les
+        // discordances : un désaccord ouvert se lit avant un accord.
+        ...vigilancesConvergencePourSynthese(constats),
       ];
       // Les MÊMES constats alimentent la vigilance et le garde : les recalculer
       // pour le second les ferait diverger du premier au moindre changement.

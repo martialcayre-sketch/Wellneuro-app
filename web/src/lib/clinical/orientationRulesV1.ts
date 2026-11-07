@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { ExclusionAlimentaire } from '@/lib/consultation/etatPopulation';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
+import { TABLE_CONVERGENCE_V1 } from './convergenceV1';
 import { sha256 } from './corpusSyntheseV1';
 import { grillesCitees } from './grillesSignees';
 
@@ -1991,11 +1992,19 @@ export function instrumentsSansFenetre(
  * par instrument y sont entrées (`{ regles, grilles, fenetres }`). Elles ont
  * quitté les règles ; sans ce troisième terme, elles décideraient de ce que la
  * table re-propose hors de toute signature.
+ *
+ * ET UNE QUATRIÈME FOIS (H98, [[D-443]] §8, [[D-453]] §8) : la table de
+ * convergence (`convergenceV1.ts`) y entre — registre des familles, bornes de
+ * la graduation, rattachements des conditions aux besoins, conditions sans
+ * compte, exclusion de `Q_ALI_01`, libellés. Elle se lit sur les déclencheurs
+ * de CETTE table : sans ce terme, retoucher un rattachement changerait ce que
+ * le praticien lit au cockpit et en synthèse hors de toute signature.
  */
 export const ORIENTATION_RULES_SHA256 = sha256(
   JSON.stringify({
     regles: ORIENTATION_RULES_V1,
     grilles: GRILLES_ORIENTATION,
     fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+    convergence: TABLE_CONVERGENCE_V1,
   }),
 );

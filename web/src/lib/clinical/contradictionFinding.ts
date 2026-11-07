@@ -48,8 +48,10 @@ export type ContradictionClaimRef = OrientationClaimRef;
 export type FormeContradiction = 'DISCORDANCE' | 'CONVERGENCE' | 'CONFLIT_SOURCES';
 
 /**
- * Graduation de la seule forme `CONVERGENCE`. Elle COMPTE des sources
- * indépendantes ; elle ne mesure pas une vraisemblance. `DC-29` : la
+ * Graduation de la seule forme `CONVERGENCE`. Elle COMPTE des familles de
+ * mesure concordantes sur un besoin ([[D-443]] §1, qui amende la lettre « sources
+ * indépendantes » de [[D-041]] ; bornes dans `convergenceV1.ts`) ; elle ne
+ * mesure pas une vraisemblance. `DC-29` : la
  * convergence augmente la priorité, jamais la certitude — c'est pourquoi cette
  * graduation vit sur la forme et non sur l'objet, et pourquoi elle ne peut pas
  * servir de champ de confiance déguisé.
@@ -102,6 +104,19 @@ export type SourceContradiction =
   | {
       type: 'claim';
       claim: ContradictionClaimRef;
+    }
+  /**
+   * Une déclaration d'anamnèse — ajoutée par H98 pour la forme `CONVERGENCE`,
+   * dont la famille `ANAMNESE` ([[D-443]] §2, règle 4) se nomme par le champ et
+   * la valeur déclarés ([[D-443]] §7). Aucune passation : pas de `reponseId`,
+   * pas de date, et elle n'entre jamais dans l'écart entre sources.
+   */
+  | {
+      type: 'anamnese';
+      champ: string;
+      valeur: string;
+      /** Libellé lu par le praticien, de la table de convergence. */
+      libelle: string;
     };
 
 /**
