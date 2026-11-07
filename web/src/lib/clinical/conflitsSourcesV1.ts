@@ -707,8 +707,18 @@ export const CONFLITS_SOURCES_ECARTES_V1: ConflitSourcesEcarte[] = [
 // [[D-452]] §1, patron [[D-042]].
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Les six dossiers de preuve clos, vocabulaire de [[D-439]] §2. */
-export type DossierPreuveClos = 'fer' | 'vitamine_d' | 'zinc' | 'magnesium' | 'b9_b12' | 'iode_selenium';
+/**
+ * Les dossiers de preuve clos, vocabulaire de [[D-439]] §2 : les six de
+ * [[D-452]], puis polyphénols et antioxydants, curé par [[D-461]].
+ */
+export type DossierPreuveClos =
+  | 'fer'
+  | 'vitamine_d'
+  | 'zinc'
+  | 'magnesium'
+  | 'b9_b12'
+  | 'iode_selenium'
+  | 'polyphenols_antioxydants';
 
 /**
  * Un conflit déclaré dans un dossier de preuve clos, relu, et qui n'entre pas
@@ -850,7 +860,9 @@ export const CONFLITS_DOSSIERS_CLOS_ECARTES_V1: ConflitDossierClosEcarte[] = [
   {
     dossier: 'magnesium',
     etiquette: 'C4',
-    claimsEpingles: ['WN-CL-0235-013', 'WN-CL-0513-004'],
+    // Liste complétée par [[D-461]] : les cinq premiers claims étaient déjà
+    // épinglés à la re-signature de [[D-452]], et la liste les omettait.
+    claimsEpingles: ['WN-CL-0164-044', 'WN-CL-0316-010', 'WN-CL-0326-009', 'WN-CL-0328-010', 'WN-CL-0344-026', 'WN-CL-0235-013', 'WN-CL-0513-004'],
     motif:
       'Une dose déjà servie face à une limite de sécurité : c’est un dépassement '
       + 'que la fiche affiche à côté de la dose, retenu comme écart déclaré et non '
@@ -895,7 +907,8 @@ export const CONFLITS_DOSSIERS_CLOS_ECARTES_V1: ConflitDossierClosEcarte[] = [
   {
     dossier: 'b9_b12',
     etiquette: 'C2',
-    claimsEpingles: ['WN-CL-0125-011', 'WN-CL-0125-045', 'WN-CL-0282-018', 'WN-CL-0312-012', 'WN-CL-0312-018', 'WN-CL-0334-005', 'WN-CL-0386-002'],
+    // `WN-CL-0168-025` ajouté par [[D-461]] : épinglé dès [[D-452]], omis.
+    claimsEpingles: ['WN-CL-0125-011', 'WN-CL-0125-045', 'WN-CL-0282-018', 'WN-CL-0168-025', 'WN-CL-0312-012', 'WN-CL-0312-018', 'WN-CL-0334-005', 'WN-CL-0386-002'],
     motif:
       'Une imprécision, pas une contradiction : la forme active de la B12 '
       + 'conseillée d’un côté, « vitamine B12 » sans précision dans des listes de '
@@ -935,6 +948,77 @@ export const CONFLITS_DOSSIERS_CLOS_ECARTES_V1: ConflitDossierClosEcarte[] = [
   { dossier: 'iode_selenium', etiquette: 'C9', claimsEpingles: [], motif: MOTIF_AUCUNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
   { dossier: 'iode_selenium', etiquette: 'C10', claimsEpingles: ['WN-CL-0524-001'], motif: MOTIF_UNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
   { dossier: 'iode_selenium', etiquette: 'C11', claimsEpingles: [], motif: MOTIF_AUCUNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
+
+  // ── Polyphénols et antioxydants ([[D-461]]). Aucun conflit publié : les
+  // huit sont écartés, sur arbitrage du responsable du 2026-11-07. ──
+  { dossier: 'polyphenols_antioxydants', etiquette: 'C1', claimsEpingles: ['WN-CL-0065-019'], motif: MOTIF_UNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
+  {
+    dossier: 'polyphenols_antioxydants',
+    etiquette: 'C2',
+    claimsEpingles: ['WN-CL-0190-041', 'WN-CL-0224-005', 'WN-CL-0225-004', 'WN-CL-0225-013', 'WN-CL-0225-014'],
+    motif:
+      `${MOTIF_UNE_PARTIE} Les claims épinglés sont tous du même côté : ils `
+      + 'décrivent un effet de la cuisson qui varie selon l’aliment, le composé et '
+      + 'le mode de cuisson, et ceux d’un même aliment viennent d’une même source '
+      + '(WN-SRC-0225). Aucun couple de deux sources ne s’y oppose.',
+    conditionDeRetour: RETOUR_EPINGLAGE,
+  },
+  { dossier: 'polyphenols_antioxydants', etiquette: 'C3', claimsEpingles: ['WN-CL-0189-122'], motif: MOTIF_UNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
+  {
+    dossier: 'polyphenols_antioxydants',
+    etiquette: 'C4',
+    claimsEpingles: ['WN-CL-0189-126', 'WN-CL-0513-002'],
+    motif:
+      'Les deux parties ont des claims épinglés, mais ils ne s’opposent pas à la '
+      + 'lecture : l’un dit qu’aucune limite supérieure de sécurité n’est établie '
+      + 'pour le bêta-carotène, l’autre que l’avis européen sur ce nutriment a été '
+      + 'mis à jour, sans en donner la conclusion. L’avis mis à jour, ingéré '
+      + '(WN-SRC-0643), conclut lui-même qu’aucune limite ne peut être établie.',
+    conditionDeRetour: RETOUR_RELECTURE,
+  },
+  {
+    dossier: 'polyphenols_antioxydants',
+    etiquette: 'C5',
+    claimsEpingles: ['WN-CL-0189-132', 'WN-CL-0189-133', 'WN-CL-0649-001'],
+    motif:
+      'Les deux parties ont des claims épinglés, et leurs références d’apport '
+      + 'diffèrent pour la femme adulte, enceinte et allaitante. La position '
+      + 'signée de la fiche retient cette différence comme un écart déclaré, '
+      + 'chaque valeur gardant sa provenance, européenne ou française, et non '
+      + 'comme un conflit à arbitrer.',
+    conditionDeRetour:
+      'Une révision signée de la position qui fasse de cet écart une question à '
+      + 'arbitrer par fiche.',
+  },
+  { dossier: 'polyphenols_antioxydants', etiquette: 'C6', claimsEpingles: ['WN-CL-0649-002'], motif: MOTIF_UNE_PARTIE, conditionDeRetour: RETOUR_EPINGLAGE },
+  {
+    dossier: 'polyphenols_antioxydants',
+    etiquette: 'C7',
+    claimsEpingles: ['WN-CL-0647-002'],
+    motif:
+      `${MOTIF_UNE_PARTIE} Les claims de l’autre partie que des tables signées `
+      + 'épinglent (WN-CL-0161-070, WN-CL-0167-023) le sont par les liens d’axe et '
+      + 'les indications de biologie, par aucune fiche d’usage ([[D-452]] §1). La '
+      + 'question du marqueur est routée à F79.',
+    conditionDeRetour:
+      'La décision de F79 sur ce marqueur, puis un claim de chaque partie épinglé '
+      + 'par une fiche d’usage signée, et deux textes, relus, qui s’opposent sur le '
+      + 'même objet.',
+  },
+  {
+    dossier: 'polyphenols_antioxydants',
+    etiquette: 'C8',
+    claimsEpingles: ['WN-CL-0645-001', 'WN-CL-0649-003'],
+    motif:
+      'Les deux claims épinglés divergent sur l’existence d’une limite supérieure '
+      + 'européenne de la vitamine E, mais l’écart tient à ce que la source '
+      + 'secondaire attribue à l’agence : la limite existait avant elle et a été '
+      + 'maintenue. C’est une attribution à vérifier sur la source, pas un choix '
+      + 'clinique à arbitrer.',
+    conditionDeRetour:
+      'Une relecture de WN-CL-0649-003 contre le passage original et sa '
+      + 'référence, qui confirme deux positions réellement opposées.',
+  },
 ];
 
 export type ConflitsSourcesMetadata = {
