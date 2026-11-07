@@ -92,10 +92,23 @@ export function LigneDePrises({ prises, onChange, desactive = false }: Props) {
   const [message, setMessage] = useState('');
   const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appuiLongDeclenche = useRef(false);
+  const piste = useRef<HTMLDivElement>(null);
+  // Une prise déplacée aux flèches change d'heure, donc de clé : React démonte
+  // le bouton qui avait le focus et le focus tombait sur la page, ce qui
+  // obligeait à retabuler à chaque pas. On le rend au bouton de la nouvelle
+  // heure, une fois les prises mises à jour par le parent.
+  const focusApresDeplacement = useRef<string | null>(null);
 
   useEffect(() => () => {
     if (minuterie.current !== null) clearTimeout(minuterie.current);
   }, []);
+
+  useEffect(() => {
+    const heure = focusApresDeplacement.current;
+    if (heure === null) return;
+    focusApresDeplacement.current = null;
+    piste.current?.querySelector<HTMLButtonElement>(`[data-testid="prise-${heure}"]`)?.focus();
+  }, [prises]);
 
   const occupes = new Set(prises.map((p) => minutesDepuisAncre(p.heure)));
   const triees = trier(prises);
@@ -165,6 +178,7 @@ export function LigneDePrises({ prises, onChange, desactive = false }: Props) {
     const nouvelle = offsetVersHeure(cible);
     setMessage('');
     setSelection(nouvelle);
+    focusApresDeplacement.current = nouvelle;
     onChange(trier(prises.map((p) => (p.heure === heure ? { ...p, heure: nouvelle } : p))));
   }
 
@@ -202,6 +216,7 @@ export function LigneDePrises({ prises, onChange, desactive = false }: Props) {
       </div>
 
       <div
+        ref={piste}
         data-testid="piste-prises"
         onPointerDown={desactive ? undefined : surPiste}
         className={`relative h-24 w-full rounded-xl border border-border bg-muted/40 ${

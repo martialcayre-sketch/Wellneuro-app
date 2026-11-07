@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { LigneDePrises, offsetDepuisRatio, offsetVersHeure } from './LigneDePrises';
 import { NB_PRISES_MAX, type PriseJour } from '@/lib/agenda-alimentaire/types';
 
@@ -80,6 +81,21 @@ describe('poser, basculer, retirer', () => {
     const { onChange } = rendre([{ heure: '08:00', nature: 'hors_repas' }]);
     fireEvent.keyDown(screen.getByTestId('prise-08:00'), { key: 'ArrowRight' });
     expect(onChange).toHaveBeenCalledWith([{ heure: '08:15', nature: 'hors_repas' }]);
+  });
+
+  it('le focus suit la prise déplacée : plusieurs pas sans retabuler (audit UI du 2026-11-07)', () => {
+    // Parent minimal qui tient l'état, comme SaisieJourneeForm : c'est la mise à
+    // jour des prises qui démontait le bouton focalisé.
+    function Parent() {
+      const [prises, setPrises] = useState<PriseJour[]>([{ heure: '08:00', nature: 'repas' }]);
+      return <LigneDePrises prises={prises} onChange={setPrises} />;
+    }
+    render(<Parent />);
+    screen.getByTestId('prise-08:00').focus();
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(screen.getByTestId('prise-08:15'));
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(screen.getByTestId('prise-08:30'));
   });
 
   it('une prise ne se déplace pas sur un emplacement déjà occupé', () => {
