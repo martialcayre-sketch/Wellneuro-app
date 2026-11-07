@@ -232,6 +232,27 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
     ]);
   });
 
+  // Contre-revue par mutations du 2026-11-07 (M1, d25-b1) : une action inconnue
+  // SEULE serait refusée plus loin (`analyte_inconnu`, son code n'étant pas
+  // chargé) et masquerait l'absence du refus. Dans un lot mixte, la vraie
+  // validation charge le code ; l'entrée inconnue au même analyte, à une autre
+  // date, irait jusqu'à la création si `decision_invalide` manquait.
+  it('LOT MIXTE : une action inconnue au même analyte est refusée `decision_invalide`, rien n’est écrit', async () => {
+    const issue = await deciderLignes({
+      ...BASE,
+      decisions: [
+        valider('l1'),
+        { idLigne: 'l7', decision: 'attendre', analyteCode: 'BIO_FERRITINE', valeur: '53', preleveLe: MINUIT_PARIS },
+      ],
+    });
+    expect(issue).toMatchObject({
+      ok: false, reason: 'lignes_invalides', status: 400,
+      lignes: [{ index: 1, idLigne: 'l7', reason: 'decision_invalide' }],
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
   it('HEURE NON LUE : un minuit de Paris renvoyé tel quel est refusé, sans transaction', async () => {
     const issue = await deciderLignes({
       ...BASE,
@@ -374,5 +395,38 @@ describe('deciderLignes — la dernière décision purge le document (D-258)', (
     restantes = 0;
     prisma.compteRenduBiologique.updateMany.mockRejectedValueOnce(Object.assign(new Error('purge refusée'), { code: 'P2010' }));
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: false, status: 500 });
+  });
+});
+
+// Contre-revue par mutations du 2026-11-07 (M2, d25-b2) : le double par défaut
+// passe le client GLOBAL à la transaction (`cb(prisma)`), et ne voit donc pas
+// une écriture faite hors d'elle. Ici, la transaction reçoit un client à elle :
+// chaque écriture doit y passer, aucune sur le client global. L'atomicité
+// elle-même se joue contre PostgreSQL (`scripts/banc-decisions-atomicite-prisma.test.ts`).
+describe('deciderLignes — toutes les écritures passent par le client de la transaction', () => {
+  it('résultat, lignes et purge sont écrits sur `tx`, jamais sur le client global', async () => {
+    restantes = 0;
+    const tx = {
+      ...prisma,
+      resultatBiologique: { ...prisma.resultatBiologique, create: vi.fn(async () => ({ id: 'res_tx' })) },
+      ligneBiologiqueCandidate: {
+        ...prisma.ligneBiologiqueCandidate,
+        updateMany: vi.fn<(args: { data: Record<string, unknown> }) => Promise<{ count: number }>>(async () => ({ count: 1 })),
+      },
+      compteRenduBiologique: { ...prisma.compteRenduBiologique, updateMany: vi.fn(async () => ({ count: 1 })) },
+    };
+    prisma.$transaction.mockImplementationOnce(async (cb: (client: typeof prisma) => unknown) => cb(tx));
+    const issue = await deciderLignes({
+      ...BASE,
+      decisions: [valider('l1'), { idLigne: 'l2', decision: 'ecarter', motif: 'non_quantitative' }],
+    });
+    expect(issue).toEqual({ ok: true, validees: 1, ecartees: 1, documentPurge: true });
+    expect(tx.resultatBiologique.create).toHaveBeenCalledTimes(1);
+    expect(tx.ligneBiologiqueCandidate.updateMany).toHaveBeenCalledTimes(2);
+    expect(tx.ligneBiologiqueCandidate.updateMany.mock.calls[0][0]).toMatchObject({ data: { idResultat: 'res_tx' } });
+    expect(tx.compteRenduBiologique.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(prisma.ligneBiologiqueCandidate.updateMany).not.toHaveBeenCalled();
+    expect(prisma.compteRenduBiologique.updateMany).not.toHaveBeenCalled();
   });
 });

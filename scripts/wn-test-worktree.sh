@@ -643,6 +643,11 @@ grep -q 'banc-purge-echeance.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc de la purge à l'échéance."
 WN_BIO_PURGE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts > /dev/null < /dev/null \
   || die "banc de la purge à l'échéance en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts\`, depuis web/)."
+# L'atomicité des décisions BIO-INGEST (mutations du 2026-11-07, M2), même discipline.
+grep -q 'banc-decisions-atomicite-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'atomicité des décisions."
+WN_BIO_DECISIONS_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-decisions-atomicite-prisma.test.ts > /dev/null < /dev/null \
+  || die "banc de l'atomicité des décisions en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-decisions-atomicite-prisma.test.ts\`, depuis web/)."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed

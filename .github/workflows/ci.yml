@@ -1810,6 +1810,17 @@ jobs:
           WN_BIO_PURGE_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-purge-echeance.test.ts
 
+      # L'atomicité des décisions BIO-INGEST (contre-revue par mutations du
+      # 2026-11-07, M2) : le VRAI `deciderLignes` contre PostgreSQL — un refus
+      # FORCÉ après la création du résultat (ligne tenue par une autre
+      # session) ne laisse aucun résultat au dossier ; témoin sans course.
+      - name: Bio decisions atomicity bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_BIO_DECISIONS_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-decisions-atomicite-prisma.test.ts
+
       # Lettres d'adressage remises au patient (D-262, LOT-01). Ce que le drift
       # check ne voit pas : la remise porte sur une approbation du même dossier
       # dont le protocole s'ouvre sur l'orientation réservée, une lettre
