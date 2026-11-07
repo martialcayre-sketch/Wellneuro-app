@@ -42,7 +42,9 @@ d25.
 
 ## Problèmes ouverts
 
-- d25-b1 et d25-b2 : à arbitrer (écrire, quand, quelle file).
+- d25-b1 et d25-b2 : à arbitrer, question `20261107-1158-d` ouverte dans la
+  liste commune (revue PR-Agent de #1904 : sans elle, les lots n'étaient
+  suivis nulle part après la clôture de D/25).
 - Le dossier de preuve local de Codex est sous `/tmp`, volatil.
 - Constat M7 (réservation 6 min contre péremption 5 min) : consigné, sans
   règle ; l'étendre à M7 serait une exigence nouvelle à décider.

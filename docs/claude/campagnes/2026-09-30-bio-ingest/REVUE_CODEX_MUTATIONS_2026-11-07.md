@@ -151,17 +151,34 @@ fonction historique `lancerExtraction()` n'a pas été mutée.
 
 ## 6. Relecture par l'assistant et lots proposés
 
-Relu sur `4ecad8e1`, en lecture seule, sans rejouer de mutation :
+Relu sur `4ecad8e1`, en lecture seule, sans rejouer de mutation. Ce qui se
+vérifie depuis le dépôt :
 
 - `decisions.ts:232` porte bien le refus `decision_invalide`, et `:299` la
-  création du résultat sur `tx`. Les diffs M1 et M2 du dossier de preuve
-  touchent ces seules lignes.
+  création du résultat sur `tx` (`git show 4ecad8e1:web/src/lib/biology-library/import/decisions.ts`).
 - `decisions.test.ts:87` installe bien
   `prisma.$transaction.mockImplementation(async cb => cb(prisma))` : le double
   confond les deux clients, comme le dit P1-2.
-- Le dossier de preuve constate la copie jetable supprimée et les deux
-  copies propres (`restored_copy_status_before_removal` et
-  `launch_copy_status` vides).
+- Les diffs M1 et M2 du dossier de preuve ne comptent chacun qu'un seul bloc
+  d'une ligne changée, sur la cible ; en voici l'en-tête de bloc et les
+  lignes changées (lignes de contexte omises) :
+
+  ```diff
+  @@ -229,7 +229,7 @@ export async function deciderLignes(params: {
+  -    if (b.decision !== 'valider') return refuser(index, idLigne, 'decision_invalide');
+  +    if (false && b.decision !== 'valider') return refuser(index, idLigne, 'decision_invalide');
+  @@ -296,7 +296,7 @@ export async function deciderLignes(params: {
+  -        const resultat = await tx.resultatBiologique.create({
+  +        const resultat = await prisma.resultatBiologique.create({
+  ```
+
+Ce qui ne se vérifie pas depuis le dépôt, **déclaré par Codex, non revérifié** :
+les sorties de bancs (32 tests verts sous chaque mutation), les codes de
+`npm run check` mutés, la suppression de la copie jetable et la propreté des
+deux copies (le constat du dossier de preuve porte
+`restored_copy_status_before_removal` et `launch_copy_status` vides). Ces
+pièces sont restées dans le dossier local du responsable. Le banc de chaque
+lot ci-dessous rejoue sa mutation, ce qui revérifiera le `SURVIT`.
 
 Deux lots de banc sont **proposés au responsable, non écrits**. Aucun ne
 touche au code de production, ni à une valeur, ni à un seuil :
