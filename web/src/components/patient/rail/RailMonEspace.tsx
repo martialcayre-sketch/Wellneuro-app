@@ -38,14 +38,20 @@ const FORME_RAIL: FormeListe = {
 export function CadreRailMonEspace({ children }: { children: ReactNode }) {
   const etat = useEtatMenuPortail();
   const pathname = usePathname() ?? '';
-  const servi = !!etat?.actif && !!etat.token && railSurLeChemin(pathname, etat.token);
+  const surLeChemin = !!etat?.token && railSurLeChemin(pathname, etat.token);
+  const servi = !!etat?.actif && surLeChemin;
+  // Tant que la garde n'a pas répondu, la place du rail est réservée, vide : le
+  // contenu d'un dossier majeur ne saute plus à son arrivée ([[D-447]] §6,
+  // amendement du 2026-11-07). Aucune entrée n'est rendue, fail-closed intact.
+  const reserve = !servi && !!etat?.gardeEnLecture && surLeChemin;
 
   // LE CADRE EST TOUJOURS RENDU, et le `main` y garde sa place : la garde se lit
   // après le premier rendu, et un cadre posé à ce moment-là remonterait la page
   // entière (formulaires, lectures). Sans rail, il ne fait qu'étirer le `main`,
   // comme avant.
   return (
-    <div className={`flex flex-1 flex-col${servi ? ' lg:flex-row lg:gap-6 lg:px-6' : ''}`}>
+    <div className={`flex flex-1 flex-col${servi || reserve ? ' lg:flex-row lg:gap-6 lg:px-6' : ''}`}>
+      {reserve ? <div data-testid="reserve-rail" aria-hidden="true" className="hidden w-nav-rail shrink-0 lg:block print:hidden" /> : null}
       {servi && etat?.token ? <ListeMonEspace etat={{ ...etat, token: etat.token }} forme={FORME_RAIL} /> : null}
       {children}
     </div>

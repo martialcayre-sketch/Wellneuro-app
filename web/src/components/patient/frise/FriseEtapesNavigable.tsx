@@ -33,7 +33,7 @@ export function useFriseNavigable(): boolean {
 
 // La puce reste en haut de la cible : `pt-1` la pose à 4 px, son centre à
 // 11 px, sur lequel s'aligne la barre de liaison (`mt-[10px]`, 2 px).
-const CLASSE_ETAPE = 'flex min-h-11 min-w-11 flex-col items-center gap-1.5 rounded-md px-1 pt-1';
+const CLASSE_ETAPE = 'flex min-h-11 min-w-11 shrink-0 flex-col items-center gap-1.5 rounded-md px-1 pt-1';
 
 export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[]; signaux: SignauxFrise }) {
   const idTexte = useId();
@@ -107,10 +107,15 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
           }
 
           return (
-            <li key={step.id} className="flex shrink-0 items-start">
+            <li key={step.id} className="flex items-start">
               {etape}
+              {/* Dès `sm`, seule la barre de liaison cède : à côté du rail, à
+                  1 024 px, les six étapes tiennent dans leur colonne, confort
+                  112,5 % compris (constat du 2026-11-07). Une base et non une
+                  largeur : une largeur fixe entre dans la taille minimale de
+                  l'étape, et rien ne céderait. */}
               {index < steps.length - 1 && (
-                <span className="mt-[10px] h-0.5 w-4 shrink-0 bg-border sm:w-6" aria-hidden="true" />
+                <span className="mt-[10px] h-0.5 min-w-4 basis-4 bg-border sm:min-w-2 sm:basis-6" aria-hidden="true" />
               )}
             </li>
           );

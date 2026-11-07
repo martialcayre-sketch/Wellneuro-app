@@ -144,6 +144,23 @@ test.describe('Portail — rail latéral', () => {
       await page.emulateMedia({ media: 'screen' });
     });
 
+    for (const texteAgrandi of [false, true]) {
+      test(`à 1 024 px, confort ${texteAgrandi ? '112,5' : '100'} % : la frise tient à côté du rail, sans défiler`, async ({ page }) => {
+        await page.addInitScript(agrandi => {
+          window.localStorage.setItem('wellneuro:portail:confort', JSON.stringify({ texteAgrandi: agrandi, espacementRenforce: false }));
+        }, texteAgrandi);
+        await page.setViewportSize({ width: 1024, height: 800 });
+        await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
+        await expect(rail(page).locator('[aria-current="page"]')).toHaveText('Mon parcours');
+        const liste = page.getByRole('navigation', { name: 'Étapes de votre parcours' }).locator('ol');
+        const { defile, largeur } = await liste.evaluate(el => ({ defile: el.scrollWidth, largeur: el.clientWidth }));
+        expect(defile).toBeLessThanOrEqual(largeur);
+        for (const cible of await page.getByRole('navigation', { name: 'Étapes de votre parcours' }).locator('[aria-current="step"]').all()) {
+          expect((await cible.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        }
+      });
+    }
+
     test('sur le hub, le rail et « Autres espaces » ; axe (WCAG 2.1 AA)', async ({ page }) => {
       await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
       await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();

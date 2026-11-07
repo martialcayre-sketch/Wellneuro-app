@@ -37,6 +37,41 @@ function dateEnClair(iso: string): string {
 // ACT-5 (H78) : l'écran du mineur sert le texte 2B de G-11, mot pour mot
 // (`texteMineurs.ts`). Sa première section en est le titre ; les numéros
 // d'urgence du texte s'appellent d'un geste, comme au pied du portail.
+function SectionTexteMineur({ section }: { section: (typeof TEXTE_MINEUR_JEUNE)[number] }) {
+  return (
+    <section className="space-y-1">
+      <h3 className="font-semibold text-foreground">{section.titre}</h3>
+      <p>
+        {decouperNumeros(section.texte, section.numerosAppelables).map((m, i) =>
+          m.numero ? (
+            <a key={i} href={`tel:${m.morceau}`} className="font-semibold underline underline-offset-2 text-foreground">
+              {m.morceau}
+            </a>
+          ) : (
+            m.morceau
+          ),
+        )}
+      </p>
+    </section>
+  );
+}
+
+/**
+ * Le dossier clos d'un mineur ([[D-341]] §5, amendement du 2026-11-07) : la seule
+ * section d'urgence du texte 2B, mot pour mot. Le 119 n'est pas au pied du portail.
+ */
+export function EncartUrgenceMineur() {
+  const section = TEXTE_MINEUR_JEUNE.find(s => s.numerosAppelables && s.numerosAppelables.length > 0);
+  if (!section) return null;
+  return (
+    <PatientCard maxWidth="md">
+      <div className="text-sm text-muted-foreground leading-relaxed">
+        <SectionTexteMineur section={section} />
+      </div>
+    </PatientCard>
+  );
+}
+
 export function EcranCircuitMineur({ lienParcours }: { lienParcours?: string }) {
   const [entree, ...suite] = TEXTE_MINEUR_JEUNE;
   return (
@@ -45,24 +80,7 @@ export function EcranCircuitMineur({ lienParcours }: { lienParcours?: string }) 
       <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
         <p>{entree.texte}</p>
         {suite.map(section => (
-          <section key={section.titre} className="space-y-1">
-            <h3 className="font-semibold text-foreground">{section.titre}</h3>
-            <p>
-              {decouperNumeros(section.texte, section.numerosAppelables).map((m, i) =>
-                m.numero ? (
-                  <a
-                    key={i}
-                    href={`tel:${m.morceau}`}
-                    className="font-semibold underline underline-offset-2 text-foreground"
-                  >
-                    {m.morceau}
-                  </a>
-                ) : (
-                  m.morceau
-                ),
-              )}
-            </p>
-          </section>
+          <SectionTexteMineur key={section.titre} section={section} />
         ))}
       </div>
       {lienParcours && (

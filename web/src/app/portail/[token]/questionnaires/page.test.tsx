@@ -12,7 +12,8 @@ vi.mock('next/navigation', () => ({
 import QuestionnairesHubPage from './page';
 
 // ACT-5 (D-341 §5) : la page des questionnaires sert le texte des mineurs en
-// tête d'un dossier mineur ouvert — ni à un majeur, ni à un dossier clos.
+// tête d'un dossier mineur ouvert — ni à un majeur, ni à un dossier clos, à qui
+// reste le seul encart d'urgence (amendement du 2026-11-07).
 describe('QuestionnairesHubPage — texte des mineurs', () => {
   afterEach(() => {
     cleanup();
@@ -67,11 +68,23 @@ describe('QuestionnairesHubPage — texte des mineurs', () => {
     }
   });
 
-  it('★ un dossier mineur clos ne voit pas le texte des mineurs', async () => {
+  it('★ un dossier mineur clos ne voit pas le texte des mineurs, mais garde l’encart d’urgence', async () => {
     stubAssignations({ statutAge: 'mineur', dossierOuvert: false });
     render(<QuestionnairesHubPage />);
     await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
     expect(screen.queryByText(TITRE)).toBeNull();
+    expect(screen.queryByText('Ton avis compte')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'En cas d’urgence' })).not.toBeNull();
+    for (const numero of ['15', '112', '119']) {
+      expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
+    }
+  });
+
+  it('★ un dossier majeur clos n’a pas l’encart d’urgence des mineurs', async () => {
+    stubAssignations({ statutAge: 'majeur', dossierOuvert: false });
+    render(<QuestionnairesHubPage />);
+    await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
+    expect(screen.queryByRole('heading', { name: 'En cas d’urgence' })).toBeNull();
   });
 
   it('★ un dossier majeur ne voit pas le texte des mineurs, et voit son questionnaire', async () => {
