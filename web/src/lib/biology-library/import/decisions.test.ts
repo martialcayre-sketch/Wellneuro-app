@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, journal } = vi.hoisted(() => {
+const { prisma, tx, journal } = vi.hoisted(() => {
   const journal: string[] = [];
   const prisma = {
     $executeRaw: vi.fn(async () => 1),
@@ -12,7 +12,10 @@ const { prisma, journal } = vi.hoisted(() => {
     resultatBiologique: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
     annulationResultatBiologique: { findMany: vi.fn(async () => [] as unknown[]) },
   };
-  return { prisma, journal };
+  // Le client transactionnel a sa propre création : M2 ne peut plus être
+  // masquée par cb(prisma). Les lectures restent les mêmes fixtures.
+  const tx = { ...prisma, resultatBiologique: { ...prisma.resultatBiologique, create: vi.fn() } };
+  return { prisma, tx, journal };
 });
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
@@ -67,7 +70,8 @@ beforeEach(() => {
     LIGNES.filter(l => where.id.in.includes(l.id)));
   prisma.biologyAnalyte.findMany.mockResolvedValue(ANALYTES);
   prisma.resultatBiologique.findMany.mockResolvedValue([]);
-  prisma.resultatBiologique.create.mockImplementation(async () => {
+  prisma.resultatBiologique.create.mockResolvedValue({ id: 'res_global' });
+  tx.resultatBiologique.create.mockImplementation(async () => {
     journal.push('resultat.create');
     return { id: 'res_1' };
   });
@@ -84,7 +88,7 @@ beforeEach(() => {
     return { count: 1 };
   });
   prisma.compteRenduBiologique.findUnique.mockResolvedValue({ motifPurge: null });
-  prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
+  prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(tx));
   espions = (['error', 'warn', 'log'] as const).map(m => vi.spyOn(console, m).mockImplementation(() => {}));
 });
 
@@ -130,11 +134,11 @@ describe('deciderLignes — seule l’extraction courante se décide (arbitrage 
   it('une ré-extraction lancée pendant le préflight est vue sous le verrou, rien n’est écrit', async () => {
     prisma.$transaction.mockImplementationOnce(async (cb: (tx: typeof prisma) => unknown) => {
       courante = 'imp_2';
-      return cb(prisma);
+      return cb(tx);
     });
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, reason: 'import_remplace', status: 409 });
-    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(tx.resultatBiologique.create).not.toHaveBeenCalled();
   });
 
   it('la courante est la plus récente qui n’a pas échoué', async () => {
@@ -148,10 +152,18 @@ describe('deciderLignes — seule l’extraction courante se décide (arbitrage 
 });
 
 describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', () => {
+  it('crée les résultats exclusivement sur le client de la transaction', async () => {
+    expect(tx).not.toBe(prisma);
+    expect(tx.resultatBiologique.create).not.toBe(prisma.resultatBiologique.create);
+    expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: true });
+    expect(tx.resultatBiologique.create).toHaveBeenCalledTimes(1);
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
   it('crée le résultat SANS saisiLe, source saisie_praticien, unité du catalogue', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: '47.5' })] });
     expect(issue).toEqual({ ok: true, validees: 1, ecartees: 0, documentPurge: false });
-    const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
+    const { data } = tx.resultatBiologique.create.mock.calls[0][0];
     expect(data).toEqual({
       idPatient: 'pat_sophie',
       analyteCode: 'BIO_FERRITINE',
@@ -173,7 +185,7 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
   it('écrit un `Decimal` EXACT, en chaîne de bout en bout (LOT-10)', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [valider('l1', { valeur: '0,30000000000000004' })] });
     expect(issue).toMatchObject({ ok: true, validees: 1 });
-    const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
+    const { data } = tx.resultatBiologique.create.mock.calls[0][0];
     expect(data.valeur).toBeInstanceOf(Prisma.Decimal);
     expect(data.valeur.toFixed()).toBe('0.30000000000000004');
   });
@@ -187,7 +199,7 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
   it('écarte avec le motif confirmé par le praticien', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [{ idLigne: 'l2', decision: 'ecarter', motif: 'non_quantitative' }] });
     expect(issue).toEqual({ ok: true, validees: 0, ecartees: 1, documentPurge: false });
-    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(tx.resultatBiologique.create).not.toHaveBeenCalled();
     expect(prisma.ligneBiologiqueCandidate.updateMany).toHaveBeenCalledWith({
       where: { id: 'l2', idImport: 'imp_1', idPatient: 'pat_sophie', statut: 'proposee' },
       data: { statut: 'ecartee', motifEcart: 'non_quantitative', traitePar: 'praticien@wellneuro.fr' },
@@ -201,6 +213,20 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
 });
 
 describe('deciderLignes — refus du préflight, tout ou rien', () => {
+  it('refuse une action inconnue dans un lot mixte, sans transaction ni résultat (M1)', async () => {
+    const issue = await deciderLignes({
+      ...BASE,
+      decisions: [valider('l1'), valider('l7', { decision: 'attendre', preleveLe: MINUIT_PARIS })],
+    });
+    expect(issue).toMatchObject({
+      ok: false, reason: 'lignes_invalides', status: 400,
+      lignes: [{ index: 1, idLigne: 'l7', reason: 'decision_invalide' }],
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(tx.resultatBiologique.create).not.toHaveBeenCalled();
+  });
+
   it('une ligne LUE non quantitative est refusée, même si le praticien tape un nombre', async () => {
     const issue = await deciderLignes({ ...BASE, decisions: [valider('l2', { analyteCode: 'BIO_CRP_US', valeur: '0.4' })] });
     expect(issue).toMatchObject({ ok: false, status: 409, lignes: [{ idLigne: 'l2', reason: 'non_quantitative' }] });
@@ -279,14 +305,14 @@ describe('deciderLignes — refus du préflight, tout ou rien', () => {
       },
     ]);
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: true });
-    expect(prisma.resultatBiologique.create).toHaveBeenCalledTimes(1);
+    expect(tx.resultatBiologique.create).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('deciderLignes — courses entre le préflight et l’écriture', () => {
   it('SAISIE INTERCALÉE : le P2002 se rend tel quel, sans repli, la ligne reste proposée', async () => {
     // Le préflight ne voit rien ; une saisie manuelle prend la clé juste avant l'écriture.
-    prisma.resultatBiologique.create.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+    tx.resultatBiologique.create.mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
     const issue = await deciderLignes({ ...BASE, decisions: [valider('l1')] });
     expect(issue).toMatchObject({ ok: false, reason: 'doublon_mesure', status: 409 });
     expect(prisma.ligneBiologiqueCandidate.updateMany).not.toHaveBeenCalled();
@@ -299,7 +325,7 @@ describe('deciderLignes — courses entre le préflight et l’écriture', () =>
     prisma.ligneBiologiqueCandidate.count.mockResolvedValueOnce(0);
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, reason: 'ligne_deja_traitee', status: 409 });
-    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(tx.resultatBiologique.create).not.toHaveBeenCalled();
   });
 
   it('une ligne décidée entre-temps rend `ligne_deja_traitee` et annule tout', async () => {
@@ -309,7 +335,7 @@ describe('deciderLignes — courses entre le préflight et l’écriture', () =>
   });
 
   it('une panne ne journalise ni valeur, ni identifiant, ni message', async () => {
-    prisma.resultatBiologique.create.mockRejectedValueOnce(
+    tx.resultatBiologique.create.mockRejectedValueOnce(
       Object.assign(new Error('valeur 48 pat_sophie'), { code: 'P2010' }),
     );
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] })).toMatchObject({ ok: false, status: 500 });
@@ -324,7 +350,7 @@ describe('deciderLignes — document écarté (D-269 §3)', () => {
     prisma.compteRenduBiologique.findUnique.mockResolvedValue({ motifPurge: 'ecarte' });
     expect(await deciderLignes({ ...BASE, decisions: [valider('l1')] }))
       .toMatchObject({ ok: false, reason: 'document_ecarte', status: 409 });
-    expect(prisma.resultatBiologique.create).not.toHaveBeenCalled();
+    expect(tx.resultatBiologique.create).not.toHaveBeenCalled();
     expect(journal).not.toContain('ligne.updateMany');
   });
 
