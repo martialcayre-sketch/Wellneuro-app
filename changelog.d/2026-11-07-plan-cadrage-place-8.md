@@ -6,7 +6,7 @@ D-xxx. Trois arbitrages du responsable, rendus sur des questions à options :
 - **F78** : l'écart est tranché. La fiche est livrée éteinte après BP-18b,
   puis activée et constatée avec BP-21b ou après (donc aussi BP-21a et
   BP-24). La livraison technique ne clôt pas la place 8. Le plan est amendé
-  aux fiches F78 et F23.
+  aux fiches F78 et F23 et à la ligne 8 du tableau des places.
 - **F12, H09** : la « règle signée et C4 » de la porte 28 est portée par la
   D-xxx de BP-18a, de la main du responsable, écrite et signée avant le code
   du lot. Les deux restes de C4 sous R:ao, nommés « couche de décision » et

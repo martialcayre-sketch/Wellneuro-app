@@ -1994,7 +1994,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 #### F23 · BP-21b : ouverture du protocole personnalisé
 - **Identifiant, piste** : BP-21b (LOT-30 de BIO-PARCOURS, à ne pas confondre avec la porte 30) ; même régime que BP-21a ; parcours.
 - **Rang** : 8 proposé [Hypothese] ; une place dans la file C, non numérotée.
-- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`) ; porte 18. La fiche compléments R:ao (F78), livrée éteinte après BP-18b, l'attend pour son activation (tranché le 2026-11-07, journal de F78).
+- **Portes, préalables** : BP-21a, BP-18b, BP-24 (`docs/claude/campagnes/2026-10-04-bio-parcours/CAMPAGNE.md:137`) ; porte 18. La fiche compléments R:ao (F78) s'active après BP-21b, jamais avant ; elle peut être livrée éteinte dès BP-18b (tranché le 2026-11-07, journal de F78).
 - **Migration, release-db** : non.
 - **Décisions, textes** : D-xxx d'ouverture, critères écrits avant.
 - **Critère de fin** : critères atteints ; activation constatée avant la suivante.
@@ -2090,7 +2090,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Portes, préalables** : J3-bio (porte 19) ; CGU constatée (ACT-1) ; règle signée et C4 (porte 28) ; porte 18 après la place précédente. Livraison éteinte après BP-18b ; activation et constat avec BP-21b ou après (F23, donc BP-21a et BP-24) ; tranché le 2026-11-07, journal ; sans effet sur le rang 10.
 - **Migration, release-db** : non.
 - **Décisions, textes** : règle signée de la main du responsable ; texte de la fiche accusé avant l'activation.
-- **Critère de fin** : règle signée ; fiche remise et constatée sur un vrai dossier avant l'activation suivante (porte 18).
+- **Critère de fin** : règle signée ; fiche remise et constatée sur un vrai dossier avant l'activation suivante (porte 18) ; la livraison éteinte ne clôt pas la place.
 - **Journal** : `docs/claude/plan-journal/F78/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs F78`.
 
 #### H81 · R:FC-5 (2/2) : place 9, geste du 21e jour de l'agenda
@@ -2175,7 +2175,7 @@ Règle de série : une activation à la fois, un constat entre chacune (porte 18
 | 5 | Textes des mineurs | H78 | z, J2-conf | textes des mineurs (G-11, acceptés le 2026-10-14, #1441) ; constat par lecture consignée | 9 |
 | 6 | Fiche signalétique (date de naissance, invitation au dépôt) ; close le 2026-10-22 sans activation (D-342 §4) : la saisie initiale de la date d'un dossier ouvert sans date reste en service (lot (h), D-284 §3) | F45 | z, k, texte accusé ; seule surface neuve permise à un dossier sans date (D-283 §5) | texte patient | 10 |
 | 7 | Invitation d'autoévaluation au 21e jour ; prête le 2026-10-24 (D-353) : texte accepté, registre et drapeau livrés éteints ; drapeau posé le 2026-10-24, **constaté le 2026-11-01** (D-353 §5) : place close ; la porte 18 libère la place 10 (D-357 §7 amendé le 2026-10-29) | H80 | k, t, texte patient | texte patient (accepté, D-353 §1) | 10 |
-| 8 | Fiche compléments | F78 | J3-bio (porte 19), règle signée et C4 (porte 28), ACT-1 | texte de la fiche | 10 |
+| 8 | Fiche compléments ; livrée éteinte après BP-18b, activée avec BP-21b ou après (arbitrage du 2026-11-07, F78) | F78 | J3-bio (porte 19), règle signée et C4 (porte 28, portée par la D-xxx de BP-18a), ACT-1 | texte de la fiche | 10 |
 | 9 | Geste du 21e jour de l'agenda alimentaire (`Q_ALI_09`, arbitrage du 2026-11-07) ; peut passer devant la place 8 dès qu'elle est prête, sans amendement (D-288 §3, D-346 §3 ; arbitrage du 2026-11-07, H81) | H81 | R:FC-5 (1/2) au cockpit | texte du geste : accepté le 2026-10-25, amendé le 2026-11-07 (« agenda » pour « carnet », H81) ; deux messages, deux places, sans fusion avec la place 7 | 10 |
 | 10 | Bibliothèque pédagogique ; lettre ap écrite le 2026-10-24 (D-357) ; titres acceptés et contenant livré éteint le 2026-10-25 (D-360) : drapeau posé le 2026-11-01, **constaté le 2026-11-01** (D-357 §7, D-360 §4 ; moitié mineur prouvée par le mécanisme, amendement du 2026-11-01 de D-357 §7) : place close ; passée devant les places 8 et 9 (amendement du 2026-10-29 de D-357 §7, D-346 §3) | H82 | « Mes échanges » ouvert, sa D-xxx (D-357), porte 17 | texte accusé (trois titres, D-357 §6) : fait (D-360) | 10 |
 | 11 | Photo du repas à l'agenda de 21 jours ; lettre an écrite le 2026-11-04 (D-437) : sans IA, jamais transmise, majeurs seuls ; reste le lot, livré éteint sous `WN_PORTAIL_CAPTURE_REPAS`, sans migration ; posé en production le 2026-11-04 (22:59 UTC, par le responsable) ; constat côté serveur le 2026-11-06 (aucune trace d'image en base), geste au téléphone attendu | H83 | registre IA, porte 5, D-269, code | information patient : ligne au geste acceptée (D-437 §5) | 10 |
