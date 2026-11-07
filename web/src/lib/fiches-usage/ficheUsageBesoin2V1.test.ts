@@ -51,7 +51,7 @@ const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, date
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure écrite', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('6e2dbc8b0dd34943d319081566438d05d885f029a831027e1b996407a39dce47');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('58adcff61f30e13f955988caf55ee7781a6b70902a27c89b0dd95f790df93a86');
   });
 
   it('écrite pour les polyphénols et antioxydants : verrou éteint jusqu’à la déclaration du responsable', () => {

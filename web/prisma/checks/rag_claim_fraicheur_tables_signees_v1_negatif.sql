@@ -2050,7 +2050,8 @@ BEGIN
 
   -- ── N12 — LA LIGNE `fiches_usage` EST GARDÉE, ELLE AUSSI ─────────────────
   -- LA TABLE LA PLUS LARGE DU CONTRAT, ENTRÉE AVEC [[D-401]] : 277 paires (391
-  -- depuis la re-signature de B9 et B12, [[D-417]] §4 ; 467 avec l'iode et le sélénium), et
+  -- depuis la re-signature de B9 et B12, [[D-417]] §4 ; 467 avec l'iode et le sélénium ;
+  -- 599 avec les polyphénols et antioxydants), et
   -- sans ce cas aucune n'était exercée hors de l'état SAIN. La contre-revue du
   -- lot l'a montré par mutation : un prédicat exemptant
   -- `table_signee = 'fiches_usage'` de TOUTES les propriétés passait les douze
@@ -2122,7 +2123,7 @@ BEGIN
     RAISE EXCEPTION 'negatif N15: la ligne indications_biologie n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 467 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 599 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

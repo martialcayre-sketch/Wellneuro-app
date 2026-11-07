@@ -1567,8 +1567,11 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
         { claimId: 'WN-CL-0305-004', versionClaim: 'v1.0' },
         { claimId: 'WN-CL-0319-015', versionClaim: 'v1.0' },
         { claimId: 'WN-CL-0341-015', versionClaim: 'v1.0' },
+        { claimId: 'WN-CL-0648-001', versionClaim: 'v1.0' },
+        { claimId: 'WN-CL-0648-002', versionClaim: 'v1.0' },
+        { claimId: 'WN-CL-0648-003', versionClaim: 'v1.0' },
       ],
-      rubriques: ['question', 'population', 'interpretations', 'options', 'argument_preference'],
+      rubriques: ['question', 'population', 'interpretations', 'options', 'precautions', 'argument_preference'],
     },
     {
       id: 'FU_POLY_AOX_P4',
