@@ -43,7 +43,9 @@ Clore au dépôt le dossier de preuve des polyphénols et antioxydants du besoin
 ## Validations exécutées
 
 - En base, par conteneur, en lecture seule, au fil du dossier : 132 claims
-  étiquetés au besoin 2 ; 881 claims `VALIDE` le portent ; 91 en attente ;
+  étiquetés au besoin 2 ; 881 claims `VALIDE` le portent ; 91 remis en attente
+  (89 depuis la re-signature conservatoire de deux d'entre eux par une autre
+  session, H98) ;
   14 rejets appliqués ; les 134 sources de la v0.2 sont `VALIDE` au besoin 2.
 - Sources de la v0.2 contrôlées par script : exactement les 134 claims cités.
 - Registre : relu sans URL ajoutée ; aucune collision de numéros (main et PR
