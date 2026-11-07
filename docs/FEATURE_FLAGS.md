@@ -389,7 +389,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/safetyEffetIndesirableV1.ts` | `true` | `2026-10-17T00:00:00.000Z` |
 | `clinical/safetyQuestionnaireV1.ts` | `true` | `2026-10-10T00:00:00.000Z` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
-| `clinical/conflitsSourcesV1.ts` | `true` | `2026-11-07T00:00:00.000Z` |
+| `clinical/conflitsSourcesV1.ts` | `true` | `2026-11-07T20:05:11.000Z` |
 | `clinical/baremeChargeV1.ts` | `true` | `2026-10-08T00:00:00.000Z` |
 | `clinical/catalogueConduitesV1.ts` | `true` | `2026-09-17T20:26:03.000Z` |
 | `clinical/tableRepliV1.ts` | `true` | `2026-10-08T00:00:00.000Z` |
@@ -397,7 +397,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/replisAssietteV1.ts` | `false` | `null` |
 | `clinical/portesBiologiquesAssiettesV1.ts` | `true` | `2026-09-24T06:44:55.000Z` |
 | `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-10-26T12:23:19.000Z` |
-| `fiches-usage/ficheUsageBesoin2V1.ts` | `true` | `2026-11-05T12:07:26.000Z` |
+| `fiches-usage/ficheUsageBesoin2V1.ts` | `true` | `2026-11-07T20:05:11.000Z` |
 | `clinical/declencheursComplementCibleV1.ts` | `true` | `2026-10-23T17:32:07.000Z` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
@@ -492,7 +492,10 @@ variable.**
   preuve clos s'ajoutent, chacun avec sa liste curée de fiches et le
   caractère déclenchable écrit. Aucun des onze n'est cité par la proposition
   de bilan : seul `CS-BIO-01` atteint le cockpit, comme avant. Les onze se
-  lisent à l'atelier sous `WN_POSITIONS_EXPERT`.
+  lisent à l'atelier sous `WN_POSITIONS_EXPERT`. **RE-SIGNÉ de nouveau le
+  2026-11-07 ([[D-457]])** : la liste curée de `CS-IODSE-01` reçoit une fiche
+  d'usage des polyphénols et antioxydants ; aucun texte, aucun déclenchement
+  ne change.
   **Deuxième effet de la signature, moins visible** : la route cockpit dérive
   désormais la proposition de bilan à chaque POST pour collecter les claims
   cités (cinq requêtes de plus, isolées par un `catch` — une panne n'emporte pas

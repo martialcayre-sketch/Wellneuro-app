@@ -649,7 +649,8 @@ export const CONFLITS_SOURCES_V1: ConflitSourcesDeclare[] = [
       + 'pas et le dit — le constat est remonté, il n’est pas arbitré.',
     ],
     fichesUsage: [
-      'FU_B9B12_P3', 'FU_IODE_SE_P3', 'FU_IODE_SE_P5', 'FU_MG_P4', 'FU_ZINC_P4',
+      'FU_B9B12_P3', 'FU_IODE_SE_P3', 'FU_IODE_SE_P5', 'FU_MG_P4', 'FU_POLY_AOX_P8',
+      'FU_ZINC_P4',
     ],
     declenchableParBilan: false,
   },
@@ -1001,8 +1002,17 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // elle ne s'efface pas ([[D-195]] §4) :
   //   2026-08-24 — sha ea18140366c114d6a51d19f82ecb082c98dab10b07b47effd527e1430fd581e2
   //                ([[D-104]], `CS-BIO-01` seul).
+  //   2026-11-07 — sha 300974d7dadf62b246b977aac45d8977f7aceb57540333daee75a9bff1f5b944
+  //                ([[D-452]], douze entrées publiées).
+  //
+  // RE-SIGNÉE LE 2026-11-07 ([[D-457]]) : `FU_POLY_AOX_P8` épingle
+  // `WN-CL-0062-041`, et la liste curée de `CS-IODSE-01` la reçoit
+  // ([[D-452]] §2). Seule cette liste change, aucun texte. Signée sur la même
+  // déclaration du responsable que la structure des fiches d'usage, après
+  // lecture de la surface et de la contre-revue ; la date, le sha et les
+  // empreintes d'entrée ci-dessous en sont la recopie.
   validationExterne: true,
-  dateValidation: '2026-11-07T00:00:00.000Z',
+  dateValidation: '2026-11-07T20:05:11.000Z',
   // Les claims épinglés par les conflits PUBLIÉS de ce registre. Le contrat de
   // fraîcheur les contrôle sur la production, et
   // `claimsEpinglesFraicheur.guard.test.ts` refuse que cette liste diverge de
@@ -1039,7 +1049,7 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // telle quelle après la déclaration — JAMAIS la constante, qui est déclarée
   // après cet objet (ReferenceError) et dont la comparaison serait
   // tautologique. Patron [[D-063]], étendu par [[D-067]].
-  shaPerimetre: '300974d7dadf62b246b977aac45d8977f7aceb57540333daee75a9bff1f5b944',
+  shaPerimetre: 'a0da49fda5eeecedc2cc8f85b8b32b2f244d2054727745287cb63f86f502f06f',
   // Empreinte de chaque entrée publiée, `sha256(JSON.stringify(entrée))`,
   // recopiée telle quelle après la déclaration. Une pose d'arbitrage n'est
   // admise que sur une entrée dont l'empreinte est celle-ci ([[D-439]] A3).
@@ -1055,7 +1065,7 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
     'CS-ZINC-04': '4957f9a5fa2e2f80e3f4c3cc38956286db84eb070e8f0af6feb90fe5f3823a64',
     'CS-MAG-03': 'b2e43a49fa04abde6245afde21e7697c3344f2ab89747f30b2624a35e15dc288',
     'CS-B9B12-01': '5f31b3cb06ba373ef2d6aeac3370a3454281ec85f1381d7afe20a405de154598',
-    'CS-IODSE-01': '93e3012dbbf69edfa9d685d9cce31f9a0eaa205d6f17b1de36a3bf9531b9bfa2',
+    'CS-IODSE-01': 'acbae2389f2d507bf80b58c6dc5e67454f39068ae3cdd968c008b4a6848c90aa',
   },
 };
 
