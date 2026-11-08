@@ -45,18 +45,34 @@ type Variante = 'tiroir' | 'modale' | 'feuille';
  * cette troisième valeur, l'adoption de la primitive aurait déplacé quatre
  * panneaux sans que personne l'ait demandé.
  */
-type LargeurTiroir = 'focale' | 'standard' | 'large' | 'ample';
+type LargeurTiroir = 'focale' | 'standard' | 'large' | 'ample' | 'navigation';
 
+// `navigation` : la largeur du tiroir de navigation du praticien (`w-72`,
+// NavBar.tsx), 18 rem dès `md`, plein écran en dessous — le menu « Mon espace »
+// du portail, ouvert à gauche ([[D-460]] §4, Q62 du 2026-11-08).
 const CLASSES_LARGEUR: Record<LargeurTiroir, string> = {
   focale: 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl',
   standard: 'max-w-xl',
   large: 'max-w-2xl',
   ample: 'max-w-4xl',
+  navigation: 'md:max-w-[18rem]',
+};
+
+/**
+ * Le bord d'où sort un `tiroir`. Défaut : `droite`, celui des panneaux de
+ * détail. `gauche` est réservé à une navigation, du côté de son bouton et du
+ * rail ([[D-460]] §4) ; les autres variantes l'ignorent.
+ */
+type CoteTiroir = 'droite' | 'gauche';
+
+const CLASSES_TIROIR: Record<CoteTiroir, string> = {
+  droite: 'right-0 border-l',
+  gauche: 'left-0 border-r',
 };
 
 const CLASSES_CONTENU: Record<Variante, string> = {
   tiroir:
-    'fixed right-0 top-0 z-50 h-full w-full overflow-y-auto border-l border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none',
+    'fixed top-0 z-50 h-full w-full overflow-y-auto border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none',
   modale:
     'fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl focus:outline-none',
   feuille:
@@ -80,8 +96,8 @@ const CLASSES_CONTENU: Record<Variante, string> = {
  */
 type ThemePanneau = 'praticien' | 'patient';
 
-function classeLargeur(variante: Variante, largeur: LargeurTiroir | undefined): string {
-  if (variante === 'tiroir') return ` ${CLASSES_LARGEUR[largeur ?? 'focale']}`;
+function classeLargeur(variante: Variante, largeur: LargeurTiroir | undefined, cote: CoteTiroir): string {
+  if (variante === 'tiroir') return ` ${CLASSES_TIROIR[cote]} ${CLASSES_LARGEUR[largeur ?? 'focale']}`;
   if (variante === 'modale') return ` ${largeur ? CLASSES_LARGEUR[largeur] : 'max-w-lg'}`;
   return '';
 }
@@ -94,6 +110,7 @@ export function PanneauSuperpose({
   descriptionMasquee = false,
   variante = 'tiroir',
   largeur,
+  cote = 'droite',
   theme = 'praticien',
   open,
   onOpenChange,
@@ -135,6 +152,8 @@ export function PanneauSuperpose({
    * confirmation) ; une `feuille` l'ignore.
    */
   largeur?: LargeurTiroir;
+  /** Voir `CoteTiroir`. Défaut : `droite`. */
+  cote?: CoteTiroir;
   /** Valeur `data-theme` re-posée sur le portail Radix. */
   theme?: ThemePanneau;
   open?: boolean;
@@ -163,7 +182,7 @@ export function PanneauSuperpose({
           data-theme={theme}
           onCloseAutoFocus={onCloseAutoFocus}
           onInteractOutside={onInteractOutside}
-          className={`${CLASSES_CONTENU[variante]}${classeLargeur(variante, largeur)}`}
+          className={`${CLASSES_CONTENU[variante]}${classeLargeur(variante, largeur, cote)}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">

@@ -326,7 +326,11 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
       description={DESCRIPTION_MENU}
       descriptionMasquee
       variante="tiroir"
-      largeur="standard"
+      // Drapeau `WN_PORTAIL_MENU_ICONES` ouvert, le panneau sort à gauche, du
+      // côté du bouton et du rail, à la largeur du tiroir praticien ([[D-460]]
+      // §4, Q62) ; fermé, il garde son côté et sa largeur d'avant.
+      largeur={etat.icones ? 'navigation' : 'standard'}
+      cote={etat.icones ? 'gauche' : 'droite'}
       theme="patient"
       open={ouvert}
       onOpenChange={setOuvert}

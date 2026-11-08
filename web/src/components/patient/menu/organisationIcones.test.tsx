@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useEffect } from 'react';
 
 /*
@@ -164,5 +164,26 @@ describe('ouvert', () => {
     nav.pathname = '/portail/PAT_TEST/questionnaires/ASG_1';
     await rendre(true);
     expect(onglets()).toBeUndefined();
+  });
+});
+
+describe('panneau « Mon espace » (Q62 du 2026-11-08, [[D-460]] §4)', () => {
+  async function ouvrirPanneau(icones: boolean) {
+    await rendre(icones);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    return screen.getByRole('dialog').className.split(' ');
+  }
+
+  it('ouvert : à gauche, pleine largeur sous `md`, 18 rem au-delà', async () => {
+    const classes = await ouvrirPanneau(true);
+    expect(classes).toEqual(expect.arrayContaining(['left-0', 'border-r', 'w-full', 'md:max-w-[18rem]']));
+    expect(classes).not.toContain('right-0');
+    expect(classes).not.toContain('max-w-xl');
+  });
+
+  it('fermé : à droite, `max-w-xl`, comme avant', async () => {
+    const classes = await ouvrirPanneau(false);
+    expect(classes).toEqual(expect.arrayContaining(['right-0', 'border-l', 'w-full', 'max-w-xl']));
+    expect(classes).not.toContain('left-0');
   });
 });
