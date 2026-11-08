@@ -1,7 +1,7 @@
 ---
 id: "LOT-14"
 titre: "BP-14 — Identité d'auteur séparée du rôle"
-statut: "en_cours (2026-11-07) — D-459 acceptée ; migration seule écrite (PR de migration), release-db et constat à venir, puis le code"
+statut: "en_cours (2026-11-08) — D-459 acceptée ; migration appliquée et constatée (#1930, date seuil 2026-11-08T22:23:53Z) ; reste la PR de code"
 dépend_de: "LOT-00"
 ---
 
