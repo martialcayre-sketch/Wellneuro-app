@@ -1394,6 +1394,9 @@ model ProtocolDraft {
   contractVersion       String    @map("contract_version") // c1-protocol-draft-v1
   supersedesDraftId     String?   @map("supersedes_draft_id")
   reviewedAt            DateTime? @map("reviewed_at")
+  // E-mail de session de qui a créé la version, posé par le serveur ; nul =
+  // auteur non consigné (portail, ou ligne non reprise) (D-459).
+  creePar               String?   @map("cree_par")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -1519,6 +1522,9 @@ model ProtocolDiffusionApproval {
   protocolDraftInputHash String   @map("protocol_draft_input_hash")
   approvedAt             DateTime @map("approved_at")
   approvedBy             String   @default("practitioner") @map("approved_by")
+  // E-mail de session de qui a cliqué « Valider pour diffusion », posé par le
+  // serveur ; nul = auteur non consigné. Le rôle reste `approvedBy` (D-459).
+  validePar              String?  @map("valide_par")
   confirmation           String   @map("confirmation") // content_approved_for_diffusion
   supersedesApprovalId   String?  @map("supersedes_approval_id")
   createdAt              DateTime @default(now()) @map("created_at")
