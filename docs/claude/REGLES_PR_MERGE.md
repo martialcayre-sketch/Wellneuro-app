@@ -124,8 +124,8 @@ migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
 (`D-393` §6) ne se déclarent pas :
 leur file les merge jusqu'au bout. Une remarque de bot arrivée après
 « prête » revient à la file, qui reprend depuis son handoff : l'intégrateur
-ne corrige pas une PR. En repli (`D-373` §5), chaque session reprend ses
-merges selon le même cycle, plus bas. Une PR qui écrit la réponse à une
+ne corrige pas une PR. En repli, sur décision du responsable (`D-454`,
+amendement du 2026-11-08), chaque session reprend ses merges selon le même cycle, plus bas. Une PR « prête » ni mergée ni commentée par l'intégrateur vingt minutes après sa déclaration revient à sa file, qui la merge selon ce même cycle (même amendement). Une PR qui écrit la réponse à une
 question de la liste commune la nomme dans sa déclaration
 (`question <identifiant>`). Celui qui la merge horodate le merge dans la ligne
 (`docs/ROLES_MACHINES.md`, « La liste commune de questions et le guichet »).
