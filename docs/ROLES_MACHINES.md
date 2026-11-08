@@ -52,6 +52,10 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
 - **En repli**, décidé par le responsable seul (`D-454`, amendement du
   2026-11-08), chaque session reprend ses merges, avec les mêmes sondes et le
   même contrôle.
+- **Filet par PR** (même amendement) : une PR « prête » ni mergée ni
+  commentée par l'intégrateur vingt minutes après sa déclaration revient à
+  sa file, qui la merge elle-même avec les mêmes gestes (7 bis, 7 ter) et
+  l'écrit en commentaire de la PR.
 
 ### La liste commune de questions et le guichet (H89)
 
