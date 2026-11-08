@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import type { Question } from '@/lib/questionnaire-types';
 
 // Champ de question (likert / bristol / select / number). Composant présentationnel pur.
@@ -26,9 +27,12 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
   // pictogramme. Les mettre en regard sur une même ligne les rendrait
   // illisibles — la grille est faite pour des options de deux mots.
   const enGrille = optionLayout === 'grille' && question.type !== 'bristol';
+  // La légende nomme le groupe, pas le champ qu'il contient : un select ou un
+  // champ numérique sans ce lien n'a aucun nom accessible propre.
+  const legendeId = useId();
   return (
     <fieldset className="min-w-0 space-y-2">
-      <legend className="text-sm font-medium text-foreground">{question.texte}</legend>
+      <legend id={legendeId} className="text-sm font-medium text-foreground">{question.texte}</legend>
       {(question.type === 'likert' || question.type === 'bristol' || (question.type === 'select' && displaySelectAsRadioCards)) && question.options && (
         <div className={enGrille ? 'flex flex-wrap gap-2' : 'grid gap-2'}>
           {question.options.map(opt => (
@@ -58,6 +62,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
       )}
       {question.type === 'select' && !displaySelectAsRadioCards && question.options && (
         <select
+          aria-labelledby={legendeId}
           value={value}
           onChange={e => onChange(e.target.value)}
           className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -72,6 +77,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
         <div className="flex items-center gap-2">
           <input
             type="number"
+            aria-labelledby={legendeId}
             min={question.min}
             max={question.max}
             step={question.step ?? 1}
