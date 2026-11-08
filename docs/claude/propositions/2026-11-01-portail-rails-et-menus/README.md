@@ -1010,7 +1010,10 @@ Le texte de décision qui en découle est `decision-D-447-rail-lateral.md`, à c
 À la demande du responsable (« fais un audit pour trancher ces différences ? »), après [[D-460]] (#1925, statut proposé) qui reprend les icônes, les groupes et les Vues rapides du praticien. Cinq écarts restent entre le portail et l'espace praticien. Trois ont déjà une réponse, donnée avant la demande du 2026-11-07 de « la même organisation » : Q48, Q56 et Q59 (chapitres 19 et 20). Le présent chapitre dit si cette demande doit les rouvrir.
 
 - **Lecture** : `origin/main@88abb491`, soit #1924 mergée, plus la branche de #1925 pour [[D-460]]. Fichiers lus : `NavBar.tsx`, `MobileBottomNav.tsx`, `SidebarRail.tsx`, `portail/layout.tsx`, `MenuMonEspace.tsx`, `ReadingComfortControl.tsx`, `PanneauSuperpose.tsx`.
-- **Relecture ui-ux-pro-max** : par la recherche gardée ([[D-456]]), `--domain ux`. La base n'a rien donné sur le repli ni sur un menu de compte (« No matches »). Sont cités les règles de navigation de `references/quick-reference.md` §9, et une ligne de `data/app-interface.csv` pour la barre basse. La relecture éclaire, elle ne tranche pas : la doctrine du chapitre 7 passe avant.
+- **Relecture ui-ux-pro-max** : par la recherche gardée ([[D-456]]), `--domain ux`. La base n'a rien donné sur le repli ni sur un menu de compte (« No matches »). Sont citées :
+  - les règles de navigation de `references/quick-reference.md` §9 ;
+  - la ligne « Bottom Tabs » de `data/app-interface.csv` (E1) ;
+  - la ligne « Consistent Help » de `data/ux-guidelines.csv` (E5). La relecture éclaire, elle ne tranche pas : la doctrine du chapitre 7 passe avant.
 - **Écran** : aucun écran constaté pour cet audit. Les mesures viennent des constats de L3 à L5 et du constat en production du 2026-11-07. Les projections sont marquées « calcul ».
 
 ### Verdict
@@ -1020,7 +1023,7 @@ Un seul écart mérite d'être repris : **le tiroir s'ouvre à gauche**, du côt
 | Écart | Praticien | Portail aujourd'hui | Déjà tranché | Recommandation |
 |---|---|---|---|---|
 | E1 Case « Plus » sous 768 px | barre de trois liens et un bouton « Plus », qui ouvre une feuille de douze destinations | barre de trois ou quatre cases, sans « Plus » ; le panneau s'ouvre par « Menu », dans l'en-tête | oui, Q48 | **garder** |
-| E2 Tiroir de 768 à 1 023 px | hamburger à gauche, tiroir gauche de 18 rem | « Menu » à gauche de l'en-tête, panneau à droite, de 36 rem | non ([[D-460]] §4 le garde à droite, sans question posée) | **reprendre** : à gauche, 18 rem |
+| E2 Tiroir de 768 à 1 023 px | hamburger à gauche, tiroir gauche de 18 rem | « Menu » à gauche de l'en-tête, panneau à droite, de 36 rem | non ([[D-460]] §4 le garde à droite, sans question posée) | **reprendre** : à gauche, 18 rem dès 768 px, pleine largeur en dessous |
 | E3 Rail repliable | 252 px ou 64 px, mémorisé dans `wn-rail-expanded` | toujours déplié, sans clé | oui, Q56 | **garder** |
 | E4 Rail sur le questionnaire en cours | rail sur toutes les pages | ni rail ni barre ; « Menu » à toute largeur | oui, Q59 (et Q51 pour la barre) | **garder** |
 | E5 Menu « Profil » | `details` « Profil » : adresse, « Session active », « Déconnexion » | « Confort de lecture » et « Se déconnecter » côte à côte | non, jamais posé | **ne pas reprendre** |
@@ -1032,7 +1035,7 @@ Un seul écart mérite d'être repris : **le tiroir s'ouvre à gauche**, du côt
   - Portail : la barre sert « Accueil », « Carnet », « Suivi », puis « Bibliothèque » ou « Fiches » ([[D-444]] §2 et §3). Le panneau « Mon espace » ne s'ouvre que par « Menu », dans l'en-tête : c'est le seul déclencheur ([[D-444]] §2, Q48).
   - La barre est absente sur le questionnaire en cours, pour le mineur et sur les murs d'entrée ([[D-444]] §1, Q51 ; [[D-283]] §5). Le bouton « Menu », lui, reste sur le questionnaire.
 - **Relecture.**
-  - `bottom-nav-limit` (cinq cases au plus) tient dans les deux organisations. `overflow-menu` justifie une case « Plus » quand les entrées ne tiennent pas.
+  - `bottom-nav-limit` (cinq cases au plus) tient dans les deux organisations. `overflow-menu` justifie une case « Plus » quand les entrées ne tiennent pas, et la ligne « Bottom Tabs » de `app-interface.csv` conseille de « move extras to More/Settings ». Le portail le fait déjà : ce qui ne tient pas dans la barre est dans le panneau, ouvert par « Menu ».
   - `navigation-consistency` demande un déclencheur à la même place sur toutes les pages, et `persistent-nav` un accès jusque dans les sous-parcours. Une case « Plus » ne peut pas satisfaire les deux, puisque la barre n'existe pas sur le questionnaire. Soit le déclencheur change de place selon la page, soit il y en a deux.
 - **Options.**
   - (a) Garder Q48, recommandé : le déclencheur reste unique, en haut, sur toutes les pages.
@@ -1051,11 +1054,11 @@ Un seul écart mérite d'être repris : **le tiroir s'ouvre à gauche**, du côt
   - `nav-hierarchy` : une navigation se distingue d'un panneau de détail. Les neuf autres usages de la primitive sont des panneaux de détail du praticien, tous à droite : fiche, bibliothèque, rayons, aperçu. Le menu du portail est la seule navigation qui y passe.
   - `drawer-usage` : un tiroir porte la navigation secondaire, ce qui est bien le cas ici.
 - **Options.**
-  - (a) Ancrer le panneau « Mon espace » à gauche, à la largeur du tiroir praticien, 18 rem et 80 % de l'écran au plus. Recommandé.
-  - (b) À gauche, en gardant 36 rem.
+  - (a) Ancrer le panneau « Mon espace » à gauche. Il garde toute la largeur sous 768 px et prend dès 768 px la largeur du tiroir praticien, 18 rem. Recommandé.
+  - (b) À gauche, en gardant 36 rem à toute largeur.
   - (c) Garder le panneau à droite, comme [[D-460]] §4 le prévoit.
 - **Effets de (a).**
-  - À 390 px, le panneau occupe déjà toute la largeur. Seul le sens d'apparition change.
+  - À 390 px, le panneau garde toute la largeur : seul le sens d'apparition change. La largeur du praticien (`w-72 max-w-[80vw]`) appliquée telle quelle donnerait 288 px à cette largeur, avec une centaine de pixels de fond visibles, d'où le seuil de 768 px.
   - De 768 à 1 023 px, le panneau prend la place qu'aura le rail. 18 rem font 288 px, 324 px en confort 112,5 % (calcul). C'est plus large que le rail de 15,75 rem, qui sert ses neuf entrées sans débordement (constats complémentaires de L5).
 - **Coût de (a).**
   - Une option de côté dans `PanneauSuperpose`, le défaut à droite étant inchangé pour les autres usages. La garde de thème, qui balaie déjà `app/portail`, reste valable.
@@ -1128,7 +1131,7 @@ Chaque question a ses options fermées, la recommandation en premier. Si la rép
 | Question | Options | Recommandation |
 |---|---|---|
 | Q61 (E1) Case « Plus » | (a) garder Q48 ; (b) « Plus » en plus de « Menu » ; (c) « Plus » à la place de « Menu » sous 768 px | (a) |
-| Q62 (E2) Côté du panneau « Mon espace » | (a) à gauche, 18 rem ; (b) à gauche, 36 rem ; (c) à droite | (a), sous `WN_PORTAIL_MENU_ICONES` |
+| Q62 (E2) Côté du panneau « Mon espace » | (a) à gauche, 18 rem dès 768 px, pleine largeur en dessous ; (b) à gauche, 36 rem ; (c) à droite | (a), sous `WN_PORTAIL_MENU_ICONES` |
 | Q63 (E3) Repli du rail | (a) garder Q56 ; (b) repli mémorisé sous [[D-460]] | (a) |
 | Q64 (E4) Rail sur le questionnaire en cours | (a) garder Q59 ; (b) rail seul ; (c) rail et barre | (a) |
 | Q65 (E5) Menu de compte | (a) ne pas reprendre ; (b) « Mon compte » partout ; (c) sous 768 px | (a) |
