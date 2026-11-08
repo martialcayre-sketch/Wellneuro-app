@@ -171,7 +171,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
         body: JSON.stringify({ idPatient: selectedPatient }),
       });
 
-      // Les gardes d'erreur répondent toujours en JSON (401/404/422/503/500),
+      // Les gardes d'erreur répondent toujours en JSON (401/404/409/422/503/500),
       // quel que soit le transport de succès.
       if (!r.ok) {
         const d = (await r.json().catch(() => ({}))) as { error?: string };
