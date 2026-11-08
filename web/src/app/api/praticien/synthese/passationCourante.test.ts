@@ -104,7 +104,7 @@ function poserMocksParDefaut(): void {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   delete process.env.WN_SYNTHESE_STREAM;
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com' });
+  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com', actif: true, suiviClotureLe: null });
   prisma.consultation.findFirst.mockResolvedValue(null);
   anthropicCreate.mockResolvedValue({
     content: [{ type: 'text', text: CONFORME }],

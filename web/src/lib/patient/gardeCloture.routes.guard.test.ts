@@ -191,3 +191,78 @@ describe('garde de clôture — routes d’écriture patient (arbitrage du 2026-
     }
   });
 });
+
+// La route de synthèse praticien (t63, arbitrage d61). Le contrôle se fait par
+// méthode : `positionGarde` juge un source, et une garde posée dans POST seul
+// passerait pour le fichier entier.
+describe('garde de clôture — synthèse praticien (t63, arbitrage d61)', () => {
+  const code = sansCommentaires(
+    fs.readFileSync(path.join(RACINE_API, 'praticien', 'synthese', 'route.ts'), 'utf8'),
+  );
+
+  /** Méthodes de la route fermées au dossier clos, et aussi au dossier désactivé. */
+  const SYNTHESE_FERMEES = ['POST', 'PUT'];
+
+  /** Méthodes ouvertes, chacune avec son motif (arbitrage du 2026-11-08 pour PATCH). */
+  const SYNTHESE_OUVERTES: Record<string, string> = {
+    GET: 'lecture du dossier',
+    PATCH: 'les cinq actions restent ouvertes, y compris vider puis réécrire une synthèse jamais remise : aucune ligne créée, et le livret comme l’impression refusent la remise d’un dossier clos ou désactivé',
+  };
+
+  /** Du `export` de la méthode à l'export suivant ; vide si elle n'est pas exportée ainsi. */
+  function corpsDe(methode: string): string {
+    const debut = code.search(new RegExp(`export\\s+(?:async\\s+function|const|function)\\s+${methode}\\b`));
+    if (debut < 0) return '';
+    const suite = code.slice(debut + 1).search(/\nexport\s/);
+    return code.slice(debut, suite < 0 ? undefined : debut + 1 + suite);
+  }
+
+  /** Toutes les formes d'export d'une méthode HTTP, réexport compris. */
+  function methodesExportees(): string[] {
+    const METHODE = '(GET|HEAD|OPTIONS|POST|PUT|PATCH|DELETE)';
+    const declarees = [...code.matchAll(new RegExp(`export\\s+(?:async\\s+function|const|function)\\s+${METHODE}\\b`, 'g'))].map((m) => m[1]);
+    const reexportees = [...code.matchAll(/export\s*\{([^}]*)\}/g)].flatMap((m) =>
+      [...m[1].matchAll(new RegExp(`\\b${METHODE}\\b`, 'g'))].map((n) => n[1]),
+    );
+    return [...declarees, ...reexportees];
+  }
+
+  it('chaque méthode exportée est classée : fermée, ou ouverte avec son motif', () => {
+    expect(methodesExportees().sort()).toEqual([...SYNTHESE_FERMEES, ...Object.keys(SYNTHESE_OUVERTES)].sort());
+  });
+
+  it('POST et PUT jouent la garde et en suivent le refus', () => {
+    for (const m of SYNTHESE_FERMEES) expect(positionGarde(corpsDe(m)), m).toBeGreaterThanOrEqual(0);
+  });
+
+  it('la garde passe après l’appartenance, et avant tout appel au modèle ou toute écriture', () => {
+    const repereAval: Record<string, RegExp> = { POST: /preparerGeneration\(/, PUT: /syntheseIA\.create\(/ };
+    for (const m of SYNTHESE_FERMEES) {
+      const corps = corpsDe(m);
+      const garde = positionGarde(corps);
+      const appartenance = corps.search(/filtrePatientsDuPraticien\(/);
+      const aval = corps.search(repereAval[m]);
+      expect(appartenance, m).toBeGreaterThanOrEqual(0);
+      expect(aval, m).toBeGreaterThanOrEqual(0);
+      expect(garde, m).toBeGreaterThan(appartenance);
+      expect(garde, m).toBeLessThan(aval);
+    }
+  });
+
+  it('GET et PATCH restent ouverts : aucune lecture de l’état du dossier', () => {
+    for (const m of Object.keys(SYNTHESE_OUVERTES)) {
+      expect(corpsDe(m), m).toMatch(new RegExp(`function\\s+${m}\\b`));
+      expect(corpsDe(m), m).not.toMatch(
+        /refusCreationSynthese|refusClotureSuiviPour|refusDossierFerme|accepteNouvelEnvoi|phaseDossier|suiviClotureLe/,
+      );
+    }
+  });
+
+  it('l’extension au dossier désactivé est tenue : son propre refus, jamais « clôturé »', () => {
+    // `refusClotureSuiviPour` dirait « clos » à un dossier désactivé (arbitrages
+    // du 2026-10-19, t11, et du 2026-11-08).
+    for (const m of SYNTHESE_FERMEES) expect(corpsDe(m), m).toMatch(/refusCreationSynthese\(/);
+    expect(code).toMatch(/function\s+refusCreationSynthese\b[\s\S]*?refusDossierFerme\(/);
+    expect(code).not.toMatch(/refusClotureSuiviPour/);
+  });
+});

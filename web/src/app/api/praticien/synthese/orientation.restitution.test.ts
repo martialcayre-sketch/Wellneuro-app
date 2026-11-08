@@ -147,7 +147,7 @@ beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   delete process.env.WN_SYNTHESE_STREAM;
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com' });
+  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com', actif: true, suiviClotureLe: null });
   prisma.questionnaireReponse.findMany.mockResolvedValue([
     {
       idQuestionnaire: 'Q_ALI_02',

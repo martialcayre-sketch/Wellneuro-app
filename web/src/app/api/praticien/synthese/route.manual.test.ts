@@ -93,6 +93,8 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     prisma.patient.findFirst.mockResolvedValue({
       idPatient: 'PAT_SEED_01',
       email: 'sophie.nicola@example.test',
+      actif: true,
+      suiviClotureLe: null,
     });
     prisma.syntheseIA.create.mockResolvedValue(ligneSynthese());
     prisma.syntheseIA.findFirst.mockResolvedValue(ligneSynthese());
@@ -129,6 +131,69 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     const response = await PUT(requete('PUT', { idPatient: 'PAT_AUTRE', synthese: brouillon }));
     expect(response.status).toBe(404);
     expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
+  });
+
+  describe('dossier fermé (t63, arbitrage d61)', () => {
+    const OUVERT = {
+      idPatient: 'PAT_SEED_01',
+      email: 'sophie.nicola@example.test',
+      actif: true,
+      suiviClotureLe: null,
+    };
+    const CLOS = { ...OUVERT, suiviClotureLe: new Date('2026-11-01T00:00:00.000Z') };
+
+    function rienNEstEcrit() {
+      expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
+      expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
+      expect(journaliserAccesDossier).not.toHaveBeenCalled();
+    }
+
+    it('PUT sur dossier clos : 409 au texte validé, aucune écriture', async () => {
+      prisma.patient.findFirst.mockResolvedValue(CLOS);
+      const response = await PUT(requete('PUT', { idPatient: 'PAT_SEED_01', synthese: brouillon }));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({
+        error: 'Le suivi de ce dossier est clôturé : aucune synthèse ne peut être générée ni rédigée. Rouvrez le suivi pour reprendre.',
+        reason: 'dossier_cloture',
+      });
+      rienNEstEcrit();
+    });
+
+    it('PUT sur dossier désactivé non clos : 409 à son propre message, aucune écriture', async () => {
+      prisma.patient.findFirst.mockResolvedValue({ ...OUVERT, actif: false });
+      const response = await PUT(requete('PUT', { idPatient: 'PAT_SEED_01', synthese: brouillon }));
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({
+        error: 'Ce dossier est désactivé : rien de nouveau ne peut y être enregistré. Réactivez le dossier pour reprendre.',
+        reason: 'dossier_desactive',
+      });
+      rienNEstEcrit();
+    });
+
+    it('PUT sur dossier ouvert ou suivi rouvert : le brouillon se crée', async () => {
+      prisma.patient.findFirst.mockResolvedValue(OUVERT);
+      const response = await PUT(requete('PUT', { idPatient: 'PAT_SEED_01', synthese: brouillon }));
+      expect(response.status).toBe(200);
+      expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
+    });
+
+    it.each(['enregistrer', 'valider', 'rejeter', 'annoter', 'effacer'])(
+      'PATCH %s reste ouvert : le dossier n’est pas même consulté',
+      async (action) => {
+        // La ligne de synthèse ne porte pas l'état du dossier, et la route ne le lit pas :
+        // l'ouverture vaut donc pour un dossier clos comme pour un dossier ouvert.
+        prisma.patient.findFirst.mockResolvedValue(CLOS);
+        const response = await PATCH(requete('PATCH', {
+          idSynthese: 'SYN_MANUEL_1',
+          action,
+          notes: 'Note du praticien',
+          synthese: brouillon,
+        }));
+        expect(response.status).toBe(200);
+        expect(prisma.patient.findFirst).not.toHaveBeenCalled();
+        expect(prisma.syntheseIA.update).toHaveBeenCalledOnce();
+      },
+    );
   });
 
   it('enregistre uniquement après avoir scopé la synthèse par son patient', async () => {
