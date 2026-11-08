@@ -49,8 +49,9 @@ files déclarent prêtes ; les files travaillent chacune dans leur worktree.
 - **L'intégrateur avance la copie principale par `git merge --ff-only`**,
   après T1 si le lot touche les crochets. Un refus de `--ff-only` s'arbitre, il ne se
   contourne pas.
-- **En repli** (`D-373` §5), chaque session reprend ses merges, avec les
-  mêmes sondes et le même contrôle.
+- **En repli**, décidé par le responsable seul (`D-454`, amendement du
+  2026-11-08), chaque session reprend ses merges, avec les mêmes sondes et le
+  même contrôle.
 
 ### La liste commune de questions et le guichet (H89)
 
@@ -155,7 +156,7 @@ Le 🚫 est la seule interdiction stricte de ce document.
    éphémère, quelle que soit la machine qui a poussé. Le PC peut donc merger une
    PR dont `verify` est vert — sous `D-373`, les seules PR que
    leur file garde (migration, authentification, `.coderabbit.yaml`), ou
-   toutes en repli (`D-373` §5). En revanche, **ne jamais pousser directement sur
+   toutes en repli (`D-454`, amendement du 2026-11-08). En revanche, **ne jamais pousser directement sur
    `main`** : la branche est protégée, `verify` y est le seul check obligatoire
    et `enforce_admins` est **actif** depuis le 2026-07-21 — personne ne passe
    outre, propriétaire compris (réglage relu sur GitHub le 2026-08-03 ; ce
