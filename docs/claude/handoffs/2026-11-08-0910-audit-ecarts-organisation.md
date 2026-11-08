@@ -26,13 +26,13 @@ Trancher les cinq écarts laissés en suspens par [[D-460]] : case « Plus », t
 
 ## Problèmes ouverts
 
-- Q61 à Q65, à trancher par le responsable.
-- Si Q62 n'est pas tranchée en (c), l'amendement de [[D-460]] §4 s'écrit dans #1925 avant que la décision soit retenue, avec une option de côté dans `PanneauSuperpose` et un E2E à 800 px.
+- Q61 à Q65 : les cinq recommandations ont été retenues par le responsable le 2026-11-08 (« Je les retiens »).
+- Q62 (a) s'écrit dans #1925 : amendement de [[D-460]] §4 et option de côté dans `PanneauSuperpose`.
 - #1925 est à recaler sur `main` depuis le merge de #1924.
 
 ## Prochaine action exacte
 
-Le responsable répond à Q61–Q65. Ensuite, recaler #1925 sur `main` et y porter la réponse à Q62.
+L'intégrateur prend cette PR, déclarée prête. Dans #1925 : la recaler sur `main` et y porter la réponse à Q62.
 
 ## Interdits encore actifs
 
