@@ -42,19 +42,17 @@ consommateur.
   verrou par l'approbation seule) ; en-tête du contrat honnête sur ce que
   « sans rien écrire » prouve. P2-4 (concurrence théorique garde/insert) :
   écarté, un seul compte en production.
-- Branche remise à niveau par rebase du commit local, sur arbitrage
-  (#1927 à #1929, sans conflit au `merge-tree`).
+- Remises à niveau sur arbitrage : rebase du commit local (#1927 à #1929),
+  puis fusion de `main` sur la branche publiée ; aucun conflit.
 
 ## Fichiers modifiés
 
-- `web/prisma/migrations/20261107230000_identite_auteur_protocoles_v1/migration.sql` (neuf).
-- `web/prisma/schema.prisma` : `creePar` et `validePar`, alignés à la main.
-- `web/prisma/checks/identite_auteur_protocoles_v1_negatif.sql` (neuf).
-- `.github/workflows/ci.yml` : une étape, après le contrat du NIR.
-- `changelog.d/2026-11-07-bp14-migration-identite-auteur.md` (neuf).
-- `docs/claude/plan-journal/F10/2026-11-07-03-migration-identite-auteur.md` (neuf).
-- Fiche LOT-14 (statut), ligne BP-14 de `CAMPAGNE.md`, ce handoff.
-- Hors dépôt : page BioFlow, ligne p28 ; page de la file C, ligne a08.
+- Neufs : la migration `20261107230000_identite_auteur_protocoles_v1`, le
+  contrat `identite_auteur_protocoles_v1_negatif.sql`, le fragment
+  `changelog.d/`, le journal F10 `2026-11-07-03-…`, ce handoff.
+- `schema.prisma` (`creePar`, `validePar`, alignés à la main) ; `ci.yml`
+  (une étape, après le NIR) ; fiche LOT-14 et `CAMPAGNE.md` ; plan §8 (une
+  dette). Hors dépôt : lignes p28 (BioFlow) et a08 (file C).
 
 ## Validations exécutées
 
@@ -66,8 +64,9 @@ consommateur.
   exclusion des blancs, verrou réduit à `cree_par`) : chacune rougit le
   contrat sur sa promesse.
 - `wn-reviewer` : GO sur le premier commit, quatre P2 arbitrés ci-dessus.
-- Au constat : comparer les compteurs de la reprise aux attendus (P2-2 a
-  et c), qu'aucun banc du CI ne voit.
+- PR #1930 : CI vert sur `3e6e8fd6` ; CodeRabbit sauté (< 10 étoiles),
+  PR-Agent en substitution valide (`wn-revue-pr-agent` à 0, aucune
+  remarque) ; passe Codex : BLOQUER sur P1-1, arbitré (Problèmes ouverts).
 - Migration répétée sur une base jetable peuplée : refus à deux praticiens
   (ni colonne ni fonction créée), puis 1 version et 1 approbation remplies
   avec un seul, `draft` nulle, rejeu de la reprise refusé.
@@ -75,22 +74,31 @@ consommateur.
 
 ## Problèmes ouverts
 
-- **Préflight `preflight_liens_axe`** : le run release-db de #1920 a
-  échoué ce soir sur D-351 §5 (un lien d'axe cite un claim qui n'est plus
-  VALIDE). Ce préflight tourne à chaque release-db : il doit être levé
-  (re-signature conservatoire, #1926) avant que celle de cette migration
-  puisse passer. À constater avant le merge.
+- **Fenêtre code neuf / schéma ancien** (passe Codex, P1-1, arbitrée le
+  2026-11-08) : release-db déploie le code AVANT ses préflights. Si l'un
+  échoue, toute requête sans `select` sur les versions de protocole et les
+  approbations tombe en 500 jusqu'à l'arbitrage. Correctif de Codex écarté
+  (un seul `select` sur 85 appels) ; dette routée au plan §8 (« Release-db,
+  préflights joués APRÈS le déploiement du code »). Atténuation retenue :
+  rejouer les cinq préflights par conteneur, en lecture seule, juste avant
+  le merge ; merger seulement s'ils passent.
+- Préflights constatés le 2026-11-08 (one-off-8011, lecture seule) : les
+  cinq rendent 0, celui des liens d'axe compris (levé par la re-signature
+  conservatoire, #1926). À rejouer juste avant le merge.
+- **Gel** : un run release-db de #1931 (D-461, chemin clinique) attend
+  l'approbation du responsable (42462991753) ; la sonde rend 1 pour #1930
+  (phase 1, chemin de migration gelé). Aucun merge avant sa conclusion.
 - Date seuil et instant de déploiement du code : inconnus jusqu'au constat.
 
 ## Prochaine action exacte
 
-1. CI : `node scripts/wn-attendre-ci.mjs <N>` en fond ; seul 0 compte.
-2. Revue : `wn-reviewer` sur tout le diff ; CodeRabbit, sinon PR-Agent ;
-   passe Codex manuelle (diff préparé pour `$wellneuro-pr-review`). Un
-   verdict par remarque ; toute remarque sur la migration en arbitrage.
-3. Avant merge : préflight des liens d'axe levé, étape 7 bis,
-   `wn-sonde-release-db.mjs <N>` à 0 ; prévenir le responsable, qui choisit
-   le créneau et approuve.
+1. CI `wn-attendre-ci 1930` à 0 sur la tête ; PR-Agent valide sur la tête
+   et `wn-reviewer` sur l'écart ; un verdict par remarque.
+2. Au constat : comparer les compteurs de la reprise aux attendus
+   (pré-lecture 10 et 9), qu'aucun banc du CI ne voit (P2-2 a et c).
+3. Avant merge : run de #1931 conclu, cinq préflights rejoués à 0 par
+   conteneur, étape 7 bis, `wn-sonde-release-db.mjs 1930` à 0 ; prévenir
+   le responsable, qui choisit le créneau et approuve.
 4. Après : sentinelle `WN_RELEASE_DB_OK id=<run>`, `migrate status` par
    conteneur agrégé par nom, reprise relue en agrégats, première ligne des
    déploiements = tête de `main` ; date seuil au journal de F10 et à la fin
