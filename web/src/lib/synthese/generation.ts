@@ -50,6 +50,8 @@ import {
 } from '@/lib/scoring/passationsNonInterpretables';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import { lireTraitementsEnVigueur } from '@/lib/physio-traitements/lecture';
+import { construireBlocBesoins } from '@/lib/synthese/blocBesoins';
+import { formesDeScoreDuNarratif } from '@/lib/synthese/narratifFormesDeScore';
 import {
   MODELE_REDACTION_PRATICIEN,
   VERSION_SYNTHESE_PRATICIEN,
@@ -468,7 +470,7 @@ function buildBlocOrientation(orientation: ResultatOrientation | null): string {
 // Gardée par `enveloppePatient.guard.test.ts` (revue adversariale du
 // 2026-08-22, constat M4) — en TEXTE, comme les gardes voisins : un
 // route.ts App Router ne peut exporter que ses handlers.
-function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrientation = ''): string {
+function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrientation = '', blocBesoins = ''): string {
   const filtered = reponses.map(r => {
     // Passation dont le résultat enregistré n'est pas une mesure (registre
     // `passationsNonInterpretables`). Le modèle n'en reçoit AUCUN chiffre et
@@ -549,8 +551,13 @@ ${contexte || 'Contexte anamnestique non renseigné pour ce patient.'}
 </donnees_declaratives_patient>`;
   // Le bloc d'orientation s'insère entre le contexte et les résultats — et
   // disparaît entièrement quand il est vide, plutôt que de laisser un en-tête
-  // sans contenu que le modèle pourrait se croire tenu de remplir.
-  const blocs = [blocContexte, ...(blocOrientation ? [blocOrientation] : [])].join('\n\n');
+  // sans contenu que le modèle pourrait se croire tenu de remplir. Le bloc des
+  // besoins ([[D-462]]) suit, par le même canal.
+  const blocs = [
+    blocContexte,
+    ...(blocOrientation ? [blocOrientation] : []),
+    ...(blocBesoins ? [blocBesoins] : []),
+  ].join('\n\n');
   return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocs}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
 }
 
@@ -590,6 +597,8 @@ export type GenererArgs = {
   contexteClinique: string;
   /** Recommandation déterministe transmise au modèle, `null` si aucune. */
   orientation: ResultatOrientation | null;
+  /** Bloc des besoins transmis au modèle ([[D-462]]), `null` s'il n'a pas pu être calculé. */
+  blocBesoins: string | null;
   /**
    * QUI A DEMANDÉ CETTE GÉNÉRATION — inscrit dans `donneesEntree`, jamais dans
    * le prompt.
@@ -776,6 +785,18 @@ export async function genererSynthesePersistee(
 
   state.idSynthese = createPublicId('SYN');
 
+  // Signalement technique ([[D-462]] §4) : des codes de forme, jamais le texte
+  // patient, et ni blocage ni correction — la synthèse suit son cours.
+  const formesDeScore = formesDeScoreDuNarratif(synthese.narratif_patient);
+  if (formesDeScore.length > 0) {
+    logger.warn({
+      event: EVENT_CODES.SYNTHESE_NARRATIF_FORME_DE_SCORE,
+      domain: 'SYNTHESE_IA',
+      message: `Forme de score relevée dans le narratif patient, sans blocage ni correction (${state.idSynthese} : ${formesDeScore.join(', ')})`,
+      context: finalizeLogContext(args.requestContext, { retryable: false }),
+    });
+  }
+
   const record = await prisma.syntheseIA.create({
     data: {
       idSynthese: state.idSynthese,
@@ -793,6 +814,10 @@ export async function genererSynthesePersistee(
         ...(args.source ? { source: args.source } : {}),
         contexteClinique: args.contexteClinique,
         vigilanceDeterministe: args.vigilanceDeterministe,
+        // Le texte exact du bloc parti au modèle ([[D-462]]) : sans lui, on ne
+        // pourrait pas dire, six mois plus tard, ce que la synthèse savait des
+        // besoins. `null` : le calcul a échoué, aucun bloc n'est parti.
+        blocBesoins: args.blocBesoins,
         metadonneesPrompt: {
           versionPrompt: VERSION_PROMPT_SYNTHESE,
           versionSchema: VERSION_SCHEMA_SYNTHESE,
@@ -1164,7 +1189,29 @@ export async function preparerGeneration(
       });
     }
 
-    const userMessage = buildUserMessage(reponsesInput, contexteClinique, buildBlocOrientation(orientation));
+    // Bloc des besoins (H95 part A, [[D-462]]) — best-effort comme l'orientation.
+    // `reponses` ET NON `reponsesAdministrables`, comme les constats ci-dessus :
+    // le cockpit lit toutes les passations et le calcul applique lui-même le filtre
+    // de validité ; filtrer ici ferait dire au bloc autre chose que l'écran.
+    let blocBesoins: string | null = null;
+    try {
+      blocBesoins = construireBlocBesoins(reponses);
+    } catch (besoinsErr) {
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_BESOINS_INDISPONIBLES,
+        domain: 'SYNTHESE_IA',
+        message: 'Bloc des besoins indisponible, synthèse sans lui',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: besoinsErr,
+      });
+    }
+
+    const userMessage = buildUserMessage(
+      reponsesInput,
+      contexteClinique,
+      buildBlocOrientation(orientation),
+      blocBesoins ?? '',
+    );
     const genererArgs: GenererArgs = {
       idPatient,
       emailPatient,
@@ -1174,6 +1221,7 @@ export async function preparerGeneration(
       reponsesInput,
       contexteClinique,
       orientation,
+      blocBesoins,
       requestContext,
     };
 

@@ -52,6 +52,8 @@ const MODULES_COCKPIT = [
   'lib/praticien/provenanceChiffre',
   // r3_08 : le motif du non mesuré, servi au praticien seul.
   'lib/praticien/motifNonMesure',
+  // [[D-462]] : le bloc des besoins, destiné au modèle, jamais à une surface patient.
+  'lib/synthese/blocBesoins',
 ];
 
 /** Les panneaux du cockpit (cercles, motif, provenance de r3_08 compris) :
