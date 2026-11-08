@@ -1,0 +1,3 @@
+### D-463 — le poids égal de la stabilité métabolique est motivé, déclaré sans source (2026-11-08)
+
+Le responsable a étendu le motif de D-403 §1 au poids égal de Q_INF_01 et Q_INF_02 dans la stabilité métabolique : « Je conserve des poids égaux faute de justification probante d'une pondération différente. » C'est un motif déclaré, sans source, qui n'établit pas une égale importance clinique des deux instruments. L'exigence « avec source » de D-333 §3 est levée pour ce seul objet. Au cockpit, « Non motivé, décision due » sera remplacé par « Poids égal : motif déclaré, sans source (D-463) », dans un lot de code à part. Le calcul ne change pas.
