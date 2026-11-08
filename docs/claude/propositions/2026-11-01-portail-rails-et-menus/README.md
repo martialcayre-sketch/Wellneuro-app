@@ -1004,3 +1004,146 @@ Le texte de décision qui en découle est `decision-D-447-rail-lateral.md`, à c
 | Q58 Colonne | **Mise en page du shell praticien** : `gap-6`, `px-6` de chaque côté, `px-4` du `main` ; colonne de 668 px à 100 % et de 623,5 px à 112,5 % (calcul) ; l'assistant recommandait un rail collé au bord (712 et 673 px) | D-447 §6 ; le constat mesure la largeur réelle à 1 024 px, à 100 % et à 112,5 % |
 | Q59 Pages | **Pas sur le questionnaire en cours** (`/questionnaires/[idAssignation]`) : règle de chemin, comme [[D-444]] §1 (Q51) ; le bouton « Menu » y reste à toute largeur | D-447 §1 ; une seule navigation « Mon espace » par page, un seul déclencheur |
 | Q60 Hub | **Garder les deux** : « Autres espaces » reste sur le hub à toute largeur ([[D-442]] §2) ; le doublon visible dès 1 024 px est assumé | D-447 §2 ; aucune décision antérieure amendée sur ce point ; l'E2E du lien « visible sans rien déplier » (portail-dossier-deux-voix.spec.ts:71-76) reste intact ; le constat montre le hub à 1 024 px |
+
+## 21. Écarts restants avec l'organisation praticien (audit du 2026-11-08)
+
+À la demande du responsable (« fais un audit pour trancher ces différences ? »), après [[D-460]] (#1925, statut proposé) qui reprend les icônes, les groupes et les Vues rapides du praticien. Cinq écarts restent entre le portail et l'espace praticien. Trois ont déjà une réponse, donnée avant la demande du 2026-11-07 de « la même organisation » : Q48, Q56 et Q59 (chapitres 19 et 20). Le présent chapitre dit si cette demande doit les rouvrir.
+
+- **Lecture** : `origin/main@88abb491`, soit #1924 mergée, plus la branche de #1925 pour [[D-460]]. Fichiers lus : `NavBar.tsx`, `MobileBottomNav.tsx`, `SidebarRail.tsx`, `portail/layout.tsx`, `MenuMonEspace.tsx`, `ReadingComfortControl.tsx`, `PanneauSuperpose.tsx`.
+- **Relecture ui-ux-pro-max** : par la recherche gardée ([[D-456]]), `--domain ux`. La base n'a rien donné sur le repli ni sur un menu de compte (« No matches »). Sont citées :
+  - les règles de navigation de `references/quick-reference.md` §9 ;
+  - la ligne « Bottom Tabs » de `data/app-interface.csv` (E1) ;
+  - la ligne « Consistent Help » de `data/ux-guidelines.csv` (E5). La relecture éclaire, elle ne tranche pas : la doctrine du chapitre 7 passe avant.
+- **Écran** : aucun écran constaté pour cet audit. Les mesures viennent des constats de L3 à L5 et du constat en production du 2026-11-07. Les projections sont marquées « calcul ».
+
+### Verdict
+
+Un seul écart mérite d'être repris : **le tiroir s'ouvre à gauche**, du côté du bouton et du rail. Les quatre autres différences ont une raison propre au patient, et la relecture n'en contredit aucune. Le portail garde la même organisation que le praticien (une liste en groupes, un rail dès 1 024 px, une barre sous 768 px, des onglets d'accès rapide), sans en copier les gestes de dense usage quotidien.
+
+| Écart | Praticien | Portail aujourd'hui | Déjà tranché | Recommandation |
+|---|---|---|---|---|
+| E1 Case « Plus » sous 768 px | barre de trois liens et un bouton « Plus », qui ouvre une feuille de douze destinations | barre de trois ou quatre cases, sans « Plus » ; le panneau s'ouvre par « Menu », dans l'en-tête | oui, Q48 | **garder** |
+| E2 Tiroir de 768 à 1 023 px | hamburger à gauche, tiroir gauche de 18 rem | « Menu » à gauche de l'en-tête, panneau à droite, de 36 rem | non ([[D-460]] §4 le garde à droite, sans question posée) | **reprendre** : à gauche, 18 rem dès 768 px, pleine largeur en dessous |
+| E3 Rail repliable | 252 px ou 64 px, mémorisé dans `wn-rail-expanded` | toujours déplié, sans clé | oui, Q56 | **garder** |
+| E4 Rail sur le questionnaire en cours | rail sur toutes les pages | ni rail ni barre ; « Menu » à toute largeur | oui, Q59 (et Q51 pour la barre) | **garder** |
+| E5 Menu « Profil » | `details` « Profil » : adresse, « Session active », « Déconnexion » | « Confort de lecture » et « Se déconnecter » côte à côte | non, jamais posé | **ne pas reprendre** |
+
+### E1 — Case « Plus » sous 768 px
+
+- **Constat.**
+  - Praticien : `MobileBottomNav.tsx` sert trois liens et un bouton « Plus », qui ouvre douze destinations à plat. L'en-tête mobile ne garde que « Profil » (chapitre 3).
+  - Portail : la barre sert « Accueil », « Carnet », « Suivi », puis « Bibliothèque » ou « Fiches » ([[D-444]] §2 et §3). Le panneau « Mon espace » ne s'ouvre que par « Menu », dans l'en-tête : c'est le seul déclencheur ([[D-444]] §2, Q48).
+  - La barre est absente sur le questionnaire en cours, pour le mineur et sur les murs d'entrée ([[D-444]] §1, Q51 ; [[D-283]] §5). Le bouton « Menu », lui, reste sur le questionnaire.
+- **Relecture.**
+  - `bottom-nav-limit` (cinq cases au plus) tient dans les deux organisations. `overflow-menu` justifie une case « Plus » quand les entrées ne tiennent pas, et la ligne « Bottom Tabs » de `app-interface.csv` conseille de « move extras to More/Settings ». Le portail le fait déjà : ce qui ne tient pas dans la barre est dans le panneau, ouvert par « Menu ».
+  - `navigation-consistency` demande un déclencheur à la même place sur toutes les pages, et `persistent-nav` un accès jusque dans les sous-parcours. Une case « Plus » ne peut pas satisfaire les deux, puisque la barre n'existe pas sur le questionnaire. Soit le déclencheur change de place selon la page, soit il y en a deux.
+- **Options.**
+  - (a) Garder Q48, recommandé : le déclencheur reste unique, en haut, sur toutes les pages.
+  - (b) Ajouter une case « Plus » en plus de « Menu » : deux déclencheurs du même panneau, ce qui amende [[D-444]] §2.
+  - (c) Une case « Plus » à la place de « Menu » sous 768 px, et « Menu » seulement là où la barre manque : le déclencheur change de place selon la page.
+- **Ce que (b) ou (c) apporteraient** : un déclencheur dans la zone du pouce. Le gain est réel sur un grand téléphone. Mais le praticien ouvre « Plus » plusieurs fois par jour, le patient le panneau quelques fois par semaine.
+
+### E2 — Tiroir de 768 à 1 023 px
+
+- **Constat.**
+  - Praticien : le hamburger « Ouvrir la navigation » est à gauche. Il ouvre un tiroir gauche `w-72 max-w-[80vw]` (18 rem) qui rejoue le rail (`NavBar.tsx:49-57`, `:131-133`).
+  - Portail : « Menu » suit le mot-symbole, à gauche de l'en-tête (`layout.tsx:101-104`). Le panneau est un `PanneauSuperpose` en tiroir, `largeur="standard"` (`max-w-xl`, 36 rem), et la primitive l'ancre à droite (`PanneauSuperpose.tsx:59`). Constat de L3 : 576 × 800 px, à droite.
+  - Dès 1 024 px, la même liste vit à gauche, dans le rail. Au passage de 1 023 à 1 024 px, le panneau se ferme et le focus passe dans le rail (constats complémentaires de L5).
+- **Relecture.**
+  - `navigation-consistency` : la liste change de côté au seuil, et s'ouvre du côté opposé à son bouton.
+  - `nav-hierarchy` : une navigation se distingue d'un panneau de détail. Les neuf autres usages de la primitive sont des panneaux de détail du praticien, tous à droite : fiche, bibliothèque, rayons, aperçu. Le menu du portail est la seule navigation qui y passe.
+  - `drawer-usage` : un tiroir porte la navigation secondaire, ce qui est bien le cas ici.
+- **Options.**
+  - (a) Ancrer le panneau « Mon espace » à gauche. Il garde toute la largeur sous 768 px et prend dès 768 px la largeur du tiroir praticien, 18 rem. Recommandé.
+  - (b) À gauche, en gardant 36 rem à toute largeur.
+  - (c) Garder le panneau à droite, comme [[D-460]] §4 le prévoit.
+- **Effets de (a).**
+  - À 390 px, le panneau garde toute la largeur : seul le sens d'apparition change. La largeur du praticien (`w-72 max-w-[80vw]`) appliquée telle quelle donnerait 288 px à cette largeur, avec une centaine de pixels de fond visibles, d'où le seuil de 768 px.
+  - De 768 à 1 023 px, le panneau prend la place qu'aura le rail. 18 rem font 288 px, 324 px en confort 112,5 % (calcul). C'est plus large que le rail de 15,75 rem, qui sert ses neuf entrées sans débordement (constats complémentaires de L5).
+- **Coût de (a).**
+  - Une option de côté dans `PanneauSuperpose`, le défaut à droite étant inchangé pour les autres usages. La garde de thème, qui balaie déjà `app/portail`, reste valable.
+  - Un E2E à 800 px.
+  - Un amendement de [[D-460]] §4. Celle-ci étant encore proposée, l'amendement s'écrit dans son texte avant qu'elle soit retenue.
+  - Sous le drapeau `WN_PORTAIL_MENU_ICONES`, rien ne change en production.
+
+### E3 — Rail repliable
+
+- **Constat.**
+  - Praticien : le rail passe de 252 à 64 px par un bouton de 44 px, et le choix est mémorisé dans `wn-rail-expanded`, sans préfixe `wellneuro:` (`NavBar.tsx:13`, `:37-43`, `:106-118`).
+  - Portail : le rail est toujours déplié, sans clé ([[D-447]] §5, Q56). [[D-460]] §4 le redit : « ni repli ».
+- **Calcul.** Le contenu du portail est borné à `max-w-2xl`, soit 42 rem : 672 px en confort 100 %, 756 px à 112,5 %.
+
+  | 1 024 px | Colonne, rail déplié | Colonne, rail replié | Gain utile |
+  |---|---|---|---|
+  | confort 100 % | 668 px | 856 px | 4 px |
+  | confort 112,5 % | 623,5 px | 835 px (1 024 − 72 − 27 − 54 − 36) | 132,5 px |
+
+  Depuis #1924, la frise tient dans 623,5 px.
+- **Relecture.**
+  - `nav-label-icon` : une navigation faite d'icônes seules nuit à la découverte. Un rail replié est fait d'icônes seules, et sans [[D-460]] le rail du portail n'a aucune icône : un repli y serait impossible.
+  - `adaptive-navigation` : le rail dès 1 024 px est déjà servi.
+- **Options.**
+  - (a) Garder Q56, recommandé.
+  - (b) Un repli mémorisé, seulement si [[D-460]] est retenue, avec une clé `wellneuro:` déclarée dans `stockageAppareil.ts` et une bascule de 44 px. Cela amende [[D-447]] §5 et [[D-460]] §4.
+
+### E4 — Rail sur le questionnaire en cours
+
+- **Constat.**
+  - Praticien : le rail est servi sur toutes les pages du tableau de bord, la fiche patient comprise.
+  - Portail : sur `/questionnaires/[idAssignation]`, il n'y a ni rail ni barre, et « Menu » reste à toute largeur ([[D-447]] §1, Q59 ; [[D-444]] §1, Q51). La règle est un test de chemin, qui ne lit aucun état de la page. Constat local : 1 248 px de cadre à 1 280 px, bouton visible.
+- **Relecture.**
+  - `persistent-nav` : l'accès reste ouvert, par « Menu ».
+  - `navigation-consistency` : à 1 024 px et plus, le rail laisse place au bouton sur cette seule page, ce qui est un écart à la règle.
+  - Le registre, de son côté, demande pour le patient « une étape à la fois » (A6-R1). Le questionnaire est la seule page de saisie longue du portail.
+- **Options.**
+  - (a) Garder Q59, recommandé : barre et rail obéissent à une seule règle, et le patient reste sur sa saisie.
+  - (b) Servir le rail sur le questionnaire, sans la barre : les règles du rail et de la barre divergent, ce qui amende [[D-447]] §1.
+  - (c) Servir rail et barre : la barre prend 64 px (72 px à 112,5 %) d'un formulaire au téléphone, ce qui amende [[D-444]] §1 et [[D-447]] §1.
+- **Ce qui affaiblit (a) sans le renverser.** Le brouillon gardé sur l'appareil fait que quitter la page ne perd pas les réponses : le hub affiche « Reprendre » dans le même navigateur (constats complémentaires de L5). Le risque d'un rail sur cette page est donc la distraction, pas la perte.
+
+### E5 — Menu « Profil »
+
+- **Constat.**
+  - Praticien : à droite de l'en-tête, un `details` « Profil » montre l'adresse, « Session active » et « Déconnexion » (`NavBar.tsx:73-89`).
+  - Portail : « Confort de lecture », un `details` à trois cases, et « Se déconnecter » sont côte à côte, à droite (`layout.tsx:108-111` ; `ReadingComfortControl.tsx:92-110`).
+  - À 390 px, l'en-tête tient sur deux lignes : 133 px de haut, 150 px à 112,5 % ; 77 px à 1 024 px (constat de L3). Il n'est pas collant et quitte l'écran au défilement (`layout.tsx:98`).
+- **Relecture.**
+  - `destructive-nav-separation` : la déconnexion est déjà à l'écart de la navigation, dans le groupe de droite.
+  - La ligne « Consistent Help » de `ux-guidelines.csv` demande que les aides restent à la même place. Le confort de lecture est une aide d'accessibilité : dans un menu « Profil », agrandir le texte demanderait deux gestes au lieu d'un.
+  - Le portail n'a pas d'identité à montrer. Afficher le nom ou l'adresse du patient serait un texte neuf à faire accepter ([[D-360]] §1), lisible par quiconque partage l'appareil.
+- **Options.**
+  - (a) Ne pas reprendre « Profil », recommandé.
+  - (b) Un menu « Mon compte » qui réunit confort et déconnexion, à toutes les largeurs, avec un libellé neuf à accepter mot pour mot.
+  - (c) Le même menu, sous 768 px seulement.
+- **Ce que (b) ou (c) apporteraient** : l'en-tête sur une ligne à 390 px, soit environ 56 px de moins en haut de page (calcul, non rendu).
+
+### Ce qui n'est pas un écart à trancher
+
+- **Rail nuit et bascule de thème** : exclus par A5-R2 et [[D-447]] §4.
+- **Compteurs et pastilles** du Fil et de la Correspondance : exclus par [[D-333]] §1. `tab-badge` les admet « sparingly », ce qui ne lève pas la décision.
+- **Bloc de marque en tête du rail** : le mot-symbole reste dans l'en-tête, en lien d'accueil ([[D-442]] §5). Un second mot-symbole dans le rail doublerait ce lien.
+- **Icônes, groupes en petites capitales, onglets d'accès rapide** : repris par [[D-460]] (#1925).
+
+### Questions au responsable
+
+Chaque question a ses options fermées, la recommandation en premier. Si la réponse à Q62 diffère de (c), elle s'écrit dans [[D-460]], encore proposée, avant que celle-ci soit retenue. Les autres réponses recommandées ne changent aucun texte.
+
+| Question | Options | Recommandation |
+|---|---|---|
+| Q61 (E1) Case « Plus » | (a) garder Q48 ; (b) « Plus » en plus de « Menu » ; (c) « Plus » à la place de « Menu » sous 768 px | (a) |
+| Q62 (E2) Côté du panneau « Mon espace » | (a) à gauche, 18 rem dès 768 px, pleine largeur en dessous ; (b) à gauche, 36 rem ; (c) à droite | (a), sous `WN_PORTAIL_MENU_ICONES` |
+| Q63 (E3) Repli du rail | (a) garder Q56 ; (b) repli mémorisé sous [[D-460]] | (a) |
+| Q64 (E4) Rail sur le questionnaire en cours | (a) garder Q59 ; (b) rail seul ; (c) rail et barre | (a) |
+| Q65 (E5) Menu de compte | (a) ne pas reprendre ; (b) « Mon compte » partout ; (c) sous 768 px | (a) |
+
+### Réponses du responsable (2026-11-08)
+
+Le responsable retient les cinq recommandations (« Je les retiens »). Aucune réponse ne s'écarte de la recommandation.
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q61 Case « Plus » | **(a) garder Q48** | aucun texte changé ; [[D-444]] §2 tient |
+| Q62 Côté du panneau | **(a) à gauche, 18 rem dès 768 px, pleine largeur en dessous** | amendement de [[D-460]] §4 sur #1925, sous `WN_PORTAIL_MENU_ICONES` ; option de côté dans `PanneauSuperpose`, défaut à droite inchangé |
+| Q63 Repli du rail | **(a) garder Q56** | aucun texte changé ; [[D-447]] §5 tient |
+| Q64 Rail sur le questionnaire en cours | **(a) garder Q59** | aucun texte changé ; [[D-447]] §1 et [[D-444]] §1 tiennent |
+| Q65 Menu de compte | **(a) ne pas reprendre** | aucun texte changé |
