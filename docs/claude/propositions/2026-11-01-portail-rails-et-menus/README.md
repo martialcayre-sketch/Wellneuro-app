@@ -788,6 +788,44 @@ Les quatre drapeaux sont posés en production depuis le 2026-11-05. **Ce constat
 - **Drapeaux** : les quatre relus à `true` en production le même jour. Aucun drapeau posé ni retiré.
 - **Inconnu faute de preuve** : le rendu chez un vrai patient mineur ou clos. La garde [[D-283]] §5 n'a pas été vue en production.
 
+### Constat local de [[D-460]] (2026-11-08)
+
+Le constat que demande [[D-460]] §5 avant la pose de `WN_PORTAIL_MENU_ICONES`. **Il est local : le drapeau n'est pas posé en production.** Il a été fait par l'assistant, à la demande du responsable, sur `origin/main@25f3cb9a`, juste après le merge de #1925. Base éphémère de `test:worktree --fast --keep-db`, après un T2 vert drapeau armé (357 E2E passés, 23 ignorés, aucun échec), servie par le build de production (`next start`).
+
+Mesures par un spec Playwright jetable non versionné (Chromium), avec `getBoundingClientRect` ; captures relues par l'assistant. Patients fictifs du seed : Sophie Nicola, majeure ; Jennifer Martin, date de naissance passée à 2012 dans la base de test. Étiquettes de [[D-125]].
+
+| Dossier, largeur, confort | Étiquette | Navigation | Colonne | En-tête | Page |
+|---|---|---|---|---|---|
+| Majeure, 390 px, 100 % | observé | bouton de 44 px ; barre de trois cases de 64 px, une icône chacune ; panneau de 390 × 844 px, à gauche | 358 px | 133 px | 390 / 390 |
+| Majeure, 390 px, 112,5 % | observé | bouton de 49,5 px ; cases de 72 px ; panneau de 390 × 844 px | 354 px | 149,5 px | 390 / 390 |
+| Majeure, 800 px, 100 % | observé | bouton de 44 px ; panneau de 288 × 1 024 px, à gauche | 768 px | 77 px | 800 / 800 |
+| Majeure, 800 px, 112,5 % | observé | bouton de 49,5 px ; panneau de 324 × 1 024 px, à gauche | 764 px | 86,5 px | 800 / 800 |
+| Majeure, 1 024 px, 100 % | observé | rail de 252 px, une icône par lien ; onglets dans l'en-tête ; ni bouton ni barre | 668 px | 77 px | 1 024 / 1 024 |
+| Majeure, 1 024 px, 112,5 % | observé | rail de 283,5 px ; onglets de 49,5 px ; ni bouton ni barre | 624 px | 86,5 px | 1 024 / 1 024 |
+| Majeure, 1 280 px, 100 % | observé | rail de 252 px ; onglets de 44 px | 924 px | 77 px | 1 280 / 1 280 |
+| Mineure, 390 et 1 280 px | observé | ni bouton, ni rail, ni barre, ni onglets, sur le hub et `/suivi` ; rien de neuf ([[D-283]] §5) | 358 et 1 248 px | 133 et 77 px | sans débordement |
+
+- **Panneau** : cinq liens et cinq icônes, liens de 44 px au moins, intertitres en capitales, aucun débordement. Échap le ferme et rend le focus à « Menu », aux quatre réglages.
+- **Onglets** : « Accueil », « Carnet », « Suivi », les mêmes que la barre, un seul `aria-current`, sans chiffre. La page n'a jamais deux navigations « Accès rapides » visibles. Ils ne portent pas d'icône, ce que [[D-460]] §2 et §3 ne demandent pas.
+- **Frise** : elle tient sans défiler à 800, 1 024 et 1 280 px, aux réglages mesurés ; elle défile à 390 px, comme prévu.
+- **Questionnaire en cours** : sur un identifiant inexistant, la règle se lisant sur le chemin, ni rail, ni barre, ni onglets, et le bouton « Menu » à toutes les largeurs.
+- **Pied d'urgence** : présent sur toutes les pages mesurées. Le recouvrement par la barre n'a pas été remesuré ici ; l'E2E de la série, passé dans ce T2, le couvre.
+
+**Point à qualifier par le responsable** (observé, rien n'est corrigé). Quand un libellé passe sur deux lignes, les entrées se touchent : 5 px séparent le texte d'une entrée de celui de la suivante, autant qu'entre deux lignes d'un même libellé. Elles se lisent presque comme un seul paragraphe, et seule l'icône marque le début d'une entrée.
+- Dans le panneau à 18 rem, à 800 px : les quatre entrées des groupes passent sur deux lignes. Le passage de 36 à 18 rem (Q62) en est la cause.
+- Dans le rail, à 1 024 px : deux, deux, trois et deux lignes, en confort 100 % comme à 112,5 %. L'icône, qui prend de la largeur, y contribue ; l'état du rail drapeau fermé n'a pas été mesuré.
+- Une petite marge verticale sur les liens, sous le drapeau, suffirait à séparer les entrées.
+
+**Non constaté** :
+- la quatrième case, « Bibliothèque » ou « Fiches » (aucune fiche remise à ce dossier de test), donc aussi le quatrième onglet ;
+- 1 280 px en confort 112,5 %, que [[D-460]] §5 ne demande pas ;
+- un vrai questionnaire en cours ;
+- le dossier clos, que [[D-460]] §5 ne demande pas ;
+- la page imprimée et un appareil à encoche ;
+- la production : drapeau non posé.
+
+Hors [[D-460]], non instruit : pour la mineure à 1 280 px, la première carte est plus étroite que la suivante.
+
 ### Dépendances
 - PR #1765 : ouverte, modifie `MobileBottomNav.tsx` (+4 −1) et y ajoute son premier banc (lue avec `gh`, hors de l'arbre lu). Aucun lot patient ne touche `MobileBottomNav`, `SidebarRail` ni `NavBar` : L0 à L3 en sont indépendants si le composant patient est séparé.
 - Plan §8 ligne 2684 et D/30 (ligne 2319, « fait le 2026-11-01 ») : dette à mettre à jour à chaque lot.
