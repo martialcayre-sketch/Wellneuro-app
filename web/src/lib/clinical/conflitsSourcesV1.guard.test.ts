@@ -276,6 +276,57 @@ describe('les conflits des dossiers clos qui n’entrent pas au registre ([[D-43
       }
     }
   });
+
+  // [[D-461]] : un conflit de dossier est publié OU écarté, jamais les deux.
+  // Le rattachement d'une entrée publiée à son conflit de dossier n'est écrit
+  // que dans les commentaires du registre ; il est recopié ici pour être tenu.
+  // Le contrôle porte sur les CONFLITS, pas sur les claims : un même claim peut
+  // servir deux conflits distincts.
+  const PUBLIES_PAR_DOSSIER: Record<string, string> = {
+    'fer C1': 'CS-FER-01',
+    'vitamine_d C1': 'CS-VITD-01',
+    'vitamine_d C4': 'CS-VITD-02',
+    'vitamine_d grossesse': 'CS-VITD-03',
+    'zinc C2': 'CS-ZINC-01',
+    'zinc C6': 'CS-ZINC-02',
+    'zinc C7': 'CS-ZINC-03',
+    'zinc antibiotiques': 'CS-ZINC-04',
+    'magnesium C6': 'CS-MAG-03',
+    'b9_b12 C8': 'CS-B9B12-01',
+    'iode_selenium C8': 'CS-IODSE-01',
+  };
+
+  it('aucun conflit publié n’est aussi déclaré écarté', () => {
+    const publiesIds = new Set(publies().map(c => c.id));
+    for (const [conflit, entree] of Object.entries(PUBLIES_PAR_DOSSIER)) {
+      expect(publiesIds.has(entree), `${conflit} → ${entree}`).toBe(true);
+    }
+    // Et la table est complète : toute entrée publiée, hors `CS-BIO-01`
+    // (antérieure aux dossiers), revient à un conflit de dossier.
+    expect([...publiesIds].filter(id => id !== 'CS-BIO-01').sort())
+      .toEqual(Object.values(PUBLIES_PAR_DOSSIER).sort());
+    const ecartes = CONFLITS_DOSSIERS_CLOS_ECARTES_V1.map(e => `${e.dossier} ${e.etiquette}`);
+    expect(ecartes.filter(id => id in PUBLIES_PAR_DOSSIER)).toEqual([]);
+  });
+
+  // [[D-461]] §5 : l'empreinte des écartés n'est pas stockée par le registre ;
+  // la déclaration du responsable l'a nommée. LITTÉRAL FIGÉ (patron [[D-063]]) :
+  // une retouche des écartés sans re-signature rougit ici, et la sortie est de
+  // re-signer, jamais de mettre le littéral à jour en silence.
+  it('les écartés sont ceux que la déclaration du 2026-11-07 a signés', () => {
+    expect(sha256(JSON.stringify(CONFLITS_DOSSIERS_CLOS_ECARTES_V1)))
+      .toBe('9b3cf379afd1c1ee932cf48413333b2587e0a2bf7a572aa0d6cd9b12a25ecb05');
+  });
+
+  // [[D-461]] : les huit conflits du dossier polyphénols et antioxydants sont
+  // tous relus, et tous écartés — aucune entrée publiée ne lui revient.
+  it('les huit conflits du dossier polyphénols et antioxydants sont écartés', () => {
+    const siens = CONFLITS_DOSSIERS_CLOS_ECARTES_V1
+      .filter(e => e.dossier === 'polyphenols_antioxydants')
+      .map(e => e.etiquette);
+    expect(siens).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8']);
+    expect(Object.keys(PUBLIES_PAR_DOSSIER).filter(k => k.startsWith('polyphenols_antioxydants '))).toEqual([]);
+  });
 });
 
 describe('DC-29 — le verdict de la descente de provenance', () => {
