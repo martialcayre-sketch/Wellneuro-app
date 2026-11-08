@@ -1135,3 +1135,15 @@ Chaque question a ses options fermées, la recommandation en premier. Si la rép
 | Q63 (E3) Repli du rail | (a) garder Q56 ; (b) repli mémorisé sous [[D-460]] | (a) |
 | Q64 (E4) Rail sur le questionnaire en cours | (a) garder Q59 ; (b) rail seul ; (c) rail et barre | (a) |
 | Q65 (E5) Menu de compte | (a) ne pas reprendre ; (b) « Mon compte » partout ; (c) sous 768 px | (a) |
+
+### Réponses du responsable (2026-11-08)
+
+Le responsable retient les cinq recommandations (« Je les retiens »). Aucune réponse ne s'écarte de la recommandation.
+
+| Question | Réponse | Effet |
+|---|---|---|
+| Q61 Case « Plus » | **(a) garder Q48** | aucun texte changé ; [[D-444]] §2 tient |
+| Q62 Côté du panneau | **(a) à gauche, 18 rem dès 768 px, pleine largeur en dessous** | amendement de [[D-460]] §4 sur #1925, sous `WN_PORTAIL_MENU_ICONES` ; option de côté dans `PanneauSuperpose`, défaut à droite inchangé |
+| Q63 Repli du rail | **(a) garder Q56** | aucun texte changé ; [[D-447]] §5 tient |
+| Q64 Rail sur le questionnaire en cours | **(a) garder Q59** | aucun texte changé ; [[D-447]] §1 et [[D-444]] §1 tiennent |
+| Q65 Menu de compte | **(a) ne pas reprendre** | aucun texte changé |
