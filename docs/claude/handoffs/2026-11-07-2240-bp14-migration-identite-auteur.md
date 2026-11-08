@@ -75,16 +75,18 @@ consommateur.
 ## Problèmes ouverts
 
 - **Fenêtre code neuf / schéma ancien** (passe Codex, P1-1, arbitrée le
-  2026-11-08) : release-db déploie le code AVANT ses préflights. Si l'un
-  échoue, toute requête sans `select` sur les versions de protocole et les
-  approbations tombe en 500 jusqu'à l'arbitrage. Correctif de Codex écarté
-  (un seul `select` sur 85 appels) ; dette routée au plan §8 (« Release-db,
-  préflights joués APRÈS le déploiement du code »). Atténuation retenue :
-  rejouer les cinq préflights par conteneur, en lecture seule, juste avant
-  le merge ; merger seulement s'ils passent.
+  2026-11-08) : release-db déploie le code AVANT ses préflights et la
+  migration. Si un préflight ou la garde `WN459` échoue, toute requête sans
+  `select` sur les versions et les approbations tombe en 500 jusqu'à
+  l'arbitrage. Correctif de Codex écarté (un `select` sur 56 appels
+  directs) ; dette au plan §8 (« Release-db, préflights joués APRÈS le
+  déploiement du code »). Atténuation : rejouer par conteneur, en lecture
+  seule, juste avant le merge, les cinq préflights (0) et le compte des
+  praticiens distincts de la garde (1).
 - Préflights constatés le 2026-11-08 (one-off-8011, lecture seule) : les
   cinq rendent 0, celui des liens d'axe compris (levé par la re-signature
-  conservatoire, #1926). À rejouer juste avant le merge.
+  conservatoire, #1926) ; garde de la migration (one-off-5682) : 1
+  praticien distinct. Les deux à rejouer juste avant le merge.
 - **Gel** : un run release-db de #1931 (D-461, chemin clinique) attend
   l'approbation du responsable (42462991753) ; la sonde rend 1 pour #1930
   (phase 1, chemin de migration gelé). Aucun merge avant sa conclusion.
@@ -96,8 +98,8 @@ consommateur.
    et `wn-reviewer` sur l'écart ; un verdict par remarque.
 2. Au constat : comparer les compteurs de la reprise aux attendus
    (pré-lecture 10 et 9), qu'aucun banc du CI ne voit (P2-2 a et c).
-3. Avant merge : run de #1931 conclu, cinq préflights rejoués à 0 par
-   conteneur, étape 7 bis, `wn-sonde-release-db.mjs 1930` à 0 ; prévenir
+3. Avant merge : run de #1931 conclu, cinq préflights à 0 et praticiens
+   distincts à 1, rejoués par conteneur, étape 7 bis, `wn-sonde-release-db.mjs 1930` à 0 ; prévenir
    le responsable, qui choisit le créneau et approuve.
 4. Après : sentinelle `WN_RELEASE_DB_OK id=<run>`, `migrate status` par
    conteneur agrégé par nom, reprise relue en agrégats, première ligne des
