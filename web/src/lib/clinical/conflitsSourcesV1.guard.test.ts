@@ -313,9 +313,10 @@ describe('les conflits des dossiers clos qui n’entrent pas au registre ([[D-43
   // la déclaration du responsable l'a nommée. LITTÉRAL FIGÉ (patron [[D-063]]) :
   // une retouche des écartés sans re-signature rougit ici, et la sortie est de
   // re-signer, jamais de mettre le littéral à jour en silence.
-  it('les écartés sont ceux que la déclaration du 2026-11-07 a signés', () => {
+  // Re-signés le 2026-11-09 ([[D-465]]) : seul le motif de C7 change.
+  it('les écartés sont ceux que la déclaration du 2026-11-09 a signés', () => {
     expect(sha256(JSON.stringify(CONFLITS_DOSSIERS_CLOS_ECARTES_V1)))
-      .toBe('9b3cf379afd1c1ee932cf48413333b2587e0a2bf7a572aa0d6cd9b12a25ecb05');
+      .toBe('94030d5903d73a9ef990067a413e414b3d5fa3743cfbc9e8f72eb6b444e15a70');
   });
 
   // [[D-461]] : les huit conflits du dossier polyphénols et antioxydants sont
