@@ -9,6 +9,7 @@ import { entreesServies, groupesServis, hrefEntree, useEtatsSondes, type EtatsSo
 import { SondesAutresEspaces, SondesPartageesContexte } from '@/components/patient/autres-espaces/SondesAutresEspaces';
 import { REQUETE_RAIL, railSurLeChemin } from '@/components/patient/rail/cheminRail';
 import { elementActif } from './activationMenu';
+import { IconeMonEspace } from './iconesMonEspace';
 import { DESCRIPTION_MENU, LIBELLE_BOUTON_MENU, TITRE_MENU } from './textesMenu';
 
 /*
@@ -41,6 +42,8 @@ export type EtatMenu = {
   mursFranchis: boolean;
   /** Le bouton « Menu » paraît (§1). */
   actif: boolean;
+  /** Groupes et icônes de l'organisation praticien ([[D-460]]). */
+  icones: boolean;
   /** La première lecture des murs n'a pas répondu : le rail réserve sa place ([[D-447]] §6). */
   gardeEnLecture: boolean;
   bilanConsultable: boolean;
@@ -86,7 +89,15 @@ async function lireMurs(): Promise<LectureMurs | null> {
   };
 }
 
-export function FournisseurMenuPortail({ sessionOuverte, children }: { sessionOuverte: boolean; children: ReactNode }) {
+export function FournisseurMenuPortail({
+  sessionOuverte,
+  icones = false,
+  children,
+}: {
+  sessionOuverte: boolean;
+  icones?: boolean;
+  children: ReactNode;
+}) {
   const params = useParams<{ token?: string }>();
   const token = typeof params?.token === 'string' ? params.token : null;
   const pathname = usePathname() ?? '';
@@ -135,6 +146,7 @@ export function FournisseurMenuPortail({ sessionOuverte, children }: { sessionOu
     segment,
     mursFranchis,
     actif,
+    icones,
     gardeEnLecture: pageDeSession && !lectureRendue,
     bilanConsultable: lecture?.bilanConsultable === true,
     etats,
@@ -202,19 +214,26 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
   const signaux = { bilanConsultable: etat.bilanConsultable };
   const groupes = groupesServis(etat.etats, signaux);
   const actif = elementActif(etat.segment, entreesServies(etat.etats, signaux));
+  // Drapeau fermé, ces trois formes rendent exactement les classes d'avant.
+  const classeLien = etat.icones ? `${forme.classeLien} gap-3` : forme.classeLien;
+  const classeLienActif = etat.icones ? `${forme.classeLienActif} gap-3 rounded-md bg-primary/10` : forme.classeLienActif;
+  const classeIntertitre = etat.icones
+    ? `${forme.classeIntertitre.replace('text-sm', 'text-xs')} uppercase tracking-wider`
+    : forme.classeIntertitre;
 
   return (
     <nav aria-label={TITRE_MENU} className={forme.classe}>
       <Link
         href={`/portail/${token}/questionnaires`}
         aria-current={actif === 'parcours' ? 'page' : undefined}
-        className={actif === 'parcours' ? forme.classeLienActif : forme.classeLien}
+        className={actif === 'parcours' ? classeLienActif : classeLien}
       >
+        {etat.icones && <IconeMonEspace cle="parcours" />}
         <span>Mon parcours</span>
       </Link>
       {groupes.map(groupe => (
         <div key={groupe.id}>
-          <h3 id={`${forme.prefixeId}-${groupe.id}`} className={forme.classeIntertitre}>
+          <h3 id={`${forme.prefixeId}-${groupe.id}`} className={classeIntertitre}>
             {groupe.libelle}
           </h3>
           <ul aria-labelledby={`${forme.prefixeId}-${groupe.id}`} className="mt-1">
@@ -223,9 +242,10 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
                 <Link
                   href={hrefEntree(token, entree)}
                   aria-current={actif === entree.cle ? 'page' : undefined}
-                  className={actif === entree.cle ? forme.classeLienActif : forme.classeLien}
+                  className={actif === entree.cle ? classeLienActif : classeLien}
                 >
-                  <span className="break-words">{entree.libelle}</span>
+                  {etat.icones && <IconeMonEspace cle={entree.cle} />}
+                  <span className={etat.icones ? 'min-w-0 break-words' : 'break-words'}>{entree.libelle}</span>
                 </Link>
               </li>
             ))}
@@ -306,7 +326,11 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
       description={DESCRIPTION_MENU}
       descriptionMasquee
       variante="tiroir"
-      largeur="standard"
+      // Drapeau `WN_PORTAIL_MENU_ICONES` ouvert, le panneau sort à gauche, du
+      // côté du bouton et du rail, à la largeur du tiroir praticien ([[D-460]]
+      // §4, Q62) ; fermé, il garde son côté et sa largeur d'avant.
+      largeur={etat.icones ? 'navigation' : 'standard'}
+      cote={etat.icones ? 'gauche' : 'droite'}
       theme="patient"
       open={ouvert}
       onOpenChange={setOuvert}

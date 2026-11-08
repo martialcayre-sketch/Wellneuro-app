@@ -100,4 +100,33 @@ describe('PanneauSuperpose', () => {
     expect(classes).toContain('max-w-4xl');
     expect(classes).not.toContain('max-w-lg');
   });
+
+  // Le côté ne vaut que pour un tiroir : à droite par défaut (les panneaux de
+  // détail), à gauche pour une navigation ([[D-460]] §4) ; une modale l'ignore.
+  it('tiroir : à droite par défaut, à gauche sur demande ; une modale ignore le côté', () => {
+    render(
+      <PanneauSuperpose open titre="Détail" description="Détail">
+        <p>Contenu.</p>
+      </PanneauSuperpose>,
+    );
+    expect(screen.getByRole('dialog').className.split(' ')).toEqual(expect.arrayContaining(['right-0', 'border-l']));
+    cleanup();
+
+    render(
+      <PanneauSuperpose open titre="Navigation" description="Navigation" cote="gauche" largeur="navigation">
+        <p>Contenu.</p>
+      </PanneauSuperpose>,
+    );
+    const gauche = screen.getByRole('dialog').className.split(' ');
+    expect(gauche).toEqual(expect.arrayContaining(['left-0', 'border-r', 'md:max-w-[18rem]']));
+    expect(gauche).not.toContain('right-0');
+    cleanup();
+
+    render(
+      <PanneauSuperpose open titre="Confirmer" description="Confirmer" variante="modale" cote="gauche">
+        <p>Contenu.</p>
+      </PanneauSuperpose>,
+    );
+    expect(screen.getByRole('dialog').className).not.toContain('left-0');
+  });
 });
