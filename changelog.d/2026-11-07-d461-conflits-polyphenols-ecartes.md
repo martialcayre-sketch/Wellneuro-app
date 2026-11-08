@@ -7,8 +7,9 @@
 - Un conflit est un écart que la position signée déclare, chaque valeur
   gardant sa provenance ; un autre tient à une attribution de source, à
   vérifier ; un troisième part à F79.
-- Le contrôle des conditions de retour des 64 conflits déjà écartés n'en
-  rouvre aucun ; deux listes de claims cités sont complétées.
+- Le contrôle des conditions de retour des 53 conflits déjà écartés des six
+  dossiers clos (64 conflits relus, dont onze publiés) n'en rouvre aucun ;
+  deux listes de claims cités sont complétées.
 - Trois bancs neufs, dont « une fiche sans analyte n'est jamais en mesure
   standard ».
 - Signé sur la déclaration du responsable, après une contre-revue Codex (GO).

@@ -309,6 +309,15 @@ describe('les conflits des dossiers clos qui n’entrent pas au registre ([[D-43
     expect(ecartes.filter(id => id in PUBLIES_PAR_DOSSIER)).toEqual([]);
   });
 
+  // [[D-461]] §5 : l'empreinte des écartés n'est pas stockée par le registre ;
+  // la déclaration du responsable l'a nommée. LITTÉRAL FIGÉ (patron [[D-063]]) :
+  // une retouche des écartés sans re-signature rougit ici, et la sortie est de
+  // re-signer, jamais de mettre le littéral à jour en silence.
+  it('les écartés sont ceux que la déclaration du 2026-11-07 a signés', () => {
+    expect(sha256(JSON.stringify(CONFLITS_DOSSIERS_CLOS_ECARTES_V1)))
+      .toBe('9b3cf379afd1c1ee932cf48413333b2587e0a2bf7a572aa0d6cd9b12a25ecb05');
+  });
+
   // [[D-461]] : les huit conflits du dossier polyphénols et antioxydants sont
   // tous relus, et tous écartés — aucune entrée publiée ne lui revient.
   it('les huit conflits du dossier polyphénols et antioxydants sont écartés', () => {
