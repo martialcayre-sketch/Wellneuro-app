@@ -22,7 +22,8 @@
 // CE QUE LA ROUTE AJOUTE À LA BASE (D-439 et arbitrages du 2026-11-06) :
 //   — Q1 : les actes alternent (`refusAlternance`) ;
 //   — Q2 : la position retenue fonde la fiche de l'arbitrage ;
-//   — Q3 : une fiche n'est fondée que par une position non retirée ;
+//   — Q3 : une fiche n'est fondée que par une position SIGNÉE, contrôlé à la
+//     signature (option (a) du 2026-11-06 : un brouillon n'occupe rien) ;
 //   — conflit inconnu (bien formé) refusé, fiche hors de la liste curée
 //     refusée, claim retenu hors du conflit refusé ;
 //   — un claim d'appui ou retenu qui n'est pas frais (absent compris) est
@@ -30,8 +31,9 @@
 //     l'arbitrage, « à relire ».
 //
 // L'ÉCRAN VOIT, LA ROUTE VÉRIFIE CE QU'IL A VU : la version courante vue (une
-// version), l'empreinte et le dernier acte vus (un acte), la tête vue (un
-// arbitrage). Si l'un d'eux a bougé, rien n'est écrit (409).
+// version), l'empreinte et le dernier acte vus (un acte), la tête vue et
+// l'empreinte de l'entrée du conflit affichée (un arbitrage — renvoi CodeRabbit
+// de #1908). Si l'un d'eux a bougé, rien n'est écrit (409).
 //
 // AUCUN TEXTE NE SORT D'ICI VERS UN JOURNAL ([[D-251]] §4).
 
@@ -101,16 +103,22 @@ function versionCourante(tx: Tx, positionId: string) {
 }
 
 /**
- * Question 3 : une AUTRE position, non retirée, fonde-t-elle déjà cette fiche ?
- * Se lit sous le verrou de la fiche. Rend l'identifiant de cette position, ou
- * `null`.
+ * Question 3 : une AUTRE position SIGNÉE fonde-t-elle déjà cette fiche ? Seule
+ * une position signée occupe sa fiche (option (a), arbitrage du 2026-11-06) :
+ * un brouillon ne l'occupe pas, et le contrôle se fait à la SIGNATURE, plus au
+ * versement. Une version d'état illisible l'occupe — on ne décide rien sur un
+ * état qu'on ne sait pas lire. Se lit sous le verrou de la fiche. Rend
+ * l'identifiant de cette position, ou `null`.
  */
 async function ficheFondeeParUneAutre(tx: Tx, ficheId: string, positionId: string): Promise<string | null> {
   const courantes = await tx.positionExpertVersion.findMany({
     where: { ficheId, positionId: { not: positionId }, revisePar: { is: null } },
     select: { positionId: true, actes: { select: { ordre: true, acte: true } } },
   });
-  const occupante = courantes.find(v => etatVersion(v.actes) !== 'retiree');
+  const occupante = courantes.find(v => {
+    const etat = etatVersion(v.actes);
+    return etat === 'signee' || etat === 'illisible';
+  });
   return occupante ? occupante.positionId : null;
 }
 
@@ -157,8 +165,7 @@ export type RaisonRefusVersion =
   | 'appui_non_frais'
   | 'etat_divergent'
   | 'version_ne_suit_pas'
-  | 'dossier_different'
-  | 'fiche_deja_fondee';
+  | 'dossier_different';
 
 export type IssueVersion =
   | { issue: 'ecrite'; version: { id: string; positionId: string; version: string } }
@@ -181,9 +188,8 @@ export async function verserVersion(demande: DemandeVersion, ctx: ContexteEcritu
       if (!versionSuit(demande.version, courante.version)) return { issue: 'refusee', raison: 'version_ne_suit_pas' };
       if (courante.dossier !== demande.dossier) return { issue: 'refusee', raison: 'dossier_different' };
     }
-    if (demande.ficheId !== null && (await ficheFondeeParUneAutre(tx, demande.ficheId, demande.positionId)) !== null) {
-      return { issue: 'refusee', raison: 'fiche_deja_fondee' };
-    }
+    // Pas de question 3 ici : un brouillon n'occupe pas sa fiche, il se verse
+    // même sur une fiche déjà fondée. Sa signature, elle, sera refusée.
 
     const cree = await tx.positionExpertVersion.create({
       data: {
@@ -301,6 +307,12 @@ export type DemandePose = {
   ficheId: string;
   /** La tête que l'écran a vue (`null` : le couple n'était pas arbitré). La pose la remplace. */
   teteVue: string | null;
+  /**
+   * L'empreinte de l'entrée du conflit que l'écran a affichée. Après une
+   * re-signature, un écran resté ouvert attesterait sinon une entrée qu'il n'a
+   * pas montrée.
+   */
+  entreeVue: string;
   retenu: RetenuArbitrage;
   motif: string;
   auteur: string;
@@ -318,6 +330,7 @@ export type DemandeRevocation = {
 export type RaisonRefusArbitrage =
   | 'conflit_inconnu'
   | 'registre_non_signe'
+  | 'entree_divergente'
   | 'structure_non_signee'
   | 'fiche_hors_structure'
   | 'fiche_hors_liste'
@@ -349,9 +362,12 @@ export async function poserArbitrage(demande: DemandePose, ctx: ContexteEcriture
   // L'entrée : celle que la signature a relue, à l'octet ([[D-452]] §4). Un
   // registre non signé, ou une entrée retouchée sans re-signature, n'ouvre
   // aucune pose — l'arbitrage attesterait une empreinte que personne n'a lue.
-  if (ctx.empreintesSignees?.[entree.id] !== empreinteEntreeConflit(entree)) {
+  const conflitSha256 = empreinteEntreeConflit(entree);
+  if (ctx.empreintesSignees?.[entree.id] !== conflitSha256) {
     return { issue: 'refusee', raison: 'registre_non_signe' };
   }
+  // L'entrée : celle que l'écran a affichée. Signée, mais pas celle-là ⇒ refus.
+  if (demande.entreeVue !== conflitSha256) return { issue: 'refusee', raison: 'entree_divergente' };
   // La fiche : dans la structure signée, ET dans la liste curée du conflit (A2).
   if (!ctx.structure.signee) return { issue: 'refusee', raison: 'structure_non_signee' };
   if (!ctx.structure.fiches.has(demande.ficheId)) return { issue: 'refusee', raison: 'fiche_hors_structure' };
@@ -378,7 +394,6 @@ export async function poserArbitrage(demande: DemandePose, ctx: ContexteEcriture
     positionRetenue = { positionId: v.positionId };
   }
 
-  const conflitSha256 = empreinteEntreeConflit(entree);
   return prisma.$transaction(async (tx): Promise<IssueArbitrage> => {
     await verrouCouple(tx, demande.conflitId, demande.ficheId);
     const tete = await teteDuCouple(tx, demande.conflitId, demande.ficheId);

@@ -41,6 +41,8 @@ export type EtatMenu = {
   mursFranchis: boolean;
   /** Le bouton « Menu » paraît (§1). */
   actif: boolean;
+  /** La première lecture des murs n'a pas répondu : le rail réserve sa place ([[D-447]] §6). */
+  gardeEnLecture: boolean;
   bilanConsultable: boolean;
   etats: EtatsSondes;
 };
@@ -92,6 +94,7 @@ export function FournisseurMenuPortail({ sessionOuverte, children }: { sessionOu
   const pageDeSession = sessionOuverte && segment !== null;
 
   const [lecture, setLecture] = useState<LectureMurs | null>(null);
+  const [lectureRendue, setLectureRendue] = useState(false);
   // Relue au changement de page tant que les murs ne sont pas franchis ; une
   // fois franchis, la lecture vaut pour la visite.
   const cleLecture = lecture?.mursFranchis ? token : `${token}|${pathname}`;
@@ -100,10 +103,16 @@ export function FournisseurMenuPortail({ sessionOuverte, children }: { sessionOu
     let vivant = true;
     lireMurs()
       .then(resultat => {
-        if (vivant) setLecture(resultat);
+        if (vivant) {
+          setLecture(resultat);
+          setLectureRendue(true);
+        }
       })
       .catch(() => {
-        if (vivant) setLecture(null);
+        if (vivant) {
+          setLecture(null);
+          setLectureRendue(true);
+        }
       });
     return () => {
       vivant = false;
@@ -126,6 +135,7 @@ export function FournisseurMenuPortail({ sessionOuverte, children }: { sessionOu
     segment,
     mursFranchis,
     actif,
+    gardeEnLecture: pageDeSession && !lectureRendue,
     bilanConsultable: lecture?.bilanConsultable === true,
     etats,
   };

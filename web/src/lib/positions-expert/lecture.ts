@@ -16,7 +16,7 @@ import {
   type EtatVersion,
 } from './etat';
 import { contexteDuDepot, type ContexteEcriture } from './ecriture';
-import { claimsDuConflit, conflitPublie, fichesCurees } from './registreConflits';
+import { claimsDuConflit, conflitPublie, empreinteEntreeConflit, fichesCurees } from './registreConflits';
 import { contenuAdmis, type CauseARelire, type ContenuPosition } from './vocabulaire';
 
 export type ActeLuSerialise = { ordre: string; acte: string; auteur: string; motif: string | null; le: string };
@@ -78,7 +78,14 @@ export type CoupleLu = {
   historique: ArbitrageLu[];
 };
 
-export type ConflitLu = { id: string; objet: string; claims: [string, string]; fichesCurees: string[] };
+export type ConflitLu = {
+  id: string;
+  objet: string;
+  claims: [string, string];
+  fichesCurees: string[];
+  /** L'empreinte de l'entrée affichée, que l'écran renvoie avec une pose. */
+  empreinte: string;
+};
 
 export type AtelierPositions = {
   positions: PositionLue[];
@@ -217,7 +224,13 @@ export async function lireAtelierPositions(ctx: ContexteEcriture = contexteDuDep
 
   const conflits: ConflitLu[] = ctx.registre
     .filter(c => conflitPublie(c.id, ctx.registre) !== null)
-    .map(c => ({ id: c.id, objet: c.objet, claims: [...claimsDuConflit(c)] as [string, string], fichesCurees: [...fichesCurees(c)] }));
+    .map(c => ({
+      id: c.id,
+      objet: c.objet,
+      claims: [...claimsDuConflit(c)] as [string, string],
+      fichesCurees: [...fichesCurees(c)],
+      empreinte: empreinteEntreeConflit(c),
+    }));
 
   return {
     positions,

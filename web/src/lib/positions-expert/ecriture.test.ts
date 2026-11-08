@@ -105,41 +105,30 @@ describe('verser une version', () => {
     expect(tx.positionExpertVersion.create.mock.calls[0][0].data.idVersionRevisee).toBe('courante1');
   });
 
-  it('question 3 : une fiche fondée par une autre position non retirée (brouillon ou signée) est refusée', async () => {
+  // Option (a) du 2026-11-06 : seule une position SIGNÉE occupe sa fiche, et
+  // le contrôle se fait à la signature. Un brouillon se verse même sur une
+  // fiche déjà fondée — c'est sa signature qui sera refusée.
+  it('question 3 n’est plus jouée au versement : brouillon admis sur une fiche fondée par une position signée', async () => {
     tx.positionExpertVersion.findFirst.mockResolvedValue(null);
-    tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes: [] }]);
-    expect(await verserVersion(demande, ctx())).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
     tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes: [{ ordre: BigInt(1), acte: 'signee' }] }]);
-    expect(await verserVersion(demande, ctx())).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
-    // Retirée : la fiche est libre.
-    tx.positionExpertVersion.findMany.mockResolvedValue([
-      { positionId: 'WN-PE-0002', actes: [{ ordre: BigInt(1), acte: 'signee' }, { ordre: BigInt(2), acte: 'retiree' }] },
-    ]);
     tx.positionExpertVersion.create.mockResolvedValue({ id: 'v1', positionId: 'WN-PE-0001', version: 'v1.0' });
     expect((await verserVersion(demande, ctx())).issue).toBe('ecrite');
-    // Elle cherche les AUTRES positions, versions courantes seulement.
-    expect(tx.positionExpertVersion.findMany.mock.calls[0][0].where).toEqual({
-      ficheId: 'FU_BANC_A',
-      positionId: { not: 'WN-PE-0001' },
-      revisePar: { is: null },
-    });
+    expect(tx.positionExpertVersion.findMany).not.toHaveBeenCalled();
   });
 
-  it('sans fiche : ni verrou de fiche, ni question 3', async () => {
+  it('sans fiche : pas de verrou de fiche', async () => {
     tx.positionExpertVersion.findFirst.mockResolvedValue(null);
     tx.positionExpertVersion.create.mockResolvedValue({ id: 'v1', positionId: 'WN-PE-0001', version: 'v1.0' });
     await verserVersion({ ...demande, ficheId: null }, ctx());
     expect(verrous()).toEqual(['pe|WN-PE-0001']);
-    expect(tx.positionExpertVersion.findMany).not.toHaveBeenCalled();
   });
 
-  it('une révision qui change de fiche verrouille et contrôle la fiche NEUVE', async () => {
+  it('une révision qui change de fiche verrouille la fiche NEUVE, et se verse', async () => {
     tx.positionExpertVersion.findFirst.mockResolvedValue({ id: 'courante1', version: 'v1.0', dossier: 'fer', ficheId: 'FU_BANC_A' });
-    tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes: [] }]);
+    tx.positionExpertVersion.create.mockResolvedValue({ id: 'v2', positionId: 'WN-PE-0001', version: 'v1.1' });
     const issue = await verserVersion({ ...demande, version: 'v1.1', ficheId: 'FU_BANC_B', idVersionCouranteVue: 'courante1' }, ctx());
-    expect(issue).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
+    expect(issue.issue).toBe('ecrite');
     expect(verrous()).toEqual(['fu|FU_BANC_B', 'pe|WN-PE-0001']);
-    expect(tx.positionExpertVersion.findMany.mock.calls[0][0].where.ficheId).toBe('FU_BANC_B');
   });
 });
 
@@ -208,8 +197,33 @@ describe('signer ou retirer — les actes alternent (question 1)', () => {
     expect(await poserActePosition(demande, ctx())).toEqual({ issue: 'refusee', raison: 'appui_non_frais', claims: [A] });
     frais = new Set([A]);
     version([{ ordre: BigInt(3), acte: 'signee' }, { ordre: BigInt(4), acte: 'retiree' }]);
-    tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes: [] }]);
+    tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes: [{ ordre: BigInt(1), acte: 'signee' }] }]);
     expect(await poserActePosition({ ...demande, dernierActeVu: '4' }, ctx())).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
+    // Elle cherche les AUTRES positions, versions courantes seulement.
+    expect(tx.positionExpertVersion.findMany.mock.calls[0][0].where).toEqual({
+      ficheId: 'FU_BANC_A',
+      positionId: { not: 'WN-PE-0001' },
+      revisePar: { is: null },
+    });
+  });
+
+  it('question 3, option (a) : seule une autre position SIGNÉE (ou illisible) occupe la fiche', async () => {
+    version([]);
+    const autre = (actes: { ordre: bigint; acte: string }[]) =>
+      tx.positionExpertVersion.findMany.mockResolvedValue([{ positionId: 'WN-PE-0002', actes }]);
+    // Un brouillon n'occupe rien : la signature passe.
+    autre([]);
+    expect((await poserActePosition(demande, ctx())).issue).toBe('ecrite');
+    // Retirée : la fiche est libre.
+    autre([{ ordre: BigInt(1), acte: 'signee' }, { ordre: BigInt(2), acte: 'retiree' }]);
+    expect((await poserActePosition(demande, ctx())).issue).toBe('ecrite');
+    // État illisible : on ne décide rien, la fiche reste tenue.
+    autre([{ ordre: BigInt(1), acte: 'inconnu' }]);
+    expect(await poserActePosition(demande, ctx())).toEqual({ issue: 'refusee', raison: 'fiche_deja_fondee' });
+    // Retirer ne joue pas la question 3 (coupe-circuit).
+    autre([{ ordre: BigInt(1), acte: 'signee' }]);
+    version([{ ordre: BigInt(3), acte: 'signee' }]);
+    expect((await poserActePosition({ ...demande, acte: 'retiree', motif: 'm', dernierActeVu: '3' }, ctx())).issue).toBe('ecrite');
   });
 });
 
@@ -218,6 +232,7 @@ describe('poser un arbitrage', () => {
     conflitId: 'CS-BANC-01',
     ficheId: 'FU_BANC_A',
     teteVue: null,
+    entreeVue: empreinteEntreeConflit(ENTREE),
     retenu: { claim: A } as { claim: string } | { idPositionVersion: string },
     motif: 'motif',
     auteur: 'responsable@exemple.fr',
@@ -238,10 +253,14 @@ describe('poser un arbitrage', () => {
     for (const entree of publiees) {
       // Refus qui vient APRÈS la signature, la structure et la liste, et avant
       // toute base : l'atteindre prouve que l'entrée est signée telle quelle.
-      const issue = await poserArbitrage({ ...demande, conflitId: entree.id, ficheId: entree.fichesUsage[0] }, depot);
+      const issue = await poserArbitrage(
+        { ...demande, conflitId: entree.id, ficheId: entree.fichesUsage[0], entreeVue: empreinteEntreeConflit(entree) },
+        depot,
+      );
       expect(issue, entree.id).toEqual({ issue: 'refusee', raison: 'claim_hors_conflit' });
     }
-    expect(await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1' }, depot))
+    const bio = publiees.find(c => c.id === 'CS-BIO-01')!;
+    expect(await poserArbitrage({ ...demande, conflitId: 'CS-BIO-01', ficheId: 'FU_FER_P1', entreeVue: empreinteEntreeConflit(bio) }, depot))
       .toEqual({ issue: 'refusee', raison: 'fiche_hors_liste' });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
@@ -252,6 +271,19 @@ describe('poser un arbitrage', () => {
     const retouchee = { ...ctx(), empreintesSignees: { [ENTREE.id]: 'a'.repeat(64) } };
     expect(await poserArbitrage(demande, retouchee)).toEqual({ issue: 'refusee', raison: 'registre_non_signe' });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  // Renvoi CodeRabbit de #1908 : après une re-signature, un écran resté ouvert
+  // n'atteste pas l'entrée neuve qu'il n'a pas montrée.
+  it('l’entrée affichée n’est plus l’entrée signée du jour : rien n’est écrit', async () => {
+    const resignee = { ...ENTREE, objet: 'Objet re-signé ?' } as ConflitSourcesDeclare;
+    const ctxResigne = { ...ctx(), registre: [resignee], empreintesSignees: { [ENTREE.id]: empreinteEntreeConflit(resignee) } };
+    // L'écran a affiché l'ancienne entrée (`demande.entreeVue`).
+    expect(await poserArbitrage(demande, ctxResigne)).toEqual({ issue: 'refusee', raison: 'entree_divergente' });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    // Rechargé, il affiche la neuve : la pose passe et atteste celle-là.
+    expect((await poserArbitrage({ ...demande, entreeVue: empreinteEntreeConflit(resignee) }, ctxResigne)).issue).toBe('ecrite');
+    expect(tx.arbitrageConflitSource.create.mock.calls[0][0].data.conflitSha256).toBe(empreinteEntreeConflit(resignee));
   });
 
   it('conflit inconnu mais bien formé ; structure non signée ; fiche hors structure ; fiche hors liste', async () => {

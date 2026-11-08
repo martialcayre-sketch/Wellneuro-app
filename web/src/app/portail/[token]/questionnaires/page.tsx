@@ -22,7 +22,7 @@ import {
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { AccueilConditions } from '@/components/patient/trust/ConditionsUtilisation';
-import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/DateNaissanceEcran';
+import { DateNaissanceEcran, EcranCircuitMineur, EncartUrgenceMineur } from '@/components/patient/DateNaissanceEcran';
 import type { StatutAge } from '@/lib/patient/gardeAge';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { NavAutresEspaces } from '@/components/patient/autres-espaces/NavAutresEspaces';
@@ -43,6 +43,9 @@ export default function QuestionnairesHubPage() {
   // inconnu traité comme mineur). `false` tant que la route n'a pas répondu
   // `majeur` : un mineur clos, servi « majeur » plus bas, garde la frise d'avant.
   const [ageMajeur, setAgeMajeur] = useState(false);
+  // Le mineur au dossier clos, servi « majeur » plus bas, garde l'encart d'urgence
+  // ([[D-341]] §5, amendement du 2026-11-07).
+  const [mineurClos, setMineurClos] = useState(false);
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
@@ -268,6 +271,7 @@ export default function QuestionnairesHubPage() {
       const statutServi = data.dossierOuvert === false ? 'majeur' : (data.statutAge ?? 'majeur');
       setStatut(statutServi);
       setAgeMajeur(data.statutAge === 'majeur');
+      setMineurClos(data.dossierOuvert === false && data.statutAge === 'mineur');
       const enPause = statutServi !== 'majeur';
       setRecueilsEnPause(enPause || data.dossierOuvert === false);
       setAssignations(enPause ? [] : data.assignations);
@@ -450,6 +454,7 @@ export default function QuestionnairesHubPage() {
       )}
 
       {statut === 'mineur' && <EcranCircuitMineur />}
+      {mineurClos && <EncartUrgenceMineur />}
 
       {/* Ancre de la frise navigable quand la liste des questionnaires n'est
           pas rendue ([[D-423]] §8). */}

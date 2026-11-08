@@ -161,6 +161,32 @@ describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
     expect(enDefaut(mutee)).toEqual([cible.id]);
   });
 
+  it('niveau de mesure (D-457 §3) : une fiche sans analyte n’est jamais une mesure standard', () => {
+    // La règle nouvelle de D-457 §3, retenue à la déclaration du responsable :
+    // une fiche qui ne porte aucun code d'analyte sert le guide, pas une carte
+    // de résultat. Elle n'est pas dans `incoherencesDeStructure` ; ce banc la
+    // tient sur la structure signée (revue wn-reviewer de #1920, P2-1, routé
+    // à D-461).
+    const enDefaut = (structure: StructureFichesUsage) =>
+      structure.fiches
+        .filter(f => f.niveauMesure === 'mesure_standard' && f.codesAnalyte.length === 0)
+        .map(f => f.id);
+    const sansAnalyte = FICHES_USAGE_BESOIN2_V1.fiches.filter(f => f.codesAnalyte.length === 0);
+    // Anti-vacuité : les sept fiches sans analyte des polyphénols et
+    // antioxydants (D-457 §3) au moins.
+    expect(sansAnalyte.length).toBeGreaterThanOrEqual(7);
+    expect(enDefaut(FICHES_USAGE_BESOIN2_V1)).toEqual([]);
+    // Mutation : une seule de ces fiches passée en mesure standard rougit.
+    const cible = sansAnalyte[0];
+    const mutee: StructureFichesUsage = {
+      ...FICHES_USAGE_BESOIN2_V1,
+      fiches: FICHES_USAGE_BESOIN2_V1.fiches.map(f =>
+        f.id === cible.id ? { ...f, niveauMesure: 'mesure_standard' } : f,
+      ),
+    };
+    expect(enDefaut(mutee)).toEqual([cible.id]);
+  });
+
   it.each([
     ['format', { id: 'fu_minuscule' }, 'fu_minuscule:format'],
     ['question non déclarée', { question: 'QC_AUTRE' }, 'FU_SYNTH:question'],

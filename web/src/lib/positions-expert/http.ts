@@ -62,8 +62,8 @@ export const MESSAGES_REFUS: Record<string, { message: string; status: number }>
   etat_divergent: { message: 'L’état a changé depuis l’affichage — rechargez l’atelier.', status: 409 },
   version_ne_suit_pas: { message: 'Le numéro de version doit suivre strictement celui de la version courante.', status: 422 },
   dossier_different: { message: 'Une révision reste dans le dossier de preuve de la position.', status: 422 },
-  fiche_deja_fondee: { message: 'Cette fiche est déjà fondée par une autre position non retirée.', status: 409 },
   // Actes
+  fiche_deja_fondee: { message: 'Cette fiche est déjà fondée par une autre position en vigueur : retirez-la ou révisez-la avant de signer celle-ci.', status: 409 },
   relecture_requise: { message: 'Signer exige de déclarer la relecture intégrale de la position.', status: 422 },
   motif_requis: { message: 'Un motif est requis.', status: 422 },
   introuvable: { message: 'Version introuvable.', status: 404 },
@@ -77,6 +77,7 @@ export const MESSAGES_REFUS: Record<string, { message: string; status: number }>
   // Arbitrages
   conflit_inconnu: { message: 'Ce conflit n’est pas publié au registre signé.', status: 404 },
   registre_non_signe: { message: 'Cette entrée du registre des conflits n’est pas signée telle quelle : aucun arbitrage avant sa signature.', status: 409 },
+  entree_divergente: { message: 'Ce conflit a été re-signé depuis l’affichage : l’entrée n’est plus celle que vous avez lue — rechargez l’atelier.', status: 409 },
   structure_non_signee: { message: 'La structure des fiches d’usage n’est pas signée : aucun arbitrage avant elle.', status: 409 },
   fiche_hors_liste: { message: 'Cette fiche n’est pas dans la liste curée du conflit.', status: 422 },
   claim_hors_conflit: { message: 'Le claim retenu n’est pas l’un des deux claims du conflit.', status: 422 },
