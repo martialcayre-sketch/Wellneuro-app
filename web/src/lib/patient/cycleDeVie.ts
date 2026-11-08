@@ -76,6 +76,15 @@ export const MESSAGE_DOSSIER_CLOS =
 export const RAISON_DOSSIER_CLOS = 'dossier_cloture';
 
 /**
+ * Le refus de créer une synthèse sur un dossier clos, texte validé mot pour mot
+ * par le responsable le 2026-11-08 (t63, arbitrage d61). Il nomme le geste : le
+ * praticien vient de cliquer sur « Générer » ou de créer un brouillon, et
+ * `MESSAGE_DOSSIER_CLOS` ne lui parlerait que de questionnaires et d'envois.
+ */
+export const MESSAGE_DOSSIER_CLOS_SYNTHESE =
+  'Le suivi de ce dossier est clôturé : aucune synthèse ne peut être générée ni rédigée. Rouvrez le suivi pour reprendre.';
+
+/**
  * Le refus opposé au PATIENT qui veut répondre sur un dossier clos —
  * arbitrage du responsable du 2026-11-04, option A. `MESSAGE_DOSSIER_CLOS`
  * s'adresse au praticien (« Rouvrez le suivi ») et ne se montre pas au portail.

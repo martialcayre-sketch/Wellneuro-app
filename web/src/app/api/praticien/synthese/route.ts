@@ -31,10 +31,34 @@ import {
   logErreurGeneration,
   auditErreurGeneration
 } from '@/lib/synthese/generation';
+import {
+  MESSAGE_DOSSIER_CLOS_SYNTHESE,
+  RAISON_DOSSIER_CLOS,
+  accepteNouvelEnvoi,
+  refusDossierFerme,
+  type EtatDossier
+} from '@/lib/patient/cycleDeVie';
 const MESSAGE_ERREUR_GENERATION = 'Erreur lors de la génération de la synthèse. Réessayez.';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/synthese';
+
+// CRÉER UNE SYNTHÈSE SUR UN DOSSIER FERMÉ SE REFUSE (t63, arbitrage d61 du
+// responsable du 2026-11-06, étendu au dossier désactivé le 2026-11-08) : POST
+// et PUT seulement. Chaque état garde son message. PATCH reste ouvert sur ses
+// cinq actions (arbitrage du 2026-11-08), y compris vider puis réécrire une
+// synthèse jamais remise : il ne crée pas de ligne, et la remise reste fermée,
+// le livret et l'impression refusant un dossier clos ou désactivé.
+function refusCreationSynthese(patient: EtatDossier): NextResponse {
+  const refus = refusDossierFerme(patient);
+  return NextResponse.json(
+    {
+      error: refus.raison === RAISON_DOSSIER_CLOS ? MESSAGE_DOSSIER_CLOS_SYNTHESE : refus.message,
+      reason: refus.raison,
+    },
+    { status: 409 },
+  );
+}
 
 // GET /api/praticien/synthese?idPatient=PAT001
 // Liste des synthèses d'un patient
@@ -172,6 +196,10 @@ export async function POST(req: Request) {
     if (!patient) {
       return withCorrelationHeader(NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 }), requestContext);
     }
+    // Avant l'assemblage de la matière : rien ne part au modèle.
+    if (!accepteNouvelEnvoi(patient)) {
+      return withCorrelationHeader(refusCreationSynthese(patient), requestContext);
+    }
 
     // LA MATIÈRE EST ASSEMBLÉE PAR LE MODULE, pas ici (`lib/synthese/generation`).
     // La route garde ce qui lui appartient : la session, l'appartenance —
@@ -204,7 +232,7 @@ export async function POST(req: Request) {
     // Transport SSE (Scalingo) : un octet précoce passe le seuil « premier
     // octet » de 30 s du routeur, les heartbeats tiennent la fenêtre 59 s, puis
     // un événement terminal `done`/`error`. Toutes les gardes qui rendent un
-    // code d'erreur (401/404/422/503) sont AU-DESSUS, avant l'ouverture du flux :
+    // code d'erreur (401/404/409/422/503) sont AU-DESSUS, avant l'ouverture du flux :
     // une fois les en-têtes partis, le statut est figé à 200 et toute erreur
     // passe in-band par `event: error`.
     const encoder = new TextEncoder();
@@ -303,6 +331,9 @@ export async function PUT(req: Request) {
     });
     if (!patient) {
       return withCorrelationHeader(NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 }), requestContext);
+    }
+    if (!accepteNouvelEnvoi(patient)) {
+      return withCorrelationHeader(refusCreationSynthese(patient), requestContext);
     }
 
     const idSynthese = createPublicId('SYN');

@@ -77,7 +77,7 @@ beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   delete process.env.WN_SYNTHESE_STREAM;
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com' });
+  prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com', actif: true, suiviClotureLe: null });
   prisma.questionnaireReponse.findMany.mockResolvedValue([
     // `idQuestionnaire` fait partie de la charge utile depuis le 2026-07-27 :
     // la consigne système désigne les questionnaires alimentaires par leur
@@ -126,6 +126,63 @@ describe('POST /api/praticien/synthese — gardes (indépendantes du transport)'
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     const res = await POST(req(CORPS));
     expect(res.status).toBe(422);
+  });
+});
+
+describe('POST /api/praticien/synthese — dossier fermé (t63, arbitrage d61)', () => {
+  const OUVERT = { idPatient: 'PAT_SEED_01', email: 'pat@example.com', actif: true, suiviClotureLe: null };
+  const CLOS = { ...OUVERT, suiviClotureLe: new Date('2026-11-01T00:00:00Z') };
+  const TEXTE_CLOS =
+    'Le suivi de ce dossier est clôturé : aucune synthèse ne peut être générée ni rédigée. Rouvrez le suivi pour reprendre.';
+  const TEXTE_DESACTIVE =
+    'Ce dossier est désactivé : rien de nouveau ne peut y être enregistré. Réactivez le dossier pour reprendre.';
+
+  function rienNEstParti() {
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(anthropicCreate).not.toHaveBeenCalled();
+    expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
+    expect(prisma.auditSynthese.create).not.toHaveBeenCalled();
+  }
+
+  it('dossier clos : 409 au texte validé, rien ne part au modèle ni en base', async () => {
+    prisma.patient.findFirst.mockResolvedValue(CLOS);
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: TEXTE_CLOS, reason: 'dossier_cloture' });
+    rienNEstParti();
+  });
+
+  it('dossier clos, transport SSE : le même 409 en JSON, aucun flux ouvert', async () => {
+    process.env.WN_SYNTHESE_STREAM = 'true';
+    prisma.patient.findFirst.mockResolvedValue(CLOS);
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(409);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    expect(await res.json()).toEqual({ error: TEXTE_CLOS, reason: 'dossier_cloture' });
+    rienNEstParti();
+  });
+
+  it('dossier désactivé non clos : 409 à son propre message, avant tout envoi au modèle', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...OUVERT, actif: false });
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: TEXTE_DESACTIVE, reason: 'dossier_desactive' });
+    rienNEstParti();
+  });
+
+  it('dossier clos puis désactivé : la clôture prime', async () => {
+    prisma.patient.findFirst.mockResolvedValue({ ...CLOS, actif: false });
+    const res = await POST(req(CORPS));
+    expect(await res.json()).toEqual({ error: TEXTE_CLOS, reason: 'dossier_cloture' });
+    rienNEstParti();
+  });
+
+  it('dossier ouvert ou suivi rouvert : la génération se maintient', async () => {
+    prisma.patient.findFirst.mockResolvedValue(OUVERT);
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(200);
+    expect(anthropicCreate).toHaveBeenCalledOnce();
+    expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
   });
 });
 

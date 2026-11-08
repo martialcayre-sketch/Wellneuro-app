@@ -97,6 +97,49 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('SynthesePanel — le refus de la route sur un dossier fermé (t63)', () => {
+  const TEXTE_CLOS =
+    'Le suivi de ce dossier est clôturé : aucune synthèse ne peut être générée ni rédigée. Rouvrez le suivi pour reprendre.';
+
+  function stubRefus(methode: 'POST' | 'PUT') {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entree: unknown, init?: RequestInit) => {
+        const url = String(entree);
+        if (url.includes('/api/praticien/patients-pg')) {
+          return { ok: true, status: 200, json: async () => ({ patients: PATIENTS }) } as unknown as Response;
+        }
+        if (url.includes('/api/praticien/synthese') && init?.method === methode) {
+          return {
+            ok: false,
+            status: 409,
+            json: async () => ({ error: TEXTE_CLOS, reason: 'dossier_cloture' }),
+          } as unknown as Response;
+        }
+        return { ok: true, status: 200, json: async () => ({ syntheses: [] }) } as unknown as Response;
+      }),
+    );
+  }
+
+  it('affiche le texte de la route quand la génération est refusée', async () => {
+    stubRefus('POST');
+    const { container } = render(<SynthesePanel initialPatientId="PAT_URL" />);
+    const ecran = within(container);
+    fireEvent.click(await ecran.findByRole('button', { name: /Générer une synthèse IA/ }));
+    expect(await ecran.findByText(TEXTE_CLOS)).toBeTruthy();
+  });
+
+  it('affiche le texte de la route et garde le brouillon ouvert quand la création est refusée', async () => {
+    stubRefus('PUT');
+    const { container } = render(<SynthesePanel initialPatientId="PAT_URL" />);
+    const ecran = within(container);
+    fireEvent.click(await ecran.findByRole('button', { name: /Rédiger une synthèse/ }));
+    fireEvent.click(await ecran.findByRole('button', { name: /Créer le brouillon/ }));
+    await waitFor(() => expect(ecran.getAllByText(TEXTE_CLOS).length).toBeGreaterThan(0));
+    expect(ecran.getByRole('button', { name: /Créer le brouillon/ })).toBeTruthy();
+  });
+});
+
 describe('SynthesePanel — le dossier de l’URL n’enferme pas le sélecteur', () => {
   it('applique le dossier de l’URL à l’arrivée', async () => {
     const { appels } = stubFetch();
