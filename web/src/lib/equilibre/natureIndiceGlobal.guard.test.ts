@@ -6,7 +6,7 @@ import {
   MENTION_NATURE_INDICE_GLOBAL,
   TENDANCE_INDICE_GLOBAL_PATIENT,
 } from './natureIndiceGlobal';
-import { MENTION_POIDS_NON_MOTIVE } from '../praticien/mentionStabiliteMetabolique';
+import { MENTION_POIDS_EGAL_MOTIVE } from '../praticien/mentionStabiliteMetabolique';
 
 // LOT-07 « Doctrine exécutable » — [[D-106]], `DC-22`.
 //
@@ -358,9 +358,9 @@ describe('nature du total — les surfaces qui le nomment sans le nommer', () =>
 // Stabilité métabolique, réserve d'adaptation et clarté sont calculées par
 // Wellneuro ; aucune n'est la cotation publiée d'un instrument. Elles reçoivent
 // donc la mention de l'indice global (§2 règle 3 ; arbitrage du 2026-10-23,
-// « repère de suivi » pour les trois). La stabilité porte en plus la tolérance
-// du §3 — « Non motivé, décision due » et ses sources nommées — jusqu'à la
-// levée de la porte 4 : la retirer avant fait rougir ce banc, et c'est voulu.
+// « repère de suivi » pour les trois). La stabilité porte en plus le motif de
+// son poids égal — libellé de [[D-463]] §3, validé mot pour mot — et ses
+// sources nommées : les retirer fait rougir ce banc, et c'est voulu.
 const OBJETS_REPERES = ['stabiliteMetabolique', 'reserveAdaptation', 'clarte'] as const;
 
 describe('nature des trois objets — le chiffre ne s’affiche jamais sans ce qu’il est', () => {
@@ -383,13 +383,13 @@ describe('nature des trois objets — le chiffre ne s’affiche jamais sans ce q
     expect(fautifs).toEqual([]);
   });
 
-  it('la stabilité porte la tolérance du §3 : poids non motivé, sources nommées', () => {
+  it('la stabilité porte le motif de son poids égal (D-463) et ses sources nommées', () => {
     for (const { element } of elementsDe('stabiliteMetabolique')) {
       const rendu = sansCommentaires(element);
-      expect(rendu).toContain('MENTION_POIDS_NON_MOTIVE');
+      expect(rendu).toContain('MENTION_POIDS_EGAL_MOTIVE');
       expect(rendu).toMatch(/mentionSourcesStabilite\(/);
     }
-    expect(MENTION_POIDS_NON_MOTIVE).toBe('Non motivé, décision due');
+    expect(MENTION_POIDS_EGAL_MOTIVE).toBe('Poids égal : motif déclaré, sans source (D-463)');
   });
 });
 

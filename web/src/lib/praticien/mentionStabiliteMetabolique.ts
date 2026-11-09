@@ -1,21 +1,22 @@
-// LA TOLÉRANCE NOMMÉE DE LA STABILITÉ MÉTABOLIQUE — [[D-333]] §3, J1-cockpit-a.
+// LE POIDS ÉGAL DE LA STABILITÉ MÉTABOLIQUE — [[D-333]] §3, J1-cockpit-a ;
+// motivé par [[D-463]].
 //
 // La stabilité métabolique est la moyenne simple des sources présentes parmi
-// Q_INF_01 et Q_INF_02 (`lib/equilibre/objetsCliniques.ts`). Aucune décision ne
-// motive ce poids égal (`DC-21`) : le responsable la motivera de sa main, avec
-// source (porte 4). D'ici là, et seulement d'ici là, le cockpit affiche le
-// chiffre avec « Non motivé, décision due », et nomme la source présente et
-// celle qui manque — jamais « deux instruments » quand une seule est là.
-//
-// La mention se retire à la levée de la porte 4, pas avant.
+// Q_INF_01 et Q_INF_02 (`lib/equilibre/objetsCliniques.ts`). Le responsable a
+// motivé ce poids égal (`DC-21`) par le motif de [[D-403]] §1, déclaré sans
+// source ([[D-463]] §1) : la tolérance « Non motivé, décision due » de D-333
+// §3 a pris fin ([[D-463]] §3). Le cockpit affiche le chiffre avec le libellé
+// validé mot pour mot, et nomme toujours la source présente et celle qui
+// manque — jamais « deux instruments » quand une seule est là.
 //
 // CE MODULE N'IMPORTE RIEN, et c'est une propriété : `FichePatientPanel.tsx`
 // est `'use client'`. Importer la liste des sources depuis `objetsCliniques.ts`
 // tirerait le moteur de score dans le bundle client ; la route envoie donc la
 // présence par source, et ce module ne fait que nommer.
 
-/** Servie à côté de la valeur, tant que le poids égal n'est pas motivé. */
-export const MENTION_POIDS_NON_MOTIVE = 'Non motivé, décision due';
+/** Servie à côté de la valeur : la nature du motif du poids égal, libellé
+ *  validé mot pour mot par le responsable ([[D-463]] §3). */
+export const MENTION_POIDS_EGAL_MOTIVE = 'Poids égal : motif déclaré, sans source (D-463)';
 
 /** Champ absent de la réponse (ancien conteneur pendant un déploiement) :
  *  une liste inconnue ne se présente jamais comme une liste vide. */
