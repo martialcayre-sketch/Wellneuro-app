@@ -288,6 +288,7 @@ describe('textes validés figés (D-455 §6)', () => {
             "La convergence relève la priorité de l’exploration ; elle ne rend aucun constat plus certain.",
             "Seuls les auto-questionnaires et l’anamnèse sont lus : une famille de mesure non recueillie n’est ni concordante ni rassurante.",
             "Une lecture rassurante d’un autre instrument du besoin n’est pas confrontée ici : seule une règle de discordance signée le ferait.",
+            "Les règles citées comme « déclenchées » satisfont leur critère de déclenchement sur les données retenues. Leurs recommandations peuvent toutefois être affichées comme éteintes, rangées parmi les explorations écartées ou absentes parce que les questionnaires concernés sont déjà renseignés.",
           ],
         }
       `);
@@ -307,6 +308,7 @@ describe('textes validés figés (D-455 §6)', () => {
             "La convergence relève la priorité de l’exploration ; elle ne rend aucun constat plus certain.",
             "Seuls les auto-questionnaires et l’anamnèse sont lus : une famille de mesure non recueillie n’est ni concordante ni rassurante.",
             "Une lecture rassurante d’un autre instrument du besoin n’est pas confrontée ici : seule une règle de discordance signée le ferait.",
+            "Les règles citées comme « déclenchées » satisfont leur critère de déclenchement sur les données retenues. Leurs recommandations peuvent toutefois être affichées comme éteintes, rangées parmi les explorations écartées ou absentes parce que les questionnaires concernés sont déjà renseignés.",
             "Visible sans compter : plainte « fatigue » actuelle (Q_MOD_03 (fatigue) : score 8 >= 7, le 05/11/2026) — son intensité ne précise pas le besoin concerné ; motif d’explorer, pas mesure.",
             "Visible sans compter : attente « Améliorer le sommeil », objectif de consultation — elle dit ce que la personne souhaite, sans observation supplémentaire.",
           ],

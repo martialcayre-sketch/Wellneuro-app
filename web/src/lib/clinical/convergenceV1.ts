@@ -226,11 +226,16 @@ export const ACTION_CONVERGENCE =
 /**
  * Ce que tout constat de convergence NE dit pas (`DC-24`, `DC-29`,
  * [[D-443]] §1 et §6, [[D-453]] §4).
+ *
+ * La quatrième : [[D-470]], texte validé par le responsable le 2026-11-09
+ * (question `20261107-1748-a`). Le constat cite les règles qui DÉCLENCHENT ; il
+ * ne dit pas ce que le panneau d'orientation montre de leurs recommandations.
  */
 export const LIMITATIONS_CONVERGENCE: readonly string[] = [
   'La convergence relève la priorité de l’exploration ; elle ne rend aucun constat plus certain.',
   'Seuls les auto-questionnaires et l’anamnèse sont lus : une famille de mesure non recueillie n’est ni concordante ni rassurante.',
   'Une lecture rassurante d’un autre instrument du besoin n’est pas confrontée ici : seule une règle de discordance signée le ferait.',
+  'Les règles citées comme « déclenchées » satisfont leur critère de déclenchement sur les données retenues. Leurs recommandations peuvent toutefois être affichées comme éteintes, rangées parmi les explorations écartées ou absentes parce que les questionnaires concernés sont déjà renseignés.',
 ];
 
 /**

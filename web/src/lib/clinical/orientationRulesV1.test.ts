@@ -52,7 +52,9 @@ describe('orientationRulesV1 — verrou v1', () => {
     // 23 claims relus en base le 2026-11-03 — 23/23 VALIDE, actifs, v1.0.
     // RE-SIGNÉE le 2026-11-07 ([[D-455]], H98) : le périmètre porte la table de
     // convergence de `DC-29` ; aucun claim ajouté ni retiré.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-07T00:00:00.000Z');
+    // RE-SIGNÉE le 2026-11-09 ([[D-470]], t67) : quatrième limite commune de
+    // convergence ; aucun claim ajouté ni retiré.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-11-09T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -219,7 +221,10 @@ describe('orientationRulesV1 — verrou v1', () => {
   //   · 2026-09-14 — `2a1f4840…2d95ddbd` (RÈGLES + GRILLES, 365 jours sur les règles)
   //   · 2026-11-04 — `f10102a5…f86311ec7` (D-430, quinze fenêtres de cible)
   //   · 2026-11-04 — `a8630112…a41ebd20` (D-433, dix-neuf fenêtres)
-  const SHA_SIGNE_2026_11_07 = '16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea';
+  //   · 2026-11-07 — `16517749…5af10cea` (D-455, table de convergence, trois limites)
+  // RE-SIGNÉE LE 2026-11-09 ([[D-470]], t67), sur attestation du responsable :
+  // quatrième limite commune de convergence.
+  const SHA_SIGNE_2026_11_09 = 'a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -349,7 +354,7 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_07);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_11_09);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP
