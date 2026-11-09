@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 
 // Écran de consultation en lecture seule (réponses verrouillées) + demande de
 // modification. Composant présentationnel : la navigation « Mon équilibre » est
@@ -100,11 +101,12 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
             Voir Mon équilibre
           </PatientButton>
 
-          {demandeEnvoyee ? (
+          <PatientRegionAccuse visible={demandeEnvoyee}>
             <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
               Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
             </p>
-          ) : (
+          </PatientRegionAccuse>
+          {!demandeEnvoyee && (
             <div className="space-y-2 text-left">
               <label htmlFor={idCommentaire} className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground/70">(facultatif)</span></label>
               <textarea

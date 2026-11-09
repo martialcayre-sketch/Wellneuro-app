@@ -126,6 +126,28 @@ describe('SignalerProbleme — remise à zéro', () => {
     attendreVierge();
   });
 
+  // Le formulaire disparaît, et le bouton qui avait le focus avec lui. Ce message
+  // porte la réponse d'orientation de l'effet indésirable : il doit être entendu.
+  // Le bouton « Faire un autre signalement » reste hors de la région.
+  it('la confirmation s’annonce dans une région déjà présente, et le focus s’y pose — à chaque envoi', async () => {
+    ouvrir({ elementsProgramme: null });
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+
+    remplirEtEnvoyer();
+    const autre = await screen.findByText('Faire un autre signalement');
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region.textContent).toBe('Reçu.');
+    expect(document.activeElement).toBe(region);
+
+    fireEvent.click(autre);
+    expect(region.textContent).toBe('');
+    fireEvent.click(screen.getByText(/Un produit me semble mal toléré/));
+    remplirEtEnvoyer();
+    await screen.findByText('Faire un autre signalement');
+    expect(document.activeElement).toBe(region);
+  });
+
   it('« Annuler » puis réouverture : rien du brouillon abandonné', () => {
     ouvrir({ elementsProgramme: null });
     remplirAssociation();

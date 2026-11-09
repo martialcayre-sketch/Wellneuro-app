@@ -6,6 +6,7 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
 import {
   ecrireBrouillonCeQuiCompte,
@@ -59,12 +60,42 @@ function dateLisible(iso: string): string {
 }
 
 export function CeQuiCompteForm({ idPatient = null }: { idPatient?: string | null } = {}) {
+  const [depose, setDepose] = useState(false);
+
+  // APRÈS LE DÉPÔT, L'ACCUSÉ PREND TOUTE LA PLACE — et il dit maintenant deux
+  // choses : que c'est enregistré, et quand on pourra écrire de nouveau. Il
+  // passe AVANT l'état de fenêtre pour que le remerciement ne soit pas remplacé
+  // dans la seconde par un écran de fermeture : le patient vient d'écrire, il
+  // doit lire qu'il a été entendu, pas qu'une porte se referme.
+  //
+  // Sa région reste ICI, hors du formulaire : chaque état de la fenêtre a son
+  // propre rendu, et elle doit exister avant que l'accusé n'y paraisse.
+  return (
+    <div>
+      <PatientRegionAccuse visible={depose}>
+        <PatientCard className="space-y-5">
+          <PatientPageHeader
+            title="Ce qui compte pour moi aujourd’hui"
+            subtitle="C’est conservé tel quel. Personne ne le note ni ne le résume."
+          />
+          <PatientInlineMessage tone="success">C’est enregistré. Merci de l’avoir écrit.</PatientInlineMessage>
+          <p className="text-sm text-muted-foreground">
+            Vous pourrez en écrire un nouveau à la prochaine étape de votre suivi. D’ici là, si quelque chose change et
+            que cela vous semble important, dites-le à votre praticien lors de votre prochain échange.
+          </p>
+        </PatientCard>
+      </PatientRegionAccuse>
+      {!depose && <FormulaireCeQuiCompte idPatient={idPatient} onDepose={() => setDepose(true)} />}
+    </div>
+  );
+}
+
+function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | null; onDepose: () => void }) {
   const [texte, setTexte] = useState('');
   const [saisiLe, setSaisiLe] = useState('');
   const [restaure, setRestaure] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [depose, setDepose] = useState(false);
   const [fenetre, setFenetre] = useState<EtatFenetreEcran>({ etat: 'chargement' });
 
   /**
@@ -127,7 +158,6 @@ export function CeQuiCompteForm({ idPatient = null }: { idPatient?: string | nul
   const soumettre = useCallback(async () => {
     setEnvoi(true);
     setErreur('');
-    setDepose(false);
     try {
       const res = await fetch('/api/portail/ce-qui-compte', {
         method: 'POST',
@@ -145,7 +175,7 @@ export function CeQuiCompteForm({ idPatient = null }: { idPatient?: string | nul
         setSaisiLe('');
         effacerBrouillonCeQuiCompte(idPatient);
         setRestaure(false);
-        setDepose(true);
+        onDepose();
       } else {
         // LE CHAMP N'EST PAS VIDÉ SUR ERREUR, et c'est délibéré : la session
         // du portail dure 30 jours (`lib/patient-session.ts`), un 401 peut donc
@@ -158,28 +188,7 @@ export function CeQuiCompteForm({ idPatient = null }: { idPatient?: string | nul
     } finally {
       setEnvoi(false);
     }
-  }, [texte, saisiLe, idPatient]);
-
-  // APRÈS LE DÉPÔT, L'ACCUSÉ PREND TOUTE LA PLACE — et il dit maintenant deux
-  // choses : que c'est enregistré, et quand on pourra écrire de nouveau. Il
-  // passe AVANT l'état de fenêtre pour que le remerciement ne soit pas remplacé
-  // dans la seconde par un écran de fermeture : le patient vient d'écrire, il
-  // doit lire qu'il a été entendu, pas qu'une porte se referme.
-  if (depose) {
-    return (
-      <PatientCard className="space-y-5">
-        <PatientPageHeader
-          title="Ce qui compte pour moi aujourd’hui"
-          subtitle="C’est conservé tel quel. Personne ne le note ni ne le résume."
-        />
-        <PatientInlineMessage tone="success">C’est enregistré. Merci de l’avoir écrit.</PatientInlineMessage>
-        <p className="text-sm text-muted-foreground">
-          Vous pourrez en écrire un nouveau à la prochaine étape de votre suivi. D’ici là, si quelque chose change et
-          que cela vous semble important, dites-le à votre praticien lors de votre prochain échange.
-        </p>
-      </PatientCard>
-    );
-  }
+  }, [texte, saisiLe, idPatient, onDepose]);
 
   // TANT QU'ON NE SAIT PAS, ON N'AFFIRME RIEN — ni le champ, ni la fermeture.
   // Ouvrir le champ puis le retirer une demi-seconde plus tard ferait
