@@ -187,3 +187,22 @@ describe('panneau « Mon espace » (Q62 du 2026-11-08, [[D-460]] §4)', () => {
     expect(classes).not.toContain('left-0');
   });
 });
+
+describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
+  const liensDuRail = () => [...rail().querySelectorAll('a')].map(lien => lien.className.split(' '));
+
+  it('ouvert : chaque lien du rail et du panneau porte `py-1`, y compris l’entrée active', async () => {
+    await rendre(true);
+    expect(rail().querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    for (const classes of liensDuRail()) expect(classes).toContain('py-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    const liens = [...screen.getByRole('dialog').querySelectorAll('a')];
+    expect(liens.length).toBeGreaterThan(0);
+    for (const lien of liens) expect(lien.className.split(' ')).toContain('py-1');
+  });
+
+  it('fermé : aucun `py-1`, comme avant', async () => {
+    await rendre(false);
+    for (const classes of liensDuRail()) expect(classes).not.toContain('py-1');
+  });
+});
