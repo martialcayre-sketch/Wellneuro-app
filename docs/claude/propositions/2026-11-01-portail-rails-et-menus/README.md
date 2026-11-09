@@ -849,6 +849,8 @@ Hors [[D-460]], non instruit : pour la mineure à 1 280 px, la première carte e
 
 **Non constaté** : un mineur ; un dossier clos ; un vrai questionnaire en cours ; la page imprimée ; un appareil à encoche ; un vrai téléphone ou une vraie tablette, la largeur étant émulée.
 
+Ce constat a suivi la pose : sur ces cas, le drapeau est donc servi sans avoir été vu en production. Le mineur a été vu au constat local du 2026-11-08, sans rien de neuf ; [[D-460]] §5 ne demande pas le dossier clos. Aucun constat de suivi n'est programmé : il se fait sur demande du responsable, qui ouvre la session. Une anomalie constatée sur l'un de ces cas lui revient, pour décider du retrait.
+
 ### Dépendances
 - PR #1765 : ouverte, modifie `MobileBottomNav.tsx` (+4 −1) et y ajoute son premier banc (lue avec `gh`, hors de l'arbre lu). Aucun lot patient ne touche `MobileBottomNav`, `SidebarRail` ni `NavBar` : L0 à L3 en sont indépendants si le composant patient est séparé.
 - Plan §8 ligne 2684 et D/30 (ligne 2319, « fait le 2026-11-01 ») : dette à mettre à jour à chaque lot.
