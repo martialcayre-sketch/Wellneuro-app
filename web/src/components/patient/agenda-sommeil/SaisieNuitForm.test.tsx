@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { EMOJI_FORME } from '@/lib/agenda-sommeil/libelles';
+import { CLASSES_SIESTE } from '@/lib/agenda-sommeil/types';
 import { SaisieNuitForm } from './SaisieNuitForm';
 
 // Ce que ces tests protègent : la saisie d'une nuit ne doit ni exiger un clavier
@@ -626,6 +628,80 @@ describe('changement d’écran', () => {
     expect(titre()).toBe('Le matin');
     expect(onSubmit).not.toHaveBeenCalled();
     expect(reste()).toBeNull();
+  });
+});
+
+// Une tuile comme « Très bonne » ou « Stress » ne dit rien seule à un lecteur
+// d'écran : le groupe porte le texte de la question.
+describe('les boutons de réponse sont reliés à leur question', () => {
+  const groupe = (nom: string) => within(screen.getByRole('group', { name: nom }));
+
+  it('chaque question du soir nomme le groupe de ses réponses', () => {
+    rendre();
+    expect(
+      groupe('Une fois couché·e, vous avez essayé de dormir…').getByRole('button', {
+        name: 'Plus tard que mon coucher',
+      }),
+    ).toBeTruthy();
+    // Deux questions à l'écran : une réponse ne tombe que dans le groupe de la sienne.
+    expect(
+      groupe('Une fois couché·e, vous avez essayé de dormir…').queryByRole('button', {
+        name: 'En moins de 15 min',
+      }),
+    ).toBeNull();
+  });
+
+  it('la nuit coupée : les réponses, l’aide et le compteur ont chacun leur groupe', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    clic(/éveillé·e longtemps/i);
+    expect(
+      groupe('Votre nuit a été…').getByRole('button', { name: 'Nuit continue, aucun réveil' }),
+    ).toBeTruthy();
+    expect(
+      groupe('Pour cette nuit, vous avez pris…').getByRole('button', {
+        name: 'Aucune aide pour dormir cette nuit',
+      }),
+    ).toBeTruthy();
+    const compteur = groupe('Combien de fois, à peu près ? (facultatif)');
+    expect(compteur.getByRole('button', { name: 'Un réveil de moins' })).toBeTruthy();
+    expect(compteur.getByRole('button', { name: 'Un réveil de plus' })).toBeTruthy();
+  });
+
+  it('le matin et ses détails : qualité, forme, sieste et facteurs', () => {
+    rendre();
+    soirMinimum();
+    continuer();
+    nuitMinimum();
+    continuer();
+    clic(/ajouter des détails/i);
+    expect(groupe('Cette nuit était…').getByRole('button', { name: 'Très bonne' })).toBeTruthy();
+    expect(groupe('Votre forme au réveil').getAllByRole('button')).toHaveLength(EMOJI_FORME.length);
+    expect(groupe('Sieste la veille').getAllByRole('button')).toHaveLength(CLASSES_SIESTE.length);
+    expect(groupe('La veille au soir').getByRole('button', { name: 'Stress' })).toBeTruthy();
+    expect(groupe('La veille au soir').getByRole('button', { name: 'Rien de particulier' })).toBeTruthy();
+  });
+
+  it('sur les trois écrans, aucune réponse à bascule ne reste hors d’un groupe nommé', () => {
+    const verifierEcran = () => {
+      const reponses = Array.from(document.querySelectorAll('button[aria-pressed]'));
+      expect(reponses.length).toBeGreaterThan(0);
+      for (const reponse of reponses) {
+        const parent = reponse.closest('[role="group"]');
+        const question = parent && document.getElementById(parent.getAttribute('aria-labelledby') ?? '');
+        expect(question?.textContent?.trim()).toBeTruthy();
+      }
+    };
+    rendre();
+    verifierEcran();
+    soirMinimum();
+    continuer();
+    verifierEcran();
+    nuitMinimum();
+    continuer();
+    clic(/ajouter des détails/i);
+    verifierEcran();
   });
 });
 
