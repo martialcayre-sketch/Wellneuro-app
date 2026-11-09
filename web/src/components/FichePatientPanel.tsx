@@ -31,7 +31,7 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
 import { MENTION_NATURE_INDICE_GLOBAL, mentionBesoinsMesures } from '@/lib/equilibre/natureIndiceGlobal';
 import {
-  MENTION_POIDS_NON_MOTIVE,
+  MENTION_POIDS_EGAL_MOTIVE,
   MENTION_SOURCES_INDISPONIBLES,
   mentionSourcesStabilite,
 } from '@/lib/praticien/mentionStabiliteMetabolique';
@@ -170,8 +170,8 @@ function ObjetGauge({
   /** Nature du chiffre, servie sous la jauge quand il n'est pas un score
    *  clinique (`DC-20`). Absente pour les objets qui n'en ont pas besoin. */
   mention?: string;
-  /** Tolérance nommée et bornée d'un objet dont la formule n'est pas encore
-   *  motivée ([[D-333]] §3). Servie sous la mention. */
+  /** Motif déclaré du poids égal d'un objet ([[D-333]] §3, [[D-463]] §3).
+   *  Servi sous la mention. */
   tolerance?: string;
   /** Ce sur quoi le chiffre est établi (« Calculé sur 8 besoins mesurés sur
    *  12 », [[D-329]] §3). Servie sous la mention, seulement si un chiffre
@@ -1540,14 +1540,14 @@ export function FichePatientPanel({
       />
       {/* LES TROIS AUTRES OBJETS SONT DES REPÈRES DE SUIVI ([[D-333]] §2 règle 3,
           §3 ; arbitrage du 2026-10-23) : calculés par Wellneuro, aucun n'est la
-          cotation publiée d'un instrument. La stabilité porte en plus la
-          tolérance du §3 — poids égal non motivé, sources nommées — jusqu'à la
-          levée de la porte 4. */}
+          cotation publiée d'un instrument. La stabilité porte en plus le
+          motif déclaré de son poids égal ([[D-463]] §3) et ses sources
+          nommées. */}
       <ObjetGauge
         label="Stabilité métabolique"
         value={objetsCliniques.stabiliteMetabolique}
         mention={MENTION_NATURE_INDICE_GLOBAL}
-        tolerance={MENTION_POIDS_NON_MOTIVE}
+        tolerance={MENTION_POIDS_EGAL_MOTIVE}
         base={
           objetsCliniques.stabiliteMetaboliqueSources
             ? (mentionSourcesStabilite(objetsCliniques.stabiliteMetaboliqueSources) ?? undefined)

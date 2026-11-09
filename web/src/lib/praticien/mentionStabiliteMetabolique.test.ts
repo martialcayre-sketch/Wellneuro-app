@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MENTION_POIDS_NON_MOTIVE, mentionSourcesStabilite } from './mentionStabiliteMetabolique';
+import { MENTION_POIDS_EGAL_MOTIVE, mentionSourcesStabilite } from './mentionStabiliteMetabolique';
 
 // [[D-333]] §3 : la stabilité nomme les sources présentes et celle qui manque,
 // jamais « deux instruments » quand une seule source est là.
@@ -34,7 +34,7 @@ describe('mentionSourcesStabilite', () => {
 
   it('jamais « deux instruments », ni aucun mot qui juge la valeur', () => {
     for (const [q1, q2] of [[true, true], [true, false], [false, true]] as const) {
-      const texte = `${MENTION_POIDS_NON_MOTIVE} ${mentionSourcesStabilite(sources(q1, q2))}`;
+      const texte = `${MENTION_POIDS_EGAL_MOTIVE} ${mentionSourcesStabilite(sources(q1, q2))}`;
       expect(texte).not.toMatch(/deux instruments/i);
       expect(texte).not.toMatch(/bon|mauvais|faible|élevé|normal|anormal|risque/i);
     }
