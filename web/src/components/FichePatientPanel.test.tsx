@@ -2511,17 +2511,17 @@ describe('FichePatientPanel — stabilité, réserve et clarté disent leur natu
     expect(screen.getAllByText('Repère de suivi, pas un score clinique')).toHaveLength(3);
   });
 
-  it('stabilité non mesurée : ni tolérance ni sources', async () => {
+  it('stabilité non mesurée : ni motif ni sources', async () => {
     await ouvrirTiroir();
-    expect(screen.queryByText('Non motivé, décision due')).toBeNull();
+    expect(screen.queryByText('Poids égal : motif déclaré, sans source (D-463)')).toBeNull();
     expect(screen.queryByText(/Q_INF_0/)).toBeNull();
   });
 
-  it('une source présente : la tolérance, la source présente et celle qui manque', async () => {
+  it('une source présente : le motif, la source présente et celle qui manque', async () => {
     await ouvrirTiroir({ stabilite: 'q1' });
     expect(screen.getByText('75')).toBeTruthy();
     expect(screen.getAllByText('Repère de suivi, pas un score clinique')).toHaveLength(3);
-    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(screen.getByText('Poids égal : motif déclaré, sans source (D-463)')).toBeTruthy();
     expect(
       screen.getByText('Sur Hyperexcitabilité SIIN (Q_INF_01) seule ; manque Magnésium / spasmophilie SIIN (Q_INF_02)'),
     ).toBeTruthy();
@@ -2531,14 +2531,14 @@ describe('FichePatientPanel — stabilité, réserve et clarté disent leur natu
   it('champ des sources absent : dit « Sources indisponibles », jamais une liste vide', async () => {
     await ouvrirTiroir({ stabilite: 'sansChamp' });
     expect(screen.getByText('75')).toBeTruthy();
-    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(screen.getByText('Poids égal : motif déclaré, sans source (D-463)')).toBeTruthy();
     expect(screen.getByText('Sources indisponibles')).toBeTruthy();
   });
 
-  it('deux sources présentes : la tolérance et la moyenne à poids égal nommée', async () => {
+  it('deux sources présentes : le motif et la moyenne à poids égal nommée', async () => {
     await ouvrirTiroir({ stabilite: 'deux' });
     expect(screen.getByText('63')).toBeTruthy();
-    expect(screen.getByText('Non motivé, décision due')).toBeTruthy();
+    expect(screen.getByText('Poids égal : motif déclaré, sans source (D-463)')).toBeTruthy();
     expect(
       screen.getByText(
         'Moyenne à poids égal : Hyperexcitabilité SIIN (Q_INF_01) et Magnésium / spasmophilie SIIN (Q_INF_02)',
