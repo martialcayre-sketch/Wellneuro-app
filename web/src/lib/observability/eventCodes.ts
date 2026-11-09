@@ -164,6 +164,16 @@ export const EVENT_CODES = {
    */
   SYNTHESE_CONVERGENCES_INDISPONIBLES: 'SYNTHESE_IA.CONVERGENCES.INDISPONIBLES',
   /**
+   * H95 part A ([[D-462]]) — le bloc des besoins n'a pas pu être calculé : la
+   * synthèse part sans lui, et la consigne dit alors de n'en rien dire.
+   */
+  SYNTHESE_BESOINS_INDISPONIBLES: 'SYNTHESE_IA.BESOINS.INDISPONIBLES',
+  /**
+   * [[D-462]] §4 — une forme de score relevée dans le texte patient. Signalement
+   * technique : ni blocage, ni correction, et jamais le texte lui-même.
+   */
+  SYNTHESE_NARRATIF_FORME_DE_SCORE: 'SYNTHESE_IA.NARRATIF.FORME_DE_SCORE',
+  /**
    * [[D-335]] §8 — les traitements en vigueur (lignes datées) n'ont pas pu
    * être lus : la ligne de vigilance ne porte que ceux de l'anamnèse. Code
    * distinct pour la même raison que le précédent (revue CodeRabbit).

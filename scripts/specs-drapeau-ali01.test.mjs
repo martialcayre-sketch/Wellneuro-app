@@ -96,6 +96,13 @@ const ALLOWLIST = new Map([
       + 'servies (H98, D-455)',
   ],
   [
+    'src/lib/synthese/blocBesoins.test.ts',
+    'lit VERSION_SCORE_EQUILIBRE pour la retrouver dans le bloc, sans la figer, et passe Q_ALI_01 '
+      + 'sous les deux positions du drapeau, en rechargeant les modules, avec les questions de la '
+      + 'forme alors servie : le nombre d’items n’y sert qu’à prouver le rechargement, le verdict '
+      + 'est identique sous les deux positions (H95 part A, D-462)',
+  ],
+  [
     'src/lib/fil/cartes.test.ts',
     'ne nomme Q_ALI_01 que comme IDENTIFIANT d’instrument du rideau T0 (carte « T0 à confirmer », '
       + 'D-150) : la carte compte des instruments distincts, elle ne lit ni score ni forme servie',

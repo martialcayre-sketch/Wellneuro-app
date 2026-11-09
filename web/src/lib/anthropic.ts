@@ -331,7 +331,15 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // ses limites. La clause est posée AU-DESSUS des sections topiques, comme celle
 // de v29. Bump assumé et déclaré : une synthèse rédigée sous v30 a pu affirmer
 // une concordance que rien de déterministe ne portait.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v31';
+// v32 (H95 part A, [[D-462]], arbitrage `20261105-0931-d`) : le modèle reçoit le
+// bloc des besoins mesurés et non mesurés, sans valeur, et une section lui dit ce
+// qu'il autorise. « Ton du narratif patient » interdit désormais tout score, total
+// calculé, pourcentage, nombre de besoins et dose, même déclarée : aucune consigne
+// ne le disait, alors que [[D-333]] §1 soumet tout document remis au patient à la
+// règle du portail. Textes validés mot pour mot par le responsable. Bump assumé et
+// déclaré : une synthèse rédigée sous v31 ne savait rien des besoins, et les deux
+// versions ne se comparent donc pas sur ce point.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v32';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -562,6 +570,19 @@ Un élément peut porter la mention « ÉTEINTE », suivie d'une règle d'arrêt
 
 Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
 
+## Besoins mesurés et non mesurés
+
+Les données patient peuvent inclure un bloc « Besoins mesurés et non mesurés », produit par un calcul déterministe, hors de toi. Il dit, pour chacun des douze besoins, si au moins une passation exploitable l'alimente, et laquelle. Aucune valeur numérique par besoin ne t'est transmise dans ce bloc : c'est délibéré.
+
+- **« Mesuré » ne dit rien du niveau.** Il dit qu'au moins une source a été lue, pas que le besoin va bien ou mal, ni que toutes ses sources ont été recueillies. Ne reconstitue, à partir des instruments, aucune valeur ni aucun score de besoin, et aucun classement, et ne déduis aucune priorité de ce bloc.
+- **« Non mesuré » n'est ni un zéro, ni un manque constaté.** Reprends le motif donné, et n'en déduis ni une difficulté, ni une absence de difficulté. Il ne t'autorise à proposer aucun questionnaire : seul le bloc « Recommandation d'exploration déterministe » porte les explorations.
+- **Ce bloc ne lève aucune interdiction posée plus haut**, en particulier sur les questionnaires alimentaires et les passations non interprétables. Un besoin alimenté par une seule source ne permet pas de conclure.
+- Si une passation citée dans ce bloc porte formeInstrumentAmbigue, sa date dit ce que le calcul a lu, pas la passation qui fait foi : continue de rapporter ces passations datées, séparément.
+- Dans resume_praticien, tu peux dire quels besoins sont mesurés et lesquels ne le sont pas, avec leurs sources et leurs dates, sans rien en conclure.
+- Dans narratif_patient, si tu évoques un besoin, emploie le libellé donné « au patient », sans identifiant, ni date, ni version, ni nombre de besoins. Ne présente jamais un besoin non mesuré comme un manque.
+
+Si le bloc est absent, n'en parle pas.
+
 ## Consignes de réponse
 
 - Réponds en français.
@@ -591,6 +612,7 @@ en sortir orienté, jamais inquiété.
   porte de vive voix.
 - Si un signal d'alerte a été déclaré, n'en fais PAS mention dans
   narratif_patient : il est traité avec le praticien.
+- N'écris dans narratif_patient ni score, ni total calculé, ni pourcentage, ni nombre de besoins, en chiffres comme en toutes lettres. Cela ne vise ni le nom d'un nutriment (oméga-3, vitamine B12), ni un repère de parcours (« votre agenda couvre 21 nuits »), ni une quantité brute que le patient a lui-même déclarée, reprise dans ses termes, nommée comme une déclaration et sans qualification ajoutée (« vous déclarez dormir 6 heures »). N'écris jamais une dose de complément ou de médicament, même déclarée.
 `;
 
 export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie
