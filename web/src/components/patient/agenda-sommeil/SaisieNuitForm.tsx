@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { SelecteurHeure } from './SelecteurHeure';
 import {
@@ -95,10 +95,13 @@ function ChoixEmoji({
   value: number | undefined;
   onChange: (v: number) => void;
 }) {
+  const idQuestion = useId();
   return (
     <div>
-      <p className="text-sm font-medium text-foreground mb-2">{label}</p>
-      <div className="flex justify-between gap-1">
+      <p id={idQuestion} className="text-sm font-medium text-foreground mb-2">
+        {label}
+      </p>
+      <div role="group" aria-labelledby={idQuestion} className="flex justify-between gap-1">
         {emojis.map((emoji, i) => {
           const note = i + 1;
           const actif = value === note;
@@ -150,11 +153,14 @@ function Puces<T extends string>({
   value: T | undefined;
   onChange: (v: T) => void;
 }) {
+  const idQuestion = useId();
   return (
     <div>
-      <p className={`text-sm font-medium text-foreground ${aide ? '' : 'mb-2'}`}>{label}</p>
+      <p id={idQuestion} className={`text-sm font-medium text-foreground ${aide ? '' : 'mb-2'}`}>
+        {label}
+      </p>
       {aide && <p className="text-xs text-muted-foreground mb-2">{aide}</p>}
-      <div className="flex flex-wrap gap-2">
+      <div role="group" aria-labelledby={idQuestion} className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const actif = value === opt;
           return (
@@ -205,10 +211,13 @@ function Compteur({
   const bouton =
     'min-h-11 min-w-11 rounded-xl border border-border text-lg text-foreground ' +
     'hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent';
+  const idQuestion = useId();
   return (
     <div>
-      <p className="text-sm font-medium text-foreground mb-2">{label}</p>
-      <div className="flex items-center gap-3">
+      <p id={idQuestion} className="text-sm font-medium text-foreground mb-2">
+        {label}
+      </p>
+      <div role="group" aria-labelledby={idQuestion} className="flex items-center gap-3">
         <button
           type="button"
           aria-label="Un réveil de moins"
@@ -330,6 +339,7 @@ export function SaisieNuitForm({
   ctaLabel = 'C’est noté ✓',
   onSubmit,
 }: Props) {
+  const idFacteurs = useId();
   const mots = motsDuSoir(contrat);
   const inconnuPropose = contrat === 'agenda-sommeil-v4';
   const optionsLatence: readonly (ClasseLatence | Inconnu)[] = inconnuPropose
@@ -792,8 +802,10 @@ export function SaisieNuitForm({
                 onChange={setSieste}
               />
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">La veille au soir</p>
-                <div className="flex flex-wrap gap-2">
+                <p id={idFacteurs} className="text-sm font-medium text-foreground mb-2">
+                  La veille au soir
+                </p>
+                <div role="group" aria-labelledby={idFacteurs} className="flex flex-wrap gap-2">
                   {CLES_FACTEURS.map((cle) => {
                     const actif = facteurs[cle] === true;
                     return (
