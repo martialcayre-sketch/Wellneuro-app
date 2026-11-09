@@ -96,7 +96,8 @@ describe('message envoyé au modèle — le bloc passe par le canal de l’orien
   // exporté. La preuve d'exécution est dans `besoins.generation.test.ts`.
   const SOURCE = readFileSync(join(__dirname, '../../../../lib/synthese/generation.ts'), 'utf8');
 
+  // Depuis [[D-471]], le bloc des règles non évaluées s'intercale entre les deux.
   it('le bloc suit celui de l’orientation, et disparaît quand il est vide', () => {
-    expect(SOURCE).toContain("...(blocOrientation ? [blocOrientation] : []),\n    ...(blocBesoins ? [blocBesoins] : []),");
+    expect(SOURCE).toContain("...(blocOrientation ? [blocOrientation] : []),\n    ...(blocNonEvaluees ? [blocNonEvaluees] : []),\n    ...(blocBesoins ? [blocBesoins] : []),");
   });
 });
