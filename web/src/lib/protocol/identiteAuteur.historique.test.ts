@@ -48,9 +48,19 @@ const ECRIVAINS = new Set([
   'lib/food-observation/persistence.ts',
 ]);
 
-const MODELES = /\b(protocolDraft|protocolDiffusionApproval)\b|protocol_drafts|protocol_diffusion_approvals/;
+const MODELES = /\b(protocolDrafts?|protocolDiffusionApprovals?|diffusionApprovals)\b|protocol_drafts|protocol_diffusion_approvals/;
 const COLONNES = /\bcreePar\b|\bvalidePar\b|\bcree_par\b|\bvalide_par\b/;
-const LECTURE = /\.(protocolDraft|protocolDiffusionApproval)\.(findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow)\(/g;
+const LECTURE = /\.(protocolDraft|protocolDiffusionApproval)\.(findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow|create)\(/g;
+
+/**
+ * Les champs de relation qui mènent aux deux modèles (`schema.prisma`). Lus
+ * par `: true` ou par `include`, ils rendent toutes les colonnes scalaires,
+ * auteur compris. Les noms ambigus (`draft`, `version`) se jugent sur les
+ * fichiers qui touchent un modèle porteur de la relation.
+ */
+const RELATIONS_SANS_AMBIGUITE = ['protocolDraft', 'protocolDrafts', 'protocolDiffusionApprovals', 'diffusionApprovals', 'approbation', 'versionSuivante'];
+const RELATIONS_AMBIGUES = ['draft', 'version'];
+const PORTEURS_AMBIGUS = /\.(protocolDiffusionApproval|protocolCheckin|arbitrageBiologique|decisionParcours)\./;
 
 function sources(dossier: string): string[] {
   const fichiers: string[] = [];
@@ -79,12 +89,50 @@ function argumentsDe(texte: string, ouvrante: number): string {
   return texte.slice(ouvrante);
 }
 
-const fichiersDesTables = sources(RACINE)
-  .map(chemin => ({ chemin: relative(RACINE, chemin), texte: readFileSync(chemin, 'utf8') }))
-  .filter(f => MODELES.test(f.texte));
+/** Les clés posées au PREMIER niveau de l'objet d'arguments d'un appel. */
+function clesDePremierNiveau(args: string): string[] {
+  const cles: string[] = [];
+  let profondeur = 0;
+  let jeton = '';
+  // Au premier niveau, on alterne : une clé, puis (après `:`) sa valeur
+  // jusqu'à la virgule. Une clé abrégée (`{ where, … }`) n'a pas de `:`.
+  let dansValeur = false;
+  const clore = () => {
+    if (!dansValeur && jeton) cles.push(jeton);
+    jeton = '';
+    dansValeur = false;
+  };
+  for (const c of args) {
+    // Profondeur 2 : l'intérieur de `(` puis de `{` — le premier niveau de l'objet.
+    if (c === '}' || c === ')' || c === ']') {
+      if (profondeur === 2) clore();
+      profondeur--;
+      continue;
+    }
+    if (c === '{' || c === '(' || c === '[') {
+      profondeur++;
+      continue;
+    }
+    if (profondeur !== 2) continue;
+    if (c === ',') clore();
+    else if (c === ':' && !dansValeur) {
+      if (jeton) cles.push(jeton);
+      jeton = '';
+      dansValeur = true;
+    } else if (!dansValeur && /[A-Za-z0-9_$]/.test(c)) jeton += c;
+    else if (!dansValeur && c === '.') jeton = '';
+  }
+  return cles;
+}
+
+const tousLesFichiers = sources(RACINE)
+  .map(chemin => ({ chemin: relative(RACINE, chemin), texte: readFileSync(chemin, 'utf8') }));
+
+const fichiersDesTables = tousLesFichiers.filter(f => MODELES.test(f.texte));
 
 const lectures = fichiersDesTables.flatMap(f =>
   [...f.texte.matchAll(LECTURE)].map(m => ({
+    creation: m[2] === 'create',
     ou: `${f.chemin}:${f.texte.slice(0, m.index).split('\n').length}`,
     args: argumentsDe(f.texte, (m.index ?? 0) + m[0].length - 1),
   })),
@@ -96,14 +144,53 @@ describe('BP-14 — aucun lecteur des colonnes d’auteur (D-459 §7)', () => {
     expect(lectures.length).toBeGreaterThanOrEqual(30);
   });
 
-  it('chaque lecture des deux tables nomme ses colonnes par `select`', () => {
-    const sansSelect = lectures.filter(l => !/\bselect\s*:/.test(l.args)).map(l => l.ou);
-    expect(sansSelect).toEqual([]);
+  it('chaque lecture (et création) des deux tables nomme ses colonnes par `select` de premier niveau, sans `include`', () => {
+    const fautives = lectures
+      .filter(l => {
+        const cles = clesDePremierNiveau(l.args);
+        return !cles.includes('select') || cles.includes('include');
+      })
+      .map(l => l.ou);
+    expect(fautives).toEqual([]);
   });
 
-  it('aucune lecture ne nomme `creePar` ni `validePar`', () => {
-    const fautives = lectures.filter(l => COLONNES.test(l.args)).map(l => l.ou);
+  it('la lecture des clés de premier niveau mord (témoins)', () => {
+    expect(clesDePremierNiveau('({ where: { id }, select: { id: true } })')).toEqual(['where', 'select']);
+    // Un `select` imbriqué sous `include` n'est pas un `select` de premier niveau.
+    expect(clesDePremierNiveau('({ where, include: { episode: { select: { milestone: true } } } })')).toEqual(['where', 'include']);
+  });
+
+  it('aucune lecture ne nomme `creePar` ni `validePar`, ni ne les lit par `: true`', () => {
+    // Les créations nomment les colonnes dans `data` : c'est l'écriture du §3.
+    const fautives = lectures.filter(l => !l.creation && COLONNES.test(l.args)).map(l => l.ou);
     expect(fautives).toEqual([]);
+    const parConstante = fichiersDesTables
+      .filter(f => /\b(creePar|validePar)\s*:\s*true\b/.test(f.texte))
+      .map(f => f.chemin);
+    expect(parConstante).toEqual([]);
+  });
+
+  it('aucune lecture par une relation vers les deux tables (`: true` ou `include`)', () => {
+    const relation = (noms: string[]) => new RegExp(`\\b(${noms.join('|')})\\s*:\\s*true\\b`);
+    const dansInclude = (noms: string[]) => new RegExp(`\\binclude\\s*:\\s*\\{[^}]*\\b(${noms.join('|')})\\s*:`);
+    const fautifs = tousLesFichiers
+      .filter(f =>
+        relation(RELATIONS_SANS_AMBIGUITE).test(f.texte)
+        || dansInclude(RELATIONS_SANS_AMBIGUITE).test(f.texte)
+        || (PORTEURS_AMBIGUS.test(f.texte)
+          && (relation(RELATIONS_AMBIGUES).test(f.texte) || dansInclude(RELATIONS_AMBIGUES).test(f.texte))))
+      .map(f => f.chemin);
+    expect(fautifs).toEqual([]);
+  });
+
+  it('aucun accès détourné aux deux tables (alias, crochets, SQL `SELECT *`)', () => {
+    const fautifs = fichiersDesTables
+      .filter(f =>
+        /=\s*(prisma|tx|client)\.(protocolDraft|protocolDiffusionApproval)\s*[;,\n]/.test(f.texte)
+        || /\[\s*['"`](protocolDraft|protocolDiffusionApproval)['"`]\s*\]/.test(f.texte)
+        || /SELECT\s+\*[^`]*\b(protocol_drafts|protocol_diffusion_approvals)\b/i.test(f.texte))
+      .map(f => f.chemin);
+    expect(fautifs).toEqual([]);
   });
 
   it('hors des trois écrivains, aucun fichier des deux tables ne nomme les colonnes', () => {

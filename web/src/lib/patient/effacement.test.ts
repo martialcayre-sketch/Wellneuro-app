@@ -407,6 +407,9 @@ describe('effacerDossier — lignes portant un auteur (D-459 §6)', () => {
     for (const nom of ['protocolDraft', 'protocolDiffusionApproval'] as const) {
       (prisma[nom].deleteMany as ReturnType<typeof vi.fn>).mockImplementationOnce(
         async ({ where }: { where: { idPatient: string } }) => {
+          // Le filtre est le dossier, et lui seul : un filtre de plus (sur
+          // l'auteur, par exemple) laisserait des lignes derrière l'effacement.
+          expect(where).toEqual({ idPatient: 'PAT_SEED_03' });
           const avant = magasin[nom].length;
           magasin[nom] = magasin[nom].filter((l) => l.idPatient !== where.idPatient);
           return { count: avant - magasin[nom].length };
