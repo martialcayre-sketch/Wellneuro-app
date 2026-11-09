@@ -1804,7 +1804,15 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // textes ont été validés le même jour. Relu avant la recopie : la
   // contre-preuve que règles, grilles et fenêtres hachent encore exactement
   // l'empreinte précédente (`a8630112…`). Aucun claim ajouté ni retiré.
-  dateValidation: '2026-11-07T00:00:00.000Z',
+  //
+  // RE-SIGNÉE LE 2026-11-09 ([[D-470]], lot t67), SUR ATTESTATION DU
+  // RESPONSABLE (« j'atteste », dans la session du lot). Le périmètre ne change
+  // pas de forme ; seule `LIMITATIONS_CONVERGENCE` gagne une quatrième limite
+  // commune, au texte validé le même jour : une règle citée « déclenchée » n'est
+  // pas une recommandation servie. Relu avant la recopie : la contre-preuve que
+  // la table sans cette limite hache encore exactement l'empreinte précédente
+  // (`16517749…`). Aucun claim ajouté ni retiré.
+  dateValidation: '2026-11-09T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
@@ -1824,6 +1832,9 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //     de cible ; déclencheur lu sans date)
   //   · 2026-11-04 — `a86301126b40d44be88463052741e12b91deb677f31f8134b7211423a41ebd20`
   //     (D-433, lot t60 : dix-neuf fenêtres, déclencheur lu avec sa fenêtre)
+  //   · 2026-11-07 — `16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea`
+  //     (D-455, lot H98 : `{ regles, grilles, fenetres, convergence }`, trois
+  //     limites communes de convergence)
   //
   // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
   // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
@@ -1839,7 +1850,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
   // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
   // couvre celle-ci.
-  shaPerimetre: '16517749b23513d6a6146088b21c395314cba21e1e90f8679252cfec5af10cea',
+  shaPerimetre: 'a9aaaf32c7e8ab5903f8faa2b7b6982c0d79c1f64ac097f140f2a3d83351d914',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
