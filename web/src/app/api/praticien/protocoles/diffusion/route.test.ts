@@ -379,6 +379,22 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
+  // BP-14 — banc nominatif (D-459 §3) : l'auteur du clic vient de la session,
+  // en minuscules, jamais du corps ; `approvedBy` garde sa valeur de rôle.
+  it('pose validePar depuis la session, en minuscules, sans toucher approvedBy', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'P@WellNeuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'appr_1' });
+    const res = await POST(postRequest({ ...body, validePar: 'intrus@exemple.fr' }));
+    expect(res.status).toBe(200);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ validePar: 'p@wellneuro.fr', approvedBy: 'practitioner' }),
+      }),
+    );
+  });
+
   it('est idempotent quand la version active est déjà approuvée (no-op)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
@@ -437,6 +453,35 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
         methode: 'GET',
       },
     });
+  });
+
+  // BP-14 — banc historique (D-459 §8 point 4) : une version et une
+  // approbation sans la colonne, à auteur nul ou à auteur déduit rendent la
+  // même réponse, et l'auteur n'y paraît jamais (§7).
+  it('une ligne nulle ou déduite rend la même réponse, sans l’auteur', async () => {
+    const AUTEUR = 'praticien@wellneuro.fr';
+    const reponses: unknown[] = [];
+    for (const auteur of [{}, { creePar: null, validePar: null }, { creePar: AUTEUR, validePar: AUTEUR }]) {
+      vi.clearAllMocks();
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      const { creePar, validePar } = auteur as { creePar?: string | null; validePar?: string | null };
+      const colonneVersion = 'creePar' in auteur ? { creePar } : {};
+      const colonneApprobation = 'validePar' in auteur ? { validePar } : {};
+      prisma.protocolDraft.findMany.mockResolvedValue([
+        { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), ...colonneVersion },
+      ]);
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+        { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z'), ...colonneApprobation },
+      ]);
+      const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
+      expect(res.status).toBe(200);
+      const texte = await res.text();
+      expect(texte).not.toContain(AUTEUR);
+      reponses.push(JSON.parse(texte));
+    }
+    expect(reponses[0]).toMatchObject({ ok: true, approval: { protocolDraftInputHash: 'HASH_V1' }, stale: false });
+    expect(reponses[1]).toEqual(reponses[0]);
+    expect(reponses[2]).toEqual(reponses[0]);
   });
 
   it('retourne approval null sans versions', async () => {

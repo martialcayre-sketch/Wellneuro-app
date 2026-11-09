@@ -141,6 +141,20 @@ describe('Le jeton du GET est celui que le POST recalcule (lot 8)', () => {
     expect(etat.remises.map(r => r.idVersion)).toEqual(['fav_1']);
   });
 
+  // BP-14 — banc nominatif (D-459 §3) : l'approbation créée DANS la
+  // transaction porte l'e-mail de session, en minuscules ; le rôle ne change pas.
+  it('l’approbation transactionnelle pose validePar depuis la session, en minuscules', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'P@WellNeuro.fr' } });
+    const apercu = await lireApercu();
+    expect((await cliquer(apercu.jeton)).status).toBe(200);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalledTimes(1);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ validePar: 'p@wellneuro.fr', approvedBy: 'practitioner' }),
+      }),
+    );
+  });
+
   it('le même aperçu rejoué après la remise est PÉRIMÉ : refusé, rien de plus n’est écrit', async () => {
     const apercu = await lireApercu();
     expect((await cliquer(apercu.jeton)).status).toBe(200);

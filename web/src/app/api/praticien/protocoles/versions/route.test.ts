@@ -379,6 +379,22 @@ describe('POST /api/praticien/protocoles/versions', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
+  // BP-14 — banc nominatif (D-459 §3, §8 point 4) : l'auteur vient de la
+  // session, normalisé en minuscules, jamais du corps de la requête ; il est
+  // posé à la création seule, la branche `update` reste vide.
+  it('pose creePar depuis la session, en minuscules, à la création seule', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'Praticien@WellNeuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const res = await POST(postRequest({ episode, decisionCard, submission, creePar: 'intrus@exemple.fr' }));
+    expect(res.status).toBe(200);
+    const appel = prisma.protocolDraft.upsert.mock.calls[0][0] as unknown as {
+      create: { creePar: unknown };
+      update: unknown;
+    };
+    expect(appel.create.creePar).toBe('praticien@wellneuro.fr');
+    expect(appel.update).toEqual({});
+  });
+
   it('crée une nouvelle version chaînée sur changement clinique', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);

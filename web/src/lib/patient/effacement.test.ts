@@ -383,6 +383,55 @@ describe('effacerDossier', () => {
   });
 });
 
+// BP-14 — banc d'effacement (D-459 §6) : l'auteur d'une version (`creePar`) et
+// celui d'une approbation (`validePar`) sont des données du praticien posées
+// dans le dossier. Elles partent avec leurs lignes, par `id_patient`, sans que
+// le code d'effacement change, et le résidu ne les reprend pas. Un magasin en
+// mémoire tient les lignes : la suppression se constate, elle ne se suppose pas.
+describe('effacerDossier — lignes portant un auteur (D-459 §6)', () => {
+  type Ligne = { idPatient: string; creePar?: string | null; validePar?: string | null };
+  const AUTEUR = 'praticien@wellneuro.fr';
+
+  it('une version et une approbation avec auteur partent avec le dossier, et seulement lui', async () => {
+    const magasin: Record<'protocolDraft' | 'protocolDiffusionApproval', Ligne[]> = {
+      protocolDraft: [
+        { idPatient: 'PAT_SEED_03', creePar: AUTEUR },
+        { idPatient: 'PAT_SEED_03', creePar: null },
+        { idPatient: 'PAT_SEED_01', creePar: AUTEUR },
+      ],
+      protocolDiffusionApproval: [
+        { idPatient: 'PAT_SEED_03', validePar: AUTEUR },
+        { idPatient: 'PAT_SEED_01', validePar: AUTEUR },
+      ],
+    };
+    for (const nom of ['protocolDraft', 'protocolDiffusionApproval'] as const) {
+      (prisma[nom].deleteMany as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        async ({ where }: { where: { idPatient: string } }) => {
+          // Le filtre est le dossier, et lui seul : un filtre de plus (sur
+          // l'auteur, par exemple) laisserait des lignes derrière l'effacement.
+          expect(where).toEqual({ idPatient: 'PAT_SEED_03' });
+          const avant = magasin[nom].length;
+          magasin[nom] = magasin[nom].filter((l) => l.idPatient !== where.idPatient);
+          return { count: avant - magasin[nom].length };
+        },
+      );
+    }
+
+    const resultat = await effacerDossier('PAT_SEED_03');
+
+    expect(magasin.protocolDraft.filter((l) => l.idPatient === 'PAT_SEED_03')).toEqual([]);
+    expect(magasin.protocolDiffusionApproval.filter((l) => l.idPatient === 'PAT_SEED_03')).toEqual([]);
+    // L'autre dossier garde ses lignes et leur auteur.
+    expect(magasin.protocolDraft).toEqual([{ idPatient: 'PAT_SEED_01', creePar: AUTEUR }]);
+    expect(magasin.protocolDiffusionApproval).toEqual([{ idPatient: 'PAT_SEED_01', validePar: AUTEUR }]);
+    expect(resultat.supprimees.protocolDrafts).toBe(2);
+    expect(resultat.supprimees.protocolDiffusionApprovals).toBe(1);
+    // Le résidu ne reprend aucun auteur.
+    const residu = (prisma.dossierEfface.create as ReturnType<typeof vi.fn>).mock.calls[0][0].data;
+    expect(JSON.stringify(residu)).not.toContain(AUTEUR);
+  });
+});
+
 // Garde structurelle. Le risque réel n'est pas de se tromper aujourd'hui : c'est
 // qu'une campagne future ajoute une table portant `id_patient` et que
 // l'effacement l'ignore en silence — laissant de la donnée patient derrière un

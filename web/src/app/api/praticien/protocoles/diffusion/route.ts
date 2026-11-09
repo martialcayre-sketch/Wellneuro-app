@@ -524,6 +524,8 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
               protocolDraftInputHash,
               approvedAt: new Date(approvedAt),
               approvedBy: 'practitioner',
+              // Qui a cliqué, depuis la session ; le rôle reste `approvedBy` (D-459 §3).
+              validePar: emailPraticien(session),
               confirmation: DIFFUSION_CONFIRMATION,
               supersedesApprovalId: active?.id ?? null,
             },
@@ -628,6 +630,8 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         protocolDraftInputHash,
         approvedAt: new Date(approvedAt),
         approvedBy: 'practitioner',
+        // Qui a cliqué, depuis la session ; le rôle reste `approvedBy` (D-459 §3).
+        validePar: emailPraticien(session),
         confirmation: DIFFUSION_CONFIRMATION,
         supersedesApprovalId: activeApproval?.id ?? null,
       },

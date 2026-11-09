@@ -665,7 +665,12 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       }),
       prisma.protocolDraft.upsert({
         where: { id: versionId },
-        create: toDraftCreateInput({ id: versionId, draft, decisionCard, episode, supersedesDraftId }),
+        // Auteur posé à la création seule, depuis la session (D-459 §3) ;
+        // la branche `update` reste vide : une version ne change pas d'auteur.
+        create: {
+          ...toDraftCreateInput({ id: versionId, draft, decisionCard, episode, supersedesDraftId }),
+          creePar: emailPraticien(session),
+        },
         update: {},
       }),
     ]);

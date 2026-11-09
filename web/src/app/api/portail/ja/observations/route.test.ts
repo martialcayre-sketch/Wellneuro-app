@@ -127,6 +127,7 @@ describe('api/portail/ja/observations', () => {
           supersedesDraftId: 'JA_DRAFT_2',
           idPatient: 'PAT_AUTRE',
           actor: 'praticien',
+          creePar: 'intrus@exemple.fr',
         }),
       }),
     );
@@ -136,6 +137,9 @@ describe('api/portail/ja/observations', () => {
       actor: 'patient',
       supersedesDraftId: 'JA_DRAFT_2',
     }));
+    // BP-14 (D-459 §3) : le portail ne transmet aucun auteur — un patient n'est
+    // pas l'auteur d'une version de protocole, la colonne reste nulle.
+    expect((saveSnapshot.mock.calls[0][0] as { creePar?: unknown }).creePar).toBeUndefined();
   });
 
   it('POST refuse un corps incomplet sans appeler le domaine', async () => {

@@ -168,3 +168,38 @@ describe('saveJaObservationSnapshot — cohérence trace ↔ épisode', () => {
     expect(snapshot.draftId).toBe('JA_DRAFT_1');
   });
 });
+
+// BP-14 — banc nominatif (D-459 §3, §8 point 4) : la colonne `creePar` est
+// posée à la création, depuis l'auteur que la route praticien transmet ; un
+// instantané du portail (`actor` `'patient'`) la laisse nulle, même si un
+// auteur lui était passé par erreur.
+describe('saveJaObservationSnapshot — auteur de la version (D-459)', () => {
+  type Cree = { data: { creePar: unknown } };
+  const cree = () => (prisma.protocolDraft.create.mock.calls[0][0] as unknown as Cree).data;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.protocolDraft.create.mockResolvedValue({
+      id: 'JA_DRAFT_1',
+      idPatient: 'PAT_TEST',
+      supersedesDraftId: null,
+      createdAt: new Date('2026-07-28T09:00:00.000Z'),
+      payload: { episode: EPISODE, actor: 'praticien' },
+    });
+  });
+
+  it('route praticien : creePar porte l’auteur transmis', async () => {
+    await saveJaObservationSnapshot(entree({ actor: 'praticien', creePar: 'praticien@wellneuro.fr' }) as never);
+    expect(cree().creePar).toBe('praticien@wellneuro.fr');
+  });
+
+  it('portail : creePar reste nul, même si un auteur est passé', async () => {
+    await saveJaObservationSnapshot(entree({ actor: 'patient', creePar: 'intrus@exemple.fr' }) as never);
+    expect(cree().creePar).toBeNull();
+  });
+
+  it('portail sans auteur : creePar reste nul', async () => {
+    await saveJaObservationSnapshot(entree() as never);
+    expect(cree().creePar).toBeNull();
+  });
+});

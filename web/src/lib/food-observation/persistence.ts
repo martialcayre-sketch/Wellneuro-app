@@ -34,6 +34,12 @@ export type JaObservationSnapshotInput = {
   journees?: JourneeRepere[];
   supersedesDraftId?: string;
   actor: 'praticien' | 'patient';
+  /**
+   * E-mail de la session praticien, normalisé par `emailPraticien` (D-459 §3).
+   * Ignoré quand `actor` vaut `'patient'` : un patient n'est pas l'auteur
+   * d'une version de protocole, la colonne reste nulle.
+   */
+  creePar?: string | null;
 };
 
 /**
@@ -84,6 +90,8 @@ export type JaActivationInput = {
   feedbackPatient: string;
   chargePercue: JaChargePercue;
   budgetChargeGlobal: number;
+  /** E-mail de la session praticien, normalisé par `emailPraticien` (D-459 §3). */
+  creePar: string | null;
 };
 
 export type JaActivationSummary = {
@@ -221,6 +229,9 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
       contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
       supersedesDraftId,
       reviewedAt: null,
+      // Auteur consigné pour la seule route praticien ; nul depuis le portail
+      // (D-459 §3). Posé à la création, jamais réécrit.
+      creePar: input.actor === 'praticien' ? (input.creePar ?? null) : null,
     },
     select: {
       id: true,
@@ -568,6 +579,8 @@ export async function activateJaObservationSnapshot(input: JaActivationInput): P
       contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
       supersedesDraftId: sourceDraftId,
       reviewedAt: new Date(reviewedAt),
+      // Auteur de l'activation, depuis la session praticien (D-459 §3).
+      creePar: input.creePar,
     },
     select: {
       id: true,
