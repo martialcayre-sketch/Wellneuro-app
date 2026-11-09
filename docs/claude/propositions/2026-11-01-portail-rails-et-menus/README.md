@@ -826,6 +826,29 @@ Mesures par un spec Playwright jetable non versionné (Chromium), avec `getBound
 
 Hors [[D-460]], non instruit : pour la mineure à 1 280 px, la première carte est plus étroite que la suivante.
 
+### Constat à l'écran de [[D-460]] en production (2026-11-09) : partiel
+
+`WN_PORTAIL_MENU_ICONES` est posé en production le 2026-11-09 à 11:43 UTC, à la demande du responsable (« Poser le drapeau »), sur `main@c70c035c`, qui porte #1925 et #1944. **Ce constat est partiel** : un seul dossier a été observé. Il a été fait par l'assistant, dans le navigateur intégré, en largeur émulée. Le responsable a ouvert la session par Google sur un dossier de test majeur. Rien n'a été saisi ni envoyé. Le confort de lecture, stocké dans ce seul navigateur, a été remis à sa valeur de départ. Étiquettes de [[D-125]].
+
+| Largeur, confort, page | Étiquette | Navigation | Colonne | En-tête | Page |
+|---|---|---|---|---|---|
+| 390 px, 100 %, `/suivi` | observé | bouton de 44 px ; barre de quatre cases de 64 px, une icône chacune ; panneau de 390 × 844 px | 358 px | 133 px | 390 / 390 |
+| 390 px, 112,5 %, hub | observé | bouton de 49,5 px ; cases de 72 px ; panneau de 390 × 844 px | 354 px | 149,5 px | 390 / 390 |
+| 800 px, 100 %, `/suivi` | observé | bouton de 44 px ; panneau de 288 × 1 024 px, à gauche | 768 px | 77 px | 800 / 800 |
+| 800 px, 112,5 %, hub | observé | bouton de 49,5 px ; panneau de 324 × 1 024 px, à gauche | 764 px | 86,5 px | 800 / 800 |
+| 1 024 px, 100 %, hub et `/suivi` | observé | rail de 252 px ; quatre onglets de 44 px ; ni bouton ni barre | 668 px | 77 px | 1 024 / 1 024 |
+| 1 024 px, 112,5 %, hub et `/suivi` | observé | rail de 283,5 px ; onglets de 49,5 px ; ni bouton ni barre | 624 px | 86,5 px | 1 024 / 1 024 |
+| 1 280 px, 100 %, hub et `/suivi` | observé | rail de 252 px ; onglets de 44 px | 924 px | 77 px | 1 280 / 1 280 |
+
+- **« Mon espace »** (observé) : douze liens et douze icônes dans le rail et le panneau, un seul `aria-current`, intertitres en capitales, aucun débordement. Échap ferme le panneau et rend le focus à « Menu », aux quatre réglages.
+- **Espacement** (observé) : 13 px entre deux entrées voisines dont l'une passe à la ligne, 14,5 px à 112,5 %, pour 5 et 5,5 px entre deux lignes d'un libellé. Une entrée sur une ligne garde 44 ou 49,5 px. Dans le rail, six des douze entrées passent à la ligne, jusqu'à trois lignes, à 1 024 comme à 1 280 px ; dans le panneau à 18 rem, cinq.
+- **Quatre cases et quatre onglets** (observé, non vu au constat local) : « Accueil », « Carnet », « Suivi », « Bibliothèque », mêmes cibles dans la barre et les onglets, sans chiffre. À 1 024 px, une seule navigation « Accès rapides » visible. Les onglets ne portent pas d'icône.
+- **Pied d'urgence** (observé, 390 px, `/suivi`) : présent sur les pages mesurées et, en bas de page, entièrement au-dessus de la barre.
+- **Questionnaire en cours** (observé sur un identifiant inexistant, 1 024 px) : ni rail, ni barre, ni onglets, et le bouton « Menu ».
+- **Frise à 1 024 px** (observé) : 676 px à 100 % et 633 px à 112,5 %, pour une colonne de 668 et 624 px. Cet écart, déjà consigné plus haut pour le rail à 1 024 px et à qualifier, demeure ; la page ne déborde pas.
+
+**Non constaté** : un mineur ; un dossier clos ; un vrai questionnaire en cours ; la page imprimée ; un appareil à encoche ; un vrai téléphone ou une vraie tablette, la largeur étant émulée.
+
 ### Dépendances
 - PR #1765 : ouverte, modifie `MobileBottomNav.tsx` (+4 −1) et y ajoute son premier banc (lue avec `gh`, hors de l'arbre lu). Aucun lot patient ne touche `MobileBottomNav`, `SidebarRail` ni `NavBar` : L0 à L3 en sont indépendants si le composant patient est séparé.
 - Plan §8 ligne 2684 et D/30 (ligne 2319, « fait le 2026-11-01 ») : dette à mettre à jour à chaque lot.
