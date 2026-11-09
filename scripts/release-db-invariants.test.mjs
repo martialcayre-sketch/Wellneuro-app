@@ -637,3 +637,29 @@ test('la garde des migrations non approuvées porte son propre refus', () => {
     'hors push (ex. workflow_dispatch), une tête apportant des migrations non approuvées doit ARRÊTER le déclenchement',
   );
 });
+
+// D-467 : la garde anti-recul de fin de job est retirée. Elle ne se justifie que
+// si un vert de ce run peut réveiller le déploiement d'un vieux commit — donc
+// tant que ce workflow ne déploie, lui-même, que la TÊTE de `main` (jamais un
+// SHA, une archive ou un slug antérieur) et que l'auto-déploiement Scalingo
+// reste coupé. Ce banc verrouille la première moitié de cette condition : si un
+// chemin du workflow se met à déployer autre chose que la branche, la garde
+// retirée est à reconsidérer avant tout merge.
+test('D-467 — aucune garde anti-recul, et le seul déploiement du workflow est celui de la tête de main', () => {
+  const code = SOURCE.split('\n')
+    .filter((l) => !/^\s*#/.test(l))
+    .join('\n');
+  assert.doesNotMatch(code, /anti-recul/i, 'la garde anti-recul a été retirée (D-467)');
+  assert.doesNotMatch(code, /Échec VOLONTAIRE/, 'plus de fin rouge volontaire après une release réussie (D-467)');
+  const deploiements = code.match(/integration-link[\w-]*(?:\s+[\w./-]+)?/g) ?? [];
+  assert.deepEqual(
+    deploiements.map((d) => d.trim()),
+    ['integration-link-manual-deploy main'],
+    'le seul déploiement du workflow est celui de la branche main (jamais un SHA ancien)',
+  );
+  assert.doesNotMatch(
+    code,
+    /scalingo[^\n]*\b(rollback|deployment-follow|--git-ref|restart|scale)\b/,
+    'aucune commande Scalingo qui redéploie ou remet en service un build antérieur',
+  );
+});

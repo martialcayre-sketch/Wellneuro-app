@@ -332,12 +332,18 @@ Avant ce jugement de contenu (2026-09-06), tout push postérieur à
 l'approbation faisait échouer la release — y compris un push documentaire, en
 pleine fenêtre d'attente de plusieurs heures (run 33966114073).
 
-**Dans ce dernier cas, le run se conclut en ÉCHEC VOLONTAIRE** (étape « Garde
-anti-recul », depuis le 2026-09-23), **après** la release et sa vérification.
-Son vert lèverait le dernier check du commit dépassé, et l'auto-déploiement
-Scalingo le redéploierait par-dessus la tête : c'est arrivé le 2026-09-23 (run
-35563094380), production reculée de quatre lots pendant six heures. Le rouge
-est le seul signal que Scalingo lise ; la base, elle, est à jour.
+**Dans ce dernier cas, le run se conclut au VERT, comme tout run qui a appliqué
+sa release** (D-467, 2026-11-09). Du 2026-09-23 au 2026-11-09, une étape « Garde
+anti-recul » le faisait finir en échec volontaire, après la release et sa
+vérification : son vert aurait levé le dernier check du commit dépassé, et
+l'auto-déploiement Scalingo l'aurait redéployé par-dessus la tête (run
+35563094380, production reculée de quatre lots pendant six heures). L'auto-déploiement
+est coupé depuis le 2026-09-25 (D-248) et ce workflow ne déploie que la tête de
+`main` (`integration-link-manual-deploy main`) : la garde ne protégeait plus de
+rien, et son rouge faisait lire « à relancer » une release appliquée (run
+42528009082, release-db de #1930). Un run rouge se lit donc de nouveau comme un
+vrai échec. Si l'auto-déploiement était un jour rétabli (cf. `docs/RUNBOOK.md`),
+la garde serait à rétablir avec lui.
 
 Le même jour, l'étape de déclenchement cessait de s'abstenir dès qu'**un**
 déploiement du commit existait dans l'historique : elle ne s'abstient plus que

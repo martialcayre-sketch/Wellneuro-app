@@ -117,7 +117,8 @@ export const CHEMINS_RELEASE_DB = [
  * le one-off (sentinelle `WN_RELEASE_DB_OK id=…`, liée au run) et la
  * contre-épreuve `migrate status` sur un second conteneur. Un run rouge dont
  * ces deux étapes sont vertes a échoué APRÈS l'application : la garde
- * anti-recul, échec volontaire (D-374 §2, phase 3). Un banc tient la parité
+ * anti-recul, échec volontaire (D-374 §2, phase 3) — retirée de release-db.yml
+ * par D-467, mais les runs antérieurs restent à lire ainsi. Un banc tient la parité
  * avec les noms d'étapes du workflow, et leur ordre.
  */
 export const ETAPES_ATTESTATION = ['Release en one-off (préflights + migrate deploy)', 'Vérification — migrate status sur conteneur'];

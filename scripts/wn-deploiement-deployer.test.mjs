@@ -533,7 +533,7 @@ test('lot 3 — un run release-db RÉUSSI, ou aucun commit de release-db dans la
 // run dont la release a eu lieu (incident #1577, 2026-10-19 : one-off et
 // contre-épreuve verts, garde rouge). La migration est appliquée, la tête
 // part. Un tel run ne devient jamais un verrou permanent.
-test('D-374 §1 — fin rouge volontaire APRÈS application (garde anti-recul) : appliquée, la tête part', async () => {
+test('D-374 §1 — fin rouge APRÈS application (runs antérieurs à D-467, garde anti-recul alors en place) : appliquée, la tête part', async () => {
   const lus = [];
   const m = monde({
     tetes: [C],
@@ -846,10 +846,12 @@ test('classement d’un run release-db : les quatre états, et les étapes ne so
 });
 
 // Les deux étapes dont le déployeur lit la conclusion doivent exister sous ce
-// nom dans le job `release` de release-db.yml, dans cet ordre, et AVANT la
-// garde anti-recul : renommer l'une d'elles ferait lire « inconnu » — retenue
-// sans fin — là où la release a eu lieu.
-test('D-374 §1 — parité des étapes d’attestation avec release-db.yml, placées avant la garde anti-recul', () => {
+// nom dans le job `release` de release-db.yml, dans cet ordre : renommer l'une
+// d'elles ferait lire « inconnu » — retenue sans fin — là où la release a eu
+// lieu. (La garde anti-recul, qui les suivait, est retirée par D-467 ; la
+// lecture d'un run rouge après application reste valable pour les runs
+// antérieurs.)
+test('D-374 §1 — parité des étapes d’attestation avec release-db.yml', () => {
   const releaseDb = readFileSync(join(RACINE, '.github/workflows/release-db.yml'), 'utf8');
   const release = releaseDb.slice(releaseDb.indexOf('\n  release:\n'), releaseDb.indexOf('\n  ref-refusee:\n'));
   const noms = [...release.matchAll(/^      - name: "([^"]+)"\s*$/gm)].map((m) => m[1]);
@@ -857,8 +859,7 @@ test('D-374 §1 — parité des étapes d’attestation avec release-db.yml, pla
   const positions = ETAPES_ATTESTATION.map((nom) => noms.indexOf(nom));
   assert.ok(positions.every((p) => p !== -1), `étape d'attestation absente de release-db.yml : ${ETAPES_ATTESTATION.join(' | ')}`);
   assert.ok(positions[0] < positions[1], 'le one-off précède la contre-épreuve');
-  const garde = noms.findIndex((n) => n.startsWith('Garde anti-recul'));
-  assert.ok(garde > positions[1], 'la garde anti-recul vient après les deux attestations');
+  assert.ok(!noms.some((n) => n.startsWith('Garde anti-recul')), 'la garde anti-recul est retirée (D-467)');
   // Le déclenchement — la lecture de la tête — précède l'application : un
   // run dont il est conclu a figé ce qu'il livre (revue de #1713).
   const declenchement = noms.indexOf(ETAPE_DECLENCHEMENT);
