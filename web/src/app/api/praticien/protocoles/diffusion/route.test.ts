@@ -379,6 +379,22 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
+  // BP-14 — banc nominatif (D-459 §3) : l'auteur du clic vient de la session,
+  // en minuscules, jamais du corps ; `approvedBy` garde sa valeur de rôle.
+  it('pose validePar depuis la session, en minuscules, sans toucher approvedBy', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'P@WellNeuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'appr_1' });
+    const res = await POST(postRequest({ ...body, validePar: 'intrus@exemple.fr' }));
+    expect(res.status).toBe(200);
+    expect(prisma.protocolDiffusionApproval.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ validePar: 'p@wellneuro.fr', approvedBy: 'practitioner' }),
+      }),
+    );
+  });
+
   it('est idempotent quand la version active est déjà approuvée (no-op)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);

@@ -103,6 +103,21 @@ describe('api/praticien/ja/activation', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
+  // BP-14 — banc nominatif (D-459 §3) : l'auteur de l'activation est l'e-mail
+  // de session en minuscules, jamais un champ du corps.
+  it('POST transmet creePar depuis la session, en minuscules', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'Praticien@WellNeuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    activateSnapshot.mockResolvedValue({ draftId: 'JA_ACT_1' });
+
+    const res = await POST(postRequest({ ...payload, creePar: 'intrus@exemple.fr' }));
+
+    expect(res.status).toBe(201);
+    expect(activateSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ creePar: 'praticien@wellneuro.fr' }),
+    );
+  });
+
   it('POST refuse un patient hors perimetre praticien', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });

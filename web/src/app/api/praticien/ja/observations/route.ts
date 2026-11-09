@@ -172,6 +172,7 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
       actionCareer: body.actionCareer,
       supersedesDraftId: typeof body.supersedesDraftId === 'string' ? body.supersedesDraftId : undefined,
       actor: 'praticien',
+      creePar: emailPraticien(session),
     });
 
     return NextResponse.json({ ok: true, snapshot }, { status: 201 });

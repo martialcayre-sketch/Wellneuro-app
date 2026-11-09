@@ -23,6 +23,7 @@ const payloadBase = {
   feedbackPatient: 'Feedback patient valide et detaille.',
   chargePercue: 'moderee' as const,
   budgetChargeGlobal: 8,
+  creePar: 'praticien@wellneuro.fr',
 };
 
 describe('activateJaObservationSnapshot — garde actor', () => {
@@ -93,5 +94,8 @@ describe('activateJaObservationSnapshot — garde actor', () => {
     expect(prisma.protocolDraft.create).toHaveBeenCalledTimes(1);
     expect(result.episodeId).toBe('ja_episode_1');
     expect(result.milestone).toBe('J7');
+    // BP-14 (D-459 §3) : l'activation porte l'auteur transmis par la route.
+    const data = (prisma.protocolDraft.create.mock.calls[0][0] as unknown as { data: { creePar: unknown } }).data;
+    expect(data.creePar).toBe('praticien@wellneuro.fr');
   });
 });

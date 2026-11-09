@@ -6,7 +6,7 @@ import {
   getLatestJaActivation,
   type JaActivationSummary,
 } from '@/lib/food-observation/persistence';
-import { verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
@@ -152,6 +152,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       feedbackPatient: body.feedbackPatient,
       chargePercue: body.chargePercue,
       budgetChargeGlobal: body.budgetChargeGlobal,
+      creePar: emailPraticien(session),
     });
 
     return NextResponse.json({ ok: true, activation }, { status: 201 });
