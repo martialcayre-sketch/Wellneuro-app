@@ -112,7 +112,7 @@ export function conseilDeuxRuns(run, tete, nouveautes, ancetre) {
   if (nouveautes.length > 0) {
     return `run ${run.id} : la tête apporte ${nouveautes.length} changement(s) de migration ou clinique non jugé(s) par lui (${nouveautes.slice(0, 3).join(', ')}${nouveautes.length > 3 ? ', …' : ''}) — à REJETER ; le run de la tête porte l'ensemble (D-374 §3).`;
   }
-  return `run ${run.id} : la tête ne lui apporte ni migration ni changement clinique — il s'approuve tel quel, déploie la tête, et sa fin rouge volontaire se lit « appliquée », jamais « à relancer » (D-374 §3).`;
+  return `run ${run.id} : la tête ne lui apporte ni migration ni changement clinique — il s'approuve tel quel, déploie la tête, et sa fin se lit « appliquée », jamais « à relancer » (D-374 §3, D-467).`;
 }
 
 /**

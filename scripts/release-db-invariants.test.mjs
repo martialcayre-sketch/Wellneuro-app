@@ -637,3 +637,45 @@ test('la garde des migrations non approuvées porte son propre refus', () => {
     'hors push (ex. workflow_dispatch), une tête apportant des migrations non approuvées doit ARRÊTER le déclenchement',
   );
 });
+
+// D-467 : la garde anti-recul de fin de job est retirée. Elle ne se justifie que
+// si un vert de ce run peut réveiller le déploiement d'un vieux commit — donc
+// tant que ce workflow ne déploie, lui-même, que la TÊTE de `main` (jamais un
+// SHA, une archive ou un slug antérieur) et que l'auto-déploiement Scalingo
+// reste coupé. Ce banc verrouille la première moitié de cette condition : si un
+// chemin du workflow se met à déployer autre chose que la branche, la garde
+// retirée est à reconsidérer avant tout merge.
+test('D-467 — aucune garde anti-recul, et le seul déploiement du workflow est celui de la tête de main', () => {
+  const code = SOURCE.split('\n')
+    .filter((l) => !/^\s*#/.test(l))
+    .join('\n');
+  assert.doesNotMatch(code, /anti-recul/i, 'la garde anti-recul a été retirée (D-467)');
+  assert.doesNotMatch(code, /Échec VOLONTAIRE/, 'plus de fin rouge volontaire après une release réussie (D-467)');
+  const deploiements = code.match(/integration-link[\w-]*(?:\s+[\w./-]+)?/g) ?? [];
+  assert.deepEqual(
+    deploiements.map((d) => d.trim()),
+    ['integration-link-manual-deploy main'],
+    'le seul déploiement du workflow est celui de la branche main (jamais un SHA ancien)',
+  );
+  // Continuations `\` recollées : le workflow écrit ses commandes Scalingo sur
+  // plusieurs lignes (`scalingo --app … \` puis la sous-commande). Chaque
+  // commande est jugée par jetons : `deploy` (archive, donc un SHA) est
+  // interdit, `integration-link-manual-deploy` et `deployments` (lecture) ne le
+  // sont pas.
+  const commandes = code
+    .replace(/\\\n\s*/g, ' ')
+    .split('\n')
+    .filter((l) => /\bscalingo\b/.test(l));
+  assert.ok(commandes.length > 0, 'le banc lit bien des commandes Scalingo');
+  for (const ligne of commandes) {
+    const jetons = ligne.split(/[\s"'`$(){};|&]+/);
+    for (const interdit of ['rollback', 'restart', 'scale', 'deploy', 'deployment-follow']) {
+      assert.ok(
+        !jetons.includes(interdit),
+        `aucune commande Scalingo « ${interdit} » qui redéploie ou remet en service un build antérieur (D-467) : ${ligne.trim()}`,
+      );
+    }
+    assert.doesNotMatch(ligne, /--git-ref\b/, `aucun déploiement d'une référence Git (D-467) : ${ligne.trim()}`);
+  }
+  assert.doesNotMatch(code, /\/deployments\b/, "aucun appel direct à l'API de déploiement Scalingo (D-467)");
+});

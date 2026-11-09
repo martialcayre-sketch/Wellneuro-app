@@ -165,10 +165,18 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    3. livrer la tête par `action=deployer` — le revert n'a été livré par
       personne ; le run s'abstient si la tête est déjà en service.
 
-   **Jamais l'ordre inverse** : entre les deux gestes, l'auto-déploiement
+   **Jamais l'ordre inverse** : entre les gestes 1 et 2, l'auto-déploiement
    tournerait à côté d'un déployeur dont la garde finale est éteinte — un
    run dépassé qui conclut vert pourrait réveiller l'auto-déploiement d'un
    vieux commit (incident 1).
+
+   **Et rétablir la garde anti-recul de `release-db.yml`**, retirée par
+   [[D-467]] parce que l'auto-déploiement était coupé : revert de la PR de
+   D-467 en entier, dans le revert du geste 1 et donc avant le geste 2 —
+   l'étape « Garde anti-recul », ses quatre bancs de comportement, et le banc
+   d'invariant D-467 de `scripts/release-db-invariants.test.mjs`, qui rougit
+   tant que la garde est présente. Sans elle, le vert d'un run dépassé
+   réveille l'auto-déploiement d'un vieux commit.
 
 ## Essai de restauration (G-7)
 

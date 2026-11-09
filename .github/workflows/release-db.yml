@@ -882,43 +882,11 @@ jobs:
           echo "❌ Aucune sentinelle de statut après 5 min — vérifier à la main." >&2
           exit 1
 
-      # ÉCHEC VOLONTAIRE APRÈS UNE RELEASE RÉUSSIE — le seul moyen de protéger
-      # la production d'un recul. Scalingo n'auto-déploie un commit qu'une fois
-      # TOUS ses checks conclus au vert, et ce run EST l'un d'eux. Quand la
-      # tête a dépassé le commit du run (chemin du 2026-09-06), le vert de ce
-      # run lève le dernier check du VIEUX commit — et Scalingo le déploie
-      # par-dessus la tête. Constaté le 2026-09-23 : run 35563094380 sur
-      # de290fd7, tête 2ded4484 déployée à 05:03, de290fd7 auto-déployé à
-      # 05:04, production reculée de quatre lots pendant six heures.
-      #
-      # La release N'EST PAS annulée : elle a eu lieu, sentinelles comprises,
-      # et l'arbitrage du 2026-09-06 (aller au bout quand aucune migration
-      # nouvelle n'est arrivée) tient. Seule la CONCLUSION du run change, parce
-      # qu'une étape GitHub n'a aucune issue « neutre » que Scalingo lirait.
-      #
-      # LE CRITÈRE EST LA TÊTE DE MAIN À LA FIN DU RUN, pas le SHA déployé par
-      # ce run : une tête arrivée PENDANT la release peut être déployée par son
-      # propre CI avant que ce run ne conclue — le vert ferait alors reculer la
-      # production tout autant. Tête illisible ⇒ échec : dans le doute, rouge.
-      - name: "Garde anti-recul — le commit du run a été dépassé"
-        run: |
-          if ! git fetch --quiet origin main; then
-            echo "✓ Release APPLIQUÉE — NE PAS RELANCER : la base est à jour." >&2
-            echo "❌ Tête de main illisible : impossible d'exclure un recul, le run" >&2
-            echo "   conclut en échec par prudence. Relire la liste des déploiements." >&2
-            exit 1
-          fi
-          TETE=$(git rev-parse origin/main)
-          if [ "$TETE" = "$GITHUB_SHA" ]; then
-            echo "✓ Le commit du run est la tête de main — rien à protéger."
-            exit 0
-          fi
-          echo "✓ Release APPLIQUÉE et constatée (image : ${WN_SHA_ATTENDU:-$GITHUB_SHA})."
-          echo "  NE PAS RELANCER : la base est à jour."
-          echo "❌ Échec VOLONTAIRE : ce run porte $GITHUB_SHA, dépassé par la tête ($TETE)." >&2
-          echo "   Conclu au vert, il lèverait le dernier check de ce commit, et" >&2
-          echo "   Scalingo l'auto-déploierait par-dessus la tête (recul du 2026-09-23)." >&2
-          exit 1
+      # Plus de garde anti-recul en fin de job (D-467, 2026-11-09) : l'auto-déploiement
+      # Scalingo est coupé depuis le 2026-09-25, aucun vert de ce run ne peut donc
+      # réveiller le déploiement d'un vieux commit. Un run dont la tête a dépassé le
+      # commit approuvé conclut au vert, comme tout run qui a appliqué sa release.
+      # Si l'auto-déploiement était un jour rétabli, la garde serait à rétablir avec lui.
 
   # Le pendant bruyant du `if:` porté par `release` : sans lui, un dispatch hors
   # `main` se terminerait en *skipped*, sans un mot, et se lirait comme « la base
