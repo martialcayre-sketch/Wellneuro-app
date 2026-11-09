@@ -88,6 +88,54 @@ describe('ConsultationScreen — « Demander une correction »', () => {
     expect(screen.queryByRole('button', { name: 'Demander une correction' })).toBeNull();
   });
 
+  // Le bouton disparaît au profit de l'accusé : sans région déjà présente ni
+  // transfert, le focus retombe sur `body` et un lecteur d'écran n'entend rien.
+  it('la transmission s’annonce dans une région déjà présente, et le focus s’y pose', async () => {
+    monter(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }));
+
+    await screen.findByText(/verrouillées en lecture seule/);
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+    fireEvent.click(screen.getByRole('button', { name: 'Demander une correction' }));
+
+    await waitFor(() => expect(region.textContent).toMatch(/a été transmise à votre praticien/));
+    expect(screen.getByRole('status')).toBe(region);
+    expect(document.activeElement).toBe(region);
+  });
+
+  // L'écran peut s'ouvrir sur une demande transmise lors d'une visite d'avant :
+  // l'accusé s'y lit, mais il ne répond à aucun geste et ne prend pas le focus.
+  it('une demande déjà transmise au chargement : l’accusé est là, le focus ne bouge pas', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(CHARGEMENT_OK) }));
+    render(
+      <ConsultationScreen
+        idAssignation="ASS_TEST"
+        statutReponses="modification_demandee"
+        onVoirEquilibre={vi.fn()}
+      />,
+    );
+
+    await screen.findByText(/verrouillées en lecture seule/);
+    expect(screen.getByRole('status').textContent).toMatch(/a été transmise à votre praticien/);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  // L'aperçu praticien ne porte aucun geste, donc aucun accusé.
+  it('l’aperçu praticien n’a pas de région d’accusé', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(CHARGEMENT_OK) }));
+    render(
+      <ConsultationScreen
+        idAssignation="ASS_TEST"
+        statutReponses="repondu"
+        onVoirEquilibre={vi.fn()}
+        readOnlyPreview
+      />,
+    );
+
+    await screen.findByText(/verrouillées en lecture seule/);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   // `setError('')` à l'entrée : un échec de CHARGEMENT ne doit pas rester
   // affiché sous une demande qui, elle, a réussi — le message porte sur la
   // tentative en cours, pas sur celle d'avant.

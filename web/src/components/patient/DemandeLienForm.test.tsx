@@ -46,6 +46,22 @@ describe('DemandeLienForm', () => {
     });
   });
 
+  // Le formulaire disparaît, et le bouton qui avait le focus avec lui : sans
+  // région déjà présente ni transfert, un lecteur d'écran n'entend rien.
+  it('le succès s’annonce dans une région déjà présente, et le focus s’y pose', async () => {
+    reponseServeur({ ok: true, message: MESSAGE_DEMANDE_ENVOYEE });
+    render(<DemandeLienForm />);
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'sophie.nicola@exemple.fr' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Recevoir un nouveau lien' }));
+
+    await waitFor(() => expect(region.textContent).toBe(MESSAGE_DEMANDE_ENVOYEE));
+    expect(screen.getByRole('status')).toBe(region);
+    expect(document.activeElement).toBe(region);
+  });
+
   it('une panne réseau laisse une issue au lieu d’un écran figé', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('hors ligne')));
     await soumettre();

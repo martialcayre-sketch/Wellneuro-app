@@ -230,6 +230,36 @@ function fenetreServie(fenetre: unknown) {
     );
 }
 
+describe('CeQuiCompteForm — l’accusé s’annonce', () => {
+  // L'accusé remplace le formulaire entier, et le bouton qui avait le focus avec
+  // lui : sans région déjà présente ni transfert, un lecteur d'écran n'entend rien.
+  it('l’accusé paraît dans une région déjà présente, et le focus s’y pose', async () => {
+    fetchMock.mockResolvedValue(json({ ok: true, entree: { id: 'ENT_1' } }, true));
+    await rendreLeFormulaire();
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+
+    ecrire(TEXTE);
+    envoyer();
+
+    await waitFor(() => expect(region.textContent).toContain('C’est enregistré. Merci de l’avoir écrit.'));
+    expect(region.textContent).toContain('prochaine étape de votre suivi');
+    expect(screen.getByRole('status')).toBe(region);
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('un refus de la route laisse la région vide et le formulaire en place', async () => {
+    fetchMock.mockResolvedValue(json({ ok: false, error: 'Refusé.' }, false));
+    await rendreLeFormulaire();
+    ecrire(TEXTE);
+    envoyer();
+
+    await waitFor(() => expect(screen.getByText('Refusé.')).toBeTruthy());
+    expect(screen.getByRole('status').textContent).toBe('');
+    expect(champTexte().value).toBe(TEXTE);
+  });
+});
+
 describe('CeQuiCompteForm — la fenêtre de dépôt (D-166)', () => {
   it('FERMÉE : aucun champ, aucun bouton, la date du dépôt et la condition de réouverture', async () => {
     fetchMock.mockImplementation(fenetreServie({ ouverte: false, fermeeDepuis: '2026-09-10T08:56:00.000Z' }));

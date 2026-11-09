@@ -5,6 +5,7 @@ import type { DemandeLienResponse } from '@/app/api/portail/lien/demande/route';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 
 // Redemande d'un lien d'accès (gate G4).
 //
@@ -41,34 +42,37 @@ export function DemandeLienForm() {
 
   // Une fois la demande passée, le formulaire disparaît : le renvoyer en boucle
   // ne ferait qu'épuiser le plafond horaire sans rien changer pour la personne.
-  if (message) {
-    return <PatientInlineMessage tone="success">{message}</PatientInlineMessage>;
-  }
-
   return (
-    <form onSubmit={soumettre} className="space-y-4">
-      <PatientField label="Votre adresse e-mail">
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          autoFocus
-          placeholder="votre@email.fr"
-          className={patientInputClassName}
-        />
-      </PatientField>
-      {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
-      <PatientButton
-        type="submit"
-        variant="primary"
-        className="w-full"
-        disabled={!email.trim()}
-        loading={envoi}
-        loadingLabel="Envoi…"
-      >
-        Recevoir un nouveau lien
-      </PatientButton>
-    </form>
+    <div>
+      <PatientRegionAccuse visible={Boolean(message)}>
+        <PatientInlineMessage tone="success">{message}</PatientInlineMessage>
+      </PatientRegionAccuse>
+      {!message && (
+        <form onSubmit={soumettre} className="space-y-4">
+          <PatientField label="Votre adresse e-mail">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoFocus
+              placeholder="votre@email.fr"
+              className={patientInputClassName}
+            />
+          </PatientField>
+          {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+          <PatientButton
+            type="submit"
+            variant="primary"
+            className="w-full"
+            disabled={!email.trim()}
+            loading={envoi}
+            loadingLabel="Envoi…"
+          >
+            Recevoir un nouveau lien
+          </PatientButton>
+        </form>
+      )}
+    </div>
   );
 }

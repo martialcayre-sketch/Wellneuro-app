@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 
 /**
  * « Signaler un problème » (TRUST LOT-03/04) — trois parcours structurés,
@@ -94,10 +95,49 @@ export function SignalerProbleme({
    */
   associationDisponible?: boolean;
 }) {
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  // La région reste ICI, hors du formulaire : chaque parcours a son propre rendu,
+  // et elle doit exister avant que la confirmation n'y paraisse. Le bouton reste
+  // hors de la région : il ne fait pas partie de ce qui s'annonce.
+  return (
+    <div>
+      <PatientRegionAccuse visible={Boolean(confirmation)}>
+        <PatientInlineMessage tone="info">{confirmation}</PatientInlineMessage>
+      </PatientRegionAccuse>
+      {confirmation ? (
+        <div className="mt-3">
+          <PatientButton variant="neutral" onClick={() => setConfirmation(null)}>
+            Faire un autre signalement
+          </PatientButton>
+        </div>
+      ) : (
+        <FormulaireSignalement
+          token={token}
+          onConfirme={setConfirmation}
+          onEnvoye={onEnvoye}
+          associationDisponible={associationDisponible}
+          elementsProgramme={elementsProgramme}
+          versionProgramme={versionProgramme}
+        />
+      )}
+    </div>
+  );
+}
+
+function FormulaireSignalement({
+  token, onConfirme, onEnvoye, associationDisponible, elementsProgramme, versionProgramme,
+}: {
+  token: string;
+  onConfirme: (message: string) => void;
+  onEnvoye: () => void;
+  associationDisponible: boolean;
+  elementsProgramme: { actionId: string; title: string }[] | null;
+  versionProgramme: string | null;
+}) {
   const [parcours, setParcours] = useState<Parcours | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [confirmation, setConfirmation] = useState<string | null>(null);
 
   // Champs effet indésirable.
   const [produit, setProduit] = useState('');
@@ -150,7 +190,7 @@ export function SignalerProbleme({
         setErreur(data.error ?? 'Erreur. Réessayez.');
         return;
       }
-      setConfirmation(
+      onConfirme(
         data.messagePatient ??
           'Votre demande a bien été enregistrée. Elle sera examinée par votre praticien, sans garantie de délai.',
       );
@@ -162,17 +202,6 @@ export function SignalerProbleme({
       setEnvoi(false);
     }
   };
-
-  if (confirmation) {
-    return (
-      <div className="space-y-3">
-        <PatientInlineMessage tone="info">{confirmation}</PatientInlineMessage>
-        <PatientButton variant="neutral" onClick={() => setConfirmation(null)}>
-          Faire un autre signalement
-        </PatientButton>
-      </div>
-    );
-  }
 
   if (!parcours) {
     return (
