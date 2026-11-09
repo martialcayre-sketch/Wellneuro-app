@@ -30,6 +30,7 @@ Faire entrer `iode_selenium` et `polyphenols_antioxydants` dans la contrainte `p
   - CodeRabbit (revue complète demandée à la main) :
     - comptage des CHECK par `conkey` plutôt que par regex : corrigé ;
     - D-464 §3 dit d'ajuster un contrat existant qui éprouvait le refus du dossier entrant : corrigé.
+    - En réponse, sur `bbf6dbd0` : il confirme la correction du comptage ; P2 « le contrat qui fixe la liste exacte doit aussi être adapté ou remplacé au prochain dossier » : corrigé en D-464 §3.
 - Remise à niveau de la branche par fusion de `origin/main` (commit de fusion), sur arbitrage du responsable du 2026-11-09.
 
 ## Fichiers modifiés
