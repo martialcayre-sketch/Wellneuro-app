@@ -66,11 +66,14 @@ DECLARE
     || '''b9_b12''::text, ''iode_selenium''::text, ''polyphenols_antioxydants''::text])))';
 BEGIN
   -- ── 1. La contrainte, seule et exacte ────────────────────────────────────
+  -- Par la colonne référencée (`conkey`), pas par le texte de la définition.
   SELECT count(*) INTO nb
   FROM pg_constraint c
+  JOIN pg_attribute a
+    ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
   WHERE c.conrelid = 'public.positions_expert_versions'::regclass
     AND c.contype = 'c'
-    AND pg_get_constraintdef(c.oid) ~ '\mdossier\M';
+    AND a.attname = 'dossier';
   IF nb <> 1 THEN
     RAISE EXCEPTION 'DOSSIERS POSITIONS: % contrainte(s) CHECK sur `dossier` ; une seule attendue.', nb;
   END IF;

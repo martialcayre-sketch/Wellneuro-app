@@ -20,6 +20,17 @@ Faire entrer `iode_selenium` et `polyphenols_antioxydants` dans la contrainte `p
 - Une seule instruction `ALTER TABLE` (DROP puis ADD de la même contrainte), donc atomique. La nouvelle liste contient l'ancienne. `schema.prisma` ne change pas : le CHECK n'y est pas modélisé.
 - Le contrat v1 éprouvait « iode_selenium refusé avant sa clôture », un cas qui rougirait dès la migration. Il éprouve désormais `omega_3`, une valeur hors liste. La liste elle-même est au contrat v2.
 - Constat de production avant la migration (one-off-6041, lecture seule) : CHECK sur les cinq valeurs ; aucune version de position, aucun acte, aucun arbitrage.
+- **Revues de la tête `d78d7d12`, verdicts (2026-11-09)** :
+  - PR-Agent : aucune remarque.
+  - `wn-reviewer` : GO, aucun P0 ni P1.
+    - P2-1 (pas de `lock_timeout`) : écarté. La table est vide, et la migration s'applique au créneau, par le one-off de la release-db.
+    - P2-2 (retour arrière) : corrigé, puce ajoutée en D-464 §5 sur arbitrage du responsable.
+    - P2-3 (deux phrases de §3 non arbitrées) : corrigé, les deux phrases sont retirées sur arbitrage du responsable.
+    - P2-4 (identifiants fixes dans le contrat) : écarté. Le pire cas est un faux rouge, jamais un faux vert, et seulement sur une base locale réutilisée ; le CI joue sur une base neuve, et le contrat v1 a le même patron.
+  - CodeRabbit (revue complète demandée à la main) :
+    - comptage des CHECK par `conkey` plutôt que par regex : corrigé ;
+    - D-464 §3 dit d'ajuster un contrat existant qui éprouvait le refus du dossier entrant : corrigé.
+- Remise à niveau de la branche par fusion de `origin/main` (commit de fusion), sur arbitrage du responsable du 2026-11-09.
 
 ## Fichiers modifiés
 
@@ -37,6 +48,8 @@ Faire entrer `iode_selenium` et `polyphenols_antioxydants` dans la contrainte `p
 - Mutations du CHECK sur la base locale, puis restauration : la liste à cinq (l'état d'avant la migration), une valeur de trop et la liste sans polyphénols font toutes rougir le contrat v2 (exit 3) ; il est vert après restauration.
 - T1 `check:rapide` (17 étapes vertes, 2 sautées) et T1 complet `npm run check` : verts.
 - T3 `npm run test:worktree` (sur `b0ebcd01` plus le lot) : séquence CI complète verte en 11 min 9 s ; « Dérive schéma ↔ migrations » donne *No difference detected* ; contrats v1 et v2 joués.
+- CI de `d78d7d12` vert : l'étape « Positions expert dossiers negative tests » a réellement tourné.
+- Après la correction de CodeRabbit, sur la base locale : contrat v2 vert ; il rougit sur les trois listes mutées et sur une seconde contrainte CHECK posée sur `dossier` (« 2 contrainte(s) »), puis redevient vert après restauration. T1 vert. T3 n'a pas été rejoué : le changement se limite au contrat et à la documentation, et le CI le rejoue sur la tête.
 
 ## Problèmes ouverts
 
