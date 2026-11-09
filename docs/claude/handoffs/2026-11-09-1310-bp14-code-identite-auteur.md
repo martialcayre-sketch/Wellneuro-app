@@ -46,7 +46,10 @@ trois bancs. Aucun lecteur des colonnes (§7).
   pour la transaction, et la route du portail JA ;
   `persistence.coherence.test.ts`, `persistence.activation.test.ts`,
   `lib/patient/effacement.test.ts` et
-  `lib/protocol/identiteAuteur.historique.test.ts` (neuf).
+  `lib/protocol/identiteAuteur.guard.test.ts` (neuf : garde historique et
+  banc de comportement ; nommé `guard` pour la parité de
+  `wn-controle-fusion`, qui veut qu'un banc qui balaie l'arborescence soit
+  un `guard`).
 - Docs : `docs/DOSSIER_RGPD.md` (rubrique 5) ;
   `changelog.d/2026-11-09-bp14-code-identite-auteur.md` ;
   `docs/claude/plan-journal/F10/2026-11-09-01-pr-code-identite-auteur.md` ;
@@ -56,11 +59,26 @@ trois bancs. Aucun lecteur des colonnes (§7).
 ## Validations exécutées
 
 - Bancs ciblés : 24 fichiers, 348 tests verts, plus `effacement.test.ts`.
-- T1 complet vert (`check`, anti-secrets compris).
-- T3 : voir la PR.
+- T1 complet vert sur `e667e8a7`. Après la revue, il a rougi sur la parité
+  « banc de balayage = `guard` », d'où le renommage ; le rejeu sur la tête
+  est indiqué dans la PR.
+- T3 sur `e667e8a7` : 2 rouges de durée sans lien avec le lot
+  (`ProtocolMiniBuilder`, délai de 5 s dépassé ; `masquage`, 210 ms pour un
+  plafond de 200 ms), sous charge, pendant que la revue tournait. Les deux
+  passent seuls. Le rejeu sur la tête est indiqué dans la PR.
 - Grep des colonnes : seuls les trois écrivains les nomment. Les 46 lectures
   des deux tables passent par `select`, et aucune relation n'est incluse.
-- Revues (wn-reviewer, CodeRabbit ou PR-Agent) : voir la PR.
+- `wn-reviewer` : GO sur `e667e8a7`, aucun constat bloquant.
+  - Corrigés : 1 et 2 (garde contournable par une relation, un `include`
+    ou un `select` imbriqué), 3 (lecture masquée par une constante), 4
+    (filtre exact de l'effacement), 6 (date du registre), ainsi que le banc
+    GET de la diffusion.
+  - Écarté avec motif : 5 (`creePar` facultatif dans l'entrée de
+    l'instantané). La persistance impose le nul pour le portail, et le banc
+    nominatif de la route praticien rougit si l'auteur manque. Une union
+    discriminée ferait réécrire les appelants pour un gain que les bancs
+    tiennent déjà.
+- Revue CodeRabbit ou PR-Agent : voir la PR.
 
 ## Problèmes ouverts
 
