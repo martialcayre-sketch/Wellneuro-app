@@ -24,6 +24,10 @@
 //      version retirée dont la fiche a été reprise par une autre position
 //      SIGNÉE est refusé ; une révision sans fiche de l'autre la libère, et
 //      toute révision d'une position signée, même sur sa fiche, aussi (cas 9).
+//   6. LES DOSSIERS ENTRÉS PAR D-464 (cas 10) : une version se verse, par le
+//      vrai chemin, dans `iode_selenium` et `polyphenols_antioxydants` ; une
+//      valeur hors liste est refusée par la base elle-même ; la liste du code
+//      recopie la définition du CHECK lue dans la base.
 //
 // SAUTÉ PAR DÉFAUT : il écrit et commet. Il ne tourne que si
 // `WN_POSITIONS_EXPERT_BANC_BASE` nomme la base de `DATABASE_URL`, sur un hôte
@@ -37,6 +41,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { CONFLITS_SOURCES_V1, type ConflitSourcesDeclare } from '@/lib/clinical/conflitsSourcesV1';
 import type { ContexteEcriture } from './ecriture';
+import { DOSSIERS_POSITION } from './vocabulaire';
 import { empreinteEntreeConflit } from './registreConflits';
 
 const URL_BASE = process.env.DATABASE_URL ?? '';
@@ -387,5 +392,36 @@ describe.skipIf(!ACTIF)('positions d’expert — base réelle (empreintes, refu
         depot,
       ),
     ).toEqual({ issue: 'refusee', raison: 'fiche_hors_structure' });
+  });
+
+  it('10. D-464 : les deux dossiers entrants se versent ; hors liste, la base refuse ; le code recopie le CHECK', async () => {
+    for (const dossier of ['iode_selenium', 'polyphenols_antioxydants'] as const) {
+      const positionId = await positionLibre();
+      const issue = await m.verserVersion(
+        { positionId, version: 'v1.0', dossier, ficheId: null, contenu: CONTENU, claimsAppui: [CL_A], idVersionCouranteVue: null, auteur: AUTEUR },
+        ctx(),
+      );
+      expect(issue.issue).toBe('ecrite');
+      const { rows } = await observateur.query('SELECT dossier FROM positions_expert_versions WHERE position_id = $1', [positionId]);
+      expect(rows).toEqual([{ dossier }]);
+    }
+
+    // La route refuse avant la base ; ici, la base refuse seule.
+    const horsListe = observateur.query(
+      `INSERT INTO positions_expert_versions (id, position_id, version, dossier, contenu, claims_appui, auteur)
+       VALUES ($1, $2, 'v1.0', 'omega_3', $3::jsonb, $4::text[], $5)`,
+      [`pevhors${RUN.toLowerCase()}`, await positionLibre(), JSON.stringify(CONTENU), [CL_A], AUTEUR],
+    );
+    await expect(horsListe).rejects.toMatchObject({ code: '23514', constraint: 'positions_expert_versions_dossier_ferme' });
+
+    // Entre la migration d'un dossier et son code, la base en accepte un de
+    // plus que la route (D-464 §5) : le code est un préfixe de la liste.
+    const { rows: def } = await observateur.query(
+      `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+       WHERE conrelid = 'public.positions_expert_versions'::regclass AND conname = 'positions_expert_versions_dossier_ferme'`,
+    );
+    const liste = [...String(def[0].def).matchAll(/'([^']+)'::text/g)].map(x => x[1]);
+    expect(liste.slice(0, DOSSIERS_POSITION.length)).toEqual([...DOSSIERS_POSITION]);
+    expect(liste).toEqual(expect.arrayContaining(['iode_selenium', 'polyphenols_antioxydants']));
   });
 });

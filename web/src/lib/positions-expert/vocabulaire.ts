@@ -16,8 +16,20 @@ export const ID_LIGNE_RE = /^[a-z0-9]{8,64}$/i;
 export const SHA256_RE = /^[0-9a-f]{64}$/;
 export const JETON_RE = /^\d{1,19}$/;
 
-/** Liste fermée de la migration ; iode et sélénium entre par migration à sa clôture. */
-export const DOSSIERS_POSITION = ['fer', 'vitamine_d', 'zinc', 'magnesium', 'b9_b12'] as const;
+/**
+ * Liste fermée du CHECK `positions_expert_versions_dossier_ferme`, recopiée
+ * dans son ordre (migration `positions_expert_dossiers_v2`, [[D-464]]). Un
+ * dossier y entre à sa clôture : migration en ajout seul, puis cette liste.
+ */
+export const DOSSIERS_POSITION = [
+  'fer',
+  'vitamine_d',
+  'zinc',
+  'magnesium',
+  'b9_b12',
+  'iode_selenium',
+  'polyphenols_antioxydants',
+] as const;
 export type DossierPosition = (typeof DOSSIERS_POSITION)[number];
 
 /** Les quatre rubriques, dans l'ORDRE FIXE de l'empreinte. */
@@ -38,6 +50,8 @@ export const LIBELLES_DOSSIERS: Record<DossierPosition, string> = {
   zinc: 'Zinc',
   magnesium: 'Magnésium érythrocytaire',
   b9_b12: 'B9 et B12',
+  iode_selenium: 'Iode et sélénium',
+  polyphenols_antioxydants: 'Polyphénols et antioxydants',
 };
 
 export type ActePosition = 'signee' | 'retiree';
