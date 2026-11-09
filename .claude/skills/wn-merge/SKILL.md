@@ -80,7 +80,14 @@ dernière session.
    `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
    commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
    (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
-   la revue de **PR-Agent** sur la tête le remplace (`D-393` §1). Elle ne
+   **Copilot passe d'abord** (`D-466`) si son quota est présumé disponible :
+   `node scripts/wn-revue-copilot.mjs --quota` à `0` ; alors
+   `gh pr edit <N> --add-reviewer @copilot` sur la tête, une fois par tête,
+   et la revue vaut si `node scripts/wn-revue-copilot.mjs <N>` rend `0`
+   (son `tete=` est la tête visée par le merge ; ses remarques, en ligne et
+   dans le corps, reçoivent leur verdict). Quota épuisé, refus, ou revue
+   absente dix minutes après la demande : la revue de **PR-Agent** sur la
+   tête le remplace (`D-393` §1). Elle ne
    vaut que si les quatre conditions de `D-393` §2 tiennent, que lit
    `node scripts/wn-revue-pr-agent.mjs <N>` — un appel, code lu directement,
    jamais dans un tube ; **`0` seul** vaut revue de la tête, **`1`** = preuve

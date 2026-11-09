@@ -131,10 +131,27 @@ la tête n'a pas été relue. Un
 correctif poussé après la dernière revue n'est pas relu tant qu'une revue
 neuve ne le dit pas.
 
+**Copilot, second recours** (`D-466`, qui amende `D-393` §1). Si CodeRabbit
+saute la PR (statut `skipping`) ou bute sur son quota (« Review rate
+limited »), Copilot passe avant PR-Agent, et seulement si son quota est
+présumé disponible : `node scripts/wn-revue-copilot.mjs --quota` rend `0`
+tant qu'aucune revue de Copilot ne dit « insufficient remaining quota »
+depuis le 1er du mois (UTC). La session le demande alors sur la tête,
+`gh pr edit <N> --add-reviewer @copilot`, une fois par tête (forme à
+constater au premier usage ; à défaut, l'interface). Sa revue n'est prouvée
+que si `node scripts/wn-revue-copilot.mjs <N>` rend `0` : une revue de
+`copilot-pull-request-reviewer[bot]` dont le `commit_id` est la tête, corps
+autre qu'un refus (« Copilot was unable to review… »). Copilot ne relit
+qu'une fois : après un push, redemande sur la nouvelle tête si le quota est
+encore présumé. Quota épuisé, refus, ou revue absente dix minutes après la
+demande : PR-Agent revoit la tête. Ses remarques, en ligne et dans le corps
+de la revue, reçoivent chacune leur verdict (règle 1.2). Jamais de demande
+de Copilot avant que CodeRabbit soit dépassé.
+
 **PR-Agent en substitution** (`D-393` §1 et §2). Si CodeRabbit saute la PR
-(statut `skipping`) ou bute sur son quota (« Review rate limited »), la
-revue de PR-Agent sur la tête le remplace, et seulement si les quatre
-conditions tiennent ensemble :
+(statut `skipping`) ou bute sur son quota (« Review rate limited »), et que
+Copilot ne remplit pas sa condition ci-dessus, la revue de PR-Agent sur la
+tête le remplace, et seulement si les quatre conditions tiennent ensemble :
 
 - (a) un run du workflow `PR-Agent`, événement `pull_request`, `head_sha`
   = tête, conclu `success`. Un run lancé par un commentaire ne compte pas,

@@ -114,6 +114,16 @@ faite seulement de fichiers exclus du modèle, ne produit pas de revue
 PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts :
 `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.
 
+**Copilot, entre les deux (`D-466`, qui amende `D-393` §1).** Quand
+CodeRabbit est dépassé, Copilot passe avant PR-Agent si son quota est
+présumé disponible (aucun refus « insufficient remaining quota » depuis le
+1er du mois, `node scripts/wn-revue-copilot.mjs --quota` à `0`). La session
+le demande sur la tête (`gh pr edit <N> --add-reviewer @copilot`), une fois
+par tête ; sa revue vaut si `node scripts/wn-revue-copilot.mjs <N>` rend `0`.
+Quota épuisé, refus, ou revue absente dix minutes après la demande :
+PR-Agent. Pas de revue systématique : la revue automatique de Copilot à
+l'ouverture est coupée par le responsable.
+
 **L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
 change pas, son porteur change. Depuis l'adoption de `D-373` (`D-454`), une
 session « intégrateur », seule occupante de la copie principale, merge les

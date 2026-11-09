@@ -129,6 +129,7 @@ la vérification base après merge dans `wn-merge`/`REGLES_PR_MERGE.md` ; les
 contrôles cliniques opposables dans `.claude/rules/clinique-scoring.md` ; la
 revue de CodeRabbit précède le merge par l'assistant (`D-290`, qui a pris la
 suite de Copilot le 2026-10-14) ; s'il saute la PR ou bute sur son quota,
-celle de PR-Agent sur la tête le remplace (`D-393`). L'une ou l'autre
+celle de Copilot le remplace si son quota est présumé disponible (`D-466`),
+sinon celle de PR-Agent sur la tête (`D-393`). L'une ou l'autre
 s'ajoute au barème ci-dessus sans en remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
 il fixe **quand** chacun s'engage et quand il ne s'engage pas.
