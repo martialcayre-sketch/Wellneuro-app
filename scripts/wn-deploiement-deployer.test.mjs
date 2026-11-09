@@ -529,10 +529,11 @@ test('lot 3 — un run release-db RÉUSSI, ou aucun commit de release-db dans la
   }
 });
 
-// D-374 §2, phase 3 : la garde anti-recul fait finir en ÉCHEC VOLONTAIRE un
-// run dont la release a eu lieu (incident #1577, 2026-10-19 : one-off et
-// contre-épreuve verts, garde rouge). La migration est appliquée, la tête
-// part. Un tel run ne devient jamais un verrou permanent.
+// D-374 §2, phase 3 : jusqu'à D-467, la garde anti-recul faisait finir en
+// ÉCHEC VOLONTAIRE un run dont la release avait eu lieu (incident #1577,
+// 2026-10-19 : one-off et contre-épreuve verts, garde rouge). Ces runs restent
+// lisibles : la migration est appliquée, la tête part. Un tel run ne devient
+// jamais un verrou permanent.
 test('D-374 §1 — fin rouge APRÈS application (runs antérieurs à D-467, garde anti-recul alors en place) : appliquée, la tête part', async () => {
   const lus = [];
   const m = monde({

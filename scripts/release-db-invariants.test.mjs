@@ -657,9 +657,25 @@ test('D-467 — aucune garde anti-recul, et le seul déploiement du workflow est
     ['integration-link-manual-deploy main'],
     'le seul déploiement du workflow est celui de la branche main (jamais un SHA ancien)',
   );
-  assert.doesNotMatch(
-    code,
-    /scalingo[^\n]*\b(rollback|deployment-follow|--git-ref|restart|scale)\b/,
-    'aucune commande Scalingo qui redéploie ou remet en service un build antérieur',
-  );
+  // Continuations `\` recollées : le workflow écrit ses commandes Scalingo sur
+  // plusieurs lignes (`scalingo --app … \` puis la sous-commande). Chaque
+  // commande est jugée par jetons : `deploy` (archive, donc un SHA) est
+  // interdit, `integration-link-manual-deploy` et `deployments` (lecture) ne le
+  // sont pas.
+  const commandes = code
+    .replace(/\\\n\s*/g, ' ')
+    .split('\n')
+    .filter((l) => /\bscalingo\b/.test(l));
+  assert.ok(commandes.length > 0, 'le banc lit bien des commandes Scalingo');
+  for (const ligne of commandes) {
+    const jetons = ligne.split(/[\s"'`$(){};|&]+/);
+    for (const interdit of ['rollback', 'restart', 'scale', 'deploy', 'deployment-follow']) {
+      assert.ok(
+        !jetons.includes(interdit),
+        `aucune commande Scalingo « ${interdit} » qui redéploie ou remet en service un build antérieur (D-467) : ${ligne.trim()}`,
+      );
+    }
+    assert.doesNotMatch(ligne, /--git-ref\b/, `aucun déploiement d'une référence Git (D-467) : ${ligne.trim()}`);
+  }
+  assert.doesNotMatch(code, /\/deployments\b/, "aucun appel direct à l'API de déploiement Scalingo (D-467)");
 });
