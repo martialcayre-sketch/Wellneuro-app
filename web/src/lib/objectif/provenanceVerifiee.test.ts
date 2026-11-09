@@ -96,10 +96,12 @@ describe('la provenance se CONSTATE, jamais ne se déclare', () => {
     expect(prisma.propositionPrioriteIA.findFirst).not.toHaveBeenCalled();
   });
 
-  it('une synthèse NON validée ne se cite pas', async () => {
+  it('une synthèse NON validée ne se cite pas — une validée puis annotée, si (t62)', async () => {
     await constaterProvenance('PAT_1', textes({ reformulationPraticien: NARRATIF }));
     expect(prisma.syntheseIA.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { idPatient: 'PAT_1', statut: 'Validee_Praticien' } }),
+      expect.objectContaining({
+        where: { idPatient: 'PAT_1', statut: { in: ['Validee_Praticien', 'Corrigee_Praticien'] } },
+      }),
     );
   });
 

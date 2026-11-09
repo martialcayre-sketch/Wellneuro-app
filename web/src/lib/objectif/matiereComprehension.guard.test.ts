@@ -98,9 +98,12 @@ describe('matière de compréhension — la surface exposée', () => {
 
   it('seule une synthèse VALIDÉE est citable — jamais un brouillon', () => {
     const code = sourceSansCommentaires(ADAPTATEUR);
-    expect(code).toContain('statut: STATUT_SYNTHESE_CITABLE');
-    expect(code).not.toContain('Brouillon_IA');
-    expect(code).not.toContain('Corrigee_Praticien');
+    // t62 : l'ensemble importé de `matierePriorite.ts` (validée ou corrigée),
+    // aux DEUX lectures — la matière et la barre d'ouverture comptent pareil.
+    expect(code.match(/statut: \{ in: \[\.\.\.STATUTS_SYNTHESE_CITABLES\] \}/g)).toHaveLength(2);
+    for (const statut of ['Brouillon_IA', 'Brouillon_Praticien', 'Rejetee', 'Validee_Praticien', 'Corrigee_Praticien']) {
+      expect(code).not.toContain(statut);
+    }
   });
 
   it('le statut citable et l’extracteur sont IMPORTÉS, jamais redéclarés', () => {
@@ -108,9 +111,9 @@ describe('matière de compréhension — la surface exposée', () => {
     // la borne dupliquée du 2026-09-10 a coûté une correction pour ce motif.
     const code = sourceSansCommentaires(ADAPTATEUR);
     expect(code).toMatch(
-      /import \{[^}]*STATUT_SYNTHESE_CITABLE[^}]*texteDepuisBlob[^}]*\} from '\.\/matierePriorite'/,
+      /import \{[^}]*STATUTS_SYNTHESE_CITABLES[^}]*texteDepuisBlob[^}]*\} from '\.\/matierePriorite'/,
     );
-    expect(code).not.toMatch(/const STATUT_SYNTHESE_CITABLE\s*=/);
+    expect(code).not.toMatch(/const STATUTS_SYNTHESE_CITABLES\s*=/);
     expect(code).not.toMatch(/function texteDepuisBlob\s*\(/);
   });
 
@@ -191,6 +194,10 @@ describe('matière de compréhension — la surface exposée', () => {
       '@/lib/scoring',
       '@/lib/instruments',
       '@/lib/equilibre',
+      // Un import RELATIF y mènerait aussi (revue de t62) : le module feuille
+      // existe pour que la liste des statuts n'ait pas à passer par là.
+      'clinical-engine',
+      'preconditionsT0',
     ]) {
       expect(code).not.toContain(interdit);
     }

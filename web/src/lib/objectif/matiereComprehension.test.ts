@@ -91,7 +91,10 @@ describe('la matière du résumé global — ce qui sort, et ce qui ne sort pas'
   it('seules les synthèses VALIDÉES sont lues, et le blob n’est pas demandé en entier', async () => {
     await lireSynthesesCitables('PAT_1');
     const appel = prisma.syntheseIA.findMany.mock.calls[0][0];
-    expect(appel.where).toEqual({ idPatient: 'PAT_1', statut: 'Validee_Praticien' });
+    expect(appel.where).toEqual({
+      idPatient: 'PAT_1',
+      statut: { in: ['Validee_Praticien', 'Corrigee_Praticien'] },
+    });
     // `select` NOMME ses colonnes : ni donneesEntree, ni modele, ni notesPraticien.
     expect(Object.keys(appel.select).sort()).toEqual(['idSynthese', 'syntheseJson']);
   });

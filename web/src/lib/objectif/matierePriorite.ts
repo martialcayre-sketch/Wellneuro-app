@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/prisma';
+import { STATUTS_SYNTHESE_VALIDEE } from '@/lib/synthese/statutsValidee';
 
 // L'ADAPTATEUR BORNÉ DE LA MATIÈRE DE PRIORITÉ — `D-167` §10, sur le patron de
 // `plainteVerifiee.ts` (`D-164`).
 //
 // CE QU'IL ADMET, ET RIEN D'AUTRE :
 //
-//   1. `resume_praticien` d'une synthèse `Validee_Praticien` — l'entrée de
-//      l'appel (`D-167` §3) ;
+//   1. `resume_praticien` d'une synthèse validée — `Validee_Praticien`, ou
+//      `Corrigee_Praticien` (validée puis annotée, t62) — l'entrée de l'appel
+//      (`D-167` §3) ;
 //   2. `narratif_patient` de la MÊME synthèse — la citation qui pré-remplit la
 //      reformulation (`D-167` §2) ;
 //   3. le dernier dépôt « ce qui compte pour moi », verbatim.
@@ -20,9 +22,13 @@ import { prisma } from '@/lib/prisma';
 //     d'appelant pour le lire. La fonction extrait DEUX clés et construit un
 //     objet neuf ; le blob ne franchit pas cette frontière ;
 //   - AUCUN score, seuil, bande ni rang. Aucun de ces objets n'est lu ;
-//   - AUCUN `Brouillon_IA`, aucune `Corrigee_Praticien` non validée. Une
-//     synthèse non validée n'a pas été relue par un praticien : la citer
-//     reviendrait à faire dire au dossier ce que la machine a écrit seule ;
+//   - AUCUN brouillon, aucune synthèse rejetée. Une synthèse non validée n'a
+//     pas été relue par un praticien : la citer reviendrait à faire dire au
+//     dossier ce que la machine a écrit seule. Une `Corrigee_Praticien`, elle,
+//     A ÉTÉ validée : la route ne la produit qu'en annotant une synthèse
+//     `Validee_Praticien`, sans toucher ni son texte ni sa `dateValidation`.
+//     L'exclure, comme le faisait `D-167` §2 avant t62, taisait une synthèse
+//     validée au seul motif que le praticien l'avait commentée ;
 //   - CE FICHIER NE FABRIQUE AUCUN TEXTE. Il rend ce qui est écrit, ou `null`.
 //
 // UNE CORRECTION À `D-167` §10, ÉCRITE PLUTÔT QUE TUE. La décision annonçait
@@ -34,8 +40,15 @@ import { prisma } from '@/lib/prisma';
 // ne dit rien de ce qu'on EXTRAIT une fois la table lue. La garde qui compte est
 // celle qui éprouve la SURFACE EXPOSÉE — `matierePriorite.guard.test.ts`.
 
-/** Le statut, et le seul, qu'une synthèse doit porter pour être citable. */
-export const STATUT_SYNTHESE_CITABLE = 'Validee_Praticien';
+/**
+ * Les statuts qu'une synthèse doit porter pour être citable — validée, ou
+ * validée puis annotée (t62, amendement de `D-167` §2 et §10).
+ *
+ * IMPORTÉS DU MODULE FEUILLE, JAMAIS REDÉCLARÉS : c'est le même ensemble que
+ * celui de la précondition T0 et du second rideau. Juger « validée » avec deux
+ * listes, c'est ce qui avait fait diverger cet adaptateur du reste du dossier.
+ */
+export const STATUTS_SYNTHESE_CITABLES = STATUTS_SYNTHESE_VALIDEE;
 
 /**
  * La matière d'une synthèse validée, réduite à deux textes.
@@ -99,7 +112,7 @@ export function texteDepuisBlob(blob: unknown, cle: string): string | null {
  */
 export async function lireSyntheseCitable(idPatient: string): Promise<MatiereSynthese | null> {
   const ligne = await prisma.syntheseIA.findFirst({
-    where: { idPatient, statut: STATUT_SYNTHESE_CITABLE },
+    where: { idPatient, statut: { in: [...STATUTS_SYNTHESE_CITABLES] } },
     orderBy: { dateValidation: 'desc' },
     select: { idSynthese: true, syntheseJson: true },
   });

@@ -64,11 +64,34 @@ describe('matière de priorité — la surface exposée', () => {
   });
 
   it('seule une synthèse VALIDÉE est citable — jamais un brouillon', () => {
+    // t62 : « validée » = `Validee_Praticien` ou `Corrigee_Praticien`, l'ensemble
+    // du module feuille, le même que celui de la précondition T0. L'adaptateur
+    // l'IMPORTE et ne nomme aucun statut lui-même : une liste locale dériverait.
     const code = sourceSansCommentaires(ADAPTATEUR);
-    expect(code).toContain("STATUT_SYNTHESE_CITABLE = 'Validee_Praticien'");
-    expect(code).not.toContain('Brouillon_IA');
-    expect(code).not.toContain('Corrigee_Praticien');
-    expect(code).toContain('statut: STATUT_SYNTHESE_CITABLE');
+    expect(code).toMatch(
+      /import \{ STATUTS_SYNTHESE_VALIDEE \} from '@\/lib\/synthese\/statutsValidee'/,
+    );
+    expect(code).toContain('export const STATUTS_SYNTHESE_CITABLES = STATUTS_SYNTHESE_VALIDEE;');
+    expect(code).toContain('statut: { in: [...STATUTS_SYNTHESE_CITABLES] }');
+    for (const statut of ['Brouillon_IA', 'Brouillon_Praticien', 'Rejetee', 'Validee_Praticien', 'Corrigee_Praticien']) {
+      expect(code).not.toContain(statut);
+    }
+  });
+
+  it('le module feuille des statuts n’importe RIEN, et la précondition T0 le ré-exporte', () => {
+    // Une feuille qui importerait tirerait dans l'adaptateur ce que la garde
+    // « aucun moteur clinique » lui interdit. Et une précondition qui
+    // redéclarerait la liste rouvrirait la divergence que t62 ferme.
+    const feuille = sourceSansCommentaires('src/lib/synthese/statutsValidee.ts');
+    expect(feuille).not.toMatch(/\bimport\b/);
+    expect(feuille).not.toMatch(/\brequire\(/);
+    expect(feuille).toContain(
+      "export const STATUTS_SYNTHESE_VALIDEE = ['Validee_Praticien', 'Corrigee_Praticien'] as const;",
+    );
+    const precondition = sourceSansCommentaires('src/lib/clinical-engine/preconditionsT0.ts');
+    expect(precondition).toContain("import { STATUTS_SYNTHESE_VALIDEE } from '../synthese/statutsValidee';");
+    expect(precondition).toContain('export { STATUTS_SYNTHESE_VALIDEE };');
+    expect(precondition).not.toMatch(/const STATUTS_SYNTHESE_VALIDEE\s*=/);
   });
 
   it.each([ADAPTATEUR, APPEL, ROUTE])('%s n’importe aucun moteur clinique', (chemin) => {
@@ -79,6 +102,10 @@ describe('matière de priorité — la surface exposée', () => {
       '@/lib/scoring',
       '@/lib/instruments',
       '@/lib/equilibre',
+      // Un import RELATIF y mènerait aussi (revue de t62) : le module feuille
+      // existe pour que la liste des statuts n'ait pas à passer par là.
+      'clinical-engine',
+      'preconditionsT0',
     ]) {
       expect(code).not.toContain(interdit);
     }

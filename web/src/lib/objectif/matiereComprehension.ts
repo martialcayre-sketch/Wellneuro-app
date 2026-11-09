@@ -1,13 +1,14 @@
 import { prisma } from '@/lib/prisma';
-import { STATUT_SYNTHESE_CITABLE, texteDepuisBlob } from './matierePriorite';
+import { STATUTS_SYNTHESE_CITABLES, texteDepuisBlob } from './matierePriorite';
 
 // L'ADAPTATEUR BORNÉ DE LA MATIÈRE DU RÉSUMÉ GLOBAL — le second de la campagne,
 // sur le patron de `matierePriorite.ts` et pour les mêmes raisons.
 //
 // CE QU'IL ADMET, ET RIEN D'AUTRE :
 //
-//   1. `narratif_patient` de CHAQUE synthèse `Validee_Praticien` du dossier,
-//      dans l'ordre de validation — la matière du texte ;
+//   1. `narratif_patient` de CHAQUE synthèse validée du dossier —
+//      `Validee_Praticien` ou `Corrigee_Praticien` (t62) —, dans l'ordre de
+//      validation — la matière du texte ;
 //   2. les LIBELLÉS de `axes_prioritaires` de ces mêmes synthèses, DANS LEUR
 //      ORDRE — et rien d'autre de ces objets ;
 //   3. les désaccords déjà signalés qui portent un texte.
@@ -101,7 +102,7 @@ function libellesDAxes(blob: unknown): string[] {
  */
 export async function lireSynthesesCitables(idPatient: string): Promise<MatiereSyntheseGlobale[]> {
   const lignes = await prisma.syntheseIA.findMany({
-    where: { idPatient, statut: STATUT_SYNTHESE_CITABLE },
+    where: { idPatient, statut: { in: [...STATUTS_SYNTHESE_CITABLES] } },
     orderBy: { dateValidation: 'asc' },
     select: { idSynthese: true, syntheseJson: true },
   });
@@ -173,7 +174,7 @@ export type OuvertureResume = {
 
 export async function constaterOuverture(idPatient: string): Promise<OuvertureResume> {
   const validees = await prisma.syntheseIA.findMany({
-    where: { idPatient, statut: STATUT_SYNTHESE_CITABLE },
+    where: { idPatient, statut: { in: [...STATUTS_SYNTHESE_CITABLES] } },
     orderBy: { dateValidation: 'asc' },
     select: { dateValidation: true },
   });
