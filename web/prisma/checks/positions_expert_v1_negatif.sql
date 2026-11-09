@@ -12,7 +12,8 @@
 --      session Europe/Paris — sur les trois tables ;
 --   3. les formats sont fermés : `WN-PE-NNNN`, `vN.M`, `FU_…`, `CS-…`,
 --      `identifiant@version`, empreintes ; le dossier de preuve est en liste
---      fermée (iode et sélénium refusé avant sa clôture) ;
+--      fermée (un dossier hors liste est refusé ; la liste elle-même est
+--      éprouvée par `positions_expert_dossiers_v2_negatif.sql`, D-464) ;
 --   4. le contenu a EXACTEMENT les quatre rubriques, chacune un texte visible ;
 --   5. une version sans claim d'appui est refusée (vide ou NULL), comme un
 --      appui mal formé ou cité deux fois ;
@@ -176,8 +177,8 @@ BEGIN
     V || '(''x1'', ''WN-PE-01'', ''v1.0'', ''fer'', NULL, ' || quote_literal(C1) || ', ' || CL || ', NULL, ''p'')', ARRAY['23514']);
   PERFORM pg_temp.doit_refuser('version mal formée',
     V || '(''x2'', ''WN-PE-0003'', ''1.0'', ''fer'', NULL, ' || quote_literal(C1) || ', ' || CL || ', NULL, ''p'')', ARRAY['23514']);
-  PERFORM pg_temp.doit_refuser('dossier iode_selenium avant sa clôture',
-    V || '(''x3'', ''WN-PE-0003'', ''v1.0'', ''iode_selenium'', NULL, ' || quote_literal(C1) || ', ' || CL || ', NULL, ''p'')', ARRAY['23514']);
+  PERFORM pg_temp.doit_refuser('dossier hors liste fermée',
+    V || '(''x3'', ''WN-PE-0003'', ''v1.0'', ''omega_3'', NULL, ' || quote_literal(C1) || ', ' || CL || ', NULL, ''p'')', ARRAY['23514']);
   PERFORM pg_temp.doit_refuser('fiche d''usage mal formée',
     V || '(''x4'', ''WN-PE-0003'', ''v1.0'', ''fer'', ''FU_minuscule'', ' || quote_literal(C1) || ', ' || CL || ', NULL, ''p'')', ARRAY['23514']);
   PERFORM pg_temp.doit_refuser('auteur blanc',

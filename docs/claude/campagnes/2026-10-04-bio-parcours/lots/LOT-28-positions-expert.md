@@ -112,10 +112,17 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
   d'escalade dès le déploiement. C'est un changement clinique, chemin
   retenu jusqu'à release-db (D-389 §5).
 - Geste du responsable : versement et signature des positions à l'atelier.
+- Amendement du 2026-11-08 (D-464, amende D-439 §2 et §5) : `iode_selenium`
+  et `polyphenols_antioxydants` entrent dans la liste fermée des dossiers de
+  preuve. PR 6 : migration seule (CHECK élargi en ajout seul, contrat
+  négatif v2, ligne de CI), sur demande explicite ; release-db. PR 7, après
+  le constat : `DOSSIERS_POSITION` et `LIBELLES_DOSSIERS`, bancs. Chaque
+  dossier suivant entre à sa clôture par le même geste.
 
 ## Hors périmètre
 
-- Iode et sélénium (à sa clôture) ; fer P7 et P8, hors structure.
+- Fer P7 et P8, hors structure. (Iode et sélénium, à sa clôture : entré par
+  D-464.)
 - BP-17 (bibliothèque des options) et BP-18a (prescription).
 - Toute lecture d'une position par une règle, le portail, le courrier,
   l'IA ou la recherche corpus.
@@ -126,8 +133,8 @@ Le 2026-11-04, sur questions à options, toutes sur l'option recommandée :
 
 - Aucun texte de position, aucune valeur au dépôt, ni dans une migration.
 - Aucun pré-remplissage d'arbitrage ; aucune position par défaut.
-- Pas de `schema.prisma` ni de migration hors de la PR 2 ; production en
-  lecture seule.
+- Pas de `schema.prisma` ni de migration hors des PR 2 et 6 ; production
+  en lecture seule.
 
 ## Critères de done
 

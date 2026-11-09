@@ -1281,6 +1281,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/positions_expert_v1_negatif.sql
 
+      # La liste fermée des dossiers de preuve, élargie à la clôture de chaque
+      # dossier (D-464, amende D-439 §2 et §5) : une seule contrainte sur
+      # `dossier`, définition exacte, les sept dossiers s'écrivent, toute
+      # valeur hors liste est refusée (inconnue, quasi-homonyme, casse, blanc
+      # de bord, vide, NULL), une révision reste dans son dossier.
+      # Transaction annulée.
+      - name: Positions expert dossiers negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/positions_expert_dossiers_v2_negatif.sql
+
       # Les mêmes tables, en deux sessions (D-439 ; contre-revue Codex de
       # #1871, P1-1) : deux premières poses, deux premières versions, une
       # révision contre un acte, un retrait contre un arbitrage, une révocation
