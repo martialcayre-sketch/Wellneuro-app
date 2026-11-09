@@ -5,6 +5,8 @@
   bloquante ») : le guichet prépare une séance par jour, d'au plus huit
   questions, avant la journée en autonomie. L'heure n'est pas fixée.
 - Non bloquante : un lot dont une question reste sans réponse est mis de
-  côté (handoff, `/clear`), les autres lots avancent.
-- `docs/ROLES_MACHINES.md` : « sans heure fixe » est remplacé, et la ligne
-  « Une session qui attend » suit. Texte seul ; ni code, ni migration.
+  côté (handoff, `/clear`, pas d'autre lot ouvert par sa session en
+  attendant) ; les lots des autres sessions avancent.
+- `docs/ROLES_MACHINES.md` : la puce « Le guichet » passe à une séance par
+  jour, toujours sans heure fixe ; la puce « Une session qui attend » nomme
+  D-466. Texte seul ; ni code, ni migration.
