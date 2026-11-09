@@ -130,10 +130,12 @@ describe('GET — lit sans jamais appeler le modèle', () => {
     );
   });
 
-  it('ne lit QUE les synthèses validées', async () => {
+  it('ne lit QUE les synthèses validées — validées puis annotées comprises (t62)', async () => {
     await get();
     expect(prisma.syntheseIA.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { idPatient: 'PAT_TEST', statut: 'Validee_Praticien' } }),
+      expect.objectContaining({
+        where: { idPatient: 'PAT_TEST', statut: { in: ['Validee_Praticien', 'Corrigee_Praticien'] } },
+      }),
     );
   });
 });

@@ -3,6 +3,7 @@ import { scoresRecalculesPourRaisonnement } from '../clinical/orientationService
 import { statutExcluDuRaisonnement } from '../scoring/validite';
 import { estAncreInitiale } from '../protocol/cycles';
 import { RIDEAU_T0, HORS_RIDEAU_MOTIVE, estAgendaHorsRideau, estDuRideauT0 } from './rideauT0';
+import { STATUTS_SYNTHESE_VALIDEE } from '../synthese/statutsValidee';
 
 /**
  * Préconditions de confirmation d'un épisode T0 ([[D-052]]).
@@ -44,8 +45,12 @@ export { RIDEAU_T0, HORS_RIDEAU_MOTIVE, estDuRideauT0 };
  * chargeur doit filtrer la lecture avec EXACTEMENT le même ensemble : filtrer
  * sur un ensemble et juger sur un autre laisserait passer une synthèse que la
  * condition croit validée, ou l'inverse.
+ *
+ * DÉPLACÉ, PAS RECOPIÉ, dans le module feuille `synthese/statutsValidee.ts`
+ * (t62) : les adaptateurs bornés de `lib/objectif/` jugent avec le même
+ * ensemble sans pouvoir importer ce module. Ré-exporté ici sous le même nom.
  */
-export const STATUTS_SYNTHESE_VALIDEE = ['Validee_Praticien', 'Corrigee_Praticien'] as const;
+export { STATUTS_SYNTHESE_VALIDEE };
 
 const STATUTS_SYNTHESE_VALIDEE_SET: ReadonlySet<string> = new Set(STATUTS_SYNTHESE_VALIDEE);
 
