@@ -113,14 +113,22 @@ test('lire --quota : présumé disponible sans refus du mois, arrêt au premier 
   assert.equal(lu.includes(REVUES(11)), false, 'la PR mise à jour avant le 1er n’est pas lue');
 });
 
-test('lire --quota : un refus pour quota du mois rend 1', () => {
+test('lire --quota : un refus pour quota du mois rend 1, et la lecture s’arrête au premier', () => {
+  const lu = [];
   const table = {
-    [LISTE(1)]: [{ number: 12, updated_at: '2026-11-08T22:00:00Z' }],
+    [LISTE(1)]: [
+      { number: 13, updated_at: '2026-11-08T23:00:00Z' },
+      { number: 12, updated_at: '2026-11-08T22:00:00Z' },
+      { number: 11, updated_at: '2026-11-05T10:00:00Z' },
+    ],
+    [REVUES(13)]: [[revue(REVUE, TETE, '2026-11-08T23:05:00Z')]],
     [REVUES(12)]: [[revue(REFUS_QUOTA, TETE, '2026-11-08T22:42:00Z')]],
   };
-  const { code, lignes } = lire({ mode: 'quota', lireJson: simuler(table), maintenant: '2026-11-09T03:00:00Z' });
+  const lireJson = (chemin, p) => { lu.push(chemin); return simuler(table)(chemin, p); };
+  const { code, lignes } = lire({ mode: 'quota', lireJson, maintenant: '2026-11-09T03:00:00Z' });
   assert.equal(code, SORTIE_NON);
   assert.match(lignes.at(-1), /refus=#12/);
+  assert.equal(lu.includes(REVUES(11)), false, 'aucune PR n’est lue après le premier refus');
 });
 
 test('lire <N> : la tête est lue sur la PR, la preuve sur ses revues', () => {

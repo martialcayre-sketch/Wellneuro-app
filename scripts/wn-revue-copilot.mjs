@@ -17,7 +17,7 @@
 // 1er du mois en cours (UTC), date de remise à zéro des requêtes premium. Un
 // tel refus vaut « épuisé » jusqu'au mois suivant. Le lecteur parcourt les PR
 // mises à jour depuis le 1er du mois (tri par mise à jour, arrêt au premier
-// plus ancien) et leurs revues.
+// plus ancien) et leurs revues, et s'arrête au premier refus trouvé.
 //
 // LA PREUVE SUR LA TÊTE (D-466 §3). Une revue de `copilot-pull-request-
 // reviewer[bot]` dont le `commit_id` est la tête et dont le corps n'est pas
@@ -109,26 +109,31 @@ export function lire({ mode, pr, lireJson, maintenant = new Date().toISOString()
     if (typeof depot !== 'string' || !depot.includes('/')) throw new Error('dépôt illisible');
     if (mode === 'quota') {
       const depuis = debutDuMois(maintenant);
-      const revuesParPr = [];
-      for (let page = 1; ; page += 1) {
+      let lues = 0;
+      let refus = null;
+      // Un seul refus du mois suffit à conclure : la lecture s'arrête au
+      // premier (revue PR-Agent de #1945). Le tri par mise à jour décroissante
+      // met les PR récentes, donc les refus récents, en tête.
+      for (let page = 1; !refus; page += 1) {
         const prs = lireJson(`repos/${depot}/pulls?state=all&sort=updated&direction=desc&per_page=100&page=${page}`, false);
         if (!Array.isArray(prs)) throw new Error('liste des PR illisible');
         if (prs.length === 0) break;
         let ancien = false;
         for (const p of prs) {
           if (date(p.updated_at) < depuis.getTime()) { ancien = true; break; }
-          revuesParPr.push({ pr: p.number, revues: aPlat(lireJson(`repos/${depot}/pulls/${p.number}/reviews?per_page=100`, true)) });
+          lues += 1;
+          refus = jugerQuota([{ pr: p.number, revues: aPlat(lireJson(`repos/${depot}/pulls/${p.number}/reviews?per_page=100`, true)) }], depuis);
+          if (refus) break;
         }
         if (ancien || prs.length < 100) break;
       }
-      const refus = jugerQuota(revuesParPr, depuis);
       const depuisIso = depuis.toISOString().slice(0, 10);
       if (refus) {
         lignes.push(`❌ quota présumé épuisé : refus pour quota sur #${refus.pr} le ${refus.quand}, depuis le ${depuisIso}`);
         lignes.push(`COPILOT quota code=${SORTIE_NON} depuis=${depuisIso} refus=#${refus.pr}`);
         return { code: SORTIE_NON, lignes };
       }
-      lignes.push(`✓ quota présumé disponible : aucun refus pour quota depuis le ${depuisIso} (${revuesParPr.length} PR lues)`);
+      lignes.push(`✓ quota présumé disponible : aucun refus pour quota depuis le ${depuisIso} (${lues} PR lues)`);
       lignes.push(`COPILOT quota code=${SORTIE_OUI} depuis=${depuisIso}`);
       return { code: SORTIE_OUI, lignes };
     }
