@@ -120,7 +120,9 @@ describe('formats refusés à la route (400), avant toute écriture', () => {
   it.each([
     ['position', { positionId: 'WN-PE-1' }],
     ['version', { version: '1.0' }],
-    ['dossier hors liste fermée', { dossier: 'iode_selenium' }],
+    ['dossier hors liste fermée', { dossier: 'omega_3' }],
+    ['dossier quasi-homonyme', { dossier: 'polyphenols' }],
+    ['dossier en casse différente', { dossier: 'IODE_SELENIUM' }],
     ['fiche', { ficheId: 'fu_minuscule' }],
     ['contenu à trois rubriques', { contenu: { enonce: 'e', perimetre: 'p', population: 'po' } }],
     ['contenu à rubrique vide', { contenu: { ...VERSION.contenu, limites: '  ' } }],
@@ -129,6 +131,14 @@ describe('formats refusés à la route (400), avant toute écriture', () => {
   ])('version : %s', async (_nom, champ) => {
     expect((await postVersion(requete({ ...VERSION, ...champ }))).status).toBe(400);
     expect(verserVersion).not.toHaveBeenCalled();
+  });
+
+  // D-464 : les deux dossiers entrés dans la liste fermée passent la route et
+  // arrivent tels quels au module d'écriture.
+  it.each(['iode_selenium', 'polyphenols_antioxydants'])('version : le dossier « %s » est admis', async dossier => {
+    verserVersion.mockResolvedValue({ issue: 'ecrite', version: { id: 'v1', positionId: 'WN-PE-0001', version: 'v1.0' } });
+    expect((await postVersion(requete({ ...VERSION, dossier }))).status).toBe(200);
+    expect(verserVersion.mock.calls[0][0].dossier).toBe(dossier);
   });
 
   it('arbitrage : retenir deux choses, ou rien', async () => {
