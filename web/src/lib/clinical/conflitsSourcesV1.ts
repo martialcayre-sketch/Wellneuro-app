@@ -996,14 +996,12 @@ export const CONFLITS_DOSSIERS_CLOS_ECARTES_V1: ConflitDossierClosEcarte[] = [
     etiquette: 'C7',
     claimsEpingles: ['WN-CL-0647-002'],
     motif:
-      `${MOTIF_UNE_PARTIE} Les claims de l’autre partie que des tables signées `
-      + 'épinglent (WN-CL-0161-070, WN-CL-0167-023) le sont par les liens d’axe et '
-      + 'les indications de biologie, par aucune fiche d’usage ([[D-452]] §1). La '
-      + 'question du marqueur est routée à F79.',
-    conditionDeRetour:
-      'La décision de F79 sur ce marqueur, puis un claim de chaque partie épinglé '
-      + 'par une fiche d’usage signée, et deux textes, relus, qui s’opposent sur le '
-      + 'même objet.',
+      `${MOTIF_UNE_PARTIE} F79 a tranché la question du marqueur ([[D-465]]) : `
+      + 'WN-CL-0161-070 est rejeté et son lien d’axe retiré, le marqueur sort des '
+      + 'deux panels. WN-CL-0167-023 reste épinglé par les indications de biologie '
+      + 'pour les autres analyses de son panel, par aucune fiche d’usage '
+      + '([[D-452]] §1).',
+    conditionDeRetour: RETOUR_EPINGLAGE,
   },
   {
     dossier: 'polyphenols_antioxydants',
@@ -1105,6 +1103,15 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   // 9b3cf379afd1c1ee932cf48413333b2587e0a2bf7a572aa0d6cd9b12a25ecb05 ; le
   // registre a0da49fd reste signé. » L'empreinte des écartés est
   // `sha256(JSON.stringify(CONFLITS_DOSSIERS_CLOS_ECARTES_V1))`, 61 entrées.
+  //
+  // ÉCARTÉS RE-SIGNÉS LE 2026-11-09 ([[D-465]]) : F79 a tranché le marqueur
+  // du conflit C7, dont seuls le motif et la condition de retour changent ;
+  // C7 reste écarté. Aucune entrée publiée ne change. Déclaration du
+  // responsable vers 11:59 UTC, après lecture de la surface et des deux
+  // passes de la contre-revue (GO sur la seconde) : « Je signe D-465 et les
+  // écartés 94030d5903d73a9ef990067a413e414b3d5fa3743cfbc9e8f72eb6b444e15a70 ;
+  // le registre a0da49fd reste signé ; je rejetterai WN-CL-0161-070 après la
+  // release. » Toujours 61 entrées.
   validationExterne: true,
   dateValidation: '2026-11-07T20:05:11.000Z',
   // Les claims épinglés par les conflits PUBLIÉS de ce registre. Le contrat de

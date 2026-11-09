@@ -1,5 +1,15 @@
 // BANC DE REJEU — la migration des dix-sept liens analyte-axe signés
-// ([[D-351]] §5, F79, migration `20261024160000_biology_liens_axe_signes_v1`).
+// ([[D-351]] §5, F79, migration `20261024160000_biology_liens_axe_signes_v1`),
+// puis celle qui retire le marqueur `BIO_ANTI_LDL_OXYDE` ([[D-465]],
+// `20261109130000_f79_marqueur_anti_ldl_retire`).
+//
+// DEUX MIGRATIONS, DEUX ÉTATS DU CONTRAT. La base du CI porte les deux
+// migrations : le contrat y attend l'état d'après D-465 (`bal_f79_04`
+// inactif). Le banc rejoue donc les deux fichiers, et le prélude remet d'abord
+// dans le clone les deux items de panel que D-465 a retirés. L'état d'avant
+// D-465 — celui que trouve le préflight de sa propre release — se rejoue en
+// effaçant, dans la transaction du clone, la ligne de D-465 de
+// `_prisma_migrations`.
 //
 // POURQUOI CE FICHIER EXISTE. La base du CI est construite par `migrate
 // deploy` seul et ne porte aucun claim : la migration n'y écrit rien (corpus
@@ -83,6 +93,8 @@ const MIGRATION = readFileSync(
   join(WEB, 'prisma/migrations/20261024160000_biology_liens_axe_signes_v1/migration.sql'),
   'utf8',
 );
+const NOM_D465 = '20261109130000_f79_marqueur_anti_ldl_retire';
+const MIGRATION_D465 = readFileSync(join(WEB, `prisma/migrations/${NOM_D465}/migration.sql`), 'utf8');
 const CONTRAT = readFileSync(join(WEB, 'prisma/checks/biology_liens_axe_v1.sql'), 'utf8');
 
 // GARDE DE TRANSACTION, en refus précoce. Un COMMIT (ou END, ABORT…) dans la
@@ -198,7 +210,7 @@ const MUTATIONS_SORTIE = [
 for (const [nom, sur] of MUTATIONS_SORTIE) {
   if (sur()) throw new Error(`REFUS : la garde de sortie du clone laisse passer la mutation « ${nom} ».`);
 }
-if (!sansSortie(MIGRATION) || !sansSortie(CONTRAT)) {
+if (!sansSortie(MIGRATION) || !sansSortie(MIGRATION_D465) || !sansSortie(CONTRAT)) {
   throw new Error('REFUS : la migration ou le contrat porte un moyen de sortir du clone (extension, dblink, postgres_fdw, PROGRAM).');
 }
 // LE CONTRAT NE FAIT QUE LIRE. Dans le rejeu, son `BEGIN TRANSACTION READ
@@ -274,8 +286,8 @@ const MUTATIONS_GARDE = [
 for (const [nom, sur] of MUTATIONS_GARDE) {
   if (sur()) throw new Error(`REFUS : la garde de transaction laisse passer la mutation « ${nom} ».`);
 }
-if (!migrationSure(MIGRATION)) {
-  throw new Error('REFUS : la migration porte une instruction de transaction, le rejeu ne serait plus annulé.');
+if (!migrationSure(MIGRATION) || !migrationSure(MIGRATION_D465)) {
+  throw new Error('REFUS : une migration porte une instruction de transaction, le rejeu ne serait plus annulé.');
 }
 if (!contratSur(CONTRAT)) {
   throw new Error('REFUS : le contrat ne s\'ouvre pas par BEGIN TRANSACTION READ ONLY ou ne se clôt pas par le seul ROLLBACK.');
@@ -314,7 +326,13 @@ const RELEVE = `
   SELECT (SELECT count(*) FROM biology_analytes)::int AS analytes,
          (SELECT count(*) FROM biology_ratios)::int AS rapports,
          (SELECT count(*) FROM biology_analyte_links)::int AS liens,
-         (SELECT count(*) FROM rag_corpus_claims)::int AS claims`;
+         (SELECT count(*) FROM rag_corpus_claims)::int AS claims,
+         -- Les items de panel, par contenu et non seulement par compte : D-465
+         -- en supprime, et le banc les réinsère dans le clone (P2-1 Codex).
+         (SELECT count(*) FROM biology_panel_items)::int AS items,
+         (SELECT coalesce(md5(string_agg(
+            concat_ws('|', id, panel_code, analyte_code, ratio_code, position),
+            ',' ORDER BY id)), '') FROM biology_panel_items) AS items_contenu`;
 const releverBase = async () => {
   const c = new pg.Client(configVers(BASE_REELLE));
   await c.connect();
@@ -355,6 +373,18 @@ END $$;
 -- Le trigger existe déjà (migration appliquée par migrate deploy) : la
 -- migration rejouée le recrée.
 DROP TRIGGER biology_analyte_links_nutriment_axe_exclusifs ON public.biology_analyte_links;
+-- D-465 a déjà retiré, par migrate deploy, les deux items du marqueur : ils
+-- reviennent ici, à leur rang du catalogue niveau 1 (D-068), pour que son
+-- rejeu trouve l'état qu'il trouvera en production.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM biology_panel_items WHERE analyte_code = 'BIO_ANTI_LDL_OXYDE') THEN
+    RAISE EXCEPTION 'banc F79 : le marqueur figure encore dans un panel, la base n''a pas reçu D-465, refus';
+  END IF;
+END $$;
+INSERT INTO public.biology_panel_items (id, panel_code, analyte_code, position) VALUES
+  ('biopi_neurodeg_1_05',    'PANEL_NEURODEG_1',    'BIO_ANTI_LDL_OXYDE', 5),
+  ('biopi_metabolique_1_07', 'PANEL_METABOLIQUE_1', 'BIO_ANTI_LDL_OXYDE', 7);
 INSERT INTO public.rag_corpus_claims
   (id, claim_id, source_id, version_claim, texte_normalise, content_sha256,
    typologie_lecture, prescriptif, statut, validateur, valide_at, active,
@@ -367,11 +397,116 @@ SELECT '__f79_' || c.claim_id, c.claim_id, 'WN-SRC-0000', 'v1.0',
 FROM unnest(ARRAY[${CLAIMS.map((c) => `'${c}'`).join(', ')}]) AS c(claim_id);
 `;
 
-// Chaque cas : `avant` s'exécute après les fixtures et avant la migration,
-// `apres` entre la migration et le contrat ; `motif` est le fragment du
+// Chaque cas : `avant` s'exécute après les fixtures et avant la première
+// migration, `entre` entre les deux migrations, `apres` entre la dernière
+// migration et le contrat ; `sansD465` rejoue l'état d'avant D-465 (sa
+// migration n'est ni rejouée ni inscrite) ; `motif` est le fragment du
 // message attendu (null = le cas doit passer).
+const SANS_D465 = `DELETE FROM _prisma_migrations WHERE migration_name = '${NOM_D465}';`;
+
+// Le différentiel des items de panel, mesuré par le banc lui-même et non par
+// la migration (P2-1 de la contre-revue Codex) : photographie juste avant
+// D-465, puis, juste après, l'ensemble doit être la photographie moins les
+// deux items du marqueur — ni un de plus, ni un contenu changé.
+const ITEMS = 'id, panel_code, analyte_code, ratio_code, position';
+const PHOTO_ITEMS = `CREATE TEMP TABLE __f79_items_avant ON COMMIT DROP AS
+  SELECT ${ITEMS} FROM biology_panel_items;`;
+const CONSTAT_ITEMS = `
+DO $$
+DECLARE ecart integer;
+BEGIN
+  WITH attendu AS (
+    SELECT ${ITEMS} FROM __f79_items_avant
+    WHERE id NOT IN ('biopi_neurodeg_1_05', 'biopi_metabolique_1_07')),
+  reel AS (SELECT ${ITEMS} FROM biology_panel_items)
+  SELECT count(*) INTO ecart FROM (
+    (SELECT * FROM attendu EXCEPT ALL SELECT * FROM reel)
+    UNION ALL
+    (SELECT * FROM reel EXCEPT ALL SELECT * FROM attendu)) d;
+  IF ecart <> 0 THEN
+    RAISE EXCEPTION 'banc F79 : les items de panel s''écartent de l''état d''avant D-465 moins ses deux items (% écart(s))', ecart;
+  END IF;
+END $$;`;
+
+// Mutants de D-465 : le texte committé, plus une écriture en trop. Le
+// constat des items doit les arrêter, la migration ne le pouvant pas.
+const muterD465 = (ajout) => {
+  const ancre = "RAISE NOTICE 'D-465 : marqueur retiré";
+  if (!MIGRATION_D465.includes(ancre)) {
+    throw new Error('banc F79 : ancre du mutant D-465 introuvable, banc à réaligner');
+  }
+  return MIGRATION_D465.replace(ancre, `${ajout}\n  ${ancre}`);
+};
+
 const CAS = [
-  { nom: 'positif : 17 liens, liste exacte, claims certifiés', motif: null },
+  { nom: 'positif : 17 liens, bal_f79_04 inactif (après D-465), claims certifiés', motif: null },
+  { nom: 'positif : 17 liens actifs (avant D-465, préflight de sa release)', sansD465: true, motif: null },
+
+  // ── D-465 : le rejet de WN-CL-0161-070 vient APRÈS la release ───────────
+  {
+    nom: 'WN-CL-0161-070 rejeté après D-465 (lien inactif)',
+    apres: `UPDATE rag_corpus_claims SET statut = 'REJETE' WHERE claim_id = 'WN-CL-0161-070';`,
+    motif: null,
+  },
+  {
+    nom: 'WN-CL-0161-070 rejeté avant D-465 : le préflight de sa release rougit',
+    sansD465: true,
+    apres: `UPDATE rag_corpus_claims SET statut = 'REJETE' WHERE claim_id = 'WN-CL-0161-070';`,
+    motif: 'D-351 §5 : 1 lien(s) d\'axe citent un claim',
+  },
+  {
+    nom: 'bal_f79_04 réactivé après D-465',
+    apres: `UPDATE biology_analyte_links SET actif = true WHERE id = 'bal_f79_04';`,
+    motif: 'D-351 §2 : les liens d\'axe s\'écartent',
+  },
+  {
+    nom: 'D-465 refuse un lien bal_f79_04 déjà inactif',
+    entre: `UPDATE biology_analyte_links SET actif = false WHERE id = 'bal_f79_04';`,
+    motif: 'D-465 §1 : 0 lien(s) désactivé(s)',
+  },
+  {
+    nom: 'D-465 refuse un lien bal_f79_04 modifié',
+    entre: `UPDATE biology_analyte_links SET direction = 'bas_evocateur' WHERE id = 'bal_f79_04';`,
+    motif: 'D-465 §1 : 0 lien(s) désactivé(s)',
+  },
+  {
+    nom: 'D-465 refuse un item de panel absent',
+    entre: `DELETE FROM biology_panel_items WHERE id = 'biopi_metabolique_1_07';`,
+    motif: 'D-465 §2 : 1 item(s)',
+  },
+  {
+    nom: 'D-465 refuse le marqueur resté dans un troisième panel',
+    entre: `INSERT INTO biology_panel_items (id, panel_code, analyte_code, position)
+            VALUES ('__f79_panel_x', 'PANEL_FATIGUE_1', 'BIO_ANTI_LDL_OXYDE', 99);`,
+    motif: 'D-465 §2 : le marqueur figure encore',
+  },
+  // P1-1 de la contre-revue Codex : le contenu complet se compare.
+  {
+    nom: 'D-465 refuse un item neurodégénératif déplacé',
+    entre: `UPDATE biology_panel_items SET position = 99 WHERE id = 'biopi_neurodeg_1_05';`,
+    motif: 'D-465 §2 : 1 item(s)',
+  },
+  {
+    nom: 'D-465 refuse un item métabolique déplacé',
+    entre: `UPDATE biology_panel_items SET position = 8 WHERE id = 'biopi_metabolique_1_07';`,
+    motif: 'D-465 §2 : 1 item(s)',
+  },
+  {
+    nom: 'D-465 refuse un niveau de preuve inscrit sur bal_f79_04',
+    entre: `UPDATE biology_analyte_links SET niveau_preuve = 'C' WHERE id = 'bal_f79_04';`,
+    motif: 'D-465 §1 : 0 lien(s) désactivé(s)',
+  },
+  // P2-1 : le banc, et non la migration, voit un item supprimé ou modifié en trop.
+  {
+    nom: 'mutant D-465 qui supprime un item de plus',
+    d465: muterD465(`DELETE FROM biology_panel_items WHERE panel_code = 'PANEL_METABOLIQUE_1' AND position = 1;`),
+    motif: 'banc F79 : les items de panel s\'écartent',
+  },
+  {
+    nom: 'mutant D-465 qui déplace un autre item',
+    d465: muterD465(`UPDATE biology_panel_items SET position = 7 WHERE panel_code = 'PANEL_METABOLIQUE_1' AND position = 8;`),
+    motif: 'banc F79 : les items de panel s\'écartent',
+  },
 
   // ── La base refuse une écriture du contrat, même hors de la garde ───────
   // Le contrat de ce cas porte une écriture que la garde lexicale aurait
@@ -484,7 +619,9 @@ try {
     // par la base dans le rejeu, et plus seulement par la garde lexicale
     // (Merge Risk de CodeRabbit sur 418e1c3b).
     const script = [
-      PRELUDE, cas.avant ?? '', MIGRATION, cas.apres ?? '', 'SET TRANSACTION READ ONLY;', cas.contrat ?? CONTRAT,
+      PRELUDE, cas.avant ?? '', MIGRATION, cas.entre ?? '',
+      cas.sansD465 ? SANS_D465 : `${PHOTO_ITEMS}\n${cas.d465 ?? MIGRATION_D465}\n${CONSTAT_ITEMS}`,
+      cas.apres ?? '', 'SET TRANSACTION READ ONLY;', cas.contrat ?? CONTRAT,
     ].join('\n');
     const client = new pg.Client(configVers(CLONE));
     await client.connect();
@@ -674,9 +811,9 @@ try {
 
 // ── La base nommée n'a rien reçu ──────────────────────────────────────────
 // Constaté par une session neuve, APRÈS la suppression du clone, contre le
-// relevé d'avant le banc : analytes, rapports, liens et claims, table par
-// table. Toute ligne en plus ou en moins, quel que soit son code, fait
-// rougir — le constat ne cherche plus seulement les fixtures connues
+// relevé d'avant le banc : analytes, rapports, liens et claims par compte,
+// items de panel par compte et par contenu (P2-1 Codex F79). Toute ligne en
+// plus ou en moins, quel que soit son code, fait rougir — le constat ne cherche plus seulement les fixtures connues
 // (troisième passe Codex de #1687). Une erreur de ce constat fait aussi
 // rougir le banc.
 try {

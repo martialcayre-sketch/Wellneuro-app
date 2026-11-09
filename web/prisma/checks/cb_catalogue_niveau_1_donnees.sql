@@ -285,9 +285,17 @@ BEGIN
       RAISE EXCEPTION 'D-068: % panel(s) au lieu des 15 du catalogue niveau 1', nb;
     END IF;
 
+    -- 78 items au catalogue niveau 1 (D-068), moins les deux du marqueur
+    -- `BIO_ANTI_LDL_OXYDE` retirés de PANEL_NEURODEG_1 et PANEL_METABOLIQUE_1
+    -- (D-465 §2), et aucun item de ce marqueur ne doit revenir.
     SELECT count(*) INTO nb FROM biology_panel_items;
-    IF nb <> 78 THEN
-      RAISE EXCEPTION 'D-068: % item(s) de composition au lieu des 78 du catalogue niveau 1', nb;
+    IF nb <> 76 THEN
+      RAISE EXCEPTION 'D-068/D-465: % item(s) de composition au lieu des 76 du catalogue niveau 1', nb;
+    END IF;
+
+    SELECT count(*) INTO nb FROM biology_panel_items WHERE analyte_code = 'BIO_ANTI_LDL_OXYDE';
+    IF nb <> 0 THEN
+      RAISE EXCEPTION 'D-465 §2: % item(s) de panel portent encore le marqueur BIO_ANTI_LDL_OXYDE', nb;
     END IF;
 
     -- Aucun item orphelin : chaque composition référence un analyte présent.
