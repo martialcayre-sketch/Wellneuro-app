@@ -201,8 +201,23 @@ describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
     for (const lien of liens) expect(lien.className.split(' ')).toContain('py-1');
   });
 
-  it('fermé : aucun `py-1`, comme avant', async () => {
+  it('fermé : les classes d’avant, au rail et au panneau, entrée active comprise', async () => {
     await rendre(false);
-    for (const classes of liensDuRail()) expect(classes).not.toContain('py-1');
+    const classesDe = (racine: Element) => {
+      const liens = [...racine.querySelectorAll('a')];
+      return {
+        actives: new Set(liens.filter(l => l.getAttribute('aria-current') === 'page').map(l => l.className)),
+        autres: new Set(liens.filter(l => l.getAttribute('aria-current') !== 'page').map(l => l.className)),
+      };
+    };
+    expect(classesDe(rail())).toEqual({
+      actives: new Set(['flex min-h-11 items-center px-3 font-semibold text-foreground shadow-nav-active']),
+      autres: new Set(['flex min-h-11 items-center px-3 text-primary underline-offset-4 hover:underline']),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(classesDe(screen.getByRole('dialog'))).toEqual({
+      actives: new Set(['flex min-h-11 items-center border-l-[3px] border-primary pl-3 font-semibold text-foreground']),
+      autres: new Set(['flex min-h-11 items-center text-primary underline-offset-4 hover:underline']),
+    });
   });
 });
