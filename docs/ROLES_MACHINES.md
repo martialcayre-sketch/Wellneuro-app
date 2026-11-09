@@ -87,8 +87,10 @@ question et la réponse.
   renvoyer au guichet. Elle écrit la ligne, puis la réponse. Le guichet
   prépare, il n'autorise pas : aucune approbation intermédiaire.
 - **Le guichet.** C'est la session existante « Questions générales et
-  audits ». Il prépare des séances d'au plus huit questions, sans heure fixe :
-  il vérifie les faits et reformule les options. Il renvoie les réponses dans
+  audits ». Il prépare une séance par jour (D-466), avant la journée en
+  autonomie, d'au plus huit questions, sans heure fixe. Elle ne bloque pas
+  les lots (voir « Une session qui attend »). Il vérifie les faits et
+  reformule les options. Il renvoie les réponses dans
   les lignes. Il ne code pas et ne merge pas. Il ne relaie pas non plus une
   réponse clinique comme si c'était un accord.
 - **Le numéro de décision.** Il se réserve à la rédaction de la décision,
@@ -98,7 +100,8 @@ question et la réponse.
   numéro s'inscrit dans la ligne, et quiconque reprend la question le
   réutilise au lieu d'en réserver un autre.
 - **Une session qui attend** écrit son handoff et fait `/clear`. Elle n'ouvre
-  pas d'autre lot en attendant la réponse.
+  pas d'autre lot en attendant la réponse. Son lot est mis de côté ; les lots
+  des autres sessions avancent (D-466).
 - **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
   vient du responsable dans la session qui agit, ou de la décision mergée.
 - **Sortie de la liste.** Une ligne ne passe à `close` qu'au merge de la

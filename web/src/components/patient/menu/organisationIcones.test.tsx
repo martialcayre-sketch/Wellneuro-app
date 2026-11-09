@@ -187,3 +187,37 @@ describe('panneau « Mon espace » (Q62 du 2026-11-08, [[D-460]] §4)', () => {
     expect(classes).not.toContain('left-0');
   });
 });
+
+describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
+  const liensDuRail = () => [...rail().querySelectorAll('a')].map(lien => lien.className.split(' '));
+
+  it('ouvert : chaque lien du rail et du panneau porte `py-1`, y compris l’entrée active', async () => {
+    await rendre(true);
+    expect(rail().querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    for (const classes of liensDuRail()) expect(classes).toContain('py-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    const liens = [...screen.getByRole('dialog').querySelectorAll('a')];
+    expect(liens.length).toBeGreaterThan(0);
+    for (const lien of liens) expect(lien.className.split(' ')).toContain('py-1');
+  });
+
+  it('fermé : les classes d’avant, au rail et au panneau, entrée active comprise', async () => {
+    await rendre(false);
+    const classesDe = (racine: Element) => {
+      const liens = [...racine.querySelectorAll('a')];
+      return {
+        actives: new Set(liens.filter(l => l.getAttribute('aria-current') === 'page').map(l => l.className)),
+        autres: new Set(liens.filter(l => l.getAttribute('aria-current') !== 'page').map(l => l.className)),
+      };
+    };
+    expect(classesDe(rail())).toEqual({
+      actives: new Set(['flex min-h-11 items-center px-3 font-semibold text-foreground shadow-nav-active']),
+      autres: new Set(['flex min-h-11 items-center px-3 text-primary underline-offset-4 hover:underline']),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(classesDe(screen.getByRole('dialog'))).toEqual({
+      actives: new Set(['flex min-h-11 items-center border-l-[3px] border-primary pl-3 font-semibold text-foreground']),
+      autres: new Set(['flex min-h-11 items-center text-primary underline-offset-4 hover:underline']),
+    });
+  });
+});

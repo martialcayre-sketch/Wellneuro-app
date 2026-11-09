@@ -215,8 +215,10 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
   const groupes = groupesServis(etat.etats, signaux);
   const actif = elementActif(etat.segment, entreesServies(etat.etats, signaux));
   // Drapeau fermé, ces trois formes rendent exactement les classes d'avant.
-  const classeLien = etat.icones ? `${forme.classeLien} gap-3` : forme.classeLien;
-  const classeLienActif = etat.icones ? `${forme.classeLienActif} gap-3 rounded-md bg-primary/10` : forme.classeLienActif;
+  // `py-1` : une entrée sur deux lignes dépasse `min-h-11` et toucherait sa
+  // voisine ; sur une ligne, le `min-h-11` l'absorbe et rien ne bouge.
+  const classeLien = etat.icones ? `${forme.classeLien} gap-3 py-1` : forme.classeLien;
+  const classeLienActif = etat.icones ? `${forme.classeLienActif} gap-3 py-1 rounded-md bg-primary/10` : forme.classeLienActif;
   const classeIntertitre = etat.icones
     ? `${forme.classeIntertitre.replace('text-sm', 'text-xs')} uppercase tracking-wider`
     : forme.classeIntertitre;
