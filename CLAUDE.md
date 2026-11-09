@@ -192,8 +192,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
   `pr_agent.yml` restent à leur file. Pas de merge avant une revue de
   `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
-  une —, ou, s'il saute ou bute sur son quota, celle de PR-Agent, prouvée
-  par son run sur la tête (`D-393` §2). Détail : `docs/claude/REGLES_PR_MERGE.md`.
+  une —, ou, s'il saute ou bute sur son quota, celle de Copilot si son quota
+  est présumé disponible (`D-468`, `wn-revue-copilot.mjs`), sinon celle de
+  PR-Agent, prouvée par son run sur la tête (`D-393` §2). Détail :
+  `docs/claude/REGLES_PR_MERGE.md`.
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
   Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
   *en ligne*, absents du rollup et de `gh pr view --comments` :
