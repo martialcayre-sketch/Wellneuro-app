@@ -80,7 +80,7 @@ dernière session.
    `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
    commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
    (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
-   **Copilot passe d'abord** (`D-466`) si son quota est présumé disponible :
+   **Copilot passe d'abord** (`D-468`) si son quota est présumé disponible :
    `node scripts/wn-revue-copilot.mjs --quota` à `0` ; alors
    `gh pr edit <N> --add-reviewer @copilot` sur la tête, une fois par tête,
    et la revue vaut si `node scripts/wn-revue-copilot.mjs <N>` rend `0`

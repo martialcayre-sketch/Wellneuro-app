@@ -1,4 +1,4 @@
-// Banc du lecteur de la revue Copilot (D-466) — sans réseau : le noyau et la
+// Banc du lecteur de la revue Copilot (D-468) — sans réseau : le noyau et la
 // collecte reçoivent des lectures simulées, aux gabarits constatés sur #1795 à
 // #1941 (revues et refus de `copilot-pull-request-reviewer[bot]`).
 
@@ -160,8 +160,8 @@ test('arguments : --quota ou un numéro, rien d’autre', () => {
   assert.equal(r.status, SORTIE_USAGE);
 });
 
-test('câblage : wn-merge, la règle 1.6 et D-466 nomment le lecteur', () => {
+test('câblage : wn-merge, la règle 1.6 et D-468 nomment le lecteur', () => {
   assert.match(lireFichier('.claude/skills/wn-merge/SKILL.md'), /wn-revue-copilot\.mjs/);
   assert.match(lireFichier('.claude/rules/pr-revue-et-release-db.md'), /wn-revue-copilot\.mjs/);
-  assert.match(lireFichier('docs/decisions/D-466.md'), /wn-revue-copilot\.mjs/);
+  assert.match(lireFichier('docs/decisions/D-468.md'), /wn-revue-copilot\.mjs/);
 });

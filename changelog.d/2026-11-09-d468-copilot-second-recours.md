@@ -1,4 +1,4 @@
-### Revue des PR : Copilot en second recours, entre CodeRabbit et PR-Agent, selon son quota (D-466, 2026-11-09)
+### Revue des PR : Copilot en second recours, entre CodeRabbit et PR-Agent, selon son quota (D-468, 2026-11-09)
 
 Demande du responsable du 2026-11-09 ; amende D-393 §1. Gouvernance des PR seulement : aucun code applicatif,
 aucune règle clinique, aucune migration.

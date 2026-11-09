@@ -114,7 +114,7 @@ faite seulement de fichiers exclus du modèle, ne produit pas de revue
 PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts :
 `.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.
 
-**Copilot, entre les deux (`D-466`, qui amende `D-393` §1).** Quand
+**Copilot, entre les deux (`D-468`, qui amende `D-393` §1).** Quand
 CodeRabbit est dépassé, Copilot passe avant PR-Agent si son quota est
 présumé disponible (aucun refus « insufficient remaining quota » depuis le
 1er du mois, `node scripts/wn-revue-copilot.mjs --quota` à `0`). La session

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Lecteur de la revue Copilot, second recours entre CodeRabbit et PR-Agent
-// (D-466). LECTURE SEULE — l'API GitHub en GET ; il ne demande aucune revue,
+// (D-468). LECTURE SEULE — l'API GitHub en GET ; il ne demande aucune revue,
 // ne commente pas, ne merge pas.
 //
 //   node scripts/wn-revue-copilot.mjs --quota   le quota est-il présumé disponible ?
@@ -11,7 +11,7 @@
 // pas cette précondition. Il ne juge pas les remarques de Copilot : leur
 // verdict reste un geste de la session (règle 1.2).
 //
-// LE QUOTA (D-466 §2). Aucune API n'expose à une session le quota restant de
+// LE QUOTA (D-468 §2). Aucune API n'expose à une session le quota restant de
 // Copilot : seul son refus se lit. Le quota est PRÉSUMÉ DISPONIBLE tant
 // qu'aucune revue de Copilot ne dit « insufficient remaining quota » depuis le
 // 1er du mois en cours (UTC), date de remise à zéro des requêtes premium. Un
@@ -19,7 +19,7 @@
 // mises à jour depuis le 1er du mois (tri par mise à jour, arrêt au premier
 // plus ancien) et leurs revues, et s'arrête au premier refus trouvé.
 //
-// LA PREUVE SUR LA TÊTE (D-466 §3). Une revue de `copilot-pull-request-
+// LA PREUVE SUR LA TÊTE (D-468 §3). Une revue de `copilot-pull-request-
 // reviewer[bot]` dont le `commit_id` est la tête et dont le corps n'est pas
 // un refus (« Copilot was unable to review… »). Copilot ne relit qu'une fois :
 // une revue sur une tête précédente ne vaut pas pour la tête.

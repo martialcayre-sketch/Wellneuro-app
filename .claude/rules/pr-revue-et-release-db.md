@@ -131,7 +131,7 @@ la tête n'a pas été relue. Un
 correctif poussé après la dernière revue n'est pas relu tant qu'une revue
 neuve ne le dit pas.
 
-**Copilot, second recours** (`D-466`, qui amende `D-393` §1). Si CodeRabbit
+**Copilot, second recours** (`D-468`, qui amende `D-393` §1). Si CodeRabbit
 saute la PR (statut `skipping`) ou bute sur son quota (« Review rate
 limited »), Copilot passe avant PR-Agent, et seulement si son quota est
 présumé disponible : `node scripts/wn-revue-copilot.mjs --quota` rend `0`
