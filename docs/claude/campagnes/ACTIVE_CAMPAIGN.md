@@ -9,13 +9,9 @@
 
 ## Activités parallèles
 
-### 2026-10-07-agenda-sommeil-adhesion
-
-**Titre** : AGENDA-SOMMEIL — adhésion : une nuit qu'on peut noter jusqu'au bout
-**Statut** : active
-**Lot actif** : LOT-02
+Aucune campagne parallèle active.
 
 **Statut global** : active
-**Mise à jour** : 2026-10-17
+**Mise à jour** : 2026-11-10
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

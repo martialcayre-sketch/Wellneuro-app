@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Re-mesure de l'adhésion, par cohortes avant / après"
-statut: "en_cours (2026-11-07) — deux lectures jouées ; clôture au responsable"
+statut: "terminé (2026-11-11) — clos sur deux lectures par le responsable (20261107-2125-d, option 1) ; porte 16 levée"
 dépend_de: "LOT-04"
 ---
 
@@ -237,6 +237,29 @@ ce versement. La clôture du LOT-02 et la levée de la porte 16 ne sont pas
 décidées ici ; elles sont posées au responsable dans la liste commune. La
 troisième fenêtre `c_apres` ne se lira relance fermée que si la repose de
 `WN_AGENDA_RELANCE` (d53) attend sa fin.
+
+## Clôture (2026-11-11)
+
+**Le lot est clos sur ses deux lectures, par le responsable.** Le 2026-11-07,
+il avait choisi d'attendre la troisième fenêtre `c_apres` (`20261107-2125-d`,
+option 2). Le 2026-11-11, il a changé de réponse et retenu l'option 1 : clore
+maintenant, sans troisième lecture. Aucune lecture de la base n'a été faite
+pour cette clôture. Les chiffres qui font foi sont ceux de la « Seconde
+lecture » : deux fenêtres `c_apres` échues contre quinze, avec l'effectif que
+cela suppose.
+
+Conséquences :
+
+- **La porte 16 est levée** (plan, §1, H27).
+- **La troisième fenêtre `c_apres` n'est pas comptée.** Elle était en cours le
+  2026-11-07 et ne s'achève pas avant le 2026-11-13 ; elle se finit relance
+  possible, et une lecture ultérieure ne la mêlerait plus à une cohorte
+  « relance fermée ».
+- **La repose de `WN_AGENDA_RELANCE` (d53) est jouable**, par le geste du
+  responsable (`env-set` puis redémarrage). La session ne la fait pas.
+- Les questions sans cause établie restent ouvertes, sans lot : le mouvement de
+  la référence `a_avant` entre le 2026-10-09 et le 2026-10-29 (R02, R04), et la
+  nuit gagnée par `b_transition` sur fenêtres échues.
 
 ## Correction apportée au constat
 
