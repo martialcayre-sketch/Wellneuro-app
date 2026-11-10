@@ -12,6 +12,7 @@ aucune release-db : le déploiement suit le merge.
   les écrans protocole s'éteignent jusqu'à leur réapprobation par le praticien (5 approbations actives sur
   3 dossiers au relevé du 2026-11-10). L'historique de momentum est coupé à la version.
 - Les passations non interprétables, comme les MFI-20 d'avant la reconstruction du 2026-07-31 (ancienne échelle
-  0-4), ne nourrissent plus le moteur, le momentum ni la règle de nouveauté. Un instrument dont toutes les
-  passations sont écartées se dit « passation écartée ».
+  0-4), ne nourrissent plus le moteur, le momentum ni la règle de nouveauté. Elles n'ancrent plus T0 de la fiche
+  « Mon équilibre ». Le snapshot clinique ne les compte plus comme réponses effectives : `sourceRefs` les dit
+  `to_verify` avec leur motif. Un instrument dont toutes les passations sont écartées se dit « passation écartée ».
 - La re-passation ciblée d'une priorité fondée sur le besoin 5 propose aussi l'Epworth et le MFI-20.

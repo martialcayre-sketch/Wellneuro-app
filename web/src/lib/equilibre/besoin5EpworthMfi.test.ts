@@ -6,6 +6,7 @@ import {
   datesDesReponsesRetenues,
   questionnairesEcartesParValidite,
   rawAnswersLisibles,
+  resoudreDateT0,
   type ReponseBrute,
 } from './depuisPrisma';
 import { calculerNiveauPreuveBesoin } from './evidence';
@@ -118,6 +119,15 @@ describe('passations non interprétables — hors du moteur ([[D-474]])', () => 
     const sansLui = construireHistoriqueEquilibre([ancre], new Date('2026-07-01T00:00:00.000Z'));
     const avecLui = construireHistoriqueEquilibre([ancre, AVANT], new Date('2026-07-01T00:00:00.000Z'));
     expect(avecLui).toEqual(sansLui);
+  });
+
+  it('il n’ancre pas T0 : la première mesure lisible reste au jalon T0', () => {
+    const epw = passation('Q_SOM_02', epworth(1), '2026-07-25');
+    expect(resoudreDateT0([AVANT, epw])).toEqual(epw.dateReponse);
+    // Sans ancre explicite (fiche « Mon équilibre ») : même historique qu'en
+    // son absence — sinon T0 tomberait au 2026-07-20, sans mesure.
+    expect(construireHistoriqueEquilibre([AVANT, epw])).toEqual(construireHistoriqueEquilibre([epw]));
+    expect(construireHistoriqueEquilibre([AVANT, epw])[0]?.date).toEqual(epw.dateReponse);
   });
 
   it('une passation invalide et une non interprétable : écarté, et rien n’est lu (drapeau de validité allumé, comme en production)', () => {

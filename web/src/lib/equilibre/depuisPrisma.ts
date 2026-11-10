@@ -156,7 +156,10 @@ function retenirParQuestionnaire(
 export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
   // Une passation exclue du raisonnement n'ancre pas T0 : la première réponse
   // VALIDE fait foi (drapeau éteint → liste inchangée, comportement actuel).
-  const exploitables = filtrerPassationsExploitables(reponses);
+  // Une passation non interprétable ([[D-474]]) non plus : le moteur ne la lit
+  // pas, et T0 tomberait sur une date sans mesure.
+  const exploitables = filtrerPassationsExploitables(reponses)
+    .filter(r => motifNonInterpretable(r.idQuestionnaire, r.dateReponse) === null);
   if (exploitables.length === 0) return null;
   return exploitables.reduce(
     (plusAncienne, r) => (r.dateReponse < plusAncienne ? r.dateReponse : plusAncienne),

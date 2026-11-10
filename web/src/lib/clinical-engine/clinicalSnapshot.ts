@@ -194,7 +194,15 @@ export function buildClinicalSnapshot(input: {
   // cet ordre empêche de retomber sur une ancienne réponse si la plus récente
   // est inexploitable.
   const latestResponses = latestResponsePerQuestionnaire(selected);
-  const effectiveResponses = latestResponses.filter(hasExploitableRawAnswers);
+  // Une passation non interprétable ([[D-474]]) n'est pas une réponse effective :
+  // le calcul ne la lit pas (`construireReponsesParQuestionnaire`), donc ni la
+  // provenance des objets ni `sourceRefs` ne la disent calculée — elles
+  // contrediraient le `not_interpretable` du même snapshot (`DC-34`). Filtrer
+  // après la déduplication suffit : le motif tient à une date de reconstruction,
+  // et toute passation interprétable du même instrument est plus récente.
+  const effectiveResponses = latestResponses
+    .filter(hasExploitableRawAnswers)
+    .filter(response => motifNonInterpretable(response.questionnaireId, response.observedAt) === null);
   const effectiveResponseIds = new Set(effectiveResponses.map(response => response.responseId));
   const rawResponses = effectiveResponses.map(response => ({
     idQuestionnaire: response.questionnaireId,
@@ -260,12 +268,9 @@ export function buildClinicalSnapshot(input: {
   const responseIdsForQuestionnaires = (questionnaireIds: string[], measurement: number | null): string[] => {
     if (measurement === null) return [];
     const accepted = new Set(questionnaireIds);
-    // Une passation non interprétable n'est pas lue par le calcul
-    // (`construireReponsesParQuestionnaire`, [[D-474]]) : la citer comme source
-    // contredirait le `not_interpretable` du même objet (`DC-34`).
+    // `effectiveResponses` exclut déjà les passations non interprétables ([[D-474]]).
     return effectiveResponses
       .filter(response => accepted.has(response.questionnaireId))
-      .filter(response => motifNonInterpretable(response.questionnaireId, response.observedAt) === null)
       .map(response => response.responseId)
       .sort();
   };
@@ -346,21 +351,26 @@ export function buildClinicalSnapshot(input: {
       staleSources: staleResponseIds,
       sourceDateRange: input.assessmentEpisode.sourceDateRange,
     },
-    sourceRefs: selected.map(response => ({
-      responseId: response.responseId,
-      questionnaireId: response.questionnaireId,
-      observedAt: new Date(response.observedAt).toISOString(),
-      scoreVersion: response.scoreVersion,
-      sourceType: 'questionnaire' as const,
-      status: effectiveResponseIds.has(response.responseId) ? 'calculated' as const : 'to_verify' as const,
-      limitations: [
-        ...(!hasExploitableRawAnswers(response) ? ['Réponse sans rawAnswers complets et exploitables.'] : []),
-        ...(hasExploitableRawAnswers(response) && !effectiveResponseIds.has(response.responseId)
-          ? ['Réponse remplacée par une réponse plus récente au même questionnaire.']
-          : []),
-        ...(staleIds.has(response.responseId) ? ['Source signalée comme obsolète par l’appelant.'] : []),
-      ],
-    })),
+    sourceRefs: selected.map(response => {
+      const motifNonMesure = motifNonInterpretable(response.questionnaireId, response.observedAt);
+      return {
+        responseId: response.responseId,
+        questionnaireId: response.questionnaireId,
+        observedAt: new Date(response.observedAt).toISOString(),
+        scoreVersion: response.scoreVersion,
+        sourceType: 'questionnaire' as const,
+        status: effectiveResponseIds.has(response.responseId) ? 'calculated' as const : 'to_verify' as const,
+        limitations: [
+          ...(!hasExploitableRawAnswers(response) ? ['Réponse sans rawAnswers complets et exploitables.'] : []),
+          // Le motif établi, au même texte que `questionnaireFindings` ([[D-474]]).
+          ...(motifNonMesure ? [motifNonMesure] : []),
+          ...(hasExploitableRawAnswers(response) && motifNonMesure === null && !effectiveResponseIds.has(response.responseId)
+            ? ['Réponse remplacée par une réponse plus récente au même questionnaire.']
+            : []),
+          ...(staleIds.has(response.responseId) ? ['Source signalée comme obsolète par l’appelant.'] : []),
+        ],
+      };
+    }),
     versions,
     limitations,
   };
