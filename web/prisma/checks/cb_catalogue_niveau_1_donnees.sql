@@ -77,11 +77,37 @@ BEGIN
   -- analyses d'un compte rendu courant, migration 20261003150000), + 7 le
   -- 2026-10-18 (D-323 §6 : analyses groupées, migration 20261018100100), + 2
   -- le 2026-10-24 (D-361 : TP et INR, migration 20261024220000), + 22 le
-  -- 2026-10-25 (D-376 : acides gras, migration 20261025140000).
+  -- 2026-10-25 (D-376 : acides gras, migration 20261025140000), + 1 le
+  -- 2026-11-10 (D-473 : vitamine E, migration 20261110120000).
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
-    IF nb <> 116 THEN
-      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361/D-376: % analyte(s) saisie_praticien au lieu des 116 du catalogue', nb;
+    IF nb <> 117 THEN
+      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361/D-376/D-473: % analyte(s) saisie_praticien au lieu des 117 du catalogue', nb;
+    END IF;
+
+    -- La fiche de vitamine E de D-473, LIGNE PAR LIGNE (aucun panel ne la
+    -- cite : le total des items de panels, plus bas, le tient), et AUCUNE
+    -- plage, aucun lien d'axe, aucune composition. Les correspondances NABM
+    -- ne sont PAS comptées ici : le candidat 7302 est fait pour être signé
+    -- par le praticien (M-3), et sa signature ne doit pas rougir ce contrat.
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE NOT validation_medicale_requise
+      AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
+      AND (code, libelle, unite, type_prelevement) IN (
+        ('BIO_VITAMINE_E', 'Vitamine E (alpha-tocophérol)', 'µmol/L', 'sang'));
+    IF nb <> 1 THEN
+      RAISE EXCEPTION 'D-473: % fiche(s) de vitamine E conforme(s) au lieu de 1 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
+    END IF;
+    SELECT count(*) INTO nb FROM (
+      SELECT analyte_code FROM biology_reference_ranges
+      UNION ALL SELECT analyte_code FROM biology_functional_ranges
+      UNION ALL SELECT analyte_code FROM biology_analyte_links
+      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
+      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
+      UNION ALL SELECT analyte_code FROM biology_panel_items
+    ) p WHERE p.analyte_code = 'BIO_VITAMINE_E';
+    IF nb > 0 THEN
+      RAISE EXCEPTION 'D-473: % plage, lien d''axe, composition ou item de panel sur la fiche de vitamine E — aucun ne s''écrit par migration', nb;
     END IF;
 
     -- Les vingt acides gras et les deux rapports de D-376, LIGNE PAR LIGNE

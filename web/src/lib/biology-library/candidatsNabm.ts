@@ -72,8 +72,9 @@ const IONO_COMPLET_1610 = 'Ionogramme complet (Na + K + Cl + CO2 + protides), re
 const CALCUL = 'Valeur calculée à partir d’autres analytes.';
 const AUCUN_AG = 'Aucun libellé de la V105 ne nomme les acides gras.';
 
-/** La liste, par code d'analyte. Les 116 analytes du catalogue y figurent
- *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361, 22 par D-376). */
+/** La liste, par code d'analyte. Les 117 analytes du catalogue y figurent
+ *  (85 relus le 2026-10-15, 7 ajoutés par D-323 §6, 2 par D-361, 22 par D-376,
+ *  1 par D-473). */
 export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   // ── Les 8 de S-7 (5 signés le 2026-10-15 : le serveur ne les propose plus).
   BIO_VITAMINE_D_25OH: {
@@ -419,6 +420,14 @@ export const CANDIDATS_NABM: Readonly<Record<string, CandidatsAnalyteNabm>> = {
   BIO_AG_ALPHA_LINOLENIQUE: { situation: 'aucun_acte', motif: AUCUN_AG },
   BIO_AG_EPA: { situation: 'aucun_acte', motif: AUCUN_AG },
   BIO_AG_DHA: { situation: 'aucun_acte', motif: AUCUN_AG },
+
+  // ── La vitamine E de D-473 (V105 relue par conteneur le 2026-11-10 : un
+  // seul libellé la nomme, actif). Une proposition : rien en base avant la
+  // signature du praticien (M-3).
+  BIO_VITAMINE_E: {
+    situation: 'libelle_explicite',
+    candidats: [{ codeActe: '7302', nature: 'isole', motif: 'Le libellé nomme le dosage de la vitamine E (sang).' }],
+  },
 
   // ── Valeurs calculées.
   BIO_RATIO_HOMA: { situation: 'valeur_calculee', motif: CALCUL },
