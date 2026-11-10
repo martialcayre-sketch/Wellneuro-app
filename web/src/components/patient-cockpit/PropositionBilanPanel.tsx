@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
-import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/statuts';
+import type { LignePanelProposition, PanelIndisponible, StatutPanel } from '@/lib/biology-library/statuts';
 // LA FEUILLE, ET NON `courrier` — constat mesuré sur l'artefact. Cet import de
 // VALEUR est le goulot par lequel SIX chaînes atteignaient la couche clinique :
 // `courrier` → `statuts` → `orientationEngine` et `grillesSignees`. Le paquet du
@@ -133,14 +133,52 @@ function Limite({ limite }: { limite: LimiteProposition }) {
       </li>
     );
   }
+  // `panel_indisponible` ne passe jamais ici : il est rendu HORS du bloc replié
+  // (`PanelsIndisponibles`, [[D-472]]).
+  if (limite.type !== 'declaration_ecartee_hors_proposition') return null;
   return (
     <li>
       {limite.motifs.map((motif, index) => (
         <span key={index}>{motif} </span>
       ))}
       Le panel concerné n’apparaît pas dans la liste ci-dessus (inactif au
-      catalogue, ou couvert par aucune règle d’indication).
+      catalogue, couvert par aucune règle d’indication, ou indisponible).
     </li>
+  );
+}
+
+/**
+ * [[D-472]] : un panel dont la règle cite au moins un claim non admissible au
+ * corpus n'a pas de ligne. Il est dit ICI, visible, jamais dans le bloc replié :
+ * un bilan qui disparaît doit se voir. Le message garde le libellé du panel et
+ * l'identifiant de règle ; les couples identifiant + version sont au détail.
+ */
+function PanelsIndisponibles({ panels }: { panels: PanelIndisponible[] }) {
+  return (
+    <ul aria-label="Bilans indisponibles" className="mt-3 space-y-2">
+      {panels.map(panel => (
+        <li
+          key={panel.panelCode}
+          className="rounded-lg border border-status-warning/40 bg-status-warning/10 p-3 text-sm text-foreground"
+        >
+          <p>
+            <strong>Bilan indisponible : {panel.libelle}.</strong> Au moins un claim cité par
+            la règle {panel.regleId} ne satisfait pas les critères de validité du corpus. Cette
+            règle n’est pas appliquée.
+          </p>
+          <details className="mt-1 text-xs text-muted-foreground">
+            <summary className="cursor-pointer">Claims concernés</summary>
+            <ul className="mt-1 list-disc pl-4">
+              {panel.claimsNonAdmissibles.map(claim => (
+                <li key={`${claim.claimId}@${claim.versionClaim}`}>
+                  {claim.claimId} ({claim.versionClaim})
+                </li>
+              ))}
+            </ul>
+          </details>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -704,6 +742,9 @@ export function PropositionBilanPanel({
   // diverger entre les deux blocs de rendu.
   const gesteOffrable =
     !motifIndisponible && lignes.some(ligne => STATUTS_PROPOSES.has(ligne.statut));
+  const panelsIndisponibles = limites.flatMap(limite =>
+    limite.type === 'panel_indisponible' ? limite.panels : [],
+  );
 
   return (
     <section
@@ -728,10 +769,19 @@ export function PropositionBilanPanel({
         ordonnance</strong>. Chaque ligne cite les claims qui la fondent.
       </p>
 
+      {!motifIndisponible && panelsIndisponibles.length > 0 && (
+        <PanelsIndisponibles panels={panelsIndisponibles} />
+      )}
+
       {motifIndisponible ? (
         <p className="mt-3 rounded-lg border border-border p-3 text-sm text-foreground">
           {motifIndisponible}
         </p>
+      ) : lignes.length === 0 && panelsIndisponibles.length > 0 ? (
+        // Toutes les règles exploitables sont indisponibles ([[D-472]]) : le
+        // bloc ci-dessus dit pourquoi ; le message générique ci-dessous
+        // attribuerait le vide à la table, pas aux claims.
+        null
       ) : lignes.length === 0 ? (
         // Le moteur a rendu une proposition VIDE (aucun panel actif ne porte de
         // règle exploitable). Un `<ul>` vide laisserait croire à un écran cassé

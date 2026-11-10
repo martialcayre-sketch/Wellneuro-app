@@ -18,6 +18,7 @@ import {
   signatureIndicationsValide,
   type RegleIndicationPanel,
 } from './indicationsBiologieV1';
+import { cleClaim } from '@/lib/clinical/catalogueConduitesV1';
 
 /** Règle non indiquée → analyte que son motif nomme comme l'exploration
  *  pertinente (D-320 §3). */
@@ -53,19 +54,32 @@ export function reglesNonIndiquees(
  * donne le libellé des bilans ACTIFS (code → libellé) : un bilan retiré du
  * catalogue n'a plus rien à dire. Table non signée ⇒ rien (fail-closed, comme
  * le moteur de proposition).
+ *
+ * CLAIMS NON ADMISSIBLES ⇒ MENTION SUSPENDUE ([[D-472]]). `claimsAdmissibles`
+ * porte les clés `cleClaim` des couples valides ET non supplantés au corpus. Une
+ * règle dont UN SEUL de ses claims n'y est pas ne rend ni son motif ni sa
+ * citation — le motif est lui-même une restitution clinique, retirer le seul
+ * lien vers le claim ne suffirait pas. Elle est COMPTÉE dans `suspendues`, pour
+ * que la fiche le dise.
  */
 export function explorationsNonIndiqueesParAnalyte(
   libellesBilans: ReadonlyMap<string, string>,
+  claimsAdmissibles: ReadonlySet<string>,
   regles: readonly RegleIndicationPanel[] = INDICATIONS_BIOLOGIE_V1,
   signee: boolean = signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA),
-): Map<string, ExplorationNonIndiquee[]> {
+): { parAnalyte: Map<string, ExplorationNonIndiquee[]>; suspenduesParAnalyte: Map<string, number> } {
   const parAnalyte = new Map<string, ExplorationNonIndiquee[]>();
-  if (!signee) return parAnalyte;
+  const suspenduesParAnalyte = new Map<string, number>();
+  if (!signee) return { parAnalyte, suspenduesParAnalyte };
   for (const regle of reglesNonIndiquees(regles)) {
     const analyteCode = ANALYTE_ALTERNATIF_NON_INDIQUE[regle.id];
     const exploration = libellesBilans.get(regle.panelCode);
     const claim = regle.justificationClaims[0];
     if (!analyteCode || !exploration || !regle.motif || !claim?.claimId || !claim.versionClaim) {
+      continue;
+    }
+    if (!regle.justificationClaims.every(c => claimsAdmissibles.has(cleClaim(c)))) {
+      suspenduesParAnalyte.set(analyteCode, (suspenduesParAnalyte.get(analyteCode) ?? 0) + 1);
       continue;
     }
     const liste = parAnalyte.get(analyteCode) ?? [];
@@ -77,5 +91,5 @@ export function explorationsNonIndiqueesParAnalyte(
     });
     parAnalyte.set(analyteCode, liste);
   }
-  return parAnalyte;
+  return { parAnalyte, suspenduesParAnalyte };
 }

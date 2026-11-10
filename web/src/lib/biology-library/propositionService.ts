@@ -20,7 +20,9 @@ import {
   remboursementsAvecCompositions,
   type CompositionSignee,
 } from './compositionsProposition';
-import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts';
+import type { PanelCatalogue, PanelDocumente, PanelIndisponible, PropositionBilan } from './statuts';
+import { claimsNonSupplantesAuCorpus, claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
+import { signature } from './saisieMessages';
 
 // Premier appelant de production de `deriverStatutsBiologie` ([[D-071]] §4).
 //
@@ -56,7 +58,14 @@ export type LimiteProposition =
    * l'écran les dit. Sans ce relais, elles disparaîtraient de la proposition
    * ET de l'écran (`DC-30`).
    */
-  | { type: 'declaration_ecartee_hors_proposition'; motifs: string[] };
+  | { type: 'declaration_ecartee_hors_proposition'; motifs: string[] }
+  /**
+   * Panels dont la règle cite au moins un claim non admissible au corpus
+   * ([[D-472]]) : la règle n'est pas appliquée. L'écran le dit HORS du bloc
+   * replié — un bilan qui disparaît doit se voir —, et la liste reste rendue
+   * même quand aucune ligne ne subsiste.
+   */
+  | { type: 'panel_indisponible'; panels: PanelIndisponible[] };
 
 export type ResultatProposition =
   | { ok: false; motif: string }
@@ -246,6 +255,30 @@ async function chargerAnalytes(): Promise<{
 }
 
 /**
+ * Les claims ADMISSIBLES de la table d'indications ([[D-472]]) : valides au
+ * corpus ET non supplantés — le critère du préflight de `release-db`
+ * (`rag_claim_fraicheur_tables_signees_v1.sql`), constaté ici à chaque lecture
+ * au lieu d'attendre la release suivante. Tous les couples de toutes les règles,
+ * identifiant ET version : aucune version plus récente n'est substituée.
+ *
+ * `null` = corpus illisible. Le service refuse alors toute proposition : ne
+ * rien pouvoir vérifier n'autorise rien (`DC-24`).
+ */
+async function chargerClaimsAdmissibles(): Promise<ReadonlySet<string> | null> {
+  const references = INDICATIONS_BIOLOGIE_V1.flatMap(regle => regle.justificationClaims);
+  try {
+    const [valides, nonSupplantes] = await Promise.all([
+      claimsValidesAuCorpus(references),
+      claimsNonSupplantesAuCorpus(references),
+    ]);
+    return new Set([...valides].filter(cle => nonSupplantes.has(cle)));
+  } catch (err) {
+    console.error('[propositionService] corpus illisible', signature(err));
+    return null;
+  }
+}
+
+/**
  * Dérive la proposition de bilan du dossier déjà stocké.
  *
  * Ne propose que des EXPLORATIONS : aucune assignation, aucune prescription,
@@ -269,6 +302,17 @@ export async function deriverPropositionPourPatient(
     return {
       ok: false,
       motif: 'La proposition de bilan biologique n’est pas activée sur cet environnement.',
+    };
+  }
+
+  // Le corpus AVANT le dossier — même ordre que `evaluerPortesBiologiquesPourPatient` :
+  // un corpus illisible n'a aucune raison de faire lire le dossier.
+  const claimsAdmissibles = await chargerClaimsAdmissibles();
+  if (claimsAdmissibles === null) {
+    return {
+      ok: false,
+      motif:
+        'La proposition de bilan n’est pas affichée : la validité de ses sources n’a pas pu être vérifiée.',
     };
   }
 
@@ -313,6 +357,9 @@ export async function deriverPropositionPourPatient(
     // [[D-323]] §2-§3 : sans composition signée, la carte est vide et les
     // analyses du bilan sont rendues telles quelles.
     compositions: analytes.compositions,
+    // [[D-472]] — appliqué par le moteur après le verrou, jamais un filtre de
+    // la table ici (contrat M-B).
+    claimsAdmissibles,
     dateReference,
   });
 
@@ -342,6 +389,9 @@ export async function deriverPropositionPourPatient(
       type: 'declaration_ecartee_hors_proposition',
       motifs: proposition.declarationsIgnoreesHorsProposition.map(d => d.motif),
     });
+  }
+  if (proposition.panelsIndisponibles.length > 0) {
+    limites.push({ type: 'panel_indisponible', panels: proposition.panelsIndisponibles });
   }
   return { ok: true, proposition, limites };
 }

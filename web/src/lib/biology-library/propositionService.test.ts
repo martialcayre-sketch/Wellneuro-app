@@ -17,6 +17,18 @@ const { prisma, deriverStatutsBiologie } = vi.hoisted(() => ({
   deriverStatutsBiologie: vi.fn(),
 }));
 
+// [[D-472]] : la lecture du corpus est simulée — les deux prédicats, séparément,
+// pour éprouver leur intersection.
+const { claimsValidesAuCorpus, claimsNonSupplantesAuCorpus } = vi.hoisted(() => ({
+  claimsValidesAuCorpus: vi.fn(),
+  claimsNonSupplantesAuCorpus: vi.fn(),
+}));
+vi.mock('@/lib/rag/claims/validite', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
+  claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus,
+}));
+
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('./statuts', async importOriginal => ({
   ...(await importOriginal<typeof import('./statuts')>()),
@@ -34,6 +46,11 @@ import { shaPerimetreBiologie } from './statuts';
 import { claimsCitesParLaPropositionBilan, deriverPropositionPourPatient } from './propositionService';
 
 const REFERENCE = '2026-08-17T12:00:00.000Z';
+
+/** Les couples `cleClaim` de toute la table — admissibles par défaut ([[D-472]]). */
+const TOUS_LES_COUPLES = INDICATIONS_BIOLOGIE_V1
+  .flatMap(regle => regle.justificationClaims)
+  .map(c => `${c.claimId}::${c.versionClaim}`);
 
 function panelDuCatalogue(code: string, items: unknown[] = []) {
   return { code, libelle: `Panel ${code}`, niveau: 'socle', objectif: null, actif: true, items };
@@ -53,7 +70,9 @@ beforeEach(() => {
   prisma.panelBiologieDocumente.findMany.mockResolvedValue([]);
   prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
-  deriverStatutsBiologie.mockReturnValue({ ok: true, lignes: [], declarationsIgnoreesHorsProposition: [] });
+  claimsValidesAuCorpus.mockResolvedValue(new Set(TOUS_LES_COUPLES));
+  claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(TOUS_LES_COUPLES));
+  deriverStatutsBiologie.mockReturnValue({ ok: true, lignes: [], declarationsIgnoreesHorsProposition: [], panelsIndisponibles: [] });
 });
 
 // ── Contrat M-B ────────────────────────────────────────────────────────────
@@ -339,6 +358,7 @@ describe('remboursements — la limite « non évalué » nomme ce qui reste', (
   it('nomme les analyses non évaluées des lignes proposées, sans doublon', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       lignes: [
         { statut: 'recommande', analytes: [
           analyteDeLigne('A', 'Ferritine', 'remboursable'),
@@ -360,6 +380,7 @@ describe('remboursements — la limite « non évalué » nomme ce qui reste', (
   it('dédoublonne par code, comme les documents : deux analyses de même libellé restent deux', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       lignes: [{ statut: 'recommande', analytes: [
         analyteDeLigne('B12_TOTALE', 'Vitamine B12', 'non_evalue'),
         analyteDeLigne('B12_ACTIVE', 'Vitamine B12', 'non_evalue'),
@@ -375,6 +396,7 @@ describe('remboursements — la limite « non évalué » nomme ce qui reste', (
   it('un calculé non évalué nomme la mesure qui manque (D-323 §4)', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       lignes: [{
         statut: 'recommande',
         analytes: [{
@@ -398,6 +420,7 @@ describe('remboursements — la limite « non évalué » nomme ce qui reste', (
   it('absente quand toutes les analyses proposées ont été tranchées', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       lignes: [{ statut: 'recommande', analytes: [
         analyteDeLigne('A', 'Ferritine', 'remboursable'),
         analyteDeLigne('B', 'Homocystéine', 'hors_nomenclature'),
@@ -422,6 +445,7 @@ describe('déclarations écartées hors proposition', () => {
   it('remontent en limite, avec leur motif', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       lignes: [],
       declarationsIgnoreesHorsProposition: [
         { panelCode: 'PANEL_X', motif: 'Déclaration écartée : sa date est illisible.' },
@@ -477,6 +501,7 @@ describe('claims cités par la proposition de bilan', () => {
   it('déduplique sur la PAIRE : trois règles citant le même claim ne font qu’une entrée', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       declarationsIgnoreesHorsProposition: [],
       lignes: [
         ligne('PANEL_A', 'recommande', [claim('WN-CL-0312-018'), claim('WN-CL-0389-004')]),
@@ -493,6 +518,7 @@ describe('claims cités par la proposition de bilan', () => {
   it('deux versions du même claim restent deux entrées', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       declarationsIgnoreesHorsProposition: [],
       lignes: [
         ligne('PANEL_A', 'recommande', [
@@ -511,6 +537,7 @@ describe('claims cités par la proposition de bilan', () => {
   it('les lignes non indiquées et déjà documentées citent aussi', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       declarationsIgnoreesHorsProposition: [],
       lignes: [
         ligne('PANEL_A', 'non_indique_actuellement', [claim('WN-CL-0312-018')]),
@@ -539,9 +566,74 @@ describe('claims cités par la proposition de bilan', () => {
   it('une proposition qui cite rend bien quelque chose', async () => {
     deriverStatutsBiologie.mockReturnValue({
       ok: true,
+      panelsIndisponibles: [],
       declarationsIgnoreesHorsProposition: [],
       lignes: [ligne('PANEL_A', 'recommande', [claim('WN-CL-0312-018')])],
     });
     expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toHaveLength(1);
+  });
+});
+
+// ── [[D-472]] : claims admissibles, lus par le service, appliqués par le moteur ──
+describe('claims admissibles — D-472', () => {
+  it('demande au corpus TOUS les couples de TOUTES les règles, identifiant et version', async () => {
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const demandes = claimsValidesAuCorpus.mock.calls[0][0] as Array<{ claimId: string; versionClaim: string }>;
+    expect(new Set(demandes.map(c => `${c.claimId}::${c.versionClaim}`))).toEqual(new Set(TOUS_LES_COUPLES));
+    expect(claimsNonSupplantesAuCorpus.mock.calls[0][0]).toEqual(demandes);
+  });
+
+  it('passe au moteur l’intersection valides ∩ non supplantés : un claim VALIDE mais supplanté n’est pas admissible', async () => {
+    const [supplante, ...autres] = [...new Set(TOUS_LES_COUPLES)];
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(autres));
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const admissibles = deriverStatutsBiologie.mock.calls[0][0].claimsAdmissibles as ReadonlySet<string>;
+    expect(admissibles.has(supplante)).toBe(false);
+    expect(admissibles.size).toBe(autres.length);
+  });
+
+  it('un claim non supplanté mais plus VALIDE n’est pas admissible non plus', async () => {
+    const [invalide, ...autres] = [...new Set(TOUS_LES_COUPLES)];
+    claimsValidesAuCorpus.mockResolvedValue(new Set(autres));
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const admissibles = deriverStatutsBiologie.mock.calls[0][0].claimsAdmissibles as ReadonlySet<string>;
+    expect(admissibles.has(invalide)).toBe(false);
+  });
+
+  it('corpus illisible : aucune proposition, et le dossier n’est pas lu', async () => {
+    claimsValidesAuCorpus.mockRejectedValue(new Error('connexion perdue'));
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(resultat).toEqual({
+      ok: false,
+      motif: 'La proposition de bilan n’est pas affichée : la validité de ses sources n’a pas pu être vérifiée.',
+    });
+    expect(deriverStatutsBiologie).not.toHaveBeenCalled();
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(prisma.consultation.findFirst).not.toHaveBeenCalled();
+    // Aucun texte du corpus ni du dossier au journal : la seule signature d'erreur.
+    expect(JSON.stringify(erreur.mock.calls)).not.toContain('connexion perdue');
+    erreur.mockRestore();
+  });
+
+  it('les panels indisponibles du moteur deviennent une limite distincte des lignes', async () => {
+    const indisponible = {
+      panelCode: 'PANEL_A',
+      libelle: 'Panel PANEL_A',
+      regleId: 'BIO-TEST-01',
+      claimsNonAdmissibles: [{ claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' }],
+    };
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [],
+      declarationsIgnoreesHorsProposition: [],
+      panelsIndisponibles: [indisponible],
+    });
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.proposition.lignes).toEqual([]);
+    expect(resultat.limites).toEqual([{ type: 'panel_indisponible', panels: [indisponible] }]);
+    // Une règle non appliquée ne cite rien : aucun conflit de source n'en part.
+    expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toEqual([]);
   });
 });

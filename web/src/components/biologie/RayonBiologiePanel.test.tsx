@@ -57,6 +57,7 @@ const CATALOGUE = {
         },
       ],
       liensAxeSuspendus: 0,
+      nonIndiquesSuspendus: 0,
     },
     {
       code: 'BIO_INSULINEMIE',
@@ -79,6 +80,7 @@ const CATALOGUE = {
       nonIndiques: [],
       liensAxe: [],
       liensAxeSuspendus: 0,
+      nonIndiquesSuspendus: 0,
     },
     {
       code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE',
@@ -115,6 +117,7 @@ const CATALOGUE = {
       liensAxe: [],
       // D-140 : un lien tu, son claim n'étant plus valide au corpus.
       liensAxeSuspendus: 1,
+      nonIndiquesSuspendus: 0,
     },
   ],
   millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
@@ -236,6 +239,29 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     // « dosage » cité par le claim n'est pas un terme d'acte de l'outil : le
     // banc de vocabulaire ne l'interdit pas.
     expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+  });
+
+  // [[D-472]] : une mention suspendue ne rend ni motif ni citation, et la
+  // section le dit — visible, jamais une section vide.
+  it('une mention suspendue se dit, sans motif ni claim cité (D-472)', async () => {
+    mockFetch({
+      ...CATALOGUE,
+      analytes: CATALOGUE.analytes.map(a =>
+        a.nonIndiques.length > 0 ? { ...a, nonIndiques: [], nonIndiquesSuspendus: 1 } : a,
+      ),
+    });
+    render(<RayonBiologiePanel />);
+    await waitFor(() => expect(screen.getByText('Magnésium érythrocytaire')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /^Magnésium érythrocytaire/ }));
+    await waitFor(() => expect(screen.getByText('Exploration non indiquée')).toBeTruthy());
+    expect(
+      screen.getByText(
+        'Une mention d’exploration non indiquée est suspendue : au moins un claim cité ne satisfait pas les critères de validité du corpus.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/non indiqué actuellement/)).toBeNull();
+    expect(screen.queryByText(/Claim cité :/)).toBeNull();
+    expect(document.body.textContent).not.toContain('Le dosage plasmatique');
   });
 
   it('une fiche sans exploration non indiquée n’a pas la section', async () => {

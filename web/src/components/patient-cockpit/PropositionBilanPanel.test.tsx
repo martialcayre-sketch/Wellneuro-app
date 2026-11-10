@@ -117,6 +117,48 @@ describe('déclarations écartées — dites, jamais tues (DC-30)', () => {
   });
 });
 
+// [[D-472]] : un panel dont la règle cite un claim non admissible n'a pas de
+// ligne ; il est dit HORS du bloc replié, avec ses couples au détail.
+describe('bilans indisponibles — dits, visibles, jamais repliés (D-472)', () => {
+  const indisponible = {
+    type: 'panel_indisponible' as const,
+    panels: [
+      {
+        panelCode: 'PANEL_THYROIDE',
+        libelle: 'Bilan thyroïdien',
+        regleId: 'BIO-THY-01',
+        claimsNonAdmissibles: [{ claimId: 'WN-CL-9999-002', versionClaim: 'v1.0' }],
+      },
+    ],
+  };
+  const MESSAGE =
+    'Au moins un claim cité par la règle BIO-THY-01 ne satisfait pas les critères de validité du corpus. Cette règle n’est pas appliquée.';
+
+  it('nomme le panel et la règle, hors du bloc « Ce que cette vue ne sait pas »', () => {
+    rendre({ limites: [indisponible] });
+    const liste = screen.getByRole('list', { name: 'Bilans indisponibles' });
+    expect(liste.textContent).toContain('Bilan indisponible : Bilan thyroïdien.');
+    expect(liste.textContent).toContain(MESSAGE);
+    expect(liste.closest('details')).toBeNull();
+    // Les couples, identifiant ET version, au détail accessible.
+    expect(within(liste).getByText('Claims concernés')).toBeTruthy();
+    expect(within(liste).getByText('WN-CL-9999-002 (v1.0)')).toBeTruthy();
+    // Une seule fois : jamais recopié dans le bloc replié.
+    expect(document.body.textContent?.split('Bilan indisponible').length).toBe(2);
+  });
+
+  it('reste dit quand aucune ligne ne subsiste, sans le message générique de table vide', () => {
+    rendre({ lignes: [], limites: [indisponible] });
+    expect(screen.getByRole('list', { name: 'Bilans indisponibles' }).textContent).toContain(MESSAGE);
+    expect(screen.queryByText(/n’est couvert par une règle d’indication exploitable/)).toBeNull();
+  });
+
+  it('sans panel indisponible, rien n’est affiché', () => {
+    rendre();
+    expect(screen.queryByRole('list', { name: 'Bilans indisponibles' })).toBeNull();
+  });
+});
+
 describe('corriger une déclaration', () => {
   it('le geste reste offert une fois le panel déclaré', () => {
     const onDeclarer = vi.fn();
