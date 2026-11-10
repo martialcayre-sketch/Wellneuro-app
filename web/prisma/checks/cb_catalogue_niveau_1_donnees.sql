@@ -77,18 +77,56 @@ BEGIN
   -- analyses d'un compte rendu courant, migration 20261003150000), + 7 le
   -- 2026-10-18 (D-323 §6 : analyses groupées, migration 20261018100100), + 2
   -- le 2026-10-24 (D-361 : TP et INR, migration 20261024220000), + 22 le
-  -- 2026-10-25 (D-376 : acides gras, migration 20261025140000).
+  -- 2026-10-25 (D-376 : acides gras, migration 20261025140000), + 1 le
+  -- 2026-11-10 (D-473 : vitamine E, migration 20261110120000).
   SELECT count(*) INTO nb FROM biology_analytes WHERE source_provenance = 'saisie_praticien';
   IF nb > 0 THEN
-    IF nb <> 116 THEN
-      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361/D-376: % analyte(s) saisie_praticien au lieu des 116 du catalogue', nb;
+    IF nb <> 117 THEN
+      RAISE EXCEPTION 'D-068/D-245/D-261/D-323/D-361/D-376/D-473: % analyte(s) saisie_praticien au lieu des 117 du catalogue', nb;
+    END IF;
+
+    -- La fiche de vitamine E de D-473, LIGNE PAR LIGNE (aucun panel ne la
+    -- cite : le total des items de panels, plus bas, le tient), et AUCUNE
+    -- plage, aucun lien d'axe. Les correspondances NABM et les compositions
+    -- ne sont PAS comptées ici : ce sont des gestes que le praticien signe
+    -- dans l'application (M-3, F80 — le candidat 7302 est fait pour l'être),
+    -- et une signature ne doit pas rougir ce contrat (constat du 2026-11-10,
+    -- voir le bloc D-376 ci-dessous).
+    SELECT count(*) INTO nb FROM biology_analytes
+    WHERE NOT validation_medicale_requise
+      AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
+      AND (code, libelle, unite, type_prelevement) IN (
+        ('BIO_VITAMINE_E', 'Vitamine E (alpha-tocophérol)', 'µmol/L', 'sang'));
+    IF nb <> 1 THEN
+      RAISE EXCEPTION 'D-473: % fiche(s) de vitamine E conforme(s) au lieu de 1 (code, libellé, unité, niveau, prélèvement, provenance)', nb;
+    END IF;
+    SELECT count(*) INTO nb FROM (
+      SELECT analyte_code FROM biology_reference_ranges
+      UNION ALL SELECT analyte_code FROM biology_functional_ranges
+      UNION ALL SELECT analyte_code FROM biology_analyte_links
+      UNION ALL SELECT analyte_code FROM biology_panel_items
+    ) p WHERE p.analyte_code = 'BIO_VITAMINE_E';
+    IF nb > 0 THEN
+      RAISE EXCEPTION 'D-473: % plage, lien d''axe ou item de panel sur la fiche de vitamine E — aucun ne s''écrit par migration', nb;
     END IF;
 
     -- Les vingt acides gras et les deux rapports de D-376, LIGNE PAR LIGNE
     -- (aucun panel ne les cite : le total des items de panels, plus bas, le
-    -- tient), et AUCUNE plage, aucune correspondance signée, aucune
-    -- composition à leur entrée. Les acides en %, sang ; les rapports en
-    -- « ratio », « autre », comme BIO_RATIO_AA_EPA (D-245 §5, D-356 §4).
+    -- tient), et AUCUNE plage, aucun lien d'axe, aucun item de panel. Les
+    -- acides en %, sang ; les rapports en « ratio », « autre », comme
+    -- BIO_RATIO_AA_EPA (D-245 §5, D-356 §4).
+    -- Les correspondances NABM signées et les compositions ne sont plus
+    -- comptées, ici comme dans les blocs D-361 et D-323 : le praticien les
+    -- signe dans l'application (M-3, F80), et ce contrat ne doit lire que ce
+    -- qu'une migration écrit. Constaté le 2026-11-10 : les compositions des
+    -- deux rapports, signées les 2026-10-26 et 27, le rougissaient en
+    -- production (35 lignes) ; en CI, base neuve, il restait vert.
+    -- PERTE DE COUVERTURE ACCEPTÉE : une composition ou une correspondance
+    -- écrite par erreur par une migration sur ces fiches ne rougit plus ce
+    -- contrat. Aucun marqueur ne la distinguerait d'une signature :
+    -- `verifie_par` est NOT NULL et non vide sur toute composition (F80), et
+    -- la correspondance signée est le geste attendu (M-3). Une telle
+    -- écriture reste à la revue de la migration (D-087).
     SELECT count(*) INTO nb FROM biology_analytes
     WHERE NOT validation_medicale_requise
       AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
@@ -122,9 +160,6 @@ BEGIN
       SELECT analyte_code FROM biology_reference_ranges
       UNION ALL SELECT analyte_code FROM biology_functional_ranges
       UNION ALL SELECT analyte_code FROM biology_analyte_links
-      UNION ALL SELECT analyte_code FROM biology_analyte_nabm WHERE verifie_par IS NOT NULL
-      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
-      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
       UNION ALL SELECT analyte_code FROM biology_panel_items
     ) p WHERE p.analyte_code IN (
       'BIO_AG_MYRISTIQUE', 'BIO_AG_PALMITIQUE', 'BIO_AG_STEARIQUE', 'BIO_AG_LAURIQUE',
@@ -135,12 +170,12 @@ BEGIN
       'BIO_AG_ALPHA_LINOLENIQUE', 'BIO_AG_EPA', 'BIO_AG_DHA',
       'BIO_RATIO_LA_DGLA', 'BIO_RATIO_OMEGA6_OMEGA3');
     IF nb > 0 THEN
-      RAISE EXCEPTION 'D-376: % plage, lien clinique, correspondance signée, composition ou item de panel sur une fiche d''acide gras — aucun ne s''écrit par migration', nb;
+      RAISE EXCEPTION 'D-376: % plage, lien clinique ou item de panel sur une fiche d''acide gras — aucun ne s''écrit par migration', nb;
     END IF;
 
     -- Les deux fiches de coagulation de D-361, LIGNE PAR LIGNE (aucun panel
-    -- ne les cite), et AUCUNE plage, aucune correspondance signée, aucune
-    -- composition à leur entrée. L'INR en « ratio », jamais NULL (D-356 §4).
+    -- ne les cite), et AUCUNE plage ni aucun lien clinique (correspondances
+    -- et compositions signées : voir le bloc D-376). L'INR en « ratio », jamais NULL (D-356 §4).
     SELECT count(*) INTO nb FROM biology_analytes
     WHERE type_prelevement = 'sang' AND NOT validation_medicale_requise
       AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
@@ -154,16 +189,13 @@ BEGIN
       SELECT analyte_code FROM biology_reference_ranges
       UNION ALL SELECT analyte_code FROM biology_functional_ranges
       UNION ALL SELECT analyte_code FROM biology_analyte_links
-      UNION ALL SELECT analyte_code FROM biology_analyte_nabm WHERE verifie_par IS NOT NULL
-      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
-      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
     ) p WHERE p.analyte_code IN ('BIO_TP', 'BIO_INR');
     IF nb > 0 THEN
-      RAISE EXCEPTION 'D-361: % plage, lien clinique, correspondance signée ou composition sur une fiche de coagulation — aucune ne s''écrit par migration', nb;
+      RAISE EXCEPTION 'D-361: % plage ou lien clinique sur une fiche de coagulation — aucune ne s''écrit par migration', nb;
     END IF;
 
     -- Les sept fiches de D-323 §6, LIGNE PAR LIGNE (aucun panel ne les cite),
-    -- et AUCUNE plage, aucune correspondance, aucune composition à leur entrée.
+    -- et AUCUNE plage ni aucun lien clinique (signatures : voir le bloc D-376).
     SELECT count(*) INTO nb FROM biology_analytes
     WHERE type_prelevement = 'sang' AND NOT validation_medicale_requise
       AND source_provenance = 'saisie_praticien'
@@ -183,14 +215,11 @@ BEGIN
       SELECT analyte_code FROM biology_reference_ranges
       UNION ALL SELECT analyte_code FROM biology_functional_ranges
       UNION ALL SELECT analyte_code FROM biology_analyte_links
-      UNION ALL SELECT analyte_code FROM biology_analyte_nabm WHERE verifie_par IS NOT NULL
-      UNION ALL SELECT analyte_code FROM biology_analyte_compositions
-      UNION ALL SELECT composant_code FROM biology_analyte_composition_items
     ) p WHERE p.analyte_code IN (
       'BIO_T4_LIBRE', 'BIO_T3_LIBRE', 'BIO_IONOGRAMME_COMPLET', 'BIO_BICARBONATES',
       'BIO_PROTIDES', 'BIO_BILIRUBINE', 'BIO_PHOSPHATASES_ALCALINES');
     IF nb > 0 THEN
-      RAISE EXCEPTION 'D-323: % plage, lien clinique, correspondance signée ou composition sur une fiche des analyses groupées — aucune ne s''écrit par migration', nb;
+      RAISE EXCEPTION 'D-323: % plage ou lien clinique sur une fiche des analyses groupées — aucune ne s''écrit par migration', nb;
     END IF;
 
     -- Les 36 analytes de D-261, LIGNE PAR LIGNE, pour la même raison que les

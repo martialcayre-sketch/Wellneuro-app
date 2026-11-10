@@ -7,6 +7,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { LONGUEUR_MAX_DESACCORD } from '@/lib/praticien/syntheseComprehension';
 import type { PortailComprehensionResponse } from '@/app/api/portail/comprehension/route';
@@ -164,11 +165,13 @@ export function ComprehensionView() {
               <p className="whitespace-pre-wrap text-base leading-relaxed">{synthese.texte}</p>
             </div>
 
-            {depose && (
+            {/* L'envoi referme le formulaire, et « Envoyer » disparaît avec lui :
+                région présente avant l'accusé, focus posé quand il paraît. */}
+            <PatientRegionAccuse visible={depose}>
               <PatientInlineMessage tone="success">
                 C’est transmis. Votre praticien le verra tel que vous l’avez écrit.
               </PatientInlineMessage>
-            )}
+            </PatientRegionAccuse>
 
             {!ouvertureFormulaire ? (
               <PatientButton

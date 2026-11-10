@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -96,6 +96,9 @@ export function SignalerProbleme({
   associationDisponible?: boolean;
 }) {
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  // « Faire un autre signalement » disparaît sous le doigt : le focus doit aller
+  // aux choix qui le remplacent. Jamais au premier affichage de la page.
+  const [retourAuxChoix, setRetourAuxChoix] = useState(false);
 
   // La région reste ICI, hors du formulaire : chaque parcours a son propre rendu,
   // et elle doit exister avant que la confirmation n'y paraisse. Le bouton reste
@@ -107,7 +110,13 @@ export function SignalerProbleme({
       </PatientRegionAccuse>
       {confirmation ? (
         <div className="mt-3">
-          <PatientButton variant="neutral" onClick={() => setConfirmation(null)}>
+          <PatientButton
+            variant="neutral"
+            onClick={() => {
+              setConfirmation(null);
+              setRetourAuxChoix(true);
+            }}
+          >
             Faire un autre signalement
           </PatientButton>
         </div>
@@ -116,6 +125,7 @@ export function SignalerProbleme({
           token={token}
           onConfirme={setConfirmation}
           onEnvoye={onEnvoye}
+          focusAuMontage={retourAuxChoix}
           associationDisponible={associationDisponible}
           elementsProgramme={elementsProgramme}
           versionProgramme={versionProgramme}
@@ -126,11 +136,14 @@ export function SignalerProbleme({
 }
 
 function FormulaireSignalement({
-  token, onConfirme, onEnvoye, associationDisponible, elementsProgramme, versionProgramme,
+  token, onConfirme, onEnvoye, focusAuMontage, associationDisponible, elementsProgramme, versionProgramme,
 }: {
   token: string;
   onConfirme: (message: string) => void;
   onEnvoye: () => void;
+  /** Poser le focus sur le premier choix au montage : vrai seulement au retour
+   *  de « Faire un autre signalement », dont le bouton vient de disparaître. */
+  focusAuMontage: boolean;
   associationDisponible: boolean;
   elementsProgramme: { actionId: string; title: string }[] | null;
   versionProgramme: string | null;
@@ -158,6 +171,19 @@ function FormulaireSignalement({
   const [typeDroit, setTypeDroit] = useState('');
   const [description, setDescription] = useState('');
 
+  // LE FOCUS QUAND LA LISTE DES CHOIX REVIENT. « Annuler » disparaît avec le
+  // formulaire, et le focus retomberait sur `body` : il revient au choix
+  // abandonné, là où le patient l'avait laissé. Au retour de « Faire un autre
+  // signalement », sur le premier choix. Sinon — premier affichage, envoi
+  // réussi — il ne bouge pas.
+  const boutonsParcours = useRef(new Map<Parcours, HTMLButtonElement>());
+  const focusSurChoix = useRef<Parcours | null>(focusAuMontage ? PARCOURS[0].valeur : null);
+  useEffect(() => {
+    if (parcours !== null || focusSurChoix.current === null) return;
+    boutonsParcours.current.get(focusSurChoix.current)?.focus();
+    focusSurChoix.current = null;
+  }, [parcours]);
+
   const reinitialiser = () => {
     setParcours(null);
     setProduit('');
@@ -174,6 +200,11 @@ function FormulaireSignalement({
     setTypeDroit('');
     setDescription('');
     setErreur('');
+  };
+
+  const annuler = () => {
+    focusSurChoix.current = parcours;
+    reinitialiser();
   };
 
   const envoyer = async (corps: Record<string, unknown>) => {
@@ -209,6 +240,10 @@ function FormulaireSignalement({
         {PARCOURS.map(p => (
           <button
             key={p.valeur}
+            ref={el => {
+              if (el) boutonsParcours.current.set(p.valeur, el);
+              else boutonsParcours.current.delete(p.valeur);
+            }}
             type="button"
             onClick={() => setParcours(p.valeur)}
             className="w-full text-left px-4 py-3 text-sm text-foreground rounded-lg border border-border bg-surface hover:border-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -338,7 +373,7 @@ function FormulaireSignalement({
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Envoyer le signalement
           </PatientButton>
-          <PatientButton variant="ghost" onClick={reinitialiser}>Annuler</PatientButton>
+          <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
         </div>
       </form>
     );
@@ -380,7 +415,7 @@ function FormulaireSignalement({
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
             Signaler
           </PatientButton>
-          <PatientButton variant="ghost" onClick={reinitialiser}>Annuler</PatientButton>
+          <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
         </div>
       </form>
     );
@@ -419,7 +454,7 @@ function FormulaireSignalement({
         <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">
           Envoyer la demande
         </PatientButton>
-        <PatientButton variant="ghost" onClick={reinitialiser}>Annuler</PatientButton>
+        <PatientButton variant="ghost" onClick={annuler}>Annuler</PatientButton>
       </div>
     </form>
   );
