@@ -19,7 +19,7 @@
 -- d'axe, AUCUNE correspondance NABM en base (le candidat 7302 est proposé par
 -- `candidatsNabm.ts` et n'entre qu'à la signature du praticien, M-3). Le
 -- libellé n'entre au résolveur signé qu'après l'application constatée de ce
--- fichier (clé étrangère d'`analyte_propose`, D-376 §7, D-473 §5).
+-- fichier (clé étrangère d'`analyte_propose`, D-376 §7, D-473 §6).
 --
 -- AUCUNE VALEUR BIOLOGIQUE PATIENT : ce fichier n'écrit dans aucune table de
 -- résultats.

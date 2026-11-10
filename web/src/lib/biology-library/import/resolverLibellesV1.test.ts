@@ -149,7 +149,7 @@ describe('resolver — une ligne : le libellé, puis l’unité qui départage (
     // elles se saisissent à la main, mais leur unité se lit comme les autres),
     // puis le TP et l'INR de D-361 (l'INR en « ratio », D-356 §4), puis les
     // vingt acides gras et les deux rapports de D-376, puis la vitamine E de
-    // D-473 (le résolveur ne la nomme pas encore : second lot, D-473 §5).
+    // D-473 (le résolveur ne la nomme pas encore : second lot, D-473 §6).
     expect(UNITES.size).toBe(117);
     expect(UNITES.get('BIO_VITAMINE_E')).toBe('µmol/L');
     expect(UNITES.get('BIO_AG_EPA')).toBe('%');
