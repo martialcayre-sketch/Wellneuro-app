@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, ContactRound, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, ClipboardList, CalendarDays, FlaskConical, Lightbulb, Pill, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, ContactRound, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, ClipboardList, CalendarDays, FlaskConical, Lightbulb, Pill, Tally5, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
@@ -31,6 +31,9 @@ const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
 // « Fiches »).
 const plusItems: { href: string; label: string; icon: LucideIcon; matiere?: 'exact' }[] = [
   { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
+  // Les comptes du cabinet ([[D-385]]) : à la place qu'ils ont dans le rail.
+  // Leur absence était un oubli (Q26 de l'audit des rails, 2026-11-02).
+  { href: '/dashboard/cabinet', label: 'Comptes du cabinet', icon: Tally5 },
   { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
   { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },
   { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },

@@ -968,7 +968,7 @@ Q4 à Q26 et Q31 à Q34 ont été tranchées le 2026-11-02, à options fermées 
 | Q34 Étapes 1 et 2 | **Non cliquables** (règle de Q28) : aucune page existante ne relit ce qui a été saisi à ces étapes | D-423 §8. Réponse revue le 2026-11-02 (ci-dessous) : la première réponse (relecture hors menu vers `/conditions` et `/informations`) reposait sur des cibles qui ne relisent pas l'étape ; elle est retirée, et la question de la porte devient sans objet |
 | Q24 Mot-symbole | **Lien d'accueil, avec L3** : vers le hub quand le segment est connu, vers la connexion sinon, absent sur les murs d'entrée | L3 (composant client, `useParams`) ; l'audit ne recommandait rien |
 | Q25 Barre basse | **Report en L4 confirmé**, sans entrées nommées tant que B n'est pas livré | hors D-423 |
-| Q26 « Comptes du cabinet » (praticien) | **Oubli** | hors D-423 ; la ligne du PLAN §8 (l. 2696) est soldée sur l'arbitrage ; l'ajout de `/dashboard/cabinet` à la feuille « Plus » reste à faire dans un lot praticien à part |
+| Q26 « Comptes du cabinet » (praticien) | **Oubli** | hors D-423 ; la ligne du PLAN §8 (l. 2696) est soldée sur l'arbitrage ; l'ajout de `/dashboard/cabinet` à la feuille « Plus » reste à faire dans un lot praticien à part ; **fait le 2026-11-10**, après « Patients », comme dans le rail |
 
 ### Textes patient acceptés mot pour mot le 2026-11-02
 - Noms de groupes (Q5) : « Au jour le jour », « Ce que j'ai reçu », « Ce que je transmets », « Avec mon praticien ».
