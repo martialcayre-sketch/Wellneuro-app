@@ -7,9 +7,9 @@ tables `PORTES_BIOLOGIQUES_ASSIETTES_V1` et `INDICATIONS_ASSIETTES_V1` et leurs 
 - Les deux services lisent, sur tous les couples de leur table, les claims valides au corpus ET non supplantés,
   c'est-à-dire le critère du préflight et de D-472 §2. Si l'une des deux lectures échoue, le corpus est illisible,
   comme avant.
-- Un claim encore `VALIDE` mais supplanté retire sa ligne. Le retrait est compté et annoncé. Pour les portes, le texte
-  de ce claim n'est plus lu.
+- Un claim encore `VALIDE` mais supplanté retire sa ligne. Le retrait est compté et annoncé. Pour les portes, la
+  lecture des textes exige elle aussi `superseded_at IS NULL`.
 - Textes du cockpit alignés : « … ne satisfait pas les critères de validité du corpus. » au lieu de « … n'est plus
   valide au corpus. »
-- §8 du plan : t74 est inscrite. Le catalogue décisionnel des compléments ne vérifie pas non plus la supplantation ;
-  son comportement reste à cadrer.
+- §8 du plan : t74 et t75 sont inscrites. Le catalogue décisionnel des compléments (t74) et les fiches d'assiette (t75)
+  ne vérifient pas non plus la supplantation ; leur comportement reste à cadrer.

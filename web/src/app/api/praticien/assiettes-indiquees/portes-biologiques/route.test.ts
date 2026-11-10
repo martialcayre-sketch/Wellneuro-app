@@ -244,7 +244,7 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
 
   // LE TEXTE SE LIT SOUS LE MÊME PRÉDICAT QUE LA VALIDITÉ — constat de revue :
   // la première version n'exigeait que `active`/`VALIDE`.
-  it('la lecture des textes porte les QUATRE conditions d’éligibilité du corpus', async () => {
+  it('la lecture des textes porte les conditions d’éligibilité du corpus, supplantation comprise', async () => {
     await GET(requete());
     const sql = (prisma.$queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
     for (const condition of [
@@ -252,6 +252,8 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
       'c.active = true',
       'c.patient_identifiable = false',
       "c.compartment = 'ACTIF'",
+      // D-476 : un claim supplanté ENTRE les lectures ne voit pas son texte servi.
+      'c.superseded_at IS NULL',
       'rag_corpus_claim_sources',
     ]) {
       expect(sql, condition).toContain(condition);

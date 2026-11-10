@@ -71,7 +71,7 @@ export type ResultatPortesBiologiques =
       actif: true;
       shaPerimetre: string;
       corpusLu: boolean;
-      /** Lignes publiées retirées faute d'un claim valide — `0` si le corpus est illisible. */
+      /** Lignes publiées retirées faute d'un claim valide et non supplanté — `0` si le corpus est illisible. */
       retireesFauteDeClaim: number;
       portes: PorteBiologiqueLue[];
     };
@@ -86,10 +86,11 @@ function referencesCitees(): ClaimRef[] {
 
 /**
  * Le texte ENTIER de chaque claim servi — sous le MÊME prédicat que
- * `claimsValidesAuCorpus`, condition par condition. Les deux lectures sont
- * séparées : si celle-ci n'exigeait que `active`/`VALIDE`, un claim devenu
- * identifiant, sorti du compartiment actif ou privé de sa source ENTRE les deux
- * verrait quand même son texte servi (constat de revue, PR #1218).
+ * `claimsValidesAuCorpus` ET `claimsNonSupplantesAuCorpus`, condition par
+ * condition ([[D-476]]). Les lectures sont séparées : si celle-ci n'exigeait
+ * que `active`/`VALIDE`, un claim devenu identifiant, sorti du compartiment
+ * actif, privé de sa source ou supplanté ENTRE les deux verrait quand même son
+ * texte servi (constat de revue, PR #1218 ; revue de t73).
  */
 async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<string, string>> {
   if (references.length === 0) return new Map();
@@ -106,6 +107,7 @@ async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<str
       AND c.statut = 'VALIDE'
       AND c.patient_identifiable = false
       AND c.compartment = 'ACTIF'
+      AND c.superseded_at IS NULL
       AND EXISTS (
         SELECT 1 FROM public.rag_corpus_claim_sources AS s WHERE s.claim_pk = c.id
       )

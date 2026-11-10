@@ -183,7 +183,10 @@ describe('AssiettesIndiqueesPanel', () => {
     const { container } = render(<AssiettesIndiqueesPanel idPatient="PAT001" />);
     const ui = within(container);
     await waitFor(() => expect(ui.getByRole('alert')).not.toBeNull());
-    expect(ui.getByRole('alert').textContent).toMatch(/3 indication\(s\) publiée\(s\) ne sont pas servies/);
+    // D-476 §3 : au caractère près.
+    expect(ui.getByRole('alert').textContent).toBe(
+      '3 indication(s) publiée(s) ne sont pas servies : un de leurs claims ne satisfait pas les critères de validité du corpus. Elles n’ont pas été regardées sur ce dossier.',
+    );
     expect(ui.getByRole('alert').textContent).toMatch(/n’ont pas été regardées/);
   });
 

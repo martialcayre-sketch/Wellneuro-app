@@ -189,6 +189,13 @@ describe('PortesBiologiquesSection', () => {
     );
   });
 
+  it('deux portes retirées : le pluriel, au caractère près (D-476 §3)', async () => {
+    monter({ ...ACTIF, retireesFauteDeClaim: 2 });
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toBe('2 assiettes ne sont pas affichées : une de leurs sources ne satisfait pas les critères de validité du corpus.'),
+    );
+  });
+
   it('une réponse ACTIVE sans `portes` est dite illisible — la section ne lève pas', async () => {
     monter({ ok: true, actif: true, shaPerimetre: 'x', corpusLu: true, retireesFauteDeClaim: 0 });
     await waitFor(() =>
