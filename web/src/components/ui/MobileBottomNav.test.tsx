@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MobileBottomNav } from './MobileBottomNav';
+import { SidebarRail } from './SidebarRail';
 
 // La feuille « Plus » est portée par Radix hors du layout, sur le fond nuit du
 // rail. Un item actif qui ne pose pas sa couleur de texte hérite de <body>,
@@ -41,5 +42,38 @@ describe('MobileBottomNav — la feuille « Plus »', () => {
       expect(actifs[0].classList.contains('text-rail-foreground')).toBe(true);
       cleanup();
     }
+  });
+});
+
+// LA PARITÉ FEUILLE / RAIL (D-324 §5), vérifiée d'un rendu à l'autre et non
+// recopiée : « Comptes du cabinet » était dans le rail depuis #1780 sans aucun
+// lien sous 768 px (Q26 de l'audit des rails, arbitrée « oubli » le 2026-11-02).
+// La barre du bas et la feuille réunies doivent couvrir tout le rail, dans son
+// ordre ; seule « Synthèses » est propre au téléphone.
+describe('MobileBottomNav — les mêmes destinations que le rail', () => {
+  it('chaque entrée du rail est dans la barre ou dans la feuille, et la feuille suit l’ordre du rail', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({}) }) as unknown as Response));
+    pathnameMock.mockReturnValue('/dashboard');
+    const rail = render(<SidebarRail collapsed={false} />);
+    const destinationsRail = within(rail.container)
+      .getAllByRole('link')
+      .map((lien) => lien.getAttribute('href') ?? '')
+      .filter((href) => href.startsWith('/dashboard'));
+    cleanup();
+    vi.unstubAllGlobals();
+
+    pathnameMock.mockReturnValue('/dashboard');
+    render(<MobileBottomNav />);
+    const barre = within(screen.getByRole('navigation', { name: 'Navigation principale' }))
+      .getAllByRole('link')
+      .map((lien) => lien.getAttribute('href') ?? '');
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    const feuille = within(screen.getByRole('dialog'))
+      .getAllByRole('link')
+      .map((lien) => lien.getAttribute('href') ?? '');
+
+    expect(feuille).toContain('/dashboard/cabinet');
+    expect(feuille).toEqual(destinationsRail.filter((href) => !barre.includes(href)));
+    expect(barre.filter((href) => !destinationsRail.includes(href))).toEqual(['/dashboard/synthese']);
   });
 });
