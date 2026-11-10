@@ -274,4 +274,18 @@ describe('FoodObservationJourney — les accusés', () => {
     expect(region.textContent).toMatch(/semaine sans possibilité est notée/);
     expect(document.activeElement).toBe(pause);
   });
+
+  // Même texte deux fois de suite, et le focus ne bouge pas : seule une mutation
+  // de la région peut faire réannoncer l'accusé. Le nœud est remplacé.
+  it('un même accusé deux fois de suite : le message est remplacé dans la même région', () => {
+    const region = rendre();
+    const pause = screen.getByRole('button', { name: 'Je n’ai pas pu cette semaine' });
+    fireEvent.click(pause);
+    const premier = region.firstElementChild;
+    expect(premier).not.toBeNull();
+    fireEvent.click(pause);
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region.firstElementChild).not.toBe(premier);
+    expect(region.textContent).toBe(premier!.textContent);
+  });
 });

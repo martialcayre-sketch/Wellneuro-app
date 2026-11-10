@@ -111,6 +111,11 @@ export function FoodObservationJourney({
   const [minimalPlans, setMinimalPlans] = useState<MinimalPlanEvent[]>([]);
   const [solutions, setSolutions] = useState<IntraEpisodeSolution[]>([]);
   const [confirmation, setConfirmation] = useState('');
+  // LE RANG DE L'ACCUSÉ, clé du message dans la région : deux gestes de suite
+  // peuvent produire le même texte (deux pauses, deux traces). Sans clé, React
+  // ne toucherait pas au DOM et la région n'aurait rien à annoncer ; avec elle,
+  // le nœud est remplacé à chaque accusé, ce qu'une région `status` annonce.
+  const [rangAccuse, setRangAccuse] = useState(0);
   // LE FOCUS SUIT L'ACCUSÉ DE LA TRACE ET DE LA SOLUTION : leur remise à zéro
   // désactive leur bouton d'envoi, et un bouton focalisé qui devient désactivé
   // rend le focus à `body`. Un compteur et non un booléen : l'accusé reste
@@ -141,6 +146,7 @@ export function FoodObservationJourney({
 
   const confirm = (message: string) => {
     setConfirmation(`${message} Cette confirmation est locale et sera perdue au rechargement.`);
+    setRangAccuse(n => n + 1);
   };
 
   const handleOccasionChange = (value: string) => {
@@ -297,7 +303,9 @@ export function FoodObservationJourney({
             : 'sr-only'
         }
       >
-        {confirmation && <PatientInlineMessage tone="success">{confirmation}</PatientInlineMessage>}
+        {confirmation && (
+          <PatientInlineMessage key={rangAccuse} tone="success">{confirmation}</PatientInlineMessage>
+        )}
       </div>
 
       <PatientCard as="form" onSubmit={submitQuestion} className="space-y-4">
