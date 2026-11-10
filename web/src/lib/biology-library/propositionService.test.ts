@@ -637,3 +637,46 @@ describe('claims admissibles — D-472', () => {
     expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toEqual([]);
   });
 });
+
+// ── [[D-472]] : la clé du corpus et celle du moteur sont la MÊME clé ──────────
+// Deux fonctions jumelles construisent `identifiant::version` : `cleClaim` de
+// `rag/claims/validite` (l'ensemble que le service fabrique) et celle de
+// `catalogueConduitesV1` (que le moteur interroge). Si l'une changeait de
+// format, toutes les règles deviendraient indisponibles. Ce banc passe les clés
+// RÉELLEMENT produites par la lecture du corpus au moteur RÉEL.
+describe('clé d’admissibilité — corpus et moteur s’accordent (D-472)', () => {
+  async function deriverAvecLeMoteurReel() {
+    const { cleClaim } = await vi.importActual<typeof import('@/lib/rag/claims/validite')>('@/lib/rag/claims/validite');
+    const reel = (await vi.importActual<typeof import('./statuts')>('./statuts')).deriverStatutsBiologie;
+    deriverStatutsBiologie.mockImplementation(reel);
+    const codes = [...new Set(INDICATIONS_BIOLOGIE_V1.map(regle => regle.panelCode))];
+    prisma.biologyPanel.findMany.mockResolvedValue(codes.map(code => panelDuCatalogue(code)));
+    return cleClaim;
+  }
+
+  it('toutes les clés lues au corpus : aucun panel indisponible, la table est servie', async () => {
+    const cleClaim = await deriverAvecLeMoteurReel();
+    const tout = (refs: Array<{ claimId: string; versionClaim: string }>) => new Set(refs.map(cleClaim));
+    claimsValidesAuCorpus.mockImplementation(async refs => tout(refs));
+    claimsNonSupplantesAuCorpus.mockImplementation(async refs => tout(refs));
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    if (!resultat.ok) throw new Error(`refus inattendu : ${resultat.motif}`);
+    expect(resultat.proposition.panelsIndisponibles).toEqual([]);
+    expect(resultat.proposition.lignes.length).toBeGreaterThan(0);
+    expect(resultat.limites.some(l => l.type === 'panel_indisponible')).toBe(false);
+  });
+
+  it('une clé retirée au corpus rend indisponible le panel de la règle qui la cite', async () => {
+    const cleClaim = await deriverAvecLeMoteurReel();
+    const visee = INDICATIONS_BIOLOGIE_V1.find(regle => regle.statut === 'publiee')!;
+    const retiree = cleClaim(visee.justificationClaims[0]);
+    claimsValidesAuCorpus.mockImplementation(async refs => new Set(refs.map(cleClaim)));
+    claimsNonSupplantesAuCorpus.mockImplementation(
+      async refs => new Set(refs.map(cleClaim).filter(cle => cle !== retiree)),
+    );
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    if (!resultat.ok) throw new Error(`refus inattendu : ${resultat.motif}`);
+    expect(resultat.proposition.panelsIndisponibles.map(p => p.regleId)).toContain(visee.id);
+    expect(resultat.proposition.lignes.map(l => l.panelCode)).not.toContain(visee.panelCode);
+  });
+});

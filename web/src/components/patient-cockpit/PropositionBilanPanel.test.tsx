@@ -153,6 +153,12 @@ describe('bilans indisponibles — dits, visibles, jamais repliés (D-472)', () 
     expect(screen.queryByText(/n’est couvert par une règle d’indication exploitable/)).toBeNull();
   });
 
+  it('quand le moteur s’abstient, seul son motif est dit — pas de liste de panels', () => {
+    rendre({ lignes: [], limites: [indisponible], motifIndisponible: 'La table n’est pas signée.' });
+    expect(screen.getByText('La table n’est pas signée.')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Bilans indisponibles' })).toBeNull();
+  });
+
   it('sans panel indisponible, rien n’est affiché', () => {
     rendre();
     expect(screen.queryByRole('list', { name: 'Bilans indisponibles' })).toBeNull();
