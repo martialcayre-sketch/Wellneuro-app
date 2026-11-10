@@ -87,7 +87,8 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
    *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
   const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | 'correction' | null>(
     null,
-  );  /** La version dont le patient est en train d'écrire SA formulation, ou
+  );
+  /** La version dont le patient est en train d'écrire SA formulation, ou
    *  `null` — la saisie n'est jamais ouverte d'office : proposer un champ vide
    *  sous un objectif suggère qu'il manque quelque chose à y mettre. */
   const [amendeId, setAmendeId] = useState<string | null>(null);
