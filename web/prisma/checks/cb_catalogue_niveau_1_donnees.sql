@@ -121,6 +121,12 @@ BEGIN
     -- qu'une migration écrit. Constaté le 2026-11-10 : les compositions des
     -- deux rapports, signées les 2026-10-26 et 27, le rougissaient en
     -- production (35 lignes) ; en CI, base neuve, il restait vert.
+    -- PERTE DE COUVERTURE ACCEPTÉE : une composition ou une correspondance
+    -- écrite par erreur par une migration sur ces fiches ne rougit plus ce
+    -- contrat. Aucun marqueur ne la distinguerait d'une signature :
+    -- `verifie_par` est NOT NULL et non vide sur toute composition (F80), et
+    -- la correspondance signée est le geste attendu (M-3). Une telle
+    -- écriture reste à la revue de la migration (D-087).
     SELECT count(*) INTO nb FROM biology_analytes
     WHERE NOT validation_medicale_requise
       AND source_provenance = 'saisie_praticien' AND niveau_completude = 'partielle'
