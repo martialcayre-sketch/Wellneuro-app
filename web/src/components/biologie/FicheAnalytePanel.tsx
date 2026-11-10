@@ -121,9 +121,18 @@ export function FicheAnalytePanel({
           D-389 §3 : le motif, reproduit mot pour mot de la table signée, est
           la lecture signée du responsable, pas une citation du claim ; le
           claim est cité à part, par son identifiant et sa version. */}
-      {fiche.nonIndiques.length > 0 && (
+      {/* D-472 : une mention dont un claim n'est plus admissible est suspendue,
+          motif ET citation — et la fiche le dit. */}
+      {(fiche.nonIndiques.length > 0 || fiche.nonIndiquesSuspendus > 0) && (
         <section aria-label="Exploration non indiquée" className="flex flex-col gap-2">
           <h5 className="text-sm font-semibold text-foreground">Exploration non indiquée</h5>
+          {fiche.nonIndiquesSuspendus > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {fiche.nonIndiquesSuspendus === 1
+                ? 'Une mention d’exploration non indiquée est suspendue : au moins un claim cité ne satisfait pas les critères de validité du corpus.'
+                : `${fiche.nonIndiquesSuspendus} mentions d’exploration non indiquée sont suspendues : pour chacune, au moins un claim cité ne satisfait pas les critères de validité du corpus.`}
+            </p>
+          )}
           {fiche.nonIndiques.map(item => (
             <div
               key={item.claimId}

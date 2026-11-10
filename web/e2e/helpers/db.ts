@@ -17,6 +17,7 @@ import { orienterEffetIndesirable } from '../../src/lib/trust/securite';
 import { PRATICIEN_EMAIL } from './auth';
 import { createHash } from 'node:crypto';
 import { canonicalSha256 } from '../../src/lib/clinical-engine/canonical';
+import { INDICATIONS_BIOLOGIE_V1 } from '../../src/lib/biology-library/indicationsBiologieV1';
 import { ficheSourceDeLAssiette } from '../../src/lib/fiches-assiette/appariement';
 import { lireContenuFiche } from '../../src/lib/fiches-assiette/contrat';
 import { controlerFiche } from '../../src/lib/fiches-assiette/invariants';
@@ -983,11 +984,70 @@ export const MEDECIN_BIO_E2E = 'Dr Dogné (banc E2E biologie)';
 /** Date du bilan déclaré par le parcours — la marque du panel documenté. */
 export const DATE_BILAN_BIO_E2E = new Date('2026-07-15T00:00:00.000Z');
 
+// ── [[D-472]] : les claims de la table d'indications, ADMISSIBLES au corpus ──
+// Depuis D-472, le service ne sert une règle que si chacun de ses couples
+// (identifiant, version) est valide au corpus ET non supplanté. Une base
+// éphémère n'a pas de corpus : sans ces lignes, chaque règle serait dite
+// indisponible et la proposition sortirait vide — fail-closed, voulu en
+// production, mais le parcours ne prouverait plus rien.
+//
+// CE SONT DES LIGNES DE FIXTURE, PAS LE CORPUS : texte neutre, source et passage
+// de banc, identifiant de ligne préfixé `E2E_BIO_IND_`. `ON CONFLICT DO NOTHING`
+// sur le couple : une base qui porte déjà le vrai claim le garde intact.
+// JAMAIS SUPPRIMÉES par le nettoyage d'un dossier : elles ne sont à aucun
+// patient, et plusieurs specs les lisent en parallèle — en effacer pendant
+// qu'un autre parcours tourne rendrait ses règles indisponibles.
+const ID_CHUNK_INDICATIONS_E2E = 'E2E_BIO_IND_CHUNK';
+const CHUNK_INDICATIONS_E2E = 'WN-CH-0998-001';
+const SOURCE_INDICATIONS_E2E = 'WN-SRC-0998';
+
+export async function poserClaimsIndicationsAdmissibles(): Promise<void> {
+  const vecteur = `[${Array(1536).fill('0').join(',')}]`;
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO public.rag_corpus_chunks
+       (id, batch_id, source_id, chunk_id, version_source, version_chunk,
+        notebook, section, content, content_sha256,
+        embedding_model, embedding_dimensions, embedding, indexation_autorisee)
+     VALUES ($1, 'LOT_998_2026-11-10', $2, $3, 'v1.0', 'v1.0', '99', 'banc E2E',
+             'Passage de fixture E2E (D-472).', repeat('0', 64), 'e2e', 1536, $4::extensions.vector, true)
+     ON CONFLICT DO NOTHING`,
+    ID_CHUNK_INDICATIONS_E2E, SOURCE_INDICATIONS_E2E, CHUNK_INDICATIONS_E2E, vecteur,
+  );
+  const couples = [
+    ...new Map(
+      INDICATIONS_BIOLOGIE_V1.flatMap(regle => regle.justificationClaims).map(c => [
+        `${c.claimId}::${c.versionClaim}`,
+        c,
+      ]),
+    ).values(),
+  ];
+  for (const claim of couples) {
+    const id = `E2E_BIO_IND_${claim.claimId}_${claim.versionClaim}`;
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO public.rag_corpus_claims
+         (id, claim_id, source_id, version_claim, texte_normalise, content_sha256,
+          typologie_lecture, prescriptif, statut, validateur, valide_at,
+          embedding_model, embedding_dimensions, embedding)
+       VALUES ($1, $2, $3, $4, 'Claim de fixture E2E (D-472).', repeat('e', 64),
+               'déclaré', true, 'VALIDE', 'e2e@wellneuro.fr', now(), 'e2e', 1536, $5::extensions.vector)
+       ON CONFLICT DO NOTHING`,
+      id, claim.claimId, SOURCE_INDICATIONS_E2E, claim.versionClaim, vecteur,
+    );
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO public.rag_corpus_claim_sources (claim_pk, chunk_id, version_chunk)
+       SELECT $1, $2, 'v1.0' WHERE EXISTS (SELECT 1 FROM public.rag_corpus_claims WHERE id = $1)
+       ON CONFLICT DO NOTHING`,
+      id, CHUNK_INDICATIONS_E2E,
+    );
+  }
+}
+
 export async function provisionnerDossierBiologie(idPatient: string): Promise<void> {
   const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { email: true } });
   if (!patient) throw new Error(`provisionnerDossierBiologie : patient introuvable (${idPatient})`);
 
   await nettoyerDossierBiologie(idPatient);
+  await poserClaimsIndicationsAdmissibles();
 
   // ── Condition dure 0 : LE CONSENTEMENT AU PARTAGE, accordé ───────────────
   // DEPUIS LE 2026-09-17, c'est une PRÉCONDITION du courrier ([[D-219]] §3

@@ -86,6 +86,8 @@ export type FicheAnalyte = {
   preanalytiques: PreanalytiqueAffiche[];
   /** Explorations non indiquées dont cet analyte est l'alternative (D-320 §3). */
   nonIndiques: ExplorationNonIndiquee[];
+  /** Mentions non indiquées suspendues : un claim cité n'est plus admissible au corpus ([[D-472]]). */
+  nonIndiquesSuspendus: number;
   /** Liens signés vers un axe biologique (F79, [[D-351]]) ; nul = non gradé. */
   liensAxe: LienAxe[];
   /** Liens d'axe tus : claim plus valide au corpus ou supplanté ([[D-140]], [[D-351]] §5). */
@@ -216,18 +218,29 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
   // présumée. Le préflight de release-db ne la voit qu'à la release suivante ;
   // un claim repassé hors VALIDE, ou supplanté (D-351 §5, exigé par le
   // préflight), entre-temps tait son lien ici, dès la lecture.
-  const referencesLiens = analytes.flatMap(a =>
-    a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
-  );
+  // [[D-472]] : les claims des règles non indiquées passent par la MÊME lecture
+  // — une mention dont un claim n'est plus admissible est suspendue, motif et
+  // citation ensemble.
+  const referencesLiens = [
+    ...analytes.flatMap(a =>
+      a.liensCliniques.map(l => ({ claimId: l.claimId, versionClaim: l.versionClaim })),
+    ),
+    // Seules les règles dont le bilan est actif : les autres ne s'affichent pas.
+    ...reglesNonIndiquees()
+      .filter(regle => bilansNonIndiques.some(bilan => bilan.code === regle.panelCode))
+      .flatMap(regle => regle.justificationClaims),
+  ];
   const [valides, nonSupplantes] = await Promise.all([
     claimsValidesAuCorpus(referencesLiens),
     claimsNonSupplantesAuCorpus(referencesLiens),
   ]);
   const claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
 
-  const nonIndiques = explorationsNonIndiqueesParAnalyte(
-    new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
-  );
+  const { parAnalyte: nonIndiques, suspenduesParAnalyte: nonIndiquesSuspendus } =
+    explorationsNonIndiqueesParAnalyte(
+      new Map(bilansNonIndiques.map(bilan => [bilan.code, bilan.libelle])),
+      claimsValides,
+    );
 
   // Même dérivation que la proposition : un calculé ou un regroupement signé
   // hérite de ses mesures ([[D-323]] §4).
@@ -264,6 +277,7 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
     remboursement: remboursements.get(analyte.code)!,
     preanalytiques: analyte.preanalytiques,
     nonIndiques: nonIndiques.get(analyte.code) ?? [],
+    nonIndiquesSuspendus: nonIndiquesSuspendus.get(analyte.code) ?? 0,
     liensAxe: lireLiensAxe(analyte.liensCliniques.filter(l => claimsValides.has(cleClaim(l)))),
     liensAxeSuspendus: analyte.liensCliniques.filter(l => !claimsValides.has(cleClaim(l))).length,
   }));

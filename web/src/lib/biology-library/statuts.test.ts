@@ -16,6 +16,8 @@ import {
   type EntreeStatutsBiologie,
   type PanelCatalogue,
 } from './statuts';
+import { genererCourrierBiologie } from './courrier';
+import { genererDocumentPatientBiologie } from './documentPatient';
 
 // Banc du moteur de statuts biologie (LOT-06, D-059). La table RÉELLE est
 // livrée vide et non signée : le golden case tourne donc sur une FIXTURE de
@@ -130,6 +132,9 @@ const SIGNATURE_FIXTURE = {
   shaPerimetre: SHA_PERIMETRE_FIXTURE,
 };
 
+/** Clé `cleClaim` — `identifiant::version`, le format du service ([[D-472]]). */
+const cleAdmissible = (claim: { claimId: string; versionClaim: string }) => `${claim.claimId}::${claim.versionClaim}`;
+
 function entree(surcharge: Partial<EntreeStatutsBiologie> = {}): EntreeStatutsBiologie {
   const regles = surcharge.regles ?? REGLES_FIXTURE;
   return {
@@ -137,6 +142,10 @@ function entree(surcharge: Partial<EntreeStatutsBiologie> = {}): EntreeStatutsBi
     reponses: [],
     drapeaux: DRAPEAUX_FIXTURE,
     dateReference: DATE_REFERENCE,
+    // Par défaut, TOUS les claims des règles passées sont admissibles : les cas
+    // historiques éprouvent ce qu'ils éprouvaient. Les bancs de [[D-472]]
+    // surchargent cet ensemble.
+    claimsAdmissibles: new Set(regles.flatMap(r => r.justificationClaims).map(cleAdmissible)),
     ...surcharge,
     regles,
     // LE SHA DE PÉRIMÈTRE SUIT LES RÈGLES PASSÉES — il n'est plus injecté à
@@ -561,6 +570,127 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
       signature: SIGNATURE_ABSENTE,
     }));
     expect(resultat.ok).toBe(false);
+  });
+});
+
+// ── [[D-472]] : une règle dont un claim n'est plus admissible n'est pas appliquée ──
+describe('deriverStatutsBiologie — claims admissibles au corpus (D-472)', () => {
+  const CLAIM_RETIRE = { claimId: 'WN-CL-9999-002', versionClaim: 'v1.0' };
+  // BIO-GLU cite DEUX claims : le premier admissible, le second non. Un contrôle
+  // qui ne lirait que le premier laisserait passer la règle.
+  const REGLES_GLU_RETIRE = REGLES_FIXTURE.map(r =>
+    r.id === 'BIO-GLU' ? { ...r, justificationClaims: [...CLAIM_FIXTURE, CLAIM_RETIRE] } : r,
+  );
+  const SEUL_FIXTURE = new Set(CLAIM_FIXTURE.map(cleAdmissible));
+
+  function resultatOk(resultat: ReturnType<typeof deriverStatutsBiologie>) {
+    if (!resultat.ok) throw new Error(`abstention inattendue : ${resultat.motif}`);
+    return resultat;
+  }
+
+  it('refus : un seul claim non admissible tait la règle, et le panel est dit indisponible', () => {
+    const resultat = resultatOk(deriverStatutsBiologie(entree({
+      regles: REGLES_GLU_RETIRE,
+      claimsAdmissibles: SEUL_FIXTURE,
+    })));
+    expect(resultat.lignes.map(l => l.panelCode)).not.toContain('PANEL_GLUCIDIQUE');
+    expect(resultat.panelsIndisponibles).toEqual([
+      {
+        panelCode: 'PANEL_GLUCIDIQUE',
+        libelle: 'Glucidique',
+        regleId: 'BIO-GLU',
+        // Seul le couple fautif est nommé — jamais le claim admissible.
+        claimsNonAdmissibles: [CLAIM_RETIRE],
+      },
+    ]);
+    // Les autres panels sont servis comme avant.
+    expect(ligne(resultat, 'PANEL_SOCLE').statut).toBe('recommande');
+  });
+
+  it('maintien : tous les claims admissibles, la proposition est servie entière et rien n’est indisponible', () => {
+    const tous = new Set([...CLAIM_FIXTURE, CLAIM_RETIRE].map(cleAdmissible));
+    const resultat = resultatOk(deriverStatutsBiologie(entree({
+      regles: REGLES_GLU_RETIRE,
+      claimsAdmissibles: tous,
+    })));
+    expect(resultat.panelsIndisponibles).toEqual([]);
+    expect(resultat.lignes.map(l => l.panelCode).sort()).toEqual(
+      PANELS_FIXTURE.map(p => p.code).sort(),
+    );
+    expect(ligne(resultat, 'PANEL_GLUCIDIQUE').statut).toBe('recommande');
+    expect(ligne(resultat, 'PANEL_GLUCIDIQUE').justificationClaims).toEqual([...CLAIM_FIXTURE, CLAIM_RETIRE]);
+  });
+
+  it('le couple fait l’identité : une autre version admissible ne remplace pas la version citée', () => {
+    const resultat = resultatOk(deriverStatutsBiologie(entree({
+      regles: REGLES_GLU_RETIRE,
+      claimsAdmissibles: new Set([...SEUL_FIXTURE, 'WN-CL-9999-002::v2.0']),
+    })));
+    expect(resultat.panelsIndisponibles.map(p => p.panelCode)).toEqual(['PANEL_GLUCIDIQUE']);
+  });
+
+  it('une discordance reste une discordance : la règle non admissible ne départage pas le panel', () => {
+    const regles = [
+      ...REGLES_FIXTURE,
+      regle({ id: 'BIO-SOCLE-BIS', panelCode: 'PANEL_SOCLE', justificationClaims: [CLAIM_RETIRE] }),
+    ];
+    const resultat = resultatOk(deriverStatutsBiologie(entree({ regles, claimsAdmissibles: SEUL_FIXTURE })));
+    const socle = ligne(resultat, 'PANEL_SOCLE');
+    // BIO-SOCLE, seule admissible, n'est PAS servie à la place de la paire.
+    expect(socle.statut).toBe('non_indique_actuellement');
+    expect(socle.motifs[0]).toMatch(/Discordance de la table d’indications : 2 règles/);
+    expect(socle.motifs[0]).toContain('BIO-SOCLE-BIS');
+    expect(resultat.panelsIndisponibles).toEqual([]);
+  });
+
+  it('une déclaration écartée sur un panel indisponible remonte hors proposition, jamais tue', () => {
+    const resultat = resultatOk(deriverStatutsBiologie(entree({
+      regles: REGLES_GLU_RETIRE,
+      claimsAdmissibles: SEUL_FIXTURE,
+      documentes: [{ panelCode: 'PANEL_GLUCIDIQUE', documenteLe: 'pas une date' }],
+    })));
+    expect(resultat.declarationsIgnoreesHorsProposition.map(d => d.panelCode)).toEqual(['PANEL_GLUCIDIQUE']);
+  });
+
+  it('aucune règle admissible : aucune ligne, et CHAQUE panel retiré est dit', () => {
+    const resultat = resultatOk(deriverStatutsBiologie(entree({ claimsAdmissibles: new Set() })));
+    expect(resultat.lignes).toEqual([]);
+    expect(resultat.panelsIndisponibles.map(p => p.regleId).sort()).toEqual(
+      REGLES_FIXTURE.map(r => r.id).sort(),
+    );
+  });
+
+  it('le verrou de signature passe AVANT : une table non signée refuse, quel que soit l’ensemble', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      claimsAdmissibles: new Set(),
+      signature: SIGNATURE_ABSENTE,
+    }));
+    expect(resultat.ok).toBe(false);
+    if (!resultat.ok) expect(resultat.motif).toMatch(/n’est pas signée/);
+  });
+
+  it('un panel indisponible n’entre ni au courrier ni au document patient', () => {
+    const base = { patientId: 'PAT_TEST', tableSha256: 'sha-fixture' };
+    const servie = resultatOk(deriverStatutsBiologie(entree({ regles: REGLES_GLU_RETIRE })));
+    const tue = resultatOk(deriverStatutsBiologie(entree({
+      regles: REGLES_GLU_RETIRE,
+      claimsAdmissibles: SEUL_FIXTURE,
+    })));
+
+    const courrierServi = genererCourrierBiologie({ ...base, lignes: servie.lignes, dateCourrier: DATE_REFERENCE });
+    const courrierTu = genererCourrierBiologie({ ...base, lignes: tue.lignes, dateCourrier: DATE_REFERENCE });
+    const documentServi = genererDocumentPatientBiologie({ ...base, lignes: servie.lignes, dateDocument: DATE_REFERENCE });
+    const documentTu = genererDocumentPatientBiologie({ ...base, lignes: tue.lignes, dateDocument: DATE_REFERENCE });
+    if (!courrierServi.ok || !courrierTu.ok || !documentServi.ok || !documentTu.ok) {
+      throw new Error('génération inattendue refusée');
+    }
+    // Témoin : le panel figure quand sa règle est admissible…
+    expect(courrierServi.courrier.texte).toContain('Glucidique');
+    expect(documentServi.documentPatient.texte).toContain('Glucidique');
+    // …et disparaît des deux documents quand elle ne l'est plus.
+    expect(courrierTu.courrier.texte).not.toContain('Glucidique');
+    expect(documentTu.documentPatient.texte).not.toContain('Glucidique');
+    expect(courrierTu.courrier.texte).not.toContain('Insulinémie');
   });
 });
 

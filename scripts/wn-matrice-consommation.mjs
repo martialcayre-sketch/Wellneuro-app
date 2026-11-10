@@ -1092,7 +1092,10 @@ if (lanceEnCli) {
     // `--strict` : une source dormante sans arbitrage daté est un échec. Le
     // défaut reste 0 — observer ne doit pas casser une passe qui ne l'a pas
     // demandé.
-    process.exit(args.has('--strict') && rapport.sansDecision.length > 0 ? 2 : 0);
+    // `exitCode` et non `process.exit()` : sur un tube, `stdout.write` est
+    // asynchrone, et `exit()` coupait le rapport à 64 Kio (65 536 octets) dès
+    // qu'il les dépassait — constaté le 2026-11-10 (t66, D-472).
+    process.exitCode = args.has('--strict') && rapport.sansDecision.length > 0 ? 2 : 0;
   } catch (err) {
     console.error(`wn-matrice-consommation : échec — ${err && err.message ? err.message : err}`);
     process.exit(1);

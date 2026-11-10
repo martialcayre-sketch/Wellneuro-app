@@ -292,6 +292,10 @@ describe('fiches — passage fidèle, absences comprises', () => {
       { code: 'PANEL_CORTISOL_ISOLE', libelle: 'Cortisol matinal isolé' },
     ]);
     const motif = (id: string) => INDICATIONS_BIOLOGIE_V1.find(regle => regle.id === id)?.motif;
+    // [[D-472]] : les claims des deux règles sont admissibles.
+    const admissibles = new Set(['WN-CL-0242-007::v1.0', 'WN-CL-0042-007::v1.0']);
+    claimsValidesAuCorpus.mockResolvedValue(admissibles);
+    claimsNonSupplantesAuCorpus.mockResolvedValue(admissibles);
 
     const catalogue = await listerCatalogueBiologie();
     const [mg, car, ferritine] = catalogue.analytes;
@@ -313,6 +317,35 @@ describe('fiches — passage fidèle, absences comprises', () => {
       },
     ]);
     expect(ferritine.nonIndiques).toEqual([]);
+    expect([mg, car, ferritine].map(f => f.nonIndiquesSuspendus)).toEqual([0, 0, 0]);
+  });
+
+  // [[D-472]] : un claim encore VALIDE mais SUPPLANTÉ suspend la mention —
+  // motif ET citation —, et la fiche la compte. L'autre mention reste servie.
+  it('une mention non indiquée dont le claim VALIDE est supplanté est suspendue, et comptée (D-472)', async () => {
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({ code: 'BIO_MAGNESIUM_ERYTHROCYTAIRE', libelle: 'Magnésium érythrocytaire' }),
+      analyteBase({ code: 'BIO_CAR', libelle: 'Cortisol awakening response' }),
+    ]);
+    prisma.biologyPanel.findMany.mockResolvedValue([
+      { code: 'PANEL_MG_PLASMATIQUE', libelle: 'Magnésium plasmatique' },
+      { code: 'PANEL_CORTISOL_ISOLE', libelle: 'Cortisol matinal isolé' },
+    ]);
+    claimsValidesAuCorpus.mockResolvedValue(new Set(['WN-CL-0242-007::v1.0', 'WN-CL-0042-007::v1.0']));
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(['WN-CL-0042-007::v1.0']));
+
+    const [mg, car] = (await listerCatalogueBiologie()).analytes;
+
+    expect(claimsValidesAuCorpus).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        { claimId: 'WN-CL-0242-007', versionClaim: 'v1.0' },
+        { claimId: 'WN-CL-0042-007', versionClaim: 'v1.0' },
+      ]),
+    );
+    expect(mg.nonIndiques).toEqual([]);
+    expect(mg.nonIndiquesSuspendus).toBe(1);
+    expect(car.nonIndiques).toHaveLength(1);
+    expect(car.nonIndiquesSuspendus).toBe(0);
   });
 
   it('un bilan non indiqué retiré du catalogue (inactif, donc non lu) ne s’affiche plus', async () => {

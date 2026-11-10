@@ -180,8 +180,47 @@ export type EntreeStatutsBiologie = {
    * analyses du bilan sont rendues telles quelles.
    */
   compositions?: ReadonlyMap<string, CompositionSignee>;
+  /**
+   * Les claims ADMISSIBLES au corpus ([[D-472]]) : clés `cleClaim`
+   * (`identifiant::version`) des couples valides ET non supplantés — le critère
+   * du préflight de `release-db`. L'appelant les lit ; le moteur reste pur.
+   *
+   * OBLIGATOIRE, ET SANS DÉFAUT : un ensemble absent servirait la table entière
+   * sans contrôle. Un couple absent n'est pas admissible (`DC-24`) — aucune
+   * version plus récente n'est substituée. Le contrôle s'applique APRÈS la
+   * vérification de l'empreinte sur la table intacte (contrat M-B ci-dessus) et
+   * APRÈS le constat des discordances : une règle non admissible ne départage
+   * jamais deux règles d'un même panel.
+   */
+  claimsAdmissibles: ReadonlySet<string>;
   /** ISO 8601 — « aujourd'hui » pour juger une répétition. Jamais lu de l'horloge ici. */
   dateReference: string;
+};
+
+/**
+ * Clé d'un couple admissible — `identifiant::version`, le format de
+ * `cleClaim` (`rag/claims/validite`) avec lequel le service construit
+ * `claimsAdmissibles`. Écrite ici et non importée : le moteur reste pur (le
+ * module du corpus importe Prisma), et `catalogueConduitesV1` refuse tout
+ * importeur neuf (D-266 §6). L'accord des deux formats est gardé par un banc
+ * (`propositionService.test.ts`, « clé d'admissibilité », [[D-472]]).
+ */
+export function cleClaimAdmissible(claim: OrientationClaimRef): string {
+  return `${claim.claimId}::${claim.versionClaim}`;
+}
+
+/**
+ * Un panel dont la règle cite au moins un claim non admissible ([[D-472]]) :
+ * la règle n'est pas appliquée, le panel n'a PAS de ligne clinique, et cette
+ * entrée dit pourquoi. Jamais mêlée aux lignes : elle ne propose rien, ne part
+ * ni au courrier ni au document patient.
+ */
+export type PanelIndisponible = {
+  panelCode: string;
+  libelle: string;
+  regleId: string;
+  /** Les couples non admissibles, identifiant ET version — dans l'ordre de la règle. */
+  claimsNonAdmissibles: OrientationClaimRef[];
 };
 
 export type PropositionBilan =
@@ -196,6 +235,8 @@ export type PropositionBilan =
        * qu'on ignore en silence est exactement ce que `DC-30` refuse.
        */
       declarationsIgnoreesHorsProposition: Array<{ panelCode: string; motif: string }>;
+      /** Panels tus faute de claims admissibles ([[D-472]]) — distincts des lignes. */
+      panelsIndisponibles: PanelIndisponible[];
     };
 
 /** Ordre de présentation : ce qui appelle une action d'abord. */
@@ -400,6 +441,7 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
   const referenceMs = Date.parse(entree.dateReference);
 
   const lignes: LignePanelProposition[] = [];
+  const panelsIndisponibles: PanelIndisponible[] = [];
   // Panels dont une ligne porte déjà le motif d'écartement.
   const portees = new Set<string>();
   for (const [panelCode, reglesDuPanel] of parPanel) {
@@ -433,6 +475,19 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
       continue;
     }
     const regle = reglesDuPanel[0];
+
+    // [[D-472]] : TOUS les claims de la règle, couple par couple. Un seul non
+    // admissible et la règle n'est pas appliquée : ni ligne, ni statut. Le
+    // panel n'entre pas dans `portees` — une déclaration écartée qui le vise
+    // remonte donc hors proposition au lieu de disparaître (`DC-30`).
+    const claimsNonAdmissibles = regle.justificationClaims.filter(
+      claim => !entree.claimsAdmissibles.has(cleClaimAdmissible(claim)),
+    );
+    if (claimsNonAdmissibles.length > 0) {
+      panelsIndisponibles.push({ panelCode, libelle: panel.libelle, regleId: regle.id, claimsNonAdmissibles });
+      continue;
+    }
+
     const documente = documentes.get(panelCode);
 
     let statut: StatutPanel;
@@ -501,7 +556,9 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
     .filter(([panelCode]) => !portees.has(panelCode))
     .map(([panelCode, motif]) => ({ panelCode, motif }));
 
-  return { ok: true, lignes, declarationsIgnoreesHorsProposition };
+  panelsIndisponibles.sort((gauche, droite) => gauche.panelCode.localeCompare(droite.panelCode));
+
+  return { ok: true, lignes, declarationsIgnoreesHorsProposition, panelsIndisponibles };
 }
 
 function composerAnalytes(
