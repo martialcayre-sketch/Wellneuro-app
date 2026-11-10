@@ -10,7 +10,7 @@ const { getServerSession, prisma, mockCorpus } = vi.hoisted(() => ({
     annulationResultatBiologique: { findMany: vi.fn() },
     $queryRaw: vi.fn(),
   },
-  mockCorpus: { claimsValidesAuCorpus: vi.fn() },
+  mockCorpus: { claimsValidesAuCorpus: vi.fn(), claimsNonSupplantesAuCorpus: vi.fn() },
 }));
 
 vi.mock('next-auth', () => ({ getServerSession }));
@@ -19,6 +19,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/claims/validite', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
   claimsValidesAuCorpus: mockCorpus.claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus: mockCorpus.claimsNonSupplantesAuCorpus,
 }));
 
 import { cleClaim } from '@/lib/rag/claims/validite';
@@ -74,6 +75,7 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
     prisma.annulationResultatBiologique.findMany.mockResolvedValue([]);
     prisma.$queryRaw.mockResolvedValue(corpusComplet());
     mockCorpus.claimsValidesAuCorpus.mockResolvedValue(new Set(CLAIMS.map(cleClaim)));
+    mockCorpus.claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(CLAIMS.map(cleClaim)));
   });
 
   afterEach(() => {
@@ -198,6 +200,37 @@ describe('GET /api/praticien/assiettes-indiquees/portes-biologiques', () => {
     if (!c.ok || !c.actif) throw new Error('réponse inattendue');
     expect(c.portes.map(p => p.ligneId)).not.toContain('PB-DOPAMINERGIQUE');
     expect(c.retireesFauteDeClaim).toBe(1);
+  });
+
+  // D-476 : VALIDE ET NON SUPPLANTÉ, le critère du préflight de release-db.
+  it('un claim encore VALIDE mais supplanté retire SA porte, le compte le dit, et son texte n’est pas lu', async () => {
+    const supplante = { claimId: 'WN-CL-0289-005', versionClaim: 'v1.0' };
+    const nonSupplantes = new Set(CLAIMS.map(cleClaim));
+    nonSupplantes.delete(cleClaim(supplante));
+    mockCorpus.claimsNonSupplantesAuCorpus.mockResolvedValue(nonSupplantes);
+    const c = await corps(await GET(requete()));
+    if (!c.ok || !c.actif) throw new Error('réponse inattendue');
+    expect(c.corpusLu).toBe(true);
+    expect(c.portes.map(p => p.ligneId)).not.toContain('PB-DOPAMINERGIQUE');
+    expect(c.portes.length).toBeGreaterThan(0);
+    expect(c.retireesFauteDeClaim).toBe(1);
+    const ids = prisma.$queryRaw.mock.calls[0].slice(1)[0] as string[];
+    expect(ids).not.toContain(supplante.claimId);
+  });
+
+  it('les deux lectures reçoivent les mêmes couples, tous ceux de la table', async () => {
+    await GET(requete());
+    const cles = (appel: unknown[]) => new Set((appel[0] as Array<{ claimId: string; versionClaim: string }>).map(cleClaim));
+    const attendues = new Set(CLAIMS.map(cleClaim));
+    expect(cles(mockCorpus.claimsValidesAuCorpus.mock.calls[0])).toEqual(attendues);
+    expect(cles(mockCorpus.claimsNonSupplantesAuCorpus.mock.calls[0])).toEqual(attendues);
+  });
+
+  it('lecture de la supplantation en échec : corpus illisible, aucune porte, aucun résultat lu', async () => {
+    mockCorpus.claimsNonSupplantesAuCorpus.mockRejectedValue(new Error('base indisponible'));
+    const c = await corps(await GET(requete()));
+    expect(c).toMatchObject({ ok: true, actif: true, corpusLu: false, retireesFauteDeClaim: 0, portes: [] });
+    expect(prisma.resultatBiologique.findMany).not.toHaveBeenCalled();
   });
 
   it('un texte introuvable au corpus retire aussi sa porte — jamais une citation vide', async () => {

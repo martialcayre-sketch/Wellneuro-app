@@ -4,7 +4,7 @@ import { derniersResultatsParAnalyte } from '@/lib/biology-library/derniersResul
 import { annulationsActives } from '@/lib/biology-library/annulations';
 import { signature } from '@/lib/biology-library/saisieMessages';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
-import { claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
+import { claimsNonSupplantesAuCorpus, claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 import {
   PORTES_BIOLOGIQUES_ASSIETTES_METADATA,
@@ -123,9 +123,18 @@ async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<str
 export async function evaluerPortesBiologiquesPourPatient(idPatient: string): Promise<ResultatPortesBiologiques> {
   if (!portesBiologiquesActives()) return { actif: false, message: MESSAGE_INACTIF };
 
+  // VALIDE ET NON SUPPLANTÉ ([[D-476]]) : le critère du préflight de
+  // release-db et de [[D-472]] §2. Un claim encore `VALIDE` mais supplanté ne
+  // fonde plus une porte, et son texte n'est plus lu. L'échec de l'une ou
+  // l'autre lecture rend le corpus illisible.
   let claimsValides: ReadonlySet<string> | null = null;
   try {
-    claimsValides = await claimsValidesAuCorpus(referencesCitees());
+    const references = referencesCitees();
+    const [valides, nonSupplantes] = await Promise.all([
+      claimsValidesAuCorpus(references),
+      claimsNonSupplantesAuCorpus(references),
+    ]);
+    claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
   } catch (err) {
     console.error('[portesBiologiquesService] corpus illisible', signature(err));
     claimsValides = null;

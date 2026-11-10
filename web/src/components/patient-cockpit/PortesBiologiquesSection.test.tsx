@@ -160,7 +160,7 @@ describe('PortesBiologiquesSection', () => {
   it('rien d’exploitable, mais une source retirée : l’anomalie reste dite, ET l’écartée reste comptée', async () => {
     monter({ ...SANS_RESULTAT, retireesFauteDeClaim: 1 });
     await waitFor(() =>
-      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'),
+      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources ne satisfait pas les critères de validité du corpus.'),
     );
     expect(screen.queryByText('Assiette sérotoninergique')).toBeNull();
     // Comptée sans « autre » : aucune assiette n'est affichée à côté (revue de
@@ -185,7 +185,7 @@ describe('PortesBiologiquesSection', () => {
   it('une porte retirée faute de source valide est comptée, pas tue', async () => {
     monter({ ...ACTIF, retireesFauteDeClaim: 1 });
     await waitFor(() =>
-      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'),
+      expect(screen.getByRole('alert').textContent).toBe('1 assiette n’est pas affichée : une de ses sources ne satisfait pas les critères de validité du corpus.'),
     );
   });
 
