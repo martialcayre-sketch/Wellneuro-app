@@ -657,8 +657,8 @@ describe('clé d’admissibilité — corpus et moteur s’accordent (D-472)', (
   it('toutes les clés lues au corpus : aucun panel indisponible, la table est servie', async () => {
     const cleClaim = await deriverAvecLeMoteurReel();
     const tout = (refs: Array<{ claimId: string; versionClaim: string }>) => new Set(refs.map(cleClaim));
-    claimsValidesAuCorpus.mockImplementation(async refs => tout(refs));
-    claimsNonSupplantesAuCorpus.mockImplementation(async refs => tout(refs));
+    claimsValidesAuCorpus.mockImplementation(async (refs: Array<{ claimId: string; versionClaim: string }>) => tout(refs));
+    claimsNonSupplantesAuCorpus.mockImplementation(async (refs: Array<{ claimId: string; versionClaim: string }>) => tout(refs));
     const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
     if (!resultat.ok) throw new Error(`refus inattendu : ${resultat.motif}`);
     expect(resultat.proposition.panelsIndisponibles).toEqual([]);
@@ -670,9 +670,9 @@ describe('clé d’admissibilité — corpus et moteur s’accordent (D-472)', (
     const cleClaim = await deriverAvecLeMoteurReel();
     const visee = INDICATIONS_BIOLOGIE_V1.find(regle => regle.statut === 'publiee')!;
     const retiree = cleClaim(visee.justificationClaims[0]);
-    claimsValidesAuCorpus.mockImplementation(async refs => new Set(refs.map(cleClaim)));
+    claimsValidesAuCorpus.mockImplementation(async (refs: Array<{ claimId: string; versionClaim: string }>) => new Set(refs.map(cleClaim)));
     claimsNonSupplantesAuCorpus.mockImplementation(
-      async refs => new Set(refs.map(cleClaim).filter(cle => cle !== retiree)),
+      async (refs: Array<{ claimId: string; versionClaim: string }>) => new Set(refs.map(cleClaim).filter(cle => cle !== retiree)),
     );
     const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
     if (!resultat.ok) throw new Error(`refus inattendu : ${resultat.motif}`);
