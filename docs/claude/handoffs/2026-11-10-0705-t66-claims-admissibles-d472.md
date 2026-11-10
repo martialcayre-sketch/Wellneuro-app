@@ -38,6 +38,12 @@ admissible au corpus, et dire au praticien pourquoi elle est indisponible.
 - `web/src/components/patient-cockpit/PropositionBilanPanel.tsx` (+ test),
   `web/src/components/biologie/FicheAnalytePanel.tsx`,
   `RayonBiologiePanel.test.tsx`.
+- `docs/claude/MATRICE_CONSOMMATION.md` (régénéré : la route du catalogue
+  atteint désormais le moteur, 6 surfaces) et `scripts/wn-matrice-consommation.mjs`
+  (`process.exitCode` au lieu de `process.exit()`, qui tronquait le JSON à
+  64 Kio sur un tube — défaut latent révélé par la surface en plus).
+- `statuts.ts` exporte `cleClaimAdmissible` : aucun importeur neuf de
+  `catalogueConduitesV1` (garde D-266 §6).
 - `docs/decisions/D-472.md`,
   `changelog.d/2026-11-10-t66-indications-claims-admissibles.md`,
   `docs/claude/PLAN_WELLNEURO.md` (lignes t71-t73 du §8).
