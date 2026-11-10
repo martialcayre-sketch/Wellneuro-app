@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BESOIN_SOURCES, NIVEAU_PREUVE_PAR_SOURCE } from './constants';
 import {
+  construireHistoriqueEquilibre,
   construireReponsesParQuestionnaire,
   datesDesReponsesRetenues,
   questionnairesEcartesParValidite,
@@ -56,6 +57,11 @@ describe('besoin 5 — les deux sources de D-438 §1', () => {
     expect(calculerCouvertureSource(MFI_GEN, { Q_SOM_07: mfiGen(3) })).toBe(0.5);
   });
 
+  it('une étendue nulle ou renversée (min ≥ max) ne mesure rien, avant toute division', () => {
+    expect(calculerCouvertureSource({ ...MFI_GEN, min: 20 }, { Q_SOM_07: mfiGen(3) })).toBeNull();
+    expect(calculerCouvertureSource({ ...MFI_GEN, min: 25 }, { Q_SOM_07: mfiGen(3) })).toBeNull();
+  });
+
   it('MFI-20 : seul GEN est lu, les quatre autres sous-échelles n’entrent pas', () => {
     const autres = { M2: 5, M8: 1, M14: 5, M20: 1, M7: 1, M11: 1, M13: 5, M19: 5 };
     expect(calculerCouvertureSource(MFI_GEN, { Q_SOM_07: { ...mfiGen(1), ...autres } })).toBe(1);
@@ -104,6 +110,25 @@ describe('passations non interprétables — hors du moteur ([[D-474]])', () => 
     // Témoin : la même source, lisible, EST une remesure — le refus vient de la garde.
     expect(estRemesure(APRES, mesureesAncre)).toBe(true);
     expect(estRemesure(AVANT, mesureesAncre)).toBe(false);
+  });
+
+  it('il ne rouvre aucun jalon de l’historique (règle de nouveauté)', () => {
+    // Ancre au 2026-07-01 sur l'Epworth ; seul un MFI-20 ancien arrive ensuite.
+    const ancre = passation('Q_SOM_02', epworth(1), '2026-07-01');
+    const sansLui = construireHistoriqueEquilibre([ancre], new Date('2026-07-01T00:00:00.000Z'));
+    const avecLui = construireHistoriqueEquilibre([ancre, AVANT], new Date('2026-07-01T00:00:00.000Z'));
+    expect(avecLui).toEqual(sansLui);
+  });
+
+  it('une passation invalide et une non interprétable : écarté, et rien n’est lu (drapeau de validité allumé, comme en production)', () => {
+    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
+    try {
+      const invalide: ReponseBrute = { ...APRES, statutValidite: 'INVALID' };
+      expect(questionnairesEcartesParValidite([AVANT, invalide]).has('Q_SOM_07')).toBe(true);
+      expect(construireReponsesParQuestionnaire([AVANT, invalide])).toEqual({});
+    } finally {
+      delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    }
   });
 
   it('un instrument hors registre n’est pas touché', () => {

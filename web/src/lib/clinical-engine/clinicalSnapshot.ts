@@ -260,8 +260,12 @@ export function buildClinicalSnapshot(input: {
   const responseIdsForQuestionnaires = (questionnaireIds: string[], measurement: number | null): string[] => {
     if (measurement === null) return [];
     const accepted = new Set(questionnaireIds);
+    // Une passation non interprétable n'est pas lue par le calcul
+    // (`construireReponsesParQuestionnaire`, [[D-474]]) : la citer comme source
+    // contredirait le `not_interpretable` du même objet (`DC-34`).
     return effectiveResponses
       .filter(response => accepted.has(response.questionnaireId))
+      .filter(response => motifNonInterpretable(response.questionnaireId, response.observedAt) === null)
       .map(response => response.responseId)
       .sort();
   };

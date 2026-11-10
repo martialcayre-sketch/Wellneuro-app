@@ -151,6 +151,28 @@ describe('ClinicalSnapshot', () => {
     expect(snapshot.clinicalObjects.filter(object => !porteurs.includes(object.code)).every(object => object.sourceResponseIds.length === 0)).toBe(true);
   });
 
+  // [[D-474]] : le MFI-20 est source du besoin 5 depuis D-438, et ses passations
+  // d'avant la reconstruction sont non interprétables. Le calcul ne les lit pas ;
+  // la provenance ne doit pas les citer, sinon l'objet se contredit lui-même.
+  it('une passation non interprétable d’un instrument source n’est pas citée comme source', () => {
+    const responses = [
+      makeResponse(),
+      makeResponse({
+        responseId: 'response-mfi-ancien',
+        questionnaireId: 'Q_SOM_07',
+        scoresJson: { rawAnswers: { M1: 1, M5: 3, M12: 1, M16: 3 } },
+      }),
+    ];
+    const snapshot = buildClinicalSnapshot({
+      snapshotId: 'snapshot-1', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+      assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+    });
+
+    expect(snapshot.questionnaireFindings.find(f => f.responseId === 'response-mfi-ancien')?.evaluability).toBe('not_interpretable');
+    expect(snapshot.clinicalObjects.find(object => object.code === 'GLOBAL_BALANCE')?.sourceResponseIds).toEqual(['response-1']);
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 5)?.measurement.value).toBeNull();
+  });
+
   it('ne déclare que la réponse la plus récente comme source effective', () => {
     const responses = [
       makeResponse({ responseId: 'response-old', observedAt: '2026-01-01T00:00:00.000Z' }),
