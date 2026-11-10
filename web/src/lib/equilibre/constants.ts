@@ -213,7 +213,25 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 //
 // Ne pas nommer ici la constante du mapping : le contrôle de certification
 // l'extrait à sa PREMIÈRE occurrence dans ce fichier.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v15' : 'v14';
+//
+// v14/v15 → v16/v17 ([[D-438]], appliquée par [[D-474]], 2026-11-10) : le
+// groupe `repos` du besoin 5 gagne deux sources, l'Epworth (`Q_SOM_02`, total
+// 0-24) et la fatigue générale du MFI-20 (`Q_SOM_07`, sous-score `GEN`, 4-20),
+// poids 1 chacune, niveau A. Le mapping change, donc l'étiquette change — les
+// deux branches du drapeau avancent d'un cran, comme en v8/v9. Le PSQI pèse
+// désormais 2/5 du repos avec ses quatre sources, 2/4 sans agenda (D-438 §2).
+//
+// Cette fois le bump N'EST PAS ÉCARTÉ, contrairement à D-329 : D-438 §5 le
+// demande, parce que des valeurs changent pour tout patient qui a rempli
+// l'Epworth ou un MFI-20 reconstruit. Le coût décrit plus haut est payé en
+// connaissance de cause : toutes les cartes de décision diffusées dérivent, et
+// leurs écrans protocole s'éteignent jusqu'à réapprobation par le praticien.
+//
+// Même lot, sans effet sur l'étiquette : les passations NON INTERPRÉTABLES
+// (`scoring/passationsNonInterpretables.ts`) ne nourrissent plus le moteur
+// (`depuisPrisma.ts`, `rawAnswersLisibles`) — sans quoi les MFI-20 d'avant la
+// reconstruction, rescorés sur la nouvelle échelle, deviendraient une mesure.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v17' : 'v16';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
@@ -330,6 +348,12 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
     // poids moindre dans le repos. Absent tant que l'agenda n'est pas clôturé,
     // ou quand la couverture ne permet pas l'indice (couverture null, jamais 0).
     { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false, groupe: 'repos', poids: 1 },
+    // [[D-438]] §1 : somnolence diurne (Epworth, total 0-24, plus haut = pire)
+    // et fatigue générale du MFI-20 (`GEN` seul, 4-20, plus haut = pire). Les
+    // quatre autres sous-scores du MFI-20 n'entrent pas. `min: 4` : la fatigue
+    // générale part de 4, et (20 − GEN) / 16 rend 1 à un patient sans fatigue.
+    { idQuestionnaire: 'Q_SOM_02', max: 24, inverser: true, groupe: 'repos', poids: 1 },
+    { idQuestionnaire: 'Q_SOM_07', sousScore: 'GEN', min: 4, max: 20, inverser: true, groupe: 'repos', poids: 1 },
   ],
   6: [],
   7: [],
@@ -408,6 +432,11 @@ export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   // niveau de son support ferait passer une construction maison pour un
   // référentiel. Corrigé le 2026-07-27.
   Q_SOM_09: 'D',
+  // [[D-438]] §1, niveau renvoyé par [[D-424]] §5. Les validations françaises
+  // (Kaminska 2010, Gentile 2003) sont des limites de population et de
+  // structure, pas un changement de niveau (D-438 §3).
+  Q_SOM_02: 'A',
+  Q_SOM_07: 'A',
   Q_NEU_11: 'A',
   Q_STR_01: 'B',
   Q_STR_02: 'A',

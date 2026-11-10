@@ -1,4 +1,5 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
+import { motifNonInterpretable } from '../scoring/passationsNonInterpretables';
 import { BESOIN_SOURCES, JOURS_JALON, ORDRE_JALONS_MESURE } from './constants';
 import { calculerEquilibre } from './score';
 import type { JalonMomentum, LectureDatee, ReponsesParQuestionnaire } from './types';
@@ -49,6 +50,24 @@ export function extraireRawAnswers(scoresJson: unknown): Record<string, string |
 }
 
 /**
+ * Les réponses brutes qu'une passation peut fournir au moteur d'équilibre :
+ * celles d'`extraireRawAnswers`, sauf si la passation est NON INTERPRÉTABLE
+ * (`motifNonInterpretable`, servi fautif avant sa reconstruction) — [[D-474]].
+ *
+ * Pourquoi ici et pas seulement à l'affichage : ce module RESCORE les réponses
+ * brutes avec le moteur COURANT. Les passations du MFI-20 antérieures au
+ * 2026-07-31 portent les mêmes identifiants `M1`…`M20` que le servi
+ * reconstruit, mais sur l'échelle 0-4 de l'ancien servi : rescorées en 1-5
+ * avec inversions, elles rendraient une fatigue générale qui n'a jamais été
+ * mesurée. Le registre ne nourrissait aucun besoin tant que le MFI-20 n'était
+ * pas une source ; il le devient avec [[D-438]].
+ */
+export function rawAnswersLisibles(reponse: Pick<ReponseBrute, 'idQuestionnaire' | 'dateReponse' | 'scoresJson'>): Record<string, string | number> | null {
+  if (motifNonInterpretable(reponse.idQuestionnaire, reponse.dateReponse) !== null) return null;
+  return extraireRawAnswers(reponse.scoresJson);
+}
+
+/**
  * Dédoublonne les réponses d'un patient par idQuestionnaire (garde la plus
  * récente), extrait les réponses brutes exploitables par le moteur
  * d'équilibre. `dateLimite` optionnelle : ignore toute réponse postérieure —
@@ -88,7 +107,14 @@ export function datesDesReponsesRetenues(reponses: ReponseBrute[], dateLimite?: 
  * n'est écarté : l'ensemble est vide.
  */
 export function questionnairesEcartesParValidite(reponses: ReponseBrute[]): Set<string> {
-  const exploitables = new Set(filtrerPassationsExploitables(reponses).map(r => r.idQuestionnaire));
+  // Une passation non interprétable ([[D-474]]) est écartée au même titre :
+  // sans cela, un instrument dont TOUTES les passations le sont s'afficherait
+  // « aucune passation », ce qui est faux.
+  const exploitables = new Set(
+    filtrerPassationsExploitables(reponses)
+      .filter(r => motifNonInterpretable(r.idQuestionnaire, r.dateReponse) === null)
+      .map(r => r.idQuestionnaire),
+  );
   return new Set(reponses.map(r => r.idQuestionnaire).filter(id => !exploitables.has(id)));
 }
 
@@ -99,7 +125,10 @@ function retenirParQuestionnaire(
   // Filtre de validité AVANT la déduplication « plus récente » : une
   // re-passation SUPERSEDED ne doit pas masquer la passation valide qui la
   // remplace, et une passation INVALID ne doit pas gagner le dédoublonnage.
-  const exploitables = filtrerPassationsExploitables(reponses);
+  // Les passations non interprétables ([[D-474]]) sortent au même étage, avant
+  // la déduplication : aucune ne peut gagner le « plus récente ».
+  const exploitables = filtrerPassationsExploitables(reponses)
+    .filter(r => motifNonInterpretable(r.idQuestionnaire, r.dateReponse) === null);
   const parQuestionnaire = new Map<string, ReponseBrute>();
   for (const r of exploitables) {
     if (dateLimite && r.dateReponse > dateLimite) continue;
@@ -221,7 +250,7 @@ export function construireHistoriqueEquilibre(
   );
   const datesReponsesRetenues = reponses
     .filter((r) =>
-      estNouveaute ? estNouveaute(r) : idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null,
+      estNouveaute ? estNouveaute(r) : idsSources.has(r.idQuestionnaire) && rawAnswersLisibles(r) !== null,
     )
     .map((r) => r.dateReponse);
 

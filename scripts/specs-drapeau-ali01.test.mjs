@@ -166,6 +166,12 @@ const ALLOWLIST = new Map([
     'ne lit que BESOIN_SOURCES[4] (Q_GAS_01), insensible à la forme de Q_ALI_01',
   ],
   [
+    'src/lib/equilibre/besoin5EpworthMfi.test.ts',
+    'ne lit que BESOIN_SOURCES[5] (Q_SOM_02, Q_SOM_07) et ne passe que des réponses à ces deux '
+      + 'instruments, insensible à la forme de Q_ALI_01 : verdict identique sous les deux drapeaux '
+      + '(D-474, rejoué drapeau allumé)',
+  ],
+  [
     'src/lib/rag/claims/clesLien.test.ts',
     'ne lit de BESOIN_SOURCES que ses clés (les numéros 1 à 12 des besoins) — jamais un max ni un '
       + 'identifiant d’instrument : verdict identique sous les deux drapeaux (D-321)',

@@ -189,14 +189,33 @@ describe('bloc des besoins — côté patient, aucune valeur', () => {
   });
 });
 
-describe('bloc des besoins — ce qui doit rester vrai demain', () => {
-  // [[D-438]] fera entrer `Q_SOM_07` au besoin 5, et ses anciennes passations sont
-  // déclarées non interprétables : le bloc dirait « mesuré » à côté d'une passation
-  // dont le modèle ne reçoit aucun chiffre. Ce banc rougit le jour où cela arrive :
-  // le lot qui ouvre la source tranche alors ce que le bloc en dit.
-  it('aucune source d’un besoin n’est au registre des passations non interprétables', () => {
+describe('bloc des besoins — passations non interprétables d’une source ([[D-474]])', () => {
+  // [[D-438]] fait entrer `Q_SOM_07` au besoin 5, et ses passations d'avant la
+  // reconstruction du 2026-07-31 sont déclarées non interprétables. Le banc qui
+  // gardait cette porte fermée l'annonçait : le lot qui ouvre la source tranche ce
+  // que le bloc en dit. [[D-474]] : elles ne nourrissent pas le calcul, donc le
+  // bloc ne les cite pas et ne dit pas « mesuré » sur elles.
+  it('le registre porte bien une source de besoin — la situation que ce bloc tranche', () => {
     const sources = Object.values(BESOIN_SOURCES).flat().map(source => source.idQuestionnaire);
-    const communes = sources.filter(id => MOTIFS_PASSATION_NON_INTERPRETABLE.has(id));
-    expect(communes).toEqual([]);
+    expect(sources.filter(id => MOTIFS_PASSATION_NON_INTERPRETABLE.has(id))).toEqual(['Q_SOM_07']);
+  });
+
+  it('un MFI-20 antérieur à la reconstruction ne mesure pas le besoin 5', () => {
+    const bloc = construireBlocBesoins([passation('Q_SOM_07', reponsesCompletes('Q_SOM_07', 3), '2026-07-20')]);
+    expect(ligne(bloc, 5)).toContain(': non mesuré, ');
+    expect(ligne(bloc, 5)).not.toContain('Q_SOM_07 (sous-score GEN), passation');
+  });
+
+  it('un MFI-20 postérieur mesure le besoin 5 et se cite daté', () => {
+    const bloc = construireBlocBesoins([passation('Q_SOM_07', reponsesCompletes('Q_SOM_07', 3), '2026-09-01')]);
+    expect(ligne(bloc, 5)).toContain(': mesuré. Source : Q_SOM_07 (sous-score GEN), passation du 2026-09-01.');
+  });
+
+  it('à côté d’une autre source, l’ancien MFI-20 n’est pas cité parmi les sources lues', () => {
+    const bloc = construireBlocBesoins([
+      passation('Q_SOM_07', reponsesCompletes('Q_SOM_07', 3), '2026-07-20'),
+      passation('Q_SOM_02', reponsesCompletes('Q_SOM_02', 1), '2026-09-01'),
+    ]);
+    expect(ligne(bloc, 5)).toContain(': mesuré. Source : Q_SOM_02, passation du 2026-09-01.');
   });
 });
