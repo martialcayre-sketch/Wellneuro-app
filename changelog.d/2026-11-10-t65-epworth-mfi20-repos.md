@@ -1,7 +1,7 @@
 ### « Mon équilibre » : l'Epworth et la fatigue générale du MFI-20 entrent au repos du besoin 5 (D-474, application de D-438, t65, 2026-11-10)
 
-Dette t65 (§8). Les valeurs viennent toutes de D-438. Aucune migration, aucune re-signature d'`ORIENTATION_RULES_V1`.
-La release-db est à approuver à part (chemin clinique).
+Dette t65 (§8). Les valeurs viennent toutes de D-438. Aucune migration, aucune re-signature d'`ORIENTATION_RULES_V1`,
+aucune release-db : le déploiement suit le merge.
 
 - `BESOIN_SOURCES[5]`, groupe `repos` : `Q_SOM_02` (total 0-24) et `Q_SOM_07` (sous-score `GEN` seul, 4-20),
   poids 1 chacune, inversées, niveau de preuve A. Le PSQI pèse 2/5 du repos avec ses quatre sources, et 2/4 sans
