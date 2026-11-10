@@ -44,6 +44,7 @@ admissible au corpus, et dire au praticien pourquoi elle est indisponible.
   64 Kio sur un tube — défaut latent révélé par la surface en plus).
 - `statuts.ts` exporte `cleClaimAdmissible` : aucun importeur neuf de
   `catalogueConduitesV1` (garde D-266 §6).
+- `web/e2e/helpers/db.ts` (fixture des claims admissibles).
 - `docs/decisions/D-472.md`,
   `changelog.d/2026-11-10-t66-indications-claims-admissibles.md`,
   `docs/claude/PLAN_WELLNEURO.md` (lignes t71-t73 du §8).
@@ -51,9 +52,17 @@ admissible au corpus, et dire au praticien pourquoi elle est indisponible.
 ## Validations exécutées
 
 - T1 complet (`npm run check`) vert sur `c157a1c0`.
-- Vitest ciblé vert après la revue : biologie, écrans, routes de proposition.
-- T3 complet : lancé sur `c157a1c0`, puis arrêté pour intégrer la revue. Il est
-  **à rejouer sur la tête finale** avant la PR.
+- T3 complet (`npm run test:worktree`) **vert sur `c9fdaf27`** : Vitest 16 657
+  passés, E2E 357 passés et 23 sautés, code 0. Les passages précédents étaient
+  rouges, chaque fois pour une seule cause, chacune corrigée :
+  - un type implicite dans un banc ;
+  - la garde D-266 §6 (importeur neuf de `catalogueConduitesV1`) ;
+  - la matrice de consommation périmée, avec la troncature à 64 Kio du
+    script ;
+  - six E2E biologie : base éphémère sans corpus, donc proposition vide. La
+    fixture `poserClaimsIndicationsAdmissibles` (`web/e2e/helpers/db.ts`) pose
+    les 29 couples, marqués `E2E_BIO_IND_`, avec `ON CONFLICT DO NOTHING`, et
+    ne les supprime jamais.
 
 ## Problèmes ouverts
 
