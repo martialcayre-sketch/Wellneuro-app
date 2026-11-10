@@ -1162,3 +1162,89 @@ describe('DossierDeuxVoixView — la seconde voix', () => {
     expect(occurrences).toBe(1);
   });
 });
+
+// ── LES ACCUSÉS : UNE RÉGION PRÉSENTE AVANT EUX (audit UI du 2026-11-07, suites
+// du n° 8). Montée avec son contenu, une région ne s'annonce pas de façon
+// fiable. Le focus suit l'accusé : les quatre gestes perdent leur bouton,
+// disparu ou désactivé.
+describe('DossierDeuxVoixView — les accusés', () => {
+  const RATIFIE = { ...OBJECTIF, etat: 'ratifie' };
+  const CONTESTE = { ...OBJECTIF, etat: 'conteste' };
+  const OUVERTE = {
+    statut: 'ouverte',
+    jalon: 'J21',
+    ouvertLe: '2026-08-20T09:00:00.000Z',
+    fermeLe: '2026-09-05T09:00:00.000Z',
+  };
+
+  async function rendre(partiel: Record<string, unknown> = {}) {
+    fetchMock.mockResolvedValueOnce(json(assemblage(partiel)));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('Ce sur quoi nous travaillons'));
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+    return region;
+  }
+
+  it('« C’est bien ça » : le bloc se ferme, l’accusé paraît dans la région et prend le focus', async () => {
+    const region = await rendre();
+    fetchMock.mockResolvedValueOnce(json({ ok: true, ratification: { id: 'RAT_1' } }));
+    fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+    fireEvent.click(screen.getByRole('button', { name: 'C’est bien ça' }));
+
+    await waitFor(() => expect(region.textContent).toContain('C’est transmis'));
+    expect(screen.getByRole('status')).toBe(region);
+    expect(document.activeElement).toBe(region);
+  });
+
+  // Le bouton reste, mais il est désactivé pendant l'envoi : le navigateur a
+  // déjà rendu le focus à `body`.
+  it('« Ce n’est pas exactement ça » : l’accusé paraît dans la région et prend le focus', async () => {
+    const region = await rendre();
+    fetchMock.mockResolvedValueOnce(json({ ok: true, ratification: { id: 'RAT_1' } }));
+    fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [CONTESTE] })));
+    fireEvent.click(screen.getByRole('button', { name: 'Ce n’est pas exactement ça' }));
+
+    await waitFor(() => expect(region.textContent).toContain('C’est transmis'));
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('« Le dire autrement » : la saisie se ferme, le focus suit l’accusé', async () => {
+    const region = await rendre();
+    fireEvent.click(screen.getByText('Le dire autrement'));
+    fireEvent.change(screen.getByLabelText('Écrivez cet objectif avec vos mots'), {
+      target: { value: 'Tenir debout jusqu’au dîner.' },
+    });
+    fetchMock.mockResolvedValueOnce(json({ ok: true, amendement: { id: 'AME_1' } }));
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    fireEvent.click(screen.getByText('Envoyer ma version'));
+
+    await waitFor(() => expect(region.textContent).toContain('lira votre version'));
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('la demande de correction : la saisie se ferme, le focus suit l’accusé', async () => {
+    const region = await rendre({ objectifs: [RATIFIE] });
+    fireEvent.click(screen.getByRole('button', { name: 'Demander une correction à mon praticien' }));
+    fetchMock.mockResolvedValueOnce(json({ ok: true, demandeCorrection: { id: 'DEM_1' } }));
+    fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+    fireEvent.click(screen.getByRole('button', { name: 'Envoyer ma demande' }));
+
+    await waitFor(() => expect(region.textContent).toContain('Votre demande est transmise'));
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('la réponse d’étape : le texte vidé désactive le bouton, le focus suit l’accusé', async () => {
+    const region = await rendre({ objectifs: [RATIFIE], jalonDu: OUVERTE });
+    fireEvent.change(screen.getByLabelText('Où en êtes-vous par rapport à cet objectif ?'), {
+      target: { value: 'Trois soirs sur sept, je tiens.' },
+    });
+    fetchMock.mockResolvedValueOnce(json({ ok: true, reponseJalon: { id: 'REP_1' } }));
+    fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })));
+    fireEvent.click(screen.getByText('Envoyer où j’en suis'));
+
+    await waitFor(() => expect(region.textContent).toContain('lira où vous en êtes'));
+    expect(screen.getByText('Envoyer où j’en suis').closest('button')?.disabled).toBe(true);
+    expect(document.activeElement).toBe(region);
+  });
+});

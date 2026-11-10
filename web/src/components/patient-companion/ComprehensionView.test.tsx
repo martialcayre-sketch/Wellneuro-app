@@ -113,6 +113,29 @@ describe('ComprehensionView', () => {
     });
   });
 
+  // Audit UI du 2026-11-07, suites du n° 8 : l'envoi referme le formulaire, et
+  // « Envoyer » disparaît avec lui. La région est là avant l'accusé, le focus
+  // s'y pose quand il paraît — à chaque envoi.
+  it('l’accusé paraît dans une région déjà présente, et le focus s’y pose', async () => {
+    chargementRendu(SYNTHESE);
+    render(<ComprehensionView />);
+    await waitFor(() => expect(screen.getByText('Ce n’est pas exactement ça')).toBeTruthy());
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+
+    for (let envoi = 0; envoi < 2; envoi += 1) {
+      fireEvent.click(screen.getByText('Ce n’est pas exactement ça'));
+      expect(region.textContent).toBe('');
+      fetchMock.mockResolvedValueOnce(json({ ok: true, desaccord: { id: `DES_${envoi}` } }));
+      chargementRendu(SYNTHESE, []);
+      fireEvent.click(screen.getByText('Envoyer'));
+
+      await waitFor(() => expect(region.textContent).toContain('C’est transmis'));
+      expect(screen.getByRole('status')).toBe(region);
+      expect(document.activeElement).toBe(region);
+    }
+  });
+
   it('n’envoie AUCUN identifiant patient : la session le dit', async () => {
     chargementRendu(SYNTHESE);
     render(<ComprehensionView />);
