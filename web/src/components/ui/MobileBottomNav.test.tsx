@@ -77,3 +77,29 @@ describe('MobileBottomNav — les mêmes destinations que le rail', () => {
     expect(barre.filter((href) => !destinationsRail.includes(href))).toEqual(['/dashboard/synthese']);
   });
 });
+
+// UNE FICHE OUVERTE ALLUME « FICHES » (étape 1 de la refonte Lien, constat C4,
+// 2026-11-11) : la barre ne comparait que le préfixe de « Fiches »
+// (`/dashboard/trajectoires`), si bien qu'aucune case n'était active sur une
+// fiche, quand le rail y allume « Fiche-trajectoire ».
+describe('MobileBottomNav — état actif sur une fiche patient', () => {
+  it('« Fiches » porte aria-current sur /dashboard/patients/<id>, et elle seule', () => {
+    pathnameMock.mockReturnValue('/dashboard/patients/p-1');
+    render(<MobileBottomNav />);
+    const barre = screen.getByRole('navigation', { name: 'Navigation principale' });
+    const actifs = within(barre)
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page');
+    expect(actifs.map((lien) => lien.getAttribute('href'))).toEqual(['/dashboard/trajectoires']);
+  });
+
+  it('la liste des patients n’allume pas « Fiches »', () => {
+    pathnameMock.mockReturnValue('/dashboard/patients');
+    render(<MobileBottomNav />);
+    const barre = screen.getByRole('navigation', { name: 'Navigation principale' });
+    const actifs = within(barre)
+      .getAllByRole('link')
+      .filter((lien) => lien.getAttribute('aria-current') === 'page');
+    expect(actifs).toEqual([]);
+  });
+});

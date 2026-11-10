@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
@@ -36,20 +37,28 @@ export function ProtocolCheckinForm() {
   const [reponses, setReponses] = useState<Partial<Record<CheckinQuestionId, string>>>({});
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
+  // UNE LECTURE EN ÉCHEC N'EST PAS UNE ATTENTE. Sans protocole, la route répond
+  // `ok: true, protocoleDiffuse: false` ; `ok: false` est un refus (session,
+  // erreur technique) et une coupure réseau n'a pas de réponse du tout. Les
+  // deux prenaient la phrase d'attente, sans moyen de réessayer.
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setChargement(true);
     setErreur('');
+    setErreurChargement(null);
     try {
       const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
-      const data = (await res.json()) as CheckinState | { ok: false; error: string };
+      const data = (await res.json()) as CheckinState | { ok: false; error?: string };
       if (data.ok) {
         setState(data);
       } else {
         setState(null);
+        setErreurChargement(data.error || 'Erreur réseau. Réessayez.');
       }
     } catch {
-      setErreur('Erreur réseau. Réessayez.');
+      setState(null);
+      setErreurChargement('Erreur réseau. Réessayez.');
     } finally {
       setChargement(false);
     }
@@ -93,6 +102,17 @@ export function ProtocolCheckinForm() {
     return (
       <PatientCard>
         <p className="text-sm text-muted-foreground">Chargement de votre suivi…</p>
+      </PatientCard>
+    );
+  }
+
+  if (erreurChargement) {
+    return (
+      <PatientCard>
+        <PatientPageHeader title="Rendez-vous de suivi" />
+        <div className="mt-2" role="alert">
+          <PatientErrorState message={erreurChargement} onReessayer={() => void charger()} />
+        </div>
       </PatientCard>
     );
   }

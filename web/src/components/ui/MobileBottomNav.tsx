@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { LayoutDashboard, Users, ContactRound, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, ClipboardList, CalendarDays, FlaskConical, Lightbulb, Pill, Tally5, type LucideIcon } from 'lucide-react';
 
-const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
+const primaryItems: { href: string; label: string; icon: LucideIcon; prefixesActifs?: string[] }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
   // Parcours 5.0 d'abord (SP-TRAJ LOT-04) : « Fiches » ouvre la porte
   // d'entrée trajectoire ; la gestion des dossiers vit dans le rayon
   // « Patients », joignable par la feuille « Plus » et par le rail desktop.
-  { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users },
+  // Une fiche ouverte (`/dashboard/patients/<id>`) allume « Fiches », comme
+  // « Fiche-trajectoire » au rail (`SidebarRail`, même préfixe).
+  { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users, prefixesActifs: ['/dashboard/patients/'] },
   // « Synthèses » reste l'un des trois boutons (D-324 §5) : trois cartes du Fil
   // y mènent, c'est le geste de relecture au téléphone — alors même que
   // « Synthèse IA » a quitté le menu du bureau.
@@ -55,8 +57,10 @@ export function MobileBottomNav() {
     setIsMoreOpen(false);
   }, [pathname]);
 
-  const isActive = (href: string) =>
-    href === '/dashboard' ? pathname === href : pathname?.startsWith(href);
+  const isActive = ({ href, prefixesActifs }: (typeof primaryItems)[number]) =>
+    href === '/dashboard'
+      ? pathname === href
+      : (pathname?.startsWith(href) || (prefixesActifs ?? []).some((p) => pathname?.startsWith(p))) ?? false;
   const itemPlusActif = (item: (typeof plusItems)[number]) =>
     item.matiere === 'exact' ? pathname === item.href : (pathname?.startsWith(item.href) ?? false);
   const isMoreActive = plusItems.some(itemPlusActif);
@@ -68,7 +72,7 @@ export function MobileBottomNav() {
         className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail-surface/95 backdrop-blur supports-[backdrop-filter]:bg-rail-surface/85 md:hidden"
       >
         {primaryItems.map((item) => {
-          const active = isActive(item.href);
+          const active = isActive(item);
           const Icon = item.icon;
 
           return (
