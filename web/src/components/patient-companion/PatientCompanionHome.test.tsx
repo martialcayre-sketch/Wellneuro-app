@@ -737,3 +737,64 @@ describe('PatientCompanionHome — « Imprimer mon protocole »', () => {
     expect(screen.queryByText(LIEN_PROTOCOLE_IMPRIMABLE)).toBeNull();
   });
 });
+
+// DEUX LECTURES INDÉPENDANTES (étape 1 de la refonte Lien, constat C1,
+// 2026-11-11) : un `Promise.all` unique faisait qu'une coupure du suivi
+// effaçait aussi le protocole, pauses comprises, au profit de « arrivera
+// bientôt ». Et un échec du protocole n'est pas une attente.
+describe('PatientCompanionHome — lectures du protocole et du suivi', () => {
+  const protoDiffuse = { ok: true, protocoleDiffuse: true, finDeCycle: false, vue };
+
+  function fetchPar(reponses: { proto: () => Promise<unknown>; checkin: () => Promise<unknown> }) {
+    global.fetch = vi.fn((url: string | URL | Request) => {
+      const href = String(url);
+      if (href.endsWith('/checkin')) return reponses.checkin();
+      if (href.endsWith('/api/portail/protocole')) return reponses.proto();
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: false }) } as Response);
+    }) as unknown as typeof fetch;
+  }
+  const json = (corps: unknown) => () => Promise.resolve({ json: () => Promise.resolve(corps) } as Response);
+  const coupure = () => Promise.reject(new Error('offline'));
+
+  it('une coupure du suivi laisse le protocole lisible', async () => {
+    fetchPar({ proto: json(protoDiffuse), checkin: coupure });
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+    expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
+    // Le lien vers les rendez-vous de suivi reste.
+    expect(screen.getByText('Mes rendez-vous de suivi')).toBeTruthy();
+  });
+
+  it('une réponse illisible du suivi laisse le protocole lisible', async () => {
+    fetchPar({
+      proto: json(protoDiffuse),
+      checkin: () => Promise.resolve({ json: () => Promise.reject(new SyntaxError('html')) } as Response),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+  });
+
+  it('une coupure du protocole est une erreur avec reprise, pas une attente', async () => {
+    let tentatives = 0;
+    fetchPar({
+      proto: () => (++tentatives === 1 ? coupure() : json(protoDiffuse)()),
+      checkin: json({ ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] }),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toContain('Connexion interrompue. Vérifiez votre connexion et réessayez.');
+    expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
+  });
+
+  it('un refus du serveur montre son message, pas la phrase d’attente', async () => {
+    fetchPar({
+      proto: json({ ok: false, reason: 'exception', error: 'Erreur technique.' }),
+      checkin: json({ ok: true, protocoleDiffuse: false, pointEtapeOuvert: null, points: [] }),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    expect((await screen.findByRole('alert')).textContent).toContain('Erreur technique.');
+    expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
+  });
+});

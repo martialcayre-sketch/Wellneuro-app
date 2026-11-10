@@ -6,6 +6,7 @@ import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
 import { DetailDuProtocole, EncartConduite, type ProtocoleResponse } from './DetailDuProtocole';
@@ -23,9 +24,42 @@ type CheckinResponse =
   | { ok: true; protocoleDiffuse: boolean; pointEtapeOuvert: PointEtape | null; points: PointEtat[] }
   | { ok: false };
 
+// Texte déjà servi au portail (`MonBilan`) : une coupure réseau n'est ni une
+// absence ni une attente.
+const CONNEXION_INTERROMPUE = 'Connexion interrompue. Vérifiez votre connexion et réessayez.';
+
+type LectureProtocole =
+  | { protocole: Extract<ProtocoleResponse, { ok: true }>; erreur: null }
+  | { protocole: null; erreur: string };
+
+async function lireProtocole(): Promise<LectureProtocole> {
+  try {
+    const res = await fetch('/api/portail/protocole', { cache: 'no-store' });
+    const data = (await res.json()) as ProtocoleResponse | { ok: false; error?: string };
+    if (data.ok) return { protocole: data, erreur: null };
+    // Le refus du serveur, tel quel, comme `MonBilan`.
+    return { protocole: null, erreur: ('error' in data && data.error) || CONNEXION_INTERROMPUE };
+  } catch {
+    return { protocole: null, erreur: CONNEXION_INTERROMPUE };
+  }
+}
+
+// Le suivi n'est qu'un complément de l'accueil : en échec, il se tait, et le
+// lien vers les rendez-vous de suivi reste.
+async function lireCheckin(): Promise<Extract<CheckinResponse, { ok: true }> | null> {
+  try {
+    const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
+    const data = (await res.json()) as CheckinResponse;
+    return data.ok ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 export function PatientCompanionHome({ token }: { token: string }) {
   const [protocole, setProtocole] = useState<Extract<ProtocoleResponse, { ok: true }> | null>(null);
   const [checkin, setCheckin] = useState<Extract<CheckinResponse, { ok: true }> | null>(null);
+  const [erreurProtocole, setErreurProtocole] = useState<string | null>(null);
   const [chargement, setChargement] = useState(true);
   const [jourDifficile, setJourDifficile] = useState(false);
   // Surface « ce qui compte » ouverte ? Décidé par la route (drapeau serveur),
@@ -55,28 +89,23 @@ export function PatientCompanionHome({ token }: { token: string }) {
 
   const charger = useCallback(async () => {
     setChargement(true);
-    try {
-      const [rp, rc] = await Promise.all([
-        fetch('/api/portail/protocole', { cache: 'no-store' }),
-        fetch('/api/portail/protocole/checkin', { cache: 'no-store' }),
-      ]);
-      const dp = (await rp.json()) as ProtocoleResponse;
-      const dc = (await rc.json()) as CheckinResponse;
-      setProtocole(dp.ok ? dp : null);
-      // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
-      // signé est dans le détail, donc le détail s'ouvre. Ce dépli n'est pas un
-      // geste du patient, et rien n'est consigné ([[D-315]] §1).
-      const dejaDeplie =
-        !dp.ok || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0;
-      setDetailDeplie(dejaDeplie);
-      setLectureConsignee(dejaDeplie);
-      setCheckin(dc.ok ? dc : null);
-    } catch {
-      setProtocole(null);
-      setCheckin(null);
-    } finally {
-      setChargement(false);
-    }
+    // DEUX LECTURES INDÉPENDANTES. Un échec du suivi ne doit pas effacer le
+    // protocole : ses pauses ([[D-281]]) se lisent sans clic. Et un échec du
+    // protocole est une erreur, pas une attente : « arrivera bientôt » serait
+    // faux pour le patient qui l'a lu hier.
+    const [p, dc] = await Promise.all([lireProtocole(), lireCheckin()]);
+    setErreurProtocole(p.erreur);
+    const dp = p.protocole;
+    setProtocole(dp);
+    // UNE PAUSE SUR EFFET INDÉSIRABLE SE LIT SANS CLIC ([[D-281]]) : son texte
+    // signé est dans le détail, donc le détail s'ouvre. Ce dépli n'est pas un
+    // geste du patient, et rien n'est consigné ([[D-315]] §1).
+    const dejaDeplie =
+      !dp || !dp.lectureDuDetail || dp.lectureDuDetail.dejaOuvert || (dp.pauses ?? []).length > 0;
+    setDetailDeplie(dejaDeplie);
+    setLectureConsignee(dejaDeplie);
+    setCheckin(dc);
+    setChargement(false);
   }, []);
 
   // Lecture séparée et non bloquante : un échec ne doit pas priver l'accueil
@@ -118,6 +147,17 @@ export function PatientCompanionHome({ token }: { token: string }) {
     return (
       <PatientCard>
         <p className="text-sm text-muted-foreground">Chargement de votre accompagnement…</p>
+      </PatientCard>
+    );
+  }
+
+  if (erreurProtocole) {
+    return (
+      <PatientCard>
+        <PatientPageHeader title="Votre accompagnement" />
+        <div className="mt-2" role="alert">
+          <PatientErrorState message={erreurProtocole} onReessayer={() => void charger()} />
+        </div>
       </PatientCard>
     );
   }
