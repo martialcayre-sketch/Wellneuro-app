@@ -228,3 +228,50 @@ describe('FoodObservationJourney — parcours JA5-02', () => {
     expect(localRemove).not.toHaveBeenCalled();
   });
 });
+
+// LES ACCUSÉS (audit UI du 2026-11-07, suites du n° 8). La région est présente
+// avant le premier accusé : montée avec son contenu, elle ne s'annonce pas de
+// façon fiable. Le focus la suit quand le bouton d'envoi se désactive à la
+// remise à zéro (trace, solution) ; il reste sur un bouton toujours actif.
+describe('FoodObservationJourney — les accusés', () => {
+  function rendre() {
+    render(<FoodObservationJourney episode={JA5_VALIDATION_EPISODE} question={JA5_VALIDATION_DAILY_QUESTION} />);
+    const region = screen.getByRole('status');
+    expect(region.textContent).toBe('');
+    return region;
+  }
+
+  it('une trace notée : l’accusé paraît dans la même région, et le focus s’y pose à chaque envoi', () => {
+    const region = rendre();
+    completeSimpleTrace();
+    fireEvent.click(screen.getByRole('button', { name: 'Noter cette trace' }));
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region.textContent).toMatch(/Votre trace est notée/);
+    expect((screen.getByRole('button', { name: 'Noter cette trace' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(document.activeElement).toBe(region);
+
+    // Second envoi, même texte : l'accusé ne change pas, le focus revient quand même.
+    region.blur();
+    completeSimpleTrace();
+    fireEvent.click(screen.getByRole('button', { name: 'Noter cette trace' }));
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('une solution gardée : le focus suit l’accusé', () => {
+    const region = rendre();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ma solution' }), { target: { value: 'Préparer la base le matin' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Dans quel contexte ?' }), { target: { value: 'Journée au cabinet' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Garder ce repère pour l’essai' }));
+    expect(region.textContent).toMatch(/Votre solution pour cet essai est notée/);
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('une pause déclarée : le bouton reste actif, le focus y reste, la région annonce', () => {
+    const region = rendre();
+    const pause = screen.getByRole('button', { name: 'Je n’ai pas pu cette semaine' });
+    pause.focus();
+    fireEvent.click(pause);
+    expect(region.textContent).toMatch(/semaine sans possibilité est notée/);
+    expect(document.activeElement).toBe(pause);
+  });
+});

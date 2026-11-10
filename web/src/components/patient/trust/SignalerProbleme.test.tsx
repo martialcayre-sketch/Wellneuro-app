@@ -148,6 +148,28 @@ describe('SignalerProbleme — remise à zéro', () => {
     expect(document.activeElement).toBe(region);
   });
 
+  // Audit UI du 2026-11-07, suites du n° 8 : « Annuler » et « Faire un autre
+  // signalement » disparaissent sous le doigt. Le focus va aux choix qui les
+  // remplacent, jamais au premier affichage.
+  it('au premier affichage, le focus ne bouge pas', () => {
+    render(<SignalerProbleme token="TOK" onEnvoye={() => {}} />);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('« Annuler » rend le focus au choix abandonné', () => {
+    render(<SignalerProbleme token="TOK" onEnvoye={() => {}} />);
+    fireEvent.click(screen.getByText(/Un problème de confidentialité/));
+    fireEvent.click(screen.getByText('Annuler'));
+    expect(document.activeElement).toBe(screen.getByText(/Un problème de confidentialité/));
+  });
+
+  it('« Faire un autre signalement » pose le focus sur le premier choix', async () => {
+    ouvrir({ elementsProgramme: null });
+    remplirEtEnvoyer();
+    fireEvent.click(await screen.findByText('Faire un autre signalement'));
+    expect(document.activeElement).toBe(screen.getByText(/Un produit me semble mal toléré/));
+  });
+
   it('« Annuler » puis réouverture : rien du brouillon abandonné', () => {
     ouvrir({ elementsProgramme: null });
     remplirAssociation();

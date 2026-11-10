@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FRICTIONS,
   FRICTION_AVEC_MOT_LIBRE,
@@ -111,6 +111,17 @@ export function FoodObservationJourney({
   const [minimalPlans, setMinimalPlans] = useState<MinimalPlanEvent[]>([]);
   const [solutions, setSolutions] = useState<IntraEpisodeSolution[]>([]);
   const [confirmation, setConfirmation] = useState('');
+  // LE FOCUS SUIT L'ACCUSÉ DE LA TRACE ET DE LA SOLUTION : leur remise à zéro
+  // désactive leur bouton d'envoi, et un bouton focalisé qui devient désactivé
+  // rend le focus à `body`. Un compteur et non un booléen : l'accusé reste
+  // affiché d'un envoi à l'autre, chaque envoi doit pourtant ramener le focus.
+  // La question du jour, la pause et le plan minimal gardent leur bouton actif :
+  // le focus y reste, la région seule annonce.
+  const regionAccuse = useRef<HTMLDivElement>(null);
+  const [focusAccuseDemande, setFocusAccuseDemande] = useState(0);
+  useEffect(() => {
+    if (focusAccuseDemande > 0) regionAccuse.current?.focus();
+  }, [focusAccuseDemande]);
 
   if (episode.content.regime === 'silence') {
     return (
@@ -184,6 +195,7 @@ export function FoodObservationJourney({
     setTraces(previous => [...previous, trace]);
     onTraceRecorded?.(trace);
     confirm(paperMode ? 'Trace de la carte papier saisie.' : 'Votre trace est notée.');
+    setFocusAccuseDemande(n => n + 1);
     setOccasion('');
     setFaisable('');
     setIssue('');
@@ -228,6 +240,7 @@ export function FoodObservationJourney({
     setSolutions(previous => [...previous, solution]);
     onSolutionRecorded?.(solution);
     confirm('Votre solution pour cet essai est notée comme repère local.');
+    setFocusAccuseDemande(n => n + 1);
     setSolutionLabel('');
     setSolutionContext('');
   };
@@ -268,11 +281,24 @@ export function FoodObservationJourney({
         </p>
       </PatientCard>
 
-      {confirmation && (
-        <div className="w-full max-w-2xl" aria-live="polite">
-          <PatientInlineMessage tone="success">{confirmation}</PatientInlineMessage>
-        </div>
-      )}
+      {/* LA RÉGION EST LÀ AVANT L'ACCUSÉ : montée avec son contenu, elle ne
+          s'annonce pas de façon fiable (modèle `DepotDocuments`). Vide, elle
+          passe en `sr-only` — hors du flux, elle n'ajoute pas un `gap` de
+          plus, et reste dans l'arbre d'accessibilité, ce que `hidden` ou
+          `display: none` lui retireraient. `tabIndex={-1}` : la trace et la
+          solution y envoient le focus (`focusAccuseDemande`). */}
+      <div
+        ref={regionAccuse}
+        role="status"
+        tabIndex={-1}
+        className={
+          confirmation
+            ? 'w-full max-w-2xl rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary'
+            : 'sr-only'
+        }
+      >
+        {confirmation && <PatientInlineMessage tone="success">{confirmation}</PatientInlineMessage>}
+      </div>
 
       <PatientCard as="form" onSubmit={submitQuestion} className="space-y-4">
         <div>

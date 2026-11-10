@@ -1,0 +1,7 @@
+### Portail : les accusés de quatre autres écrans s'annoncent, et le focus suit le geste qui a perdu son bouton (2026-11-10)
+
+Audit d'interface du 2026-11-07, suites du constat n° 8 (WCAG 4.1.3 et 2.4.3), relevées hors constat par sa PR (#1956). Trois écrans affichaient leur accusé dans un bloc monté en même temps que le message, ce qu'un lecteur d'écran n'annonce pas de façon fiable : « Ce que votre praticien a compris de vous », « Mon dossier, à deux voix » (quatre accusés) et l'essai d'observation alimentaire. Et leur bouton d'envoi disparaissait ou devenait désactivé : le focus retombait sur la page. Dans « Signaler un problème », « Annuler » et « Faire un autre signalement » perdaient eux aussi le focus.
+
+Correctif : `ComprehensionView` et `DossierDeuxVoixView` passent par `PatientRegionAccuse`. Les quatre gestes du dossier perdent leur bouton : il disparaît, ou il est désactivé, après l'envoi pour l'étape, pendant l'envoi pour « pas exactement ça ». L'essai d'observation garde une région `status` permanente. Le focus n'y va qu'après une trace ou une solution, dont le bouton se désactive à la remise à zéro. La question du jour, la pause et le plan minimal gardent leur bouton actif : le focus reste sur ce bouton. Dans « Signaler un problème », « Annuler » rend le focus au choix abandonné, et « Faire un autre signalement » le pose sur le premier choix. Aucun texte ne change, et l'apparence au repos non plus.
+
+Démontré dans le code, sans occurrence observée (`D-125`).

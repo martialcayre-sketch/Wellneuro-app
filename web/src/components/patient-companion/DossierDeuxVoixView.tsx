@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PortailDossierResponse } from '@/app/api/portail/dossier/route';
 import {
@@ -86,8 +87,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
    *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
   const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | 'correction' | null>(
     null,
-  );
-  /** La version dont le patient est en train d'écrire SA formulation, ou
+  );  /** La version dont le patient est en train d'écrire SA formulation, ou
    *  `null` — la saisie n'est jamais ouverte d'office : proposer un champ vide
    *  sous un objectif suggère qu'il manque quelque chose à y mettre. */
   const [amendeId, setAmendeId] = useState<string | null>(null);
@@ -1031,35 +1031,45 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                 );
               })()}
 
-              {repondu === 'reponse' && (
-                <PatientInlineMessage tone="success">
-                  C’est transmis. Votre praticien le verra tel que vous l’avez indiqué.
-                </PatientInlineMessage>
-              )}
-              {repondu === 'version' && (
-                <PatientInlineMessage tone="success">
-                  C’est transmis. Votre praticien lira votre version, mot pour mot.
-                </PatientInlineMessage>
-              )}
-              {/* TROISIÈME ACCUSÉ, et non un des deux précédents recyclé : ce
-                  n'est ni un clic ni une reformulation de l'objectif. Dire que
-                  « votre version » est partie après un récit d'étape laisserait
-                  croire que l'objectif lui-même a changé. */}
-              {repondu === 'etape' && (
-                <PatientInlineMessage tone="success">
-                  C’est transmis. Votre praticien lira où vous en êtes, tel que vous l’avez écrit.
-                </PatientInlineMessage>
-              )}
-              {/* QUATRIÈME ACCUSÉ, et il ne dit PAS « c'est transmis » tout
-                  court : ce geste attend une suite du praticien, là où les
-                  trois autres se suffisent. Promettre un délai serait mentir —
-                  rien dans le dossier ne le connaît. */}
-              {repondu === 'correction' && (
-                <PatientInlineMessage tone="success">
-                  Votre demande est transmise. Votre praticien la lira et reprendra cet objectif
-                  avec vous.
-                </PatientInlineMessage>
-              )}
+              {/* UNE RÉGION POUR LES QUATRE ACCUSÉS, présente avant eux : une
+                  région montée avec son contenu ne s'annonce pas de façon
+                  fiable. Et le focus la suit, parce que les quatre gestes
+                  perdent leur bouton : « C'est bien ça » referme le bloc, les
+                  deux saisies se referment, « Envoyer où j'en suis » reste
+                  désactivé une fois le texte vidé, et « Pas exactement ça »
+                  l'est pendant l'envoi — un bouton focalisé qui devient
+                  désactivé rend le focus à `body`. */}
+              <PatientRegionAccuse visible={repondu !== null}>
+                {repondu === 'reponse' && (
+                  <PatientInlineMessage tone="success">
+                    C’est transmis. Votre praticien le verra tel que vous l’avez indiqué.
+                  </PatientInlineMessage>
+                )}
+                {repondu === 'version' && (
+                  <PatientInlineMessage tone="success">
+                    C’est transmis. Votre praticien lira votre version, mot pour mot.
+                  </PatientInlineMessage>
+                )}
+                {/* TROISIÈME ACCUSÉ, et non un des deux précédents recyclé : ce
+                    n'est ni un clic ni une reformulation de l'objectif. Dire que
+                    « votre version » est partie après un récit d'étape laisserait
+                    croire que l'objectif lui-même a changé. */}
+                {repondu === 'etape' && (
+                  <PatientInlineMessage tone="success">
+                    C’est transmis. Votre praticien lira où vous en êtes, tel que vous l’avez écrit.
+                  </PatientInlineMessage>
+                )}
+                {/* QUATRIÈME ACCUSÉ, et il ne dit PAS « c'est transmis » tout
+                    court : ce geste attend une suite du praticien, là où les
+                    trois autres se suffisent. Promettre un délai serait mentir —
+                    rien dans le dossier ne le connaît. */}
+                {repondu === 'correction' && (
+                  <PatientInlineMessage tone="success">
+                    Votre demande est transmise. Votre praticien la lira et reprendra cet objectif
+                    avec vous.
+                  </PatientInlineMessage>
+                )}
+              </PatientRegionAccuse>
               {erreurEnvoi && (
                 <PatientInlineMessage tone="error">{erreurEnvoi}</PatientInlineMessage>
               )}
