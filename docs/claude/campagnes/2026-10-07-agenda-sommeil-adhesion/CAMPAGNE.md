@@ -1,10 +1,10 @@
 ---
 id: "2026-10-07-agenda-sommeil-adhesion"
 titre: "AGENDA-SOMMEIL — adhésion : une nuit qu'on peut noter jusqu'au bout"
-statut: "en_cours (ouverte le 2026-10-07 ; LOT-01, LOT-03 à LOT-11 mergés, recette sur appareil faite ; LOT-12 transféré au plan le 2026-10-13 ; LOT-02 en attente de lecture le 2026-10-29)"
+statut: "terminée (2026-11-11 ; LOT-01, LOT-03 à LOT-11 mergés, recette sur appareil faite ; LOT-12 transféré au plan le 2026-10-13 ; LOT-02 clos sur deux lectures par le responsable, porte 16 levée)"
 créée_le: "2026-10-07"
-mise_à_jour: "2026-10-14"
-lot_courant: "LOT-02"
+mise_à_jour: "2026-11-11"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
