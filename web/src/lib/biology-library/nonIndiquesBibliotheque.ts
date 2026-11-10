@@ -18,7 +18,7 @@ import {
   signatureIndicationsValide,
   type RegleIndicationPanel,
 } from './indicationsBiologieV1';
-import { cleClaim } from '@/lib/clinical/catalogueConduitesV1';
+import { cleClaimAdmissible } from './statuts';
 
 /** Règle non indiquée → analyte que son motif nomme comme l'exploration
  *  pertinente (D-320 §3). */
@@ -78,7 +78,7 @@ export function explorationsNonIndiqueesParAnalyte(
     if (!analyteCode || !exploration || !regle.motif || !claim?.claimId || !claim.versionClaim) {
       continue;
     }
-    if (!regle.justificationClaims.every(c => claimsAdmissibles.has(cleClaim(c)))) {
+    if (!regle.justificationClaims.every(c => claimsAdmissibles.has(cleClaimAdmissible(c)))) {
       suspenduesParAnalyte.set(analyteCode, (suspenduesParAnalyte.get(analyteCode) ?? 0) + 1);
       continue;
     }

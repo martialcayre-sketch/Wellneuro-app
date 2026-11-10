@@ -5,7 +5,6 @@ import {
   type ReponseOrientation,
 } from '@/lib/clinical/orientationEngine';
 import type { OrientationClaimRef } from '@/lib/clinical/orientationRulesV1';
-import { cleClaim } from '@/lib/clinical/catalogueConduitesV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import type { Remboursement } from './remboursable';
 import { signatureIndicationsValide } from './indicationsBiologieV1';
@@ -197,6 +196,18 @@ export type EntreeStatutsBiologie = {
   /** ISO 8601 — « aujourd'hui » pour juger une répétition. Jamais lu de l'horloge ici. */
   dateReference: string;
 };
+
+/**
+ * Clé d'un couple admissible — `identifiant::version`, le format de
+ * `cleClaim` (`rag/claims/validite`) avec lequel le service construit
+ * `claimsAdmissibles`. Écrite ici et non importée : le moteur reste pur (le
+ * module du corpus importe Prisma), et `catalogueConduitesV1` refuse tout
+ * importeur neuf (D-266 §6). L'accord des deux formats est gardé par un banc
+ * (`propositionService.test.ts`, « clé d'admissibilité », [[D-472]]).
+ */
+export function cleClaimAdmissible(claim: OrientationClaimRef): string {
+  return `${claim.claimId}::${claim.versionClaim}`;
+}
 
 /**
  * Un panel dont la règle cite au moins un claim non admissible ([[D-472]]) :
@@ -470,7 +481,7 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
     // panel n'entre pas dans `portees` — une déclaration écartée qui le vise
     // remonte donc hors proposition au lieu de disparaître (`DC-30`).
     const claimsNonAdmissibles = regle.justificationClaims.filter(
-      claim => !entree.claimsAdmissibles.has(cleClaim(claim)),
+      claim => !entree.claimsAdmissibles.has(cleClaimAdmissible(claim)),
     );
     if (claimsNonAdmissibles.length > 0) {
       panelsIndisponibles.push({ panelCode, libelle: panel.libelle, regleId: regle.id, claimsNonAdmissibles });

@@ -640,8 +640,8 @@ describe('claims admissibles — D-472', () => {
 
 // ── [[D-472]] : la clé du corpus et celle du moteur sont la MÊME clé ──────────
 // Deux fonctions jumelles construisent `identifiant::version` : `cleClaim` de
-// `rag/claims/validite` (l'ensemble que le service fabrique) et celle de
-// `catalogueConduitesV1` (que le moteur interroge). Si l'une changeait de
+// `rag/claims/validite` (l'ensemble que le service fabrique) et
+// `cleClaimAdmissible` de `statuts.ts` (que le moteur interroge). Si l'une changeait de
 // format, toutes les règles deviendraient indisponibles. Ce banc passe les clés
 // RÉELLEMENT produites par la lecture du corpus au moteur RÉEL.
 describe('clé d’admissibilité — corpus et moteur s’accordent (D-472)', () => {
