@@ -51,6 +51,11 @@ import {
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import { lireTraitementsEnVigueur } from '@/lib/physio-traitements/lecture';
 import { construireBlocBesoins } from '@/lib/synthese/blocBesoins';
+import {
+  construireBlocReglesNonEvaluees,
+  passationsNonEvaluees,
+  reglesNonEvalueesIds,
+} from '@/lib/synthese/blocReglesNonEvaluees';
 import { formesDeScoreDuNarratif } from '@/lib/synthese/narratifFormesDeScore';
 import {
   MODELE_REDACTION_PRATICIEN,
@@ -356,6 +361,10 @@ function questionnairesCitables(
       ...cibles,
       ...reponses.map(reponse => reponse.idQuestionnaire),
       ...QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE,
+      // Le bloc des règles non évaluées ([[D-471]]) les transmet, et la consigne
+      // demande de les nommer : le moteur lit toutes les passations, y compris
+      // celles d'un instrument que `reponses` ne porte pas (non administrable).
+      ...passationsNonEvaluees(orientation).map(passation => passation.idQuestionnaire),
     ]),
   ];
 }
@@ -470,7 +479,13 @@ function buildBlocOrientation(orientation: ResultatOrientation | null): string {
 // Gardée par `enveloppePatient.guard.test.ts` (revue adversariale du
 // 2026-08-22, constat M4) — en TEXTE, comme les gardes voisins : un
 // route.ts App Router ne peut exporter que ses handlers.
-function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrientation = '', blocBesoins = ''): string {
+function buildUserMessage(
+  reponses: ReponseInput[],
+  contexte: string,
+  blocOrientation = '',
+  blocBesoins = '',
+  blocNonEvaluees = '',
+): string {
   const filtered = reponses.map(r => {
     // Passation dont le résultat enregistré n'est pas une mesure (registre
     // `passationsNonInterpretables`). Le modèle n'en reçoit AUCUN chiffre et
@@ -552,10 +567,14 @@ ${contexte || 'Contexte anamnestique non renseigné pour ce patient.'}
   // Le bloc d'orientation s'insère entre le contexte et les résultats — et
   // disparaît entièrement quand il est vide, plutôt que de laisser un en-tête
   // sans contenu que le modèle pourrait se croire tenu de remplir. Le bloc des
-  // besoins ([[D-462]]) suit, par le même canal.
+  // besoins ([[D-462]]) suit, par le même canal. Le bloc des règles non
+  // évaluées ([[D-471]]) se place juste après celui d'orientation, et part même
+  // quand celui-ci est absent : c'est alors qu'il empêche de lire « aucune
+  // recommandation » comme « rien à explorer ».
   const blocs = [
     blocContexte,
     ...(blocOrientation ? [blocOrientation] : []),
+    ...(blocNonEvaluees ? [blocNonEvaluees] : []),
     ...(blocBesoins ? [blocBesoins] : []),
   ].join('\n\n');
   return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocs}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
@@ -599,6 +618,8 @@ export type GenererArgs = {
   orientation: ResultatOrientation | null;
   /** Bloc des besoins transmis au modèle ([[D-462]]), `null` s'il n'a pas pu être calculé. */
   blocBesoins: string | null;
+  /** Bloc des règles non évaluées transmis au modèle ([[D-471]]), `''` si aucun. */
+  blocReglesNonEvaluees: string;
   /**
    * QUI A DEMANDÉ CETTE GÉNÉRATION — inscrit dans `donneesEntree`, jamais dans
    * le prompt.
@@ -818,6 +839,11 @@ export async function genererSynthesePersistee(
         // pourrait pas dire, six mois plus tard, ce que la synthèse savait des
         // besoins. `null` : le calcul a échoué, aucun bloc n'est parti.
         blocBesoins: args.blocBesoins,
+        // [[D-471]] : le texte exact du bloc des règles non évaluées parti au
+        // modèle (`''` si aucun), et les identifiants des règles, qui, eux, ne
+        // partent pas au modèle. Tous deux lus dans `reglesNonEvaluees` du moteur.
+        blocReglesNonEvaluees: args.blocReglesNonEvaluees,
+        reglesNonEvaluees: reglesNonEvalueesIds(args.orientation),
         metadonneesPrompt: {
           versionPrompt: VERSION_PROMPT_SYNTHESE,
           versionSchema: VERSION_SCHEMA_SYNTHESE,
@@ -1206,11 +1232,13 @@ export async function preparerGeneration(
       });
     }
 
+    const blocReglesNonEvaluees = construireBlocReglesNonEvaluees(orientation);
     const userMessage = buildUserMessage(
       reponsesInput,
       contexteClinique,
       buildBlocOrientation(orientation),
       blocBesoins ?? '',
+      blocReglesNonEvaluees,
     );
     const genererArgs: GenererArgs = {
       idPatient,
@@ -1222,6 +1250,7 @@ export async function preparerGeneration(
       contexteClinique,
       orientation,
       blocBesoins,
+      blocReglesNonEvaluees,
       requestContext,
     };
 

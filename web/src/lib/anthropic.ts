@@ -339,7 +339,15 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // règle du portail. Textes validés mot pour mot par le responsable. Bump assumé et
 // déclaré : une synthèse rédigée sous v31 ne savait rien des besoins, et les deux
 // versions ne se comparent donc pas sur ce point.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v32';
+// v33 (ligne t61, [[D-471]], arbitrages `20261109-1355-a` à `1357-a`) : le
+// modèle reçoit le bloc des règles d'orientation non évaluées, tiré du seul
+// `reglesNonEvaluees` du moteur ([[D-433]] §3), et une section lui dit ce qu'il
+// autorise. Sans lui, l'absence du bloc de recommandation se lisait « rien à
+// explorer » là où le moteur n'avait pas pu trancher, et une passation hors
+// fenêtre se rapportait au présent. Textes validés mot pour mot par le
+// responsable. Bump assumé et déclaré : une synthèse rédigée sous v32 ne savait
+// rien des règles non évaluées.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v33';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -569,6 +577,18 @@ Un élément peut porter la mention « ÉTEINTE », suivie d'une règle d'arrêt
 - une extinction n'est ni un résultat normal, ni une absence de trouble. Elle ne t'autorise aucune conclusion clinique — elle porte sur ce qu'il est utile de MESURER, pas sur ce que le patient a.
 
 Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
+
+## Règles d'orientation non évaluées
+
+Les données patient peuvent inclure un bloc « Règles d'orientation non évaluées », produit par le même calcul déterministe que le bloc de recommandation, hors de toi. Il nomme les passations qu'une règle d'orientation aurait dû lire et qui dépassent la fenêtre fixée pour leur questionnaire. Certaines règles qui lisent ces passations sont restées non évaluées : elles n'ont été ni déclenchées ni écartées et ne produisent aucune recommandation.
+
+- **Une règle non évaluée ne dit rien du patient.** Elle n'est ni un résultat normal, ni une absence de besoin d'exploration. L'absence d'un élément dans le bloc « Recommandation d'exploration déterministe », ou l'absence de ce bloc, ne te permet donc pas d'écrire qu'aucune exploration n'est utile.
+- **Dans resume_praticien, dis-le en une seule mention**, qui regroupe les questionnaires concernés, sur ce modèle : « PSS-10 hors de sa fenêtre de 30 jours : certaines règles qui le lisent n'ont pas été évaluées. L'opportunité d'une réévaluation relève du praticien. » Ne propose pas de refaire ces questionnaires : seul le bloc de recommandation porte les explorations.
+- **Le résultat d'une passation citée dans ce bloc est la dernière mesure disponible, datée, pas l'état actuel du patient.** Écris par exemple « dernière mesure disponible, du 12 mars : stress perçu élevé ». Sa valeur reste celle qui t'est transmise : ne la corrige pas, ne la minore pas, et n'en déduis aucune évolution depuis. Pour ces passations seulement, cette règle prime sur « rapporte l'état actuel d'après la passation courante ».
+- La fenêtre est un choix de l'application pour l'orientation, pas une durée de validité du questionnaire : n'écris pas que la passation est invalide ou périmée.
+- N'évoque pas ce bloc dans narratif_patient.
+
+Si le bloc est absent, n'en parle pas.
 
 ## Besoins mesurés et non mesurés
 
