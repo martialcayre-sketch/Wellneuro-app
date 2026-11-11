@@ -80,7 +80,7 @@ prescrit : BP-18a et sa D-xxx en décideront.
 | Préalable | État au 2026-11-10 (mis à jour le 2026-11-11) |
 |---|---|
 | BP-11 (LOT-11) | terminé le 2026-10-20 (`D-331`) ; vocabulaire d'hypothèses vide le 2026-11-10, six hypothèses inscrites par `D-477` le 2026-11-11 |
-| BP-12b (LOT-28) | clos d'après le journal de F09 du 2026-11-10 : 18 positions signées, 32 arbitrages de conflit, PR 7 (#1955) mergée. La fiche LOT-28 et la ligne de `CAMPAGNE.md` disent encore « en_cours » |
+| BP-12b (LOT-28) | clos d'après le journal de F09 du 2026-11-10 : 18 positions signées, 32 arbitrages de conflit, PR 7 (#1955) mergée. La fiche LOT-28 et la ligne de `CAMPAGNE.md` disent encore « en_cours » : écart connu, à corriger par la file B, qui porte BP-12b (handoff du 2026-11-10, `2026-11-10-1950-bp17-cadrage.md`) ; il ne bloque pas BP-17 |
 | Porte 23 | non levée : les parts BP-12a et BP-12b sont signées, il reste celle de BP-17 (journal de F09 du 2026-11-10) |
 
 ## Réponses du responsable (2026-11-10)
@@ -126,7 +126,9 @@ cockpit sous drapeau éteint, avec sa ligne dans la trame de BP-26.
 | 6 | **Cockpit sous drapeau éteint**, ligne dans la trame de BP-26, ligne de `docs/FEATURE_FLAGS.md` | PR 5 | file C | T2 |
 | 7 | **Contenus** : liste du responsable transcrite en identifiants et renvois, texte saisi à l'atelier, puis signature | PR 3 à 5 ; contenus du responsable | file B (transcription), responsable (contenus, signature) | T3 |
 
-Les PR 2 et 3 sont indépendantes et peuvent avancer en parallèle. Aucune
+Les PR 2 à 7 ne partent que sur `D-480` au statut « accepté » et sur ce
+découpage accepté. Les PR 2 et 3 sont indépendantes et peuvent avancer en
+parallèle. Aucune
 n'écrit de contenu clinique. La garde des libellés d'hypothèse
 (`20261111-0008-b`, `D-477` §2) est un lot de la file C distinct de BP-17,
 sans dépendance avec ce découpage.
