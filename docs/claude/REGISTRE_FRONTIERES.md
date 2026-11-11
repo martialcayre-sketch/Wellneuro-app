@@ -227,6 +227,29 @@
   (`--background`/`--muted`/`--border`) dans les deux thèmes, `--surface`/cartes
   inchangés. Matrice de contraste complète : `design-system-d1.md` §9.
 
+### A5-R3 — Révision : direction « Lien chaleureux — Empreinte » (décision utilisateur 2026-11-10, acceptée mot pour mot le 2026-11-11, [[D-481]])
+
+- La structure A5 est conservée : deux interfaces claires, aucun sélecteur
+  de thème, aucune bascule clair/sombre, le rôle fixe l'interface. Changent :
+  la palette (crème `#F7F1E7`, ivoire `#FFFCF7`, encre `#233B42`, pétrole
+  `#205B63`, sauge, argile, avoine), la marque (Empreinte, nom
+  « Wellneuro »), le rail praticien (nuit pétrole `#142F36`) et la
+  typographie (Sora praticien, Lora pour les titres patient et la marque,
+  Instrument Sans pour le corps, IBM Plex Mono 400). Les couleurs des strates
+  Corps, Ancrage et Esprit ne changent pas.
+- Le rail patient prend le fond sauge (`rail-background`) au lieu de
+  `bg-surface` ([[D-447]] §5) ; il reste clair. Le vert de succès devient
+  `#166534` (6,3:1 sur le fond crème). Les jetons et leurs contrastes sont
+  ceux de l'artefact « Wellneuro Lien — Empreinte », version 4. Le
+  déploiement suit les lots du cadrage §18 : fondations, shell et
+  navigation, écrans, vérification ; chaque lot est réversible.
+- Révise A5-R1 (teintes, typographies) et A5-R2 (canvas mid-tone). C'est la
+  ligne qui manquait au premier audit de la refonte (constat B6) : palette et
+  marque avaient été choisies le 2026-11-10 en conversation, sans trace au
+  dépôt.
+- Statut : **accepté, non appliqué au code** ; lot de fondation COM-0
+  (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/socle-commun.md`).
+
 ### A6 — Disposition « la Spirale » 5.0 adoptée comme cible UX (décision utilisateur 2026-07-15)
 
 - La **disposition** 5.0 (Fil du jour, fiche-trajectoire/Spirale, copilote,

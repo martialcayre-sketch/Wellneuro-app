@@ -21,7 +21,7 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | Texte accepté et inscrit (DOC-0 ou DOC-n) : T-31 | PAT-2 (sinon PAT-2 livre sans lui) |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-30 (les neuf lignes ensemble) | PAT-3 (idem) |
 | Q-E2-5 tranchée (« Réessayer » sur un suivi non reconnu) | PAT-3 (sinon l'existant reste) |
-| Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-33, T-34 | PAT-5 (idem) |
+| Texte accepté et inscrit : T-33 ([[D-488]]) ; T-34 refusé | PAT-5 |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PAT-2 à PAT-6 |
 
 Sans AM-1, le rail patient reste toujours déplié ([[D-460]] §4) et PAT-1 se
@@ -121,7 +121,7 @@ encart d'urgence et messages de sécurité intacts, mot pour mot.
 Mon équilibre (sans score, `showValue={false}`), Ce qui compte pour moi,
 compréhension (T-33), dossier à deux voix, bilan, bibliothèque, fiches
 remises, courriers et document pour le médecin, informations, conditions
-(T-34). Lecteur et impression sans rail (X06). **Réception** : « Bibliothèque »
+(retour « ← Mon espace » gardé, T-34 refusé, [[D-488]] §6). Lecteur et impression sans rail (X06). **Réception** : « Bibliothèque »
 et « Fiches » gardent leurs périmètres, jamais fusionnés (cadrage v3 l.399) ;
 lecture, téléchargement et remise restent des gestes distincts.
 

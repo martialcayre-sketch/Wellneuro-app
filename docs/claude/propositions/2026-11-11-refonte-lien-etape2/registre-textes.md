@@ -1,5 +1,9 @@
 # Refonte Lien / Empreinte — étape 2 : registre des textes
 
+> **Accepté le 2026-11-11** : tous les textes mot pour mot sauf T-34, refusé
+> (« ← Mon espace » et sa destination actuelle maintenus). Inscrits par
+> DOC-0 dans [[D-488]], qui fait foi ; Q-E2-5 (a) y est aussi (§7).
+
 Chaque texte neuf ou changé par la refonte passe ici avant tout lot (réponse
 6 (a) du 2026-11-11). Aucun n'est accepté : chaque ligne attend l'acceptation
 **mot pour mot** du responsable. Un texte accepté est inscrit sous une
