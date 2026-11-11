@@ -96,7 +96,7 @@ export const SOURCES_DE_SAVOIR = [
   },
   {
     id: 'indications-assiettes',
-    libelle: 'Table d’indications d’assiette (11 lignes signées, 7 servables)',
+    libelle: 'Table d’indications d’assiette (10 lignes signées, 7 servables)',
     module: 'web/src/lib/clinical/indicationsAssiettesV1.ts',
     symboles: ['INDICATIONS_ASSIETTES_V1', 'INDICATIONS_ASSIETTES_METADATA'],
     // MÊME FORME QUE SES DEUX VOISINES, ET MÊME RAISON DE LA DÉCLARER : la
