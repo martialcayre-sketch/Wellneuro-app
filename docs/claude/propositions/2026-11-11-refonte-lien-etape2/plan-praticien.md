@@ -21,6 +21,7 @@ registre des textes (§1), amendements AM-3, AM-4, AM-5, AM-6 ; artefact
 | Q-E2-1 (groupes) et Q-E2-2 (menu du téléphone) tranchées | PRA-1 |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-14, T-15 | PRA-3 |
+| Texte T-16 inscrit (DOC-1, amendement de [[D-488]]) | PRA-2 |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PRA-2 à PRA-5 |
 
 Un amendement refusé retire ce qui en dépend : sans AM-3, les vues rapides
@@ -108,9 +109,11 @@ fiches-trajectoires, Comptes du cabinet, Correspondance, Confiance & droits
 (effet indésirable jamais sous un accordéon), Paramètres, connexion.
 Habillage Lien par les jetons du socle ; aucune palette codée en dur ;
 icônes Lucide à 1,75 px. Lien d'évitement « Aller au contenu » sur chaque
-page du portail (T-35, amendement DOC-1 de [[D-488]]). **Réception** : une
-action principale lisible par zone ; le lien d'évitement est le premier arrêt
-de tabulation et vise `<main id="contenu">` ; états de lecture explicites
+page du portail praticien, connexion comprise (T-16, amendement DOC-1 de
+[[D-488]]). **Réception** : une action principale lisible par zone ; le lien
+d'évitement est le premier arrêt de tabulation, visible au focus seulement,
+et vise `<main id="contenu">` (celui de `NavBar` ; celui de la page de
+connexion, à créer) ; états de lecture explicites
 (X03), jamais un échec maquillé en liste vide ; ouverture depuis une carte du Fil sur le bon contenu (cadrage v3
 l.551).
 
