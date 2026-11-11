@@ -70,7 +70,7 @@ describe('PatientCompanionHome', () => {
     // Le critère J21, servi dans le JSON depuis toujours et rendu nulle part.
     expect(screen.getByText('Réveils nocturnes < 2 par nuit à J21.')).toBeTruthy();
     // Point ouvert non renseigné → CTA de suivi au singulier, mis en avant.
-    const cta = screen.getByText('Mon rendez-vous de suivi') as HTMLAnchorElement;
+    const cta = screen.getByText('Mon point de suivi') as HTMLAnchorElement;
     expect(cta.getAttribute('href')).toBe('/portail/TOK/suivi');
     // LE BOUTON DIT CE QU'IL FAIT : il mène au centre TRUST, pas à une fiche
     // conseils — `adviceSheetRef` est écrit `null` par la route depuis toujours.
@@ -228,6 +228,8 @@ describe('PatientCompanionHome', () => {
     render(<PatientCompanionHome token="TOK" />);
     fireEvent.click(await screen.findByText(/Jour difficile/i));
     expect(screen.getByText(/Un petit pas compte/i)).toBeTruthy();
+    // Zone de repos sur fond sable (refonte Lien, PAT-3, prototype validé).
+    expect(screen.getByText(/Un petit pas compte/i).parentElement?.className).toMatch(/\bbg-lien-sand\b/);
   });
 
   it('affiche un message de clôture en fin de cycle', async () => {
@@ -765,8 +767,8 @@ describe('PatientCompanionHome — lectures du protocole et du suivi', () => {
     render(<PatientCompanionHome token="TOK" />);
     expect(await screen.findByText('Petit-déjeuner protéiné')).toBeTruthy();
     expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
-    // Le lien vers les rendez-vous de suivi reste.
-    expect(screen.getByText('Mes rendez-vous de suivi')).toBeTruthy();
+    // Le lien vers le point de suivi reste.
+    expect(screen.getByText('Mon point de suivi')).toBeTruthy();
   });
 
   it('une réponse illisible du suivi laisse le protocole lisible', async () => {

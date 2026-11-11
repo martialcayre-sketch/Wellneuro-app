@@ -1,0 +1,12 @@
+### Refonte Lien, PAT-3 : Mon parcours, accompagnement, point de suivi (D-488, D-333, 2026-11-11)
+
+Deuxième lot du plan patient de la refonte Lien / Empreinte, sur le prototype de la famille validé le 2026-11-11 ([[D-481]] §4). Habillage et textes seulement : aucune migration, aucun drapeau posé ni retiré, aucune route, garde, question, cotation ni règle d'enregistrement changée ; aucun texte hors de [[D-488]]. Les états livrés (#1973, #1978, #1979) sont gardés tels quels.
+
+- **« Mon point de suivi »** (T-30a à T-30i, [[D-488]]) : entrée de la table « Ouvrir mon point de suivi », titre « Mon point de suivi » et « Mon point de suivi — semaine N », historique « Mes points de suivi », lien de l'accompagnement « Mon point de suivi », lien de Jour difficile « Le noter dans mon point de suivi », action du fil « Répondre à mon point de suivi », message du dossier clos et deux erreurs du serveur au même nom.
+- **Suivi non reconnu** ([[D-488]] §7, Q-E2-5 (a)) : un refus 404 de la lecture se lit sans « Réessayer », qui ne pouvait pas réussir ; le retour « ← Mon parcours » reste. Les autres erreurs gardent « Réessayer » ; la session absente ou expirée renvoie toujours à l'entrée.
+- **Réponses du point de suivi** : boutons de 44 px bordés `control-border` (3,35:1) au lieu du filet `border` (1,4:1), qui ne délimitait pas un contrôle.
+- **Erreurs encadrées** : `PatientErrorState` gagne une forme encadrée opt-in (`erreur`, filet et titre danger ; `constat`, filet neutre sans « Réessayer »), employée par le point de suivi (lecture et envoi) et « Mon accompagnement ». Les écrans des autres lots gardent la forme simple. Un envoi en échec garde les réponses sélectionnées et ne confirme rien.
+- **Jour difficile** : zone de repos sur fond sable (`bg-lien-sand` ; texte 9,5:1, texte atténué 4,8:1).
+- **Hub** : « Mon accompagnement » en volet de l'Empreinte (en-tête lisible de 48 px, chevron qui suit l'ouverture, même condition d'ouverture) ; l'intertitre repliable « Transmis au praticien » et ses voisins perdent leur compteur « (N) » ([[D-333]], Q1 tranchée par le prototype).
+- **Frise** : l'étape courante en anneau pétrole (`border-primary`) remplace le halo cuivré codé en dur que la revue de COM-0 avait renvoyé à PAT-3 ; l'étape à venir est bordée `control-border`.
+- **Invitation à une réévaluation** : inchangée (Q2 tranchée par le prototype : le texte servi reste). **Protocole imprimable** : déjà sans rail, en-tête, pied ni barre basse à l'impression ; inchangé.

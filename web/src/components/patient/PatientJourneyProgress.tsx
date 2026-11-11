@@ -40,16 +40,19 @@ export function buildJourneySteps(currentId: JourneyStep['id']): JourneyStep[] {
 }
 
 // Anatomie journey de la maquette cible : puce 14 px au-dessus du libellé,
-// étape courante en accent avec halo cuivré, barres de liaison 2 px. Le halo
+// barres de liaison 2 px. Étape courante en anneau pétrole (refonte Lien,
+// PAT-3, prototype validé) : il remplace le halo cuivré codé en dur que la
+// revue de COM-0 a renvoyé aux lots patient. Étape à venir bordée
+// `control-border` (3,35:1) : le filet `border` ne la délimitait pas. L'anneau
 // n'est jamais seul porteur : le libellé passe en semibold + sr-only. Partagé
 // avec la frise navigable du hub ([[D-423]] §8), qui garde la même anatomie.
 export const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: string }> = {
   done: { dot: 'bg-primary', label: 'text-foreground' },
   current: {
-    dot: 'bg-accent shadow-[0_0_0_4px_rgba(178,94,56,.18)]',
+    dot: 'border-[3px] border-primary bg-surface',
     label: 'text-foreground font-semibold',
   },
-  upcoming: { dot: 'border border-border bg-muted', label: 'text-muted-foreground/70' },
+  upcoming: { dot: 'border border-control-border bg-muted', label: 'text-muted-foreground/70' },
 };
 
 export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {

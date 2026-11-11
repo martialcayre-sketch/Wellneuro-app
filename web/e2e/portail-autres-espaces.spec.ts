@@ -51,9 +51,9 @@ test.describe('Portail — « Autres espaces » en groupes', () => {
     }
   });
 
-  test('« Au jour le jour » mène aux rendez-vous de suivi, et le retour au hub', async ({ page }) => {
+  test('« Au jour le jour » mène au point de suivi, et le retour au hub', async ({ page }) => {
     const groupe = await auJourLeJour(page);
-    await groupe.getByRole('link', { name: 'Ouvrir mes rendez-vous de suivi' }).click();
+    await groupe.getByRole('link', { name: 'Ouvrir mon point de suivi' }).click();
     await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/suivi$`));
     await page.getByRole('link', { name: '← Mon parcours' }).click();
     await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/questionnaires$`));

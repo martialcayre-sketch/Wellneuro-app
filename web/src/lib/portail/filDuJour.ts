@@ -168,10 +168,10 @@ export type SourcesFilDuJour = {
  * (`pointEtapeOuvert`, `renseigne`), pour que la règle n'existe qu'à un endroit.
  *
  * Aucun e-mail ni aucune notification n'en part : la ligne ne se lit qu'à la
- * visite. Côté patient, elle dit « rendez-vous de suivi », jamais « point
+ * visite. Côté patient, elle dit « point de suivi » (T-30g, [[D-488]]), jamais « point
  * d'étape » ni « jalon » (vocabulaire A1) — le point ne figure que dans la clé.
  */
-export const CTA_RENDEZ_VOUS_SUIVI = 'Répondre à mon rendez-vous de suivi';
+export const CTA_RENDEZ_VOUS_SUIVI = 'Répondre à mon point de suivi';
 export const APPUI_RENDEZ_VOUS_SUIVI = 'Quelques questions rapides pour ajuster votre accompagnement.';
 
 /**

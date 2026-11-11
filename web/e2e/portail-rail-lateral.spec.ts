@@ -60,7 +60,7 @@ test.describe('Portail — rail latéral', () => {
       await expect(bouton(page)).toBeHidden();
       await expect(nav.getByRole('link').first()).toHaveText('Mon parcours');
       await expect(nav.locator('[aria-current]')).toHaveCount(1);
-      await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mes rendez-vous de suivi');
+      await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mon point de suivi');
       for (const lien of await nav.getByRole('link').all()) {
         const boite = await lien.boundingBox();
         expect(boite?.height ?? 0, (await lien.textContent()) ?? '').toBeGreaterThanOrEqual(44);
@@ -235,7 +235,7 @@ test.describe('Portail — rail latéral', () => {
           await page.keyboard.press('Tab');
           parcourus.push(await page.evaluate(() => document.activeElement?.textContent?.trim() ?? ''));
         }
-        expect(parcourus).not.toContain('Ouvrir mes rendez-vous de suivi');
+        expect(parcourus).not.toContain('Ouvrir mon point de suivi');
         await bouton(page).click();
         await expect(nav).toBeVisible();
         await expect(nav.locator('[aria-current="page"]')).toBeFocused();

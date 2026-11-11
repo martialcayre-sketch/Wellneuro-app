@@ -424,10 +424,10 @@ describe('le rendez-vous de suivi (D-317 §6, PA-1)', () => {
     expect(cles(f)).toEqual(['rendez-vous-suivi:J21', 'lecture:bilan:env_1', 'ce-qui-compte', 'ASS_Q']);
   });
 
-  it('le patient lit « rendez-vous de suivi », jamais « point d’étape », « jalon » ni le jour', () => {
+  it('le patient lit « point de suivi » (T-30g), jamais « point d’étape », « jalon » ni le jour', () => {
     const [tache] = fil([], [], new Set(), [], { rendezVousSuivi: 'J21' }).taches;
     const texte = `${tache.cta} ${tache.appui ?? ''}`;
-    expect(texte).toMatch(/rendez-vous de suivi/);
+    expect(texte).toMatch(/point de suivi/);
     expect(texte).not.toMatch(/point d.étape|jalon|J\d|jour/i);
   });
 });

@@ -32,6 +32,8 @@ import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
+import { ChevronDown } from 'lucide-react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
@@ -507,11 +509,22 @@ export default function QuestionnairesHubPage() {
         Déplié aussi quand la lecture du protocole échoue : l'erreur se lit
         avant tout clic, comme l'encart.
       */}
-      <details open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee} className="rounded-xl border border-border bg-surface p-4">
-        <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      {/* Volet de l'Empreinte (prototype PAT-3 validé) : en-tête lisible de
+          48 px, chevron qui suit l'ouverture ; même condition d'ouverture. */}
+      <details
+        open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee}
+        className="group rounded-lg border border-border bg-surface"
+      >
+        <summary className="flex min-h-12 cursor-pointer select-none list-none items-center justify-between gap-4 rounded-lg px-5 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
           Mon accompagnement
+          <ChevronDown
+            aria-hidden="true"
+            size={18}
+            strokeWidth={TRAIT_ICONE}
+            className="shrink-0 transition-transform duration-reveal ease-lien group-open:rotate-180 motion-reduce:transition-none"
+          />
         </summary>
-        <div className="mt-3">
+        <div className="px-4 pb-4">
           <PatientCompanionHome token={token} />
         </div>
       </details>
@@ -578,7 +591,7 @@ export default function QuestionnairesHubPage() {
               return (
                 <details key={cle} className="space-y-3">
                   <summary className="text-sm font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer select-none">
-                    {titre} ({items.length})
+                    {titre}
                   </summary>
                   <div className="mt-3">{liste}</div>
                 </details>
