@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { EmpreinteMarque } from '@/components/ui/EmpreinteMarque';
 
 // L'écran des adresses qui ne mènent nulle part, pour TOUT le site.
 //
@@ -20,8 +21,11 @@ import Link from 'next/link';
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg p-8 space-y-4 text-center">
-        <h1 className="font-display text-2xl font-bold text-primary">
+      <div className="max-w-md w-full bg-surface rounded-lg border border-border shadow-card p-8 space-y-4 text-center">
+        {/* Marque Empreinte (A5-R3) : cette page sert les deux rôles, la
+            marque est ce qu'ils ont en commun. Symbole seul, nom lisible. */}
+        <EmpreinteMarque size={48} compact className="mx-auto" />
+        <h1 className="font-display text-2xl font-bold text-foreground">
           Cette page n’existe pas
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -37,7 +41,7 @@ export default function NotFound() {
           </Link>
           <Link
             href="/login"
-            className="w-full block text-center px-4 py-3 rounded-xl text-sm font-medium border border-border text-foreground hover:bg-muted transition"
+            className="w-full block text-center px-4 py-3 rounded-xl text-sm font-medium border border-control-border text-foreground hover:bg-muted transition"
           >
             Espace praticien
           </Link>
