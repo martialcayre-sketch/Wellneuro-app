@@ -139,6 +139,15 @@ describe('MobileBottomNav — intertitres et entrée active (PRA-1)', () => {
     expect(screen.getByRole('button', { name: 'Plus' }).className).toContain('var(--rail-accent)');
   });
 
+  it('aucune entrée sans lien dans la feuille : ni Documents, ni Règles, ni Positions d’expert (D-485 §2)', () => {
+    const liens = ouvrirFeuilleSur('/dashboard');
+    const hrefs = liens.map((lien) => lien.getAttribute('href'));
+    for (const absent of ['/dashboard/documents', '/dashboard/regles', '/dashboard/bibliotheque/positions-expert']) {
+      expect(hrefs).not.toContain(absent);
+    }
+    expect(liens.map((lien) => lien.textContent)).not.toContain('Documents');
+  });
+
   it('icônes au trait Lien (1,75)', () => {
     pathnameMock.mockReturnValue('/dashboard');
     render(<MobileBottomNav />);

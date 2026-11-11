@@ -1,7 +1,7 @@
 // Parcours praticien : authentification et accès au dashboard
 // Teste la session NextAuth du praticien (sans automatiser le login OAuth réel)
 // et vérifie que les routes du dashboard sont accessibles avec une session valide.
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
 
 const PRATICIEN_EMAIL = 'martialcayre@wellneuro.fr';
@@ -472,6 +472,18 @@ test.describe('rail praticien escamotable', () => {
     await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
   });
 
+  /**
+   * Un clic parti avant l'hydratation ne fait rien : le HTML du serveur est
+   * déjà là, pas encore ses gestionnaires. On rejoue le clic jusqu'à voir son
+   * effet (revue wn-reviewer de #1997).
+   */
+  async function cliquerJusqua(bouton: Locator, effet: Locator) {
+    await expect(async () => {
+      await bouton.click({ timeout: 2_000 });
+      await expect(effet).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
+  }
+
   test('masquer, recharger, afficher : le rail sort du clavier et le focus suit la commande', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/dashboard');
@@ -481,22 +493,28 @@ test.describe('rail praticien escamotable', () => {
     await expect(page.getByRole('navigation', { name: 'Vues rapides' })).toHaveCount(0);
     await expect(rail.getByRole('link', { name: 'Le Fil du jour' })).toHaveAttribute('aria-current', 'page');
 
-    await rail.getByRole('button', { name: 'Masquer la navigation' }).click();
     const afficher = page.getByRole('button', { name: 'Afficher la navigation' });
+    await cliquerJusqua(rail.getByRole('button', { name: 'Masquer la navigation' }), afficher);
     await expect(afficher).toBeFocused();
     // Hors de l'arbre d'accessibilité et du parcours clavier.
     await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Paramètres' })).toHaveCount(0);
-    await page.keyboard.press('Tab');
-    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('#rail-praticien')))).toBe(false);
+    // Aucun lien ni bouton du rail ne peut recevoir le focus (le seul `Tab`
+    // depuis l'en-tête tombait sur « Profil » et ne prouvait rien).
+    const focalisables = await page.locator('#rail-praticien').evaluate((railMasque) =>
+      [...railMasque.querySelectorAll<HTMLElement>('a[href], button')].filter((element) => {
+        element.focus();
+        return document.activeElement === element;
+      }).length,
+    );
+    expect(focalisables).toBe(0);
 
     await page.reload();
     await expect(page.getByRole('button', { name: 'Afficher la navigation' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Afficher la navigation' }).click();
     const railRouvert = page.getByRole('navigation', { name: 'Navigation principale' });
-    await expect(railRouvert).toBeVisible();
+    await cliquerJusqua(page.getByRole('button', { name: 'Afficher la navigation' }), railRouvert);
     await expect(railRouvert.getByRole('button', { name: 'Masquer la navigation' })).toBeFocused();
     await expect(page.getByRole('button', { name: 'Afficher la navigation' })).toHaveCount(0);
   });
@@ -504,11 +522,11 @@ test.describe('rail praticien escamotable', () => {
   test('réouverture atteignable à 200 % (1 024 × 576 px CSS)', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 576 });
     await page.goto('/dashboard');
-    await page.getByRole('navigation', { name: 'Navigation principale' })
-      .getByRole('button', { name: 'Masquer la navigation' })
-      .click();
-
     const afficher = page.getByRole('button', { name: 'Afficher la navigation' });
+    await cliquerJusqua(
+      page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Masquer la navigation' }),
+      afficher,
+    );
     await expect(afficher).toBeInViewport();
     const boite = await afficher.boundingBox();
     expect(boite?.height).toBeGreaterThanOrEqual(44);

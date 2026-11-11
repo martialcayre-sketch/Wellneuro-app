@@ -308,6 +308,25 @@ describe('SidebarRail — rail réduit en icônes (D-486 §2)', () => {
     expect(nav.getAttribute('data-infobulles')).toBeNull();
   });
 
+  it('l’infobulle se laisse survoler (WCAG 1.4.13) : pas de pointer-events-none, un remplissage plutôt qu’une marge', () => {
+    const { container } = rendreReduit();
+    const infobulle = within(container).getByRole('link', { name: 'Patients' }).querySelector('span[aria-hidden="true"]');
+    expect(infobulle?.className).not.toMatch(/pointer-events-none/);
+    expect(infobulle?.className).toMatch(/\bpl-3\b/);
+    expect(infobulle?.className).not.toMatch(/\bml-/);
+  });
+
+  it('un Échap donné avant ne survit pas à un nouveau repli', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    const { container, rerender } = render(<SidebarRail collapsed />);
+    const nav = () => within(container).getByRole('navigation', { name: 'Navigation principale' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(nav().getAttribute('data-infobulles')).toBe('non');
+    rerender(<SidebarRail collapsed={false} />);
+    rerender(<SidebarRail collapsed />);
+    expect(nav().getAttribute('data-infobulles')).toBeNull();
+  });
+
   it('l’appui du doigt montre le libellé de l’entrée pressée', () => {
     const { container } = rendreReduit();
     const lien = within(container).getByRole('link', { name: 'Patients' });

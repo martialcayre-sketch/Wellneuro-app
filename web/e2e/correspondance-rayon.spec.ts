@@ -2,7 +2,7 @@
 // pendant que le rail affiche un compteur réel à côté d'elle.
 //
 // AUCUN E2E NE VISITAIT CETTE ADRESSE avant ce fichier : elle était déclarée
-// dans les trois navigations et parcourue par aucun test, si bien que rien ne
+// dans les navigations et parcourue par aucun test, si bien que rien ne
 // rougissait quand son contenu contredisait le produit livré. Le seed ne crée
 // aucune consignation — le panneau est donc VIDE, et c'est l'état honnête que
 // ce spec épingle.

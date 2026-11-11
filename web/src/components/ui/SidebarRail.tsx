@@ -62,9 +62,16 @@ interface SidebarRailProps {
  * jusqu'au prochain mouvement du pointeur ou du focus ([[D-486]] §2 ; artefact
  * « Wellneuro Lien — Empreinte », LienShell). L'infobulle est décorative
  * (`aria-hidden`) : le nom vient de `aria-label`.
+ *
+ * L'infobulle se laisse survoler (WCAG 1.4.13) : elle est contenue dans
+ * l'entrée, et l'écart qui l'en sépare est un remplissage, pas une marge — le
+ * pointeur passe de l'une à l'autre sans quitter le survol (revue
+ * wn-reviewer de #1997).
  */
 const CLASSES_INFOBULLE =
-  'pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-sm font-medium text-surface shadow-pop group-hover/entree:block group-focus-visible/entree:block group-data-[appui=oui]/entree:block group-data-[infobulles=non]/rail:!hidden';
+  'absolute left-full top-1/2 z-50 hidden -translate-y-1/2 pl-3 group-hover/entree:block group-focus-visible/entree:block group-data-[appui=oui]/entree:block group-data-[infobulles=non]/rail:!hidden';
+const CLASSES_INFOBULLE_BULLE =
+  'block whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-sm font-medium text-surface shadow-pop';
 
 export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }: SidebarRailProps) {
   const pathname = usePathname();
@@ -113,6 +120,10 @@ export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }:
   }, []);
 
   useEffect(() => {
+    // Chaque passage au rail réduit repart infobulles permises : un Échap
+    // donné avant ne doit pas survivre à un repli fait au clavier, sans
+    // mouvement du pointeur ni du focus.
+    setInfobullesMasquees(false);
     if (!collapsed) return undefined;
     function surTouche(evenement: KeyboardEvent) {
       if (evenement.key === 'Escape') {
@@ -234,7 +245,7 @@ export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }:
                         rayon (H43). */}
                     {collapsed ? (
                       <span aria-hidden="true" className={CLASSES_INFOBULLE}>
-                        {destination.libelle}
+                        <span className={CLASSES_INFOBULLE_BULLE}>{destination.libelle}</span>
                       </span>
                     ) : (
                       <span className="min-w-0 flex-1 break-words leading-snug">{destination.libelle}</span>
@@ -292,7 +303,7 @@ export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }:
                 <Icone aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} className="shrink-0" />
                 {collapsed ? (
                   <span aria-hidden="true" className={CLASSES_INFOBULLE}>
-                    {commande.libelle}
+                    <span className={CLASSES_INFOBULLE_BULLE}>{commande.libelle}</span>
                   </span>
                 ) : (
                   <span className="min-w-0 flex-1 break-words leading-snug">{commande.libelle}</span>

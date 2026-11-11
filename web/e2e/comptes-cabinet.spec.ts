@@ -48,7 +48,7 @@ test.describe('Comptes du cabinet', () => {
     ).toBe(true);
   });
 
-  test('le rail desktop mène à la page, près de « Fiche-trajectoire »', async ({ page, context }, testInfo) => {
+  test('le rail desktop mène à la page, dans le groupe Cabinet (D-487)', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'Desktop Chromium', 'rail latéral : desktop uniquement');
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto('/dashboard/trajectoires');
