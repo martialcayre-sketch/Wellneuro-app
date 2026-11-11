@@ -5,9 +5,9 @@ import { entreesSurSignauxAlerte, valeursDeDrapeauInconnues } from './declencheu
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 
 // INDICATIONS D'ASSIETTE — la FORME d'une ligne, le verrou qui la garde, et
-// ONZE LIGNES depuis le 2026-09-19. Verrou OUVERT ([[D-213]] §10, [[D-216]],
-// [[D-225]], [[D-229]], [[D-230]], [[D-231]], [[D-232]], [[D-235]], [[D-236]],
-// [[D-237]]).
+// DIX LIGNES depuis [[D-489]] — onze du 2026-09-19 jusqu'au retrait de
+// l'antioxydante. Verrou OUVERT ([[D-213]] §10, [[D-216]], [[D-225]], [[D-229]],
+// [[D-230]], [[D-231]], [[D-232]], [[D-235]], [[D-236]], [[D-237]], [[D-489]]).
 //
 // CE CHAPEAU A DIT LE CONTRAIRE DE L'ÉTAT PENDANT DEUX LOTS, et le dire ici
 // vaut mieux que le corriger en silence. [[D-236]] a signé la table et mis à
@@ -22,8 +22,8 @@ import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 // d'outil ; les ATTESTER n'en est pas un — la signature a été transcrite sur
 // déclaration.
 //
-// POURQUOI LE STATUT EXISTAIT AVANT LA PREMIÈRE LIGNE ([[D-225]]). Quatre des
-// onze lignes sont en brouillon. Sans champ `statut` et sans filtre de service,
+// POURQUOI LE STATUT EXISTAIT AVANT LA PREMIÈRE LIGNE ([[D-225]]). Trois des
+// dix lignes sont en brouillon (quatre des onze avant [[D-489]]). Sans champ `statut` et sans filtre de service,
 // elles s'afficheraient exactement comme les sept publiées : le jour de
 // l'attestation, le responsable aurait signé un périmètre dont une partie ne
 // devait pas sortir. **Le filtre existait donc AVANT la première ligne, et pas
@@ -139,12 +139,12 @@ export type LigneIndicationAssiette = {
 };
 
 /**
- * LA TABLE — ONZE LIGNES, ET LE VERROU EST OUVERT DEPUIS LE 2026-09-19.
+ * LA TABLE — DIX LIGNES, ET LE VERROU EST OUVERT DEPUIS LE 2026-09-19.
  *
  * Écrite par [[D-235]] (chantier 2 de [[D-216]]), **attestée par [[D-236]]** le
- * même jour. Sept lignes publiées — **servables**, c'est-à-dire éligibles au
- * service —, quatre en brouillon : relues et hachées au même titre, jamais
- * servies. **Écrire les lignes et les attester sont deux gestes**, et le second
+ * même jour, re-signée par [[D-489]] sans la ligne antioxydante. Sept lignes
+ * publiées — **servables**, c'est-à-dire éligibles au service —, trois en
+ * brouillon : relues et hachées au même titre, jamais servies. **Écrire les lignes et les attester sont deux gestes**, et le second
  * n'appartient pas à l'outil : il a été transcrit sur déclaration.
  *
  * SERVABLE N'EST PAS SERVI, et la nuance n'est pas de forme :
@@ -436,7 +436,8 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
   },
   // ── BROUILLONS — relus, hachés, JAMAIS servis ──────────────────────────────
   //
-  // LES QUATRE ONT LE MÊME MOTIF, et ce n'est pas celui que la première
+  // LES QUATRE AVAIENT LE MÊME MOTIF — trois depuis [[D-489]], qui retire
+  // l'antioxydante —, et ce n'est pas celui que la première
   // rédaction leur donnait. Arbitrage du responsable du 2026-09-19 (seconde
   // séance) : **ces assiettes se proposent sur le RÉSULTAT BIOLOGIQUE**, et la
   // porte écrite ici — âge, régime, antécédent — n'en est qu'un proxy
@@ -510,29 +511,13 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
       + 'des proxys d’anamnèse ; le dépôt ne sait pas lire le marqueur.',
     statut: 'brouillon',
   },
-  {
-    id: 'ASSIETTE-IND-ANTIOXYDANTE',
-    plateCode: 'ASSIETTE_ANTIOXYDANTE',
-    // LA RÉSERVE EST UNE AFFAIRE DE GRANULARITÉ, PAS DE DONNÉE MANQUANTE.
-    // `WN-CL-0292-003` désigne NOMMÉMENT une série de tableaux neurodégénératifs
-    // et démentiels ; le drapeau d'anamnèse ne porte qu'un domaine large, qui
-    // range la migraine et le TDAH au même endroit. Adosser l'indication à ce
-    // domaine l'élargirait franchement.
-    // Arbitrage du responsable, 2026-09-19 : la ligne est écrite, relue et
-    // hachée, jamais servie — le jour où un champ plus fin existera, elle
-    // changera de statut sans se réinventer.
-    declencheur: { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Neurologique (migraine, TDAH…)'] },
-    claimsIndication: [{ claimId: 'WN-CL-0292-003', versionClaim: 'v1.0' }],
-    claimsSecurite: [],
-    raccourciAssume:
-      'Le claim nomme des tableaux neurodégénératifs précis ; la ligne lit un '
-      + 'domaine d’antécédents qui les contient ET contient bien autre chose. '
-      + 'L’élargissement est réel et il est assumé par l’outil. S’y ajoute le '
-      + 'motif commun aux quatre brouillons : la vraie porte est biologique — '
-      + 'WN-CL-0292-005 nomme des marqueurs de stress oxydant associés à une CRP '
-      + 'ultrasensible élevée, que rien ici ne sait lire.',
-    statut: 'brouillon',
-  },
+  // LA LIGNE `ASSIETTE-IND-ANTIOXYDANTE` EST RETIRÉE PAR [[D-489]]. Son seul
+  // claim d'indication, `WN-CL-0292-003`, est rejeté à la relecture du dossier
+  // polyphénols et antioxydants (besoin 2) : les sources vérifiées n'étayent ni
+  // son niveau de preuve ni l'étendue de ses indications. Une ligne sans claim
+  // d'indication n'est pas une indication, et le verrou la refuserait : la ligne
+  // part entière, et l'assiette ne reçoit plus aucune ligne. Sa composition
+  // (`plates.ts`) et sa fiche ne bougent pas.
   {
     id: 'ASSIETTE-IND-OMEGA-3',
     plateCode: 'ASSIETTE_OMEGA_3',
@@ -563,8 +548,8 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     raccourciAssume:
       'Le claim énumère neuf tableaux cliniques ; la ligne lit trois domaines '
       + 'd’antécédents qui les recouvrent partiellement et débordent largement. '
-      + 'C’est le plus grand écart de granularité de la table, plus large que '
-      + 'celui de l’antioxydante, et il est assumé par l’outil. La vraie porte '
+      + 'C’est le plus grand écart de granularité de la table, et il est assumé '
+      + 'par l’outil. La vraie porte '
       + 'est biologique — WN-CL-0294-004 cite un index oméga 3 et un ratio '
       + 'AA/EPA — et rien ne sait la lire. D’où le brouillon.',
     statut: 'brouillon',
@@ -630,13 +615,17 @@ export const INDICATIONS_ASSIETTES_METADATA: IndicationsAssiettesMetadata = {
   // DÉCLARATION RENDUE EN SÉANCE, APRÈS LECTURE — [[D-195]] §1. Les sept lignes
   // publiées ont été confirmées CLAIM PAR CLAIM : ce qui est attesté n'est pas
   // que le claim existe, mais qu'il fonde la porte écrite en face de lui. Les
-  // quatre brouillons sont relus et hachés au même titre — hors du SERVICE,
+  // trois brouillons sont relus et hachés au même titre — hors du SERVICE,
   // jamais hors du PÉRIMÈTRE.
-  dateValidation: '2026-09-19T18:27:15.000Z',
+  // RE-SIGNÉE PAR [[D-489]], 2026-11-11, sur la déclaration du responsable
+  // rendue en séance après lecture du périmètre recalculé depuis le fichier :
+  // « Je signe D-489 et le périmètre 9f38c220…7032 ». Première signature :
+  // 2026-09-19T18:27:15.000Z, sha 92f02da4…b35c ([[D-236]]).
+  dateValidation: '2026-11-11T15:37:30.000Z',
   // L'UNION DES DEUX CATÉGORIES, dédoublonnée et triée. `WN-CL-0288-013` est le
   // seul claim cité deux fois — il fonde l'indication de l'assiette protéinée ET
   // porte son exception parkinsonienne —, et il n'apparaît ici qu'une fois :
-  // vingt claims pour vingt-et-une désignations.
+  // dix-neuf claims pour vingt désignations depuis [[D-489]].
   claimsSource: [
     { claimId: 'WN-CL-0285-001', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0285-002', versionClaim: 'v1.0' },
@@ -654,7 +643,6 @@ export const INDICATIONS_ASSIETTES_METADATA: IndicationsAssiettesMetadata = {
     { claimId: 'WN-CL-0289-004', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0291-011', versionClaim: 'v1.0' },
-    { claimId: 'WN-CL-0292-003', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0293-009', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0293-011', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0294-002', versionClaim: 'v1.0' },
@@ -663,7 +651,7 @@ export const INDICATIONS_ASSIETTES_METADATA: IndicationsAssiettesMetadata = {
   // rendrait la comparaison tautologique et ferait entrer toute ligne ajoutée
   // plus tard sous une signature acquise ([[D-063]]). Calculé une fois sur le
   // périmètre relu, puis RECOPIÉ ici.
-  shaPerimetre: '92f02da47b335adc7f16443c1e74e298ee144ecec4746f60dc6ac34c6b49b35c',
+  shaPerimetre: '9f38c2200464e531116bdc721d4086a3e26c31894912691d47c7294b6ef77032',
 };
 
 function estIsoCanonique(valeur: string | null): valeur is string {

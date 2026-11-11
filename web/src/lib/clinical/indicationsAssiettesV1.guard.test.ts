@@ -82,7 +82,7 @@ const claimsValidesDe = (lignes: readonly LigneIndicationAssiette[]) =>
   new Set(lignes.flatMap(l => [...l.claimsIndication, ...l.claimsSecurite]).map(cleClaim));
 
 describe('indications d’assiette — état livré', () => {
-  it('ONZE LIGNES, dans cet ordre — et la métadonnée ATTESTE', () => {
+  it('DIX LIGNES, dans cet ordre — et la métadonnée ATTESTE', () => {
     expect(INDICATIONS_ASSIETTES_V1.map(l => l.id)).toEqual([
       'ASSIETTE-IND-DOPAMINERGIQUE',
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE',
@@ -93,21 +93,24 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-PSYCHOBIOTIQUE',
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
       'ASSIETTE-IND-METHYLATION',
-      'ASSIETTE-IND-ANTIOXYDANTE',
       'ASSIETTE-IND-OMEGA-3',
     ]);
+    // L'ANTIOXYDANTE EST SORTIE ([[D-489]]) : son seul claim d'indication est
+    // rejeté. Elle ne revient que par une nouvelle décision et une re-signature.
+    expect(INDICATIONS_ASSIETTES_V1.some(l => l.plateCode === 'ASSIETTE_ANTIOXYDANTE')).toBe(false);
     // PREMIÈRE SIGNATURE, 2026-09-19 ([[D-236]]). La date et le sha sont figés
     // ICI en littéraux, jamais recalculés : un banc qui recalculerait le sha
     // rendrait la comparaison tautologique et laisserait passer toute ligne
     // ajoutée après coup sous la signature acquise ([[D-063]]).
     expect(INDICATIONS_ASSIETTES_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_ASSIETTES_METADATA.dateValidation).toBe('2026-09-19T18:27:15.000Z');
+    // RE-SIGNATURE, 2026-11-11 ([[D-489]]), sans la ligne antioxydante.
+    expect(INDICATIONS_ASSIETTES_METADATA.dateValidation).toBe('2026-11-11T15:37:30.000Z');
     expect(INDICATIONS_ASSIETTES_METADATA.shaPerimetre)
-      .toBe('92f02da47b335adc7f16443c1e74e298ee144ecec4746f60dc6ac34c6b49b35c');
-    // VINGT CLAIMS POUR VINGT-ET-UNE DÉSIGNATIONS : `WN-CL-0288-013` fonde
-    // l'indication de la protéinée ET porte son exception, et l'union le
+      .toBe('9f38c2200464e531116bdc721d4086a3e26c31894912691d47c7294b6ef77032');
+    // DIX-NEUF CLAIMS POUR VINGT DÉSIGNATIONS ([[D-489]]) : `WN-CL-0288-013`
+    // fonde l'indication de la protéinée ET porte son exception, et l'union le
     // dédoublonne.
-    expect(INDICATIONS_ASSIETTES_METADATA.claimsSource).toHaveLength(20);
+    expect(INDICATIONS_ASSIETTES_METADATA.claimsSource).toHaveLength(19);
     expect(INDICATIONS_ASSIETTES_METADATA.claimsSource.map(cleClaim))
       .toEqual([...INDICATIONS_ASSIETTES_METADATA.claimsSource.map(cleClaim)].sort());
     // ET LE VERROU OUVRE RÉELLEMENT — sans ce terme, les sept cas ci-dessus
@@ -115,14 +118,13 @@ describe('indications d’assiette — état livré', () => {
     expect(indicationsAssiettesSignees()).toBe(true);
   });
 
-  it('SEPT publiées, QUATRE en brouillon — comptées, jamais annoncées', () => {
+  it('SEPT publiées, TROIS en brouillon — comptées, jamais annoncées', () => {
     const parStatut = (statut: LigneIndicationAssiette['statut']) =>
       INDICATIONS_ASSIETTES_V1.filter(l => l.statut === statut).map(l => l.id);
     expect(parStatut('publiee')).toHaveLength(7);
     expect(parStatut('brouillon')).toEqual([
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE',
       'ASSIETTE-IND-METHYLATION',
-      'ASSIETTE-IND-ANTIOXYDANTE',
       'ASSIETTE-IND-OMEGA-3',
     ]);
   });
@@ -150,7 +152,6 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-PSYCHOBIOTIQUE': { ind: ['WN-CL-0291-011::v1.0'], sec: [] },
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': { ind: ['WN-CL-0293-009::v1.0'], sec: [] },
       'ASSIETTE-IND-METHYLATION': { ind: ['WN-CL-0286-006::v1.0'], sec: [] },
-      'ASSIETTE-IND-ANTIOXYDANTE': { ind: ['WN-CL-0292-003::v1.0'], sec: [] },
       'ASSIETTE-IND-OMEGA-3': { ind: ['WN-CL-0294-002::v1.0'], sec: [] },
     });
   });
@@ -165,10 +166,11 @@ describe('indications d’assiette — état livré', () => {
     for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
       expect(parIndication.has(ligneReelle.plateCode)).toBe(true);
     }
-    // Dix assiettes reçoivent une ligne ; l'anti-inflammatoire en reçoit deux.
-    // Les DEUX qui n'en reçoivent aucune sont la végétale et la chronobiologique
-    // — relues sur pièce le 2026-09-19, aucun claim n'y fonde d'indication.
-    expect(new Set(INDICATIONS_ASSIETTES_V1.map(l => l.plateCode)).size).toBe(10);
+    // Neuf assiettes reçoivent une ligne ; l'anti-inflammatoire en reçoit deux.
+    // Les TROIS qui n'en reçoivent aucune sont la végétale et la chronobiologique
+    // — relues sur pièce le 2026-09-19, aucun claim n'y fonde d'indication — et
+    // l'antioxydante, dont le seul claim d'indication est rejeté ([[D-489]]).
+    expect(new Set(INDICATIONS_ASSIETTES_V1.map(l => l.plateCode)).size).toBe(9);
   });
 
   it('chaque ligne DÉCLARE son raccourci — aucune ne se tait sur ce qu’elle assume', () => {
@@ -176,7 +178,7 @@ describe('indications d’assiette — état livré', () => {
       expect(ligneReelle.raccourciAssume, ligneReelle.id).not.toBeNull();
       expect(ligneReelle.raccourciAssume!.length, ligneReelle.id).toBeGreaterThan(80);
     }
-    // Un fragment DISTINCTIF par ligne : sans lui, onze raccourcis identiques
+    // Un fragment DISTINCTIF par ligne : sans lui, dix raccourcis identiques
     // passeraient le cas ci-dessus.
     const fragments: Record<string, string> = {
       'ASSIETTE-IND-DOPAMINERGIQUE': 'score FAIBLE',
@@ -188,7 +190,6 @@ describe('indications d’assiette — état livré', () => {
       'ASSIETTE-IND-PSYCHOBIOTIQUE': 'intestinale constatée',
       'ASSIETTE-IND-ANTI-INFLAMMATOIRE-PREVENTIVE': 'classe d’âge',
       'ASSIETTE-IND-METHYLATION': 'susceptibilité',
-      'ASSIETTE-IND-ANTIOXYDANTE': 'L’élargissement est réel',
       'ASSIETTE-IND-OMEGA-3': 'neuf tableaux cliniques',
     };
     for (const ligneReelle of INDICATIONS_ASSIETTES_V1) {
@@ -213,20 +214,20 @@ describe('indications d’assiette — état livré', () => {
     ]);
   });
 
-  it('LES QUATRE BROUILLONS DÉCLARENT que leur vraie porte est biologique', () => {
+  it('LES TROIS BROUILLONS DÉCLARENT que leur vraie porte est biologique', () => {
     // Arbitrage du responsable, 2026-09-19 : ces assiettes se proposent sur le
     // RÉSULTAT biologique, et la porte écrite n'en est qu'un proxy d'anamnèse.
     // Le motif doit vivre sur CHAQUE ligne, pas seulement dans le chapeau : un
     // statut changé à un seul endroit est le défaut que la revue a relevé quatre
     // fois cette semaine.
     const brouillons = INDICATIONS_ASSIETTES_V1.filter(l => l.statut === 'brouillon');
-    expect(brouillons).toHaveLength(4);
+    expect(brouillons).toHaveLength(3);
     for (const b of brouillons) {
       expect(b.raccourciAssume, b.id).toMatch(/biologique|marqueur|homocystéine/);
     }
   });
 
-  it('LES SEPT PUBLIÉES SORTENT, les quatre brouillons restent dedans', () => {
+  it('LES SEPT PUBLIÉES SORTENT, les trois brouillons restent dedans', () => {
     // Sur la signature RÉELLE, cette fois — pas celle du banc.
     const servies = lignesIndicationAssietteServables(
       claimsValidesDe(INDICATIONS_ASSIETTES_V1),
