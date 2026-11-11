@@ -34,12 +34,16 @@ arbitrages :
   ne lève pas l'état. Il faut une version neuve (même texte, empreinte de
   structure à jour) puis son acte, sur le patron des libellés que cite
   D-480 §3. Constat de `wn-reviewer` (C3) : les commentaires sont corrigés.
+  Pas d'amendement de D-480 (arbitrage du responsable, 2026-11-11) : la
+  référence au patron des libellés suffit.
 - L'identifiant d'option n'a aucun format imposé (texte sans espace, 1 à
   128 caractères) : c'est la PR 3 qui le fixe.
 
 ## Fichiers modifiés
 
-- `web/prisma/migrations/20261111120000_bibliotheque_options_textes_v1/migration.sql`
+- `web/prisma/migrations/20261111180000_bibliotheque_options_textes_v1/migration.sql`
+  (d'abord horodatée `120000`, renommée après l'entrée sur main de la migration
+  de D-490, `20261111160000`, pour garder la chronologie).
 - `web/prisma/schema.prisma` : bloc `BibliothequeOptionTexte` et
   `BibliothequeOptionTexteActe`, édité à la main.
 - `web/prisma/checks/bibliotheque_options_textes_v1_negatif.sql` : 13
@@ -76,8 +80,10 @@ arbitrages :
 
 ## Prochaine action exacte
 
-Après le CI vert et la revue sur la tête : `wn-sonde-release-db.mjs <N>` à
-0, créneau choisi avec le responsable, merge. Si la PR 3 vient d'être
+#1994. Créneau choisi par le responsable : « dès que prêt ». Avant le
+merge : la release-db de #1992 (D-490) doit être conclue et constatée
+(sonde à 1 le 2026-11-11 au soir, run en attente d'approbation). Puis CI
+vert et revue sur la tête, `wn-sonde-release-db.mjs 1994` à 0, merge. Si la PR 3 vient d'être
 mergée et que sa release-db attend, ne pas merger. Le responsable approuve
 la release-db. Constat par conteneur : `migrate status` agrégé par nom,
 tables présentes et vides, triggers en place, puis première ligne de
