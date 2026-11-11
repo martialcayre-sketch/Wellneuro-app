@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { LienDuHub } from '@/components/patient/LienDuHub';
 import { STATE_CLASSES, type JourneyStep } from '@/components/patient/PatientJourneyProgress';
 import { cibleEtape, type SignauxFrise } from './friseEtapes';
 
@@ -80,10 +81,13 @@ export function FriseEtapesNavigable({ steps, signaux }: { steps: JourneyStep[];
 
           let etape: ReactNode;
           if (cible.type === 'lien') {
+            // « Restitution » mène à une page du portail : `LienDuHub` y va
+            // sans recharger, l'état du rail suit ([[D-482]] §1). Une ancre du
+            // hub reste un `<a>`.
             etape = (
-              <a href={cible.href} aria-current={courante} className={CLASSE_ETAPE}>
+              <LienDuHub href={cible.href} aria-current={courante} className={CLASSE_ETAPE}>
                 {contenu}
-              </a>
+              </LienDuHub>
             );
           } else if (cible.type === 'texte') {
             etape = (

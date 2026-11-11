@@ -7,16 +7,18 @@
 // sur le hub, où « Autres espaces » n'est plus rendu ([[D-483]] §2). Ses trois
 // états ([[D-482]], lot PAT-1) : réduit mesuré à 1 024 px en confort 100 % et
 // 112,5 %, libellés entiers ; escamoté hors du clavier, le bouton « Menu » qui
-// le rouvre ; l'état gardé d'une page à l'autre, perdu au rechargement. Sur
+// le rouvre ; l'état gardé d'une page à l'autre, perdu au rechargement, et
+// gardé quand on suit un lien du hub (lot PAT-3, M1 de PAT-1). Sur
 // iPhone 13 : aucun rail. Les cas
 // d'âge, de murs, de chemin (questionnaire en cours) et de clôture sont
 // épinglés en Vitest (`components/patient/rail/RailMonEspace.test.tsx`).
 //
 // Patient fictif Sophie Nicola (PAT_SEED_01), majeure. Lecture seule, hors
-// l'accusé d'entrée que posent déjà les autres specs du hub.
+// l'accusé d'entrée que posent déjà les autres specs du hub, et un bilan
+// transmis posé puis retiré par le test du lien du hub.
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { accuserPorteTrust, closePrisma } from './helpers/db';
+import { accuserPorteTrust, cleanupBilanTransmis, closePrisma, provisionBilanTransmis } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
 
 const PATIENT = { idPatient: 'PAT_SEED_01', email: 'sophie.nicola@fictif.wellneuro.fr' };
@@ -265,6 +267,35 @@ test.describe('Portail — rail latéral', () => {
         // Rien n'est écrit sur l'appareil pour le rail (Q56).
         const cles = await page.evaluate(() => [...Object.keys(localStorage), ...Object.keys(sessionStorage)]);
         expect(cles.filter(cle => /rail|menu/i.test(cle))).toEqual([]);
+      });
+
+      test('l’état posé sur le hub suit un lien du hub, sans recharger la page', async ({ page }) => {
+        // Un bilan transmis met « Lire mon bilan » au fil du jour, un lien du
+        // hub vers une autre page du portail (`LienDuHub`) : la fixture le pose,
+        // puis le retire.
+        await provisionBilanTransmis(PATIENT.idPatient, PATIENT.email);
+        try {
+          await page.setViewportSize({ width: 1280, height: 800 });
+          await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
+          const nav = rail(page);
+          await expect(nav.locator('[aria-current="page"]')).toHaveText('Mon parcours');
+          const lien = page.getByRole('main').getByRole('link', { name: 'Lire mon bilan', exact: true });
+          await expect(lien).toHaveAttribute('href', `/portail/${PATIENT.idPatient}/bilan`);
+          await commande(page, 'Réduire le menu').click();
+          await expect(commande(page, 'Agrandir le menu')).toBeVisible();
+          // Témoin posé sur la fenêtre : un document rechargé l'effacerait,
+          // comme il effaçait l'état du rail avec un `<a href>` (M1 de PAT-1).
+          await page.evaluate(() => {
+            (window as unknown as { temoinRail?: boolean }).temoinRail = true;
+          });
+          await lien.click();
+          await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/bilan$`));
+          await expect(nav).toBeVisible();
+          await expect(commande(page, 'Agrandir le menu')).toBeVisible();
+          expect(await page.evaluate(() => (window as unknown as { temoinRail?: boolean }).temoinRail)).toBe(true);
+        } finally {
+          await cleanupBilanTransmis();
+        }
       });
 
       test('rail escamoté, à 1 023 px : le seul bouton « Menu » ouvre le panneau', async ({ page }) => {

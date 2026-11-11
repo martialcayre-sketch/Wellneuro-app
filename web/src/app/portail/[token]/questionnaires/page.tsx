@@ -570,6 +570,9 @@ export default function QuestionnairesHubPage() {
                       </div>
                     </div>
                     {aff.action ? (
+                      // Un `<a>`, pas un `Link` : la page du questionnaire fige sa
+                      // caméra et son `script-src` au chargement du document
+                      // (`next.config.mjs`, [[D-437]]) — voir `LienDuHub`.
                       <a
                         href={`/portail/${token}/questionnaires/${a.idAssignation}`}
                         className={`inline-flex items-center justify-center shrink-0 ${patientButtonClassName(aff.ghost ? 'ghost' : 'primary')}`}
