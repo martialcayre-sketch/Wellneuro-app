@@ -343,6 +343,40 @@ describe('/api/praticien/regles', () => {
       expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
     });
 
+    // [[D-479]] — VALIDE NE SUFFIT PLUS : un claim encore `VALIDE` mais
+    // supplanté ne fonde pas une règle, et l'atelier ne l'enregistre pas. Les
+    // deux lectures se distinguent par leur SQL, pas par leur ordre.
+    it('refuse un claim encore VALIDE mais supplanté, avec le message exact', async () => {
+      prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) =>
+        Promise.resolve(
+          strings.join('?').includes('superseded_at IS NULL')
+            ? []
+            : [{ claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' }],
+        ),
+      );
+      const reponse = await POST(requetePost(CORPS_CREATION));
+      expect(reponse.status).toBe(422);
+      const corps = await reponse.json();
+      expect(corps.reason).toBe('claim_non_valide');
+      expect(corps.error).toBe(
+        'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+          + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+          + 'reposer que sur un claim signé et non supplanté.',
+      );
+      expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+    });
+
+    it('accepte un claim valide et non supplanté, après les deux lectures', async () => {
+      const reponse = await POST(requetePost(CORPS_CREATION));
+      expect(reponse.status).toBe(201);
+      const requetes = prisma.$queryRaw.mock.calls.map((appel) =>
+        (appel[0] as TemplateStringsArray).join('?'),
+      );
+      expect(requetes).toHaveLength(2);
+      expect(requetes.filter((sql) => sql.includes('superseded_at IS NULL'))).toHaveLength(1);
+      expect(prisma.clinicalRule.create).toHaveBeenCalled();
+    });
+
     it('écrit le claim sur la règle créée', async () => {
       await POST(requetePost(CORPS_CREATION));
       expect(prisma.clinicalRule.create).toHaveBeenCalledWith(

@@ -44,7 +44,8 @@ export type CauseRefus =
   | 'source_absente'
   // Les deux issues du CLAIM FONDATEUR ([[D-140]]), séparées pour la même
   // raison que les trois du critère : une règle qui ne nomme AUCUN claim et une
-  // règle dont le claim n'est pas validé au corpus refusent toutes deux, mais
+  // règle dont le claim ne satisfait pas les critères de validité du corpus
+  // (valide ET non supplanté, [[D-479]]) refusent toutes deux, mais
   // la première est une lacune de la règle et la seconde un état du corpus. Les
   // confondre ferait chercher le défaut au mauvais endroit.
   | 'claim_absent'
@@ -244,11 +245,14 @@ export function deciderIntentionAvantBiologie(contexte: ContexteDecision): Verdi
       regle.regleId,
     );
   }
+  // [[D-479]] : « n'est pas validé » serait inexact pour un claim encore
+  // `VALIDE` mais supplanté, que ce refus couvre désormais — même formule que
+  // [[D-472]] et [[D-476]] §3.
   if (!contexte.claimsValides) {
     return refus(
       'claims_non_valides',
       `Le claim « ${claim.claimId} » (${claim.versionClaim}) qui fonde la règle `
-        + `« ${regle.regleId} » n’est pas validé au corpus.`,
+        + `« ${regle.regleId} » ne satisfait pas les critères de validité du corpus.`,
       ingredient,
       regle.regleId,
     );

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
-import { claimValideAuCorpus } from '@/lib/rag/claims/validite';
+import { claimAdmissibleAuCatalogue } from '@/lib/supplement-library/catalogueDecisionPrisma';
 import {
   SELECTION_REGLE,
   serialiserRegle,
@@ -44,8 +44,9 @@ const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
   critere_introuvable: { message: 'Critère clinique inconnu ou inactif.', status: 422 },
   claim_non_valide: {
     message:
-      'Ce claim n’est pas validé au corpus : vérifiez son identifiant et sa version au poste '
-      + 'de revue des claims. Une règle ne peut reposer que sur un claim signé.',
+      'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+      + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+      + 'reposer que sur un claim signé et non supplanté.',
     status: 422,
   },
 };
@@ -102,7 +103,9 @@ export async function POST(req: Request): Promise<NextResponse<RegleRevisionApiR
     // référentiels : il ne dépend pas de la lignée (que seule la transaction
     // connaît), et il vit dans une table SQL-brut hors `schema.prisma`
     // ([[D-140]]). Refuser tôt évite d'ouvrir une transaction pour rien.
-    if (!(await claimValideAuCorpus(contenu.claim))) {
+    // Valide au corpus ET non supplanté ([[D-479]]) : le critère de la
+    // prévisualisation, pour ne pas enregistrer une révision qu'elle refuserait.
+    if (!(await claimAdmissibleAuCatalogue(contenu.claim))) {
       const refus = MESSAGES_REFUS.claim_non_valide;
       return echec('claim_non_valide', refus.message, refus.status);
     }
