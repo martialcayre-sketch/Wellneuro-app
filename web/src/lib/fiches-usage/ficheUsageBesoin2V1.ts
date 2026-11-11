@@ -34,6 +34,9 @@ import {
 // position v0.2 signée), sur la déclaration du responsable ([[D-446]]).
 // RE-SIGNÉE LE 2026-11-07 pour les polyphénols et antioxydants (huit fiches,
 // une par position v0.2 signée), sur la déclaration du responsable ([[D-457]]).
+// RE-SIGNÉE POUR LES HYPOTHÈSES DU PARCOURS ([[D-477]]) : six hypothèses,
+// rattachées aux fiches de leur nutriment, sur la déclaration du responsable ;
+// aucune fiche, aucun claim, aucun axe ne change.
 // Écrire la structure
 // et la signer sont deux gestes distincts, et les contenus sont ceux du
 // responsable (porte 23, arbitrage 1 ; la liste des populations, chaque valeur
@@ -240,7 +243,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0154-054', versionClaim: 'v1.0' },
@@ -261,7 +264,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0512-009', versionClaim: 'v1.0' },
@@ -282,7 +285,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0105-005', versionClaim: 'v1.0' },
@@ -310,7 +313,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0172-037', versionClaim: 'v1.0' },
@@ -332,7 +335,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0139-011', versionClaim: 'v1.0' },
@@ -364,7 +367,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0057-019', versionClaim: 'v1.0' },
@@ -401,7 +404,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0235-013', versionClaim: 'v1.0' },
@@ -420,7 +423,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'mesure_standard',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_VITD_1'],
       codesAnalyte: ['BIO_VITAMINE_D_25OH'],
       claims: [
         { claimId: 'WN-CL-0057-022', versionClaim: 'v1.0' },
@@ -440,7 +443,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0031-052', versionClaim: 'v1.0' },
@@ -502,7 +505,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
@@ -538,7 +541,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0061-024', versionClaim: 'v1.0' },
@@ -572,7 +575,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0105-007', versionClaim: 'v1.0' },
@@ -608,7 +611,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0061-037', versionClaim: 'v1.0' },
@@ -635,7 +638,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ENFANT_GROSSESSE_ALLAITEMENT',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0150-006', versionClaim: 'v1.0' },
@@ -672,7 +675,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0240-015', versionClaim: 'v1.0' },
@@ -690,7 +693,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_ZINC_1'],
       codesAnalyte: ['BIO_ZINC_PLASMATIQUE'],
       claims: [
         { claimId: 'WN-CL-0031-052', versionClaim: 'v1.0' },
@@ -724,7 +727,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0061-038', versionClaim: 'v1.0' },
@@ -752,7 +755,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0044-009', versionClaim: 'v1.0' },
@@ -772,7 +775,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0048-002', versionClaim: 'v1.0' },
@@ -801,7 +804,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0061-032', versionClaim: 'v1.0' },
@@ -831,7 +834,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0061-032', versionClaim: 'v1.0' },
@@ -861,7 +864,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0061-027', versionClaim: 'v1.0' },
@@ -895,7 +898,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0235-013', versionClaim: 'v1.0' },
@@ -915,7 +918,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_MG_1'],
       codesAnalyte: ['BIO_MAGNESIUM_ERYTHROCYTAIRE'],
       claims: [
         { claimId: 'WN-CL-0063-005', versionClaim: 'v1.0' },
@@ -940,7 +943,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0058-028', versionClaim: 'v1.0' },
@@ -972,7 +975,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0054-021', versionClaim: 'v1.0' },
@@ -1001,7 +1004,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ADULTE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0058-010', versionClaim: 'v1.0' },
@@ -1043,7 +1046,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0043-016', versionClaim: 'v1.0' },
@@ -1070,7 +1073,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0058-008', versionClaim: 'v1.0' },
@@ -1097,7 +1100,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ENFANT_GROSSESSE_ALLAITEMENT',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0054-018', versionClaim: 'v1.0' },
@@ -1135,7 +1138,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0025-050', versionClaim: 'v1.0' },
@@ -1172,7 +1175,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_B9_1', 'HYP_B12_1'],
       codesAnalyte: ['BIO_FOLATES_ERYTHROCYTAIRES', 'BIO_B12_HOLOTC'],
       claims: [
         { claimId: 'WN-CL-0058-004', versionClaim: 'v1.0' },
@@ -1255,7 +1258,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0020-019', versionClaim: 'v1.0' },
@@ -1284,7 +1287,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_IODURIE', 'BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0020-020', versionClaim: 'v1.0' },
@@ -1347,7 +1350,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0164-044', versionClaim: 'v1.0' },
@@ -1371,7 +1374,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_IODURIE', 'BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0328-011', versionClaim: 'v1.0' },
@@ -1401,7 +1404,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_ENFANT_GROSSESSE_ALLAITEMENT',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_IODURIE', 'BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0060-016', versionClaim: 'v1.0' },
@@ -1437,7 +1440,7 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
       statutUsage: 'preuves_limitees',
       niveauMesure: 'exploration_fonctionnelle',
       population: 'POP_GENERALE',
-      hypotheses: [],
+      hypotheses: ['HYP_SE_1'],
       codesAnalyte: ['BIO_IODURIE', 'BIO_SELENIUM'],
       claims: [
         { claimId: 'WN-CL-0065-014', versionClaim: 'v1.0' },
@@ -1741,7 +1744,12 @@ export const FICHES_USAGE_BESOIN2_V1: StructureFichesUsage = {
     },
   ],
   questions: ['QC_EXPLORATION_BESOIN2'],
-  hypotheses: [],
+  // Six hypothèses, déclarées par le responsable le 2026-11-11 ([[D-477]]) :
+  // un nutriment et un sens chacune, des identifiants opaques jamais
+  // réattribués ; leurs libellés vivent en base, jamais ici. `HYP_FER_1` est
+  // réservé et n'est pas inscrit : sa provenance reste à compléter
+  // ([[D-477]] §3). Pas d'hypothèse iode ([[D-477]] §4).
+  hypotheses: ['HYP_VITD_1', 'HYP_ZINC_1', 'HYP_MG_1', 'HYP_B9_1', 'HYP_B12_1', 'HYP_SE_1'],
   populations: [
     'POP_FEMME_REGLEE_NON_ANEMIQUE',
     'POP_GROSSESSE_ALLAITEMENT',
@@ -1775,11 +1783,14 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
   // pour les polyphénols et antioxydants ([[D-457]]) sur la déclaration du
   // responsable, rendue après lecture de la surface et de la contre-revue
   // traitée (P3 rattachée aux claims que son corps cite), aucune case corrigée
-  // ensuite : la date et le sha ci-dessous en sont la recopie. Signature
-  // remplacée ([[D-195]] §4) : 2026-11-05T12:07:26.000Z, sha
-  // 116fbf9c0c5be66d0c047f0692ef329e2c7feacdd1b7b037f6c1ed48400b8c1c ([[D-446]]).
+  // ensuite. RE-SIGNÉE le 2026-11-11 pour les six hypothèses du parcours
+  // ([[D-477]]) sur la déclaration du responsable, rendue en session après
+  // lecture du périmètre et de la contre-revue Codex (GO, aucun constat),
+  // aucune case corrigée : la date et le sha ci-dessous en sont la recopie.
+  // Signature remplacée ([[D-195]] §4) : 2026-11-07T20:05:11.000Z, sha
+  // 58adcff61f30e13f955988caf55ee7781a6b70902a27c89b0dd95f790df93a86 ([[D-457]]).
   validationExterne: true,
-  dateValidation: '2026-11-07T20:05:11.000Z',
+  dateValidation: '2026-11-11T09:02:54.000Z',
   claimsSource: [
     { claimId: 'WN-CL-0001-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0020-018', versionClaim: 'v1.0' },
@@ -2381,7 +2392,7 @@ export const FICHES_USAGE_BESOIN2_METADATA: FichesUsageMetadata = {
     { claimId: 'WN-CL-0651-004', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0651-005', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: '58adcff61f30e13f955988caf55ee7781a6b70902a27c89b0dd95f790df93a86',
+  shaPerimetre: 'e59d35c381435a2bdf7ec76460e4ebe4b7096cdef688c4322cbe4d3eacfb98ba',
 };
 
 /**
