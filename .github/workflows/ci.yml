@@ -593,6 +593,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_decisions_etiquetage_v1.sql
 
+      # D-490 : la marque « exclu de la recherche » — la fonction de recherche
+      # ne rend pas un claim exclu (contrôle positif sur son jumeau), et l'acte
+      # `exclusion_recherche` n'admet qu'une forme complète (un claim, un sens,
+      # un motif non blanc).
+      - name: RAG claim exclusion recherche contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_exclusion_recherche_v1_negatif.sql
+
       # L'index unique partiel des assignations vit en SQL brut : Prisma ne sait
       # pas le déclarer, donc le drift check ne le voit pas. Sans ce contrat, sa
       # disparition ne rougirait nulle part.
