@@ -107,9 +107,11 @@ Le Fil du jour, Patients et la création de dossier, Agenda, liste des
 fiches-trajectoires, Comptes du cabinet, Correspondance, Confiance & droits
 (effet indésirable jamais sous un accordéon), Paramètres, connexion.
 Habillage Lien par les jetons du socle ; aucune palette codée en dur ;
-icônes Lucide à 1,75 px. **Réception** : une action principale lisible par
-zone ; états de lecture explicites (X03), jamais un échec maquillé en liste
-vide ; ouverture depuis une carte du Fil sur le bon contenu (cadrage v3
+icônes Lucide à 1,75 px. Lien d'évitement « Aller au contenu » sur chaque
+page du portail (T-35, amendement DOC-1 de [[D-488]]). **Réception** : une
+action principale lisible par zone ; le lien d'évitement est le premier arrêt
+de tabulation et vise `<main id="contenu">` ; états de lecture explicites
+(X03), jamais un échec maquillé en liste vide ; ouverture depuis une carte du Fil sur le bon contenu (cadrage v3
 l.551).
 
 ### PRA-3 — Fiche-trajectoire
