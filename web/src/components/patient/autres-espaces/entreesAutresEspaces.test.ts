@@ -22,7 +22,7 @@ import {
 const RACINE_WEB = path.resolve(__dirname, '../../../..');
 
 const ATTENDU = [
-  ['suivi', 'Ouvrir mes rendez-vous de suivi', 'suivi', 'au_jour_le_jour', 'aucune'],
+  ['suivi', 'Ouvrir mon point de suivi', 'suivi', 'au_jour_le_jour', 'aucune'],
   ['carnet', 'Ouvrir mon carnet alimentaire', 'alimentation', 'au_jour_le_jour', 'aucune'],
   ['bilan', 'Consulter mon bilan', 'bilan', 'recu', 'bilanConsultable'],
   ['bibliotheque', 'Ma bibliothèque', 'bibliotheque', 'recu', 'sonde'],

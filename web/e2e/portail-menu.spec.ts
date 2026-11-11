@@ -49,7 +49,7 @@ test.describe('Portail — menu « Mon espace »', () => {
     const nav = panneau.getByRole('navigation', { name: 'Mon espace' });
     await expect(nav.getByRole('link').first()).toHaveText('Mon parcours');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
-    await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mes rendez-vous de suivi');
+    await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mon point de suivi');
     await page.keyboard.press('Escape');
     await expect(panneau).toHaveCount(0);
     await expect(bouton).toBeFocused();

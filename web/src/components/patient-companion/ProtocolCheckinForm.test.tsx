@@ -83,3 +83,54 @@ describe('ProtocolCheckinForm — session expirée', () => {
     await vi.waitFor(() => expect(router.replace).toHaveBeenCalledWith('/portail/TOK'));
   });
 });
+
+// SUIVI NON RECONNU ([[D-488]] §7, Q-E2-5 (a)) : un refus 404 ne peut pas
+// réussir en réessayant. L'écran le dit, sans « Réessayer » ; les autres
+// erreurs le gardent (voir « une coupure réseau… » ci-dessus).
+describe('ProtocolCheckinForm — suivi non reconnu (404)', () => {
+  it('le message seul, sans « Réessayer »', async () => {
+    fetchSuivi(() =>
+      Promise.resolve({
+        status: 404,
+        json: () => Promise.resolve({ ok: false, reason: 'not_found', error: 'Suivi non reconnu.' }),
+      } as Response),
+    );
+    render(<ProtocolCheckinForm token="TOK" />);
+    expect((await screen.findByRole('alert')).textContent).toContain('Suivi non reconnu.');
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Mon point de suivi' })).toBeTruthy();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
+// T-30 ([[D-488]]) et refonte Lien PAT-3 (prototype validé le 2026-11-11).
+describe('ProtocolCheckinForm — point ouvert', () => {
+  const ouvert = json({ ok: true, protocoleDiffuse: true, pointEtapeOuvert: 'J14', points: [] });
+
+  it('titre « Mon point de suivi — semaine N », réponses bordées en control-border', async () => {
+    fetchSuivi(ouvert);
+    render(<ProtocolCheckinForm token="TOK" />);
+    expect(await screen.findByRole('heading', { name: 'Mon point de suivi — semaine 2' })).toBeTruthy();
+    const groupe = within(screen.getByRole('group', { name: CHECKIN_QUESTIONS[0].libelle }));
+    const choix = groupe.getByRole('button', { name: CHECKIN_QUESTIONS[0].options[0].libelle });
+    expect(choix.className).toMatch(/\bborder-control-border\b/);
+    expect(choix.className).toMatch(/\bmin-h-11\b/);
+  });
+
+  it('un envoi en échec garde la saisie et ne confirme rien', async () => {
+    fetchSuivi(ouvert, () => Promise.reject(new Error('offline')));
+    render(<ProtocolCheckinForm token="TOK" />);
+    await screen.findByRole('button', { name: 'Envoyer' });
+    for (const q of CHECKIN_QUESTIONS) {
+      const groupe = within(screen.getByRole('group', { name: q.libelle }));
+      fireEvent.click(groupe.getByRole('button', { name: q.options[0].libelle }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Erreur réseau. Réessayez.');
+    for (const q of CHECKIN_QUESTIONS) {
+      const groupe = within(screen.getByRole('group', { name: q.libelle }));
+      expect(groupe.getByRole('button', { name: q.options[0].libelle }).getAttribute('aria-pressed')).toBe('true');
+    }
+    expect(screen.queryByText(/votre point de cette semaine est enregistré/)).toBeNull();
+  });
+});

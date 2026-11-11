@@ -36,7 +36,7 @@ export function ProtocolCheckinTrend({ points }: { points: PointEtat[] }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">Vos rendez-vous de suivi</h3>
+      <h3 className="text-sm font-semibold text-foreground">Mes points de suivi</h3>
       <ul className="space-y-2.5">
         {renseignes.map((point) => {
           const reponses = point.reponses as CheckinReponses;

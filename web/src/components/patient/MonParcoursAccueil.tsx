@@ -1,3 +1,4 @@
+import { LienDuHub } from '@/components/patient/LienDuHub';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { evaluerReprise, phraseReprise } from '@/lib/patient/reprise';
@@ -93,13 +94,13 @@ export function MonParcoursAccueil({
 
         {premiere && (
           <>
-            <a
+            <LienDuHub
               href={premiere.href}
               aria-describedby={premiere.appui ? idAppui(premiere.cle) : undefined}
               className={`inline-flex items-center justify-center ${patientButtonClassName('primary')}`}
             >
               {premiere.cta}
-            </a>
+            </LienDuHub>
             {premiere.appui && (
               <p id={idAppui(premiere.cle)} className="mt-2 text-sm text-foreground">
                 {premiere.appui}
@@ -131,13 +132,13 @@ export function MonParcoursAccueil({
             <ol className="space-y-2">
               {suivantes.map(tache => (
                 <li key={tache.cle}>
-                  <a
+                  <LienDuHub
                     href={tache.href}
                     aria-describedby={tache.appui ? idAppui(tache.cle) : undefined}
                     className="text-base text-foreground underline underline-offset-2"
                   >
                     {tache.cta}
-                  </a>
+                  </LienDuHub>
                   {tache.appui && (
                     <p id={idAppui(tache.cle)} className="text-sm text-muted-foreground">
                       {tache.appui}

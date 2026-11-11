@@ -238,7 +238,7 @@ describe('§2 et §3 — la liste et l’activation', () => {
   for (const [chemin, attendu] of [
     ['questionnaires', 'Mon parcours'],
     ['protocole', 'Mon parcours'],
-    ['suivi', 'Ouvrir mes rendez-vous de suivi'],
+    ['suivi', 'Ouvrir mon point de suivi'],
     ['alimentation', 'Ouvrir mon carnet alimentaire'],
     ['fiches/REM_1', 'Ma bibliothèque'],
     ['ce-qui-compte', 'Ouvrir mon dossier à deux voix'],
@@ -292,7 +292,7 @@ describe('§4 — comportement', () => {
     ecran.passer(true);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(courant()[0]));
-    expect(document.activeElement?.textContent).toBe('Ouvrir mes rendez-vous de suivi');
+    expect(document.activeElement?.textContent).toBe('Ouvrir mon point de suivi');
   });
 
   it('au seuil, sans entrée active dans le rail, le focus passe à sa première entrée', async () => {
@@ -410,7 +410,7 @@ describe('trois états ([[D-482]]) : déplié, réduit, escamoté', () => {
     expect(rouvrir()).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(courant()[0]);
-    expect(document.activeElement?.textContent).toBe('Ouvrir mes rendez-vous de suivi');
+    expect(document.activeElement?.textContent).toBe('Ouvrir mon point de suivi');
   });
 
   it('rail escamoté, sous `lg`, le bouton « Menu » ouvre toujours le panneau', async () => {
