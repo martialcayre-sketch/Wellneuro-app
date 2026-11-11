@@ -44,11 +44,23 @@ VALIDE mais supplanté pouvait donc fonder une fiche diffusée au patient.
 - T1 complet (`npm run check`) : vert sur 09020299, après `prisma generate`
   dans le worktree neuf.
 - `wn-reviewer` : GO, ni P0 ni P1. Les verdicts sont en D-478 §7.
-- T3 (`npm run test:worktree`) : lancé sur 09020299 ; résultat à reporter dans
-  la PR.
+- T3 (`npm run test:worktree`) : ROUGE en local, deux fois, sur deux bancs
+  différents et étrangers au lot.
+  - Run 1, sur 09020299 : Vitest vert (16 737) et 356 E2E verts.
+    - Un E2E WebKit rouge : `e2e/portail-bilan.spec.ts:147`, sur iPhone 13.
+    - Le `page.reload` a émis la navigation `/portail/…/bilan` sans recevoir
+      de réponse. Ce n'est pas la signature D-049, car une requête est partie.
+    - Le banc ne remet aucune fiche et ne passe pas par l'écran du responsable.
+  - Run 2, sur 22a85165 : un Vitest rouge sur une borne de durée,
+    `export-dossier/masquage.test.ts` (201 ms pour 200). Il passe seul,
+    164/164. Les E2E n'ont pas été joués.
+  - Pas de troisième rejeu : le CI arbitre le segment E2E sur la tête.
+- Fusion arbitrée de origin/main (#1987, trois fichiers de doc H15, sans
+  recouvrement) : aa69e14b.
 
 ## Problèmes ouverts
 
+- T3 local rouge, hors lot (voir plus haut) : le CI doit être vert, E2E compris, sur la tête.
 - Revue de tête : CodeRabbit (quota 1/h), puis Copilot, puis PR-Agent.
 - P0 clinique : la passe Codex manuelle relève du responsable, avant le merge.
 
