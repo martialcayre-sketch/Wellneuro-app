@@ -1,5 +1,11 @@
 # Refonte Lien / Empreinte — étape 2 : textes d'amendement proposés
 
+> **Accepté le 2026-11-11** (« Je valide ce bloc ») : AM-1 à AM-7 tels que
+> rédigés, AM-8 sans objet. Inscrits par DOC-0 : AM-1 → [[D-482]], AM-2 →
+> [[D-483]], AM-3 → [[D-484]], AM-4 → [[D-485]], AM-5 → [[D-486]], AM-6 →
+> A5-R3 et [[D-481]] §1, AM-7 → [[D-487]]. Les décisions font foi ; le
+> texte ci-dessous est celui qui a été proposé.
+
 Aucun de ces textes n'est signé ni numéroté. Chacun attend l'acceptation mot
 pour mot du responsable ; un numéro D-xxx ne lui sera donné qu'à ce moment, au
 registre, par la PR qui le porte. Les citations des décisions viennent de

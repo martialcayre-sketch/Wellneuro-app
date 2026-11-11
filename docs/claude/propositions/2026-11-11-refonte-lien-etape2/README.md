@@ -69,6 +69,11 @@ réponses §4 ─► DOC-0 ─► COM-0 ─┬─► PRA-1 ─► PRA-3a ─► 
 
 ## 4. Questions au responsable
 
+> **Réponses du 2026-11-11** (« Je valide ce bloc ») : Q-E2-1 à Q-E2-5 en
+> option (a) ; AM-1 à AM-7 acceptés tels que rédigés, AM-8 sans objet ; tous
+> les textes du registre mot pour mot sauf T-34, refusé. Inscrites par DOC-0
+> dans [[D-481]] à [[D-488]] et A5-R3. Prochain lot : COM-0.
+
 Recommandation en option (a). Une option qui contredit une décision le dit.
 
 **Q-E2-1 — Groupes du menu praticien.**
