@@ -1301,6 +1301,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/positions_expert_dossiers_v2_negatif.sql
 
+      # Texte d'accompagnement de la bibliothèque des options (D-480 §3,
+      # BP-17). Deux tables append-only, sans donnée patient : neuf rubriques
+      # en liste fermée, empreinte du texte tenue par CHECK, numéro qui suit
+      # par couple option × rubrique, seule la dernière version reçoit un acte,
+      # relecture pour valider, motif pour retirer, READ COMMITTED seul.
+      # Instants éprouvés sous un fuseau de session Europe/Paris. Transactions
+      # annulées.
+      - name: Bibliotheque options textes negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/bibliotheque_options_textes_v1_negatif.sql
+
       # NF-7, lot 1 (D-303, H59 ; réponses 20261111-0027-a à 0029-a) : la
       # déclaration « question sur le suicide » des instruments du cabinet,
       # NULL = non déclaré ; désignation seulement entière et sous « oui » ;

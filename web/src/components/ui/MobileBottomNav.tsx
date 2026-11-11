@@ -4,50 +4,27 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, ContactRound, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, Compass, Mail, BookOpen, ClipboardCheck, ClipboardList, CalendarDays, FlaskConical, Lightbulb, Pill, Tally5, type LucideIcon } from 'lucide-react';
+import { MoreHorizontal, X } from 'lucide-react';
+import {
+  DESTINATIONS_FEUILLE_PLUS,
+  GROUPES_NAVIGATION,
+  RACCOURCIS_TELEPHONE,
+  destinationsDuGroupe,
+  estActive,
+} from '@/lib/navigation/destinationsPraticien';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
-const primaryItems: { href: string; label: string; icon: LucideIcon; prefixesActifs?: string[] }[] = [
-  { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
-  // Parcours 5.0 d'abord (SP-TRAJ LOT-04) : « Fiches » ouvre la porte
-  // d'entrée trajectoire ; la gestion des dossiers vit dans le rayon
-  // « Patients », joignable par la feuille « Plus » et par le rail desktop.
-  // Une fiche ouverte (`/dashboard/patients/<id>`) allume « Fiches », comme
-  // « Fiche-trajectoire » au rail (`SidebarRail`, même préfixe).
-  { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users, prefixesActifs: ['/dashboard/patients/'] },
-  // « Synthèses » reste l'un des trois boutons (D-324 §5) : trois cartes du Fil
-  // y mènent, c'est le geste de relecture au téléphone — alors même que
-  // « Synthèse IA » a quitté le menu du bureau.
-  { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
-];
-
-// LA FEUILLE « PLUS » REPREND LE RAIL DESKTOP (audit du cockpit 2026-09-02 :
-// sept destinations sur quatorze n'avaient alors AUCUN point d'entrée sous
-// 768 px, le hamburger du rail complet étant masqué à ces largeurs). Même
-// ordre, mêmes libellés que SidebarRail depuis D-324 (2026-10-18) : Documents
-// n'y figure plus (sa porte est la fiche et la minute d'après), Biologie
-// fonctionnelle est devenue le rayon « Analyses biologiques », et chaque rayon
-// de la Bibliothèque a son entrée. `/dashboard/regles` reste volontairement
-// non liée, comme partout (rayon en attente d'activation).
-// `matiere: 'exact'` = actif sur la page seule (patron SidebarRail pour le
-// rayon Patients, dont les sous-pages sont les fiches et appartiennent à
-// « Fiches »).
-const plusItems: { href: string; label: string; icon: LucideIcon; matiere?: 'exact' }[] = [
-  { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
-  // Les comptes du cabinet ([[D-385]]) : à la place qu'ils ont dans le rail.
-  // Leur absence était un oubli (Q26 de l'audit des rails, 2026-11-02).
-  { href: '/dashboard/cabinet', label: 'Comptes du cabinet', icon: Tally5 },
-  { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
-  { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },
-  { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
-  { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
-  { href: '/dashboard/bibliotheque/questionnaires', label: 'Questionnaires', icon: ClipboardList },
-  { href: '/dashboard/bibliotheque/fiches-conseils', label: 'Fiches conseils', icon: Lightbulb },
-  { href: '/dashboard/bibliotheque/complements', label: 'Compléments alimentaires', icon: Pill },
-  { href: '/dashboard/bibliotheque/biologie', label: 'Analyses biologiques', icon: FlaskConical },
-  { href: '/dashboard/bibliotheque/connaissances', label: 'Connaissances', icon: BookOpen },
-  { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
-  { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
-];
+// BARRE BASSE ET FEUILLE « PLUS » DU TÉLÉPHONE, DÉRIVÉES DE LA DÉCLARATION
+// UNIQUE ([[D-485]] §1). La barre garde ses trois raccourcis ([[D-324]] §5,
+// [[D-481]] §5) ; la feuille porte toutes les autres destinations du menu, dans
+// son ordre, sous les intertitres des quatre groupes ([[D-487]]). L'audit du
+// 2026-09-02 avait trouvé sept destinations sur quatorze sans AUCUN point
+// d'entrée sous 768 px, et Q26 (2026-11-02) « Comptes du cabinet » oublié :
+// plus aucune liste n'est recopiée à la main.
+//
+// Entrée active (refonte Lien) : fond `rail-surface` et filet `rail-accent`
+// (champagne), comme au rail ; l'ancienne pastille pétrole sur `rail-surface`
+// ne lisait qu'à 1,5:1 (revue de COM-0).
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -57,61 +34,43 @@ export function MobileBottomNav() {
     setIsMoreOpen(false);
   }, [pathname]);
 
-  const isActive = ({ href, prefixesActifs }: (typeof primaryItems)[number]) =>
-    href === '/dashboard'
-      ? pathname === href
-      : (pathname?.startsWith(href) || (prefixesActifs ?? []).some((p) => pathname?.startsWith(p))) ?? false;
-  const itemPlusActif = (item: (typeof plusItems)[number]) =>
-    item.matiere === 'exact' ? pathname === item.href : (pathname?.startsWith(item.href) ?? false);
-  const isMoreActive = plusItems.some(itemPlusActif);
+  const isMoreActive = DESTINATIONS_FEUILLE_PLUS.some((destination) => estActive(destination, pathname));
+
+  const classesCase = (active: boolean) =>
+    `flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 transition duration-fast ease-lien focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-rail-focus-ring ${
+      active
+        ? 'bg-rail-surface text-rail-foreground shadow-[inset_0_3px_0_var(--rail-accent)]'
+        : 'text-rail-muted-foreground'
+    }`;
 
   return (
     <>
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail-surface/95 backdrop-blur supports-[backdrop-filter]:bg-rail-surface/85 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail md:hidden"
       >
-        {primaryItems.map((item) => {
-          const active = isActive(item);
-          const Icon = item.icon;
+        {RACCOURCIS_TELEPHONE.map((raccourci) => {
+          const active = estActive(raccourci, pathname);
+          const Icone = raccourci.icone;
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={raccourci.href}
+              href={raccourci.href}
               aria-current={active ? 'page' : undefined}
-              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
+              className={classesCase(active)}
             >
-              <span
-                className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                  active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
-                }`}
-              >
-                <Icon aria-hidden="true" size={18} strokeWidth={2} />
-              </span>
-              <span className={`text-13 font-medium ${active ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
-                {item.label}
-              </span>
+              <Icone aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} />
+              <span className={`text-13 ${active ? 'font-semibold' : 'font-medium'}`}>{raccourci.libelle}</span>
             </Link>
           );
         })}
 
         <Dialog.Root open={isMoreOpen} onOpenChange={setIsMoreOpen}>
           <Dialog.Trigger asChild>
-            <button
-              type="button"
-              aria-label="Plus"
-              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
-            >
-              <span
-                aria-hidden="true"
-                className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                  isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
-                }`}
-              >
-                <MoreHorizontal size={18} strokeWidth={2} />
-              </span>
-              <span className={`text-13 font-medium ${isMoreActive ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
+            <button type="button" aria-label="Plus" className={classesCase(isMoreActive)}>
+              <MoreHorizontal aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} />
+              <span className={`text-13 ${isMoreActive ? 'font-semibold' : 'font-medium'}`}>
                 Plus
               </span>
             </button>
@@ -125,7 +84,7 @@ export function MobileBottomNav() {
             <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35 md:hidden" />
             <Dialog.Content
               data-theme="praticien"
-              className="fixed inset-x-0 bottom-0 z-50 w-full rounded-t-[1.5rem] border-t border-rail-border bg-rail-surface p-4 shadow-xl focus:outline-none md:hidden"
+              className="fixed inset-x-0 bottom-0 z-50 w-full rounded-t-[1.5rem] border-t border-rail-border bg-rail p-4 shadow-pop focus:outline-none md:hidden"
             >
               <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-rail-border" aria-hidden="true" />
               <Dialog.Description className="sr-only">Menu de navigation supplémentaire</Dialog.Description>
@@ -137,41 +96,45 @@ export function MobileBottomNav() {
                     aria-label="Fermer le menu"
                     className="flex h-11 w-11 items-center justify-center rounded-xl border border-rail-border text-rail-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
                   >
-                    <X aria-hidden="true" size={20} strokeWidth={2} />
+                    <X aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} />
                   </button>
                 </Dialog.Close>
               </div>
-              {/* Liste pilotée par `plusItems` — quatre blocs recopiés à la
-                  main auparavant, et sept destinations injoignables sur
-                  téléphone (audit 2026-09-02). */}
               <div className="max-h-[60vh] overflow-y-auto">
-                {plusItems.map((item) => {
-                  const actif = itemPlusActif(item);
-                  const Icone = item.icon;
-                  // L'item actif porte sa couleur de texte : <body> n'en pose
-                  // aucune, et le libellé héritait du noir par défaut sur le
-                  // fond nuit du rail.
+                {GROUPES_NAVIGATION.map((groupe) => {
+                  const destinations = destinationsDuGroupe(groupe.id, DESTINATIONS_FEUILLE_PLUS);
+                  if (destinations.length === 0) return null;
                   return (
-                    <Dialog.Close asChild key={item.href}>
-                      <Link
-                        href={item.href}
-                        aria-current={actif ? 'page' : undefined}
-                        className={`group mb-1 flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
-                          actif
-                            ? 'border-rail-primary/20 bg-rail-primary/10 text-rail-foreground'
-                            : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
-                        }`}
-                      >
-                        <span
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                            actif ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
-                          }`}
-                        >
-                          <Icone aria-hidden="true" size={20} strokeWidth={2} />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.label}</span>
-                      </Link>
-                    </Dialog.Close>
+                    <div key={groupe.id}>
+                      {/* Intertitres des groupes ([[D-481]] §5 ; T-01 à T-04). */}
+                      <p className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
+                        {groupe.intertitre}
+                      </p>
+                      {destinations.map((destination) => {
+                        const actif = estActive(destination, pathname);
+                        const Icone = destination.icone;
+                        // L'item actif porte sa couleur de texte : <body> n'en
+                        // pose aucune, et le libellé héritait du noir par défaut
+                        // sur le fond nuit du rail.
+                        return (
+                          <Dialog.Close asChild key={destination.href}>
+                            <Link
+                              href={destination.href}
+                              aria-current={actif ? 'page' : undefined}
+                              className={`mb-1 flex min-h-[44px] items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm transition duration-fast ease-lien focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                                actif
+                                  ? 'bg-rail-surface font-semibold text-rail-foreground shadow-[inset_3px_0_0_var(--rail-accent)]'
+                                  : 'font-medium text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
+                              }`}
+                            >
+                              <Icone aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} className="shrink-0" />
+                              {/* Passe à la ligne plutôt que d'être coupé (H43). */}
+                              <span className="min-w-0 flex-1 break-words leading-snug">{destination.libelle}</span>
+                            </Link>
+                          </Dialog.Close>
+                        );
+                      })}
+                    </div>
                   );
                 })}
               </div>

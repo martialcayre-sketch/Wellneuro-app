@@ -2,7 +2,7 @@
 // pendant que le rail affiche un compteur réel à côté d'elle.
 //
 // AUCUN E2E NE VISITAIT CETTE ADRESSE avant ce fichier : elle était déclarée
-// dans les trois navigations et parcourue par aucun test, si bien que rien ne
+// dans les navigations et parcourue par aucun test, si bien que rien ne
 // rougissait quand son contenu contredisait le produit livré. Le seed ne crée
 // aucune consignation — le panneau est donc VIDE, et c'est l'état honnête que
 // ce spec épingle.
@@ -50,10 +50,9 @@ test.describe('Rayon Correspondance', () => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto('/dashboard');
 
-    // DEUX LIENS PORTENT CE NOM sur l'accueil — le rail et la barre « Vues
-    // rapides » — et c'est voulu. Le rail se désigne par son groupe, patron de
-    // `trajectoires.spec.ts`.
-    const rail = page.locator('nav').filter({ hasText: 'La Spirale' }).first();
+    // Le rail se désigne par son nom accessible (T-10 de D-488). Les vues
+    // rapides, qui portaient un second lien de ce nom, sont retirées (D-484).
+    const rail = page.getByRole('navigation', { name: 'Navigation principale' });
     await rail.getByRole('link', { name: 'Correspondance' }).click();
     await expect(page).toHaveURL(/\/dashboard\/correspondance$/);
     await expect(page.getByRole('heading', { name: 'Correspondance', level: 2 })).toBeVisible();
