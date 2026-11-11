@@ -4295,6 +4295,74 @@ model ArbitrageConflitSource {
   @@map("arbitrages_conflits_sources")
 }
 
+// ─── Bibliothèque des options : texte d'accompagnement (D-480, BP-17) ───────
+//
+// Deux tables append-only (triggers), sans AUCUNE donnée patient. La
+// structure (hypothèses, options, renvois) est au dépôt ; le texte de chaque
+// rubrique d'une option vit ici, en base HDS (D-251 §4, D-480 §3), saisi à
+// l'atelier, jamais par migration. Le texte d'une rubrique est validé si le
+// dernier acte, au sens d'`ordre`, de sa DERNIÈRE version est `validee` ; une
+// version neuve sans acte masque la précédente ; « à relire » si
+// `structureSha256` n'est plus l'empreinte signée. Rien n'est réécrit. Les
+// refus vivent en base (migration `bibliotheque_options_textes_v1`). Aucune
+// prescription, aucun lecteur hors de l'atelier et du cockpit (D-480 §8).
+
+/// Une version du texte d'UNE rubrique d'UNE option de la bibliothèque,
+/// numérotée sans trou par couple option × rubrique (trigger).
+model BibliothequeOptionTexte {
+  id              String   @id @default(cuid()) @map("id")
+  /// Identifiant opaque de l'option à la structure ; sans espace (CHECK).
+  optionId        String   @map("option_id")
+  /// Liste fermée de D-480 §1 (CHECK) : 'produit_statut_reglementaire' |
+  /// 'dose' | 'duree' | 'precautions' | 'contre_indications' |
+  /// 'interactions' | 'surveillance' | 'critere_arret' | 'role_praticien'.
+  rubrique        String   @map("rubrique")
+  numero          Int      @map("numero")
+  texte           String   @map("texte")
+  /// Tenue égale au SHA-256 du texte par un CHECK.
+  texteSha256     String   @map("texte_sha256")
+  /// Empreinte de la structure de la bibliothèque qu'il accompagne : une
+  /// re-signature le rend « à relire » jusqu'à une version neuve et son acte
+  /// (D-480 §3, sur le patron des libellés) ; la version est figée.
+  structureSha256 String   @map("structure_sha256")
+  /// Le compte qui a saisi le texte.
+  auteur          String   @map("auteur")
+  /// Posé par la base (trigger), en UTC.
+  creeLe          DateTime @default(now()) @map("cree_le")
+
+  actes BibliothequeOptionTexteActe[]
+
+  @@unique([optionId, rubrique, numero], map: "bibliotheque_options_textes_option_rubrique_numero_key")
+  @@map("bibliotheque_options_textes")
+}
+
+/// Un geste du responsable sur la DERNIÈRE version d'un couple option ×
+/// rubrique : la valider, ou la retirer (trigger). Le dernier acte se lit par
+/// `ordre`, jamais par `le`.
+model BibliothequeOptionTexteActe {
+  id                 String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (séquence, réaffirmée par trigger).
+  ordre              BigInt   @default(autoincrement()) @map("ordre")
+  idTexte            String   @map("id_texte")
+  /// 'validee' | 'retiree' — fermé par un CHECK en base.
+  acte               String   @map("acte")
+  /// Recopiée du texte, et vérifiée égale par trigger.
+  empreinte          String   @map("empreinte")
+  validateur         String   @map("validateur")
+  /// Déclaration de relecture intégrale — exigée pour valider.
+  relectureIntegrale Boolean  @map("relecture_integrale")
+  /// Obligatoire pour un retrait (CHECK).
+  motif              String?  @map("motif")
+  /// Posé par la base (trigger), en UTC.
+  le                 DateTime @default(now()) @map("le")
+
+  texte BibliothequeOptionTexte @relation(fields: [idTexte], references: [id], onDelete: Restrict)
+
+  @@unique([ordre], map: "bibliotheque_options_textes_actes_ordre_key")
+  @@index([idTexte, ordre], map: "bibliotheque_options_textes_actes_texte_ordre_idx")
+  @@map("bibliotheque_options_textes_actes")
+}
+
 /// Lettre d'adressage mise à disposition du patient dans son portail ([[D-262]],
 /// LOT-01). Ajout seul : UPDATE et TRUNCATE refusés, DELETE réservé à
 /// l'effacement nommé. Le texte est un instantané figé, son empreinte tenue par
