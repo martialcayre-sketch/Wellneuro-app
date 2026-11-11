@@ -95,6 +95,8 @@ export function ExclusionRechercheLotPanel({ onConclu }: { onConclu?: () => void
         'Résultat inconnu : la réponse n’a pas pu être lue. Vérifiez les claims dans l’atelier avant de renvoyer ; un renvoi de la même liste n’ajoute aucun acte sur un claim déjà dans cet état.',
       );
       setEtat('apercu');
+      // Le lot a pu être écrit : la file de l'atelier est relue, l'aperçu reste.
+      onConclu?.();
     }
   };
 

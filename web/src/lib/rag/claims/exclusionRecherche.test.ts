@@ -73,6 +73,15 @@ describe('lireListeExclusion — liste collée, rien n’est complété ni écar
     ]);
   });
 
+  it('hors tableau, la barre finale appartient au motif', () => {
+    const lue = lireListeExclusion('WN-CL-0001-001 ; dossier A|B|\nWN-CL-0001-002 ; |');
+    expect(lue.erreurs).toEqual([]);
+    expect(lue.lignes).toEqual([
+      { claimId: 'WN-CL-0001-001', motif: 'dossier A|B|' },
+      { claimId: 'WN-CL-0001-002', motif: '|' },
+    ]);
+  });
+
   it('une ligne illisible est une ERREUR nommée, jamais une ligne sautée', () => {
     const lue = lireListeExclusion(
       ['WN-CL-0001-001', '0001-002 ; motif', 'WN-CL-0001-003 ;   ', 'WN-CL-0001-004@x ; motif'].join('\n'),

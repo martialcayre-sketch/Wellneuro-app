@@ -72,9 +72,11 @@ export function lireListeExclusion(texte: string): ListeExclusionLue {
     if (!ligne || ligne.startsWith('#') || !/\d/.test(ligne)) return;
     const erreur = (raison: string) => erreurs.push({ numero, texte: ligne, raison });
 
-    // Barres extérieures d'un tableau copié retirées, puis coupe au PREMIER
-    // séparateur : le motif garde les siens.
-    const nette = ligne.replace(/^\|/, '').replace(/\|$/, '');
+    // Barres extérieures d'un tableau copié retirées — la finale seulement si
+    // la ligne en est une (elle commence par une barre) : un motif hors
+    // tableau garde la sienne. Puis coupe au PREMIER séparateur : le motif
+    // garde les siens.
+    const nette = ligne.startsWith('|') ? ligne.slice(1).replace(/\|$/, '') : ligne;
     const coupe = nette.search(/[;\t|]/);
     if (coupe < 0) {
       erreur('deux champs attendus : identifiant ; motif');

@@ -873,6 +873,38 @@ describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
     expect((screen.getByLabelText('Motif — WN-CL-0056-001') as HTMLInputElement).value).toBe('dossier');
   });
 
+  it('une réponse perdue : résultat inconnu annoncé, liste relue, message resté visible', async () => {
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) =>
+      options?.method === 'POST'
+        ? Promise.reject(new TypeError('réseau'))
+        : routeur(VALIDE)(url, options),
+    );
+    await ouvrirValides();
+    fireEvent.click(screen.getByRole('button', { name: 'Exclure de la recherche' }));
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: 'dossier' } });
+    const avant = appelsGet().length;
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’exclusion' }));
+    await waitFor(() => expect(appelsGet().length).toBeGreaterThan(avant));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Résultat inconnu'));
+  });
+
+  it('un claim devenu non validé : la liste est relue et le refus reste affiché', async () => {
+    fetchMock.mockImplementation(
+      routeur(VALIDE, {
+        ok: false,
+        reason: 'claim_non_valide',
+        error: 'Seul un claim validé s’exclut de la recherche ou s’y rétablit — rechargez la liste.',
+      }),
+    );
+    await ouvrirValides();
+    fireEvent.click(screen.getByRole('button', { name: 'Exclure de la recherche' }));
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: 'dossier' } });
+    const avant = appelsGet().length;
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’exclusion' }));
+    await waitFor(() => expect(appelsGet().length).toBeGreaterThan(avant));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Seul un claim validé'));
+  });
+
   it('un seul geste armé à la fois : étiqueter ou remettre en attente un autre claim ferme l’exclusion armée', async () => {
     const VALIDE_2 = { ...VALIDE, id: 'WN-CL-0056-002@v1.0', claimId: 'WN-CL-0056-002' };
     fetchMock.mockImplementation((url: string, options?: { method?: string }) =>

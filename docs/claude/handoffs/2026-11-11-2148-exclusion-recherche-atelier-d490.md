@@ -131,6 +131,24 @@ Clôture :
     `9aa1073`, et sur l'écart depuis `7d2e4d1`.
   - Son P3 restant est corrigé : une assertion fixe le délai de 30 s du geste
     individuel.
+  - CodeRabbit, relancé à 21:47 UTC, a revu `7596540` : quatre remarques.
+    - Corrigé : sur une réponse perdue, l'atelier annonce un résultat inconnu
+      et relit la liste au lieu d'affirmer « non enregistré ». Revu au
+      passage, le message d'erreur était effacé par la recharge ; il est
+      désormais posé après elle, et testé.
+    - Corrigé : le panneau de lot fait relire la file sur un résultat
+      inconnu.
+    - Corrigé : la barre finale d'un motif hors tableau est gardée.
+    - Routé au §8 du plan : le remontage du panneau après un geste en lot
+      (onglet et filtre perdus). C'est un patron commun avec l'étiquetage en
+      lot et la voie rapide.
+- **Mise à niveau** : `origin/main` est fusionné deux fois dans la branche,
+  sans conflit (arbitrage du responsable : fusion plutôt que rebasage).
+- **T3, arbitrage du responsable (2026-11-11)** :
+  - le CI vert suffit pour cette PR ;
+  - cinq passages rouges sur des délais minutés hors du diff, dont un sans
+    autre suite active ;
+  - la fragilité est routée au §8 du plan.
 
 - **`wn-reviewer`** sur 7d2e4d14b : GO avec corrections mineures, sans P1 ni
   P2.

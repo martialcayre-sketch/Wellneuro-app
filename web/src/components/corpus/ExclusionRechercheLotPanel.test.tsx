@@ -99,12 +99,16 @@ describe('ExclusionRechercheLotPanel — coller, relire, confirmer ([[D-490]])',
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('WN-CL-0001-001 : pas validé'));
   });
 
-  it('une réponse illisible annonce un résultat inconnu, pas un échec', async () => {
+  it('une réponse illisible annonce un résultat inconnu, pas un échec, et fait relire la file', async () => {
     fetchMock.mockResolvedValue({ ok: false, json: async () => { throw new SyntaxError('html'); } });
-    render(<ExclusionRechercheLotPanel />);
+    const onConclu = vi.fn();
+    render(<ExclusionRechercheLotPanel onConclu={onConclu} />);
     ouvrirEtColler('WN-CL-0001-001 ; dossier A');
     fireEvent.click(screen.getByRole('button', { name: 'Exclure ce claim' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’exclusion' }));
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Résultat inconnu'));
+    // Le lot a pu être écrit : la file est relue, l'aperçu reste affiché.
+    expect(onConclu).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('1 claim lu')).toBeTruthy();
   });
 });

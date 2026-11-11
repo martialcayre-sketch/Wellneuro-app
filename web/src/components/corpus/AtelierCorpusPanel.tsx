@@ -370,10 +370,12 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         });
         const payload = (await reponse.json()) as CorpusExclusionRechercheApiResponse;
         if (!reponse.ok || !payload.ok) {
-          setErreurDecision(payload.ok ? 'Le geste n’a pas pu être enregistré.' : payload.error);
+          // `charger` efface l'erreur affichée dès son appel : la recharge
+          // part d'abord, le message est posé ensuite et reste visible.
           if (!payload.ok && payload.reason === 'claim_non_valide') {
             void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
           }
+          setErreurDecision(payload.ok ? 'Le geste n’a pas pu être enregistré.' : payload.error);
           return;
         }
         // Succès seulement : sur un échec transitoire, le motif reste saisi.
@@ -381,7 +383,14 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         setMotifExclusionSaisi('');
         void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
       } catch {
-        setErreurDecision('Le geste n’a pas pu être enregistré.');
+        // Réponse perdue : l'acte a pu être écrit. On ne l'affirme ni dans un
+        // sens ni dans l'autre, et la vue est relue pour que le badge dise
+        // l'état réel avant tout nouveau geste (recharge d'abord : elle
+        // efface l'erreur affichée).
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
+        setErreurDecision(
+          'Résultat inconnu : la réponse n’a pas pu être lue. La liste est rechargée ; vérifiez le badge avant de recommencer.',
+        );
       } finally {
         envoiRef.current = false;
         setEnvoiId(null);
