@@ -9,7 +9,8 @@ import { useEffect } from 'react';
  * RAIL LATÉRAL ([[D-447]]) : où il paraît et ce qu'il fait du bouton « Menu »
  * (§1, amendement de [[D-442]] §1), sa liste (§2), l'activation (§3), le
  * comportement (§4), la forme et les jetons (§5), le cadre à deux colonnes
- * (§6). Il reprend la garde et les sondes du menu : chaque `Lien*` est remplacé
+ * (§6) ; ses trois états et ses commandes ([[D-482]], lot PAT-1 de la refonte
+ * Lien). Il reprend la garde et les sondes du menu : chaque `Lien*` est remplacé
  * par un double qui rapporte l'état configuré. La largeur réelle (`lg`, la
  * colonne, le pied) relève de l'E2E `portail-rail-lateral.spec.ts`.
  */
@@ -74,20 +75,24 @@ function Page() {
   return <p>contenu</p>;
 }
 
-async function rendre({ session = true, railServi = true }: { session?: boolean; railServi?: boolean } = {}) {
-  const resultat = render(
-    <FournisseurMenuPortail sessionOuverte={session}>
+function Portail({ session = true, railServi = true }: { session?: boolean; railServi?: boolean }) {
+  return (
+    <FournisseurMenuPortail sessionOuverte={session} rail={railServi}>
       <header>
         <BoutonMenuMonEspace railServi={railServi} />
       </header>
       <CadreRailMonEspace>
-        <main>
+        <main id="contenu" tabIndex={-1}>
           <Page />
         </main>
       </CadreRailMonEspace>
       <footer />
-    </FournisseurMenuPortail>,
+    </FournisseurMenuPortail>
   );
+}
+
+async function rendre({ session = true, railServi = true }: { session?: boolean; railServi?: boolean } = {}) {
+  const resultat = render(<Portail session={session} railServi={railServi} />);
   await act(async () => {
     await new Promise(r => setTimeout(r, 0));
   });
@@ -234,7 +239,7 @@ describe('§2 et §3 — la liste et l’activation', () => {
     ['questionnaires', 'Mon parcours'],
     ['protocole', 'Mon parcours'],
     ['suivi', 'Ouvrir mes rendez-vous de suivi'],
-    ['alimentation', 'Ouvrir Mon carnet alimentaire'],
+    ['alimentation', 'Ouvrir mon carnet alimentaire'],
     ['fiches/REM_1', 'Ma bibliothèque'],
     ['ce-qui-compte', 'Ouvrir mon dossier à deux voix'],
   ] as const) {
@@ -324,28 +329,174 @@ describe('§4 — comportement', () => {
     expect(screen.queryByRole('dialog', { name: 'Mon espace' })).toBeTruthy();
   });
 
-  it('toujours déplié : aucun bouton dans le rail, rien écrit sur l’appareil', async () => {
-    const ecrire = vi.spyOn(Storage.prototype, 'setItem');
+});
+
+describe('trois états ([[D-482]]) : déplié, réduit, escamoté', () => {
+  const commande = (nom: string) => within(rail()!).queryByRole('button', { name: nom });
+  /** Escamoté, deux boutons « Menu » coexistent dans le DOM : le déclencheur du panneau (effacé dès `lg`) et celui qui rouvre le rail (dès `lg` seulement). */
+  const rouvrir = () => document.getElementById('bouton-rouvrir-mon-espace');
+  const declencheur = () => screen.getAllByRole('button', { name: 'Menu' }).find(b => b.id !== 'bouton-rouvrir-mon-espace')!;
+
+  it('au chargement, déplié : `nav-rail`, deux commandes en pied de rail (T-21, T-23)', async () => {
     servir();
     await rendre();
     await waitFor(() => expect(rail()).toBeTruthy());
-    expect(within(rail()!).queryByRole('button')).toBeNull();
+    expect(rail()!.className.split(/\s+/)).toContain('w-nav-rail');
+    expect(within(rail()!).getAllByRole('button').map(b => b.textContent)).toEqual(['Réduire le menu', 'Masquer le menu']);
+    // Les commandes ferment le rail : après la liste, dans la même `nav`.
+    const commandes = within(rail()!).getAllByRole('button');
+    for (const une of commandes) {
+      expect(une.getAttribute('type')).toBe('button');
+      expect(une.className).toMatch(/\bmin-h-11\b/);
+      expect(une.className).not.toMatch(/outline-none|truncate/);
+    }
+    expect(rouvrir()).toBeNull();
+  });
+
+  it('réduit : `rail-patient-compact`, mêmes libellés, jamais un rail d’icônes ; « Agrandir le menu » (T-22) le rend déplié', async () => {
+    sondes.ouvertes = new Set(['bibliotheque', 'dossier', 'compteRendu']);
+    servir();
+    await rendre();
+    await waitFor(() => expect(within(rail()!).getAllByRole('link').length).toBeGreaterThan(4));
+    const libelles = within(rail()!).getAllByRole('link').map(l => l.textContent);
+    const reduire = commande('Réduire le menu')!;
+    reduire.focus();
+    fireEvent.click(reduire);
+    const classes = rail()!.className.split(/\s+/);
+    expect(classes).toContain('w-nav-rail-compact');
+    expect(classes).not.toContain('w-nav-rail');
+    expect(within(rail()!).getAllByRole('link').map(l => l.textContent)).toEqual(libelles);
+    for (const lien of within(rail()!).getAllByRole('link')) {
+      expect(lien.className).toMatch(/\bmin-h-11\b/);
+      expect(lien.className).not.toMatch(/truncate|sr-only/);
+    }
+    for (const libelle of rail()!.querySelectorAll('li a span')) expect(libelle.className).toContain('break-words');
+    // Même bouton, autre texte : le focus reste où il était.
+    expect(commande('Agrandir le menu')).toBe(reduire);
+    expect(document.activeElement).toBe(reduire);
+    fireEvent.click(commande('Agrandir le menu')!);
+    expect(rail()!.className.split(/\s+/)).toContain('w-nav-rail');
+    expect(commande('Réduire le menu')).toBeTruthy();
+  });
+
+  it('escamoté (T-23) : hors de la page et de l’arbre ; la colonne reprend sa place ; le focus passe au bouton « Menu »', async () => {
+    servir();
+    const { container } = await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    const masquer = commande('Masquer le menu')!;
+    masquer.focus();
+    fireEvent.click(masquer);
+    expect(screen.queryByRole('navigation', { name: 'Mon espace', hidden: true })).toBeNull();
+    expect(screen.queryByTestId('reserve-rail')).toBeNull();
+    expect(container.querySelector('main')!.parentElement!.className).toBe('flex flex-1 flex-col');
+    // Un seul déclencheur par largeur ([[D-444]] §2) : le panneau sous `lg`,
+    // le rail dès `lg`.
+    expect(rouvrir()).toBeTruthy();
+    expect(rouvrir()!.textContent).toBe('Menu');
+    expect(rouvrir()!.className.split(/\s+/)).toEqual(expect.arrayContaining(['hidden', 'lg:inline-flex', 'print:hidden']));
+    expect(declencheur().className.split(/\s+/)).toContain('lg:hidden');
+    expect(document.activeElement).toBe(rouvrir());
+  });
+
+  it('rail escamoté, « Menu » le rouvre déplié, le focus sur son entrée active, et s’efface', async () => {
+    servir();
+    await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    fireEvent.click(commande('Réduire le menu')!);
+    fireEvent.click(commande('Masquer le menu')!);
+    fireEvent.click(rouvrir()!);
+    expect(rail()).toBeTruthy();
+    expect(rail()!.className.split(/\s+/)).toContain('w-nav-rail');
+    expect(rouvrir()).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(courant()[0]);
+    expect(document.activeElement?.textContent).toBe('Ouvrir mes rendez-vous de suivi');
+  });
+
+  it('rail escamoté, sous `lg`, le bouton « Menu » ouvre toujours le panneau', async () => {
+    largeur(false);
+    servir();
+    await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    fireEvent.click(commande('Masquer le menu')!);
+    fireEvent.click(declencheur());
+    expect(await screen.findByRole('dialog', { name: 'Mon espace' })).toBeTruthy();
+  });
+
+  it('rail escamoté, un panneau fermé au seuil rend le focus au bouton qui rouvre le rail', async () => {
+    const ecran = largeur(false);
+    servir();
+    await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    fireEvent.click(commande('Masquer le menu')!);
+    fireEvent.click(declencheur());
+    await screen.findByRole('dialog', { name: 'Mon espace' });
+    ecran.passer(true);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(rouvrir()));
+  });
+
+  it('l’état survit à la navigation entre pages, pas au rechargement ; rien n’est écrit sur l’appareil', async () => {
+    const ecrire = vi.spyOn(Storage.prototype, 'setItem');
+    servir();
+    const { rerender, unmount } = await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    fireEvent.click(commande('Réduire le menu')!);
+    nav.pathname = '/portail/PAT_TEST/alimentation';
+    rerender(<Portail />);
+    await waitFor(() => expect(courant()[0]?.textContent).toBe('Ouvrir mon carnet alimentaire'));
+    expect(rail()!.className.split(/\s+/)).toContain('w-nav-rail-compact');
+    fireEvent.click(commande('Masquer le menu')!);
+    nav.pathname = '/portail/PAT_TEST/suivi';
+    rerender(<Portail />);
+    expect(rail()).toBeNull();
+    expect(rouvrir()).toBeTruthy();
+    unmount();
+    // Rechargement : un layout neuf, le rail déplié.
+    await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    expect(rail()!.className.split(/\s+/)).toContain('w-nav-rail');
     expect(ecrire).not.toHaveBeenCalled();
     ecrire.mockRestore();
+  });
+
+  it('sur le questionnaire en cours, rail escamoté ou non, un seul bouton « Menu », celui du panneau', async () => {
+    servir();
+    const { rerender } = await rendre();
+    await waitFor(() => expect(rail()).toBeTruthy());
+    fireEvent.click(commande('Masquer le menu')!);
+    nav.pathname = '/portail/PAT_TEST/questionnaires/ASG_1';
+    rerender(<Portail />);
+    expect(screen.getAllByRole('button', { name: 'Menu' })).toHaveLength(1);
+    expect(rouvrir()).toBeNull();
+    expect(bouton()!.className).not.toMatch(/\blg:hidden\b/);
+  });
+
+  it('[[D-333]] : ni chiffre ni pastille dans le rail ni ses commandes', async () => {
+    sondes.ouvertes = new Set(['bibliotheque', 'dossier', 'echanges']);
+    servir();
+    await rendre();
+    await waitFor(() => expect(within(rail()!).getAllByRole('link').length).toBeGreaterThan(3));
+    expect(rail()!.textContent).not.toMatch(/\d/);
+    fireEvent.click(commande('Réduire le menu')!);
+    expect(rail()!.textContent).not.toMatch(/\d/);
   });
 });
 
 describe('§5 et §6 — forme, jetons, cadre', () => {
-  it('dès `lg` seulement, collé en haut et jamais fixé, jamais imprimé, rien du rail praticien', async () => {
+  it('dès `lg` seulement, collé en haut et jamais fixé, jamais imprimé ; fond sauge du thème patient, rien du rail praticien', async () => {
     servir();
     await rendre();
     await waitFor(() => expect(rail()).toBeTruthy());
     const classes = rail()!.className.split(/\s+/);
-    for (const attendu of ['hidden', 'lg:block', 'w-nav-rail', 'lg:sticky', 'bg-surface', 'border-border', 'print:hidden']) {
+    // Fond sauge (`rail-background` patient, A5-R3, [[D-447]] §5 amendé par
+    // [[D-482]]) : `bg-rail` lit le jeton du thème patient, toujours clair.
+    for (const attendu of ['hidden', 'lg:block', 'w-nav-rail', 'lg:sticky', 'bg-rail', 'border-rail-border', 'text-rail-foreground', 'print:hidden']) {
       expect(classes).toContain(attendu);
     }
     expect(classes).not.toContain('fixed');
-    expect(rail()!.outerHTML).not.toMatch(/\bbg-rail|rail-focus|--rail|data-theme="praticien"/);
+    // Ni thème praticien, ni aplat `rail-primary` (l'entrée active du rail nuit).
+    expect(rail()!.outerHTML).not.toMatch(/data-theme="praticien"|\bbg-rail-primary\b|\bdark:/);
     expect(rail()!.closest('[data-theme="praticien"]')).toBeNull();
   });
 
@@ -423,6 +574,8 @@ describe('§5 et §6 — forme, jetons, cadre', () => {
     const css = readFileSync(join(__dirname, '../../../app/globals.css'), 'utf8');
     const patient = css.slice(css.indexOf(":root,\n[data-theme='patient'] {"), css.indexOf("[data-theme='praticien'] {"));
     expect(patient).toContain('--nav-rail: 15.75rem;');
+    expect(patient).toContain('--rail-patient-compact: 13rem;');
+    expect(patient).toContain('--rail-background: var(--lien-sage);');
     expect(patient).toContain('--shadow-nav-active: inset 3px 0 0 var(--color-primary);');
     expect(css.match(/--nav-rail:/g)).toHaveLength(1);
     expect(css.match(/--shadow-nav-active:/g)).toHaveLength(1);

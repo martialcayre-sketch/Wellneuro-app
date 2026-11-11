@@ -5,7 +5,9 @@ import { useEffect } from 'react';
 
 /*
  * ORGANISATION DU PRATICIEN AU PORTAIL ([[D-460]]) : icônes de « Mon espace » et
- * de la barre, intertitres, onglets de l'en-tête. Drapeau fermé, rien ne change.
+ * de la barre, intertitres. Drapeau fermé, rien ne change. Les onglets de
+ * l'en-tête du §3 ne sont plus ([[D-483]] §1, lot PAT-1) : une seule navigation
+ * « Accès rapides » subsiste, la barre basse.
  */
 
 const nav = vi.hoisted(() => ({ token: 'PAT_TEST' as string | undefined, pathname: '/portail/PAT_TEST/suivi' }));
@@ -40,7 +42,7 @@ import { ICONES_MON_ESPACE } from './iconesMonEspace';
 import { menuIconesOuvert } from './menuDrapeau';
 import { ENTREES_AUTRES_ESPACES } from '@/components/patient/autres-espaces/entreesAutresEspaces';
 import { BarreBasse } from '@/components/patient/barre-basse/BarreBasse';
-import { VuesRapidesPortail } from '@/components/patient/barre-basse/VuesRapidesPortail';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { CadreRailMonEspace } from '@/components/patient/rail/RailMonEspace';
 
 type Serveur = { trust?: Record<string, unknown> | null; assignations?: Record<string, unknown> | null };
@@ -67,7 +69,6 @@ async function rendre(icones: boolean) {
     <FournisseurMenuPortail sessionOuverte icones={icones}>
       <header>
         <BoutonMenuMonEspace railServi />
-        <VuesRapidesPortail />
       </header>
       <CadreRailMonEspace>
         <main />
@@ -82,7 +83,6 @@ async function rendre(icones: boolean) {
 
 const rail = () => screen.getByRole('navigation', { name: 'Mon espace', hidden: true });
 const acces = () => screen.queryAllByRole('navigation', { name: 'Accès rapides', hidden: true });
-const onglets = () => acces().find(n => n.className.includes('lg:block'));
 const barre = () => acces().find(n => n.className.includes('md:hidden'));
 
 beforeEach(() => {
@@ -102,13 +102,12 @@ describe('drapeau', () => {
     for (const valeur of ['', 'false', 'TRUE', '1']) expect(menuIconesOuvert(valeur)).toBe(false);
   });
 
-  it('fermé : ni icône, ni intertitre en capitales, ni onglets', async () => {
+  it('fermé : ni icône, ni intertitre en capitales', async () => {
     await rendre(false);
     expect(rail().querySelectorAll('svg')).toHaveLength(0);
     expect(rail().querySelector('h3')?.className ?? '').not.toContain('uppercase');
     for (const libelle of rail().querySelectorAll('li a span')) expect(libelle.className).toBe('break-words');
     expect(barre()!.querySelectorAll('svg')).toHaveLength(0);
-    expect(onglets()).toBeUndefined();
   });
 });
 
@@ -131,40 +130,33 @@ describe('ouvert', () => {
     expect(rail().querySelector('h3')!.className).toContain('uppercase');
   });
 
-  it('[[D-333]] : ni chiffre ni pastille dans le rail, la barre et les onglets', async () => {
+  it('[[D-333]] : ni chiffre ni pastille dans le rail et la barre', async () => {
     await rendre(true);
-    for (const zone of [rail(), barre()!, onglets()!]) expect(zone.textContent).not.toMatch(/\d/);
+    for (const zone of [rail(), barre()!]) expect(zone.textContent).not.toMatch(/\d/);
   });
 
-  it('barre : icône et libellé dans chaque case ; onglets : mêmes libellés, mêmes cibles', async () => {
+  it('barre : icône et libellé dans chaque case ; plus d’onglets dans l’en-tête ([[D-483]] §1)', async () => {
     await rendre(true);
     const cases = within(barre()!).getAllByRole('link', { hidden: true });
     for (const une of cases) expect(une.querySelectorAll('svg')).toHaveLength(1);
-    const tabs = within(onglets()!).getAllByRole('link', { hidden: true });
-    expect(tabs.map(t => t.textContent)).toEqual(cases.map(c => c.textContent));
-    expect(tabs.map(t => t.getAttribute('href'))).toEqual(cases.map(c => c.getAttribute('href')));
-    expect(tabs.filter(t => t.getAttribute('aria-current') === 'page').map(t => t.textContent)).toEqual(['Suivi']);
-    for (const tab of tabs) expect(tab.className).toContain('min-h-11');
+    expect(acces()).toHaveLength(1);
+    expect(screen.getByRole('banner').querySelector('nav')).toBeNull();
   });
 
-  it('onglets : dès `lg` seulement, jamais imprimés', async () => {
+  it('icônes au trait Lien (`TRAIT_ICONE`, A5-R3)', async () => {
     await rendre(true);
-    expect(onglets()!.className).toContain('hidden lg:block');
-    expect(onglets()!.className).toContain('print:hidden');
+    const svgs = [...rail().querySelectorAll('svg'), ...barre()!.querySelectorAll('svg')];
+    expect(svgs.length).toBeGreaterThan(3);
+    for (const svg of svgs) expect(svg.getAttribute('stroke-width')).toBe(String(TRAIT_ICONE));
   });
 
-  it('[[D-283]] §5 : dossier mineur, ni onglets ni barre ni rail', async () => {
+  it('[[D-283]] §5 : dossier mineur, ni barre ni rail', async () => {
     servir({ assignations: { statutAge: 'mineur' } });
     await rendre(true);
     expect(acces()).toHaveLength(0);
     expect(screen.queryByRole('navigation', { name: 'Mon espace', hidden: true })).toBeNull();
   });
 
-  it('questionnaire en cours : pas d’onglets', async () => {
-    nav.pathname = '/portail/PAT_TEST/questionnaires/ASG_1';
-    await rendre(true);
-    expect(onglets()).toBeUndefined();
-  });
 });
 
 describe('panneau « Mon espace » (Q62 du 2026-11-08, [[D-460]] §4)', () => {
@@ -201,7 +193,7 @@ describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
     for (const lien of liens) expect(lien.className.split(' ')).toContain('py-1');
   });
 
-  it('fermé : les classes d’avant, au rail et au panneau, entrée active comprise', async () => {
+  it('fermé : au panneau, les classes d’avant ; au rail, celles du Lien ; entrée active comprise', async () => {
     await rendre(false);
     const classesDe = (racine: Element) => {
       const liens = [...racine.querySelectorAll('a')];
@@ -210,9 +202,11 @@ describe('espacement des entrées sur deux lignes ([[D-460]] §5)', () => {
         autres: new Set(liens.filter(l => l.getAttribute('aria-current') !== 'page').map(l => l.className)),
       };
     };
+    // Le rail est habillé Lien sans drapeau ([[D-481]] §3, lot PAT-1) ; le
+    // panneau garde ses classes d'avant.
     expect(classesDe(rail())).toEqual({
-      actives: new Set(['flex min-h-11 items-center px-3 font-semibold text-foreground shadow-nav-active']),
-      autres: new Set(['flex min-h-11 items-center px-3 text-primary underline-offset-4 hover:underline']),
+      actives: new Set(['flex min-h-11 items-center rounded-md bg-rail-surface px-3 font-semibold text-rail-foreground shadow-nav-active']),
+      autres: new Set(['flex min-h-11 items-center rounded-md px-3 text-rail-foreground hover:bg-rail-surface']),
     });
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     expect(classesDe(screen.getByRole('dialog'))).toEqual({

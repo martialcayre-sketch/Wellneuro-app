@@ -69,7 +69,7 @@ export type EntreeAutresEspaces = {
 /** Ordre de [[D-423]] §2 : groupe par groupe, les entrées dans l'ordre écrit. */
 export const ENTREES_AUTRES_ESPACES: readonly EntreeAutresEspaces[] = [
   { cle: 'suivi', libelle: 'Ouvrir mes rendez-vous de suivi', segment: 'suivi', groupe: 'au_jour_le_jour', condition: 'aucune' },
-  { cle: 'carnet', libelle: 'Ouvrir Mon carnet alimentaire', segment: 'alimentation', groupe: 'au_jour_le_jour', condition: 'aucune' },
+  { cle: 'carnet', libelle: 'Ouvrir mon carnet alimentaire', segment: 'alimentation', groupe: 'au_jour_le_jour', condition: 'aucune' }, // T-32, [[D-488]] §5
   { cle: 'bilan', libelle: 'Consulter mon bilan', segment: 'bilan', groupe: 'recu', condition: 'bilanConsultable' },
   { cle: 'bibliotheque', libelle: TITRE_BIBLIOTHEQUE, segment: 'bibliotheque', groupe: 'recu', condition: 'sonde' },
   { cle: 'fiches', libelle: TITRE_ESPACE, segment: 'fiches', groupe: 'recu', condition: 'sonde' },

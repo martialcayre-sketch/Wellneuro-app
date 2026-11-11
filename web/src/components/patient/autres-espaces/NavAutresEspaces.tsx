@@ -1,5 +1,6 @@
 'use client';
 
+import { useEtatMenuPortail } from '@/components/patient/menu/MenuMonEspace';
 import { groupesServis, hrefEntree, useEtatsSondes } from './entreesAutresEspaces';
 import { SondesAutresEspaces, useSondesPartagees } from './SondesAutresEspaces';
 
@@ -24,6 +25,14 @@ import { SondesAutresEspaces, useSondesPartagees } from './SondesAutresEspaces';
  * Activation (§4), pour le hub seul : `/questionnaires` allume « Mon
  * parcours ». Les autres chemins de la règle supposent le menu sur d'autres
  * pages : ils relèvent du bouton « Menu » (L3).
+ *
+ * Rail servi ([[D-483]] §2, lot PAT-1) : dès 1 024 px, la liste n'est pas
+ * rendue (`lg:hidden`, hors de l'affichage et de l'arbre d'accessibilité) — elle
+ * répétait celle du rail ; rail escamoté, le bouton « Menu » le rouvre. Sous
+ * 1 024 px, ou si la garde du rail refuse (mineur, murs, lecture en échec),
+ * elle reste, inchangée ; pendant la lecture de cette garde, elle attend, comme
+ * la place du rail. Le hub n'est jamais le questionnaire en cours : la
+ * garde du rail y suffit.
  */
 
 const CLASSE_LIEN = 'flex min-h-11 items-center text-primary underline-offset-4 hover:underline';
@@ -32,12 +41,17 @@ export function NavAutresEspaces({ token, bilanConsultable }: { token: string; b
   const locales = useEtatsSondes();
   const partagees = useSondesPartagees();
   const groupes = groupesServis(partagees ?? locales.etats, { bilanConsultable });
+  const menu = useEtatMenuPortail();
+  // Tant que la garde du rail se lit, la liste est déjà retirée dès 1 024 px,
+  // comme le rail réserve sa place : un dossier majeur ne la voit pas paraître
+  // puis disparaître. Garde refusée ou en échec, elle revient.
+  const railServi = !!menu?.rail && (menu.actif || menu.gardeEnLecture);
 
   return (
     <>
       {partagees === null && <SondesAutresEspaces token={token} rapporteurs={locales.rapporteurs} />}
 
-      <nav aria-label="Autres espaces" className="space-y-4">
+      <nav aria-label="Autres espaces" className={`space-y-4${railServi ? ' lg:hidden' : ''}`}>
         <a
           href={`/portail/${token}/questionnaires`}
           aria-current="page"

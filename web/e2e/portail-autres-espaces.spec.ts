@@ -3,6 +3,8 @@
 // atteints par clic dans aucun E2E (EP-17) : ce spec les ouvre depuis le groupe
 // « Au jour le jour » du hub, sur les deux projets (Desktop Chromium et
 // iPhone 13), et épingle la cible de 44 px des liens de liste (Q17).
+// Dès 1 024 px, rail servi, « Autres espaces » n'est plus rendu ([[D-483]] §2) :
+// au bureau, la page est vue à 1 023 px, la plus grande largeur où il reste.
 //
 // Patient fictif Sophie Nicola (PAT_SEED_01). Lecture seule, hors l'accusé
 // d'entrée que posent déjà les autres specs du hub.
@@ -22,8 +24,9 @@ test.describe('Portail — « Autres espaces » en groupes', () => {
     await closePrisma();
   });
 
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, page, isMobile }) => {
     await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+    if (!isMobile) await page.setViewportSize({ width: 1023, height: 800 });
   });
 
   async function auJourLeJour(page: Page) {
@@ -59,7 +62,7 @@ test.describe('Portail — « Autres espaces » en groupes', () => {
 
   test('« Au jour le jour » mène au carnet alimentaire', async ({ page }) => {
     const groupe = await auJourLeJour(page);
-    await groupe.getByRole('link', { name: 'Ouvrir Mon carnet alimentaire' }).click();
+    await groupe.getByRole('link', { name: 'Ouvrir mon carnet alimentaire' }).click();
     await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
     await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
   });

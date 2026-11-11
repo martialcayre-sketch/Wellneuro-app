@@ -4,7 +4,11 @@
 // bouton « Menu », sa page active, les cibles de 44 px, la colonne mesurée à
 // 1 024 px en confort 100 % et 112,5 %, le bouton seul à 1 023 px, le panneau
 // fermé au seuil, le pied d'urgence, le lien d'évitement, l'impression et `axe`
-// sur le hub, où « Autres espaces » reste. Sur iPhone 13 : aucun rail. Les cas
+// sur le hub, où « Autres espaces » n'est plus rendu ([[D-483]] §2). Ses trois
+// états ([[D-482]], lot PAT-1) : réduit mesuré à 1 024 px en confort 100 % et
+// 112,5 %, libellés entiers ; escamoté hors du clavier, le bouton « Menu » qui
+// le rouvre ; l'état gardé d'une page à l'autre, perdu au rechargement. Sur
+// iPhone 13 : aucun rail. Les cas
 // d'âge, de murs, de chemin (questionnaire en cours) et de clôture sont
 // épinglés en Vitest (`components/patient/rail/RailMonEspace.test.tsx`).
 //
@@ -61,10 +65,10 @@ test.describe('Portail — rail latéral', () => {
         const boite = await lien.boundingBox();
         expect(boite?.height ?? 0, (await lien.textContent()) ?? '').toBeGreaterThanOrEqual(44);
       }
-      await nav.getByRole('link', { name: 'Ouvrir Mon carnet alimentaire' }).click();
+      await nav.getByRole('link', { name: 'Ouvrir mon carnet alimentaire' }).click();
       await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
       await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
-      await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir Mon carnet alimentaire');
+      await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mon carnet alimentaire');
     });
 
     for (const [confort, largeurRail, colonne] of [
@@ -163,17 +167,115 @@ test.describe('Portail — rail latéral', () => {
       });
     }
 
-    test('sur le hub, le rail et « Autres espaces » ; axe (WCAG 2.1 AA)', async ({ page }) => {
+    test('sur le hub, le rail seul : « Autres espaces » non rendu, la frise reste ; axe (WCAG 2.1 AA)', async ({ page }) => {
       await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
       await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
       await expect(rail(page).locator('[aria-current="page"]')).toHaveText('Mon parcours');
-      const autres = page.getByRole('navigation', { name: 'Autres espaces' });
-      await expect(autres.getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true })).toBeVisible();
       await expect(rail(page).getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Autres espaces' })).toBeHidden();
+      await expect(page.getByRole('navigation', { name: 'Étapes de votre parcours' })).toBeVisible();
+      // Plus d'onglets dans l'en-tête ([[D-483]] §1) : une seule navigation
+      // « Mon espace », aucune « Accès rapides » visible.
+      await expect(page.getByRole('navigation', { name: 'Accès rapides' })).toBeHidden();
+      await expect(page.getByRole('banner').getByRole('navigation')).toHaveCount(0);
       const { violations } = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
         .analyze();
       expect(violations.map(v => `${v.id} (${v.impact}) : ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+    });
+
+    test.describe('trois états ([[D-482]])', () => {
+      const commande = (page: Page, nom: string) => rail(page).getByRole('button', { name: nom, exact: true });
+
+      for (const [confort, largeurReduit] of [
+        ['100 %', 208],
+        ['112,5 %', 234],
+      ] as const) {
+        test(`réduit à 1 024 px, confort ${confort} : ${largeurReduit} px, libellés entiers, cibles de 44 px`, async ({ page }) => {
+          if (confort !== '100 %') {
+            await page.addInitScript(() => {
+              window.localStorage.setItem('wellneuro:portail:confort', JSON.stringify({ texteAgrandi: true, espacementRenforce: false }));
+            });
+          }
+          await page.setViewportSize({ width: 1024, height: 800 });
+          const nav = await surLeSuivi(page);
+          const libelles = await nav.getByRole('link').allTextContents();
+          await commande(page, 'Réduire le menu').click();
+          await expect(commande(page, 'Agrandir le menu')).toBeFocused();
+          expect((await nav.boundingBox())!.width).toBeCloseTo(largeurReduit, 1);
+          expect(await nav.getByRole('link').allTextContents()).toEqual(libelles);
+          for (const cible of [...(await nav.getByRole('link').all()), ...(await nav.getByRole('button').all())]) {
+            const nom = (await cible.textContent()) ?? '';
+            expect((await cible.boundingBox())!.height, nom).toBeGreaterThanOrEqual(44);
+            // Entier : ni coupé ni masqué, passé à la ligne au besoin.
+            const coupe = await cible.evaluate(el => [...el.querySelectorAll('span')].some(s => s.scrollWidth > s.clientWidth + 1));
+            expect(coupe, nom).toBe(false);
+          }
+          const debordement = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          expect(debordement).toBeLessThanOrEqual(0);
+          await commande(page, 'Agrandir le menu').click();
+          expect((await nav.boundingBox())!.width).toBeCloseTo(confort === '100 %' ? 252 : 283.5, 1);
+        });
+      }
+
+      test('escamoté : hors de la page et du clavier, la colonne s’élargit ; « Menu » le rouvre déplié', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        const nav = await surLeSuivi(page);
+        const colonneAvant = (await page.locator('main').boundingBox())!.width;
+        await commande(page, 'Masquer le menu').focus();
+        await page.keyboard.press('Enter');
+        await expect(rail(page)).toHaveCount(0);
+        // Un seul déclencheur visible : le bouton « Menu », qui a le focus.
+        await expect(bouton(page)).toBeVisible();
+        await expect(bouton(page)).toBeFocused();
+        expect((await page.locator('main').boundingBox())!.width).toBeGreaterThan(colonneAvant);
+        // Le clavier ne rencontre plus aucune entrée de la liste.
+        const parcourus: string[] = [];
+        for (let i = 0; i < 25; i += 1) {
+          await page.keyboard.press('Tab');
+          parcourus.push(await page.evaluate(() => document.activeElement?.textContent?.trim() ?? ''));
+        }
+        expect(parcourus).not.toContain('Ouvrir mes rendez-vous de suivi');
+        await bouton(page).click();
+        await expect(nav).toBeVisible();
+        await expect(nav.locator('[aria-current="page"]')).toBeFocused();
+        await expect(bouton(page)).toBeHidden();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+      });
+
+      test('l’état suit la navigation entre pages, pas le rechargement', async ({ page }) => {
+        const nav = await surLeSuivi(page);
+        await commande(page, 'Réduire le menu').click();
+        await nav.getByRole('link', { name: 'Ouvrir mon carnet alimentaire' }).click();
+        await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
+        await expect(nav.locator('[aria-current="page"]')).toHaveText('Ouvrir mon carnet alimentaire');
+        await expect(commande(page, 'Agrandir le menu')).toBeVisible();
+        await commande(page, 'Masquer le menu').click();
+        await page.getByRole('banner').getByRole('link', { name: 'Wellneuro' }).click();
+        await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/questionnaires$`));
+        await expect(rail(page)).toHaveCount(0);
+        await expect(bouton(page)).toBeVisible();
+        // Rail escamoté sur le hub : « Autres espaces » reste non rendu, le
+        // bouton « Menu » rouvre la liste ([[D-483]] §2).
+        await expect(page.getByRole('navigation', { name: 'Autres espaces' })).toBeHidden();
+        await page.reload();
+        await expect(rail(page)).toBeVisible();
+        await expect(commande(page, 'Réduire le menu')).toBeVisible();
+        await expect(bouton(page)).toBeHidden();
+        // Rien n'est écrit sur l'appareil pour le rail (Q56).
+        const cles = await page.evaluate(() => [...Object.keys(localStorage), ...Object.keys(sessionStorage)]);
+        expect(cles.filter(cle => /rail|menu/i.test(cle))).toEqual([]);
+      });
+
+      test('rail escamoté, à 1 023 px : le seul bouton « Menu » ouvre le panneau', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await surLeSuivi(page);
+        await commande(page, 'Masquer le menu').click();
+        await page.setViewportSize({ width: 1023, height: 800 });
+        await expect(bouton(page)).toBeVisible();
+        await bouton(page).click();
+        await expect(page.getByRole('dialog', { name: 'Mon espace' })).toBeVisible();
+      });
     });
   });
 });
