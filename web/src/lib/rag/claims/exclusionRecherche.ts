@@ -40,6 +40,10 @@ export function motifExclusion(valeur: unknown): string | null {
   if (typeof valeur !== 'string') return null;
   const motif = valeur.trim();
   if (motif.length > MOTIF_EXCLUSION_MAX) return null;
+  // PostgreSQL refuse le caractère nul dans un texte, et `::jsonb` refuse une
+  // moitié de paire de substitution isolée : sans ce refus, un tel motif
+  // passerait l'écran et finirait en erreur technique.
+  if (/\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(motif)) return null;
   return motif.replace(/[\s​]/g, '') ? motif : null;
 }
 

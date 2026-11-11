@@ -117,7 +117,31 @@ Clôture :
     rejouer machine moins chargée avant « prête » ; son verdict est consigné
     en commentaire de la PR.
 
+- **`wn-reviewer`** sur 7d2e4d14b : GO avec corrections mineures, sans P1 ni
+  P2.
+  - P3-1, corrigé : un motif contenant un caractère nul, ou une moitié de
+    paire de substitution isolée, passait l'écran puis échouait en base. Il
+    est désormais refusé, avec un test.
+  - P3-2, corrigé : le geste individuel attend désormais 30 s, comme le lot,
+    sous un verrou tenu par un lot.
+  - P3-3, corrigé : le banc vérifie aussi l'absence du passage avant
+    d'écrire. Le geste individuel y est rejoué (aucun acte) et refusé sur un
+    claim en attente.
+  - P3-4, écarté : les lignes sans chiffre sont ignorées par conception
+    (en-têtes et séparateurs), ce que l'en-tête du module documente. Une
+    ligne de claim porte toujours des chiffres.
+  - Tests ajoutés : exclusivité des gestes armés entre deux claims.
+  - Deux versions d'un même claim dans un lot sont refusées en 422 (doublon
+    de `claimId`). C'est le patron de l'étiquetage en lot ; on le garde.
+
 ## Problèmes ouverts
+
+**Questions de la revue pour le responsable** (D-490, pas ce diff) :
+- **Q1.** Un claim exclu, remis en attente puis revalidé, revient exclu,
+  sans acte nouveau (le badge le montre). Faut-il garder ce comportement ?
+  D-490 §3 ne traite que les nouvelles versions.
+- **Q2.** Le filtre « exclus seulement » n'existe que dans l'onglet Validés,
+  si bien qu'on ne peut pas lister un claim rejeté et exclu.
 
 **Coordination avec la file C (LOT-17, PR 4).** À remettre avec la PR, et
 reporté dans un commentaire de celle-ci :

@@ -784,7 +784,7 @@ export async function exclureDeLaRecherche(params: {
     `;
 
     return { ok: true as const, claim: { id: claim.id, excluRecherche: exclu }, inchange: false };
-  });
+  }, { timeout: 30_000 });
 }
 
 export type RefusExclusionLot = {

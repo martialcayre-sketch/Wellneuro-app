@@ -29,6 +29,13 @@ describe('motifExclusion — un motif vide pour l’écran l’est aussi pour la
     expect(motifExclusion(motif)).toBeNull();
   });
 
+  it('refuse ce que PostgreSQL refuserait : caractère nul, moitié de paire isolée', () => {
+    expect(motifExclusion('dossier\u0000')).toBeNull();
+    expect(motifExclusion('dossier \uD800')).toBeNull();
+    expect(motifExclusion('\uDC00 dossier')).toBeNull();
+    expect(motifExclusion('dossier 🙂')).toBe('dossier 🙂');
+  });
+
   it('refuse un motif non textuel ou trop long', () => {
     expect(motifExclusion(undefined)).toBeNull();
     expect(motifExclusion(12)).toBeNull();

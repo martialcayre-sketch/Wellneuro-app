@@ -134,6 +134,11 @@ async function main() {
       [[1, 2, 3, 4].map(claimId)],
     );
     assert.equal(deja[0].n, 0, 'des claims de ces numéros existent déjà dans cette base : banc refusé');
+    const { rows: passage } = await c.query(
+      `SELECT count(*)::int AS n FROM public.rag_corpus_chunks WHERE chunk_id = $1 AND version_chunk = 'v1.0'`,
+      [CHUNK],
+    );
+    assert.equal(passage[0].n, 0, `le passage ${CHUNK} existe déjà dans cette base : banc refusé`);
 
     // 0. Contre-épreuves : le CHECK de forme est armé.
     const element = { id: idLigne(1), claimId: claimId(1), versionClaim: 'v1.0', sens: 'exclure' };
@@ -206,7 +211,16 @@ async function main() {
       [a1[0].source_id, a1[0].validateur, a1[0].motif, a1[0].element],
       [SOURCE, PRATICIEN, 'dossier de banc, hors parcours', { id: idLigne(1), claimId: claimId(1), versionClaim: 'v1.0', sens: 'exclure' }],
     );
-    console.log('ok 1 — geste individuel : marque posée, signature intacte, un acte de la forme exigée');
+    // Rejoué (double clic, réponse perdue) : rien de réécrit, aucun acte.
+    const r1bis = await exclureDeLaRecherche({ id: idLigne(1), sens: 'exclure', motif: 'dossier de banc', validateur: PRATICIEN });
+    assert.deepEqual(r1bis, { ok: true, claim: { id: idLigne(1), excluRecherche: true }, inchange: true });
+    assert.equal((await actes(c)).length, 1, 'un geste rejoué n’ajoute aucun acte');
+    // Un claim en attente : refus, rien d'écrit.
+    const r1ter = await exclureDeLaRecherche({ id: idLigne(4), sens: 'exclure', motif: 'dossier de banc', validateur: PRATICIEN });
+    assert.deepEqual(r1ter, { ok: false, raison: 'claim_non_valide' });
+    assert.equal((await etat(c, 4)).exclu_recherche, false);
+    assert.equal((await actes(c)).length, 1);
+    console.log('ok 1 — geste individuel : marque posée, signature intacte, un acte de la forme exigée ; rejoué sans acte ; claim en attente refusé');
 
     // 2. Le geste en lot : le 2 est exclu, le 1 l'était déjà.
     const r2 = await exclureDeLaRechercheLot({

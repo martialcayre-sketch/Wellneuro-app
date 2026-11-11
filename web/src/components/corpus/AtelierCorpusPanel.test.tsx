@@ -873,6 +873,28 @@ describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
     expect((screen.getByLabelText('Motif — WN-CL-0056-001') as HTMLInputElement).value).toBe('dossier');
   });
 
+  it('un seul geste armé à la fois : étiqueter ou remettre en attente un autre claim ferme l’exclusion armée', async () => {
+    const VALIDE_2 = { ...VALIDE, id: 'WN-CL-0056-002@v1.0', claimId: 'WN-CL-0056-002' };
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) =>
+      options?.method === 'POST'
+        ? Promise.resolve(json({}, false))
+        : Promise.resolve(json({ ...LISTE, statut: 'VALIDE', total: 2, claims: [VALIDE, VALIDE_2] })),
+    );
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Exclure de la recherche' })).toHaveLength(2));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Exclure de la recherche' })[0]);
+    expect(screen.getByLabelText('Motif — WN-CL-0056-001')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Étiqueter' }));
+    expect(screen.queryByLabelText('Motif — WN-CL-0056-001')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exclure de la recherche' }));
+    expect(screen.queryByRole('button', { name: 'Enregistrer l’étiquetage' })).toBeNull();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remettre en attente' })[0]);
+    expect(screen.queryByLabelText(/^Motif — /)).toBeNull();
+  });
+
   it('le filtre « exclus seulement » n’existe que dans l’onglet Validés et part dans l’URL', async () => {
     fetchMock.mockImplementation(routeur(EXCLU));
     await attendreLaFile();
