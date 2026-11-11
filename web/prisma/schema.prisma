@@ -217,6 +217,12 @@ model Assignation {
   correctionCommentaire  String?   @map("correction_commentaire")
   correctionDemandeeDate DateTime? @map("correction_demandee_date")
 
+  // NF-7 (D-303, H59) : copie de la déclaration de l'instrument du cabinet,
+  // prise à l'envoi. L'écran patient la lit, sans repli sur la déclaration
+  // courante de l'instrument, qui peut changer après transmission. NULL pour
+  // le catalogue (CHECK `assignations_declaration_suicide_cabinet_seul`).
+  poseQuestionSuicide Boolean? @map("pose_question_suicide")
+
   patient            Patient             @relation(fields: [idPatient], references: [idPatient])
   protocolCheckins       ProtocolCheckin[]
   agendaSommeilNuits     AgendaSommeilNuit[]
@@ -2076,6 +2082,15 @@ model CabinetInstrument {
   actif           Boolean  @default(true)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // NF-7 (D-303, H59) : « pose-t-il une question sur le suicide », déclaré à
+  // la publication. NULL = non déclaré, jamais « non ». La désignation (id de
+  // la question, valeur entière de son option « non ») sert le volet D-277 ;
+  // CHECK de cohérence `cabinet_instruments_designation_suicide_coherente`
+  // (désignation entière ou absente, jamais sans « oui »), non modélisé ici.
+  poseQuestionSuicide      Boolean? @map("pose_question_suicide")
+  questionSuicideId        String?  @map("question_suicide_id")
+  questionSuicideOptionNon Int?     @map("question_suicide_option_non")
 
   @@index([praticienEmail, actif], map: "cabinet_instrument_praticien_idx")
   @@map("cabinet_instruments")
