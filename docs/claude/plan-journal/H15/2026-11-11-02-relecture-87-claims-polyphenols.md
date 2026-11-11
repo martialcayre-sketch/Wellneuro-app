@@ -1,0 +1,25 @@
+- **Mise à jour (2026-11-11, restes du besoin 2 : relecture des claims en attente du dossier polyphénols et antioxydants)** : forme opaque (`D-251` §4) ; identifiants, mécanismes et agrégats seulement. Textes, motifs et preuves dans le dossier privé du responsable.
+  - **Constat préalable** (conteneur détaché, lecture seule, agrégats) : 87 claims en attente, remis en attente le 2026-11-07 par l'étape E1 du dossier (91 moins 0167-023 et 0292-003, re-signés, et 0056-015 et 0161-070, rejetés). Aucun n'est épinglé par le contrat de fraîcheur des tables signées (742 paires), et aucun n'est consommé par les liens d'analyte, les plages fonctionnelles, les préanalytiques ou les règles cliniques. Un verdict ne bloque donc aucune release-db. Ni migration, ni release-db, ni décision `D-xxx`.
+  - **Arbitrages du responsable** (questions à options) : une proposition motivée par claim, contre-revue Codex avant l'arbitrage ; des paquets alignés sur les positions signées P1 à P8 ; ce qui ne se tranche pas reste en attente (non servi) ; le responsable signe, l'assistant exécute les rejets depuis l'atelier.
+  - **Contre-revue Codex** (dépôt privé des revues) : GO avec corrections. Onze constats (aucun P0), tous vérifiés sur pièces et retenus. Les passages complets de deux sources ont été relus en production, en lecture seule, là où les pièces étaient tronquées. Une limite : le dossier remis à Codex était antérieur d'un commit, mais les positions signées, qui font foi, étaient présentes.
+  - **Arbitrage final** : propositions approuvées, avec deux écarts à Codex :
+    - 0189-136 à 0189-140 sont signés au besoin 2, en Précautions : les chiffres sont ceux de l'avis de 2024, mais la source note une unité de 2006 ;
+    - 0057-015 est signé hors parcours.
+  - **Gestes et constats** (conteneur détaché, lecture seule) :
+    - 45 rejets avec motif, exécutés depuis l'atelier, et 45 actes au journal ;
+    - 8 signatures du responsable : 6 étiquetées au besoin 2, rubrique Précautions (0102-007, 0189-136 à 0189-140), et 2 hors parcours (0167-027, 0057-015) ;
+    - 34 claims restent en attente ;
+    - la base compte 8 594 claims validés, 34 en attente et 92 rejetés ; le besoin 2 en compte 887 ;
+    - le contrat de fraîcheur est vert, et les 17 liens d'axe sont conformes à la liste signée.
+  - **Effets** :
+    - 0044-020 reste en attente et 0044-021 est rejeté : la fiche de lecture de la vitamine E reste sans analyte (`D-473` §6 (2)) ;
+    - 0043-005 et 0377-016 attendent la mécanisation de la réserve de `D-465` §3 ;
+    - 0161-069 et 0043-011, renvoyés par `D-465` §10, sont rejetés.
+  - **Écart consigné** : le handoff `2026-11-11-0915-resolveur-vitamine-e-d475.md` ne cite pas `docs/FEATURE_FLAGS.md` parmi les fichiers de la PR #1975. Il n'est pas réécrit : un handoff passé ne se réinterprète pas.
+  - **Suite**, dans l'ordre arbitré :
+    - une source externe pour 0292-003 ;
+    - la lecture de l'IOM 2000 pour 0649-005 ;
+    - la réserve de `D-465` §3 ;
+    - la déclaration « besoin 2 achevé ».
+
+    La dette d'un banc de CI qui rejoue le contrat du catalogue sur une base avec signatures demeure, et le candidat NABM `7302` reste à signer par le praticien.
