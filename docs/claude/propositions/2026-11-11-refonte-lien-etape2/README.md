@@ -41,7 +41,7 @@ mergés.
 | `amendements.md` | AM-1 à AM-6 : textes d'amendement, « traduit » séparé de « proposé » |
 | `cadrage-revise.md` | delta du cadrage v3, section par section |
 | `catalogue-revise.md` | les 110 fiches du catalogue v2 : gabarit, navigation cible, lot |
-| `registre-textes.md` | textes neufs ou changés (T-01 à T-35), à accepter mot pour mot |
+| `registre-textes.md` | textes neufs ou changés (T-nn, numérotation par famille, discontinue), à accepter mot pour mot ; inscrits par DOC-0 une fois acceptés |
 | `socle-commun.md` | DOC-0 et COM-0, seuls lots communs ; règles des deux sessions |
 | `plan-praticien.md` | plan de l'Observatoire, PRA-1 à PRA-6 |
 | `plan-patient.md` | plan du Jardin, PAT-1 à PAT-7 |
@@ -104,7 +104,7 @@ version 4 ; les écarts se voient au constat à l'écran de chaque lot.
 | AM-4 une déclaration des destinations | idem |
 | AM-5 rail praticien escamotable | idem |
 | AM-6 / A5-R3 adoption de Lien / Empreinte | idem |
-| T-01 à T-35 | `registre-textes.md` §3 (récapitulatif par lot) |
+| T-01 à T-07, T-10 à T-15, T-21 à T-23, T-30 (a à i), T-31 (a, b), T-32 à T-35 | `registre-textes.md` ; la numérotation saute volontairement entre les familles (praticien 01-15, rail patient 21-23, textes patient 30-35) ; récapitulatif par lot au §3 |
 
 ## 5. Non vu
 

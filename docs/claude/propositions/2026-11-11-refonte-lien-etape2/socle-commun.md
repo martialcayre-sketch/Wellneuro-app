@@ -6,21 +6,32 @@ réalisation ne démarrent qu'après leur merge.
 
 ## DOC-0 — Décisions de la refonte
 
-**Objet.** Inscrire au registre les amendements acceptés mot pour mot
-(`amendements.md`, AM-1 à AM-6), dans une seule PR de documentation. Les
-numéros D-xxx se prennent à ce moment, sur `origin/main` relu, pour qu'aucune
-des deux sessions n'ait à en prendre un.
+**Objet.** Inscrire au registre, dans une seule PR de documentation :
+
+- les amendements acceptés mot pour mot (`amendements.md`, AM-1 à AM-6) ;
+- une décision « textes de la refonte Lien » qui recopie chaque texte du
+  registre accepté (`registre-textes.md`), avec son identifiant T-nn, son
+  emplacement et le texte qu'il remplace. Aucun lot n'applique un texte qui
+  n'y figure pas.
+
+Les numéros D-xxx se prennent à ce moment, sur `origin/main` relu, pour
+qu'aucune des deux sessions n'ait à en prendre un. Un texte accepté plus
+tard (T-30, T-31, T-33 à T-35 sont facultatifs pour leur lot) passe par un
+micro-lot `DOC-n` qui complète cette décision, un seul ouvert à la fois,
+avant le lot qui l'applique.
 
 **Préalable.** Les réponses écrites du responsable aux questions Q-E2-1 à
-Q-E2-4 (`README.md` §4) et l'acceptation, amendement par amendement.
+Q-E2-4 (`README.md` §4) et l'acceptation, amendement par amendement et
+texte par texte.
 
 **Fichiers.** `docs/decisions/D-xxx.md` (neufs), `docs/decisions/` (index),
 `docs/claude/REGISTRE_FRONTIERES.md` (A5-R3), les décisions amendées
 ([[D-324]], [[D-447]], [[D-460]]) pour leur seule ligne de renvoi.
 
 **Réception.** Une décision par amendement accepté, chacune citant sa
-réponse ; un amendement refusé n'a pas de décision et le lot qui en dépend
-est retiré du plan.
+réponse ; une décision des textes acceptés, mot pour mot ; un amendement
+refusé n'a pas de décision et ce qui en dépend est retiré du plan ; un texte
+refusé laisse l'existant en place.
 
 ## COM-0 — Fondation Lien
 

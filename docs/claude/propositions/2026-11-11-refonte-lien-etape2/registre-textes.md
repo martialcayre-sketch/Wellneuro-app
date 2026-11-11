@@ -2,8 +2,13 @@
 
 Chaque texte neuf ou changé par la refonte passe ici avant tout lot (réponse
 6 (a) du 2026-11-11). Aucun n'est accepté : chaque ligne attend l'acceptation
-**mot pour mot** du responsable. Un texte refusé laisse l'existant en place ;
-le lot qui le portait livre sans lui.
+**mot pour mot** du responsable. Un texte accepté est inscrit sous une
+décision par DOC-0 (`socle-commun.md`) avant le lot qui l'applique. Un texte
+refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
+
+Numérotation par famille, avec des trous voulus : praticien T-01 à T-15,
+rail patient T-21 à T-23, textes patient T-30 à T-35. Aucun identifiant
+absent n'est un texte manquant.
 
 Colonnes : **Proposé** (texte exact, sans guillemets de l'interface) ;
 **Où** (couche, composant) ; **Sens** (ce que le texte doit dire, pour juger

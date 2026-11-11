@@ -163,7 +163,7 @@ révisée. Les gabarits G1–G8 sont ceux de la v2 (l.149-158), inchangés.
 
 | Fiche | Titre (v2) | Gab. | Cible révisée | Lot |
 |---|---|---|---|---|
-| X01 | Connexion praticien | G6 | v2 | PRA-1 |
+| X01 | Connexion praticien | G6 | v2 | PRA-2 |
 | X02 | Menus global, dossier et Mon espace | G3/G5 | praticien : trois états, sans vues rapides (AM-3, AM-5) ; patient : trois états, rail seul dès 1 024 px (AM-1, AM-2) | PRA-1 et PAT-1 |
 | X03 | États de lecture et messages | G1–G7 | v2 ; composant d'état par rôle (`LienDataState` en référence) | COM-0 puis chaque lot |
 | X04 | Panneaux superposés | G8 | v2 ; `PanneauSuperpose` reste la primitive | COM-0 |

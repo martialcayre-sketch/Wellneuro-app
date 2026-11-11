@@ -57,7 +57,7 @@ deux sessions parallèles, chacun avec une page de suivi.
 
 ## Problèmes ouverts
 
-- Q-E2-1 à Q-E2-4 et les acceptations (AM-1 à AM-6, T-01 à T-35) attendent
+- Q-E2-1 à Q-E2-4 et les acceptations (AM-1 à AM-6, textes du registre) attendent
   la réponse écrite du responsable.
 - Imports indirects non suivis hors des deux dossiers mixtes.
 - T-33 : décision éventuelle sur le titre de la compréhension non trouvée.

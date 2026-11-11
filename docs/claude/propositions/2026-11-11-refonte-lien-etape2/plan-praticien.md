@@ -19,8 +19,8 @@ registre des textes (§1), amendements AM-3, AM-4, AM-5, AM-6 ; artefact
 | DOC-0 mergé, avec AM-3, AM-4, AM-5 acceptés | tous |
 | COM-0 mergé | tous |
 | Q-E2-1 (groupes) et Q-E2-2 (menu du téléphone) tranchées | PRA-1 |
-| Textes acceptés : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |
-| Textes acceptés : T-14, T-15 | PRA-3 |
+| Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |
+| Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-14, T-15 | PRA-3 |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PRA-2 à PRA-5 |
 
 Un amendement refusé retire ce qui en dépend : sans AM-3, les vues rapides
