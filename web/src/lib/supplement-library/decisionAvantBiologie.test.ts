@@ -278,6 +278,12 @@ describe('Compléments avant biologie — l’absence d’information ne vaut ja
     // chercher le défaut au mauvais endroit.
     expect((verdict as { motif: string }).motif).toContain('WN-CL-2026-042');
     expect((verdict as { motif: string }).motif).toContain('v2.1');
+    // [[D-479]] — AU CARACTÈRE PRÈS : ce refus couvre aussi un claim encore
+    // `VALIDE` mais supplanté, pour qui « n'est pas validé » serait inexact.
+    expect((verdict as { motif: string }).motif).toBe(
+      `Le claim « WN-CL-2026-042 » (v2.1) qui fonde la règle « ${regle().regleId} » `
+        + 'ne satisfait pas les critères de validité du corpus.',
+    );
   });
 });
 

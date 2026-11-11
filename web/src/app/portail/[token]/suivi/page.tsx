@@ -14,7 +14,7 @@ export default async function PortailSuiviPage({ params }: { params: Promise<{ t
       >
         ← Mon parcours
       </Link>
-      <ProtocolCheckinForm />
+      <ProtocolCheckinForm token={token} />
     </div>
   );
 }

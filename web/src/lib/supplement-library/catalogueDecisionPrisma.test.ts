@@ -157,6 +157,64 @@ describe('lireCatalogueDecision', () => {
       ]);
       expect(catalogue.claimsValidesParRegle.get('regle_a')).toBe(false);
     });
+
+    // [[D-479]] — VALIDE AU CORPUS ET NON SUPPLANTÉ. Les deux lectures passent
+    // par `$queryRaw` ; on les distingue par leur SQL, pas par leur ordre.
+    function corpus(reponses: {
+      valides: Array<{ claim_id: string; version_claim: string }>;
+      nonSupplantes: Array<{ claim_id: string; version_claim: string }> | Error;
+    }) {
+      prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) => {
+        if (!strings.join('?').includes('superseded_at IS NULL')) {
+          return Promise.resolve(reponses.valides);
+        }
+        return reponses.nonSupplantes instanceof Error
+          ? Promise.reject(reponses.nonSupplantes)
+          : Promise.resolve(reponses.nonSupplantes);
+      });
+    }
+    const A = { claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' };
+    const B = { claim_id: 'WN-CL-2026-002', version_claim: 'v1.0' };
+    const REGLES = [
+      { regleId: 'regle_a', claim: { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' } },
+      { regleId: 'regle_b', claim: { claimId: 'WN-CL-2026-002', versionClaim: 'v1.0' } },
+    ];
+
+    it('refuse la seule règle dont le claim, encore VALIDE, est supplanté', async () => {
+      // A et B sont valides ; seul A est non supplanté.
+      corpus({ valides: [A, B], nonSupplantes: [A] });
+      const catalogue = await lireCatalogueDecision(['ing_1'], undefined, REGLES);
+      expect(catalogue.claimsValidesParRegle.get('regle_a')).toBe(true);
+      expect(catalogue.claimsValidesParRegle.get('regle_b')).toBe(false);
+    });
+
+    it('ne valide pas un claim non supplanté que le corpus ne valide pas', async () => {
+      corpus({ valides: [A], nonSupplantes: [A, B] });
+      const catalogue = await lireCatalogueDecision(['ing_1'], undefined, REGLES);
+      expect(catalogue.claimsValidesParRegle.get('regle_a')).toBe(true);
+      expect(catalogue.claimsValidesParRegle.get('regle_b')).toBe(false);
+    });
+
+    it('pose les MÊMES couples aux deux lectures', async () => {
+      corpus({ valides: [A, B], nonSupplantes: [A, B] });
+      await lireCatalogueDecision(['ing_1'], undefined, REGLES);
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+      const [premier, second] = prisma.$queryRaw.mock.calls;
+      expect(premier.slice(1)).toEqual([
+        ['WN-CL-2026-001', 'WN-CL-2026-002'],
+        ['v1.0', 'v1.0'],
+      ]);
+      expect(second.slice(1)).toEqual(premier.slice(1));
+    });
+
+    // Rien n'est servi sur une lecture partielle : la prévisualisation rend
+    // une erreur plutôt qu'un verdict fondé sur la moitié du critère.
+    it('propage l’échec de la seule lecture des supplantations', async () => {
+      corpus({ valides: [A, B], nonSupplantes: new Error('corpus illisible') });
+      await expect(lireCatalogueDecision(['ing_1'], undefined, REGLES)).rejects.toThrow(
+        'corpus illisible',
+      );
+    });
   });
 
   // [[D-138]] — LES CONSTATS DE CRITÈRES : lus seulement s'il y a un DOSSIER.

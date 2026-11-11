@@ -1,5 +1,10 @@
 import { prisma } from '../prisma';
-import { claimsValidesAuCorpus, cleClaim, type ReferenceClaim } from '@/lib/rag/claims/validite';
+import {
+  claimsNonSupplantesAuCorpus,
+  claimsValidesAuCorpus,
+  cleClaim,
+  type ReferenceClaim,
+} from '@/lib/rag/claims/validite';
 import type {
   AlerteSecuriteJointe,
   SeuilFonctionnelSource,
@@ -127,7 +132,8 @@ async function lireSeuilsEtAlertes(ingredientIds: readonly string[]): Promise<{
  * PREMIER par le moteur — fermait donc toute règle, en donnant pour motif que
  * « les claims cités » n'étaient pas valides alors qu'aucun n'était cité. La
  * règle porte maintenant son claim fondateur, et cette lecture répond à la
- * question réelle : ce claim-là est-il VALIDE au corpus ?
+ * question réelle : ce claim-là est-il VALIDE au corpus, et non supplanté
+ * ([[D-479]]) ?
  *
  * UN ENTRANT NE SE DÉRIVE TOUJOURS PAS, et il est rendu FERMÉ plutôt
  * qu'inventé — l'absence d'information ne vaut jamais autorisation (`DC-24`,
@@ -180,7 +186,41 @@ export async function lireCatalogueDecision(
 }
 
 /**
- * `regleId` → son claim fondateur est-il VALIDE au corpus ? ([[D-140]])
+ * Parmi les références demandées, celles qui peuvent FONDER une règle de la
+ * Bibliothèque : valides au corpus ET non supplantées ([[D-479]]), rendues
+ * comme un ensemble de clés `cleClaim`.
+ *
+ * LE CRITÈRE DE [[D-472]] §2 ET DE [[D-476]] §2. Les règles vivent en base
+ * (`clinical_rules`), hors des tables signées que le préflight de release-db
+ * vérifie : rien d'autre que ce code ne l'impose ici. Un claim encore `VALIDE`
+ * mais supplanté ne fonde plus une règle, et aucune version plus récente ne
+ * lui est substituée — la règle repose sur le couple que le praticien a cité.
+ *
+ * UN SEUL CRITÈRE POUR LA LECTURE ET L'ÉCRITURE : la prévisualisation
+ * (`lireClaimsValides`) et les routes de création et de révision de l'atelier
+ * appellent cette fonction, pour que l'atelier n'enregistre pas ce que sa
+ * prévisualisation refuserait. Les deux lectures portent sur les mêmes couples ;
+ * l'échec de l'une ou l'autre se propage — rien n'est alors servi ni écrit.
+ */
+export async function claimsAdmissiblesAuCatalogue(
+  references: readonly ReferenceClaim[],
+): Promise<ReadonlySet<string>> {
+  if (references.length === 0) return new Set();
+  const [valides, nonSupplantes] = await Promise.all([
+    claimsValidesAuCorpus(references),
+    claimsNonSupplantesAuCorpus(references),
+  ]);
+  return new Set([...valides].filter((cle) => nonSupplantes.has(cle)));
+}
+
+/** Le cas à une seule référence — l'écriture d'une règle en pose exactement une. */
+export async function claimAdmissibleAuCatalogue(reference: ReferenceClaim): Promise<boolean> {
+  return (await claimsAdmissiblesAuCatalogue([reference])).has(cleClaim(reference));
+}
+
+/**
+ * `regleId` → son claim fondateur peut-il fonder la règle ? ([[D-140]],
+ * [[D-479]] : valide au corpus ET non supplanté)
  *
  * TOUTES LES RÈGLES SONT INSCRITES, y compris celles qui échouent : une clé
  * absente et un `false` se liraient pareil au moteur (`… ?? false`), mais pas à
@@ -193,7 +233,7 @@ async function lireClaimsValides(
   const carte = new Map<string, boolean>();
   if (regles.length === 0) return carte;
 
-  const valides = await claimsValidesAuCorpus(
+  const valides = await claimsAdmissiblesAuCatalogue(
     regles
       .map((regle) => regle.claim)
       .filter((claim): claim is ReferenceClaim => claim !== null),

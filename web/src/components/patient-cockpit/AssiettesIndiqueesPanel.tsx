@@ -387,8 +387,8 @@ export function AssiettesIndiqueesPanel({
             {lecture.corpusLu && lecture.retireesFauteDeClaim > 0 && (
               <p role="alert" className="mt-4 text-sm text-status-warning">
                 {lecture.retireesFauteDeClaim} indication(s) publiée(s) ne sont pas servies : un de
-                leurs claims n’est plus valide au corpus. Elles n’ont pas été regardées sur ce
-                dossier.
+                leurs claims ne satisfait pas les critères de validité du corpus. Elles n’ont pas
+                été regardées sur ce dossier.
               </p>
             )}
 

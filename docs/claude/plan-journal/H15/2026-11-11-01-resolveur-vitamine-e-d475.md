@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-11, second lot de `D-473` ; `D-475`)** : forme opaque (`D-251` §4) ; identifiants, mécanismes et agrégats seulement.
+  - **Constat préalable** (conteneur détaché, lecture seule, agrégats) : aucune ligne de compte rendu importée ne nomme la vitamine E ; aucune correspondance NABM signée sur la fiche.
+  - **Arbitrages du responsable** (questions à options) : libellé du catalogue et synonymes, au précédent `D-336` ; le nom courant seul rattaché, en exception écrite à la règle de `D-263` ; une unité autre que celle de la fiche ne se valide pas, et `D-473` §2 est corrigée ; libellés dans le résolveur public, au précédent `D-381`.
+  - **Résolveur re-signé** par le responsable sur déclaration de conformité : 209 entrées, 110 analytes. Aucune forme à lettre grecque, prouvé par un banc. Aucune migration ni release-db.
+  - **Suite** : restes du besoin 2 dans l'ordre arbitré (relecture des claims en attente, croisée avec le contrat de fraîcheur, puis les deux claims épinglés, la réserve de `D-465` §3, la déclaration « besoin 2 achevé »). La signature du candidat NABM `7302` reste un geste du praticien.

@@ -16,7 +16,7 @@ const { prisma, mockCorpus, mockSignee } = vi.hoisted(() => ({
     consultation: { findFirst: vi.fn() },
     patient: { findUnique: vi.fn() },
   },
-  mockCorpus: { claimsValidesAuCorpus: vi.fn() },
+  mockCorpus: { claimsValidesAuCorpus: vi.fn(), claimsNonSupplantesAuCorpus: vi.fn() },
   // `null` = LE VERDICT RÉEL du verrou. Un seul cas le force, pour éprouver le
   // second terme de la conjonction ; partout ailleurs la vraie signature décide,
   // sans quoi le banc cesserait de mordre le jour où elle tomberait.
@@ -28,6 +28,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/claims/validite', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
   claimsValidesAuCorpus: mockCorpus.claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus: mockCorpus.claimsNonSupplantesAuCorpus,
 }));
 
 vi.mock('@/lib/clinical/indicationsAssiettesV1', async (importOriginal) => {
@@ -109,6 +110,7 @@ beforeEach(() => {
   mockSignee.valeur = null;
   process.env.WN_ASSIETTES_INDIQUEES = 'true';
   mockCorpus.claimsValidesAuCorpus.mockResolvedValue(toutesLesClesDuCorpus());
+  mockCorpus.claimsNonSupplantesAuCorpus.mockResolvedValue(toutesLesClesDuCorpus());
   dossierVide();
 });
 
@@ -201,6 +203,45 @@ describe('le corpus — deux fermetures, deux raisons, jamais confondues', () =>
     const resultat = await evaluerAssiettesPourPatient('PAT001');
     if (!resultat.actif) throw new Error('le verrou devait être ouvert');
     expect(resultat.retireesFauteDeClaim).toBe(0);
+  });
+});
+
+describe('valide ET non supplanté — le critère du préflight de release-db (D-476)', () => {
+  it('un claim encore VALIDE mais supplanté retire SA ligne, et elle seule, comptée', async () => {
+    const nonSupplantes = toutesLesClesDuCorpus();
+    nonSupplantes.delete(cleClaimCorpus({ claimId: 'WN-CL-0290-005', versionClaim: 'v1.0' }));
+    mockCorpus.claimsNonSupplantesAuCorpus.mockResolvedValue(nonSupplantes);
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    const vues = [...resultat.indiquees, ...resultat.nonEvaluees].map(a => a.ligneId);
+    expect(resultat.corpusLu).toBe(true);
+    expect(vues).not.toContain('ASSIETTE-IND-SEROTONINERGIQUE');
+    expect(vues).toContain('ASSIETTE-IND-DETOXICATION');
+    expect(resultat.retireesFauteDeClaim).toBe(1);
+  });
+
+  it('tous les claims valides et non supplantés : aucune ligne retirée', async () => {
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    expect(resultat.retireesFauteDeClaim).toBe(0);
+    expect([...resultat.indiquees, ...resultat.nonEvaluees].map(a => a.ligneId)).toContain('ASSIETTE-IND-SEROTONINERGIQUE');
+  });
+
+  it('les deux lectures reçoivent les mêmes couples, tous ceux de la table', async () => {
+    await evaluerAssiettesPourPatient('PAT001');
+    const cles = (appel: unknown[]) =>
+      new Set((appel[0] as Array<{ claimId: string; versionClaim: string }>).map(c => cleClaimCorpus(c)));
+    expect(cles(mockCorpus.claimsValidesAuCorpus.mock.calls[0])).toEqual(toutesLesClesDuCorpus());
+    expect(cles(mockCorpus.claimsNonSupplantesAuCorpus.mock.calls[0])).toEqual(toutesLesClesDuCorpus());
+  });
+
+  it('lecture de la supplantation en échec : corpus illisible, rien servi, dossier non lu', async () => {
+    mockCorpus.claimsNonSupplantesAuCorpus.mockRejectedValue(new Error('connexion perdue'));
+    const resultat = await evaluerAssiettesPourPatient('PAT001');
+    if (!resultat.actif) throw new Error('le verrou devait être ouvert');
+    expect(resultat.corpusLu).toBe(false);
+    expect(resultat.retireesFauteDeClaim).toBe(0);
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
   });
 });
 

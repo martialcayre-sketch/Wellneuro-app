@@ -12,7 +12,7 @@ const { getServerSession, prisma, mockCorpus } = vi.hoisted(() => ({
     questionnaireReponse: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
   },
-  mockCorpus: { claimsValidesAuCorpus: vi.fn() },
+  mockCorpus: { claimsValidesAuCorpus: vi.fn(), claimsNonSupplantesAuCorpus: vi.fn() },
 }));
 
 vi.mock('next-auth', () => ({ getServerSession }));
@@ -21,6 +21,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/claims/validite', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
   claimsValidesAuCorpus: mockCorpus.claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus: mockCorpus.claimsNonSupplantesAuCorpus,
 }));
 
 import { cleClaim } from '@/lib/rag/claims/validite';
@@ -48,6 +49,7 @@ describe('GET /api/praticien/assiettes-indiquees', () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.consultation.findFirst.mockResolvedValue(null);
     mockCorpus.claimsValidesAuCorpus.mockResolvedValue(toutesLesCles());
+    mockCorpus.claimsNonSupplantesAuCorpus.mockResolvedValue(toutesLesCles());
   });
 
   afterEach(() => {

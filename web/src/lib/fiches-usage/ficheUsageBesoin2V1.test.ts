@@ -51,14 +51,14 @@ const SIGNEE = { ...FICHES_USAGE_BESOIN2_METADATA, validationExterne: true, date
 
 describe('structure des fiches d’usage du besoin 2 (D-314 §2)', () => {
   it('épingle l’empreinte de la structure écrite', () => {
-    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('58adcff61f30e13f955988caf55ee7781a6b70902a27c89b0dd95f790df93a86');
+    expect(FICHES_USAGE_BESOIN2_SHA256).toBe('e59d35c381435a2bdf7ec76460e4ebe4b7096cdef688c4322cbe4d3eacfb98ba');
   });
 
-  it('re-signée pour les polyphénols et antioxydants (D-457) : verrou posé sur la déclaration du responsable', () => {
+  it('re-signée pour les hypothèses du parcours (D-477) : verrou posé sur la déclaration du responsable', () => {
     expect(FICHES_USAGE_BESOIN2_V1.fiches).toHaveLength(54);
-    expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual([]);
+    expect(FICHES_USAGE_BESOIN2_V1.hypotheses).toEqual(['HYP_VITD_1', 'HYP_ZINC_1', 'HYP_MG_1', 'HYP_B9_1', 'HYP_B12_1', 'HYP_SE_1']);
     expect(FICHES_USAGE_BESOIN2_METADATA.validationExterne).toBe(true);
-    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-07T20:05:11.000Z');
+    expect(FICHES_USAGE_BESOIN2_METADATA.dateValidation).toBe('2026-11-11T09:02:54.000Z');
     expect(FICHES_USAGE_BESOIN2_METADATA.shaPerimetre).toBe(FICHES_USAGE_BESOIN2_SHA256);
     expect(structureSignee()).toBe(true);
   });

@@ -84,6 +84,12 @@ export default function QuestionnairesHubPage() {
     protocoleDiffuse: false,
     finDeCycle: false,
   });
+  // LECTURE DU PROTOCOLE EN ÉCHEC : on ne sait pas s'il est servi. « Mon
+  // accompagnement » s'ouvre alors, pour que l'erreur et « Réessayer » de
+  // l'accueil se voient sans clic (constat à l'écran du 2026-11-11, réponse
+  // du responsable « lot maintenant »). « Replié sinon » ([[D-423]] §3) reste
+  // le cas d'une absence CONFIRMÉE.
+  const [lectureProtocoleEchouee, setLectureProtocoleEchouee] = useState(false);
   /*
    * LA FENÊTRE DE DÉPÔT DE « CE QUI COMPTE » — et pourquoi une sonde.
    *
@@ -282,24 +288,34 @@ export default function QuestionnairesHubPage() {
         data.parcours ?? { consultationStatut: null, bookletEnvoye: false, bilanConsultable: false },
       );
       // Protocole diffusé / fin de cycle : route existante, lecture résiliente
-      // — un échec laisse les signaux au plus prudent, jamais bloquant.
+      // — un échec laisse les signaux au plus prudent, jamais bloquant, mais
+      // ouvre « Mon accompagnement » (voir `lectureProtocoleEchouee`).
+      setLectureProtocoleEchouee(false);
       void (async () => {
         try {
           const resProtocole = await fetch('/api/portail/protocole');
-          if (!resProtocole.ok || annuleRef.current) return;
+          if (annuleRef.current) return;
+          if (!resProtocole.ok) {
+            setLectureProtocoleEchouee(true);
+            return;
+          }
           const protocole = (await resProtocole.json()) as {
             ok?: boolean;
             protocoleDiffuse?: boolean;
             finDeCycle?: boolean;
           };
-          if (!annuleRef.current && protocole.ok) {
+          if (annuleRef.current) return;
+          if (protocole.ok) {
             setSignauxProtocole({
               protocoleDiffuse: protocole.protocoleDiffuse === true,
               finDeCycle: protocole.finDeCycle === true,
             });
+          } else {
+            setLectureProtocoleEchouee(true);
           }
         } catch {
           /* signaux laissés au plus prudent */
+          if (!annuleRef.current) setLectureProtocoleEchouee(true);
         }
       })();
       setBrouillons(new Set(data.assignations.filter(a => hasDraft(a.idAssignation)).map(a => a.idAssignation)));
@@ -488,8 +504,10 @@ export default function QuestionnairesHubPage() {
         fondu dans « Mon parcours ». Déplié d'office quand un protocole est
         servi, replié sinon ([[D-423]] §3) : aucun second repli autour de celui
         de [[D-315]], l'encart de conduite se lit avant tout clic ([[D-349]] §2).
+        Déplié aussi quand la lecture du protocole échoue : l'erreur se lit
+        avant tout clic, comme l'encart.
       */}
-      <details open={signauxProtocole.protocoleDiffuse} className="rounded-xl border border-border bg-surface p-4">
+      <details open={signauxProtocole.protocoleDiffuse || lectureProtocoleEchouee} className="rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Mon accompagnement
         </summary>

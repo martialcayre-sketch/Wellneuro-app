@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
@@ -31,7 +32,8 @@ const LABEL_POINT: Record<PointEtape, string> = {
   J21: 'Semaine 3',
 };
 
-export function ProtocolCheckinForm() {
+export function ProtocolCheckinForm({ token }: { token: string }) {
+  const router = useRouter();
   const [state, setState] = useState<CheckinState | null>(null);
   const [chargement, setChargement] = useState(true);
   const [reponses, setReponses] = useState<Partial<Record<CheckinQuestionId, string>>>({});
@@ -47,8 +49,19 @@ export function ProtocolCheckinForm() {
     setChargement(true);
     setErreur('');
     setErreurChargement(null);
+    // Pendant le renvoi au gate, l'écran reste sur « Chargement » : ni erreur
+    // ni phrase d'attente.
+    let renvoi = false;
     try {
       const res = await fetch('/api/portail/protocole/checkin', { cache: 'no-store' });
+      if (res.status === 401) {
+        // Session absente ou expirée : retour au gate du portail, comme les
+        // autres écrans — « Réessayer » ne pourrait pas réussir (réponse 7 (b)
+        // du responsable à l'étape 1 de la refonte Lien, 2026-11-11).
+        renvoi = true;
+        router.replace(`/portail/${token}`);
+        return;
+      }
       const data = (await res.json()) as CheckinState | { ok: false; error?: string };
       if (data.ok) {
         setState(data);
@@ -60,9 +73,9 @@ export function ProtocolCheckinForm() {
       setState(null);
       setErreurChargement('Erreur réseau. Réessayez.');
     } finally {
-      setChargement(false);
+      if (!renvoi) setChargement(false);
     }
-  }, []);
+  }, [router, token]);
 
   useEffect(() => {
     void charger();
@@ -84,6 +97,10 @@ export function ProtocolCheckinForm() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ pointEtape: pointOuvert, reponses }),
       });
+      if (res.status === 401) {
+        router.replace(`/portail/${token}`);
+        return;
+      }
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (data.ok) {
         setReponses({});
@@ -96,7 +113,7 @@ export function ProtocolCheckinForm() {
     } finally {
       setEnvoi(false);
     }
-  }, [pointOuvert, complet, reponses, charger]);
+  }, [pointOuvert, complet, reponses, charger, router, token]);
 
   if (chargement) {
     return (

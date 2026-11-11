@@ -4,7 +4,7 @@ import { derniersResultatsParAnalyte } from '@/lib/biology-library/derniersResul
 import { annulationsActives } from '@/lib/biology-library/annulations';
 import { signature } from '@/lib/biology-library/saisieMessages';
 import { getRecommendedPlate } from '@/lib/food-compass/plates';
-import { claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
+import { claimsNonSupplantesAuCorpus, claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
 import { cleClaim, type ClaimRef } from './catalogueConduitesV1';
 import {
   PORTES_BIOLOGIQUES_ASSIETTES_METADATA,
@@ -71,7 +71,7 @@ export type ResultatPortesBiologiques =
       actif: true;
       shaPerimetre: string;
       corpusLu: boolean;
-      /** Lignes publiées retirées faute d'un claim valide — `0` si le corpus est illisible. */
+      /** Lignes publiées retirées faute d'un claim valide et non supplanté — `0` si le corpus est illisible. */
       retireesFauteDeClaim: number;
       portes: PorteBiologiqueLue[];
     };
@@ -86,10 +86,11 @@ function referencesCitees(): ClaimRef[] {
 
 /**
  * Le texte ENTIER de chaque claim servi — sous le MÊME prédicat que
- * `claimsValidesAuCorpus`, condition par condition. Les deux lectures sont
- * séparées : si celle-ci n'exigeait que `active`/`VALIDE`, un claim devenu
- * identifiant, sorti du compartiment actif ou privé de sa source ENTRE les deux
- * verrait quand même son texte servi (constat de revue, PR #1218).
+ * `claimsValidesAuCorpus` ET `claimsNonSupplantesAuCorpus`, condition par
+ * condition ([[D-476]]). Les lectures sont séparées : si celle-ci n'exigeait
+ * que `active`/`VALIDE`, un claim devenu identifiant, sorti du compartiment
+ * actif, privé de sa source ou supplanté ENTRE les deux verrait quand même son
+ * texte servi (constat de revue, PR #1218 ; revue de t73).
  */
 async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<string, string>> {
   if (references.length === 0) return new Map();
@@ -106,6 +107,7 @@ async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<str
       AND c.statut = 'VALIDE'
       AND c.patient_identifiable = false
       AND c.compartment = 'ACTIF'
+      AND c.superseded_at IS NULL
       AND EXISTS (
         SELECT 1 FROM public.rag_corpus_claim_sources AS s WHERE s.claim_pk = c.id
       )
@@ -123,9 +125,18 @@ async function textesDesClaims(references: readonly ClaimRef[]): Promise<Map<str
 export async function evaluerPortesBiologiquesPourPatient(idPatient: string): Promise<ResultatPortesBiologiques> {
   if (!portesBiologiquesActives()) return { actif: false, message: MESSAGE_INACTIF };
 
+  // VALIDE ET NON SUPPLANTÉ ([[D-476]]) : le critère du préflight de
+  // release-db et de [[D-472]] §2. Un claim encore `VALIDE` mais supplanté ne
+  // fonde plus une porte, et son texte n'est plus lu. L'échec de l'une ou
+  // l'autre lecture rend le corpus illisible.
   let claimsValides: ReadonlySet<string> | null = null;
   try {
-    claimsValides = await claimsValidesAuCorpus(referencesCitees());
+    const references = referencesCitees();
+    const [valides, nonSupplantes] = await Promise.all([
+      claimsValidesAuCorpus(references),
+      claimsNonSupplantesAuCorpus(references),
+    ]);
+    claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
   } catch (err) {
     console.error('[portesBiologiquesService] corpus illisible', signature(err));
     claimsValides = null;
