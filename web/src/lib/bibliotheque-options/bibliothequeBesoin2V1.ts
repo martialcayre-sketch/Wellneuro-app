@@ -1,9 +1,11 @@
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import {
-  FICHES_USAGE_BESOIN2_SHA256,
+  FICHES_USAGE_BESOIN2_METADATA,
   FICHES_USAGE_BESOIN2_V1,
+  incoherencesDeStructure,
   structureSignee as fichesUsageSignees,
   type ClaimEpingle,
+  type FichesUsageMetadata,
   type StructureFichesUsage,
 } from '@/lib/fiches-usage/ficheUsageBesoin2V1';
 import { BESOINS } from '@/lib/fiches-usage/vocabulaire';
@@ -160,7 +162,13 @@ export function incoherencesDeBibliotheque(
     }
     for (const rubrique of cles) {
       const renvois = (option.renvois as Record<string, readonly string[]>)[rubrique];
-      if (!dans(RUBRIQUES_OPTION, rubrique) || !Array.isArray(renvois)) continue;
+      if (!dans(RUBRIQUES_OPTION, rubrique)) continue;
+      // Une valeur qui n'est pas une liste (JSON importé, cast) ferme le
+      // verrou : elle ne passe jamais pour une rubrique sans renvoi.
+      if (!Array.isArray(renvois)) {
+        a(`${rubrique}:renvoi`);
+        continue;
+      }
       const lus = renvois.map(lireRenvoi);
       if (lus.some(r => r === null) || doublons(renvois)) a(`${rubrique}:renvoi`);
       if (renvois.includes(INFORMATION_MANQUANTE)) {
@@ -239,14 +247,25 @@ export type EtatBibliotheque = 'non_signee' | 'a_relire' | 'signee';
  * `a_relire` si elle est signée mais que l'empreinte des fiches d'usage a
  * changé depuis (re-signature d'une structure modifiée), ou qu'elles ne sont
  * plus signées ([[D-480]] §2) ; sinon `non_signee`.
+ *
+ * Tout se CALCULE ICI, sur les structures et métadonnées passées : ni la
+ * signature de la bibliothèque, ni celle des fiches d'usage, ni leur empreinte
+ * ne se passent à part (revue PR-Agent de #2006).
  */
 export function etatBibliotheque(
-  signee: boolean = bibliothequeSignee(),
   metadata: BibliothequeMetadata = BIBLIOTHEQUE_BESOIN2_METADATA,
-  empreinteFichesUsage: string = FICHES_USAGE_BESOIN2_SHA256,
-  fichesUsageSigneesDuJour: boolean = fichesUsageSignees(),
+  structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1,
+  fichesUsage: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
+  fichesUsageMetadata: FichesUsageMetadata = FICHES_USAGE_BESOIN2_METADATA,
 ): EtatBibliotheque {
-  if (!signee) return 'non_signee';
-  if (!fichesUsageSigneesDuJour || metadata.shaFichesUsage !== empreinteFichesUsage) return 'a_relire';
+  if (!bibliothequeSignee(metadata, structure, fichesUsage)) return 'non_signee';
+  const empreinteFichesUsage = sha256(JSON.stringify(fichesUsage));
+  const fichesSignees = fichesUsageSignees(
+    fichesUsageMetadata,
+    empreinteFichesUsage,
+    incoherencesDeStructure(fichesUsage),
+    fichesUsage,
+  );
+  if (!fichesSignees || metadata.shaFichesUsage !== empreinteFichesUsage) return 'a_relire';
   return 'signee';
 }

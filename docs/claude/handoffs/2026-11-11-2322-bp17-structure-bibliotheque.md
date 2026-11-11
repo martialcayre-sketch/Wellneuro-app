@@ -77,6 +77,14 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   le texte « à relire » est précisé (empreinte des fiches d'usage). Routés :
   « aucune option sans précautions » à la PR 4 ; forme de renvoi du registre
   des compléments, avant la transcription de la PR 7.
+- Tête `58a2d1a3` : CodeRabbit à quota épuisé (une revue par heure),
+  Copilot à quota épuisé (`--quota` à 1). PR-Agent est prouvé
+  (`wn-revue-pr-agent` à 0) et pointe trois zones d'attention. Corrigées :
+  une rubrique dont la valeur n'est pas une liste ferme le verrou ;
+  `etatBibliotheque(metadata, structure, fichesUsage, fichesUsageMetadata)`
+  calcule lui-même les deux signatures et l'empreinte. Écartée avec motif :
+  le changement du helper partagé (155 bancs de garde verts, aucun `.js` ni
+  `require()` en production).
 
 ## Problèmes ouverts
 

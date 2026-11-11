@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
-import { FICHES_USAGE_BESOIN2_SHA256, FICHES_USAGE_BESOIN2_V1, type StructureFichesUsage } from '@/lib/fiches-usage/ficheUsageBesoin2V1';
+import {
+  FICHES_USAGE_BESOIN2_METADATA,
+  FICHES_USAGE_BESOIN2_V1,
+  type FichesUsageMetadata,
+  type StructureFichesUsage,
+} from '@/lib/fiches-usage/ficheUsageBesoin2V1';
 import {
   BIBLIOTHEQUE_BESOIN2_METADATA,
   BIBLIOTHEQUE_BESOIN2_SHA256,
@@ -137,6 +142,9 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     }
     const double = { ...OPTION.renvois, interactions: ['WN-CL-9999-002@v1.0', 'WN-CL-9999-002@v1.0'] };
     expect(incoherencesDeBibliotheque(avec({ renvois: double }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:interactions:renvoi']);
+    // Une valeur qui n'est pas une liste (JSON importé, cast) ferme le verrou (revue PR-Agent de #2006).
+    const pasUneListe = { ...OPTION.renvois, dose: 'WN-CL-9999-001@v1.0' } as unknown as OptionBibliotheque['renvois'];
+    expect(incoherencesDeBibliotheque(avec({ renvois: pasUneListe }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:dose:renvoi']);
   });
 
   it('« information manquante » vaut pour la dose seule, et seule', () => {
@@ -231,19 +239,36 @@ describe('signature à cinq termes (D-480 §6)', () => {
 });
 
 describe('état : « à relire » après une re-signature des fiches d’usage (D-480 §2)', () => {
-  const metadata = { ...BIBLIOTHEQUE_BESOIN2_METADATA, shaFichesUsage: FICHES_USAGE_BESOIN2_SHA256 };
+  const structure = avec({});
+  /** Des fiches d'usage synthétiques signées sur leur propre empreinte. */
+  const fichesSigneesSur = (fu: StructureFichesUsage): FichesUsageMetadata => ({
+    ...FICHES_USAGE_BESOIN2_METADATA,
+    validationExterne: true,
+    dateValidation: '2026-11-11T09:00:00.000Z',
+    claimsSource: [],
+    shaPerimetre: sha256(JSON.stringify(fu)),
+  });
+  const metaFU = fichesSigneesSur(FU_SYNTH);
+  const metadata = { ...signeeSur(structure), shaFichesUsage: sha256(JSON.stringify(FU_SYNTH)) };
 
   it('signée sur l’empreinte du jour des fiches d’usage signées : signée', () => {
-    expect(etatBibliotheque(true, metadata, FICHES_USAGE_BESOIN2_SHA256, true)).toBe('signee');
+    expect(etatBibliotheque(metadata, structure, FU_SYNTH, metaFU)).toBe('signee');
   });
 
-  it('fiches d’usage re-signées depuis, ou plus signées : à relire, sans réécriture', () => {
-    expect(etatBibliotheque(true, metadata, 'b'.repeat(64), true)).toBe('a_relire');
-    expect(etatBibliotheque(true, metadata, FICHES_USAGE_BESOIN2_SHA256, false)).toBe('a_relire');
-    expect(etatBibliotheque(true, { ...metadata, shaFichesUsage: null }, FICHES_USAGE_BESOIN2_SHA256, true)).toBe('a_relire');
+  it('fiches d’usage re-signées sur une structure modifiée : à relire, sans réécriture', () => {
+    const resignees: StructureFichesUsage = { ...FU_SYNTH, populations: ['POP_SYNTH', 'POP_AUTRE'] };
+    expect(incoherencesDeBibliotheque(structure, resignees)).toEqual([]);
+    expect(etatBibliotheque(metadata, structure, resignees, fichesSigneesSur(resignees))).toBe('a_relire');
+  });
+
+  it('fiches d’usage plus signées, ou empreinte jamais recopiée : à relire', () => {
+    expect(etatBibliotheque(metadata, structure, FU_SYNTH, { ...metaFU, validationExterne: false })).toBe('a_relire');
+    expect(etatBibliotheque({ ...metadata, shaFichesUsage: null }, structure, FU_SYNTH, metaFU)).toBe('a_relire');
   });
 
   it('non signée : non signée, quelles que soient les fiches d’usage', () => {
-    expect(etatBibliotheque(false, metadata, FICHES_USAGE_BESOIN2_SHA256, true)).toBe('non_signee');
+    expect(etatBibliotheque({ ...metadata, validationExterne: false }, structure, FU_SYNTH, metaFU)).toBe('non_signee');
+    // Une signature d'une AUTRE structure ne se combine pas avec celle-ci.
+    expect(etatBibliotheque(metadata, avec({}, { optionsRetirees: ['OPT_SYNTH_9'] }), FU_SYNTH, metaFU)).toBe('non_signee');
   });
 });
