@@ -16601,5 +16601,31 @@
     "requiredAction": "Extraits ciblés ingérés (besoin 2, polyphénols et antioxydants, lot LOT_055_2026-11-07) ; claims signés par le responsable le 2026-11-07",
     "comment": "Source externe, résumé indexé par PubMed et Europe PMC ; droits de l'éditeur (Cochrane, John Wiley & Sons). Extraits courts mot pour mot, usage interne.",
     "auditDate": "2026-11-07"
+  },
+  {
+    "sourceId": "WN-SRC-0652",
+    "title": "World Health Organization (2019). Risk reduction of cognitive decline and dementia: WHO guidelines. Genève : OMS (ISBN 978-92-4-155054-3)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Recommandation de pratique",
+    "format": "PDF",
+    "mimeType": "application/pdf",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_GUIDELINE",
+    "audienceOriginal": "Praticien",
+    "importance": "canonical",
+    "prescriptive": false,
+    "primaryNotebook": "10 — Micronutrition et compléments",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Élevée",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, polyphénols et antioxydants, lot LOT_056_2026-11-11) ; claims en attente de la signature du responsable",
+    "comment": "Source externe, lignes directrices publiées par l'OMS ; localisation au registre externe. Droits : © OMS 2019, licence CC BY-NC-SA 3.0 IGO (usage non commercial) ; extraits courts mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-11"
   }
 ]
