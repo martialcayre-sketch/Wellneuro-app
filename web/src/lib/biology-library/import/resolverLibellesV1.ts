@@ -290,6 +290,17 @@ export const RESOLVER_LIBELLES_V1: readonly EntreeResolver[] = Object.freeze([
   { libelle: 'Acide eicosapentaénoïque (EPA)', code: 'BIO_AG_EPA' },
   { libelle: 'Acide docosahexaénoïque (DHA)', code: 'BIO_AG_DHA' },
   { libelle: 'Acide dihomo-gamma-linolénique (DGLA)', code: 'BIO_AG_DGLA' },
+  // [[D-475]] (D-473 §6) : la fiche de vitamine E. Aucun libellé lu en
+  // production (constat par conteneur du 2026-11-11) : le libellé du catalogue
+  // et des synonymes validés par le responsable, comme [[D-336]]. « Vitamine
+  // E » nu se rattache, EXCEPTION écrite à la règle de [[D-263]] (un libellé
+  // lu au moins aussi précis que le catalogue). JAMAIS de lettre grecque :
+  // `normaliserLibelle` l'efface, et « α-tocophérol » rejoindrait
+  // « γ-tocophérol » et « Tocophérol » nu sous la même clé.
+  { libelle: 'Vitamine E (alpha-tocophérol)', code: 'BIO_VITAMINE_E' },
+  { libelle: 'Alpha-tocophérol', code: 'BIO_VITAMINE_E' },
+  { libelle: 'Vitamine E (tocophérol)', code: 'BIO_VITAMINE_E' },
+  { libelle: 'Vitamine E', code: 'BIO_VITAMINE_E' },
 ]);
 
 export type ResolverLibellesMetadata = {
@@ -310,18 +321,19 @@ export type ResolverLibellesMetadata = {
 
 export const RESOLVER_LIBELLES_METADATA: ResolverLibellesMetadata = {
   version: 'resolver-libelles-v1',
-  // RE-SIGNÉE PAR [[D-381]] — RE-SIGNER REMPLACE : la signature de [[D-363]]
-  // (2026-10-25, SHA `b4007b9c…`, 177 entrées, 87 analytes) portait la table
-  // sans les acides gras de [[D-376]] §7 ; celles de [[D-356]] (`ebe7179e…`),
-  // [[D-336]] (`3e084667…`), [[D-263]] (`be9a463c…`), [[D-260]] (`5f95d167…`)
-  // et [[D-259]] (`ccbd8008…`) étaient déjà remplacées. 205 entrées,
-  // 109 analytes. Signature du responsable transcrite par l'assistant sur son
-  // instruction, le 2026-10-26.
+  // RE-SIGNÉE PAR [[D-475]] — RE-SIGNER REMPLACE : la signature de [[D-381]]
+  // (2026-10-26, SHA `8ede2a9e…`, 205 entrées, 109 analytes) portait la table
+  // sans la vitamine E de D-473 §6 ; celles de [[D-363]] (`b4007b9c…`),
+  // [[D-356]] (`ebe7179e…`), [[D-336]] (`3e084667…`), [[D-263]]
+  // (`be9a463c…`), [[D-260]] (`5f95d167…`) et [[D-259]] (`ccbd8008…`) étaient
+  // déjà remplacées. 209 entrées, 110 analytes. Déclaration de conformité du
+  // responsable sur question à options, signature transcrite par l'assistant,
+  // le 2026-11-11.
   // Enrôlée dans `clinical/shaPerimetreLitteral.guard.test.ts` depuis D-259.
   validationExterne: true,
-  dateValidation: '2026-10-26T12:23:19.000Z',
-  sourceReference: 'Relecture du responsable, le 2026-10-26, des vingt-deux libellés de D-376 §7 lus en production (constat par conteneur du 2026-10-25) — vingt acides gras et deux rapports, chacun vers sa fiche — et de trois sigles arbitrés (EPA, DHA, DGLA, seuls ou avec le nom) ; AA, ALA et « Acide linolénique » nu jamais rattachés',
-  shaPerimetre: '8ede2a9e3e35a8cd4accad288d1a3b99b3a235cd4363c6430fc6bc25aaa797c9',
+  dateValidation: '2026-11-11T08:00:13.000Z',
+  sourceReference: 'Relecture du responsable, le 2026-11-11, de quatre libellés de la fiche de vitamine E de D-473 (aucun lu en production, constat par conteneur du 2026-11-11) : le libellé du catalogue, deux synonymes alpha en lettres latines, et « Vitamine E » nu, en exception à D-263 ; aucune lettre grecque',
+  shaPerimetre: 'e30d990ffb99f5f494a1d8e474770e33bc8edea2e23876db01d2a39611571efe',
 };
 
 // Empreinte calculée ICI, par `node:crypto` : importer `sha256` du module du

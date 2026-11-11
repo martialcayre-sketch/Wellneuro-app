@@ -388,3 +388,40 @@ describe('resolver — les acides gras, libellés imprimés et sigles ([[D-376]]
     }
   });
 });
+
+describe('resolver — la vitamine E, libellé du catalogue et synonymes ([[D-475]], D-473 §6)', () => {
+  const UNITES = unitesDuCatalogue();
+  it.each([
+    ['Vitamine E (alpha-tocophérol)'],
+    ['Alpha-tocophérol'],
+    // Le trait d'union est une ponctuation : la même clé que la forme liée.
+    ['Alpha tocophérol'],
+    ['Vitamine E (tocophérol)'],
+    // Exception écrite à la règle de [[D-263]] : le nom courant seul.
+    ['Vitamine E'],
+    ['VITAMINE E'],
+  ])('« %s » en µmol/L → BIO_VITAMINE_E, unité concordante', libelle => {
+    expect(resoudreLigne(libelle, 'µmol/L', UNITES)).toEqual({ statut: 'resolu', code: 'BIO_VITAMINE_E' });
+    expect(unitesConcordent('µmol/L', UNITES.get('BIO_VITAMINE_E') ?? null)).toBe(true);
+  });
+
+  it('imprimée en mg/L, la ligne est proposée mais son unité ne concorde pas : aucune conversion, elle ne peut que s’écarter', () => {
+    expect(resoudreLigne('Vitamine E', 'mg/L', UNITES)).toEqual({ statut: 'resolu', code: 'BIO_VITAMINE_E' });
+    expect(unitesConcordent('mg/L', UNITES.get('BIO_VITAMINE_E') ?? null)).toBe(false);
+  });
+
+  it('une lettre grecque s’efface à la normalisation : « α-tocophérol » rejoindrait « γ-tocophérol » et « Tocophérol » nu', () => {
+    expect(normaliserLibelle('α-tocophérol')).toBe(normaliserLibelle('γ-tocophérol'));
+    expect(normaliserLibelle('α-tocophérol')).toBe(normaliserLibelle('Tocophérol'));
+    expect(RESOLVER_LIBELLES_V1.filter(e => /[Ͱ-Ͽ]/.test(e.libelle))).toEqual([]);
+  });
+
+  it('les formes non arbitrées — grecques, autre tocophérol, rapport, sigle court — restent « inconnu »', () => {
+    for (const libelle of [
+      'α-tocophérol', 'γ-tocophérol', 'Gamma-tocophérol', 'Tocophérol', 'Tocophérols totaux',
+      'Vitamine E / cholestérol', 'Rapport vitamine E / lipides', 'Vit E',
+    ]) {
+      expect(resoudreLibelle(libelle).statut, libelle).toBe('inconnu');
+    }
+  });
+});
