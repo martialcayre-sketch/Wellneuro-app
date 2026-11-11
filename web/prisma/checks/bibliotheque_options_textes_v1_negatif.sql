@@ -11,6 +11,7 @@
 --      session Europe/Paris — sur les deux tables ;
 --   3. les formats sont fermés : identifiant d'option sans espace et borné,
 --      empreinte de structure, auteur et validateur visibles et bornés ;
+--      option, rubrique et numéro NULL, empreinte d'acte NULL, refusés ;
 --   4. la rubrique est en liste FERMÉE, celle de D-480 §1 : la population
 --      (BP-12a) et « explication patient » sont refusées ;
 --   5. le texte est visible, et son empreinte est celle de son texte ;
@@ -22,15 +23,20 @@
 --   8. l'empreinte d'un acte est celle du texte visé ; un texte inconnu est
 --      refusé sous son nom ;
 --   9. seule la DERNIÈRE version d'un couple reçoit un acte, validation comme
---      retrait ;
+--      retrait — et la règle se juge couple par couple : la v2 d'un couple ne
+--      dépasse ni une autre rubrique de l'option, ni une autre option ;
 --  10. `ordre` est posé par la base ;
 --  11. UPDATE, DELETE et TRUNCATE sont refusés sur les deux tables, chacune
 --      par son PROPRE trigger TRUNCATE ;
 --  12. la FK des actes est en ON DELETE RESTRICT ; la RLS deny-all est
---      active et sans policy (posture `D-005`), et AUCUNE colonne ne désigne
---      un patient ;
---  13. READ COMMITTED SEUL : une version ou un acte en REPEATABLE READ ou
---      SERIALIZABLE est refusé (seconde transaction, en fin de fichier).
+--      active et sans policy (posture `D-005`), AUCUNE colonne ne désigne
+--      un patient, et PUBLIC n'exécute aucune fonction de trigger ;
+--  13. READ COMMITTED SEUL : une version ou un acte en REPEATABLE READ, puis
+--      en SERIALIZABLE, est refusé (une transaction par niveau, en fin de
+--      fichier).
+--
+-- Hors de ce fichier : la concurrence réelle (deux sessions, verrou constaté
+-- en attente), au banc sur base réelle de la PR 5.
 --
 -- Ce que la base ne vérifie pas — l'existence de l'option à la structure,
 -- l'égalité de `structure_sha256` à l'empreinte signée — est à la route et
@@ -142,6 +148,16 @@ BEGIN
     V || '(''x6'', ''OPT_X'', ''dose'', 1, ' || quote_literal(T1) || ', ' || quote_literal(H1) || ', ' || quote_literal(S) || ', E''\t'')', ARRAY['23514']);
   PERFORM pg_temp.doit_refuser('auteur trop long',
     V || '(''x7'', ''OPT_X'', ''dose'', 1, ' || quote_literal(T1) || ', ' || quote_literal(H1) || ', ' || quote_literal(S) || ', repeat(''p'', 321))', ARRAY['23514']);
+  -- NULL : le verrou (`hashtext` NULL) ne se prend pas, le trigger laisse
+  -- passer, et le NOT NULL refuse (revue `wn-reviewer`, N5).
+  PERFORM pg_temp.doit_refuser('identifiant d''option NULL',
+    V || '(''x1n'', NULL, ''dose'', 1, ' || quote_literal(T1) || ', ' || quote_literal(H1) || ', ' || quote_literal(S) || ', ''p'')', ARRAY['23502']);
+  PERFORM pg_temp.doit_refuser('rubrique NULL',
+    V || '(''x1r'', ''OPT_X'', NULL, 1, ' || quote_literal(T1) || ', ' || quote_literal(H1) || ', ' || quote_literal(S) || ', ''p'')', ARRAY['23502']);
+  PERFORM pg_temp.doit_refuser('numéro NULL',
+    V || '(''x1u'', ''OPT_X'', ''dose'', NULL, ' || quote_literal(T1) || ', ' || quote_literal(H1) || ', ' || quote_literal(S) || ', ''p'')', ARRAY['P0001'], 'le numéro attendu est 1');
+  PERFORM pg_temp.doit_refuser('acte à l''empreinte NULL',
+    A || '(''z0n'', ''bot_1'', ''validee'', NULL, ''p'', true, NULL)', ARRAY['P0001'], 'ne correspond pas au texte bot_1');
   PERFORM pg_temp.doit_refuser('validateur blanc',
     A || '(''z1'', ''bot_1'', ''validee'', ' || quote_literal(H1) || ', E''\n'', true, NULL)', ARRAY['23514']);
   PERFORM pg_temp.doit_refuser('validateur trop long',
@@ -214,6 +230,18 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: la validation de la dernière version a été refusée (%)', SQLERRM;
   END;
+  -- La règle se juge COUPLE PAR COUPLE (revue `wn-reviewer`, C1) : une v2
+  -- de `OPT_CONTRAT_1` × precautions ne rend dépassée ni une autre rubrique
+  -- de la même option, ni la même rubrique d'une autre option.
+  BEGIN
+    INSERT INTO bibliotheque_options_textes_actes
+      (id, id_texte, acte, empreinte, validateur, relecture_integrale)
+    VALUES ('boa_autre_rub', 'bot_autre_rub', 'validee', H1, 'p', true),
+           ('boa_autre_opt', 'bot_autre_opt', 'validee', H1, 'p', true);
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: un acte a été refusé à cause d''un AUTRE couple (%)', SQLERRM;
+  END;
 
   -- ── 10. `ordre` posé par la base ─────────────────────────────────────────
   SELECT ordre INTO o1 FROM bibliotheque_options_textes_actes WHERE id = 'boa_1';
@@ -226,7 +254,7 @@ BEGIN
   PERFORM pg_temp.doit_refuser('UPDATE d''une version',
     'UPDATE bibliotheque_options_textes SET auteur = ''q'' WHERE id = ''bot_autre_opt''', ARRAY['P0001']);
   PERFORM pg_temp.doit_refuser('DELETE d''une version sans acte',
-    'DELETE FROM bibliotheque_options_textes WHERE id = ''bot_autre_opt''', ARRAY['P0001']);
+    'DELETE FROM bibliotheque_options_textes WHERE id = ''bot_r_duree''', ARRAY['P0001']);
   PERFORM pg_temp.doit_refuser('UPDATE d''un acte',
     'UPDATE bibliotheque_options_textes_actes SET motif = ''q'' WHERE id = ''boa_1''', ARRAY['P0001']);
   PERFORM pg_temp.doit_refuser('DELETE d''un acte',
@@ -281,6 +309,18 @@ BEGIN
   IF nb <> 0 THEN
     RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: % colonne(s) désignent un patient — ces tables ne portent AUCUNE donnée patient.', nb;
   END IF;
+  -- Les fonctions des triggers ne s'exécutent pas hors des triggers
+  -- (revue `wn-reviewer`, N2).
+  SELECT count(*) INTO nb
+  FROM unnest(ARRAY[
+    'public.bibliotheque_options_append_only()',
+    'public.bibliotheque_options_textes_avant_insertion()',
+    'public.bibliotheque_options_textes_actes_avant_insertion()'
+  ]) AS f
+  WHERE has_function_privilege('public', f, 'EXECUTE');
+  IF nb <> 0 THEN
+    RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: % fonction(s) de trigger exécutable(s) par PUBLIC.', nb;
+  END IF;
 
   RAISE NOTICE 'BIBLIOTHEQUE OPTIONS: versions et actes valides acceptés, neuf rubriques ; instants en UTC sous Europe/Paris ; formats fermés ; rubrique fermée (population et explication patient refusées) ; texte visible et son empreinte ; numéro qui suit, par couple ; relecture et motif exigés, acte fermé ; empreinte du texte visé, cible inconnue nommée ; dernière version seule ; ordre posé par la base ; UPDATE/DELETE/TRUNCATE refusés, trigger TRUNCATE propre ; FK RESTRICT ; RLS deny-all ; aucune colonne patient.';
 END $$;
@@ -318,6 +358,38 @@ BEGIN
   PERFORM pg_temp.doit_refuser_isolation('acte en REPEATABLE READ',
     'INSERT INTO bibliotheque_options_textes_actes (id, id_texte, acte, empreinte, validateur, relecture_integrale) VALUES (''rr_a'', ''bot_inconnu'', ''validee'', repeat(''a'', 64), ''p'', true)');
   RAISE NOTICE 'BIBLIOTHEQUE OPTIONS: version et acte refusés en REPEATABLE READ.';
+END $$;
+
+ROLLBACK;
+
+-- Puis SERIALIZABLE, chaque niveau sa transaction (revue `wn-reviewer`, C2).
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+
+CREATE FUNCTION pg_temp.doit_refuser_isolation(libelle text, requete text)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  BEGIN
+    EXECUTE requete;
+  EXCEPTION
+    WHEN others THEN
+      IF SQLSTATE <> 'P0001' OR strpos(SQLERRM, 'exige READ COMMITTED') = 0 THEN
+        RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: « % » refusé pour une autre raison (% : %).', libelle, SQLSTATE, SQLERRM;
+      END IF;
+      RETURN;
+  END;
+  RAISE EXCEPTION 'BIBLIOTHEQUE OPTIONS: « % » a été accepté.', libelle;
+END;
+$$;
+
+DO $$
+BEGIN
+  PERFORM pg_temp.doit_refuser_isolation('version en SERIALIZABLE',
+    'INSERT INTO bibliotheque_options_textes (id, option_id, rubrique, numero, texte, texte_sha256, structure_sha256, auteur) VALUES (''sr_1'', ''OPT_SR'', ''dose'', 1, ''Texte.'', encode(sha256(convert_to(''Texte.'', ''UTF8'')), ''hex''), repeat(''a'', 64), ''p'')');
+  PERFORM pg_temp.doit_refuser_isolation('acte en SERIALIZABLE',
+    'INSERT INTO bibliotheque_options_textes_actes (id, id_texte, acte, empreinte, validateur, relecture_integrale) VALUES (''sr_a'', ''bot_inconnu'', ''validee'', repeat(''a'', 64), ''p'', true)');
+  RAISE NOTICE 'BIBLIOTHEQUE OPTIONS: version et acte refusés en SERIALIZABLE.';
 END $$;
 
 ROLLBACK;

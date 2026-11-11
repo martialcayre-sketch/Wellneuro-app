@@ -52,7 +52,10 @@
 -- acte MASQUE la précédente : une ancienne version validée ne réapparaît
 -- jamais d'elle-même (arbitrage du 2026-11-11). Il est « à relire » si son
 -- `structure_sha256` n'est plus l'empreinte de la structure signée (D-480
--- §2-3). Rien ne stocke l'état : il se dérive à la lecture.
+-- §2-3) ; la version étant figée, il le reste jusqu'à une version NEUVE
+-- (même texte, empreinte de structure à jour) et son acte, comme les
+-- libellés des fiches d'usage. Rien ne stocke l'état : il se dérive à la
+-- lecture.
 --
 -- ── CE QUE LA BASE REFUSE ──────────────────────────────────────────────────
 --
@@ -149,7 +152,9 @@ ALTER TABLE "bibliotheque_options_textes_actes" ADD CONSTRAINT "bibliotheque_opt
 -- retire que l'espace ASCII et laisse passer une ligne de tabulations.
 
 ALTER TABLE "bibliotheque_options_textes"
-  -- Sans espace d'aucune sorte (`\s` couvre tabulation et retour à la ligne).
+  -- Sans blanc au sens de `\s` (espace, tabulation, retour à la ligne ; la
+  -- reconnaissance des blancs Unicode suit la collation). Le format exact
+  -- est fixé par la structure (PR 3).
   ADD CONSTRAINT "bibliotheque_options_textes_option_format"
     CHECK ("option_id" ~ '^\S+$' AND char_length("option_id") <= 128),
   ADD CONSTRAINT "bibliotheque_options_textes_rubrique_fermee"

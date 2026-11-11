@@ -4307,7 +4307,8 @@ model BibliothequeOptionTexte {
   /// Tenue égale au SHA-256 du texte par un CHECK.
   texteSha256     String   @map("texte_sha256")
   /// Empreinte de la structure de la bibliothèque qu'il accompagne : une
-  /// re-signature le rend « à relire » jusqu'à un nouvel acte (D-480 §3).
+  /// re-signature le rend « à relire » jusqu'à une version neuve et son acte
+  /// (D-480 §3, sur le patron des libellés) ; la version est figée.
   structureSha256 String   @map("structure_sha256")
   /// Le compte qui a saisi le texte.
   auteur          String   @map("auteur")
