@@ -3,8 +3,14 @@ import type { ReactElement } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+// Un routeur STABLE, comme celui de Next : l'accueil le compte dans les
+// dépendances de son chargement, et un objet neuf à chaque rendu relancerait
+// la lecture en boucle.
+const { replace, router } = vi.hoisted(() => {
+  const replace = vi.fn();
+  return { replace, router: { replace } };
+});
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
 import { MonProtocoleImprimable } from './MonProtocoleImprimable';
 import { PatientCompanionHome } from './PatientCompanionHome';

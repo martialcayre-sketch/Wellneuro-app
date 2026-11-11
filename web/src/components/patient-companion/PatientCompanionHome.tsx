@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
@@ -30,11 +31,16 @@ const CONNEXION_INTERROMPUE = 'Connexion interrompue. Vérifiez votre connexion 
 
 type LectureProtocole =
   | { protocole: Extract<ProtocoleResponse, { ok: true }>; erreur: null }
-  | { protocole: null; erreur: string };
+  | { protocole: null; erreur: string }
+  | { protocole: null; erreur: null; sessionExpiree: true };
 
 async function lireProtocole(): Promise<LectureProtocole> {
   try {
     const res = await fetch('/api/portail/protocole', { cache: 'no-store' });
+    // Session absente ou expirée : « Réessayer » ne peut pas réussir. Retour au
+    // gate du portail, comme le hub et les autres écrans (réponse 7 (b) du
+    // responsable à l'étape 1 de la refonte Lien, 2026-11-11).
+    if (res.status === 401) return { protocole: null, erreur: null, sessionExpiree: true };
     const data = (await res.json()) as ProtocoleResponse | { ok: false; error?: string };
     if (data.ok) return { protocole: data, erreur: null };
     // Le refus du serveur, tel quel, comme `MonBilan`.
@@ -57,6 +63,7 @@ async function lireCheckin(): Promise<Extract<CheckinResponse, { ok: true }> | n
 }
 
 export function PatientCompanionHome({ token }: { token: string }) {
+  const router = useRouter();
   const [protocole, setProtocole] = useState<Extract<ProtocoleResponse, { ok: true }> | null>(null);
   const [checkin, setCheckin] = useState<Extract<CheckinResponse, { ok: true }> | null>(null);
   const [erreurProtocole, setErreurProtocole] = useState<string | null>(null);
@@ -94,6 +101,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
     // protocole est une erreur, pas une attente : « arrivera bientôt » serait
     // faux pour le patient qui l'a lu hier.
     const [p, dc] = await Promise.all([lireProtocole(), lireCheckin()]);
+    if ('sessionExpiree' in p) {
+      router.replace(`/portail/${token}`);
+      return;
+    }
     setErreurProtocole(p.erreur);
     const dp = p.protocole;
     setProtocole(dp);
@@ -106,7 +117,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
     setLectureConsignee(dejaDeplie);
     setCheckin(dc);
     setChargement(false);
-  }, []);
+  }, [router, token]);
 
   // Lecture séparée et non bloquante : un échec ne doit pas priver l'accueil
   // de son protocole. Aucune donnée n'en revient — seulement « ouvert ou non ».

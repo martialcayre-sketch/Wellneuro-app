@@ -2,6 +2,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEXTE_PAUSE_AVIS_RENDU, TEXTE_PAUSE_COMPLEMENTS, TEXTE_PAUSE_ELEMENT } from '@/lib/trust/pauseEffetIndesirable';
+
+const { router } = vi.hoisted(() => ({ router: { replace: vi.fn() } }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+
 import { PatientCompanionHome } from './PatientCompanionHome';
 import { TITRE_LECTURE_DATEE } from '@/lib/portail/lectureDatee';
 import { PARAGRAPHES_ENCART_CONDUITE, TITRE_ENCART_CONDUITE } from '@/lib/portail/texteEncartConduite';
@@ -795,6 +799,24 @@ describe('PatientCompanionHome — lectures du protocole et du suivi', () => {
     });
     render(<PatientCompanionHome token="TOK" />);
     expect((await screen.findByRole('alert')).textContent).toContain('Erreur technique.');
+    expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
+  });
+
+  // SESSION EXPIRÉE (réponse 7 (b) du responsable, 2026-11-11) : retour au
+  // gate du portail, pas un « Réessayer » qui ne peut pas réussir.
+  it('une session expirée renvoie au gate du portail, sans erreur affichée', async () => {
+    router.replace.mockClear();
+    fetchPar({
+      proto: () =>
+        Promise.resolve({
+          status: 401,
+          json: () => Promise.resolve({ ok: false, reason: 'unauthenticated', error: 'Connexion au portail requise.' }),
+        } as Response),
+      checkin: json({ ok: false, reason: 'unauthenticated', error: 'Connexion au portail requise.' }),
+    });
+    render(<PatientCompanionHome token="TOK" />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/portail/TOK'));
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText(/arrivera bientôt/i)).toBeNull();
   });
 });
