@@ -37,6 +37,28 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
   mockContraRegles: [] as unknown[],
 }));
 
+// L'ADMISSIBILITÉ DES CLAIMS AU CORPUS ([[D-491]]). Par défaut, tout couple est
+// admissible : les bancs d'avant D-491 gardent leur sens. Les bancs de D-491
+// déclarent un couple non admissible, ou le corpus illisible.
+const { mockAdmissibilite } = vi.hoisted(() => ({
+  mockAdmissibilite: { illisible: false, nonAdmissibles: new Set<string>(), appels: 0 },
+}));
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('./admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) => {
+      mockAdmissibilite.appels += 1;
+      if (mockAdmissibilite.illisible) return null;
+      return new Set(
+        references
+          .map(r => `${r.claimId}::${r.versionClaim}`)
+          .filter(cle => !mockAdmissibilite.nonAdmissibles.has(cle)),
+      );
+    },
+  };
+});
+
 vi.mock('@/lib/prisma', () => ({ prisma }));
 // `estFeuilleInstrument` VIENT DU MODULE RÉEL, jamais d'un stub ([[D-231]]) :
 // le moteur s'en sert pour distinguer une feuille d'instrument d'une borne
@@ -1027,11 +1049,22 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     });
   }
 
+  function remettreLAdmissibilite() {
+    mockAdmissibilite.illisible = false;
+    mockAdmissibilite.nonAdmissibles.clear();
+    mockAdmissibilite.appels = 0;
+  }
+
   beforeEach(() => {
+    remettreLAdmissibilite();
     signerLaTable();
     mockRegles.push(REGLE_DRAPEAU);
     mockArretRegles.push(ARRET_DRAPEAU);
     dossier();
+  });
+
+  afterEach(() => {
+    remettreLAdmissibilite();
   });
 
   it('le verrou est auto-portant : un booléen seul ne l\'ouvre pas', () => {
@@ -1109,6 +1142,79 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.ecartees[0].extinction?.motif).toContain('rassurants');
     // Et le motif d'ÉCARTEMENT reste distinct de celui de l'extinction.
     expect(resultat.ecartees[0].motif).toContain('chronotype');
+  });
+
+  // ── [[D-491]] — une règle d'arrêt dont un claim n'est pas admissible ──────
+  //
+  // Une extinction est plus exigeante qu'une proposition ([[D-053]], arbitrage
+  // 1) : la règle n'est pas passée au moteur, l'exploration reste proposée, et
+  // la suspension est dite. Ne pas pouvoir vérifier les sources n'autorise
+  // jamais une extinction.
+
+  it('D-491 : table signée et exploitable, tous les claims admissibles — l\'extinction joue, rien n\'est suspendu', async () => {
+    signerLArret();
+    armerLesContradictions();
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.arretsSuspendus).toEqual([]);
+    expect(mockAdmissibilite.appels).toBe(1);
+  });
+
+  it('D-491 : un claim de la règle d\'arrêt NON ADMISSIBLE — rien n\'est éteint, la règle est dite suspendue avec son couple', async () => {
+    signerLArret();
+    armerLesContradictions();
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-011::v1.0');
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsSuspendus).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      motif: 'claims_non_admissibles',
+      claims: [{ claimId: 'WN-CL-0000-011', versionClaim: 'v1.0' }],
+    }]);
+    // La provenance de la table reste servie : la table est signée, c'est une
+    // de ses règles qui ne joue pas.
+    expect(resultat.arret).toEqual({ version: 'stop-rules-nnpp2-v1', sha256: 'sha-arret-test' });
+  });
+
+  it('D-491 : corpus ILLISIBLE — aucune extinction, la règle est dite suspendue faute de vérification', async () => {
+    signerLArret();
+    armerLesContradictions();
+    mockAdmissibilite.illisible = true;
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsSuspendus).toEqual([
+      { stopRuleId: 'STOP-TEST', motif: 'validite_non_verifiee', claims: [] },
+    ]);
+  });
+
+  it('D-491 : table d\'arrêt NON exploitable — le corpus n\'est pas lu, rien n\'est dit suspendu', async () => {
+    // Signée, mais contradictions éteintes ([[D-065]]) : aucune extinction ne
+    // joue de toute façon, la suspension n'aurait rien à dire.
+    signerLArret();
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.arretsSuspendus).toEqual([]);
+    expect(mockAdmissibilite.appels).toBe(0);
+  });
+
+  it('D-491 : une règle d\'arrêt suspendue ne touche pas l\'exclusion des instruments déjà mesurés (elle ne cite aucun claim)', async () => {
+    signerLArret();
+    armerLesContradictions();
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-011::v1.0');
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idReponse: 'REP-1', idQuestionnaire: 'Q_SOM_01', dateReponse: new Date(Date.now() - 24 * 60 * 60 * 1000), statutValidite: 'VALID', scoresJson: { rawAnswers: { Q1: 0, Q2: 90, Q3: 7, Q4: 4, Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3, Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3, Q6: 3, Q7: 3, Q8: 3, Q9: 3 } } },
+    ]);
+    mockRegles.length = 0;
+    mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toEqual([]);
+    expect(resultat.arretsSuspendus).toHaveLength(1);
   });
 
   // L'EXCLUSION SUIT LE MÊME VERROU, et elle porte sur une passation

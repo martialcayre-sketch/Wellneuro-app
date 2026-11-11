@@ -6,6 +6,7 @@ import {
   evaluerOrientationPourPatient,
   orientationActive,
   resultatInactif,
+  type ArretSuspendu,
   type PropositionEcartee,
   type RecommandationServie,
 } from '@/lib/clinical/orientationService';
@@ -46,6 +47,8 @@ export type OrientationApiResponse =
       ecartees: PropositionEcartee[];
       /** Règles non évaluées faute de passation fraîche ([[D-433]] §3) — vide, jamais absent. */
       reglesNonEvaluees: RegleNonEvaluee[];
+      /** Règles d'arrêt suspendues faute de claim admissible ([[D-491]]) — vide, jamais absent. */
+      arretsSuspendus: ArretSuspendu[];
     }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
@@ -96,6 +99,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       recommandations: resultat.recommandations,
       ecartees: resultat.ecartees,
       reglesNonEvaluees: resultat.reglesNonEvaluees,
+      arretsSuspendus: resultat.arretsSuspendus,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de

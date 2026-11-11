@@ -18,6 +18,7 @@ function orientation(reglesNonEvaluees: unknown): ResultatOrientation {
     ecartees: [],
     reglesNonEvaluees,
     arret: null,
+    arretsSuspendus: [],
   } as ResultatOrientation;
 }
 

@@ -34,6 +34,48 @@ const INTITULE_PAR_FORME = {
  * apparu sans son état — et l'escalade est précisément ce que `DC-55` demande
  * de rendre visible, puisqu'elle est une issue de la politique et non un échec.
  */
+/**
+ * LA RÉSERVE SUR LA SOURCE — [[D-491]]. Visible dans le résumé, sans déplier :
+ * le constat reste servi, mais un de ses claims ne satisfait pas les critères
+ * de validité du corpus, ou cette validité n'a pas pu être vérifiée. Le claim
+ * n'est jamais présenté comme admissible. Un conflit n'est pas résolu pour
+ * autant : un claim supplanté n'est pas nécessairement réfuté.
+ */
+function intituleReserve(constat: ContradictionAffichee): string | null {
+  const reserve = constat.reserveSource;
+  if (!reserve) return null;
+  if (reserve.motif === 'validite_non_verifiee') return 'Validité des sources non vérifiée';
+  return constat.forme === 'CONFLIT_SOURCES' ? 'Registre de conflits à relire' : 'Réserve sur la source';
+}
+
+function phraseReserve(constat: ContradictionAffichee): string | null {
+  const reserve = constat.reserveSource;
+  if (!reserve) return null;
+  const constatOuConflit = constat.forme === 'CONFLIT_SOURCES'
+    ? 'Le conflit reste affiché : il n’est pas résolu pour autant, un claim supplanté n’étant pas nécessairement réfuté.'
+    : 'Le constat reste affiché, et il empêche toujours une règle d’arrêt de retirer une exploration.';
+  const cause = reserve.motif === 'validite_non_verifiee'
+    ? 'La validité des claims cités n’a pas pu être vérifiée.'
+    : constat.forme === 'CONFLIT_SOURCES'
+      ? 'Au moins un des deux claims ne satisfait pas les critères de validité du corpus.'
+      : 'Au moins un claim qui fonde ce constat ne satisfait pas les critères de validité du corpus.';
+  return `${cause} ${constatOuConflit}`;
+}
+
+/** Un claim de la liste des sources, marqué s'il n'est pas admissible ([[D-491]]). */
+function libelleClaimSource(
+  constat: ContradictionAffichee,
+  claim: { claimId: string; versionClaim: string },
+): string {
+  const libelle = `${claim.claimId} ${claim.versionClaim}`;
+  const reserve = constat.reserveSource;
+  if (reserve?.motif !== 'claims_non_admissibles') return libelle;
+  const nonAdmissible = reserve.claims.some(
+    c => c.claimId === claim.claimId && c.versionClaim === claim.versionClaim,
+  );
+  return nonAdmissible ? `${libelle} (ne satisfait pas les critères de validité du corpus)` : libelle;
+}
+
 const ETAT_PAR_STATUT = {
   ouverte: 'non résolue',
   escaladee_praticien: 'escaladée — arbitrage praticien attendu',
@@ -109,9 +151,21 @@ export function MissingDataPanel({
           <TwoLevelReading
             key={constat.id}
             label="Voir le détail"
-            summary={<span><span className="font-medium">{INTITULE_PAR_FORME[constat.forme]} :</span> {constat.description}</span>}
+            summary={(
+              <span>
+                {intituleReserve(constat) && (
+                  <span className="block font-medium text-status-warning">{intituleReserve(constat)}</span>
+                )}
+                <span className="font-medium">{INTITULE_PAR_FORME[constat.forme]} :</span> {constat.description}
+              </span>
+            )}
             detail={(
               <div className="space-y-2">
+                {phraseReserve(constat) && (
+                  <p role="note" className="rounded-md bg-status-warning/10 p-2 text-status-warning">
+                    {phraseReserve(constat)}
+                  </p>
+                )}
                 {/* `DC-30`, ACTÉE : l'objet minimal d'une discordance porte son
                     importance et son état de résolution. Le vocabulaire est
                     celui que ce panneau affiche déjà pour les données
@@ -217,7 +271,7 @@ export function MissingDataPanel({
                     pas remontable (`DC-01`, `DC-26`). */}
                 {constat.claims.length > 0 && (
                   <p className="text-muted-foreground">
-                    Règle {constat.regleId} · sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
+                    Règle {constat.regleId} · sources : {constat.claims.map(c => libelleClaimSource(constat, c)).join(', ')}
                   </p>
                 )}
                 {/* LES ARBITRAGES PAR FICHE, LISTÉS SANS ÊTRE APPLIQUÉS —
