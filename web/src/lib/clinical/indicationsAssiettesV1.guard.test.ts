@@ -247,7 +247,7 @@ describe('indications d’assiette — état livré', () => {
   });
 
   it('UN CLAIM QUI CESSE D’ÊTRE VALIDE retire SA ligne, et elle seule', () => {
-    // Boucle sur les VINGT claims du périmètre : en retirer un ne doit retirer
+    // Boucle sur les DIX-NEUF claims du périmètre : en retirer un ne doit retirer
     // que les lignes qui le citent. Un balayage global ne dirait pas lesquelles.
     for (const claim of INDICATIONS_ASSIETTES_METADATA.claimsSource) {
       const valides = new Set(claimsValidesDe(INDICATIONS_ASSIETTES_V1));

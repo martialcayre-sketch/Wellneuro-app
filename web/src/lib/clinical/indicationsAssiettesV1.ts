@@ -512,7 +512,7 @@ export const INDICATIONS_ASSIETTES_V1: readonly LigneIndicationAssiette[] = [
     statut: 'brouillon',
   },
   // LA LIGNE `ASSIETTE-IND-ANTIOXYDANTE` EST RETIRÉE PAR [[D-489]]. Son seul
-  // claim d'indication, `WN-CL-0292-003`, est rejeté à la relecture du dossier
+  // claim d'indication, `WN-CL-0292-003`, sera rejeté après la release-db, sur la relecture du dossier
   // polyphénols et antioxydants (besoin 2) : les sources vérifiées n'étayent ni
   // son niveau de preuve ni l'étendue de ses indications. Une ligne sans claim
   // d'indication n'est pas une indication, et le verrou la refuserait : la ligne
