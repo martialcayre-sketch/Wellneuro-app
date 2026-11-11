@@ -1303,6 +1303,22 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.recommandations[0].extinction ?? null).toBeNull();
   });
 
+  // [[D-491]] §4 — LE FREIN NE DÉPEND PAS DE LA VALIDITÉ DU CLAIM DE LA
+  // CONTRADICTION. Son claim n'est plus admissible, la règle d'arrêt l'est : la
+  // discordance reste ouverte et interdit toujours l'extinction. Seul
+  // l'affichage du cockpit porte la réserve.
+  it('D-491 : claim de la contradiction NON admissible, règle d\'arrêt admissible — l\'extinction reste refusée', async () => {
+    signerLArret();
+    armerLesContradictions();
+    mockContraRegles.push(CONTRA_SUR_DOSSIER);
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-012::v1.0');
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsSuspendus).toEqual([]);
+  });
+
   // ── LE FREIN EST STRUCTUREL — [[D-065]]. Ce bloc affirmait l'inverse sous le
   // titre « hiérarchie des verrous » : contradictions éteintes, le dossier
   // s'éteignait quand même. C'est la configuration exacte qui a tourné en

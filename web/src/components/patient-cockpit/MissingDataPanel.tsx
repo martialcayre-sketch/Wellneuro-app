@@ -27,14 +27,6 @@ const INTITULE_PAR_FORME = {
 } as const;
 
 /**
- * L'état de résolution, en toutes lettres.
- *
- * `escaladee_praticien` ne pouvait PAS s'afficher avant [[D-103]] : le panneau
- * ne disait quelque chose que sur `ouverte`. Un conflit escaladé serait donc
- * apparu sans son état — et l'escalade est précisément ce que `DC-55` demande
- * de rendre visible, puisqu'elle est une issue de la politique et non un échec.
- */
-/**
  * LA RÉSERVE SUR LA SOURCE — [[D-491]]. Visible dans le résumé, sans déplier :
  * le constat reste servi, mais un de ses claims ne satisfait pas les critères
  * de validité du corpus, ou cette validité n'a pas pu être vérifiée. Le claim
@@ -76,6 +68,14 @@ function libelleClaimSource(
   return nonAdmissible ? `${libelle} (ne satisfait pas les critères de validité du corpus)` : libelle;
 }
 
+/**
+ * L'état de résolution, en toutes lettres.
+ *
+ * `escaladee_praticien` ne pouvait PAS s'afficher avant [[D-103]] : le panneau
+ * ne disait quelque chose que sur `ouverte`. Un conflit escaladé serait donc
+ * apparu sans son état — et l'escalade est précisément ce que `DC-55` demande
+ * de rendre visible, puisqu'elle est une issue de la politique et non un échec.
+ */
 const ETAT_PAR_STATUT = {
   ouverte: 'non résolue',
   escaladee_praticien: 'escaladée — arbitrage praticien attendu',

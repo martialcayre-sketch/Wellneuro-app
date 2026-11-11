@@ -14,4 +14,5 @@ sont inchangées. `release-db` à approuver séparément.
 - Conflits de sources : le conflit reste servi et escaladé ; le cockpit ajoute « Registre de conflits à relire » et
   désigne le claim en cause.
 - §8 du plan : la ligne t72 est corrigée (une règle d'arrêt est une règle d'extinction, D-053, pas un signal de
-  sécurité DC-12) et soldée.
+  sécurité DC-12) et soldée ; t77 est inscrite (la synthèse IA ne dit pas qu'une règle d'arrêt est suspendue ; t71 y
+  ajoutera les règles d'orientation non appliquées).

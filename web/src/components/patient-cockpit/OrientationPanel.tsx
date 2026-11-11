@@ -504,7 +504,7 @@ export function OrientationPanel({
               {suspendu.motif === 'validite_non_verifiee'
                 ? ' La validité de ses sources n’a pas pu être vérifiée.'
                 : ' Au moins un claim cité ne satisfait pas les critères de validité du corpus.'}
-              {' Les explorations qu’elle aurait retenues restent proposées.'}
+              {' Les explorations qu’elle aurait retirées restent proposées.'}
             </p>
             {suspendu.claims.length > 0 && (
               <p className="mt-0.5 font-mono text-2xs text-muted-foreground">
