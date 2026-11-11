@@ -555,7 +555,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                       setBookletInfo(null);
                       setFeedback(null);
                     }}
-                    className="text-xs text-accent hover:underline"
+                    className="text-xs text-accent-ink hover:underline"
                   >
                     Voir / gérer
                   </button>

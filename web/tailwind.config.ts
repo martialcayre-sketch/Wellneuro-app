@@ -32,9 +32,19 @@ const config: Config = {
         accent: {
           DEFAULT: 'rgb(var(--color-accent-rgb) / <alpha-value>)',
           foreground: 'var(--color-accent-foreground)',
+          // Texte d'accent lisible sur clair (A5-R3) : l'argile pleine est
+          // décorative seulement.
+          ink: 'var(--color-accent-ink)',
         },
-        // Rail de navigation praticien — toujours sombre, indépendant de
-        // data-theme (cf. docs/design-system-d1.md, section « Rail de navigation »).
+        // Contour perceptible des champs, cases et boutons secondaires (A5-R3).
+        'control-border': 'var(--color-control-border)',
+        // Fonds des deux voix du dossier partagé (A5-R3).
+        voice: {
+          patient: 'var(--voice-patient)',
+          practitioner: 'var(--voice-practitioner)',
+        },
+        // Menu latéral, par thème depuis A5-R3 : nuit pétrole côté praticien,
+        // sauge claire côté patient (valeurs dans globals.css).
         rail: {
           DEFAULT: 'var(--rail-background)',
           surface: 'rgb(var(--rail-surface-rgb) / <alpha-value>)',
@@ -51,6 +61,14 @@ const config: Config = {
         },
         // Palette de marque brute, disponible pour des usages ponctuels
         // en dehors des rôles sémantiques ci-dessus.
+        // Palette « Lien — Empreinte » (A5-R3) : seulement les teintes sans
+        // rôle sémantique (traits, ornements, encre champagne, sable).
+        lien: {
+          'sage-line': 'var(--lien-sage-line)',
+          champagne: 'var(--lien-champagne)',
+          'champagne-ink': 'var(--lien-champagne-ink)',
+          sand: 'var(--lien-sand)',
+        },
         teal: {
           950: 'var(--teal-950)',
           900: 'var(--teal-900)',
@@ -111,10 +129,12 @@ const config: Config = {
         // Rôles typographiques A5-R1 : les valeurs de --font-body /
         // --font-display / --font-mono sont attribuées par thème dans
         // globals.css (praticien : Sora/Instrument Sans/Plex Mono ;
-        // patient : Bricolage Grotesque/Albert Sans/Plex Mono).
+        // patient : Lora/Instrument Sans/Plex Mono depuis A5-R3).
         sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
+        // Nom de la marque (EmpreinteMarque), en Lora dans les deux rôles.
+        marque: ['var(--font-lora)', 'Georgia', 'serif'],
       },
       // Échelle typographique 5.0 (refonte visuelle, maquette cible
       // 2026-07-18) : la « typo remontée » se fait ici, au niveau des tokens —
@@ -144,9 +164,24 @@ const config: Config = {
         // Entrée active du rail patient ([[D-447]] §5).
         'nav-active': 'var(--shadow-nav-active)',
       },
-      // Largeur du rail patient ([[D-447]] §5), en `rem` dans globals.css.
+      // Largeur du rail patient ([[D-447]] §5), en `rem` dans globals.css ;
+      // forme réduite à libellés ([[D-482]]).
       width: {
         'nav-rail': 'var(--nav-rail)',
+        'nav-rail-compact': 'var(--rail-patient-compact)',
+      },
+      // Mouvement Lien (A5-R3) : durées et courbe uniques, neutralisées par
+      // les blocs de réduction de globals.css.
+      transitionDuration: {
+        press: 'var(--duration-press)',
+        fast: 'var(--duration-fast)',
+        hover: 'var(--duration-hover)',
+        reveal: 'var(--duration-reveal)',
+        panel: 'var(--duration-panel)',
+        brand: 'var(--duration-brand)',
+      },
+      transitionTimingFunction: {
+        lien: 'var(--ease-lien)',
       },
       borderRadius: {
         sm: 'var(--radius-sm)',

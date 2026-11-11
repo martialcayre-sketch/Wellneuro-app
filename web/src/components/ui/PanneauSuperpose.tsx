@@ -3,6 +3,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import { TRAIT_ICONE } from './icone';
 
 // LA PRIMITIVE DE SUPERPOSITION — audit du cockpit 2026-09-02, lot 2.
 //
@@ -187,7 +188,7 @@ export function PanneauSuperpose({
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               {surtitre && (
-                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">{surtitre}</p>
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-accent-ink">{surtitre}</p>
               )}
               <Dialog.Title className="font-display text-lg font-bold text-foreground">{titre}</Dialog.Title>
               <Dialog.Description
@@ -202,7 +203,7 @@ export function PanneauSuperpose({
                 aria-label={`Fermer ${titre}`}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
-                <X aria-hidden="true" size={20} strokeWidth={2} />
+                <X aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} />
               </button>
             </Dialog.Close>
           </div>
