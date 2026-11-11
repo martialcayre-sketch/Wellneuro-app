@@ -19,4 +19,7 @@ Lot 1 du cadrage v3 §18. C'est le premier lot de code de la refonte. Il raccord
   - le favicon au petit format.
 - **Icônes.** Le trait Lucide de 1,75 px est exporté sous le nom `TRAIT_ICONE`. `PanneauSuperpose` l'adopte ; son surtitre passe en `text-accent-ink`.
 - **Barre basse.** Sous 768 px, `html` réserve `scroll-padding-bottom: 5rem`. Un élément amené à l'écran ne finit plus sous la barre basse fixe. Le défaut a été vu par l'E2E `lecture-datee-reflow` (iPhone 13), une fois la hauteur de la page modifiée par les nouvelles polices.
+- **Contraste.** Aucun libellé ne reste sur l'argile :
+  - les boutons sélectionnés de `DossierDeuxVoixView` et de `ObjectifNegociePanel` passent en `bg-primary text-primary-foreground` ;
+  - le lien d'accent de `SynthesePanel` passe en `text-accent-ink`.
 - **X07.** La page absente reçoit la marque, un filet `control-border` sur le lien secondaire et une carte `shadow-card`. L'erreur globale, qui s'affiche sans les variables CSS, prend les valeurs Lien en clair.

@@ -1957,7 +1957,7 @@ export function ObjectifNegociePanel({
                               }}
                               className={`mt-2 min-h-9 rounded-lg px-2 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                                 citeAmendement?.id === amendement.id
-                                  ? 'bg-accent text-accent-foreground'
+                                  ? 'bg-primary text-primary-foreground'
                                   : 'border border-border text-foreground hover:bg-accent/10'
                               }`}
                             >

@@ -41,6 +41,7 @@ Lot COM-0 du socle (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/soc
   - `brand/` : quatre marques, plus le favicon en SVG et en ICO ;
   - `ornaments/`, `patterns/`, `backgrounds/` ;
   - `PROVENANCE.md`, `LUCIDE-LICENSE.txt`.
+- Hors liste COM-0, après revue : `components/patient-companion/DossierDeuxVoixView.tsx`, `components/patient-cockpit/ObjectifNegociePanel.tsx` et `components/SynthesePanel.tsx`, une classe chacun (voir « Problèmes ouverts »).
 - `changelog.d/2026-11-11-refonte-lien-com0-fondation.md`, ce handoff.
 - Fichiers COM-0 relus sans modification : `Badge.tsx`, `ScoreGauge.tsx`, `FormulaireTraitement.tsx`, `ChampDatePeriode.tsx`. Ils ne contiennent que des jetons sémantiques, sans palette codée en dur. `ScoreGauge` garde `showValue` intact.
 
@@ -60,7 +61,8 @@ Lot COM-0 du socle (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/soc
 - **T2** (`npm run test:worktree -- --fast`), premier passage : 356 passés, 1 échec (`e2e/lecture-datee-reflow.spec.ts`, iPhone 13).
   - *Observé sur un parcours réel* : après `scrollIntoViewIfNeeded`, « Retour au présent » s'arrête au bord bas du viewport (`haut` 619 px sur 664), sous `MobileBottomNav` (fixe, 4 rem). L'appui tombe sur « Synthèses ».
   - *Démontré dans le code* : aucune réserve de défilement n'existait pour cette barre. Le changement de polices a déplacé le bouton jusque-là.
-  - Correctif : `scroll-padding-bottom` sous 768 px. Le résultat du second passage figure dans la PR.
+  - Correctif : `scroll-padding-bottom` sous 768 px. Second passage vert : 357 passés, 23 ignorés, 0 échec.
+  - Après les correctifs de contraste de la revue, T1 et T2 ont été rejoués, tous deux verts (T2 : 357 passés, 0 échec).
 - **Constat à l'écran local** : preuves visuelles de `e2e/visual.spec.ts` (base de test éphémère, patients fictifs), relues après T2.
 - **Relecture `ui-ux-pro-max`** (`.claude/skills/ui-ux-pro-max/data/ux-guidelines.csv`) :
   - l.3 « Fixed nav should not obscure content » : c'est le correctif ci-dessus ;
@@ -69,11 +71,10 @@ Lot COM-0 du socle (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/soc
 
 ## Problèmes ouverts
 
-- **Texte sur `bg-accent`.** Deux sites posent un libellé sur l'argile, à environ 3,6:1 :
-  - `components/patient-companion/DossierDeuxVoixView.tsx` (l.858), côté patient ;
-  - `components/patient-cockpit/ObjectifNegociePanel.tsx` (l.1960), côté praticien.
-  - Leur lot doit passer ce libellé en `bg-primary text-primary-foreground`, ou l'accent en `text-accent-ink` sur clair. Les deux fichiers sont hors COM-0.
-- **`text-accent` en texte** dans `SynthesePanel.tsx` (lien `text-xs`, l.558) : l'argile est à 3,2:1. Il valait 2,0:1 auparavant avec le solaire. À passer en `text-accent-ink` au lot PRA concerné. Les icônes `text-accent` atteignent 3,2:1, ce qui suffit pour un élément graphique.
+- **Texte sur l'argile : soldé dans ce lot**, sur la revue de CodeRabbit et de PR-Agent : le recul de contraste ne devait pas attendre les lots suivants. Ces fichiers n'appartiennent pas à COM-0, mais aucune session PRA ou PAT n'avait commencé, donc il n'y a pas de conflit.
+  - Les boutons sélectionnés de `DossierDeuxVoixView.tsx` (l.858) et de `ObjectifNegociePanel.tsx` (l.1960) passent en `bg-primary text-primary-foreground` (7,5:1), qui est le rôle « sélection » de l'artefact.
+  - Le lien de `SynthesePanel.tsx` (l.558) passe en `text-accent-ink` (6,4:1).
+  - Les icônes `text-accent` restent à 3,2:1, ce qui suffit pour un élément graphique.
 - **Écrans qui citent encore les palettes Spirale par leur nom** (`indigo-600`, `solar-ink`, `mint-ink`, `copper-ink`, `forest-600`, `night-*`) : ils gardent leur ancienne teinte jusqu'à leur lot.
 - **`SidebarRail`** active encore son entrée par `rail-primary` (aplat pétrole). L'artefact veut `rail-surface` et une barre `rail-accent` : c'est le travail du lot PRA-1.
 
