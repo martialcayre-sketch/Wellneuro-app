@@ -41,6 +41,9 @@
 //     son commentaire : une commande postée avant le début, éditée ou
 //     supprimée a pu réécrire le commentaire persistant avec une revue
 //     allégée (`--ignore.glob=`), qui porterait alors la tête.
+//     Un run encore `queued`, sans conclusion et sans aucun job sur TOUTES
+//     ses tentatives (API `filter=all`, lue après les commentaires), n'a pu
+//     exécuter de commande : son état GitHub ne suffit pas à bloquer.
 //
 // CODES DE SORTIE — `0` seul vaut revue de la tête :
 //   0 preuve tenue · 1 preuve absente ou défaut · 2 lecture impossible
@@ -334,6 +337,26 @@ export function lire({ pr, lireJson, lireJournal }) {
       for (const r of candidats) {
         if (r.event !== 'issue_comment' || r.conclusion === 'skipped' || date(r.created_at) > fin) continue;
         if (r.status === 'completed' && date(r.updated_at) < debut) continue;
+        if (r.status === 'queued' && r.conclusion === null) {
+          // `latest` masquerait les jobs d'une tentative antérieure. Ne
+          // conclure à l'absence d'exécution que sur une réponse complète,
+          // cohérente et vide, toutes tentatives incluses. Toute panne ou
+          // réponse illisible remonte au code 2 ; aucun job n'est ignoré.
+          const pages = lireJson(`repos/{owner}/{repo}/actions/runs/${r.id}/jobs?filter=all&per_page=100`, true);
+          if (!Array.isArray(pages) || pages.length === 0 || pages.some((p) =>
+            !Number.isSafeInteger(p?.total_count) || p.total_count < 0 || !Array.isArray(p.jobs))) {
+            throw new Error(`liste des jobs du run ${r.id} illisible`);
+          }
+          const total = pages[0].total_count;
+          const nombre = pages.reduce((n, p) => n + p.jobs.length, 0);
+          if (pages.some((p) => p.total_count !== total) || nombre !== total || (total === 0 && pages.length !== 1)) {
+            throw new Error(`liste des jobs du run ${r.id} incohérente ou incomplète`);
+          }
+          if (total === 0) {
+            avertissements.push(`· run sur commentaire ${r.id} toujours queued, sans conclusion : aucun job sur toutes les tentatives (API filter=all), aucune exécution à opposer à la revue.`);
+            continue;
+          }
+        }
         runsCommentaire.push({ id: r.id, display_title: r.display_title, journal: r.status === 'completed' ? journalDe(r.id) : null });
       }
     }

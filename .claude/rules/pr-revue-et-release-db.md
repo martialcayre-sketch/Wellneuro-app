@@ -195,7 +195,14 @@ ouvert (détail en tête du script) :
   PR-Agent comptent ; l'avis doit nommer la tête ; la commande d'un robot
   compte ; tout run sur commentaire du dépôt actif pendant le run, dont le
   journal ne dit pas qu'il a ignoré son commentaire, fait échouer (une
-  commande postée avant le début, éditée ou supprimée).
+  commande postée avant le début, éditée ou supprimée). Un run encore
+  `queued`, sans conclusion et dont l'API des jobs `filter=all` confirme
+  `total_count: 0` et `jobs: []` n'a exécuté aucun job, toutes tentatives
+  incluses ; ce constat, fait après la lecture des commentaires, est affiché
+  et ne bloque pas la preuve. Un job présent reste bloquant ; une liste
+  impossible à lire, mal formée ou incomplète donne `2`, jamais `0`.
+  Cela ne l'annule pas : les runs GitHub désynchronisés sans job peuvent
+  nécessiter le [support GitHub](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows#canceling-workflows).
 
 Il ne vérifie pas que CodeRabbit a sauté la PR, et ne distingue pas un
 commentaire contrefait par un autre workflow muni d'un jeton d'écriture :

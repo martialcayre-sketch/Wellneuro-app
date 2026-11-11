@@ -425,6 +425,65 @@ test('collecte : une PR qui modifie pr_agent.yml est signalée (D-393 §6)', () 
   assert.ok(r.lignes.some((l) => l.startsWith('· ') && l.includes('D-393 §6')), r.lignes.join('\n'));
 });
 
+test('collecte : queued sans aucun job sur toutes les tentatives ne contamine pas une revue', () => {
+  const { lireJson, appels } = api({
+    'event=issue_comment': [{ workflow_runs: [runCommentaire({ status: 'queued', conclusion: null })] }],
+    '/runs/200/jobs?filter=all&per_page=100': [{ total_count: 0, jobs: [] }],
+  });
+  const { lus, lireJournal } = journaux();
+  const r = lire({ pr: PR_N, lireJson, lireJournal });
+  assert.equal(r.code, SORTIE_PREUVE, r.lignes.join('\n'));
+  assert.match(r.lignes.find((l) => l.startsWith('· ')), /200.*queued.*aucun job.*toutes les tentatives/);
+  assert.deepEqual(lus, [100]);
+  const jobs = appels.findIndex((c) => c.includes('/runs/200/jobs?filter=all'));
+  assert.ok(jobs > appels.findIndex((c) => c.includes(`/issues/${PR_N}/comments`)));
+});
+
+test('collecte : un job même ancien maintient le blocage du run queued', () => {
+  const { lireJson } = api({
+    'event=issue_comment': [{ workflow_runs: [runCommentaire({ status: 'queued', conclusion: null })] }],
+    '/runs/200/jobs?filter=all&per_page=100': [{ total_count: 1, jobs: [{ id: 123, run_attempt: 1, status: 'completed' }] }],
+  });
+  const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+  assert.equal(r.code, SORTIE_DEFAUT, r.lignes.join('\n'));
+  assert.match(r.lignes.find((l) => l.startsWith('❌ (d)')), /200.*non conclu/);
+});
+
+test('collecte : liste de jobs absente, mal formée, tronquée ou en erreur reste illisible', () => {
+  for (const reponse of [new Error('HTTP 403'), undefined, null, [], [{}],
+    [{ jobs: [] }], [{ total_count: 0 }], [{ total_count: '0', jobs: [] }],
+    [{ total_count: -1, jobs: [] }], [{ total_count: 0, jobs: [{}] }],
+    [{ total_count: 1, jobs: [] }], [{ total_count: 0, jobs: [] }, { total_count: 0, jobs: [] }],
+    [{ total_count: 1, jobs: [{}] }, { total_count: 2, jobs: [{}] }]]) {
+    const { lireJson } = api({
+      'event=issue_comment': [{ workflow_runs: [runCommentaire({ status: 'queued', conclusion: null })] }],
+      '/runs/200/jobs?filter=all&per_page=100': reponse,
+    });
+    const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+    assert.equal(r.code, SORTIE_ILLISIBLE, r.lignes.join('\n'));
+  }
+});
+
+test('collecte : un run in_progress ou une conclusion incohérente ne reçoit pas l’exception sans job', () => {
+  for (const champs of [{ status: 'in_progress', conclusion: null }, { status: 'queued', conclusion: 'success' }]) {
+    const { lireJson, appels } = api({ 'event=issue_comment': [{ workflow_runs: [runCommentaire(champs)] }] });
+    const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+    assert.equal(r.code, SORTIE_DEFAUT, r.lignes.join('\n'));
+    assert.ok(!appels.some((c) => c.includes('/jobs?')));
+  }
+});
+
+test('collecte : une commande postée sur la PR reste bloquante même si son run queued n’a aucun job', () => {
+  const { lireJson } = api({
+    'event=issue_comment': [{ workflow_runs: [runCommentaire({ status: 'queued', conclusion: null })] }],
+    '/runs/200/jobs?filter=all&per_page=100': [{ total_count: 0, jobs: [] }],
+    [`/issues/${PR_N}/comments`]: [[revue({ updated_at: PENDANT }), commentaire('/review', { user: membre })]],
+  });
+  const r = lire({ pr: PR_N, lireJson, lireJournal: journaux().lireJournal });
+  assert.equal(r.code, SORTIE_DEFAUT, r.lignes.join('\n'));
+  assert.match(r.lignes.find((l) => l.startsWith('❌ (d)')), /commande.*postée/);
+});
+
 test('collecte : toute lecture impossible sort en 2, jamais en 0', () => {
   const pannes = [
     { pr: new Error('HTTP 502') },
