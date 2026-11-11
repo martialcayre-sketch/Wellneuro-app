@@ -175,7 +175,7 @@ export type ProvenanceArret = { version: string; sha256: string };
  * arbitrage 1) : une règle dont un claim n'est pas admissible au corpus
  * (valide ET non supplanté, critère de [[D-472]] §2), ou dont la validité n'a
  * pas pu être vérifiée, ne retire aucune exploration. Les explorations qu'elle
- * aurait retenues restent proposées, et la suspension est DITE : le praticien
+ * aurait retirées restent proposées, et la suspension est DITE : le praticien
  * ne voit pas ce qui ne s'affiche pas, il doit donc savoir que l'extinction ne
  * joue pas.
  */
