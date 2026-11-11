@@ -56,6 +56,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import { preparerMiroirsApt } from './wn-playwright-apt.mjs';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHEMIN = path.join(RACINE, '.github/workflows/ci.yml');
@@ -324,6 +326,53 @@ function etape(bloc, nom) {
   const fin = suite.slice(1).search(/^\s*- \S/m);
   return { debut, texte: fin < 0 ? suite : suite.slice(0, fin + 1) };
 }
+
+test('Playwright évite le miroir Azure dans les sources APT sans altérer leur signature', (t) => {
+  const apt = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-playwright-apt-'));
+  t.after(() => fs.rmSync(apt, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(apt, 'sources.list.d'));
+  fs.mkdirSync(path.join(apt, 'apt.conf.d'));
+  const azure = 'http://azure.archive.ubuntu.com/ubuntu/';
+  const officiel = 'https://archive.ubuntu.com/ubuntu/';
+  const contenus = {
+    'sources.list': `deb ${azure} noble main\n`,
+    'apt-mirrors.txt': `${azure}\n`,
+    'apt-mirrors-security.txt': 'https://azure.archive.ubuntu.com/ubuntu/\n',
+    'sources.list.d/ubuntu.sources': `Types: deb\nURIs: ${azure}\nSuites: noble noble-security\nComponents: main universe\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n`,
+    'sources.list.d/microsoft.list': 'deb https://packages.microsoft.com/ubuntu/24.04/prod noble main\n',
+  };
+  for (const [nom, contenu] of Object.entries(contenus)) fs.writeFileSync(path.join(apt, nom), contenu);
+  assert.equal(preparerMiroirsApt(apt), 4);
+  for (const [nom, contenu] of Object.entries(contenus)) {
+    assert.equal(fs.readFileSync(path.join(apt, nom), 'utf8'),
+      contenu.replaceAll(azure, officiel).replaceAll('https://azure.archive.ubuntu.com/ubuntu/', officiel));
+  }
+  assert.equal(preparerMiroirsApt(apt), 0, 'un second passage ne réécrit pas les sources');
+  const config = fs.readFileSync(path.join(apt, 'apt.conf.d/99-playwright-network'), 'utf8');
+  assert.match(config, /Acquire::https::Timeout "15"/);
+  assert.match(config, /APT::Update::Error-Mode "any"/, 'un index inaccessible doit échouer');
+  assert.doesNotMatch(config, /AllowInsecure|AllowUnauthenticated|Verify-Peer/);
+});
+
+test('les deux workflows préparent APT avant une installation Playwright bornée', () => {
+  for (const [workflow, nom] of [[blocE2e(), 'Install Playwright browsers'],
+    [fs.readFileSync(CHEMIN_BASELINES, 'utf8'), 'Navigateurs Playwright']]) {
+    const miroirs = etape(workflow, 'Préparer les miroirs Ubuntu pour Playwright');
+    const installation = etape(workflow, nom);
+    assert.ok(miroirs.debut < installation.debut);
+    assert.match(miroirs.texte, /sudo env GITHUB_ACTIONS=true .*wn-playwright-apt\.mjs/);
+    assert.match(installation.texte, /timeout-minutes: 10/);
+    assert.match(installation.texte, /playwright install --with-deps chromium webkit/);
+  }
+});
+
+test('le rapport est exigé après les tests, pas après une panne de provisioning', () => {
+  const tests = etape(blocE2e(), 'E2E tests (Playwright, production build)');
+  assert.match(tests.texte, /id: playwright/);
+  const rapport = etape(blocE2e(), 'Upload Playwright report');
+  assert.match(rapport.texte, /if: always\(\) && steps\.playwright\.outcome != '' && steps\.playwright\.outcome != 'skipped'/);
+  assert.match(rapport.texte, /if-no-files-found: error/);
+});
 
 test('le cache Next précède le build d’`e2e`, saute en documentaire et a une clé complète', () => {
   const e2e = blocE2e();
