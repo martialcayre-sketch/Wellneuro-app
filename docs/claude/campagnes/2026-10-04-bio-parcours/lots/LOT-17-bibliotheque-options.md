@@ -1,15 +1,17 @@
 ---
 id: "LOT-17"
 titre: "BP-17 — Bibliothèque signée des options par hypothèse"
-statut: "cadrage (2026-11-10) — fiche proposée, cinq questions ouvertes à la liste commune (20261110-1940-c à -1944-c), aucune D-xxx"
+statut: "cadrage (2026-11-11) — cinq réponses rendues le 2026-11-10 ; D-477 mergée (#1980) ; D-480 proposée ; découpage des PR à accepter (20261111-1131-c), aucune migration avant"
 dépend_de: "LOT-11, LOT-28"
 ---
 
 # LOT-17 (BP-17) — Bibliothèque signée des options par hypothèse
 
-> **Fiche proposée le 2026-11-10**, sans arbitrage rendu. Les cinq questions
-> sont dans la liste commune (`20261110-1940-c` à `-1944-c`). Le dépôt est
-> public : cette fiche ne porte ni option, ni produit, ni dose, ni durée, ni
+> **Fiche proposée le 2026-11-10, mise à jour le 2026-11-11.** Les cinq
+> questions du cadrage ont reçu leur réponse le 2026-11-10 (liste commune,
+> `20261110-1940-c` à `-1944-c`). La décision d'objet est `D-480`
+> (proposée) ; le découpage des PR attend l'accord du responsable
+> (`20261111-1131-c`). Le dépôt est public : cette fiche ne porte ni option, ni produit, ni dose, ni durée, ni
 > précaution, ni contre-indication, ni libellé d'hypothèse. Ces contenus sont
 > de la main du responsable (porte 23, `DC-11`).
 
@@ -75,49 +77,61 @@ prescrit : BP-18a et sa D-xxx en décideront.
 
 ## Préalables
 
-| Préalable | État au 2026-11-10 |
+| Préalable | État au 2026-11-10 (mis à jour le 2026-11-11) |
 |---|---|
-| BP-11 (LOT-11) | terminé le 2026-10-20 (`D-331`) ; aucun constat possible tant que le vocabulaire d'hypothèses est vide |
-| BP-12b (LOT-28) | clos d'après le journal de F09 du 2026-11-10 : 18 positions signées, 32 arbitrages de conflit, PR 7 (#1955) mergée. La fiche LOT-28 et la ligne de `CAMPAGNE.md` disent encore « en_cours » |
+| BP-11 (LOT-11) | terminé le 2026-10-20 (`D-331`) ; vocabulaire d'hypothèses vide le 2026-11-10, six hypothèses inscrites par `D-477` le 2026-11-11 |
+| BP-12b (LOT-28) | clos d'après le journal de F09 du 2026-11-10 : 18 positions signées, 32 arbitrages de conflit, PR 7 (#1955) mergée. La fiche LOT-28 et la ligne de `CAMPAGNE.md` disent encore « en_cours » : écart connu, à corriger par la file B, qui porte BP-12b (handoff du 2026-11-10, `2026-11-10-1950-bp17-cadrage.md`) ; il ne bloque pas BP-17 |
 | Porte 23 | non levée : les parts BP-12a et BP-12b sont signées, il reste celle de BP-17 (journal de F09 du 2026-11-10) |
 
-## Questions ouvertes (liste commune, 2026-11-10)
+## Réponses du responsable (2026-11-10)
 
-1. **Clé** (`20261110-1940-c`, clinique) : nommer les hypothèses par une
-   re-signature de BP-12a (recommandée) ; ou accrocher aux fiches d'usage ;
-   ou suspendre.
-2. **Forme** (`20261110-1941-c`, migration) : une liste signée dans le code,
-   par références seulement, sans migration (recommandée) ; ou une table en
-   base ; ou les deux.
-3. **Périmètre de la signature à cinq termes** (`20261110-1942-c`,
-   clinique) : une structure par besoin, re-signée par dossier, positions
-   vérifiées comme les claims (recommandée) ; ou une structure unique ; ou
-   une par hypothèse.
-4. **Porteur des contenus** (`20261110-1943-c`) : le responsable dresse la
-   liste, la file B la transcrit, la file C code (recommandée) ; ou la
-   file C fait tout ; ou la file B porte le lot. Les deux files se
-   croient porteuses : le journal de F09 du 2026-11-10 écrit « Suite de la
-   file B : BP-17 (F11) ».
-5. **Place de la D-xxx de premier usage prescriptif** (`20261110-1944-c`,
-   clinique) : une D-xxx d'objet pour BP-17, rédigée par la session et
-   acceptée par le responsable, qui n'autorise aucun usage prescriptif ;
-   l'autorisation reste dans le texte de BP-18a (recommandée). Ou tout dans
-   le texte de BP-18a, ou une D-xxx de BP-17 de la main du responsable.
+Rendues sur les questions du cadrage, inscrites `repondue` dans la liste
+commune. Elles ne se reposent pas.
 
-## Ordre des PR (provisoire, sur les options recommandées)
+1. **Clé** (`20261110-1940-c`) : les hypothèses `HYP_…` du besoin 2,
+   nommées par une re-signature de BP-12a. Fait le 2026-11-11 : `D-477`,
+   six hypothèses inscrites, `HYP_FER_1` réservé et non inscrit (#1980,
+   mergée ; release-db verte sur `ac3f0ead` ; empreinte constatée en
+   production, #1982). La saisie des libellés à l'atelier reste à la file B.
+2. **Forme** (`20261110-1941-c`) : les deux, références dans le code et
+   texte d'accompagnement en base. Ce choix n'autorise à lui seul aucune
+   migration : le découpage ci-dessous attend l'accord du responsable.
+3. **Signature** (`20261110-1942-c`) : une structure par besoin, re-signée
+   à chaque dossier ; les positions d'expert citées sont contrôlées comme
+   des claims.
+4. **Porteurs** (`20261110-1943-c`) : le responsable fournit et valide les
+   contenus. La file B porte les hypothèses, leur re-signature et la
+   transcription des contenus. La file C porte la migration, le code, les
+   surfaces de l'atelier et du cockpit, et la coordination de BP-17.
+5. **Décision** (`20261110-1944-c`) : une D-xxx d'objet pour BP-17, sans
+   prescription ; l'autorisation va au texte de BP-18a. C'est `D-480`,
+   proposée le 2026-11-11. Elle écrit que « `prescriptif` exigé pour la
+   seule source de dose » est un régime des claims (`D-046`) et ne dispense
+   d'aucune autre métadonnée de `DC-11`.
 
-1. **Re-signature de BP-12a** avec les hypothèses du besoin 2, si la
-   question 1 le retient (file B, geste du responsable).
-2. **D-xxx d'objet de BP-17**, PR de décision seule, acceptée avant le code.
-3. **Code** : format de la structure, `structureSignee()` sur le patron des
-   fiches d'usage, garde « aucune option sans précautions », renvois
-   vérifiés contre les claims et positions, fichier ajouté au hook `DC-17`
-   et à la matrice de consommation. Structure vide, non signée.
-4. **Contenus** : la liste du responsable transcrite en identifiants, puis
-   sa signature (porte 23).
+Autres choix rendus le 2026-11-10 (session de la file B) : deux tables au
+contrat de fraîcheur, `prescriptif` exigé de la seule source de dose ;
+cockpit sous drapeau éteint, avec sa ligne dans la trame de BP-26.
 
-L'ordre change si la question 2 retient une table : migration seule, puis
-release-db, puis code (`D-266` §11).
+## Découpage des PR (proposé le 2026-11-11, à accepter : `20261111-1131-c`)
+
+| # | PR | Dépend de | Porteur | Palier |
+|---|---|---|---|---|
+| 0 | `D-477`, hypothèses du besoin 2 | — | file B | fait (#1980) |
+| 1 | `D-480` et ce découpage, PR de doc | — | file C | T1 |
+| 2 | **Migration seule** : table du texte d'accompagnement et de ses actes, en ajout seul, triggers et contrat SQL négatif ; `schema.prisma` à la main | accord sur `D-480` et sur ce découpage | file C | T3, `wn-reviewer` ; release-db approuvée, constat par conteneur |
+| 3 | **Structure par références** : format, structure du besoin 2 vide et non signée, signature à cinq termes, empreinte de la structure des fiches d'usage | `D-477` ; accord sur `D-480` | file C | T3 (chemin clinique) |
+| 4 | **Contrôles et garde** : aucune option sans précautions ; deux tables au contrat de fraîcheur ; contrat des positions citées ; aucune lecture de dossier ; hook DC-17 et matrice de consommation | PR 3 | file C | T3 ; T1 sur les crochets |
+| 5 | **Surfaces de l'atelier** : saisie du texte par rubrique, acte daté du responsable, « à relire » après re-signature | PR 2 constatée en production ; PR 3 | file C | T2 |
+| 6 | **Cockpit sous drapeau éteint**, ligne dans la trame de BP-26, ligne de `docs/FEATURE_FLAGS.md` | PR 5 | file C | T2 |
+| 7 | **Contenus** : liste du responsable transcrite en identifiants et renvois, texte saisi à l'atelier, puis signature | PR 3 à 5 ; contenus du responsable | file B (transcription), responsable (contenus, signature) | T3 |
+
+Les PR 2 à 7 ne partent que sur `D-480` au statut « accepté » et sur ce
+découpage accepté. Les PR 2 et 3 sont indépendantes et peuvent avancer en
+parallèle. Aucune
+n'écrit de contenu clinique. La garde des libellés d'hypothèse
+(`20261111-0008-b`, `D-477` §2) est un lot de la file C distinct de BP-17,
+sans dépendance avec ce découpage.
 
 ## Critère de fin (F11)
 
@@ -132,5 +146,6 @@ levée.
 - Aucun lecteur de `creePar` ni de `validePar` (`D-459` §7) : BP-18a en
   décidera.
 - La D-xxx de BP-18a et la règle signée sont de la main du responsable.
-- Pas de `schema.prisma` ni de migration sans arbitrage de la question 2.
+- Pas de `schema.prisma` ni de migration avant l'accord du responsable sur
+  `D-480` et sur le découpage (réponse `20261110-1941-c`).
 - Rien au patient. Production en lecture seule, par conteneur, en agrégats.
