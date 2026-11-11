@@ -1292,6 +1292,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/positions_expert_dossiers_v2_negatif.sql
 
+      # Texte d'accompagnement de la bibliothèque des options (D-480 §3,
+      # BP-17). Deux tables append-only, sans donnée patient : neuf rubriques
+      # en liste fermée, empreinte du texte tenue par CHECK, numéro qui suit
+      # par couple option × rubrique, seule la dernière version reçoit un acte,
+      # relecture pour valider, motif pour retirer, READ COMMITTED seul.
+      # Instants éprouvés sous un fuseau de session Europe/Paris. Transactions
+      # annulées.
+      - name: Bibliotheque options textes negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/bibliotheque_options_textes_v1_negatif.sql
+
       # Les mêmes tables, en deux sessions (D-439 ; contre-revue Codex de
       # #1871, P1-1) : deux premières poses, deux premières versions, une
       # révision contre un acte, un retrait contre un arbitrage, une révocation
