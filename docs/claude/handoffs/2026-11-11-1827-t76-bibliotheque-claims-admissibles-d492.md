@@ -49,9 +49,10 @@ Dette t76 (§8), inscrite par t74 (D-479 §7). Trois points :
 
 ## Problèmes ouverts
 
-- P2-2 de la revue, remonté au responsable : après une exclusion PARTIELLE, une fiche qui ne porte que
-  l'ingrédient de la règle écartée peut lire « Compatible » et « Aucun cumul ». C'est conforme à D-140 et
-  écrit en D-492 §2. Si le responsable veut une abstention par ingrédient, il faut un lot suivant.
+- P2-2 de la revue (et PR-Agent) : après une exclusion PARTIELLE, une fiche qui ne porte que l'ingrédient
+  de la règle écartée peut lire « Compatible » et « Aucun cumul ». Accepté tel quel par le responsable
+  (question 20261111-1853-a), écrit en D-492 §2 ; plus rien d'ouvert sur ce point.
+- Branche remise à niveau par `git merge origin/main` (555bfd8e, #1976), sur arbitrage du responsable.
 - Passe Codex manuelle due avant le merge (P0 clinique), geste du responsable.
 
 ## Prochaine action exacte
