@@ -397,7 +397,7 @@ function ClaimsDuBloc({ cles, claims }: { cles: readonly string[]; claims: Map<s
             {claim?.texte ? (
               <span className="whitespace-pre-wrap break-words">{claim.texte}</span>
             ) : (
-              <span className="text-status-danger">ce claim n’est pas VALIDE au corpus aujourd’hui.</span>
+              <span className="text-status-danger">ce claim ne satisfait pas les critères de validité du corpus aujourd’hui.</span>
             )}
           </li>
         );
@@ -480,7 +480,7 @@ function Reserves({ detail }: { detail: DetailVersionFiche }) {
                 <Badge variant="danger">portée par aucune précaution</Badge>
               )}
               <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
-                {r.texte ?? 'Ce claim n’est pas VALIDE au corpus aujourd’hui.'}
+                {r.texte ?? 'Ce claim ne satisfait pas les critères de validité du corpus aujourd’hui.'}
               </p>
             </li>
           ))}

@@ -21,7 +21,7 @@ import type { ContenuFicheAssiette } from './types';
 
 type ClientLecture = Pick<Prisma.TransactionClient, '$queryRaw'>;
 
-/** Une anomalie du contenu : celles de `controlerFiche`, et un claim cité non VALIDE. */
+/** Une anomalie du contenu : celles de `controlerFiche`, et un claim cité non VALIDE ou supplanté. */
 export type AnomalieContenu = AnomalieFiche | { code: 'claim_non_valide'; detail: string };
 
 /** Une anomalie d'une version en base : son contenu, plus ce que la base porte autour. */
@@ -51,7 +51,12 @@ export async function controlerContenuFiche(
   const claimsValides = await claimsValidesEtLeursTextes(references, client);
   const anomalies: AnomalieContenu[] = references
     .filter(r => !claimsValides.has(cleClaim(r)))
-    .map(r => ({ code: 'claim_non_valide' as const, detail: `${cleClaim(r)} n'est pas un claim VALIDE du corpus.` }));
+    // Absent de la lecture : non VALIDE, ou VALIDE mais supplanté ([[D-478]]).
+    // « n'est pas VALIDE » serait inexact pour le second (D-476 §3).
+    .map(r => ({
+      code: 'claim_non_valide' as const,
+      detail: `${cleClaim(r)} ne satisfait pas les critères de validité du corpus.`,
+    }));
 
   anomalies.push(
     ...controlerFiche({
