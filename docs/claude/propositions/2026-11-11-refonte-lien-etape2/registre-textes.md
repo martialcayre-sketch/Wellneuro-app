@@ -10,7 +10,8 @@ Chaque texte neuf ou changé par la refonte passe ici avant tout lot (réponse
 décision par DOC-0 (`socle-commun.md`) avant le lot qui l'applique. Un texte
 refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
-Numérotation par famille, avec des trous voulus : praticien T-01 à T-15,
+Numérotation par famille, avec des trous voulus : praticien T-01 à T-16
+(T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]]),
 rail patient T-21 à T-23, textes patient T-30 à T-34. Aucun identifiant
 absent n'est un texte manquant.
 
@@ -156,5 +157,5 @@ Non proposés, relevés :
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2, inscrit par DOC-1) |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) |
