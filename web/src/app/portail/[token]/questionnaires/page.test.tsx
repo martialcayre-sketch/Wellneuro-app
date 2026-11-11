@@ -195,3 +195,80 @@ describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
     expect(lienVers('ASS_TRANSMIS')).toHaveLength(1);
   });
 });
+
+// « MON ACCOMPAGNEMENT » ET LA LECTURE DU PROTOCOLE (constat à l'écran du
+// 2026-11-11) : déplié sous protocole servi, replié sur absence CONFIRMÉE
+// ([[D-423]] §3), et déplié quand la lecture échoue — sinon l'erreur et
+// « Réessayer » de l'accueil restaient derrière un clic.
+describe('QuestionnairesHubPage — « Mon accompagnement » et la lecture du protocole', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  function stub(protocole: () => Promise<unknown>) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === '/api/portail/protocole') return protocole();
+      const corps = url.startsWith('/api/portail/assignations')
+        ? {
+            ok: true,
+            patient: { idPatient: 'PAT_TEST', prenom: 'Jennifer', nom: 'Martin' },
+            assignations: [],
+            agendas: [],
+            agendasAlimentaires: [],
+            derniereReponseLe: null,
+            parcours: { consultationStatut: null, bookletEnvoye: false, bilanConsultable: false },
+            statutAge: 'majeur',
+            dossierOuvert: true,
+          }
+        : url.startsWith('/api/portail/trust/etat')
+          ? { ok: true, avantDeCommencerRequis: false }
+          : { ok: false, error: 'indisponible' };
+      return { ok: true, status: 200, json: async () => corps };
+    }));
+  }
+  const reponse = (status: number, corps: unknown) => async () =>
+    ({ ok: status < 400, status, json: async () => corps });
+
+  async function groupe() {
+    await waitFor(() => expect(screen.queryByText('Chargement de vos questionnaires…')).toBeNull());
+    return screen.getByText('Mon accompagnement').closest('details') as HTMLDetailsElement;
+  }
+
+  it('aucun protocole servi (réponse saine) : replié', async () => {
+    stub(reponse(200, { ok: true, protocoleDiffuse: false }));
+    render(<QuestionnairesHubPage />);
+    const g = await groupe();
+    // Laisse la lecture du protocole aboutir avant de conclure.
+    await new Promise(r => setTimeout(r, 20));
+    expect(g.open).toBe(false);
+  });
+
+  it('protocole servi : déplié', async () => {
+    stub(reponse(200, { ok: true, protocoleDiffuse: true, finDeCycle: false }));
+    render(<QuestionnairesHubPage />);
+    const g = await groupe();
+    await waitFor(() => expect(g.open).toBe(true));
+  });
+
+  it('★ coupure réseau sur le protocole : déplié', async () => {
+    stub(() => Promise.reject(new Error('offline')));
+    render(<QuestionnairesHubPage />);
+    const g = await groupe();
+    await waitFor(() => expect(g.open).toBe(true));
+  });
+
+  it('★ erreur du serveur sur le protocole : déplié', async () => {
+    stub(reponse(500, { ok: false, reason: 'exception', error: 'Erreur technique.' }));
+    render(<QuestionnairesHubPage />);
+    const g = await groupe();
+    await waitFor(() => expect(g.open).toBe(true));
+  });
+
+  it('★ protocole incohérent (409) : déplié', async () => {
+    stub(reponse(409, { ok: false, reason: 'integrity', error: 'Protocole indisponible.' }));
+    render(<QuestionnairesHubPage />);
+    const g = await groupe();
+    await waitFor(() => expect(g.open).toBe(true));
+  });
+});
