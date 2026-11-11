@@ -400,6 +400,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `biology-library/import/resolverLibellesV1.ts` | `true` | `2026-11-11T08:00:13.000Z` |
 | `fiches-usage/ficheUsageBesoin2V1.ts` | `true` | `2026-11-11T09:02:54.000Z` |
 | `clinical/declencheursComplementCibleV1.ts` | `true` | `2026-10-23T17:32:07.000Z` |
+| `bibliotheque-options/bibliothequeBesoin2V1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
