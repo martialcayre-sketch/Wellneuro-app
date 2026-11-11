@@ -56,7 +56,16 @@ VALIDE mais supplanté pouvait donc fonder une fiche diffusée au patient.
     164/164. Les E2E n'ont pas été joués.
   - Pas de troisième rejeu : le CI arbitre le segment E2E sur la tête.
 - Fusion arbitrée de origin/main (#1987, trois fichiers de doc H15, sans
-  recouvrement) : aa69e14b.
+  recouvrement) : aa69e14b. Deuxième fusion arbitrée (#1988, doc D-480) : 69140845.
+- PR #1990 ouverte sur d9069c1c. Revues de cette tête :
+  - PR-Agent : preuve à 0. Son seul constat (changelog absent) est écarté,
+    faux positif.
+  - CodeRabbit : un P2 « Outside diff », exact. Il est documenté en D-478 §2
+    sans texte UI, par arbitrage (`20261111-1735-a`). Verdicts en D-478 §8.
+  - Copilot : quota épuisé.
+- CI de d9069c1c : `controles`, `typage-tests` et `pr_agent` verts. L'E2E est
+  bloqué sur « Install Playwright browsers » depuis 15:30 UTC, comme celui de
+  toutes les PR ouvertes : panne d'infrastructure.
 
 ## Problèmes ouverts
 
