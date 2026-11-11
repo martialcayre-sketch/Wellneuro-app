@@ -134,8 +134,8 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
           {lecture.corpusLu && lecture.retireesFauteDeClaim > 0 && (
             <p role="alert" className="mt-3 text-sm text-status-warning">
               {lecture.retireesFauteDeClaim === 1
-                ? '1 assiette n’est pas affichée : une de ses sources n’est plus valide au corpus.'
-                : `${lecture.retireesFauteDeClaim} assiettes ne sont pas affichées : une de leurs sources n’est plus valide au corpus.`}
+                ? '1 assiette n’est pas affichée : une de ses sources ne satisfait pas les critères de validité du corpus.'
+                : `${lecture.retireesFauteDeClaim} assiettes ne sont pas affichées : une de leurs sources ne satisfait pas les critères de validité du corpus.`}
             </p>
           )}
           <ul className="mt-3 grid gap-3">

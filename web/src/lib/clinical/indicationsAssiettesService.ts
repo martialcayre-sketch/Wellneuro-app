@@ -16,7 +16,7 @@ import {
   type LacuneDeclencheur,
 } from '@/lib/clinical/orientationEngine';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
-import { claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
+import { claimsNonSupplantesAuCorpus, claimsValidesAuCorpus } from '@/lib/rag/claims/validite';
 import { assiettesParIndication } from '@/lib/food-compass/plates';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -289,9 +289,19 @@ export async function evaluerAssiettesPourPatient(
   // rend `[]` : c'est le fail-closed voulu. Mais on RETIENT la raison, sans
   // quoi la carte afficherait un vide indiscernable d'un dossier sans
   // indication.
+  //
+  // VALIDE ET NON SUPPLANTÉ ([[D-476]]) : le critère du préflight de
+  // release-db et de [[D-472]] §2. Un claim encore `VALIDE` mais supplanté ne
+  // fonde plus une indication ; l'échec de l'une ou l'autre lecture rend le
+  // corpus illisible.
   let claimsValides: ReadonlySet<string> | null = null;
   try {
-    claimsValides = await claimsValidesAuCorpus(referencesCiteesParLaTable());
+    const references = referencesCiteesParLaTable();
+    const [valides, nonSupplantes] = await Promise.all([
+      claimsValidesAuCorpus(references),
+      claimsNonSupplantesAuCorpus(references),
+    ]);
+    claimsValides = new Set([...valides].filter(cle => nonSupplantes.has(cle)));
   } catch (err) {
     console.error(
       '[indicationsAssiettesService] corpus illisible',
