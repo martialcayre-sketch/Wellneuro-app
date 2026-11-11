@@ -52,7 +52,7 @@ test.describe('Porte d’entrée Trajectoires', () => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto('/dashboard/trajectoires');
 
-    const rail = page.locator('nav').filter({ hasText: 'La Spirale' }).first();
+    const rail = page.getByRole('navigation', { name: 'Navigation principale' });
     await expect(rail.getByRole('link', { name: 'Fiche-trajectoire' })).toHaveAttribute(
       'href',
       '/dashboard/trajectoires',
