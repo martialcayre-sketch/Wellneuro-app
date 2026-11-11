@@ -24,11 +24,18 @@ import { prisma } from '@/lib/prisma';
 // `match_wellneuro_rag_claims` est la seule voie autorisée à faire REMONTER un
 // claim (son verbatim, sa portée, son autorité) ; ce module ne fait pas
 // remonter de claim : il répond OUI ou NON sur un identifiant que l'appelant
-// nomme déjà. Il n'en reprend pas moins ses cinq prédicats mot pour mot —
-// `active`, `statut = 'VALIDE'`, non patient, compartiment `ACTIF`, et adossé à
-// au moins un chunk source. Un claim que la récupération refuserait de servir
-// ne peut pas davantage fonder une règle : deux réponses différentes sur le
-// même claim seraient une incohérence clinique, pas une nuance.
+// nomme déjà. Il n'en reprend pas moins ses cinq prédicats de VALIDITÉ mot
+// pour mot — `active`, `statut = 'VALIDE'`, non patient, compartiment `ACTIF`,
+// et adossé à au moins un chunk source. Un claim que la récupération jugerait
+// invalide ne peut pas davantage fonder une règle : deux réponses différentes
+// sur le même claim seraient une incohérence clinique, pas une nuance.
+//
+// La fonction en porte un SIXIÈME, `exclu_recherche = false` ([[D-490]]), qui
+// n'est pas un prédicat de validité mais de RECHERCHE : un claim exclu de la
+// recherche ne remonte plus par les rayons, et reste valide pour ce qui le
+// cite explicitement (D-490 §2, qui précise D-140 §7). Ce module NE le recopie
+// PAS — le recopier retirerait leur fondement aux règles, plages et positions
+// qui citent un claim exclu.
 //
 // AUCUN TEXTE N'EN SORT : la sélection ne rend que le couple identifiant déjà
 // fourni par l'appelant. Rien du corpus ne transite par ce chemin.

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import type { ClaimEnRevue, ClaimStatut } from '@/lib/rag/claims/revue';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
 import type { CorpusClaimDecisionApiResponse } from '@/app/api/praticien/corpus/claims/decision/route';
+import type { CorpusExclusionRechercheApiResponse } from '@/app/api/praticien/corpus/claims/exclusion-recherche/route';
 import { clesLienDuClaim } from '@/lib/rag/claims/clesLien';
 import { lireIdentifiantRecherche } from '@/lib/rag/claims/rechercheIdentifiant';
 import { nomRubrique } from '@/components/fiches-usage/libelles';
@@ -27,6 +28,11 @@ import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien }
 // posent, au choix, avec la validation individuelle ; sur un claim validé,
 // « Étiqueter » les pose ou les corrige sans re-signer (acte journalisé sous
 // son propre type). La revue en lot n'en pose aucune.
+//
+// Exclusion de la recherche ([[D-490]]) : sur un claim validé, « Exclure de la
+// recherche » (ou « Rétablir ») arme un motif obligatoire — la provenance —,
+// puis confirme ; un acte journalisé, sans toucher statut ni signature. Le
+// badge « Exclu de la recherche » se montre dans tous les onglets.
 //
 // Deux voies de décision, jamais une validation en masse aveugle :
 //  - « une par une » : arme/confirme claim par claim (défaut) ;
@@ -100,6 +106,11 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const [clesSaisie, setClesSaisie] = useState<SaisieClesLien>(SAISIE_CLES_VIDE);
   /** Claim VALIDE dont l'étiquetage est ouvert. */
   const [etiquetageId, setEtiquetageId] = useState<string | null>(null);
+  /** [[D-490]] : claim VALIDE dont le geste exclure / rétablir est armé, et son motif. */
+  const [exclusionId, setExclusionId] = useState<string | null>(null);
+  const [motifExclusionSaisi, setMotifExclusionSaisi] = useState('');
+  /** Onglet Validés : seulement les claims exclus de la recherche. */
+  const [seulementExclus, setSeulementExclus] = useState(false);
 
   /** Revue en lot : marquage local puis soumission séquentielle. */
   const [modeLot, setModeLot] = useState(false);
@@ -112,10 +123,11 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   // par `decider` pour recharger CE que l'écran affiche, pas la vue d'origine
   // de la décision ; verrou d'envoi lisible hors re-render.
   const generationRef = useRef(0);
-  const vueRef = useRef<{ statut: ClaimStatut; offset: number; recherche: string | null }>({
+  const vueRef = useRef<{ statut: ClaimStatut; offset: number; recherche: string | null; exclus: boolean }>({
     statut: 'EN_ATTENTE_VALIDATION',
     offset: 0,
     recherche: null,
+    exclus: false,
   });
   const envoiRef = useRef(false);
   const refsOnglets = useRef<Array<HTMLButtonElement | null>>([]);
@@ -126,12 +138,15 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setMotifRejet('');
     setEtiquetageId(null);
     setClesSaisie(SAISIE_CLES_VIDE);
+    setExclusionId(null);
+    setMotifExclusionSaisi('');
   }, []);
 
   const charger = useCallback(async (
     statutCourant: ClaimStatut,
     offsetCourant: number,
     rechercheCourante: string | null,
+    exclusCourant: boolean,
   ) => {
     const generation = ++generationRef.current;
     setEtat('chargement');
@@ -140,12 +155,17 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setMotifRejet('');
     setEtiquetageId(null);
     setClesSaisie(SAISIE_CLES_VIDE);
+    setExclusionId(null);
+    setMotifExclusionSaisi('');
     setErreurDecision('');
     try {
       const filtreNotebook = notebook ? `&notebook=${encodeURIComponent(notebook)}` : '';
       const filtreClaim = rechercheCourante ? `&claim=${encodeURIComponent(rechercheCourante)}` : '';
+      // Le filtre des exclus ne vaut que dans l'onglet Validés (la route le
+      // refuse ailleurs) ; une recherche par identifiant le remet à zéro.
+      const filtreExclus = exclusCourant && statutCourant === 'VALIDE' ? '&exclu=1' : '';
       const reponse = await fetch(
-        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}${filtreClaim}`,
+        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}${filtreClaim}${filtreExclus}`,
       );
       const payload = (await reponse.json()) as CorpusClaimsApiResponse;
       if (generation !== generationRef.current) return;
@@ -173,7 +193,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   }, [notebook]);
 
   useEffect(() => {
-    vueRef.current = { statut, offset, recherche };
+    vueRef.current = { statut, offset, recherche, exclus: seulementExclus };
     // La vue change : les marques d'une page ne valent pas pour une autre.
     // Le résumé de lot, lui, SURVIT à la recharge automatique qui vide la file
     // (une page vidée fait reculer l'offset) — sinon le seul retour d'audit à
@@ -181,8 +201,8 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     // une action explicite : changement d'onglet, bascule de mode, nouveau
     // marquage, ou nouveau run.
     setMarques(new Map());
-    void charger(statut, offset, recherche);
-  }, [charger, statut, offset, recherche]);
+    void charger(statut, offset, recherche, seulementExclus);
+  }, [charger, statut, offset, recherche, seulementExclus]);
 
   const changerOnglet = (prochain: ClaimStatut) => {
     // Pas de changement d'onglet pendant une soumission en lot : la vue ne
@@ -207,6 +227,9 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     setResumeLot('');
     setSaisieRecherche(lecture.claimId);
     setRecherche(lecture.claimId);
+    // Le renvoi d'une recherche vide ne doit pas désigner l'onglet ouvert :
+    // la recherche cherche dans tout l'onglet, exclus ou non.
+    setSeulementExclus(false);
     setOffset(0);
   };
 
@@ -272,12 +295,12 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
           // État divergent : la liste affichée ment — on recharge pour remettre
           // l'écran d'accord avec la base avant toute nouvelle décision.
           if (!payload.ok && payload.reason === 'etat_divergent') {
-            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
+            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
           }
           return;
         }
         // Recharge de la vue COURANTE (l'onglet a pu changer pendant l'envoi).
-        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
       } catch {
         setErreurDecision('La décision n’a pas pu être enregistrée.');
       } finally {
@@ -314,16 +337,60 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         if (!reponse.ok || !payload.ok) {
           setErreurDecision(payload.ok ? 'L’étiquetage n’a pas pu être enregistré.' : payload.error);
           if (!payload.ok && payload.reason === 'claim_non_valide') {
-            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
+            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
           }
           return;
         }
         // Succès seulement : sur un échec transitoire, la saisie reste ouverte.
         setEtiquetageId(null);
         setClesSaisie(SAISIE_CLES_VIDE);
-        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
       } catch {
         setErreurDecision('L’étiquetage n’a pas pu être enregistré.');
+      } finally {
+        envoiRef.current = false;
+        setEnvoiId(null);
+      }
+    },
+    [charger],
+  );
+
+  /** [[D-490]] : exclure de la recherche, ou y rétablir, un claim VALIDE — motif obligatoire. */
+  const basculerExclusion = useCallback(
+    async (claim: ClaimEnRevue, motif: string) => {
+      if (envoiRef.current || !motif.trim()) return;
+      envoiRef.current = true;
+      setEnvoiId(claim.id);
+      setErreurDecision('');
+      try {
+        const reponse = await fetch('/api/praticien/corpus/claims/exclusion-recherche', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: claim.id, sens: claim.excluRecherche ? 'retablir' : 'exclure', motif }),
+        });
+        const payload = (await reponse.json()) as CorpusExclusionRechercheApiResponse;
+        if (!reponse.ok || !payload.ok) {
+          // `charger` efface l'erreur affichée dès son appel : la recharge
+          // part d'abord, le message est posé ensuite et reste visible.
+          if (!payload.ok && payload.reason === 'claim_non_valide') {
+            void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
+          }
+          setErreurDecision(payload.ok ? 'Le geste n’a pas pu être enregistré.' : payload.error);
+          return;
+        }
+        // Succès seulement : sur un échec transitoire, le motif reste saisi.
+        setExclusionId(null);
+        setMotifExclusionSaisi('');
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
+      } catch {
+        // Réponse perdue : l'acte a pu être écrit. On ne l'affirme ni dans un
+        // sens ni dans l'autre, et la vue est relue pour que le badge dise
+        // l'état réel avant tout nouveau geste (recharge d'abord : elle
+        // efface l'erreur affichée).
+        void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
+        setErreurDecision(
+          'Résultat inconnu : la réponse n’a pas pu être lue. La liste est rechargée ; vérifiez le badge avant de recommencer.',
+        );
       } finally {
         envoiRef.current = false;
         setEnvoiId(null);
@@ -433,7 +500,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
 
     envoiRef.current = false;
     setEnCoursLot(false);
-    void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche);
+    void charger(vueRef.current.statut, vueRef.current.offset, vueRef.current.recherche, vueRef.current.exclus);
   }, [claims, marques, charger]);
 
   // Groupement par source : la revue se fait document par document.
@@ -565,6 +632,22 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         )}
       </form>
 
+      {statut === 'VALIDE' && (
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={seulementExclus}
+            disabled={enEnvoiGlobal}
+            onChange={(event) => {
+              setSeulementExclus(event.target.checked);
+              setOffset(0);
+            }}
+            className="h-4 w-4"
+          />
+          Exclus de la recherche seulement
+        </label>
+      )}
+
       <div id="panneau-claims" role="tabpanel" aria-labelledby={idOngletActif} className="flex flex-col gap-5">
         {erreurDecision && (
           <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
@@ -594,7 +677,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         {etat === 'erreur' && (
           <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>{erreur}</span>
-            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset, recherche)}>
+            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset, recherche, seulementExclus)}>
               Réessayer
             </Button>
           </div>
@@ -630,7 +713,9 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
           <div className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card">
             {statut === 'EN_ATTENTE_VALIDATION'
               ? 'Aucun claim en attente de validation. La file se remplit à l’ingestion d’un lot rédigé.'
-              : 'Aucun claim dans cet état.'}
+              : statut === 'VALIDE' && seulementExclus
+                ? 'Aucun claim validé n’est exclu de la recherche.'
+                : 'Aucun claim dans cet état.'}
           </div>
         )}
 
@@ -680,6 +765,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                   // les reprend — elles se corrigent, jamais ne s'oublient.
                   const clesPosees = clesLienDuClaim(claim.metadata);
                   const etiquetageOuvert = etiquetageId === claim.id;
+                  const exclusionArmee = exclusionId === claim.id;
                   return (
                     <article
                       key={claim.id}
@@ -693,6 +779,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                         {claim.prescriptif && <Badge variant="warning">prescriptif</Badge>}
                         {claim.niveauPreuve && <Badge variant="neutral">preuve {claim.niveauPreuve}</Badge>}
                         {claim.classeAutorite && <Badge variant="neutral">{claim.classeAutorite}</Badge>}
+                        {claim.excluRecherche && <Badge variant="warning">Exclu de la recherche</Badge>}
                       </div>
 
                       <p className="text-base text-foreground">{claim.texteNormalise}</p>
@@ -884,6 +971,34 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                 Annuler
                               </Button>
                             </>
+                          ) : exclusionArmee ? (
+                            <>
+                              <span className="text-sm font-medium text-foreground">
+                                {claim.excluRecherche
+                                  ? 'Rétablir ce claim dans la recherche ?'
+                                  : 'Exclure ce claim de la recherche ? Il reste validé et citable.'}
+                              </span>
+                              <input
+                                type="text"
+                                aria-label={`Motif — ${claim.claimId}`}
+                                autoFocus
+                                maxLength={4000}
+                                value={motifExclusionSaisi}
+                                disabled={enEnvoiGlobal}
+                                onChange={(event) => setMotifExclusionSaisi(event.target.value)}
+                                placeholder="Motif : dossier et classement (obligatoire)"
+                                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                              />
+                              <Button
+                                disabled={enEnvoiGlobal || motifExclusionSaisi.trim().length === 0}
+                                onClick={() => void basculerExclusion(claim, motifExclusionSaisi)}
+                              >
+                                {claim.excluRecherche ? 'Confirmer le rétablissement' : 'Confirmer l’exclusion'}
+                              </Button>
+                              <Button variant="outline" disabled={enEnvoiGlobal} onClick={annulerArmement}>
+                                Annuler
+                              </Button>
+                            </>
                           ) : armeeRemise ? (
                             <>
                               <span className="text-sm font-medium text-foreground">
@@ -911,6 +1026,7 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                   onClick={() => {
                                     setConfirmationId(null);
                                     setConfirmationAction(null);
+                                    setExclusionId(null);
                                     setEtiquetageId(claim.id);
                                     setClesSaisie(
                                       clesPosees
@@ -922,11 +1038,27 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
                                   {clesPosees ? 'Corriger l’étiquetage' : 'Étiqueter'}
                                 </Button>
                               )}
+                              {claim.statut === 'VALIDE' && (
+                                <Button
+                                  variant="outline"
+                                  disabled={enEnvoiGlobal}
+                                  onClick={() => {
+                                    setConfirmationId(null);
+                                    setConfirmationAction(null);
+                                    setEtiquetageId(null);
+                                    setMotifExclusionSaisi('');
+                                    setExclusionId(claim.id);
+                                  }}
+                                >
+                                  {claim.excluRecherche ? 'Rétablir dans la recherche' : 'Exclure de la recherche'}
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 disabled={enEnvoiGlobal}
                                 onClick={() => {
                                   setEtiquetageId(null);
+                                  setExclusionId(null);
                                   setConfirmationId(claim.id);
                                   setConfirmationAction('EN_ATTENTE_VALIDATION');
                                 }}

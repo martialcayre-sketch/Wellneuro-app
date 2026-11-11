@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { AtelierCorpusPanel } from '@/components/corpus/AtelierCorpusPanel';
 import { AtelierVoieRapideModale } from '@/components/corpus/AtelierVoieRapideModale';
 import { EtiquetageLotPanel } from '@/components/corpus/EtiquetageLotPanel';
+import { ExclusionRechercheLotPanel } from '@/components/corpus/ExclusionRechercheLotPanel';
 import type { CorpusSourcesApiResponse, SourceAtelier } from '@/app/api/praticien/corpus/claims/sources/route';
 
 // Atelier corpus — vue d'ensemble et orchestration (v2).
@@ -142,6 +143,8 @@ export function AtelierCorpus() {
       </section>
 
       <EtiquetageLotPanel onConclu={() => setGeneration((g) => g + 1)} />
+
+      <ExclusionRechercheLotPanel onConclu={() => setGeneration((g) => g + 1)} />
 
       <AtelierCorpusPanel key={generation} notebook={notebookChoisi || undefined} />
 

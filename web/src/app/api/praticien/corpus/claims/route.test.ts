@@ -100,6 +100,20 @@ describe('/api/praticien/corpus/claims', () => {
     });
   });
 
+  it('filtre des exclus de la recherche (D-490) : seulement dans l’onglet Validés', async () => {
+    expect((await GET(requete('statut=VALIDE&exclu=1'))).status).toBe(200);
+    expect(listerClaimsRevue).toHaveBeenCalledWith(
+      expect.objectContaining({ statut: 'VALIDE', excluRecherche: true }),
+    );
+    listerClaimsRevue.mockClear();
+    for (const query of ['statut=EN_ATTENTE_VALIDATION&exclu=1', 'statut=REJETE&exclu=1', 'statut=VALIDE&exclu=oui']) {
+      const reponse = await GET(requete(query));
+      expect(reponse.status).toBe(400);
+      expect((await reponse.json()).reason).toBe('exclu_invalide');
+    }
+    expect(listerClaimsRevue).not.toHaveBeenCalled();
+  });
+
   it('refuse une recherche par identifiant illisible, sans lire la base (D/22)', async () => {
     for (const claim of ['0061-08', 'WN-CL-0061', 'WN-SRC-0061', '0061-008@x', '%25']) {
       const reponse = await GET(requete(`claim=${claim}`));

@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { lireClesLien, type ClesLienClaim } from './clesLien';
 import type { LigneEtiquetageLot } from './etiquetageLot';
+import type { LigneExclusionLot, SensExclusion } from './exclusionRecherche';
 
 // Poste de revue des claims (Atelier corpus v1, D-004). C'est ici — et
 // seulement ici — que vit la signature praticien D-003 : l'ingestion force
@@ -67,6 +68,8 @@ export type ClaimEnRevue = {
   validateur: string | null;
   valideAt: string | null;
   metadata: Record<string, unknown>;
+  /** [[D-490]] : la recherche des rayons ne rend plus ce claim (il reste valide). */
+  excluRecherche: boolean;
   createdAt: string;
   sources: SourceCiteeRevue[];
 };
@@ -87,6 +90,8 @@ export type ListerClaimsRevueOptions = {
   sourceIds?: string[];
   /** Identifiant exact (`WN-CL-…`, lu par lireIdentifiantRecherche) — toutes ses versions actives. */
   claimId?: string;
+  /** [[D-490]] : seulement les claims exclus de la recherche. */
+  excluRecherche?: true;
   limit?: number;
   offset?: number;
 };
@@ -104,6 +109,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
   // — résultat vide garanti, jamais un filtre silencieusement ignoré.
   const sourceIds = options.sourceIds ?? null;
   const claimId = options.claimId ?? null;
+  const exclus = options.excluRecherche === true;
   const limit = Math.max(1, Math.min(options.limit ?? 50, LIMIT_MAX));
   const offset = Math.max(0, options.offset ?? 0);
 
@@ -116,6 +122,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
         AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
         AND (${claimId}::text IS NULL OR c.claim_id = ${claimId})
+        AND (${exclus}::boolean = false OR c.exclu_recherche = true)
     `,
     prisma.$queryRaw<Array<{
       id: string;
@@ -132,6 +139,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
       validateur: string | null;
       valide_at: Date | null;
       metadata: unknown;
+      exclu_recherche: boolean;
       created_at: Date;
     }>>`
       SELECT
@@ -149,6 +157,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         c.validateur,
         c.valide_at,
         c.metadata,
+        c.exclu_recherche,
         c.created_at
       FROM public.rag_corpus_claims c
       WHERE c.statut = ${statut}
@@ -156,6 +165,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
         AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
         AND (${claimId}::text IS NULL OR c.claim_id = ${claimId})
+        AND (${exclus}::boolean = false OR c.exclu_recherche = true)
       ORDER BY c.source_id, c.claim_id, c.version_claim
       LIMIT ${limit} OFFSET ${offset}
     `,
@@ -226,6 +236,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
         row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
           ? (row.metadata as Record<string, unknown>)
           : {},
+      excluRecherche: row.exclu_recherche === true,
       createdAt: row.created_at.toISOString(),
       sources: sourcesParClaim.get(row.id) ?? [],
     })),
@@ -683,6 +694,209 @@ export async function etiqueterClaimsLot(params: {
     );
   } catch (err) {
     if (err instanceof EtatDivergentEtiquetageLot) return { ok: false, raison: 'etat_divergent' };
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Exclusion de la recherche ([[D-490]]) — un claim VALIDE ne remonte plus par
+// `match_wellneuro_rag_claims`, sans rien perdre de sa validité : ni statut,
+// ni signataire, ni date ne bougent, et `validite.ts` (citations explicites)
+// ne lit pas la marque (D-490 §2). L'acte `exclusion_recherche` vise un claim,
+// porte un sens et un motif — la provenance —, et s'écrit au journal dans la
+// même transaction que l'UPDATE de la colonne (D-490 §3).
+// ---------------------------------------------------------------------------
+
+/**
+ * Élément d'un acte `exclusion_recherche`. Ni `statutAvant` ni `statutApres`
+ * (rien n'est décidé) ; le CHECK `rag_claim_decisions_exclusion_recherche_complete`
+ * exige `id`, `claimId`, `versionClaim` et `sens`.
+ */
+export function elementJournalExclusion(
+  claim: { id: string; claimId: string; versionClaim: string },
+  sens: SensExclusion,
+): { id: string; claimId: string; versionClaim: string; sens: SensExclusion } {
+  return { id: claim.id, claimId: claim.claimId, versionClaim: claim.versionClaim, sens };
+}
+
+export type ExclusionRechercheResultat =
+  | { ok: true; claim: { id: string; excluRecherche: boolean }; inchange: boolean }
+  | { ok: false; raison: 'claim_introuvable' | 'claim_non_valide' };
+
+/**
+ * Exclut un claim VALIDE de la recherche, ou l'y rétablit. Le claim est
+ * verrouillé (`FOR UPDATE`) le temps de l'acte ; un claim déjà dans l'état
+ * visé n'est ni réécrit ni journalisé (`inchange`) — un double clic n'ajoute
+ * aucun acte. Le motif arrive déjà lu (`motifExclusion`) : la route refuse un
+ * motif vide avant tout appel.
+ */
+export async function exclureDeLaRecherche(params: {
+  id: string;
+  sens: SensExclusion;
+  motif: string;
+  validateur: string;
+}): Promise<ExclusionRechercheResultat> {
+  const { id, sens, motif, validateur } = params;
+  const exclu = sens === 'exclure';
+
+  return prisma.$transaction(async (tx) => {
+    const lus = await tx.$queryRaw<Array<{
+      id: string;
+      claim_id: string;
+      version_claim: string;
+      source_id: string;
+      statut: string;
+      exclu_recherche: boolean;
+    }>>`
+      SELECT id, claim_id, version_claim, source_id, statut, exclu_recherche
+      FROM public.rag_corpus_claims
+      WHERE id = ${id}
+        AND active = true
+      FOR UPDATE
+    `;
+    const claim = lus[0];
+    if (!claim) return { ok: false as const, raison: 'claim_introuvable' as const };
+    if (claim.statut !== 'VALIDE') return { ok: false as const, raison: 'claim_non_valide' as const };
+    if (claim.exclu_recherche === exclu) {
+      return { ok: true as const, claim: { id: claim.id, excluRecherche: exclu }, inchange: true };
+    }
+
+    const majes = await tx.$queryRaw<Array<{ id: string }>>`
+      UPDATE public.rag_corpus_claims
+      SET exclu_recherche = ${exclu},
+          updated_at = now()
+      WHERE id = ${id}
+        AND statut = 'VALIDE'
+        AND active = true
+      RETURNING id
+    `;
+    if (majes.length !== 1) return { ok: false as const, raison: 'claim_non_valide' as const };
+
+    const element = elementJournalExclusion(
+      { id: claim.id, claimId: claim.claim_id, versionClaim: claim.version_claim },
+      sens,
+    );
+    await tx.$executeRaw`
+      INSERT INTO public.rag_corpus_claim_decisions
+        (type_acte, motif, validateur, source_id, claims)
+      VALUES
+        ('exclusion_recherche', ${motif}, ${validateur}, ${claim.source_id}, ${JSON.stringify([element])}::jsonb)
+    `;
+
+    return { ok: true as const, claim: { id: claim.id, excluRecherche: exclu }, inchange: false };
+  }, { timeout: 30_000 });
+}
+
+export type RefusExclusionLot = {
+  claimId: string;
+  raison: 'claim_introuvable' | 'claim_non_valide' | 'claim_ambigu' | 'version_divergente';
+};
+
+export type ExclusionLotResultat =
+  | { ok: true; n: number; inchanges: number }
+  | { ok: false; raison: 'claims_refuses'; refus: RefusExclusionLot[] }
+  | { ok: false; raison: 'etat_divergent' };
+
+class EtatDivergentExclusionLot extends Error {}
+
+/**
+ * Exclusion (ou rétablissement) en lot, au patron de l'étiquetage en lot
+ * ([[D-325]], étendu par [[D-490]] §6) : UN geste sur une liste relue, N
+ * actes `exclusion_recherche` — un claim par acte, chacun avec son motif.
+ * Tout ou rien : un claim introuvable, ambigu, d'une autre version ou non
+ * VALIDE, et rien n'est écrit ; le refus nomme chaque claim en cause. Un
+ * claim déjà dans l'état visé n'est ni réécrit ni journalisé (`inchanges`).
+ */
+export async function exclureDeLaRechercheLot(params: {
+  lignes: LigneExclusionLot[];
+  sens: SensExclusion;
+  validateur: string;
+}): Promise<ExclusionLotResultat> {
+  const { lignes, sens, validateur } = params;
+  const exclu = sens === 'exclure';
+  const ids = lignes.map((l) => l.claimId);
+
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const trouves = await tx.$queryRaw<Array<{
+          id: string;
+          claim_id: string;
+          version_claim: string;
+          source_id: string;
+          statut: string;
+          exclu_recherche: boolean;
+        }>>`
+          SELECT id, claim_id, version_claim, source_id, statut, exclu_recherche
+          FROM public.rag_corpus_claims
+          WHERE active = true
+            AND claim_id = ANY(${ids}::text[])
+          ORDER BY id
+          FOR UPDATE
+        `;
+
+        const parClaim = new Map<string, typeof trouves>();
+        for (const ligne of trouves) {
+          parClaim.set(ligne.claim_id, [...(parClaim.get(ligne.claim_id) ?? []), ligne]);
+        }
+
+        const refus: RefusExclusionLot[] = [];
+        const cibles: Array<{ ligne: LigneExclusionLot; claim: (typeof trouves)[number] }> = [];
+        for (const ligne of lignes) {
+          const actifs = parClaim.get(ligne.claimId) ?? [];
+          // Une version demandée lève l'ambiguïté de plusieurs versions actives.
+          const candidats = ligne.versionClaim
+            ? actifs.filter((c) => c.version_claim === ligne.versionClaim)
+            : actifs;
+          if (actifs.length === 0) refus.push({ claimId: ligne.claimId, raison: 'claim_introuvable' });
+          else if (candidats.length === 0) refus.push({ claimId: ligne.claimId, raison: 'version_divergente' });
+          else if (candidats.length > 1) refus.push({ claimId: ligne.claimId, raison: 'claim_ambigu' });
+          else if (candidats[0].statut !== 'VALIDE') {
+            refus.push({ claimId: ligne.claimId, raison: 'claim_non_valide' });
+          } else cibles.push({ ligne, claim: candidats[0] });
+        }
+        if (refus.length > 0) return { ok: false as const, raison: 'claims_refuses' as const, refus };
+
+        // Les lignes sont verrouillées : la relecture de la marque vaut sous
+        // concurrence, et un renvoi de la même liste n'ajoute aucun acte.
+        const aEcrire = cibles.filter(({ claim }) => claim.exclu_recherche !== exclu);
+        const inchanges = cibles.length - aEcrire.length;
+        if (aEcrire.length === 0) return { ok: true as const, n: 0, inchanges };
+
+        const idsAEcrire = aEcrire.map(({ claim }) => claim.id);
+        const majes = await tx.$queryRaw<Array<{ id: string }>>`
+          UPDATE public.rag_corpus_claims
+          SET exclu_recherche = ${exclu},
+              updated_at = now()
+          WHERE id = ANY(${idsAEcrire}::text[])
+            AND statut = 'VALIDE'
+            AND active = true
+          RETURNING id
+        `;
+        if (majes.length !== aEcrire.length) throw new EtatDivergentExclusionLot();
+
+        const actes = aEcrire.map(({ ligne, claim }) => ({
+          source_id: claim.source_id,
+          motif: ligne.motif,
+          element: elementJournalExclusion(
+            { id: claim.id, claimId: claim.claim_id, versionClaim: claim.version_claim },
+            sens,
+          ),
+        }));
+        const journalises = await tx.$executeRaw`
+          INSERT INTO public.rag_corpus_claim_decisions
+            (type_acte, motif, validateur, source_id, claims)
+          SELECT 'exclusion_recherche', x.motif, ${validateur}, x.source_id, jsonb_build_array(x.element)
+          FROM jsonb_to_recordset(${JSON.stringify(actes)}::jsonb) AS x(source_id text, motif text, element jsonb)
+        `;
+        if (journalises !== aEcrire.length) throw new EtatDivergentExclusionLot();
+
+        return { ok: true as const, n: aEcrire.length, inchanges };
+      },
+      { timeout: 30_000 },
+    );
+  } catch (err) {
+    if (err instanceof EtatDivergentExclusionLot) return { ok: false, raison: 'etat_divergent' };
     throw err;
   }
 }
