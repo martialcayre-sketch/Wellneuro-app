@@ -140,7 +140,7 @@ BEGIN
 
   -- ── 3. assignations ──────────────────────────────────────────────────────
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
-  VALUES ('nf7_pat', 'PAT_NF7_CONTRAT', 'contrat-nf7@test.invalid', 'Contrat', 'Nf7', 'contrat@test.invalid', now());
+  VALUES ('nf7_pat', 'PAT_NF7_CONTRAT', 'sophie.nicola+nf7@example.test', 'Sophie', 'Nicola', 'contrat@test.invalid', now());
 
   PERFORM pg_temp.doit_accepter('catalogue, copie NULL',
     A || '(''nf7_a1'', ''ASS_NF7_1'', ''PAT_NF7_CONTRAT'', ''contrat@test.invalid'', ''Q_NEU_01'', ''Contrat'', ''En attente'', now(), NULL)');
