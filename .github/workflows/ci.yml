@@ -2158,8 +2158,16 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
 
+      # Le cache des navigateurs ne contient pas les bibliothèques système.
+      # Azure ne répondait plus le 2026-11-11 : ~20 s d'attente PAR paquet.
+      - name: Préparer les miroirs Ubuntu pour Playwright
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: sudo env GITHUB_ACTIONS=true "$(command -v node)" ../scripts/wn-playwright-apt.mjs
+
       - name: Install Playwright browsers
         if: steps.scope.outputs.docs_only != 'true'
+        timeout-minutes: 10
         working-directory: web
         run: npx playwright install --with-deps chromium webkit
 
@@ -2167,6 +2175,7 @@ jobs:
       # de compilation à la demande de next dev) et plus fidèle au déploiement
       # Vercel (bundles React prod, prerender identique).
       - name: E2E tests (Playwright, production build)
+        id: playwright
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         env:
@@ -2174,7 +2183,8 @@ jobs:
         run: npm run test:e2e
 
       - name: Upload Playwright report
-        if: always() && steps.scope.outputs.docs_only != 'true'
+        # Aucun rapport n'existe si l'installation des navigateurs a échoué.
+        if: always() && steps.playwright.outcome != '' && steps.playwright.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
