@@ -175,6 +175,53 @@ describe('/api/praticien/regles/revision', () => {
     expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
   });
 
+  // [[D-479]] — même critère que la prévisualisation : valide ET non supplanté.
+  it('refuse un claim encore VALIDE mais supplanté, sans ouvrir de transaction', async () => {
+    prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) =>
+      Promise.resolve(
+        strings.join('?').includes('superseded_at IS NULL')
+          ? []
+          : [{ claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' }],
+      ),
+    );
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(422);
+    const corps = await reponse.json();
+    expect(corps.reason).toBe('claim_non_valide');
+    expect(corps.error).toBe(
+      'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+        + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+        + 'reposer que sur un claim signé et non supplanté.',
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  // Une lecture partielle ne vaut pas autorisation : l'échec de la seule
+  // lecture des supplantations rend une erreur, sans transaction ni écriture.
+  it('rend une erreur si la lecture des supplantations échoue, sans ouvrir de transaction', async () => {
+    prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) =>
+      strings.join('?').includes('superseded_at IS NULL')
+        ? Promise.reject(new Error('corpus illisible'))
+        : Promise.resolve([{ claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' }]),
+    );
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(500);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  it('accepte un claim valide et non supplanté, après les deux lectures', async () => {
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(201);
+    const requetes = prisma.$queryRaw.mock.calls.map((appel) =>
+      (appel[0] as TemplateStringsArray).join('?'),
+    );
+    expect(requetes).toHaveLength(2);
+    expect(requetes.filter((sql) => sql.includes('superseded_at IS NULL'))).toHaveLength(1);
+    expect(prisma.clinicalRule.create).toHaveBeenCalled();
+  });
+
   // ── Les conditions, sur le chemin de RÉVISION ([[D-142]]) ─────────────────
   // Le formulaire n'envoyait aucune condition et la route écrivait l'ancien
   // champ : réviser une règle conditionnée à un critère la rendait

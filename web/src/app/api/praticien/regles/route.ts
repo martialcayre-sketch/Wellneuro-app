@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
-import { claimValideAuCorpus } from '@/lib/rag/claims/validite';
+import { claimAdmissibleAuCatalogue } from '@/lib/supplement-library/catalogueDecisionPrisma';
 import {
   CODE_GOUVERNE_RE,
   FILTRE_PAR_STATUT,
@@ -228,7 +228,9 @@ export async function POST(req: Request): Promise<NextResponse<RegleCreationApiR
             select: { id: true, actif: true },
           })
         : Promise.resolve(null),
-      claimValideAuCorpus(contenu.claim),
+      // Valide au corpus ET non supplanté ([[D-479]]) : le critère même de la
+      // prévisualisation, pour ne pas enregistrer une règle qu'elle refuserait.
+      claimAdmissibleAuCatalogue(contenu.claim),
     ]);
 
     if (!intention?.actif) {
@@ -252,14 +254,16 @@ export async function POST(req: Request): Promise<NextResponse<RegleCreationApiR
     }
     // UN SEUL REFUS POUR PLUSIEURS CAUSES, et c'est délibéré : le claim peut
     // n'exister nulle part, attendre validation, avoir été rejeté, désactivé,
-    // ou n'être adossé à aucun verbatim source. Les distinguer ici reviendrait
-    // à décrire l'état du corpus depuis l'atelier de règles — le poste de revue
-    // des claims est le lieu de cette réponse, pas celui-ci.
+    // n'être adossé à aucun verbatim source, ou être supplanté ([[D-479]]). Les
+    // distinguer ici reviendrait à décrire l'état du corpus depuis l'atelier de
+    // règles — le poste de revue des claims est le lieu de cette réponse, pas
+    // celui-ci.
     if (!claimValide) {
       return echec(
         'claim_non_valide',
-        'Ce claim n’est pas validé au corpus : vérifiez son identifiant et sa version au '
-        + 'poste de revue des claims. Une règle ne peut reposer que sur un claim signé.',
+        'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+        + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+        + 'reposer que sur un claim signé et non supplanté.',
         422,
       );
     }
