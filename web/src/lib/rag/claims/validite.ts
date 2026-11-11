@@ -1,15 +1,24 @@
 import { prisma } from '@/lib/prisma';
 
-// LE CLAIM CITÉ EXISTE-T-IL, ET EST-IL VALIDE AU CORPUS ? ([[D-140]])
+// LE CLAIM CITÉ EXISTE-T-IL, EST-IL VALIDE AU CORPUS, EST-IL SUPPLANTÉ ?
+// ([[D-140]], [[D-479]])
 //
 // POURQUOI CE MODULE EXISTE. `rag_corpus_claims` est une table SQL-brut, hors
 // `schema.prisma` (`prisma.config.ts`, `tables.external`) : aucune clé
 // étrangère ne peut partir de `clinical_rules` ni de `biology_functional_ranges`
-// vers elle. Le lien entre une règle et son claim fondateur ne peut donc être
-// gardé que par le CODE — à l'écriture (les routes de l'atelier refusent une
-// règle dont le claim n'est pas valide) et à la lecture
-// (`lireCatalogueDecision` remplit `claimsValidesParRegle` avec ce qui est
-// constaté, jamais avec une présomption).
+// vers elle. Le lien entre une donnée clinique et son claim ne peut donc être
+// gardé que par le CODE, qui lit ici deux PRÉDICATS : la validité au corpus
+// (`claimsValidesAuCorpus`) et la non-supplantation
+// (`claimsNonSupplantesAuCorpus`).
+//
+// CE MODULE NE PORTE PAS LE CRITÈRE D'UNE RÈGLE. Une règle de la Bibliothèque
+// des compléments n'est fondée que si son claim est valide ET non supplanté
+// ([[D-479]] §2) : ce critère vit dans `claimsAdmissiblesAuCatalogue`
+// (`supplement-library/catalogueDecisionPrisma.ts`), seul appelé par
+// l'écriture (création, révision, validation d'une règle), par la
+// prévisualisation de l'atelier et par la Bibliothèque filtrée par intention.
+// Appeler `claimsValidesAuCorpus` seul pour une règle laisserait passer un
+// claim supplanté.
 //
 // LES MÊMES PRÉDICATS QUE LA VOIE DE RÉCUPÉRATION, EXACTEMENT. La fonction
 // `match_wellneuro_rag_claims` est la seule voie autorisée à faire REMONTER un
@@ -119,9 +128,4 @@ export async function claimsNonSupplantesAuCorpus(
   return new Set(
     lignes.map((ligne) => cleClaim({ claimId: ligne.claim_id, versionClaim: ligne.version_claim })),
   );
-}
-
-/** Le cas à une seule référence — l'écriture d'une règle en pose exactement une. */
-export async function claimValideAuCorpus(reference: ReferenceClaim): Promise<boolean> {
-  return (await claimsValidesAuCorpus([reference])).has(cleClaim(reference));
 }

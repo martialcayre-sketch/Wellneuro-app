@@ -10,6 +10,24 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+// Les deux PRÉDICATS du corpus sont simulés ; le critère qui les combine
+// (`claimsAdmissiblesAuCatalogue`, [[D-479]] §2) reste le vrai : le banc
+// éprouve que la Bibliothèque passe par lui, pas par une copie.
+const { claimsValidesAuCorpus, claimsNonSupplantesAuCorpus } = vi.hoisted(() => ({
+  claimsValidesAuCorpus: vi.fn(),
+  claimsNonSupplantesAuCorpus: vi.fn(),
+}));
+vi.mock('@/lib/rag/claims/validite', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rag/claims/validite')>()),
+  claimsValidesAuCorpus,
+  claimsNonSupplantesAuCorpus,
+}));
+
+/** Le corpus reconnaît tout couple demandé (cas par défaut des bancs). */
+function toutReconnu(references: { claimId: string; versionClaim: string }[]) {
+  return Promise.resolve(new Set(references.map((r) => `${r.claimId}::${r.versionClaim}`)));
+}
+
 import {
   CatalogueRequeteInvalide,
   FACETTES_INDISPONIBLES,
@@ -33,6 +51,7 @@ function regleMag(overrides: Record<string, unknown> = {}) {
     id: 'regle_mag', intentTagId: 'tag_sommeil', typeRegle: 'recommande',
     justification: 'Justification magnésium.',
     conditionBiologie: null, conditionCritere: null,
+    claimId: 'WN-CL-2026-001', versionClaim: 'v1.0',
     doseCibleBasse: 100, doseCibleHaute: 300, gradePreuveScientifique: 'modere',
     versionRegle: 1, creeLe: new Date('2026-07-01T00:00:00.000Z'),
     validePar: 'praticien@wellneuro.fr', valideLe: new Date('2026-07-02T00:00:00.000Z'),
@@ -94,6 +113,8 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     prisma.ingredientFunctionalThreshold.findMany.mockResolvedValue([]);
     prisma.clinicalIntentTag.findMany.mockResolvedValue([]);
     prisma.clinicalRule.findMany.mockResolvedValue([]);
+    claimsValidesAuCorpus.mockImplementation(toutReconnu);
+    claimsNonSupplantesAuCorpus.mockImplementation(toutReconnu);
   });
 
   it('refuse tout service quand WN_C4_ENABLED est absent ou faux (fail-closed)', async () => {
@@ -109,7 +130,8 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(res.fiches).toEqual([]);
     expect(res.total).toBe(0);
     expect(res.aucunScoreGlobal).toBe(true);
-    expect(res.contractVersion).toBe('c4-catalogue-v4');
+    expect(res.contractVersion).toBe('c4-catalogue-v5');
+    expect(res.reglesEcartees).toEqual([]);
   });
 
   it('ne produit AUCUN score global agrégé', async () => {
@@ -526,6 +548,176 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('aucun');
   });
 
+  // ─── t76 : une règle ne s'applique que si son claim est admissible ────────
+  //
+  // [[D-140]] : une règle qui ne nomme pas un claim validé ne s'applique pas.
+  // [[D-479]] §2 : « validé » = valide au corpus ET non supplanté. La
+  // prévisualisation refusait déjà ces règles ; la Bibliothèque les servait.
+
+  const JUSTIF_CUMUL_SANS_REGLE_ADMISSIBLE =
+    'Aucune règle admissible pour l’intention sélectionnée : cumuls et seuils non évalués.';
+
+  /** Fiche intègre : sans exclusion, la sentinelle y rendrait « Compatible » et « Aucun cumul ». */
+  function poserIntentionEtFicheIntegre(regles: unknown[]) {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit({ compositionSourceLignes: 1 })]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue(regles);
+  }
+
+  it('un claim SUPPLANTÉ écarte sa règle : ni grade, ni forme, ni source, ni compteur, ni sentinelle', async () => {
+    poserIntentionEtFicheIntegre([regleMag()]);
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set());
+
+    const res = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    const [fiche] = res.fiches;
+    expect(res.intentionFiltre?.code).toBe('sommeil_fragmente');
+    expect(res.reglesEcartees).toEqual([
+      {
+        regleId: 'regle_mag',
+        intentionCode: 'sommeil_fragmente',
+        claim: { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+      },
+    ]);
+    expect(fiche.dimensions.gradePreuveParIntention.valeurs).toEqual([]);
+    // Fiche intègre : la justification est servie telle quelle, sans mention ajoutée.
+    expect(fiche.dimensions.gradePreuveParIntention.justification).toBe(
+      'Aucune intention sélectionnée, ou aucune règle admissible pour cette composition : grade de preuve non applicable.',
+    );
+    expect(fiche.dimensions.biodisponibiliteForme.valeursPresentes).not.toContain('forme_preferee');
+    expect(fiche.reglesCorrespondantes).toBe(0);
+    expect(fiche.referencesScientifiques.map((r) => r.id)).not.toContain('src_1');
+    // Aucun feu vert tiré de l'exclusion : la sentinelle n'est pas évaluée.
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.justification).toBe(JUSTIF_CUMUL_SANS_REGLE_ADMISSIBLE);
+    // Une seule lecture des seuils : celle des interactions de la page. La
+    // sentinelle en aurait fait une seconde.
+    expect(prisma.ingredientFunctionalThreshold.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('un claim NON VALIDE au corpus (mais non supplanté) écarte aussi sa règle', async () => {
+    poserIntentionEtFicheIntegre([regleMag()]);
+    claimsValidesAuCorpus.mockResolvedValue(new Set());
+
+    const res = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    expect(res.reglesEcartees.map((r) => r.regleId)).toEqual(['regle_mag']);
+    expect(res.fiches[0].reglesCorrespondantes).toBe(0);
+  });
+
+  it('une règle SANS claim est écartée et nommée sans claim, sans question au corpus', async () => {
+    poserIntentionEtFicheIntegre([regleMag({ claimId: null, versionClaim: null })]);
+
+    const res = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    expect(res.reglesEcartees).toEqual([
+      { regleId: 'regle_mag', intentionCode: 'sommeil_fragmente', claim: null },
+    ]);
+    expect(claimsValidesAuCorpus).not.toHaveBeenCalled();
+    expect(claimsNonSupplantesAuCorpus).not.toHaveBeenCalled();
+  });
+
+  it('seule la règle non admissible est écartée ; les deux lectures reçoivent les mêmes couples', async () => {
+    const regleVitD = regleMag({
+      id: 'regle_vitd',
+      claimId: 'WN-CL-2026-002',
+      versionClaim: 'v2.0',
+      ingredient: { id: 'ing_vitd', code: 'vitamine_d', nomFr: 'Vitamine D' },
+      formePreferee: null,
+      sourceReference: { id: 'src_2', citation: 'Revue Vitamine D, 2025', lienUrl: null },
+    });
+    poserIntentionEtFicheIntegre([regleMag(), regleVitD]);
+    // La fiche porte les DEUX ingrédients : l'exclusion se lit sur la fiche.
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({
+        compositionSourceLignes: 2,
+        compositions: [
+          {
+            doseParDjr: 200, unite: 'mg', position: 0,
+            ingredient: { id: 'ing_mag', code: 'magnesium', nomFr: 'Magnésium' },
+            forme: { id: 'forme_bisg', code: 'bisglycinate', labelFr: 'Bisglycinate' },
+          },
+          {
+            doseParDjr: 10, unite: 'µg', position: 1,
+            ingredient: { id: 'ing_vitd', code: 'vitamine_d', nomFr: 'Vitamine D' },
+            forme: null,
+          },
+        ],
+      }),
+    ]);
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set(['WN-CL-2026-001::v1.0']));
+
+    const res = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    expect(res.reglesEcartees.map((r) => r.regleId)).toEqual(['regle_vitd']);
+    const [fiche] = res.fiches;
+    expect(fiche.completudeComposition).toBe('integre');
+    expect(fiche.reglesCorrespondantes).toBe(1);
+    expect(fiche.dimensions.gradePreuveParIntention.valeurs).toEqual([
+      expect.objectContaining({ ingredientCode: 'magnesium' }),
+    ]);
+    expect(fiche.referencesScientifiques.map((r) => r.id)).toEqual(['src_1']);
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('aucun');
+    const couples = [
+      { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-2026-002', versionClaim: 'v2.0' },
+    ];
+    expect(claimsValidesAuCorpus).toHaveBeenCalledWith(couples);
+    expect(claimsNonSupplantesAuCorpus).toHaveBeenCalledWith(couples);
+  });
+
+  it.each([
+    ['des supplantations', claimsNonSupplantesAuCorpus],
+    ['de la validité', claimsValidesAuCorpus],
+  ])('une panne de la lecture %s reste une ERREUR, jamais une exclusion ni un service', async (_libelle, lecture) => {
+    poserIntentionEtFicheIntegre([regleMag()]);
+    lecture.mockRejectedValue(new Error('corpus injoignable'));
+
+    await expect(listerCatalogue({ intentionCode: 'sommeil_fragmente' })).rejects.toThrow('corpus injoignable');
+    expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
+  });
+
+  it('sans intention, le corpus n’est pas lu', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const res = await listerCatalogue();
+    expect(res.reglesEcartees).toEqual([]);
+    expect(claimsValidesAuCorpus).not.toHaveBeenCalled();
+    expect(claimsNonSupplantesAuCorpus).not.toHaveBeenCalled();
+  });
+
+  it('la liste des exclusions survit à une réponse SANS fiche', async () => {
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
+    claimsNonSupplantesAuCorpus.mockResolvedValue(new Set());
+
+    // Vide par construction (facette insatisfiable) : aucune requête de page.
+    const vide = await listerCatalogue({
+      intentionCode: 'sommeil_fragmente',
+      filtres: { donneesManquantes: ['non_evaluee'] },
+    });
+    expect(vide.fiches).toEqual([]);
+    expect(vide.reglesEcartees.map((r) => r.regleId)).toEqual(['regle_mag']);
+
+    // Vide par la base : page sans fiche.
+    const pageVide = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    expect(pageVide.fiches).toEqual([]);
+    expect(pageVide.reglesEcartees.map((r) => r.regleId)).toEqual(['regle_mag']);
+  });
+
+  it('une intention résolue SANS aucune règle le dit, au lieu d’« aucune sélection ouverte »', async () => {
+    poserIntentionEtFicheIntegre([]);
+    const [fiche] = (await listerCatalogue({ intentionCode: 'sommeil_fragmente' })).fiches;
+    expect(fiche.dimensions.cumulVsSeuils.justification).toBe(JUSTIF_CUMUL_SANS_REGLE_ADMISSIBLE);
+  });
+
+  it('sans intention, la justification du cumul reste « aucune sélection ouverte »', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit({ compositionSourceLignes: 1 })]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const [fiche] = (await listerCatalogue()).fiches;
+    expect(fiche.dimensions.cumulVsSeuils.justification).toBe(
+      'Aucune sélection d\'intentions ouverte : cumuls et seuils non évalués.',
+    );
+  });
+
   it('annonce l’état de la composition sur CHAQUE fiche servie', async () => {
     prisma.supplementProduct.findMany.mockResolvedValue([
       produit({ id: 'p_vide', compositions: [] }),
@@ -755,7 +947,7 @@ describe('appliquerCompletude — l’asymétrie positif / feu vert', () => {
 
   // Le cas de la revue : une règle validée existe, mais ne porte que sur un
   // ingrédient NON RÉSOLU. La liste de grades est vide et son texte affirme
-  // « aucune règle validée pour cette composition ». Sans la mention, le
+  // « aucune règle admissible pour cette composition ». Sans la mention, le
   // praticien conclut qu'aucune preuve n'existe sur ce produit.
   it('une absence de grade due aux ingrédients non résolus est annoncée comme telle', () => {
     const d = appliquerCompletude(
@@ -763,12 +955,12 @@ describe('appliquerCompletude — l’asymétrie positif / feu vert', () => {
         gradePreuveParIntention: {
           valeurs: [],
           justification:
-            'Aucune intention sélectionnée, ou aucune règle validée pour cette composition : grade de preuve non applicable.',
+            'Aucune intention sélectionnée, ou aucune règle admissible pour cette composition : grade de preuve non applicable.',
         },
       }),
       'partielle',
     );
-    expect(d.gradePreuveParIntention.justification).toMatch(/aucune règle validée/i);
+    expect(d.gradePreuveParIntention.justification).toMatch(/aucune règle admissible/i);
     expect(d.gradePreuveParIntention.justification).toMatch(/incomplète/i);
   });
 

@@ -279,3 +279,56 @@ describe('MissingDataPanel — constat de convergence', () => {
     expect(screen.getByText(/non résolue/)).toBeTruthy();
   });
 });
+
+// [[D-491]] — LA RÉSERVE SUR LA SOURCE. Le constat reste affiché ; la réserve
+// se lit dans le résumé, sans déplier, et le claim en cause est marqué dans la
+// liste des sources — jamais présenté comme admissible.
+describe('MissingDataPanel — réserve sur la source (D-491)', () => {
+  const conflitAReserve: ContradictionAffichee = {
+    ...conflit,
+    reserveSource: {
+      motif: 'claims_non_admissibles',
+      claims: [{ claimId: 'WN-CL-0387-013', versionClaim: 'v1.0' }],
+    },
+  };
+
+  it('conflit : « Registre de conflits à relire » dans le résumé, le conflit reste', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflitAReserve]} />);
+    expect(screen.getByText('Registre de conflits à relire')).toBeTruthy();
+    expect(screen.getByText(/Conflit entre sources du corpus/)).toBeTruthy();
+  });
+
+  it('conflit : la phrase dit que le conflit n’est pas résolu, et seul le claim en cause est marqué', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflitAReserve]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/Au moins un des deux claims ne satisfait pas les critères de validité du corpus\. Le conflit reste affiché : il n’est pas résolu pour autant/)).toBeTruthy();
+    expect(screen.getByText(/WN-CL-0387-013 v1\.0 \(ne satisfait pas les critères de validité du corpus\)/)).toBeTruthy();
+    expect(screen.queryByText(/WN-CL-0312-018 v1\.0 \(ne satisfait/)).toBeNull();
+  });
+
+  it('discordance : « Réserve sur la source », et le frein de l’extinction est dit maintenu', () => {
+    const aReserve: ContradictionAffichee = {
+      ...constat,
+      reserveSource: { motif: 'claims_non_admissibles', claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }] },
+    };
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[aReserve]} />);
+    expect(screen.getByText('Réserve sur la source')).toBeTruthy();
+    deplierLeDetail();
+    expect(screen.getByText(/Au moins un claim qui fonde ce constat ne satisfait pas les critères de validité du corpus\. Le constat reste affiché, et il empêche toujours une règle d’arrêt de retirer une exploration\./)).toBeTruthy();
+  });
+
+  it('validité non vérifiée : intitulé et phrase propres, aucun claim marqué', () => {
+    const nonVerifie: ContradictionAffichee = { ...constat, reserveSource: { motif: 'validite_non_verifiee' } };
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[nonVerifie]} />);
+    expect(screen.getByText('Validité des sources non vérifiée')).toBeTruthy();
+    deplierLeDetail();
+    expect(screen.getByText(/La validité des claims cités n’a pas pu être vérifiée\./)).toBeTruthy();
+    expect(screen.queryByText(/\(ne satisfait pas/)).toBeNull();
+  });
+
+  it('sans réserve : aucun intitulé de réserve', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat, conflit]} />);
+    expect(screen.queryByText('Registre de conflits à relire')).toBeNull();
+    expect(screen.queryByText('Réserve sur la source')).toBeNull();
+  });
+});

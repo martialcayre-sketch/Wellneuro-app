@@ -1313,6 +1313,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bibliotheque_options_textes_v1_negatif.sql
 
+      # NF-7, lot 1 (D-303, H59 ; réponses 20261111-0027-a à 0029-a) : la
+      # déclaration « question sur le suicide » des instruments du cabinet,
+      # NULL = non déclaré ; désignation seulement entière et sous « oui » ;
+      # copie d'assignation seulement sur un CAB_ ; pas encore de CHECK
+      # « valide ⇒ déclaré » (après l'allumage du drapeau). Transaction annulée.
+      - name: NF-7 cabinet suicide declaration negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/nf7_declaration_suicide_cabinet_v1_negatif.sql
+
       # Les mêmes tables, en deux sessions (D-439 ; contre-revue Codex de
       # #1871, P1-1) : deux premières poses, deux premières versions, une
       # révision contre un acte, un retrait contre un arbitrage, une révocation

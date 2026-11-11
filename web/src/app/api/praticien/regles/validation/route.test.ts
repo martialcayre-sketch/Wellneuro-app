@@ -17,7 +17,17 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+const { claimAdmissibleAuCatalogue } = vi.hoisted(() => ({ claimAdmissibleAuCatalogue: vi.fn() }));
+vi.mock('@/lib/supplement-library/catalogueDecisionPrisma', () => ({ claimAdmissibleAuCatalogue }));
+
 import { POST } from './route';
+
+// Message de D-479 §4, au caractère près.
+const MESSAGE_CLAIM_NON_VALIDE =
+  'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+  + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+  + 'reposer que sur un claim signé et non supplanté.';
+const COUPLE_EN_BASE = { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' };
 
 const URL_BASE = 'http://localhost/api/praticien/regles/validation';
 
@@ -30,6 +40,8 @@ const BROUILLON = {
   ingredientId: 'ing_mag',
   typeRegle: 'recommande',
   versionRegle: 2,
+  claimId: 'WN-CL-2026-001',
+  versionClaim: 'v1.0',
 };
 
 const SIGNEE = {
@@ -79,6 +91,7 @@ describe('/api/praticien/regles/validation', () => {
     prisma.clinicalRule.findFirst.mockResolvedValue(null);
     prisma.clinicalRule.updateMany.mockResolvedValue({ count: 1 });
     prisma.clinicalRule.findMany.mockResolvedValue([]);
+    claimAdmissibleAuCatalogue.mockResolvedValue(true);
   });
 
   it('exige une session AVEC e-mail — jamais de signature anonyme', async () => {
@@ -174,5 +187,84 @@ describe('/api/praticien/regles/validation', () => {
   it('répond 404 sur une règle introuvable', async () => {
     prisma.clinicalRule.findUnique.mockReset().mockResolvedValue(null);
     expect((await POST(requete(CORPS))).status).toBe(404);
+    expect(claimAdmissibleAuCatalogue).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // ─── t76 : le claim fondateur se relit avant de signer ([[D-479]] §2) ────
+
+  it('vérifie le couple ENREGISTRÉ sur la règle, avant la transaction, puis signe', async () => {
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(200);
+    expect(claimAdmissibleAuCatalogue).toHaveBeenCalledTimes(1);
+    expect(claimAdmissibleAuCatalogue).toHaveBeenCalledWith(COUPLE_EN_BASE);
+    expect(claimAdmissibleAuCatalogue.mock.invocationCallOrder[0])
+      .toBeLessThan(prisma.$transaction.mock.invocationCallOrder[0]);
+  });
+
+  it('refuse 422 claim_non_valide un brouillon dont le claim n’est plus admissible, sans transaction', async () => {
+    claimAdmissibleAuCatalogue.mockResolvedValue(false);
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(422);
+    expect(await reponse.json()).toEqual({
+      ok: false,
+      reason: 'claim_non_valide',
+      error: MESSAGE_CLAIM_NON_VALIDE,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('n’accepte aucun claim venu du corps : seul le couple en base est jugé', async () => {
+    await POST(requete({ ...CORPS, claimId: 'WN-CL-2026-999', versionClaim: 'v9.0' }));
+    expect(claimAdmissibleAuCatalogue).toHaveBeenCalledWith(COUPLE_EN_BASE);
+  });
+
+  it('refuse 422 une règle sans claim, sans interroger le corpus', async () => {
+    prisma.clinicalRule.findUnique.mockReset().mockResolvedValue({
+      ...BROUILLON,
+      claimId: null,
+      versionClaim: null,
+    });
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(422);
+    expect((await reponse.json()).reason).toBe('claim_non_valide');
+    expect(claimAdmissibleAuCatalogue).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('le rejeu sur une règle déjà signée reste 409 etat_divergent, même si son claim n’est plus admissible', async () => {
+    prisma.clinicalRule.findUnique.mockReset().mockResolvedValue({
+      ...BROUILLON,
+      validePar: 'praticien@wellneuro.fr',
+      valideLe: new Date('2026-07-23T00:00:00.000Z'),
+    });
+    claimAdmissibleAuCatalogue.mockResolvedValue(false);
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(409);
+    expect((await reponse.json()).reason).toBe('etat_divergent');
+    // Le claim d'une règle qui n'est pas un brouillon n'est pas jugé ici.
+    expect(claimAdmissibleAuCatalogue).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('une règle disparue entre la lecture préalable et la transaction rend 404, sans écriture', async () => {
+    prisma.clinicalRule.findUnique.mockReset()
+      .mockResolvedValueOnce(BROUILLON)
+      .mockResolvedValueOnce(null);
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(404);
+    expect((await reponse.json()).reason).toBe('regle_introuvable');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.clinicalRule.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('une panne de lecture du corpus rend 500, sans transaction ni écriture', async () => {
+    claimAdmissibleAuCatalogue.mockRejectedValue(new Error('corpus injoignable'));
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(500);
+    expect((await reponse.json()).reason).toBe('exception');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.updateMany).not.toHaveBeenCalled();
   });
 });

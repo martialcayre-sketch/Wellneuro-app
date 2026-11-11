@@ -855,7 +855,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                                 onClick={() => setEvaJalon(valeur)}
                                 className={
                                   evaJalon === valeur
-                                    ? 'min-h-11 min-w-11 rounded-lg border border-border bg-accent px-3 text-base font-medium text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring'
+                                    ? 'min-h-11 min-w-11 rounded-lg border border-primary bg-primary px-3 text-base font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring'
                                     : 'min-h-11 min-w-11 rounded-lg border border-border bg-surface px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring'
                                 }
                               >

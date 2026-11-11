@@ -13,7 +13,8 @@ import {
   type RecommandationExploration,
   type RegleNonEvaluee,
 } from '@/lib/clinical/orientationEngine';
-import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
+import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
+import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from '@/lib/clinical/admissibiliteClaims';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
@@ -167,6 +168,25 @@ export type ResultatOrientationInactif = { actif: false; version: string; messag
  */
 export type ProvenanceArret = { version: string; sha256: string };
 
+/**
+ * Une règle d'ARRÊT publiée que le service n'a pas passée au moteur ([[D-491]]).
+ *
+ * Une extinction est un acte plus exigeant qu'une proposition ([[D-053]],
+ * arbitrage 1) : une règle dont un claim n'est pas admissible au corpus
+ * (valide ET non supplanté, critère de [[D-472]] §2), ou dont la validité n'a
+ * pas pu être vérifiée, ne retire aucune exploration — d'autres critères
+ * (instrument déjà renseigné, écartement praticien) peuvent encore en retirer
+ * ([[D-491]] §6). La suspension est DITE : le praticien
+ * ne voit pas ce qui ne s'affiche pas, il doit donc savoir que l'extinction ne
+ * joue pas.
+ */
+export type ArretSuspendu = {
+  stopRuleId: string;
+  motif: 'claims_non_admissibles' | 'validite_non_verifiee';
+  /** Les couples non admissibles ; vide quand la validité n'a pas pu être vérifiée. */
+  claims: CoupleClaim[];
+};
+
 export type ResultatOrientation =
   | ResultatOrientationInactif
   | {
@@ -183,6 +203,12 @@ export type ResultatOrientation =
        */
       reglesNonEvaluees: RegleNonEvaluee[];
       arret: ProvenanceArret | null;
+      /**
+       * Règles d'arrêt suspendues faute de claim admissible ([[D-491]]) — vide,
+       * jamais absent, et vide aussi quand la table d'arrêt n'est pas
+       * exploitable (aucune extinction n'y joue de toute façon).
+       */
+      arretsSuspendus: ArretSuspendu[];
     };
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
@@ -273,6 +299,46 @@ export function tableArretExploitable(): boolean {
   return tableArretSignee() && contradictionsActives();
 }
 
+/**
+ * Les règles d'arrêt à passer au moteur, et celles qui sont suspendues
+ * ([[D-491]]).
+ *
+ * Le verrou de signature (`tableArretSignee`, dont l'empreinte porte sur la
+ * table ENTIÈRE) est jugé par l'appelant avant cette lecture ; filtrer ensuite
+ * la liste passée au moteur ne touche pas l'empreinte. Seules les règles que le
+ * moteur évaluerait (`publiee`, au moins un claim) sont lues et, le cas échéant,
+ * dites suspendues. Corpus illisible : aucune règle n'est passée — ne pas
+ * pouvoir vérifier ses sources n'autorise jamais une extinction.
+ */
+async function reglesArretAdmissibles(): Promise<{ regles: StopRule[]; suspendus: ArretSuspendu[] }> {
+  const evaluables = STOP_RULES_V1.filter(
+    regle => regle.statut === 'publiee' && regle.justificationClaims.length > 0,
+  );
+  if (evaluables.length === 0) return { regles: [], suspendus: [] };
+  const admissibles = await claimsAdmissiblesAuCorpus(
+    evaluables.flatMap(regle => regle.justificationClaims),
+    'orientationService/arret',
+  );
+  if (admissibles === null) {
+    return {
+      regles: [],
+      suspendus: evaluables.map(regle => ({
+        stopRuleId: regle.id,
+        motif: 'validite_non_verifiee' as const,
+        claims: [],
+      })),
+    };
+  }
+  const regles: StopRule[] = [];
+  const suspendus: ArretSuspendu[] = [];
+  for (const regle of evaluables) {
+    const manquants = couplesNonAdmissibles(regle.justificationClaims, admissibles);
+    if (manquants.length === 0) regles.push(regle);
+    else suspendus.push({ stopRuleId: regle.id, motif: 'claims_non_admissibles', claims: manquants });
+  }
+  return { regles, suspendus };
+}
+
 export function resultatInactif(): ResultatOrientationInactif {
   return { actif: false, version: ORIENTATION_METADATA.version, message: MESSAGE_ORIENTATION_INACTIVE };
 }
@@ -350,7 +416,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // d'hier et un âge d'aujourd'hui. Le moteur ne lit toujours aucune horloge.
   const maintenantMs = Date.now();
 
-  const [reponses, assignations, packs, consultation, ecartements, patient] = await Promise.all([
+  const [reponses, assignations, packs, consultation, ecartements, patient, arretAdmissible] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
@@ -417,6 +483,13 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       where: { idPatient },
       select: { dateNaissance: true },
     }),
+    // LES RÈGLES D'ARRÊT ADMISSIBLES ([[D-491]]) — lues seulement quand la
+    // table est exploitable : sinon aucune extinction ne joue, et le corpus
+    // n'a pas à être interrogé. Ne lève jamais : un corpus illisible rend
+    // toutes les règles suspendues.
+    tableArretExploitable()
+      ? reglesArretAdmissibles()
+      : Promise.resolve({ regles: [] as StopRule[], suspendus: [] as ArretSuspendu[] }),
   ]);
 
   // Traduire AVANT de comparer. `pack.idPack` vient de la base
@@ -528,7 +601,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // nulle part ailleurs : tant que la table n'est pas signée ET que le système
     // de contradictions n'est pas actif ([[D-065]]), le moteur ne reçoit aucune
     // règle et l'exclusion reste éteinte.
-    reglesArret: tableArretExploitable() ? STOP_RULES_V1 : [],
+    // [[D-491]] : seules les règles dont TOUS les claims sont admissibles au
+    // corpus (valides ET non supplantés) ; les autres sont suspendues et dites
+    // (`arretsSuspendus`), et n'éteignent rien.
+    reglesArret: tableArretExploitable() ? arretAdmissible.regles : [],
     // UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION ([[D-053]] §5,
     // [[D-055]]). Les constats viennent du service de contradictions — même
     // recalcul, même doctrine de mise à `null`, même verrou (drapeau + table
@@ -680,5 +756,6 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     arret: tableArretExploitable()
       ? { version: STOP_RULES_METADATA.version, sha256: STOP_RULES_SHA256 }
       : null,
+    arretsSuspendus: arretAdmissible.suspendus,
   };
 }

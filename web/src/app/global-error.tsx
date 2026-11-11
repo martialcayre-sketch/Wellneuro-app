@@ -26,16 +26,21 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     Sentry.captureException(error);
   }, [error]);
 
+  // Cet écran remplace le layout racine : il s'affiche sans les variables CSS
+  // de globals.css. Ses couleurs sont donc les valeurs Lien en clair (A5-R3,
+  // [[D-481]]), tenues à la main : encre #233B42 sur crème #F7F1E7 (10,5:1),
+  // texte secondaire #52676C (5,3:1), bouton pétrole #205B63 sous un libellé
+  // ivoire #FFFCF7 (7,5:1).
   return (
     <html lang="fr">
-      <body>
-        <main style={{ maxWidth: 720, margin: '48px auto', padding: '0 16px', fontFamily: 'system-ui, sans-serif' }}>
-          <h1 style={{ fontSize: 28, marginBottom: 12 }}>Une erreur est survenue</h1>
+      <body style={{ margin: 0, minHeight: '100vh', background: '#F7F1E7', color: '#233B42' }}>
+        <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 16px', fontFamily: 'system-ui, sans-serif' }}>
+          <h1 style={{ fontSize: 28, marginBottom: 12, fontFamily: 'Georgia, serif' }}>Une erreur est survenue</h1>
           <p style={{ lineHeight: 1.5, marginBottom: 20 }}>
             Nous rencontrons un problème technique temporaire. Réessayez dans quelques instants.
           </p>
           {error.digest ? (
-            <p style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>
+            <p style={{ fontSize: 14, color: '#52676C', marginBottom: 20 }}>
               Référence technique: {error.digest}
             </p>
           ) : null}
@@ -43,11 +48,14 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             type="button"
             onClick={() => reset()}
             style={{
-              background: '#1f2937',
-              color: '#fff',
+              background: '#205B63',
+              color: '#FFFCF7',
               border: 0,
-              borderRadius: 8,
-              padding: '10px 14px',
+              borderRadius: 18,
+              minHeight: 48,
+              padding: '10px 16px',
+              fontSize: 16,
+              fontWeight: 600,
               cursor: 'pointer',
             }}
           >

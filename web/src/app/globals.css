@@ -39,7 +39,9 @@
    * d'opacité plutôt qu'un aplat plein. `info` complète le quatuor
    * (E18, badge « Corrigée » de SynthesePanel). */
   --color-status-danger-rgb: 185 28 28;
-  --color-status-success-rgb: 21 128 61;
+  /* Succès assombri en A5-R3 (#166534) : #15803d tombait à 4,46:1 sur le
+   * canvas crème. */
+  --color-status-success-rgb: 22 101 52;
   --color-status-warning-rgb: 146 64 14;
   --color-status-info-rgb: 29 78 216;
 
@@ -79,6 +81,56 @@
   --copper-500-rgb: 178 94 56;
   --copper-ink: #8f4526;
 
+  /* Palette « Lien — Empreinte » (A5-R3, [[D-481]] ; artefact design system
+   * « Wellneuro Lien — Empreinte », cible du 2026-11-10). Valeurs brutes :
+   * les deux thèmes ci-dessous s'y raccordent par rôle, un composant ne les
+   * consomme pas directement. Les palettes Spirale au-dessus restent
+   * définies : des écrans les citent encore par leur nom, ils migrent dans
+   * leurs lots (plan praticien, plan patient). Contrastes dans la
+   * matrice de l'artefact, recalculés au lot COM-0. */
+  --lien-ivory: #f7f1e7;
+  --lien-surface: #fffcf7;
+  --lien-ink: #233b42;
+  --lien-muted: #52676c;
+  --lien-action: #205b63;
+  --lien-sage: #e6ebdd;
+  --lien-sage-line: #8fa58d;
+  --lien-mist: #e8eeeb;
+  --lien-clay: #bd8068;
+  --lien-clay-ink: #80523e;
+  --lien-champagne: #c5ab80;
+  --lien-champagne-ink: #6d5938;
+  --lien-sand: #f0e5d5;
+  --lien-border: #dfd9cd;
+  --lien-control-border: #7a8f89;
+  --lien-rail: #142f36;
+  --lien-rail-surface: #1c3f47;
+  --lien-rail-muted: #c1d1cd;
+  --lien-rail-focus: #c9b78f;
+  /* Teintes du rail nuit choisies au lot COM-0 (l'artefact ne les fixe pas) :
+   * fond d'entrée inactive entre --lien-rail et --lien-rail-surface
+   * (--lien-surface y lit 11,9:1) et filet décoratif (1,6:1, jamais la limite
+   * d'un contrôle). */
+  --lien-rail-hover: #1a3a42;
+  --lien-rail-line: #2a4f57;
+  --lien-ivory-rgb: 247 241 231;
+  --lien-surface-rgb: 255 252 247;
+  --lien-ink-rgb: 35 59 66;
+  --lien-action-rgb: 32 91 99;
+  --lien-sage-rgb: 230 235 221;
+  --lien-clay-rgb: 189 128 104;
+  --lien-rail-surface-rgb: 28 63 71;
+
+  /* Mouvement Lien : paramètres d'interface, pas des délais promis. Les
+   * blocs de réduction plus bas les neutralisent comme toute transition. */
+  --duration-press: 140ms;
+  --duration-fast: 160ms;
+  --duration-hover: 180ms;
+  --duration-reveal: 240ms;
+  --duration-panel: 250ms;
+  --duration-brand: 600ms;
+  --ease-lien: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Trio catégoriel Corps/Ancrage/Esprit (A5-R1) — couleurs d'entité fixes,
    * indépendantes des thèmes (cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md §6).
    * Trio validé au validateur dataviz (CVD ΔE 48, chroma OK) ; le solaire
@@ -107,135 +159,160 @@
  */
 
 /*
- * Thème patient — « le Jardin » (Forêt & cuivre, A5-R1), clair fixe,
- * appliqué par défaut et via [data-theme="patient"].
- * Canvas approfondi « sable » (A5-R2, lot Vague 1) : --background/--muted/
- * --border en mid-tone, --surface (cartes) inchangé. Contraste recalculé
- * (matrice design-system-d1 §8/§9).
+ * Rôles communs « Lien — Empreinte » (A5-R3, [[D-481]]) : les deux thèmes
+ * partagent canvas crème, surfaces ivoire, encre, pétrole et argile ; ils ne
+ * diffèrent que par les titres et le menu latéral (blocs suivants). Posés
+ * sur :root pour que les panneaux portalés vers <body> les trouvent.
+ * Contrastes (artefact v4, recalculés au lot COM-0) : foreground 10,5:1 sur
+ * background et 11,6:1 sur surface ; muted-foreground 5,3:1 sur background,
+ * 4,9:1 sur muted ; primaire 7,5:1 en texte sur surface et 7,5:1 sous son
+ * libellé ; focus pétrole 6,3:1 au moins sur toute surface claire.
  */
 :root,
+[data-theme='praticien'],
 [data-theme='patient'] {
-  --background: #eae0cc;
-  --foreground: #2b2115;
-  --surface: #fffdf9;
-  --surface-foreground: #2b2115;
-  --muted: #f0e7d6;
-  --muted-foreground: #6e5f49;
-  --border: #dccfb6;
+  --background: var(--lien-ivory);
+  --foreground: var(--lien-ink);
+  --surface: var(--lien-surface);
+  --surface-foreground: var(--lien-ink);
+  --muted: var(--lien-sage);
+  --muted-foreground: var(--lien-muted);
+  --border: var(--lien-border);
   /* Jumeaux RGB (même règle que --teal-700-rgb) : requis pour que Tailwind
    * génère les modificateurs d'opacité (bg-foreground/35 des overlays,
    * bg-surface/80 des headers, bg-muted/40) — sans eux la classe n'est pas
    * produite et le fond est simplement ABSENT (overlays invisibles trouvés
    * par l'audit visuel du 2026-07-22). Tenus synchronisés à la main. */
-  --foreground-rgb: 43 33 21;
-  --surface-rgb: 255 253 249;
-  --muted-rgb: 240 231 214;
-  --color-primary: var(--forest-600);
-  --color-primary-rgb: var(--forest-600-rgb);
-  --color-primary-foreground: #ffffff;
-  --color-accent: var(--copper-500);
-  --color-accent-rgb: var(--copper-500-rgb);
-  --color-accent-foreground: #ffffff;
+  --foreground-rgb: var(--lien-ink-rgb);
+  --surface-rgb: var(--lien-surface-rgb);
+  --muted-rgb: var(--lien-sage-rgb);
+  --color-primary: var(--lien-action);
+  --color-primary-rgb: var(--lien-action-rgb);
+  --color-primary-foreground: var(--lien-surface);
+  /* Argile : détail décoratif seulement (3,2:1 sur surface). Ni l'encre
+   * (3,6:1) ni l'ivoire (3,3:1) n'y atteignent 4,5:1 : un libellé posé sur
+   * bg-accent doit passer en primaire dans son lot. L'encre est retenue
+   * comme la moins mauvaise. Texte d'accent sur clair : --color-accent-ink
+   * (6,4:1 sur surface). */
+  --color-accent: var(--lien-clay);
+  --color-accent-rgb: var(--lien-clay-rgb);
+  --color-accent-foreground: var(--lien-ink);
+  --color-accent-ink: var(--lien-clay-ink);
+  /* Contour perceptible des contrôles : 3,35:1 sur surface, 3,06:1 sur
+   * background ; --border reste décoratif (1,4:1). */
+  --color-control-border: var(--lien-control-border);
+  /* Voix du dossier à deux voix : patient en sauge, praticien en brume. */
+  --voice-patient: var(--lien-sage);
+  --voice-practitioner: var(--lien-mist);
 
-  /* Réconciliation UX 3.0 (LOT-01, additif — cf. docs/design-system-d1.md
-   * section « Réconciliation tokens UX 3.0 »). Élévation gérée surtout via
-   * ombre/bordure en thème clair. */
-  --color-surface-elevated: #ffffff;
-  --color-status-success: #15803d;
+  /* Réconciliation UX 3.0 (LOT-01, additif), opaque en A5-R3 : l'élévation
+   * vient de shadow-pop, jamais d'une transparence derrière du texte. */
+  --color-surface-elevated: var(--lien-surface);
+  --color-status-success: #166534;
   --color-status-warning: #92400e;
   --color-status-danger: #b91c1c;
   --color-status-info: #1d4ed8;
-  --color-focus-ring: var(--forest-600);
+  --color-focus-ring: var(--lien-action);
 
-  /* Rail latéral « Mon espace » ([[D-447]] §5) : largeur en `rem`, pour
-   * suivre le confort de lecture 112,5 % ; filet de l'entrée active, en forêt.
-   * Jetons du thème patient seulement — jamais `--rail-*`, qui est praticien.
-   * Consommés via les utilitaires Tailwind w-nav-rail et shadow-nav-active. */
-  --nav-rail: 15.75rem;
-  --shadow-nav-active: inset 3px 0 0 var(--color-primary);
-
-  /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
-  --font-display: var(--font-bricolage), Georgia, 'Times New Roman', serif;
-  --font-body: var(--font-albert), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
 /*
- * Thème praticien — « l'Observatoire » (Nuit spectrale, A5-R1). Structure
- * A5 inchangée : espace de travail clair + rail sombre structurel. Canvas
- * approfondi « ardoise » (A5-R2, lot Vague 1) : --background/--muted/--border
- * en mid-tone, --surface (cartes) inchangé. Contraste recalculé (matrice
- * design-system-d1 §8/§9).
+ * Thème patient — « le Jardin » (A5-R3), clair fixe, appliqué par défaut et
+ * via [data-theme="patient"]. Titres en Lora, corps en Instrument Sans ;
+ * menu latéral en sauge claire ([[D-447]] §5 amendé, [[D-482]]).
+ */
+:root,
+[data-theme='patient'] {
+  /* Rail latéral « Mon espace » ([[D-447]] §5) : largeur en `rem`, pour
+   * suivre le confort de lecture 112,5 %. Forme réduite ([[D-482]]) : elle
+   * garde ses libellés, jamais d'icônes seules. Consommés via w-nav-rail et
+   * w-nav-rail-compact. */
+  --nav-rail: 15.75rem;
+  --rail-patient-compact: 13rem;
+  /* Filet de l'entrée active, en pétrole (le primaire Lien). Jeton du thème
+   * patient seulement ; consommé via shadow-nav-active. */
+  --shadow-nav-active: inset 3px 0 0 var(--color-primary);
+
+  /* Menu latéral patient : encre 9,7:1 sur sauge, 11,6:1 sur ivoire ; texte
+   * secondaire 4,9:1 sur sauge ; pétrole (barre active, focus) 6,3:1. */
+  --rail-background: var(--lien-sage);
+  --rail-gradient: none;
+  --rail-surface: var(--lien-surface);
+  --rail-surface-rgb: var(--lien-surface-rgb);
+  --rail-foreground: var(--lien-ink);
+  --rail-muted: var(--lien-ivory);
+  --rail-muted-foreground: var(--lien-muted);
+  --rail-border: var(--lien-border);
+  --rail-primary: var(--lien-action);
+  --rail-primary-rgb: var(--lien-action-rgb);
+  --rail-primary-foreground: var(--lien-surface);
+  --rail-accent: var(--lien-action);
+  --rail-focus-ring: var(--lien-action);
+
+  /* Typographies A5-R3 (chargées dans app/layout.tsx via next/font). */
+  --font-display: var(--font-lora), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-instrument), system-ui, sans-serif;
+}
+
+/*
+ * Thème praticien — « l'Observatoire » (A5-R3). Espace de travail clair et
+ * menu latéral nuit pétrole, seule grande surface sombre, sans mode sombre.
  */
 [data-theme='praticien'] {
-  --background: #d3d8e6;
-  --foreground: #1b2337;
-  --surface: #ffffff;
-  --surface-foreground: #1b2337;
-  --muted: #e3e7f1;
-  --muted-foreground: #535d7a;
-  --border: #c4cbdd;
-  /* Jumeaux RGB — cf. bloc patient. */
-  --foreground-rgb: 27 35 55;
-  --surface-rgb: 255 255 255;
-  --muted-rgb: 227 231 241;
-  --color-primary: var(--indigo-600);
-  --color-primary-rgb: var(--indigo-600-rgb);
-  --color-primary-foreground: #ffffff;
-  --color-accent: var(--solar-500);
-  --color-accent-rgb: var(--solar-500-rgb);
-  --color-accent-foreground: #1b2337;
-
-  /* Réconciliation UX 3.0 (LOT-01, additif). */
-  --color-surface-elevated: #ffffff;
-  --color-status-success: #15803d;
-  --color-status-warning: #92400e;
-  --color-status-danger: #b91c1c;
-  --color-status-info: #1d4ed8;
-  --color-focus-ring: var(--indigo-600);
-
-  /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
+  /* Typographies A5-R3 (chargées dans app/layout.tsx via next/font). */
   --font-display: var(--font-sora), 'Avenir Next', system-ui, sans-serif;
   --font-body: var(--font-instrument), system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   /*
-   * Rail de navigation — reste structurellement sombre (aside desktop,
-   * barre basse mobile, tiroir tablette), élément signature A5. Valeurs
-   * Nuit spectrale re-vérifiées (matrice design-system-d1 §8) : texte
-   * 14,72:1, texte atténué 5,64:1, accent solaire 7,76:1, texte sur
-   * primaire indigo 6,92:1.
+   * Rail de navigation — nuit pétrole (aside desktop, barre basse mobile,
+   * tiroir tablette). Contrastes : texte 13,8:1 sur nuit et 11,1:1 sur
+   * rail-surface ; texte atténué 8,9:1 et 7,2:1 ; champagne (barre active,
+   * focus) 7,2:1 sur nuit et 5,8:1 sur rail-surface ; libellé sur primaire
+   * pétrole 7,5:1. Aplat uni : --rail-gradient vaut `none`.
    */
-  --rail-background: var(--night-900);
-  /* Dégradé nuit du rail (maquette cible 5.0) — appliqué en background-image
-   * par-dessus la couleur de repli --rail-background. */
-  --rail-gradient: linear-gradient(180deg, var(--night-900), var(--night-950));
-  --rail-surface: var(--night-800);
-  /* Jumeau RGB de night-800 (#1b2342) : bg-rail-surface/95 de la barre basse
-   * mobile — sans lui la barre était TRANSPARENTE (audit 2026-07-22). */
-  --rail-surface-rgb: 27 35 66;
-  --rail-foreground: #eef0fa;
-  --rail-muted: #1f2850;
-  --rail-muted-foreground: #8b94be;
-  --rail-border: var(--night-border);
-  --rail-primary: var(--indigo-600);
-  --rail-primary-rgb: var(--indigo-600-rgb);
-  --rail-primary-foreground: #eef0fa;
-  --rail-accent: var(--solar-500);
-  --rail-focus-ring: var(--solar-500);
+  --rail-background: var(--lien-rail);
+  --rail-gradient: none;
+  --rail-surface: var(--lien-rail-surface);
+  /* Jumeau RGB : bg-rail-surface/95 de la barre basse mobile — sans lui la
+   * barre était TRANSPARENTE (audit 2026-07-22). */
+  --rail-surface-rgb: var(--lien-rail-surface-rgb);
+  --rail-foreground: var(--lien-surface);
+  --rail-muted: var(--lien-rail-hover);
+  --rail-muted-foreground: var(--lien-rail-muted);
+  --rail-border: var(--lien-rail-line);
+  --rail-primary: var(--lien-action);
+  --rail-primary-rgb: var(--lien-action-rgb);
+  --rail-primary-foreground: var(--lien-surface);
+  --rail-accent: var(--lien-rail-focus);
+  --rail-focus-ring: var(--lien-rail-focus);
 }
 
 /*
  * Focus clavier 5.0 — épaisseur et décalage de la maquette cible (3px,
- * offset 2px), couleur portée par --color-focus-ring (indigo praticien /
- * forêt patient — le solaire plein est à 2,03:1 sur blanc, insuffisant pour
- * un indicateur non textuel, cf. règle de relief A5-R1). :focus-visible
- * seul : pas d'anneau au clic souris.
+ * offset 2px), couleur portée par --color-focus-ring (pétrole dans les deux
+ * thèmes depuis A5-R3, 6,3:1 au moins sur clair ; champagne dans le rail nuit
+ * via --rail-focus-ring). :focus-visible seul : pas d'anneau au clic souris.
  */
 @layer base {
   :focus-visible {
     outline: 3px solid var(--color-focus-ring);
     outline-offset: 2px;
+  }
+
+  /* Sous 768 px, les deux rôles ont une barre basse fixe (MobileBottomNav
+   * praticien, 4 rem ; BarreBasse patient). Un élément amené à l'écran — focus
+   * clavier, ancre, scrollIntoView — s'arrêtait au bord du viewport, donc
+   * SOUS la barre : constaté au lot COM-0 sur « Retour au présent » de la
+   * lecture datée (e2e/lecture-datee-reflow.spec.ts, iPhone 13), où l'appui
+   * tombait sur « Synthèses ». La réserve garde la cible au-dessus de la
+   * barre (WCAG 2.4.11, focus non masqué). Elle ajoute la zone de sécurité
+   * basse : BarreBasse la porte en padding sous `viewport-fit=cover`, et sur
+   * un iPhone à encoche la barre dépasse alors 5 rem (revue wn-reviewer). */
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    }
   }
 }
 

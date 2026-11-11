@@ -27,6 +27,8 @@ import { isC4Enabled } from './featureFlag';
 import { resoudreIntentions } from './resolution';
 import { evaluerSentinelle, sentinelleADeQuoiConclure } from './sentinelle';
 import { construireTableauCompatibilite } from './compatibilite';
+import { claimsAdmissiblesAuCatalogue } from './catalogueDecisionPrisma';
+import { cleClaim, type ReferenceClaim } from '@/lib/rag/claims/validite';
 import {
   labelGradePreuve,
   type CandidatProtocolReviewFlag,
@@ -39,7 +41,10 @@ import {
 // v4 (2026-07-31) : `composition[].doseParPortion` devient `doseParDjr`. La
 // source déclare une quantité par dose journalière recommandée, pas par unité
 // de prise — le champ portait un nom qui trompait son prochain lecteur.
-export const C4_CATALOGUE_VERSION = 'c4-catalogue-v4' as const;
+// v5 (2026-11-11, t76) : `reglesEcartees` — les règles validées dont le claim
+// fondateur n'est pas admissible ne fondent plus aucune dimension, et la
+// réponse les nomme ([[D-140]], [[D-479]] §2).
+export const C4_CATALOGUE_VERSION = 'c4-catalogue-v5' as const;
 
 // Bornes de pagination. 50 fiches × ~5 Ko ≈ 250 Ko : marge large sous la limite
 // de réponse de la fonction. L'offset est plafonné parce que personne ne
@@ -289,12 +294,27 @@ export type OptionsCatalogue = {
   parPage?: number;
 };
 
+/**
+ * Une règle validée de l'intention, écartée parce que son claim fondateur
+ * n'est pas admissible (valide au corpus ET non supplanté, [[D-479]] §2) — ou
+ * parce qu'elle n'en nomme aucun (`claim: null`). Elle ne fonde ni grade, ni
+ * forme préférée, ni référence, ni cumul ; elle est seulement NOMMÉE, pour que
+ * le praticien sache qu'une règle signée existe et doit être révisée.
+ */
+export type RegleEcartee = {
+  regleId: string;
+  intentionCode: string;
+  claim: ReferenceClaim | null;
+};
+
 export type CatalogueResult = {
   contractVersion: typeof C4_CATALOGUE_VERSION;
   // Marqueur de contrat : aucune sortie du catalogue n'agrège les dimensions.
   aucunScoreGlobal: true;
   intentionFiltre: { code: string; labelFr: string } | null;
   codesInconnus: string[];
+  /** Règles écartées de l'intention — présentes même quand aucune fiche n'est servie. */
+  reglesEcartees: RegleEcartee[];
   tri: CleTri;
   recherche: string;
   page: number;
@@ -476,7 +496,7 @@ function calculerGrades(composition: LigneComposition[], vue: VueIntentions): Di
     valeurs,
     justification:
       valeurs.length === 0
-        ? 'Aucune intention sélectionnée, ou aucune règle validée pour cette composition : grade de preuve non applicable.'
+        ? 'Aucune intention sélectionnée, ou aucune règle admissible pour cette composition : grade de preuve non applicable.'
         : 'Grade de preuve (échelle GRADE : fort / modéré / faible / usage traditionnel), listé par intention et par ingrédient — jamais moyenné.',
   };
 }
@@ -531,12 +551,19 @@ function calculerInteractions(
 function calculerCumul(
   composition: LigneComposition[],
   candidats: CandidatProtocolReviewFlag[] | null,
+  intentionResolue: boolean,
 ): DimensionsFiche['cumulVsSeuils'] {
   if (candidats === null) {
     return {
       valeur: 'non_evaluee',
       signaux: [],
-      justification: 'Aucune sélection d\'intentions ouverte : cumuls et seuils non évalués.',
+      // Une intention RÉSOLUE dont la sentinelle n'a rien à conclure n'a plus
+      // aucune règle admissible (la résolution par défaut ne rend que des règles
+      // validées, puis `listerCatalogue` écarte celles dont le claim n'est pas
+      // admissible) : dire « aucune sélection ouverte » serait faux.
+      justification: intentionResolue
+        ? 'Aucune règle admissible pour l’intention sélectionnée : cumuls et seuils non évalués.'
+        : 'Aucune sélection d\'intentions ouverte : cumuls et seuils non évalués.',
     };
   }
   const codesFiche = new Set(composition.map((c) => c.ingredient.code));
@@ -859,6 +886,44 @@ function construireOrderBy(tri: CleTri): Prisma.SupplementProductOrderByWithRela
 
 // ─── Point d'entrée ─────────────────────────────────────────────────────────
 
+// UNE RÈGLE NE S'APPLIQUE QUE SI SON CLAIM FONDATEUR EST ADMISSIBLE ([[D-140]],
+// [[D-479]] §2, t76). La résolution par défaut rend les règles actives et
+// validées sans lire le corpus ; la prévisualisation de l'atelier les refuse
+// (`claims_non_valides`), la Bibliothèque les servait. Le filtre passe ICI,
+// avant la sentinelle et toute projection : une règle écartée ne fonde ni
+// grade, ni forme préférée, ni référence, ni cumul, ni le compteur. Il ne
+// passe pas dans `resoudreIntentions`, dont la prévisualisation a besoin pour
+// montrer la règle avec son motif de refus.
+//
+// Le critère est celui de la prévisualisation et de l'écriture, et une seule
+// fonction le porte (`claimsAdmissiblesAuCatalogue`). Une règle sans claim est
+// écartée, comme dans `lireClaimsValides`. Une panne de lecture du corpus se
+// PROPAGE : la déclarer « écartée » donnerait un motif faux (le claim n'a pas
+// été jugé), et la servir lèverait la garde.
+async function ecarterReglesNonAdmissibles(
+  resolution: ResolutionIntentions,
+): Promise<{ resolution: ResolutionIntentions; reglesEcartees: RegleEcartee[] }> {
+  const references = resolution.intentions.flatMap(({ regles }) =>
+    regles
+      .map((regle) => regle.claim)
+      .filter((claim): claim is ReferenceClaim => claim !== null));
+  // Aucune règle → aucune question au corpus (la fonction rend un ensemble vide).
+  const admissibles = await claimsAdmissiblesAuCatalogue(references);
+
+  const reglesEcartees: RegleEcartee[] = [];
+  const intentions = resolution.intentions.map(({ intention, regles }) => ({
+    intention,
+    regles: regles.filter((regle) => {
+      const admissible = regle.claim !== null && admissibles.has(cleClaim(regle.claim));
+      if (!admissible) {
+        reglesEcartees.push({ regleId: regle.regleId, intentionCode: intention.code, claim: regle.claim });
+      }
+      return admissible;
+    }),
+  }));
+  return { resolution: { ...resolution, intentions }, reglesEcartees };
+}
+
 function resultatVide(params: {
   tri: CleTri;
   recherche: string;
@@ -866,12 +931,14 @@ function resultatVide(params: {
   parPage: number;
   intentionFiltre: { code: string; labelFr: string } | null;
   codesInconnus: string[];
+  reglesEcartees: RegleEcartee[];
 }): CatalogueResult {
   return {
     contractVersion: C4_CATALOGUE_VERSION,
     aucunScoreGlobal: true,
     intentionFiltre: params.intentionFiltre,
     codesInconnus: params.codesInconnus,
+    reglesEcartees: params.reglesEcartees,
     tri: params.tri,
     recherche: params.recherche,
     page: params.page,
@@ -939,8 +1006,11 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   let candidatsSentinelle: CandidatProtocolReviewFlag[] | null = null;
   let intentionFiltre: { code: string; labelFr: string } | null = null;
   const codesInconnus: string[] = [];
+  let reglesEcartees: RegleEcartee[] = [];
   if (intentionCode) {
-    resolution = await resoudreIntentions([intentionCode]);
+    ({ resolution, reglesEcartees } = await ecarterReglesNonAdmissibles(
+      await resoudreIntentions([intentionCode]),
+    ));
     const trouvee = resolution.intentions[0]?.intention ?? null;
     intentionFiltre = trouvee ? { code: trouvee.code, labelFr: trouvee.labelFr } : null;
     codesInconnus.push(...resolution.codesInconnus);
@@ -968,7 +1038,7 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   // CONSTRUCTION, sans requête. Ne jamais retomber sur un where absent, qui
   // servirait le catalogue entier.
   if (where === null) {
-    return resultatVide({ tri, recherche, page, parPage, intentionFiltre, codesInconnus });
+    return resultatVide({ tri, recherche, page, parPage, intentionFiltre, codesInconnus, reglesEcartees });
   }
 
   // Sélection, tri, comptage et pagination en base : seule la page traverse
@@ -1065,7 +1135,7 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
     const biodisponibiliteForme = calculerBiodisponibilite(p.compositions, vue);
     const gradePreuveParIntention = calculerGrades(p.compositions, vue);
     const interactionsSignalees = calculerInteractions(p.compositions, seuilsParIngredient, ingredientCodeParId);
-    const cumulVsSeuils = calculerCumul(p.compositions, candidatsSentinelle);
+    const cumulVsSeuils = calculerCumul(p.compositions, candidatsSentinelle, intentionFiltre !== null);
     const donneesManquantes = calculerDonneesManquantes(p.donneesManquantes ?? []);
 
     // Compatibilité protocole : lecture RÉUTILISÉE de construireTableauCompatibilite,
@@ -1144,6 +1214,7 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
     aucunScoreGlobal: true,
     intentionFiltre,
     codesInconnus,
+    reglesEcartees,
     tri,
     recherche,
     page,

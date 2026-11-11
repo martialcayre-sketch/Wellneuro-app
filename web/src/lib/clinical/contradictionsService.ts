@@ -13,6 +13,7 @@ import { LIBELLE_GRADUATION } from './convergenceV1';
 import type { ReponseOrientation } from './orientationEngine';
 import { FENETRES_FRAICHEUR_ORIENTATION, ORIENTATION_RULES_V1 } from './orientationRulesV1';
 import { orientationActive, scoresRecalculesPourRaisonnement } from './orientationService';
+import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from './admissibiliteClaims';
 // Découpage par position d'une ligne trop longue ([[D-107]]) : fonction PURE,
 // logée à part parce que ce module-ci instancie Prisma au chargement.
 import { lignesDeVigilance } from './vigilanceLongueur';
@@ -130,6 +131,20 @@ function formeAutorisee(constat: ContradictionFinding): boolean {
 }
 
 /**
+ * LA RÉSERVE SUR LA SOURCE d'un constat de contradiction ou de conflit
+ * ([[D-491]]). Le constat n'est ni retiré ni modifié : une discordance ne se
+ * supprime pas en silence (`DC-30`), et l'inadmissibilité d'un claim ne résout
+ * pas un conflit (un claim supplanté n'est pas nécessairement réfuté). Elle dit
+ * seulement, à l'écran, qu'un claim cité ne satisfait pas les critères de
+ * validité du corpus (valide ET non supplanté, [[D-472]] §2), ou que cette
+ * validité n'a pas pu être vérifiée — sans jamais présenter le claim comme
+ * admissible.
+ */
+export type ReserveSource =
+  | { motif: 'claims_non_admissibles'; claims: CoupleClaim[] }
+  | { motif: 'validite_non_verifiee' };
+
+/**
  * Ce que l'écran reçoit d'un constat de contradiction.
  *
  * POURQUOI CE TYPE, ET PAS `DiscordanceFinding` — la lettre de [[D-044]] dit
@@ -218,6 +233,13 @@ export type ContradictionAffichee = {
    * le praticien ne les voyait pas dans le détail. Absent quand il n'y en a pas.
    */
   declarations?: string[];
+  /**
+   * Réserve sur la source ([[D-491]]) — absente quand tous les claims cités
+   * sont admissibles. Posée par `contradictionsPourPatient` sur les
+   * discordances et les conflits de sources ; jamais sur une convergence, dont
+   * les claims sont ceux de la table d'orientation (t71).
+   */
+  reserveSource?: ReserveSource;
 };
 
 /** `JJ/MM/AAAA` dans le fuseau clinique — le format du reste du cockpit. */
@@ -445,10 +467,41 @@ export async function contradictionsPourPatient(
     ? await constatsDuDossierStocke(idPatient)
     : [];
 
-  return contradictionsPourAffichage([
+  return avecReservesDeSource(contradictionsPourAffichage([
     ...contradictions,
     ...conflitsSourcesPourDossier(claimsCites),
-  ]);
+  ]));
+}
+
+/**
+ * Pose la réserve sur la source des discordances et des conflits affichés
+ * ([[D-491]]).
+ *
+ * L'ÉCRAN SEUL. Le constat brut, que lisent le frein de l'extinction
+ * (`orientationService`, [[D-053]] §5) et la vigilance de la synthèse, n'est
+ * pas touché : une discordance détectée reste ouverte et continue d'interdire
+ * l'extinction, quelle que soit la validité de son claim. La précondition du
+ * T0 lit bien cette sortie décorée (`preconditionsT0Prisma`), mais n'en
+ * recopie que la description et les passations : son verdict ne change pas. Aucune lecture du corpus quand aucun constat concerné n'est
+ * affiché. Corpus illisible : chaque constat concerné reste servi, avec la
+ * réserve « validité non vérifiée ». Exportée pour les bancs.
+ */
+export async function avecReservesDeSource(affichees: ContradictionAffichee[]): Promise<ContradictionAffichee[]> {
+  const concerne = (constat: ContradictionAffichee) => constat.forme !== 'CONVERGENCE' && constat.claims.length > 0;
+  const concernees = affichees.filter(concerne);
+  if (concernees.length === 0) return affichees;
+  const admissibles = await claimsAdmissiblesAuCorpus(
+    concernees.flatMap(constat => constat.claims),
+    'contradictionsService',
+  );
+  return affichees.map(constat => {
+    if (!concerne(constat)) return constat;
+    if (admissibles === null) return { ...constat, reserveSource: { motif: 'validite_non_verifiee' } };
+    const manquants = couplesNonAdmissibles(constat.claims, admissibles);
+    return manquants.length === 0
+      ? constat
+      : { ...constat, reserveSource: { motif: 'claims_non_admissibles', claims: manquants } };
+  });
 }
 
 /**

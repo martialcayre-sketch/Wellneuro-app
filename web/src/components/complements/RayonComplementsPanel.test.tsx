@@ -64,10 +64,11 @@ function fiche(over: Partial<FicheComplement> = {}): FicheComplement {
 
 function catalogue(over: Partial<CatalogueResult> = {}): CatalogueResult {
   return {
-    contractVersion: 'c4-catalogue-v4',
+    contractVersion: 'c4-catalogue-v5',
     aucunScoreGlobal: true,
     intentionFiltre: over.intentionFiltre ?? null,
     codesInconnus: [],
+    reglesEcartees: over.reglesEcartees ?? [],
     tri: over.tri ?? 'neutre',
     recherche: over.recherche ?? '',
     page: over.page ?? 1,
@@ -235,6 +236,56 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     rechercher('magnésium');
     await waitFor(() => expect(screen.getByText('Magnésium Plus')).toBeTruthy());
     expect(urlsAppelees().some((u) => u.includes('q=magn'))).toBe(true);
+  });
+
+  // t76 ([[D-140]], [[D-479]] §2) : les règles écartées sont NOMMÉES, en deux
+  // formes écrites en entier, même quand aucune fiche n'est servie.
+  it('annonce UNE règle écartée au singulier, même sans fiche servie', async () => {
+    fetchMock.mockImplementation(routerFetch(catalogue({
+      intentionFiltre: { code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté' },
+      reglesEcartees: [
+        {
+          regleId: 'regle_mag',
+          intentionCode: 'sommeil_fragmente',
+          claim: { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+        },
+      ],
+    })));
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText(
+      '1 règle écartée : son claim fondateur ne satisfait pas les critères de validité du corpus. À réviser dans l’atelier des règles.',
+    )).toBeTruthy());
+    expect(screen.getByText('Claim « WN-CL-2026-001 » (v1.0)')).toBeTruthy();
+  });
+
+  it('annonce PLUSIEURS règles écartées au pluriel, et une règle sans claim comme telle', async () => {
+    fetchMock.mockImplementation(routerFetch(catalogue({
+      intentionFiltre: { code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté' },
+      fiches: [fiche()],
+      reglesEcartees: [
+        {
+          regleId: 'regle_mag',
+          intentionCode: 'sommeil_fragmente',
+          claim: { claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' },
+        },
+        { regleId: 'regle_vitd', intentionCode: 'sommeil_fragmente', claim: null },
+      ],
+    })));
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText(
+      '2 règles écartées : leurs claims fondateurs ne satisfont pas les critères de validité du corpus. À réviser dans l’atelier des règles.',
+    )).toBeTruthy());
+    expect(screen.getByText('Aucun claim fondateur renseigné')).toBeTruthy();
+  });
+
+  it('n’affiche aucune mention quand aucune règle n’est écartée', async () => {
+    fetchMock.mockImplementation(routerFetch(catalogue({ fiches: [fiche({ nomCommercial: 'Magnésium Plus' })] })));
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText('Magnésium Plus')).toBeTruthy());
+    expect(screen.queryByText(/règles? écartées?/)).toBeNull();
   });
 
   it('affiche un message métier clair et désactive le panneau quand le rayon est désactivé', async () => {

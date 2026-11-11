@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
+import { claimAdmissibleAuCatalogue } from '@/lib/supplement-library/catalogueDecisionPrisma';
 import {
   SELECTION_REGLE,
   cleLigneeRegle,
@@ -51,6 +52,15 @@ const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
       'Une version au moins aussi récente de cette lignée est déjà validée — repartez d’une révision.',
     status: 409,
   },
+  // Message de [[D-479]] §4, au caractère près — celui de la création et de la
+  // révision : l'atelier refuse la même chose dans les mêmes mots.
+  claim_non_valide: {
+    message:
+      'Ce claim ne satisfait pas les critères de validité du corpus : vérifiez son '
+      + 'identifiant et sa version au poste de revue des claims. Une règle ne peut '
+      + 'reposer que sur un claim signé et non supplanté.',
+    status: 422,
+  },
 };
 
 function echec(reason: string, error: string, status: number) {
@@ -93,6 +103,40 @@ export async function POST(req: Request): Promise<NextResponse<RegleValidationAp
     // Seule transition entrante : brouillon → validée.
     if (statutAttendu !== 'brouillon') {
       return echec('transition_invalide', 'Seul un brouillon peut être validé.', 409);
+    }
+
+    // LE CLAIM FONDATEUR SE RELIT AVANT DE SIGNER ([[D-140]], [[D-479]] §2, t76).
+    // Un brouillon écrit sur un claim alors admissible peut avoir vu ce claim
+    // supplanté ou retiré depuis : la signature le rendrait servi par la
+    // Bibliothèque. Le couple lu est CELUI ENREGISTRÉ sur la règle — jamais une
+    // version plus récente substituée : la révision est la seule voie pour
+    // changer de claim. La lecture précède la transaction, comme à la révision :
+    // une règle est append-only, son couple ne change jamais après écriture, et
+    // le corpus vit hors `schema.prisma`. Statut et concurrence restent jugés
+    // DANS la transaction. Une panne de lecture se propage (500, rien d'écrit).
+    //
+    // Seul un BROUILLON voit son claim jugé ici : le rejeu d'une validation sur
+    // une règle déjà signée ou désactivée doit rester `etat_divergent`
+    // (« rechargez la liste »), et non devenir un refus de claim au motif
+    // trompeur. La transaction le constate et le rend.
+    const fondement = await prisma.clinicalRule.findUnique({
+      where: { id: regleId },
+      select: { actif: true, validePar: true, valideLe: true, claimId: true, versionClaim: true },
+    });
+    if (!fondement) {
+      const refus = MESSAGES_REFUS.regle_introuvable;
+      return echec('regle_introuvable', refus.message, refus.status);
+    }
+    if (statutRegle(fondement) === 'brouillon') {
+      const admissible = fondement.claimId !== null && fondement.versionClaim !== null
+        && (await claimAdmissibleAuCatalogue({
+          claimId: fondement.claimId,
+          versionClaim: fondement.versionClaim,
+        }));
+      if (!admissible) {
+        const refus = MESSAGES_REFUS.claim_non_valide;
+        return echec('claim_non_valide', refus.message, refus.status);
+      }
     }
 
     const resultat: ResultatTransaction = await prisma.$transaction(async (tx) => {
