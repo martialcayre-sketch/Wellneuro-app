@@ -228,6 +228,54 @@ describe('OrientationPanel', () => {
     expect(screen.getByText(/1 exploration écartée/)).toBeTruthy();
   });
 
+  // [[D-491]] — une règle d'arrêt suspendue faute de claim admissible : dite
+  // dans les deux branches, hors de tout repli.
+  const SUSPENDU = {
+    stopRuleId: 'STOP-STR',
+    motif: 'claims_non_admissibles' as const,
+    claims: [{ claimId: 'WN-CL-0051-019', versionClaim: 'v1.0' }],
+  };
+
+  it('D-491, liste non vide : la règle d’arrêt suspendue est dite, avec ses claims', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [SUSPENDU] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’arrêt suspendue : STOP-STR.')).toBeTruthy();
+    expect(screen.getByText(/Au moins un claim cité ne satisfait pas les critères de validité du corpus\. Elle ne retire donc aucune exploration\./)).toBeTruthy();
+    expect(screen.getByText('Claims concernés : WN-CL-0051-019 v1.0')).toBeTruthy();
+  });
+
+  it('D-491, liste vide : la suspension est dite aussi', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [SUSPENDU] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’arrêt suspendue : STOP-STR.')).toBeTruthy();
+  });
+
+  it('D-491, validité non vérifiée : le motif est dit, sans liste de claims', async () => {
+    stubFetch({
+      ...ACTIF,
+      reglesNonEvaluees: [],
+      arretsSuspendus: [{ stopRuleId: 'STOP-STR', motif: 'validite_non_verifiee', claims: [] }],
+    });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/La validité de ses sources n’a pas pu être vérifiée\. Elle ne retire donc aucune exploration\./)).toBeTruthy();
+    expect(screen.queryByText(/Claims concernés/)).toBeNull();
+  });
+
+  it('D-491 : aucun bloc de suspension quand aucune règle d’arrêt n’est suspendue', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Index de qualité du sommeil de Pittsburgh/i)).toBeTruthy();
+    expect(screen.queryByText(/Règle d’arrêt suspendue/)).toBeNull();
+  });
+
   it('aucun bloc quand toutes les règles sont évaluées', async () => {
     stubFetch({ ...ACTIF, reglesNonEvaluees: [] });
 

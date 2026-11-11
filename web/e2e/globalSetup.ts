@@ -1,4 +1,4 @@
-import { cleanupAncreJalon, closePrisma } from './helpers/db';
+import { cleanupAncreJalon, closePrisma, poserClaimsTablesCliniquesAdmissibles } from './helpers/db';
 
 /**
  * BALAYAGE D'ENTRÉE — les fixtures d'épisode ne survivent pas à un run
@@ -22,5 +22,9 @@ import { cleanupAncreJalon, closePrisma } from './helpers/db';
  */
 export default async function globalSetup(): Promise<void> {
   await cleanupAncreJalon();
+  // [[D-491]] : les claims des règles d'arrêt, de la contradiction et des
+  // conflits, admissibles comme en production — sans eux, le panneau
+  // d'orientation de chaque fiche dirait la règle d'arrêt suspendue.
+  await poserClaimsTablesCliniquesAdmissibles();
   await closePrisma();
 }

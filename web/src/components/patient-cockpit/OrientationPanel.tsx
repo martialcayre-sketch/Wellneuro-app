@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { OrientationApiResponse } from '@/app/api/praticien/orientation/route';
 import type { EcartementPropositionResponse } from '@/app/api/praticien/orientation/ecartement/route';
-import type { PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
+import type { ArretSuspendu, PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
 import { cleCibleEcartement, motifRecevable, MOTIF_LONGUEUR_MAX } from '@/lib/orientation/ecartements';
 import type { CibleExploration, PassationPerimee, RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 import type {
@@ -483,6 +483,41 @@ export function OrientationPanel({
   ) : null;
 
   /**
+   * Les règles d'ARRÊT suspendues — [[D-491]]. Une règle d'arrêt dont un claim
+   * ne satisfait pas les critères de validité du corpus (ou dont la validité
+   * n'a pas pu être vérifiée) ne retire aucune exploration : le serveur ne l'a
+   * pas passée au moteur. Le dire est le seul moyen pour le praticien de savoir
+   * que l'extinction ne joue pas. HORS de tout repli, et RENDU DANS LES DEUX
+   * BRANCHES, liste vide comprise — même motif que les règles non évaluées.
+   */
+  const arretsSuspendus: ArretSuspendu[] =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.arretsSuspendus)
+      ? reponse.arretsSuspendus
+      : [];
+  const blocArretsSuspendus = arretsSuspendus.length > 0 ? (
+    <div role="note" className="mt-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2">
+      <ul className="space-y-2">
+        {arretsSuspendus.map(suspendu => (
+          <li key={suspendu.stopRuleId} className="text-xs text-foreground">
+            <p>
+              <span className="font-medium">{`Règle d’arrêt suspendue : ${suspendu.stopRuleId}.`}</span>
+              {suspendu.motif === 'validite_non_verifiee'
+                ? ' La validité de ses sources n’a pas pu être vérifiée.'
+                : ' Au moins un claim cité ne satisfait pas les critères de validité du corpus.'}
+              {' Elle ne retire donc aucune exploration.'}
+            </p>
+            {suspendu.claims.length > 0 && (
+              <p className="mt-0.5 font-mono text-2xs text-muted-foreground">
+                {`Claims concernés : ${suspendu.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}`}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
+  /**
    * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
    *
    * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
@@ -609,6 +644,7 @@ export function OrientationPanel({
           {issueGeste?.succes && (
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
+          {blocArretsSuspendus}
           {blocNonEvaluees}
           {blocEcartees}
         </>
@@ -826,6 +862,7 @@ export function OrientationPanel({
             // geste a été enregistré.
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
+          {blocArretsSuspendus}
           {blocNonEvaluees}
           {blocEcartees}
           {/* Le même bouton que la file de la Bibliothèque, sous les
