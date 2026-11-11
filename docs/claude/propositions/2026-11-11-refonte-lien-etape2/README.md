@@ -31,8 +31,8 @@ données le 2026-11-11 : `2a 3a 4b 5a 6a 7b 8a 9b`.
 
 **Lots livrés depuis l'étape 1** : #1973 (fiabilité du suivi et des fiches,
 C1, C2, C4 ; mergée), #1978 (session expirée renvoyée à l'entrée), #1979
-(« Mon accompagnement » ouvert sur un protocole illisible). Les deux
-derniers sont déclarés prêts et attendent l'intégrateur.
+(« Mon accompagnement » ouvert sur un protocole illisible). Les trois sont
+mergés.
 
 ## 2. Contenu du dossier
 

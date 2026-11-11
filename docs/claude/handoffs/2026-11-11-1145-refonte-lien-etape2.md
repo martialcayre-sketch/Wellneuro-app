@@ -5,7 +5,7 @@
 - Branche `claude/refonte-lien-etape2`, créée depuis `origin/main`
   (`ac3f0ead`) dans le worktree `wt-refonte-etape2`. Documentation seule.
   À déclarer « prête @<sha> » pour l'intégrateur après CI et revue de bot.
-- #1978 et #1979 (lots de l'étape 1) déclarées prêtes, en attente de merge ;
+- #1978 et #1979 (lots de l'étape 1) mergées pendant la rédaction ;
   fichiers disjoints de cette PR.
 - Checkout principal non touché.
 
