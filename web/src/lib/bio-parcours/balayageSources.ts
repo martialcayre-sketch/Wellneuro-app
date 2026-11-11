@@ -11,7 +11,7 @@ import { join } from 'node:path';
 export const RACINE = join(__dirname, '..', '..', '..', '..');
 
 /**
- * Fichiers `.ts`/`.tsx` de `web/src`, suivis OU non suivis (mais non ignorés) :
+ * Fichiers `.ts`/`.tsx`/`.js`/`.jsx` de `web/src`, suivis OU non suivis (mais non ignorés) :
  * le signal doit tenir en local avant le premier `git add` du fichier fautif,
  * et pas seulement en CI (finding M1 du banc des importeurs du verdict d’abstention, `clinical-engine/`).
  * Chemins relatifs à la racine du dépôt, triés.
@@ -22,7 +22,8 @@ export function fichiersSource(): string[] {
     ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/src'],
     { cwd: RACINE, encoding: 'utf8' },
   );
-  return [...new Set(sortie.split('\n').filter(f => /\.tsx?$/.test(f)))].sort();
+  // `.js`/`.jsx` aussi : `allowJs` les admet en production (revue de #2006).
+  return [...new Set(sortie.split('\n').filter(f => /\.[jt]sx?$/.test(f)))].sort();
 }
 
 /** Un fichier de test (banc compris) — hors du périmètre « code de production ». */
@@ -36,13 +37,15 @@ export function lire(chemin: string): string {
 
 /**
  * Spécificateurs de module importés par un source : `import … from`,
- * `export … from`, `import 'x'` et `import('x')`. Les commentaires sont retirés
- * avant la lecture — une prose qui CITE un module n'en est pas l'importeur
- * (six fichiers de production citent `biology-library` sans l'importer).
+ * `export … from`, `import 'x'`, `import('x')` et `require('x')` (`allowJs`
+ * admet du CommonJS sous `web/src`, revue CodeRabbit de #2006). Les commentaires
+ * sont retirés avant la lecture — une prose qui CITE un module n'en est pas
+ * l'importeur (six fichiers de production citent `biology-library` sans
+ * l'importer).
  */
 export function specificateursImportes(source: string): string[] {
   const sansCommentaires = retirerLignesDeCommentaire(source);
-  const motif = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
+  const motif = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
   return [...sansCommentaires.matchAll(motif)].map(m => m[2]);
 }
 

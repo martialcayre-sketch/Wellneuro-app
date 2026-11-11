@@ -68,6 +68,15 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   360 réussis. Dérive schéma ↔ migrations : « No difference detected ».
   Main a ensuite apporté #2000, #1998 et #2002, sans fichier commun avec ce
   lot : le CI de la PR rejoue la séquence sur l'arbre fusionné.
+- CI de #2006 sur `14c01b9e` : `wn-attendre-ci` à 0. Revue CodeRabbit
+  déclenchée à la main (dépôt à moins de 10 étoiles), six remarques, verdicts
+  dans la PR. Corrigés : la signature calcule l'empreinte et la cohérence
+  sur la structure jugée (plus de paramètres séparés) ; le helper
+  `balayageSources` balaie `.js`/`.jsx` et lit `require()` (aucun fichier ni
+  appel de ce type en production : les 155 bancs de garde restent verts) ;
+  le texte « à relire » est précisé (empreinte des fiches d'usage). Routés :
+  « aucune option sans précautions » à la PR 4 ; forme de renvoi du registre
+  des compléments, avant la transcription de la PR 7.
 
 ## Problèmes ouverts
 
@@ -82,6 +91,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   exécutable. Le format n'admet `information_manquante` que pour la dose
   (§4, consigne du lot). Pour les autres rubriques, une liste vide tient lieu
   de « non documentée ». À trancher à la PR 4, qui juge l'exécutabilité.
+- **Aucune option sans précautions** (D-480 §5.1) : pas encore dans
+  `incoherencesDeBibliotheque`. Une structure avec `precautions: []` est
+  donc signable jusqu'à la PR 4, qui porte ce contrôle (découpage accepté).
+  Sans risque tant que la structure est vide et que la signature attend la
+  PR 7, qui dépend des PR 3 à 5. Constat de CodeRabbit sur #2006, routé.
 - Le chemin du module n'est pas encore sous le hook DC-17, au contrat de
   fraîcheur, à la matrice de consommation ni aux chemins de `release-db.yml` :
   c'est la PR 4. Tant que la structure est vide, rien n'en dépend.

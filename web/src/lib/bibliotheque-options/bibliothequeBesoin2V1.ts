@@ -96,7 +96,11 @@ export type BibliothequeMetadata = {
   /**
    * L'empreinte de la structure des fiches d'usage sur laquelle la
    * bibliothèque a été signée ([[D-480]] §2), recopiée à la signature. Une
-   * re-signature des fiches d'usage la rend « à relire », sans la réécrire.
+   * re-signature des fiches d'usage la rend « à relire », sans la réécrire :
+   * sur leur patron, une re-signature est celle d'une structure modifiée, donc
+   * d'une empreinte neuve, et c'est l'empreinte qui se compare (comme le
+   * `structure_sha256` des textes et des libellés). Des fiches d'usage qui ne
+   * sont plus signées la rendent aussi « à relire ».
    */
   shaFichesUsage: string | null;
 };
@@ -171,9 +175,6 @@ export function incoherencesDeBibliotheque(
   return anomalies;
 }
 
-/** Calculées une fois : la structure est une constante du module. */
-const INCOHERENCES_DU_DEPOT = incoherencesDeBibliotheque();
-
 function estIsoCanonique(valeur: string | null): valeur is string {
   if (valeur === null) return false;
   const date = new Date(valeur);
@@ -211,19 +212,23 @@ const memes = (a: readonly string[], b: readonly string[]) => a.length === b.len
  * déclarés égaux à ceux que citent les renvois ; périmètre relu égal à
  * l'empreinte calculée ; structure cohérente. Une structure retouchée après
  * signature ne l'est plus ; une structure incohérente ne l'est jamais.
+ *
+ * L'empreinte et la cohérence se CALCULENT ICI, sur la structure jugée : elles
+ * ne se passent pas à part, si bien qu'aucun appel ne peut juger une structure
+ * avec l'empreinte ou la cohérence d'une autre (revue CodeRabbit de #2006).
  */
 export function bibliothequeSignee(
   metadata: BibliothequeMetadata = BIBLIOTHEQUE_BESOIN2_METADATA,
-  empreinte: string = BIBLIOTHEQUE_BESOIN2_SHA256,
-  incoherences: readonly string[] = INCOHERENCES_DU_DEPOT,
   structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1,
+  fichesUsage: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
 ): boolean {
   if (metadata.validationExterne !== true) return false;
   if (!estIsoCanonique(metadata.dateValidation)) return false;
   const cites = sourcesCitees(structure);
   if (!memes([...new Set(metadata.claimsSource.map(cleClaim))].sort(), cites.claims)) return false;
   if (!memes([...new Set(metadata.positionsSource.map(clePosition))].sort(), cites.positions)) return false;
-  return metadata.shaPerimetre === empreinte && incoherences.length === 0;
+  if (metadata.shaPerimetre !== sha256(JSON.stringify(structure))) return false;
+  return incoherencesDeBibliotheque(structure, fichesUsage).length === 0;
 }
 
 export type EtatBibliotheque = 'non_signee' | 'a_relire' | 'signee';
@@ -231,8 +236,9 @@ export type EtatBibliotheque = 'non_signee' | 'a_relire' | 'signee';
 /**
  * L'état de la bibliothèque : `signee` si ses cinq termes tiennent ET si la
  * structure des fiches d'usage est encore signée sur l'empreinte recopiée ;
- * `a_relire` si elle est signée mais que les fiches d'usage ont été
- * re-signées depuis, ou ne le sont plus ([[D-480]] §2) ; sinon `non_signee`.
+ * `a_relire` si elle est signée mais que l'empreinte des fiches d'usage a
+ * changé depuis (re-signature d'une structure modifiée), ou qu'elles ne sont
+ * plus signées ([[D-480]] §2) ; sinon `non_signee`.
  */
 export function etatBibliotheque(
   signee: boolean = bibliothequeSignee(),

@@ -73,7 +73,7 @@ const signeeSur = (structure: StructureBibliotheque): BibliothequeMetadata => {
 };
 
 const signee = (metadata: BibliothequeMetadata, structure: StructureBibliotheque) =>
-  bibliothequeSignee(metadata, empreinteDe(structure), incoherencesDeBibliotheque(structure, FU_SYNTH), structure);
+  bibliothequeSignee(metadata, structure, FU_SYNTH);
 
 describe('bibliothèque des options du besoin 2 — livrée vide et non signée (D-480 §3, §6)', () => {
   it('épingle l’empreinte de la structure vide', () => {
@@ -192,6 +192,18 @@ describe('signature à cinq termes (D-480 §6)', () => {
     const retouchee = avec({ populations: ['POP_SYNTH'], renvois: { ...OPTION.renvois, interactions: ['WN-CL-9999-001@v1.0'] } });
     expect(empreinteDe(retouchee)).not.toBe(metadata.shaPerimetre);
     expect(signee(metadata, retouchee)).toBe(false);
+  });
+
+  it('l’empreinte et la cohérence sont celles de la structure jugée, jamais d’une autre (revue de #2006)', () => {
+    // Même sources citées, structure retouchée hors des renvois : la signature
+    // de l'ancienne ne vaut pas pour elle.
+    const metadata = signeeSur(structure);
+    const retiree = avec({}, { optionsRetirees: ['OPT_SYNTH_9'] });
+    expect(sourcesCitees(retiree)).toEqual(sourcesCitees(structure));
+    expect(signee(metadata, retiree)).toBe(false);
+    // Appel avec la seule structure : les fiches d'usage du dépôt, où
+    // `HYP_SYNTH` n'est pas inscrite, rendent la structure incohérente.
+    expect(bibliothequeSignee(metadata, structure)).toBe(false);
   });
 
   it('verrou éteint, date absente ou hors forme ISO canonique : non signée', () => {

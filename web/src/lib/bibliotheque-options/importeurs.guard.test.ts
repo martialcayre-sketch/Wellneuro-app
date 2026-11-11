@@ -29,14 +29,17 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
   });
 
-  // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif —
-  // est vue ; une prose qui cite le dossier ne l'est pas.
+  // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif,
+  // statique, dynamique ou CommonJS — est vue ; une prose qui cite le dossier
+  // ne l'est pas.
   it('le détecteur voit un import et ignore une citation en commentaire', () => {
     const source = [
       "import { BIBLIOTHEQUE_BESOIN2_V1 } from '@/lib/bibliotheque-options/bibliothequeBesoin2V1';",
       "export { RUBRIQUES_OPTION } from '../bibliotheque-options/vocabulaire';",
+      "const v = await import('@/lib/bibliotheque-options/vocabulaire');",
+      "const b = require('./bibliotheque-options/bibliothequeBesoin2V1');",
       '// voir web/src/lib/bibliotheque-options/',
     ].join('\n');
-    expect(specificateursImportes(source).filter(importeLaBibliotheque)).toHaveLength(2);
+    expect(specificateursImportes(source).filter(importeLaBibliotheque)).toHaveLength(4);
   });
 });
