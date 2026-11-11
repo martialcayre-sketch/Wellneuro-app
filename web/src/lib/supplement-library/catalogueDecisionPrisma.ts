@@ -197,9 +197,10 @@ export async function lireCatalogueDecision(
  * lui est substituée — la règle repose sur le couple que le praticien a cité.
  *
  * UN SEUL CRITÈRE POUR LA LECTURE ET L'ÉCRITURE : la prévisualisation
- * (`lireClaimsValides`) et les routes de création et de révision de l'atelier
- * appellent cette fonction, pour que l'atelier n'enregistre pas ce que sa
- * prévisualisation refuserait. Les deux lectures portent sur les mêmes couples ;
+ * (`lireClaimsValides`), la Bibliothèque filtrée par intention
+ * (`listerCatalogue`, [[D-492]]) et les routes de création, de révision et de
+ * validation de l'atelier appellent cette fonction, pour que l'atelier
+ * n'enregistre ni ne signe ce que sa prévisualisation refuserait. Les deux lectures portent sur les mêmes couples ;
  * l'échec de l'une ou l'autre se propage — rien n'est alors servi ni écrit.
  */
 export async function claimsAdmissiblesAuCatalogue(
