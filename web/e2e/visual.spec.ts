@@ -156,6 +156,11 @@ async function attendreFicheTrajectoirePosee(page: Page): Promise<void> {
 
   await page.getByRole('heading', { name: 'Explorations complémentaires proposées' }).waitFor();
   await expect(page.getByText(/Lecture de l['’]orientation/)).toHaveCount(0);
+  // [[D-491]] : les claims de la table d'arrêt sont posés admissibles par
+  // `globalSetup`, comme en production. Une suspension ici dirait la fixture
+  // incomplète — et l'écart se lit aussi sur le Mac, où la comparaison de
+  // pixels ne joue pas.
+  await expect(page.getByText(/Règle d’arrêt suspendue/)).toHaveCount(0);
 }
 
 async function ouvrirHubPortail(page: Page): Promise<void> {

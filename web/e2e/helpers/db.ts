@@ -18,6 +18,9 @@ import { PRATICIEN_EMAIL } from './auth';
 import { createHash } from 'node:crypto';
 import { canonicalSha256 } from '../../src/lib/clinical-engine/canonical';
 import { INDICATIONS_BIOLOGIE_V1 } from '../../src/lib/biology-library/indicationsBiologieV1';
+import { STOP_RULES_V1 } from '../../src/lib/clinical/stopRulesV1';
+import { CONTRADICTIONS_RULES_V1 } from '../../src/lib/clinical/contradictionsV1';
+import { CONFLITS_SOURCES_V1 } from '../../src/lib/clinical/conflitsSourcesV1';
 import { ficheSourceDeLAssiette } from '../../src/lib/fiches-assiette/appariement';
 import { lireContenuFiche } from '../../src/lib/fiches-assiette/contrat';
 import { controlerFiche } from '../../src/lib/fiches-assiette/invariants';
@@ -1002,6 +1005,40 @@ const CHUNK_INDICATIONS_E2E = 'WN-CH-0998-001';
 const SOURCE_INDICATIONS_E2E = 'WN-SRC-0998';
 
 export async function poserClaimsIndicationsAdmissibles(): Promise<void> {
+  await poserCouplesDeFixture(
+    INDICATIONS_BIOLOGIE_V1.flatMap(regle => regle.justificationClaims),
+    'E2E_BIO_IND_',
+    'Claim de fixture E2E (D-472).',
+  );
+}
+
+/**
+ * Les claims des règles d'arrêt, de la contradiction et des conflits de sources
+ * ([[D-491]]), posés une fois par `globalSetup`. Depuis D-491, une règle
+ * d'arrêt dont un couple n'est pas admissible est dite suspendue au cockpit, et
+ * une contradiction ou un conflit porte une réserve : sur une base éphémère sans
+ * corpus, le panneau d'orientation de CHAQUE fiche afficherait la suspension,
+ * alors qu'en production les couples sont admissibles. Mêmes garanties que
+ * ci-dessus : lignes de fixture, jamais supprimées, jamais substituées à un
+ * vrai claim.
+ */
+export async function poserClaimsTablesCliniquesAdmissibles(): Promise<void> {
+  await poserCouplesDeFixture(
+    [
+      ...STOP_RULES_V1.flatMap(regle => regle.justificationClaims),
+      ...CONTRADICTIONS_RULES_V1.flatMap(regle => regle.justificationClaims),
+      ...CONFLITS_SOURCES_V1.flatMap(conflit => conflit.claims),
+    ],
+    'E2E_TBL_',
+    'Claim de fixture E2E (D-491).',
+  );
+}
+
+async function poserCouplesDeFixture(
+  references: readonly { claimId: string; versionClaim: string }[],
+  prefixeId: string,
+  texte: string,
+): Promise<void> {
   const vecteur = `[${Array(1536).fill('0').join(',')}]`;
   await prisma.$executeRawUnsafe(
     `INSERT INTO public.rag_corpus_chunks
@@ -1015,23 +1052,23 @@ export async function poserClaimsIndicationsAdmissibles(): Promise<void> {
   );
   const couples = [
     ...new Map(
-      INDICATIONS_BIOLOGIE_V1.flatMap(regle => regle.justificationClaims).map(c => [
+      references.map(c => [
         `${c.claimId}::${c.versionClaim}`,
         c,
       ]),
     ).values(),
   ];
   for (const claim of couples) {
-    const id = `E2E_BIO_IND_${claim.claimId}_${claim.versionClaim}`;
+    const id = `${prefixeId}${claim.claimId}_${claim.versionClaim}`;
     await prisma.$executeRawUnsafe(
       `INSERT INTO public.rag_corpus_claims
          (id, claim_id, source_id, version_claim, texte_normalise, content_sha256,
           typologie_lecture, prescriptif, statut, validateur, valide_at,
           embedding_model, embedding_dimensions, embedding)
-       VALUES ($1, $2, $3, $4, 'Claim de fixture E2E (D-472).', repeat('e', 64),
+       VALUES ($1, $2, $3, $4, $6, repeat('e', 64),
                'déclaré', true, 'VALIDE', 'e2e@wellneuro.fr', now(), 'e2e', 1536, $5::extensions.vector)
        ON CONFLICT DO NOTHING`,
-      id, claim.claimId, SOURCE_INDICATIONS_E2E, claim.versionClaim, vecteur,
+      id, claim.claimId, SOURCE_INDICATIONS_E2E, claim.versionClaim, vecteur, texte,
     );
     await prisma.$executeRawUnsafe(
       `INSERT INTO public.rag_corpus_claim_sources (claim_pk, chunk_id, version_chunk)
