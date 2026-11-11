@@ -1365,7 +1365,7 @@ L'ordre des release-db de ce rang suit la hiérarchie : EF-3b (h1), puis BP-12a,
 - **Portes, préalables** : j (F63), g (F04), k (F77), l (D-283), m (H10), n (H11), s (F57) ; G-7 (porte 8) ; porte 9 (BP-09 constaté, F03) ; J1-cockpit pour CC-0 (F59) ; f pour BF-3 (F54) ; porte 21 pour OF-2 ; porte 16 pour sommeil et hex [A verifier].
 - **Migration, release-db** : 2 migrations. EF-3b, en tête du rang 4 par la hiérarchie h1 (constatée, #1478), puis NF-7 lot 1 (`nf7_declaration_suicide_cabinet_v1`, 20261111-0027-a et 0028-a). Une troisième, le CHECK « valide ⇒ déclaré » de NF-7, s'ajoute si elle part après l'allumage du drapeau (20261111-0029-a).
 - **Décisions, textes** : lettres j, m, n, g appliquées.
-- **Critère de fin** : palier 1 sorti (porte 24) ; release-db d'EF-3b constatée.
+- **Critère de fin** : palier 1 sorti (porte 24) ; release-db d'EF-3b constatée ; release-db de NF-7 constatée (lot 1, et le CHECK « valide ⇒ déclaré » s'il part à part).
 - **Journal** : `docs/claude/plan-journal/H59/` — mises à jour datées, un fichier par mise à jour, jamais réécrit ; lecture : `node scripts/wn-plan-fiche.mjs H59`.
 
 #### H60 · p et J2-cc8 : journal de lecture du protocole
