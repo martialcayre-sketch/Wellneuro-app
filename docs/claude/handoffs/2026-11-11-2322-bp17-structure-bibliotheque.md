@@ -4,7 +4,7 @@
 
 - Branche `feat/bp17-structure`, worktree `bp17-structure`, créée depuis
   `origin/main` (`68293eb1`, #1999), puis remise à niveau par merge de main
-  (`32ab280b`, #2000, docs seulement).
+  (`32ab280b`, #2000, puis `f326f782`, #1998 et #2002).
 - PR ordinaire de la file C : déclarée « prête @<sha> », mergée par
   l'intégrateur (D-373, D-454). Ni migration ni `schema.prisma`.
 
@@ -63,7 +63,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 
 - Bancs ciblés (module, verrous, garde « aucune phrase ») : 35 tests verts.
 - T1 rapide : code 0. T1 complet (`npm run check`) : code 0.
-- T3 `test:worktree` : résultat consigné dans la PR.
+- T3 `test:worktree`, joué sur la branche avant les merges de main : séquence
+  complète verte en 11 min 35 s, code 0. Vitest : 16 856 tests réussis. E2E :
+  360 réussis. Dérive schéma ↔ migrations : « No difference detected ».
+  Main a ensuite apporté #2000, #1998 et #2002, sans fichier commun avec ce
+  lot : le CI de la PR rejoue la séquence sur l'arbre fusionné.
 
 ## Problèmes ouverts
 
