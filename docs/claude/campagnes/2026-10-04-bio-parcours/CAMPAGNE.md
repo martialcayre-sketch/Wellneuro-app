@@ -140,7 +140,7 @@ nouveaux, décisions acceptées.
 | BP-15 | LOT-15 | Décisions de parcours | en_cours (2026-10-22 : fiche, arbitrages du 2026-10-20, `D-343` et déclaration RGPD validées le 2026-10-22, #1642 ; migration mergée (#1644), appliquée et constatée le 2026-10-22 ; code sous `WN_DECISIONS_PARCOURS` éteint en PR le 2026-10-22) | **oui** | BP-00 |
 | BP-20 | LOT-20 | Suivi factuel ; jalon J1 | à_faire | non | BP-15, BP-16 |
 | BP-08 | LOT-08 | Indicateurs de processus | à_faire | non | BP-20 ; un cycle réel à J21 |
-| BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | à_faire (2026-11-11 : cinq réponses rendues, `D-477` mergée, `D-480` proposée, découpage des PR à accepter) | **oui** (texte en base, `20261110-1941-c` ; après accord du découpage) | BP-11, BP-12b |
+| BP-17 | LOT-17 | Bibliothèque signée des options par hypothèse | à_faire (2026-11-11 : `D-477` mergée, `D-480` et découpage en sept PR acceptés par arbitrage délégué, `20261111-1131-c`) | **oui** (texte en base, `20261110-1941-c` ; confirmations de migration distinctes, `AGENTS.md`) | BP-11, BP-12b |
 | BP-18a | LOT-18 | Prescription niveau 3, figée | à_faire | **oui** | BP-01, BP-14, BP-17, BP-23 ; DC-42 signée |
 | BP-18b | LOT-29 | « Protocole personnalisé » remis | à_faire | selon | BP-18a |
 | **Phase 3** | | **Ouvertures de l'étage outil** | | | |
