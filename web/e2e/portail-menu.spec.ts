@@ -67,7 +67,7 @@ test.describe('Portail — menu « Mon espace »', () => {
       const boite = await lien.boundingBox();
       expect(boite?.height ?? 0, (await lien.textContent()) ?? '').toBeGreaterThanOrEqual(44);
     }
-    await panneau.getByRole('link', { name: 'Ouvrir Mon carnet alimentaire' }).click();
+    await panneau.getByRole('link', { name: 'Ouvrir mon carnet alimentaire' }).click();
     await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
     await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);

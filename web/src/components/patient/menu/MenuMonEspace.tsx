@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
@@ -8,6 +9,7 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { entreesServies, groupesServis, hrefEntree, useEtatsSondes, type EtatsSondes } from '@/components/patient/autres-espaces/entreesAutresEspaces';
 import { SondesAutresEspaces, SondesPartageesContexte } from '@/components/patient/autres-espaces/SondesAutresEspaces';
 import { REQUETE_RAIL, railSurLeChemin } from '@/components/patient/rail/cheminRail';
+import { FournisseurEtatRail, ID_BOUTON_ROUVRIR_RAIL, useEtatRail } from '@/components/patient/rail/etatRail';
 import { elementActif } from './activationMenu';
 import { IconeMonEspace } from './iconesMonEspace';
 import { DESCRIPTION_MENU, LIBELLE_BOUTON_MENU, TITRE_MENU } from './textesMenu';
@@ -44,6 +46,8 @@ export type EtatMenu = {
   actif: boolean;
   /** Groupes et icônes de l'organisation praticien ([[D-460]]). */
   icones: boolean;
+  /** Le rail latéral est servi par son drapeau ([[D-447]] §8) ; sa garde est `actif`. */
+  rail: boolean;
   /** La première lecture des murs n'a pas répondu : le rail réserve sa place ([[D-447]] §6). */
   gardeEnLecture: boolean;
   bilanConsultable: boolean;
@@ -92,10 +96,12 @@ async function lireMurs(): Promise<LectureMurs | null> {
 export function FournisseurMenuPortail({
   sessionOuverte,
   icones = false,
+  rail = false,
   children,
 }: {
   sessionOuverte: boolean;
   icones?: boolean;
+  rail?: boolean;
   children: ReactNode;
 }) {
   const params = useParams<{ token?: string }>();
@@ -147,6 +153,7 @@ export function FournisseurMenuPortail({
     mursFranchis,
     actif,
     icones,
+    rail,
     gardeEnLecture: pageDeSession && !lectureRendue,
     bilanConsultable: lecture?.bilanConsultable === true,
     etats,
@@ -156,7 +163,9 @@ export function FournisseurMenuPortail({
     <MenuContexte.Provider value={valeur}>
       <SondesPartageesContexte.Provider value={pageDeSession ? etats : null}>
         {sondesMontees && token && <SondesAutresEspaces token={token} rapporteurs={rapporteurs} />}
-        {children}
+        {/* L'état du rail vit ici, dans le layout : il survit aux navigations,
+            pas au rechargement ([[D-482]] §1). */}
+        <FournisseurEtatRail>{children}</FournisseurEtatRail>
       </SondesPartageesContexte.Provider>
     </MenuContexte.Provider>
   );
@@ -195,6 +204,8 @@ export type FormeListe = {
   classeLien: string;
   classeLienActif: string;
   classeIntertitre: string;
+  /** Fond et arrondi de l'entrée active quand les icônes sont servies ([[D-460]] §2). */
+  classeActifIcones: string;
 };
 
 const FORME_PANNEAU: FormeListe = {
@@ -203,13 +214,23 @@ const FORME_PANNEAU: FormeListe = {
   classeLien: CLASSE_LIEN,
   classeLienActif: CLASSE_LIEN_ACTIF,
   classeIntertitre: 'text-sm font-semibold text-muted-foreground',
+  classeActifIcones: 'rounded-md bg-primary/10',
 };
 
 /**
  * La liste « Mon espace » (§2, §3), déclarée une fois : le panneau la sert, et
  * le rail latéral ([[D-447]] §2) la reprend avec sa propre forme.
  */
-export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: string }; forme: FormeListe }) {
+export function ListeMonEspace({
+  etat,
+  forme,
+  pied,
+}: {
+  etat: EtatMenu & { token: string };
+  forme: FormeListe;
+  /** Les commandes du rail, en pied de liste ([[D-482]] §2). */
+  pied?: ReactNode;
+}) {
   const { token } = etat;
   const signaux = { bilanConsultable: etat.bilanConsultable };
   const groupes = groupesServis(etat.etats, signaux);
@@ -218,7 +239,7 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
   // `py-1` : une entrée sur deux lignes dépasse `min-h-11` et toucherait sa
   // voisine ; sur une ligne, le `min-h-11` l'absorbe et rien ne bouge.
   const classeLien = etat.icones ? `${forme.classeLien} gap-3 py-1` : forme.classeLien;
-  const classeLienActif = etat.icones ? `${forme.classeLienActif} gap-3 py-1 rounded-md bg-primary/10` : forme.classeLienActif;
+  const classeLienActif = etat.icones ? `${forme.classeLienActif} gap-3 py-1 ${forme.classeActifIcones}`.trim() : forme.classeLienActif;
   const classeIntertitre = etat.icones
     ? `${forme.classeIntertitre.replace('text-sm', 'text-xs')} uppercase tracking-wider`
     : forme.classeIntertitre;
@@ -254,20 +275,45 @@ export function ListeMonEspace({ etat, forme }: { etat: EtatMenu & { token: stri
           </ul>
         </div>
       ))}
+      {pied}
     </nav>
   );
+}
+
+/** Le rail ouvert dans la page : la `nav` « Mon espace » hors de tout dialogue. */
+function railDansLaPage(): HTMLElement | undefined {
+  return [...document.querySelectorAll<HTMLElement>(`nav[aria-label="${TITRE_MENU}"]`)].find(
+    navigation => !navigation.closest('[role="dialog"]'),
+  );
+}
+
+/** L'entrée active du rail, sinon sa première ; à défaut de rail, le contenu. */
+export function donnerLeFocusAuRail() {
+  const rail = railDansLaPage();
+  const cible =
+    rail?.querySelector<HTMLElement>('[aria-current="page"]') ??
+    rail?.querySelector<HTMLElement>('a') ??
+    document.getElementById('contenu');
+  cible?.focus();
 }
 
 /**
  * `railServi` : le rail latéral est servi ([[D-447]], drapeau ouvert). Sur ses
  * pages, à partir de 1 024 px, il remplace le bouton (§1 amendé le
  * 2026-11-05) : le bouton s'efface, et un panneau ouvert se ferme au seuil.
+ *
+ * Rail escamoté ([[D-482]] §2), le bouton « Menu » reparaît dès 1 024 px et
+ * rouvre le rail déplié. C'est un second bouton, du même nom, qui ne paraît
+ * qu'à cette largeur : le déclencheur du panneau, lui, reste effacé dès `lg`.
+ * À chaque largeur, un seul des deux est affiché ([[D-444]] §2).
  */
 export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean }) {
   const etat = useContext(MenuContexte);
   const pathname = usePathname();
   const [ouvert, setOuvert] = useState(false);
+  const { etat: etatRail, changer: changerEtatRail } = useEtatRail();
   const remplaceParRail = railServi && !!etat?.token && railSurLeChemin(pathname ?? '', etat.token);
+  const railEscamote = remplaceParRail && etatRail === 'escamote';
 
   // Fermé au changement de page (§4) : un lien suivi referme le panneau.
   useEffect(() => {
@@ -299,46 +345,60 @@ export function BoutonMenuMonEspace({ railServi = false }: { railServi?: boolean
   // Fermé au seuil du rail, le bouton n'est plus affiché : Radix lui rendrait
   // un focus qui tomberait sur `body`. Le focus passe alors à la même liste,
   // dans le rail — son entrée active, sinon sa première —, sous l'anneau de
-  // focus global ; à défaut de rail, au contenu. Partout ailleurs, il revient
-  // au bouton.
+  // focus global ; rail escamoté, au bouton qui le rouvre ; à défaut, au
+  // contenu. Partout ailleurs, il revient au bouton.
   const rendreFocus = (evenement: Event) => {
     if (!remplaceParRail || typeof window.matchMedia !== 'function' || !window.matchMedia(REQUETE_RAIL).matches) return;
     evenement.preventDefault();
-    const rail = [...document.querySelectorAll<HTMLElement>(`nav[aria-label="${TITRE_MENU}"]`)].find(
-      navigation => !navigation.closest('[role="dialog"]'),
-    );
-    const cible =
-      rail?.querySelector<HTMLElement>('[aria-current="page"]') ??
-      rail?.querySelector<HTMLElement>('a') ??
-      document.getElementById('contenu');
-    cible?.focus();
+    if (railEscamote) {
+      document.getElementById(ID_BOUTON_ROUVRIR_RAIL)?.focus();
+      return;
+    }
+    donnerLeFocusAuRail();
   };
 
+  // Rouvert, le rail prend le focus : le bouton qui l'a rouvert s'efface.
+  const rouvrirLeRail = () => {
+    flushSync(() => changerEtatRail('deplie'));
+    donnerLeFocusAuRail();
+  };
+
+  const classeBouton = patientButtonClassName('neutral');
+
   return (
-    <PanneauSuperpose
-      declencheur={
+    <>
+      <PanneauSuperpose
+        declencheur={
+          <button type="button" className={`${classeBouton} print:hidden${remplaceParRail ? ' lg:hidden' : ''}`}>
+            {LIBELLE_BOUTON_MENU}
+          </button>
+        }
+        titre={TITRE_MENU}
+        description={DESCRIPTION_MENU}
+        descriptionMasquee
+        variante="tiroir"
+        // Drapeau `WN_PORTAIL_MENU_ICONES` ouvert, le panneau sort à gauche, du
+        // côté du bouton et du rail, à la largeur du tiroir praticien ([[D-460]]
+        // §4, Q62) ; fermé, il garde son côté et sa largeur d'avant.
+        largeur={etat.icones ? 'navigation' : 'standard'}
+        cote={etat.icones ? 'gauche' : 'droite'}
+        theme="patient"
+        open={ouvert}
+        onOpenChange={setOuvert}
+        onCloseAutoFocus={rendreFocus}
+      >
+        <ListeMonEspace etat={{ ...etat, token: etat.token }} forme={FORME_PANNEAU} />
+      </PanneauSuperpose>
+      {railEscamote ? (
         <button
           type="button"
-          className={`${patientButtonClassName('neutral')} print:hidden${remplaceParRail ? ' lg:hidden' : ''}`}
+          id={ID_BOUTON_ROUVRIR_RAIL}
+          onClick={rouvrirLeRail}
+          className={`${classeBouton} hidden lg:inline-flex print:hidden`}
         >
           {LIBELLE_BOUTON_MENU}
         </button>
-      }
-      titre={TITRE_MENU}
-      description={DESCRIPTION_MENU}
-      descriptionMasquee
-      variante="tiroir"
-      // Drapeau `WN_PORTAIL_MENU_ICONES` ouvert, le panneau sort à gauche, du
-      // côté du bouton et du rail, à la largeur du tiroir praticien ([[D-460]]
-      // §4, Q62) ; fermé, il garde son côté et sa largeur d'avant.
-      largeur={etat.icones ? 'navigation' : 'standard'}
-      cote={etat.icones ? 'gauche' : 'droite'}
-      theme="patient"
-      open={ouvert}
-      onOpenChange={setOuvert}
-      onCloseAutoFocus={rendreFocus}
-    >
-      <ListeMonEspace etat={{ ...etat, token: etat.token }} forme={FORME_PANNEAU} />
-    </PanneauSuperpose>
+      ) : null}
+    </>
   );
 }

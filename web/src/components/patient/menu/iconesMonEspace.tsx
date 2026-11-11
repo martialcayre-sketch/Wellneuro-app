@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { CleEntree } from '@/components/patient/autres-espaces/entreesAutresEspaces';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 /*
  * LES ICÔNES DE « MON ESPACE » ([[D-460]] §2). Une icône désigne un rayon, jamais
@@ -40,8 +41,8 @@ export const ICONES_MON_ESPACE: Readonly<Record<CleEntree | 'parcours', LucideIc
   echanges: MessageCircle,
 };
 
-/** 19 px à 100 %, comme le rail praticien ; en `rem`, pour suivre le confort de lecture. */
+/** 19 px à 100 %, comme le rail praticien ; en `rem`, pour suivre le confort de lecture ; trait Lien (`TRAIT_ICONE`, A5-R3). */
 export function IconeMonEspace({ cle }: { cle: CleEntree | 'parcours' }) {
   const Icone = ICONES_MON_ESPACE[cle];
-  return <Icone aria-hidden="true" className="h-[1.1875rem] w-[1.1875rem] shrink-0" />;
+  return <Icone aria-hidden="true" strokeWidth={TRAIT_ICONE} className="h-[1.1875rem] w-[1.1875rem] shrink-0" />;
 }
