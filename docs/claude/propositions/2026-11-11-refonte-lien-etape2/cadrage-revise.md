@@ -70,7 +70,7 @@ vaut sous 1 024 px, ou quand la garde du rail refuse (AM-2).
 | Section | Révisé | Fondement |
 |---|---|---|
 | §12.4 Mon accompagnement | lectures indépendantes, erreur avec reprise, groupe ouvert sur échec : **livrés** (#1973, #1979) | lot de fiabilité |
-| §12.6 Mon point de suivi | titre au registre (T-30) ; erreur de chargement distincte et session expirée renvoyée à l'entrée : **livrés** (#1973, #1978) ; « Réessayer » retiré sur une lecture refusée (T-35) | réponse 7 (b) |
+| §12.6 Mon point de suivi | titre au registre (T-30) ; erreur de chargement distincte et session expirée renvoyée à l'entrée : **livrés** (#1973, #1978) ; « Réessayer » sur une lecture refusée (404) : Q-E2-5 | réponse 7 (b) |
 
 ## §15 — Accessibilité
 

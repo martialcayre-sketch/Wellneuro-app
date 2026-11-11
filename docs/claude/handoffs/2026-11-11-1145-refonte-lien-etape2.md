@@ -18,7 +18,8 @@ deux sessions parallèles, chacun avec une page de suivi.
 
 ## Décisions prises
 
-- Aucune décision signée : AM-1 à AM-6 sont des propositions ; DOC-0 prendra
+- Aucune décision signée : AM-1 à AM-8 sont des propositions (AM-7 et AM-8
+  conditionnels) ; DOC-0 prendra
   tous les numéros D-xxx d'un coup, après acceptation, pour que les deux
   sessions n'en prennent aucun.
 - Un seul lot commun, COM-0 (jetons, polices, marque, primitives partagées),
@@ -57,7 +58,7 @@ deux sessions parallèles, chacun avec une page de suivi.
 
 ## Problèmes ouverts
 
-- Q-E2-1 à Q-E2-4 et les acceptations (AM-1 à AM-6, textes du registre) attendent
+- Q-E2-1 à Q-E2-5 et les acceptations (AM-1 à AM-8, textes du registre) attendent
   la réponse écrite du responsable.
 - Imports indirects non suivis hors des deux dossiers mixtes.
 - T-33 : décision éventuelle sur le titre de la compréhension non trouvée.

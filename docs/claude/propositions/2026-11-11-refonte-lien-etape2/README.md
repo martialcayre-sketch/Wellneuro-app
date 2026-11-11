@@ -9,6 +9,8 @@
   rédige deux plans de progression séparés avec artéfact de suivi pour le
   portail praticien et le portail patient que les deux puissent être codés
   par des sessions parallèles ».
+- Revue PR-Agent de la PR : six remarques, toutes reprises (textes
+  inscrits par DOC-0, X01, identifiants T-nn, U38, AM-7 et AM-8, Q-E2-5).
 - Ce dossier ne crée aucun numéro D-xxx, ne signe aucun amendement, ne touche
   ni au code ni aux drapeaux. Rien n'est engagé avant les réponses écrites du
   §4.
@@ -38,7 +40,7 @@ mergés.
 
 | Fichier | Rôle |
 |---|---|
-| `amendements.md` | AM-1 à AM-6 : textes d'amendement, « traduit » séparé de « proposé » |
+| `amendements.md` | AM-1 à AM-6, et AM-7, AM-8 selon Q-E2-1 et Q-E2-2 : textes d'amendement, « traduit » séparé de « proposé » |
 | `cadrage-revise.md` | delta du cadrage v3, section par section |
 | `catalogue-revise.md` | les 110 fiches du catalogue v2 : gabarit, navigation cible, lot |
 | `registre-textes.md` | textes neufs ou changés (T-nn, numérotation par famille, discontinue), à accepter mot pour mot ; inscrits par DOC-0 une fois acceptés |
@@ -71,7 +73,7 @@ Recommandation en option (a). Une option qui contredit une décision le dit.
 
 **Q-E2-1 — Groupes du menu praticien.**
 (a) Travail, Bibliothèque, Ateliers, Cabinet (`catalogue-revise.md` §2 ;
-textes T-01 à T-04) ; amende [[D-324]] §1 à §4 (groupes et ordre).
+textes T-01 à T-04) ; amende [[D-324]] §1, §3 et §4 (texte : AM-7).
 (b) Garder La Spirale, Bibliothèque, Réglages ([[D-324]]) ; le catalogue v2
 §5.2 (l.164) reste non appliqué.
 
@@ -79,7 +81,7 @@ textes T-01 à T-04) ; amende [[D-324]] §1 à §4 (groupes et ordre).
 (a) Garder la barre de trois raccourcis et la feuille « Plus », qui reçoit
 les intertitres de groupe ; conforme à [[D-324]] §5.
 (b) Remplacer la feuille par un menu complet ouvert depuis l'en-tête
-(catalogue v2 l.166) ; amende [[D-324]] §5.
+(catalogue v2 l.166) ; amende [[D-324]] §5 (texte : AM-8).
 
 **Q-E2-3 — Déploiement.**
 (a) Sans drapeau : la refonte habille des surfaces existantes, elle n'en
@@ -94,6 +96,14 @@ lot qui la réalise ; PRA-1, PAT-1 et COM-0 n'en attendent pas.
 (b) Pas de prototype : les lots suivent le catalogue révisé et l'artefact,
 version 4 ; les écarts se voient au constat à l'écran de chaque lot.
 
+**Q-E2-5 — « Réessayer » sous « Suivi non reconnu. ».**
+Le serveur refuse la lecture du suivi (404, `lib/protocol/portailProtocol.ts:32`) ;
+la page montre ce texte et « Réessayer », qui ne peut pas réussir.
+(a) Retirer « Réessayer » dans ce seul cas ; le retour « ← Mon parcours »
+de la page reste. Suit le motif de la réponse 7 (b) (« Réessayer » pour
+les erreurs récupérables), mais va au-delà de sa lettre : à confirmer.
+(b) Garder « Réessayer », comme aujourd'hui.
+
 **Acceptations, une par ligne** (oui, non, ou texte corrigé) :
 
 | Objet | Où |
@@ -104,7 +114,9 @@ version 4 ; les écarts se voient au constat à l'écran de chaque lot.
 | AM-4 une déclaration des destinations | idem |
 | AM-5 rail praticien escamotable | idem |
 | AM-6 / A5-R3 adoption de Lien / Empreinte | idem |
-| T-01 à T-07, T-10 à T-15, T-21 à T-23, T-30 (a à i), T-31 (a, b), T-32 à T-35 | `registre-textes.md` ; la numérotation saute volontairement entre les familles (praticien 01-15, rail patient 21-23, textes patient 30-35) ; récapitulatif par lot au §3 |
+| AM-7 quatre groupes praticien (si Q-E2-1 (a)) | idem |
+| AM-8 menu complet au téléphone (si Q-E2-2 (b)) | idem |
+| T-01 à T-07, T-10 à T-15, T-21 à T-23, T-30 (a à i), T-31 (a, b), T-32 à T-34 | `registre-textes.md` ; la numérotation saute volontairement entre les familles (praticien 01-15, rail patient 21-23, textes patient 30-34) ; récapitulatif par lot au §3 |
 
 ## 5. Non vu
 

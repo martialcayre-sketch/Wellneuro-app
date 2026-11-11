@@ -201,6 +201,53 @@ logo Empreinte » ; mandat du 2026-11-10) :
 
 ---
 
+## AM-7 — Praticien : quatre groupes (seulement si Q-E2-1 (a))
+
+**Amende** [[D-324]] §1 (« Le menu compte trois groupes : La Spirale,
+Bibliothèque, Réglages »), §3 (« Réglages ne garde que "Paramètres" ») et §4
+(« L'atelier de validation suit, en fin de groupe »). **Ne change pas** :
+les entrées, leurs libellés, leurs routes et leurs gardes ; « Confiance &
+droits » reste avec le travail du jour (§3) ; §2, §5 et §6.
+
+*Proposé* (Q-E2-1 n'est pas tranchée ; rien n'est traduit) :
+
+> **[[D-324]] §1 (amendé).** Le menu compte quatre groupes : Travail,
+> Bibliothèque, Ateliers, Cabinet. Travail reprend les entrées de La
+> Spirale, sauf « Comptes du cabinet ».
+>
+> **[[D-324]] §3 (amendé).** « Confiance & droits » reste dans Travail,
+> après « Correspondance ». Le groupe Cabinet porte « Comptes du cabinet »
+> ([[D-385]]) puis « Paramètres ».
+>
+> **[[D-324]] §4 (complément).** L'atelier de validation (« Atelier
+> corpus ») quitte la fin du groupe Bibliothèque pour le groupe Ateliers,
+> qui accueillera aussi l'atelier des règles et les positions d'expert
+> quand leur garde leur donnera une entrée. La Bibliothèque garde ses cinq
+> rayons.
+
+Les noms de groupe sont au registre (T-01 à T-04). Composition détaillée :
+`catalogue-revise.md` §2.
+
+---
+
+## AM-8 — Praticien : menu complet au téléphone (seulement si Q-E2-2 (b))
+
+**Amende** [[D-324]] §5 (« La feuille "Plus" du téléphone reprend l'ordre et
+les libellés du menu du bureau »). **Ne change pas** : les trois boutons de
+la barre basse (Le Fil, Fiches, Synthèses).
+
+*Proposé* :
+
+> **[[D-324]] §5 (amendé).** Au téléphone, la feuille « Plus » est
+> remplacée par un menu complet, ouvert depuis un bouton de l'en-tête ; il
+> porte toutes les destinations, par groupes, dans l'ordre et avec les
+> libellés du menu du bureau. La barre basse garde ses trois boutons.
+
+Avec Q-E2-2 (a), recommandée, AM-8 n'a pas d'objet : la feuille « Plus »
+reçoit seulement les intertitres de groupe, ce que §5 permet déjà.
+
+---
+
 ## Ce qui n'est pas amendé
 
 - [[D-283]] §5 (aucune surface neuve à un mineur), [[D-288]] §1 (surface

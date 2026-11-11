@@ -19,7 +19,8 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | COM-0 mergé | tous |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-21 à T-23, T-32 | PAT-1 |
 | Texte accepté et inscrit (DOC-0 ou DOC-n) : T-31 | PAT-2 (sinon PAT-2 livre sans lui) |
-| Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-30 (les neuf lignes ensemble), T-35 | PAT-3 (idem) |
+| Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-30 (les neuf lignes ensemble) | PAT-3 (idem) |
+| Q-E2-5 tranchée (« Réessayer » sur un suivi non reconnu) | PAT-3 (sinon l'existant reste) |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-33, T-34 | PAT-5 (idem) |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PAT-2 à PAT-6 |
 
@@ -98,7 +99,7 @@ modifiée.
 ### PAT-3 — Mon parcours, accompagnement, suivi
 
 Hub (frise, « Mon accompagnement »), Jour difficile, point de suivi (T-30,
-T-35), protocole imprimable (sans rail à l'impression), invitation à une
+Q-E2-5), protocole imprimable (sans rail à l'impression), invitation à une
 réévaluation. Les états livrés (#1973, #1978, #1979) sont gardés tels quels.
 **Réception** : les quatre lignes de suivi du cadrage v3 (l.546-548) :
 protocole lisible quand le suivi échoue, erreur explicite à la première

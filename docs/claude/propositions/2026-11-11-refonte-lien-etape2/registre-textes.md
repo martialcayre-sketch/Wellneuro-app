@@ -7,7 +7,7 @@ décision par DOC-0 (`socle-commun.md`) avant le lot qui l'applique. Un texte
 refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
 Numérotation par famille, avec des trous voulus : praticien T-01 à T-15,
-rail patient T-21 à T-23, textes patient T-30 à T-35. Aucun identifiant
+rail patient T-21 à T-23, textes patient T-30 à T-34. Aucun identifiant
 absent n'est un texte manquant.
 
 Colonnes : **Proposé** (texte exact, sans guillemets de l'interface) ;
@@ -116,7 +116,11 @@ correspondance a son propre circuit de validation. Côté praticien,
 | T-32 | Ouvrir mon carnet alimentaire | entrée de la table | casse : « mon » en minuscule, comme les autres entrées | « Ouvrir Mon carnet alimentaire » `entreesAutresEspaces.ts:72` | PAT-1 |
 | T-33 | Ce que mon praticien a compris de moi | titre de page | première personne, comme le lien qui y mène (cadrage v3 l.82) | « Ce que votre praticien a compris de vous » `components/patient-companion/ComprehensionView.tsx:117, :126, :143` | PAT-5 |
 | T-34 | ← Mon parcours | retour de la page Conditions, vers `/questionnaires` | même retour que toutes les autres pages | « ← Mon espace », vers `/portail/[token]` `app/portail/[token]/conditions/page.tsx:88` | PAT-5 |
-| T-35 | (aucun texte) ; « Réessayer » retiré | suivi, lecture refusée par le serveur (404) | « Réessayer » ne peut pas réussir ; le retour « ← Mon parcours » de la page reste | « Suivi non reconnu. » `lib/protocol/portailProtocol.ts:32`, affiché avec « Réessayer » par `ProtocolCheckinForm.tsx` | PAT-3 |
+
+Le « Réessayer » affiché sous « Suivi non reconnu. »
+(`lib/protocol/portailProtocol.ts:32`, rendu par `ProtocolCheckinForm.tsx`)
+n'est pas un texte mais un comportement : il passe en question (Q-E2-5,
+`README.md` §4).
 
 T-33 : si une décision fixe ce titre, elle est à amender (non trouvée à la
 lecture du registre ; à vérifier à l'acceptation).
@@ -149,4 +153,4 @@ Non proposés, relevés :
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30, T-35 (PAT-3) ; T-33, T-34 (PAT-5) |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) |

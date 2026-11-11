@@ -16,7 +16,7 @@ registre des textes (§1), amendements AM-3, AM-4, AM-5, AM-6 ; artefact
 
 | Préalable | Lots concernés |
 |---|---|
-| DOC-0 mergé, avec AM-3, AM-4, AM-5 acceptés | tous |
+| DOC-0 mergé, avec AM-3, AM-4, AM-5 acceptés ; AM-7 si Q-E2-1 (a), AM-8 si Q-E2-2 (b) | tous |
 | COM-0 mergé | tous |
 | Q-E2-1 (groupes) et Q-E2-2 (menu du téléphone) tranchées | PRA-1 |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |

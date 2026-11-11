@@ -8,7 +8,8 @@ réalisation ne démarrent qu'après leur merge.
 
 **Objet.** Inscrire au registre, dans une seule PR de documentation :
 
-- les amendements acceptés mot pour mot (`amendements.md`, AM-1 à AM-6) ;
+- les amendements acceptés mot pour mot (`amendements.md`, AM-1 à AM-6 ;
+  AM-7 si Q-E2-1 (a), AM-8 si Q-E2-2 (b)) ;
 - une décision « textes de la refonte Lien » qui recopie chaque texte du
   registre accepté (`registre-textes.md`), avec son identifiant T-nn, son
   emplacement et le texte qu'il remplace. Aucun lot n'applique un texte qui
@@ -16,12 +17,12 @@ réalisation ne démarrent qu'après leur merge.
 
 Les numéros D-xxx se prennent à ce moment, sur `origin/main` relu, pour
 qu'aucune des deux sessions n'ait à en prendre un. Un texte accepté plus
-tard (T-30, T-31, T-33 à T-35 sont facultatifs pour leur lot) passe par un
+tard (T-30, T-31, T-33, T-34 sont facultatifs pour leur lot) passe par un
 micro-lot `DOC-n` qui complète cette décision, un seul ouvert à la fois,
 avant le lot qui l'applique.
 
 **Préalable.** Les réponses écrites du responsable aux questions Q-E2-1 à
-Q-E2-4 (`README.md` §4) et l'acceptation, amendement par amendement et
+Q-E2-5 (`README.md` §4) et l'acceptation, amendement par amendement et
 texte par texte.
 
 **Fichiers.** `docs/decisions/D-xxx.md` (neufs), `docs/decisions/` (index),

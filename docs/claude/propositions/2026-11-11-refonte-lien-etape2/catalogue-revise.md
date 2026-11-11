@@ -153,7 +153,7 @@ révisée. Les gabarits G1–G8 sont ceux de la v2 (l.149-158), inchangés.
 | U35 | Renseignements et déclarations | `/renseignements` | G6/G7 | v2 | PAT-6 |
 | U36 | Mes échanges | `/echanges` | G2/G7 | v2 | PAT-6 |
 | U37 | Informations et cadre | `/informations` | G7 | v2 | PAT-5 |
-| U38 | Conditions d'utilisation | `/conditions` | G7/G8 | v2 ; retour « ← Mon espace » gardé | PAT-5 |
+| U38 | Conditions d'utilisation | `/conditions` | G7/G8 | v2 ; retour « ← Mon parcours » vers `/questionnaires` si T-34 est accepté, sinon « ← Mon espace » gardé | PAT-5 |
 | U39 | Mes choix et droits | depuis Informations | G6/G7 | v2 | PAT-6 |
 | U40 | Signaler un problème | depuis Informations ou U18 | G6/G8 | v2 | PAT-6 |
 | U41 | Invitation à une réévaluation | dans Mon parcours | G7/G8 | v2 | PAT-3 |
