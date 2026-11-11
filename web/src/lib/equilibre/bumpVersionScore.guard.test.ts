@@ -71,6 +71,9 @@ import { agregerEquilibre } from './score';
 const VALEURS_PAR_VERSION: Record<string, { seuil: number; plafond: number }> = {
   v14: { seuil: 0.34, plafond: 50 },
   v15: { seuil: 0.34, plafond: 50 },
+  // [[D-474]] applique [[D-438]] : le mapping change, pas le plafonnement.
+  v16: { seuil: 0.34, plafond: 50 },
+  v17: { seuil: 0.34, plafond: 50 },
 };
 
 describe('plafonnement — une valeur ne change pas sans bump de version', () => {
@@ -89,7 +92,7 @@ describe('plafonnement — une valeur ne change pas sans bump de version', () =>
   // tourne : sans ce cas, supprimer l'entrée de la position inactive passerait
   // inaperçu jusqu'au jour où le drapeau bascule.
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(VALEURS_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
+    expect(Object.keys(VALEURS_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
   });
 });
 
@@ -168,6 +171,24 @@ const SORTIES_PAR_VERSION: Record<string, Record<string, SortieDeReference>> = {
     rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
     frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
   },
+  // v16/v17 ([[D-474]]) : la formule ne change pas — seul le mapping change,
+  // gardé plus bas. Mêmes sorties, vérifiées par le même calcul.
+  v16: {
+    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
+    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
+    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
+    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
+    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
+    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
+  },
+  v17: {
+    pleine: { global: 64, avantPlafond: 64, plafondApplique: false, fondations: [] },
+    fondationEffondree: { global: 50, avantPlafond: 83, plafondApplique: true, fondations: [1] },
+    toutBasSansPlafond: { global: 19, avantPlafond: 19, plafondApplique: false, fondations: [1, 2, 4, 5, 9] },
+    strateAbsente: { global: 66, avantPlafond: 66, plafondApplique: false, fondations: [] },
+    rienDeMesure: { global: null, avantPlafond: null, plafondApplique: false, fondations: [] },
+    frontiereArrondi: { global: 65, avantPlafond: 65, plafondApplique: false, fondations: [] },
+  },
 };
 
 function sortieObservee(couvertures: Record<number, number | null>): SortieDeReference {
@@ -203,7 +224,7 @@ describe('formule — une sortie ne change pas sans bump de version', () => {
   }
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(SORTIES_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
+    expect(Object.keys(SORTIES_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
   });
 });
 
@@ -223,7 +244,9 @@ function empreinteDuMapping(): string {
   return Object.entries(BESOIN_SOURCES)
     .map(([besoin, sources]) => {
       const decrites = sources
-        .map(s => [s.idQuestionnaire, s.sousScore ?? '-', s.max, s.inverser ? 'inv' : 'dir', s.groupe ?? '-', s.poids ?? 1].join('|'))
+        // La borne basse ([[D-474]]) n'apparaît que déclarée (`min..max`) : les
+        // empreintes v14/v15, écrites avant elle, restent lisibles telles quelles.
+        .map(s => [s.idQuestionnaire, s.sousScore ?? '-', s.min === undefined ? s.max : `${s.min}..${s.max}`, s.inverser ? 'inv' : 'dir', s.groupe ?? '-', s.poids ?? 1].join('|'))
         .join(',');
       return `${besoin}:${decrites || '-'}`;
     })
@@ -251,6 +274,27 @@ const MAPPING_PAR_VERSION: Record<string, string> = {
     + '9:Q_STR_01|-|42|inv|-|1,Q_STR_02|-|50|inv|-|1,Q_STR_03|-|55|inv|-|1 '
     + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
     + '11:- 12:Q_INF_03|ME|40|inv|-|1',
+  // v16/v17 ([[D-438]] appliquée par [[D-474]]) : v14/v15 plus DEUX sources au
+  // repos du besoin 5, et rien d'autre — l'Epworth (0-24) et la fatigue
+  // générale du MFI-20 (4-20), poids 1 chacune.
+  v16:
+    '1:Q_ALI_01|-|42|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|0|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_01|-|42|inv|-|1,Q_STR_02|-|50|inv|-|1,Q_STR_03|-|55|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_INF_03|ME|40|inv|-|1',
+  v17:
+    '1:Q_ALI_01|-|90|dir|-|1 2:- 3:Q_ALI_01|RYTHME_CHRONO|7|dir|-|1 '
+    + '4:Q_GAS_01|-|93|inv|-|1,Q_INF_01|-|96|inv|-|1 '
+    + '5:Q_MOD_01|ACTIVITE_PHYSIQUE|20|dir|mouvement|1,Q_SOM_01|-|21|inv|repos|2,Q_SOM_09|-|100|dir|repos|1,'
+    + 'Q_SOM_02|-|24|inv|repos|1,Q_SOM_07|GEN|4..20|inv|repos|1 '
+    + '6:- 7:- 8:Q_NEU_11|D|21|inv|-|1 '
+    + '9:Q_STR_01|-|42|inv|-|1,Q_STR_02|-|50|inv|-|1,Q_STR_03|-|55|inv|-|1 '
+    + '10:Q_INF_03|DA|40|inv|-|1,Q_INF_03|NA|40|inv|-|1,Q_INF_03|SE|40|inv|-|1 '
+    + '11:- 12:Q_INF_03|ME|40|inv|-|1',
 };
 
 describe('mapping — une source ne change pas sans bump de version', () => {
@@ -266,9 +310,10 @@ describe('mapping — une source ne change pas sans bump de version', () => {
     // Sans ce cas, recopier v14 dans v15 rendrait le registre vert dans les deux
     // positions tout en cessant de décrire l'une des deux.
     expect(MAPPING_PAR_VERSION.v14).not.toBe(MAPPING_PAR_VERSION.v15);
+    expect(MAPPING_PAR_VERSION.v16).not.toBe(MAPPING_PAR_VERSION.v17);
   });
 
   it('les deux positions du drapeau restent couvertes', () => {
-    expect(Object.keys(MAPPING_PAR_VERSION).sort()).toEqual(['v14', 'v15']);
+    expect(Object.keys(MAPPING_PAR_VERSION)).toEqual(expect.arrayContaining(['v16', 'v17']));
   });
 });

@@ -1,6 +1,6 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
 import { BESOIN_SOURCES, JOURS_JALON, ORDRE_JALONS_MESURE } from './constants';
-import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
+import { construireReponsesParQuestionnaire, rawAnswersLisibles, type ReponseBrute } from './depuisPrisma';
 import { calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum } from './types';
 import { joursDepuisAncre } from '../protocol/fenetreJalon';
@@ -160,7 +160,7 @@ export function construireHistoriqueParBesoin(
   // La règle est au grain du BESOIN : une lecture n'est ajoutée à sa série
   // que si l'une de SES sources porte une réponse exploitable nouvelle depuis
   // sa lecture précédente. Le prédicat d'exploitabilité est celui de la règle
-  // globale (`extraireRawAnswers`), jamais recopié.
+  // globale (`rawAnswersLisibles`, [[D-474]]), jamais recopié.
   const exploitables = filtrerPassationsExploitables(brutes);
   const datesParBesoin = new Map<number, Date[]>();
   for (const [besoinCle, sources] of Object.entries(BESOIN_SOURCES)) {
@@ -168,7 +168,7 @@ export function construireHistoriqueParBesoin(
     datesParBesoin.set(
       Number(besoinCle),
       exploitables
-        .filter(r => ids.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
+        .filter(r => ids.has(r.idQuestionnaire) && rawAnswersLisibles(r) !== null)
         .map(r => r.dateReponse),
     );
   }

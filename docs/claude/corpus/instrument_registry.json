@@ -1022,7 +1022,7 @@
         "readministrable": null,
         "intervalleMinJours": null
       },
-      "sourceMonEquilibre": false,
+      "sourceMonEquilibre": true,
       "sourceIds": [
         "WN-SRC-0412",
         "WN-SRC-0413"
@@ -1274,7 +1274,7 @@
         "readministrable": null,
         "intervalleMinJours": null
       },
-      "sourceMonEquilibre": false,
+      "sourceMonEquilibre": true,
       "sourceIds": [
         "WN-SRC-0396",
         "WN-SRC-0397"

@@ -27,6 +27,11 @@ export type SourceQuestionnaire = {
   idQuestionnaire: string;
   sousScore?: string;
   max: number;
+  // Borne basse de l'échelle (défaut 0). La couverture vaut
+  // (valeur − min) / (max − min), inversée si `inverser`. Une échelle qui ne
+  // part pas de 0 — la fatigue générale du MFI-20, de 4 à 20 ([[D-438]] §1) —
+  // rendrait sinon 0,8 à un patient sans aucune fatigue.
+  min?: number;
   inverser: boolean;
   // Poids DANS le groupe (défaut 1). Sans groupe partagé, il n'a aucun effet.
   poids?: number;

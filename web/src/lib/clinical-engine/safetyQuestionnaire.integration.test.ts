@@ -41,10 +41,15 @@ const NON = { ...POSITIF_HORS_EPISODE, idReponse: 'REP_BDI_NON', scoresJson: { r
 // valeurs : la carte, elle, dépend de la forme de `Q_ALI_01` servie sous
 // `WN_ALI_01_SIIN57` (la table d'orientation en a été affranchie, pas la carte).
 // Allumer le drapeau en production change donc l'empreinte de chaque carte.
+//
+// Relevées à nouveau le 2026-11-10 ([[D-474]], application de [[D-438]]) : la
+// version du score passe de v14/v15 à v16/v17, et elle entre dans l'empreinte.
+// Dérive VOULUE, décidée par D-438 §5 : chaque carte diffusée dérive, et son
+// écran protocole s'éteint jusqu'à réapprobation par le praticien.
 const EMPREINTE_REFERENCE =
   process.env.WN_ALI_01_SIIN57 === 'true'
-    ? '484704352c11f4873ab5dd533918dc0e2ee4551d573f4b0d233ed8a3031d8eb2'
-    : 'e5bd9744d54d5804abf12943b5a51c9317868c3ce768fa4b50262f5498d768be';
+    ? 'c5b806ab5b64917ae2eefa109677ce815331725eb8f3f74bdfee7408cd83fab7'
+    : 'f2e808ade7a5fa8998fa7edf53d7a727175d94918dcf6deb32065b8c5dc4c6a0';
 
 beforeEach(() => {
   signerTablePriorites();

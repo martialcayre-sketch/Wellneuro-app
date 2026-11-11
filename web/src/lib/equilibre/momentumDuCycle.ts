@@ -1,7 +1,7 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
 import { BESOIN_SOURCES, ORDRE_JALONS_MESURE } from './constants';
 import { fenetreDuJalon } from '../protocol/fenetreJalon';
-import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
+import { construireReponsesParQuestionnaire, rawAnswersLisibles, type ReponseBrute } from './depuisPrisma';
 import { calculerDeltaMomentum } from './momentum';
 import { calculerCouvertureSource, calculerEquilibre } from './score';
 import type { AncreCycle, JalonMomentum, LectureDatee, ReponsesParQuestionnaire, TendanceMomentum } from './types';
@@ -81,7 +81,7 @@ function sourcesMesurees(reponses: ReponsesParQuestionnaire, besoin?: number): S
 export function reponsesDuCycle(brutes: ReponseBrute[], dateAncre: Date): ReponseBrute[] {
   return brutes.filter(r => {
     if (r.dateReponse <= dateAncre) return true;
-    const rawAnswers = extraireRawAnswers(r.scoresJson);
+    const rawAnswers = rawAnswersLisibles(r);
     return rawAnswers !== null && sourcesMesurees({ [r.idQuestionnaire]: rawAnswers }).size > 0;
   });
 }
@@ -102,7 +102,7 @@ export function sourcesMesureesAu(brutes: ReponseBrute[], date: Date): Set<strin
  * si `besoin` est donné). Le statut de validité se filtre en amont.
  */
 export function estRemesure(reponse: ReponseBrute, mesureesAncre: ReadonlySet<string>, besoin?: number): boolean {
-  const rawAnswers = extraireRawAnswers(reponse.scoresJson);
+  const rawAnswers = rawAnswersLisibles(reponse);
   if (!rawAnswers) return false;
   for (const cle of sourcesMesurees({ [reponse.idQuestionnaire]: rawAnswers }, besoin)) {
     if (mesureesAncre.has(cle)) return true;

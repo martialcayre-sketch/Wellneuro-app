@@ -170,12 +170,16 @@ export function evaluerCouvertureSource(
   // existe depuis que `BESOIN_SOURCES` porte un `max` DÉRIVÉ : la forme qui ne
   // déclare pas le sous-score en rend 0. Refuser avant de diviser.
   if (!(source.max > 0)) return { motif: 'forme_sans_sous_score' };
+  // Borne basse ([[D-438]] §1, [[D-474]]) : une étendue nulle ou négative
+  // diviserait par 0 ; même refus que pour `max`, avant toute division.
+  const min = source.min ?? 0;
+  if (!(source.max > min)) return { motif: 'forme_sans_sous_score' };
   const answers = reponses[source.idQuestionnaire];
   if (!answers) return { motif: 'aucune_passation' };
   const resultat = calculateScore(source.idQuestionnaire, answers);
   const lecture = extraireValeurBrute(resultat, source.sousScore);
   if ('motif' in lecture) return lecture;
-  const ratio = lecture.valeur / source.max;
+  const ratio = (lecture.valeur - min) / (source.max - min);
   return { couverture: clamp01(source.inverser ? 1 - ratio : ratio) };
 }
 

@@ -3,7 +3,7 @@ import { VERSION_SCORE_EQUILIBRE } from '../equilibre/constants';
 import { construireReponsesParQuestionnaire } from '../equilibre/depuisPrisma';
 import { calculerEquilibre } from '../equilibre/score';
 import { confirmAssessmentEpisode, proposeAssessmentEpisode } from './assessmentEpisode';
-import { buildClinicalSnapshot } from './clinicalSnapshot';
+import { buildClinicalSnapshot, hasExploitableRawAnswers } from './clinicalSnapshot';
 import type { PatientContext, QuestionnaireResponseInput } from './types';
 
 // PSS-10 complet : source vivante du besoin 9, donc scoreGlobal non-null.
@@ -149,6 +149,35 @@ describe('ClinicalSnapshot', () => {
     expect(snapshot.clinicalObjects.find(object => object.code === 'GLOBAL_BALANCE')?.sourceResponseIds).toEqual(['response-1']);
     expect(snapshot.clinicalObjects.find(object => object.code === 'ADAPTATION_RESERVE')?.sourceResponseIds).toEqual(['response-1']);
     expect(snapshot.clinicalObjects.filter(object => !porteurs.includes(object.code)).every(object => object.sourceResponseIds.length === 0)).toBe(true);
+  });
+
+  // [[D-474]] : le MFI-20 est source du besoin 5 depuis D-438, et ses passations
+  // d'avant la reconstruction sont non interprétables. Le calcul ne les lit pas ;
+  // la provenance ne doit pas les citer, sinon l'objet se contredit lui-même.
+  it('une passation non interprétable d’un instrument source n’est pas citée comme source', () => {
+    // Passation COMPLÈTE (vingt items), antérieure au 2026-07-31 : elle passe
+    // `hasExploitableRawAnswers`, c'est bien la garde de D-474 qui l'écarte.
+    const mfiAncien = makeResponse({
+      responseId: 'response-mfi-ancien',
+      questionnaireId: 'Q_SOM_07',
+      scoresJson: { rawAnswers: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`M${i + 1}`, 3])) },
+    });
+    expect(hasExploitableRawAnswers(mfiAncien)).toBe(true);
+    const responses = [makeResponse(), mfiAncien];
+    const snapshot = buildClinicalSnapshot({
+      snapshotId: 'snapshot-1', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+      assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+    });
+
+    expect(snapshot.questionnaireFindings.find(f => f.responseId === 'response-mfi-ancien')?.evaluability).toBe('not_interpretable');
+    expect(snapshot.clinicalObjects.find(object => object.code === 'GLOBAL_BALANCE')?.sourceResponseIds).toEqual(['response-1']);
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 5)?.measurement.value).toBeNull();
+    const ref = snapshot.sourceRefs.find(r => r.responseId === 'response-mfi-ancien');
+    expect(ref?.status).toBe('to_verify');
+    expect(ref?.limitations).toEqual(
+      snapshot.questionnaireFindings.find(f => f.responseId === 'response-mfi-ancien')?.limitations,
+    );
+    expect(snapshot.sourceRefs.find(r => r.responseId === 'response-1')?.status).toBe('calculated');
   });
 
   it('ne déclare que la réponse la plus récente comme source effective', () => {

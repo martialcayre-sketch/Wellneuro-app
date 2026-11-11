@@ -52,7 +52,11 @@ describe('forme alimentaire servie', () => {
     // et non protectrice — c'est elle qui rend le bump obligatoire, sur
     // `Q_STR_01` comme sur `Q_GAS_01` et `Q_SOM_01` : trois sources
     // `inverser: true`, où retirer une mesure basse REMONTE la couverture.
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v15' : 'v14');
+    //
+    // v16 / v17 ([[D-438]], appliquée par [[D-474]], 2026-11-10) : l'Epworth et
+    // la fatigue générale du MFI-20 entrent au repos du besoin 5. Chaque branche
+    // avance encore d'un cran.
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v17' : 'v16');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {
