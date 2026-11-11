@@ -177,6 +177,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
                 commandes={[
                   {
                     // T-11 de [[D-488]], inchangé.
+                    id: 'repli',
                     libelle: expanded ? 'Réduire la navigation' : 'Étendre la navigation',
                     icone: expanded ? PanelLeftClose : PanelLeftOpen,
                     onClick: toggleExpanded,
@@ -184,6 +185,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
                   },
                   {
                     // T-12 de [[D-488]].
+                    id: 'escamotage',
                     libelle: 'Masquer la navigation',
                     icone: X,
                     onClick: masquerNavigation,

@@ -318,8 +318,8 @@ describe('SidebarRail — rail réduit en icônes (D-486 §2)', () => {
   it('les commandes du pied gardent leur nom, réduites comme dépliées', () => {
     pathnameMock.mockReturnValue('/dashboard');
     const commandes = [
-      { libelle: 'Étendre la navigation', icone: X, onClick: () => {}, ariaExpanded: false },
-      { libelle: 'Masquer la navigation', icone: X, onClick: () => {} },
+      { id: 'repli', libelle: 'Étendre la navigation', icone: X, onClick: () => {}, ariaExpanded: false },
+      { id: 'escamotage', libelle: 'Masquer la navigation', icone: X, onClick: () => {} },
     ];
     const { container, rerender } = render(<SidebarRail collapsed commandes={commandes} />);
     expect(within(container).getByRole('button', { name: 'Étendre la navigation' }).getAttribute('aria-expanded')).toBe('false');

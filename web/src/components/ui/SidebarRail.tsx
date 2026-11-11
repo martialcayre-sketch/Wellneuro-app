@@ -32,6 +32,13 @@ const LIBELLE_FIL_INCOMPLET = 'comptes rendus biologiques à lire non vérifiés
 
 /** Une commande du pied de rail : réduire, étendre, masquer ([[D-486]] §2). */
 export type CommandeRail = {
+  /**
+   * Identifiant STABLE de la commande, clé React comprise : le libellé change
+   * au basculement « Réduire » / « Étendre », et une clé tirée du texte
+   * remontait le bouton, dont le focus clavier se perdait (revue CodeRabbit
+   * de #1997).
+   */
+  id: string;
   libelle: string;
   icone: LucideIcon;
   onClick: () => void;
@@ -268,14 +275,14 @@ export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }:
             const Icone = commande.icone;
             return (
               <button
-                key={commande.libelle}
+                key={commande.id}
                 ref={commande.refBouton}
                 type="button"
                 onClick={commande.onClick}
                 aria-expanded={commande.ariaExpanded}
                 aria-label={collapsed ? commande.libelle : undefined}
-                data-appui={entreeAppuyee === commande.libelle ? 'oui' : undefined}
-                onPointerDown={evenement => appuiDebut(commande.libelle, evenement)}
+                data-appui={entreeAppuyee === commande.id ? 'oui' : undefined}
+                onPointerDown={evenement => appuiDebut(commande.id, evenement)}
                 onPointerUp={appuiFin}
                 onPointerCancel={appuiFin}
                 className={`group/entree relative flex min-h-11 w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-sm text-rail-muted-foreground transition duration-fast ease-lien hover:bg-rail-surface hover:text-rail-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${

@@ -65,6 +65,19 @@ describe('NavBar — déplié et réduit (clé wn-rail-expanded inchangée)', ()
     expect(within(rail(container)).getByRole('button', { name: 'Étendre la navigation' })).toBeTruthy();
   });
 
+  it('le focus reste sur la commande après « Réduire » puis « Étendre » (revue CodeRabbit #1997)', () => {
+    const { container } = rendre();
+    const reduire = within(rail(container)).getByRole('button', { name: 'Réduire la navigation' });
+    reduire.focus();
+    fireEvent.click(reduire);
+    const etendre = within(rail(container)).getByRole('button', { name: 'Étendre la navigation' });
+    // Même nœud : le bouton n'a pas été remonté, le focus ne s'est pas perdu.
+    expect(etendre).toBe(reduire);
+    expect(document.activeElement).toBe(etendre);
+    fireEvent.click(etendre);
+    expect(document.activeElement).toBe(within(rail(container)).getByRole('button', { name: 'Réduire la navigation' }));
+  });
+
   it('un choix « réduit » mémorisé est relu au montage', async () => {
     window.localStorage.setItem('wn-rail-expanded', 'false');
     const { container } = rendre();
