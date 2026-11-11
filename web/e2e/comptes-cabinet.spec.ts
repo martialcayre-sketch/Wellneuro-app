@@ -53,7 +53,7 @@ test.describe('Comptes du cabinet', () => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto('/dashboard/trajectoires');
 
-    const rail = page.locator('nav').filter({ hasText: 'La Spirale' }).first();
+    const rail = page.getByRole('navigation', { name: 'Navigation principale' });
     const lien = rail.getByRole('link', { name: 'Comptes du cabinet' });
     await expect(lien).toHaveAttribute('href', '/dashboard/cabinet');
     await lien.click();

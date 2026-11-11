@@ -103,3 +103,47 @@ describe('MobileBottomNav — état actif sur une fiche patient', () => {
     expect(actifs).toEqual([]);
   });
 });
+
+// FEUILLE « PLUS » PAR GROUPES ([[D-481]] §5, [[D-487]]) et entrée active Lien
+// (filet champagne, revue de COM-0 routée vers PRA-1).
+describe('MobileBottomNav — intertitres et entrée active (PRA-1)', () => {
+  it('la feuille porte les quatre intertitres, chacun avant ses entrées', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    render(<MobileBottomNav />);
+    fireEvent.click(screen.getByRole('button', { name: 'Plus' }));
+    const feuille = within(screen.getByRole('dialog'));
+    const groupeDe = (libelle: string) =>
+      feuille.getByRole('link', { name: libelle }).parentElement?.querySelector('p')?.textContent;
+    expect(groupeDe('Patients')).toBe('Travail');
+    expect(groupeDe('Confiance & droits')).toBe('Travail');
+    expect(groupeDe('Questionnaires')).toBe('Bibliothèque');
+    expect(groupeDe('Atelier corpus')).toBe('Ateliers');
+    expect(groupeDe('Comptes du cabinet')).toBe('Cabinet');
+    expect(groupeDe('Paramètres')).toBe('Cabinet');
+  });
+
+  it('l’entrée active de la barre : fond rail-surface et filet rail-accent, plus de pastille pétrole', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    render(<MobileBottomNav />);
+    const barre = screen.getByRole('navigation', { name: 'Navigation principale' });
+    const actif = within(barre).getByRole('link', { name: 'Le Fil' });
+    expect(actif.getAttribute('aria-current')).toBe('page');
+    expect(actif.className).toMatch(/\bbg-rail-surface\b/);
+    expect(actif.className).toContain('var(--rail-accent)');
+    expect(barre.innerHTML).not.toMatch(/bg-rail-primary/);
+  });
+
+  it('« Plus » porte le même état quand la page courante est dans la feuille', () => {
+    pathnameMock.mockReturnValue('/dashboard/cabinet');
+    render(<MobileBottomNav />);
+    expect(screen.getByRole('button', { name: 'Plus' }).className).toContain('var(--rail-accent)');
+  });
+
+  it('icônes au trait Lien (1,75)', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    render(<MobileBottomNav />);
+    const barre = screen.getByRole('navigation', { name: 'Navigation principale' });
+    const traits = [...barre.querySelectorAll('svg')].map((svg) => svg.getAttribute('stroke-width'));
+    expect(new Set(traits)).toEqual(new Set(['1.75']));
+  });
+});

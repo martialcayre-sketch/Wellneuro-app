@@ -1,133 +1,65 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Ref } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  ContactRound,
-  Settings,
-  ShieldCheck,
-  Compass,
-  Mail,
-  BookOpen,
-  ClipboardCheck,
-  ClipboardList,
-  CalendarDays,
-  FlaskConical,
-  Lightbulb,
-  Pill,
-  Tally5,
-  type LucideIcon,
-} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { CorrespondanceCompteurApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/compteur/route';
+import {
+  DESTINATIONS_PRATICIEN,
+  GROUPES_NAVIGATION,
+  destinationsDuGroupe,
+  estActive,
+  type DestinationPraticien,
+} from '@/lib/navigation/destinationsPraticien';
+import { EmpreinteMarque } from '@/components/ui/EmpreinteMarque';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
-// Rail en trois groupes depuis D-324 (2026-10-18) : La Spirale (le travail du
-// jour), Bibliothèque (un rayon par entrée), Réglages. `badge: 'fil'` affiche
-// le compteur RÉEL de cartes du Fil.
+// Rail praticien (refonte Lien, lot PRA-1). Ses entrées viennent de la
+// déclaration unique des destinations ([[D-485]]) ; ses quatre groupes sont
+// ceux de [[D-487]]. Le rail n'en recopie aucune.
 //
-// Historique : de la maquette « WellNeuro 5.0 — La Spirale » (2026-07-22)
-// jusqu'au 2026-10-18, un groupe « Héritage 4.0 — inchangé » rangeait cinq
-// surfaces historiques sous l'étiquette « 4.0 », sans décision qui l'ait créé
-// ni daté. D-324 l'a retiré : Documents et Synthèse IA quittent le menu
-// (pages gardées, ouvertes depuis la fiche, le Fil, la minute d'après et la
-// barre du téléphone), l'agenda et l'atelier restent sans étiquette, et
-// Biologie fonctionnelle devient le rayon « Analyses biologiques ».
-//
-// `badge: 'correspondance'` désigne une TÂCHE, pas un historique : le nombre de
-// dossiers dont le DERNIER échange consigné est un envoi remontant à plus de
-// sept jours — on a écrit, rien n'est revenu ([[D-210]]). Il comptait jusqu'au
-// 2026-09-16 les consignations des sept derniers jours, tous sens confondus,
-// donc les gestes de son propre lecteur : transcrire une réponse le faisait
-// MONTER. Il la fait maintenant descendre. Ce commentaire était resté sur
-// l'ancien contrat — constat de revue de la PR #1148, retenu.
-//
-// Le délai n'est pas fixé ici : il vient du serveur, et l'écran le rapporte.
-// Aucun chiffre inventé ; rien en cas d'erreur réseau.
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  tag?: string;
-  badge?: 'fil' | 'correspondance';
-  /** 'exact' : actif seulement sur le chemin exact — c'est ce qui désambiguïse
-   * « Patients » (la liste, /dashboard/patients) de « Fiche-trajectoire », qui
-   * s'allume sur les fiches ouvertes sous ce même préfixe. */
-  matiere?: 'exact' | 'prefixe' | 'sous-pages';
-  /** Préfixes SUPPLÉMENTAIRES qui activent l'item — ex. « Fiche-trajectoire »
-   * reste allumée sur les fiches (/dashboard/patients/…) alors qu'elle pointe
-   * vers /dashboard/trajectoires (SP-TRAJ LOT-04). */
-  prefixesActifs?: string[];
-};
-
-const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
-  {
-    etiquette: 'La Spirale',
-    items: [
-      { href: '/dashboard', label: 'Le Fil du jour', icon: LayoutDashboard, matiere: 'exact', badge: 'fil' },
-      // LE RAYON PATIENTS — le dossier administratif, sorti de l'héritage 4.0
-      // où il cohabitait avec l'assignation de questionnaires et les packs.
-      // `matiere: 'exact'` : seule la LISTE allume cet item. Les fiches, sous
-      // ce même préfixe, allument « Fiche-trajectoire » juste en dessous —
-      // c'est la seule paire du rail qui partage un préfixe d'URL.
-      { href: '/dashboard/patients', label: 'Patients', icon: ContactRound, matiere: 'exact' },
-      // Porte d'entrée trajectoire (SP-TRAJ LOT-04) : la liste orientée
-      // trajectoire. L'item reste actif sur les fiches ouvertes depuis elle ;
-      // /dashboard/patients exact n'allume que « Patients ».
-      {
-        href: '/dashboard/trajectoires',
-        label: 'Fiche-trajectoire',
-        icon: Users,
-        prefixesActifs: ['/dashboard/patients/'],
-      },
-      // Les comptes du cabinet ([[D-385]], J3-cabinet) : près de la porte
-      // Trajectoires, même population. La page compte, elle n'ouvre aucun dossier.
-      { href: '/dashboard/cabinet', label: 'Comptes du cabinet', icon: Tally5 },
-      { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
-      // L'agenda reste une entrée du menu, sans encart à l'accueil (D-324 §2) :
-      // aucun rendez-vous n'était saisi en production le 2026-10-18.
-      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays },
-      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail, badge: 'correspondance' },
-      // La file des signalements d'effets indésirables et des demandes de droits
-      // est du travail du jour, pas un réglage (D-324 §3).
-      { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
-    ],
-  },
-  {
-    // CHAQUE RAYON A SON ENTRÉE (D-324 §4) : la page unique empilait des
-    // onglets en tête et des rayons plus bas, et se lisait mal. « Questionnaires »
-    // garde le catalogue, l'aperçu, la file d'envoi ET les assignations et packs ;
-    // « Connaissances » est la lecture du corpus (D-310 §2), et l'atelier qui le
-    // signe vient juste après (D-310 §1).
-    etiquette: 'Bibliothèque',
-    items: [
-      { href: '/dashboard/bibliotheque/questionnaires', label: 'Questionnaires', icon: ClipboardList },
-      { href: '/dashboard/bibliotheque/fiches-conseils', label: 'Fiches conseils', icon: Lightbulb },
-      { href: '/dashboard/bibliotheque/complements', label: 'Compléments alimentaires', icon: Pill },
-      { href: '/dashboard/bibliotheque/biologie', label: 'Analyses biologiques', icon: FlaskConical },
-      { href: '/dashboard/bibliotheque/connaissances', label: 'Connaissances', icon: BookOpen },
-      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
-    ],
-  },
-  {
-    etiquette: 'Réglages',
-    items: [{ href: '/dashboard/parametres', label: 'Paramètres', icon: Settings }],
-  },
-];
+// `compteur: 'fil'` affiche le compteur RÉEL de cartes du Fil.
+// `compteur: 'correspondance'` désigne une TÂCHE, pas un historique : le nombre
+// de dossiers dont le DERNIER échange consigné est un envoi remontant à plus de
+// sept jours — on a écrit, rien n'est revenu ([[D-210]]). Le délai n'est pas
+// fixé ici : il vient du serveur, et l'écran le rapporte. Aucun chiffre
+// inventé ; rien en cas d'erreur réseau.
 
 const LIBELLE_FIL_INCOMPLET = 'comptes rendus biologiques à lire non vérifiés';
 
+/** Une commande du pied de rail : réduire, étendre, masquer ([[D-486]] §2). */
+export type CommandeRail = {
+  libelle: string;
+  icone: LucideIcon;
+  onClick: () => void;
+  ariaExpanded?: boolean;
+  refBouton?: Ref<HTMLButtonElement>;
+};
+
 interface SidebarRailProps {
+  /** Rail réduit en icônes ([[D-486]] §1). */
   collapsed: boolean;
   onNavigate?: () => void;
-  /** Affiche le bloc de marque en tête (maquette : le brand vit dans le
-   * rail). Le tiroir tablette garde son propre titre. */
+  /** Affiche la marque Empreinte en tête (le tiroir tablette garde son titre). */
   brand?: boolean;
+  /** Commandes du pied de rail ; le tiroir tablette n'en a pas. */
+  commandes?: CommandeRail[];
 }
 
-export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRailProps) {
+/*
+ * RAIL RÉDUIT : chaque entrée garde son nom accessible ; son libellé paraît au
+ * survol, au focus clavier et pendant l'appui du doigt, et Échap le masque
+ * jusqu'au prochain mouvement du pointeur ou du focus ([[D-486]] §2 ; artefact
+ * « Wellneuro Lien — Empreinte », LienShell). L'infobulle est décorative
+ * (`aria-hidden`) : le nom vient de `aria-label`.
+ */
+const CLASSES_INFOBULLE =
+  'pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-sm font-medium text-surface shadow-pop group-hover/entree:block group-focus-visible/entree:block group-data-[appui=oui]/entree:block group-data-[infobulles=non]/rail:!hidden';
+
+export function SidebarRail({ collapsed, onNavigate, brand = false, commandes }: SidebarRailProps) {
   const pathname = usePathname();
   // Compteur réel du Fil — même API que l'écran ; silence en cas d'échec.
   const [nbCartesFil, setNbCartesFil] = useState<number | null>(null);
@@ -141,6 +73,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
   // cas d'échec. Le délai vient du serveur : l'écran le dit, il ne le fixe pas.
   const [nbCorrespondance, setNbCorrespondance] = useState<number | null>(null);
   const [delaiAttente, setDelaiAttente] = useState<number | null>(null);
+  // Infobulles du rail réduit : masquées par Échap, entrée pressée au doigt.
+  const [infobullesMasquees, setInfobullesMasquees] = useState(false);
+  const [entreeAppuyee, setEntreeAppuyee] = useState<string | null>(null);
+  const minuteurAppui = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     let vivant = true;
     fetch('/api/praticien/fil')
@@ -168,8 +105,27 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
     };
   }, []);
 
-  const compteurBadge = (badge: NavItem['badge']): number | null =>
-    badge === 'fil' ? nbCartesFil : badge === 'correspondance' ? nbCorrespondance : null;
+  useEffect(() => {
+    if (!collapsed) return undefined;
+    function surTouche(evenement: KeyboardEvent) {
+      if (evenement.key === 'Escape') {
+        setInfobullesMasquees(true);
+        setEntreeAppuyee(null);
+      }
+    }
+    document.addEventListener('keydown', surTouche);
+    return () => document.removeEventListener('keydown', surTouche);
+  }, [collapsed]);
+
+  useEffect(
+    () => () => {
+      if (minuteurAppui.current) clearTimeout(minuteurAppui.current);
+    },
+    [],
+  );
+
+  const compteurDe = (compteur: DestinationPraticien['compteur']): number | null =>
+    compteur === 'fil' ? nbCartesFil : compteur === 'correspondance' ? nbCorrespondance : null;
 
   /**
    * UN NOMBRE NU N'EST PAS UN SIGNAL. La pastille ne portait aucun énoncé : ni
@@ -177,120 +133,168 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
    * Ce libellé dit ce que le chiffre compte, et le délai vient du serveur —
    * l'écran le rapporte, il ne le fixe pas.
    */
-  const libelleCompteur = (badge: NavItem['badge'], compteur: number): string => {
-    if (badge === 'fil') return `${compteur} carte${compteur > 1 ? 's' : ''} au Fil du jour`;
-    const dossiers = `${compteur} dossier${compteur > 1 ? 's' : ''}`;
+  const libelleCompteur = (compteur: DestinationPraticien['compteur'], nombre: number): string => {
+    if (compteur === 'fil') return `${nombre} carte${nombre > 1 ? 's' : ''} au Fil du jour`;
+    const dossiers = `${nombre} dossier${nombre > 1 ? 's' : ''}`;
     return delaiAttente === null
       ? `${dossiers} sans réponse du médecin`
       : `${dossiers} sans réponse du médecin depuis plus de ${delaiAttente} jours`;
   };
 
-  const isActive = (item: NavItem) => {
-    if (item.prefixesActifs?.some((prefixe) => pathname?.startsWith(prefixe))) return true;
-    if (item.matiere === 'exact') return pathname === item.href;
-    if (item.matiere === 'sous-pages') return pathname === item.href;
-    if (item.matiere === 'prefixe') return pathname?.startsWith(`${item.href}/`) ?? false;
-    return pathname?.startsWith(item.href) ?? false;
+  function appuiDebut(cle: string, evenement: React.PointerEvent) {
+    if (!collapsed || evenement.pointerType !== 'touch') return;
+    if (minuteurAppui.current) clearTimeout(minuteurAppui.current);
+    setInfobullesMasquees(false);
+    setEntreeAppuyee(cle);
+  }
+
+  function appuiFin() {
+    if (minuteurAppui.current) clearTimeout(minuteurAppui.current);
+    minuteurAppui.current = setTimeout(() => setEntreeAppuyee(null), 1500);
+  }
+
+  const reveiller = () => {
+    if (infobullesMasquees) setInfobullesMasquees(false);
   };
 
   return (
-    <nav className="space-y-1">
+    <nav
+      aria-label="Navigation principale"
+      className="group/rail flex flex-1 flex-col"
+      data-infobulles={infobullesMasquees ? 'non' : undefined}
+      onPointerMove={reveiller}
+      onFocus={reveiller}
+    >
       {brand && (
-        <div className={`flex items-center gap-3 pb-3 ${collapsed ? 'justify-center' : 'px-1'}`}>
-          <span
-            aria-hidden="true"
-            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-solar-500/[.18] font-display text-sm font-extrabold text-rail-accent"
-          >
-            WN
-          </span>
-          {!collapsed && (
-            <span className="min-w-0">
-              <span className="block truncate font-display text-lg font-bold text-rail-foreground">Wellneuro</span>
-              <span className="block truncate text-2xs text-rail-muted-foreground">Horizon 5.0</span>
-            </span>
-          )}
+        // Marque Empreinte sur la nuit du rail (A5-R3) ; réduite, le symbole
+        // seul, le nom restant lisible par les lecteurs d'écran.
+        <div className={`flex items-center pb-3 ${collapsed ? 'justify-center' : 'px-1'}`}>
+          <EmpreinteMarque tone="night" size={collapsed ? 36 : 40} compact={collapsed} />
         </div>
       )}
-      {groupesNavigation.map((groupe, indexGroupe) => (
-        <div key={groupe.etiquette ?? 'principal'}>
-          {collapsed ? (
-            indexGroupe > 0 && <div className="my-2 border-t border-rail-border" aria-hidden="true" />
-          ) : (
-            <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
-              {groupe.etiquette}
-            </p>
-          )}
-          {groupe.items.map(item => {
-            const active = isActive(item);
-            const Icon = item.icon;
 
+      <div className="space-y-1">
+        {GROUPES_NAVIGATION.map((groupe, indexGroupe) => {
+          const destinations = destinationsDuGroupe(groupe.id, DESTINATIONS_PRATICIEN);
+          if (destinations.length === 0) return null;
+          return (
+            <div key={groupe.id}>
+              {collapsed ? (
+                indexGroupe > 0 && <div className="my-2 border-t border-rail-border" aria-hidden="true" />
+              ) : (
+                <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
+                  {groupe.intertitre}
+                </p>
+              )}
+              {destinations.map(destination => {
+                const active = estActive(destination, pathname);
+                const Icone = destination.icone;
+                const nombre = compteurDe(destination.compteur);
+                const filSignale = destination.compteur === 'fil' && filIncomplet;
+
+                return (
+                  <Link
+                    key={destination.href}
+                    href={destination.href}
+                    onClick={onNavigate}
+                    aria-current={active ? 'page' : undefined}
+                    aria-label={
+                      collapsed
+                        ? filSignale
+                          ? `${destination.libelle} — ${LIBELLE_FIL_INCOMPLET}`
+                          : destination.libelle
+                        : undefined
+                    }
+                    data-appui={entreeAppuyee === destination.href ? 'oui' : undefined}
+                    onPointerDown={evenement => appuiDebut(destination.href, evenement)}
+                    onPointerUp={appuiFin}
+                    onPointerCancel={appuiFin}
+                    // Entrée active ([[D-488]], artefact Lien) : fond `rail-surface`
+                    // et barre de 3 px `rail-accent` (champagne, 5,8:1 sur
+                    // rail-surface), au lieu d'un aplat.
+                    className={`group/entree relative flex min-h-11 items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm transition duration-fast ease-lien focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                      collapsed ? 'justify-center' : ''
+                    } ${
+                      active
+                        ? 'bg-rail-surface font-semibold text-rail-foreground shadow-[inset_3px_0_0_var(--rail-accent)]'
+                        : 'text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
+                    }`}
+                  >
+                    <Icone aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} className="shrink-0" />
+                    {/* Le libellé passe à la ligne plutôt que d'être coupé :
+                        « Compléments alimentaires » dépasse les 252 px du rail
+                        déplié, et « Compléments aliment… » ne disait plus le
+                        rayon (H43). */}
+                    {collapsed ? (
+                      <span aria-hidden="true" className={CLASSES_INFOBULLE}>
+                        {destination.libelle}
+                      </span>
+                    ) : (
+                      <span className="min-w-0 flex-1 break-words leading-snug">{destination.libelle}</span>
+                    )}
+                    {filSignale && (
+                      // Le « ! » double le texte, jamais la couleur seule (A5-R1),
+                      // et se voit rail réduit comme déplié.
+                      <span
+                        className="shrink-0 rounded-full border border-rail-accent px-1.5 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
+                        title={LIBELLE_FIL_INCOMPLET}
+                        data-testid="fil-incomplet"
+                      >
+                        <span aria-hidden="true">!</span>
+                        {!collapsed && <span className="sr-only">{LIBELLE_FIL_INCOMPLET}</span>}
+                      </span>
+                    )}
+                    {!collapsed && nombre !== null && nombre > 0 && (
+                      <span
+                        className="shrink-0 rounded-full border border-rail-border px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
+                        title={libelleCompteur(destination.compteur, nombre)}
+                      >
+                        <span aria-hidden="true">{nombre}</span>
+                        <span className="sr-only">{libelleCompteur(destination.compteur, nombre)}</span>
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
+      {commandes && commandes.length > 0 && (
+        // Pied de rail ([[D-486]] §2) : chaque commande nomme sa cible.
+        <div className="mt-auto space-y-1 border-t border-rail-border pt-3">
+          {commandes.map(commande => {
+            const Icone = commande.icone;
             return (
-              <Link
-                key={`${item.href}-${item.label}`}
-                href={item.href}
-                onClick={onNavigate}
-                aria-current={active ? 'page' : undefined}
-                aria-label={
-                  collapsed
-                    ? item.badge === 'fil' && filIncomplet
-                      ? `${item.label} — ${LIBELLE_FIL_INCOMPLET}`
-                      : item.label
-                    : undefined
-                }
-                className={`group flex min-h-11 items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+              <button
+                key={commande.libelle}
+                ref={commande.refBouton}
+                type="button"
+                onClick={commande.onClick}
+                aria-expanded={commande.ariaExpanded}
+                aria-label={collapsed ? commande.libelle : undefined}
+                data-appui={entreeAppuyee === commande.libelle ? 'oui' : undefined}
+                onPointerDown={evenement => appuiDebut(commande.libelle, evenement)}
+                onPointerUp={appuiFin}
+                onPointerCancel={appuiFin}
+                className={`group/entree relative flex min-h-11 w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left text-sm text-rail-muted-foreground transition duration-fast ease-lien hover:bg-rail-surface hover:text-rail-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
                   collapsed ? 'justify-center' : ''
-                } ${
-                  active
-                    ? 'bg-solar-500/[.12] font-semibold text-rail-foreground shadow-[inset_3px_0_0_var(--rail-accent)]'
-                    : item.tag
-                      ? 'text-rail-muted-foreground opacity-80 hover:bg-rail-surface hover:text-rail-foreground hover:opacity-100'
-                      : 'text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
                 }`}
               >
-                <Icon
-                  aria-hidden="true"
-                  size={19}
-                  strokeWidth={2}
-                  className={`shrink-0 ${active ? '' : 'opacity-85'}`}
-                />
-                {/* Le libellé passe à la ligne plutôt que d'être coupé : « Compléments
-                    alimentaires » (D-324 §4) dépasse les 252 px du rail déplié, et
-                    « Compléments aliment… » ne disait plus le rayon (H43). */}
-                {!collapsed && <span className="min-w-0 flex-1 break-words leading-snug">{item.label}</span>}
-                {item.badge === 'fil' && filIncomplet && (
-                  // Le « ! » double le texte, jamais la couleur seule (A5-R1),
-                  // et se voit rail réduit comme déplié.
-                  <span
-                    className="shrink-0 rounded-full border border-rail-accent px-1.5 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
-                    title={LIBELLE_FIL_INCOMPLET}
-                    data-testid="fil-incomplet"
-                  >
-                    <span aria-hidden="true">!</span>
-                    {!collapsed && <span className="sr-only">{LIBELLE_FIL_INCOMPLET}</span>}
+                <Icone aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} className="shrink-0" />
+                {collapsed ? (
+                  <span aria-hidden="true" className={CLASSES_INFOBULLE}>
+                    {commande.libelle}
                   </span>
+                ) : (
+                  <span className="min-w-0 flex-1 break-words leading-snug">{commande.libelle}</span>
                 )}
-                {(() => {
-                  const compteur = compteurBadge(item.badge);
-                  return !collapsed && compteur !== null && compteur > 0 ? (
-                    <span
-                      className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent"
-                      title={libelleCompteur(item.badge, compteur)}
-                    >
-                      <span aria-hidden="true">{compteur}</span>
-                      <span className="sr-only">{libelleCompteur(item.badge, compteur)}</span>
-                    </span>
-                  ) : null;
-                })()}
-                {!collapsed && item.tag && (
-                  <span className="shrink-0 rounded-md border border-rail-border px-1.5 py-0.5 text-2xs text-rail-muted-foreground">
-                    {item.tag}
-                  </span>
-                )}
-              </Link>
+              </button>
             );
           })}
         </div>
-      ))}
+      )}
     </nav>
   );
 }

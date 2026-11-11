@@ -211,7 +211,9 @@ test.describe('Praticien Dashboard', () => {
       // être affiché : la navigation basse (LOT-03) le remplace.
       await expect(page.getByRole('button', { name: 'Ouvrir la navigation' })).toBeHidden();
 
-      const bottomNav = page.locator('nav[aria-label="Navigation principale"]');
+      // Le rail porte le même nom (T-10 de D-488) mais n'est pas rendu sous
+      // 1 024 px : `:visible` désigne la barre basse.
+      const bottomNav = page.locator('nav[aria-label="Navigation principale"]:visible');
       await expect(bottomNav).toBeVisible();
       await expect(bottomNav.locator('a[href="/dashboard"]:visible')).toBeVisible();
       // SP-TRAJ LOT-04 : « Fiches » ouvre la porte d'entrée trajectoire.
@@ -457,5 +459,68 @@ test.describe('Praticien Dashboard', () => {
     } finally {
       process.env.NEXTAUTH_SECRET = originalSecret;
     }
+  });
+});
+
+// RAIL PRATICIEN EN TROIS ÉTATS (D-486, lot PRA-1 de la refonte Lien) :
+// escamoté, il quitte le clavier et l'arbre d'accessibilité, le focus passe à
+// « Afficher la navigation », le choix survit au rechargement ; la réouverture
+// reste atteignable à 200 % ; les vues rapides ont quitté l'en-tête (D-484).
+test.describe('rail praticien escamotable', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'Desktop Chromium', 'rail latéral : bureau uniquement');
+    await page.context().addCookies([await praticienSessionCookie(PRATICIEN_EMAIL)]);
+  });
+
+  test('masquer, recharger, afficher : le rail sort du clavier et le focus suit la commande', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/dashboard');
+
+    const rail = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(rail).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Vues rapides' })).toHaveCount(0);
+    await expect(rail.getByRole('link', { name: 'Le Fil du jour' })).toHaveAttribute('aria-current', 'page');
+
+    await rail.getByRole('button', { name: 'Masquer la navigation' }).click();
+    const afficher = page.getByRole('button', { name: 'Afficher la navigation' });
+    await expect(afficher).toBeFocused();
+    // Hors de l'arbre d'accessibilité et du parcours clavier.
+    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Paramètres' })).toHaveCount(0);
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest('#rail-praticien')))).toBe(false);
+
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Afficher la navigation' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Afficher la navigation' }).click();
+    const railRouvert = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(railRouvert).toBeVisible();
+    await expect(railRouvert.getByRole('button', { name: 'Masquer la navigation' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Afficher la navigation' })).toHaveCount(0);
+  });
+
+  test('réouverture atteignable à 200 % (1 024 × 576 px CSS)', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 576 });
+    await page.goto('/dashboard');
+    await page.getByRole('navigation', { name: 'Navigation principale' })
+      .getByRole('button', { name: 'Masquer la navigation' })
+      .click();
+
+    const afficher = page.getByRole('button', { name: 'Afficher la navigation' });
+    await expect(afficher).toBeInViewport();
+    const boite = await afficher.boundingBox();
+    expect(boite?.height).toBeGreaterThanOrEqual(44);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true);
+  });
+
+  test('une fiche allume « Fiche-trajectoire », et elle seule', async ({ page }) => {
+    await page.goto('/dashboard/patients/PAT_SEED_01');
+    const rail = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(rail.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(rail.getByRole('link', { name: 'Fiche-trajectoire' })).toHaveAttribute('aria-current', 'page');
   });
 });

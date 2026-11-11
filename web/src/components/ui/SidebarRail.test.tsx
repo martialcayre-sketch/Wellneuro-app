@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { X } from 'lucide-react';
 import { SidebarRail } from './SidebarRail';
 
 // PREMIER BANC DU RAIL, et il comble un trou daté.
@@ -43,12 +44,12 @@ describe('SidebarRail — le rayon Patients', () => {
     expect(lien.getAttribute('href')).toBe('/dashboard/patients');
   });
 
-  it('il figure dans « La Spirale », pas dans l’héritage 4.0', () => {
+  it('il figure dans « Travail » (D-487), pas dans l’héritage 4.0', () => {
     const { container } = rendreSur('/dashboard');
 
     // Le groupe se lit par son étiquette, et l'item ne porte PAS le tag « 4.0 »
     // — c'est ce tag qui grise les entrées d'héritage.
-    expect(within(container).getByText('La Spirale')).toBeTruthy();
+    expect(within(container).getByText('Travail')).toBeTruthy();
     const lien = within(container).getByRole('link', { name: 'Patients' });
     expect(lien.textContent).not.toContain('4.0');
   });
@@ -76,12 +77,11 @@ describe('SidebarRail — le rayon Patients', () => {
   });
 });
 
-describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => {
+describe('SidebarRail — quatre groupes (D-487), sans « Héritage 4.0 » (D-324)', () => {
   const ORDRE = [
     'Le Fil du jour',
     'Patients',
     'Fiche-trajectoire',
-    'Comptes du cabinet',
     'Consultation copilote',
     'Agenda & consultations',
     'Correspondance',
@@ -92,6 +92,7 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     'Analyses biologiques',
     'Connaissances',
     'Atelier corpus',
+    'Comptes du cabinet',
     'Paramètres',
   ];
 
@@ -104,13 +105,29 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     }
   });
 
-  it('trois groupes, quinze entrées, dans l’ordre décidé', () => {
+  it('quatre groupes (T-01 à T-04), quinze entrées, dans l’ordre décidé', () => {
     const { container } = rendreSur('/dashboard');
+    const ui = within(container);
 
-    expect(within(container).getByText('La Spirale')).toBeTruthy();
-    expect(within(container).getByText('Bibliothèque')).toBeTruthy();
-    expect(within(container).getByText('Réglages')).toBeTruthy();
-    expect(within(container).getAllByRole('link').map(l => l.textContent?.trim())).toEqual(ORDRE);
+    const intertitres = ['Travail', 'Bibliothèque', 'Ateliers', 'Cabinet'].map(t => ui.getByText(t));
+    // Dans l'ordre du document, chacun avant les entrées de son groupe.
+    for (let i = 1; i < intertitres.length; i++) {
+      expect(intertitres[i - 1].compareDocumentPosition(intertitres[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(ui.queryByText('La Spirale')).toBeNull();
+    expect(ui.queryByText('Réglages')).toBeNull();
+    expect(ui.getAllByRole('link').map(l => l.textContent?.trim())).toEqual(ORDRE);
+  });
+
+  it('les entrées se rangent sous leur intertitre', () => {
+    const { container } = rendreSur('/dashboard');
+    const groupeDe = (libelle: string) =>
+      within(container).getByRole('link', { name: libelle }).parentElement?.querySelector('p')?.textContent;
+    expect(groupeDe('Confiance & droits')).toBe('Travail');
+    expect(groupeDe('Connaissances')).toBe('Bibliothèque');
+    expect(groupeDe('Atelier corpus')).toBe('Ateliers');
+    expect(groupeDe('Comptes du cabinet')).toBe('Cabinet');
+    expect(groupeDe('Paramètres')).toBe('Cabinet');
   });
 
   it('un libellé long passe à la ligne au lieu d’être coupé (« Compléments aliment… », H43)', () => {
@@ -130,6 +147,10 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
     expect(ui.queryByRole('link', { name: 'Synthèse IA' })).toBeNull();
     expect(ui.queryByRole('link', { name: 'Biologie fonctionnelle' })).toBeNull();
     expect(ui.queryByRole('link', { name: 'Bibliothèque' })).toBeNull();
+    // Ni l'atelier des règles ni les positions d'expert tant que leur garde est
+    // fermée (D-487 §3).
+    expect(ui.queryByRole('link', { name: /Règles|règles/ })).toBeNull();
+    expect(ui.queryByRole('link', { name: /Positions d.expert/ })).toBeNull();
   });
 
   it('un seul item actif sur chacun des rayons et des entrées déplacées', () => {
@@ -142,6 +163,11 @@ describe('SidebarRail — le groupe « Héritage 4.0 » retiré (D-324)', () => 
       '/dashboard/corpus',
       '/dashboard/agenda',
       '/dashboard/droits',
+      '/dashboard/cabinet',
+      '/dashboard/parametres',
+      '/dashboard/copilote',
+      '/dashboard/correspondance',
+      '/dashboard/trajectoires',
     ]) {
       const { container } = rendreSur(chemin);
       const actifs = within(container)
@@ -216,5 +242,89 @@ describe('SidebarRail — le Fil incomplet se voit (D-268 §6, contre-revue Code
     expect(
       within(container).getByRole('link', { name: 'Le Fil du jour — comptes rendus biologiques à lire non vérifiés' }),
     ).toBeTruthy();
+  });
+});
+
+describe('SidebarRail — Lien : nom, marque, entrée active (PRA-1)', () => {
+  it('le rail est nommé « Navigation principale » (T-10)', () => {
+    rendreSur('/dashboard');
+    expect(screen.getByRole('navigation', { name: 'Navigation principale' })).toBeTruthy();
+  });
+
+  it('la marque est Empreinte, sur la nuit, sans « Horizon 5.0 » ni initiales', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    const { container } = render(<SidebarRail collapsed={false} brand />);
+    expect(container.querySelector('[data-tone="night"]')?.textContent).toBe('Wellneuro');
+    expect(container.textContent).not.toMatch(/Horizon|WN/);
+  });
+
+  it('réduit, la marque garde son nom pour les lecteurs d’écran', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    const { container } = render(<SidebarRail collapsed brand />);
+    const nom = container.querySelector('[data-tone="night"] .sr-only');
+    expect(nom?.textContent).toBe('Wellneuro');
+  });
+
+  it('l’entrée active : fond rail-surface et barre rail-accent, plus d’aplat ni de palette Spirale', () => {
+    const { container } = rendreSur('/dashboard/agenda');
+    const actif = within(container).getByRole('link', { name: 'Agenda & consultations' });
+    expect(actif.className).toMatch(/\bbg-rail-surface\b/);
+    expect(actif.className).toContain('var(--rail-accent)');
+    expect(container.innerHTML).not.toMatch(/bg-rail-primary|solar-/);
+  });
+
+  it('icônes au trait Lien (1,75)', () => {
+    const { container } = rendreSur('/dashboard');
+    const traits = [...container.querySelectorAll('a svg')].map(svg => svg.getAttribute('stroke-width'));
+    expect(traits.length).toBe(15);
+    expect(new Set(traits)).toEqual(new Set(['1.75']));
+  });
+});
+
+describe('SidebarRail — rail réduit en icônes (D-486 §2)', () => {
+  function rendreReduit(chemin = '/dashboard') {
+    pathnameMock.mockReturnValue(chemin);
+    return render(<SidebarRail collapsed />);
+  }
+
+  it('chaque entrée garde son nom accessible, et le libellé est rendu en infobulle', () => {
+    const { container } = rendreReduit();
+    const lien = within(container).getByRole('link', { name: 'Consultation copilote' });
+    const infobulle = lien.querySelector('span[aria-hidden="true"]');
+    expect(infobulle?.textContent).toBe('Consultation copilote');
+    // L'infobulle paraît au survol, au focus clavier et à l'appui du doigt.
+    expect(infobulle?.className).toMatch(/group-hover\/entree:block/);
+    expect(infobulle?.className).toMatch(/group-focus-visible\/entree:block/);
+    expect(infobulle?.className).toMatch(/group-data-\[appui=oui\]\/entree:block/);
+  });
+
+  it('Échap masque les infobulles ; le prochain mouvement les rend', () => {
+    const { container } = rendreReduit();
+    const nav = within(container).getByRole('navigation', { name: 'Navigation principale' });
+    expect(nav.getAttribute('data-infobulles')).toBeNull();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(nav.getAttribute('data-infobulles')).toBe('non');
+    fireEvent.pointerMove(nav);
+    expect(nav.getAttribute('data-infobulles')).toBeNull();
+  });
+
+  it('l’appui du doigt montre le libellé de l’entrée pressée', () => {
+    const { container } = rendreReduit();
+    const lien = within(container).getByRole('link', { name: 'Patients' });
+    fireEvent.pointerDown(lien, { pointerType: 'touch' });
+    expect(lien.getAttribute('data-appui')).toBe('oui');
+  });
+
+  it('les commandes du pied gardent leur nom, réduites comme dépliées', () => {
+    pathnameMock.mockReturnValue('/dashboard');
+    const commandes = [
+      { libelle: 'Étendre la navigation', icone: X, onClick: () => {}, ariaExpanded: false },
+      { libelle: 'Masquer la navigation', icone: X, onClick: () => {} },
+    ];
+    const { container, rerender } = render(<SidebarRail collapsed commandes={commandes} />);
+    expect(within(container).getByRole('button', { name: 'Étendre la navigation' }).getAttribute('aria-expanded')).toBe('false');
+    expect(within(container).getByRole('button', { name: 'Masquer la navigation' })).toBeTruthy();
+    rerender(<SidebarRail collapsed={false} commandes={commandes} />);
+    expect(within(container).getByRole('button', { name: 'Masquer la navigation' })).toBeTruthy();
   });
 });
