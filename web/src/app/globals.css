@@ -306,10 +306,12 @@
    * SOUS la barre : constaté au lot COM-0 sur « Retour au présent » de la
    * lecture datée (e2e/lecture-datee-reflow.spec.ts, iPhone 13), où l'appui
    * tombait sur « Synthèses ». La réserve garde la cible au-dessus de la
-   * barre (WCAG 2.4.11, focus non masqué). */
+   * barre (WCAG 2.4.11, focus non masqué). Elle ajoute la zone de sécurité
+   * basse : BarreBasse la porte en padding sous `viewport-fit=cover`, et sur
+   * un iPhone à encoche la barre dépasse alors 5 rem (revue wn-reviewer). */
   @media (max-width: 767px) {
     html {
-      scroll-padding-bottom: 5rem;
+      scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
     }
   }
 }

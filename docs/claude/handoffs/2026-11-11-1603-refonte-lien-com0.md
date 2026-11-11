@@ -79,6 +79,14 @@ Lot COM-0 du socle (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/soc
   - Les icônes `text-accent` restent à 3,2:1, ce qui suffit pour un élément graphique.
 - **Écrans qui citent encore les palettes Spirale par leur nom** (`indigo-600`, `solar-ink`, `mint-ink`, `copper-ink`, `forest-600`, `night-*`) : ils gardent leur ancienne teinte jusqu'à leur lot.
 - **`SidebarRail`** active encore son entrée par `rail-primary` (aplat pétrole). L'artefact veut `rail-surface` et une barre `rail-accent` : c'est le travail du lot PRA-1.
+- **Revue `wn-reviewer` sur `400e9e91` : GO.** Son mineur n°1 est corrigé dans ce lot : la réserve de défilement ajoute `env(safe-area-inset-bottom)`, car la barre basse patient atteint environ 99 px sur un iPhone à encoche. Les autres mineurs partent aux lots :
+  - **PRA-1** : l'entrée active de `MobileBottomNav` (pastille pétrole sur `rail-surface`, 1,5:1), à doter d'un filet `rail-accent` ; la marque du rail praticien (« La Spirale / Horizon 5.0 »), à remplacer par `EmpreinteMarque tone="night"`.
+  - **PAT** :
+    - barre de progression de `GenericQuestionnaire` (argile sur sauge, 2,7:1, doublée par le texte) ;
+    - halo cuivre codé en dur dans `PatientJourneyProgress.tsx:49` ;
+    - raccord des jetons `--rail-*` et `w-nav-rail-compact` du rail patient, qui demandera d'amender `RailMonEspace.test.tsx:348` et `autresEspaces.test.tsx:247` (ils interdisent `rail-` côté patient).
+  - **PRA et PAT** : icônes de statut `text-accent`, à 2,9:1 sur le canvas ; contour des champs encore en `border-border`, à raccorder à `control-border`.
+  - Tests suggérés, non écrits : une garde de parité des `--rail-*` entre les thèmes et des jumeaux RGB ; une capture de `not-found` et de `global-error`.
 
 ## Prochaine action exacte
 

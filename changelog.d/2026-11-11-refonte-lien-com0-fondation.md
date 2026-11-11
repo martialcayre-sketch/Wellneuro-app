@@ -8,8 +8,8 @@ Lot 1 du cadrage v3 §18. C'est le premier lot de code de la refonte. Il raccord
   - l'argile en accent décoratif ;
   - le succès assombri en `#166534`.
 - **Menu latéral.** Il change selon le rôle :
-  - patient : sauge claire, avec la forme réduite à libellés `rail-patient-compact` (13 rem) ;
-  - praticien : nuit pétrole, en aplat uni.
+  - praticien : nuit pétrole, en aplat uni ;
+  - patient : sauge claire, avec la forme réduite à libellés `rail-patient-compact` (13 rem). Ces jetons sont seulement définis : le rail patient ne les consomme pas encore, il le fera dans son lot PAT.
 - **Nouveaux jetons.** `accent-ink`, `control-border`, `voice-patient`, `voice-practitioner`, les durées et la courbe `ease-lien`, ainsi que les utilitaires Tailwind qui les servent (`text-accent-ink`, `border-control-border`, `bg-voice-*`, `w-nav-rail-compact`, `duration-*`, `ease-lien`, `font-marque`).
 - **Palettes Spirale.** Elles restent définies : les écrans qui les citent par leur nom migrent dans leurs lots.
 - **Polices.** Lora est chargée par `next/font` pour les titres patient et le nom de la marque. Le corps patient passe en Instrument Sans. Bricolage Grotesque et Albert Sans ne sont plus chargées : aucun écran ne les citait.
@@ -18,7 +18,7 @@ Lot 1 du cadrage v3 §18. C'est le premier lot de code de la refonte. Il raccord
   - la provenance et la licence Lucide ;
   - le favicon au petit format.
 - **Icônes.** Le trait Lucide de 1,75 px est exporté sous le nom `TRAIT_ICONE`. `PanneauSuperpose` l'adopte ; son surtitre passe en `text-accent-ink`.
-- **Barre basse.** Sous 768 px, `html` réserve `scroll-padding-bottom: 5rem`. Un élément amené à l'écran ne finit plus sous la barre basse fixe. Le défaut a été vu par l'E2E `lecture-datee-reflow` (iPhone 13), une fois la hauteur de la page modifiée par les nouvelles polices.
+- **Barre basse.** Sous 768 px, `html` réserve `scroll-padding-bottom`, soit 5 rem plus la zone de sécurité basse. Un élément amené à l'écran ne finit plus sous la barre basse fixe. Le défaut a été vu par l'E2E `lecture-datee-reflow` (iPhone 13), une fois la hauteur de la page modifiée par les nouvelles polices.
 - **Contraste.** Aucun libellé ne reste sur l'argile :
   - les boutons sélectionnés de `DossierDeuxVoixView` et de `ObjectifNegociePanel` passent en `bg-primary text-primary-foreground` ;
   - le lien d'accent de `SynthesePanel` passe en `text-accent-ink`.
