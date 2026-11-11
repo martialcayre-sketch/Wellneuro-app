@@ -6,7 +6,6 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 import {
   CLAIM_ID_RE,
   VERSION_CLAIM_RE,
-  claimValideAuCorpus,
   claimsNonSupplantesAuCorpus,
   claimsValidesAuCorpus,
   cleClaim,
@@ -92,20 +91,6 @@ describe('claimsValidesAuCorpus', () => {
   it('ne sélectionne aucun contenu de claim', async () => {
     await claimsValidesAuCorpus([{ claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' }]);
     expect(sql()).not.toContain('texte_normalise');
-  });
-});
-
-describe('claimValideAuCorpus', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('rend vrai sur le couple EXACT, faux sur une autre version', async () => {
-    prisma.$queryRaw.mockResolvedValue([{ claim_id: 'WN-CL-2026-001', version_claim: 'v1.0' }]);
-    expect(await claimValideAuCorpus({ claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' })).toBe(true);
-
-    prisma.$queryRaw.mockResolvedValue([]);
-    expect(await claimValideAuCorpus({ claimId: 'WN-CL-2026-001', versionClaim: 'v2.0' })).toBe(false);
   });
 });
 

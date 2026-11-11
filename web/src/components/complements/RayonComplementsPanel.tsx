@@ -31,6 +31,14 @@ type FacetteCle = 'qualite' | 'donneesManquantes' | 'statut';
 // évaluée » servirait les 140 148 fiches en franchissant le mur d'entrée.
 type FacetteGrisee = 'grade' | 'biodisponibilite' | 'compatibilite' | 'cumul' | 'interactions';
 
+// Deux formes écrites en entier (arbitrage du 2026-11-11, t76) : l'accord du
+// pluriel porte sur toute la phrase, pas sur un « (s) ».
+function mentionReglesEcartees(nombre: number): string {
+  return nombre === 1
+    ? '1 règle écartée : son claim fondateur ne satisfait pas les critères de validité du corpus. À réviser dans l’atelier des règles.'
+    : `${nombre} règles écartées : leurs claims fondateurs ne satisfont pas les critères de validité du corpus. À réviser dans l’atelier des règles.`;
+}
+
 const LABEL_FACETTE: Record<FacetteCle | FacetteGrisee, string> = {
   qualite: 'Qualité de formulation',
   biodisponibilite: 'Biodisponibilité',
@@ -343,6 +351,24 @@ export function RayonComplementsPanel() {
           <p className="mt-2 text-xs text-status-warning">
             Aucune intention active ne correspond à « {intention} ».
           </p>
+        )}
+        {catalogue && catalogue.reglesEcartees.length > 0 && (
+          // Règles validées que la Bibliothèque n'applique plus : leur claim
+          // fondateur n'est pas admissible ([[D-140]], [[D-479]] §2, t76).
+          // Elles ne fondent aucune dimension des fiches — l'écran les NOMME
+          // pour que le praticien sache qu'elles existent et doivent être revues.
+          <div className="mt-2 text-xs text-status-warning">
+            <p>{mentionReglesEcartees(catalogue.reglesEcartees.length)}</p>
+            <ul className="mt-1 list-disc pl-5">
+              {catalogue.reglesEcartees.map((regle) => (
+                <li key={regle.regleId}>
+                  {regle.claim
+                    ? `Claim « ${regle.claim.claimId} » (${regle.claim.versionClaim})`
+                    : 'Aucun claim fondateur renseigné'}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Tri mono-dimension */}
