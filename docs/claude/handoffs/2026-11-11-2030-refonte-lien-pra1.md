@@ -37,6 +37,7 @@ Lot PRA-1 du plan praticien (`docs/claude/propositions/2026-11-11-refonte-lien-e
 - **T1** (`cd web && npm run check`) vert : type-check, lint, `test:court14` (1718 passés, 21 ignorés), `test:changed` (56 passés), anti-secrets, crochets et contrôles de registre.
 - **T2** (`npm run test:worktree -- --fast`) vert : Vitest 16 805 passés (50 ignorés) ; Playwright, build de production, Chromium et WebKit : 360 passés, 26 ignorés, 0 échec — dont le bloc « rail praticien escamotable » et `mode-consultation.spec.ts` (mode consultation intact).
 - **Constat à l'écran local** (build de production sur la base éphémère de T2, patients fictifs Sophie Nicola, Jennifer Martin, Michel Dogné), captures Chromium : bureau 1 280 px déplié (groupes Travail et Bibliothèque, entrée active en `rail-surface` et barre champagne, marque Empreinte) ; réduit en icônes, infobulle « Atelier corpus » au survol ; escamoté à 1 024 × 576 (200 %) : « Afficher la navigation » dans l'en-tête, colonne de contenu pleine largeur, pas de défilement horizontal ; tiroir 900 px avec les quatre intertitres ; téléphone 390 px : « Fiches » actif sur une fiche, filet champagne, feuille « Plus » par groupes. Captures non versées.
+- **CI #1997, premier passage (c13b7ed7)** : 355 passés, 5 échecs, tous au pixel dans `e2e/visual.spec.ts` (fiche-cockpit bureau et iPhone, tiroir des 12 besoins bureau, onglet Trajectoire bureau et iPhone). Références régénérées par le workflow `visual-baselines` sur la branche, relues une à une : seuls le rail, ses groupes, la marque, l'en-tête sans vues rapides et la barre basse changent ; le contenu des écrans est identique ; les références patient sont inchangées. Cinq images commises dans `web/e2e/visual.spec.ts-snapshots/`.
 - **Relecture `ui-ux-pro-max`** (lecture seule, `.claude/skills/ui-ux-pro-max/data/ux-guidelines.csv`, lignes du fichier) :
   - l.4 « Active State » : respectée, l'entrée courante se lit par fond, barre et graisse, et `aria-current` ;
   - l.29 « Focus States » et l.42 « Keyboard Navigation » : anneau `rail-focus-ring` sur chaque entrée et commande ; rail escamoté hors du parcours ; focus déplacé vers la commande visible ;
@@ -50,7 +51,7 @@ Lot PRA-1 du plan praticien (`docs/claude/propositions/2026-11-11-refonte-lien-e
 
 - **Lien d'évitement praticien** (`ux-guidelines.csv` l.46, « Skip Links ») : le shell praticien n'en a pas ; « Aller au contenu » n'est inscrit à [[D-488]] que pour le patient. L'ajouter demande un micro-lot `DOC-n` (texte T-nn praticien) avant un lot PRA.
 - **Éclair au chargement** : l'état mémorisé (réduit, escamoté) est lu après l'hydratation ; le rail paraît déplié une fraction de seconde. Comportement préexistant pour `wn-rail-expanded`, étendu à l'escamotage.
-- **Références visuelles** (`e2e/visual.spec.ts`) : les captures praticien changent (rail, en-tête, barre basse) ; à régénérer par le workflow `visual-baselines` si la CI les signale.
+- **Rail déplié à 900 px de haut** : il défile en interne ; « Cabinet » et le pied du rail (Réduire, Masquer) sont sous sa ligne de flottaison, atteignables au défilement et au clavier. Voulu (artefact : « le menu défile si sa hauteur ne suffit pas »), à revoir au prototype de l'étape 3 si la densité gêne.
 
 ## Prochaine action exacte
 
