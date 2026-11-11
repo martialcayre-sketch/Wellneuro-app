@@ -113,9 +113,24 @@ Clôture :
     de `export-dossier/masquage.test.ts`. La charge moyenne de la machine
     était à 44, à cause de suites concurrentes d'autres sessions.
   - Rejoué seul, `ProtocolMiniBuilder.test.tsx` est vert (94 tests).
-  - Aucun de ces fichiers n'est touché par le diff. T3 complet est à
-    rejouer machine moins chargée avant « prête » ; son verdict est consigné
-    en commentaire de la PR.
+  - 3e passage (charge moyenne 6 au départ, 18 à l'arrivée) : un seul
+    échec, encore un timeout à 5 s dans `ProtocolMiniBuilder.test.tsx`.
+  - Aucun de ces fichiers n'est touché par le diff, et
+    `ProtocolMiniBuilder` n'a pas changé depuis le 2026-10-25. C'est un
+    fichier jsdom lourd (12 s à lui seul), sensible à la charge.
+  - Le CI de la tête est vert, E2E compris. Le verdict final de T3 est
+    consigné en commentaire de la PR.
+- **Revue de tête** :
+  - CodeRabbit : statut « skipping » (moins de 10 étoiles), puis « Review
+    rate limited » à la demande manuelle.
+  - Copilot : quota présumé épuisé (`wn-revue-copilot --quota`, refus sur
+    #1942).
+  - PR-Agent : non probant (`wn-revue-pr-agent` rend 1 : « pruning diff »,
+    « Review coverage », runs sur commentaire concurrents).
+  - Dérogation D-448 : `wn-reviewer` remplace les robots. Son GO porte sur
+    `9aa1073`, et sur l'écart depuis `7d2e4d1`.
+  - Son P3 restant est corrigé : une assertion fixe le délai de 30 s du geste
+    individuel.
 
 - **`wn-reviewer`** sur 7d2e4d14b : GO avec corrections mineures, sans P1 ni
   P2.

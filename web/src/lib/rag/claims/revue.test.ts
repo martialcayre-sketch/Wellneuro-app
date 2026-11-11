@@ -776,6 +776,9 @@ describe('exclureDeLaRecherche — acte « exclusion_recherche » sur un claim V
       inchange: false,
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    // Même délai que le lot : un clic qui attend le verrou d'un lot en cours
+    // ne tombe pas en erreur technique au bout des 5 s par défaut.
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ timeout: 30_000 });
 
     const [appelLecture, appelMaj] = prisma.$queryRaw.mock.calls;
     expect(sqlDeAppel(appelLecture)).toContain('FOR UPDATE');
