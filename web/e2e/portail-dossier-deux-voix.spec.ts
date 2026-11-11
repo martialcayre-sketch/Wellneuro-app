@@ -31,6 +31,10 @@ import {
 } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
 
+// « Autres espaces » sous 1 024 px ; dès 1 024 px, rail servi, la même liste est
+// celle du rail « Mon espace » ([[D-483]] §2) : une seule des deux est visible.
+const LISTE_DES_ESPACES = /^(Autres espaces|Mon espace)$/;
+
 const PATIENT = {
   idPatient: 'PAT_SEED_01',
   email: 'sophie.nicola@fictif.wellneuro.fr',
@@ -74,7 +78,7 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
     // replié sans protocole, et après un retour anticipé — aurait livré un
     // écran que personne n'ouvre.
     const lien = page
-      .getByRole('navigation', { name: 'Autres espaces' })
+      .getByRole('navigation', { name: LISTE_DES_ESPACES })
       .getByRole('list', { name: 'Avec mon praticien' })
       .getByRole('link', { name: 'Ouvrir mon dossier à deux voix' });
     await expect(lien).toBeVisible();

@@ -190,7 +190,7 @@ describe('« Autres espaces » — groupes et ordre exacts (D-423 §2)', () => {
     const nav = await navApresSondes(fetchMock);
     await waitFor(() => expect(liensDe(nav)).toEqual(attendus(MAJEUR_BIBLIOTHEQUE)));
     expect(groupesDe(nav)).toEqual([
-      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']],
+      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir mon carnet alimentaire']],
       [
         'Ce que j’ai reçu',
         ['Consulter mon bilan', 'Ma bibliothèque', 'Courrier pour votre médecin', 'Courrier à remettre à votre médecin', 'Pour votre médecin'],
@@ -263,7 +263,7 @@ describe('« Autres espaces » — groupes et ordre exacts (D-423 §2)', () => {
   it('sondes fermées, bilan non consultable : « Au jour le jour » seul, aucune autre étiquette', async () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: false, sondesFermees: true });
     const nav = await navApresSondes(fetchMock);
-    expect(groupesDe(nav)).toEqual([['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']]]);
+    expect(groupesDe(nav)).toEqual([['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir mon carnet alimentaire']]]);
     for (const libelle of ['Ce que j’ai reçu', 'Ce que je transmets', 'Avec mon praticien']) {
       expect(screen.queryByText(libelle)).toBeNull();
     }
@@ -273,7 +273,7 @@ describe('« Autres espaces » — groupes et ordre exacts (D-423 §2)', () => {
     const fetchMock = monter({ age: 'majeur', dossierOuvert: true, bilanConsultable: true, sondesFermees: true });
     const nav = await navApresSondes(fetchMock);
     expect(groupesDe(nav)).toEqual([
-      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir Mon carnet alimentaire']],
+      ['Au jour le jour', ['Ouvrir mes rendez-vous de suivi', 'Ouvrir mon carnet alimentaire']],
       ['Ce que j’ai reçu', ['Consulter mon bilan']],
     ]);
   });

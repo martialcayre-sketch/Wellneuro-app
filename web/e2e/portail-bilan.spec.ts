@@ -20,6 +20,10 @@ import {
   closePrisma,
 } from './helpers/db';
 
+// « Autres espaces » sous 1 024 px ; dès 1 024 px, rail servi, la même liste est
+// celle du rail « Mon espace » ([[D-483]] §2) : une seule des deux est visible.
+const LISTE_DES_ESPACES = /^(Autres espaces|Mon espace)$/;
+
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
 // Ce que le praticien garde pour lui — jamais dans la page du patient.
@@ -66,7 +70,7 @@ test.describe('Portail — Mon bilan', () => {
     //    Il se range dans « Ce que j’ai reçu » ([[D-423]] §2).
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
     const lien = page
-      .getByRole('navigation', { name: 'Autres espaces' })
+      .getByRole('navigation', { name: LISTE_DES_ESPACES })
       .getByRole('list', { name: 'Ce que j’ai reçu' })
       .getByRole('link', { name: 'Consulter mon bilan' });
     await expect(lien).toBeVisible();
@@ -159,7 +163,7 @@ test.describe('Portail — Mon bilan', () => {
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
     await expect(
       page
-        .getByRole('navigation', { name: 'Autres espaces' })
+        .getByRole('navigation', { name: LISTE_DES_ESPACES })
         .getByRole('list', { name: 'Ce que j’ai reçu' })
         .getByRole('link', { name: 'Consulter mon bilan' }),
     ).toBeVisible();

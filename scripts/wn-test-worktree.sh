@@ -613,6 +613,11 @@ grep -q 'banc-etiquetage-lot-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc de l'étiquetage en lot."
 WN_ETIQUETAGE_LOT_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts > /dev/null < /dev/null \
   || die "banc de l'étiquetage en lot en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts\`, depuis web/)."
+# Le vrai écrivain de l'exclusion de la recherche, jusqu'au rayon (D-490).
+grep -q 'banc-exclusion-recherche-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'exclusion de la recherche."
+WN_EXCLUSION_RECHERCHE_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts > /dev/null < /dev/null \
+  || die "banc de l'exclusion de la recherche en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts\`, depuis web/)."
 grep -q 'banc-unicite-mesure-prisma.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc du client Prisma contre la garde anti-doublon."
 WN_BIO_ANNULATION_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-unicite-mesure-prisma.test.ts > /dev/null < /dev/null \

@@ -63,9 +63,9 @@ function servir({ trust = { ok: true, avantDeCommencerRequis: false }, assignati
   }));
 }
 
-async function rendre({ session = true, hub = false }: { session?: boolean; hub?: boolean } = {}) {
+async function rendre({ session = true, hub = false, rail = false }: { session?: boolean; hub?: boolean; rail?: boolean } = {}) {
   const resultat = render(
-    <FournisseurMenuPortail sessionOuverte={session}>
+    <FournisseurMenuPortail sessionOuverte={session} rail={rail}>
       <header>
         <MotSymbole />
         <BoutonMenuMonEspace />
@@ -189,7 +189,7 @@ describe('§2 à §4 — le panneau « Mon espace »', () => {
     expect(liens).toEqual([
       'Mon parcours',
       'Ouvrir mes rendez-vous de suivi',
-      'Ouvrir Mon carnet alimentaire',
+      'Ouvrir mon carnet alimentaire',
       'Consulter mon bilan',
       'Ma fiche de renseignements',
       'Ouvrir mon dossier à deux voix',
@@ -283,4 +283,40 @@ describe('§2 — sondes partagées avec le hub', () => {
     await waitFor(() => expect(motSymbole().closest('a')).toBeTruthy());
     expect(sondes.montages).toEqual({});
   });
+});
+
+describe('[[D-483]] §2 — « Autres espaces » sur le hub, rail servi', () => {
+  const autres = () => screen.getByRole('navigation', { name: 'Autres espaces' });
+
+  it('rail servi, dossier majeur : non rendu dès 1 024 px (`lg:hidden`), rendu au-dessous', async () => {
+    nav.pathname = '/portail/PAT_TEST/questionnaires';
+    servir();
+    await rendre({ hub: true, rail: true });
+    await waitFor(() => expect(autres().className.split(/\s+/)).toContain('lg:hidden'));
+    expect(autres().className.split(/\s+/)).not.toContain('hidden');
+  });
+
+  it('rail servi, garde en lecture : déjà retiré dès 1 024 px, sans saut à l’arrivée de la garde', async () => {
+    nav.pathname = '/portail/PAT_TEST/questionnaires';
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    await rendre({ hub: true, rail: true });
+    expect(autres().className.split(/\s+/)).toContain('lg:hidden');
+  });
+
+  for (const [cas, serveur, rail] of [
+    ['drapeau du rail fermé', {}, false],
+    ['dossier mineur (la garde du rail refuse)', { assignations: { statutAge: 'mineur' } }, true],
+    ['lecture des murs en échec', { trust: null }, true],
+  ] as const) {
+    it(`${cas} : « Autres espaces » reste à toute largeur`, async () => {
+      nav.pathname = '/portail/PAT_TEST/questionnaires';
+      servir(serveur as Serveur);
+      await rendre({ hub: true, rail });
+      await waitFor(() => expect(autres()).toBeTruthy());
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 0));
+      });
+      expect(autres().className).not.toMatch(/\blg:hidden\b/);
+    });
+  }
 });

@@ -51,7 +51,7 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json<CorpusClaimsApiResponse>({ ok: false, reason, error }, { status });
 }
 
-// GET /api/praticien/corpus/claims?statut=&source=&claim=&limit=&offset=
+// GET /api/praticien/corpus/claims?statut=&source=&claim=&exclu=&limit=&offset=
 export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiResponse>> {
   try {
     const session = await getServerSession(authOptions);
@@ -83,6 +83,13 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
       return echec('notebook_invalide', 'Libellé de notebook invalide.', 400);
     }
 
+    // [[D-490]] : seulement les claims exclus de la recherche. La marque ne se
+    // pose que sur un claim VALIDE : le filtre n'a de sens que dans cet onglet.
+    const excluBrut = (searchParams.get('exclu') ?? '').trim();
+    if (excluBrut && (excluBrut !== '1' || statutBrut !== 'VALIDE')) {
+      return echec('exclu_invalide', 'Le filtre « exclus de la recherche » ne vaut que pour les claims validés.', 400);
+    }
+
     const limitBrut = Number(searchParams.get('limit') ?? '50');
     const offsetBrut = Number(searchParams.get('offset') ?? '0');
     if (!Number.isInteger(limitBrut) || !Number.isInteger(offsetBrut) || limitBrut < 1 || offsetBrut < 0) {
@@ -99,6 +106,7 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
         sourceId: sourceBrut || undefined,
         sourceIds,
         ...(claimId ? { claimId } : {}),
+        ...(excluBrut ? { excluRecherche: true as const } : {}),
         limit: limitBrut,
         offset: offsetBrut,
       }),
