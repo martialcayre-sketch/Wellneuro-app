@@ -103,7 +103,7 @@ export async function lireRayonFichesConseils(): Promise<LigneRayonFiche[]> {
 
 export type ClaimCite = {
   cle: string;
-  /** `null` : le claim n'est pas VALIDE au corpus aujourd'hui (ou n'existe pas). */
+  /** `null` : le claim n'est pas VALIDE au corpus aujourd'hui, est supplanté, ou n'existe pas ([[D-478]]). */
   texte: string | null;
   /** Une réserve de sécurité que les précautions doivent porter (§6). */
   reserveAttendue: boolean;

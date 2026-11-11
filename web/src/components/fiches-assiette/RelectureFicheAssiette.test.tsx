@@ -105,8 +105,10 @@ describe('RelectureFicheAssiette — la surface de relecture précède l’attes
     expect(within(adaptation).getByText('Repris tel quel de la source')).toBeTruthy();
     expect(within(adaptation).getByText('Reformulé depuis 2 claims')).toBeTruthy();
     expect(adaptation.textContent).toContain('Claim synthétique.');
-    // Un claim qui n'est plus VALIDE est nommé, jamais un blanc (`DC-24`).
-    expect(adaptation.textContent).toContain('ce claim n’est pas VALIDE au corpus aujourd’hui.');
+    // Un claim qui ne satisfait plus les critères (non VALIDE ou supplanté,
+    // [[D-478]]) est nommé, jamais un blanc (`DC-24`).
+    expect(adaptation.textContent).toContain('ce claim ne satisfait pas les critères de validité du corpus aujourd’hui.');
+    expect(adaptation.textContent).not.toContain('n’est pas VALIDE');
 
     const reserves = screen.getByRole('region', { name: 'Réserves de sécurité attendues' });
     expect(reserves.textContent).toContain('Réserve synthétique non citée.');
@@ -115,6 +117,19 @@ describe('RelectureFicheAssiette — la surface de relecture précède l’attes
       ['portée par une précaution', 'success'],
       ['portée par aucune précaution', 'danger'],
     ]);
+  });
+
+  it('une réserve attendue sans texte (non VALIDE ou supplantée) est nommée au caractère près (D-478)', async () => {
+    const base = detail();
+    simulerFetch([
+      detail({
+        claimsCites: base.claimsCites.map(c => (c.cle === 'WN-CL-0288-014::v1.0' ? { ...c, texte: null } : c)),
+      }),
+    ]);
+    render(<RelectureFicheAssiette idVersion="versionbanc2" onFermer={() => {}} onOuvrirVersion={() => {}} />);
+    const reserves = await screen.findByRole('region', { name: 'Réserves de sécurité attendues' });
+    expect(within(reserves).getByText('Ce claim ne satisfait pas les critères de validité du corpus aujourd’hui.')).toBeTruthy();
+    expect(reserves.textContent).not.toContain('n’est pas VALIDE');
   });
 
   it('valider exige la déclaration, arme puis confirme, envoie ce qui est affiché, et recharge', async () => {

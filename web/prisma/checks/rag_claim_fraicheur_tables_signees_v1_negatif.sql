@@ -244,9 +244,10 @@ BEGIN
     ('WN-CL-0316-016', 'v1.0', 'conduites', false),
     ('WN-CL-0316-006', 'v1.0', 'conduites', false),
     ('WN-CL-0316-029', 'v1.0', 'conduites', false),
-    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19) — onze
-    -- lignes, vingt claims, `exige_prescriptif` à `false` pour le motif écrit
-    -- dans `TABLE_EXIGE_PRESCRIPTIF`. Les quatre lignes en BROUILLON sont
+    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19 ;
+    -- re-signée par [[D-489]] sans la ligne antioxydante) — dix lignes,
+    -- dix-neuf claims, `exige_prescriptif` à `false` pour le motif écrit
+    -- dans `TABLE_EXIGE_PRESCRIPTIF`. Les trois lignes en BROUILLON sont
     -- épinglées comme les sept publiées : elles sont dans le périmètre haché,
     -- donc dans ce que la signature couvre. Hors du service n'est pas hors du
     -- périmètre.
@@ -266,7 +267,6 @@ BEGIN
     ('WN-CL-0289-004', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0290-005', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0291-011', 'v1.0', 'indications_assiettes', false),
-    ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false),
@@ -1114,8 +1114,9 @@ BEGIN
     ('WN-CL-0316-016', 'v1.0', 'conduites', false),
     ('WN-CL-0316-006', 'v1.0', 'conduites', false),
     ('WN-CL-0316-029', 'v1.0', 'conduites', false),
-    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19) — onze
-    -- lignes, vingt claims, `exige_prescriptif` à `false`. Les quatre lignes en
+    -- INDICATIONS D'ASSIETTE ([[D-236]], première signature, 2026-09-19 ;
+    -- re-signée par [[D-489]] sans la ligne antioxydante) — dix lignes,
+    -- dix-neuf claims, `exige_prescriptif` à `false`. Les trois lignes en
     -- BROUILLON sont épinglées comme les sept publiées : hors du service n'est
     -- pas hors du périmètre.
     ('WN-CL-0285-001', 'v1.0', 'indications_assiettes', false),
@@ -1134,7 +1135,6 @@ BEGIN
     ('WN-CL-0289-004', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0290-005', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0291-011', 'v1.0', 'indications_assiettes', false),
-    ('WN-CL-0292-003', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-009', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0293-011', 'v1.0', 'indications_assiettes', false),
     ('WN-CL-0294-002', 'v1.0', 'indications_assiettes', false),
@@ -2093,7 +2093,7 @@ BEGIN
   END IF;
 
   -- ── N14 — LA LIGNE `indications_assiettes` EST GARDÉE, ELLE AUSSI ────────
-  -- Vingt paires ([[D-225]]), même trou, même patron ; le claim muté,
+  -- Dix-neuf paires depuis [[D-489]] ([[D-225]]), même trou, même patron ; le claim muté,
   -- `WN-CL-0285-001`, n'est épinglé par aucune autre table.
   a_leve := false; msg := '';
   BEGIN
@@ -2123,7 +2123,7 @@ BEGIN
     RAISE EXCEPTION 'negatif N15: la ligne indications_biologie n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, vingt claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 599 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 15 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret, vingt claims de priorites, quatorze claims de conduites, deux claims de conflits de sources, huit claims de portes biologiques, dix-neuf claims d''indications d''assiette, vingt-neuf claims d''indications de biologie et 599 claims de fiches d''usage non exiges prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

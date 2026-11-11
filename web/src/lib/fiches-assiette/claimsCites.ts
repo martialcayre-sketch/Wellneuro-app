@@ -15,6 +15,15 @@
 // rougit s'ils divergent. `rag_corpus_claims` est hors du schéma Prisma, d'où
 // la requête brute ; le `unnest` apparie les couples position par position.
 //
+// ET NON SUPPLANTÉ ([[D-478]], t75). Après ce bloc commun, la même requête exige
+// `superseded_at IS NULL` — le prédicat de `claimsNonSupplantesAuCorpus` et le
+// critère de [[D-472]] §2 et [[D-476]] §2. Dans CETTE lecture, pas dans une
+// seconde : la validité et le texte restent sur la même ligne, et la décision
+// du responsable lit sous son client transactionnel. Un claim encore `VALIDE`
+// mais supplanté manque donc à la carte, et l'appelant le refuse comme tout
+// claim manquant (`claim_non_valide`) — du dépôt jusqu'au service au patient.
+// Aucune version plus récente n'est substituée à celle que la fiche cite.
+//
 // LE TEXTE NE SORT JAMAIS VERS UN JOURNAL. Il sert au contrôle des nombres, et
 // à la relecture du responsable (lot 6), dans l'application seulement.
 
@@ -46,9 +55,10 @@ export function clesCiteesDuContenu(contenu: ContenuFicheAssiette): string[] {
 }
 
 /**
- * Parmi les références données, celles qui sont VALIDE au corpus, chacune avec
- * son texte — par clé `claimId::versionClaim`. Une référence absente de la
- * carte n'est pas valide ; l'appelant n'en déduit rien de plus (`DC-24`).
+ * Parmi les références données, celles qui sont VALIDE au corpus et non
+ * supplantées, chacune avec son texte — par clé `claimId::versionClaim`. Une
+ * référence absente de la carte ne satisfait pas les critères de validité du
+ * corpus ; l'appelant n'en déduit rien de plus (`DC-24`).
  */
 export async function claimsValidesEtLeursTextes(
   references: readonly ReferenceClaim[],
@@ -69,6 +79,7 @@ export async function claimsValidesEtLeursTextes(
       AND EXISTS (
         SELECT 1 FROM public.rag_corpus_claim_sources AS s WHERE s.claim_pk = c.id
       )
+      AND c.superseded_at IS NULL
   `;
   return new Map(
     lignes.map(l => [cleClaim({ claimId: l.claim_id, versionClaim: l.version_claim }), l.texte_normalise]),

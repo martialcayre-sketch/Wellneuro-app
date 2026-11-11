@@ -1,7 +1,7 @@
 ---
 id: "LOT-17"
 titre: "BP-17 — Bibliothèque signée des options par hypothèse"
-statut: "cadrage (2026-11-11) — cinq réponses rendues le 2026-11-10 ; D-477 mergée (#1980) ; D-480 proposée ; découpage des PR à accepter (20261111-1131-c), aucune migration avant"
+statut: "cadrage accepté (2026-11-11) — D-480 et découpage en sept PR acceptés par arbitrage délégué (20261111-1131-c) ; confirmations de migration distinctes"
 dépend_de: "LOT-11, LOT-28"
 ---
 
@@ -10,8 +10,8 @@ dépend_de: "LOT-11, LOT-28"
 > **Fiche proposée le 2026-11-10, mise à jour le 2026-11-11.** Les cinq
 > questions du cadrage ont reçu leur réponse le 2026-11-10 (liste commune,
 > `20261110-1940-c` à `-1944-c`). La décision d'objet est `D-480`
-> (proposée) ; le découpage des PR attend l'accord du responsable
-> (`20261111-1131-c`). Le dépôt est public : cette fiche ne porte ni option, ni produit, ni dose, ni durée, ni
+> (acceptée par arbitrage délégué le 2026-11-11), avec le découpage en sept
+> PR (`20261111-1131-c`). Le dépôt est public : cette fiche ne porte ni option, ni produit, ni dose, ni durée, ni
 > précaution, ni contre-indication, ni libellé d'hypothèse. Ces contenus sont
 > de la main du responsable (porte 23, `DC-11`).
 
@@ -113,7 +113,18 @@ Autres choix rendus le 2026-11-10 (session de la file B) : deux tables au
 contrat de fraîcheur, `prescriptif` exigé de la seule source de dose ;
 cockpit sous drapeau éteint, avec sa ligne dans la trame de BP-26.
 
-## Découpage des PR (proposé le 2026-11-11, à accepter : `20261111-1131-c`)
+## Arbitrage du 2026-11-11
+
+À la demande du responsable (« tranche l'arbitrage »), l'assistant retient
+`D-480` avec ses trois points de forme (§1 à §3) et les sept PR ci-dessous.
+La séparation migration, structure, contrôles, surfaces et contenus permet
+de relire chaque étape et de constater la base avant le code consommateur.
+Les PR 2 et 3 peuvent avancer en parallèle après le merge de l'acceptation.
+L'écriture d'une migration ou la modification de `schema.prisma` restent
+soumises à une demande explicite et à une confirmation distincte
+(`AGENTS.md`) ; l'application passe par une release-db approuvée.
+
+## Découpage des PR (accepté le 2026-11-11 : `20261111-1131-c`)
 
 | # | PR | Dépend de | Porteur | Palier |
 |---|---|---|---|---|
@@ -146,6 +157,8 @@ levée.
 - Aucun lecteur de `creePar` ni de `validePar` (`D-459` §7) : BP-18a en
   décidera.
 - La D-xxx de BP-18a et la règle signée sont de la main du responsable.
-- Pas de `schema.prisma` ni de migration avant l'accord du responsable sur
-  `D-480` et sur le découpage (réponse `20261110-1941-c`).
+- L'accord sur `D-480` et le découpage est acquis ; aucune écriture de
+  migration ni modification de `schema.prisma` sans demande explicite et
+  confirmation distincte (`AGENTS.md`). Aucune application sans release-db
+  approuvée.
 - Rien au patient. Production en lecture seule, par conteneur, en agrégats.

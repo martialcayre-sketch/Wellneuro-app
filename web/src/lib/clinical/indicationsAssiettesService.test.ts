@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // LE BANC EXERCE LA TABLE RÉELLE, et ce choix est le cœur du dossier. Fabriquer
 // des lignes de fixture aurait prouvé que le service sait évaluer DES lignes ;
-// il n'aurait rien prouvé des ONZE qui sont signées. Ce qui est contrôlé ici,
+// il n'aurait rien prouvé des DIX qui sont signées. Ce qui est contrôlé ici,
 // ce sont les entrées — passations, anamnèse, date de naissance — et les
 // verdicts portent sur les vraies portes.
 //
@@ -246,14 +246,14 @@ describe('valide ET non supplanté — le critère du préflight de release-db (
 });
 
 describe('la jointure des deux `cleClaim` — tenue par ce cas, et par rien d’autre', () => {
-  it('le service interroge le corpus avec les VINGT couples de la table', async () => {
+  it('le service interroge le corpus avec les DIX-NEUF couples de la table', async () => {
     await evaluerAssiettesPourPatient('PAT001');
     const demandes = mockCorpus.claimsValidesAuCorpus.mock.calls[0][0] as ReadonlyArray<{
       claimId: string;
       versionClaim: string;
     }>;
     expect(demandes).toHaveLength(INDICATIONS_ASSIETTES_METADATA.claimsSource.length);
-    expect(new Set(demandes.map(d => d.claimId)).size).toBe(20);
+    expect(new Set(demandes.map(d => d.claimId)).size).toBe(19);
   });
 
   it('les clés rendues par le corpus SUFFISENT au filtre — deux `cleClaim`, un seul format', async () => {
@@ -271,13 +271,13 @@ describe('la jointure des deux `cleClaim` — tenue par ce cas, et par rien d’
   });
 });
 
-describe('ce que le service sert — les SEPT lignes publiées, jamais les quatre brouillons', () => {
+describe('ce que le service sert — les SEPT lignes publiées, jamais les trois brouillons', () => {
   it('aucun brouillon ne paraît, ni indiqué ni non évalué', async () => {
     prisma.patient.findUnique.mockResolvedValue({ dateNaissance: '1950-03-12' });
     const resultat = await evaluerAssiettesPourPatient('PAT001');
     if (!resultat.actif) throw new Error('le verrou devait être ouvert');
     const brouillons = INDICATIONS_ASSIETTES_V1.filter(l => l.statut === 'brouillon').map(l => l.id);
-    expect(brouillons.length).toBe(4);
+    expect(brouillons.length).toBe(3);
     const vues = [...resultat.indiquees, ...resultat.nonEvaluees].map(a => a.ligneId);
     for (const id of brouillons) expect(vues).not.toContain(id);
   });
