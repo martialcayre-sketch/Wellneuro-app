@@ -177,6 +177,20 @@ describe('deposerBrouillonFiche — contrôler, puis déposer un BROUILLON (D-25
     expect(transaction).not.toHaveBeenCalled();
   });
 
+  // [[D-478]] (t75) : la requête écarte un claim encore VALIDE mais supplanté ;
+  // le corpus simulé le rend absent, comme la base. Une réserve de sécurité
+  // d'`INDICATIONS_ASSIETTES_V1` y passe comme un claim cité ordinaire.
+  it('REFUSE une réserve de sécurité supplantée, motif au caractère près, sans rien écrire (D-478)', async () => {
+    const supplantee = SECURITE[0];
+    queryRaw.mockImplementation(corpus([supplantee]));
+    const issue = await deposerBrouillonFiche(brouillon());
+    expect(issue.issue).toBe('refusee');
+    expect(issue.issue === 'refusee' && issue.anomalies.filter(a => a.code === 'claim_non_valide')).toEqual([
+      { code: 'claim_non_valide', detail: `${supplantee} ne satisfait pas les critères de validité du corpus.` },
+    ]);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
   it('REFUSE une réserve de sécurité omise (D-251 §6)', async () => {
     const b = brouillon();
     const sansReserve: BrouillonFiche = { ...b, contenu: { ...b.contenu, precautions: [] } };
@@ -216,9 +230,18 @@ describe('deposerBrouillonFiche — contrôler, puis déposer un BROUILLON (D-25
       "c.compartment = 'ACTIF'",
       'rag_corpus_claim_sources',
       'unnest',
+      // [[D-478]] : non supplanté, dans la MÊME lecture.
+      'c.superseded_at IS NULL',
     ]) {
       expect(sql()).toContain(fragment);
     }
+  });
+
+  // [[D-478]] : la non-supplantation suit le bloc commun, hors de lui — le banc
+  // « mot pour mot » ci-dessous garde donc toute sa portée.
+  it('exige la non-supplantation APRÈS le bloc de prédicats recopié (D-478)', () => {
+    const source = readFileSync(path.join(process.cwd(), 'src', 'lib/fiches-assiette/claimsCites.ts'), 'utf8');
+    expect(source).toMatch(/WHERE s\.claim_pk = c\.id\s*\)\s*AND c\.superseded_at IS NULL\s*`/);
   });
 
   // Les prédicats sont RECOPIÉS de `claimsValidesAuCorpus`, qui s'interdit de
