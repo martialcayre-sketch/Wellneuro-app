@@ -242,7 +242,7 @@ describe('OrientationPanel', () => {
     render(<OrientationPanel idPatient="PAT_SEED_03" />);
 
     expect(await screen.findByText('Règle d’arrêt suspendue : STOP-STR.')).toBeTruthy();
-    expect(screen.getByText(/Au moins un claim cité ne satisfait pas les critères de validité du corpus\. Les explorations qu’elle aurait retirées restent proposées\./)).toBeTruthy();
+    expect(screen.getByText(/Au moins un claim cité ne satisfait pas les critères de validité du corpus\. Elle ne retire donc aucune exploration\./)).toBeTruthy();
     expect(screen.getByText('Claims concernés : WN-CL-0051-019 v1.0')).toBeTruthy();
   });
 
@@ -263,7 +263,7 @@ describe('OrientationPanel', () => {
 
     render(<OrientationPanel idPatient="PAT_SEED_03" />);
 
-    expect(await screen.findByText(/La validité de ses sources n’a pas pu être vérifiée\./)).toBeTruthy();
+    expect(await screen.findByText(/La validité de ses sources n’a pas pu être vérifiée\. Elle ne retire donc aucune exploration\./)).toBeTruthy();
     expect(screen.queryByText(/Claims concernés/)).toBeNull();
   });
 
