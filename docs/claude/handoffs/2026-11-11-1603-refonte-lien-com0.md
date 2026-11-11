@@ -63,6 +63,8 @@ Lot COM-0 du socle (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/soc
   - *Démontré dans le code* : aucune réserve de défilement n'existait pour cette barre. Le changement de polices a déplacé le bouton jusque-là.
   - Correctif : `scroll-padding-bottom` sous 768 px. Second passage vert : 357 passés, 23 ignorés, 0 échec.
   - Après les correctifs de contraste de la revue, T1 et T2 ont été rejoués, tous deux verts (T2 : 357 passés, 0 échec).
+- **CI.** Les deux premiers runs `e2e` ont échoué sur une panne du miroir apt d'Ubuntu des runners (« Temporary failure resolving 'azure.archive.ubuntu.com' », puis des 404). Le troisième, une fois le miroir rétabli, a donné 8 échecs, tous dans `e2e/visual.spec.ts` : des écarts au pixel, attendus avec la nouvelle palette.
+  - Les références ont été régénérées par le workflow `visual-baselines` (Ubuntu), relues une à une et commises dans `web/e2e/visual.spec.ts-snapshots/`.
 - **Constat à l'écran local** : preuves visuelles de `e2e/visual.spec.ts` (base de test éphémère, patients fictifs), relues après T2.
 - **Relecture `ui-ux-pro-max`** (`.claude/skills/ui-ux-pro-max/data/ux-guidelines.csv`) :
   - l.3 « Fixed nav should not obscure content » : c'est le correctif ci-dessus ;
