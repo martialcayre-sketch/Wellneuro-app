@@ -121,7 +121,7 @@ les erreurs récupérables), mais va au-delà de sa lettre : à confirmer.
 | AM-6 / A5-R3 adoption de Lien / Empreinte | idem |
 | AM-7 quatre groupes praticien (si Q-E2-1 (a)) | idem |
 | AM-8 menu complet au téléphone (si Q-E2-2 (b)) | idem |
-| T-01 à T-07, T-10 à T-15, T-21 à T-23, T-30 (a à i), T-31 (a, b), T-32 à T-34 | `registre-textes.md` ; la numérotation saute volontairement entre les familles (praticien 01-16, rail patient 21-23, textes patient 30-34 ; T-16 ajouté par DOC-1) ; récapitulatif par lot au §3 |
+| T-01 à T-07, T-10 à T-16, T-21 à T-23, T-30 (a à i), T-31 (a, b), T-32 à T-34 | `registre-textes.md` ; la numérotation saute volontairement entre les familles (praticien 01-16, rail patient 21-23, textes patient 30-34 ; T-16 ajouté par DOC-1) ; récapitulatif par lot au §3 |
 
 ## 5. Non vu
 
