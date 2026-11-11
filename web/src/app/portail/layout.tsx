@@ -11,7 +11,6 @@ import { BoutonMenuMonEspace, FournisseurMenuPortail, MotSymbole } from '@/compo
 import { LIEN_EVITEMENT } from '@/components/patient/menu/textesMenu';
 import { barreBasseOuverte } from '@/components/patient/barre-basse/barreBasseDrapeau';
 import { BarreBasse } from '@/components/patient/barre-basse/BarreBasse';
-import { VuesRapidesPortail } from '@/components/patient/barre-basse/VuesRapidesPortail';
 import { railLateralOuvert } from '@/components/patient/rail/railDrapeau';
 import { CadreRailMonEspace } from '@/components/patient/rail/RailMonEspace';
 
@@ -54,7 +53,9 @@ export default async function PortailLayout({ children }: { children: ReactNode 
   const barre = barreServie();
   // Rail latéral ([[D-447]]) : sans effet menu fermé, dont il reprend la garde.
   const rail = menu && railLateralOuvert();
-  // Groupes, icônes et onglets ([[D-460]]) : sans effet menu fermé.
+  // Groupes et icônes ([[D-460]]) : sans effet menu fermé. Les onglets de
+  // l'en-tête ne sont plus ([[D-483]] §1) : dès 1 024 px, le rail est la seule
+  // navigation « Mon espace ».
   const icones = menu && menuIconesOuvert();
   const contenu = (
     <main
@@ -108,7 +109,6 @@ export default async function PortailLayout({ children }: { children: ReactNode 
         ) : (
           <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
         )}
-        {icones && rail && <VuesRapidesPortail />}
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ReadingComfortControl />
           {sessionOuverte && <BoutonDeconnexion />}
@@ -134,7 +134,7 @@ export default async function PortailLayout({ children }: { children: ReactNode 
     </div>
   );
   return menu ? (
-    <FournisseurMenuPortail sessionOuverte={sessionOuverte} icones={icones}>
+    <FournisseurMenuPortail sessionOuverte={sessionOuverte} icones={icones} rail={rail}>
       {portail}
     </FournisseurMenuPortail>
   ) : portail;

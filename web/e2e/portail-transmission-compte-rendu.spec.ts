@@ -29,6 +29,10 @@ import {
   transmissionsSur24h,
 } from './helpers/db';
 
+// « Autres espaces » sous 1 024 px ; dès 1 024 px, rail servi, la même liste est
+// celle du rail « Mon espace » ([[D-483]] §2) : une seule des deux est visible.
+const LISTE_DES_ESPACES = /^(Autres espaces|Mon espace)$/;
+
 const PATIENT = { idPatient: 'PAT_SEED_03' };
 const TITRE = 'Transmettre un compte rendu d’analyses';
 
@@ -117,8 +121,9 @@ test('le patient transmet son compte rendu au clavier, du lien magique au statut
     page = await context.newPage();
     await atterrissage.close();
     await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
-    // Dans « Autres espaces » : au bureau, le rail latéral ([[D-447]]) porte le même lien.
-    const lien = page.getByRole('navigation', { name: 'Autres espaces' }).getByRole('link', { name: TITRE });
+    // La liste des espaces visible : « Autres espaces » sous 1 024 px, le rail
+    // latéral au bureau ([[D-447]], [[D-483]] §2), qui porte le même lien.
+    const lien = page.getByRole('navigation', { name: LISTE_DES_ESPACES }).getByRole('link', { name: TITRE });
     await expect(lien).toBeVisible();
     await tabulerJusqua(page, lien);
     await page.keyboard.press('Enter');

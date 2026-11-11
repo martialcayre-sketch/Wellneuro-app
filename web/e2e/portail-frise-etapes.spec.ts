@@ -13,6 +13,10 @@ import AxeBuilder from '@axe-core/playwright';
 import { accuserPorteTrust, closePrisma } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
 
+// « Autres espaces » sous 1 024 px ; dès 1 024 px, rail servi, la même liste est
+// celle du rail « Mon espace » ([[D-483]] §2) : une seule des deux est visible.
+const LISTE_DES_ESPACES = /^(Autres espaces|Mon espace)$/;
+
 const PATIENT = { idPatient: 'PAT_SEED_01', email: 'sophie.nicola@fictif.wellneuro.fr' };
 const LIBELLES = ['Consentement', 'Informations', 'Situation', 'Questionnaires', 'Analyse du praticien', 'Restitution'];
 
@@ -45,9 +49,9 @@ test.describe('Portail — frise des étapes navigable', () => {
     }
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
     await expect(nav.locator('[aria-current]')).toHaveAttribute('aria-current', 'step');
-    // « Autres espaces » garde son propre élément courant : deux navigations,
-    // deux questions.
-    await expect(page.getByRole('navigation', { name: 'Autres espaces' }).locator('[aria-current="page"]')).toHaveCount(1);
+    // La liste des espaces (« Autres espaces », ou le rail au bureau) garde
+    // son propre élément courant : deux navigations, deux questions.
+    await expect(page.getByRole('navigation', { name: LISTE_DES_ESPACES }).locator('[aria-current="page"]')).toHaveCount(1);
   });
 
   test('chaque étape cliquable a une cible de 44 px au moins', async ({ page }) => {
@@ -92,9 +96,10 @@ test.describe('Portail — frise des étapes navigable', () => {
   test('le hub, frise navigable comprise, passe axe (WCAG 2.1 AA)', async ({ page }) => {
     await frise(page);
     // Une entrée sondée au moins : la mesure ne part pas avant les sondes.
-    // Dans « Autres espaces » : au bureau, le rail latéral ([[D-447]]) porte le même lien.
+    // La liste des espaces visible : « Autres espaces » sous 1 024 px, le rail
+    // latéral au bureau ([[D-447]], [[D-483]] §2), qui porte le même lien.
     await expect(
-      page.getByRole('navigation', { name: 'Autres espaces' }).getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true }),
+      page.getByRole('navigation', { name: LISTE_DES_ESPACES }).getByRole('link', { name: 'Ouvrir mon dossier à deux voix', exact: true }),
     ).toBeVisible();
     const { violations } = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

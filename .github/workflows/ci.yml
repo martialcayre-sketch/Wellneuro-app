@@ -1803,6 +1803,18 @@ jobs:
           WN_ETIQUETAGE_LOT_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-etiquetage-lot-prisma.test.ts
 
+      # Le VRAI écrivain de l'exclusion de la recherche (D-490) contre le
+      # journal et la fonction de recherche : un acte par claim, de la forme
+      # du CHECK ; tout ou rien ; un claim exclu absent de servirRayonCorpus
+      # mais valide pour claimsValidesAuCorpus ; rétablir le fait revenir.
+      # Contre-épreuve en tête : un acte de deux claims est refusé.
+      - name: Search exclusion writer bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_EXCLUSION_RECHERCHE_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-exclusion-recherche-prisma.test.ts
+
       # Le VRAI client Prisma contre la garde anti-doublon (D-294, BP-09) :
       # le 23505 du trigger doit arriver en P2002 (le 409 `doublon_mesure` des
       # écrivains en dépend), la place annulée se reprend, REPEATABLE READ est

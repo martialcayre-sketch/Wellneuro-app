@@ -71,10 +71,10 @@ describe('claimsValidesAuCorpus', () => {
     expect(sql()).not.toContain('ANY');
   });
 
-  // Les cinq prédicats de `match_wellneuro_rag_claims`, mot pour mot : un claim
-  // que la voie de récupération refuserait de servir ne peut pas fonder une
-  // règle. Deux réponses différentes sur le même claim seraient une incohérence
-  // clinique, pas une nuance.
+  // Les cinq prédicats de VALIDITÉ de `match_wellneuro_rag_claims`, mot pour
+  // mot : un claim que la voie de récupération jugerait invalide ne peut pas
+  // fonder une règle. Deux réponses différentes sur le même claim seraient une
+  // incohérence clinique, pas une nuance.
   it.each([
     ['actif', 'c.active = true'],
     ['statut validé', "c.statut = 'VALIDE'"],
@@ -84,6 +84,15 @@ describe('claimsValidesAuCorpus', () => {
   ])('exige que le claim soit %s', async (_libelle, fragment) => {
     await claimsValidesAuCorpus([{ claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' }]);
     expect(sql()).toContain(fragment);
+  });
+
+  // Le sixième prédicat de la fonction, `exclu_recherche = false` ([[D-490]]),
+  // est de RECHERCHE, pas de validité : un claim exclu de la recherche reste
+  // valide pour ce qui le cite (D-490 §2). Le recopier ici retirerait leur
+  // fondement aux règles qui citent un claim exclu.
+  it('ne lit pas la marque « exclu de la recherche »', async () => {
+    await claimsValidesAuCorpus([{ claimId: 'WN-CL-2026-001', versionClaim: 'v1.0' }]);
+    expect(sql()).not.toContain('exclu_recherche');
   });
 
   // AUCUN TEXTE NE SORT : la sélection ne rend que l'identifiant déjà fourni

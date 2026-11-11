@@ -26,10 +26,13 @@ import {
   ECHANTILLON_MIN,
   elementJournalClaim,
   elementJournalEtiquetage,
+  elementJournalExclusion,
   eligiblesVoieRapide,
   estClaimStatut,
   etiqueterClaim,
   etiqueterClaimsLot,
+  exclureDeLaRecherche,
+  exclureDeLaRechercheLot,
   listerClaimsRevue,
   listerSourcesEnRevue,
   sanitiserQuestionnaire,
@@ -159,7 +162,8 @@ describe('listerClaimsRevue', () => {
     const appelPage = prisma.$queryRaw.mock.calls[1];
     expect(sqlDeAppel(appelPage)).toContain('LIMIT');
     // Paramètres de la page : statut, source ×2, sourceIds (notebook) ×2,
-    // claimId (recherche) ×2, limit clampé, offset plancher.
+    // claimId (recherche) ×2, filtre des exclus (D-490), limit clampé, offset
+    // plancher.
     expect(parametresDeAppel(appelPage)).toEqual([
       'EN_ATTENTE_VALIDATION',
       null,
@@ -168,6 +172,7 @@ describe('listerClaimsRevue', () => {
       null,
       null,
       null,
+      false,
       100,
       0,
     ]);
@@ -181,7 +186,22 @@ describe('listerClaimsRevue', () => {
     const appelPage = prisma.$queryRaw.mock.calls[1];
     expect(sqlDeAppel(appelPage)).toContain('= ANY(');
     // Le tableau vide est transmis tel quel : le SQL rend zéro ligne.
-    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, [], [], null, null, 50, 0]);
+    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, [], [], null, null, false, 50, 0]);
+  });
+
+  it('filtre des exclus de la recherche (D-490) : au compte ET à la page, et la marque est rendue', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ total: BigInt(1) }])
+      .mockResolvedValueOnce([{ ...LIGNE_CLAIM, statut: 'VALIDE', exclu_recherche: true }])
+      .mockResolvedValueOnce([]);
+
+    const liste = await listerClaimsRevue({ statut: 'VALIDE', excluRecherche: true });
+
+    expect(liste.claims[0].excluRecherche).toBe(true);
+    for (const appel of prisma.$queryRaw.mock.calls.slice(0, 2)) {
+      expect(sqlDeAppel(appel)).toContain('c.exclu_recherche = true');
+      expect(parametresDeAppel(appel)).toContain(true);
+    }
   });
 
   it('recherche par identifiant (D/22) : égalité exacte, au compte ET à la page', async () => {
@@ -721,6 +741,208 @@ describe('elementJournalEtiquetage — forme exigée par le CHECK etiquetage_com
       { besoins: [1, 12], rubrique: 'question' },
     );
     expect(Object.keys(element).sort()).toEqual(['besoins', 'claimId', 'id', 'rubrique', 'versionClaim']);
+  });
+});
+
+describe('exclureDeLaRecherche — acte « exclusion_recherche » sur un claim VALIDE (D-490 §3)', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+    prisma.$transaction.mockClear();
+  });
+
+  const PARAMS = {
+    id: 'WN-CL-0056-001@v1.0',
+    sens: 'exclure' as const,
+    motif: 'dossier, classement',
+    validateur: 'praticien@wellneuro.fr',
+  };
+  const LU = {
+    id: PARAMS.id,
+    claim_id: 'WN-CL-0056-001',
+    version_claim: 'v1.0',
+    source_id: 'WN-SRC-0056',
+    statut: 'VALIDE',
+    exclu_recherche: false,
+  };
+
+  it('verrouille, pose la marque sans toucher statut ni signature, et journalise l’acte avec son motif', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([LU]).mockResolvedValueOnce([{ id: PARAMS.id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+
+    expect(await exclureDeLaRecherche(PARAMS)).toEqual({
+      ok: true,
+      claim: { id: PARAMS.id, excluRecherche: true },
+      inchange: false,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    // Même délai que le lot : un clic qui attend le verrou d'un lot en cours
+    // ne tombe pas en erreur technique au bout des 5 s par défaut.
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ timeout: 30_000 });
+
+    const [appelLecture, appelMaj] = prisma.$queryRaw.mock.calls;
+    expect(sqlDeAppel(appelLecture)).toContain('FOR UPDATE');
+    const sqlMaj = sqlDeAppel(appelMaj);
+    expect(sqlMaj).toContain('SET exclu_recherche = ?');
+    expect(sqlMaj).toContain("AND statut = 'VALIDE'");
+    expect(sqlMaj).toContain('AND active = true');
+    const clauseSet = sqlMaj.slice(sqlMaj.indexOf('SET'), sqlMaj.indexOf('WHERE'));
+    expect(clauseSet).not.toMatch(/validateur|valide_at|statut|metadata/);
+    expect(parametresDeAppel(appelMaj)[0]).toBe(true);
+
+    const appelJournal = prisma.$executeRaw.mock.calls[0];
+    expect(sqlDeAppel(appelJournal)).toContain("('exclusion_recherche', ?, ?, ?, ?::jsonb)");
+    const params = parametresDeAppel(appelJournal);
+    expect(params.slice(0, 3)).toEqual(['dossier, classement', 'praticien@wellneuro.fr', 'WN-SRC-0056']);
+    // Ni statutAvant ni statutApres : un compte des signatures ne voit pas l'acte.
+    expect(JSON.parse(params[3] as string)).toEqual([
+      { id: PARAMS.id, claimId: 'WN-CL-0056-001', versionClaim: 'v1.0', sens: 'exclure' },
+    ]);
+  });
+
+  it('rétablir lève la marque', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ ...LU, exclu_recherche: true }]).mockResolvedValueOnce([{ id: PARAMS.id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    expect(await exclureDeLaRecherche({ ...PARAMS, sens: 'retablir' })).toEqual({
+      ok: true,
+      claim: { id: PARAMS.id, excluRecherche: false },
+      inchange: false,
+    });
+    expect(parametresDeAppel(prisma.$queryRaw.mock.calls[1])[0]).toBe(false);
+    expect(JSON.parse(parametresDeAppel(prisma.$executeRaw.mock.calls[0])[3] as string)[0].sens).toBe('retablir');
+  });
+
+  it('un claim déjà dans l’état visé : ni réécrit ni journalisé', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ ...LU, exclu_recherche: true }]);
+    expect(await exclureDeLaRecherche(PARAMS)).toEqual({
+      ok: true,
+      claim: { id: PARAMS.id, excluRecherche: true },
+      inchange: true,
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('un claim non VALIDE ou inconnu : refus, rien d’écrit', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ ...LU, statut: 'EN_ATTENTE_VALIDATION' }]);
+    expect(await exclureDeLaRecherche(PARAMS)).toEqual({ ok: false, raison: 'claim_non_valide' });
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await exclureDeLaRecherche(PARAMS)).toEqual({ ok: false, raison: 'claim_introuvable' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('exclureDeLaRechercheLot — un geste, un acte par claim, tout ou rien (D-490 §3, §6)', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+    prisma.$transaction.mockClear();
+  });
+
+  const LIGNES = [
+    { claimId: 'WN-CL-0056-001', motif: 'dossier A' },
+    { claimId: 'WN-CL-0056-002', versionClaim: 'v1.0', motif: 'dossier B' },
+  ];
+  const TROUVES = [
+    { id: 'WN-CL-0056-001@v1.0', claim_id: 'WN-CL-0056-001', version_claim: 'v1.0', source_id: 'WN-SRC-0056', statut: 'VALIDE', exclu_recherche: false },
+    { id: 'WN-CL-0056-002@v1.0', claim_id: 'WN-CL-0056-002', version_claim: 'v1.0', source_id: 'WN-SRC-0056', statut: 'VALIDE', exclu_recherche: false },
+  ];
+  const appeler = (sens: 'exclure' | 'retablir' = 'exclure', lignes = LIGNES) =>
+    exclureDeLaRechercheLot({ lignes, sens, validateur: 'praticien@wellneuro.fr' });
+
+  it('verrouille, pose la marque et journalise un acte par claim, chacun avec son motif', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES).mockResolvedValueOnce([{ id: TROUVES[0].id }, { id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(2);
+
+    expect(await appeler()).toEqual({ ok: true, n: 2, inchanges: 0 });
+    expect(prisma.$transaction.mock.calls[0][1]).toEqual({ timeout: 30_000 });
+
+    const [appelLecture, appelMaj] = prisma.$queryRaw.mock.calls;
+    expect(sqlDeAppel(appelLecture)).toContain('ORDER BY id\n          FOR UPDATE');
+    const sqlMaj = sqlDeAppel(appelMaj);
+    expect(sqlMaj).toContain("AND statut = 'VALIDE'");
+    const clauseSet = sqlMaj.slice(sqlMaj.indexOf('SET'), sqlMaj.indexOf('WHERE'));
+    expect(clauseSet).not.toMatch(/validateur|valide_at|statut|metadata/);
+    expect(parametresDeAppel(appelMaj)).toEqual([true, [TROUVES[0].id, TROUVES[1].id]]);
+
+    const appelJournal = prisma.$executeRaw.mock.calls[0];
+    expect(sqlDeAppel(appelJournal)).toContain("SELECT 'exclusion_recherche', x.motif, ?, x.source_id, jsonb_build_array(x.element)");
+    const params = parametresDeAppel(appelJournal);
+    expect(params[0]).toBe('praticien@wellneuro.fr');
+    expect(JSON.parse(params[1] as string)).toEqual([
+      {
+        source_id: 'WN-SRC-0056',
+        motif: 'dossier A',
+        element: { id: TROUVES[0].id, claimId: 'WN-CL-0056-001', versionClaim: 'v1.0', sens: 'exclure' },
+      },
+      {
+        source_id: 'WN-SRC-0056',
+        motif: 'dossier B',
+        element: { id: TROUVES[1].id, claimId: 'WN-CL-0056-002', versionClaim: 'v1.0', sens: 'exclure' },
+      },
+    ]);
+  });
+
+  it('un claim non VALIDE, introuvable, ambigu ou d’une autre version : refus nommé, rien d’écrit', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { ...TROUVES[0], statut: 'REJETE' },
+      { ...TROUVES[1], id: 'WN-CL-0056-002@v2.0', version_claim: 'v2.0' },
+    ]);
+    expect(await appeler()).toEqual({
+      ok: false,
+      raison: 'claims_refuses',
+      refus: [
+        { claimId: 'WN-CL-0056-001', raison: 'claim_non_valide' },
+        { claimId: 'WN-CL-0056-002', raison: 'version_divergente' },
+      ],
+    });
+    prisma.$queryRaw.mockResolvedValueOnce([TROUVES[0], { ...TROUVES[0], id: 'WN-CL-0056-001@v2.0', version_claim: 'v2.0' }]);
+    expect(await appeler('exclure', [{ claimId: 'WN-CL-0056-001', motif: 'm' }, { claimId: 'WN-CL-0056-009', motif: 'm' }])).toEqual({
+      ok: false,
+      raison: 'claims_refuses',
+      refus: [
+        { claimId: 'WN-CL-0056-001', raison: 'claim_ambigu' },
+        { claimId: 'WN-CL-0056-009', raison: 'claim_introuvable' },
+      ],
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('un claim déjà dans l’état visé n’est ni réécrit ni journalisé : un renvoi n’ajoute aucun acte', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ ...TROUVES[0], exclu_recherche: true }, TROUVES[1]])
+      .mockResolvedValueOnce([{ id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    expect(await appeler()).toEqual({ ok: true, n: 1, inchanges: 1 });
+    expect(parametresDeAppel(prisma.$queryRaw.mock.calls[1])[1]).toEqual([TROUVES[1].id]);
+
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES);
+    expect(await appeler('retablir')).toEqual({ ok: true, n: 0, inchanges: 2 });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('un claim qui bouge entre la lecture et l’écriture, ou un acte manquant, annule tout le geste', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES).mockResolvedValueOnce([{ id: TROUVES[0].id }]);
+    expect(await appeler()).toEqual({ ok: false, raison: 'etat_divergent' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+
+    prisma.$queryRaw.mockResolvedValueOnce(TROUVES).mockResolvedValueOnce([{ id: TROUVES[0].id }, { id: TROUVES[1].id }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+    expect(await appeler()).toEqual({ ok: false, raison: 'etat_divergent' });
+  });
+});
+
+describe('elementJournalExclusion — forme exigée par le CHECK exclusion_recherche_complete', () => {
+  it('porte l’identité du claim et son sens, sans statut', () => {
+    const element = elementJournalExclusion(
+      { id: 'WN-CL-0056-001@v1.0', claimId: 'WN-CL-0056-001', versionClaim: 'v1.0' },
+      'retablir',
+    );
+    expect(Object.keys(element).sort()).toEqual(['claimId', 'id', 'sens', 'versionClaim']);
   });
 });
 
