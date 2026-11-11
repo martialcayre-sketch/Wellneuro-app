@@ -792,3 +792,95 @@ describe('AtelierCorpusPanel — recherche par identifiant (D/22)', () => {
     expect(urlsGet().at(-1)).toBe('/api/praticien/corpus/claims?statut=VALIDE&limit=50&offset=0&claim=WN-CL-0056-001');
   });
 });
+
+describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
+  const URL_EXCLUSION = '/api/praticien/corpus/claims/exclusion-recherche';
+  const VALIDE = {
+    ...CLAIM,
+    statut: 'VALIDE',
+    validateur: 'praticien@wellneuro.fr',
+    valideAt: '2026-07-22T18:00:00.000Z',
+    excluRecherche: false,
+  };
+  const EXCLU = { ...VALIDE, excluRecherche: true };
+  const POST_EXCLU = { ok: true, claim: { id: CLAIM.id, excluRecherche: true }, inchange: false };
+
+  function routeur(claimValide: typeof VALIDE, post: unknown = POST_EXCLU) {
+    return (url: string, options?: { method?: string }) => {
+      if (options?.method === 'POST') {
+        return Promise.resolve(url === URL_EXCLUSION ? json(post) : json({}, false));
+      }
+      if (url.startsWith('/api/praticien/corpus/claims?')) {
+        const statut = new URLSearchParams(url.split('?')[1]).get('statut');
+        return Promise.resolve(
+          json(statut === 'VALIDE' ? { ...LISTE, statut: 'VALIDE', claims: [claimValide] } : LISTE),
+        );
+      }
+      return Promise.resolve(json({}, false));
+    };
+  }
+
+  async function ouvrirValides() {
+    await attendreLaFile();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    await screen.findByRole('button', { name: /(Exclure de|Rétablir dans) la recherche/ });
+  }
+
+  it('exclut en deux temps, motif obligatoire, sans décision ni signature envoyée', async () => {
+    fetchMock.mockImplementation(routeur(VALIDE));
+    await ouvrirValides();
+    expect(screen.queryByText('Exclu de la recherche')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exclure de la recherche' }));
+    const confirmer = screen.getByRole('button', { name: 'Confirmer l’exclusion' }) as HTMLButtonElement;
+    expect(confirmer.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: '  ' } });
+    expect(confirmer.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: 'dossier, classement' } });
+    expect(confirmer.disabled).toBe(false);
+    fireEvent.click(confirmer);
+
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(appelsPost()[0][0]).toBe(URL_EXCLUSION);
+    expect(JSON.parse(appelsPost()[0][1].body)).toEqual({
+      id: CLAIM.id,
+      sens: 'exclure',
+      motif: 'dossier, classement',
+    });
+  });
+
+  it('un claim exclu porte le badge et se rétablit', async () => {
+    fetchMock.mockImplementation(
+      routeur(EXCLU, { ok: true, claim: { id: CLAIM.id, excluRecherche: false }, inchange: false }),
+    );
+    await ouvrirValides();
+    expect(screen.getByText('Exclu de la recherche')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rétablir dans la recherche' }));
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: 'relecture' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le rétablissement' }));
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(JSON.parse(appelsPost()[0][1].body).sens).toBe('retablir');
+  });
+
+  it('un refus garde le motif saisi et dit l’erreur', async () => {
+    fetchMock.mockImplementation(routeur(VALIDE, { ok: false, reason: 'exception', error: 'Erreur technique.' }));
+    await ouvrirValides();
+    fireEvent.click(screen.getByRole('button', { name: 'Exclure de la recherche' }));
+    fireEvent.change(screen.getByLabelText('Motif — WN-CL-0056-001'), { target: { value: 'dossier' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’exclusion' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Erreur technique.'));
+    expect((screen.getByLabelText('Motif — WN-CL-0056-001') as HTMLInputElement).value).toBe('dossier');
+  });
+
+  it('le filtre « exclus seulement » n’existe que dans l’onglet Validés et part dans l’URL', async () => {
+    fetchMock.mockImplementation(routeur(EXCLU));
+    await attendreLaFile();
+    expect(screen.queryByLabelText('Exclus de la recherche seulement')).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    fireEvent.click(await screen.findByLabelText('Exclus de la recherche seulement'));
+    await waitFor(() =>
+      expect(appelsGet().at(-1)?.[0]).toBe('/api/praticien/corpus/claims?statut=VALIDE&limit=50&offset=0&exclu=1'),
+    );
+  });
+});

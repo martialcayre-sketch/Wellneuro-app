@@ -4,7 +4,8 @@
 // La barrière D-003 n'est PAS réimplémentée ici : la seule voie de récupération
 // reste la fonction SQL match_wellneuro_rag_claims, qui n'expose qu'un claim
 // signé praticien (statut VALIDE, actif, non patient, adossé à ≥1 verbatim
-// source). Le rayon est filtré PAR NOTEBOOK, au niveau SQL, via le paramètre
+// source) et non exclu de la recherche par un acte de l'atelier ([[D-490]] :
+// un sixième prédicat, de recherche et non de validité). Le rayon est filtré PAR NOTEBOOK, au niveau SQL, via le paramètre
 // filter_source_ids de la fonction (décision 7 des arbitrages praticien du
 // 2026-07-27 : filtrer par notebook, jamais par un tag metadata.rayon — ni
 // migration, ni backfill). Filtrer côté SQL calcule les N meilleurs claims À
