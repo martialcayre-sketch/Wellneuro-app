@@ -877,4 +877,19 @@ describe('RayonPatientsPanel — lecture du tableau en échec (PRA-2a)', () => {
     expect(screen.getByRole('button', { name: 'Nouvelle consultation' }).className).not.toMatch(/\bbg-primary\b/);
     expect(screen.getByRole('heading', { level: 2, name: 'Patients' })).toBeTruthy();
   });
+
+  // Au téléphone, les éléments du tableau passent en `block`/`flex` (Q11 a) :
+  // les rôles explicites gardent la sémantique que le navigateur retirerait.
+  it('le tableau porte ses rôles explicites, ligne et cellules comprises', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    const tableau = screen.getByRole('table');
+    expect(tableau.getAttribute('role')).toBe('table');
+    const lignes = within(tableau).getAllByRole('row');
+    expect(lignes.every(l => l.getAttribute('role') === 'row')).toBe(true);
+    const cellules = within(lignes[1]).getAllByRole('cell');
+    expect(cellules).toHaveLength(5);
+    expect(cellules.every(c => c.getAttribute('role') === 'cell')).toBe(true);
+  });
 });

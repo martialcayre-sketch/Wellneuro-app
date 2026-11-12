@@ -98,6 +98,14 @@ La trace est dans le journal de la fiche PRA-2 de la page de suivi praticien. Le
   - « Error Placement » : chaque erreur est près de son geste ;
   - **constat accepté** : au téléphone, l'Agenda affiche la liste avant le formulaire par `order`, alors que l'ordre du DOM et du clavier reste formulaire puis liste. C'est l'ordre du bureau, que Q5 a ne change pas. Même remarque pour l'état placé avant l'adresse dans un bloc Patients. L'écart est d'ordre de lecture seulement : aucun contenu n'est caché.
 
+- **Revue PR-Agent** sur `56e7a810`, deux constats :
+  - **Sémantique du tableau au téléphone** : **corrigé**. Sous `md`, les éléments du tableau passent en `block` ou en `flex`, et WebKit comme Chromium retirent alors les rôles de tableau. Le tableau, ses groupes, ses lignes, ses en-têtes et ses cellules portent maintenant des rôles explicites. Le message d'échec passe dans un `span role="alert"` à l'intérieur de sa cellule. Un banc vérifie les rôles.
+  - **Ordre de focus et ordre visuel dans l'Agenda** : **écarté**, avec son motif.
+    - Q5 a, validée, place la liste d'abord au téléphone seulement.
+    - Le remède proposé, la liste d'abord dans le DOM et l'ordre inversé au bureau, déplacerait le même écart sur le bureau et la tablette. Ce sont les largeurs où le clavier sert le plus.
+    - Les deux zones sont indépendantes, chacune sous son `h2`. Aucune ne dépend de l'autre pour être comprise ou utilisée, donc l'ordre du DOM garde le sens (WCAG 2.4.3).
+- **Remise à niveau** : `main` a avancé (#2027) après le commit du lot. Le garde de fraîcheur bloque alors l'édition, et une branche qui a des commits ne se fusionne ni ne se rebase sans arbitrage humain. La correction a donc été posée par script, en le disant ici. `git merge-tree` donne une fusion propre, sans aucun fichier en commun avec `main`.
+
 ## Problèmes ouverts
 
 - **T-17 « Réessayer »** n'est pas posé, et attend DOC-6. À poser ensuite sous les deux messages d'échec. Il relira la seule lecture concernée et gardera la recherche, le tri et la saisie.

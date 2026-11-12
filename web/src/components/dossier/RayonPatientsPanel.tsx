@@ -490,28 +490,30 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
         </div>
         {/* Au téléphone, chaque ligne devient un bloc empilé (Q11 a) : le
             tableau ne défile plus de côté. À la tablette, la colonne
-            Téléphone se retire (`PatientRow`). */}
+            Téléphone se retire (`PatientRow`). Les rôles explicites gardent
+            la sémantique du tableau quand ses éléments passent en `block` ou
+            `flex` : WebKit et Chromium la retirent sinon (revue PR-Agent). */}
         <div className="overflow-x-auto">
-          <table className="block w-full text-sm md:table md:min-w-full">
-            <thead className="hidden bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground md:table-header-group">
-              <tr>
-                <th className="px-4 py-2 text-left">Nom</th>
-                <th className="px-4 py-2 text-left">Email</th>
-                <th className="hidden px-4 py-2 text-left lg:table-cell">Téléphone</th>
-                <th className="px-4 py-2 text-left">Actif</th>
-                <th className="px-4 py-2 text-left"></th>
+          <table role="table" className="block w-full text-sm md:table md:min-w-full">
+            <thead role="rowgroup" className="hidden bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground md:table-header-group">
+              <tr role="row">
+                <th role="columnheader" className="px-4 py-2 text-left">Nom</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Email</th>
+                <th role="columnheader" className="hidden px-4 py-2 text-left lg:table-cell">Téléphone</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Actif</th>
+                <th role="columnheader" className="px-4 py-2 text-left"></th>
               </tr>
             </thead>
-            <tbody className="block md:table-row-group">
+            <tbody role="rowgroup" className="block md:table-row-group">
               {!loadingTable && erreurTable && (
-                <tr className="block md:table-row">
-                  <td colSpan={5} role="alert" className="block px-4 py-4 text-center text-foreground md:table-cell">
-                    {erreurTable}
+                <tr role="row" className="block md:table-row">
+                  <td role="cell" colSpan={5} className="block px-4 py-4 text-center text-foreground md:table-cell">
+                    <span role="alert">{erreurTable}</span>
                   </td>
                 </tr>
               )}
               {!loadingTable && !erreurTable && tablePatients.length === 0 && (
-                <tr className="block md:table-row"><td colSpan={5} className="block px-4 py-4 text-center text-muted-foreground md:table-cell">Aucun patient.</td></tr>
+                <tr role="row" className="block md:table-row"><td role="cell" colSpan={5} className="block px-4 py-4 text-center text-muted-foreground md:table-cell">Aucun patient.</td></tr>
               )}
               {tablePatients.map(p => (
                 <PatientRow

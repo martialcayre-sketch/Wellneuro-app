@@ -85,17 +85,17 @@ export function PatientRow({
   // empilé — nom et état, adresse, téléphone, gestes. `order` ne joue que
   // dans le bloc (flex) : dans une ligne de tableau, il est sans effet.
   return (
-    <tr className="flex flex-col gap-1 border-t border-border px-4 py-3 hover:bg-muted/50 md:table-row md:p-0">
-      <td className="order-1 font-medium text-foreground md:table-cell md:px-4 md:py-2">
+    <tr role="row" className="flex flex-col gap-1 border-t border-border px-4 py-3 hover:bg-muted/50 md:table-row md:p-0">
+      <td role="cell" className="order-1 font-medium text-foreground md:table-cell md:px-4 md:py-2">
         {`${patient.prenom} ${patient.nom}`.trim() || '—'}
       </td>
-      <td className="order-3 [overflow-wrap:anywhere] text-muted-foreground md:table-cell md:px-4 md:py-2 md:text-foreground">
+      <td role="cell" className="order-3 [overflow-wrap:anywhere] text-muted-foreground md:table-cell md:px-4 md:py-2 md:text-foreground">
         {patient.email || '—'}
       </td>
-      <td className="order-4 text-muted-foreground md:hidden md:px-4 md:py-2 md:text-foreground lg:table-cell">
+      <td role="cell" className="order-4 text-muted-foreground md:hidden md:px-4 md:py-2 md:text-foreground lg:table-cell">
         {patient.telephone || '—'}
       </td>
-      <td className="order-2 md:table-cell md:px-4 md:py-2">
+      <td role="cell" className="order-2 md:table-cell md:px-4 md:py-2">
         {/* Les deux états se cumulent et ne se déduisent pas l'un de l'autre.
             `phaseDossier` fait primer la clôture, ce qui est juste pour
             décider d'un envoi — mais afficher le seul « Suivi clôturé » sur un
@@ -120,7 +120,7 @@ export function PatientRow({
           )}
         </span>
       </td>
-      <td className="order-5 md:table-cell md:px-2 md:py-2">
+      <td role="cell" className="order-5 md:table-cell md:px-2 md:py-2">
         {/* Une action principale par ligne (PRA-2a) : « Fiche patient », en
             lien pétrole ; « Modifier » et « Gérer le dossier » restent
             discrets. UN SEUL lien par ligne (audit 2026-09-02) : deux
