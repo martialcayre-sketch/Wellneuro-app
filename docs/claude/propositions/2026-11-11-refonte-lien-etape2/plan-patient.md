@@ -23,6 +23,8 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | Q-E2-5 tranchée (« Réessayer » sur un suivi non reconnu) | PAT-3 (sinon l'existant reste) |
 | Texte accepté et inscrit : T-33 ([[D-488]]) ; T-34 refusé | PAT-5 |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PAT-2 à PAT-6 |
+| Décor inscrit (DOC-2, [[D-481]] §1 bis) et primitive `LienDecor` mergée (COM-1) | tout lot qui pose un décor, ornement d'état vide compris : PAT-2, PAT-3b, PAT-5, et tout autre lot qui orne un état vide réel ; sans eux, le lot livre sans décor (PAT-3b attend) |
+| Prototype PAT-3 révisé avec la signature du hub, revalidé ([[D-481]] §4) | PAT-3b |
 
 Sans AM-1, le rail patient reste toujours déplié ([[D-460]] §4) et PAT-1 se
 réduit à l'habillage ; sans AM-2, les onglets et « Autres espaces » restent
@@ -58,10 +60,11 @@ condition d'apparition ni règle d'enregistrement de questionnaire.
 | PAT-1 | Shell et navigation | X02 (patient), U42, U10 pour « Autres espaces » | socle, §1 | moyenne |
 | PAT-2 | Entrée dans le parcours | U01–U09 | PAT-1 | moyenne |
 | PAT-3 | Mon parcours, accompagnement, suivi | U10, U18–U21, U41 | PAT-1 | grande |
+| PAT-3b | Signature graphique du hub | U10 (en-tête) | PAT-3, COM-1, prototype revalidé | petite |
 | PAT-4 | Questionnaires et agendas | U11–U14, U16, U17, U22 | PAT-1 | grande |
 | PAT-5 | Lectures et espaces reçus | U15, U23–U32, U37, U38 | PAT-1 | grande |
 | PAT-6 | Transmissions et droits | U33–U36, U39, U40 | PAT-1 | moyenne |
-| PAT-7 | Vérification et stabilisation | toutes | PAT-1 à PAT-6 | moyenne |
+| PAT-7 | Vérification et stabilisation | toutes | PAT-1 à PAT-6, PAT-3b | moyenne |
 
 Ordre recommandé après PAT-1 : PAT-3 (le hub et le suivi sont les écrans les
 plus vus), PAT-2, PAT-4, PAT-5, PAT-6.
@@ -92,7 +95,9 @@ Connexion, lien indisponible, avant de commencer, date de naissance,
 circuit mineur (aucune navigation adulte, [[D-283]] §5), consentements,
 fiche de renseignements, « Parler de votre situation » (T-31), fin d'entrée.
 Aucun rail ni menu avant le franchissement ([[D-447]] §1). Les textes de
-consentement et de droits ne changent pas. **Réception** : parcours
+consentement et de droits ne changent pas. Décor par `LienDecor`
+([[D-481]] §1 bis) : un fond léger **ou** les anneaux d'alliance comme
+élément principal, jamais les deux, jamais derrière un champ. **Réception** : parcours
 d'entrée complet avec un patient fictif, mineur compris ; aucune question
 modifiée.
 
@@ -105,6 +110,16 @@ réévaluation. Les états livrés (#1973, #1978, #1979) sont gardés tels quels
 protocole lisible quand le suivi échoue, erreur explicite à la première
 lecture, saisie conservée sur échec de transmission, aucune confirmation
 sans succès réel ; session expirée renvoyée à l'entrée ; aucun chiffre.
+
+### PAT-3b — Signature graphique du hub
+
+Lot distinct, après le merge de PAT-3 (#2008) et de COM-1 : en tête du hub
+« Mon parcours », un en-tête compact avec un ornement léger, par
+`LienDecor` ; jamais une grande illustration qui repousse l'action
+principale ([[D-481]] §1 bis). Le prototype PAT-3 est révisé puis revalidé
+avant le lot ([[D-481]] §4). **Réception** : la première action reste
+visible sans défilement au téléphone ; l'ornement est absent de
+l'accessibilité et de l'impression ; aucun texte neuf.
 
 ### PAT-4 — Questionnaires et agendas
 
@@ -121,7 +136,9 @@ encart d'urgence et messages de sécurité intacts, mot pour mot.
 Mon équilibre (sans score, `showValue={false}`), Ce qui compte pour moi,
 compréhension (T-33), dossier à deux voix, bilan, bibliothèque, fiches
 remises, courriers et document pour le médecin, informations, conditions
-(retour « ← Mon espace » gardé, T-34 refusé, [[D-488]] §6). Lecteur et impression sans rail (X06). **Réception** : « Bibliothèque »
+(retour « ← Mon espace » gardé, T-34 refusé, [[D-488]] §6). Lecteur et impression sans rail (X06). Le dossier à deux voix reçoit le séparateur
+`divider-two-voices` ; les intitulés des deux voix restent en texte et à
+l'impression ([[D-481]] §1 bis). **Réception** : « Bibliothèque »
 et « Fiches » gardent leurs périmètres, jamais fusionnés (cadrage v3 l.399) ;
 lecture, téléchargement et remise restent des gestes distincts.
 

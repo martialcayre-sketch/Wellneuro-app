@@ -1,8 +1,8 @@
 # Registre sanitaire du corpus clinique
 
-`source_registry.json` contient 624 notices normalisées : 391 issues du pack WN
+`source_registry.json` contient 625 notices normalisées : 391 issues du pack WN
 Ultimate v2 (`NNFC1_Annee1`, `NNPP2_Annee2`), 116 instruments du cabinet
-(`INSTRUMENTS_CABINET`), et 117 sources externes (`SOURCES_EXTERNES` — BP-07 :
+(`INSTRUMENTS_CABINET`), et 118 sources externes (`SOURCES_EXTERNES` — BP-07 :
 avis d'agence, recommandation, essai, règlement, `WN-SRC-0508` à `0511`, puis
 pour la position P5 v0.3 une recommandation de l'OMS, `WN-SRC-0555` ; besoin 2 :
 trois avis d'agence, un rapport d'évaluation, une recommandation de pratique,
@@ -54,7 +54,8 @@ lues dans `0521` ;
 besoin 2, polyphénols et antioxydants : deux avis et un rapport d'expertise de
 l'Anses, quatre avis et une guidance de l'EFSA, un règlement de l'Union, la
 publication d'un essai, une fiche du NCCIH et deux revues Cochrane,
-`WN-SRC-0639` à `0651`, puis des lignes directrices de l'OMS, `WN-SRC-0652`),
+`WN-SRC-0639` à `0651`, puis des lignes directrices de l'OMS, `WN-SRC-0652`,
+et un rapport des National Academies (IOM), `WN-SRC-0653`),
 dont seuls des extraits ciblés sont ingérés. Le manuscrit soumis `WN-SRC-0546`
 est `deprecated` : remplacé par sa version publiée `WN-SRC-0564`, ses claims ne
 sont pas retenus. Les plages `0525` à `0539` et `0556` à `0559` sont
@@ -107,9 +108,10 @@ corpus runtime.
   2022/2340 (`0642`, texte de l'Union) ; les douze autres restent à vérifier ;
   au 2026-11-11, les lignes directrices de l'OMS (`WN-SRC-0652`, licence
   CC BY-NC-SA 3.0 IGO, clause non commerciale) restent à vérifier ;
-  la recommandation de l'OMS (`WN-SRC-0555`, tous droits réservés), dont un
-  extrait court est ingéré pour usage interne sur arbitrage du responsable,
-  reste à vérifier.
+  au 2026-11-12, le rapport de l'IOM (`WN-SRC-0653`, lecture libre en ligne,
+  droits de l'éditeur) reste à vérifier. La recommandation de l'OMS
+  (`WN-SRC-0555`, tous droits réservés), dont un extrait court est ingéré pour
+  usage interne sur arbitrage du responsable, reste à vérifier.
 - Quarantaine sanitaire (`lifecycleStatus: quarantined`) : relue au registre
   à chaque déploiement, elle retire la source du rayon du corpus, jamais de
   la file de revue. Au 2026-11-01, 25 notices la portent : celles de

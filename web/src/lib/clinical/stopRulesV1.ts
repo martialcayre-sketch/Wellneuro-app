@@ -1,5 +1,6 @@
 import type { OrientationDeclencheur } from './orientationRulesV1';
 import { sha256 } from './corpusSyntheseV1';
+import { grillesCitees } from './grillesSignees';
 
 // Table des RÈGLES D'ARRÊT NNPP2 — [[D-053]], campagne « chaîne T0
 // opérationnelle », LOT-03.
@@ -224,7 +225,8 @@ export const STOP_RULES_ECARTEES_V1: StopRuleEcartee[] = [
     // en apprenant précisément cette différence.
     //
     // CE QUI NE BOUGE PAS, et c'est le point à vérifier avant toute édition ici :
-    // `STOP_RULES_SHA256` porte sur `STOP_RULES_V1` seule. Modifier cette liste
+    // `STOP_RULES_SHA256` porte sur `STOP_RULES_V1` et les grilles qu'elle cite
+    // ([[D-494]]), jamais sur cette liste. Modifier cette liste
     // ne déplace donc aucun sha et ne rouvre aucune signature — l'extinction
     // publiée et l'exclusion `dejaRepondu` restent exactement où elles étaient.
     id: 'STOP-SOM',
@@ -268,13 +270,18 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   //
   // RE-SIGNÉE le 2026-10-10 ([[D-278]] §2) : STOP-STR exige aussi l'axe `D`
   // du DASS-21 en « Normal », et son motif nomme les trois sous-échelles.
+  //
+  // RE-SIGNÉE le 2026-11-11 ([[D-494]], [[D-400]] §1) : le périmètre signé
+  // devient `{ regles, grilles }` — la règle ET les grilles de Q_STR_01,
+  // Q_STR_03 et Q_STR_04 qu'elle cite. Aucune règle, borne ni claim modifié.
   validationExterne: true,
-  dateValidation: '2026-10-10T00:00:00.000Z',
+  dateValidation: '2026-11-11T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
   // valait à la relecture, recopiée telle quelle — jamais la constante
   // (déclarée après cet objet ; comparaison tautologique sinon). Reposé à la
-  // re-signature du 2026-10-10 ([[D-278]] §2).
-  shaPerimetre: '1db9a002eeac4efe784f7884db96a13d8aada2b143757a8ec19d5eb1dac6501a',
+  // re-signature du 2026-10-10 ([[D-278]] §2), puis à celle du 2026-11-11
+  // ([[D-494]]), sur le périmètre `{ regles, grilles }`.
+  shaPerimetre: 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -287,8 +294,25 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   ],
 };
 
+/**
+ * LES GRILLES QUE CETTE TABLE LIT, et qui décident du point où une règle
+ * d'arrêt s'allume ([[D-400]] §1, [[D-494]]).
+ *
+ * STOP-STR cite des LIBELLÉS de zone (« Normal », « Niveau de stress très
+ * bas »…) : la borne qui les allume est écrite dans l'instrument, pas dans la
+ * règle. Sans ce terme, élargir la bande « Normal » du DASS-21 ferait éteindre
+ * chez davantage de patients sous une signature inchangée. Dérivé par
+ * `grillesCitees`, comme pour les tables d'orientation et de biologie : une
+ * règle ajoutée demain fait entrer SA grille sans qu'on y pense.
+ */
+export const GRILLES_ARRET = grillesCitees(STOP_RULES_V1);
+
 // La constante seule ne garde RIEN : ses deux membres bougent ensemble. Ce qui
 // garde, c'est le littéral épinglé dans `stopRulesV1.test.ts` — toute édition
-// d'une règle après signature y rougit, et la sortie de secours est de
-// RE-SIGNER, jamais de mettre le sha à jour en silence.
-export const STOP_RULES_SHA256 = sha256(JSON.stringify(STOP_RULES_V1));
+// d'une règle OU d'une grille citée après signature y rougit, et ferme
+// `tableArretSignee()` ; la sortie de secours est de RE-SIGNER, jamais de
+// mettre le sha à jour en silence. Périmètre `{ regles, grilles }` depuis
+// [[D-494]] — même patron que `ORIENTATION_RULES_SHA256`.
+export const STOP_RULES_SHA256 = sha256(
+  JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET }),
+);
