@@ -42,6 +42,18 @@ export const DECLARATION_SUICIDE_EFFACEE = Object.freeze({
   questionSuicideOptionNon: null,
 });
 
+// Borne TECHNIQUE, pas clinique : la colonne `question_suicide_option_non`
+// est un `INTEGER` (int4). La validation des options admet tout entier JS ;
+// hors de cette plage, l'écriture échouerait en 500 (revue `wn-reviewer`,
+// P2-2). Une telle option n'est pas proposée à la désignation (revue
+// CodeRabbit de #2010) : l'écran et le serveur disent la même chose.
+const INT4_MIN = -2147483648;
+const INT4_MAX = 2147483647;
+
+function estEntierInt4(valeur: unknown): valeur is number {
+  return Number.isInteger(valeur) && (valeur as number) >= INT4_MIN && (valeur as number) <= INT4_MAX;
+}
+
 export type QuestionDesignable = {
   id: string;
   texte: string;
@@ -65,7 +77,7 @@ export function questionsDesignables(definition: unknown): QuestionDesignable[] 
       if (!Array.isArray(q.options) || q.options.length === 0) continue;
       const options = q.options
         .map(o => o as { v?: unknown; l?: unknown } | null)
-        .filter((o): o is { v: number; l: unknown } => !!o && Number.isInteger(o.v))
+        .filter((o): o is { v: number; l: unknown } => !!o && estEntierInt4(o.v))
         .map(o => ({ v: o.v, l: typeof o.l === 'string' ? o.l : String(o.v) }));
       if (options.length === 0) continue;
       trouvees.push({ id: q.id, texte: typeof q.texte === 'string' ? q.texte : q.id, options });
@@ -73,12 +85,6 @@ export function questionsDesignables(definition: unknown): QuestionDesignable[] 
   }
   return trouvees;
 }
-
-// Borne TECHNIQUE, pas clinique : la colonne `question_suicide_option_non`
-// est un `INTEGER` (int4). La validation des options admet tout entier JS ;
-// hors de cette plage, l'écriture échouerait en 500 (revue `wn-reviewer`, P2-2).
-const INT4_MIN = -2147483648;
-const INT4_MAX = 2147483647;
 
 export const ERREURS_DECLARATION_SUICIDE = Object.freeze({
   reponse: 'Indiquez si ce questionnaire pose une question sur le suicide ou les idées de mort (oui / non).',
@@ -114,13 +120,7 @@ export function lireDeclarationSuicide(
     return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.questionInconnue };
   }
   const optionNon = brut.questionSuicideOptionNon;
-  if (
-    typeof optionNon !== 'number'
-    || !Number.isInteger(optionNon)
-    || optionNon < INT4_MIN
-    || optionNon > INT4_MAX
-    || !question.options.some(o => o.v === optionNon)
-  ) {
+  if (!estEntierInt4(optionNon) || !question.options.some(o => o.v === optionNon)) {
     return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon };
   }
   return {

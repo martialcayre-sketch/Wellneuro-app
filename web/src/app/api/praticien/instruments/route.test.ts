@@ -8,6 +8,8 @@ const { prisma } = vi.hoisted(() => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      // NF-7, drapeau allumé : la publication est une écriture gardée.
+      updateMany: vi.fn(),
     },
     // Gel du contenu : le PATCH compte les assignations non verrouillées.
     assignation: { count: vi.fn() },
@@ -483,6 +485,7 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
     delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
     prisma.cabinetInstrument.findFirst.mockResolvedValue(A_RELIRE);
     prisma.cabinetInstrument.update.mockResolvedValue({});
+    prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 1 });
     prisma.assignation.count.mockResolvedValue(0);
   });
 
@@ -499,6 +502,8 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       const res = await publier();
       expect(res.status).toBe(200);
       expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toEqual({ statutRelecture: 'valide' });
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].where).toEqual({ idInstrument: 'CAB_1' });
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
     });
 
     it('une déclaration envoyée quand même est ignorée', async () => {
@@ -541,6 +546,7 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
         expect(res.status).toBe(400);
         expect((await res.json()).reason).toBe('invalid_payload');
         expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+        expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
       });
     }
 
@@ -557,13 +563,15 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
         const res = await publier({ poseQuestionSuicide: true, ...designation });
         expect(res.status).toBe(400);
         expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+        expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
       });
     }
 
     it('« oui » désigné : publié, déclaration et désignation écrites avec le statut', async () => {
       const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'Q2', questionSuicideOptionNon: 0 });
       expect(res.status).toBe(200);
-      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toEqual({
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].data).toEqual({
         statutRelecture: 'valide',
         poseQuestionSuicide: true,
         questionSuicideId: 'Q2',
@@ -574,12 +582,31 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
     it('« non » : publié, toute désignation envoyée est effacée (CHECK de cohérence)', async () => {
       const res = await publier({ poseQuestionSuicide: false, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 });
       expect(res.status).toBe(200);
-      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toEqual({
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].data).toEqual({
         statutRelecture: 'valide',
         poseQuestionSuicide: false,
         questionSuicideId: null,
         questionSuicideOptionNon: null,
       });
+    });
+
+    // Revue CodeRabbit de #2010 (P1) : la désignation est vérifiée contre la
+    // définition lue ; l'écriture n'a lieu que si l'instrument n'a pas bougé.
+    it('publication gardée : l’écriture exige le statut et la date de mise à jour relus', async () => {
+      await publier({ poseQuestionSuicide: false });
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].where).toEqual({
+        idInstrument: 'CAB_1',
+        statutRelecture: 'grille_a_relire',
+        updatedAt: A_RELIRE.updatedAt,
+      });
+    });
+
+    it('instrument modifié entre la lecture et l’écriture : 409, rien n’est publié', async () => {
+      prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 0 });
+      const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 });
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('conflit_statut');
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
     });
 
     it('la désignation se vérifie contre la définition RELUE en base, pas contre le corps', async () => {
@@ -593,6 +620,7 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       });
       expect(res.status).toBe(400);
       expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
     });
 
     it('une saisie chiffrée ne se désigne pas : 400', async () => {
@@ -603,6 +631,7 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'N1', questionSuicideOptionNon: 0 });
       expect(res.status).toBe(400);
       expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
     });
 
     it('modifier les questions efface la déclaration et repasse en brouillon ([[D-303]] §2)', async () => {

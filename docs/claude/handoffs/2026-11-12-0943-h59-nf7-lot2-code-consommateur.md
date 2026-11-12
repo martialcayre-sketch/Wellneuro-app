@@ -67,6 +67,14 @@ reste strictement celui d'avant NF-7.
   - Revue de l'écart `697e7618..220804fc` : **GO**. Ses deux P2 sont corrigés
     au commit suivant : la bordure portée par une enveloppe (le `<legend>` la
     coupait), et la reprise documentée par migration et release-db (D-087).
+- Revue CodeRabbit sur `f00ed5ec` (demande manuelle ; PR-Agent valable sur la
+  même tête, code 0, sans remarque). Les trois remarques sont corrigées :
+  - P1 : publication gardée drapeau allumé, par `updateMany` sur
+    `grille_a_relire` et `updatedAt` relus, avec un 409 sinon ;
+  - P2 : options hors int4 retirées de la désignation ;
+  - nitpick : banc de garde lu sur plusieurs lignes.
+  Branche remise à niveau par fusion de `origin/main` (5bd76ae4, deux commits
+  de documentation), sur arbitrage du responsable.
 - Encart, branches couvertes par un banc pour un `CAB_` déclaré « oui » :
   - page : consentement, période terminée, transmis, « Mon équilibre » et son
     détail, saisie ;
@@ -86,15 +94,12 @@ reste strictement celui d'avant NF-7.
   - Deux remèdes possibles : filtrer `poseQuestionSuicide` non NULL dans
     `idsAssignablesPour`, drapeau allumé ; ou faire la reprise au moment de
     l'allumage. Question d'arbitrage pour le responsable.
-- **P2-3, courses.**
-  - À l'envoi : `idsAssignablesPour` est lu hors transaction, et la copie ne
-    revérifie pas `valide`. La course préexiste, mais NF-7 y ajoute la perte
-    de l'encart.
-  - À la publication : l'`update` n'est pas gardé sur le statut ni sur
-    `updatedAt`.
-  - Correctif proposé, drapeau allumé : `findFirst` sur
-    `valide` + `actif` dans la transaction d'envoi, et `updateMany` gardé avec
-    un 409 à la publication.
+- **P2-3, course à l'envoi.** `idsAssignablesPour` est lu hors transaction,
+  et la copie ne revérifie pas `valide`. La course préexiste, mais NF-7 y
+  ajoute la perte de l'encart. Correctif proposé, drapeau allumé : un
+  `findFirst` sur `valide` + `actif` dans la transaction d'envoi. La course à
+  la publication est corrigée dans ce lot (revue CodeRabbit de #2010, voir
+  « Validations exécutées »).
 - **P2-4, arbitrage.** Un instrument fait seulement de saisies chiffrées (EVA,
   D-088) ne peut pas être publié en « oui » : 0027-a exige une valeur « non ».
   L'écran le dit désormais ; reste à décider ce qu'il faut faire d'un tel

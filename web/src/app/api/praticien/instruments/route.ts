@@ -370,8 +370,9 @@ export async function PATCH(request: Request) {
       // désignation vérifiée contre la définition relue. C'est le seul
       // passage vers `valide` (banc `declarationSuicideCabinet.guard.test.ts`).
       // Drapeau éteint : la publication d'avant NF-7, inchangée.
+      const declarationExigee = declarationSuicideCabinetActive();
       let declaration = {};
-      if (declarationSuicideCabinetActive()) {
+      if (declarationExigee) {
         const lue = lireDeclarationSuicide(body, instrument.definitionJson);
         if (!lue.ok) {
           return NextResponse.json<MutateInstrumentResponse>(
@@ -381,10 +382,31 @@ export async function PATCH(request: Request) {
         }
         declaration = lue.declaration;
       }
-      await prisma.cabinetInstrument.update({
-        where: { idInstrument },
-        data: { statutRelecture: 'valide', ...declaration },
-      });
+      const data = { statutRelecture: 'valide', ...declaration };
+      if (declarationExigee) {
+        // La désignation a été vérifiée contre la définition LUE ci-dessus :
+        // l'écriture n'a lieu que si l'instrument n'a pas bougé depuis. Une
+        // modification concurrente le repasse en brouillon et touche
+        // `updatedAt` — la publication échoue alors en 409 au lieu de valider
+        // une déclaration contre d'anciennes questions (revue CodeRabbit de
+        // #2010 ; `wn-reviewer`, P2-3). Drapeau éteint : l'écriture d'avant.
+        const ecrit = await prisma.cabinetInstrument.updateMany({
+          where: { idInstrument, statutRelecture: 'grille_a_relire', updatedAt: instrument.updatedAt },
+          data,
+        });
+        if (ecrit.count === 0) {
+          return NextResponse.json<MutateInstrumentResponse>(
+            {
+              success: false,
+              reason: 'conflit_statut',
+              error: 'L’instrument a été modifié pendant la relecture : rouvrez « Relire la grille ».',
+            },
+            { status: 409 },
+          );
+        }
+      } else {
+        await prisma.cabinetInstrument.update({ where: { idInstrument }, data });
+      }
       return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
     }
 

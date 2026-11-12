@@ -24,7 +24,10 @@ import {
 // comportement ne verrait pas. Lecture du texte, comme les bancs voisins.
 
 const RACINE_SRC = path.resolve(__dirname, '../..');
+// `\s` couvre le saut de ligne : `statutRelecture:` et `'valide'` sur deux
+// lignes restent un passage (revue CodeRabbit de #2010).
 const PASSAGE_VALIDE = /statutRelecture\s*:\s*['"]valide['"]/;
+const PASSAGES_VALIDE = new RegExp(PASSAGE_VALIDE.source, 'g');
 
 function sources(repertoire: string): string[] {
   const trouves: string[] = [];
@@ -41,29 +44,48 @@ function sources(repertoire: string): string[] {
   return trouves;
 }
 
-/** Les lignes de code (hors commentaires) qui nomment `statutRelecture: 'valide'`. */
+/** Le code d'un fichier sans ses lignes de commentaire, lignes rejointes. */
+function sansCommentaires(texte: string): string {
+  return texte
+    .split('\n')
+    .filter(ligne => {
+      const code = ligne.trim();
+      return !(code.startsWith('//') || code.startsWith('*') || code.startsWith('/*'));
+    })
+    .join('\n');
+}
+
+/** Combien de fois ce code nomme `statutRelecture: 'valide'`, sur une ou plusieurs lignes. */
+function passagesDans(texte: string): number {
+  return [...sansCommentaires(texte).matchAll(PASSAGES_VALIDE)].length;
+}
+
+/** Un chemin par passage trouvé sous `web/src`, hors bancs. */
 function occurrences(): string[] {
   const vues: string[] = [];
   for (const fichier of sources(RACINE_SRC)) {
-    const lignes = readFileSync(fichier, 'utf8').split('\n');
-    lignes.forEach((ligne, i) => {
-      const code = ligne.trim();
-      if (code.startsWith('//') || code.startsWith('*') || code.startsWith('/*')) return;
-      if (PASSAGE_VALIDE.test(code)) vues.push(`${path.relative(RACINE_SRC, fichier)}:${i + 1}`);
-    });
+    const n = passagesDans(readFileSync(fichier, 'utf8'));
+    for (let i = 0; i < n; i += 1) vues.push(path.relative(RACINE_SRC, fichier));
   }
   return vues;
 }
 
 describe('NF-7 — un seul passage vers `valide`, et il exige la déclaration ([[D-303]] §4)', () => {
   it('deux occurrences, et deux seulement : l’écriture de `publier` et le filtre des assignables', () => {
-    const vues = occurrences().map(o => o.replace(/:\d+$/, '')).sort();
-    expect(vues).toEqual(['app/api/praticien/instruments/route.ts', 'lib/instruments.ts']);
+    expect(occurrences().sort()).toEqual(['app/api/praticien/instruments/route.ts', 'lib/instruments.ts']);
+  });
+
+  it('le lecteur voit une écriture répartie sur deux lignes, et ignore les commentaires', () => {
+    expect(passagesDans("data: {\n  statutRelecture:\n    'valide',\n}")).toBe(1);
+    expect(passagesDans("// statutRelecture: 'valide'\n * statutRelecture: 'valide'")).toBe(0);
+    expect(passagesDans("a = { statutRelecture: 'valide' }; b = { statutRelecture: \"valide\" }")).toBe(2);
   });
 
   it('l’écriture de `publier` porte la déclaration lue, et le filtre ne fait que lire', () => {
     const route = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/instruments/route.ts'), 'utf8');
-    expect(route).toMatch(/data:\s*\{\s*statutRelecture:\s*'valide',\s*\.\.\.declaration\s*\}/);
+    expect(route).toMatch(/const data = \{\s*statutRelecture:\s*'valide',\s*\.\.\.declaration\s*\}/);
+    // Drapeau allumé, l'écriture est gardée sur le statut et la date relus.
+    expect(route).toMatch(/updateMany\(\{\s*where:\s*\{\s*idInstrument,\s*statutRelecture:\s*'grille_a_relire',\s*updatedAt:\s*instrument\.updatedAt\s*\}/);
     expect(route).toMatch(/lireDeclarationSuicide\(body,\s*instrument\.definitionJson\)/);
     // Le filtre `where` de `idsAssignablesPour` : une lecture, pas une écriture.
     const instruments = readFileSync(path.join(RACINE_SRC, 'lib/instruments.ts'), 'utf8');
@@ -142,6 +164,8 @@ describe('NF-7 — la désignation, vérifiée contre la définition', () => {
     expect(lireDeclarationSuicide({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 3000000000 }, geante))
       .toEqual({ ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon });
     expect(lireDeclarationSuicide({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 1 }, geante).ok).toBe(true);
+    // L'écran ne la propose pas non plus (revue CodeRabbit de #2010).
+    expect(questionsDesignables(geante)[0].options.map(o => o.v)).toEqual([1]);
   });
 });
 
