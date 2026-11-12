@@ -1,0 +1,11 @@
+- **Mise à jour (2026-11-12, NF-7 lot 2, code consommateur)** : sur demande du responsable, après D-493 mergée (#2001, `d6957b86`). Le code est livré sans migration, derrière `WN_ENABLE_DECLARATION_SUICIDE_CAB`, neuf et éteint.
+  - **Publication** (`api/praticien/instruments`, action `publier`) : drapeau allumé, la déclaration oui / non est exigée. « Oui » exige la désignation, vérifiée contre la définition relue en base. Une désignation vide est refusée ici. Le P2 (1) routé par la revue de #2001 est ainsi tranché par la demande du lot.
+  - **Modification** des questions ou de la grille : l'instrument repasse en brouillon, comme avant, et la déclaration est effacée.
+  - **Envoi** : copie sur l'assignation dans la transaction de `file-envoi/envoyer`, seul chemin `CAB_` ; les packs et l'assignation unitaire servent le catalogue seul.
+  - **Écran patient** : verdict serveur `encartUrgenceCabinet` (`api/patient/questionnaire`), lu par la page `portail/[token]/questionnaires/[idAssignation]` et par `GenericQuestionnaire`, sur chaque branche de rendu.
+  - **Rien de D-277** sur un `CAB_` : un banc le tient (P2 (3) de #2001).
+  - **Banc de D-303 §4** : `publier` reste le seul écrivain de `valide`.
+  - Ligne du drapeau ajoutée à `docs/FEATURE_FLAGS.md`.
+- **Reste à faire, hors de ce lot** :
+  - l'allumage, geste du responsable, pas avant le lot à part du volet D-277 (`20261111-2148-a`) ;
+  - puis la troisième migration (CHECK « valide ⇒ déclaré »), avec sa reprise avant son ADD CONSTRAINT.

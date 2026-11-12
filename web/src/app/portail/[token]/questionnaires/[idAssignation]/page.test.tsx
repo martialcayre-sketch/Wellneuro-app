@@ -80,6 +80,8 @@ function monter(over: {
   assignation?: Partial<typeof assignation>;
   consentementPossible?: boolean;
   questionnaire?: unknown;
+  /** NF-7 : verdict du serveur, absent par défaut comme drapeau éteint. */
+  encartUrgenceCabinet?: boolean;
 }) {
   vi.stubGlobal(
     'fetch',
@@ -94,6 +96,7 @@ function monter(over: {
           questionnaire: over.questionnaire ?? { id: 'Q_NEU_03', titre: 'Questionnaire test', questions: [] },
           renderer: 'liste',
           consentementPossible: over.consentementPossible ?? true,
+          ...(over.encartUrgenceCabinet ? { encartUrgenceCabinet: true } : {}),
         }),
     }),
   );
@@ -213,3 +216,68 @@ describe('écran portail — encart d’urgence avant la saisie', () => {
   });
 });
 
+
+// NF-7 ([[D-303]] §3) : UN INSTRUMENT DU CABINET DÉCLARÉ « OUI » PORTE L'ENCART
+// SUR CHAQUE BRANCHE DE RENDU de cet écran, comme les quatre du catalogue — sur
+// le seul verdict du serveur (`encartUrgenceCabinet`), qui lit la copie prise
+// à l'envoi. Branches : consentement, période terminée, transmis, accueil et
+// détail de Mon équilibre, saisie (`GenericQuestionnaire`, banc voisin pour la
+// saisie page à page et le résumé). Sans verdict, un `CAB_` n'en porte aucun.
+describe('écran portail — encart d’urgence d’un instrument du cabinet (NF-7)', () => {
+  const ENCART = { name: 'Besoin d’aide maintenant ?' };
+  const CAB = { idQuestionnaire: 'CAB_TEST' };
+  const DEFINITION_CAB = {
+    id: 'CAB_TEST',
+    titre: 'Questionnaire test',
+    sections: [
+      {
+        id: 'S1',
+        questions: [
+          { id: 'Q1', texte: 'Question test', type: 'likert', options: [{ v: 0, l: 'Non' }, { v: 1, l: 'Oui' }] },
+        ],
+      },
+    ],
+  };
+
+  for (const avecVerdict of [true, false]) {
+    const attendu = avecVerdict ? 1 : 0;
+    const libelle = avecVerdict ? 'verdict du serveur' : 'témoin sans verdict';
+
+    it(`${libelle} : écran de consentement`, async () => {
+      monter({ assignation: CAB, encartUrgenceCabinet: avecVerdict });
+      await screen.findAllByText('Questionnaire test');
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+    });
+
+    it(`${libelle} : écran « période terminée »`, async () => {
+      monter({ assignation: CAB, consentementPossible: false, encartUrgenceCabinet: avecVerdict });
+      await screen.findByText(/La période est terminée/);
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+    });
+
+    it(`${libelle} : écran transmis, accueil et détail de Mon équilibre`, async () => {
+      monter({
+        assignation: { ...CAB, consentement: 'donne', statutReponses: 'verrouille' },
+        encartUrgenceCabinet: avecVerdict,
+      });
+      fireEvent.click(await screen.findByRole('button', { name: 'Voir Mon équilibre' }));
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+      fireEvent.click(screen.getByRole('button', { name: 'Voir le détail' }));
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+      fireEvent.click(screen.getByRole('button', { name: 'Retour à l’accueil' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+    });
+
+    it(`${libelle} : écran de saisie`, async () => {
+      vi.stubGlobal('scrollTo', vi.fn());
+      monter({
+        assignation: { ...CAB, consentement: 'donne', statutReponses: 'en_cours' },
+        questionnaire: DEFINITION_CAB,
+        encartUrgenceCabinet: avecVerdict,
+      });
+      await screen.findByText('Question test');
+      expect(screen.queryAllByRole('note', ENCART)).toHaveLength(attendu);
+    });
+  }
+});

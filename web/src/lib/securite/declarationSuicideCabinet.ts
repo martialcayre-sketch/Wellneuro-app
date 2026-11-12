@@ -1,0 +1,118 @@
+// LA DÉCLARATION « QUESTION SUR LE SUICIDE » DES INSTRUMENTS DU CABINET —
+// [[D-303]] §2-§4, amendée par [[D-493]] (NF-7, H59, lot 2).
+//
+// À la publication d'un instrument `CAB_`, le praticien répond : « Ce
+// questionnaire pose-t-il une question sur le suicide ou les idées de mort :
+// oui / non ». Sans réponse, rien ne se publie. « Oui » exige la désignation
+// de la question concernée et de sa valeur « non » (réponse 20261111-0027-a),
+// vérifiée ICI contre la définition : un CHECK de base ne lit pas le JSON, et
+// une désignation vide passerait le sien.
+//
+// CE QUE LA DÉSIGNATION NE FAIT PAS ([[D-493]] §3) : rien ne la lit pour
+// calculer un message, un constat ou un courriel. Le message de [[D-277]] et
+// le courriel au praticien relèvent d'un lot à part, sous sa propre décision
+// clinique. NF-7 ne sert que l'encart de [[D-275]], lu sur la COPIE de la
+// déclaration prise à l'envoi (`assignations.pose_question_suicide`), sans
+// repli sur l'instrument (20261111-0027-a).
+//
+// NULL VEUT DIRE « NON DÉCLARÉ », JAMAIS « NON » (20261111-0028-a).
+//
+// Module pur, sans dépendance Node : l'écran de relecture du praticien lit
+// `questionsDesignables` pour proposer la désignation.
+
+/**
+ * `WN_ENABLE_DECLARATION_SUICIDE_CAB` (20261111-0029-a), éteint par défaut.
+ * Convention des drapeaux produit (`docs/FEATURE_FLAGS.md`, section A) : seule
+ * la valeur exacte `true` l'allume. Éteint, rien ne change : la publication
+ * n'exige rien, l'envoi ne copie rien, l'écran patient n'affiche l'encart que
+ * sur les quatre questionnaires du catalogue.
+ */
+export function declarationSuicideCabinetActive(): boolean {
+  return process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB === 'true';
+}
+
+export type DeclarationSuicideCabinet =
+  | { poseQuestionSuicide: false; questionSuicideId: null; questionSuicideOptionNon: null }
+  | { poseQuestionSuicide: true; questionSuicideId: string; questionSuicideOptionNon: number };
+
+/** La déclaration effacée : ce qu'une modification des questions laisse. */
+export const DECLARATION_SUICIDE_EFFACEE = Object.freeze({
+  poseQuestionSuicide: null,
+  questionSuicideId: null,
+  questionSuicideOptionNon: null,
+});
+
+export type QuestionDesignable = {
+  id: string;
+  texte: string;
+  options: { v: number; l: string }[];
+};
+
+/**
+ * Les questions qu'on peut désigner : celles qui proposent des réponses au
+ * choix. Une saisie chiffrée n'a pas de valeur « non » à désigner.
+ */
+export function questionsDesignables(definition: unknown): QuestionDesignable[] {
+  const sections = (definition as { sections?: unknown } | null)?.sections;
+  if (!Array.isArray(sections)) return [];
+  const trouvees: QuestionDesignable[] = [];
+  for (const section of sections) {
+    const questions = (section as { questions?: unknown } | null)?.questions;
+    if (!Array.isArray(questions)) continue;
+    for (const brute of questions) {
+      const q = brute as { id?: unknown; texte?: unknown; options?: unknown } | null;
+      if (!q || typeof q.id !== 'string' || q.id.length === 0) continue;
+      if (!Array.isArray(q.options) || q.options.length === 0) continue;
+      const options = q.options
+        .map(o => o as { v?: unknown; l?: unknown } | null)
+        .filter((o): o is { v: number; l: unknown } => !!o && Number.isInteger(o.v))
+        .map(o => ({ v: o.v, l: typeof o.l === 'string' ? o.l : String(o.v) }));
+      if (options.length === 0) continue;
+      trouvees.push({ id: q.id, texte: typeof q.texte === 'string' ? q.texte : q.id, options });
+    }
+  }
+  return trouvees;
+}
+
+export const ERREURS_DECLARATION_SUICIDE = Object.freeze({
+  reponse: 'Indiquez si ce questionnaire pose une question sur le suicide ou les idées de mort (oui / non).',
+  question: 'Désignez la question qui porte sur le suicide ou les idées de mort.',
+  questionInconnue: 'La question désignée n’existe pas dans ce questionnaire, ou ne propose pas de réponses au choix.',
+  optionNon: 'Désignez, parmi les réponses de cette question, celle qui signifie « non ».',
+});
+
+/**
+ * Lit la déclaration envoyée à la publication et la vérifie contre la
+ * définition de l'instrument. « Non » efface toute désignation (le CHECK de
+ * base la refuserait sans « oui »).
+ */
+export function lireDeclarationSuicide(
+  brut: { poseQuestionSuicide?: unknown; questionSuicideId?: unknown; questionSuicideOptionNon?: unknown },
+  definition: unknown,
+): { ok: true; declaration: DeclarationSuicideCabinet } | { ok: false; erreur: string } {
+  if (brut.poseQuestionSuicide === false) {
+    return {
+      ok: true,
+      declaration: { poseQuestionSuicide: false, questionSuicideId: null, questionSuicideOptionNon: null },
+    };
+  }
+  if (brut.poseQuestionSuicide !== true) {
+    return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.reponse };
+  }
+  const idQuestion = brut.questionSuicideId;
+  if (typeof idQuestion !== 'string' || idQuestion.trim().length === 0) {
+    return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.question };
+  }
+  const question = questionsDesignables(definition).find(q => q.id === idQuestion);
+  if (!question) {
+    return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.questionInconnue };
+  }
+  const optionNon = brut.questionSuicideOptionNon;
+  if (typeof optionNon !== 'number' || !Number.isInteger(optionNon) || !question.options.some(o => o.v === optionNon)) {
+    return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon };
+  }
+  return {
+    ok: true,
+    declaration: { poseQuestionSuicide: true, questionSuicideId: idQuestion, questionSuicideOptionNon: optionNon },
+  };
+}

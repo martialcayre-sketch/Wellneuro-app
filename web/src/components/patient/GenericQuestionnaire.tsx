@@ -29,7 +29,14 @@ import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog'
 // Questionnaire générique piloté par le catalogue, section par section.
 // Composant présentationnel : la navigation (retour hub / succès) est confiée
 // à onDone par la page appelante.
-export function GenericQuestionnaire({ assignation, questionnaire, email, onDone, renderer: rendererServeur }: {
+export function GenericQuestionnaire({
+  assignation,
+  questionnaire,
+  email,
+  onDone,
+  renderer: rendererServeur,
+  encartUrgenceCabinet = false,
+}: {
   assignation: AssignationInfo;
   questionnaire: QuestionnaireDef;
   email: string;
@@ -42,7 +49,14 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
    * questionnaires à forme unique.
    */
   renderer?: RendererProfile;
+  /**
+   * NF-7 ([[D-303]] §3) : instrument du cabinet déclaré « oui », verdict du
+   * serveur (`api/patient/questionnaire`). Il ouvre l'encart de [[D-275]],
+   * et lui seul : le message de [[D-277]] ne suit pas ([[D-493]]).
+   */
+  encartUrgenceCabinet?: boolean;
 }) {
+  const avecEncartUrgence = afficheEncartUrgence(assignation.idQuestionnaire) || encartUrgenceCabinet;
   const sections = questionnaire.sections ?? [];
   const renderer = rendererServeur ?? getEnabledRenderer(questionnaire.id);
   const microBatches = getMicroBatches(questionnaire.id);
@@ -210,7 +224,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             {questionnaireComplet ? 'Toutes les parties sont complètes.' : 'Certaines parties restent à compléter.'}
           </p>
           {/* Le résumé est un écran à part : l'encart doit y être aussi ([[D-275]]). */}
-          {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mt-3" />}
+          {avecEncartUrgence && <EncartUrgenceSuicide className="mt-3" />}
           {/* [[D-277]] §1 : le message revient sur le résumé avant transmission. */}
           {questionnairePorteReponseSuicidePositive(
             assignation.idQuestionnaire,
@@ -305,7 +319,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             Merci de ne pas le compléter seul&nbsp;: attendez le rendez-vous.
           </p>
         )}
-        {afficheEncartUrgence(assignation.idQuestionnaire) && <EncartUrgenceSuicide className="mt-2" />}
+        {avecEncartUrgence && <EncartUrgenceSuicide className="mt-2" />}
         {currentSection === 0 && questionnaire.instructions && (
           <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}

@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
@@ -277,7 +279,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setTiroirRelecture(true);
   }
 
-  async function publier(idInstrument: string) {
+  async function publier(idInstrument: string, declaration?: DeclarationSuicideSaisie) {
     setOccupe(true);
     setMessage(null);
     setErreur(null);
@@ -285,7 +287,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
       const res = await fetch('/api/praticien/instruments', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idInstrument, action: 'publier' }),
+        body: JSON.stringify({ idInstrument, action: 'publier', ...declaration }),
       });
       const json = (await res.json()) as MutateInstrumentResponse;
       if (json.success) {
@@ -376,7 +378,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 <RelectureGrille
                   detail={relecture}
                   occupe={occupe}
-                  onPublier={() => void publier(relecture.idInstrument)}
+                  onPublier={declaration => void publier(relecture.idInstrument, declaration)}
                 />
               )}
             </PanneauSuperpose>
@@ -1265,6 +1267,101 @@ function ImportInstrument({ onRafraichir }: { onRafraichir: () => Promise<void> 
   );
 }
 
+// NF-7 ([[D-303]] §2, [[D-493]] §3) : la déclaration « question sur le
+// suicide », exigée à la publication quand le serveur l'annonce
+// (`declarationSuicideRequise`, drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB`).
+// « Oui » demande la question concernée et sa réponse « non ». Le serveur
+// revérifie tout contre la définition relue en base.
+type DeclarationSuicideSaisie =
+  | { poseQuestionSuicide: false }
+  | { poseQuestionSuicide: true; questionSuicideId: string; questionSuicideOptionNon: number };
+
+function DeclarationSuicide({
+  detail,
+  onChange,
+}: {
+  detail: InstrumentCabinetDetailDto;
+  onChange: (declaration: DeclarationSuicideSaisie | null) => void;
+}) {
+  const idLegende = useId();
+  const idQuestion = useId();
+  const idOption = useId();
+  const designables = useMemo(() => questionsDesignables(detail.definition), [detail.definition]);
+  const [reponse, setReponse] = useState<'oui' | 'non' | null>(null);
+  const [questionId, setQuestionId] = useState('');
+  const [optionNon, setOptionNon] = useState('');
+  const question = designables.find(q => q.id === questionId);
+
+  useEffect(() => {
+    if (reponse === 'non') onChange({ poseQuestionSuicide: false });
+    else if (reponse === 'oui' && question && optionNon !== '') {
+      onChange({ poseQuestionSuicide: true, questionSuicideId: question.id, questionSuicideOptionNon: Number(optionNon) });
+    } else onChange(null);
+  }, [reponse, question, optionNon, onChange]);
+
+  return (
+    <fieldset className="border-t border-border pt-4" aria-labelledby={idLegende}>
+      <p id={idLegende} className="text-sm font-semibold text-foreground">
+        Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
+      </p>
+      <p className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
+      <div className="mt-2 flex gap-4">
+        {(['oui', 'non'] as const).map(valeur => (
+          <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
+            <input
+              type="radio"
+              name={`${idLegende}-reponse`}
+              value={valeur}
+              checked={reponse === valeur}
+              onChange={() => setReponse(valeur)}
+            />
+            {valeur === 'oui' ? 'Oui' : 'Non'}
+          </label>
+        ))}
+      </div>
+      {reponse === 'oui' && (
+        <div className="mt-2 flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor={idQuestion} className="text-xs font-medium text-foreground">
+              Question concernée
+            </label>
+            <Select
+              id={idQuestion}
+              value={questionId}
+              onChange={e => {
+                setQuestionId(e.target.value);
+                setOptionNon('');
+              }}
+            >
+              <option value="">Choisir une question</option>
+              {designables.map(q => (
+                <option key={q.id} value={q.id}>
+                  {q.texte}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {question && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor={idOption} className="text-xs font-medium text-foreground">
+                Réponse qui signifie « non »
+              </label>
+              <Select id={idOption} value={optionNon} onChange={e => setOptionNon(e.target.value)}>
+                <option value="">Choisir une réponse</option>
+                {question.options.map(o => (
+                  <option key={o.v} value={String(o.v)}>
+                    {o.l}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
 // Récapitulatif de relecture : échelle, bandes, score maximal — puis le geste
 // explicite « Grille relue — publier ». C'est LE passage obligé vers
 // l'assignabilité d'un instrument du cabinet.
@@ -1280,8 +1377,10 @@ function RelectureGrille({
 }: {
   detail: InstrumentCabinetDetailDto;
   occupe: boolean;
-  onPublier: () => void;
+  onPublier: (declaration?: DeclarationSuicideSaisie) => void;
 }) {
+  const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
+  const declarationManquante = detail.declarationSuicideRequise === true && declaration === null;
   const sansInterpretation = interditTouteBande(detail.scoring);
   const premiere = detail.definition.sections[0]?.questions[0];
   const options = premiere && premiere.type === 'likert' ? premiere.options : [];
@@ -1361,8 +1460,15 @@ function RelectureGrille({
           </div>
         </>
       )}
+      {detail.declarationSuicideRequise === true && (
+        <DeclarationSuicide detail={detail} onChange={setDeclaration} />
+      )}
       <div className="border-t border-border pt-4">
-        <Button type="button" disabled={occupe} onClick={onPublier}>
+        <Button
+          type="button"
+          disabled={occupe || declarationManquante}
+          onClick={() => onPublier(detail.declarationSuicideRequise === true ? declaration ?? undefined : undefined)}
+        >
           {sansInterpretation ? 'Relu — publier' : 'Grille relue — publier'}
         </Button>
         <p className="mt-2 text-2xs text-muted-foreground">
