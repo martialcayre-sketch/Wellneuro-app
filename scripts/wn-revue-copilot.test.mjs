@@ -160,8 +160,15 @@ test('arguments : --quota ou un numéro, rien d’autre', () => {
   assert.equal(r.status, SORTIE_USAGE);
 });
 
-test('câblage : wn-merge, la règle 1.6 et D-468 nomment le lecteur', () => {
-  assert.match(lireFichier('.claude/skills/wn-merge/SKILL.md'), /wn-revue-copilot\.mjs/);
-  assert.match(lireFichier('.claude/rules/pr-revue-et-release-db.md'), /wn-revue-copilot\.mjs/);
+// D-499 (2026-11-12) : PR-Agent devient la revue exigée ; la session ne
+// demande plus Copilot (§1), qui n'est plus un recours (§2). Le lecteur reste
+// nommé par D-468, mais wn-merge et la règle 1.6 ne le prescrivent plus.
+test('câblage : D-468 nomme le lecteur ; depuis D-499, wn-merge et la règle 1.6 ne le prescrivent plus', () => {
   assert.match(lireFichier('docs/decisions/D-468.md'), /wn-revue-copilot\.mjs/);
+  for (const chemin of ['.claude/skills/wn-merge/SKILL.md', '.claude/rules/pr-revue-et-release-db.md']) {
+    const texte = lireFichier(chemin);
+    assert.doesNotMatch(texte, /wn-revue-copilot\.mjs/, chemin);
+    assert.match(texte, /D-499/, chemin);
+    assert.match(texte, /wn-revue-pr-agent\.mjs/, chemin);
+  }
 });
