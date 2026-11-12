@@ -139,10 +139,13 @@ function lecteursAtteints(entree: string, sources: ReadonlyMap<string, string>):
 }
 
 /** La clause du contrat du catalogue qui refuse le marqueur dans un panel,
- * active (hors commentaire) et suivie de son refus à zéro. */
+ * active (hors commentaire de ligne `--` ou de bloc) et suivie de son refus à
+ * zéro. Que le contrat s'exécute est l'affaire du CI, qui le joue
+ * (`ci.yml`) : ce banc n'en vérifie que la présence. */
 function clauseRefusMarqueurActive(contrat: string): boolean {
+  const sansBlocs = contrat.replace(/\/\*[\s\S]*?\*\//g, '');
   return /^\s*SELECT count\(\*\) INTO nb FROM biology_panel_items WHERE analyte_code = 'BIO_ANTI_LDL_OXYDE';\s*\n\s*IF nb <> 0 THEN\s*\n\s*RAISE EXCEPTION 'D-465 §2:/m.test(
-    contrat,
+    sansBlocs,
   );
 }
 
@@ -220,12 +223,14 @@ describe('Réserve de D-465 §3 : le marqueur anti-LDL oxydé ne vaut pas indica
       expect(clauseRefusMarqueurActive(contrat)).toBe(true);
     });
 
-    it('mutations : clause commentée, seuil changé, refus neutralisé — rouges', () => {
+    it('mutations : clause commentée (ligne ou bloc), seuil changé, refus neutralisé — rouges', () => {
       const i = contrat.indexOf(select);
       expect(i).toBeGreaterThan(0);
       const avant = contrat.slice(0, i);
       const apres = contrat.slice(i);
       expect(clauseRefusMarqueurActive(contrat.replace(select, `-- ${select}`))).toBe(false);
+      const fin = apres.indexOf('END IF;') + 'END IF;'.length;
+      expect(clauseRefusMarqueurActive(`${avant}/* ${apres.slice(0, fin)} */${apres.slice(fin)}`)).toBe(false);
       expect(clauseRefusMarqueurActive(avant + apres.replace('IF nb <> 0 THEN', 'IF nb <> 5 THEN'))).toBe(false);
       expect(clauseRefusMarqueurActive(avant + apres.replace('IF nb <> 0 THEN', 'IF false THEN'))).toBe(false);
     });
