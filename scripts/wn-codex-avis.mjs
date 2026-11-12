@@ -342,6 +342,9 @@ function executer(bin, args, stdin, env, delaiS) {
     enfant.stderr.on('data', (d) => { err += d; });
     enfant.on('error', (e) => { clearTimeout(minuterie); resolve({ code: -1, out, err: String(e), expire }); });
     enfant.on('close', (code) => { clearTimeout(minuterie); resolve({ code, out, err, expire }); });
+    // Un binaire mort avant d'avoir lu l'entrée (drapeau rejeté…) lève EPIPE :
+    // la fermeture du processus porte déjà l'échec, rendu en `4`.
+    enfant.stdin.on('error', () => {});
     enfant.stdin.end(stdin);
   });
 }

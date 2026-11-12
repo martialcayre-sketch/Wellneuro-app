@@ -198,6 +198,7 @@ const fs = require('node:fs'), path = require('node:path');
 const ici = __dirname, s = JSON.parse(fs.readFileSync(path.join(ici, 'scenario.json'), 'utf8'));
 const a = process.argv.slice(2);
 if (a[0] === '--version') { console.log(s.version); process.exit(0); }
+if (s.sortirSansLire) process.exit(s.code ?? 2);
 fs.writeFileSync(path.join(ici, 'recu.json'), JSON.stringify({ env: process.env, args: a }));
 if (s.ecrireDansVide) fs.writeFileSync(path.join(a[a.indexOf('-C') + 1], 'trace'), 'x');
 if (s.reponse) fs.writeFileSync(a[a.indexOf('-o') + 1], JSON.stringify(s.reponse));
@@ -260,6 +261,13 @@ test('bout en bout : une action = 3, même si le délai expire ; sortie non écr
   assert.equal(r.avis, null);
   const lent = banc({ evenements: action, dormirMs: 4000 }, { extra: ['--delai', '1'] });
   assert.equal(lent.code, 3, 'l\'action prime sur le délai dépassé');
+});
+
+test('bout en bout : binaire mort sans lire un gros paquet = 4, pas un plantage', () => {
+  const gros = `Question : forme.\n${'- ligne de diff ordinaire\n'.repeat(12_000)}`;
+  const r = banc({ evenements: [], reponse: null, code: 2, sortirSansLire: true }, { paquet: gros });
+  assert.equal(r.code, 4, r.stderr);
+  assert.doesNotMatch(r.stderr, /EPIPE/);
 });
 
 test('bout en bout : délai dépassé sans action = 4', () => {

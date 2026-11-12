@@ -107,8 +107,11 @@ question et la réponse.
   (`node scripts/wn-codex-avis.mjs --mode question`) : le paquet porte la
   question, ses faits et ses options, sans l'option recommandée. L'avis se
   joint à la ligne (`avis_codex`). Sur une question `ordinaire` du périmètre
-  de `D-505` §6, si Codex retient l'option recommandée par la session, la
-  session avance. La ligne passe à `repondue`, avec `reponse_par` =
+  de `D-505` §6 et hors de ses exclusions (texte patient, donnée en base,
+  sécurité, juridique ou RGPD, orientation du produit, release-db,
+  garde-fous, politique de revue, `D-505` elle-même), la session avance
+  si Codex retient l'option qu'elle recommande, avec une confiance au
+  moins moyenne et aucun fait manquant déclaré. La ligne passe à `repondue`, avec `reponse_par` =
   `accord session et Codex (D-505)`. Elle reste `repondue` jusqu'à la
   séance, même sans décision ni PR : le guichet la présente, le
   responsable peut la renverser. Sinon, la question attend la séance.
