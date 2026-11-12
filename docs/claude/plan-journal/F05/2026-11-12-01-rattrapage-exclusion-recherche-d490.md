@@ -1,0 +1,21 @@
+- **Mise à jour (2026-11-12, constat : rattrapage de l'exclusion de la recherche, D-490, PR 3 sur 3)** : forme opaque (`D-251` §4) ; identifiants, mécanismes et agrégats seulement. Listes, délégation, constat et mesure au dépôt privé des revues (`rattrapage-d490/`).
+  - **Liste proposée** : 483 claims, soit 481 hors parcours sans usage explicite dans aucun dossier (signature, épinglage, citation) et deux exceptions nominatives (`D-490` §5). `WN-CL-0292-003`, rejeté, n'y figure pas. Contre-vérification de Codex : GO sur 483. La relecture de production du même jour a retrouvé les lignes des candidats inchangées, sans claim exclu ni acte d'exclusion.
+  - **Retrait** : `WN-CL-0167-023`, l'une des deux exceptions nominatives, est cité par les indications de biologie du code et tenu pour épinglé. Le responsable l'a retiré de la liste ; il reste dans la recherche.
+  - **Validation et délégation** : liste validée par le responsable à 482 claims (481 hors parcours et l'exception `WN-CL-0044-016`), avec délégation du geste (`D-490` §6, patron de `D-325` §5). Empreinte de la liste au dossier privé.
+  - **Geste** : exclusion en lot à l'atelier, exécutée par l'assistant depuis Chrome dans la session du responsable, le 2026-11-12 à 09:30 UTC. Réponse : 482 claims exclus de la recherche.
+  - **Constat** (conteneur de lecture seule) :
+    - 482 claims exclus, aucun hors de la liste ;
+    - 482 actes « exclure » d'un seul acteur, dans une seule fenêtre ;
+    - motifs conformes à la liste validée (empreinte) ;
+    - sur tout le corpus, aucune incohérence entre la colonne et le dernier sens du journal ;
+    - prédicat présent dans la fonction de recherche ;
+    - témoins non exclus : `0167-023`, `0245-006`, `0333-043` et `0292-003` ;
+    - la validité est inchangée : 8 596 claims validés, dont 482 exclus de la recherche, 35 en attente, 93 rejetés.
+  - **Mesure des résultats rendus** (conteneurs de lecture seule, `match_count` 8, seuil par défaut) :
+    - les cinq graines de la mesure du 2026-11-11 rendent toujours huit résultats. Avant, un à sept d'entre eux venaient de la liste ; il n'y en a plus aucun, et aucune graine ne se rend elle-même ;
+    - avec pour graines les 482 claims exclus (le pire cas), aucun claim exclu n'est rendu. 425 graines rendent huit résultats, 57 en rendent moins, dont 11 aucun (moyenne 7,43) ;
+    - pour ces 57 graines, le parcours exact sans index rend les mêmes comptes que l'index HNSW. Le manque n'est donc pas une perte de l'index, avec un filtre appliqué après lui : même en parcours exact, moins de huit claims servables (validés, actifs, non exclus) dépassent le seuil de similarité près de ces graines. Aucun calcul sans seuil n'a été fait. Réserve : le plan exact n'a pas été relu par `EXPLAIN`.
+  - **Toujours ouvert** (handoff du 2026-11-11, pour le responsable, non arbitré) :
+    - Q1 : un claim exclu, remis en attente puis revalidé, revient exclu sans acte nouveau ;
+    - Q2 : le filtre « exclus seulement » n'existe que dans l'onglet Validés.
+  - **Coordination** : la marque est posée en production. Le refus d'une option BP-17 qui cite un claim exclu reste un contrôle de la file C (LOT-17, PR 4). `D-490` n'est pas modifiée.
