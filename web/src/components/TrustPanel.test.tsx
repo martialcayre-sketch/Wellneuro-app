@@ -7,7 +7,16 @@ import { TrustPanel } from './TrustPanel';
 // refus du serveur (« Traité » sans réponse) s'affiche au lieu d'être ignoré.
 
 vi.mock('next/link', () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
+  default: ({ children, href, id, 'aria-current': courant }: {
+    children: React.ReactNode; href: string; id?: string; 'aria-current'?: 'true';
+  }) => <a href={href} id={id} aria-current={courant}>{children}</a>,
+}));
+
+// Le dépôt choisi vit dans l'adresse (`?depot=`, PRA-2b) : le test le pose.
+let depot: string | null = null;
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/dashboard/droits',
+  useSearchParams: () => new URLSearchParams(depot ? `depot=${depot}` : ''),
 }));
 
 const DEMANDE = {
@@ -25,6 +34,7 @@ const REFUS = 'Une réponse écrite est requise avant de passer une demande de d
 let corpsPatch: Record<string, unknown> | null = null;
 
 beforeEach(() => {
+  depot = null;
   corpsPatch = null;
   global.fetch = vi.fn((_url: string | URL | Request, init?: RequestInit) => {
     if (init?.method === 'PATCH') {
@@ -46,13 +56,13 @@ afterEach(cleanup);
 describe('TrustPanel — réponse à une demande de droit (D-295 §3)', () => {
   it('le champ de réponse ne paraît que sur la demande de droit', async () => {
     render(<TrustPanel />);
-    await screen.findByText(/Demande d'exercice de droit/);
+    await screen.findAllByText(/Demande d'exercice de droit/);
     expect(screen.getAllByLabelText(/Réponse envoyée au patient/)).toHaveLength(1);
   });
 
   it('affiche le refus du serveur quand « Traité » est choisi sans réponse', async () => {
     render(<TrustPanel />);
-    await screen.findByText(/Demande d'exercice de droit/);
+    await screen.findAllByText(/Demande d'exercice de droit/);
     fireEvent.change(screen.getAllByLabelText('Statut de traitement')[0], { target: { value: 'traite' } });
     expect((await screen.findByRole('alert')).textContent).toBe(REFUS);
     expect(corpsPatch).toMatchObject({ kind: 'demande_droit', statutTraitement: 'traite' });
@@ -81,7 +91,7 @@ describe('TrustPanel — réponse à une demande de droit (D-295 §3)', () => {
 
   it('envoie la réponse saisie avec le changement de statut', async () => {
     render(<TrustPanel />);
-    await screen.findByText(/Demande d'exercice de droit/);
+    await screen.findAllByText(/Demande d'exercice de droit/);
     fireEvent.change(screen.getByLabelText(/Réponse envoyée au patient/), { target: { value: 'Export envoyé.' } });
     fireEvent.change(screen.getAllByLabelText('Statut de traitement')[0], { target: { value: 'traite' } });
     await waitFor(() => expect(corpsPatch).toMatchObject({ statutTraitement: 'traite', reponse: 'Export envoyé.' }));
@@ -89,10 +99,86 @@ describe('TrustPanel — réponse à une demande de droit (D-295 §3)', () => {
   });
 
   it("n'envoie pas de réponse pour un autre signalement", async () => {
+    depot = 'i1';
     render(<TrustPanel />);
-    await screen.findByText(/Incident de confidentialité/);
-    fireEvent.change(screen.getAllByLabelText('Statut de traitement')[1], { target: { value: 'en_cours' } });
+    await screen.findByText('Description');
+    fireEvent.change(screen.getByLabelText('Statut de traitement'), { target: { value: 'en_cours' } });
     await waitFor(() => expect(corpsPatch).toMatchObject({ kind: 'incident_confidentialite' }));
     expect(corpsPatch).not.toHaveProperty('reponse');
+  });
+});
+
+// PRA-2b ([[D-481]] Q10 b) : file compacte et détail du dépôt choisi.
+const EFFET = {
+  kind: 'effet_indesirable', id: 'e1', idPatient: 'p3', patient: 'Jennifer Martin',
+  resume: 'Effet indésirable — troubles digestifs', detail: '', statutTraitement: 'recu',
+  soumisLe: '2026-10-15T08:00:00.000Z', examineLe: null,
+  validation: {
+    rattachement: 'element', elementDesigne: { actionId: 'a1', title: 'Magnésium le soir' },
+    elements: [{ actionId: 'a1', title: 'Magnésium le soir' }], avisSansElement: false,
+    verdicts: [], verdictCourantId: null,
+  },
+};
+
+describe('TrustPanel — file compacte et détail (PRA-2b, Q10 b)', () => {
+  beforeEach(() => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ ok: true, signalements: [EFFET, DEMANDE, INCIDENT], nonTraites: 3, pauseServie: true }),
+      } as Response),
+    );
+  });
+
+  it('chaque dépôt a sa ligne dans la file, qui mène à `?depot=` sur la même route', async () => {
+    render(<TrustPanel />);
+    const ligne = (await screen.findByText('Michel Dogné')).closest('a');
+    expect(ligne?.getAttribute('href')).toBe('/dashboard/droits?depot=i1');
+    expect(document.getElementById('depot-e1')?.getAttribute('href')).toBe('/dashboard/droits?depot=e1');
+    expect(document.getElementById('depot-d1')).toBeTruthy();
+  });
+
+  it('la file dit l’attente d’un avis ; le détail porte l’avis déplié', async () => {
+    render(<TrustPanel />);
+    await screen.findByText('Michel Dogné');
+    // Une fois dans la file, une fois en tête de l'avis du premier dépôt.
+    expect(screen.getAllByText('En attente de votre avis.')).toHaveLength(2);
+    const avis = screen.getByRole('region', { name: 'Avis sur l’implication' });
+    expect(avis.closest('details')).toBeNull();
+  });
+
+  it('le dépôt de l’adresse est montré, avec « Retour à la file » vers la file', async () => {
+    depot = 'd1';
+    render(<TrustPanel />);
+    expect(await screen.findByLabelText(/Réponse envoyée au patient/)).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Avis sur l’implication' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Retour à la file' }).getAttribute('href')).toBe('/dashboard/droits');
+    expect(document.getElementById('depot-d1')?.getAttribute('aria-current')).toBe('true');
+  });
+
+  it('quitter un détail garde le brouillon d’avis et n’enregistre rien', async () => {
+    depot = 'e1';
+    const { rerender } = render(<TrustPanel />);
+    fireEvent.click(await screen.findByLabelText('Non impliqué'));
+    depot = 'd1';
+    rerender(<TrustPanel />);
+    await screen.findByLabelText(/Réponse envoyée au patient/);
+    depot = 'e1';
+    rerender(<TrustPanel />);
+    expect((await screen.findByLabelText<HTMLInputElement>('Non impliqué')).checked).toBe(true);
+    const appels = (global.fetch as ReturnType<typeof vi.fn>).mock.calls;
+    expect(appels.some(([, init]) => (init as RequestInit | undefined)?.method)).toBe(false);
+  });
+
+  it('quitter un détail garde aussi la réponse d’une demande de droit', async () => {
+    depot = 'd1';
+    const { rerender } = render(<TrustPanel />);
+    fireEvent.change(await screen.findByLabelText(/Réponse envoyée au patient/), { target: { value: 'Brouillon.' } });
+    depot = 'i1';
+    rerender(<TrustPanel />);
+    await screen.findByText('Description');
+    depot = 'd1';
+    rerender(<TrustPanel />);
+    expect(((await screen.findByLabelText(/Réponse envoyée au patient/)) as HTMLTextAreaElement).value).toBe('Brouillon.');
   });
 });

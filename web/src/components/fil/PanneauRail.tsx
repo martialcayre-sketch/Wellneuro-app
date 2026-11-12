@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 /**
  * COQUE COMMUNE DES PANNEAUX DE L'ACCUEIL — et surtout : ce qu'un panneau
@@ -60,13 +61,13 @@ export function PanneauRail({
               rupture : le résumé descend entier sous le titre au lieu de se
               couper en deux au milieu. */}
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
-            <h3 className="font-display text-sm font-semibold text-foreground">{titre}</h3>
+            <h2 className="font-display text-sm font-semibold text-foreground">{titre}</h2>
             <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
               {resumeVide}
               <ChevronDown
                 aria-hidden="true"
                 size={14}
-                strokeWidth={2}
+                strokeWidth={TRAIT_ICONE}
                 className="shrink-0 transition-transform group-open:rotate-180"
               />
             </span>
@@ -84,7 +85,7 @@ export function PanneauRail({
       className="rounded-lg border border-border bg-surface p-5 shadow-card"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">{titre}</h3>
+        <h2 className="font-display text-lg font-semibold text-foreground">{titre}</h2>
         {complement}
       </div>
       {children}

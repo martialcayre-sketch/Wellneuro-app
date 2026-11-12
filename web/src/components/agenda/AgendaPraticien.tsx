@@ -1,7 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import type { RendezVousApiResponse, RendezVousExpose } from '@/app/api/praticien/rendez-vous/route';
+import { Button } from '@/components/ui/Button';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 type PatientOption = { idPatient: string; nomComplet: string };
 
@@ -51,6 +54,7 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
   const [heure, setHeure] = useState('');
   const [motif, setMotif] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const titreListeRef = useRef<HTMLHeadingElement>(null);
 
   const charger = useCallback(async () => {
     try {
@@ -193,16 +197,35 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
 
       {/* Liste des rendez-vous à venir, par jour */}
       <section className="order-1 rounded-xl border border-border bg-surface p-5 shadow-card md:order-2">
-        <h2 className="font-display text-lg font-semibold text-foreground">Rendez-vous à venir</h2>
+        {/* `tabIndex={-1}` : « Réessayer » disparaît pendant la relecture ;
+            le focus vient ici plutôt que de retomber sur la page. */}
+        <h2 ref={titreListeRef} tabIndex={-1} className="font-display text-lg font-semibold text-foreground focus:outline-none">Rendez-vous à venir</h2>
         {rdvs === null ? (
           <div className="mt-3 flex flex-col gap-2">
             <div className="h-11 animate-pulse rounded-lg bg-muted" />
             <div className="h-11 animate-pulse rounded-lg bg-muted" />
           </div>
         ) : erreurListe ? (
-          <p role="alert" className="mt-3 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
-            {erreurListe}
-          </p>
+          <div className="mt-3 flex flex-col items-start gap-3">
+            <p role="alert" className="w-full rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
+              {erreurListe}
+            </p>
+            {/* T-17 ([[D-488]], DOC-6) : relit la seule liste ; la saisie du
+                formulaire « Planifier » n'est pas touchée. */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                titreListeRef.current?.focus();
+                setRdvs(null);
+                void charger();
+              }}
+              className="inline-flex min-h-11 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              <RefreshCw aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+              Réessayer
+            </Button>
+          </div>
         ) : groupes.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
             Aucun rendez-vous planifié pour les 7 prochains jours.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import type {
   CreatePatientResponse,
   PatchPatientResponse,
@@ -18,6 +19,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
 import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDossier';
@@ -80,6 +82,7 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const titreTableauRef = useRef<HTMLHeadingElement>(null);
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [page, setPage] = useState(1);
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
@@ -486,7 +489,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       {/* Tableau patients */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border">
-          <h2 className="font-display text-lg font-semibold text-foreground">Patients</h2>
+          {/* `tabIndex={-1}` : « Réessayer » disparaît pendant la relecture ;
+              le focus vient ici plutôt que de retomber sur la page. */}
+          <h2 ref={titreTableauRef} tabIndex={-1} className="font-display text-lg font-semibold text-foreground focus:outline-none">Patients</h2>
         </div>
         {/* Au téléphone, chaque ligne devient un bloc empilé (Q11 a) : le
             tableau ne défile plus de côté. À la tablette, la colonne
@@ -509,6 +514,22 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
                 <tr role="row" className="block md:table-row">
                   <td role="cell" colSpan={5} className="block px-4 py-4 text-center text-foreground md:table-cell">
                     <span role="alert">{erreurTable}</span>
+                    {/* T-17 ([[D-488]], DOC-6) : relit le seul tableau ; la
+                        recherche, le tri et la page restent ceux de l'écran. */}
+                    <span className="mt-3 flex justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          titreTableauRef.current?.focus();
+                          void loadPatientsTable(page, search, sortBy);
+                        }}
+                        className="inline-flex min-h-11 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      >
+                        <RefreshCw aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+                        Réessayer
+                      </Button>
+                    </span>
                   </td>
                 </tr>
               )}

@@ -10,6 +10,7 @@ import { grouperLuesParLecture, type GroupeLecture } from '@/lib/fil/lectureCart
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import type { EtatMeteoAdhesion } from '@/lib/protocol/adhesion';
 import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
@@ -186,6 +187,7 @@ function CarteDuFil({
   carte,
   imminente,
   meteo,
+  meteoIndisponible,
   maintenant,
   onEcarter,
 }: {
@@ -194,6 +196,8 @@ function CarteDuFil({
   /** État d'adhésion du patient — badge affiché seulement s'il appelle une
    * conversation (fragile/interrompue). Absent = pas de badge. */
   meteo?: EtatMeteoAdhesion;
+  /** La Météo d'adhésion n'a pas pu être lue (T-18, [[D-481]] Q9 b). */
+  meteoIndisponible: boolean;
   maintenant: Date;
   onEcarter: () => void;
 }) {
@@ -216,7 +220,7 @@ function CarteDuFil({
             : 'border-border bg-muted text-muted-foreground'
         }`}
       >
-        <Icon size={14} strokeWidth={2} aria-hidden="true" />
+        <Icon size={14} strokeWidth={TRAIT_ICONE} aria-hidden="true" />
       </span>
       {/* flex-wrap : à 390px les actions passent sous le texte au lieu de
           l'écraser dans une colonne de 50px (audit visuel 2026-07-22). */}
@@ -245,16 +249,29 @@ function CarteDuFil({
               <BadgeMeteo etat={meteo} prefixe="Adhésion : " />
             </div>
           )}
+          {/* T-18 ([[D-488]], DOC-6 ; [[D-481]] Q9 b) : la lecture a échoué.
+              Badge neutre, distinct du panneau « Météo d'adhésion » qui garde
+              son propre état : il ne qualifie pas l'adhésion. */}
+          {meteoIndisponible && (
+            <div className="mt-1.5">
+              <span className="inline-flex items-center rounded-full border border-control-border bg-surface px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                {"Météo d'adhésion indisponible"}
+              </span>
+            </div>
+          )}
           {/* Rangée d'actions maquette : bouton d'action + pill « Pourquoi
               maintenant » (le pourquoi garde son propre span — les tests le
               ciblent au texte exact). */}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Link
               href={carte.href}
-              className={`inline-flex min-h-9 items-center rounded-lg border px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+              // UNE ACTION PRINCIPALE PAR CARTE (PRA-2b) : le bouton plein est
+              // réservé à la carte « Maintenant » ; ailleurs, un lien pétrole.
+              // La cible (`carte.href`) ne change pas.
+              className={`inline-flex min-h-9 items-center rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                 imminente
-                  ? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'border-border bg-surface text-foreground hover:bg-muted'
+                  ? 'bg-primary px-3 font-medium text-primary-foreground hover:bg-primary/90'
+                  : 'px-1 font-semibold text-primary underline underline-offset-[3px] hover:decoration-2'
               }`}
             >
               {carte.actionLabel} →
@@ -292,7 +309,7 @@ function CarteDuFil({
             type="button"
             onClick={onEcarter}
             aria-label={`Écarter cette carte — ${carte.titre}, ${carte.patient}`}
-            className="min-h-11 min-w-11 rounded-lg border border-border px-2 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="min-h-11 min-w-11 rounded-lg px-2 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Écarter
           </button>
@@ -388,6 +405,9 @@ export function FilDuJour() {
   // Météo par patient pour le badge inline — chargée à part. Un échec ne
   // masque jamais le Fil : sans donnée, pas de badge, c'est tout.
   const [meteoParPatient, setMeteoParPatient] = useState<Map<string, EtatMeteoAdhesion>>(new Map());
+  // …mais il se DIT (T-18) : sans quoi une carte sans badge se lirait « rien
+  // à signaler » là où la vérité est « on ne sait pas ».
+  const [meteoIndisponible, setMeteoIndisponible] = useState(false);
 
   // Le Fil se RELIT après un « Remettre », il ne se répare pas de mémoire. Une
   // lecture annulée rend au Fil TOUTES les cartes de son couple (dossier,
@@ -411,10 +431,13 @@ export function FilDuJour() {
     fetch('/api/praticien/meteo-adhesion')
       .then(async r => (await r.json()) as MeteoAdhesionApiResponse)
       .then(reponse => {
-        if (reponse.unavailable) return;
+        if (reponse.unavailable || !reponse.ok || !Array.isArray(reponse.determinees)) {
+          setMeteoIndisponible(true);
+          return;
+        }
         setMeteoParPatient(new Map(reponse.determinees.map(l => [l.idPatient, l.etat])));
       })
-      .catch(() => {});
+      .catch(() => setMeteoIndisponible(true));
   }, []);
 
   // Le serveur fait foi : la carte n'est écartée à l'écran qu'une fois le refus
@@ -542,7 +565,7 @@ export function FilDuJour() {
     // qualitatif mono, timeline de cartes à l'intérieur.
     <section data-testid="fil-du-jour" className="rounded-lg border border-border bg-surface p-4 shadow-card">
       <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
-        <h3 className="font-display text-lg font-semibold text-foreground">Aujourd&apos;hui</h3>
+        <h2 className="font-display text-lg font-semibold text-foreground">Aujourd&apos;hui</h2>
         <span className="font-mono text-13 text-muted-foreground">{resumeFil(data.cartes)}</span>
       </div>
       <div className="relative flex flex-col gap-3">
@@ -577,6 +600,7 @@ export function FilDuJour() {
               carte={carte}
               imminente={carte.cle === cleImminente}
               meteo={meteoParPatient.get(carte.idPatient)}
+              meteoIndisponible={meteoIndisponible}
               maintenant={maintenant}
               onEcarter={() => void basculerRefus(carte, true)}
             />

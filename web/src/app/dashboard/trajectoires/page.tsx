@@ -9,7 +9,8 @@ export default function DashboardTrajectoiresPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Fiche-trajectoire</h2>
+        {/* Titre de page en h1 (PRA-2b, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Fiche-trajectoire</h1>
         <p className="mt-1 text-base text-muted-foreground">
           Chaque patient, sa Spirale : épisode en cours, dernier jalon mesuré, prochaine échéance. Ouvrir une ligne
           affiche la fiche sur l’onglet Trajectoire.

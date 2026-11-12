@@ -11,6 +11,7 @@ import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import type { ReponseQuestionnaireLisible } from '@/lib/questionnaire-reponses';
 import { PanneauRail } from '@/components/fil/PanneauRail';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 type DetailState = {
   idPatient: string;
@@ -307,7 +308,7 @@ export function InboxQuestionnaires() {
                   aria-label="Fermer la lecture des questionnaires"
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  <X aria-hidden="true" size={20} strokeWidth={2} />
+                  <X aria-hidden="true" size={20} strokeWidth={TRAIT_ICONE} />
                 </button>
               </Dialog.Close>
             </div>
@@ -334,7 +335,7 @@ export function InboxQuestionnaires() {
                       <article key={reponse.idReponse} className="rounded-lg border border-border bg-background p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <h4 className="font-display text-lg font-semibold text-foreground">{reponse.titre}</h4>
+                            <h3 className="font-display text-lg font-semibold text-foreground">{reponse.titre}</h3>
                             <p className="font-mono text-xs text-muted-foreground">
                               {new Date(reponse.dateSoumission).toLocaleString('fr-FR', {
                                 day: '2-digit',
