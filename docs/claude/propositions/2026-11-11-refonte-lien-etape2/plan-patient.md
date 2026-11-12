@@ -109,7 +109,8 @@ d'entrée sont gardés ; U02 conserve sa destination et son libellé actuels.
 T-35 « Revenir à la connexion » reste proposé, non accepté. La date de
 version en lettres relève de PAT-6. Q5, Q6 et Q7 restent ouvertes,
 à soumettre séparément ; aucune validation de ces trois points n'est
-déduite de l'inscription des quatre choix.
+déduite de l'inscription des quatre choix. Elles ont été tranchées le
+même jour, à part : voir le paragraphe suivant (DOC-4).
 
 **Q5–Q7 du 2026-11-12** : `Q5a — Q6b — Q7a`, inscrits par DOC-4 dans
 [[D-481]] ; détails : [`pat2-arbitrages.md`](pat2-arbitrages.md). Le lot

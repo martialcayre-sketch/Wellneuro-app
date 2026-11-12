@@ -169,7 +169,8 @@ T-35 ne fait pas partie du bloc accepté le 2026-11-11 et n'est pas ajouté
 aux textes acceptés de [[D-488]]. Aucun changement de destination, de garde
 ou d'authentification n'est proposé ici. Q5 (reconnexion), Q6 (brouillon
 dans l'onglet) et Q7 (emplacement de l'alerte) restent des questions
-séparées : aucun autre texte n'est implicitement accepté.
+séparées : aucun autre texte n'est implicitement accepté. Elles ont été
+tranchées le même jour, à part : voir §2.6 (DOC-4).
 
 ### 2.6 Propositions après arbitrage PAT-2 (Q5a, Q6b) — en attente
 

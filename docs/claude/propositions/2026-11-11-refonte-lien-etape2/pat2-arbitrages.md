@@ -84,7 +84,7 @@ inscription dans [[D-488]] par un DOC-n.
 
 ### Suivi patient — report après inscription
 
-Report fait par la session qui inscrit DOC-4, sur la page
-https://claude.ai/artifact/V7AVAR7WiyU64pgJxLeG8S : fiche PAT-2 (statut
-inchangé) et une entrée de journal sous un identifiant libre, avec
-`if_version`.
+Report fait le 2026-11-12 sur la page
+https://claude.ai/artifact/V7AVAR7WiyU64pgJxLeG8S : entrées de journal
+`2026-11-12-09` (inscription de DOC-4) et `2026-11-12-13` (fusion de DOC-3,
+PR de DOC-4) ; statut de la fiche PAT-2 inchangé.
