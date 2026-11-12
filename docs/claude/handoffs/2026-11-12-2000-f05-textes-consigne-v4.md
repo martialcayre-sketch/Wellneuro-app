@@ -4,7 +4,8 @@
 
 `f05-textes-v4`, créée sur `origin/main` (6e526a16) dans le worktree
 `b-fiche-usage-iode-selenium`. #2031 (D-501 §5-§6, v3) est mergée
-(f968eb81). Un commit, PR à ouvrir.
+(f968eb81). Commit de la v4, PR #2042, puis fusion de `origin/main` (sur
+arbitrage) et commit de l'approbation.
 
 ## Objectif
 
@@ -20,8 +21,10 @@ relâcher sur les faits.
   (D-501 §7, statut proposé). La rubrique « question » se compose des seules
   désignations approuvées et de la réserve du statut d'usage ; la
   contre-lecture la juge alors fidèle, tout autre élément est un fait.
-- Restent à rendre : avis Codex, puis approbation de la v4 par le
-  responsable (patron de la v2 et de la v3).
+- V4 approuvée par le responsable (question à options, « v4 + rubriques
+  P3 et P4 », sans avis Codex demandé), avec délégation explicite de la
+  validation des rubriques de P3 et P4 (D-501 §7).
+- Fusion de `origin/main` dans la branche sur ce même arbitrage.
 
 ## Fichiers modifiés
 
@@ -47,9 +50,11 @@ relâcher sur les faits.
 
 ## Problèmes ouverts
 
-- **P3 et P4 attendent la validation du responsable**, rubrique par
-  rubrique, à l'écran (Biologie fonctionnelle, rayon « Fiches d'usage »).
-- La v4 attend l'avis Codex et l'approbation du responsable avant le merge.
+- Validation déléguée faite : six actes (P4 entière, P3 question et
+  population), constatés par conteneur (one-off-1854). **P3
+  « interprétations » reste sans acte** : sa première phrase recopie deux
+  axes signés comme un fait ; à rédiger de nouveau (version n° 2 sous la
+  v4).
 - Le `RAG_INTERNAL_SECRET` de `web/.env.local` (copie principale) n'est
   toujours pas celui de la production : le dépôt passe le secret de
   production au seul processus. Mise à jour du fichier : geste du
@@ -62,7 +67,8 @@ FU_FER_P1,FU_FER_P2,FU_FER_P5,FU_FER_P6 --designations
 ~/.wellneuro/corpus/fiches-usage/designations.json --claims
 ~/.wellneuro/corpus/claims/f05-epingles-2026-11-12.json`, puis
 `deposer.mjs --validate`, `--cible https://app.wellneuro.fr`, constat par
-conteneur. Ensuite, un dossier par lot.
+conteneur. FU_FER_P3 se rédige de nouveau sous la v4 (version n° 2, ses
+trois rubriques à revalider). Ensuite, un dossier par lot.
 
 ## Interdits encore actifs
 

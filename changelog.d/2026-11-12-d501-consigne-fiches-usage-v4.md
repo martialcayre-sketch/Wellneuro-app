@@ -10,5 +10,8 @@
   décisionnel, population, hypothèses rattachées, analyte) et de la réserve
   du statut d'usage, sans aucun fait ; la contre-lecture la juge alors
   fidèle, et tout autre élément comme un fait.
+- **Validation déléguée par le responsable** : P4 entière et deux rubriques
+  de P3 validées après relecture contre les claims ; P3 « interprétations »
+  reste sans acte, ses axes recopiés comme un fait.
 - La structure signée, la base et les modèles par défaut ne changent pas ;
   pas de release-db.
