@@ -274,14 +274,20 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // RE-SIGNÉE le 2026-11-11 ([[D-494]], [[D-400]] §1) : le périmètre signé
   // devient `{ regles, grilles }` — la règle ET les grilles de Q_STR_01,
   // Q_STR_03 et Q_STR_04 qu'elle cite. Aucune règle, borne ni claim modifié.
+  //
+  // RE-SIGNÉE le 2026-11-12 ([[D-500]]) : le périmètre signé devient
+  // `{ regles, grilles, fenetres }` — les fenêtres d'EXTINCTION (Cungi et
+  // DASS-21 à 7 jours, aucune pour Q_STR_01 : STOP-STR inopérante jusqu'à un
+  // arbitrage sur cet instrument). Règles et grilles inchangées.
   validationExterne: true,
-  dateValidation: '2026-11-11T00:00:00.000Z',
+  dateValidation: '2026-11-12T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
   // valait à la relecture, recopiée telle quelle — jamais la constante
   // (déclarée après cet objet ; comparaison tautologique sinon). Reposé à la
   // re-signature du 2026-10-10 ([[D-278]] §2), puis à celle du 2026-11-11
-  // ([[D-494]]), sur le périmètre `{ regles, grilles }`.
-  shaPerimetre: 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2',
+  // ([[D-494]]), sur le périmètre `{ regles, grilles }`, puis à celle du
+  // 2026-11-12 ([[D-500]]), sur le périmètre `{ regles, grilles, fenetres }`.
+  shaPerimetre: '0f153aacf64fa1e681f15f6679574ab322bbf8ece75f6051dcbf10ae1062ef11',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

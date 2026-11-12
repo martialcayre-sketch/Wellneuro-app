@@ -37,7 +37,7 @@ describe('stopRulesV1 — statut de signature', () => {
   // supprimée : une dé-signature accidentelle reste attrapée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(STOP_RULES_METADATA.validationExterne).toBe(true);
-    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-11T00:00:00.000Z');
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-12T00:00:00.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
@@ -365,7 +365,7 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // secours est de RE-SIGNER — jamais de mettre le sha à jour en silence.
   // Re-signé le 2026-10-10 ([[D-278]] §2) : l'axe D du DASS-21 entre dans STOP-STR.
   // Re-signé le 2026-11-11 ([[D-494]]) : le périmètre devient `{ regles, grilles }`.
-  // [[D-500]] : le périmètre devient `{ regles, grilles, fenetres }`.
+  // Re-signé le 2026-11-12 ([[D-500]]) : le périmètre devient `{ regles, grilles, fenetres }`.
   const SHA_REGLES_GRILLES_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
   const SHA_CONTENU_2026_11_12 = '0f153aacf64fa1e681f15f6679574ab322bbf8ece75f6051dcbf10ae1062ef11';
 
