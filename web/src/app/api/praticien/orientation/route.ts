@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import type { ArretNonEvalue } from '@/lib/clinical/orientationEngine';
 import {
   evaluerOrientationPourPatient,
   orientationActive,
@@ -47,6 +48,8 @@ export type OrientationApiResponse =
       ecartees: PropositionEcartee[];
       /** Règles non évaluées faute de passation fraîche ([[D-433]] §3) — vide, jamais absent. */
       reglesNonEvaluees: RegleNonEvaluee[];
+      /** Règles d'arrêt non évaluées faute de passation assez récente ou de fenêtre d'extinction ([[D-500]] §4) — vide, jamais absent. */
+      arretsNonEvalues: ArretNonEvalue[];
       /** Règles d'arrêt suspendues faute de claim admissible ([[D-491]]) — vide, jamais absent. */
       arretsSuspendus: ArretSuspendu[];
     }
@@ -99,6 +102,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       recommandations: resultat.recommandations,
       ecartees: resultat.ecartees,
       reglesNonEvaluees: resultat.reglesNonEvaluees,
+      arretsNonEvalues: resultat.arretsNonEvalues,
       arretsSuspendus: resultat.arretsSuspendus,
     });
   } catch (err) {

@@ -86,10 +86,16 @@ vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => {
     },
   };
 });
+// [[D-500]] : fenêtres d'extinction de fixture, mutables par cas — vides par
+// défaut, la règle d'arrêt de fixture lisant un drapeau.
+const { mockFenetresArret } = vi.hoisted(() => ({
+  mockFenetresArret: {} as Record<string, { delaiJours: number }>,
+}));
 vi.mock('@/lib/clinical/stopRulesV1', () => ({
   STOP_RULES_METADATA: mockArretMeta,
   STOP_RULES_V1: mockArretRegles,
   STOP_RULES_SHA256: 'sha-arret-test',
+  FENETRES_ARRET: mockFenetresArret,
   LIBELLE_EXTINCTION: 'Information suffisante — pas d’exploration supplémentaire actuellement.',
 }));
 vi.mock('@/lib/clinical/contradictionsV1', () => ({
@@ -1159,6 +1165,32 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
     expect(resultat.arretsSuspendus).toEqual([]);
     expect(mockAdmissibilite.appels).toBe(1);
+  });
+
+  it('D-500 : le service passe SES fenêtres d’extinction au moteur, et sert l’arrêt non évalué', async () => {
+    // Une règle d'arrêt sur le PSQI du dossier (passé le 2026-07-01, horloge
+    // au 2026-07-21 : 20 jours) avec une fenêtre de fixture de 7 jours. Si le
+    // service ne passait pas `FENETRES_ARRET`, la passation serait dite « sans
+    // fenêtre » (`null`) ; s'il ne servait pas `arretsNonEvalues`, rien.
+    signerLArret();
+    armerLesContradictions();
+    mockArretRegles.length = 0;
+    mockArretRegles.push({
+      ...ARRET_DRAPEAU,
+      id: 'STOP-TEST-FENETRE',
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_SOM_01', operateur: '>=', valeur: 0 }],
+    });
+    mockFenetresArret.Q_SOM_01 = { delaiJours: 7 };
+    try {
+      const resultat = await evaluerOrientationPourPatient('PAT-1');
+      if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+      expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+      expect(resultat.arretsNonEvalues).toHaveLength(1);
+      expect(resultat.arretsNonEvalues[0].stopRuleId).toBe('STOP-TEST-FENETRE');
+      expect(resultat.arretsNonEvalues[0].passations).toMatchObject([{ idQuestionnaire: 'Q_SOM_01', fenetreJours: 7 }]);
+    } finally {
+      delete mockFenetresArret.Q_SOM_01;
+    }
   });
 
   it('D-491 : un claim de la règle d\'arrêt NON ADMISSIBLE — rien n\'est éteint, la règle est dite suspendue avec son couple', async () => {

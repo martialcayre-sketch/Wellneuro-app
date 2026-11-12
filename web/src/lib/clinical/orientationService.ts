@@ -12,8 +12,9 @@ import {
   evaluerOrientationDetaillee,
   type RecommandationExploration,
   type RegleNonEvaluee,
+  type ArretNonEvalue,
 } from '@/lib/clinical/orientationEngine';
-import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
+import { FENETRES_ARRET, STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
 import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from '@/lib/clinical/admissibiliteClaims';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -202,6 +203,13 @@ export type ResultatOrientation =
        * absent — même raison que `ecartees` (`DC-24`).
        */
       reglesNonEvaluees: RegleNonEvaluee[];
+      /**
+       * Règles d'arrêt non évaluées faute de passation assez récente, ou
+       * faute de fenêtre d'extinction pour un instrument ([[D-500]] §4) —
+       * elles n'éteignent rien. Vide, jamais absent ; vide aussi quand la
+       * table d'arrêt n'est pas exploitable.
+       */
+      arretsNonEvalues: ArretNonEvalue[];
       arret: ProvenanceArret | null;
       /**
        * Règles d'arrêt suspendues faute de claim admissible ([[D-491]]) — vide,
@@ -584,7 +592,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     ),
   }));
 
-  const { recommandations, reglesNonEvaluees } = evaluerOrientationDetaillee({
+  const { recommandations, reglesNonEvaluees, arretsNonEvalues } = evaluerOrientationDetaillee({
     reponses: reponsesRecalculees,
     idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
     regles: ORIENTATION_RULES_V1,
@@ -628,6 +636,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // Le registre même que l'empreinte signée hache ([[D-430]]) : chaque
     // instrument lit sa fenêtre, quelle que soit la règle qui le propose.
     fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+    // Les fenêtres d'EXTINCTION, distinctes des précédentes ([[D-500]]) : le
+    // registre que l'empreinte signée de la table d'arrêt hache. Sans fenêtre
+    // pour un instrument, ses déclencheurs d'arrêt ne sont pas évalués.
+    fenetresArret: FENETRES_ARRET,
     // Années révolues à `maintenantMs`, ou `null` — jamais une valeur devinée.
     // Un patient introuvable, une date absente ou illisible donnent le même
     // `null`, et un `null` n'atteint aucune borne d'âge ([[D-231]]).
@@ -748,6 +760,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     recommandations: recommandationsVisibles,
     ecartees,
     reglesNonEvaluees,
+    arretsNonEvalues,
     // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
     // autrement indiscernables à l'audit — et une extinction est précisément ce
     // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la

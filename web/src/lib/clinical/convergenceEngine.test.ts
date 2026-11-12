@@ -467,6 +467,8 @@ describe('aucun effet sur l’extinction ([[D-055]] M8)', () => {
   const entree = {
     reponses, idsQuestionnairesAssignes: [], regles: ORIENTATION_RULES_V1,
     maintenantMs: MAINTENANT, fenetres: FENETRES_FRAICHEUR_ORIENTATION, reglesArret: [ARRET],
+    // [[D-500]] : sans fenêtre d'extinction pour l'Epworth, rien ne s'éteindrait.
+    fenetresArret: { Q_SOM_02: { delaiJours: 7 } },
   };
   const eteintes = (contradictions: ContradictionFinding[]) =>
     evaluerOrientationDetaillee({ ...entree, contradictions }).recommandations
