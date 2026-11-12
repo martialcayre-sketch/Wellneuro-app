@@ -641,7 +641,7 @@ export function ImportCompteRenduPanel({
     }
     const contexte = contexteDuBrouillon(brouillonContexte);
     if (contexte === null) {
-      setErreur('Le contexte du prélèvement attend une valeur : un champ « Renseigné » n’a pas de nombre lisible.');
+      setErreur('Le contexte du prélèvement n’est pas complet : voyez le message sous le champ « Renseigné ».');
       return;
     }
 

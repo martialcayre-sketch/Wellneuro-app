@@ -383,7 +383,7 @@ function DeclarationsDuDossier({ idPatient }: { idPatient: string }) {
               <dt className="text-muted-foreground">{LIBELLES_CRITERE[critere]} :</dt>
               <dd className="text-foreground">
                 {enVigueur
-                  ? `${LIBELLES_REPONSE[tete.reponse ?? ''] ?? tete.reponse ?? NON_RENSEIGNE} — ${LIBELLES_SOURCE_PRATICIEN[tete.source]} le ${jour(tete.acteLe)}`
+                  ? `${LIBELLES_REPONSE[tete.reponse ?? ''] ?? tete.reponse ?? NON_RENSEIGNE} — ${LIBELLES_SOURCE_PRATICIEN[tete.source] ?? NON_RENSEIGNE} le ${jour(tete.acteLe)}`
                   : NON_RENSEIGNE}
               </dd>
             </div>
@@ -401,7 +401,7 @@ function DeclarationsDuDossier({ idPatient }: { idPatient: string }) {
                     {(t.nature === 'medicament' || t.nature === 'complement' ? LIBELLES_NATURE[t.nature] : 'Traitement')}
                     {' : '}
                     {t.nom ?? ''}
-                    {t.dose ? ` (${t.dose})` : ''} — {LIBELLES_SOURCE_PRATICIEN[t.source]} le {jour(t.acteLe)}
+                    {t.dose ? ` (${t.dose})` : ''} — {LIBELLES_SOURCE_PRATICIEN[t.source] ?? NON_RENSEIGNE} le {jour(t.acteLe)}
                   </li>
                 ))}
               </ul>

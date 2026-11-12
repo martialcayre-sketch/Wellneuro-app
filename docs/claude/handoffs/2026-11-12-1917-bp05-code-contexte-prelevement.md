@@ -89,6 +89,14 @@
   - `messageJourCycle` et `messageDelai` disent sous le champ chaque cas où l'envoi attend (vide, illisible, trop grand selon le validateur du serveur) ;
   - le délai porte désormais `aria-describedby` ;
   - un banc vérifie, cas par cas, qu'un message nul équivaut à un contexte envoyable.
+- `wn-reviewer` sur la tête `90089682`, diff complet, en recours de PR-Agent : **GO**. Verdicts :
+  - **1**, deux lectures BP-13 journalisées quand deux blocs sont montés : **écarté**. Chaque lecture est réelle et affichée, le journal dit vrai ; mutualiser l'appel toucherait `EstimeMesurePanel` sans bénéfice pour le patient ;
+  - **2**, un contexte « Renseigné » vide bloque aussi un envoi qui ne fait qu'écarter des lignes : **écarté**. Le cas est rare, le message dit quoi faire (« Inconnu »), et l'écarter évite de toucher le contrôle du serveur ;
+  - **3**, message d'import imprécis pour « trop grand » : **corrigé**, il renvoie au message sous le champ ;
+  - **4**, source BP-13 hors liste affichée « undefined » : **corrigé** (`?? NON_RENSEIGNE`) ;
+  - **5**, espace supprimé sur une ligne voisine de la garde des seuils : **corrigé**, la ligne retrouve son état de `main` ;
+  - **6**, assertion E2E « non recueilli » à 0 : **écartée**. T2 et T3 provisionnent une base éphémère neuve, et le seed n'écrit aucun résultat de biologie ;
+  - **Q1** et **Q2**, moment de la journée : **routées au responsable**, voir Problèmes ouverts. **Q3**, validation de B1 et B2 : donnée par le responsable en session, sur question à options.
 - T1 complet et T3 : voir la PR.
 
 ## Problèmes ouverts
@@ -97,6 +105,10 @@
 - **L'envoi de l'e-mail `conditions_utilisation@6` est le geste du responsable**, après le déploiement.
 - Corriger un contexte (remplacer la tête) n'a **pas encore d'écran**. La base l'accepte, aucun code ne l'écrit. Dette routée à LOT-05.
 - Libellé du pied de série vide (constat 1) : le responsable peut l'amender.
+- **Question au responsable, moment de la journée** (revue de tête, Q1 et Q2) :
+  - D-497 §5 ne fait pas de l'heure un motif. Une série matin/soir (cortisol, par exemple) dont les sept champs sont connus et égaux affiche donc « aucun motif connu de non-comparabilité ».
+  - Un point saisi au cockpit avec son heure affiche « Moment de la journée : inconnu (aucune heure lue sur un compte rendu) », à la lettre de §3.
+  - À trancher : faut-il un motif « heures de prélèvement différentes » (décision), ou le laisser à BP-27 ?
 - Le bloc n'apparaît ni dans la saisie unitaire ni dans la correction (périmètre de D-497 §4).
 - Aucune lecture du contexte dans l'export ni dans la synthèse (hors périmètre de la fiche, part B de H95).
 
