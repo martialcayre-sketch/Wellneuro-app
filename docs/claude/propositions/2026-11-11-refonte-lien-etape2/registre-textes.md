@@ -11,8 +11,9 @@ acceptation **mot pour mot**. Un texte accepté est inscrit sous une décision
 par DOC-0 ou un DOC-n (`socle-commun.md`) avant le lot qui l'applique. Un texte
 refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
-Numérotation par famille, avec des trous voulus : praticien T-01 à T-16
-(T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]]),
+Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
+(T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]] ; T-17 à T-19,
+textes du prototype PRA-2, ajoutés par DOC-6, §1.4),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. Aucun identifiant
 absent n'est un texte manquant.
@@ -65,6 +66,24 @@ Aucun autre libellé de destination praticien ne change. « Synthèses »
 | T-13 | Afficher la navigation | en-tête, rail escamoté | rouvrir le rail déplié | aucun ; cadrage v2 §5.2 l.166 proposait « Ouvrir le menu » | PRA-1 |
 | T-14 | Masquer les phases / Afficher les phases | fiche, rail des sept phases | le cadrage dit « étapes » (l.279) ; la fiche les nomme « phases » | aucun | PRA-3 |
 | T-15 | Masquer le contexte / Afficher le contexte | fiche, panneau droit | cadrage v3 l.279 | aucun | PRA-3 |
+
+### 1.4 Textes du prototype PRA-2 — acceptés (D-488)
+
+Le responsable a validé par écrit le prototype PRA-2 le 2026-11-12 (« Oui,
+tout validé ») : onze questions, inscrites en complément DOC-6 de
+[[D-481]], et les trois textes ci-dessous, acceptés mot pour mot.
+Inscription par DOC-6 dans [[D-488]], amendement du 2026-11-12. Existant
+lu au commit `9a680203`.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-17 | Réessayer | Patients (tableau) et Agenda (liste des rendez-vous), sous le message d'échec de lecture | relit la seule lecture en échec ; recherche, tri et saisie du formulaire gardés | aucun ; un échec vide aujourd'hui la liste (`components/dossier/RayonPatientsPanel.tsx:491`, `components/agenda/AgendaPraticien.tsx`) | PRA-2a (Patients, Agenda) | **Accepté (D-488)** |
+| T-18 | Météo d'adhésion indisponible | badge d'une carte du Fil dont la météo d'adhésion n'a pas pu être lue (`components/fil/FilDuJour.tsx:245`) | ne qualifie pas l'adhésion ; distinct du panneau « Météo d'adhésion » | aucun | PRA-2b | **Accepté (D-488)** |
+| T-19 | Retour à la file | Confiance & droits, en tête du détail d'un dépôt, à la tablette et au téléphone (Q10 b) | revient à la file, même page et même position ; n'enregistre rien | aucun | PRA-2b | **Accepté (D-488)** |
+
+T-17 est posé dès son inscription (Q4 b) ; les messages d'échec qu'il
+accompagne sont les phrases existantes. Aucun texte de consentement, de
+droits ni de sécurité n'est touché.
 
 ## 2. Patient
 
@@ -199,5 +218,5 @@ reste à réaliser dans PAT-2. T-35 reste proposé, non accepté.
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2, inscrit par DOC-1) |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 acceptés et inscrits dans D-488 par DOC-5 (PAT-2) ; T-35 reste proposé, non accepté |
