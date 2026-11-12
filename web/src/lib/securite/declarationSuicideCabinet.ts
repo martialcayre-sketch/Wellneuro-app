@@ -74,6 +74,12 @@ export function questionsDesignables(definition: unknown): QuestionDesignable[] 
   return trouvees;
 }
 
+// Borne TECHNIQUE, pas clinique : la colonne `question_suicide_option_non`
+// est un `INTEGER` (int4). La validation des options admet tout entier JS ;
+// hors de cette plage, l'écriture échouerait en 500 (revue `wn-reviewer`, P2-2).
+const INT4_MIN = -2147483648;
+const INT4_MAX = 2147483647;
+
 export const ERREURS_DECLARATION_SUICIDE = Object.freeze({
   reponse: 'Indiquez si ce questionnaire pose une question sur le suicide ou les idées de mort (oui / non).',
   question: 'Désignez la question qui porte sur le suicide ou les idées de mort.',
@@ -108,7 +114,13 @@ export function lireDeclarationSuicide(
     return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.questionInconnue };
   }
   const optionNon = brut.questionSuicideOptionNon;
-  if (typeof optionNon !== 'number' || !Number.isInteger(optionNon) || !question.options.some(o => o.v === optionNon)) {
+  if (
+    typeof optionNon !== 'number'
+    || !Number.isInteger(optionNon)
+    || optionNon < INT4_MIN
+    || optionNon > INT4_MAX
+    || !question.options.some(o => o.v === optionNon)
+  ) {
     return { ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon };
   }
   return {

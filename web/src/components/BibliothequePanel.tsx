@@ -1284,6 +1284,7 @@ function DeclarationSuicide({
   onChange: (declaration: DeclarationSuicideSaisie | null) => void;
 }) {
   const idLegende = useId();
+  const idAide = useId();
   const idQuestion = useId();
   const idOption = useId();
   const designables = useMemo(() => questionsDesignables(detail.definition), [detail.definition]);
@@ -1300,11 +1301,11 @@ function DeclarationSuicide({
   }, [reponse, question, optionNon, onChange]);
 
   return (
-    <fieldset className="border-t border-border pt-4" aria-labelledby={idLegende}>
-      <p id={idLegende} className="text-sm font-semibold text-foreground">
+    <fieldset className="border-t border-border pt-4" aria-describedby={idAide}>
+      <legend id={idLegende} className="text-sm font-semibold text-foreground">
         Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
-      </p>
-      <p className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
+      </legend>
+      <p id={idAide} className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
       <div className="mt-2 flex gap-4">
         {(['oui', 'non'] as const).map(valeur => (
           <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
@@ -1319,7 +1320,15 @@ function DeclarationSuicide({
           </label>
         ))}
       </div>
-      {reponse === 'oui' && (
+      {/* Revue `wn-reviewer`, P2-4 : sans question à réponses au choix, rien à
+          désigner — le dire, plutôt qu'une liste vide qui pousserait à « non ». */}
+      {reponse === 'oui' && designables.length === 0 && (
+        <p role="status" className="mt-2 text-xs text-status-danger">
+          Aucune question de ce questionnaire ne propose de réponses au choix : la question
+          concernée ne peut pas être désignée, et l’instrument ne peut pas être publié en l’état.
+        </p>
+      )}
+      {reponse === 'oui' && designables.length > 0 && (
         <div className="mt-2 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor={idQuestion} className="text-xs font-medium text-foreground">

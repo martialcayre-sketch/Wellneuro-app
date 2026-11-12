@@ -333,3 +333,131 @@ describe('BibliothequePanel — EVA sans interprétation (D-088)', () => {
     expect(screen.queryByLabelText('Libellé de la bande 1')).toBeNull();
   });
 });
+
+// NF-7 ([[D-303]] §2, [[D-493]] §3) : L'ÉCRAN « RELIRE LA GRILLE » DEMANDE LA
+// DÉCLARATION quand le serveur l'annonce (`declarationSuicideRequise`, drapeau
+// allumé). Sans cette annonce (drapeau éteint), l'écran et le corps envoyé
+// sont ceux d'avant NF-7 — revue `wn-reviewer`, mutation 1 : rien ne le
+// prouvait côté écran.
+describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7)', () => {
+  const OPTIONS = [{ v: 0, l: 'Jamais' }, { v: 1, l: 'Parfois' }, { v: 2, l: 'Souvent' }];
+  const DETAIL_LIKERT = {
+    idInstrument: 'CAB_NF7',
+    titre: 'Humeur cabinet',
+    categorie: 'Cabinet',
+    description: null,
+    statutRelecture: 'grille_a_relire',
+    nbQuestions: 2,
+    scoreMax: 4,
+    updatedAt: '2026-11-12T08:00:00.000Z',
+    definition: {
+      sections: [
+        {
+          id: 'S1',
+          questions: [
+            { id: 'Q1', texte: 'Je me sens triste.', type: 'likert', options: OPTIONS },
+            { id: 'Q2', texte: 'Il m’arrive de penser à la mort.', type: 'likert', options: OPTIONS },
+          ],
+        },
+      ],
+    },
+    scoring: { type: 'sum', maxTotal: 4, interpretation: [{ min: 0, max: 4, label: 'Repère', color: 'success' }] },
+  };
+  const LEGENDE = 'Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?';
+
+  function stubFetch(detail: Record<string, unknown>) {
+    const corps: unknown[] = [];
+    const ok = (data: unknown) =>
+      Promise.resolve({ ok: true, status: 200, json: async () => data } as Response);
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (init?.method === 'PATCH') {
+        corps.push(JSON.parse(String(init.body)));
+        return ok({ success: true, idInstrument: detail.idInstrument });
+      }
+      if (url.includes('/api/praticien/file-envoi')) return ok({ brouillons: [] });
+      if (url.includes('/api/praticien/bibliotheque')) return ok({ entrees: [] });
+      if (url.includes('/api/praticien/instruments?id=')) return ok({ instrument: detail });
+      if (url.includes('/api/praticien/instruments')) {
+        return ok({
+          instruments: [
+            {
+              idInstrument: detail.idInstrument,
+              titre: detail.titre,
+              categorie: detail.categorie,
+              statutRelecture: detail.statutRelecture,
+              nbQuestions: detail.nbQuestions,
+              scoreMax: detail.scoreMax,
+            },
+          ],
+        });
+      }
+      if (url.includes('/api/praticien/patients')) return ok({ patients: [] });
+      return ok({});
+    });
+    return corps;
+  }
+
+  async function ouvrirRelecture(detail: Record<string, unknown>) {
+    const corps = stubFetch(detail);
+    render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+    fireEvent.click(await screen.findByText('Relire la grille'));
+    await screen.findByText(/— publier$/);
+    return corps;
+  }
+
+  function bouton() {
+    return screen.getByRole('button', { name: 'Grille relue — publier' }) as HTMLButtonElement;
+  }
+
+  it('drapeau éteint : aucune question posée, le corps envoyé est celui d’avant NF-7', async () => {
+    const corps = await ouvrirRelecture(DETAIL_LIKERT);
+    expect(screen.queryByText(LEGENDE)).toBeNull();
+    expect(bouton().disabled).toBe(false);
+    fireEvent.click(bouton());
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toEqual({ idInstrument: 'CAB_NF7', action: 'publier' });
+  });
+
+  it('déclaration requise : publier reste impossible tant que la réponse manque ; « non » part seul', async () => {
+    const corps = await ouvrirRelecture({ ...DETAIL_LIKERT, declarationSuicideRequise: true });
+    const groupe = screen.getByRole('group', { name: LEGENDE });
+    expect(bouton().disabled).toBe(true);
+    fireEvent.click(within(groupe).getByLabelText('Non'));
+    await waitFor(() => expect(bouton().disabled).toBe(false));
+    fireEvent.click(bouton());
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toEqual({ idInstrument: 'CAB_NF7', action: 'publier', poseQuestionSuicide: false });
+  });
+
+  it('« oui » : question et réponse « non » exigées ; changer de question remet la réponse à choisir', async () => {
+    const corps = await ouvrirRelecture({ ...DETAIL_LIKERT, declarationSuicideRequise: true });
+    fireEvent.click(within(screen.getByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+    expect(bouton().disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
+    expect(bouton().disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
+    await waitFor(() => expect(bouton().disabled).toBe(false));
+    fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q1' } });
+    await waitFor(() => expect(bouton().disabled).toBe(true));
+    fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
+    await waitFor(() => expect(bouton().disabled).toBe(false));
+    fireEvent.click(bouton());
+    await waitFor(() => expect(corps).toHaveLength(1));
+    expect(corps[0]).toEqual({
+      idInstrument: 'CAB_NF7',
+      action: 'publier',
+      poseQuestionSuicide: true,
+      questionSuicideId: 'Q1',
+      questionSuicideOptionNon: 0,
+    });
+  });
+
+  it('« oui » sans question à réponses au choix : l’écran le dit, et publier reste impossible', async () => {
+    await ouvrirRelecture({ ...EVA_DETAIL, declarationSuicideRequise: true });
+    fireEvent.click(within(screen.getByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+    expect(screen.getByText(/ne propose de réponses au choix/)).toBeTruthy();
+    expect(screen.queryByLabelText('Question concernée')).toBeNull();
+    expect((screen.getByRole('button', { name: 'Relu — publier' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});

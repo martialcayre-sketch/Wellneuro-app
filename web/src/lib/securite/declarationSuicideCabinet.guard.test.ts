@@ -134,6 +134,15 @@ describe('NF-7 — la désignation, vérifiée contre la définition', () => {
     expect(refus({ questionSuicideId: 'Q1', questionSuicideOptionNon: 1 })).toEqual({ ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon });
     expect(refus({ questionSuicideId: 'Q1', questionSuicideOptionNon: 0.5 })).toEqual({ ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon });
   });
+
+  it('une valeur « non » hors de l’entier de la colonne (int4) est refusée, pas écrite en 500', () => {
+    const geante = {
+      sections: [{ id: 'S', questions: [{ id: 'Q1', texte: 'x', type: 'likert', options: [{ v: 3000000000, l: 'Non' }, { v: 1, l: 'Oui' }] }] }],
+    };
+    expect(lireDeclarationSuicide({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 3000000000 }, geante))
+      .toEqual({ ok: false, erreur: ERREURS_DECLARATION_SUICIDE.optionNon });
+    expect(lireDeclarationSuicide({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 1 }, geante).ok).toBe(true);
+  });
 });
 
 // [[D-493]] §2 et §4 : rien de [[D-277]] sur un instrument du cabinet. Aucun
