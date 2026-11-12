@@ -247,6 +247,10 @@
   ligne qui manquait au premier audit de la refonte (constat B6) : palette et
   marque avaient été choisies le 2026-11-10 en conversation, sans trace au
   dépôt.
+- Décor (amendement DOC-2 de [[D-481]], 2026-11-12) : les fonds, ornements
+  et motifs du kit entrent dans l'identité avec parcimonie, statiques, à des
+  emplacements nommés (§1 bis de [[D-481]]), posés par la primitive
+  `LienDecor` (COM-1).
 - Statut : **accepté, non appliqué au code** ; lot de fondation COM-0
   (`docs/claude/propositions/2026-11-11-refonte-lien-etape2/socle-commun.md`).
 
