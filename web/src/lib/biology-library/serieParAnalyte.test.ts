@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { positionDansLeSuivi, serieParAnalyte, type JourZeroDeSuivi, type LigneDeSerie } from './serieParAnalyte';
+import { CONTEXTE_INCONNU, type ContextePrelevementSaisi } from './contextePrelevement';
 
 // BP-03 : la série des mesures qui font foi. Fixtures neutres — elles prouvent
 // le mécanisme, pas un parcours (`D-125`).
@@ -109,8 +110,78 @@ describe('serieParAnalyte — une tête par fil, les fils annulés exclus', () =
     ], AUCUNE, SANS_DIFFUSION);
     expect(Object.keys(serie).sort()).toEqual(['analyteCode', 'motifs', 'points']);
     for (const point of serie.points) {
-      expect(Object.keys(point).sort()).toEqual(['correctionLe', 'entreeLe', 'ligne', 'position']);
+      // Le contexte et l'heure lue sont des faits juxtaposés (D-497 §5), pas
+      // des grandeurs dérivées des valeurs.
+      expect(Object.keys(point).sort()).toEqual(['contexte', 'correctionLe', 'entreeLe', 'heureLue', 'ligne', 'position']);
     }
+  });
+});
+
+describe('serieParAnalyte — le contexte de prélèvement (D-497 §4-§5)', () => {
+  const motifs = (lignes: LigneDeSerie[]) => serieParAnalyte(lignes, AUCUNE, SANS_DIFFUSION)[0].motifs;
+  const CONNU: ContextePrelevementSaisi = {
+    aJeun: 'oui',
+    supplementationArretee: 'non',
+    traitementInterferent: 'non',
+    episodeInflammatoire: 'non',
+    grossesse: 'non',
+    jourCycleEtat: 'renseigne',
+    jourCycle: 5,
+    delaiDernierePriseEtat: 'renseigne',
+    delaiDernierePrise: 24,
+    delaiDernierePriseUnite: 'heure',
+  };
+  const deux = (a: ContextePrelevementSaisi | null, b: ContextePrelevementSaisi | null) => [
+    ligne({ id: 'a', preleveLe: '2026-08-01T06:00:00.000Z', contexte: a }),
+    ligne({ id: 'b', contexte: b }),
+  ];
+
+  it('un point SANS ligne de contexte : non recueilli, le point le dit par `null`', () => {
+    const [serie] = serieParAnalyte([ligne({ id: 'a' })], AUCUNE, SANS_DIFFUSION);
+    expect(serie.points[0].contexte).toBeNull();
+    expect(serie.motifs).toContain('contexte_non_renseigne');
+  });
+
+  it('deux contextes connus et égaux : aucun motif de contexte', () => {
+    expect(motifs(deux(CONNU, CONNU))).toEqual([]);
+  });
+
+  it('un seul champ « inconnu » suffit : contexte non renseigné, jamais « complet »', () => {
+    expect(motifs(deux(CONNU, { ...CONNU, grossesse: 'inconnu' }))).toEqual(['contexte_non_renseigne']);
+    expect(motifs(deux(CONNU, CONTEXTE_INCONNU))).toEqual(['contexte_non_renseigne']);
+  });
+
+  it('un point non recueilli à côté d’un point connu : non renseigné', () => {
+    expect(motifs(deux(CONNU, null))).toEqual(['contexte_non_renseigne']);
+  });
+
+  it('deux points qui diffèrent sur un champ renseigné : contextes différents', () => {
+    expect(motifs(deux(CONNU, { ...CONNU, aJeun: 'non' }))).toEqual(['contextes_differents']);
+    expect(motifs(deux(CONNU, { ...CONNU, delaiDernierePrise: 1, delaiDernierePriseUnite: 'jour' }))).toEqual([
+      'contextes_differents',
+    ]);
+  });
+
+  it('une différence ET un inconnu : les deux motifs', () => {
+    expect(motifs(deux(CONNU, { ...CONNU, aJeun: 'non', grossesse: 'inconnu' }))).toEqual([
+      'contexte_non_renseigne',
+      'contextes_differents',
+    ]);
+  });
+
+  it('une correction garde le contexte de sa RACINE, et l’heure lue de sa racine', () => {
+    const [serie] = serieParAnalyte([
+      ligne({ id: 'r', contexte: CONNU, heureLue: true }),
+      ligne({ id: 'c', valeur: '45', saisiLe: '2026-09-03T08:00:00.000Z', supersedesResultatId: 'r' }),
+    ], AUCUNE, SANS_DIFFUSION);
+    expect(serie.points.map(p => p.ligne.id)).toEqual(['c']);
+    expect(serie.points[0].contexte).toEqual(CONNU);
+    expect(serie.points[0].heureLue).toBe(true);
+  });
+
+  it('sans heure lue, le point le dit (moment inconnu, D-497 §3)', () => {
+    const [serie] = serieParAnalyte([ligne({ id: 'a' })], AUCUNE, SANS_DIFFUSION);
+    expect(serie.points[0].heureLue).toBe(false);
   });
 });
 
@@ -125,7 +196,7 @@ describe('serieParAnalyte — motifs de non-comparabilité, comparés à l’ide
     expect(motifs([ligne({ id: 'a' })])).toEqual(['point_unique', 'contexte_non_renseigne']);
   });
 
-  it('même unité, même laboratoire : reste le contexte, toujours non renseigné', () => {
+  it('même unité, même laboratoire : reste le contexte, non recueilli', () => {
     expect(motifs(deux())).toEqual(['contexte_non_renseigne']);
   });
 

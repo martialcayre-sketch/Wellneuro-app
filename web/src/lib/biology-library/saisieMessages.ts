@@ -5,6 +5,8 @@
 // vit ici, sinon deux routes recopieraient deux fois le même refus — et
 // l'une dériverait.
 
+import { MESSAGE_CONTEXTE_INVALIDE } from './contextePrelevement';
+
 export const MESSAGES_REFUS_SAISIE: Record<string, string> = {
   valeur_invalide: 'La valeur mesurée doit être un nombre.',
   valeur_hors_capacite:
@@ -47,6 +49,8 @@ export const MESSAGES_REFUS_SAISIE: Record<string, string> = {
   correction_hors_bilan:
     'Un bilan ne corrige aucune mesure : une valeur à reprendre se corrige depuis la série.',
   lignes_invalides: 'Rien n’a été enregistré : reprenez les lignes signalées.',
+  // Contexte du prélèvement ([[D-497]], BP-05).
+  contexte_invalide: MESSAGE_CONTEXTE_INVALIDE,
 };
 
 /**

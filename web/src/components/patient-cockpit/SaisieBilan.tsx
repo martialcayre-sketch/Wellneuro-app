@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { lireDecimalSaisi } from '@/lib/biology-library/valeurDecimale';
+import type { ContextePrelevementSaisi } from '@/lib/biology-library/contextePrelevement';
+import {
+  BlocContextePrelevement,
+  BROUILLON_INCONNU,
+  contexteDuBrouillon,
+  type BrouillonContexte,
+} from '@/components/biologie/BlocContextePrelevement';
 
 // Saisie GROUPÉE d'un bilan (BIO-INGEST LOT-01, A1 et A3 de [[D-256]]) : une
 // date de prélèvement commune, N analytes, UNE validation. Remplace la saisie
@@ -16,6 +23,13 @@ import { lireDecimalSaisi } from '@/lib/biology-library/valeurDecimale';
 //
 // L'UNITÉ N'EST PAS SAISIE : le serveur la relit sur l'analyte au catalogue.
 // Aucune valeur n'est qualifiée ici (ni basse, ni haute) : `DC-27`.
+//
+// LE CONTEXTE DU PRÉLÈVEMENT ([[D-497]] §4) se saisit une fois pour le bilan,
+// prérempli à « inconnu ». Comme la date, il reste après un succès : un
+// analyte oublié du même prélèvement garde le même contexte. Mais si la date
+// change APRÈS un succès, c'est un autre prélèvement : le contexte repart à
+// « inconnu », sans quoi il serait recopié en silence (revue `wn-reviewer`
+// de la PR 3, constat 2 — aucun écran ne corrige encore un contexte).
 
 export type AnalyteChoix = { code: string; libelle: string; unite: string | null };
 
@@ -28,20 +42,34 @@ export type IssueBilan =
 type Ligne = { id: number; analyteCode: string; valeur: string };
 
 export function SaisieBilan({
+  idPatient,
   analytes,
   disabled,
   onEnregistrer,
 }: {
+  idPatient: string;
   analytes: AnalyteChoix[];
   disabled: boolean;
   onEnregistrer: (bilan: {
     preleveLe: string;
     lignes: Array<{ analyteCode: string; valeur: string }>;
+    contexte: ContextePrelevementSaisi;
   }) => Promise<IssueBilan>;
 }) {
   const prochainId = useRef(1);
   const nouvelleLigne = (): Ligne => ({ id: prochainId.current++, analyteCode: '', valeur: '' });
   const [preleveLe, setPreleveLe] = useState('');
+  const [brouillonContexte, setBrouillonContexte] = useState<BrouillonContexte>(() => ({ ...BROUILLON_INCONNU }));
+  const contexte = contexteDuBrouillon(brouillonContexte);
+  /** La date du dernier bilan enregistré, tant qu'elle n'a pas changé. */
+  const dateDuDernierSucces = useRef<string | null>(null);
+  const changerDate = (valeur: string) => {
+    if (dateDuDernierSucces.current !== null && valeur !== dateDuDernierSucces.current) {
+      dateDuDernierSucces.current = null;
+      setBrouillonContexte({ ...BROUILLON_INCONNU });
+    }
+    setPreleveLe(valeur);
+  };
   const [lignes, setLignes] = useState<Ligne[]>(() => [nouvelleLigne()]);
   /** Refus par ligne, indexés par l'IDENTIFIANT de ligne : retirer une ligne ne décale rien. */
   const [refusParLigne, setRefusParLigne] = useState<Record<number, string>>({});
@@ -57,6 +85,7 @@ export function SaisieBilan({
 
   const prete =
     preleveLe !== '' &&
+    contexte !== null &&
     lignes.length > 0 &&
     lignes.every(l => l.analyteCode !== '' && lireDecimalSaisi(l.valeur) !== null);
 
@@ -66,6 +95,8 @@ export function SaisieBilan({
 
   const enregistrer = async () => {
     const envoyees = lignes;
+    // `prete` l'exige déjà : le bouton est désactivé sans contexte lisible.
+    if (contexte === null) return;
     setErreur(null);
     setRefusParLigne({});
     const issue = await onEnregistrer({
@@ -73,11 +104,13 @@ export function SaisieBilan({
       // Chaîne décimale canonique, jamais un `number` (LOT-10). Une ligne
       // illisible partirait vide : `prete` l'interdit, le serveur la refuserait.
       lignes: envoyees.map(l => ({ analyteCode: l.analyteCode, valeur: lireDecimalSaisi(l.valeur) ?? '' })),
+      contexte,
     });
     if (issue.ok) {
       // La date reste : un analyte oublié du même prélèvement se rajoute sans
       // la re-frapper. Les lignes, elles, sont consignées — elles se vident.
       setLignes([nouvelleLigne()]);
+      dateDuDernierSucces.current = preleveLe;
       return;
     }
     const parId: Record<number, string> = {};
@@ -106,7 +139,7 @@ export function SaisieBilan({
         id="bilan-preleve-le"
         type="datetime-local"
         value={preleveLe}
-        onChange={event => setPreleveLe(event.target.value)}
+        onChange={event => changerDate(event.target.value)}
         // Pendant l'envoi, la saisie est GELÉE : une frappe faite pendant
         // l'attente ne partirait pas, puis serait vidée au succès ou recevrait
         // le refus d'un autre instantané (revue Copilot de #1276).
@@ -117,6 +150,13 @@ export function SaisieBilan({
         Une date et une heure pour tout le bilan. L’heure distingue deux prélèvements du même jour
         (profils salivaires, glycémies). L’unité vient du catalogue.
       </p>
+
+      <BlocContextePrelevement
+        idPatient={idPatient}
+        valeur={brouillonContexte}
+        onChange={setBrouillonContexte}
+        disabled={disabled}
+      />
 
       <ol className="mt-3 space-y-2">
         {lignes.map((ligne, position) => {

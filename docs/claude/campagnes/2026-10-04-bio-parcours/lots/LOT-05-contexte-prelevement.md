@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "BP-05 — Contexte de prélèvement typé (absorbe BP-06)"
-statut: "en_cours (2026-11-12) — D-497 et déclaration RGPD mergées (#2013) ; migration seule (table `contextes_prelevement`) écrite sur confirmation distincte du responsable, en PR ; code consommateur après constat par conteneur"
+statut: "en_cours (2026-11-12) — D-497 et déclaration RGPD mergées (#2013) ; migration (#2018) mergée, appliquée et constatée par conteneur ; code consommateur (PR 3) en PR, texte patient v23 et conditions v6 dans le même déploiement"
 dépend_de: "LOT-00, LOT-03"
 ---
 
@@ -107,6 +107,12 @@ Détail des formes, du rattachement et du contrat : [[D-497]] §2 à §6.
 - Tolérance de `effacement.ts` à la table absente (arbitrage du 2026-11-12,
   PR 2 #2018) retirée par la PR 3, avec son cas de banc ; ramassage E2E des
   résultats en une seule transaction (contextes, puis résultats).
+
+## Reste après la PR 3
+
+- Un écran de correction du contexte (ligne qui remplace la tête, [[D-497]]
+  §4) : la base l'accepte, aucun code ne l'écrit encore (revue
+  `wn-reviewer` de la PR 3, constat 2).
 
 ## Dépendances
 

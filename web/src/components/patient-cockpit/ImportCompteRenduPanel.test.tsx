@@ -3,6 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
+import { CONTEXTE_INCONNU } from '@/lib/biology-library/contextePrelevement';
 import {
   champsDepuisInstant,
   choixInitial,
@@ -191,6 +192,8 @@ describe('ImportCompteRenduPanel — décisions', () => {
         { idLigne: 'l1', decision: 'valider', analyteCode: 'BIO_FERRITINE', valeur: '48', preleveLe: A_0830 },
         { idLigne: 'l2', decision: 'ecarter', motif: 'non_quantitative' },
       ],
+      // Le contexte du prélèvement, « inconnu » tant que rien n'est coché (D-497 §4).
+      contexte: CONTEXTE_INCONNU,
     });
     expect(screen.getByText(/1 mesure\(s\) enregistrée\(s\), 1 ligne\(s\) écartée\(s\)/)).toBeTruthy();
   });

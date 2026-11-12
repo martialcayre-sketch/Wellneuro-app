@@ -86,6 +86,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@4',
       // [[D-292]] §5 — l'annonce des conditions v5 ([[D-335]], [[D-391]] §6).
       'conditions_utilisation@5',
+      // [[D-292]] §5 — l'annonce des conditions v6 ([[D-497]] §7, BP-05).
+      'conditions_utilisation@6',
       // [[D-317]] §3 — une nouvelle version du protocole. Il ne nomme rien.
       'protocole_diffuse@1',
       // Décision du praticien du 2026-10-23 (D/39 du plan) : les quatre
@@ -218,30 +220,49 @@ describe('registre des gabarits patient — intégrité', () => {
 
   // D-391 §6 : phrase de tête relue dans la proposition (B2), à l'apostrophe
   // typographique près ; le reste est celui de la @4 au caractère près. La @4
-  // est partie le 2026-10-27 : la @5 est la version la plus haute, servie.
-  it('conditions_utilisation@5 : la phrase de tête de la proposition, la fin de la @4 au caractère près', () => {
-    const proposition = fs
-      .readFileSync(
-        path.resolve(__dirname, '../../../../docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/README.md'),
-        'utf8',
-      )
+  // est partie le 2026-10-27 ; la @6 lui succède (D-497 §7).
+  /** La phrase de tête B2 d'une proposition, lignes de citation recollées. */
+  function teteB2(proposition: string): string {
+    const texte = fs
+      .readFileSync(path.resolve(__dirname, `../../../../docs/claude/propositions/${proposition}/README.md`), 'utf8')
       .replaceAll("'", '’');
-    const suite = proposition.slice(proposition.indexOf('### B2.'));
-    const tete = suite
+    const suite = texte.slice(texte.indexOf('### B2.'));
+    return suite
       .slice(0, suite.indexOf('\n## '))
       .split('\n')
       .filter(ligne => ligne.startsWith('>'))
       .map(ligne => ligne.replace(/^>\s?/, '').trim())
       .join(' ');
+  }
+
+  it('conditions_utilisation@5 : la phrase de tête de la proposition, la fin de la @4 au caractère près', () => {
+    const tete = teteB2('2026-10-28-bp13-v22-texte-patient');
     expect(tete.length).toBeGreaterThan(0);
-    const g = getGabarit('conditions_utilisation');
-    expect(g.version).toBe(5);
+    const g = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 5)!;
     expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
     expect(g.corps.startsWith(`Bonjour,\n\n${tete}\n\n`)).toBe(true);
     expect([...g.variables]).toEqual(['lien']);
     const v4 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 4)!;
     const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
     expect(fin(g.corps)).toBe(fin(v4.corps));
+  });
+
+  // D-497 §7 : phrase de tête validée le 2026-11-12, version courte (B2) ; le
+  // reste est celui de la @5 au caractère près. La @6 est la plus haute, servie.
+  it('conditions_utilisation@6 : la phrase de tête validée, la fin de la @5 au caractère près', () => {
+    const tete = teteB2('2026-11-12-bp05-texte-patient');
+    expect(tete).toBe(
+      'Les conditions d’utilisation de votre espace Wellneuro évoluent : la partie “Vos données personnelles” '
+        + 'dit que votre praticien peut désormais noter les circonstances du prélèvement de vos analyses.',
+    );
+    const g = getGabarit('conditions_utilisation');
+    expect(g.version).toBe(6);
+    expect(g.sujet).toBe('Wellneuro — les conditions d’utilisation de votre espace évoluent');
+    expect(g.corps.startsWith(`Bonjour,\n\n${tete}\n\n`)).toBe(true);
+    expect([...g.variables]).toEqual(['lien']);
+    const v5 = REGISTRE_GABARITS_PATIENT.find(x => x.key === 'conditions_utilisation' && x.version === 5)!;
+    const fin = (c: string) => c.slice(c.indexOf('Rien d’autre ne change dans votre accompagnement.'));
+    expect(fin(g.corps)).toBe(fin(v5.corps));
   });
 
   it('document_remis : objet et phrase du §9 mot pour mot, et RIEN du document', () => {
@@ -280,7 +301,7 @@ describe('registre des gabarits patient — intégrité', () => {
     expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(3);
   });
 
-  it('les vingt-trois validations formelles sont datées — le reste du registre ne l’est pas', () => {
+  it('les vingt-quatre validations formelles sont datées — le reste du registre ne l’est pas', () => {
     // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
     // banc échoue si une validation est posée ailleurs sans décision.
     const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
@@ -320,6 +341,8 @@ describe('registre des gabarits patient — intégrité', () => {
       'conditions_utilisation@4',
       // [[D-292]] §5, conditions v5 — né validé le 2026-10-28 ([[D-391]] §6).
       'conditions_utilisation@5',
+      // [[D-292]] §5, conditions v6 — né validé le 2026-11-12 ([[D-497]] §7).
+      'conditions_utilisation@6',
       // [[D-317]] §3 — relu mot pour mot et validé en session, le jour de sa
       // rédaction.
       'protocole_diffuse@1',
@@ -354,6 +377,7 @@ describe('registre des gabarits patient — intégrité', () => {
       '2026-10-24',
       '2026-10-27',
       '2026-10-28',
+      '2026-11-12',
       '2026-10-17',
       '2026-10-23',
       '2026-10-23',

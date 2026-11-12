@@ -1860,6 +1860,45 @@ const DONNEES_CONFIDENTIALITE_V22: VersionDocumentTrust = {
   hash: 'f4d3078b312e0033c9eddc21b700c2888733a868ad6172a8223147718d597600',
 };
 
+// « VOS DONNÉES PERSONNELLES » v23 ([[D-497]] §7, BP-05) : le contexte du
+// prélèvement des analyses. Paragraphe et résumé validés tels quels par le
+// responsable le 2026-11-12
+// (`docs/claude/propositions/2026-11-12-bp05-texte-patient/README.md`, A1 et
+// A2), publiés AVEC le code qui écrit la table, dans le même déploiement.
+// Placé juste après le paragraphe des résultats d'analyses, celui que la
+// proposition désigne par sa forme d'avant la v11 (« Ces résultats sont
+// saisis… », devenu « Ces résultats sont enregistrés… »). Elle entraîne les
+// conditions v6 ([[D-292]] §5).
+const PARAGRAPHE_CONTEXTE_PRELEVEMENT_D497 =
+  'Avec ces résultats, votre praticien peut noter les circonstances du prélèvement : si vous étiez à jeun, si vous aviez interrompu un complément, si un traitement pouvait modifier le résultat, si vous aviez un épisode inflammatoire, si vous étiez enceinte, le jour de votre cycle et le délai depuis la dernière prise d’un médicament ou d’un complément. Chacune de ces informations peut rester « inconnue ». Rien n’est effacé : une correction s’ajoute, avec sa date. Seul votre praticien les voit ; l’application ne les envoie à aucun outil d’intelligence artificielle. Elles sont conservées et effacées avec votre dossier.';
+const DONNEES_CONFIDENTIALITE_V23: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v23',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: DONNEES_CONFIDENTIALITE_V22.sections.map(section => {
+    if (section.titre === 'Quelles données sont recueillies ?') {
+      return {
+        ...section,
+        paragraphes: section.paragraphes.flatMap(paragraphe =>
+          paragraphe.startsWith('Ces résultats sont enregistrés par votre praticien à partir du compte rendu')
+            ? [paragraphe, PARAGRAPHE_CONTEXTE_PRELEVEMENT_D497]
+            : [paragraphe],
+        ),
+      };
+    }
+    return section;
+  }),
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Votre praticien peut désormais noter les circonstances du prélèvement de vos analyses (jeûne, traitement, grossesse, jour du cycle…). Le reste ne change pas.',
+  publieLe: '2026-11-12',
+  requiresAcknowledgement: true,
+  hash: '2533d9280746febb12bac63ac2e06c57adace477a113fae98b2a708dd022a496',
+};
+
 // LES CONDITIONS D'UTILISATION ([[D-292]], lettre k) : les quatre textes
 // d'information repris mot pour mot, dans leur version en vigueur au jour de
 // l'assemblage, puis une cinquième partie neuve. Texte validé par le
@@ -2090,6 +2129,40 @@ const CONDITIONS_UTILISATION_V5: VersionDocumentTrust = {
   hash: 'a5e5ee163a7a6797ebebe13369bd9222ed7d5fa292ccc5b1dd757649dd12d8a1',
 };
 
+// LES CONDITIONS v6 ([[D-292]] §5) : la partie 3 reprend « Vos données
+// personnelles » v23 ([[D-497]] §7) ; les trois autres parties et la partie 5
+// sont celles de la v5. Titre et résumé inchangés ; résumé du changement
+// validé par le responsable le 2026-11-12 (version courte, proposition BP-05,
+// B1). Publiées avec la v23, dans le déploiement du code qui écrit le
+// contexte. Accusé par l'e-mail `conditions_utilisation@6` (patients suivis,
+// envoi en une fois par le responsable), par l'accueil (nouveau patient
+// majeur) ou au filet du dépôt du compte rendu.
+export const PARTIES_REPRISES_CONDITIONS_V6: readonly { partie: string; source: VersionDocumentTrust }[] =
+  Object.freeze([
+    { partie: 'Le cadre de votre accompagnement', source: CADRE_ACCOMPAGNEMENT_V1 },
+    { partie: 'Limites et sécurité médicale', source: LIMITES_SECURITE_V1 },
+    { partie: 'Vos données personnelles et leur confidentialité', source: DONNEES_CONFIDENTIALITE_V23 },
+    { partie: 'L’intelligence artificielle', source: USAGE_IA_V8 },
+  ]);
+
+const CONDITIONS_UTILISATION_V6: VersionDocumentTrust = {
+  key: 'conditions_utilisation',
+  type: 'terms_of_use',
+  version: 'v6',
+  titre: CONDITIONS_UTILISATION_V1.titre,
+  resume: CONDITIONS_UTILISATION_V1.resume,
+  sections: [
+    ...PARTIES_REPRISES_CONDITIONS_V6.flatMap(({ partie, source }) => sectionsDeLaPartie(partie, source)),
+    ...CONDITIONS_UTILISATION_V5.sections.filter(section => section.partie === PARTIE_5_CONDITIONS),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'La partie “Vos données personnelles” dit que votre praticien peut désormais noter les circonstances du prélèvement de vos analyses. Le reste ne change pas.',
+  publieLe: '2026-11-12',
+  requiresAcknowledgement: true,
+  hash: 'eea578fbefa888f825c83a7b0e4e9160d154b3ea8963e7f22d60ee902884a92c',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -2116,6 +2189,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V20,
   DONNEES_CONFIDENTIALITE_V21,
   DONNEES_CONFIDENTIALITE_V22,
+  DONNEES_CONFIDENTIALITE_V23,
   USAGE_IA_V1,
   USAGE_IA_V2,
   USAGE_IA_V3,
@@ -2133,6 +2207,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CONDITIONS_UTILISATION_V3,
   CONDITIONS_UTILISATION_V4,
   CONDITIONS_UTILISATION_V5,
+  CONDITIONS_UTILISATION_V6,
 ]);
 
 export function getDocumentCourant(key: TrustDocumentKey): VersionDocumentTrust {

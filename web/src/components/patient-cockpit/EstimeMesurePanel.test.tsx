@@ -2,10 +2,11 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CbFeatureProvider } from './CbFeatureProvider';
 import { EstimeMesurePanel } from './EstimeMesurePanel';
+import { CONTEXTE_INCONNU } from '@/lib/biology-library/contextePrelevement';
 import {
   SELECTEUR_COMMENTAIRE_LABORATOIRE,
   SELECTEUR_INTERVALLE_LABORATOIRE,
@@ -217,10 +218,12 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
       expect(post).toBeTruthy();
       expect(String(post?.[0])).toBe('/api/praticien/biologie/resultats/bilan');
       const corps = JSON.parse(String((post?.[1] as RequestInit).body));
+      // Le contexte part avec le bilan, « inconnu » tant que rien n'est coché (D-497 §4).
       expect(corps).toEqual({
         idPatient: 'PAT1',
         preleveLe: new Date('2026-09-02T08:15').toISOString(),
         lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: '51.2' }],
+        contexte: CONTEXTE_INCONNU,
       });
     });
   });
@@ -252,6 +255,7 @@ describe('EstimeMesurePanel — drapeau levé (étage 2, D-122 §2)', () => {
         idPatient: 'PAT1',
         preleveLe: new Date('2026-09-02T08:15').toISOString(),
         lignes: [{ analyteCode: 'BIO_FERRITINE', valeur: '0.30000000000000004' }],
+        contexte: CONTEXTE_INCONNU,
       });
     });
   });
@@ -375,6 +379,38 @@ describe('EstimeMesurePanel — saisie d’un bilan (LOT-01)', () => {
     expect((screen.getByLabelText(/^Valeur.*, ligne 1$/) as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText(/Prélevé le/) as HTMLInputElement).value).toBe('2026-09-02T08:15');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  // D-497 §4 : le contexte suit le prélèvement. Même date après un succès,
+  // il reste (analyte oublié) ; autre date, il repart à « inconnu ».
+  it('après un succès, le contexte reste pour la même date et repart à « inconnu » sur une autre', async () => {
+    mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    await remplirDeuxLignes();
+    const ouiAJeun = () =>
+      within(screen.getByRole('group', { name: 'À jeun' })).getByRole('radio', { name: 'Oui' }) as HTMLInputElement;
+    fireEvent.click(ouiAJeun());
+    expect(ouiAJeun().checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le bilan (2 mesures)' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Enregistrer le bilan (1 mesure)' })).toBeTruthy();
+    });
+    expect(ouiAJeun().checked).toBe(true);
+    fireEvent.change(screen.getByLabelText(/Prélevé le/), { target: { value: '2026-09-03T08:15' } });
+    expect(ouiAJeun().checked).toBe(false);
+    expect(
+      (within(screen.getByRole('group', { name: 'À jeun' })).getByRole('radio', { name: 'Inconnu' }) as HTMLInputElement)
+        .checked,
+    ).toBe(true);
+  });
+
+  it('avant tout succès, corriger la date ne touche pas au contexte', async () => {
+    mockBilan({ status: 201, corps: { ok: true, nombre: 2 } });
+    await remplirDeuxLignes();
+    const ouiAJeun = () =>
+      within(screen.getByRole('group', { name: 'À jeun' })).getByRole('radio', { name: 'Oui' }) as HTMLInputElement;
+    fireEvent.click(ouiAJeun());
+    fireEvent.change(screen.getByLabelText(/Prélevé le/), { target: { value: '2026-09-03T08:15' } });
+    expect(ouiAJeun().checked).toBe(true);
   });
 
   it('pendant l’envoi, la saisie est GELÉE : rien ne se modifie qui ne partirait pas', async () => {
@@ -1473,6 +1509,55 @@ describe('EstimeMesurePanel — la série qui fait foi (BP-03)', () => {
     expect((await bloc()).textContent).toContain(
       '2 points — non comparables en l’état : laboratoire non identifié, contexte de prélèvement non renseigné',
     );
+  });
+
+  // D-497 §4-§5 : deux absences, jamais confondues — aucune ligne
+  // (« non recueilli ») et un champ « inconnu », dit champ par champ.
+  it('le contexte de chaque point : non recueilli, ou ses sept champs, « inconnu » écrit', async () => {
+    monter(
+      [ORIGINE, CORRECTION, IMPORTEE],
+      [
+        {
+          ...SERIE,
+          motifs: ['laboratoire_non_identifie', 'contexte_non_renseigne', 'contextes_differents'],
+          points: [
+            { ...SERIE.points[0], contexte: null, heureLue: false },
+            {
+              ...SERIE.points[1],
+              contexte: {
+                ...CONTEXTE_INCONNU,
+                aJeun: 'oui',
+                delaiDernierePriseEtat: 'renseigne',
+                delaiDernierePrise: 12,
+                delaiDernierePriseUnite: 'heure',
+              },
+              heureLue: true,
+            },
+          ],
+        },
+      ],
+    );
+    const items = (await bloc()).querySelectorAll('ol > li');
+    expect(items[0].textContent).toContain('Contexte de prélèvement non recueilli');
+    expect(items[0].textContent).toContain('Moment de la journée : inconnu');
+    expect(items[1].textContent).toContain('À jeun : oui');
+    expect(items[1].textContent).toContain('Grossesse au prélèvement : inconnu');
+    expect(items[1].textContent).toContain('Jour du cycle : inconnu');
+    expect(items[1].textContent).toContain('Délai depuis la dernière prise : 12 h');
+    expect(items[1].textContent).toContain('Heure du prélèvement lue sur le compte rendu');
+    expect(items[1].textContent).not.toContain('non recueilli');
+    expect((await bloc()).textContent).toContain('contextes de prélèvement différents');
+  });
+
+  // Depuis BP-05 la liste des motifs peut être vide : le silence se lirait
+  // « comparable », que la série ne déclare jamais (D-497 §5).
+  it('sans motif connu, le pied le dit sans déclarer la série comparable', async () => {
+    monter([ORIGINE, CORRECTION, IMPORTEE], [{ ...SERIE, motifs: [] }]);
+    const texte = (await bloc()).textContent ?? '';
+    expect(texte).toContain(
+      '2 points — aucun motif connu de non-comparabilité ; la série n’est pas déclarée comparable',
+    );
+    expect(texte).not.toMatch(/\bsont comparables\b|\best comparable\b/);
   });
 
   it('la liste des saisies reste en dessous, entière', async () => {

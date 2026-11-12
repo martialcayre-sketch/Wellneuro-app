@@ -4,12 +4,12 @@ import {
   ClipboardCheck,
   ClipboardList,
   Compass,
-  ContactRound,
   FlaskConical,
-  LayoutDashboard,
+  House,
   Lightbulb,
   Mail,
   Pill,
+  Route,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -77,12 +77,15 @@ export type DestinationPraticien = {
 /** Les quinze entrées du menu ([[D-324]] §7 amendé par [[D-485]] §2), dans l'ordre. */
 export const DESTINATIONS_PRATICIEN: readonly DestinationPraticien[] = [
   // Travail ([[D-487]] §1) : les entrées de La Spirale, sauf « Comptes du cabinet ».
-  { href: '/dashboard', libelle: 'Le Fil du jour', icone: LayoutDashboard, groupe: 'travail', activation: 'exacte', compteur: 'fil' },
-  { href: '/dashboard/patients', libelle: 'Patients', icone: ContactRound, groupe: 'travail', activation: 'exacte' },
+  // Icônes : table `icon-map.fr.json` du kit Lien v2.0.0 (Le Fil du jour → house,
+  // Patients → users). La fiche-trajectoire, absente de la table, prend `Route`
+  // pour ne pas partager `Users` avec Patients.
+  { href: '/dashboard', libelle: 'Le Fil du jour', icone: House, groupe: 'travail', activation: 'exacte', compteur: 'fil' },
+  { href: '/dashboard/patients', libelle: 'Patients', icone: Users, groupe: 'travail', activation: 'exacte' },
   {
     href: '/dashboard/trajectoires',
     libelle: 'Fiche-trajectoire',
-    icone: Users,
+    icone: Route,
     groupe: 'travail',
     activation: 'rubrique',
     prefixesActifs: ['/dashboard/patients/'],

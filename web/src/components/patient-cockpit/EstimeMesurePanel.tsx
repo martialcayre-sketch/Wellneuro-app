@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { lireDecimalSaisi } from '@/lib/biology-library/valeurDecimale';
+import {
+  CHAMPS_CONTEXTE,
+  LIBELLES_CHAMP,
+  valeurAffichee,
+  type ContextePrelevementSaisi,
+} from '@/lib/biology-library/contextePrelevement';
 import { useBioIngestEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import { ImportCompteRenduPanel } from './ImportCompteRenduPanel';
 import { SaisieBilan, type AnalyteChoix, type IssueBilan } from './SaisieBilan';
@@ -110,6 +116,9 @@ type SerieAffichee = {
       | { type: 'jour'; jour: number; jourZero: string }
       | { type: 'anterieur'; jourZero: string }
       | { type: 'aucune_diffusion' };
+    /** `null` : contexte de prélèvement non recueilli ([[D-497]] §4). */
+    contexte?: ContextePrelevementSaisi | null;
+    heureLue?: boolean;
   }>;
   motifs: string[];
 };
@@ -120,7 +129,32 @@ const LIBELLES_MOTIF_NON_COMPARABILITE: Record<string, string> = {
   laboratoire_non_identifie: 'laboratoire non identifié',
   laboratoires_differents: 'laboratoires différents',
   contexte_non_renseigne: 'contexte de prélèvement non renseigné',
+  contextes_differents: 'contextes de prélèvement différents',
 };
+
+/**
+ * Le contexte d'un point ([[D-497]] §4-§5) : les DEUX absences, jamais
+ * confondues — aucune ligne (« non recueilli ») et un champ « inconnu ».
+ * Juxtaposé, jamais interprété : aucun « complet », aucun « conforme ».
+ */
+function ContexteDuPoint({
+  contexte,
+  heureLue,
+}: {
+  contexte: ContextePrelevementSaisi | null | undefined;
+  heureLue: boolean | undefined;
+}) {
+  // Absent de la réponse (serveur antérieur) : rien n'est affirmé recueilli.
+  return (
+    <p className="mt-1" data-testid="contexte-du-point">
+      {contexte === null || contexte === undefined
+        ? 'Contexte de prélèvement non recueilli'
+        : `Contexte : ${CHAMPS_CONTEXTE.map(champ => `${LIBELLES_CHAMP[champ]} : ${valeurAffichee(contexte, champ)}`).join(' · ')}`}
+      {' · '}
+      {heureLue ? 'Heure du prélèvement lue sur le compte rendu' : 'Moment de la journée : inconnu (aucune heure lue sur un compte rendu)'}
+    </p>
+  );
+}
 
 /** Le jour de la diffusion, au calendrier de Paris — celui du jour n. */
 function formatJourParis(iso: string): string {
@@ -180,16 +214,21 @@ function SerieQuiFaitFoi({
                 {point.correctionLe !== null && <> · corrigé le {formatDateHeure(point.correctionLe)}</>}
               </p>
               <p>{formatPosition(point.position)}</p>
+              <ContexteDuPoint contexte={point.contexte} heureLue={point.heureLue} />
             </li>
           );
         })}
       </ol>
       <p className="mt-2 text-xs text-muted-foreground">
         {nombre} {nombre > 1 ? 'points' : 'point'}
-        {serie.motifs.length > 0 &&
-          ` — non comparables en l’état : ${serie.motifs
-            .map(motif => LIBELLES_MOTIF_NON_COMPARABILITE[motif] ?? motif)
-            .join(', ')}`}
+        {serie.motifs.length > 0
+          ? ` — non comparables en l’état : ${serie.motifs
+              .map(motif => LIBELLES_MOTIF_NON_COMPARABILITE[motif] ?? motif)
+              .join(', ')}`
+          : // Depuis BP-05, la liste peut être vide (contextes tous renseignés et
+            // égaux). Le silence se lirait « comparable » : la série ne l'est
+            // jamais déclarée ([[D-497]] §5, DC-24).
+            ' — aucun motif connu de non-comparabilité ; la série n’est pas déclarée comparable'}
       </p>
     </div>
   );
@@ -608,6 +647,7 @@ export function EstimeMesurePanel({
     async (bilan: {
       preleveLe: string;
       lignes: Array<{ analyteCode: string; valeur: string }>;
+      contexte: ContextePrelevementSaisi;
     }): Promise<IssueBilan> => {
       setEnvoiEnCours(true);
       setErreur(null);
@@ -1019,7 +1059,12 @@ export function EstimeMesurePanel({
         </p>
       )}
 
-      <SaisieBilan analytes={analytes} disabled={envoiEnCours} onEnregistrer={enregistrerBilan} />
+      <SaisieBilan
+        idPatient={idPatient}
+        analytes={analytes}
+        disabled={envoiEnCours}
+        onEnregistrer={enregistrerBilan}
+      />
 
       {/* L'import d'un compte rendu (BIO-INGEST LOT-02) — derrière son propre drapeau. */}
       {bioIngestEnabled && (
