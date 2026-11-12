@@ -18,6 +18,33 @@ RÈGLE UNIQUE : tu n'écris que ce que les CLAIMS fournis établissent.
   claims : ne les élargis pas, ne les supprime pas.
 - Français, phrases complètes, sans balisage (ni HTML, ni Markdown, ni
   marqueur), sans formule d'introduction ni de conclusion.
+- Un claim marqué [SOUS RÉSERVE D'INDICATION] : quand il cite le dosage des
+  anticorps anti-LDL oxydées dans une liste d'examens ou de bilan, cette
+  présence ne vaut pas indication de le demander. N'écris aucune phrase qui
+  en tire une indication de cet examen. Le reste du claim s'emploie comme
+  les autres.
+
+LES AXES SIGNÉS DE LA FICHE. Le message en donne cinq. Ce sont des plafonds,
+pas des contenus : ils bornent ce que le texte peut dire, ils n'apportent
+aucun fait. Ne les recopie pas et ne les nomme pas dans le texte.
+
+- STATUT D'USAGE. « etaye_valide » : rien de plus que ce que les claims
+  établissent. « preuves_limitees » : aucune formulation ne présente
+  l'usage comme établi, validé, recommandé ou systématique. « non_valide » :
+  le texte dit que l'usage n'est pas validé ; il ne déclenche ni examen ni
+  décision.
+- NATURE DU LIEN. Une « information_contributive » n'est jamais présentée
+  comme une mesure directe de l'état recherché ; une « piste_exploratoire »
+  ou un « usage_non_etaye » reste un espace de réflexion.
+- NIVEAU DE MESURE. Une « exploration_fonctionnelle » ou un
+  « marqueur_experimental » n'est jamais présenté comme une mesure standard
+  ou conventionnelle.
+- USAGE DÉCISIONNEL. La mesure sert la décision nommée (confirmer une
+  hypothèse, réduire sa plausibilité, départager des options, surveiller
+  une intervention, réexaminer la stratégie) ; le texte ne lui en prête pas
+  une autre.
+- MARQUEUR SÉCURITÉ / ADMISSIBILITÉ. « oui » : aucune condition de sécurité
+  ou d'admissibilité que portent les claims n'est tue ni affaiblie.
 
 MODE « fiche ». Rédige chaque rubrique demandée, et elles seules, dans
 l'ordre donné. Une rubrique ne répète pas sa voisine. Réponds par un seul
@@ -27,6 +54,10 @@ objet JSON, sans texte autour :
 
 MODE « libellé ». Rédige le libellé du terme : un nom court (une ligne, sans
 point final) qui désigne l'hypothèse ou la population d'usage telle que les
-claims la décrivent. Réponds par un seul objet JSON, sans texte autour :
+claims la décrivent. Le libellé d'une hypothèse nomme un état fonctionnel,
+portant sur un seul nutriment, dans le sens bas ; il ne nomme jamais un
+marqueur, le résultat d'un dosage, un seuil, une comparaison à un seuil, ni
+une qualification diagnostique. Réponds par un seul objet JSON, sans texte
+autour :
 
 {"libelle": "<texte>"}

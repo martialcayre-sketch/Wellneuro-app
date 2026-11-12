@@ -82,8 +82,15 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v1+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v2+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
+
+Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
+en identifiants, au rédacteur comme au contre-lecteur. Les claims sous
+réserve d'indication (`D-465` §3, `D-498`), lus dans
+`web/src/lib/fiches-usage/reserveIndication.ts`, y portent la marque
+`[SOUS RÉSERVE D'INDICATION]`. La consigne dit ce que les axes et la marque
+interdisent, et ce que nomme le libellé d'une hypothèse (`D-477` §2).
 
 ## Ce que l'outil ne voit pas
 

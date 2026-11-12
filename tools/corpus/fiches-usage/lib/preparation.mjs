@@ -16,32 +16,57 @@
 // DC-03 ([[D-266]] §7) : un identifiant ou un nombre cité qui n'existe pas dans
 // les sources fournies au modèle refuse la sortie. Les sources sont exactement
 // ce que la consigne a reçu : identifiants de la structure et textes des claims.
+//
+// LES AXES ET LA RÉSERVE ([[D-501]], consigne v2). Le rédacteur et le
+// contre-lecteur reçoivent les axes signés de la fiche (nature du lien, usage
+// décisionnel, marqueur sécurité / admissibilité, statut d'usage, niveau de
+// mesure) — des plafonds, pas des contenus — et chaque claim sous réserve
+// d'indication ([[D-465]] §3, [[D-498]]) porte une marque dans la liste.
 
 import { ErreurOutil } from '../../fiches/lib/assemblage.mjs';
 
 /** La clé d'un claim épinglé dans l'instantané local. */
 export const cleClaim = c => `${c.claimId}::${c.versionClaim}`;
 
-/** Les claims épinglés d'une fiche, dans l'ordre de la structure — ou une erreur qui les nomme. */
-export function claimsDeLaFiche(fiche, claims) {
+/** La marque d'un claim sous réserve d'indication, telle que la consigne la nomme. */
+export const MARQUE_RESERVE = "[SOUS RÉSERVE D'INDICATION]";
+
+/**
+ * Les claims épinglés d'une fiche, dans l'ordre de la structure — ou une erreur
+ * qui les nomme. `reserve` : les identifiants de claims sous réserve d'indication.
+ */
+export function claimsDeLaFiche(fiche, claims, reserve = []) {
   const cles = fiche.claims.map(cleClaim);
   const manquants = cles.filter(c => !claims.has(c));
   if (manquants.length > 0) {
     throw new ErreurOutil(`${fiche.id} : claim(s) épinglé(s) absent(s) de l'instantané : ${manquants.join(', ')}.`);
   }
-  return cles.map(cle => ({ cle, texte: claims.get(cle).texte }));
+  return fiche.claims.map(c => ({ cle: cleClaim(c), texte: claims.get(cleClaim(c)).texte, sousReserve: reserve.includes(c.claimId) }));
 }
 
 /** Les claims des fiches qui citent un terme, sans doublon — la base d'un libellé. */
-export function claimsDuTerme(termeId, structure, claims) {
+export function claimsDuTerme(termeId, structure, claims, reserve = []) {
   const fiches = structure.fiches.filter(f => f.population === termeId || f.hypotheses.includes(termeId));
   const vus = new Map();
-  for (const f of fiches) for (const c of claimsDeLaFiche(f, claims)) vus.set(c.cle, c);
+  for (const f of fiches) for (const c of claimsDeLaFiche(f, claims, reserve)) vus.set(c.cle, c);
   return { fiches: fiches.map(f => f.id), claims: [...vus.values()] };
 }
 
 function listeDeClaims(liste) {
-  return liste.length === 0 ? '(aucun)' : liste.map(c => `- "${c.cle}" : ${c.texte}`).join('\n');
+  return liste.length === 0
+    ? '(aucun)'
+    : liste.map(c => `- "${c.cle}"${c.sousReserve ? ` ${MARQUE_RESERVE}` : ''} : ${c.texte}`).join('\n');
+}
+
+/** Les axes signés d'une fiche, en identifiants : des plafonds que la consigne explique. */
+export function axesDeLaFiche(fiche) {
+  return (
+    `NATURE DU LIEN : ${fiche.nature}\n` +
+    `USAGE DÉCISIONNEL : ${fiche.usageDecisionnel}\n` +
+    `MARQUEUR SÉCURITÉ / ADMISSIBILITÉ : ${fiche.securiteAdmissibilite ? 'oui' : 'non'}\n` +
+    `STATUT D'USAGE : ${fiche.statutUsage}\n` +
+    `NIVEAU DE MESURE : ${fiche.niveauMesure}`
+  );
 }
 
 /** Le message envoyé au rédacteur pour une fiche. Aucune donnée patient : la structure et des claims. */
@@ -51,6 +76,7 @@ export function messageRedactionFiche(fiche, claimsCites) {
     `POPULATION D'USAGE : ${fiche.population}\n` +
     `HYPOTHÈSES : ${fiche.hypotheses.join(', ') || '(aucune)'}\n` +
     `CODES D'ANALYTE : ${fiche.codesAnalyte.join(', ') || '(aucun)'}\n` +
+    `${axesDeLaFiche(fiche)}\n` +
     `RUBRIQUES À RÉDIGER, DANS CET ORDRE : ${fiche.rubriques.join(', ')}\n\n` +
     `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}`
   );
@@ -65,10 +91,15 @@ export function messageRedactionLibelle(termeId, nature, fichesCitantes, claimsC
   );
 }
 
-/** Le message envoyé au contre-lecteur pour un texte, dans son contexte. */
-export function messageContreLecture({ nature, texte, contexte, claimsCites }) {
+/**
+ * Le message envoyé au contre-lecteur pour un texte, dans son contexte.
+ * `axes` : ceux de la fiche, pour une rubrique ; absents pour un libellé.
+ */
+export function messageContreLecture({ nature, texte, contexte, claimsCites, axes = null }) {
   return (
-    `NATURE : ${nature}\n\nTEXTE À VÉRIFIER :\n"""\n${texte}\n"""\n\n` +
+    `NATURE : ${nature}\n\n` +
+    (axes ? `AXES SIGNÉS DE LA FICHE :\n${axes}\n\n` : '') +
+    `TEXTE À VÉRIFIER :\n"""\n${texte}\n"""\n\n` +
     (contexte ? `CONTEXTE (à ne pas juger, pour situer le texte) :\n"""\n${contexte}\n"""\n\n` : '') +
     `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}`
   );
