@@ -81,26 +81,14 @@ dernière session.
    `node scripts/wn-revue-pr-agent.mjs <N>` à `0` (conditions ci-dessous),
    sans attendre CodeRabbit ni demander Copilot ; à défaut, `wn-reviewer`
    sur la tête (`D-448`). Une remarque de CodeRabbit ou de Copilot, s'il en
-   vient une, reçoit son verdict. Le texte qui suit, jusqu'à « Quota épuisé
-   […] PR-Agent », décrit l'ordre d'avant `D-499` ; les conditions de la
-   revue de PR-Agent restent en vigueur. **Si CodeRabbit a sauté la PR**
-   (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
-   **Copilot passe d'abord** (`D-468`) si son quota est présumé disponible :
-   `node scripts/wn-revue-copilot.mjs --quota` à `0` ; alors
-   `gh pr edit <N> --add-reviewer @copilot` sur la tête, une fois par tête,
-   et la revue vaut si `node scripts/wn-revue-copilot.mjs <N>` rend `0`
-   (son `tete=` est la tête visée par le merge ; ses remarques, en ligne et
-   dans le corps, reçoivent leur verdict). Quota épuisé, refus, ou revue
-   absente dix minutes après la demande : la revue de **PR-Agent** sur la
-   tête le remplace (`D-393` §1). Elle ne
+   vient une, reçoit son verdict. La revue de **PR-Agent** ne
    vaut que si les quatre conditions de `D-393` §2 tiennent, que lit
    `node scripts/wn-revue-pr-agent.mjs <N>` — un appel, code lu directement,
    jamais dans un tube ; **`0` seul** vaut revue de la tête, **`1`** = preuve
    absente ou défaut (la ligne `❌` nomme la condition), **`2`** = lecture
    impossible, jamais lue comme un `0`. Le `tete=` de sa ligne `REVUE`
-   (sha entier) est la tête que le merge vise par `--match-head-commit`. Il
-   ne vérifie pas que CodeRabbit a sauté la PR : cette précondition se lit
-   avant de l'appeler. Ce qu'il vérifie :
+   (sha entier) est la tête que le merge vise par `--match-head-commit`.
+   Ce qu'il vérifie :
    un run `pull_request` de `pr_agent.yml` conclu `success` sur la tête ;
    un journal qui dit « returning full diff », jamais « pruning diff » ;
    le commentaire persistant de `github-actions[bot]` écrit pendant ce run,
@@ -110,7 +98,7 @@ dernière session.
    review](…)** updated to latest commit », tout autre commentaire
    (« ## Standalone PR Review » compris) faisant échouer ; ni commande
    PR-Agent postée sur la PR après son début. Un run sur commentaire ou une
-   revue `-i` ne compte pas. Si aucun bot ne remplit sa condition, ne pas merger. Les remarques
+   revue `-i` ne compte pas. Si la revue de PR-Agent ne remplit pas sa condition, pas de merge sans revue `wn-reviewer` de la tête (`D-448`). Les remarques
    de PR-Agent (corps du commentaire, et `findings` du bloc) reçoivent leur
    verdict dans un commentaire de PR distinct. CodeRabbit écrit à **trois** endroits,
    chacun redirigé vers un fichier puis relu : le commentaire de synthèse
