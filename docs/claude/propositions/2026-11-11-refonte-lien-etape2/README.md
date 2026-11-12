@@ -44,6 +44,7 @@ mergés.
 | `cadrage-revise.md` | delta du cadrage v3, section par section |
 | `catalogue-revise.md` | les 110 fiches du catalogue v2 : gabarit, navigation cible, lot |
 | `registre-textes.md` | textes neufs ou changés (T-nn, numérotation par famille, discontinue), à accepter mot pour mot ; inscrits par DOC-0 une fois acceptés |
+| `pat2-arbitrages.md` | arbitrages PAT-2 du 2026-11-12 inscrits par DOC-3 ; Q5–Q7 ouvertes et mise à jour du suivi patient à reporter |
 | `socle-commun.md` | DOC-0, COM-0 et COM-1 (décor, après DOC-2), seuls lots communs ; règles des deux sessions |
 | `plan-praticien.md` | plan de l'Observatoire, PRA-1 à PRA-6 |
 | `plan-patient.md` | plan du Jardin, PAT-1 à PAT-7 |

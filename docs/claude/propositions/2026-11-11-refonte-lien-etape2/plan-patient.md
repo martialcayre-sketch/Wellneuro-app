@@ -96,10 +96,20 @@ circuit mineur (aucune navigation adulte, [[D-283]] §5), consentements,
 fiche de renseignements, « Parler de votre situation » (T-31), fin d'entrée.
 Aucun rail ni menu avant le franchissement ([[D-447]] §1). Les textes de
 consentement et de droits ne changent pas. Décor par `LienDecor`
-([[D-481]] §1 bis) : un fond léger **ou** les anneaux d'alliance comme
-élément principal, jamais les deux, jamais derrière un champ. **Réception** : parcours
-d'entrée complet avec un patient fictif, mineur compris ; aucune question
-modifiée.
+([[D-481]] §1 bis) : fond léger périphérique `backgrounds/screen-desktop.svg`
+ou `screen-mobile.svg` selon la largeur, sur les neuf écrans ; carte opaque,
+jamais derrière un champ, absent à l'impression. Les anneaux d'alliance ne
+sont pas retenus (Q4 (a), 2026-11-12). **Réception** : parcours d'entrée
+complet avec un patient fictif, mineur compris ; aucune question modifiée.
+
+**Arbitrages PAT-2 du 2026-11-12** : `Q1a — Q2a — Q3b — Q4a`,
+inscrits par DOC-3 dans [[D-481]] et [[D-333]] ; détails et suite du suivi :
+[`pat2-arbitrages.md`](pat2-arbitrages.md). Les repères d'étapes et sections
+d'entrée sont gardés ; U02 conserve sa destination et son libellé actuels.
+T-35 « Revenir à la connexion » reste proposé, non accepté. La date de
+version en lettres relève de PAT-6. Q5, Q6 et Q7 restent ouvertes,
+à soumettre séparément ; aucune validation de ces trois points n'est
+déduite de l'inscription des quatre choix.
 
 ### PAT-3 — Mon parcours, accompagnement, suivi
 
@@ -148,6 +158,13 @@ Dépôt de documents, comptes rendus biologiques, renseignements et
 déclarations, échanges, choix et droits, signaler un problème. **Réception** :
 confirmation de transmission sans promesse de délai ; échec qui garde la
 saisie ; textes de droits inchangés.
+
+Q3 (b) de PAT-2 (2026-11-12, [[D-481]], complément DOC-3) : le composant
+partagé `components/patient/trust/DocumentTrust.tsx` affiche la date de
+version en lettres à la place de AAAA-MM-JJ. Conditions v5 et consentement
+v3 gardent chacun leur version et leur date ; leur mise en forme reste
+indépendante. Aucune date canonique ni aucun texte de document ne change ;
+PAT-2 ne réalise pas cette modification.
 
 ### PAT-7 — Vérification et stabilisation
 
