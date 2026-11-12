@@ -98,38 +98,39 @@ racine) ; le merge des PR et la suppression des branches appartiennent à
 « Cycle PR complet côté assistant » plus bas. CodeRabbit n'approuve pas et ne
 merge pas : son approbation n'est pas requise. Comment lire ce qu'il écrit,
 l'attendre et rendre les verdicts : `.claude/rules/pr-revue-et-release-db.md` §1.
+Depuis `D-499` (2026-11-12), la revue exigée est celle de PR-Agent (ci-dessous) ;
+l'intitulé de cette section est gardé, `D-373` le cite.
 
-**La revue de substitution (`D-393`, qui amende `D-290` §1 et §3).** Une
-seule revue de bot est exigée sur la tête. Si CodeRabbit saute la PR (statut
-`skipping`, moins de dix étoiles) ou bute sur son quota (« Review rate
-limited »), la revue de **PR-Agent** (`.github/workflows/pr_agent.yml`,
-commentaire de `github-actions[bot]`) le remplace, sans redemander
-CodeRabbit. Elle n'est prouvée sur la tête que par les quatre conditions
+**Les conditions de la revue de PR-Agent (`D-393` §2).** La revue de **PR-Agent** (`.github/workflows/pr_agent.yml`, commentaire de `github-actions[bot]`) n'est prouvée sur la tête que par les quatre conditions
 de `D-393` §2 : run `pull_request` conclu `success` sur la tête, diff
 entier (« returning full diff »), commentaire persistant écrit pendant ce
 run (bloc d'état avec `head_sha` = tête et `excluded_files` vide, ou, sans
 remarque, aucun bloc), aucune autre revue de PR-Agent pendant ce run ni
-commande PR-Agent postée sur la PR après son début. Une PR de clôture seule, ou
-faite seulement de fichiers exclus du modèle, ne produit pas de revue
-PR-Agent : CodeRabbit s'y demande à la main (`D-393` §4). Lecture et verdicts :
-`.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10.
+commande PR-Agent postée sur la PR après son début. Lecture et verdicts :
+`.claude/rules/pr-revue-et-release-db.md` §1.6 et §1.10. L'ordre d'avant
+`D-499` (CodeRabbit, puis Copilot selon son quota, `D-468`, puis PR-Agent en
+substitution, `D-393` §1 et §4) est caduc ; il reste lisible dans ces
+décisions.
 
-**Copilot, entre les deux (`D-468`, qui amende `D-393` §1).** Quand
-CodeRabbit est dépassé, Copilot passe avant PR-Agent si son quota est
-présumé disponible (aucun refus « insufficient remaining quota » depuis le
-1er du mois, `node scripts/wn-revue-copilot.mjs --quota` à `0`). La session
-le demande sur la tête (`gh pr edit <N> --add-reviewer @copilot`), une fois
-par tête ; sa revue vaut si `node scripts/wn-revue-copilot.mjs <N>` rend `0`.
-Quota épuisé, refus, ou revue absente dix minutes après la demande :
-PR-Agent. Pas de revue systématique : la revue automatique de Copilot à
-l'ouverture est coupée par le responsable.
+**PR-Agent, revue exigée (`D-499`, qui amende `D-290` §1, `D-393` §1 et §4,
+`D-468` §1, §3 et §4).** Depuis le 2026-11-12, la revue de bot exigée sur la
+tête est **celle de PR-Agent**, prouvée par
+`node scripts/wn-revue-pr-agent.mjs <N>` → `0` (les quatre conditions de
+`D-393` §2), sans attendre que CodeRabbit saute la PR ni bute sur son quota.
+La session n'attend plus CodeRabbit, ne le relance plus et ne demande plus
+Copilot. Si la revue de PR-Agent ne remplit pas ses conditions (« pruning
+diff », fichier exclu, run sur commentaire non conclu, PR de clôture seule),
+la revue exigée est celle de `wn-reviewer` sur la tête (`D-448`). Une
+remarque de CodeRabbit ou de Copilot, s'il en vient une, reçoit son verdict ;
+leur absence ne retient aucun merge.
 
 **L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
 change pas, son porteur change. Depuis l'adoption de `D-373` (`D-454`), une
 session « intégrateur », seule occupante de la copie principale, merge les
 PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
 qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
-`/clear`. Une PR n'a qu'un responsable actif à la fois. Les lots de
+`/clear`. Depuis `D-499` §5, l'intégrateur signale chaque merge par un message direct à la session de la PR, si elle est joignable,
+en plus de son commentaire sur la PR, qui fait foi. Une PR n'a qu'un responsable actif à la fois. Les lots de
 migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
 (`D-393` §6) ne se déclarent pas :
 leur file les merge jusqu'au bout. Une remarque de bot arrivée après
