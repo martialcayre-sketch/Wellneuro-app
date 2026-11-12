@@ -15,8 +15,10 @@ Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
 (T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]] ; T-17 à T-19,
 textes du prototype PRA-2, ajoutés par DOC-6, §1.4),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
-le 2026-11-12 comme proposition non acceptée pour U02. Aucun identifiant
-absent n'est un texte manquant.
+le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
+T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
+(lot Q5b). T-45 est sans objet ; T-46/T-47 restent libres.
+Aucun identifiant absent n'est un texte manquant.
 
 Colonnes : **Proposé** (texte exact, sans guillemets de l'interface) ;
 **Où** (couche, composant) ; **Sens** (ce que le texte doit dire, pour juger
@@ -214,9 +216,39 @@ aucun texte : le message de sécurité garde son texte et son emplacement
 DOC-5 ; aucun code ne change dans ce lot documentaire. Le correctif Q6b
 reste à réaliser dans PAT-2. T-35 reste proposé, non accepté.
 
+## 2.7 PAT-4 et brouillon alimentaire — DOC-7
+
+Acceptations individuelles du responsable le 2026-11-12, après présentation
+de chaque existant revérifié sur main. Les textes exacts, leur emplacement,
+leur sens, l'existant et leur lot ont pour **source canonique [[D-488]],
+amendement DOC-7** ; ne pas recopier une variante depuis le prototype.
+
+| Famille | Statut final | Portée |
+|---|---|---|
+| T-40 | accepté mot pour mot | accusé de la demande de correction, PAT-4 |
+| T-41a, T-41b | acceptés mot pour mot | messages du sommeil sans emoji ; T-41a d'abord refusé puis accepté sur correction directe « t41a retirer l'émoji » |
+| T-42a à T-42c | acceptés mot pour mot | boutons des agendas sans signe décoratif |
+| T-43a à T-43e | acceptés mot pour mot | libellés du sommeil sans emoji ; mots, variantes et valeurs inchangés |
+| T-44a, T-44b | acceptés mot pour mot | messages de l'agenda alimentaire sans emoji |
+| T-48a à T-48g | acceptés mot pour mot | ponctuation avec U+00A0 avant ? et : |
+| T-48h | accepté mot pour mot | seule l'apostrophe devient typographique, valeur gt60 inchangée |
+| T-36, emplacement | accepté par Q6a, inscription DOC-7 | sous les 401 des questionnaires, plaintes et deux agendas ; même onglet vers /portail/connexion |
+| T-49 | accepté mot pour mot, non publié | rappel de l'appareil partagé près du brouillon, lot Q5b |
+| T-50 | accepté mot pour mot, non publié | information de conservation, circuit TRUST, lot Q5b |
+
+T-45 est sans objet (Q5b, [[D-507]]) : les quatre textes « sur cet
+appareil » restent. T-46/T-47 restent libres. T-49/T-50 étaient libres
+avant inscription ; DOC-7 est le prochain numéro après DOC-6, sans DOC-n
+concurrent ouvert au relevé. Aucun texte du message de sécurité ne change :
+[[D-506]] ne change que sa visibilité, avec la réserve Q11b.
+
+L'acceptation de T-49/T-50 ne publie aucune version de confidentialité :
+ils ne deviennent visibles qu'au lot séparé Q5b, avec le comportement décrit.
+Voir pat4-prealables.md et lot-q5b-brouillon-appareil.md.
+
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 acceptés et inscrits dans D-488 par DOC-5 (PAT-2) ; T-35 reste proposé, non accepté |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 inscrits par DOC-5 ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
