@@ -1,6 +1,11 @@
 import { dateJourParis } from '@/lib/dateParis';
 import { annulationParLigne, correctionsParLigne } from './filCorrection';
 import type { LigneResultatDatee } from './derniersResultats';
+import {
+  champsInconnus,
+  champsQuiDifferent,
+  type ContextePrelevementSaisi,
+} from './contextePrelevement';
 
 // LA SÉRIE DES MESURES QUI FONT FOI, PAR ANALYTE (BP-03, cadrage v1 §4) —
 // résolution PURE, testable sans base. Voisine de `derniersResultatsParAnalyte`,
@@ -37,6 +42,18 @@ export type LigneDeSerie = LigneResultatDatee & {
    * saisie praticien ou un import sans laboratoire lu.
    */
   laboratoire: string | null;
+  /**
+   * La tête du contexte de prélèvement de CETTE ligne ([[D-497]] §4) — seule
+   * une racine en porte une. `null` ou absent : aucune ligne de contexte,
+   * « contexte de prélèvement non recueilli » (résultat antérieur à BP-05).
+   */
+  contexte?: ContextePrelevementSaisi | null;
+  /**
+   * L'import a-t-il lu l'heure du prélèvement (`LigneBiologiqueCandidate.heureLue`) ?
+   * Le moment de la journée n'est pas un champ (§3) : sans heure lue — saisie
+   * praticien comprise —, il est « inconnu ».
+   */
+  heureLue?: boolean;
 };
 
 /** Une ouverture du calendrier de suivi : un jour 0 et sa diffusion. */
@@ -52,8 +69,11 @@ export const MOTIFS_NON_COMPARABILITE = [
   'unites_differentes',
   'laboratoire_non_identifie',
   'laboratoires_differents',
-  // Toujours présent jusqu'à BP-05, qui crée ce contexte : c'est la vérité.
+  // [[D-497]] §5 : tant qu'un point n'a pas de ligne de contexte, ou qu'un de
+  // ses sept champs vaut « inconnu ». Un contexte n'est jamais « complet ».
   'contexte_non_renseigne',
+  // [[D-497]] §5 : deux points qui diffèrent sur un même champ renseigné.
+  'contextes_differents',
 ] as const;
 
 export type MotifNonComparabilite = (typeof MOTIFS_NON_COMPARABILITE)[number];
@@ -65,6 +85,13 @@ export type PointDeSerie<T extends LigneDeSerie> = {
   /** `saisiLe` de la tête quand elle remplace une ligne, sinon `null`. */
   correctionLe: string | null;
   position: PositionDansLeSuivi;
+  /**
+   * Le contexte de la RACINE du fil ([[D-497]] §4 : une correction garde le
+   * contexte de sa racine), `null` s'il n'a pas été recueilli.
+   */
+  contexte: ContextePrelevementSaisi | null;
+  /** L'heure du prélèvement a-t-elle été lue à l'import (racine du fil) ? */
+  heureLue: boolean;
 };
 
 export type SerieAnalyte<T extends LigneDeSerie> = {
@@ -137,7 +164,16 @@ function motifsDe(points: readonly PointDeSerie<LigneDeSerie>[]): MotifNonCompar
   const laboratoires = points.map(p => p.ligne.laboratoire);
   if (laboratoires.some(l => l === null)) motifs.push('laboratoire_non_identifie');
   if (new Set(laboratoires.filter(l => l !== null)).size > 1) motifs.push('laboratoires_differents');
-  motifs.push('contexte_non_renseigne');
+  // Les deux absences (non recueilli, inconnu) rendent le même motif : la
+  // série ne compare pas ce qu'elle ne connaît pas. L'écran, lui, les dit
+  // distinctement, point par point.
+  if (points.some(p => p.contexte === null || champsInconnus(p.contexte).length > 0)) {
+    motifs.push('contexte_non_renseigne');
+  }
+  const contextes = points.map(p => p.contexte).filter((c): c is ContextePrelevementSaisi => c !== null);
+  if (contextes.some((a, i) => contextes.slice(i + 1).some(b => champsQuiDifferent(a, b).length > 0))) {
+    motifs.push('contextes_differents');
+  }
   return motifs;
 }
 
@@ -164,11 +200,14 @@ export function serieParAnalyte<T extends LigneDeSerie>(
   for (const ligne of lignes) {
     if (corrigees.has(ligne.id) || annulees.has(ligne.id)) continue;
     const points = parAnalyte.get(ligne.analyteCode) ?? [];
+    const racine = racineDe(ligne, parId);
     points.push({
       ligne,
-      entreeLe: racineDe(ligne, parId).saisiLe,
+      entreeLe: racine.saisiLe,
       correctionLe: ligne.supersedesResultatId ? ligne.saisiLe : null,
       position: positionDansLeSuivi(ligne.preleveLe, ouvertures),
+      contexte: racine.contexte ?? null,
+      heureLue: racine.heureLue ?? false,
     });
     parAnalyte.set(ligne.analyteCode, points);
   }

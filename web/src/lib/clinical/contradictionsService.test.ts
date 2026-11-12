@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContradictionFinding } from './contradictionFinding';
+import type { OrientationAdmissible } from './orientationAdmissible';
+import { ORIENTATION_RULES_V1 } from './orientationRulesV1';
 
 // Ce banc garde les deux endroits où un constat déterministe peut devenir faux
 // en changeant de forme : le VERROU (qui décide s'il sort) et la CONVERSION
@@ -754,24 +756,26 @@ describe('Convergences — double verrou du dossier (H98)', () => {
     statutValidite: 'VALID',
   }];
   const anamnese = { antecedentsDomaines: ['Respiratoire / apnée du sommeil'] };
+  // [[D-495]] : la table entière, tous ses claims admissibles.
+  const TOUTES = { regles: ORIENTATION_RULES_V1, nonAppliquees: [] };
 
   it('orientation éteinte : aucune convergence', async () => {
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(false);
-    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT);
+    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'tout', TOUTES);
     expect(constats.filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
   });
 
   it('les deux verrous ouverts : la convergence du besoin 5 sort', async () => {
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
-    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT);
+    const constats = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'tout', TOUTES);
     expect(constats.filter(c => c.forme === 'CONVERGENCE').map(c => c.id)).toEqual(['CONV-B5']);
   });
 
   it('système de contradictions éteint : rien, quelle que soit l’orientation', async () => {
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
-    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toEqual([]);
+    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'tout', TOUTES)).toEqual([]);
   });
 
   // Revue `wn-reviewer` de #1907 (D-455 §7) : l'orientation ne lit que les
@@ -781,7 +785,7 @@ describe('Convergences — double verrou du dossier (H98)', () => {
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
     expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')
       .filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
-    const seules = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences');
+    const seules = constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences', TOUTES);
     expect(seules.map(c => c.id)).toEqual(['CONV-B5']);
   });
 
@@ -791,8 +795,78 @@ describe('Convergences — double verrou du dossier (H98)', () => {
       evaluerConvergences: () => { throw new Error('panne simulée du producteur'); },
     }));
     const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
-    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT)).toThrow('panne simulée');
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'tout', TOUTES)).toThrow('panne simulée');
     expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')).not.toThrow();
     vi.doUnmock('./convergenceEngine');
+  });
+
+  // ── [[D-495]] §1 et §3 — les seules règles d'orientation appliquées ────────
+
+  it('D-495 : sans les règles qui l’ouvrent, la convergence ne sort plus', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    const sansAucune = constatsContradictionsPourDossier(
+      lignes, anamnese, MAINTENANT, 'convergences', { regles: [], nonAppliquees: [] },
+    );
+    expect(sansAucune).toEqual([]);
+  });
+
+  it('D-495 : corpus illisible (null) — aucune convergence', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences', null)).toEqual([]);
+  });
+
+  it('D-495 : un appelant qui omet les règles applicables lève — jamais de repli sur la table entière', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { constatsContradictionsPourDossier } = await serviceAvecOrientation(true);
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'convergences'))
+      .toThrow('Règles d’orientation applicables non fournies');
+    expect(() => constatsContradictionsPourDossier(lignes, anamnese, MAINTENANT, 'discordances')).not.toThrow();
+  });
+
+  // ── [[D-495]] §3 — le dossier stocké : la lecture du corpus, puis ce que le
+  // moteur reçoit et ce que le cockpit doit dire. Revue `wn-reviewer` de t71b :
+  // le banc de route mocke ce service et ne prouvait que la transmission.
+
+  async function serviceStocke(orientation: OrientationAdmissible | null) {
+    vi.doMock('./orientationAdmissible', () => ({
+      reglesOrientationAdmissibles: vi.fn().mockResolvedValue(orientation),
+    }));
+    prismaMock.questionnaireReponse.findMany.mockResolvedValue(lignes);
+    prismaMock.consultation.findFirst.mockResolvedValue({ anamnese });
+    return serviceAvecOrientation(true);
+  }
+
+  afterEach(() => {
+    vi.doUnmock('./orientationAdmissible');
+    vi.doUnmock('./convergenceEngine');
+  });
+
+  it('D-495 : corpus illisible sur le dossier stocké — « convergences non évaluées », aucune convergence affichée', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { contradictionsDetailleesPourPatient } = await serviceStocke(null);
+    const resultat = await contradictionsDetailleesPourPatient('PAT_1');
+    expect(resultat.convergencesNonEvaluees).toBe(true);
+    expect(resultat.affichees.filter(c => c.forme === 'CONVERGENCE')).toEqual([]);
+  });
+
+  it('D-495 : corpus lisible — la convergence sort et rien n’est signalé', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { contradictionsDetailleesPourPatient } = await serviceStocke(TOUTES);
+    const resultat = await contradictionsDetailleesPourPatient('PAT_1');
+    expect(resultat.convergencesNonEvaluees).toBe(false);
+    expect(resultat.affichees.filter(c => c.forme === 'CONVERGENCE').map(c => c.id)).toEqual(['CONV-B5']);
+  });
+
+  it('D-495 : le moteur de convergence reçoit les seules règles appliquées, jamais la table entière', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const espion = vi.fn().mockReturnValue([]);
+    vi.doMock('./convergenceEngine', () => ({ evaluerConvergences: espion }));
+    const appliquees = ORIENTATION_RULES_V1.slice(1);
+    const { contradictionsDetailleesPourPatient } = await serviceStocke({ regles: appliquees, nonAppliquees: [] });
+    await contradictionsDetailleesPourPatient('PAT_1');
+    expect(espion).toHaveBeenCalledTimes(1);
+    expect(espion.mock.calls[0][0].regles).toBe(appliquees);
   });
 });

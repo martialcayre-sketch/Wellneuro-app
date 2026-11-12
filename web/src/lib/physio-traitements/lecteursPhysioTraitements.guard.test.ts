@@ -28,6 +28,12 @@ const ACCES_ADMIS = [
   'web/src/components/physio-traitements/DeclarationsPatient.tsx',
   'web/src/components/physio-traitements/LienFicheRenseignements.tsx',
   'web/src/app/portail/[token]/page.tsx',
+  // Le bloc du contexte de prélèvement, au cockpit ([[D-497]] §2-§3, BP-05) :
+  // la route du cockpit relue telle quelle, sexe, statut menstruel,
+  // grossesse et traitements en vigueur affichés À CÔTÉ, en lecture seule et
+  // datés — jamais recopiés dans le contexte (arbitrage du responsable du
+  // 2026-11-12, « affichage en ligne »).
+  'web/src/components/biologie/BlocContextePrelevement.tsx',
   // La ligne de vigilance (§8) : les traitements en vigueur, quel que soit
   // le drapeau ([[D-391]] §4) ; le texte transmis à l'IA ne les reçoit pas.
   'web/src/lib/synthese/generation.ts',

@@ -389,6 +389,19 @@ export type DecisionCounterfactual = {
   limitations: string[];
 };
 
+/**
+ * Une priorité dont les conditions de déclenchement sont réunies sur le
+ * dossier, et qui n'est pas proposée faute de claim admissible ([[D-495]] §4).
+ * Le libellé est celui de la règle, pour que le praticien puisse la reprendre
+ * comme priorité libre ([[D-279]] §1).
+ */
+export type PrioriteNonProposee = {
+  ruleId: string;
+  label: string;
+  /** Les couples cités par la règle qui ne sont pas admissibles au corpus. */
+  claims: { claimId: string; versionClaim: string }[];
+};
+
 export type DecisionCard = {
   decisionCardId: string;
   snapshotId: string;
@@ -412,6 +425,20 @@ export type DecisionCard = {
    * `ClinicalReview.safetyFindingsAdresses`).
    */
   safetyFindingAdresseIds?: string[];
+  /**
+   * Les priorités que la table aurait proposées sur ce dossier, et qui ne le
+   * sont pas : au moins un claim cité par la règle n'est pas admissible au
+   * corpus ([[D-495]] §4). Écartées AVANT le classement, à la place de la gate
+   * de population ; dites sur la carte. Absent quand il serait vide — même
+   * garde d'empreinte que `safetyFindingAdresseIds`.
+   */
+  prioritesNonProposees?: PrioriteNonProposee[];
+  /**
+   * Présent (et vrai) seulement quand la validité des sources de la table des
+   * priorités n'a pas pu être vérifiée : aucune priorité issue des règles
+   * n'est alors proposée ([[D-495]] §3). Absent sinon.
+   */
+  validitePrioritesNonVerifiee?: true;
   abstention: AbstentionAssessment;
   limitations: string[];
   inputHash: string;

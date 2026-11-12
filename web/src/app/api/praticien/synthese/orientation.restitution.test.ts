@@ -9,8 +9,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // consigne pour tenir un bloc vide) ; et si un pack est cité hors de ceux
 // transmis, l'écart est journalisé sous son propre code.
 
-const { getServerSession, prisma, anthropicCreate, validateSyntheseSchema, evaluerOrientationPourPatient, loggerWarn } =
+const {
+  getServerSession, prisma, anthropicCreate, validateSyntheseSchema, evaluerOrientationPourPatient, loggerWarn,
+  etatOrientation, reglesOrientationAdmissibles,
+} =
   vi.hoisted(() => ({
+    // [[D-495]] : verrou de l'orientation et lecture du corpus, partagée par la
+    // convergence et l'orientation. Défaut : verrou fermé, rien n'est lu.
+    etatOrientation: { active: false },
+    reglesOrientationAdmissibles: vi.fn(),
     getServerSession: vi.fn(),
     prisma: {
       patient: { findFirst: vi.fn() },
@@ -56,7 +63,11 @@ vi.mock('@/lib/clinical/corpusSyntheseV1', () => ({
 }));
 // Le service est mocké ICI, et seulement ici : c'est ce qui permet d'exercer le
 // chemin `actif: true`, impossible autrement tant que la table n'est pas signée.
-vi.mock('@/lib/clinical/orientationService', () => ({ evaluerOrientationPourPatient }));
+vi.mock('@/lib/clinical/orientationService', () => ({
+  evaluerOrientationPourPatient,
+  orientationActive: () => etatOrientation.active,
+}));
+vi.mock('@/lib/clinical/orientationAdmissible', () => ({ reglesOrientationAdmissibles }));
 vi.mock('@/lib/scoring/miniSynthese', () => ({ buildMiniSynthese: () => ({}) }));
 vi.mock('@/lib/consultation/contexteClinique', () => ({
   buildContexteClinique: () => '',
@@ -171,6 +182,8 @@ beforeEach(() => {
   });
   prisma.auditSynthese.create.mockResolvedValue({});
   evaluerOrientationPourPatient.mockResolvedValue(INACTIVE);
+  etatOrientation.active = false;
+  reglesOrientationAdmissibles.mockReset();
 });
 
 describe('bloc d’orientation transmis au modèle', () => {
@@ -332,6 +345,35 @@ describe('bloc d’orientation transmis au modèle', () => {
     const res = await POST(req());
     expect(res.status).toBe(200);
     expect(messageEnvoye()).not.toContain("Recommandation d'exploration déterministe");
+  });
+});
+
+// Revue CodeRabbit de #2025 ([[D-495]] §4) : UNE lecture du corpus, partagée
+// par la convergence et l'orientation — jamais deux lectures qui divergent.
+describe('une seule lecture des règles d’orientation applicables', () => {
+  it('la lecture faite pour la convergence est celle que reçoit l’orientation', async () => {
+    etatOrientation.active = true;
+    const lecture = { regles: [], nonAppliquees: [] };
+    reglesOrientationAdmissibles.mockResolvedValue(lecture);
+    await POST(req());
+    expect(reglesOrientationAdmissibles).toHaveBeenCalledTimes(1);
+    expect(evaluerOrientationPourPatient).toHaveBeenCalledWith(expect.any(String), lecture);
+  });
+
+  it('corpus illisible : l’orientation reçoit null, sans seconde lecture', async () => {
+    etatOrientation.active = true;
+    reglesOrientationAdmissibles.mockResolvedValue(null);
+    await POST(req());
+    expect(reglesOrientationAdmissibles).toHaveBeenCalledTimes(1);
+    expect(evaluerOrientationPourPatient).toHaveBeenCalledWith(expect.any(String), null);
+  });
+
+  it('une levée de la lecture vaut un corpus illisible, et la synthèse aboutit', async () => {
+    etatOrientation.active = true;
+    reglesOrientationAdmissibles.mockRejectedValue(new Error('corpus indisponible'));
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(evaluerOrientationPourPatient).toHaveBeenCalledWith(expect.any(String), null);
   });
 });
 

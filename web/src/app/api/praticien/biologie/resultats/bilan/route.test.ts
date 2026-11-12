@@ -23,6 +23,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { Prisma } from '@/generated/prisma';
+import { CONTEXTE_INCONNU } from '@/lib/biology-library/contextePrelevement';
 import { POST } from './route';
 
 const URL_BILAN = 'http://localhost/api/praticien/biologie/resultats/bilan';
@@ -167,6 +168,15 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
       ),
     );
     expect(response.status).toBe(201);
+    // Sans contexte dans le corps (client antérieur), chaque racine reçoit
+    // une ligne de contexte « inconnu » — jamais aucune (D-497 §4).
+    const contexteInconnu = {
+      create: {
+        ...CONTEXTE_INCONNU,
+        patient: { connect: { idPatient: 'PAT1' } },
+        praticienEmail: PRATICIEN,
+      },
+    };
     expect(donneesEcrites()).toEqual([
       {
         idPatient: 'PAT1',
@@ -177,6 +187,7 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
         source: 'saisie_praticien',
         saisiPar: PRATICIEN,
         supersedesResultatId: null,
+        contextesPrelevement: contexteInconnu,
       },
       {
         idPatient: 'PAT1',
@@ -187,8 +198,40 @@ describe('bilan — ce que le serveur pose, et lui seul', () => {
         source: 'saisie_praticien',
         saisiPar: PRATICIEN,
         supersedesResultatId: null,
+        contextesPrelevement: contexteInconnu,
       },
     ]);
+  });
+
+  // D-497 §4 : le contexte du bilan, saisi une fois, part sur CHAQUE racine.
+  it('le contexte du bilan est écrit sur chaque racine, sans clé étrangère', async () => {
+    const contexte = {
+      ...CONTEXTE_INCONNU,
+      aJeun: 'oui',
+      jourCycleEtat: 'renseigne',
+      jourCycle: 3,
+      delaiDernierePriseEtat: 'renseigne',
+      delaiDernierePrise: 12,
+      delaiDernierePriseUnite: 'heure',
+    };
+    const response = await POST(
+      postRequest(bilan(DEUX_LIGNES, { contexte: { ...contexte, praticienEmail: 'x@y.fr', idResultat: 'r' } })),
+    );
+    expect(response.status).toBe(201);
+    for (const donnees of donneesEcrites()) {
+      expect(donnees.contextesPrelevement).toEqual({
+        create: { ...contexte, patient: { connect: { idPatient: 'PAT1' } }, praticienEmail: PRATICIEN },
+      });
+    }
+  });
+
+  it('un contexte mal formé refuse TOUT le bilan, sans transaction', async () => {
+    const response = await POST(
+      postRequest(bilan(DEUX_LIGNES, { contexte: { ...CONTEXTE_INCONNU, jourCycleEtat: 'renseigne', jourCycle: 0 } })),
+    );
+    expect(response.status).toBe(400);
+    expect((await response.json()).reason).toBe('contexte_invalide');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('un analyte sans unité au catalogue se consigne SANS unité — jamais une unité inventée', async () => {

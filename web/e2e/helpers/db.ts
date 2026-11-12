@@ -21,6 +21,8 @@ import { INDICATIONS_BIOLOGIE_V1 } from '../../src/lib/biology-library/indicatio
 import { STOP_RULES_V1 } from '../../src/lib/clinical/stopRulesV1';
 import { CONTRADICTIONS_RULES_V1 } from '../../src/lib/clinical/contradictionsV1';
 import { CONFLITS_SOURCES_V1 } from '../../src/lib/clinical/conflitsSourcesV1';
+import { ORIENTATION_RULES_V1 } from '../../src/lib/clinical/orientationRulesV1';
+import { PRIORITY_RULES_V1 } from '../../src/lib/clinical/priorityRulesV1';
 import { ficheSourceDeLAssiette } from '../../src/lib/fiches-assiette/appariement';
 import { lireContenuFiche } from '../../src/lib/fiches-assiette/contrat';
 import { controlerFiche } from '../../src/lib/fiches-assiette/invariants';
@@ -1021,6 +1023,11 @@ export async function poserClaimsIndicationsAdmissibles(): Promise<void> {
  * alors qu'en production les couples sont admissibles. Mêmes garanties que
  * ci-dessus : lignes de fixture, jamais supprimées, jamais substituées à un
  * vrai claim.
+ *
+ * DEPUIS [[D-495]], AUSSI L'ORIENTATION ET LES PRIORITÉS : une règle
+ * d'orientation dont un couple manque ne propose rien, et une priorité n'est
+ * plus candidate — sans ces couples, chaque parcours E2E perdrait ses
+ * propositions et ses priorités.
  */
 export async function poserClaimsTablesCliniquesAdmissibles(): Promise<void> {
   await poserCouplesDeFixture(
@@ -1028,6 +1035,8 @@ export async function poserClaimsTablesCliniquesAdmissibles(): Promise<void> {
       ...STOP_RULES_V1.flatMap(regle => regle.justificationClaims),
       ...CONTRADICTIONS_RULES_V1.flatMap(regle => regle.justificationClaims),
       ...CONFLITS_SOURCES_V1.flatMap(conflit => conflit.claims),
+      ...ORIENTATION_RULES_V1.flatMap(regle => regle.justificationClaims),
+      ...PRIORITY_RULES_V1.flatMap(regle => regle.justificationClaims),
     ],
     'E2E_TBL_',
     'Claim de fixture E2E (D-491).',
@@ -1247,17 +1256,27 @@ export async function nettoyerProtocoleEtArbitrages(
  * Les statuts posés sur ces mesures partent AVANT elles ([[D-322]], F58) :
  * leur clé vers le résultat est en RESTRICT, et un statut posé par un E2E
  * ferait échouer le ramassage entier.
+ *
+ * Les contextes de prélèvement aussi ([[D-497]], BP-05), et dans la MÊME
+ * transaction que leurs résultats : la base refuse, au commit, la
+ * suppression d'un contexte dont le dossier et le résultat survivent. Deux
+ * appels séparés seraient refusés au premier (N1 de la revue de #2018).
  */
 export async function nettoyerResultatsBiologiques(
   idPatient: string,
   depuis: Date,
 ): Promise<void> {
-  await prisma.statutPoseResultatBiologique.deleteMany({
-    where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
-  });
-  await prisma.resultatBiologique.deleteMany({
-    where: { idPatient, saisiLe: { gte: depuis } },
-  });
+  await prisma.$transaction([
+    prisma.contextePrelevement.deleteMany({
+      where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
+    }),
+    prisma.statutPoseResultatBiologique.deleteMany({
+      where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
+    }),
+    prisma.resultatBiologique.deleteMany({
+      where: { idPatient, saisiLe: { gte: depuis } },
+    }),
+  ]);
 }
 
 /**

@@ -2179,6 +2179,7 @@ export function ClinicalRuntimeSection({
           // règles n'est pas signée, et le composant n'a aucune condition à
           // porter.
           contradictions={runtime?.status === 'ready' ? runtime.contradictions : []}
+          convergencesNonEvaluees={runtime?.status === 'ready' && runtime.convergencesNonEvaluees === true}
           arbitragesConflits={runtime?.status === 'ready' ? runtime.arbitragesConflits ?? [] : []}
         />
       )}

@@ -332,3 +332,20 @@ describe('MissingDataPanel — réserve sur la source (D-491)', () => {
     expect(screen.queryByText('Réserve sur la source')).toBeNull();
   });
 });
+
+// [[D-495]] §3 — corpus illisible : les convergences ne sont pas évaluées, et
+// le panneau le DIT (texte T5) au lieu de laisser une absence se lire « aucune
+// convergence ».
+describe('MissingDataPanel — convergences non évaluées (D-495)', () => {
+  const T5 = 'Convergences non évaluées : la validité de leurs sources n’a pas pu être vérifiée.';
+
+  it('le texte paraît quand le serveur le signale', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[]} convergencesNonEvaluees />);
+    expect(screen.getByText(T5)).toBeTruthy();
+  });
+
+  it('il ne paraît pas autrement', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
+    expect(screen.queryByText(T5)).toBeNull();
+  });
+});

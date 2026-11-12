@@ -10,6 +10,7 @@ import { garderResultats } from '@/lib/biology-library/gardeResultats';
 import { validerDatePrelevement, validerSaisieResultat } from '@/lib/biology-library/resultats';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 import { cleMesure, clesOccupees } from '@/lib/biology-library/annulations';
+import { colonnesContexte, validerContextePrelevement } from '@/lib/biology-library/contextePrelevement';
 
 // Saisie GROUPÉE d'un bilan (BIO-INGEST LOT-01, A1 et A3 de [[D-256]]) : une
 // date de prélèvement commune, N analytes, UNE validation. Sœur de la route
@@ -38,6 +39,13 @@ import { cleMesure, clesOccupees } from '@/lib/biology-library/annulations';
 // PAS de journal d'accès : même dispense d'écriture `GD-1` que le POST
 // unitaire ([[D-118]]) — `saisi_par` et `saisi_le` datent et attribuent déjà
 // chaque ligne. La lecture des doublons sert la garde, rien n'en est rendu.
+//
+// LE CONTEXTE DU PRÉLÈVEMENT ([[D-497]] §4, BP-05) est saisi UNE fois pour le
+// bilan et écrit sur chaque racine créée, dans la même transaction : une
+// ligne de contexte par résultat, à « inconnu » pour tout champ que le
+// praticien ne connaît pas. Absent du corps (client antérieur), il vaut
+// « inconnu » partout ; mal formé, tout le bilan est refusé. La base juge à
+// nouveau le dossier, la racine et le praticien (trigger).
 
 /**
  * Plafond de lignes d'un bilan. Borne TECHNIQUE (taille d'une requête, d'une
@@ -70,7 +78,7 @@ function echec(reason: string, error: string, status: number, lignes?: RefusLign
 
 type LigneBrute = { analyteCode?: unknown; valeur?: unknown; supersedesResultatId?: unknown };
 
-type BilanBody = { idPatient?: unknown; preleveLe?: unknown; lignes?: unknown };
+type BilanBody = { idPatient?: unknown; preleveLe?: unknown; lignes?: unknown; contexte?: unknown };
 
 export async function POST(req: Request) {
   try {
@@ -116,6 +124,13 @@ export async function POST(req: Request) {
       return echec(date.raison, MESSAGES_REFUS_SAISIE[date.raison], 400);
     }
     const preleveLe = date.preleveLe;
+
+    // LE CONTEXTE EST COMMUN, comme la date : un seul refus, celui du bilan.
+    const verdictContexte = validerContextePrelevement(body.contexte);
+    if (!verdictContexte.ok) {
+      return echec(verdictContexte.raison, MESSAGES_REFUS_SAISIE[verdictContexte.raison], 400);
+    }
+    const contexte = colonnesContexte(verdictContexte.contexte);
 
     // PRÉFLIGHT, ÉTAGE 1 — la forme de chaque ligne, sans aucune lecture.
     const refus: RefusLigneBilan[] = [];
@@ -210,6 +225,15 @@ export async function POST(req: Request) {
               source: 'saisie_praticien',
               saisiPar: garde.email,
               supersedesResultatId: null,
+              // Imbriqué : la ligne de contexte naît après sa racine, dans
+              // la même transaction tableau — toutes ou aucune.
+              contextesPrelevement: {
+                create: {
+                  ...contexte,
+                  patient: { connect: { idPatient } },
+                  praticienEmail: garde.email,
+                },
+              },
             },
             select: { id: true },
           }),

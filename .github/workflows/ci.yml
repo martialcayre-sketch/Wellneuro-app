@@ -282,13 +282,24 @@ jobs:
       - name: Journal du plan (garde, avertissement seul)
         run: node scripts/wn-plan-journal-garde.mjs
 
+      # Banc identifiant–rubrique du journal (D-502 §4, Q3 bis ; D-325 §5).
+      # BLOQUANT : une ligne de `docs/claude/plan-journal/` qui associe un
+      # identifiant de claim et un nom de rubrique d'étiquetage rougit. Les
+      # noms se lisent dans `web/src/lib/fiches-usage/vocabulaire.ts`, jamais
+      # recopiés ; le rapport ne donne que chemin et ligne. Un écart ne se
+      # corrige pas en réécrivant le fragment : il demande une décision.
+      - name: Journal du plan (identifiant de claim et rubrique, bloquant)
+        run: node scripts/wn-plan-journal-rubriques.mjs
+
       # Bancs du journal du plan. Ils prouvent que la bascule ne perd, ne
       # réordonne ni ne réécrit aucune ligne — reconstruire(basculer(P)) === P
       # à l'octet près, sur une copie du plan réel et sur des cas fabriqués —,
       # que rien ne s'écrit sans `--ecrire`, qu'une fiche se lit avec son
-      # journal comme avant la bascule, et que le garde n'est jamais bloquant.
-      - name: Journal du plan (bancs de la bascule, de la lecture et du garde)
-        run: node --test scripts/lib/plan-journal.test.mjs scripts/wn-plan-fiche.test.mjs scripts/wn-plan-journal-garde.test.mjs
+      # journal comme avant la bascule, que le garde n'est jamais bloquant, et
+      # que le banc identifiant–rubrique refuse l'association sans rougir un
+      # nom seul ni un identifiant seul.
+      - name: Journal du plan (bancs de la bascule, de la lecture, du garde et de l'identifiant–rubrique)
+        run: node --test scripts/lib/plan-journal.test.mjs scripts/wn-plan-fiche.test.mjs scripts/wn-plan-journal-garde.test.mjs scripts/lib/plan-journal-rubriques.test.mjs
 
       # Invariants de sûreté de `release-db`, le seul chemin d'écriture de la base
       # de production. Depuis que ce workflow est proposé automatiquement, il ne
