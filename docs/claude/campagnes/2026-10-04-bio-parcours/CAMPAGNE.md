@@ -133,7 +133,7 @@ nouveaux, décisions acceptées.
 | BP-14 | LOT-14 | Identité d'auteur séparée du rôle | terminé (2026-11-10 : D-459 ; migration constatée, #1930 ; code mergé, #1953, et déployé le 2026-11-09) | **oui** | BP-00 |
 | BP-03 | LOT-03 | Série par analyte, jour n, trois dates | terminé (2026-10-17 ; #1463 fiche, #1466 code, sans migration ; constat après déploiement par le responsable) | non | BP-01, BP-09 |
 | BP-04 | LOT-04 | Attente typée sur les deux véhicules | terminé (2026-10-15 ; `D-305` #1471, code en une PR sans migration) | non | BP-01, BP-09 |
-| BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | à_faire | **oui** | BP-00, BP-03 |
+| BP-05 | LOT-05 | Contexte de prélèvement typé (absorbe BP-06) | en_cours (2026-11-12 : fiche, quatre arbitrages du 2026-11-12, `D-497` et déclaration RGPD ; migration seule sur confirmation distincte, puis le code après constat) | **oui** | BP-00, BP-03 |
 | **Phase 2** | | **Premier parcours, étage outil** | | | |
 | BP-11 | LOT-11 | Constats du praticien | terminé (2026-10-20 ; #1600, release-db constatée, puis le code sous `WN_BIO_CONSTAT` éteint ; `D-331`) | **oui** | BP-09, BP-12a |
 | BP-16 | LOT-16 | Boucle d'exploration | à_faire | non | BP-03, BP-04, BP-11 |
