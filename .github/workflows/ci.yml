@@ -1860,6 +1860,19 @@ jobs:
           WN_PORTAIL_LIEN_BANC_BASE: wellneuro_ci
         run: node prisma/runWithAlias.js scripts/banc-naissance-lien-deux-sessions.test.ts
 
+      # L'envoi d'un instrument du cabinet contre sa modification, sa
+      # publication et sa déclaration (NF-7, H59, lot 3 #2021) : les VRAIS
+      # handlers (`file-envoi/envoyer` POST, `instruments` PATCH), drapeau
+      # allumé, contre PostgreSQL — FOR SHARE de l'envoi, FOR UPDATE et
+      # recomptage de la modification, les deux ordres, deux témoins, ordres
+      # opposés sans interblocage, titre écrit sur une lecture périmée (P1-1).
+      - name: Cabinet instrument send race bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_NF7_ENVOI_BANC_BASE: wellneuro_ci
+        run: node prisma/runWithAlias.js scripts/banc-envoi-cabinet-deux-sessions.test.ts
+
       # La file durable des lectures (D-282, G3 lot 3) : le VRAI code de la file
       # contre PostgreSQL — deux demandes, deux réclamations (courses FORCÉES
       # par le verrou du compte rendu tenu par une troisième session), la

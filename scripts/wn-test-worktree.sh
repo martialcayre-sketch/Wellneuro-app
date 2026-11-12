@@ -638,6 +638,12 @@ grep -q 'banc-naissance-lien-deux-sessions.test.ts' "$ROOT/.github/workflows/ci.
   || die "ci.yml ne lance plus le banc de la naissance d'un lien magique."
 WN_PORTAIL_LIEN_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-naissance-lien-deux-sessions.test.ts > /dev/null < /dev/null \
   || die "banc de la naissance d'un lien en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-naissance-lien-deux-sessions.test.ts\`, depuis web/)."
+# L'envoi d'un instrument du cabinet contre sa modification, sa publication
+# et sa déclaration (NF-7, H59), même discipline.
+grep -q 'banc-envoi-cabinet-deux-sessions.test.ts' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus le banc de l'envoi d'un instrument du cabinet."
+WN_NF7_ENVOI_BANC_BASE=wellneuro_ci node prisma/runWithAlias.js scripts/banc-envoi-cabinet-deux-sessions.test.ts > /dev/null < /dev/null \
+  || die "banc de l'envoi d'un instrument du cabinet en échec — le relancer seul (\`node prisma/runWithAlias.js scripts/banc-envoi-cabinet-deux-sessions.test.ts\`, depuis web/)."
 # La file durable des lectures (D-282, G3 lot 3), même discipline.
 grep -q 'banc-file-extraction-deux-sessions.test.ts' "$ROOT/.github/workflows/ci.yml" \
   || die "ci.yml ne lance plus le banc de la file des lectures."
