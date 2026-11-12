@@ -83,8 +83,11 @@ node scripts/wn-codex-avis.mjs --mode revue --paquet paquet.txt \
 gh pr comment <N> --body-file avis.md
 ```
 
-`0` seul vaut passe faite. Le script refuse un paquet qui porte un secret ou
-une adresse e-mail réelle (`2`, rien n'est parti) ; un avis où Codex a lu ou
+`0` seul vaut passe faite. En mode `revue`, le script refuse un paquet qui
+porte un secret (`2`, rien n'est parti) ; il ne filtre ni adresse ni
+identifiant, parce que le diff est déjà public : la session relit son diff
+avant l'envoi et en retire toute donnée patient (`D-505` §3). Le filtre des
+adresses et des identifiants de dossier ne vaut qu'en mode `question` ; un avis où Codex a lu ou
 lancé quoi que ce soit est non conforme (`3`) ; Codex indisponible rend `4`.
 Chaque constat reçoit son verdict sur la PR (corrigé, écarté avec motif,
 routé avec adresse), et le fragment du lot nomme la contre-revue Codex et
