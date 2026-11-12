@@ -77,13 +77,18 @@
     - `useId` pour le titre de l'encart : corrigé ;
     - `console.error` sans valeur sur une tête illisible : corrigé ;
     - renvoi §3 → §2 dans l'exemption : corrigé ;
-    - message absent sous un champ « Renseigné » vide : écarté, le bouton reste fermé et le champ porte `aria-invalid`, comme les lignes du bilan ;
+    - message absent sous un champ « Renseigné » vide : d'abord écarté, puis **corrigé** quand PR-Agent l'a signalé aussi (voir plus bas) ;
     - « heure lue » après une heure modifiée à la validation : écarté, D-497 §3 lit `heureLue` et ne prévoit pas cette nuance ;
   - **questions** :
     - Q1 : traitée par le constat 1 ;
     - Q2 : la validation de B1 et B2 est la réponse du responsable en session (question à options du 2026-11-12), consignée dans la proposition ;
     - Q3 : la date `publieLe` se vérifie au moment de déclarer la PR « prête » (problème ouvert ci-dessous).
 - Après les correctifs : 2471 tests verts sur les dossiers touchés.
+- T3 complet vert sur `cea1fe63` (9 min 26 s, 370 E2E) ; T1 complet vert ; CI de #2038 vert (`wn-attendre-ci` → 0).
+- PR-Agent sur `cea1fe63` : revue **partielle**, 22 fichiers exclus faute de budget (`wn-revue-pr-agent` → 1). Recours : `wn-reviewer` sur la tête (D-448). Son seul constat, « blocage silencieux », est **corrigé** :
+  - `messageJourCycle` et `messageDelai` disent sous le champ chaque cas où l'envoi attend (vide, illisible, trop grand selon le validateur du serveur) ;
+  - le délai porte désormais `aria-describedby` ;
+  - un banc vérifie, cas par cas, qu'un message nul équivaut à un contexte envoyable.
 - T1 complet et T3 : voir la PR.
 
 ## Problèmes ouverts

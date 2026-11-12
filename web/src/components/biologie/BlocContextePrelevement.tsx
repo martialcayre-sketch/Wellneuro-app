@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import {
   CHAMPS_DECLARATION,
+  CONTEXTE_INCONNU,
   LIBELLES_CHAMP,
   validerContextePrelevement,
   type ContextePrelevementSaisi,
@@ -89,6 +90,37 @@ export function contexteDuBrouillon(b: BrouillonContexte): ContextePrelevementSa
   return verdict.ok ? verdict.contexte : null;
 }
 
+const TROP_GRAND = 'Ce nombre est trop grand pour être enregistré.';
+
+/**
+ * Pourquoi un champ renseigné retient l'envoi, dit sous le champ : sans ce
+ * message, le bouton d'enregistrement resterait fermé sans explication (revue
+ * PR-Agent et `wn-reviewer` de la PR 3). La capacité de la base se juge par
+ * le validateur du serveur, pas par un nombre recopié ici.
+ */
+export function messageJourCycle(b: BrouillonContexte): string | null {
+  if (b.jourCycleEtat !== 'renseigne') return null;
+  const t = b.jourCycle.trim();
+  if (t === '') return 'Saisissez le jour du cycle, ou choisissez « Inconnu ».';
+  if (!ENTIER.test(t) || Number(t) < 1) return 'Un nombre entier, à partir de 1.';
+  const verdict = validerContextePrelevement({ ...CONTEXTE_INCONNU, jourCycleEtat: 'renseigne', jourCycle: Number(t) });
+  return verdict.ok ? null : TROP_GRAND;
+}
+
+export function messageDelai(b: BrouillonContexte): string | null {
+  if (b.delaiDernierePriseEtat !== 'renseigne') return null;
+  const t = b.delaiDernierePrise.trim();
+  if (t === '') return 'Saisissez le délai, ou choisissez « Inconnu ».';
+  if (!ENTIER.test(t)) return 'Un nombre entier, à partir de 0.';
+  const verdict = validerContextePrelevement({
+    ...CONTEXTE_INCONNU,
+    delaiDernierePriseEtat: 'renseigne',
+    delaiDernierePrise: Number(t),
+    delaiDernierePriseUnite: b.delaiDernierePriseUnite,
+  });
+  return verdict.ok ? null : TROP_GRAND;
+}
+
 const OPTIONS_DECLARATION: Array<{ valeur: Declaration; libelle: string }> = [
   { valeur: 'oui', libelle: 'Oui' },
   { valeur: 'non', libelle: 'Non' },
@@ -155,10 +187,8 @@ export function BlocContextePrelevement({
   const id = useId();
   const modifier = <K extends keyof BrouillonContexte>(champ: K, v: BrouillonContexte[K]) =>
     onChange({ ...valeur, [champ]: v });
-  const jourIllisible = valeur.jourCycleEtat === 'renseigne' && !ENTIER.test(valeur.jourCycle.trim());
-  const jourNul = !jourIllisible && valeur.jourCycleEtat === 'renseigne' && Number(valeur.jourCycle) < 1;
-  const delaiIllisible =
-    valeur.delaiDernierePriseEtat === 'renseigne' && !ENTIER.test(valeur.delaiDernierePrise.trim());
+  const erreurJour = messageJourCycle(valeur);
+  const erreurDelai = messageDelai(valeur);
 
   return (
     <fieldset className="mt-3 rounded-lg border border-border p-3" data-testid="bloc-contexte-prelevement">
@@ -200,13 +230,13 @@ export function BlocContextePrelevement({
             value={valeur.jourCycle}
             onChange={event => modifier('jourCycle', event.target.value)}
             disabled={disabled}
-            aria-invalid={jourIllisible || jourNul ? true : undefined}
-            aria-describedby={jourIllisible || jourNul ? `${id}-jour-cycle-erreur` : undefined}
+            aria-invalid={erreurJour ? true : undefined}
+            aria-describedby={erreurJour ? `${id}-jour-cycle-erreur` : undefined}
             className="min-h-11 w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
-          {(jourIllisible || jourNul) && valeur.jourCycle !== '' && (
+          {erreurJour && (
             <p id={`${id}-jour-cycle-erreur`} className="mt-1 text-xs text-status-danger">
-              Un nombre entier, à partir de 1.
+              {erreurJour}
             </p>
           )}
         </div>
@@ -239,7 +269,8 @@ export function BlocContextePrelevement({
               value={valeur.delaiDernierePrise}
               onChange={event => modifier('delaiDernierePrise', event.target.value)}
               disabled={disabled}
-              aria-invalid={delaiIllisible && valeur.delaiDernierePrise !== '' ? true : undefined}
+              aria-invalid={erreurDelai ? true : undefined}
+              aria-describedby={erreurDelai ? `${id}-delai-erreur` : undefined}
               className="min-h-11 w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
           </div>
@@ -258,6 +289,11 @@ export function BlocContextePrelevement({
               <option value="jour">jours</option>
             </select>
           </div>
+          {erreurDelai && (
+            <p id={`${id}-delai-erreur`} className="w-full text-xs text-status-danger">
+              {erreurDelai}
+            </p>
+          )}
         </div>
       )}
 

@@ -7,6 +7,8 @@ import {
   BlocContextePrelevement,
   BROUILLON_INCONNU,
   contexteDuBrouillon,
+  messageDelai,
+  messageJourCycle,
   type BrouillonContexte,
 } from './BlocContextePrelevement';
 
@@ -80,7 +82,56 @@ describe('contexteDuBrouillon', () => {
   });
 });
 
+// Chaque cas où `contexteDuBrouillon` rend `null` a son message : le bouton
+// d'enregistrement ne reste jamais fermé sans explication (revue PR-Agent).
+describe('messages des champs renseignés', () => {
+  const jour = (v: string) => messageJourCycle({ ...BROUILLON_INCONNU, jourCycleEtat: 'renseigne', jourCycle: v });
+  const delai = (v: string) =>
+    messageDelai({ ...BROUILLON_INCONNU, delaiDernierePriseEtat: 'renseigne', delaiDernierePrise: v });
+
+  it('« inconnu » ne demande rien', () => {
+    expect(messageJourCycle(BROUILLON_INCONNU)).toBeNull();
+    expect(messageDelai(BROUILLON_INCONNU)).toBeNull();
+  });
+
+  it('vide, illisible, trop grand : chaque blocage est dit', () => {
+    expect(jour('')).toBe('Saisissez le jour du cycle, ou choisissez « Inconnu ».');
+    expect(jour('0')).toBe('Un nombre entier, à partir de 1.');
+    expect(jour('2,5')).toBe('Un nombre entier, à partir de 1.');
+    expect(jour('99999999999')).toBe('Ce nombre est trop grand pour être enregistré.');
+    expect(jour('14')).toBeNull();
+    expect(delai('')).toBe('Saisissez le délai, ou choisissez « Inconnu ».');
+    expect(delai('-3')).toBe('Un nombre entier, à partir de 0.');
+    expect(delai('99999999999')).toBe('Ce nombre est trop grand pour être enregistré.');
+    expect(delai('0')).toBeNull();
+  });
+
+  it('message nul ⇔ contexte envoyable, sur chaque cas', () => {
+    for (const v of ['', '0', '1', '2,5', '-3', '14', '99999999999']) {
+      const bj = { ...BROUILLON_INCONNU, jourCycleEtat: 'renseigne' as const, jourCycle: v };
+      expect(messageJourCycle(bj) === null, `jour « ${v} »`).toBe(contexteDuBrouillon(bj) !== null);
+      const bd = { ...BROUILLON_INCONNU, delaiDernierePriseEtat: 'renseigne' as const, delaiDernierePrise: v };
+      expect(messageDelai(bd) === null, `délai « ${v} »`).toBe(contexteDuBrouillon(bd) !== null);
+    }
+  });
+});
+
 describe('BlocContextePrelevement', () => {
+  it('le délai renseigné et vide dit pourquoi l’envoi attend, rattaché au champ', () => {
+    servir({ status: 503, body: { ok: false } });
+    render(<Hote />);
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Délai depuis la dernière prise' })).getByLabelText('Renseigné'),
+    );
+    const champ = screen.getByLabelText('Délai (nombre entier)');
+    expect(champ.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(champ.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      'Saisissez le délai, ou choisissez « Inconnu ».',
+    );
+    fireEvent.change(champ, { target: { value: '12' } });
+    expect(champ.getAttribute('aria-invalid')).toBeNull();
+  });
+
   it('chaque déclaration part cochée « Inconnu », et se coche au toucher', () => {
     servir({ status: 503, body: { ok: false } });
     const changements: BrouillonContexte[] = [];
