@@ -173,6 +173,16 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   `new globalThis.URL(…)`, ferme le verrou. Contre-épreuves : chemin exact
   ou sentinelle pour les quatre exemples de Codex et leurs variantes non
   constantes. T1 complet : code 0.
+- PR-Agent sur `5a29983b`, constat nouveau « Verrou qui jette »
+  (`bbca5e170e29`), corrigé. Une structure hors du typage faisait lever une
+  exception dans `incoherencesDeBibliotheque`, `sourcesCitees` et
+  `bibliothequeSignee`. C'était le cas pour `optionsRetirees` absent ou qui
+  n'est pas une liste, `options` ou `renvois` d'une autre forme, et une
+  structure ou des métadonnées nulles. Elle rend désormais des anomalies,
+  dont `structure:option_mal_formee` pour une case d'option qui n'est pas un
+  objet, et ne se signe pas. Un banc couvre neuf formes de structure et
+  trois formes de métadonnées. T1 complet : code 0, joué avant la fusion de
+  main (#2027, t78), qui ne touche aucun fichier du lot.
 
 ## Problèmes ouverts
 
