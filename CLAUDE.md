@@ -182,20 +182,20 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - Ouvrir la PR avec `--body-file` et un diff d'une seule finalité.
 - Attendre le CI en un seul appel bloquant, **en tâche de fond** :
   `node scripts/wn-attendre-ci.mjs <N>` — puis attendre sa notification.
-  Une boucle bornée reste permise pour la revue CodeRabbit ou un déploiement
+  Une boucle bornée reste permise pour la revue PR-Agent ou un déploiement
   (autorisation du responsable du 2026-10-24). L'attente sert au fragment, au
   handoff ou à la relecture du lot en cours.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
-- **CodeRabbit revoit, l'assistant merge** (`D-290`) : merge et suppression
+- **PR-Agent revoit, l'assistant merge** (`D-290`, `D-499`) : merge et suppression
   des branches par délégation du responsable. Sous `D-373` (adoptée par
   `D-454`), l'intégrateur merge les PR qu'une file déclare « prête @<sha> » (chemin du
   handoff, exceptions) ; migration, authentification, `.coderabbit.yaml` et
-  `pr_agent.yml` restent à leur file. Pas de merge avant une revue de
-  `coderabbitai[bot]` sur le sha de tête — son statut `success` n'en est pas
-  une —, ou, s'il saute ou bute sur son quota, celle de Copilot si son quota
-  est présumé disponible (`D-468`, `wn-revue-copilot.mjs`), sinon celle de
-  PR-Agent, prouvée par son run sur la tête (`D-393` §2). Détail :
-  `docs/claude/REGLES_PR_MERGE.md`.
+  `pr_agent.yml` restent à leur file. Pas de merge avant la revue de
+  **PR-Agent** sur le sha de tête, prouvée par
+  `node scripts/wn-revue-pr-agent.mjs <N>` → `0` (`D-499`, `D-393` §2) ;
+  à défaut, celle de `wn-reviewer` (`D-448`). CodeRabbit et Copilot ne sont
+  plus attendus ni demandés ; leurs remarques éventuelles reçoivent leur
+  verdict. Détail : `docs/claude/REGLES_PR_MERGE.md`.
 - **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
   Trois sorties : synthèse, **corps** des revues (nitpicks), et commentaires
   *en ligne*, absents du rollup et de `gh pr view --comments` :
