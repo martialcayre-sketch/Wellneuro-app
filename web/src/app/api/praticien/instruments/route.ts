@@ -16,6 +16,7 @@ import {
 } from '@/lib/instruments';
 import {
   DECLARATION_SUICIDE_EFFACEE,
+  declarationRequiseAvantEnvoi,
   declarationSuicideCabinetActive,
   lireDeclarationSuicide,
 } from '@/lib/securite/declarationSuicideCabinet';
@@ -34,6 +35,12 @@ export type InstrumentCabinetDto = {
   nbQuestions: number | null;
   scoreMax: number | null;
   updatedAt: string;
+  /**
+   * NF-7, P2-1 (arbitrage du 2026-11-12) : présent seulement drapeau allumé,
+   * sur un instrument publié sans déclaration. Il reste visible mais ne part
+   * plus ; l'écran affiche le motif et le geste « Déclarer ».
+   */
+  declarationRequise?: true;
 };
 
 export type InstrumentCabinetDetailDto = InstrumentCabinetDto & {
@@ -105,6 +112,7 @@ function versDto(row: Awaited<ReturnType<typeof listeInstrumentsCabinet>>[number
     nbQuestions: resume.nbQuestions,
     scoreMax: resume.scoreMax,
     updatedAt: row.updatedAt.toISOString(),
+    ...(declarationRequiseAvantEnvoi(row) ? { declarationRequise: true as const } : {}),
   };
 }
 
@@ -410,6 +418,56 @@ export async function PATCH(request: Request) {
       return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
     }
 
+    if (action === 'declarer' && declarationSuicideCabinetActive()) {
+      // NF-7, P2-1 (arbitrage du 2026-11-12) : le geste « Déclarer » recueille
+      // la déclaration d'un instrument PUBLIÉ qui n'en a pas (publié drapeau
+      // éteint), sans toucher aux questions ni au statut. Sans migration ni
+      // reprise en base ; seule la déclaration est enregistrée par
+      // l'application. Même validation que `publier`, contre la définition
+      // relue ; même écriture gardée. Drapeau éteint : l'action n'existe pas
+      // (« Action inconnue »), comme avant ce lot.
+      if (!declarationRequiseAvantEnvoi(instrument)) {
+        return NextResponse.json<MutateInstrumentResponse>(
+          { success: false, reason: 'conflit_statut', error: 'Cet instrument n’attend aucune déclaration.' },
+          { status: 409 },
+        );
+      }
+      const lue = lireDeclarationSuicide(body, instrument.definitionJson);
+      if (!lue.ok) {
+        return NextResponse.json<MutateInstrumentResponse>(
+          { success: false, reason: 'invalid_payload', error: lue.erreur, erreurs: [lue.erreur] },
+          { status: 400 },
+        );
+      }
+      // Gardée sur ce qui a été relu : toujours publié, toujours non déclaré,
+      // inchangé depuis. Une modification concurrente des questions repasse
+      // l'instrument en brouillon et touche `updatedAt` ; une autre
+      // déclaration le rend non NULL. Dans les deux cas : 409, rien d'écrit.
+      // `data` ne porte QUE la déclaration — jamais le statut (banc
+      // `declarationSuicideCabinet.guard.test.ts`).
+      const ecrit = await prisma.cabinetInstrument.updateMany({
+        where: {
+          idInstrument,
+          actif: true,
+          statutRelecture: 'valide',
+          poseQuestionSuicide: null,
+          updatedAt: instrument.updatedAt,
+        },
+        data: lue.declaration,
+      });
+      if (ecrit.count === 0) {
+        return NextResponse.json<MutateInstrumentResponse>(
+          {
+            success: false,
+            reason: 'conflit_statut',
+            error: 'L’instrument a été modifié entre-temps : rouvrez « Déclarer ».',
+          },
+          { status: 409 },
+        );
+      }
+      return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
+    }
+
     if (action !== null) {
       return NextResponse.json<MutateInstrumentResponse>(
         { success: false, reason: 'invalid_payload', error: 'Action inconnue.' },
@@ -469,21 +527,56 @@ export async function PATCH(request: Request) {
       );
     }
 
-    await prisma.cabinetInstrument.update({
+    const edition = {
       where: { idInstrument },
       data: {
         titre,
         categorie,
         description: description || null,
-        definitionJson: definition as unknown as Prisma.InputJsonValue,
-        scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
+        // NF-7, P2-3 (passe Codex du lot 3, P1-1) : drapeau allumé, une
+        // édition des métadonnées seules ne réécrit PAS le contenu. Elle
+        // échappe au verrou et au recomptage ; réécrire la définition et la
+        // grille qu'elle a lues pourrait réinstaller, après une modification,
+        // une publication et un envoi concurrents, l'ancien contenu sous la
+        // nouvelle déclaration. Drapeau éteint : l'écriture d'avant.
+        ...(contenuChange || !declarationSuicideCabinetActive()
+          ? {
+              definitionJson: definition as unknown as Prisma.InputJsonValue,
+              scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
         ...(contenuChange ? { statutRelecture: 'brouillon' } : {}),
         // NF-7 ([[D-303]] §2) : une modification des questions redemande la
         // déclaration — l'ancienne est effacée (NULL = non déclaré), la
         // prochaine publication la recueille de nouveau. Drapeau éteint : rien.
         ...(contenuChange && declarationSuicideCabinetActive() ? DECLARATION_SUICIDE_EFFACEE : {}),
       },
-    });
+    };
+    if (contenuChange && declarationSuicideCabinetActive()) {
+      // NF-7, P2-3 (revue `wn-reviewer` du lot 3, P1) : le gel du contenu
+      // comptait les envois HORS de tout verrou. Un envoi pouvait se glisser
+      // entre ce comptage et l'écriture, et l'assignation garder la copie de
+      // la déclaration d'avant des questions nouvelles. Drapeau allumé, la
+      // ligne est verrouillée `FOR UPDATE` (en conflit avec le `FOR SHARE`
+      // de l'envoi), les envois recomptés sous ce verrou, puis l'écriture :
+      // soit l'envoi a commité avant et il est compté (refus), soit
+      // l'écriture passe avant et l'envoi, sous son verrou, voit un brouillon
+      // et l'écarte. Drapeau éteint : l'écriture d'avant.
+      const envoisSousVerrou = await prisma.$transaction(async tx => {
+        await tx.$queryRaw`SELECT id_instrument FROM cabinet_instruments WHERE id_instrument = ${idInstrument} FOR UPDATE`;
+        const envois = await tx.assignation.count({
+          where: { idQuestionnaire: idInstrument, statutReponses: { not: 'verrouille' } },
+        });
+        if (envois > 0) return envois;
+        await tx.cabinetInstrument.update(edition);
+        return 0;
+      });
+      if (envoisSousVerrou > 0) {
+        return refusEnvoisEnCours(envoisSousVerrou);
+      }
+    } else {
+      await prisma.cabinetInstrument.update(edition);
+    }
     return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
   } catch {
     return NextResponse.json<MutateInstrumentResponse>(

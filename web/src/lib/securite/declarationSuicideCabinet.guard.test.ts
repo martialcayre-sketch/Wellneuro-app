@@ -71,8 +71,28 @@ function occurrences(): string[] {
 }
 
 describe('NF-7 — un seul passage vers `valide`, et il exige la déclaration ([[D-303]] §4)', () => {
-  it('deux occurrences, et deux seulement : l’écriture de `publier` et le filtre des assignables', () => {
-    expect(occurrences().sort()).toEqual(['app/api/praticien/instruments/route.ts', 'lib/instruments.ts']);
+  // Trois occurrences : l'écriture de `publier`, le filtre des assignables, et
+  // la garde `where` du geste « Déclarer » (lot 3, P2-1), qui LIT le statut
+  // sans l'écrire — le troisième bloc ci-dessous le tient.
+  it('trois occurrences, et trois seulement : `publier`, le filtre des assignables, la garde de « Déclarer »', () => {
+    expect(occurrences().sort()).toEqual([
+      'app/api/praticien/instruments/route.ts',
+      'app/api/praticien/instruments/route.ts',
+      'lib/instruments.ts',
+    ]);
+  });
+
+  it('« Déclarer » (P2-1) n’écrit que la déclaration lue, jamais le statut', () => {
+    const route = readFileSync(path.join(RACINE_SRC, 'app/api/praticien/instruments/route.ts'), 'utf8');
+    const debut = route.indexOf("if (action === 'declarer'");
+    expect(debut).toBeGreaterThan(-1);
+    const corps = route.slice(debut, route.indexOf('if (action !== null)', debut));
+    expect(corps).toMatch(/lireDeclarationSuicide\(body,\s*instrument\.definitionJson\)/);
+    expect(corps).toMatch(/updateMany\(\{\s*where:\s*\{\s*idInstrument,\s*actif:\s*true,\s*statutRelecture:\s*'valide',\s*poseQuestionSuicide:\s*null,\s*updatedAt:\s*instrument\.updatedAt,?\s*\},\s*data:\s*lue\.declaration,?\s*\}\)/);
+    // Un seul passage `statutRelecture: 'valide'` dans ce bloc : celui du `where`.
+    expect(passagesDans(corps)).toBe(1);
+    // Ni `update` nu ni autre écriture.
+    expect(corps).not.toMatch(/\.(update|create|upsert)\(/);
   });
 
   it('le lecteur voit une écriture répartie sur deux lignes, et ignore les commentaires', () => {

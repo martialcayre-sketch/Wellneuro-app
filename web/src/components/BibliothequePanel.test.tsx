@@ -388,6 +388,7 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
               statutRelecture: detail.statutRelecture,
               nbQuestions: detail.nbQuestions,
               scoreMax: detail.scoreMax,
+              ...(detail.declarationRequise ? { declarationRequise: true } : {}),
             },
           ],
         });
@@ -453,11 +454,76 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
     });
   });
 
-  it('« oui » sans question à réponses au choix : l’écran le dit, et publier reste impossible', async () => {
+  // P2-4 (arbitrage du 2026-11-12) : le texte validé par le responsable, mot
+  // pour mot, et rien qui pousse vers « non ».
+  it('« oui » sans question à réponses au choix : le texte validé (P2-4), et publier reste impossible', async () => {
     await ouvrirRelecture({ ...EVA_DETAIL, declarationSuicideRequise: true });
     fireEvent.click(within(screen.getByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
-    expect(screen.getByText(/ne propose de réponses au choix/)).toBeTruthy();
+    const etat = screen.getByRole('status');
+    const paragraphes = [...etat.querySelectorAll('p')].map(p => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(paragraphes).toEqual([
+      'Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question concernée et sa réponse « non ». Il ne peut donc pas être publié en l’état avec une déclaration « oui ».',
+      'Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre la publication laisserait le patient sans encart d’urgence.',
+    ]);
     expect(screen.queryByLabelText('Question concernée')).toBeNull();
     expect((screen.getByRole('button', { name: 'Relu — publier' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  // P2-1 (arbitrage du 2026-11-12) : un instrument publié non déclaré (drapeau
+  // allumé, `declarationRequise`) affiche le motif et le geste « Déclarer »,
+  // qui n'envoie que la déclaration. Sans l'annonce, ni motif ni geste.
+  describe('geste « Déclarer » (P2-1)', () => {
+    const PUBLIE = { ...DETAIL_LIKERT, statutRelecture: 'valide', declarationSuicideRequise: true };
+    const MOTIF = 'Déclaration requise avant un nouvel envoi.';
+
+    it('sans `declarationRequise` : ni motif ni geste', async () => {
+      stubFetch(PUBLIE);
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      await screen.findByText('Modifier');
+      expect(screen.queryByRole('button', { name: 'Déclarer' })).toBeNull();
+      expect(screen.queryByText(MOTIF)).toBeNull();
+    });
+
+    it('motif affiché ; « Déclarer » recueille la déclaration et n’envoie qu’elle', async () => {
+      const corps = stubFetch({ ...PUBLIE, declarationRequise: true });
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      expect(await screen.findByText(MOTIF)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Déclarer' }));
+      const groupe = await screen.findByRole('group', { name: LEGENDE });
+      const valider = () =>
+        screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
+      expect(valider().disabled).toBe(true);
+      fireEvent.click(within(groupe).getByLabelText('Oui'));
+      fireEvent.change(screen.getByLabelText('Question concernée'), { target: { value: 'Q2' } });
+      fireEvent.change(screen.getByLabelText('Réponse qui signifie « non »'), { target: { value: '0' } });
+      await waitFor(() => expect(valider().disabled).toBe(false));
+      fireEvent.click(valider());
+      await waitFor(() => expect(corps).toHaveLength(1));
+      expect(corps[0]).toEqual({
+        idInstrument: 'CAB_NF7',
+        action: 'declarer',
+        poseQuestionSuicide: true,
+        questionSuicideId: 'Q2',
+        questionSuicideOptionNon: 0,
+      });
+      expect(await screen.findByText('Déclaration enregistrée.')).toBeTruthy();
+    });
+
+    // Variante « envoi » du texte P2-4 (arbitrage du 2026-11-12) : l'instrument
+    // est déjà publié, le texte parle de déclaration et d'envoi.
+    it('« oui » sans question à réponses au choix : la variante « envoi », et « Déclarer » reste impossible', async () => {
+      stubFetch({ ...EVA_DETAIL, statutRelecture: 'valide', declarationSuicideRequise: true, declarationRequise: true });
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Déclarer' }));
+      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+      const etat = screen.getByRole('status');
+      const paragraphes = [...etat.querySelectorAll('p')].map(p => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
+      expect(paragraphes).toEqual([
+        'Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question concernée et sa réponse « non ». Il ne peut donc pas être déclaré « oui » en l’état, et ne peut plus être envoyé.',
+        'Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre l’envoi laisserait le patient sans encart d’urgence.',
+      ]);
+      const valider = screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
+      expect(valider.disabled).toBe(true);
+    });
   });
 });
