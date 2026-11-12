@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-12, correction après la déclaration du besoin 2)** : trois mentions périmées, relevées par une seconde session pendant l'inventaire de la déclaration (#2020), sont corrigées. Le fragment `2026-11-12-03` les nomme en partie parmi ses réserves.
+  - **Registre** : l'action requise de `WN-SRC-0652` et `0653` disait encore « en attente de la signature ». Les quatre claims sont validés (constat par conteneur en lecture seule, 2026-11-12).
+  - **Plan** : la ligne des fiches d'usage du besoin 2 disait encore « release-db et constat à faire » pour `D-477`. Ce constat est fait (#1982, empreinte `e59d35c3` servie).
+  - **Plan** : la ligne D.3 des dossiers des autres besoins reçoit la levée de son préalable (#2020).
+  - **Hors de ce lot** : l'étiquetage de `WN-CL-0043-005` et `0377-016`, signés sans clé de besoin le 2026-11-12, est à rapprocher du dossier. Deux questions de la revue de `D-490` sont versées à la liste commune (`20261112-1240-b`, `20261112-1241-b`).
