@@ -1,0 +1,6 @@
+- **Mise à jour (2026-11-12, correction : trois rubriques publiées contre `D-325` §5, occultées par `D-502`)** : forme opaque (`D-251` §4).
+  - **Écart** : trois lignes de deux fragments de ce journal associaient un identifiant de claim et sa rubrique d'étiquetage, que `D-325` §5 réserve au dossier privé : `2026-11-11-02-relecture-87-claims-polyphenols.md` (lignes 6 et 10) et `2026-11-12-03-preuve-besoin-2-achevee.md` (ligne 11). Relevé par la revue du lot d'étiquetage du 2026-11-12.
+  - **Arbitrage du responsable** (question à options, après un contre-avis Codex) : occulter dans l'arbre courant, par une exception bornée à « un fragment n'est jamais réécrit » (`D-502`), et consigner l'écart ici sans répéter les rubriques.
+  - **Geste** : sur ces trois lignes seules, le nom de la rubrique est remplacé par « rubrique occultée (`D-502`) » ; noms de fichier, rangs et autres mots inchangés. **L'historique Git garde les formulations d'origine** : il n'est pas réécrit.
+  - **Effet** : aucun claim, aucune étiquette, aucune écriture en base. La règle du journal reste entière ; un écart de même nature demandera une nouvelle décision.
+  - **Suite** : un banc contextuel identifiant–rubrique dans le journal du plan, en lot d'outillage distinct.

@@ -8,7 +8,7 @@
     - 891 claims VALIDE étiquetés au besoin 2 ;
     - base : 8 599 validés, 32 en attente, 93 rejetés ;
     - contrat de fraîcheur et `biology_liens_axe_v1.sql` en `exit=0`.
-  - **Étiquetage délégué** (`D-325` §5, à la demande du responsable) : `WN-CL-0653-001` étiqueté au besoin 2, rubrique des limites, depuis sa session. Statut et hash inchangés ; acte au journal.
+  - **Étiquetage délégué** (`D-325` §5, à la demande du responsable) : `WN-CL-0653-001` étiqueté au besoin 2, rubrique occultée (`D-502`), depuis sa session. Statut et hash inchangés ; acte au journal.
   - **Réserves**, ouvertes ailleurs ou plus tard :
     - **textes des fiches d'usage** (F05) : aucune version ni aucun libellé en production ;
     - **32 claims en attente** (indécidables, non servis, arbitrage du 2026-11-11) ; parmi eux, `WN-CL-0044-020` laisse la fiche de lecture de la vitamine E sans analyte (`D-473` §6) ;

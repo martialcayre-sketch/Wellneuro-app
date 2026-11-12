@@ -1,0 +1,10 @@
+- **Mise à jour (2026-11-12, constat de la signature des deux claims sous la réserve de `D-465` §3 ; `D-498` §3)** : forme opaque (`D-251` §4) ; identifiants et agrégats seulement. Constat posté sur #2014 le 2026-11-12 à 11:26 UTC, consigné ici après coup (dette relevée au handoff `2026-11-12-1630-etiquetage-reserve-d465.md`).
+  - **Geste** : à la demande du responsable, `WN-CL-0043-005` et `WN-CL-0377-016` ont été signés depuis sa session praticien, par la route de décision de l'atelier (HTTP 200 pour chacun), après le merge du banc (#2014).
+  - **Constat** (production, conteneurs détachés, lecture seule) :
+    - les deux claims sont VALIDE, signés à 11:26 UTC, hash inchangés, avec une décision individuelle chacun au journal des actes ;
+    - la base compte 8 599 claims validés, 32 en attente et 93 rejetés ;
+    - le contrat de fraîcheur et `biology_liens_axe_v1.sql` sont en `exit=0` ;
+    - aucune clé de lien n'a été posée par la signature ;
+    - aucune release-db n'a été déclenchée par le merge.
+  - Les deux claims sont dans la liste du banc `reserveMarqueurAntiLdl.guard.test.ts`. Leur étiquetage au besoin 2 est consigné au journal de H15 (`2026-11-12-05`).
+  - **Reste ouvert** (`D-498` §4) : la recherche du corpus sert les sept claims sous réserve sans la mentionner.
