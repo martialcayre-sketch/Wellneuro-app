@@ -59,7 +59,7 @@ reste strictement celui d'avant NF-7.
 
 - T1 (`check:rapide`) : vert après chaque série d'éditions.
 - Les sept fichiers de banc touchés, joués à part : verts.
-- T3 (`npm run test:worktree`) sur `220804fc` : voir la PR.
+- T3 (`npm run test:worktree`) sur `b1347380` : **vert**, en 9 min 58 s : 16 967 tests unitaires, 366 E2E (Chromium et WebKit), « No difference detected » sur la dérive entre schéma et migrations. Le commit suivant ne touche que ce handoff.
 - Revue `wn-reviewer` sur `697e7618` : **GO**, ni P0 ni P1.
   - Corrigés au commit `220804fc` : P2-2 (borne int4), P2-4 (message), P2-5
     (`<legend>`, `aria-describedby`), mutation 1 (banc de rendu de l'écran de
