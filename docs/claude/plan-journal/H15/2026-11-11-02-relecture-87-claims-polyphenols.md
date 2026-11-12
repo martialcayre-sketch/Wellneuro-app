@@ -3,11 +3,11 @@
   - **Arbitrages du responsable** (questions à options) : une proposition motivée par claim, contre-revue Codex avant l'arbitrage ; des paquets alignés sur les positions signées P1 à P8 ; ce qui ne se tranche pas reste en attente (non servi) ; le responsable signe, l'assistant exécute les rejets depuis l'atelier.
   - **Contre-revue Codex** (dépôt privé des revues) : GO avec corrections. Onze constats (aucun P0), tous vérifiés sur pièces et retenus. Les passages complets de deux sources ont été relus en production, en lecture seule, là où les pièces étaient tronquées. Une limite : le dossier remis à Codex était antérieur d'un commit, mais les positions signées, qui font foi, étaient présentes.
   - **Arbitrage final** : propositions approuvées, avec deux écarts à Codex :
-    - 0189-136 à 0189-140 sont signés au besoin 2, en Précautions : les chiffres sont ceux de l'avis de 2024, mais la source note une unité de 2006 ;
+    - 0189-136 à 0189-140 sont signés au besoin 2 (rubrique occultée, `D-502`) : les chiffres sont ceux de l'avis de 2024, mais la source note une unité de 2006 ;
     - 0057-015 est signé hors parcours.
   - **Gestes et constats** (conteneur détaché, lecture seule) :
     - 45 rejets avec motif, exécutés depuis l'atelier, et 45 actes au journal ;
-    - 8 signatures du responsable : 6 étiquetées au besoin 2, rubrique Précautions (0102-007, 0189-136 à 0189-140), et 2 hors parcours (0167-027, 0057-015) ;
+    - 8 signatures du responsable : 6 étiquetées au besoin 2, rubrique occultée (`D-502`) (0102-007, 0189-136 à 0189-140), et 2 hors parcours (0167-027, 0057-015) ;
     - 34 claims restent en attente ;
     - la base compte 8 594 claims validés, 34 en attente et 92 rejetés ; le besoin 2 en compte 887 ;
     - le contrat de fraîcheur est vert, et les 17 liens d'axe sont conformes à la liste signée.
