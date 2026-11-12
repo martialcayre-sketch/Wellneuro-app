@@ -22,6 +22,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/protocol/calendriersPersistes', () => ({ lireJoursZeroSuccessifs }));
 
 import { Prisma } from '@/generated/prisma';
+import { CONTEXTE_INCONNU } from '@/lib/biology-library/contextePrelevement';
 import { GET, POST } from './route';
 
 const URL_BASE = 'http://localhost/api/praticien/biologie/resultats';
@@ -60,6 +61,8 @@ const LIGNE_CONSIGNEE = {
   analyte: { libelle: 'Ferritine', unite: 'µg/L' },
   // Une saisie praticien n'a pas de ligne lue ([[D-267]]) : aucun fait.
   ligneCandidate: null,
+  // Aucune ligne de contexte : « non recueilli » ([[D-497]] §4).
+  contextesPrelevement: [] as unknown[],
 };
 
 /** La correction de `res1` : même analyte, même prélèvement, valeur neuve. */
@@ -257,7 +260,29 @@ describe('GET — la série du dossier, journalisée (GD-1)', () => {
           valeurLue: true,
           commentaireLu: true,
           commentaireNonTranscrit: true,
+          heureLue: true,
           import: { select: { laboratoireLu: true } },
+        },
+      });
+    });
+
+    // D-497 §4 : la TÊTE du contexte seule (aucune ligne ne la remplace), et
+    // ses sept champs — ni le praticien, ni l'ordre, ni la chaîne.
+    it('le contexte lu est la tête, ses sept champs et rien d’autre', async () => {
+      await GET(getRequest('PAT1'));
+      expect(prisma.resultatBiologique.findMany.mock.calls[0][0].select.contextesPrelevement).toEqual({
+        where: { remplacePar: null },
+        select: {
+          aJeun: true,
+          supplementationArretee: true,
+          traitementInterferent: true,
+          episodeInflammatoire: true,
+          grossesse: true,
+          jourCycleEtat: true,
+          jourCycle: true,
+          delaiDernierePriseEtat: true,
+          delaiDernierePrise: true,
+          delaiDernierePriseUnite: true,
         },
       });
     });
@@ -357,6 +382,10 @@ describe('POST — la saisie praticien, bornée par le serveur', () => {
     expect(data.unite).toBe('µg/L');
     expect(data.source).toBe('saisie_praticien');
     expect(data.saisiPar).toBe(PRATICIEN);
+    // D-497 §4 : une racine neuve saisie à l'unité reçoit sa ligne, à « inconnu ».
+    expect(data.contextesPrelevement).toEqual({
+      create: { ...CONTEXTE_INCONNU, patient: { connect: { idPatient: 'PAT1' } }, praticienEmail: PRATICIEN },
+    });
   });
 
   it('analyte inconnu au catalogue : 409, rien n’est consigné', async () => {
@@ -577,6 +606,9 @@ describe('POST — la correction d’une mesure (D-124) : une ligne de plus, jam
     expect(data.supersedesResultatId).toBe('res1');
     expect(data.valeur).toBeInstanceOf(Prisma.Decimal);
     expect(data.valeur.toFixed()).toBe('45.5');
+    // D-497 §4 : une correction garde le contexte de sa racine — aucune ligne
+    // neuve (la base la refuserait : elle vise une correction).
+    expect(data).not.toHaveProperty('contextesPrelevement');
   });
 
   it('l’analyte et la date VIENNENT DE LA CIBLE : ceux du corps sont ignorés', async () => {
@@ -1029,8 +1061,10 @@ describe('GET — la série par analyte (BP-03)', () => {
       valeurLue: '42,5',
       commentaireLu: 'Contrôle à prévoir.',
       commentaireNonTranscrit: false,
+      heureLue: true,
       import: { laboratoireLu: 'Laboratoire A' },
     },
+    contextesPrelevement: [{ ...CONTEXTE_INCONNU, aJeun: 'oui' }],
   };
 
   it('ne sert que les têtes de fil, avec les trois dates, et reste cohérente avec les lignes', async () => {
@@ -1052,6 +1086,9 @@ describe('GET — la série par analyte (BP-03)', () => {
             entreeLe: '2026-09-01T09:00:00.000Z',
             correctionLe: '2026-09-02T09:00:00.000Z',
             position: { type: 'aucune_diffusion' },
+            // La racine `res1` n'a pas de ligne : non recueilli (D-497 §4).
+            contexte: null,
+            heureLue: false,
           },
           {
             idResultat: 'imp1',
@@ -1062,6 +1099,8 @@ describe('GET — la série par analyte (BP-03)', () => {
             entreeLe: '2026-09-12T09:00:00.000Z',
             correctionLe: null,
             position: { type: 'aucune_diffusion' },
+            contexte: { ...CONTEXTE_INCONNU, aJeun: 'oui' },
+            heureLue: true,
           },
         ],
       },

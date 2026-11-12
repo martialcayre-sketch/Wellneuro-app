@@ -51,6 +51,9 @@ const VALEUR_MATIN = '51.2';
 const VALEUR_SOIR = '47.8';
 /** Le prélèvement du bilan à deux lignes — un autre jour, aucune collision. */
 const BILAN = '2026-07-02T07:30';
+/** Le prélèvement du bilan avec contexte (D-497) — encore un autre jour. */
+const CONTEXTE = '2026-07-03T07:45';
+const VALEUR_CONTEXTE = '42.4';
 
 let debutDuRun: Date;
 
@@ -279,6 +282,39 @@ test.describe('Saisie de résultats biologiques — série, doublon, panne de le
     await expect(relu.getByText(`14.2 ${ZINC_UNITE}`, { exact: true })).toHaveCount(2);
     await expect(relu.getByText(`9.9 ${ZINC_UNITE}`)).toHaveCount(0);
     await expect(relu.getByText(`33.3 ${ANALYTE_UNITE}`)).toHaveCount(0);
+  });
+
+  test('le contexte du prélèvement saisi avec le bilan se relit sous son point (D-497)', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    const panneau = await ouvrirPanneauMesures(page);
+
+    // Le bloc part à « inconnu » partout : rien n'est affirmé que le praticien
+    // n'a pas dit. Une seule déclaration change ici — « À jeun : Oui ».
+    const bloc = panneau.getByTestId('bloc-contexte-prelevement');
+    await expect(bloc).toBeVisible();
+    await bloc.getByRole('group', { name: 'À jeun', exact: true }).getByRole('radio', { name: 'Oui', exact: true }).check();
+
+    const reponse = await enregistrerBilan(page, panneau, {
+      preleveLe: CONTEXTE,
+      lignes: [{ code: ANALYTE_CODE, valeur: VALEUR_CONTEXTE }],
+    });
+    expect(reponse.status(), `bilan refusé — corps : ${await reponse.text()}`).toBe(201);
+
+    // Sous le point écrit, le contexte relu de la base : « oui » pour le jeûne,
+    // « inconnu » pour le reste — et le moment de la journée inconnu, aucune
+    // heure n'ayant été LUE sur un compte rendu (D-497 §3).
+    const serie = panneau.getByRole('group', { name: 'Mesures qui font foi' });
+    const avecJeun = serie.getByTestId('contexte-du-point').filter({ hasText: 'À jeun : oui' });
+    await expect(avecJeun).toHaveCount(1);
+    await expect(avecJeun).toContainText('Grossesse au prélèvement : inconnu');
+    await expect(avecJeun).toContainText('Moment de la journée : inconnu');
+    // Les mesures des tests précédents, saisies sans rien changer au bloc,
+    // portent un contexte RECUEILLI et inconnu — pas « non recueilli ».
+    await expect(serie.getByTestId('contexte-du-point').filter({ hasText: 'À jeun : inconnu' }).first()).toBeVisible();
+    await expect(serie.getByText('Contexte de prélèvement non recueilli')).toHaveCount(0);
   });
 
   test('une panne de lecture ne se lit JAMAIS « aucune mesure » (DC-24)', async ({

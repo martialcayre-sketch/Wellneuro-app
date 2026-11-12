@@ -4,6 +4,11 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 import { validerSaisieResultat } from '@/lib/biology-library/resultats';
 import { cleMesure, clesOccupees } from '@/lib/biology-library/annulations';
 import { cleVerrouCompteRendu } from './verrou';
+import {
+  colonnesContexte,
+  MESSAGE_CONTEXTE_INVALIDE,
+  validerContextePrelevement,
+} from '@/lib/biology-library/contextePrelevement';
 import { lireValeurQuantitative, MOTIFS_ECART, unitesConcordent, type MotifEcart } from './valeurLue';
 
 // DÉCISIONS DU PRATICIEN SUR LES LIGNES CANDIDATES (BIO-INGEST LOT-02,
@@ -53,6 +58,7 @@ export type RefusDecision = { idLigne: string | null; index: number; reason: str
 
 export const MESSAGES_REFUS_DECISION: Record<string, string> = {
   decisions_vides: 'Aucune ligne n’est décidée.',
+  contexte_invalide: MESSAGE_CONTEXTE_INVALIDE,
   decisions_trop_nombreuses: 'Trop de lignes pour un seul enregistrement.',
   import_introuvable: 'Cette extraction est introuvable dans ce dossier.',
   import_non_extrait: 'Cette extraction n’est pas terminée : aucune ligne ne se décide encore.',
@@ -161,12 +167,21 @@ export async function deciderLignes(params: {
   idImport: string;
   traitePar: string;
   decisions: unknown;
+  /**
+   * Le contexte du prélèvement ([[D-497]] §4), saisi une fois pour la
+   * validation et écrit sur chaque résultat qu'elle crée. Absent : « inconnu »
+   * partout ; mal formé : toute la validation est refusée.
+   */
+  contexte?: unknown;
   maintenant?: Date;
 }): Promise<IssueDecisions> {
   const { idPatient, idImport, traitePar } = params;
   const maintenant = params.maintenant ?? new Date();
   if (!Array.isArray(params.decisions) || params.decisions.length === 0) return refusGlobal('decisions_vides', 400);
   if (params.decisions.length > DECISIONS_MAX) return refusGlobal('decisions_trop_nombreuses', 400);
+  const verdictContexte = validerContextePrelevement(params.contexte);
+  if (!verdictContexte.ok) return refusGlobal(verdictContexte.raison, 400);
+  const contexte = colonnesContexte(verdictContexte.contexte);
 
   const imp = await prisma.importBiologique.findFirst({
     where: { id: idImport, idPatient },
@@ -307,6 +322,16 @@ export async function deciderLignes(params: {
             source: 'saisie_praticien',
             saisiPar: traitePar,
             supersedesResultatId: null,
+            // Le contexte de la validation, sur chaque racine qu'elle crée
+            // ([[D-497]] §4), dans la même transaction. La base rejuge le
+            // dossier, la racine et le praticien (trigger).
+            contextesPrelevement: {
+              create: {
+                ...contexte,
+                patient: { connect: { idPatient } },
+                praticienEmail: traitePar,
+              },
+            },
           },
           select: { id: true },
         });

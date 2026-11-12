@@ -320,20 +320,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // patient et le résultat racine — ils partent AVANT les résultats, en une
     // seule instruction (remplacements compris). La base refuse leur
     // suppression si le dossier et le résultat survivent à la transaction (contrat
-    // `contexte_prelevement_biologique_v1_negatif.sql`).
-    //
-    // TOLÉRANCE TEMPORAIRE (arbitrage du responsable du 2026-11-12, constat
-    // PR-Agent sur #2018) : ce code se déploie AVANT l'approbation de la
-    // release-db qui crée la table. Une requête sur une table absente annule
-    // toute la transaction — attraper l'erreur ne suffirait pas —, d'où la
-    // lecture de son existence d'abord, dans la même transaction. Absente, elle
-    // ne porte aucune ligne : rien à effacer. À retirer par la PR 3 de
-    // [[D-497]], après le constat par conteneur.
-    const [{ existe: tableContextesPresente }] = await tx.$queryRaw<{ existe: boolean }[]>`
-      SELECT to_regclass('public.contextes_prelevement') IS NOT NULL AS existe`;
-    supprimees.contextesPrelevement = tableContextesPresente
-      ? (await tx.contextePrelevement.deleteMany({ where: par })).count
-      : 0;
+    // `contexte_prelevement_biologique_v1_negatif.sql`). La tolérance à la
+    // table absente, posée pour la fenêtre de release-db de #2018, est
+    // retirée : la table est constatée en production (2026-11-12).
+    supprimees.contextesPrelevement = (
+      await tx.contextePrelevement.deleteMany({ where: par })
+    ).count;
     supprimees.resultatsBiologiques = (
       await tx.resultatBiologique.deleteMany({ where: par })
     ).count;
