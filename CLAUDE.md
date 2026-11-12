@@ -233,6 +233,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - Lire silencieusement, avant la première réponse, le dernier handoff créé
   par la branche courante (`docs/claude/handoffs/`) ; à défaut, celui du lot
   repris que désigne la tâche, sinon le dernier au tri sur `main` (`D-372`).
+- Puis lire sa boîte du registre des messages, l'accuser, et la relire avant
+  « prête » (`D-503`, `docs/ROLES_MACHINES.md`).
 - **Lancer à la racine du dépôt** (VS Code ouvert sur
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.
