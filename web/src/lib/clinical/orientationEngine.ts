@@ -187,10 +187,30 @@ export type RegleNonEvaluee = {
   passations: PassationPerimee[];
 };
 
+/**
+ * UNE RÈGLE D'ARRÊT NI APPLIQUÉE NI ÉCARTÉE ([[D-500]] §4) : un de ses
+ * déclencheurs lit une passation trop ancienne pour la fenêtre d'extinction de
+ * son instrument, ou un instrument sans fenêtre d'extinction
+ * (`fenetreJours: null`), et aucun autre n'est lu frais et non atteint.
+ *
+ * ELLE N'ÉTEINT RIEN. Elle n'est rapportée que si elle avait au moins une
+ * recommandation à éteindre : sinon, la dire « non évaluée » n'aurait aucune
+ * conséquence pour le praticien.
+ */
+export type ArretNonEvalue = {
+  stopRuleId: string;
+  passations: PassationPerimee[];
+};
+
 export type ResultatOrientationDetaille = {
   recommandations: RecommandationExploration[];
   /** Dans l'ordre de la table. Vide sans horloge ([[D-433]] §5). */
   reglesNonEvaluees: RegleNonEvaluee[];
+  /**
+   * Dans l'ordre de la table d'arrêt ([[D-500]] §4). Vide sans horloge — et
+   * alors aucune extinction n'a lieu ([[D-500]] §3).
+   */
+  arretsNonEvalues: ArretNonEvalue[];
 };
 
 export type EntreeOrientation = {
@@ -298,6 +318,22 @@ export type EntreeOrientation = {
    * jamais jusqu'ici, et le moteur n'a pas à connaître le verrou.
    */
   reglesArret?: StopRule[];
+  /**
+   * Fenêtres d'EXTINCTION par instrument ([[D-500]]), fournies par l'appelant
+   * comme `reglesArret` — le service passe `FENETRES_ARRET`, le registre que
+   * l'empreinte signée de la table d'arrêt hache.
+   *
+   * DISTINCTES DE `fenetres` PAR CONSTRUCTION : celles-ci disent jusqu'à quand
+   * une passation permet de PROPOSER ; celles-là, jusqu'à quand elle permet
+   * d'ÉTEINDRE. Que leurs valeurs coïncident aujourd'hui est un arbitrage
+   * ([[D-500]] §1), pas une dérivation.
+   *
+   * ABSENT, OU INSTRUMENT ABSENT = AUCUNE EXTINCTION sur ce déclencheur : il
+   * n'est pas évalué ([[D-500]] §2). Et sans `maintenantMs`, aucune règle
+   * d'arrêt n'est évaluée du tout ([[D-500]] §3) — le repli « sans horloge,
+   * aucune péremption » de [[D-433]] §5 ne vaut pas pour l'extinction.
+   */
+  fenetresArret?: Readonly<Record<string, RepetitionOrientation>>;
   /**
    * Constats du moteur de contradictions ([[D-053]] §5, [[D-055]] arbitrage 4).
    *
@@ -1790,15 +1826,46 @@ export function evaluerOrientationDetaillee(entree: EntreeOrientation): Resultat
   // Prédicat partagé avec la synthèse depuis le LOT-09 : il vivait ici en
   // clair, et le paraphraser ailleurs a suffi à le faire diverger.
   const contradictionOuverte = (entree.contradictions ?? []).some(contradictionEstOuverte);
-  for (const arret of contradictionOuverte ? [] : entree.reglesArret ?? []) {
+  // SANS HORLOGE, AUCUNE EXTINCTION ([[D-500]] §3). La proposition garde son
+  // repli « sans horloge, aucune péremption » ([[D-433]] §5) : on ne
+  // re-propose pas faute de savoir quel jour on est. L'extinction prend le
+  // parti inverse, parce qu'elle est l'acte le plus exigeant ([[D-053]]
+  // arbitrage 1) : ne pas savoir l'âge d'une passation interdit de s'y fier
+  // pour retirer une exploration.
+  const fraicheurArret: FraicheurCible | undefined = typeof entree.maintenantMs === 'number'
+    ? { maintenantMs: entree.maintenantMs, fenetres: entree.fenetresArret }
+    : undefined;
+  const arretsNonEvalues: ArretNonEvalue[] = [];
+  const reglesArretEvaluables = contradictionOuverte || !fraicheurArret ? [] : entree.reglesArret ?? [];
+  for (const arret of reglesArretEvaluables) {
     if (arret.statut !== 'publiee') continue;
     if (arret.declencheurs.length === 0) continue;
     if (arret.justificationClaims.length === 0) continue;
     if (arret.reglesEteintes.length === 0) continue;
 
+    // LA FRAÎCHEUR EST UNE CONDITION NÉCESSAIRE, EN PLUS DES AUTRES GARDES
+    // ([[D-500]] §1). Même partage en trois issues que les règles
+    // d'orientation ([[D-433]] §3), avec la fenêtre d'EXTINCTION de
+    // l'instrument : un déclencheur qui lit une passation hors de sa fenêtre,
+    // ou un instrument sans fenêtre, n'est pas évalué ; un seul déclencheur lu
+    // frais et non atteint écarte la règle, quel que soit l'état des autres.
     const conditions: string[] = [];
+    const perimees: PassationPerimee[] = [];
     let tousAtteints = true;
     for (const declencheur of arret.declencheurs) {
+      const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheurArret);
+      const lues = sansPassationsPerimees(dernieres, perimeesIci);
+      const ajouterPerimees = () => {
+        for (const p of perimeesIci) {
+          if (!perimees.some(q => q.idQuestionnaire === p.idQuestionnaire)) perimees.push(p);
+        }
+      };
+      // Une feuille d'instrument périmée n'a rien d'autre à lire : elle n'est
+      // pas évaluée, et sa garde de complétude n'a pas d'objet.
+      if (declencheur.type !== 'ou' && estFeuilleInstrument(declencheur) && perimeesIci.length > 0) {
+        ajouterPerimees();
+        continue;
+      }
       // GARDE DE COMPLÉTUDE PROPRE AU MOTEUR D'ARRÊT, et elle n'est pas une
       // redite de celle des déclencheurs.
       //
@@ -1834,32 +1901,44 @@ export function evaluerOrientationDetaillee(entree: EntreeOrientation): Resultat
       // règle exigerait la complétude de TOUTES les branches, ce qui
       // transformerait le OU en ET.
       if (declencheur.type !== 'ou' && estFeuilleInstrument(declencheur)) {
-        const porteur = dernieres.get(declencheur.idQuestionnaire)?.scores;
+        const porteur = lues.get(declencheur.idQuestionnaire)?.scores;
         const comptes = comptesDuPorteurVise(porteur, declencheur.sousScore);
         if (comptes === null || comptes.manquants > 0) {
           tousAtteints = false;
           break;
         }
       }
-      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux, {
-        ageAnnees: entree.ageAnnees,
-        etatPopulation: entree.etatPopulation,
-      });
-      if (!condition) {
+      const condition = evaluerDeclencheur(declencheur, lues, entree.drapeaux, dossier);
+      if (condition) {
+        conditions.push(condition.motif);
+        continue;
+      }
+      // Un `ou` dont seules des branches périmées auraient pu l'atteindre
+      // n'est pas évalué ; sans branche périmée, il est faux.
+      if (perimeesIci.length === 0) {
         tousAtteints = false;
         break;
       }
-      conditions.push(condition.motif);
+      ajouterPerimees();
     }
     if (!tousAtteints) continue;
 
     const eteintes = new Set(arret.reglesEteintes);
-    for (const recommandation of retenues) {
-      // Déjà éteinte par une règle d'arrêt précédente : la première qui mord
-      // porte le motif. En ajouter un second décrirait deux fois le même état.
-      if (recommandation.extinction) continue;
-      if (recommandation.motifs.length === 0) continue;
-      if (!recommandation.motifs.every(motif => eteintes.has(motif.regleId))) continue;
+    // Déjà éteinte par une règle d'arrêt précédente : la première qui mord
+    // porte le motif. En ajouter un second décrirait deux fois le même état.
+    const visees = retenues.filter(recommandation =>
+      !recommandation.extinction
+      && recommandation.motifs.length > 0
+      && recommandation.motifs.every(motif => eteintes.has(motif.regleId)));
+
+    // NON ÉVALUÉE ([[D-500]] §4) : elle n'éteint rien, et elle se dit — mais
+    // seulement si elle avait quelque chose à éteindre.
+    if (perimees.length > 0) {
+      if (visees.length > 0) arretsNonEvalues.push({ stopRuleId: arret.id, passations: perimees });
+      continue;
+    }
+
+    for (const recommandation of visees) {
       recommandation.extinction = {
         stopRuleId: arret.id,
         conditions,
@@ -1877,5 +1956,5 @@ export function evaluerOrientationDetaillee(entree: EntreeOrientation): Resultat
     || b.motifs.length - a.motifs.length
     || cleCible(a.cible).localeCompare(cleCible(b.cible))
   );
-  return { recommandations: triees, reglesNonEvaluees };
+  return { recommandations: triees, reglesNonEvaluees, arretsNonEvalues };
 }

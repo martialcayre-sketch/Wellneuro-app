@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
+  FENETRES_ARRET,
   GRILLES_ARRET,
   LIBELLE_EXTINCTION,
   STOP_RULES_ECARTEES_V1,
@@ -9,8 +10,13 @@ import {
   STOP_RULES_V1,
   type StopRule,
 } from './stopRulesV1';
-import { estFeuilleInstrument, feuillesDuDeclencheur, ORIENTATION_RULES_V1 } from './orientationRulesV1';
-import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
+import {
+  estFeuilleInstrument,
+  feuillesDuDeclencheur,
+  FENETRES_FRAICHEUR_ORIENTATION,
+  ORIENTATION_RULES_V1,
+} from './orientationRulesV1';
+import { evaluerOrientation, evaluerOrientationDetaillee, type ReponseOrientation } from './orientationEngine';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { GRILLE_INTROUVABLE, grillesCitees } from './grillesSignees';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -31,7 +37,7 @@ describe('stopRulesV1 — statut de signature', () => {
   // supprimée : une dé-signature accidentelle reste attrapée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(STOP_RULES_METADATA.validationExterne).toBe(true);
-    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-11T00:00:00.000Z');
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-12T00:00:00.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
@@ -359,17 +365,44 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // secours est de RE-SIGNER — jamais de mettre le sha à jour en silence.
   // Re-signé le 2026-10-10 ([[D-278]] §2) : l'axe D du DASS-21 entre dans STOP-STR.
   // Re-signé le 2026-11-11 ([[D-494]]) : le périmètre devient `{ regles, grilles }`.
-  const SHA_CONTENU_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
+  // Re-signé le 2026-11-12 ([[D-500]]) : le périmètre devient `{ regles, grilles, fenetres }`.
+  const SHA_REGLES_GRILLES_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
+  const SHA_CONTENU_2026_11_12 = '0f153aacf64fa1e681f15f6679574ab322bbf8ece75f6051dcbf10ae1062ef11';
 
-  it('le sha publié porte sur les règles ET les grilles citées', () => {
+  it('le sha publié porte sur les règles, les grilles citées ET les fenêtres d’extinction', () => {
     expect(STOP_RULES_SHA256).toBe(
-      sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET })),
+      sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET, fenetres: FENETRES_ARRET })),
     );
   });
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(STOP_RULES_V1.length).toBe(1);
-    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_11_11);
+    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_11_12);
+  });
+
+  // CONTRE-ÉPREUVE DE [[D-500]] : seule l'entrée des fenêtres déplace
+  // l'empreinte — règles et grilles hachent encore celle de [[D-494]].
+  it('règles et grilles sont inchangées depuis D-494', () => {
+    expect(sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET })))
+      .toBe(SHA_REGLES_GRILLES_2026_11_11);
+  });
+
+  // L'INVENTAIRE DES FENÊTRES EST ÉPINGLÉ ([[D-500]] §1 et §2) : le Cungi et
+  // le DASS-21 à 7 jours, et `Q_STR_01` ABSENT — aucune durée implicite, la
+  // règle reste inopérante jusqu'à un arbitrage explicite sur cet instrument.
+  it('fenêtres d’extinction : Cungi et DASS-21 à 7 jours, aucune pour Q_STR_01', () => {
+    expect(FENETRES_ARRET).toEqual({ Q_STR_03: { delaiJours: 7 }, Q_STR_04: { delaiJours: 7 } });
+    expect(Object.hasOwn(FENETRES_ARRET, 'Q_STR_01')).toBe(false);
+  });
+
+  // Une fenêtre déplacée change l'empreinte, donc ferme `tableArretSignee()`.
+  it('une fenêtre d’extinction déplacée change l’empreinte', () => {
+    const deplacee = sha256(JSON.stringify({
+      regles: STOP_RULES_V1,
+      grilles: GRILLES_ARRET,
+      fenetres: { ...FENETRES_ARRET, Q_STR_04: { delaiJours: 8 } },
+    }));
+    expect(deplacee).not.toBe(SHA_CONTENU_2026_11_12);
   });
 
   // L'INVENTAIRE EST ÉPINGLÉ ([[D-400]] §1) : une règle qui citerait un nouvel
@@ -397,13 +430,13 @@ describe('stopRulesV1 — verrou de contenu', () => {
       const deplacee = sha256(
         JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) }),
       );
-      expect(deplacee).not.toBe(SHA_CONTENU_2026_11_11);
+      expect(deplacee).not.toBe(SHA_REGLES_GRILLES_2026_11_11);
     } finally {
       normalA.max = maxAvant;
     }
     expect(
       sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) })),
-    ).toBe(SHA_CONTENU_2026_11_11);
+    ).toBe(SHA_REGLES_GRILLES_2026_11_11);
   });
 
   it('le libellé d’extinction est une phrase française stable', () => {
@@ -469,6 +502,18 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
    * PSS-10 (`Q_STR_02`) et le BMS-10 (`Q_STR_05`) — des cibles NON passées,
    * précisément celles qu'une extinction concerne.
    */
+  /**
+   * L'HORLOGE ET LES FENÊTRES DU SERVICE ([[D-500]]). Sans horloge, rien ne
+   * s'éteint ; avec les fenêtres RÉELLES, STOP-STR ne s'éteint pas non plus :
+   * `Q_STR_01` n'a pas de fenêtre d'extinction (§2). Pour continuer de prouver
+   * que la chaîne réelle MORD — et que ses gardes ferment — le jour où une
+   * fenêtre sera arbitrée, les bancs ci-dessous ajoutent une fenêtre de
+   * FIXTURE à `Q_STR_01`, sans portée clinique. Le premier banc, lui, joue la
+   * configuration réelle et épingle l'état de production.
+   */
+  const MAINTENANT = Date.parse('2026-08-14T12:00:00.000Z');
+  const FENETRES_ARRET_FIXTURE = { ...FENETRES_ARRET, Q_STR_01: { delaiJours: 7 } };
+
   function dossierSansPss10(reponseStr01: ReponseOrientation) {
     return {
       reponses: [
@@ -493,8 +538,40 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
       reglesArret: STOP_RULES_V1,
       // Le service ne fournit JAMAIS l'un sans l'autre.
       exclureDejaRepondu: true,
+      maintenantMs: MAINTENANT,
+      fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+      fenetresArret: FENETRES_ARRET_FIXTURE,
     };
   }
+
+  it('D-500 §2 — configuration RÉELLE : STOP-STR n’éteint rien, faute de fenêtre pour Q_STR_01, et le dit', () => {
+    const entree = {
+      ...dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01))),
+      fenetresArret: FENETRES_ARRET,
+    };
+    const resultat = evaluerOrientationDetaillee(entree);
+    expect(resultat.recommandations.length).toBeGreaterThan(0);
+    expect(resultat.recommandations.every(reco => !reco.extinction)).toBe(true);
+    // DASS-21 et Cungi sont frais (un jour) : seule la fenêtre manquante est dite.
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-STR',
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-08-13T10:00:00.000Z', fenetreJours: null }],
+    }]);
+  });
+
+  it('D-500 §1 — un DASS-21 au-delà de ses 7 jours n’éteint pas, même avec une fenêtre pour Q_STR_01', () => {
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses = entree.reponses.map(reponse =>
+      reponse.idQuestionnaire === 'Q_STR_04'
+        ? { ...reponse, dateReponse: '2026-08-05T10:00:00.000Z' }
+        : reponse,
+    );
+    const resultat = evaluerOrientationDetaillee(entree);
+    expect(resultat.recommandations.every(reco => !reco.extinction)).toBe(true);
+    expect(resultat.arretsNonEvalues[0]?.passations).toEqual([
+      { idQuestionnaire: 'Q_STR_04', dateReponse: '2026-08-05T10:00:00.000Z', fenetreJours: 7 },
+    ]);
+  });
 
   function cible(reco: ReturnType<typeof evaluerOrientation>[number]): string {
     return reco.cible.type === 'questionnaire' ? reco.cible.questionnaireId : reco.cible.packId;

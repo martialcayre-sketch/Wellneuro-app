@@ -383,7 +383,7 @@ CI ; une table signée neuve absente du tableau aussi.
 |---|---|---|
 | `clinical/orientationRulesV1.ts` | `true` | `2026-11-09T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `clinical/stopRulesV1.ts` | `true` | `2026-11-11T00:00:00.000Z` |
+| `clinical/stopRulesV1.ts` | `true` | `2026-11-12T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-09-16T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |

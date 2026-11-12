@@ -5,7 +5,7 @@ import type { OrientationApiResponse } from '@/app/api/praticien/orientation/rou
 import type { EcartementPropositionResponse } from '@/app/api/praticien/orientation/ecartement/route';
 import type { ArretSuspendu, PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
 import { cleCibleEcartement, motifRecevable, MOTIF_LONGUEUR_MAX } from '@/lib/orientation/ecartements';
-import type { CibleExploration, PassationPerimee, RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
+import type { ArretNonEvalue, CibleExploration, PassationPerimee, RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 import type {
   FileEnvoiApiResponse,
   MutateFileEnvoiResponse,
@@ -483,6 +483,40 @@ export function OrientationPanel({
   ) : null;
 
   /**
+   * Les règles d'ARRÊT non évaluées — [[D-500]] §4. Une règle d'arrêt dont un
+   * déclencheur lit une passation plus ancienne que la fenêtre d'extinction de
+   * son instrument, ou un instrument sans fenêtre d'extinction, ne retire
+   * aucune exploration. Deux phrases distinctes, textes du responsable :
+   * « passation trop ancienne » et « fenêtre non définie ». Le moteur ne la
+   * rapporte que si elle avait une exploration à retirer. HORS de tout repli,
+   * et RENDU DANS LES DEUX BRANCHES — même motif que les règles suspendues.
+   */
+  const arretsNonEvalues: ArretNonEvalue[] =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.arretsNonEvalues)
+      ? reponse.arretsNonEvalues
+      : [];
+  const blocArretsNonEvalues = arretsNonEvalues.length > 0 ? (
+    <div role="note" className="mt-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2">
+      <ul className="space-y-2">
+        {arretsNonEvalues.map(arret => (
+          <li key={arret.stopRuleId} className="text-xs text-foreground">
+            <p>
+              <span className="font-medium">{`Règle d’arrêt non évaluée : ${arret.stopRuleId}.`}</span>
+              {arret.passations.map(passation => {
+                const titre = CATALOGUE_DEFINITIONS[passation.idQuestionnaire]?.titre ?? passation.idQuestionnaire;
+                return passation.fenetreJours === null
+                  ? ` Aucune fenêtre de fraîcheur n’est définie pour ${titre}.`
+                  : ` La passation de ${titre} du ${jourLisible(passation.dateReponse)} dépasse sa fenêtre de ${passation.fenetreJours} jours.`;
+              }).join('')}
+              {' Elle ne retire donc aucune exploration.'}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
+  /**
    * Les règles d'ARRÊT suspendues — [[D-491]]. Une règle d'arrêt dont un claim
    * ne satisfait pas les critères de validité du corpus (ou dont la validité
    * n'a pas pu être vérifiée) ne retire aucune exploration : le serveur ne l'a
@@ -646,6 +680,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonEvaluees}
+          {blocArretsNonEvalues}
           {blocEcartees}
         </>
       ) : reponse?.ok && reponse.actif === true ? (
@@ -864,6 +899,7 @@ export function OrientationPanel({
           )}
           {blocArretsSuspendus}
           {blocNonEvaluees}
+          {blocArretsNonEvalues}
           {blocEcartees}
           {/* Le même bouton que la file de la Bibliothèque, sous les
               suggestions (demande propriétaire 2026-08-09) : il envoie TOUT le
