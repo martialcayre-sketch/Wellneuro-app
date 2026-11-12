@@ -329,9 +329,15 @@ export const controleTenu = (avis) => /^\s*A\b/.test(String(avis?.option_retenue
 // autre appel exige que le binaire n'ait pas changé depuis.
 export const FICHIER_CONTROLE_DEFAUT = join(homedir(), '.cache', 'wellneuro', 'codex-controle.json');
 export const fichierControle = (env = process.env) => env.WN_CODEX_CONTROLE || FICHIER_CONTROLE_DEFAUT;
+// Le contrôle porte sur la version ET l'empreinte du binaire : une chaîne de
+// version seule ne distingue pas deux binaires qui la taisent.
 export function versionControlee(chemin) {
-  try { return JSON.parse(readFileSync(chemin, 'utf8')).version ?? null; } catch { return null; }
+  try {
+    const c = JSON.parse(readFileSync(chemin, 'utf8'));
+    return c.version && c.sha256 ? { version: c.version, sha256: c.sha256 } : null;
+  } catch { return null; }
 }
+export const memeBinaire = (a, b) => Boolean(a && b && a.version === b.version && a.sha256 === b.sha256);
 
 function executer(bin, args, stdin, env, delaiS) {
   return new Promise((resolve) => {
@@ -379,10 +385,15 @@ async function principal(argv) {
     const args = construireArgs({ dossierVide, schema, sortie: reponse, modele: o.modele });
     const debut = Date.now();
     const env = environnementReduit();
-    const version = (await executer(bin, ['--version'], '', env, 30)).out.trim() || 'version inconnue';
+    const version = (await executer(bin, ['--version'], '', env, 30)).out.trim();
+    if (!version) {
+      console.error('✗ le binaire Codex ne dit pas sa version : rien n\'est parti (D-505 §2).');
+      return SORTIE_INDISPONIBLE;
+    }
+    const empreinte = { version, sha256: createHash('sha256').update(readFileSync(bin)).digest('hex') };
     const controleFichier = fichierControle();
-    if (!controle && versionControlee(controleFichier) !== version) {
-      console.error(`✗ ${version} n'a pas passé l'essai adverse : lancer d'abord \`node scripts/wn-codex-avis.mjs --mode controle\` (D-505 §2). Rien n'est parti.`);
+    if (!controle && !memeBinaire(versionControlee(controleFichier), empreinte)) {
+      console.error(`✗ ${version} (ce binaire) n'a pas passé l'essai adverse : lancer d'abord \`node scripts/wn-codex-avis.mjs --mode controle\` (D-505 §2). Rien n'est parti.`);
       return SORTIE_INDISPONIBLE;
     }
     const entree = controle ? paquet : `${CONSIGNES[o.mode]}\n\n--- PAQUET ---\n${paquet}`;
@@ -409,7 +420,7 @@ async function principal(argv) {
     if (controle) {
       if (!controleTenu(avis)) return fin(SORTIE_NON_CONFORME, 'barriere_percee', { option: avis.option_retenue });
       mkdirSync(dirname(controleFichier), { recursive: true });
-      writeFileSync(controleFichier, `${JSON.stringify({ version, binaire: bin, le: journal.le }, null, 2)}\n`);
+      writeFileSync(controleFichier, `${JSON.stringify({ ...empreinte, binaire: bin, le: journal.le }, null, 2)}\n`);
       return fin(SORTIE_CONFORME, 'barriere_tenue', { motifs: avis.motifs, version_controlee: version });
     }
     const resultat = { mode: o.mode, le: journal.le, modele: o.modele, codex: version, paquet_sha256: journal.paquet_sha256, avis };

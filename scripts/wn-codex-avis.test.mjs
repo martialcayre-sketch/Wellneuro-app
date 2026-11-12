@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -208,14 +209,14 @@ setTimeout(() => process.exit(s.code ?? 0), s.dormirMs ?? 0);
 const AVIS = { option_retenue: 'A', confiance: 'forte', motifs: ['m'], reserves: [], faits_manquants: [] };
 const MSG = [{ type: 'turn.started' }, { type: 'item.completed', item: { type: 'agent_message' } }, { type: 'turn.completed' }];
 
-function banc(scenario, { args = null, extra = [], paquet = 'Question : nommer un script.\n- A — wn-x\n- B — X', controleVersion = 'faux 1' } = {}) {
+function banc(scenario, { args = null, extra = [], paquet = 'Question : nommer un script.\n- A — wn-x\n- B — X', controleVersion = 'faux 1', controleSha = null } = {}) {
   const d = mkdtempSync(join(tmpdir(), 'wn-codex-e2e-'));
   const bin = join(d, 'codex');
   writeFileSync(bin, FAUX); chmodSync(bin, 0o755);
   writeFileSync(join(d, 'scenario.json'), JSON.stringify({ version: 'faux 1', evenements: MSG, reponse: AVIS, ...scenario }));
   writeFileSync(join(d, 'paquet.txt'), paquet);
   const controle = join(d, 'controle.json');
-  if (controleVersion) writeFileSync(controle, JSON.stringify({ version: controleVersion }));
+  if (controleVersion) writeFileSync(controle, JSON.stringify({ version: controleVersion, sha256: controleSha ?? createHash('sha256').update(FAUX).digest('hex') }));
   const avant = new Set(readdirSync(tmpdir()).filter((n) => n.startsWith('wn-codex-') && !n.startsWith('wn-codex-e2e') && !n.startsWith('wn-codex-test')));
   const r = spawnSync(process.execPath, [SCRIPT, ...(args ?? ['--mode', 'question', '--paquet', join(d, 'paquet.txt'), '--sortie', join(d, 'avis.json'), ...extra])], {
     encoding: 'utf8',
@@ -252,6 +253,16 @@ test('bout en bout : version non contrôlée = 4, rien n\'est parti', () => {
     assert.equal(r.recu, null, 'le binaire n\'a reçu aucun paquet');
     assert.match(r.stderr, /--mode controle/);
   }
+  const autreBinaire = banc({}, { controleSha: 'a'.repeat(64) });
+  assert.equal(autreBinaire.code, 4, 'même version, autre binaire : refusé');
+  assert.equal(autreBinaire.recu, null);
+});
+
+test('bout en bout : binaire muet sur sa version = 4, en usage comme en contrôle', () => {
+  assert.equal(banc({ version: '' }).code, 4);
+  const c = banc({ version: '' }, { args: ['--mode', 'controle'], controleVersion: null });
+  assert.equal(c.code, 4);
+  assert.equal(c.controle, null, 'rien n\'est inscrit');
 });
 
 test('bout en bout : une action = 3, même si le délai expire ; sortie non écrite', () => {
@@ -287,6 +298,7 @@ test('bout en bout : --mode controle tenu écrit la version ; percé = 3 sans l\
   const tenu = banc({ reponse: { ...AVIS, option_retenue: "A — lecture impossible" } }, { args: ['--mode', 'controle'], controleVersion: null });
   assert.equal(tenu.code, 0, tenu.stderr);
   assert.equal(tenu.controle.version, 'faux 1');
+  assert.equal(tenu.controle.sha256, createHash('sha256').update(FAUX).digest('hex'));
   const perce = banc({ reponse: { ...AVIS, option_retenue: 'B — lecture obtenue' } }, { args: ['--mode', 'controle'], controleVersion: null });
   assert.equal(perce.code, 3);
   assert.equal(perce.controle, null);
