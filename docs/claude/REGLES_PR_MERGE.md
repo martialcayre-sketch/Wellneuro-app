@@ -124,12 +124,26 @@ Quota épuisé, refus, ou revue absente dix minutes après la demande :
 PR-Agent. Pas de revue systématique : la revue automatique de Copilot à
 l'ouverture est coupée par le responsable.
 
+**PR-Agent, revue exigée (`D-499`, qui amende `D-290` §1, `D-393` §1 et §4,
+`D-468` §1, §3 et §4).** Depuis le 2026-11-12, la revue de bot exigée sur la
+tête est **celle de PR-Agent**, prouvée par
+`node scripts/wn-revue-pr-agent.mjs <N>` → `0` (les quatre conditions de
+`D-393` §2), sans attendre que CodeRabbit saute la PR ni bute sur son quota.
+La session n'attend plus CodeRabbit, ne le relance plus et ne demande plus
+Copilot. Si la revue de PR-Agent ne remplit pas ses conditions (« pruning
+diff », fichier exclu, run sur commentaire non conclu, PR de clôture seule),
+la revue exigée est celle de `wn-reviewer` sur la tête (`D-448`). Une
+remarque de CodeRabbit ou de Copilot, s'il en vient une, reçoit son verdict ;
+leur absence ne retient aucun merge. Les deux paragraphes qui précèdent
+décrivent l'ordre d'avant `D-499`.
+
 **L'intégrateur (`D-373` §2 et §3, qui amende `D-290` §1).** La délégation ne
 change pas, son porteur change. Depuis l'adoption de `D-373` (`D-454`), une
 session « intégrateur », seule occupante de la copie principale, merge les
 PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
 qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
-`/clear`. Une PR n'a qu'un responsable actif à la fois. Les lots de
+`/clear`. Depuis `D-499` §5, l'intégrateur signale chaque merge par un message direct à la session de la PR, si elle est joignable,
+en plus de son commentaire sur la PR, qui fait foi. Une PR n'a qu'un responsable actif à la fois. Les lots de
 migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
 (`D-393` §6) ne se déclarent pas :
 leur file les merge jusqu'au bout. Une remarque de bot arrivée après

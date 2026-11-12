@@ -131,6 +131,16 @@ la tête n'a pas été relue. Un
 correctif poussé après la dernière revue n'est pas relu tant qu'une revue
 neuve ne le dit pas.
 
+**Depuis `D-499` (2026-11-12) : PR-Agent est la revue exigée.** Pas de
+merge avant que `node scripts/wn-revue-pr-agent.mjs <N>` rende `0` sur la
+tête (conditions ci-dessous) ; à défaut, `wn-reviewer` sur la tête
+(`D-448`). La session n'attend plus CodeRabbit, ne le relance plus, ne
+demande plus Copilot ; une remarque de l'un ou de l'autre, s'il en vient une,
+reçoit son verdict (règle 1.2). Les deux paragraphes qui suivent (Copilot
+second recours, PR-Agent en substitution) décrivent l'ordre d'avant
+`D-499` : seules les quatre conditions de la revue de PR-Agent restent en
+vigueur.
+
 **Copilot, second recours** (`D-468`, qui amende `D-393` §1). Si CodeRabbit
 saute la PR (statut `skipping`) ou bute sur son quota (« Review rate
 limited »), Copilot passe avant PR-Agent, et seulement si son quota est

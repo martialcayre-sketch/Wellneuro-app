@@ -76,9 +76,14 @@ dernière session.
    Les deux s'appliquent même quand l'assistant merge ; ne jamais les sauter sur
    ce périmètre.
 6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
-   `verify` vert ne dit rien d'eux. **Pas de merge avant qu'une revue de
-   `coderabbitai[bot]` porte sur le sha de tête** (`commit_id` de la revue, ou
-   commentaire de synthèse qui le nomme). **Si CodeRabbit a sauté la PR**
+   `verify` vert ne dit rien d'eux. **Depuis `D-499` (2026-11-12), la revue
+   exigée est celle de PR-Agent sur la tête**, prouvée par
+   `node scripts/wn-revue-pr-agent.mjs <N>` à `0` (conditions ci-dessous),
+   sans attendre CodeRabbit ni demander Copilot ; à défaut, `wn-reviewer`
+   sur la tête (`D-448`). Une remarque de CodeRabbit ou de Copilot, s'il en
+   vient une, reçoit son verdict. Le texte qui suit, jusqu'à « Quota épuisé
+   […] PR-Agent », décrit l'ordre d'avant `D-499` ; les conditions de la
+   revue de PR-Agent restent en vigueur. **Si CodeRabbit a sauté la PR**
    (statut `skipping`) **ou bute sur son quota** (« Review rate limited »),
    **Copilot passe d'abord** (`D-468`) si son quota est présumé disponible :
    `node scripts/wn-revue-copilot.mjs --quota` à `0` ; alors
