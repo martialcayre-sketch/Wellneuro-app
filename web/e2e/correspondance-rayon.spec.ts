@@ -17,7 +17,7 @@ test.describe('Rayon Correspondance', () => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto('/dashboard/correspondance');
 
-    await expect(page.getByRole('heading', { name: 'Correspondance', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Correspondance', level: 1 })).toBeVisible();
 
     // LES DEUX AFFIRMATIONS RETIRÉES. « Module différé » décrivait comme à venir
     // une fonction en service depuis le 2026-07-22 ; les pièces jointes sont
@@ -55,7 +55,7 @@ test.describe('Rayon Correspondance', () => {
     const rail = page.getByRole('navigation', { name: 'Navigation principale' });
     await rail.getByRole('link', { name: 'Correspondance' }).click();
     await expect(page).toHaveURL(/\/dashboard\/correspondance$/);
-    await expect(page.getByRole('heading', { name: 'Correspondance', level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Correspondance', level: 1 })).toBeVisible();
     await expect(page.getByText(/Module différé/i)).toHaveCount(0);
   });
 });

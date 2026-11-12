@@ -829,3 +829,105 @@ describe('RayonPatientsPanel — la fiche suit le dossier qu’on ouvre', () => 
     });
   });
 });
+
+// PRA-2a (X03) : une lecture du tableau en échec n'est jamais présentée comme
+// une liste vide. La liste complète (sélecteur de consultation) répond ; seul
+// l'appel paginé du tableau échoue.
+describe('RayonPatientsPanel — lecture du tableau en échec (PRA-2a)', () => {
+  const tableau = (url: string) => url.includes('page=');
+
+  it('une panne réseau du tableau dit l’erreur, pas « Aucun patient. »', async () => {
+    stubFetch({
+      surPatients: url => {
+        if (tableau(url)) throw new Error('réseau');
+        return { patients: [PATIENT], assignations: [] };
+      },
+    });
+    render(<RayonPatientsPanel />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toBe('Une erreur inattendue est survenue. Réessayez dans un instant.');
+    expect(screen.queryByText('Aucun patient.')).toBeNull();
+  });
+
+  it('une réponse « indisponible » du tableau dit son motif, pas « Aucun patient. »', async () => {
+    stubFetch({
+      surPatients: url =>
+        tableau(url)
+          ? { patients: [], assignations: [], unavailable: true, reason: 'unauthenticated' }
+          : { patients: [PATIENT], assignations: [] },
+    });
+    render(<RayonPatientsPanel />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toMatch(/session a expiré/);
+    expect(screen.queryByText('Aucun patient.')).toBeNull();
+  });
+
+  it('un tableau réellement vide reste « Aucun patient. », sans alerte', async () => {
+    stubFetch({ surPatients: () => ({ patients: [], assignations: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } }) });
+    render(<RayonPatientsPanel />);
+    expect(await screen.findByText('Aucun patient.')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('une action principale : « Nouveau patient » en plein, « Nouvelle consultation » en secondaire', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    expect(screen.getByRole('button', { name: 'Nouveau patient' }).className).toMatch(/\bbg-primary\b/);
+    expect(screen.getByRole('button', { name: 'Nouvelle consultation' }).className).not.toMatch(/\bbg-primary\b/);
+    expect(screen.getByRole('heading', { level: 2, name: 'Patients' })).toBeTruthy();
+  });
+
+  // Au téléphone, les éléments du tableau passent en `block`/`flex` (Q11 a) :
+  // les rôles explicites gardent la sémantique que le navigateur retirerait.
+  it('le tableau porte ses rôles explicites, ligne et cellules comprises', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    const tableau = screen.getByRole('table');
+    expect(tableau.getAttribute('role')).toBe('table');
+    const lignes = within(tableau).getAllByRole('row');
+    expect(lignes.every(l => l.getAttribute('role') === 'row')).toBe(true);
+    const cellules = within(lignes[1]).getAllByRole('cell');
+    expect(cellules).toHaveLength(5);
+    expect(cellules.every(c => c.getAttribute('role') === 'cell')).toBe(true);
+  });
+});
+
+// T-17 « Réessayer » ([[D-488]], DOC-6) : relit le seul tableau, avec la
+// recherche, le tri et la page de l'écran ; la liste complète n'est pas relue.
+describe('RayonPatientsPanel — « Réessayer » sous l’échec du tableau (T-17)', () => {
+  it('relit le seul tableau, recherche et tri gardés', async () => {
+    let enPanne = true;
+    const appels: { url: string }[] = [];
+    stubFetch({
+      surPatients: url => {
+        appels.push({ url });
+        if (url.includes('page=') && enPanne) throw new Error('réseau');
+        return { patients: [PATIENT], assignations: [], pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1 } };
+      },
+    });
+    render(<RayonPatientsPanel />);
+    await screen.findByRole('alert');
+    fireEvent.change(screen.getByPlaceholderText('Rechercher (nom, prénom, email)'), { target: { value: 'Nicola' } });
+    await waitFor(() => expect(appels.some(a => a.url.includes('search=Nicola'))).toBe(true), { timeout: 2000 });
+    await screen.findByRole('button', { name: 'Réessayer' });
+    const listesCompletes = appels.filter(a => a.url === '/api/praticien/patients').length;
+    enPanne = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    const dernier = appels.filter(a => a.url.includes('page=')).at(-1)!.url;
+    expect(dernier).toContain('search=Nicola');
+    expect(dernier).toContain('sortBy=nom');
+    expect(appels.filter(a => a.url === '/api/praticien/patients').length).toBe(listesCompletes);
+    expect((screen.getByPlaceholderText('Rechercher (nom, prénom, email)') as HTMLInputElement).value).toBe('Nicola');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('un tableau lu n’offre pas « Réessayer »', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+  });
+});

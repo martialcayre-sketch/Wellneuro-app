@@ -22,7 +22,8 @@ export default function DashboardPatientsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Patients</h2>
+        {/* Titre de page en h1, titres de zone en h2 (PRA-2a, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Patients</h1>
         <p className="text-base text-muted-foreground mt-1">
           Les dossiers du cabinet : création, coordonnées, accès au portail et fin de parcours. Ouvrir une
           ligne mène à sa fiche ; le suivi clinique se lit dans « Fiche-trajectoire », et l’assignation de

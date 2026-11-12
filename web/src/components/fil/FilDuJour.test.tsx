@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CarteFil } from '@/lib/fil/cartes';
+import type { CarteFil, TypeCarteFil } from '@/lib/fil/cartes';
 import { FilDuJour } from './FilDuJour';
 
 // Le Fil est l'accueil praticien depuis SP-FIL LOT-01 et n'avait aucun test :
@@ -714,5 +714,82 @@ describe('FilDuJour — signal de sécurité à évaluer (D-275 §3)', () => {
     stubFetch(async () => ({ cartes: [carte()], signauxSecuriteIndisponibles: true, lecturesBiologieIndisponibles: true }));
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+  });
+});
+
+// PRA-2b (Q9 b, T-18 de [[D-488]]) : une Météo illisible se dit sur la carte,
+// d'un badge neutre qui ne qualifie pas l'adhésion.
+describe('FilDuJour — Météo d’adhésion indisponible (T-18)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const T18 = "Météo d'adhésion indisponible";
+
+  it('une réponse `unavailable` pose le badge sur la carte, sans badge d’adhésion', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('meteo-adhesion')
+          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+      ),
+    );
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText(T18)).toBeTruthy());
+    expect(screen.queryByText(/Adhésion :/i)).toBeNull();
+  });
+
+  it('un échec réseau de la Météo pose le badge, le Fil reste servi', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('meteo-adhesion')) throw new Error('réseau');
+        return { json: async () => ({ cartes: [carte()] }) } as unknown as Response;
+      }),
+    );
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText(T18)).toBeTruthy());
+    expect(screen.getByText('Questionnaire en retard')).toBeTruthy();
+  });
+
+  it('une Météo lue, même sans patient déterminé, ne pose aucun badge', async () => {
+    stubFetch(async () => ({ cartes: [carte()] }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Questionnaire en retard')).toBeTruthy());
+    expect(screen.queryByText(T18)).toBeNull();
+  });
+});
+
+// PRA-2b : l'habillage change l'action principale de chaque carte (lien ou
+// bouton plein), jamais sa cible. Un type oublié ici fait échouer la
+// vérification de types : la liste est exhaustive par construction.
+describe('FilDuJour — la cible de chaque carte ne change pas, type par type', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const TYPES: Record<TypeCarteFil, true> = {
+    signal_securite: true,
+    consultation_prevue: true,
+    signalement_trust: true,
+    synthese_a_valider: true,
+    synthese_a_generer: true,
+    synthese_non_servie: true,
+    jalon_j21: true,
+    t0_a_confirmer: true,
+    biologie_arbitree: true,
+    import_biologique_a_lire: true,
+    compte_rendu_transmis: true,
+    assignation_en_retard: true,
+    sans_avancee: true,
+    reprise: true,
+    geste_objectif: true,
+  };
+
+  it.each(Object.keys(TYPES) as TypeCarteFil[])('%s : le lien d’action mène à `carte.href`', async type => {
+    const href = `/dashboard/cible-${type}?idPatient=PAT_SEED_01`;
+    stubFetch(async () => ({
+      cartes: [carte({ type, cle: `${type}:X`, href, actionLabel: `Ouvrir ${type}` })],
+    }));
+    render(<FilDuJour />);
+    const lien = await screen.findByRole('link', { name: `Ouvrir ${type} →` });
+    expect(lien.getAttribute('href')).toBe(href);
   });
 });

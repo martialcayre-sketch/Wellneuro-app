@@ -48,15 +48,23 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v2` (`D-501`, qui remplace la v1 avant tout envoi ; relue par
-Codex, puis approuvée par le responsable le 2026-11-12).
+`fiche-usage-v3` (`D-501` §5). La v2 avait remplacé la v1 avant tout envoi
+(relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
+la remplace après le pilote fer, où aucun texte n'avait été retenu.
+
+Un libellé de population que les claims ne décrivent pas ne passe pas par
+l'IA : il vient d'une correspondance approuvée par le responsable, déposée
+comme brouillon sous un nom de rédacteur qui le dit, puis validée par acte
+(`D-501` §6).
 
 ## Ce qui est envoyé aux fournisseurs d'IA
 
 - **Envoyé** : les identifiants de la structure (fiche, population,
-  hypothèses, codes d’analyte, axes signés, rubriques), le texte des claims
-  épinglés et la marque des claims sous réserve d’indication (`D-501`) ;
-  au contre-lecteur, en plus, le texte rédigé.
+  hypothèses, codes d’analyte, axes signés, rubriques), leurs désignations
+  approuvées (libellés validés en base, libellés du catalogue des analytes,
+  libellés de `D-266` §3), le texte des claims épinglés et la marque des
+  claims sous réserve d’indication (`D-501`) ; au contre-lecteur, en plus,
+  le texte rédigé.
 - **Jamais envoyé** : aucune donnée d'un patient, ni nom, ni réponse, ni
   résultat, ni élément de dossier. L'outil s'exécute en dehors de
   l'application, depuis le poste du responsable (`tools/corpus/fiches-usage/`).

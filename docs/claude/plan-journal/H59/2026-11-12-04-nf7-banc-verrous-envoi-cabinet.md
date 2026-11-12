@@ -1,0 +1,13 @@
+- **Mise à jour (2026-11-12, NF-7, verrous de l'envoi éprouvés contre PostgreSQL)** : le lot 3 (#2021, `b56ca4d9`) est mergé et constaté par conteneur (one-off-5712). Les deux textes sont servis, et la production compte 0 assignation `CAB_`, donc 0 copie NULL ; ce compte se refait juste avant l'allumage.
+  - **Forme retenue par le responsable : B, permanente.** Le banc joue les vrais écrivains dans T3 et dans le CI. Aucune extraction n'a été nécessaire : les handlers de production sont appelés tels quels, et seule la session du praticien est substituée (`web/scripts/banc-stubs/`).
+  - **Courses.** Elles sont jouées en READ COMMITTED et forcées chacune par un verrou tenu par un tiers ; le blocage est constaté avant chaque issue. Toutes vertes :
+    - modification et envoi, dans les deux ordres ;
+    - deux témoins : modification annulée, envoi annulé ;
+    - publication « non » commise entre la lecture de l'envoi et son verrou, d'où une copie « non » ;
+    - envoi d'abord : la publication attend sa fin ;
+    - déclaration et envoi, dans les deux ordres : « Déclarer » ne vise jamais une ligne que l'envoi verrouille ;
+    - instruments en ordres opposés, deux patients puis un seul : aucun interblocage ;
+    - titre écrit sur une lecture périmée (P1-1 de #2021).
+  - **Mutations.** Quatre mutations du code rendent le banc rouge : envoi sans `FOR SHARE`, modification sans `FOR UPDATE`, modification sans recomptage sous verrou, et retour du défaut P1-1.
+  - **Question `20261111-2148-a`.** Son option 1 plaçait le lot D-277 « après l'allumage ». Elle est corrigée à la demande du responsable : ce lot reste préalable à l'allumage (`docs/FEATURE_FLAGS.md`). La question reste ouverte.
+- **Reste avant l'allumage** : le lot à part D-277, dont le contenu clinique se cadre et se valide séparément, puis le compte des copies NULL refait juste avant. L'allumage est un geste du responsable ; la troisième migration vient ensuite.

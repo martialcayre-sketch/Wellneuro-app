@@ -1,11 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import type { RendezVousApiResponse, RendezVousExpose } from '@/app/api/praticien/rendez-vous/route';
+import { Button } from '@/components/ui/Button';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 
 type PatientOption = { idPatient: string; nomComplet: string };
 
 const FUSEAU = 'Europe/Paris';
+const LISTE_INDISPONIBLE = 'La liste des rendez-vous est momentanément indisponible.';
 const FORMAT_JOUR = new Intl.DateTimeFormat('fr-FR', {
   timeZone: FUSEAU,
   weekday: 'long',
@@ -39,22 +43,33 @@ function grouperParJour(rdvs: RendezVousExpose[]): { jour: string; libelle: stri
  */
 export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
   const [rdvs, setRdvs] = useState<RendezVousExpose[] | null>(null);
+  // TROIS ERREURS SÉPARÉES (PRA-2a, Q4 b) : chacune à l'endroit de son geste.
+  // La lecture de la liste dans la liste, la planification sous « Planifier »,
+  // l'annulation sur sa ligne. Une lecture en échec n'est jamais une liste vide.
+  const [erreurListe, setErreurListe] = useState('');
   const [erreur, setErreur] = useState('');
+  const [erreurAnnulation, setErreurAnnulation] = useState<{ id: string; message: string } | null>(null);
   const [idPatient, setIdPatient] = useState('');
   const [date, setDate] = useState('');
   const [heure, setHeure] = useState('');
   const [motif, setMotif] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const titreListeRef = useRef<HTMLHeadingElement>(null);
 
   const charger = useCallback(async () => {
     try {
       const reponse = await fetch('/api/praticien/rendez-vous');
       const payload = (await reponse.json()) as RendezVousApiResponse;
-      if (payload.ok && Array.isArray(payload.rendezVous)) setRdvs(payload.rendezVous);
-      else setRdvs([]);
+      if (reponse.ok && payload.ok && Array.isArray(payload.rendezVous)) {
+        setRdvs(payload.rendezVous);
+        setErreurListe('');
+        return;
+      }
+      setRdvs([]);
+      setErreurListe(LISTE_INDISPONIBLE);
     } catch {
       setRdvs([]);
-      setErreur('La liste des rendez-vous est momentanément indisponible.');
+      setErreurListe(LISTE_INDISPONIBLE);
     }
   }, []);
 
@@ -93,7 +108,7 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
   }
 
   async function annuler(id: string) {
-    setErreur('');
+    setErreurAnnulation(null);
     try {
       const reponse = await fetch('/api/praticien/rendez-vous/annulation', {
         method: 'POST',
@@ -102,23 +117,25 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
       });
       const payload = (await reponse.json()) as { ok: boolean; error?: string };
       if (!reponse.ok || !payload.ok) {
-        setErreur(payload.error ?? 'Le rendez-vous n’a pas pu être annulé.');
+        setErreurAnnulation({ id, message: payload.error ?? 'Le rendez-vous n’a pas pu être annulé.' });
         return;
       }
       setRdvs(prev => (prev ? prev.filter(r => r.id !== id) : prev));
     } catch {
-      setErreur('Le rendez-vous n’a pas pu être annulé.');
+      setErreurAnnulation({ id, message: 'Le rendez-vous n’a pas pu être annulé.' });
     }
   }
 
   const groupes = rdvs ? grouperParJour(rdvs) : [];
 
   return (
-    <div className="flex flex-col gap-6">
+    // Bureau : formulaire et liste côte à côte. Tablette : empilés, formulaire
+    // d'abord. Téléphone : la liste passe avant le formulaire (PRA-2a, Q5 a).
+    <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start">
       {/* Formulaire de planification */}
-      <form onSubmit={planifier} className="rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">Planifier un rendez-vous</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <form onSubmit={planifier} className="order-2 rounded-xl border border-border bg-surface p-5 shadow-card md:order-1">
+        <h2 className="font-display text-lg font-semibold text-foreground">Planifier un rendez-vous</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Patient</span>
             <select
@@ -164,11 +181,6 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
             />
           </label>
         </div>
-        {erreur && (
-          <p role="alert" className="mt-3 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
-            {erreur}
-          </p>
-        )}
         <button
           type="submit"
           disabled={enCours}
@@ -176,15 +188,43 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
         >
           {enCours ? 'Planification…' : 'Planifier'}
         </button>
+        {erreur && (
+          <p role="alert" className="mt-3 rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
+            {erreur}
+          </p>
+        )}
       </form>
 
       {/* Liste des rendez-vous à venir, par jour */}
-      <section className="rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">Rendez-vous à venir</h3>
+      <section className="order-1 rounded-xl border border-border bg-surface p-5 shadow-card md:order-2">
+        {/* `tabIndex={-1}` : « Réessayer » disparaît pendant la relecture ;
+            le focus vient ici plutôt que de retomber sur la page. */}
+        <h2 ref={titreListeRef} tabIndex={-1} className="font-display text-lg font-semibold text-foreground focus:outline-none">Rendez-vous à venir</h2>
         {rdvs === null ? (
           <div className="mt-3 flex flex-col gap-2">
             <div className="h-11 animate-pulse rounded-lg bg-muted" />
             <div className="h-11 animate-pulse rounded-lg bg-muted" />
+          </div>
+        ) : erreurListe ? (
+          <div className="mt-3 flex flex-col items-start gap-3">
+            <p role="alert" className="w-full rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
+              {erreurListe}
+            </p>
+            {/* T-17 ([[D-488]], DOC-6) : relit la seule liste ; la saisie du
+                formulaire « Planifier » n'est pas touchée. */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                titreListeRef.current?.focus();
+                setRdvs(null);
+                void charger();
+              }}
+              className="inline-flex min-h-11 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              <RefreshCw aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+              Réessayer
+            </Button>
           </div>
         ) : groupes.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
@@ -199,24 +239,28 @@ export function AgendaPraticien({ patients }: { patients: PatientOption[] }) {
                 </p>
                 <ul className="mt-1.5 flex flex-col gap-1.5">
                   {groupe.items.map(r => (
-                    <li
-                      key={r.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
-                    >
-                      <span className="flex items-baseline gap-2">
-                        <span className="font-mono text-sm text-foreground">
-                          {FORMAT_HEURE.format(new Date(r.dateHeure))}
+                    <li key={r.id} className="rounded-lg border border-border px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+                          <span className="font-mono text-sm text-foreground">
+                            {FORMAT_HEURE.format(new Date(r.dateHeure))}
+                          </span>
+                          <span className="text-sm font-semibold text-foreground">{r.patient}</span>
+                          {r.motif && <span className="text-sm text-muted-foreground">— {r.motif}</span>}
                         </span>
-                        <span className="text-sm font-semibold text-foreground">{r.patient}</span>
-                        {r.motif && <span className="text-sm text-muted-foreground">— {r.motif}</span>}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void annuler(r.id)}
-                        className="min-h-9 rounded-lg border border-border px-3 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
-                        Annuler
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => void annuler(r.id)}
+                          className="min-h-11 rounded-lg px-3 text-sm text-muted-foreground transition-colors duration-fast ease-lien hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                      {erreurAnnulation?.id === r.id && (
+                        <p role="alert" className="mt-2 text-sm text-status-danger">
+                          {erreurAnnulation.message}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>

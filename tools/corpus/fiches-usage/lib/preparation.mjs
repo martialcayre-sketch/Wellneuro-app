@@ -22,6 +22,7 @@
 // décisionnel, marqueur sécurité / admissibilité, statut d'usage, niveau de
 // mesure) — des plafonds, pas des contenus — et chaque claim sous réserve
 // d'indication ([[D-465]] §3, [[D-498]]) porte une marque dans la liste.
+// Depuis la v3 ([[D-501]] §5), ils reçoivent aussi les désignations approuvées.
 
 import { ErreurOutil } from '../../fiches/lib/assemblage.mjs';
 
@@ -69,8 +70,57 @@ export function axesDeLaFiche(fiche) {
   );
 }
 
-/** Le message envoyé au rédacteur pour une fiche. Aucune donnée patient : la structure et des claims. */
-export function messageRedactionFiche(fiche, claimsCites) {
+// LES DÉSIGNATIONS APPROUVÉES ([[D-501]] §5, consigne v3). La population, les
+// hypothèses rattachées, les analytes et l'usage décisionnel d'une fiche se
+// NOMMENT par une désignation approuvée — jamais à partir de l'identifiant
+// seul, qui est opaque : le libellé validé en base (population, hypothèse), le
+// libellé du catalogue (analyte), le libellé de [[D-266]] §3 (usage
+// décisionnel). Une désignation nomme ; elle n'établit aucun fait, que seuls
+// les claims portent. Une fiche dont une désignation manque ne part pas.
+
+/** Les libellés de [[D-266]] §3 pour l'usage décisionnel — table de la décision, recopiée. */
+export const LIBELLES_USAGE_DECISIONNEL = {
+  confirmer_hypothese: 'confirmer une hypothèse',
+  reduire_plausibilite: 'réduire sa plausibilité',
+  departager_options: 'départager des options',
+  surveiller_intervention: 'surveiller une intervention',
+  reexaminer_strategie: 'réexaminer la stratégie',
+};
+
+/**
+ * Le bloc des désignations d'une fiche — ou une erreur qui nomme ce qui
+ * manque, avant tout appel de modèle. `designations` : `{ termes: {POP_…|HYP_…:
+ * libellé validé}, analytes: {BIO_…: libellé du catalogue} }`.
+ */
+export function designationsDeLaFiche(fiche, designations) {
+  const termes = designations?.termes ?? {};
+  const analytes = designations?.analytes ?? {};
+  const manquants = [
+    ...[fiche.population, ...fiche.hypotheses].filter(t => typeof termes[t] !== 'string' || !/\S/u.test(termes[t])),
+    ...fiche.codesAnalyte.filter(a => typeof analytes[a] !== 'string' || !/\S/u.test(analytes[a])),
+    ...(LIBELLES_USAGE_DECISIONNEL[fiche.usageDecisionnel] ? [] : [fiche.usageDecisionnel]),
+  ];
+  if (manquants.length > 0) {
+    throw new ErreurOutil(`${fiche.id} : désignation(s) approuvée(s) absente(s) : ${manquants.join(', ')}.`);
+  }
+  const lignes = [
+    `- population d'usage ${fiche.population} : « ${termes[fiche.population]} »`,
+    ...(fiche.hypotheses.length === 0
+      ? ['- hypothèses rattachées : (aucune)']
+      : fiche.hypotheses.map(h => `- hypothèse rattachée ${h} : « ${termes[h]} »`)),
+    ...(fiche.codesAnalyte.length === 0
+      ? ['- analytes : (aucun)']
+      : fiche.codesAnalyte.map(a => `- analyte ${a} : « ${analytes[a]} »`)),
+    `- usage décisionnel ${fiche.usageDecisionnel} : « ${LIBELLES_USAGE_DECISIONNEL[fiche.usageDecisionnel]} »`,
+  ];
+  return lignes.join('\n');
+}
+
+/**
+ * Le message envoyé au rédacteur pour une fiche. Aucune donnée patient : la
+ * structure, ses désignations approuvées et des claims.
+ */
+export function messageRedactionFiche(fiche, claimsCites, designations) {
   return (
     `MODE : fiche\nFICHE : ${fiche.id}\n` +
     `POPULATION D'USAGE : ${fiche.population}\n` +
@@ -78,8 +128,21 @@ export function messageRedactionFiche(fiche, claimsCites) {
     `CODES D'ANALYTE : ${fiche.codesAnalyte.join(', ') || '(aucun)'}\n` +
     `${axesDeLaFiche(fiche)}\n` +
     `RUBRIQUES À RÉDIGER, DANS CET ORDRE : ${fiche.rubriques.join(', ')}\n\n` +
-    `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}`
+    `DÉSIGNATIONS APPROUVÉES — POUR NOMMER, JAMAIS POUR ÉTABLIR UN FAIT :\n${designations}\n\n` +
+    `CLAIMS — SEULE BASE ADMISE POUR TOUT FAIT :\n${listeDeClaims(claimsCites)}`
   );
+}
+
+/**
+ * La réponse du rédacteur pour une fiche : ses rubriques, ou un refus motivé
+ * quand les claims contredisent le cadre signé (consigne v3).
+ */
+export function lireReponseFiche(reponse, attendues) {
+  if (reponse && typeof reponse.refus === 'string') {
+    if (!/\S/u.test(reponse.refus)) throw new ErreurOutil('refus sans motif.');
+    return { refus: reponse.refus.trim() };
+  }
+  return { rubriques: rubriquesRedigees(reponse, attendues) };
 }
 
 /** Le message envoyé au rédacteur pour un libellé. */
@@ -93,15 +156,18 @@ export function messageRedactionLibelle(termeId, nature, fichesCitantes, claimsC
 
 /**
  * Le message envoyé au contre-lecteur pour un texte, dans son contexte.
- * `axes` : ceux de la fiche, pour une rubrique ; absents pour un libellé.
+ * `axes` et `designations` : ceux de la fiche, pour une rubrique — les mêmes
+ * que le rédacteur a reçus ; absents pour un libellé.
  */
-export function messageContreLecture({ nature, texte, contexte, claimsCites, axes = null }) {
+export function messageContreLecture({ nature, texte, contexte, claimsCites, axes = null, designations = null }) {
   return (
     `NATURE : ${nature}\n\n` +
     (axes ? `AXES SIGNÉS DE LA FICHE :\n${axes}\n\n` : '') +
+    (designations ? `DÉSIGNATIONS APPROUVÉES — POUR NOMMER, JAMAIS POUR ÉTABLIR UN FAIT :\n${designations}\n\n` : '') +
     `TEXTE À VÉRIFIER :\n"""\n${texte}\n"""\n\n` +
     (contexte ? `CONTEXTE (à ne pas juger, pour situer le texte) :\n"""\n${contexte}\n"""\n\n` : '') +
-    `CLAIMS — SEULE BASE ADMISE :\n${listeDeClaims(claimsCites)}`
+    (designations ? 'CLAIMS — SEULE BASE ADMISE POUR TOUT FAIT :\n' : 'CLAIMS — SEULE BASE ADMISE :\n') +
+    listeDeClaims(claimsCites)
   );
 }
 

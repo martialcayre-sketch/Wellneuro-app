@@ -38,7 +38,8 @@ Toutes les commandes se lancent **depuis la racine du dépôt**.
 
 ```bash
 node --env-file=web/.env.local --import ./tools/corpus/lib/register-alias.mjs \
-  tools/corpus/fiches-usage/rediger.mjs [--fiche FU_…[,…]] [--terme HYP_…|POP_…[,…]]
+  tools/corpus/fiches-usage/rediger.mjs [--fiche FU_…[,…] --designations <fichier>] \
+  [--terme HYP_…|POP_…[,…]] [--claims <instantané>]
 ```
 
 Sans `--fiche` ni `--terme`, l'outil traite toutes les fiches et tous les
@@ -82,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v2+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v3+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -91,6 +92,18 @@ réserve d'indication (`D-465` §3, `D-498`), lus dans
 `web/src/lib/fiches-usage/reserveIndication.ts`, y portent la marque
 `[SOUS RÉSERVE D'INDICATION]`. La consigne dit ce que les axes et la marque
 interdisent, et ce que nomme le libellé d'une hypothèse (`D-477` §2).
+
+Depuis la v3 (`D-501` §5), une fiche ne se rédige qu'avec ses
+**désignations approuvées**, passées par `--designations <fichier>` (local,
+hors dépôt) : `{ "termes": { "POP_…|HYP_…": "<libellé validé>" },
+"analytes": { "BIO_…": "<libellé du catalogue>" } }`. Il est tiré de la
+production en lecture seule, par conteneur : les libellés **validés** sur
+l'empreinte de la structure en cours, et les libellés de `biology_analytes`.
+L'usage décisionnel se désigne par la table de `D-266` §3, dans le code.
+Une fiche dont la population, une hypothèse ou un analyte n'a pas de
+désignation est refusée avant tout appel : un identifiant seul ne fonde
+aucun sens. Le rédacteur peut refuser une fiche dont les claims contredisent
+le cadre signé (`refus_redacteur`).
 
 ## Ce que l'outil ne voit pas
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import type {
   CreatePatientResponse,
   PatchPatientResponse,
@@ -18,6 +19,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
 import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDossier';
@@ -80,11 +82,15 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const titreTableauRef = useRef<HTMLHeadingElement>(null);
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [page, setPage] = useState(1);
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
   const [loadingTable, setLoadingTable] = useState(true);
+  // Lecture du tableau en échec (PRA-2a, X03) : jamais présentée comme une
+  // liste vide. Le message est celui de la route, ou l'erreur inattendue.
+  const [erreurTable, setErreurTable] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editState, setEditState] = useState<EditPatientState | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', dateNaissance: '' });
@@ -124,11 +130,21 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       if (currentSearch.trim()) params.set('search', currentSearch.trim());
       const r = await fetch(`/api/praticien/patients?${params.toString()}`);
       const json = (await r.json()) as PatientsApiResponse;
-      setTablePatients(json.patients ?? []);
+      // La route répond `unavailable: true` (200 sur exception, 401 sans
+      // session) : c'était lu comme « Aucun patient. ».
+      if (!r.ok || json.unavailable || !Array.isArray(json.patients)) {
+        setTablePatients([]);
+        setPagination(null);
+        setErreurTable(erreurLisible(json.reason ?? 'exception'));
+        return;
+      }
+      setErreurTable(null);
+      setTablePatients(json.patients);
       setPagination(json.pagination ?? null);
     } catch {
       setTablePatients([]);
       setPagination(null);
+      setErreurTable(erreurLisible('exception'));
     } finally {
       setLoadingTable(false);
     }
@@ -375,7 +391,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
 
         <PanneauSuperpose
           largeur="standard"
-          declencheur={<Button className="min-h-11">Nouvelle consultation</Button>}
+          // Une action principale par zone (PRA-2a, Q3) : « Nouveau patient »
+          // en plein, « Nouvelle consultation » en secondaire.
+          declencheur={<Button variant="outline" className="min-h-11">Nouvelle consultation</Button>}
           titre="Nouvelle consultation"
           description="Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un dossier existant sont dans « Gérer le dossier », au bout de sa ligne."
           open={tiroirOuvert === 'consultation'}
@@ -471,24 +489,52 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       {/* Tableau patients */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border">
-          <h3 className="font-display text-lg font-semibold text-foreground">Patients</h3>
+          {/* `tabIndex={-1}` : « Réessayer » disparaît pendant la relecture ;
+              le focus vient ici plutôt que de retomber sur la page. */}
+          <h2 ref={titreTableauRef} tabIndex={-1} className="font-display text-lg font-semibold text-foreground focus:outline-none">Patients</h2>
         </div>
+        {/* Au téléphone, chaque ligne devient un bloc empilé (Q11 a) : le
+            tableau ne défile plus de côté. À la tablette, la colonne
+            Téléphone se retire (`PatientRow`). Les rôles explicites gardent
+            la sémantique du tableau quand ses éléments passent en `block` ou
+            `flex` : WebKit et Chromium la retirent sinon (revue PR-Agent). */}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left">Nom</th>
-                <th className="px-4 py-2 text-left">Email</th>
-                <th className="px-4 py-2 text-left">Téléphone</th>
-                <th className="px-4 py-2 text-left">Actif</th>
-                <th className="px-4 py-2 text-left"></th>
-                <th className="px-4 py-2 text-left"></th>
-                <th className="px-4 py-2 text-left"></th>
+          <table role="table" className="block w-full text-sm md:table md:min-w-full">
+            <thead role="rowgroup" className="hidden bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground md:table-header-group">
+              <tr role="row">
+                <th role="columnheader" className="px-4 py-2 text-left">Nom</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Email</th>
+                <th role="columnheader" className="hidden px-4 py-2 text-left lg:table-cell">Téléphone</th>
+                <th role="columnheader" className="px-4 py-2 text-left">Actif</th>
+                <th role="columnheader" className="px-4 py-2 text-left"></th>
               </tr>
             </thead>
-            <tbody>
-              {!loadingTable && tablePatients.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-4 text-center text-muted-foreground">Aucun patient.</td></tr>
+            <tbody role="rowgroup" className="block md:table-row-group">
+              {!loadingTable && erreurTable && (
+                <tr role="row" className="block md:table-row">
+                  <td role="cell" colSpan={5} className="block px-4 py-4 text-center text-foreground md:table-cell">
+                    <span role="alert">{erreurTable}</span>
+                    {/* T-17 ([[D-488]], DOC-6) : relit le seul tableau ; la
+                        recherche, le tri et la page restent ceux de l'écran. */}
+                    <span className="mt-3 flex justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          titreTableauRef.current?.focus();
+                          void loadPatientsTable(page, search, sortBy);
+                        }}
+                        className="inline-flex min-h-11 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      >
+                        <RefreshCw aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+                        Réessayer
+                      </Button>
+                    </span>
+                  </td>
+                </tr>
+              )}
+              {!loadingTable && !erreurTable && tablePatients.length === 0 && (
+                <tr role="row" className="block md:table-row"><td role="cell" colSpan={5} className="block px-4 py-4 text-center text-muted-foreground md:table-cell">Aucun patient.</td></tr>
               )}
               {tablePatients.map(p => (
                 <PatientRow

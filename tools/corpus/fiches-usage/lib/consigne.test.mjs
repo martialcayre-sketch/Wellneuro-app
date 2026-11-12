@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v2 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v3 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -36,4 +36,19 @@ test('v2 : axes signés, réserve d’indication et libellé d’hypothèse, des
   }
   assert.match(redaction, /des plafonds,\s+pas des contenus/);
   assert.match(contreLecture, /AXES SIGNÉS DE LA FICHE/);
+});
+
+// [[D-501]] §5 : la structure signée fonde la désignation, jamais un fait ;
+// l'identifiant seul ne fonde rien ; contradiction ⇒ refus motivé.
+test('v3 : désignations approuvées pour nommer, jamais pour établir un fait, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /DÉSIGNATIONS APPROUVÉES/);
+    assert.match(c, /identifiant/);
+  }
+  assert.match(redaction, /n'établissent AUCUN fait/);
+  assert.match(redaction, /\{"refus": "<motif en une phrase>"\}/);
+  assert.match(redaction, /Ne nomme aucune hypothèse que la liste ne rattache pas/);
+  assert.match(contreLecture, /une DÉSIGNATION reprise des DÉSIGNATIONS APPROUVÉES/);
+  assert.match(contreLecture, /un FAIT \(indication, interprétation, condition, précaution, limite\) n'est\s+fidèle que si un claim l'établit/);
 });

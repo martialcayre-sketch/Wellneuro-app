@@ -23,7 +23,7 @@
 //
 // Sans --fiche ni --terme : toutes les fiches et tous les termes de la structure.
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
@@ -36,11 +36,12 @@ import {
   claimsDeLaFiche,
   claimsDuTerme,
   contexteDeRubrique,
+  designationsDeLaFiche,
+  lireReponseFiche,
   messageContreLecture,
   messageRedactionFiche,
   messageRedactionLibelle,
   resumeSansTexte,
-  rubriquesRedigees,
   sourcesDc03,
   verdictDEnsemble,
 } from './lib/preparation.mjs';
@@ -63,18 +64,20 @@ const JETONS_MAX_CONTRE_LECTURE = 4096;
 
 function lireArguments() {
   const a = process.argv.slice(2);
-  const o = { fiches: null, termes: null, claims: CLAIMS_PAR_DEFAUT };
+  const o = { fiches: null, termes: null, claims: CLAIMS_PAR_DEFAUT, designations: null };
   const liste = v => (v ?? '').split(',').map(s => s.trim()).filter(Boolean);
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--fiche') o.fiches = liste(a[++i]);
     else if (a[i] === '--terme') o.termes = liste(a[++i]);
     else if (a[i] === '--claims') o.claims = a[++i];
+    else if (a[i] === '--designations') o.designations = a[++i];
     else throw new ErreurOutil(`Argument inconnu : ${a[i]}`);
   }
   const structure = FICHES_USAGE_BESOIN2_V1;
   const tous = o.fiches === null && o.termes === null;
   return {
     claims: o.claims,
+    designations: o.designations,
     fiches: tous ? structure.fiches.map(f => f.id) : (o.fiches ?? []),
     termes: tous ? [...structure.hypotheses, ...structure.populations] : (o.termes ?? []),
   };
@@ -142,11 +145,19 @@ async function redigerFiche(ficheId, outils) {
   const fiche = ficheDeLaStructure(ficheId, FICHES_USAGE_BESOIN2_V1);
   if (!fiche) throw new ErreurOutil(`${ficheId} : fiche absente de la structure.`);
   const cites = claimsDeLaFiche(fiche, claims, CLAIMS_SOUS_RESERVE_INDICATION);
-  const message = messageRedactionFiche(fiche, cites);
+  // Refusé AVANT tout appel : une population, une hypothèse ou un analyte sans
+  // désignation approuvée ne se nomme pas depuis son identifiant ([[D-501]] §5).
+  const designations = designationsDeLaFiche(fiche, outils.designations);
+  const message = messageRedactionFiche(fiche, cites, designations);
   const axes = axesDeLaFiche(fiche);
   console.log(`${ficheId} : ${fiche.rubriques.length} rubrique(s), ${cites.length} claim(s).`);
 
-  const rubriques = rubriquesRedigees(await rediger(anthropic, consignes.redaction, message), fiche.rubriques);
+  const reponse = lireReponseFiche(await rediger(anthropic, consignes.redaction, message), fiche.rubriques);
+  if (reponse.refus) {
+    const fichier = await ecrire(ficheId, h, 'revue', { etape: 'rédaction', exclusions: [{ id: ficheId, motif: 'refus_redacteur', raison: reponse.refus }] });
+    return { id: ficheId, issue: 'echec', motif: 'refus_redacteur', fichier };
+  }
+  const { rubriques } = reponse;
   const verdicts = await enParallele(fiche.rubriques, CONTRE_LECTURES_SIMULTANEES, r =>
     contreLire(openai, consignes.contreLecture, {
       nature: `rubrique « ${r} »`,
@@ -154,6 +165,7 @@ async function redigerFiche(ficheId, outils) {
       contexte: contexteDeRubrique(rubriques, r),
       claimsCites: cites,
       axes,
+      designations,
     }),
   );
   const sources = sourcesDc03(message, cites);
@@ -244,6 +256,14 @@ async function main() {
     console.error('ANTHROPIC_API_KEY et OPENAI_API_KEY sont requis (node --env-file=web/.env.local …).');
     process.exit(1);
   }
+  // Les désignations approuvées ([[D-501]] §5) : exigées dès qu'une fiche est
+  // demandée, lues dans un fichier local hors dépôt (libellés validés en base,
+  // libellés du catalogue), jamais déduites d'un identifiant.
+  if (args.fiches.length > 0 && !args.designations) {
+    console.error('--designations <fichier> est requis pour rédiger une fiche (D-501 §5).');
+    process.exit(1);
+  }
+  const designations = args.designations ? JSON.parse(await readFile(args.designations, 'utf8')) : null;
   const consignes = consignesVerifiees();
   const { claims, empreintesFausses } = await chargerClaimsLocaux(args.claims);
   if (empreintesFausses.length > 0) console.log(`Instantané des claims : ${empreintesFausses.length} claim(s) écarté(s), empreinte fausse.`);
@@ -251,7 +271,7 @@ async function main() {
 
   // Journaux des SDK coupés : au niveau « debug », ils imprimeraient le corps
   // des requêtes, donc le texte.
-  const outils = { anthropic: new Anthropic({ logLevel: 'off' }), openai: new OpenAI({ logLevel: 'off' }), consignes, claims };
+  const outils = { anthropic: new Anthropic({ logLevel: 'off' }), openai: new OpenAI({ logLevel: 'off' }), consignes, claims, designations };
   let echecs = 0;
   const taches = [...args.fiches.map(id => () => redigerFiche(id, outils)), ...args.termes.map(id => () => redigerLibelle(id, outils))];
   const ids = [...args.fiches, ...args.termes];

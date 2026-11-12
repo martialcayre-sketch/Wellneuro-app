@@ -83,11 +83,12 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
       return echec('notebook_invalide', 'Libellé de notebook invalide.', 400);
     }
 
-    // [[D-490]] : seulement les claims exclus de la recherche. La marque ne se
-    // pose que sur un claim VALIDE : le filtre n'a de sens que dans cet onglet.
+    // [[D-490]] : seulement les claims exclus de la recherche, dans les trois
+    // statuts — la marque se pose sur un claim VALIDE mais le suit s'il est
+    // remis en attente ou rejeté (D-490 §3, précision du 2026-11-12).
     const excluBrut = (searchParams.get('exclu') ?? '').trim();
-    if (excluBrut && (excluBrut !== '1' || statutBrut !== 'VALIDE')) {
-      return echec('exclu_invalide', 'Le filtre « exclus de la recherche » ne vaut que pour les claims validés.', 400);
+    if (excluBrut && excluBrut !== '1') {
+      return echec('exclu_invalide', 'Filtre « exclus de la recherche » invalide.', 400);
     }
 
     const limitBrut = Number(searchParams.get('limit') ?? '50');

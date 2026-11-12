@@ -32,7 +32,10 @@ import { ClesLienChamps, SAISIE_CLES_VIDE, etatSaisieCles, type SaisieClesLien }
 // Exclusion de la recherche ([[D-490]]) : sur un claim validé, « Exclure de la
 // recherche » (ou « Rétablir ») arme un motif obligatoire — la provenance —,
 // puis confirme ; un acte journalisé, sans toucher statut ni signature. Le
-// badge « Exclu de la recherche » se montre dans tous les onglets.
+// badge « Exclu de la recherche » se montre dans tous les onglets, et le
+// filtre « Exclus de la recherche seulement » y vaut aussi : il survit au
+// changement d'onglet (on suit un claim exclu remis en attente ou rejeté) ;
+// seule une recherche par identifiant le remet à zéro.
 //
 // Deux voies de décision, jamais une validation en masse aveugle :
 //  - « une par une » : arme/confirme claim par claim (défaut) ;
@@ -161,9 +164,9 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
     try {
       const filtreNotebook = notebook ? `&notebook=${encodeURIComponent(notebook)}` : '';
       const filtreClaim = rechercheCourante ? `&claim=${encodeURIComponent(rechercheCourante)}` : '';
-      // Le filtre des exclus ne vaut que dans l'onglet Validés (la route le
-      // refuse ailleurs) ; une recherche par identifiant le remet à zéro.
-      const filtreExclus = exclusCourant && statutCourant === 'VALIDE' ? '&exclu=1' : '';
+      // Le filtre des exclus vaut dans les trois onglets ; une recherche par
+      // identifiant le remet à zéro.
+      const filtreExclus = exclusCourant ? '&exclu=1' : '';
       const reponse = await fetch(
         `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}${filtreClaim}${filtreExclus}`,
       );
@@ -632,21 +635,19 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
         )}
       </form>
 
-      {statut === 'VALIDE' && (
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={seulementExclus}
-            disabled={enEnvoiGlobal}
-            onChange={(event) => {
-              setSeulementExclus(event.target.checked);
-              setOffset(0);
-            }}
-            className="h-4 w-4"
-          />
-          Exclus de la recherche seulement
-        </label>
-      )}
+      <label className="flex items-center gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          checked={seulementExclus}
+          disabled={enEnvoiGlobal}
+          onChange={(event) => {
+            setSeulementExclus(event.target.checked);
+            setOffset(0);
+          }}
+          className="h-4 w-4"
+        />
+        Exclus de la recherche seulement
+      </label>
 
       <div id="panneau-claims" role="tabpanel" aria-labelledby={idOngletActif} className="flex flex-col gap-5">
         {erreurDecision && (
@@ -711,10 +712,14 @@ export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
 
         {etat === 'chargee' && claims.length === 0 && recherche === null && (
           <div className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card">
-            {statut === 'EN_ATTENTE_VALIDATION'
-              ? 'Aucun claim en attente de validation. La file se remplit à l’ingestion d’un lot rédigé.'
-              : statut === 'VALIDE' && seulementExclus
-                ? 'Aucun claim validé n’est exclu de la recherche.'
+            {seulementExclus
+              ? statut === 'EN_ATTENTE_VALIDATION'
+                ? 'Aucun claim en attente n’est exclu de la recherche.'
+                : statut === 'VALIDE'
+                  ? 'Aucun claim validé n’est exclu de la recherche.'
+                  : 'Aucun claim rejeté n’est exclu de la recherche.'
+              : statut === 'EN_ATTENTE_VALIDATION'
+                ? 'Aucun claim en attente de validation. La file se remplit à l’ingestion d’un lot rédigé.'
                 : 'Aucun claim dans cet état.'}
           </div>
         )}
