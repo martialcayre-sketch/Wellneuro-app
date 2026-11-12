@@ -1300,74 +1300,78 @@ function DeclarationSuicide({
     } else onChange(null);
   }, [reponse, question, optionNon, onChange]);
 
+  // Le filet porte sur l'enveloppe : un `<legend>` s'inscrit dans la bordure de
+  // son `fieldset` et la couperait (revue de l'écart, `wn-reviewer`).
   return (
-    <fieldset className="border-t border-border pt-4" aria-describedby={idAide}>
-      <legend id={idLegende} className="text-sm font-semibold text-foreground">
-        Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
-      </legend>
-      <p id={idAide} className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
-      <div className="mt-2 flex gap-4">
-        {(['oui', 'non'] as const).map(valeur => (
-          <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
-            <input
-              type="radio"
-              name={`${idLegende}-reponse`}
-              value={valeur}
-              checked={reponse === valeur}
-              onChange={() => setReponse(valeur)}
-            />
-            {valeur === 'oui' ? 'Oui' : 'Non'}
-          </label>
-        ))}
-      </div>
-      {/* Revue `wn-reviewer`, P2-4 : sans question à réponses au choix, rien à
-          désigner — le dire, plutôt qu'une liste vide qui pousserait à « non ». */}
-      {reponse === 'oui' && designables.length === 0 && (
-        <p role="status" className="mt-2 text-xs text-status-danger">
-          Aucune question de ce questionnaire ne propose de réponses au choix : la question
-          concernée ne peut pas être désignée, et l’instrument ne peut pas être publié en l’état.
-        </p>
-      )}
-      {reponse === 'oui' && designables.length > 0 && (
-        <div className="mt-2 flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <label htmlFor={idQuestion} className="text-xs font-medium text-foreground">
-              Question concernée
+    <div className="border-t border-border pt-4">
+      <fieldset aria-describedby={idAide}>
+        <legend id={idLegende} className="text-sm font-semibold text-foreground">
+          Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
+        </legend>
+        <p id={idAide} className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
+        <div className="mt-2 flex gap-4">
+          {(['oui', 'non'] as const).map(valeur => (
+            <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
+              <input
+                type="radio"
+                name={`${idLegende}-reponse`}
+                value={valeur}
+                checked={reponse === valeur}
+                onChange={() => setReponse(valeur)}
+              />
+              {valeur === 'oui' ? 'Oui' : 'Non'}
             </label>
-            <Select
-              id={idQuestion}
-              value={questionId}
-              onChange={e => {
-                setQuestionId(e.target.value);
-                setOptionNon('');
-              }}
-            >
-              <option value="">Choisir une question</option>
-              {designables.map(q => (
-                <option key={q.id} value={q.id}>
-                  {q.texte}
-                </option>
-              ))}
-            </Select>
-          </div>
-          {question && (
+          ))}
+        </div>
+        {/* Revue `wn-reviewer`, P2-4 : sans question à réponses au choix, rien à
+            désigner — le dire, plutôt qu'une liste vide qui pousserait à « non ». */}
+        {reponse === 'oui' && designables.length === 0 && (
+          <p role="status" className="mt-2 text-xs text-status-danger">
+            Aucune question de ce questionnaire ne propose de réponses au choix : la question
+            concernée ne peut pas être désignée, et l’instrument ne peut pas être publié en l’état.
+          </p>
+        )}
+        {reponse === 'oui' && designables.length > 0 && (
+          <div className="mt-2 flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor={idOption} className="text-xs font-medium text-foreground">
-                Réponse qui signifie « non »
+              <label htmlFor={idQuestion} className="text-xs font-medium text-foreground">
+                Question concernée
               </label>
-              <Select id={idOption} value={optionNon} onChange={e => setOptionNon(e.target.value)}>
-                <option value="">Choisir une réponse</option>
-                {question.options.map(o => (
-                  <option key={o.v} value={String(o.v)}>
-                    {o.l}
+              <Select
+                id={idQuestion}
+                value={questionId}
+                onChange={e => {
+                  setQuestionId(e.target.value);
+                  setOptionNon('');
+                }}
+              >
+                <option value="">Choisir une question</option>
+                {designables.map(q => (
+                  <option key={q.id} value={q.id}>
+                    {q.texte}
                   </option>
                 ))}
               </Select>
             </div>
-          )}
-        </div>
-      )}
-    </fieldset>
+            {question && (
+              <div className="flex flex-col gap-1">
+                <label htmlFor={idOption} className="text-xs font-medium text-foreground">
+                  Réponse qui signifie « non »
+                </label>
+                <Select id={idOption} value={optionNon} onChange={e => setOptionNon(e.target.value)}>
+                  <option value="">Choisir une réponse</option>
+                  {question.options.map(o => (
+                    <option key={o.v} value={String(o.v)}>
+                      {o.l}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+          </div>
+        )}
+      </fieldset>
+    </div>
   );
 }
 
