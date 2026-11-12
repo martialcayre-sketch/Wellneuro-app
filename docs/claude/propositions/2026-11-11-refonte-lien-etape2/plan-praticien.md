@@ -72,7 +72,7 @@ toucher (`socle-commun.md`, dernière règle).
 | Lot | Objet | Fiches | Dépend de | Taille |
 |---|---|---|---|---|
 | PRA-1 | Shell et navigation | X02 (praticien), P01, P02, P35 pour l'activation | socle, §1 | moyenne |
-| PRA-2 | Écrans de travail transverses | P01–P03, P33, P35, P36, P53–P57, X01 | PRA-1 | grande |
+| PRA-2 | Écrans de travail transverses | P01–P03, P33, P35, P36, P53–P57, X01 | PRA-1 | grande, en 2a puis 2b |
 | PRA-3 | Fiche-trajectoire | P04–P32, P58–P60 | PRA-1 | très grande, en 3a puis 3b |
 | PRA-4 | Bibliothèque et ateliers | P37–P50 | PRA-1 | grande |
 | PRA-5 | Copilote, synthèses, documents, impression | P34, P51, P52, X06 | PRA-3a | moyenne |
@@ -119,6 +119,25 @@ et vise `<main id="contenu">` (celui de `NavBar` ; celui de la page de
 connexion, à créer) ; états de lecture explicites
 (X03), jamais un échec maquillé en liste vide ; ouverture depuis une carte du Fil sur le bon contenu (cadrage v3
 l.551).
+
+Prototype validé le 2026-11-12 (« Oui, tout validé ») ; arbitrages inscrits
+en complément DOC-6 de [[D-481]], textes T-17 à T-19 inscrits dans
+[[D-488]] par DOC-6 (Q1 a) :
+
+- **2a** : lien d'évitement (T-16), connexion, Patients et création de
+  dossier, Agenda. Titres de page en `h1` (Q2 a) ; « Nouveau patient »
+  principal, « Nouvelle consultation » secondaire (Q3 a) ; faux vides
+  corrigés avec les phrases existantes, « Réessayer » (T-17) sur le tableau
+  Patients et la liste de l'Agenda, erreurs de l'Agenda séparées (Q4 b) ;
+  liste avant formulaire au téléphone dans l'Agenda (Q5 a) ; logo Google
+  gardé (Q6 a) ; marque Empreinte dans le `h1` de la connexion (Q7 a) ;
+  connexion sans décor jusqu'à COM-1 (Q8 a) ; Patients sans colonne
+  Téléphone à la tablette, blocs empilés au téléphone (Q11 a).
+- **2b** : Fil du jour, liste des fiches-trajectoires, Comptes du cabinet,
+  Correspondance, Confiance & droits, Paramètres. Badge « Météo d'adhésion
+  indisponible » (T-18) sur une carte du Fil (Q9 b) ; Confiance & droits en
+  file compacte et détail, dépôt choisi dans `?depot=` sur la même route,
+  « Retour à la file » (T-19) à la tablette et au téléphone (Q10 b).
 
 ### PRA-3 — Fiche-trajectoire
 
