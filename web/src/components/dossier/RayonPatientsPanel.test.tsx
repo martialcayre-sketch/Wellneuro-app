@@ -893,3 +893,41 @@ describe('RayonPatientsPanel — lecture du tableau en échec (PRA-2a)', () => {
     expect(cellules.every(c => c.getAttribute('role') === 'cell')).toBe(true);
   });
 });
+
+// T-17 « Réessayer » ([[D-488]], DOC-6) : relit le seul tableau, avec la
+// recherche, le tri et la page de l'écran ; la liste complète n'est pas relue.
+describe('RayonPatientsPanel — « Réessayer » sous l’échec du tableau (T-17)', () => {
+  it('relit le seul tableau, recherche et tri gardés', async () => {
+    let enPanne = true;
+    const appels: { url: string }[] = [];
+    stubFetch({
+      surPatients: url => {
+        appels.push({ url });
+        if (url.includes('page=') && enPanne) throw new Error('réseau');
+        return { patients: [PATIENT], assignations: [], pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1 } };
+      },
+    });
+    render(<RayonPatientsPanel />);
+    await screen.findByRole('alert');
+    fireEvent.change(screen.getByPlaceholderText('Rechercher (nom, prénom, email)'), { target: { value: 'Nicola' } });
+    await waitFor(() => expect(appels.some(a => a.url.includes('search=Nicola'))).toBe(true), { timeout: 2000 });
+    await screen.findByRole('button', { name: 'Réessayer' });
+    const listesCompletes = appels.filter(a => a.url === '/api/praticien/patients').length;
+    enPanne = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    const dernier = appels.filter(a => a.url.includes('page=')).at(-1)!.url;
+    expect(dernier).toContain('search=Nicola');
+    expect(dernier).toContain('sortBy=nom');
+    expect(appels.filter(a => a.url === '/api/praticien/patients').length).toBe(listesCompletes);
+    expect((screen.getByPlaceholderText('Rechercher (nom, prénom, email)') as HTMLInputElement).value).toBe('Nicola');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('un tableau lu n’offre pas « Réessayer »', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+  });
+});

@@ -21,6 +21,18 @@ const LIBELLE_RATTACHEMENT = {
   autre_produit: 'Le patient associe cet effet à un autre produit (traité comme « Je ne sais pas »).',
 } as const;
 
+/**
+ * Le brouillon d'un avis : TENU PAR LA PAGE (PRA-2b, [[D-481]] Q10 b). Le
+ * détail d'un dépôt se quitte pour un autre, puis se retrouve : la saisie doit
+ * survivre au démontage de ce composant. Rien ne part sans « Enregistrer ».
+ */
+export type BrouillonAvis = {
+  verdict: 'implique' | 'non_implique' | '';
+  elementActionId: string;
+  amenagement: Amenagement | '';
+};
+export const BROUILLON_AVIS_VIDE: BrouillonAvis = { verdict: '', elementActionId: '', amenagement: '' };
+
 /** Le formulaire d'avant : « oui » au programme, sans élément désigné (D-281 §5). */
 const LIBELLE_FORMULAIRE_AVANT =
   'Le patient associe cet effet à son programme, sans désigner d’élément (formulaire d’avant).';
@@ -38,6 +50,8 @@ export function ValidationEffetIndesirable({
   debutSymptomesLe,
   pauseServie,
   onEnregistre,
+  brouillon: brouillonTenu,
+  onBrouillon,
 }: {
   reportId: string;
   validation: Validation;
@@ -45,6 +59,9 @@ export function ValidationEffetIndesirable({
   debutSymptomesLe: string | null;
   pauseServie: boolean;
   onEnregistre: () => Promise<void>;
+  /** Brouillon tenu par l'appelant ; sans lui, le composant le tient seul. */
+  brouillon?: BrouillonAvis;
+  onBrouillon?: (brouillon: BrouillonAvis) => void;
 }) {
   const designeParPatient = validation.rattachement === 'element';
   const formulaireAvant = validation.rattachement === null;
@@ -58,9 +75,13 @@ export function ValidationEffetIndesirable({
   const courant = validation.verdicts.find(v => v.id === validation.verdictCourantId) ?? null;
   const corriges = validation.verdicts.filter(v => v.id !== validation.verdictCourantId);
 
-  const [verdict, setVerdict] = useState<'implique' | 'non_implique' | ''>('');
-  const [elementActionId, setElementActionId] = useState('');
-  const [amenagement, setAmenagement] = useState<Amenagement | ''>('');
+  const [brouillonLocal, setBrouillonLocal] = useState<BrouillonAvis>(BROUILLON_AVIS_VIDE);
+  const brouillon = brouillonTenu ?? brouillonLocal;
+  const majBrouillon = onBrouillon ?? setBrouillonLocal;
+  const { verdict, elementActionId, amenagement } = brouillon;
+  const setVerdict = (v: BrouillonAvis['verdict']) => majBrouillon({ ...brouillon, verdict: v });
+  const setElementActionId = (id: string) => majBrouillon({ ...brouillon, elementActionId: id });
+  const setAmenagement = (a: Amenagement) => majBrouillon({ ...brouillon, amenagement: a });
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -92,9 +113,7 @@ export function ValidationEffetIndesirable({
         setErreur(corps.error);
         return;
       }
-      setVerdict('');
-      setElementActionId('');
-      setAmenagement('');
+      majBrouillon(BROUILLON_AVIS_VIDE);
       await onEnregistre();
     } catch {
       setErreur('Erreur réseau. Réessayez.');
@@ -107,7 +126,21 @@ export function ValidationEffetIndesirable({
     || (verdict === 'implique' && amenagement !== '' && (designeParPatient || sansElement || elementActionId !== ''));
 
   return (
-    <section className="mt-3 rounded-lg border border-border bg-muted/40 p-3" aria-label="Avis sur l’implication">
+    // TOUJOURS DÉPLIÉ, jamais sous un accordéon (PRA-2b). Filet de contrôle et
+    // bandeau brume en tête, qui dit l'état de l'avis : pas le rouge d'erreur.
+    <section className="mt-3 overflow-hidden rounded-xl border border-control-border bg-surface" aria-label="Avis sur l’implication">
+      <p className="bg-voice-practitioner px-4 py-3 text-sm text-foreground">
+        {courant
+          ? <>
+            Avis en vigueur : <strong>{LIBELLE_VERDICT[courant.verdict]}</strong>
+            {courant.verdict === 'implique' && <>
+              {' — '}{elementDeLAvis(courant.elementActionId)}, aménagement : {LIBELLE_AMENAGEMENT[courant.amenagement as Amenagement] ?? courant.amenagement}
+            </>}
+            <span className="text-xs text-muted-foreground"> (rendu le {formatHorodatage(courant.renduLe)} par {courant.renduPar})</span>
+          </>
+          : <strong>En attente de votre avis.</strong>}
+      </p>
+      <div className="px-4 pb-4 pt-3">
       <p className="text-sm text-foreground">
         {designeParPatient
           ? <>Élément désigné par le patient : <strong>{titreDe(validation.elementDesigne?.actionId ?? null)}</strong></>
@@ -120,17 +153,6 @@ export function ValidationEffetIndesirable({
         {' · '}Début des symptômes : {debutSymptomesLe ? formatDate(debutSymptomesLe) : 'non renseigné'}
       </p>
 
-      <p className="text-sm text-foreground mt-2">
-        {courant
-          ? <>
-            Avis en vigueur : <strong>{LIBELLE_VERDICT[courant.verdict]}</strong>
-            {courant.verdict === 'implique' && <>
-              {' — '}{elementDeLAvis(courant.elementActionId)}, aménagement : {LIBELLE_AMENAGEMENT[courant.amenagement as Amenagement] ?? courant.amenagement}
-            </>}
-            <span className="text-xs text-muted-foreground"> (rendu le {formatHorodatage(courant.renduLe)} par {courant.renduPar})</span>
-          </>
-          : <strong>En attente de votre avis.</strong>}
-      </p>
       {corriges.length > 0 && (
         <details className="mt-1">
           <summary className="text-xs text-muted-foreground cursor-pointer">Avis corrigés ({corriges.length})</summary>
@@ -244,6 +266,7 @@ export function ValidationEffetIndesirable({
           </Button>
         </div>
       </form>
+      </div>
     </section>
   );
 }

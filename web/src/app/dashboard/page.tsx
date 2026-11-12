@@ -52,9 +52,10 @@ export default function DashboardPage() {
         <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
           {dateDuJour} · Interface ambiante
         </p>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
+        {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
           Le Fil du jour
-        </h2>
+        </h1>
         <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
           L&apos;interface anticipe l&apos;étape au lieu d&apos;attendre la navigation —
           chaque carte dit pourquoi elle apparaît maintenant, tout reste refusable,

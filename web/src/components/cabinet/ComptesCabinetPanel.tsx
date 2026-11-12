@@ -58,7 +58,7 @@ function TableauDesComptes<K extends string>({
 }) {
   return (
     <section className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-card">
-      <h3 className="font-display text-xl font-semibold text-foreground">{titre}</h3>
+      <h2 className="font-display text-xl font-semibold text-foreground">{titre}</h2>
       {note && <p className="text-sm text-muted-foreground">{note}</p>}
       <p className="text-base font-medium text-foreground">{libelleEffectif(tableau.effectif)}</p>
       {tableau.repartitionMasquee && (
@@ -82,7 +82,7 @@ function TableauDesComptes<K extends string>({
               <th scope="row" className="py-2 pr-4 text-left font-normal text-foreground">
                 {libelles[ligne.cle]}
               </th>
-              <td className="py-2 text-right tabular-nums text-foreground">
+              <td className="py-2 text-right font-mono tabular-nums text-foreground">
                 {ligne.compte === 'masqué' ? <span className="text-muted-foreground">masqué</span> : ligne.compte}
               </td>
             </tr>
