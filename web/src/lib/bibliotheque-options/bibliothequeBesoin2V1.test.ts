@@ -188,6 +188,12 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
   it('aucune option sans précautions documentées : non cohérente, donc non signable (D-480 §5.1)', () => {
     const sansPrecautions = { ...OPTION.renvois, precautions: [] };
     expect(incoherencesDeBibliotheque(avec({ renvois: sansPrecautions }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:precautions']);
+    // Une liste à trous ou à valeur non textuelle n'est pas une précaution documentée (revue de #2006).
+    for (const precautions of [new Array<string>(1), [undefined], [42]] as unknown as string[][]) {
+      const structure = avec({ renvois: { ...OPTION.renvois, precautions } });
+      expect(incoherencesDeBibliotheque(structure, FU_SYNTH)).toEqual(['OPT_SYNTH_1:precautions:renvoi']);
+      expect(signee(signeeSur(structure), structure)).toBe(false);
+    }
     // Les autres rubriques vides restent cohérentes ici : leur portée est un contrôle de la PR 4.
     expect(OPTION.renvois.duree).toEqual([]);
     expect(incoherencesDeBibliotheque(avec({}), FU_SYNTH)).toEqual([]);

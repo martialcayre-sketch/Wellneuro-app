@@ -185,8 +185,13 @@ export function incoherencesDeBibliotheque(
         a(`${rubrique}:renvoi`);
         continue;
       }
-      const lus = renvois.map(lireRenvoi);
-      if (lus.some(r => r === null) || doublons(renvois)) a(`${rubrique}:renvoi`);
+      // `Array.from` rend chaque case, trous compris (`new Array(1)`), que
+      // `map` et `some` sauteraient : une case absente ou qui n'est pas un
+      // texte est un renvoi mal formé (revue CodeRabbit de #2006).
+      const valeurs: unknown[] = Array.from(renvois);
+      if (valeurs.some(v => typeof v !== 'string' || lireRenvoi(v) === null) || doublons(valeurs)) {
+        a(`${rubrique}:renvoi`);
+      }
       // AUCUNE OPTION SANS PRÉCAUTIONS DOCUMENTÉES ([[D-480]] §5.1, cadrage
       // `:47`, `:260`, DC-38) : une option sans renvoi en précautions rend la
       // structure incohérente, donc non signable. Entré à la PR 3 sur

@@ -34,8 +34,9 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   des fiches d'usage. Une option peut couvrir plusieurs populations. Une
   liste d'un élément reproduit le cas d'une fiche.
 - **Rubriques** : les neuf de la migration, toutes présentes et aucune
-  autre. Une liste de renvois vide signifie « non documentée » : ce que cela
-  emporte relève de la PR 4.
+  autre. Une liste de renvois vide signifie « non documentée ». Pour les
+  précautions, cette PR la refuse déjà (voir plus bas). Pour les huit autres
+  rubriques, ce que cela emporte relève de la PR 4.
 - **Empreinte des fiches d'usage** : `shaFichesUsage` est inscrit aux
   métadonnées, recopié à la signature. Il n'entre pas dans les cinq termes :
   `etatBibliotheque()` rend `signee`, `a_relire` (fiches d'usage re-signées
