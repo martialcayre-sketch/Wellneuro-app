@@ -165,10 +165,13 @@ export function incoherencesDeBibliotheque(
     if (!estIdentifiantOption(option.id)) a('format');
     if (structure.optionsRetirees.includes(option.id)) a('reattribuee');
     if (!fichesUsage.hypotheses.includes(option.hypothese)) a('hypothese');
+    // Chaque case, trous compris (`new Array(1)` : longueur 1, aucune
+    // population) — `some` sauterait la case absente (passe Codex sur #2006).
+    const populations: unknown[] = Array.isArray(option.populations) ? Array.from(option.populations) : [];
     if (
-      option.populations.length === 0 ||
-      doublons(option.populations) ||
-      option.populations.some(p => !fichesUsage.populations.includes(p))
+      populations.length === 0 ||
+      doublons(populations) ||
+      populations.some(p => typeof p !== 'string' || !fichesUsage.populations.includes(p))
     ) {
       a('populations');
     }

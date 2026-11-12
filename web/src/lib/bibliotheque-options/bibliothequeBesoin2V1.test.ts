@@ -284,6 +284,18 @@ describe('état : « à relire » après une re-signature des fiches d’usage (
     expect(etatBibliotheque(metadata, structure, FU_SYNTH, metaFU)).toBe('signee');
   });
 
+  // Passe Codex sur #2006 : `new Array(1)` a une longueur de 1 et aucune
+  // population ; `some` sautait la case absente et l'option se signait.
+  it('une liste de populations à trous ou non textuelle ne se signe par aucun des deux prédicats', () => {
+    for (const populations of [new Array<string>(1), [undefined], [42], ['POP_SYNTH', undefined]]) {
+      const trouee = avec({ populations: populations as unknown as string[] });
+      const metaTrouee = { ...signeeSur(trouee), shaFichesUsage: sha256(JSON.stringify(FU_SYNTH)) };
+      expect(incoherencesDeBibliotheque(trouee, FU_SYNTH)).toEqual(['OPT_SYNTH_1:populations']);
+      expect(bibliothequeSignee(metaTrouee, trouee, FU_SYNTH)).toBe(false);
+      expect(etatBibliotheque(metaTrouee, trouee, FU_SYNTH, metaFU)).toBe('non_signee');
+    }
+  });
+
   it('fiches d’usage re-signées sur une structure modifiée : à relire, sans réécriture', () => {
     const resignees: StructureFichesUsage = { ...FU_SYNTH, populations: ['POP_SYNTH', 'POP_AUTRE'] };
     expect(incoherencesDeBibliotheque(structure, resignees)).toEqual([]);

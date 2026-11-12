@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estUnTest, fichiersSource, lire, specificateursImportes } from '../bio-parcours/balayageSources';
+import { estFichierSource, estUnTest, fichiersSource, lire, specificateursSyntaxiques } from '../bio-parcours/balayageSources';
 
 // [[D-480]] §8 — LA BIBLIOTHÈQUE N'AUTORISE AUCUNE PRESCRIPTION. Aucun
 // parcours, courrier, portail, document remis ni appel à un modèle ne la lit.
@@ -9,6 +9,11 @@ import { estUnTest, fichiersSource, lire, specificateursImportes } from '../bio-
 // LES LECTEURS ADMIS s'ajoutent nommément, par la PR qui les apporte : l'atelier
 // (PR 5) et le cockpit sous drapeau éteint (PR 6) du découpage de D-480. Un
 // parcours, un courrier, le portail ou un appel à un modèle n'y entrent jamais.
+//
+// LE PARSEUR, PAS LE TEXTE : les spécificateurs sont lus par
+// `specificateursSyntaxiques`, décodés — un commentaire entre `import` et la
+// chaîne, ou un échappement dans le chemin, ne fait pas sortir un importeur du
+// banc (passe Codex sur #2006).
 const DOSSIER = 'web/src/lib/bibliotheque-options/';
 const LECTEURS_ADMIS: readonly string[] = [];
 
@@ -22,25 +27,47 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     expect(sources).toContain(`${DOSSIER}vocabulaire.ts`);
   });
 
+  // CONTRE-ÉPREUVE du balayage : un `.js`/`.jsx` de production en est
+  // (`allowJs`) ; le retirer du filtre ferait rougir ce banc.
+  it('le balayage admet .ts, .tsx, .js et .jsx, et rien d’autre', () => {
+    for (const f of ['a.ts', 'a.tsx', 'a.js', 'a.jsx']) expect(estFichierSource(`web/src/${f}`)).toBe(true);
+    for (const f of ['a.json', 'a.css', 'a.md', 'a.d.ts.map']) expect(estFichierSource(`web/src/${f}`)).toBe(false);
+  });
+
   it('aucun code de production hors du dossier n’importe la bibliothèque', () => {
     const importeurs = sources
       .filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER))
-      .filter(chemin => specificateursImportes(lire(chemin)).some(importeLaBibliotheque));
+      .filter(chemin => specificateursSyntaxiques(lire(chemin), chemin).some(importeLaBibliotheque));
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
   });
 
   // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif,
-  // statique, dynamique ou CommonJS — est vue ; une prose qui cite le dossier
-  // ne l'est pas.
-  it('le détecteur voit un import et ignore une citation en commentaire', () => {
-    const source = [
+  // statique, dynamique ou CommonJS, masqué par un commentaire ou un
+  // échappement — est vue ; une prose qui cite le dossier ne l'est pas.
+  it('le détecteur voit chaque forme d’import et ignore une citation', () => {
+    const formes = [
       "import { BIBLIOTHEQUE_BESOIN2_V1 } from '@/lib/bibliotheque-options/bibliothequeBesoin2V1';",
       "export { RUBRIQUES_OPTION } from '../bibliotheque-options/vocabulaire';",
       "const v = await import('@/lib/bibliotheque-options/vocabulaire');",
       "const b = require('./bibliotheque-options/bibliothequeBesoin2V1');",
       'const g = await import(`@/lib/bibliotheque-options/vocabulaire`);',
+      'import/**/"@/lib/bibliotheque-options/vocabulaire";',
+      'import { BIBLIOTHEQUE_BESOIN2_V1 }\n  from "@/lib/\\u0062ibliotheque-options/bibliothequeBesoin2V1";',
+      "import r = require('@/lib/bibliotheque-options/vocabulaire');",
+      "type T = typeof import('@/lib/bibliotheque-options/vocabulaire');",
+    ];
+    for (const forme of formes) {
+      expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
+    }
+    for (const chemin of ['x.js', 'x.jsx']) {
+      const source = "const b = require('./bibliotheque-options/vocabulaire');";
+      expect(specificateursSyntaxiques(source, chemin).filter(importeLaBibliotheque)).toHaveLength(1);
+    }
+    const prose = [
       '// voir web/src/lib/bibliotheque-options/',
+      "/* import '@/lib/bibliotheque-options/vocabulaire' */",
+      "const texte = 'import from @/lib/bibliotheque-options/vocabulaire';",
     ].join('\n');
-    expect(specificateursImportes(source).filter(importeLaBibliotheque)).toHaveLength(5);
+    expect(specificateursSyntaxiques(prose, 'x.ts').filter(importeLaBibliotheque)).toEqual([]);
   });
 });

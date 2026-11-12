@@ -1,6 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  createSourceFile, forEachChild, isCallExpression, isExportDeclaration, isExternalModuleReference, isIdentifier,
+  isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isStringLiteralLike, ScriptKind, ScriptTarget, SyntaxKind,
+  type Node,
+} from 'typescript';
 
 // Outillage des bancs BP-01 ([[D-266]]) — lecture du SOURCE, jamais exécuté
 // par l'application : aucun module de production ne l'importe (le banc des
@@ -22,8 +27,12 @@ export function fichiersSource(): string[] {
     ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/src'],
     { cwd: RACINE, encoding: 'utf8' },
   );
-  // `.js`/`.jsx` aussi : `allowJs` les admet en production (revue de #2006).
-  return [...new Set(sortie.split('\n').filter(f => /\.[jt]sx?$/.test(f)))].sort();
+  return [...new Set(sortie.split('\n').filter(estFichierSource))].sort();
+}
+
+/** `.js`/`.jsx` aussi : `allowJs` les admet en production (revue de #2006). */
+export function estFichierSource(chemin: string): boolean {
+  return /\.[jt]sx?$/.test(chemin);
 }
 
 /** Un fichier de test (banc compris) — hors du périmètre « code de production ». */
@@ -49,6 +58,40 @@ export function specificateursImportes(source: string): string[] {
   const sansCommentaires = retirerLignesDeCommentaire(source);
   const motif = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"`])([^'"`\n]+)\1/g;
   return [...sansCommentaires.matchAll(motif)].map(m => m[2]);
+}
+
+/**
+ * Spécificateurs de module lus par le PARSEUR TypeScript, DÉCODÉS : déclarations
+ * `import`/`export … from`, `import x = require('x')`, `import('x')`,
+ * `require('x')` et `typeof import('x')`, sur un littéral chaîne ou un gabarit
+ * sans expression. Là où `specificateursImportes` lit le texte, celui-ci ne
+ * manque ni un commentaire glissé entre le mot-clé et la chaîne
+ * (`import/**\/"x"`) ni une séquence d'échappement dans le chemin
+ * (`"b…"`) — passe Codex sur #2006. Une prose en commentaire n'est pas un
+ * nœud : elle n'est jamais lue.
+ */
+export function specificateursSyntaxiques(source: string, chemin = 'source.tsx'): string[] {
+  const nature = /\.jsx?$/.test(chemin) ? (chemin.endsWith('x') ? ScriptKind.JSX : ScriptKind.JS)
+    : chemin.endsWith('.ts') ? ScriptKind.TS : ScriptKind.TSX;
+  const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, false, nature);
+  const trouves: string[] = [];
+  const litteral = (n: Node | undefined) => {
+    if (n && isStringLiteralLike(n)) trouves.push(n.text);
+  };
+  const visiter = (n: Node): void => {
+    if (isImportDeclaration(n) || isExportDeclaration(n)) litteral(n.moduleSpecifier);
+    else if (isExternalModuleReference(n)) litteral(n.expression);
+    else if (isImportTypeNode(n) && isLiteralTypeNode(n.argument)) litteral(n.argument.literal);
+    else if (
+      isCallExpression(n) &&
+      (n.expression.kind === SyntaxKind.ImportKeyword || (isIdentifier(n.expression) && n.expression.text === 'require'))
+    ) {
+      litteral(n.arguments[0]);
+    }
+    forEachChild(n, visiter);
+  };
+  visiter(fichier);
+  return trouves;
 }
 
 /**

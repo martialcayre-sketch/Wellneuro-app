@@ -108,6 +108,24 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   - commentaire §5.4 rectifié.
 
   Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 980 tests.
+- Passe Codex du responsable sur `fb80151b` : BLOQUER, deux P1 confirmés et
+  toujours présents dans `eec057ad`, corrigés ensuite :
+  - P1-1 : une liste de populations à trous (`new Array(1)`) se signait.
+    `some` sautait la case absente. Chaque case est maintenant lue, trous
+    compris, et doit être un texte déclaré. Un banc couvre `new Array(1)`,
+    `[undefined]`, `[42]` et une liste mixte. Il vérifie le refus par
+    `incoherencesDeBibliotheque`, `bibliothequeSignee` et `etatBibliotheque`.
+  - P1-2 : le banc §8 lisait les imports dans le texte, d'où deux trous. Un
+    commentaire glissé entre `import` et la chaîne (`import/**/"…"`) passait,
+    et un échappement dans le chemin (`b…`) aussi. Le banc lit
+    désormais les spécificateurs avec le parseur TypeScript, décodés, par
+    `specificateursSyntaxiques`, nouvel export de `balayageSources`. Les
+    autres bancs gardent `specificateursImportes`, sans changement. Ajouts :
+    contre-épreuve des deux formes, de `import x = require`, de
+    `typeof import` et du `require` en `.js`/`.jsx` ; contre-épreuve du
+    filtre de balayage `.js`/`.jsx` (`estFichierSource`).
+
+  Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 981 tests.
 
 ## Problèmes ouverts
 
@@ -122,10 +140,16 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   exécutable. Le format n'admet `information_manquante` que pour la dose
   (§4, consigne du lot). Pour les autres rubriques, une liste vide tient lieu
   de « non documentée ». À trancher à la PR 4, qui juge l'exécutabilité.
-- **Passe Codex** : la politique de revue la rend obligatoire pour un module
-  clinique signé de la campagne BIO-PARCOURS (bibliothèque d'options). C'est
-  un geste manuel du responsable (`$wellneuro-pr-review`). La PR n'est
-  déclarée « prête » qu'après son verdict.
+- **Passe Codex** : obligatoire pour un module clinique signé de la campagne
+  BIO-PARCOURS (bibliothèque d'options), geste manuel du responsable
+  (`$wellneuro-pr-review`). La première passe a rendu BLOQUER ; ses deux P1
+  sont corrigés. La PR n'est déclarée « prête » qu'après le verdict d'une
+  contre-passe sur la nouvelle tête.
+- **Les autres bancs de garde** lisent toujours les imports dans le texte
+  (`specificateursImportes`). Ils restent ouverts aux deux formes de
+  contournement relevées par Codex. Leur passage au parseur touche une
+  quinzaine de bancs hors de ce lot ; il est routé vers la PR 4, qui pose la
+  garde de consommation.
 - Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
   passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
   Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
