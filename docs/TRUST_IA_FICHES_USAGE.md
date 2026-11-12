@@ -48,7 +48,8 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v2` (`D-501`, qui remplace la v1 avant tout envoi).
+`fiche-usage-v2` (`D-501`, qui remplace la v1 avant tout envoi ; relue par
+Codex, puis approuvée par le responsable le 2026-11-12).
 
 ## Ce qui est envoyé aux fournisseurs d'IA
 

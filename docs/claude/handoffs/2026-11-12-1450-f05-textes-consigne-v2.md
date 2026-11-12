@@ -3,8 +3,10 @@
 ## Branche et état Git
 
 `f05-textes-cadrage`, créée depuis `origin/main` (16c29f6f) dans le worktree
-`b-fiche-usage-iode-selenium`. Un commit (D-501), poussé ; PR ouverte. Le
-préalable #2020 était déjà mergé par l'intégrateur (16c29f6f).
+`b-fiche-usage-iode-selenium`. Commit D-501, fusion de `origin/main`
+(07644dfc, sans conflit, sur arbitrage du responsable), puis commit de
+l'approbation ; PR #2023. Le préalable #2020 était déjà mergé par
+l'intégrateur (16c29f6f).
 
 ## Objectif
 
@@ -17,7 +19,7 @@ préparer l'outil avant le premier envoi, comme l'a arbitré le responsable.
   (1) pilote fer (six fiches, 21 rubriques), puis un dossier par lot ;
   (2) consigne v2 **d'abord**, contre la recommandation ; (3) les libellés
   sont rédigés par l'outil.
-- D-501 (proposée) : axes signés et marque des claims sous réserve
+- D-501 (acceptée, v2 approuvée par le responsable) : axes signés et marque des claims sous réserve
   d'indication dans le message ; règle des libellés d'hypothèse de D-477 §2
   dans la consigne. Modèles par défaut inchangés (arbitrage 25).
 
@@ -42,9 +44,9 @@ préparer l'outil avant le premier envoi, comme l'a arbitré le responsable.
 
 ## Problèmes ouverts
 
-- **La v2 doit être relue par le responsable avant le merge** (D-501,
-  statut). La consigne nomme le marqueur pour l'interdire : ce point est à
-  confirmer à la relecture.
+- Aucun sur la consigne : la v2 a été relue (avis Codex favorable, nom du
+  marqueur conservé), puis approuvée par le responsable le 2026-11-12 ;
+  D-501 est acceptée.
 - L'instantané local des claims (`draft-LOT_004_2026-07-25.json`) ne contient
   pas les 599 claims épinglés : il faut l'extraire de la production par
   conteneur, en lecture seule (gzip puis base64), vers
