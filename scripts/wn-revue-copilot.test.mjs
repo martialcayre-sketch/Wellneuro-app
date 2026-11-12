@@ -160,8 +160,15 @@ test('arguments : --quota ou un numéro, rien d’autre', () => {
   assert.equal(r.status, SORTIE_USAGE);
 });
 
-test('câblage : wn-merge, la règle 1.6 et D-468 nomment le lecteur', () => {
-  assert.match(lireFichier('.claude/skills/wn-merge/SKILL.md'), /wn-revue-copilot\.mjs/);
-  assert.match(lireFichier('.claude/rules/pr-revue-et-release-db.md'), /wn-revue-copilot\.mjs/);
+// Depuis D-499 (2026-11-12), Copilot n'est plus demandé : wn-merge et la
+// règle 1.6 ne câblent plus ce lecteur, ils nomment D-499 et le lecteur de
+// PR-Agent. D-468 garde la trace du lecteur, qui reste utilisable à la main.
+test('câblage : D-468 nomme le lecteur ; wn-merge et la règle 1.6 suivent D-499', () => {
   assert.match(lireFichier('docs/decisions/D-468.md'), /wn-revue-copilot\.mjs/);
+  for (const fichier of ['.claude/skills/wn-merge/SKILL.md', '.claude/rules/pr-revue-et-release-db.md']) {
+    const texte = lireFichier(fichier);
+    assert.match(texte, /D-499/);
+    assert.match(texte, /wn-revue-pr-agent\.mjs/);
+    assert.doesNotMatch(texte, /--add-reviewer @copilot/);
+  }
 });
