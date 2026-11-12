@@ -297,7 +297,10 @@ export function BlocContextePrelevement({
         </div>
       )}
 
-      <DeclarationsDuDossier idPatient={idPatient} />
+      {/* `key` : un autre dossier remonte l'encart, rien du précédent ne reste
+          affiché, même si la lecture suivante échoue (revue PR-Agent de
+          #2038, « données périmées »). */}
+      <DeclarationsDuDossier key={idPatient} idPatient={idPatient} />
     </fieldset>
   );
 }

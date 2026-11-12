@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-`feat/bp05-code-contexte-prelevement` tourne en session concurrente, dans le worktree `.claude/worktrees/b-bp05-migration`. Elle est créée sur `origin/main` après le merge de #2018 (c85853730), puis avancée par `--ff-only` jusqu'à `36f3bee21`. La PR ne contient ni migration ni `schema.prisma`, et ne touche pas `web/src/lib/clinical/**` : aucune release-db n'est due. Régime : déclarée « prête @<sha> » à l'intégrateur.
+`feat/bp05-code-contexte-prelevement` tourne en session concurrente, dans le worktree `.claude/worktrees/b-bp05-migration`. Elle est créée sur `origin/main` après le merge de #2018 (c85853730), puis avancée par `--ff-only` jusqu'à `a84e5a697`. **Arbitrage du responsable du 2026-11-12** : `origin/main` (`470700859`, #2025 à #2044, sans conflit) est mergé dans la branche pour corriger le constat « données périmées » de PR-Agent. La PR ne contient ni migration ni `schema.prisma`, et ne touche pas `web/src/lib/clinical/**` : aucune release-db n'est due. Régime : déclarée « prête @<sha> » à l'intégrateur.
 
 ## Objectif
 
@@ -97,7 +97,17 @@
   - **5**, espace supprimé sur une ligne voisine de la garde des seuils : **corrigé**, la ligne retrouve son état de `main` ;
   - **6**, assertion E2E « non recueilli » à 0 : **écartée**. T2 et T3 provisionnent une base éphémère neuve, et le seed n'écrit aucun résultat de biologie ;
   - **Q1** et **Q2**, moment de la journée : **routées au responsable**, voir Problèmes ouverts. **Q3**, validation de B1 et B2 : donnée par le responsable en session, sur question à options.
-- T1 complet et T3 : voir la PR.
+- Validations de l'écart `90089682` → `f49e810b` (4 lignes de code, trois fichiers) :
+  - T2 était vert sur `90089682` (370 E2E) ;
+  - sur l'écart, trois T2 ont rougi, chaque fois seulement sur des tests chronométrés de fichiers hors du lot (`ProtocolMiniBuilder` à 5 s, `masquage` linéaire). La machine était chargée : charge 15 à 20, une autre session en T2 et build, `fseventsd` à 99 % ;
+  - ces deux fichiers passent seuls (258 tests) ; T1 complet vert ; CI de `f49e810b` vert sur un runner propre.
+- PR-Agent sur `f49e810b`, toujours partiel (24 fichiers exclus). Verdicts :
+  - « blocage silencieux » : déjà **corrigé** dans `90089682`. Il reste marqué actif parce que PR-Agent l'a vu pour la dernière fois sur `cea1fe63` ;
+  - « données périmées » : **corrigé** après le merge de `main`. Si le dossier change sans remontage et que la nouvelle lecture échoue, l'encart BP-13 pouvait garder les déclarations du dossier précédent. `key={idPatient}` le remonte à chaque dossier, et un banc couvre le cas (lu, puis 503 sur l'autre dossier).
+- Après le merge de `main` et `key={idPatient}` :
+  - T2 lancé machine calme (charge 4,6) : rouge, encore sur le seul `ProtocolMiniBuilder` (5 s). La suite unitaire a pris 142 s au lieu de 73 ;
+  - c'est le quatrième rouge chronométré de suite, hors du lot, sur ce Mac, avec `fseventsd` durablement à 99 %. La passe complète de la tête est celle du CI ;
+  - T1 complet : voir la PR.
 
 ## Problèmes ouverts
 
@@ -114,11 +124,10 @@
 
 ## Prochaine action exacte
 
-1. T3 en entier sur la tête, puis commit (T1 complet) et PR `--body-file`.
-2. `node scripts/wn-attendre-ci.mjs <N>` en fond.
-3. `wn-reviewer` (P1 : écritures en base, effacement, texte patient), puis la revue PR-Agent prouvée (`wn-revue-pr-agent.mjs <N>` → 0), sinon `wn-reviewer` sur la tête. Un verdict pour chaque remarque.
-4. Déclarer « prête @<sha> » à l'intégrateur.
-5. Après le déploiement : le responsable envoie la @6.
+1. PR #2038 : CI de la tête finale (`wn-attendre-ci`), revue `wn-reviewer` de l'écart sur cette tête (PR-Agent reste partiel), un verdict pour chaque remarque.
+2. D-503 : lire la boîte B du registre des messages, y écrire une ligne `prete` pour l'intégrateur, puis commenter « prête @<sha> » sur la PR.
+3. Au merge, si la date a changé : recaler `publieLe` et les empreintes avant de déclarer de nouveau.
+4. Après le déploiement : le responsable envoie la @6.
 
 ## Interdits encore actifs
 

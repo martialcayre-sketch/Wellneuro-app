@@ -187,6 +187,32 @@ describe('BlocContextePrelevement', () => {
     expect(screen.getByTestId('bloc-contexte-prelevement')).toBeTruthy();
   });
 
+  it('changer de dossier n’affiche plus rien du précédent, même si la lecture suivante échoue', async () => {
+    const fetchMock = vi.fn(async (entree: RequestInfo | URL) =>
+      String(entree).includes('PAT_SEED_01')
+        ? ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              ok: true,
+              criteres: [],
+              traitements: [],
+              anamneseDu: null,
+              mineur: false,
+              aujourdhui: '2026-11-12',
+            }),
+          } as Response)
+        : ({ ok: false, status: 503, json: async () => ({ ok: false }) } as Response),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const props = { valeur: { ...BROUILLON_INCONNU }, onChange: () => {}, disabled: false };
+    const { rerender } = render(<BlocContextePrelevement idPatient="PAT_SEED_01" {...props} />);
+    expect(await screen.findByTestId('declarations-dossier-bp13')).toBeTruthy();
+    rerender(<BlocContextePrelevement idPatient="PAT_SEED_02" {...props} />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId('declarations-dossier-bp13')).toBeNull();
+  });
+
   it('un fetch qui rejette tait l’encart, le bloc reste', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('réseau'); }));
     render(<Hote />);
