@@ -100,13 +100,21 @@ describe('/api/praticien/corpus/claims', () => {
     });
   });
 
-  it('filtre des exclus de la recherche (D-490) : seulement dans l’onglet Validés', async () => {
-    expect((await GET(requete('statut=VALIDE&exclu=1'))).status).toBe(200);
-    expect(listerClaimsRevue).toHaveBeenCalledWith(
-      expect.objectContaining({ statut: 'VALIDE', excluRecherche: true }),
-    );
+  it('filtre des exclus de la recherche (D-490) : dans les trois statuts, avec et sans le filtre', async () => {
+    for (const statut of ['EN_ATTENTE_VALIDATION', 'VALIDE', 'REJETE']) {
+      listerClaimsRevue.mockClear();
+      expect((await GET(requete(`statut=${statut}&exclu=1`))).status).toBe(200);
+      expect(listerClaimsRevue).toHaveBeenCalledWith(expect.objectContaining({ statut, excluRecherche: true }));
+
+      listerClaimsRevue.mockClear();
+      expect((await GET(requete(`statut=${statut}`))).status).toBe(200);
+      expect(listerClaimsRevue.mock.calls[0][0]).not.toHaveProperty('excluRecherche');
+    }
+  });
+
+  it('refuse un filtre des exclus illisible, sans lire la base (D-490)', async () => {
     listerClaimsRevue.mockClear();
-    for (const query of ['statut=EN_ATTENTE_VALIDATION&exclu=1', 'statut=REJETE&exclu=1', 'statut=VALIDE&exclu=oui']) {
+    for (const query of ['statut=VALIDE&exclu=oui', 'statut=REJETE&exclu=0', 'exclu=true']) {
       const reponse = await GET(requete(query));
       expect(reponse.status).toBe(400);
       expect((await reponse.json()).reason).toBe('exclu_invalide');
