@@ -85,6 +85,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
   const [loadingTable, setLoadingTable] = useState(true);
+  // Lecture du tableau en échec (PRA-2a, X03) : jamais présentée comme une
+  // liste vide. Le message est celui de la route, ou l'erreur inattendue.
+  const [erreurTable, setErreurTable] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editState, setEditState] = useState<EditPatientState | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', dateNaissance: '' });
@@ -124,11 +127,21 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       if (currentSearch.trim()) params.set('search', currentSearch.trim());
       const r = await fetch(`/api/praticien/patients?${params.toString()}`);
       const json = (await r.json()) as PatientsApiResponse;
-      setTablePatients(json.patients ?? []);
+      // La route répond `unavailable: true` (200 sur exception, 401 sans
+      // session) : c'était lu comme « Aucun patient. ».
+      if (!r.ok || json.unavailable || !Array.isArray(json.patients)) {
+        setTablePatients([]);
+        setPagination(null);
+        setErreurTable(erreurLisible(json.reason ?? 'exception'));
+        return;
+      }
+      setErreurTable(null);
+      setTablePatients(json.patients);
       setPagination(json.pagination ?? null);
     } catch {
       setTablePatients([]);
       setPagination(null);
+      setErreurTable(erreurLisible('exception'));
     } finally {
       setLoadingTable(false);
     }
@@ -375,7 +388,9 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
 
         <PanneauSuperpose
           largeur="standard"
-          declencheur={<Button className="min-h-11">Nouvelle consultation</Button>}
+          // Une action principale par zone (PRA-2a, Q3) : « Nouveau patient »
+          // en plein, « Nouvelle consultation » en secondaire.
+          declencheur={<Button variant="outline" className="min-h-11">Nouvelle consultation</Button>}
           titre="Nouvelle consultation"
           description="Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un dossier existant sont dans « Gérer le dossier », au bout de sa ligne."
           open={tiroirOuvert === 'consultation'}
@@ -471,24 +486,32 @@ export function RayonPatientsPanel({ lienMagiqueActif = false }: { lienMagiqueAc
       {/* Tableau patients */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border">
-          <h3 className="font-display text-lg font-semibold text-foreground">Patients</h3>
+          <h2 className="font-display text-lg font-semibold text-foreground">Patients</h2>
         </div>
+        {/* Au téléphone, chaque ligne devient un bloc empilé (Q11 a) : le
+            tableau ne défile plus de côté. À la tablette, la colonne
+            Téléphone se retire (`PatientRow`). */}
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
+          <table className="block w-full text-sm md:table md:min-w-full">
+            <thead className="hidden bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground md:table-header-group">
               <tr>
                 <th className="px-4 py-2 text-left">Nom</th>
                 <th className="px-4 py-2 text-left">Email</th>
-                <th className="px-4 py-2 text-left">Téléphone</th>
+                <th className="hidden px-4 py-2 text-left lg:table-cell">Téléphone</th>
                 <th className="px-4 py-2 text-left">Actif</th>
-                <th className="px-4 py-2 text-left"></th>
-                <th className="px-4 py-2 text-left"></th>
                 <th className="px-4 py-2 text-left"></th>
               </tr>
             </thead>
-            <tbody>
-              {!loadingTable && tablePatients.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-4 text-center text-muted-foreground">Aucun patient.</td></tr>
+            <tbody className="block md:table-row-group">
+              {!loadingTable && erreurTable && (
+                <tr className="block md:table-row">
+                  <td colSpan={5} role="alert" className="block px-4 py-4 text-center text-foreground md:table-cell">
+                    {erreurTable}
+                  </td>
+                </tr>
+              )}
+              {!loadingTable && !erreurTable && tablePatients.length === 0 && (
+                <tr className="block md:table-row"><td colSpan={5} className="block px-4 py-4 text-center text-muted-foreground md:table-cell">Aucun patient.</td></tr>
               )}
               {tablePatients.map(p => (
                 <PatientRow

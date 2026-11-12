@@ -28,7 +28,8 @@ export default async function AgendaPage() {
         <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
           Transverse — donne son tempo à la boucle
         </p>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Agenda & consultations</h2>
+        {/* Titre de page en h1, titres de zone en h2 (PRA-2a, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Agenda & consultations</h1>
         <p className="text-base text-muted-foreground mt-1 max-w-2xl">
           Planifiez les rendez-vous de la semaine : chaque consultation du jour
           remonte dans le Fil sous forme de carte « Pré-vol prêt », prête à ouvrir

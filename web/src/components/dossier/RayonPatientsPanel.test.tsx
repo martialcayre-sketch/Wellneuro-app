@@ -829,3 +829,52 @@ describe('RayonPatientsPanel — la fiche suit le dossier qu’on ouvre', () => 
     });
   });
 });
+
+// PRA-2a (X03) : une lecture du tableau en échec n'est jamais présentée comme
+// une liste vide. La liste complète (sélecteur de consultation) répond ; seul
+// l'appel paginé du tableau échoue.
+describe('RayonPatientsPanel — lecture du tableau en échec (PRA-2a)', () => {
+  const tableau = (url: string) => url.includes('page=');
+
+  it('une panne réseau du tableau dit l’erreur, pas « Aucun patient. »', async () => {
+    stubFetch({
+      surPatients: url => {
+        if (tableau(url)) throw new Error('réseau');
+        return { patients: [PATIENT], assignations: [] };
+      },
+    });
+    render(<RayonPatientsPanel />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toBe('Une erreur inattendue est survenue. Réessayez dans un instant.');
+    expect(screen.queryByText('Aucun patient.')).toBeNull();
+  });
+
+  it('une réponse « indisponible » du tableau dit son motif, pas « Aucun patient. »', async () => {
+    stubFetch({
+      surPatients: url =>
+        tableau(url)
+          ? { patients: [], assignations: [], unavailable: true, reason: 'unauthenticated' }
+          : { patients: [PATIENT], assignations: [] },
+    });
+    render(<RayonPatientsPanel />);
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toMatch(/session a expiré/);
+    expect(screen.queryByText('Aucun patient.')).toBeNull();
+  });
+
+  it('un tableau réellement vide reste « Aucun patient. », sans alerte', async () => {
+    stubFetch({ surPatients: () => ({ patients: [], assignations: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } }) });
+    render(<RayonPatientsPanel />);
+    expect(await screen.findByText('Aucun patient.')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('une action principale : « Nouveau patient » en plein, « Nouvelle consultation » en secondaire', async () => {
+    stubFetch();
+    render(<RayonPatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    expect(screen.getByRole('button', { name: 'Nouveau patient' }).className).toMatch(/\bbg-primary\b/);
+    expect(screen.getByRole('button', { name: 'Nouvelle consultation' }).className).not.toMatch(/\bbg-primary\b/);
+    expect(screen.getByRole('heading', { level: 2, name: 'Patients' })).toBeTruthy();
+  });
+});

@@ -79,12 +79,23 @@ export function PatientRow({
 
   const elements = elementsMenuDossier({ patient, onAction, lienMagiqueActif, actionAccesEnCours });
 
+  // TROIS LARGEURS, UNE SEULE LIGNE (PRA-2a, Q11 a) : au bureau, la ligne du
+  // tableau ; à la tablette, la colonne Téléphone se retire et le tableau
+  // tient sans défilement de côté ; au téléphone, la ligne devient un bloc
+  // empilé — nom et état, adresse, téléphone, gestes. `order` ne joue que
+  // dans le bloc (flex) : dans une ligne de tableau, il est sans effet.
   return (
-    <tr className="border-t border-border hover:bg-muted/50">
-      <td className="px-4 py-2">{`${patient.prenom} ${patient.nom}`.trim() || '—'}</td>
-      <td className="px-4 py-2">{patient.email || '—'}</td>
-      <td className="px-4 py-2">{patient.telephone || '—'}</td>
-      <td className="px-4 py-2">
+    <tr className="flex flex-col gap-1 border-t border-border px-4 py-3 hover:bg-muted/50 md:table-row md:p-0">
+      <td className="order-1 font-medium text-foreground md:table-cell md:px-4 md:py-2">
+        {`${patient.prenom} ${patient.nom}`.trim() || '—'}
+      </td>
+      <td className="order-3 [overflow-wrap:anywhere] text-muted-foreground md:table-cell md:px-4 md:py-2 md:text-foreground">
+        {patient.email || '—'}
+      </td>
+      <td className="order-4 text-muted-foreground md:hidden md:px-4 md:py-2 md:text-foreground lg:table-cell">
+        {patient.telephone || '—'}
+      </td>
+      <td className="order-2 md:table-cell md:px-4 md:py-2">
         {/* Les deux états se cumulent et ne se déduisent pas l'un de l'autre.
             `phaseDossier` fait primer la clôture, ce qui est juste pour
             décider d'un envoi — mais afficher le seul « Suivi clôturé » sur un
@@ -109,29 +120,30 @@ export function PatientRow({
           )}
         </span>
       </td>
-      <td className="px-4 py-2">
-        <button
-          onClick={() => onEdit(patient)}
-          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          Modifier
-        </button>
-      </td>
-      <td className="px-4 py-2">
-        {/* UN SEUL lien par ligne (audit 2026-09-02) : deux destinations vers
-            la même fiche, différenciées par le seul onglet d'ouverture, se
-            lisaient comme deux objets. L'entrée trajectoire garde sa porte
-            dédiée (/dashboard/trajectoires) et le deep-link ?onglet= vit
-            toujours côté fiche. */}
-        <Link
-          href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
-          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          Fiche patient
-        </Link>
-      </td>
-      <td className="px-4 py-2">
-        <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />
+      <td className="order-5 md:table-cell md:px-2 md:py-2">
+        {/* Une action principale par ligne (PRA-2a) : « Fiche patient », en
+            lien pétrole ; « Modifier » et « Gérer le dossier » restent
+            discrets. UN SEUL lien par ligne (audit 2026-09-02) : deux
+            destinations vers la même fiche, différenciées par le seul onglet
+            d'ouverture, se lisaient comme deux objets. L'entrée trajectoire
+            garde sa porte dédiée (/dashboard/trajectoires) et le deep-link
+            ?onglet= vit toujours côté fiche. */}
+        <div className="flex flex-wrap items-center gap-1 md:flex-nowrap md:justify-end">
+          <Link
+            href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
+            className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Fiche patient
+          </Link>
+          <button
+            type="button"
+            onClick={() => onEdit(patient)}
+            className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm text-muted-foreground transition-colors duration-fast ease-lien hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Modifier
+          </button>
+          <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />
+        </div>
       </td>
     </tr>
   );
