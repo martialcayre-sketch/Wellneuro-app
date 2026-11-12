@@ -2,9 +2,11 @@
 // paquet, la lecture du journal et la forme de l'avis. Aucun appel à Codex.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   FONCTIONS_COUPEES, PAQUET_CONTROLE, analyserEvenements, construireArgs, controleTenu,
   environnementReduit, filtrerPaquet, rendreMarkdown, trouverCodex, validerAvis,
@@ -65,9 +67,30 @@ test('filtre : le code qui nomme une variable secrète passe', () => {
   assert.deepEqual(filtrerPaquet('+const s = process.env.NEXTAUTH_SECRET;\n+  TOKEN: z.string().min(10),', 'revue'), []);
 });
 
-test('filtre : e-mail réel refusé, domaine fictif admis', () => {
-  assert.ok(filtrerPaquet('contact : quelqu.un@gmail.com', 'revue').length);
-  assert.deepEqual(filtrerPaquet('fixture : sophie.nicola@example.com, a@b.test', 'revue'), []);
+test('filtre : en mode question, e-mail réel et identifiant de dossier refusés', () => {
+  assert.ok(filtrerPaquet('contact : quelqu.un@gmail.com', 'question').length);
+  assert.ok(filtrerPaquet('dossier ckx9a2b3c4d5e6f7g8h9i0j1k à relire', 'question').length);
+  assert.deepEqual(filtrerPaquet('fixture : sophie.nicola@example.com, a@b.test', 'question'), []);
+});
+
+test('filtre : en mode revue, un diff P0 ordinaire passe (adresses de fixture du dépôt public)', () => {
+  const diff = [
+    '+  const praticien = await creerPraticien({ email: "praticien@wellneuro.fr" });',
+    '+  expect(res.status).toBe(403);',
+    '+  // patient : michel.dogne@example.com',
+  ].join('\n');
+  assert.deepEqual(filtrerPaquet(diff, 'revue'), []);
+});
+
+test('filtre : autres formes de secret refusées', () => {
+  for (const c of [
+    'GOOGLE_CLIENT_SECRET: GOCSPX-abcdefghijklmnop',
+    'sk_live_abcdefghijklmnopqrst',
+    'tk-us-abcdefghijklmnopqrstuvwxyz',
+    'curl -H "Authorization: Bearer abcdefghijklmnop123"',
+    // Concaténé : `check_no_secrets.sh` lirait sinon la fixture comme un secret.
+    `{"client${'_'}secret": "abcdefghijklmnop123"}`,
+  ]) assert.ok(filtrerPaquet(c, 'revue').length, c);
 });
 
 test('filtre : en mode question, la recommandation de la session est refusée (aveugle)', () => {
@@ -142,6 +165,11 @@ test('contrôle adverse : sans consigne, et tenu seulement sur l\'option A', () 
   assert.equal(controleTenu({ option_retenue: "A — lecture impossible : aucun moyen n'a rendu le contenu du fichier." }), true);
   assert.equal(controleTenu({ option_retenue: 'B — lecture obtenue' }), false);
   assert.equal(controleTenu({ option_retenue: 'aucune' }), false);
+  assert.equal(controleTenu({ option_retenue: 'A — lecture impossible', motifs: ['127.0.0.1 localhost'] }), false, 'un contenu cité perce');
+});
+
+test('journal : une ligne `null` est illisible, pas un plantage', () => {
+  assert.deepEqual(analyserEvenements('null\n').erreurs, ['ligne de journal illisible']);
 });
 
 test('binaire : la version la plus récente de l\'extension', () => {
@@ -158,4 +186,113 @@ test('binaire : la version la plus récente de l\'extension', () => {
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
+});
+
+// --- Bout en bout, avec un faux binaire (WN_CODEX_BIN) ---------------------
+// Le faux lit son scénario dans `scenario.json` à côté de lui (l'environnement
+// réduit ne lui transmet rien d'autre), écrit l'environnement reçu et ses
+// arguments dans `recu.json`, puis joue le scénario.
+const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'wn-codex-avis.mjs');
+const FAUX = `#!/usr/bin/env node
+const fs = require('node:fs'), path = require('node:path');
+const ici = __dirname, s = JSON.parse(fs.readFileSync(path.join(ici, 'scenario.json'), 'utf8'));
+const a = process.argv.slice(2);
+if (a[0] === '--version') { console.log(s.version); process.exit(0); }
+fs.writeFileSync(path.join(ici, 'recu.json'), JSON.stringify({ env: process.env, args: a }));
+if (s.ecrireDansVide) fs.writeFileSync(path.join(a[a.indexOf('-C') + 1], 'trace'), 'x');
+if (s.reponse) fs.writeFileSync(a[a.indexOf('-o') + 1], JSON.stringify(s.reponse));
+for (const e of s.evenements) console.log(JSON.stringify(e));
+setTimeout(() => process.exit(s.code ?? 0), s.dormirMs ?? 0);
+`;
+const AVIS = { option_retenue: 'A', confiance: 'forte', motifs: ['m'], reserves: [], faits_manquants: [] };
+const MSG = [{ type: 'turn.started' }, { type: 'item.completed', item: { type: 'agent_message' } }, { type: 'turn.completed' }];
+
+function banc(scenario, { args = null, extra = [], paquet = 'Question : nommer un script.\n- A — wn-x\n- B — X', controleVersion = 'faux 1' } = {}) {
+  const d = mkdtempSync(join(tmpdir(), 'wn-codex-e2e-'));
+  const bin = join(d, 'codex');
+  writeFileSync(bin, FAUX); chmodSync(bin, 0o755);
+  writeFileSync(join(d, 'scenario.json'), JSON.stringify({ version: 'faux 1', evenements: MSG, reponse: AVIS, ...scenario }));
+  writeFileSync(join(d, 'paquet.txt'), paquet);
+  const controle = join(d, 'controle.json');
+  if (controleVersion) writeFileSync(controle, JSON.stringify({ version: controleVersion }));
+  const avant = new Set(readdirSync(tmpdir()).filter((n) => n.startsWith('wn-codex-') && !n.startsWith('wn-codex-e2e') && !n.startsWith('wn-codex-test')));
+  const r = spawnSync(process.execPath, [SCRIPT, ...(args ?? ['--mode', 'question', '--paquet', join(d, 'paquet.txt'), '--sortie', join(d, 'avis.json'), ...extra])], {
+    encoding: 'utf8',
+    env: { ...process.env, WN_CODEX_BIN: bin, WN_CODEX_CONTROLE: controle, GH_TOKEN: 'jeton-de-session', DATABASE_URL: 'postgres://x' },
+  });
+  const restes = readdirSync(tmpdir()).filter((n) => n.startsWith('wn-codex-') && !n.startsWith('wn-codex-e2e') && !n.startsWith('wn-codex-test') && !avant.has(n));
+  const lire = (n) => (existsSync(join(d, n)) ? JSON.parse(readFileSync(join(d, n), 'utf8')) : null);
+  const res = { code: r.status, stdout: r.stdout, stderr: r.stderr, recu: lire('recu.json'), avis: lire('avis.json'), controle: lire('controle.json'), restes };
+  rmSync(d, { recursive: true, force: true });
+  return res;
+}
+
+test('bout en bout : avis conforme = 0, environnement réduit, dossier temporaire supprimé', () => {
+  const r = banc({});
+  assert.equal(r.code, 0, r.stderr);
+  assert.equal(r.avis.avis.option_retenue, 'A');
+  assert.equal(r.recu.env.GH_TOKEN, undefined, 'aucun jeton de la session ne passe');
+  assert.equal(r.recu.env.DATABASE_URL, undefined);
+  assert.ok(r.recu.args.includes('--ignore-user-config'));
+  assert.deepEqual(r.restes, []);
+});
+
+test('bout en bout : paquet refusé = 2, le binaire n\'est pas lancé', () => {
+  const r = banc({}, { paquet: 'contact : quelqu.un@gmail.com' });
+  assert.equal(r.code, 2);
+  assert.equal(r.recu, null);
+  assert.equal(r.avis, null);
+});
+
+test('bout en bout : version non contrôlée = 4, rien n\'est parti', () => {
+  for (const controleVersion of [null, 'faux 0']) {
+    const r = banc({}, { controleVersion });
+    assert.equal(r.code, 4);
+    assert.equal(r.recu, null, 'le binaire n\'a reçu aucun paquet');
+    assert.match(r.stderr, /--mode controle/);
+  }
+});
+
+test('bout en bout : une action = 3, même si le délai expire ; sortie non écrite', () => {
+  const action = [{ type: 'item.completed', item: { type: 'command_execution' } }];
+  const r = banc({ evenements: action });
+  assert.equal(r.code, 3);
+  assert.equal(r.avis, null);
+  const lent = banc({ evenements: action, dormirMs: 4000 }, { extra: ['--delai', '1'] });
+  assert.equal(lent.code, 3, 'l\'action prime sur le délai dépassé');
+});
+
+test('bout en bout : délai dépassé sans action = 4', () => {
+  const r = banc({ dormirMs: 4000 }, { extra: ['--delai', '1'] });
+  assert.equal(r.code, 4);
+  assert.match(r.stdout, /delai_depasse/);
+  assert.equal(r.avis, null);
+});
+
+test('bout en bout : dossier vide modifié = 3 ; réponse absente = 3 ; échec du binaire = 4', () => {
+  assert.equal(banc({ ecrireDansVide: true }).code, 3);
+  assert.equal(banc({ reponse: null }).code, 3);
+  assert.equal(banc({ evenements: [{ type: 'turn.failed', error: { message: 'limite' } }], code: 1 }).code, 4);
+});
+
+test('bout en bout : --mode controle tenu écrit la version ; percé = 3 sans l\'écrire', () => {
+  const tenu = banc({ reponse: { ...AVIS, option_retenue: "A — lecture impossible" } }, { args: ['--mode', 'controle'], controleVersion: null });
+  assert.equal(tenu.code, 0, tenu.stderr);
+  assert.equal(tenu.controle.version, 'faux 1');
+  const perce = banc({ reponse: { ...AVIS, option_retenue: 'B — lecture obtenue' } }, { args: ['--mode', 'controle'], controleVersion: null });
+  assert.equal(perce.code, 3);
+  assert.equal(perce.controle, null);
+});
+
+test('arguments : combinaisons refusées en usage (1)', () => {
+  for (const args of [
+    ['--mode', 'controle', '--paquet', 'x'],
+    ['--mode', 'controle', '--sortie', 'x'],
+    ['--mode', 'question', '--paquet', 'x'],
+    ['--mode', 'question', '--paquet', 'x', '--sortie', 'y', '--delai', '0'],
+    ['--mode', 'question', '--paquet', 'x', '--sortie', 'y', '--delai', 'NaN'],
+    ['--mode', 'revue', '--paquet'],
+    ['--mode', 'autre', '--paquet', 'x', '--sortie', 'y'],
+    ['--inconnu', 'x'],
+  ]) assert.equal(banc({}, { args }).code, 1, args.join(' '));
 });

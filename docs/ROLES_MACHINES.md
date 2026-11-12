@@ -109,8 +109,9 @@ question et la réponse.
   joint à la ligne (`avis_codex`). Sur une question `ordinaire` du périmètre
   de `D-505` §6, si Codex retient l'option recommandée par la session, la
   session avance. La ligne passe à `repondue`, avec `reponse_par` =
-  `accord session et Codex (D-505)`, et le responsable peut la renverser
-  à la séance. Sinon, la question attend la séance.
+  `accord session et Codex (D-505)`. Elle reste `repondue` jusqu'à la
+  séance, même sans décision ni PR : le guichet la présente, le
+  responsable peut la renverser. Sinon, la question attend la séance.
 - **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
   vient du responsable dans la session qui agit, ou de la décision mergée.
   Un avis de Codex n'en est jamais une.

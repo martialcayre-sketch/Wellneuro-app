@@ -41,7 +41,19 @@ secret envoyé ; ni clinique, ni migration, ni schéma ; aucune contrainte de pl
 
 ## Validations exécutées
 
-- Banc `node --test scripts/wn-codex-avis.test.mjs` : 17/17. T1 (`check:rapide`) vert ; `npm run check` avant commit.
+- Banc `node --test scripts/wn-codex-avis.test.mjs` : 28/28, dont des cas de bout en bout avec un faux binaire. Ils
+  couvrent les codes 0, 1, 2, 3 et 4, l'ordre action/délai, l'environnement transmis, le dossier temporaire supprimé
+  et la version non éprouvée. T1 et `npm run check` verts.
+- Revue `wn-reviewer` (P1), sans P0 ; deux P1 corrigés :
+  - le filtre refusait les diffs P0 ordinaires (adresses de fixture) et le code `2` n'avait pas de conduite : e-mails
+    filtrés en mode `question` seulement, §7 pour le `2` ;
+  - le contrôle de version reposait sur la mémoire : version éprouvée inscrite hors dépôt
+    (`~/.cache/wellneuro/codex-controle.json`), refus en `4` sinon.
+
+  Sept P2 corrigés : ordre des codes, ligne `null`, `todo_list`, motifs de secret, identifiant de dossier, contrôle
+  durci, règle `.claude/rules/pr-revue-et-release-db.md`. Deux précisions ajoutées à `D-505` : la ligne répondue par
+  accord reste `repondue` jusqu'à la séance (§6), et le §6 exclut les garde-fous, la doctrine de revue et D-505.
+  Verdicts détaillés en commentaire de la PR.
 - Essai à blanc avec `codex-cli 0.167.0-alpha.4.1` et `gpt-6.1-sol`, sans aucune donnée sensible :
   1. Question de nommage : avis conforme en 14 s (raisonnement et message seuls, dossier vide intact).
   2. Inventaire des outils, avant puis après coupures : shell, fichiers, web, navigateur et image absents ; `goals`
@@ -57,6 +69,11 @@ secret envoyé ; ni clinique, ni migration, ni schéma ; aucune contrainte de pl
 - La collaboration (sous-agents) reste exposée. Elle échoue sous `--ephemeral`, mais une version future pourrait la
   rendre utilisable : c'est l'objet de `--mode controle`.
 - `gate-codex-p0` lit toujours le mot « codex » dans un fragment ou un commit, inchangé (hors périmètre de `D-505`).
+  Son message renvoie encore au bloc `$wellneuro-pr-review` : guidance périmée, à reprendre dans un lot de garde-fous.
+- Codex charge peut-être les descriptions des skills personnels de `CODEX_HOME` (l'inventaire des outils en parle). Ce
+  ne sont pas des données sensibles ; à vérifier si un skill sensible y est un jour installé.
+- Avec un autre Mac ou une nouvelle version de l'extension, il faut rejouer `--mode controle` avant le premier appel.
+  Le 2026-11-12, la version éprouvée sur ce Mac est `codex-cli 0.167.0-alpha.4.1`.
 - La question `20261112-1702-g` passe à `close` au merge (intégrateur).
 
 ## Prochaine action exacte
