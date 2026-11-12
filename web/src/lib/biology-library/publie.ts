@@ -87,6 +87,7 @@ export const TABLES_BIOFLOW = [
   'biology_reference_ranges',
   'biology_source_snapshots',
   'comptes_rendus_biologiques',
+  'contextes_prelevement',
   'documents_patient_biologie',
   'imports_biologiques',
   'lectures_imports_biologiques',
