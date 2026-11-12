@@ -879,6 +879,115 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-11-01',
     hash: 'd9cb936d2c4bd6933b9f228b0e44be5722fe15a3ce147b9e379dade795e4f34d',
   },
+  // d33 (file D) — L'ADRESSE DE LA PAGE D'ÉTAT. Si l'hébergeur tombe, aucun
+  // écran de l'application ne s'affiche : la page servie est celle du routeur.
+  // La page d'état est hébergée hors de Wellneuro (Better Stack), et son
+  // adresse doit être chez le patient AVANT la panne — d'où les trois e-mails
+  // qu'il garde ou reçoit en dernier. Le paragraphe NOMME le tiers : l'e-mail
+  // d'accès affirme que tout vient de wellneuro.fr, un lien vers un autre
+  // domaine sans explication y ressemblerait à de l'hameçonnage. Textes au
+  // caractère près des versions précédentes, hors ce paragraphe ; nés validés
+  // (texte relu et choisi par le responsable en session, le 2026-11-04).
+  {
+    key: 'lien_magique',
+    version: 2,
+    titre: "Lien temporaire d'accès à l'espace patient",
+    sujet: 'Votre lien d’accès — Wellneuro',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      "Voici votre lien d'accès à votre espace patient Wellneuro :\n{{lien}}\n\n" +
+      "Ce lien est valable 24 heures et ne s'ouvre qu'une fois. " +
+      "Passé ce délai, ou si vous l'avez déjà utilisé, vous pourrez en redemander " +
+      'un nouveau depuis la page qui s\'affichera — sans passer par votre praticien.\n\n' +
+      "Si la page ne s'ouvre pas, une page tenue hors de Wellneuro, par Better Stack, " +
+      "le service qui surveille l'application, indique si votre espace est " +
+      'momentanément indisponible :\n' +
+      'https://wellneuro.betteruptime.com\n\n' +
+      "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message : " +
+      'sans clic de votre part, ce lien expirera seul.\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['prenom', 'lien'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-11-04',
+    valideLe: '2026-11-04',
+    hash: '1c1650a2724d4ee2c50064ec6954689f4343f2aa0aea248ba736e33dd765fa9d',
+  },
+  // Sans `{{lien}}`, comme la v2 : le chemin sans lien la sert sans lever.
+  {
+    key: 'acces_portail',
+    version: 3,
+    titre: "Ouverture de l'accès à l'espace patient",
+    sujet: 'Votre espace de suivi — Martial Cayre (Wellneuro)',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'Je vous ouvre l’accès à votre espace de suivi.\n\n' +
+      'Wellneuro est l’outil que j’utilise pour le suivi de mes patients, et ' +
+      'wellneuro.fr est mon site : ce message, et ceux qui suivront depuis ' +
+      'noreply@wellneuro.fr, viennent de mon cabinet. L’accès à cet espace et le ' +
+      'suivi qui s’y fait sont gratuits — il n’y a rien à payer, ni maintenant ni ' +
+      'plus tard.\n\n' +
+      'Votre page d’accès :\n{{connexion}}\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'Si votre espace ne s’ouvre pas, une page tenue hors de Wellneuro, par Better ' +
+      'Stack, le service qui surveille l’application, indique s’il est ' +
+      'momentanément indisponible :\n' +
+      'https://wellneuro.betteruptime.com\n\n' +
+      'À la première connexion : votre consentement, une courte fiche de ' +
+      'renseignements, puis quelques questions sur ce qui vous amène. Vos ' +
+      'questionnaires sont mis à disposition ensuite, et vous avancez à votre ' +
+      'rythme ; si l’un d’eux porte une date limite, elle vous sera indiquée.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      SIGNATURE_PRATICIEN,
+    variables: ['prenom', 'connexion'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-11-04',
+    valideLe: '2026-11-04',
+    hash: '80793cf4745a155e10a920c5720bae82b25d6374871a99f4f5264f8c7fbeca70',
+  },
+  {
+    key: 'acces_portail_lien',
+    version: 2,
+    titre: "Ouverture de l'accès à l'espace patient, avec lien direct",
+    sujet: 'Votre espace de suivi — Martial Cayre (Wellneuro)',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'Je vous ouvre l’accès à votre espace de suivi.\n\n' +
+      'Wellneuro est l’outil que j’utilise pour le suivi de mes patients, et ' +
+      'wellneuro.fr est mon site : ce message, et ceux qui suivront depuis ' +
+      'noreply@wellneuro.fr, viennent de mon cabinet. L’accès à cet espace et le ' +
+      'suivi qui s’y fait sont gratuits — il n’y a rien à payer, ni maintenant ni ' +
+      'plus tard.\n\n' +
+      'Pour entrer directement, ouvrez ce lien :\n{{lien}}\n\n' +
+      'Il est valable 24 heures et ne s’ouvre qu’une fois. Passé ce délai, ou si ' +
+      'vous l’avez déjà ouvert, votre page d’accès, elle, reste ouverte et ne ' +
+      'change jamais :\n{{connexion}}\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'Si votre espace ne s’ouvre pas, une page tenue hors de Wellneuro, par Better ' +
+      'Stack, le service qui surveille l’application, indique s’il est ' +
+      'momentanément indisponible :\n' +
+      'https://wellneuro.betteruptime.com\n\n' +
+      'À la première connexion : votre consentement, une courte fiche de ' +
+      'renseignements, puis quelques questions sur ce qui vous amène. Vos ' +
+      'questionnaires sont mis à disposition ensuite, et vous avancez à votre ' +
+      'rythme ; si l’un d’eux porte une date limite, elle vous sera indiquée.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      SIGNATURE_PRATICIEN,
+    variables: ['prenom', 'connexion', 'lien'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-11-04',
+    valideLe: '2026-11-04',
+    hash: '71fca0dd241522e923639d2b89bf422c999de730d532736a39b32773ea10e186',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

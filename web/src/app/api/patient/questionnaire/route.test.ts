@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
     assignation: { findUnique: vi.fn() },
     patient: { findUnique: vi.fn() },
+    // NF-7 : la définition d'un instrument du cabinet se lit en base.
+    cabinetInstrument: { findUnique: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -264,5 +266,74 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       const response = await GET(requeteProprietaire());
       expect(response.status).toBe(200);
     });
+  });
+});
+
+// NF-7 ([[D-303]] §3, réponses 20261111-0027-a et 0028-a) : le verdict
+// `encartUrgenceCabinet` se lit sur la COPIE de la déclaration prise à l'envoi,
+// sans repli sur l'instrument. Présent seulement drapeau allumé, sur un `CAB_`
+// dont la copie vaut `true`. Drapeau éteint : la réponse d'avant NF-7.
+describe('GET /api/patient/questionnaire — encart d’un instrument du cabinet (NF-7)', () => {
+  const CAB = { ...assignation, idQuestionnaire: 'CAB_1', poseQuestionSuicide: true };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(CAB);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      accessTokenRevoked: false,
+      email: assignation.emailPatient,
+      dateNaissance: '1985-03-14',
+    });
+    // L'instrument dit « non » aujourd'hui : la copie « oui » doit l'emporter.
+    prisma.cabinetInstrument.findUnique.mockResolvedValue({
+      idInstrument: 'CAB_1',
+      titre: 'Humeur cabinet',
+      definitionJson: { sections: [] },
+      scoringJson: null,
+      statutRelecture: 'valide',
+      actif: true,
+      poseQuestionSuicide: false,
+    });
+  });
+
+  afterEach(() => {
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  });
+
+  async function lire() {
+    const response = await GET(requeteProprietaire());
+    expect(response.status).toBe(200);
+    return response.json();
+  }
+
+  it('drapeau éteint : aucun verdict, même sur une copie à vrai', async () => {
+    expect('encartUrgenceCabinet' in (await lire())).toBe(false);
+  });
+
+  it('drapeau allumé, copie à vrai : l’encart est dû, quelle que soit la déclaration courante de l’instrument', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    expect((await lire()).encartUrgenceCabinet).toBe(true);
+  });
+
+  it('drapeau allumé, copie à « non » ou non déclarée : aucun verdict, sans repli sur l’instrument', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    prisma.cabinetInstrument.findUnique.mockResolvedValue({
+      idInstrument: 'CAB_1', titre: 'x', definitionJson: { sections: [] }, scoringJson: null,
+      statutRelecture: 'valide', actif: true, poseQuestionSuicide: true,
+    });
+    for (const copie of [false, null]) {
+      prisma.assignation.findUnique.mockResolvedValue({ ...CAB, poseQuestionSuicide: copie });
+      expect('encartUrgenceCabinet' in (await lire()), String(copie)).toBe(false);
+    }
+  });
+
+  it('drapeau allumé : un questionnaire du catalogue ne reçoit jamais ce verdict', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, poseQuestionSuicide: true });
+    expect('encartUrgenceCabinet' in (await lire())).toBe(false);
   });
 });

@@ -14,6 +14,11 @@ import {
   type DefinitionCabinet,
   type ScoringCabinet,
 } from '@/lib/instruments';
+import {
+  DECLARATION_SUICIDE_EFFACEE,
+  declarationSuicideCabinetActive,
+  lireDeclarationSuicide,
+} from '@/lib/securite/declarationSuicideCabinet';
 
 // Instruments du cabinet (décision utilisateur du 2026-07-23) : le praticien
 // crée, édite, fait relire puis publie ses propres questionnaires. Rien ici
@@ -35,6 +40,13 @@ export type InstrumentCabinetDetailDto = InstrumentCabinetDto & {
   description: string | null;
   definition: DefinitionCabinet;
   scoring: ScoringCabinet;
+  /**
+   * NF-7 ([[D-303]] §2) : présent, et vrai, seulement drapeau
+   * `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé — la publication exige alors la
+   * déclaration « question sur le suicide ». Absent, l'écran reste celui
+   * d'avant NF-7.
+   */
+  declarationSuicideRequise?: true;
 };
 
 export type InstrumentsApiResponse = {
@@ -128,6 +140,7 @@ export async function GET(request: Request) {
           description: row.description,
           definition: row.definitionJson as unknown as DefinitionCabinet,
           scoring: row.scoringJson as unknown as ScoringCabinet,
+          ...(declarationSuicideCabinetActive() ? { declarationSuicideRequise: true as const } : {}),
         },
       });
     }
@@ -244,6 +257,9 @@ export async function PATCH(request: Request) {
       description?: unknown;
       definition?: unknown;
       scoring?: unknown;
+      poseQuestionSuicide?: unknown;
+      questionSuicideId?: unknown;
+      questionSuicideOptionNon?: unknown;
     };
     const idInstrument =
       typeof body.idInstrument === 'string' ? body.idInstrument.trim().slice(0, 50) : '';
@@ -349,10 +365,48 @@ export async function PATCH(request: Request) {
           { status: 400 },
         );
       }
-      await prisma.cabinetInstrument.update({
-        where: { idInstrument },
-        data: { statutRelecture: 'valide' },
-      });
+      // NF-7 ([[D-303]] §2, [[D-493]] §3) : drapeau allumé, la déclaration
+      // « question sur le suicide » est exigée à CHAQUE publication, et sa
+      // désignation vérifiée contre la définition relue. C'est le seul
+      // passage vers `valide` (banc `declarationSuicideCabinet.guard.test.ts`).
+      // Drapeau éteint : la publication d'avant NF-7, inchangée.
+      const declarationExigee = declarationSuicideCabinetActive();
+      let declaration = {};
+      if (declarationExigee) {
+        const lue = lireDeclarationSuicide(body, instrument.definitionJson);
+        if (!lue.ok) {
+          return NextResponse.json<MutateInstrumentResponse>(
+            { success: false, reason: 'invalid_payload', error: lue.erreur, erreurs: [lue.erreur] },
+            { status: 400 },
+          );
+        }
+        declaration = lue.declaration;
+      }
+      const data = { statutRelecture: 'valide', ...declaration };
+      if (declarationExigee) {
+        // La désignation a été vérifiée contre la définition LUE ci-dessus :
+        // l'écriture n'a lieu que si l'instrument n'a pas bougé depuis. Une
+        // modification concurrente le repasse en brouillon et touche
+        // `updatedAt` — la publication échoue alors en 409 au lieu de valider
+        // une déclaration contre d'anciennes questions (revue CodeRabbit de
+        // #2010 ; `wn-reviewer`, P2-3). Drapeau éteint : l'écriture d'avant.
+        const ecrit = await prisma.cabinetInstrument.updateMany({
+          where: { idInstrument, statutRelecture: 'grille_a_relire', updatedAt: instrument.updatedAt },
+          data,
+        });
+        if (ecrit.count === 0) {
+          return NextResponse.json<MutateInstrumentResponse>(
+            {
+              success: false,
+              reason: 'conflit_statut',
+              error: 'L’instrument a été modifié pendant la relecture : rouvrez « Relire la grille ».',
+            },
+            { status: 409 },
+          );
+        }
+      } else {
+        await prisma.cabinetInstrument.update({ where: { idInstrument }, data });
+      }
       return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });
     }
 
@@ -424,6 +478,10 @@ export async function PATCH(request: Request) {
         definitionJson: definition as unknown as Prisma.InputJsonValue,
         scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
         ...(contenuChange ? { statutRelecture: 'brouillon' } : {}),
+        // NF-7 ([[D-303]] §2) : une modification des questions redemande la
+        // déclaration — l'ancienne est effacée (NULL = non déclaré), la
+        // prochaine publication la recueille de nouveau. Drapeau éteint : rien.
+        ...(contenuChange && declarationSuicideCabinetActive() ? DECLARATION_SUICIDE_EFFACEE : {}),
       },
     });
     return NextResponse.json<MutateInstrumentResponse>({ success: true, idInstrument });

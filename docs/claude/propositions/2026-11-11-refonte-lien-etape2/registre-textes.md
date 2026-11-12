@@ -5,14 +5,16 @@
 > DOC-0 dans [[D-488]], qui fait foi ; Q-E2-5 (a) y est aussi (§7).
 
 Chaque texte neuf ou changé par la refonte passe ici avant tout lot (réponse
-6 (a) du 2026-11-11). Aucun n'est accepté : chaque ligne attend l'acceptation
-**mot pour mot** du responsable. Un texte accepté est inscrit sous une
-décision par DOC-0 (`socle-commun.md`) avant le lot qui l'applique. Un texte
+6 (a) du 2026-11-11). Le bloc du 2026-11-11 a été accepté, sauf T-34,
+comme indiqué en tête ; chaque proposition ajoutée ensuite attend son
+acceptation **mot pour mot**. Un texte accepté est inscrit sous une décision
+par DOC-0 ou un DOC-n (`socle-commun.md`) avant le lot qui l'applique. Un texte
 refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
 Numérotation par famille, avec des trous voulus : praticien T-01 à T-16
 (T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]]),
-rail patient T-21 à T-23, textes patient T-30 à T-34. Aucun identifiant
+rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
+le 2026-11-12 comme proposition non acceptée pour U02. Aucun identifiant
 absent n'est un texte manquant.
 
 Colonnes : **Proposé** (texte exact, sans guillemets de l'interface) ;
@@ -152,6 +154,22 @@ Non proposés, relevés :
   le second disparaît avec AM-2.
 - Libellés morts des dix composants `Lien*` montés en `sondeSeule`
   (`SondesAutresEspaces.tsx:34-43`) : jamais affichés ; ils ne changent pas.
+
+### 2.5 Proposition après arbitrage PAT-2 — en attente
+
+Le responsable a retenu Q2 (a) le 2026-11-12 : U02 garde le lien et la
+destination actuels. Il demande de soumettre le libellé ci-dessous, pas de
+l'appliquer. Référence : [[D-481]], complément PAT-2 du 2026-11-12 (DOC-3).
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-35 | Revenir à la connexion | U02, `app/portail/lien/indisponible/page.tsx`, lien vers `/portail/connexion` | nommer la destination réelle ; garder la navigation pleine page qui relit les conditions d'ouverture | Continuer avec Google | lot distinct après acceptation et inscription DOC-n ; non appliqué dans PAT-2 avant cette acceptation | **Proposé — non accepté ; acceptation mot pour mot requise** |
+
+T-35 ne fait pas partie du bloc accepté le 2026-11-11 et n'est pas ajouté
+aux textes acceptés de [[D-488]]. Aucun changement de destination, de garde
+ou d'authentification n'est proposé ici. Q5 (reconnexion), Q6 (brouillon
+dans l'onglet) et Q7 (emplacement de l'alerte) restent des questions
+séparées : aucun autre texte n'est implicitement accepté.
 
 ## 3. Récapitulatif
 

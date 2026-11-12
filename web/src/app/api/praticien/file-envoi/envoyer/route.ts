@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
-import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
+import { estInstrumentCabinet, idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
+import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
@@ -179,10 +180,26 @@ export async function POST(request: Request) {
         if (aInserer.length === 0) {
           throw new ToutDejaAssigne();
         }
+        // NF-7 ([[D-303]] §3, réponse 20261111-0027-a) : la déclaration
+        // « question sur le suicide » d'un instrument du cabinet est COPIÉE sur
+        // l'assignation à l'envoi, lue dans la transaction. L'écran patient lit
+        // cette copie, jamais la déclaration courante de l'instrument. Une
+        // déclaration absente reste NULL (« non déclaré », 0028-a). Drapeau
+        // éteint, ou instrument du catalogue : rien n'est écrit.
+        const copierDeclaration = declarationSuicideCabinetActive();
         for (const item of aInserer) {
+          let declaration = {};
+          if (copierDeclaration && estInstrumentCabinet(item.idQuestionnaire)) {
+            const instrument = await tx.cabinetInstrument.findUnique({
+              where: { idInstrument: item.idQuestionnaire },
+              select: { poseQuestionSuicide: true },
+            });
+            declaration = { poseQuestionSuicide: instrument?.poseQuestionSuicide ?? null };
+          }
           await tx.assignation.create({
             data: {
               ...item,
+              ...declaration,
               idPatient: patient.idPatient,
               emailPatient: patient.email,
               dateAssignation: new Date(),

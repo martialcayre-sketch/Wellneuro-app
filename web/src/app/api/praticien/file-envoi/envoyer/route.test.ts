@@ -14,6 +14,8 @@ const { sendMail, prisma } = vi.hoisted(() => ({
 
 const tx = {
   assignation: { create: vi.fn(), findMany: vi.fn() },
+  // NF-7 : la copie de la déclaration se lit dans la transaction.
+  cabinetInstrument: { findUnique: vi.fn() },
   envoiBrouillon: { updateMany: vi.fn() },
   $queryRaw: vi.fn(),
 };
@@ -212,5 +214,79 @@ describe('file-envoi/envoyer POST', () => {
     const res = await POST(postRequest({ idBrouillon: 'ENV_INCONNU' }));
     expect(res.status).toBe(404);
     expect((await res.json()).reason).toBe('not_found');
+  });
+});
+
+// NF-7 ([[D-303]] §3, réponse 20261111-0027-a) : la déclaration « question sur
+// le suicide » d'un instrument du cabinet est COPIÉE sur l'assignation à
+// l'envoi. Drapeau éteint, rien n'est écrit : l'envoi d'avant NF-7.
+describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
+  const INSTRUMENT_PUBLIE = {
+    idInstrument: 'CAB_1',
+    praticienEmail: 'praticien@wellneuro.fr',
+    titre: 'Humeur cabinet',
+    definitionJson: { sections: [] },
+    scoringJson: null,
+    statutRelecture: 'valide',
+    actif: true,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    process.env.SMTP_URL = 'smtp://test';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+    prisma.envoiBrouillon.findFirst.mockResolvedValue({ ...BROUILLON, qids: ['CAB_1', 'Q_STR_02'] });
+    prisma.patient.findFirst.mockResolvedValue(PATIENT);
+    prisma.cabinetInstrument.findMany.mockResolvedValue([{ idInstrument: 'CAB_1' }]);
+    prisma.cabinetInstrument.findUnique.mockResolvedValue(INSTRUMENT_PUBLIE);
+    prisma.$transaction.mockImplementation((op: (t: typeof tx) => unknown) => op(tx));
+    tx.envoiBrouillon.updateMany.mockResolvedValue({ count: 1 });
+    tx.assignation.findMany.mockResolvedValue([]);
+    tx.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: true });
+  });
+
+  function donneesCreees(idQuestionnaire: string) {
+    const appel = tx.assignation.create.mock.calls.find(c => c[0].data.idQuestionnaire === idQuestionnaire);
+    expect(appel, idQuestionnaire).toBeDefined();
+    return appel![0].data as Record<string, unknown>;
+  }
+
+  it('drapeau éteint : aucune copie, ni sur le CAB_ ni sur le catalogue', async () => {
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(200);
+    expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
+    expect('poseQuestionSuicide' in donneesCreees('Q_STR_02')).toBe(false);
+    expect(tx.cabinetInstrument.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('drapeau allumé : le CAB_ porte la copie, lue dans la transaction ; le catalogue reste sans copie', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(200);
+    expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(true);
+    expect('poseQuestionSuicide' in donneesCreees('Q_STR_02')).toBe(false);
+    expect(tx.cabinetInstrument.findUnique).toHaveBeenCalledTimes(1);
+    expect(tx.cabinetInstrument.findUnique.mock.calls[0][0].where).toEqual({ idInstrument: 'CAB_1' });
+  });
+
+  it('drapeau allumé : « non » se copie « non », et non déclaré reste NULL, jamais « non » (0028-a)', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: false });
+    await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(false);
+
+    tx.assignation.create.mockClear();
+    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: null });
+    await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(donneesCreees('CAB_1').poseQuestionSuicide).toBeNull();
+  });
+
+  it('valeur autre que « true » : le drapeau reste éteint', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = '1';
+    await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
   });
 });

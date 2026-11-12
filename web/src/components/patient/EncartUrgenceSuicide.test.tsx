@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
-import { DELAI_ENCART_PAR_ECRAN } from '@/lib/securite/urgenceSuicide';
+import { DELAI_ENCART_PAR_ECRAN, estReponseSuicidePositive } from '@/lib/securite/urgenceSuicide';
 import { EncartUrgenceSuicide } from './EncartUrgenceSuicide';
 import { GenericQuestionnaire } from './GenericQuestionnaire';
 
@@ -105,3 +105,70 @@ describe('GenericQuestionnaire — l’encart reste présent jusqu’au résumé
   }
 });
 
+
+// NF-7 ([[D-303]] §3, [[D-493]]) : UN INSTRUMENT DU CABINET DÉCLARÉ « OUI » PORTE
+// L'ENCART SUR CHAQUE ÉCRAN DE SAISIE ET AU RÉSUMÉ — et rien de [[D-277]] : ni
+// le message sur réponse positive, quelle que soit la réponse choisie, ni le
+// constat qui ferait partir le courriel au praticien. Ce volet est cadré à part
+// (question 20261111-2148-a) ; tant qu'il ne l'est pas, servir le message ferait
+// lire au patient une promesse (« votre praticien sera prévenu ») non tenue.
+describe('GenericQuestionnaire — instrument du cabinet déclaré « oui » (NF-7)', () => {
+  const OPTIONS = [{ v: 0, l: 'Non' }, { v: 1, l: 'Un peu' }, { v: 2, l: 'Souvent' }];
+  const DEFINITION_CAB = {
+    id: 'CAB_TEST',
+    titre: 'Humeur cabinet',
+    sections: [
+      { id: 'S1', questions: [{ id: 'Q1', texte: 'Je me sens triste.', type: 'likert', options: OPTIONS }] },
+      { id: 'S2', questions: [{ id: 'Q2', texte: 'Il m’arrive de penser à la mort.', type: 'likert', options: OPTIONS }] },
+    ],
+  } as unknown as QuestionnaireDef;
+  const ENCART = { name: 'Besoin d’aide maintenant ?' };
+
+  function parcourir(encartUrgenceCabinet: boolean) {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+    const a = assignation('CAB_TEST');
+    render(
+      <GenericQuestionnaire
+        assignation={a}
+        questionnaire={DEFINITION_CAB}
+        email={a.emailPatient}
+        onDone={vi.fn()}
+        encartUrgenceCabinet={encartUrgenceCabinet}
+      />,
+    );
+    const parEcran: number[] = [];
+    for (let ecran = 0; ecran < 10; ecran += 1) {
+      parEcran.push(screen.queryAllByRole('note', ENCART).length);
+      // Aucune réponse, même la plus grave, ne fait paraître le message de D-277.
+      expect(screen.queryByRole('alert'), `écran ${ecran + 1}`).toBeNull();
+      if (screen.queryByRole('heading', { name: 'Vérifiez votre questionnaire' })) break;
+      for (const groupe of screen.queryAllByRole('radiogroup').concat(screen.queryAllByRole('group'))) {
+        const radios = groupe.querySelectorAll('input[type="radio"]');
+        if (radios.length > 0) fireEvent.click(radios[radios.length - 1]);
+      }
+      expect(screen.queryByRole('alert'), `écran ${ecran + 1}, après réponse`).toBeNull();
+      const bouton = screen.queryByRole('button', { name: 'Voir le résumé' }) ?? screen.getByRole('button', { name: /Suivant/ });
+      fireEvent.click(bouton);
+    }
+    expect(screen.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).not.toBeNull();
+    return parEcran;
+  }
+
+  it('verdict du serveur : l’encart sur chaque écran et au résumé, jamais le message de D-277', () => {
+    const parEcran = parcourir(true);
+    expect(parEcran.length).toBeGreaterThan(1);
+    expect(parEcran.every(n => n === 1), JSON.stringify(parEcran)).toBe(true);
+  });
+
+  it('témoin sans verdict : aucun encart, sur aucun écran', () => {
+    const parEcran = parcourir(false);
+    expect(parEcran.every(n => n === 0), JSON.stringify(parEcran)).toBe(true);
+  });
+
+  // Le constat et le courriel : `declarationSuicideCabinet.guard.test.ts`
+  // (environnement Node — le module du courriel charge le client Anthropic).
+  it('la règle du message ne reconnaît aucune réponse positive sur un CAB_', () => {
+    expect(estReponseSuicidePositive('CAB_TEST', 'Q2', 2, OPTIONS)).toBe(false);
+  });
+});
