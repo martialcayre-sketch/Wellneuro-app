@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "BP-05 — Contexte de prélèvement typé (absorbe BP-06)"
-statut: "en_cours (2026-11-12) — D-497 et déclaration RGPD en PR ; migration seule sur confirmation distincte du responsable ; code consommateur après constat par conteneur"
+statut: "en_cours (2026-11-12) — D-497 et déclaration RGPD mergées (#2013) ; migration seule (table `contextes_prelevement`) écrite sur confirmation distincte du responsable, en PR ; code consommateur après constat par conteneur"
 dépend_de: "LOT-00, LOT-03"
 ---
 
