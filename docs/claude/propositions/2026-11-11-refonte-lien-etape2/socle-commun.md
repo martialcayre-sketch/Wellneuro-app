@@ -72,6 +72,28 @@ une PR courte, ouverte par la session qui en a besoin, annoncée dans les deux
 artefacts de suivi ; l'autre session rebase dessus avant son prochain lot.
 Deux `COM-n` ne sont jamais ouverts en même temps.
 
+## COM-1 — Décor Lien (`LienDecor`)
+
+**Objet.** Poser la primitive commune du décor ([[D-481]] §1 quater).
+`LienDecor` rend un fond, un ornement ou un motif du kit
+(`web/public/wellneuro-lien/`) selon les règles du §1 bis : `aria-hidden`,
+aucune interception du pointeur, masqué à l'impression, sans animation,
+jamais derrière le contenu. Elle ne propose que les éléments nommés aux
+emplacements retenus.
+
+**Préalable.** DOC-2 mergé ([[D-481]], amendement du 2026-11-12).
+
+**Fichiers.** `web/src/components/ui/LienDecor.tsx` et son test, neufs.
+Aucun fichier de COM-0 n'est touché ; aucun écran ne l'emploie dans ce lot.
+
+**Réception.** Banc : nœud décoratif hors de l'arbre d'accessibilité, sans
+pointeur, caché à l'impression ; aucun mouvement, y compris sans
+`prefers-reduced-motion` ; seuls les éléments nommés sont acceptés. Annonce
+dans les deux artefacts de suivi.
+
+L'ornement neuf du §1 ter (végétal et connexion) n'entre dans `LienDecor`
+qu'une fois dessiné et validé par le responsable, par un `COM-n` ultérieur.
+
 ## Règles communes aux deux sessions
 
 - Worktree neuf sur `origin/main` fraîchement fetché, un par lot ; jamais le

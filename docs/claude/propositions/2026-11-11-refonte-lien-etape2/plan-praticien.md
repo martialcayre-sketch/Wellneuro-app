@@ -22,6 +22,7 @@ registre des textes (§1), amendements AM-3, AM-4, AM-5, AM-6 ; artefact
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-14, T-15 | PRA-3 |
 | Texte T-16 inscrit (DOC-1, amendement de [[D-488]]) | PRA-2 |
+| Décor inscrit (DOC-2, [[D-481]] §1 bis) et primitive `LienDecor` mergée (COM-1) | tout lot qui pose un décor : PRA-2, PRA-3a, PRA-3b ; sans eux, le lot livre sans décor |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PRA-2 à PRA-5 |
 
 Un amendement refusé retire ce qui en dépend : sans AM-3, les vues rapides
@@ -110,7 +111,9 @@ fiches-trajectoires, Comptes du cabinet, Correspondance, Confiance & droits
 Habillage Lien par les jetons du socle ; aucune palette codée en dur ;
 icônes Lucide à 1,75 px. Lien d'évitement « Aller au contenu » sur chaque
 page du portail praticien, connexion comprise (T-16, amendement DOC-1 de
-[[D-488]]). **Réception** : une action principale lisible par zone ; le lien
+[[D-488]]). Décor par `LienDecor` ([[D-481]] §1 bis) : connexion avec
+`login-calm` en périphérie, carte opaque, champs sur fond uni ; petit
+ornement sur un état vide réel seulement. **Réception** : une action principale lisible par zone ; aucun décor derrière un champ ni à l'impression ; le lien
 d'évitement est le premier arrêt de tabulation, visible au focus seulement,
 et vise `<main id="contenu">` (celui de `NavBar` ; celui de la page de
 connexion, à créer) ; états de lecture explicites
@@ -124,11 +127,14 @@ l.551).
   (AM-3) ; rail des sept phases repliable (T-14) ; panneau de contexte
   escamotable (T-15) ; information critique toujours visible dans la zone
   de travail quand le contexte est fermé ; replier ne démonte aucun
-  brouillon.
+  brouillon ; un motif d'alliance discret dans l'en-tête de fiche, sans
+  diminuer l'espace utile ([[D-481]] §1 bis).
 - **3b, contenus** : les panneaux des phases, une PR par groupe de phases
   (Patient ; Données et Compréhension ; Décision ; Actions et protocole ;
   Suivi et réévaluation ; Biologie ; Correspondance et documents ;
-  agendas et journal).
+  agendas et journal). Le panneau de l'objectif négocié reçoit le
+  séparateur `divider-two-voices` ; les intitulés des deux voix restent en
+  texte et à l'impression ([[D-481]] §1 bis).
 - **Réception** : passage d'un dossier à un autre sans contenu précédent ;
   aucun focus perdu dans une zone fermée ; aperçu de diffusion qui ne
   diffuse rien ; approbations conservées ; P15 garde son brouillon quand le
