@@ -240,6 +240,15 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   - P2-b, routé vers la PR 4 : `module.hot.accept(x)`. Le constat a été
     compilé en production et n'embarque rien ; il ne concerne que le
     développement.
+- Contre-passe `wn-reviewer` sur `7ca05b18` : P1-A et P1-B fermés. Toutes
+  les formes AMD que webpack embarque sont vues. BLOQUER sur un constat :
+  - P1-C, corrigé : un pragma séparé par U+0085 (NEL) passe, car SWC
+    l'admet et le `\s` de JavaScript l'ignore. Le second verrou rate en
+    plus un dossier `jsx-runtime/` (avec `index.ts` ou `package.json`).
+  - Correctif : toute mention du pragma de source JSX ferme le verrou, quel
+    que soit le séparateur. Sa valeur n'est plus lue.
+  - Le banc du dossier liste désormais tous ses fichiers, et plus seulement
+    ses sources. Il refuse tout `jsx-runtime`, en fichier comme en dossier.
 
 ## Problèmes ouverts
 

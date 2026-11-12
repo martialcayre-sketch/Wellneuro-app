@@ -125,11 +125,14 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
       }
     }
   };
-  // `/** @jsxImportSource x */` : le compilateur importe `x/jsx-runtime`. Un
-  // pragma est un commentaire, que le parseur ne rend pas : il est lu dans le
-  // texte, et une prose qui le citerait fermerait le verrou (`wn-reviewer` sur #2006).
-  // La valeur s'arrête avant un `*/` collé (`…options*/`, contre-passe sur b1524e75).
-  for (const m of source.matchAll(/@jsxImportSource\s+((?:(?!\*\/)\S)+)/g)) trouves.push(`${m[1]}/jsx-runtime`);
+  // Le pragma de source JSX (`@jsx` suivi de `ImportSource x`) fait importer
+  // `x/jsx-runtime` au compilateur. Un pragma est un commentaire, que le
+  // parseur ne rend pas, et sa valeur ne se lit pas sûrement dans le texte : un
+  // `*/` collé, un séparateur U+0085 que SWC admet et que `\s` ignore
+  // (contre-passes `wn-reviewer` sur #2006). TOUTE mention ferme donc le
+  // verrou, prose comprise. Aucune n'existe en production — ce fichier écrit le
+  // mot en deux morceaux pour ne pas s'y compter.
+  if (PRAGMA_SOURCE_JSX.test(source)) trouves.push(IMPORT_NON_CONSTANT);
   const visiter = (n: Node): void => {
     if (isImportDeclaration(n) || isExportDeclaration(n)) {
       if (n.moduleSpecifier) argument(n.moduleSpecifier);
@@ -163,6 +166,8 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   visiter(fichier);
   return trouves;
 }
+
+const PRAGMA_SOURCE_JSX = new RegExp('jsx' + 'ImportSource', 'i');
 
 /** Rendu par `specificateursSyntaxiques` pour un argument d'import non constant. */
 export const IMPORT_NON_CONSTANT = '<import non constant>';

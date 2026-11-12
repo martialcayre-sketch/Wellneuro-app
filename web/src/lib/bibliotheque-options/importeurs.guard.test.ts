@@ -53,10 +53,22 @@ const fichiersHorsSrc = () =>
 describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)', () => {
   const sources = [...fichiersSource(), ...fichiersHorsSrc()];
 
-  // Un pragma `@jsxImportSource`, sous quelque forme que ce soit, n'importe que
-  // `<dossier>/jsx-runtime` : le dossier n'en porte aucun (contre-passe sur b1524e75).
+  // Un pragma `@jsxImportSource` n'importe que `<dossier>/jsx-runtime` : le
+  // dossier n'en porte aucun, ni fichier, ni dossier, ni `package.json` qui y
+  // renverrait — TOUS ses fichiers sont listés, pas seulement les sources
+  // (contre-passes `wn-reviewer` sur b1524e75 et 7ca05b18).
   it('le dossier ne porte aucun jsx-runtime', () => {
-    expect(sources.filter(f => f.startsWith(DOSSIER) && /\/jsx-(dev-)?runtime\.[^/]+$/i.test(f))).toEqual([]);
+    const tous = execFileSync(
+      'git',
+      ['ls-files', '--cached', '--others', '--exclude-standard', '--', DOSSIER],
+      { cwd: RACINE, encoding: 'utf8' },
+    ).split('\n').filter(Boolean);
+    expect(tous).toContain(`${DOSSIER}vocabulaire.ts`);
+    const runtime = /(^|\/)jsx-(dev-)?runtime(\.|\/|$)/i;
+    expect(tous.filter(f => runtime.test(f.slice(DOSSIER.length)))).toEqual([]);
+    for (const f of ['jsx-runtime.ts', 'jsx-runtime/index.ts', 'jsx-runtime/package.json', 'JSX-Dev-Runtime/index.tsx']) {
+      expect(runtime.test(f), f).toBe(true);
+    }
   });
 
   it('le balayage voit le module lui-même et les entrées hors de web/src (anti-vacuité)', () => {
@@ -164,8 +176,11 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       ['define("m", ["./a", "./b"], function () {});', ['./a', './b']],
       ['define({ a: 1 });', []],
       ['const o = { define: 1 }; o.define;', []],
-      ['/** @jsxImportSource @/lib/bibliotheque-options */', ['@/lib/bibliotheque-options/jsx-runtime']],
-      ['/*@jsxImportSource @/lib/bibliotheque-options*/', ['@/lib/bibliotheque-options/jsx-runtime']],
+      // Toute mention du pragma ferme le verrou, quel que soit le séparateur.
+      ['/** @jsxImportSource @/lib/bibliotheque-options */', [IMPORT_NON_CONSTANT]],
+      ['/*@jsxImportSource @/lib/bibliotheque-options*/', [IMPORT_NON_CONSTANT]],
+      ['/* @jsxImportSource\u0085@/lib/bibliotheque-options */', [IMPORT_NON_CONSTANT]],
+      ['/* @jsxImportSource react */', [IMPORT_NON_CONSTANT]],
       ['define(["exports", "require"], (e, r) => r("./x"));', ['exports', 'require', IMPORT_NON_CONSTANT]],
       ['define(function () { return 1; });', []],
     ];
