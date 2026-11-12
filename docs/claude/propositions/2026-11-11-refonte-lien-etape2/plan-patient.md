@@ -19,6 +19,7 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | COM-0 mergé | tous |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-21 à T-23, T-32 | PAT-1 |
 | Texte accepté et inscrit (DOC-0 ou DOC-n) : T-31 | PAT-2 (sinon PAT-2 livre sans lui) |
+| T-36 à T-39 acceptés mot pour mot le 2026-11-12 et inscrits dans D-488 (DOC-5) | PAT-2, entrée seule ; questionnaires inchangés |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-30 (les neuf lignes ensemble) | PAT-3 (idem) |
 | Q-E2-5 tranchée (« Réessayer » sur un suivi non reconnu) | PAT-3 (sinon l'existant reste) |
 | Texte accepté et inscrit : T-33 ([[D-488]]) ; T-34 refusé | PAT-5 |
@@ -114,7 +115,8 @@ même jour, à part : voir le paragraphe suivant (DOC-4).
 
 **Q5–Q7 du 2026-11-12** : `Q5a — Q6b — Q7a`, inscrits par DOC-4 dans
 [[D-481]] ; détails : [`pat2-arbitrages.md`](pat2-arbitrages.md). Le lot
-PAT-2 reçoit, une fois T-36 à T-39 acceptés mot pour mot puis inscrits :
+PAT-2 reçoit, T-36 à T-39 étant acceptés mot pour mot le 2026-11-12 et
+inscrits dans [[D-488]] par DOC-5 :
 le lien « Me reconnecter » sous « Session expirée. Reconnectez-vous. », dans
 le même onglet ; le correctif du brouillon de l'entrée (mention de
 conservation après une écriture réussie seulement, heure de la dernière
