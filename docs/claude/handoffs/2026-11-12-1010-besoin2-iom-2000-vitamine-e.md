@@ -38,6 +38,7 @@ Restes du besoin 2, dans l'ordre déjà tranché : relire `WN-CL-0649-005` contr
 
 - `WN-CL-0653-001` attend la signature du responsable ; puis constat (statut, hash, contrats).
 - `WN-CL-0044-020` et `0044-021` restent à relire (`D-473` §6).
+- Le `requiredAction` des notices `0652` et `0653` dit « en attente de la signature » : à passer à « signés » au prochain lot qui touche le registre, une fois les signatures constatées (`0573`, `0577` et `0578` portent le même retard).
 - Toujours ouverts :
   - la licence non commerciale de l'OMS 2019 (`0652`), question au responsable ;
   - 0189-136 à 0189-140, dont l'unité de la source date de 2006 ;
