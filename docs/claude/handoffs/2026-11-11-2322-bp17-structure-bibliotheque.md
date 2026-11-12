@@ -160,8 +160,9 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   T1 complet : un seul rouge, hérité de main (#2017, D-499).
   `scripts/wn-revue-copilot.test.mjs`, test « câblage », attend encore que
   `wn-merge` nomme `wn-revue-copilot.mjs`, mais D-499 a retiré cette
-  mention. Le CI de main est pourtant vert sur `b56ca4d9`. Ce test sort
-  du périmètre de ce lot et n'est pas corrigé ici.
+  mention. Main l'a réaligné (#2029), fusionné sur la branche :
+  `bancs-outillage-check` est vert, et les étapes qui n'avaient pas tourné
+  derrière lui (anti-secrets) aussi.
 
 ## Problèmes ouverts
 
