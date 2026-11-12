@@ -3,9 +3,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  axesDeLaFiche,
   claimsDeLaFiche,
   claimsDuTerme,
   contexteDeRubrique,
+  MARQUE_RESERVE,
+  messageContreLecture,
   messageRedactionFiche,
   rubriquesRedigees,
   sourcesDc03,
@@ -23,7 +26,7 @@ const FICHE = {
 const CLAIMS = new Map([['WN-CL-9999-001::v1.0', { sourceId: 'WN-SRC-9999', texte: 'Claim synthétique.' }]]);
 
 test('un claim épinglé absent de l’instantané arrête la fiche, et l’erreur ne nomme que sa clé', () => {
-  assert.deepEqual(claimsDeLaFiche(FICHE, CLAIMS), [{ cle: 'WN-CL-9999-001::v1.0', texte: 'Claim synthétique.' }]);
+  assert.deepEqual(claimsDeLaFiche(FICHE, CLAIMS), [{ cle: 'WN-CL-9999-001::v1.0', texte: 'Claim synthétique.', sousReserve: false }]);
   assert.throws(() => claimsDeLaFiche({ ...FICHE, claims: [{ claimId: 'WN-CL-9999-002', versionClaim: 'v2.0' }] }, CLAIMS), /WN-CL-9999-002::v2\.0/);
 });
 
@@ -71,6 +74,37 @@ test('tout ou rien : un refus, un échec technique ou un DC-03 négatif fait éc
     ['options', 'contre_lecture_incomplete'],
     ['precautions', 'dc03'],
   ]);
+});
+
+// [[D-501]] : les axes signés partent avec la fiche, la réserve marque ses claims.
+test('v2 : le message porte les axes signés, et la marque des seuls claims sous réserve', () => {
+  const fiche = {
+    ...FICHE,
+    nature: 'information_contributive',
+    usageDecisionnel: 'departager_options',
+    securiteAdmissibilite: true,
+    statutUsage: 'preuves_limitees',
+    niveauMesure: 'exploration_fonctionnelle',
+    claims: [...FICHE.claims, { claimId: 'WN-CL-9999-002', versionClaim: 'v1.0' }],
+  };
+  const claims = new Map([...CLAIMS, ['WN-CL-9999-002::v1.0', { texte: 'Second claim.' }]]);
+  const cites = claimsDeLaFiche(fiche, claims, ['WN-CL-9999-002']);
+  assert.deepEqual(cites.map(c => c.sousReserve), [false, true]);
+  const m = messageRedactionFiche(fiche, cites);
+  assert.match(m, /NATURE DU LIEN : information_contributive\n/);
+  assert.match(m, /USAGE DÉCISIONNEL : departager_options\n/);
+  assert.match(m, /MARQUEUR SÉCURITÉ \/ ADMISSIBILITÉ : oui\n/);
+  assert.match(m, /STATUT D'USAGE : preuves_limitees\n/);
+  assert.match(m, /NIVEAU DE MESURE : exploration_fonctionnelle\n/);
+  assert.match(m, /"WN-CL-9999-001::v1\.0" : Claim synthétique\./);
+  assert.ok(m.includes(`"WN-CL-9999-002::v1.0" ${MARQUE_RESERVE} : Second claim.`));
+  // Sans liste de réserve, aucune marque.
+  assert.ok(!messageRedactionFiche(fiche, claimsDeLaFiche(fiche, claims)).includes(MARQUE_RESERVE));
+  // Le contre-lecteur reçoit les mêmes axes et la même marque ; un libellé n'a pas d'axes.
+  const cl = messageContreLecture({ nature: 'rubrique « question »', texte: 'T.', contexte: null, claimsCites: cites, axes: axesDeLaFiche(fiche) });
+  assert.match(cl, /AXES SIGNÉS DE LA FICHE :\nNATURE DU LIEN : information_contributive/);
+  assert.ok(cl.includes(MARQUE_RESERVE));
+  assert.ok(!messageContreLecture({ nature: 'libellé', texte: 'T.', contexte: null, claimsCites: cites }).includes('AXES SIGNÉS'));
 });
 
 test('les sources DC-03 sont exactement ce que le rédacteur a reçu', () => {
