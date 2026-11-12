@@ -79,6 +79,14 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       // Arguments non constants : lecteurs possibles, le verrou se ferme.
       'const n = import(`@/lib/bibliotheque-options/${nom}`);',
       'const m = require(chemin);',
+      // Appelé déballé, et toute autre mention de `require` ou `import.meta` (contre-passe Codex sur 302b80d8).
+      'const d = (0, require)("./bibliotheque-options/vocabulaire");',
+      'const e = (require as (s: string) => unknown)("./bibliotheque-options/vocabulaire");',
+      'const f = module.require("./bibliotheque-options/vocabulaire");',
+      'const r = require; r("./bibliotheque-options/vocabulaire");',
+      'const k = require.context("../bibliotheque-options");',
+      'const w = new Worker(new URL("../bibliotheque-options/vocabulaire", import.meta.url));',
+      'const q = import.meta.webpackContext("../bibliotheque-options");',
     ];
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
@@ -93,7 +101,16 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       "const texte = 'import from @/lib/bibliotheque-options/vocabulaire';",
     ].join('\n');
     expect(specificateursSyntaxiques(prose, 'x.ts').filter(importeLaBibliotheque)).toEqual([]);
+    // Un `require` entre parenthèses : chemin exact, ou sentinelle s'il n'est pas constant.
+    expect(specificateursSyntaxiques('(require)("./bibliotheque-options/vocabulaire");', 'x.js')).toEqual([
+      './bibliotheque-options/vocabulaire',
+    ]);
+    expect(specificateursSyntaxiques('(require)(chemin);', 'x.js')).toEqual([IMPORT_NON_CONSTANT]);
     // Un import constant d'un autre module n'est ni la bibliothèque ni un lecteur possible.
     expect(specificateursSyntaxiques('const z = import("@/lib/" + "autre/module");', 'x.ts')).toEqual(['@/lib/autre/module']);
+    // La seule forme de production qui touche `import.meta` : lue par son chemin, sans sentinelle.
+    expect(
+      specificateursSyntaxiques("new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();", 'x.tsx'),
+    ).toEqual(['pdfjs-dist/build/pdf.worker.min.mjs']);
   });
 });

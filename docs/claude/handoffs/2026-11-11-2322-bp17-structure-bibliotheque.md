@@ -144,6 +144,24 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   se signe pas. Le balayage admet `.mjs`, `.cjs`, `.mts` et `.cts`. Il n'en
   existe aucun sous `web/src`, donc les autres bancs ne changent pas.
   `estUnTest` et le choix de la grammaire du parseur sont alignés.
+- Contre-passe Codex sur `302b80d8` : BLOQUER. Un `require` entre
+  parenthèses, `(require)("…")` ou `(require)(chemin)`, n'était pas lu. Le
+  correctif déballe l'appelé (parenthèses, assertions de type, virgule) et
+  admet `module.require`. Toute autre mention de `require`, comme
+  `const r = require`, `require.context` ou `typeof require`, ferme le verrou.
+  Il en va de même de `import.meta` hors de `.url`, par exemple
+  `import.meta.webpackContext`. `new URL(x, import.meta.url)` est lu par
+  son chemin. Il n'y a aucune de ces mentions en production. La seule forme
+  qui touche `import.meta`, le worker de `pdfjs-dist`, est lue sans
+  sentinelle. Contre-épreuves : chemin exact et sentinelle pour les deux
+  formes relevées, et une contre-épreuve par forme voisine. Tests de la
+  bibliothèque et du balayage : 37, verts.
+
+  T1 complet : un seul rouge, hérité de main (#2017, D-499).
+  `scripts/wn-revue-copilot.test.mjs`, test « câblage », attend encore que
+  `wn-merge` nomme `wn-revue-copilot.mjs`, mais D-499 a retiré cette
+  mention. Le CI de main est pourtant vert sur `b56ca4d9`. Ce test sort
+  du périmètre de ce lot et n'est pas corrigé ici.
 
 ## Problèmes ouverts
 
@@ -178,8 +196,8 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 
 ## Prochaine action exacte
 
-#2006 : CI de la tête, revue sur la tête (CodeRabbit dès que son quota
-revient, sinon PR-Agent prouvé), passe Codex du responsable. Chaque remarque
+#2006 : CI de la tête, revue sur la tête (PR-Agent prouvé, revue exigée
+depuis D-499), passe Codex du responsable. Chaque remarque
 reçoit son verdict, puis la PR est déclarée « prête @<sha> ».
 L'intégrateur merge. La PR 4 (contrôles et garde) suit dans une nouvelle
 session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
