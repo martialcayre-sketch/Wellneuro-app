@@ -77,7 +77,9 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
   );
 
   const progression = (
-    <p className="text-xs text-muted-foreground" aria-live="polite">
+    // Repère d'entrée gardé ([[D-333]] §1, famille 1, précision du
+    // 2026-11-12), en surtitre du prototype PAT-2.
+    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" aria-live="polite">
       Étape {ecran + 1} sur 4
     </p>
   );
