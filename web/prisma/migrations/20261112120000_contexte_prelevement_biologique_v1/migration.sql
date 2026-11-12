@@ -75,9 +75,14 @@
 --
 -- En fin de transaction (trigger de contrainte DIFFÉRÉ
 -- `contextes_prelevement_suppression_nommee`) :
---  5. une suppression dont le dossier survit à la transaction : DELETE est
---     réservé à l'effacement nommé du dossier. Sans cette garde, supprimer
---     une tête ressusciterait la ligne qu'elle remplaçait.
+--  5. une suppression dont le dossier ET le résultat désigné survivent à la
+--     transaction : un contexte ne part qu'avec son résultat — l'effacement
+--     nommé du dossier, ou le ramassage d'un résultat de test par les E2E
+--     (`nettoyerResultatsBiologiques`, sous le drapeau que PR 3 allume) ;
+--     rien d'autre ne supprime un résultat. Sans cette garde, supprimer une
+--     tête ressusciterait la ligne qu'elle remplaçait (revue `wn-reviewer`
+--     du lot : refuser dès que le dossier survit aurait rendu ce ramassage
+--     impossible).
 --
 -- La base NE refuse PAS : une grossesse ou un jour du cycle renseignés pour
 -- un dossier dont BP-13 déclare un autre sexe ou statut (la règle lirait une
@@ -96,7 +101,7 @@
 -- ── FIGÉE, MAIS EFFAÇABLE ──────────────────────────────────────────────────
 --
 -- UPDATE et TRUNCATE sont refusés par trigger. DELETE ne l'est qu'en fin de
--- transaction, si le dossier survit (refus 5) : l'effacement du dossier
+-- transaction, si le dossier et le résultat survivent (refus 5) : l'effacement du dossier
 -- supprime NOMMÉMENT ces lignes, en une instruction, avant les résultats
 -- (clé RESTRICT vers le résultat) et le dossier.
 --
@@ -291,8 +296,9 @@ LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM public.patients p WHERE p.id_patient = OLD.id_patient) THEN
-    RAISE EXCEPTION '% : suppression refusée ; un contexte de prélèvement ne s''efface qu''avec son dossier.', TG_TABLE_NAME;
+  IF EXISTS (SELECT 1 FROM public.patients p WHERE p.id_patient = OLD.id_patient)
+     AND EXISTS (SELECT 1 FROM public.resultats_biologiques r WHERE r.id = OLD.id_resultat) THEN
+    RAISE EXCEPTION '% : suppression refusée ; un contexte de prélèvement ne s''efface qu''avec son résultat ou son dossier.', TG_TABLE_NAME;
   END IF;
   RETURN NULL;
 END;

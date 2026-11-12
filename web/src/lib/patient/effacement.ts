@@ -319,7 +319,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // Les contextes de prélèvement ([[D-497]], BP-05) : FK RESTRICT vers le
     // patient et le résultat racine — ils partent AVANT les résultats, en une
     // seule instruction (remplacements compris). La base refuse leur
-    // suppression si le dossier survit à la transaction (contrat
+    // suppression si le dossier et le résultat survivent à la transaction (contrat
     // `contexte_prelevement_biologique_v1_negatif.sql`).
     supprimees.contextesPrelevement = (
       await tx.contextePrelevement.deleteMany({ where: par })

@@ -29,10 +29,12 @@
 --      d'une même ligne — refusés par les index ; un remplacement qui vise
 --      une autre racine, un autre dossier, ou une ligne absente — refusé par
 --      le trigger ; après remplacements, UNE tête par racine ;
---  11. FIGÉE ET EFFAÇABLE : UPDATE et TRUNCATE refusés ; une suppression
---      hors effacement refusée en fin de transaction ; une ligne remplacée
---      ne se supprime pas sous son successeur ; le résultat ne s'efface pas
---      avant ses contextes (RESTRICT) ; l'effacement NOMMÉ passe, en une
+--  11. FIGÉE ET EFFAÇABLE : UPDATE et TRUNCATE refusés ; une tête supprimée
+--      quand son résultat et son dossier survivent, refusée en fin de
+--      transaction ; une ligne remplacée ne se supprime pas sous son
+--      successeur ; le résultat ne s'efface pas avant ses contextes
+--      (RESTRICT) ; les contextes d'un résultat partent AVEC lui, dossier
+--      conservé (ramassage E2E) ; l'effacement NOMMÉ passe, en une
 --      instruction, puis le dossier ;
 --  12. les FK ont la règle annoncée, les quatorze CHECK sont présents (et
 --      aucun n'appelle `btrim`), les cinq index aussi — le partiel avec son
@@ -46,9 +48,12 @@
 --  14. la RLS deny-all est active et sans policy (posture `D-005`), et
 --      aucune des trois fonctions n'est exécutable par PUBLIC.
 --
--- CHAQUE REFUS EST ISOLÉ : le cas refusé passerait si l'on retirait la seule
--- règle qu'il éprouve. Chaque refus est reconnu à son code ET à son motif
--- (message du trigger, nom de la contrainte ou de la colonne). Deux CHECK ne
+-- CHAQUE REFUS EST RECONNU à son code ET à son motif (message du trigger, nom
+-- de la contrainte ou de la colonne) ; chaque CHECK est éprouvé seul. Trois
+-- refus du trigger ont un second gardien : « résultat absent » et « ligne
+-- absente » (la clé étrangère refuserait ensuite, en 23503 — le contrat
+-- rougirait sur le code), « autre dossier » (un résultat n'a qu'un dossier :
+-- la ligne d'un autre dossier est aussi d'une autre racine). Deux CHECK ne
 -- s'isolent pas, parce que le trigger refuse avant eux : `praticien_non_vide`
 -- (un e-mail blanc n'est pas celui du dossier) et `ne_se_remplace_pas` (une
 -- ligne n'existe pas encore quand elle se désignerait). Ils restent la garde
@@ -376,6 +381,16 @@ BEGIN
   PERFORM pg_temp.refuse('11 résultat effacé avant ses contextes',
     $q$DELETE FROM resultats_biologiques WHERE id = 'res_c3'$q$,
     '23503', 'contextes_prelevement_id_resultat_fkey');
+  -- Les contextes d'un résultat partent AVEC lui, le dossier conservé : le
+  -- ramassage des résultats saisis par les E2E (revue `wn-reviewer`, A1).
+  -- La chaîne entière de `res_c1`, en une instruction, puis le résultat.
+  DELETE FROM contextes_prelevement WHERE id_resultat = 'res_c1';
+  DELETE FROM resultats_biologiques WHERE id = 'res_c1';
+  PERFORM pg_temp.clore();
+  SELECT count(*) INTO nb FROM patients WHERE id_patient = 'PAT_CONTRAT_CTX_A';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'CONTRAT — 11 : le dossier devait survivre au ramassage d''un résultat.';
+  END IF;
   DELETE FROM contextes_prelevement WHERE id_patient = 'PAT_CONTRAT_CTX_A';
   SELECT count(*) INTO nb FROM contextes_prelevement WHERE id_patient = 'PAT_CONTRAT_CTX_A';
   IF nb <> 0 THEN
@@ -390,8 +405,10 @@ BEGIN
   -- ── 12. Clés, CHECK, index, triggers, verrou ─────────────────────────────
   SELECT count(*) INTO nb FROM pg_constraint
   WHERE conrelid = 'public.contextes_prelevement'::regclass AND contype = 'f'
-    AND ((conname IN ('contextes_prelevement_id_patient_fkey', 'contextes_prelevement_id_resultat_fkey')
-          AND confdeltype = 'r')
+    AND ((conname = 'contextes_prelevement_id_patient_fkey' AND confdeltype = 'r'
+          AND confrelid = 'public.patients'::regclass)
+      OR (conname = 'contextes_prelevement_id_resultat_fkey' AND confdeltype = 'r'
+          AND confrelid = 'public.resultats_biologiques'::regclass)
       OR (conname = 'contextes_prelevement_id_ligne_remplacee_fkey' AND confdeltype = 'a'
           AND confrelid = 'public.contextes_prelevement'::regclass));
   IF nb <> 3 THEN
