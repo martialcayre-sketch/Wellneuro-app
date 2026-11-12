@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Toutes les tables filles sont appelées via `tx.<modele>.deleteMany` : on
 // capture l'ordre exact des appels, qui est la garantie du lot.
-const { prisma, appels } = vi.hoisted(() => {
+const { prisma, appels, base } = vi.hoisted(() => {
   const appels: string[] = [];
+  // Fenêtre de la PR 2 de D-497 : la table des contextes peut manquer.
+  const base = { contextesPresente: true };
   const modele = (nom: string) => ({
     deleteMany: vi.fn(async () => {
       appels.push(nom);
@@ -23,6 +25,7 @@ const { prisma, appels } = vi.hoisted(() => {
     dossierEfface: { create: vi.fn(async () => ({})) },
     $queryRaw: vi.fn(async (sql: TemplateStringsArray) => {
       appels.push(`sql:${sql.join('?')}`);
+      if (sql.join('?').includes('to_regclass')) return [{ existe: base.contextesPresente }];
       return [{ '?column?': 1 }];
     }),
   };
@@ -65,7 +68,7 @@ const { prisma, appels } = vi.hoisted(() => {
     tx[nom] = modele(nom);
   }
   const client = { ...tx, $transaction: vi.fn(async (f: (t: unknown) => unknown) => f(tx)) };
-  return { appels, prisma: client as typeof client & Record<string, { create: unknown; deleteMany: unknown; findUnique: unknown }> };
+  return { appels, base, prisma: client as typeof client & Record<string, { create: unknown; deleteMany: unknown; findUnique: unknown }> };
 });
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -74,6 +77,7 @@ import { effacerDossier } from './effacement';
 
 beforeEach(() => {
   appels.length = 0;
+  base.contextesPresente = true;
   vi.clearAllMocks();
 });
 
@@ -332,6 +336,20 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('contextePrelevement')).toBeGreaterThanOrEqual(0);
     expect(rang('contextePrelevement')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Fenêtre de déploiement de la PR 2 de D-497 (arbitrage du 2026-11-12) :
+  // tant que la release-db n'a pas créé la table, l'effacement ne la touche
+  // pas et va jusqu'au dossier. Interroger une table absente annulerait la
+  // transaction entière.
+  it('table des contextes absente : ne la touche pas, efface le reste du dossier', async () => {
+    base.contextesPresente = false;
+    const resultat = await effacerDossier('PAT_SEED_03');
+    expect(appels.some((a) => a.includes('to_regclass'))).toBe(true);
+    expect(appels).not.toContain('contextePrelevement');
+    expect(appels).toContain('resultatBiologique');
+    expect(appels[appels.length - 1]).toBe('patient');
+    expect(resultat.supprimees.contextesPrelevement).toBe(0);
   });
 
   // File durable des lectures (D-282) : FK RESTRICT vers l'import courant et

@@ -14,9 +14,10 @@
 -- CONSTATÉE par conteneur. Le seul code qui l'accompagne est l'effacement
 -- nommé du dossier (`patient/effacement.ts`) : le banc de complétude l'exige
 -- de toute table qui porte `id_patient`. Entre le déploiement du code et
--- l'approbation de la release-db, un effacement de dossier échouerait donc
--- sur la table absente — transaction annulée, rien d'effacé ; d'où
--- l'approbation dans la foulée du merge.
+-- l'approbation de la release-db, la table manque : l'effacement lit d'abord
+-- son existence et ne la touche pas tant qu'elle est absente (arbitrage du
+-- responsable du 2026-11-12, constat PR-Agent ; tolérance à retirer par la
+-- PR 3). L'approbation se donne quand même dans la foulée du merge.
 --
 -- ── CE QU'UNE LIGNE DIT ────────────────────────────────────────────────────
 --

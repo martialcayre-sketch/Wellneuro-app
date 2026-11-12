@@ -47,13 +47,14 @@
 
 - Le contre-audit Codex est un geste manuel du responsable : lui fournir le diff de la PR.
 - La revue de bot doit porter sur la tête (CodeRabbit, sinon Copilot si son quota le permet, sinon PR-Agent prouvé). Tout constat de migration remonte en arbitrage.
-- Le créneau de merge est choisi par le responsable. Il faut la sonde `wn-sonde-release-db` à 0, puis la release-db approuvée dans la foulée : entre le déploiement et l'approbation, `effacerDossier` échoue (table absente, transaction annulée, rien d'effacé).
+- Le créneau de merge est choisi par le responsable. Il faut la sonde `wn-sonde-release-db` à 0, puis la release-db approuvée dans la foulée.
+- **Arbitrage du responsable du 2026-11-12** (constat PR-Agent sur #2018) : l'effacement est rendu tolérant à la table absente. Il lit `to_regclass('public.contextes_prelevement')` dans la transaction et ne touche la table que si elle existe. Attraper l'erreur ne suffirait pas, car une requête sur une table absente annule toute la transaction. Un cas est ajouté à `effacement.test.ts`. **La PR 3 retire cette tolérance** après le constat.
 - Question de la revue, à reprendre au constat : compter en production les résultats dont `supersedes_resultat_id` vise un id absent ou forme un cycle (attendu : 0). Ces fils ne pourraient recevoir aucun contexte.
 - Risque résiduel antérieur, hors lot : `resultats_biologiques` n'a pas de garde contre l'UPDATE.
 
 ## Prochaine action exacte
 
-Merger la PR par la file, au créneau du responsable, sonde à 0. Puis release-db approuvée, sentinelle `WN_RELEASE_DB_OK` liée au run, et constat par `scalingo run -d` : `migrate status` agrégé par nom, table `contextes_prelevement` vide. Ensuite seulement, PR 3 dans une autre session : bloc de contexte à la saisie et à la validation d'import, « non recueilli » ≠ « inconnu », motifs de la série, version suivante de « Vos données personnelles » publiée dans le même déploiement, sans drapeau neuf. Le ramassage E2E (`nettoyerResultatsBiologiques`) y supprimera les contextes puis les résultats dans **une seule** `prisma.$transaction([...])`, contextes filtrés par `resultat: { saisiLe: { gte: depuis } }`. Deux appels séparés seraient refusés : la garde est jugée au commit, et le résultat existerait encore au moment où ses contextes partent seuls (revue `wn-reviewer` de l'écart, N1).
+Merger la PR par la file, au créneau du responsable, sonde à 0. Puis release-db approuvée, sentinelle `WN_RELEASE_DB_OK` liée au run, et constat par `scalingo run -d` : `migrate status` agrégé par nom, table `contextes_prelevement` vide. Ensuite seulement, PR 3 dans une autre session : retrait de la tolérance à la table absente dans `effacement.ts` (et de son cas de banc), bloc de contexte à la saisie et à la validation d'import, « non recueilli » ≠ « inconnu », motifs de la série, version suivante de « Vos données personnelles » publiée dans le même déploiement, sans drapeau neuf. Le ramassage E2E (`nettoyerResultatsBiologiques`) y supprimera les contextes puis les résultats dans **une seule** `prisma.$transaction([...])`, contextes filtrés par `resultat: { saisiLe: { gte: depuis } }`. Deux appels séparés seraient refusés : la garde est jugée au commit, et le résultat existerait encore au moment où ses contextes partent seuls (revue `wn-reviewer` de l'écart, N1).
 
 ## Interdits encore actifs
 
