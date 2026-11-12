@@ -133,6 +133,11 @@ attend d'être lu.
   `lu_par`, `traite_le`, `relances`, `relance_le`. Objets : `prete`,
   `merge_fait`, `reponse_arrivee`, `chevauchement`, `porte_levee`, `autre`.
   Une ligne ne se supprime jamais.
+- **Ce qui n'y entre jamais.** Ni donnée patient (nom, e-mail, identifiant
+  de dossier), ni contenu clinique (réponse clinique, texte de claim, dose,
+  rubrique, mesure), ni secret ou jeton (`docs/securite_rgpd.md`). Le texte
+  nomme l'objet et renvoie à sa source par `ref` ; le contenu reste où il
+  vit.
 - **Qui écrit quoi.**
   - La file qui déclare « prête » écrit `prete` à l'`integrateur` (`ref` =
     la PR), en plus de son commentaire.
