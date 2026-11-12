@@ -14,7 +14,7 @@
   - **Mesure des résultats rendus** (conteneurs de lecture seule, `match_count` 8, seuil par défaut) :
     - les cinq graines de la mesure du 2026-11-11 rendent toujours huit résultats. Avant, un à sept d'entre eux venaient de la liste ; il n'y en a plus aucun, et aucune graine ne se rend elle-même ;
     - avec pour graines les 482 claims exclus (le pire cas), aucun claim exclu n'est rendu. 425 graines rendent huit résultats, 57 en rendent moins, dont 11 aucun (moyenne 7,43) ;
-    - pour ces 57 graines, le parcours exact sans index rend les mêmes comptes que l'index HNSW : le manque vient du seuil de similarité, non du filtre appliqué après l'index. Réserve : le plan exact n'a pas été relu par `EXPLAIN`.
+    - pour ces 57 graines, le parcours exact sans index rend les mêmes comptes que l'index HNSW. Le manque n'est donc pas une perte de l'index, avec un filtre appliqué après lui : même en parcours exact, moins de huit claims servables (validés, actifs, non exclus) dépassent le seuil de similarité près de ces graines. Aucun calcul sans seuil n'a été fait. Réserve : le plan exact n'a pas été relu par `EXPLAIN`.
   - **Toujours ouvert** (handoff du 2026-11-11, pour le responsable, non arbitré) :
     - Q1 : un claim exclu, remis en attente puis revalidé, revient exclu sans acte nouveau ;
     - Q2 : le filtre « exclus seulement » n'existe que dans l'onglet Validés.

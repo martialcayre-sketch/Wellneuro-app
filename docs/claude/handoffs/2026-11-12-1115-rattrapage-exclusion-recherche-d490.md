@@ -59,8 +59,10 @@ Au dépôt privé des revues, dans `rattrapage-d490/` :
     moyenne 7,43.
 - **Cause des 57 graines sous 8** (one-off-5752, lecture seule) : l'index HNSW
   et le parcours exact forcé (`enable_indexscan` et `enable_bitmapscan` à off)
-  rendent les mêmes 57 couples. Le manque vient donc du seuil, et non du filtre
-  appliqué après l'index. Réserve : le plan n'a pas été relu par `EXPLAIN`.
+  rendent les mêmes 57 couples. Le manque n'est donc pas une perte de l'index,
+  avec un filtre appliqué après lui : même en parcours exact, moins de huit
+  claims servables dépassent le seuil près de ces graines. Aucun calcul sans
+  seuil n'a été fait, et le plan n'a pas été relu par `EXPLAIN`.
 - **T1 complet** et `check_no_secrets.sh` : voir la PR.
 
 ## Problèmes ouverts
