@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -8,6 +8,8 @@ const { prisma } = vi.hoisted(() => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      // NF-7, drapeau allumé : la publication est une écriture gardée.
+      updateMany: vi.fn(),
     },
     // Gel du contenu : le PATCH compte les assignations non verrouillées.
     assignation: { count: vi.fn() },
@@ -466,6 +468,199 @@ describe('instruments — EVA sans interprétation (D-088)', () => {
       min: 0,
       max: 10,
       unit: '/10',
+    });
+  });
+});
+
+// ── NF-7 ([[D-303]] §2 et §4, [[D-493]] §3) ─────────────────────────────────
+// Drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé : la publication exige la
+// déclaration « question sur le suicide », et « oui » exige une désignation
+// vérifiée contre la définition. Une modification des questions efface la
+// déclaration. Drapeau éteint : la route d'avant NF-7, à l'identique.
+describe('instruments — déclaration « question sur le suicide » (NF-7)', () => {
+  const A_RELIRE = { ...INSTRUMENT, statutRelecture: 'grille_a_relire' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+    prisma.cabinetInstrument.findFirst.mockResolvedValue(A_RELIRE);
+    prisma.cabinetInstrument.update.mockResolvedValue({});
+    prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 1 });
+    prisma.assignation.count.mockResolvedValue(0);
+  });
+
+  afterEach(() => {
+    delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+  });
+
+  function publier(declaration: Record<string, unknown> = {}) {
+    return PATCH(patchRequest({ idInstrument: 'CAB_1', action: 'publier', ...declaration }));
+  }
+
+  describe('drapeau éteint : rien ne change', () => {
+    it('publier sans déclaration : 200, la donnée écrite est exactement celle d’avant NF-7', async () => {
+      const res = await publier();
+      expect(res.status).toBe(200);
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toEqual({ statutRelecture: 'valide' });
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].where).toEqual({ idInstrument: 'CAB_1' });
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('une déclaration envoyée quand même est ignorée', async () => {
+      await publier({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 });
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toEqual({ statutRelecture: 'valide' });
+    });
+
+    it('modifier les questions n’efface rien', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide' });
+      await PATCH(patchRequest({ idInstrument: 'CAB_1', definition: DEFINITION_VALIDE }));
+      expect('poseQuestionSuicide' in prisma.cabinetInstrument.update.mock.calls[0][0].data).toBe(false);
+    });
+
+    it('le détail ne demande pas la déclaration', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue(INSTRUMENT);
+      const json = await (await GET(new Request('http://localhost/api/praticien/instruments?id=CAB_1'))).json();
+      expect('declarationSuicideRequise' in json.instrument).toBe(false);
+    });
+  });
+
+  describe('drapeau allumé', () => {
+    beforeEach(() => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    });
+
+    it('le détail annonce la déclaration requise', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue(INSTRUMENT);
+      const json = await (await GET(new Request('http://localhost/api/praticien/instruments?id=CAB_1'))).json();
+      expect(json.instrument.declarationSuicideRequise).toBe(true);
+    });
+
+    // [[D-303]] §4 : aucun instrument `valide` sans déclaration.
+    for (const [cas, declaration] of [
+      ['sans réponse', {}],
+      ['réponse nulle', { poseQuestionSuicide: null }],
+      ['réponse en chaîne', { poseQuestionSuicide: 'oui' }],
+    ] as const) {
+      it(`publier ${cas} : 400, rien n’est écrit`, async () => {
+        const res = await publier(declaration);
+        expect(res.status).toBe(400);
+        expect((await res.json()).reason).toBe('invalid_payload');
+        expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+        expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+      });
+    }
+
+    for (const [cas, designation] of [
+      ['sans désignation', {}],
+      ['désignation vide', { questionSuicideId: '', questionSuicideOptionNon: 0 }],
+      ['désignation blanche', { questionSuicideId: '  ', questionSuicideOptionNon: 0 }],
+      ['question inconnue', { questionSuicideId: 'Q9', questionSuicideOptionNon: 0 }],
+      ['valeur « non » absente', { questionSuicideId: 'Q1' }],
+      ['valeur « non » hors des options', { questionSuicideId: 'Q1', questionSuicideOptionNon: 7 }],
+      ['valeur « non » en chaîne', { questionSuicideId: 'Q1', questionSuicideOptionNon: '0' }],
+    ] as const) {
+      it(`« oui » ${cas} : 400, rien n’est écrit`, async () => {
+        const res = await publier({ poseQuestionSuicide: true, ...designation });
+        expect(res.status).toBe(400);
+        expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+        expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+      });
+    }
+
+    it('« oui » désigné : publié, déclaration et désignation écrites avec le statut', async () => {
+      const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'Q2', questionSuicideOptionNon: 0 });
+      expect(res.status).toBe(200);
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].data).toEqual({
+        statutRelecture: 'valide',
+        poseQuestionSuicide: true,
+        questionSuicideId: 'Q2',
+        questionSuicideOptionNon: 0,
+      });
+    });
+
+    it('« non » : publié, toute désignation envoyée est effacée (CHECK de cohérence)', async () => {
+      const res = await publier({ poseQuestionSuicide: false, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 });
+      expect(res.status).toBe(200);
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].data).toEqual({
+        statutRelecture: 'valide',
+        poseQuestionSuicide: false,
+        questionSuicideId: null,
+        questionSuicideOptionNon: null,
+      });
+    });
+
+    // Revue CodeRabbit de #2010 (P1) : la désignation est vérifiée contre la
+    // définition lue ; l'écriture n'a lieu que si l'instrument n'a pas bougé.
+    it('publication gardée : l’écriture exige le statut et la date de mise à jour relus', async () => {
+      await publier({ poseQuestionSuicide: false });
+      expect(prisma.cabinetInstrument.updateMany.mock.calls[0][0].where).toEqual({
+        idInstrument: 'CAB_1',
+        statutRelecture: 'grille_a_relire',
+        updatedAt: A_RELIRE.updatedAt,
+      });
+    });
+
+    it('instrument modifié entre la lecture et l’écriture : 409, rien n’est publié', async () => {
+      prisma.cabinetInstrument.updateMany.mockResolvedValue({ count: 0 });
+      const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'Q1', questionSuicideOptionNon: 0 });
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('conflit_statut');
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+    });
+
+    it('la désignation se vérifie contre la définition RELUE en base, pas contre le corps', async () => {
+      const res = await publier({
+        poseQuestionSuicide: true,
+        questionSuicideId: 'QX',
+        questionSuicideOptionNon: 0,
+        definition: {
+          sections: [{ id: 'S', questions: [{ id: 'QX', texte: 'x', type: 'likert', options: [{ v: 0, l: 'Non' }, { v: 1, l: 'Oui' }] }] }],
+        },
+      });
+      expect(res.status).toBe(400);
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('une saisie chiffrée ne se désigne pas : 400', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({
+        ...A_RELIRE,
+        definitionJson: { sections: [{ id: 'S', questions: [{ id: 'N1', texte: 'Douleur', type: 'number', min: 0, max: 10 }] }] },
+      });
+      const res = await publier({ poseQuestionSuicide: true, questionSuicideId: 'N1', questionSuicideOptionNon: 0 });
+      expect(res.status).toBe(400);
+      expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+      expect(prisma.cabinetInstrument.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('modifier les questions efface la déclaration et repasse en brouillon ([[D-303]] §2)', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({
+        ...INSTRUMENT,
+        statutRelecture: 'valide',
+        poseQuestionSuicide: true,
+        questionSuicideId: 'Q1',
+        questionSuicideOptionNon: 0,
+      });
+      await PATCH(patchRequest({ idInstrument: 'CAB_1', definition: DEFINITION_VALIDE }));
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data).toMatchObject({
+        statutRelecture: 'brouillon',
+        poseQuestionSuicide: null,
+        questionSuicideId: null,
+        questionSuicideOptionNon: null,
+      });
+    });
+
+    it('modifier la grille seule l’efface aussi', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide', poseQuestionSuicide: false });
+      await PATCH(patchRequest({ idInstrument: 'CAB_1', scoring: SCORING_VALIDE }));
+      expect(prisma.cabinetInstrument.update.mock.calls[0][0].data.poseQuestionSuicide).toBeNull();
+    });
+
+    it('modifier le titre seul garde la déclaration', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide', poseQuestionSuicide: true });
+      await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
+      expect('poseQuestionSuicide' in prisma.cabinetInstrument.update.mock.calls[0][0].data).toBe(false);
     });
   });
 });

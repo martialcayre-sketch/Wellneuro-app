@@ -108,7 +108,13 @@ export default function PortailQuestionnairePage() {
   // L'ENCART D'URGENCE SUIT LE PATIENT SUR CHAQUE ÉCRAN DE CES QUESTIONNAIRES
   // ([[D-275]]) : consentement, période close, écran transmis et ses sous-vues.
   // La saisie et le résumé le portent dans `GenericQuestionnaire`.
-  const encart = afficheEncartUrgence(assignation.idQuestionnaire)
+  //
+  // Instrument du cabinet déclaré « oui » ([[D-303]] §3, NF-7) : même encart,
+  // mot pour mot, sur les mêmes écrans — sur le verdict du serveur, qui lit la
+  // copie de la déclaration prise à l'envoi.
+  const avecEncartUrgence =
+    afficheEncartUrgence(assignation.idQuestionnaire) || data.encartUrgenceCabinet === true;
+  const encart = avecEncartUrgence
     ? <EncartUrgenceSuicide className="mb-4" />
     : null;
 
@@ -306,6 +312,7 @@ export default function PortailQuestionnairePage() {
         email={email}
         onDone={retourHub}
         renderer={data.renderer}
+        encartUrgenceCabinet={data.encartUrgenceCabinet === true}
       />
     </div>
   );

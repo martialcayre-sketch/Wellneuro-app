@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { resolveDefinition } from '@/lib/instruments';
+import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
+import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { notePraticienAffichable } from '@/lib/consultation/notePraticien';
@@ -30,6 +31,14 @@ export type PatientQuestionnaireResponse =
        * si le geste aboutira.
        */
       consentementPossible: boolean;
+      /**
+       * NF-7 ([[D-303]] §3) : l'encart signé de [[D-275]] est dû sur cet
+       * instrument du cabinet. Un verdict du serveur, présent seulement
+       * drapeau `WN_ENABLE_DECLARATION_SUICIDE_CAB` allumé ET copie de la
+       * déclaration à vrai sur l'assignation. Les quatre questionnaires du
+       * catalogue n'en dépendent pas (`afficheEncartUrgence`).
+       */
+      encartUrgenceCabinet?: true;
     }
   | {
       ok: false;
@@ -181,7 +190,23 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     const consentementPossible =
       ass.statutReponses === 'deverrouille' || !isDeadlineExpired(ass.dateLimite);
 
-    return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire, renderer, consentementPossible });
+    // NF-7 : la COPIE prise à l'envoi fait foi, sans repli sur l'instrument
+    // (réponse 20261111-0027-a) ; NULL n'est pas « non », mais seul `true`
+    // ouvre l'encart (0028-a : non déclaré n'est jamais lu comme « oui » non
+    // plus — c'est la troisième migration qui fermera l'existant non déclaré).
+    const encartUrgenceCabinet =
+      declarationSuicideCabinetActive()
+      && estInstrumentCabinet(ass.idQuestionnaire)
+      && ass.poseQuestionSuicide === true;
+
+    return NextResponse.json({
+      ok: true,
+      assignation: assignationInfo,
+      questionnaire,
+      renderer,
+      consentementPossible,
+      ...(encartUrgenceCabinet ? { encartUrgenceCabinet: true as const } : {}),
+    });
   } catch (err) {
     console.error('[patient/questionnaire GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
