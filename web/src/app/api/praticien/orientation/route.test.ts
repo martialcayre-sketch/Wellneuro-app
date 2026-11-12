@@ -59,6 +59,19 @@ vi.mock('@/lib/clinical/orientationRulesV1', async (importOriginal) => {
 
 import { GET } from './route';
 
+// [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
+// l'admissibilité des claims au corpus. Tout couple est admissible ici — les
+// cas où un claim tombe, ou où le corpus est illisible, ont leurs bancs aux
+// services (`orientationService`, `contradictionsService`, `chaineC1`).
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) =>
+      new Set(references.map(reference => `${reference.claimId}::${reference.versionClaim}`)),
+  };
+});
+
 // PSS-10 complet, total 33 — bande « Niveau élevé de stress et désadaptation ».
 //
 // `rawAnswers` EST OBLIGATOIRE depuis le 2026-08-04 : la route ne relit plus le

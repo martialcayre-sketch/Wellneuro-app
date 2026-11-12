@@ -3,6 +3,7 @@ import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/co
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { canonicalJson, canonicalSha256 } from './canonical';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
+import { lireAdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
 import type { ConfirmedAssessmentEpisode, DecisionCard } from './types';
@@ -192,6 +193,8 @@ export async function refusChaineC1(
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       couverturesAdressage,
+      // Même lecture aux quatre constructions ([[D-495]]) : `null` = corpus illisible.
+      claimsAdmissiblesPriorites: await lireAdmissibilitePriorites(),
     }, await lireSelectionPriorite(episode.patientId, decisionCard.decisionCardId)));
   } catch (error) {
     return `La chaîne clinique ne peut pas être recalculée sur ce dossier : ${

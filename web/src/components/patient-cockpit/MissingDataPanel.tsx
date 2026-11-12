@@ -86,6 +86,7 @@ export function MissingDataPanel({
   missingData,
   discordances,
   contradictions = [],
+  convergencesNonEvaluees = false,
   arbitragesConflits = [],
 }: {
   missingData: MissingDataFinding[] | null;
@@ -97,6 +98,12 @@ export function MissingDataPanel({
    * `contradictionsPourAffichage`, jamais ici.
    */
   contradictions?: ContradictionAffichee[];
+  /**
+   * Les convergences n'ont pas pu être évaluées : la validité des sources de
+   * la table d'orientation n'a pas pu être vérifiée ([[D-495]] §3). Dit, pour
+   * qu'une convergence ne disparaisse pas en silence.
+   */
+  convergencesNonEvaluees?: boolean;
   /**
    * Les arbitrages des conflits de sources constatés, déjà filtrés côté
    * serveur ([[D-439]] A2) : vide drapeau `WN_POSITIONS_EXPERT` éteint. Ils se
@@ -146,6 +153,12 @@ export function MissingDataPanel({
             )}
           />
         ))}
+
+        {convergencesNonEvaluees && (
+          <div role="note" className="rounded-xl border border-status-warning/40 bg-status-warning/10 p-4 text-base text-foreground">
+            Convergences non évaluées : la validité de leurs sources n’a pas pu être vérifiée.
+          </div>
+        )}
 
         {contradictions.map(constat => (
           <TwoLevelReading

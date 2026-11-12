@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   prisma, entreesRuntime, construireChaineC1Tolerante, lireSelectionPriorite,
-  lireCouverturesAdressage,
+  lireCouverturesAdressage, lireAdmissibilitePriorites,
 } =
   vi.hoisted(() => ({
+    lireAdmissibilitePriorites: vi.fn(),
     prisma: { assessmentEpisode: { findUnique: vi.fn() } },
     entreesRuntime: vi.fn(),
     construireChaineC1Tolerante: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('./verifierChaineC1', () => ({ entreesRuntime }));
 vi.mock('./selectionPrioritePrisma', () => ({ construireChaineC1Tolerante, lireSelectionPriorite }));
 vi.mock('./adressagesSignalAlertePrisma', () => ({ lireCouverturesAdressage }));
+vi.mock('@/lib/clinical/prioritesAdmissibles', () => ({ lireAdmissibilitePriorites }));
 
 import { canonicalSha256 } from './canonical';
 import { rejouerCarteDecision } from './rejeuCarteDecision';
@@ -65,6 +67,7 @@ describe('rejouerCarteDecision', () => {
     entreesRuntime.mockResolvedValue(entrees());
     lireSelectionPriorite.mockResolvedValue(null);
     lireCouverturesAdressage.mockResolvedValue(undefined);
+    lireAdmissibilitePriorites.mockResolvedValue(new Set(['WN-CL-FIXTURE::v1.0']));
     construireChaineC1Tolerante.mockReturnValue({
       chaine: { decisionCard: { decisionCardId: ID_CARTE, inputHash: EMPREINTE_APPROUVEE } },
       selectionEcartee: false,
@@ -116,6 +119,36 @@ describe('rejouerCarteDecision', () => {
       selectionEcartee: false,
     });
     expect(await appel()).toEqual({ ok: false, motif: 'carte_derivee' });
+  });
+
+  // [[D-495]] §6 — la même lecture d'admissibilité que le cockpit, et une
+  // interruption SANS révocation : le rejeu n'écrit rien (le double Prisma n'a
+  // que `findUnique`), donc l'empreinte approuvée qui revient sert de nouveau.
+  it('D-495 : transmet à la chaîne l’admissibilité lue au présent', async () => {
+    const admissibles = new Set(['WN-CL-FIXTURE::v1.0']);
+    lireAdmissibilitePriorites.mockResolvedValue(admissibles);
+    await appel();
+    expect(lireAdmissibilitePriorites).toHaveBeenCalledTimes(1);
+    expect(construireChaineC1Tolerante.mock.calls[0][0].claimsAdmissiblesPriorites).toBe(admissibles);
+  });
+
+  it('D-495 : un claim qui tombe interrompt le protocole, son retour le rétablit sans réapprobation', async () => {
+    construireChaineC1Tolerante.mockImplementation((entree: { claimsAdmissiblesPriorites: ReadonlySet<string> | null }) => ({
+      chaine: {
+        decisionCard: {
+          decisionCardId: ID_CARTE,
+          inputHash: entree.claimsAdmissiblesPriorites?.has('WN-CL-FIXTURE::v1.0')
+            ? EMPREINTE_APPROUVEE
+            : 'empreinte-sans-la-priorite',
+        },
+      },
+      selectionEcartee: false,
+    }));
+    lireAdmissibilitePriorites.mockResolvedValueOnce(new Set());
+    expect(await appel()).toEqual({ ok: false, motif: 'carte_derivee' });
+    lireAdmissibilitePriorites.mockResolvedValueOnce(null);
+    expect(await appel()).toEqual({ ok: false, motif: 'carte_derivee' });
+    expect((await appel()).ok).toBe(true);
   });
 
   it('refuse un brouillon qui ne nomme aucun épisode', async () => {

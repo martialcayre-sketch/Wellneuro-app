@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { OrientationApiResponse } from '@/app/api/praticien/orientation/route';
 import type { EcartementPropositionResponse } from '@/app/api/praticien/orientation/ecartement/route';
 import type { ArretSuspendu, PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
+import type { RegleOrientationNonAppliquee } from '@/lib/clinical/orientationAdmissible';
 import { cleCibleEcartement, motifRecevable, MOTIF_LONGUEUR_MAX } from '@/lib/orientation/ecartements';
 import type { ArretNonEvalue, CibleExploration, PassationPerimee, RegleNonEvaluee } from '@/lib/clinical/orientationEngine';
 import type {
@@ -552,6 +553,40 @@ export function OrientationPanel({
   ) : null;
 
   /**
+   * Les règles d'ORIENTATION non appliquées — [[D-495]] §1. Une règle dont un
+   * claim ne satisfait pas les critères de validité du corpus n'est pas passée
+   * au moteur : elle ne propose rien. Rubrique DISTINCTE des « non évaluées »
+   * (source inadmissible ≠ passation trop ancienne), listée que la règle se
+   * déclenche ou non, et rendue dans les deux branches — même motif que les
+   * règles d'arrêt suspendues.
+   */
+  const reglesNonAppliquees: RegleOrientationNonAppliquee[] =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.reglesNonAppliquees)
+      ? reponse.reglesNonAppliquees
+      : [];
+  const blocNonAppliquees = reglesNonAppliquees.length > 0 ? (
+    <div role="note" className="mt-3 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2">
+      <p className="text-xs font-medium text-foreground">Règles d’orientation non appliquées</p>
+      <ul className="mt-2 space-y-2">
+        {reglesNonAppliquees.map(regle => (
+          <li key={regle.regleId} className="text-xs text-foreground">
+            <p>
+              <span className="font-medium">{`Règle d’orientation non appliquée : ${regle.regleId}.`}</span>
+              {' Au moins un claim cité ne satisfait pas les critères de validité du corpus.'}
+              {' Elle ne propose donc aucune exploration.'}
+            </p>
+            {regle.claims.length > 0 && (
+              <p className="mt-0.5 font-mono text-2xs text-muted-foreground">
+                {`Claims concernés : ${regle.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}`}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
+  /**
    * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
    *
    * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
@@ -679,6 +714,7 @@ export function OrientationPanel({
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
           {blocArretsSuspendus}
+          {blocNonAppliquees}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}
@@ -898,6 +934,7 @@ export function OrientationPanel({
             <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
           )}
           {blocArretsSuspendus}
+          {blocNonAppliquees}
           {blocNonEvaluees}
           {blocArretsNonEvalues}
           {blocEcartees}
