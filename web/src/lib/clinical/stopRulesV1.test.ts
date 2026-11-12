@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
+  GRILLES_ARRET,
   LIBELLE_EXTINCTION,
   STOP_RULES_ECARTEES_V1,
   STOP_RULES_METADATA,
@@ -11,6 +12,7 @@ import {
 import { estFeuilleInstrument, feuillesDuDeclencheur, ORIENTATION_RULES_V1 } from './orientationRulesV1';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { GRILLE_INTROUVABLE, grillesCitees } from './grillesSignees';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 
 // Verrou de la table des règles d'arrêt ([[D-053]]) — patron
@@ -29,7 +31,7 @@ describe('stopRulesV1 — statut de signature', () => {
   // supprimée : une dé-signature accidentelle reste attrapée.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(STOP_RULES_METADATA.validationExterne).toBe(true);
-    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-10-10T00:00:00.000Z');
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-11-11T00:00:00.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
@@ -356,15 +358,52 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // littéral-ci qui rougit quand une règle est retouchée, et la sortie de
   // secours est de RE-SIGNER — jamais de mettre le sha à jour en silence.
   // Re-signé le 2026-10-10 ([[D-278]] §2) : l'axe D du DASS-21 entre dans STOP-STR.
-  const SHA_CONTENU_2026_10_10 = '1db9a002eeac4efe784f7884db96a13d8aada2b143757a8ec19d5eb1dac6501a';
+  // Re-signé le 2026-11-11 ([[D-494]]) : le périmètre devient `{ regles, grilles }`.
+  const SHA_CONTENU_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
 
-  it('le sha publié correspond au contenu de la table', () => {
-    expect(STOP_RULES_SHA256).toBe(sha256(JSON.stringify(STOP_RULES_V1)));
+  it('le sha publié porte sur les règles ET les grilles citées', () => {
+    expect(STOP_RULES_SHA256).toBe(
+      sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET })),
+    );
   });
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(STOP_RULES_V1.length).toBe(1);
-    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_10_10);
+    expect(STOP_RULES_SHA256).toBe(SHA_CONTENU_2026_11_11);
+  });
+
+  // L'INVENTAIRE EST ÉPINGLÉ ([[D-400]] §1) : une règle qui citerait un nouvel
+  // instrument doit se voir ici, pas seulement dans un sha qui bouge.
+  it('les grilles signées sont exactement celles des trois instruments cités par STOP-STR', () => {
+    expect(Object.keys(GRILLES_ARRET)).toEqual(['Q_STR_01', 'Q_STR_03', 'Q_STR_04']);
+    for (const grille of Object.values(GRILLES_ARRET)) {
+      expect(grille).not.toBe(GRILLE_INTROUVABLE);
+    }
+  });
+
+  // LE DÉFAUT QUE [[D-400]] RÉPARE, rejoué : élargir la bande « Normal » de
+  // l'axe A du DASS-21 change l'empreinte, donc ferme `tableArretSignee()`.
+  // Avant [[D-494]], ce même geste laissait le sha intact.
+  it('une borne déplacée sur une grille citée change l’empreinte', () => {
+    const q = QUESTIONNAIRE_CATALOGUE.Q_STR_04 as unknown as {
+      scoring: { interpretation: Array<{ subscale: string; ranges: Array<{ label: string; max: number }> }> };
+    };
+    const normalA = q.scoring.interpretation
+      .find(axe => axe.subscale === 'A')!
+      .ranges.find(bande => bande.label === 'Normal')!;
+    const maxAvant = normalA.max;
+    try {
+      normalA.max = maxAvant + 2;
+      const deplacee = sha256(
+        JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) }),
+      );
+      expect(deplacee).not.toBe(SHA_CONTENU_2026_11_11);
+    } finally {
+      normalA.max = maxAvant;
+    }
+    expect(
+      sha256(JSON.stringify({ regles: STOP_RULES_V1, grilles: grillesCitees(STOP_RULES_V1) })),
+    ).toBe(SHA_CONTENU_2026_11_11);
   });
 
   it('le libellé d’extinction est une phrase française stable', () => {

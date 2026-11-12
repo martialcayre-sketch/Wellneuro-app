@@ -65,6 +65,10 @@
  * re-signature. Le mauvais sens de l'erreur est connu — sur-couvrir coûte une
  * re-signature de trop, sous-couvrir laisse un seuil commander une table signée
  * sans être signé.
+ *
+ * TROISIÈME TABLE ([[D-400]] §1, [[D-494]]). La table d'arrêt (`stopRulesV1.ts`,
+ * `STOP_RULES_SHA256`) signe le même périmètre `{ regles, grilles }` depuis le
+ * 2026-11-11 : STOP-STR cite des libellés de Q_STR_01, Q_STR_03 et Q_STR_04.
  */
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import {
