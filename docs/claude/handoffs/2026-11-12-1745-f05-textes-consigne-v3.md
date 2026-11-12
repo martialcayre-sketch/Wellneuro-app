@@ -3,9 +3,9 @@
 ## Branche et état Git
 
 `f05-textes-v3`, recréée sur `origin/main` (e00cf5ca) dans le worktree
-`b-fiche-usage-iode-selenium`, sans fusion. #2023 (D-501, v2) est mergée
-(e6f365c5). Un commit, poussé ; PR ouverte, **non prête** tant que le
-responsable n'a pas approuvé la v3.
+`b-fiche-usage-iode-selenium`. #2023 (D-501, v2) est mergée (e6f365c5).
+Commit de la v3, puis fusion de `origin/main` (9a680203, sans conflit, sur
+arbitrage du responsable), puis commit de l'approbation ; PR #2031.
 
 ## Objectif
 
@@ -18,7 +18,8 @@ v2, sans relâcher la fidélité aux claims.
   fonde la désignation et jamais un fait, avec sa restriction dictée : un
   identifiant opaque ne fonde aucun sens, aucune hypothèse ne se déduit, les
   claims seuls établissent, une contradiction fait refuser la fiche, et la
-  contre-lecture reçoit les mêmes bases (D-501 §5, proposé).
+  contre-lecture reçoit les mêmes bases (D-501 §5). Avis Codex « ACCEPTER »,
+  puis v3 approuvée par le responsable le 2026-11-12 : §5 accepté.
 - Arbitrage du responsable : `POP_FEMME_REGLEE_NON_ANEMIQUE` est un libellé
   proposé par l'assistant, repris de l'identifiant, et approuvé ; il part en
   brouillon sans contre-lecture, traçabilité explicite (D-501 §6).
@@ -50,8 +51,6 @@ v2, sans relâcher la fidélité aux claims.
 
 ## Problèmes ouverts
 
-- **La v3 doit être approuvée par le responsable avant le merge** (D-501
-  §5, statut « proposé »).
 - **Les deux libellés attendent la validation du responsable à l'écran**
   (Biologie fonctionnelle, rayon « Fiches d'usage »). Sans elle, le pilote
   v3 refuse les six fiches avant tout appel.
