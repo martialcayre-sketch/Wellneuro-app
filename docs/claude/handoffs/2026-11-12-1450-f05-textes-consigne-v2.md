@@ -47,19 +47,20 @@ préparer l'outil avant le premier envoi, comme l'a arbitré le responsable.
 - Aucun sur la consigne : la v2 a été relue (avis Codex favorable, nom du
   marqueur conservé), puis approuvée par le responsable le 2026-11-12 ;
   D-501 est acceptée.
-- L'instantané local des claims (`draft-LOT_004_2026-07-25.json`) ne contient
-  pas les 599 claims épinglés : il faut l'extraire de la production par
-  conteneur, en lecture seule (gzip puis base64), vers
-  `~/.wellneuro/corpus/claims/`, hors dépôt, au format attendu par
-  `chargerClaimsLocaux` (`claimId`, `versionClaim`, `texteNormalise`,
-  `contentSha256`, `sourceId`).
+- Instantané des claims : FAIT le 2026-11-12. Lu en production par conteneur,
+  en lecture seule (one-off-5305 ; sortie gzip, base64, en morceaux
+  numérotés, les journaux coupant une ligne vers 16 Ko). 599 paires sur 599,
+  toutes VALIDE et actives ; rechargées par `chargerClaimsLocaux`, aucune
+  empreinte fausse. Fichier hors dépôt :
+  `~/.wellneuro/corpus/claims/f05-epingles-2026-11-12.json`, à passer par
+  `--claims`.
 - L'identifiant `claude-sonnet-5` reste à éprouver au premier appel.
 
 ## Prochaine action exacte
 
-Après la relecture de la v2 et le merge : extraire l'instantané, lancer
-`rediger.mjs --fiche FU_FER_P1,…,FU_FER_P6` (clés de la copie principale par
-`--env-file`), puis `deposer.mjs --validate`, puis `--cible
+Après le merge : lancer `rediger.mjs --fiche FU_FER_P1,…,FU_FER_P6 --claims
+~/.wellneuro/corpus/claims/f05-epingles-2026-11-12.json` (clés de la copie
+principale par `--env-file`), puis `deposer.mjs --validate`, puis `--cible
 https://app.wellneuro.fr`. Constater par conteneur, puis faire relire et
 valider par le responsable à l'écran.
 
