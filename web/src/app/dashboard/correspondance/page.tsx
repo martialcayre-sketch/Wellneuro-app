@@ -27,19 +27,22 @@ export default function CorrespondancePage() {
         <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
           Réseau de soin · campagne C3
         </p>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
+        {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">
           Correspondance
-        </h2>
+        </h1>
         <p className="text-base text-muted-foreground mt-1">
           Les échanges avec le médecin traitant deviennent une pièce du dossier : ce qui a été
           transmis, ce qui est revenu, daté et attribué.
         </p>
       </div>
 
+      {/* Côte à côte au bureau, empilées ailleurs (prototype PRA-2). */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">
+        <h2 className="font-display text-lg font-semibold text-foreground">
           Le geste se fait sur le dossier
-        </h3>
+        </h2>
         <p className="mt-2 text-base text-muted-foreground">
           L&apos;application n&apos;envoie rien au médecin et ne lui ouvre aucun accès. Vous
           consignez, en texte seul, les échanges faits par vos canaux habituels — courrier,
@@ -48,7 +51,8 @@ export default function CorrespondancePage() {
         </p>
         <Link
           href="/dashboard/trajectoires"
-          className="mt-3 inline-flex h-11 items-center rounded-[10px] border border-border px-4 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          // L'action principale de la zone : pleine (prototype PRA-2).
+          className="mt-3 inline-flex h-11 items-center rounded-[10px] bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
         >
           Ouvrir un dossier
         </Link>
@@ -57,6 +61,7 @@ export default function CorrespondancePage() {
       {/* Les mêmes cinq dernières consignations que l'accueil, servies par la
           même route, et chacune ouvre la fiche DIRECTEMENT sur son onglet. */}
       <CorrespondanceRecente />
+      </div>
     </div>
   );
 }

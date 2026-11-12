@@ -67,8 +67,10 @@ import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import {
   evaluerOrientationPourPatient,
+  orientationActive,
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
+import { reglesOrientationAdmissibles, type OrientationAdmissible } from '@/lib/clinical/orientationAdmissible';
 import {
   derniereReponseParQuestionnaire,
   type RecommandationExploration,
@@ -1180,11 +1182,30 @@ export async function preparerGeneration(
     // convergence emportait les discordances avec elle, sous un message qui
     // les en accusait. Elles ne nourrissent pas le garde de restitution — les
     // gardes ne les lisent pas (`morceaux`).
+    //
+    // LES SEULES RÈGLES D'ORIENTATION APPLIQUÉES ([[D-495]] §1) : la même
+    // lecture que le cockpit. Corpus illisible ⇒ aucune convergence ici, et
+    // la synthèse ne le dit pas encore — limite reconnue, rattachée à t77
+    // ([[D-495]] §8).
+    //
+    // UNE SEULE LECTURE POUR LA CONVERGENCE ET L'ORIENTATION (revue
+    // CodeRabbit de #2025) : deux lectures pouvaient diverger — un claim tombé
+    // entre les deux, ou une seconde lecture illisible qui éteignait
+    // l'orientation en laissant les convergences déjà ajoutées. Une levée
+    // inattendue vaut un corpus illisible : ni orientation, ni convergence.
+    let orientationApplicable: OrientationAdmissible | null = null;
+    try {
+      orientationApplicable = orientationActive() ? await reglesOrientationAdmissibles() : null;
+    } catch {
+      orientationApplicable = null;
+    }
     try {
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
         ...vigilancesConvergencePourSynthese(
-          constatsContradictionsPourDossier(reponses, anamnesePourConstats, Date.now(), 'convergences'),
+          constatsContradictionsPourDossier(
+            reponses, anamnesePourConstats, Date.now(), 'convergences', orientationApplicable,
+          ),
         ),
       ];
     } catch (convErr) {
@@ -1204,7 +1225,7 @@ export async function preparerGeneration(
     // rien tant que la table n'est pas signée.
     let orientation: ResultatOrientation | null = null;
     try {
-      orientation = await evaluerOrientationPourPatient(idPatient);
+      orientation = await evaluerOrientationPourPatient(idPatient, orientationApplicable);
     } catch (orientErr) {
       logger.warn({
         event: EVENT_CODES.SYNTHESE_ORIENTATION_INDISPONIBLE,

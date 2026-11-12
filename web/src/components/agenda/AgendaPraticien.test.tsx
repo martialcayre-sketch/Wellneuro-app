@@ -120,4 +120,29 @@ describe('AgendaPraticien', () => {
     expect(alerte.closest('form')).not.toBeNull();
     expect(screen.getByText(/Aucun rendez-vous planifié/i)).toBeTruthy();
   });
+
+  // T-17 « Réessayer » ([[D-488]], DOC-6) : relit la seule liste ; la saisie
+  // du formulaire « Planifier » reste.
+  it('« Réessayer » relit la liste et garde la saisie du formulaire', async () => {
+    let enPanne = true;
+    const appels: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: { method?: string }) => {
+        appels.push(`${init?.method ?? 'GET'} ${url}`);
+        if (enPanne) return { ok: false, json: async () => ({ ok: false, error: 'x' }) } as unknown as Response;
+        return { ok: true, json: async () => ({ ok: true, rendezVous: [] }) } as unknown as Response;
+      }),
+    );
+    render(<AgendaPraticien patients={PATIENTS} />);
+    await screen.findByRole('alert');
+    const motif = screen.getByLabelText(/Motif/i) as HTMLInputElement;
+    fireEvent.change(motif, { target: { value: 'Point de suivi' } });
+    enPanne = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByText(/Aucun rendez-vous planifié/i)).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect((screen.getByLabelText(/Motif/i) as HTMLInputElement).value).toBe('Point de suivi');
+    expect(appels).toEqual(['GET /api/praticien/rendez-vous', 'GET /api/praticien/rendez-vous']);
+  });
 });

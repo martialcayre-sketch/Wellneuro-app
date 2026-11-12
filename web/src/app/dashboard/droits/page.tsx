@@ -11,24 +11,25 @@ export default function DroitsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Confiance &amp; droits</h2>
+        {/* Titre de page en h1, titres de zone en h2 (PRA-2b, Q2). */}
+        <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Confiance &amp; droits</h1>
         <p className="text-base text-muted-foreground mt-1">
           Signalements d’effets indésirables, incidents de confidentialité et demandes de droits
           déposés par vos patients. Rien ne se supprime : les statuts évoluent.
         </p>
       </div>
       <section>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
           File des signalements et demandes
-        </h3>
+        </h2>
         <TrustPanel />
       </section>
       {/* [[D-292]] §3 — absente drapeau fermé : le cockpit reste celui d'avant. */}
       {conditionsUtilisationOuvertes() && (
         <section>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
             Conditions d’utilisation — e-mail aux patients suivis
-          </h3>
+          </h2>
           <EnvoiConditionsPanel />
         </section>
       )}

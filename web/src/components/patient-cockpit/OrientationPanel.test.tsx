@@ -314,6 +314,45 @@ describe('OrientationPanel', () => {
     expect(screen.queryByText(/Claims concernés/)).toBeNull();
   });
 
+  // [[D-495]] — une règle d'ORIENTATION non appliquée faute de claim
+  // admissible : rubrique distincte, dite dans les deux branches (texte T1).
+  const NON_APPLIQUEE = {
+    regleId: 'R-SOM-01',
+    claims: [{ claimId: 'WN-CL-0102-004', versionClaim: 'v1.0' }],
+  };
+
+  it('D-495, liste non vide : la règle non appliquée est dite, dans sa rubrique, avec ses claims', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], reglesNonAppliquees: [NON_APPLIQUEE] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règles d’orientation non appliquées')).toBeTruthy();
+    expect(screen.getByText('Règle d’orientation non appliquée : R-SOM-01.')).toBeTruthy();
+    expect(screen.getByText(/Au moins un claim cité ne satisfait pas les critères de validité du corpus\. Elle ne propose donc aucune exploration\./)).toBeTruthy();
+    expect(screen.getByText('Claims concernés : WN-CL-0102-004 v1.0')).toBeTruthy();
+  });
+
+  it('D-495, liste vide : la règle non appliquée est dite aussi', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [], reglesNonAppliquees: [NON_APPLIQUEE] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’orientation non appliquée : R-SOM-01.')).toBeTruthy();
+  });
+
+  it('D-495 : corpus illisible — le message du serveur est affiché tel quel', async () => {
+    stubFetch({
+      ok: true,
+      actif: false,
+      version: 'orientation-nnpp2-v1',
+      message: 'L\'orientation n\'est pas affichée : la validité de ses sources n\'a pas pu être vérifiée.',
+    });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('L\'orientation n\'est pas affichée : la validité de ses sources n\'a pas pu être vérifiée.')).toBeTruthy();
+  });
+
   it('D-491 : aucun bloc de suspension quand aucune règle d’arrêt n’est suspendue', async () => {
     stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [] });
 

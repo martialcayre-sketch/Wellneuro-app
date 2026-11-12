@@ -1,0 +1,6 @@
+- **Mise à jour (2026-11-12, correction : une quatrième rubrique publiée contre `D-325` §5, occultée par `D-504`)** : forme opaque (`D-251` §4).
+  - **Écart** : une ligne de ce journal associait un identifiant de claim et sa rubrique, que `D-325` §5 réserve au dossier privé : `2026-11-12-01-iom-2000-relecture-0649-005.md`, ligne 2. Relevé par le banc contextuel identifiant–rubrique de `D-502` §4, lors du balayage de l'arbre courant, avant son branchement.
+  - **Arbitrage du responsable** (question à options `20261112-2005-b`, option recommandée) : la décision d'occultation d'abord, en PR de doc distincte (`D-504`), puis le banc.
+  - **Geste** : sur cette ligne seule, le nom de la rubrique est remplacé par « rubrique occultée (`D-504`) » ; nom de fichier, rang et autres mots inchangés. **L'historique Git garde la formulation d'origine** : il n'est pas réécrit.
+  - **Effet** : aucun claim, aucune étiquette, aucune écriture en base. La règle du journal reste entière, et l'exception de `D-502` reste close à ses trois lignes.
+  - **Suite** : le banc identifiant–rubrique, branché bloquant dans le CI, en lot d'outillage distinct.
