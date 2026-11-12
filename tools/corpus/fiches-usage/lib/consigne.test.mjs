@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v1 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v2 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -21,4 +21,19 @@ test('la consigne interdit nombre, donnée patient et médicament, et impose la 
   assert.match(redaction, /aucun médicament/);
   assert.match(redaction, /Les sources retenues ne documentent pas ce point\./);
   assert.match(contreLecture, /En cas de doute, le texte est INFIDÈLE/);
+});
+
+// [[D-501]] : les axes signés, la réserve d'indication et la règle des libellés
+// d'hypothèse ([[D-477]] §2) sont dans les deux consignes.
+test('v2 : axes signés, réserve d’indication et libellé d’hypothèse, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  for (const c of [redaction, contreLecture]) {
+    assert.match(c, /\[SOUS RÉSERVE D'INDICATION\]/);
+    for (const axe of ['preuves_limitees', 'non_valide', 'information_contributive', 'exploration_fonctionnelle', 'marqueur_experimental']) {
+      assert.ok(c.includes(axe), axe);
+    }
+    assert.match(c, /état fonctionnel/);
+  }
+  assert.match(redaction, /des plafonds,\s+pas des contenus/);
+  assert.match(contreLecture, /AXES SIGNÉS DE LA FICHE/);
 });

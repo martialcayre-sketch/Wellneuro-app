@@ -169,11 +169,35 @@ T-35 ne fait pas partie du bloc accepté le 2026-11-11 et n'est pas ajouté
 aux textes acceptés de [[D-488]]. Aucun changement de destination, de garde
 ou d'authentification n'est proposé ici. Q5 (reconnexion), Q6 (brouillon
 dans l'onglet) et Q7 (emplacement de l'alerte) restent des questions
-séparées : aucun autre texte n'est implicitement accepté.
+séparées : aucun autre texte n'est implicitement accepté. Elles ont été
+tranchées le même jour, à part : voir §2.6 (DOC-4).
+
+### 2.6 Textes après arbitrage PAT-2 (Q5a, Q6b) — acceptés (D-488)
+
+Le responsable a retenu Q5 (a), Q6 (b) et Q7 (a) le 2026-11-12 (DOC-4).
+Il a ensuite accepté mot pour mot les quatre formulations ci-dessous,
+telles qu'au présent §2.6 sur `claude/refonte-lien-doc4-pat2@61b3b1da`.
+Inscription par DOC-5 dans [[D-488]], amendement du 2026-11-12 ; application
+dans PAT-2 seulement. Numérotation : textes patient, à la suite de T-35.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-36 | Me reconnecter | lien sous « Session expirée. Reconnectez-vous. » (réponses 401 de `/api/portail/consentement`, `/fiche`, `/valider`), vers la page de connexion, dans le même onglet | laisser le patient comprendre l'interruption et choisir de poursuivre (Q5a) | aucun | PAT-2 | **Accepté (D-488)** |
+| T-37 | Brouillon gardé dans cet onglet — dernière sauvegarde à {HH:MM}. Il ne sera transmis à votre praticien qu’après validation. | entrée seule (fiche et situation, `app/portail/[token]/page.tsx`) ; `{HH:MM}` = heure de la dernière écriture réussie | dire où le brouillon est réellement conservé (`sessionStorage`) (Q6b) | « Brouillon enregistré sur cet appareil — dernière sauvegarde à {HH:MM}. Il ne sera transmis à votre praticien qu’après validation. » `components/patient/SaveStatusIndicator.tsx:36` | PAT-2 | **Accepté (D-488)** |
+| T-38 | Connexion interrompue — vos réponses restent conservées dans cet onglet. | entrée seule, idem | idem (Q6b) | « Connexion interrompue — vos réponses restent conservées sur cet appareil. » `SaveStatusIndicator.tsx:19` | PAT-2 | **Accepté (D-488)** |
+| T-39 | Transmission non terminée — vos réponses restent conservées dans cet onglet. | entrée seule, idem | idem (Q6b) | « Transmission non terminée — vos réponses restent conservées sur cet appareil. » `SaveStatusIndicator.tsx:27` | PAT-2 | **Accepté (D-488)** |
+
+Les questionnaires (brouillon en `localStorage`) gardent leurs textes « sur
+cet appareil » : T-37 à T-39 ne valent que pour l'entrée (U07, U08).
+`{HH:MM}` est l'heure de la dernière écriture réussie. Q7 (a) ne propose
+aucun texte : le message de sécurité garde son texte et son emplacement
+([[D-277]] §1). T-36 à T-39 sont acceptés et inscrits dans [[D-488]] par
+DOC-5 ; aucun code ne change dans ce lot documentaire. Le correctif Q6b
+reste à réaliser dans PAT-2. T-35 reste proposé, non accepté.
 
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2, inscrit par DOC-1) |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 acceptés et inscrits dans D-488 par DOC-5 (PAT-2) ; T-35 reste proposé, non accepté |

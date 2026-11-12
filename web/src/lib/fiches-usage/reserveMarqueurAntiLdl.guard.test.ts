@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { FICHES_USAGE_BESOIN2_V1 } from '@/lib/fiches-usage/ficheUsageBesoin2V1';
+import { CLAIMS_SOUS_RESERVE_INDICATION } from '@/lib/fiches-usage/reserveIndication';
 import { INDICATIONS_BIOLOGIE_V1 } from '@/lib/biology-library/indicationsBiologieV1';
 import { CORPUS_CLINIQUE_SYNTHESE_V1 } from '@/lib/clinical/corpusSyntheseV1';
 
@@ -173,6 +174,11 @@ describe('Réserve de D-465 §3 : le marqueur anti-LDL oxydé ne vaut pas indica
 
   describe('1. fiches d’usage signées', () => {
     const fiches = FICHES_USAGE_BESOIN2_V1.fiches;
+
+    // [[D-501]] : la liste que lit l'outil de rédaction est exactement celle-ci.
+    it('la liste lue par l’outil de rédaction est celle du banc', () => {
+      expect([...CLAIMS_SOUS_RESERVE_INDICATION]).toEqual([...CLAIMS_SOUS_RESERVE]);
+    });
 
     // La liste exacte des claims sous réserve que la structure épingle : une
     // épingle nouvelle (à la prochaine re-signature) rougit ici, pour être relue

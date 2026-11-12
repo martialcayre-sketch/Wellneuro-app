@@ -128,3 +128,44 @@ export function lireDeclarationSuicide(
     declaration: { poseQuestionSuicide: true, questionSuicideId: idQuestion, questionSuicideOptionNon: optionNon },
   };
 }
+
+// ── P2-1 (arbitrage du 2026-11-12) : la déclaration conditionne l'envoi ─────
+//
+// Drapeau allumé, un instrument `valide` sans déclaration (NULL, publié
+// drapeau éteint) reste VISIBLE dans la bibliothèque mais ne part plus : il
+// partirait sans encart. Le praticien le déclare par le geste « Déclarer »,
+// sans toucher aux questions ni au statut. Sans migration ni reprise en base ;
+// seule la déclaration est enregistrée par l'application. Le CHECK « valide ⇒
+// déclaré » (troisième migration, 0029-a) reste prévu après l'allumage.
+//
+// CE FILTRE NE REMPLACE PAS LA REPRISE AVANT UN RALLUMAGE : une déclaration
+// devenue périmée drapeau éteint peut être non NULL, et elle passe ce filtre
+// (`docs/FEATURE_FLAGS.md`).
+
+/** Motif affiché sur un instrument publié non déclaré, drapeau allumé (texte arbitré). */
+export const MOTIF_DECLARATION_REQUISE = 'Déclaration requise avant un nouvel envoi';
+
+/**
+ * Vrai si cet instrument publié attend sa déclaration avant de pouvoir partir :
+ * drapeau allumé, `valide`, déclaration NULL. Drapeau éteint : jamais.
+ */
+export function declarationRequiseAvantEnvoi(row: {
+  statutRelecture: string;
+  poseQuestionSuicide: boolean | null;
+}): boolean {
+  return declarationSuicideCabinetActive() && row.statutRelecture === 'valide' && row.poseQuestionSuicide === null;
+}
+
+/**
+ * Un instrument du cabinet peut-il partir AUJOURD'HUI : actif, publié et —
+ * drapeau allumé — déclaré. Même prédicat que le filtre `where` de
+ * `idsAssignablesPour`, pour les lectures qui ont déjà la ligne en main
+ * (file d'envoi, bibliothèque, verrou de l'envoi).
+ */
+export function cabinetEnvoyable(row: {
+  actif: boolean;
+  statutRelecture: string;
+  poseQuestionSuicide: boolean | null;
+}): boolean {
+  return row.actif && row.statutRelecture === 'valide' && !declarationRequiseAvantEnvoi(row);
+}

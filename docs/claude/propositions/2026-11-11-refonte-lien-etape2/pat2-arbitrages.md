@@ -62,3 +62,35 @@ sans inventer une version ArtifactData ni un identifiant de journal.
 > l'alerte) restent ouvertes, à soumettre séparément. Aucun code modifié.
 
 Le report du suivi est une action restante, pas un résultat annoncé.
+
+## Q5–Q7 — arbitrages du 2026-11-12, inscrits par DOC-4
+
+- Réponse écrite du responsable : **Q5a — Q6b — Q7a**. Elle tranche les
+  trois questions laissées ouvertes ci-dessus.
+- Inscription par **DOC-4**, raccordé à DOC-3 (#2012) tant que celui-ci
+  n'est pas fusionné. Référence canonique : [[D-481]], complément DOC-4 ;
+  textes proposés au registre de l'étape 2, T-36 à T-39.
+- **Documentation seule** : pas de réalisation PAT-2. Les quatre textes
+  initialement proposés par DOC-4 ont ensuite été acceptés mot pour mot
+  le 2026-11-12 et inscrits dans [[D-488]] par DOC-5.
+
+| Question | Choix | Où la règle est inscrite |
+|---|---|---|
+| Q5 — reconnexion | a, lien vers la page de connexion sous « Session expirée. Reconnectez-vous. », dans le même onglet ; retour au bon dossier et restauration du brouillon à vérifier au lot | [[D-481]], complément DOC-4 ; T-36 « Me reconnecter » accepté et inscrit dans [[D-488]] par DOC-5 |
+| Q6 — brouillon de l'entrée | b, correctif : la mention de conservation ne paraît qu'après une écriture réussie, avec l'heure de la dernière écriture réussie ; formulations « dans cet onglet » ; les questionnaires gardent « sur cet appareil » | [[D-481]], complément DOC-4 ; T-37 à T-39 acceptés et inscrits dans [[D-488]] par DOC-5 |
+| Q7 — alerte | a, message de sécurité gardé sous la liste des signaux ([[D-277]] §1), sans déplacement ni défilement ; visibilité à vérifier au lot (téléphone réel, zoom 200 %, confort 112,5 %) | [[D-481]], complément DOC-4 ; aucun texte proposé |
+
+Les quatre formulations T-36 à T-39, telles qu'au registre §2.6 sur
+`claude/refonte-lien-doc4-pat2@61b3b1da`, ont été acceptées mot pour mot
+le 2026-11-12 et inscrites dans [[D-488]] par DOC-5. Elles valent pour
+l'entrée seule ; les questionnaires gardent « sur cet appareil ».
+`{HH:MM}` est l'heure de la dernière écriture réussie. Le correctif de
+comportement Q6b reste dans PAT-2. T-35 reste proposé, non accepté.
+Aucun code n'est modifié par cette inscription.
+
+### Suivi patient — report après inscription
+
+Report fait le 2026-11-12 sur la page
+https://claude.ai/artifact/V7AVAR7WiyU64pgJxLeG8S : entrées de journal
+`2026-11-12-09` (inscription de DOC-4) et `2026-11-12-13` (fusion de DOC-3,
+PR de DOC-4) ; statut de la fiche PAT-2 inchangé.

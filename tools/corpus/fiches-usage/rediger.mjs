@@ -32,6 +32,7 @@ import { enParallele, ErreurOutil, erreurSansTexte, parseJsonLache } from '../fi
 import { CLAIMS_PAR_DEFAUT, chargerClaimsLocaux } from '../fiches/lib/entrees.mjs';
 import { consignesVerifiees } from './lib/consigne.mjs';
 import {
+  axesDeLaFiche,
   claimsDeLaFiche,
   claimsDuTerme,
   contexteDeRubrique,
@@ -50,6 +51,7 @@ const { FICHES_USAGE_BESOIN2_V1, FICHES_USAGE_BESOIN2_SHA256, ficheDeLaStructure
 const { lireBrouillonVersionUsage, lireBrouillonLibelle } = await import('@/lib/fiches-usage/contrat');
 const { controlerVersionContreStructure, controlerLibelleContreStructure } = await import('@/lib/fiches-usage/controle');
 const { natureDuTerme } = await import('@/lib/fiches-usage/vocabulaire');
+const { CLAIMS_SOUS_RESERVE_INDICATION } = await import('@/lib/fiches-usage/reserveIndication');
 const { verifierDc03 } = await import('@/lib/bio-parcours/verifierDc03');
 
 export const SORTIES = path.join(os.homedir(), '.wellneuro', 'corpus', 'fiches-usage');
@@ -139,8 +141,9 @@ async function redigerFiche(ficheId, outils) {
   const h = horodatage();
   const fiche = ficheDeLaStructure(ficheId, FICHES_USAGE_BESOIN2_V1);
   if (!fiche) throw new ErreurOutil(`${ficheId} : fiche absente de la structure.`);
-  const cites = claimsDeLaFiche(fiche, claims);
+  const cites = claimsDeLaFiche(fiche, claims, CLAIMS_SOUS_RESERVE_INDICATION);
   const message = messageRedactionFiche(fiche, cites);
+  const axes = axesDeLaFiche(fiche);
   console.log(`${ficheId} : ${fiche.rubriques.length} rubrique(s), ${cites.length} claim(s).`);
 
   const rubriques = rubriquesRedigees(await rediger(anthropic, consignes.redaction, message), fiche.rubriques);
@@ -150,6 +153,7 @@ async function redigerFiche(ficheId, outils) {
       texte: rubriques[r],
       contexte: contexteDeRubrique(rubriques, r),
       claimsCites: cites,
+      axes,
     }),
   );
   const sources = sourcesDc03(message, cites);
@@ -188,7 +192,7 @@ async function redigerLibelle(termeId, outils) {
   // pas serait refusé au contrôle, après deux appels payants (revue).
   const declares = nature === 'hypothese' ? FICHES_USAGE_BESOIN2_V1.hypotheses : FICHES_USAGE_BESOIN2_V1.populations;
   if (!declares.includes(termeId)) throw new ErreurOutil(`${termeId} : terme absent de la structure.`);
-  const { fiches, claims: cites } = claimsDuTerme(termeId, FICHES_USAGE_BESOIN2_V1, claims);
+  const { fiches, claims: cites } = claimsDuTerme(termeId, FICHES_USAGE_BESOIN2_V1, claims, CLAIMS_SOUS_RESERVE_INDICATION);
   // Sans claim, le libellé n'aurait pour base que l'identifiant ou un savoir
   // extérieur (DC-01) : refusé lui aussi avant tout appel (revue).
   if (cites.length === 0) throw new ErreurOutil(`${termeId} : aucun claim épinglé ne porte ce terme.`);

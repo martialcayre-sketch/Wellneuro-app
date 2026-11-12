@@ -39,6 +39,10 @@ export default async function ConnexionPortailPage({
   // atterrissent ici, à l'identique. Rien dans cet écran ne dit lequel des
   // motifs s'applique — c'est la propriété de non-oracle.
   const refuse = parametres?.etat === 'refus';
+  // Deux canaux servis : même poids, séparés d'un filet (prototype PAT-2,
+  // U01, itération 2) — aucun ne paraît secondaire ni indisponible.
+  const deuxCanaux = googleActif && redemandeActive;
+  const varianteCanal = deuxCanaux ? 'ghost' : 'primary';
 
   return (
     <div className="w-full max-w-md space-y-4">
@@ -60,7 +64,7 @@ export default async function ConnexionPortailPage({
                 pas une page : il pose un cookie puis redirige. `<Link>` y ferait une
                 navigation client vers une cible qui n'en est pas une. La règle, qui
                 scanne désormais aussi l'app router, se trompe de cas. */}
-            <a href="/portail/google" className={patientButtonClassName('primary', 'w-full')}>
+            <a href="/portail/google" className={patientButtonClassName(varianteCanal, 'w-full')}>
               Continuer avec Google
             </a>
             {/* Dit AVANT le clic, pas après (registre : Google sous-traitant
@@ -75,8 +79,9 @@ export default async function ConnexionPortailPage({
         {/* Réception d'un lien d'accès par e-mail : le chemin pour qui n'utilise
             pas Google. Réponse indifférenciée (non-oracle) — voir DemandeLienForm.
             Sans le canal public, on rappelle au moins qu'un praticien peut en envoyer. */}
+        {deuxCanaux && <hr className="border-border" />}
         {redemandeActive ? (
-          <DemandeLienForm />
+          <DemandeLienForm variant={varianteCanal} />
         ) : (
           <PatientInlineMessage tone="info">
             Vous avez reçu un lien d’accès par e-mail ? Il reste valable : ouvrez-le directement.

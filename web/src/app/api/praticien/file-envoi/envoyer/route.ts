@@ -6,7 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { estInstrumentCabinet, idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
-import { declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
+import { cabinetEnvoyable, declarationSuicideCabinetActive } from '@/lib/securite/declarationSuicideCabinet';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
@@ -58,6 +58,12 @@ class BrouillonDejaParti extends Error {}
 // assignation ouverte : la transaction est annulée, le brouillon reste
 // en l'état, aucun mail ne part.
 class ToutDejaAssigne extends Error {}
+
+// NF-7, P2-3 : levée quand, sous verrou, plus aucun questionnaire du
+// brouillon n'est envoyable (instruments du cabinet devenus inéligibles
+// entre la lecture et la transaction). La transaction est annulée, le
+// brouillon reste en l'état, aucun mail ne part.
+class RienDEnvoyable extends Error {}
 
 export async function POST(request: Request) {
   const requestContext = createRequestContext(request);
@@ -182,20 +188,66 @@ export async function POST(request: Request) {
         }
         // NF-7 ([[D-303]] §3, réponse 20261111-0027-a) : la déclaration
         // « question sur le suicide » d'un instrument du cabinet est COPIÉE sur
-        // l'assignation à l'envoi, lue dans la transaction. L'écran patient lit
-        // cette copie, jamais la déclaration courante de l'instrument. Une
-        // déclaration absente reste NULL (« non déclaré », 0028-a). Drapeau
-        // éteint, ou instrument du catalogue : rien n'est écrit.
+        // l'assignation à l'envoi. L'écran patient lit cette copie, jamais la
+        // déclaration courante de l'instrument. Drapeau éteint, ou instrument
+        // du catalogue : rien n'est écrit, rien n'est verrouillé.
+        //
+        // P2-3 (arbitrage du 2026-11-12) : l'éligibilité (actif, publié,
+        // déclaré) et la déclaration copiée restent vraies JUSQU'AU COMMIT.
+        // Le verrou `FOR SHARE` sur les lignes des instruments du cabinet fait
+        // ATTENDRE toute publication, modification, déclaration ou
+        // désactivation concurrente (chacune écrit la ligne) jusqu'à la fin de
+        // cette transaction, sans bloquer un autre envoi du même instrument.
+        // Attendre ne suffit pas pour une modification du contenu : elle
+        // recompte les envois sous son propre `FOR UPDATE` avant d'écrire, et
+        // voit donc celui-ci (`api/praticien/instruments`, édition).
+        // Ordre fixe (`ORDER BY`) : deux envois ne s'interbloquent pas. Un
+        // instrument devenu inéligible depuis la lecture d'`idsAssignablesPour`
+        // est écarté avec sa trace ; si rien ne reste, tout est annulé.
         const copierDeclaration = declarationSuicideCabinetActive();
-        for (const item of aInserer) {
-          let declaration = {};
-          if (copierDeclaration && estInstrumentCabinet(item.idQuestionnaire)) {
-            const instrument = await tx.cabinetInstrument.findUnique({
-              where: { idInstrument: item.idQuestionnaire },
-              select: { poseQuestionSuicide: true },
-            });
-            declaration = { poseQuestionSuicide: instrument?.poseQuestionSuicide ?? null };
+        const declarations = new Map<string, boolean>();
+        let retenusEnvoi = aInserer;
+        const idsCabinet = copierDeclaration
+          ? aInserer.map(i => i.idQuestionnaire).filter(estInstrumentCabinet).sort()
+          : [];
+        if (idsCabinet.length > 0) {
+          const lignes = await tx.$queryRaw<
+            { id_instrument: string; actif: boolean; statut_relecture: string; pose_question_suicide: boolean | null }[]
+          >`SELECT id_instrument, actif, statut_relecture, pose_question_suicide
+              FROM cabinet_instruments
+             WHERE id_instrument = ANY(${idsCabinet}::text[])
+               AND lower(praticien_email) = lower(${emailSession})
+             ORDER BY id_instrument
+               FOR SHARE`;
+          for (const ligne of lignes) {
+            const etat = {
+              actif: ligne.actif,
+              statutRelecture: ligne.statut_relecture,
+              poseQuestionSuicide: ligne.pose_question_suicide,
+            };
+            if (cabinetEnvoyable(etat) && etat.poseQuestionSuicide !== null) {
+              declarations.set(ligne.id_instrument, etat.poseQuestionSuicide);
+            }
           }
+          const ecartes = idsCabinet.filter(id => !declarations.has(id));
+          if (ecartes.length > 0) {
+            logger.warn({
+              event: EVENT_CODES.ASSIGNATION_INSTRUMENT_INELIGIBLE_ECARTE,
+              domain: 'ASSIGNATION',
+              message: `Instruments du cabinet devenus non envoyables écartés de l'envoi groupé : ${ecartes.join(', ')}`,
+              context: finalizeLogContext(requestContext, { retryable: false }),
+            });
+            retenusEnvoi = aInserer.filter(item => !ecartes.includes(item.idQuestionnaire));
+          }
+          if (retenusEnvoi.length === 0) {
+            throw new RienDEnvoyable();
+          }
+        }
+        for (const item of retenusEnvoi) {
+          const declaration =
+            copierDeclaration && estInstrumentCabinet(item.idQuestionnaire)
+              ? { poseQuestionSuicide: declarations.get(item.idQuestionnaire) }
+              : {};
           await tx.assignation.create({
             data: {
               ...item,
@@ -209,13 +261,21 @@ export async function POST(request: Request) {
             },
           });
         }
-        return aInserer;
+        return retenusEnvoi;
       });
     } catch (err) {
       if (err instanceof BrouillonDejaParti) {
         return NextResponse.json<EnvoyerFileResponse>(
           { success: false, reason: 'deja_envoye', error: 'Ce brouillon a déjà été envoyé.' },
           { status: 409 },
+        );
+      }
+      if (err instanceof RienDEnvoyable) {
+        // Même refus que lorsqu'aucun questionnaire n'est assignable avant la
+        // transaction : le brouillon reste en l'état, aucun mail ne part.
+        return NextResponse.json<EnvoyerFileResponse>(
+          { success: false, reason: 'invalid_payload', error: 'Aucun questionnaire valide dans ce brouillon.' },
+          { status: 400 },
         );
       }
       if (err instanceof ToutDejaAssigne) {

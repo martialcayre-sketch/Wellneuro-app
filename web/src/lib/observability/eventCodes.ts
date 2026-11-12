@@ -130,6 +130,10 @@ export const EVENT_CODES = {
   // assignation ouverte. Code distinct — sous le même code, la télémétrie de
   // suspension compterait des écartés qui n'ont rien à voir avec elle.
   ASSIGNATION_DEJA_ASSIGNE_ECARTE: 'ASSIGNATION.DEJA_ASSIGNE.ECARTE',
+  // NF-7, P2-3 : un instrument du cabinet devenu non envoyable (dépublié,
+  // désactivé ou non déclaré) entre la lecture et la transaction d'envoi,
+  // constaté sous verrou et écarté. Code distinct, pour la même raison.
+  ASSIGNATION_INSTRUMENT_INELIGIBLE_ECARTE: 'ASSIGNATION.INSTRUMENT_INELIGIBLE.ECARTE',
 
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',

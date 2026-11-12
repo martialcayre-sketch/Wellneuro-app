@@ -6,6 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { CATALOGUE_DEFINITIONS, IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { estInstrumentCabinet, idsAssignablesPour } from '@/lib/instruments';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { cabinetEnvoyable } from '@/lib/securite/declarationSuicideCabinet';
 import {
   RAISON_DOSSIER_DESACTIVE,
   accepteNouvelEnvoi,
@@ -62,7 +63,7 @@ export type MutateFileEnvoiResponse = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-type InfoCabinet = { titre: string; actif: boolean; statutRelecture: string };
+type InfoCabinet = { titre: string; actif: boolean; statutRelecture: string; poseQuestionSuicide: boolean | null };
 
 function itemDe(id: string, cabinetParId: Map<string, InfoCabinet>): FileEnvoiItem {
   if (!estInstrumentCabinet(id)) {
@@ -75,8 +76,9 @@ function itemDe(id: string, cabinetParId: Map<string, InfoCabinet>): FileEnvoiIt
   const info = cabinetParId.get(id);
   // Un instrument du cabinet dépublié ou désactivé reste LISTÉ, marqué
   // indisponible — jamais supprimé silencieusement : c'est l'envoi qui le
-  // filtrera, et l'écran doit le dire avant.
-  const indisponible = !info || !info.actif || info.statutRelecture !== 'valide';
+  // filtrera, et l'écran doit le dire avant. Drapeau NF-7 allumé, un publié
+  // non déclaré l'est aussi (P2-1) : même prédicat que l'envoi.
+  const indisponible = !info || !cabinetEnvoyable(info);
   return { id, titre: info?.titre || id, ...(indisponible ? { indisponible: true } : {}) };
 }
 
@@ -108,11 +110,16 @@ export async function GET() {
                 idInstrument: { in: idsCabinet },
                 praticienEmail: { equals: emailSession, mode: 'insensitive' },
               },
-              select: { idInstrument: true, titre: true, actif: true, statutRelecture: true },
+              select: { idInstrument: true, titre: true, actif: true, statutRelecture: true, poseQuestionSuicide: true },
             })
           ).map(row => [
             row.idInstrument,
-            { titre: row.titre, actif: row.actif, statutRelecture: row.statutRelecture },
+            {
+              titre: row.titre,
+              actif: row.actif,
+              statutRelecture: row.statutRelecture,
+              poseQuestionSuicide: row.poseQuestionSuicide,
+            },
           ]),
     );
     return NextResponse.json<FileEnvoiApiResponse>({

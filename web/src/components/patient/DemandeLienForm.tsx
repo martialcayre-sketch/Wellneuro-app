@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { DemandeLienResponse } from '@/app/api/portail/lien/demande/route';
-import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientButton, type PatientButtonVariant } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse';
@@ -13,7 +13,9 @@ import { PatientRegionAccuse } from '@/components/patient/ui/PatientRegionAccuse
 // volontairement la même que l'adresse existe ou non. Ne jamais y ajouter un
 // « adresse inconnue » côté client — ce serait rétablir l'oracle que la route
 // prend soin de fermer.
-export function DemandeLienForm() {
+// `variant` : la connexion, quand Google est aussi servi, pose les deux canaux
+// au même poids (prototype PAT-2, U01) ; partout ailleurs, bouton principal.
+export function DemandeLienForm({ variant = 'primary' }: { variant?: PatientButtonVariant } = {}) {
   const [email, setEmail] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [message, setMessage] = useState('');
@@ -63,7 +65,7 @@ export function DemandeLienForm() {
           {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
           <PatientButton
             type="submit"
-            variant="primary"
+            variant={variant}
             className="w-full"
             disabled={!email.trim()}
             loading={envoi}

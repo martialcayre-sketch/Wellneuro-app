@@ -182,6 +182,50 @@ describe('file-envoi GET', () => {
     expect(where.statut).toBe('brouillon');
     expect(where.praticienEmail.equals).toBe('praticien@wellneuro.fr');
   });
+
+  // NF-7, P2-1 (arbitrage du 2026-11-12) : drapeau allumé, un publié non
+  // déclaré est marqué « Indisponible » dans la file, AVANT l'envoi qui
+  // l'écarterait. Drapeau éteint : il reste disponible, comme avant.
+  describe('instrument du cabinet publié non déclaré', () => {
+    function brouillonAvec(poseQuestionSuicide: boolean | null) {
+      prisma.envoiBrouillon.findMany.mockResolvedValue([
+        {
+          idBrouillon: 'ENV_1',
+          idPatient: 'PAT001',
+          qids: ['CAB_1'],
+          dateLimite: null,
+          notes: null,
+          patient: { prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.com' },
+        },
+      ]);
+      prisma.cabinetInstrument.findMany.mockResolvedValue([
+        { idInstrument: 'CAB_1', titre: 'Humeur cabinet', actif: true, statutRelecture: 'valide', poseQuestionSuicide },
+      ]);
+    }
+
+    async function item() {
+      const json = await (await GET()).json();
+      return json.brouillons[0].items[0];
+    }
+
+    it('drapeau éteint : disponible, comme avant ce lot', async () => {
+      delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+      brouillonAvec(null);
+      expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet' });
+    });
+
+    it('drapeau allumé : non déclaré = indisponible ; déclaré « non » = disponible', async () => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      try {
+        brouillonAvec(null);
+        expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet', indisponible: true });
+        brouillonAvec(false);
+        expect(await item()).toEqual({ id: 'CAB_1', titre: 'Humeur cabinet' });
+      } finally {
+        delete process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB;
+      }
+    });
+  });
 });
 
 describe('file-envoi DELETE', () => {

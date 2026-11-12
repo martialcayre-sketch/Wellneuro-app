@@ -19,6 +19,7 @@ registre des textes (§2), amendements AM-1, AM-2, AM-6 ; artefact
 | COM-0 mergé | tous |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-21 à T-23, T-32 | PAT-1 |
 | Texte accepté et inscrit (DOC-0 ou DOC-n) : T-31 | PAT-2 (sinon PAT-2 livre sans lui) |
+| T-36 à T-39 acceptés mot pour mot le 2026-11-12 et inscrits dans D-488 (DOC-5) | PAT-2, entrée seule ; questionnaires inchangés |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-30 (les neuf lignes ensemble) | PAT-3 (idem) |
 | Q-E2-5 tranchée (« Réessayer » sur un suivi non reconnu) | PAT-3 (sinon l'existant reste) |
 | Texte accepté et inscrit : T-33 ([[D-488]]) ; T-34 refusé | PAT-5 |
@@ -109,7 +110,23 @@ d'entrée sont gardés ; U02 conserve sa destination et son libellé actuels.
 T-35 « Revenir à la connexion » reste proposé, non accepté. La date de
 version en lettres relève de PAT-6. Q5, Q6 et Q7 restent ouvertes,
 à soumettre séparément ; aucune validation de ces trois points n'est
-déduite de l'inscription des quatre choix.
+déduite de l'inscription des quatre choix. Elles ont été tranchées le
+même jour, à part : voir le paragraphe suivant (DOC-4).
+
+**Q5–Q7 du 2026-11-12** : `Q5a — Q6b — Q7a`, inscrits par DOC-4 dans
+[[D-481]] ; détails : [`pat2-arbitrages.md`](pat2-arbitrages.md). Le lot
+PAT-2 reçoit, T-36 à T-39 étant acceptés mot pour mot le 2026-11-12 et
+inscrits dans [[D-488]] par DOC-5 :
+le lien « Me reconnecter » sous « Session expirée. Reconnectez-vous. », dans
+le même onglet ; le correctif du brouillon de l'entrée (mention de
+conservation après une écriture réussie seulement, heure de la dernière
+écriture réussie, formulations « dans cet onglet ») ; le message de
+sécurité gardé sous la liste des signaux ([[D-277]] §1). **Réception
+complémentaire** : retour au bon dossier et restauration du brouillon après
+reconnexion par Google dans le même onglet ; aucune confirmation ni heure
+antérieure après une écriture échouée ; questionnaires inchangés (« sur cet
+appareil ») ; message de sécurité visible sur téléphone réel, au zoom 200 %
+et en confort 112,5 %.
 
 ### PAT-3 — Mon parcours, accompagnement, suivi
 

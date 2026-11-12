@@ -1,0 +1,24 @@
+- **Mise à jour (2026-11-12, déclaration : la preuve du besoin 2 est achevée, avec réserves)** : forme opaque (`D-251` §4) ; identifiants et agrégats seulement.
+  - **Arbitrage du responsable** (question à options, option recommandée) : déclarer achevés les **dossiers de preuve** du besoin 2, avec réserves. Cela lève le préalable « besoin 2 achevé » de la ligne « dossiers des autres besoins ». Les **textes des fiches d'usage** restent à F05, à leur rang : cette déclaration ne les couvre pas.
+  - **Ce qui est achevé** :
+    - les dossiers de preuve : fer, vitamine D, zinc, magnésium érythrocytaire, B9 et B12, iode et sélénium, polyphénols et antioxydants ;
+    - leurs restes arbitrés : relecture des 87 claims en attente ; rejet de `WN-CL-0292-003` (`D-489`) ; OMS 2019 (`WN-SRC-0652`) ; relecture de `WN-CL-0649-005` contre l'IOM 2000 et claim distinct (`WN-SRC-0653`) ; réserve de `D-465` §3 gardée par un banc (`D-498`) ;
+    - la structure des fiches d'usage, signée et constatée (54 fiches, dernière re-signature `D-477`).
+  - **Constat** (production, conteneurs détachés, lecture seule) :
+    - 891 claims VALIDE étiquetés au besoin 2 ;
+    - base : 8 599 validés, 32 en attente, 93 rejetés ;
+    - contrat de fraîcheur et `biology_liens_axe_v1.sql` en `exit=0`.
+  - **Étiquetage délégué** (`D-325` §5, à la demande du responsable) : `WN-CL-0653-001` étiqueté au besoin 2, rubrique des limites, depuis sa session. Statut et hash inchangés ; acte au journal.
+  - **Réserves**, ouvertes ailleurs ou plus tard :
+    - **textes des fiches d'usage** (F05) : aucune version ni aucun libellé en production ;
+    - **32 claims en attente** (indécidables, non servis, arbitrage du 2026-11-11) ; parmi eux, `WN-CL-0044-020` laisse la fiche de lecture de la vitamine E sans analyte (`D-473` §6) ;
+    - **2 claims VALIDE sans clé de lien** du lot (`WN-CL-0512-019`, `0512-020`), non étiquetés ;
+    - **points connus** :
+      - l'unité de 2006 de `0189-136` à `0189-140` ;
+      - la licence non commerciale de `WN-SRC-0652` ;
+      - le `requiredAction` des notices `0652` et `0653` ;
+      - le candidat NABM `7302`, à signer ;
+      - la dette du banc du contrat du catalogue (H15 02) ;
+      - l'écran de revue de l'atelier ;
+      - la recherche du corpus, qui sert les claims sous réserve sans la mentionner (`D-498` §4).
+  - **Suite** : les dossiers des autres besoins (1, 4, 5, 9, puis 3, 8, 10, 12, puis 6, 7, 11), au geste du responsable ; les textes des fiches d'usage, à F05.

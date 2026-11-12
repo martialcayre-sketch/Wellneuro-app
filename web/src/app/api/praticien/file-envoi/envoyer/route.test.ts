@@ -31,6 +31,7 @@ vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) 
 import nodemailer from 'nodemailer';
 import { POST } from './route';
 import { MESSAGE_DOSSIER_DESACTIVE } from '@/lib/patient/cycleDeVie';
+import { logger } from '@/lib/observability/logger';
 
 const BROUILLON = {
   idBrouillon: 'ENV_1',
@@ -243,9 +244,23 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     prisma.$transaction.mockImplementation((op: (t: typeof tx) => unknown) => op(tx));
     tx.envoiBrouillon.updateMany.mockResolvedValue({ count: 1 });
     tx.assignation.findMany.mockResolvedValue([]);
-    tx.$queryRaw.mockResolvedValue([{ id: 1 }]);
-    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: true });
+    lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: true }]);
   });
+
+  type LigneVerrou = { id_instrument: string; actif: boolean; statut_relecture: string; pose_question_suicide: boolean | null };
+
+  /** `$queryRaw` sert deux verrous : la ligne patient, puis (drapeau allumé) celles des instruments. */
+  function lignesVerrouillees(lignes: LigneVerrou[]) {
+    tx.$queryRaw.mockImplementation((sql: TemplateStringsArray) =>
+      Promise.resolve(sql.join('?').includes('cabinet_instruments') ? lignes : [{ id: 1 }]),
+    );
+  }
+
+  function requetesInstruments(): string[] {
+    return tx.$queryRaw.mock.calls
+      .map(c => (c[0] as TemplateStringsArray).join('?'))
+      .filter(sql => sql.includes('cabinet_instruments'));
+  }
 
   function donneesCreees(idQuestionnaire: string) {
     const appel = tx.assignation.create.mock.calls.find(c => c[0].data.idQuestionnaire === idQuestionnaire);
@@ -253,34 +268,82 @@ describe('file-envoi/envoyer — copie de la déclaration NF-7', () => {
     return appel![0].data as Record<string, unknown>;
   }
 
-  it('drapeau éteint : aucune copie, ni sur le CAB_ ni sur le catalogue', async () => {
+  it('drapeau éteint : aucune copie, aucun verrou d’instrument, l’envoi d’avant NF-7', async () => {
+    lignesVerrouillees([{ id_instrument: 'CAB_1', actif: false, statut_relecture: 'brouillon', pose_question_suicide: null }]);
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ success: true, count: 2 });
     expect('poseQuestionSuicide' in donneesCreees('CAB_1')).toBe(false);
     expect('poseQuestionSuicide' in donneesCreees('Q_STR_02')).toBe(false);
+    expect(requetesInstruments()).toEqual([]);
     expect(tx.cabinetInstrument.findUnique).not.toHaveBeenCalled();
   });
 
-  it('drapeau allumé : le CAB_ porte la copie, lue dans la transaction ; le catalogue reste sans copie', async () => {
+  it('drapeau allumé : le CAB_ porte la copie lue SOUS VERROU ; le catalogue reste sans copie', async () => {
     process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(res.status).toBe(200);
     expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(true);
     expect('poseQuestionSuicide' in donneesCreees('Q_STR_02')).toBe(false);
-    expect(tx.cabinetInstrument.findUnique).toHaveBeenCalledTimes(1);
-    expect(tx.cabinetInstrument.findUnique.mock.calls[0][0].where).toEqual({ idInstrument: 'CAB_1' });
+    // P2-3 : une seule lecture des instruments, verrouillée jusqu'au commit,
+    // en ordre fixe, bornée au cabinet du praticien.
+    const [sql] = requetesInstruments();
+    expect(requetesInstruments()).toHaveLength(1);
+    expect(sql).toMatch(/FOR SHARE/);
+    expect(sql).toMatch(/ORDER BY id_instrument/);
+    expect(sql).toMatch(/lower\(praticien_email\)/);
+    const appel = tx.$queryRaw.mock.calls.find(c => (c[0] as TemplateStringsArray).join('?').includes('cabinet_instruments'))!;
+    expect(appel.slice(1)).toEqual([['CAB_1'], 'praticien@wellneuro.fr']);
   });
 
-  it('drapeau allumé : « non » se copie « non », et non déclaré reste NULL, jamais « non » (0028-a)', async () => {
+  it('drapeau allumé : « non » se copie « non » ; jamais de NULL copié (0028-a)', async () => {
     process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
-    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: false });
+    lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: false }]);
     await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(donneesCreees('CAB_1').poseQuestionSuicide).toBe(false);
+  });
 
-    tx.assignation.create.mockClear();
-    tx.cabinetInstrument.findUnique.mockResolvedValue({ poseQuestionSuicide: null });
-    await POST(postRequest({ idBrouillon: 'ENV_1' }));
-    expect(donneesCreees('CAB_1').poseQuestionSuicide).toBeNull();
+  // P2-3 (arbitrage du 2026-11-12) : l'instrument a changé entre la lecture
+  // d'`idsAssignablesPour` et la transaction. Sous verrou, il est écarté avec
+  // sa trace ; le reste du brouillon part.
+  for (const [cas, ligne] of [
+    ['dépublié', { statut_relecture: 'brouillon', pose_question_suicide: null }],
+    ['désactivé', { actif: false }],
+    ['déclaration effacée (non déclaré)', { pose_question_suicide: null }],
+  ] as const) {
+    it(`drapeau allumé, instrument ${cas} sous verrou : écarté avec sa trace, le reste part`, async () => {
+      process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+      const publieDeclare: LigneVerrou = { id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: true };
+      lignesVerrouillees([{ ...publieDeclare, ...ligne }]);
+      const warn = vi.spyOn(logger, 'warn');
+      const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ success: true, count: 1 });
+      expect(tx.assignation.create).toHaveBeenCalledTimes(1);
+      expect(tx.assignation.create.mock.calls[0][0].data.idQuestionnaire).toBe('Q_STR_02');
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'ASSIGNATION.INSTRUMENT_INELIGIBLE.ECARTE', message: expect.stringContaining('CAB_1') }),
+      );
+      warn.mockRestore();
+    });
+  }
+
+  it('drapeau allumé, instrument d’un autre cabinet ou disparu : aucune ligne sous verrou, écarté', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    lignesVerrouillees([]);
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(await res.json()).toMatchObject({ success: true, count: 1 });
+  });
+
+  it('drapeau allumé, plus rien d’envoyable sous verrou : 400, tout est annulé, aucun mail', async () => {
+    process.env.WN_ENABLE_DECLARATION_SUICIDE_CAB = 'true';
+    prisma.envoiBrouillon.findFirst.mockResolvedValue({ ...BROUILLON, qids: ['CAB_1'] });
+    lignesVerrouillees([{ id_instrument: 'CAB_1', actif: true, statut_relecture: 'valide', pose_question_suicide: null }]);
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ success: false, error: 'Aucun questionnaire valide dans ce brouillon.' });
+    expect(tx.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('valeur autre que « true » : le drapeau reste éteint', async () => {
