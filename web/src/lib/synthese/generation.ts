@@ -70,7 +70,7 @@ import {
   orientationActive,
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
-import { reglesOrientationAdmissibles } from '@/lib/clinical/orientationAdmissible';
+import { reglesOrientationAdmissibles, type OrientationAdmissible } from '@/lib/clinical/orientationAdmissible';
 import {
   derniereReponseParQuestionnaire,
   type RecommandationExploration,
@@ -1187,8 +1187,19 @@ export async function preparerGeneration(
     // lecture que le cockpit. Corpus illisible ⇒ aucune convergence ici, et
     // la synthèse ne le dit pas encore — limite reconnue, rattachée à t77
     // ([[D-495]] §8).
+    //
+    // UNE SEULE LECTURE POUR LA CONVERGENCE ET L'ORIENTATION (revue
+    // CodeRabbit de #2025) : deux lectures pouvaient diverger — un claim tombé
+    // entre les deux, ou une seconde lecture illisible qui éteignait
+    // l'orientation en laissant les convergences déjà ajoutées. Une levée
+    // inattendue vaut un corpus illisible : ni orientation, ni convergence.
+    let orientationApplicable: OrientationAdmissible | null = null;
     try {
-      const orientationApplicable = orientationActive() ? await reglesOrientationAdmissibles() : null;
+      orientationApplicable = orientationActive() ? await reglesOrientationAdmissibles() : null;
+    } catch {
+      orientationApplicable = null;
+    }
+    try {
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
         ...vigilancesConvergencePourSynthese(
@@ -1214,7 +1225,7 @@ export async function preparerGeneration(
     // rien tant que la table n'est pas signée.
     let orientation: ResultatOrientation | null = null;
     try {
-      orientation = await evaluerOrientationPourPatient(idPatient);
+      orientation = await evaluerOrientationPourPatient(idPatient, orientationApplicable);
     } catch (orientErr) {
       logger.warn({
         event: EVENT_CODES.SYNTHESE_ORIENTATION_INDISPONIBLE,

@@ -16,7 +16,11 @@ import {
 } from '@/lib/clinical/orientationEngine';
 import { FENETRES_ARRET, STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
 import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from '@/lib/clinical/admissibiliteClaims';
-import { reglesOrientationAdmissibles, type RegleOrientationNonAppliquee } from '@/lib/clinical/orientationAdmissible';
+import {
+  reglesOrientationAdmissibles,
+  type OrientationAdmissible,
+  type RegleOrientationNonAppliquee,
+} from '@/lib/clinical/orientationAdmissible';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
@@ -422,8 +426,16 @@ export function scoresRecalculesPourRaisonnement(
  * Ne propose rien d'autre que des explorations : aucune assignation n'est
  * créée ici, ni ailleurs à partir d'ici. L'appelant est responsable d'avoir
  * vérifié que ce praticien a le droit de lire ce patient.
+ *
+ * `lectureOrientation` : la lecture des règles applicables déjà faite par
+ * l'appelant ([[D-495]] §4). La synthèse la partage avec la convergence, pour
+ * que les deux calculs portent sur la même table filtrée — `null` compris
+ * (corpus illisible). Absente (`undefined`), le service la fait lui-même.
  */
-export async function evaluerOrientationPourPatient(idPatient: string): Promise<ResultatOrientation> {
+export async function evaluerOrientationPourPatient(
+  idPatient: string,
+  lectureOrientation?: OrientationAdmissible | null,
+): Promise<ResultatOrientation> {
   // Le verrou est re-vérifié ici même si l'appelant l'a déjà consulté : c'est
   // ce qui garantit qu'aucun futur appelant ne puisse lire le dossier à travers
   // ce module sans que le double verrou soit passé. La lecture Prisma est en
@@ -513,7 +525,9 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       : Promise.resolve({ regles: [] as StopRule[], suspendus: [] as ArretSuspendu[] }),
     // LES RÈGLES D'ORIENTATION APPLICABLES ([[D-495]]) — la même lecture que
     // la convergence. Ne lève jamais : `null` dit un corpus illisible.
-    reglesOrientationAdmissibles(),
+    lectureOrientation === undefined
+      ? reglesOrientationAdmissibles()
+      : Promise.resolve(lectureOrientation),
   ]);
 
   // Corpus illisible : aucune règle n'est vérifiable, aucune n'est appliquée,

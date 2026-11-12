@@ -1281,6 +1281,26 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     });
   });
 
+  // Revue CodeRabbit de #2025 : la synthèse partage sa lecture avec la
+  // convergence. Le corpus est lisible et tout admissible ici — seule la
+  // lecture FOURNIE peut expliquer le résultat.
+  it('D-495 : une lecture fournie (null) prime sur le corpus — T3, même corpus lisible', async () => {
+    const resultat = await evaluerOrientationPourPatient('PAT-1', null);
+    expect(resultat).toEqual({
+      actif: false,
+      version: expect.any(String),
+      message: 'L\'orientation n\'est pas affichée : la validité de ses sources n\'a pas pu être vérifiée.',
+    });
+  });
+
+  it('D-495 : une lecture fournie est la table appliquée — sans la règle, rien n\'est proposé', async () => {
+    const nonAppliquees = [{ regleId: 'R-TEST-DRAPEAU', claims: [{ claimId: 'WN-CL-0000-010', versionClaim: 'v1.0' }] }];
+    const resultat = await evaluerOrientationPourPatient('PAT-1', { regles: [], nonAppliquees });
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toEqual([]);
+    expect(resultat.reglesNonAppliquees).toEqual(nonAppliquees);
+  });
+
   it('D-491 : une règle d\'arrêt suspendue ne touche pas l\'exclusion des instruments déjà mesurés (elle ne cite aucun claim)', async () => {
     signerLArret();
     armerLesContradictions();
