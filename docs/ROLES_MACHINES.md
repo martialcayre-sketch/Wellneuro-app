@@ -102,8 +102,18 @@ question et la réponse.
 - **Une session qui attend** écrit son handoff et fait `/clear`. Elle n'ouvre
   pas d'autre lot en attendant la réponse. Son lot est mis de côté ; les lots
   des autres sessions avancent (D-466).
+- **Avis de Codex (`D-505`).** Avant d'écrire une question `clinique` ou
+  `ordinaire`, la session demande l'avis de Codex à l'aveugle
+  (`node scripts/wn-codex-avis.mjs --mode question`) : le paquet porte la
+  question, ses faits et ses options, sans l'option recommandée. L'avis se
+  joint à la ligne (`avis_codex`). Sur une question `ordinaire` du périmètre
+  de `D-505` §6, si Codex retient l'option recommandée par la session, la
+  session avance. La ligne passe à `repondue`, avec `reponse_par` =
+  `accord session et Codex (D-505)`, et le responsable peut la renverser
+  à la séance. Sinon, la question attend la séance.
 - **Autorité.** Une réponse `clinique` ou `migration` ne vaut que si elle
   vient du responsable dans la session qui agit, ou de la décision mergée.
+  Un avis de Codex n'en est jamais une.
 - **Sortie de la liste.** Une ligne ne passe à `close` qu'au merge de la
   décision, ou de la PR qui écrit la réponse. Cette PR nomme sa ligne dans sa
   déclaration « prête @<sha> » (`question <identifiant>`). Celui qui merge,
