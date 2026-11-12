@@ -86,6 +86,8 @@ model Patient {
   annulationsResultatsBiologiques AnnulationResultatBiologique[]
   // Statuts posés près d'une valeur biologique, et leurs retraits (D-322, F58).
   statutsPosesResultatsBiologiques StatutPoseResultatBiologique[]
+  // Contextes de prélèvement des résultats biologiques (D-497, BP-05).
+  contextesPrelevement ContextePrelevement[]
   // Constats du praticien sur une hypothèse du parcours, et leurs pièces
   // (D-331, BP-11).
   constatsPraticien ConstatPraticien[]
@@ -2752,6 +2754,10 @@ model ResultatBiologique {
   // exacte ; ce modèle ne reçoit aucune colonne.
   statutsPoses StatutPoseResultatBiologique[]
 
+  // Relation inverse SEULE (D-497, BP-05) : le contexte du prélèvement
+  // désigne la ligne RACINE du fil ; ce modèle ne reçoit aucune colonne.
+  contextesPrelevement ContextePrelevement[]
+
   // Relation inverse SEULE (D-331, BP-11) : une pièce de constat désigne la
   // ligne exacte ; ce modèle ne reçoit aucune colonne.
   piecesConstats PieceConstatPraticien[]
@@ -3117,6 +3123,56 @@ model StatutPoseResultatBiologique {
   @@index([idPatient, ordre], map: "statuts_poses_resultats_biologiques_patient_ordre_idx")
   @@index([idResultat, ordre], map: "statuts_poses_resultats_biologiques_resultat_ordre_idx")
   @@map("statuts_poses_resultats_biologiques")
+}
+
+/// Le contexte du prélèvement d'un résultat biologique ([[D-497]], BP-05,
+/// DC-46), saisi par le praticien du dossier et écrit sur la ligne RACINE du
+/// fil (une correction garde le contexte de sa racine). Sept champs en trois
+/// formes, `inconnu` par défaut ; aucun texte libre, aucune catégorie, aucune
+/// comparaison à une consigne. Ajout seul : corriger, c'est remplacer la
+/// tête ; une tête par racine. « Inconnu » ≠ absence de ligne (« non
+/// recueilli »). Les refus vivent en base (migration
+/// `contexte_prelevement_biologique_v1`) ; l'index unique PARTIEL « une
+/// ouverture par racine » n'est pas modélisé ici, le contrat SQL le tient.
+model ContextePrelevement {
+  id                       String   @id @default(cuid()) @map("id")
+  /// Clé d'ordre monotone, posée par la base (trigger).
+  ordre                    BigInt   @default(autoincrement()) @map("ordre")
+  idPatient                String   @map("id_patient")
+  /// La ligne racine du fil de résultat, de ce dossier (trigger).
+  idResultat               String   @map("id_resultat")
+  /// Cinq déclarations : `oui` | `non` | `inconnu` (CHECK).
+  aJeun                    String   @default("inconnu") @map("a_jeun")
+  supplementationArretee   String   @default("inconnu") @map("supplementation_arretee")
+  /// Le traitement n'est pas nommé : les lignes de BP-13 s'affichent à côté.
+  traitementInterferent    String   @default("inconnu") @map("traitement_interferent")
+  episodeInflammatoire     String   @default("inconnu") @map("episode_inflammatoire")
+  grossesse                String   @default("inconnu") @map("grossesse")
+  /// `renseigne` | `inconnu` (CHECK) ; la valeur, ≥ 1, si et seulement si
+  /// `renseigne`. Borne technique, sans borne haute.
+  jourCycleEtat            String   @default("inconnu") @map("jour_cycle_etat")
+  jourCycle                Int?     @map("jour_cycle")
+  /// `renseigne` | `inconnu` (CHECK) ; la valeur, ≥ 0, et son unité
+  /// `heure` | `jour`, si et seulement si `renseigne`.
+  delaiDernierePriseEtat   String   @default("inconnu") @map("delai_derniere_prise_etat")
+  delaiDernierePrise       Int?     @map("delai_derniere_prise")
+  delaiDernierePriseUnite  String?  @map("delai_derniere_prise_unite")
+  /// La tête remplacée, de la même racine ; un successeur au plus.
+  idLigneRemplacee         String?  @unique @map("id_ligne_remplacee")
+  /// Le praticien du dossier (trigger).
+  praticienEmail           String   @map("praticien_email")
+  /// Posé par la base (trigger), en UTC.
+  poseLe                   DateTime @default(now()) @map("pose_le")
+
+  patient     Patient              @relation(fields: [idPatient], references: [idPatient], onDelete: Restrict)
+  resultat    ResultatBiologique   @relation(fields: [idResultat], references: [id], onDelete: Restrict)
+  remplace    ContextePrelevement? @relation("RemplacementContextePrelevement", fields: [idLigneRemplacee], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  remplacePar ContextePrelevement? @relation("RemplacementContextePrelevement")
+
+  @@unique([ordre], map: "contextes_prelevement_ordre_key")
+  @@index([idPatient, ordre], map: "contextes_prelevement_patient_ordre_idx")
+  @@index([idResultat, ordre], map: "contextes_prelevement_resultat_ordre_idx")
+  @@map("contextes_prelevement")
 }
 
 /// Le constat du praticien sur une hypothèse du parcours ([[D-331]], BP-11),

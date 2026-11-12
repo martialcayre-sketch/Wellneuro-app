@@ -48,7 +48,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'correspondanceMedecin', 'correspondancePatient', 'documentPatientBiologie',
     'lectureImportBiologique', 'travailExtractionBiologique',
     'ligneBiologiqueCandidate', 'importBiologique', 'masquageCompteRendu', 'compteRenduBiologique',
-    'annulationResultatBiologique', 'statutPoseResultatBiologique', 'resultatBiologique',
+    'annulationResultatBiologique', 'statutPoseResultatBiologique', 'contextePrelevement', 'resultatBiologique',
     'rendezVous', 'journalAccesDossier',
     'agendaSommeilNuit', 'agendaAlimentaireJour',
     'objectifNegocie', 'entreeCeQuiCompte', 'syntheseComprehension',
@@ -322,6 +322,16 @@ describe('effacerDossier', () => {
     const rang = (nom: string) => appels.indexOf(nom);
     expect(rang('statutPoseResultatBiologique')).toBeGreaterThanOrEqual(0);
     expect(rang('statutPoseResultatBiologique')).toBeLessThan(rang('resultatBiologique'));
+  });
+
+  // Contextes de prélèvement (D-497, BP-05) : FK RESTRICT vers le résultat
+  // racine. Une ligne déplacée après lui rendrait l'effacement impossible
+  // pour tout dossier dont un prélèvement porte un contexte.
+  it('supprime les contextes de prélèvement avant les résultats', async () => {
+    await effacerDossier('PAT_SEED_03');
+    const rang = (nom: string) => appels.indexOf(nom);
+    expect(rang('contextePrelevement')).toBeGreaterThanOrEqual(0);
+    expect(rang('contextePrelevement')).toBeLessThan(rang('resultatBiologique'));
   });
 
   // File durable des lectures (D-282) : FK RESTRICT vers l'import courant et
