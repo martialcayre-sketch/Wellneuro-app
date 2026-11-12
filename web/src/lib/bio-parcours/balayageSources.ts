@@ -2,9 +2,10 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  createSourceFile, forEachChild, isCallExpression, isExportDeclaration, isExternalModuleReference, isIdentifier,
-  isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isStringLiteralLike, ScriptKind, ScriptTarget, SyntaxKind,
-  type Node,
+  createSourceFile, forEachChild, isAsExpression, isBinaryExpression, isCallExpression, isExportDeclaration,
+  isExternalModuleReference, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isNonNullExpression,
+  isNumericLiteral, isParenthesizedExpression, isSatisfiesExpression, isStringLiteralLike, isTemplateExpression,
+  isTypeAssertionExpression, ScriptKind, ScriptTarget, SyntaxKind, type Node,
 } from 'typescript';
 
 // Outillage des bancs BP-01 ([[D-266]]) — lecture du SOURCE, jamais exécuté
@@ -63,8 +64,8 @@ export function specificateursImportes(source: string): string[] {
 /**
  * Spécificateurs de module lus par le PARSEUR TypeScript, DÉCODÉS : déclarations
  * `import`/`export … from`, `import x = require('x')`, `import('x')`,
- * `require('x')` et `typeof import('x')`, sur un littéral chaîne ou un gabarit
- * sans expression. Là où `specificateursImportes` lit le texte, celui-ci ne
+ * `require('x')` et `typeof import('x')`, l'argument lu par sa valeur
+ * constante (`IMPORT_NON_CONSTANT` s'il n'en a pas). Là où `specificateursImportes` lit le texte, celui-ci ne
  * manque ni un commentaire glissé entre le mot-clé et la chaîne
  * (`import/**\/"x"`) ni une séquence d'échappement dans le chemin
  * (`"b…"`) — passe Codex sur #2006. Une prose en commentaire n'est pas un
@@ -75,23 +76,56 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
     : chemin.endsWith('.ts') ? ScriptKind.TS : ScriptKind.TSX;
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, false, nature);
   const trouves: string[] = [];
-  const litteral = (n: Node | undefined) => {
-    if (n && isStringLiteralLike(n)) trouves.push(n.text);
-  };
+  // L'argument est lu par sa VALEUR CONSTANTE, comme le fait le bundler
+  // (parenthèses, concaténations, gabarits, assertions de type) — contre-passe
+  // Codex sur #2006. Un argument non constant ferme le verrou : il rend
+  // `IMPORT_NON_CONSTANT`, qu'un banc traite comme un lecteur possible (le
+  // bundler en ferait un module de contexte, qui embarque tout un dossier).
+  const argument = (n: Node | undefined) => trouves.push((n && valeurConstante(n)) ?? IMPORT_NON_CONSTANT);
   const visiter = (n: Node): void => {
-    if (isImportDeclaration(n) || isExportDeclaration(n)) litteral(n.moduleSpecifier);
-    else if (isExternalModuleReference(n)) litteral(n.expression);
-    else if (isImportTypeNode(n) && isLiteralTypeNode(n.argument)) litteral(n.argument.literal);
+    if (isImportDeclaration(n) || isExportDeclaration(n)) {
+      if (n.moduleSpecifier) argument(n.moduleSpecifier);
+    } else if (isExternalModuleReference(n)) argument(n.expression);
+    else if (isImportTypeNode(n) && isLiteralTypeNode(n.argument)) argument(n.argument.literal);
     else if (
       isCallExpression(n) &&
       (n.expression.kind === SyntaxKind.ImportKeyword || (isIdentifier(n.expression) && n.expression.text === 'require'))
     ) {
-      litteral(n.arguments[0]);
+      argument(n.arguments[0]);
     }
     forEachChild(n, visiter);
   };
   visiter(fichier);
   return trouves;
+}
+
+/** Rendu par `specificateursSyntaxiques` pour un argument d'import non constant. */
+export const IMPORT_NON_CONSTANT = '<import non constant>';
+
+/** Valeur d'une expression chaîne CONSTANTE, ou `null` si elle dépend de l'exécution. */
+function valeurConstante(n: Node): string | null {
+  if (isStringLiteralLike(n) || isNumericLiteral(n)) return n.text;
+  if (
+    isParenthesizedExpression(n) || isAsExpression(n) || isSatisfiesExpression(n) ||
+    isTypeAssertionExpression(n) || isNonNullExpression(n)
+  ) {
+    return valeurConstante(n.expression);
+  }
+  if (isBinaryExpression(n) && n.operatorToken.kind === SyntaxKind.PlusToken) {
+    const gauche = valeurConstante(n.left);
+    const droite = valeurConstante(n.right);
+    return gauche === null || droite === null ? null : gauche + droite;
+  }
+  if (isTemplateExpression(n)) {
+    let valeur = n.head.text;
+    for (const segment of n.templateSpans) {
+      const v = valeurConstante(segment.expression);
+      if (v === null) return null;
+      valeur += v + segment.literal.text;
+    }
+    return valeur;
+  }
+  return null;
 }
 
 /**

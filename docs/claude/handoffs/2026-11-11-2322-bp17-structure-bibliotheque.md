@@ -126,6 +126,18 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     filtre de balayage `.js`/`.jsx` (`estFichierSource`).
 
   Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 981 tests.
+- Contre-passe Codex sur `12009284` : BLOQUER. P1-1 est fermé. P1-2 reste
+  ouvert pour les arguments constants qui ne sont pas des littéraux :
+  `import(("…"))` et `import("@/lib/" + "bibliotheque-options/…")`. Le
+  correctif lit chaque argument par sa valeur constante : parenthèses,
+  concaténations, gabarits et assertions de type. Un `import()` ou un
+  `require()` à argument non constant rend `IMPORT_NON_CONSTANT`, que le
+  banc §8 traite comme un lecteur possible, car le bundler en ferait un
+  module de contexte. Il n'y en a aucun en production (0 sur 1 125 fichiers).
+  Contre-épreuves ajoutées pour chacune de ces formes.
+
+  Bancs de garde, `bio-parcours` et bibliothèque : 161 fichiers verts,
+  3 023 tests.
 
 ## Problèmes ouverts
 
