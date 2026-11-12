@@ -249,6 +249,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     que soit le séparateur. Sa valeur n'est plus lue.
   - Le banc du dossier liste désormais tous ses fichiers, et plus seulement
     ses sources. Il refuse tout `jsx-runtime`, en fichier comme en dossier.
+- Contre-passe `wn-reviewer` sur `a58631d6` : **PASSER**. P1-C est fermé :
+  la chaîne a été compilée, et chaque variante de pragma appliquée par SWC
+  est vue. Deux P2 non bloquants :
+  - fichier ignoré, ou test importé par la production : routé vers la PR 4 ;
+  - prose qui ferme le verrou : voulu, donc écarté.
 
 ## Problèmes ouverts
 
@@ -274,7 +279,8 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   contournement relevées par Codex. Leur passage au parseur touche une
   quinzaine de bancs hors de ce lot ; il est routé vers la PR 4, qui pose la
   garde de consommation. Sont routés au même endroit l'outillage de
-  `scripts/` et `tools/` et les détours par la configuration (`wn-reviewer`).
+  `scripts/` et `tools/`, les détours par la configuration, `module.hot` et
+  les fichiers ignorés ou de test importés par la production (`wn-reviewer`).
 - Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
   passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
   Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
