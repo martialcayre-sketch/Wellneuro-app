@@ -6,12 +6,16 @@ import { compteRenduDemande, estOngletFiche, estPhaseFiche, type PhaseFiche } fr
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { reinitialiserReplisFiche } from './patient-cockpit/replisFiche';
 
 // La fiche MÉMORISE l'onglet et la phase en localStorage (par patient) : sans
 // purge entre les cas, un test qui navigue vers « Trajectoire » ferait
 // restaurer cet onglet au cas suivant, avec des fixtures qui ne le
 // provisionnent pas — fuite d'état inter-tests, pas un comportement produit.
 afterEach(() => {
+  // Les replis de la fiche vivent pour la session (PRA-3a) : chaque cas
+  // repart de l'état de début de session.
+  reinitialiserReplisFiche();
   try {
     window.localStorage.clear();
   } catch {
@@ -3464,5 +3468,119 @@ describe('FichePatientPanel — mode consultation : masqué ≠ absent (D-354 §
     const chip = await screen.findByText(/Au tour précédent :/);
     expect(chip.textContent).toContain('Source non enregistrée');
     expect(chip.textContent).not.toContain(MENTION);
+  });
+});
+
+// PRA-3a — structure de la fiche ([[D-486]] §3, T-14, T-15 ; prototype de
+// l'étape 3 validé le 2026-11-12). jsdom n'applique pas les classes : on lit
+// la classe qui masque au bureau, le focus et le contenu monté.
+describe('FichePatientPanel — replis des phases et du contexte (PRA-3a)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  function colonnePhases() {
+    return screen.getByRole('tablist', { name: 'Cycle clinique' }).parentElement as HTMLElement;
+  }
+  function colonneContexte() {
+    return screen.getByRole('button', { name: 'Masquer le contexte' }).parentElement as HTMLElement;
+  }
+
+  it('« Masquer les phases » replie le rail sans le démonter ; le focus passe à « Afficher les phases », puis revient', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    fireEvent.click(screen.getByRole('tab', { name: /Actions/i }));
+    const raison = await screen.findByLabelText('Raison d’être');
+    fireEvent.change(raison, { target: { value: 'Soutenir le sommeil' } });
+
+    expect(colonnePhases().className).not.toContain('lg:hidden');
+    fireEvent.click(screen.getByRole('button', { name: 'Masquer les phases' }));
+
+    expect(colonnePhases().className).toContain('lg:hidden');
+    const afficher = screen.getByRole('button', { name: 'Afficher les phases' });
+    await waitFor(() => expect(document.activeElement).toBe(afficher));
+    expect(afficher.className).toContain('lg:inline-flex');
+    // Le rail reste monté, et le brouillon de P15 garde sa saisie.
+    expect(screen.getAllByRole('tab', { name: /\d\. / })).toHaveLength(7);
+    expect((screen.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('Soutenir le sommeil');
+
+    fireEvent.click(afficher);
+    expect(colonnePhases().className).not.toContain('lg:hidden');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Masquer les phases' })));
+    expect(screen.getByRole('button', { name: 'Afficher les phases' }).className).not.toContain('lg:inline-flex');
+  });
+
+  it('contexte : escamoté d’office de 1 024 à 1 279 px tant que rien n’est choisi, puis suit la commande', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    expect(colonneContexte().className).toContain('lg:max-xl:hidden');
+    expect(screen.getByRole('button', { name: 'Afficher le contexte' }).className).toContain('lg:max-xl:inline-flex');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Masquer le contexte' }));
+    expect(colonneContexte().className).toContain('lg:hidden');
+    expect(colonneContexte().className).not.toContain('lg:max-xl:hidden');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Afficher le contexte' })));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher le contexte' }));
+    expect(colonneContexte().className).not.toMatch(/lg:(max-xl:)?hidden/);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Masquer le contexte' })));
+  });
+
+  it('contexte fermé : traitements et décisions de parcours restent dans la zone de travail, sans lecture de plus', async () => {
+    const fetchMock = stubFetch({ runtime: 'ready' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" physioTraitementsActif decisionsParcoursActif />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+    const zone = document.getElementById('zone-focale') as HTMLElement;
+    const encart = within(zone).getByRole('button', { name: /Données physiologiques et traitements/ }).parentElement as HTMLElement;
+    expect(within(encart).getByRole('button', { name: /Décisions de parcours/ })).toBeTruthy();
+    // Affiché au bureau seulement quand le contexte est fermé.
+    expect(encart.className).toContain('lg:max-xl:flex');
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher le contexte' }));
+    expect(encart.className).not.toMatch(/lg:(max-xl:)?flex/);
+
+    const appelsAvant = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Masquer le contexte' }));
+    expect(encart.className).toContain('lg:flex');
+    fireEvent.click(screen.getByRole('button', { name: 'Masquer les phases' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher les phases' }));
+    // Replier n'émet aucune requête : aucune lecture de plus au journal d'accès.
+    expect(fetchMock.mock.calls.length).toBe(appelsAvant);
+  });
+
+  it('sans les drapeaux des deux instruments, la zone de travail n’en montre aucun', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    const zone = document.getElementById('zone-focale') as HTMLElement;
+    expect(within(zone).queryByRole('button', { name: /Données physiologiques et traitements/ })).toBeNull();
+    expect(within(zone).queryByRole('button', { name: /Décisions de parcours/ })).toBeNull();
+  });
+
+  it('les replis passent d’un dossier à l’autre pendant la session, sans rien écrire sur l’appareil', async () => {
+    const ecritures = vi.spyOn(Storage.prototype, 'setItem');
+    try {
+      await rendreFiche({ runtime: 'ready' });
+      fireEvent.click(screen.getByRole('button', { name: 'Masquer les phases' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Masquer le contexte' }));
+      const clesRepli = ecritures.mock.calls.map(appel => String(appel[0])).filter(cle => /repli|phases|contexte/i.test(cle));
+      expect(clesRepli).toEqual([]);
+      cleanup();
+
+      // Dossier suivant : la fiche est remontée (clé du dossier), les replis restent.
+      await rendreFiche({ runtime: 'ready' });
+      expect(colonnePhases().className).toContain('lg:hidden');
+      expect(colonneContexte().className).toContain('lg:hidden');
+    } finally {
+      ecritures.mockRestore();
+    }
+    // Deux montages complets de la fiche : sous charge, au-delà des 5 s par défaut.
+  }, 20_000);
+
+  it('le bandeau du poste de pilotage ne répète plus le nom du dossier, porté par l’en-tête de fiche', async () => {
+    await rendreFiche({ runtime: 'ready' });
+    expect(screen.getByRole('heading', { level: 2, name: 'Sophie Nicola' })).toBeTruthy();
+    const poste = screen.getByRole('region', { name: 'Poste de pilotage clinique' });
+    expect(within(poste).queryByText('Sophie Nicola')).toBeNull();
   });
 });

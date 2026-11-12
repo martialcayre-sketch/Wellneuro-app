@@ -88,3 +88,73 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
     ).toBe(true);
   });
 });
+
+// PRA-3a — structure de la fiche ([[D-486]] §3, T-14, T-15 ; prototype de
+// l'étape 3 validé le 2026-11-12). Au bureau seulement : sous 1 024 px, rien
+// ne se replie (colonnes empilées, sans commande).
+test.describe('Fiche-trajectoire — replis des phases et du contexte (PRA-3a)', () => {
+  test.skip(({ isMobile }) => isMobile, 'Les replis n’existent qu’au bureau (≥ 1 024 px).');
+
+  test('le focus suit la commande, le rail replié quitte le clavier', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+
+    const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+    await expect(rail).toBeVisible();
+    const masquerPhases = page.getByRole('button', { name: 'Masquer les phases' });
+    const afficherPhases = page.getByRole('button', { name: 'Afficher les phases' });
+    await expect(afficherPhases).toBeHidden();
+
+    // Fiche hydratée avant le clic : le rail est « posé » quand ses statuts,
+    // lus côté client, ne disent plus « indéterminée » (même signal que
+    // `visual.spec.ts`). Un seul clic, jamais rejoué : une interaction
+    // perdue doit faire échouer le test.
+    await expect(rail.getByText('indéterminée')).toHaveCount(0);
+    await masquerPhases.click();
+    await expect(rail).toBeHidden();
+    await expect(afficherPhases).toBeFocused();
+    // Replié, aucune phase ne prend le focus.
+    await page.getByRole('tab', { name: /Actions/, includeHidden: true }).focus().catch(() => undefined);
+    await expect(page.getByRole('tab', { name: /Actions/, includeHidden: true })).not.toBeFocused();
+
+    await afficherPhases.click();
+    await expect(rail).toBeVisible();
+    await expect(masquerPhases).toBeFocused();
+
+    const masquerContexte = page.getByRole('button', { name: 'Masquer le contexte' });
+    const afficherContexte = page.getByRole('button', { name: 'Afficher le contexte' });
+    const instruments = page.getByText('Instruments', { exact: true });
+    await expect(instruments).toBeVisible();
+    await masquerContexte.click();
+    await expect(instruments).toBeHidden();
+    await expect(afficherContexte).toBeFocused();
+
+    // Rechargement : la session repart, les deux panneaux reviennent.
+    await page.reload();
+    await expect(rail).toBeVisible();
+    await expect(page.getByText('Instruments', { exact: true })).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true);
+  });
+
+  test('de 1 024 à 1 279 px, le contexte est escamoté d’office et se rouvre par sa commande', async ({ page, context }) => {
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+
+    const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+    await expect(rail).toBeVisible();
+    await expect(page.getByText('Instruments', { exact: true })).toBeHidden();
+    const afficherContexte = page.getByRole('button', { name: 'Afficher le contexte' });
+    // Fiche hydratée avant le clic (rail « posé »), un seul clic.
+    await expect(rail.getByText('indéterminée')).toHaveCount(0);
+    await afficherContexte.click();
+    await expect(page.getByText('Instruments', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Masquer le contexte' })).toBeFocused();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+    ).toBe(true);
+  });
+});
+
