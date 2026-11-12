@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
 import { construireChaineC1, plainteDominanteDepuisScores } from './chaineC1';
+import { CLAIMS_PRIORITES_ADMISSIBLES } from './chaineC1Fixture';
 import {
   DEPARTAGE_PLAINTE_EX_AEQUO,
   INVARIANTS_PRODUCTEUR,
@@ -89,6 +90,8 @@ function chaine(options: {
   etat?: Record<string, string>;
   /** Couvertures d'adressage actives ([[D-257]], LOT-04) ; absent = non lues. */
   couvertures?: CouvertureAdressage[];
+  /** Couples admissibles de la table des priorités ([[D-495]]) ; absent = tous. */
+  admissibles?: ReadonlySet<string> | null;
   /** Signalements d'effet indésirable ([[D-281]]) ; absent = non lus. */
 } = {}) {
   const lignes = reponsesRuntimeRideauT0(
@@ -128,6 +131,7 @@ function chaine(options: {
     reponsesSecurite: inputs.reponsesSecurite,
     etatPopulation: inputs.etatPopulation,
     ...(options.couvertures !== undefined ? { couverturesAdressage: options.couvertures } : {}),
+    claimsAdmissiblesPriorites: options.admissibles === undefined ? CLAIMS_PRIORITES_ADMISSIBLES : options.admissibles,
   });
 }
 
@@ -549,6 +553,65 @@ describe('chaîne C1 — déterminisme', () => {
     // La signature CHANGE la carte : c'est bien le verrou qui commande, et non
     // un hasard de fixture.
     expect(ouvert[0].decisionCard.inputHash).not.toBe(ferme[0].decisionCard.inputHash);
+  });
+});
+
+// [[D-495]] §3-5 — UN CLAIM DE LA TABLE DES PRIORITÉS QUI N'EST PLUS ADMISSIBLE.
+describe('chaîne C1 — admissibilité des claims de priorité (D-495)', () => {
+  const claimPonderal = PRIORITY_RULES_V1.find(r => r.id === 'PRIO-PON-01')!.justificationClaims[0];
+  const sansPonderal = new Set(
+    [...CLAIMS_PRIORITES_ADMISSIBLES].filter(cle => cle !== `${claimPonderal.claimId}::${claimPonderal.versionClaim}`),
+  );
+
+  it('tous les claims admissibles : la carte ne porte AUCUN des deux champs — son empreinte ne bouge pas', () => {
+    simulerSignature();
+    const { decisionCard } = chaine();
+    expect('prioritesNonProposees' in decisionCard).toBe(false);
+    expect('validitePrioritesNonVerifiee' in decisionCard).toBe(false);
+    expect(decisionCard.priorityCandidates.map(c => c.ruleId)).toEqual(['PRIO-PON-01', 'PRIO-DIG-01']);
+  });
+
+  it('un claim non admissible : la priorité n’est pas classée, elle est dite sur la carte avec son couple', () => {
+    simulerSignature();
+    const { decisionCard } = chaine({ admissibles: sansPonderal });
+    // Écartée AVANT le classement : l'autre candidat prend le rang 1, contigu.
+    expect(decisionCard.priorityCandidates.map(c => [c.ruleId, c.rank])).toEqual([['PRIO-DIG-01', 1]]);
+    expect(decisionCard.proposedMainPriorityId).toBe('priority:PRIO-DIG-01');
+    expect(decisionCard.prioritesNonProposees).toEqual([{
+      ruleId: 'PRIO-PON-01',
+      label: PRIORITY_RULES_V1.find(r => r.id === 'PRIO-PON-01')!.libelle,
+      claims: [{ claimId: claimPonderal.claimId, versionClaim: claimPonderal.versionClaim }],
+    }]);
+    // Le référentiel `rules` reste entier : il décrit la table signée.
+    expect(chaine({ admissibles: sansPonderal }).review.inputHash).toBe(chaine().review.inputHash);
+    // La carte, elle, change — c'est voulu (interruption du protocole diffusé).
+    expect(decisionCard.inputHash).not.toBe(chaine().decisionCard.inputHash);
+  });
+
+  it('une règle non admissible qui ne se déclenche pas n’est pas nommée sur la carte', () => {
+    simulerSignature();
+    const claimSommeil = PRIORITY_RULES_V1.find(r => r.id === 'PRIO-SOM-01')!.justificationClaims[0];
+    const sansSommeil = new Set(
+      [...CLAIMS_PRIORITES_ADMISSIBLES].filter(cle => cle !== `${claimSommeil.claimId}::${claimSommeil.versionClaim}`),
+    );
+    const { decisionCard } = chaine({ admissibles: sansSommeil });
+    expect('prioritesNonProposees' in decisionCard).toBe(false);
+    expect(decisionCard.priorityCandidates.map(c => c.ruleId)).toEqual(['PRIO-PON-01', 'PRIO-DIG-01']);
+  });
+
+  it('corpus illisible : aucune priorité issue des règles, et la carte le dit', () => {
+    simulerSignature();
+    const { decisionCard } = chaine({ admissibles: null });
+    expect(decisionCard.priorityCandidates).toEqual([]);
+    expect(decisionCard.proposedMainPriorityId).toBeNull();
+    expect(decisionCard.validitePrioritesNonVerifiee).toBe(true);
+    expect('prioritesNonProposees' in decisionCard).toBe(false);
+  });
+
+  it('table non signée : le corpus illisible ne se dit pas — aucune priorité n’aurait été évaluée', () => {
+    simulerNonSignature();
+    const { decisionCard } = chaine({ admissibles: null });
+    expect('validitePrioritesNonVerifiee' in decisionCard).toBe(false);
   });
 });
 

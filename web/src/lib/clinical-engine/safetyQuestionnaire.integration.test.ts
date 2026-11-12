@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma } = vi.hoisted(() => ({
+const { prisma, corpus } = vi.hoisted(() => ({
+  // [[D-495]] §6.4 : un claim retiré, ou le corpus illisible, entre
+  // l'affichage et l'enregistrement — défaut : tout est admissible.
+  corpus: { retires: new Set<string>(), illisible: false },
   prisma: {
     questionnaireReponse: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
@@ -13,8 +16,10 @@ vi.mock('./selectionPrioritePrisma', async importOriginal => ({
   lireSelectionPriorite: vi.fn(async () => null),
 }));
 
+import { PRIORITY_RULES_V1 } from '@/lib/clinical/priorityRulesV1';
 import {
   ANAMNESE_C1_FIXTURE,
+  CANDIDAT_RANG_1,
   chaineC1DeReference,
   passationsC1Fixture,
   retablirTablePriorites,
@@ -23,6 +28,23 @@ import {
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
 import { estFindingQuestionnaire } from './safetyFindingSource';
 import { refusChaineC1 } from './verifierChaineC1';
+
+// [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
+// l'admissibilité des claims au corpus. Tout couple est admissible ici — les
+// cas où un claim tombe, ou où le corpus est illisible, ont leurs bancs aux
+// services (`orientationService`, `contradictionsService`, `chaineC1`).
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) =>
+      corpus.illisible
+        ? null
+        : new Set(references
+          .map(reference => `${reference.claimId}::${reference.versionClaim}`)
+          .filter(cle => !corpus.retires.has(cle))),
+  };
+});
 
 // [[D-275]] §2, LOT-3 — LES RACCORDEMENTS, éprouvés de bout en bout (revue
 // Codex de #1375, P1-3). Le banc de garde éprouve le producteur ; celui-ci
@@ -56,6 +78,8 @@ beforeEach(() => {
   prisma.consultation.findFirst.mockResolvedValue({ id: 'CONS_PORTEUSE', ...ANAMNESE_C1_FIXTURE });
 });
 afterEach(() => {
+  corpus.retires.clear();
+  corpus.illisible = false;
   retablirTablePriorites();
   vi.clearAllMocks();
 });
@@ -133,6 +157,29 @@ describe('parité — le vérificateur recalcule la carte du cockpit, positif co
   it('contre-épreuve : le vérificateur LIT le positif — sans lui, la carte diverge', async () => {
     const chaine = chaineC1DeReference({ passationsSecurite: [POSITIF_HORS_EPISODE] });
     prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    expect(await refusChaineC1(chaine.episode, chaine.decisionCard)).not.toBeNull();
+  });
+});
+
+describe('D-495 §6.4 — le vérificateur relit le corpus au présent', () => {
+  const claimDuRang1 = () => {
+    const regle = PRIORITY_RULES_V1.find(r => `priority:${r.id}` === CANDIDAT_RANG_1);
+    if (!regle) throw new Error('règle du rang 1 introuvable');
+    const claim = regle.justificationClaims[0];
+    return `${claim.claimId}::${claim.versionClaim}`;
+  };
+
+  it('un claim retiré entre l’affichage et l’enregistrement : la carte diverge (409)', async () => {
+    const chaine = chaineC1DeReference();
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    corpus.retires.add(claimDuRang1());
+    expect(await refusChaineC1(chaine.episode, chaine.decisionCard)).not.toBeNull();
+  });
+
+  it('corpus devenu illisible : la carte diverge aussi (409), jamais acceptée par défaut', async () => {
+    const chaine = chaineC1DeReference();
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    corpus.illisible = true;
     expect(await refusChaineC1(chaine.episode, chaine.decisionCard)).not.toBeNull();
   });
 });

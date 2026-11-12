@@ -9,6 +9,7 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import { isRuntimeMilestone, proposeRuntimeEpisode } from '@/lib/clinical-engine/runtimeFromPrisma';
 import { lireCouverturesAdressage } from '@/lib/clinical-engine/adressagesSignalAlertePrisma';
+import { lireAdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import type { CouvertureAdressage } from '@/lib/clinical-engine/safetyFindingSource';
 import {
   construireChaineC1Tolerante,
@@ -49,7 +50,7 @@ import type {
 } from '@/lib/clinical-engine/types';
 import {
   conflitsSourcesActifs,
-  contradictionsPourPatient,
+  contradictionsDetailleesPourPatient,
   type ContradictionAffichee,
 } from '@/lib/clinical/contradictionsService';
 import { CANAL_PLAINTE, PRIORITY_RULES_METADATA, tablePrioritesSignee } from '@/lib/clinical/priorityRulesV1';
@@ -129,6 +130,13 @@ export type CockpitRuntimeApiResponse =
        * dans le service, jamais ici ni chez le client.
        */
       contradictions: ContradictionAffichee[];
+      /**
+       * Présent (et vrai) seulement quand les convergences n'ont pas pu être
+       * évaluées : la validité des sources de la table d'orientation n'a pas pu
+       * être vérifiée ([[D-495]] §3). L'écran le DIT, au lieu de laisser une
+       * absence de convergence se lire « aucune convergence ».
+       */
+      convergencesNonEvaluees?: true;
       /**
        * Les arbitrages des conflits de sources constatés ci-dessus, LISTÉS à
        * côté de leur constat, chacun étiqueté par sa fiche d'usage ([[D-439]]
@@ -361,7 +369,9 @@ async function reponsePrete(
       );
     }
   }
-  const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
+  const { affichees: contradictions, convergencesNonEvaluees } = await contradictionsDetailleesPourPatient(
+    idPatient, claimsCites,
+  );
   // Les arbitrages ne se lisent que pour les conflits DÉJÀ constatés : aucun
   // n'ajoute ni ne retire un constat, et une lecture en échec ne prive le
   // praticien que de la liste, jamais du constat d'escalade (`DC-55`).
@@ -381,6 +391,7 @@ async function reponsePrete(
     review: chaine.review,
     decisionCard: chaine.decisionCard,
     contradictions,
+    ...(convergencesNonEvaluees ? { convergencesNonEvaluees: true as const } : {}),
     ...(arbitragesConflits.length > 0 ? { arbitragesConflits } : {}),
     plainteDominante: chaine.plainteDominante,
     perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
@@ -785,6 +796,8 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
       couverturesAdressage,
+      // Même lecture aux quatre constructions ([[D-495]]) : `null` = corpus illisible.
+      claimsAdmissiblesPriorites: await lireAdmissibilitePriorites(),
     }, await lireSelectionPriorite(idPatient, `runtime-decision-${idSuffix}`));
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
     // praticien a été vérifiée — un patient d'un autre praticien est sorti en

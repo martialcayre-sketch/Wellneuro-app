@@ -78,6 +78,38 @@ import { construireSafetyFindings } from '@/lib/clinical-engine/safetyFindings';
 import { identifiantPrioriteLibre } from '@/lib/clinical-engine/prioriteLibreServeur';
 import { GET, POST } from './route';
 
+// [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
+// l'admissibilité des claims au corpus. Tout couple est admissible ici — les
+// cas où un claim tombe, ou où le corpus est illisible, ont leurs bancs aux
+// services (`orientationService`, `contradictionsService`, `chaineC1`).
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) =>
+      new Set(references.map(reference => `${reference.claimId}::${reference.versionClaim}`)),
+  };
+});
+
+/**
+ * Double les DEUX lectures des contradictions : la forme simple, que lisent
+ * les préconditions T0, et la forme détaillée, que lit la route ([[D-495]]
+ * §3). Un seul `mockRestore` pour les deux.
+ */
+function doublerLesContradictions(
+  service: typeof import('@/lib/clinical/contradictionsService'),
+  constats: import('@/lib/clinical/contradictionsService').ContradictionAffichee[],
+) {
+  const pourPatient = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue(constats);
+  const detaillees = vi.spyOn(service, 'contradictionsDetailleesPourPatient')
+    .mockResolvedValue({ affichees: constats, convergencesNonEvaluees: false });
+  return {
+    pourPatient,
+    detaillees,
+    mockRestore() { pourPatient.mockRestore(); detaillees.mockRestore(); },
+  };
+}
+
 const patient = { idPatient: 'PAT_TEST', createdAt: new Date('2026-01-01T00:00:00.000Z') };
 const rawAnswers = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
 
@@ -696,6 +728,10 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     };
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([constat]);
+    // La route lit la forme DÉTAILLÉE ([[D-495]] §3 : elle porte aussi le
+    // « convergences non évaluées ») ; les préconditions T0, la forme simple.
+    const espionRoute = vi.spyOn(service, 'contradictionsDetailleesPourPatient')
+      .mockResolvedValue({ affichees: [constat], convergencesNonEvaluees: false });
 
     const proposed = await proposal();
     const response = await POST(postRequest({
@@ -722,9 +758,27 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     // conflit de sources, délibérément. Le second est celui de la route, à deux.
     // Sans cette distinction, l'assertion ci-dessus était satisfaite par le
     // premier appel et ne disait rien de ce que la route transmet.
-    expect(espion.mock.calls.at(-1)).toEqual(['PAT_TEST', []]);
+    expect(espionRoute.mock.calls.at(-1)).toEqual(['PAT_TEST', []]);
     expect(espion.mock.calls[0]).toEqual(['PAT_TEST']);
     expect(payload.contradictions).toEqual([constat]);
+    expect(payload).not.toHaveProperty('convergencesNonEvaluees');
+    espion.mockRestore();
+    espionRoute.mockRestore();
+  });
+
+  it('D-495 : convergences non évaluées (corpus illisible) — la route le transmet', async () => {
+    const service = await import('@/lib/clinical/contradictionsService');
+    const espion = vi.spyOn(service, 'contradictionsDetailleesPourPatient')
+      .mockResolvedValue({ affichees: [], convergencesNonEvaluees: true });
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    const payload = await response.json();
+    expect(response.status).toBe(200);
+    expect(payload.convergencesNonEvaluees).toBe(true);
     espion.mockRestore();
   });
 
@@ -758,7 +812,7 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     it('lus pour les seuls conflits constatés, et rendus à côté du constat', async () => {
       const service = await import('@/lib/clinical/contradictionsService');
       const cockpit = await import('@/lib/positions-expert/cockpit');
-      const espionService = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([conflit]);
+      const espionService = doublerLesContradictions(service, [conflit]);
       const arbitrage = { conflitId: 'CS-BIO-01', ficheId: 'FU_MG_P7', retenu: 'WN-CL-0312-018@v1.0', motif: 'm', le: '2026-11-07T10:00:00.000Z', aRelire: false };
       const espion = vi.spyOn(cockpit, 'lireArbitragesAuCockpit').mockResolvedValue([arbitrage]);
       const payload = await (await confirmer()).json();
@@ -772,7 +826,7 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     it('une lecture en échec ne prive que de la liste : le constat reste, la réponse aussi', async () => {
       const service = await import('@/lib/clinical/contradictionsService');
       const cockpit = await import('@/lib/positions-expert/cockpit');
-      const espionService = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([conflit]);
+      const espionService = doublerLesContradictions(service, [conflit]);
       const espion = vi.spyOn(cockpit, 'lireArbitragesAuCockpit').mockRejectedValue(new Error('base indisponible'));
       const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
       const response = await confirmer();
@@ -860,8 +914,8 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
       .spyOn(bio, 'claimsCitesParLaPropositionBilan')
       .mockResolvedValue(cites);
     const espionService = vi
-      .spyOn(service, 'contradictionsPourPatient')
-      .mockResolvedValue([]);
+      .spyOn(service, 'contradictionsDetailleesPourPatient')
+      .mockResolvedValue({ affichees: [], convergencesNonEvaluees: false });
 
     const proposed = await proposal();
     await POST(postRequest({
@@ -960,7 +1014,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
   // priorité de stress — ni en tête, ni ailleurs.
   it('une contradiction de stress ouverte ne produit aucune priorité de stress', async () => {
     const service = await import('@/lib/clinical/contradictionsService');
-    const espion = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([{
+    const espion = doublerLesContradictions(service, [{
       id: 'C-STR',
       forme: 'DISCORDANCE' as const,
       description: 'Une contradiction que le praticien doit voir.',
@@ -980,7 +1034,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
       { conditionId: 'contradictions_ouvertes', motif: 'Vue en entretien.' },
     ]);
     expect(statut).toBe(200);
-    expect(espion).toHaveBeenCalledWith('PAT_TEST');
+    expect(espion.pourPatient).toHaveBeenCalledWith('PAT_TEST');
     expect(payload.contradictions).toHaveLength(1);
     for (const candidat of payload.decisionCard.priorityCandidates) {
       expect(candidat.ruleId).not.toMatch(/STR/);

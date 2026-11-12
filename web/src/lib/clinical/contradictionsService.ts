@@ -11,7 +11,8 @@ import { CONFLITS_SOURCES_METADATA, CONFLITS_SOURCES_SHA256 } from './conflitsSo
 import { evaluerConvergences } from './convergenceEngine';
 import { LIBELLE_GRADUATION } from './convergenceV1';
 import type { ReponseOrientation } from './orientationEngine';
-import { FENETRES_FRAICHEUR_ORIENTATION, ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import { FENETRES_FRAICHEUR_ORIENTATION } from './orientationRulesV1';
+import { reglesOrientationAdmissibles, type OrientationAdmissible } from './orientationAdmissible';
 import { orientationActive, scoresRecalculesPourRaisonnement } from './orientationService';
 import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from './admissibiliteClaims';
 // Découpage par position d'une ligne trop longue ([[D-107]]) : fonction PURE,
@@ -374,8 +375,21 @@ export function constatsContradictionsPourDossier(
    * vigilances de discordance (revue `wn-reviewer` de #1907, [[D-455]] §7).
    */
   portee: 'tout' | 'discordances' | 'convergences' = 'tout',
+  /**
+   * Les règles d'orientation APPLICABLES ([[D-495]] §1), telles que
+   * `reglesOrientationAdmissibles` les rend — `null` quand le corpus est
+   * illisible : aucune convergence n'est alors calculée. Ignoré pour la
+   * portée `discordances`. EXIGÉ pour les deux autres : un appelant qui
+   * l'oublierait compterait sinon la table entière, règles non appliquées
+   * comprises — l'écart que [[D-495]] ferme. L'oubli lève, il ne se replie
+   * pas.
+   */
+  orientation?: OrientationAdmissible | null,
 ): ContradictionFinding[] {
   if (!contradictionsActives()) return [];
+  if (portee !== 'discordances' && orientation === undefined) {
+    throw new TypeError('Règles d’orientation applicables non fournies au calcul des convergences.');
+  }
 
   // RECALCUL À LA LECTURE, jamais l'instantané figé — doctrine détaillée sur
   // `contradictionsPourPatient`, qui portait ce bloc avant l'extraction.
@@ -402,7 +416,7 @@ export function constatsContradictionsPourDossier(
   const drapeaux = anamnese == null ? undefined : extraireDrapeauxAnamnese(anamnese);
   return [
     ...(portee === 'convergences' ? [] : evaluerContradictions({ reponses: reponsesRecalculees, drapeaux })),
-    ...(portee === 'discordances' ? [] : convergencesDuDossier(reponsesRecalculees, drapeaux, maintenantMs)),
+    ...(portee === 'discordances' ? [] : convergencesDuDossier(reponsesRecalculees, drapeaux, maintenantMs, orientation ?? null)),
   ];
 }
 
@@ -417,23 +431,50 @@ export function constatsContradictionsPourDossier(
  *
  * Le moteur reçoit les MÊMES passations recalculées que la discordance, et les
  * fenêtres de la table signée.
+ *
+ * LES SEULES RÈGLES APPLIQUÉES ([[D-495]] §1). Une règle dont un claim n'est
+ * pas admissible perd ses DEUX apports : elle n'ouvre plus de besoin, et ses
+ * conditions ne sont plus comptées dans les besoins que d'autres règles
+ * ouvrent. Une condition que porte aussi une règle applicable compte encore,
+ * par elle. Corpus illisible (`null`) : aucune convergence — l'appelant le dit
+ * (`convergencesNonEvaluees`).
  */
 function convergencesDuDossier(
   reponses: ReponseOrientation[],
   drapeaux: DrapeauxAnamnese | undefined,
   maintenantMs: number,
+  orientation: OrientationAdmissible | null,
 ): ContradictionFinding[] {
-  if (!orientationActive()) return [];
+  if (!orientationActive() || orientation === null) return [];
   return evaluerConvergences({
     reponses,
     drapeaux,
-    regles: ORIENTATION_RULES_V1,
+    regles: orientation.regles,
     maintenantMs,
     fenetres: FENETRES_FRAICHEUR_ORIENTATION,
   });
 }
 
+/**
+ * `contradictionsPourPatient`, plus le fait que les convergences n'ont pas pu
+ * être évaluées ([[D-495]] §3) — ce que le cockpit doit DIRE (« Convergences
+ * non évaluées… ») plutôt que de laisser une absence se lire « aucune
+ * convergence ». Vrai seulement quand les deux verrous sont ouverts et que le
+ * corpus est illisible.
+ */
+export type ContradictionsDuPatient = {
+  affichees: ContradictionAffichee[];
+  convergencesNonEvaluees: boolean;
+};
+
 export async function contradictionsPourPatient(
+  idPatient: string,
+  claimsCites: ContradictionClaimRef[] = [],
+): Promise<ContradictionAffichee[]> {
+  return (await contradictionsDetailleesPourPatient(idPatient, claimsCites)).affichees;
+}
+
+export async function contradictionsDetailleesPourPatient(
   idPatient: string,
   /**
    * Les claims que les sorties déjà produites pour ce dossier citent —
@@ -448,7 +489,7 @@ export async function contradictionsPourPatient(
    * l'extinction est une dette nommée de [[D-103]], pas un effet de bord.
    */
   claimsCites: ContradictionClaimRef[] = [],
-): Promise<ContradictionAffichee[]> {
+): Promise<ContradictionsDuPatient> {
   // LES CONFLITS DE SOURCES NE LISENT PAS LE DOSSIER, et le verrou d'entrée
   // reste donc celui des contradictions — corrigé en revue ([[D-103]]).
   //
@@ -463,14 +504,17 @@ export async function contradictionsPourPatient(
   // Les conflits sont donc calculés HORS de cette porte, plus bas : verrou des
   // contradictions fermé, le dossier n'est pas touché et les conflits sortent
   // quand même si leur propre registre est signé.
-  const contradictions = contradictionsActives()
+  const { constats: contradictions, convergencesNonEvaluees } = contradictionsActives()
     ? await constatsDuDossierStocke(idPatient)
-    : [];
+    : { constats: [], convergencesNonEvaluees: false };
 
-  return avecReservesDeSource(contradictionsPourAffichage([
-    ...contradictions,
-    ...conflitsSourcesPourDossier(claimsCites),
-  ]));
+  return {
+    affichees: await avecReservesDeSource(contradictionsPourAffichage([
+      ...contradictions,
+      ...conflitsSourcesPourDossier(claimsCites),
+    ])),
+    convergencesNonEvaluees,
+  };
 }
 
 /**
@@ -509,8 +553,10 @@ export async function avecReservesDeSource(affichees: ContradictionAffichee[]): 
  * `contradictionsPourPatient` par [[D-103]], pour que la lecture Prisma reste
  * derrière le verrou des contradictions et ne parte pas au nom des conflits.
  */
-async function constatsDuDossierStocke(idPatient: string): Promise<ContradictionFinding[]> {
-  const [reponses, consultation] = await Promise.all([
+async function constatsDuDossierStocke(
+  idPatient: string,
+): Promise<{ constats: ContradictionFinding[]; convergencesNonEvaluees: boolean }> {
+  const [reponses, consultation, orientation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
@@ -525,6 +571,10 @@ async function constatsDuDossierStocke(idPatient: string): Promise<Contradiction
       select: { anamnese: true },
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
+    // [[D-495]] : la même lecture que le panneau d'orientation — seulement
+    // quand une convergence peut être calculée, sinon le corpus n'a pas à être
+    // interrogé.
+    orientationActive() ? reglesOrientationAdmissibles() : Promise.resolve(null),
   ]);
 
   // RECALCUL À LA LECTURE, jamais l'instantané figé en base — l'en-tête de
@@ -554,7 +604,12 @@ async function constatsDuDossierStocke(idPatient: string): Promise<Contradiction
   // garde sa place dans la sélection : l'instrument s'éteint au lieu de
   // reculer dans le temps. Tout ce bloc vit désormais dans
   // `constatsContradictionsPourDossier`, partagé avec `orientationService`.
-  return constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null);
+  return {
+    constats: constatsContradictionsPourDossier(
+      reponses, consultation?.anamnese ?? null, Date.now(), 'tout', orientation,
+    ),
+    convergencesNonEvaluees: orientationActive() && orientation === null,
+  };
 }
 
 /**
