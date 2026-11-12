@@ -27,11 +27,12 @@ Aligner les icônes du menu praticien sur la table `icon-map.fr.json` du kit Lie
 - T1 (`npm run check:rapide`) : vert.
 - T2 (`npm run test:worktree -- --fast`), premier passage : un échec hors du diff, `src/lib/export-dossier/masquage.test.ts` (test de durée, 1,94 s pour une borne de 1,5 s, machine chargée), vert rejoué seul (164 passés). Le build et Playwright n'ayant pas tourné, T2 a été relancé.
 - T2, second passage (sur `47070085`) : vert en 11 min 31 s. Vitest 17 137 passés, 50 sautés ; Playwright 368 passés, 34 sautés (Chromium et WebKit, build de production).
-- Constat à l'écran : non fait en local ; les références visuelles du rail sont jugées par le CI.
+- Constat à l'écran : non fait en local ; les références visuelles l'ont fait à sa place.
+- CI sur `845c01f8` : `e2e` rouge sur cinq références visuelles de la fiche patient (`visual.spec.ts`), 198 à 322 pixels d'écart chacune ; 365 autres E2E verts. PR-Agent prouvé sur `845c01f8` (`wn-revue-pr-agent` → 0), sans remarque.
+- Références régénérées par `visual-baselines` (run 43306482318, Ubuntu) : exactement les cinq en échec diffèrent, les trois autres sont identiques. Chaque image relue en avant-après : les pixels changés se limitent à la colonne d'icônes du rail (Le Fil du jour, Patients, Fiche-trajectoire active) au bureau, et à la barre basse (« Le Fil », « Fiches ») au téléphone. Aucun seuil desserré.
 
 ## Problèmes ouverts
 
-- Si le CI signale des références visuelles du rail ou de la barre basse, les régénérer par le workflow `visual-baselines` et les relire.
 - Les écrans encore au trait de 2 px passent à 1,75 px dans leurs lots, comme prévu par `components/ui/icone.ts`.
 
 ## Prochaine action exacte
