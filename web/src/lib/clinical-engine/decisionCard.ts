@@ -16,6 +16,7 @@ import type {
   DecisionCounterfactual,
   DecisionPriorityCandidate,
   DecisionPrioritySelection,
+  PrioriteNonProposee,
   ValidatedClinicalRuleRef,
 } from './types';
 
@@ -76,6 +77,10 @@ export function buildDecisionCard(input: {
   proposedMainPriorityId?: string | null;
   selectedMainPriority?: DecisionPrioritySelection | null;
   counterfactuals?: DecisionCounterfactual[];
+  /** [[D-495]] §4 — priorités écartées avant le classement faute de claim admissible. */
+  prioritesNonProposees?: PrioriteNonProposee[];
+  /** [[D-495]] §3 — la validité des sources de la table n'a pas pu être vérifiée. */
+  validitePrioritesNonVerifiee?: boolean;
 }): DecisionCard {
   nonEmpty(input.decisionCardId, 'decisionCardId');
   canonicalIso(input.createdAt, 'createdAt');
@@ -189,6 +194,10 @@ export function buildDecisionCard(input: {
   const counterfactuals = [...counterfactualsById.values()].sort((left, right) => (
     left.counterfactualId < right.counterfactualId ? -1 : left.counterfactualId > right.counterfactualId ? 1 : 0
   ));
+  const prioritesNonProposees = normaliserPrioritesNonProposees(
+    input.prioritesNonProposees ?? [],
+    candidatesById,
+  );
   const limitations = uniqueSorted([
     ...input.review.limitations,
     ...(blocked ? ['Aucune priorité ne peut être proposée avant une évaluation explicite de l’abstention et la revue des bloqueurs.'] : []),
@@ -214,9 +223,49 @@ export function buildDecisionCard(input: {
     ...((input.review.safetyFindingsAdresses?.length ?? 0) > 0
       ? { safetyFindingAdresseIds: uniqueSorted(input.review.safetyFindingsAdresses!.map(finding => finding.findingId)) }
       : {}),
+    // [[D-495]] : MÊME GARDE D'EMPREINTE. Absents quand vides, pour que
+    // l'empreinte d'une carte ordinaire — tous les claims admissibles — ne
+    // bouge pas, et qu'aucun protocole diffusé ne s'interrompe au déploiement.
+    ...(prioritesNonProposees.length > 0 ? { prioritesNonProposees } : {}),
+    ...(input.validitePrioritesNonVerifiee ? { validitePrioritesNonVerifiee: true as const } : {}),
     abstention: input.review.abstention,
     limitations,
   };
   const { decisionCardId: _decisionCardId, ...hashInput } = withoutHash;
   return { ...withoutHash, inputHash: canonicalSha256(hashInput) };
+}
+
+/**
+ * Les priorités non proposées ([[D-495]] §4), validées puis triées par règle :
+ * l'ordre entre dans l'empreinte, il ne doit dépendre que du contenu. Une
+ * règle à la fois candidate et non proposée serait une incohérence du
+ * producteur, pas un cas clinique : elle fait jeter la carte.
+ */
+function normaliserPrioritesNonProposees(
+  entrees: PrioriteNonProposee[],
+  candidatesById: Map<string, DecisionPriorityCandidate>,
+): PrioriteNonProposee[] {
+  const reglesCandidates = new Set([...candidatesById.values()].map(candidate => candidate.ruleId));
+  const vues = new Set<string>();
+  const normalisees = entrees.map(entree => {
+    nonEmpty(entree.ruleId, 'règle de priorité non proposée');
+    nonEmpty(entree.label, 'libellé de priorité non proposée');
+    if (entree.claims.length === 0) {
+      throw new TypeError('Une priorité non proposée doit nommer au moins un claim non admissible.');
+    }
+    for (const claim of entree.claims) {
+      nonEmpty(claim.claimId, 'claim de priorité non proposée');
+      nonEmpty(claim.versionClaim, 'version de claim de priorité non proposée');
+    }
+    if (vues.has(entree.ruleId) || reglesCandidates.has(entree.ruleId)) {
+      throw new TypeError('Une règle de priorité ne peut être à la fois candidate et non proposée.');
+    }
+    vues.add(entree.ruleId);
+    return {
+      ruleId: entree.ruleId,
+      label: entree.label,
+      claims: entree.claims.map(claim => ({ claimId: claim.claimId, versionClaim: claim.versionClaim })),
+    };
+  });
+  return normalisees.sort((a, b) => (a.ruleId < b.ruleId ? -1 : a.ruleId > b.ruleId ? 1 : 0));
 }

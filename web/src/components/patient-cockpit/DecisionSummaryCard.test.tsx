@@ -321,3 +321,42 @@ describe('DecisionSummaryCard — priorité posée par le praticien (D-279)', ()
     expect(screen.getByText(/aucun axe proposé \(recueil incomplet\)/)).toBeTruthy();
   });
 });
+
+// [[D-495]] §3-4 — ce que la table n'a pas proposé faute de source admissible
+// se lit dans le RÉSUMÉ de la carte, jamais derrière « Voir les sources ».
+describe('DecisionSummaryCard — priorités non proposées (D-495)', () => {
+  it('T2 : la priorité non proposée est dite, avec sa règle et ses claims, sans ouvrir le détail', () => {
+    const { decisionCard } = buildValidationErgoC1Fixture();
+    const carte: DecisionCard = {
+      ...decisionCard,
+      prioritesNonProposees: [{
+        ruleId: 'PRIO-PON-01',
+        label: 'Équilibre pondéral',
+        claims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1.0' }],
+      }],
+    };
+    render(<DecisionSummaryCard decisionCard={carte} />);
+    expect(screen.getByText('Priorité non proposée : Équilibre pondéral.')).toBeTruthy();
+    expect(screen.getByText(/Ses conditions de déclenchement sont réunies sur ce dossier, mais au moins un claim cité par la règle PRIO-PON-01 ne satisfait pas les critères de validité du corpus\./)).toBeTruthy();
+    expect(screen.getByText('Claims concernés : WN-CL-0001-001 v1.0')).toBeTruthy();
+  });
+
+  it('T4 : corpus illisible — aucune priorité issue des règles, et c’est dit', () => {
+    const { decisionCard } = buildValidationErgoC1Fixture();
+    const carte: DecisionCard = {
+      ...decisionCard,
+      priorityCandidates: [],
+      proposedMainPriorityId: null,
+      validitePrioritesNonVerifiee: true,
+    };
+    render(<DecisionSummaryCard decisionCard={carte} />);
+    expect(screen.getByText('Aucune priorité issue des règles n’est proposée : la validité de leurs sources n’a pas pu être vérifiée.')).toBeTruthy();
+  });
+
+  it('une carte ordinaire ne porte ni l’un ni l’autre', () => {
+    const { decisionCard } = buildValidationErgoC1Fixture();
+    render(<DecisionSummaryCard decisionCard={decisionCard} />);
+    expect(screen.queryByText(/Priorité non proposée/)).toBeNull();
+    expect(screen.queryByText(/Aucune priorité issue des règles/)).toBeNull();
+  });
+});

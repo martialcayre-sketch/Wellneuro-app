@@ -10,6 +10,7 @@ import {
   ANAMNESE_C1_FIXTURE,
   ANAMNESE_C1_FIXTURE_AVEC_SIGNAL,
   CANDIDAT_RANG_1,
+  CLAIMS_PRIORITES_ADMISSIBLES,
   HORODATAGE_C1_FIXTURE,
   MOTIF_SELECTION_FIXTURE,
   designerTablePriorites,
@@ -177,6 +178,7 @@ describe('construireChaineC1Tolerante', () => {
       signauxAlerte: inputs.signauxAlerte,
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
+      claimsAdmissiblesPriorites: CLAIMS_PRIORITES_ADMISSIBLES,
     };
   }
 

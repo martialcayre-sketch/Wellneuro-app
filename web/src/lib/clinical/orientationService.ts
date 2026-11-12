@@ -16,6 +16,11 @@ import {
 } from '@/lib/clinical/orientationEngine';
 import { FENETRES_ARRET, STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1, type StopRule } from '@/lib/clinical/stopRulesV1';
 import { claimsAdmissiblesAuCorpus, couplesNonAdmissibles, type CoupleClaim } from '@/lib/clinical/admissibiliteClaims';
+import {
+  reglesOrientationAdmissibles,
+  type OrientationAdmissible,
+  type RegleOrientationNonAppliquee,
+} from '@/lib/clinical/orientationAdmissible';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
@@ -57,6 +62,12 @@ import { estExclueDuRaisonnement } from '@/lib/scoring/validite';
 // précisément celle qui lui aurait fait conclure à l'envers ([[D-076]]).
 export const MESSAGE_ORIENTATION_INACTIVE =
   "Orientation non activée sur cet environnement.";
+
+// CORPUS ILLISIBLE ([[D-495]] §3, patron de [[D-472]] §3.1) : aucune règle
+// d'orientation n'est vérifiable, donc aucune n'est appliquée — et le
+// praticien le lit, au lieu d'un panneau vide qui dirait « rien à proposer ».
+export const MESSAGE_ORIENTATION_SOURCES_NON_VERIFIEES =
+  "L'orientation n'est pas affichée : la validité de ses sources n'a pas pu être vérifiée.";
 
 /**
  * Une recommandation servie, augmentée de l'`id_pack` de la base pour les
@@ -217,6 +228,12 @@ export type ResultatOrientation =
        * exploitable (aucune extinction n'y joue de toute façon).
        */
       arretsSuspendus: ArretSuspendu[];
+      /**
+       * Règles d'orientation non appliquées faute de claim admissible
+       * ([[D-495]] §1) — listées qu'elles se déclenchent ou non sur ce
+       * dossier. Vide, jamais absent.
+       */
+      reglesNonAppliquees: RegleOrientationNonAppliquee[];
     };
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
@@ -409,8 +426,16 @@ export function scoresRecalculesPourRaisonnement(
  * Ne propose rien d'autre que des explorations : aucune assignation n'est
  * créée ici, ni ailleurs à partir d'ici. L'appelant est responsable d'avoir
  * vérifié que ce praticien a le droit de lire ce patient.
+ *
+ * `lectureOrientation` : la lecture des règles applicables déjà faite par
+ * l'appelant ([[D-495]] §4). La synthèse la partage avec la convergence, pour
+ * que les deux calculs portent sur la même table filtrée — `null` compris
+ * (corpus illisible). Absente (`undefined`), le service la fait lui-même.
  */
-export async function evaluerOrientationPourPatient(idPatient: string): Promise<ResultatOrientation> {
+export async function evaluerOrientationPourPatient(
+  idPatient: string,
+  lectureOrientation?: OrientationAdmissible | null,
+): Promise<ResultatOrientation> {
   // Le verrou est re-vérifié ici même si l'appelant l'a déjà consulté : c'est
   // ce qui garantit qu'aucun futur appelant ne puisse lire le dossier à travers
   // ce module sans que le double verrou soit passé. La lecture Prisma est en
@@ -424,7 +449,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // d'hier et un âge d'aujourd'hui. Le moteur ne lit toujours aucune horloge.
   const maintenantMs = Date.now();
 
-  const [reponses, assignations, packs, consultation, ecartements, patient, arretAdmissible] = await Promise.all([
+  const [reponses, assignations, packs, consultation, ecartements, patient, arretAdmissible, orientationAdmissible] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
@@ -498,7 +523,23 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     tableArretExploitable()
       ? reglesArretAdmissibles()
       : Promise.resolve({ regles: [] as StopRule[], suspendus: [] as ArretSuspendu[] }),
+    // LES RÈGLES D'ORIENTATION APPLICABLES ([[D-495]]) — la même lecture que
+    // la convergence. Ne lève jamais : `null` dit un corpus illisible.
+    lectureOrientation === undefined
+      ? reglesOrientationAdmissibles()
+      : Promise.resolve(lectureOrientation),
   ]);
+
+  // Corpus illisible : aucune règle n'est vérifiable, aucune n'est appliquée,
+  // et le panneau le DIT ([[D-495]] §3) — jamais une liste vide qui se lirait
+  // « rien à proposer ».
+  if (orientationAdmissible === null) {
+    return {
+      actif: false,
+      version: ORIENTATION_METADATA.version,
+      message: MESSAGE_ORIENTATION_SOURCES_NON_VERIFIEES,
+    };
+  }
 
   // Traduire AVANT de comparer. `pack.idPack` vient de la base
   // (`PACK_SOCLE_INIT`), les règles parlent en slugs de doctrine
@@ -595,7 +636,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   const { recommandations, reglesNonEvaluees, arretsNonEvalues } = evaluerOrientationDetaillee({
     reponses: reponsesRecalculees,
     idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
-    regles: ORIENTATION_RULES_V1,
+    // [[D-495]] : les règles dont un claim n'est pas admissible ne sont pas
+    // passées au moteur — elles ne proposent rien, et sont dites
+    // (`reglesNonAppliquees`).
+    regles: orientationAdmissible.regles,
     compositionPacks,
     estAdministrable: estAdministrableParLaRoute,
     // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
@@ -770,5 +814,6 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       ? { version: STOP_RULES_METADATA.version, sha256: STOP_RULES_SHA256 }
       : null,
     arretsSuspendus: arretAdmissible.suspendus,
+    reglesNonAppliquees: orientationAdmissible.nonAppliquees,
   };
 }
