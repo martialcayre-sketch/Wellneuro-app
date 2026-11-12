@@ -31,14 +31,21 @@ export function fichiersSource(): string[] {
   return [...new Set(sortie.split('\n').filter(estFichierSource))].sort();
 }
 
-/** `.js`/`.jsx` aussi : `allowJs` les admet en production (revue de #2006). */
+/**
+ * `.ts`/`.tsx`, `.js`/`.jsx` (`allowJs` les admet en production, revue de
+ * #2006) et les modules `.mjs`/`.cjs`/`.mts`/`.cts` (revue CodeRabbit de
+ * #2006) : aucun n'existe sous `web/src` aujourd'hui, mais un importeur y
+ * échapperait au banc.
+ */
+const EXTENSION_SOURCE = String.raw`\.(?:[cm]?[jt]s|[jt]sx)$`;
+
 export function estFichierSource(chemin: string): boolean {
-  return /\.[jt]sx?$/.test(chemin);
+  return new RegExp(EXTENSION_SOURCE).test(chemin);
 }
 
 /** Un fichier de test (banc compris) — hors du périmètre « code de production ». */
 export function estUnTest(chemin: string): boolean {
-  return /\.(test|spec)\.[jt]sx?$/.test(chemin) || chemin.includes('/__tests__/');
+  return new RegExp(String.raw`\.(test|spec)` + EXTENSION_SOURCE).test(chemin) || chemin.includes('/__tests__/');
 }
 
 export function lire(chemin: string): string {
@@ -72,8 +79,10 @@ export function specificateursImportes(source: string): string[] {
  * nœud : elle n'est jamais lue.
  */
 export function specificateursSyntaxiques(source: string, chemin = 'source.tsx'): string[] {
-  const nature = /\.jsx?$/.test(chemin) ? (chemin.endsWith('x') ? ScriptKind.JSX : ScriptKind.JS)
-    : chemin.endsWith('.ts') ? ScriptKind.TS : ScriptKind.TSX;
+  const nature = chemin.endsWith('.tsx') ? ScriptKind.TSX
+    : chemin.endsWith('.jsx') ? ScriptKind.JSX
+      : /\.[cm]?js$/.test(chemin) ? ScriptKind.JS
+        : /\.[cm]?ts$/.test(chemin) ? ScriptKind.TS : ScriptKind.TSX;
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, false, nature);
   const trouves: string[] = [];
   // L'argument est lu par sa VALEUR CONSTANTE, comme le fait le bundler

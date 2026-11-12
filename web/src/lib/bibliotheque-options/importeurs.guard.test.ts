@@ -39,9 +39,14 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
 
   // CONTRE-ÉPREUVE du balayage : un `.js`/`.jsx` de production en est
   // (`allowJs`) ; le retirer du filtre ferait rougir ce banc.
-  it('le balayage admet .ts, .tsx, .js et .jsx, et rien d’autre', () => {
-    for (const f of ['a.ts', 'a.tsx', 'a.js', 'a.jsx']) expect(estFichierSource(`web/src/${f}`)).toBe(true);
-    for (const f of ['a.json', 'a.css', 'a.md', 'a.d.ts.map']) expect(estFichierSource(`web/src/${f}`)).toBe(false);
+  it('le balayage admet .ts, .tsx, .js, .jsx, .mjs, .cjs, .mts et .cts, et rien d’autre', () => {
+    for (const f of ['a.ts', 'a.tsx', 'a.js', 'a.jsx', 'a.mjs', 'a.cjs', 'a.mts', 'a.cts']) {
+      expect(estFichierSource(`web/src/${f}`), f).toBe(true);
+    }
+    for (const f of ['a.json', 'a.css', 'a.md', 'a.d.ts.map', 'a.mjsx', 'a.ctsx']) {
+      expect(estFichierSource(`web/src/${f}`), f).toBe(false);
+    }
+    expect(estUnTest('web/src/a.test.mjs')).toBe(true);
   });
 
   it('aucun code de production hors du dossier n’importe la bibliothèque', () => {
@@ -49,7 +54,8 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       .filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER))
       .filter(chemin => specificateursSyntaxiques(lire(chemin), chemin).some(importeLaBibliotheque));
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
-  });
+    // Le parseur lit tout `web/src` : même délai que l'autre banc qui le fait (`replisAssietteV1`).
+  }, 30_000);
 
   // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif,
   // statique, dynamique ou CommonJS, masqué par un commentaire ou un
@@ -77,7 +83,7 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
     }
-    for (const chemin of ['x.js', 'x.jsx']) {
+    for (const chemin of ['x.js', 'x.jsx', 'x.mjs', 'x.cjs', 'x.mts', 'x.cts']) {
       const source = "const b = require('./bibliotheque-options/vocabulaire');";
       expect(specificateursSyntaxiques(source, chemin).filter(importeLaBibliotheque)).toHaveLength(1);
     }

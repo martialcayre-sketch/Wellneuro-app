@@ -156,7 +156,9 @@ export function incoherencesDeBibliotheque(
   if (!memesCles(structure, CLES_STRUCTURE)) anomalies.push('structure:cles');
   if (!dans(BESOINS, structure.besoin)) anomalies.push('structure:besoin');
   if (doublons(structure.options.map(o => o.id))) anomalies.push('structure:option_en_double');
-  if (doublons(structure.optionsRetirees) || structure.optionsRetirees.some(id => !estIdentifiantOption(id))) {
+  // Chaque case, trous compris (revue CodeRabbit de #2006, comme les populations).
+  const retirees: unknown[] = Array.isArray(structure.optionsRetirees) ? Array.from(structure.optionsRetirees) : [null];
+  if (doublons(retirees) || retirees.some(id => typeof id !== 'string' || !estIdentifiantOption(id))) {
     anomalies.push('structure:options_retirees');
   }
   for (const option of structure.options) {

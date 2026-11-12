@@ -138,6 +138,12 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 
   Bancs de garde, `bio-parcours` et bibliothèque : 161 fichiers verts,
   3 023 tests.
+- CodeRabbit sur `748a8467` : deux remarques, toutes deux corrigées.
+  `optionsRetirees` est lue case par case, trous compris : `new Array(1)`,
+  `[undefined]`, `[42]` et une liste mixte sont refusés, et la structure ne
+  se signe pas. Le balayage admet `.mjs`, `.cjs`, `.mts` et `.cts`. Il n'en
+  existe aucun sous `web/src`, donc les autres bancs ne changent pas.
+  `estUnTest` et le choix de la grammaire du parseur sont alignés.
 
 ## Problèmes ouverts
 

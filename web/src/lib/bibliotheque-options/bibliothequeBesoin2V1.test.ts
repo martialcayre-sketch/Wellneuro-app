@@ -205,6 +205,15 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     ]);
   });
 
+  // Revue CodeRabbit de #2006 : `some` sautait la case absente de `new Array(1)`.
+  it('une liste d’identifiants retirés à trous ou non textuelle est refusée, et ne se signe pas', () => {
+    for (const optionsRetirees of [new Array<string>(1), [undefined], [42], ['OPT_SYNTH_9', undefined]]) {
+      const structure = avec({}, { optionsRetirees: optionsRetirees as unknown as string[] });
+      expect(incoherencesDeBibliotheque(structure, FU_SYNTH)).toEqual(['structure:options_retirees']);
+      expect(signee(signeeSur(structure), structure)).toBe(false);
+    }
+  });
+
   it('ni plus ni moins que les champs du format : une propriété en trop est refusée', () => {
     const enTrop = { ...OPTION, texte: 'X' } as unknown as OptionBibliotheque;
     expect(incoherencesDeBibliotheque({ besoin: 2, options: [enTrop], optionsRetirees: [] }, FU_SYNTH)).toEqual(['OPT_SYNTH_1:cles']);
