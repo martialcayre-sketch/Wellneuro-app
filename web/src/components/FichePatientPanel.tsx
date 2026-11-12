@@ -15,6 +15,10 @@ import {
   HelpCircle,
   ListChecks,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Pill,
   ShieldAlert,
   Sparkles,
@@ -128,6 +132,8 @@ import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 import { FicheAdministrativePanel } from '@/components/dossier/FicheAdministrativePanel';
 import { ExportDossierPanel } from '@/components/patient-cockpit/ExportDossierPanel';
+import { useReplisFiche } from '@/components/patient-cockpit/replisFiche';
+import { TRAIT_ICONE } from '@/components/ui/icone';
 import { usePatientGestesDossier } from '@/components/dossier/usePatientGestesDossier';
 import { elementsMenuDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog } from '@/components/ui/DossierConfirmDialog';
@@ -819,6 +825,45 @@ export function FichePatientPanel({
   const [demandesAssemblage, setDemandesAssemblage] = useState(0);
   const refsPhases = useRef<(HTMLButtonElement | null)[]>([]);
   const refsOnglets = useRef<(HTMLButtonElement | null)[]>([]);
+  // Replis du rail des phases et du contexte (PRA-3a, T-14, T-15) : le focus
+  // suit la commande — jamais laissé sur un bouton qui vient de disparaître.
+  // Il se pose APRÈS le rendu, quand la commande d'arrivée est affichée.
+  const { phasesMasquees, contexteMasque, poserPhasesMasquees, poserContexteMasque } = useReplisFiche();
+  const refsReplis = useRef<Record<'masquerPhases' | 'afficherPhases' | 'masquerContexte' | 'afficherContexte', HTMLButtonElement | null>>({
+    masquerPhases: null,
+    afficherPhases: null,
+    masquerContexte: null,
+    afficherContexte: null,
+  });
+  const [focusRepli, setFocusRepli] = useState<keyof typeof refsReplis.current | null>(null);
+  useEffect(() => {
+    if (!focusRepli) return;
+    refsReplis.current[focusRepli]?.focus();
+    setFocusRepli(null);
+  }, [focusRepli, phasesMasquees, contexteMasque]);
+  const replier = (geste: 'masquerPhases' | 'afficherPhases' | 'masquerContexte' | 'afficherContexte') => {
+    if (geste === 'masquerPhases') poserPhasesMasquees(true);
+    if (geste === 'afficherPhases') poserPhasesMasquees(false);
+    if (geste === 'masquerContexte') poserContexteMasque(true);
+    if (geste === 'afficherContexte') poserContexteMasque(false);
+    setFocusRepli(
+      geste === 'masquerPhases' ? 'afficherPhases'
+        : geste === 'afficherPhases' ? 'masquerPhases'
+          : geste === 'masquerContexte' ? 'afficherContexte'
+            : 'masquerContexte',
+    );
+  };
+  // Classes de largeur, littérales pour Tailwind. Sous 1 024 px, rien ne se
+  // replie : colonnes empilées, sans commande (prototype validé). Contexte
+  // sans choix de la session (`null`) : escamoté d'office de 1 024 à 1 279 px.
+  const classesColonnePhases = phasesMasquees ? 'lg:hidden' : '';
+  const classesCommandeAfficherPhases = phasesMasquees ? 'hidden lg:inline-flex' : 'hidden';
+  const classesColonneContexte =
+    contexteMasque === true ? 'lg:hidden' : contexteMasque === null ? 'lg:max-xl:hidden' : '';
+  const classesContexteFerme =
+    contexteMasque === true ? 'hidden lg:flex' : contexteMasque === null ? 'hidden lg:max-xl:flex' : 'hidden';
+  const classesCommandeAfficherContexte =
+    contexteMasque === true ? 'hidden lg:inline-flex' : contexteMasque === null ? 'hidden lg:max-xl:inline-flex' : 'hidden';
   // Harnais de validation ergonomique C1 (dev uniquement — voir
   // validationErgoFixture.ts) : la fixture est construite côté serveur par la
   // page et reçue en prop ; le brouillon relu (Épreuve 2) est construit par le
@@ -2270,6 +2315,34 @@ export function FichePatientPanel({
     return null;
   };
 
+  // Deux instruments rendus à deux endroits : dans la colonne de contexte, et
+  // dans la zone de travail quand le contexte est fermé (PRA-3a, Q3). Deux
+  // instances, un seul affiché à la fois ; chacune ne lit qu'à l'ouverture.
+  // Les données physiologiques et les traitements en cours, en lignes datées
+  // ([[D-335]], BP-13) : sous leur drapeau seulement. Le panneau ne lit rien
+  // tant que le tiroir est fermé — la primitive ne monte son contenu qu'à
+  // l'ouverture.
+  const instrumentPhysioTraitements = (
+    <InstrumentTiroir
+      libelle="Données physiologiques et traitements"
+      description="Sexe et statut déclarés, grossesse, allaitement, poids, taille, traitements et compléments en cours : chaque ligne datée, avec sa source. Rien n’est déduit ni calculé."
+      icone={Pill}
+      large
+    >
+      <PhysioTraitementsPanel idPatient={idPatient} />
+    </InstrumentTiroir>
+  );
+  const instrumentDecisionsParcours = (
+    <InstrumentTiroir
+      libelle="Décisions de parcours"
+      description="Par version du protocole : préférences et refus du patient, début réel, interruption, reprise, arrêt, révision. Chaque ligne datée, avec sa source et son motif. Rien n’est déduit."
+      icone={ListChecks}
+      large
+    >
+      <DecisionsParcoursPanel idPatient={idPatient} />
+    </InstrumentTiroir>
+  );
+
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
     <ChiffresMasquesProvider masques={modeConsultationActif}>
@@ -2623,9 +2696,23 @@ export function FichePatientPanel({
               maquette disait 19), position en
               mono, chip d'état à droite. */}
           <div className="flex flex-wrap items-center gap-4 border-b border-border bg-surface px-[18px] py-3.5">
+            {/* Commandes de réouverture (T-14, T-15) : dans le bandeau, la
+                seule rangée toujours affichée du poste de pilotage. */}
+            <button
+              type="button"
+              ref={element => {
+                refsReplis.current.afficherPhases = element;
+              }}
+              onClick={() => replier('afficherPhases')}
+              className={`${classesCommandeAfficherPhases} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+            >
+              <PanelLeftOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+              Afficher les phases
+            </button>
             <SpiraleTrajectoire enCours className="shrink-0" />
+            {/* Le nom du dossier n'est plus répété ici : l'en-tête de fiche,
+                juste au-dessus, le porte (prototype PRA-3a validé, Q4). */}
             <div className="min-w-0">
-              <p className="font-display text-lg font-bold leading-tight text-foreground">{nomComplet}</p>
               <p className="font-mono text-13 text-muted-foreground">
                 {derniereReponse ? `Dernière réponse le ${derniereReponse}` : 'Aucune réponse reçue'}
               </p>
@@ -2681,20 +2768,43 @@ export function FichePatientPanel({
                 /* Sans provenance, pas de chiffre ([[D-333]] §2 règle 1). */
                 <Chip variante="delta">Au tour précédent : {MENTION_SOURCE_NON_ENREGISTREE}</Chip>
               ))}
-            <Chip variante="due" className="ml-auto">
+            {/* La puce et « Afficher le contexte » vont ensemble, à droite :
+                faute de place (1 024 à 1 279 px), ils passent à la ligne
+                ensemble, sans laisser la commande seule à gauche. */}
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
+            <Chip variante="due">
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
               Phase affichée : {phaseCourante.libelle} — {libelleStatut(phaseCourante.id, statutPhase(phaseCourante.id))}
             </Chip>
+            <button
+              type="button"
+              ref={element => {
+                refsReplis.current.afficherContexte = element;
+              }}
+              onClick={() => replier('afficherContexte')}
+              className={`${classesCommandeAfficherContexte} min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-control-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+            >
+              <PanelRightOpen aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} />
+              Afficher le contexte
+            </button>
+            </div>
           </div>
           </div>
 
-          <div className="lg:grid lg:min-h-0 lg:grid-cols-[13rem,1fr,15rem]">
+          {/* Trois colonnes au bureau, en flex : une colonne repliée sort du
+              flux sans recalcul de grille. Replier ne démonte rien — les
+              colonnes restent montées, masquées par `display: none` (hors
+              page, hors clavier, hors arbre d'accessibilité). */}
+          <div className="lg:flex lg:min-h-0">
             {/* Rail des 7 phases = colonne vertébrale */}
+            <div
+              className={`flex flex-col border-b border-border lg:w-52 lg:shrink-0 lg:border-b-0 lg:border-r ${classesColonnePhases}`}
+            >
             <div
               role="tablist"
               aria-orientation="vertical"
               aria-label="Cycle clinique"
-              className="flex gap-1 overflow-x-auto border-b border-border p-2 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r"
+              className="flex gap-1 overflow-x-auto p-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto"
             >
               <p className="hidden px-2 pb-1 text-2xs font-semibold uppercase tracking-[.07em] text-muted-foreground lg:block">
                 Cycle clinique
@@ -2740,6 +2850,21 @@ export function FichePatientPanel({
                 );
               })}
             </div>
+            {/* Hors du tablist : une commande n'est pas un onglet. */}
+            <div className="hidden border-t border-border p-2 lg:block">
+              <button
+                type="button"
+                ref={element => {
+                  refsReplis.current.masquerPhases = element;
+                }}
+                onClick={() => replier('masquerPhases')}
+                className="flex min-h-11 w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <PanelLeftClose aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0" />
+                Masquer les phases
+              </button>
+            </div>
+            </div>
 
             {/* Zone focale unique */}
             <div
@@ -2747,7 +2872,7 @@ export function FichePatientPanel({
               id="zone-focale"
               aria-labelledby={`phase-${phaseCourante.id}`}
               tabIndex={0}
-              className="flex flex-col gap-4 p-4 lg:min-h-0 lg:overflow-y-auto"
+              className="flex flex-col gap-4 p-4 lg:min-h-0 lg:min-w-0 lg:flex-1 lg:overflow-y-auto"
             >
               <div>
                 {/* « Phase due » quand la phase affichée est celle qui attend
@@ -2757,6 +2882,18 @@ export function FichePatientPanel({
                 </p>
                 <h3 className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
               </div>
+              {/* Contexte fermé : l'information critique reste dans la zone de
+                  travail (prototype PRA-3a validé, Q3) — les mêmes instruments
+                  « Données physiologiques et traitements » et « Décisions de
+                  parcours », sous leurs drapeaux, sans intitulé neuf. Comme
+                  dans la colonne, leur contenu ne se lit qu'à l'ouverture :
+                  replier n'émet aucune requête. Leur contenu est de PRA-3b. */}
+              {(physioTraitementsActif || decisionsParcoursActif) && (
+                <div className={`${classesContexteFerme} flex-row flex-wrap gap-2 [&>*]:min-w-[16rem] [&>*]:flex-1`}>
+                  {physioTraitementsActif && instrumentPhysioTraitements}
+                  {decisionsParcoursActif && instrumentDecisionsParcours}
+                </div>
+              )}
               {focalLocal()}
               {/* Le runtime clinique reste monté en permanence : seul l'affichage
                   est filtré par phase — aucun rechargement, aucun brouillon perdu.
@@ -2795,7 +2932,22 @@ export function FichePatientPanel({
             </div>
 
             {/* Instruments à tiroir */}
-            <div className="flex flex-col gap-2 border-t border-border p-3 lg:border-l lg:border-t-0 lg:overflow-y-auto">
+            {/* `[&>*]:shrink-0` : à faible hauteur, la colonne défile ; ses
+                boutons d'instrument ne s'écrasent pas sous leur contenu. */}
+            <div
+              className={`flex flex-col gap-2 border-t border-border p-3 lg:w-60 lg:shrink-0 lg:border-l lg:border-t-0 lg:overflow-y-auto [&>*]:shrink-0 ${classesColonneContexte}`}
+            >
+              <button
+                type="button"
+                ref={element => {
+                  refsReplis.current.masquerContexte = element;
+                }}
+                onClick={() => replier('masquerContexte')}
+                className="hidden min-h-11 w-full items-center gap-2 rounded-[10px] px-2 py-2 text-left text-14 font-medium text-muted-foreground hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:flex"
+              >
+                <PanelRightClose aria-hidden="true" size={18} strokeWidth={TRAIT_ICONE} className="shrink-0" />
+                Masquer le contexte
+              </button>
               <p className="px-1 text-2xs font-semibold uppercase tracking-[.07em] text-muted-foreground">Instruments</p>
               <InstrumentTiroir
                 libelle="Les 12 besoins"
@@ -2841,28 +2993,10 @@ export function FichePatientPanel({
                   lignes datées ([[D-335]], BP-13) : sous leur drapeau
                   seulement. Le panneau ne lit rien tant que le tiroir est
                   fermé — la primitive ne monte son contenu qu'à l'ouverture. */}
-              {physioTraitementsActif && (
-                <InstrumentTiroir
-                  libelle="Données physiologiques et traitements"
-                  description="Sexe et statut déclarés, grossesse, allaitement, poids, taille, traitements et compléments en cours : chaque ligne datée, avec sa source. Rien n’est déduit ni calculé."
-                  icone={Pill}
-                  large
-                >
-                  <PhysioTraitementsPanel idPatient={idPatient} />
-                </InstrumentTiroir>
-              )}
+              {physioTraitementsActif && instrumentPhysioTraitements}
               {/* Les décisions de parcours, par version du protocole
                   ([[D-343]], BP-15) : sous leur drapeau seulement. */}
-              {decisionsParcoursActif && (
-                <InstrumentTiroir
-                  libelle="Décisions de parcours"
-                  description="Par version du protocole : préférences et refus du patient, début réel, interruption, reprise, arrêt, révision. Chaque ligne datée, avec sa source et son motif. Rien n’est déduit."
-                  icone={ListChecks}
-                  large
-                >
-                  <DecisionsParcoursPanel idPatient={idPatient} />
-                </InstrumentTiroir>
-              )}
+              {decisionsParcoursActif && instrumentDecisionsParcours}
               <InstrumentTiroir
                 libelle="Agenda du sommeil"
                 description="Recueil nuit par nuit (Q_SOM_09) : chronogramme, durée, efficacité, régularité."
