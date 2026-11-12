@@ -51,6 +51,8 @@ Trace : journal de la fiche PRA-3 sur la page de suivi praticien.
   - 1 280 × 800 : contexte affiché ; les boutons d'instrument s'écrasaient sous leur contenu (la colonne rétrécissait ses enfants), **corrigé** par `[&>*]:shrink-0`, la colonne défile ;
   - 1 100 px : contexte escamoté d'office ; la puce de phase et « Afficher le contexte » passaient séparément à la ligne, **corrigé** en les groupant à droite ;
   - téléphone 390 px : inchangé, aucune commande de repli, instruments après la zone de travail.
+- **CI #2019, premier passage (`c2f9a3c3`)** : contrôles, typage et tests, PR-Agent et CodeRabbit verts ; `e2e` rouge sur trois références au pixel seulement (`visual.spec.ts` : fiche-cockpit bureau et iPhone, tiroir des 12 besoins bureau), `verify` rouge par agrégation. Références régénérées par le workflow `visual-baselines` sur la branche, comparées aux références de `main` : exactement ces trois-là diffèrent, les cinq autres sont identiques à l'octet. Relues une à une : bandeau sans le nom, « Masquer le contexte » en tête des instruments, « Masquer les phases » au pied du rail (bureau) ; nom retiré du bandeau seulement (iPhone) ; contenu des écrans identique. Trois images commises dans `web/e2e/visual.spec.ts-snapshots/`.
+- **Revue CodeRabbit** (`c2f9a3c3`, un commentaire en ligne, aucun nitpick) : clic rejoué dans `toPass()` dans les deux e2e PRA-3a → **corrigé** : le test attend le rail « posé » (plus aucune « indéterminée », signal de `visual.spec.ts`), puis clique une seule fois. **PR-Agent** : description et guide, aucun constat.
 - **Relecture `ui-ux-pro-max`** (lecture seule, `ux-guidelines.csv`) :
   - « Focus States » et « Keyboard Navigation » : anneau `focus-ring` sur les quatre commandes ; colonnes repliées hors du parcours ; ordre de tabulation conforme à l'ordre visuel ;
   - « Focus Not Obscured (Minimum) » : commandes dans le flux, jamais sous une superposition ;
@@ -65,7 +67,6 @@ Trace : journal de la fiche PRA-3 sur la page de suivi praticien.
 - **Information critique, lignes affichées** : la lecture retenue garde les deux instruments accessibles, pas leurs lignes visibles. Un résumé lisible sans ouvrir (traitements en cours, décision active) relève de PRA-3b et d'une lecture à arbitrer (`G-TRUST-04`).
 - **Hauteur du poste de pilotage** (`lg:h-[calc(100dvh-11.75rem)]`) : l'en-tête de fiche et les onglets dépassent désormais 11,75 rem, la page défile d'une trentaine de pixels au bureau et « Masquer les phases », au pied du rail, est sous la ligne de flottaison à 800-900 px de haut — atteignable au défilement et au clavier. Comportement de la hauteur antérieur au lot ; pour PRA-6 (vérifications de largeurs et de hauteurs).
 - **Libellés de phase tronqués** dans la colonne de 13 rem (« 2. Données fi… ») : déjà sur la référence visuelle de `main`, inchangé ; contenu du rail, pour PRA-3b.
-- **Références visuelles** : le bandeau perd le nom et gagne les commandes ; `e2e/visual.spec.ts` (Linux, CI) devrait changer sur la fiche-cockpit — régénération par le workflow `visual-baselines` et relecture image par image si la CI rougit.
 - **Reportés de PRA-1, toujours pour PRA-6** : rail réduit à faible hauteur ; e2e des infobulles ; specs qui cliquent avant l'hydratation (`mode-consultation-sans-chiffre`).
 
 ## Prochaine action exacte

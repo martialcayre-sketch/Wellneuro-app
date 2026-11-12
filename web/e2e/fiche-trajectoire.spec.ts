@@ -95,7 +95,7 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
 test.describe('Fiche-trajectoire — replis des phases et du contexte (PRA-3a)', () => {
   test.skip(({ isMobile }) => isMobile, 'Les replis n’existent qu’au bureau (≥ 1 024 px).');
 
-  test('le focus suit la commande, le rail replié quitte le clavier, le brouillon reste', async ({ page, context }) => {
+  test('le focus suit la commande, le rail replié quitte le clavier', async ({ page, context }) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
 
@@ -105,11 +105,13 @@ test.describe('Fiche-trajectoire — replis des phases et du contexte (PRA-3a)',
     const afficherPhases = page.getByRole('button', { name: 'Afficher les phases' });
     await expect(afficherPhases).toBeHidden();
 
-    // Clic rejoué jusqu'à son effet : le premier peut partir avant l'hydratation.
-    await expect(async () => {
-      await masquerPhases.click({ timeout: 1_000 });
-      await expect(rail).toBeHidden({ timeout: 1_000 });
-    }).toPass();
+    // Fiche hydratée avant le clic : le rail est « posé » quand ses statuts,
+    // lus côté client, ne disent plus « indéterminée » (même signal que
+    // `visual.spec.ts`). Un seul clic, jamais rejoué : une interaction
+    // perdue doit faire échouer le test.
+    await expect(rail.getByText('indéterminée')).toHaveCount(0);
+    await masquerPhases.click();
+    await expect(rail).toBeHidden();
     await expect(afficherPhases).toBeFocused();
     // Replié, aucune phase ne prend le focus.
     await page.getByRole('tab', { name: /Actions/, includeHidden: true }).focus().catch(() => undefined);
@@ -141,13 +143,14 @@ test.describe('Fiche-trajectoire — replis des phases et du contexte (PRA-3a)',
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
 
-    await expect(page.getByRole('tablist', { name: 'Cycle clinique' })).toBeVisible();
+    const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+    await expect(rail).toBeVisible();
     await expect(page.getByText('Instruments', { exact: true })).toBeHidden();
     const afficherContexte = page.getByRole('button', { name: 'Afficher le contexte' });
-    await expect(async () => {
-      await afficherContexte.click({ timeout: 1_000 });
-      await expect(page.getByText('Instruments', { exact: true })).toBeVisible({ timeout: 1_000 });
-    }).toPass();
+    // Fiche hydratée avant le clic (rail « posé »), un seul clic.
+    await expect(rail.getByText('indéterminée')).toHaveCount(0);
+    await afficherContexte.click();
+    await expect(page.getByText('Instruments', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Masquer le contexte' })).toBeFocused();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
