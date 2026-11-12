@@ -1,6 +1,6 @@
 - **Mise à jour (2026-11-12, étiquetage des deux claims signés sous la réserve de `D-465` §3)** : forme opaque (`D-251` §4). Liste collée, rapprochement et constats au dépôt privé des revues (dossier polyphénols et antioxydants, `reserve-d465/ETIQUETAGE.md`).
   - **Objet** : `WN-CL-0043-005` et `WN-CL-0377-016`, signés le 2026-11-12 sous la réserve (`D-498`, #2014), sans clé de besoin. C'est le reste nommé par le fragment `2026-11-12-04`.
-  - **Rapprochement** : la même étiquette que les cinq écarts de la même réserve, tous au besoin 2, rubrique de la question.
+  - **Rapprochement** : la même étiquette (besoin et rubrique) que les cinq écarts de la même réserve, tous au besoin 2 ; la rubrique est consignée au dossier privé (`D-325` §5).
   - **Geste** : étiquetage en lot (`D-325`), délégué par le responsable sur question à options (`D-325` §5). L'assistant l'a exécuté depuis la session du responsable ; deux actes `etiquetage` sont au journal.
   - **Constat** (production, conteneurs détachés, lecture seule, avant et après) : les deux claims restent VALIDE, date de validation inchangée, non exclus de la recherche, avec la clé du besoin 2. 893 claims VALIDE la portent désormais (891 avant). Base inchangée : 8599 VALIDE, 32 en attente, 93 rejetés.
   - Ni migration, ni release-db, ni signature.
