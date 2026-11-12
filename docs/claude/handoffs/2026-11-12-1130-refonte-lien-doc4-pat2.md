@@ -39,12 +39,12 @@ Le responsable a répondu par écrit le 2026-11-12 : « Q5a — Q6b — Q7a ».
 
 ## Problèmes ouverts
 
-- T-35 à T-39 attendent l'acceptation mot pour mot ; une fois acceptés, un DOC-n les inscrit dans [[D-488]] avant PAT-2.
+- T-36 à T-39 ont été acceptés après ce lot ; un DOC-n les inscrit dans [[D-488]] avant PAT-2. T-35 reste proposé, non accepté.
 - DOC-3 (#2012) est fusionné ; DOC-4 est rebasé sur `main`.
 
 ## Prochaine action exacte
 
-Fusion de DOC-4 par l'intégrateur ; ensuite, acceptation mot pour mot de T-35 à T-39 par le responsable, puis un DOC-n qui les inscrit dans [[D-488]].
+Fusion de DOC-4 par l'intégrateur. Le responsable a accepté mot pour mot T-36 à T-39 le 2026-11-12, après l'écriture de ce lot (page de suivi patient) ; un DOC-n suivant les inscrit dans [[D-488]]. T-35 reste proposé.
 
 ## Interdits encore actifs
 
