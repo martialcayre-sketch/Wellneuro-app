@@ -183,6 +183,24 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   objet, et ne se signe pas. Un banc couvre neuf formes de structure et
   trois formes de métadonnées. T1 complet : code 0, joué avant la fusion de
   main (#2027, t78), qui ne touche aucun fichier du lot.
+- Contre-passe Codex sur `3311087b` : P1-2a et P1-2b fermés, BLOQUER sur
+  deux constats.
+  - P1-3 : `id: ["OPT_SYNTH_1"]` passait pour l'identifiant par conversion
+    implicite, et la structure se signait.
+  - P2-1 : il restait des chemins qui faisaient lever une exception :
+    `{ toString: null }` en identifiant ou en renvoi, `[null]` en claims ou
+    en positions épinglés.
+
+  Correctif : chaque valeur imbriquée est contrôlée par son type avant d'être
+  convertie, interpolée ou lue. `estIdentifiantOption` et `lireRenvoi`
+  exigent un texte. Un identifiant qui n'est pas un texte rend
+  `structure:option_mal_formee`. La date, les claims et les positions
+  épinglés sont vérifiés case par case, trous compris. Les fiches d'usage
+  sont lues sans supposer leur forme. Si leur propre module ne sait pas les
+  lire, elles valent « non signées », et la bibliothèque passe donc
+  « à relire ». Bancs : identifiants, renvois, sources et date, fiches
+  d'usage hors typage. Pour chacun, il vérifie les anomalies exactes, une
+  signature refusée et l'état attendu. T1 complet : code 0.
 
 ## Problèmes ouverts
 
