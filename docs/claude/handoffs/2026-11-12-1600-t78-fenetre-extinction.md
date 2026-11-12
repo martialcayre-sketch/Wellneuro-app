@@ -23,8 +23,8 @@ soit sa date.
   - pour la synthèse, l'extinction est refusée dès maintenant ; son explication au modèle est versée à t77.
     t61 est soldée par D-471.
 - L'empreinte `{ regles, grilles, fenetres }` = `0f153aac…` a été re-signée le 2026-11-12 par le responsable.
-- Choix non arbitré, inscrit au §4 de D-500 : une règle n'est rapportée « non évaluée » que si elle avait au moins
-  une exploration à retirer.
+- Arbitré par le responsable le 2026-11-12, sur la revue de la PR (§4 de D-500) : une règle n'est rapportée
+  « non évaluée » que si elle avait au moins une exploration à retirer.
 
 ## Fichiers modifiés
 
@@ -44,6 +44,8 @@ soit sa date.
 - Mutations (`lues`→`dernieres`, suppression de `ajouterPerimees()`) : chacune rougit le banc, code restauré.
 - Revue `wn-reviewer` : GO, aucun P0. P1-1 et P2-1 corrigés ; P2-2 et ses deux questions inscrits à D-500 comme
   limites connues.
+- Revue exigée sur la tête (D-499 §2, PR-Agent ayant compressé le diff et exclu D-500.md) : `wn-reviewer`, GO, sans
+  P0 ni P1 ; ses trois P2 sont corrigés dans D-500 (§4 arbitré, §6 « signée », date future en limite connue au §1).
 - Après la re-signature :
   - T1 complet (`npm run check`) : `exit 0` ;
   - suites `src/lib/clinical/` : 37 fichiers, 1080 tests verts ;
