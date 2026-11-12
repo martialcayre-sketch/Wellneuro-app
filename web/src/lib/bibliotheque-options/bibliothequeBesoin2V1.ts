@@ -173,8 +173,15 @@ export function incoherencesDeBibliotheque(
   if (doublons(retirees) || retirees.some(id => typeof id !== 'string' || !estIdentifiantOption(id))) {
     anomalies.push('structure:options_retirees');
   }
+  // Les fiches d'usage lues sans supposer leur forme : une liste absente ne
+  // contient rien, donc chaque option y devient une anomalie.
+  const hypothesesFU: readonly unknown[] = estObjet(fichesUsage) && Array.isArray(fichesUsage.hypotheses) ? fichesUsage.hypotheses : [];
+  const populationsFU: readonly unknown[] = estObjet(fichesUsage) && Array.isArray(fichesUsage.populations) ? fichesUsage.populations : [];
   for (const brute of options) {
-    if (!estObjet(brute)) {
+    // Un identifiant qui n'est pas un TEXTE n'est ni interpolé ni converti :
+    // `["OPT_X"]` passait pour `"OPT_X"`, `{ toString: null }` jetait (passe
+    // Codex sur #2006). L'option entière est mal formée.
+    if (!estObjet(brute) || typeof brute.id !== 'string') {
       anomalies.push('structure:option_mal_formee');
       continue;
     }
@@ -183,14 +190,14 @@ export function incoherencesDeBibliotheque(
     if (!memesCles(option, CLES_OPTION)) a('cles');
     if (!estIdentifiantOption(option.id)) a('format');
     if (retirees.includes(option.id)) a('reattribuee');
-    if (!fichesUsage.hypotheses.includes(option.hypothese)) a('hypothese');
+    if (!hypothesesFU.includes(option.hypothese)) a('hypothese');
     // Chaque case, trous compris (`new Array(1)` : longueur 1, aucune
     // population) — `some` sauterait la case absente (passe Codex sur #2006).
     const populations: unknown[] = Array.isArray(option.populations) ? Array.from(option.populations) : [];
     if (
       populations.length === 0 ||
       doublons(populations) ||
-      populations.some(p => typeof p !== 'string' || !fichesUsage.populations.includes(p))
+      populations.some(p => typeof p !== 'string' || !populationsFU.includes(p))
     ) {
       a('populations');
     }
@@ -232,8 +239,9 @@ export function incoherencesDeBibliotheque(
   return anomalies;
 }
 
-function estIsoCanonique(valeur: string | null): valeur is string {
-  if (valeur === null) return false;
+function estIsoCanonique(valeur: unknown): valeur is string {
+  // Un TEXTE d'abord : `new Date` convertirait une liste, et jetterait sur `{ toString: null }`.
+  if (typeof valeur !== 'string') return false;
   const date = new Date(valeur);
   // `getTime()` D'ABORD : `toISOString()` JETTE sur une date invalide, et un
   // verrou doit FERMER, jamais jeter.
@@ -243,6 +251,16 @@ function estIsoCanonique(valeur: string | null): valeur is string {
 
 const cleClaim = (c: ClaimEpingle) => `${c.claimId}@${c.versionClaim}`;
 const clePosition = (p: PositionEpinglee) => `${p.positionId}@${p.version}`;
+// Une source épinglée n'est interpolée qu'une fois ses deux champs reconnus
+// comme TEXTES : `[null]` jetait, `{ claimId: ["X"] }` passait pour `"X"`
+// (passe Codex sur #2006).
+const claimBienForme = (c: unknown): c is ClaimEpingle =>
+  estObjet(c) && typeof c.claimId === 'string' && typeof c.versionClaim === 'string';
+const positionBienFormee = (p: unknown): p is PositionEpinglee =>
+  estObjet(p) && typeof p.positionId === 'string' && typeof p.version === 'string';
+/** Chaque case, trous compris (`every` sauterait une case absente). */
+const toutesLesCases = <T>(liste: unknown, forme: (v: unknown) => v is T): liste is T[] =>
+  Array.isArray(liste) && Array.from(liste).every(forme);
 
 /** Les claims et positions cités par les renvois, en clés `identifiant@version` triées. */
 export function sourcesCitees(structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1) {
@@ -283,7 +301,8 @@ export function bibliothequeSignee(
 ): boolean {
   if (!estObjet(metadata) || metadata.validationExterne !== true) return false;
   if (!estIsoCanonique(metadata.dateValidation)) return false;
-  if (!Array.isArray(metadata.claimsSource) || !Array.isArray(metadata.positionsSource)) return false;
+  if (!toutesLesCases(metadata.claimsSource, claimBienForme)) return false;
+  if (!toutesLesCases(metadata.positionsSource, positionBienFormee)) return false;
   const cites = sourcesCitees(structure);
   if (!memes([...new Set(metadata.claimsSource.map(cleClaim))].sort(), cites.claims)) return false;
   if (!memes([...new Set(metadata.positionsSource.map(clePosition))].sort(), cites.positions)) return false;
@@ -312,12 +331,20 @@ export function etatBibliotheque(
 ): EtatBibliotheque {
   if (!bibliothequeSignee(metadata, structure, fichesUsage)) return 'non_signee';
   const empreinteFichesUsage = sha256(JSON.stringify(fichesUsage));
-  const fichesSignees = fichesUsageSignees(
-    fichesUsageMetadata,
-    empreinteFichesUsage,
-    incoherencesDeStructure(fichesUsage),
-    fichesUsage,
-  );
+  // Les fiches d'usage sont jugées par LEUR module, qui suppose leur format :
+  // une forme qu'il ne sait pas lire vaut « non signées », donc « à relire »,
+  // jamais une exception.
+  let fichesSignees = false;
+  try {
+    fichesSignees = fichesUsageSignees(
+      fichesUsageMetadata,
+      empreinteFichesUsage,
+      incoherencesDeStructure(fichesUsage),
+      fichesUsage,
+    );
+  } catch {
+    fichesSignees = false;
+  }
   if (!fichesSignees || metadata.shaFichesUsage !== empreinteFichesUsage) return 'a_relire';
   return 'signee';
 }

@@ -245,6 +245,66 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     expect(signee({ ...metadata, positionsSource: 'X' } as unknown as BibliothequeMetadata, structure)).toBe(false);
   });
 
+  // Passe Codex sur #2006 (3311087b) : une valeur imbriquée qui n'est pas un
+  // texte était CONVERTIE (`["OPT_SYNTH_1"]` passait pour l'identifiant, et la
+  // structure se signait) ou faisait JETER (`{ toString: null }`, `[null]`).
+  const jette = { toString: null };
+  it('un identifiant d’option qui n’est pas un texte rend l’option mal formée, sans conversion ni exception', () => {
+    for (const id of [['OPT_SYNTH_1'], jette, 1, null]) {
+      const structure = avec({ id: id as unknown as string });
+      expect(incoherencesDeBibliotheque(structure, FU_SYNTH), String(Array.isArray(id) ? 'liste' : typeof id)).toEqual([
+        'structure:option_mal_formee',
+      ]);
+      const metadata = signeeSur(structure);
+      expect(signee(metadata, structure)).toBe(false);
+      expect(etatBibliotheque(metadata, structure, FU_SYNTH, FICHES_USAGE_BESOIN2_METADATA)).toBe('non_signee');
+    }
+  });
+
+  it('un renvoi qui n’est pas un texte est mal formé, et ne fait pas jeter les sources citées', () => {
+    for (const renvoi of [jette, ['WN-CL-9999-001@v1.0'], 42]) {
+      const structure = avec({ renvois: { ...OPTION.renvois, precautions: [renvoi as unknown as string] } });
+      expect(incoherencesDeBibliotheque(structure, FU_SYNTH)).toEqual(['OPT_SYNTH_1:precautions:renvoi']);
+      expect(sourcesCitees(structure)).toEqual({ claims: [], positions: ['WN-PE-9999@v1.0'] });
+      expect(signee(signeeSur(structure), structure)).toBe(false);
+    }
+  });
+
+  it('des sources épinglées ou une date qui ne sont pas des textes ferment la signature, sans conversion ni exception', () => {
+    const structure = avec({});
+    const metadata = signeeSur(structure);
+    expect(signee(metadata, structure)).toBe(true);
+    const [claim] = metadata.claimsSource;
+    const [position] = metadata.positionsSource;
+    const fautives: Partial<Record<keyof BibliothequeMetadata, unknown>>[] = [
+      { claimsSource: [null] },
+      { claimsSource: new Array(1) },
+      { claimsSource: [{ ...claim, claimId: [claim.claimId] }] },
+      { claimsSource: [{ ...claim, versionClaim: jette }] },
+      { positionsSource: [null] },
+      { positionsSource: [{ ...position, positionId: [position.positionId] }] },
+      { positionsSource: [{ ...position, version: jette }] },
+      { dateValidation: jette },
+      { dateValidation: [metadata.dateValidation] },
+    ];
+    for (const fautive of fautives) {
+      const m = { ...metadata, ...fautive } as unknown as BibliothequeMetadata;
+      expect(signee(m, structure), Object.keys(fautive)[0]).toBe(false);
+      expect(etatBibliotheque(m, structure, FU_SYNTH, FICHES_USAGE_BESOIN2_METADATA)).toBe('non_signee');
+    }
+  });
+
+  it('des fiches d’usage hors typage ne font jeter ni la cohérence ni l’état', () => {
+    for (const fichesUsage of [null, {}, { hypotheses: 'HYP_SYNTH', populations: null }]) {
+      const fu = fichesUsage as unknown as StructureFichesUsage;
+      expect(incoherencesDeBibliotheque(avec({}), fu)).toEqual(['OPT_SYNTH_1:hypothese', 'OPT_SYNTH_1:populations']);
+      // Une structure sans option ne lit pas les fiches d'usage : signée, mais
+      // les fiches illisibles valent « non signées », donc « à relire ».
+      const vide: StructureBibliotheque = { besoin: 2, options: [], optionsRetirees: [] };
+      expect(etatBibliotheque(signeeSur(vide), vide, fu, FICHES_USAGE_BESOIN2_METADATA)).toBe('a_relire');
+    }
+  });
+
   it('ni plus ni moins que les champs du format : une propriété en trop est refusée', () => {
     const enTrop = { ...OPTION, texte: 'X' } as unknown as OptionBibliotheque;
     expect(incoherencesDeBibliotheque({ besoin: 2, options: [enTrop], optionsRetirees: [] }, FU_SYNTH)).toEqual(['OPT_SYNTH_1:cles']);

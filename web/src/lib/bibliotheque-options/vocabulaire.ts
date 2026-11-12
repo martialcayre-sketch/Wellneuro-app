@@ -49,8 +49,13 @@ export const OPTION_ID_LONGUEUR_MAX = 128;
  */
 export const RE_OPTION = /^OPT_[A-Z0-9_]+$/;
 
-export function estIdentifiantOption(valeur: string): boolean {
-  return RE_OPTION.test(valeur) && valeur.length <= OPTION_ID_LONGUEUR_MAX;
+/**
+ * Un TEXTE au format des options. Le type est contrôlé AVANT l'expression
+ * régulière, qui convertirait sinon `["OPT_X"]` en `"OPT_X"` ou jetterait sur
+ * `{ toString: null }` (passe Codex sur #2006).
+ */
+export function estIdentifiantOption(valeur: unknown): valeur is string {
+  return typeof valeur === 'string' && RE_OPTION.test(valeur) && valeur.length <= OPTION_ID_LONGUEUR_MAX;
 }
 
 // ─── Les renvois d'une rubrique ([[D-480]] §4) ──────────────────────────────
@@ -81,8 +86,9 @@ export type Renvoi =
   | { nature: 'position'; positionId: string; version: string }
   | { nature: 'information_manquante' };
 
-/** Le renvoi lu, ou `null` s'il est mal formé. */
-export function lireRenvoi(valeur: string): Renvoi | null {
+/** Le renvoi lu, ou `null` s'il est mal formé — tout ce qui n'est pas un texte l'est. */
+export function lireRenvoi(valeur: unknown): Renvoi | null {
+  if (typeof valeur !== 'string') return null;
   if (valeur === INFORMATION_MANQUANTE) return { nature: 'information_manquante' };
   const claim = RE_RENVOI_CLAIM.exec(valeur);
   if (claim) return { nature: 'claim', claimId: claim[1], versionClaim: claim[2] };
