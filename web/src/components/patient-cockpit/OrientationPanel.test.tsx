@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OrientationPanel } from './OrientationPanel';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
+import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
 // RE-CÂBLÉ LE 2026-08-06 (LOT-02, D-030). Le geste du panneau n'est plus
 // `POST /api/praticien/packs/assign` mais `POST /api/praticien/file-envoi`, et
@@ -226,6 +227,52 @@ describe('OrientationPanel', () => {
     expect(await screen.findByText(/Plus aucune exploration à examiner/)).toBeTruthy();
     expect(screen.getByText('Règles non évaluées : passation trop ancienne')).toBeTruthy();
     expect(screen.getByText(/1 exploration écartée/)).toBeTruthy();
+  });
+
+  // [[D-500]] §4 — une règle d'arrêt NON ÉVALUÉE : deux cas, deux textes du
+  // responsable (passation trop ancienne, fenêtre non définie), dits dans les
+  // deux branches de rendu.
+  const ARRET_NON_EVALUE = {
+    stopRuleId: 'STOP-STR',
+    passations: [
+      { idQuestionnaire: 'Q_STR_01', dateReponse: '2026-11-10T10:00:00.000Z', fenetreJours: null },
+      { idQuestionnaire: 'Q_STR_04', dateReponse: '2026-11-01T10:00:00.000Z', fenetreJours: 7 },
+    ],
+  };
+
+  it('D-500, liste non vide : l’arrêt non évalué est dit, fenêtre non définie puis passation trop ancienne', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], arretsNonEvalues: [ARRET_NON_EVALUE] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’arrêt non évaluée : STOP-STR.')).toBeTruthy();
+    const titreSiin = CATALOGUE_DEFINITIONS.Q_STR_01?.titre ?? 'Q_STR_01';
+    const titreDass = CATALOGUE_DEFINITIONS.Q_STR_04?.titre ?? 'Q_STR_04';
+    const dateDass = new Date('2026-11-01T10:00:00.000Z').toLocaleDateString('fr-FR');
+    const ligne = screen.getByText('Règle d’arrêt non évaluée : STOP-STR.').closest('p');
+    expect(ligne?.textContent).toBe(
+      'Règle d’arrêt non évaluée : STOP-STR.'
+      + ` Aucune fenêtre de fraîcheur n’est définie pour ${titreSiin}.`
+      + ` La passation de ${titreDass} du ${dateDass} dépasse sa fenêtre de 7 jours.`
+      + ' Elle ne retire donc aucune exploration.',
+    );
+  });
+
+  it('D-500, liste vide : l’arrêt non évalué est dit aussi', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [], arretsNonEvalues: [ARRET_NON_EVALUE] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’arrêt non évaluée : STOP-STR.')).toBeTruthy();
+  });
+
+  it('D-500 : aucun bloc quand toutes les règles d’arrêt ont été évaluées', async () => {
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], arretsNonEvalues: [] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Index de qualité du sommeil de Pittsburgh/i)).toBeTruthy();
+    expect(screen.queryByText(/Règle d’arrêt non évaluée/)).toBeNull();
   });
 
   // [[D-491]] — une règle d'arrêt suspendue faute de claim admissible : dite

@@ -569,12 +569,26 @@ function mesureArret(total: number, items = 21) {
   return { total, repondus: items, items, missing: 0 };
 }
 
+/**
+ * L'horloge et les fenêtres sans lesquelles plus rien ne s'éteint ([[D-500]]
+ * §1 à §3) : la passation qui éteint doit tenir dans la fenêtre d'EXTINCTION
+ * de son instrument. Valeurs de fixture, sans portée clinique — les dates des
+ * bancs (du 1er au 25 juillet) tiennent toutes dans 30 jours au 26 juillet.
+ * Les fenêtres de proposition sont le registre réel (PSS-10 et PSQI à 30 j).
+ */
+const HORLOGE_ARRET = {
+  maintenantMs: Date.parse('2026-07-26T12:00:00.000Z'),
+  fenetres: FENETRES_FRAICHEUR_ORIENTATION,
+  fenetresArret: { Q_STR_01: { delaiJours: 30 }, Q_STR_04: { delaiJours: 30 } },
+};
+
 /** Le dossier minimal qui allume `R-TEST-01` : un PSS-10 à 30. */
 function dossierAllume() {
   return {
     reponses: [reponse({ scores: { total: 30 } })],
     idsQuestionnairesAssignes: [],
     regles: [regle({})],
+    ...HORLOGE_ARRET,
   };
 }
 
@@ -647,6 +661,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
       idsQuestionnairesAssignes: [],
       regles: [regle({}), autreAxe],
       reglesArret: [arret({})],
+      ...HORLOGE_ARRET,
     });
     expect(recos).toHaveLength(1);
     expect(recos[0].motifs.map(motif => motif.regleId).sort()).toEqual(['R-SOM-99', 'R-TEST-01']);
@@ -683,6 +698,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
       ],
       idsQuestionnairesAssignes: [],
       regles: [regle({}), seconde],
+      ...HORLOGE_ARRET,
     };
     const sansArret = evaluerOrientation(entree).map(reco => JSON.stringify(reco.cible));
     const avecArret = evaluerOrientation({ ...entree, reglesArret: [arret({})] });
@@ -768,6 +784,105 @@ describe('evaluerOrientation — une contradiction ouverte interdit l\'extinctio
     const sans = evaluerOrientation(dossierAllume());
     const avec = evaluerOrientation({ ...dossierAllume(), contradictions: [constat('ouverte')] });
     expect(avec).toEqual(sans);
+  });
+});
+
+describe('extinction — fenêtre d’extinction de l’instrument (D-500)', () => {
+  // ARBITRAGE DU RESPONSABLE DU 2026-11-12 ([[D-500]]) : une passation trop
+  // ancienne pour la fenêtre d'EXTINCTION de son instrument ne peut plus
+  // éteindre ; un instrument sans fenêtre non plus ; sans horloge, rien ne
+  // s'éteint. Le dossier de base ÉTEINT (contre-épreuve en tête) : chaque cas
+  // ne change qu'un terme.
+  const ELIGIBLE_LE = '2026-07-20T10:00:00.000Z';
+  function entree(surcharge: Record<string, unknown> = {}, dateArret = ELIGIBLE_LE) {
+    return {
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: dateArret, scores: mesureArret(2) }),
+      ],
+      reglesArret: [arret({})],
+      ...surcharge,
+    };
+  }
+
+  it('contre-épreuve : dans la fenêtre, l’extinction a lieu et rien n’est dit non évalué', () => {
+    const resultat = evaluerOrientationDetaillee(entree());
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
+
+  it('sans horloge, AUCUNE extinction — le repli de D-433 §5 ne vaut pas pour l’arrêt', () => {
+    const resultat = evaluerOrientationDetaillee(entree({ maintenantMs: undefined }));
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
+
+  it('une passation hors de sa fenêtre d’extinction n’éteint pas, et la règle est dite non évaluée', () => {
+    // 2026-06-25 au 2026-07-26 : 31 jours, au-delà des 30 de la fixture.
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-06-25T10:00:00.000Z'));
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-06-25T10:00:00.000Z', fenetreJours: 30 }],
+    }]);
+  });
+
+  it('le jour anniversaire couvre encore — même comparaison que la proposition', () => {
+    // 2026-06-26T12:00 au 2026-07-26T12:00 : 30 jours pile.
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-06-26T12:00:00.000Z'));
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+  });
+
+  it('un instrument SANS fenêtre d’extinction n’éteint pas — fenêtre non définie, sans nombre inventé', () => {
+    const resultat = evaluerOrientationDetaillee(entree({ fenetresArret: {} }));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: ELIGIBLE_LE, fenetreJours: null }],
+    }]);
+  });
+
+  it('la fenêtre de PROPOSITION ne vaut pas fenêtre d’extinction — deux registres', () => {
+    const resultat = evaluerOrientationDetaillee(entree({
+      fenetres: { ...FENETRES_FRAICHEUR_ORIENTATION, Q_STR_01: { delaiJours: 30 } },
+      fenetresArret: undefined,
+    }));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues[0]?.passations[0]?.fenetreJours).toBeNull();
+  });
+
+  it('ET : un déclencheur frais NON atteint écarte la règle malgré un autre périmé — silence', () => {
+    const deux = arret({
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'plage', min: 0, max: 4 } },
+        { type: 'zone', idQuestionnaire: 'Q_STR_04', zone: { type: 'plage', min: 0, max: 4 } },
+      ],
+    });
+    const resultat = evaluerOrientationDetaillee(entree({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-06-01T10:00:00.000Z', scores: mesureArret(2) }),
+        // Frais, complet, et HORS de la plage : non atteint.
+        reponse({ idQuestionnaire: 'Q_STR_04', scores: mesureArret(12) }),
+      ],
+      reglesArret: [deux],
+    }));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
+
+  it('non évaluée SANS rien à éteindre : rien n’est rapporté', () => {
+    // La règle d'arrêt ne nomme pas `R-TEST-01` : elle n'avait aucune ligne à
+    // éteindre, la dire non évaluée n'aurait aucune conséquence.
+    const resultat = evaluerOrientationDetaillee(entree(
+      { reglesArret: [arret({ reglesEteintes: ['R-AUTRE'] })] },
+      '2026-06-01T10:00:00.000Z',
+    ));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([]);
   });
 });
 
@@ -998,7 +1113,7 @@ describe('evaluerOrientationDetaillee — fenêtre du déclencheur (D-433)', () 
     const somFrais = (total: number) =>
       reponse({ idQuestionnaire: 'Q_SOM_01', dateReponse: '2026-10-30T12:00:00.000Z', scores: { total } });
     const ecartee = evaluer([pss('2026-08-01T12:00:00.000Z'), somFrais(3)], { regles: [et] });
-    expect(ecartee).toEqual({ recommandations: [], reglesNonEvaluees: [] });
+    expect(ecartee).toEqual({ recommandations: [], reglesNonEvaluees: [], arretsNonEvalues: [] });
     // Contre-épreuve : le second frais ET atteint, la règle redevient non évaluée.
     const nonEvaluee = evaluer([pss('2026-08-01T12:00:00.000Z'), somFrais(9)], { regles: [et] });
     expect(nonEvaluee.recommandations).toEqual([]);
@@ -1061,7 +1176,7 @@ describe('evaluerOrientationDetaillee — fenêtre du déclencheur (D-433)', () 
   });
 
   it('un instrument jamais passé n’est pas périmé : la règle n’est simplement pas atteinte', () => {
-    expect(evaluer([])).toEqual({ recommandations: [], reglesNonEvaluees: [] });
+    expect(evaluer([])).toEqual({ recommandations: [], reglesNonEvaluees: [], arretsNonEvalues: [] });
   });
 
   it('`evaluerOrientation` rend exactement les recommandations du détail', () => {

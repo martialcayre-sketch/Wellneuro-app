@@ -1,4 +1,4 @@
-import type { OrientationDeclencheur } from './orientationRulesV1';
+import type { OrientationDeclencheur, RepetitionOrientation } from './orientationRulesV1';
 import { sha256 } from './corpusSyntheseV1';
 import { grillesCitees } from './grillesSignees';
 
@@ -307,12 +307,37 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
  */
 export const GRILLES_ARRET = grillesCitees(STOP_RULES_V1);
 
+/**
+ * FENÊTRES D'EXTINCTION PAR INSTRUMENT ([[D-500]]) — jusqu'à quand une
+ * passation permet d'ÉTEINDRE. Au-delà, le déclencheur qui la lit n'est pas
+ * évalué, et la règle n'éteint rien.
+ *
+ * UN ARBITRAGE NEUF, PAS UNE DÉRIVATION ([[D-500]] §1). Les deux valeurs
+ * reprennent celles de la proposition (`FENETRES_FRAICHEUR_ORIENTATION`,
+ * [[D-430]] §2) au 2026-11-12, recopiées en littéral : D-430 ne fonde pas leur
+ * validité clinique pour cet usage, et ses durées restent des choix WellNeuro
+ * sans source. Une fenêtre de proposition modifiée demain ne déplace donc pas
+ * celle-ci.
+ *
+ * `Q_STR_01` N'Y EST PAS, ET C'EST VOULU ([[D-500]] §2) : aucune durée
+ * implicite. Sans fenêtre, aucune extinction par STOP-STR — la règle reste
+ * inopérante jusqu'à un arbitrage explicite sur cet instrument.
+ *
+ * Dans l'empreinte signée : une fenêtre ajoutée, retirée ou déplacée ferme
+ * `tableArretSignee()` jusqu'à re-signature.
+ */
+export const FENETRES_ARRET: Readonly<Record<string, RepetitionOrientation>> = {
+  Q_STR_03: { delaiJours: 7 }, // Cungi
+  Q_STR_04: { delaiJours: 7 }, // DASS-21
+};
+
 // La constante seule ne garde RIEN : ses deux membres bougent ensemble. Ce qui
 // garde, c'est le littéral épinglé dans `stopRulesV1.test.ts` — toute édition
 // d'une règle OU d'une grille citée après signature y rougit, et ferme
 // `tableArretSignee()` ; la sortie de secours est de RE-SIGNER, jamais de
 // mettre le sha à jour en silence. Périmètre `{ regles, grilles }` depuis
-// [[D-494]] — même patron que `ORIENTATION_RULES_SHA256`.
+// [[D-494]] — même patron que `ORIENTATION_RULES_SHA256` —, puis
+// `{ regles, grilles, fenetres }` depuis [[D-500]].
 export const STOP_RULES_SHA256 = sha256(
-  JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET }),
+  JSON.stringify({ regles: STOP_RULES_V1, grilles: GRILLES_ARRET, fenetres: FENETRES_ARRET }),
 );

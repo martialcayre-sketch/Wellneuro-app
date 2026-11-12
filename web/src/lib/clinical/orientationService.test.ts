@@ -90,6 +90,9 @@ vi.mock('@/lib/clinical/stopRulesV1', () => ({
   STOP_RULES_METADATA: mockArretMeta,
   STOP_RULES_V1: mockArretRegles,
   STOP_RULES_SHA256: 'sha-arret-test',
+  // [[D-500]] : vide — la règle d'arrêt de fixture lit un drapeau, pas un
+  // instrument ; aucune fenêtre d'extinction n'a d'objet ici.
+  FENETRES_ARRET: {},
   LIBELLE_EXTINCTION: 'Information suffisante — pas d’exploration supplémentaire actuellement.',
 }));
 vi.mock('@/lib/clinical/contradictionsV1', () => ({
