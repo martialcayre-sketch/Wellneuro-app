@@ -1347,15 +1347,32 @@ type DeclarationSuicideSaisie =
   | { poseQuestionSuicide: false }
   | { poseQuestionSuicide: true; questionSuicideId: string; questionSuicideOptionNon: number };
 
+// Deux contextes, deux jeux de textes validés par le responsable
+// (2026-11-12) : « Relire la grille » (publication) et « Déclarer » (un
+// instrument déjà publié, qui ne part plus avant sa déclaration).
+const TEXTES_DECLARATION = {
+  publication: {
+    aide: 'Réponse obligatoire pour publier.',
+    sansChoix: 'Il ne peut donc pas être publié en l’état avec une déclaration « oui ».',
+    pourPermettre: 'la publication',
+  },
+  declaration: {
+    aide: `${MOTIF_DECLARATION_REQUISE}.`,
+    sansChoix: 'Il ne peut donc pas être déclaré « oui » en l’état, et ne peut plus être envoyé.',
+    pourPermettre: 'l’envoi',
+  },
+} as const;
+
 function DeclarationSuicide({
   detail,
   onChange,
-  aide = 'Réponse obligatoire pour publier.',
+  contexte = 'publication',
 }: {
   detail: InstrumentCabinetDetailDto;
   onChange: (declaration: DeclarationSuicideSaisie | null) => void;
-  aide?: string;
+  contexte?: keyof typeof TEXTES_DECLARATION;
 }) {
+  const textes = TEXTES_DECLARATION[contexte];
   const idLegende = useId();
   const idAide = useId();
   const idQuestion = useId();
@@ -1381,7 +1398,7 @@ function DeclarationSuicide({
         <legend id={idLegende} className="text-sm font-semibold text-foreground">
           Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
         </legend>
-        <p id={idAide} className="mt-1 text-2xs text-muted-foreground">{aide}</p>
+        <p id={idAide} className="mt-1 text-2xs text-muted-foreground">{textes.aide}</p>
         <div className="mt-2 flex gap-4">
           {(['oui', 'non'] as const).map(valeur => (
             <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
@@ -1404,13 +1421,12 @@ function DeclarationSuicide({
           <div role="status" className="mt-2 flex flex-col gap-1.5 text-xs text-status-danger">
             <p>
               Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question
-              concernée et sa réponse « non ». Il ne peut donc pas être publié en l’état avec une
-              déclaration « oui ».
+              concernée et sa réponse « non ». {textes.sansChoix}
             </p>
             <p>
               Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question
-              sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre
-              la publication laisserait le patient sans encart d’urgence.
+              sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre{' '}
+              {textes.pourPermettre} laisserait le patient sans encart d’urgence.
             </p>
           </div>
         )}
@@ -1482,7 +1498,7 @@ function DeclarerInstrument({
           {detail.nbQuestions != null ? ` · ${detail.nbQuestions} questions` : ''}
         </p>
       </div>
-      <DeclarationSuicide detail={detail} onChange={setDeclaration} aide={`${MOTIF_DECLARATION_REQUISE}.`} />
+      <DeclarationSuicide detail={detail} onChange={setDeclaration} contexte="declaration" />
       <div className="border-t border-border pt-4">
         <Button
           type="button"

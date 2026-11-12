@@ -18,8 +18,11 @@ tiennent. Aucune D-xxx : D-303, amendée par D-493, et les arbitrages du
   l'assignation se lisent sous un verrou de ligne tenu jusqu'au commit. Une
   publication, une modification ou une désactivation concurrente attend la
   fin de l'envoi. Un instrument devenu inéligible est écarté avec sa trace.
+  Une modification des questions recompte les envois en cours sous son propre
+  verrou : un envoi ne peut plus se glisser entre le comptage et l'écriture.
 - **Message de « Relire la grille » (P2-4).** Quand un questionnaire déclaré
   « oui » ne propose aucune réponse au choix, le texte validé par le
   responsable s'affiche. Il rappelle que la déclaration décrit le contenu réel
   du questionnaire, et que répondre « Non » pour publier laisserait le patient
-  sans encart d'urgence.
+  sans encart d'urgence. « Déclarer » en affiche une variante qui parle
+  d'envoi, validée le même jour.

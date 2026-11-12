@@ -508,5 +508,22 @@ describe('BibliothequePanel — déclaration « question sur le suicide » (NF-7
       });
       expect(await screen.findByText('Déclaration enregistrée.')).toBeTruthy();
     });
+
+    // Variante « envoi » du texte P2-4 (arbitrage du 2026-11-12) : l'instrument
+    // est déjà publié, le texte parle de déclaration et d'envoi.
+    it('« oui » sans question à réponses au choix : la variante « envoi », et « Déclarer » reste impossible', async () => {
+      stubFetch({ ...EVA_DETAIL, statutRelecture: 'valide', declarationSuicideRequise: true, declarationRequise: true });
+      render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Déclarer' }));
+      fireEvent.click(within(await screen.findByRole('group', { name: LEGENDE })).getByLabelText('Oui'));
+      const etat = screen.getByRole('status');
+      const paragraphes = [...etat.querySelectorAll('p')].map(p => (p.textContent ?? '').replace(/\s+/g, ' ').trim());
+      expect(paragraphes).toEqual([
+        'Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question concernée et sa réponse « non ». Il ne peut donc pas être déclaré « oui » en l’état, et ne peut plus être envoyé.',
+        'Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre l’envoi laisserait le patient sans encart d’urgence.',
+      ]);
+      const valider = screen.getAllByRole('button', { name: 'Déclarer' }).find(b => b.closest('[role="dialog"]')) as HTMLButtonElement;
+      expect(valider.disabled).toBe(true);
+    });
   });
 });
