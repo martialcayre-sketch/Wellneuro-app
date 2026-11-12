@@ -87,6 +87,11 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       'const k = require.context("../bibliotheque-options");',
       'const w = new Worker(new URL("../bibliotheque-options/vocabulaire", import.meta.url));',
       'const q = import.meta.webpackContext("../bibliotheque-options");',
+      // Accès calculé, constructeur et base déballés (contre-passe Codex sur c847d0f5).
+      'const s = module[`req` + "uire"]("./bibliotheque-options/vocabulaire");',
+      'const v = new Worker(new (URL as typeof URL)("./bibliotheque-options/vocabulaire", (0, import.meta.url)));',
+      'const h = new globalThis.URL("./bibliotheque-options/vocabulaire", import.meta.url);',
+      'const i = import.meta.url;',
     ];
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
@@ -106,6 +111,15 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       './bibliotheque-options/vocabulaire',
     ]);
     expect(specificateursSyntaxiques('(require)(chemin);', 'x.js')).toEqual([IMPORT_NON_CONSTANT]);
+    // Accès calculé à `require` et `new URL` déballé : chemin exact, ou sentinelle.
+    const exacts: [string, string[]][] = [
+      ['module["require"]("./bibliotheque-options/vocabulaire");', ['./bibliotheque-options/vocabulaire']],
+      ['module["require"](chemin);', [IMPORT_NON_CONSTANT]],
+      ['new Worker(new URL("./bibliotheque-options/vocabulaire", (import.meta.url)));', ['./bibliotheque-options/vocabulaire']],
+      ['new Worker(new (URL)("./bibliotheque-options/vocabulaire", import.meta.url));', ['./bibliotheque-options/vocabulaire']],
+      ['new Worker(new URL(chemin, import.meta.url));', [IMPORT_NON_CONSTANT]],
+    ];
+    for (const [forme, attendu] of exacts) expect(specificateursSyntaxiques(forme, 'x.js'), forme).toEqual(attendu);
     // Un import constant d'un autre module n'est ni la bibliothèque ni un lecteur possible.
     expect(specificateursSyntaxiques('const z = import("@/lib/" + "autre/module");', 'x.ts')).toEqual(['@/lib/autre/module']);
     // La seule forme de production qui touche `import.meta` : lue par son chemin, sans sentinelle.

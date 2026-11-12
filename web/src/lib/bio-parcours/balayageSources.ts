@@ -2,11 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  createSourceFile, forEachChild, isAsExpression, isBinaryExpression, isCallExpression, isExportDeclaration,
+  createSourceFile, forEachChild, isAsExpression, isBinaryExpression, isCallExpression, isElementAccessExpression,
+  isExportDeclaration,
   isExternalModuleReference, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isMetaProperty,
   isNewExpression, isNonNullExpression, isNumericLiteral, isParenthesizedExpression, isPropertyAccessExpression,
   isSatisfiesExpression, isStringLiteralLike, isTemplateExpression, isTypeAssertionExpression, ScriptKind, ScriptTarget,
-  SyntaxKind, type Node,
+  SyntaxKind, type Node, type PropertyAccessExpression,
 } from 'typescript';
 
 // Outillage des bancs BP-01 ([[D-266]]) — lecture du SOURCE, jamais exécuté
@@ -87,14 +88,18 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, true, nature);
   const trouves: string[] = [];
   // L'APPELÉ est lu déballé — `(require)(x)`, `(0, require)(x)`,
-  // `(require as F)(x)` — et `module.require(x)` en est (contre-passe Codex sur
-  // 302b80d8). Toute AUTRE mention de `require` (`const r = require`,
-  // `require.context`, `typeof require`) ou de `import.meta` hors de `.url`
-  // (`import.meta.webpackContext`) ferme le verrou : aucune n'existe en
+  // `(require as F)(x)` —, et `module.require(x)` comme `module["require"](x)`
+  // en sont (contre-passes Codex sur 302b80d8 et c847d0f5). Toute AUTRE
+  // mention de `require` (`const r = require`, `require.context`,
+  // `typeof require`) ferme le verrou ; de même toute mention de `import.meta`
+  // qui n'est pas la base d'un `new URL(x, import.meta.url)` reconnu
+  // (`import.meta.webpackContext`, `new globalThis.URL(…)`). Aucune n'existe en
   // production, et le bundler en ferait un chargement qu'on ne lit pas.
-  const appelesReconnus = new Set<Node>();
-  const estRequire = (n: Node) =>
-    (isIdentifier(n) && n.text === 'require') || (isPropertyAccessExpression(n) && n.name.text === 'require');
+  const reconnus = new Set<Node>();
+  const estRequire = (n: Node): boolean =>
+    (isIdentifier(n) && n.text === 'require' && !(isPropertyAccessExpression(n.parent) && n.parent.name === n)) ||
+    (isPropertyAccessExpression(n) && n.name.text === 'require') ||
+    (isElementAccessExpression(n) && valeurConstante(n.argumentExpression) === 'require');
   // L'argument est lu par sa VALEUR CONSTANTE, comme le fait le bundler
   // (parenthèses, concaténations, gabarits, assertions de type) — contre-passe
   // Codex sur #2006. Un argument non constant ferme le verrou : il rend
@@ -109,16 +114,21 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
     else if (isCallExpression(n)) {
       const appele = deballer(n.expression);
       if (appele.kind === SyntaxKind.ImportKeyword || estRequire(appele)) {
-        appelesReconnus.add(appele);
+        reconnus.add(appele);
         argument(n.arguments[0]);
       }
-    } else if (isNewExpression(n) && isIdentifier(n.expression) && n.expression.text === 'URL' && estImportMetaUrl(n.arguments?.[1])) {
-      // `new URL(x, import.meta.url)` : le bundler embarque `x` (et l'exécute sous `new Worker`).
-      argument(n.arguments?.[0]);
-    } else if (isIdentifier(n) && n.text === 'require') {
-      const porteur = isPropertyAccessExpression(n.parent) && n.parent.name === n ? n.parent : n;
-      if (!appelesReconnus.has(porteur)) trouves.push(IMPORT_NON_CONSTANT);
-    } else if (isMetaProperty(n) && n.keywordToken === SyntaxKind.ImportKeyword && !estImportMetaUrl(n.parent)) {
+    } else if (isNewExpression(n)) {
+      // `new URL(x, import.meta.url)`, constructeur et base déballés : le
+      // bundler embarque `x` (et l'exécute sous `new Worker`).
+      const constructeur = deballer(n.expression);
+      const base = n.arguments?.[1] && deballer(n.arguments[1]);
+      if (isIdentifier(constructeur) && constructeur.text === 'URL' && base && estImportMetaUrl(base)) {
+        reconnus.add(base.expression);
+        argument(n.arguments?.[0]);
+      }
+    } else if (estRequire(n)) {
+      if (!reconnus.has(n)) trouves.push(IMPORT_NON_CONSTANT);
+    } else if (isMetaProperty(n) && n.keywordToken === SyntaxKind.ImportKeyword && !reconnus.has(n)) {
       trouves.push(IMPORT_NON_CONSTANT);
     }
     forEachChild(n, visiter);
@@ -142,10 +152,10 @@ function deballer(n: Node): Node {
   return n;
 }
 
-/** `import.meta.url`, seule mention de `import.meta` qui ne charge rien. */
-function estImportMetaUrl(n: Node | undefined): boolean {
+/** `import.meta.url` — admis seulement comme base d'un `new URL` reconnu. */
+function estImportMetaUrl(n: Node): n is PropertyAccessExpression {
   return (
-    n !== undefined && isPropertyAccessExpression(n) && n.name.text === 'url' &&
+    isPropertyAccessExpression(n) && n.name.text === 'url' &&
     isMetaProperty(n.expression) && n.expression.keywordToken === SyntaxKind.ImportKeyword
   );
 }
