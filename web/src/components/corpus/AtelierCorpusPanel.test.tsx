@@ -927,14 +927,43 @@ describe('AtelierCorpusPanel — exclusion de la recherche ([[D-490]])', () => {
     expect(screen.queryByLabelText(/^Motif — /)).toBeNull();
   });
 
-  it('le filtre « exclus seulement » n’existe que dans l’onglet Validés et part dans l’URL', async () => {
+  it('le filtre « exclus seulement » vaut dans les trois onglets, part dans l’URL et survit au changement d’onglet', async () => {
+    // Onglet Rejetés vide : il montre le message propre au filtre.
+    const parDefaut = routeur(EXCLU);
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) =>
+      url.includes('statut=REJETE')
+        ? Promise.resolve(json({ ...LISTE, statut: 'REJETE', total: 0, claims: [] }))
+        : parDefaut(url, options),
+    );
+    await attendreLaFile();
+    const URL_CLAIMS = '/api/praticien/corpus/claims?statut=';
+    fireEvent.click(screen.getByLabelText('Exclus de la recherche seulement'));
+    await waitFor(() =>
+      expect(appelsGet().at(-1)?.[0]).toBe(`${URL_CLAIMS}EN_ATTENTE_VALIDATION&limit=50&offset=0&exclu=1`),
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
+    await waitFor(() => expect(appelsGet().at(-1)?.[0]).toBe(`${URL_CLAIMS}VALIDE&limit=50&offset=0&exclu=1`));
+    expect((screen.getByLabelText('Exclus de la recherche seulement') as HTMLInputElement).checked).toBe(true);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Rejetés' }));
+    await waitFor(() => expect(appelsGet().at(-1)?.[0]).toBe(`${URL_CLAIMS}REJETE&limit=50&offset=0&exclu=1`));
+    expect(await screen.findByText('Aucun claim rejeté n’est exclu de la recherche.')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Exclus de la recherche seulement'));
+    await waitFor(() => expect(appelsGet().at(-1)?.[0]).toBe(`${URL_CLAIMS}REJETE&limit=50&offset=0`));
+    expect(await screen.findByText('Aucun claim dans cet état.')).toBeTruthy();
+  });
+
+  it('une recherche par identifiant remet le filtre « exclus seulement » à zéro', async () => {
     fetchMock.mockImplementation(routeur(EXCLU));
     await attendreLaFile();
-    expect(screen.queryByLabelText('Exclus de la recherche seulement')).toBeNull();
-    fireEvent.click(screen.getByRole('tab', { name: 'Validés' }));
-    fireEvent.click(await screen.findByLabelText('Exclus de la recherche seulement'));
-    await waitFor(() =>
-      expect(appelsGet().at(-1)?.[0]).toBe('/api/praticien/corpus/claims?statut=VALIDE&limit=50&offset=0&exclu=1'),
-    );
+    fireEvent.click(screen.getByLabelText('Exclus de la recherche seulement'));
+    await waitFor(() => expect(appelsGet().at(-1)?.[0]).toContain('&exclu=1'));
+    fireEvent.change(screen.getByLabelText('Rechercher un claim par identifiant'), { target: { value: '0061-008' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rechercher' }));
+    await waitFor(() => expect(appelsGet().at(-1)?.[0]).toContain('&claim=WN-CL-0061-008'));
+    expect(appelsGet().at(-1)?.[0]).not.toContain('exclu=1');
+    expect((screen.getByLabelText('Exclus de la recherche seulement') as HTMLInputElement).checked).toBe(false);
   });
 });
