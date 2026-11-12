@@ -111,6 +111,20 @@ version en lettres relève de PAT-6. Q5, Q6 et Q7 restent ouvertes,
 à soumettre séparément ; aucune validation de ces trois points n'est
 déduite de l'inscription des quatre choix.
 
+**Q5–Q7 du 2026-11-12** : `Q5a — Q6b — Q7a`, inscrits par DOC-4 dans
+[[D-481]] ; détails : [`pat2-arbitrages.md`](pat2-arbitrages.md). Le lot
+PAT-2 reçoit, une fois T-36 à T-39 acceptés mot pour mot puis inscrits :
+le lien « Me reconnecter » sous « Session expirée. Reconnectez-vous. », dans
+le même onglet ; le correctif du brouillon de l'entrée (mention de
+conservation après une écriture réussie seulement, heure de la dernière
+écriture réussie, formulations « dans cet onglet ») ; le message de
+sécurité gardé sous la liste des signaux ([[D-277]] §1). **Réception
+complémentaire** : retour au bon dossier et restauration du brouillon après
+reconnexion par Google dans le même onglet ; aucune confirmation ni heure
+antérieure après une écriture échouée ; questionnaires inchangés (« sur cet
+appareil ») ; message de sécurité visible sur téléphone réel, au zoom 200 %
+et en confort 112,5 %.
+
 ### PAT-3 — Mon parcours, accompagnement, suivi
 
 Hub (frise, « Mon accompagnement »), Jour difficile, point de suivi (T-30,
