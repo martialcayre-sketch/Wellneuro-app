@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   estFichierSource,
@@ -5,13 +6,14 @@ import {
   fichiersSource,
   IMPORT_NON_CONSTANT,
   lire,
+  RACINE,
   specificateursSyntaxiques,
 } from '../bio-parcours/balayageSources';
 
 // [[D-480]] §8 — LA BIBLIOTHÈQUE N'AUTORISE AUCUNE PRESCRIPTION. Aucun
 // parcours, courrier, portail, document remis ni appel à un modèle ne la lit.
-// Ce banc lit le SOURCE de `web/src` et refuse tout importeur de production
-// hors de son dossier.
+// Ce banc lit le SOURCE de tout `web/` (entrées, `web/scripts/` compris) et
+// refuse tout importeur de production hors de son dossier.
 //
 // LES LECTEURS ADMIS s'ajoutent nommément, par la PR qui les apporte : l'atelier
 // (PR 5) et le cockpit sous drapeau éteint (PR 6) du découpage de D-480. Un
@@ -26,15 +28,37 @@ import {
 const DOSSIER = 'web/src/lib/bibliotheque-options/';
 const LECTEURS_ADMIS: readonly string[] = [];
 
+// Le motif ignore la casse : un système de fichiers qui l'ignore aussi (macOS)
+// résout `./BIBLIOTHEQUE-options/…` (`wn-reviewer` sur #2006).
 const importeLaBibliotheque = (specificateur: string) =>
-  specificateur === IMPORT_NON_CONSTANT || /(^|\/)bibliotheque-options(\/|$)/.test(specificateur);
+  specificateur === IMPORT_NON_CONSTANT || /(^|\/)bibliotheque-options(\/|$)/i.test(specificateur);
+
+/**
+ * HORS DE `web/src`, du code tourne aussi : les entrées de `web/`
+ * (`instrumentation-client.ts` dans le bundle client, `sentry.*.config.ts`),
+ * le worker et le cron de `web/scripts/` (alias `@/`, appel à un modèle)
+ * (`wn-reviewer` sur #2006). Ils sont balayés avec `web/src`. L'outillage de
+ * `scripts/` et `tools/`, hors de la production, charge par des chemins
+ * calculés : il relève du banc de consommation de la PR 4.
+ */
+const fichiersHorsSrc = () =>
+  execFileSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web', ':!web/src'],
+    { cwd: RACINE, encoding: 'utf8' },
+  )
+    .split('\n')
+    .filter(estFichierSource);
 
 describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)', () => {
-  const sources = fichiersSource();
+  const sources = [...fichiersSource(), ...fichiersHorsSrc()];
 
-  it('le balayage voit le module lui-même (anti-vacuité)', () => {
+  it('le balayage voit le module lui-même et les entrées hors de web/src (anti-vacuité)', () => {
     expect(sources).toContain(`${DOSSIER}bibliothequeBesoin2V1.ts`);
     expect(sources).toContain(`${DOSSIER}vocabulaire.ts`);
+    expect(sources).toContain('web/instrumentation-client.ts');
+    expect(sources).toContain('web/sentry.server.config.ts');
+    expect(sources).toContain('web/scripts/bioExtractionWorker.ts');
   });
 
   // CONTRE-ÉPREUVE du balayage : un `.js`/`.jsx` de production en est
@@ -92,6 +116,13 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       'const v = new Worker(new (URL as typeof URL)("./bibliotheque-options/vocabulaire", (0, import.meta.url)));',
       'const h = new globalThis.URL("./bibliotheque-options/vocabulaire", import.meta.url);',
       'const i = import.meta.url;',
+      // AMD, pragma JSX, casse (`wn-reviewer` sur bab68ad7).
+      'define(["./bibliotheque-options/vocabulaire"], v => v);',
+      'define("m", ["./bibliotheque-options/vocabulaire"], function (v) { return v; });',
+      'define(dependances, function () {});',
+      'const amd = define;',
+      '/** @jsxImportSource @/lib/bibliotheque-options */\nexport const C = () => <div />;',
+      "import { X } from './BIBLIOTHEQUE-options/vocabulaire';",
     ];
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
@@ -118,6 +149,11 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       ['new Worker(new URL("./bibliotheque-options/vocabulaire", (import.meta.url)));', ['./bibliotheque-options/vocabulaire']],
       ['new Worker(new (URL)("./bibliotheque-options/vocabulaire", import.meta.url));', ['./bibliotheque-options/vocabulaire']],
       ['new Worker(new URL(chemin, import.meta.url));', [IMPORT_NON_CONSTANT]],
+      ['define(["./bibliotheque-options/vocabulaire"], v => v);', ['./bibliotheque-options/vocabulaire']],
+      ['define("m", ["./a", "./b"], function () {});', ['./a', './b']],
+      ['define({ a: 1 });', []],
+      ['const o = { define: 1 }; o.define;', []],
+      ['/** @jsxImportSource @/lib/bibliotheque-options */', ['@/lib/bibliotheque-options/jsx-runtime']],
     ];
     for (const [forme, attendu] of exacts) expect(specificateursSyntaxiques(forme, 'x.js'), forme).toEqual(attendu);
     // Un import constant d'un autre module n'est ni la bibliothèque ni un lecteur possible.

@@ -190,7 +190,9 @@ export function incoherencesDeBibliotheque(
     if (!memesCles(option, CLES_OPTION)) a('cles');
     if (!estIdentifiantOption(option.id)) a('format');
     if (retirees.includes(option.id)) a('reattribuee');
-    if (!hypothesesFU.includes(option.hypothese)) a('hypothese');
+    // Un TEXTE d'abord : `null` dans la structure et dans les fiches d'usage se
+    // reconnaissaient (`wn-reviewer` sur #2006).
+    if (typeof option.hypothese !== 'string' || !hypothesesFU.includes(option.hypothese)) a('hypothese');
     // Chaque case, trous compris (`new Array(1)` : longueur 1, aucune
     // population) — `some` sauterait la case absente (passe Codex sur #2006).
     const populations: unknown[] = Array.isArray(option.populations) ? Array.from(option.populations) : [];
@@ -306,8 +308,23 @@ export function bibliothequeSignee(
   const cites = sourcesCitees(structure);
   if (!memes([...new Set(metadata.claimsSource.map(cleClaim))].sort(), cites.claims)) return false;
   if (!memes([...new Set(metadata.positionsSource.map(clePosition))].sort(), cites.positions)) return false;
-  if (metadata.shaPerimetre !== sha256(JSON.stringify(structure))) return false;
+  const empreinte = empreinteSure(structure);
+  if (empreinte === null || metadata.shaPerimetre !== empreinte) return false;
   return incoherencesDeBibliotheque(structure, fichesUsage).length === 0;
+}
+
+/**
+ * L'empreinte d'une valeur, ou `null` si elle n'a pas de forme JSON : une
+ * fonction, un `Symbol` (rien à empreindre), un BigInt ou un cycle (qui font
+ * jeter `JSON.stringify`) ferment le verrou sans exception (`wn-reviewer` sur #2006).
+ */
+function empreinteSure(valeur: unknown): string | null {
+  try {
+    const texte = JSON.stringify(valeur);
+    return typeof texte === 'string' ? sha256(texte) : null;
+  } catch {
+    return null;
+  }
 }
 
 export type EtatBibliotheque = 'non_signee' | 'a_relire' | 'signee';
@@ -330,7 +347,8 @@ export function etatBibliotheque(
   fichesUsageMetadata: FichesUsageMetadata = FICHES_USAGE_BESOIN2_METADATA,
 ): EtatBibliotheque {
   if (!bibliothequeSignee(metadata, structure, fichesUsage)) return 'non_signee';
-  const empreinteFichesUsage = sha256(JSON.stringify(fichesUsage));
+  const empreinteFichesUsage = empreinteSure(fichesUsage);
+  if (empreinteFichesUsage === null) return 'a_relire';
   // Les fiches d'usage sont jugées par LEUR module, qui suppose leur format :
   // une forme qu'il ne sait pas lire vaut « non signées », donc « à relire »,
   // jamais une exception.

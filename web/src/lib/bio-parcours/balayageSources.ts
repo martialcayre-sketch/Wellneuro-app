@@ -2,8 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  createSourceFile, forEachChild, isAsExpression, isBinaryExpression, isCallExpression, isElementAccessExpression,
-  isExportDeclaration,
+  createSourceFile, forEachChild, isArrayLiteralExpression, isAsExpression, isBinaryExpression, isCallExpression,
+  isElementAccessExpression, isExportDeclaration, isFunctionLike, isObjectLiteralExpression,
   isExternalModuleReference, isIdentifier, isImportDeclaration, isImportTypeNode, isLiteralTypeNode, isMetaProperty,
   isNewExpression, isNonNullExpression, isNumericLiteral, isParenthesizedExpression, isPropertyAccessExpression,
   isSatisfiesExpression, isStringLiteralLike, isTemplateExpression, isTypeAssertionExpression, ScriptKind, ScriptTarget,
@@ -106,6 +106,25 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   // `IMPORT_NON_CONSTANT`, qu'un banc traite comme un lecteur possible (le
   // bundler en ferait un module de contexte, qui embarque tout un dossier).
   const argument = (n: Node | undefined) => trouves.push((n && valeurConstante(n)) ?? IMPORT_NON_CONSTANT);
+  // `define([...], f)` AMD : le bundler charge chaque dépendance du tableau
+  // (`wn-reviewer` sur #2006). Le nom d'un module nommé, une fabrique ou un
+  // objet ne chargent rien ; tout autre argument, et toute autre mention de
+  // `define`, ferment le verrou. Aucune n'existe en production.
+  const estDefine = (n: Node): boolean =>
+    isIdentifier(n) && n.text === 'define' && (n.parent as { name?: Node } | undefined)?.name !== n;
+  const dependancesAmd = (args: readonly Node[]) => {
+    for (const brut of args) {
+      const a = deballer(brut);
+      if (isArrayLiteralExpression(a)) a.elements.forEach(e => argument(e));
+      else if (!(isStringLiteralLike(a) || isFunctionLike(a) || isObjectLiteralExpression(a))) {
+        trouves.push(IMPORT_NON_CONSTANT);
+      }
+    }
+  };
+  // `/** @jsxImportSource x */` : le compilateur importe `x/jsx-runtime`. Un
+  // pragma est un commentaire, que le parseur ne rend pas : il est lu dans le
+  // texte, et une prose qui le citerait fermerait le verrou (`wn-reviewer` sur #2006).
+  for (const m of source.matchAll(/@jsxImportSource\s+(\S+)/g)) trouves.push(`${m[1]}/jsx-runtime`);
   const visiter = (n: Node): void => {
     if (isImportDeclaration(n) || isExportDeclaration(n)) {
       if (n.moduleSpecifier) argument(n.moduleSpecifier);
@@ -116,6 +135,9 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
       if (appele.kind === SyntaxKind.ImportKeyword || estRequire(appele)) {
         reconnus.add(appele);
         argument(n.arguments[0]);
+      } else if (estDefine(appele)) {
+        reconnus.add(appele);
+        dependancesAmd(n.arguments);
       }
     } else if (isNewExpression(n)) {
       // `new URL(x, import.meta.url)`, constructeur et base déballés : le
@@ -126,7 +148,7 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
         reconnus.add(base.expression);
         argument(n.arguments?.[0]);
       }
-    } else if (estRequire(n)) {
+    } else if (estRequire(n) || estDefine(n)) {
       if (!reconnus.has(n)) trouves.push(IMPORT_NON_CONSTANT);
     } else if (isMetaProperty(n) && n.keywordToken === SyntaxKind.ImportKeyword && !reconnus.has(n)) {
       trouves.push(IMPORT_NON_CONSTANT);

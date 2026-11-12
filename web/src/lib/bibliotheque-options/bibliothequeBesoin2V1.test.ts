@@ -305,6 +305,32 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     }
   });
 
+  it('une hypothèse qui n’est pas un texte est refusée, même inscrite telle quelle aux fiches d’usage (wn-reviewer)', () => {
+    const fu = { ...FU_SYNTH, hypotheses: [null, 2] } as unknown as StructureFichesUsage;
+    for (const hypothese of [null, 2]) {
+      const structure = avec({ hypothese } as unknown as Partial<OptionBibliotheque>);
+      expect(incoherencesDeBibliotheque(structure, fu)).toEqual(['OPT_SYNTH_1:hypothese']);
+      expect(bibliothequeSignee(signeeSur(structure), structure, fu)).toBe(false);
+    }
+  });
+
+  it('une valeur sans forme JSON (fonction, Symbol, BigInt, cycle) ferme le verrou, jamais une exception (wn-reviewer)', () => {
+    const vide: StructureBibliotheque = { besoin: 2, options: [], optionsRetirees: [] };
+    const metadata = { ...signeeSur(vide), shaFichesUsage: sha256(JSON.stringify(FU_SYNTH)) };
+    const cyclique = { besoin: 2, options: [], optionsRetirees: [] as unknown[] };
+    cyclique.optionsRetirees.push(cyclique);
+    const sansJson: unknown[] = [() => 0, Symbol('s'), BigInt(1), { ...vide, besoin: BigInt(2) }, cyclique];
+    for (const brute of sansJson) {
+      const structure = brute as StructureBibliotheque;
+      expect(() => incoherencesDeBibliotheque(structure, FU_SYNTH)).not.toThrow();
+      expect(signee(metadata, structure)).toBe(false);
+      expect(etatBibliotheque(metadata, structure, FU_SYNTH, FICHES_USAGE_BESOIN2_METADATA)).toBe('non_signee');
+      // Des fiches d'usage sans forme JSON : la structure vide reste signée, les fiches valent « à relire ».
+      const fu = brute as StructureFichesUsage;
+      expect(etatBibliotheque(metadata, vide, fu, FICHES_USAGE_BESOIN2_METADATA)).toBe('a_relire');
+    }
+  });
+
   it('ni plus ni moins que les champs du format : une propriété en trop est refusée', () => {
     const enTrop = { ...OPTION, texte: 'X' } as unknown as OptionBibliotheque;
     expect(incoherencesDeBibliotheque({ besoin: 2, options: [enTrop], optionsRetirees: [] }, FU_SYNTH)).toEqual(['OPT_SYNTH_1:cles']);

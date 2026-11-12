@@ -201,6 +201,30 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   « à relire ». Bancs : identifiants, renvois, sources et date, fiches
   d'usage hors typage. Pour chacun, il vérifie les anomalies exactes, une
   signature refusée et l'état attendu. T1 complet : code 0.
+- Revue `wn-reviewer` sur `bab68ad7` (la passe Codex était indisponible ; le
+  responsable l'a remplacée par `wn-reviewer`), BLOQUER :
+  - P1-1, corrigé : un `define([...], f)` AMD charge ses dépendances sans
+    que le banc les voie. Le visiteur lit maintenant les éléments constants
+    du tableau. Tout autre argument et toute autre mention de `define`
+    ferment le verrou.
+  - P1-2, corrigé : `@jsxImportSource x` fait importer `x/jsx-runtime`.
+    Le pragma est lu dans le texte.
+  - P1-3, corrigé : le banc balaie désormais tout `web/`, y compris les
+    entrées hors de `src` et `web/scripts/` (worker, cron). Il vérifie qu'il
+    voit bien ces fichiers (anti-vacuité). L'outillage de `scripts/` et
+    `tools/`, qui n'est pas en production, charge des chemins calculés, ce
+    qui donnerait 34 faux rouges : routé vers la PR 4.
+  - P2-1, corrigé : une fonction, un `Symbol`, un BigInt ou un cycle ne font
+    plus lever d'exception. L'empreinte est calculée par `empreinteSure`, qui
+    rend `null` dans ces cas et ferme alors le verrou.
+  - P2-2, corrigé : `hypothese` doit être un texte.
+  - P2-3, corrigé : le motif du banc ignore la casse.
+  - Q1, routé vers la PR 4 : les détours par la configuration (`paths`,
+    `imports`, alias de `next.config`). Chacun exige de modifier un fichier
+    de configuration hors de ce lot.
+  - Q2, écarté : un `toJSON` posé sur un tableau de renvois n'existe que par
+    cast dans du code. Du JSON lu ne peut pas en porter, et ce code serait
+    visible en revue.
 
 ## Problèmes ouverts
 
@@ -218,13 +242,15 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 - **Passe Codex** : obligatoire pour un module clinique signé de la campagne
   BIO-PARCOURS (bibliothèque d'options), geste manuel du responsable
   (`$wellneuro-pr-review`). La première passe a rendu BLOQUER ; ses deux P1
-  sont corrigés. La PR n'est déclarée « prête » qu'après le verdict d'une
-  contre-passe sur la nouvelle tête.
+  sont corrigés. Les contre-passes ont suivi jusqu'à `3311087b`. Ensuite,
+  Codex était indisponible : le responsable l'a remplacé par `wn-reviewer`
+  sur `bab68ad7`. C'est une exception à déclarer avec « prête ».
 - **Les autres bancs de garde** lisent toujours les imports dans le texte
   (`specificateursImportes`). Ils restent ouverts aux deux formes de
   contournement relevées par Codex. Leur passage au parseur touche une
   quinzaine de bancs hors de ce lot ; il est routé vers la PR 4, qui pose la
-  garde de consommation.
+  garde de consommation. Sont routés au même endroit l'outillage de
+  `scripts/` et `tools/` et les détours par la configuration (`wn-reviewer`).
 - Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
   passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
   Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
@@ -236,7 +262,8 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 ## Prochaine action exacte
 
 #2006 : CI de la tête, revue sur la tête (PR-Agent prouvé, revue exigée
-depuis D-499), passe Codex du responsable. Chaque remarque
+depuis D-499). Les correctifs de la revue `wn-reviewer` sont posés ; la
+passe Codex, indisponible, est remplacée par cette revue. Chaque remarque
 reçoit son verdict, puis la PR est déclarée « prête @<sha> ».
 L'intégrateur merge. La PR 4 (contrôles et garde) suit dans une nouvelle
 session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
