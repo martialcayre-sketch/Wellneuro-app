@@ -533,8 +533,18 @@ export async function PATCH(request: Request) {
         titre,
         categorie,
         description: description || null,
-        definitionJson: definition as unknown as Prisma.InputJsonValue,
-        scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
+        // NF-7, P2-3 (passe Codex du lot 3, P1-1) : drapeau allumé, une
+        // édition des métadonnées seules ne réécrit PAS le contenu. Elle
+        // échappe au verrou et au recomptage ; réécrire la définition et la
+        // grille qu'elle a lues pourrait réinstaller, après une modification,
+        // une publication et un envoi concurrents, l'ancien contenu sous la
+        // nouvelle déclaration. Drapeau éteint : l'écriture d'avant.
+        ...(contenuChange || !declarationSuicideCabinetActive()
+          ? {
+              definitionJson: definition as unknown as Prisma.InputJsonValue,
+              scoringJson: { ...scoring, maxTotal: verdict.scoreMax } as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
         ...(contenuChange ? { statutRelecture: 'brouillon' } : {}),
         // NF-7 ([[D-303]] §2) : une modification des questions redemande la
         // déclaration — l'ancienne est effacée (NULL = non déclaré), la

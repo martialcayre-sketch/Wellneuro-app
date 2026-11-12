@@ -525,6 +525,14 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
 
+    it('modifier le titre seul réécrit la définition et la grille lues, comme avant', async () => {
+      prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...INSTRUMENT, statutRelecture: 'valide' });
+      await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
+      const data = prisma.cabinetInstrument.update.mock.calls[0][0].data;
+      expect(data.definitionJson).toEqual(DEFINITION_VALIDE);
+      expect(data.scoringJson).toEqual({ ...SCORING_VALIDE, maxTotal: 4 });
+    });
+
     it('le détail ne demande pas la déclaration', async () => {
       prisma.cabinetInstrument.findFirst.mockResolvedValue(INSTRUMENT);
       const json = await (await GET(new Request('http://localhost/api/praticien/instruments?id=CAB_1'))).json();
@@ -670,6 +678,51 @@ describe('instruments — déclaration « question sur le suicide » (NF-7)', ()
       await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
       expect('poseQuestionSuicide' in prisma.cabinetInstrument.update.mock.calls[0][0].data).toBe(false);
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    // Passe Codex du lot 3, P1-1 : l'édition des métadonnées échappe au
+    // verrou et au recomptage ; elle ne doit donc rien réécrire du contenu.
+    // Entrelacement rejoué sur une ligne en mémoire partagée par les deux
+    // séquences.
+    it('titre modifié pendant une modification, une publication et un envoi : l’ancien contenu n’est pas réinstallé', async () => {
+      const V2 = { ...DEFINITION_VALIDE, instructions: 'Version 2.' };
+      const GRILLE_V2 = { ...SCORING_VALIDE, maxTotal: 4, version: 2 };
+      const base: Record<string, unknown> = {
+        ...INSTRUMENT,
+        statutRelecture: 'valide',
+        poseQuestionSuicide: true,
+        questionSuicideId: 'Q1',
+        questionSuicideOptionNon: 0,
+      };
+      // 1. Le PATCH du titre lit la V1 déclarée « oui », puis attend.
+      prisma.cabinetInstrument.findFirst.mockResolvedValueOnce({ ...base });
+      prisma.cabinetInstrument.update.mockImplementationOnce(async ({ data }: { data: Record<string, unknown> }) => {
+        // 2. Entre-temps : V2, publiée avec « non », puis un envoi commité.
+        Object.assign(base, {
+          definitionJson: V2,
+          scoringJson: GRILLE_V2,
+          statutRelecture: 'valide',
+          poseQuestionSuicide: false,
+          questionSuicideId: null,
+          questionSuicideOptionNon: null,
+        });
+        prisma.assignation.count.mockResolvedValue(1);
+        // 3. Le PATCH reprend et écrit.
+        Object.assign(base, data);
+        return base;
+      });
+      const res = await PATCH(patchRequest({ idInstrument: 'CAB_1', titre: 'Nouveau titre' }));
+      expect(res.status).toBe(200);
+      expect(Object.keys(prisma.cabinetInstrument.update.mock.calls[0][0].data).sort()).toEqual([
+        'categorie',
+        'description',
+        'titre',
+      ]);
+      expect(base.titre).toBe('Nouveau titre');
+      expect(base.definitionJson).toBe(V2);
+      expect(base.scoringJson).toBe(GRILLE_V2);
+      expect(base.statutRelecture).toBe('valide');
+      expect(base.poseQuestionSuicide).toBe(false);
     });
 
     // Lot 3, P2-3 (revue `wn-reviewer`, P1) : le gel du contenu se juge sous

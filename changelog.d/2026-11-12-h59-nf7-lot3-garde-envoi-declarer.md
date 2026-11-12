@@ -20,6 +20,9 @@ tiennent. Aucune D-xxx : D-303, amendée par D-493, et les arbitrages du
   fin de l'envoi. Un instrument devenu inéligible est écarté avec sa trace.
   Une modification des questions recompte les envois en cours sous son propre
   verrou : un envoi ne peut plus se glisser entre le comptage et l'écriture.
+  Une modification du seul titre, du domaine ou de la description ne
+  réécrit plus les questions ni la grille : elle ne peut plus réinstaller un
+  contenu remplacé entre-temps (passe Codex).
 - **Message de « Relire la grille » (P2-4).** Quand un questionnaire déclaré
   « oui » ne propose aucune réponse au choix, le texte validé par le
   responsable s'affiche. Il rappelle que la déclaration décrit le contenu réel
