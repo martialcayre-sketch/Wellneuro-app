@@ -220,6 +220,29 @@ export function DecisionSummaryCard({
               </p>
             )}
             {current && <p className="mt-1 font-mono text-xs text-muted-foreground">Statut : {current.confidence}</p>}
+            {/* CE QUE LA TABLE N'A PAS PROPOSÉ FAUTE DE SOURCE ADMISSIBLE
+                ([[D-495]] §3-4). DANS LE RÉSUMÉ, jamais derrière « Voir les
+                sources » : une priorité disparue sans mot se lirait « la table
+                ne la propose pas pour ce patient ». Les deux faits viennent de
+                la carte elle-même — ce composant ne rejuge rien. */}
+            {decisionCard.validitePrioritesNonVerifiee && (
+              <p role="note" className="mt-2 rounded-md border border-status-warning/40 bg-status-warning/10 p-2 text-sm text-foreground">
+                Aucune priorité issue des règles n’est proposée : la validité de leurs sources n’a pas pu être vérifiée.
+              </p>
+            )}
+            {(decisionCard.prioritesNonProposees ?? []).map(nonProposee => (
+              <div key={nonProposee.ruleId} role="note" className="mt-2 rounded-md border border-status-warning/40 bg-status-warning/10 p-2 text-sm text-foreground">
+                <p>
+                  <span className="font-medium">{`Priorité non proposée : ${nonProposee.label}.`}</span>
+                  {' Ses conditions de déclenchement sont réunies sur ce dossier, mais au moins un claim cité par la règle '}
+                  {nonProposee.ruleId}
+                  {' ne satisfait pas les critères de validité du corpus.'}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  {`Claims concernés : ${nonProposee.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}`}
+                </p>
+              </div>
+            ))}
           </div>
         )}
         detail={(

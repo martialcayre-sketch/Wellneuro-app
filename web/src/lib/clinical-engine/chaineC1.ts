@@ -6,6 +6,8 @@ import {
   tablePrioritesSignee,
 } from '@/lib/clinical/priorityRulesV1';
 import { evaluerGatePopulation } from '@/lib/clinical/gatePopulationV1';
+import { couplesNonAdmissibles } from '@/lib/clinical/admissibiliteClaims';
+import type { AdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
 import { etatIntegralementInconnu, type EtatPopulation } from '@/lib/consultation/etatPopulation';
@@ -26,6 +28,7 @@ import type {
   DecisionCard,
   DecisionPriorityCandidate,
   DecisionPrioritySelection,
+  PrioriteNonProposee,
   PatientContext,
   QuestionnaireResponseInput,
 } from './types';
@@ -166,6 +169,16 @@ export type EntreeChaineC1 = {
    * honnête, ou éteindrait l'écran du patient.
    */
   couverturesAdressage?: CouvertureAdressage[];
+  /**
+   * Les couples admissibles des règles de priorité ([[D-495]] §4), tels que
+   * `lireAdmissibilitePriorites` les rend — `null` quand le corpus est
+   * illisible.
+   *
+   * OBLIGATOIRE, pour le motif de `signauxAlerte` : un défaut ferait passer
+   * « tout admissible » et « je n'ai pas lu » pour la même chose. Les QUATRE
+   * appelants le lisent par la même fonction, comme les couvertures.
+   */
+  claimsAdmissiblesPriorites: AdmissibilitePriorites;
 };
 
 /** Un objet de score lisible — typage défensif, le JSON n'est pas garanti. */
@@ -458,7 +471,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     limitations: securite.limitations,
   });
 
-  const candidats = construireCandidats({
+  const { candidats, nonProposees, validiteNonVerifiee } = construireCandidats({
     dernieres,
     plainteDominante,
     priorityGoal: input.patientContext.priorityGoal,
@@ -468,6 +481,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     // candidats sous une abstention que la revue n'a pas retenue.
     abstention: review.abstention.status,
     etatPopulation: input.etatPopulation,
+    claimsAdmissibles: input.claimsAdmissiblesPriorites,
   });
   const decisionCard = buildDecisionCard({
     decisionCardId: input.decisionCardId,
@@ -479,6 +493,12 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     // `null` dès que la décision est bloquée ou qu'aucun candidat n'existe.
     proposedMainPriorityId: candidats[0]?.candidateId ?? null,
     selectedMainPriority: input.selectionPraticien ?? null,
+    // DANS LA CARTE, ET DONC DANS SON EMPREINTE ([[D-495]] §4-5) : ce que la
+    // table n'a pas proposé faute de source admissible se lit sur la carte
+    // elle-même. Les deux champs sont ABSENTS quand ils seraient vides — la
+    // carte d'un dossier ordinaire garde son empreinte ([[D-257]]).
+    prioritesNonProposees: nonProposees,
+    validitePrioritesNonVerifiee: validiteNonVerifiee,
   });
 
   return { snapshot, review, decisionCard, plainteDominante };
@@ -496,8 +516,10 @@ function construireCandidats(input: {
   priorityGoal: string | null;
   abstention: AbstentionAssessment['status'];
   etatPopulation: EtatPopulation;
-}): DecisionPriorityCandidate[] {
-  if (!tablePrioritesSignee()) return [];
+  claimsAdmissibles: AdmissibilitePriorites;
+}): { candidats: DecisionPriorityCandidate[]; nonProposees: PrioriteNonProposee[]; validiteNonVerifiee: boolean } {
+  const aucun = { candidats: [], nonProposees: [], validiteNonVerifiee: false };
+  if (!tablePrioritesSignee()) return aucun;
   // UNE ABSTENTION REQUISE FAIT TAIRE LA TABLE (`DC-25`) — relevé en revue le
   // 2026-08-12.
   //
@@ -512,7 +534,12 @@ function construireCandidats(input: {
   // décision est `blocked`), mais il aurait GARDÉ les candidats classés : le
   // praticien aurait lu une liste hiérarchisée sous un bandeau de suspension.
   // Données insuffisantes ⇒ on réduit la conclusion, on ne l'habille pas.
-  if (input.abstention !== 'not_required') return [];
+  if (input.abstention !== 'not_required') return aucun;
+  // CORPUS ILLISIBLE : AUCUN CANDIDAT, ET C'EST DIT ([[D-495]] §3). Ne pas
+  // pouvoir vérifier les sources n'autorise pas à proposer une priorité qui
+  // mènerait à un protocole (`DC-01`).
+  if (input.claimsAdmissibles === null) return { ...aucun, validiteNonVerifiee: true };
+  const claimsAdmissibles = input.claimsAdmissibles;
   const declenchees = evaluerPriorites(input.dernieres);
 
   // LA GATE DE POPULATION, ET ELLE EST ICI ([[D-101]], `DC-43`).
@@ -534,9 +561,25 @@ function construireCandidats(input: {
       evaluerGatePopulation(declenchee.regle.id, input.etatPopulation),
     ]),
   );
-  const retenues = declenchees.filter(
+  const passees = declenchees.filter(
     declenchee => verdicts.get(declenchee.regle.id)?.statut !== 'ecarte',
   );
+
+  // L'ADMISSIBILITÉ DES CLAIMS, JUSTE APRÈS LA GATE ET AVANT LE CLASSEMENT
+  // ([[D-495]] §4, arbitrage 20261111-1558-a) : un candidat dont un claim
+  // n'est pas admissible ne porte jamais de rang. APRÈS la gate, pour que la
+  // carte ne dise « non proposée faute de source » que d'une priorité qui
+  // aurait réellement été candidate — une règle que la population écarte
+  // n'aurait rien proposé de toute façon, et la nommer ici donnerait au
+  // praticien un faux motif. Le référentiel `rules` (`reglesPrioritesValidees`)
+  // reste entier : il décrit la table signée, pas ce qu'elle rend ici.
+  const nonProposees: PrioriteNonProposee[] = [];
+  const retenues = passees.filter(declenchee => {
+    const manquants = couplesNonAdmissibles(declenchee.regle.justificationClaims, claimsAdmissibles);
+    if (manquants.length === 0) return true;
+    nonProposees.push({ ruleId: declenchee.regle.id, label: declenchee.regle.libelle, claims: manquants });
+    return false;
+  });
 
   // CLASSEMENT — la plainte dominante d'abord, la priorité intrinsèque de la
   // table ensuite, l'identifiant en dernier ressort. Le troisième terme n'est
@@ -553,7 +596,7 @@ function construireCandidats(input: {
       || (gauche.regle.id < droite.regle.id ? -1 : gauche.regle.id > droite.regle.id ? 1 : 0);
   });
 
-  return classees.map((declenchee, index) => {
+  const candidats = classees.map((declenchee, index) => {
     // Les instruments viennent de l'ATTEINTE, plus de la forme statique de la
     // règle ([[D-060]] §4) : `evaluerPriorites` les collecte déclencheur par
     // déclencheur, et sous un `ou` seule la branche qui a décidé est citée.
@@ -624,4 +667,5 @@ function construireCandidats(input: {
       ],
     };
   });
+  return { candidats, nonProposees, validiteNonVerifiee: false };
 }

@@ -12,6 +12,7 @@ import {
   type AncrePosee,
 } from './runtimeFromPrisma';
 import { lireCouverturesAdressage } from './adressagesSignalAlertePrisma';
+import { lireAdmissibilitePriorites } from '@/lib/clinical/prioritesAdmissibles';
 import type { CouvertureAdressage } from './safetyFindingSource';
 import { construireChaineC1Tolerante, lireSelectionPriorite } from './selectionPrioritePrisma';
 import {
@@ -336,6 +337,8 @@ export async function rejouerChaine(
     reponsesSecurite: inputs.reponsesSecurite,
     etatPopulation: inputs.etatPopulation,
     couverturesAdressage,
+    // Même lecture aux quatre constructions ([[D-495]]) : `null` = corpus illisible.
+    claimsAdmissiblesPriorites: await lireAdmissibilitePriorites(),
   }, await lireSelectionPriorite(idPatient, decisionCardIdRejeu));
   return { chaine, selectionEcartee, couverturesAdressage };
 }

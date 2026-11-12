@@ -67,8 +67,10 @@ import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import {
   evaluerOrientationPourPatient,
+  orientationActive,
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
+import { reglesOrientationAdmissibles } from '@/lib/clinical/orientationAdmissible';
 import {
   derniereReponseParQuestionnaire,
   type RecommandationExploration,
@@ -1180,11 +1182,19 @@ export async function preparerGeneration(
     // convergence emportait les discordances avec elle, sous un message qui
     // les en accusait. Elles ne nourrissent pas le garde de restitution — les
     // gardes ne les lisent pas (`morceaux`).
+    //
+    // LES SEULES RÈGLES D'ORIENTATION APPLIQUÉES ([[D-495]] §1) : la même
+    // lecture que le cockpit. Corpus illisible ⇒ aucune convergence ici, et
+    // la synthèse ne le dit pas encore — limite reconnue, rattachée à t77
+    // ([[D-495]] §8).
     try {
+      const orientationApplicable = orientationActive() ? await reglesOrientationAdmissibles() : null;
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
         ...vigilancesConvergencePourSynthese(
-          constatsContradictionsPourDossier(reponses, anamnesePourConstats, Date.now(), 'convergences'),
+          constatsContradictionsPourDossier(
+            reponses, anamnesePourConstats, Date.now(), 'convergences', orientationApplicable,
+          ),
         ),
       ];
     } catch (convErr) {

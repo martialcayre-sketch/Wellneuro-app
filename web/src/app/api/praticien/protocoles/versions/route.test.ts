@@ -60,6 +60,19 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import type { FoodCompassActionRef } from '@/lib/food-compass';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
 
+// [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
+// l'admissibilité des claims au corpus. Tout couple est admissible ici — les
+// cas où un claim tombe, ou où le corpus est illisible, ont leurs bancs aux
+// services (`orientationService`, `contradictionsService`, `chaineC1`).
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) =>
+      new Set(references.map(reference => `${reference.claimId}::${reference.versionClaim}`)),
+  };
+});
+
 const VALUES: Record<string, number> = {
   '25000': 23.3, '31000': 0.31, '32000': 0, '34100': 0,
   '40302': 3.06, '40303': 5.31, '40304': 5.1, '41833': 0.18,

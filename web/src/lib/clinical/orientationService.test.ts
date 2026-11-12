@@ -41,15 +41,23 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
 // admissible : les bancs d'avant D-491 gardent leur sens. Les bancs de D-491
 // déclarent un couple non admissible, ou le corpus illisible.
 const { mockAdmissibilite } = vi.hoisted(() => ({
-  mockAdmissibilite: { illisible: false, nonAdmissibles: new Set<string>(), appels: 0 },
+  // `appels` compte les lectures de la TABLE D'ARRÊT seules (étiquette
+  // `orientationService/arret`) ; `illisiblePour` rend illisible une seule
+  // lecture, par son étiquette — l'orientation ([[D-495]]) lit à part.
+  mockAdmissibilite: {
+    illisible: false,
+    illisiblePour: new Set<string>(),
+    nonAdmissibles: new Set<string>(),
+    appels: 0,
+  },
 }));
 vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
   const reel = await importOriginal<typeof import('./admissibiliteClaims')>();
   return {
     ...reel,
-    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) => {
-      mockAdmissibilite.appels += 1;
-      if (mockAdmissibilite.illisible) return null;
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[], etiquette: string) => {
+      if (etiquette === 'orientationService/arret') mockAdmissibilite.appels += 1;
+      if (mockAdmissibilite.illisible || mockAdmissibilite.illisiblePour.has(etiquette)) return null;
       return new Set(
         references
           .map(r => `${r.claimId}::${r.versionClaim}`)
@@ -1057,6 +1065,7 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
 
   function remettreLAdmissibilite() {
     mockAdmissibilite.illisible = false;
+    mockAdmissibilite.illisiblePour.clear();
     mockAdmissibilite.nonAdmissibles.clear();
     mockAdmissibilite.appels = 0;
   }
@@ -1211,10 +1220,10 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.arret).toEqual({ version: 'stop-rules-nnpp2-v1', sha256: 'sha-arret-test' });
   });
 
-  it('D-491 : corpus ILLISIBLE — aucune extinction, la règle est dite suspendue faute de vérification', async () => {
+  it('D-491 : corpus ILLISIBLE pour la table d\'arrêt — aucune extinction, la règle est dite suspendue faute de vérification', async () => {
     signerLArret();
     armerLesContradictions();
-    mockAdmissibilite.illisible = true;
+    mockAdmissibilite.illisiblePour.add('orientationService/arret');
     const resultat = await evaluerOrientationPourPatient('PAT-1');
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
     expect(resultat.recommandations).toHaveLength(1);
@@ -1232,6 +1241,44 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
     expect(resultat.arretsSuspendus).toEqual([]);
     expect(mockAdmissibilite.appels).toBe(0);
+  });
+
+  // ── [[D-495]] — une règle d'ORIENTATION dont un claim n'est pas admissible ──
+
+  it('D-495 : tous les claims d\'orientation admissibles — la règle propose, rien n\'est dit non appliqué', async () => {
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations.map(r => r.motifs.map(m => m.regleId)).flat()).toContain('R-TEST-DRAPEAU');
+    expect(resultat.reglesNonAppliquees).toEqual([]);
+  });
+
+  it('D-495 : un claim de la règle NON ADMISSIBLE — elle ne propose rien, et elle est dite avec son couple', async () => {
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-010::v1.0');
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toEqual([]);
+    expect(resultat.reglesNonAppliquees).toEqual([{
+      regleId: 'R-TEST-DRAPEAU',
+      claims: [{ claimId: 'WN-CL-0000-010', versionClaim: 'v1.0' }],
+    }]);
+  });
+
+  it('D-495 : la règle non appliquée est dite même quand elle ne se déclencherait pas', async () => {
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-010::v1.0');
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.reglesNonAppliquees.map(r => r.regleId)).toEqual(['R-TEST-DRAPEAU']);
+  });
+
+  it('D-495 : corpus ILLISIBLE pour l\'orientation — rien n\'est servi, et le panneau le dit', async () => {
+    mockAdmissibilite.illisiblePour.add('orientationAdmissible');
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    expect(resultat).toEqual({
+      actif: false,
+      version: expect.any(String),
+      message: 'L\'orientation n\'est pas affichée : la validité de ses sources n\'a pas pu être vérifiée.',
+    });
   });
 
   it('D-491 : une règle d\'arrêt suspendue ne touche pas l\'exclusion des instruments déjà mesurés (elle ne cite aucun claim)', async () => {

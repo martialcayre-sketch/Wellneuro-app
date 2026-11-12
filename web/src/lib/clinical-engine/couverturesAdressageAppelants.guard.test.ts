@@ -66,6 +66,20 @@ describe('couvertures d’adressage — les quatre constructions de la chaîne C
     expect(nue).toEqual([path.join('src', 'lib', 'clinical-engine', 'selectionPrioritePrisma.ts')]);
   });
 
+  // [[D-495]] §4 : MÊME RAISON, MÊME BANC. Les couples admissibles de la table
+  // des priorités sont lus au présent par chaque construction, et par la même
+  // fonction — une lecture d'un côté seulement ferait 409 sur une carte
+  // honnête, ou interromprait à tort le protocole d'un patient.
+  it.each(APPELANTS)('%s lit l’admissibilité des priorités à chaque construction, par la fonction partagée', (fichier) => {
+    const source = readFileSync(path.join(process.cwd(), fichier), 'utf8');
+    const constructions = [...source.matchAll(CONSTRUIRE)].length;
+    const blocs = source.split(CONSTRUIRE).slice(1).map(bloc => bloc.split('}, await lireSelectionPriorite')[0]);
+    expect(blocs).toHaveLength(constructions);
+    for (const bloc of blocs) {
+      expect(bloc.match(/^\s*claimsAdmissiblesPriorites: await lireAdmissibilitePriorites\(\),$/gm)?.length ?? 0).toBe(1);
+    }
+  });
+
   it('le compte total est quatre : cockpit, rejeu du cockpit, vérificateur, rejeu', () => {
     const total = APPELANTS
       .map(fichier => readFileSync(path.join(process.cwd(), fichier), 'utf8').match(CONSTRUIRE)?.length ?? 0)

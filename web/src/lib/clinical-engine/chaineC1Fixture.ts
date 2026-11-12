@@ -1,4 +1,5 @@
-import { PRIORITY_RULES_METADATA, PRIORITY_RULES_SHA256 } from '@/lib/clinical/priorityRulesV1';
+import { PRIORITY_RULES_METADATA, PRIORITY_RULES_SHA256, PRIORITY_RULES_V1 } from '@/lib/clinical/priorityRulesV1';
+import { cleClaim } from '@/lib/rag/claims/validite';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { construireChaineC1, type ChaineC1 } from './chaineC1';
 import {
@@ -24,6 +25,15 @@ import type { ConfirmedAssessmentEpisode, DecisionPrioritySelection } from './ty
  * `@/lib/prisma` : `construireChaineC1` tire `orientationService`, dont le module
  * instancie un client Prisma au chargement.
  */
+
+/**
+ * Tous les couples de la table des priorités, admissibles ([[D-495]]) — ce que
+ * `lireAdmissibilitePriorites` rend sur un corpus où la table est entièrement
+ * fondée. Un banc qui veut un claim tombé en retire un.
+ */
+export const CLAIMS_PRIORITES_ADMISSIBLES: ReadonlySet<string> = new Set(
+  PRIORITY_RULES_V1.flatMap(regle => regle.justificationClaims.map(cleClaim)),
+);
 
 /** Horodatage unique de la chaîne de référence — `asOf` et les deux `createdAt`. */
 export const HORODATAGE_C1_FIXTURE = '2026-01-03T00:00:00.000Z';
@@ -269,6 +279,7 @@ export function chaineC1DeReference(options: {
       signauxAlerte: inputs.signauxAlerte,
       reponsesSecurite: inputs.reponsesSecurite,
       etatPopulation: inputs.etatPopulation,
+      claimsAdmissiblesPriorites: CLAIMS_PRIORITES_ADMISSIBLES,
     }),
   };
 }

@@ -35,6 +35,19 @@ import {
 import { identifiantPrioriteLibre } from '@/lib/clinical-engine/prioriteLibreServeur';
 import { POST } from './route';
 
+// [[D-495]] : l'orientation, la convergence et la chaîne C1 lisent
+// l'admissibilité des claims au corpus. Tout couple est admissible ici — les
+// cas où un claim tombe, ou où le corpus est illisible, ont leurs bancs aux
+// services (`orientationService`, `contradictionsService`, `chaineC1`).
+vi.mock('@/lib/clinical/admissibiliteClaims', async (importOriginal) => {
+  const reel = await importOriginal<typeof import('@/lib/clinical/admissibiliteClaims')>();
+  return {
+    ...reel,
+    claimsAdmissiblesAuCorpus: async (references: { claimId: string; versionClaim: string }[]) =>
+      new Set(references.map(reference => `${reference.claimId}::${reference.versionClaim}`)),
+  };
+});
+
 // UNE CHAÎNE C1 RÉELLE, jamais une carte forgée ([[D-054]] arbitrage 5) : cette
 // route appelle `refusChaineC1`, et une fixture inventée y rendrait 409 pour la
 // mauvaise raison.
