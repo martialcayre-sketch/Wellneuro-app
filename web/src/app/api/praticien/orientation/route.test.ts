@@ -238,6 +238,8 @@ describe('GET /api/praticien/orientation', () => {
       expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
       // Vide, jamais absent ([[D-433]] §3) : le déclencheur est frais.
       expect(payload.reglesNonEvaluees).toEqual([]);
+      // Servi par la route, vide et jamais absent ([[D-500]] §4).
+      expect(payload.arretsNonEvalues).toEqual([]);
     });
 
     // D-433 §3 : un déclencheur au-delà de la fenêtre de son instrument (PSS-10,

@@ -884,6 +884,50 @@ describe('extinction — fenêtre d’extinction de l’instrument (D-500)', () 
     expect(resultat.recommandations[0].extinction ?? null).toBeNull();
     expect(resultat.arretsNonEvalues).toEqual([]);
   });
+
+  // LE CHEMIN `ou`, pris par la revue wn-reviewer de t78 (P1-1) : deux
+  // mutations d'une ligne — évaluer le `ou` sur toutes les passations au lieu
+  // des seules fraîches, ou oublier d'y compter la branche périmée — faisaient
+  // éteindre sur une passation hors fenêtre sans qu'aucun banc ne rougisse.
+  const arretOu = arret({
+    declencheurs: [{
+      type: 'ou',
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'plage', min: 0, max: 4 } },
+        { type: 'zone', idQuestionnaire: 'Q_STR_04', zone: { type: 'plage', min: 0, max: 4 } },
+      ],
+    }],
+  });
+
+  it('`ou` : une branche PÉRIMÉE favorable n’atteint pas le `ou` — non évaluée, rien d’éteint', () => {
+    const resultat = evaluerOrientationDetaillee(entree({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-06-01T10:00:00.000Z', scores: mesureArret(2) }),
+        // Fraîche, complète, hors de la plage : non atteinte.
+        reponse({ idQuestionnaire: 'Q_STR_04', scores: mesureArret(12) }),
+      ],
+      reglesArret: [arretOu],
+    }));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-06-01T10:00:00.000Z', fenetreJours: 30 }],
+    }]);
+  });
+
+  it('`ou` : une branche FRAÎCHE atteinte éteint, malgré l’autre périmée — contre-épreuve', () => {
+    const resultat = evaluerOrientationDetaillee(entree({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-06-01T10:00:00.000Z', scores: mesureArret(12) }),
+        reponse({ idQuestionnaire: 'Q_STR_04', scores: mesureArret(2) }),
+      ],
+      reglesArret: [arretOu],
+    }));
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
 });
 
 describe('evaluerOrientation — fenêtre de fraîcheur par instrument (D-430)', () => {
