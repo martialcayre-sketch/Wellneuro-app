@@ -55,7 +55,7 @@ non recueilli » s'il est antérieur au lot. Jamais « complet », jamais
 
 | question | réponse |
 |---|---|
-| `20261112-1030-b` — champs | Huit champs, laboratoire inchangé |
+| `20261112-1030-b` — champs | Huit champs, laboratoire inchangé (huit éléments, dont sept champs stockés : le moment est lu à l'import, `1031-b`) |
 | `20261112-1031-b` — moment, cycle, délai | Des faits, pas des catégories |
 | `20261112-1032-b` — rattachement (migration) | Par ligne racine, saisi en bloc |
 | `20261112-1033-b` — grossesse et cycle face à BP-13 | Champ propre au prélèvement |
