@@ -25,6 +25,9 @@ relâcher sur les faits.
   P3 et P4 », sans avis Codex demandé), avec délégation explicite de la
   validation des rubriques de P3 et P4 (D-501 §7).
 - Fusion de `origin/main` dans la branche sur ce même arbitrage.
+- Revue PR-Agent : D-314 §3 ne prévoyait pas de délégation. Arbitrage du
+  responsable (question à options) : l'inscrire, D-509 (réservée), qui
+  amende D-314 §3 ; les six actes restent.
 
 ## Fichiers modifiés
 
