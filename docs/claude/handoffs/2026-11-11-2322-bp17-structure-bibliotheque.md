@@ -163,6 +163,16 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   mention. Main l'a réaligné (#2029), fusionné sur la branche :
   `bancs-outillage-check` est vert, et les étapes qui n'avaient pas tourné
   derrière lui (anti-secrets) aussi.
+- Contre-passe Codex sur `c847d0f5` : BLOQUER, pour deux formes voisines.
+  La première est `module["require"](…)`, un accès calculé. La seconde est
+  `new URL(…)` avec le constructeur ou la base entre parenthèses. Le
+  correctif reconnaît un accès calculé constant à `require`, quelle que
+  soit sa forme, et déballe le constructeur et la base de `new URL`.
+  `import.meta` n'est plus admis que comme base d'un `new URL` reconnu.
+  Toute autre mention, y compris `import.meta.url` seul ou
+  `new globalThis.URL(…)`, ferme le verrou. Contre-épreuves : chemin exact
+  ou sentinelle pour les quatre exemples de Codex et leurs variantes non
+  constantes. T1 complet : code 0.
 
 ## Problèmes ouverts
 
