@@ -22,7 +22,7 @@ registre des textes (§1), amendements AM-3, AM-4, AM-5, AM-6 ; artefact
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-01 à T-05, T-07, T-10, T-12, T-13 | PRA-1 |
 | Textes acceptés et inscrits (DOC-0 ou DOC-n) : T-14, T-15 | PRA-3 |
 | Texte T-16 inscrit (DOC-1, amendement de [[D-488]]) | PRA-2 |
-| Décor inscrit (DOC-2, [[D-481]] §1 bis) et primitive `LienDecor` mergée (COM-1) | tout lot qui pose un décor : PRA-2, PRA-3a, PRA-3b ; sans eux, le lot livre sans décor |
+| Décor inscrit (DOC-2, [[D-481]] §1 bis) et primitive `LienDecor` mergée (COM-1) | tout lot qui pose un décor, ornement d'état vide compris : PRA-2, PRA-3a, PRA-3b, et tout autre lot qui orne un état vide réel ; sans eux, le lot livre sans décor |
 | Prototype de la famille validé à l'étape 3 (si Q-E2-4 (a)) | PRA-2 à PRA-5 |
 
 Un amendement refusé retire ce qui en dépend : sans AM-3, les vues rapides
