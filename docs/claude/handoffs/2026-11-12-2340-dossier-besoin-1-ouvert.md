@@ -2,7 +2,7 @@
 
 ## Branche et état Git
 
-- Branche `docs/besoin1-dossier-ouverture`, créée sur `origin/main` bff47e88 (après le merge de #2043), dans le
+- Branche `docs/besoin1-dossier-ouverture`, créée sur `origin/main` bff47e88 (merge de #2046 ; #2043 est mergée en 6aeab38d), dans le
   worktree `.claude/worktrees/b-bp17-cadre`.
 - Session concurrente (file B) : `git` et `gh` en direct, pas de `/wn-*`.
 
@@ -16,12 +16,13 @@ arbitrage.
 
 - Boîte B du registre des messages (`D-503`) : une ligne, `20261112-2139-integrateur` (`merge_fait` de #2038), sans
   suite pour la file B ; passée à `lu`.
-- Support : Claude Doc privé « Équilibre de l'assiette (besoin 1) », https://claude.ai/artifact/T2nhZYXEjV6pCxASb572uE,
-  au gabarit des dossiers du besoin 2, relu sur le dossier iode et sélénium. Étape 1 seulement : statut, « À trancher
+- Support : Claude Doc privé « Équilibre de l'assiette (besoin 1) » (lien hors dépôt, comme pour le besoin 2), au
+  gabarit des dossiers du besoin 2, relu sur le dossier iode et sélénium. Étape 1 seulement : statut, « À trancher
   en premier » (T1 à T3), cadre (état initial, Q4 à Q7, limite `D-455`, interdits) ; les sections des étapes
   suivantes restent en attente.
 - État initial : la forme longue de l'enquête est servie (`WN_ALI_01_SIIN57`, depuis le 2026-07-28), donc le double
-  compte est réel en production. Les biomarqueurs du guide existent au catalogue, sans lien au besoin 1.
+  compte est réel en production. Les biomarqueurs du guide existent au catalogue, sans lien au besoin 1 ; deux d'entre eux portent
+  des liens analyte–axe signés (F79, `D-351`), à relire à l'étape 2.
 - Questions à la liste commune (page de la file D, collection `questions`) : `20261112-2330-b` (support et
   structure, ordinaire), `20261112-2331-b` (sources à réunir, clinique), `20261112-2332-b` (mesure dérivée,
   clinique). Option A recommandée pour les trois.
@@ -37,6 +38,10 @@ arbitrage.
 - `node scripts/wn-plan-journal-rubriques.mjs` : `exit=0` (aucun identifiant associé à une rubrique).
 - `bash scripts/check_no_secrets.sh` : `exit=0`.
 - T1 complet (`npm run check`) : `exit=0`. Pas de T2 : lot de documentation, sans code.
+- CI de c2280ccb (`wn-attendre-ci.mjs`) : `0`. PR-Agent ne tourne pas : `pr_agent.yml` ignore les chemins de clôture,
+  seuls touchés ici. Recours `wn-reviewer` (`D-448`) : GO, quatre P2, tous corrigés (niveau B signé par `D-424` §3 ;
+  provenance des arbitrages Q4 à Q6 et décision clinique à venir pour la mesure ; liens analyte–axe de deux
+  biomarqueurs ; commit de base). L'URL du dossier privé est retirée du handoff, sur le précédent du besoin 2.
 
 ## Problèmes ouverts
 
