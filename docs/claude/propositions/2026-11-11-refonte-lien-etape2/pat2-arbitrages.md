@@ -62,3 +62,29 @@ sans inventer une version ArtifactData ni un identifiant de journal.
 > l'alerte) restent ouvertes, à soumettre séparément. Aucun code modifié.
 
 Le report du suivi est une action restante, pas un résultat annoncé.
+
+## Q5–Q7 — arbitrages du 2026-11-12, inscrits par DOC-4
+
+- Réponse écrite du responsable : **Q5a — Q6b — Q7a**. Elle tranche les
+  trois questions laissées ouvertes ci-dessus.
+- Inscription par **DOC-4**, raccordé à DOC-3 (#2012) tant que celui-ci
+  n'est pas fusionné. Référence canonique : [[D-481]], complément DOC-4 ;
+  textes proposés au registre de l'étape 2, T-36 à T-39.
+- **Documentation seule** : ni réalisation PAT-2 ni acceptation de texte.
+
+| Question | Choix | Où la règle est inscrite |
+|---|---|---|
+| Q5 — reconnexion | a, lien vers la page de connexion sous « Session expirée. Reconnectez-vous. », dans le même onglet ; retour au bon dossier et restauration du brouillon à vérifier au lot | [[D-481]], complément DOC-4 ; T-36 « Me reconnecter » proposé, non accepté |
+| Q6 — brouillon de l'entrée | b, correctif : la mention de conservation ne paraît qu'après une écriture réussie, avec l'heure de la dernière écriture réussie ; formulations « dans cet onglet » ; les questionnaires gardent « sur cet appareil » | [[D-481]], complément DOC-4 ; T-37 à T-39 proposés, non acceptés |
+| Q7 — alerte | a, message de sécurité gardé sous la liste des signaux ([[D-277]] §1), sans déplacement ni défilement ; visibilité à vérifier au lot (téléphone réel, zoom 200 %, confort 112,5 %) | [[D-481]], complément DOC-4 ; aucun texte proposé |
+
+Les quatre formulations T-36 à T-39 sont soumises à acceptation mot pour
+mot. Rien ne change dans le code avant leur acceptation puis leur
+inscription dans [[D-488]] par un DOC-n.
+
+### Suivi patient — report après inscription
+
+Report fait le 2026-11-12 sur la page
+https://claude.ai/artifact/V7AVAR7WiyU64pgJxLeG8S : entrées de journal
+`2026-11-12-09` (inscription de DOC-4) et `2026-11-12-13` (fusion de DOC-3,
+PR de DOC-4) ; statut de la fiche PAT-2 inchangé.
