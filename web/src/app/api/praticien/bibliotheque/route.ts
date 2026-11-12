@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { listeBibliotheque, type BibliothequeEntree } from '@/lib/bibliotheque';
 import { listeInstrumentsCabinet, resumeInstrumentCabinet } from '@/lib/instruments';
 import { emailPraticien } from '@/lib/praticien/appartenance';
+import { cabinetEnvoyable, declarationRequiseAvantEnvoi } from '@/lib/securite/declarationSuicideCabinet';
 
 export type BibliothequeApiResponse = {
   entrees: BibliothequeEntree[];
@@ -36,10 +37,15 @@ export async function GET() {
         scoreMax: resume.scoreMax,
         certifie: false,
         statutCertification: 'non_certifie',
-        assignable: row.statutRelecture === 'valide',
+        // NF-7, P2-1 : drapeau allumé, un publié non déclaré reste visible mais
+        // ne s'ajoute plus à la file (même prédicat que l'envoi).
+        assignable: cabinetEnvoyable(row),
         aliasVers: null,
         passationPraticien: false,
-        cabinet: { statutRelecture: row.statutRelecture },
+        cabinet: {
+          statutRelecture: row.statutRelecture,
+          ...(declarationRequiseAvantEnvoi(row) ? { declarationRequise: true as const } : {}),
+        },
       };
     });
     return NextResponse.json<BibliothequeApiResponse>({

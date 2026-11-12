@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
+import { MOTIF_DECLARATION_REQUISE, questionsDesignables } from '@/lib/securite/declarationSuicideCabinet';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
@@ -61,6 +61,9 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const [tiroirRelecture, setTiroirRelecture] = useState(false);
   const [editionInitiale, setEditionInitiale] = useState<InstrumentCabinetDetailDto | null>(null);
   const [relecture, setRelecture] = useState<InstrumentCabinetDetailDto | null>(null);
+  // NF-7, P2-1 : le geste « Déclarer » d'un instrument publié non déclaré.
+  const [tiroirDeclaration, setTiroirDeclaration] = useState(false);
+  const [aDeclarer, setADeclarer] = useState<InstrumentCabinetDetailDto | null>(null);
 
   const selection = useMemo(
     () => entreesCourantes.find(e => e.id === selectionId) ?? null,
@@ -303,6 +306,42 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setOccupe(false);
   }
 
+  async function ouvrirDeclaration(idInstrument: string) {
+    setErreur(null);
+    const detail = await chargerDetail(idInstrument);
+    if (!detail) {
+      setErreur('Instrument introuvable.');
+      return;
+    }
+    setADeclarer(detail);
+    setTiroirDeclaration(true);
+  }
+
+  async function declarer(idInstrument: string, declaration: DeclarationSuicideSaisie) {
+    setOccupe(true);
+    setMessage(null);
+    setErreur(null);
+    try {
+      const res = await fetch('/api/praticien/instruments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idInstrument, action: 'declarer', ...declaration }),
+      });
+      const json = (await res.json()) as MutateInstrumentResponse;
+      if (json.success) {
+        setMessage('Déclaration enregistrée.');
+        setTiroirDeclaration(false);
+        // La file d'envoi aussi : ses items « Indisponible » redeviennent envoyables.
+        await Promise.all([rafraichirCabinet(), chargerFile()]);
+      } else {
+        setErreur(json.error ?? 'Déclaration impossible.');
+      }
+    } catch {
+      setErreur('Déclaration impossible.');
+    }
+    setOccupe(false);
+  }
+
   async function desactiverInstrument(idInstrument: string) {
     setOccupe(true);
     setMessage(null);
@@ -379,6 +418,21 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                   detail={relecture}
                   occupe={occupe}
                   onPublier={declaration => void publier(relecture.idInstrument, declaration)}
+                />
+              )}
+            </PanneauSuperpose>
+            <PanneauSuperpose
+              largeur="standard"
+              titre="Déclarer"
+              description={`${MOTIF_DECLARATION_REQUISE}.`}
+              open={tiroirDeclaration}
+              onOpenChange={setTiroirDeclaration}
+            >
+              {aDeclarer && (
+                <DeclarerInstrument
+                  detail={aDeclarer}
+                  occupe={occupe}
+                  onDeclarer={declaration => void declarer(aDeclarer.idInstrument, declaration)}
                 />
               )}
             </PanneauSuperpose>
@@ -504,7 +558,22 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                           {i.nbQuestions != null ? ` · ${i.nbQuestions} questions` : ''}
                           {i.scoreMax != null ? ` · /${i.scoreMax}` : ''}
                         </p>
+                        {/* NF-7, P2-1 : publié mais non déclaré, drapeau allumé —
+                            visible, plus envoyable avant « Déclarer ». */}
+                        {i.declarationRequise && (
+                          <p className="mt-1 text-xs text-status-danger">{MOTIF_DECLARATION_REQUISE}.</p>
+                        )}
                         <div className="mt-2 flex flex-wrap gap-1.5">
+                          {i.declarationRequise && (
+                            <button
+                              type="button"
+                              disabled={occupe}
+                              onClick={() => void ouvrirDeclaration(i.idInstrument)}
+                              className="rounded-lg border border-indigo-600 bg-indigo-600/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-indigo-600/20 disabled:opacity-60"
+                            >
+                              Déclarer
+                            </button>
+                          )}
                           {i.statutRelecture === 'grille_a_relire' && (
                             <button
                               type="button"
@@ -642,7 +711,9 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                     {selection && !selection.assignable
                       ? selection.passationPraticien
                         ? 'Passation en consultation — cet instrument ne peut pas être envoyé.'
-                        : selection.cabinet
+                        : selection.cabinet?.declarationRequise
+                          ? `${MOTIF_DECLARATION_REQUISE}.`
+                          : selection.cabinet
                           ? 'Instrument du cabinet non publié — faites relire puis publiez la grille avant l’envoi.'
                           : 'Alias historique — non assignable tel quel.'
                       : selection?.passationPraticien
@@ -1279,9 +1350,11 @@ type DeclarationSuicideSaisie =
 function DeclarationSuicide({
   detail,
   onChange,
+  aide = 'Réponse obligatoire pour publier.',
 }: {
   detail: InstrumentCabinetDetailDto;
   onChange: (declaration: DeclarationSuicideSaisie | null) => void;
+  aide?: string;
 }) {
   const idLegende = useId();
   const idAide = useId();
@@ -1308,7 +1381,7 @@ function DeclarationSuicide({
         <legend id={idLegende} className="text-sm font-semibold text-foreground">
           Ce questionnaire pose-t-il une question sur le suicide ou les idées de mort ?
         </legend>
-        <p id={idAide} className="mt-1 text-2xs text-muted-foreground">Réponse obligatoire pour publier.</p>
+        <p id={idAide} className="mt-1 text-2xs text-muted-foreground">{aide}</p>
         <div className="mt-2 flex gap-4">
           {(['oui', 'non'] as const).map(valeur => (
             <label key={valeur} className="inline-flex min-h-11 items-center gap-2 text-sm text-foreground">
@@ -1323,13 +1396,23 @@ function DeclarationSuicide({
             </label>
           ))}
         </div>
-        {/* Revue `wn-reviewer`, P2-4 : sans question à réponses au choix, rien à
-            désigner — le dire, plutôt qu'une liste vide qui pousserait à « non ». */}
+        {/* P2-4 (arbitrage du 2026-11-12, texte validé par le responsable, mot
+            pour mot) : sans question à réponses au choix, rien à désigner. Le
+            message ne pousse pas vers « non » : la déclaration décrit le
+            contenu réel du questionnaire. */}
         {reponse === 'oui' && designables.length === 0 && (
-          <p role="status" className="mt-2 text-xs text-status-danger">
-            Aucune question de ce questionnaire ne propose de réponses au choix : la question
-            concernée ne peut pas être désignée, et l’instrument ne peut pas être publié en l’état.
-          </p>
+          <div role="status" className="mt-2 flex flex-col gap-1.5 text-xs text-status-danger">
+            <p>
+              Ce questionnaire ne propose aucune réponse au choix permettant de désigner la question
+              concernée et sa réponse « non ». Il ne peut donc pas être publié en l’état avec une
+              déclaration « oui ».
+            </p>
+            <p>
+              Votre déclaration doit décrire le contenu réel du questionnaire. S’il pose une question
+              sur le suicide ou les idées de mort, conservez « Oui » : répondre « Non » pour permettre
+              la publication laisserait le patient sans encart d’urgence.
+            </p>
+          </div>
         )}
         {reponse === 'oui' && designables.length > 0 && (
           <div className="mt-2 flex flex-col gap-3">
@@ -1371,6 +1454,44 @@ function DeclarationSuicide({
           </div>
         )}
       </fieldset>
+    </div>
+  );
+}
+
+// NF-7, P2-1 (arbitrage du 2026-11-12) : le geste « Déclarer » d'un instrument
+// publié sans déclaration. Il recueille la seule déclaration — ni les
+// questions ni le statut ne bougent — et le serveur la vérifie comme à la
+// publication. Sans migration ni reprise en base ; seule la déclaration est
+// enregistrée par l'application.
+function DeclarerInstrument({
+  detail,
+  occupe,
+  onDeclarer,
+}: {
+  detail: InstrumentCabinetDetailDto;
+  occupe: boolean;
+  onDeclarer: (declaration: DeclarationSuicideSaisie) => void;
+}) {
+  const [declaration, setDeclaration] = useState<DeclarationSuicideSaisie | null>(null);
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="font-display text-base font-semibold text-foreground">{detail.titre}</p>
+        <p className="mt-1 font-mono text-2xs text-muted-foreground">
+          {detail.idInstrument}
+          {detail.nbQuestions != null ? ` · ${detail.nbQuestions} questions` : ''}
+        </p>
+      </div>
+      <DeclarationSuicide detail={detail} onChange={setDeclaration} aide={`${MOTIF_DECLARATION_REQUISE}.`} />
+      <div className="border-t border-border pt-4">
+        <Button
+          type="button"
+          disabled={occupe || declaration === null}
+          onClick={() => declaration && onDeclarer(declaration)}
+        >
+          Déclarer
+        </Button>
+      </div>
     </div>
   );
 }
