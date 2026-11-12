@@ -1,4 +1,4 @@
-// LA CONSIGNE VERSIONNÉE « fiche-usage-v3 » ([[D-314]] §4, [[D-501]] §5) — patron de
+// LA CONSIGNE VERSIONNÉE « fiche-usage-v4 » ([[D-314]] §4, [[D-501]] §5 et §7) — patron de
 // `tools/corpus/fiches/lib/consigne.mjs`.
 //
 // Deux fichiers, lus tels quels : la consigne de rédaction et celle de la
@@ -14,8 +14,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { empreinteConsignes } from '../../fiches/lib/consigne.mjs';
 
-export const VERSION_CONSIGNE = 'fiche-usage-v3';
-export const EMPREINTE_ATTENDUE = '26d46ed349b9c996';
+export const VERSION_CONSIGNE = 'fiche-usage-v4';
+export const EMPREINTE_ATTENDUE = '28ece7ee8ab1922d';
 
 const DOSSIER = path.join(import.meta.dirname, '..', 'consignes');
 

@@ -48,9 +48,11 @@
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v3` (`D-501` §5). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v4` (`D-501` §7). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
-la remplace après le pilote fer, où aucun texte n'avait été retenu.
+l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
+v4 précise la seule rubrique « question », refusée même quand elle ne
+faisait que nommer l'usage signé.
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée
