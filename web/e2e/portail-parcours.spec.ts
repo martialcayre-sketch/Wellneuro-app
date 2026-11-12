@@ -204,12 +204,12 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await page.getByLabel(/exactitude des informations fournies/i).check();
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/fiche') && res.status() === 200),
-        page.getByRole('button', { name: /anamnèse/i }).click(),
+        page.getByRole('button', { name: 'Continuer vers votre situation' }).click(),
       ]);
     });
 
-    await test.step('Anamnèse (paginée section par section depuis HC-F LOT-04)', async () => {
-      await expect(page.getByRole('heading', { name: 'Anamnèse' })).toBeVisible();
+    await test.step('Parler de votre situation (paginée section par section depuis HC-F LOT-04)', async () => {
+      await expect(page.getByRole('heading', { name: 'Parler de votre situation' })).toBeVisible();
       // SEPT SECTIONS DEPUIS [[D-101]] (LOT-05), et non plus six : « État
       // actuel » s'insère entre « Antécédents » et « Traitements ». Le compte
       // n'est pas décoratif — l'anamnèse est PAGINÉE, et le bouton d'envoi

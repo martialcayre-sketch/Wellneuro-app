@@ -42,7 +42,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 async function allerAuxSignaux(): Promise<void> {
   render(<PortailPage />);
-  await screen.findByText('Anamnèse');
+  await screen.findByText('Parler de votre situation');
   for (let i = 0; i < 20 && !screen.queryByText('Signaux à signaler'); i += 1) {
     for (const champ of document.querySelectorAll<HTMLTextAreaElement | HTMLInputElement>('textarea[required], input[required]')) {
       if (!champ.value) fireEvent.change(champ, { target: { value: 'Fatigue persistante depuis six mois.' } });

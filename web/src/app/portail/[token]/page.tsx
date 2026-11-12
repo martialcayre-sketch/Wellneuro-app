@@ -22,7 +22,7 @@ import {
 } from '@/lib/physio-traitements/anamnese';
 import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
-import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientButton, patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
@@ -34,6 +34,33 @@ import { DateNaissanceEcran, EcranCircuitMineur } from '@/components/patient/Dat
 import type { StatutAge } from '@/lib/patient/gardeAge';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
+import {
+  BOUTON_VERS_SITUATION,
+  DESTINATION_RECONNEXION,
+  LIEN_RECONNEXION,
+  TEXTES_BROUILLON_ENTREE,
+  TITRE_SITUATION,
+} from './textesEntree';
+
+// Repères « Section i / N » et « Étape n sur 4 » : gardés dans l'entrée seule
+// ([[D-333]] §1, famille 1, précision du 2026-11-12). Surtitre du prototype
+// PAT-2 : petites capitales espacées, texte atténué plein (pas `/70`).
+const CLASSE_REPERE = 'mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+
+// T-36 sous « Session expirée. Reconnectez-vous. » ([[D-481]], complément
+// DOC-4, Q5a). Navigation pleine page, dans le même onglet : la connexion
+// relit ses conditions d'ouverture et le layout relit le cookie ; par Google,
+// le retour mène à `/portail/<idPatient>` dans ce même onglet, où le brouillon
+// (`sessionStorage`) est restauré. Par un lien reçu par e-mail, ouvert en
+// général dans un nouvel onglet, il ne l'est pas.
+function LienReconnexion() {
+  return (
+    // eslint-disable-next-line @next/next/no-html-link-for-pages -- pleine page voulue (voir ci-dessus).
+    <a href={DESTINATION_RECONNEXION} className={patientButtonClassName('ghost')}>
+      {LIEN_RECONNEXION}
+    </a>
+  );
+}
 
 // ─── autosave locale minimale (gate/fiche/anamnèse n'ont pas de idAssignation
 // avant l'onboarding — clé scopée par patient plutôt que par assignation, sur
@@ -111,13 +138,25 @@ function readWizardDraft<T>(kind: WizardDraftKind, idPatient: string, validate: 
     return null;
   }
 }
-function writeWizardDraft(kind: WizardDraftKind, idPatient: string, value: unknown): void {
-  if (typeof window === 'undefined' || !idPatient) return;
+// Rend l'heure de CETTE écriture si elle a réussi, `null` sinon ([[D-481]],
+// complément DOC-4, Q6b) : l'écran ne confirme la conservation qu'après une
+// écriture réussie, et jamais avec l'heure d'une sauvegarde antérieure.
+function writeWizardDraft(kind: WizardDraftKind, idPatient: string, value: unknown): Date | null {
+  if (typeof window === 'undefined' || !idPatient) return null;
   try {
+    const maintenant = new Date();
     window.sessionStorage.setItem(wizardDraftKey(kind, idPatient), JSON.stringify(value));
-    window.sessionStorage.setItem(wizardDraftSavedAtKey(kind, idPatient), new Date().toISOString());
+    window.sessionStorage.setItem(wizardDraftSavedAtKey(kind, idPatient), maintenant.toISOString());
+    return maintenant;
   } catch {
-    /* quota / mode privé : on n'interrompt pas la saisie */
+    // Quota, mode privé : la saisie continue, sans promesse de conservation.
+    // L'heure d'une écriture antérieure ne doit pas survivre à l'échec.
+    try {
+      window.sessionStorage.removeItem(wizardDraftSavedAtKey(kind, idPatient));
+    } catch {
+      /* no-op */
+    }
+    return null;
   }
 }
 function readWizardDraftSavedAt(kind: WizardDraftKind, idPatient: string): Date | null {
@@ -151,9 +190,11 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sessionExpiree, setSessionExpiree] = useState(false);
 
   const handleContinue = async () => {
     setError('');
+    setSessionExpiree(false);
     setLoading(true);
     try {
       const res = await fetch('/api/portail/consentement', {
@@ -161,6 +202,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, email }),
       });
+      setSessionExpiree(res.status === 401);
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) setError(data.error ?? 'Erreur. Réessayez.');
       else onAccepted();
@@ -176,7 +218,9 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
   return (
     <PatientCard>
       <PatientPageHeader title="Votre consentement au suivi" />
-      <div className="mt-2">
+      {/* Zone de lecture posée sur sable (prototype PAT-2) ; le texte du
+          consentement ne change pas. */}
+      <div className="mt-2 rounded-xl bg-lien-sand p-4">
         <DocumentTrust document={getDocumentCourant('consentement_suivi')} />
       </div>
       <label className="flex min-h-11 items-start gap-3 mt-6 cursor-pointer">
@@ -186,6 +230,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
         </span>
       </label>
       {error && <div className="mt-4"><PatientInlineMessage tone="error">{error}</PatientInlineMessage></div>}
+      {sessionExpiree && <div className="mt-3"><LienReconnexion /></div>}
       <PatientButton
         variant="primary" disabled={!checked} loading={loading} loadingLabel="Enregistrement…"
         onClick={handleContinue} className="w-full mt-6"
@@ -205,14 +250,15 @@ function FicheForm({ token, idPatient, email, onDone }: {
   const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Heure de la dernière écriture RÉUSSIE du brouillon ; `null` après un échec.
   const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('fiche', idPatient));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const premierRendu = useRef(true);
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    writeWizardDraft('fiche', idPatient, valeurs);
-    setSavedAt(readWizardDraftSavedAt('fiche', idPatient));
+    setSavedAt(writeWizardDraft('fiche', idPatient, valeurs));
   }, [valeurs, idPatient]);
 
   const set = (id: string, v: string) => setValeurs(prev => ({ ...prev, [id]: v }));
@@ -227,6 +273,7 @@ function FicheForm({ token, idPatient, email, onDone }: {
   const soumettre = async () => {
     setError('');
     setSaveError(undefined);
+    setSessionExpiree(false);
     setLoading(true);
     try {
       const res = await fetch('/api/portail/fiche', {
@@ -234,6 +281,7 @@ function FicheForm({ token, idPatient, email, onDone }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, email, fiche: valeurs }),
       });
+      setSessionExpiree(res.status === 401);
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
       else { clearWizardDraft('fiche', idPatient); onDone(); }
@@ -254,7 +302,7 @@ function FicheForm({ token, idPatient, email, onDone }: {
   return (
     <PatientCard as="form" onSubmit={handleSectionSubmit} className="space-y-6">
       <div>
-        <div className="text-xs text-muted-foreground/70 mb-2">Section {sectionIndex + 1} / {FICHE_SECTIONS.length}</div>
+        <div className={CLASSE_REPERE}>Section {sectionIndex + 1} / {FICHE_SECTIONS.length}</div>
         <PatientPageHeader
           title="Fiche de renseignements"
           subtitle="Ces informations aident votre praticien à personnaliser votre suivi."
@@ -293,7 +341,9 @@ function FicheForm({ token, idPatient, email, onDone }: {
       )}
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
-      <SaveStatusIndicator savedAt={savedAt} error={saveError} />
+      {sessionExpiree && <div><LienReconnexion /></div>}
+      {/* Q6b : « restent conservées » seulement si la dernière écriture a réussi. */}
+      <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
 
       <div className="flex gap-3">
         {sectionIndex > 0 && (
@@ -309,7 +359,7 @@ function FicheForm({ token, idPatient, email, onDone }: {
           disabled={isLastSection ? (loading || requisManquant || !mentions) : sectionRequisManquant}
           loading={loading} loadingLabel="Enregistrement…"
         >
-          {isLastSection ? 'Continuer vers l’anamnèse' : 'Suivant →'}
+          {isLastSection ? BOUTON_VERS_SITUATION : 'Suivant →'}
         </PatientButton>
       </div>
     </PatientCard>
@@ -388,8 +438,10 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Heure de la dernière écriture RÉUSSIE du brouillon ; `null` après un échec.
   const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('anamnese', idPatient));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const premierRendu = useRef(true);
   // [[D-335]] §3 (BP-13) : sous `WN_PHYSIO_TRAITEMENTS`, les groupes
   // « Médicaments en cours » et « Compléments alimentaires en cours » sont
@@ -415,8 +467,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    writeWizardDraft('anamnese', idPatient, { valeurs, motif });
-    setSavedAt(readWizardDraftSavedAt('anamnese', idPatient));
+    setSavedAt(writeWizardDraft('anamnese', idPatient, { valeurs, motif }));
   }, [valeurs, motif, idPatient]);
 
   const setChamp = (id: string, v: string | string[]) => setValeurs(prev => ({ ...prev, [id]: v }));
@@ -452,6 +503,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   const soumettre = async () => {
     setError('');
     setSaveError(undefined);
+    setSessionExpiree(false);
     setLoading(true);
     try {
       const res = await fetch('/api/portail/valider', {
@@ -461,6 +513,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         // les groupes remplacés.
         body: JSON.stringify({ token, email, anamnese: physioOuvert ? sansGroupesRemplaces(valeurs) : valeurs, motif }),
       });
+      setSessionExpiree(res.status === 401);
       const data = (await res.json()) as { ok: boolean; error?: string; premiereAssignation?: string | null };
       if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
       else { clearWizardDraft('anamnese', idPatient); onDone(data.premiereAssignation ?? null); }
@@ -506,9 +559,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
   return (
     <PatientCard as="form" onSubmit={handleSectionSubmit} className="space-y-6">
       <div>
-        <div className="text-xs text-muted-foreground/70 mb-2">Section {sectionIndex + 1} / {ANAMNESE_SECTIONS.length}</div>
+        <div className={CLASSE_REPERE}>Section {sectionIndex + 1} / {ANAMNESE_SECTIONS.length}</div>
         <PatientPageHeader
-          title="Anamnèse"
+          title={TITRE_SITUATION}
           subtitle="Décrivez votre situation. Ces éléments complètent vos questionnaires et guideront votre accompagnement."
         />
       </div>
@@ -578,7 +631,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
       </fieldset>
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
-      <SaveStatusIndicator savedAt={savedAt} error={saveError} />
+      {sessionExpiree && <div><LienReconnexion /></div>}
+      {/* Q6b : « restent conservées » seulement si la dernière écriture a réussi. */}
+      <SaveStatusIndicator savedAt={savedAt} error={savedAt ? saveError : undefined} textes={TEXTES_BROUILLON_ENTREE} />
 
       <div className="flex gap-3">
         {sectionIndex > 0 && (
@@ -605,8 +660,9 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
 function DoneScreen({ token, premiereAssignation }: { token: string; premiereAssignation: string | null }) {
   return (
     <PatientCard maxWidth="md" className="text-center">
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-status-success/10 mb-4">
-        <svg className="w-8 h-8 text-status-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Pastille sable, coche pétrole (prototype PAT-2, U09). */}
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-lien-sand mb-4">
+        <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
@@ -623,7 +679,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
           cet écran fermait la porte du hub — précisément l'écran qui sait dire
           « transmis / en préparation / restitution disponible ». Le libellé
           ci-dessus ne promet plus rien à sa place. */}
-      <a href={`/portail/${token}/questionnaires`} className="inline-block py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">
+      <a href={`/portail/${token}/questionnaires`} className={patientButtonClassName('primary')}>
         Accéder à mon parcours
       </a>
     </PatientCard>
