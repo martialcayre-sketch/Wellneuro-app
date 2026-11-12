@@ -5,6 +5,12 @@ import { Badge } from '@/components/ui/Badge';
 import { lireValeurQuantitative, unitesConcordent, type MotifEcart } from '@/lib/biology-library/import/valeurLue';
 import type { CompteRenduLu, LigneLue } from '@/lib/biology-library/import/lecture';
 import type { AnalyteChoix } from './SaisieBilan';
+import {
+  BlocContextePrelevement,
+  BROUILLON_INCONNU,
+  contexteDuBrouillon,
+  type BrouillonContexte,
+} from '@/components/biologie/BlocContextePrelevement';
 import { FaitsDuLaboratoire } from './FaitsDuLaboratoire';
 import type { ActeLectureLu } from '@/lib/biology-library/import/acteLecture';
 import { etatLecture } from '@/lib/biology-library/import/lectureImport';
@@ -285,6 +291,13 @@ export function ImportCompteRenduPanel({
   const [fichier, setFichier] = useState<File | null>(null);
   const [saisies, setSaisies] = useState<Record<string, Saisie>>({});
   const [refusParLigne, setRefusParLigne] = useState<Record<string, string>>({});
+  // Le contexte du prélèvement ([[D-497]] §4) : un par compte rendu, remis à
+  // « inconnu » quand le praticien en ouvre un autre.
+  const [brouillonContexte, setBrouillonContexte] = useState<BrouillonContexte>(() => ({ ...BROUILLON_INCONNU }));
+  const idDetail = detail?.id ?? null;
+  useEffect(() => {
+    setBrouillonContexte({ ...BROUILLON_INCONNU });
+  }, [idDetail]);
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -626,13 +639,18 @@ export function ImportCompteRenduPanel({
       setErreur('Aucune ligne n’est décidée.');
       return;
     }
+    const contexte = contexteDuBrouillon(brouillonContexte);
+    if (contexte === null) {
+      setErreur('Le contexte du prélèvement attend une valeur : un champ « Renseigné » n’a pas de nombre lisible.');
+      return;
+    }
 
     setOccupe(true);
     try {
       const response = await fetch('/api/praticien/biologie/import/decisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient, idImport: courant.id, decisions }),
+        body: JSON.stringify({ idPatient, idImport: courant.id, decisions, contexte }),
       });
       const payload = await lireJson<{
         ok: boolean;
@@ -1010,7 +1028,10 @@ export function ImportCompteRenduPanel({
                   d'elles, ou plus rien à trancher, les déplie. */}
               {lignesPretes.length > 0 && (
                 <details
-                  key={pretesOuvertes ? 'deplie' : 'replie'}
+                  // Clés PRÉFIXÉES : trois `<details>` frères dans le même
+                  // fragment ; « deplie »/« replie » nus s'y heurtaient, et un
+                  // rendu de plus dupliquait les lignes (BP-05, D-497).
+                  key={pretesOuvertes ? 'pretes-deplie' : 'pretes-replie'}
                   open={pretesOuvertes}
                   className="mt-3"
                 >
@@ -1039,7 +1060,7 @@ export function ImportCompteRenduPanel({
                   « Écarter » pré-coché tant que sa jumelle part validée. */}
               {lignesSecondeUnite.length > 0 && (
                 <details
-                  key={secondesOuvertes ? 'deplie' : 'replie'}
+                  key={secondesOuvertes ? 'secondes-deplie' : 'secondes-replie'}
                   open={secondesOuvertes}
                   className="mt-3"
                 >
@@ -1070,7 +1091,7 @@ export function ImportCompteRenduPanel({
                   la restitution que l'acte de lecture atteste ([[D-268]]). */}
               {lignesDecidees.length > 0 && (
                 <details
-                  key={lignesProposees.length > 0 ? 'replie' : 'deplie'}
+                  key={lignesProposees.length > 0 ? 'decidees-replie' : 'decidees-deplie'}
                   open={lignesProposees.length === 0}
                   className="mt-3"
                 >
@@ -1096,9 +1117,19 @@ export function ImportCompteRenduPanel({
                 </details>
               )}
               {lignesProposees.length > 0 && (
-                <button type="button" onClick={() => void enregistrer()} disabled={occupe} className={`${BOUTON_PRIMAIRE} mt-3`}>
-                  Enregistrer les décisions
-                </button>
+                <>
+                  {/* [[D-497]] §4 : le contexte du prélèvement, saisi une fois
+                      et écrit sur chaque mesure validée par cet envoi. */}
+                  <BlocContextePrelevement
+                    idPatient={idPatient}
+                    valeur={brouillonContexte}
+                    onChange={setBrouillonContexte}
+                    disabled={occupe}
+                  />
+                  <button type="button" onClick={() => void enregistrer()} disabled={occupe} className={`${BOUTON_PRIMAIRE} mt-3`}>
+                    Enregistrer les décisions
+                  </button>
+                </>
               )}
             </>
           )}

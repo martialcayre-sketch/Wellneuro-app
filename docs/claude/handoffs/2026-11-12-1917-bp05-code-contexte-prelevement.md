@@ -1,0 +1,113 @@
+# Handoff — 2026-11-12 — BP-05 (LOT-05, F20) : code consommateur du contexte de prélèvement (D-497 §8.3, PR 3)
+
+## Branche et état Git
+
+`feat/bp05-code-contexte-prelevement` tourne en session concurrente, dans le worktree `.claude/worktrees/b-bp05-migration`. Elle est créée sur `origin/main` après le merge de #2018 (c85853730), puis avancée par `--ff-only` jusqu'à `36f3bee21`. La PR ne contient ni migration ni `schema.prisma`, et ne touche pas `web/src/lib/clinical/**` : aucune release-db n'est due. Régime : déclarée « prête @<sha> » à l'intégrateur.
+
+## Objectif
+
+Écrire le code qui se sert de la table `contextes_prelevement`, appliquée et constatée par conteneur le 2026-11-12 :
+- recueil du contexte à la saisie d'un bilan et à la validation d'un import ;
+- deux absences distinctes à l'écran ;
+- motifs de la série ;
+- effacement sans tolérance ;
+- ramassage E2E en une transaction ;
+- texte patient publié dans le même déploiement ;
+- aucun drapeau neuf.
+
+## Décisions prises
+
+- **Arbitrage du responsable du 2026-11-12** : Conditions v6 et e-mail `conditions_utilisation@6` en **versions courtes**. Leurs textes sont en B1 et B2 de `docs/claude/propositions/2026-11-12-bp05-texte-patient/README.md` ; l'énumération reste dans le texte patient complet (v23).
+- **Arbitrage du responsable du 2026-11-12** : BP-13 en **affichage en ligne**.
+  - Les déclarations du dossier s'affichent à côté du bloc, en lecture seule, datées, sous le drapeau BP-13 (le 503 masque l'encart).
+  - Elles ne préremplissent rien. Aucune n'est recopiée ni lue comme l'état au prélèvement.
+- La saisie unitaire neuve écrit une ligne à « inconnu » (D-497 §4 : « une ligne ajoutée plus tard reçoit sa propre ligne »). Une correction n'en écrit pas : elle garde le contexte de sa racine.
+- Le moment de la journée vaut « inconnu » tant qu'aucune heure n'est lue sur un compte rendu, saisie praticien comprise (D-497 §3).
+- Champs comparés sans conversion : 24 h et 1 jour sont « différents ».
+- Le bloc vit dans `web/src/components/biologie/`, sous la frontière BioFlow (D-306), avec une entrée motivée dans les deux listes blanches (importeurs de `biology-library`, lecteurs BP-13 de D-335 §8).
+- `publieLe` vaut **2026-11-12** pour la v23, les conditions v6 et la @6.
+
+## Fichiers modifiés
+
+- Module pur `web/src/lib/biology-library/contextePrelevement.ts` et son banc (neufs). `saisieMessages.ts` (`contexte_invalide`).
+- Écritures :
+  - `api/praticien/biologie/resultats/bilan/route.ts` ;
+  - `resultats/route.ts` (écriture unitaire et lecture de la tête, `heureLue`) ;
+  - `lib/biology-library/import/decisions.ts` et `import/decisions/route.ts`.
+- Série : `serieParAnalyte.ts` (contexte de la racine, `contexte_non_renseigne` conditionné, `contextes_differents`).
+- Écrans :
+  - `components/biologie/BlocContextePrelevement.tsx` (neuf) ;
+  - `patient-cockpit/SaisieBilan.tsx`, `EstimeMesurePanel.tsx` (`ContexteDuPoint`) ;
+  - `ImportCompteRenduPanel.tsx`. **Correctif d'un défaut antérieur** : les clés des trois `<details>` frères sont préfixées. Le rendu de plus du `useEffect` dupliquait sinon les lignes.
+- Effacement : `lib/patient/effacement.ts` et son banc (la tolérance `to_regclass` est retirée).
+- Banc à vraie base : `web/scripts/banc-decisions-atomicite-prisma.test.ts` (ménage des contextes, deux assertions).
+- E2E : `web/e2e/helpers/db.ts` (`nettoyerResultatsBiologiques` en une seule `$transaction`, contextes d'abord) et `biologie-saisie-resultats.spec.ts` (cas neuf « À jeun : oui »).
+- Texte patient :
+  - `lib/trust/contenus/registre.ts` (v23, conditions v6) ;
+  - `lib/correspondance/registreGabarits.ts` (@6) ;
+  - les bancs des deux.
+- Bancs mis à jour :
+  - gardes `importeursBiologyLibrary.guard`, `lecteursPhysioTraitements.guard` ;
+  - fiche LOT-05 : rubrique « Reste après la PR 3 » ;
+  - `doctrine/seuilsLitterauxMotives.guard` : exemption motivée de `v <= 2147483647`, la capacité du type INTEGER et non une borne clinique (le premier T2 a rougi sur elle) ;
+  - routes, série, panneaux.
+- Docs :
+  - proposition (B1, B2, ancre précisée) ;
+  - `docs/DOSSIER_RGPD.md` (état de la migration, publication) ;
+  - fiche LOT-05 (statut) ;
+  - `plan-journal/F20/2026-11-12-03-…` ;
+  - `changelog.d/2026-11-12-bp05-code-contexte-prelevement.md` ;
+  - ce handoff.
+
+## Validations exécutées
+
+- Vitest ciblé sur les dossiers touchés : 3176 verts, 28 sautés.
+- `npx tsc --noEmit` passe (code 0).
+- T1 rapide passe (16 étapes vertes).
+- Premier T2 : rouge sur un seul test (garde des seuils littéraux), corrigé par l'exemption motivée. Second T2 arrêté avant les E2E, pour laisser passer les correctifs de la revue.
+- `wn-reviewer` (P1) sur le diff non commité : **GO sous conditions** (T1, T2 et T3 verts ; dette routée ; constat 1 tranché). Verdicts :
+  - **constat 1**, une série sans aucun motif : **corrigé**. Le pied dit « aucun motif connu de non-comparabilité ; la série n'est pas déclarée comparable » (D-497 §5, DC-24), avec un banc ;
+  - **constat 2**, un contexte recopié à tort : **corrigé**. Le brouillon repart à « inconnu » si la date change après un succès, deux bancs. La dette « écran de correction » est **routée** à LOT-05 (« Reste après la PR 3 ») et au fragment F20 03 ;
+  - **constat 3**, aucune preuve sur une vraie base pour l'import et la saisie unitaire :
+    - **import corrigé** : T3 l'a révélé. Le banc à vraie base `scripts/banc-decisions-atomicite-prisma.test.ts` appelle `deciderLignes`, et son ménage rougissait (FK `contextes_prelevement_id_resultat_fkey`) ;
+    - ce banc supprime maintenant les contextes avant les résultats, et vérifie deux choses : une course annule aussi le contexte, et le témoin écrit une ligne à « inconnu » sur sa racine, ce qui prouve le trigger ;
+    - **saisie unitaire, écartée avec motif** : même forme imbriquée que le bilan, que l'E2E prouve ;
+  - **constat 4**, encart BP-13 sur une forme inattendue : **corrigé**. Filtrage élément par élément, deux bancs (élément malformé, fetch rejeté) ;
+  - **nitpicks** :
+    - `useId` pour le titre de l'encart : corrigé ;
+    - `console.error` sans valeur sur une tête illisible : corrigé ;
+    - renvoi §3 → §2 dans l'exemption : corrigé ;
+    - message absent sous un champ « Renseigné » vide : écarté, le bouton reste fermé et le champ porte `aria-invalid`, comme les lignes du bilan ;
+    - « heure lue » après une heure modifiée à la validation : écarté, D-497 §3 lit `heureLue` et ne prévoit pas cette nuance ;
+  - **questions** :
+    - Q1 : traitée par le constat 1 ;
+    - Q2 : la validation de B1 et B2 est la réponse du responsable en session (question à options du 2026-11-12), consignée dans la proposition ;
+    - Q3 : la date `publieLe` se vérifie au moment de déclarer la PR « prête » (problème ouvert ci-dessous).
+- Après les correctifs : 2471 tests verts sur les dossiers touchés.
+- T1 complet et T3 : voir la PR.
+
+## Problèmes ouverts
+
+- **`publieLe` = 2026-11-12** : si le merge tombe un autre jour, il faut ajuster la date de la v23, des conditions v6 et de la @6. Les empreintes du registre et du gabarit couvrent leur contenu et sont à recalculer dans ce cas, avec les bancs.
+- **L'envoi de l'e-mail `conditions_utilisation@6` est le geste du responsable**, après le déploiement.
+- Corriger un contexte (remplacer la tête) n'a **pas encore d'écran**. La base l'accepte, aucun code ne l'écrit. Dette routée à LOT-05.
+- Libellé du pied de série vide (constat 1) : le responsable peut l'amender.
+- Le bloc n'apparaît ni dans la saisie unitaire ni dans la correction (périmètre de D-497 §4).
+- Aucune lecture du contexte dans l'export ni dans la synthèse (hors périmètre de la fiche, part B de H95).
+
+## Prochaine action exacte
+
+1. T3 en entier sur la tête, puis commit (T1 complet) et PR `--body-file`.
+2. `node scripts/wn-attendre-ci.mjs <N>` en fond.
+3. `wn-reviewer` (P1 : écritures en base, effacement, texte patient), puis la revue PR-Agent prouvée (`wn-revue-pr-agent.mjs <N>` → 0), sinon `wn-reviewer` sur la tête. Un verdict pour chaque remarque.
+4. Déclarer « prête @<sha> » à l'intégrateur.
+5. Après le déploiement : le responsable envoie la @6.
+
+## Interdits encore actifs
+
+- Jamais `npx prisma format` ; ni migration ni `schema.prisma` dans ce lot.
+- Aucune borne, catégorie ni comparaison à une consigne de `biology_preanalytics` ; aucun verdict de conformité ; le contexte n'est jamais « complet ».
+- Aucune déclaration BP-13 recopiée ni interprétée comme l'état au prélèvement.
+- Production en lecture seule, par `scalingo run -d`.
+- Aucun seed ni E2E sur un dossier réel ; fixtures Sophie Nicola, Jennifer Martin, Michel Dogné.
+- Ne pas toucher à t71b (worktree `t71b-cadrage`), t51, r4_01, #2006 (BP-17), t78.

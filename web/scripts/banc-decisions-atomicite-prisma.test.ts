@@ -87,9 +87,15 @@ async function poserExtraction(c: pg.Client, cas: string) {
 
 async function etat(c: pg.Client, x: { cr: string; ligne: string }) {
   const resultats = await c.query('SELECT count(*)::int AS n FROM resultats_biologiques WHERE id_patient = $1', [PATIENT]);
+  const contextes = await c.query('SELECT count(*)::int AS n FROM contextes_prelevement WHERE id_patient = $1', [PATIENT]);
   const ligne = await c.query('SELECT statut, id_resultat FROM lignes_biologiques_candidates WHERE id = $1', [x.ligne]);
   const doc = await c.query('SELECT contenu IS NOT NULL AS present, motif_purge FROM comptes_rendus_biologiques WHERE id = $1', [x.cr]);
-  return { resultats: resultats.rows[0].n as number, ligne: ligne.rows[0], document: doc.rows[0] };
+  return {
+    resultats: resultats.rows[0].n as number,
+    contextes: contextes.rows[0].n as number,
+    ligne: ligne.rows[0],
+    document: doc.rows[0],
+  };
 }
 
 /**
@@ -159,6 +165,7 @@ async function main() {
     assert.equal(issue1.ok === false && issue1.reason, 'ligne_deja_traitee', `1 : ${JSON.stringify(issue1)}`);
     const apres1 = await etat(c, course);
     assert.equal(apres1.resultats, 0, '1 : un résultat reste au dossier — il a été écrit hors de la transaction.');
+    assert.equal(apres1.contextes, 0, '1 : un contexte de prélèvement reste au dossier ([[D-497]] §4).');
     assert.deepEqual(apres1.ligne, { statut: 'ecartee', id_resultat: null }, '1 : la ligne ne porte pas le seul écart de l’autre session.');
     assert.deepEqual(apres1.document, { present: true, motif_purge: null }, '1 : le document a été touché.');
     console.log('ok 1 - un refus après la création annule tout : aucun résultat, ligne non rattachée, document intact');
@@ -169,6 +176,19 @@ async function main() {
     assert.deepEqual(issue2, { ok: true, validees: 1, ecartees: 0, documentPurge: true }, `2 : ${JSON.stringify(issue2)}`);
     const apres2 = await etat(c, temoin);
     assert.equal(apres2.resultats, 1, '2 : le résultat du témoin manque.');
+    // Le contexte passe le trigger de la base (dossier, racine, praticien du
+    // dossier) : une ligne, sur la racine, à « inconnu » faute de contexte reçu.
+    const ctx = await c.query(
+      `SELECT cp.id_resultat = l.id_resultat AS sur_la_racine, cp.a_jeun, cp.jour_cycle_etat, cp.id_ligne_remplacee
+       FROM contextes_prelevement cp JOIN lignes_biologiques_candidates l ON l.id = $1
+       WHERE cp.id_patient = $2`,
+      [temoin.ligne, PATIENT],
+    );
+    assert.deepEqual(
+      ctx.rows,
+      [{ sur_la_racine: true, a_jeun: 'inconnu', jour_cycle_etat: 'inconnu', id_ligne_remplacee: null }],
+      `2 : contexte de prélèvement — ${JSON.stringify(ctx.rows)}`,
+    );
     assert.equal(apres2.ligne.statut, 'validee');
     assert.ok(apres2.ligne.id_resultat, '2 : la ligne validée ne désigne aucun résultat.');
     assert.deepEqual(apres2.document, { present: false, motif_purge: 'lignes_decidees' });
@@ -185,6 +205,9 @@ async function main() {
       await c.query('DELETE FROM lignes_biologiques_candidates WHERE id_patient = $1', par);
       await c.query('DELETE FROM imports_biologiques WHERE id_patient = $1', par);
       await c.query('DELETE FROM comptes_rendus_biologiques WHERE id_patient = $1', par);
+      // Les contextes avant leurs résultats, dans la même transaction (garde
+      // différée de [[D-497]] : un contexte ne part qu'avec son résultat).
+      await c.query('DELETE FROM contextes_prelevement WHERE id_patient = $1', par);
       await c.query('DELETE FROM resultats_biologiques WHERE id_patient = $1', par);
       await c.query('DELETE FROM patients WHERE id_patient = $1', par);
       await c.query('DELETE FROM biology_analytes WHERE code = $1', [ANALYTE]);

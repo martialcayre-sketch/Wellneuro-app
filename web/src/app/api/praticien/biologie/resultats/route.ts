@@ -19,6 +19,12 @@ import type { StatutPose } from '@/lib/biology-library/statutPoseListe';
 import { lireValeurQuantitative, unitesConcordent } from '@/lib/biology-library/import/valeurLue';
 import { MESSAGES_REFUS_SAISIE, signature } from '@/lib/biology-library/saisieMessages';
 import {
+  CONTEXTE_INCONNU,
+  colonnesContexte,
+  validerContextePrelevement,
+  type ContextePrelevementSaisi,
+} from '@/lib/biology-library/contextePrelevement';
+import {
   serieParAnalyte,
   type MotifNonComparabilite,
   type PositionDansLeSuivi,
@@ -191,6 +197,13 @@ export type PointDeSerieServi = {
   entreeLe: string;
   correctionLe: string | null;
   position: PositionDansLeSuivi;
+  /**
+   * Le contexte de prélèvement de la racine du fil ([[D-497]] §4), ou `null` :
+   * « contexte de prélèvement non recueilli » — distinct d'un champ « inconnu ».
+   */
+  contexte: ContextePrelevementSaisi | null;
+  /** L'heure de `preleveLe` a été lue à l'import ; sinon le moment est « inconnu » (§3). */
+  heureLue: boolean;
 };
 
 export type SerieServie = {
@@ -251,9 +264,30 @@ type LigneLue = {
     valeurLue: string;
     commentaireLu: string | null;
     commentaireNonTranscrit: boolean;
+    heureLue: boolean;
     import: { laboratoireLu: string | null };
   } | null;
+  /** La tête du contexte de prélèvement (au plus une, index unique partiel). */
+  contextesPrelevement: Array<Record<keyof ContextePrelevementSaisi, unknown>>;
 };
+
+/**
+ * La tête lue, rejugée par la forme du module : la base l'a déjà jugée
+ * (CHECK), et une ligne que le module refuserait serait une base abîmée —
+ * elle se dit alors « non recueilli », jamais une valeur inventée.
+ */
+function contexteDeLaLigne(ligne: LigneLue): ContextePrelevementSaisi | null {
+  const tete = ligne.contextesPrelevement[0];
+  if (!tete) return null;
+  const verdict = validerContextePrelevement(tete);
+  if (!verdict.ok) {
+    // Une tête que la base a acceptée mais que le module refuse : dérive de
+    // forme à voir, jamais silencieuse. Aucune valeur au journal.
+    console.error('[biologie/resultats GET] contexte de prélèvement illisible — servi « non recueilli »');
+    return null;
+  }
+  return verdict.contexte;
+}
 
 /** Le commentaire de la ligne lue, ou le silence. */
 function commentaireDeLaLigne(ligne: LigneLue): ResultatConsigne['commentaireLaboratoire'] {
@@ -342,7 +376,27 @@ const CHAMPS_LUS = {
       valeurLue: true,
       commentaireLu: true,
       commentaireNonTranscrit: true,
+      // [[D-497]] §3 : le moment de la journée est l'heure lue, pas un champ.
+      heureLue: true,
       import: { select: { laboratoireLu: true } },
+    },
+  },
+  // [[D-497]] §4 : la TÊTE du contexte, celle qu'aucune ligne ne remplace —
+  // une au plus par racine (index unique partiel). Une correction n'en porte
+  // pas : la série lit celle de sa racine.
+  contextesPrelevement: {
+    where: { remplacePar: null },
+    select: {
+      aJeun: true,
+      supplementationArretee: true,
+      traitementInterferent: true,
+      episodeInflammatoire: true,
+      grossesse: true,
+      jourCycleEtat: true,
+      jourCycle: true,
+      delaiDernierePriseEtat: true,
+      delaiDernierePrise: true,
+      delaiDernierePriseUnite: true,
     },
   },
 } as const;
@@ -391,6 +445,8 @@ export async function GET(req: Request) {
         valeur: l.valeur.toFixed(),
         unite: l.unite,
         laboratoire: l.ligneCandidate?.import.laboratoireLu ?? null,
+        contexte: contexteDeLaLigne(l),
+        heureLue: l.ligneCandidate?.heureLue ?? false,
       })),
       actives,
       joursZero,
@@ -406,6 +462,8 @@ export async function GET(req: Request) {
         entreeLe: point.entreeLe,
         correctionLe: point.correctionLe,
         position: point.position,
+        contexte: point.contexte,
+        heureLue: point.heureLue,
       })),
     }));
 
@@ -672,6 +730,22 @@ export async function POST(req: Request) {
           // Le maillon. `null` en saisie neuve — c'est LUI qui décide si la
           // ligne tombe sous l'unicité partielle ou en sort.
           supersedesResultatId: cible?.id ?? null,
+          // LE CONTEXTE DU PRÉLÈVEMENT ([[D-497]] §4) : une racine neuve,
+          // saisie à l'unité, reçoit sa propre ligne de contexte, à
+          // « inconnu » — jamais aucune, ce qui la dirait « non recueilli »
+          // comme un résultat antérieur à BP-05. Une CORRECTION n'en écrit
+          // pas : le contexte reste celui de sa racine (la base le refuserait).
+          ...(cible
+            ? {}
+            : {
+                contextesPrelevement: {
+                  create: {
+                    ...colonnesContexte(CONTEXTE_INCONNU),
+                    patient: { connect: { idPatient } },
+                    praticienEmail: garde.email,
+                  },
+                },
+              }),
         },
         select: CHAMPS_LUS,
       });

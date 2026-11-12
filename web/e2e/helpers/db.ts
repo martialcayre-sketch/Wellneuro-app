@@ -1247,17 +1247,27 @@ export async function nettoyerProtocoleEtArbitrages(
  * Les statuts posés sur ces mesures partent AVANT elles ([[D-322]], F58) :
  * leur clé vers le résultat est en RESTRICT, et un statut posé par un E2E
  * ferait échouer le ramassage entier.
+ *
+ * Les contextes de prélèvement aussi ([[D-497]], BP-05), et dans la MÊME
+ * transaction que leurs résultats : la base refuse, au commit, la
+ * suppression d'un contexte dont le dossier et le résultat survivent. Deux
+ * appels séparés seraient refusés au premier (N1 de la revue de #2018).
  */
 export async function nettoyerResultatsBiologiques(
   idPatient: string,
   depuis: Date,
 ): Promise<void> {
-  await prisma.statutPoseResultatBiologique.deleteMany({
-    where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
-  });
-  await prisma.resultatBiologique.deleteMany({
-    where: { idPatient, saisiLe: { gte: depuis } },
-  });
+  await prisma.$transaction([
+    prisma.contextePrelevement.deleteMany({
+      where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
+    }),
+    prisma.statutPoseResultatBiologique.deleteMany({
+      where: { idPatient, resultat: { saisiLe: { gte: depuis } } },
+    }),
+    prisma.resultatBiologique.deleteMany({
+      where: { idPatient, saisiLe: { gte: depuis } },
+    }),
+  ]);
 }
 
 /**

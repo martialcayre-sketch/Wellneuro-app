@@ -288,7 +288,8 @@ const EXEMPTIONS: Record<string, string> = {
   'src/lib/patient/cycleDeVie.ts\tannee >= 1900': 'plage d’année calendaire plausible, garde de parsing',
   'src/lib/patient/cycleDeVie.ts\tannee <= 2099': 'plage d’année calendaire plausible, garde de parsing',
   'src/lib/supplement-library/gouvernance.ts\tnombre > 1000': 'borne de saisie du poids d’une règle (entier de pondération), arbitrable par le praticien ligne à ligne',
-  'src/lib/rag/verification.ts\tsimilarity >= 0.999999': 'tolérance numérique d’une comparaison de vecteurs — identité à l’epsilon près, pas un seuil de décision',
+  'src/lib/biology-library/contextePrelevement.ts\tv <= 2147483647': 'capacité du type INTEGER de PostgreSQL (jour du cycle, délai) : au-delà la base refuserait ; aucune borne haute clinique ([[D-497]] §2)',
+  'src/lib/rag/verification.ts\tsimilarity >= 0.999999':'tolérance numérique d’une comparaison de vecteurs — identité à l’epsilon près, pas un seuil de décision',
 
   // — Bornes de COUVERTURE et de CHARGE. Elles ne cotent rien : elles décident
   //   qu'il n'y a pas assez de matière pour émettre, ou qu'un cadre est plein.
