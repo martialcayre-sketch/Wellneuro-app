@@ -19,7 +19,6 @@ import {
   compterAssociations,
   FENETRE,
   jugerJournal,
-  lignesEnCause,
   lireRubriques,
   racinesDesCodes,
   SOURCE_RUBRIQUES,
@@ -82,16 +81,6 @@ test("la forme occultée de D-502 et D-504 passe", () => {
     0,
   );
   assert.equal(compterAssociations(`  - **Étiquetage délégué** : \`${ID}\` étiqueté au besoin 2, rubrique occultée (\`D-502\`)`, CODES), 0);
-});
-
-test("les lignes occultées par D-502 (trois) et D-504 (une) passent dans l'arbre courant", () => {
-  const lire = (f) => fs.readFileSync(path.join(RACINE, JOURNAL, f), "utf8");
-  const a = lignesEnCause(lire("H15/2026-11-11-02-relecture-87-claims-polyphenols.md"), CODES);
-  const b = lignesEnCause(lire("H15/2026-11-12-03-preuve-besoin-2-achevee.md"), CODES);
-  const c = lignesEnCause(lire("H15/2026-11-12-01-iom-2000-relecture-0649-005.md"), CODES);
-  for (const l of [6, 10]) assert.ok(!a.includes(l), `l.${l}`);
-  assert.ok(!b.includes(11));
-  assert.ok(!c.includes(2));
 });
 
 function racineFabriquee(fragments) {

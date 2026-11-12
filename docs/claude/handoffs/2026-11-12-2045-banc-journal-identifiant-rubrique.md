@@ -44,7 +44,12 @@ Lot 3 des suites des sept questions du 2026-11-12 (Q3 bis, `D-502` §4) : un ban
 - `node --test` banc + `parite-check-ci` + `ci-invariants` : 74/74.
 - `node scripts/wn-plan-journal-rubriques.mjs` sur l'arbre : `exit=0`.
 - T1 (`check:rapide`, puis `npm run check`) : vert.
-- T2 (`test:worktree -- --fast`) : voir la PR.
+- T2 (`test:worktree -- --fast`) : vert en 17 min 59 s (Vitest, contrats SQL, bancs à deux sessions, build, E2E).
+- Revue PR-Agent sur d150f23d (`wn-revue-pr-agent.mjs` = 0) : une remarque, corrigée. Le test qui lisait trois
+  fragments réels de H15 par leur nom est retiré : un retrait d'urgence (`D-371` §3) l'aurait cassé, et l'étape
+  bloquante du CI juge déjà l'arbre ; les formes occultées restent couvertes par les fixtures. Avant ce correctif,
+  `origin/main` a été fusionné dans la branche, sur arbitrage du responsable (garde de fraîcheur, aucun fichier
+  commun).
 
 ## Problèmes ouverts
 
