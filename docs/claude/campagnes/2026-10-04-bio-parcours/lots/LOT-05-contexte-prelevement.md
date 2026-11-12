@@ -104,6 +104,9 @@ Détail des formes, du rattachement et du contrat : [[D-497]] §2 à §6.
 - « Inconnu » par défaut à chaque champ ; « non recueilli » distinct
   d'« inconnu » à l'écran.
 - Migration constatée par conteneur ; code déployé ; texte patient publié.
+- Tolérance de `effacement.ts` à la table absente (arbitrage du 2026-11-12,
+  PR 2 #2018) retirée par la PR 3, avec son cas de banc ; ramassage E2E des
+  résultats en une seule transaction (contextes, puis résultats).
 
 ## Dépendances
 

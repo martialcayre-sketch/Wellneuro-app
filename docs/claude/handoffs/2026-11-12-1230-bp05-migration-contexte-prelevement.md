@@ -49,6 +49,7 @@
 - La revue de bot doit porter sur la tête (CodeRabbit, sinon Copilot si son quota le permet, sinon PR-Agent prouvé). Tout constat de migration remonte en arbitrage.
 - Le créneau de merge est choisi par le responsable. Il faut la sonde `wn-sonde-release-db` à 0, puis la release-db approuvée dans la foulée.
 - **Arbitrage du responsable du 2026-11-12** (constat PR-Agent sur #2018) : l'effacement est rendu tolérant à la table absente. Il lit `to_regclass('public.contextes_prelevement')` dans la transaction et ne touche la table que si elle existe. Attraper l'erreur ne suffirait pas, car une requête sur une table absente annule toute la transaction. Un cas est ajouté à `effacement.test.ts`. **La PR 3 retire cette tolérance** après le constat.
+- **Précaution d'exploitation** (revue `wn-reviewer` de l'écart `f23e109a`) : **ne lancer aucun effacement de dossier pendant l'exécution de la release-db**. La migration prend ses verrous sur `patients` puis `resultats_biologiques`, et un effacement toléré les prend dans l'ordre inverse : l'interblocage est possible, pendant quelques millisecondes. Si la migration est l'abandonnée, c'est P3009 au déploiement suivant, puis `migrate resolve --rolled-back` et rejeu.
 - Question de la revue, à reprendre au constat : compter en production les résultats dont `supersedes_resultat_id` vise un id absent ou forme un cycle (attendu : 0). Ces fils ne pourraient recevoir aucun contexte.
 - Risque résiduel antérieur, hors lot : `resultats_biologiques` n'a pas de garde contre l'UPDATE.
 
