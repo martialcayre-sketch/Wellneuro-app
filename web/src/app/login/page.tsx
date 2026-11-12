@@ -5,11 +5,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 
 import { messageErreurConnexion } from '@/lib/messagesErreurLogin';
+import { CLASSES_LIEN_EVITEMENT, ID_CONTENU, LIEN_EVITEMENT_PRATICIEN } from '@/lib/navigation/lienEvitementPraticien';
+import { EmpreinteMarque } from '@/components/ui/EmpreinteMarque';
 
+// Rendue hors de NavBar : la page porte son propre lien d'évitement et son
+// propre <main id="contenu"> ([[D-488]] T-16). Habillage Lien seulement
+// (PRA-2a) : le flux NextAuth, le domaine autorisé et les gardes ne changent pas.
 function EcranCentre({ children }: { children: React.ReactNode }) {
   return (
-    <div data-theme="praticien" className="min-h-screen flex items-center justify-center bg-background">
-      {children}
+    <div data-theme="praticien" className="relative min-h-screen bg-background">
+      <a href={`#${ID_CONTENU}`} className={CLASSES_LIEN_EVITEMENT}>
+        {LIEN_EVITEMENT_PRATICIEN}
+      </a>
+      <main
+        id={ID_CONTENU}
+        tabIndex={-1}
+        className="flex min-h-screen items-center justify-center px-4 py-8 focus:outline-none"
+      >
+        {children}
+      </main>
     </div>
   );
 }
@@ -30,11 +44,12 @@ function ContenuLogin() {
   }
 
   return (
-    <div className="max-w-sm w-full bg-surface rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6">
-      {/* Logo / titre */}
+    <div className="max-w-sm w-full bg-surface border border-border rounded-2xl shadow-pop p-8 flex flex-col items-center gap-6">
+      {/* Marque Empreinte : symbole, et le nom « Wellneuro » en texte, seul h1
+          de la page (prototype PRA-2, Q7). */}
       <div className="text-center">
-        <h1 className="font-display text-2xl font-bold text-primary">
-          Wellneuro
+        <h1 className="flex justify-center">
+          <EmpreinteMarque size={44} />
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Espace praticien</p>
       </div>
@@ -63,10 +78,10 @@ function ContenuLogin() {
       {/* Connexion Google */}
       <button
         onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-xl text-sm font-medium text-foreground hover:bg-muted transition"
+        className="w-full min-h-11 flex items-center justify-center gap-3 px-4 py-3 border border-control-border bg-surface rounded-xl text-sm font-medium text-foreground hover:bg-muted transition duration-fast ease-lien focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
-        {/* Icône Google SVG inline */}
-        <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+        {/* Logo de la marque Google, ses couleurs propres (prototype PRA-2, Q6). */}
+        <svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>

@@ -146,3 +146,31 @@ describe('NavBar — escamotage (D-486)', () => {
     expect(within(barre).getAllByRole('link').map((l) => l.textContent)).toEqual(['Le Fil', 'Fiches', 'Synthèses']);
   });
 });
+
+describe('NavBar — lien d’évitement (D-488 T-16, lot PRA-2a)', () => {
+  it('« Aller au contenu » est le premier arrêt de tabulation et vise un <main id="contenu"> unique', () => {
+    const { container } = rendre();
+    const evitement = screen.getByRole('link', { name: 'Aller au contenu' });
+    expect(container.querySelector('a, button, summary, input, select, textarea')).toBe(evitement);
+    expect(evitement.getAttribute('href')).toBe('#contenu');
+    expect(container.querySelectorAll('#contenu')).toHaveLength(1);
+    const principal = screen.getByRole('main');
+    expect(principal.id).toBe('contenu');
+    // Focalisable par le lien, sans entrer dans le parcours de tabulation.
+    expect(principal.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('caché hors focus, visible au focus, absent de l’impression', () => {
+    rendre();
+    const classes = screen.getByRole('link', { name: 'Aller au contenu' }).className;
+    expect(classes).toMatch(/(^|\s)sr-only(\s|$)/);
+    expect(classes).toMatch(/\bfocus:not-sr-only\b/);
+    expect(classes).toMatch(/\bprint:hidden\b/);
+  });
+
+  it('même texte que le lien d’évitement du portail patient', async () => {
+    const { LIEN_EVITEMENT } = await import('@/components/patient/menu/textesMenu');
+    rendre();
+    expect(screen.getByRole('link', { name: LIEN_EVITEMENT })).toBeTruthy();
+  });
+});

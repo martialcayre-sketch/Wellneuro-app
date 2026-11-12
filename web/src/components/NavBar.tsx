@@ -10,6 +10,7 @@ import { SidebarRail } from '@/components/ui/SidebarRail';
 import { MobileBottomNav } from '@/components/ui/MobileBottomNav';
 import { EmpreinteMarque } from '@/components/ui/EmpreinteMarque';
 import { TRAIT_ICONE } from '@/components/ui/icone';
+import { CLASSES_LIEN_EVITEMENT, ID_CONTENU, LIEN_EVITEMENT_PRATICIEN } from '@/lib/navigation/lienEvitementPraticien';
 
 /** Déplié ou réduit ([[D-486]] §1) : clé inchangée. */
 const RAIL_STORAGE_KEY = 'wn-rail-expanded';
@@ -96,6 +97,11 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
   return (
     <Dialog.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
       <div className="flex min-h-screen flex-col bg-background text-foreground">
+        {/* Premier arrêt de tabulation de chaque page du tableau de bord
+            ([[D-488]] T-16) : il vise le <main id="contenu"> ci-dessous. */}
+        <a href={`#${ID_CONTENU}`} className={CLASSES_LIEN_EVITEMENT}>
+          {LIEN_EVITEMENT_PRATICIEN}
+        </a>
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border bg-surface px-4">
           <Dialog.Trigger asChild>
             <button
@@ -196,7 +202,9 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
             </div>
           </aside>
 
-          <main className="min-w-0 flex-1 pb-24 md:pb-6 lg:pb-8">{children}</main>
+          <main id={ID_CONTENU} tabIndex={-1} className="min-w-0 flex-1 pb-24 focus:outline-none md:pb-6 lg:pb-8">
+            {children}
+          </main>
         </div>
 
         <Dialog.Portal>
