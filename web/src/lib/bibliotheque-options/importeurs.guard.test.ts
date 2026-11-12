@@ -53,6 +53,12 @@ const fichiersHorsSrc = () =>
 describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)', () => {
   const sources = [...fichiersSource(), ...fichiersHorsSrc()];
 
+  // Un pragma `@jsxImportSource`, sous quelque forme que ce soit, n'importe que
+  // `<dossier>/jsx-runtime` : le dossier n'en porte aucun (contre-passe sur b1524e75).
+  it('le dossier ne porte aucun jsx-runtime', () => {
+    expect(sources.filter(f => f.startsWith(DOSSIER) && /\/jsx-(dev-)?runtime\.[^/]+$/i.test(f))).toEqual([]);
+  });
+
   it('le balayage voit le module lui-même et les entrées hors de web/src (anti-vacuité)', () => {
     expect(sources).toContain(`${DOSSIER}bibliothequeBesoin2V1.ts`);
     expect(sources).toContain(`${DOSSIER}vocabulaire.ts`);
@@ -117,12 +123,16 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       'const h = new globalThis.URL("./bibliotheque-options/vocabulaire", import.meta.url);',
       'const i = import.meta.url;',
       // AMD, pragma JSX, casse (`wn-reviewer` sur bab68ad7).
-      'define(["./bibliotheque-options/vocabulaire"], v => v);',
-      'define("m", ["./bibliotheque-options/vocabulaire"], function (v) { return v; });',
+      'define(["./bibliotheque-options/vocabulaire"], () => 0);',
+      'define("m", ["./bibliotheque-options/vocabulaire"], function () { return 1; });',
       'define(dependances, function () {});',
       'const amd = define;',
       '/** @jsxImportSource @/lib/bibliotheque-options */\nexport const C = () => <div />;',
       "import { X } from './BIBLIOTHEQUE-options/vocabulaire';",
+      // Fabrique AMD à paramètres, pragma collé à `*/` (contre-passe sur b1524e75).
+      'define(function (r) { return r("./bibliotheque-options/vocabulaire"); });',
+      'define(["require"], function (r) { return r("./bibliotheque-options/vocabulaire"); });',
+      '/*@jsxImportSource @/lib/bibliotheque-options*/\nexport const D = () => <div />;',
     ];
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
@@ -149,11 +159,15 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       ['new Worker(new URL("./bibliotheque-options/vocabulaire", (import.meta.url)));', ['./bibliotheque-options/vocabulaire']],
       ['new Worker(new (URL)("./bibliotheque-options/vocabulaire", import.meta.url));', ['./bibliotheque-options/vocabulaire']],
       ['new Worker(new URL(chemin, import.meta.url));', [IMPORT_NON_CONSTANT]],
-      ['define(["./bibliotheque-options/vocabulaire"], v => v);', ['./bibliotheque-options/vocabulaire']],
+      ['define(["./bibliotheque-options/vocabulaire"], () => 0);', ['./bibliotheque-options/vocabulaire']],
+      ['define(["./bibliotheque-options/vocabulaire"], v => v);', ['./bibliotheque-options/vocabulaire', IMPORT_NON_CONSTANT]],
       ['define("m", ["./a", "./b"], function () {});', ['./a', './b']],
       ['define({ a: 1 });', []],
       ['const o = { define: 1 }; o.define;', []],
       ['/** @jsxImportSource @/lib/bibliotheque-options */', ['@/lib/bibliotheque-options/jsx-runtime']],
+      ['/*@jsxImportSource @/lib/bibliotheque-options*/', ['@/lib/bibliotheque-options/jsx-runtime']],
+      ['define(["exports", "require"], (e, r) => r("./x"));', ['exports', 'require', IMPORT_NON_CONSTANT]],
+      ['define(function () { return 1; });', []],
     ];
     for (const [forme, attendu] of exacts) expect(specificateursSyntaxiques(forme, 'x.js'), forme).toEqual(attendu);
     // Un import constant d'un autre module n'est ni la bibliothèque ni un lecteur possible.

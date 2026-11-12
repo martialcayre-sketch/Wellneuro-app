@@ -116,6 +116,10 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
     for (const brut of args) {
       const a = deballer(brut);
       if (isArrayLiteralExpression(a)) a.elements.forEach(e => argument(e));
+      // Une fabrique À PARAMÈTRES ferme le verrou : le bundler renomme le
+      // paramètre placé en face de `"require"` (ou le premier, sans tableau),
+      // et `r("x")` charge `x` (contre-passe `wn-reviewer` sur b1524e75).
+      else if (isFunctionLike(a) && a.parameters.length > 0) trouves.push(IMPORT_NON_CONSTANT);
       else if (!(isStringLiteralLike(a) || isFunctionLike(a) || isObjectLiteralExpression(a))) {
         trouves.push(IMPORT_NON_CONSTANT);
       }
@@ -124,7 +128,8 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   // `/** @jsxImportSource x */` : le compilateur importe `x/jsx-runtime`. Un
   // pragma est un commentaire, que le parseur ne rend pas : il est lu dans le
   // texte, et une prose qui le citerait fermerait le verrou (`wn-reviewer` sur #2006).
-  for (const m of source.matchAll(/@jsxImportSource\s+(\S+)/g)) trouves.push(`${m[1]}/jsx-runtime`);
+  // La valeur s'arrête avant un `*/` collé (`…options*/`, contre-passe sur b1524e75).
+  for (const m of source.matchAll(/@jsxImportSource\s+((?:(?!\*\/)\S)+)/g)) trouves.push(`${m[1]}/jsx-runtime`);
   const visiter = (n: Node): void => {
     if (isImportDeclaration(n) || isExportDeclaration(n)) {
       if (n.moduleSpecifier) argument(n.moduleSpecifier);

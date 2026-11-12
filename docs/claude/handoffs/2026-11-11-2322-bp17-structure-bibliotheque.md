@@ -225,6 +225,21 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   - Q2, écarté : un `toJSON` posé sur un tableau de renvois n'existe que par
     cast dans du code. Du JSON lu ne peut pas en porter, et ce code serait
     visible en revue.
+- Contre-passe `wn-reviewer` sur `b1524e75` : quatre correctifs sont fermés,
+  et un fuzz de 10 416 appels sur JSON muté ne lève aucune exception. Elle
+  rend pourtant BLOQUER sur deux constats :
+  - P1-A, corrigé : `define(["require"], function (r) { r("x") })` charge
+    `x`, ce que webpack confirme en compilant. Une fabrique AMD qui déclare
+    des paramètres ferme désormais le verrou.
+  - P1-B, corrigé : le motif du pragma s'arrête désormais avant un `*/`
+    collé (`…options*/`).
+  - En complément, un banc interdit tout fichier `jsx-runtime` dans le
+    dossier, ce qui couvre toute autre forme de pragma.
+  - P2-a, écarté : un `define` détourné vers un autre usage ferait un rouge
+    à arbitrer. Il n'en existe aucun aujourd'hui, et le verrou reste fermé.
+  - P2-b, routé vers la PR 4 : `module.hot.accept(x)`. Le constat a été
+    compilé en production et n'embarque rien ; il ne concerne que le
+    développement.
 
 ## Problèmes ouverts
 
