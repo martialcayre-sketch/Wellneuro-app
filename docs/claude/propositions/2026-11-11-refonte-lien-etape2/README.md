@@ -44,7 +44,7 @@ mergés.
 | `cadrage-revise.md` | delta du cadrage v3, section par section |
 | `catalogue-revise.md` | les 110 fiches du catalogue v2 : gabarit, navigation cible, lot |
 | `registre-textes.md` | textes neufs ou changés (T-nn, numérotation par famille, discontinue), à accepter mot pour mot ; inscrits par DOC-0 une fois acceptés |
-| `socle-commun.md` | DOC-0 et COM-0, seuls lots communs ; règles des deux sessions |
+| `socle-commun.md` | DOC-0, COM-0 et COM-1 (décor, après DOC-2), seuls lots communs ; règles des deux sessions |
 | `plan-praticien.md` | plan de l'Observatoire, PRA-1 à PRA-6 |
 | `plan-patient.md` | plan du Jardin, PAT-1 à PAT-7 |
 
@@ -61,6 +61,8 @@ réponses §4 ─► DOC-0 ─► COM-0 ─┬─► PRA-1 ─► PRA-3a ─► 
   partagés fichier par fichier ; leurs deux composants communs vont au socle.
 - Un besoin commun après COM-0 passe par un micro-lot `COM-n`, un seul ouvert
   à la fois (`socle-commun.md`).
+- Le décor (DOC-2, [[D-481]] §1 bis) passe par COM-1, la primitive
+  `LienDecor` ; PAT-3b, signature du hub, suit PAT-3 et COM-1.
 - Les numéros de décision sont tous pris par DOC-0 : aucune des deux
   sessions n'en prend, et elles ne peuvent donc pas se croiser au registre.
 - Le découpage des fichiers vient des imports directs, relus au commit

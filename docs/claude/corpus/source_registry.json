@@ -16627,5 +16627,31 @@
     "requiredAction": "Extraits ciblés ingérés (besoin 2, polyphénols et antioxydants, lot LOT_056_2026-11-11) ; claims en attente de la signature du responsable",
     "comment": "Source externe, lignes directrices publiées par l'OMS ; localisation au registre externe. Droits : © OMS 2019, licence CC BY-NC-SA 3.0 IGO (usage non commercial) ; extraits courts mot pour mot, usage interne, autorisation à vérifier.",
     "auditDate": "2026-11-11"
+  },
+  {
+    "sourceId": "WN-SRC-0653",
+    "title": "Institute of Medicine (2000). Dietary Reference Intakes for Vitamin C, Vitamin E, Selenium, and Carotenoids. Washington, DC : The National Academies Press (doi:10.17226/9810)",
+    "corpus": "SOURCES_EXTERNES",
+    "documentType": "Rapport d'agence",
+    "format": "HTML",
+    "mimeType": "text/html",
+    "language": "en",
+    "jurisdiction": "EU_INTERNATIONAL",
+    "authorityClass": "EXTERNAL_AGENCY_OPINION",
+    "audienceOriginal": "Praticien",
+    "importance": "canonical",
+    "prescriptive": false,
+    "primaryNotebook": "10 — Micronutrition et compléments",
+    "secondaryNotebooks": [],
+    "sourceVersion": null,
+    "contentHash": null,
+    "rightsStatus": "to_verify",
+    "clinicalReviewStatus": "not_reviewed",
+    "practitionerReviewRequired": true,
+    "lifecycleStatus": "raw",
+    "vigilance": "Élevée",
+    "requiredAction": "Extraits ciblés ingérés (besoin 2, polyphénols et antioxydants, lot LOT_057_2026-11-12) ; claim en attente de la signature du responsable",
+    "comment": "Source externe, rapport des National Academies (source primaire citée par WN-SRC-0649) ; texte lu dans l'édition en ligne de NAP. Droits : © National Academy of Sciences, lecture libre en ligne ; extraits courts mot pour mot, usage interne, autorisation à vérifier.",
+    "auditDate": "2026-11-12"
   }
 ]
