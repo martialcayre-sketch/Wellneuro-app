@@ -7,6 +7,8 @@ import {
   claimsDeLaFiche,
   claimsDuTerme,
   contexteDeRubrique,
+  designationsDeLaFiche,
+  lireReponseFiche,
   MARQUE_RESERVE,
   messageContreLecture,
   messageRedactionFiche,
@@ -105,6 +107,39 @@ test('v2 : le message porte les axes signés, et la marque des seuls claims sous
   assert.match(cl, /AXES SIGNÉS DE LA FICHE :\nNATURE DU LIEN : information_contributive/);
   assert.ok(cl.includes(MARQUE_RESERVE));
   assert.ok(!messageContreLecture({ nature: 'libellé', texte: 'T.', contexte: null, claimsCites: cites }).includes('AXES SIGNÉS'));
+});
+
+// [[D-501]] §5 : désignations approuvées, refus avant tout appel si l'une manque.
+test('v3 : les désignations de la fiche, ou une erreur qui nomme ce qui manque', () => {
+  const fiche = { ...FICHE, usageDecisionnel: 'departager_options' };
+  const designations = { termes: { POP_SYNTH: 'Population synthétique', HYP_SYNTH_1: 'Hypothèse synthétique' }, analytes: { BIO_SYNTH: 'Analyte synthétique' } };
+  const bloc = designationsDeLaFiche(fiche, designations);
+  assert.match(bloc, /population d'usage POP_SYNTH : « Population synthétique »/);
+  assert.match(bloc, /hypothèse rattachée HYP_SYNTH_1 : « Hypothèse synthétique »/);
+  assert.match(bloc, /analyte BIO_SYNTH : « Analyte synthétique »/);
+  assert.match(bloc, /usage décisionnel departager_options : « départager des options »/);
+  assert.match(designationsDeLaFiche({ ...fiche, hypotheses: [] }, designations), /hypothèses rattachées : \(aucune\)/);
+  // Un identifiant sans désignation ne se nomme pas : la fiche ne part pas.
+  assert.throws(() => designationsDeLaFiche(fiche, { ...designations, termes: { HYP_SYNTH_1: 'H' } }), /absente\(s\) : POP_SYNTH\./);
+  assert.throws(() => designationsDeLaFiche(fiche, { termes: designations.termes, analytes: {} }), /BIO_SYNTH/);
+  assert.throws(() => designationsDeLaFiche(fiche, { termes: { ...designations.termes, HYP_SYNTH_1: '  ' }, analytes: designations.analytes }), /HYP_SYNTH_1/);
+  assert.throws(() => designationsDeLaFiche({ ...fiche, usageDecisionnel: 'inconnu' }, designations), /inconnu/);
+  assert.throws(() => designationsDeLaFiche(fiche, null), /POP_SYNTH, HYP_SYNTH_1, BIO_SYNTH/);
+  // Le rédacteur et le contre-lecteur reçoivent le même bloc.
+  const cites = claimsDeLaFiche(fiche, CLAIMS);
+  const m = messageRedactionFiche(fiche, cites, bloc);
+  assert.ok(m.includes(`DÉSIGNATIONS APPROUVÉES — POUR NOMMER, JAMAIS POUR ÉTABLIR UN FAIT :\n${bloc}\n`));
+  assert.match(m, /CLAIMS — SEULE BASE ADMISE POUR TOUT FAIT :/);
+  const cl = messageContreLecture({ nature: 'rubrique « population »', texte: 'T.', contexte: null, claimsCites: cites, axes: 'A', designations: bloc });
+  assert.ok(cl.includes(bloc));
+  assert.match(cl, /CLAIMS — SEULE BASE ADMISE POUR TOUT FAIT :/);
+});
+
+test('v3 : la réponse du rédacteur — rubriques, ou refus motivé', () => {
+  assert.deepEqual(lireReponseFiche({ refus: ' Contradiction. ' }, FICHE.rubriques), { refus: 'Contradiction.' });
+  assert.throws(() => lireReponseFiche({ refus: ' ' }, FICHE.rubriques), /refus sans motif/);
+  assert.deepEqual(lireReponseFiche({ rubriques: { question: 'Q.', limites: 'L.' } }, FICHE.rubriques), { rubriques: { question: 'Q.', limites: 'L.' } });
+  assert.throws(() => lireReponseFiche({ rubriques: { question: 'Q.' } }, FICHE.rubriques), /manquantes : limites/);
 });
 
 test('les sources DC-03 sont exactement ce que le rédacteur a reçu', () => {
