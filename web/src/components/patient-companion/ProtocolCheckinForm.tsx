@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
-import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import {
   CHECKIN_QUESTIONS,
@@ -14,7 +13,7 @@ import {
 } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
 
-// Formulaire de « rendez-vous de suivi » (C2A LOT-04). 4 questions à choix
+// Formulaire du « point de suivi » (C2A LOT-04 ; nommé par T-30, [[D-488]]). 4 questions à choix
 // unique, < 15 s, formulation factuelle non culpabilisante. La soumission passe
 // par la session portail (cookie) — aucun identifiant sensible côté client.
 // Le point d'étape ouvert et l'assignation d'ancrage sont résolus côté serveur.
@@ -26,11 +25,15 @@ type CheckinState = {
   points: PointEtat[];
 };
 
-const LABEL_POINT: Record<PointEtape, string> = {
-  J7: 'Semaine 1',
-  J14: 'Semaine 2',
-  J21: 'Semaine 3',
+// T-30b et T-30c ([[D-488]]) : « Mon point de suivi », « — semaine N ».
+const TITRE = 'Mon point de suivi';
+const TITRE_POINT: Record<PointEtape, string> = {
+  J7: `${TITRE} — semaine 1`,
+  J14: `${TITRE} — semaine 2`,
+  J21: `${TITRE} — semaine 3`,
 };
+
+type ErreurChargement = { message: string; nonReconnu: boolean };
 
 export function ProtocolCheckinForm({ token }: { token: string }) {
   const router = useRouter();
@@ -43,7 +46,10 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
   // `ok: true, protocoleDiffuse: false` ; `ok: false` est un refus (session,
   // erreur technique) et une coupure réseau n'a pas de réponse du tout. Les
   // deux prenaient la phrase d'attente, sans moyen de réessayer.
-  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
+  // Un refus 404 (« Suivi non reconnu. ») ne peut pas réussir en réessayant :
+  // il se lit sans « Réessayer » ([[D-488]] §7, Q-E2-5 (a)) ; le retour
+  // « ← Mon parcours » de la page reste. Les autres erreurs le gardent.
+  const [erreurChargement, setErreurChargement] = useState<ErreurChargement | null>(null);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -67,11 +73,11 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
         setState(data);
       } else {
         setState(null);
-        setErreurChargement(data.error || 'Erreur réseau. Réessayez.');
+        setErreurChargement({ message: data.error || 'Erreur réseau. Réessayez.', nonReconnu: res.status === 404 });
       }
     } catch {
       setState(null);
-      setErreurChargement('Erreur réseau. Réessayez.');
+      setErreurChargement({ message: 'Erreur réseau. Réessayez.', nonReconnu: false });
     } finally {
       if (!renvoi) setChargement(false);
     }
@@ -126,9 +132,13 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
   if (erreurChargement) {
     return (
       <PatientCard>
-        <PatientPageHeader title="Rendez-vous de suivi" />
-        <div className="mt-2" role="alert">
-          <PatientErrorState message={erreurChargement} onReessayer={() => void charger()} />
+        <PatientPageHeader title={TITRE} />
+        <div className="mt-3" role="alert">
+          {erreurChargement.nonReconnu ? (
+            <PatientErrorState forme="constat" message={erreurChargement.message} />
+          ) : (
+            <PatientErrorState forme="erreur" message={erreurChargement.message} onReessayer={() => void charger()} />
+          )}
         </div>
       </PatientCard>
     );
@@ -137,7 +147,7 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
   if (!state || !state.protocoleDiffuse) {
     return (
       <PatientCard>
-        <PatientPageHeader title="Rendez-vous de suivi" />
+        <PatientPageHeader title={TITRE} />
         <p className="text-sm text-muted-foreground mt-2">
           Votre suivi commencera dès que votre praticien aura partagé votre accompagnement.
         </p>
@@ -152,7 +162,7 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
     return (
       <PatientCard>
         <PatientPageHeader
-          title="Rendez-vous de suivi"
+          title={TITRE}
           subtitle={
             dejaRenseigne
               ? 'Merci, votre point de cette semaine est enregistré.'
@@ -167,7 +177,7 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
   return (
     <PatientCard as="form" onSubmit={(e) => { e.preventDefault(); void soumettre(); }} className="space-y-5">
       <PatientPageHeader
-        title={`Rendez-vous de suivi — ${LABEL_POINT[pointOuvert]}`}
+        title={TITRE_POINT[pointOuvert]}
         subtitle="Quelques questions rapides pour ajuster votre accompagnement."
       />
 
@@ -183,10 +193,12 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
                   type="button"
                   onClick={() => setReponses((prev) => ({ ...prev, [question.id]: option.valeur }))}
                   aria-pressed={actif}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  // Bord `control-border` (3,35:1) : le filet `border` (1,4:1)
+                  // ne délimitait pas un contrôle (prototype PAT-3 validé).
+                  className={`inline-flex min-h-11 items-center rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
                     actif
                       ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-surface text-foreground border-border hover:bg-muted'
+                      : 'bg-surface text-foreground border-control-border hover:bg-muted'
                   }`}
                 >
                   {option.libelle}
@@ -197,7 +209,13 @@ export function ProtocolCheckinForm({ token }: { token: string }) {
         </fieldset>
       ))}
 
-      {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+      {/* Échec de l'envoi : les réponses restent sélectionnées, aucune
+          confirmation sans succès réel. */}
+      {erreur && (
+        <div role="alert">
+          <PatientErrorState forme="erreur" message={erreur} />
+        </div>
+      )}
 
       <PatientButton
         type="submit"

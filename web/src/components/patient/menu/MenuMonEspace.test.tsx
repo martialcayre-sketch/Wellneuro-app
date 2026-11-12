@@ -188,7 +188,7 @@ describe('§2 à §4 — le panneau « Mon espace »', () => {
     const liens = within(navigation).getAllByRole('link').map(l => l.textContent);
     expect(liens).toEqual([
       'Mon parcours',
-      'Ouvrir mes rendez-vous de suivi',
+      'Ouvrir mon point de suivi',
       'Ouvrir mon carnet alimentaire',
       'Consulter mon bilan',
       'Ma fiche de renseignements',
@@ -209,7 +209,7 @@ describe('§2 à §4 — le panneau « Mon espace »', () => {
     const courants = panneau.querySelectorAll('[aria-current]');
     expect(courants).toHaveLength(1);
     expect(courants[0].getAttribute('aria-current')).toBe('page');
-    expect(courants[0].textContent).toBe('Ouvrir mes rendez-vous de suivi');
+    expect(courants[0].textContent).toBe('Ouvrir mon point de suivi');
   });
 
   it('cibles de 44 px en `rem` sur chaque lien', async () => {

@@ -105,7 +105,7 @@ export const MESSAGE_DOSSIER_CLOS_PATIENT_FICHE =
 export const MESSAGE_DOSSIER_CLOS_PATIENT_JOURNAL =
   'Votre suivi est clôturé : vous ne pouvez plus transmettre votre journal.';
 export const MESSAGE_DOSSIER_CLOS_PATIENT_CHECKIN =
-  'Votre suivi est clôturé : vous ne pouvez plus répondre à ce rendez-vous de suivi.';
+  'Votre suivi est clôturé : vous ne pouvez plus répondre à ce point de suivi.';
 
 /**
  * LE DOSSIER DÉSACTIVÉ A SON PROPRE REFUS (dette t11, arbitrage du 2026-10-19).

@@ -96,7 +96,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const pointOuvert = pointEtapeCourant(jourZero, new Date());
     if (!pointOuvert) {
       return NextResponse.json(
-        { ok: false, reason: 'no_step_open', error: 'Aucun rendez-vous de suivi ouvert actuellement.' },
+        { ok: false, reason: 'no_step_open', error: 'Aucun point de suivi ouvert actuellement.' },
         { status: 409 },
       );
     }
@@ -105,7 +105,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // il doit correspondre au point ouvert (jamais un point arbitraire).
     if (body.pointEtape !== undefined && ensurePointEtape(body.pointEtape) !== pointOuvert) {
       return NextResponse.json(
-        { ok: false, reason: 'step_mismatch', error: 'Ce rendez-vous de suivi n’est pas ouvert.' },
+        { ok: false, reason: 'step_mismatch', error: 'Ce point de suivi n’est pas ouvert.' },
         { status: 409 },
       );
     }

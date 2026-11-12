@@ -428,7 +428,7 @@ describe('/api/portail/protocole/checkin — dossier clos', () => {
     expect(await res.json()).toEqual({
       ok: false,
       reason: 'dossier_cloture',
-      error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce rendez-vous de suivi.',
+      error: 'Votre suivi est clôturé : vous ne pouvez plus répondre à ce point de suivi.',
     });
     expect(prisma.protocolCheckin.create).not.toHaveBeenCalled();
   });

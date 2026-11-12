@@ -166,8 +166,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
     return (
       <PatientCard>
         <PatientPageHeader title="Votre accompagnement" />
-        <div className="mt-2" role="alert">
-          <PatientErrorState message={erreurProtocole} onReessayer={() => void charger()} />
+        <div className="mt-3" role="alert">
+          <PatientErrorState forme="erreur" message={erreurProtocole} onReessayer={() => void charger()} />
         </div>
       </PatientCard>
     );
@@ -294,13 +294,13 @@ export function PatientCompanionHome({ token }: { token: string }) {
         <DetailDuProtocole vue={vue} pauses={protocole.pauses} troisPlans={protocole.troisPlans} titreRef={titreActions} />
       )}
 
-      {/* Accès : rendez-vous de suivi (mis en avant si dû) + fiche. */}
+      {/* Accès : point de suivi (mis en avant si dû, T-30e) + fiche. */}
       <div className="flex flex-wrap gap-2.5">
         <Link
           href={`/portail/${token}/suivi`}
           className={patientButtonClassName(checkinDu ? 'primary' : 'ghost')}
         >
-          {checkinDu ? 'Mon rendez-vous de suivi' : 'Mes rendez-vous de suivi'}
+          Mon point de suivi
         </Link>
         {/* « IMPRIMER MON PROTOCOLE » ([[D-392]], lettre bh) — dans le détail
             déplié seulement : il imprime ce détail-là. La route décide
@@ -362,7 +362,9 @@ export function PatientCompanionHome({ token }: { token: string }) {
             Jour difficile ? Je n’ai pas suivi
           </button>
           {jourDifficile && (
-            <div className="mt-3 rounded-xl border border-border bg-muted/40 px-4 py-3 space-y-2">
+            // Zone de repos sur fond sable (prototype PAT-3 validé) : le texte
+            // courant y lit 9,5:1, le texte atténué 4,8:1.
+            <div className="mt-3 space-y-2 rounded-lg bg-lien-sand px-5 py-4">
               <p className="text-sm text-foreground">
                 Un petit pas compte. Reprenez quand vous pouvez, sans pression.
               </p>
@@ -379,7 +381,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
                   href={`/portail/${token}/suivi`}
                   className={`mt-1 inline-flex ${patientButtonClassName('ghost')}`}
                 >
-                  Le noter dans mon rendez-vous de suivi
+                  Le noter dans mon point de suivi
                 </Link>
               )}
             </div>

@@ -194,6 +194,15 @@ describe('QuestionnairesHubPage — parcours d’un dossier clos', () => {
     expect(screen.getByText('Questionnaire transmis')).not.toBeNull();
     expect(lienVers('ASS_TRANSMIS')).toHaveLength(1);
   });
+
+  // AUCUN COMPTEUR SUR UNE SURFACE PATIENT ([[D-333]]) : l'intertitre
+  // repliable disait « Transmis au praticien (N) » (refonte Lien, PAT-3, Q1
+  // tranchée par le prototype validé le 2026-11-11). Le chiffre seul part.
+  it('l’intertitre repliable ne porte aucun compteur', async () => {
+    await rendre({ statutAge: 'majeur', dossierOuvert: true });
+    const titre = screen.getByText('Transmis au praticien', { selector: 'summary' });
+    expect(titre.textContent).toBe('Transmis au praticien');
+  });
 });
 
 // « MON ACCOMPAGNEMENT » ET LA LECTURE DU PROTOCOLE (constat à l'écran du
