@@ -214,6 +214,37 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     }
   });
 
+  // Revue PR-Agent de #2006 : une forme hors du typage (JSON importé, cast)
+  // faisait JETER `incoherencesDeBibliotheque`. Le verrou ferme, il ne jette pas.
+  it('une structure mal formée rend des anomalies, jamais une exception, et ne se signe pas', () => {
+    const { optionsRetirees: _retirees, ...sansRetirees } = avec({});
+    const { renvois: _renvois, ...sansRenvois } = OPTION;
+    const cas: [unknown, string[]][] = [
+      [sansRetirees, ['structure:cles', 'structure:options_retirees']],
+      [avec({}, { optionsRetirees: 'OPT_SYNTH_1' as unknown as string[] }), ['structure:options_retirees']],
+      [{ besoin: 2, options: [sansRenvois], optionsRetirees: [] }, ['OPT_SYNTH_1:cles', 'OPT_SYNTH_1:rubriques']],
+      [avec({ renvois: null as unknown as OptionBibliotheque['renvois'] }), ['OPT_SYNTH_1:rubriques']],
+      [{ besoin: 2, options: null, optionsRetirees: [] }, ['structure:option_mal_formee']],
+      [{ besoin: 2, options: [null], optionsRetirees: [] }, ['structure:option_mal_formee']],
+      [{ besoin: 2, options: new Array(1), optionsRetirees: [] }, ['structure:option_mal_formee']],
+      [{ besoin: 2, options: [[]], optionsRetirees: [] }, ['structure:option_mal_formee']],
+      [null, ['structure:cles']],
+    ];
+    for (const [brute, attendu] of cas) {
+      const structure = brute as StructureBibliotheque;
+      expect(incoherencesDeBibliotheque(structure, FU_SYNTH), JSON.stringify(brute)).toEqual(attendu);
+      const metadata = signeeSur(structure);
+      expect(signee(metadata, structure)).toBe(false);
+      expect(etatBibliotheque(metadata, structure, FU_SYNTH, FICHES_USAGE_BESOIN2_METADATA)).toBe('non_signee');
+    }
+    // Des métadonnées hors du typage ferment aussi le verrou, sans jeter.
+    const structure = avec({});
+    const metadata = signeeSur(structure);
+    expect(signee(null as unknown as BibliothequeMetadata, structure)).toBe(false);
+    expect(signee({ ...metadata, claimsSource: null } as unknown as BibliothequeMetadata, structure)).toBe(false);
+    expect(signee({ ...metadata, positionsSource: 'X' } as unknown as BibliothequeMetadata, structure)).toBe(false);
+  });
+
   it('ni plus ni moins que les champs du format : une propriété en trop est refusée', () => {
     const enTrop = { ...OPTION, texte: 'X' } as unknown as OptionBibliotheque;
     expect(incoherencesDeBibliotheque({ besoin: 2, options: [enTrop], optionsRetirees: [] }, FU_SYNTH)).toEqual(['OPT_SYNTH_1:cles']);

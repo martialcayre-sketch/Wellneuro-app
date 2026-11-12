@@ -139,6 +139,16 @@ const memesCles = (objet: object, attendues: readonly string[]) => {
   const cles = Object.keys(objet);
   return cles.length === attendues.length && attendues.every(c => cles.includes(c));
 };
+/** Un objet au sens du format — ni `null`, ni liste, ni case absente. */
+const estObjet = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+/**
+ * Les options, CHAQUE case comprise (trous compris) ; une valeur qui n'est pas
+ * une liste rend une case vide, donc une anomalie. Un JSON importé ou un cast
+ * peut livrer n'importe quelle forme : le verrou FERME, il ne jette jamais
+ * (revue PR-Agent de #2006, comme `estIsoCanonique`).
+ */
+const casesOptions = (structure: StructureBibliotheque): unknown[] =>
+  Array.isArray(structure.options) ? Array.from(structure.options) : [null];
 
 /**
  * Les règles de FORMAT que toute structure doit tenir pour se signer, en codes
@@ -151,21 +161,28 @@ export function incoherencesDeBibliotheque(
   fichesUsage: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
 ): string[] {
   const anomalies: string[] = [];
+  if (!estObjet(structure)) return ['structure:cles'];
   // Ni plus ni moins que les champs du format : une propriété en trop entrerait
   // dans l'empreinte signée sans qu'aucune règle la juge (`wn-reviewer` sur #2006).
   if (!memesCles(structure, CLES_STRUCTURE)) anomalies.push('structure:cles');
   if (!dans(BESOINS, structure.besoin)) anomalies.push('structure:besoin');
-  if (doublons(structure.options.map(o => o.id))) anomalies.push('structure:option_en_double');
+  const options = casesOptions(structure);
+  if (doublons(options.filter(estObjet).map(o => o.id))) anomalies.push('structure:option_en_double');
   // Chaque case, trous compris (revue CodeRabbit de #2006, comme les populations).
   const retirees: unknown[] = Array.isArray(structure.optionsRetirees) ? Array.from(structure.optionsRetirees) : [null];
   if (doublons(retirees) || retirees.some(id => typeof id !== 'string' || !estIdentifiantOption(id))) {
     anomalies.push('structure:options_retirees');
   }
-  for (const option of structure.options) {
+  for (const brute of options) {
+    if (!estObjet(brute)) {
+      anomalies.push('structure:option_mal_formee');
+      continue;
+    }
+    const option = brute as OptionBibliotheque;
     const a = (regle: string) => anomalies.push(`${option.id}:${regle}`);
     if (!memesCles(option, CLES_OPTION)) a('cles');
     if (!estIdentifiantOption(option.id)) a('format');
-    if (structure.optionsRetirees.includes(option.id)) a('reattribuee');
+    if (retirees.includes(option.id)) a('reattribuee');
     if (!fichesUsage.hypotheses.includes(option.hypothese)) a('hypothese');
     // Chaque case, trous compris (`new Array(1)` : longueur 1, aucune
     // population) — `some` sauterait la case absente (passe Codex sur #2006).
@@ -177,7 +194,8 @@ export function incoherencesDeBibliotheque(
     ) {
       a('populations');
     }
-    const cles = Object.keys(option.renvois);
+    // Des renvois qui ne sont pas un objet n'ont aucune rubrique : anomalie, jamais une exception.
+    const cles = estObjet(option.renvois) ? Object.keys(option.renvois) : [];
     if (cles.length !== RUBRIQUES_OPTION.length || RUBRIQUES_OPTION.some(r => !cles.includes(r))) {
       a('rubriques');
     }
@@ -230,7 +248,9 @@ const clePosition = (p: PositionEpinglee) => `${p.positionId}@${p.version}`;
 export function sourcesCitees(structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1) {
   const claims = new Set<string>();
   const positions = new Set<string>();
-  for (const option of structure.options) {
+  if (!estObjet(structure)) return { claims: [], positions: [] };
+  for (const option of casesOptions(structure)) {
+    if (!estObjet(option) || !estObjet(option.renvois)) continue;
     for (const renvois of Object.values(option.renvois) as (readonly string[])[]) {
       if (!Array.isArray(renvois)) continue;
       for (const valeur of renvois) {
@@ -261,8 +281,9 @@ export function bibliothequeSignee(
   structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1,
   fichesUsage: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
 ): boolean {
-  if (metadata.validationExterne !== true) return false;
+  if (!estObjet(metadata) || metadata.validationExterne !== true) return false;
   if (!estIsoCanonique(metadata.dateValidation)) return false;
+  if (!Array.isArray(metadata.claimsSource) || !Array.isArray(metadata.positionsSource)) return false;
   const cites = sourcesCitees(structure);
   if (!memes([...new Set(metadata.claimsSource.map(cleClaim))].sort(), cites.claims)) return false;
   if (!memes([...new Set(metadata.positionsSource.map(clePosition))].sort(), cites.positions)) return false;
