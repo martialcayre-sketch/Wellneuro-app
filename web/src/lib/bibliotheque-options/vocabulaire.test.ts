@@ -6,8 +6,10 @@ import {
   lireRenvoi,
   OPTION_ID_LONGUEUR_MAX,
   RE_OPTION,
+  RE_RENVOI_POSITION,
   RUBRIQUES_OPTION,
 } from './vocabulaire';
+import { POSITION_ID_RE, VERSION_POSITION_RE } from '@/lib/positions-expert/vocabulaire';
 
 // La base ferme les neuf rubriques et borne l'identifiant d'option (migration
 // de la PR 2, D-480 §3). Ce banc LIT LE FICHIER SQL, jamais la base, et rougit
@@ -52,7 +54,17 @@ describe('vocabulaire de la bibliothèque — aligné sur la migration (D-480 §
       expect(estIdentifiantOption(id), id).toBe(true);
       expect(/^\S+$/.test(id) && id.length <= OPTION_ID_LONGUEUR_MAX, id).toBe(true);
     }
-    for (const id of ['', 'OPT_', 'OPT_ A', 'opt_a', 'OPT-A', 'HYP_A', `OPT_${'Z'.repeat(OPTION_ID_LONGUEUR_MAX - 3)}`]) {
+    for (const id of [
+      '',
+      'OPT_',
+      'OPT_ A',
+      'opt_a',
+      'OPT_a',
+      'OPT_É',
+      'OPT-A',
+      'HYP_A',
+      `OPT_${'Z'.repeat(OPTION_ID_LONGUEUR_MAX - 3)}`,
+    ]) {
       expect(estIdentifiantOption(id), id).toBe(false);
     }
   });
@@ -63,6 +75,14 @@ describe('renvois (D-480 §4)', () => {
     expect(lireRenvoi('WN-CL-9999-001@v1.0')).toEqual({ nature: 'claim', claimId: 'WN-CL-9999-001', versionClaim: 'v1.0' });
     expect(lireRenvoi('WN-PE-9999@v0.2')).toEqual({ nature: 'position', positionId: 'WN-PE-9999', version: 'v0.2' });
     expect(lireRenvoi('information_manquante')).toEqual({ nature: 'information_manquante' });
+  });
+
+  it('le renvoi de position suit les formats des positions d’expert, bornes comprises', () => {
+    expect(RE_RENVOI_POSITION.source).toContain(VERSION_POSITION_RE.source.replace(/^\^/, '').replace(/\$$/, ''));
+    expect(RE_RENVOI_POSITION.source).toContain(POSITION_ID_RE.source.replace(/^\^/, '').replace(/\$$/, ''));
+    expect(lireRenvoi('WN-PE-9999@v1234.1234')).not.toBeNull();
+    expect(lireRenvoi('WN-PE-9999@v12345.1')).toBeNull();
+    expect(lireRenvoi('WN-PE-9999@v1.12345')).toBeNull();
   });
 
   it('refuse tout autre texte', () => {

@@ -7,6 +7,8 @@
 // migration et rougit si le code et la base divergent. Aucun identifiant ni
 // format ne porte de sens clinique : ce sont des clés.
 
+import { POSITION_ID_RE, VERSION_POSITION_RE } from '@/lib/positions-expert/vocabulaire';
+
 /**
  * Les neuf rubriques d'une option ([[D-480]] §1), dans l'ordre de la
  * migration. Produit et statut réglementaire forment UNE rubrique (arbitrage
@@ -61,8 +63,13 @@ export function estIdentifiantOption(valeur: string): boolean {
 
 /** `WN-CL-NNNN-NNN@vN.M` — le `v` est exigé, comme dans les claims épinglés. */
 export const RE_RENVOI_CLAIM = /^(WN-CL-[0-9]{4}-[0-9]{3})@(v[0-9]+\.[0-9]+)$/;
-/** `WN-PE-NNNN@vN.M` — le format des versions de position ([[D-439]]). */
-export const RE_RENVOI_POSITION = /^(WN-PE-[0-9]{4})@(v[0-9]{1,4}\.[0-9]{1,4})$/;
+/**
+ * `WN-PE-NNNN@vN.M` — DÉRIVÉ des formats des positions d'expert ([[D-439]],
+ * `positions-expert/vocabulaire.ts`), jamais recopié : une borne qui changerait
+ * là change ici.
+ */
+const corpsDe = (re: RegExp) => re.source.replace(/^\^/, '').replace(/\$$/, '');
+export const RE_RENVOI_POSITION = new RegExp(`^(${corpsDe(POSITION_ID_RE)})@(${corpsDe(VERSION_POSITION_RE)})$`);
 /** La dose sans source : « information manquante », jamais une valeur. */
 export const INFORMATION_MANQUANTE = 'information_manquante';
 

@@ -180,7 +180,30 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
   });
 
   it('une structure par besoin du guide', () => {
-    expect(incoherencesDeBibliotheque(avec({}, { besoin: 13 }), FU_SYNTH)).toEqual(['structure:besoin']);
+    for (const besoin of [0, -1, 2.5, 13]) {
+      expect(incoherencesDeBibliotheque(avec({}, { besoin }), FU_SYNTH), String(besoin)).toEqual(['structure:besoin']);
+    }
+  });
+
+  it('aucune option sans précautions documentées : non cohérente, donc non signable (D-480 §5.1)', () => {
+    const sansPrecautions = { ...OPTION.renvois, precautions: [] };
+    expect(incoherencesDeBibliotheque(avec({ renvois: sansPrecautions }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:precautions']);
+    // Les autres rubriques vides restent cohérentes ici : leur portée est un contrôle de la PR 4.
+    expect(OPTION.renvois.duree).toEqual([]);
+    expect(incoherencesDeBibliotheque(avec({}), FU_SYNTH)).toEqual([]);
+  });
+
+  it('un identifiant retiré suit le format des options', () => {
+    expect(incoherencesDeBibliotheque(avec({}, { optionsRetirees: ['opt_synth_9'] }), FU_SYNTH)).toEqual([
+      'structure:options_retirees',
+    ]);
+  });
+
+  it('ni plus ni moins que les champs du format : une propriété en trop est refusée', () => {
+    const enTrop = { ...OPTION, texte: 'X' } as unknown as OptionBibliotheque;
+    expect(incoherencesDeBibliotheque({ besoin: 2, options: [enTrop], optionsRetirees: [] }, FU_SYNTH)).toEqual(['OPT_SYNTH_1:cles']);
+    const structureEnTrop = { ...avec({}), version: 'X' } as unknown as StructureBibliotheque;
+    expect(incoherencesDeBibliotheque(structureEnTrop, FU_SYNTH)).toEqual(['structure:cles']);
   });
 
   it('les sources citées sont l’union des renvois, information manquante exclue', () => {
@@ -263,6 +286,12 @@ describe('état : « à relire » après une re-signature des fiches d’usage (
 
   it('fiches d’usage plus signées, ou empreinte jamais recopiée : à relire', () => {
     expect(etatBibliotheque(metadata, structure, FU_SYNTH, { ...metaFU, validationExterne: false })).toBe('a_relire');
+    // Fiches d'usage incohérentes, même déclarées signées sur leur empreinte : à relire.
+    const incoherentes: StructureFichesUsage = { ...FU_SYNTH, populations: ['POP_SYNTH', 'pas_une_population'] };
+    const metaIncoherentes = { ...fichesSigneesSur(incoherentes) };
+    const metaBib = { ...metadata, shaFichesUsage: sha256(JSON.stringify(incoherentes)) };
+    expect(incoherencesDeBibliotheque(structure, incoherentes)).toEqual([]);
+    expect(etatBibliotheque(metaBib, structure, incoherentes, metaIncoherentes)).toBe('a_relire');
     expect(etatBibliotheque({ ...metadata, shaFichesUsage: null }, structure, FU_SYNTH, metaFU)).toBe('a_relire');
   });
 

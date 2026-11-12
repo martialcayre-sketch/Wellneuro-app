@@ -43,6 +43,16 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 - **Garde § 8** : banc `importeurs.guard.test.ts`, avec une liste de lecteurs
   admis vide. La PR 5 (atelier) et la PR 6 (cockpit) y ajouteront leur
   fichier, nommément.
+- **Aucune option sans précautions (D-480 §5.1) entre dans cette PR**, sur
+  l'arbitrage du responsable du 2026-11-12. CodeRabbit avait classé P0 son
+  absence. Une option dont la rubrique `precautions` n'a aucun renvoi rend la
+  structure incohérente (code `<option>:precautions`). La PR 4 garde les
+  autres contrôles de §5 : deux tables au contrat de fraîcheur, contrat des
+  positions citées, aucune lecture de dossier, hook DC-17, matrice de
+  consommation.
+- **Prédicat à consommer** (PR 5 et 6) : `etatBibliotheque(...) === 'signee'`,
+  jamais `bibliothequeSignee` seul, qui ne vérifie pas que les fiches d'usage
+  sont signées. C'est écrit en tête du module.
 - Le verrou est ajouté au tableau `ETAT_VERROUS_SIGNATURE` et au balayage de
   `verrousSignatureDocumentes.guard.test.ts`. Sans cela, une signature
   future passerait sans que le tableau le dise.
@@ -85,6 +95,18 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   calcule lui-même les deux signatures et l'empreinte. Écartée avec motif :
   le changement du helper partagé (155 bancs de garde verts, aucun `.js` ni
   `require()` en production).
+- `wn-reviewer` (P0) sur `8bfacc95` : GO, avec 20 mutations jouées hors dépôt.
+  Corrigé ensuite :
+  - mutations survivantes, chacune avec son banc : fiches d'usage
+    incohérentes, format des identifiants retirés, besoin 0, -1 et 2.5,
+    `OPT_a` et `OPT_É`, bornes des versions de position (désormais dérivées
+    de `positions-expert/vocabulaire.ts`) ;
+  - banc §8 : il voit aussi un gabarit à accents graves ;
+  - `estUnTest` aligné sur `.js` et `.jsx` ;
+  - propriétés en trop refusées (`cles`) ;
+  - commentaire §5.4 rectifié.
+
+  Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 980 tests.
 
 ## Problèmes ouverts
 
@@ -99,20 +121,23 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   exécutable. Le format n'admet `information_manquante` que pour la dose
   (§4, consigne du lot). Pour les autres rubriques, une liste vide tient lieu
   de « non documentée ». À trancher à la PR 4, qui juge l'exécutabilité.
-- **Aucune option sans précautions** (D-480 §5.1) : pas encore dans
-  `incoherencesDeBibliotheque`. Une structure avec `precautions: []` est
-  donc signable jusqu'à la PR 4, qui porte ce contrôle (découpage accepté).
-  Sans risque tant que la structure est vide et que la signature attend la
-  PR 7, qui dépend des PR 3 à 5. Constat de CodeRabbit sur #2006, routé.
+- **Passe Codex** : la politique de revue la rend obligatoire pour un module
+  clinique signé de la campagne BIO-PARCOURS (bibliothèque d'options). C'est
+  un geste manuel du responsable (`$wellneuro-pr-review`). La PR n'est
+  déclarée « prête » qu'après son verdict.
+- Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
+  passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
+  Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
+  (`wn-reviewer`, constat 4).
 - Le chemin du module n'est pas encore sous le hook DC-17, au contrat de
   fraîcheur, à la matrice de consommation ni aux chemins de `release-db.yml` :
   c'est la PR 4. Tant que la structure est vide, rien n'en dépend.
 
 ## Prochaine action exacte
 
-PR de ce lot : CI (`wn-attendre-ci` en fond), revue sur la tête
-(CodeRabbit, sinon Copilot, sinon PR-Agent, sinon dérogation D-448 avec
-`wn-reviewer`), verdict pour chaque remarque, puis « prête @<sha> ».
+#2006 : CI de la tête, revue sur la tête (CodeRabbit dès que son quota
+revient, sinon PR-Agent prouvé), passe Codex du responsable. Chaque remarque
+reçoit son verdict, puis la PR est déclarée « prête @<sha> ».
 L'intégrateur merge. La PR 4 (contrôles et garde) suit dans une nouvelle
 session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
 constatée.

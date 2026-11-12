@@ -44,14 +44,19 @@ import {
 //
 // LES RENVOIS (§4) : un claim `identifiant@version`, une position d'expert
 // `WN-PE-NNNN@vN.M`, ou `information_manquante` pour la dose seule. Une
-// rubrique sans renvoi n'est pas documentée ; ce que cela emporte (aucune
-// option sans précautions, deux tables au contrat de fraîcheur, contrat des
-// positions citées) relève des contrôles de la PR 4 (§5), qui s'ajouteront à
-// la cohérence ci-dessous.
+// rubrique sans renvoi n'est pas documentée. Une option sans précautions
+// documentées rend la structure incohérente (§5.1, entré ici sur l'arbitrage
+// du 2026-11-12) ; les autres contrôles (deux tables au contrat de fraîcheur,
+// contrat des positions citées) relèvent de la PR 4 (§5).
 //
 // AUCUN LECTEUR (§8) : aucun parcours, courrier, portail, document remis ni
-// appel à un modèle ne lit cette structure, et elle ne lit aucun dossier
-// (§5.4). Le banc `importeurs.guard.test.ts` le tient.
+// appel à un modèle ne lit cette structure ; le banc `importeurs.guard.test.ts`
+// tient les importeurs ENTRANTS. Qu'elle ne lise aucun dossier (§5.4) est un
+// contrôle de la PR 4.
+//
+// LE PRÉDICAT À CONSOMMER est `etatBibliotheque(...) === 'signee'` : lui seul
+// exige aussi que les fiches d'usage soient signées sur l'empreinte recopiée
+// (§2). `bibliothequeSignee` juge les cinq termes de la bibliothèque seule.
 
 /** Une position d'expert épinglée, citée par version ([[D-480]] §5.3). */
 export type PositionEpinglee = { positionId: string; version: string };
@@ -128,17 +133,27 @@ export const BIBLIOTHEQUE_BESOIN2_SHA256 = sha256(JSON.stringify(BIBLIOTHEQUE_BE
 
 const dans = <T>(liste: readonly T[], valeur: unknown): boolean => (liste as readonly unknown[]).includes(valeur);
 const doublons = (liste: readonly unknown[]) => new Set(liste).size !== liste.length;
+const CLES_STRUCTURE = ['besoin', 'options', 'optionsRetirees'];
+const CLES_OPTION = ['id', 'hypothese', 'populations', 'renvois'];
+const memesCles = (objet: object, attendues: readonly string[]) => {
+  const cles = Object.keys(objet);
+  return cles.length === attendues.length && attendues.every(c => cles.includes(c));
+};
 
 /**
  * Les règles de FORMAT que toute structure doit tenir pour se signer, en codes
- * sans texte (`<option>:<règle>` ou `<option>:<rubrique>:<règle>`). Vide =
- * cohérente. Les contrôles de la PR 4 ([[D-480]] §5) s'y ajouteront.
+ * sans texte (`<option>:<règle>` ou `<option>:<rubrique>:<règle>`), plus
+ * « aucune option sans précautions » ([[D-480]] §5.1). Vide = cohérente. Les
+ * autres contrôles de la PR 4 ([[D-480]] §5) s'y ajouteront.
  */
 export function incoherencesDeBibliotheque(
   structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1,
   fichesUsage: StructureFichesUsage = FICHES_USAGE_BESOIN2_V1,
 ): string[] {
   const anomalies: string[] = [];
+  // Ni plus ni moins que les champs du format : une propriété en trop entrerait
+  // dans l'empreinte signée sans qu'aucune règle la juge (`wn-reviewer` sur #2006).
+  if (!memesCles(structure, CLES_STRUCTURE)) anomalies.push('structure:cles');
   if (!dans(BESOINS, structure.besoin)) anomalies.push('structure:besoin');
   if (doublons(structure.options.map(o => o.id))) anomalies.push('structure:option_en_double');
   if (doublons(structure.optionsRetirees) || structure.optionsRetirees.some(id => !estIdentifiantOption(id))) {
@@ -146,6 +161,7 @@ export function incoherencesDeBibliotheque(
   }
   for (const option of structure.options) {
     const a = (regle: string) => anomalies.push(`${option.id}:${regle}`);
+    if (!memesCles(option, CLES_OPTION)) a('cles');
     if (!estIdentifiantOption(option.id)) a('format');
     if (structure.optionsRetirees.includes(option.id)) a('reattribuee');
     if (!fichesUsage.hypotheses.includes(option.hypothese)) a('hypothese');
@@ -171,6 +187,11 @@ export function incoherencesDeBibliotheque(
       }
       const lus = renvois.map(lireRenvoi);
       if (lus.some(r => r === null) || doublons(renvois)) a(`${rubrique}:renvoi`);
+      // AUCUNE OPTION SANS PRÉCAUTIONS DOCUMENTÉES ([[D-480]] §5.1, cadrage
+      // `:47`, `:260`, DC-38) : une option sans renvoi en précautions rend la
+      // structure incohérente, donc non signable. Entré à la PR 3 sur
+      // l'arbitrage du responsable du 2026-11-12 (constat de revue de #2006).
+      if (rubrique === 'precautions' && renvois.length === 0) a('precautions');
       if (renvois.includes(INFORMATION_MANQUANTE)) {
         // Pour la dose seule, et seule : une source citée et « manquante »
         // ensemble se contrediraient.

@@ -28,7 +28,7 @@ export function fichiersSource(): string[] {
 
 /** Un fichier de test (banc compris) — hors du périmètre « code de production ». */
 export function estUnTest(chemin: string): boolean {
-  return /\.(test|spec)\.tsx?$/.test(chemin) || chemin.includes('/__tests__/');
+  return /\.(test|spec)\.[jt]sx?$/.test(chemin) || chemin.includes('/__tests__/');
 }
 
 export function lire(chemin: string): string {
@@ -38,14 +38,16 @@ export function lire(chemin: string): string {
 /**
  * Spécificateurs de module importés par un source : `import … from`,
  * `export … from`, `import 'x'`, `import('x')` et `require('x')` (`allowJs`
- * admet du CommonJS sous `web/src`, revue CodeRabbit de #2006). Les commentaires
+ * admet du CommonJS sous `web/src`, revue CodeRabbit de #2006), entre
+ * apostrophes, guillemets ou accents graves (un gabarit sans expression se
+ * résout comme un import statique, `wn-reviewer` sur #2006). Les commentaires
  * sont retirés avant la lecture — une prose qui CITE un module n'en est pas
  * l'importeur (six fichiers de production citent `biology-library` sans
  * l'importer).
  */
 export function specificateursImportes(source: string): string[] {
   const sansCommentaires = retirerLignesDeCommentaire(source);
-  const motif = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
+  const motif = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)(['"`])([^'"`\n]+)\1/g;
   return [...sansCommentaires.matchAll(motif)].map(m => m[2]);
 }
 

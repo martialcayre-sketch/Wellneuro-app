@@ -38,8 +38,9 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       "export { RUBRIQUES_OPTION } from '../bibliotheque-options/vocabulaire';",
       "const v = await import('@/lib/bibliotheque-options/vocabulaire');",
       "const b = require('./bibliotheque-options/bibliothequeBesoin2V1');",
+      'const g = await import(`@/lib/bibliotheque-options/vocabulaire`);',
       '// voir web/src/lib/bibliotheque-options/',
     ].join('\n');
-    expect(specificateursImportes(source).filter(importeLaBibliotheque)).toHaveLength(4);
+    expect(specificateursImportes(source).filter(importeLaBibliotheque)).toHaveLength(5);
   });
 });
