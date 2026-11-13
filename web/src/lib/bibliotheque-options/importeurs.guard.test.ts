@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -95,6 +96,16 @@ function resoutDansLeDossier(
  */
 const CLES_NEXT_ADMISES = ['headers', 'reactStrictMode', 'redirects'];
 const CLES_SENTRY_ADMISES = ['authToken', 'org', 'project', 'silent', 'sourcemaps', 'telemetry', 'webpack', 'widenClientFileUpload'];
+
+/** Un fichier qui peut déplacer la résolution d'un module, où qu'il soit sous `web/`. */
+const CONFIG_DE_RESOLUTION =
+  /(^|\/)(package\.json|[jt]sconfig[^/]*\.json|\.babelrc[^/]*|babel\.config\.[^/]+|\.swcrc|next\.config\.[^/]+)$/i;
+const CLES_PACKAGE_ADMISES = ['dependencies', 'devDependencies', 'engines', 'name', 'overrides', 'private', 'scripts', 'version'];
+const CLES_TSCONFIG_ADMISES = [
+  'allowJs', 'esModuleInterop', 'incremental', 'isolatedModules', 'jsx', 'lib', 'module', 'moduleResolution',
+  'noEmit', 'paths', 'plugins', 'resolveJsonModule', 'skipLibCheck', 'strict', 'target',
+];
+const EMPREINTE_NEXT_CONFIG = 'fc39557e9be8db01158baa1ecd5fe13666746b36e299926ee4f58156bd4c8778';
 
 function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
   const ecarts: string[] = [];
@@ -227,13 +238,49 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
   // autre tsconfig (`typescript.tsconfigPath`) n'est pas vu par le résolveur
   // ci-dessus ; la configuration évaluée de Next n'en porte donc aucun.
+  // LES CONFIGURATIONS DE RÉSOLUTION SONT VERROUILLÉES (contre-passe Codex n° 2
+  // sur c12bd412) : interpréter chaque détour en appelle un autre — condition
+  // `types` d'un `#import` que TypeScript et le bundler résolvent
+  // différemment, alias webpack posé sous `NODE_ENV === 'production'` seul.
+  // Le banc fige donc ce qui peut déplacer une résolution ; tout changement le
+  // rougit, et se relit avant que l'empreinte ou la liste ne s'ajustent.
+  it('les configurations de résolution sont celles admises (verrou, passe Codex P1-4)', () => {
+    // Aucun babel (plugin module-resolver), swc, jsconfig, second tsconfig ni package.json imbriqué.
+    const configs = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web'], {
+      cwd: RACINE,
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .filter(f => CONFIG_DE_RESOLUTION.test(f))
+      .sort();
+    expect(configs).toEqual(['web/next.config.mjs', 'web/package.json', 'web/tsconfig.json']);
+    for (const f of ['web/.babelrc', 'web/src/babel.config.cjs', 'web/.swcrc', 'web/jsconfig.json', 'web/tsconfig.options.json', 'web/src/x/package.json']) {
+      expect(CONFIG_DE_RESOLUTION.test(f), f).toBe(true);
+    }
+
+    // `package.json` : ni `imports`, ni `exports`, ni `browser` — aucune clé hors de la liste.
+    const paquet = JSON.parse(lire('web/package.json')) as object;
+    expect(Object.keys(paquet).sort()).toEqual(CLES_PACKAGE_ADMISES);
+
+    // `tsconfig.json` : ni `extends`, ni `baseUrl`, `rootDirs`, `customConditions`… ; `paths` figé.
+    const { config } = parseConfigFileTextToJson('tsconfig.json', lire('web/tsconfig.json')) as {
+      config: { compilerOptions: Record<string, unknown> };
+    };
+    expect(Object.keys(config).sort()).toEqual(['compilerOptions', 'exclude', 'include']);
+    expect(Object.keys(config.compilerOptions).sort()).toEqual(CLES_TSCONFIG_ADMISES);
+    expect(config.compilerOptions.paths).toEqual({ '@/*': ['./src/*'] });
+    expect(config.compilerOptions.moduleResolution).toBe('bundler');
+
+    // `next.config.mjs` : empreinte du fichier entier. Une branche conditionnelle
+    // (`NODE_ENV`, variable d'environnement) n'est vue par aucune évaluation.
+    // AVANT d'ajuster l'empreinte : vérifier que le changement n'ajoute aucun
+    // alias, aucun `webpack`, `turbopack`, `typescript.tsconfigPath`,
+    // `experimental`, `modularizeImports` ni rien qui déplace une résolution.
+    const empreinte = createHash('sha256').update(lire('web/next.config.mjs')).digest('hex');
+    expect(empreinte).toBe(EMPREINTE_NEXT_CONFIG);
+  });
+
   it('next.config, évalué, ne porte que des clés admises (verrou, passe Codex P1-4)', async () => {
-    const configs = execFileSync(
-      'git',
-      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/next.config.*', 'web/jsconfig.json', 'web/tsconfig.*'],
-      { cwd: RACINE, encoding: 'utf8' },
-    ).split('\n').filter(Boolean).sort();
-    expect(configs).toEqual(['web/next.config.mjs', 'web/tsconfig.json']);
     const evalue = (await import(pathToFileURL(join(WEB, 'next.config.mjs')).href)) as {
       default: { CAPTURE?: boolean; configNext: object; optionsSentry: object };
     };
