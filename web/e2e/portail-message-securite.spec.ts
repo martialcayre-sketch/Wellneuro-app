@@ -128,7 +128,7 @@ async function ouvrirLeJournal(page: Page): Promise<void> {
  * un défilement animé : deux relevés à 150 ms y ont été trouvés identiques
  * avant tout mouvement), la position ne dirait rien du résultat. Un
  * défilement qui ne part pas dans ce délai, ou s'arrête court, échoue
- * toujours. La mesure stable est rendue telle quelle, pour la consigne, et
+ * toujours, sauf en WebKit animé en confort (voir `arretCourtToleree`). La mesure stable est rendue telle quelle, pour la consigne, et
  * jugée par `bienPlace`.
  */
 async function attendreLeMessagePlace(
@@ -147,8 +147,10 @@ async function attendreLeMessagePlace(
     return stable !== null;
   }, { timeout: 8_000, intervals: [200] }).toBe(true);
   const m = stable as unknown as Mesure;
-  const journal = await page.evaluate(() =>
-    (window as unknown as { __journalD506?: unknown[] }).__journalD506?.slice(-80) ?? null);
+  const { depart, journal } = await page.evaluate(() => {
+    const complet = (window as unknown as { __journalD506?: unknown[][] }).__journalD506;
+    return { depart: complet?.[0]?.[2] ?? null, journal: complet?.slice(-80) ?? null };
+  });
   const constat = `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(journal)}`;
   if (arretCourtToleree && !bienPlace(m)) {
     // WebKit Linux (CI), défilement animé : il s'arrête parfois avant sa
@@ -157,6 +159,8 @@ async function attendreLeMessagePlace(
     // haut du message dans la part utile de la fenêtre, son début lisible
     // sans défiler. L'écart est consigné, pas tu.
     expect(m.haut >= m.margeHaut - 1 && m.haut < m.fenetre - m.margeBas, constat).toBe(true);
+    // Et un défilement a eu lieu : un arrêt court, pas une absence de mouvement.
+    expect(m.defile > Number(depart), `${constat} ; scrollY au départ : ${depart}`).toBe(true);
     arretCourtToleree.testInfo.annotations.push({ type: 'écart D-506 WebKit animé', description: `${arretCourtToleree.libelle} — ${constat}` });
     console.log(`[écart D-506 WebKit animé] ${arretCourtToleree.libelle} — ${constat}`);
     return m;
@@ -188,7 +192,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
   for (const reglage of REGLAGES) {
     test(`${reglage.nom} : sous la question puis au résumé, le message vient dans la fenêtre, le focus ne bouge pas`, async ({ page, context, browserName }, testInfo) => {
       const tolerance = (libelle: string) =>
-        browserName === 'webkit' && !reglage.mouvementReduit ? { testInfo, libelle: `${reglage.nom}, ${libelle}` } : null;
+        reglage.confort && browserName === 'webkit' && !reglage.mouvementReduit ? { testInfo, libelle: `${reglage.nom}, ${libelle}` } : null;
       await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
       if (reglage.confort) {
         await page.addInitScript(() => {
@@ -246,7 +250,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
   // L'entrée du parcours : la case « Idées noires ou suicidaires » des
   // signaux, au téléphone au zoom 200 %. Le consentement et la fiche sont
   // ceux du parcours normal ; l'anamnèse n'est pas validée.
-  test('entrée, téléphone 390 px, zoom 200 % : sous la liste des signaux, le message vient dans la fenêtre', async ({ page, context, browserName }, testInfo) => {
+  test('entrée, téléphone 390 px, zoom 200 % : sous la liste des signaux, le message vient dans la fenêtre', async ({ page, context }, testInfo) => {
     await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
     await page.setViewportSize({ width: 195, height: 422 });
     await page.goto(`/portail/${PATIENT.idPatient}`);
@@ -278,8 +282,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
     const caseSignal = page.getByLabel(/Idées noires ou suicidaires/);
     await ouvrirLeJournal(page);
     await caseSignal.check();
-    const auxSignaux = await attendreLeMessagePlace(
-      page, browserName === 'webkit' ? { testInfo, libelle: 'entrée, zoom 200 %, sous la liste des signaux' } : null);
+    const auxSignaux = await attendreLeMessagePlace(page);
 
     const consigne = `${testInfo.project.name} — entrée, téléphone 390 px, zoom 200 % — sous la liste des signaux : ${JSON.stringify(auxSignaux)}`;
     testInfo.annotations.push({ type: 'mesure D-506', description: consigne });
