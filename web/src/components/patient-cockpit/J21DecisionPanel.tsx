@@ -151,7 +151,9 @@ export function J21DecisionPanel({
 
       {/* Point de jonction : score (momentum) + action (check-ins). */}
       {echecLecture ? (
-        <p role="status" className="mt-3 text-base text-status-warning">
+        // Sans région vivante : la météo d'adhésion, juste au-dessus, annonce
+        // déjà ce même texte (role="alert") — l'annoncer deux fois n'aide pas.
+        <p className="mt-3 text-base text-status-warning">
           Les points d’étape n’ont pas pu être lus. Ce n’est pas une absence de réponse du patient.
         </p>
       ) : (

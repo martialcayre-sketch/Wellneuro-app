@@ -33,6 +33,7 @@ Deuxième PR du code de PRA-3b, groupe Suivi et réévaluation (P20–P24), dans
 
 - Vitest ciblé : cinq suites, 133 tests verts.
 - `npx tsc --noEmit` vert ; `npm run check:rapide` vert.
+- Relecture `ui-ux-pro-max` (lecture seule) : T-61 annoncé deux fois (alerte de la météo et région `status` du point J21) — corrigé, seule la météo garde la région vivante. Écarté avec motif : pas d'état « relecture en cours » sur « Réessayer », même motif que la PR 2 (lecture courte, jeton d'obsolescence contre le double clic).
 - T1 complet (`npm run check`) et T2 (`npm run test:worktree -- --fast`) : voir la PR.
 - Constat à l'écran local : non joué dans cette PR (critère de réception à quatre largeurs, à faire à la réception du groupe, comme pour la PR 2).
 
