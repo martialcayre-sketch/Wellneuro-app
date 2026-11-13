@@ -13,7 +13,8 @@ refusé laisse l'existant en place ; le lot qui le portait livre sans lui.
 
 Numérotation par famille, avec des trous voulus : praticien T-01 à T-19
 (T-16, « Aller au contenu », ajouté par DOC-1 dans [[D-488]] ; T-17 à T-19,
-textes du prototype PRA-2, ajoutés par DOC-6, §1.4),
+textes du prototype PRA-2, ajoutés par DOC-6, §1.4) et T-60 à T-66
+(textes du prototype PRA-3b, ajoutés par DOC-8, §1.5),
 rail patient T-21 à T-23, textes patient T-30 à T-34 ; T-35 est ajouté
 le 2026-11-12 comme proposition non acceptée pour U02. DOC-5 ajoute
 T-36 à T-39 ; DOC-7 inscrit T-40 à T-44 et T-48 (PAT-4), puis T-49/T-50
@@ -86,6 +87,33 @@ lu au commit `9a680203`.
 T-17 est posé dès son inscription (Q4 b) ; les messages d'échec qu'il
 accompagne sont les phrases existantes. Aucun texte de consentement, de
 droits ni de sécurité n'est touché.
+
+### 1.5 Textes du prototype PRA-3b — acceptés (D-488)
+
+Le responsable accepte mot pour mot le 2026-11-12 (« J'accepte tout ») les
+textes du prototype PRA-3b (itération 2 révisée). Le prototype les
+numérotait T-50 à T-56 ; T-49 et T-50 étant pris par DOC-7, ils sont
+inscrits sous T-60 à T-66, sans changement de mot. Inscription par DOC-8
+dans [[D-488]], amendement du 2026-11-13 ; arbitrages Q4 a, Q6 b, Q9 a et
+Q17 a en complément DOC-8 de [[D-481]]. Existant lu au commit `50b0e4cf`,
+inchangé à `c8542cab`.
+
+| Id | Proposé | Où | Sens | Existant | Lot | Statut |
+|---|---|---|---|---|---|---|
+| T-60 | Les questionnaires reçus n’ont pas pu être lus. Ce n’est pas un dossier sans réponse. | fiche, Données : carte des questionnaires reçus et tiroir « Détail des réponses » (`components/FichePatientPanel.tsx:1634`, `:2080`) | dit l'échec de lecture ; la comparaison (P10) se tait derrière lui | « Aucun questionnaire complété pour ce patient. » affiché sur un échec | PRA-3b, PR 2 | **Accepté (D-488)** |
+| T-61 | Les points d’étape n’ont pas pu être lus. Ce n’est pas une absence de réponse du patient. | fiche, Suivi : point J21 (`components/patient-cockpit/J21DecisionPanel.tsx:156`) | ne qualifie pas l'adhésion | pastille « Indéterminée » et « non disponible pour l’instant » | PRA-3b, PR 5 | **Accepté (D-488)** |
+| T-62 | Les transmissions du patient n’ont pas pu être lues. Ce n’est pas une absence de transmission. | onglet Alimentation (`components/food-observation/PractitionerFoodObservationPanel.tsx:646`) | dit l'échec de lecture | « Aucune transmission du patient à ce jour. » sur un échec | PRA-3b, PR 5 | **Accepté (D-488)** |
+| T-63 | Le protocole diffusé n’a pas pu être lu. Ce n’est pas une absence de protocole. | onglet Alimentation (`components/food-observation/PractitionerFoodObservationPanel.tsx:626`) | dit l'échec de lecture | « Aucun protocole diffusé pour ce patient : … » sur un échec | PRA-3b, PR 5 | **Accepté (D-488)** |
+| T-64 | Les arbitrages biologiques n’ont pas pu être lus. Ce n’est pas une absence d’arbitrage. | onglet Biologie (`components/patient-cockpit/ArbitrageBiologiquePanel.tsx:155`) | aucun formulaire de verdict ni « Appliquer » tant que la lecture n'a pas réussi | formulaires affichés comme si rien n'était arbitré | PRA-3b, PR 6 | **Accepté (D-488)** |
+| T-65 | La proposition de bilan n’a pas pu être lue. Ce n’est pas une absence de proposition. | onglet Biologie, proposition de bilan (`components/biologie/PropositionBilanSection.tsx`) | pour toute réponse autre que le motif `cb_proposition_desactivee` (étage fermé), qui laisse le panneau absent | le panneau disparaît | PRA-3b, PR 6 | **Accepté (D-488)** |
+| T-66 | Voir les nuits une par une | tiroir Agenda du sommeil, sous le chronogramme (`components/agenda-sommeil/ChronogrammeSommeil.tsx`) | déplie la liste des nuits, chacune avec toutes les rubriques de l'infobulle | aucun | PRA-3b, PR 8 | **Accepté (D-488)** |
+
+Inscrits par le même amendement de [[D-488]] : dans l'onglet Alimentation,
+retrait des deux mentions de version (JA5-03, JA5-05) et quatre apostrophes
+rétablies (Q9 a) ; emplacements neufs de T-17, du texte de relecture
+existant sous P28 et du message serveur de double arbitrage sous P19
+(Q17 a). Aucun texte de consentement, de droits ni de sécurité n'est
+touché ; chaque texte est posé par la PR de PRA-3b indiquée.
 
 ## 2. Patient
 
@@ -250,5 +278,5 @@ Voir pat4-prealables.md et lot-q5b-brouillon-appareil.md.
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
-| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 |
+| Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 |
 | Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 inscrits par DOC-5 ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |

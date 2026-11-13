@@ -153,7 +153,11 @@ en complément DOC-6 de [[D-481]], textes T-17 à T-19 inscrits dans
   Suivi et réévaluation ; Biologie ; Correspondance et documents ;
   agendas et journal). Le panneau de l'objectif négocié reçoit le
   séparateur `divider-two-voices` ; les intitulés des deux voix restent en
-  texte et à l'impression ([[D-481]] §1 bis).
+  texte et à l'impression ([[D-481]] §1 bis). Textes de 3b acceptés le
+  2026-11-12 et inscrits dans [[D-488]] par DOC-8 (T-60 à T-66,
+  corrections de l'onglet Alimentation, emplacements neufs de T-17, du
+  texte de relecture et du message de double arbitrage) ; validation du
+  prototype par groupe de PR (Q16, ouverte), complément DOC-8 de [[D-481]].
 - **Réception** : passage d'un dossier à un autre sans contenu précédent ;
   aucun focus perdu dans une zone fermée ; aperçu de diffusion qui ne
   diffuse rien ; approbations conservées ; P15 garde son brouillon quand le
