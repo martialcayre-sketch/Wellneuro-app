@@ -102,6 +102,7 @@ export function J21DecisionPanel({
   resume,
   onAjuster,
   suiviOuvert = null,
+  echecLecture = false,
 }: {
   resume: ResumeJ21 | null;
   // Renvoie vers le flux de versionnement existant (« Enregistrer la version »).
@@ -111,6 +112,13 @@ export function J21DecisionPanel({
    * pas encore su : le panneau garde sa forme habituelle.
    */
   suiviOuvert?: boolean | null;
+  /**
+   * Les points d'étape n'ont pas pu être lus (T-61, [[D-488]]). Le résumé ne
+   * qualifie alors rien : ni « non disponible pour l'instant », ni « en
+   * attente du patient » — une panne n'est pas une absence de réponse.
+   * « Réessayer » est porté par la météo d'adhésion, juste au-dessus.
+   */
+  echecLecture?: boolean;
 }) {
   const chiffresMasques = useChiffresMasques();
   // SANS DIFFUSION, AUCUN POINT D'ÉTAPE NE COURT ([[D-255]]). Le panneau
@@ -119,9 +127,9 @@ export function J21DecisionPanel({
   if (suiviOuvert === false) {
     return (
       <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
-        <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
+        <h4 id="j21-decision-title" className="text-sm font-semibold text-foreground">
           Point d’étape J21 — résumé et décision
-        </h3>
+        </h4>
         <p role="status" className="mt-3 text-base text-muted-foreground">
           Aucun protocole n’a été diffusé sur ce cycle : les points d’étape J7, J14 et J21 ne courent pas encore.
           Ils partiront de la diffusion du protocole (phase Actions).
@@ -132,14 +140,23 @@ export function J21DecisionPanel({
 
   return (
     <section aria-labelledby="j21-decision-title" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="j21-decision-title" className="text-sm font-semibold text-foreground">
+      <h4 id="j21-decision-title" className="text-sm font-semibold text-foreground">
         Point d’étape J21 — résumé et décision
-      </h3>
+      </h4>
       {/* J2-jourN (H52) : le jour du cycle, compté depuis le jour 0 du momentum
           et des jalons. Sans jour 0, rien : aucun jour n'est inventé. */}
-      {resume?.suivi && <p className="mt-1 text-sm text-foreground">{ligneJourDuCycle(resume.suivi)}</p>}
+      {!echecLecture && resume?.suivi && (
+        <p className="mt-1 text-sm text-foreground">{ligneJourDuCycle(resume.suivi)}</p>
+      )}
 
       {/* Point de jonction : score (momentum) + action (check-ins). */}
+      {echecLecture ? (
+        // Sans région vivante : la météo d'adhésion, juste au-dessus, annonce
+        // déjà ce même texte (role="alert") — l'annoncer deux fois n'aide pas.
+        <p className="mt-3 text-base text-status-warning">
+          Les points d’étape n’ont pas pu être lus. Ce n’est pas une absence de réponse du patient.
+        </p>
+      ) : (
       <div className="mt-3 space-y-1 text-base">
         {/* [[D-108]] — la tendance ci-dessous est celle du total de « Mon
             équilibre », sans interprétation clinique ([[D-106]], `DC-22`). */}
@@ -176,11 +193,12 @@ export function J21DecisionPanel({
           ))}
         </ul>
       </div>
+      )}
 
       {/* Décision : ajuster (via versionnement) vs orientations documentées. */}
       <div className="mt-4 space-y-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajuster le protocole</p>
+          <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajuster le protocole</h5>
           <div className="mt-2 flex flex-wrap gap-2">
             {AJUSTEMENTS.map((item) => (
               <button
@@ -188,7 +206,7 @@ export function J21DecisionPanel({
                 type="button"
                 onClick={onAjuster}
                 title={item.description}
-                className="rounded-lg border border-primary/30 bg-surface px-3 py-2 text-sm text-primary hover:bg-primary/10 transition-colors"
+                className="min-h-11 rounded-lg border border-primary/30 bg-surface px-3 py-2 text-sm text-primary hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {item.titre}
               </button>
@@ -201,7 +219,7 @@ export function J21DecisionPanel({
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autres décisions</p>
+          <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autres décisions</h5>
           <ul className="mt-2 space-y-1 text-base text-muted-foreground">
             {AUTRES.map((item) => (
               <li key={item.titre}>

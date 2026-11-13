@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MeteoAdhesion } from '@/lib/protocol/adhesion';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
 
@@ -66,5 +66,34 @@ describe('MeteoAdhesionPanel (SP-MET)', () => {
     cleanup();
     render(<MeteoAdhesionPanel meteo={meteo({ pointsEtapeRenseignes: 3 })} />);
     expect(screen.getByText(/3 points d’étape renseignés sur 3/)).toBeTruthy();
+  });
+
+  // PRA-3b, PR 5 (T-61, [[D-488]]) : une lecture en échec n'est pas une
+  // absence de réponse — aucun état, pas même « Indéterminée ».
+  describe('lecture des points d’étape en échec', () => {
+    it('dit T-61 et ne qualifie pas l’adhésion', () => {
+      render(<MeteoAdhesionPanel meteo={meteo({ etat: 'indeterminee' })} echecLecture onRelire={() => {}} />);
+      expect(
+        screen.getByText('Les points d’étape n’ont pas pu être lus. Ce n’est pas une absence de réponse du patient.'),
+      ).toBeTruthy();
+      expect(screen.queryByText('Indéterminée')).toBeNull();
+      expect(screen.queryByText(/Aucun point d’étape exploitable/)).toBeNull();
+      expect(screen.queryByText(/points? d’étape renseignés? sur 3/)).toBeNull();
+    });
+
+    it('« Réessayer » relit, puis rend le focus au panneau', async () => {
+      const onRelire = vi.fn(async () => {});
+      render(<MeteoAdhesionPanel meteo={meteo()} echecLecture onRelire={onRelire} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+      expect(onRelire).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Météo d’adhésion' }).closest('section')),
+      );
+    });
+
+    it('titre du panneau en h4 sous la phase (Q2 a)', () => {
+      render(<MeteoAdhesionPanel meteo={meteo()} />);
+      expect(screen.getByRole('heading', { level: 4, name: 'Météo d’adhésion' })).toBeTruthy();
+    });
   });
 });

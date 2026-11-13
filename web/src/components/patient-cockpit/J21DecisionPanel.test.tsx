@@ -113,4 +113,26 @@ describe('J21DecisionPanel', () => {
     fireEvent.click(screen.getByText('Alléger'));
     expect(onAjuster).toHaveBeenCalled();
   });
+
+  // PRA-3b, PR 5 (T-61, [[D-488]]) : la ligne du score passe derrière T-61 ;
+  // rien n'est dit « non disponible » ni « en attente du patient ».
+  it('lecture en échec : T-61 à la place du score et des points d’étape', () => {
+    render(<J21DecisionPanel resume={resumeSuivi} echecLecture />);
+    expect(
+      screen.getByText('Les points d’étape n’ont pas pu être lus. Ce n’est pas une absence de réponse du patient.'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/non disponible pour l’instant/)).toBeNull();
+    expect(screen.queryByText(/en attente du patient/)).toBeNull();
+    expect(screen.queryByText(/Score « Mon équilibre »/)).toBeNull();
+    expect(screen.queryByText(/^Jour 12 sur 21/)).toBeNull();
+    // Les gestes de décision restent : ils ne dépendent pas de la lecture.
+    expect(screen.getByRole('button', { name: 'Alléger' })).toBeTruthy();
+  });
+
+  it('titres : panneau en h4, sous-parties en h5 (Q2 a)', () => {
+    render(<J21DecisionPanel resume={resume} />);
+    expect(screen.getByRole('heading', { level: 4, name: /Point d’étape J21/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 5, name: 'Ajuster le protocole' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 5, name: 'Autres décisions' })).toBeTruthy();
+  });
 });
