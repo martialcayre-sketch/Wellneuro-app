@@ -181,6 +181,17 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     const etatLigne = page.getByText(/prises? : |Aucune prise posée/);
     await expect(etatLigne).toHaveText('Aucune prise posée pour l’instant.');
 
+    // Q12a (liste commune 20261113-1442-d) : le bouton reste actif sur une
+    // journée incomplète ; au clic, la consigne du code paraît, rien ne part.
+    const noter = page.getByRole('button', { name: 'C’est noté', exact: true });
+    await expect(noter).toBeEnabled();
+    await noter.click();
+    const consignePrises = page.getByText(
+      'Posez au moins une prise sur la ligne, ou cochez « je n’ai rien mangé ni bu de sucré ce jour-là ».',
+    );
+    await expect(consignePrises).toBeInViewport();
+    await expect(page.getByRole('heading', { name: 'Votre journée' })).toBeVisible();
+
     // « Ajouter une prise » pose 08:00 (l'emplacement proposé à défaut de
     // doigt), puis le premier libre suivant, soit 08:15.
     const ajouter = page.getByRole('button', { name: 'Ajouter une prise' });
@@ -198,6 +209,12 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     // Les quatre présences ont TROIS choix. On en exerce les trois, dont
     // l'abstention explicite — c'est elle qui vaut `null`, une réponse, et non
     // une clé absente.
+    // Une prise posée, des questions sans réponse : la seconde consigne.
+    await noter.click();
+    await expect(
+      page.getByText('Il reste une question sans réponse. Répondez oui, non, ou « je ne sais pas ».'),
+    ).toBeInViewport();
+
     await page.getByRole('button', { name: 'Des protéines à votre première prise ? Oui' }).click();
     await page.getByRole('button', { name: 'Des légumes à au moins deux prises ? Non' }).click();
     await page
@@ -214,7 +231,7 @@ test.describe('Agenda alimentaire — parcours patient', () => {
       .getByRole('button', { name: 'Le repas du soir était le plus important de la journée ? Oui' })
       .click();
 
-    await page.getByRole('button', { name: 'C’est noté ✓' }).click();
+    await noter.click();
 
     // ── 4. L'envoi a réussi, et la journée compte dans l'avancement ────────
     // La journée du jour étant désormais notée, l'écran retombe sur la frise :
