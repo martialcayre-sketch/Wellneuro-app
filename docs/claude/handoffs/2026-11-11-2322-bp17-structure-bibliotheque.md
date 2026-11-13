@@ -285,6 +285,32 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     réelle (clé calculée ajoutée au fichier, puis retirée) : le banc nomme
     `next.turbopack`. Validations : bancs du dossier à 47 tests verts (dont
     7 pour la garde) ; T1 complet à 0.
+  - Contre-passe Codex n° 2 sur `c12bd412` : **BLOQUER**. Elle confirme
+    que les deux détours précédents sont fermés, et en relève deux
+    nouveaux :
+    - une condition `types` dans un `#import` de `package.json` : TypeScript
+      résout la déclaration, et le bundler la cible protégée ;
+    - un alias webpack posé sous `NODE_ENV === 'production'` seul, invisible
+      à l'évaluation du banc.
+
+    Corrigé en changeant de méthode. Interpréter chaque détour en appelle un
+    autre ; les configurations de résolution sont donc **verrouillées**.
+    C'est la première option de la passe initiale.
+    - Sous `web/`, il n'existe que `next.config.mjs`, `package.json` et
+      `tsconfig.json` : aucun babel, swc, jsconfig, second tsconfig ni
+      `package.json` imbriqué.
+    - `package.json` ne porte que ses huit clés actuelles, donc ni
+      `imports`, ni `exports`, ni `browser`.
+    - `tsconfig.json` ne porte que ses clés actuelles (ni `extends`, ni
+      `baseUrl`, ni `rootDirs`…), avec `paths` figé.
+    - `next.config.mjs` est figé par l'empreinte SHA-256 du fichier entier.
+
+    **Coût assumé** : tout changement de `next.config.mjs` rougit ce banc
+    jusqu'à ce que l'empreinte soit ajustée. Le banc dit ce qu'il faut
+    vérifier avant de l'ajuster. Le fichier a connu huit commits depuis sa
+    création. La résolution TypeScript et le verrou sur l'objet évalué
+    restent en place, en défense complémentaire. Validations : bancs du
+    dossier à 47 tests verts ; T1 complet à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
