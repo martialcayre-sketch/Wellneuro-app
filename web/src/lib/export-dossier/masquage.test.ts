@@ -561,6 +561,19 @@ describe('creerMasqueur — garanties', () => {
     expect(masquer('le 01 13 2024 10 30')).toBe(`le ${M} 30`);
   });
 
+  // Contre-passe Codex de #2051 : un jour absent de son mois, une heure en « h » suivie de minutes invalides.
+  it('un jour impossible dans son mois, ou « h99 », n’excuse pas le numéro', () => {
+    expect(masquer('Contact : 31.02.2024 10 30')).toBe(`Contact : 31.${M}`);
+    expect(masquer('Contact : 30-02-2024 10 30')).toBe(`Contact : 30-${M}`);
+    expect(masquer('Contact : 31 04 2024 10 30')).toBe(`Contact : 31 ${M}`);
+    expect(masquer('Contact : 06 12 2024 10 h99')).toBe(`Contact : ${M} h99`);
+    // Les vraies dates restent : 31 janvier, 30 avril, 29 février, « 10h30 ».
+    expect(masquer('le 31.01.2024 10 30')).toBe('le 31.01.2024 10 30');
+    expect(masquer('le 30-04-2024 10 30')).toBe('le 30-04-2024 10 30');
+    expect(masquer('le 29.02.2024 10 30')).toBe('le 29.02.2024 10 30');
+    expect(masquer('le 06 12 2024 10h30')).toBe('le 06 12 2024 10h30');
+  });
+
   it('reste linéaire sur les formes génériques : 80 000 caractères hostiles en moins de 200 ms chacun', () => {
     const N = 80_000;
     const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);

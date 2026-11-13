@@ -210,6 +210,8 @@ const FUITES: Fuite[] = [
   { origine: 'Codex #2051', texte: 'Contact : 06 98 2024 32', identite: ['0698202432'] },
   { origine: 'Codex #2051', texte: 'mon frère : 06 12 2024 32', identite: ['0612202432'] },
   { origine: 'Codex #2051', texte: 'portable 06 2024 1030', identite: ['0620241030'] },
+  { origine: 'Codex #2051', texte: 'Contact : 31.02.2024 10 30', identite: ['0220241030'] },
+  { origine: 'Codex #2051', texte: 'Contact : 06 12 2024 10 h99', identite: ['0612202410'] },
 ];
 
 // ── (b) FIDÉLITÉ ───────────────────────────────────────────────────────────

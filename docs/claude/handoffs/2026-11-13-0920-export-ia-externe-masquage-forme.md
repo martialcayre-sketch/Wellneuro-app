@@ -71,8 +71,12 @@ la session de la refonte.
   « 06 98 2024 32 », « 06 12 2024 32 » et « 06 2024 1030 » sont masqués ; au corpus, dans les deux sens.
 - P2 (fidélité) : écarté avec motif. « 05 11 98 08 15 » a la forme exacte d'un numéro du Sud-Ouest ; rien ne
   les distingue, le masque l'emporte. Un test le documente.
-- Validations : suite `export-dossier` verte (586 tests) ; T1 ; CI, PR-Agent et contre-passe Codex ciblée sur la
-  nouvelle tête.
+- Contre-passe Codex ciblée sur `d42c79fc` : deux constats, corrigés. Un jour impossible dans son mois (« 31.02 »,
+  « 30.02 », « 31.04 ») n'excuse plus le numéro, et une heure en « h » suivie de minutes invalides (« 10 h99 ») non plus.
+  Le 29 février est admis quelle que soit l'année : vérifier l'année bissextile serait disproportionné pour un
+  filet de masquage (écarté avec ce motif).
+- `origin/main` fusionnée deux fois dans la branche (sans conflit), sur autorisation du responsable.
+- Validations : suite `export-dossier` verte (589 tests) ; T1 complet ; CI, PR-Agent sur la tête finale.
 
 ## Problèmes ouverts
 

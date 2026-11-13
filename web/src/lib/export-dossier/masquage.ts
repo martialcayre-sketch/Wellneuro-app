@@ -610,16 +610,25 @@ const EMAIL_GENERIQUE =
 // pas. Une date suivie d'une heure n'est pas un numéro, mais seulement une
 // VRAIE date suivie d'une VRAIE heure : au « 0 » d'un jour (« 01.02.2024 10 30 »)
 // ou d'un mois précédé de son jour (« 12-03-2026 09 00 »), mois de 01 à 12,
-// année en 19xx ou 20xx, heure de 00 à 23 suivie de ses minutes (« 10 30 », « 10:30 ») ou de « h ».
+// année en 19xx ou 20xx, heure de 00 à 23 suivie de ses minutes (« 10 30 »,
+// « 10:30 », « 10h30 ») ou de « h » seul. Un jour qui n'existe pas dans son
+// mois (« 31.02 », « 31.04 », « 30.02 ») n'excuse rien ; le 29 février est
+// admis quelle que soit l'année, l'année bissextile n'est pas vérifiée.
 // Sans ces bornes, « 06 98 2024 32 » passait pour une date et le numéro d'un
-// tiers sortait en clair (contre-revue Codex de #2051, P1). Une date à année
-// sur deux chiffres suivie d'une heure (« 05 11 98 08 15 ») a la forme exacte
-// d'un numéro (05 : indicatif du Sud-Ouest) : elle reste masquée — dans le
-// doute, le masque l'emporte (même contre-revue, P2, écarté).
-const HEURE_APRES_DATE = '[ .\\-](?:[01]\\d|2[0-3])(?:[ .\\-:]?[0-5]\\d(?!\\d)|\\s?h)';
+// tiers sortait en clair (contre-revue Codex de #2051, P1 ; contre-passe :
+// jour impossible, « h99 »). Une date à année sur deux chiffres suivie d'une
+// heure (« 05 11 98 08 15 ») a la forme exacte d'un numéro (05 : indicatif du
+// Sud-Ouest) : elle reste masquée — dans le doute, le masque l'emporte (même
+// contre-revue, P2, écarté).
+const HEURE_APRES_DATE = '[ .\\-](?:[01]\\d|2[0-3])(?:[ .\\-:]?[0-5]\\d|\\s?h(?:[0-5]\\d)?)(?!\\d)';
+const AN_HEURE = `[ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE}`;
+// Au « 0 » d'un mois précédé de son jour : chaque jour, les mois qui l'ont.
+const MOIS_APRES_JOUR =
+  `(?!(?<=(?<!\\d)(?:0[1-9]|[12]\\d)[ .\\-]0)[1-9]${AN_HEURE})` +
+  `(?!(?<=(?<!\\d)30[ .\\-]0)[13-9]${AN_HEURE})` +
+  `(?!(?<=(?<!\\d)31[ .\\-]0)[13578]${AN_HEURE})`;
 const TELEPHONE_GENERIQUE =
-  `(?:0(?!\\d[ .\\-](?:0[1-9]|1[0-2])[ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE})` +
-  `(?!(?<=(?<!\\d)(?:0[1-9]|[12]\\d|3[01])[ .\\-]0)[1-9][ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE})` +
+  `(?:0(?!\\d[ .\\-](?:0[1-9]|1[0-2])${AN_HEURE})${MOIS_APRES_JOUR}` +
   '|(?:\\+|00)[ .\\-]?33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?:[ .\\-]?\\d){8}';
 // NIR : sexe, année, mois, département (2A, 2B compris), commune, ordre, clé
 // facultative — 13 ou 15 chiffres, groupés ou non. La clé n'est pas
