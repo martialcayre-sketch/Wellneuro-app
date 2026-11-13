@@ -35,7 +35,9 @@
 //   0 événement (ou amorçage fait) · 3 délai échu sans événement, toutes
 //   lectures abouties ou certaines seulement (la ligne compte les échecs) ·
 //   2 aucune lecture n'a abouti pendant toute la passe, ou amorçage
-//   impossible (« je n'ai rien pu lire » n'est pas « rien vu ») · 4 usage.
+//   impossible (« je n'ai rien pu lire » n'est pas « rien vu ») · 4 usage,
+//   dont un fichier des traitées absent ou illisible hors `--amorcer`, refusé
+//   avant la boucle.
 //   Lignes de tête : `NOUVELLE` / `AUCUNE` pour `prete`, comme le guetteur
 //   hors dépôt ; `EVENEMENT <sonde>` / `AUCUN <sonde>` pour les deux autres ;
 //   `LECTURE-IMPOSSIBLE` pour le code 2.
@@ -196,6 +198,16 @@ async function principal(argv) {
       for (const d of neuves) console.log(`amorcée c:${d.id} pr=${d.pr} sha=${d.sha.slice(0, 8)} at=${d.at}`);
       console.log(`TOTAL ${neuves.length} amorcée(s)`);
       return 0;
+    }
+    // Un fichier des traitées absent ou illisible est une erreur de
+    // configuration, pas une lecture ratée : sans cette lecture d'essai, la
+    // boucle réessaierait toute la passe (45 minutes par défaut) avant de
+    // rendre 2 (remarque de PR-Agent, #2076).
+    try {
+      lireVus(fichier);
+    } catch (e) {
+      console.error(`${String(e?.message || e).slice(0, 200)} (créer un fichier vide, puis prete --amorcer)\n${USAGE}`);
+      return 4;
     }
     lire = () => declarationsNeuves(lirePrsOuvertes(), lireVus(fichier)).map(ligneDeclaration);
   } else if (sonde === 'merge') {

@@ -13,7 +13,9 @@
     D-087). `--ignorer` écarte les runs déjà signalés.
 - Codes : 0 événement, 3 délai échu, et 2 nouveau, « aucune lecture n'a
   abouti ». Le guetteur hors dépôt rendait 3 dans ce cas, ce qui confondait
-  « rien vu » et « rien lu ».
+  « rien vu » et « rien lu ». Un fichier des traitées absent ou
+  illisible (hors `--amorcer`) rend 4 avant la boucle, au lieu de réessayer toute la passe
+  (remarque de PR-Agent).
 - Banc `scripts/wn-guetteur.test.mjs`, câblé dans `npm run check` et dans le
   CI. Il reprend les cas du motif à l'identique, couvre les trois sondes, les
   codes de la boucle et les usages refusés. Il lance aussi le script par un

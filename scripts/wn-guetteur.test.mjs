@@ -176,6 +176,33 @@ test('lancé par un chemin relatif : usage refusé → 4', () => {
   assert.equal(r.status, 4, r.stdout + r.stderr);
 });
 
+// Remarque de PR-Agent (#2076) : un fichier des traitées absent faisait
+// réessayer toute la passe (45 × 60 s) avant de rendre 2. Il est refusé avant
+// la boucle, sans lecture `gh` ; le délai borne le test s'il régressait.
+test('prete sur un fichier des traitées absent : 4 aussitôt, avant toute lecture', () => {
+  const dossier = mkdtempSync(path.join(tmpdir(), 'wn-guetteur-'));
+  try {
+    const absent = path.join(dossier, 'traitees.txt');
+    const r = spawnSync('node', [SCRIPT, 'prete', absent], { encoding: 'utf8', timeout: 15000 });
+    assert.equal(r.status, 4, r.stdout + r.stderr);
+    assert.match(r.stderr, /fichier des traitées introuvable/);
+    assert.equal(r.stdout, '');
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test('prete sur un chemin illisible (un dossier) : 4 aussitôt, avant toute lecture', () => {
+  const dossier = mkdtempSync(path.join(tmpdir(), 'wn-guetteur-'));
+  try {
+    const r = spawnSync('node', [SCRIPT, 'prete', dossier], { encoding: 'utf8', timeout: 15000 });
+    assert.equal(r.status, 4, r.stdout + r.stderr);
+    assert.equal(r.stdout, '');
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
 for (const args of [[], ['inconnue'], ['merge'], ['merge', 'abc'], ['prete'], ['release-db', 'x'], ['merge', '1', '--iter', '0'], ['merge', '1', '--pas', '-1']]) {
   test(`usage refusé → 4 : ${args.join(' ') || '(vide)'}`, () => {
     const r = spawnSync('node', [SCRIPT, ...args], { encoding: 'utf8' });

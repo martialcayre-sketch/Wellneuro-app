@@ -52,6 +52,12 @@ et relais ».
   - `release-db` → 0, un run en attente d'approbation (geste du responsable) ;
   - `prete` sur une copie de la liste de l'intégrateur → 3 (déclarations déjà vues).
 - Constat : `crossSessionInbound` vaut `"accept"` dans `~/.claude/settings.json`.
+- Conflit avec `main` après #2074 (mêmes points d'insertion dans `web/package.json` et `ci.yml`) : fusion
+  d'`origin/main` sur arbitrage du responsable (`20261113-2010-d`, option A), les deux lignes gardées.
+- Remarque de PR-Agent (« erreur de configuration non immédiate ») corrigée : un fichier des traitées absent ou
+  illisible rend 4 avant la boucle, par une lecture d'essai ; deux tests ajoutés (32/32). `wn-reviewer` sur l'écart
+  (fusions et correctif) : GO, résolution fidèle, parité CI ↔ check 66/66 ; ses deux P2 (indication du message,
+  chemin illisible) corrigés avant le push.
 
 ## Problèmes ouverts
 
