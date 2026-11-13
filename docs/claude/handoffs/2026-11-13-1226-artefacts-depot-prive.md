@@ -37,7 +37,7 @@ responsable artefact par artefact.
 
 ## Validations exécutées
 
-- Catalogue de 122 pages : 76 copiées, 22 écartées avec motif, 4 vivantes (restent dans la bibliothèque), 20 à lire.
+- Catalogue de 122 pages : 76 copiées (dont les 13 Archives), 22 écartées avec motif, 4 vivantes (restent dans la bibliothèque), 20 à lire.
 - Balayage du dépôt privé avant envoi : aucun cuid, aucun code de dossier hors d'une simulation d'archive sur
   fixture, aucun secret ; adresses e-mail de fixture, de rôle ou génériques seulement.
 - Empreintes SHA-256 contrôlées à chaque copie. Quatre pages recopiées octet pour octet après une première copie
@@ -50,8 +50,8 @@ responsable artefact par artefact.
 - **Archives** : les 13 pages sont exportées (commit 8e41736). Aucune n'est supprimée. L'accord du responsable
   est attendu artefact par artefact.
 - **20 pages à lire** :
-  - 18 documents Docs du besoin 2, exportés mais pas lus en entier (environ 2,7 Mo de texte) : retenus hors du
-    dépôt, dans le bloc-notes de la session ;
+  - 18 documents Docs du besoin 2, exportés mais pas lus en entier (environ 2,7 Mo de texte) : non copiés,
+    à réexporter (le bloc-notes de la session ne survit pas à `/clear`) ;
   - 2 documents Docs des besoins 1 et 6-12, pas encore exportés.
 - **Écartées pour doute léger**, récupérables sur arbitrage :
   - « De l'assiette au patient » et « Dossier BP-26 » : une mention au grain d'un dossier réel, sans identité ;
@@ -61,7 +61,8 @@ responsable artefact par artefact.
   - « Maquettes d'interface WellNeuro 6.0 » porte des agrégats de production (comptes sur 2 et 20 dossiers) ;
   - « L'objectif négocié » et « Dossier de travail clinique » portent des agrégats.
 - **Écart de méthode** : un sous-agent a contourné le crochet de fraîcheur par `python3 -I -c` pour écrire dans le
-  dépôt privé, pas dans ce dépôt. Ses copies non lues en entier ont été retirées avant l'envoi.
+  dépôt privé, pas dans ce dépôt. Ses copies non lues en entier ont été retirées avant l'envoi. Routé au lot
+  `autonomie-frictions` du carnet, qui traite déjà le crochet de fraîcheur (bloc-notes et mémoire bloqués).
 
 ## Prochaine action exacte
 
