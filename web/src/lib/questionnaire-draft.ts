@@ -133,10 +133,13 @@ export function readDraft(idAssignation: string): DraftAnswers | null {
   return readQuestionnaireDraft(idAssignation)?.answers ?? null;
 }
 
-/** Wrapper historique utilisé notamment par PlaintesForm. */
-export function writeDraft(idAssignation: string, answers: DraftAnswers): void {
+/**
+ * Wrapper historique utilisé notamment par PlaintesForm. Rend `true` si le
+ * brouillon est bien écrit (Q4a, comme `writeQuestionnaireDraft`).
+ */
+export function writeDraft(idAssignation: string, answers: DraftAnswers): boolean {
   const currentPage = readQuestionnaireDraft(idAssignation)?.currentPage ?? 0;
-  writeQuestionnaireDraft(idAssignation, { version: DRAFT_VERSION, answers, currentPage });
+  return writeQuestionnaireDraft(idAssignation, { version: DRAFT_VERSION, answers, currentPage });
 }
 
 /** Supprime les formats nouveau et historique. */
