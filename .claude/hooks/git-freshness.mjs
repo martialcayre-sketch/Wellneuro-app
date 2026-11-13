@@ -158,6 +158,9 @@ function sous(chemin, racine) {
 function horsDepot() {
   const fichier = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
   if (typeof fichier !== "string" || !fichier) return false;
+  // Un `..` se résoudrait lexicalement avant la lecture des liens : un lien
+  // traversé puis remonté échapperait au contrôle. Aucune exemption.
+  if (fichier.split(/[\\/]+/).includes("..")) return false;
   // Chaque élément du chemin qui existe est relu : un lien symbolique (fichier
   // ou dossier, pendant ou non) ferme l'exemption, sauf s'il se résout.
   const cibleAbsolue = path.resolve(cwd, fichier);
@@ -178,9 +181,12 @@ function horsDepot() {
     if (path.dirname(courant) === courant) break;
   }
   // Fichier existant : son dossier réel, pas celui du lien qui le désigne.
+  // Un lien physique ne se voit pas au realpath : un fichier à plusieurs
+  // noms peut être celui du dépôt. Aucune exemption.
   let cibleReelle = cibleAbsolue;
   try {
     cibleReelle = fs.realpathSync.native(cibleAbsolue);
+    if (fs.statSync(cibleReelle).nlink > 1) return false;
   } catch {
     // fichier neuf : son plus proche dossier existant est résolu ci-dessous
   }

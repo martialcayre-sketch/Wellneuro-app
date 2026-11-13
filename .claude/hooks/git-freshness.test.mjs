@@ -538,6 +538,7 @@ test("liens symboliques et pointeur .git cassé : jamais d'exemption vers le dé
   fs.symlinkSync(path.join(work, "web", "absent.ts"), path.join(blocNotes, "lien-pendant.ts"));
   fs.symlinkSync(path.join(work, "web"), path.join(blocNotes, "lien-dossier"));
   fs.symlinkSync(path.join(work, "web", "absent"), path.join(blocNotes, "lien-dossier-pendant"));
+  fs.linkSync(path.join(work, "web", "existant.ts"), path.join(blocNotes, "lien-physique.ts"));
   // Worktree imbriqué dont le pointeur `.git` ne mène plus nulle part.
   const casse = path.join(work, ".claude", "worktrees", "casse");
   fs.mkdirSync(casse, { recursive: true });
@@ -548,6 +549,8 @@ test("liens symboliques et pointeur .git cassé : jamais d'exemption vers le dé
     path.join(blocNotes, "lien-pendant.ts"),
     path.join(blocNotes, "lien-dossier", "neuf.ts"),
     path.join(blocNotes, "lien-dossier-pendant", "neuf.ts"),
+    path.join(blocNotes, "lien-physique.ts"),
+    `${path.join(blocNotes, "lien-dossier")}/../neuf.ts`,
     path.join(casse, "neuf.ts"),
   ]) {
     const refus = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: fichier } });
