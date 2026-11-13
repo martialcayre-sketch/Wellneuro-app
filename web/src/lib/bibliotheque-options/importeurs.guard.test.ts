@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { builtinModules } from 'node:module';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -97,6 +98,26 @@ function resoutDansLeDossier(
 const CLES_NEXT_ADMISES = ['headers', 'reactStrictMode', 'redirects'];
 const CLES_SENTRY_ADMISES = ['authToken', 'org', 'project', 'silent', 'sourcemaps', 'telemetry', 'webpack', 'widenClientFileUpload'];
 
+/**
+ * UN NOM NU INCONNU EST UN LECTEUR POSSIBLE (contre-passe Codex n° 3 sur
+ * db10dd9f) : `NODE_PATH`, que Next ajoute aux `resolve.modules` de webpack,
+ * peut venir d'un script ou de l'environnement de déploiement — hors du dépôt,
+ * hors de tout verrou de configuration. Un spécificateur nu doit donc nommer
+ * une dépendance déclarée de `web/package.json` ou un module natif de Node ;
+ * sinon il ferme le verrou, quel que soit l'environnement.
+ */
+function dependancesDeclarees(): Set<string> {
+  const paquet = JSON.parse(lire('web/package.json')) as Record<string, Record<string, string> | undefined>;
+  return new Set([...Object.keys(paquet.dependencies ?? {}), ...Object.keys(paquet.devDependencies ?? {})]);
+}
+
+function nomNuInconnu(specificateur: string, dependances: ReadonlySet<string>): boolean {
+  if (specificateur === IMPORT_NON_CONSTANT || /^(\.|\/|@\/)/.test(specificateur)) return false;
+  if (specificateur.startsWith('node:')) return false;
+  const nom = specificateur.startsWith('@') ? specificateur.split('/').slice(0, 2).join('/') : specificateur.split('/')[0];
+  return !dependances.has(nom) && !builtinModules.includes(nom);
+}
+
 /** Un fichier qui peut déplacer la résolution d'un module, où qu'il soit sous `web/`. */
 const CONFIG_DE_RESOLUTION =
   /(^|\/)(package\.json|[jt]sconfig[^/]*\.json|\.babelrc[^/]*|babel\.config\.[^/]+|\.swcrc|next\.config\.[^/]+)$/i;
@@ -181,11 +202,15 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   it('aucun code de production hors du dossier n’importe la bibliothèque', () => {
     const options = optionsDeResolution();
     const cache = createModuleResolutionCache(WEB, x => x, options);
+    const dependances = dependancesDeclarees();
     const importeurs = sources
       .filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER))
       .filter(chemin =>
         specificateursSyntaxiques(lire(chemin), chemin).some(
-          s => importeLaBibliotheque(s) || resoutDansLeDossier(s, chemin, options, sys, cache),
+          s =>
+            importeLaBibliotheque(s) ||
+            nomNuInconnu(s, dependances) ||
+            resoutDansLeDossier(s, chemin, options, sys, cache),
         ),
       );
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
@@ -238,6 +263,28 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
   // autre tsconfig (`typescript.tsconfigPath`) n'est pas vu par le résolveur
   // ci-dessus ; la configuration évaluée de Next n'en porte donc aucun.
+  // CONTRE-ÉPREUVE n° 3 : un nom nu qui n'est ni une dépendance ni un module
+  // natif ferme le verrou ; et le dossier ne porte aucune entrée au nom d'une
+  // dépendance (un `NODE_PATH` vers lui servirait `zod/…` après node_modules).
+  it('un nom nu inconnu est un lecteur possible (contre-passe Codex n° 3, NODE_PATH)', () => {
+    const dependances = dependancesDeclarees();
+    for (const s of ['vocabulaire', 'bibliothequeBesoin2V1', 'options/vocabulaire', '@inconnu/paquet', '@inconnu']) {
+      expect(nomNuInconnu(s, dependances), s).toBe(true);
+    }
+    for (const s of ['react', 'next/server', '@sentry/nextjs', 'node:fs', 'fs/promises', 'path', '@/lib/x', './x', '../x', IMPORT_NON_CONSTANT]) {
+      expect(nomNuInconnu(s, dependances), s).toBe(false);
+    }
+    const entrees = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', DOSSIER], {
+      cwd: RACINE,
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .filter(Boolean)
+      .map(f => f.slice(DOSSIER.length).split('/')[0].replace(/\.[^.]+$/, '').replace(/\.(test|guard)$/, ''));
+    expect(entrees.length).toBeGreaterThan(0);
+    expect(entrees.filter(e => dependances.has(e) || builtinModules.includes(e))).toEqual([]);
+  });
+
   // LES CONFIGURATIONS DE RÉSOLUTION SONT VERROUILLÉES (contre-passe Codex n° 2
   // sur c12bd412) : interpréter chaque détour en appelle un autre — condition
   // `types` d'un `#import` que TypeScript et le bundler résolvent
