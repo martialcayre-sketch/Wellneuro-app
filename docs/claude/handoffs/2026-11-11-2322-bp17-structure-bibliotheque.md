@@ -283,7 +283,8 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     (`webpack` limité à `treeshake`). Seuls `next.config.mjs` et
     `tsconfig.json` existent comme configurations sous `web/`. Mutation
     réelle (clé calculée ajoutée au fichier, puis retirée) : le banc nomme
-    `next.turbopack`.
+    `next.turbopack`. Validations : bancs du dossier à 47 tests verts (dont
+    7 pour la garde) ; T1 complet à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
