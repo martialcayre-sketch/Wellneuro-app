@@ -1,9 +1,12 @@
 # Revue automatique des PR par PR-Agent (Qodo, open source), sur l'API
-# Anthropic. Condition de merge (D-393, qui amende D-290 §1 et §3) : une
-# revue de CodeRabbit sur la tête ; s'il la saute ou bute sur son quota, la
-# revue de PR-Agent sur la tête la remplace. Une seule revue exigée par PR,
-# et toute remarque reçue garde son verdict. Une PR de clôture seule
-# (`paths-ignore` ci-dessous) reçoit CodeRabbit, demandé à la main.
+# Anthropic. Condition de merge (D-499, qui amende D-290 §1 et D-393 §1 et
+# §4) : la revue de PR-Agent sur la tête est la seule revue de bot exigée,
+# prouvée par `node scripts/wn-revue-pr-agent.mjs <N>` → 0 (D-393 §2). Si
+# elle ne remplit pas ses conditions (« pruning diff », fichier exclu, PR de
+# clôture seule, que `paths-ignore` ci-dessous laisse sans run), la revue
+# exigée est celle de `wn-reviewer` sur la tête (D-448, D-499 §2).
+# CodeRabbit et Copilot ne sont plus des recours ; toute remarque reçue, de
+# quelque bot qu'elle vienne, garde son verdict (D-499 §3).
 # Ce fichier est gardé par sa file, comme `.coderabbit.yaml` (D-393, P1).
 #
 # Choix du responsable (2026-10-28) :
@@ -99,9 +102,10 @@ jobs:
           config.custom_model_max_tokens: "200000"
           # Plafond de contexte envoyé par appel. Au-delà, PR-Agent compresse
           # le diff (« pruning diff » au journal) et peut omettre sans le dire
-          # des blocs de suppression : une telle revue ne remplace pas
-          # CodeRabbit (D-393). Seuls les jetons envoyés se paient : relever
-          # le plafond ne renchérit que les PR qui le dépassent.
+          # des blocs de suppression : une telle revue ne compte pas, et
+          # `wn-reviewer` la remplace (D-499 §2). Seuls les jetons envoyés
+          # se paient : relever le plafond ne renchérit que les PR qui le
+          # dépassent.
           config.max_model_tokens: "32000"
 
           # --- Langue ---
