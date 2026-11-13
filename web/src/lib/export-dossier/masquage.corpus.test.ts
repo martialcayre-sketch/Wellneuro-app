@@ -198,6 +198,11 @@ const FUITES: Fuite[] = [
   { origine: 'P1-1', texte: 'joindre mon mari au 06 98 76 54 32', identite: ['0698765432'] },
   { origine: 'P1-1', texte: 'ancien numéro 07.11.22.33.44 ; fixe 04-72-00-11-22', identite: ['0711223344', '0472001122'] },
   { origine: 'P1-1', texte: 'portable 0698765432, ou +33 6 98 76 54 32, ou 0033 (0)6 98 76 54 32', identite: ['0698765432', '33698765432', '0033069876543'] },
+  // Revue PR-Agent de #2051 : séparateurs mêlés, groupements irréguliers, « 00 33 ».
+  { origine: 'P1-1', texte: 'joindre ma sœur au 06 12-34 56 78', identite: ['0612345678'] },
+  { origine: 'P1-1', texte: 'numéros : 06 1234 5678 et 0612 345 678', identite: ['0612345678'] },
+  { origine: 'P1-1', texte: 'depuis l’étranger : 00 33 6 98 76 54 32', identite: ['0033698765432'] },
+  { origine: 'P1-1', texte: 'liste : 06 98 76 54 32 01 23 45 67 89', identite: ['0698765432', '0123456789'] },
   { origine: 'P1-1', texte: 'Sécu : 2 85 03 75 115 123 45', identite: ['285037511512345'] },
   { origine: 'P1-1', texte: 'NIR 285037511512345 et 1850375115123', identite: ['285037511512345', '1850375115123'] },
   { origine: 'P1-1', texte: 'NIR 2 85 03 2A 115 123', identite: ['285032a115123'] },
@@ -269,6 +274,7 @@ const FIDELITE: Fidelite[] = [
   // P1-1 : ce qui ressemble à un numéro ou à un e-mail sans en être un.
   { origine: 'P1-1', texte: 'Bilan du 01/02/2024 10:30, revu le 01.02.2024 10:30' },
   { origine: 'P1-1', texte: 'le 01-02-2024 à 10 h, puis le 01 02 2024 10 30' },
+  { origine: 'P1-1', texte: 'le 05.11.1998 08 15, le 05 11 98 à 08 15, le 12-03-2026 09 00' },
   { origine: 'P1-1', texte: 'Glycémie 0,95 g/L ; TSH 1,85 mUI/L ; ferritine 45 µg/L' },
   { origine: 'P1-1', texte: 'Vitamine D 25-OH : 30 ng/mL ; 1 000 UI/jour ; 2 x 500 mg' },
   { origine: 'P1-1', texte: 'Sommeil 23:30 – 06:45, 3 réveils, 7 h 15' },

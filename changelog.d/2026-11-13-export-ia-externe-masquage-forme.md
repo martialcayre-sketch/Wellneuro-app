@@ -4,8 +4,9 @@ Lot de correction décidé par le responsable sur la revue de sécurité de l'ex
 (pseudonymisée) » ([[D-252]]) : P0-1, P1-1 et P2-1, sans décision nouvelle. Aucune migration, aucun changement
 clinique. P1-2 (identifiant du dossier) et P1-3 (âge, dates, lieux, profession) attendent un arbitrage.
 
-- P1-1 : les textes libres de l'export pseudonymisé masquent, par leur forme et quel que soit leur titulaire, toute
-  adresse e-mail, tout numéro de téléphone français et tout NIR (13 ou 15 chiffres, 2A et 2B compris, clé non
+- P1-1 : les textes libres de l’export pseudonymisé masquent, par leur forme et quel que soit leur titulaire, les
+  formes courantes des adresses e-mail, des numéros de téléphone français (séparateurs mêlés et groupements
+  irréguliers compris) et des NIR (13 ou 15 chiffres, 2A et 2B compris, clé non
   vérifiée). Jusqu'ici, seules les valeurs du dossier lui-même l'étaient : le contact d'un proche ou un NIR saisi en
   texte libre passaient en clair. Une date suivie d'une heure n'est pas prise pour un numéro. Le corpus du masqueur
   reçoit les cas correspondants, dans les deux sens. Le préambule du PDF le dit.

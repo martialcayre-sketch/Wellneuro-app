@@ -591,7 +591,8 @@ function motifsNom(valeur: string | null): Motif[] {
 
 // ── Formes génériques, quel que soit leur titulaire ──
 //
-// Revue de sécurité du 2026-11-12 (P1-1) : les motifs ci-dessus ne viennent
+// Prolonge le filet de [[D-252]] §2 sur les textes libres, sans en changer le
+// périmètre. Revue de sécurité du 2026-11-12 (P1-1) : les motifs ci-dessus ne viennent
 // que des valeurs du dossier. Un e-mail, un numéro ou un NIR d'un PROCHE, ou
 // un ancien numéro du patient, passaient en clair. Ces trois formes se
 // reconnaissent sans connaître leur titulaire, et aucune ne ressemble à une
@@ -602,13 +603,16 @@ function motifsNom(valeur: string | null): Motif[] {
 // Partie locale de 64 caractères au plus (RFC 5321), libellés de domaine de 63.
 const EMAIL_GENERIQUE =
   "[a-z0-9][a-z0-9._%+'\\-]{0,63}@[a-z0-9][a-z0-9\\-]{0,62}(?:\\.[a-z0-9][a-z0-9\\-]{0,62}){1,8}";
-// Numéro français : « 0 » ou l'indicatif, un chiffre de 1 à 9, puis quatre
-// paires sous un MÊME séparateur (espace, point, tiret) ou sans séparateur.
-// La barre n'en est pas un, et le séparateur ne change pas en route : une
-// date suivie d'une heure (« 01/02/2024 10:30 », « 01.02.2024 10:30 ») n'est
-// pas un numéro.
+// Numéro français : « 0 » ou l'indicatif (« +33 », « 0033 », « 00 33 »), un
+// chiffre de 1 à 9, puis huit chiffres, chacun précédé au plus d'un
+// séparateur (espace, point, tiret, mêlés ou non) : « 06 12-34 56 78 »,
+// « 06 1234 5678 », « 0612 345 678 ». La barre et les deux-points n'en sont
+// pas. Une date suivie d'une heure n'est pas un numéro : au « 0 » d'un jour
+// (« 01.02.2024 10 30 ») ou d'un mois (« 02.2024 10 30 ») suivi d'une année
+// en 19xx ou 20xx, la forme ne se cherche pas.
 const TELEPHONE_GENERIQUE =
-  '(?:0|(?:\\+|00)33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?<separateurTelephone>[ .\\-]?)\\d\\d(?:\\k<separateurTelephone>\\d\\d){3}';
+  '(?:0(?!\\d[ .\\-]\\d\\d[ .\\-](?:19|20)\\d\\d)(?!\\d[ .\\-](?:19|20)\\d\\d[ .\\-])' +
+  '|(?:\\+|00)[ .\\-]?33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?:[ .\\-]?\\d){8}';
 // NIR : sexe, année, mois, département (2A, 2B compris), commune, ordre, clé
 // facultative — 13 ou 15 chiffres, groupés ou non. La clé n'est pas
 // vérifiée : un NIR mal recopié reste un NIR.

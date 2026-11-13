@@ -14,8 +14,9 @@ const VERSION_IA_EXTERNE =
   "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, " +
   'la date de naissance, les coordonnées et le médecin traitant sont ' +
   `retirés, et leurs occurrences dans les textes libres sont remplacées par ${MARQUE_MASQUE}. ` +
-  'Les adresses e-mail, les numéros de téléphone français et les NIR sont masqués aussi quand ils ' +
-  'ne sont pas ceux du patient. ' +
+  // [[D-252]] §2, formes génériques du masqueur (revue de sécurité du 2026-11-12, P1-1).
+  'Les formes courantes des adresses e-mail, des numéros de téléphone français et des NIR sont ' +
+  'masquées aussi quand elles ne sont pas celles du patient. ' +
   `Un nom qui est aussi un mot courant est masqué partout (« riz ${MARQUE_MASQUE} » pour un patient ` +
   'nommé Blanc). ' +
   "Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : " +
