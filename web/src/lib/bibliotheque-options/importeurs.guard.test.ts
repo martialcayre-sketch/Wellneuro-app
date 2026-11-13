@@ -283,9 +283,6 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     expect(resoutDansLeDossier('#options', importeur, base)).toBe(false);
   });
 
-  // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
-  // autre tsconfig (`typescript.tsconfigPath`) n'est pas vu par le résolveur
-  // ci-dessus ; la configuration évaluée de Next n'en porte donc aucun.
   // CONTRE-ÉPREUVE n° 3 : un nom nu qui n'est ni une dépendance ni un module
   // natif ferme le verrou ; et le dossier ne porte aucune entrée au nom d'une
   // dépendance (un `NODE_PATH` vers lui servirait `zod/…` après node_modules).
@@ -305,10 +302,14 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       .filter(Boolean);
     expect(fichiers.length).toBeGreaterThan(0);
     // Un segment `@…` est le premier segment d'un nom à portée (`@detour/paquet`) : interdit tel quel (contre-passe Codex n° 6).
-    const interdit = (n: string) => n !== '' && (n.startsWith('@') || dependances.has(n) || builtinModules.includes(n));
+    // Casse ignorée : un build sur système insensible à la casse servirait `react/…` depuis `React/` (`wn-reviewer`).
+    const interdit = (n: string) => {
+      const bas = n.toLowerCase();
+      return bas !== '' && (bas.startsWith('@') || dependances.has(bas) || builtinModules.includes(bas));
+    };
     expect(segmentsDuDossier(fichiers).filter(interdit)).toEqual([]);
     // CONTRE-ÉPREUVE : à toute profondeur, fichier ou dossier, avec ou sans extension.
-    for (const f of ['detour/fs/charge.ts', 'a/b/react/x.ts', 'a/path.ts', 'a/react.test.ts', '.detour/next/x.ts', 'detour/@detour/paquet/charge.ts', '@x.ts']) {
+    for (const f of ['detour/fs/charge.ts', 'a/b/react/x.ts', 'a/path.ts', 'a/react.test.ts', '.detour/next/x.ts', 'detour/@detour/paquet/charge.ts', '@x.ts', 'a/React/x.ts', 'FS.ts']) {
       expect(segmentsDuDossier([`${DOSSIER}${f}`]).some(interdit), f).toBe(true);
     }
     expect(segmentsDuDossier([`${DOSSIER}detour/charge.ts`]).some(interdit)).toBe(false);
@@ -356,6 +357,9 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     expect(empreinte).toBe(EMPREINTE_NEXT_CONFIG);
   });
 
+  // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
+  // autre tsconfig (`typescript.tsconfigPath`) n'est pas vu par le résolveur
+  // ci-dessus ; la configuration évaluée de Next n'en porte donc aucun.
   it('next.config, évalué, ne porte que des clés admises (verrou, passe Codex P1-4)', async () => {
     const evalue = (await import(pathToFileURL(join(WEB, 'next.config.mjs')).href)) as {
       default: { CAPTURE?: boolean; configNext: object; optionsSentry: object };

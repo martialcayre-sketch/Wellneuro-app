@@ -309,7 +309,10 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     **Coût assumé** : tout changement de `next.config.mjs` rougit ce banc
     jusqu'à ce que l'empreinte soit ajustée. Le banc dit ce qu'il faut
     vérifier avant de l'ajuster. Le fichier a connu huit commits depuis sa
-    création. La résolution TypeScript et le verrou sur l'objet évalué
+    création. De même, toute clé nouvelle de `web/package.json` ou de
+    `compilerOptions` (par exemple `type`, `browserslist`,
+    `noUncheckedIndexedAccess`) rougit le banc, même sans rapport avec la
+    résolution : elle s'inscrit nommément dans la liste, en revue. La résolution TypeScript et le verrou sur l'objet évalué
     restent en place, en défense complémentaire. Validations : bancs du
     dossier à 47 tests verts ; T1 complet à 0.
   - Contre-passe Codex n° 3 sur `db10dd9f` : **BLOQUER**. Elle confirme
@@ -368,15 +371,37 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
       Correctif pressenti : canonicaliser le fichier atteint (`realpath`)
       avant la comparaison, avec une contre-épreuve par lien réel.
     - Constats des passes n° 2 à n° 6 : fermés selon cette même passe.
-  - Contre-épreuve en mémoire : `@options` par `paths`, un joker
-    `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
-    l'hôte de résolution. Le motif seul rate `@options`, la résolution le
-    voit. Mutation réelle jouée puis retirée (alias dans `tsconfig` et
-    importeur sous `web/src/app/`) : le banc nomme l'importeur.
-  - Validations : banc de garde à 7 tests verts ; T1 rapide et T1 complet à
-    0 sur l'arbre fusionné avec `bff47e88`. Main a ensuite apporté
-    `c8542cab`, de la documentation seule. T3 local non rejoué : le
-    correctif ne touche qu'un banc, et le CI rejoue la séquence entière.
+  - Correctif initial de P1-4 (`05c5ea2b`), pour mémoire :
+    - Contre-épreuve en mémoire : `@options` par `paths`, un joker
+      `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
+      l'hôte de résolution. Le motif seul rate `@options`, la résolution le
+      voit.
+    - Mutation réelle jouée puis retirée (alias dans `tsconfig` et
+      importeur sous `web/src/app/`) : le banc nomme l'importeur.
+    - Validations d'alors : banc de garde à 7 tests ; T1 rapide et T1
+      complet à 0. Le banc compte aujourd'hui 9 tests.
+    - T3 local non rejoué sur tout le correctif : seul un banc est touché,
+      et le CI rejoue la séquence entière.
+  - CI de `65792d8d` : `wn-attendre-ci` à 0 (`verify` a réellement tourné).
+    PR-Agent à 1 : diff élagué, et deux fichiers hors de la revue
+    (`balayageSources.ts`, `FEATURE_FLAGS.md`, inchangés depuis
+    `ec805bc7`). Repli D-448 : `wn-reviewer` sur le delta
+    `ec805bc7..65792d8d` rend **PASSER**, sans P1 ; banc relu à 49 tests
+    verts. Verdicts de ses remarques :
+    - P2-1, handoff périmé (prochaine action, validations non datées) :
+      corrigé.
+    - P2-2, commentaire « VERROU » placé au-dessus du mauvais test :
+      corrigé.
+    - P2-3, coût des listes de clés de `package.json` et `tsconfig` non
+      documenté : corrigé dans « Coût assumé ».
+    - P2-4a, segment interdit comparé sans ignorer la casse (`React/`) :
+      corrigé, contre-épreuve `a/React/x.ts` et `FS.ts`.
+    - P2-4b, `builtinModules` dépend de la version de Node : écarté. Le CI
+      et le poste local sont tous deux en Node 22.
+    - Question sur les valeurs des `scripts` de `package.json` : routée
+      vers la PR 4, avec l'extension des verrous aux autres bancs.
+      Aucun alias passable par la ligne de commande de `next build` n'a été
+      trouvé.
 
 ## Problèmes ouverts
 
@@ -419,12 +444,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 
 ## Prochaine action exacte
 
-#2006 : CI de la tête, revue sur la tête (PR-Agent prouvé, revue exigée
-depuis D-499). Après le correctif P1-4 : contre-passe Codex ciblée sur P1-4
-(`wn-codex-avis.mjs`, D-505) avant le merge, comme l'a demandé
-l'intégrateur. Chaque remarque reçoit son verdict, puis la PR est
-redéclarée « prête @<nouveau sha> ».
-L'intégrateur merge. La PR 4 (contrôles et garde) suit dans une nouvelle
+#2006 : CI de la nouvelle tête (correctifs des P2 de `wn-reviewer`),
+contre-passe `wn-reviewer` sur ce dernier delta, puis la PR est redéclarée
+« prête @<sha> ». La déclaration le dit clairement : la contre-passe Codex
+n° 7 est un BLOQUER sur le lien symbolique, routé vers la PR 4 par
+l'arbitrage du responsable du 2026-11-13. L'intégrateur juge et merge. La PR 4 (contrôles et garde) suit dans une nouvelle
 session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
 constatée.
 
