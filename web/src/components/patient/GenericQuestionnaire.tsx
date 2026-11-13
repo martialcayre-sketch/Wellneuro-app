@@ -98,6 +98,11 @@ export function GenericQuestionnaire({
   const [savedAt, setSavedAt] = useState<Date | null>(() => readDraftSavedAt(assignation.idAssignation));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
+  // [[D-506]], précision du 2026-11-13 : la question dont la réponse VIENT de
+  // devenir positive. Son message vient dans la fenêtre à son montage, puis
+  // elle est oubliée : revenir sur sa page, ou reprendre un brouillon qui la
+  // porte, ne relance pas le mouvement.
+  const [messageAAmener, setMessageAAmener] = useState<string | null>(null);
   const premierRendu = useRef(true);
   const ignorerProchaineSauvegarde = useRef(false);
   const batchTitleRef = useRef<HTMLHeadingElement>(null);
@@ -248,7 +253,7 @@ export function GenericQuestionnaire({
             assignation.idQuestionnaire,
             answers,
             idQuestion => questionsById.get(idQuestion)?.options,
-          ) && <MessageReponseSuicide className="mt-3" />}
+          ) && <MessageReponseSuicide className="mt-3" defiler /* [[D-506]] : à chaque arrivée au résumé */ />}
         </div>
 
         <ol className="space-y-3" aria-label="Parties du questionnaire">
@@ -366,13 +371,23 @@ export function GenericQuestionnaire({
           <QuestionField
             question={q}
             value={answers[q.id] ?? ''}
-            onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
+            onChange={val => {
+              const positive = (valeur: string | undefined) =>
+                estReponseSuicidePositive(assignation.idQuestionnaire, q.id, valeur, q.options);
+              // Le CHOIX d'une réponse positive, depuis une réponse qui ne
+              // l'était pas : seul geste, hors du résumé, qui amène le message.
+              if (positive(val) && !positive(answers[q.id])) setMessageAAmener(q.id);
+              setAnswers(a => ({ ...a, [q.id]: val }));
+            }}
             displaySelectAsRadioCards={isMicroBatch || estGrille}
             optionLayout={estGrille ? 'grille' : 'cartes'}
           />
           {/* [[D-277]] §1 : dès qu'une réponse positive est choisie, tant qu'elle le reste. */}
           {estReponseSuicidePositive(assignation.idQuestionnaire, q.id, answers[q.id], q.options) && (
-            <MessageReponseSuicide />
+            <MessageReponseSuicide
+              defiler={messageAAmener === q.id}
+              onVenu={() => setMessageAAmener(courant => (courant === q.id ? null : courant))}
+            />
           )}
         </Fragment>
       ))}

@@ -2,8 +2,9 @@
 
 ## Branche et état du dépôt
 
-- Branche `claude/refonte-lien-pat4-questionnaires`, dans le worktree `.claude/worktrees/pat4-questionnaires-agendas` du clone principal. Un commit, posé sur `origin/main@fb66bf90`.
-  - La branche a été recréée une fois sur la nouvelle tête de `main` (`git switch -C`), avant tout commit, sans merge ni rebase. #2053 et #2054 ne touchaient que des documents hors du lot.
+- Branche `claude/refonte-lien-pat4-questionnaires`, dans le worktree `.claude/worktrees/pat4-questionnaires-agendas` du clone principal. PR #2056.
+  - La branche a été recréée une fois sur la nouvelle tête de `main` (`git switch -C`), avant tout commit. #2053 et #2054 ne touchaient que des documents hors du lot.
+  - Après le premier commit, `origin/main` a été mergé deux fois dans la branche, sur demande du responsable (2026-11-13, « Merger origin/main ») : la garde de fraîcheur bloquait l'édition. Dernière tête de `main` intégrée : `abdfded1`.
 - La session ne merge pas : elle déclare la PR « prête @<sha> », et l'intégrateur merge.
 - Le checkout principal n'a pas été touché. Aucun fichier COM-0 n'a été modifié, ni aucun fichier du plan praticien.
 
@@ -13,8 +14,11 @@ Lot PAT-4 du plan patient (`docs/claude/propositions/2026-11-11-refonte-lien-eta
 
 ## Décisions prises
 
-- **Découpage.** Les plaintes (U12) et l'agenda alimentaire (U17) sont restés à l'itération 1 du prototype. Ils sont soumis au responsable avant d'être codés (liste commune `20261113-1008-d`, option a recommandée : seconde PR, avec les seuls changements déjà arbitrés). Cette première PR couvre le reste.
-- **[[D-506]].** `MessageReponseSuicide` porte le défilement : `faireVenirDansLaFenetre` à chaque montage.
+- **Découpage.** Les plaintes (U12) et l'agenda alimentaire (U17) sont restés à l'itération 1 du prototype. Le responsable a répondu le 2026-11-13 (liste commune `20261113-1008-d`) : **attendre une itération 2 du prototype**. Cette PR couvre le reste.
+- **[[D-506]].** `MessageReponseSuicide` porte le défilement (`faireVenirDansLaFenetre`), mais l'écran qui le rend décide du moment, par la prop `defiler`, lue au montage seulement. C'est la réponse **b** du responsable du 2026-11-13 (liste commune `20261113-1035-d`), inscrite en [[D-506]] §4 :
+  - au choix d'une réponse positive, et après retrait puis nouveau choix (`messageAAmener` dans `GenericQuestionnaire` et dans l'anamnèse de l'entrée) ;
+  - à chaque arrivée au résumé ;
+  - jamais au retour sur une page qui porte déjà la réponse, ni à la reprise d'un brouillon.
   - Rien ne se passe si le message est déjà entièrement visible, `scroll-padding` du document compris.
   - `block: 'nearest'` ; animé, sauf en mouvement réduit (préférence du système ou `data-reading-motion`).
   - Le focus ne bouge jamais.
@@ -48,6 +52,8 @@ Lot PAT-4 du plan patient (`docs/claude/propositions/2026-11-11-refonte-lien-eta
 - `web/src/lib/questionnaire-draft.ts`, `web/src/lib/agenda-sommeil/libelles.ts`.
 - `web/src/components/food-observation/PatientFoodObservationPanel.tsx` et son test.
 - `web/e2e/portail-message-securite.spec.ts` (nouveau), `web/e2e/helpers/db.ts` (`creerAssignationQuestionnaire`), `web/e2e/agenda-sommeil-saisie.spec.ts` (libellés T-41a, T-42a).
+- `web/src/app/portail/[token]/page.tsx` (anamnèse de l'entrée : `messageAAmener`).
+- `docs/decisions/D-506.md` (§4, précision du 2026-11-13).
 - `changelog.d/2026-11-13-refonte-lien-pat4-questionnaires-agendas.md`, ce handoff.
 
 ## Validations exécutées
@@ -61,34 +67,35 @@ Lot PAT-4 du plan patient (`docs/claude/propositions/2026-11-11-refonte-lien-eta
 - **Revue indépendante** wn-reviewer (relecture clinique de D-506, textes octet par octet) : NO-GO en l'état, GO sous conditions.
   - P1-1, une date ISO restante (`plan.from`) : corrigée.
   - P1-2, mesures et entrée : ajoutées, voir ci-dessous.
-  - P1-3, sens d'« apparition » : question `20261113-1035-d`.
+  - P1-3, sens d'« apparition » : question `20261113-1035-d`, tranchée b, implémentée.
   - P2 traités : `scroll-padding` pris en compte ; JSDoc fusionnée ; tests ajoutés (intégration D-506 dans le questionnaire, T-40, date en lettres, dernière transmission).
   - P2 laissés, avec motif :
     - `LienReconnexion` local de l'entrée : changement minimal ;
     - `trace.localDate` est une clé UTC, donc un jour décalé est possible autour de minuit. On ne peut pas le corriger sans changer la clé, ce qui est interdit.
-- **Mesures Q11b** (E2E, build de production, local, Michel Dogné ; px CSS ; relevé stable en mouvement réduit) :
-  - **Téléphone 390 px au zoom 200 %** (fenêtre émulée 195 × 422, police racine 16 px) :
-    - message des questionnaires : 975 px. Après défilement, haut en 0, 422 px visibles. Même résultat au résumé, en Chromium et en WebKit ;
-    - entrée : 570 px. Relevé animé, Chromium : haut 304 px, 118 px visibles ; WebKit : haut 106 px, 316 px visibles.
-  - **Confort 112,5 %** (390 × 844, police racine 18 px) : 363 px, le message tient entier.
+- **Deuxième revue wn-reviewer** (fallback de PR-Agent, élagué, sur `361cadbb`) : NO-GO. P1-A (1035-d) : tranchée b, implémentée. P1-B : les mesures de l'entrée du handoff étaient relevées en cours d'animation, et l'assertion « haut dans la fenêtre » était trop faible. L'E2E attend désormais un relevé stable et le juge par `bienPlace` : message entier dans la part utile de la fenêtre (fenêtre moins `scroll-padding`), ou son haut au haut de cette part s'il la dépasse. Quatrième réglage ajouté : confort 112,5 % en mouvement réduit.
+- **Après (b)** : Vitest ciblés 154/154 ; **T1 complet** vert ; **T2** code 1 : Vitest 17 265 passés, Playwright 381 passés, 34 ignorés, **1 échec hors lot** : `mode-consultation-sans-chiffre.spec.ts:181` (iPhone 13, le tiroir praticien « Détail des réponses » ne paraît pas). Le lot ne touche aucun fichier praticien, et le même test passe sur Desktop Chromium.
+- **Mesures Q11b** (T2 local après (b), build de production, Michel Dogné ; px CSS ; relevés stables, tous jugés bien placés par `bienPlace`) :
+  - **Téléphone 390 px au zoom 200 %** (fenêtre émulée 195 × 422, police racine 16 px, marge basse 80) :
+    - message des questionnaires : 975 px. Haut en 0, 422 px visibles, sous la question comme au résumé, animé ou non, en Chromium et en WebKit ;
+    - entrée : 570 px. Haut en 0, 422 px visibles, en Chromium et en WebKit.
+  - **Confort 112,5 %** (390 × 844, police racine 18 px) : 363 px, le message tient entier, animé ou non. Haut à 392 px en Chromium (marge basse 90), à 402 px en WebKit (marge basse 80).
   - Le focus est inchangé dans tous les cas.
-  - **Dépassement confirmé** au zoom 200 % : renvoyé au responsable (liste commune `20261113-1050-d`, D-506 §2). Téléphone réel : non mesuré.
+  - **Dépassement confirmé** au zoom 200 %. Le responsable a répondu c le 2026-11-13 (liste commune `20261113-1050-d`) : revoir le texte ou l'ordre, par une décision clinique hors de PAT-4. D-506 s'applique tel quel en attendant. Téléphone réel : non mesuré.
 
 ## Problèmes ouverts
 
-- `20261113-1008-d` : plaintes et agenda alimentaire (seconde PR).
-- `20261113-1035-d` (clinique) : relancer ou non le défilement au retour sur une page qui porte la réponse positive. La session recommande a (code actuel) ; Codex retient b.
-- `20261113-1050-d` (clinique) : dépassement au zoom 200 %. La session ne recommande pas d'option. Codex retient c (changer l'ordre ou le texte, décision clinique hors de PAT-4). D-506 s'applique tel quel en attendant.
+- Plaintes (U12) et agenda alimentaire (U17) : attendent une itération 2 du prototype (`20261113-1008-d`).
+- `20261113-1050-d` (clinique) : lot de décision à ouvrir hors de PAT-4 (D-xxx, texte ou ordre du message de [[D-277]] §1).
 - Mesure sur téléphone réel (D-506 §2) : geste du responsable ou d'un testeur.
-- `portail-rail-lateral.spec.ts:196` : rouge hors du lot, à instruire si la CI le reproduit.
+- `mode-consultation-sans-chiffre.spec.ts:181` (iPhone 13) : rouge local hors du lot, à instruire si la CI le reproduit. `portail-rail-lateral.spec.ts:196`, rouge au T2 précédent, ne s'est reproduit ni en CI ni au second T2.
 
 ## Prochaine action exacte
 
-T1 complet, puis commit, push et PR (`--body-file`). Ensuite :
-- `node scripts/wn-attendre-ci.mjs <N>` en tâche de fond ;
-- `node scripts/wn-revue-pr-agent.mjs <N>` → 0, avec un verdict par remarque.
+Sur la nouvelle tête de #2056 :
+- `node scripts/wn-attendre-ci.mjs 2056` en tâche de fond, → 0 ;
+- `node scripts/wn-revue-pr-agent.mjs 2056` → 0, sinon la revue wn-reviewer sur la tête ; un verdict par remarque.
 
-Puis déclarer « prête @<sha> », écrire la ligne `prete` au registre D-503, et mettre à jour la page de suivi patient (fiche PAT-4, journal). Après les réponses de `1008-d` et `1035-d` : seconde PR (plaintes, agenda alimentaire), et correctif D-506 si l'option b est retenue.
+Si GO : déclarer « prête @<sha> », écrire la ligne `prete` au registre D-503, et mettre à jour la page de suivi patient (fiche PAT-4, journal). Ensuite, sur l'itération 2 du prototype : une seconde PR (plaintes, agenda alimentaire).
 
 ## Interdits encore actifs
 

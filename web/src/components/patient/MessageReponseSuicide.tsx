@@ -18,13 +18,9 @@ function mouvementReduit(): boolean {
 }
 
 /**
- * [[D-506]] (amende [[D-277]] §1) : à chaque apparition du message, résumé
- * compris, le faire venir dans la fenêtre par le plus petit défilement s'il
- * n'y est pas entièrement. Le focus ne bouge pas ; en mouvement réduit, aucun
- * défilement animé. L'effet ne court qu'au montage : ni un nouveau rendu ni
- * le défilement du patient ne le relancent. Chaque montage du message compte
- * comme une apparition : choix d'une réponse positive, résumé, et aussi retour
- * sur une page qui la porte déjà.
+ * [[D-506]] (amende [[D-277]] §1) : faire venir le message dans la fenêtre
+ * par le plus petit défilement s'il n'y est pas entièrement. Le focus ne
+ * bouge pas ; en mouvement réduit, aucun défilement animé.
  */
 export function faireVenirDansLaFenetre(element: HTMLElement): void {
   if (typeof element.scrollIntoView !== 'function') return;
@@ -40,11 +36,35 @@ export function faireVenirDansLaFenetre(element: HTMLElement): void {
   element.scrollIntoView({ block: 'nearest', behavior: mouvementReduit() ? 'auto' : 'smooth' });
 }
 
-export function MessageReponseSuicide({ className = '' }: { className?: string }) {
+/**
+ * Quand le message vient dans la fenêtre : décidé par l'écran qui le rend, au
+ * montage seulement (précision de [[D-506]] du 2026-11-13). Au choix d'une
+ * réponse positive, et après retrait puis nouveau choix ; au résumé, à chaque
+ * arrivée. Jamais au retour sur une page qui porte déjà la réponse, ni à la
+ * reprise d'un brouillon : la présence continue d'une réponse positive ne
+ * relance pas le mouvement. Ni un nouveau rendu ni le défilement du patient
+ * ne le relancent.
+ */
+export function MessageReponseSuicide({
+  className = '',
+  defiler = false,
+  onVenu,
+}: {
+  className?: string;
+  /** Faire venir le message dans la fenêtre à ce montage. */
+  defiler?: boolean;
+  /** Appelé après le défilement, pour que l'écran l'oublie. */
+  onVenu?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  // Les valeurs du MONTAGE : l'effet ne court qu'une fois.
+  const auMontage = useRef({ defiler, onVenu });
 
   useEffect(() => {
-    if (ref.current) faireVenirDansLaFenetre(ref.current);
+    const { defiler: aDefiler, onVenu: venu } = auMontage.current;
+    if (!aDefiler || !ref.current) return;
+    faireVenirDansLaFenetre(ref.current);
+    venu?.();
   }, []);
 
   return (

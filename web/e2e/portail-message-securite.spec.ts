@@ -6,13 +6,16 @@
 // sous la liste des signaux, au zoom 200 %. Les deux projets jouent tout :
 // Desktop Chromium, iPhone 13 (WebKit).
 //
-// Ce que la réception de D-506 attend ici : le haut du message dans la
-// fenêtre après son apparition, le focus là où le patient l'a laissé. Les
-// mesures (hauteur du message, part visible, fenêtre, en px CSS) sont
-// consignées en annotation et dans la sortie : elles disent si le message
-// dépasse la fenêtre, ce qui revient au responsable (D-506 §2). Le cas « déjà
-// visible », le mouvement réduit du réglage patient et l'unicité par
-// apparition sont épinglés en Vitest (`MessageReponseSuicide.test.tsx`).
+// Ce que la réception de D-506 attend ici : le message placé par le plus
+// petit défilement dans la part utile de la fenêtre (`bienPlace`), le focus
+// là où le patient l'a laissé. Les mesures (hauteur du message, part visible,
+// fenêtre, marges de défilement, en px CSS) sont consignées en annotation et
+// dans la sortie : elles disent si le message dépasse la fenêtre, ce qui
+// revient au responsable (D-506 §2). Le cas « déjà visible », le mouvement
+// réduit du réglage patient, et les moments du mouvement (au choix et au
+// résumé, jamais au retour sur la page ni à la reprise d'un brouillon :
+// précision du 2026-11-13) sont épinglés en Vitest
+// (`MessageReponseSuicide.test.tsx`).
 //
 // Patient fictif Michel Dogné (PAT_SEED_03). Une consultation par la route
 // praticien et une assignation `Q_NEU_01` sans réponse, retirées par
@@ -30,9 +33,16 @@ const REGLAGES = [
   { nom: 'téléphone 390 px, zoom 200 %', vue: { width: 195, height: 422 }, confort: false, mouvementReduit: false },
   { nom: 'téléphone 390 px, zoom 200 %, mouvement réduit', vue: { width: 195, height: 422 }, confort: false, mouvementReduit: true },
   { nom: 'téléphone 390 px, confort 112,5 %', vue: { width: 390, height: 844 }, confort: true, mouvementReduit: false },
+  { nom: 'téléphone 390 px, confort 112,5 %, mouvement réduit', vue: { width: 390, height: 844 }, confort: true, mouvementReduit: true },
 ] as const;
 
-type Mesure = { message: number; haut: number; visible: number; fenetre: number; largeur: number; policeRacine: string };
+type Mesure = {
+  message: number; haut: number; visible: number; fenetre: number; largeur: number; policeRacine: string;
+  /** `scroll-padding` du document : la part de la fenêtre qu'une barre fixe occupe. */
+  margeHaut: number; margeBas: number;
+  /** Défilement de la page, et ce qu'il en reste avant le bas du document. */
+  defile: number; resteADefiler: number;
+};
 
 async function mesurer(page: Page): Promise<Mesure> {
   return page.evaluate((debut) => {
@@ -41,32 +51,58 @@ async function mesurer(page: Page): Promise<Mesure> {
     if (!message) throw new Error('message absent');
     const { top, bottom, height } = message.getBoundingClientRect();
     const fenetre = window.innerHeight;
+    const racine = document.documentElement;
+    const style = getComputedStyle(racine);
     return {
       message: Math.round(height),
       haut: Math.round(top),
       visible: Math.round(Math.max(0, Math.min(bottom, fenetre) - Math.max(top, 0))),
       fenetre,
       largeur: window.innerWidth,
-      policeRacine: getComputedStyle(document.documentElement).fontSize,
+      policeRacine: style.fontSize,
+      margeHaut: Math.round(parseFloat(style.scrollPaddingTop) || 0),
+      margeBas: Math.round(parseFloat(style.scrollPaddingBottom) || 0),
+      defile: Math.round(window.scrollY),
+      resteADefiler: Math.round(racine.scrollHeight - fenetre - window.scrollY),
     };
   }, DEBUT_DU_MESSAGE);
 }
 
 /**
- * Le haut du message est dans la fenêtre : son début se lit sans défiler. La
- * mesure n'est rendue qu'une fois le défilement animé terminé (deux relevés
- * identiques à 150 ms d'écart) : relevée en cours de course, la position ne
- * dirait rien du résultat.
+ * Le placement que D-506 attend de `scrollIntoView({ block: 'nearest' })`
+ * dans la part utile de la fenêtre (fenêtre moins `scroll-padding`) : le
+ * message entier s'il y tient, sinon son haut au haut de la part utile. Seule
+ * exception : le bas du document atteint, la page ne peut pas défiler plus ;
+ * le haut du message doit alors être dans la part utile. À 1 px près
+ * (arrondis des positions).
  */
-async function attendreLeHautDansLaFenetre(page: Page): Promise<Mesure> {
+function bienPlace(m: Mesure): boolean {
+  const partUtile = m.fenetre - m.margeHaut - m.margeBas;
+  const hautDansLaPart = m.haut >= m.margeHaut - 1 && m.haut < m.fenetre - m.margeBas;
+  if (m.resteADefiler <= 1 && hautDansLaPart) return true;
+  if (m.message > partUtile) return Math.abs(m.haut - m.margeHaut) <= 1;
+  return m.haut >= m.margeHaut - 1 && m.haut + m.message <= m.fenetre - m.margeBas + 1;
+}
+
+/**
+ * La mesure n'est jugée qu'une fois le défilement terminé (deux relevés
+ * identiques à 150 ms d'écart) : relevée en cours de course, la position ne
+ * dirait rien du résultat. La mesure stable est rendue telle quelle, pour
+ * la consigne, et jugée par `bienPlace`.
+ */
+async function attendreLeMessagePlace(page: Page): Promise<Mesure> {
   let precedente = '';
+  let stable: Mesure | null = null;
   await expect.poll(async () => {
     const m = await mesurer(page);
-    const stable = JSON.stringify(m) === precedente;
-    precedente = JSON.stringify(m);
-    return stable && m.haut >= 0 && m.haut < m.fenetre;
+    const texte = JSON.stringify(m);
+    if (texte === precedente) stable = m;
+    precedente = texte;
+    return stable !== null;
   }, { timeout: 5_000, intervals: [150] }).toBe(true);
-  return mesurer(page);
+  const m = stable as unknown as Mesure;
+  expect(bienPlace(m), `placement du message : ${JSON.stringify(m)}`).toBe(true);
+  return m;
 }
 
 test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-506]])', () => {
@@ -90,7 +126,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
   });
 
   for (const reglage of REGLAGES) {
-    test(`${reglage.nom} : sous la question puis au résumé, le haut du message vient dans la fenêtre, le focus ne bouge pas`, async ({ page, context }, testInfo) => {
+    test(`${reglage.nom} : sous la question puis au résumé, le message vient dans la fenêtre, le focus ne bouge pas`, async ({ page, context }, testInfo) => {
       await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
       if (reglage.confort) {
         await page.addInitScript(() => {
@@ -125,7 +161,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
       }, DEBUT_DU_MESSAGE);
       await b7(1).check();
       const focusAvant = await focus();
-      const sousLaQuestion = await attendreLeHautDansLaFenetre(page);
+      const sousLaQuestion = await attendreLeMessagePlace(page);
       const focusApres = await focus();
       expect(focusApres).toEqual(focusAvant);
       expect(focusApres.dansLeMessage).toBe(false);
@@ -133,7 +169,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
       // Au résumé : une nouvelle apparition.
       await page.getByRole('button', { name: 'Voir le résumé' }).click();
       await expect(page.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBeFocused();
-      const auResume = await attendreLeHautDansLaFenetre(page);
+      const auResume = await attendreLeMessagePlace(page);
       // Le focus reste sur le titre du résumé, où l'écran le pose.
       await expect(page.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBeFocused();
 
@@ -146,7 +182,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
   // L'entrée du parcours : la case « Idées noires ou suicidaires » des
   // signaux, au téléphone au zoom 200 %. Le consentement et la fiche sont
   // ceux du parcours normal ; l'anamnèse n'est pas validée.
-  test('entrée, téléphone 390 px, zoom 200 % : sous la liste des signaux, le haut du message vient dans la fenêtre', async ({ page, context }, testInfo) => {
+  test('entrée, téléphone 390 px, zoom 200 % : sous la liste des signaux, le message vient dans la fenêtre', async ({ page, context }, testInfo) => {
     await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
     await page.setViewportSize({ width: 195, height: 422 });
     await page.goto(`/portail/${PATIENT.idPatient}`);
@@ -177,7 +213,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
     // Section des signaux.
     const caseSignal = page.getByLabel(/Idées noires ou suicidaires/);
     await caseSignal.check();
-    const auxSignaux = await attendreLeHautDansLaFenetre(page);
+    const auxSignaux = await attendreLeMessagePlace(page);
 
     const consigne = `${testInfo.project.name} — entrée, téléphone 390 px, zoom 200 % — sous la liste des signaux : ${JSON.stringify(auxSignaux)}`;
     testInfo.annotations.push({ type: 'mesure D-506', description: consigne });
