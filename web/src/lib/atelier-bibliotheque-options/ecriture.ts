@@ -84,7 +84,8 @@ export type DemandeVersion = {
   auteur: string;
 };
 
-export type RaisonRefusVersion = 'option_hors_structure' | 'etat_divergent' | 'texte_inchange';
+export const RAISONS_REFUS_VERSION = ['option_hors_structure', 'etat_divergent', 'texte_inchange'] as const;
+export type RaisonRefusVersion = (typeof RAISONS_REFUS_VERSION)[number];
 
 export type IssueVersion =
   | { issue: 'versee'; version: { id: string; optionId: string; rubrique: string; numero: number } }
@@ -142,18 +143,21 @@ export type DemandeActe = {
   validateur: string;
 };
 
-export type RaisonRefusActe =
-  | 'relecture_requise'
-  | 'motif_requis'
-  | 'introuvable'
-  | 'version_depassee'
-  | 'empreinte_divergente'
-  | 'etat_illisible'
-  | 'etat_divergent'
-  | 'deja_dans_cet_etat'
-  | 'structure_non_signee'
-  | 'option_hors_structure'
-  | 'texte_a_relire';
+export const RAISONS_REFUS_ACTE = [
+  'relecture_requise',
+  'motif_requis',
+  'introuvable',
+  'version_depassee',
+  'empreinte_divergente',
+  'etat_illisible',
+  'etat_divergent',
+  'deja_dans_cet_etat',
+  'structure_non_signee',
+  'structure_a_relire',
+  'option_hors_structure',
+  'texte_a_relire',
+] as const;
+export type RaisonRefusActe = (typeof RAISONS_REFUS_ACTE)[number];
 
 export type IssueActe =
   | { issue: 'posee'; acte: ActeSerialise; etat: EtatRubriqueOption }
@@ -164,6 +168,9 @@ export async function poserActeTexte(demande: DemandeActe, contexte: ContexteAte
   if (demande.acte === 'retiree' && demande.motif === null) return { issue: 'refusee', raison: 'motif_requis' };
   // La signature de la structure précède la validation du texte (porte 23,
   // patron des fiches d'usage). Saisir et retirer restent ouverts.
+  // Une structure « à relire » (fiches d'usage re-signées depuis) est nommée
+  // pour ce qu'elle est (DC-24).
+  if (demande.acte === 'validee' && contexte.etatStructure === 'a_relire') return { issue: 'refusee', raison: 'structure_a_relire' };
   if (demande.acte === 'validee' && contexte.etatStructure !== 'signee') return { issue: 'refusee', raison: 'structure_non_signee' };
 
   return prisma.$transaction(async (tx): Promise<IssueActe> => {

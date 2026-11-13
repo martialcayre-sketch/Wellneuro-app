@@ -108,7 +108,7 @@ describe('poser un acte (D-480 §3)', () => {
   it('valider : relecture strictement `true`, structure signée — refusés avant toute transaction', async () => {
     expect(await poserActeTexte({ ...ACTE, relectureIntegrale: 'true' }, contexte())).toEqual({ issue: 'refusee', raison: 'relecture_requise' });
     expect(await poserActeTexte(ACTE, contexte('non_signee'))).toEqual({ issue: 'refusee', raison: 'structure_non_signee' });
-    expect(await poserActeTexte(ACTE, contexte('a_relire'))).toEqual({ issue: 'refusee', raison: 'structure_non_signee' });
+    expect(await poserActeTexte(ACTE, contexte('a_relire'))).toEqual({ issue: 'refusee', raison: 'structure_a_relire' });
     expect(await poserActeTexte({ ...ACTE, acte: 'retiree' }, contexte())).toEqual({ issue: 'refusee', raison: 'motif_requis' });
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
@@ -122,6 +122,9 @@ describe('poser un acte (D-480 §3)', () => {
         data: { idTexte: 'texte0000001', acte: 'validee', empreinte: SHA, validateur: 'responsable@exemple.fr', relectureIntegrale: true, motif: null },
       }),
     );
+    // Le verrou du couple, pris AVANT la lecture de la dernière version.
+    expect(tx.$executeRaw.mock.calls[0].slice(1)).toEqual([`bo|${OPTION}|dose`]);
+    expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.bibliothequeOptionTexte.findFirst.mock.invocationCallOrder[0]);
   });
 
   it('une version qui n’est plus la dernière, une empreinte ou un dernier acte qui ont bougé : rien d’écrit', async () => {

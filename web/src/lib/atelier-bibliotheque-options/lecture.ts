@@ -126,15 +126,19 @@ export function assemblerAtelier(lignes: readonly LigneLue[], contexte: Contexte
   };
 }
 
+/**
+ * Deux lectures : les versions SANS leur texte (de quoi trouver la dernière de
+ * chaque couple et juger son état), puis le texte des seules dernières
+ * versions — l'historique ne se charge pas à chaque affichage (`wn-reviewer`).
+ */
 export async function lireAtelierOptions(contexte: ContexteAtelier = contexteDuDepot()): Promise<AtelierOptions> {
-  const lignes = await prisma.bibliothequeOptionTexte.findMany({
+  const versions = await prisma.bibliothequeOptionTexte.findMany({
     orderBy: [{ optionId: 'asc' }, { rubrique: 'asc' }, { numero: 'asc' }],
     select: {
       id: true,
       optionId: true,
       rubrique: true,
       numero: true,
-      texte: true,
       texteSha256: true,
       structureSha256: true,
       auteur: true,
@@ -144,5 +148,17 @@ export async function lireAtelierOptions(contexte: ContexteAtelier = contexteDuD
       },
     },
   });
-  return assemblerAtelier(lignes, contexte);
+  const dernieres = new Map<string, { id: string; numero: number }>();
+  for (const v of versions) {
+    const cle = `${v.optionId}|${v.rubrique}`;
+    const vu = dernieres.get(cle);
+    if (!vu || v.numero > vu.numero) dernieres.set(cle, { id: v.id, numero: v.numero });
+  }
+  const ids = [...dernieres.values()].map(d => d.id);
+  const textes = ids.length === 0
+    ? []
+    : await prisma.bibliothequeOptionTexte.findMany({ where: { id: { in: ids } }, select: { id: true, texte: true } });
+  const texteDe = new Map(textes.map(t => [t.id, t.texte]));
+  // Une version qui n'est pas la dernière n'est jamais affichée : son texte reste vide.
+  return assemblerAtelier(versions.map(v => ({ ...v, texte: texteDe.get(v.id) ?? '' })), contexte);
 }

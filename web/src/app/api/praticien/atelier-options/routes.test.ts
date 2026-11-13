@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RaisonRefusActe, RaisonRefusVersion } from '@/lib/atelier-bibliotheque-options/ecriture';
 
 const { getServerSession, verserTexte, poserActeTexte, lireAtelierOptions } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -67,6 +66,9 @@ describe('atelier de la bibliothèque des options — drapeau, session, garde du
     expect((await postActe(requete(ACTE))).status).toBe(403);
     expect(verserTexte).not.toHaveBeenCalled();
     expect(poserActeTexte).not.toHaveBeenCalled();
+    // La garde passe AVANT la lecture du corps : un corps illisible reçoit 403, pas 400.
+    const illisible = new Request('http://localhost/api/praticien/atelier-options/x', { method: 'POST', body: '{pas du json' });
+    expect((await postVersion(illisible)).status).toBe(403);
   });
 
   it('saisie : identifiant, rubrique, texte et dernière version vue contrôlés ; l’auteur est la session', async () => {
@@ -102,11 +104,10 @@ describe('atelier de la bibliothèque des options — drapeau, session, garde du
   });
 
   it('chaque raison de refus du module d’écriture a son message en français et son statut', async () => {
-    const raisons: (RaisonRefusVersion | RaisonRefusActe)[] = [
-      'option_hors_structure', 'etat_divergent', 'texte_inchange',
-      'relecture_requise', 'motif_requis', 'introuvable', 'version_depassee', 'empreinte_divergente',
-      'etat_illisible', 'deja_dans_cet_etat', 'structure_non_signee', 'texte_a_relire',
-    ];
+    // Les listes du module RÉEL : une raison ajoutée au type sans message rougit ici.
+    const reel = await vi.importActual<typeof import('@/lib/atelier-bibliotheque-options/ecriture')>('@/lib/atelier-bibliotheque-options/ecriture');
+    const raisons = [...reel.RAISONS_REFUS_VERSION, ...reel.RAISONS_REFUS_ACTE];
+    expect(raisons.length).toBeGreaterThanOrEqual(15);
     for (const r of raisons) expect(MESSAGES_REFUS[r], r).toBeDefined();
     poserActeTexte.mockResolvedValue({ issue: 'refusee', raison: 'structure_non_signee' });
     const res = await postActe(requete(ACTE));

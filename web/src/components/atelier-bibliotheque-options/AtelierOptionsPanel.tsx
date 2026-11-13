@@ -153,6 +153,10 @@ function Rubrique({
             {v.dernierActe
               ? ` — ${v.dernierActe.acte === 'validee' ? 'validée' : 'retirée'} le ${formatDate(v.dernierActe.le)}`
               : ''}
+            {/* Une validation posée sur une autre structure n'est pas une validation du jour (DC-24). */}
+            {v.dernierActe?.acte === 'validee' && (r.etat.etat === 'a_relire' || r.etat.etat === 'hors_structure')
+              ? ', sur une structure qui n’est plus celle du jour'
+              : ''}
             {v.dernierActe?.acte === 'retiree' && v.dernierActe.motif ? ` (motif : ${v.dernierActe.motif})` : ''}
           </p>
         </div>

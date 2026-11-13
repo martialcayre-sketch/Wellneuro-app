@@ -56,6 +56,9 @@ export function libelleEtatRubrique(etat: EtatRubriqueOption): { texte: string; 
 export function obstacleValidation(etat: EtatRubriqueOption, structure: EtatBibliotheque): string | null {
   if (etat.etat === 'hors_structure') return 'Cette option n’est plus déclarée par la structure : son texte ne se valide plus.';
   if (etat.etat === 'a_relire') return 'Ce texte accompagne une structure qui n’est plus celle du jour : saisissez-en une version neuve.';
+  if (structure === 'a_relire') {
+    return 'La structure de la bibliothèque est à relire (les fiches d’usage ont changé depuis sa signature) : la validation s’ouvrira après sa re-signature.';
+  }
   if (structure !== 'signee') return 'La structure de la bibliothèque n’est pas signée : la validation s’ouvrira après sa signature.';
   return null;
 }

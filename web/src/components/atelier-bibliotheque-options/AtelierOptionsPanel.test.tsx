@@ -90,6 +90,15 @@ describe('atelier de la bibliothèque des options (D-480 §3)', () => {
     expect(JSON.parse(init.body as string)).toEqual({ optionId: 'OPT_BANC_A', rubrique: 'dose', texte: 'Texte synthétique.', derniereVersionVue: null });
   });
 
+  it('structure à relire : nommée comme telle, validation fermée', async () => {
+    servir(atelier('a_relire', { version: VERSION, etat: { etat: 'a_valider' }, etatActes: { etat: 'a_valider' } }), true);
+    render(<AtelierOptionsPanel />);
+    await screen.findByText('Texte synthétique de banc.');
+    expect(screen.getByText('Structure à relire')).toBeTruthy();
+    expect(screen.getByText(/s’ouvrira après sa re-signature/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Valider' })).toBeNull();
+  });
+
   it('structure non signée : la validation est fermée, le retrait reste offert', async () => {
     servir(atelier('non_signee', { version: VERSION, etat: { etat: 'a_valider' }, etatActes: { etat: 'a_valider' } }), true);
     render(<AtelierOptionsPanel />);
@@ -134,6 +143,8 @@ describe('atelier de la bibliothèque des options (D-480 §3)', () => {
     const item = (await screen.findByText('Texte synthétique de banc.')).closest('li') as HTMLElement;
     expect(within(item).getByText('À relire')).toBeTruthy();
     expect(within(item).queryByText('Validé')).toBeNull();
+    // La ligne d'information dit sur quelle structure la validation portait.
+    expect(within(item).getByText(/validée le .*, sur une structure qui n’est plus celle du jour/)).toBeTruthy();
     expect(within(item).getByRole('button', { name: 'Retirer' })).toBeTruthy();
     expect(within(item).getByRole('button', { name: 'Saisir une version neuve' })).toBeTruthy();
   });
