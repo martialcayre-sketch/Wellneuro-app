@@ -13,7 +13,8 @@ externe : fiabiliser le socle).
   bancs d'outillage. Le banc de parité exige donc aussi leur présence dans
   `npm run check`, où ils figuraient déjà.
 - Hermétiques : joués avec un environnement vidé et un `PATH` sans `gh` ni
-  `codex`, ils passent (170 tests). Coût : environ 35 secondes par run.
+  `codex`, ils passent (170 tests). Coût : quelques secondes par run (5 s sur
+  le runner, les six fichiers tournant en parallèle).
 
 Aucun contrôle retiré ; `verify`, la protection de branche et les plafonds de
 durée sont inchangés.

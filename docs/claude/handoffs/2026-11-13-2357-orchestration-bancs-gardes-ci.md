@@ -44,8 +44,10 @@
 - Les six bancs, un à un : 170 tests, 0 échec, codes 0 (registres 19, revue PR-Agent 47, sonde release-db 24,
   chevauchement 10, contrôle de fusion 40, avis Codex 30). Le plus long dure 16 s.
 - Les mêmes, avec un environnement vidé (`env -i`, `HOME` vide, `PATH` réduit à node, `/usr/bin` et `/bin`, sans
-  `gh` ni `codex`) : tous verts. Ils sont hermétiques ; l'identité git de leurs dépôts temporaires est fixée par les
-  bancs eux-mêmes.
+  `gh` ni `codex`) : tous verts. Ce test, joué sur macOS, ne prouve pas à lui seul les points propres au runner
+  Ubuntu. La lecture du code (revue `wn-reviewer`) les règle : les commits des bancs passent `-c user.name/user.email`,
+  et le script de fusion ne commite pas. Le `gh` réel du runner n'est jamais atteint : faux `gh` en tête du `PATH`,
+  dépendances injectées, sortie sur erreur d'usage. Sur le runner, l'étape a pris 5 s, au vert.
 - `node --test scripts/parite-check-ci.test.mjs scripts/ci-invariants.test.mjs` : 76/76, code 0. Les six fichiers
   entrent dans la parité.
 - Premier CI de `main` après #2086 (cb608354), puis 921f0908 : quatre jobs `success`.
