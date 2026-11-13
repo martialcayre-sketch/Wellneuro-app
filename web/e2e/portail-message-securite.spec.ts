@@ -122,8 +122,11 @@ async function ouvrirLeJournal(page: Page): Promise<void> {
 }
 
 /**
- * La mesure n'est jugée qu'une fois le défilement terminé : cinq relevés
- * identiques de suite, à 200 ms d'écart, soit 800 ms sans mouvement. Relevée
+ * La mesure n'est jugée qu'une fois le défilement terminé : dix relevés
+ * identiques de suite, à 200 ms d'écart, soit 1,8 s sans mouvement. La
+ * fenêtre dépasse le délai de la relance du composant (600 ms) et le temps
+ * qu'un défilement met à atterrir en WebKit Linux (~560 ms constatés) : une
+ * demande ignorée puis relancée se juge sur son résultat. Relevée
  * en cours de course, ou avant son départ, la position ne dirait rien du
  * résultat. Un défilement qui ne part pas dans ce délai, ou s'arrête court,
  * échoue : partout, sans tolérance (refus du responsable du 2026-11-13). Le
@@ -142,9 +145,9 @@ async function attendreLeMessagePlace(page: Page, libelle: string): Promise<Mesu
       const texte = JSON.stringify(m);
       identiques = texte === precedente ? identiques + 1 : 0;
       precedente = texte;
-      if (identiques >= 4) stable = m;
+        if (identiques >= 9) stable = m;
       return stable !== null;
-    }, { timeout: 8_000, intervals: [200] }).toBe(true);
+    }, { timeout: 12_000, intervals: [200] }).toBe(true);
   } catch (erreur) {
     // Position jamais stable : le journal est le seul témoin, il est consigné.
     console.log(`[journal D-506] ${libelle} — jamais stable — dernier relevé : ${precedente} ; journal : ${JSON.stringify(await lireLeJournal())}`);

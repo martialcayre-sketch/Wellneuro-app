@@ -39,8 +39,9 @@ export const DELAI_VERIFICATION_DEFILEMENT_MS = 600;
  * bouge pas ; en mouvement réduit, aucun défilement animé.
  *
  * Un moteur peut ignorer la demande : WebKit sous Linux (CI) a laissé la page
- * immobile, au pixel près, sur plusieurs runs du 2026-11-13. Si, après
- * `DELAI_VERIFICATION_DEFILEMENT_MS`, la page n'a pas bougé et que le message
+ * immobile, au pixel près, sur un run du 2026-11-13. Si, après
+ * `DELAI_VERIFICATION_DEFILEMENT_MS`, la page n'a pas bougé (aucun événement de défilement,
+ * même position) et que le message
  * n'est toujours pas entièrement visible, la même demande est renouvelée, une
  * fois. Une page qui a bougé, fût-ce par le patient, n'est jamais relancée.
  * Rend de quoi annuler la vérification (démontage).
@@ -51,11 +52,20 @@ export function faireVenirDansLaFenetre(element: HTMLElement): () => void {
   const demander = () =>
     element.scrollIntoView({ block: 'nearest', behavior: mouvementReduit() ? 'auto' : 'smooth' });
   const avant = window.scrollY;
+  // Tout défilement, même revenu au même pixel, compte comme un mouvement.
+  let aBouge = false;
+  const surDefilement = () => { aBouge = true; };
+  window.addEventListener('scroll', surDefilement, { passive: true });
   demander();
   const minuterie = window.setTimeout(() => {
-    if (window.scrollY === avant && element.isConnected && !entierementVisible(element)) demander();
+    window.removeEventListener('scroll', surDefilement);
+    const immobile = !aBouge && window.scrollY === avant;
+    if (immobile && element.isConnected && !entierementVisible(element)) demander();
   }, DELAI_VERIFICATION_DEFILEMENT_MS);
-  return () => window.clearTimeout(minuterie);
+  return () => {
+    window.clearTimeout(minuterie);
+    window.removeEventListener('scroll', surDefilement);
+  };
 }
 
 /**

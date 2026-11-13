@@ -156,6 +156,21 @@ describe('MessageReponseSuicide — venue dans la fenêtre ([[D-506]])', () => {
       expect(scrollIntoView).toHaveBeenCalledOnce();
     });
 
+    it('un défilement revenu au même pixel compte comme un mouvement : rien n’est relancé', () => {
+      render(<MessageReponseSuicide defiler />);
+      window.dispatchEvent(new Event('scroll'));
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    });
+
+    it('en mouvement réduit, la demande renouvelée reste sans animation', () => {
+      vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+      render(<MessageReponseSuicide defiler />);
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'auto' });
+    });
+
     it('le message est désormais entièrement visible : rien n’est relancé', () => {
       render(<MessageReponseSuicide defiler />);
       position = { top: 100, bottom: 400 };

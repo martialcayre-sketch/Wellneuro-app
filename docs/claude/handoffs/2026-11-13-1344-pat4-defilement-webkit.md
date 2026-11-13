@@ -22,9 +22,9 @@ Ce qui est attendu :
   - Le journal du run réussi (#2059, `9011d660`) montre deux temps :
     - à 143 ms, Playwright amène la case B7 à 3 795 avant le clic, alors que le message est encore absent ;
     - à 702 ms, le défilement de D-506 va à 4 019 en un seul événement. Sous WebKit Linux, l'animation n'a pas d'étapes intermédiaires.
-  - Le run raté de `29bfdbaf` s'était arrêté exactement à 3 795. Lecture : la demande de défilement a été **ignorée** par le moteur, et non interrompue en route. Les runs ratés de `c4a448cc` (3 872) et de `361cadbb` sont cohérents avec cette lecture, sans journal pour le prouver.
+  - Le run raté de `29bfdbaf` s'était arrêté exactement à 3 795. Lecture : la demande de défilement a été **ignorée** par le moteur, et non interrompue en route. Pour les runs ratés de `c4a448cc` (3 872) et de `361cadbb` (538, soit 3 883), ce n'est qu'une hypothèse : elle tient si Playwright y avait laissé B7 à une autre position. S'il s'agissait d'arrêts en cours de route, la page a bougé, la relance ne joue pas, et l'E2E strict rougira de nouveau : ce sera l'issue honnête.
   - Les trois runs avec journal (`1efdffda`, `97e0fd09`, `9011d660`) sont tous bien placés : la présence des écouteurs a pu changer le minutage. C'est un fait, pas une cause établie.
-- **Correctif** (`MessageReponseSuicide.tsx`) : après 600 ms, si la page n'a pas bougé et que le message n'est toujours pas entièrement visible, la même demande est renouvelée, une fois.
+- **Correctif** (`MessageReponseSuicide.tsx`) : après 600 ms, si la page n'a pas bougé (aucun événement de défilement, même position) et que le message n'est toujours pas entièrement visible, la même demande est renouvelée, une fois.
   - La relance garde le même défilement minimal, la même animation hors mouvement réduit, et le focus inchangé.
   - Une page qui a bougé, y compris par le patient, n'est jamais relancée.
   - La vérification est annulée au démontage du message.
@@ -42,6 +42,8 @@ Ce qui est attendu :
 - Vitest ciblés : 158/158 (`MessageReponseSuicide`, `GenericQuestionnaire`, portail).
 - CI de `9011d660` (tolérance retirée, sans correctif) : e2e vert, WebKit animé bien placé sous la question et au résumé ; `controles` rouge, faute de ce handoff.
 - T1 rapide (`check:rapide`) : vert, 16 étapes.
+- Revue wn-reviewer sur `1ad95dad` : la relance met D-506 en œuvre fidèlement, sans en changer le comportement, et ne relève donc pas du responsable. NO-GO sur un P1 : la fenêtre de stabilité de l'E2E (800 ms) se fermait avant que la relance puisse atterrir. Corrigé : dix relevés identiques, soit 1,8 s, avec un délai de 12 s. P2 traités : tout événement de défilement compte comme un mouvement ; test de la relance en mouvement réduit ; hypothèse reformulée ci-dessus.
+- Vitest ciblés après correction : 160/160.
 
 ## Problèmes ouverts
 
@@ -52,7 +54,7 @@ Ce qui est attendu :
 ## Prochaine action exacte
 
 1. Pousser, puis `node scripts/wn-attendre-ci.mjs 2059` en tâche de fond.
-2. Revue : `node scripts/wn-revue-pr-agent.mjs 2059` ; à défaut, wn-reviewer, en particulier sur la question « la relance touche-t-elle D-506 ? ».
+2. Revue : `node scripts/wn-revue-pr-agent.mjs 2059` ; à défaut, wn-reviewer sur la nouvelle tête.
 3. Si la revue la juge hors de D-506 et que la CI sort à 0 : passer la PR hors brouillon, déclarer « prête @<sha> » et écrire la ligne au registre. Sinon, poser la question à la liste commune avec les faits du journal.
 
 ## Interdits encore actifs
