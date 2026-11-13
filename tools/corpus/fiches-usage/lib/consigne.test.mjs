@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v4 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v5 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -62,4 +62,17 @@ test('v4 : la rubrique « question » nomme l’usage signé sans l’affirmer, 
   assert.match(redaction, /Elle n'énonce aucun\s+fait/);
   assert.match(contreLecture, /La rubrique « question » pose une question, elle n'affirme pas un usage/);
   assert.match(contreLecture, /Tout autre élément\s+qu'elle contient est un fait, jugé comme tel/);
+});
+
+// [[D-501]] §8 : la qualification « fonctionnel » du libellé d'une hypothèse
+// est la forme qu'impose le cadre signé ([[D-477]] §2), pas un fait à étayer ;
+// tout autre élément du libellé reste un fait, jugé comme tel.
+test('v5 : le libellé d’une hypothèse porte la forme signée sans claim qui la nomme', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  assert.match(redaction, /Le libellé d'une hypothèse nomme un état fonctionnel/);
+  assert.match(contreLecture, /Le libellé d'une hypothèse nomme un état, il n'affirme pas un fait/);
+  assert.match(contreLecture, /FIDÈLE même\s+si aucun claim n'emploie le mot « fonctionnel »/);
+  assert.match(contreLecture, /Tout autre élément qu'il\s+contient \(une cause, un mécanisme, une population, une gravité, une\s+conséquence\) est un fait, jugé comme tel/);
+  // La règle des défauts ne bouge pas : marqueur, dosage, seuil, diagnostic restent infidèles.
+  assert.match(contreLecture, /plutôt qu'un état fonctionnel d'un seul\s+nutriment dans le sens bas/);
 });
