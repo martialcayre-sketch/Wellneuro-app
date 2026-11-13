@@ -4,8 +4,8 @@
 // de composant — vingt de ses voisins en ont un. L'oubli s'explique : il était
 // INATTEIGNABLE, faute d'une surface posant `conditionnelle_biologie`. Le geste
 // de suspension livré avec ce lot le rend joignable ; il gagne son banc avec.
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ArbitrageBiologiquePanel } from './ArbitrageBiologiquePanel';
 
 function intention(
@@ -183,5 +183,149 @@ describe('ArbitrageBiologiquePanel', () => {
     // Dans les deux cas : jamais de champ de VALEUR. La table d'arbitrage n'a
     // aucune colonne de résultat, et un contrat SQL négatif le garde en CI.
     expect(screen.queryByLabelText(/valeur|résultat|taux/i)).toBeNull();
+  });
+});
+
+// PRA-3b, PR 6 (T-64, Q5 a, Q17 a ; [[D-488]]) : un échec de lecture des
+// arbitrages n'est jamais lu comme « rien d'arbitré ».
+describe('ArbitrageBiologiquePanel — lecture des arbitrages', () => {
+  // Le bloc précédent ne démonte rien : on part d'un document vide.
+  beforeEach(cleanup);
+  afterEach(cleanup);
+  const T64 = 'Les arbitrages biologiques n’ont pas pu être lus. Ce n’est pas une absence d’arbitrage.';
+  const DOUBLE = 'Un arbitrage existe déjà pour cette intention sur cette version de protocole.';
+  const consigne = (intentionId: string) => ({
+    intentionId,
+    verdict: 'sans_objet',
+    noteCourte: null,
+    arbitreLe: '2026-11-10T09:00:00.000Z',
+  });
+
+  it('en échec : T-64, ni verdict ni « Appliquer »', () => {
+    render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention()]}
+        arbitrages={[]}
+        revisionPossible
+        onArbitrer={vi.fn()}
+        onReviser={vi.fn()}
+        lecture="echec"
+        onRelire={vi.fn(async () => false)}
+      />,
+    );
+    expect(screen.getByRole('alert').textContent).toContain(T64);
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Consigner l’arbitrage' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Appliquer les arbitrages/ })).toBeNull();
+  });
+
+  it('pas encore lus : aucun formulaire non plus', () => {
+    render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention()]}
+        arbitrages={[]}
+        revisionPossible={false}
+        onArbitrer={vi.fn()}
+        lecture="en_cours"
+      />,
+    );
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(screen.queryByText(T64)).toBeNull();
+  });
+
+  it('« Réessayer » est désactivé pendant la relecture', () => {
+    render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention()]}
+        arbitrages={[]}
+        revisionPossible={false}
+        onArbitrer={vi.fn()}
+        lecture="echec"
+        relectureEnCours
+        onRelire={vi.fn(async () => false)}
+      />,
+    );
+    expect((screen.getByRole('button', { name: 'Réessayer' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('relecture réussie : focus au titre ; encore en échec : focus sur « Réessayer »', async () => {
+    const proprietes = {
+      intentions: [intention()],
+      arbitrages: [],
+      revisionPossible: false,
+      onArbitrer: vi.fn(),
+    };
+    const { rerender } = render(
+      <ArbitrageBiologiquePanel {...proprietes} lecture="echec" onRelire={vi.fn(async () => false)} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })));
+
+    const onRelire = vi.fn(async () => {
+      rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="ok" onRelire={onRelire} />);
+      return true;
+    });
+    rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="echec" onRelire={onRelire} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Biologie — arbitrage au retour du bilan' })),
+    );
+  });
+
+  it('un échec de relecture ne vide pas le choix local', () => {
+    const proprietes = {
+      intentions: [intention()],
+      arbitrages: [],
+      revisionPossible: false,
+      onArbitrer: vi.fn(),
+      onRelire: vi.fn(async () => true),
+    };
+    const { rerender } = render(<ArbitrageBiologiquePanel {...proprietes} lecture="ok" />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Infirmée par le bilan' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Ferritine normale au bilan.' } });
+
+    rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="echec" />);
+    expect(screen.queryByRole('radio')).toBeNull();
+
+    rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="ok" />);
+    expect(screen.getByRole('radio', { name: 'Infirmée par le bilan' }).getAttribute('aria-checked')).toBe('true');
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Ferritine normale au bilan.');
+  });
+
+  it('arbitrée entre-temps ailleurs avec un choix local : verdict consigné et message du serveur', () => {
+    const proprietes = { intentions: [intention()], revisionPossible: false, onArbitrer: vi.fn(), lecture: 'ok' as const };
+    const { rerender } = render(<ArbitrageBiologiquePanel {...proprietes} arbitrages={[]} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Confirmée par le bilan' }));
+
+    rerender(<ArbitrageBiologiquePanel {...proprietes} arbitrages={[consigne('act-1')]} />);
+    expect(screen.getByText(/Bilan sans objet pour cette intention — arbitré le/)).toBeTruthy();
+    expect(screen.getByText(DOUBLE)).toBeTruthy();
+    expect(screen.queryByRole('radio')).toBeNull();
+  });
+
+  it('consignée depuis ce panneau : pas de message de double arbitrage', () => {
+    const onArbitrer = vi.fn();
+    const proprietes = { intentions: [intention()], revisionPossible: false, onArbitrer, lecture: 'ok' as const };
+    const { rerender } = render(<ArbitrageBiologiquePanel {...proprietes} arbitrages={[]} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Confirmée par le bilan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Consigner l’arbitrage' }));
+    expect(onArbitrer).toHaveBeenCalledWith('act-1', 'confirme', '');
+
+    rerender(<ArbitrageBiologiquePanel {...proprietes} arbitrages={[{ ...consigne('act-1'), verdict: 'confirme' }]} />);
+    expect(screen.queryByText(DOUBLE)).toBeNull();
+  });
+
+  it('« Consigner l’arbitrage » est bordé ; « Appliquer » reste la seule action pleine (Q3 a)', () => {
+    render(
+      <ArbitrageBiologiquePanel
+        intentions={[intention(), intention({ actionId: 'act-2', title: 'Autre intention' })]}
+        arbitrages={[{ ...consigne('act-2'), verdict: 'confirme' }]}
+        revisionPossible
+        onArbitrer={vi.fn()}
+        onReviser={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Consigner l’arbitrage' }).className).not.toContain('bg-primary');
+    expect(screen.getByRole('button', { name: /Appliquer les arbitrages/ }).className).toContain('bg-primary');
   });
 });

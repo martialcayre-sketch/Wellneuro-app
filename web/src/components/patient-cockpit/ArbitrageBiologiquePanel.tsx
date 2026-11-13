@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types.
 import { LIBELLE_ATTENTE_NON_TYPEE } from '@/lib/clinical-engine/types';
@@ -17,6 +17,18 @@ import { LIBELLE_ATTENTE_NON_TYPEE } from '@/lib/clinical-engine/types';
 // portail patient continue de servir la dernière version validée entre-temps.
 
 export type ArbitrageState = 'idle' | 'saving' | 'error';
+
+/**
+ * L'état de LECTURE des arbitrages consignés ([[D-488]], T-64 ; Q5 a de
+ * PRA-3b). Tant qu'elle n'a pas réussi, le panneau n'offre ni verdict ni
+ * « Appliquer » : consigner sur un état inconnu, c'est arbitrer sans voir
+ * l'existant.
+ */
+export type LectureArbitrages = 'en_cours' | 'echec' | 'ok';
+
+/** Le choix local d'une intention, non consigné. */
+type SaisieArbitrage = { verdict: VerdictArbitrage | null; note: string };
+const SAISIE_VIERGE: SaisieArbitrage = { verdict: null, note: '' };
 
 export type IntentionBiologieAffichee = {
   actionId: string;
@@ -49,17 +61,24 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('fr-FR');
 }
 
+// Formulaire CONTRÔLÉ : la saisie vit dans le panneau, pour qu'un échec de
+// relecture, qui retire les formulaires, ne la vide pas (Q5 a).
 function FormulaireArbitrage({
   intention,
   disabled,
-  onArbitrer,
+  saisie,
+  onSaisie,
+  onConsigner,
 }: {
   intention: IntentionBiologieAffichee;
   disabled: boolean;
-  onArbitrer: (intentionId: string, verdict: VerdictArbitrage, note: string) => void;
+  saisie: SaisieArbitrage;
+  onSaisie: (saisie: SaisieArbitrage) => void;
+  onConsigner: (verdict: VerdictArbitrage, note: string) => void;
 }) {
-  const [verdict, setVerdict] = useState<VerdictArbitrage | null>(null);
-  const [note, setNote] = useState('');
+  const { verdict, note } = saisie;
+  const setVerdict = (valeur: VerdictArbitrage) => onSaisie({ ...saisie, verdict: valeur });
+  const setNote = (valeur: string) => onSaisie({ ...saisie, note: valeur });
   const noteRequise = verdict === 'infirme';
   const noteManquante = noteRequise && note.trim() === '';
 
@@ -74,10 +93,8 @@ function FormulaireArbitrage({
             aria-checked={verdict === valeur}
             onClick={() => setVerdict(valeur)}
             disabled={disabled}
-            className={`min-h-11 rounded-lg border px-3 py-2 text-sm ${
-              verdict === valeur
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-surface text-foreground'
+            className={`min-h-11 rounded-lg border px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+              verdict === valeur ? 'border-primary bg-muted font-medium' : 'border-border bg-surface'
             } disabled:opacity-50`}
           >
             {LIBELLES_VERDICT[valeur]}
@@ -97,9 +114,9 @@ function FormulaireArbitrage({
       </label>
       <button
         type="button"
-        onClick={() => verdict && onArbitrer(intention.actionId, verdict, note)}
+        onClick={() => verdict && onConsigner(verdict, note)}
         disabled={disabled || verdict === null || noteManquante}
-        className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        className="min-h-11 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
       >
         Consigner l’arbitrage
       </button>
@@ -116,6 +133,9 @@ export function ArbitrageBiologiquePanel({
   onArbitrer,
   onReviser,
   resultatsActifs = false,
+  lecture = 'ok',
+  relectureEnCours = false,
+  onRelire,
 }: {
   /** Intentions `conditionnelle_biologie` de la version active. */
   intentions: IntentionBiologieAffichee[];
@@ -134,8 +154,29 @@ export function ArbitrageBiologiquePanel({
   onReviser?: (reviewed: boolean) => void;
   /** Étage 2 actif : le badge « aucune valeur conservée » suit l'état réel. */
   resultatsActifs?: boolean;
+  /** État de lecture des arbitrages ; « ok » par défaut (bancs, montages sans lecture). */
+  lecture?: LectureArbitrages;
+  /** Une relecture est en vol : « Réessayer » est désactivé (pas de double requête). */
+  relectureEnCours?: boolean;
+  /** « Réessayer » (T-17) : relit les seuls arbitrages ; rend vrai si la lecture a réussi. */
+  onRelire?: () => Promise<boolean>;
 }) {
   const [reluRevision, setReluRevision] = useState(false);
+  // Les choix locaux, par intention, et les intentions que CE praticien a
+  // soumises depuis ce panneau. Une intention arbitrée entre-temps (ailleurs)
+  // alors qu'un choix local existait le dit, avec le texte du serveur (Q17 a).
+  const [saisies, setSaisies] = useState<Record<string, SaisieArbitrage>>({});
+  const [soumises, setSoumises] = useState<ReadonlySet<string>>(() => new Set());
+  const titreRef = useRef<HTMLHeadingElement>(null);
+  const reessayerRef = useRef<HTMLButtonElement>(null);
+  const relire = async () => {
+    if (!onRelire) return;
+    const lue = await onRelire();
+    // Lue : le focus passe au titre du panneau relu ; encore en échec : il
+    // revient sur « Réessayer ».
+    if (lue) titreRef.current?.focus();
+    else reessayerRef.current?.focus();
+  };
   // Un verdict consigné après la coche change la révision qui sera générée :
   // la coche tombe ([[D-213]] §1, BP-23). Le changement de version active,
   // lui, remonte le panneau (`key` posée par le parent).
@@ -149,11 +190,21 @@ export function ArbitrageBiologiquePanel({
   const parIntention = new Map(arbitrages.map(a => [a.intentionId, a]));
 
   return (
-    <section aria-labelledby="arbitrage-biologie-title" className="rounded-xl border border-border bg-surface p-4">
+    <section
+      aria-labelledby="arbitrage-biologie-title"
+      aria-busy={relectureEnCours || undefined}
+      className="rounded-xl border border-border bg-surface p-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 id="arbitrage-biologie-title" className="text-sm font-semibold text-foreground">
+        {/* Panneau d'une sous-vue de phase : h4 sous le titre de phase (Q2 a). */}
+        <h4
+          id="arbitrage-biologie-title"
+          ref={titreRef}
+          tabIndex={-1}
+          className="text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
           Biologie — arbitrage au retour du bilan
-        </h3>
+        </h4>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
           {/* Le badge est une affirmation sur L'OUTIL, pas sur cette table :
               il suit l'état réel de l'étage 2 (D-122 §2), comme son jumeau du
@@ -169,12 +220,40 @@ export function ArbitrageBiologiquePanel({
         jamais un résultat d’analyse.
       </p>
 
+      {lecture === 'echec' && (
+        // ÉCHEC DE LECTURE ≠ RIEN D'ARBITRÉ (T-64, [[D-488]]) : les
+        // formulaires s'affichaient comme si aucune intention n'était
+        // arbitrée. Ni verdict ni « Appliquer » tant que la lecture n'a pas
+        // réussi ; la relecture ne vide aucune saisie et n'applique rien.
+        <div role="alert" className="mt-3 flex flex-col gap-3 rounded-lg bg-status-warning/10 p-3 text-base text-status-warning">
+          <span>Les arbitrages biologiques n’ont pas pu être lus. Ce n’est pas une absence d’arbitrage.</span>
+          {onRelire && (
+            <button
+              ref={reessayerRef}
+              type="button"
+              onClick={() => void relire()}
+              disabled={relectureEnCours}
+              className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+            >
+              Réessayer
+            </button>
+          )}
+        </div>
+      )}
+
+      {lecture === 'ok' && (
       <ul className="mt-3 space-y-4">
         {intentions.map(intention => {
           const arbitrage = parIntention.get(intention.actionId);
+          const saisie = saisies[intention.actionId] ?? SAISIE_VIERGE;
+          // Arbitrée entre-temps, ailleurs, alors qu'un choix local existait :
+          // le verdict consigné s'affiche, et le message du serveur le dit.
+          const arbitreeEntreTemps = arbitrage !== undefined
+            && saisie.verdict !== null
+            && !soumises.has(intention.actionId);
           return (
             <li key={intention.actionId} className="rounded-lg border border-border p-3">
-              <p className="text-sm font-medium text-foreground">{intention.title}</p>
+              <h5 className="text-sm font-medium text-foreground">{intention.title}</h5>
               {intention.cible && (
                 <p className="text-xs text-muted-foreground">En attente de biologie : {intention.cible}</p>
               )}
@@ -193,13 +272,24 @@ export function ArbitrageBiologiquePanel({
                 <FormulaireArbitrage
                   intention={intention}
                   disabled={state === 'saving'}
-                  onArbitrer={onArbitrer}
+                  saisie={saisie}
+                  onSaisie={valeur => setSaisies(prev => ({ ...prev, [intention.actionId]: valeur }))}
+                  onConsigner={(verdict, note) => {
+                    setSoumises(prev => new Set(prev).add(intention.actionId));
+                    onArbitrer(intention.actionId, verdict, note);
+                  }}
                 />
+              )}
+              {arbitreeEntreTemps && (
+                <p className="mt-2 text-sm text-status-warning">
+                  Un arbitrage existe déjà pour cette intention sur cette version de protocole.
+                </p>
               )}
             </li>
           );
         })}
       </ul>
+      )}
 
       {state === 'error' && (
         <p role="alert" className="mt-2 text-base text-status-danger">
@@ -207,7 +297,7 @@ export function ArbitrageBiologiquePanel({
         </p>
       )}
 
-      {revisionPossible && onReviser && (
+      {lecture === 'ok' && revisionPossible && onReviser && (
         <div className="mt-3">
           {/* Bouton inactif sans la coche : une révision née en brouillon ne
               se relirait plus, le panneau ne propose de réviser que la version
