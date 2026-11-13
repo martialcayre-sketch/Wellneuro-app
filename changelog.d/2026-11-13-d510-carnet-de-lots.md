@@ -12,6 +12,11 @@
   qui le tenait n'est plus joignable.
 - Un lot qui bute se range `bloque` avec son motif, et la session prend le
   suivant. Ses questions s'accumulent pour la séance. Amende `D-466` §3.
+- Après « prête », en l'absence du responsable, la session enchaîne le lot
+  suivant après son handoff, sans `/clear`. Amende `D-373` §1 et « Un lot =
+  une session ». Un lot gardé (migration, authentification) se suit
+  toujours jusqu'au constat, et une migration ne passe à `fait` qu'au
+  constat de sa release-db.
 - Le carnet ordonne, il n'autorise rien : portes, migration, release-db,
   signatures et données restent à leur file et au responsable.
 - Consigne : `docs/ROLES_MACHINES.md` ; pointeurs dans `REGLES_PR_MERGE.md`,
