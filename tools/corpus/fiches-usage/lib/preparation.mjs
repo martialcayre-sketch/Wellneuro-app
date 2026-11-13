@@ -24,7 +24,7 @@
 // d'indication ([[D-465]] §3, [[D-498]]) porte une marque dans la liste.
 // Depuis la v3 ([[D-501]] §5), ils reçoivent aussi les désignations approuvées.
 
-import { ErreurOutil } from '../../fiches/lib/assemblage.mjs';
+import { ErreurOutil, parseJsonLache } from '../../fiches/lib/assemblage.mjs';
 
 /** La clé d'un claim épinglé dans l'instantané local. */
 export const cleClaim = c => `${c.claimId}::${c.versionClaim}`;
@@ -143,6 +143,25 @@ export function lireReponseFiche(reponse, attendues) {
     return { refus: reponse.refus.trim() };
   }
   return { rubriques: rubriquesRedigees(reponse, attendues) };
+}
+
+/**
+ * La réponse brute du rédacteur pour un libellé. La consigne demande
+ * `{"libelle": "…"}` ; le rédacteur rend parfois le libellé seul, en texte nu
+ * (constaté le 2026-11-13 sur HYP_MG_1, trois fois sur trois). Une seule ligne
+ * non vide, sans accolade, crochet ni clôture de code, se lit alors comme le
+ * libellé : la contre-lecture, DC-03 et le contrat le jugent ensuite comme
+ * tout autre. Le reste est refusé, sans citer le texte. Tout séparateur de
+ * ligne compte (LF, CR, U+2028, U+2029 : constat Codex du 2026-11-13).
+ */
+export function lireReponseLibelle(texte) {
+  try {
+    return parseJsonLache(texte);
+  } catch {
+    const t = (texte || '').trim();
+    if (t && !/[\n\r\u2028\u2029{}[\]`]/u.test(t)) return { libelle: t };
+    throw new ErreurOutil('réponse du rédacteur illisible (ni objet JSON, ni libellé sur une ligne).');
+  }
 }
 
 /** Le message envoyé au rédacteur pour un libellé. */

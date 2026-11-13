@@ -52,6 +52,8 @@ jobs:
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
       NEXTAUTH_SECRET: ci-test-secret-r8-2-playwright-automation
       NEXTAUTH_URL: http://localhost:3000
+      # Valeur factice : le pseudonyme d'export de la version « IA externe » (D-512 §1).
+      WN_EXPORT_PSEUDONYME_SECRET: ci-test-secret-export-pseudonyme-non-production
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
     steps:
@@ -423,6 +425,14 @@ jobs:
       # réseau : node suffit.
       - name: Guetteur borné (banc)
         run: node --test scripts/wn-guetteur.test.mjs
+
+      # Piège converti en contrôle (lot `autonomie-frictions`) : `btrim(texte)`
+      # à un argument ne retire que l'espace ASCII, si bien qu'un CHECK « non
+      # vide » laisse passer une tabulation. Refusé dans toute migration neuve ;
+      # les migrations appliquées sont gelées à leur compte (D-111 pour leur
+      # resserrage). Lecture des fichiers seule : ni npm ni base.
+      - name: Migrations — btrim à un argument refusé (banc)
+        run: node --test scripts/migrations-btrim.test.mjs
 
       # Le classement d'un échec E2E (blocage navigateur vs défaut applicatif)
       # ne sert qu'en local — `wn-test-worktree.sh` ne tourne pas ici. Son BANC,

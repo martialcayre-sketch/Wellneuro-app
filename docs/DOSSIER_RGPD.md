@@ -1265,6 +1265,32 @@ sert toujours la version « Pour une IA externe », aucun code ne tient ni ne
 constate la suspension, et les textes patient qui nomment ce destinataire ne
 changent pas.
 
+**Version « Pour une IA externe » resserrée le 2026-11-13 ([[D-512]], qui
+amende [[D-252]] §2).** Ce qui sort vers ce destinataire, s'il reprend un
+jour, n'est plus tout à fait ce que décrivait D-252 :
+
+- l'identifiant interne du dossier (`PATnnn`) n'y figure plus, ni dans le
+  titre, le pied de page, les métadonnées ou le nom du fichier, ni cité dans
+  un texte libre (masqué). Il est remplacé par un **pseudonyme d'export**
+  `EXT-XXXXXX`, calculé par HMAC-SHA256 sous un secret serveur
+  (`WN_EXPORT_PSEUDONYME_SECRET`) et jamais stocké. Le même dossier garde le
+  même pseudonyme tant que le secret ne change pas. Sans le secret, le
+  destinataire ne remonte pas au dossier ; avec lui, l'application le peut ;
+  le tiroir d'export l'affiche au praticien. Sans secret configuré, la
+  version pseudonymisée est refusée (la complète reste servie) ;
+- les dates administratives (création du dossier, horodatage du
+  consentement, accès du patient, clôture du suivi) sont retirées ;
+- les dates cliniques s'écrivent en jours relatifs (J+n, J-n) depuis la
+  première consultation ou, à défaut, le premier événement enregistré par
+  l'application ; une date connue au mois ou à l'année près, en mois ou
+  années relatifs. La date d'export est ramenée au jour ;
+- l'âge est donné en tranche de cinq ans, à l'affichage seulement.
+
+La profession et les lieux cités dans un texte libre ne sont pas masqués
+automatiquement : la relecture avant l'envoi reste demandée. Le document reste
+**pseudonymisé** : le RGPD s'y applique entièrement, et la réserve du tableau
+ci-dessus est inchangée.
+
 **Déclaré le 2026-10-15 (D4, [[D-299]]) :** OpenAI figure au tableau ci-dessus et dans « Vos données personnelles » v18, accusé exigé ; le flux est inchangé. La contre-lecture des fiches d'assiette par OpenAI s'exécute hors de l'application, sur le seul texte des fiches, sans donnée personnelle : elle est déclarée par `docs/TRUST_IA_FICHES_ASSIETTE.md` et n'est pas un sous-traitant de données patient. Le constat d'origine suit, inchangé.
 
 **Déclaré le 2026-10-16, avant le premier envoi (BP-12a, [[D-314]] §4) :** la rédaction des fiches d'usage du besoin 2 suit le même régime que celle des fiches d'assiette. L'outil `tools/corpus/fiches-usage/` s'exécute hors de l'application et envoie à Anthropic (rédaction) et à OpenAI (contre-lecture) les identifiants de la structure signée et le texte des claims qu'elle épingle : aucune donnée personnelle. Ni l'un ni l'autre n'est un sous-traitant de données patient pour ce flux, déclaré par `docs/TRUST_IA_FICHES_USAGE.md`. Aucun texte n'était encore rédigé à cette date.

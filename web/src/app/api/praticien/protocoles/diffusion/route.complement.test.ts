@@ -311,7 +311,9 @@ describe('Le courrier complément au clic de diffusion (D-345, J3-12h lot 3)', (
     expect(remettreCourrierComplement).not.toHaveBeenCalled();
     // La lecture de base est celle d'avant : le contrat n'est pas lu.
     for (const appel of prisma.protocolDraft.findMany.mock.calls as unknown as [{ select: Record<string, unknown> }][]) {
-      expect(appel[0].select.contractVersion).toBe(false);
+      // Faux ou absent : la lecture de la version en vigueur (Q18) ne le
+      // demande pas non plus.
+      expect(appel[0].select.contractVersion ?? false).toBe(false);
     }
   });
 });

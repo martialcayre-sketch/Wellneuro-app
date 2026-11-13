@@ -521,7 +521,7 @@ function dessinerFilet(page: PDFPage, y: number): void {
 
 export async function rendrePdf(doc: DocumentExport, options?: { maintenant?: Date }): Promise<Uint8Array> {
   const { pdf, polices, convertir, mesure, pages } = await preparer(doc);
-  const maintenant = options?.maintenant ?? new Date();
+  const maintenant = doc.metadonnees.date ?? options?.maintenant ?? new Date();
 
   pdf.setTitle(doc.metadonnees.titre);
   pdf.setSubject(doc.metadonnees.sujet);

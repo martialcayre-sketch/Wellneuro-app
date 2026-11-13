@@ -34,7 +34,8 @@ import {
  *   (`/dashboard/patients/<id>`) allume « Fiche-trajectoire » au rail et
  *   « Fiches » sur la barre, par `prefixesActifs`.
  * - Sans entrée : Documents ([[D-324]]), l'atelier des règles et les positions
- *   d'expert tant que leur garde est fermée ([[D-487]] §3). « Synthèses » n'a
+ *   d'expert tant que leur garde est fermée ([[D-487]] §3), et l'atelier de la
+ *   bibliothèque des options sous son drapeau éteint ([[D-480]] §8). « Synthèses » n'a
  *   d'entrée que sur la barre du téléphone ([[D-324]] §5).
  *
  * Aucune route, aucune garde n'est décidée ici : une entrée visible n'est

@@ -19,6 +19,15 @@ qu'impose le statut d'usage, elle est FIDÈLE même si aucun claim n'établit
 l'usage décisionnel : cet usage vient du cadre signé. Tout autre élément
 qu'elle contient est un fait, jugé comme tel.
 
+Le libellé d'une hypothèse nomme un état, il n'affirme pas un fait. Le
+cadre signé lui impose sa forme : un état fonctionnel, portant sur un seul
+nutriment, dans le sens bas. Un libellé qui nomme ainsi l'état du nutriment
+que décrivent les claims, dans le sens où ils le décrivent, est FIDÈLE même
+si aucun claim n'emploie le mot « fonctionnel » ni ne qualifie l'état
+ainsi : cette qualification vient du cadre signé. Tout autre élément qu'il
+contient (une cause, un mécanisme, une population, une gravité, une
+conséquence) est un fait, jugé comme tel.
+
 Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
 - une affirmation, une condition ou une conséquence qu'aucun claim ne porte ;

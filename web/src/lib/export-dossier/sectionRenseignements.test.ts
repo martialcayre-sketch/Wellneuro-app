@@ -8,6 +8,7 @@ import {
   type DonneesDateesExport,
   type TraitementExport,
 } from './modele';
+import { dateurRelatif } from './datesExport';
 import { sectionRenseignements } from './sectionRenseignements';
 
 function consultation(surcharge: Partial<ConsultationExport> = {}): ConsultationExport {
@@ -379,6 +380,36 @@ describe('sectionRenseignements — lignes datées du dossier ([[D-391]] §2)', 
         'Complément : « Complément B » · Objectif : « objectif Y » · Depuis : 2023 · Arrêté : date inconnue'
           + ' · Prescrit par un autre soignant : inconnu — déclaré par le patient le 12/10/2026',
       ],
+    });
+  });
+  describe('version « IA externe » : jours relatifs ([[D-512]] §2-§3)', () => {
+    // J0 = 01/09/2026, jour de la consultation de la fixture.
+    const relatif = dateurRelatif({ jour: '2026-09-01', repere: 'consultation' });
+
+    it('en-tête de consultation : J0, validation en J+n, consentement sans horodatage', () => {
+      const blocs = sectionRenseignements([consultation()], null, null, relatif);
+      expect(blocs[1]).toEqual({ type: 'titre', niveau: 2, texte: 'Consultation à J0' });
+      expect(valeurDe(blocs, 'Statut')).toBe('Validée à J+2');
+      expect(valeurDe(blocs, 'Consentement')).toBe('Donné (version v2)');
+    });
+
+    it('lignes datées : mesures et sources en J+n, périodes à leur précision, jamais un jour du calendrier', () => {
+      const blocs = sectionRenseignements([], null, donnees({
+        traitements: [
+          traitement({ debut: '2024-05-12', debutPrecision: 'jour', finPrecision: null }),
+          traitement({ debut: '2023-01-01', debutPrecision: 'annee', fin: '2026-06-01', finPrecision: 'mois' }),
+        ],
+      }), relatif);
+      expect(valeurDe(blocs, 'Poids')).toBe('64 kg, mesuré à J+30 — confirmé par le praticien à J+50');
+      const liste = blocs.find(b => b.type === 'liste');
+      expect(liste?.type === 'liste' && liste.elements).toEqual([
+        'Complément : « Complément B » · Depuis : J-842 · En cours · Prescrit par un autre soignant : inconnu'
+          + ' — déclaré par le patient à J+41',
+        "Complément : « Complément B » · Depuis : A-3 (à l'année près) · Arrêté : M-3 (au mois près)"
+          + ' · Prescrit par un autre soignant : inconnu — déclaré par le patient à J+41',
+      ]);
+      expect(textes(blocs).join('\n')).not.toMatch(/\d{2}\/\d{2}\/\d{4}|\b20\d\d\b|mai|juin/);
+      expect(textes(blocs).join('\n')).toContain('un jour (J-12), un mois (M-3, au mois près)');
     });
   });
 });

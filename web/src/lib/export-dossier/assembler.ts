@@ -39,7 +39,9 @@ import {
   masquerPassation,
   masquerSynthese,
 } from './masquage';
+import { choisirJourZero, DATEUR_CALENDAIRE, dateurRelatif, type Dateur } from './datesExport';
 import {
+  dateFr,
   dateHeureFr,
   type AssignationSansReponseExport,
   type ConsultationExport,
@@ -164,6 +166,7 @@ const CATALOGUE: Readonly<Record<string, { titre: string } | undefined>> = QUEST
 async function lirePassations(
   lignes: LignePassation[],
   definitionPourLecture: LecteurDefinitions,
+  dateur: Dateur,
 ): Promise<PassationExport[]> {
   const courantes = idsPassationsCourantes(lignes);
 
@@ -207,7 +210,7 @@ async function lirePassations(
       // Posée, la réserve suspend la traduction : codes bruts sous elle.
       avertissementLecture:
         modifieeLe && modifieeLe.getTime() > r.dateReponse.getTime()
-          ? avertissementInstrumentCabinetModifie(modifieeLe)
+          ? avertissementInstrumentCabinetModifie(modifieeLe, dateur)
           : null,
     };
   }));
@@ -303,17 +306,36 @@ function donneesDateesExport(donnees: DonneesDuDossier): DonneesDateesExport | n
   };
 }
 
-export function nomFichierExport(idPatient: string, version: VersionExport, maintenant: Date): string {
-  return `dossier-${idPatient}-${version === 'ia-externe' ? 'ia-externe' : 'complet'}-${dateJourParis(maintenant)}.pdf`;
+/**
+ * `identifiant` : `PATnnn` pour la version complète, le pseudonyme d'export
+ * pour la version « IA externe » ([[D-512]] §1) — c'est l'appelant qui choisit.
+ */
+export function nomFichierExport(identifiant: string, version: VersionExport, maintenant: Date): string {
+  return `dossier-${identifiant}-${version === 'ia-externe' ? 'ia-externe' : 'complet'}-${dateJourParis(maintenant)}.pdf`;
 }
 
+/** Minuit UTC du jour de Paris : la date des métadonnées, ramenée au jour ([[D-512]] §3). */
+function jourSeul(maintenant: Date): Date {
+  const [annee, mois, jour] = dateJourParis(maintenant).split('-').map(Number);
+  return new Date(Date.UTC(annee, mois - 1, jour));
+}
+
+/**
+ * `pseudonyme` : exigé pour la version « IA externe » ([[D-512]] §1) ; sans
+ * lui, l'assemblage lève — jamais de repli sur `PATnnn`.
+ */
 export async function assemblerDossierExport(params: {
   idPatient: string;
   praticienEmail: string;
   version: VersionExport;
   maintenant: Date;
+  pseudonyme?: string | null;
 }): Promise<DocumentExport | null> {
   const { idPatient, praticienEmail, version, maintenant } = params;
+  const pseudonyme = params.pseudonyme ?? null;
+  if (version === 'ia-externe' && !pseudonyme) {
+    throw new Error('Pseudonyme d’export absent : version « IA externe » impossible.');
+  }
 
   const patient: PatientExport | null = await prisma.patient.findUnique({
     where: { idPatient },
@@ -418,9 +440,38 @@ export async function assemblerDossierExport(params: {
     ficheSignaletique: c.ficheSignaletique == null ? null : normaliserFiche(c.ficheSignaletique),
     anamnese: c.anamnese == null ? null : normaliserAnamnese(c.anamnese),
   }));
+  const donneesDatees = donneesDateesExport(lignesDuDossier);
+
+  // Version « IA externe » : dates en jours relatifs à J0 ([[D-512]] §3). Sans
+  // consultation, J0 est le premier événement que l'application a enregistré —
+  // jamais une date déclarée du passé (début de traitement, jour de mesure).
+  // Il se cherche sur TOUT ce qui a été enregistré, pas sur ce que l'export
+  // affiche : une ligne corrigée ou retirée, une synthèse jamais validée
+  // gardent leur date, et J0 ne bouge pas d'un export à l'autre (contre-revue
+  // Codex, P1-1).
+  const premiereSynthese = version === 'ia-externe' && consultationsDb.length === 0
+    ? await prisma.syntheseIA.findFirst({
+        where: { idPatient },
+        orderBy: { dateGeneration: 'asc' },
+        select: { dateGeneration: true },
+      })
+    : null;
+  const jourZero = version === 'ia-externe'
+    ? choisirJourZero(
+        consultationsDb.map(c => c.createdAt),
+        [
+          ...passationsDb.map(p => p.dateReponse),
+          ...assignationsDb.map(a => a.dateAssignation),
+          ...lignesDuDossier.criteres.flatMap(c => c.historique.map(l => new Date(l.acteLe))),
+          ...lignesDuDossier.traitements.flatMap(f => f.historique.map(l => new Date(l.acteLe))),
+          ...(premiereSynthese ? [premiereSynthese.dateGeneration] : []),
+        ].filter(d => !Number.isNaN(d.getTime())),
+      )
+    : null;
+  const dateur = version === 'ia-externe' ? dateurRelatif(jourZero) : DATEUR_CALENDAIRE;
 
   const definitionPourLecture = lecteurDefinitions(praticienEmail);
-  const passations = await lirePassations(passationsDb, definitionPourLecture);
+  const passations = await lirePassations(passationsDb, definitionPourLecture, dateur);
 
   const assignationsRepondues = new Set(
     passationsDb.map(p => p.idAssignation).filter((id): id is string => Boolean(id)),
@@ -449,30 +500,46 @@ export async function assemblerDossierExport(params: {
       }
     : null;
 
-  // Version « IA externe » : les TEXTES LIBRES sont masqués ici, avant
-  // qu'aucune section ne les lise ; les textes fixes (catalogue, consignes,
-  // préambule) ne le sont jamais.
-  const masquer = version === 'ia-externe' ? creerMasqueur(patient) : null;
-  const donneesDatees = donneesDateesExport(lignesDuDossier);
+  if (version === 'ia-externe' && pseudonyme) {
+    // Les TEXTES LIBRES sont masqués ici, avant qu'aucune section ne les lise ;
+    // les textes fixes (catalogue, consignes, préambule) ne le sont jamais.
+    const masquer = creerMasqueur(patient, pseudonyme);
+    // [[D-512]] : le pseudonyme partout où `PATnnn` s'écrivait ; la date
+    // d'export au jour, jamais en jours relatifs (elle donnerait le
+    // calendrier de J0) ; les métadonnées au jour.
+    const titre = `Dossier patient ${pseudonyme}`;
+    return {
+      titre,
+      sousTitre: 'Version pseudonymisée pour une IA externe',
+      mentionPied: `${pseudonyme} · version pseudonymisée · exporté le ${dateFr(maintenant)}`,
+      metadonnees: { titre, sujet: 'Dossier de neuronutrition exporté depuis WellNeuro', date: jourSeul(maintenant) },
+      blocs: [
+        ...sectionPerimetre(version, maintenant, donneesDatees !== null, jourZero),
+        ...sectionAdministrative(patient, version, maintenant, pseudonyme),
+        ...sectionRenseignements(
+          consultations.map(c => masquerConsultation(c, masquer)),
+          porteuse?.idConsultation ?? null,
+          donneesDatees ? masquerDonneesDatees(donneesDatees, masquer) : null,
+          dateur,
+        ),
+        ...sectionQuestionnaires(passations.map(p => masquerPassation(p, masquer)), sansReponse, dateur),
+        ...sectionSynthese(synthese ? masquerSynthese(synthese, masquer) : null, brouillonPlusRecent, dateur),
+      ],
+    };
+  }
 
   const titre = `Dossier patient ${patient.idPatient}`;
   return {
     titre,
-    sousTitre: version === 'ia-externe'
-      ? 'Version pseudonymisée pour une IA externe'
-      : "Version complète — contient l'identité du patient",
-    mentionPied: `${patient.idPatient} · ${version === 'ia-externe' ? 'version pseudonymisée' : 'version complète'} · exporté le ${dateHeureFr(maintenant)}`,
+    sousTitre: "Version complète — contient l'identité du patient",
+    mentionPied: `${patient.idPatient} · version complète · exporté le ${dateHeureFr(maintenant)}`,
     metadonnees: { titre, sujet: 'Dossier de neuronutrition exporté depuis WellNeuro' },
     blocs: [
       ...sectionPerimetre(version, maintenant, donneesDatees !== null),
       ...sectionAdministrative(patient, version, maintenant),
-      ...sectionRenseignements(
-        masquer ? consultations.map(c => masquerConsultation(c, masquer)) : consultations,
-        porteuse?.idConsultation ?? null,
-        donneesDatees && masquer ? masquerDonneesDatees(donneesDatees, masquer) : donneesDatees,
-      ),
-      ...sectionQuestionnaires(masquer ? passations.map(p => masquerPassation(p, masquer)) : passations, sansReponse),
-      ...sectionSynthese(synthese && masquer ? masquerSynthese(synthese, masquer) : synthese, brouillonPlusRecent),
+      ...sectionRenseignements(consultations, porteuse?.idConsultation ?? null, donneesDatees),
+      ...sectionQuestionnaires(passations, sansReponse),
+      ...sectionSynthese(synthese, brouillonPlusRecent),
     ],
   };
 }

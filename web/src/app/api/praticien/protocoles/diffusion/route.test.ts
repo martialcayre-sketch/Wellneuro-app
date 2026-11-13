@@ -113,6 +113,64 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     eiActive.valeur = false;
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
     rejouerCarteDecision.mockResolvedValue(carteSansBloqueur());
+    // Par défaut, la version visée est celle en vigueur (PRA-3b, Q18).
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: versionId, inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-01-02T00:00:00.000Z') },
+    ]);
+  });
+
+  // ── SEULE LA VERSION EN VIGUEUR S'APPROUVE (PRA-3b, Q18 a) ───────────────
+  //
+  // Deux onglets : le premier reste sur V1, relue ; le second enregistre V2,
+  // qui la remplace. Le clic du premier envoie encore l'empreinte de V1.
+  describe('version qui n’est plus en vigueur', () => {
+    const v2Id = deriveVersionId(deriveProtocolDraftId('DEC_1'), 'HASH_V2');
+    const deuxOnglets = [
+      { id: versionId, inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-01-02T00:00:00.000Z') },
+      { id: v2Id, inputHash: 'HASH_V2', supersedesDraftId: versionId, createdAt: new Date('2026-01-03T00:00:00.000Z') },
+    ];
+
+    it('refuse (409) l’empreinte d’une version remplacée ailleurs, avec le message de l’aperçu périmé, sans rien écrire', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+      prisma.protocolDraft.findMany.mockResolvedValue(deuxOnglets);
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest(body));
+      expect(res.status).toBe(409);
+      const json = await res.json();
+      expect(json).toEqual({
+        ok: false,
+        reason: 'version_plus_en_vigueur',
+        error: 'L’aperçu de ce que le clic remettra au patient n’est plus exact : il vient d’être mis à jour. Relisez-le avant de valider.',
+      });
+      // Lue sur la même décision et le même dossier que le GET.
+      expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { idPatient: 'PAT_1', decisionCardId: 'DEC_1' } }),
+      );
+      expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+      expect(rejouerCarteDecision).not.toHaveBeenCalled();
+    });
+
+    it('approuve la version en vigueur du même fil — le second onglet, à jour, passe', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue({ ...versionRow, inputHash: 'HASH_V2' });
+      prisma.protocolDraft.findMany.mockResolvedValue(deuxOnglets);
+      prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+      prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'APP_V2' });
+      const res = await POST(postRequest({ ...body, protocolDraftInputHash: 'HASH_V2' }));
+      expect(res.status).toBe(200);
+      expect((await res.json()).approvalId).toBe('APP_V2');
+    });
+
+    it('aucune version lisible sur la décision : refus, jamais une approbation à l’aveugle', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+      prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest(body));
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('version_plus_en_vigueur');
+      expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+    });
   });
 
   // ── LES BLOQUEURS DE LA CARTE ([[D-192]]) ───────────────────────────────
@@ -813,6 +871,11 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr', actif: true, suiviClotureLe: null });
     prisma.protocolDraft.findUnique.mockResolvedValue({ ...versionRow, payload: { actions: [] } });
+    // La version visée est celle en vigueur (PRA-3b, Q18) — posé ici, sans
+    // dépendre du bloc précédent (revue `wn-reviewer` du micro-lot, P2-1).
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: versionId, inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-01-02T00:00:00.000Z') },
+    ]);
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
     prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'appr_new' });
     prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
@@ -851,6 +914,20 @@ describe('POST et GET /api/praticien/protocoles/diffusion — fiches d’assiett
     const lecture = (await (await GET(requeteGet())).json()) as { fiches: unknown };
     expect(lecture.fiches).toBeNull();
     expect(apercuFichesDuProtocole).not.toHaveBeenCalled();
+  });
+
+  it('drapeau ouvert, jeton valide : une version remplacée ailleurs est refusée AVANT la transaction et l’aperçu (Q18)', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: versionId, inputHash: 'HASH_V1', supersedesDraftId: null, createdAt: new Date('2026-01-02T00:00:00.000Z') },
+      { id: 'pd_v2', inputHash: 'HASH_V2', supersedesDraftId: versionId, createdAt: new Date('2026-01-03T00:00:00.000Z') },
+    ]);
+    const res = await POST(postRequest({ ...body, jetonApercuFiches: 'J1' }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { reason: string }).reason).toBe('version_plus_en_vigueur');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(apercuFichesDuProtocole).not.toHaveBeenCalled();
+    expect(remettreFiches).not.toHaveBeenCalled();
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
   });
 
   it('refuse un clic SANS jeton d’aperçu (409), sans rien écrire', async () => {

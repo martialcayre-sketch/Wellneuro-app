@@ -139,13 +139,17 @@ export const SOURCES_DE_SAVOIR = [
     libelle: 'Bibliothèque des options du besoin 2 (structure de références, vide et non signée)',
     module: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts',
     symboles: ['BIBLIOTHEQUE_BESOIN2_V1', 'BIBLIOTHEQUE_BESOIN2_METADATA'],
-    // ENTRÉE AVANT SA SURFACE ([[D-480]] §5.5, BP-17 PR 4) : aucun lecteur
-    // n'est admis tant que l'atelier (PR 5) et le cockpit sous drapeau éteint
-    // (PR 6) ne l'ont pas apporté (banc `importeurs.guard.test.ts`). Elle est
-    // donc DORMANTE, arbitrée dans `consommation_decisions.json`. La garde est
-    // dans le module même : `etatBibliotheque(...) === 'signee'`. Elle
+    // ENTRÉE AVANT SA SURFACE ([[D-480]] §5.5, BP-17 PR 4), CONSOMMÉE DEPUIS
+    // L'ATELIER (PR 5) : son seul lecteur admis est
+    // `atelier-bibliotheque-options/structure.ts` (banc `importeurs.guard.test.ts`),
+    // derrière le drapeau `WN_BIBLIOTHEQUE_OPTIONS_ATELIER`, éteint. Le
+    // cockpit (PR 6) suivra sous son propre drapeau. La garde de la validation
+    // est dans le module même : `etatBibliotheque(...) === 'signee'`. Elle
     // n'autorise aucune prescription (§8) ; rien ne sort vers un patient.
-    modulesGardes: [{ chemin: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts', noms: ['etatBibliotheque'] }],
+    modulesGardes: [
+      { chemin: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts', noms: ['etatBibliotheque'] },
+      { chemin: 'web/src/lib/atelier-bibliotheque-options/drapeau.ts', noms: ['atelierOptionsActif'] },
+    ],
     decisionProduite: 'Pour une hypothèse confirmée du besoin 2, toutes les options et le renvoi de chaque rubrique à ses sources — énumérées, jamais choisies d’après le dossier.',
   },
   {

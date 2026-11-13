@@ -134,6 +134,33 @@ for (const motif of refus) {
   }
 }
 
+// REFUS SUR LA STRUCTURE — pièges d'outillage convertis en contrôles (lot
+// `autonomie-frictions`, 2026-11-13). Ils ne détruisent pas de données : un
+// faux positif sur de la prose coûterait plus qu'un contournement par
+// `bash -c "…"`. Ils lisent donc la commande MASQUÉE, comme la « demande », et
+// non la commande brute.
+//
+// `prisma format` réaligne une centaine de lignes de `schema.prisma` étrangères
+// au diff et noie la revue d'une migration (mémoire prisma-format, constaté
+// deux fois). `prisma validate` vérifie sans écrire ; `prisma format --check`
+// n'écrit rien non plus et reste permis.
+const refusStructure = [
+  {
+    motif: /\bprisma\s+format\b(?![^\n;&|]*--check\b)/,
+    raison:
+      "`prisma format` réaligne une centaine de lignes de schema.prisma " +
+      "étrangères au diff. Aligner à la main le bloc touché, puis " +
+      "`npx prisma validate` (ou `prisma format --check`, qui n'écrit rien)."
+  }
+];
+
+for (const { motif, raison } of refusStructure) {
+  if (motif.test(masquee)) {
+    console.error(`Commande bloquée par WellNeuro : ${raison}`);
+    process.exit(2);
+  }
+}
+
 // SONDAGE — n'est plus refusé depuis le 2026-10-24 : le responsable autorise,
 // pour toutes les sessions, le contrôle en boucle (CI, revue CodeRabbit,
 // déploiement). `wn-attendre-ci.mjs` en tâche de fond reste la forme préférée

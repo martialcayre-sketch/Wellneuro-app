@@ -1,0 +1,16 @@
+- **Mise à jour (2026-11-13, dossier du besoin 1, étapes 4 et 5 : étiquetage, positions, contre-revue, signature)** : forme opaque (`D-251` §4), avec seulement des identifiants, des comptes et des mécanismes.
+  - **Signature des claims** : le responsable a signé lui-même, dans l'atelier, les 82 claims entrés à l'étape 3. Le constat est fait par conteneur, en lecture seule.
+  - **Délégation** : le responsable a délégué l'étiquetage en permanence (`D-325` §5) ; la signature reste à lui (`DC-16`). Les listes et les constats sont consignés au dossier privé.
+  - **Étiquetage, deux lots**, faits par délégation et constatés par conteneur :
+    - lot 1 : les 82 nouveaux claims. 78 vont au besoin 1 ; 4 vont au besoin 3, conformément à `20261113-1032-b` ;
+    - lot 2 : 89 claims de cours déjà validés. Les besoins déjà posés sont conservés. 7 candidats sont écartés, chacun avec son motif au dossier ;
+    - le besoin 1 compte désormais 167 claims validés et étiquetés.
+  - **Positions** : une v0.1 de dix-neuf positions, rangées par rubrique, chaque claim cité par identifiant.
+  - **Contre-revue Codex** : pièces déposées au dépôt privé des revues, avec treize affirmations à réfuter. Verdict : NO-GO pour la v0.1. Sept constats (cinq P1, deux P2, aucun P0), tous vérifiés sur les pièces et retenus. Ils portent sur :
+    - les réserves de population ;
+    - l'éligibilité de claims étiquetés sans rôle autorisé ;
+    - deux paraphrases qui perdaient une condition ;
+    - la portée de deux sources hors de leur contexte.
+  - **Positions v0.2** : vingt positions. La nouvelle position d'éligibilité pose que l'étiquetage ne vaut pas autorisation : seuls les claims cités par une position signée fondent un constat ou un conseil. Les autres restent pièces de provenance ou de contexte. J3-12f applique cette liste à la sélection des claims, et un banc la vérifie.
+  - **Signées par le responsable le 2026-11-13** : les vingt positions. Le dossier de preuve du besoin 1 est signé.
+  - **Suite** : décision clinique, puis J3-12f (`D-312` §3). J3-12f porte la mesure dérivée, la lecture des deux biomarqueurs retenus et la liste d'éligibilité. Aucun code dans ce lot.
