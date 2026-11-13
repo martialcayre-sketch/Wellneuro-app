@@ -150,6 +150,9 @@ test('la réponse du rédacteur pour un libellé — objet JSON, ou libellé nu 
   assert.deepEqual(lireReponseLibelle('  État synthétique \n'), { libelle: 'État synthétique' });
   // Plusieurs lignes, un JSON cassé, une clôture ou rien : refusés.
   assert.throws(() => lireReponseLibelle('État synthétique\nJustification.'), /illisible/);
+  for (const sep of ['\r', '\u2028', '\u2029']) {
+    assert.throws(() => lireReponseLibelle(`État synthétique${sep}Justification.`), /illisible/);
+  }
   assert.throws(() => lireReponseLibelle('{"libelle": "État synthétique"'), /illisible/);
   assert.throws(() => lireReponseLibelle('```État synthétique```'), /illisible/);
   assert.throws(() => lireReponseLibelle('   '), /illisible/);

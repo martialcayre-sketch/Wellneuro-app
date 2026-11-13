@@ -30,7 +30,7 @@ Débloquer la rédaction des libellés d'hypothèse du besoin 2 (`HYP_MG_1` d'ab
 
 ## Problèmes ouverts
 
-- **La v5 attend l'approbation du responsable** (patron des v2 à v4), puis le merge ; D-501 §8 passera alors de « proposé » à « accepté ».
+- La v5 est **approuvée** par le responsable le 2026-11-13, après un avis Codex à sa demande (au dépôt privé `wellneuro-revues`, `f05/2026-11-13-avis-codex-consigne-v5.md`). Aucun défaut dans le paragraphe v5 ; un constat P2 sur les séparateurs de ligne de la lecture tolérante, corrigé. D-501 §8 est « accepté ». La branche a été mise à niveau par un merge d'`origin/main`, sur arbitrage du responsable (#2072 et #2073, aucun fichier commun). Reste le merge par l'intégrateur.
 - Le fer reste en attente (#2061) ; P3 reste en v1.
 - `designations.json` (hors dépôt) devra recevoir `POP_ADULTE`, `POP_GENERALE` et `HYP_MG_1` tirés de la production avant les fiches du magnésium.
 

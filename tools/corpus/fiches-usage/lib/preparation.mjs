@@ -151,14 +151,15 @@ export function lireReponseFiche(reponse, attendues) {
  * (constaté le 2026-11-13 sur HYP_MG_1, trois fois sur trois). Une seule ligne
  * non vide, sans accolade, crochet ni clôture de code, se lit alors comme le
  * libellé : la contre-lecture, DC-03 et le contrat le jugent ensuite comme
- * tout autre. Le reste est refusé, sans citer le texte.
+ * tout autre. Le reste est refusé, sans citer le texte. Tout séparateur de
+ * ligne compte (LF, CR, U+2028, U+2029 : constat Codex du 2026-11-13).
  */
 export function lireReponseLibelle(texte) {
   try {
     return parseJsonLache(texte);
   } catch {
     const t = (texte || '').trim();
-    if (t && !/[\n{}[\]`]/u.test(t)) return { libelle: t };
+    if (t && !/[\n\r\u2028\u2029{}[\]`]/u.test(t)) return { libelle: t };
     throw new ErreurOutil('réponse du rédacteur illisible (ni objet JSON, ni libellé sur une ligne).');
   }
 }
