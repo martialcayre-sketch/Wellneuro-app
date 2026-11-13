@@ -52,6 +52,7 @@ import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { AVERTISSEMENT_SYNTHESE_ANTERIEURE } from '@/lib/scoring/passationsNonInterpretables';
 import { assemblerDossierExport, nomFichierExport } from './assembler';
+import { dateurRelatif } from './datesExport';
 import { creerMasqueur, MARQUE_MASQUE } from './masquage';
 import type { DocumentExport, PassationExport, VersionExport } from './modele';
 import { planifierPages, rendrePdf } from './pdf';
@@ -313,7 +314,7 @@ const SYNTHESE_VALIDEE = {
 
 const BROUILLON = { statut: 'Brouillon_IA', dateGeneration: new Date('2026-09-22T09:00:00.000Z') };
 
-type WhereSynthese = { where: { statut: { in: string[] } } };
+type WhereSynthese = { where: { statut?: { in: string[] } } };
 
 function brancherBase(options: { validee?: typeof SYNTHESE_VALIDEE | null; brouillon?: typeof BROUILLON | null } = {}) {
   const validee = options.validee === undefined ? SYNTHESE_VALIDEE : options.validee;
@@ -324,15 +325,25 @@ function brancherBase(options: { validee?: typeof SYNTHESE_VALIDEE | null; broui
   prisma.questionnaireReponse.findMany.mockResolvedValue(PASSATIONS);
   prisma.assignation.findMany.mockResolvedValue(ASSIGNATIONS);
   prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
-    args.where.statut.in.includes('Validee_Praticien') ? validee : brouillon,
+    // Sans filtre de statut : la première synthèse, pour J0 sans consultation ([[D-512]] §3).
+    !args.where.statut ? brouillon ?? validee : args.where.statut.in.includes('Validee_Praticien') ? validee : brouillon,
   );
   // Aucune ligne datée : l'état de la production au 2026-10-28.
   prisma.donneePhysiologique.findMany.mockResolvedValue([]);
   prisma.traitementEnCours.findMany.mockResolvedValue([]);
 }
 
+// Pseudonyme d'export de fixture ([[D-512]] §1) : la route le calcule, l'assembleur le reçoit.
+const PSEUDONYME = 'EXT-7F3K9Q';
+
 function assembler(version: VersionExport): Promise<DocumentExport | null> {
-  return assemblerDossierExport({ idPatient: 'PAT030', praticienEmail: PRATICIEN, version, maintenant: MAINTENANT });
+  return assemblerDossierExport({
+    idPatient: 'PAT030',
+    praticienEmail: PRATICIEN,
+    version,
+    maintenant: MAINTENANT,
+    pseudonyme: version === 'ia-externe' ? PSEUDONYME : null,
+  });
 }
 
 async function assemblerOuEchouer(version: VersionExport): Promise<DocumentExport> {
@@ -787,8 +798,13 @@ describe('assemblerDossierExport — lectures des agendas et du cabinet', () => 
 
   it('instrument du cabinet modifié APRÈS une passation : ses réponses ne sont pas traduites par la définition actuelle (NF4)', async () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([...PASSATIONS_CAB, ...PASSATIONS]);
-    const reserve = avertissementInstrumentCabinetModifie(new Date('2026-09-08T09:00:00.000Z'));
     for (const version of ['complete', 'ia-externe'] as const) {
+      const modifieLe = new Date('2026-09-08T09:00:00.000Z');
+      // Version « IA externe » : la modification se date en jours relatifs (J0 = 01/08/2026, [[D-512]] §3).
+      const reserve = version === 'ia-externe'
+        ? avertissementInstrumentCabinetModifie(modifieLe, dateurRelatif({ jour: '2026-08-01', repere: 'consultation' }))
+        : avertissementInstrumentCabinetModifie(modifieLe);
+      if (version === 'ia-externe') expect(reserve).toContain('modifié à J+38');
       const { blocs } = await assemblerOuEchouer(version);
       // Codes bruts sous la réserve — jamais « Toujours » sous « Troubles du sommeil ».
       const i = blocs.findIndex(b => b.type === 'paragraphe' && b.texte === reserve);
@@ -901,15 +917,36 @@ describe('assemblerDossierExport — document', () => {
     ]);
   });
 
-  it('version ia-externe : en-tête, pied et métadonnées sans identité', async () => {
+  it('version ia-externe : en-tête, pied et métadonnées au pseudonyme, date d’export au jour ([[D-512]])', async () => {
     const doc = await assemblerOuEchouer('ia-externe');
-    expect(doc.titre).toBe('Dossier patient PAT030');
+    expect(doc.titre).toBe(`Dossier patient ${PSEUDONYME}`);
     expect(doc.sousTitre).toBe('Version pseudonymisée pour une IA externe');
-    expect(doc.mentionPied).toBe('PAT030 · version pseudonymisée · exporté le 26/09/2026 à 10:05');
+    expect(doc.mentionPied).toBe(`${PSEUDONYME} · version pseudonymisée · exporté le 26/09/2026`);
     expect(doc.metadonnees).toEqual({
-      titre: 'Dossier patient PAT030',
+      titre: `Dossier patient ${PSEUDONYME}`,
       sujet: 'Dossier de neuronutrition exporté depuis WellNeuro',
+      date: new Date('2026-09-26T00:00:00.000Z'),
     });
+  });
+
+  it('version ia-externe sans pseudonyme : l’assemblage lève, rien n’est lu ([[D-512]] §1)', async () => {
+    for (const pseudonyme of [undefined, null, '']) {
+      await expect(assemblerDossierExport({
+        idPatient: 'PAT030', praticienEmail: PRATICIEN, version: 'ia-externe', maintenant: MAINTENANT, pseudonyme,
+      })).rejects.toThrow(/Pseudonyme/);
+    }
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('version ia-externe : aucune date au calendrier hors la date d’export ([[D-512]] §2-§3)', async () => {
+    const doc = await assemblerOuEchouer('ia-externe');
+    const fautifs = textes(doc)
+      .map(texte => texte.replaceAll('26/09/2026', ''))
+      .filter(texte => /\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2}|\b\d{1,2}:\d{2}\b/.test(texte));
+    expect(fautifs).toEqual([]);
+    const joint = textes(doc).join('\n');
+    expect(joint).toContain('Consultation à J');
+    expect(joint).toMatch(/Passation à J[+-]?\d*/);
   });
 
   it('version complete : en-tête et pied annoncent la version complète', async () => {
@@ -945,8 +982,9 @@ describe('assemblerDossierExport — document', () => {
     // Le masquage a bien mordu (anti-vacuité) : l'anamnèse, la note, la réponse
     // libre et le motif d'invalidation portaient tous l'identité.
     expect(tous.filter(texte => texte.includes(MARQUE_MASQUE)).length).toBeGreaterThanOrEqual(5);
-    // L'identifiant, lui, reste : c'est la clé que le praticien retrouve.
-    expect(tous.some(texte => texte.includes('PAT030'))).toBe(true);
+    // [[D-512]] §1 : l'identifiant interne ne sort plus ; le pseudonyme le remplace.
+    expect(tous.filter(texte => texte.includes('PAT030'))).toEqual([]);
+    expect(tous.some(texte => texte.includes(PSEUDONYME))).toBe(true);
   });
 
   it('version complete : les valeurs identifiantes sont présentes, rien n’est masqué', async () => {
@@ -976,7 +1014,7 @@ describe('assemblerDossierExport — document', () => {
       const octets = await rendrePdf(doc, { maintenant: MAINTENANT });
       expect(new TextDecoder('latin1').decode(octets.slice(0, 5))).toBe('%PDF-');
       const relu = await PDFDocument.load(octets);
-      expect(relu.getTitle()).toBe('Dossier patient PAT030');
+      expect(relu.getTitle()).toBe(`Dossier patient ${version === 'ia-externe' ? PSEUDONYME : 'PAT030'}`);
       expect(relu.getPageCount()).toBeGreaterThan(1);
     }
   });
@@ -984,7 +1022,8 @@ describe('assemblerDossierExport — document', () => {
   it('le texte mis en page de la version ia-externe ne porte aucun nom', async () => {
     const doc = await assemblerOuEchouer('ia-externe');
     const lignes = (await planifierPages(doc)).flat().map(l => l.texte).join('\n');
-    expect(lignes).toContain('PAT030');
+    expect(lignes).toContain(PSEUDONYME);
+    expect(lignes).not.toContain('PAT030');
     for (const mot of ['Sophie', 'Nicola', 'Jennifer', 'Martin']) {
       expect(contientMot(lignes, mot), mot).toBe(false);
     }
@@ -1042,7 +1081,7 @@ describe('assemblerDossierExport — masquage des textes libres', () => {
     ]);
     espionDefinition.mockResolvedValue({ ...DEFINITION_OISEAUX, cabinet: false });
     // Témoin : appliqué au libellé, le masqueur l'effacerait.
-    expect(creerMasqueur(jennifer)('Martin-pêcheur')).not.toBe('Martin-pêcheur');
+    expect(creerMasqueur(jennifer, PSEUDONYME)('Martin-pêcheur')).not.toBe('Martin-pêcheur');
 
     const doc = await assemblerOuEchouer('ia-externe');
     expect(doc.blocs).toContainEqual({ type: 'champ', libelle: 'Quel oiseau avez-vous observé ?', valeur: 'Martin-pêcheur' });
@@ -1108,12 +1147,13 @@ describe('assemblerDossierExport — masquage des textes libres', () => {
     for (const temoin of temoins) expect(complete, temoin).toContain(temoin);
     const pseudonymisee = await lire('ia-externe');
     for (const temoin of temoins) expect(pseudonymisee, temoin).not.toContain(temoin);
-    expect(pseudonymisee).toContain('pat030');
+    expect(pseudonymisee).toContain(PSEUDONYME.toLowerCase());
+    expect(pseudonymisee).not.toContain('pat030');
   });
 
   function brancherSynthese(validee: typeof SYNTHESE_VALIDEE) {
     prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
-      args.where.statut.in.includes('Validee_Praticien') ? validee : null,
+      !args.where.statut || args.where.statut.in.includes('Validee_Praticien') ? validee : null,
     );
   }
 });
@@ -1261,10 +1301,10 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
       vi.clearAllMocks();
       brancherBase();
       const doc = await assemblerOuEchouer(version);
-      const [consultations, porteuse, donnees] = espionRenseignements.mock.calls[0];
+      const [consultations, porteuse, donnees, dateur] = espionRenseignements.mock.calls[0];
       expect(donnees).toBeNull();
       // Même sortie qu'un appel sans le troisième argument : la forme d'avant.
-      expect(blocsSection2(doc)).toEqual(espionRenseignements(consultations, porteuse));
+      expect(blocsSection2(doc)).toEqual(espionRenseignements(consultations, porteuse, undefined, dateur));
       expect(doc.blocs).toContainEqual({
         type: 'paragraphe',
         texte:
@@ -1297,19 +1337,23 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
       brancherLignes();
       const doc = await assemblerOuEchouer(version);
       const section = blocsSection2(doc);
+      // Version « IA externe » : jours relatifs à J0 = 01/08/2026, première consultation ([[D-512]] §3).
+      const [le20, le19, depuis] = version === 'ia-externe'
+        ? ['à J+80', 'à J+79', 'J-142']
+        : ['le 20/10/2026', 'le 19/10/2026', '12/03/2026'];
       expect(section[1]).toEqual({ type: 'titre', niveau: 2, texte: 'Données physiologiques et traitements du dossier' });
-      expect(section).toContainEqual({ type: 'champ', libelle: 'Sexe déclaré', valeur: 'féminin — déclaré par le patient le 20/10/2026' });
-      expect(section).toContainEqual({ type: 'champ', libelle: 'Grossesse', valeur: 'inconnu — confirmé par le praticien le 20/10/2026' });
+      expect(section).toContainEqual({ type: 'champ', libelle: 'Sexe déclaré', valeur: `féminin — déclaré par le patient ${le20}` });
+      expect(section).toContainEqual({ type: 'champ', libelle: 'Grossesse', valeur: `inconnu — confirmé par le praticien ${le20}` });
       expect(section).toContainEqual({
         type: 'champ',
         libelle: 'Poids',
-        valeur: '72,5 kg, mesuré le 19/10/2026 — confirmé par le praticien le 20/10/2026',
+        valeur: `72,5 kg, mesuré ${le19} — confirmé par le praticien ${le20}`,
       });
       expect(section).toContainEqual({ type: 'champ', libelle: 'Taille', valeur: 'Non renseigné' });
       const joint = joindre(section);
       // Jamais l'e-mail du praticien qui a posé une ligne, dans aucune version.
       expect(joint).not.toContain(PRATICIEN);
-      expect(joint).toContain('Depuis : 12/03/2026');
+      expect(joint).toContain(`Depuis : ${depuis}`);
       expect(joint).toContain('Prescrit par un autre soignant : oui');
       // Le préambule annonce les lignes et ceux qui les posent.
       expect(joindre(doc.blocs)).toContain('2. données physiologiques et traitements datés du dossier, déclarés par le patient ou confirmés par le praticien');
@@ -1373,7 +1417,7 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
     expect(chiffres(joint)).not.toContain('0612345678');
     expect(joint).not.toContain('14/03/1985');
     // Fermées : ni masquées ni retirées.
-    expect(joint).toContain('féminin — déclaré par le patient le 20/10/2026');
+    expect(joint).toContain('féminin — déclaré par le patient à J+80');
     expect(joint).toContain('Prescrit par un autre soignant : oui');
     // Jamais l'e-mail du praticien qui a posé la ligne.
     expect(joint).not.toContain(PRATICIEN);
@@ -1392,7 +1436,7 @@ describe('assemblerDossierExport — lignes datées du dossier (D-391 §2)', () 
 
 describe('nomFichierExport', () => {
   it('porte l’identifiant, la version et la date de Paris — jamais le nom du patient', () => {
-    expect(nomFichierExport('PAT030', 'ia-externe', MAINTENANT)).toBe('dossier-PAT030-ia-externe-2026-09-26.pdf');
+    expect(nomFichierExport(PSEUDONYME, 'ia-externe', MAINTENANT)).toBe(`dossier-${PSEUDONYME}-ia-externe-2026-09-26.pdf`);
     expect(nomFichierExport('PAT030', 'complete', MAINTENANT)).toBe('dossier-PAT030-complet-2026-09-26.pdf');
   });
 
@@ -1401,5 +1445,52 @@ describe('nomFichierExport', () => {
     expect(nomFichierExport('PAT030', 'complete', new Date('2026-12-31T23:30:00.000Z'))).toBe(
       'dossier-PAT030-complet-2027-01-01.pdf',
     );
+  });
+});
+
+describe('assemblerDossierExport — J0 sans consultation ([[D-512]] §3, contre-revue Codex P1-1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    espionDefinition.mockImplementation(async (id: string) => definitionDe(id));
+    brancherBase({ validee: null, brouillon: null });
+    prisma.consultation.findMany.mockResolvedValue([]);
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.assignation.findMany.mockResolvedValue([]);
+  });
+
+  const POIDS_1 = rangPhysio({ id: 'P1', ordre: BigInt(1), critere: 'poids', mesure: '70', acteLe: new Date('2026-10-01T09:00:00.000Z') });
+  const POIDS_2 = rangPhysio({
+    id: 'P2', ordre: BigInt(2), critere: 'poids', mesure: '71', idLigneRemplacee: 'P1', acteLe: new Date('2026-11-01T09:00:00.000Z'),
+  });
+
+  async function poids(): Promise<string | undefined> {
+    const doc = await assemblerOuEchouer('ia-externe');
+    const champ = blocsSection2(doc).find(b => b.type === 'champ' && b.libelle === 'Poids');
+    return champ?.type === 'champ' ? champ.valeur : undefined;
+  }
+
+  it('une ligne corrigée garde sa première date : J0 ne glisse pas sur la correction', async () => {
+    prisma.donneePhysiologique.findMany.mockResolvedValue([POIDS_1, POIDS_2]);
+    expect(await poids()).toBe('71 kg — confirmé par le praticien à J+31');
+  });
+
+  it('la première synthèse enregistrée, même jamais validée, compte pour J0', async () => {
+    prisma.donneePhysiologique.findMany.mockResolvedValue([POIDS_1]);
+    prisma.syntheseIA.findFirst.mockImplementation(async (args: WhereSynthese) =>
+      args.where.statut ? null : { dateGeneration: new Date('2026-09-01T09:00:00.000Z') },
+    );
+    expect(await poids()).toBe('70 kg — confirmé par le praticien à J+30');
+    expect(prisma.syntheseIA.findFirst).toHaveBeenCalledWith({
+      where: { idPatient: 'PAT030' },
+      orderBy: { dateGeneration: 'asc' },
+      select: { dateGeneration: true },
+    });
+  });
+
+  it('avec une consultation, la première synthèse n’est pas cherchée', async () => {
+    prisma.consultation.findMany.mockResolvedValue(CONSULTATIONS);
+    await assemblerOuEchouer('ia-externe');
+    expect(prisma.syntheseIA.findFirst).not.toHaveBeenCalledWith(expect.objectContaining({ orderBy: { dateGeneration: 'asc' } }));
   });
 });

@@ -11,7 +11,6 @@ import {
 } from '@/lib/consultation/anamnese';
 import { FICHE_SECTIONS } from '@/lib/consultation/fiche';
 import { isMotifValide } from '@/lib/consultation/motifs';
-import { formaterDatePeriode, formaterJour } from '@/lib/physio-traitements/dates';
 import {
   BLOCS_PATIENT,
   CHAMPS_PATIENT,
@@ -22,9 +21,9 @@ import {
   UNITES,
   type Critere,
 } from '@/lib/physio-traitements/liste';
+import { DATEUR_CALENDAIRE, type Dateur } from './datesExport';
 import {
   citer,
-  dateFr,
   NON_RENSEIGNE,
   type BlocExport,
   type ConsultationExport,
@@ -48,7 +47,7 @@ function intertitre(texte: string): BlocExport {
   return { type: 'paragraphe', texte, ton: 'discret', garderAvecSuite: true };
 }
 
-function libelleStatut(consultation: ConsultationExport): string {
+function libelleStatut(consultation: ConsultationExport, dateur: Dateur): string {
   switch (consultation.statut) {
     case 'creee':
       return 'Créée';
@@ -56,7 +55,7 @@ function libelleStatut(consultation: ConsultationExport): string {
       return 'En cours';
     case 'validee':
       return consultation.dateValidation
-        ? `Validée le ${dateFr(consultation.dateValidation)}`
+        ? `Validée ${dateur.le(consultation.dateValidation)}`
         : 'Validée';
     default:
       return consultation.statut.trim() || NON_RENSEIGNE;
@@ -64,11 +63,12 @@ function libelleStatut(consultation: ConsultationExport): string {
 }
 
 // Valeurs écrites par les routes du portail : 'non_donne' par défaut, 'donne' au recueil.
-function libelleConsentement(consultation: ConsultationExport): string {
+// L'horodatage est une date administrative : la version relative le retire ([[D-512]] §2).
+function libelleConsentement(consultation: ConsultationExport, dateur: Dateur): string {
   switch (consultation.consentement) {
     case 'donne': {
-      const date = consultation.consentementHorodatage
-        ? ` le ${dateFr(consultation.consentementHorodatage)}`
+      const date = consultation.consentementHorodatage && !dateur.relatif
+        ? ` ${dateur.le(consultation.consentementHorodatage)}`
         : '';
       const version = consultation.consentementVersion?.trim()
         ? ` (version ${consultation.consentementVersion.trim()})`
@@ -174,17 +174,17 @@ function blocsAnamnese(anamnese: AnamneseValeurs | null): BlocExport[] {
   return blocs;
 }
 
-function blocsConsultation(consultation: ConsultationExport, porteuse: boolean): BlocExport[] {
+function blocsConsultation(consultation: ConsultationExport, porteuse: boolean, dateur: Dateur): BlocExport[] {
   const blocs: BlocExport[] = [
-    { type: 'titre', niveau: 2, texte: `Consultation du ${dateFr(consultation.createdAt)}` },
+    { type: 'titre', niveau: 2, texte: `Consultation ${dateur.du(consultation.createdAt)}` },
   ];
   if (porteuse) {
     blocs.push(discret("Consultation qui fait foi : c'est cette anamnèse que lit la synthèse."));
   }
   blocs.push(
-    champ('Statut', libelleStatut(consultation)),
+    champ('Statut', libelleStatut(consultation, dateur)),
     champ('Motif de consultation', libelleMotif(consultation.motif)),
-    champ('Consentement', libelleConsentement(consultation)),
+    champ('Consentement', libelleConsentement(consultation, dateur)),
   );
   const finalite = consultation.finaliteConsentement?.trim();
   if (finalite) blocs.push(champ('Finalité du consentement', finalite));
@@ -208,8 +208,15 @@ const LIGNES_DATEES =
   'aucune ligne en vigueur ; « inconnu » est une réponse donnée. Une date de traitement est écrite à la ' +
   'précision connue : un jour (12/05/2024), un mois (mai 2024), une année (2024), ou « date inconnue ».';
 
-function source(ligne: { source: 'patient' | 'praticien'; acteLe: string }): string {
-  return `${LIBELLES_SOURCE_PRATICIEN[ligne.source]} le ${dateFr(new Date(ligne.acteLe))}`;
+// [[D-512]] §3 : les mêmes précisions, relatives à J0.
+const LIGNES_DATEES_RELATIVES =
+  "Lignes datées, tenues à part de l'anamnèse : chacune dit sa date et sa source — déclarée par " +
+  'le patient, ou confirmée par le praticien. Seule la ligne en vigueur figure ici. « Non renseigné » : ' +
+  'aucune ligne en vigueur ; « inconnu » est une réponse donnée. Une date de traitement est écrite à la ' +
+  "précision connue : un jour (J-12), un mois (M-3, au mois près), une année (A-1, à l'année près), ou « date inconnue ».";
+
+function source(ligne: { source: 'patient' | 'praticien'; acteLe: string }, dateur: Dateur): string {
+  return `${LIBELLES_SOURCE_PRATICIEN[ligne.source]} ${dateur.le(new Date(ligne.acteLe))}`;
 }
 
 /** Valeur fermée par les CHECK de la base : son libellé ; hors liste, citée telle quelle. */
@@ -219,39 +226,39 @@ function ferme(valeur: string | null): string {
   return Object.hasOwn(LIBELLES_REPONSE, valeur) ? LIBELLES_REPONSE[valeur] : citer(valeur);
 }
 
-function valeurPhysio(critere: Critere, tete: DonneePhysioExport | null): string {
+function valeurPhysio(critere: Critere, tete: DonneePhysioExport | null, dateur: Dateur): string {
   if (tete === null) return NON_RENSEIGNE;
   if (tete.mesure !== null) {
     const unite = critere === 'poids' || critere === 'taille' ? ` ${UNITES[critere]}` : '';
-    const le = tete.mesureLe ? `, mesuré le ${formaterJour(tete.mesureLe)}` : '';
-    return `${tete.mesure.replace('.', ',')}${unite}${le} — ${source(tete)}`;
+    const le = tete.mesureLe ? `, mesuré ${dateur.relatif ? 'à' : 'le'} ${dateur.jourCivil(tete.mesureLe)}` : '';
+    return `${tete.mesure.replace('.', ',')}${unite}${le} — ${source(tete, dateur)}`;
   }
-  return `${ferme(tete.reponse)} — ${source(tete)}`;
+  return `${ferme(tete.reponse)} — ${source(tete, dateur)}`;
 }
 
-function texteTraitement(t: TraitementExport): string {
+function texteTraitement(t: TraitementExport, dateur: Dateur): string {
   const nature = t.nature === 'complement' ? 'complement' : 'medicament';
   const libelleNature = t.nature === 'medicament' || t.nature === 'complement' ? LIBELLES_NATURE[t.nature] : 'Traitement';
   const morceaux = [`${libelleNature} : ${t.nom ? citer(t.nom) : NON_RENSEIGNE}`];
   if (t.dose) morceaux.push(`${CHAMPS_PATIENT.dose} : ${citer(t.dose)}`);
   if (t.moment) morceaux.push(`${CHAMPS_PATIENT.moment} : ${citer(t.moment)}`);
   if (t.motif) morceaux.push(`${BLOCS_PATIENT[nature].motif} : ${citer(t.motif)}`);
-  morceaux.push(`Depuis : ${formaterDatePeriode(t.debut, t.debutPrecision, DATE_INCONNUE) || NON_RENSEIGNE}`);
+  morceaux.push(`Depuis : ${dateur.periode(t.debut, t.debutPrecision, DATE_INCONNUE) || NON_RENSEIGNE}`);
   morceaux.push(
     t.finPrecision === null
       ? 'En cours'
-      : `Arrêté : ${formaterDatePeriode(t.fin, t.finPrecision, DATE_INCONNUE)}`,
+      : `Arrêté : ${dateur.periode(t.fin, t.finPrecision, DATE_INCONNUE)}`,
   );
   morceaux.push(`Prescrit par un autre soignant : ${ferme(t.prescritParTiers)}`);
-  return `${morceaux.join(' · ')} — ${source(t)}`;
+  return `${morceaux.join(' · ')} — ${source(t, dateur)}`;
 }
 
-function blocsDonneesDatees(donnees: DonneesDateesExport): BlocExport[] {
+function blocsDonneesDatees(donnees: DonneesDateesExport, dateur: Dateur): BlocExport[] {
   const blocs: BlocExport[] = [
     { type: 'titre', niveau: 2, texte: 'Données physiologiques et traitements du dossier' },
-    discret(LIGNES_DATEES),
+    discret(dateur.relatif ? LIGNES_DATEES_RELATIVES : LIGNES_DATEES),
     { type: 'titre', niveau: 3, texte: 'Données physiologiques' },
-    ...donnees.criteres.map(c => champ(LIBELLES_CRITERE[c.critere], valeurPhysio(c.critere, c.tete))),
+    ...donnees.criteres.map(c => champ(LIBELLES_CRITERE[c.critere], valeurPhysio(c.critere, c.tete, dateur))),
   ];
   // Sans traitement, le champ seul : pas un titre suivi du même libellé.
   if (!donnees.traitements.length) {
@@ -259,7 +266,7 @@ function blocsDonneesDatees(donnees: DonneesDateesExport): BlocExport[] {
   } else {
     blocs.push(
       { type: 'titre', niveau: 3, texte: TITRE_TRAITEMENTS },
-      { type: 'liste', elements: donnees.traitements.map(texteTraitement) },
+      { type: 'liste', elements: donnees.traitements.map(t => texteTraitement(t, dateur)) },
     );
   }
   return blocs;
@@ -268,15 +275,17 @@ function blocsDonneesDatees(donnees: DonneesDateesExport): BlocExport[] {
 /**
  * Consultations reçues déjà triées, la plus récente d'abord : l'ordre est celui
  * de l'appelant. Les lignes datées du dossier ouvrent la section ; sans aucune
- * ligne (`null`), la section est celle d'avant [[D-391]].
+ * ligne (`null`), la section est celle d'avant [[D-391]]. `dateur` : le
+ * calendrier (version complète) ou les jours relatifs ([[D-512]] §3).
  */
 export function sectionRenseignements(
   consultations: ConsultationExport[],
   idConsultationPorteuse: string | null,
   donneesDatees: DonneesDateesExport | null = null,
+  dateur: Dateur = DATEUR_CALENDAIRE,
 ): BlocExport[] {
   const blocs: BlocExport[] = [{ type: 'titre', niveau: 1, texte: TITRE }];
-  if (donneesDatees) blocs.push(...blocsDonneesDatees(donneesDatees));
+  if (donneesDatees) blocs.push(...blocsDonneesDatees(donneesDatees, dateur));
   if (!consultations.length) {
     blocs.push({
       type: 'paragraphe',
@@ -289,6 +298,7 @@ export function sectionRenseignements(
       ...blocsConsultation(
         consultation,
         idConsultationPorteuse !== null && consultation.idConsultation === idConsultationPorteuse,
+        dateur,
       ),
     );
   }

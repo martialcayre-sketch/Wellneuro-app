@@ -36,6 +36,9 @@ import { creerMasqueur, masquerConsultation, masquerPassation, masquerSynthese, 
 import type { ConsultationExport, PassationExport, PatientExport, SyntheseExport } from './modele';
 import { versWinAnsi } from './pdf';
 
+/** Pseudonyme d'export de fixture ([[D-512]] §1). */
+const PSEUDONYME = 'EXT-7F3K9Q';
+
 const DOSSIER: PatientExport = {
   idPatient: 'PAT030',
   prenom: 'Sophie',
@@ -112,7 +115,10 @@ const FUITES: Fuite[] = [
   { origine: '1re #3', dossier: { dateNaissance: '1980-03-12' }, texte: 'née le 12-mars-1980', identite: ['12mars1980'] },
   // Contre-audit Codex P0-1 : une coordonnée qui contient l'identifiant PATnnn.
   { origine: 'Codex P0-1', dossier: { email: 'PAT030@example.test' }, texte: 'Contact : PAT030@example.test', identite: ['pat030exampletest'] },
-  { origine: 'Codex P0-1', texte: 'Écrire à SophiePAT030 ou PAT030Nicola', identite: ['sophie', 'nicola'] },
+  { origine: 'Codex P0-1', texte: 'Écrire à SophiePAT030 ou PAT030Nicola', identite: ['sophie', 'nicola', 'pat030'] },
+  // D-512 §1 : l'identifiant interne, le sien ou celui d'un autre dossier, ne sort plus.
+  { origine: 'D-512', texte: 'Dossier PAT030, revu le 21/03/2026.', identite: ['pat030'] },
+  { origine: 'D-512', texte: 'comparer avec PAT123 et pat-0456', identite: ['pat123', 'pat0456'] },
   // Revue finale : l'abréviation « mar » du mois.
   { origine: 'finale', texte: 'née le 14 mar 1985, le 14 mar. 85', identite: ['14mar1985', '14mar85'] },
 
@@ -217,8 +223,8 @@ const FUITES: Fuite[] = [
 // ── (b) FIDÉLITÉ ───────────────────────────────────────────────────────────
 
 const FIDELITE: Fidelite[] = [
-  // Contre-audit Codex P0-1 : l'identifiant seul reste, même quand l'e-mail le contient.
-  { origine: 'Codex P0-1', dossier: { email: 'PAT030@example.test' }, texte: 'Dossier PAT030, revu le 21/03/2026.' },
+  // Contre-audit Codex P0-1, repris par D-512 §1 : le pseudonyme seul reste, même quand l'e-mail le contient.
+  { origine: 'D-512', dossier: { email: `${PSEUDONYME}@example.test` }, texte: `Dossier ${PSEUDONYME}, revu le 21/03/2026.` },
   // N2 et N12 : doses, apports et mesures qui partagent les chiffres de la naissance.
   { origine: 'N12', dossier: { dateNaissance: '2000-05-01' }, texte: '1500 mg de magnésium le soir' },
   { origine: 'N12', dossier: { dateNaissance: '2000-05-01' }, texte: 'objectif 1500 kcal' },
@@ -343,7 +349,7 @@ function synthese(texte: string): SyntheseExport {
 
 /** Le texte, masqué par chacun des points d'entrée d'un texte libre. */
 function masques(texte: string, dossier: Partial<PatientExport> = {}): string[] {
-  const masquer = creerMasqueur({ ...DOSSIER, ...dossier });
+  const masquer = creerMasqueur({ ...DOSSIER, ...dossier }, PSEUDONYME);
   const c = masquerConsultation(consultation(texte), masquer);
   const s = masquerSynthese(synthese(texte), masquer);
   return [
@@ -403,7 +409,7 @@ describe('corpus du masqueur — clés de réponses hors définition', () => {
     [{ A1: 1, EXTRA: { 'Sophie Nicola': 1 } }, ['sophie', 'nicola']],
     [{ A1: 1, 'sophie.nicola@example.test': 'x' }, ['sophie', 'nicola']],
   ] as Array<[Record<string, unknown>, string[]]>)('%j', (rawAnswers, identite) => {
-    const masquee = masquerPassation(passation(rawAnswers), creerMasqueur(DOSSIER));
+    const masquee = masquerPassation(passation(rawAnswers), creerMasqueur(DOSSIER, PSEUDONYME));
     const rendu = JSON.stringify(masquee.scores?.rawAnswers);
     for (const forme of identite) {
       expect(lu(JSON.stringify(rawAnswers)), `témoin ${forme}`).toContain(forme);

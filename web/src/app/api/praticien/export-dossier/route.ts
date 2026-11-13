@@ -5,6 +5,7 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import { assemblerDossierExport, nomFichierExport } from '@/lib/export-dossier/assembler';
 import { estVersionExport, type VersionExport } from '@/lib/export-dossier/modele';
 import { rendrePdf } from '@/lib/export-dossier/pdf';
+import { lireSecretPseudonyme, pseudonymeExport } from '@/lib/export-dossier/pseudonyme';
 
 // Export PDF du dossier patient (D-252) — LECTURE SEULE, téléchargement direct.
 // La version par défaut est la version pseudonymisée : un paramètre oublié ne
@@ -21,7 +22,13 @@ const ROUTE_JOURNAL: Record<VersionExport, string> = {
 
 export type ExportDossierErreur = {
   ok: false;
-  reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception';
+  reason:
+    | 'unauthenticated'
+    | 'invalid'
+    | 'patient_not_found'
+    | 'forbidden'
+    | 'pseudonymisation_indisponible'
+    | 'exception';
   error: string;
 };
 
@@ -53,6 +60,22 @@ export async function GET(req: Request): Promise<Response> {
   }
   const version: VersionExport = versionDemandee ?? 'ia-externe';
 
+  // [[D-512]] §1 : sans secret serveur, pas de pseudonyme — l'export pseudonymisé
+  // échoue franchement, avant toute lecture du dossier, plutôt que de laisser
+  // sortir l'identifiant interne ou de pousser vers la version complète.
+  const secret = version === 'ia-externe' ? lireSecretPseudonyme() : null;
+  if (version === 'ia-externe' && !secret) {
+    console.error('[praticien/export-dossier GET] secret de pseudonymisation absent ou trop court');
+    return NextResponse.json<ExportDossierErreur>(
+      {
+        ok: false,
+        reason: 'pseudonymisation_indisponible',
+        error: 'Export pseudonymisé indisponible : la pseudonymisation n’est pas configurée sur le serveur.',
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const praticienEmail = emailPraticien(session);
     const appartenance = await verifierAppartenancePatient(idPatient, praticienEmail, {
@@ -73,7 +96,8 @@ export async function GET(req: Request): Promise<Response> {
     }
 
     const maintenant = new Date();
-    const document = await assemblerDossierExport({ idPatient, praticienEmail, version, maintenant });
+    const pseudonyme = secret ? pseudonymeExport(idPatient, secret) : null;
+    const document = await assemblerDossierExport({ idPatient, praticienEmail, version, maintenant, pseudonyme });
     if (!document) {
       return NextResponse.json<ExportDossierErreur>(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
@@ -86,8 +110,10 @@ export async function GET(req: Request): Promise<Response> {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${nomFichierExport(idPatient, version, maintenant)}"`,
+        'Content-Disposition': `attachment; filename="${nomFichierExport(pseudonyme ?? idPatient, version, maintenant)}"`,
         'Cache-Control': 'no-store',
+        // [[D-512]] §1 : le tiroir affiche le pseudonyme au praticien.
+        ...(pseudonyme ? { 'X-Pseudonyme-Export': pseudonyme } : {}),
       },
     });
   } catch (err) {
