@@ -16,7 +16,10 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   commande** (tout sauf les corps de heredoc) ne contient aucun interpréteur.
   `cat >> journal.md <<'FIN'` écrit du texte ; `cat <<'FIN' | bash` reste
   attrapé, le `| bash` étant sur la ligne d'ouverture. Ce que le corps
-  *raconte* n'entre pas dans la décision.
+  *raconte* n'entre pas dans la décision. Depuis le 2026-11-13 (lot
+  `autonomie-frictions`), `prisma format` est aussi refusé, mais lu sur la
+  commande **masquée** comme la « demande » : il ne détruit rien, et une
+  prose qui le cite doit rester libre ; `prisma format --check` passe.
 - **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
   `prisma migrate`, `supabase db push`, push forcé. L'autorisation en un clic
   dans la session matérialise la « confirmation explicite » exigée par
