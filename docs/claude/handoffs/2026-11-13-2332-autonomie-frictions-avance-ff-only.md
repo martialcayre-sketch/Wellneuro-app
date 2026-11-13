@@ -54,7 +54,9 @@ session, et la session ne fusionne toujours pas une branche commitée.
     - l'assertion du banc.
 - `wn-reviewer` sur l'écart : GO, les deux P1 levés. Un P2 restait (le §4 disait que le banc ne figeait pas les
   textes), corrigé : le banc fige le contrat, pas la phrase entière.
-- Contre-revue Codex (P0, `wn-codex-avis.mjs --mode revue`) : sur le diff poussé, verdict dans un commentaire de la PR.
+- Contre-revue Codex (P0, `wn-codex-avis.mjs --mode revue`, diff poussé d96b27a6) : avis conforme, aucun P0 ni P1, pas
+  d'élargissement de l'option A. Un P2 corrigé : une avance « peut » échouer sur un chemin commun, mais pas toujours,
+  par exemple quand la modification locale est identique à la version entrante.
 
 ## Problèmes ouverts
 
