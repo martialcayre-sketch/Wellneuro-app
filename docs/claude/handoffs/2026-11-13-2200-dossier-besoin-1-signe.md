@@ -17,7 +17,7 @@ Mener le dossier du besoin 1 jusqu'à la signature :
 
 ## Décisions prises
 
-- **Délégation permanente de l'étiquetage** (`D-325` §5), donnée en session le 2026-11-13. Elle ne s'applique qu'à des claims validés. **La signature reste au responsable** (`DC-16`) : il a refusé de la déléguer, et l'assistant a refusé de signer sur demande.
+- **Délégation permanente de l'étiquetage** (`D-325` §5), donnée en session le 2026-11-13. Elle ne s'applique qu'à des claims validés. **La signature reste au responsable** (`DC-16`). Il a choisi en session de ne pas la déléguer. Plus tard, sollicité de signer les positions à sa place, l'assistant a refusé, et le responsable les a signées lui-même.
 - **Signature des 82 claims** de l'étape 3, faite par le responsable dans l'atelier et constatée par conteneur (one-off-2200).
 - **Deux lots d'étiquetage**, faits par délégation et constatés par conteneur :
 
@@ -30,6 +30,10 @@ Mener le dossier du besoin 1 jusqu'à la signature :
 - **Contre-revue Codex** : pièces au dépôt privé des revues (`besoin1-assiette/`), consigne en treize affirmations à réfuter. Verdict : NO-GO pour la v0.1. Sept constats (cinq P1, deux P2), vérifiés sur les pièces et tous retenus. La table des verdicts est au dossier privé. Aucune seconde passe : rien ne la signale.
 - **Positions v0.2** : vingt positions, dont une position d'éligibilité. L'étiquetage ne vaut pas autorisation : seuls les claims cités par une position signée fondent un constat ou un conseil. La liste des claims de provenance seule est au dossier.
 - **Les vingt positions sont signées par le responsable le 2026-11-13** (cases cochées, texte inchangé, constat par lecture du dossier).
+- **Points restés ouverts au handoff 1900, soldés par ces positions :**
+  - le repère sur les claims internes (`20261113-1034-b` = C) est signé, avec le niveau « interne » déclaré. La publication primaire, déjà ingérée et signée à l'étape 3, y est citée avec sa portée propre ;
+  - la plage du biomarqueur retenu est signée ;
+  - la lecture de la mesure dérivée est fixée sans tranche : elle reste descriptive, nomme les items qui ne comptent pas leurs points, et ne transpose aucune tranche du total (`20261113-1035-b`).
 
 ## Fichiers modifiés
 
