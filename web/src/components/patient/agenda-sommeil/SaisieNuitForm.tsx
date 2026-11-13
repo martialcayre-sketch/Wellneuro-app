@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { SelecteurHeure } from './SelecteurHeure';
 import {
   ARIA_AIDE_SOMMEIL,
@@ -324,6 +325,8 @@ type Props = {
   suggestionsPersonnelles?: boolean;
   // Refus du serveur, rendu À CÔTÉ DU BOUTON d'envoi.
   refus?: string;
+  // Le refus est un 401 : T-36 « Me reconnecter » le suit (Q6a, [[D-488]] DOC-7).
+  reconnexion?: boolean;
   submitting: boolean;
   ctaLabel?: string;
   onSubmit: (reponses: NuitReponses) => void;
@@ -335,8 +338,10 @@ export function SaisieNuitForm({
   horairesHabituels,
   suggestionsPersonnelles = false,
   refus = '',
+  reconnexion = false,
   submitting,
-  ctaLabel = 'C’est noté ✓',
+  // T-42a, [[D-488]] DOC-7 : sans la coche décorative (Q3b).
+  ctaLabel = 'C’est noté',
   onSubmit,
 }: Props) {
   const idFacteurs = useId();
@@ -429,7 +434,7 @@ export function SaisieNuitForm({
   // elles ne valent pas zéro.
   const manquants: { bloc: Bloc; libelle: string }[] = [];
   if (heureAuLit === undefined) {
-    manquants.push({ bloc: 'miseAuLit', libelle: 'l’heure du coucher 🛏️' });
+    manquants.push({ bloc: 'miseAuLit', libelle: 'l’heure du coucher' });
   }
   if (extinctionImmediate === undefined) manquants.push({ bloc: 'coucher', libelle: mots.moment });
   if (extinctionImmediate === false && heureRepere === undefined) {
@@ -439,11 +444,11 @@ export function SaisieNuitForm({
   if (dureeReveils === undefined) manquants.push({ bloc: 'nuit', libelle: 'la nuit' });
   if (aideSommeil === undefined) manquants.push({ bloc: 'aide', libelle: 'l’aide pour dormir' });
   if (heureLever === undefined) {
-    manquants.push({ bloc: 'sortie', libelle: 'l’heure du lever 🌅' });
+    manquants.push({ bloc: 'sortie', libelle: 'l’heure du lever' });
   }
   if (leverImmediat === undefined) manquants.push({ bloc: 'lever', libelle: 'le lever' });
   if (leverImmediat === false && heureReveilFinal === undefined) {
-    manquants.push({ bloc: 'reveilFinal', libelle: 'l’heure du réveil 👁️' });
+    manquants.push({ bloc: 'reveilFinal', libelle: 'l’heure du réveil' });
   }
   if (qualite === undefined) manquants.push({ bloc: 'qualite', libelle: 'la qualité de la nuit' });
 
@@ -611,7 +616,7 @@ export function SaisieNuitForm({
           <div ref={ancre('miseAuLit')} tabIndex={-1} className={classeBloc('miseAuLit')}>
             <SelecteurHeure
               id="agenda-heure-mise-au-lit"
-              label={`🛏️ ${LABEL_MISE_AU_LIT} à`}
+              label={`${LABEL_MISE_AU_LIT} à`}
               valeur={heureAuLit}
               heureDebut={18}
               onChange={majHeure(setHeureAuLit)}
@@ -645,7 +650,7 @@ export function SaisieNuitForm({
             <div ref={ancre('extinction')} tabIndex={-1} className={classeBloc('extinction')}>
               <SelecteurHeure
                 id="agenda-heure-extinction"
-                label={`🌑 ${mots.repere} à`}
+                label={`${mots.repere} à`}
                 valeur={heureRepere}
                 heureDebut={18}
                 onChange={majHeure(setHeureRepere)}
@@ -731,7 +736,7 @@ export function SaisieNuitForm({
           <div ref={ancre('sortie')} tabIndex={-1} className={classeBloc('sortie')}>
             <SelecteurHeure
               id="agenda-heure-sortie"
-              label={`🌅 ${LABEL_SORTIE_DU_LIT} à`}
+              label={`${LABEL_SORTIE_DU_LIT} à`}
               valeur={heureLever}
               heureDebut={3}
               onChange={majHeure(setHeureLever)}
@@ -756,7 +761,7 @@ export function SaisieNuitForm({
             <div ref={ancre('reveilFinal')} tabIndex={-1} className={classeBloc('reveilFinal')}>
               <SelecteurHeure
                 id="agenda-heure-reveil"
-                label={`👁️ ${LABEL_REVEIL_FINAL} à`}
+                label={`${LABEL_REVEIL_FINAL} à`}
                 valeur={heureReveilFinal}
                 heureDebut={3}
                 onChange={majHeure(setHeureReveilFinal)}
@@ -855,9 +860,12 @@ export function SaisieNuitForm({
       ) : (
         etape === 2 &&
         refus && (
-          <p role="alert" className="text-sm text-status-danger">
-            {refus}
-          </p>
+          <>
+            <p role="alert" className="text-sm text-status-danger">
+              {refus}
+            </p>
+            {reconnexion && <LienReconnexion />}
+          </>
         )
       )}
 

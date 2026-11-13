@@ -93,7 +93,7 @@ async function noterNuitEtMatin(page: Page): Promise<void> {
   await page.getByLabel(/levé·e à/).selectOption('07:00');
   await page.getByRole('button', { name: 'Au même moment que mon réveil' }).click();
   await page.getByRole('button', { name: 'Très bonne' }).click();
-  await page.getByRole('button', { name: 'C’est noté ✓' }).click();
+  await page.getByRole('button', { name: 'C’est noté' }).click();
 }
 
 test.afterAll(async () => {
@@ -132,7 +132,7 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     await page.getByLabel(/levé·e à/).selectOption('07:00');
     await page.getByRole('button', { name: 'Au même moment que mon réveil' }).click();
     await page.getByRole('button', { name: 'Très bonne' }).click();
-    await page.getByRole('button', { name: 'C’est noté ✓' }).click();
+    await page.getByRole('button', { name: 'C’est noté' }).click();
 
     // La nuit du jour est notée : l'écran retombe sur la frise.
     await expect(page.getByText('1 nuit notée sur 21.')).toBeVisible();
@@ -181,7 +181,7 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     await page.getByRole('button', { name: '+ Ajouter des détails (facultatif)' }).click();
     await expect(page.getByRole('button', { name: '− Masquer les détails' })).toBeVisible();
     await expect(jeNeSaisPas(page)).toHaveCount(0);
-    await page.getByRole('button', { name: 'C’est noté ✓' }).click();
+    await page.getByRole('button', { name: 'C’est noté' }).click();
 
     // L'envoi ramène au soir, dit pourquoi, et rien n'est écrit.
     await expect(page.getByRole('heading', { name: 'Le soir' })).toBeVisible();
@@ -196,8 +196,8 @@ test.describe('agenda du sommeil — saisie d’une nuit', () => {
     await expect(page.getByRole('heading', { name: 'Pendant la nuit' })).toBeVisible();
     await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('heading', { name: 'Le matin' })).toBeVisible();
-    await page.getByRole('button', { name: 'C’est noté ✓' }).click();
-    await expect(page.getByText('Merci, à demain matin. ☕')).toBeVisible();
+    await page.getByRole('button', { name: 'C’est noté' }).click();
+    await expect(page.getByText('Merci, à demain matin.')).toBeVisible();
     await expect(page.getByText('1 nuit notée sur 21.')).toBeVisible();
 
     const nuits = await lireNuitsAgendaSommeil(PATIENT.idPatient);

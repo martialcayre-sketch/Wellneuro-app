@@ -41,6 +41,23 @@ function dateLocale(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
+// Q8a ([[D-481]] DOC-7) : les dates que le patient LIT sont en lettres, en
+// heure locale. `dateLocale` ci-dessus reste la clé des données enregistrées,
+// qui ne change pas ; seul l'affichage quitte `toISOString`.
+const DATE_EN_LETTRES: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+
+/** Un instant (`createdAt`) lu en heure locale. */
+function instantEnLettres(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', DATE_EN_LETTRES);
+}
+
+/** Un jour civil `AAAA-MM-JJ`, lu tel quel : aucun décalage de fuseau. */
+function jourEnLettres(jour: string): string {
+  const [annee, mois, quantieme] = jour.split('-').map(Number);
+  const date = new Date(annee, (mois ?? 1) - 1, quantieme ?? 1);
+  return Number.isNaN(date.getTime()) ? jour : date.toLocaleDateString('fr-FR', DATE_EN_LETTRES);
+}
+
 function makeId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -574,7 +591,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
               <p className="text-sm font-medium text-foreground">{episode.content.action.labelPatient}</p>
               <p className="text-sm text-muted-foreground">{episode.content.action.simplePlan}</p>
               <p className="text-xs text-muted-foreground">
-                Période du {episode.startDate} au {episode.endDate}.
+                Période du {jourEnLettres(episode.startDate)} au {jourEnLettres(episode.endDate)}.
               </p>
             </PatientCard>
           </div>
@@ -601,7 +618,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         <PatientCard padding="sm" className="space-y-2 border-primary/20" data-testid="ja-patient-decision-active">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision active du praticien</p>
           <p className="text-sm text-foreground">{decision.feedbackPatient}</p>
-          <p className="text-xs text-muted-foreground">Ajustement de la décision: {decision.deltaDecision}</p>
+          <p className="text-xs text-muted-foreground">Ajustement de la décision&nbsp;: {decision.deltaDecision}</p>
         </PatientCard>
       ) : null}
 
@@ -622,7 +639,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         <PatientCard padding="sm" className="space-y-3 border-primary/20">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Question du jour</p>
           <p className="text-sm text-foreground">
-            Cette semaine, qu’est-ce qui a le plus aidé (ou freiné) votre action alimentaire?
+            Cette semaine, qu’est-ce qui a le plus aidé (ou freiné) votre action alimentaire&nbsp;?
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <PatientButton variant="ghost" className="w-full sm:w-auto" onClick={() => addPlan(1)}>Plan minimal 1 jour</PatientButton>
@@ -737,7 +754,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           </select>
         </PatientField>
 
-        <PatientField label="L’occasion s’est présentée?">
+        <PatientField label={'L’occasion s’est présentée\u00a0?'}>
           <select
             data-testid="ja-patient-occasion"
             className={patientInputClassName}
@@ -759,7 +776,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           </select>
         </PatientField>
 
-        <PatientField label="C’était faisable?">
+        <PatientField label={'C’était faisable\u00a0?'}>
           <select
             data-testid="ja-patient-faisable"
             className={patientInputClassName}
@@ -814,7 +831,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </PatientField>
 
         {issue === 'partiel_empeche' && (
-          <PatientField label="Si besoin, quelle friction principale?">
+          <PatientField label={'Si besoin, quelle friction principale\u00a0?'}>
             <select
               data-testid="ja-patient-friction"
               className={patientInputClassName}
@@ -837,7 +854,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             value={motLibre}
             onChange={(e) => setMotLibre(e.target.value)}
             maxLength={80}
-            placeholder="Exemple: déplacement imprévu"
+            placeholder={'Exemple\u00a0: déplacement imprévu'}
           />
         </PatientField>
 
@@ -877,7 +894,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             </p>
             {derniereTransmission?.createdAt && (
               <p className="text-xs text-muted-foreground" data-testid="ja-patient-derniere-transmission">
-                Dernière transmission le {dateLocale(new Date(derniereTransmission.createdAt))}.
+                Dernière transmission le {instantEnLettres(derniereTransmission.createdAt)}.
               </p>
             )}
             {erreurEnvoi && <PatientInlineMessage tone="error">{erreurEnvoi}</PatientInlineMessage>}
@@ -905,7 +922,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
               className={patientInputClassName}
               value={solutionInput}
               onChange={(e) => setSolutionInput(e.target.value)}
-              placeholder="Exemple: préparer la veille"
+              placeholder={'Exemple\u00a0: préparer la veille'}
             />
             <PatientButton data-testid="ja-patient-ajouter-solution" variant="ghost" className="w-full sm:w-auto" onClick={addSolution}>
               Ajouter
@@ -933,19 +950,19 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             <div className="space-y-2 text-sm max-h-80 overflow-y-auto pr-1">
               {traces.map((trace) => (
                 <div key={trace.traceId} className="rounded-lg border border-border p-2">
-                  <p className="font-medium text-foreground">{trace.localDate} · {LABELS_ISSUE_TRACE[trace.issue]}</p>
+                  <p className="font-medium text-foreground">{jourEnLettres(trace.localDate)} · {LABELS_ISSUE_TRACE[trace.issue]}</p>
                   {trace.frictionCode && <p className="text-xs text-muted-foreground">{FRICTIONS[trace.frictionCode]}</p>}
                   {trace.motLibre && <p className="text-xs text-muted-foreground">{trace.motLibre}</p>}
                 </div>
               ))}
               {pauses.map((pause) => (
                 <div key={pause.eventId} className="rounded-lg border border-border p-2 text-muted-foreground">
-                  {pause.semaineDu} · {LABEL_PAUSE_PATIENT}
+                  {jourEnLettres(pause.semaineDu)} · {LABEL_PAUSE_PATIENT}
                 </div>
               ))}
               {plans.map((plan) => (
                 <div key={plan.eventId} className="rounded-lg border border-border p-2 text-muted-foreground">
-                  {plan.from} · Plan minimal {plan.dureeJours} jour(s)
+                  {jourEnLettres(plan.from)} · Plan minimal {plan.dureeJours} jour(s)
                 </div>
               ))}
             </div>

@@ -470,7 +470,19 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
     setSavedAt(writeWizardDraft('anamnese', idPatient, { valeurs, motif }));
   }, [valeurs, motif, idPatient]);
 
-  const setChamp = (id: string, v: string | string[]) => setValeurs(prev => ({ ...prev, [id]: v }));
+  // [[D-506]], précision du 2026-11-13 : le message de sécurité vient dans la
+  // fenêtre au moment où la case « Idées noires ou suicidaires » est COCHÉE,
+  // pas quand on revient sur la section qui la porte, ni à la reprise du
+  // brouillon.
+  const [messageAAmener, setMessageAAmener] = useState(false);
+  const setChamp = (id: string, v: string | string[]) => {
+    if (
+      id === CHAMP_ANAMNESE_SIGNAUX
+      && anamneseSignaleIdeesSuicidaires(v)
+      && !anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX])
+    ) setMessageAAmener(true);
+    setValeurs(prev => ({ ...prev, [id]: v }));
+  };
 
   // Groupes répétables : liste d'entrées (objets de champs texte).
   const entrees = (groupeId: string): Array<Record<string, string>> => {
@@ -591,7 +603,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
         ))}
         {/* [[D-277]] §1 : tant que la case « Idées noires ou suicidaires » est cochée. */}
         {section.id === SECTION_ANAMNESE_SIGNAUX && anamneseSignaleIdeesSuicidaires(valeurs[CHAMP_ANAMNESE_SIGNAUX]) && (
-          <MessageReponseSuicide />
+          <MessageReponseSuicide defiler={messageAAmener} onVenu={() => setMessageAAmener(false)} />
         )}
         {physioOuvert && section.id === SECTION_REPERES && <DeclarationsPatient parties="sexe" onEditionChange={changerLignePhysio} onLectureEchouee={changerPhysioIllisible} />}
 

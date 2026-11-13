@@ -54,8 +54,24 @@ const CHARGEMENT_OK = {
 
 const fetchMock = vi.fn();
 
-function reponse(payload: unknown, ok = true) {
-  return Promise.resolve({ ok, json: async () => payload });
+function reponse(payload: unknown, ok = true, status = ok ? 200 : 400) {
+  return Promise.resolve({ ok, status, json: async () => payload });
+}
+
+/** Remplit la nuit jusqu'au bouton d'envoi, comme le patient. */
+function noterLaNuit() {
+  const clic = (nom: string) => fireEvent.click(screen.getByRole('button', { name: nom }));
+  clic('Comme d’habitude : 23:00');
+  clic('Au même moment que mon coucher');
+  clic('En moins de 15 min');
+  clic('Continuer');
+  clic('Nuit continue, aucun réveil');
+  clic('Aucune aide pour dormir cette nuit');
+  clic('Continuer');
+  clic('Comme d’habitude : 07:00');
+  clic('Au même moment que mon réveil');
+  clic('Très bonne');
+  fireEvent.click(screen.getByRole('button', { name: /c’est noté/i }));
 }
 
 beforeEach(() => {
@@ -90,6 +106,34 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
     // LE JOURNAL RESTE À L'ÉCRAN : basculer `etat` aurait remplacé la page par
     // l'écran d'échec et emporté la saisie en cours.
     expect(screen.getByText('Vos nuits')).toBeTruthy();
+    // Un refus qui n'est pas un 401 ne propose pas de se reconnecter (Q6a).
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('T-36 sous le refus 401 de la transmission, vers la connexion (Q6a)', async () => {
+    fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') return reponse({ ok: false, error: 'Connexion au portail requise.' }, false, 401);
+      return reponse(CHARGEMENT_OK);
+    });
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Vos nuits')).toBeTruthy());
+    screen.getByRole('button', { name: /Terminer et transmettre/ }).click();
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Connexion au portail requise.'));
+    expect(screen.getByRole('link', { name: 'Me reconnecter' }).getAttribute('href')).toBe('/portail/connexion');
+  });
+
+  it('T-36 sous le refus 401 de l’enregistrement d’une nuit, et seulement là (Q6a)', async () => {
+    const sansNuitDuJour = { ...CHARGEMENT_OK, nuits: [{ dateNuit: '2026-09-02', reponses: NUIT }] };
+    fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') return reponse({ ok: false, error: 'Connexion au portail requise.' }, false, 401);
+      return reponse(sansNuitDuJour);
+    });
+    render(<AgendaSommeilJournal idAssignation="ASSIGN_1" onRetourHub={() => {}} />);
+    await waitFor(() => expect(screen.getByText('Votre nuit passée')).toBeTruthy());
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+    noterLaNuit();
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Connexion au portail requise.'));
+    expect(screen.getByRole('link', { name: 'Me reconnecter' }).getAttribute('href')).toBe('/portail/connexion');
   });
 
   // L'AUTRE MOITIÉ DU DÉFAUT : `enregistrer` part de la vue SAISIE, qui ne
@@ -173,7 +217,7 @@ describe('AgendaSommeilJournal — un refus ne reste pas muet', () => {
 // de noter, jamais sur le nombre de nuits, et ne contient aucun chiffre. Une
 // nuit notée ou deux : le même texte.
 describe('AgendaSommeilJournal — écran de fin (D-379)', () => {
-  const TITRE = 'Merci d’avoir noté vos nuits 🌙';
+  const TITRE = 'Merci d’avoir noté vos nuits';
   const TEXTE = 'Votre praticien a reçu votre agenda. Voici vos nuits, telles que vous les avez notées.';
 
   it.each([

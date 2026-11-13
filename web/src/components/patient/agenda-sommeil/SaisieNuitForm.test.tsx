@@ -131,7 +131,7 @@ describe('trois écrans — rien ne passe sans geste, et ce qui manque est nomm�
     continuer();
     expect(titre()).toBe('Le soir');
     expect(reste()!.textContent).toBe(
-      'Il reste à renseigner : l’heure du coucher 🛏️, le moment où vous avez essayé de dormir et l’endormissement.',
+      'Il reste à renseigner : l’heure du coucher, le moment où vous avez essayé de dormir et l’endormissement.',
     );
   });
 
@@ -303,7 +303,7 @@ describe('réveil final', () => {
     clic('Plus tard que mon réveil');
     clic('Très bonne');
     expect(envoiRefuse(onSubmit)).toBe(true);
-    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure du réveil 👁️.');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure du réveil.');
     choisir(/réveillé·e à/, '06:30');
     expect(envoiRefuse(onSubmit)).toBe(false);
     expect(onSubmit.mock.calls[0][0].heureReveilFinal).toBe('06:30');
@@ -379,7 +379,7 @@ describe('le soir dans l’ordre vécu — coucher, puis repère', () => {
     clic('En moins de 15 min');
     continuer();
     expect(titre()).toBe('Le soir');
-    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure où vous avez essayé de dormir 🌑.');
+    expect(reste()!.textContent).toBe('Il reste à renseigner : l’heure où vous avez essayé de dormir.');
   });
 
   it('revenir à « au même moment » efface l’heure du repère, et le coucher redevient le repère', () => {
@@ -779,11 +779,11 @@ describe('contrat v3 — un agenda ouvert avant la v4 s’y termine', () => {
     rendre({ contrat: 'agenda-sommeil-v3' });
     continuer();
     expect(reste()?.textContent).toBe(
-      'Il reste à renseigner : l’heure du coucher 🛏️, l’extinction de la lumière et l’endormissement.',
+      'Il reste à renseigner : l’heure du coucher, l’extinction de la lumière et l’endormissement.',
     );
     clic('Plus tard que mon coucher');
     expect(reste()?.textContent).toBe(
-      'Il reste à renseigner : l’heure du coucher 🛏️, l’heure où vous avez éteint 🌑 et l’endormissement.',
+      'Il reste à renseigner : l’heure du coucher, l’heure où vous avez éteint et l’endormissement.',
     );
   });
 });

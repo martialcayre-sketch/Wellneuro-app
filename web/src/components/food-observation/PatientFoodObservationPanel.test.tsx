@@ -289,8 +289,8 @@ describe('PatientFoodObservationPanel', () => {
     const carte = await screen.findByTestId('ja-patient-action-cycle');
     expect(carte.textContent).toMatch(/Ajouter une source de protéines au petit-déjeuner/);
     expect(carte.textContent).toMatch(/Le faire trois fois cette semaine/);
-    expect(carte.textContent).toMatch(/2026-07-20/);
-    expect(carte.textContent).toMatch(/2026-08-09/);
+    expect(carte.textContent).toMatch(/20 juillet 2026/);
+    expect(carte.textContent).toMatch(/9 août 2026/);
   });
 
   // Lot 2, item 4 — la transmission est un geste explicite du patient.
@@ -341,7 +341,9 @@ describe('PatientFoodObservationPanel', () => {
     });
     render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
-    await screen.findByTestId('ja-patient-derniere-transmission');
+    // Q8a : la dernière transmission se lit en lettres, en heure locale.
+    expect((await screen.findByTestId('ja-patient-derniere-transmission')).textContent)
+      .toMatch(/^Dernière transmission le \d{1,2} juillet 2026\.$/);
     fireEvent.click(screen.getByTestId('ja-patient-transmettre'));
 
     await waitFor(() => {
@@ -385,7 +387,29 @@ describe('PatientFoodObservationPanel', () => {
       expect(corps.traces[0].episodeId).toBe('ja_PAT_TEST_abcdef0123456789');
     });
     // La trace ancienne reste visible en local : elle n'est pas détruite.
-    expect(screen.getByText(/2026-06-01/)).toBeTruthy();
+    expect(screen.getByText(/1 juin 2026/)).toBeTruthy();
+  });
+
+  // Q8a : le jour d'un plan minimal se lit en lettres, sans décalage de fuseau.
+  it('date le plan minimal en lettres', async () => {
+    window.sessionStorage.setItem('wellneuro:ja5-02:patient:PAT_TEST', JSON.stringify({
+      budget: 3,
+      traces: [],
+      pauses: [],
+      plans: [{
+        eventId: 'p_1',
+        episodeId: 'ja_PAT_TEST_abcdef0123456789',
+        from: '2026-06-03',
+        dureeJours: 3,
+        activatedBy: 'patient',
+        rationaleRequired: false,
+      }],
+      solutions: [],
+    }));
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    expect(await screen.findByText('3 juin 2026 · Plan minimal 3 jour(s)')).toBeTruthy();
   });
 
   it('n’ouvre aucune saisie avant que le cycle soit résolu', () => {

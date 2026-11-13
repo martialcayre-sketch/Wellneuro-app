@@ -26,7 +26,8 @@ export const LABEL_LATENCE: Record<ClasseLatence | Inconnu, string> = {
   lt15: 'En moins de 15 min',
   e15_30: 'En 15 à 30 min',
   e30_60: 'En 30 à 60 min',
-  gt60: "Après plus d'une heure",
+  // T-48h, [[D-488]] DOC-7 : apostrophe typographique ; la clé `gt60` ne change pas.
+  gt60: 'Après plus d’une heure',
   inconnu: LABEL_INCONNU,
 };
 
@@ -205,13 +206,13 @@ export function motsDuSoir(contrat: ContratEcriture): {
         question: QUESTION_ESSAI_DORMIR,
         latence: 'Une fois que vous avez essayé de dormir, vous vous êtes endormi·e…',
         moment: 'le moment où vous avez essayé de dormir',
-        manquant: 'l’heure où vous avez essayé de dormir 🌑',
+        manquant: 'l’heure où vous avez essayé de dormir',
       }
     : {
         repere: LABEL_EXTINCTION,
         question: QUESTION_EXTINCTION,
         latence: 'Une fois la lumière éteinte, vous vous êtes endormi·e…',
         moment: 'l’extinction de la lumière',
-        manquant: 'l’heure où vous avez éteint 🌑',
+        manquant: 'l’heure où vous avez éteint',
       };
 }
