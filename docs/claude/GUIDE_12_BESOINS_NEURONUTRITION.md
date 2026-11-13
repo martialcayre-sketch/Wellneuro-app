@@ -37,9 +37,12 @@ ultra-transformés.
   chaque biomarqueur rapporté avec sa valeur de référence signée et sa source,
   sans diagnostic ; trois constats séparés, sans règle « ou ». La règle
   précédente (tranche sur le total, « ou » entre deux variables) est retirée.
-- **Population, « non évalué », pondération** : `D-516` §4 et §6.3. Seuls les
-  claims cités par une position signée fondent un constat ou un conseil
-  (`D-516` §5.4). Application : lot J3-12f.
+- **Références citées** : identifiants au dossier privé ; seuls les claims
+  cités par une position signée fondent un constat ou un conseil, la liste de
+  provenance seule est au `D-516` §5.4.
+- **Population visée et « non évalué »** : `D-516` §4.
+- **Motif de la part de pondération** : non tranché (`D-516` §6.3).
+- **Application** : lot J3-12f.
 
 ### 2. Les micronutriments essentiels
 
