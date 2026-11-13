@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
@@ -144,6 +145,10 @@ export function motifAujourdHuiNonNotable(fenetre: FenetreAgendaAli, aujourdHui:
 export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) {
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [erreur, setErreur] = useState('');
+  // Q6a : le refus en cours est un 401 ; T-36 le suit, et lui seul. Le lien
+  // ne paraît qu'avec le message de ce refus : tout geste qui efface le
+  // message l'efface aussi.
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [data, setData] = useState<GetOk | null>(null);
   const [mode, setMode] = useState<'frise' | 'saisie' | 'clos'>('frise');
   const [cibleDate, setCibleDate] = useState<string>('');
@@ -211,6 +216,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
   async function enregistrer(reponses: JourReponses) {
     setEnvoi(true);
     setEnvois(n => n + 1);
+    setSessionExpiree(false);
     // Présent SEULEMENT si cette date porte déjà une journée active : la route
     // refuse un `supersedesJourId` sur une date vierge (409
     // `correction_invalide`) autant qu'une écriture NUE sur une date notée (409
@@ -234,6 +240,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
         // journée illisible ou d'une réponse manquante. En réinventer un ici
         // ferait deux vocabulaires pour un seul refus.
         setErreur(json.error ?? 'Enregistrement impossible.');
+        setSessionExpiree(res.status === 401);
         setEnvoi(false);
         // COURSE ENTRE DEUX APPAREILS. Ces deux refus-là disent la même chose :
         // la tête de chaîne de cette date n'est plus celle que l'écran croyait
@@ -298,7 +305,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
       <div className="space-y-4">
         <PatientCard>
           <h2 className="font-display text-lg font-bold text-foreground mb-1">
-            Merci pour vos trois semaines 🥗
+            Merci pour vos trois semaines
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
             Votre agenda est entre les mains de votre praticien. Voici la frise de vos journées.
@@ -349,8 +356,9 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
             l’assiette. Une estimation suffit.
           </p>
           {erreur !== '' && (
-            <div className="mb-4">
+            <div className="mb-4 space-y-2">
               <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>
+              {sessionExpiree && <LienReconnexion />}
             </div>
           )}
           {/* `key` remonte le formulaire à chaque changement de date : sans elle,
@@ -379,7 +387,8 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
             initial={journeeVisee?.reponses ?? null}
             submitting={envoi}
             ctaLabel={
-              enCorrection ? 'Corriger ✓' : cibleEstHier ? 'C’est noté pour hier ✓' : 'C’est noté ✓'
+              // T-42a, b, c ([[D-488]], DOC-7) : sans la coche.
+              enCorrection ? 'Corriger' : cibleEstHier ? 'C’est noté pour hier' : 'C’est noté'
             }
             onSubmit={enregistrer}
           />
@@ -402,7 +411,7 @@ export function AgendaAlimentaireJournal({ idAssignation, onRetourHub }: Props) 
     <div className="space-y-4">
       {merci && (
         <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-center text-sm text-foreground">
-          Merci, à demain. 🥗
+          Merci, à demain.
         </div>
       )}
       {erreur !== '' && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}

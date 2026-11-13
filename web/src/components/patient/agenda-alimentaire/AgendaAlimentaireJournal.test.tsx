@@ -166,6 +166,64 @@ describe('refus du serveur', () => {
     );
   });
 
+  it('Q6a : un autre refus que le 401 ne propose pas « Me reconnecter »', async () => {
+    const corps = corpsGet({ datesNotees: ['2026-08-09'] });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? reponse({ ok: false, reason: 'hors_fenetre_21j', error: 'Refus quelconque.' }, 409)
+          : reponse(corps),
+      ),
+    );
+    render(<AgendaAlimentaireJournal idAssignation="ASS_TEST" onRetourHub={() => {}} />);
+    fireEvent.click(await screen.findByLabelText(/rien mangé ni bu de sucré/i));
+    fireEvent.click(screen.getByRole('button', { name: /^c’est noté$/i }));
+    await screen.findByText('Refus quelconque.');
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('Q6a : sous le refus 401, « Me reconnecter » (T-36) mène à la connexion', async () => {
+    const corps = corpsGet({ datesNotees: ['2026-08-09'] });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? reponse({ ok: false, error: 'Connexion au portail requise.' }, 401)
+          : reponse(corps),
+      ),
+    );
+    render(<AgendaAlimentaireJournal idAssignation="ASS_TEST" onRetourHub={() => {}} />);
+    fireEvent.click(await screen.findByLabelText(/rien mangé ni bu de sucré/i));
+    fireEvent.click(screen.getByRole('button', { name: /^c’est noté$/i }));
+    const lien = await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(lien.getAttribute('href')).toBe('/portail/connexion');
+    expect(screen.getByRole('alert').textContent).toBe('Connexion au portail requise.');
+  });
+
+  it('T-44a : après l’enregistrement, « Merci, à demain. » sans emoji', async () => {
+    // Après l'envoi, le GET rend la journée du jour notée : l'écran retombe sur
+    // la frise, où paraît le remerciement.
+    let poste = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          poste = true;
+          return reponse({ ok: true, jourId: 'jour_neuf' }, 201);
+        }
+        return reponse(
+          corpsGet({ datesNotees: poste ? ['2026-08-09', AUJOURD_HUI] : ['2026-08-09'] }),
+        );
+      }),
+    );
+    render(<AgendaAlimentaireJournal idAssignation="ASS_TEST" onRetourHub={() => {}} />);
+    fireEvent.click(await screen.findByLabelText(/rien mangé ni bu de sucré/i));
+    fireEvent.click(screen.getByRole('button', { name: /^c’est noté$/i }));
+    const merci = await screen.findByText('Merci, à demain.');
+    expect(merci.textContent).toBe('Merci, à demain.');
+  });
+
   it('une erreur de chargement propose de réessayer, en français', async () => {
     vi.stubGlobal(
       'fetch',
@@ -260,7 +318,7 @@ describe('correction d’une journée déjà notée', () => {
     expect(enfonce(/légumes à au moins deux prises \?\s*non/i)).toBe('false');
     expect(enfonce(/produits ultra-transformés \?\s*non/i)).toBe('true');
     // Pré-rempli = envoyable sans rien retoucher.
-    expect((screen.getByRole('button', { name: /corriger ✓/i }) as HTMLButtonElement).disabled).toBe(
+    expect((screen.getByRole('button', { name: /^corriger$/i }) as HTMLButtonElement).disabled).toBe(
       false,
     );
   });
@@ -271,7 +329,7 @@ describe('correction d’une journée déjà notée', () => {
       { ok: true, jourId: 'jour_neuf' },
     );
     fireEvent.click(await screen.findByRole('button', { name: /modifier ma journée/i }));
-    fireEvent.click(screen.getByRole('button', { name: /corriger ✓/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^corriger$/i }));
 
     await waitFor(() => expect(corpsPoste(fetchMock).supersedesJourId).toBe('jour_2'));
     expect(corpsPoste(fetchMock).dateJour).toBe(AUJOURD_HUI);
@@ -283,7 +341,7 @@ describe('correction d’une journée déjà notée', () => {
       { ok: true, jourId: 'jour_neuf' },
     );
     fireEvent.click(await screen.findByRole('button', { name: /corriger la journée d’hier/i }));
-    fireEvent.click(screen.getByRole('button', { name: /corriger ✓/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^corriger$/i }));
 
     await waitFor(() => expect(corpsPoste(fetchMock).supersedesJourId).toBe('jour_1'));
     expect(corpsPoste(fetchMock).dateJour).toBe('2026-08-09');
@@ -304,7 +362,7 @@ describe('correction d’une journée déjà notée', () => {
     expect(screen.queryByTestId('prise-08:00')).toBeNull();
 
     fireEvent.click(screen.getByLabelText(/rien mangé ni bu de sucré/i));
-    fireEvent.click(screen.getByRole('button', { name: /c’est noté ✓/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^c’est noté$/i }));
 
     await waitFor(() => expect(corpsPoste(fetchMock).dateJour).toBe(AUJOURD_HUI));
     expect('supersedesJourId' in corpsPoste(fetchMock)).toBe(false);
@@ -324,7 +382,7 @@ describe('correction d’une journée déjà notée', () => {
       409,
     );
     fireEvent.click(await screen.findByRole('button', { name: /modifier ma journée/i }));
-    fireEvent.click(screen.getByRole('button', { name: /corriger ✓/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^corriger$/i }));
 
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toMatch(/ne correspond pas/i),
@@ -335,7 +393,7 @@ describe('correction d’une journée déjà notée', () => {
     );
     expect(lectures).toHaveLength(2);
     // Et l'écran est revenu sur la frise : plus de formulaire ouvert.
-    expect(screen.queryByRole('button', { name: /corriger ✓/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^corriger$/i })).toBeNull();
   });
 });
 

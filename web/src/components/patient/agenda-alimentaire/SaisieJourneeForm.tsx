@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import type { JourReponses, PriseJour } from '@/lib/agenda-alimentaire/types';
@@ -155,7 +155,7 @@ type Props = {
 export function SaisieJourneeForm({
   initial,
   submitting,
-  ctaLabel = 'C’est noté ✓',
+  ctaLabel = 'C’est noté',
   onSubmit,
 }: Props) {
   const [prises, setPrises] = useState<PriseJour[]>(initial?.prises ?? []);
@@ -172,12 +172,22 @@ export function SaisieJourneeForm({
     initial?.soirPlusCopieux,
   );
   const [erreur, setErreur] = useState('');
+  const refConsigne = useRef<HTMLDivElement>(null);
 
   // Une journée SANS PRISE est une réponse ENTIÈRE : le contrat de domaine y
   // interdit toute observation de contenu (`jour.ts`, branche `aucunePrise`).
   // Les présences sont donc neutralisées avec la ligne, et non seulement elle.
   const presencesCompletes = CLES_PRESENCES.every((cle) => presences[cle] !== undefined);
-  const complet = aucunePrise ? true : prises.length > 0 && presencesCompletes;
+
+  // Q12a (liste commune 20261113-1442-d) : le bouton reste actif ; au clic sur
+  // une journée incomplète, la consigne paraît au-dessus de lui et vient dans
+  // la fenêtre, sans déplacer le focus — comme l'agenda du sommeil. `block:
+  // 'nearest'` ne bouge rien si elle est déjà visible. `scrollIntoView`
+  // n'existe pas sous jsdom.
+  useEffect(() => {
+    if (erreur === '') return;
+    refConsigne.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [erreur]);
 
   function majPresence(cle: ClePresence, valeur: TriEtat) {
     setErreur('');
@@ -217,7 +227,15 @@ export function SaisieJourneeForm({
 
   return (
     <div className="space-y-6">
-      <LigneDePrises prises={prises} onChange={setPrises} desactive={aucunePrise} />
+      <LigneDePrises
+        prises={prises}
+        onChange={(p) => {
+          // Comme les autres gestes : une consigne caduque ne reste pas affichée.
+          setErreur('');
+          setPrises(p);
+        }}
+        desactive={aucunePrise}
+      />
 
       <div className="rounded-xl border border-border p-3">
         <label className="flex min-h-11 items-center gap-3 text-sm text-foreground">
@@ -264,12 +282,15 @@ export function SaisieJourneeForm({
         </div>
       )}
 
-      {erreur !== '' && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+      {erreur !== '' && (
+        <div ref={refConsigne}>
+          <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>
+        </div>
+      )}
 
       <PatientButton
         variant="primary"
         className="w-full"
-        disabled={!complet}
         loading={submitting}
         loadingLabel="Enregistrement…"
         onClick={soumettre}
