@@ -124,6 +124,8 @@ export function segmentsInterditsDuDossier(
 export interface ContexteResolution {
   options: CompilerOptions;
   cache?: ModuleResolutionCache;
+  /** L'hôte de résolution : le disque, ou un graphe en mémoire pour une contre-épreuve. */
+  hote?: ModuleResolutionHost;
   dependances: ReadonlySet<string>;
   racine: string;
 }
@@ -159,10 +161,29 @@ export function importsResolus(chemin: string, contexte: ContexteResolution, sou
   const genere = chemin.startsWith('web/src/generated/');
   return importsSyntaxiques(texte, chemin).map(i => ({
     ...i,
-    atteint: fichierAtteint(i.specificateur, chemin, contexte.options, sys, contexte.cache, contexte.racine),
+    atteint: fichierAtteint(i.specificateur, chemin, contexte.options, contexte.hote ?? sys, contexte.cache, contexte.racine),
     indetermine:
       i.specificateur === IMPORT_NON_CONSTANT || (!genere && nomNuInconnu(i.specificateur, contexte.dependances)),
   }));
+}
+
+/**
+ * Un hôte de résolution qui voit, sous `web/src`, les seuls fichiers d'un
+ * graphe EN MÉMOIRE (clés relatives à `web/src`), et le disque ailleurs
+ * (`node_modules`, `package.json`) : une contre-épreuve résout ses sources
+ * fabriquées comme le dépôt, sans écrire aucun fichier.
+ */
+export function hoteEnMemoire(sources: ReadonlyMap<string, string>): ModuleResolutionHost {
+  const src = join(WEB, 'src') + sep;
+  const cle = (f: string) => f.slice(src.length).split(sep).join('/');
+  return {
+    ...sys,
+    fileExists: f => (f.startsWith(src) ? sources.has(cle(f)) : sys.fileExists(f)),
+    readFile: f => (f.startsWith(src) ? sources.get(cle(f)) : sys.readFile(f)),
+    directoryExists: d =>
+      (d + sep).startsWith(src) ? [...sources.keys()].some(k => `${src}${k}`.startsWith(d + sep)) : (sys.directoryExists?.(d) ?? false),
+    realpath: f => f,
+  };
 }
 
 /**
