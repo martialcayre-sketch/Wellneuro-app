@@ -1031,6 +1031,18 @@ for (const id of instrumentsADimensions) {
     for (const dimension of resultat.dimensions) {
       assert(dimension.label && typeof dimension.max === 'number', `${id} : dimension \`${dimension.id}\` sans libellé ou sans maximum — la fiche patient rend les deux`);
     }
+    // Un moteur qui REFUSE le recueil incomplet (`scored: false` avec des
+    // manquants — l'Enquête SIIN, [[D-517]]) n'a pas de total à confronter : ses
+    // dimensions restent servies, et leurs comptes doivent alors couvrir
+    // exactement les items répondus — le même découpage bancal s'y trahirait.
+    if (resultat.scored === false && resultat.total === null && resultat.missing > 0) {
+      assertEqual(
+        resultat.dimensions.reduce((somme, dimension) => somme + dimension.repondus, 0),
+        Object.keys(reponses).length,
+        `${id} (${libelle}) : les comptes des dimensions ne couvrent pas les items répondus`,
+      );
+      continue;
+    }
     assertEqual(
       resultat.dimensions.reduce((somme, dimension) => somme + dimension.total, 0),
       resultat.total,

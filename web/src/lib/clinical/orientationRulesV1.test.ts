@@ -1832,6 +1832,7 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
   type QuestionReelle = { id: string; options?: OptionReelle[] };
   type FormeServie = { sections: Array<{ questions: QuestionReelle[] }> };
   type ScoreLu = {
+    scored?: boolean;
     total: number | null;
     missing?: number;
     interpretation?: { label?: string; color?: string } | null;
