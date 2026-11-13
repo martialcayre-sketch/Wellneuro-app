@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { claimsCitesParUsage } from '@/lib/bibliotheque-options/bibliothequeBesoin2V1';
 
 // LOT-01 chaîne T0 (D-042, précisé par D-044) — ce banc garde les trois
 // propriétés que le SQL ne peut pas garder tout seul.
@@ -38,6 +39,10 @@ const RACINES_BALAYEES = [
   CLINIQUE,
   path.join(RACINE, 'web/src/lib/fiches-usage'),
   path.join(RACINE, 'web/src/lib/biology-library'),
+  // La bibliothèque des options ([[D-480]] §5.2, BP-17 PR 4) : ses claims
+  // entrent au contrat en DEUX tables, selon l'usage (voir
+  // `FICHIER_VERS_TABLES_PAR_USAGE`).
+  path.join(RACINE, 'web/src/lib/bibliotheque-options'),
 ];
 
 /** Les sources de production des racines balayées, par nom de fichier et chemin. */
@@ -142,6 +147,42 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   // le 2026-11-01 avec ses vingt-neuf paires ([[D-419]]).
   'indicationsBiologieV1.ts': 'indications_biologie',
 };
+
+// UN FICHIER, DEUX TABLES, SELON L'USAGE — [[D-480]] §5.2. La bibliothèque des
+// options cite un claim soit comme SOURCE DE DOSE, soit pour une autre
+// rubrique (précautions, contre-indications…). Le contrat de fraîcheur exige
+// les quatre propriétés de [[D-044]] du premier usage, les trois de [[D-046]]
+// du second ; or ce banc impose l'uniformité de l'exigence PAR TABLE (voir
+// `conduites` plus bas). D'où deux tables, et une liste de claims qui ne se
+// lit pas dans `claimsSource` (déclarée à la signature, sans l'usage) mais
+// dans la STRUCTURE, par `claimsCitesParUsage` : ce que cite la structure
+// entre au contrat dès qu'elle le cite, signée ou non — fail-closed, patron
+// des portes biologiques. Un même claim cité des deux façons figure dans les
+// deux tables.
+const FICHIER_VERS_TABLES_PAR_USAGE: Record<
+  string,
+  { dose: string; autres: string; claims: () => { dose: string[]; autres: string[] } }
+> = {
+  'bibliothequeBesoin2V1.ts': {
+    dose: 'bibliotheque_options_dose',
+    autres: 'bibliotheque_options',
+    claims: () => claimsCitesParUsage(),
+  },
+};
+
+/** Les paires attendues au contrat, `claim@version#table`, de toutes les tables signées. */
+function pairesAttendues(tables: TableSignee[]): string[] {
+  return [
+    ...new Set(
+      tables.flatMap(t => {
+        const parUsage = FICHIER_VERS_TABLES_PAR_USAGE[t.fichier];
+        if (!parUsage) return t.claims.map(c => `${c}#${FICHIER_VERS_TABLE[t.fichier]}`);
+        const { dose, autres } = parUsage.claims();
+        return [...dose.map(c => `${c}#${parUsage.dose}`), ...autres.map(c => `${c}#${parUsage.autres}`)];
+      }),
+    ),
+  ].sort();
+}
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
 //
@@ -270,6 +311,18 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // toute release, ou forcerait à retoucher une table signée. Motif de fond de
   // [[D-236]] : la prescription vient de la SIGNATURE praticien.
   indications_biologie: false,
+  // LA BIBLIOTHÈQUE DES OPTIONS, EN DEUX TABLES — [[D-480]] §5.2, arbitrage du
+  // responsable du 2026-11-10 (« deux tables au contrat de fraîcheur,
+  // `prescriptif` exigé de la seule source de dose »). Un claim cité comme
+  // source de DOSE doit tenir les quatre propriétés de [[D-044]] : la dose se
+  // tire d'une source, jamais d'un calcul (cadrage §4.2, DC-01), et cette
+  // source doit prescrire. Un claim cité pour toute autre rubrique tient les
+  // trois de [[D-046]]. Ce régime des claims ne dispense d'aucune autre
+  // métadonnée de DC-11 (§5.2). Les deux entrent ici le jour où le fichier est
+  // balayé, structure VIDE : elles n'ont aucune ligne au contrat SQL tant
+  // qu'aucune option ne cite de claim (voir « chaque ligne du contrat… »).
+  bibliotheque_options_dose: true,
+  bibliotheque_options: false,
 };
 
 interface TableSignee {
@@ -327,7 +380,11 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
   // exactement ce que ce banc empêche.
   it('chaque table signée a une correspondance arbitrée', () => {
     for (const table of tablesSignees()) {
-      expect(Object.keys(FICHIER_VERS_TABLE)).toContain(table.fichier);
+      expect([...Object.keys(FICHIER_VERS_TABLE), ...Object.keys(FICHIER_VERS_TABLES_PAR_USAGE)]).toContain(table.fichier);
+    }
+    // Un fichier n'a qu'un régime : une table, ou deux par usage.
+    for (const fichier of Object.keys(FICHIER_VERS_TABLES_PAR_USAGE)) {
+      expect(Object.keys(FICHIER_VERS_TABLE)).not.toContain(fichier);
     }
   });
 
@@ -338,11 +395,13 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
     // en ne comparant que des ensembles vides — le pire des silences ici.
     expect(tables.length).toBeGreaterThan(1);
 
-    const attendus = [
-      ...new Set(
-        tables.flatMap(t => t.claims.map(c => `${c}#${FICHIER_VERS_TABLE[t.fichier]}`)),
-      ),
-    ].sort();
+    // Anti-vacuité de la répartition par usage : un fichier déclaré mais plus
+    // balayé ne contribuerait plus rien, en silence.
+    for (const fichier of Object.keys(FICHIER_VERS_TABLES_PAR_USAGE)) {
+      expect(tables.map(t => t.fichier)).toContain(fichier);
+    }
+
+    const attendus = pairesAttendues(tables);
     expect(attendus.length).toBeGreaterThanOrEqual(24);
 
     const auContrat = pairesSql(bloc(lire(CONTRAT), 'PREDICAT_FRAICHEUR_CLAIMS_EPINGLES', CONTRAT));
@@ -392,8 +451,22 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
     const entrees = entreesSql(bloc(lire(CONTRAT), 'PREDICAT_FRAICHEUR_CLAIMS_EPINGLES', CONTRAT));
     expect(entrees.length).toBeGreaterThanOrEqual(24);
 
+    // Toute table du contrat est arbitrée ; un arbitrage sans ligne au contrat
+    // n'est admis que pour une table qui n'attend AUCUNE paire (la
+    // bibliothèque des options, vide jusqu'à la PR 7 de BP-17). Ailleurs, un
+    // arbitrage sans ligne reste un rouge : sa table aurait perdu ses claims.
     const tables = [...new Set(entrees.map(e => e.table))].sort();
-    expect(tables).toEqual(Object.keys(TABLE_EXIGE_PRESCRIPTIF).sort());
+    const tablesAttendues = new Set(pairesAttendues(tablesSignees()).map(p => p.split('#')[1]));
+    for (const table of tables) expect(Object.keys(TABLE_EXIGE_PRESCRIPTIF)).toContain(table);
+    for (const table of Object.keys(TABLE_EXIGE_PRESCRIPTIF)) {
+      expect({ table, auContrat: tables.includes(table) }).toEqual({ table, auContrat: tablesAttendues.has(table) });
+    }
+    // Chaque table que déclare un fichier a son arbitrage, même sans ligne.
+    for (const parUsage of Object.values(FICHIER_VERS_TABLES_PAR_USAGE)) {
+      expect(Object.keys(TABLE_EXIGE_PRESCRIPTIF)).toEqual(expect.arrayContaining([parUsage.dose, parUsage.autres]));
+    }
+    expect(TABLE_EXIGE_PRESCRIPTIF.bibliotheque_options_dose).toBe(true);
+    expect(TABLE_EXIGE_PRESCRIPTIF.bibliotheque_options).toBe(false);
 
     for (const entree of entrees) {
       expect(entree.exigePrescriptif).toBe(TABLE_EXIGE_PRESCRIPTIF[entree.table]);

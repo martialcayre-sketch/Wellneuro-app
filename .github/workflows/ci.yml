@@ -1324,6 +1324,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/bibliotheque_options_textes_v1_negatif.sql
 
+      # Contrat des positions d'expert citées par les tables signées (D-480
+      # §5.3, BP-17 PR 4) : le prédicat du préflight de production, joué sur
+      # des fixtures neutres — position absente, sans acte, retirée, révisée ;
+      # une position courante et signée passe. Le contrat positif ne tourne
+      # pas ici (base vide). Transaction annulée.
+      - name: Positions citees negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/positions_citees_tables_signees_v1_negatif.sql
+
       # NF-7, lot 1 (D-303, H59 ; réponses 20261111-0027-a à 0029-a) : la
       # déclaration « question sur le suicide » des instruments du cabinet,
       # NULL = non déclaré ; désignation seulement entière et sous « oui » ;

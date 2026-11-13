@@ -117,9 +117,11 @@ test('MIGRATE_DATABASE_URL posée : ignorée, l’add-on fait foi et l’hôte e
       'npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql',
       'npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql',
       'npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+      // D-480 §5.3 (BP-17 PR 4) : le contrat des positions citées.
+      'npx prisma db execute --file prisma/checks/positions_citees_tables_signees_v1.sql',
       'npx prisma db execute --file prisma/checks/biology_liens_axe_v1.sql',
     ],
-    'les cinq préflights, nommés, dans l’ordre — aucun fichier négatif',
+    'les six préflights, nommés, dans l’ordre — aucun fichier négatif',
   );
   assert.equal(r.appels.at(-1), 'npx prisma migrate deploy', 'migrate deploy vient en dernier');
 });

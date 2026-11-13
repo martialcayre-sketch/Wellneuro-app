@@ -21,6 +21,7 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 
 | Source de savoir | Surface qui la consomme | Décision produite | Drapeau(x) | Verrou donnée | Patient | Arbitrage |
 |---|---|---|---|---|---|---|
+| Bibliothèque des options du besoin 2 (structure de références, vide et non signée) | **aucune — dormante** | Pour une hypothèse confirmée du besoin 2, toutes les options et le renvoi de chaque rubrique à ses sources — énumérées, jamais choisies d’après le dossier. | — | validationExterne | non | a_brancher (2026-11-13) |
 | Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 19 indirecte(s) | Lecture PRAL/densité d’un aliment servie au praticien (le portail ne la sert plus, D-365). | WN_C5_ENABLED | — | oui | — |
 | Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | 14 surface(s) indirecte(s) seulement | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_PROPOSITION, WN_CB_RESULTS_ENABLED | — | non | — |
 | Catalogue des compléments alimentaires (C4) | `web/src/app/api/praticien/complements/route.ts` (route-api)<br>`web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>`web/src/app/api/praticien/regles/revision/route.ts` (route-api)<br>`web/src/app/api/praticien/regles/route.ts` (route-api)<br>`web/src/app/api/praticien/regles/validation/route.ts` (route-api) | Fiche complément : composition, cumuls, compatibilités. | WN_C4_ENABLED | — | non | — |
@@ -46,5 +47,5 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 2 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 22 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
 
-24 source(s) recensée(s), dont **0 dormante(s)**.
+25 source(s) recensée(s), dont **1 dormante(s)**.
 

@@ -133,6 +133,24 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
   // verrou, prose comprise. Aucune n'existe en production — ce fichier écrit le
   // mot en deux morceaux pour ne pas s'y compter.
   if (PRAGMA_SOURCE_JSX.test(source)) trouves.push(IMPORT_NON_CONSTANT);
+  // `module.hot.accept(x)` et `module.hot.decline(x)` : le remplacement à
+  // chaud de webpack charge `x` (routé de #2006 vers BP-17 PR 4). En
+  // développement seulement — un build de production n'embarque rien —, mais
+  // la forme est lue comme un import : une chaîne ou un tableau de chaînes
+  // constantes rendent leurs chemins ; un rappel seul (auto-acceptation) ne
+  // charge rien. Toute AUTRE mention de `module.hot` (`const h = module.hot`,
+  // `module.hot.dispose`, un argument non constant) ferme le verrou. Aucune
+  // n'existe en production.
+  const estHot = (n: Node): boolean =>
+    (isPropertyAccessExpression(n) && n.name.text === 'hot' && isIdentifier(n.expression) && n.expression.text === 'module') ||
+    (isElementAccessExpression(n) && valeurConstante(n.argumentExpression) === 'hot' &&
+      isIdentifier(n.expression) && n.expression.text === 'module');
+  const dependancesHot = (arg: Node | undefined) => {
+    const a = arg && deballer(arg);
+    if (!a || isFunctionLike(a)) return;
+    if (isArrayLiteralExpression(a)) a.elements.forEach(e => argument(e));
+    else argument(a);
+  };
   const visiter = (n: Node): void => {
     if (isImportDeclaration(n) || isExportDeclaration(n)) {
       if (n.moduleSpecifier) argument(n.moduleSpecifier);
@@ -146,6 +164,15 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
       } else if (estDefine(appele)) {
         reconnus.add(appele);
         dependancesAmd(n.arguments);
+      } else if (
+        (isPropertyAccessExpression(appele) || isElementAccessExpression(appele)) &&
+        ['accept', 'decline'].includes(
+          (isPropertyAccessExpression(appele) ? appele.name.text : valeurConstante(appele.argumentExpression)) ?? '',
+        ) &&
+        estHot(deballer(appele.expression))
+      ) {
+        reconnus.add(deballer(appele.expression));
+        dependancesHot(n.arguments[0]);
       }
     } else if (isNewExpression(n)) {
       // `new URL(x, import.meta.url)`, constructeur et base déballés : le
@@ -156,7 +183,7 @@ export function specificateursSyntaxiques(source: string, chemin = 'source.tsx')
         reconnus.add(base.expression);
         argument(n.arguments?.[0]);
       }
-    } else if (estRequire(n) || estDefine(n)) {
+    } else if (estRequire(n) || estDefine(n) || estHot(n)) {
       if (!reconnus.has(n)) trouves.push(IMPORT_NON_CONSTANT);
     } else if (isMetaProperty(n) && n.keywordToken === SyntaxKind.ImportKeyword && !reconnus.has(n)) {
       trouves.push(IMPORT_NON_CONSTANT);

@@ -350,6 +350,9 @@ test('D-389 §5 — le résumé ne nomme pas la table signée quand le push ne l
 for (const fichier of [
   'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
   'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+  // D-480 §5 (BP-17 PR 4) : même patron.
+  'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts',
+  'web/prisma/checks/positions_citees_tables_signees_v1.sql',
 ]) {
   test(`D-416 — une tête modifiant ${fichier} arrête le déclenchement`, () => {
     const { base, local, approuve } = depotJouet({ migrations: false, table: fichier });
