@@ -194,7 +194,7 @@ et « Fiches » gardent leurs périmètres, jamais fusionnés (cadrage v3 l.399)
 lecture, téléchargement et remise restent des gestes distincts.
 
 **Arbitrages PAT-5 du 2026-11-13** : `Q1c — Q2a — Q3a — Q4a — Q5a — Q6a —
-Q7a — Q8a`, sur le prototype
+Q7a — Q8a` (Q1c close et Q7a retirée par DOC-10), sur le prototype
 https://claude.ai/artifact/RAM7H81H6f5ikjUXqpxBUn ; inscrits par DOC-9
 dans [[D-481]] et [[D-488]], corrigés par DOC-10 pour Q1 et Q7. La jauge
 de « Mon équilibre » reste : [[D-333]] §1, famille 2, l'admet déjà, et la
