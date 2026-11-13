@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "BP-05 — Contexte de prélèvement typé (absorbe BP-06)"
-statut: "terminé (2026-11-13) — D-497 et déclaration RGPD mergées (#2013) ; migration (#2018) mergée, appliquée et constatée par conteneur ; code consommateur (#2038) mergé et constaté en production le 2026-11-13, avec le texte patient v23 et les conditions v6 ; reste l'écran de correction du contexte (rubrique « Reste après la PR 3 »)"
+statut: "terminé (2026-11-13) — D-497 et déclaration RGPD mergées (#2013) ; migration (#2018) mergée, appliquée et constatée par conteneur ; code consommateur (#2038) mergé et constaté en production le 2026-11-13, avec le texte patient v23 et les conditions v6 ; l'écran de correction du contexte, seul reste (rubrique « Reste après la PR 3 »), est routé au plan, §8, « Dettes techniques vivantes »"
 dépend_de: "LOT-00, LOT-03"
 ---
 
