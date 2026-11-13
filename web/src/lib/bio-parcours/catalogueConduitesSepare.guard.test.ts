@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { estUnTest, fichiersSource, lire, specificateursImportes } from './balayageSources';
+import { estUnTest, fichiersSource, lire, specificateursSyntaxiques } from './balayageSources';
+import { contexteResolution, designe, importsResolus, type ContexteResolution } from './resolutionImports';
 
 // BP-01 ([[D-266]] §6) — le module de fiches d'usage du premier parcours
 // (« exploration du besoin 2 ») est un module signé DISTINCT de
@@ -16,6 +17,9 @@ import { estUnTest, fichiersSource, lire, specificateursImportes } from './balay
 // LIMITE : un module neuf qui sélectionnerait PAR un importeur listé
 // (`indicationsAssiettesService`, `portesBiologiquesService`) échappe au
 // balayage direct et relève de la revue.
+// LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : les
+// imports sont lus par le parseur et RÉSOLUS (alias, liens symboliques) ; un
+// import indéterminé (non constant, nom nu inconnu) compte comme importeur.
 const CATALOGUE = 'web/src/lib/clinical/catalogueConduitesV1.ts';
 
 /** Ce que le catalogue importe : la seule fonction d'empreinte. */
@@ -30,32 +34,34 @@ const IMPORTEURS_DU_CATALOGUE = [
   'web/src/lib/fiches-assiette/securite.ts',
 ];
 
-function designeCatalogue(specificateur: string): boolean {
-  return /(^|\/)catalogueConduitesV1$/.test(specificateur);
-}
+const NOMME_CATALOGUE = /(^|\/)catalogueConduitesV1$/;
 
-/** Pipeline pur des importeurs — extrait pour la contre-épreuve. */
-export function importeursDuCatalogue(fichiers: readonly { chemin: string; source: string }[]): string[] {
+/** Pipeline des importeurs — extrait pour la contre-épreuve. */
+export function importeursDuCatalogue(
+  fichiers: readonly { chemin: string; source?: string }[],
+  contexte: ContexteResolution = contexteResolution(),
+): string[] {
   return fichiers
     .filter(f => !estUnTest(f.chemin) && f.chemin !== CATALOGUE)
-    .filter(f => specificateursImportes(f.source).some(designeCatalogue))
+    .filter(f => importsResolus(f.chemin, contexte, f.source).some(i => designe(i, NOMME_CATALOGUE, [CATALOGUE])))
     .map(f => f.chemin)
     .sort();
 }
 
 describe('catalogueConduitesV1 — séparé du module « besoin 2 » (BP-01, D-266 §6)', () => {
   it('le catalogue n\'importe que ce qu\'il importait : aucun module neuf ne l\'alimente', () => {
-    expect([...new Set(specificateursImportes(lire(CATALOGUE)))].sort()).toEqual([...IMPORTS_DU_CATALOGUE].sort());
+    expect([...new Set(specificateursSyntaxiques(lire(CATALOGUE), CATALOGUE))].sort()).toEqual([...IMPORTS_DU_CATALOGUE].sort());
   });
 
   it('aucun importeur neuf du catalogue : aucun module neuf ne sélectionne par lui', () => {
-    const lus = importeursDuCatalogue(fichiersSource().map(chemin => ({ chemin, source: lire(chemin) })));
+    const lus = importeursDuCatalogue(fichiersSource().map(chemin => ({ chemin })));
     expect(
       lus,
       'importeur neuf de `catalogueConduitesV1` : vérifier qu\'il n\'est pas le module « besoin 2 » '
         + '(D-266 §6), puis l\'inscrire ici par un diff relu',
     ).toEqual([...IMPORTEURS_DU_CATALOGUE].sort());
-  });
+    // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
+  }, 120_000);
 
   // CONTRE-ÉPREUVE : la mutation attendue — un module de fiches d'usage qui
   // importe le catalogue — rougit, en alias comme en relatif.
@@ -64,7 +70,16 @@ describe('catalogueConduitesV1 — séparé du module « besoin 2 » (BP-01, D-2
       { chemin: 'web/src/lib/fiches-usage/a.ts', source: "import { x } from '@/lib/clinical/catalogueConduitesV1';" },
       { chemin: 'web/src/lib/clinical/b.ts', source: "import { y } from './catalogueConduitesV1';" },
       { chemin: 'web/src/lib/clinical/c.ts', source: "import { z } from './catalogueConduitesV1Bis';" },
+      // Formes que le motif sur le texte ne voyait pas : commentaire glissé,
+      // concaténation constante, extension explicite résolue, import indéterminé.
+      { chemin: 'web/src/lib/fiches-usage/d.ts', source: 'import/**/"@/lib/clinical/catalogueConduitesV1";' },
+      { chemin: 'web/src/lib/fiches-usage/e.ts', source: 'const c = require("@/lib/clinical/" + "catalogueConduitesV1");' },
+      { chemin: 'web/src/lib/fiches-usage/f.ts', source: "import { x } from '../clinical/catalogueConduitesV1.ts';" },
+      { chemin: 'web/src/lib/fiches-usage/g.ts', source: 'const c = await import(chemin);' },
     ]);
-    expect(lus).toEqual(['web/src/lib/clinical/b.ts', 'web/src/lib/fiches-usage/a.ts']);
+    expect(lus).toEqual([
+      'web/src/lib/clinical/b.ts', 'web/src/lib/fiches-usage/a.ts', 'web/src/lib/fiches-usage/d.ts',
+      'web/src/lib/fiches-usage/e.ts', 'web/src/lib/fiches-usage/f.ts', 'web/src/lib/fiches-usage/g.ts',
+    ]);
   });
 });

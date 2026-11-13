@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { specificateursSyntaxiques } from '@/lib/bio-parcours/balayageSources';
 
 import type { DesaccordExpose, SyntheseExposee } from '@/app/api/praticien/comprehension/route';
 import type { SyntheseServie } from '@/app/api/portail/comprehension/route';
@@ -217,7 +218,16 @@ describe('G4 — le module n’embarque ni Prisma ni rien d’autre', () => {
     // Un seul `import` de valeur suffirait à tirer Prisma dans le bundle
     // navigateur par transitivité — piège constaté au LOT-05 (`instruments.ts`
     // embarque Prisma, la Bibliothèque est un panneau client).
-    expect(source).not.toMatch(/^\s*import\s/m);
+    // LU PAR LE PARSEUR (lot `bp17-extension-bancs-garde`) : le motif `^import`
+    // ne voyait ni `require`, ni `import()`, ni `export … from`, ni un import
+    // posé après un autre énoncé sur la même ligne. `import type` compte
+    // aussi, comme avant : aucun import d'aucune sorte.
+    const brut = readFileSync(path.join(RACINE_WEB, MODULE), 'utf8');
+    expect(specificateursSyntaxiques(brut, MODULE)).toEqual([]);
+    // CONTRE-ÉPREUVE du lecteur.
+    for (const forme of ["const p = require('@prisma/client');", "export { x } from './y';", "const a = 1; import('z');"]) {
+      expect(specificateursSyntaxiques(forme, MODULE), forme).toHaveLength(1);
+    }
   });
 });
 

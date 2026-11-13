@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { contexteResolution, designe, importsResolus } from '../bio-parcours/resolutionImports';
 
 // GARDE : QUI ÉCRIT LES POSITIONS D'EXPERT ET LES ARBITRAGES (D-439, patron de
 // `fiches-usage/ecritures.guard.test.ts`).
@@ -73,18 +74,42 @@ describe('Positions d’expert — qui écrit (D-439)', () => {
   it('seuls le module et les routes de l’atelier lisent ces tables ou importent sa lecture', () => {
     const LIRE = 'findMany|findFirst|findFirstOrThrow|findUnique|findUniqueOrThrow|count|aggregate|groupBy';
     const SQL_LECTURE = /\b(?:FROM|JOIN)\s+(?:public\.)?"?(?:positions_expert_versions|positions_expert_actes|arbitrages_conflits_sources)\b/i;
-    const IMPORT_LECTURE = /import\s+(?!type\b)[^;]*from\s+['"]@\/lib\/positions-expert\/(?:lecture|ecriture|http)['"]/;
+    // L'IMPORT est lu par le parseur et RÉSOLU (lot `bp17-extension-bancs-garde`) :
+    // relatif, `require`, `import()`, commentaire glissé, alias ou lien
+    // symbolique ne le cachent plus ; un import indéterminé (non constant, nom
+    // nu inconnu) compte comme lecteur. `import type` reste exempté.
+    const contexte = contexteResolution();
+    const MODULES_LECTURE = ['lecture', 'ecriture', 'http'].map(m => `web/src/lib/positions-expert/${m}.ts`);
+    const importeLaLecture = (fichier: string, source?: string) =>
+      importsResolus(`web/src/${fichier.split(path.sep).join('/')}`, contexte, source).some(
+        i => !i.typeSeul && designe(i, /(^|\/)positions-expert\/(?:lecture|ecriture|http)$/, MODULES_LECTURE),
+      );
     const admis = (fichier: string) =>
       fichier.startsWith(path.join('lib', 'positions-expert') + path.sep)
       || fichier.startsWith(path.join('app', 'api', 'praticien', 'positions-expert') + path.sep);
     for (const m of MODELES) expect(occurrences(modele(m, LIRE)).filter(o => !admis(o.fichier))).toEqual([]);
     expect(occurrences(SQL_LECTURE).filter(o => !admis(o.fichier))).toEqual([]);
-    expect(occurrences(IMPORT_LECTURE).filter(o => !admis(o.fichier))).toEqual([]);
+    expect(SOURCES.map(s => s.fichier).filter(f => !admis(f) && importeLaLecture(f))).toEqual([]);
     // Le banc n'est pas vide : la lecture lit bien.
     expect(occurrences(modele('arbitrageConflitSource', LIRE)).length).toBeGreaterThan(0);
-    expect(IMPORT_LECTURE.test("import { lireAtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(true);
-    expect(IMPORT_LECTURE.test("import type { AtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(false);
-  });
+    expect(SOURCES.map(s => s.fichier).filter(f => admis(f) && importeLaLecture(f)).length).toBeGreaterThan(0);
+    const neuf = path.join('lib', 'neuf', 'a.ts');
+    for (const source of [
+      "import { lireAtelierPositions } from '@/lib/positions-expert/lecture';",
+      "import { lireAtelierPositions } from '../positions-expert/lecture';",
+      'import/**/"@/lib/positions-expert/ecriture";',
+      'const h = require("@/lib/positions-expert/" + "http");',
+      'const m = await import(chemin);',
+    ]) {
+      expect(importeLaLecture(neuf, source), source).toBe(true);
+    }
+    expect(importeLaLecture(neuf, "import type { AtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(false);
+    // Tous les noms en `type` : effacé à la compilation (tant que `verbatimModuleSyntax` reste absent, verrou commun).
+    expect(importeLaLecture(neuf, "import { type AtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(false);
+    expect(importeLaLecture(neuf, "import { type AtelierPositions, lireAtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(true);
+    expect(importeLaLecture(neuf, "import { x } from '@/lib/positions-expert/vocabulaire';")).toBe(false);
+    // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
+  }, 120_000);
 
   it('la garde rougit sur une source fabriquée (elle n’est pas décorative)', () => {
     expect(modele('positionExpertActe', REECRIRE).test('tx.positionExpertActe.update({})')).toBe(true);

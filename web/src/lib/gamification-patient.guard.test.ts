@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
-import { extname, join, relative } from 'path';
+import { extname, join, relative, sep } from 'path';
 import { describe, expect, it } from 'vitest';
+import { RACINE as RACINE_DEPOT } from './bio-parcours/balayageSources';
+import { contexteResolution, importsResolus } from './bio-parcours/resolutionImports';
 
 // Garde structurelle — réserve R2 de l'audit de conformité 5.0, arbitrée le
 // 2026-07-21.
@@ -141,29 +143,40 @@ function fichiersPatient(): string[] {
 // donc ses imports de composants, transitivement, et on exige que chaque
 // racine atteinte soit déclarée. Un composant patient neuf est alors gardé
 // D'OFFICE, ou il rougit ici en nommant l'entrée qui manque.
-function resoudre(specifieur: string): string | null {
-  const base = join(RACINE, specifieur.replace(/^@\//, ''));
-  for (const suffixe of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
-    try {
-      if (statSync(`${base}${suffixe}`).isFile()) return `${base}${suffixe}`;
-    } catch {
-      /* candidat suivant */
-    }
-  }
-  return null;
-}
+//
+// LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : la remontée
+// lisait les seuls `from '@/components/…'`. Elle lit désormais chaque import
+// par le parseur (relatif, `import()`, `require`, ré-export, commentaire
+// glissé) et le RÉSOUT comme le fait TypeScript (alias, liens symboliques) :
+// toute cible sous `components/` donne sa racine et se remonte à son tour. Un
+// import indéterminé (non constant, nom nu inconnu) peut monter n'importe
+// quel composant : il rend une racine qu'aucune déclaration ne couvre.
+const INDETERMINE = '<import indéterminé>';
+const COMPOSANTS = 'web/src/components/';
 
-function racinesMonteesDansLePortail(): string[] {
-  const aVisiter = fichiersSources(join(RACINE, 'app/portail'));
+function racinesMonteesDansLePortail(depart: readonly string[] = fichiersSources(join(RACINE, 'app/portail'))): string[] {
+  const contexte = contexteResolution();
+  const aVisiter = [...depart];
   const vus = new Set(aVisiter);
   const racines = new Set<string>();
 
   while (aVisiter.length > 0) {
-    const source = readFileSync(aVisiter.pop() as string, 'utf8');
-    for (const [, specifieur] of source.matchAll(/from\s+['"](@\/components\/[^'"]+)['"]/g)) {
-      racines.add(specifieur.split('/').slice(1, 3).join('/'));
-      const cible = resoudre(specifieur);
-      if (!cible || vus.has(cible)) continue;
+    const fichier = aVisiter.pop() as string;
+    const chemin = relative(RACINE_DEPOT, fichier).split(sep).join('/');
+    for (const i of importsResolus(chemin, contexte)) {
+      if (i.indetermine) {
+        racines.add(INDETERMINE);
+        continue;
+      }
+      // Un `@/components/x/…` qui ne se résout pas (un asset) garde sa racine, comme avant.
+      if (i.atteint === null && i.specificateur.startsWith('@/components/')) {
+        racines.add(i.specificateur.split('/').slice(1, 3).join('/'));
+        continue;
+      }
+      if (!i.atteint?.startsWith(COMPOSANTS)) continue;
+      racines.add(`components/${i.atteint.slice(COMPOSANTS.length).split('/')[0]}`);
+      const cible = join(RACINE_DEPOT, i.atteint);
+      if (vus.has(cible) || EST_UN_TEST.test(cible)) continue;
       vus.add(cible);
       aVisiter.push(cible);
     }
@@ -218,7 +231,8 @@ describe('surfaces patient — aucune gamification (R2)', () => {
       (racine) => !SURFACES_PATIENT.includes(racine),
     );
     expect(nonDeclarees).toEqual([]);
-  });
+    // Le parseur et le résolveur remontent tout l'arbre du portail : délai élargi.
+  }, 60_000);
 
   it('la remontée des imports du portail voit bien quelque chose', () => {
     // Sans ce plancher, une expression régulière d'import cassée rendrait un
@@ -226,5 +240,5 @@ describe('surfaces patient — aucune gamification (R2)', () => {
     const racines = racinesMonteesDansLePortail();
     expect(racines).toContain('components/patient');
     expect(racines.length).toBeGreaterThan(2);
-  });
+  }, 60_000);
 });

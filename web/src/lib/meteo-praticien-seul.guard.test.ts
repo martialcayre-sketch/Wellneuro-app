@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from 'fs';
 import { extname, join, relative } from 'path';
 import { describe, expect, it } from 'vitest';
+import { RACINE as RACINE_DEPOT } from './bio-parcours/balayageSources';
+import { contexteResolution, importsResolus, type ContexteResolution } from './bio-parcours/resolutionImports';
 
 // Garde structurelle SP-MET (accueil-observatoire LOT-02) : la Météo d'adhésion
 // est un signal de PILOTAGE praticien. Elle ne doit apparaître sur AUCUNE
@@ -49,6 +51,24 @@ function fichiersSources(dossier: string): string[] {
   });
 }
 
+/**
+ * LES IMPORTS LUS PAR LE PARSEUR ET RÉSOLUS (lot `bp17-extension-bancs-garde`),
+ * EN PLUS du balayage ligne à ligne, qui reste pour `fetch(` et ne retire rien
+ * de ce qu'il voyait : un import dont le spécificateur est sur une autre ligne
+ * que son mot-clé, un `export … from`, un commentaire glissé, une
+ * concaténation constante, un alias ou un lien symbolique lui échappaient. Est
+ * fautif l'import dont le spécificateur ou le FICHIER atteint nomme un module
+ * interdit, ou qui est INDÉTERMINÉ (non constant, nom nu inconnu).
+ */
+function importsInterdits(chemin: string, contexte: ContexteResolution, source?: string): string[] {
+  const relatifAuDepot = relative(RACINE_DEPOT, chemin).split('\\').join('/');
+  return importsResolus(relatifAuDepot, contexte, source).flatMap((i) => {
+    if (i.indetermine) return [i.specificateur];
+    const atteint = i.atteint?.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, '') ?? '';
+    return MODULES_INTERDITS.some((m) => i.specificateur.includes(m) || atteint.includes(m)) ? [i.specificateur] : [];
+  });
+}
+
 describe('Météo d’adhésion — praticien seul (SP-MET, structurel)', () => {
   it('aucune surface patient n’importe le badge, l’agrégat ou la route Météo', () => {
     const fautifs: string[] = [];
@@ -68,6 +88,26 @@ describe('Météo d’adhésion — praticien seul (SP-MET, structurel)', () => 
 
     expect(fautifs, `Météo d’adhésion référencée dans une surface patient :\n${fautifs.join('\n')}`).toEqual([]);
   });
+
+  it('aucune surface patient n’importe un module Météo, sous quelque forme que ce soit (parseur et résolution)', () => {
+    const contexte = contexteResolution();
+    const fichiers = SURFACES_PATIENT.flatMap((surface) => fichiersSources(join(RACINE, surface)));
+    const fautifs = fichiers.flatMap((chemin) =>
+      importsInterdits(chemin, contexte).map((s) => `${relative(RACINE, chemin)} — « ${s} »`),
+    );
+    expect(fautifs).toEqual([]);
+    // CONTRE-ÉPREUVE : les formes que le balayage ligne à ligne ne voyait pas.
+    const neuf = join(RACINE, 'components/patient/Neuf.tsx');
+    for (const source of [
+      "import {\n  BadgeMeteo,\n} from\n  '@/components/meteo/BadgeMeteo';",
+      "export { calculer } from '../../lib/protocol/adhesion';",
+      'const s = require("@/lib/agenda-sommeil/" + "suivi");',
+      'const m = await import(chemin);',
+    ]) {
+      expect(importsInterdits(neuf, contexte, source), source).toHaveLength(1);
+    }
+    expect(importsInterdits(neuf, contexte, "import { x } from '@/lib/portail/session';")).toEqual([]);
+  }, 60_000);
 
   it('la liste des surfaces patient scannées n’est pas vide (garde anti-régression)', () => {
     const fichiers = SURFACES_PATIENT.flatMap((surface) => fichiersSources(join(RACINE, surface)));

@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from './balayageSources';
+import { RACINE, estUnTest, fichiersSource } from './balayageSources';
+import { contexteResolution, designe, importsResolus, type ContexteResolution } from './resolutionImports';
 
 // BP-01 ([[D-266]]) — l'import de `biology-library` est interdit hors liste
 // blanche NOMINATIVE. Le jour du lot, 26 fichiers de production l'importent :
@@ -15,7 +16,16 @@ import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from 
 // PÉRIMÈTRE : le code de production de `web/src`. Les bancs et tests en sont
 // exclus (ils importent le module pour l'éprouver), le module lui-même aussi.
 // Une prose qui CITE `biology-library` n'est pas un import (six fichiers le
-// font) : seules les lignes de code comptent.
+// font) : seuls les nœuds d'import comptent.
+//
+// LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`, d'après le
+// banc de la bibliothèque des options, D-480 §8) : un import est lu par
+// `importsSyntaxiques` (commentaire glissé, échappement, concaténation
+// constante, `require`, `import type` compté), puis RÉSOLU comme le fait
+// TypeScript, liens symboliques suivis — un alias ou un lien qui mène au
+// dossier sans le nommer est vu. Un import non constant ou un nom nu inconnu
+// est un lecteur possible. Verrous de configuration :
+// `resolutionImports.guard.test.ts`.
 //
 // DEUX SENS : un importeur absent de la liste rougit ; une entrée qui n'importe
 // plus rougit aussi — une liste blanche qui se périme finit par couvrir un
@@ -170,30 +180,33 @@ const IMPORTEURS_ADMIS = [
   'web/src/lib/praticien/ancrageCorrespondance.ts',
 ];
 
-/** Un spécificateur qui désigne le module, en alias `@/` ou en relatif. */
-function designeBiologyLibrary(specificateur: string): boolean {
-  return /(^|\/)biology-library(\/|$)/.test(specificateur);
-}
+const DOSSIER = 'web/src/lib/biology-library/';
+/** Un spécificateur qui NOMME le module, en alias `@/` ou en relatif. */
+const NOMME_BIOLOGY_LIBRARY = /(^|\/)biology-library(\/|$)/;
 
-/** Le pipeline de lecture, pur — extrait pour être éprouvé (contre-épreuve). */
-export function importeursDe(fichiers: readonly { chemin: string; source: string }[]): string[] {
+/** Le pipeline de lecture — extrait pour être éprouvé (contre-épreuve). */
+export function importeursDe(
+  fichiers: readonly { chemin: string; source?: string }[],
+  contexte: ContexteResolution = contexteResolution(),
+): string[] {
   return fichiers
     .filter(f => !estUnTest(f.chemin))
-    .filter(f => !f.chemin.startsWith('web/src/lib/biology-library/'))
-    .filter(f => specificateursImportes(f.source).some(designeBiologyLibrary))
+    .filter(f => !f.chemin.startsWith(DOSSIER))
+    .filter(f => importsResolus(f.chemin, contexte, f.source).some(i => designe(i, NOMME_BIOLOGY_LIBRARY, [DOSSIER])))
     .map(f => f.chemin)
     .sort();
 }
 
 describe('biology-library — liste blanche nominative des importeurs (BP-01)', () => {
   it('aucun importeur de production hors de la liste, aucune entrée périmée', () => {
-    const lus = importeursDe(fichiersSource().map(chemin => ({ chemin, source: lire(chemin) })));
+    const lus = importeursDe(fichiersSource().map(chemin => ({ chemin })));
     expect(
       lus,
       'importeur neuf de `biology-library` : l\'inscrire ici par un diff relu, avec son motif ; '
         + 'entrée qui n\'importe plus : la retirer',
     ).toEqual([...IMPORTEURS_ADMIS].sort());
-  });
+    // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
+  }, 120_000);
 
   it('chaque entrée désigne un fichier réel', () => {
     for (const chemin of IMPORTEURS_ADMIS) {
@@ -203,9 +216,18 @@ describe('biology-library — liste blanche nominative des importeurs (BP-01)', 
 
   // CONTRE-ÉPREUVE : la mutation que ce banc doit attraper — un module neuf
   // qui importe la bibliothèque — rougit, en alias comme en relatif, en import
-  // statique comme dynamique ; une simple mention en commentaire ne rougit pas.
+  // statique comme dynamique, masqué par un commentaire, un échappement ou une
+  // concaténation, par `require` ou en type seul, ou par un spécificateur
+  // indéterminé ; une simple mention en commentaire ne rougit pas.
   it('le pipeline voit un import neuf, ignore une mention et un banc', () => {
     const lus = importeursDe([
+      { chemin: 'web/src/lib/neuf/f.ts', source: 'import/**/"@/lib/biology-library/catalogue";' },
+      { chemin: 'web/src/lib/neuf/g.ts', source: 'import { x } from "@/lib/\\u0062iology-library/catalogue";' },
+      { chemin: 'web/src/lib/neuf/h.ts', source: 'const m = require("@/lib/biology-" + "library/catalogue");' },
+      { chemin: 'web/src/lib/neuf/i.ts', source: "import type { T } from '../biology-library/catalogue';" },
+      { chemin: 'web/src/lib/neuf/j.ts', source: 'const m = await import(chemin);' },
+      { chemin: 'web/src/lib/neuf/k.ts', source: "import { x } from 'biology-library/catalogue';" },
+      { chemin: 'web/src/lib/neuf/l.ts', source: "import { x } from '@/lib/autre/module';" },
       { chemin: 'web/src/lib/neuf/a.ts', source: "import { x } from '@/lib/biology-library/catalogue';" },
       { chemin: 'web/src/lib/neuf/b.ts', source: "const m = await import('../biology-library/resultats');" },
       { chemin: 'web/src/lib/neuf/c.ts', source: "export { y } from '../../lib/biology-library';" },
@@ -213,6 +235,25 @@ describe('biology-library — liste blanche nominative des importeurs (BP-01)', 
       { chemin: 'web/src/lib/neuf/e.guard.test.ts', source: "import '@/lib/biology-library/catalogue';" },
       { chemin: 'web/src/lib/biology-library/interne.ts', source: "import { z } from './catalogue';" },
     ]);
-    expect(lus).toEqual(['web/src/lib/neuf/a.ts', 'web/src/lib/neuf/b.ts', 'web/src/lib/neuf/c.ts']);
+    expect(lus).toEqual([
+      'web/src/lib/neuf/a.ts', 'web/src/lib/neuf/b.ts', 'web/src/lib/neuf/c.ts', 'web/src/lib/neuf/f.ts',
+      'web/src/lib/neuf/g.ts', 'web/src/lib/neuf/h.ts', 'web/src/lib/neuf/i.ts', 'web/src/lib/neuf/j.ts',
+      'web/src/lib/neuf/k.ts',
+    ]);
+  });
+
+  // CONTRE-ÉPREUVE DE LA RÉSOLUTION : un alias `paths` sous `@/` (que la
+  // règle des noms nus admet) qui mène au dossier sans le nommer est vu, en
+  // mémoire, sans toucher aucun fichier.
+  it('un alias de configuration qui mène au dossier est vu', () => {
+    const contexte = contexteResolution();
+    const source = 'import { x } from "@/bio";';
+    expect(importeursDe([{ chemin: 'web/src/lib/neuf/a.ts', source }], contexte)).toEqual([]);
+    const avecAlias = {
+      ...contexte,
+      cache: undefined,
+      options: { ...contexte.options, paths: { ...contexte.options.paths, '@/bio': ['./src/lib/biology-library/publie.ts'] } },
+    };
+    expect(importeursDe([{ chemin: 'web/src/lib/neuf/a.ts', source }], avecAlias)).toEqual(['web/src/lib/neuf/a.ts']);
   });
 });
