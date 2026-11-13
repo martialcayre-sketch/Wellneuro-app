@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProtocolMiniBuilder, type RelectureProtocoleSoumission, type VersionActiveConstructeur } from './ProtocolMiniBuilder';
 import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PROTOCOL_DRAFT_V4, type DecisionCard } from '@/lib/clinical-engine/types';
 import { ACTION_ID_ORIENTATION } from '@/lib/clinical-engine/orientationAdressage';
@@ -1397,5 +1397,162 @@ describe('ProtocolMiniBuilder — la nature d’une intention de complément (D-
     fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
     expect(ui.queryByText('Nature du complément')).toBeNull();
     expect(container.textContent).toContain('La nature du complément a été retirée de l’action 1');
+  });
+});
+
+// ── PRA-3b PR 4 : protocole chargé au téléphone (Q13 a), saisie locale (Q14 a) ──
+
+describe('ProtocolMiniBuilder — un protocole chargé reste lisible (PRA-3b Q13 a)', () => {
+  // Les identifiants (ancres, titre qui nomme le sommaire) se résolvent dans le
+  // DOCUMENT : les montages des bancs précédents, laissés en place par ce
+  // fichier, porteraient les mêmes.
+  beforeEach(cleanup);
+
+  // Fixture à trois cents caractères par plan, comme la matrice des PR le demande.
+  const PLAN_LONG = 'Prendre un petit-déjeuner assis, sans écran, '.repeat(7).slice(0, 300);
+  const actionLongue = (n: number) => ({
+    ...ACTION_EN_VIGUEUR, actionId: `action-${n}`, title: `Action ${n} en vigueur`,
+    idealPlan: PLAN_LONG, minimalPlan: PLAN_LONG, rescuePlan: PLAN_LONG,
+  });
+
+  it('les trois plans sont des champs qui grandissent : la valeur entière, recopiée dans leur gabarit', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([actionLongue(1)])} />,
+    );
+    const ui = within(container);
+    expect(PLAN_LONG).toHaveLength(300);
+    for (const libelle of ['Plan idéal', 'Plan minimal', 'Plan de secours']) {
+      const champ = ui.getByLabelText(`${libelle} de l’action 1`) as HTMLTextAreaElement;
+      expect(champ.tagName).toBe('TEXTAREA');
+      expect(champ.value).toBe(PLAN_LONG);
+      expect(champ.className).toContain('min-h-11');
+      expect(champ.parentElement?.getAttribute('data-valeur')).toBe(PLAN_LONG);
+    }
+    // La raison d'être grandit de même.
+    expect(ui.getByLabelText('Raison d’être').parentElement?.getAttribute('data-valeur')).toBe('Raison en vigueur');
+  });
+
+  it('un plan reste d’une ligne logique : un saut de ligne collé devient une espace, Entrée n’insère rien', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    const plan = ui.getByLabelText('Plan idéal de l’action 1') as HTMLTextAreaElement;
+    fireEvent.change(plan, { target: { value: 'Marcher\nau soleil \r\n\n le matin' } });
+    // Revue PR-Agent de #2087 : retiré sec, le saut soudait les mots.
+    expect(plan.value).toBe('Marcher au soleil le matin');
+    // `fireEvent.keyDown` rend faux quand l'action par défaut est empêchée.
+    expect(fireEvent.keyDown(plan, { key: 'Enter' })).toBe(false);
+    expect(fireEvent.keyDown(plan, { key: 'a' })).toBe(true);
+  });
+
+  it('« Actions » est un titre de niveau 4, et nomme le sommaire d’ancres dès deux actions', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([actionLongue(1)])} />,
+    );
+    const ui = within(container);
+    expect(ui.getByRole('heading', { level: 4, name: 'Actions (1/7)' })).toBeTruthy();
+    // Une seule action : rien à sommer.
+    expect(ui.queryByRole('navigation', { name: 'Actions (1/7)' })).toBeNull();
+
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    const sommaire = ui.getByRole('navigation', { name: 'Actions (2/7)' });
+    const ancres = within(sommaire).getAllByRole('link');
+    expect(ancres.map(ancre => ancre.textContent)).toEqual(['Action 1', 'Action 2']);
+  });
+
+  it('suivre une ancre amène le focus sur l’action, sans poser de fragment d’URL', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} versionActive={versionActive([actionLongue(1), actionLongue(2)])} />,
+    );
+    const ui = within(container);
+    const hashAvant = window.location.hash;
+    fireEvent.click(ui.getByRole('link', { name: 'Action 2' }));
+    expect(document.activeElement?.tagName).toBe('FIELDSET');
+    expect(within(document.activeElement as HTMLElement).getByLabelText('Intitulé de l’action 2')).toBeTruthy();
+    expect(window.location.hash).toBe(hashAvant);
+  });
+
+  it('l’état du brouillon et « Enregistrer la version » vivent dans la barre basse collante', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} />);
+    const ui = within(container);
+    const enregistrer = ui.getByRole('button', { name: 'Enregistrer la version' });
+    const barre = enregistrer.closest('.sticky') as HTMLElement;
+    expect(barre).not.toBeNull();
+    expect(barre.className).toContain('lg:static');
+    expect(within(barre).getByText('Brouillon local — non enregistré.')).toBeTruthy();
+    // Une seule action pleine dans le constructeur (Q3 a).
+    const pleins = ui.getAllByRole('button').filter(bouton => bouton.className.includes('bg-primary'));
+    expect(pleins).toEqual([enregistrer]);
+  });
+});
+
+describe('ProtocolMiniBuilder — la saisie locale hors du serveur (PRA-3b Q14 a)', () => {
+  it('signale une frappe, se tait après l’enregistrement, et reparle sur un refus du serveur', () => {
+    const signal = vi.fn();
+    const onSave = vi.fn();
+    const { container, rerender } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} onModificationsLocales={signal} />,
+    );
+    const ui = within(container);
+    expect(signal).toHaveBeenLastCalledWith(false);
+
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    expect(signal).toHaveBeenLastCalledWith(true);
+
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère' } });
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    // En vol : la saisie n'est pas encore sur le serveur.
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} onModificationsLocales={signal} saveState="saving" />);
+    expect(signal).toHaveBeenLastCalledWith(true);
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} onModificationsLocales={signal} saveState="saved" />);
+    expect(signal).toHaveBeenLastCalledWith(false);
+    for (const refus of ['error', 'stale'] as const) {
+      rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} onModificationsLocales={signal} saveState={refus} />);
+      expect(signal).toHaveBeenLastCalledWith(true);
+    }
+  });
+
+  // Revue PR-Agent de #2087 : `saveState` et le refus de registre sont tenus
+  // par le cockpit. Sans ce banc, « Réinitialiser » laissait la validation
+  // suspendue sur une saisie qui n'existait plus.
+  it('« Réinitialiser » après un refus lève la suspension ; un refus neuf la repose', () => {
+    const signal = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { container, rerender } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="error" />,
+    );
+    const ui = within(container);
+    expect(signal).toHaveBeenLastCalledWith(true);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.click(ui.getByRole('button', { name: 'Réinitialiser' }));
+    expect(signal).toHaveBeenLastCalledWith(false);
+
+    // Un nouvel enregistrement, refusé à son tour : la suspension revient.
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="saving" />);
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="stale" />);
+    expect(signal).toHaveBeenLastCalledWith(true);
+    confirmSpy.mockRestore();
+  });
+
+  it('un refus de registre en attente suspend, et « Réinitialiser » le lève', () => {
+    const signal = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={vi.fn()}
+        onModificationsLocales={signal}
+        confirmationRegistre={{ message: 'Terme à reformuler.', jeton: 'j' }}
+        onConfirmerRegistre={vi.fn()}
+      />,
+    );
+    expect(signal).toHaveBeenLastCalledWith(true);
+    fireEvent.click(within(container).getByRole('button', { name: 'Réinitialiser' }));
+    expect(signal).toHaveBeenLastCalledWith(false);
+    confirmSpy.mockRestore();
   });
 });
