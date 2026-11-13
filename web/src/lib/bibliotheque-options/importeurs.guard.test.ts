@@ -112,7 +112,8 @@ function dependancesDeclarees(): Set<string> {
 }
 
 function nomNuInconnu(specificateur: string, dependances: ReadonlySet<string>): boolean {
-  if (specificateur === IMPORT_NON_CONSTANT || /^(\.|\/|@\/)/.test(specificateur)) return false;
+  // Seuls `.`, `..`, `./…` et `../…` sont relatifs : `.detour/x` est un nom nu (contre-passe Codex n° 4).
+  if (specificateur === IMPORT_NON_CONSTANT || /^(\.\.?(\/|$)|\/|@\/)/.test(specificateur)) return false;
   if (specificateur.startsWith('node:')) return false;
   const nom = specificateur.startsWith('@') ? specificateur.split('/').slice(0, 2).join('/') : specificateur.split('/')[0];
   return !dependances.has(nom) && !builtinModules.includes(nom);
@@ -268,10 +269,10 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   // dépendance (un `NODE_PATH` vers lui servirait `zod/…` après node_modules).
   it('un nom nu inconnu est un lecteur possible (contre-passe Codex n° 3, NODE_PATH)', () => {
     const dependances = dependancesDeclarees();
-    for (const s of ['vocabulaire', 'bibliothequeBesoin2V1', 'options/vocabulaire', '@inconnu/paquet', '@inconnu']) {
+    for (const s of ['vocabulaire', 'bibliothequeBesoin2V1', 'options/vocabulaire', '@inconnu/paquet', '@inconnu', '.detour/vocabulaire', '..detour/x', '.x']) {
       expect(nomNuInconnu(s, dependances), s).toBe(true);
     }
-    for (const s of ['react', 'next/server', '@sentry/nextjs', 'node:fs', 'fs/promises', 'path', '@/lib/x', './x', '../x', IMPORT_NON_CONSTANT]) {
+    for (const s of ['react', 'next/server', '@sentry/nextjs', 'node:fs', 'fs/promises', 'path', '@/lib/x', './x', '../x', '.', '..', IMPORT_NON_CONSTANT]) {
       expect(nomNuInconnu(s, dependances), s).toBe(false);
     }
     const entrees = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', DOSSIER], {
@@ -280,9 +281,11 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     })
       .split('\n')
       .filter(Boolean)
-      .map(f => f.slice(DOSSIER.length).split('/')[0].replace(/\.[^.]+$/, '').replace(/\.(test|guard)$/, ''));
+      .map(f => f.slice(DOSSIER.length).split('/')[0]);
     expect(entrees.length).toBeGreaterThan(0);
-    expect(entrees.filter(e => dependances.has(e) || builtinModules.includes(e))).toEqual([]);
+    // Le nom brut et chacun de ses préfixes avant un point (`zod.ts`, `zod.test.ts` → `zod`).
+    const noms = entrees.flatMap(e => e.split('.').map((_, i, parts) => parts.slice(0, i + 1).join('.')));
+    expect(noms.filter(n => n !== '' && (dependances.has(n) || builtinModules.includes(n)))).toEqual([]);
   });
 
   // LES CONFIGURATIONS DE RÉSOLUTION SONT VERROUILLÉES (contre-passe Codex n° 2

@@ -326,6 +326,13 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
       retiré) : le banc nomme l'importeur.
     - Validations : bancs du dossier verts (garde à 9 tests) ; T1 complet
       à 0.
+  - Contre-passe Codex n° 4 sur `8fb6728b` : **BLOQUER**. Elle confirme
+    que le cas `"vocabulaire"` est fermé, mais un nom nu commençant par un
+    point (`.detour/vocabulaire`) passait pour relatif.
+    - Corrigé : seuls `.`, `..`, `./…` et `../…` sont relatifs.
+    - L'inventaire du dossier compare désormais le nom brut de chaque
+      entrée, et chacun de ses préfixes avant un point, aux dépendances.
+    - Validations : bancs du dossier verts ; T1 complet à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
