@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { join, relative, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   createModuleResolutionCache,
   parseConfigFileTextToJson,
@@ -10,7 +11,7 @@ import {
   type ModuleResolutionCache,
   type ModuleResolutionHost,
 } from 'typescript';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   estFichierSource,
   estUnTest,
@@ -18,9 +19,14 @@ import {
   IMPORT_NON_CONSTANT,
   lire,
   RACINE,
-  retirerCommentaires,
   specificateursSyntaxiques,
 } from '../bio-parcours/balayageSources';
+
+// `web/next.config.mjs` est ÉVALUÉ par le verrou plus bas : l'enveloppe Sentry
+// y est remplacée par une capture de ses deux arguments.
+vi.mock('@sentry/nextjs', () => ({
+  withSentryConfig: (configNext: unknown, optionsSentry: unknown) => ({ CAPTURE: true, configNext, optionsSentry }),
+}));
 
 // [[D-480]] §8 — LA BIBLIOTHÈQUE N'AUTORISE AUCUNE PRESCRIPTION. Aucun
 // parcours, courrier, portail, document remis ni appel à un modèle ne la lit.
@@ -79,8 +85,29 @@ function resoutDansLeDossier(
   return atteint.toLowerCase().startsWith(DOSSIER.toLowerCase());
 }
 
-/** Toute clé de `next.config` qui déplacerait la résolution des modules. */
-const ALIAS_NEXT = /\balias\b|resolveAlias|\bresolve\b|\bwebpack\s*\(|\bwebpack\s*:(?!\s*\{\s*treeshake\s*:\s*\{\s*removeDebugLogging\s*:\s*true\s*\}\s*\})/i;
+/**
+ * LE VERROU DE NEXT porte sur la configuration ÉVALUÉE, pas sur son texte : une
+ * clé calculée (`['res' + 'olveAlias']`) ou un `typescript.tsconfigPath` vers
+ * un autre tsconfig échappaient à un motif (contre-passe Codex sur 05c5ea2b).
+ * Toute clé hors de ces listes — `webpack`, `turbopack`, `experimental`,
+ * `typescript`, `modularizeImports`… — rougit le banc, quelle que soit son
+ * écriture ; l'ajout d'une clé légitime s'y inscrit nommément, en revue.
+ */
+const CLES_NEXT_ADMISES = ['headers', 'reactStrictMode', 'redirects'];
+const CLES_SENTRY_ADMISES = ['authToken', 'org', 'project', 'silent', 'sourcemaps', 'telemetry', 'webpack', 'widenClientFileUpload'];
+
+function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
+  const ecarts: string[] = [];
+  for (const cle of Reflect.ownKeys(configNext)) {
+    if (!CLES_NEXT_ADMISES.includes(String(cle))) ecarts.push(`next.${String(cle)}`);
+  }
+  for (const cle of Reflect.ownKeys(optionsSentry)) {
+    if (!CLES_SENTRY_ADMISES.includes(String(cle))) ecarts.push(`sentry.${String(cle)}`);
+  }
+  const webpack = (optionsSentry as { webpack?: unknown }).webpack;
+  if (JSON.stringify(webpack) !== JSON.stringify({ treeshake: { removeDebugLogging: true } })) ecarts.push('sentry.webpack');
+  return ecarts;
+}
 
 /**
  * HORS DE `web/src`, du code tourne aussi : les entrées de `web/`
@@ -197,27 +224,38 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     expect(resoutDansLeDossier('#options', importeur, base)).toBe(false);
   });
 
-  // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) n'est
-  // pas vu par TypeScript ; la configuration de Next n'en déclare donc aucun.
-  it('next.config ne déclare aucun alias de résolution (verrou, passe Codex P1-4)', () => {
+  // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) ou un
+  // autre tsconfig (`typescript.tsconfigPath`) n'est pas vu par le résolveur
+  // ci-dessus ; la configuration évaluée de Next n'en porte donc aucun.
+  it('next.config, évalué, ne porte que des clés admises (verrou, passe Codex P1-4)', async () => {
     const configs = execFileSync(
       'git',
-      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/next.config.*'],
+      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/next.config.*', 'web/jsconfig.json', 'web/tsconfig.*'],
       { cwd: RACINE, encoding: 'utf8' },
-    ).split('\n').filter(Boolean);
-    expect(configs).toEqual(['web/next.config.mjs']);
-    const code = retirerCommentaires(lire('web/next.config.mjs'));
-    expect(code).toContain('webpack: { treeshake: { removeDebugLogging: true } }');
-    expect(code.match(ALIAS_NEXT)).toBeNull();
-    for (const mutation of [
-      "webpack: (config) => { config.resolve.alias['@options'] = x; return config; },",
-      'webpack(config) { return config; },',
-      'webpack: { treeshake: { removeDebugLogging: true }, resolve: {} },',
-      "turbopack: { resolveAlias: { '@options': './src/lib/bibliotheque-options' } },",
-      "experimental: { turbo: { resolveAlias: {} } },",
-    ]) {
-      expect(ALIAS_NEXT.test(mutation), mutation).toBe(true);
-    }
+    ).split('\n').filter(Boolean).sort();
+    expect(configs).toEqual(['web/next.config.mjs', 'web/tsconfig.json']);
+    const evalue = (await import(pathToFileURL(join(WEB, 'next.config.mjs')).href)) as {
+      default: { CAPTURE?: boolean; configNext: object; optionsSentry: object };
+    };
+    // L'export est l'enveloppe Sentry de l'objet de configuration — ni fonction de phase, ni autre forme.
+    expect(evalue.default.CAPTURE).toBe(true);
+    expect(Object.keys(evalue).sort()).toEqual(['default']);
+    expect(ecartsConfigNext(evalue.default.configNext, evalue.default.optionsSentry)).toEqual([]);
+
+    // CONTRE-ÉPREUVE : les détours relevés, en objets évalués.
+    const sentry = { webpack: { treeshake: { removeDebugLogging: true } } };
+    const mutations: [object, object, string][] = [
+      [{ turbopack: { ['res' + 'olveAl' + 'ias']: { '@options': './x' } } }, sentry, 'next.turbopack'],
+      [{ typescript: { tsconfigPath: 'tsconfig.options.json' } }, sentry, 'next.typescript'],
+      [{ webpack: (c: unknown) => c }, sentry, 'next.webpack'],
+      [{ experimental: { turbo: { resolveAlias: {} } } }, sentry, 'next.experimental'],
+      [{ modularizeImports: {} }, sentry, 'next.modularizeImports'],
+      [{ [Symbol('cle')]: 1 }, sentry, 'next.Symbol(cle)'],
+      [{}, { webpack: { treeshake: { removeDebugLogging: true }, resolve: {} } }, 'sentry.webpack'],
+      [{}, { ...sentry, aliasDeBuild: {} }, 'sentry.aliasDeBuild'],
+    ];
+    for (const [next, options, attendu] of mutations) expect(ecartsConfigNext(next, options), attendu).toContain(attendu);
+    expect(ecartsConfigNext({ headers: 1, reactStrictMode: 1, redirects: 1 }, sentry)).toEqual([]);
   });
 
   // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif,

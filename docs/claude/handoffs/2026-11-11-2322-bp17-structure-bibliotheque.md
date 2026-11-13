@@ -268,6 +268,22 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     Les alias propres à Next (`webpack`, `resolveAlias`) échappent à
     TypeScript : un verrou exige que `next.config.mjs` reste l'unique
     configuration de Next et n'en déclare aucun.
+  - Contre-passe Codex ciblée sur `05c5ea2b` (`wn-codex-avis.mjs`, D-505,
+    après un `--mode controle` passé par la nouvelle version de codex-cli) :
+    **BLOQUER**. Elle confirme que le cas exact de P1-4 est fermé, mais
+    relève deux détours de la même classe :
+    - une clé calculée (`['res' + 'olveAl' + 'ias']`) échappe au motif
+      textuel sur `next.config` : corrigé ;
+    - `typescript.tsconfigPath` fait lire un autre tsconfig à Next, alors
+      que le banc lit `web/tsconfig.json` : corrigé.
+    Correctif commun : le verrou porte sur la configuration ÉVALUÉE.
+    `web/next.config.mjs` est importé par le banc, l'enveloppe Sentry étant
+    remplacée par une capture. Seules des clés listées sont admises, côté
+    Next (`headers`, `reactStrictMode`, `redirects`) comme côté Sentry
+    (`webpack` limité à `treeshake`). Seuls `next.config.mjs` et
+    `tsconfig.json` existent comme configurations sous `web/`. Mutation
+    réelle (clé calculée ajoutée au fichier, puis retirée) : le banc nomme
+    `next.turbopack`.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
