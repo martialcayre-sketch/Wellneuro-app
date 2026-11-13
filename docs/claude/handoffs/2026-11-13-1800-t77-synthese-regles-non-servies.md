@@ -30,7 +30,8 @@ Solder la dette t77 (§8 du plan) : la synthèse IA ne disait ni les règles d'a
 - T1 complet (`npm run check`) : vert.
 - Contre-revue Codex en mode `revue` sur le diff poussé : conforme, un P2 corrigé et banc ajouté.
 - T3 (`npm run test:worktree`) : **incomplet**. Deux passes rouges sur le seul fichier `ProtocolMiniBuilder.test.tsx`, hors du diff et inchangé depuis #1691 : 1 puis 6 tests au-delà du délai de 5 s sous charge, 94/94 vert joué seul. Le reste de Vitest est vert (17 326 tests). Ce rouge arrête la suite avant les E2E : le segment E2E local n'a pas tourné. Sur arbitrage du responsable (2026-11-13), la PR s'ouvre et le CI fait foi, E2E compris.
-- Branche remise à niveau par un merge d'`origin/main` (#2062, fichiers patient, sans chevauchement), sur arbitrage du responsable.
+- Branche remise à niveau deux fois par un merge d'`origin/main` (#2062, puis #2063 ; sans chevauchement), chaque fois sur arbitrage du responsable.
+- CI de #2065 vert sur `ca93c30b` (code 0, E2E compris). PR-Agent a élagué le diff (code 1 : `PLAN_WELLNEURO.md` exclu) ; son seul constat, « fragment changelog.d absent », est écarté : le fragment est dans le diff. Revue `wn-reviewer` ([[D-499]]) : GO, aucun P0 ni P1 ; P2-1 corrigé (banc de la vigilance hors du `try`), P2-2 et P2-3 consignés en [[D-511]] §7.
 
 ## Problèmes ouverts
 

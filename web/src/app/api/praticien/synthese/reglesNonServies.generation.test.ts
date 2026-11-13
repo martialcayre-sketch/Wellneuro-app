@@ -258,6 +258,21 @@ describe('corpus illisible (D-511 §2 et §4)', () => {
     expect(donneesEntree().sourcesOrientationNonVerifiees).toBe(false);
   });
 
+  // Revue `wn-reviewer` de #2065 (P2-1) : la ligne est posée HORS du `try` du
+  // producteur de convergence. La déplacer dedans laisserait les autres bancs
+  // verts ; celui-ci tombe.
+  it('une levée du producteur de convergence ne tait pas la vigilance', async () => {
+    reglesOrientationAdmissibles.mockResolvedValue(null);
+    evaluerOrientationPourPatient.mockResolvedValue(INACTIF_SOURCES);
+    constatsContradictionsPourDossier.mockImplementation((...args: unknown[]) => {
+      if (args[3] === 'convergences') throw new Error('producteur de convergence en panne');
+      return [];
+    });
+    const res = await POST(req());
+    expect(res.status).toBe(200);
+    expect(donneesEntree().vigilanceDeterministe).toContain(VIGILANCE);
+  });
+
   it('service d’orientation en panne : aucun bloc (rien reçu à rapporter), la vigilance reste', async () => {
     reglesOrientationAdmissibles.mockResolvedValue(null);
     evaluerOrientationPourPatient.mockRejectedValue(new Error('base indisponible'));
