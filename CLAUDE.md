@@ -237,6 +237,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   repris que désigne la tâche, sinon le dernier au tri sur `main` (`D-372`).
 - Puis lire sa boîte du registre des messages, l'accuser, et la relire avant
   « prête » (`D-503`, `docs/ROLES_MACHINES.md`).
+- Sans lot désigné, prendre au carnet le lot `pret` suivant de sa file ; un
+  lot qui bute se range `bloque` et la session prend le suivant (`D-510`).
 - **Lancer à la racine du dépôt** (VS Code ouvert sur
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.
