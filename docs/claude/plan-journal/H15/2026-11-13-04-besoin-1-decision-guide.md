@@ -1,0 +1,5 @@
+- **Mise à jour (2026-11-13, besoin 1 : décision clinique du guide, D-516)** : forme opaque (`D-251` §4), avec seulement des identifiants et des mécanismes.
+  - **`D-516` acceptée** : la section du besoin 1 du guide est réécrite sur les vingt positions signées, sans rien y ajouter. Le texte complet est au dossier privé ; le responsable l'a validé tel quel.
+  - **Deux arbitrages du même jour**, à l'option recommandée : le guide se signe section par section, et J3-12f applique les sections signées à sa date ; sous la forme courte de l'enquête, le besoin 1 est non évalué (le drapeau de forme est allumé en production, constaté le 2026-11-13).
+  - **Ce que J3-12f appliquera au besoin 1** (`D-516` §5) : la mesure dérivée, qui retire le double compte avec le besoin 3 ; deux biomarqueurs en constats séparés, au cockpit seulement, hors couverture ; le troisième non lu ; la liste d'éligibilité des claims sous un banc ; aucune tranche sur la mesure.
+  - **Reste ouvert avant J3-12f** : le motif ou la redéfinition des parts 60/20/20, de la main du responsable (`D-312` §3, `DC-21`).
