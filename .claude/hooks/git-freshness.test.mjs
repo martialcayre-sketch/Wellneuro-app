@@ -180,8 +180,15 @@ test("branche remise à niveau en session : l'édition est autorisée sans repri
 
   const bloque = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Edit" });
   assert.match(bloque.stdout, /"permissionDecision":"deny"/);
+  // D-518 : le refus nomme le geste permis à la session, sa condition et son
+  // recours ; l'avis de démarrage le résume.
+  assert.match(bloque.stdout, /--ff-only origin\/main/);
+  assert.match(bloque.stdout, /origin\/main\.\.HEAD/);
+  assert.match(bloque.stdout, /ni stash ou commit pour forcer/);
+  assert.match(bloque.stdout, /D-518/);
+  assert.match(start.stdout, /--ff-only.*D-518/);
 
-  // Arbitrage humain hors du hook : la branche est remise à niveau.
+  // Branche sans commit propre : la session l'avance elle-même (D-518 §1).
   run(["merge", "--ff-only", "origin/main"], work);
 
   const edit = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Edit" });

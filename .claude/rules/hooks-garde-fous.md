@@ -94,9 +94,13 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
   verdict, donc n'interdit rien : un `fetch` qui pend (remote qui absorbe les
   paquets, invite d'identifiants) doit devenir un échec de fetch, jamais un
   silence.
-- Branche qui ne contient pas `origin/main` : refus nommant les deux SHA. La
-  remise à niveau est un arbitrage humain — le hook ne fait jamais de pull,
-  merge, rebase ou checkout.
+- Branche qui ne contient pas `origin/main` : refus nommant les deux SHA. Le
+  hook ne fait jamais de pull, merge, rebase ou checkout. La session avance
+  seule par `git merge --ff-only origin/main` sa branche, dans son propre
+  worktree, si elle n'a **aucun commit propre** (`git log origin/main..HEAD`
+  vide). Une branche qui a un commit propre, ou dont l'avance échoue, se
+  remet à niveau sur arbitrage du responsable — ni stash ni commit pour
+  forcer l'avance (`D-518`).
 - Portée : le dépôt du `cwd` de la session, pas celui du fichier édité. Une
   écriture par chemin absolu vers un **autre** worktree n'est pas gardée — la
   convention « une session = un worktree » est ce qui tient cette limite.
