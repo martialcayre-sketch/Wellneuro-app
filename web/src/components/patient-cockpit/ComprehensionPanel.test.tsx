@@ -43,6 +43,26 @@ afterEach(() => {
 });
 
 describe('ComprehensionPanel', () => {
+  it('UN ÉCHEC DE LECTURE propose « Réessayer » (T-17), qui relit le panneau et y rend le focus', async () => {
+    let echecs = 1;
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/comprehension/proposition')) return Promise.resolve(json({ ok: true, tirage: null }));
+      if (echecs > 0) {
+        echecs -= 1;
+        return Promise.resolve(json({ ok: false, error: 'Erreur technique.' }, false));
+      }
+      return Promise.resolve(json(dossier()));
+    });
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    expect(await screen.findByText('Ce panneau n’a pas pu être chargé.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(screen.queryByText('Ce panneau n’a pas pu être chargé.')).toBeNull());
+    expect(screen.getByText(/Rien d’écrit pour ce dossier/)).toBeTruthy();
+    const titre = screen.getByRole('heading', { name: 'Ce que j’ai compris de vous', level: 4 });
+    await waitFor(() => expect(document.activeElement).toBe(titre.closest('section')));
+  });
+
   it('DIT LA VÉRITÉ quand la surface patient est fermée, et empêche de publier', async () => {
     fetchMock.mockResolvedValueOnce(json(dossier({ surfacePatientOuverte: false })));
     render(<ComprehensionPanel idPatient="PAT_TEST" />);

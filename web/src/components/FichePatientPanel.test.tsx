@@ -114,6 +114,9 @@ type Options = {
   // Nombre de lectures `equilibre` qui échouent (`exception`) avant la
   // première réussie — de quoi éprouver le bouton « Réessayer ».
   equilibreEchecs?: number;
+  // Nombre de lectures `reponses` qui échouent (500, `reponses: []`) avant la
+  // première réussie — T-60 et « Réessayer » (PRA-3b).
+  reponsesEchecs?: number;
   assignationsModif?: boolean;
   // Comportement de `GET /api/praticien/patients` :
   // - `erreur` : charge d'indisponibilité (session expirée) ;
@@ -568,6 +571,7 @@ function stubFetch(options: Options = {}) {
           : decisionCard();
 
   let equilibreEchecs = options.equilibreEchecs ?? 0;
+  let reponsesEchecs = options.reponsesEchecs ?? 0;
   const fetchMock = vi.fn((input: unknown) => {
     const url = String(input);
     const ok = (payload: unknown, status = 200) =>
@@ -722,6 +726,10 @@ function stubFetch(options: Options = {}) {
       });
     }
     if (url.includes('/api/praticien/reponses')) {
+      if (reponsesEchecs > 0) {
+        reponsesEchecs -= 1;
+        return ok({ reponses: [], error: 'Erreur technique.' }, 500);
+      }
       if (options.reponses === 'aucune') return ok({ reponses: [] });
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
@@ -1895,6 +1903,36 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: 'Correspondance' }).getAttribute('aria-selected')).toBe('true'),
     );
+  });
+
+  // T-60 (PRA-3b, D-488) : la route répond `reponses: []` avec un statut
+  // d'erreur ; la liste vide le lisait comme un dossier sans réponse.
+  it('ÉCHEC DE LECTURE DES RÉPONSES : T-60 et « Réessayer », jamais « Aucun questionnaire complété »', async () => {
+    await rendreFiche({ reponsesEchecs: 1, phaseDemandee: 'donnees' });
+    expect(
+      await screen.findByText('Les questionnaires reçus n’ont pas pu être lus. Ce n’est pas un dossier sans réponse.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('Aucun questionnaire complété pour ce patient.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    const carte = await screen.findByText(/questionnaire\(s\) reçu\(s\)/);
+    expect(screen.queryByText(/n’ont pas pu être lus\. Ce n’est pas un dossier sans réponse/)).toBeNull();
+    // Le focus revient au contenu relu, pas au corps de la page.
+    await waitFor(() => expect(document.activeElement).toBe(carte));
+  });
+
+  it('ÉCHEC DE LECTURE DES RÉPONSES : T-60 en tête du tiroir, la comparaison se tait', async () => {
+    await rendreFiche({ reponsesEchecs: 1 });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+    const tiroir = await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(
+        within(tiroir).getByText('Les questionnaires reçus n’ont pas pu être lus. Ce n’est pas un dossier sans réponse.'),
+      ).toBeTruthy(),
+    );
+    expect(within(tiroir).queryByText('Aucun questionnaire complété pour ce patient.')).toBeNull();
+    expect(within(tiroir).queryByRole('heading', { name: 'Deux passations comparées' })).toBeNull();
+    expect(within(tiroir).getByRole('button', { name: 'Réessayer' })).toBeTruthy();
   });
 
   it('dimensions descriptives : le total et son interprétation restent affichés, détaillés et non remplacés', async () => {
