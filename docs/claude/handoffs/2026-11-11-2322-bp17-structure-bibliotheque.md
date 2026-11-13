@@ -311,6 +311,21 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     création. La résolution TypeScript et le verrou sur l'objet évalué
     restent en place, en défense complémentaire. Validations : bancs du
     dossier à 47 tests verts ; T1 complet à 0.
+  - Contre-passe Codex n° 3 sur `db10dd9f` : **BLOQUER**. Elle confirme
+    que les deux détours précédents sont fermés, et en relève un nouveau :
+    `NODE_PATH`. Next l'ajoute aux `resolve.modules` de webpack, et il
+    peut venir d'un script ou de l'environnement de déploiement, hors du
+    dépôt. Un import `"vocabulaire"` atteint alors le dossier.
+    - Corrigé au spécificateur, quel que soit l'environnement : un nom nu
+      doit être une dépendance déclarée de `web/package.json` ou un module
+      natif de Node. Sinon, il ferme le verrou.
+    - Le dossier ne porte en outre aucune entrée au nom d'une dépendance.
+    - L'inventaire préalable de la production compte zéro nom nu inconnu,
+      donc la règle ne coûte rien aujourd'hui.
+    - Mutation réelle (import `"vocabulaire"` sous `web/src/app/`, puis
+      retiré) : le banc nomme l'importeur.
+    - Validations : bancs du dossier verts (garde à 9 tests) ; T1 complet
+      à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
