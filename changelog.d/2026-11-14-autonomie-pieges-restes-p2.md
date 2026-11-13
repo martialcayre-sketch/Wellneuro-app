@@ -12,12 +12,13 @@ Codex, qui avaient été routés au lot `autonomie-pieges-restes` :
     - La lecture par contexte lit du SQL après `AS`, `DO [LANGUAGE x]` ou
       `EXECUTE`, et un littéral ailleurs. `btrim($$a,b$$)` compte donc bien,
       et une apostrophe dans un littéral dollar ne masque plus la suite.
-    - La lecture d'avant lit tout le contenu comme du SQL, sauf après `IS` :
-      `COMMENT … IS $$btrim(x)$$` ne compte plus.
-    - Un `$` collé à un identifiant (`a$b$c`, `é$q$`) n'ouvre pas de
-      littéral.
-    - Le prix est un refus prudent sur `trim($$ $$ from t)` et sur un
-      message dollar qui cite un appel, deux formes absentes des migrations.
+    - La lecture d'avant, gardée à l'identique, lit tout le contenu comme du
+      SQL.
+    - Dans la lecture par contexte, un `$` collé à un identifiant
+      (`a$b$c`, `é$q$`) n'ouvre pas de littéral.
+    - Le prix : les faux positifs de la lecture d'avant restent des refus
+      prudents. Ce sont `trim($$ $$ from t)` et un appel cité dans un
+      littéral dollar, deux formes absentes des migrations.
 - `.claude/hooks/block-risky-commands.mjs` : `npx prisma@7 format` est
   refusé comme `prisma format`, et un `--check` placé après un `#` (un
   commentaire du shell) ne l'excuse plus.

@@ -48,8 +48,8 @@ const GEL = {
  * Deux lectures d'une chaîne `$tag$`, que `compterBtrimUnArgument` combine :
  * - `"contexte"` : du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, un
  *   littéral ailleurs ;
- * - `"sql"` : la lecture d'avant, qui lit tout contenu dollar comme du SQL,
- *   sauf après `IS` (`COMMENT … IS $$…$$` n'admet qu'une constante).
+ * - `"sql"` : la lecture d'avant, à l'identique, qui lit tout contenu dollar
+ *   comme du SQL.
  */
 export function masquerSql(sql, lecture = "contexte") {
   let sortie = "";
@@ -69,6 +69,14 @@ export function masquerSql(sql, lecture = "contexte") {
       const j = fin === -1 ? n : fin + 2;
       sortie += blanc(sql.slice(i, j));
       i = j;
+    } else if (c === "$" && lecture === "sql") {
+      // Lecture d'avant, À L'IDENTIQUE (code de #2074) : seules les balises
+      // sont masquées, le contenu est lu par la boucle comme du SQL. Aucune
+      // exception : le maximum des deux lectures ne peut ainsi jamais tomber
+      // sous l'ancien compte.
+      const m = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      sortie += m ? blanc(m[0]) : c;
+      i += m ? m[0].length : 1;
     } else if (c === "$") {
       // Collé à un identifiant (`a$b$c`, `é$q$`), un `$` en fait partie : pas
       // de délimiteur, sinon la suite du fichier serait effacée jusqu'au
@@ -79,24 +87,17 @@ export function masquerSql(sql, lecture = "contexte") {
         i += 1;
         continue;
       }
-      if (lecture === "sql" && !/\bIS\s*$/i.test(sortie)) {
-        // Lecture d'avant : seules les balises sont masquées, le contenu est
-        // lu par la boucle comme du SQL.
-        sortie += blanc(m[0]);
-        i += m[0].length;
-        continue;
-      }
       // Une chaîne `$tag$ … $tag$` est du SQL quand elle suit `AS` (corps de
       // fonction, de trigger), `DO [LANGUAGE x]` ou `EXECUTE` (SQL dynamique,
       // exécuté) : elle est lue, masquée à son tour (ses propres chaînes,
       // commentaires et `$q$` imbriqués). Ailleurs (`COMMENT … IS $$…$$`,
       // argument `btrim($$a,b$$)`), c'est un littéral, rendu comme `'…'` : sa
       // virgule n'est pas un second argument, et il reste visible comme
-      // argument. (Lecture « contexte » seulement.)
+      // argument.
       const ouverture = i + m[0].length;
       const fermeture = sql.indexOf(m[0], ouverture);
       const fin = fermeture === -1 ? n : fermeture + m[0].length;
-      const corps = lecture !== "sql" && /(?:\bAS|\bDO(?:\s+LANGUAGE\s+(?:\w+|"[^"]*"))?|\bEXECUTE)\s*$/i.test(sortie);
+      const corps = /(?:\bAS|\bDO(?:\s+LANGUAGE\s+(?:\w+|"[^"]*"))?|\bEXECUTE)\s*$/i.test(sortie);
       if (corps) {
         const finContenu = fermeture === -1 ? n : fermeture;
         sortie += blanc(m[0]) + masquerSql(sql.slice(ouverture, finContenu), lecture);
@@ -144,9 +145,10 @@ export function masquerSql(sql, lecture = "contexte") {
  * Le compte retenu est le plus haut des deux lectures de `masquerSql`. Ce banc
  * ne peut donc jamais voir moins que la lecture d'avant : une forme que
  * l'heuristique « contexte » ne reconnaît pas (`EXECUTE format($q$…$q$)`,
- * `DO LANGUAGE "plpgsql"`) reste comptée. Prix accepté, un refus prudent :
- * `trim($$ $$ from t)` compte, alors qu'il nomme ses caractères. Aucune
- * migration n'a cette forme.
+ * `DO LANGUAGE "plpgsql"`) reste comptée. Prix accepté, des refus prudents,
+ * les faux positifs de la lecture d'avant : `trim($$ $$ from t)`, un appel cité
+ * dans un littéral dollar (`COMMENT … IS $$btrim(x)$$`, `RAISE NOTICE`).
+ * Aucune migration n'a ces formes.
  */
 export function compterBtrimUnArgument(sql) {
   return Math.max(compterDans(masquerSql(sql, "sql")), compterDans(masquerSql(sql, "contexte")));
@@ -231,8 +233,9 @@ test("parseur : trim, ltrim et rtrim sans caractères comptent", () => {
 test("parseur : un littéral dollar hors corps est une chaîne", () => {
   // Sa virgule n'est pas un second argument…
   assert.equal(compterBtrimUnArgument("SELECT btrim($$a,b$$);"), 1);
-  // … et le texte qu'il porte n'est pas un appel.
-  assert.equal(compterBtrimUnArgument("COMMENT ON COLUMN t.c IS $$btrim(x)$$;"), 0);
+  // Refus prudent, accepté : la lecture d'avant lit un appel cité dans un
+  // commentaire dollar (forme absente des migrations).
+  assert.equal(compterBtrimUnArgument("COMMENT ON COLUMN t.c IS $$btrim(x)$$;"), 1);
   // Une apostrophe dans un littéral dollar ne masque pas la suite du fichier.
   assert.equal(compterBtrimUnArgument("COMMENT ON TABLE t IS $$l'arbitrage$$;\nALTER TABLE t ADD CHECK (btrim(c) <> '');"), 1);
 });
@@ -258,6 +261,9 @@ test("parseur : les formes que le contexte ne reconnaît pas restent comptées",
   assert.equal(compterBtrimUnArgument('DO LANGUAGE "plpgsql" $$ BEGIN PERFORM btrim(chr(9)); END $$;'), 1);
   // Refus prudent, accepté : un jeu de caractères en littéral dollar compte.
   assert.equal(compterBtrimUnArgument("CHECK (trim($$ $$ from t) <> '')"), 1);
+  // Revue de l'écart (wn-reviewer) : une balise fermante précédée de `IS` ne
+  // fait plus rien perdre.
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN RAISE NOTICE $m$state IS $m$; EXECUTE format($q$ALTER TABLE t ADD CHECK (btrim(c) <> '')$q$); END $$;"), 1);
 });
 
 test("migrations : aucun btrim à un argument hors du gel, aucun compte gelé en hausse", () => {

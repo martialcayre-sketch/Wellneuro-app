@@ -20,7 +20,9 @@ lot. Les quatre contrôles tenaient sur toutes les formes présentes dans le dé
   `-delete`.
 - Chaînes `$tag$` : le banc les lit de deux façons et retient le compte le plus haut, pour ne jamais voir moins que
   la lecture d'avant. La première est la lecture par contexte (du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, un
-  littéral ailleurs). La seconde est la lecture d'avant, qui lit tout comme du SQL sauf après `IS`.
+  littéral ailleurs). La seconde est la lecture d'avant, gardée à l'identique : la promesse « jamais moins » tient
+  donc par construction. Une première version avait une exception `IS`, que la revue de l'écart a mise en défaut
+  (une balise fermante précédée de `IS` faisait perdre un appel). Elle est retirée, et le cas est testé.
   - C'est la réponse aux trois P2 de la contre-revue Codex sur 4aa1aeb8, trois affaiblissements réels :
     `EXECUTE format($q$…)`, `DO LANGUAGE "plpgsql"` et l'identifiant `é$q$`.
   - Le prix est un refus prudent sur deux formes absentes des migrations.
@@ -55,6 +57,11 @@ lot. Les quatre contrôles tenaient sur toutes les formes présentes dans le dé
   docstring, la limite `EXECUTE format(…)`.
 - Contre-revue Codex (P0, diff poussé 4aa1aeb8) : avis conforme. Trois P2 corrigés par la double lecture, avec des
   tests pour chacun (9/9). Les autres contrôles (crochet, doublons, anti-secrets) n'ont reçu aucun constat.
+- `wn-reviewer` sur l'écart 4aa1aeb8..9863d45d : GO sous réserve d'un P2, le contre-exemple de l'exception `IS`.
+  - Corrigé : la lecture d'avant est maintenant reprise à l'identique, et le cas est testé.
+  - Le P3 du commentaire est corrigé.
+  - Les autres P3 sont sans action : la garde d'identifiant ne retire que des faux positifs, et le maximum par
+    fichier ne joue que sur des dossiers gelés.
 
 ## Problèmes ouverts
 
