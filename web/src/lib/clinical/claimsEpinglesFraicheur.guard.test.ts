@@ -452,14 +452,22 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
     expect(entrees.length).toBeGreaterThanOrEqual(24);
 
     // Toute table du contrat est arbitrée ; un arbitrage sans ligne au contrat
-    // n'est admis que pour une table qui n'attend AUCUNE paire (la
+    // n'est admis que pour une table PAR USAGE qui n'attend aucune paire (la
     // bibliothèque des options, vide jusqu'à la PR 7 de BP-17). Ailleurs, un
     // arbitrage sans ligne reste un rouge : sa table aurait perdu ses claims.
+    // La dispense ne vaut QUE pour les tables par usage : une table ordinaire
+    // dont les claims ET les lignes SQL disparaîtraient ensemble resterait
+    // sinon verte (passe Codex sur #2060).
     const tables = [...new Set(entrees.map(e => e.table))].sort();
     const tablesAttendues = new Set(pairesAttendues(tablesSignees()).map(p => p.split('#')[1]));
+    const tablesParUsage = new Set(Object.values(FICHIER_VERS_TABLES_PAR_USAGE).flatMap(p => [p.dose, p.autres]));
     for (const table of tables) expect(Object.keys(TABLE_EXIGE_PRESCRIPTIF)).toContain(table);
     for (const table of Object.keys(TABLE_EXIGE_PRESCRIPTIF)) {
-      expect({ table, auContrat: tables.includes(table) }).toEqual({ table, auContrat: tablesAttendues.has(table) });
+      if (tablesParUsage.has(table)) {
+        expect({ table, auContrat: tables.includes(table) }).toEqual({ table, auContrat: tablesAttendues.has(table) });
+      } else {
+        expect(tables, table).toContain(table);
+      }
     }
     // Chaque table que déclare un fichier a son arbitrage, même sans ligne.
     for (const parUsage of Object.values(FICHIER_VERS_TABLES_PAR_USAGE)) {

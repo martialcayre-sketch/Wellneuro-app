@@ -4,7 +4,12 @@ import { join, relative, sep } from 'node:path';
 import {
   createSourceFile,
   forEachChild,
+  isBinaryExpression,
+  isElementAccessExpression,
   isIdentifier,
+  isParenthesizedExpression,
+  isStringLiteralLike,
+  SyntaxKind,
   parseConfigFileTextToJson,
   parseJsonConfigFileContent,
   resolveModuleName,
@@ -69,6 +74,10 @@ const ACCES_GLOBAUX = new Set([
   'fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'Request', 'navigator', 'window', 'document',
   'localStorage', 'sessionStorage', 'indexedDB', 'caches', 'process', 'globalThis', 'global', 'self',
   'eval', 'Function', 'require', 'module', 'Deno', 'Bun', 'importScripts',
+  // Les portes vers `Function` sans le nommer : `(() => {}).constructor("…")()`
+  // (passe Codex sur #2060), la chaîne des prototypes, la réflexion, et les
+  // minuteries qui, au navigateur, évaluent une chaîne.
+  'constructor', 'prototype', '__proto__', 'Reflect', 'Proxy', 'setTimeout', 'setInterval',
 ]);
 
 function optionsDeResolution(): CompilerOptions {
@@ -86,12 +95,33 @@ const cheminReel = (chemin: string) => {
   }
 };
 
-/** Les identifiants d'accès global qu'un source nomme. */
+/** La valeur d'une clé constante (`"a"`, `` `a` ``, `"a" + "b"`), ou `null`. */
+function cleConstante(n: Node): string | null {
+  if (isStringLiteralLike(n)) return n.text;
+  if (isParenthesizedExpression(n)) return cleConstante(n.expression);
+  if (isBinaryExpression(n) && n.operatorToken.kind === SyntaxKind.PlusToken) {
+    const g = cleConstante(n.left);
+    const d = cleConstante(n.right);
+    return g === null || d === null ? null : g + d;
+  }
+  return null;
+}
+
+/**
+ * Les accès globaux qu'un source nomme : un identifiant, ou la clé constante
+ * d'un accès calculé (`x["constr" + "uctor"]`). LIMITE DÉCLARÉE : une clé
+ * tirée d'une variable (`x[k]`) n'est pas lue — la fermeture est figée par
+ * liste exacte, et ses fichiers se relisent à chaque changement.
+ */
 function accesGlobaux(source: string, chemin: string): string[] {
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, true, chemin.endsWith('.tsx') ? ScriptKind.TSX : ScriptKind.TS);
   const trouves = new Set<string>();
   const visiter = (n: Node): void => {
     if (isIdentifier(n) && ACCES_GLOBAUX.has(n.text)) trouves.add(n.text);
+    if (isElementAccessExpression(n)) {
+      const cle = cleConstante(n.argumentExpression);
+      if (cle !== null && ACCES_GLOBAUX.has(cle)) trouves.add(cle);
+    }
     forEachChild(n, visiter);
   };
   visiter(fichier);
@@ -164,6 +194,11 @@ describe('bibliothèque des options — aucune lecture de dossier (D-480 §5.4)'
       ['window.location.href;', 'window'],
       ['const x = (0, eval)("1");', 'eval'],
       ['const m = module.require("pg");', 'module'],
+      // Le constructeur de fonction sans le nommer (passe Codex sur #2060).
+      ['const e = (() => {}).constructor("return process.env")();', 'constructor'],
+      ['const e = (() => {})["constr" + "uctor"]("x")();', 'constructor'],
+      ['const p = Object.getPrototypeOf(x).__proto__;', '__proto__'],
+      ['const r = Reflect.get(x, "y");', 'Reflect'],
     ];
     for (const [source, attendu] of formes) expect(accesGlobaux(source, 'x.ts'), source).toContain(attendu);
     expect(accesGlobaux('// fetch process\nconst t = "fetch window";', 'x.ts')).toEqual([]);

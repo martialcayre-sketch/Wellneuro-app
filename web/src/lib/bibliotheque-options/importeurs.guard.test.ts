@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
@@ -129,9 +129,13 @@ function resoutDansLeDossier(
  * bibliothèque, dans l'ordre de découverte, et les fichiers atteints hors du
  * départ.
  */
-function importeursDeLaBibliotheque(depart: readonly string[]): { importeurs: string[]; atteints: string[] } {
+function importeursDeLaBibliotheque(
+  depart: readonly string[],
+  racine: string = RACINE,
+): { importeurs: string[]; atteints: string[] } {
   const options = optionsDeResolution();
-  const cache = createModuleResolutionCache(WEB, x => x, options);
+  // Le cache n'est partagé que sur le dépôt lui-même ; une racine d'essai résout sans cache.
+  const cache = racine === RACINE ? createModuleResolutionCache(WEB, x => x, options) : undefined;
   const dependances = dependancesDeclarees();
   const vus = new Set(depart);
   const file = [...depart];
@@ -145,18 +149,26 @@ function importeursDeLaBibliotheque(depart: readonly string[]): { importeurs: st
     // par résolution.
     const genere = chemin.startsWith('web/src/generated/');
     let lecteur = false;
-    for (const s of specificateursSyntaxiques(lire(chemin), chemin)) {
+    for (const s of specificateursSyntaxiques(readFileSync(join(racine, chemin), 'utf8'), chemin)) {
       if (importeLaBibliotheque(s) || (!genere && nomNuInconnu(s, dependances))) {
         lecteur = true;
         continue;
       }
-      const atteint = fichierAtteint(s, chemin, options, sys, cache);
+      const atteint = fichierAtteint(s, chemin, options, sys, cache, racine);
       if (atteint === null) continue;
       if (atteint.toLowerCase().startsWith(DOSSIER.toLowerCase())) {
         lecteur = true;
         continue;
       }
-      if (atteint.startsWith('web/') && !atteint.includes('/node_modules/') && estFichierSource(atteint) && !vus.has(atteint)) {
+      // Partout DANS le dépôt, pas seulement sous `web/` : un relais posé à la
+      // racine (`shared/relais.test.ts`) serait embarqué de même (passe Codex
+      // sur #2060). Hors du dépôt et dans `node_modules`, rien n'est suivi.
+      if (
+        !atteint.startsWith('../') &&
+        !/(^|\/)node_modules\//.test(atteint) &&
+        estFichierSource(atteint) &&
+        !vus.has(atteint)
+      ) {
         vus.add(atteint);
         atteints.push(atteint);
         file.push(atteint);
@@ -234,10 +246,15 @@ const EMPREINTES_LANCEMENT: Record<string, string> = {
   'web/Procfile': 'a8d5dfe89dbd0f8dd1bbd575852137507bcfbbf7cf048c7c57a36a2e107b89ad',
   'web/cron.json': '28f5dd8a770e1926cc41999094be61e80d5728556da9d7282eee0168c7164e74',
   'web/scripts/build.sh': '3987d84d0e777382128baa5c22043090dad119f9a75272c16617d254b746b493',
+  // Lancé par `db:deploy` (postdeploy du Procfile) : un script qu'une valeur
+  // figée appelle est figé lui aussi (passe Codex sur #2060).
+  'web/scripts/db-deploy.sh': 'de03d4de80c2eabad2dfff601594bea8da4bfc87b23ad4170f61479518ad1423',
   'web/prisma/runWithAlias.js': 'f6e4fa4ffa1ae7c7070fc157aba28661308fd5f7e9969af8d0bb67d4794918fa',
 };
 const SCRIPTS_LANCEMENT: Record<string, string> = {
   build: 'bash scripts/build.sh',
+  // Appelé par `web/scripts/build.sh`.
+  'prisma:generate': 'prisma generate',
   'start:scalingo': 'next start -p ${PORT:-3000}',
   'bio:worker-extraction': 'node prisma/runWithAlias.js scripts/bioExtractionWorker.ts',
   'db:deploy': 'bash scripts/db-deploy.sh',
@@ -346,9 +363,18 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       const atteint = fichierAtteint('../lib/relais.test', 'web/src/app/page.tsx', options, sys, undefined, racine);
       expect(atteint).toBe('web/src/lib/relais.test.ts');
       expect(estUnTest(atteint as string)).toBe(true);
-      expect(
-        resoutDansLeDossier('./bibliotheque-options/vocabulaire', 'web/src/lib/relais.test.ts', options, sys, undefined, racine),
-      ).toBe(true);
+      // Le parcours complet : le relais est atteint, balayé, et nommé.
+      expect(importeursDeLaBibliotheque(['web/src/app/page.tsx'], racine)).toEqual({
+        importeurs: ['web/src/lib/relais.test.ts'],
+        atteints: ['web/src/lib/relais.test.ts'],
+      });
+      // Un relais HORS de `web/`, à la racine du dépôt (passe Codex sur #2060).
+      ecrire('shared/relais.test.ts', "export { X } from '../web/src/lib/bibliotheque-options/vocabulaire';\n");
+      ecrire('web/src/app/autre.tsx', "import { X } from '../../../shared/relais.test';\nexport default X;\n");
+      expect(importeursDeLaBibliotheque(['web/src/app/autre.tsx'], racine)).toEqual({
+        importeurs: ['shared/relais.test.ts'],
+        atteints: ['shared/relais.test.ts'],
+      });
     } finally {
       rmSync(racine, { recursive: true, force: true });
     }
@@ -468,11 +494,21 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     const empreinte = (f: string) => createHash('sha256').update(lire(f)).digest('hex');
     expect(Object.fromEntries(Object.keys(EMPREINTES_LANCEMENT).map(f => [f, empreinte(f)]))).toEqual(EMPREINTES_LANCEMENT);
 
-    // Les scripts que la chaîne appelle : `npm run X` du Procfile et de la tâche planifiée, plus `build`.
-    const appeles = [...`${lire('web/Procfile')}\n${lire('web/cron.json')}`.matchAll(/npm run ([\w:.-]+)/g)].map(m => m[1]);
+    // Les scripts que la chaîne appelle : `npm run X` du Procfile, de la tâche
+    // planifiée et de tout fichier figé (le build appelle `prisma:generate`), plus `build`.
+    const textesFiges = Object.keys(EMPREINTES_LANCEMENT).map(lire).join('\n');
+    const appeles = [...textesFiges.matchAll(/npm run ([\w:.-]+)/g)].map(m => m[1]);
     expect([...new Set(['build', ...appeles])].sort()).toEqual(Object.keys(SCRIPTS_LANCEMENT).sort());
     const scripts = (JSON.parse(lire('web/package.json')) as { scripts: Record<string, string> }).scripts;
     for (const [nom, valeur] of Object.entries(SCRIPTS_LANCEMENT)) expect(scripts[nom], nom).toBe(valeur);
+    // Tout script shell ou chargeur JavaScript qu'une valeur figée lance est
+    // figé lui aussi (`bash x.sh`, `node x.js`) ; une source TypeScript lancée
+    // (le worker) est balayée par le banc des importeurs.
+    const lances = Object.values(SCRIPTS_LANCEMENT).flatMap(v =>
+      [...v.matchAll(/\b(?:bash|sh|node)\s+(\S+\.(?:sh|[cm]?js))\b/g)].map(m => `web/${m[1]}`),
+    );
+    expect(lances.length).toBeGreaterThan(0);
+    for (const f of lances) expect(Object.keys(EMPREINTES_LANCEMENT), f).toContain(f);
 
     // Aucun script de cycle de vie autour d'eux, ni d'installation (npm ci les enchaîne au build).
     const cycle = Object.keys(scripts).filter(

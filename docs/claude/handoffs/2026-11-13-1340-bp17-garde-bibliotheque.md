@@ -130,7 +130,26 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   symbolique, `module.hot`, relais de test, outillage, `package.json`.
 - Bancs `release-db-*`, déployeur, sonde, CI : 226 verts. Crochets touchés :
   102 verts. Matrice : verte.
-- T1 rapide : code 0. T1 complet et T3 : voir la PR.
+- T1 rapide et T1 complet : code 0. T3 sur `fc67b4af` (première tête) : vert
+  en 9 min 52 s (Vitest 17 288 tests, E2E 382, dérive schéma ↔ migrations
+  sans différence, négatif des positions joué parmi les contrats SQL).
+- Passe Codex P0 (`wn-codex-avis.mjs --mode revue`, codex-cli
+  0.169.0-alpha.11.1, avis conforme) sur `fc67b4af` : 3 P1 et 1 P2,
+  **tous corrigés** :
+  - P1, dispense « arbitrage sans ligne » étendue à toutes les tables :
+    réservée aux tables par usage ; une table ordinaire doit avoir ses lignes.
+    Mutation (ligne `contradictions` retirée du contrat) : la nouvelle
+    assertion nomme la table.
+  - P1, suivi arrêté à `web/` : il couvre tout le dépôt. Contre-épreuve par
+    parcours complet en racine temporaire ; mutation réelle
+    (`shared/zzRelais.test.ts`) : nommé.
+  - P1, `web/scripts/db-deploy.sh` non figé : ajouté aux empreintes, avec
+    `prisma:generate` (appelé par le build) ; tout `bash x.sh`/`node x.js`
+    lancé par un script figé doit l'être aussi. Mutation : empreinte nommée.
+  - P2, constructeur de fonction sans le nommer : `constructor`,
+    `prototype`, `__proto__`, `Reflect`, `Proxy` et minuteries refusés, par
+    nom ou par clé constante. Limite déclarée : une clé tirée d'une variable.
+    Mutation : nommé.
 
 ## Problèmes ouverts
 
