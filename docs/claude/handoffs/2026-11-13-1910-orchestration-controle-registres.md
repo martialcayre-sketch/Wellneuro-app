@@ -26,6 +26,22 @@ aucune machine ne les relit.
 - Ce qui n'est pas règle écrite sort en avis, jamais en anomalie. Exemple : le suffixe d'un identifiant de message
   est comparé à la boîte émettrice sans tirets et par préfixe, parce que l'usage abrège.
 - Une action due est un rappel. Le code de sortie `1` ne vaut autorisation d'aucun geste.
+- Revue interne (`/code-review medium`, niveau P2) : dix constats, un verdict chacun.
+  - Corrigés (huit) :
+    - la sonnerie d'un lot se reconnaît à son identifiant entier dans `ref`, plus à un fragment ;
+    - sans le registre des messages dans l'export, un lot muet sort en `lot_silence_a_verifier`, et non en
+      « sans nouvelles » affirmé ;
+    - une sonnerie lue depuis plus de quatre heures, `tenu_le` inchangé, remet le lot « sans nouvelles » ;
+    - les comptes séparent le total de la répartition ;
+    - un identifiant daté doit porter une date qui existe ;
+    - l'âge de l'export est celui de son fichier le plus ancien ;
+    - la règle « un lot par session » compare les noms de session sans casse ni espaces ;
+    - le CLI rend son code par `process.exitCode`, pour ne pas couper la sortie dans un tube.
+  - Écartés avec motif (deux) :
+    - « toute ligne `emis` est à relancer, même fraîche » : la règle écrite dit « à chaque tour » et ne fixe aucun
+      seuil ; en inventer un serait ajouter une règle ;
+    - « le contrôle du suffixe d'identifiant est trop permissif » : c'est un avis, pas une règle, et l'usage abrège
+      les noms de boîte ; une boîte émettrice vide est déjà une anomalie de champ.
 - Écartés de cette PR, à porter dans des lots à part :
   - l'étape `ci.yml` qui jouerait le banc (revue P1, orchestration CI) ;
   - toute lecture de GitHub (déclarations « prête », revues, checks) ;
@@ -42,13 +58,13 @@ aucune machine ne les relit.
 
 ## Validations exécutées
 
-- `node --test scripts/lib/registres.test.mjs` : 19/19, code 0, rejoué après l'ajout de la section à
-  `docs/ROLES_MACHINES.md`.
+- `node --test scripts/lib/registres.test.mjs` : 19/19, code 0, rejoué après les correctifs de revue (cas
+  étendus : fragment d'identifiant, sonnerie lue, collection absente, comptes, date inexistante, âge de l'export).
 - `npm run check:rapide` : rouge une fois, sur `scripts/wn-etat-reel.test.mjs` (cas N1). Ce banc compare deux
   rapports pris à deux instants, et une autre session a changé la branche d'un worktree voisin entre les deux.
   Rejoué seul : 10/10, code 0. Aucun fichier de ce lot n'est en cause.
-- `npm run check` (T1 complet), rejoué sur l'arbre final (base 9ac34746) : code 0. Bancs d'outillage : 899 tests,
-  898 passés, 0 échec, 1 sauté ; anti-secrets : aucun secret détecté.
+- `npm run check` (T1 complet), rejoué sur l'arbre final après les correctifs de revue (base 9ac34746) : code 0.
+  Bancs d'outillage : 899 tests, 898 passés, 0 échec, 1 sauté ; anti-secrets : aucun secret détecté.
 - Essai sur un export réel des trois registres, gardé hors dépôt : code `2`. Agrégats : 68 messages, 13 lots,
   241 questions ; 26 anomalies de règle, 46 avis, 81 actions dues. Détail par règle :
   - anomalies : 7 objets de message hors énumération, 3 identifiants de message hors format, 1 ligne `traite` sans
@@ -56,6 +72,7 @@ aucune machine ne les relit.
     énumération, 8 questions closes sans horodatage de réponse ;
   - actions dues : 51 questions répondues sans suite, 14 lignes `emis` à relancer, 13 merges à constater, 1 lot
     sans nouvelles depuis plus de quatre heures, 1 lot `bloque` dont la question est répondue, 1 question ouverte.
+  - Rejoué sur le même export après les correctifs de revue : mêmes agrégats.
 - T2 non joué : le lot ne touche ni UI ni API.
 
 ## Problèmes ouverts
@@ -73,8 +90,8 @@ aucune machine ne les relit.
   l'accepte déjà, puisqu'une collection absente est dite et non contrôlée.
 - **Export auto-certifié.** Rien ne prouve qu'un export est complet : une pagination oubliée donne un export
   partiel cohérent. Le script ne peut pas le voir.
-- **Hors périmètre, constaté pendant l'audit** : le dépôt est public, et l'outillage de l'intégrateur (hors dépôt)
-  ne filtre pas l'auteur d'un commentaire « prête ». Porté au rapport de la session et à la liste commune.
+- **Hors périmètre, constaté pendant l'audit** : un constat de sécurité sur l'outillage de l'intégrateur, qui vit
+  hors dépôt. Il est porté au rapport privé de la session et à la liste commune, pas dans ce fichier.
 
 ## Prochaine action exacte
 

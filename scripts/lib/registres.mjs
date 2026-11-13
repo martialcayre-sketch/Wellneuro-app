@@ -79,7 +79,10 @@ function idDate(id) {
   const m = RE_ID_DATE.exec(id);
   if (!m) return null;
   const [, a, mo, j, h, mi, suffixe] = m;
-  if (+mo < 1 || +mo > 12 || +j < 1 || +j > 31 || +h > 23 || +mi > 59) return null;
+  if (+h > 23 || +mi > 59) return null;
+  // Une date qui existe : le 31 novembre ou le 30 février ne passent pas.
+  const d = new Date(Date.UTC(+a, +mo - 1, +j));
+  if (d.getUTCFullYear() !== +a || d.getUTCMonth() !== +mo - 1 || d.getUTCDate() !== +j) return null;
   return { jour: `${a}-${mo}-${j}`, suffixe };
 }
 
@@ -169,7 +172,9 @@ export function controlerLots(lots, questions = null) {
     if (l.etat === 'bloque' && vide(l.motif)) r.anomalie(l.id, 'bloque', 'lot `bloque` sans `motif`');
     if (l.etat === 'pris') {
       for (const c of ['pris_par', 'pris_le', 'tenu_le', 'branche']) if (vide(l[c])) r.anomalie(l.id, 'pris', `lot \`pris\` sans \`${c}\``);
-      if (vide(l.pr) && !vide(l.pris_par)) tenus.set(l.pris_par, [...(tenus.get(l.pris_par) ?? []), l.id]);
+      // La même session s'écrit parfois avec une autre casse ou une espace de trop.
+      const session = texte(l.pris_par).trim().replace(/\s+/g, ' ').toLowerCase();
+      if (vide(l.pr) && session) tenus.set(session, { nom: l.pris_par, ids: [...(tenus.get(session)?.ids ?? []), l.id] });
     }
     if (l.etat === 'fait' && vide(l.fait_le)) r.anomalie(l.id, 'fait', 'lot `fait` sans `fait_le`');
     if (idsQuestions && Array.isArray(l.questions)) {
@@ -177,8 +182,8 @@ export function controlerLots(lots, questions = null) {
     }
     controlerContenu(l, r);
   }
-  for (const [session, ids] of tenus) {
-    if (ids.length > 1) r.anomalie(ids[0], 'un_lot_par_session', `« ${court(session, 60)} » tient ${ids.length} lots sans PR déclarée (${ids.join(', ')}) — une session en tient au plus un`);
+  for (const { nom, ids } of tenus.values()) {
+    if (ids.length > 1) r.anomalie(ids[0], 'un_lot_par_session', `« ${court(nom, 60)} » tient ${ids.length} lots sans PR déclarée (${ids.join(', ')}) — une session en tient au plus un`);
   }
   return r.constats;
 }
@@ -216,8 +221,9 @@ const heures = (ms) => Math.round((ms / 3600000) * 10) / 10;
  * Ce que les règles écrites appellent, à l'instant `maintenant` (ms). Chaque
  * action cite la règle qui la fonde ; aucune n'est une autorisation.
  */
-export function actionsDues({ messages = [], lots = [], questions = [] }, maintenant) {
+export function actionsDues({ messages = [], lots = [], questions = [], absentes = [] }, maintenant) {
   const actions = [];
+  const sansMessages = absentes.includes('messages');
   const questionParId = new Map(questions.map((q) => [q.id, q]));
 
   // « Relance » : à chaque tour, l'intégrateur relit les lignes encore `emis`.
@@ -238,13 +244,25 @@ export function actionsDues({ messages = [], lots = [], questions = [] }, mainte
     // « Sans nouvelles » : `pris` sans `pr`, `tenu_le` de plus de quatre heures.
     if (l.etat === 'pris' && vide(l.pr)) {
       const t = instant(l.tenu_le);
-      if (t !== null && maintenant - t > SANS_NOUVELLES_MS) {
+      if (t !== null && maintenant - t > SANS_NOUVELLES_MS && sansMessages) {
+        // Sans le registre des messages, rien ne dit si le lot a déjà été sonné.
+        actions.push({ type: 'lot_silence_a_verifier', collection: 'lots', id: l.id, cible: court(l.file), age_h: heures(maintenant - t), detail: '`pris` sans `pr`, tenu il y a plus de quatre heures — le registre des messages manque à l\'export : refaire l\'export avant de sonner ou de reprendre' });
+      } else if (t !== null && maintenant - t > SANS_NOUVELLES_MS) {
+        // La sonnerie nomme le lot : un identifiant entier de `ref`, pas un
+        // fragment (`bio-1` n'est pas sonné par une ligne qui nomme `bio-12`).
         const sonnerie = messages
-          .filter((m) => m.objet === 'autre' && normaliserBoite(m.a) === normaliserBoite(l.file) && texte(m.ref).includes(l.id) && (instant(m.emis_le) ?? 0) > t)
+          .filter((m) => m.objet === 'autre' && normaliserBoite(m.a) === normaliserBoite(l.file) && texte(m.ref).split(/[^a-z0-9-]+/).includes(l.id) && (instant(m.emis_le) ?? 0) > t)
           .sort((x, y) => (instant(y.emis_le) ?? 0) - (instant(x.emis_le) ?? 0))[0];
-        if (!sonnerie) {
+        // Une sonnerie lue vaut nouvelles à l'heure de sa lecture ; si `tenu_le`
+        // n'a pas bougé quatre heures après, le lot est de nouveau sans nouvelles.
+        const lue = sonnerie && sonnerie.etat !== 'emis' ? (instant(sonnerie.lu_le) ?? instant(sonnerie.traite_le)) : null;
+        if (sonnerie && sonnerie.etat !== 'emis') {
+          if (lue !== null && maintenant - lue > SANS_NOUVELLES_MS) {
+            actions.push({ type: 'lot_sans_nouvelles', collection: 'lots', id: l.id, cible: court(l.file), age_h: heures(maintenant - t), detail: `sonnerie ${sonnerie.id} lue il y a plus de quatre heures, \`tenu_le\` inchangé — une session de la file sonne de nouveau` });
+          }
+        } else if (!sonnerie) {
           actions.push({ type: 'lot_sans_nouvelles', collection: 'lots', id: l.id, cible: court(l.file), age_h: heures(maintenant - t), detail: `\`pris\` sans \`pr\`, tenu il y a plus de quatre heures — une session de la file sonne : ligne \`autre\` à la boîte, \`ref\` = le lot` });
-        } else if (sonnerie.etat === 'emis' && maintenant - instant(sonnerie.emis_le) > REPRISE_MS) {
+        } else if (maintenant - instant(sonnerie.emis_le) > REPRISE_MS) {
           actions.push({ type: 'lot_reprise_possible', collection: 'lots', id: l.id, cible: court(l.file), age_h: heures(maintenant - t), detail: `sonné par la ligne ${sonnerie.id}, non lue depuis plus d'une heure — reprise par \`update\` avec \`if_version\`, \`reprises\` + 1, branche neuve` });
         }
       }
@@ -311,20 +329,29 @@ export function boite(messages, nom) {
     .map((m) => ({ id: m.id, de: court(m.de), objet: court(m.objet, 20), ref: court(m.ref), etat: court(m.etat, 10) }));
 }
 
-const compter = (lignes, champ) => lignes.reduce((acc, l) => ({ ...acc, [court(l[champ], 20)]: (acc[court(l[champ], 20)] ?? 0) + 1 }), {});
+// Le total et la répartition vivent à part : une valeur d'état « total », vide
+// ou `__proto__` (les lignes sont des textes libres) ne peut rien écraser.
+function compter(lignes, champ) {
+  const par = new Map();
+  for (const l of lignes) {
+    const cle = vide(l[champ]) ? '(vide)' : court(l[champ], 20);
+    par.set(cle, (par.get(cle) ?? 0) + 1);
+  }
+  return { total: lignes.length, par: Object.fromEntries(par) };
+}
 
 /** L'analyse entière d'un export : constats de règle, actions dues, lots suivants, comptes. */
-export function analyser({ messages = [], lots = [], questions = [] }, maintenant) {
+export function analyser({ messages = [], lots = [], questions = [], absentes = [] }, maintenant) {
   const constats = [...controlerMessages(messages), ...controlerLots(lots, questions.length > 0 ? questions : null), ...controlerQuestions(questions)];
   return {
     comptes: {
-      messages: { total: messages.length, ...compter(messages, 'etat') },
-      lots: { total: lots.length, ...compter(lots, 'etat') },
-      questions: { total: questions.length, ...compter(questions, 'statut') },
+      messages: compter(messages, 'etat'),
+      lots: compter(lots, 'etat'),
+      questions: compter(questions, 'statut'),
     },
     anomalies: constats.filter((c) => c.gravite === 'anomalie'),
     avis: constats.filter((c) => c.gravite === 'avis'),
-    actions: actionsDues({ messages, lots, questions }, maintenant),
+    actions: actionsDues({ messages, lots, questions, absentes }, maintenant),
     suivants: lotsSuivants(lots),
   };
 }

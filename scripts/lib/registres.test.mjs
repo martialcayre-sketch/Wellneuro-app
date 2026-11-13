@@ -126,6 +126,7 @@ test('messages : identifiant, objet, état, accusés, relances, prete', () => {
   const c = controlerMessages([
     message({ id: '20260110-1300-A' }),
     message({ id: '20261340-2500-a' }),
+    message({ id: '20261131-1200-a' }),
     message({ id: '20260110-1301-a', objet: 'renvoi' }),
     message({ id: '20260110-1302-a', etat: 'recu' }),
     message({ id: '20260110-1303-a', etat: 'lu' }),
@@ -139,7 +140,7 @@ test('messages : identifiant, objet, état, accusés, relances, prete', () => {
     message({ id: '20260110-1311-a', auteur: '' }),
     message({ id: '20260110-1312-a', objet: 'merge_fait', a: 'A', de: 'integrateur', ref: '' }),
   ]);
-  assert.deepEqual(regles(c), ['identifiant', 'identifiant', 'objet', 'etat', 'accuse', 'accuse', 'accuse', 'relances', 'relances', 'prete', 'prete', 'horodatage', 'champ', 'merge_fait']);
+  assert.deepEqual(regles(c), ['identifiant', 'identifiant', 'identifiant', 'objet', 'etat', 'accuse', 'accuse', 'accuse', 'relances', 'relances', 'prete', 'prete', 'horodatage', 'champ', 'merge_fait']);
   assert.deepEqual(
     c.filter((x) => x.gravite === 'avis').map((x) => [x.id, x.regle]),
     [['20260110-1312-a', 'identifiant']],
@@ -197,7 +198,7 @@ test('lots : file, état, préalable, champs d\'état, un lot par session', () =
       lot({ id: 'h00-8', etat: 'fait' }),
       lot({ id: 'h00-9', ordre: '10' }),
       lot({ id: 'h00-10', ...tenu }),
-      lot({ id: 'h00-11', ...tenu }),
+      lot({ id: 'h00-11', ...tenu, pris_par: ' file  a ' }),
       lot({ id: 'h00-12', ...tenu, pr: '#12' }),
       lot({ id: 'h00-13', etat: 'bloque', motif: 'question', questions: ['20260101-0000-z'] }),
       lot({ id: 'sans-rang' }),
@@ -263,6 +264,12 @@ test('actions : lot sans nouvelles — au-delà de quatre heures, sans `pr`, pui
   assert.deepEqual(types({ lots: [tenu()], messages: [sonnerie({ etat: 'lu', lu_le: iso(T0 + 5 * H) })] }, T0 + 9 * H), [], 'sonnerie lue : la session a des nouvelles');
   assert.deepEqual(types({ lots: [tenu()], messages: [sonnerie({ emis_le: iso(T0 - H) })] }, T0 + 9 * H), ['lot_sans_nouvelles'], 'une sonnerie d\'avant le dernier `tenu_le` ne compte pas');
   assert.deepEqual(types({ lots: [tenu()], messages: [sonnerie({ a: 'B' })] }, T0 + 9 * H), ['lot_sans_nouvelles'], 'sonnerie d\'une autre boîte');
+  assert.deepEqual(types({ lots: [tenu()], messages: [sonnerie({ ref: 'lot h00-21' })] }, T0 + 9 * H), ['lot_sans_nouvelles'], 'la sonnerie d\'un autre lot, dont l\'identifiant commence pareil, ne compte pas');
+  assert.deepEqual(types({ lots: [tenu()], messages: [sonnerie({ ref: 'reprise de h00-2, file A' })] }, T0 + 6 * H + 1), ['lot_reprise_possible'], 'identifiant entier dans `ref`');
+  const lue = sonnerie({ etat: 'lu', lu_le: iso(T0 + 5 * H) });
+  assert.deepEqual(types({ lots: [tenu()], messages: [lue] }, T0 + 9 * H + 1), ['lot_sans_nouvelles'], 'sonnerie lue depuis plus de quatre heures, `tenu_le` inchangé : de nouveau sans nouvelles');
+  assert.deepEqual(types({ lots: [tenu()], messages: [], absentes: ['messages'] }, T0 + 9 * H), ['lot_silence_a_verifier'], 'registre des messages absent : ni sonnerie ni reprise affirmée');
+  assert.deepEqual(types({ lots: [tenu()], absentes: ['questions'] }, T0 + 9 * H), ['lot_sans_nouvelles']);
 });
 
 test('actions : lot `bloque` à relire quand toutes ses questions ont une réponse — jamais « repasser à pret »', () => {
@@ -348,7 +355,10 @@ test('analyse et rendu : comptes, ligne machine, aucun texte libre en sortie', (
     },
     T0 + H,
   );
-  assert.deepEqual(analyse.comptes.messages, { total: 2, emis: 2 });
+  assert.deepEqual(analyse.comptes.messages, { total: 2, par: { emis: 2 } });
+  const pieges = analyser({ lots: [lot({ etat: 'total' }), lot({ id: 'h00-2', etat: '' }), lot({ id: 'h00-3', etat: '__proto__' })] }, T0).comptes.lots;
+  assert.equal(pieges.total, 3, 'une valeur d\'état ne peut pas écraser le total');
+  assert.deepEqual(Object.entries(pieges.par), [['total', 1], ['(vide)', 1], ['__proto__', 1]]);
   assert.equal(analyse.anomalies.length, 1);
   assert.equal(analyse.actions.length, 3);
   const lignes = rendre(analyse, { ageExportMin: 45, boiteNom: 'integrateur', lignesBoite: boite([message()], 'integrateur') });
@@ -394,6 +404,13 @@ test('CLI : lit un export sur disque, codes 0, 1, 2 et 3, sans rien écrire', ()
     assert.equal(due.code, SORTIE_ACTIONS);
     assert.match(due.lignes[0], /^⚠ export vieux de 120 min/);
     assert.equal(due.lignes.at(-1), 'REGISTRES anomalies=0 avis=0 actions=1 boite=1');
+
+    assert.equal(lireExport(dossier).plusAncien, T0);
+    const recent = join(dossier, 'messages', '20260110-1300-a.json');
+    utimesSync(recent, new Date(T0 + 2 * H), new Date(T0 + 2 * H));
+    assert.equal(lireExport(dossier).plusAncien, T0, 'un export refait en partie a l\'âge de son fichier le plus ancien');
+    assert.match(controler([dossier, '--maintenant', iso(T0 + 2 * H)]).lignes[0], /^⚠ export vieux de 120 min/);
+    utimesSync(recent, new Date(T0), new Date(T0));
 
     poser('questions', question({ nature: 'produit' }));
     writeFileSync(join(dossier, 'lots', 'casse.json'), '{');

@@ -67,10 +67,12 @@ export function analyserArguments(argv) {
 
 /**
  * Lit l'export. Rend `{ messages, lots, questions, absentes, illisibles,
- * plusRecent }` — chaque ligne reçoit son `id`, le nom de son fichier.
+ * plusAncien }` — chaque ligne reçoit son `id`, le nom de son fichier.
+ * `plusAncien` est la date du fichier le plus ancien : un export refait en
+ * partie a l'âge de ce qui n'a pas été refait.
  */
 export function lireExport(dossier) {
-  const lu = { messages: [], lots: [], questions: [], absentes: [], illisibles: [], plusRecent: null };
+  const lu = { messages: [], lots: [], questions: [], absentes: [], illisibles: [], plusAncien: null };
   for (const collection of COLLECTIONS) {
     const chemin = join(dossier, collection);
     if (!existsSync(chemin) || !statSync(chemin).isDirectory()) {
@@ -84,7 +86,7 @@ export function lireExport(dossier) {
         if (!donnees || typeof donnees !== 'object' || Array.isArray(donnees)) throw new Error('pas un objet');
         lu[collection].push({ ...donnees, id: fichier.slice(0, -'.json'.length) });
         const modifie = statSync(complet).mtimeMs;
-        if (lu.plusRecent === null || modifie > lu.plusRecent) lu.plusRecent = modifie;
+        if (lu.plusAncien === null || modifie < lu.plusAncien) lu.plusAncien = modifie;
       } catch {
         lu.illisibles.push(`${collection}/${fichier}`);
       }
@@ -102,7 +104,7 @@ export function rendre(analyse, { absentes = [], illisibles = [], ageExportMin =
   if (absentes.length > 0) lignes.push(`· collection(s) absente(s) de l'export, non contrôlée(s) : ${absentes.join(', ')}`);
   for (const f of illisibles) lignes.push(`✗ fichier illisible : ${court(f, 80)}`);
   const { comptes, anomalies, avis, actions, suivants } = analyse;
-  const detail = (c) => Object.entries(c).filter(([k]) => k !== 'total').map(([k, n]) => `${k} ${n}`).join(', ');
+  const detail = (c) => Object.entries(c.par).map(([k, n]) => `${k} ${n}`).join(', ');
   for (const collection of COLLECTIONS) {
     if (!absentes.includes(collection)) lignes.push(`· ${collection} : ${comptes[collection].total} ligne(s)${comptes[collection].total > 0 ? ` (${detail(comptes[collection])})` : ''}`);
   }
@@ -144,7 +146,7 @@ export function controler(argv, { maintenant = Date.now() } = {}) {
   if (lu.absentes.length === COLLECTIONS.length) return { code: SORTIE_USAGE, lignes: [`✗ aucune collection (${COLLECTIONS.join(', ')}) sous ${options.dossier}`, USAGE] };
   const instantT = options.maintenant ?? maintenant;
   const analyse = analyser(lu, instantT);
-  const ageExportMin = lu.plusRecent === null ? null : Math.max(0, (instantT - lu.plusRecent) / 60000);
+  const ageExportMin = lu.plusAncien === null ? null : Math.max(0, (instantT - lu.plusAncien) / 60000);
   const lignesBoite = options.boite === null ? [] : boite(lu.messages, options.boite);
   const code = codeDeSortie(analyse, lu.illisibles);
   if (options.json) {
@@ -158,5 +160,7 @@ const direct = process.argv[1] && realpathSync(process.argv[1]) === fileURLToPat
 if (direct) {
   const { code, lignes } = controler(process.argv.slice(2));
   console.log(lignes.join('\n'));
-  process.exit(code);
+  // `process.exitCode`, pas `process.exit()` : la sortie s'écrit en entier
+  // avant la fin du processus, même dans un tube.
+  process.exitCode = code;
 }
