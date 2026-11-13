@@ -120,27 +120,37 @@ jobs:
           # Deux sorties de plus, pour `typage-tests` et `e2e` seulement ;
           # `controles` reste gouverné par `docs_only`, inchangé.
           # - `e2e` (build et Playwright) : faux quand le diff ne touche que de
-          #   la documentation, de l'outillage racine (`scripts/`, joué par
-          #   `controles`), `.claude/` (bancs des crochets, dans `controles`) ou
-          #   `changelog.d/`. Exception : `scripts/wn-playwright-apt.mjs`, que
-          #   le job `e2e` exécute.
+          #   la documentation et, SUR UNE PR SEULEMENT, de l'outillage racine
+          #   (`scripts/`), `.claude/` (bancs des crochets, dans `controles`) ou
+          #   `changelog.d/`. Sur `push` de `main`, l'outillage garde l'E2E :
+          #   ce run déploie la tête, il doit avoir joué l'arbre déployé.
+          #   Exception : `scripts/wn-playwright-apt.mjs`, que `e2e` exécute.
           # - `unitaires` (type-check, Vitest, lint) : vrai dès que `e2e` l'est,
-          #   ET quand le diff touche une documentation que le code LIT —
-          #   décisions (lues par une route praticien et par les gardes des
-          #   textes patients), propositions de textes, corpus, supports de
-          #   campagne. Avant, une PR qui ne touchait qu'eux était
+          #   quand le diff touche `scripts/` (des gardes Vitest y cherchent
+          #   écrivains et importeurs interdits), ET quand il touche une
+          #   documentation que le code LIT — décisions, propositions de textes,
+          #   corpus, supports et cadrages de campagne, FEATURE_FLAGS,
+          #   DOSSIER_RGPD. Avant, une PR qui ne touchait qu'eux était
           #   « documentaire » et ne jouait aucun des tests qui les lisent :
-          #   57 PR sur les 300 dernières (mesure du 2026-11-13).
-          neutres="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$|^scripts/|^\.claude/|^changelog\.d/)' || true)"
+          #   57 PR sur les 300 dernières (mesure du 2026-11-13). Un document
+          #   lu par `web/` et absent de cette liste rougit
+          #   `scripts/ci-invariants.test.mjs`.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            motif_neutre='(^docs/|\.md$|^scripts/|^\.claude/|^changelog\.d/)'
+          else
+            motif_neutre='(^docs/|\.md$)'
+          fi
+          neutres="$(printf '%s\n' "$fichiers" | grep -vE "$motif_neutre" || true)"
           outillage_e2e="$(printf '%s\n' "$fichiers" | grep -E '^scripts/wn-playwright-apt\.mjs$' || true)"
-          lus="$(printf '%s\n' "$fichiers" | grep -E '^docs/(decisions/|claude/(propositions|corpus)/|claude/campagnes/[^/]+/supports/)' || true)"
+          outillage="$(printf '%s\n' "$fichiers" | grep -E '^scripts/' || true)"
+          lus="$(printf '%s\n' "$fichiers" | grep -E '^docs/(decisions/|claude/(propositions|corpus)/|claude/campagnes/([^/]+/supports/|[^/]+\.md$)|FEATURE_FLAGS\.md$|DOSSIER_RGPD\.md$)' || true)"
           if [ -z "$fichiers" ] || [ -n "$neutres" ] || [ -n "$outillage_e2e" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ] || [ -n "$consignes" ]; then
             echo "e2e=true" >> "$GITHUB_OUTPUT"
             echo "unitaires=true" >> "$GITHUB_OUTPUT"
-          elif [ -n "$lus" ]; then
+          elif [ -n "$lus" ] || [ -n "$outillage" ]; then
             echo "e2e=false" >> "$GITHUB_OUTPUT"
             echo "unitaires=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Documentation lue par le code — type-check, Vitest et lint joués ; build et E2E sautés."
+            echo "::notice::Outillage racine ou documentation lue par le code — type-check, Vitest et lint joués ; build et E2E sautés."
           else
             echo "e2e=false" >> "$GITHUB_OUTPUT"
             echo "unitaires=false" >> "$GITHUB_OUTPUT"
