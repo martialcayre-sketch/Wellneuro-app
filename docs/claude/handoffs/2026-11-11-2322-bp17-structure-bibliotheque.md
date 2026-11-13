@@ -346,6 +346,15 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     - En plus, un module natif ne s'admet qu'en entrée exacte
       (`fs/promises`, pas `fs/charge`).
     - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 6 sur `0b928f26` : **BLOQUER**. L'argument laissait
+    un trou pour les dépendances à portée : `@detour/paquet` n'est jamais vu
+    segment par segment.
+    - Corrigé : tout segment `@…` du dossier est interdit, puisqu'il est le
+      premier segment d'un nom à portée.
+    - Arbitrage du responsable (2026-11-13) : une contre-passe n° 7, puis
+      arrêt. Si elle bloque encore, le reste part à la PR 4, avec un
+      verdict.
+    - Validations : bancs du dossier verts ; T1 complet à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le

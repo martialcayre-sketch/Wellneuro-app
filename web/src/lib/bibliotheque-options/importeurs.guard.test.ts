@@ -125,8 +125,9 @@ function nomNuInconnu(specificateur: string, dependances: ReadonlySet<string>): 
  * POURQUOI CELA FERME `NODE_PATH`, OÙ QU'IL POINTE (contre-passe Codex n° 5) :
  * au-dessus du dossier, le spécificateur nomme `bibliotheque-options` et le
  * motif le voit ; dans le dossier, son premier segment est un nom du dossier —
- * inconnu, il ferme le verrou ; nom de dépendance ou de module natif, il est
- * interdit à TOUTE profondeur du dossier par le banc ci-dessous.
+ * inconnu, il ferme le verrou ; nom de dépendance ou de module natif, ou
+ * portée `@…` d'un nom à portée, il est interdit à TOUTE profondeur du
+ * dossier par le banc ci-dessous.
  */
 function segmentsDuDossier(fichiers: readonly string[]): string[] {
   return fichiers.flatMap(f =>
@@ -301,10 +302,11 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       .split('\n')
       .filter(Boolean);
     expect(fichiers.length).toBeGreaterThan(0);
-    const interdit = (n: string) => n !== '' && (dependances.has(n) || builtinModules.includes(n));
+    // Un segment `@…` est le premier segment d'un nom à portée (`@detour/paquet`) : interdit tel quel (contre-passe Codex n° 6).
+    const interdit = (n: string) => n !== '' && (n.startsWith('@') || dependances.has(n) || builtinModules.includes(n));
     expect(segmentsDuDossier(fichiers).filter(interdit)).toEqual([]);
     // CONTRE-ÉPREUVE : à toute profondeur, fichier ou dossier, avec ou sans extension.
-    for (const f of ['detour/fs/charge.ts', 'a/b/react/x.ts', 'a/path.ts', 'a/react.test.ts', '.detour/next/x.ts']) {
+    for (const f of ['detour/fs/charge.ts', 'a/b/react/x.ts', 'a/path.ts', 'a/react.test.ts', '.detour/next/x.ts', 'detour/@detour/paquet/charge.ts', '@x.ts']) {
       expect(segmentsDuDossier([`${DOSSIER}${f}`]).some(interdit), f).toBe(true);
     }
     expect(segmentsDuDossier([`${DOSSIER}detour/charge.ts`]).some(interdit)).toBe(false);
