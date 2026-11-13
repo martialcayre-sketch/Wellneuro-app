@@ -18,7 +18,9 @@ const OPTIONS_VERSION: readonly { valeur: VersionExport; libelle: string; aide: 
     aide:
       'Sans nom, prénom, date de naissance, coordonnées ni médecin traitant ; '
       + 'l’âge et l’identifiant du dossier restent. Leurs occurrences dans les textes libres sont masquées : '
-      + 'relisez le PDF avant de l’envoyer.',
+      + 'relisez le PDF avant de l’envoyer. '
+      // [[D-449]] §3 : la suspension est un geste du responsable ; ce texte la dit, il ne la tient pas.
+      + 'L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026.',
   },
   {
     valeur: 'complete',

@@ -520,7 +520,7 @@ describe('creerMasqueur — garanties', () => {
     expect(masquer('Ｒｅçｕ : So\u{AD}phie ; \u{FB01}n')).toBe(`Ｒｅçｕ : ${M} ; \u{FB01}n`);
   });
 
-  it('n’a rien à masquer quand le dossier ne porte que l’identifiant', () => {
+  it('ne masque que les formes génériques quand le dossier ne porte que l’identifiant', () => {
     const vide = creerMasqueur(
       patient({
         prenom: '',
@@ -533,7 +533,34 @@ describe('creerMasqueur — garanties', () => {
         medecinTraitantCoordonnees: null,
       }),
     );
-    expect(vide('Sophie PAT030 0612345678')).toBe('Sophie PAT030 0612345678');
+    expect(vide('Sophie PAT030 0612345678')).toBe(`Sophie PAT030 ${M}`);
+    expect(vide('Sophie PAT030 de garde')).toBe('Sophie PAT030 de garde');
+  });
+
+  // Revue de sécurité du 2026-11-12, P1-1 : l'identifiant reste, même collé à une forme générique.
+  it('une forme générique masquée garde l’identifiant qui la jouxte', () => {
+    expect(masquer('PAT030 : 06 98 76 54 32')).toBe(`PAT030 : ${M}`);
+    expect(masquer('PAT030@autre.example.test')).toBe(M);
+  });
+
+  it('reste linéaire sur les formes génériques : 80 000 caractères hostiles en moins de 200 ms chacun', () => {
+    const N = 80_000;
+    const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
+    for (const texte of [
+      remplir('a.'),
+      remplir('a@'),
+      remplir('a@b.'),
+      remplir('a@' + 'b'.repeat(70) + ' '),
+      remplir('06 '),
+      remplir('06 12 34 '),
+      remplir('1 85 03 '),
+      remplir('2a'),
+      remplir('+33 (0)6 '),
+    ]) {
+      const debut = performance.now();
+      masquer(texte);
+      expect(performance.now() - debut, texte.slice(0, 12)).toBeLessThan(200);
+    }
   });
 
   it('reste linéaire : 80 000 caractères hostiles en moins de 200 ms chacun', () => {

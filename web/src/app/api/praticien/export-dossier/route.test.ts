@@ -107,15 +107,20 @@ describe('GET /api/praticien/export-dossier', () => {
     expect(assemblerDossierExport).not.toHaveBeenCalled();
   });
 
-  it('accès accordé : journalisé UNE fois, au gabarit littéral (G-TRUST-04)', async () => {
-    const res = await GET(request('idPatient=PAT_1&version=complete'));
+  // Revue de sécurité du 2026-11-12, P2-1 : le gabarit dit quelle version est sortie.
+  it.each([
+    ['idPatient=PAT_1&version=complete', '/api/praticien/export-dossier?version=complete'],
+    ['idPatient=PAT_1&version=ia-externe', '/api/praticien/export-dossier?version=ia-externe'],
+    ['idPatient=PAT_1', '/api/praticien/export-dossier?version=ia-externe'],
+  ])('accès accordé (%s) : journalisé UNE fois, au gabarit littéral de la version (G-TRUST-04)', async (query, route) => {
+    const res = await GET(request(query));
     expect(res.status).toBe(200);
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
       data: {
         idPatient: 'PAT_1',
         praticienEmail: 'p@wellneuro.fr',
-        route: '/api/praticien/export-dossier',
+        route,
         methode: 'GET',
       },
     });

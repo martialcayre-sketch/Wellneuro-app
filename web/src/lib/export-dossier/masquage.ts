@@ -7,7 +7,9 @@
 // pseudonymisées n'écrivent déjà aucune valeur identifiante, mais un patient ou
 // un praticien a pu en taper une. Les textes FIXES (libellés du catalogue,
 // consignes, préambule) ne passent jamais ici : un nom qui est aussi un mot
-// courant n'y efface pas une option de réponse.
+// courant n'y efface pas une option de réponse. Les e-mails, numéros
+// français et NIR sont masqués aussi quand ils ne sont pas ceux du dossier
+// (`MOTIFS_GENERIQUES`).
 //
 // La recherche porte sur un texte PLIÉ (`plier`) qui ressemble à ce que le PDF
 // DESSINE (`versWinAnsi`, puis le composeur, qui fusionne les espaces) :
@@ -587,6 +589,38 @@ function motifsNom(valeur: string | null): Motif[] {
   return [...morceaux].filter(utile).map(morceau => motifMot(morceau));
 }
 
+// ── Formes génériques, quel que soit leur titulaire ──
+//
+// Revue de sécurité du 2026-11-12 (P1-1) : les motifs ci-dessus ne viennent
+// que des valeurs du dossier. Un e-mail, un numéro ou un NIR d'un PROCHE, ou
+// un ancien numéro du patient, passaient en clair. Ces trois formes se
+// reconnaissent sans connaître leur titulaire, et aucune ne ressemble à une
+// valeur clinique. Chaque quantificateur est borné : un long texte hostile se
+// parcourt en temps linéaire. Les noms de tiers, eux, ne se reconnaissent pas
+// par la forme : le préambule demande toujours une relecture.
+
+// Partie locale de 64 caractères au plus (RFC 5321), libellés de domaine de 63.
+const EMAIL_GENERIQUE =
+  "[a-z0-9][a-z0-9._%+'\\-]{0,63}@[a-z0-9][a-z0-9\\-]{0,62}(?:\\.[a-z0-9][a-z0-9\\-]{0,62}){1,8}";
+// Numéro français : « 0 » ou l'indicatif, un chiffre de 1 à 9, puis quatre
+// paires sous un MÊME séparateur (espace, point, tiret) ou sans séparateur.
+// La barre n'en est pas un, et le séparateur ne change pas en route : une
+// date suivie d'une heure (« 01/02/2024 10:30 », « 01.02.2024 10:30 ») n'est
+// pas un numéro.
+const TELEPHONE_GENERIQUE =
+  '(?:0|(?:\\+|00)33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?<separateurTelephone>[ .\\-]?)\\d\\d(?:\\k<separateurTelephone>\\d\\d){3}';
+// NIR : sexe, année, mois, département (2A, 2B compris), commune, ordre, clé
+// facultative — 13 ou 15 chiffres, groupés ou non. La clé n'est pas
+// vérifiée : un NIR mal recopié reste un NIR.
+const NIR_GENERIQUE =
+  '[1-478][ .\\-]?\\d\\d[ .\\-]?(?:0[1-9]|1[0-2]|[2-9]\\d)[ .\\-]?(?:\\d\\d|2[ab])[ .\\-]?\\d{3}[ .\\-]?\\d{3}(?:[ .\\-]?\\d\\d)?';
+
+const MOTIFS_GENERIQUES: readonly Motif[] = [
+  { source: EMAIL_GENERIQUE, poids: 64, frontiere: 'mot' },
+  { source: NIR_GENERIQUE, poids: 15, frontiere: 'nombre' },
+  { source: TELEPHONE_GENERIQUE, poids: 13, frontiere: 'nombre' },
+];
+
 // ── Le masqueur ────────────────────────────────────────────────────────────
 
 export function creerMasqueur(patient: PatientExport): Masqueur {
@@ -601,6 +635,7 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
     ...motifsNom(patient.prenom),
     ...motifsNom(patient.nom),
     ...motifsNom(patient.medecinTraitantNom),
+    ...MOTIFS_GENERIQUES,
   ]
     .filter(motif => motif.source)
     .sort((a, b) => b.poids - a.poids);

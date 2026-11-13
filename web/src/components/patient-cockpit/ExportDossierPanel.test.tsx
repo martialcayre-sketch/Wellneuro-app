@@ -101,6 +101,10 @@ describe('ExportDossierPanel — ouverture', () => {
     const iaExterne = within(dialogue).getByRole('radio', { name: 'Pour une IA externe (pseudonymisée)' });
     const idAide = iaExterne.getAttribute('aria-describedby') ?? '';
     expect(document.getElementById(idAide)?.textContent).toMatch(/relisez le PDF avant de l’envoyer/);
+    // Revue de sécurité du 2026-11-12, P0-1 : la suspension de [[D-449]] §3 est dite au moment du choix.
+    expect(document.getElementById(idAide)?.textContent).toMatch(
+      /L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026\./,
+    );
     const complete = within(dialogue).getByRole('radio', { name: 'Complète' });
     expect(document.getElementById(complete.getAttribute('aria-describedby') ?? '')?.textContent).toMatch(
       /ne pas transmettre à un service d’IA externe/,

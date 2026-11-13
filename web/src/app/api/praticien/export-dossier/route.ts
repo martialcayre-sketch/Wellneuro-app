@@ -10,8 +10,14 @@ import { rendrePdf } from '@/lib/export-dossier/pdf';
 // La version par défaut est la version pseudonymisée : un paramètre oublié ne
 // doit jamais faire sortir l'identité du patient.
 
-// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
-const ROUTE_JOURNAL = '/api/praticien/export-dossier';
+// Gabarits littéraux pour le journal des accès (G-TRUST-04) — jamais l'URL
+// reçue. Un par version (revue de sécurité du 2026-11-12, P2-1) : le journal
+// dit si l'identité est sortie du dossier. La version est validée avant, et
+// seule l'une de ces deux chaînes peut être écrite.
+const ROUTE_JOURNAL: Record<VersionExport, string> = {
+  'ia-externe': '/api/praticien/export-dossier?version=ia-externe',
+  complete: '/api/praticien/export-dossier?version=complete',
+};
 
 export type ExportDossierErreur = {
   ok: false;
@@ -50,7 +56,7 @@ export async function GET(req: Request): Promise<Response> {
   try {
     const praticienEmail = emailPraticien(session);
     const appartenance = await verifierAppartenancePatient(idPatient, praticienEmail, {
-      route: ROUTE_JOURNAL,
+      route: ROUTE_JOURNAL[version],
       methode: 'GET',
     });
     if (appartenance === 'introuvable') {
