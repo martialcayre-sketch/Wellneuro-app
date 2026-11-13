@@ -33,6 +33,11 @@ describe('PractitionerFoodObservationPanel', () => {
       if (url.includes('/api/praticien/ja/activation') && (init?.method ?? 'GET') === 'GET') {
         return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
       }
+      // La liste (GET sans `draftId`) rend toujours `snapshots`, comme la route :
+      // sans lui, le panneau lit désormais un échec de lecture (T-62).
+      if (url.includes('/api/praticien/ja/observations') && (init?.method ?? 'GET') === 'GET' && !url.includes('draftId=')) {
+        return new Response(JSON.stringify({ ok: true, snapshots: [], tronquee: false }), { status: 200 });
+      }
       if (url.includes('/api/praticien/ja/observations')) {
         return new Response(JSON.stringify({ ok: true, snapshot: { draftId: 'JA_DRAFT_1' } }), { status: 201 });
       }
@@ -541,5 +546,107 @@ describe('la troncature de la liste', () => {
     monterAvecTransmissions({ liste: dix.slice(0, 2), details: { JA_0: instantane({ draftId: 'JA_0' }) } });
     const bloc = await screen.findByTestId('ja-praticien-transmissions');
     expect(bloc.textContent).not.toContain('Il peut en exister d’autres');
+  });
+
+});
+
+// PRA-3b, PR 5 ([[D-488]]) : un échec de lecture n'est jamais lu comme un vide.
+describe('échecs de lecture (T-62, T-63)', () => {
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({ ok: true, snapshots: [] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    }));
+  });
+
+  afterEach(() => {
+    cleanup();
+    window.sessionStorage.clear();
+    vi.unstubAllGlobals();
+  });
+  const T63 = 'Le protocole diffusé n’a pas pu être lu. Ce n’est pas une absence de protocole.';
+  const T62 = 'Les transmissions du patient n’ont pas pu être lues. Ce n’est pas une absence de transmission.';
+
+  it('protocole diffusé illisible : T-63, jamais « Aucun protocole diffusé » ; « Réessayer » relit', async () => {
+    let cyclePanne = true;
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return cyclePanne
+          ? new Response(JSON.stringify({ ok: false, error: 'Erreur serveur.' }), { status: 500 })
+          : new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({ ok: true, snapshots: [] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    });
+
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const echec = await screen.findByTestId('ja-praticien-cycle-echec');
+    expect(echec.textContent).toContain(T63);
+    expect(screen.queryByTestId('ja-praticien-sans-cycle')).toBeNull();
+
+    cyclePanne = false;
+    fireEvent.click(within(echec).getByRole('button', { name: 'Réessayer' }));
+    await screen.findByTestId('ja-praticien-cycle');
+    expect(screen.queryByText(T63)).toBeNull();
+  });
+
+  it('réseau coupé sur le protocole : T-63 aussi', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) throw new TypeError('Failed to fetch');
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({ ok: true, snapshots: [] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    });
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    expect((await screen.findByTestId('ja-praticien-cycle-echec')).textContent).toContain(T63);
+  });
+
+  it('transmissions illisibles : T-62, jamais « Aucune transmission » ; « Réessayer » relit', async () => {
+    let listePanne = true;
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return listePanne
+          ? new Response(JSON.stringify({ ok: false, error: 'Accès refusé.' }), { status: 403 })
+          : new Response(JSON.stringify({ ok: true, snapshots: [] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    });
+
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const echec = await screen.findByTestId('ja-praticien-transmissions-echec');
+    expect(echec.textContent).toContain(T62);
+    const bloc = screen.getByTestId('ja-praticien-transmissions');
+    expect(bloc.textContent).not.toContain('Aucune transmission du patient à ce jour.');
+
+    listePanne = false;
+    fireEvent.click(within(echec).getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(bloc.textContent).toContain('Aucune transmission du patient à ce jour.'));
+    expect(screen.queryByText(T62)).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(bloc));
+  });
+
+  it('n’affiche plus les mentions de version du prototype (Q9 a) ; titre de l’onglet en h3', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    await screen.findByTestId('ja-praticien-cycle');
+    expect(screen.queryByText(/Prototype JA5-03/)).toBeNull();
+    expect(screen.queryByText(/Version JA5-05/)).toBeNull();
+    expect(screen.getByRole('heading', { level: 3, name: 'Trajectoire alimentaire' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 4, name: 'Ce que le patient a transmis' })).toBeTruthy();
   });
 });

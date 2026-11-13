@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   C5B_PLATE_CATALOG_VERSION,
@@ -190,7 +190,14 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   const [cycleCharge, setCycleCharge] = useState(false);
   /** Un protocole EST diffusé, et le portail ne peut pas le servir au patient. */
   const [protocoleNonServable, setProtocoleNonServable] = useState(false);
+  /**
+   * La lecture du protocole diffusé a échoué (refus, panne, réseau). Ce n'est
+   * pas « aucun protocole » : T-63 le dit, et « Réessayer » relit ([[D-488]]).
+   */
+  const [echecCycle, setEchecCycle] = useState(false);
   const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
+  /** Même règle pour les transmissions du patient (T-62). */
+  const [echecTransmissions, setEchecTransmissions] = useState(false);
   const [listeTronquee, setListeTronquee] = useState(false);
   const [detailOuvert, setDetailOuvert] = useState<string | null>(null);
   const [calibrage, setCalibrage] = useState<JaSnapshotDetail | null>(null);
@@ -256,92 +263,134 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
   // Transmissions reçues du patient (lot 2, item 4). Sans ce lecteur, le bouton
   // « Transmettre à mon praticien » promettait un partage sans destinataire.
-  useEffect(() => {
-    let mounted = true;
-
-    const chargerTransmissions = async () => {
-      try {
-        const res = await fetch(
-          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&actor=patient`,
-          { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
-        );
-        const json = (await res.json()) as {
-          ok: boolean;
-          snapshots?: JaSnapshotRecu[];
-          tronquee?: boolean;
-        };
-        if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
-        // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
-        // ceinture, il ne porte plus la fenêtre de lecture.
-        const duPatient = json.snapshots.filter(s => s.actor === 'patient');
-        setTransmissions(duPatient);
-        setListeTronquee(json.tronquee === true);
-
-        // Le bilan de calibrage porte l'ÉTAT DU RECUEIL, pas ce que le
-        // praticien a déplié. Il suit donc la transmission la plus récente, et
-        // elle seule : les transmissions sont cumulatives par cycle — le
-        // patient renvoie tout son brouillon — donc la dernière est la plus
-        // complète, et sommer les instantanés compterait deux fois les mêmes
-        // journées.
-        const derniere = duPatient[0];
-        if (derniere) {
-          const resDetail = await fetch(
-            `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&draftId=${encodeURIComponent(derniere.draftId)}`,
-            { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
-          );
-          const jsonDetail = (await resDetail.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
-          if (mounted && resDetail.ok && jsonDetail.ok && jsonDetail.snapshot) {
-            setCalibrage(jsonDetail.snapshot);
-          }
-        }
-      } catch {
-        // Repli silencieux : la revue praticien reste utilisable.
+  //
+  // Jeton d'obsolescence : seule la DERNIÈRE lecture écrit l'état — la
+  // relecture de « Réessayer » ne doit pas être écrasée par une lecture partie
+  // avant elle, ni écrire après le démontage (le nettoyage avance le jeton).
+  const seqTransmissions = useRef(0);
+  const chargerTransmissions = useCallback(async () => {
+    const seq = ++seqTransmissions.current;
+    const aJour = () => seq === seqTransmissions.current;
+    let derniere: JaSnapshotRecu | undefined;
+    try {
+      const res = await fetch(
+        `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&actor=patient`,
+        { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+      );
+      const json = (await res.json()) as {
+        ok: boolean;
+        snapshots?: JaSnapshotRecu[];
+        tronquee?: boolean;
+      };
+      if (!aJour()) return;
+      // ÉCHEC DE LECTURE ≠ AUCUNE TRANSMISSION (T-62, [[D-488]]) : la liste
+      // vide affichait « Aucune transmission du patient à ce jour. » sur un
+      // refus ou une panne.
+      if (!res.ok || !json.ok || !json.snapshots) {
+        setEchecTransmissions(true);
+        return;
       }
-    };
+      setEchecTransmissions(false);
+      // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
+      // ceinture, il ne porte plus la fenêtre de lecture.
+      const duPatient = json.snapshots.filter(s => s.actor === 'patient');
+      setTransmissions(duPatient);
+      setListeTronquee(json.tronquee === true);
+      derniere = duPatient[0];
+    } catch {
+      // Réseau ou réponse illisible : la liste n'est pas lue (T-62).
+      if (aJour()) setEchecTransmissions(true);
+      return;
+    }
 
-    void chargerTransmissions();
-    return () => { mounted = false; };
+    // Le bilan de calibrage porte l'ÉTAT DU RECUEIL, pas ce que le
+    // praticien a déplié. Il suit donc la transmission la plus récente, et
+    // elle seule : les transmissions sont cumulatives par cycle — le
+    // patient renvoie tout son brouillon — donc la dernière est la plus
+    // complète, et sommer les instantanés compterait deux fois les mêmes
+    // journées.
+    if (!derniere) return;
+    try {
+      const resDetail = await fetch(
+        `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&draftId=${encodeURIComponent(derniere.draftId)}`,
+        { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+      );
+      const jsonDetail = (await resDetail.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
+      if (aJour() && resDetail.ok && jsonDetail.ok && jsonDetail.snapshot) {
+        setCalibrage(jsonDetail.snapshot);
+      }
+    } catch {
+      // Repli silencieux : la liste est lue, seul le bilan de calibrage manque.
+    }
   }, [idPatient]);
+
+  useEffect(() => {
+    void chargerTransmissions();
+    return () => { seqTransmissions.current += 1; };
+  }, [chargerTransmissions]);
 
   // Épisode dérivé du protocole diffusé, identique à celui du panneau patient.
-  useEffect(() => {
-    let mounted = true;
-
-    const chargerCycle = async () => {
-      try {
-        const res = await fetch(`/api/praticien/ja/cycle?idPatient=${encodeURIComponent(idPatient)}`, {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-        });
-        const json = (await res.json()) as {
-          ok: boolean;
-          protocoleDiffuse?: boolean;
-          indisponible?: boolean;
-          vue?: VueCyclePraticien | null;
-        };
-        if (!mounted) return;
-        // DIFFUSÉ MAIS NON SERVI N'EST PAS « AUCUN PROTOCOLE » ([[D-200]]). Le
-        // panneau affichait la même phrase dans les deux cas — « Aucun
-        // protocole diffusé pour ce patient » —, ce qui est faux quand un
-        // protocole existe et que le portail refuse de le servir. Le praticien
-        // ne pouvait pas savoir qu'il avait quelque chose à corriger.
-        setProtocoleNonServable(json.ok === true && json.protocoleDiffuse === true && !json.vue);
-        if (!res.ok || !json.ok || !json.protocoleDiffuse || !json.vue) {
-          setEpisode(null);
-          return;
-        }
-        setEpisode(buildEpisodeDepuisProtocole({ idPatient, protocole: json.vue }));
-      } catch {
-        if (mounted) setEpisode(null);
-      } finally {
-        if (mounted) setCycleCharge(true);
+  const seqCycle = useRef(0);
+  const chargerCycle = useCallback(async () => {
+    const seq = ++seqCycle.current;
+    const aJour = () => seq === seqCycle.current;
+    try {
+      const res = await fetch(`/api/praticien/ja/cycle?idPatient=${encodeURIComponent(idPatient)}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        protocoleDiffuse?: boolean;
+        indisponible?: boolean;
+        vue?: VueCyclePraticien | null;
+      };
+      if (!aJour()) return;
+      // ÉCHEC DE LECTURE ≠ AUCUN PROTOCOLE (T-63, [[D-488]]) : un refus ou une
+      // panne affichait « Aucun protocole diffusé pour ce patient ».
+      const lu = res.ok && json.ok === true;
+      setEchecCycle(!lu);
+      // DIFFUSÉ MAIS NON SERVI N'EST PAS « AUCUN PROTOCOLE » ([[D-200]]). Le
+      // panneau affichait la même phrase dans les deux cas — « Aucun
+      // protocole diffusé pour ce patient » —, ce qui est faux quand un
+      // protocole existe et que le portail refuse de le servir. Le praticien
+      // ne pouvait pas savoir qu'il avait quelque chose à corriger.
+      setProtocoleNonServable(json.ok === true && json.protocoleDiffuse === true && !json.vue);
+      if (!lu || !json.protocoleDiffuse || !json.vue) {
+        setEpisode(null);
+        return;
       }
-    };
-
-    void chargerCycle();
-    return () => { mounted = false; };
+      setEpisode(buildEpisodeDepuisProtocole({ idPatient, protocole: json.vue }));
+    } catch {
+      if (aJour()) {
+        setEpisode(null);
+        setProtocoleNonServable(false);
+        setEchecCycle(true);
+      }
+    } finally {
+      if (aJour()) setCycleCharge(true);
+    }
   }, [idPatient]);
+
+  useEffect(() => {
+    void chargerCycle();
+    return () => { seqCycle.current += 1; };
+  }, [chargerCycle]);
+
+  // « Réessayer » (T-17) relit la seule lecture en échec, puis rend le focus à
+  // sa zone : le bouton disparaît si la lecture réussit, et le focus ne doit
+  // pas retomber sur le corps de la page. La saisie locale n'est pas touchée.
+  const zoneCycleRef = useRef<HTMLDivElement>(null);
+  const zoneTransmissionsRef = useRef<HTMLElement>(null);
+  const relireCycle = async () => {
+    await chargerCycle();
+    zoneCycleRef.current?.focus();
+  };
+  const relireTransmissions = async () => {
+    await chargerTransmissions();
+    zoneTransmissionsRef.current?.focus();
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -482,7 +531,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
   const activerDecision = async () => {
     if (decisionNote.trim().length < 10) {
-      setError('Ajoutez une note de décision d au moins 10 caractères avant activation.');
+      setError('Ajoutez une note de décision d’au moins 10 caractères avant activation.');
       return;
     }
     if (feedbackPatient.trim().length < 10) {
@@ -564,7 +613,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       };
 
       if (!activationRes.ok || !activationJson.ok || !activationJson.activation) {
-        setError(activationJson.error ?? 'Impossible d activer la décision JA.');
+        setError(activationJson.error ?? 'Impossible d’activer la décision JA.');
         return;
       }
 
@@ -572,7 +621,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       setActivationInfo('Décision activée et rendue disponible sur le portail patient.');
       setReviewSummary(`Activation ${activationJson.activation.milestone} validée.`);
     } catch {
-      setError('Erreur réseau pendant l activation JA.');
+      setError('Erreur réseau pendant l’activation JA.');
     } finally {
       setActivationSubmitting(false);
     }
@@ -582,10 +631,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h2>
-          <p className="text-base text-muted-foreground mt-1">
-            Prototype JA5-03 local: revue praticien guidée, sans persistance.
-          </p>
+          {/* Sous le nom du dossier (h2) : l'onglet titre en h3, ses panneaux en
+              h4 (Q2 a). Mention de version du prototype retirée (Q9 a, [[D-488]]). */}
+          <h3 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h3>
         </div>
         <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="text-sm text-muted-foreground hover:underline">
           ← Retour fiche patient
@@ -593,14 +641,34 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </div>
 
       {cycleCharge && (
-        episode && episode.content.regime === 'essai' ? (
+        <div
+          ref={zoneCycleRef}
+          tabIndex={-1}
+          className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+        {echecCycle ? (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-3 rounded-lg px-4 py-2 text-base text-status-warning bg-status-warning/10"
+            data-testid="ja-praticien-cycle-echec"
+          >
+            <span className="min-w-0">Le protocole diffusé n’a pas pu être lu. Ce n’est pas une absence de protocole.</span>
+            <button
+              type="button"
+              onClick={() => void relireCycle()}
+              className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : episode && episode.content.regime === 'essai' ? (
           <section
             className="bg-surface border border-border rounded-xl p-4 space-y-1"
             data-testid="ja-praticien-cycle"
           >
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Action du protocole diffusé
-            </h3>
+            </h4>
             <p className="text-sm font-medium text-foreground">{episode.content.action.labelPatient}</p>
             <p className="text-sm text-muted-foreground">{episode.content.action.simplePlan}</p>
             <p className="text-xs text-muted-foreground">
@@ -627,22 +695,42 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             ne peut être activée.
           </p>
           )
-        )
+        )}
+        </div>
       )}
 
       <section
-        className="bg-surface border border-border rounded-xl p-4 space-y-2"
+        ref={zoneTransmissionsRef}
+        tabIndex={-1}
+        className="bg-surface border border-border rounded-xl p-4 space-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         data-testid="ja-praticien-transmissions"
       >
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Ce que le patient a transmis
-        </h3>
-        {listeTronquee && (
+        </h4>
+        {!echecTransmissions && listeTronquee && (
           <p className="text-xs text-muted-foreground">
             Les transmissions les plus récentes. Il peut en exister d’autres, plus anciennes.
           </p>
         )}
-        {transmissions.length === 0 ? (
+        {echecTransmissions ? (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-3 text-sm text-status-warning"
+            data-testid="ja-praticien-transmissions-echec"
+          >
+            <span className="min-w-0">
+              Les transmissions du patient n’ont pas pu être lues. Ce n’est pas une absence de transmission.
+            </span>
+            <button
+              type="button"
+              onClick={() => void relireTransmissions()}
+              className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : transmissions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucune transmission du patient à ce jour.</p>
         ) : (
           <ul className="space-y-2 text-sm text-foreground">
@@ -802,7 +890,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </div>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-formulaire">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saisie rapide praticien</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saisie rapide praticien</h4>
         <p className="text-xs text-muted-foreground">
           Mobile: privilégier une friction principale et une note courte optionnelle.
         </p>
@@ -857,14 +945,14 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           data-testid="ja-praticien-enregistrer"
           type="button"
           onClick={enregistrerTrace}
-          className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90"
+          className="w-full sm:w-auto min-h-11 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Enregistrer la trace (≤ 30 s)
         </button>
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-constats">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Constats directs</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Constats directs</h4>
         {constats.length === 0 ? (
           <p className="text-base text-muted-foreground">Aucun constat direct pour l’instant.</p>
         ) : (
@@ -882,7 +970,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           observation qui n'existait pas, au moment où il décide. Il ne rend plus
           que ce que le patient a effectivement décrit. */}
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h4>
         {journeesTransmises.length === 0 ? (
           <p className="text-base text-muted-foreground">
             Aucune journée décrite à ce jour.
@@ -910,7 +998,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-moments-explorer">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h4>
         <ul className="space-y-1 text-base text-foreground">
           {momentsToExplore.map((moment) => (
             <li key={moment}>• {moment}</li>
@@ -919,7 +1007,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-revue-decision">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revue pré-remplie (Accepter / Modifier)</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revue pré-remplie (Accepter / Modifier)</h4>
 
         <label className="block text-sm text-muted-foreground">
           Action liée à une assiette recommandée
@@ -991,7 +1079,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           data-testid="ja-praticien-valider-revue"
           type="button"
           onClick={validerRevue}
-          className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90"
+          className="w-full sm:w-auto min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Préparer la décision
         </button>
@@ -1064,12 +1152,12 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             type="button"
             onClick={activerDecision}
             disabled={activationSubmitting}
-            className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60"
+            className="w-full sm:w-auto min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             {activationSubmitting ? 'Activation en cours…' : 'Activer la décision JA'}
           </button>
 
-          {activationLoading && <p className="text-xs text-muted-foreground">Chargement de l activation en cours…</p>}
+          {activationLoading && <p className="text-xs text-muted-foreground">Chargement de l’activation en cours…</p>}
           {activationInfo && <p className="text-xs text-primary">{activationInfo}</p>}
           {activation && (
             <p className="text-xs text-foreground rounded-lg border border-border px-3 py-2" data-testid="ja-praticien-activation-summary">
@@ -1080,7 +1168,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-historique">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h3>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h4>
         {traces.length === 0 ? (
           <p className="text-base text-muted-foreground">Aucune trace praticien enregistrée.</p>
         ) : (
@@ -1096,9 +1184,6 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         )}
       </section>
 
-      <section className="bg-muted border border-border rounded-xl p-4 text-xs text-muted-foreground">
-        Version JA5-05: activation praticien et restitution patient via API, sans migration Prisma.
-      </section>
     </div>
   );
 }

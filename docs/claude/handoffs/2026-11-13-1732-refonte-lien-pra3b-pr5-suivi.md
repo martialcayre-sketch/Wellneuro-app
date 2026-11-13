@@ -1,0 +1,52 @@
+# Handoff — 2026-11-13 — Refonte Lien PRA-3b, PR 5 : Suivi, Réévaluation et Alimentation (P20–P24)
+
+## Branche et état du dépôt
+
+- Branche `worktree-refonte-lien-pra3b-pr5-suivi`, créée depuis `origin/main@f2677460` (PR 2 de PRA-3b #2055 mergée).
+- Worktree `.claude/worktrees/refonte-lien-pra3b-pr5-suivi`. La session ne merge pas : l'intégrateur merge sur « prête @<sha> ».
+
+## Objectif
+
+Deuxième PR du code de PRA-3b, groupe Suivi et réévaluation (P20–P24), dans l'ordre Q1a (PR 2, 5 et 6 d'abord : échecs de lecture lus comme des vides). Questions du groupe : Q3, Q4, Q9, Q17, répondues « Toutes en a » par le responsable (2026-11-13) ; textes T-61 à T-63 et corrections de l'onglet Alimentation inscrits dans D-488 par DOC-8 (#2050).
+
+## Décisions prises
+
+- T-61 : posé dans la météo d'adhésion (avec « Réessayer », T-17) et dans le point d'étape J21, à la place du score, du jour du cycle et des points d'étape. Les gestes d'ajustement restent : ils ne dépendent pas de la lecture.
+- L'échec des check-ins est retenu par carte (`echecCheckinsPour`), distinct de « pas encore lus » (`checkinsLusPour`) : seul un échec avéré (statut HTTP, `ok: false`, réseau) fait dire T-61.
+- T-62 et T-63 : posés dans l'onglet Alimentation, chacun avec son « Réessayer ». Les lectures passent en `useCallback` avec jeton d'obsolescence (comme `loadCheckins`), pour que la relecture ne soit jamais écrasée par une lecture plus ancienne. La liste des transmissions sans `snapshots` est lue comme un échec : la route rend toujours `snapshots` en lecture de liste.
+- Un échec du bilan de calibrage, quand la liste est lue, reste silencieux (comportement d'avant, hors T-62).
+- Q9a : deux mentions de version retirées, quatre apostrophes rétablies. « Activation protocole JA5-05 » (intitulé de sous-partie) et le lien « ← Retour fiche patient » ne figurent pas dans D-488 : laissés tels quels.
+- Q3a : « Préparer la décision » et « Activer la décision JA » bordés ; « Enregistrer la trace » reste la seule action pleine.
+- Q2a : panneaux du Suivi et de la Réévaluation en h4, sous-parties J21 en h5 (paragraphes-intitulés devenus titres, même texte) ; onglet Alimentation titré en h3 (même apparence), panneaux en h4.
+- P22 (Les 12 besoins) et P24 (Trajectoire) laissés tels quels, conformément à la matrice du prototype.
+
+## Fichiers modifiés
+
+- `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx` : état `echecCheckinsPour`, props vers les deux panneaux, « Réessayer » de la Réévaluation à 44 px, titre du résumé en h4.
+- `web/src/components/patient-cockpit/MeteoAdhesionPanel.tsx` : `echecLecture`, `onRelire`, T-61 et « Réessayer », focus rendu au panneau, h4.
+- `web/src/components/patient-cockpit/J21DecisionPanel.tsx` : `echecLecture`, T-61, h4/h5, ajustements à 44 px.
+- `web/src/components/food-observation/PractitionerFoodObservationPanel.tsx` : `echecCycle`, `echecTransmissions`, relectures, T-62, T-63, Q9a, Q3a, titres.
+- Tests : `MeteoAdhesionPanel.test.tsx`, `J21DecisionPanel.test.tsx`, `PractitionerFoodObservationPanel.test.tsx` (bancs neufs ; le faux serveur par défaut rend `snapshots` en lecture de liste, comme la route).
+- `changelog.d/2026-11-13-refonte-lien-pra3b-pr5-suivi-alimentation.md`, ce handoff.
+
+## Validations exécutées
+
+- Vitest ciblé : cinq suites, 133 tests verts.
+- `npx tsc --noEmit` vert ; `npm run check:rapide` vert.
+- T1 complet (`npm run check`) et T2 (`npm run test:worktree -- --fast`) : voir la PR.
+- Constat à l'écran local : non joué dans cette PR (critère de réception à quatre largeurs, à faire à la réception du groupe, comme pour la PR 2).
+
+## Problèmes ouverts
+
+- Sur un échec de lecture du protocole, « Activer la décision JA » répond encore « Aucun protocole diffusé : diffusez un protocole avant d’activer une décision JA. » sous T-63. Le corriger demande un texte neuf ou un blocage du geste : à arbitrer (liste commune), hors de cette PR.
+- PR 6 (Biologie : T-64, T-65, P19, P26, P29) suit ; micro-lot serveur Q18 avant la PR 4 ; puis les PR 1, 3, 7 et 8.
+
+## Prochaine action exacte
+
+Fusion de la PR 5 par l'intégrateur ; ouvrir la PR 6 depuis un worktree neuf sur `origin/main` fraîchement fetché.
+
+## Interdits encore actifs
+
+- Rien de clinique (règles, seuils, scoring, calcul d'adhésion) ; aucun texte hors de D-488.
+- Motif d'alliance et séparateur des deux voix hors du lot tant que COM-1 est reporté ; aucun drapeau.
+- Identités fictives seulement ; constat à l'écran en local seulement ; production en lecture seule.
