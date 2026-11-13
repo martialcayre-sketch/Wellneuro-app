@@ -150,7 +150,9 @@ function sansCommentaires(texte) {
 function estTableSignee(fichier) {
   const n = normalise(fichier);
   if (!/\.([cm]?[tj]sx?|json)$/.test(n) || /\.(test|spec)\.[a-z]+$/.test(n)) return false;
-  const marqueur = /(^|\/)web\/src\/lib\/fiches-usage\//.test(n)
+  // Structures livrées vides et non signées, couvertes verrou éteint aussi :
+  // fiches d'usage ([[D-314]] §2) et bibliothèque des options ([[D-480]] §5.5).
+  const marqueur = /(^|\/)web\/src\/lib\/(fiches-usage|bibliotheque-options)\//.test(n)
     ? /["']?validationExterne["']?\s*:\s*(true|false)/
     : /["']?validationExterne["']?\s*:\s*true/;
   const textes = [];

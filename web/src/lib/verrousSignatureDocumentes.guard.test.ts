@@ -40,7 +40,9 @@ const MARQUEUR = 'ETAT_VERROUS_SIGNATURE';
 // `fiches-usage` : la structure signée des fiches d'usage ([[D-314]] §2), hors
 // de `clinical/` par décision — le module est distinct du catalogue des
 // conduites ([[D-266]] §6).
-const RACINES_BALAYEES = ['clinical', 'biology-library', 'biology-library/import', 'fiches-usage'];
+// `bibliotheque-options` : la structure de la bibliothèque des options
+// ([[D-480]], BP-17), hors de `clinical/` sur le même patron.
+const RACINES_BALAYEES = ['clinical', 'biology-library', 'biology-library/import', 'fiches-usage', 'bibliotheque-options'];
 
 interface Signature {
   fichier: string;

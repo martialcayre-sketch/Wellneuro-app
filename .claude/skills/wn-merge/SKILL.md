@@ -258,7 +258,9 @@ dernière session.
    celui de 7 ter : la sonde release-db reste le dernier geste avant le
    merge. Puis, pour l'intégrateur, écrire la ligne `merge_fait` du registre
    des messages à la boîte qui a déclaré la PR, et la sonner si sa session est joignable
-   (`D-503`, `docs/ROLES_MACHINES.md`). Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
+   (`D-503`, `docs/ROLES_MACHINES.md`), et passer à `fait` la ligne du
+   carnet de lots qui porte cette PR — après le constat de sa release-db
+   pour une migration (`D-510` §3, §7). Puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
    ou `git worktree remove`), et repartir de `main` — jamais de la branche
    squashée — pour le lot suivant. **Le merge vient de faire avancer
    `origin/main`** : tant que le worktree reste sur la branche squashée, le

@@ -258,6 +258,33 @@ describe('OrientationPanel', () => {
     );
   });
 
+  // [[D-508]] §2 — troisième cas, texte validé par le responsable le
+  // 2026-11-12 : une passation datée après la date du jour n'éteint pas.
+  it('D-508, passation datée après la date du jour : texte complet', async () => {
+    const futur = {
+      stopRuleId: 'STOP-STR',
+      passations: [{
+        idQuestionnaire: 'Q_STR_03',
+        dateReponse: '2026-12-01T10:00:00.000Z',
+        fenetreJours: 7,
+        dateeApresMaintenant: true as const,
+      }],
+    };
+    stubFetch({ ...ACTIF, reglesNonEvaluees: [], arretsSuspendus: [], arretsNonEvalues: [futur] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('Règle d’arrêt non évaluée : STOP-STR.')).toBeTruthy();
+    const titreCungi = CATALOGUE_DEFINITIONS.Q_STR_03?.titre ?? 'Q_STR_03';
+    const date = new Date('2026-12-01T10:00:00.000Z').toLocaleDateString('fr-FR');
+    const ligne = screen.getByText('Règle d’arrêt non évaluée : STOP-STR.').closest('p');
+    expect(ligne?.textContent).toBe(
+      'Règle d’arrêt non évaluée : STOP-STR.'
+      + ` La passation de ${titreCungi} est datée du ${date}, après la date du jour.`
+      + ' Elle ne retire donc aucune exploration.',
+    );
+  });
+
   it('D-500, liste vide : l’arrêt non évalué est dit aussi', async () => {
     stubFetch({ ...ACTIF, recommandations: [], reglesNonEvaluees: [], arretsSuspendus: [], arretsNonEvalues: [ARRET_NON_EVALUE] });
 

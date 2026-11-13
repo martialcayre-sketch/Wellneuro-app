@@ -65,6 +65,11 @@ npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql || eche
 echo "→ Préflight fraîcheur des claims épinglés (lecture seule)…"
 npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql || echec "preflight_claims"
 
+# D-480 §5.3 (BP-17 PR 4) : une position d'expert citée par une table signée
+# doit être la version courante, signée en dernier acte.
+echo "→ Préflight positions citées par les tables signées (lecture seule)…"
+npx prisma db execute --file prisma/checks/positions_citees_tables_signees_v1.sql || echec "preflight_positions"
+
 # D-351 (F79, revue P2-1) : les liens d'axe citent seize claims que le
 # contrat ci-dessus ne connaît pas. Un claim rejeté ou supplanté après la
 # release laisserait ses liens actifs sans signal ; ce contrat le voit.

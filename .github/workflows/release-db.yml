@@ -25,7 +25,7 @@ on:
   # automatique EST un `migrate-only` ; le mode `import-cb` exige EN PLUS
   # `github.event_name == 'workflow_dispatch'` — et il est refusé (hors
   # service) tant qu'il n'est pas réécrit pour Scalingo.
-  # Le filtre `paths` voit CINQ chemins, et cinq seulement :
+  # Le filtre `paths` voit SEPT chemins, et sept seulement :
   # `web/prisma/migrations/**`, seul chemin légitime d'une migration (doctrine
   # « registre canonique ») ; `web/src/lib/clinical/**` depuis D-044, pour que
   # les contrats de lecture soient rejoués sur la production quand une table de
@@ -36,7 +36,12 @@ on:
   # D-416, sur le même patron, le FICHIER de la structure signée des fiches
   # d'usage (`web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts`) et le contrat
   # positif de fraîcheur que rejoue le préflight
-  # (`web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql`). Détail :
+  # (`web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql`) ; et,
+  # depuis D-480 §5 (BP-17 PR 4), le FICHIER de la structure de la
+  # bibliothèque des options
+  # (`web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts`) et le
+  # contrat des positions citées que rejoue le préflight
+  # (`web/prisma/checks/positions_citees_tables_signees_v1.sql`). Détail :
   # docs/adr/2026-08-07-commentaires-workflows.md.
   push:
     branches: [main]
@@ -54,6 +59,13 @@ on:
       # approuvée dont le préflight rejoue le contrat contre la production.
       - 'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts'
       - 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql'
+      # D-480 §5 (BP-17 PR 4) — la structure de la bibliothèque des options
+      # vit hors de `clinical/` (le fichier seul : son dossier recevra
+      # l'atelier), et le contrat des positions citées hors de `web/src` :
+      # leur changement part par une release dont les préflights rejouent
+      # les deux contrats contre la production.
+      - 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts'
+      - 'web/prisma/checks/positions_citees_tables_signees_v1.sql'
 
   workflow_dispatch:
     inputs:
@@ -306,15 +318,17 @@ jobs:
               echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
               echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
             fi
-            # D-389 §5, D-416 : les tables signées hors de `clinical/` et le
-            # contrat de fraîcheur ne sont pas des migrations, et la liste
+            # D-389 §5, D-416, D-480 §5 : les tables signées hors de
+            # `clinical/` et les contrats de fraîcheur ne sont pas des migrations, et la liste
             # ci-dessus ne peut pas les nommer. Ils se signalent à part, sur la
             # même plage : l'approbation doit savoir qu'elle les juge (revue
             # CodeRabbit de #1744). Même isolement du statut que plus haut.
             if SIGNES=$(git diff --name-only "$PLAGE" -- \
                 web/src/lib/biology-library/indicationsBiologieV1.ts \
                 web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts \
-                web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql); then
+                web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql \
+                web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts \
+                web/prisma/checks/positions_citees_tables_signees_v1.sql); then
               if [ -n "$SIGNES" ]; then
                 echo
                 echo "### Table signée ou contrat de fraîcheur modifié ([[D-389]] §5, [[D-416]])"
@@ -669,7 +683,7 @@ jobs:
             # D-389 §5, D-416 : les tables signées hors de `clinical/` et le
             # contrat de fraîcheur comptent aussi comme une migration. Une seule
             # ligne : un banc la compare à `CHEMINS_RELEASE_DB`.
-            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/clinical/ web/src/lib/biology-library/indicationsBiologieV1.ts web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql; then
+            if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/ web/src/lib/clinical/ web/src/lib/biology-library/indicationsBiologieV1.ts web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts web/prisma/checks/positions_citees_tables_signees_v1.sql; then
               if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
                 echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
                 echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles, un" >&2

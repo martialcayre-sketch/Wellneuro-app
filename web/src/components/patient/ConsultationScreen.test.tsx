@@ -86,6 +86,16 @@ describe('ConsultationScreen — « Demander une correction »', () => {
 
     await waitFor(() => expect(screen.getByText(/a été transmise à votre praticien/)).not.toBeNull());
     expect(screen.queryByRole('button', { name: 'Demander une correction' })).toBeNull();
+    // T-40 ([[D-488]] DOC-7), mot pour mot.
+    expect(screen.getByText(
+      'Votre demande de correction a été transmise à votre praticien. Elle attend sa validation.',
+    )).not.toBeNull();
+  });
+
+  it('dit la date d’envoi en lettres (Q8a)', async () => {
+    monter(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) }));
+    const texte = (await screen.findByText(/verrouillées en lecture seule/)).textContent ?? '';
+    expect(texte).toMatch(/envoyé le 1 septembre 2026\./);
   });
 
   // Le bouton disparaît au profit de l'accusé : sans région déjà présente ni

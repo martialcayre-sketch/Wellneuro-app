@@ -92,3 +92,68 @@ describe('PlaintesForm — pagination 4 + 3', () => {
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
   });
 });
+
+describe('PlaintesForm — refonte Lien PAT-4', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const transmettre = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Suivant →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre au praticien' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre' }));
+  };
+
+  it('Q3b : les dimensions sont nommées par leur libellé seul, sans emoji', () => {
+    render(<PlaintesForm assignation={assignation} email={assignation.emailPatient} onDone={vi.fn()} />);
+    const texte = document.body.textContent ?? '';
+    expect(texte).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(screen.getByRole('slider', { name: 'Fatigue' })).not.toBeNull();
+  });
+
+  it('Q4a : après un échec d’écriture du brouillon, ni confirmation ni heure antérieure', () => {
+    render(<PlaintesForm assignation={assignation} email={assignation.emailPatient} onDone={vi.fn()} />);
+    fireEvent.change(screen.getAllByRole('slider')[0], { target: { value: '7' } });
+    expect(screen.getByText(/^Brouillon enregistré sur cet appareil/)).not.toBeNull();
+
+    const ecrire = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    try {
+      fireEvent.change(screen.getAllByRole('slider')[1], { target: { value: '8' } });
+      expect(screen.queryByText(/^Brouillon enregistré sur cet appareil/)).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Sauvegarder le brouillon' }));
+      expect(screen.queryByText(/^Brouillon enregistré sur cet appareil/)).toBeNull();
+    } finally {
+      ecrire.mockRestore();
+    }
+  });
+
+  it('Q6a : sous le refus 401, « Me reconnecter » (T-36) mène à la connexion', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      status: 401,
+      json: vi.fn().mockResolvedValue({ ok: false, error: 'Connexion au portail requise.' }),
+    }));
+    render(<PlaintesForm assignation={assignation} email={assignation.emailPatient} onDone={vi.fn()} />);
+    transmettre();
+    const lien = await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(lien.getAttribute('href')).toBe('/portail/connexion');
+    expect(screen.getByText('Connexion au portail requise.')).not.toBeNull();
+  });
+
+  it('Q6a : un autre refus que le 401 ne propose pas « Me reconnecter »', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      status: 409,
+      json: vi.fn().mockResolvedValue({ ok: false, error: 'Ce questionnaire a déjà été complété.' }),
+    }));
+    render(<PlaintesForm assignation={assignation} email={assignation.emailPatient} onDone={vi.fn()} />);
+    transmettre();
+    await waitFor(() => expect(screen.getByText('Ce questionnaire a déjà été complété.')).not.toBeNull());
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 import Link from 'next/link';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import {
@@ -573,6 +573,11 @@ export function FichePatientPanel({
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
   const [comparaisons, setComparaisons] = useState<ComparaisonsPassations | null>(null);
   const [loadingReponses, setLoadingReponses] = useState(true);
+  // Un échec de lecture des questionnaires reçus n'est JAMAIS rendu comme
+  // « aucun questionnaire » (T-60, PRA-3b) : la route répond `reponses: []`
+  // avec un statut d'erreur, que la liste vide confondait avec un dossier sans
+  // réponse. La comparaison des passations se tait derrière ce message.
+  const [echecReponses, setEchecReponses] = useState(false);
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   // Un échec de lecture n'est JAMAIS rendu comme « aucune demande » : ce serait
   // la même affirmation fausse que celle corrigée ici, et elle laisserait le
@@ -946,14 +951,18 @@ export function FichePatientPanel({
     const generation = ++generationReponses.current;
     setLoadingReponses(true);
     try {
-      const d = (await (await fetch(`/api/praticien/reponses?email=${encodeURIComponent(emailReponses)}`)).json()) as ReponsesApiResponse;
+      const res = await fetch(`/api/praticien/reponses?email=${encodeURIComponent(emailReponses)}`);
+      if (!res.ok) throw new Error(`reponses ${res.status}`);
+      const d = (await res.json()) as ReponsesApiResponse;
       if (generation !== generationReponses.current) return;
       setReponses(d.reponses ?? []);
       setComparaisons(d.comparaisons ?? null);
+      setEchecReponses(false);
     } catch {
       if (generation !== generationReponses.current) return;
       setReponses([]);
       setComparaisons(null);
+      setEchecReponses(true);
     } finally {
       if (generation === generationReponses.current) setLoadingReponses(false);
     }
@@ -964,6 +973,33 @@ export function FichePatientPanel({
   useEffect(() => {
     void chargerReponses();
   }, [data, chargerReponses]);
+
+  // « Réessayer » (T-17) relit la seule lecture des réponses, puis rend le
+  // focus au contenu relu : le bouton disparaît si la lecture réussit, et le
+  // focus ne doit pas retomber sur le corps de la page.
+  const relireReponses = useCallback(
+    async (cible: RefObject<HTMLDivElement | null>) => {
+      await chargerReponses();
+      cible.current?.focus();
+    },
+    [chargerReponses],
+  );
+  const carteReponsesRef = useRef<HTMLDivElement>(null);
+  const tableauReponsesRef = useRef<HTMLDivElement>(null);
+  const echecLectureReponses = (cible: RefObject<HTMLDivElement | null>) => (
+    <div role="alert" className="flex flex-wrap items-center gap-3">
+      <span className="min-w-0">
+        Les questionnaires reçus n’ont pas pu être lus. Ce n’est pas un dossier sans réponse.
+      </span>
+      <button
+        type="button"
+        onClick={() => void relireReponses(cible)}
+        className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
+        Réessayer
+      </button>
+    </div>
+  );
 
   // Demandes de correction du dossier affiché. Les deux filtres partent au
   // serveur : appliqués en mémoire, ils l'étaient APRÈS la troncature à 40 de la
@@ -1627,9 +1663,15 @@ export function FichePatientPanel({
   );
 
   const tableauReponses = (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+    <div
+      ref={tableauReponsesRef}
+      tabIndex={-1}
+      className="bg-surface border border-border rounded-xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+    >
       {loadingReponses ? (
         <div className="px-4 py-4 text-base text-muted-foreground">Chargement...</div>
+      ) : echecReponses ? (
+        <div className="px-4 py-4 text-base text-muted-foreground">{echecLectureReponses(tableauReponsesRef)}</div>
       ) : reponses.length === 0 ? (
         <div className="px-4 py-4 text-base text-muted-foreground">Aucun questionnaire complété pour ce patient.</div>
       ) : (
@@ -2073,12 +2115,18 @@ export function FichePatientPanel({
     if (phaseActive === 'donnees') {
       return (
         <div className="flex flex-col gap-3">
-          <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          <div
+            ref={carteReponsesRef}
+            tabIndex={-1}
+            className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
             {loadingReponses
               ? 'Chargement des réponses...'
-              : reponses.length === 0
-                ? 'Aucun questionnaire complété pour ce patient.'
-                : `${reponses.length} questionnaire(s) reçu(s). Le détail chiffré s’ouvre dans l’instrument « Détail des réponses ».`}
+              : echecReponses
+                ? echecLectureReponses(carteReponsesRef)
+                : reponses.length === 0
+                  ? 'Aucun questionnaire complété pour ce patient.'
+                  : `${reponses.length} questionnaire(s) reçu(s). Le détail chiffré s’ouvre dans l’instrument « Détail des réponses ».`}
           </div>
 
           {/* LE COMPTE DES ENVOIS — demande propriétaire du 2026-09-12.

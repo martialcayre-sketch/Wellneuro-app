@@ -135,6 +135,20 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Quelles fiches d’usage et quels termes se rédigent et se valident, rubrique par rubrique, à l’écran praticien.',
   },
   {
+    id: 'bibliotheque-options-besoin2',
+    libelle: 'Bibliothèque des options du besoin 2 (structure de références, vide et non signée)',
+    module: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts',
+    symboles: ['BIBLIOTHEQUE_BESOIN2_V1', 'BIBLIOTHEQUE_BESOIN2_METADATA'],
+    // ENTRÉE AVANT SA SURFACE ([[D-480]] §5.5, BP-17 PR 4) : aucun lecteur
+    // n'est admis tant que l'atelier (PR 5) et le cockpit sous drapeau éteint
+    // (PR 6) ne l'ont pas apporté (banc `importeurs.guard.test.ts`). Elle est
+    // donc DORMANTE, arbitrée dans `consommation_decisions.json`. La garde est
+    // dans le module même : `etatBibliotheque(...) === 'signee'`. Elle
+    // n'autorise aucune prescription (§8) ; rien ne sort vers un patient.
+    modulesGardes: [{ chemin: 'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts', noms: ['etatBibliotheque'] }],
+    decisionProduite: 'Pour une hypothèse confirmée du besoin 2, toutes les options et le renvoi de chaque rubrique à ses sources — énumérées, jamais choisies d’après le dossier.',
+  },
+  {
     id: 'contradictions-nnpp2',
     libelle: 'Table de contradictions NNPP2 (règles signées)',
     module: 'web/src/lib/clinical/contradictionsV1.ts',

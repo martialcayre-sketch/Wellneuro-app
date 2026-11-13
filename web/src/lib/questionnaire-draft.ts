@@ -101,11 +101,17 @@ export function readQuestionnaireDraft(idAssignation: string): QuestionnaireDraf
   }
 }
 
-/** Écrit le nouveau format puis supprime les anciennes clés après succès. */
-export function writeQuestionnaireDraft(idAssignation: string, state: QuestionnaireDraftState): void {
-  if (typeof window === 'undefined') return;
+/**
+ * Écrit le nouveau format puis supprime les anciennes clés après succès.
+ * Rend `true` si le brouillon est bien écrit. Un échec (quota, mode privé,
+ * état invalide) n'interrompt pas la saisie, mais ne doit pas laisser croire
+ * à une sauvegarde : l'appelant n'affiche alors ni confirmation ni heure
+ * (Q4a, refonte Lien PAT-4).
+ */
+export function writeQuestionnaireDraft(idAssignation: string, state: QuestionnaireDraftState): boolean {
+  if (typeof window === 'undefined') return false;
   const answers = parseAnswers(state.answers);
-  if (!answers || !Number.isInteger(state.currentPage) || state.currentPage < 0) return;
+  if (!answers || !Number.isInteger(state.currentPage) || state.currentPage < 0) return false;
   try {
     window.localStorage.setItem(versionedDraftKey(idAssignation), JSON.stringify({
       version: DRAFT_VERSION,
@@ -115,8 +121,10 @@ export function writeQuestionnaireDraft(idAssignation: string, state: Questionna
     window.localStorage.setItem(versionedMetaKey(idAssignation), new Date().toISOString());
     window.localStorage.removeItem(legacyDraftKey(idAssignation));
     window.localStorage.removeItem(legacyMetaKey(idAssignation));
+    return true;
   } catch {
     // Quota / mode privé : ne pas interrompre la saisie.
+    return false;
   }
 }
 
@@ -125,10 +133,13 @@ export function readDraft(idAssignation: string): DraftAnswers | null {
   return readQuestionnaireDraft(idAssignation)?.answers ?? null;
 }
 
-/** Wrapper historique utilisé notamment par PlaintesForm. */
-export function writeDraft(idAssignation: string, answers: DraftAnswers): void {
+/**
+ * Wrapper historique utilisé notamment par PlaintesForm. Rend `true` si le
+ * brouillon est bien écrit (Q4a, comme `writeQuestionnaireDraft`).
+ */
+export function writeDraft(idAssignation: string, answers: DraftAnswers): boolean {
   const currentPage = readQuestionnaireDraft(idAssignation)?.currentPage ?? 0;
-  writeQuestionnaireDraft(idAssignation, { version: DRAFT_VERSION, answers, currentPage });
+  return writeQuestionnaireDraft(idAssignation, { version: DRAFT_VERSION, answers, currentPage });
 }
 
 /** Supprime les formats nouveau et historique. */

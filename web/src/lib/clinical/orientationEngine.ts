@@ -158,7 +158,8 @@ export type ExtinctionRecommandation = {
 
 /**
  * Une passation qu'un déclencheur lit, et qui a dépassé la fenêtre de son
- * instrument ([[D-433]] §1).
+ * instrument ([[D-433]] §1) — ou, pour la seule boucle d'arrêt, qui est datée
+ * après l'horloge (`dateeApresMaintenant`, [[D-508]] §2).
  *
  * `fenetreJours: null` = instrument sans fenêtre valide. `tableSignee()` refuse
  * une telle table ([[D-433]] §6), le cas n'arrive donc pas en production ; un
@@ -170,6 +171,12 @@ export type PassationPerimee = {
   /** ISO 8601 de la dernière passation, celle que le déclencheur lirait. */
   dateReponse: string;
   fenetreJours: number | null;
+  /**
+   * Passation datée APRÈS l'horloge de l'appelant ([[D-508]] §2). Posé par la
+   * seule boucle d'arrêt : pour l'extinction, un âge négatif ne vaut pas
+   * fraîcheur ; pour la proposition, il la vaut toujours ([[D-433]] §4).
+   */
+  dateeApresMaintenant?: true;
 };
 
 /**
@@ -190,8 +197,10 @@ export type RegleNonEvaluee = {
 /**
  * UNE RÈGLE D'ARRÊT NI APPLIQUÉE NI ÉCARTÉE ([[D-500]] §4) : un de ses
  * déclencheurs lit une passation trop ancienne pour la fenêtre d'extinction de
- * son instrument, ou un instrument sans fenêtre d'extinction
- * (`fenetreJours: null`), et aucun autre n'est lu frais et non atteint.
+ * son instrument, un instrument sans fenêtre d'extinction
+ * (`fenetreJours: null`), ou une passation datée après l'horloge
+ * (`dateeApresMaintenant`, [[D-508]] §2), et aucun autre n'est lu frais et non
+ * atteint.
  *
  * ELLE N'ÉTEINT RIEN. Elle n'est rapportée que si elle avait au moins une
  * recommandation à éteindre : sinon, la dire « non évaluée » n'aurait aucune
@@ -1370,6 +1379,7 @@ function passationsPerimeesDuDeclencheur(
   declencheur: OrientationDeclencheur,
   dernieres: Map<string, ReponseOrientation>,
   fraicheur: FraicheurCible | undefined,
+  options: { futurNonFrais?: boolean } = {},
 ): PassationPerimee[] {
   if (!fraicheur) return [];
   const perimees: PassationPerimee[] = [];
@@ -1379,8 +1389,22 @@ function passationsPerimeesDuDeclencheur(
     const reponse = dernieres.get(feuille.idQuestionnaire);
     if (!reponse) continue;
     const fraiche = dansLaFenetre(reponse, fraicheur);
-    if (fraiche === true) continue;
     const fenetre = fraicheur.fenetres?.[feuille.idQuestionnaire];
+    // UNE PASSATION DATÉE APRÈS L'HORLOGE N'ÉTEINT PAS ([[D-508]] §2). La
+    // comparaison commune la compte fraîche (âge négatif, [[D-433]] §4) ; la
+    // boucle d'arrêt, seule à passer l'option, la refuse : l'extinction est
+    // l'acte le plus exigeant ([[D-053]] arbitrage 1), comme sans horloge
+    // ([[D-500]] §3). Sans tolérance : aucun chiffre technique n'est posé.
+    if (fraiche === true && options.futurNonFrais && Date.parse(reponse.dateReponse) > fraicheur.maintenantMs) {
+      perimees.push({
+        idQuestionnaire: feuille.idQuestionnaire,
+        dateReponse: reponse.dateReponse,
+        fenetreJours: fenetre ? fenetre.delaiJours : null,
+        dateeApresMaintenant: true,
+      });
+      continue;
+    }
+    if (fraiche === true) continue;
     perimees.push({
       idQuestionnaire: feuille.idQuestionnaire,
       dateReponse: reponse.dateReponse,
@@ -1853,7 +1877,7 @@ export function evaluerOrientationDetaillee(entree: EntreeOrientation): Resultat
     const perimees: PassationPerimee[] = [];
     let tousAtteints = true;
     for (const declencheur of arret.declencheurs) {
-      const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheurArret);
+      const perimeesIci = passationsPerimeesDuDeclencheur(declencheur, dernieres, fraicheurArret, { futurNonFrais: true });
       const lues = sansPassationsPerimees(dernieres, perimeesIci);
       const ajouterPerimees = () => {
         for (const p of perimeesIci) {

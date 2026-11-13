@@ -216,7 +216,9 @@ function juger(filePath, toolInput) {
     // ([[D-314]] §2, critère de fin de F05) : elle est livrée vide et non signée,
     // et ce qu'on y écrit avant la signature est déjà le périmètre que le
     // responsable signera. Ailleurs, un verrou éteint reste en silence.
-    const structureFichesUsage = /(^|\/)web\/src\/lib\/fiches-usage\//.test(normalized);
+    // LA STRUCTURE DE LA BIBLIOTHÈQUE DES OPTIONS aussi ([[D-480]] §5.5, BP-17
+    // PR 4) : livrée vide et non signée, sur le même patron.
+    const structureFichesUsage = /(^|\/)web\/src\/lib\/(fiches-usage|bibliotheque-options)\//.test(normalized);
     const marqueur = structureFichesUsage
       ? /["']?validationExterne["']?\s*:\s*(true|false)/
       : /["']?validationExterne["']?\s*:\s*true/;

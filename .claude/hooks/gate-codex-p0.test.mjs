@@ -122,6 +122,8 @@ const marqueur = ["validation", "Externe"].join("");
 for (const [nom, chemin, contenu] of [
   ["structure signée des fiches d'usage", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: true };\n`],
   ["structure des fiches d'usage, verrou éteint", "web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts", `export const M = { ${marqueur}: false };\n`],
+  // D-480 §5.5 (BP-17 PR 4).
+  ["structure de la bibliothèque des options, verrou éteint", "web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts", `export const M = { ${marqueur}: false };\n`],
   ["table signée hors liste", "web/src/lib/clinical/catalogueConduitesV1.ts", `export const M = { ${marqueur}: true };\n`],
 ]) {
   test(`demande : ${nom}, aucune trace Codex`, () => {

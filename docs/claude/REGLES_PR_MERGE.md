@@ -129,8 +129,9 @@ change pas, son porteur change. Depuis l'adoption de `D-373` (`D-454`), une
 session « intégrateur », seule occupante de la copie principale, merge les
 PR ordinaires. Une file déclare sa PR par un commentaire **« prête @<sha> »**
 qui porte le chemin de son fragment de handoff et ses exceptions, puis fait
-`/clear`. Depuis `D-499` §5, l'intégrateur signale chaque merge à la session de la PR, en plus de son commentaire sur la PR, qui fait foi ;
-depuis `D-503`, ce signal est une ligne `merge_fait` du registre des messages, adressée à la boîte qui a déclaré la PR, et le message direct n'en est que la sonnette (`docs/ROLES_MACHINES.md`). Une PR n'a qu'un responsable actif à la fois. Les lots de
+`/clear` — ou, en l'absence du responsable, prend au carnet le lot suivant
+de sa file (`D-510` §7). Depuis `D-499` §5, l'intégrateur signale chaque merge à la session de la PR, en plus de son commentaire sur la PR, qui fait foi ;
+depuis `D-503`, ce signal est une ligne `merge_fait` du registre des messages, adressée à la boîte qui a déclaré la PR, et le message direct n'en est que la sonnette (`docs/ROLES_MACHINES.md`) ; depuis `D-510`, l'intégrateur passe aussi à `fait` la ligne du carnet de lots qui porte la PR (après le constat de sa release-db pour une migration), et qui renvoie ou ferme une PR sans merge vide `pr` dans sa ligne et y met `tenu_le` à l'heure du renvoi. Une PR n'a qu'un responsable actif à la fois. Les lots de
 migration, d'authentification, de `.coderabbit.yaml` et de `pr_agent.yml`
 (`D-393` §6) ne se déclarent pas :
 leur file les merge jusqu'au bout. Une remarque de bot arrivée après

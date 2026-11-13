@@ -251,6 +251,39 @@ test("structure des fiches d'usage au verrou ÉTEINT : demande", () => {
   assert.match(j.sortie, /DC-17/);
 });
 
+// D-480 §5.5 (BP-17 PR 4) : la structure de la bibliothèque des options, même
+// patron — verrou éteint couvert ; le vocabulaire du dossier, sans marqueur, et
+// un compagnon de test restent en silence.
+test("structure de la bibliothèque des options au verrou ÉTEINT : demande", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts"),
+    content: "export const META = {\n  validationExterne: false,\n};\n",
+  });
+  assert.equal(j.verdict, "demande");
+  assert.match(j.sortie, /DC-17/);
+});
+
+test("structure de la bibliothèque des options sur disque (verrou éteint) : demande", () => {
+  const j = jugementBrut({ file_path: path.join(racine, "web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts") });
+  assert.equal(j.verdict, "demande");
+  assert.match(j.sortie, /DC-17/);
+});
+
+test("bibliothèque des options : vocabulaire sans marqueur et compagnon de test, silence", () => {
+  for (const fichier of ["web/src/lib/bibliotheque-options/vocabulaire.ts", "web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.test.ts"]) {
+    const j = jugementBrut({ file_path: path.join(racine, fichier) });
+    assert.equal(j.verdict, "passe", fichier);
+  }
+});
+
+test("même marqueur éteint hors des deux structures : silence", () => {
+  const j = jugementBrut({
+    file_path: path.join(racine, "web/src/lib/documents/vocabulaire.ts"),
+    content: "export const META = {\n  validationExterne: false,\n};\n",
+  });
+  assert.equal(j.verdict, "passe");
+});
+
 test("structure des fiches d'usage : marqueur éteint en commentaire seulement, silence", () => {
   const j = jugementBrut({
     file_path: path.join(racine, "web/src/lib/fiches-usage/lecture.ts"),

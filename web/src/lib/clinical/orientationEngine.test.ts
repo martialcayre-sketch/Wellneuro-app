@@ -836,12 +836,70 @@ describe('extinction — fenêtre d’extinction de l’instrument (D-500)', () 
     expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
   });
 
+  // [[D-508]] §2 : une passation datée APRÈS l'horloge ne vaut pas fraîcheur
+  // pour l'extinction. La proposition garde la comparaison de [[D-433]] §4.
+  it('D-508 §2 — une passation datée après l’horloge n’éteint pas, et la règle est dite non évaluée', () => {
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-07-27T10:00:00.000Z'));
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{
+        idQuestionnaire: 'Q_STR_01',
+        dateReponse: '2026-07-27T10:00:00.000Z',
+        fenetreJours: 30,
+        dateeApresMaintenant: true,
+      }],
+    }]);
+  });
+
+  it('D-508 §2 — sans tolérance : une milliseconde après l’horloge suffit à ne pas éteindre', () => {
+    // Verrouille l'absence de tout chiffre technique (contre-audit Codex, P2-1).
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-07-26T12:00:00.001Z'));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{
+        idQuestionnaire: 'Q_STR_01',
+        dateReponse: '2026-07-26T12:00:00.001Z',
+        fenetreJours: 30,
+        dateeApresMaintenant: true,
+      }],
+    }]);
+  });
+
+  it('D-508 §2 — une passation datée exactement de l’horloge éteint encore (âge nul)', () => {
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-07-26T12:00:00.000Z'));
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
+
+  it('D-508 §2, contre-épreuve — la PROPOSITION compte toujours fraîche une passation datée après l’horloge', () => {
+    const resultat = evaluerOrientationDetaillee({
+      ...dossierAllume(),
+      reponses: [reponse({ dateReponse: '2026-07-27T10:00:00.000Z', scores: { total: 30 } })],
+    });
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.reglesNonEvaluees).toEqual([]);
+  });
+
   it('un instrument SANS fenêtre d’extinction n’éteint pas — fenêtre non définie, sans nombre inventé', () => {
     const resultat = evaluerOrientationDetaillee(entree({ fenetresArret: {} }));
     expect(resultat.recommandations[0].extinction ?? null).toBeNull();
     expect(resultat.arretsNonEvalues).toEqual([{
       stopRuleId: 'STOP-TEST',
       passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: ELIGIBLE_LE, fenetreJours: null }],
+    }]);
+  });
+
+  it('D-508 §2 — datée après l’horloge ET sans fenêtre d’extinction : « aucune fenêtre » prime, sans drapeau', () => {
+    // Ordre des branches épinglé : l'absence de fenêtre ([[D-500]] §1) se dit
+    // avant la date future, qui ne s'évalue que sur une passation lue fraîche.
+    const resultat = evaluerOrientationDetaillee(entree({ fenetresArret: {} }, '2026-07-27T10:00:00.000Z'));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-27T10:00:00.000Z', fenetreJours: null }],
     }]);
   });
 
