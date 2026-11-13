@@ -279,6 +279,11 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // `{ regles, grilles, fenetres }` — les fenêtres d'EXTINCTION (Cungi et
   // DASS-21 à 7 jours, aucune pour Q_STR_01 : STOP-STR inopérante jusqu'à un
   // arbitrage sur cet instrument). Règles et grilles inchangées.
+  //
+  // RE-SIGNÉE le 2026-11-12 ([[D-508]]) : Q_STR_01 entre dans les fenêtres
+  // d'extinction à 7 jours inclus, arbitrage WellNeuro sans source clinique
+  // établissant cette durée ; STOP-STR redevient opérante. Règles, grilles et
+  // fenêtres du Cungi et du DASS-21 inchangées.
   validationExterne: true,
   dateValidation: '2026-11-12T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
@@ -286,8 +291,9 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // (déclarée après cet objet ; comparaison tautologique sinon). Reposé à la
   // re-signature du 2026-10-10 ([[D-278]] §2), puis à celle du 2026-11-11
   // ([[D-494]]), sur le périmètre `{ regles, grilles }`, puis à celle du
-  // 2026-11-12 ([[D-500]]), sur le périmètre `{ regles, grilles, fenetres }`.
-  shaPerimetre: '0f153aacf64fa1e681f15f6679574ab322bbf8ece75f6051dcbf10ae1062ef11',
+  // 2026-11-12 ([[D-500]]), sur le périmètre `{ regles, grilles, fenetres }`,
+  // puis à celle du même jour ([[D-508]]), fenêtre de Q_STR_01 comprise.
+  shaPerimetre: '8c853f9203da2fe48b3b7cb4e65ee7d01bea88fe14141ee2e34dc7e41c701dbf',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -325,14 +331,19 @@ export const GRILLES_ARRET = grillesCitees(STOP_RULES_V1);
  * sans source. Une fenêtre de proposition modifiée demain ne déplace donc pas
  * celle-ci.
  *
- * `Q_STR_01` N'Y EST PAS, ET C'EST VOULU ([[D-500]] §2) : aucune durée
- * implicite. Sans fenêtre, aucune extinction par STOP-STR — la règle reste
- * inopérante jusqu'à un arbitrage explicite sur cet instrument.
+ * `Q_STR_01` Y ENTRE PAR UN ARBITRAGE EXPLICITE ([[D-508]] §1), après
+ * avoir été laissé dehors par [[D-500]] §2 : 7 jours inclus, arbitrage
+ * WellNeuro SANS SOURCE CLINIQUE établissant cette durée. La consigne de
+ * l'instrument (« les dernières semaines ») ne la fonde pas. Le chiffre est
+ * celui du DASS-21 et du Cungi : STOP-STR exige trois passations datant
+ * chacune de sept jours au plus. Q_STR_01 n'a toujours aucune fenêtre de
+ * PROPOSITION : aucune règle d'orientation ne le lit.
  *
  * Dans l'empreinte signée : une fenêtre ajoutée, retirée ou déplacée ferme
  * `tableArretSignee()` jusqu'à re-signature.
  */
 export const FENETRES_ARRET: Readonly<Record<string, RepetitionOrientation>> = {
+  Q_STR_01: { delaiJours: 7 }, // Stress SIIN — D-508 §1, arbitrage sans source
   Q_STR_03: { delaiJours: 7 }, // Cungi
   Q_STR_04: { delaiJours: 7 }, // DASS-21
 };

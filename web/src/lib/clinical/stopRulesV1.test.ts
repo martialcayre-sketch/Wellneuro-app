@@ -366,8 +366,9 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // Re-signé le 2026-10-10 ([[D-278]] §2) : l'axe D du DASS-21 entre dans STOP-STR.
   // Re-signé le 2026-11-11 ([[D-494]]) : le périmètre devient `{ regles, grilles }`.
   // Re-signé le 2026-11-12 ([[D-500]]) : le périmètre devient `{ regles, grilles, fenetres }`.
+  // Re-signé le 2026-11-12 ([[D-508]]) : Q_STR_01 entre dans les fenêtres d'extinction (7 jours).
   const SHA_REGLES_GRILLES_2026_11_11 = 'b73cc1b6879b24026a9c489fe5ae10eb6223bf7d70b7e0de4235ed44b9b5dde2';
-  const SHA_CONTENU_2026_11_12 = '0f153aacf64fa1e681f15f6679574ab322bbf8ece75f6051dcbf10ae1062ef11';
+  const SHA_CONTENU_2026_11_12 = '8c853f9203da2fe48b3b7cb4e65ee7d01bea88fe14141ee2e34dc7e41c701dbf';
 
   it('le sha publié porte sur les règles, les grilles citées ET les fenêtres d’extinction', () => {
     expect(STOP_RULES_SHA256).toBe(
@@ -387,12 +388,15 @@ describe('stopRulesV1 — verrou de contenu', () => {
       .toBe(SHA_REGLES_GRILLES_2026_11_11);
   });
 
-  // L'INVENTAIRE DES FENÊTRES EST ÉPINGLÉ ([[D-500]] §1 et §2) : le Cungi et
-  // le DASS-21 à 7 jours, et `Q_STR_01` ABSENT — aucune durée implicite, la
-  // règle reste inopérante jusqu'à un arbitrage explicite sur cet instrument.
-  it('fenêtres d’extinction : Cungi et DASS-21 à 7 jours, aucune pour Q_STR_01', () => {
-    expect(FENETRES_ARRET).toEqual({ Q_STR_03: { delaiJours: 7 }, Q_STR_04: { delaiJours: 7 } });
-    expect(Object.hasOwn(FENETRES_ARRET, 'Q_STR_01')).toBe(false);
+  // L'INVENTAIRE DES FENÊTRES EST ÉPINGLÉ ([[D-500]] §1, [[D-508]] §1) : les
+  // trois instruments de STOP-STR à 7 jours. `Q_STR_01` y est entré par un
+  // arbitrage explicite, sans source clinique établissant cette durée.
+  it('fenêtres d’extinction : Q_STR_01, Cungi et DASS-21 à 7 jours', () => {
+    expect(FENETRES_ARRET).toEqual({
+      Q_STR_01: { delaiJours: 7 },
+      Q_STR_03: { delaiJours: 7 },
+      Q_STR_04: { delaiJours: 7 },
+    });
   });
 
   // Une fenêtre déplacée change l'empreinte, donc ferme `tableArretSignee()`.
@@ -480,11 +484,15 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
   }
 
   let compteur = 0;
-  function passation(idQuestionnaire: string, brutes: Record<string, number>): ReponseOrientation {
+  function passation(
+    idQuestionnaire: string,
+    brutes: Record<string, number>,
+    dateReponse = '2026-08-13T10:00:00.000Z',
+  ): ReponseOrientation {
     compteur += 1;
     return {
       idQuestionnaire,
-      dateReponse: '2026-08-13T10:00:00.000Z',
+      dateReponse,
       idReponse: `r-${compteur}`,
       // Le défaut de colonne Prisma — c'est lui que le service transporte.
       statutValidite: 'VALID',
@@ -503,16 +511,12 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
    * précisément celles qu'une extinction concerne.
    */
   /**
-   * L'HORLOGE ET LES FENÊTRES DU SERVICE ([[D-500]]). Sans horloge, rien ne
-   * s'éteint ; avec les fenêtres RÉELLES, STOP-STR ne s'éteint pas non plus :
-   * `Q_STR_01` n'a pas de fenêtre d'extinction (§2). Pour continuer de prouver
-   * que la chaîne réelle MORD — et que ses gardes ferment — le jour où une
-   * fenêtre sera arbitrée, les bancs ci-dessous ajoutent une fenêtre de
-   * FIXTURE à `Q_STR_01`, sans portée clinique. Le premier banc, lui, joue la
-   * configuration réelle et épingle l'état de production.
+   * L'HORLOGE ET LES FENÊTRES DU SERVICE ([[D-500]], [[D-508]]). Sans
+   * horloge, rien ne s'éteint. Depuis [[D-508]] §1, les fenêtres RÉELLES
+   * couvrent les trois instruments de STOP-STR : les bancs ci-dessous jouent
+   * la configuration de production, sans fenêtre de fixture.
    */
   const MAINTENANT = Date.parse('2026-08-14T12:00:00.000Z');
-  const FENETRES_ARRET_FIXTURE = { ...FENETRES_ARRET, Q_STR_01: { delaiJours: 7 } };
 
   function dossierSansPss10(reponseStr01: ReponseOrientation) {
     return {
@@ -540,26 +544,29 @@ describe('STOP-STR de bout en bout — calculateScore réel, table réelle, conf
       exclureDejaRepondu: true,
       maintenantMs: MAINTENANT,
       fenetres: FENETRES_FRAICHEUR_ORIENTATION,
-      fenetresArret: FENETRES_ARRET_FIXTURE,
+      fenetresArret: FENETRES_ARRET,
     };
   }
 
-  it('D-500 §2 — configuration RÉELLE : STOP-STR n’éteint rien, faute de fenêtre pour Q_STR_01, et le dit', () => {
-    const entree = {
-      ...dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01))),
-      fenetresArret: FENETRES_ARRET,
-    };
-    const resultat = evaluerOrientationDetaillee(entree);
-    expect(resultat.recommandations.length).toBeGreaterThan(0);
+  it('D-508 §1 — configuration RÉELLE : les trois passations fraîches, STOP-STR éteint et rien n’est dit non évalué', () => {
+    const resultat = evaluerOrientationDetaillee(dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01))));
+    expect(resultat.recommandations.some(reco => reco.extinction?.stopRuleId === 'STOP-STR')).toBe(true);
+    expect(resultat.arretsNonEvalues).toEqual([]);
+  });
+
+  it('D-508 §1 — un Q_STR_01 au-delà de ses 7 jours n’éteint pas, et la règle le dit', () => {
+    // 2026-08-06T10:00 au 2026-08-14T12:00 : plus de 8 jours.
+    const resultat = evaluerOrientationDetaillee(dossierSansPss10(
+      passation('Q_STR_01', reponsesAZero(ITEMS_STR_01), '2026-08-06T10:00:00.000Z'),
+    ));
     expect(resultat.recommandations.every(reco => !reco.extinction)).toBe(true);
-    // DASS-21 et Cungi sont frais (un jour) : seule la fenêtre manquante est dite.
     expect(resultat.arretsNonEvalues).toEqual([{
       stopRuleId: 'STOP-STR',
-      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-08-13T10:00:00.000Z', fenetreJours: null }],
+      passations: [{ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-08-06T10:00:00.000Z', fenetreJours: 7 }],
     }]);
   });
 
-  it('D-500 §1 — un DASS-21 au-delà de ses 7 jours n’éteint pas, même avec une fenêtre pour Q_STR_01', () => {
+  it('D-500 §1 — un DASS-21 au-delà de ses 7 jours n’éteint pas', () => {
     const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
     entree.reponses = entree.reponses.map(reponse =>
       reponse.idQuestionnaire === 'Q_STR_04'
