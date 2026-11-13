@@ -36,10 +36,20 @@ renvoyait encore au skill personnel `$wellneuro-pr-review` alors que D-505 fait 
 
 ## Validations exécutées
 
-- `node --test .claude/hooks/git-freshness.test.mjs` : 27/27. Trois cas neufs :
-  - cible hors dépôt libre sans fetch ni marqueur ;
+- `node --test .claude/hooks/git-freshness.test.mjs` : 29/29. Cinq cas neufs :
+  - cible hors dépôt libre sans fetch ni marqueur, pour les quatre outils ;
   - autre dépôt et autre worktree refusés ;
-  - Git qui pend sur la cible : pas d'exemption.
+  - environnement `GIT_*` hérité sans effet ;
+  - Git qui pend coupé en 2 s ;
+  - liens symboliques et pointeur `.git` cassé refusés.
+  Rejoués contre la version b400aed1, les cas de l'environnement et des liens échouent : ils prouvent le
+  durcissement.
+- Contre-revue Codex (D-505, `--mode revue`, code 0) sur b400aed1 : un P2 (environnement Git hérité), corrigé.
+- `wn-reviewer` sur b400aed1 : GO, six P2 :
+  - environnement, `.git` cassé, liens, délai prouvé, cas non couverts, vocabulaire de la règle : corrigés ;
+  - la question sur le message « hors dépôt » de `SessionStart` est écartée, car sans racine lisible rien n'est
+    exempté.
+- Branche remise à niveau par `git merge origin/main` (#2062, aucun fichier commun), sur arbitrage du responsable.
 - `node --test .claude/hooks/gate-codex-p0.test.mjs` : 24/24, avec le message épinglé.
 - `node --test .claude/hooks/*.test.mjs` : 425/425.
 - Constat réel : la mémoire et le bloc-notes répondent tous deux `128` et « not a git repository ».

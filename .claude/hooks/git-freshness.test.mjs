@@ -435,16 +435,16 @@ test("branche en retard : une cible hors de tout dépôt (bloc-notes, mémoire) 
   run(["fetch", "origin"], work);
   const blocNotes = path.join(root, "bloc-notes", "neuf", "note.md");
 
-  for (const outil of ["Write", "Edit", "MultiEdit"]) {
+  for (const outil of ["Write", "Edit", "MultiEdit", "NotebookEdit"]) {
+    const tool_input = outil === "NotebookEdit" ? { notebook_path: blocNotes.replace(/\.md$/, ".ipynb") } : { file_path: blocNotes };
     assertAutorise(invoke(work, {
-      hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: outil, tool_input: { file_path: blocNotes },
+      hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: outil, tool_input,
     }), `${outil} hors dépôt`);
   }
   // Aucune évaluation de fraîcheur : ni fetch, ni marqueur.
   assert.equal(fs.existsSync(marqueur(work, session)), false);
-  assert.deepEqual(journal(work).lignes.map((l) => [l.cible, l.verdict, l.motif]), [
-    ["externe", "autorise", "hors-depot"], ["externe", "autorise", "hors-depot"], ["externe", "autorise", "hors-depot"],
-  ]);
+  assert.deepEqual(journal(work).lignes.map((l) => [l.cible, l.verdict, l.motif]),
+    Array(4).fill(["externe", "autorise", "hors-depot"]));
   // Le même outil, dans le dépôt, reste refusé.
   const refus = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: path.join(work, "a.md") } });
   assert.match(refus.stdout, /"permissionDecision":"deny"/);
@@ -470,6 +470,32 @@ test("branche en retard : un autre dépôt ou un autre worktree restent gardés"
   }
 });
 
+test("environnement Git hérité : il ne fait pas passer le dépôt pour « hors dépôt »", (t) => {
+  const contexte = repo();
+  const { root, work } = contexte;
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const session = `env-git-${Date.now()}`;
+  t.after(() => fs.rmSync(marqueur(work, session), { force: true }));
+  avancerLeRemote(contexte, "env-git");
+  fs.mkdirSync(path.join(work, "web"), { recursive: true });
+  const cible = path.join(work, "web", "neuf.ts");
+
+  for (const env of [
+    { GIT_CEILING_DIRECTORIES: work },
+    { GIT_DIR: path.join(root, "inexistant.git") },
+    { GIT_DISCOVERY_ACROSS_FILESYSTEM: "0", GIT_CEILING_DIRECTORIES: fs.realpathSync(work) },
+  ]) {
+    const refus = spawnSync("node", [hook], {
+      cwd: work,
+      input: JSON.stringify({ hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: cible } }),
+      encoding: "utf8",
+      env: { ...process.env, ...env },
+    });
+    assert.doesNotMatch(journal(work).brut, /hors-depot/, JSON.stringify(env));
+    assert.match(refus.stdout, /"permissionDecision":"deny"/, JSON.stringify(env));
+  }
+});
+
 test("Git qui pend sur la cible : pas d'exemption, le garde juge", (t) => {
   const contexte = repo();
   const { root, work } = contexte;
@@ -482,8 +508,11 @@ test("Git qui pend sur la cible : pas d'exemption, le garde juge", (t) => {
   const vraiGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
   const bin = path.join(root, "bin");
   fs.mkdirSync(bin);
-  fs.writeFileSync(path.join(bin, "git"), `#!/bin/sh\ncase "$(pwd -P)" in "${fs.realpathSync(horsDepot)}"*) exec sleep 30;; esac\nexec "${vraiGit}" "$@"\n`, { mode: 0o755 });
+  // Après 30 s, le faux Git rend exactement la réponse qui exempte : seul le
+  // délai de 2 s peut produire le refus, et dans un temps borné.
+  fs.writeFileSync(path.join(bin, "git"), `#!/bin/sh\ncase "$(pwd -P)" in "${fs.realpathSync(horsDepot)}"*) sleep 30; echo "fatal: not a git repository (or any of the parent directories): .git" >&2; exit 128;; esac\nexec "${vraiGit}" "$@"\n`, { mode: 0o755 });
 
+  const debut = Date.now();
   const refus = spawnSync("node", [hook], {
     cwd: work,
     input: JSON.stringify({ hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: path.join(horsDepot, "n.md") } }),
@@ -491,6 +520,40 @@ test("Git qui pend sur la cible : pas d'exemption, le garde juge", (t) => {
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}` },
   });
   assert.match(refus.stdout, /"permissionDecision":"deny"/);
+  assert.ok(Date.now() - debut < 20_000, "le délai de 2 s doit couper le Git qui pend");
+});
+
+test("liens symboliques et pointeur .git cassé : jamais d'exemption vers le dépôt", (t) => {
+  const contexte = repo();
+  const { root, work } = contexte;
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const session = `liens-${Date.now()}`;
+  t.after(() => fs.rmSync(marqueur(work, session), { force: true }));
+  avancerLeRemote(contexte, "liens");
+  const blocNotes = path.join(root, "bloc-notes");
+  fs.mkdirSync(blocNotes);
+  fs.mkdirSync(path.join(work, "web"));
+  fs.writeFileSync(path.join(work, "web", "existant.ts"), "x\n");
+  fs.symlinkSync(path.join(work, "web", "existant.ts"), path.join(blocNotes, "lien-fichier.ts"));
+  fs.symlinkSync(path.join(work, "web", "absent.ts"), path.join(blocNotes, "lien-pendant.ts"));
+  fs.symlinkSync(path.join(work, "web"), path.join(blocNotes, "lien-dossier"));
+  fs.symlinkSync(path.join(work, "web", "absent"), path.join(blocNotes, "lien-dossier-pendant"));
+  // Worktree imbriqué dont le pointeur `.git` ne mène plus nulle part.
+  const casse = path.join(work, ".claude", "worktrees", "casse");
+  fs.mkdirSync(casse, { recursive: true });
+  fs.writeFileSync(path.join(casse, ".git"), "gitdir: /inexistant/worktrees/casse\n");
+
+  for (const fichier of [
+    path.join(blocNotes, "lien-fichier.ts"),
+    path.join(blocNotes, "lien-pendant.ts"),
+    path.join(blocNotes, "lien-dossier", "neuf.ts"),
+    path.join(blocNotes, "lien-dossier-pendant", "neuf.ts"),
+    path.join(casse, "neuf.ts"),
+  ]) {
+    const refus = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: fichier } });
+    assert.match(refus.stdout, /"permissionDecision":"deny"/, path.relative(root, fichier));
+  }
+  assert.doesNotMatch(journal(work).brut, /hors-depot/);
 });
 
 test("journal : le refus pour retard porte les deux SHA et son motif", (t) => {

@@ -39,13 +39,13 @@ const DELAI_GIT_MS = 10_000;
 // délai de Claude Code : ses appels Git ont un budget court.
 const DELAI_GIT_JOURNAL_MS = 2_000;
 
-function git(args, { dans = cwd, delai = DELAI_GIT_MS, env = {} } = {}) {
+function git(args, { dans = cwd, delai = DELAI_GIT_MS, env = { ...process.env } } = {}) {
   return spawnSync("git", args, {
     cwd: dans,
     encoding: "utf8",
     timeout: delai,
     killSignal: "SIGKILL",
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", ...env },
+    env: { ...env, GIT_TERMINAL_PROMPT: "0" },
   });
 }
 
@@ -143,12 +143,71 @@ function cible() {
 // explicite de Git exempte — message forcé en anglais (`LC_ALL=C`) ; un délai
 // dépassé, un Git absent ou toute autre erreur laissent le garde juger. Un
 // autre worktree, un autre dépôt restent gardés : ils sont dans un dépôt.
+// Aucune variable `GIT_*` héritée n'entre dans ce constat : `GIT_DIR`,
+// `GIT_CEILING_DIRECTORIES` ou une borne de système de fichiers feraient dire
+// « pas un dépôt » à Git sur une cible qui en est un (contre-revue Codex, #2064).
+// Le chemin est lu sur disque, liens résolus : un lien du bloc-notes vers le
+// dépôt n'exempte rien, et un lien qui ne se résout pas non plus. Une cible
+// sous la racine du worktree courant ou sous la copie principale (worktrees
+// imbriqués compris) n'est jamais exemptée, même si Git la dit hors dépôt
+// (pointeur `.git` cassé) ; sans racine lisible pour le `cwd`, rien n'est exempté.
+function sous(chemin, racine) {
+  return chemin === racine || chemin.startsWith(racine.endsWith(path.sep) ? racine : racine + path.sep);
+}
+
 function horsDepot() {
   const fichier = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
   if (typeof fichier !== "string" || !fichier) return false;
-  const dossier = dossierExistant(fichier);
+  // Chaque élément du chemin qui existe est relu : un lien symbolique (fichier
+  // ou dossier, pendant ou non) ferme l'exemption, sauf s'il se résout.
+  const cibleAbsolue = path.resolve(cwd, fichier);
+  for (let courant = cibleAbsolue; ; courant = path.dirname(courant)) {
+    let lien = false;
+    try {
+      lien = fs.lstatSync(courant).isSymbolicLink();
+    } catch {
+      // absent : rien à relire à ce niveau
+    }
+    if (lien) {
+      try {
+        fs.realpathSync.native(courant);
+      } catch {
+        return false;
+      }
+    }
+    if (path.dirname(courant) === courant) break;
+  }
+  // Fichier existant : son dossier réel, pas celui du lien qui le désigne.
+  let cibleReelle = cibleAbsolue;
+  try {
+    cibleReelle = fs.realpathSync.native(cibleAbsolue);
+  } catch {
+    // fichier neuf : son plus proche dossier existant est résolu ci-dessous
+  }
+  const dossier = dossierExistant(cibleReelle);
   if (!dossier) return false;
-  const resultat = git(["rev-parse", "--show-toplevel"], { dans: dossier, delai: DELAI_GIT_JOURNAL_MS, env: { LC_ALL: "C" } });
+  let dossierReel;
+  try {
+    dossierReel = fs.realpathSync.native(dossier);
+  } catch {
+    return false;
+  }
+  const ici = racineReelle(cwd);
+  if (!ici || sous(dossierReel, ici)) return false;
+  const commun = git(["rev-parse", "--git-common-dir"], { delai: DELAI_GIT_JOURNAL_MS });
+  if (commun.status !== 0) return false;
+  try {
+    const copiePrincipale = fs.realpathSync.native(path.dirname(path.resolve(cwd, commun.stdout.trim())));
+    if (sous(dossierReel, copiePrincipale)) return false;
+  } catch {
+    return false;
+  }
+  const env = Object.fromEntries(Object.entries(process.env).filter(([cle]) => !/^GIT_/i.test(cle)));
+  const resultat = git(["rev-parse", "--show-toplevel"], {
+    dans: dossierReel,
+    delai: DELAI_GIT_JOURNAL_MS,
+    env: { ...env, LC_ALL: "C", GIT_DISCOVERY_ACROSS_FILESYSTEM: "1" },
+  });
   return resultat.status === 128 && /not a git repository/i.test(resultat.stderr);
 }
 

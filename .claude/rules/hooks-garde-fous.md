@@ -100,9 +100,16 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
 - **Cible hors de tout dépôt** (bloc-notes de la session, mémoire, depuis le
   2026-11-13, lot `autonomie-frictions`) : autorisée sans fetch ni marqueur,
   journalisée `hors-depot`. Seul le « not a git repository » explicite de Git
-  (`LC_ALL=C`, délai de 2 s) exempte ; un délai dépassé ou toute autre erreur
-  laissent le garde juger. Un autre dépôt, un autre worktree restent gardés.
-  Le journal avait compté 359 refus sur des cibles externes en seize jours.
+  exempte (`LC_ALL=C`, délai de 2 s, aucune variable `GIT_*` héritée) ; un
+  délai dépassé ou une autre erreur laissent le garde juger. Jamais exemptés :
+  - une cible sous la racine du worktree courant ou sous la copie principale
+    (worktrees imbriqués compris), même avec un pointeur `.git` cassé ;
+  - un chemin dont un lien symbolique ne se résout pas ; un lien qui se
+    résout est jugé sur sa destination ;
+  - toute cible quand la racine du `cwd` est illisible.
+  Une cible dans un autre dépôt reste jugée, comme avant, sur la fraîcheur du
+  dépôt du `cwd`. Le journal avait compté 359 refus sur des cibles externes en
+  seize jours.
 - **Journal des verdicts** (`D-375` §1, depuis H86) : une ligne JSON par
   verdict — date, outil, cible `interne`/`externe`/`inconnue` au worktree du
   `cwd` (jamais le chemin ; un worktree imbriqué sous `.claude/worktrees/`
