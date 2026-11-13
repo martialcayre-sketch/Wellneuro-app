@@ -119,6 +119,18 @@ describe('PropositionBilanSection — la proposition dans l’onglet « Biologie
     expect((await screen.findByRole('alert')).textContent).toContain(T65);
   });
 
+  it('échec persistant : le focus revient sur « Réessayer », réactivé', async () => {
+    stubFetch({ [PROPOSITION]: { status: 500, corps: { ok: false } } });
+    rendre();
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => {
+      const bouton = screen.getByRole('button', { name: 'Réessayer' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(false);
+      expect(document.activeElement).toBe(bouton);
+    });
+  });
+
   it('« Réessayer » relit la seule proposition ; réussie, le panneau revient et prend le focus', async () => {
     let panne = true;
     vi.stubGlobal('fetch', vi.fn(async (entree: RequestInfo | URL) => {

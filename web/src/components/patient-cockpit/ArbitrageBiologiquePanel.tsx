@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types.
 import { LIBELLE_ATTENTE_NON_TYPEE } from '@/lib/clinical-engine/types';
@@ -169,13 +169,21 @@ export function ArbitrageBiologiquePanel({
   const [soumises, setSoumises] = useState<ReadonlySet<string>>(() => new Set());
   const titreRef = useRef<HTMLHeadingElement>(null);
   const reessayerRef = useRef<HTMLButtonElement>(null);
+  // Lue : le focus passe au titre du panneau relu ; encore en échec : il
+  // revient sur « Réessayer ». La cible est mémorisée, et le focus posé par
+  // un effet une fois la relecture finie ET rendue — avant, le bouton est
+  // encore désactivé dans le DOM (revue PR-Agent de #2071).
+  const [focusApres, setFocusApres] = useState<'titre' | 'reessayer' | null>(null);
+  useEffect(() => {
+    if (focusApres === null || relectureEnCours) return;
+    if (focusApres === 'titre') titreRef.current?.focus();
+    else reessayerRef.current?.focus();
+    setFocusApres(null);
+  }, [focusApres, relectureEnCours, lecture]);
   const relire = async () => {
     if (!onRelire) return;
     const lue = await onRelire();
-    // Lue : le focus passe au titre du panneau relu ; encore en échec : il
-    // revient sur « Réessayer ».
-    if (lue) titreRef.current?.focus();
-    else reessayerRef.current?.focus();
+    setFocusApres(lue ? 'titre' : 'reessayer');
   };
   // Un verdict consigné après la coche change la révision qui sera générée :
   // la coche tombe ([[D-213]] §1, BP-23). Le changement de version active,

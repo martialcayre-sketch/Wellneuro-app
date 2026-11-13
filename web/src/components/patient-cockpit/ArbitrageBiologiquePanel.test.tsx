@@ -272,6 +272,26 @@ describe('ArbitrageBiologiquePanel — lecture des arbitrages', () => {
     );
   });
 
+  it('échec persistant avec bouton désactivé en vol : le focus revient sur « Réessayer » une fois rendu', async () => {
+    const proprietes = { intentions: [intention()], arbitrages: [], revisionPossible: false, onArbitrer: vi.fn() };
+    let finirRelecture: (lue: boolean) => void = () => {};
+    const onRelire = vi.fn(() => {
+      // Le parent passe « en vol » : le bouton est désactivé dans le DOM.
+      rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="echec" relectureEnCours onRelire={onRelire} />);
+      return new Promise<boolean>(resolve => { finirRelecture = resolve; });
+    });
+    const { rerender } = render(
+      <ArbitrageBiologiquePanel {...proprietes} lecture="echec" relectureEnCours={false} onRelire={onRelire} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    // Le parent répond « échec » AVANT d'avoir rendu la fin de la relecture.
+    finirRelecture(false);
+    await Promise.resolve();
+    expect(document.activeElement).not.toBe(screen.getByRole('button', { name: 'Réessayer' }));
+    rerender(<ArbitrageBiologiquePanel {...proprietes} lecture="echec" relectureEnCours={false} onRelire={onRelire} />);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })));
+  });
+
   it('un échec de relecture ne vide pas le choix local', () => {
     const proprietes = {
       intentions: [intention()],

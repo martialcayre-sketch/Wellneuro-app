@@ -207,6 +207,17 @@ export function PropositionBilanSection({
   // « Réessayer » (T-17) : relit la seule proposition, bouton désactivé en vol,
   // puis rend le focus — au panneau relu, ou au bouton si l'échec persiste.
   const reessayerRef = useRef<HTMLButtonElement>(null);
+  // La cible du focus est mémorisée, et posée par un effet une fois la
+  // relecture finie ET rendue : avant, le bouton est encore désactivé, ou
+  // c'est le titre de la section d'échec, pas celui du panneau relu (revue
+  // PR-Agent de #2071).
+  const [focusApres, setFocusApres] = useState<'titre' | 'reessayer' | null>(null);
+  useEffect(() => {
+    if (focusApres === null || relectureProposition) return;
+    if (focusApres === 'titre') document.getElementById('proposition-bilan-title')?.focus();
+    else reessayerRef.current?.focus();
+    setFocusApres(null);
+  }, [focusApres, relectureProposition, propositionDisponible, echecProposition]);
   const relireProposition = useCallback(async () => {
     setRelectureProposition(true);
     let lue = false;
@@ -214,11 +225,7 @@ export function PropositionBilanSection({
       lue = await loadProposition();
     } finally {
       setRelectureProposition(false);
-    }
-    if (lue) {
-      requestAnimationFrame(() => document.getElementById('proposition-bilan-title')?.focus());
-    } else {
-      reessayerRef.current?.focus();
+      setFocusApres(lue ? 'titre' : 'reessayer');
     }
   }, [loadProposition]);
 
