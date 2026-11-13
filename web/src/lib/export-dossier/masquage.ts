@@ -7,7 +7,9 @@
 // pseudonymisées n'écrivent déjà aucune valeur identifiante, mais un patient ou
 // un praticien a pu en taper une. Les textes FIXES (libellés du catalogue,
 // consignes, préambule) ne passent jamais ici : un nom qui est aussi un mot
-// courant n'y efface pas une option de réponse.
+// courant n'y efface pas une option de réponse. Les e-mails, numéros
+// français et NIR sont masqués aussi quand ils ne sont pas ceux du dossier
+// (`MOTIFS_GENERIQUES`).
 //
 // La recherche porte sur un texte PLIÉ (`plier`) qui ressemble à ce que le PDF
 // DESSINE (`versWinAnsi`, puis le composeur, qui fusionne les espaces) :
@@ -587,6 +589,59 @@ function motifsNom(valeur: string | null): Motif[] {
   return [...morceaux].filter(utile).map(morceau => motifMot(morceau));
 }
 
+// ── Formes génériques, quel que soit leur titulaire ──
+//
+// Prolonge le filet de [[D-252]] §2 sur les textes libres, sans en changer le
+// périmètre. Revue de sécurité du 2026-11-12 (P1-1) : les motifs ci-dessus ne viennent
+// que des valeurs du dossier. Un e-mail, un numéro ou un NIR d'un PROCHE, ou
+// un ancien numéro du patient, passaient en clair. Ces trois formes se
+// reconnaissent sans connaître leur titulaire, et aucune ne ressemble à une
+// valeur clinique. Chaque quantificateur est borné : un long texte hostile se
+// parcourt en temps linéaire. Les noms de tiers, eux, ne se reconnaissent pas
+// par la forme : le préambule demande toujours une relecture.
+
+// Partie locale de 64 caractères au plus (RFC 5321), libellés de domaine de 63.
+const EMAIL_GENERIQUE =
+  "[a-z0-9][a-z0-9._%+'\\-]{0,63}@[a-z0-9][a-z0-9\\-]{0,62}(?:\\.[a-z0-9][a-z0-9\\-]{0,62}){1,8}";
+// Numéro français : « 0 » ou l'indicatif (« +33 », « 0033 », « 00 33 »), un
+// chiffre de 1 à 9, puis huit chiffres, chacun précédé au plus d'un
+// séparateur (espace, point, tiret, mêlés ou non) : « 06 12-34 56 78 »,
+// « 06 1234 5678 », « 0612 345 678 ». La barre et les deux-points n'en sont
+// pas. Une date suivie d'une heure n'est pas un numéro, mais seulement une
+// VRAIE date suivie d'une VRAIE heure : au « 0 » d'un jour (« 01.02.2024 10 30 »)
+// ou d'un mois précédé de son jour (« 12-03-2026 09 00 »), mois de 01 à 12,
+// année en 19xx ou 20xx, heure de 00 à 23 suivie de ses minutes (« 10 30 »,
+// « 10:30 », « 10h30 ») ou de « h » seul. Un jour qui n'existe pas dans son
+// mois (« 31.02 », « 31.04 », « 30.02 ») n'excuse rien ; le 29 février est
+// admis quelle que soit l'année, l'année bissextile n'est pas vérifiée.
+// Sans ces bornes, « 06 98 2024 32 » passait pour une date et le numéro d'un
+// tiers sortait en clair (contre-revue Codex de #2051, P1 ; contre-passe :
+// jour impossible, « h99 »). Une date à année sur deux chiffres suivie d'une
+// heure (« 05 11 98 08 15 ») a la forme exacte d'un numéro (05 : indicatif du
+// Sud-Ouest) : elle reste masquée — dans le doute, le masque l'emporte (même
+// contre-revue, P2, écarté).
+const HEURE_APRES_DATE = '[ .\\-](?:[01]\\d|2[0-3])(?:[ .\\-:]?[0-5]\\d|\\s?h(?:[0-5]\\d)?)(?!\\d)';
+const AN_HEURE = `[ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE}`;
+// Au « 0 » d'un mois précédé de son jour : chaque jour, les mois qui l'ont.
+const MOIS_APRES_JOUR =
+  `(?!(?<=(?<!\\d)(?:0[1-9]|[12]\\d)[ .\\-]0)[1-9]${AN_HEURE})` +
+  `(?!(?<=(?<!\\d)30[ .\\-]0)[13-9]${AN_HEURE})` +
+  `(?!(?<=(?<!\\d)31[ .\\-]0)[13578]${AN_HEURE})`;
+const TELEPHONE_GENERIQUE =
+  `(?:0(?!\\d[ .\\-](?:0[1-9]|1[0-2])${AN_HEURE})${MOIS_APRES_JOUR}` +
+  '|(?:\\+|00)[ .\\-]?33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?:[ .\\-]?\\d){8}';
+// NIR : sexe, année, mois, département (2A, 2B compris), commune, ordre, clé
+// facultative — 13 ou 15 chiffres, groupés ou non. La clé n'est pas
+// vérifiée : un NIR mal recopié reste un NIR.
+const NIR_GENERIQUE =
+  '[1-478][ .\\-]?\\d\\d[ .\\-]?(?:0[1-9]|1[0-2]|[2-9]\\d)[ .\\-]?(?:\\d\\d|2[ab])[ .\\-]?\\d{3}[ .\\-]?\\d{3}(?:[ .\\-]?\\d\\d)?';
+
+const MOTIFS_GENERIQUES: readonly Motif[] = [
+  { source: EMAIL_GENERIQUE, poids: 64, frontiere: 'mot' },
+  { source: NIR_GENERIQUE, poids: 15, frontiere: 'nombre' },
+  { source: TELEPHONE_GENERIQUE, poids: 13, frontiere: 'nombre' },
+];
+
 // ── Le masqueur ────────────────────────────────────────────────────────────
 
 export function creerMasqueur(patient: PatientExport): Masqueur {
@@ -601,6 +656,7 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
     ...motifsNom(patient.prenom),
     ...motifsNom(patient.nom),
     ...motifsNom(patient.medecinTraitantNom),
+    ...MOTIFS_GENERIQUES,
   ]
     .filter(motif => motif.source)
     .sort((a, b) => b.poids - a.poids);

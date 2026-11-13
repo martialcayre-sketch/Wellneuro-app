@@ -520,7 +520,7 @@ describe('creerMasqueur — garanties', () => {
     expect(masquer('Ｒｅçｕ : So\u{AD}phie ; \u{FB01}n')).toBe(`Ｒｅçｕ : ${M} ; \u{FB01}n`);
   });
 
-  it('n’a rien à masquer quand le dossier ne porte que l’identifiant', () => {
+  it('ne masque que les formes génériques quand le dossier ne porte que l’identifiant', () => {
     const vide = creerMasqueur(
       patient({
         prenom: '',
@@ -533,7 +533,67 @@ describe('creerMasqueur — garanties', () => {
         medecinTraitantCoordonnees: null,
       }),
     );
-    expect(vide('Sophie PAT030 0612345678')).toBe('Sophie PAT030 0612345678');
+    expect(vide('Sophie PAT030 0612345678')).toBe(`Sophie PAT030 ${M}`);
+    expect(vide('Sophie PAT030 de garde')).toBe('Sophie PAT030 de garde');
+  });
+
+  // Revue de sécurité du 2026-11-12, P1-1 : l'identifiant reste, même collé à une forme générique.
+  it('une forme générique masquée garde l’identifiant qui la jouxte', () => {
+    expect(masquer('PAT030 : 06 98 76 54 32')).toBe(`PAT030 : ${M}`);
+    expect(masquer('PAT030@autre.example.test')).toBe(M);
+  });
+
+  // Contre-revue Codex de #2051, P2 (écarté) : une date à année sur deux
+  // chiffres suivie d'une heure a la forme exacte d'un numéro du Sud-Ouest.
+  // Rien ne les distingue : dans le doute, le masque l'emporte.
+  it('masque une date à année sur deux chiffres suivie d’une heure, indiscernable d’un numéro', () => {
+    expect(masquer('Bilan du 05 11 98 08 15')).toBe(`Bilan du ${M}`);
+    expect(masquer('Fixe : 05 11 98 08 15')).toBe(`Fixe : ${M}`);
+  });
+
+  it('une date n’excuse un numéro que si elle est valide et suivie d’une heure valide', () => {
+    expect(masquer('le 01.02.2024 10 30')).toBe('le 01.02.2024 10 30');
+    expect(masquer('le 12-03-2026 09 00')).toBe('le 12-03-2026 09 00');
+    expect(masquer('le 01 02 2024 10 h')).toBe('le 01 02 2024 10 h');
+    expect(masquer('06 98 2024 32')).toBe(M);
+    expect(masquer('06 12 2024 32')).toBe(M);
+    expect(masquer('06 2024 1030')).toBe(M);
+    expect(masquer('le 01 13 2024 10 30')).toBe(`le ${M} 30`);
+  });
+
+  // Contre-passe Codex de #2051 : un jour absent de son mois, une heure en « h » suivie de minutes invalides.
+  it('un jour impossible dans son mois, ou « h99 », n’excuse pas le numéro', () => {
+    expect(masquer('Contact : 31.02.2024 10 30')).toBe(`Contact : 31.${M}`);
+    expect(masquer('Contact : 30-02-2024 10 30')).toBe(`Contact : 30-${M}`);
+    expect(masquer('Contact : 31 04 2024 10 30')).toBe(`Contact : 31 ${M}`);
+    expect(masquer('Contact : 06 12 2024 10 h99')).toBe(`Contact : ${M} h99`);
+    // Les vraies dates restent : 31 janvier, 30 avril, 29 février, « 10h30 ».
+    expect(masquer('le 31.01.2024 10 30')).toBe('le 31.01.2024 10 30');
+    expect(masquer('le 30-04-2024 10 30')).toBe('le 30-04-2024 10 30');
+    expect(masquer('le 29.02.2024 10 30')).toBe('le 29.02.2024 10 30');
+    expect(masquer('le 06 12 2024 10h30')).toBe('le 06 12 2024 10h30');
+  });
+
+  it('reste linéaire sur les formes génériques : 80 000 caractères hostiles en moins de 200 ms chacun', () => {
+    const N = 80_000;
+    const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
+    for (const texte of [
+      remplir('a.'),
+      remplir('a@'),
+      remplir('a@b.'),
+      remplir('a@' + 'b'.repeat(70) + ' '),
+      remplir('06 '),
+      remplir('06 12 34 '),
+      remplir('01 02 2024 '),
+      remplir('12-03-2026 0'),
+      remplir('1 85 03 '),
+      remplir('2a'),
+      remplir('+33 (0)6 '),
+    ]) {
+      const debut = performance.now();
+      masquer(texte);
+      expect(performance.now() - debut, texte.slice(0, 12)).toBeLessThan(200);
+    }
   });
 
   it('reste linéaire : 80 000 caractères hostiles en moins de 200 ms chacun', () => {

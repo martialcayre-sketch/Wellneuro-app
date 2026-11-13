@@ -50,7 +50,7 @@ describe('sectionPerimetre', () => {
       {
         type: 'paragraphe',
         texte:
-          "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, la date de naissance, les coordonnées et le médecin traitant sont retirés, et leurs occurrences dans les textes libres sont remplacées par [masqué]. Un nom qui est aussi un mot courant est masqué partout (« riz [masqué] » pour un patient nommé Blanc). Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : relisez le document avant de l'envoyer.",
+          "Version pseudonymisée, préparée pour être soumise à un outil d'IA externe : le nom, le prénom, la date de naissance, les coordonnées et le médecin traitant sont retirés, et leurs occurrences dans les textes libres sont remplacées par [masqué]. Les formes courantes des adresses e-mail, des numéros de téléphone français et des NIR sont masquées aussi quand elles ne sont pas celles du patient. Un nom qui est aussi un mot courant est masqué partout (« riz [masqué] » pour un patient nommé Blanc). Un identifiant écrit autrement (surnom, faute de frappe, nom d'un proche) n'est pas détecté : relisez le document avant de l'envoyer. L'envoi de ce document à un service d'IA externe est suspendu depuis le 5 novembre 2026.",
         ton: 'alerte',
       },
       ...COMMUNS_APRES,

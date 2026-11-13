@@ -189,6 +189,29 @@ const FUITES: Fuite[] = [
   { origine: 'N2', dossier: { dateNaissance: '1985-03-07' }, texte: 'née le 7/3/85, le 07031985', identite: ['7385', '07031985'] },
   { origine: 'N2', texte: 'née le 14•03•85, le 14 mars, 1985', identite: ['140385', '14mars1985'] },
   { origine: 'N2', dossier: { dateNaissance: '1975-02-05' }, texte: 'née le 5 févr. 1975', identite: ['5fevr1975'] },
+
+  // Revue de sécurité du 2026-11-12, P1-1 : les formes qui ne sont PAS celles
+  // du dossier — e-mail, numéro ou NIR d'un proche, ancien numéro du patient.
+  { origine: 'P1-1', texte: 'écrire à cabinet.autre@example.fr', identite: ['cabinetautreexamplefr'] },
+  { origine: 'P1-1', texte: 'ma fille : jennifer.martin@example.test.', identite: ['jennifermartinexampletest'] },
+  { origine: 'P1-1', texte: 'Mél : Ｍｉｃｈｅｌ.Ｄｏｇｎｅ＠example.test', identite: ['micheldogneexampletest'] },
+  { origine: 'P1-1', texte: 'joindre mon mari au 06 98 76 54 32', identite: ['0698765432'] },
+  { origine: 'P1-1', texte: 'ancien numéro 07.11.22.33.44 ; fixe 04-72-00-11-22', identite: ['0711223344', '0472001122'] },
+  { origine: 'P1-1', texte: 'portable 0698765432, ou +33 6 98 76 54 32, ou 0033 (0)6 98 76 54 32', identite: ['0698765432', '33698765432', '0033069876543'] },
+  // Revue PR-Agent de #2051 : séparateurs mêlés, groupements irréguliers, « 00 33 ».
+  { origine: 'P1-1', texte: 'joindre ma sœur au 06 12-34 56 78', identite: ['0612345678'] },
+  { origine: 'P1-1', texte: 'numéros : 06 1234 5678 et 0612 345 678', identite: ['0612345678'] },
+  { origine: 'P1-1', texte: 'depuis l’étranger : 00 33 6 98 76 54 32', identite: ['0033698765432'] },
+  { origine: 'P1-1', texte: 'liste : 06 98 76 54 32 01 23 45 67 89', identite: ['0698765432', '0123456789'] },
+  { origine: 'P1-1', texte: 'Sécu : 2 85 03 75 115 123 45', identite: ['285037511512345'] },
+  { origine: 'P1-1', texte: 'NIR 285037511512345 et 1850375115123', identite: ['285037511512345', '1850375115123'] },
+  { origine: 'P1-1', texte: 'NIR 2 85 03 2A 115 123', identite: ['285032a115123'] },
+  // Contre-revue Codex de #2051, P1 : « 98 » n'est pas un mois, « 32 » pas une heure.
+  { origine: 'Codex #2051', texte: 'Contact : 06 98 2024 32', identite: ['0698202432'] },
+  { origine: 'Codex #2051', texte: 'mon frère : 06 12 2024 32', identite: ['0612202432'] },
+  { origine: 'Codex #2051', texte: 'portable 06 2024 1030', identite: ['0620241030'] },
+  { origine: 'Codex #2051', texte: 'Contact : 31.02.2024 10 30', identite: ['0220241030'] },
+  { origine: 'Codex #2051', texte: 'Contact : 06 12 2024 10 h99', identite: ['0612202410'] },
 ];
 
 // ── (b) FIDÉLITÉ ───────────────────────────────────────────────────────────
@@ -253,7 +276,17 @@ const FIDELITE: Fidelite[] = [
   { origine: 'N4', dossier: { adresse: '12 rue des Lilas' }, texte: 'au 12 rue des Roses' },
   { origine: 'N4', texte: 'je travaille rue des Roses' },
   { origine: '1re #4', dossier: { adresse: 'Lyon' }, texte: 'Né à Lyon' },
-  { origine: 'NF0', texte: 'écrire à cabinet.autre@example.fr' },
+
+  // P1-1 : ce qui ressemble à un numéro ou à un e-mail sans en être un.
+  { origine: 'P1-1', texte: 'Bilan du 01/02/2024 10:30, revu le 01.02.2024 10:30' },
+  { origine: 'P1-1', texte: 'le 01-02-2024 à 10 h, puis le 01 02 2024 10 30' },
+  { origine: 'P1-1', texte: 'le 05.11.1998 08 15, le 05 11 98 à 08 15, le 12-03-2026 09 00' },
+  { origine: 'Codex #2051', texte: 'le 01 02 2024 10 h, le 31.12.1999 23 59, le 15-03-2026 0815' },
+  { origine: 'P1-1', texte: 'Glycémie 0,95 g/L ; TSH 1,85 mUI/L ; ferritine 45 µg/L' },
+  { origine: 'P1-1', texte: 'Vitamine D 25-OH : 30 ng/mL ; 1 000 UI/jour ; 2 x 500 mg' },
+  { origine: 'P1-1', texte: 'Sommeil 23:30 – 06:45, 3 réveils, 7 h 15' },
+  { origine: 'P1-1', texte: 'magnésium@soir, 1@2 prises' },
+  { origine: 'P1-1', texte: 'Poids 72,5 kg le 12/09/2026, 71 kg le 10/10/2026' },
 
   // Signes et pictogrammes cliniques, sans identité à côté.
   { origine: 'N9', texte: 'Vitamine D ✅, magnésium ❌, lactose 🚫' },
