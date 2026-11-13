@@ -81,6 +81,7 @@ vi.mock('@/lib/observability/eventCodes', () => ({
     SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE: 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
     SYNTHESE_ORIENTATION_INDISPONIBLE: 'SYNTHESE_IA.ORIENTATION.INDISPONIBLE',
     SYNTHESE_POST_CONTEXT_UNAVAILABLE: 'SYNTHESE_IA.GENERATION.CONTEXT_UNAVAILABLE',
+    SYNTHESE_REGLES_ORIENTATION_ILLISIBLES: 'SYNTHESE_IA.REGLES_ORIENTATION.ILLISIBLES',
   },
 }));
 vi.mock('@/lib/observability/requestContext', () => ({
@@ -374,6 +375,17 @@ describe('une seule lecture des règles d’orientation applicables', () => {
     const res = await POST(req());
     expect(res.status).toBe(200);
     expect(evaluerOrientationPourPatient).toHaveBeenCalledWith(expect.any(String), null);
+    // [[D-511]] §6.1 : la levée est journalisée, sous son propre code, sans
+    // donnée patient dans le message.
+    const appel = loggerWarn.mock.calls.find(([entree]) => entree.event === 'SYNTHESE_IA.REGLES_ORIENTATION.ILLISIBLES');
+    expect(appel).toBeDefined();
+    expect(JSON.stringify(appel?.[0].message)).not.toMatch(/PAT_SEED_01|pat@example\.com/);
+  });
+
+  it('verrou fermé : aucune lecture, aucune journalisation', async () => {
+    await POST(req());
+    expect(reglesOrientationAdmissibles).not.toHaveBeenCalled();
+    expect(loggerWarn.mock.calls.some(([entree]) => entree.event === 'SYNTHESE_IA.REGLES_ORIENTATION.ILLISIBLES')).toBe(false);
   });
 });
 

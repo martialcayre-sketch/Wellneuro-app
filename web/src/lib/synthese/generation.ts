@@ -56,6 +56,12 @@ import {
   passationsNonEvaluees,
   reglesNonEvalueesIds,
 } from '@/lib/synthese/blocReglesNonEvaluees';
+import {
+  construireBlocReglesNonServies,
+  passationsArretsNonEvalues,
+  traceReglesNonServies,
+  VIGILANCE_CONVERGENCES_NON_EVALUEES,
+} from '@/lib/synthese/blocReglesNonServies';
 import { formesDeScoreDuNarratif } from '@/lib/synthese/narratifFormesDeScore';
 import {
   MODELE_REDACTION_PRATICIEN,
@@ -367,6 +373,9 @@ function questionnairesCitables(
       // demande de les nommer : le moteur lit toutes les passations, y compris
       // celles d'un instrument que `reponses` ne porte pas (non administrable).
       ...passationsNonEvaluees(orientation).map(passation => passation.idQuestionnaire),
+      // Même raison pour les arrêts non évalués du bloc des règles non servies
+      // ([[D-511]] §7) : le bloc nomme leurs instruments.
+      ...passationsArretsNonEvalues(orientation).map(passation => passation.idQuestionnaire),
     ]),
   ];
 }
@@ -487,6 +496,7 @@ function buildUserMessage(
   blocOrientation = '',
   blocBesoins = '',
   blocNonEvaluees = '',
+  blocNonServies = '',
 ): string {
   const filtered = reponses.map(r => {
     // Passation dont le résultat enregistré n'est pas une mesure (registre
@@ -572,11 +582,14 @@ ${contexte || 'Contexte anamnestique non renseigné pour ce patient.'}
   // besoins ([[D-462]]) suit, par le même canal. Le bloc des règles non
   // évaluées ([[D-471]]) se place juste après celui d'orientation, et part même
   // quand celui-ci est absent : c'est alors qu'il empêche de lire « aucune
-  // recommandation » comme « rien à explorer ».
+  // recommandation » comme « rien à explorer ». Le bloc des règles non
+  // appliquées par le service ([[D-511]]) le suit, au même titre et par le même
+  // canal : il part, lui aussi, sans bloc d'orientation.
   const blocs = [
     blocContexte,
     ...(blocOrientation ? [blocOrientation] : []),
     ...(blocNonEvaluees ? [blocNonEvaluees] : []),
+    ...(blocNonServies ? [blocNonServies] : []),
     ...(blocBesoins ? [blocBesoins] : []),
   ].join('\n\n');
   return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocs}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
@@ -622,6 +635,12 @@ export type GenererArgs = {
   blocBesoins: string | null;
   /** Bloc des règles non évaluées transmis au modèle ([[D-471]]), `''` si aucun. */
   blocReglesNonEvaluees: string;
+  /** Bloc des règles non appliquées par le service ([[D-511]]), `''` si aucun. */
+  blocReglesNonServies: string;
+  /** Verrou de l'orientation ouvert et corpus illisible ([[D-511]] §2). */
+  sourcesOrientationNonVerifiees: boolean;
+  /** Verrous de la convergence ouverts et corpus illisible ([[D-511]] §4). */
+  convergencesNonEvaluees: boolean;
   /**
    * QUI A DEMANDÉ CETTE GÉNÉRATION — inscrit dans `donneesEntree`, jamais dans
    * le prompt.
@@ -846,6 +865,13 @@ export async function genererSynthesePersistee(
         // partent pas au modèle. Tous deux lus dans `reglesNonEvaluees` du moteur.
         blocReglesNonEvaluees: args.blocReglesNonEvaluees,
         reglesNonEvaluees: reglesNonEvalueesIds(args.orientation),
+        // [[D-511]] §5 : le texte exact du bloc des règles non appliquées par le
+        // service (`''` si aucun), et ce qui n'en sort pas — identifiants, motifs
+        // et couples de claims —, plus les deux constats de corpus illisible.
+        blocReglesNonServies: args.blocReglesNonServies,
+        ...traceReglesNonServies(args.orientation),
+        sourcesOrientationNonVerifiees: args.sourcesOrientationNonVerifiees,
+        convergencesNonEvaluees: args.convergencesNonEvaluees,
         metadonneesPrompt: {
           versionPrompt: VERSION_PROMPT_SYNTHESE,
           versionSchema: VERSION_SCHEMA_SYNTHESE,
@@ -1185,20 +1211,36 @@ export async function preparerGeneration(
     //
     // LES SEULES RÈGLES D'ORIENTATION APPLIQUÉES ([[D-495]] §1) : la même
     // lecture que le cockpit. Corpus illisible ⇒ aucune convergence ici, et
-    // la synthèse ne le dit pas encore — limite reconnue, rattachée à t77
-    // ([[D-495]] §8).
+    // la synthèse le dit par une ligne de vigilance déterministe ([[D-511]] §4).
     //
     // UNE SEULE LECTURE POUR LA CONVERGENCE ET L'ORIENTATION (revue
     // CodeRabbit de #2025) : deux lectures pouvaient diverger — un claim tombé
     // entre les deux, ou une seconde lecture illisible qui éteignait
     // l'orientation en laissant les convergences déjà ajoutées. Une levée
-    // inattendue vaut un corpus illisible : ni orientation, ni convergence.
+    // inattendue vaut un corpus illisible : ni orientation, ni convergence. Elle
+    // est journalisée ([[D-511]] §6.1), sans donnée patient : la lecture ne porte
+    // que sur le corpus.
+    let verrouOrientation = false;
     let orientationApplicable: OrientationAdmissible | null = null;
     try {
-      orientationApplicable = orientationActive() ? await reglesOrientationAdmissibles() : null;
-    } catch {
+      verrouOrientation = orientationActive();
+      orientationApplicable = verrouOrientation ? await reglesOrientationAdmissibles() : null;
+    } catch (lectureErr) {
       orientationApplicable = null;
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_REGLES_ORIENTATION_ILLISIBLES,
+        domain: 'SYNTHESE_IA',
+        message: 'Règles d\'orientation applicables illisibles, traitées comme un corpus illisible',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: lectureErr,
+      });
     }
+    // [[D-511]] §2 et §4 : les deux constats de corpus illisible, sous les
+    // verrous mêmes du cockpit — un module éteint ou une table non signée ne
+    // produisent ni l'un ni l'autre (`convergencesNonEvaluees` de
+    // `contradictionsService`).
+    const sourcesOrientationNonVerifiees = verrouOrientation && orientationApplicable === null;
+    const convergencesNonEvaluees = contradictionsActives() && sourcesOrientationNonVerifiees;
     try {
       vigilanceDeterministe = [
         ...vigilanceDeterministe,
@@ -1217,12 +1259,23 @@ export async function preparerGeneration(
         error: convErr,
       });
     }
+    // Hors du `try` : une levée du producteur de convergence ne doit pas taire
+    // ce constat-ci. Texte du cockpit, validé ([[D-511]] §4).
+    if (convergencesNonEvaluees) {
+      vigilanceDeterministe = [...vigilanceDeterministe, VIGILANCE_CONVERGENCES_NON_EVALUEES];
+    }
 
     // Orientation déterministe (LOT-06) — best-effort, comme le contexte
     // clinique : une synthèse ne doit pas échouer parce que la table
     // d'orientation est indisponible. Appelée APRÈS le contrôle d'appartenance
     // ci-dessus ; le service re-vérifie de son côté le double verrou et ne lit
     // rien tant que la table n'est pas signée.
+    //
+    // CONTRAT DE `lectureOrientation` ([[D-511]] §6.4) : l'objet passé est
+    // celui que `reglesOrientationAdmissibles()` vient de rendre, dans cette
+    // requête, et qui a servi à la convergence ci-dessus — jamais une lecture
+    // d'une autre requête ni une valeur reconstruite. `null` vaut corpus
+    // illisible et rend l'orientation inactive.
     let orientation: ResultatOrientation | null = null;
     try {
       orientation = await evaluerOrientationPourPatient(idPatient, orientationApplicable);
@@ -1254,12 +1307,14 @@ export async function preparerGeneration(
     }
 
     const blocReglesNonEvaluees = construireBlocReglesNonEvaluees(orientation);
+    const blocReglesNonServies = construireBlocReglesNonServies(orientation, sourcesOrientationNonVerifiees);
     const userMessage = buildUserMessage(
       reponsesInput,
       contexteClinique,
       buildBlocOrientation(orientation),
       blocBesoins ?? '',
       blocReglesNonEvaluees,
+      blocReglesNonServies,
     );
     const genererArgs: GenererArgs = {
       idPatient,
@@ -1272,6 +1327,9 @@ export async function preparerGeneration(
       orientation,
       blocBesoins,
       blocReglesNonEvaluees,
+      blocReglesNonServies,
+      sourcesOrientationNonVerifiees,
+      convergencesNonEvaluees,
       requestContext,
     };
 

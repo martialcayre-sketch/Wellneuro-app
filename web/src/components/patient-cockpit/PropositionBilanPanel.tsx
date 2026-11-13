@@ -752,7 +752,12 @@ export function PropositionBilanPanel({
       className="rounded-xl border border-border bg-surface p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 id="proposition-bilan-title" className="text-sm font-semibold text-foreground">
+        {/* Cible du focus après « Réessayer » réussi (PropositionBilanSection). */}
+        <h3
+          id="proposition-bilan-title"
+          tabIndex={-1}
+          className="text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
           Biologie — proposition de bilan
         </h3>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">

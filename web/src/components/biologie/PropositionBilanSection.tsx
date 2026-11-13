@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCbEnabled, useCbResultsEnabled } from '@/components/patient-cockpit/CbFeatureProvider';
 import {
   PropositionBilanPanel,
@@ -50,6 +50,13 @@ export function PropositionBilanSection({
   // c'est LUI qui porte le drapeau `WN_CB_PROPOSITION`, sans second
   // FeatureProvider — un 503 laisse simplement le panneau absent.
   const [propositionDisponible, setPropositionDisponible] = useState(false);
+  /**
+   * La lecture de la proposition a ÉCHOUÉ autrement que par l'étage fermé
+   * (T-65, [[D-488]] ; Q12 a de PRA-3b) : le panneau ne disparaît plus en
+   * silence, il le dit.
+   */
+  const [echecProposition, setEchecProposition] = useState(false);
+  const [relectureProposition, setRelectureProposition] = useState(false);
   const [propositionLignes, setPropositionLignes] = useState<LignePanelProposition[]>([]);
   const [propositionLimites, setPropositionLimites] = useState<LimiteProposition[]>([]);
   const [propositionDocumentes, setPropositionDocumentes] = useState<DocumenteAffiche[]>([]);
@@ -115,11 +122,18 @@ export function PropositionBilanSection({
     }
   }, [idPatient, cbEnabled]);
 
-  // Le drapeau `WN_CB_PROPOSITION` est lu côté serveur seulement : ici, une
-  // route qui refuse (503) laisse le panneau absent, et rien ne le distingue
-  // d'un rayon fermé.
-  const loadProposition = useCallback(async () => {
-    if (!cbEnabled) return;
+  // Le drapeau `WN_CB_PROPOSITION` est lu côté serveur seulement. LE CLIENT
+  // LIT LE MOTIF, JAMAIS LE CODE SEUL (Q12 a) : seul le garde de drapeau rend
+  // 503, et il porte `cb_proposition_desactivee` — l'étage fermé, panneau
+  // absent comme avant. Toute autre réponse (503 sans ce motif — redémarrage,
+  // délai du routeur —, 500, refus, réseau) est un échec de lecture : T-65.
+  //
+  // Jeton d'obsolescence : seule la DERNIÈRE lecture écrit l'échec.
+  const seqProposition = useRef(0);
+  const loadProposition = useCallback(async (): Promise<boolean> => {
+    if (!cbEnabled) return false;
+    const seq = ++seqProposition.current;
+    const aJour = () => seq === seqProposition.current;
     try {
       const response = await fetch(
         `/api/praticien/biologie/proposition?idPatient=${encodeURIComponent(idPatient)}`,
@@ -136,7 +150,9 @@ export function PropositionBilanSection({
       // Le moteur qui s'abstient (409) N'EST PAS une indisponibilité : son
       // motif est écrit pour le praticien et doit s'afficher tel quel — une
       // abstention expliquée vaut mieux qu'un panneau vide (`DC-34`).
+      if (!aJour()) return false;
       if (response.status === 409 && payload.error) {
+        setEchecProposition(false);
         setPropositionDisponible(true);
         setPropositionMotif(payload.error);
         setPropositionLignes([]);
@@ -149,12 +165,15 @@ export function PropositionBilanSection({
         // lieu d'être lue. Ce que le moteur ne sait plus dériver aujourd'hui
         // ne retire rien à ce qui a été remis hier.
         void chargerDocumentsPatient();
-        return;
+        return true;
       }
       if (!response.ok || !payload.ok) {
         setPropositionDisponible(false);
-        return;
+        const etageFerme = response.status === 503 && payload.reason === 'cb_proposition_desactivee';
+        setEchecProposition(!etageFerme);
+        return etageFerme;
       }
+      setEchecProposition(false);
       setPropositionDisponible(true);
       setPropositionMotif(null);
       setPropositionLignes(payload.lignes ?? []);
@@ -174,11 +193,41 @@ export function PropositionBilanSection({
       // lieu d'être lue. Le GET journalise — il ne part que là où ce qu'il
       // rapporte sera affiché.
       void chargerDocumentsPatient();
+      return true;
     } catch {
-      // La proposition est rechargeable : un échec de lecture ne bloque pas la fiche.
+      // La proposition est rechargeable : un échec de lecture ne bloque pas la
+      // fiche — mais il se dit (T-65).
+      if (!aJour()) return false;
       setPropositionDisponible(false);
+      setEchecProposition(true);
+      return false;
     }
   }, [idPatient, cbEnabled, chargerDocumentsPatient]);
+
+  // « Réessayer » (T-17) : relit la seule proposition, bouton désactivé en vol,
+  // puis rend le focus — au panneau relu, ou au bouton si l'échec persiste.
+  const reessayerRef = useRef<HTMLButtonElement>(null);
+  // La cible du focus est mémorisée, et posée par un effet une fois la
+  // relecture finie ET rendue : avant, le bouton est encore désactivé, ou
+  // c'est le titre de la section d'échec, pas celui du panneau relu (revue
+  // PR-Agent de #2071).
+  const [focusApres, setFocusApres] = useState<'titre' | 'reessayer' | null>(null);
+  useEffect(() => {
+    if (focusApres === null || relectureProposition) return;
+    if (focusApres === 'titre') document.getElementById('proposition-bilan-title')?.focus();
+    else reessayerRef.current?.focus();
+    setFocusApres(null);
+  }, [focusApres, relectureProposition, propositionDisponible, echecProposition]);
+  const relireProposition = useCallback(async () => {
+    setRelectureProposition(true);
+    let lue = false;
+    try {
+      lue = await loadProposition();
+    } finally {
+      setRelectureProposition(false);
+      setFocusApres(lue ? 'titre' : 'reessayer');
+    }
+  }, [loadProposition]);
 
   // UNE lecture par montage, et par dossier : `loadProposition` ne change
   // d'identité qu'avec `idPatient` ou le drapeau CB.
@@ -332,7 +381,32 @@ export function PropositionBilanSection({
     [idPatient, documentPatientRefus, confirmationsDocument, chargerDocumentsPatient],
   );
 
-  if (!propositionDisponible) return null;
+  if (!propositionDisponible) {
+    if (!cbEnabled || !echecProposition) return null;
+    return (
+      <section
+        aria-labelledby="proposition-bilan-title"
+        aria-busy={relectureProposition || undefined}
+        className="rounded-xl border border-border bg-surface p-4"
+      >
+        <h3 id="proposition-bilan-title" className="text-sm font-semibold text-foreground">
+          Biologie — proposition de bilan
+        </h3>
+        <div role="alert" className="mt-3 flex flex-col gap-3 rounded-lg bg-status-warning/10 p-3 text-base text-status-warning">
+          <span>La proposition de bilan n’a pas pu être lue. Ce n’est pas une absence de proposition.</span>
+          <button
+            ref={reessayerRef}
+            type="button"
+            onClick={() => void relireProposition()}
+            disabled={relectureProposition}
+            className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+          >
+            Réessayer
+          </button>
+        </div>
+      </section>
+    );
+  }
   return (
     <PropositionBilanPanel
       lignes={propositionLignes}

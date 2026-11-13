@@ -80,10 +80,76 @@ describe('PropositionBilanSection — la proposition dans l’onglet « Biologie
   });
 
   it('une proposition fermée (503) : panneau absent, et la liste des remises n’est pas lue', async () => {
-    const fetchMock = stubFetch({ [PROPOSITION]: { status: 503, corps: { ok: false } } });
+    // Le corps du garde de drapeau (`gardeProposition`) : le client lit le
+    // MOTIF, jamais le code seul (Q12 a de PRA-3b).
+    const fetchMock = stubFetch({
+      [PROPOSITION]: {
+        status: 503,
+        corps: { ok: false, reason: 'cb_proposition_desactivee', error: 'Proposition de bilan désactivée.' },
+      },
+    });
     const { container } = rendre();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(container.textContent).toBe('');
+  });
+
+  // T-65 ([[D-488]]) : toute autre réponse est un échec de lecture, jamais
+  // une absence de proposition.
+  const T65 = 'La proposition de bilan n’a pas pu être lue. Ce n’est pas une absence de proposition.';
+  for (const [cas, reponse] of [
+    ['503 sans le motif de l’étage fermé (plateforme)', { status: 503, corps: { ok: false } }],
+    ['500', { status: 500, corps: { ok: false, error: 'Erreur serveur.' } }],
+    ['403', { status: 403, corps: { ok: false, reason: 'forbidden', error: 'Accès refusé.' } }],
+  ] as const) {
+    it(`${cas} : T-65 et « Réessayer », pas un panneau absent`, async () => {
+      const fetchMock = stubFetch({ [PROPOSITION]: reponse });
+      rendre();
+      expect((await screen.findByRole('alert')).textContent).toContain(T65);
+      expect(screen.getByRole('region', { name: 'Biologie — proposition de bilan' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+      // Aucun geste de déclaration ni de courrier sur une lecture en échec.
+      expect(screen.queryByRole('button', { name: /Consigner|Établir/ })).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  it('réseau coupé : T-65 aussi', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    rendre();
+    expect((await screen.findByRole('alert')).textContent).toContain(T65);
+  });
+
+  it('échec persistant : le focus revient sur « Réessayer », réactivé', async () => {
+    stubFetch({ [PROPOSITION]: { status: 500, corps: { ok: false } } });
+    rendre();
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => {
+      const bouton = screen.getByRole('button', { name: 'Réessayer' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(false);
+      expect(document.activeElement).toBe(bouton);
+    });
+  });
+
+  it('« Réessayer » relit la seule proposition ; réussie, le panneau revient et prend le focus', async () => {
+    let panne = true;
+    vi.stubGlobal('fetch', vi.fn(async (entree: RequestInfo | URL) => {
+      const url = String(entree);
+      if (url.includes('/proposition/document-patient')) {
+        return new Response(JSON.stringify({ ok: true, documents: [] }), { status: 200 });
+      }
+      return panne
+        ? new Response(JSON.stringify({ ok: false }), { status: 500 })
+        : new Response(JSON.stringify({ ok: true, lignes: [LIGNE], limites: [], documentes: [], partageMedecinTraitant: 'accorde' }), { status: 200 });
+    }));
+    rendre();
+    await screen.findByRole('alert');
+    panne = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(screen.queryByText(T65)).toBeNull());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Biologie — proposition de bilan' })),
+    );
   });
 
   it('le moteur qui s’abstient (409) : son motif s’affiche, et les remises sont lues', async () => {

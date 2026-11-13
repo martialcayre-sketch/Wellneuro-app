@@ -45,7 +45,10 @@ vi.mock('@/lib/clinical/corpusSyntheseV1', () => ({
   CORPUS_CLINIQUE_SHA256: 'sha',
   sha256: (texte: string) => `sha256(${texte.length})`,
 }));
-vi.mock('@/lib/clinical/orientationService', () => ({ evaluerOrientationPourPatient }));
+// `orientationActive` explicite ([[D-511]] §6.2) : absent du mock, son appel
+// levait et la levée passait pour un corpus illisible. Éteint : la lecture
+// partagée n'a pas lieu, et ce banc ne porte que sur `reglesNonEvaluees`.
+vi.mock('@/lib/clinical/orientationService', () => ({ evaluerOrientationPourPatient, orientationActive: () => false }));
 vi.mock('@/lib/scoring/miniSynthese', () => ({ buildMiniSynthese: () => ({}) }));
 vi.mock('@/lib/consultation/contexteClinique', () => ({
   buildContexteClinique: () => '',

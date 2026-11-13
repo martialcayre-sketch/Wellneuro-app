@@ -168,6 +168,13 @@ export const EVENT_CODES = {
    */
   SYNTHESE_CONVERGENCES_INDISPONIBLES: 'SYNTHESE_IA.CONVERGENCES.INDISPONIBLES',
   /**
+   * t77 ([[D-511]] §6.1) — la lecture partagée des règles d'orientation
+   * applicables a levé : elle vaut un corpus illisible (ni orientation, ni
+   * convergence, et la synthèse le dit). Code distinct d'ORIENTATION_INDISPONIBLE,
+   * qui dit une levée du service lui-même.
+   */
+  SYNTHESE_REGLES_ORIENTATION_ILLISIBLES: 'SYNTHESE_IA.REGLES_ORIENTATION.ILLISIBLES',
+  /**
    * H95 part A ([[D-462]]) — le bloc des besoins n'a pas pu être calculé : la
    * synthèse part sans lui, et la consigne dit alors de n'en rien dire.
    */
