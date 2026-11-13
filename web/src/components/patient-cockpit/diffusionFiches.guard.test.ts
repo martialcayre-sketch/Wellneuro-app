@@ -43,6 +43,12 @@ describe('Cockpit — le jeton de l’aperçu des fiches au clic « Valider pour
     );
   });
 
+  it('une version qui n’est plus en vigueur recharge versions et aperçu, comme un aperçu périmé (PRA-3b, Q18)', () => {
+    expect(corpsDuClic()).toMatch(
+      /payload\.reason === 'version_plus_en_vigueur' \|\| payload\.reason === 'apercu_fiches_perime'\) \{\s*await Promise\.all\(\[loadVersions\(readyDecisionCardId\), loadDiffusion\(readyDecisionCardId\)\]\)/,
+    );
+  });
+
   it('une lecture manquée de l’état de diffusion efface l’aperçu des fiches', () => {
     const debut = SOURCE.indexOf('const loadDiffusion = useCallback');
     const corps = SOURCE.slice(debut, SOURCE.indexOf('}, [idPatient]);', debut));

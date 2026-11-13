@@ -317,6 +317,28 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
+    // ── SEULE LA VERSION EN VIGUEUR S'APPROUVE (PRA-3b, Q18 a) ──────────────
+    //
+    // Le clic envoie l'empreinte de la version que l'écran tenait pour active.
+    // Un onglet resté ouvert sur une version relue, puis remplacée ailleurs,
+    // faisait approuver l'ancienne : rien ne vérifiait qu'elle était encore
+    // celle en vigueur. La version en vigueur est celle que le GET montre
+    // (`resolveActiveVersion` sur la même décision) ; toute autre empreinte est
+    // un clic périmé, refusé avec le message de l'aperçu périmé, et l'écran
+    // recharge versions et aperçu. Le contrôle précède le rejeu et toute
+    // écriture ; il ne prend aucun verrou — une version enregistrée dans la
+    // même fraction de seconde que le clic n'est pas couverte.
+    const versionsDeLaDecision = await prisma.protocolDraft.findMany({
+      where: { idPatient, decisionCardId },
+      select: { id: true, inputHash: true, supersedesDraftId: true, createdAt: true },
+    });
+    if (resolveActiveVersion(versionsDeLaDecision)?.inputHash !== protocolDraftInputHash) {
+      return NextResponse.json(
+        { ok: false, reason: 'version_plus_en_vigueur', error: ERREUR_APERCU_PERIME },
+        { status: 409 },
+      );
+    }
+
     const approvedAt = new Date().toISOString();
     const approval = {
       decisionCardInputHash: version.decisionCardInputHash,

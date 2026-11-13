@@ -1758,8 +1758,10 @@ export function ClinicalRuntimeSection({
         // c'est lui que le praticien relit avant de cliquer à nouveau. Les
         // VERSIONS aussi : le clic vise la version active de l'état local, et
         // un état local en retard sur le serveur renverrait le même refus sans
-        // fin (constat de revue du lot 8).
-        if (payload.reason === 'apercu_fiches_perime') {
+        // fin (constat de revue du lot 8). Une version qui n'est plus en
+        // vigueur (onglet resté ouvert sur une version remplacée ailleurs,
+        // PRA-3b Q18) appelle le même rechargement.
+        if (payload.reason === 'version_plus_en_vigueur' || payload.reason === 'apercu_fiches_perime') {
           await Promise.all([loadVersions(readyDecisionCardId), loadDiffusion(readyDecisionCardId)]);
         } else if (payload.reason === 'courrier_complement_requis') {
           // Le refus du courrier complément ([[D-345]] §4) : l'aperçu relu dit
