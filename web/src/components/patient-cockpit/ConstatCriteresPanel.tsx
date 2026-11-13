@@ -67,28 +67,28 @@ function FormulaireConstat({
 
   return (
     <div className="mt-2 space-y-2">
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={`Constat pour ${critere.labelFr}`}>
+      {/* VRAIS BOUTONS RADIO (PRA-3b, P29) : flèches et Tab natifs, l'état
+          choisi porté par la radio elle-même, sans aplat plein — comme le
+          formulaire « Poser ce constat » de l'onglet Biologie. Aucune radio
+          cochée d'office : il n'existe pas de valeur par défaut. */}
+      <fieldset className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-foreground">
+        <legend className="sr-only">{`Constat pour ${critere.labelFr}`}</legend>
         {([
           [true, 'Constaté présent'],
           [false, 'Constaté absent'],
         ] as const).map(([valeur, libelle]) => (
-          <button
-            key={String(valeur)}
-            type="button"
-            role="radio"
-            aria-checked={present === valeur}
-            onClick={() => setPresent(valeur)}
-            disabled={disabled}
-            className={`min-h-11 rounded-lg border px-3 py-2 text-sm ${
-              present === valeur
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-surface text-foreground'
-            } disabled:opacity-50`}
-          >
+          <label key={String(valeur)} className="flex min-h-11 items-center gap-2">
+            <input
+              type="radio"
+              name={`constat-${critere.critereId}`}
+              checked={present === valeur}
+              onChange={() => setPresent(valeur)}
+              disabled={disabled}
+            />
             {libelle}
-          </button>
+          </label>
         ))}
-      </div>
+      </fieldset>
       <label className="block text-sm text-muted-foreground">
         Note (facultative)
         <textarea

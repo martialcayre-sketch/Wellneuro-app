@@ -772,6 +772,36 @@ describe('ImportCompteRenduPanel — relecture robuste', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('une relecture qui échoue après une lecture réussie dit que l’affichage peut être périmé (PRA-3b, P28)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let lectures = 0;
+    const fetchMock = serveur({ detail: () => compteRendu('en_cours') });
+    const reel = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (entree, init) => {
+      if (String(entree).includes('/import/compte-rendu') && ++lectures === 2) {
+        return { ok: false, status: 500, json: async () => ({ ok: false }) } as Response;
+      }
+      return reel(entree, init);
+    });
+    render(<ImportCompteRenduPanel idPatient="pat_sophie" analytes={ANALYTES} mesures={[]} onResultatsEnregistres={async () => {}} />);
+    fireEvent.click(await screen.findByRole('button', { name: /Déposé le/ }));
+    expect(await screen.findByText(/Lecture en cours/)).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    expect(lectures).toBe(2);
+    // Le compte rendu lu reste affiché, et l'écran dit qu'il peut être périmé —
+    // pas « n'a pas pu être lu », qui se lirait comme une absence.
+    expect(screen.getByRole('alert').textContent).toBe('La relecture a échoué : ce qui suit peut ne plus être à jour.');
+    expect(screen.queryByText('Le compte rendu n’a pas pu être lu.')).toBeNull();
+    expect(screen.getByText(/Lecture en cours/)).toBeTruthy();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    expect(lectures).toBe(3);
+    expect(screen.queryByText(/La relecture a échoué/)).toBeNull();
+  });
+
   it('une réponse d’un autre compte rendu, arrivée après l’ouverture du second, est ignorée', async () => {
     const liberer: Array<() => void> = [];
     const fetchMock = vi.fn(async (entree: RequestInfo | URL) => {

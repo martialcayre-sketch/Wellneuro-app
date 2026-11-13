@@ -308,6 +308,14 @@ export function ImportCompteRenduPanel({
   const [relanceArmee, setRelanceArmee] = useState(false);
   /** Refaire le masquage de l'identité alors qu'un masquage existe déjà ([[D-284]] §5). */
   const [remasquage, setRemasquage] = useState(false);
+  /**
+   * La RELECTURE du compte rendu ouvert a échoué après une lecture réussie
+   * (PRA-3b, P28) : ce qui reste affiché peut être périmé, et l'écran le dit
+   * au lieu de le présenter comme à jour.
+   */
+  const [relectureEchouee, setRelectureEchouee] = useState(false);
+  /** Le compte rendu dont une lecture a ABOUTI depuis son ouverture. */
+  const detailLuRef = useRef<string | null>(null);
   /** Remonte le champ fichier natif, qui garde sinon le nom d'un fichier déjà déposé. */
   const [cleFichier, setCleFichier] = useState(0);
   /** Fait avancer la relecture même quand une relecture échoue (sans nouveau détail). */
@@ -363,10 +371,13 @@ export function ImportCompteRenduPanel({
         }>(response);
         if (ouvertRef.current !== idCompteRendu) return false;
         if (!response.ok || !payload?.ok || !payload.compteRendu) {
-          setErreur(payload?.error ?? 'Le compte rendu n’a pas pu être lu.');
+          if (detailLuRef.current === idCompteRendu) setRelectureEchouee(true);
+          else setErreur(payload?.error ?? 'Le compte rendu n’a pas pu être lu.');
           return false;
         }
         const lu = payload.compteRendu;
+        detailLuRef.current = idCompteRendu;
+        setRelectureEchouee(false);
         setDetail(lu);
         setActesLecture(payload.actesLecture ?? null);
         setActesLectureIndisponibles(payload.actesLectureIndisponibles === true);
@@ -381,7 +392,10 @@ export function ImportCompteRenduPanel({
         });
         return true;
       } catch {
-        if (ouvertRef.current === idCompteRendu) setErreur('Le compte rendu n’a pas pu être lu.');
+        if (ouvertRef.current === idCompteRendu) {
+          if (detailLuRef.current === idCompteRendu) setRelectureEchouee(true);
+          else setErreur('Le compte rendu n’a pas pu être lu.');
+        }
         return false;
       }
     },
@@ -423,6 +437,8 @@ export function ImportCompteRenduPanel({
   const ouvrir = useCallback(
     async (idCompteRendu: string) => {
       ouvertRef.current = idCompteRendu;
+      detailLuRef.current = null;
+      setRelectureEchouee(false);
       setDetail(null);
       setActesLecture(null);
       setActesLectureIndisponibles(false);
@@ -518,6 +534,8 @@ export function ImportCompteRenduPanel({
         return;
       }
       ouvertRef.current = null;
+      detailLuRef.current = null;
+      setRelectureEchouee(false);
       setDetail(null);
       setSaisies({});
       setInfo('Le dépôt a été retiré.');
@@ -781,12 +799,19 @@ export function ImportCompteRenduPanel({
 
       {detail && (
         <div className="mt-3 rounded-lg border border-border/60 p-3">
+          {/* Texte existant au produit (D-488, emplacement neuf PRA-3b) :
+              la relecture suivante, réussie, le retire. */}
+          {relectureEchouee && (
+            <p role="alert" className="mb-2 text-sm text-foreground">
+              La relecture a échoué : ce qui suit peut ne plus être à jour.
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-foreground">
+            <h5 className="text-sm font-normal text-foreground">
               Compte rendu déposé le {formatDateHeure(detail.deposeLe)}
               {transmisParLePatient && ' — transmis par le patient'}
               {courant?.laboratoireLu && ` — ${courant.laboratoireLu}`}
-            </p>
+            </h5>
             {/* LE REGARD AVANT LA LECTURE ([[D-269]] §1) : le document s'ouvre
                 dans un onglet, servi par la route du praticien ; rien ne part
                 chez Anthropic. Plus rien à montrer une fois effacé. */}
@@ -951,7 +976,12 @@ export function ImportCompteRenduPanel({
               {peutMasquer && (
                 <>
                   {' '}
-                  <button type="button" onClick={() => setRemasquage(true)} disabled={occupe} className="underline">
+                  <button
+                    type="button"
+                    onClick={() => setRemasquage(true)}
+                    disabled={occupe}
+                    className="inline-flex min-h-11 items-center rounded-lg px-1 text-sm underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                  >
                     Refaire le masquage
                   </button>
                 </>
