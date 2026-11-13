@@ -20,6 +20,10 @@
   d'une intelligence artificielle**, puis **validés par le responsable,
   rubrique par rubrique**, avant de pouvoir être lus comme validés. Les
   autres praticiens les lisent sans pouvoir les valider (`D-314` §9).
+  Depuis `D-509`, le responsable peut **déléguer** cette validation à
+  l'assistant de développement (Claude), explicitement et sur un périmètre
+  nommé : l'acte porte alors son adresse, et seule une trace écrite (décision
+  du lot, journal du plan) dit qu'il a été délégué.
 - **L'IA n'a jamais accès à une donnée de patient.** Elle travaille sur des
   identifiants et des énoncés sourcés du corpus, une fois par version, en
   dehors de l'application.
@@ -43,14 +47,16 @@
 | Contre-lecture | GPT, d'**OpenAI** | Relit chaque rubrique dans le contexte des autres, et chaque libellé, contre les claims. Un désaccord ou un doute écarte la fiche entière. |
 | Vérificateur DC-03 | L'outil, sans IA | Refuse tout identifiant ou nombre absent de ce que le rédacteur a reçu (`D-266` §7). |
 | Contrat et structure | L'outil puis l'application, sans IA | Rubriques exactement attendues, structure du jour, aucun champ de validation. |
-| Validation | Le responsable seul | Relecture déclarée de chaque rubrique et de chaque libellé, puis acte daté, à son adresse. |
+| Validation | Le responsable, ou l'assistant sur sa délégation explicite (`D-509`) | Relecture déclarée de chaque rubrique et de chaque libellé, puis acte daté, à son adresse. Une validation déléguée est tracée par écrit ; le retrait ne se délègue pas. |
 
 Le nom des deux modèles et la version de la consigne sont enregistrés avec
 chaque version de fiche et chaque libellé : l'origine de chaque texte se
 retrace. Par défaut : `claude-sonnet-5` et `gpt-5.4`, sous la consigne
-`fiche-usage-v3` (`D-501` §5). La v2 avait remplacé la v1 avant tout envoi
+`fiche-usage-v4` (`D-501` §7). La v2 avait remplacé la v1 avant tout envoi
 (relue par Codex, puis approuvée par le responsable le 2026-11-12) ; la v3
-la remplace après le pilote fer, où aucun texte n'avait été retenu.
+l'a remplacée après le pilote fer, où aucun texte n'avait été retenu ; la
+v4 précise la seule rubrique « question », refusée même quand elle ne
+faisait que nommer l'usage signé.
 
 Un libellé de population que les claims ne décrivent pas ne passe pas par
 l'IA : il vient d'une correspondance approuvée par le responsable, déposée
@@ -88,10 +94,14 @@ impose notamment :
    serait jamais valide.
 2. **Vérificateur DC-03**, bloquant.
 3. **Dépôt comme brouillon seulement**, sous secret interne. La voie de dépôt
-   refuse tout champ de validation : une machine ne valide jamais (`DC-16`).
-4. **Validation humaine, distincte et datée, rubrique par rubrique**, par le
-   responsable seul, après une relecture déclarée au moment de valider ;
-   refusée tant que la structure n'est pas signée.
+   refuse tout champ de validation : le circuit de rédaction ne valide
+   jamais (`DC-16`).
+4. **Validation distincte et datée, rubrique par rubrique**, par le
+   responsable, après une relecture déclarée au moment de valider ; refusée
+   tant que la structure n'est pas signée. Sur sa délégation explicite, en
+   session et sur un périmètre nommé, l'assistant peut poser ces actes à sa
+   place après sa propre relecture ; la délégation est l'acte humain qui en
+   répond, et elle est tracée par écrit (`D-509`).
 5. **Le texte est lié à la structure qu'il rédige** : une structure re-signée
    le rend « à relire » jusqu'à un nouveau dépôt (`D-314` §5).
 6. **Retrait possible à tout moment**, avec un motif. Rien ne s'efface : la
@@ -102,7 +112,10 @@ impose notamment :
 - Voir une donnée de patient.
 - Choisir une fiche pour un dossier : aucune sélection d'après le dossier
   n'existe dans ce lot (`D-314` §7).
-- Valider un texte ou un libellé.
+- Valider un texte ou un libellé de sa propre initiative. Seul l'assistant
+  de développement le fait, sur délégation explicite du responsable, en
+  session et sur un périmètre nommé (`D-509`) ; le circuit de rédaction ne
+  valide jamais.
 - Ajouter un nombre, une dose ou un identifiant absents de ses sources.
 
 ## Limites connues
@@ -110,15 +123,23 @@ impose notamment :
 - **Le contrôle automatique ne lit pas le sens.** Un sens déplacé, une
   population élargie ou un nombre écrit en lettres lui échappent. La
   contre-lecture les cherche, et la relecture du praticien reste la
-  dernière porte (`D-195` §1).
+  dernière porte (`D-195` §1). Quand la validation est déléguée, cette
+  relecture est celle de l'assistant, un modèle de la même famille que le
+  rédacteur : la relecture par le responsable lui-même reste recommandée
+  (`D-509` §3).
 - **La base enregistre la déclaration de relecture, pas la preuve d'un geste
-  humain.** Cette garantie tient par l'application, qui n'accepte un acte que
-  du responsable connecté, désigné par une liste d'adresses fermée par défaut
-  (`D-314` §9).
+  humain.** L'application n'accepte un acte que d'une adresse de la liste
+  des validateurs, fermée par défaut (`D-314` §9) ; elle ne dit pas qui
+  a relu. Un acte délégué porte la même adresse et la même déclaration
+  qu'un acte du responsable, et ne s'en distingue pas en base : seule la
+  trace écrite de la délégation (décision du lot, journal du plan) le dit.
+  L'acte humain qui répond de la validation est alors la délégation, pas la
+  relecture (`D-509` §3).
 
 ## Références
 
 - Décision : `D-314` (§3 validation rubrique par rubrique, §4 rédaction hors
-  ligne, §5 fraîcheur, §7 hors périmètre, §9 le responsable seul valide) ; `D-251` §4 (texte hors dépôt) ;
+  ligne, §5 fraîcheur, §7 hors périmètre, §9 le responsable seul valide,
+  amendé par `D-509` : validation déléguable) ; `D-251` §4 (texte hors dépôt) ;
   `D-266` §7 (DC-03). Principes : `DC-16`, `D-195` §1.
 - Outil : `tools/corpus/fiches-usage/README.md` et ses consignes.

@@ -12,6 +12,13 @@ CLAIMS fournis. Pour une rubrique, distingue deux choses :
 - un FAIT (indication, interprétation, condition, précaution, limite) n'est
   fidèle que si un claim l'établit.
 
+La rubrique « question » pose une question, elle n'affirme pas un usage.
+Composée seulement des désignations approuvées (usage décisionnel,
+population d'usage, hypothèses rattachées, analyte) et de la réserve
+qu'impose le statut d'usage, elle est FIDÈLE même si aucun claim n'établit
+l'usage décisionnel : cet usage vient du cadre signé. Tout autre élément
+qu'elle contient est un fait, jugé comme tel.
+
 Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 
 - une affirmation, une condition ou une conséquence qu'aucun claim ne porte ;

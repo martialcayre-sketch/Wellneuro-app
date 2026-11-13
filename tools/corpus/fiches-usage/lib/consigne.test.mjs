@@ -1,4 +1,4 @@
-// La consigne « fiche-usage-v3 » est épinglée : un octet changé sans bump de
+// La consigne « fiche-usage-v4 » est épinglée : un octet changé sans bump de
 // version rougit ici, et l'outil refuse de tourner ([[D-314]] §4).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -51,4 +51,15 @@ test('v3 : désignations approuvées pour nommer, jamais pour établir un fait, 
   assert.match(redaction, /Ne nomme aucune hypothèse que la liste ne rattache pas/);
   assert.match(contreLecture, /une DÉSIGNATION reprise des DÉSIGNATIONS APPROUVÉES/);
   assert.match(contreLecture, /un FAIT \(indication, interprétation, condition, précaution, limite\) n'est\s+fidèle que si un claim l'établit/);
+});
+
+// [[D-501]] §7 : la rubrique « question » se compose des seules désignations
+// approuvées et de la réserve du statut d'usage ; la contre-lecture la juge
+// fidèle sans claim de l'usage, et tout autre élément comme un fait.
+test('v4 : la rubrique « question » nomme l’usage signé sans l’affirmer, des deux côtés', () => {
+  const { redaction, contreLecture } = lireConsignes();
+  assert.match(redaction, /LA RUBRIQUE « QUESTION »/);
+  assert.match(redaction, /Elle n'énonce aucun\s+fait/);
+  assert.match(contreLecture, /La rubrique « question » pose une question, elle n'affirme pas un usage/);
+  assert.match(contreLecture, /Tout autre élément\s+qu'elle contient est un fait, jugé comme tel/);
 });
