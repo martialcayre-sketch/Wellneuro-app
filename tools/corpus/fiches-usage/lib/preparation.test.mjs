@@ -9,6 +9,7 @@ import {
   contexteDeRubrique,
   designationsDeLaFiche,
   lireReponseFiche,
+  lireReponseLibelle,
   MARQUE_RESERVE,
   messageContreLecture,
   messageRedactionFiche,
@@ -140,6 +141,18 @@ test('v3 : la réponse du rédacteur — rubriques, ou refus motivé', () => {
   assert.throws(() => lireReponseFiche({ refus: ' ' }, FICHE.rubriques), /refus sans motif/);
   assert.deepEqual(lireReponseFiche({ rubriques: { question: 'Q.', limites: 'L.' } }, FICHE.rubriques), { rubriques: { question: 'Q.', limites: 'L.' } });
   assert.throws(() => lireReponseFiche({ rubriques: { question: 'Q.' } }, FICHE.rubriques), /manquantes : limites/);
+});
+
+test('la réponse du rédacteur pour un libellé — objet JSON, ou libellé nu sur une ligne', () => {
+  assert.deepEqual(lireReponseLibelle('{"libelle": "État synthétique"}'), { libelle: 'État synthétique' });
+  assert.deepEqual(lireReponseLibelle('```json\n{"libelle": "État synthétique"}\n```'), { libelle: 'État synthétique' });
+  // Le libellé seul, en texte nu (constaté sur HYP_MG_1) : lu comme le libellé.
+  assert.deepEqual(lireReponseLibelle('  État synthétique \n'), { libelle: 'État synthétique' });
+  // Plusieurs lignes, un JSON cassé, une clôture ou rien : refusés.
+  assert.throws(() => lireReponseLibelle('État synthétique\nJustification.'), /illisible/);
+  assert.throws(() => lireReponseLibelle('{"libelle": "État synthétique"'), /illisible/);
+  assert.throws(() => lireReponseLibelle('```État synthétique```'), /illisible/);
+  assert.throws(() => lireReponseLibelle('   '), /illisible/);
 });
 
 test('les sources DC-03 sont exactement ce que le rédacteur a reçu', () => {
