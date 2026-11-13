@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { authOptions, profilPraticienAutorise } from './auth';
+import { contexteResolution, designe, importsResolus, type ContexteResolution } from './bio-parcours/resolutionImports';
 
 // Garde structurelle — séparation des rôles patient / praticien (IDP2 LOT-03b).
 //
@@ -57,6 +58,23 @@ function fichiersSources(dossier: string): string[] {
 
 const SURFACES_PATIENT = [...RACINES_PATIENT.flatMap(fichiersSources), ...FICHIERS_PATIENT_ISOLES];
 
+// LES IMPORTS sont lus par le parseur et RÉSOLUS (lot `bp17-extension-bancs-garde`) :
+// le motif `from '…'` ne voyait ni `import()`, ni `require`, ni l'import
+// latéral, ni un commentaire glissé, ni un alias ou un lien symbolique vers
+// `lib/auth`. Un import INDÉTERMINÉ (non constant, nom nu inconnu) peut charger
+// NextAuth comme le module praticien : il rougit les deux cas. Les lectures
+// par mot (`getServerSession`, `authOptions`, le nom du cookie) restent sur le
+// texte : elles ne sont pas des imports.
+let contexte: ContexteResolution | undefined;
+const importsVers = (chemin: string, motif: RegExp, cibles: readonly string[], source?: string) =>
+  importsResolus(`web/src/${chemin}`, (contexte ??= contexteResolution()), source)
+    .filter(i => designe(i, motif, cibles))
+    .map(i => i.specificateur);
+const NEXT_AUTH = /^next-auth(\/|$)/;
+const CIBLES_NEXT_AUTH = ['web/node_modules/next-auth/'];
+const AUTH_PRATICIEN = /\/auth$/;
+const CIBLES_AUTH_PRATICIEN = ['web/src/lib/auth.ts'];
+
 describe('séparation des rôles — NextAuth est réservé aux praticiens', () => {
   it('recense bien les surfaces patient (sinon la garde ne regarde plus rien)', () => {
     // Si l'arborescence bouge et que le parcours ne trouve plus les fichiers,
@@ -79,7 +97,7 @@ describe('séparation des rôles — NextAuth est réservé aux praticiens', () 
 
   it.each(SURFACES_PATIENT)('%s n’importe pas NextAuth', chemin => {
     const source = readFileSync(join(RACINE, chemin), 'utf8');
-    expect(source).not.toMatch(/from\s+['"]next-auth/);
+    expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source)).toEqual([]);
     expect(source).not.toMatch(/\bgetServerSession\b/);
     expect(source).not.toMatch(/\bnext-auth\.session-token\b/);
   });
@@ -87,9 +105,31 @@ describe('séparation des rôles — NextAuth est réservé aux praticiens', () 
   it('aucune surface patient n’importe le module d’authentification praticien', () => {
     for (const chemin of SURFACES_PATIENT) {
       const source = readFileSync(join(RACINE, chemin), 'utf8');
-      expect(source).not.toMatch(/from\s+['"][^'"]*\/auth['"]/);
+      expect(importsVers(chemin, AUTH_PRATICIEN, CIBLES_AUTH_PRATICIEN, source), chemin).toEqual([]);
       expect(source).not.toMatch(/\bauthOptions\b/);
     }
+  }, 60_000);
+
+  // CONTRE-ÉPREUVE DU LECTEUR (absente avant le lot) : les formes que le motif
+  // `from '…'` ne voyait pas, vers NextAuth et vers le module praticien.
+  it('le lecteur voit chaque forme d’import de NextAuth et du module praticien', () => {
+    const chemin = 'lib/portail/neuf.ts';
+    for (const source of [
+      "const n = await import('next-auth/react');",
+      'const n = require("next-" + "auth");',
+      "import 'next-auth';",
+      'const m = await import(chemin);',
+    ]) {
+      expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source), source).toHaveLength(1);
+    }
+    for (const source of [
+      "import { authOptions as o } from '../auth';",
+      'import { authOptions as o } from/**/"@/lib/auth";',
+      "const a = require('@/lib/' + 'auth');",
+    ]) {
+      expect(importsVers(chemin, AUTH_PRATICIEN, CIBLES_AUTH_PRATICIEN, source), source).toHaveLength(1);
+    }
+    expect(importsVers(chemin, AUTH_PRATICIEN, CIBLES_AUTH_PRATICIEN, "import { x } from '@/lib/patient-session';")).toEqual([]);
   });
 
   it('lib/auth.ts ignore tout du portail patient', () => {
