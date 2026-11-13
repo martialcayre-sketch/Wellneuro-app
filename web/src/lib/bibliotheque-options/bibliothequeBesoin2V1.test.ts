@@ -148,11 +148,35 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
     expect(incoherencesDeBibliotheque(avec({ renvois: pasUneListe }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:dose:renvoi']);
   });
 
-  it('« information manquante » vaut pour la dose seule, et seule', () => {
-    const horsDose = { ...OPTION.renvois, duree: ['information_manquante'] };
-    expect(incoherencesDeBibliotheque(avec({ renvois: horsDose }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:duree:information_manquante']);
-    const avecSource = { ...OPTION.renvois, dose: ['information_manquante', 'WN-CL-9999-003@v1.0'] };
-    expect(incoherencesDeBibliotheque(avec({ renvois: avecSource }), FU_SYNTH)).toEqual(['OPT_SYNTH_1:dose:information_manquante']);
+  it('« information manquante » vaut dans toute rubrique sauf les précautions, et seule (D-514 §2)', () => {
+    // Chaque rubrique autre que les précautions peut être déclarée manquante.
+    const admises = RUBRIQUES_OPTION.filter(r => r !== 'precautions');
+    expect(admises).toHaveLength(8);
+    for (const rubrique of admises) {
+      const declaree = { ...OPTION.renvois, [rubrique]: ['information_manquante'] };
+      expect(incoherencesDeBibliotheque(avec({ renvois: declaree }), FU_SYNTH), rubrique).toEqual([]);
+    }
+    // Toutes ensemble aussi : l'option reste cohérente, ses précautions documentées.
+    const toutesManquantes = Object.fromEntries(
+      RUBRIQUES_OPTION.map(r => [r, r === 'precautions' ? ['WN-CL-9999-001@v1.0'] : ['information_manquante']]),
+    ) as unknown as OptionBibliotheque['renvois'];
+    expect(incoherencesDeBibliotheque(avec({ renvois: toutesManquantes }), FU_SYNTH)).toEqual([]);
+    // Les précautions ne se déclarent pas manquantes (§5.1, DC-38).
+    const precautionsManquantes = { ...OPTION.renvois, precautions: ['information_manquante'] };
+    expect(incoherencesDeBibliotheque(avec({ renvois: precautionsManquantes }), FU_SYNTH)).toEqual([
+      'OPT_SYNTH_1:precautions:information_manquante',
+    ]);
+    const precautionsMelees = { ...OPTION.renvois, precautions: ['WN-CL-9999-001@v1.0', 'information_manquante'] };
+    expect(incoherencesDeBibliotheque(avec({ renvois: precautionsMelees }), FU_SYNTH)).toEqual([
+      'OPT_SYNTH_1:precautions:information_manquante',
+    ]);
+    // « Manquante » et une source ensemble se contredisent, dans toute rubrique.
+    for (const rubrique of ['dose', 'duree', 'role_praticien'] as const) {
+      const avecSource = { ...OPTION.renvois, [rubrique]: ['information_manquante', 'WN-CL-9999-003@v1.0'] };
+      expect(incoherencesDeBibliotheque(avec({ renvois: avecSource }), FU_SYNTH), rubrique).toEqual([
+        `OPT_SYNTH_1:${rubrique}:information_manquante`,
+      ]);
+    }
   });
 
   it('une rubrique hors liste est refusée, une rubrique absente aussi', () => {

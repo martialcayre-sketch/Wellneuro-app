@@ -43,8 +43,9 @@ import {
 // fiches d'usage, jamais redéfinie ici ([[D-417]] §1, BP-12a).
 //
 // LES RENVOIS (§4) : un claim `identifiant@version`, une position d'expert
-// `WN-PE-NNNN@vN.M`, ou `information_manquante` pour la dose seule. Une
-// rubrique sans renvoi n'est pas documentée. Une option sans précautions
+// `WN-PE-NNNN@vN.M`, ou `information_manquante` dans toute rubrique sauf les
+// précautions ([[D-514]] §2). Une rubrique sans renvoi n'est pas documentée ;
+// une rubrique `information_manquante` est déclarée manquante (D-480 §5.2). Une option sans précautions
 // documentées rend la structure incohérente (§5.1, entré ici sur l'arbitrage
 // du 2026-11-12). Les autres contrôles de §5 sont posés par la PR 4 : les
 // claims cités entrent au contrat de fraîcheur en deux tables selon l'usage
@@ -70,7 +71,7 @@ export type OptionBibliotheque = {
   hypothese: string;
   /** `POP_…` — au moins une, toutes déclarées par la structure des fiches d'usage. */
   populations: readonly string[];
-  /** Les renvois de chacune des neuf rubriques, ni plus ni moins ; une liste vide = non documentée. */
+  /** Les renvois de chacune des neuf rubriques, ni plus ni moins ; une liste vide = non documentée, `information_manquante` = déclarée manquante. */
   renvois: Readonly<Record<RubriqueOption, readonly string[]>>;
 };
 
@@ -233,8 +234,8 @@ export function incoherencesDeBibliotheque(
       // l'arbitrage du responsable du 2026-11-12 (constat de revue de #2006).
       if (rubrique === 'precautions' && renvois.length === 0) a('precautions');
       if (renvois.includes(INFORMATION_MANQUANTE)) {
-        // Pour la dose seule, et seule : une source citée et « manquante »
-        // ensemble se contrediraient.
+        // Hors des précautions ([[D-514]] §2), et seule : une source citée et
+        // « manquante » ensemble se contrediraient.
         if (!RUBRIQUES_INFORMATION_MANQUANTE.includes(rubrique as RubriqueOption) || renvois.length > 1) {
           a(`${rubrique}:information_manquante`);
         }
