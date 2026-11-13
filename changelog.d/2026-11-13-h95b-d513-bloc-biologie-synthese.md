@@ -14,5 +14,7 @@ recopie une forme biologique. Le texte patient ne dira que la réception d'un
 bilan daté. Consigne `synthese-v35` ; amende D-266 §4 (R5) et D-331 §6. Le
 flux vers l'IA sera déclaré au dossier RGPD, dans « Vos données
 personnelles » et dans les conditions d'utilisation avant son ouverture.
+Un drapeau propre au flux, créé éteint, ne garde que le bloc. Sa pose est
+un geste du responsable, après ces préalables.
 Le lot de code passera par `release-db` (constructeur sous
 `web/src/lib/clinical/`), sans migration.
