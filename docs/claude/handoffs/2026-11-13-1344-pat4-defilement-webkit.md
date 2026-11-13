@@ -45,6 +45,11 @@ Ce qui est attendu :
 - Revue wn-reviewer sur `1ad95dad` : la relance met D-506 en œuvre fidèlement, sans en changer le comportement, et ne relève donc pas du responsable. NO-GO sur un P1 : la fenêtre de stabilité de l'E2E (800 ms) se fermait avant que la relance puisse atterrir. Corrigé : dix relevés identiques, soit 1,8 s, avec un délai de 12 s. P2 traités : test de la relance en mouvement réduit ; hypothèse reformulée ci-dessus.
 - Deuxième revue, sur `479fbac1` : NO-GO sur un P1. L'écouteur `scroll` ajouté pour un P2 (« tout événement compte comme un mouvement ») désarmait la relance au résumé : l'événement du `scrollTo(0, 0)` qui précède le montage arrive après la demande. Corrigé en retirant l'écouteur : la position seule fait foi, et un test fige la relance au résumé (il échouait avec l'écouteur). Le P2 d'origine (retour au même pixel en moins de 600 ms, toucher annulé avant toute image) est écarté : ces cas sont improbables, et l'écouteur rouvrait un défaut plus grave à un moment fixé par D-506 §4. Indentation de l'E2E corrigée.
 - Vitest ciblés après correction : 160/160.
+- Troisième revue, sur `ef973433` : **GO**, sans P0, P1 ni P2. La relance met D-506 en œuvre sans en changer le comportement : rien à porter au responsable.
+- Verdicts sur PR-Agent (revue de `479fbac1`) :
+  - « Comportement D-506 modifié sans décision ni fragment » : corrigé pour le titre de la PR, `test(e2e)` devenu `fix(patient)`, et pour sa description. Écarté pour le reste : le fragment `changelog.d/2026-11-13-pat4-defilement-webkit.md` est dans la PR, et la revue clinique juge la relance fidèle à D-506 (un mouvement par apparition, jamais après un mouvement de la page).
+  - « Journal tronqué au début » : corrigé. Le journal garde ses 20 premières et ses 100 dernières entrées.
+  - « Relance limitée à la page immobile » : écarté. Relancer après un mouvement partiel contredirait D-506 §1 et §3, puisque rien ne distingue un arrêt du moteur d'un défilement du patient. Un arrêt en cours de route ferait rougir l'E2E strict : c'est l'issue voulue.
 
 ## Problèmes ouverts
 

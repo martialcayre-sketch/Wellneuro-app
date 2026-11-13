@@ -137,8 +137,12 @@ async function attendreLeMessagePlace(page: Page, libelle: string): Promise<Mesu
   let precedente = '';
   let identiques = 0;
   let stable: Mesure | null = null;
-  const lireLeJournal = () => page.evaluate(() =>
-    (window as unknown as { __journalD506?: unknown[][] }).__journalD506?.slice(0, 120) ?? null);
+  // Le début (départ, geste) et la fin (où le défilement s'arrête) du journal.
+  const lireLeJournal = () => page.evaluate(() => {
+    const complet = (window as unknown as { __journalD506?: unknown[][] }).__journalD506;
+    if (!complet) return null;
+    return complet.length <= 120 ? complet : [...complet.slice(0, 20), ['…', complet.length - 120], ...complet.slice(-100)];
+  });
   try {
     await expect.poll(async () => {
       const m = await mesurer(page);
