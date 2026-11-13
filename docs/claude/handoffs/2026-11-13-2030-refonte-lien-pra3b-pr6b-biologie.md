@@ -33,7 +33,9 @@ Seconde moitié de la PR 6 du plan PRA-3b (Biologie) : l'interface de P25 à P29
 - Vitest ciblé : 16 fichiers, 624 tests verts (biologie, patient-cockpit touchés, `ClinicalRuntimeSection`, `AssiettesIndiqueesPanel`, `FichePatientPanel`).
 - `npx tsc --noEmit` vert ; `npm run check:rapide` vert.
 - Relecture ui-ux-pro-max : aucun constat bloquant (hiérarchie des titres, annonce des échecs, bouton désactivé pendant la relecture, focus visible).
-- T1, T2 : voir la PR.
+- T1 (`npm run check`) vert.
+- T2 (`npm run test:worktree -- --fast`) vert : Vitest 17 409 tests passés (50 sautés) ; Playwright sur build de production, Chromium et WebKit, 382 passés, 34 sautés.
+- Revue PR-Agent : un constat (« Réessayer » des Constats démonté pendant la relecture, l'erreur effacée avant la réponse) corrigé ; la branche a été remise à niveau par fusion d'`origin/main`, sur arbitrage du responsable, pour lever le crochet de fraîcheur. Après fusion et correctif : T1 vert ; T2 arrêté à Vitest par trois délais dépassés dans `ProtocolMiniBuilder.test.tsx` (hors du diff, charge machine 18), le fichier rejoué seul vert (94/94) ; E2E jugés par le CI.
 
 ## Problèmes ouverts
 

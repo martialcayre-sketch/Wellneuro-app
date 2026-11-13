@@ -224,8 +224,11 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect(alerte.textContent).toBe('Les constats n’ont pas pu être lus.');
     expect(alerte.className).toContain('text-status-danger');
     expect(alerte.className).not.toContain('text-destructive');
-    // Relecture en échec : le message reste, le focus revient sur le bouton.
+    // Relecture en échec : le message et le bouton restent montés pendant la
+    // relecture (bouton désactivé), puis le focus revient sur le bouton.
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(screen.getByRole('alert').textContent).toBe('Les constats n’ont pas pu être lus.');
+    expect((screen.getByRole('button', { name: 'Réessayer' }) as HTMLButtonElement).disabled).toBe(true);
     await waitFor(() => expect(lectures).toBe(2));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })));
     // Relecture réussie : les constats paraissent, le focus passe au titre.

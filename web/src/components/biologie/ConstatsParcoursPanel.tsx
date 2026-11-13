@@ -355,7 +355,9 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
   const sequence = useRef(0);
   const charger = useCallback(async (): Promise<boolean> => {
     const numero = ++sequence.current;
-    setErreur(null);
+    // L'échec affiché reste en place jusqu'à la réponse (revue PR-Agent de
+    // #2078) : l'effacer d'emblée démontait « Réessayer » pendant la
+    // relecture, jetait le focus sur la page et réannonçait le message.
     try {
       const res = await fetch(`/api/praticien/biologie/constats?idPatient=${encodeURIComponent(idPatient)}`);
       const rendu = (await res.json().catch(() => null)) as ({ ok: true } & Donnees) | { ok: false; error?: string } | null;
@@ -364,6 +366,7 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
         setErreur((rendu && !rendu.ok && rendu.error) || 'Les constats n’ont pas pu être lus.');
         return false;
       }
+      setErreur(null);
       setDonnees(rendu);
       return true;
     } catch {
