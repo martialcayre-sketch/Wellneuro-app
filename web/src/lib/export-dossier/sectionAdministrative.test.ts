@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { NON_RENSEIGNE, type BlocExport, type PatientExport } from './modele';
-import { MENTION_PSEUDONYMISATION, sectionAdministrative } from './sectionAdministrative';
+import { MENTION_PSEUDONYMISATION, sectionAdministrative, trancheAge } from './sectionAdministrative';
+
+const PSEUDONYME = 'EXT-7F3K9Q';
 
 const MAINTENANT = new Date('2026-09-26T12:00:00Z');
 // Un questionnaire (Q_ALI_03) peut demander le sexe : la phrase ne le nie pas.
@@ -117,43 +119,57 @@ describe('sectionAdministrative — version complète', () => {
 });
 
 describe('sectionAdministrative — version IA externe', () => {
-  it('ne garde que l’identifiant, l’âge, le sexe non renseigné et l’état du dossier', () => {
-    expect(sectionAdministrative(patient(), 'ia-externe', MAINTENANT)).toEqual([
+  it('ne garde que le pseudonyme, la tranche d’âge, le sexe non renseigné et l’état du dossier (D-512)', () => {
+    expect(sectionAdministrative(patient(), 'ia-externe', MAINTENANT, PSEUDONYME)).toEqual([
       { type: 'titre', niveau: 1, texte: '1. Renseignements administratifs' },
-      { type: 'champ', libelle: 'Identifiant WellNeuro', valeur: 'PAT030' },
-      { type: 'champ', libelle: 'Âge', valeur: '41 ans' },
+      { type: 'champ', libelle: "Pseudonyme d'export", valeur: PSEUDONYME },
+      { type: 'champ', libelle: 'Âge', valeur: '40-44 ans' },
       { type: 'champ', libelle: 'Sexe', valeur: SEXE },
       { type: 'titre', niveau: 2, texte: 'État du dossier' },
       { type: 'champ', libelle: 'Dossier', valeur: 'Actif' },
-      { type: 'champ', libelle: 'Accès du patient', valeur: 'Actif' },
-      { type: 'champ', libelle: 'Création du dossier', valeur: '01/09/2026' },
       { type: 'paragraphe', texte: MENTION_PSEUDONYMISATION, ton: 'discret' },
     ]);
   });
 
+  it('sans pseudonyme, lève — jamais de repli sur PATnnn', () => {
+    expect(() => sectionAdministrative(patient(), 'ia-externe', MAINTENANT)).toThrow(/Pseudonyme/);
+    expect(() => sectionAdministrative(patient(), 'ia-externe', MAINTENANT, '')).toThrow(/Pseudonyme/);
+  });
+
   it('annonce la pseudonymisation dans les mots attendus', () => {
     expect(MENTION_PSEUDONYMISATION).toBe(
-      'Version pseudonymisée : nom, prénom, date de naissance, coordonnées et médecin traitant sont retirés de ce document.',
+      'Version pseudonymisée : nom, prénom, date de naissance, coordonnées et médecin traitant sont retirés de ce document. '
+      + "L'identifiant interne du dossier est remplacé par un pseudonyme d'export, l'âge est donné par tranche de cinq ans "
+      + 'et les dates administratives sont retirées.',
     );
   });
 
   it('dit « Non renseigné » quand l’âge ne se calcule pas — jamais la date à la place', () => {
     for (const dateNaissance of [null, '', '1985-02-31', '14/03/1985', '2030-01-01']) {
-      const blocs = sectionAdministrative(patient({ dateNaissance }), 'ia-externe', MAINTENANT);
+      const blocs = sectionAdministrative(patient({ dateNaissance }), 'ia-externe', MAINTENANT, PSEUDONYME);
       expect(valeurDe(blocs, 'Âge')).toBe(NON_RENSEIGNE);
       expect(valeurDe(blocs, 'Date de naissance')).toBeUndefined();
     }
   });
 
-  it('garde l’état du dossier complet, clôture et révocation comprises', () => {
+  it('dit l’état du dossier sans aucune date administrative (D-512 §2)', () => {
     const blocs = sectionAdministrative(
       patient({ actif: false, suiviClotureLe: new Date('2026-09-20T10:00:00Z'), accessTokenRevoked: true }),
       'ia-externe',
       MAINTENANT,
+      PSEUDONYME,
     );
     expect(valeurDe(blocs, 'Dossier')).toBe('Inactif');
-    expect(valeurDe(blocs, 'Suivi')).toBe('Clôturé le 20/09/2026');
-    expect(valeurDe(blocs, 'Accès du patient')).toBe('Révoqué');
+    expect(valeurDe(blocs, 'Suivi')).toBe('Clôturé');
+    expect(valeurDe(blocs, 'Accès du patient')).toBeUndefined();
+    expect(valeurDe(blocs, 'Création du dossier')).toBeUndefined();
+    expect(JSON.stringify(blocs)).not.toMatch(/\d{2}\/\d{2}\/\d{4}|20\d\d/);
+  });
+
+  it('n’écrit jamais l’identifiant interne', () => {
+    const blocs = sectionAdministrative(patient(), 'ia-externe', MAINTENANT, PSEUDONYME);
+    expect(JSON.stringify(blocs)).not.toContain('PAT030');
+    expect(valeurDe(blocs, 'Identifiant WellNeuro')).toBeUndefined();
   });
 
   describe('aucune valeur identifiante ne figure dans les blocs', () => {
@@ -179,7 +195,7 @@ describe('sectionAdministrative — version IA externe', () => {
     ];
 
     it.each(variantes)('%s', (_nom, p) => {
-      const blocs = sectionAdministrative(p, 'ia-externe', MAINTENANT);
+      const blocs = sectionAdministrative(p, 'ia-externe', MAINTENANT, PSEUDONYME);
       const texte = JSON.stringify(blocs).toLowerCase();
       const chiffres = (valeur: string | null) => (valeur ?? '').replace(/\D/g, '');
       const interdits = [
@@ -210,5 +226,19 @@ describe('sectionAdministrative — version IA externe', () => {
         expect(valeurDe(blocs, libelle)).toBeUndefined();
       }
     });
+  });
+});
+
+describe('trancheAge (D-512 §4)', () => {
+  it('rend la tranche de cinq ans qui contient l’âge', () => {
+    expect(trancheAge(40)).toBe('40-44 ans');
+    expect(trancheAge(44)).toBe('40-44 ans');
+    expect(trancheAge(45)).toBe('45-49 ans');
+    expect(trancheAge(0)).toBe('0-4 ans');
+    expect(trancheAge(17)).toBe('15-19 ans');
+  });
+
+  it('la version complète garde l’âge exact', () => {
+    expect(valeurDe(sectionAdministrative(patient(), 'complete', MAINTENANT), 'Date de naissance')).toBe('14/03/1985 (41 ans)');
   });
 });

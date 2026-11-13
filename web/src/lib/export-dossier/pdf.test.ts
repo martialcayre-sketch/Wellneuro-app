@@ -238,7 +238,18 @@ describe('rendrePdf', () => {
     expect(pdf.getModificationDate()?.toISOString()).toBe(maintenant.toISOString());
   });
 
-  it('un document long s’étend sur plusieurs pages, comme planifié', async () => {
+  it('une date de métadonnées posée par le document prime sur l’instant d’export ([[D-512]] §3)', async () => {
+    const jour = new Date(Date.UTC(2026, 8, 26));
+    const doc = documentDe([]);
+    const octets = await rendrePdf({ ...doc, metadonnees: { ...doc.metadonnees, date: jour } }, {
+      maintenant: new Date('2026-09-26T08:30:00.000Z'),
+    });
+    const pdf = await PDFDocument.load(octets, { updateMetadata: false });
+    expect(pdf.getCreationDate()?.toISOString()).toBe('2026-09-26T00:00:00.000Z');
+    expect(pdf.getModificationDate()?.toISOString()).toBe('2026-09-26T00:00:00.000Z');
+  });
+
+    it('un document long s’étend sur plusieurs pages, comme planifié', async () => {
     const doc = documentDe(paragraphes(40, LONG));
     const octets = await rendrePdf(doc);
     const pdf = await PDFDocument.load(octets);

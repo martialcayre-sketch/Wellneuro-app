@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Garde, journal des accès (G-TRUST-04) et en-têtes du téléchargement. Le
 // contenu du document est jugé par lib/export-dossier/assembler.test.ts, pas
@@ -23,6 +23,10 @@ vi.mock('@/lib/export-dossier/assembler', async importOriginal => {
 vi.mock('@/lib/export-dossier/pdf', () => ({ rendrePdf }));
 
 import { GET } from './route';
+import { FORME_PSEUDONYME, pseudonymeExport, VARIABLE_SECRET_PSEUDONYME } from '@/lib/export-dossier/pseudonyme';
+
+// Secret de test, jamais celui d'un environnement ([[D-512]] §1).
+const SECRET = 'secret-de-test-route-export-pseudonyme-0123456789';
 
 const DOCUMENT = {
   titre: 'Dossier patient PAT_1',
@@ -44,6 +48,11 @@ describe('GET /api/praticien/export-dossier', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
     assemblerDossierExport.mockResolvedValue(DOCUMENT);
     rendrePdf.mockResolvedValue(OCTETS);
+    vi.stubEnv(VARIABLE_SECRET_PSEUDONYME, SECRET);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('sans session : 401, rien n’est lu', async () => {
@@ -144,6 +153,50 @@ describe('GET /api/praticien/export-dossier', () => {
     expect(params).toMatchObject({ idPatient: 'PAT_1', praticienEmail: 'p@wellneuro.fr', version: 'ia-externe' });
     expect(params.maintenant).toBeInstanceOf(Date);
     expect(rendrePdf).toHaveBeenCalledWith(DOCUMENT, { maintenant: params.maintenant });
+  });
+
+  // [[D-512]] §1 : le pseudonyme remplace PATnnn dans le nom du fichier et part à l'assembleur.
+  it('200 ia-externe : pseudonyme d’export à l’assembleur, dans le nom du fichier et dans l’en-tête ; jamais l’identifiant interne', async () => {
+    const res = await GET(request('idPatient=PAT_1&version=ia-externe'));
+    expect(res.status).toBe(200);
+    const pseudonyme = pseudonymeExport('PAT_1', SECRET);
+    expect(pseudonyme).toMatch(FORME_PSEUDONYME);
+    expect(assemblerDossierExport).toHaveBeenCalledWith(expect.objectContaining({ pseudonyme }));
+    expect(res.headers.get('X-Pseudonyme-Export')).toBe(pseudonyme);
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    expect(disposition).toBe(
+      `attachment; filename="dossier-${pseudonyme}-ia-externe-${disposition.match(/\d{4}-\d{2}-\d{2}/)?.[0]}.pdf"`,
+    );
+    expect(disposition).not.toContain('PAT_1');
+  });
+
+  it('200 complete : ni pseudonyme ni en-tête, le nom garde l’identifiant interne', async () => {
+    const res = await GET(request('idPatient=PAT_1&version=complete'));
+    expect(res.status).toBe(200);
+    expect(assemblerDossierExport).toHaveBeenCalledWith(expect.objectContaining({ pseudonyme: null }));
+    expect(res.headers.get('X-Pseudonyme-Export')).toBeNull();
+  });
+
+  it.each([
+    ['absent', ''],
+    ['trop court (31 caractères)', 'x'.repeat(31)],
+  ])('secret de pseudonymisation %s : ia-externe en 503, rien n’est lu ni journalisé ; la complète reste servie', async (_cas, valeur) => {
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubEnv(VARIABLE_SECRET_PSEUDONYME, valeur);
+    for (const query of ['idPatient=PAT_1&version=ia-externe', 'idPatient=PAT_1']) {
+      const res = await GET(request(query));
+      expect(res.status).toBe(503);
+      const corps = await res.json();
+      expect(corps).toMatchObject({ ok: false, reason: 'pseudonymisation_indisponible' });
+      expect(corps.error).toContain('Export pseudonymisé indisponible');
+    }
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+    expect(assemblerDossierExport).not.toHaveBeenCalled();
+    expect(JSON.stringify(erreur.mock.calls)).not.toContain(valeur || '\u0000');
+    const complete = await GET(request('idPatient=PAT_1&version=complete'));
+    expect(complete.status).toBe(200);
+    erreur.mockRestore();
   });
 
   it('dossier disparu entre la garde et l’assemblage : 404', async () => {

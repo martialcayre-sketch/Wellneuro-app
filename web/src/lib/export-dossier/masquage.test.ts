@@ -20,6 +20,8 @@ import type {
 import { versWinAnsi } from './pdf';
 
 const M = MARQUE_MASQUE;
+/** Pseudonyme d'export de fixture ([[D-512]] §1) : il est protégé, l'identifiant interne ne l'est plus. */
+const PSEUDONYME = 'EXT-7F3K9Q';
 
 function patient(surcharge: Partial<PatientExport> = {}): PatientExport {
   return {
@@ -40,7 +42,7 @@ function patient(surcharge: Partial<PatientExport> = {}): PatientExport {
   };
 }
 
-const masquer = creerMasqueur(patient());
+const masquer = creerMasqueur(patient(), PSEUDONYME);
 
 // Jeu WinAnsi d'une police standard : ce que le PDF saura dessiner.
 let jeu: ReadonlySet<number>;
@@ -125,14 +127,14 @@ describe('creerMasqueur — noms', () => {
   });
 
   it('masque les jetons d’un nom composé, tirets et apostrophes compris', () => {
-    const composee = creerMasqueur(patient({ prenom: 'Jennifer-Sophie', nom: "D'Martin" }));
+    const composee = creerMasqueur(patient({ prenom: 'Jennifer-Sophie', nom: "D'Martin" }), PSEUDONYME);
     expect(composee('Jennifer-Sophie est là')).toBe(`${M} est là`);
     expect(composee('Jennifer Sophie, puis Jennifer seule')).toBe(`${M}, puis ${M} seule`);
     expect(composee('Mme D’Martin et Martin')).toBe(`Mme ${M} et ${M}`);
   });
 
   it('ne masque pas « médecin » ni « généraliste » quand ils figurent dans le nom du médecin', () => {
-    const fonction = creerMasqueur(patient({ medecinTraitantNom: 'Dr Michel Dogné, médecin généraliste' }));
+    const fonction = creerMasqueur(patient({ medecinTraitantNom: 'Dr Michel Dogné, médecin généraliste' }), PSEUDONYME);
     expect(fonction('À évoquer avec le médecin traitant ou un généraliste.')).toBe(
       'À évoquer avec le médecin traitant ou un généraliste.',
     );
@@ -159,7 +161,7 @@ const FORMES: Array<[string, (texte: string) => string]> = [
 
 describe('creerMasqueur — lettres de toutes les langues', () => {
   describe.each(EMPRUNTS)('$prenom $nom', ({ prenom, nom, temoins }) => {
-    const masqueur = creerMasqueur(patient({ prenom, nom, email: '', medecinTraitantNom: null }));
+    const masqueur = creerMasqueur(patient({ prenom, nom, email: '', medecinTraitantNom: null }), PSEUDONYME);
 
     it.each(FORMES)('forme %s : masquée, et rien du nom ne ressort du PDF', (_forme, ecrire) => {
       const texte = `Suivie par ${ecrire(`${prenom} ${nom}`)}, qui écrit.`;
@@ -172,14 +174,14 @@ describe('creerMasqueur — lettres de toutes les langues', () => {
   });
 
   it('masque un prénom de trois lettres accentuées seul (« Thị »)', () => {
-    const masqueur = creerMasqueur(patient({ prenom: 'Thị Hương', nom: 'Nguyễn' }));
+    const masqueur = creerMasqueur(patient({ prenom: 'Thị Hương', nom: 'Nguyễn' }), PSEUDONYME);
     expect(masqueur('Thị, Hương et NGUYỄN')).toBe(`${M}, ${M} et ${M}`);
   });
 });
 
 describe('creerMasqueur — caractères que le rendu efface ou recompose', () => {
   const masqueur = creerMasqueur(
-    patient({ prenom: 'Joffrey', nom: 'Lafitte', email: '', medecinTraitantNom: 'Dr Ana Petrović' }),
+    patient({ prenom: 'Joffrey', nom: 'Lafitte', email: '', medecinTraitantNom: 'Dr Ana Petrović' }), PSEUDONYME,
   );
 
   it.each([
@@ -205,13 +207,13 @@ describe('creerMasqueur — caractères que le rendu efface ou recompose', () =>
     ['barre horizontale, que le rendu imprime « ? »', '06\u{2015}12\u{2015}34\u{2015}56\u{2015}78'],
     ['puces', '06•12•34•56•78'],
   ])('masque aussi un numéro écrit avec des %s', (_cas, forme) => {
-    const tel = creerMasqueur(patient({ telephone: '06 12 34 56 78' }));
+    const tel = creerMasqueur(patient({ telephone: '06 12 34 56 78' }), PSEUDONYME);
     expect(tel(`au ${forme}`)).toBe(`au ${M}`);
     expect(lu(tel(`au ${forme}`))).not.toMatch(/\d/);
   });
 
   it('retrouve un numéro stocké avec des séparateurs inattendus', () => {
-    const puces = creerMasqueur(patient({ telephone: '06•12•34•56•78' }));
+    const puces = creerMasqueur(patient({ telephone: '06•12•34•56•78' }), PSEUDONYME);
     expect(puces('tél. 0612345678')).toBe(`tél. ${M}`);
   });
 
@@ -221,10 +223,10 @@ describe('creerMasqueur — caractères que le rendu efface ou recompose', () =>
     ['06  -  12  -  34  -  56  -  78', '06 12 34 56 78'],
     ['06\u{A0}\u{A0}-\u{A0}\u{A0}12\u{A0}\u{A0}-\u{A0}\u{A0}34\u{A0}\u{A0}-\u{A0}\u{A0}56\u{A0}\u{A0}-\u{A0}\u{A0}78', '06 12 34 56 78'],
   ])('masque un numéro écrit avec des séparateurs larges « %s »', (forme, telephone) => {
-    const large = creerMasqueur(patient({ telephone }));
+    const large = creerMasqueur(patient({ telephone }), PSEUDONYME);
     expect(large(`numéro ${forme}.`)).toBe(`numéro ${M}.`);
     // Et le même numéro STOCKÉ ainsi se retrouve sous sa forme ordinaire.
-    const stocke = creerMasqueur(patient({ telephone: forme }));
+    const stocke = creerMasqueur(patient({ telephone: forme }), PSEUDONYME);
     expect(stocke(`numéro ${telephone}.`)).toBe(`numéro ${M}.`);
   });
 
@@ -266,7 +268,7 @@ describe('creerMasqueur — formes soudées', () => {
     ['Du Pont', ['Dupont', 'DUPONT', 'Du-Pont', 'Pont']],
     ['de La Fontaine', ['Lafontaine', 'LA FONTAINE', 'Delafontaine', 'Fontaine']],
   ])('%s', (nom, formes) => {
-    const masqueur = creerMasqueur(patient({ nom }));
+    const masqueur = creerMasqueur(patient({ nom }), PSEUDONYME);
     for (const forme of formes) expect(masqueur(`Mme ${forme} dort mal`), forme).toBe(`Mme ${M} dort mal`);
   });
 
@@ -283,17 +285,17 @@ describe('creerMasqueur — formes soudées', () => {
     ['Leblanc', 'le blanc de poulet, le blanc de l’œil'],
     ['Laporte', 'laisse la porte ouverte la nuit'],
   ])('« %s » stocké soudé laisse intacte la locution détachée', (nom, texte) => {
-    const masqueur = creerMasqueur(patient({ prenom: 'Jennifer', nom }));
+    const masqueur = creerMasqueur(patient({ prenom: 'Jennifer', nom }), PSEUDONYME);
     expect(masqueur(texte)).toBe(texte);
     expect(masqueur(`Mme ${nom} dort mal`)).toBe(`Mme ${M} dort mal`);
   });
 
   it('ne masque jamais une particule seule, ni un nom court coupé en deux', () => {
-    const masqueur = creerMasqueur(patient({ nom: 'de La Fontaine' }));
+    const masqueur = creerMasqueur(patient({ nom: 'de La Fontaine' }), PSEUDONYME);
     expect(masqueur('de la fatigue, des réveils')).toBe('de la fatigue, des réveils');
-    const delafontaine = creerMasqueur(patient({ nom: 'Delafontaine' }));
+    const delafontaine = creerMasqueur(patient({ nom: 'Delafontaine' }), PSEUDONYME);
     expect(delafontaine('de la fatigue, la fontaine')).toBe('de la fatigue, la fontaine');
-    const anne = creerMasqueur(patient({ prenom: 'Anne' }));
+    const anne = creerMasqueur(patient({ prenom: 'Anne' }), PSEUDONYME);
     expect(anne('un an ne suffit pas ; Anne vient')).toBe(`un an ne suffit pas ; ${M} vient`);
   });
 });
@@ -323,7 +325,7 @@ describe('creerMasqueur — coordonnées', () => {
   it.each(['+33 (0)6 12 34 56 78', '06/12/34/56/78', '(+33) 6 12 34 56 78', '0033 6 12 34 56 78'])(
     'retrouve le numéro stocké « %s » sous une autre forme',
     stocke => {
-      const masqueur = creerMasqueur(patient({ telephone: stocke }));
+      const masqueur = creerMasqueur(patient({ telephone: stocke }), PSEUDONYME);
       expect(masqueur('tél. 0612345678 ou 06 12 34 56 78')).toBe(`tél. ${M} ou ${M}`);
       expect(masqueur(`tél. ${stocke}`)).toBe(`tél. ${M}`);
     },
@@ -332,7 +334,7 @@ describe('creerMasqueur — coordonnées', () => {
   it.each(['06 12 34 56 78 - 04 78 99 88 77', '0612345678 / 0478998877', '06123456780478998877'])(
     'masque chacun des deux numéros d’un même champ « %s »',
     stocke => {
-      const masqueur = creerMasqueur(patient({ telephone: stocke }));
+      const masqueur = creerMasqueur(patient({ telephone: stocke }), PSEUDONYME);
       expect(masqueur('portable 0612345678, fixe 04.78.99.88.77')).toBe(`portable ${M}, fixe ${M}`);
     },
   );
@@ -340,7 +342,7 @@ describe('creerMasqueur — coordonnées', () => {
   it.each(['Cabinet, Lyon 69006\n04 78 00 11 22', '04 78 00 11 22\n12 rue des Tilleuls 69006 Lyon'])(
     'isole le numéro du médecin collé à une ligne d’adresse « %s »',
     coordonnees => {
-      const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: coordonnees }));
+      const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: coordonnees }), PSEUDONYME);
       expect(masqueur('médecin au 0478001122, ou 04.78.00.11.22')).toBe(`médecin au ${M}, ou ${M}`);
     },
   );
@@ -350,7 +352,7 @@ describe('creerMasqueur — coordonnées', () => {
   });
 
   it('ne construit aucun motif de téléphone sous 8 chiffres', () => {
-    const court = creerMasqueur(patient({ telephone: '1234567' }));
+    const court = creerMasqueur(patient({ telephone: '1234567' }), PSEUDONYME);
     expect(court('code 1234567')).toBe('code 1234567');
   });
 
@@ -361,14 +363,14 @@ describe('creerMasqueur — coordonnées', () => {
   });
 
   it('découpe une adresse saisie sur une ligne, sans virgule, avant son code postal', () => {
-    const uneLigne = creerMasqueur(patient({ adresse: '12 rue des Lilas 75011 Paris' }));
+    const uneLigne = creerMasqueur(patient({ adresse: '12 rue des Lilas 75011 Paris' }), PSEUDONYME);
     expect(uneLigne('j’habite au 12 rue des Lilas depuis peu')).toBe(`j’habite au ${M} depuis peu`);
     expect(uneLigne('installée à 75011 Paris')).toBe(`installée à ${M}`);
     expect(uneLigne('12 RUE DES LILAS 75011 PARIS')).toBe(M);
   });
 
   it('accepte la virgule d’usage après le numéro : « 12, rue des Lilas »', () => {
-    const uneLigne = creerMasqueur(patient({ adresse: '12 rue des Lilas 75011 Paris' }));
+    const uneLigne = creerMasqueur(patient({ adresse: '12 rue des Lilas 75011 Paris' }), PSEUDONYME);
     expect(uneLigne('au 12, rue des Lilas')).toBe(`au ${M}`);
     expect(uneLigne('au 12, rue des Lilas, 75011 Paris.')).toBe(`au ${M}.`);
     expect(uneLigne('rue des Lilas')).toBe(M);
@@ -379,7 +381,7 @@ describe('creerMasqueur — coordonnées', () => {
     ['75011 Paris 12 rue des Lilas', ['au 12 rue des Lilas', 'à 75011 Paris']],
     ['12 rue des Lilas Paris', ['au 12 rue des Lilas', 'rue des Lilas']],
   ])('découpe l’adresse « %s » : voie, et « CP ville » jusqu’au nombre ou au Cedex qui suit', (adresse, textes) => {
-    const masqueur = creerMasqueur(patient({ adresse }));
+    const masqueur = creerMasqueur(patient({ adresse }), PSEUDONYME);
     for (const texte of textes) {
       const masque = masqueur(texte);
       expect(masque, texte).toContain(M);
@@ -388,15 +390,15 @@ describe('creerMasqueur — coordonnées', () => {
   });
 
   it('isole la voie du cabinet sans code postal, sa ville ôtée', () => {
-    const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: 'Cabinet 3 avenue Foch Lyon' }));
+    const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: 'Cabinet 3 avenue Foch Lyon' }), PSEUDONYME);
     expect(masqueur('Médecin au 3 avenue Foch.')).toBe(`Médecin au ${M}.`);
     // Un nom de voie qui finit par une particule n'a pas de ville à ôter.
-    const sansVille = creerMasqueur(patient({ adresse: '12 rue des Lilas' }));
+    const sansVille = creerMasqueur(patient({ adresse: '12 rue des Lilas' }), PSEUDONYME);
     expect(sansVille('au 12 rue des Roses')).toBe('au 12 rue des Roses');
   });
 
   it('ne masque pas une adresse de moins de 8 caractères', () => {
-    const courte = creerMasqueur(patient({ adresse: 'Lyon' }));
+    const courte = creerMasqueur(patient({ adresse: 'Lyon' }), PSEUDONYME);
     expect(courte('Né à Lyon')).toBe('Né à Lyon');
   });
 
@@ -418,14 +420,14 @@ describe('creerMasqueur — coordonnées', () => {
   ])(
     'extrait l’e-mail du médecin sans la ponctuation voisine « %s »',
     coordonnees => {
-      const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: coordonnees }));
+      const masqueur = creerMasqueur(patient({ medecinTraitantCoordonnees: coordonnees }), PSEUDONYME);
       expect(masqueur('Le Dr m’a écrit à cabinet.parc@example.test hier.')).toBe(`Le Dr m’a écrit à ${M} hier.`);
     },
   );
 
   it('échappe les métacaractères des valeurs stockées', () => {
     const speciale = creerMasqueur(
-      patient({ email: 'sophie.nicola+suivi@example.test', adresse: '12 rue des Lilas (bât. B) [2e]' }),
+      patient({ email: 'sophie.nicola+suivi@example.test', adresse: '12 rue des Lilas (bât. B) [2e]' }), PSEUDONYME,
     );
     expect(speciale('mail sophie.nicola+suivi@example.test')).toBe(`mail ${M}`);
     // Non échappés, « . » et « + » auraient accepté cette adresse-ci.
@@ -461,14 +463,14 @@ describe('creerMasqueur — date de naissance', () => {
   });
 
   it('accepte jour et mois sans zéro, et « 1er » pour un premier du mois', () => {
-    const premier = creerMasqueur(patient({ dateNaissance: '1990-01-01' }));
+    const premier = creerMasqueur(patient({ dateNaissance: '1990-01-01' }), PSEUDONYME);
     expect(premier('née le 1er janvier 1990')).toBe(`née le ${M}`);
     expect(premier('née le 1/1/90')).toBe(`née le ${M}`);
     expect(premier('née le 01 01 1990')).toBe(`née le ${M}`);
   });
 
   it('accepte le mois abrégé et la virgule autour du mois en toutes lettres', () => {
-    const fevrier = creerMasqueur(patient({ dateNaissance: '1975-02-05' }));
+    const fevrier = creerMasqueur(patient({ dateNaissance: '1975-02-05' }), PSEUDONYME);
     expect(fevrier('née le 5 févr. 1975')).toBe(`née le ${M}`);
     expect(fevrier('née le 05-février-75')).toBe(`née le ${M}`);
     expect(masquer('née le 14 mars, 1985')).toBe(`née le ${M}`);
@@ -484,26 +486,44 @@ describe('creerMasqueur — date de naissance', () => {
     ['1980-03-12', ['Plaquettes 120380 /mm3', '12380'], ['12/03/80', '12031980']],
     ['1990-01-01', ['Note 11/90', '1190 kcal'], ['1/1/90', '01011990']],
   ])('née le %s : les mesures restent, la date est masquée', (dateNaissance, intacts, dates) => {
-    const masqueur = creerMasqueur(patient({ dateNaissance }));
+    const masqueur = creerMasqueur(patient({ dateNaissance }), PSEUDONYME);
     for (const texte of intacts) expect(masqueur(texte), texte).toBe(texte);
     for (const date of dates) expect(masqueur(`née le ${date}.`), date).toBe(`née le ${M}.`);
   });
 });
 
 describe('creerMasqueur — garanties', () => {
-  it('ne masque jamais l’identifiant PATnnn', () => {
-    expect(masquer('Dossier PAT030 de Sophie Nicola (PAT030).')).toBe(`Dossier PAT030 de ${M} ${M} (PAT030).`);
-    const pat = creerMasqueur(patient({ nom: 'Pat', prenom: 'PAT030' }));
-    expect(pat('PAT030 et Pat')).toBe(`PAT030 et ${M}`);
+  it('ne masque jamais le pseudonyme d’export, même quand un nom le recoupe ([[D-512]] §1)', () => {
+    expect(masquer(`Dossier ${PSEUDONYME} de Sophie Nicola (${PSEUDONYME}).`))
+      .toBe(`Dossier ${PSEUDONYME} de ${M} ${M} (${PSEUDONYME}).`);
+    const ext = creerMasqueur(patient({ nom: 'Ext', prenom: '7F3K9Q' }), PSEUDONYME);
+    expect(ext(`${PSEUDONYME} et Ext`)).toBe(`${PSEUDONYME} et ${M}`);
+    expect(masquer(PSEUDONYME.toLowerCase())).toBe(PSEUDONYME.toLowerCase());
+  });
+
+  // D-512 §1 : l'identifiant interne ne sort plus de l'application dans la version « IA externe ».
+  it('masque l’identifiant interne du dossier et toute forme PATnnn citée en texte libre', () => {
+    expect(masquer('Dossier PAT030 de Sophie Nicola (PAT030).')).toBe(`Dossier ${M} de ${M} ${M} (${M}).`);
+    expect(masquer('voir aussi PAT123, pat-456 et PAT_789 ; pat030 en minuscules')).toBe(
+      `voir aussi ${M}, ${M} et ${M} ; ${M} en minuscules`,
+    );
+    const seed = creerMasqueur(patient({ idPatient: 'PAT_SEED_01' }), PSEUDONYME);
+    expect(seed('dossier PAT_SEED_01 ouvert')).toBe(`dossier ${M} ouvert`);
+    // Un nombre ou un mot qui ne porte pas la forme reste.
+    expect(masquer('PATIENT 030, pat 12, PAT12, compat123')).toBe('PATIENT 030, pat 12, PAT12, compat123');
   });
 
   // Contre-audit Codex P0-1 : l'identifiant était protégé en COUPANT le texte
   // avant la recherche — un e-mail qui le contient n'était jamais vu entier.
   it('une coordonnée qui contient l’identifiant se masque entière ; un nom collé à l’identifiant aussi', () => {
-    const avecId = creerMasqueur(patient({ email: 'PAT030@example.test' }));
-    expect(avecId('Contact PAT030@example.test, dossier PAT030.')).toBe(`Contact ${M}, dossier PAT030.`);
+    const avecId = creerMasqueur(patient({ email: 'PAT030@example.test' }), PSEUDONYME);
+    expect(avecId('Contact PAT030@example.test, dossier PAT030.')).toBe(`Contact ${M}, dossier ${M}.`);
     expect(avecId('écrire à pat030@EXAMPLE.test')).toBe(`écrire à ${M}`);
-    expect(masquer('SophiePAT030 et PAT030Nicola')).toBe(`${M}PAT030 et PAT030${M}`);
+    const avecPseudonyme = creerMasqueur(patient({ email: `${PSEUDONYME}@example.test` }), PSEUDONYME);
+    expect(avecPseudonyme(`Contact ${PSEUDONYME}@example.test, dossier ${PSEUDONYME}.`))
+      .toBe(`Contact ${M}, dossier ${PSEUDONYME}.`);
+    expect(masquer(`Sophie${PSEUDONYME} et ${PSEUDONYME}Nicola`)).toBe(`${M}${PSEUDONYME} et ${PSEUDONYME}${M}`);
+    expect(lu(masquer('SophiePAT030 et PAT030Nicola'))).not.toMatch(/sophie|nicola|pat030/);
   });
 
   it('est idempotent : la marque posée n’est pas remasquée', () => {
@@ -531,15 +551,17 @@ describe('creerMasqueur — garanties', () => {
         adresse: null,
         medecinTraitantNom: null,
         medecinTraitantCoordonnees: null,
-      }),
+      }), PSEUDONYME,
     );
-    expect(vide('Sophie PAT030 0612345678')).toBe(`Sophie PAT030 ${M}`);
-    expect(vide('Sophie PAT030 de garde')).toBe('Sophie PAT030 de garde');
+    expect(vide(`Sophie ${PSEUDONYME} 0612345678`)).toBe(`Sophie ${PSEUDONYME} ${M}`);
+    expect(vide(`Sophie ${PSEUDONYME} de garde`)).toBe(`Sophie ${PSEUDONYME} de garde`);
+    expect(vide('Sophie PAT030 de garde')).toBe(`Sophie ${M} de garde`);
   });
 
   // Revue de sécurité du 2026-11-12, P1-1 : l'identifiant reste, même collé à une forme générique.
-  it('une forme générique masquée garde l’identifiant qui la jouxte', () => {
-    expect(masquer('PAT030 : 06 98 76 54 32')).toBe(`PAT030 : ${M}`);
+  it('une forme générique masquée garde le pseudonyme qui la jouxte', () => {
+    expect(masquer(`${PSEUDONYME} : 06 98 76 54 32`)).toBe(`${PSEUDONYME} : ${M}`);
+    expect(masquer(`${PSEUDONYME}@autre.example.test`)).toBe(M);
     expect(masquer('PAT030@autre.example.test')).toBe(M);
   });
 
@@ -605,7 +627,7 @@ describe('creerMasqueur — garanties', () => {
         adresse: '12 rue des Lilas 75011 Paris',
         medecinTraitantNom: 'Dr Michel Dogné, médecin généraliste',
         medecinTraitantCoordonnees: 'Cabinet du parc\n04 78 00 11 22 - cabinet.parc@example.test',
-      }),
+      }), PSEUDONYME,
     );
     const N = 80_000;
     const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
@@ -634,7 +656,7 @@ describe('creerMasqueur — garanties', () => {
   // « ( » puis des blancs : l'indicatif « (+33) » n'enchaîne jamais deux `\s*`,
   // et le pli ne laisse jamais deux blancs de suite.
   it('reste linéaire sur « ( » suivi de 80 000 blancs : moins de 50 ms', () => {
-    const tel = creerMasqueur(patient({ telephone: '06 12 34 56 78' }));
+    const tel = creerMasqueur(patient({ telephone: '06 12 34 56 78' }), PSEUDONYME);
     const N = 80_000;
     tel('(' + ' '.repeat(N));
     for (const blanc of [' ', '\t', '\n', '\u{A0}']) {
@@ -650,7 +672,10 @@ describe('creerMasqueur — garanties', () => {
   it('reste linéaire sur un texte qui répète l’identifiant : 640 000 caractères en moins de 1,5 s', () => {
     const N = 640_000;
     const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
-    for (const motif of ['PAT030 Sophie ', 'PAT030 ', 'SophiePAT030', 'PAT030@example.test ']) {
+    for (const motif of [
+      'PAT030 Sophie ', 'PAT030 ', 'SophiePAT030', 'PAT030@example.test ',
+      `${PSEUDONYME} Sophie `, `${PSEUDONYME} `, `Sophie${PSEUDONYME}`, `${PSEUDONYME}@example.test `,
+    ]) {
       const texte = remplir(motif);
       const debut = performance.now();
       masquer(texte);
@@ -673,14 +698,14 @@ describe('creerMasqueur — garanties', () => {
       { nom: `${'Du-'.repeat(33)}Pont` },
     ]) {
       const debut = performance.now();
-      const masquer = creerMasqueur(patient(champs));
+      const masquer = creerMasqueur(patient(champs), PSEUDONYME);
       masquer('Texte libre ordinaire, 06 12 34 56 78, a.a@b.fr, 12 rue des Lilas.');
       expect(performance.now() - debut, Object.keys(champs)[0]).toBeLessThan(500);
     }
   });
 
   it('un e-mail très pointé reste masqué sous sa forme entière et ses voisins emportés', () => {
-    const masquer = creerMasqueur(patient({ email: 'a.b.c.d.e.f@g.h.i.fr' }));
+    const masquer = creerMasqueur(patient({ email: 'a.b.c.d.e.f@g.h.i.fr' }), PSEUDONYME);
     expect(masquer('écrire à a.b.c.d.e.f@g.h.i.fr')).toBe('écrire à [masqué]');
     expect(masquer('mél.a.b.c.d.e.f@g.h.i.fr.Tél')).not.toContain('a.b.c.d.e.f@g.h.i.fr');
   });
@@ -710,7 +735,7 @@ const DEFINITION: QuestionnaireDef = {
 };
 
 const JENNIFER = creerMasqueur(
-  patient({ prenom: 'Jennifer', nom: 'Martin', email: 'jennifer.martin@example.test' }),
+  patient({ prenom: 'Jennifer', nom: 'Martin', email: 'jennifer.martin@example.test' }), PSEUDONYME,
 );
 
 function passation(surcharge: Partial<PassationExport> = {}): PassationExport {
@@ -835,7 +860,7 @@ function consultation(surcharge: Partial<ConsultationExport> = {}): Consultation
 
 describe('masquerConsultation', () => {
   // « Marie » : prénom d'emprunt, fictif, qui coïncide avec une option de la fiche.
-  const MARIE = creerMasqueur(patient({ prenom: 'Marie', nom: 'Martin', email: '' }));
+  const MARIE = creerMasqueur(patient({ prenom: 'Marie', nom: 'Martin', email: '' }), PSEUDONYME);
 
   it('masque chaque valeur libre de la fiche et de l’anamnèse, entrées de groupes comprises', () => {
     const masquee = masquerConsultation(consultation(), MARIE);

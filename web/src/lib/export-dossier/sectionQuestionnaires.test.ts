@@ -8,6 +8,7 @@ import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpre
 import { LEGENDE_AGREGATS_SOMMEIL } from './libellesAgendas';
 import type { AssignationSansReponseExport, BlocExport, PassationExport } from './modele';
 import { AVERTISSEMENT_DEFINITION_RETIREE, AVERTISSEMENT_SANS_RECOUVREMENT } from './reponsesExport';
+import { dateurRelatif } from './datesExport';
 import { MISE_EN_GARDE_FORME_VARIABLE, sectionQuestionnaires } from './sectionQuestionnaires';
 
 const DEF: QuestionnaireDef = {
@@ -528,5 +529,40 @@ describe('sectionQuestionnaires — scores persistés malformés', () => {
     const listes = blocs.flatMap(b => (b.type === 'liste' ? b.elements : []));
     expect(listes).toContain('Fatigue : 3/10');
     expect(listes).toContain('Dimension : 2/4');
+  });
+});
+
+describe('sectionQuestionnaires — version « IA externe » : jours relatifs ([[D-512]] §3)', () => {
+  // J0 = 01/09/2026.
+  const relatif = dateurRelatif({ jour: '2026-09-01', repere: 'consultation' });
+
+  it('passation, invalidation, envoi et échéance en J+n ; une échéance illisible n’est pas écrite', () => {
+    const blocs = sectionQuestionnaires(
+      [passation({ statutValidite: 'INVALID', invalideLe: new Date('2026-09-14T08:00:00.000Z'), motifInvalidation: null })],
+      [
+        { idQuestionnaire: 'Q_SOM_03', titre: 'Questionnaire de Berlin', statut: 'En attente', dateAssignation: new Date('2026-09-20T09:00:00Z'), dateLimite: '2026-10-04' },
+        { idQuestionnaire: 'Q_STR_02', titre: 'Stress perçu', statut: 'En attente', dateAssignation: new Date('2026-08-30T09:00:00Z'), dateLimite: 'fin octobre' },
+      ],
+      relatif,
+    );
+    expect(blocs.some(b => b.type === 'titre' && b.texte.startsWith('Passation à J+11'))).toBe(true);
+    expect(champ(blocs, 'Validité')).toBe('Invalidée par le praticien à J+13');
+    expect(blocs.find(b => b.type === 'liste')).toEqual({
+      type: 'liste',
+      elements: [
+        'Questionnaire de Berlin (Q_SOM_03) — En attente — envoyé à J+19, échéance J+33',
+        'Stress perçu (Q_STR_02) — En attente — envoyé à J-2',
+      ],
+    });
+    expect(JSON.stringify(blocs)).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+
+  it('le motif d’une passation non interprétable perd sa date de reconstruction (contre-revue Codex, P2-2)', () => {
+    const nonInterpretable = 'Instrument reconstruit depuis sa source le 2026-07-31 ; mention limitée aux passations antérieures.';
+    const relative = JSON.stringify(sectionQuestionnaires([passation({ nonInterpretable })], [], relatif));
+    expect(relative).toContain('Instrument reconstruit depuis sa source ; mention limitée aux passations antérieures.');
+    expect(relative).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    // La version complète le garde tel quel.
+    expect(JSON.stringify(sectionQuestionnaires([passation({ nonInterpretable })], []))).toContain('le 2026-07-31');
   });
 });

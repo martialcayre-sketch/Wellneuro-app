@@ -289,6 +289,7 @@ trap 'exit 130' INT TERM
 # `-p`, et la variable PORT exportée ci-dessous couvre tout lancement manuel.
 export DATABASE_URL="postgresql://ci_user:ci_password@localhost:${PG_PORT}/wellneuro_ci"
 export NEXTAUTH_SECRET="ci-test-secret-r8-2-playwright-automation"
+export WN_EXPORT_PSEUDONYME_SECRET="ci-test-secret-export-pseudonyme-non-production"
 export NEXTAUTH_URL="http://localhost:${APP_PORT}"
 export GOOGLE_CLIENT_ID="ci-placeholder"
 export GOOGLE_CLIENT_SECRET="ci-placeholder"
