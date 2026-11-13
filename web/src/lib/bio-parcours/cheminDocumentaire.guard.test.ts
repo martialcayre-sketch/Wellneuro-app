@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { join, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { confirmAssessmentEpisode, proposeAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { buildClinicalSnapshot } from '@/lib/clinical-engine/clinicalSnapshot';
@@ -11,7 +9,8 @@ import type {
   PatientContext,
   QuestionnaireResponseInput,
 } from '@/lib/clinical-engine/types';
-import { RACINE, lire, retirerLignesDeCommentaire, specificateursImportes } from './balayageSources';
+import { estFichierSource, lire, retirerLignesDeCommentaire } from './balayageSources';
+import { contexteResolution, designe, importsResolus, type ContexteResolution } from './resolutionImports';
 
 // BP-01 ([[D-266]]) — un résultat biologique ne modifie pas en silence le
 // chemin documentaire : épisode (`includedResponseIds`), snapshot, carte de
@@ -42,20 +41,22 @@ const RACINES_DOCUMENTAIRES = [
 
 const LECTURE_BIOLOGIE = /\.resultatBiologique\b|\bresultatsBiologiques\b|\bresultats_biologiques\b/;
 
-/** Résout un spécificateur local vers un fichier du dépôt, ou `null` (paquet). */
-function resoudre(depuis: string, specificateur: string): string | null {
-  let base: string;
-  if (specificateur.startsWith('@/')) base = posix.join('web/src', specificateur.slice(2));
-  else if (specificateur.startsWith('.')) base = posix.join(posix.dirname(depuis), specificateur);
-  else return null;
-  for (const candidat of [base, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`]) {
-    if (/\.tsx?$/.test(candidat) && existsSync(join(RACINE, candidat))) return candidat;
-  }
-  return null;
-}
+const NOMME_BIOLOGIE = /(^|\/)biology-library(\/|$)/;
 
-/** Fermeture transitive des imports locaux, et les spécificateurs rencontrés. */
-export function fermeture(racines: readonly string[], lireSource: (chemin: string) => string) {
+/**
+ * Fermeture transitive des imports du dépôt, et les lectures rencontrées.
+ * LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : chaque
+ * import est lu par le parseur et RÉSOLU comme le fait TypeScript (alias,
+ * liens symboliques, `.js`, `.mts`, `index`) — l'ancien résolveur ne suivait
+ * que `@/` et le relatif vers `.ts`/`.tsx`. Est suivi tout fichier source
+ * atteint DANS le dépôt, hors `node_modules`. Un import qui nomme ou atteint
+ * `biology-library`, ou indéterminé (non constant, nom nu inconnu), est fautif.
+ */
+export function fermeture(
+  racines: readonly string[],
+  lireSource: (chemin: string) => string,
+  contexte: ContexteResolution = contexteResolution(),
+) {
   const vus = new Set<string>();
   const fautifs: string[] = [];
   const pile = [...racines];
@@ -64,10 +65,10 @@ export function fermeture(racines: readonly string[], lireSource: (chemin: strin
     if (vus.has(chemin)) continue;
     vus.add(chemin);
     const source = lireSource(chemin);
-    for (const spec of specificateursImportes(source)) {
-      if (/(^|\/)biology-library(\/|$)/.test(spec)) fautifs.push(`${chemin} importe ${spec}`);
-      const cible = resoudre(chemin, spec);
-      if (cible) pile.push(cible);
+    for (const i of importsResolus(chemin, contexte, source)) {
+      if (designe(i, NOMME_BIOLOGIE, ['web/src/lib/biology-library/'])) fautifs.push(`${chemin} importe ${i.specificateur}`);
+      const cible = i.atteint;
+      if (cible && !cible.startsWith('../') && !/(^|\/)node_modules\//.test(cible) && estFichierSource(cible)) pile.push(cible);
     }
     if (LECTURE_BIOLOGIE.test(retirerLignesDeCommentaire(source))) fautifs.push(`${chemin} lit les résultats biologiques`);
   }
@@ -81,7 +82,7 @@ describe('chemin documentaire — aucune entrée biologique (BP-01, structure)',
     // cassée rendrait une fermeture vide — et un banc vert pour rien.
     expect(vus.length).toBeGreaterThan(RACINES_DOCUMENTAIRES.length);
     expect(fautifs, 'une lecture biologique atteint une empreinte du chemin documentaire').toEqual([]);
-  });
+  }, 120_000);
 
   // CONTRE-ÉPREUVE : la mutation attendue — un module du chemin qui importe la
   // bibliothèque, directement ou par un intermédiaire — rougit.
@@ -92,6 +93,17 @@ describe('chemin documentaire — aucune entrée biologique (BP-01, structure)',
     };
     const { fautifs } = fermeture(['web/src/lib/clinical-engine/clinicalSnapshot.ts'], c => sources[c] ?? '');
     expect(fautifs).toEqual(['web/src/lib/clinical-engine/canonical.ts importe @/lib/biology-library/resultats']);
+    // Formes que l'ancien résolveur ne suivait pas ou que le motif ne voyait
+    // pas : commentaire glissé, concaténation constante, import indéterminé.
+    const masques: Record<string, string> = {
+      'web/src/lib/clinical-engine/clinicalSnapshot.ts': "import { x } from './canonical';",
+      'web/src/lib/clinical-engine/canonical.ts': 'import/**/"@/lib/biology-library/resultats";\nconst m = require("@/lib/biology-" + "library/x");\nconst n = import(chemin);',
+    };
+    expect(fermeture(['web/src/lib/clinical-engine/clinicalSnapshot.ts'], c => masques[c] ?? '').fautifs).toEqual([
+      'web/src/lib/clinical-engine/canonical.ts importe <import non constant>',
+      'web/src/lib/clinical-engine/canonical.ts importe @/lib/biology-library/resultats',
+      'web/src/lib/clinical-engine/canonical.ts importe @/lib/biology-library/x',
+    ]);
   });
 });
 

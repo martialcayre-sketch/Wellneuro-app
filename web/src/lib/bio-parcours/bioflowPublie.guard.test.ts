@@ -11,7 +11,8 @@ import {
   FICHIERS_PUBLIES,
   TABLES_BIOFLOW,
 } from '@/lib/biology-library/publie';
-import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from './balayageSources';
+import { RACINE, estUnTest, fichiersSource, lire } from './balayageSources';
+import { contexteResolution, designe, importsResolus, type ContexteResolution } from './resolutionImports';
 
 // J3-BIOFLOW — LE BANC À LISTE FERMÉE DES IMPORTS DE LA BIOLOGIE DEPUIS
 // L'EXTÉRIEUR ([[D-306]] §2, §5 ; lettre j, plan F63).
@@ -28,6 +29,12 @@ import { RACINE, estUnTest, fichiersSource, lire, specificateursImportes } from 
 // reste au palier 2, porte 24.
 //
 // LIMITE, la même que BP-01 : le banc juge l'import DIRECT.
+// LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : comme le
+// banc BP-01, les imports sont lus par le parseur et RÉSOLUS (alias, liens
+// symboliques) ; un import qui atteint le dossier de la biologie sans le
+// nommer est vu, et l'entrée publiée se reconnaît au FICHIER atteint. Un
+// import indéterminé (non constant, nom nu inconnu) n'est jamais un passage
+// par l'entrée : il compte comme dérogation.
 // LIMITE des drapeaux : seule la forme `process.env.WN_…` est lue dans
 // `featureFlag.ts` ; une lecture par crochets ou par déstructuration
 // échapperait au banc, qui ne rougit alors que si un drapeau déclaré n'est
@@ -94,22 +101,19 @@ const LECTEURS_PUBLIES = [
   'web/src/lib/constats-besoin/lecture.ts',
 ];
 
-const ENTREE = 'biology-library/publie';
-
-function designeBiologie(specificateur: string): boolean {
-  return /(^|\/)biology-library(\/|$)/.test(specificateur);
-}
-
-function designeEntree(specificateur: string): boolean {
-  return new RegExp(`(^|/)${ENTREE}$`).test(specificateur);
-}
+const DOSSIER = 'web/src/lib/biology-library/';
+const ENTREE = `${DOSSIER}publie.ts`;
+const NOMME_BIOLOGIE = /(^|\/)biology-library(\/|$)/;
 
 function horsDomaine(chemin: string): boolean {
   return !DOMAINE_BIOLOGIE.some(prefixe => chemin.startsWith(prefixe));
 }
 
 /** Le pipeline, pur — extrait pour la contre-épreuve. */
-export function frontiere(fichiers: readonly { chemin: string; source: string }[]): {
+export function frontiere(
+  fichiers: readonly { chemin: string; source?: string }[],
+  contexte: ContexteResolution = contexteResolution(),
+): {
   derogations: string[];
   lecteurs: string[];
 } {
@@ -117,15 +121,17 @@ export function frontiere(fichiers: readonly { chemin: string; source: string }[
   const lecteurs: string[] = [];
   for (const f of fichiers) {
     if (estUnTest(f.chemin) || !horsDomaine(f.chemin)) continue;
-    const biologie = specificateursImportes(f.source).filter(designeBiologie);
+    const biologie = importsResolus(f.chemin, contexte, f.source).filter(i => designe(i, NOMME_BIOLOGIE, [DOSSIER]));
     if (biologie.length === 0) continue;
-    if (biologie.every(designeEntree)) lecteurs.push(f.chemin);
+    if (biologie.every(i => !i.indetermine && i.atteint?.toLowerCase() === ENTREE.toLowerCase())) lecteurs.push(f.chemin);
     else derogations.push(f.chemin);
   }
   return { derogations: derogations.sort(), lecteurs: lecteurs.sort() };
 }
 
-const lus = () => frontiere(fichiersSource().map(chemin => ({ chemin, source: lire(chemin) })));
+// Le parseur et le résolveur lisent tout `web/src` : une seule lecture par banc.
+let lecture: ReturnType<typeof frontiere> | undefined;
+const lus = () => (lecture ??= frontiere(fichiersSource().map(chemin => ({ chemin }))));
 
 describe('BioFlow publié — la frontière du domaine (D-306, J3-bioflow)', () => {
   it('aucun import direct hors des dérogations datées, aucune dérogation périmée', () => {
@@ -134,7 +140,7 @@ describe('BioFlow publié — la frontière du domaine (D-306, J3-bioflow)', () 
       'import direct neuf de la biologie : passer par `@/lib/biology-library/publie` ; '
         + 'dérogation qui n’importe plus en direct : la retirer (la liste ne fait que diminuer)',
     ).toEqual(DEROGATIONS.map(d => d.chemin).sort());
-  });
+  }, 120_000);
 
   it('chaque dérogation est datée, et la liste ne dépasse pas son plafond', () => {
     expect(DEROGATIONS.length).toBeLessThanOrEqual(PLAFOND_DEROGATIONS);
@@ -147,11 +153,15 @@ describe('BioFlow publié — la frontière du domaine (D-306, J3-bioflow)', () 
   it('un lecteur hors biologie passe par la seule entrée publiée', () => {
     expect(LECTEURS_PUBLIES.length).toBeGreaterThan(0);
     expect(lus().lecteurs).toEqual([...LECTEURS_PUBLIES].sort());
-  });
+  }, 120_000);
 
   it('l’entrée ne ré-exporte que la liste fermée de ses fichiers', () => {
-    const source = lire('web/src/lib/biology-library/publie.ts');
-    const relatifs = specificateursImportes(source).map(s => s.replace(/^\.\//, ''));
+    // Chaque ré-export lu par le parseur et RÉSOLU : un fichier du dossier se
+    // nomme par son chemin sous lui, sans extension ; tout autre import garde
+    // son spécificateur, et rougit.
+    const relatifs = importsResolus(ENTREE, contexteResolution()).map(i =>
+      !i.indetermine && i.atteint?.startsWith(DOSSIER) ? i.atteint.slice(DOSSIER.length).replace(/\.tsx?$/, '') : i.specificateur,
+    );
     expect([...new Set(relatifs)].sort()).toEqual([...FICHIERS_PUBLIES].sort());
     for (const fichier of FICHIERS_PUBLIES) {
       expect(existsSync(join(RACINE, 'web/src/lib/biology-library', `${fichier}.ts`)), fichier).toBe(true);
@@ -188,5 +198,14 @@ describe('BioFlow publié — la frontière du domaine (D-306, J3-bioflow)', () 
     ]);
     expect(r.derogations).toEqual(['web/src/lib/neuf/a.ts', 'web/src/lib/neuf/c.ts']);
     expect(r.lecteurs).toEqual(['web/src/lib/neuf/b.ts']);
+    // Formes que le motif sur le texte ne voyait pas, et l'entrée atteinte en relatif.
+    const masques = frontiere([
+      { chemin: 'web/src/lib/neuf/e.ts', source: 'import/**/"@/lib/biology-library/statuts";' },
+      { chemin: 'web/src/lib/neuf/f.ts', source: 'const s = require("@/lib/biology-" + "library/statuts");' },
+      { chemin: 'web/src/lib/neuf/g.ts', source: 'import { y } from "@/lib/biology-library/publie";\nconst m = import(chemin);' },
+      { chemin: 'web/src/lib/neuf/h.ts', source: "import { y } from '../biology-library/publie';" },
+    ]);
+    expect(masques.derogations).toEqual(['web/src/lib/neuf/e.ts', 'web/src/lib/neuf/f.ts', 'web/src/lib/neuf/g.ts']);
+    expect(masques.lecteurs).toEqual(['web/src/lib/neuf/h.ts']);
   });
 });
