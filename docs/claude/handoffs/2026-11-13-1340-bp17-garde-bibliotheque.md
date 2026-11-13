@@ -158,6 +158,13 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   gabarits et des noms de propriété calculés. Mutation réelle (les deux
   formes dans `vocabulaire.ts`) : nommé. Limite inchangée : une clé composée
   à partir d'une variable.
+- CI sur `3ce2a7c7` : `verify` rouge par deux jobs **hors du lot**. Vitest
+  `typage-tests` : 17 288 tests verts, mais une erreur non capturée (minuterie
+  de `@radix-ui/react-focus-scope` après démontage, attribuée à
+  `PatientPreview.test.tsx`, fichier non touché ; vert en local, seul). E2E :
+  `portail-message-securite.spec.ts` sur iPhone 13, corrigé sur `main` par
+  #2059. Rattrapage par fusion de `main` (`5d9dc216`, aucun fichier commun,
+  `merge-tree` propre), T1 complet rejoué sur la fusion.
 
 ## Problèmes ouverts
 
@@ -173,6 +180,9 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   déploiement (`NODE_OPTIONS` chargeur) n'est pas lisible au dépôt ; seule la
   règle des noms nus couvre `NODE_PATH`.
 - Le merge propose une release-db (chemin clinique et deux chemins neufs).
+- Erreur non capturée intermittente de `PatientPreview.test.tsx` (minuterie
+  Radix sous jsdom) : hors lot, constatée une fois au CI de la PR, à suivre si
+  elle revient.
 
 ## Prochaine action exacte
 
