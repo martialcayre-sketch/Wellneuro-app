@@ -432,6 +432,12 @@ export function ClinicalRuntimeSection({
   // Les arbitrages ont-ils été LUS ? Sans ce témoin, une liste encore vide
   // compterait toutes les actions comme en attente.
   const [arbitragesLus, setArbitragesLus] = useState(false);
+  /**
+   * La dernière lecture des arbitrages a ÉCHOUÉ (T-64, [[D-488]]) : distinct
+   * de « pas encore lus ». Le panneau le dit et n'offre aucun verdict.
+   */
+  const [echecArbitrages, setEchecArbitrages] = useState(false);
+  const [relectureArbitrages, setRelectureArbitrages] = useState(false);
   // Constats de critères ([[D-138]]). La liste porte le vocabulaire ACTIF,
   // chaque critère avec son constat — ou `null` pour « personne ne s'est
   // prononcé ». Vide tant que le vocabulaire l'est : le panneau ne s'affiche
@@ -761,20 +767,49 @@ export function ClinicalRuntimeSection({
 
   // Arbitrages biologiques du patient — lus seulement drapeau CB posé ; la
   // route est de toute façon fail-closed sans lui.
-  const loadArbitrages = useCallback(async () => {
-    if (!cbEnabled) return;
+  //
+  // Jeton d'obsolescence : seule la DERNIÈRE lecture écrit l'état — une
+  // relecture (« Réessayer », consignation, 409) ne doit pas être écrasée par
+  // une lecture partie avant elle. Rend vrai si la lecture a réussi.
+  const seqArbitrages = useRef(0);
+  const loadArbitrages = useCallback(async (): Promise<boolean> => {
+    if (!cbEnabled) return false;
+    const seq = ++seqArbitrages.current;
+    // ÉCHEC DE LECTURE ≠ RIEN D'ARBITRÉ (T-64) : l'échec était avalé, et le
+    // panneau offrait les verdicts comme si aucune intention n'était arbitrée.
+    // Il ne compte plus rien non plus en attente : `arbitragesLus` retombe.
+    const echec = () => {
+      if (seq !== seqArbitrages.current) return false;
+      setArbitragesLus(false);
+      setEchecArbitrages(true);
+      return false;
+    };
     try {
       const response = await fetch(
         `/api/praticien/biologie/arbitrage?idPatient=${encodeURIComponent(idPatient)}`,
       );
       const payload = (await response.json()) as { ok: boolean; arbitrages?: ArbitrageRow[] };
-      if (!response.ok || !payload.ok) return;
+      if (seq !== seqArbitrages.current) return false;
+      if (!response.ok || !payload.ok) return echec();
       setArbitrages(payload.arbitrages ?? []);
       setArbitragesLus(true);
+      setEchecArbitrages(false);
+      return true;
     } catch {
-      // L'arbitrage est rechargeable : un échec de lecture ne bloque pas le cockpit.
+      // L'arbitrage est rechargeable : un échec de lecture ne bloque pas le
+      // cockpit — mais il se dit.
+      return echec();
     }
   }, [idPatient, cbEnabled]);
+  // « Réessayer » (T-17) : relit les seuls arbitrages, bouton désactivé en vol.
+  const relireArbitrages = useCallback(async () => {
+    setRelectureArbitrages(true);
+    try {
+      return await loadArbitrages();
+    } finally {
+      setRelectureArbitrages(false);
+    }
+  }, [loadArbitrages]);
 
   // Constats de critères du dossier ([[D-138]]) — vocabulaire actif + constats,
   // recousus par la route. En mode fixture, aucun appel : la fiche de
@@ -2573,6 +2608,9 @@ export function ClinicalRuntimeSection({
               )}
               onArbitrer={arbitrerBiologie}
               onReviser={reviserApresArbitrages}
+              lecture={echecArbitrages ? 'echec' : arbitragesLus ? 'ok' : 'en_cours'}
+              relectureEnCours={relectureArbitrages}
+              onRelire={relireArbitrages}
             />
           )}
           {!cbEnabled && (
