@@ -390,6 +390,28 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText(/1 juin 2026/)).toBeTruthy();
   });
 
+  // Q8a : le jour d'un plan minimal se lit en lettres, sans décalage de fuseau.
+  it('date le plan minimal en lettres', async () => {
+    window.sessionStorage.setItem('wellneuro:ja5-02:patient:PAT_TEST', JSON.stringify({
+      budget: 3,
+      traces: [],
+      pauses: [],
+      plans: [{
+        eventId: 'p_1',
+        episodeId: 'ja_PAT_TEST_abcdef0123456789',
+        from: '2026-06-03',
+        dureeJours: 3,
+        activatedBy: 'patient',
+        rationaleRequired: false,
+      }],
+      solutions: [],
+    }));
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    expect(await screen.findByText('3 juin 2026 · Plan minimal 3 jour(s)')).toBeTruthy();
+  });
+
   it('n’ouvre aucune saisie avant que le cycle soit résolu', () => {
     mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
     render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
