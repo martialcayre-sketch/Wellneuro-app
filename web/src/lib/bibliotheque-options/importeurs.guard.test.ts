@@ -1,4 +1,15 @@
 import { execFileSync } from 'node:child_process';
+import { join, relative, sep } from 'node:path';
+import {
+  createModuleResolutionCache,
+  parseConfigFileTextToJson,
+  parseJsonConfigFileContent,
+  resolveModuleName,
+  sys,
+  type CompilerOptions,
+  type ModuleResolutionCache,
+  type ModuleResolutionHost,
+} from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   estFichierSource,
@@ -7,6 +18,7 @@ import {
   IMPORT_NON_CONSTANT,
   lire,
   RACINE,
+  retirerCommentaires,
   specificateursSyntaxiques,
 } from '../bio-parcours/balayageSources';
 
@@ -32,6 +44,43 @@ const LECTEURS_ADMIS: readonly string[] = [];
 // résout `./BIBLIOTHEQUE-options/…` (`wn-reviewer` sur #2006).
 const importeLaBibliotheque = (specificateur: string) =>
   specificateur === IMPORT_NON_CONSTANT || /(^|\/)bibliotheque-options(\/|$)/i.test(specificateur);
+
+/**
+ * LES DÉTOURS PAR LA CONFIGURATION (passe Codex P1-4 sur #2006) : un alias
+ * `paths` ou `baseUrl` de `tsconfig`, ou un `#import` de `package.json`, mène
+ * au dossier par un spécificateur qui ne le nomme pas (`"@options"`). Chaque
+ * spécificateur est donc RÉSOLU comme le fait TypeScript, avec les options de
+ * `web/tsconfig.json`, et le fichier atteint est comparé au dossier (casse
+ * ignorée, liens symboliques suivis). Next reprend `paths` et `baseUrl` dans
+ * webpack ; ses alias propres, que TypeScript ne voit pas, sont verrouillés
+ * plus bas.
+ */
+const WEB = join(RACINE, 'web');
+
+function optionsDeResolution(): CompilerOptions {
+  const fichier = join(WEB, 'tsconfig.json');
+  const { config, error } = parseConfigFileTextToJson(fichier, lire('web/tsconfig.json'));
+  if (error || !config) throw new Error('web/tsconfig.json illisible');
+  // `include` vidé : seules les options comptent, pas l'énumération des fichiers.
+  return parseJsonConfigFileContent({ ...config, include: [], files: [] }, sys, WEB, undefined, fichier).options;
+}
+
+function resoutDansLeDossier(
+  specificateur: string,
+  importeur: string,
+  options: CompilerOptions,
+  hote: ModuleResolutionHost = sys,
+  cache?: ModuleResolutionCache,
+): boolean {
+  if (specificateur === IMPORT_NON_CONSTANT) return false;
+  const { resolvedModule } = resolveModuleName(specificateur, join(RACINE, importeur), options, hote, cache);
+  if (!resolvedModule) return false;
+  const atteint = relative(RACINE, resolvedModule.resolvedFileName).split(sep).join('/');
+  return atteint.toLowerCase().startsWith(DOSSIER.toLowerCase());
+}
+
+/** Toute clé de `next.config` qui déplacerait la résolution des modules. */
+const ALIAS_NEXT = /\balias\b|resolveAlias|\bresolve\b|\bwebpack\s*\(|\bwebpack\s*:(?!\s*\{\s*treeshake\s*:\s*\{\s*removeDebugLogging\s*:\s*true\s*\}\s*\})/i;
 
 /**
  * HORS DE `web/src`, du code tourne aussi : les entrées de `web/`
@@ -92,12 +141,84 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   });
 
   it('aucun code de production hors du dossier n’importe la bibliothèque', () => {
+    const options = optionsDeResolution();
+    const cache = createModuleResolutionCache(WEB, x => x, options);
     const importeurs = sources
       .filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER))
-      .filter(chemin => specificateursSyntaxiques(lire(chemin), chemin).some(importeLaBibliotheque));
+      .filter(chemin =>
+        specificateursSyntaxiques(lire(chemin), chemin).some(
+          s => importeLaBibliotheque(s) || resoutDansLeDossier(s, chemin, options, sys, cache),
+        ),
+      );
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
-    // Le parseur lit tout `web/src` : même délai que l'autre banc qui le fait (`replisAssietteV1`).
-  }, 30_000);
+    // Le parseur et le résolveur lisent tout `web/` : délai élargi.
+  }, 60_000);
+
+  // CONTRE-ÉPREUVE P1-4 : le cas reproduit par la passe Codex, en mémoire, sans
+  // toucher aucun fichier — l'alias échappe au motif, pas à la résolution.
+  it('un alias de configuration qui mène au dossier est vu (passe Codex P1-4)', () => {
+    const base = optionsDeResolution();
+    expect(base.paths).toEqual({ '@/*': ['./src/*'] });
+    const importeur = 'web/src/app/page.tsx';
+    // La configuration réelle : l'alias `@/` est résolu, un autre module ne l'est pas vers le dossier.
+    expect(resoutDansLeDossier('@/lib/bibliotheque-options/vocabulaire', importeur, base)).toBe(true);
+    expect(resoutDansLeDossier('@/lib/bio-parcours/balayageSources', importeur, base)).toBe(false);
+    expect(resoutDansLeDossier('../lib/bibliotheque-options/vocabulaire', importeur, base)).toBe(true);
+    expect(resoutDansLeDossier('typescript', importeur, base)).toBe(false);
+
+    // `paths` : la reproduction de la passe.
+    const avecAlias: CompilerOptions = {
+      ...base,
+      paths: { ...base.paths, '@options': ['./src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts'] },
+    };
+    const specs = specificateursSyntaxiques('import { BIBLIOTHEQUE_BESOIN2_V1 } from "@options";', 'x.ts');
+    expect(specs).toEqual(['@options']);
+    expect(specs.some(importeLaBibliotheque)).toBe(false);
+    expect(resoutDansLeDossier('@options', importeur, avecAlias)).toBe(true);
+    expect(resoutDansLeDossier('@options', importeur, base)).toBe(false);
+
+    // `paths` à joker, et `baseUrl`.
+    const joker: CompilerOptions = { ...base, paths: { ...base.paths, 'opt/*': ['./src/lib/bibliotheque-options/*'] } };
+    expect(resoutDansLeDossier('opt/vocabulaire', importeur, joker)).toBe(true);
+    expect(resoutDansLeDossier('lib/bibliotheque-options/vocabulaire', importeur, { ...base, baseUrl: join(WEB, 'src') })).toBe(true);
+
+    // `imports` de `package.json` (`#options`), par un hôte qui ne réécrit rien sur disque.
+    const paquet = join(WEB, 'package.json');
+    const hote: ModuleResolutionHost = {
+      ...sys,
+      fileExists: f => sys.fileExists(f),
+      readFile: f => {
+        const texte = sys.readFile(f);
+        if (f !== paquet || texte === undefined) return texte;
+        return JSON.stringify({ ...JSON.parse(texte), imports: { '#options': './src/lib/bibliotheque-options/vocabulaire.ts' } });
+      },
+    };
+    expect(resoutDansLeDossier('#options', importeur, base, hote)).toBe(true);
+    expect(resoutDansLeDossier('#options', importeur, base)).toBe(false);
+  });
+
+  // VERROU : un alias propre à Next (`webpack`, `turbopack.resolveAlias`) n'est
+  // pas vu par TypeScript ; la configuration de Next n'en déclare donc aucun.
+  it('next.config ne déclare aucun alias de résolution (verrou, passe Codex P1-4)', () => {
+    const configs = execFileSync(
+      'git',
+      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'web/next.config.*'],
+      { cwd: RACINE, encoding: 'utf8' },
+    ).split('\n').filter(Boolean);
+    expect(configs).toEqual(['web/next.config.mjs']);
+    const code = retirerCommentaires(lire('web/next.config.mjs'));
+    expect(code).toContain('webpack: { treeshake: { removeDebugLogging: true } }');
+    expect(code.match(ALIAS_NEXT)).toBeNull();
+    for (const mutation of [
+      "webpack: (config) => { config.resolve.alias['@options'] = x; return config; },",
+      'webpack(config) { return config; },',
+      'webpack: { treeshake: { removeDebugLogging: true }, resolve: {} },',
+      "turbopack: { resolveAlias: { '@options': './src/lib/bibliotheque-options' } },",
+      "experimental: { turbo: { resolveAlias: {} } },",
+    ]) {
+      expect(ALIAS_NEXT.test(mutation), mutation).toBe(true);
+    }
+  });
 
   // CONTRE-ÉPREUVE : la mutation attendue — un import, par alias ou relatif,
   // statique, dynamique ou CommonJS, masqué par un commentaire ou un

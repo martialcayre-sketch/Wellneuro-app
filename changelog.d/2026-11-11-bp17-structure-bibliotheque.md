@@ -12,5 +12,6 @@ re-signature des fiches d'usage. Une option sans précautions documentées
 rend la structure incohérente, donc non signable (D-480 §5.1). La structure
 du besoin 2 est livrée vide et non signée, sans valeur ni texte clinique. Des bancs alignent le code sur
 la migration de la PR 2 et vérifient le format et la signature ; un autre
-refuse tout lecteur de production (D-480 §8). Le verrou est ajouté au
+refuse tout lecteur de production (D-480 §8), y compris par un alias de
+`tsconfig`, de `package.json` ou de `next.config`. Le verrou est ajouté au
 tableau des signatures de `docs/FEATURE_FLAGS.md`.

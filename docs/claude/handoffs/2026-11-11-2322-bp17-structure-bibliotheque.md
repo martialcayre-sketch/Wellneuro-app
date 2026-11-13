@@ -4,7 +4,9 @@
 
 - Branche `feat/bp17-structure`, worktree `bp17-structure`, créée depuis
   `origin/main` (`68293eb1`, #1999), puis remise à niveau par merge de main
-  (`32ab280b`, #2000, puis `f326f782`, #1998 et #2002).
+  (`32ab280b`, #2000, puis `f326f782`, #1998 et #2002), puis le 2026-11-13
+  par merge de `origin/main` (`bff47e88`, `git merge-tree` propre) avant le
+  correctif P1-4.
 - PR ordinaire de la file C : déclarée « prête @<sha> », mergée par
   l'intégrateur (D-373, D-454). Ni migration ni `schema.prisma`.
 
@@ -254,6 +256,23 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   est vue. Deux P2 non bloquants :
   - fichier ignoré, ou test importé par la production : routé vers la PR 4 ;
   - prose qui ferme le verrou : voulu, donc écarté.
+- Passe Codex P0 du responsable sur `ec805bc7` (2026-11-13) : **BLOQUER**
+  sur un constat, P1-4. Le garde compare les spécificateurs au nom du
+  dossier sans résoudre les alias : avec `"paths": { "@options": [...] }`,
+  `import … from "@options"` charge la bibliothèque et le banc reste vert.
+  Le routage vers la PR 4 est refusé : l'invariant §8 est exigé ici.
+  - P1-4, corrigé : chaque spécificateur est résolu par `resolveModuleName`
+    de TypeScript, avec les options de `web/tsconfig.json`, et le fichier
+    atteint est comparé au dossier (casse ignorée, liens symboliques suivis).
+    Cela couvre `paths`, `baseUrl` et les `imports` de `package.json`.
+    Les alias propres à Next (`webpack`, `resolveAlias`) échappent à
+    TypeScript : un verrou exige que `next.config.mjs` reste l'unique
+    configuration de Next et n'en déclare aucun.
+  - Contre-épreuve en mémoire : `@options` par `paths`, un joker
+    `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
+    l'hôte de résolution. Le motif seul rate `@options`, la résolution le
+    voit. Mutation réelle jouée puis retirée (alias dans `tsconfig` et
+    importeur sous `web/src/app/`) : le banc nomme l'importeur.
 
 ## Problèmes ouverts
 
@@ -279,8 +298,10 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   contournement relevées par Codex. Leur passage au parseur touche une
   quinzaine de bancs hors de ce lot ; il est routé vers la PR 4, qui pose la
   garde de consommation. Sont routés au même endroit l'outillage de
-  `scripts/` et `tools/`, les détours par la configuration, `module.hot` et
-  les fichiers ignorés ou de test importés par la production (`wn-reviewer`).
+  `scripts/` et `tools/`, `module.hot` et les fichiers ignorés ou de test
+  importés par la production (`wn-reviewer`). Les détours par la
+  configuration sont fermés ici pour la bibliothèque (P1-4) ; la PR 4
+  n'aura qu'à reprendre le résolveur pour les autres bancs.
 - Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
   passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
   Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
@@ -292,9 +313,10 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 ## Prochaine action exacte
 
 #2006 : CI de la tête, revue sur la tête (PR-Agent prouvé, revue exigée
-depuis D-499). Les correctifs de la revue `wn-reviewer` sont posés ; la
-passe Codex, indisponible, est remplacée par cette revue. Chaque remarque
-reçoit son verdict, puis la PR est déclarée « prête @<sha> ».
+depuis D-499). Après le correctif P1-4 : contre-passe Codex ciblée sur P1-4
+(`wn-codex-avis.mjs`, D-505) avant le merge, comme l'a demandé
+l'intégrateur. Chaque remarque reçoit son verdict, puis la PR est
+redéclarée « prête @<nouveau sha> ».
 L'intégrateur merge. La PR 4 (contrôles et garde) suit dans une nouvelle
 session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
 constatée.
