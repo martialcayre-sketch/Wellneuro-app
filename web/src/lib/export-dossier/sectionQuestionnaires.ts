@@ -17,10 +17,9 @@ import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
+import { DATEUR_CALENDAIRE, type Dateur } from './datesExport';
 import {
   citer,
-  dateFr,
-  dateNaissanceFr,
   type AssignationSansReponseExport,
   type BlocExport,
   type PassationExport,
@@ -65,10 +64,10 @@ function pseudoTitre(texte: string): BlocExport {
   return paragraphe(texte, 'normal', true);
 }
 
-function validite(p: PassationExport): string {
+function validite(p: PassationExport, dateur: Dateur): string {
   if (p.statutValidite === 'INVALID') {
     let texte = 'Invalidée par le praticien';
-    if (p.invalideLe) texte += ` le ${dateFr(p.invalideLe)}`;
+    if (p.invalideLe) texte += ` ${dateur.le(p.invalideLe)}`;
     if (p.motifInvalidation) texte += ` — motif : ${citer(p.motifInvalidation)}`;
     return texte;
   }
@@ -195,16 +194,18 @@ function blocsReponses(p: PassationExport): BlocExport[] {
   return blocs;
 }
 
-function blocsPassation(p: PassationExport): BlocExport[] {
+function blocsPassation(p: PassationExport, dateur: Dateur): BlocExport[] {
   const blocs: BlocExport[] = [
     {
       type: 'titre',
       niveau: 3,
-      texte: `Passation du ${dateFr(p.dateReponse)}${p.courante ? ' — passation courante' : ''}`,
+      texte: `Passation ${dateur.du(p.dateReponse)}${p.courante ? ' — passation courante' : ''}`,
     },
-    { type: 'champ', libelle: 'Validité', valeur: validite(p) },
+    { type: 'champ', libelle: 'Validité', valeur: validite(p, dateur) },
   ];
-  if (p.nonInterpretable) blocs.push(alerte(`${ETIQUETTE_NON_INTERPRETABLE} — ${p.nonInterpretable}`));
+  // Le motif porte la date de reconstruction de l'instrument : la version
+  // relative la retire ([[D-512]] §3, contre-revue Codex P2-2).
+  if (p.nonInterpretable) blocs.push(alerte(`${ETIQUETTE_NON_INTERPRETABLE} — ${dateur.texteFixe(p.nonInterpretable)}`));
   blocs.push(...blocsScores(p), ...blocsReponses(p));
   return blocs;
 }
@@ -224,19 +225,21 @@ function saisiesAgenda(recueil: NonNullable<AssignationSansReponseExport['recuei
   return `${recueil.saisies} ${unite}`;
 }
 
-function envoiNonSoumis(a: AssignationSansReponseExport): string {
+function envoiNonSoumis(a: AssignationSansReponseExport, dateur: Dateur): string {
   const titre = titreQuestionnaire(a.titre, a.idQuestionnaire);
   // Un agenda en cours n'a pas de réponse tant qu'il n'est pas clôturé, mais
   // ses nuits ou journées existent : le dire absent serait faux.
   let texte = a.recueilEnCours
-    ? `${titre} — ${a.statut === 'Annulée' ? 'Annulée' : 'recueil en cours'} : ${saisiesAgenda(a.recueilEnCours)}, agenda non clôturé — envoyé le ${dateFr(a.dateAssignation)}`
-    : `${titre} — ${a.statut} — envoyé le ${dateFr(a.dateAssignation)}`;
-  // Même découpage AAAA-MM-JJ que la date de naissance : chaîne stockée, sans fuseau.
-  if (a.dateLimite) texte += `, échéance ${dateNaissanceFr(a.dateLimite)}`;
+    ? `${titre} — ${a.statut === 'Annulée' ? 'Annulée' : 'recueil en cours'} : ${saisiesAgenda(a.recueilEnCours)}, agenda non clôturé — envoyé ${dateur.le(a.dateAssignation)}`
+    : `${titre} — ${a.statut} — envoyé ${dateur.le(a.dateAssignation)}`;
+  // Même découpage AAAA-MM-JJ que la date de naissance : chaîne stockée, sans
+  // fuseau. Illisible, la version relative ne l'écrit pas ([[D-512]] §3).
+  const echeance = a.dateLimite ? dateur.chaineStockee(a.dateLimite) : null;
+  if (echeance) texte += `, échéance ${echeance}`;
   return texte;
 }
 
-function blocsSansReponse(sansReponse: AssignationSansReponseExport[]): BlocExport[] {
+function blocsSansReponse(sansReponse: AssignationSansReponseExport[], dateur: Dateur): BlocExport[] {
   if (sansReponse.length === 0) return [];
   const agendaEnCours = sansReponse.some(a => a.recueilEnCours);
   return [
@@ -247,7 +250,7 @@ function blocsSansReponse(sansReponse: AssignationSansReponseExport[]): BlocExpo
         : "Une absence de réponse ne renseigne pas sur l'état du patient.",
       true,
     ),
-    { type: 'liste', elements: sansReponse.map(envoiNonSoumis) },
+    { type: 'liste', elements: sansReponse.map(a => envoiNonSoumis(a, dateur)) },
   ];
 }
 
@@ -272,6 +275,7 @@ function blocsEnTeteGroupe(groupe: PassationExport[]): BlocExport[] {
 export function sectionQuestionnaires(
   passations: PassationExport[],
   sansReponse: AssignationSansReponseExport[],
+  dateur: Dateur = DATEUR_CALENDAIRE,
 ): BlocExport[] {
   const blocs: BlocExport[] = [{ type: 'titre', niveau: 1, texte: '3. Réponses aux questionnaires' }];
 
@@ -297,10 +301,10 @@ export function sectionQuestionnaires(
         texte: titreQuestionnaire(groupe[0].titre, groupe[0].idQuestionnaire),
       });
       blocs.push(...blocsEnTeteGroupe(groupe));
-      for (const p of groupe) blocs.push(...blocsPassation(p));
+      for (const p of groupe) blocs.push(...blocsPassation(p, dateur));
     }
   }
 
-  blocs.push(...blocsSansReponse(sansReponse));
+  blocs.push(...blocsSansReponse(sansReponse, dateur));
   return blocs;
 }

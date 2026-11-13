@@ -49,7 +49,7 @@ async function telecharger(page: Page, panneau: Locator, versionAttendue: 'ia-ex
   const telechargement = await telechargementAttendu;
   expect(await telechargement.failure()).toBeNull();
   const octets = await readFile(await telechargement.path());
-  return { nom: telechargement.suggestedFilename(), octets };
+  return { nom: telechargement.suggestedFilename(), octets, pseudonyme: reponse.headers()['x-pseudonyme-export'] ?? null };
 }
 
 async function lirePdf(octets: Buffer) {
@@ -70,14 +70,20 @@ test.describe('Export PDF du dossier patient (fiche patient)', () => {
     await expect(radioIaExterne).toBeChecked();
     await expect(radioComplete).not.toBeChecked();
 
+    // [[D-512]] §1 : le pseudonyme d'export remplace l'identifiant interne
+    // dans le nom du fichier et le titre, et le tiroir l'affiche.
     const iaExterne = await telecharger(page, panneau, 'ia-externe');
-    expect(iaExterne.nom).toMatch(/^dossier-[A-Za-z0-9_-]+-ia-externe-\d{4}-\d{2}-\d{2}\.pdf$/);
-    expect(iaExterne.nom.startsWith(`dossier-${PATIENT_ID}-`)).toBe(true);
-    expect((await lirePdf(iaExterne.octets)).getTitle()).toBe(`Dossier patient ${PATIENT_ID}`);
+    expect(iaExterne.pseudonyme).toMatch(/^EXT-[0-9A-HJKMNP-TV-Z]{6}$/);
+    expect(iaExterne.nom).toMatch(/^dossier-EXT-[0-9A-HJKMNP-TV-Z]{6}-ia-externe-\d{4}-\d{2}-\d{2}\.pdf$/);
+    expect(iaExterne.nom.startsWith(`dossier-${iaExterne.pseudonyme}-`)).toBe(true);
+    expect(iaExterne.nom).not.toContain(PATIENT_ID);
+    expect((await lirePdf(iaExterne.octets)).getTitle()).toBe(`Dossier patient ${iaExterne.pseudonyme}`);
+    await expect(panneau.getByRole('status')).toContainText(`Pseudonyme d’export de ce dossier : ${iaExterne.pseudonyme}.`);
 
     await radioComplete.check();
     await expect(radioIaExterne).not.toBeChecked();
     const complete = await telecharger(page, panneau, 'complete');
+    expect(complete.pseudonyme).toBeNull();
     expect(complete.nom).toMatch(/^dossier-[A-Za-z0-9_-]+-complet-\d{4}-\d{2}-\d{2}\.pdf$/);
     expect(complete.nom.startsWith(`dossier-${PATIENT_ID}-`)).toBe(true);
     expect((await lirePdf(complete.octets)).getTitle()).toBe(`Dossier patient ${PATIENT_ID}`);
