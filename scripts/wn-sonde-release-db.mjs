@@ -82,6 +82,7 @@ export const CHEMINS_GELES = [
   'web/prisma/checks/packs_registre_coherence_v1.sql',
   'web/prisma/checks/rag_pgvector_structure_v1.sql',
   'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+  'web/prisma/checks/positions_citees_tables_signees_v1.sql',
   'web/prisma/checks/biology_liens_axe_v1.sql',
   '.github/workflows/deploiement-production.yml',
   'scripts/wn-deploiement-deployer.mjs',

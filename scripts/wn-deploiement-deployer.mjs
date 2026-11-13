@@ -102,7 +102,9 @@ export function classerCi(runs) {
  * indications de biologie — le fichier seul, pas son dossier : il passe tel
  * quel au pathspec de `git log`, comme les deux dossiers. Depuis D-416, deux
  * fichiers encore, sur le même patron : la structure signée des fiches
- * d'usage et le contrat positif de fraîcheur que rejoue le préflight.
+ * d'usage et le contrat positif de fraîcheur que rejoue le préflight. Depuis
+ * D-480 §5 (BP-17 PR 4), deux encore : la structure de la bibliothèque des
+ * options et le contrat des positions citées.
  */
 export const CHEMINS_RELEASE_DB = [
   'web/prisma/migrations',
@@ -110,6 +112,8 @@ export const CHEMINS_RELEASE_DB = [
   'web/src/lib/biology-library/indicationsBiologieV1.ts',
   'web/src/lib/fiches-usage/ficheUsageBesoin2V1.ts',
   'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
+  'web/src/lib/bibliotheque-options/bibliothequeBesoin2V1.ts',
+  'web/prisma/checks/positions_citees_tables_signees_v1.sql',
 ];
 
 /**

@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
+import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -59,13 +61,24 @@ const importeLaBibliotheque = (specificateur: string) =>
  * au dossier par un spécificateur qui ne le nomme pas (`"@options"`). Chaque
  * spécificateur est donc RÉSOLU comme le fait TypeScript, avec les options de
  * `web/tsconfig.json`, et le fichier atteint est comparé au dossier (casse
- * ignorée). UN LIEN SYMBOLIQUE n'est PAS suivi pour un import relatif :
- * TypeScript garde le chemin du lien (constaté) — détour routé vers la PR 4
- * (contre-passe Codex n° 7, arbitrage du 2026-11-13). Next reprend `paths` et `baseUrl` dans
- * webpack ; ses alias propres, que TypeScript ne voit pas, sont verrouillés
- * plus bas.
+ * ignorée). UN LIEN SYMBOLIQUE est suivi : TypeScript garde le chemin du
+ * lien pour un import relatif (`./detour/vocabulaire` sous un lien
+ * `detour -> bibliotheque-options`), alors que le bundler charge la cible —
+ * le fichier atteint est donc CANONICALISÉ (`realpath`) avant la comparaison
+ * (contre-passe Codex n° 7 sur #2006, routée vers BP-17 PR 4 par l'arbitrage
+ * du 2026-11-13). Next reprend `paths` et `baseUrl` dans webpack ; ses alias
+ * propres, que TypeScript ne voit pas, sont verrouillés plus bas.
  */
 const WEB = join(RACINE, 'web');
+
+/** Le chemin réel, ou le chemin tel quel s'il n'existe pas sur disque (hôte de résolution en mémoire). */
+function cheminReel(chemin: string): string {
+  try {
+    return realpathSync(chemin);
+  } catch {
+    return chemin;
+  }
+}
 
 function optionsDeResolution(): CompilerOptions {
   const fichier = join(WEB, 'tsconfig.json');
@@ -75,18 +88,95 @@ function optionsDeResolution(): CompilerOptions {
   return parseJsonConfigFileContent({ ...config, include: [], files: [] }, sys, WEB, undefined, fichier).options;
 }
 
+/**
+ * Le fichier qu'atteint un spécificateur, relatif à la racine du dépôt,
+ * CANONICALISÉ (liens symboliques suivis, de la racine comme de la cible), ou
+ * `null` s'il ne se résout pas.
+ */
+function fichierAtteint(
+  specificateur: string,
+  importeur: string,
+  options: CompilerOptions,
+  hote: ModuleResolutionHost = sys,
+  cache?: ModuleResolutionCache,
+  racine: string = RACINE,
+): string | null {
+  if (specificateur === IMPORT_NON_CONSTANT) return null;
+  const { resolvedModule } = resolveModuleName(specificateur, join(racine, importeur), options, hote, cache);
+  if (!resolvedModule) return null;
+  return relative(cheminReel(racine), cheminReel(resolvedModule.resolvedFileName)).split(sep).join('/');
+}
+
 function resoutDansLeDossier(
   specificateur: string,
   importeur: string,
   options: CompilerOptions,
   hote: ModuleResolutionHost = sys,
   cache?: ModuleResolutionCache,
+  racine: string = RACINE,
 ): boolean {
-  if (specificateur === IMPORT_NON_CONSTANT) return false;
-  const { resolvedModule } = resolveModuleName(specificateur, join(RACINE, importeur), options, hote, cache);
-  if (!resolvedModule) return false;
-  const atteint = relative(RACINE, resolvedModule.resolvedFileName).split(sep).join('/');
-  return atteint.toLowerCase().startsWith(DOSSIER.toLowerCase());
+  const atteint = fichierAtteint(specificateur, importeur, options, hote, cache, racine);
+  return atteint !== null && atteint.toLowerCase().startsWith(DOSSIER.toLowerCase());
+}
+
+/**
+ * UN FICHIER DE TEST OU IGNORÉ QU'IMPORTE LA PRODUCTION EST DE LA PRODUCTION
+ * (`wn-reviewer` sur #2006, routé vers BP-17 PR 4) : le bundler l'embarque, et
+ * ce qu'il importe avec. Le balayage part des sources de production et suit
+ * chaque import qui se résout sous `web/`, hors de `node_modules` : un test, un
+ * fichier ignoré (client Prisma généré compris) ou non suivi atteint ainsi est
+ * balayé à son tour, jusqu'au point fixe. Rend les importeurs de la
+ * bibliothèque, dans l'ordre de découverte, et les fichiers atteints hors du
+ * départ.
+ */
+function importeursDeLaBibliotheque(
+  depart: readonly string[],
+  racine: string = RACINE,
+): { importeurs: string[]; atteints: string[] } {
+  const options = optionsDeResolution();
+  // Le cache n'est partagé que sur le dépôt lui-même ; une racine d'essai résout sans cache.
+  const cache = racine === RACINE ? createModuleResolutionCache(WEB, x => x, options) : undefined;
+  const dependances = dependancesDeclarees();
+  const vus = new Set(depart);
+  const file = [...depart];
+  const importeurs: string[] = [];
+  const atteints: string[] = [];
+  while (file.length > 0) {
+    const chemin = file.shift() as string;
+    // Le client Prisma GÉNÉRÉ importe les dépendances de `@prisma/client`
+    // (`@prisma/client-runtime-utils`), installées avec lui : la règle des noms
+    // nus ne vaut que pour le code écrit au dépôt. Il reste suivi par motif et
+    // par résolution.
+    const genere = chemin.startsWith('web/src/generated/');
+    let lecteur = false;
+    for (const s of specificateursSyntaxiques(readFileSync(join(racine, chemin), 'utf8'), chemin)) {
+      if (importeLaBibliotheque(s) || (!genere && nomNuInconnu(s, dependances))) {
+        lecteur = true;
+        continue;
+      }
+      const atteint = fichierAtteint(s, chemin, options, sys, cache, racine);
+      if (atteint === null) continue;
+      if (atteint.toLowerCase().startsWith(DOSSIER.toLowerCase())) {
+        lecteur = true;
+        continue;
+      }
+      // Partout DANS le dépôt, pas seulement sous `web/` : un relais posé à la
+      // racine (`shared/relais.test.ts`) serait embarqué de même (passe Codex
+      // sur #2060). Hors du dépôt et dans `node_modules`, rien n'est suivi.
+      if (
+        !atteint.startsWith('../') &&
+        !/(^|\/)node_modules\//.test(atteint) &&
+        estFichierSource(atteint) &&
+        !vus.has(atteint)
+      ) {
+        vus.add(atteint);
+        atteints.push(atteint);
+        file.push(atteint);
+      }
+    }
+    if (lecteur) importeurs.push(chemin);
+  }
+  return { importeurs, atteints };
 }
 
 /**
@@ -151,6 +241,35 @@ const CLES_TSCONFIG_ADMISES = [
 ];
 const EMPREINTE_NEXT_CONFIG = 'fc39557e9be8db01158baa1ecd5fe13666746b36e299926ee4f58156bd4c8778';
 
+/** La chaîne de lancement de production, figée (voir le banc « chaîne de lancement »). */
+const EMPREINTES_LANCEMENT: Record<string, string> = {
+  'web/Procfile': 'a8d5dfe89dbd0f8dd1bbd575852137507bcfbbf7cf048c7c57a36a2e107b89ad',
+  'web/cron.json': '28f5dd8a770e1926cc41999094be61e80d5728556da9d7282eee0168c7164e74',
+  'web/scripts/build.sh': '3987d84d0e777382128baa5c22043090dad119f9a75272c16617d254b746b493',
+  // Lancé par `db:deploy` (postdeploy du Procfile) : un script qu'une valeur
+  // figée appelle est figé lui aussi (passe Codex sur #2060).
+  'web/scripts/db-deploy.sh': 'de03d4de80c2eabad2dfff601594bea8da4bfc87b23ad4170f61479518ad1423',
+  'web/prisma/runWithAlias.js': 'f6e4fa4ffa1ae7c7070fc157aba28661308fd5f7e9969af8d0bb67d4794918fa',
+};
+const SCRIPTS_LANCEMENT: Record<string, string> = {
+  build: 'bash scripts/build.sh',
+  // Appelé par `web/scripts/build.sh`.
+  'prisma:generate': 'prisma generate',
+  'start:scalingo': 'next start -p ${PORT:-3000}',
+  'bio:worker-extraction': 'node prisma/runWithAlias.js scripts/bioExtractionWorker.ts',
+  'db:deploy': 'bash scripts/db-deploy.sh',
+  'bio:purge-echeance': 'node prisma/runWithAlias.js scripts/purgeComptesRendusEcheance.ts',
+};
+const CYCLE_DE_VIE_NPM = [
+  'preinstall', 'install', 'postinstall', 'prepare', 'preprepare', 'postprepare', 'prepublish',
+  'prepack', 'postpack', 'dependencies',
+];
+// Les crochets du buildpack Node (dérivé de Heroku) : `heroku-postbuild`
+// REMPLACE `build`, les autres l'encadrent. Refusés par préfixe, avec leurs
+// homonymes `scalingo-` (revue wn-reviewer sur #2060).
+const CROCHETS_BUILDPACK = /^(heroku|scalingo)-/;
+const DEPLACE_LA_RESOLUTION = /\bNODE_PATH\b|\bNODE_OPTIONS\b|--(import|require|loader|experimental-loader|conditions)\b|\s-[rC]\s/;
+
 function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
   const ecarts: string[] = [];
   for (const cle of Reflect.ownKeys(configNext)) {
@@ -169,8 +288,7 @@ function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
  * (`instrumentation-client.ts` dans le bundle client, `sentry.*.config.ts`),
  * le worker et le cron de `web/scripts/` (alias `@/`, appel à un modèle)
  * (`wn-reviewer` sur #2006). Ils sont balayés avec `web/src`. L'outillage de
- * `scripts/` et `tools/`, hors de la production, charge par des chemins
- * calculés : il relève du banc de consommation de la PR 4.
+ * `scripts/` et `tools/`, hors de la production, a son propre banc plus bas.
  */
 const fichiersHorsSrc = () =>
   execFileSync(
@@ -223,22 +341,73 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   });
 
   it('aucun code de production hors du dossier n’importe la bibliothèque', () => {
-    const options = optionsDeResolution();
-    const cache = createModuleResolutionCache(WEB, x => x, options);
-    const dependances = dependancesDeclarees();
-    const importeurs = sources
-      .filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER))
-      .filter(chemin =>
-        specificateursSyntaxiques(lire(chemin), chemin).some(
-          s =>
-            importeLaBibliotheque(s) ||
-            nomNuInconnu(s, dependances) ||
-            resoutDansLeDossier(s, chemin, options, sys, cache),
-        ),
-      );
+    const { importeurs, atteints } = importeursDeLaBibliotheque(
+      sources.filter(chemin => !estUnTest(chemin) && !chemin.startsWith(DOSSIER)),
+    );
     expect(importeurs).toEqual([...LECTEURS_ADMIS]);
+    // Anti-vacuité du suivi : le client Prisma généré, ignoré, est atteint par
+    // la production et balayé à son tour.
+    expect(atteints.some(f => f.startsWith('web/src/generated/prisma/'))).toBe(true);
     // Le parseur et le résolveur lisent tout `web/` : délai élargi.
-  }, 60_000);
+  }, 120_000);
+
+  // CONTRE-ÉPREUVE : un fichier de test qu'importe la production est atteint,
+  // et l'import de la bibliothèque qu'il porte est vu.
+  it('un fichier de test ou ignoré qu’importe la production est balayé (wn-reviewer sur #2006)', () => {
+    const racine = mkdtempSync(join(tmpdir(), 'wn-bp17-atteint-'));
+    try {
+      const options = optionsDeResolution();
+      const ecrire = (relatif: string, texte: string) => {
+        mkdirSync(join(racine, relatif, '..'), { recursive: true });
+        writeFileSync(join(racine, relatif), texte);
+      };
+      ecrire(`${DOSSIER}vocabulaire.ts`, 'export const X = 1;\n');
+      ecrire('web/src/lib/relais.test.ts', "export { X } from './bibliotheque-options/vocabulaire';\n");
+      ecrire('web/src/app/page.tsx', "import { X } from '../lib/relais.test';\nexport default X;\n");
+      const atteint = fichierAtteint('../lib/relais.test', 'web/src/app/page.tsx', options, sys, undefined, racine);
+      expect(atteint).toBe('web/src/lib/relais.test.ts');
+      expect(estUnTest(atteint as string)).toBe(true);
+      // Le parcours complet : le relais est atteint, balayé, et nommé.
+      expect(importeursDeLaBibliotheque(['web/src/app/page.tsx'], racine)).toEqual({
+        importeurs: ['web/src/lib/relais.test.ts'],
+        atteints: ['web/src/lib/relais.test.ts'],
+      });
+      // Un relais HORS de `web/`, à la racine du dépôt (passe Codex sur #2060).
+      ecrire('shared/relais.test.ts', "export { X } from '../web/src/lib/bibliotheque-options/vocabulaire';\n");
+      ecrire('web/src/app/autre.tsx', "import { X } from '../../../shared/relais.test';\nexport default X;\n");
+      expect(importeursDeLaBibliotheque(['web/src/app/autre.tsx'], racine)).toEqual({
+        importeurs: ['shared/relais.test.ts'],
+        atteints: ['shared/relais.test.ts'],
+      });
+    } finally {
+      rmSync(racine, { recursive: true, force: true });
+    }
+  });
+
+  // CONTRE-ÉPREUVE SUR UN VRAI LIEN (contre-passe Codex n° 7 sur #2006) : un
+  // lien `detour -> bibliotheque-options` hors du dossier, atteint par un
+  // import relatif. TypeScript rend le chemin du lien ; le chemin réel est
+  // dans le dossier, et le banc le voit.
+  it('un lien symbolique hors du dossier vers lui est vu (contre-passe Codex n° 7)', () => {
+    const racine = mkdtempSync(join(tmpdir(), 'wn-bp17-lien-'));
+    try {
+      const options = optionsDeResolution();
+      mkdirSync(join(racine, DOSSIER), { recursive: true });
+      mkdirSync(join(racine, 'web/src/app'), { recursive: true });
+      writeFileSync(join(racine, DOSSIER, 'vocabulaire.ts'), 'export const X = 1;\n');
+      symlinkSync(join(racine, DOSSIER), join(racine, 'web/src/lib/detour'), 'dir');
+      const brut = resolveModuleName('../lib/detour/vocabulaire', join(racine, 'web/src/app/page.tsx'), options, sys);
+      // Le constat de la contre-passe : TypeScript garde le chemin du lien.
+      expect(brut.resolvedModule?.resolvedFileName).toContain('/web/src/lib/detour/vocabulaire.ts');
+      expect(resoutDansLeDossier('../lib/detour/vocabulaire', 'web/src/app/page.tsx', options, sys, undefined, racine)).toBe(true);
+      // Un lien de fichier, aussi.
+      symlinkSync(join(racine, DOSSIER, 'vocabulaire.ts'), join(racine, 'web/src/lib/raccourci.ts'), 'file');
+      expect(resoutDansLeDossier('../lib/raccourci', 'web/src/app/page.tsx', options, sys, undefined, racine)).toBe(true);
+      expect(resoutDansLeDossier('../lib/autre', 'web/src/app/page.tsx', options, sys, undefined, racine)).toBe(false);
+    } finally {
+      rmSync(racine, { recursive: true, force: true });
+    }
+  });
 
   // CONTRE-ÉPREUVE P1-4 : le cas reproduit par la passe Codex, en mémoire, sans
   // toucher aucun fichier — l'alias échappe au motif, pas à la résolution.
@@ -281,6 +450,96 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     };
     expect(resoutDansLeDossier('#options', importeur, base, hote)).toBe(true);
     expect(resoutDansLeDossier('#options', importeur, base)).toBe(false);
+  });
+
+  // L'OUTILLAGE DE `scripts/` ET `tools/` ne tourne pas en production, mais il
+  // peut appeler un modèle ou produire un document : il ne lit pas davantage la
+  // bibliothèque (routé de #2006 vers BP-17 PR 4). Il charge souvent par des
+  // chemins CALCULÉS (`import(cheminDuBanc)`) : 34 fichiers rendaient la
+  // sentinelle d'import non constant à la PR 3. Ce banc juge donc ses
+  // spécificateurs CONSTANTS, par motif et par résolution ; un chargement
+  // calculé n'y est pas vu — limite déclarée, hors de la production.
+  it('l’outillage de scripts/ et tools/ ne lit pas la bibliothèque (spécificateurs constants)', () => {
+    const outillage = execFileSync(
+      'git',
+      ['ls-files', '--cached', '--others', '--exclude-standard', '--', 'scripts', 'tools'],
+      { cwd: RACINE, encoding: 'utf8' },
+    )
+      .split('\n')
+      .filter(estFichierSource);
+    // Anti-vacuité : le balayage voit l'outillage.
+    expect(outillage).toContain('scripts/wn-matrice-consommation.mjs');
+    expect(outillage.length).toBeGreaterThan(100);
+    const options = optionsDeResolution();
+    const cache = createModuleResolutionCache(WEB, x => x, options);
+    const lecteurs = outillage.filter(chemin =>
+      specificateursSyntaxiques(lire(chemin), chemin).some(
+        s => s !== IMPORT_NON_CONSTANT && (importeLaBibliotheque(s) || resoutDansLeDossier(s, chemin, options, sys, cache)),
+      ),
+    );
+    expect(lecteurs).toEqual([]);
+  }, 60_000);
+
+  // LA CHAÎNE DE LANCEMENT DE PRODUCTION EST FIGÉE (routé de #2006 vers BP-17
+  // PR 4 : la clé `scripts` de `web/package.json` était admise sans que son
+  // contenu soit lu). Ce qui démarre le code en production peut déplacer une
+  // résolution — `NODE_PATH`, un chargeur `--import`/`--require`, l'alias du
+  // chargeur `jiti` du worker et du cron, un script `pre…`/`post…` qu'npm
+  // enchaîne seul. Sont donc figés : le Procfile, la tâche planifiée, le
+  // script de build et le chargeur `runWithAlias.js` (empreintes), la valeur
+  // exacte de chaque script que la chaîne appelle, l'absence de tout script
+  // d'installation ou de cycle de vie autour d'eux, de tout crochet du
+  // buildpack (`heroku-*`, `scalingo-*`) et de `web/.npmrc`. AVANT d'ajuster une
+  // empreinte : vérifier que le changement ne pose ni alias, ni `NODE_PATH`, ni
+  // chargeur, ni configuration de résolution. Aucun script, enfin, ne nomme
+  // `NODE_PATH`, `NODE_OPTIONS` ni un drapeau de chargeur. LIMITE : une
+  // variable posée dans l'environnement de déploiement, hors du dépôt, n'est
+  // vue que par la règle des noms nus (`NODE_PATH`).
+  it('la chaîne de lancement de production est figée (scripts de web/package.json)', () => {
+    const empreinte = (f: string) => createHash('sha256').update(lire(f)).digest('hex');
+    expect(Object.fromEntries(Object.keys(EMPREINTES_LANCEMENT).map(f => [f, empreinte(f)]))).toEqual(EMPREINTES_LANCEMENT);
+
+    // Les scripts que la chaîne appelle : `npm run X` du Procfile, de la tâche
+    // planifiée et de tout fichier figé (le build appelle `prisma:generate`), plus `build`.
+    const textesFiges = Object.keys(EMPREINTES_LANCEMENT).map(lire).join('\n');
+    const appeles = [...textesFiges.matchAll(/npm run ([\w:.-]+)/g)].map(m => m[1]);
+    expect([...new Set(['build', ...appeles])].sort()).toEqual(Object.keys(SCRIPTS_LANCEMENT).sort());
+    const scripts = (JSON.parse(lire('web/package.json')) as { scripts: Record<string, string> }).scripts;
+    for (const [nom, valeur] of Object.entries(SCRIPTS_LANCEMENT)) expect(scripts[nom], nom).toBe(valeur);
+    // Tout script shell ou chargeur JavaScript qu'une valeur figée lance est
+    // figé lui aussi (`bash x.sh`, `node x.js`) ; une source TypeScript lancée
+    // (le worker) est balayée par le banc des importeurs.
+    const lances = Object.values(SCRIPTS_LANCEMENT).flatMap(v =>
+      [...v.matchAll(/\b(?:bash|sh|node)\s+(\S+\.(?:sh|[cm]?js))\b/g)].map(m => `web/${m[1]}`),
+    );
+    expect(lances.length).toBeGreaterThan(0);
+    for (const f of lances) expect(Object.keys(EMPREINTES_LANCEMENT), f).toContain(f);
+
+    // Aucun script de cycle de vie autour d'eux, ni d'installation (npm ci les enchaîne au build).
+    const cycle = Object.keys(scripts).filter(
+      nom =>
+        CYCLE_DE_VIE_NPM.includes(nom) ||
+        CROCHETS_BUILDPACK.test(nom) ||
+        Object.keys(SCRIPTS_LANCEMENT).some(x => nom === `pre${x}` || nom === `post${x}`),
+    );
+    expect(cycle).toEqual([]);
+    for (const nom of ['heroku-prebuild', 'heroku-postbuild', 'heroku-cleanup', 'scalingo-postbuild']) {
+      expect(CROCHETS_BUILDPACK.test(nom), nom).toBe(true);
+    }
+    // Aucune configuration npm de projet : un `node-options=--require …` d'un
+    // `.npmrc` s'appliquerait à chaque `npm run` sans passer par les scripts.
+    // LIMITE : une configuration npm de l'utilisateur ou globale, hors du dépôt.
+    expect(existsSync(join(RACINE, 'web/.npmrc'))).toBe(false);
+
+    // Aucun script ne déplace la résolution de Node.
+    expect(Object.entries(scripts).filter(([, v]) => DEPLACE_LA_RESOLUTION.test(v)).map(([nom]) => nom)).toEqual([]);
+    // CONTRE-ÉPREUVE du motif.
+    for (const v of ['NODE_PATH=src next build', 'NODE_OPTIONS=--x next start', 'node --import ./x.mjs y', 'node -r ./x y', 'node --require=./x y', 'node --loader ./x y', 'node --experimental-loader=./x y', 'node --conditions=dev y', 'node -C dev y']) {
+      expect(DEPLACE_LA_RESOLUTION.test(v), v).toBe(true);
+    }
+    for (const v of ['next build', 'bash scripts/build.sh', 'node prisma/runWithAlias.js scripts/x.ts', 'vitest run --reporter=dot', 'node --test x.test.mjs']) {
+      expect(DEPLACE_LA_RESOLUTION.test(v), v).toBe(false);
+    }
   });
 
   // CONTRE-ÉPREUVE n° 3 : un nom nu qui n'est ni une dépendance ni un module
@@ -431,6 +690,10 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       'define(function (r) { return r("./bibliotheque-options/vocabulaire"); });',
       'define(["require"], function (r) { return r("./bibliotheque-options/vocabulaire"); });',
       '/*@jsxImportSource @/lib/bibliotheque-options*/\nexport const D = () => <div />;',
+      // Remplacement à chaud de webpack (routé de #2006 vers BP-17 PR 4).
+      'module.hot.accept("./bibliotheque-options/vocabulaire", () => {});',
+      'module.hot.decline(["./bibliotheque-options/vocabulaire"]);',
+      'const hmr = module.hot; hmr.accept("./bibliotheque-options/vocabulaire");',
     ];
     for (const forme of formes) {
       expect(specificateursSyntaxiques(forme, 'x.ts').filter(importeLaBibliotheque), forme).toHaveLength(1);
@@ -469,6 +732,18 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
       ['/* @jsxImportSource react */', [IMPORT_NON_CONSTANT]],
       ['define(["exports", "require"], (e, r) => r("./x"));', ['exports', 'require', IMPORT_NON_CONSTANT]],
       ['define(function () { return 1; });', []],
+      // `module.hot` (routé de #2006 vers BP-17 PR 4) : chemins exacts, auto-acceptation, ou sentinelle.
+      ['module.hot.accept("./bibliotheque-options/vocabulaire", () => {});', ['./bibliotheque-options/vocabulaire']],
+      ['module.hot.accept(["./a", "./b"], () => {});', ['./a', './b']],
+      ['module["hot"].decline("./a");', ['./a']],
+      ['(module.hot as any).accept(("./a"));', ['./a']],
+      ['module.hot.accept();', []],
+      ['module.hot.accept(() => {});', []],
+      ['module.hot.accept(chemin);', [IMPORT_NON_CONSTANT]],
+      ['module.hot.dispose(() => {});', [IMPORT_NON_CONSTANT]],
+      ['const h = module.hot; h.accept("./a");', [IMPORT_NON_CONSTANT]],
+      ['if (module.hot) {}', [IMPORT_NON_CONSTANT]],
+      ['const o = { hot: 1 }; o.hot; module.exports = 1;', []],
     ];
     for (const [forme, attendu] of exacts) expect(specificateursSyntaxiques(forme, 'x.js'), forme).toEqual(attendu);
     // Un import constant d'un autre module n'est ni la bibliothèque ni un lecteur possible.

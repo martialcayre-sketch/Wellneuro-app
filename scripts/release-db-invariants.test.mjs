@@ -435,7 +435,7 @@ test('le job release est borné dans le temps', () => {
 // chaque chemin ajouté fait proposer une release, donc demande une approbation
 // humaine, à chaque push qui le touche. D-389 §5 l'a élargi une seconde fois, au
 // FICHIER de la table signée des indications de biologie, pas à son dossier.
-test('le déclencheur automatique est borné à main et aux cinq chemins décidés', () => {
+test('le déclencheur automatique est borné à main et aux sept chemins décidés', () => {
   const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
   assert.ok(bloc, 'section `on:` introuvable');
   const declencheurs = bloc[1];
@@ -474,8 +474,21 @@ test('le déclencheur automatique est borné à main et aux cinq chemins décid�
     /^ {6}- 'web\/prisma\/checks\/rag_claim_fraicheur_tables_signees_v1\.sql'\s*$/m,
     'le filtre `paths` doit viser le contrat positif de fraîcheur (D-416), sans quoi un prédicat retouché part sans être rejoué',
   );
+  // D-480 §5 (BP-17 PR 4) : la structure de la bibliothèque des options et le
+  // contrat des positions citées, fichiers exacts — ni `bibliotheque-options/`,
+  // qui recevra l'atelier, ni `web/prisma/checks/`, où vit le négatif.
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/src\/lib\/bibliotheque-options\/bibliothequeBesoin2V1\.ts'\s*$/m,
+    'le filtre `paths` doit viser le fichier de la structure de la bibliothèque des options (D-480 §5)',
+  );
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/prisma\/checks\/positions_citees_tables_signees_v1\.sql'\s*$/m,
+    'le filtre `paths` doit viser le contrat des positions citées (D-480 §5.3)',
+  );
   const chemins = declencheurs.match(/^ {6}- '.*'$/gm) ?? [];
-  assert.equal(chemins.length, 5, `cinq chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
+  assert.equal(chemins.length, 7, `sept chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
 });
 
 // Le commentaire de la section `on:` explique au relecteur ce que le filtre laisse

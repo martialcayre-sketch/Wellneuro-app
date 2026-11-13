@@ -11,6 +11,7 @@ import {
   BIBLIOTHEQUE_BESOIN2_SHA256,
   BIBLIOTHEQUE_BESOIN2_V1,
   bibliothequeSignee,
+  claimsCitesParUsage,
   etatBibliotheque,
   incoherencesDeBibliotheque,
   sourcesCitees,
@@ -340,6 +341,28 @@ describe('format de la structure (D-480 §1, §2, §4)', () => {
 
   it('les sources citées sont l’union des renvois, information manquante exclue', () => {
     expect(sourcesCitees(avec({}))).toEqual({ claims: ['WN-CL-9999-001@v1.0'], positions: ['WN-PE-9999@v1.0'] });
+  });
+
+  // D-480 §5.2 : les deux tables de la bibliothèque au contrat de fraîcheur.
+  it('les claims cités se répartissent par usage : la dose d’un côté, toute autre rubrique de l’autre', () => {
+    const structure = avec({
+      renvois: {
+        ...renvoisVides(),
+        dose: ['WN-CL-9999-002@v1.0', 'WN-CL-9999-001@v1.0'],
+        precautions: ['WN-CL-9999-001@v1.0', 'WN-PE-9999@v1.0'],
+        interactions: ['WN-CL-9999-003@v1.0'],
+      },
+    });
+    expect(claimsCitesParUsage(structure)).toEqual({
+      dose: ['WN-CL-9999-001@v1.0', 'WN-CL-9999-002@v1.0'],
+      autres: ['WN-CL-9999-001@v1.0', 'WN-CL-9999-003@v1.0'],
+    });
+    // Information manquante et position ne sont pas des claims.
+    expect(claimsCitesParUsage(avec({}))).toEqual({ dose: [], autres: ['WN-CL-9999-001@v1.0'] });
+    expect(claimsCitesParUsage(BIBLIOTHEQUE_BESOIN2_V1)).toEqual({ dose: [], autres: [] });
+    // Hors typage : jamais d'exception.
+    expect(claimsCitesParUsage(null as unknown as StructureBibliotheque)).toEqual({ dose: [], autres: [] });
+    expect(claimsCitesParUsage({ besoin: 2, options: [null, { renvois: { dose: 'x' } }], optionsRetirees: [] } as unknown as StructureBibliotheque)).toEqual({ dose: [], autres: [] });
   });
 });
 

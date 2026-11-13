@@ -46,13 +46,15 @@ import {
 // `WN-PE-NNNN@vN.M`, ou `information_manquante` pour la dose seule. Une
 // rubrique sans renvoi n'est pas documentée. Une option sans précautions
 // documentées rend la structure incohérente (§5.1, entré ici sur l'arbitrage
-// du 2026-11-12) ; les autres contrôles (deux tables au contrat de fraîcheur,
-// contrat des positions citées) relèvent de la PR 4 (§5).
+// du 2026-11-12). Les autres contrôles de §5 sont posés par la PR 4 : les
+// claims cités entrent au contrat de fraîcheur en deux tables selon l'usage
+// (`claimsCitesParUsage`, `claimsEpinglesFraicheur.guard.test.ts`), les
+// positions citées à leur propre contrat (`positionsCitees.guard.test.ts`).
 //
 // AUCUN LECTEUR (§8) : aucun parcours, courrier, portail, document remis ni
 // appel à un modèle ne lit cette structure ; le banc `importeurs.guard.test.ts`
-// tient les importeurs ENTRANTS. Qu'elle ne lise aucun dossier (§5.4) est un
-// contrôle de la PR 4.
+// tient les importeurs ENTRANTS. Elle ne lit aucun dossier (§5.4) :
+// `aucuneLectureDeDossier.guard.test.ts` tient la fermeture de ses imports.
 //
 // LE PRÉDICAT À CONSOMMER est `etatBibliotheque(...) === 'signee'` : lui seul
 // exige aussi que les fiches d'usage soient signées sur l'empreinte recopiée
@@ -154,7 +156,8 @@ const casesOptions = (structure: StructureBibliotheque): unknown[] =>
  * Les règles de FORMAT que toute structure doit tenir pour se signer, en codes
  * sans texte (`<option>:<règle>` ou `<option>:<rubrique>:<règle>`), plus
  * « aucune option sans précautions » ([[D-480]] §5.1). Vide = cohérente. Les
- * autres contrôles de la PR 4 ([[D-480]] §5) s'y ajouteront.
+ * autres contrôles de §5 sont des bancs et des contrats de production (PR 4),
+ * hors de cette fonction pure.
  */
 export function incoherencesDeBibliotheque(
   structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1,
@@ -281,6 +284,34 @@ export function sourcesCitees(structure: StructureBibliotheque = BIBLIOTHEQUE_BE
     }
   }
   return { claims: [...claims].sort(), positions: [...positions].sort() };
+}
+
+/**
+ * Les claims cités, répartis selon l'USAGE qu'en fait la structure ([[D-480]]
+ * §5.2) : `dose`, ceux qu'une rubrique `dose` cite comme source, qui tiennent
+ * les quatre propriétés de [[D-044]] (dont `prescriptif`) ; `autres`, ceux que
+ * cite toute autre rubrique, qui tiennent les trois de [[D-046]]. Un même claim
+ * cité des deux façons figure dans les deux listes. Ce sont les deux tables de
+ * la bibliothèque au contrat de fraîcheur (`claimsEpinglesFraicheur.guard.test.ts`).
+ * Clés `identifiant@version` triées ; une forme hors format est ignorée, comme
+ * dans `sourcesCitees` — la cohérence la refuse déjà.
+ */
+export function claimsCitesParUsage(structure: StructureBibliotheque = BIBLIOTHEQUE_BESOIN2_V1) {
+  const dose = new Set<string>();
+  const autres = new Set<string>();
+  if (!estObjet(structure)) return { dose: [], autres: [] };
+  for (const option of casesOptions(structure)) {
+    if (!estObjet(option) || !estObjet(option.renvois)) continue;
+    for (const [rubrique, renvois] of Object.entries(option.renvois) as [string, readonly string[]][]) {
+      if (!Array.isArray(renvois)) continue;
+      for (const valeur of renvois) {
+        const renvoi = lireRenvoi(valeur);
+        if (renvoi?.nature !== 'claim') continue;
+        (rubrique === 'dose' ? dose : autres).add(cleClaim(renvoi));
+      }
+    }
+  }
+  return { dose: [...dose].sort(), autres: [...autres].sort() };
 }
 
 const memes = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
