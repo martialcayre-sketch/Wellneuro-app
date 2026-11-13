@@ -203,7 +203,7 @@ vides viennent par un micro-lot après COM-1 (Q2a, Q3a). Retour et
 commandes sont masqués à l'impression sur U23 à U25, U27, U28, U37 et U38
 (Q5a). Le rail reste à l'écran sur les pages de lecture (Q8a). Textes :
 T-33 au seul titre de U24 (Q4a) ; T-36 sous le 401 d'un envoi de U23 à
-U25 (Q6a) ; phrase vide de U28 dans le rayon vide de U27 (Q7a).
+U25 (Q6a), dans un nouvel onglet sur U24 et U25 pour garder le texte saisi ; phrase vide de U28 dans le rayon vide de U27 (Q7a).
 
 ### PAT-6 — Transmissions et droits
 

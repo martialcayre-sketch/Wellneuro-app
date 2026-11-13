@@ -284,7 +284,7 @@ amendement DOC-9, et [[D-481]], complément DOC-9.
 | Texte | Statut final | Portée |
 |---|---|---|
 | T-33 | accepté (DOC-0), appliqué au seul titre de U24 (Q4a) | l'intitulé de la synthèse sous l'objectif, dans U25, reste « Ce que votre praticien a compris de vous » |
-| T-36, emplacement | accepté mot pour mot, inscription DOC-9 | sous le 401 d'un envoi de U23, U24 et U25 ; même onglet vers /portail/connexion |
+| T-36, emplacement | accepté mot pour mot, inscription DOC-9 | sous le 401 d'un envoi de U23, U24 et U25, vers /portail/connexion : même onglet sur U23, nouvel onglet sur U24 et U25 (`20261113-1856-d`) |
 | Phrase vide de U28, emplacement | acceptée mot pour mot, inscription DOC-9 | rayon vide « Remis par mon praticien » de U27 |
 
 Aucun texte neuf ni nouvel identifiant. Ne sont pas proposés, et restent

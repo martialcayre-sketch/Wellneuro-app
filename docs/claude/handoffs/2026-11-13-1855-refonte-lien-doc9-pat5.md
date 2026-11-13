@@ -16,6 +16,7 @@ Inscrire, avant le code de PAT-5, les réponses du responsable au prototype PAT-
 - Prototype publié avant tout code (D-481 §4) : https://claude.ai/artifact/RAM7H81H6f5ikjUXqpxBUn. Il couvre les treize fiches, une planche des états et une planche d'impression, avec les textes du code mot pour mot.
 - Réponses du responsable : « All recommended », soit Q1c — Q2a — Q3a — Q4a — Q5a — Q6a — Q7a — Q8a. Liste commune `20261113-1830-d` à `-1837-d`.
 - Emplacements neufs acceptés : « Accept both ». Liste commune `20261113-1847-d`, `-1848-d`.
+- Constat PR-Agent sur #2069 (d74e269d7648, perte du texte saisi sur U24 et U25) : routé en question `20261113-1856-d`, réponse a (« Yes, a: new tab ») : T-36 ouvre la connexion dans un nouvel onglet sur U24 et U25, même onglet sur U23. Intégré à DOC-9 avant « prête ».
 - [[D-481]] : complément DOC-9, les huit choix.
 - [[D-488]] : amendement DOC-9.
   - T-36 sous le 401 d'un envoi de U23, U24 et U25.
@@ -49,7 +50,7 @@ Inscrire, avant le code de PAT-5, les réponses du responsable au prototype PAT-
 
 1. Fusion de DOC-9 par l'intégrateur.
 2. Feu vert du responsable.
-3. Code de PAT-5 sur une branche neuve depuis `origin/main`, dans ce worktree : habillage des treize fiches, T-33 sur U24, T-36 et la phrase vide aux emplacements de DOC-9, `print:hidden` de Q5a.
+3. Code de PAT-5 sur une branche neuve depuis `origin/main`, dans ce worktree : habillage des treize fiches, T-33 sur U24, T-36 et la phrase vide aux emplacements de DOC-9, `print:hidden` de Q5a. Un E2E doit prouver qu'après une reconnexion dans le nouvel onglet, l'envoi depuis U24 ou U25 resté ouvert réussit.
 
 ## Interdits encore actifs
 
