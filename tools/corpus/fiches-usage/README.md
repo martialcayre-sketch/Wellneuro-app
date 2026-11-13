@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v3+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v4+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -104,6 +104,11 @@ Une fiche dont la population, une hypothèse ou un analyte n'a pas de
 désignation est refusée avant tout appel : un identifiant seul ne fonde
 aucun sens. Le rédacteur peut refuser une fiche dont les claims contredisent
 le cadre signé (`refus_redacteur`).
+
+Depuis la v4 (`D-501` §7), la rubrique « question » se compose des seules
+désignations approuvées et de la réserve qu'impose le statut d'usage : elle
+pose la question d'usage sans l'affirmer, et la contre-lecture la juge
+fidèle sans claim de l'usage. Tout autre élément y est un fait.
 
 ## Ce que l'outil ne voit pas
 

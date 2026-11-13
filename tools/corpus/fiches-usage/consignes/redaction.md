@@ -64,6 +64,14 @@ cadre signé, pas des claims.
 - Si les claims contredisent le cadre signé (population, usage
   décisionnel), ne rédige rien : réponds {"refus": "<motif en une phrase>"}.
 
+LA RUBRIQUE « QUESTION ». Elle pose la question d'usage de la fiche, et rien
+d'autre. Elle se compose seulement de l'usage décisionnel, de la population
+d'usage, des hypothèses rattachées et de l'analyte, nommés par leurs
+désignations approuvées, et de la réserve qu'impose le statut d'usage (un
+usage qui n'est pas établi, ou qui n'est pas validé). Elle n'énonce aucun
+fait : ni ce que la mesure documente ou ne sert pas à faire, ni la situation
+clinique où elle s'emploie, ni ce que rapportent les sources.
+
 MODE « fiche ». Rédige chaque rubrique demandée, et elles seules, dans
 l'ordre donné. Une rubrique ne répète pas sa voisine ; aucune ne déborde sur
 l'objet d'une autre. Réponds par un seul objet JSON, sans texte autour :
