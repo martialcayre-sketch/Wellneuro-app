@@ -34,7 +34,8 @@ Deuxième PR du code de PRA-3b, groupe Suivi et réévaluation (P20–P24), dans
 - Vitest ciblé : cinq suites, 133 tests verts.
 - `npx tsc --noEmit` vert ; `npm run check:rapide` vert.
 - Relecture `ui-ux-pro-max` (lecture seule) : T-61 annoncé deux fois (alerte de la météo et région `status` du point J21) — corrigé, seule la météo garde la région vivante. Écarté avec motif : pas d'état « relecture en cours » sur « Réessayer », même motif que la PR 2 (lecture courte, jeton d'obsolescence contre le double clic).
-- T1 complet (`npm run check`) et T2 (`npm run test:worktree -- --fast`) : voir la PR.
+- T1 complet (`npm run check`) : vert.
+- T2 (`npm run test:worktree -- --fast`) : trois passes, toutes arrêtées à l'étape Vitest par des dépassements de délai (5 s) et de temps dans des fichiers hors du diff (`ProtocolMiniBuilder.test.tsx`, `masquage.test.ts`, une fois `GenericQuestionnaire.test.tsx`), la machine à une charge de 20 à 22 tenue par d'autres sessions ; la troisième avec deux workers. Ces deux fichiers sont verts seuls (258/258). L'étape E2E n'a pas été atteinte localement : c'est le CI qui la juge.
 - Constat à l'écran local : non joué dans cette PR (critère de réception à quatre largeurs, à faire à la réception du groupe, comme pour la PR 2).
 
 ## Problèmes ouverts
