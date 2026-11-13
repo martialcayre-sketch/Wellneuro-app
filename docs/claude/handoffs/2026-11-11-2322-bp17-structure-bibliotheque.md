@@ -1,0 +1,467 @@
+# Handoff — 2026-11-11 — BP-17, PR 3 : structure par références de la bibliothèque des options
+
+## Branche et état Git
+
+- Branche `feat/bp17-structure`, worktree `bp17-structure`, créée depuis
+  `origin/main` (`68293eb1`, #1999), puis remise à niveau par merge de main
+  (`32ab280b`, #2000, puis `f326f782`, #1998 et #2002), puis le 2026-11-13
+  par merge de `origin/main` (`bff47e88`, `git merge-tree` propre) avant le
+  correctif P1-4.
+- PR ordinaire de la file C : déclarée « prête @<sha> », mergée par
+  l'intégrateur (D-373, D-454). Ni migration ni `schema.prisma`.
+
+## Objectif
+
+Livrer la première couche de D-480 §3 : la structure de références de la
+bibliothèque des options, son format, sa signature à cinq termes et
+l'empreinte des fiches d'usage, avec la structure du besoin 2 vide et non
+signée.
+
+## Décisions prises
+
+Choix de forme de la session, tous dans le cadre de D-480 et du découpage
+accepté (`20261111-1131-c`). Aucun ne touche au clinique.
+- **Emplacement** : `web/src/lib/bibliotheque-options/`, hors de `clinical/`,
+  sur le patron de `fiches-usage/`. Le module est distinct des fiches d'usage
+  et du catalogue des conduites. Il importe la structure signée des fiches
+  d'usage pour la clé et la population, et ne la modifie pas.
+- **Identifiant d'option** : `^OPT_[A-Z0-9_]+$`, au plus 128 caractères. Il
+  est donc conforme au CHECK `option_id ~ '^\S+$'` de la PR 2. Il est opaque.
+  Pour qu'il ne soit jamais réattribué, la structure tient une liste
+  `optionsRetirees` : une option qui y figure est incohérente.
+- **Renvois** : chaînes `WN-CL-NNNN-NNN@vN.M` (le `v` est exigé, comme pour
+  les claims épinglés), `WN-PE-NNNN@vN.M`, ou `information_manquante`. Cette
+  dernière vaut pour la dose seulement, et seule dans sa rubrique.
+- **Population** : une liste non vide de `POP_…` déclarés par la structure
+  des fiches d'usage. Une option peut couvrir plusieurs populations. Une
+  liste d'un élément reproduit le cas d'une fiche.
+- **Rubriques** : les neuf de la migration, toutes présentes et aucune
+  autre. Une liste de renvois vide signifie « non documentée ». Pour les
+  précautions, cette PR la refuse déjà (voir plus bas). Pour les huit autres
+  rubriques, ce que cela emporte relève de la PR 4.
+- **Empreinte des fiches d'usage** : `shaFichesUsage` est inscrit aux
+  métadonnées, recopié à la signature. Il n'entre pas dans les cinq termes :
+  `etatBibliotheque()` rend `signee`, `a_relire` (fiches d'usage re-signées
+  ou plus signées) ou `non_signee`.
+- **Garde § 8** : banc `importeurs.guard.test.ts`, avec une liste de lecteurs
+  admis vide. La PR 5 (atelier) et la PR 6 (cockpit) y ajouteront leur
+  fichier, nommément.
+- **Aucune option sans précautions (D-480 §5.1) entre dans cette PR**, sur
+  l'arbitrage du responsable du 2026-11-12. CodeRabbit avait classé P0 son
+  absence. Une option dont la rubrique `precautions` n'a aucun renvoi rend la
+  structure incohérente (code `<option>:precautions`). La PR 4 garde les
+  autres contrôles de §5 : deux tables au contrat de fraîcheur, contrat des
+  positions citées, aucune lecture de dossier, hook DC-17, matrice de
+  consommation.
+- **Prédicat à consommer** (PR 5 et 6) : `etatBibliotheque(...) === 'signee'`,
+  jamais `bibliothequeSignee` seul, qui ne vérifie pas que les fiches d'usage
+  sont signées. C'est écrit en tête du module.
+- Le verrou est ajouté au tableau `ETAT_VERROUS_SIGNATURE` et au balayage de
+  `verrousSignatureDocumentes.guard.test.ts`. Sans cela, une signature
+  future passerait sans que le tableau le dise.
+
+## Fichiers modifiés
+
+- `web/src/lib/bibliotheque-options/vocabulaire.ts` (pur),
+  `bibliothequeBesoin2V1.ts`, et leurs bancs `vocabulaire.test.ts`,
+  `bibliothequeBesoin2V1.test.ts`, `importeurs.guard.test.ts`.
+- `web/src/lib/verrousSignatureDocumentes.guard.test.ts` : une racine
+  balayée de plus.
+- `docs/FEATURE_FLAGS.md` : une ligne au tableau des verrous (`false`,
+  `null`).
+- `changelog.d/2026-11-11-bp17-structure-bibliotheque.md`, fragment F11
+  `2026-11-11-05-structure-bibliotheque-references.md`, ce handoff.
+
+## Validations exécutées
+
+- Bancs ciblés (module, verrous, garde « aucune phrase ») : 35 tests verts.
+- T1 rapide : code 0. T1 complet (`npm run check`) : code 0.
+- T3 `test:worktree`, joué sur la branche avant les merges de main : séquence
+  complète verte en 11 min 35 s, code 0. Vitest : 16 856 tests réussis. E2E :
+  360 réussis. Dérive schéma ↔ migrations : « No difference detected ».
+  Main a ensuite apporté #2000, #1998 et #2002, sans fichier commun avec ce
+  lot : le CI de la PR rejoue la séquence sur l'arbre fusionné.
+- CI de #2006 sur `14c01b9e` : `wn-attendre-ci` à 0. Revue CodeRabbit
+  déclenchée à la main (dépôt à moins de 10 étoiles), six remarques, verdicts
+  dans la PR. Corrigés : la signature calcule l'empreinte et la cohérence
+  sur la structure jugée (plus de paramètres séparés) ; le helper
+  `balayageSources` balaie `.js`/`.jsx` et lit `require()` (aucun fichier ni
+  appel de ce type en production : les 155 bancs de garde restent verts) ;
+  le texte « à relire » est précisé (empreinte des fiches d'usage). Routés :
+  « aucune option sans précautions » à la PR 4 ; forme de renvoi du registre
+  des compléments, avant la transcription de la PR 7.
+- Tête `58a2d1a3` : CodeRabbit à quota épuisé (une revue par heure),
+  Copilot à quota épuisé (`--quota` à 1). PR-Agent est prouvé
+  (`wn-revue-pr-agent` à 0) et pointe trois zones d'attention. Corrigées :
+  une rubrique dont la valeur n'est pas une liste ferme le verrou ;
+  `etatBibliotheque(metadata, structure, fichesUsage, fichesUsageMetadata)`
+  calcule lui-même les deux signatures et l'empreinte. Écartée avec motif :
+  le changement du helper partagé (155 bancs de garde verts, aucun `.js` ni
+  `require()` en production).
+- `wn-reviewer` (P0) sur `8bfacc95` : GO, avec 20 mutations jouées hors dépôt.
+  Corrigé ensuite :
+  - mutations survivantes, chacune avec son banc : fiches d'usage
+    incohérentes, format des identifiants retirés, besoin 0, -1 et 2.5,
+    `OPT_a` et `OPT_É`, bornes des versions de position (désormais dérivées
+    de `positions-expert/vocabulaire.ts`) ;
+  - banc §8 : il voit aussi un gabarit à accents graves ;
+  - `estUnTest` aligné sur `.js` et `.jsx` ;
+  - propriétés en trop refusées (`cles`) ;
+  - commentaire §5.4 rectifié.
+
+  Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 980 tests.
+- Passe Codex du responsable sur `fb80151b` : BLOQUER, deux P1 confirmés et
+  toujours présents dans `eec057ad`, corrigés ensuite :
+  - P1-1 : une liste de populations à trous (`new Array(1)`) se signait.
+    `some` sautait la case absente. Chaque case est maintenant lue, trous
+    compris, et doit être un texte déclaré. Un banc couvre `new Array(1)`,
+    `[undefined]`, `[42]` et une liste mixte. Il vérifie le refus par
+    `incoherencesDeBibliotheque`, `bibliothequeSignee` et `etatBibliotheque`.
+  - P1-2 : le banc §8 lisait les imports dans le texte, d'où deux trous. Un
+    commentaire glissé entre `import` et la chaîne (`import/**/"…"`) passait,
+    et un échappement dans le chemin (`b…`) aussi. Le banc lit
+    désormais les spécificateurs avec le parseur TypeScript, décodés, par
+    `specificateursSyntaxiques`, nouvel export de `balayageSources`. Les
+    autres bancs gardent `specificateursImportes`, sans changement. Ajouts :
+    contre-épreuve des deux formes, de `import x = require`, de
+    `typeof import` et du `require` en `.js`/`.jsx` ; contre-épreuve du
+    filtre de balayage `.js`/`.jsx` (`estFichierSource`).
+
+  Bancs de garde et `bio-parcours` : 158 fichiers verts, 2 981 tests.
+- Contre-passe Codex sur `12009284` : BLOQUER. P1-1 est fermé. P1-2 reste
+  ouvert pour les arguments constants qui ne sont pas des littéraux :
+  `import(("…"))` et `import("@/lib/" + "bibliotheque-options/…")`. Le
+  correctif lit chaque argument par sa valeur constante : parenthèses,
+  concaténations, gabarits et assertions de type. Un `import()` ou un
+  `require()` à argument non constant rend `IMPORT_NON_CONSTANT`, que le
+  banc §8 traite comme un lecteur possible, car le bundler en ferait un
+  module de contexte. Il n'y en a aucun en production (0 sur 1 125 fichiers).
+  Contre-épreuves ajoutées pour chacune de ces formes.
+
+  Bancs de garde, `bio-parcours` et bibliothèque : 161 fichiers verts,
+  3 023 tests.
+- CodeRabbit sur `748a8467` : deux remarques, toutes deux corrigées.
+  `optionsRetirees` est lue case par case, trous compris : `new Array(1)`,
+  `[undefined]`, `[42]` et une liste mixte sont refusés, et la structure ne
+  se signe pas. Le balayage admet `.mjs`, `.cjs`, `.mts` et `.cts`. Il n'en
+  existe aucun sous `web/src`, donc les autres bancs ne changent pas.
+  `estUnTest` et le choix de la grammaire du parseur sont alignés.
+- Contre-passe Codex sur `302b80d8` : BLOQUER. Un `require` entre
+  parenthèses, `(require)("…")` ou `(require)(chemin)`, n'était pas lu. Le
+  correctif déballe l'appelé (parenthèses, assertions de type, virgule) et
+  admet `module.require`. Toute autre mention de `require`, comme
+  `const r = require`, `require.context` ou `typeof require`, ferme le verrou.
+  Il en va de même de `import.meta` hors de `.url`, par exemple
+  `import.meta.webpackContext`. `new URL(x, import.meta.url)` est lu par
+  son chemin. Il n'y a aucune de ces mentions en production. La seule forme
+  qui touche `import.meta`, le worker de `pdfjs-dist`, est lue sans
+  sentinelle. Contre-épreuves : chemin exact et sentinelle pour les deux
+  formes relevées, et une contre-épreuve par forme voisine. Tests de la
+  bibliothèque et du balayage : 37, verts.
+
+  T1 complet : un seul rouge, hérité de main (#2017, D-499).
+  `scripts/wn-revue-copilot.test.mjs`, test « câblage », attend encore que
+  `wn-merge` nomme `wn-revue-copilot.mjs`, mais D-499 a retiré cette
+  mention. Main l'a réaligné (#2029), fusionné sur la branche :
+  `bancs-outillage-check` est vert, et les étapes qui n'avaient pas tourné
+  derrière lui (anti-secrets) aussi.
+- Contre-passe Codex sur `c847d0f5` : BLOQUER, pour deux formes voisines.
+  La première est `module["require"](…)`, un accès calculé. La seconde est
+  `new URL(…)` avec le constructeur ou la base entre parenthèses. Le
+  correctif reconnaît un accès calculé constant à `require`, quelle que
+  soit sa forme, et déballe le constructeur et la base de `new URL`.
+  `import.meta` n'est plus admis que comme base d'un `new URL` reconnu.
+  Toute autre mention, y compris `import.meta.url` seul ou
+  `new globalThis.URL(…)`, ferme le verrou. Contre-épreuves : chemin exact
+  ou sentinelle pour les quatre exemples de Codex et leurs variantes non
+  constantes. T1 complet : code 0.
+- PR-Agent sur `5a29983b`, constat nouveau « Verrou qui jette »
+  (`bbca5e170e29`), corrigé. Une structure hors du typage faisait lever une
+  exception dans `incoherencesDeBibliotheque`, `sourcesCitees` et
+  `bibliothequeSignee`. C'était le cas pour `optionsRetirees` absent ou qui
+  n'est pas une liste, `options` ou `renvois` d'une autre forme, et une
+  structure ou des métadonnées nulles. Elle rend désormais des anomalies,
+  dont `structure:option_mal_formee` pour une case d'option qui n'est pas un
+  objet, et ne se signe pas. Un banc couvre neuf formes de structure et
+  trois formes de métadonnées. T1 complet : code 0, joué avant la fusion de
+  main (#2027, t78), qui ne touche aucun fichier du lot.
+- Contre-passe Codex sur `3311087b` : P1-2a et P1-2b fermés, BLOQUER sur
+  deux constats.
+  - P1-3 : `id: ["OPT_SYNTH_1"]` passait pour l'identifiant par conversion
+    implicite, et la structure se signait.
+  - P2-1 : il restait des chemins qui faisaient lever une exception :
+    `{ toString: null }` en identifiant ou en renvoi, `[null]` en claims ou
+    en positions épinglés.
+
+  Correctif : chaque valeur imbriquée est contrôlée par son type avant d'être
+  convertie, interpolée ou lue. `estIdentifiantOption` et `lireRenvoi`
+  exigent un texte. Un identifiant qui n'est pas un texte rend
+  `structure:option_mal_formee`. La date, les claims et les positions
+  épinglés sont vérifiés case par case, trous compris. Les fiches d'usage
+  sont lues sans supposer leur forme. Si leur propre module ne sait pas les
+  lire, elles valent « non signées », et la bibliothèque passe donc
+  « à relire ». Bancs : identifiants, renvois, sources et date, fiches
+  d'usage hors typage. Pour chacun, il vérifie les anomalies exactes, une
+  signature refusée et l'état attendu. T1 complet : code 0.
+- Revue `wn-reviewer` sur `bab68ad7` (la passe Codex était indisponible ; le
+  responsable l'a remplacée par `wn-reviewer`), BLOQUER :
+  - P1-1, corrigé : un `define([...], f)` AMD charge ses dépendances sans
+    que le banc les voie. Le visiteur lit maintenant les éléments constants
+    du tableau. Tout autre argument et toute autre mention de `define`
+    ferment le verrou.
+  - P1-2, corrigé : `@jsxImportSource x` fait importer `x/jsx-runtime`.
+    Le pragma est lu dans le texte.
+  - P1-3, corrigé : le banc balaie désormais tout `web/`, y compris les
+    entrées hors de `src` et `web/scripts/` (worker, cron). Il vérifie qu'il
+    voit bien ces fichiers (anti-vacuité). L'outillage de `scripts/` et
+    `tools/`, qui n'est pas en production, charge des chemins calculés, ce
+    qui donnerait 34 faux rouges : routé vers la PR 4.
+  - P2-1, corrigé : une fonction, un `Symbol`, un BigInt ou un cycle ne font
+    plus lever d'exception. L'empreinte est calculée par `empreinteSure`, qui
+    rend `null` dans ces cas et ferme alors le verrou.
+  - P2-2, corrigé : `hypothese` doit être un texte.
+  - P2-3, corrigé : le motif du banc ignore la casse.
+  - Q1, routé vers la PR 4 : les détours par la configuration (`paths`,
+    `imports`, alias de `next.config`). Chacun exige de modifier un fichier
+    de configuration hors de ce lot.
+  - Q2, écarté : un `toJSON` posé sur un tableau de renvois n'existe que par
+    cast dans du code. Du JSON lu ne peut pas en porter, et ce code serait
+    visible en revue.
+- Contre-passe `wn-reviewer` sur `b1524e75` : quatre correctifs sont fermés,
+  et un fuzz de 10 416 appels sur JSON muté ne lève aucune exception. Elle
+  rend pourtant BLOQUER sur deux constats :
+  - P1-A, corrigé : `define(["require"], function (r) { r("x") })` charge
+    `x`, ce que webpack confirme en compilant. Une fabrique AMD qui déclare
+    des paramètres ferme désormais le verrou.
+  - P1-B, corrigé : le motif du pragma s'arrête désormais avant un `*/`
+    collé (`…options*/`).
+  - En complément, un banc interdit tout fichier `jsx-runtime` dans le
+    dossier, ce qui couvre toute autre forme de pragma.
+  - P2-a, écarté : un `define` détourné vers un autre usage ferait un rouge
+    à arbitrer. Il n'en existe aucun aujourd'hui, et le verrou reste fermé.
+  - P2-b, routé vers la PR 4 : `module.hot.accept(x)`. Le constat a été
+    compilé en production et n'embarque rien ; il ne concerne que le
+    développement.
+- Contre-passe `wn-reviewer` sur `7ca05b18` : P1-A et P1-B fermés. Toutes
+  les formes AMD que webpack embarque sont vues. BLOQUER sur un constat :
+  - P1-C, corrigé : un pragma séparé par U+0085 (NEL) passe, car SWC
+    l'admet et le `\s` de JavaScript l'ignore. Le second verrou rate en
+    plus un dossier `jsx-runtime/` (avec `index.ts` ou `package.json`).
+  - Correctif : toute mention du pragma de source JSX ferme le verrou, quel
+    que soit le séparateur. Sa valeur n'est plus lue.
+  - Le banc du dossier liste désormais tous ses fichiers, et plus seulement
+    ses sources. Il refuse tout `jsx-runtime`, en fichier comme en dossier.
+- Contre-passe `wn-reviewer` sur `a58631d6` : **PASSER**. P1-C est fermé :
+  la chaîne a été compilée, et chaque variante de pragma appliquée par SWC
+  est vue. Deux P2 non bloquants :
+  - fichier ignoré, ou test importé par la production : routé vers la PR 4 ;
+  - prose qui ferme le verrou : voulu, donc écarté.
+- Passe Codex P0 du responsable sur `ec805bc7` (2026-11-13) : **BLOQUER**
+  sur un constat, P1-4. Le garde compare les spécificateurs au nom du
+  dossier sans résoudre les alias : avec `"paths": { "@options": [...] }`,
+  `import … from "@options"` charge la bibliothèque et le banc reste vert.
+  Le routage vers la PR 4 est refusé : l'invariant §8 est exigé ici.
+  - P1-4, corrigé : chaque spécificateur est résolu par `resolveModuleName`
+    de TypeScript, avec les options de `web/tsconfig.json`, et le fichier
+    atteint est comparé au dossier (casse ignorée ; un lien symbolique n'est
+    pas suivi pour un import relatif, voir la contre-passe n° 7).
+    Cela couvre `paths`, `baseUrl` et les `imports` de `package.json`.
+    Les alias propres à Next (`webpack`, `resolveAlias`) échappent à
+    TypeScript : un verrou exige que `next.config.mjs` reste l'unique
+    configuration de Next et n'en déclare aucun.
+  - Contre-passe Codex ciblée sur `05c5ea2b` (`wn-codex-avis.mjs`, D-505,
+    après un `--mode controle` passé par la nouvelle version de codex-cli) :
+    **BLOQUER**. Elle confirme que le cas exact de P1-4 est fermé, mais
+    relève deux détours de la même classe :
+    - une clé calculée (`['res' + 'olveAl' + 'ias']`) échappe au motif
+      textuel sur `next.config` : corrigé ;
+    - `typescript.tsconfigPath` fait lire un autre tsconfig à Next, alors
+      que le banc lit `web/tsconfig.json` : corrigé.
+    Correctif commun : le verrou porte sur la configuration ÉVALUÉE.
+    `web/next.config.mjs` est importé par le banc, l'enveloppe Sentry étant
+    remplacée par une capture. Seules des clés listées sont admises, côté
+    Next (`headers`, `reactStrictMode`, `redirects`) comme côté Sentry
+    (`webpack` limité à `treeshake`). Seuls `next.config.mjs` et
+    `tsconfig.json` existent comme configurations sous `web/`. Mutation
+    réelle (clé calculée ajoutée au fichier, puis retirée) : le banc nomme
+    `next.turbopack`. Validations : bancs du dossier à 47 tests verts (dont
+    7 pour la garde) ; T1 complet à 0.
+  - Contre-passe Codex n° 2 sur `c12bd412` : **BLOQUER**. Elle confirme
+    que les deux détours précédents sont fermés, et en relève deux
+    nouveaux :
+    - une condition `types` dans un `#import` de `package.json` : TypeScript
+      résout la déclaration, et le bundler la cible protégée ;
+    - un alias webpack posé sous `NODE_ENV === 'production'` seul, invisible
+      à l'évaluation du banc.
+
+    Corrigé en changeant de méthode. Interpréter chaque détour en appelle un
+    autre ; les configurations de résolution sont donc **verrouillées**.
+    C'est la première option de la passe initiale.
+    - Sous `web/`, il n'existe que `next.config.mjs`, `package.json` et
+      `tsconfig.json` : aucun babel, swc, jsconfig, second tsconfig ni
+      `package.json` imbriqué.
+    - `package.json` ne porte que ses huit clés actuelles, donc ni
+      `imports`, ni `exports`, ni `browser`.
+    - `tsconfig.json` ne porte que ses clés actuelles (ni `extends`, ni
+      `baseUrl`, ni `rootDirs`…), avec `paths` figé.
+    - `next.config.mjs` est figé par l'empreinte SHA-256 du fichier entier.
+
+    **Coût assumé** : tout changement de `next.config.mjs` rougit ce banc
+    jusqu'à ce que l'empreinte soit ajustée. Le banc dit ce qu'il faut
+    vérifier avant de l'ajuster. Le fichier a connu huit commits depuis sa
+    création. De même, toute clé nouvelle de `web/package.json` ou de
+    `compilerOptions` (par exemple `type`, `browserslist`,
+    `noUncheckedIndexedAccess`) rougit le banc, même sans rapport avec la
+    résolution : elle s'inscrit nommément dans la liste, en revue. La résolution TypeScript et le verrou sur l'objet évalué
+    restent en place, en défense complémentaire. Validations : bancs du
+    dossier à 47 tests verts ; T1 complet à 0.
+  - Contre-passe Codex n° 3 sur `db10dd9f` : **BLOQUER**. Elle confirme
+    que les deux détours précédents sont fermés, et en relève un nouveau :
+    `NODE_PATH`. Next l'ajoute aux `resolve.modules` de webpack, et il
+    peut venir d'un script ou de l'environnement de déploiement, hors du
+    dépôt. Un import `"vocabulaire"` atteint alors le dossier.
+    - Corrigé au spécificateur, quel que soit l'environnement : un nom nu
+      doit être une dépendance déclarée de `web/package.json` ou un module
+      natif de Node. Sinon, il ferme le verrou.
+    - Le dossier ne porte en outre aucune entrée au nom d'une dépendance.
+    - L'inventaire préalable de la production compte zéro nom nu inconnu,
+      donc la règle ne coûte rien aujourd'hui.
+    - Mutation réelle (import `"vocabulaire"` sous `web/src/app/`, puis
+      retiré) : le banc nomme l'importeur.
+    - Validations : bancs du dossier verts (garde à 9 tests) ; T1 complet
+      à 0.
+  - Contre-passe Codex n° 4 sur `8fb6728b` : **BLOQUER**. Elle confirme
+    que le cas `"vocabulaire"` est fermé, mais un nom nu commençant par un
+    point (`.detour/vocabulaire`) passait pour relatif.
+    - Corrigé : seuls `.`, `..`, `./…` et `../…` sont relatifs.
+    - L'inventaire du dossier compare désormais le nom brut de chaque
+      entrée, et chacun de ses préfixes avant un point, aux dépendances.
+    - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 5 sur `72f6d5a4` : **BLOQUER**. L'inventaire ne
+    lisait que le premier niveau : un `NODE_PATH` vers
+    `…/detour` servait `fs/charge` depuis `detour/fs/charge.ts`, et `fs`,
+    module natif, était admis.
+    - Corrigé, et fermé par un argument complet plutôt que cas par cas. Si
+      `NODE_PATH` pointe au-dessus du dossier, le spécificateur nomme
+      `bibliotheque-options` et le motif le voit. S'il pointe dans le
+      dossier, le premier segment du spécificateur est un nom du dossier :
+      inconnu, il ferme le verrou ; nom de dépendance ou de module natif,
+      il est interdit à toute profondeur du dossier.
+    - En plus, un module natif ne s'admet qu'en entrée exacte
+      (`fs/promises`, pas `fs/charge`).
+    - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 6 sur `0b928f26` : **BLOQUER**. L'argument laissait
+    un trou pour les dépendances à portée : `@detour/paquet` n'est jamais vu
+    segment par segment.
+    - Corrigé : tout segment `@…` du dossier est interdit, puisqu'il est le
+      premier segment d'un nom à portée.
+    - Arbitrage du responsable (2026-11-13) : une contre-passe n° 7, puis
+      arrêt. Si elle bloque encore, le reste part à la PR 4, avec un
+      verdict.
+    - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 7 sur `85d17707` : **BLOQUER** sur un lien
+    symbolique hors du dossier. Avec `web/src/lib/detour ->
+    bibliotheque-options`, l'import `./detour/vocabulaire` passe :
+    TypeScript garde le chemin du lien pour un import relatif, alors que le
+    bundler charge la bibliothèque.
+    - Constaté en bac à sable : `resolvedFileName` vaut
+      `…/detour/vocabulaire.ts`. L'affirmation « liens symboliques suivis »
+      du banc et de ce handoff était donc fausse ; elle est corrigée.
+    - **Routé vers la PR 4**, par l'arbitrage du responsable ci-dessus.
+      Correctif pressenti : canonicaliser le fichier atteint (`realpath`)
+      avant la comparaison, avec une contre-épreuve par lien réel.
+    - Constats des passes n° 2 à n° 6 : fermés selon cette même passe.
+  - Correctif initial de P1-4 (`05c5ea2b`), pour mémoire :
+    - Contre-épreuve en mémoire : `@options` par `paths`, un joker
+      `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
+      l'hôte de résolution. Le motif seul rate `@options`, la résolution le
+      voit.
+    - Mutation réelle jouée puis retirée (alias dans `tsconfig` et
+      importeur sous `web/src/app/`) : le banc nomme l'importeur.
+    - Validations d'alors : banc de garde à 7 tests ; T1 rapide et T1
+      complet à 0. Le banc compte aujourd'hui 9 tests.
+    - T3 local non rejoué sur tout le correctif : seul un banc est touché,
+      et le CI rejoue la séquence entière.
+  - CI de `65792d8d` : `wn-attendre-ci` à 0 (`verify` a réellement tourné).
+    PR-Agent à 1 : diff élagué, et deux fichiers hors de la revue
+    (`balayageSources.ts`, `FEATURE_FLAGS.md`, inchangés depuis
+    `ec805bc7`). Repli D-448 : `wn-reviewer` sur le delta
+    `ec805bc7..65792d8d` rend **PASSER**, sans P1 ; banc relu à 49 tests
+    verts. Verdicts de ses remarques :
+    - P2-1, handoff périmé (prochaine action, validations non datées) :
+      corrigé.
+    - P2-2, commentaire « VERROU » placé au-dessus du mauvais test :
+      corrigé.
+    - P2-3, coût des listes de clés de `package.json` et `tsconfig` non
+      documenté : corrigé dans « Coût assumé ».
+    - P2-4a, segment interdit comparé sans ignorer la casse (`React/`) :
+      corrigé, contre-épreuve `a/React/x.ts` et `FS.ts`.
+    - P2-4b, `builtinModules` dépend de la version de Node : écarté. Le CI
+      et le poste local sont tous deux en Node 22.
+    - Question sur les valeurs des `scripts` de `package.json` : routée
+      vers la PR 4, avec l'extension des verrous aux autres bancs.
+      Aucun alias passable par la ligne de commande de `next build` n'a été
+      trouvé.
+
+## Problèmes ouverts
+
+- **Deux sources de dose de D-480 §4 sans forme de renvoi** : le registre
+  des compléments et les référentiels externes ingérés. Un référentiel
+  ingéré l'est en claims (cas de WN-SRC-0652), qui se citent déjà. Le
+  registre des compléments n'a pas de forme. L'ajouter change le format,
+  sans migration ; la question est à poser à la PR 4 ou à la transcription
+  de la PR 7, quand un contenu du responsable en aura besoin.
+- **« Déclarée manquante » hors de la dose** : D-480 §5.2 dit qu'une
+  métadonnée de DC-11 absente « ou déclarée manquante » rend l'option non
+  exécutable. Le format n'admet `information_manquante` que pour la dose
+  (§4, consigne du lot). Pour les autres rubriques, une liste vide tient lieu
+  de « non documentée ». À trancher à la PR 4, qui juge l'exécutabilité.
+- **Passe Codex** : obligatoire pour un module clinique signé de la campagne
+  BIO-PARCOURS (bibliothèque d'options), geste manuel du responsable
+  (`$wellneuro-pr-review`). La première passe a rendu BLOQUER ; ses deux P1
+  sont corrigés. Les contre-passes ont suivi jusqu'à `3311087b`. Ensuite,
+  Codex était indisponible : le responsable l'a remplacé par `wn-reviewer`
+  sur `bab68ad7`. C'est une exception à déclarer avec « prête ».
+- **Les autres bancs de garde** lisent toujours les imports dans le texte
+  (`specificateursImportes`). Ils restent ouverts aux deux formes de
+  contournement relevées par Codex. Leur passage au parseur touche une
+  quinzaine de bancs hors de ce lot ; il est routé vers la PR 4, qui pose la
+  garde de consommation. Sont routés au même endroit l'outillage de
+  `scripts/` et `tools/`, `module.hot` et les fichiers ignorés ou de test
+  importés par la production (`wn-reviewer`). Les détours par la
+  configuration sont fermés ici pour la bibliothèque (P1-4). Reste un
+  détour, routé vers la PR 4 : un lien symbolique hors du dossier, atteint
+  par un import relatif (contre-passe Codex n° 7, avec `realpath` à
+  poser). La PR 4 reprendra aussi le résolveur, les verrous de
+  configuration et la règle des noms nus pour les autres bancs.
+- Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
+  passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
+  Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
+  (`wn-reviewer`, constat 4).
+- Le chemin du module n'est pas encore sous le hook DC-17, au contrat de
+  fraîcheur, à la matrice de consommation ni aux chemins de `release-db.yml` :
+  c'est la PR 4. Tant que la structure est vide, rien n'en dépend.
+
+## Prochaine action exacte
+
+#2006 : CI de la nouvelle tête (correctifs des P2 de `wn-reviewer`),
+contre-passe `wn-reviewer` sur ce dernier delta, puis la PR est redéclarée
+« prête @<sha> ». La déclaration le dit clairement : la contre-passe Codex
+n° 7 est un BLOQUER sur le lien symbolique, routé vers la PR 4 par
+l'arbitrage du responsable du 2026-11-13. L'intégrateur juge et merge. La PR 4 (contrôles et garde) suit dans une nouvelle
+session, puis la PR 5 (atelier), qui dépend de cette PR et de la PR 2,
+constatée.
+
+## Interdits encore actifs
+
+- Aucune migration, aucune modification de `schema.prisma`. Aucune lecture
+  ni écriture des tables de la PR 2 avant la PR 5.
+- Aucune option, dose, durée, précaution, contre-indication, interaction ni
+  libellé rédigé par une session (porte 23, DC-11) ; fixtures neutres
+  seulement.
+- Aucune signature : c'est le geste du responsable, à la PR 7.
+- Aucun lecteur de `creePar` / `validePar` (D-459 §7). Aucun lecteur de la
+  bibliothèque hors des bancs, de l'atelier et du cockpit (§8).
+- Ne pas reposer D-480, ses trois points de forme ni le découpage ; ni les
+  arbitrages BP-17, D-477, BP-14, D-459, F78 ou BP-12b.
+- Production en lecture seule, par conteneur, en agrégats.

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   ComprehensionApiResponse,
   DesaccordExpose,
@@ -120,6 +120,12 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
 
   useEffect(() => {
     void charger();
+  }, [charger]);
+
+  const sectionRef = useRef<HTMLElement>(null);
+  const relire = useCallback(async () => {
+    await charger();
+    sectionRef.current?.focus();
   }, [charger]);
 
   /**
@@ -257,9 +263,13 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
   const editionOuverte = syntheses.length === 0 || revise !== null || redactionLibre;
 
   return (
-    <section className="mt-6 rounded-lg border border-border bg-card p-4">
+    <section
+      ref={sectionRef}
+      tabIndex={-1}
+      className="mt-6 rounded-lg border border-border bg-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+    >
       <header className="mb-3">
-        <h3 className="text-base font-semibold">Ce que j’ai compris de vous</h3>
+        <h4 className="text-base font-semibold">Ce que j’ai compris de vous</h4>
         <p className="text-sm text-muted-foreground">
           Votre compréhension, écrite pour le patient et publiée telle quelle. Ce n’est ni un
           diagnostic, ni une orientation : c’est ce que vous avez retenu de lui.
@@ -268,7 +278,18 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
 
       {etat === 'chargement' && <p className="text-sm text-muted-foreground">Chargement…</p>}
       {etat === 'erreur' && (
-        <p className="text-sm text-status-error">Ce panneau n’a pas pu être chargé.</p>
+        <div role="alert" className="flex flex-wrap items-center gap-3">
+          <p className="min-w-0 text-sm text-status-danger">Ce panneau n’a pas pu être chargé.</p>
+          {/* « Réessayer » (T-17, PRA-3b) relit le seul panneau, puis rend le
+              focus au panneau relu. */}
+          <button
+            type="button"
+            onClick={() => void relire()}
+            className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Réessayer
+          </button>
+        </div>
       )}
 
       {etat === 'chargee' && (
@@ -320,7 +341,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                     )}
                     <button
                       type="button"
-                      className="mt-2 text-xs text-primary hover:underline"
+                      className="mt-2 min-h-11 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       onClick={() => {
                         setRevise(trajectoire.idSynthese);
                         setTexte(trajectoire.lignes[0].texte);
@@ -340,7 +361,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               dit ce qui a été dit, et l'état dérivé de chaque message. */}
           {desaccords.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">« Ce n’est pas exactement ça »</h4>
+              <h5 className="text-sm font-medium">« Ce n’est pas exactement ça »</h5>
               <ul className="space-y-2">
                 {desaccords.map((desaccord) => (
                   <li
@@ -387,7 +408,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               <button
                 type="button"
                 onClick={() => setRedactionLibre(true)}
-                className="rounded border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/10"
+                className="min-h-11 rounded border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Écrire une nouvelle version
               </button>
@@ -453,7 +474,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                   type="button"
                   disabled={tirageEnCours}
                   onClick={() => void demanderTirage(tirage !== null)}
-                  className="rounded border border-border px-3 py-1.5 text-xs disabled:opacity-50"
+                  className="min-h-11 rounded border border-border px-3 py-1.5 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   {tirageEnCours
                     ? 'En cours…'
@@ -507,7 +528,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                 className={`rounded p-2 text-sm ${
                   registreAConfirmer
                     ? 'border border-status-warning/40 bg-status-warning/10'
-                    : 'text-status-error'
+                    : 'text-status-danger'
                 }`}
               >
                 {message}
@@ -529,7 +550,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               <button
                 type="submit"
                 disabled={envoi === 'envoi' || texte.trim().length === 0}
-                className="rounded bg-secondary px-3 py-2 text-sm disabled:opacity-50"
+                className="min-h-11 rounded border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Enregistrer en brouillon
               </button>
@@ -542,7 +563,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                   identiqueAuTirage
                 }
                 onClick={() => void envoyer(true, false)}
-                className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                className="min-h-11 rounded bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Publier au patient
               </button>
@@ -554,7 +575,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                   type="button"
                   disabled={envoi === 'envoi'}
                   onClick={() => void envoyer(true, true)}
-                  className="rounded border border-status-warning px-3 py-2 text-sm"
+                  className="min-h-11 rounded border border-status-warning px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Publier tel quel
                 </button>

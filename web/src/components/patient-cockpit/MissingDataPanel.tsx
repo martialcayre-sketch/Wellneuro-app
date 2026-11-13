@@ -114,9 +114,9 @@ export function MissingDataPanel({
 }) {
   return (
     <section aria-labelledby="missing-data-title">
-      <h3 id="missing-data-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+      <h4 id="missing-data-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
         Données manquantes
-      </h3>
+      </h4>
       <div className="flex flex-col gap-3">
         {missingData === null ? (
           <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
