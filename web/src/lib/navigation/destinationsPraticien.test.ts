@@ -40,6 +40,7 @@ const ROUTES = [
   '/dashboard/bibliotheque/complements',
   '/dashboard/bibliotheque/connaissances',
   '/dashboard/bibliotheque/fiches-conseils',
+  '/dashboard/bibliotheque/options',
   '/dashboard/bibliotheque/positions-expert',
   '/dashboard/bibliotheque/questionnaires',
   '/dashboard/biologie',
@@ -83,9 +84,9 @@ describe('destinations praticien — groupes et ordre ([[D-487]])', () => {
     expect(libelles('cabinet')).toEqual(['Comptes du cabinet', 'Paramètres']);
   });
 
-  it('aucune entrée sans lien : ni Documents, ni Règles, ni Positions d’expert, ni Synthèses au menu', () => {
+  it('aucune entrée sans lien : ni Documents, ni Règles, ni Positions d’expert, ni Bibliothèque des options, ni Synthèses au menu', () => {
     const hrefs = DESTINATIONS_PRATICIEN.map((d) => d.href);
-    for (const absent of ['/dashboard/documents', '/dashboard/regles', '/dashboard/bibliotheque/positions-expert', '/dashboard/synthese']) {
+    for (const absent of ['/dashboard/documents', '/dashboard/regles', '/dashboard/bibliotheque/positions-expert', '/dashboard/bibliotheque/options', '/dashboard/synthese']) {
       expect(hrefs).not.toContain(absent);
     }
   });
@@ -110,7 +111,7 @@ describe('destinations praticien — activation ([[D-485]] §2-§3)', () => {
   });
 
   it('les pages sans entrée n’allument rien', () => {
-    for (const chemin of ['/dashboard/documents', '/dashboard/regles', '/dashboard/synthese', '/dashboard/bibliotheque/positions-expert']) {
+    for (const chemin of ['/dashboard/documents', '/dashboard/regles', '/dashboard/synthese', '/dashboard/bibliotheque/positions-expert', '/dashboard/bibliotheque/options']) {
       expect(actifsSur(chemin), chemin).toEqual([]);
     }
   });

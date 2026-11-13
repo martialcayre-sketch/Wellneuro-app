@@ -48,7 +48,10 @@ vi.mock('@sentry/nextjs', () => ({
 // est lu par sa valeur constante ; s'il n'en a pas, le fichier compte comme un
 // lecteur possible (contre-passe Codex) — aucun n'existe en production.
 const DOSSIER = 'web/src/lib/bibliotheque-options/';
-const LECTEURS_ADMIS: readonly string[] = [];
+// PR 5 : le module de l'atelier qui rend la structure de références à ses
+// routes, à sa lecture et à son écriture — seul importeur, sous drapeau éteint
+// (`WN_BIBLIOTHEQUE_OPTIONS_ATELIER`).
+const LECTEURS_ADMIS: readonly string[] = ['web/src/lib/atelier-bibliotheque-options/structure.ts'];
 
 // Le motif ignore la casse : un système de fichiers qui l'ignore aussi (macOS)
 // résout `./BIBLIOTHEQUE-options/…` (`wn-reviewer` sur #2006).
