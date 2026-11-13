@@ -244,11 +244,13 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   // tu dès qu'une transmission patient existe, plutôt que d'affirmer une
   // absence que cette surface ne peut pas constater.
   const joursSansTrace = useMemo(() => {
-    if (!episode || transmissions.length > 0) return 0;
+    // Transmissions non lues (T-62) : on ne sait pas s'il en existe — le
+    // constat se tait aussi, plutôt que d'affirmer une absence sur une panne.
+    if (!episode || transmissions.length > 0 || echecTransmissions) return 0;
     const datesTracees = new Set(traces.map(t => t.localDate));
     return joursObservables(episode.startDate, episode.endDate, dateLocale(new Date()))
       .filter(jour => !datesTracees.has(jour)).length;
-  }, [episode, traces, transmissions]);
+  }, [episode, traces, transmissions, echecTransmissions]);
 
   const constats = useMemo(() => listDirectFindings({
     joursSansTrace,
@@ -971,7 +973,13 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           que ce que le patient a effectivement décrit. */}
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h4>
-        {journeesTransmises.length === 0 ? (
+        {/* Le bilan se lit sur les transmissions : non lues, il ne dit pas
+            « aucune journée » — il redit T-62 ; « Réessayer » est au-dessus. */}
+        {echecTransmissions ? (
+          <p className="text-base text-status-warning" data-testid="ja-praticien-calibrage-echec">
+            Les transmissions du patient n’ont pas pu être lues. Ce n’est pas une absence de transmission.
+          </p>
+        ) : journeesTransmises.length === 0 ? (
           <p className="text-base text-muted-foreground">
             Aucune journée décrite à ce jour.
           </p>

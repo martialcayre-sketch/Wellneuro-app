@@ -259,9 +259,26 @@ describe('PractitionerFoodObservationPanel', () => {
 // l'identique quel que soit le patient. L'assertion NÉGATIVE est le cœur de ce
 // test : sans elle, réintroduire la phrase passerait au vert.
 describe('PractitionerFoodObservationPanel — le calibrage ne s’invente plus', () => {
+  // Lectures RÉUSSIES et vides : sans faux serveur, le `fetch` de jsdom
+  // échouait, et le panneau lisait cet échec comme un vide — ce que T-62 et
+  // T-63 interdisent désormais (PRA-3b, PR 5).
   beforeEach(() => {
     cleanup();
     window.sessionStorage.clear();
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify({ ok: true, protocoleDiffuse: false, vue: null }), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({ ok: true, snapshots: [] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('n’affiche aucune structure tant qu’aucune journée n’est ouverte', async () => {
@@ -633,6 +650,14 @@ describe('échecs de lecture (T-62, T-63)', () => {
     expect(echec.textContent).toContain(T62);
     const bloc = screen.getByTestId('ja-praticien-transmissions');
     expect(bloc.textContent).not.toContain('Aucune transmission du patient à ce jour.');
+    // Le bilan de calibrage et le constat de jours sans trace se lisent sur les
+    // transmissions : ils ne concluent pas à un vide sur une panne (revue
+    // PR-Agent de #2063).
+    await screen.findByTestId('ja-praticien-cycle');
+    const calibrageBloc = screen.getByTestId('ja-praticien-calibrage');
+    expect(calibrageBloc.textContent).toContain(T62);
+    expect(calibrageBloc.textContent).not.toContain('Aucune journée décrite à ce jour.');
+    expect(screen.queryByText(/Aucune trace sur la période/i)).toBeNull();
 
     listePanne = false;
     fireEvent.click(within(echec).getByRole('button', { name: 'Réessayer' }));
