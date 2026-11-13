@@ -274,9 +274,29 @@ L'acceptation de T-49/T-50 ne publie aucune version de confidentialité :
 ils ne deviennent visibles qu'au lot séparé Q5b, avec le comportement décrit.
 Voir pat4-prealables.md et lot-q5b-brouillon-appareil.md.
 
+## 2.8 PAT-5, lectures et espaces reçus — DOC-9
+
+Réponses du responsable le 2026-11-13 au prototype PAT-5, itération 1
+(« All recommended » : Q1c à Q8a), puis acceptation mot pour mot des deux
+emplacements neufs (« Accept both »). Source canonique : [[D-488]],
+amendement DOC-9, et [[D-481]], complément DOC-9.
+
+| Texte | Statut final | Portée |
+|---|---|---|
+| T-33 | accepté (DOC-0), appliqué au seul titre de U24 (Q4a) | l'intitulé de la synthèse sous l'objectif, dans U25, reste « Ce que votre praticien a compris de vous » |
+| T-36, emplacement | accepté mot pour mot, inscription DOC-9 | sous le 401 d'un envoi de U23, U24 et U25 ; même onglet vers /portail/connexion |
+| Phrase vide de U28, emplacement | acceptée mot pour mot, inscription DOC-9 | rayon vide « Remis par mon praticien » de U27 |
+
+Aucun texte neuf ni nouvel identifiant. Ne sont pas proposés, et restent
+tels qu'au code : les titres « Mon bilan » et « Bilan neuronutritionnel »
+(U26), le titre commun de U37 et U38, les retours « ← Mon parcours » (U37)
+et « ← Mon espace » (U38, T-34 refusé), la date de version en AAAA-MM-JJ
+(confiée à PAT-6), et les apostrophes droites des textes signés. Le bouton
+« Imprimer ou enregistrer en PDF » n'est pas étendu à U24 et U25 (Q5a).
+
 ## 3. Récapitulatif
 
 | Plan | Textes à accepter avant le lot |
 |---|---|
 | Praticien | T-01 à T-05, T-07, T-10, T-12, T-13 (PRA-1) ; T-14, T-15 (PRA-3) ; T-16 (PRA-2a, inscrit par DOC-1) ; T-17 (PRA-2a), T-18, T-19 (PRA-2b), acceptés et inscrits dans D-488 par DOC-6 ; T-60 à T-66 (PRA-3b), acceptés et inscrits dans D-488 par DOC-8 |
-| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5) ; T-36 à T-39 inscrits par DOC-5 ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
+| Patient | T-21 à T-23, T-32 (PAT-1) ; T-31 (PAT-2) ; T-30 (PAT-3) ; T-33, T-34 (PAT-5), avec les emplacements neufs de T-36 et de la phrase vide de U28 inscrits par DOC-9 ; T-36 à T-39 inscrits par DOC-5 ; T-40 à T-44, T-48 et nouvel emplacement T-36 inscrits par DOC-7 (PAT-4), T-49/T-50 inscrits pour Q5b ; T-34 refusé, T-35 reste proposé, T-45 sans objet |
