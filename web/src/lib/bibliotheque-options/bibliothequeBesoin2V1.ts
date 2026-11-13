@@ -314,7 +314,7 @@ export function claimsCitesParUsage(structure: StructureBibliotheque = BIBLIOTHE
   return { dose: [...dose].sort(), autres: [...autres].sort() };
 }
 
-const memes =(a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+const memes = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /**
  * La structure est signée — les cinq termes de [[D-480]] §6, sur le patron des

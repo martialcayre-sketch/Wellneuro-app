@@ -152,10 +152,12 @@ BEGIN
     INSERT INTO positions_expert_actes (id, id_version, acte, empreinte, auteur, relecture_integrale)
     VALUES ('pca_faux', 'pcv_sans_acte', 'signee', H2, 'p', true);
   EXCEPTION
-    WHEN others THEN refuse := true;
+    -- Le refus attendu est celui du déclencheur, pas n'importe quelle erreur
+    -- (revue wn-reviewer sur #2060).
+    WHEN others THEN refuse := SQLERRM LIKE '%empreinte recopiée ne correspond pas%';
   END;
   IF NOT refuse THEN
-    RAISE EXCEPTION 'POSITIONS CITÉES : un acte à l''empreinte divergente a été accepté ; le contrat devrait alors en avoir une fixture.';
+    RAISE EXCEPTION 'POSITIONS CITÉES : un acte à l''empreinte divergente n''a pas été refusé par le déclencheur d''empreinte ; le contrat devrait alors en avoir une fixture.';
   END IF;
 
   RAISE NOTICE 'POSITIONS CITÉES : contrat négatif vert.';

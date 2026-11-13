@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
@@ -264,6 +264,10 @@ const CYCLE_DE_VIE_NPM = [
   'preinstall', 'install', 'postinstall', 'prepare', 'preprepare', 'postprepare', 'prepublish',
   'prepack', 'postpack', 'dependencies',
 ];
+// Les crochets du buildpack Node (dérivé de Heroku) : `heroku-postbuild`
+// REMPLACE `build`, les autres l'encadrent. Refusés par préfixe, avec leurs
+// homonymes `scalingo-` (revue wn-reviewer sur #2060).
+const CROCHETS_BUILDPACK = /^(heroku|scalingo)-/;
 const DEPLACE_LA_RESOLUTION = /\bNODE_PATH\b|\bNODE_OPTIONS\b|--(import|require|loader|experimental-loader|conditions)\b|\s-[rC]\s/;
 
 function ecartsConfigNext(configNext: object, optionsSentry: object): string[] {
@@ -483,8 +487,9 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   // chargeur `jiti` du worker et du cron, un script `pre…`/`post…` qu'npm
   // enchaîne seul. Sont donc figés : le Procfile, la tâche planifiée, le
   // script de build et le chargeur `runWithAlias.js` (empreintes), la valeur
-  // exacte de chaque script que la chaîne appelle, et l'absence de tout script
-  // d'installation ou de cycle de vie autour d'eux. AVANT d'ajuster une
+  // exacte de chaque script que la chaîne appelle, l'absence de tout script
+  // d'installation ou de cycle de vie autour d'eux, de tout crochet du
+  // buildpack (`heroku-*`, `scalingo-*`) et de `web/.npmrc`. AVANT d'ajuster une
   // empreinte : vérifier que le changement ne pose ni alias, ni `NODE_PATH`, ni
   // chargeur, ni configuration de résolution. Aucun script, enfin, ne nomme
   // `NODE_PATH`, `NODE_OPTIONS` ni un drapeau de chargeur. LIMITE : une
@@ -514,9 +519,17 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
     const cycle = Object.keys(scripts).filter(
       nom =>
         CYCLE_DE_VIE_NPM.includes(nom) ||
+        CROCHETS_BUILDPACK.test(nom) ||
         Object.keys(SCRIPTS_LANCEMENT).some(x => nom === `pre${x}` || nom === `post${x}`),
     );
     expect(cycle).toEqual([]);
+    for (const nom of ['heroku-prebuild', 'heroku-postbuild', 'heroku-cleanup', 'scalingo-postbuild']) {
+      expect(CROCHETS_BUILDPACK.test(nom), nom).toBe(true);
+    }
+    // Aucune configuration npm de projet : un `node-options=--require …` d'un
+    // `.npmrc` s'appliquerait à chaque `npm run` sans passer par les scripts.
+    // LIMITE : une configuration npm de l'utilisateur ou globale, hors du dépôt.
+    expect(existsSync(join(RACINE, 'web/.npmrc'))).toBe(false);
 
     // Aucun script ne déplace la résolution de Node.
     expect(Object.entries(scripts).filter(([, v]) => DEPLACE_LA_RESOLUTION.test(v)).map(([nom]) => nom)).toEqual([]);

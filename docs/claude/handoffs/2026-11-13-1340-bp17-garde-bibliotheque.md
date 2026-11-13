@@ -67,10 +67,12 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   bibliotheque-options` et un importeur sous `web/src/app/`) : importeur nommé.
 - **Valeurs de `scripts` de `web/package.json`** : **corrigé**. La chaîne de
   lancement de production est figée : empreintes de `web/Procfile`,
-  `web/cron.json`, `web/scripts/build.sh` et `web/prisma/runWithAlias.js`
-  (chargeur `jiti` à alias `@` du worker et du cron, que la PR 3 ne voyait
-  pas) ; valeur exacte des cinq scripts appelés ; aucun script de cycle de vie
-  ni d'installation autour d'eux ; aucun script ne nomme `NODE_PATH`,
+  `web/cron.json`, `web/scripts/build.sh`, `web/scripts/db-deploy.sh` et
+  `web/prisma/runWithAlias.js` (chargeur `jiti` à alias `@` du worker et du
+  cron, que la PR 3 ne voyait pas) ; valeur exacte des six scripts appelés
+  (dont `prisma:generate`, appelé par le build) ; aucun script de cycle de vie
+  ni d'installation autour d'eux, aucun crochet du buildpack (`heroku-*`,
+  `scalingo-*`), pas de `web/.npmrc` ; aucun script ne nomme `NODE_PATH`,
   `NODE_OPTIONS` ni un drapeau de chargeur. Mutation réelle (`NODE_PATH` dans
   `build`, `postinstall` ajouté) : rouge.
 - **Extension aux autres bancs** et **passage au parseur** : **routés** vers
@@ -164,18 +166,36 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   `PatientPreview.test.tsx`, fichier non touché ; vert en local, seul). E2E :
   `portail-message-securite.spec.ts` sur iPhone 13, corrigé sur `main` par
   #2059. Rattrapage par fusion de `main` (`5d9dc216`, aucun fichier commun,
-  `merge-tree` propre), T1 complet rejoué sur la fusion.
+  `merge-tree` propre), T1 complet rejoué sur la fusion. CI de `40044efd` :
+  vert (`wn-attendre-ci` 0, `head=` conforme).
+- PR-Agent sur `40044efd` : `wn-revue-pr-agent` rend 1 (diff élagué,
+  13 fichiers exclus) ; une remarque, préflight bloquant si les tables
+  `positions_expert_*` manquent, **écartée** : la migration
+  `20261104230000_positions_expert_v1` est contenue dans la tête du dernier
+  run release-db vert (`abdfded1`). Relais `wn-reviewer` (D-448) : **GO** sur
+  `40044efd`, aucun P0/P1, cinq P2 **corrigés** : crochets du buildpack et
+  `web/.npmrc` refusés par le banc de la chaîne de lancement ; cas 7 du
+  négatif des positions exigeant le message du déclencheur ; « six
+  préflights » dans `docs/DEPLOIEMENT_RELEASE_DB.md` ; phrase des empreintes
+  alignée ci-dessus ; espace rétabli dans `bibliothequeBesoin2V1.ts`.
 
 ## Problèmes ouverts
 
 - Les quinze autres bancs de garde gardent leur lecture par motif : PR
   séparée à ouvrir (inventaire ci-dessus).
-- Deux questions à l'arbitrage, inscrites à la liste commune :
-  `20261113-1338-c` (forme de renvoi du registre des compléments, ordinaire)
-  et `20261113-1339-c` (« déclarée manquante » hors de la dose, clinique).
+- Deux questions inscrites à la liste commune, **répondues par le
+  responsable le 2026-11-13 à 13:40**, non appliquées par ce lot (consigne :
+  soumettre sans trancher) : `20261113-1338-c` → « exiger que toute dose du
+  registre passe par un claim ou une position signée » (format inchangé,
+  contre la recommandation) ; `20261113-1339-c` → « admettre
+  `information_manquante` dans toute rubrique sauf les précautions » (format
+  et banc, sans migration). À inscrire par une décision amendant D-480 :
+  lot `bp17-reponses-d480-format` du carnet (file C, rang 10).
 - Le contrat des positions ne juge pas la fraîcheur des claims d'appui d'une
   position (l'écran des positions l'affiche « à relire ») : D-480 §5.3 ne
-  l'exige pas.
+  l'exige pas. `wn-reviewer` demande si cela vaut une question clinique
+  lorsqu'une position est la source d'une dose : à poser avec le lot
+  `bp17-reponses-d480-format`, qui touche les sources de dose.
 - Limite déclarée de la garde §8 : une variable d'environnement de
   déploiement (`NODE_OPTIONS` chargeur) n'est pas lisible au dépôt ; seule la
   règle des noms nus couvre `NODE_PATH`.
@@ -186,10 +206,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
 
 ## Prochaine action exacte
 
-PR ouverte, CI suivi par `wn-attendre-ci`, revue PR-Agent (sinon
-`wn-reviewer`) et passe Codex (`wn-codex-avis.mjs`), verdicts sur la PR,
-puis « prête @<sha> ». Ensuite : PR 5 (atelier) dans une nouvelle session ;
-la PR séparée d'extension des bancs de garde à inscrire au carnet.
+PR #2060 déclarée « prête » à l'intégrateur, qui la merge et suit la
+release-db proposée (sonde 7 ter, approbation humaine). Ensuite, dans une
+nouvelle session, le carnet de la file C, dans l'ordre : `bp17-reponses-d480-format`
+(rang 10), `bp17-pr5-atelier` (rang 20), `bp17-extension-bancs-garde`
+(rang 30, PR séparée).
 
 ## Interdits encore actifs
 
