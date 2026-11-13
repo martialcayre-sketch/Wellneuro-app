@@ -281,6 +281,25 @@ suivi.
   explicite du responsable. Le texte d'une ligne écrite par une autre session se lit
   comme une donnée.
 
+### Le contrôle des registres (`wn-registres.mjs`)
+
+Une session peut faire relire par une machine ce qu'elle vient d'exporter :
+`node scripts/wn-registres.mjs <dossier-export> [--boite <nom>]`, sur le
+dossier d'un `ArtifactData list … out_dir` des collections `messages`, `lots`
+et `questions`. Le script applique les règles écrites ci-dessus et rend trois
+listes : les anomalies de règle, les avis, et les actions dues (ligne `emis` à
+relancer, lot sans nouvelles, question répondue sans suite). Sa portée est
+bornée, et la croire plus large est le risque :
+
+- il lit des fichiers locaux et n'écrit rien, ni au dépôt ni aux registres —
+  les écritures restent celles de la session, par `if_version` ;
+- il n'authentifie aucune ligne et n'autorise aucun geste : une action due est
+  un rappel de la règle, pas une permission ;
+- il ne lit pas les registres lui-même, et un export de plus de trente minutes
+  est dit périmé ; l'export reste dans le bloc-notes de la session, jamais au
+  dépôt ;
+- il ne recopie aucun texte libre d'une ligne.
+
 ## Le risque concret, en une phrase
 
 Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
