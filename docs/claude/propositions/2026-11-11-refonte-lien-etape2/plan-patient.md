@@ -194,16 +194,17 @@ et « Fiches » gardent leurs périmètres, jamais fusionnés (cadrage v3 l.399)
 lecture, téléchargement et remise restent des gestes distincts.
 
 **Arbitrages PAT-5 du 2026-11-13** : `Q1c — Q2a — Q3a — Q4a — Q5a — Q6a —
-Q7a — Q8a`, sur le prototype
+Q7a — Q8a` (Q1c close et Q7a retirée par DOC-10), sur le prototype
 https://claude.ai/artifact/RAM7H81H6f5ikjUXqpxBUn ; inscrits par DOC-9
-dans [[D-481]] et [[D-488]]. La jauge de « Mon équilibre » reste en
-attendant une décision à part (Q1c). Le lot livre sans décor : le
+dans [[D-481]] et [[D-488]], corrigés par DOC-10 pour Q1 et Q7. La jauge
+de « Mon équilibre » reste : [[D-333]] §1, famille 2, l'admet déjà, et la
+décision à part de Q1c est sans objet (DOC-10). Le lot livre sans décor : le
 séparateur, entre les deux sections du bas de U25, et les ornements des
 vides viennent par un micro-lot après COM-1 (Q2a, Q3a). Retour et
 commandes sont masqués à l'impression sur U23 à U25, U27, U28, U37 et U38
 (Q5a). Le rail reste à l'écran sur les pages de lecture (Q8a). Textes :
 T-33 au seul titre de U24 (Q4a) ; T-36 sous le 401 d'un envoi de U23 à
-U25 (Q6a), dans un nouvel onglet sur U24 et U25 pour garder le texte saisi ; phrase vide de U28 dans le rayon vide de U27 (Q7a).
+U25 (Q6a), dans un nouvel onglet sur U24 et U25 pour garder le texte saisi. Q7a est retirée par DOC-10 : le rayon vide de U27 ne s'affiche pas ([[D-357]] §2, [[D-360]] §3), et PAT-5 ne touche pas à `Bibliotheque.tsx`. L'E2E de Q6a couvre aussi une reconnexion sous un autre compte patient : l'envoi de la page restée ouverte est refusé.
 
 ### PAT-6 — Transmissions et droits
 
