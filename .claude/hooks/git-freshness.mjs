@@ -310,7 +310,7 @@ if (event === "SessionStart") {
   }
   if (!constat.contient) {
     const source = fetchOk ? "le nouvel `origin/main`" : "l'`origin/main` connu (fetch impossible)";
-    process.stdout.write(`Freshness Git : la branche ne contient pas ${source} (HEAD ${constat.head.slice(0, 12)} · origin/main ${constat.originMain.slice(0, 12)}). Aucune édition avant arbitrage ; le garde réévalue à chaque tentative d'édition, sans reprise de session.\n`);
+    process.stdout.write(`Freshness Git : la branche ne contient pas ${source} (HEAD ${constat.head.slice(0, 12)} · origin/main ${constat.originMain.slice(0, 12)}). Aucune édition avant remise à niveau : branche de session, dans son propre worktree, sans commit propre (\`git log origin/main..HEAD\` vide) → \`git merge --ff-only origin/main\` ; sinon, ou si l'avance échoue, arbitrage du responsable (D-518) ; le garde réévalue à chaque tentative d'édition, sans reprise de session.\n`);
     journaliser("constat", "retard", constat);
     process.exit(0);
   }
@@ -337,7 +337,7 @@ if (event === "PreToolUse" && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(Strin
     process.exit(0);
   }
   if (!constat.contient) {
-    deny(`Édition bloquée : la branche ne contient pas \`origin/main\` (HEAD ${constat.head} · origin/main ${constat.originMain}). Remettre la branche à niveau par arbitrage humain — ni pull, ni merge, ni rebase automatique. L'édition est réévaluée dès la tentative suivante, sans reprise de session.`);
+    deny(`Édition bloquée : la branche ne contient pas \`origin/main\` (HEAD ${constat.head} · origin/main ${constat.originMain}). Branche de session, dans son propre worktree, sans commit propre (\`git log origin/main..HEAD\` vide) : avancer par \`git merge --ff-only origin/main\`. Sinon, ou si l'avance échoue : arbitrage du responsable — ni pull, ni fusion, ni rebase, ni stash ou commit pour forcer l'avance (D-518). L'édition est réévaluée dès la tentative suivante, sans reprise de session.`);
     journaliser("refus", "retard", constat);
     process.exit(0);
   }
