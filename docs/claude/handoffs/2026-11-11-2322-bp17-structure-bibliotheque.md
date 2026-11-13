@@ -333,6 +333,19 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     - L'inventaire du dossier compare désormais le nom brut de chaque
       entrée, et chacun de ses préfixes avant un point, aux dépendances.
     - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 5 sur `72f6d5a4` : **BLOQUER**. L'inventaire ne
+    lisait que le premier niveau : un `NODE_PATH` vers
+    `…/detour` servait `fs/charge` depuis `detour/fs/charge.ts`, et `fs`,
+    module natif, était admis.
+    - Corrigé, et fermé par un argument complet plutôt que cas par cas. Si
+      `NODE_PATH` pointe au-dessus du dossier, le spécificateur nomme
+      `bibliotheque-options` et le motif le voit. S'il pointe dans le
+      dossier, le premier segment du spécificateur est un nom du dossier :
+      inconnu, il ferme le verrou ; nom de dépendance ou de module natif,
+      il est interdit à toute profondeur du dossier.
+    - En plus, un module natif ne s'admet qu'en entrée exacte
+      (`fs/promises`, pas `fs/charge`).
+    - Validations : bancs du dossier verts ; T1 complet à 0.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le

@@ -115,8 +115,27 @@ function nomNuInconnu(specificateur: string, dependances: ReadonlySet<string>): 
   // Seuls `.`, `..`, `./…` et `../…` sont relatifs : `.detour/x` est un nom nu (contre-passe Codex n° 4).
   if (specificateur === IMPORT_NON_CONSTANT || /^(\.\.?(\/|$)|\/|@\/)/.test(specificateur)) return false;
   if (specificateur.startsWith('node:')) return false;
+  // Un module natif ne s'admet qu'en entrée exacte (`fs/promises`, pas `fs/charge`) ; une dépendance, avec ses sous-chemins.
+  if (builtinModules.includes(specificateur)) return false;
   const nom = specificateur.startsWith('@') ? specificateur.split('/').slice(0, 2).join('/') : specificateur.split('/')[0];
-  return !dependances.has(nom) && !builtinModules.includes(nom);
+  return !dependances.has(nom);
+}
+
+/**
+ * POURQUOI CELA FERME `NODE_PATH`, OÙ QU'IL POINTE (contre-passe Codex n° 5) :
+ * au-dessus du dossier, le spécificateur nomme `bibliotheque-options` et le
+ * motif le voit ; dans le dossier, son premier segment est un nom du dossier —
+ * inconnu, il ferme le verrou ; nom de dépendance ou de module natif, il est
+ * interdit à TOUTE profondeur du dossier par le banc ci-dessous.
+ */
+function segmentsDuDossier(fichiers: readonly string[]): string[] {
+  return fichiers.flatMap(f =>
+    f
+      .slice(DOSSIER.length)
+      .split('/')
+      // Le nom brut et chacun de ses préfixes avant un point (`zod.ts`, `zod.test.ts` → `zod`).
+      .flatMap(seg => seg.split('.').map((_, i, parts) => parts.slice(0, i + 1).join('.'))),
+  );
 }
 
 /** Un fichier qui peut déplacer la résolution d'un module, où qu'il soit sous `web/`. */
@@ -269,23 +288,26 @@ describe('bibliothèque des options — aucun lecteur hors des bancs (D-480 §8)
   // dépendance (un `NODE_PATH` vers lui servirait `zod/…` après node_modules).
   it('un nom nu inconnu est un lecteur possible (contre-passe Codex n° 3, NODE_PATH)', () => {
     const dependances = dependancesDeclarees();
-    for (const s of ['vocabulaire', 'bibliothequeBesoin2V1', 'options/vocabulaire', '@inconnu/paquet', '@inconnu', '.detour/vocabulaire', '..detour/x', '.x']) {
+    for (const s of ['vocabulaire', 'bibliothequeBesoin2V1', 'options/vocabulaire', '@inconnu/paquet', '@inconnu', '.detour/vocabulaire', '..detour/x', '.x', 'fs/charge', 'path/detour']) {
       expect(nomNuInconnu(s, dependances), s).toBe(true);
     }
-    for (const s of ['react', 'next/server', '@sentry/nextjs', 'node:fs', 'fs/promises', 'path', '@/lib/x', './x', '../x', '.', '..', IMPORT_NON_CONSTANT]) {
+    for (const s of ['react', 'next/server', '@sentry/nextjs', 'node:fs', 'fs/promises', 'path', 'path/posix', '@/lib/x', './x', '../x', '.', '..', IMPORT_NON_CONSTANT]) {
       expect(nomNuInconnu(s, dependances), s).toBe(false);
     }
-    const entrees = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', DOSSIER], {
+    const fichiers = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', DOSSIER], {
       cwd: RACINE,
       encoding: 'utf8',
     })
       .split('\n')
-      .filter(Boolean)
-      .map(f => f.slice(DOSSIER.length).split('/')[0]);
-    expect(entrees.length).toBeGreaterThan(0);
-    // Le nom brut et chacun de ses préfixes avant un point (`zod.ts`, `zod.test.ts` → `zod`).
-    const noms = entrees.flatMap(e => e.split('.').map((_, i, parts) => parts.slice(0, i + 1).join('.')));
-    expect(noms.filter(n => n !== '' && (dependances.has(n) || builtinModules.includes(n)))).toEqual([]);
+      .filter(Boolean);
+    expect(fichiers.length).toBeGreaterThan(0);
+    const interdit = (n: string) => n !== '' && (dependances.has(n) || builtinModules.includes(n));
+    expect(segmentsDuDossier(fichiers).filter(interdit)).toEqual([]);
+    // CONTRE-ÉPREUVE : à toute profondeur, fichier ou dossier, avec ou sans extension.
+    for (const f of ['detour/fs/charge.ts', 'a/b/react/x.ts', 'a/path.ts', 'a/react.test.ts', '.detour/next/x.ts']) {
+      expect(segmentsDuDossier([`${DOSSIER}${f}`]).some(interdit), f).toBe(true);
+    }
+    expect(segmentsDuDossier([`${DOSSIER}detour/charge.ts`]).some(interdit)).toBe(false);
   });
 
   // LES CONFIGURATIONS DE RÉSOLUTION SONT VERROUILLÉES (contre-passe Codex n° 2
