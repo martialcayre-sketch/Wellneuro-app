@@ -25,6 +25,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 
 // Questionnaire générique piloté par le catalogue, section par section.
 // Composant présentationnel : la navigation (retour hub / succès) est confiée
@@ -92,6 +93,8 @@ export function GenericQuestionnaire({
   const [view, setView] = useState<'form' | 'summary'>('form');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Q6a : le lien T-36 ne suit que le refus HTTP 401, jamais un autre refus.
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(() => readDraftSavedAt(assignation.idAssignation));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
@@ -108,28 +111,36 @@ export function GenericQuestionnaire({
       ignorerProchaineSauvegarde.current = false;
       return;
     }
-    writeQuestionnaireDraft(assignation.idAssignation, { version: 1, answers, currentPage: currentSection });
-    setSavedAt(readDraftSavedAt(assignation.idAssignation));
+    // Q4a ([[D-481]] DOC-7) : après une écriture du brouillon qui échoue, ni
+    // confirmation ni heure d'une sauvegarde antérieure.
+    const ecrit = writeQuestionnaireDraft(assignation.idAssignation, { version: 1, answers, currentPage: currentSection });
+    setSavedAt(ecrit ? readDraftSavedAt(assignation.idAssignation) : null);
   }, [answers, currentSection, assignation.idAssignation]);
 
   useEffect(() => {
     if (isMicroBatch && previousPage.current !== currentSection) {
-      batchTitleRef.current?.focus();
+      // Sans défilement : la page est déjà remontée (`scrollTo(0, 0)`), et le
+      // message de sécurité qui paraît avec elle doit pouvoir venir dans la
+      // fenêtre ([[D-506]]) sans que le focus l'en chasse.
+      batchTitleRef.current?.focus({ preventScroll: true });
     }
     previousPage.current = currentSection;
   }, [currentSection, isMicroBatch]);
 
   useEffect(() => {
-    if (view === 'summary') summaryTitleRef.current?.focus();
+    // Même raison que ci-dessus : le message du résumé ([[D-506]]).
+    if (view === 'summary') summaryTitleRef.current?.focus({ preventScroll: true });
   }, [view]);
 
   const section = isMicroBatch ? sections[0] : sections[currentSection];
   const activeQuestions = pageQuestions[currentSection] ?? [];
   const pageCount = pageQuestions.length;
   const answeredCount = allQuestions.filter(question => answers[question.id] !== undefined && answers[question.id] !== '').length;
-  const progress = isMicroBatch
-    ? Math.round((answeredCount / allQuestions.length) * 100)
-    : Math.round(((currentSection) / sections.length) * 100);
+  // Q2d (refonte Lien PAT-4, [[D-481]] DOC-7) : l'avancement compte les
+  // réponses renseignées, en saisie par parties comme en micro-lots, et non
+  // plus les parties franchies.
+  const progress = Math.round((answeredCount / allQuestions.length) * 100);
+  const avancement = `${answeredCount} réponses sur ${allQuestions.length}`;
   const isLast = currentSection === pageCount - 1;
 
   const sectionAnswered = activeQuestions.every(q => {
@@ -145,8 +156,10 @@ export function GenericQuestionnaire({
   };
 
   const handleSauvegarder = () => {
-    writeQuestionnaireDraft(assignation.idAssignation, { version: 1, answers, currentPage: currentSection });
-    setSavedAt(readDraftSavedAt(assignation.idAssignation));
+    // Q4a ([[D-481]] DOC-7) : après une écriture du brouillon qui échoue, ni
+    // confirmation ni heure d'une sauvegarde antérieure.
+    const ecrit = writeQuestionnaireDraft(assignation.idAssignation, { version: 1, answers, currentPage: currentSection });
+    setSavedAt(ecrit ? readDraftSavedAt(assignation.idAssignation) : null);
   };
 
   const confirmerReinitialiser = () => {
@@ -176,6 +189,7 @@ export function GenericQuestionnaire({
   const confirmerTransmission = async () => {
     setError('');
     setSaveError(undefined);
+    setSessionExpiree(false);
     setSubmitting(true);
     try {
       const numericAnswers: Record<string, number> = {};
@@ -195,7 +209,11 @@ export function GenericQuestionnaire({
         }),
       });
       const data = (await res.json()) as PatientSubmitResponse;
-      if (!data.ok) { setError(data.error); setSaveError('submission-incomplete'); }
+      if (!data.ok) {
+        setError(data.error);
+        setSaveError('submission-incomplete');
+        setSessionExpiree(res.status === 401);
+      }
       else { clearDraft(assignation.idAssignation); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
@@ -258,6 +276,7 @@ export function GenericQuestionnaire({
         </ol>
 
         {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+        {sessionExpiree && <LienReconnexion />}
         <SaveStatusIndicator savedAt={savedAt} error={saveError} />
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -297,18 +316,16 @@ export function GenericQuestionnaire({
       <div>
         <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground/70">
           <span>Partie {currentSection + 1} / {pageCount}</span>
-          <span aria-live={isMicroBatch ? 'polite' : undefined}>
-            {isMicroBatch ? `${answeredCount} réponses sur ${allQuestions.length}` : `${progress}% complété`}
-          </span>
+          <span aria-live={isMicroBatch ? 'polite' : undefined}>{avancement}</span>
         </div>
         <div
           className="w-full h-1.5 bg-muted rounded-full"
           role="progressbar"
           aria-label="Progression du questionnaire"
           aria-valuemin={0}
-          aria-valuemax={isMicroBatch ? allQuestions.length : 100}
-          aria-valuenow={isMicroBatch ? answeredCount : progress}
-          aria-valuetext={isMicroBatch ? `${answeredCount} réponses sur ${allQuestions.length}` : `${progress} % complété`}
+          aria-valuemax={allQuestions.length}
+          aria-valuenow={answeredCount}
+          aria-valuetext={avancement}
         >
           <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>

@@ -79,7 +79,8 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
       {reponse && (
         <p className="text-sm text-muted-foreground mb-6">
           « {reponse.titre} » — envoyé le{' '}
-          {new Date(reponse.dateReponse).toLocaleDateString('fr-FR')}.<br />
+          {/* Q8a ([[D-481]] DOC-7) : date en lettres, en heure locale. */}
+          {new Date(reponse.dateReponse).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.<br />
           Vos réponses sont verrouillées en lecture seule.
         </p>
       )}
@@ -103,7 +104,8 @@ export function ConsultationScreen({ idAssignation, statutReponses, onVoirEquili
 
           <PatientRegionAccuse visible={demandeEnvoyee}>
             <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
-              Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
+              {/* T-40, [[D-488]] DOC-7. */}
+              Votre demande de correction a été transmise à votre praticien. Elle attend sa validation.
             </p>
           </PatientRegionAccuse>
           {!demandeEnvoyee && (

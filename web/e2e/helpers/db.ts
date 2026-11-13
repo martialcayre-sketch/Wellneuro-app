@@ -406,6 +406,31 @@ export async function creerAssignationPlaintes(idPatient: string, emailPatient: 
   return idAssignation;
 }
 
+/**
+ * Une assignation sans réponse d'un questionnaire du catalogue, pour un
+ * patient fictif. `resetPortailState` la retire.
+ */
+export async function creerAssignationQuestionnaire(
+  idPatient: string,
+  emailPatient: string,
+  idQuestionnaire: string,
+  titre: string,
+): Promise<string> {
+  const idAssignation = `ASS_E2E_${idQuestionnaire}_${Date.now()}`;
+  await prisma.assignation.create({
+    data: {
+      idAssignation,
+      idPatient,
+      emailPatient,
+      idQuestionnaire,
+      titre,
+      dateAssignation: new Date(),
+      statut: 'En attente',
+    },
+  });
+  return idAssignation;
+}
+
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
 }

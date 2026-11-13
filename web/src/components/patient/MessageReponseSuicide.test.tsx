@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
@@ -26,6 +26,89 @@ describe('MessageReponseSuicide ([[D-277]] §1)', () => {
     for (const numero of ['3114', '15', '112']) {
       expect(screen.getByRole('link', { name: numero }).getAttribute('href')).toBe(`tel:${numero}`);
     }
+  });
+});
+
+describe('MessageReponseSuicide — venue dans la fenêtre ([[D-506]])', () => {
+  const scrollIntoView = vi.fn();
+  let position = { top: 900, bottom: 1300 };
+
+  beforeEach(() => {
+    scrollIntoView.mockReset();
+    position = { top: 900, bottom: 1300 };
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scrollIntoView });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => ({ ...position, left: 0, right: 300, width: 300, height: position.bottom - position.top, x: 0, y: position.top, toJSON: () => ({}) }),
+    );
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    delete document.documentElement.dataset.readingMotion;
+  });
+
+  it('hors de la fenêtre : le plus petit défilement, animé, sans déplacer le focus', () => {
+    const avant = document.createElement('button');
+    document.body.append(avant);
+    avant.focus();
+    render(<MessageReponseSuicide />);
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' });
+    expect(document.activeElement).toBe(avant);
+    avant.remove();
+  });
+
+  it('déjà entièrement visible : aucun déplacement', () => {
+    position = { top: 100, bottom: 400 };
+    render(<MessageReponseSuicide />);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('mouvement réduit, du système ou du patient : aucun défilement animé', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    render(<MessageReponseSuicide />);
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'auto' });
+    cleanup();
+
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    document.documentElement.dataset.readingMotion = 'reduced';
+    render(<MessageReponseSuicide />);
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'auto' });
+  });
+
+  it('dans le questionnaire : autre réponse positive ou autre question, rien ; retrait puis nouveau choix, une fois de plus ; le résumé, une fois', () => {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+    const a = assignation('Q_NEU_01');
+    render(<GenericQuestionnaire assignation={a} questionnaire={(QUESTIONNAIRE_CATALOGUE as Record<string, unknown>).Q_NEU_01 as QuestionnaireDef} email={a.emailPatient} onDone={vi.fn()} />);
+    const choisir = (id: string, valeur: number) =>
+      fireEvent.click(document.querySelector(`input[type="radio"][name="${id}"][value="${valeur}"]`)!);
+
+    choisir('B7', 1);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    choisir('B7', 2);
+    choisir('B1', 0);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    choisir('B7', 0);
+    choisir('B7', 1);
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
+
+    for (let i = 1; i <= 13; i += 1) if (i !== 7) choisir(`B${i}`, 0);
+    fireEvent.click(screen.getByRole('button', { name: 'Voir le résumé' }));
+    expect(screen.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBe(document.activeElement);
+    expect(scrollIntoView).toHaveBeenCalledTimes(3);
+  });
+
+  it('une fois par apparition : un nouveau rendu ne relance rien, une nouvelle apparition si', () => {
+    const { rerender, unmount } = render(<MessageReponseSuicide />);
+    rerender(<MessageReponseSuicide className="mt-3" />);
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    unmount();
+    render(<MessageReponseSuicide />);
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
 });
 

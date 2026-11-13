@@ -247,6 +247,60 @@ describe('GenericQuestionnaire — micro_batch Q_NEU_03', () => {
     expect(readQuestionnaireDraft(assignation.idAssignation)).toBeNull();
   });
 
+  it('propose « Me reconnecter » sous un refus 401 seulement, jamais sous un autre refus (T-36, Q6a)', async () => {
+    const reponse = (status: number, error: string) => ({
+      status,
+      json: vi.fn().mockResolvedValue({ ok: false, reason: 'refus', error }),
+    });
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(reponse(401, 'Connexion au portail requise.'))
+      .mockResolvedValueOnce(reponse(409, 'Ce questionnaire a déjà été complété.')));
+
+    render(
+      <GenericQuestionnaire
+        assignation={assignation}
+        questionnaire={QUESTIONNAIRE_CATALOGUE.Q_NEU_03 as QuestionnaireDef}
+        email={assignation.emailPatient}
+        onDone={vi.fn()}
+      />,
+    );
+    remplirJusquAuResume();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre au praticien' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre' }));
+    await waitFor(() => expect(screen.getByText('Connexion au portail requise.')).not.toBeNull());
+    expect(screen.getByRole('link', { name: 'Me reconnecter' }).getAttribute('href')).toBe('/portail/connexion');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre au praticien' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transmettre' }));
+    await waitFor(() => expect(screen.getByText('Ce questionnaire a déjà été complété.')).not.toBeNull());
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('après un échec d’écriture du brouillon, ni confirmation ni heure antérieure (Q4a)', () => {
+    render(
+      <GenericQuestionnaire
+        assignation={assignation}
+        questionnaire={QUESTIONNAIRE_CATALOGUE.Q_NEU_03 as QuestionnaireDef}
+        email={assignation.emailPatient}
+        onDone={vi.fn()}
+      />,
+    );
+    const [premier, second] = screen.getAllByRole('group');
+    fireEvent.click(within(premier).getAllByRole('radio')[0]);
+    expect(screen.getByText(/^Brouillon enregistré sur cet appareil/)).not.toBeNull();
+
+    const ecrire = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    try {
+      fireEvent.click(within(second).getAllByRole('radio')[0]);
+      expect(screen.queryByText(/^Brouillon enregistré sur cet appareil/)).toBeNull();
+    } finally {
+      ecrire.mockRestore();
+    }
+  });
+
   it('conserve le renderer standard pour un questionnaire non pilote', () => {
     const standardQuestionnaire: QuestionnaireDef = {
       id: 'Q_TEST_STANDARD',
@@ -277,7 +331,8 @@ describe('GenericQuestionnaire — micro_batch Q_NEU_03', () => {
     expect(screen.getByRole('combobox')).not.toBeNull();
     expect(screen.queryByRole('radio')).toBeNull();
     expect(screen.queryByRole('heading', { name: /Questions .* sur/ })).toBeNull();
-    expect(screen.getByText('0% complété')).not.toBeNull();
+    // Q2d (refonte Lien PAT-4) : les réponses renseignées, plus les parties franchies.
+    expect(screen.getByText('0 réponses sur 1')).not.toBeNull();
   });
 
   it('reprend aussi la page sauvegardée avec le renderer standard', () => {
@@ -318,7 +373,7 @@ describe('GenericQuestionnaire — micro_batch Q_NEU_03', () => {
     );
 
     expect(screen.getByText('Deuxième partie')).not.toBeNull();
-    expect(screen.getByText('50% complété')).not.toBeNull();
+    expect(screen.getByText('1 réponses sur 2')).not.toBeNull();
     expect(screen.getByRole('combobox')).not.toBeNull();
   });
 });

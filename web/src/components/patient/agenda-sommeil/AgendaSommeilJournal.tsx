@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { decalerDate } from '@/lib/agenda-sommeil/nuit';
@@ -32,6 +33,8 @@ type Props = { idAssignation: string; onRetourHub: () => void };
 export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [erreur, setErreur] = useState('');
+  // Q6a : le refus en cours est un 401 ; T-36 le suit, et lui seul.
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [data, setData] = useState<GetOk | null>(null);
   const [mode, setMode] = useState<'frise' | 'saisie' | 'clos'>('frise');
   const [cibleDate, setCibleDate] = useState<string>('');
@@ -87,6 +90,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     // L'ANCIEN REFUS S'EFFACE AU DÉPART, sans quoi une seconde tentative
     // réussie laisserait le message de la première à l'écran.
     setErreur('');
+    setSessionExpiree(false);
     try {
       const res = await fetch('/api/portail/agenda-sommeil', {
         method: 'POST',
@@ -96,6 +100,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
       const json = (await res.json()) as { ok: boolean; error?: string };
       if (!json.ok) {
         setErreur(json.error ?? 'Enregistrement impossible.');
+        setSessionExpiree(res.status === 401);
         setEnvoi(false);
         return;
       }
@@ -112,6 +117,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   async function transmettre() {
     setEnvoi(true);
     setErreur('');
+    setSessionExpiree(false);
     try {
       const res = await fetch('/api/portail/agenda-sommeil/cloture', {
         method: 'POST',
@@ -121,6 +127,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
       const json = (await res.json()) as { ok: boolean; error?: string };
       if (!json.ok) {
         setErreur(json.error ?? 'Transmission impossible.');
+        setSessionExpiree(res.status === 401);
         setEnvoi(false);
         return;
       }
@@ -183,7 +190,7 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     return (
       <div className="space-y-4">
         <PatientCard>
-          <h2 className="font-display text-lg font-bold text-foreground mb-1">Merci d’avoir noté vos nuits 🌙</h2>
+          <h2 className="font-display text-lg font-bold text-foreground mb-1">Merci d’avoir noté vos nuits</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Votre praticien a reçu votre agenda. Voici vos nuits, telles que vous les avez notées.
           </p>
@@ -251,8 +258,9 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
             horairesHabituels={habituels}
             suggestionsPersonnelles={habituelsPersonnels}
             refus={erreur}
+            reconnexion={sessionExpiree}
             submitting={envoi}
-            ctaLabel="C’est noté ✓"
+            ctaLabel="C’est noté"
             onSubmit={enregistrer}
           />
         </PatientCard>
@@ -267,9 +275,10 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
   return (
     <div className="space-y-4">
       {alerteRefus}
+      {alerteRefus && sessionExpiree && <LienReconnexion />}
       {merci && (
         <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground text-center">
-          Merci, à demain matin. ☕
+          Merci, à demain matin.
         </div>
       )}
       {rappelEnTete && (
