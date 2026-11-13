@@ -134,18 +134,24 @@ async function attendreLeMessagePlace(page: Page, libelle: string): Promise<Mesu
   let precedente = '';
   let identiques = 0;
   let stable: Mesure | null = null;
-  await expect.poll(async () => {
-    const m = await mesurer(page);
-    const texte = JSON.stringify(m);
-    identiques = texte === precedente ? identiques + 1 : 0;
-    precedente = texte;
-    if (identiques >= 4) stable = m;
-    return stable !== null;
-  }, { timeout: 8_000, intervals: [200] }).toBe(true);
+  const lireLeJournal = () => page.evaluate(() =>
+    (window as unknown as { __journalD506?: unknown[][] }).__journalD506?.slice(0, 120) ?? null);
+  try {
+    await expect.poll(async () => {
+      const m = await mesurer(page);
+      const texte = JSON.stringify(m);
+      identiques = texte === precedente ? identiques + 1 : 0;
+      precedente = texte;
+      if (identiques >= 4) stable = m;
+      return stable !== null;
+    }, { timeout: 8_000, intervals: [200] }).toBe(true);
+  } catch (erreur) {
+    // Position jamais stable : le journal est le seul témoin, il est consigné.
+    console.log(`[journal D-506] ${libelle} — jamais stable — dernier relevé : ${precedente} ; journal : ${JSON.stringify(await lireLeJournal())}`);
+    throw erreur;
+  }
   const m = stable as unknown as Mesure;
-  const journal = await page.evaluate(() =>
-    (window as unknown as { __journalD506?: unknown[][] }).__journalD506 ?? null);
-  const constat = `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(journal?.slice(0, 120) ?? null)}`;
+  const constat = `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(await lireLeJournal())}`;
   console.log(`[journal D-506] ${libelle} — bien placé : ${bienPlace(m)} — ${constat}`);
   expect(bienPlace(m), constat).toBe(true);
   return m;

@@ -5,7 +5,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { GenericQuestionnaire } from './GenericQuestionnaire';
 import { writeQuestionnaireDraft } from '@/lib/questionnaire-draft';
-import { MessageReponseSuicide } from './MessageReponseSuicide';
+import { DELAI_VERIFICATION_DEFILEMENT_MS, MessageReponseSuicide } from './MessageReponseSuicide';
 
 // Le texte SIGNÉ par le responsable le 2026-10-10 ([[D-277]] §1), tel que le
 // patient le lit, paragraphe par paragraphe.
@@ -133,6 +133,42 @@ describe('MessageReponseSuicide — venue dans la fenêtre ([[D-506]])', () => {
     render(<GenericQuestionnaire assignation={a} questionnaire={(QUESTIONNAIRE_CATALOGUE as Record<string, unknown>).Q_NEU_01 as QuestionnaireDef} email={a.emailPatient} onDone={vi.fn()} />);
     expect(screen.getAllByText(TEXTE_SIGNE[0])).toHaveLength(1);
     expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  describe('demande ignorée par le moteur (WebKit Linux, 2026-11-13)', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('page immobile et message toujours hors de la fenêtre : la demande est renouvelée, une fois', () => {
+      render(<MessageReponseSuicide defiler />);
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'smooth' });
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS * 5);
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    });
+
+    it('la page a bougé (le défilement, ou le patient) : rien n’est relancé', () => {
+      render(<MessageReponseSuicide defiler />);
+      vi.stubGlobal('scrollY', 120);
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    });
+
+    it('le message est désormais entièrement visible : rien n’est relancé', () => {
+      render(<MessageReponseSuicide defiler />);
+      position = { top: 100, bottom: 400 };
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    });
+
+    it('message retiré avant la vérification : rien n’est relancé', () => {
+      const { unmount } = render(<MessageReponseSuicide defiler />);
+      unmount();
+      vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    });
   });
 
   it('un nouveau rendu ne relance rien', () => {

@@ -17,13 +17,8 @@ function mouvementReduit(): boolean {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/**
- * [[D-506]] (amende [[D-277]] §1) : faire venir le message dans la fenêtre
- * par le plus petit défilement s'il n'y est pas entièrement. Le focus ne
- * bouge pas ; en mouvement réduit, aucun défilement animé.
- */
-export function faireVenirDansLaFenetre(element: HTMLElement): void {
-  if (typeof element.scrollIntoView !== 'function') return;
+/** Le message est-il entièrement dans la part utile de la fenêtre ? */
+function entierementVisible(element: HTMLElement): boolean {
   const { top, bottom } = element.getBoundingClientRect();
   const hauteurFenetre = window.innerHeight || document.documentElement.clientHeight;
   // La marge de défilement du document (`scroll-padding`, sous une barre
@@ -32,8 +27,35 @@ export function faireVenirDansLaFenetre(element: HTMLElement): void {
   const style = getComputedStyle(document.documentElement);
   const margeHaut = parseFloat(style.scrollPaddingTop) || 0;
   const margeBas = parseFloat(style.scrollPaddingBottom) || 0;
-  if (top >= margeHaut && bottom <= hauteurFenetre - margeBas) return;
-  element.scrollIntoView({ block: 'nearest', behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  return top >= margeHaut && bottom <= hauteurFenetre - margeBas;
+}
+
+/** Délai après lequel une demande de défilement restée sans effet est renouvelée. */
+export const DELAI_VERIFICATION_DEFILEMENT_MS = 600;
+
+/**
+ * [[D-506]] (amende [[D-277]] §1) : faire venir le message dans la fenêtre
+ * par le plus petit défilement s'il n'y est pas entièrement. Le focus ne
+ * bouge pas ; en mouvement réduit, aucun défilement animé.
+ *
+ * Un moteur peut ignorer la demande : WebKit sous Linux (CI) a laissé la page
+ * immobile, au pixel près, sur plusieurs runs du 2026-11-13. Si, après
+ * `DELAI_VERIFICATION_DEFILEMENT_MS`, la page n'a pas bougé et que le message
+ * n'est toujours pas entièrement visible, la même demande est renouvelée, une
+ * fois. Une page qui a bougé, fût-ce par le patient, n'est jamais relancée.
+ * Rend de quoi annuler la vérification (démontage).
+ */
+export function faireVenirDansLaFenetre(element: HTMLElement): () => void {
+  if (typeof element.scrollIntoView !== 'function') return () => {};
+  if (entierementVisible(element)) return () => {};
+  const demander = () =>
+    element.scrollIntoView({ block: 'nearest', behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  const avant = window.scrollY;
+  demander();
+  const minuterie = window.setTimeout(() => {
+    if (window.scrollY === avant && element.isConnected && !entierementVisible(element)) demander();
+  }, DELAI_VERIFICATION_DEFILEMENT_MS);
+  return () => window.clearTimeout(minuterie);
 }
 
 /**
@@ -63,8 +85,9 @@ export function MessageReponseSuicide({
   useEffect(() => {
     const { defiler: aDefiler, onVenu: venu } = auMontage.current;
     if (!aDefiler || !ref.current) return;
-    faireVenirDansLaFenetre(ref.current);
+    const annuler = faireVenirDansLaFenetre(ref.current);
     venu?.();
+    return annuler;
   }, []);
 
   return (
