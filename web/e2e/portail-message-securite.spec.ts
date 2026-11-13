@@ -85,21 +85,27 @@ function bienPlace(m: Mesure): boolean {
 }
 
 /**
- * La mesure n'est jugée qu'une fois le défilement terminé (deux relevés
- * identiques à 150 ms d'écart) : relevée en cours de course, la position ne
- * dirait rien du résultat. La mesure stable est rendue telle quelle, pour
- * la consigne, et jugée par `bienPlace`.
+ * La mesure n'est jugée qu'une fois le défilement terminé : cinq relevés
+ * identiques de suite, à 200 ms d'écart, soit 800 ms sans mouvement. Relevée
+ * en cours de course, ou avant son départ (WebKit en CI peut tarder à lancer
+ * un défilement animé : deux relevés à 150 ms y ont été trouvés identiques
+ * avant tout mouvement), la position ne dirait rien du résultat. Un
+ * défilement qui ne part pas dans ce délai, ou s'arrête court, échoue
+ * toujours. La mesure stable est rendue telle quelle, pour la consigne, et
+ * jugée par `bienPlace`.
  */
 async function attendreLeMessagePlace(page: Page): Promise<Mesure> {
   let precedente = '';
+  let identiques = 0;
   let stable: Mesure | null = null;
   await expect.poll(async () => {
     const m = await mesurer(page);
     const texte = JSON.stringify(m);
-    if (texte === precedente) stable = m;
+    identiques = texte === precedente ? identiques + 1 : 0;
     precedente = texte;
+    if (identiques >= 4) stable = m;
     return stable !== null;
-  }, { timeout: 5_000, intervals: [150] }).toBe(true);
+  }, { timeout: 8_000, intervals: [200] }).toBe(true);
   const m = stable as unknown as Mesure;
   expect(bienPlace(m), `placement du message : ${JSON.stringify(m)}`).toBe(true);
   return m;
