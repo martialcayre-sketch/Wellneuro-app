@@ -417,6 +417,14 @@ jobs:
       - name: Invariants de ci.yml (déclencheurs, concurrency)
         run: node --test scripts/ci-invariants.test.mjs
 
+      # Piège converti en contrôle (lot `autonomie-frictions`) : `btrim(texte)`
+      # à un argument ne retire que l'espace ASCII, si bien qu'un CHECK « non
+      # vide » laisse passer une tabulation. Refusé dans toute migration neuve ;
+      # les migrations appliquées sont gelées à leur compte (D-111 pour leur
+      # resserrage). Lecture des fichiers seule : ni npm ni base.
+      - name: Migrations — btrim à un argument refusé (banc)
+        run: node --test scripts/migrations-btrim.test.mjs
+
       # Le classement d'un échec E2E (blocage navigateur vs défaut applicatif)
       # ne sert qu'en local — `wn-test-worktree.sh` ne tourne pas ici. Son BANC,
       # lui, a sa place dans les deux passes : le banc de parité ne contrôle que

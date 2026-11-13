@@ -94,6 +94,32 @@ test("écrire un fichier avec tee passe", () => {
   assert.equal(verdict("tee /tmp/notes.txt <<'FIN'\nbonjour\nFIN"), "passe");
 });
 
+// ── Refus sur la structure : pièges convertis (lot autonomie-frictions) ──────
+
+for (const cmd of [
+  "npx prisma format",
+  "cd web && npx prisma format --schema prisma/schema.prisma",
+  "prisma format",
+  "npx prisma validate && npx prisma format",
+]) {
+  test(`prisma format est refusé : ${cmd}`, () => assert.equal(verdict(cmd), "refus"));
+}
+
+for (const cmd of [
+  "npx prisma format --check",
+  "cd web && npx prisma format --schema prisma/schema.prisma --check",
+  "npx prisma validate",
+  'gh pr comment 12 --body "ne jamais lancer prisma format"',
+  "gh pr create --body-file - <<'CORPS'\nJamais npx prisma format sur le schéma.\nCORPS",
+]) {
+  test(`prisma format --check, validate ou prose passent : ${cmd.split("\n")[0]}`, () =>
+    assert.equal(verdict(cmd), "passe"));
+}
+
+test("un --check d'une autre commande n'excuse pas prisma format", () => {
+  assert.equal(verdict("npx prisma format && npm run lint -- --check"), "refus");
+});
+
 // ── Niveau « demande » : inchangé par le masquage des heredocs ───────────────
 
 test("prisma migrate deploy demande une autorisation", () => {

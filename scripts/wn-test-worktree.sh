@@ -409,6 +409,16 @@ cd "$WEB"
 step "Client Prisma (generate)"
 npx prisma generate
 
+# Piège converti en contrôle (lot `autonomie-frictions`, 2026-11-13) : deux
+# `prisma generate` concurrents (deux worktrees, ou un generate manuel pendant
+# ce script) laissent des doublons « index.d 2.ts », « edge 2.js »… Le
+# répertoire est ignoré par Git : rien ne se voit, et le build casse plus loin
+# sur « Constructor implementation is missing », qui ne ressemble pas à sa
+# cause. Sans `head` : sous `pipefail`, un SIGPIPE ferait sortir le script.
+doublons_prisma="$(find src/generated/prisma -name '* 2.*' 2>/dev/null || true)"
+[[ -z "$doublons_prisma" ]] \
+  || die "doublons « * 2.* » dans web/src/generated/prisma (deux \`prisma generate\` concurrents) — remède sans risque, le répertoire est régénérable : \`find web/src/generated/prisma -name '* 2.*' -delete\`, puis relancer."
+
 if [[ "$FAST" == 0 ]]; then
   step "Certification scoring (63 questionnaires)"
   npm run scoring-check

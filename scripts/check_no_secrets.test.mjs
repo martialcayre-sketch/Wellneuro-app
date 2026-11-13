@@ -267,6 +267,74 @@ describe('check_no_secrets.sh — ce qu’il ne doit jamais imprimer', () => {
   });
 });
 
+// Trace Playwright (lot autonomie-frictions) : le contrôle porte sur le NOM de
+// ce que Git suit ou s'apprête à suivre — une archive compressée échappe aux
+// motifs de contenu, et son journal réseau porte le cookie de session.
+describe('check_no_secrets.sh — trace Playwright', () => {
+  for (const nom of ['trace.zip', 'web/test-results/cas/trace.zip', 'retry1-trace.zip', 'TRACE.ZIP', 'trace/0-trace.network', 'trace/test.trace']) {
+    test(`une trace commitée est refusée en mode complet : ${nom}`, () => {
+      avecBanc({}, racine => {
+        mkdirSync(join(racine, dirname(nom)), { recursive: true });
+        writeFileSync(join(racine, nom), 'PK factice\n');
+        git(racine, 'add', '-f', nom);
+        git(racine, 'commit', '--quiet', '-m', 'trace');
+        const { code, sortie, emplacements } = lancer(racine);
+        assert.equal(code, 1, `trace commitée acceptée : ${sortie}`);
+        assert.deepEqual(emplacements, [nom]);
+        assert.match(sortie, /trace Playwright/);
+      });
+    });
+  }
+
+  test('une trace indexée est refusée en mode --staged', () => {
+    avecBanc({ 'trace.zip': 'PK factice\n' }, racine => {
+      git(racine, 'add', '-f', 'trace.zip');
+      const { code, sortie } = lancer(racine, '--staged');
+      assert.equal(code, 1, `trace indexée acceptée : ${sortie}`);
+      assert.match(sortie, /trace Playwright/);
+    });
+  });
+
+  test('une trace locale non suivie passe (web/test-results est ignoré)', () => {
+    avecBanc({ 'trace.zip': 'PK factice\n' }, racine => {
+      const { code, sortie } = lancer(racine);
+      assert.equal(code, 0, `trace non suivie refusée : ${sortie}`);
+    });
+  });
+
+  test('le retrait d’une trace de l’index passe en mode --staged', () => {
+    avecBanc({ 'trace.zip': 'PK factice\n' }, racine => {
+      git(racine, 'add', '-f', 'trace.zip');
+      git(racine, 'commit', '--quiet', '-m', 'trace');
+      git(racine, 'rm', '--quiet', '--cached', 'trace.zip');
+      const { code, sortie } = lancer(racine, '--staged');
+      assert.equal(code, 0, `retrait de trace refusé : ${sortie}`);
+    });
+  });
+
+  for (const nom of ['docs/trace-synthese.md', 'tracer.zip', 'retrace.zip', 'network.ts']) {
+    test(`un nom voisin passe : ${nom}`, () => {
+      avecBanc({}, racine => {
+        mkdirSync(join(racine, dirname(nom)), { recursive: true });
+        writeFileSync(join(racine, nom), ANODIN);
+        git(racine, 'add', nom);
+        git(racine, 'commit', '--quiet', '-m', 'voisin');
+        const { code, sortie } = lancer(racine);
+        assert.equal(code, 0, `nom voisin refusé : ${sortie}`);
+      });
+    });
+  }
+
+  test('un git en panne en mode complet sort en 2, jamais en 0', () => {
+    avecBanc({ 'src.ts': ANODIN }, racine => {
+      const { code, sortie } = lancerAvecOutilEnPanne(racine, 'git');
+      assert.equal(code, 2, `le contrôle a conclu sans lire la liste suivie : ${sortie}`);
+      assert.doesNotMatch(sortie, /^OK:/m);
+      assert.match(sortie, /NON CONCLUANT/);
+    });
+  });
+});
+
 describe('check_no_secrets.sh — ce qui doit passer', () => {
   test('un dépôt sans secret est accepté', () => {
     // Contrôle négatif indispensable : sans lui, un script qui refuserait

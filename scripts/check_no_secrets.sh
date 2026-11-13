@@ -158,6 +158,38 @@ check_pattern "private_key"         "private_key${SEP}-----BEGIN"
 # scanner de secrets et ne remplace pas la règle de base : rien de sensible
 # n'entre dans le dépôt.
 
+# TRACE PLAYWRIGHT — piège converti en contrôle (lot `autonomie-frictions`,
+# 2026-11-13). Le journal réseau d'une `trace.zip` porte les en-têtes complets
+# de chaque requête, cookie de session next-auth compris : committer une trace
+# comme fixture met un jeton dans l'historique, et aucun motif ci-dessus ne le
+# voit (archive compressée). Le contrôle porte donc sur le NOM du fichier, et
+# seulement sur ce que Git suit ou s'apprête à suivre : les traces locales de
+# `web/test-results/`, ignorées, ne sont pas visées. Formes : `trace.zip`,
+# `…-trace.zip`, et les pièces d'une trace dézippée (`*.trace`, `*.network`).
+# Un `git` en panne sort en 2, comme plus haut.
+TRACES="$(mktemp)" || { echo "ERREUR: mktemp a échoué — contrôle NON CONCLUANT." >&2; exit 2; }
+trap 'rm -f "${LISTE:-}" "$TRACES"' EXIT
+if [[ "$MODE" == "staged" ]]; then
+  git diff --cached --name-only -z --diff-filter=ACMR -- . > "$TRACES" \
+    || { echo "ERREUR: 'git diff --cached' a échoué — contrôle NON CONCLUANT." >&2; exit 2; }
+else
+  git ls-files -z > "$TRACES" \
+    || { echo "ERREUR: 'git ls-files' a échoué — contrôle NON CONCLUANT." >&2; exit 2; }
+fi
+MOTIF_TRACE='(^|[-_.])trace\.zip$|\.(trace|network)$'
+traces_trouvees=""
+while IFS= read -r -d '' fichier; do
+  base="$(printf '%s' "${fichier##*/}" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$base" =~ $MOTIF_TRACE ]]; then
+    traces_trouvees+="$fichier"$'\n'
+  fi
+done < "$TRACES"
+if [[ -n "$traces_trouvees" ]]; then
+  printf '%s' "$traces_trouvees"
+  echo "ERREUR: trace Playwright suivie par Git (porte un cookie de session) — la retirer de l'index ; reproduire sa forme dans une fixture écrite à la main." >&2
+  status=1
+fi
+
 if [[ "$status" -eq 0 ]]; then
   if [[ "$MODE" == "staged" ]]; then
     echo "OK: aucun secret évident dans les lignes indexées."
