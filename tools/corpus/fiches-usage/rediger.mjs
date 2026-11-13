@@ -38,6 +38,7 @@ import {
   contexteDeRubrique,
   designationsDeLaFiche,
   lireReponseFiche,
+  lireReponseLibelle,
   messageContreLecture,
   messageRedactionFiche,
   messageRedactionLibelle,
@@ -83,7 +84,7 @@ function lireArguments() {
   };
 }
 
-async function rediger(anthropic, consigne, message) {
+async function redigerTexte(anthropic, consigne, message) {
   const rep = await anthropic.messages.create({
     model: MODELE_REDACTION,
     max_tokens: 16000,
@@ -91,8 +92,10 @@ async function rediger(anthropic, consigne, message) {
     system: consigne,
     messages: [{ role: 'user', content: message }],
   });
-  return parseJsonLache(rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n'));
+  return rep.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
 }
+
+const rediger = async (anthropic, consigne, message) => parseJsonLache(await redigerTexte(anthropic, consigne, message));
 
 /** Un verdict, ou un échec TECHNIQUE — qui n'est ni un accord ni un refus. */
 async function contreLire(openai, consigne, entree) {
@@ -211,7 +214,7 @@ async function redigerLibelle(termeId, outils) {
   const message = messageRedactionLibelle(termeId, nature, fiches, cites);
   console.log(`${termeId} : ${fiches.length} fiche(s) citante(s), ${cites.length} claim(s).`);
 
-  const reponse = await rediger(anthropic, consignes.redaction, message);
+  const reponse = lireReponseLibelle(await redigerTexte(anthropic, consignes.redaction, message));
   if (typeof reponse?.libelle !== 'string' || !/\S/u.test(reponse.libelle)) throw new ErreurOutil(`${termeId} : réponse sans « libelle ».`);
   const libelle = reponse.libelle.trim();
   const verdict = await contreLire(openai, consignes.contreLecture, {
