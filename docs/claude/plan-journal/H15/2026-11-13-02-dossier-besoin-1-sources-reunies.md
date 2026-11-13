@@ -1,0 +1,15 @@
+- **Mise à jour (2026-11-13, dossier du besoin 1, étape 3 : sources réunies)** : forme opaque (`D-251` §4), avec seulement des identifiants, des comptes et des mécanismes. Le responsable a tranché le 2026-11-13 les six questions de l'étape 2 (liste commune, file B). Ces arbitrages ne se reposent pas :
+  - `20261113-1030-b` = A : tirer des claims des deux pièces de l'instrument, déclarées source interne sans validation publiée ;
+  - `20261113-1031-b` = A : les poids sont les points du barème source ;
+  - `20261113-1032-b` = A : toutes les dimensions, hors des quatre items du besoin 3 ;
+  - `20261113-1033-b` = A, amendée le même jour en session sur un fait nouveau (voir plus bas) ;
+  - `20261113-1034-b` = C : le repère est signé d'abord sur les claims internes, puis la publication primaire le complète avant J3-12f ;
+  - `20261113-1035-b` = A : pas de règle combinée ; un constat par variable, sans seuil transposé à la mesure dérivée.
+  - **Mesure dérivée** : avec les deux premiers choix, elle revient au total du barème privé des quatre items du besoin 3, sans aucun chiffre nouveau. Sa lecture attend une source ; d'ici là, elle reste descriptive.
+  - **Ingestion**, sur accord du responsable, envoi par envoi, en production par la route d'ingestion et depuis des conteneurs `scalingo run -d`. Chaque envoi a été constaté en lecture seule.
+    - Instrument : 68 claims tirés des deux pièces déjà en base (`WN-SRC-0470`, `WN-SRC-0471`), sans passage nouveau.
+    - `LOT_058` : trois sources externes, `WN-SRC-0654` à `0656` (rapport de consultation, résumé d'article, revue exploratoire), avec 4 passages et 10 claims, pour deux des trois biomarqueurs.
+    - `LOT_059` : trois sources externes, `WN-SRC-0657` à `0659` (recommandation d'une société savante française, lignes directrices européennes, méta-analyse), avec 4 passages et 4 claims.
+    - Les 82 claims entrent en attente de validation. Aucune clé de besoin ni de rubrique n'est posée et rien n'est signé. Les six sources entrent au registre, droits à vérifier pour trois d'entre elles.
+  - **Fait nouveau et amendement** : trois recherches documentaires n'ont trouvé aucune autorité qui fixe un seuil pour l'un des trois biomarqueurs. Une recommandation française en déconseille l'usage individuel. Le responsable a donc acté en session que ce biomarqueur reste « non évalué » au besoin 1, avec une raison sourcée, et qu'aucune plage n'est signée. La réponse `20261113-1033-b` porte l'amendement à la liste commune. Les deux autres biomarqueurs gardent leurs arbitrages.
+  - **Suite** : la signature des 82 claims et des repères revient au responsable (`D-325` §5). Viennent ensuite l'étiquetage au besoin 1 (sur accord), les positions et la contre-revue. Aucun code : la mesure dérivée et la lecture biologique partent avec J3-12f, après la signature et la décision clinique (`D-312` §3).
