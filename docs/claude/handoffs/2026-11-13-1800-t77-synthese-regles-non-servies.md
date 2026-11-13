@@ -29,13 +29,15 @@ Solder la dette t77 (§8 du plan) : la synthèse IA ne disait ni les règles d'a
 - Vitest ciblé (synthèse, api/praticien, clinical, clinical-engine, observabilité) : 4 902 tests verts.
 - T1 complet (`npm run check`) : vert.
 - Contre-revue Codex en mode `revue` sur le diff poussé : conforme, un P2 corrigé et banc ajouté.
-- T3 (`npm run test:worktree`) : première passe rouge sur un seul test hors du diff (`ProtocolMiniBuilder.test.tsx`, délai de 5 s dépassé sous charge ; 94/94 vert joué seul), qui a arrêté la suite avant les E2E ; seconde passe complète : voir la PR.
+- T3 (`npm run test:worktree`) : **incomplet**. Deux passes rouges sur le seul fichier `ProtocolMiniBuilder.test.tsx`, hors du diff et inchangé depuis #1691 : 1 puis 6 tests au-delà du délai de 5 s sous charge, 94/94 vert joué seul. Le reste de Vitest est vert (17 326 tests). Ce rouge arrête la suite avant les E2E : le segment E2E local n'a pas tourné. Sur arbitrage du responsable (2026-11-13), la PR s'ouvre et le CI fait foi, E2E compris.
+- Branche remise à niveau par un merge d'`origin/main` (#2062, fichiers patient, sans chevauchement), sur arbitrage du responsable.
 
 ## Problèmes ouverts
 
 - [[D-505]] §5 n'a pas été suivi au cadrage : les quatre questions cliniques ont été écrites sans avis Codex préalable (`avis_codex` absent).
 - Limites consignées en [[D-511]] §7 : la mesure datée ne couvre pas les arrêts non évalués ; une levée du service d'orientation ne produit aucun bloc.
 - Au cockpit, deux lectures du corpus par page (orientation et contradictions), qui peuvent diverger ([[D-511]] §6.5) : non corrigé.
+- `ProtocolMiniBuilder.test.tsx` dépasse son délai de 5 s sous la charge d'une suite complète et bloque T3 avant les E2E : dette hors du lot, sans porteur.
 
 ## Prochaine action exacte
 
