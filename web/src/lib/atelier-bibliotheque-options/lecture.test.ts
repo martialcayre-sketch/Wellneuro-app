@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/prisma', () => ({ prisma: {} }));
+const { findMany } = vi.hoisted(() => ({ findMany: vi.fn() }));
+vi.mock('@/lib/prisma', () => ({ prisma: { bibliothequeOptionTexte: { findMany } } }));
 
-import { assemblerAtelier } from './lecture';
+import { assemblerAtelier, lireAtelierOptions } from './lecture';
 import { contexteDuDepot, RUBRIQUES_OPTION, type ContexteAtelier } from './structure';
 
 // L'assemblage de l'atelier (D-480 §3) : la dernière version par couple, l'état
@@ -72,5 +73,40 @@ describe('assemblage de l’atelier (D-480 §3)', () => {
     expect(depot.options).toEqual([]);
     expect(depot.etatStructure).toBe('non_signee');
     expect(depot.empreinteStructure).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe('lecture en deux requêtes (wn-reviewer sur #2082)', () => {
+  const sansTexte = (numero: number, actes: unknown[] = []) => {
+    const { texte: _t, ...reste } = ligne('OPT_BANC_A', 'dose', numero, { actes });
+    return reste;
+  };
+  const validee = { ordre: BigInt(1), acte: 'validee', empreinte: '1'.repeat(64), validateur: 'r', relectureIntegrale: true, motif: null, le: new Date() };
+
+  it('le texte n’est lu que pour la dernière version de chaque couple, et c’est lui qui s’affiche', async () => {
+    findMany.mockReset();
+    findMany.mockResolvedValueOnce([sansTexte(1, [validee]), sansTexte(2)]);
+    findMany.mockResolvedValueOnce([{ id: sansTexte(2).id, texte: 'texte 2' }]);
+    const atelier = await lireAtelierOptions(contexte);
+    expect(findMany).toHaveBeenCalledTimes(2);
+    expect(findMany.mock.calls[0][0].select.texte).toBeUndefined();
+    expect(findMany.mock.calls[1][0]).toEqual({ where: { id: { in: [sansTexte(2).id] } }, select: { id: true, texte: true } });
+    const dose = atelier.options[0].rubriques.find(r => r.rubrique === 'dose');
+    expect(dose?.version).toMatchObject({ numero: 2, texte: 'texte 2' });
+    expect(dose?.etat).toEqual({ etat: 'a_valider' });
+  });
+
+  it('le texte d’une dernière version qui manque ferme la lecture, jamais un texte vide affiché', async () => {
+    findMany.mockReset();
+    findMany.mockResolvedValueOnce([sansTexte(1)]);
+    findMany.mockResolvedValueOnce([]);
+    await expect(lireAtelierOptions(contexte)).rejects.toThrow(/introuvable/);
+  });
+
+  it('aucune version : une seule requête', async () => {
+    findMany.mockReset();
+    findMany.mockResolvedValueOnce([]);
+    await lireAtelierOptions(contexte);
+    expect(findMany).toHaveBeenCalledTimes(1);
   });
 });

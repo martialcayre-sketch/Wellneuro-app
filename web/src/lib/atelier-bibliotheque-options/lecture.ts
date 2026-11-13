@@ -159,6 +159,10 @@ export async function lireAtelierOptions(contexte: ContexteAtelier = contexteDuD
     ? []
     : await prisma.bibliothequeOptionTexte.findMany({ where: { id: { in: ids } }, select: { id: true, texte: true } });
   const texteDe = new Map(textes.map(t => [t.id, t.texte]));
+  // Le texte d'une DERNIÈRE version ne manque jamais (CHECK, ajout seul) : s'il
+  // manquait, l'écran montrerait un texte vide sur l'empreinte d'un autre, et un
+  // acte pourrait s'y poser. On ferme plutôt que d'afficher (DC-24, `wn-reviewer`).
+  if (ids.some(id => !texteDe.has(id))) throw new Error('Texte d’une dernière version introuvable : lecture de l’atelier refusée.');
   // Une version qui n'est pas la dernière n'est jamais affichée : son texte reste vide.
   return assemblerAtelier(versions.map(v => ({ ...v, texte: texteDe.get(v.id) ?? '' })), contexte);
 }

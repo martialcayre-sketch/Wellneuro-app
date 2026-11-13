@@ -71,7 +71,7 @@ export const MESSAGES_REFUS: Record<string, { message: string; status: number }>
   deja_dans_cet_etat: { message: 'Ce texte est déjà dans cet état.', status: 409 },
   structure_non_signee: { message: 'La structure de la bibliothèque n’est pas signée : aucune validation avant sa signature.', status: 409 },
   structure_a_relire: {
-    message: 'La structure de la bibliothèque est à relire : les fiches d’usage ont changé depuis sa signature. Aucune validation avant sa re-signature.',
+    message: 'La structure de la bibliothèque est à relire : les fiches d’usage ne sont plus celles de sa signature. Aucune validation avant sa re-signature.',
     status: 409,
   },
   texte_a_relire: { message: 'Ce texte accompagne une structure qui n’est plus celle du jour : saisissez-en une version neuve.', status: 409 },
