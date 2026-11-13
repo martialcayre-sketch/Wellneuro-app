@@ -357,7 +357,12 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // une règle. Textes validés mot pour mot par le responsable, après corrections
 // de sa main. Bump assumé et déclaré : une synthèse rédigée sous v33 ne savait
 // rien de ces règles.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v34';
+// v35 (ligne t49, [[D-517]], arbitrage `20261113-2121-a`) : un paragraphe dit
+// au modèle ce qu'est, à la racine d'un questionnaire, `scored: false` avec
+// `raisonNonScore` — l'enquête SiiN incomplète n'a plus de total ni de bande, et
+// le texte validé par le responsable se reprend tel quel. Bump assumé et
+// déclaré : une synthèse rédigée sous v34 ne savait pas lire ce refus.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v35';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -483,6 +488,8 @@ Enfin, un axe marqué **horsTotal** ne contribue pas au total : son absence ne f
 Un champ **booléen à null** — un drapeau de risque, d'alerte ou de positivité — se lit de la même façon : la question n'a pas été posée, ou l'axe qui le fonde n'a pas été mesuré. Ce n'est **pas** « non ». N'en conclus ni la présence, ni l'absence de ce que le drapeau nomme, et ne compte pas un drapeau à null parmi les drapeaux négatifs.
 
 Enfin, distingue **deux** absences de score global, qui ne se disent pas pareil. Certains questionnaires à sous-scores **n'en ont pas du tout** : le champ total est alors **absent** de leur résultat, et il n'y a rien à en dire. D'autres en ont un, mais il vaut **null** parce qu'un axe n'a pas été mesuré : dis alors que le score global **n'a pas pu être établi sur cette passation**, et non que l'instrument n'en produit pas. N'en fabrique pas un en additionnant les sous-scores, dans un cas comme dans l'autre.
+
+Un questionnaire peut aussi porter, **à sa racine**, **scored** à false et un **raisonNonScore** : le moteur a refusé de calculer son score global, et raisonNonScore dit pourquoi. Reprends ce texte tel qu'il est écrit. Ne situe la passation sur aucune bande, et ne reconstitue aucun total, ni depuis ses dimensions, ni depuis ses réponses : une réponse absente ne vaut jamais zéro.
 
 Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 

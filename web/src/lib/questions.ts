@@ -5,6 +5,7 @@ import type { Question, QuestionOption } from './questionnaire-types';
 // signature, et c'est par là que deux tables signées ont changé de comportement
 // sans qu'un sha bouge ([[D-180]]). Les bornes sont inchangées.
 import { BANDES_PSQI } from './clinical/bandesPsqi';
+import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from './scoring/enqueteAlimentaireIncomplete';
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_ALI_09, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
@@ -2171,7 +2172,16 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       };
     }
 
-    const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
+    // GARDE — recueil INCOMPLET : ni total, ni bande ([[D-517]], D-403 §6).
+    //
+    // Tous les items du barème sont requis : aucun n'est conditionnel. Un item
+    // sans réponse n'est pas « zéro point » (`DC-24`), et aucun prorata n'est
+    // fondé : le total d'un recueil incomplet ne mesure rien et ne se calcule
+    // pas. Les dimensions restent servies avec leurs comptes, comme découpage
+    // descriptif ; le sous-score servi au besoin 3 tombe avec le total (§6 :
+    // une passation partielle ne nourrit plus les besoins 1 et 3).
+    const incomplet = missingIds.length > 0;
+    const interp = !incomplet && sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
     // Agrégat d'un sous-ensemble d'items du barème, partagé par les deux usages
     // ci-dessous : `dimensions` (descriptif, affiché) et `scoresBesoins` (servi
     // à Mon équilibre). Le partage est LOCAL à ce moteur : la branche `sum` a sa
@@ -2216,19 +2226,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // (/10) et n'en sert que 4 au besoin 3 (/7), ceux que le guide nomme.
     // Un sous-score SERVI n'est une mesure que s'il est COMPLET. La parade
     // anti-zéro d'`agregerItems` s'arrête à « aucun item répondu » : elle suffit
-    // sur un total à 57 items, où un manquant est du bruit, mais pas ici — sur
+    // à un découpage descriptif, mais pas ici — sur
     // 4 items, un seul répondu au repère rendait 2/7, soit 29 % de couverture,
     // SOUS le seuil d'effondrement, pour un patient qu'on n'a presque pas
     // interrogé. La sensibilité est ~14 fois celle du besoin 1. Partiel vaut
     // donc « pas de mesure », jamais une mesure basse.
     const scoresBesoins = (sc.sousScoresBesoins || []).map((d: any) => {
       const agrege = agregerItems(d);
-      return { ...agrege, total: agrege.repondus === agrege.items ? agrege.total : null };
+      return { ...agrege, total: !incomplet && agrege.repondus === agrege.items ? agrege.total : null };
     });
 
     return {
-      type: 'seuils_points', scored: true, total, maxTotal: sc.maxTotal,
+      type: 'seuils_points', scored: !incomplet, total: incomplet ? null : total, maxTotal: sc.maxTotal,
       interpretation: interp,
+      ...(incomplet ? {raisonNonScore: TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE} : {}),
       ...(dimensions.length > 0 ? {dimensions} : {}),
       ...(scoresBesoins.length > 0 ? {scoresBesoins} : {}),
       missing: missingIds.length,

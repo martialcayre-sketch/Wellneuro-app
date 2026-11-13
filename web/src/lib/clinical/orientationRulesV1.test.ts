@@ -1973,11 +1973,12 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
     expect(motifs).toContain('R2-ALI-01');
   });
 
-  // Le score global d'une enquête abandonnée reste servi par `seuils_points`
-  // SANS condition de complétude : trois items renseignés rendent quelques
-  // points sur 90, donc la bande la plus sévère. C'est la garde de complétude
-  // d'`extraireCible` qui l'arrête, et elle est exercée ici sur l'instrument
-  // réel — pas sur un `missing` posé à la main.
+  // Avant [[D-517]], le score global d'une enquête abandonnée restait servi par
+  // `seuils_points` SANS condition de complétude : trois items renseignés
+  // rendaient quelques points sur 90, donc la bande la plus sévère, que seule
+  // la garde de complétude d'`extraireCible` arrêtait. Le moteur refuse
+  // désormais lui-même : ni total, ni bande. Exercé sur l'instrument réel —
+  // pas sur un `missing` posé à la main.
   it('DRAPEAU ALLUMÉ — une enquête SIIN abandonnée n’engage rien', async () => {
     const { scorer, items } = await formeServie('true');
     const complete = passationLaPlusBasse(items, scorer);
@@ -1986,8 +1987,9 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
     );
     const score = scorer(troisItems);
     expect(score.missing, 'la passation doit être incomplète').toBeGreaterThan(0);
-    expect(score.interpretation?.label, 'le moteur sert quand même sa bande la plus sévère')
-      .toBe('Alimentation très déséquilibrée et défavorable');
+    expect(score.scored, 'le moteur refuse de coter un recueil incomplet (D-517)').toBe(false);
+    expect(score.total).toBeNull();
+    expect(score.interpretation, 'aucune bande sur un recueil incomplet (D-517)').toBeNull();
     expect(evaluerSur(score)).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeScoreFromDef } from '@/lib/questions';
+import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from '@/lib/scoring/enqueteAlimentaireIncomplete';
 import { Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from './alimentaire';
 
 // Banc de l'Enquête alimentaire SIIN, forme complète.
@@ -106,13 +107,74 @@ describe('scoring', () => {
     expect(r.interpretation.label).toContain('très déséquilibrée');
   });
 
-  it('une passation partielle score ce qui est répondu et compte les manquants', () => {
+  it('une passation partielle n’est pas calculée et compte ses manquants (D-517)', () => {
     const deuxItems = BAREME.slice(0, 2);
     const answers = Object.fromEntries(deuxItems.map(e => [e.id, valeurAuSeuil(e.id, e.seuil)]));
     const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers as Record<string, number>);
-    expect(r.scored).toBe(true);
-    expect(r.total).toBe(deuxItems.reduce((s, e) => s + e.points, 0));
+    expect(r.scored).toBe(false);
+    expect(r.total).toBeNull();
+    expect(r.interpretation).toBeNull();
+    expect(r.raisonNonScore).toBe(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE);
     expect(r.missing).toBe(55);
+  });
+});
+
+describe('recueil incomplet — D-517 (D-403 §6)', () => {
+  const auSeuil = () => Object.fromEntries(BAREME.map(e => [e.id, valeurAuSeuil(e.id, e.seuil)])) as Record<string, number>;
+
+  it('le texte est celui que le responsable a validé, mot pour mot', () => {
+    expect(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE).toBe('Enquête alimentaire incomplète : score non calculé.');
+  });
+
+  it('un seul item manquant suffit : ni total, ni bande, aucun prorata', () => {
+    for (const absent of [BAREME[0].id, BAREME[BAREME.length - 1].id]) {
+      const answers = auSeuil();
+      delete answers[absent];
+      const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers);
+      expect(r.scored, absent).toBe(false);
+      expect(r.total, absent).toBeNull();
+      expect(r.interpretation, absent).toBeNull();
+      expect(r.missing, absent).toBe(1);
+      expect(r.missingIds, absent).toEqual([absent]);
+    }
+  });
+
+  it('une réponse non numérique compte comme manquante', () => {
+    const answers = auSeuil() as Record<string, unknown>;
+    answers[BAREME[3].id] = 'abc';
+    const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers as Record<string, number>);
+    expect(r.scored).toBe(false);
+    expect(r.missingIds).toEqual([BAREME[3].id]);
+  });
+
+  it('les dimensions restent servies, avec leurs comptes', () => {
+    const answers = auSeuil();
+    const absent = SCORING.dimensions[0].items[0];
+    delete answers[absent];
+    const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers);
+    expect(r.dimensions).toHaveLength(SCORING.dimensions.length);
+    const premiere = r.dimensions[0];
+    expect(premiere.repondus).toBe(premiere.items - 1);
+    expect(typeof premiere.total).toBe('number');
+  });
+
+  it('le sous-score du besoin 3 tombe même quand ses quatre items sont remplis', () => {
+    const answers = auSeuil();
+    const rythme: string[] = SCORING.sousScoresBesoins[0].items;
+    const absent = BAREME.map(e => e.id).find(id => !rythme.includes(id))!;
+    delete answers[absent];
+    const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers);
+    const sousScore = r.scoresBesoins.find((s: { id: string }) => s.id === 'RYTHME_CHRONO');
+    expect(sousScore.repondus).toBe(sousScore.items);
+    expect(sousScore.total).toBeNull();
+  });
+
+  it('contrôle négatif — une passation complète reste calculée, avec son sous-score', () => {
+    const r = computeScoreFromDef(Q_ALI_01_SIIN_57, auSeuil());
+    expect(r.scored).toBe(true);
+    expect(r.raisonNonScore).toBeUndefined();
+    expect(r.missing).toBe(0);
+    expect(typeof r.scoresBesoins[0].total).toBe('number');
   });
 });
 
@@ -138,16 +200,19 @@ describe('la parade anti-zéro — le risque majeur du lot', () => {
     expect(typeof r.total === 'number').toBe(false);
   });
 
-  it('contrôle négatif — une seule réponse valide suffit à scorer', () => {
-    // Sans lui, rendre inconditionnellement « non scoré » ferait passer les
-    // deux tests ci-dessus au vert.
+  it('contrôle négatif — une seule réponse valide n’est plus un recueil vide', () => {
+    // Sans lui, la garde du recueil vide et celle du recueil incomplet
+    // ([[D-517]]) ne se distingueraient pas : une réponse SIIN valide dit
+    // « incomplète », pas « aucune réponse ne correspond ». Le contrôle
+    // positif (passation complète calculée) vit dans le bloc D-517.
     const premier = BAREME[0];
     const r = computeScoreFromDef(
       Q_ALI_01_SIIN_57,
       { [premier.id]: valeurAuSeuil(premier.id, premier.seuil) } as Record<string, number>,
     );
-    expect(r.scored).toBe(true);
-    expect(r.total).toBe(premier.points);
+    expect(r.scored).toBe(false);
+    expect(r.raisonNonScore).toBe(TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE);
+    expect(r.missing).toBe(BAREME.length - 1);
   });
 });
 

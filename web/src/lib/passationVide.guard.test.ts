@@ -15,6 +15,10 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { calculerNiveauPreuveBesoin } from '@/lib/equilibre/evidence';
+import { TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE } from '@/lib/scoring/enqueteAlimentaireIncomplete';
+
+/** `Q_ALI_01` sert l'Enquête SIIN à 57 items drapeau allumé (lu à l'import). */
+const SIIN57 = process.env.WN_ALI_01_SIIN57 === 'true';
 
 /** Les trois instruments qui portent leur propre motif de non-scoré. */
 const PROPRE_MOTIF = ['Q_SOM_09', 'Q_URO_02', 'Q_FIB_03'];
@@ -120,6 +124,7 @@ describe('passation vide — rien à juger, donc aucun verdict', () => {
     // des passations complètes, et laissait donc passer une garde élargie à
     // « au moins un item manquant », qui aurait effacé presque tous les scores.
     let partiels = 0;
+    const recueilsIncomplets: string[] = [];
     for (const id of Object.keys(QUESTIONNAIRE_CATALOGUE as any)) {
       const items = itemsDe(id);
       if (items.length < 3) continue;
@@ -131,10 +136,15 @@ describe('passation vide — rien à juger, donc aucun verdict', () => {
       };
       const r: any = calculateScore(id, une);
       if (r.scored !== false) partiels++;
+      else if (r.raisonNonScore === TEXTE_ENQUETE_ALIMENTAIRE_INCOMPLETE) recueilsIncomplets.push(id);
     }
     // 62 instruments portent au moins trois items ; les trois non scorés sur une
-    // réponse unique sont exactement ceux qui portent leur propre motif.
-    expect(partiels).toBe(62 - PROPRE_MOTIF.length);
+    // réponse unique sont exactement ceux qui portent leur propre motif — plus,
+    // drapeau allumé, l'Enquête SIIN, dont TOUS les items sont requis
+    // ([[D-517]]) : elle le dit par son propre texte, pas par le motif du vide.
+    // Le refus du recueil incomplet est donc borné à cet instrument.
+    expect(recueilsIncomplets).toEqual(SIIN57 ? ['Q_ALI_01'] : []);
+    expect(partiels).toBe(62 - PROPRE_MOTIF.length - recueilsIncomplets.length);
   });
 
   it('« Mon équilibre » ne fabrique plus de preuve à partir d’une passation vide', () => {

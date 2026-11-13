@@ -198,7 +198,10 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
       const perimetres = { ...perimetresDeclares(id), ...(PERIMETRES[id] ?? {}) };
       for (const [axeId, items] of Object.entries(perimetres)) {
         const r: any = calculateScore(id, toutSauf(id, items));
-        if (r?.scored === false) continue;
+        // Un résultat non scoré qui n'émet aucun axe n'a rien à éprouver. Mais
+        // l'Enquête SIIN incomplète ([[D-517]]) reste `scored: false` ET sert ses
+        // découpages avec leurs comptes : ils restent éprouvés ici.
+        if (r?.scored === false && axesEmis(r).length === 0) continue;
         const trouve = axesEmis(r).find(({ axe }) => axe.id === axeId);
         if (!trouve) { coupables.push(`${id}/${axeId} : axe absent du résultat`); continue; }
         axesEprouves++;
