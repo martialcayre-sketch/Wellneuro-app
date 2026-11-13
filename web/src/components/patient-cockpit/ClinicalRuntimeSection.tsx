@@ -524,6 +524,12 @@ export function ClinicalRuntimeSection({
    * (`DC-24`, revue Copilot de #1273).
    */
   const [checkinsLusPour, setCheckinsLusPour] = useState<string | null>(null);
+  /**
+   * La carte dont la lecture des check-ins a ÉCHOUÉ (refus, panne, réseau).
+   * Distinct de « pas encore lus » : seul un échec avéré fait dire T-61 à la
+   * phase Suivi ([[D-488]]) — une panne n'est pas une absence de réponse.
+   */
+  const [echecCheckinsPour, setEchecCheckinsPour] = useState<string | null>(null);
   // Points d'étape bruts : la route les renvoyait déjà, le cockpit les ignorait.
   // Ils alimentent la météo d'adhésion (SP-MET), dérivée à la lecture seule.
   const [checkins, setCheckins] = useState<CheckinRow[]>([]);
@@ -642,8 +648,10 @@ export function ClinicalRuntimeSection({
       if (seq !== seqCheckins.current) return;
       if (!response.ok || !payload.ok) {
         setCheckinsLusPour(null);
+        setEchecCheckinsPour(decisionCardId);
         return;
       }
+      setEchecCheckinsPour(null);
       setResumeJ21(payload.resume ?? null);
       setCheckins(payload.checkins ?? []);
       setCheckinsLusPour(payload.resume ? decisionCardId : null);
@@ -652,6 +660,7 @@ export function ClinicalRuntimeSection({
       // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit,
       // mais le rail ne dit plus rien du suivi.
       setCheckinsLusPour(null);
+      setEchecCheckinsPour(decisionCardId);
     }
   }, [idPatient]);
 
@@ -2583,12 +2592,17 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       {affiche('suivi') && !fixture && readyDecisionCardId && (
-        <MeteoAdhesionPanel meteo={deriverMeteoAdhesion(checkins)} />
+        <MeteoAdhesionPanel
+          meteo={deriverMeteoAdhesion(checkins)}
+          echecLecture={echecCheckinsPour === readyDecisionCardId}
+          onRelire={() => loadCheckins(readyDecisionCardId)}
+        />
       )}
       {affiche('suivi') && !fixture && readyDecisionCardId && (
         <J21DecisionPanel
           resume={resumeJ21}
           suiviOuvert={suiviOuvert}
+          echecLecture={echecCheckinsPour === readyDecisionCardId}
           onAjuster={
             onAjusterProtocole ??
             (() => document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' }))
@@ -2607,7 +2621,7 @@ export function ClinicalRuntimeSection({
             <button
               type="button"
               onClick={() => rechargerTrajectoire()}
-              className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 self-start rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Réessayer
             </button>
@@ -2646,7 +2660,7 @@ export function ClinicalRuntimeSection({
                 aria-label="Réévaluation — résumé du cycle"
                 className="rounded-xl border border-border bg-surface p-4 text-sm"
               >
-                <h3 className="font-semibold text-foreground">Réévaluation — où en est le cycle</h3>
+                <h4 className="font-semibold text-foreground">Réévaluation — où en est le cycle</h4>
                 {trajectoire?.discordanceOrdreCycles && (
                   <p
                     role="status"
