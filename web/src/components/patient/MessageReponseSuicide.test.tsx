@@ -156,11 +156,20 @@ describe('MessageReponseSuicide — venue dans la fenêtre ([[D-506]])', () => {
       expect(scrollIntoView).toHaveBeenCalledOnce();
     });
 
-    it('un défilement revenu au même pixel compte comme un mouvement : rien n’est relancé', () => {
-      render(<MessageReponseSuicide defiler />);
-      window.dispatchEvent(new Event('scroll'));
+    it('au résumé, après la remontée de la page : la demande ignorée est renouvelée', () => {
+      localStorage.clear();
+      // La remontée (`scrollTo(0, 0)`) émet son événement `scroll` après la
+      // demande : il ne doit pas désarmer la relance.
+      vi.stubGlobal('scrollTo', vi.fn(() => { setTimeout(() => window.dispatchEvent(new Event('scroll')), 0); }));
+      const a = assignation('Q_NEU_01');
+      render(<GenericQuestionnaire assignation={a} questionnaire={(QUESTIONNAIRE_CATALOGUE as Record<string, unknown>).Q_NEU_01 as QuestionnaireDef} email={a.emailPatient} onDone={vi.fn()} />);
+      const choisir = (id: string, valeur: number) =>
+        fireEvent.click(document.querySelector(`input[type="radio"][name="${id}"][value="${valeur}"]`)!);
+      for (let i = 1; i <= 13; i += 1) choisir(`B${i}`, i === 7 ? 1 : 0);
+      fireEvent.click(screen.getByRole('button', { name: 'Voir le résumé' }));
+      const auResume = scrollIntoView.mock.calls.length;
       vi.advanceTimersByTime(DELAI_VERIFICATION_DEFILEMENT_MS);
-      expect(scrollIntoView).toHaveBeenCalledOnce();
+      expect(scrollIntoView.mock.calls.length).toBe(auResume + 1);
     });
 
     it('en mouvement réduit, la demande renouvelée reste sans animation', () => {

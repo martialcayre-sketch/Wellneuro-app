@@ -24,7 +24,7 @@ Ce qui est attendu :
     - à 702 ms, le défilement de D-506 va à 4 019 en un seul événement. Sous WebKit Linux, l'animation n'a pas d'étapes intermédiaires.
   - Le run raté de `29bfdbaf` s'était arrêté exactement à 3 795. Lecture : la demande de défilement a été **ignorée** par le moteur, et non interrompue en route. Pour les runs ratés de `c4a448cc` (3 872) et de `361cadbb` (538, soit 3 883), ce n'est qu'une hypothèse : elle tient si Playwright y avait laissé B7 à une autre position. S'il s'agissait d'arrêts en cours de route, la page a bougé, la relance ne joue pas, et l'E2E strict rougira de nouveau : ce sera l'issue honnête.
   - Les trois runs avec journal (`1efdffda`, `97e0fd09`, `9011d660`) sont tous bien placés : la présence des écouteurs a pu changer le minutage. C'est un fait, pas une cause établie.
-- **Correctif** (`MessageReponseSuicide.tsx`) : après 600 ms, si la page n'a pas bougé (aucun événement de défilement, même position) et que le message n'est toujours pas entièrement visible, la même demande est renouvelée, une fois.
+- **Correctif** (`MessageReponseSuicide.tsx`) : après 600 ms, si la page est toujours à la position d'avant la demande et que le message n'est toujours pas entièrement visible, la même demande est renouvelée, une fois.
   - La relance garde le même défilement minimal, la même animation hors mouvement réduit, et le focus inchangé.
   - Une page qui a bougé, y compris par le patient, n'est jamais relancée.
   - La vérification est annulée au démontage du message.
@@ -42,7 +42,8 @@ Ce qui est attendu :
 - Vitest ciblés : 158/158 (`MessageReponseSuicide`, `GenericQuestionnaire`, portail).
 - CI de `9011d660` (tolérance retirée, sans correctif) : e2e vert, WebKit animé bien placé sous la question et au résumé ; `controles` rouge, faute de ce handoff.
 - T1 rapide (`check:rapide`) : vert, 16 étapes.
-- Revue wn-reviewer sur `1ad95dad` : la relance met D-506 en œuvre fidèlement, sans en changer le comportement, et ne relève donc pas du responsable. NO-GO sur un P1 : la fenêtre de stabilité de l'E2E (800 ms) se fermait avant que la relance puisse atterrir. Corrigé : dix relevés identiques, soit 1,8 s, avec un délai de 12 s. P2 traités : tout événement de défilement compte comme un mouvement ; test de la relance en mouvement réduit ; hypothèse reformulée ci-dessus.
+- Revue wn-reviewer sur `1ad95dad` : la relance met D-506 en œuvre fidèlement, sans en changer le comportement, et ne relève donc pas du responsable. NO-GO sur un P1 : la fenêtre de stabilité de l'E2E (800 ms) se fermait avant que la relance puisse atterrir. Corrigé : dix relevés identiques, soit 1,8 s, avec un délai de 12 s. P2 traités : test de la relance en mouvement réduit ; hypothèse reformulée ci-dessus.
+- Deuxième revue, sur `479fbac1` : NO-GO sur un P1. L'écouteur `scroll` ajouté pour un P2 (« tout événement compte comme un mouvement ») désarmait la relance au résumé : l'événement du `scrollTo(0, 0)` qui précède le montage arrive après la demande. Corrigé en retirant l'écouteur : la position seule fait foi, et un test fige la relance au résumé (il échouait avec l'écouteur). Le P2 d'origine (retour au même pixel en moins de 600 ms, toucher annulé avant toute image) est écarté : ces cas sont improbables, et l'écouteur rouvrait un défaut plus grave à un moment fixé par D-506 §4. Indentation de l'E2E corrigée.
 - Vitest ciblés après correction : 160/160.
 
 ## Problèmes ouverts

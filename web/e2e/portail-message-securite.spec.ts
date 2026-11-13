@@ -145,7 +145,7 @@ async function attendreLeMessagePlace(page: Page, libelle: string): Promise<Mesu
       const texte = JSON.stringify(m);
       identiques = texte === precedente ? identiques + 1 : 0;
       precedente = texte;
-        if (identiques >= 9) stable = m;
+      if (identiques >= 9) stable = m;
       return stable !== null;
     }, { timeout: 12_000, intervals: [200] }).toBe(true);
   } catch (erreur) {

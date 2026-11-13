@@ -40,11 +40,15 @@ export const DELAI_VERIFICATION_DEFILEMENT_MS = 600;
  *
  * Un moteur peut ignorer la demande : WebKit sous Linux (CI) a laissé la page
  * immobile, au pixel près, sur un run du 2026-11-13. Si, après
- * `DELAI_VERIFICATION_DEFILEMENT_MS`, la page n'a pas bougé (aucun événement de défilement,
- * même position) et que le message
- * n'est toujours pas entièrement visible, la même demande est renouvelée, une
- * fois. Une page qui a bougé, fût-ce par le patient, n'est jamais relancée.
- * Rend de quoi annuler la vérification (démontage).
+ * `DELAI_VERIFICATION_DEFILEMENT_MS`, la page est toujours à la position
+ * d'avant la demande et que le message n'est toujours pas entièrement
+ * visible, la même demande est renouvelée, une fois. Une page qui a bougé,
+ * fût-ce par le patient, n'est jamais relancée.
+ *
+ * La position seule fait foi, pas les événements `scroll` : au résumé, celui
+ * du `scrollTo(0, 0)` qui précède le montage arrive après la demande, et
+ * désarmerait la relance à l'un des moments que fixe [[D-506]] §4. Rend de
+ * quoi annuler la vérification (démontage).
  */
 export function faireVenirDansLaFenetre(element: HTMLElement): () => void {
   if (typeof element.scrollIntoView !== 'function') return () => {};
@@ -52,20 +56,11 @@ export function faireVenirDansLaFenetre(element: HTMLElement): () => void {
   const demander = () =>
     element.scrollIntoView({ block: 'nearest', behavior: mouvementReduit() ? 'auto' : 'smooth' });
   const avant = window.scrollY;
-  // Tout défilement, même revenu au même pixel, compte comme un mouvement.
-  let aBouge = false;
-  const surDefilement = () => { aBouge = true; };
-  window.addEventListener('scroll', surDefilement, { passive: true });
   demander();
   const minuterie = window.setTimeout(() => {
-    window.removeEventListener('scroll', surDefilement);
-    const immobile = !aBouge && window.scrollY === avant;
-    if (immobile && element.isConnected && !entierementVisible(element)) demander();
+    if (window.scrollY === avant && element.isConnected && !entierementVisible(element)) demander();
   }, DELAI_VERIFICATION_DEFILEMENT_MS);
-  return () => {
-    window.clearTimeout(minuterie);
-    window.removeEventListener('scroll', surDefilement);
-  };
+  return () => window.clearTimeout(minuterie);
 }
 
 /**
