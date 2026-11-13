@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { specificateursSyntaxiques } from '../bio-parcours/balayageSources';
 
 // LA GARDE DE SURFACE — ce que `D-167` §10 aurait dû demander.
 //
@@ -85,6 +86,10 @@ describe('matière de priorité — la surface exposée', () => {
     const feuille = sourceSansCommentaires('src/lib/synthese/statutsValidee.ts');
     expect(feuille).not.toMatch(/\bimport\b/);
     expect(feuille).not.toMatch(/\brequire\(/);
+    // ET PAR LE PARSEUR (lot `bp17-extension-bancs-garde`) : `export … from`,
+    // que les deux motifs ne voient pas, est aussi un import.
+    expect(specificateursSyntaxiques(source('src/lib/synthese/statutsValidee.ts'), 'statutsValidee.ts')).toEqual([]);
+    expect(specificateursSyntaxiques("export { x } from './voisin';", 'statutsValidee.ts')).toHaveLength(1);
     expect(feuille).toContain(
       "export const STATUTS_SYNTHESE_VALIDEE = ['Validee_Praticien', 'Corrigee_Praticien'] as const;",
     );

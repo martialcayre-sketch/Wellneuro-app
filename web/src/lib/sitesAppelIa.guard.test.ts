@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { estUnTest, fichiersSource, lire, retirerLignesDeCommentaire } from './bio-parcours/balayageSources';
+import { contexteResolution, importsResolus, type ContexteResolution } from './bio-parcours/resolutionImports';
 
 // K-05a (F46, arbitrage du responsable du 2026-10-14) — LISTE FERMÉE des
 // fichiers de `web/src` qui parlent à un fournisseur d'IA, CHACUN rattaché à
@@ -160,24 +161,26 @@ function premierArgument(code: string, debut: number): string {
 
 /**
  * Modules dont un fichier dépend À L'EXÉCUTION : import et réexportation de
- * valeur, `import()` et `require()`. Les formes effacées par TypeScript ne
- * comptent pas : `import type`, `export type`, et un import nommé dont chaque
- * élément porte `type`.
+ * valeur, import latéral, `import()` et `require()`. Les formes effacées par
+ * TypeScript ne comptent pas : `import type`, `export type`, un import nommé
+ * dont chaque élément porte `type`, `typeof import(…)`.
+ *
+ * LE PARSEUR ET LA RÉSOLUTION (lot `bp17-extension-bancs-garde`) : chaque
+ * import est lu par le parseur (commentaire glissé, échappement,
+ * concaténation constante, import non ancré en début de ligne) et RÉSOLU
+ * comme le fait TypeScript. Un fichier atteint dans `node_modules` rend le
+ * nom de son paquet : un alias ou un lien symbolique vers un SDK le nomme
+ * ainsi. Un import INDÉTERMINÉ (non constant, nom nu inconnu) qui ne nomme
+ * aucun SDK connu peut en charger un : il se range sous `inconnu · client`.
  */
-function modulesDeValeur(code: string): string[] {
-  const modules: string[] = [];
-  for (const m of code.matchAll(/^\s*(import|export)\s+([^;]*?)\s*\bfrom\s*['"]([^'"]+)['"]/gm)) {
-    const clause = m[2].trim();
-    if (/^type\b/.test(clause)) continue;
-    const nommes = clause.match(/^\{([^}]*)\}$/);
-    if (nommes) {
-      const elements = nommes[1].split(',').map(e => e.trim()).filter(Boolean);
-      if (elements.length > 0 && elements.every(e => /^type\s/.test(e))) continue;
-    }
-    modules.push(m[3]);
-  }
-  for (const m of code.matchAll(/\b(?:import|require)\s*\(\s*['"]([^'"]+)['"]/g)) modules.push(m[1]);
-  return modules;
+let contexte: ContexteResolution | undefined;
+function modulesDeValeur(chemin: string, source: string): { noms: string[]; indetermine: boolean }[] {
+  return importsResolus(chemin, (contexte ??= contexteResolution()), source)
+    .filter(i => !i.typeSeul)
+    .map(i => {
+      const paquet = i.atteint?.match(/(?:^|\/)node_modules\/((?:@[^/]+\/)?[^/]+)/)?.[1];
+      return { noms: paquet ? [i.specificateur, `${paquet}/`] : [i.specificateur], indetermine: i.indetermine };
+    });
 }
 
 type Detection = { chemin: string; fournisseur: Fournisseur | 'inconnu'; roles: Role[] };
@@ -198,9 +201,13 @@ export function detecter(chemin: string, source: string): Detection[] {
     for (const { fournisseur, motif } of NOMS_FOURNISSEUR) if (motif.test(cible)) noter(fournisseur, 'appel');
     for (const { fournisseur, motif } of ADRESSES_IA) if (motif.test(cible)) noter(fournisseur, 'appel');
   }
-  for (const specifiant of modulesDeValeur(code)) {
-    const sdk = SDK_IA.find(s => s.motif.test(specifiant));
+  for (const { noms, indetermine } of modulesDeValeur(chemin, source)) {
+    // Un SDK connu se nomme d'abord (`openai` n'est pas une dépendance
+    // déclarée : nom nu inconnu, mais fournisseur identifié) ; à défaut, un
+    // import indéterminé peut charger n'importe quel SDK.
+    const sdk = SDK_IA.find(s => noms.some(n => s.motif.test(n)));
     if (sdk) noter(sdk.fournisseur, 'client');
+    else if (indetermine) noter('inconnu', 'client');
   }
   for (const { fournisseur, motif } of ADRESSES_IA) if (motif.test(code)) noter(fournisseur, 'constante');
 
@@ -211,7 +218,7 @@ const cle = (d: { chemin: string; fournisseur: string; roles: readonly string[] 
   `${d.chemin} · ${d.fournisseur} · ${[...d.roles].sort().join('+')}`;
 
 describe('sites d\'appel IA de web/src — liste fermée, chacun déclaré au registre (K-05a)', () => {
-  const detections = fichiersSource()
+  const detections = () => fichiersSource()
     .filter(chemin => !estUnTest(chemin))
     .flatMap(chemin => detecter(chemin, lire(chemin)));
   const dossier = lire('docs/DOSSIER_RGPD.md');
@@ -219,11 +226,12 @@ describe('sites d\'appel IA de web/src — liste fermée, chacun déclaré au re
 
   it('les fichiers qui parlent à un fournisseur d\'IA sont exactement ceux de la liste', () => {
     expect(
-      detections.map(cle).sort(),
+      detections().map(cle).sort(),
       'site IA nouveau ou modifié : l\'ajouter à SITES_APPEL_IA avec sa déclaration au DOSSIER_RGPD (rubrique 6), '
         + 'ou retirer l\'entrée qui ne parle plus au fournisseur',
     ).toEqual(SITES_APPEL_IA.map(cle).sort());
-  });
+    // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
+  }, 120_000);
 
   it('chaque flux d\'un sous-traitant est déclaré sur la ligne de son fournisseur (rubrique 6)', () => {
     for (const site of SITES_APPEL_IA) {
@@ -269,5 +277,13 @@ describe('sites d\'appel IA de web/src — liste fermée, chacun déclaré au re
     expect(vu("import { type MessageParam } from '@anthropic-ai/sdk/resources/messages';")).toEqual([]);
     expect(vu("export type { MessageParam } from '@anthropic-ai/sdk/resources/messages';")).toEqual([]);
     expect(vu("import { type A, B } from '@anthropic-ai/sdk';")).toEqual(['x.ts · Anthropic · client']);
+    // Lot `bp17-extension-bancs-garde` : les formes que les motifs ne voyaient
+    // pas — commentaire glissé, concaténation constante, import latéral —, et
+    // un import indéterminé, qui peut charger n'importe quel SDK.
+    expect(vu('import Anthropic from/**/"@anthropic-ai/sdk";')).toEqual(['x.ts · Anthropic · client']);
+    expect(vu('const O = require("open" + "ai");')).toEqual(['x.ts · OpenAI · client']);
+    expect(vu("import '@mistralai/mistralai';")).toEqual(['x.ts · inconnu · client']);
+    expect(vu('const m = await import(chemin);')).toEqual(['x.ts · inconnu · client']);
+    expect(vu("type M = typeof import('@anthropic-ai/sdk');")).toEqual([]);
   });
 });
