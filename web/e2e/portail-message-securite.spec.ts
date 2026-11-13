@@ -22,7 +22,7 @@
 // `resetPortailState` ; à l'entrée, le consentement et la fiche du parcours
 // normal, comme `portail-parcours`. Aucune réponse de questionnaire n'est
 // transmise, et l'anamnèse n'est pas validée.
-import { test, expect, type Page, type TestInfo } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { accuserPorteTrust, closePrisma, creerAssignationQuestionnaire, resetPortailState } from './helpers/db';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 
@@ -122,49 +122,44 @@ async function ouvrirLeJournal(page: Page): Promise<void> {
 }
 
 /**
- * La mesure n'est jugée qu'une fois le défilement terminé : cinq relevés
- * identiques de suite, à 200 ms d'écart, soit 800 ms sans mouvement. Relevée
- * en cours de course, ou avant son départ (WebKit en CI peut tarder à lancer
- * un défilement animé : deux relevés à 150 ms y ont été trouvés identiques
- * avant tout mouvement), la position ne dirait rien du résultat. Un
- * défilement qui ne part pas dans ce délai, ou s'arrête court, échoue
- * toujours, sauf en WebKit animé en confort (voir `arretCourtToleree`). La mesure stable est rendue telle quelle, pour la consigne, et
- * jugée par `bienPlace`.
+ * La mesure n'est jugée qu'une fois le défilement terminé : dix relevés
+ * identiques de suite, à 200 ms d'écart, soit 1,8 s sans mouvement. La
+ * fenêtre dépasse le délai de la relance du composant (600 ms) et le temps
+ * qu'un défilement met à atterrir en WebKit Linux (~560 ms constatés) : une
+ * demande ignorée puis relancée se juge sur son résultat. Relevée
+ * en cours de course, ou avant son départ, la position ne dirait rien du
+ * résultat. Un défilement qui ne part pas dans ce délai, ou s'arrête court,
+ * échoue : partout, sans tolérance (refus du responsable du 2026-11-13). Le
+ * journal de défilement est consigné à chaque mesure, réussie ou non, pour
+ * instruire un arrêt court.
  */
-async function attendreLeMessagePlace(
-  page: Page,
-  arretCourtToleree: { testInfo: TestInfo; libelle: string } | null = null,
-): Promise<Mesure> {
+async function attendreLeMessagePlace(page: Page, libelle: string): Promise<Mesure> {
   let precedente = '';
   let identiques = 0;
   let stable: Mesure | null = null;
-  await expect.poll(async () => {
-    const m = await mesurer(page);
-    const texte = JSON.stringify(m);
-    identiques = texte === precedente ? identiques + 1 : 0;
-    precedente = texte;
-    if (identiques >= 4) stable = m;
-    return stable !== null;
-  }, { timeout: 8_000, intervals: [200] }).toBe(true);
-  const m = stable as unknown as Mesure;
-  const { depart, journal } = await page.evaluate(() => {
+  // Le début (départ, geste) et la fin (où le défilement s'arrête) du journal.
+  const lireLeJournal = () => page.evaluate(() => {
     const complet = (window as unknown as { __journalD506?: unknown[][] }).__journalD506;
-    return { depart: complet?.[0]?.[2] ?? null, journal: complet?.slice(-80) ?? null };
+    if (!complet) return null;
+    return complet.length <= 120 ? complet : [...complet.slice(0, 20), ['…', complet.length - 120], ...complet.slice(-100)];
   });
-  const constat = `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(journal)}`;
-  if (arretCourtToleree && !bienPlace(m)) {
-    // WebKit Linux (CI), défilement animé : il s'arrête parfois avant sa
-    // cible (constaté sur 3 runs de 4 le 2026-11-13, jamais en mouvement
-    // réduit, jamais sous macOS ni en Chromium). Le plancher reste exigé : le
-    // haut du message dans la part utile de la fenêtre, son début lisible
-    // sans défiler. L'écart est consigné, pas tu.
-    expect(m.haut >= m.margeHaut - 1 && m.haut < m.fenetre - m.margeBas, constat).toBe(true);
-    // Et un défilement a eu lieu : un arrêt court, pas une absence de mouvement.
-    expect(m.defile > Number(depart), `${constat} ; scrollY au départ : ${depart}`).toBe(true);
-    arretCourtToleree.testInfo.annotations.push({ type: 'écart D-506 WebKit animé', description: `${arretCourtToleree.libelle} — ${constat}` });
-    console.log(`[écart D-506 WebKit animé] ${arretCourtToleree.libelle} — ${constat}`);
-    return m;
+  try {
+    await expect.poll(async () => {
+      const m = await mesurer(page);
+      const texte = JSON.stringify(m);
+      identiques = texte === precedente ? identiques + 1 : 0;
+      precedente = texte;
+      if (identiques >= 9) stable = m;
+      return stable !== null;
+    }, { timeout: 12_000, intervals: [200] }).toBe(true);
+  } catch (erreur) {
+    // Position jamais stable : le journal est le seul témoin, il est consigné.
+    console.log(`[journal D-506] ${libelle} — jamais stable — dernier relevé : ${precedente} ; journal : ${JSON.stringify(await lireLeJournal())}`);
+    throw erreur;
   }
+  const m = stable as unknown as Mesure;
+  const constat = `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(await lireLeJournal())}`;
+  console.log(`[journal D-506] ${libelle} — bien placé : ${bienPlace(m)} — ${constat}`);
   expect(bienPlace(m), constat).toBe(true);
   return m;
 }
@@ -190,9 +185,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
   });
 
   for (const reglage of REGLAGES) {
-    test(`${reglage.nom} : sous la question puis au résumé, le message vient dans la fenêtre, le focus ne bouge pas`, async ({ page, context, browserName }, testInfo) => {
-      const tolerance = (libelle: string) =>
-        reglage.confort && browserName === 'webkit' && !reglage.mouvementReduit ? { testInfo, libelle: `${reglage.nom}, ${libelle}` } : null;
+    test(`${reglage.nom} : sous la question puis au résumé, le message vient dans la fenêtre, le focus ne bouge pas`, async ({ page, context }, testInfo) => {
       await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
       if (reglage.confort) {
         await page.addInitScript(() => {
@@ -228,7 +221,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
       await ouvrirLeJournal(page);
       await b7(1).check();
       const focusAvant = await focus();
-      const sousLaQuestion = await attendreLeMessagePlace(page, tolerance('sous la question'));
+      const sousLaQuestion = await attendreLeMessagePlace(page, `${testInfo.project.name} — ${reglage.nom}, sous la question`);
       const focusApres = await focus();
       expect(focusApres).toEqual(focusAvant);
       expect(focusApres.dansLeMessage).toBe(false);
@@ -237,7 +230,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
       await ouvrirLeJournal(page);
       await page.getByRole('button', { name: 'Voir le résumé' }).click();
       await expect(page.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBeFocused();
-      const auResume = await attendreLeMessagePlace(page, tolerance('au résumé'));
+      const auResume = await attendreLeMessagePlace(page, `${testInfo.project.name} — ${reglage.nom}, au résumé`);
       // Le focus reste sur le titre du résumé, où l'écran le pose.
       await expect(page.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBeFocused();
 
@@ -282,7 +275,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
     const caseSignal = page.getByLabel(/Idées noires ou suicidaires/);
     await ouvrirLeJournal(page);
     await caseSignal.check();
-    const auxSignaux = await attendreLeMessagePlace(page);
+    const auxSignaux = await attendreLeMessagePlace(page, `${testInfo.project.name} — entrée, sous la liste des signaux`);
 
     const consigne = `${testInfo.project.name} — entrée, téléphone 390 px, zoom 200 % — sous la liste des signaux : ${JSON.stringify(auxSignaux)}`;
     testInfo.annotations.push({ type: 'mesure D-506', description: consigne });
