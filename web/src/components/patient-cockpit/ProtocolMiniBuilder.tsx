@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 // Module FEUILLE (aucun import) : lisible d'un composant client.
 import { SITUATIONS_COMPLEMENT, type NatureComplement, type SituationComplement } from '@/lib/clinical-engine/complementCible';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
@@ -119,6 +119,23 @@ const LOAD_LABELS: Record<TherapeuticLoad['level'], string> = {
 type BrouillonAction = Omit<ProtocolAction, 'type'> & { type: ProtocolActionType | '' };
 type NiveauChargeBrouillon = TherapeuticLoad['level'] | '';
 
+/** L'anneau de focus des champs (PRA-3b, PR 4) : absent jusqu'ici. */
+const ANNEAU_FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+
+/**
+ * UN CHAMP À HAUTEUR DE SON CONTENU (PRA-3b Q13 a) : 44 px au moins, il grandit
+ * avec le texte au lieu de le faire défiler dans une ligne. Le gabarit est un
+ * pseudo-élément qui recopie la valeur (`data-valeur`) dans la même cellule de
+ * grille : pur CSS, juste quand le constructeur est masqué puis réaffiché, et
+ * sans nœud de texte en double dans le DOM (un lecteur d'écran ou un sélecteur
+ * de test ne lit la valeur qu'une fois).
+ */
+const GABARIT_EXTENSIBLE = [
+  'mt-1 grid text-sm font-normal',
+  "after:invisible after:col-start-1 after:row-start-1 after:min-h-11 after:whitespace-pre-wrap after:break-words after:rounded-lg after:border after:border-transparent after:p-2 after:content-[attr(data-valeur)_'_']",
+].join(' ');
+const CHAMP_EXTENSIBLE = `col-start-1 row-start-1 min-h-11 w-full resize-none overflow-hidden rounded-lg border border-border bg-background p-2 ${ANNEAU_FOCUS}`;
+
 function emptyAction(actionId: string): BrouillonAction {
   return {
     actionId, type: '', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [],
@@ -170,6 +187,7 @@ export function ProtocolMiniBuilder({
   chargeVersionActive = null,
   versionActive = null,
   complementCibleOuvert = false,
+  onModificationsLocales,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -259,6 +277,13 @@ export function ProtocolMiniBuilder({
    * celui d'avant — et une nature déjà portée par l'action reste affichée.
    */
   complementCibleOuvert?: boolean;
+  /**
+   * Une saisie locale n'est pas sur le serveur (PRA-3b Q14 a) : modifiée depuis
+   * le dernier enregistrement, en cours d'enregistrement, ou refusée par lui.
+   * L'appelant s'en sert pour suspendre « Valider pour diffusion », qui agit sur
+   * la version enregistrée et non sur ce que le praticien a sous les yeux.
+   */
+  onModificationsLocales?: (enAttente: boolean) => void;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -354,6 +379,30 @@ export function ProtocolMiniBuilder({
     }
   }
 
+  // CE QUI N'EST PAS SUR LE SERVEUR (PRA-3b Q14 a). Un enregistrement en vol,
+  // refusé (`error`), devancé par une autre version (`stale`) ou arrêté sur un
+  // refus de registre à confirmer laisse la saisie locale hors du serveur, même
+  // si `editedSinceSave` est retombé au clic.
+  //
+  // LE REFUS SE LÈVE AUSSI QUAND LE PRATICIEN ABANDONNE SA SAISIE (revue
+  // PR-Agent de #2087) : `saveState` et le refus de registre sont tenus par le
+  // cockpit, et « Réinitialiser » ne les touche pas. Sans ce témoin, la
+  // validation restait suspendue sur une saisie qui n'existait plus, jusqu'au
+  // prochain enregistrement réussi. Tout nouvel état d'enregistrement le remet
+  // à faux : un refus neuf suspend de nouveau.
+  const [refusAbandonne, setRefusAbandonne] = useState(false);
+  const [saveStateVu, setSaveStateVu] = useState(saveState);
+  if (saveState !== saveStateVu) {
+    setSaveStateVu(saveState);
+    setRefusAbandonne(false);
+  }
+  const refusEnSuspens = saveState === 'error' || saveState === 'stale' || confirmationRegistre !== null;
+  const modificationsEnAttente = editedSinceSave
+    || saveState === 'saving' || (refusEnSuspens && !refusAbandonne);
+  useEffect(() => {
+    onModificationsLocales?.(modificationsEnAttente);
+  }, [modificationsEnAttente, onModificationsLocales]);
+
   // UNE PRIORITÉ POSÉE PAR LE PRATICIEN ([[D-279]] §2) n'est bloquée que par un
   // constat de sécurité — pas par l'abstention pour recueil incomplet, qui ne
   // retire que les candidats. Même partage que le moteur (`validateDecisionCard`).
@@ -392,6 +441,14 @@ export function ProtocolMiniBuilder({
   // retirable, ni modifiable, ni comptée dans la borne — et part en tête à la
   // soumission, au texte signé. Le moteur la refuse sous toute autre forme.
   const orientation = orientationRequise(decisionCard);
+
+  // LE SOMMAIRE D'ANCRES (PRA-3b Q13 a) : suivre « Action N » amène le FOCUS sur
+  // l'action, pas seulement la vue — sans quoi le clavier repartirait d'en haut.
+  // Le fragment d'URL n'est pas posé : la fiche n'a pas de navigation par ancre.
+  const allerAAction = (event: MouseEvent<HTMLAnchorElement>, idCible: string) => {
+    event.preventDefault();
+    document.getElementById(idCible)?.focus();
+  };
 
   const markDirty = () => {
     if (reviewed) setReviewed(false);
@@ -566,6 +623,7 @@ export function ProtocolMiniBuilder({
     setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel(''); setLoadJustification('');
     setReviewed(false); setMessage(null); setErreur(null); setNextActionId(1); setEditedSinceSave(false);
     setVideALaMain(true);
+    setRefusAbandonne(true);
   };
 
   // Validations locales communes à « Marquer comme relu » et « Enregistrer la
@@ -685,7 +743,10 @@ export function ProtocolMiniBuilder({
   };
 
   return (
-    <section aria-labelledby="protocol-builder-title" className="rounded-xl border border-border bg-surface p-4">
+    <section
+      aria-labelledby="protocol-builder-title"
+      className="rounded-xl border border-border bg-surface p-4 max-lg:[&_:is(input,select,textarea,fieldset,button,a)]:scroll-mb-44"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="protocol-builder-title" className="text-sm font-semibold text-foreground">Protocole 21 jours</h3>
@@ -702,7 +763,9 @@ export function ProtocolMiniBuilder({
           <span className="ml-2 font-normal text-xs text-muted-foreground">
             votre patient la lit en sous-titre de son accueil
           </span>
-          <textarea aria-label="Raison d’être" value={purpose} onChange={event => { markDirty(); setPurpose(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" />
+          <div className={GABARIT_EXTENSIBLE} data-valeur={purpose}>
+            <textarea aria-label="Raison d’être" rows={1} value={purpose} onChange={event => { markDirty(); setPurpose(event.target.value); }} className={CHAMP_EXTENSIBLE} />
+          </div>
           {/* CITER, C'EST REPRENDRE UN TEXTE DÉJÀ ÉCRIT — jamais en composer un.
               Le bouton recopie la source telle quelle dans le champ ; la marque,
               elle, se constate au serveur et tombe au premier caractère
@@ -735,7 +798,7 @@ export function ProtocolMiniBuilder({
         </label>
         <label className="text-sm font-medium text-foreground">
           Critère observable à J21
-          <input aria-label="Critère observable à J21" value={followUpCriterion} onChange={event => { markDirty(); setFollowUpCriterion(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" />
+          <input aria-label="Critère observable à J21" value={followUpCriterion} onChange={event => { markDirty(); setFollowUpCriterion(event.target.value); }} className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 font-normal ${ANNEAU_FOCUS}`} />
         </label>
 
         {orientation && (
@@ -760,9 +823,26 @@ export function ProtocolMiniBuilder({
 
         <div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</span>
-            <button type="button" onClick={addAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
+            <h4 id="protocol-builder-actions-title" className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</h4>
+            <button type="button" onClick={addAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className={`min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50 ${ANNEAU_FOCUS}`}>Ajouter une action</button>
           </div>
+          {/* LE SOMMAIRE D'ANCRES (PRA-3b Q13 a), sous 1 024 px et dès deux
+              actions : nommé par l'intitulé « Actions » au-dessus, il reprend les
+              légendes déjà au produit — aucun texte neuf. */}
+          {actions.length > 1 && (
+            <nav aria-labelledby="protocol-builder-actions-title" className="mt-2 flex flex-wrap gap-1.5 lg:hidden">
+              {actions.map((action, index) => (
+                <a
+                  key={action.actionId}
+                  href={`#protocole-action-${action.actionId}`}
+                  onClick={event => allerAAction(event, `protocole-action-${action.actionId}`)}
+                  className={`inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm text-foreground ${ANNEAU_FOCUS}`}
+                >
+                  Action {index + 1}
+                </a>
+              ))}
+            </nav>
+          )}
           {assietteSelection && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2 text-sm">
               <span>Assiette indiquée retenue : {assietteSelection.libelle}</span>
@@ -787,7 +867,12 @@ export function ProtocolMiniBuilder({
           )}
           <div className="mt-3 grid gap-3">
             {actions.map((action, index) => (
-              <fieldset key={action.actionId} className="rounded-lg border border-border p-3">
+              <fieldset
+                key={action.actionId}
+                id={`protocole-action-${action.actionId}`}
+                tabIndex={-1}
+                className={`scroll-mt-20 rounded-lg border border-border px-2.5 pb-3 pt-2 sm:p-3 ${ANNEAU_FOCUS}`}
+              >
                 <legend className="px-1 text-sm font-medium">Action {index + 1}</legend>
                 <div className="grid gap-2">
                   <label className="text-xs">Type
@@ -796,7 +881,7 @@ export function ProtocolMiniBuilder({
                       aria-invalid={erreur !== null && action.type === ''}
                       value={action.type}
                       onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType | '' })}
-                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                      className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
                     >
                       {/* Option d'absence NON désactivée : elle doit se lire,
                           et rester atteignable si le praticien veut revenir en
@@ -874,7 +959,7 @@ export function ProtocolMiniBuilder({
                           aria-label={`Assiette de l’action ${index + 1}`}
                           value={action.recommendedPlateRef?.plateCode ?? ''}
                           onChange={event => choisirAssiette(action.actionId, event.target.value)}
-                          className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm"
+                          className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`}
                         >
                           <option value="">Aucune assiette — action alimentaire libre</option>
                           {(assiettesIndiquees ?? []).map(assiette => (
@@ -946,7 +1031,7 @@ export function ProtocolMiniBuilder({
                             waitFor: { type: 'biologie', cible: event.target.value, analyteCodes: action.waitFor?.analyteCodes ?? [] },
                           })}
                           placeholder="Ex. ferritine, TSH, 25-OH vitamine D"
-                          className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                          className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
                         />
                       </label>
                     )}
@@ -1001,11 +1086,32 @@ export function ProtocolMiniBuilder({
                       </fieldset>
                     )}
                   </div>
-                  {(['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {
-                    const labels = { title: 'Intitulé', idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
-                    return <label key={field} className="text-xs">{labels[field]}<input aria-label={`${labels[field]} de l’action ${index + 1}`} value={action[field]} onChange={event => updateAction(action.actionId, { [field]: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" /></label>;
+                  <label className="text-xs">Intitulé<input aria-label={`Intitulé de l’action ${index + 1}`} value={action.title} onChange={event => updateAction(action.actionId, { title: event.target.value })} className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 text-sm ${ANNEAU_FOCUS}`} /></label>
+                  {/* LES TROIS PLANS GRANDISSENT AVEC LEUR TEXTE (PRA-3b Q13 a) :
+                      un plan de trois cents caractères se lit en entier au lieu
+                      de défiler dans une ligne. Ils restent d'UNE ligne logique,
+                      comme le champ d'une ligne qu'ils remplacent : Entrée
+                      n'insère rien, et un saut de ligne collé devient une
+                      espace — retiré sec, il soudait les mots (revue PR-Agent
+                      de #2087). Le contenu servi ne change pas de forme. */}
+                  {(['idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {
+                    const labels = { idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
+                    return (
+                      <label key={field} className="text-xs">{labels[field]}
+                        <div className={GABARIT_EXTENSIBLE} data-valeur={action[field]}>
+                          <textarea
+                            aria-label={`${labels[field]} de l’action ${index + 1}`}
+                            rows={1}
+                            value={action[field]}
+                            onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault(); }}
+                            onChange={event => updateAction(action.actionId, { [field]: event.target.value.replace(/[ \t]*[\r\n]+[ \t]*/g, ' ') })}
+                            className={CHAMP_EXTENSIBLE}
+                          />
+                        </div>
+                      </label>
+                    );
                   })}
-                  <button type="button" onClick={() => removeAction(action.actionId)} className="min-h-11 justify-self-start text-xs text-muted-foreground underline">Supprimer l’action</button>
+                  <button type="button" onClick={() => removeAction(action.actionId)} className={`min-h-11 justify-self-start text-xs text-muted-foreground underline ${ANNEAU_FOCUS}`}>Supprimer l’action</button>
                 </div>
               </fieldset>
             ))}
@@ -1028,13 +1134,13 @@ export function ProtocolMiniBuilder({
             aria-invalid={erreur !== null && loadLevel === ''}
             value={loadLevel}
             onChange={event => { markDirty(); setLoadLevel(event.target.value as NiveauChargeBrouillon); }}
-            className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger"
+            className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger ${ANNEAU_FOCUS}`}
           >
             <option value="">Choisir la charge…</option>
             {Object.entries(LOAD_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
-        {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" /></label>}
+        {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className={`mt-1 min-h-11 w-full rounded-lg border border-border bg-background p-2 font-normal ${ANNEAU_FOCUS}`} /></label>}
         {/* LE BARÈME PROPOSE, LE PRATICIEN DISPOSE ([[D-196]]).
             `TherapeuticLoad.source` vaut la constante 'practitioner', posée en
             dur : le barème ne peut pas devenir l'auteur de la charge sans
@@ -1111,46 +1217,54 @@ export function ProtocolMiniBuilder({
       {erreur && <p role="alert" className="mt-4 text-base text-status-danger">{erreur}</p>}
       {message && <p role="status" className="mt-4 text-base text-muted-foreground">{message}</p>}
       {onSaveVersion && (
-        <p role="status" className="mt-3 text-base">
-          {editedSinceSave && saveState === 'saved'
-            ? <span className="text-status-warning">Modifications locales non enregistrées.</span>
-            : saveState === 'saving'
-              ? <span className="text-muted-foreground">Enregistrement en cours…</span>
-              : saveState === 'saved'
-                ? <span className="text-foreground font-medium">Version enregistrée sur le serveur — non transmise au patient.</span>
-                : saveState === 'stale'
-                  ? <span className="text-status-warning">La version active a changé ; rechargez l’historique avant d’enregistrer.</span>
-                  : saveState === 'error'
-                    ? <span className="text-status-danger">{saveError ?? 'Échec de l’enregistrement.'}</span>
-                    : <span className="text-muted-foreground">Brouillon local — non enregistré.</span>}
-        </p>
-      )}
-      {onSaveVersion && (
         <label className="mt-4 flex min-h-11 items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={reviewed}
             onChange={event => setReviewed(event.target.checked)}
             disabled={saveState === 'saving'}
-            className="h-4 w-4"
+            className={`h-4 w-4 ${ANNEAU_FOCUS}`}
           />
           J’ai relu ce contenu
         </label>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
-        {onSaveVersion ? (
-          <button
-            type="button"
-            onClick={saveVersion}
-            disabled={saveState === 'saving'}
-            className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            Enregistrer la version
-          </button>
-        ) : (
-          <button type="button" onClick={review} className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Marquer comme relu</button>
+      {/* LA BARRE BASSE COLLANTE (PRA-3b Q13 a), sous 1 024 px : l'état du
+          brouillon et la seule action pleine restent à portée pendant qu'on
+          compose un protocole chargé. Au-dessus de la barre de navigation du
+          téléphone (h-16), au bas de l'écran ensuite ; à plat au bureau. Champs,
+          boutons et ancres gardent une marge de défilement de sa hauteur : ce
+          qui reçoit le focus ne passe pas dessous (WCAG 2.4.11). */}
+      <div className="sticky bottom-16 z-10 -mx-4 mt-3 border-t border-border bg-surface px-4 pb-3 pt-2 md:bottom-0 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
+        {onSaveVersion && (
+          <p role="status" className="text-base">
+            {editedSinceSave && saveState === 'saved'
+              ? <span className="text-status-warning">Modifications locales non enregistrées.</span>
+              : saveState === 'saving'
+                ? <span className="text-muted-foreground">Enregistrement en cours…</span>
+                : saveState === 'saved'
+                  ? <span className="text-foreground font-medium">Version enregistrée sur le serveur — non transmise au patient.</span>
+                  : saveState === 'stale'
+                    ? <span className="text-status-warning">La version active a changé ; rechargez l’historique avant d’enregistrer.</span>
+                    : saveState === 'error'
+                      ? <span className="text-status-danger">{saveError ?? 'Échec de l’enregistrement.'}</span>
+                      : <span className="text-muted-foreground">Brouillon local — non enregistré.</span>}
+          </p>
         )}
-        <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm">Réinitialiser</button>
+        <div className="mt-2 flex flex-wrap gap-2 lg:mt-4">
+          {onSaveVersion ? (
+            <button
+              type="button"
+              onClick={saveVersion}
+              disabled={saveState === 'saving'}
+              className={`min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 ${ANNEAU_FOCUS}`}
+            >
+              Enregistrer la version
+            </button>
+          ) : (
+            <button type="button" onClick={review} className={`min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground ${ANNEAU_FOCUS}`}>Marquer comme relu</button>
+          )}
+          <button type="button" onClick={reset} className={`min-h-11 rounded-lg border border-border px-3 py-2 text-sm ${ANNEAU_FOCUS}`}>Réinitialiser</button>
+        </div>
       </div>
     </section>
   );

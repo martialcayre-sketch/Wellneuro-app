@@ -360,6 +360,28 @@ export function ClinicalRuntimeSection({
   const [sousVueActions, setSousVueActions] = useState<
     'protocole' | 'historique' | 'diffusion' | 'biologie'
   >('protocole');
+  // LE RETOUR SUR UNE SOUS-VUE RETROUVE LA PAGE OÙ ON L'A LAISSÉE (PRA-3b,
+  // Q14 a) : la hauteur de défilement se note au départ, et se rend au retour
+  // par le sélecteur — pas à l'entrée dans la phase, qui part d'ailleurs. Le
+  // focus, lui, reste sur le bouton pressé : rien ne le déplace.
+  type SousVueActions = typeof sousVueActions;
+  const positionsSousVues = useRef<Partial<Record<SousVueActions, number>>>({});
+  const positionARendre = useRef<number | null>(null);
+  const changerSousVue = (cible: SousVueActions) => {
+    if (cible === sousVueActions) return;
+    positionsSousVues.current[sousVueActions] = window.scrollY;
+    positionARendre.current = positionsSousVues.current[cible] ?? null;
+    setSousVueActions(cible);
+  };
+  useEffect(() => {
+    const cible = positionARendre.current;
+    positionARendre.current = null;
+    if (cible !== null && Math.abs(window.scrollY - cible) > 1) window.scrollTo(0, cible);
+  }, [sousVueActions]);
+  // UNE SAISIE LOCALE HORS DU SERVEUR SUSPEND LA VALIDATION (PRA-3b Q14 a) :
+  // « Valider pour diffusion » agit sur la version ENREGISTRÉE, pas sur ce que
+  // le constructeur montre. Signalé par le constructeur, qui reste monté.
+  const [brouillonHorsServeur, setBrouillonHorsServeur] = useState(false);
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
   // LA LECTURE EST CELLE D'UNE CARTE (t15, revue) : un changement de carte
@@ -1723,8 +1745,12 @@ export function ClinicalRuntimeSection({
 
   // Validation explicite « pour diffusion » de la version active relue. Jamais
   // d'envoi patient : l'approbation ne fait qu'attester le contenu.
+  // Le constructeur compte aussi le refus de registre en attente de
+  // confirmation, qu'il reçoit : lui seul sait si le praticien a abandonné sa
+  // saisie depuis (« Réinitialiser »).
+  const modificationsLocalesEnAttente = brouillonHorsServeur;
   const approveForDiffusion = async () => {
-    if (fixture || !readyDecisionCardId) return;
+    if (fixture || !readyDecisionCardId || modificationsLocalesEnAttente) return;
     const activeVersion = versions.find((version) => version.isActive);
     if (!activeVersion || activeVersion.status !== 'practitioner_reviewed') return;
     setDiffusionState('saving');
@@ -2373,7 +2399,7 @@ export function ClinicalRuntimeSection({
               key={id}
               type="button"
               aria-pressed={sousVueActions === id}
-              onClick={() => setSousVueActions(id)}
+              onClick={() => changerSousVue(id)}
               className={`min-h-11 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                 sousVueActions === id
                   ? 'bg-accent/15 font-semibold text-foreground'
@@ -2486,6 +2512,7 @@ export function ClinicalRuntimeSection({
           baremeCharge={fixture ? [] : baremeCharge}
           chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
           complementCibleOuvert={!fixture && complementCibleOuvert}
+          onModificationsLocales={fixture ? undefined : setBrouillonHorsServeur}
           versionActive={fixture || !versionsLues || !contenuActif || !activeVersionId
             ? null
             : { versionId: activeVersionId, contenu: contenuActif }}
@@ -2556,6 +2583,7 @@ export function ClinicalRuntimeSection({
             annonceProtocole={annonceProtocole}
             state={diffusionState}
             error={diffusionError}
+            modificationsLocales={modificationsLocalesEnAttente}
             onApprove={approveForDiffusion}
           />
         ) : versionsLues ? (

@@ -31,6 +31,7 @@ jobs:
   # Playwright 203 s) — en série derrière des contrôles qui n'en dépendent pas.
   controles:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services: &services
       postgres:
         # Image PostgreSQL 15 + extension pgvector précompilée : la migration
@@ -85,6 +86,8 @@ jobs:
           if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "Base '${base}' introuvable → périmètre traité comme code."
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "unitaires=true" >> "$GITHUB_OUTPUT"
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           fichiers="$(git diff --name-only "$base" HEAD)"
@@ -113,6 +116,45 @@ jobs:
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Diff purement documentaire — étapes de build et E2E sautées."
+          fi
+          # Deux sorties de plus, pour `typage-tests` et `e2e` seulement ;
+          # `controles` reste gouverné par `docs_only`, inchangé.
+          # - `e2e` (build et Playwright) : faux quand le diff ne touche que de
+          #   la documentation et, SUR UNE PR SEULEMENT, de l'outillage racine
+          #   (`scripts/`), `.claude/` (bancs des crochets, dans `controles`) ou
+          #   `changelog.d/`. Sur `push` de `main`, l'outillage garde l'E2E :
+          #   ce run déploie la tête, il doit avoir joué l'arbre déployé.
+          #   Exception : `scripts/wn-playwright-apt.mjs`, que `e2e` exécute.
+          # - `unitaires` (type-check, Vitest, lint) : vrai dès que `e2e` l'est,
+          #   quand le diff touche `scripts/` (des gardes Vitest y cherchent
+          #   écrivains et importeurs interdits), ET quand il touche une
+          #   documentation que le code LIT — décisions, propositions de textes,
+          #   corpus, supports et cadrages de campagne, FEATURE_FLAGS,
+          #   DOSSIER_RGPD. Avant, une PR qui ne touchait qu'eux était
+          #   « documentaire » et ne jouait aucun des tests qui les lisent :
+          #   57 PR sur les 300 dernières (mesure du 2026-11-13). Un document
+          #   lu par `web/` et absent de cette liste rougit
+          #   `scripts/ci-invariants.test.mjs`.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            motif_neutre='(^docs/|\.md$|^scripts/|^\.claude/|^changelog\.d/)'
+          else
+            motif_neutre='(^docs/|\.md$)'
+          fi
+          neutres="$(printf '%s\n' "$fichiers" | grep -vE "$motif_neutre" || true)"
+          outillage_e2e="$(printf '%s\n' "$fichiers" | grep -E '^scripts/wn-playwright-apt\.mjs$' || true)"
+          outillage="$(printf '%s\n' "$fichiers" | grep -E '^scripts/' || true)"
+          lus="$(printf '%s\n' "$fichiers" | grep -E '^docs/(decisions/|claude/(propositions|corpus)/|claude/campagnes/([^/]+/supports/|[^/]+\.md$)|FEATURE_FLAGS\.md$|DOSSIER_RGPD\.md$)' || true)"
+          if [ -z "$fichiers" ] || [ -n "$neutres" ] || [ -n "$outillage_e2e" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ] || [ -n "$consignes" ]; then
+            echo "e2e=true" >> "$GITHUB_OUTPUT"
+            echo "unitaires=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$lus" ] || [ -n "$outillage" ]; then
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
+            echo "unitaires=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Outillage racine ou documentation lue par le code — type-check, Vitest et lint joués ; build et E2E sautés."
+          else
+            echo "e2e=false" >> "$GITHUB_OUTPUT"
+            echo "unitaires=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Ni application ni documentation lue par le code — type-check, Vitest, build et E2E sautés."
           fi
 
       - name: Anti-secrets scan
@@ -418,6 +460,13 @@ jobs:
       # intermédiaire et un commit fusionné perd sa seule vérification.
       - name: Invariants de ci.yml (déclencheurs, concurrency)
         run: node --test scripts/ci-invariants.test.mjs
+
+      # Banc du guetteur borné (`scripts/wn-guetteur.mjs`) : motif des
+      # déclarations « prête », sondes de merge et de release-db, codes de la
+      # boucle. Le guetteur vivait hors dépôt sans banc versionné. Ni npm ni
+      # réseau : node suffit.
+      - name: Guetteur borné (banc)
+        run: node --test scripts/wn-guetteur.test.mjs
 
       # Piège converti en contrôle (lot `autonomie-frictions`) : `btrim(texte)`
       # à un argument ne retire que l'espace ASCII, si bien qu'un CHECK « non
@@ -2059,7 +2108,8 @@ jobs:
 
   # Type-check, Vitest et lint, détachés de `controles` le 2026-10-27 (H91) :
   # ils attendaient en série derrière la base et les contrats SQL, dont ils ne
-  # dépendent pas. Même ordre qu'avant, mêmes conditions de périmètre.
+  # dépendent pas. Même ordre qu'avant. Condition : la sortie `unitaires` du
+  # périmètre (2026-11-13), qui joue aussi la documentation lue par le code.
   # Sans service PostgreSQL : aucun spec Vitest n'ouvre de base sans variable
   # explicite. Les quatre bancs `*.pg.test.ts` sont joués dans `controles`,
   # après les contrats, par leur étape propre ; les deux passes Vitest les
@@ -2069,6 +2119,7 @@ jobs:
   # `controles`, que lit le banc de parité avec `npm run check`.
   typage-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env: *env
     steps:
       - uses: actions/checkout@v4
@@ -2078,24 +2129,24 @@ jobs:
       - *perimetre
 
       - uses: actions/setup-node@v4
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         run: npm ci
 
       - name: Generate Prisma client
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         run: npx prisma generate
 
       - name: Type-check
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         shell: bash
         run: |
@@ -2105,7 +2156,7 @@ jobs:
       # Le log complet du type-check est conservé en artefact : le tronquage
       # des annotations GitHub masquait des erreurs TS sur les gros diffs.
       - name: Upload type-check diagnostics
-        if: always() && steps.scope.outputs.docs_only != 'true'
+        if: always() && steps.scope.outputs.unitaires == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: typecheck-log
@@ -2121,7 +2172,7 @@ jobs:
       # suite entière tourne juste en dessous. Liste dans `test:court14`
       # (web/package.json), gardée par `scripts/specs-drapeau-ali01.test.mjs`.
       - name: Unit tests (Vitest, forme courte 14 items)
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         run: npm run test:court14
 
@@ -2136,21 +2187,23 @@ jobs:
       # Restreindre celle-ci plutôt que la précédente aurait réduit la couverture
       # de la configuration RÉELLE à quelques specs — l'inverse de ce qu'on veut.
       - name: Unit tests (Vitest, forme SIIN 57 items)
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         run: npm run test:siin57
 
       - name: Lint
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.unitaires == 'true'
         working-directory: web
         run: npm run lint
 
   # E2E contre le build de production, en PARALLÈLE de `controles` et de
   # `typage-tests`. Sa propre base — même service, mêmes migrations, même
-  # seed : deux jobs ne partagent pas de conteneur. Une PR documentaire y saute
-  # tout, comme dans `controles`.
+  # seed : deux jobs ne partagent pas de conteneur. Condition : la sortie `e2e`
+  # du périmètre — une PR de documentation, d'outillage racine, de `.claude/`
+  # ou de `changelog.d/` y saute tout (2026-11-13).
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     services: *services
     env: *env
     steps:
@@ -2161,29 +2214,29 @@ jobs:
       - *perimetre
 
       - uses: actions/setup-node@v4
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: npm ci
 
       - name: Generate Prisma client
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: npx prisma generate
 
       - name: Setup database schema
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: npx prisma migrate deploy
 
       - name: Seed test data
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: npm run prisma:seed
 
@@ -2196,7 +2249,7 @@ jobs:
       # `WN_GARDER_CACHE_WEBPACK=1` : sans elle, `build.sh` l'efface pour
       # l'image Scalingo (#1001), et ce cache serait presque vide.
       - name: Cache de compilation Next
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         uses: actions/cache@v4
         with:
           path: web/.next/cache
@@ -2205,7 +2258,7 @@ jobs:
             next-${{ runner.os }}-${{ hashFiles('web/package-lock.json', 'web/next.config.mjs') }}-
 
       - name: Build
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         # Les drapeaux du rayon biologie sont exigés ICI, au BUILD, et pas
         # seulement au démarrage du serveur : `dashboard/patients/[idPatient]`
@@ -2249,7 +2302,7 @@ jobs:
       # de job : tout échec statique (type-check, Vitest, lint, build) rendait
       # sinon la main après avoir payé ~1 min de téléchargement inutile.
       - name: Cache navigateurs Playwright
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
@@ -2258,12 +2311,12 @@ jobs:
       # Le cache des navigateurs ne contient pas les bibliothèques système.
       # Azure ne répondait plus le 2026-11-11 : ~20 s d'attente PAR paquet.
       - name: Préparer les miroirs Ubuntu pour Playwright
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         run: sudo env GITHUB_ACTIONS=true "$(command -v node)" ../scripts/wn-playwright-apt.mjs
 
       - name: Install Playwright browsers
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         timeout-minutes: 10
         working-directory: web
         run: npx playwright install --with-deps chromium webkit
@@ -2273,7 +2326,7 @@ jobs:
       # Vercel (bundles React prod, prerender identique).
       - name: E2E tests (Playwright, production build)
         id: playwright
-        if: steps.scope.outputs.docs_only != 'true'
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: web
         env:
           PLAYWRIGHT_WEB_SERVER: start
@@ -2302,6 +2355,7 @@ jobs:
     needs: [controles, typage-tests, e2e]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Contrôles, typage-tests et E2E ont réussi
         run: |
