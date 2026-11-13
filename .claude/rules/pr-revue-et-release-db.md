@@ -298,7 +298,7 @@ coûte une seconde PR (`.claude/rules/docs-changelog.md`).
   lit la revue sur le sha déclaré et vérifie le verdict de chaque remarque.
 - **Le barème ne change pas.** CodeRabbit s'ajoute à `POLITIQUE_REVUE.md` sans
   remplacer aucune ligne : `/code-review medium` en P2, `wn-reviewer` en P1,
-  Codex manuel obligatoire en P0.
+  passe Codex obligatoire en P0, appelée par la session (`D-505`).
 - **PR-Agent, quand il remplace CodeRabbit** (`D-393` §3 et §6). Il ne
   publie pas de remarque en ligne. Ses remarques sont dans le commentaire
   persistant, réécrit à chaque revue ; celles des têtes précédentes restent
