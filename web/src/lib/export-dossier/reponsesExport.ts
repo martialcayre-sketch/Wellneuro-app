@@ -23,7 +23,8 @@ import {
   definitionLectureAgendaSommeil,
   estPseudoItemAgenda,
 } from './libellesAgendas';
-import { SANS_REPONSE, citer, dateFr } from './modele';
+import { DATEUR_CALENDAIRE, type Dateur } from './datesExport';
+import { SANS_REPONSE, citer } from './modele';
 
 export type LigneReponse = {
   section: string | null;
@@ -70,9 +71,9 @@ export const NON_CALCULE = 'Non calculé : données insuffisantes';
  * l'éditeur renumérote ses items : modifié depuis, il ne dit plus quelle
  * question portait chaque code. Les réponses sortent alors en codes bruts.
  */
-export function avertissementInstrumentCabinetModifie(modifieLe: Date): string {
+export function avertissementInstrumentCabinetModifie(modifieLe: Date, dateur: Dateur = DATEUR_CALENDAIRE): string {
   return (
-    `Instrument du cabinet modifié le ${dateFr(modifieLe)} après cette passation : les réponses ne sont ` +
+    `Instrument du cabinet modifié ${dateur.le(modifieLe)} après cette passation : les réponses ne sont ` +
     'pas rapportées à ses questions actuelles : codes bruts ci-dessous.'
   );
 }

@@ -16,9 +16,12 @@ const OPTIONS_VERSION: readonly { valeur: VersionExport; libelle: string; aide: 
     valeur: 'ia-externe',
     libelle: 'Pour une IA externe (pseudonymisée)',
     aide:
-      'Sans nom, prénom, date de naissance, coordonnées ni médecin traitant ; '
-      + 'l’âge et l’identifiant du dossier restent. Leurs occurrences dans les textes libres sont masquées : '
-      + 'relisez le PDF avant de l’envoyer. '
+      'Sans nom, prénom, date de naissance, coordonnées ni médecin traitant ; leurs occurrences dans '
+      + 'les textes libres sont masquées. '
+      // [[D-512]] : pseudonyme d'export, âge en tranche, dates relatives.
+      + 'L’identifiant du dossier est remplacé par un pseudonyme d’export (EXT-…), l’âge est donné en '
+      + 'tranche de cinq ans et les dates en jours relatifs (J+n). La profession et les lieux ne sont pas '
+      + 'masqués : relisez le PDF avant de l’envoyer. '
       // [[D-449]] §3 : la suspension est un geste du responsable ; ce texte la dit, il ne la tient pas.
       + 'L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026.',
   },
@@ -37,15 +40,32 @@ const VERSION_PAR_DEFAUT: VersionExport = 'ia-externe';
 // certains navigateurs : on laisse le temps de lire le blob.
 const DELAI_REVOCATION_MS = 40_000;
 
-function messageEchec(statut: number | null): string {
+function messageEchec(statut: number | null, raison: string | null = null): string {
   if (statut === 401) return 'Votre session a expiré : reconnectez-vous puis recommencez.';
+  // [[D-512]] §1 : sans secret serveur, la version pseudonymisée échoue franchement.
+  if (raison === 'pseudonymisation_indisponible') {
+    return 'L’export pseudonymisé est indisponible : la pseudonymisation n’est pas configurée sur le serveur. '
+      + 'Prévenez le responsable technique.';
+  }
   if (statut === 403 || statut === 404) return 'Ce dossier n’est pas accessible depuis votre compte.';
   return 'Le PDF n’a pas pu être préparé. Réessayez dans un instant.';
 }
 
-function nomDeFichier(disposition: string | null, idPatient: string): string {
+// Repli de la version pseudonymisée sans l'identifiant interne ([[D-512]] §1).
+function nomDeFichier(disposition: string | null, idPatient: string, version: VersionExport): string {
   const nom = disposition ? /filename="([^"]+)"/i.exec(disposition)?.[1] : undefined;
-  return nom ?? `dossier-${idPatient}.pdf`;
+  return nom ?? (version === 'ia-externe' ? 'dossier-ia-externe.pdf' : `dossier-${idPatient}.pdf`);
+}
+
+async function raisonEchec(reponse: Response): Promise<string | null> {
+  try {
+    const corps: unknown = await reponse.json();
+    return corps && typeof corps === 'object' && typeof (corps as { reason?: unknown }).reason === 'string'
+      ? (corps as { reason: string }).reason
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
@@ -54,6 +74,8 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
   const [version, setVersion] = useState<VersionExport>(VERSION_PAR_DEFAUT);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Le pseudonyme du dernier PDF pseudonymisé reçu ([[D-512]] §1).
+  const [pseudonyme, setPseudonyme] = useState<string | null>(null);
 
   // Chaque ouverture repart de la version pseudonymisée : la version complète
   // se choisit à chaque fois, elle ne se retient pas.
@@ -62,6 +84,7 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
     if (!ouverture) {
       setVersion(VERSION_PAR_DEFAUT);
       setErreur(null);
+      setPseudonyme(null);
     }
   }
 
@@ -69,12 +92,13 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
     if (enCours) return;
     setEnCours(true);
     setErreur(null);
+    setPseudonyme(null);
     try {
       const reponse = await fetch(
         `/api/praticien/export-dossier?idPatient=${encodeURIComponent(idPatient)}&version=${version}`,
       );
       if (!reponse.ok) {
-        setErreur(messageEchec(reponse.status));
+        setErreur(messageEchec(reponse.status, await raisonEchec(reponse)));
         return;
       }
       if (!(reponse.headers.get('Content-Type') ?? '').includes('application/pdf')) {
@@ -85,11 +109,12 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
       const url = URL.createObjectURL(blob);
       const lien = document.createElement('a');
       lien.href = url;
-      lien.download = nomDeFichier(reponse.headers.get('Content-Disposition'), idPatient);
+      lien.download = nomDeFichier(reponse.headers.get('Content-Disposition'), idPatient, version);
       document.body.appendChild(lien);
       lien.click();
       lien.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), DELAI_REVOCATION_MS);
+      if (version === 'ia-externe') setPseudonyme(reponse.headers.get('X-Pseudonyme-Export'));
     } catch {
       setErreur(messageEchec(null));
     } finally {
@@ -162,6 +187,13 @@ export function ExportDossierPanel({ idPatient }: { idPatient: string }) {
         <FileDown aria-hidden="true" size={16} strokeWidth={2} />
         {enCours ? 'Préparation du PDF…' : 'Télécharger le PDF'}
       </Button>
+
+      {pseudonyme && (
+        <p role="status" className="mt-3 text-sm text-foreground">
+          Pseudonyme d’export de ce dossier : <span className="font-mono font-medium">{pseudonyme}</span>. Il
+          remplace l’identifiant du dossier dans le PDF ; il sera le même à chaque export.
+        </p>
+      )}
 
       {erreur && (
         <p role="alert" className="mt-3 text-sm text-status-danger">

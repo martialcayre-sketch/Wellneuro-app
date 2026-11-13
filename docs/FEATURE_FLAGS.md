@@ -570,6 +570,17 @@ défaut** : absente ou vide, personne ne décide. À poser sur Scalingo (geste d
 responsable, puis conteneurs web recréés — un `env-set` seul ne change rien),
 jamais au dépôt.
 
+**Secret du pseudonyme d'export** ([[D-512]] §1) : `WN_EXPORT_PSEUDONYME_SECRET`,
+lu par `lib/export-dossier/pseudonyme.ts`. Clé du HMAC qui calcule le
+pseudonyme `EXT-XXXXXX` de la version « IA externe » de l'export PDF, 32
+caractères au moins (`openssl rand -base64 48`). **Fermée par défaut** :
+absente ou trop courte, l'export pseudonymisé répond 503 et ne retombe jamais
+sur `PATnnn` ; la version complète n'en dépend pas. À poser sur Scalingo
+(geste du responsable, puis conteneurs web recréés — un `env-set` seul ne
+change rien) et dans `web/.env.local` en développement, jamais au dépôt. La
+changer change tous les pseudonymes et rompt le suivi par l'outil externe :
+pas sans décision. Le CI et `test:worktree` posent une valeur factice.
+
 **Hors `web/src`** : `WN_MIGRATIONS_PAR_RELEASE_DB` (`web/scripts/db-deploy.sh`)
 sort les migrations du postdeploy pour les confier au workflow `release-db` —
 posée en production seule, décrite dans `docs/DEPLOIEMENT_RELEASE_DB.md`.

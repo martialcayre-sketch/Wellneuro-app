@@ -5,6 +5,7 @@ import { ExportDossierPanel } from './ExportDossierPanel';
 
 // Identifiant de fixture — aucune donnée réelle.
 const ID_PATIENT = 'PAT001';
+const PSEUDONYME = 'EXT-7F3K9Q';
 
 const fetchMock = vi.fn();
 const createObjectURL = vi.fn((_blob: Blob) => 'blob:export-dossier');
@@ -16,11 +17,13 @@ type ReponseSimulee = {
   status: number;
   headers: Headers;
   blob: () => Promise<Blob>;
+  json?: () => Promise<unknown>;
 };
 
-function reponsePdf(disposition: string | null): ReponseSimulee {
+function reponsePdf(disposition: string | null, pseudonyme: string | null = null): ReponseSimulee {
   const headers = new Headers({ 'Content-Type': 'application/pdf' });
   if (disposition) headers.set('Content-Disposition', disposition);
+  if (pseudonyme) headers.set('X-Pseudonyme-Export', pseudonyme);
   return {
     ok: true,
     status: 200,
@@ -29,12 +32,13 @@ function reponsePdf(disposition: string | null): ReponseSimulee {
   };
 }
 
-function reponseEchec(status: number): ReponseSimulee {
+function reponseEchec(status: number, reason: string | null = null): ReponseSimulee {
   return {
     ok: false,
     status,
     headers: new Headers({ 'Content-Type': 'application/json' }),
     blob: async () => new Blob(['{}'], { type: 'application/json' }),
+    json: async () => (reason ? { ok: false, reason, error: 'x' } : {}),
   };
 }
 
@@ -101,6 +105,11 @@ describe('ExportDossierPanel — ouverture', () => {
     const iaExterne = within(dialogue).getByRole('radio', { name: 'Pour une IA externe (pseudonymisée)' });
     const idAide = iaExterne.getAttribute('aria-describedby') ?? '';
     expect(document.getElementById(idAide)?.textContent).toMatch(/relisez le PDF avant de l’envoyer/);
+    // [[D-512]] : ce qui change dans le PDF est dit au moment du choix.
+    expect(document.getElementById(idAide)?.textContent).toMatch(
+      /pseudonyme d’export \(EXT-…\), l’âge est donné en tranche de cinq ans et les dates en jours relatifs/,
+    );
+    expect(document.getElementById(idAide)?.textContent).toMatch(/La profession et les lieux ne sont pas masqués/);
     // Revue de sécurité du 2026-11-12, P0-1 : la suspension de [[D-449]] §3 est dite au moment du choix.
     expect(document.getElementById(idAide)?.textContent).toMatch(
       /L’envoi à un service d’IA externe est suspendu depuis le 5 novembre 2026\./,
@@ -161,11 +170,43 @@ describe('ExportDossierPanel — téléchargement', () => {
     expect(within(dialogue).queryByRole('alert')).toBeNull();
   });
 
-  it('sans Content-Disposition, le nom de repli porte l’identifiant du dossier', async () => {
+  it('sans Content-Disposition : le repli de la version pseudonymisée tait l’identifiant ([[D-512]] §1), celui de la complète le porte', async () => {
     fetchMock.mockResolvedValue(reponsePdf(null));
     const dialogue = ouvrir();
     fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
-    await waitFor(() => expect(nomsTelecharges).toEqual(['dossier-PAT001.pdf']));
+    await waitFor(() => expect(nomsTelecharges).toEqual(['dossier-ia-externe.pdf']));
+    await waitFor(() =>
+      expect(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }).hasAttribute('disabled')).toBe(false),
+    );
+    fireEvent.click(within(dialogue).getByRole('radio', { name: 'Complète' }));
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
+    await waitFor(() => expect(nomsTelecharges).toEqual(['dossier-ia-externe.pdf', 'dossier-PAT001.pdf']));
+  });
+
+  it('affiche le pseudonyme d’export reçu, et l’oublie à la fermeture ([[D-512]] §1)', async () => {
+    fetchMock.mockResolvedValue(reponsePdf(`attachment; filename="dossier-${PSEUDONYME}-ia-externe.pdf"`, PSEUDONYME));
+    const { container } = render(<ExportDossierPanel idPatient={ID_PATIENT} />);
+    const declencheur = within(container).getByRole('button', { name: 'Exporter en PDF' });
+    fireEvent.click(declencheur);
+    let dialogue = screen.getByRole('dialog');
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
+    const statut = await within(dialogue).findByRole('status');
+    expect(statut.textContent).toContain(`Pseudonyme d’export de ce dossier : ${PSEUDONYME}.`);
+    expect(nomsTelecharges).toEqual([`dossier-${PSEUDONYME}-ia-externe.pdf`]);
+
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Fermer Exporter le dossier en PDF' }));
+    fireEvent.click(declencheur);
+    dialogue = screen.getByRole('dialog');
+    expect(within(dialogue).queryByText(/Pseudonyme d’export de ce dossier/)).toBeNull();
+  });
+
+  it('version complète : aucun pseudonyme affiché, même si un en-tête en portait un', async () => {
+    fetchMock.mockResolvedValue(reponsePdf('attachment; filename="dossier-PAT001-complet.pdf"', PSEUDONYME));
+    const dialogue = ouvrir();
+    fireEvent.click(within(dialogue).getByRole('radio', { name: 'Complète' }));
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
+    await waitFor(() => expect(nomsTelecharges).toEqual(['dossier-PAT001-complet.pdf']));
+    expect(within(dialogue).queryByText(/Pseudonyme d’export de ce dossier/)).toBeNull();
   });
 
   it('le bouton est désactivé et annonce la préparation pendant l’attente', async () => {
@@ -211,6 +252,24 @@ describe('ExportDossierPanel — échecs', () => {
     expect(createObjectURL).not.toHaveBeenCalled();
     expect(nomsTelecharges).toEqual([]);
     expect(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('503 sans secret de pseudonymisation : message dédié ([[D-512]] §1) ; un 503 d’une autre cause reste générique', async () => {
+    fetchMock.mockResolvedValue(reponseEchec(503, 'pseudonymisation_indisponible'));
+    const dialogue = ouvrir();
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
+    const alerte = await within(dialogue).findByRole('alert');
+    expect(alerte.textContent).toBe(
+      'L’export pseudonymisé est indisponible : la pseudonymisation n’est pas configurée sur le serveur. '
+        + 'Prévenez le responsable technique.',
+    );
+    expect(nomsTelecharges).toEqual([]);
+
+    fetchMock.mockResolvedValue(reponseEchec(503));
+    fireEvent.click(within(dialogue).getByRole('button', { name: 'Télécharger le PDF' }));
+    await waitFor(() =>
+      expect(within(dialogue).getByRole('alert').textContent).toBe('Le PDF n’a pas pu être préparé. Réessayez dans un instant.'),
+    );
   });
 
   it('erreur réseau : message générique, rien de journalisé', async () => {

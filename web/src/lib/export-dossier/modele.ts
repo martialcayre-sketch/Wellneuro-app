@@ -37,8 +37,12 @@ export type DocumentExport = {
   sousTitre: string;
   /** Pied de chaque page ; le moteur y ajoute « page n/N ». Jamais le nom du patient. */
   mentionPied: string;
-  /** Métadonnées PDF (Title, Subject) — jamais le nom du patient. */
-  metadonnees: { titre: string; sujet: string };
+  /**
+   * Métadonnées PDF (Title, Subject) — jamais le nom du patient. `date` :
+   * CreationDate et ModificationDate quand elles ne sont pas l'instant de
+   * l'export (version « IA externe » : ramenées au jour, [[D-512]] §3).
+   */
+  metadonnees: { titre: string; sujet: string; date?: Date };
   blocs: BlocExport[];
 };
 

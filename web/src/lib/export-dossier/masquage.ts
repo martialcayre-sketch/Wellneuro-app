@@ -644,7 +644,8 @@ const MOTIFS_GENERIQUES: readonly Motif[] = [
 
 // ── Le masqueur ────────────────────────────────────────────────────────────
 
-export function creerMasqueur(patient: PatientExport): Masqueur {
+/** `pseudonyme` : le pseudonyme d'export de la version « IA externe », protégé ([[D-512]] §1). */
+export function creerMasqueur(patient: PatientExport, pseudonyme: string): Masqueur {
   const motifs = [
     ...motifsEmail(patient.email),
     ...motifsTelephone(patient.telephone),
@@ -701,29 +702,50 @@ export function creerMasqueur(patient: PatientExport): Masqueur {
     return sortie + texte.slice(curseur);
   };
 
-  // L'identifiant PATnnn est la clé que le praticien retrouve : il ne se masque
-  // jamais SEUL. Les motifs se cherchent sur le texte ENTIER — une coordonnée
-  // qui le contient (« PAT030@exemple.fr ») se masque entière —, et sur chaque
-  // morceau entre deux occurrences, où un nom collé (« SophiePAT030 ») garde
-  // sa frontière ; seule une plage tenue DANS une occurrence est rendue.
-  const identifiant = patient.idPatient.trim();
-  if (!identifiant) return texte => remplacer(texte, plagesDe(texte));
-  const occurrencesIdentifiant = new RegExp(echapper(identifiant), 'gi');
+  // [[D-512]] §1 : le PSEUDONYME d'export est la clé que le praticien retrouve :
+  // il ne se masque jamais SEUL. L'identifiant interne, lui, ne sort plus :
+  // celui du dossier (toute casse) et toute forme « PAT » suivie de trois
+  // chiffres ou plus sont masqués. Les trois se repèrent sur le texte
+  // d'origine ; les motifs se cherchent sur le texte ENTIER — une coordonnée
+  // qui contient le pseudonyme (« EXT-7F3K9Q@exemple.fr ») se masque entière —,
+  // et sur chaque morceau entre deux occurrences, où un nom collé
+  // (« SophiePAT030 ») garde sa frontière ; seule une plage tenue DANS une
+  // occurrence du pseudonyme est rendue.
+  const protege = pseudonyme.trim();
+  const occurrences = new RegExp(
+    [
+      ...(protege ? [echapper(protege)] : []),
+      ...(patient.idPatient.trim() ? [echapper(patient.idPatient.trim())] : []),
+      IDENTIFIANT_INTERNE_GENERIQUE,
+    ].join('|'),
+    'giu',
+  );
+  const protegeMinuscule = protege.toLowerCase();
   return texte => {
-    const proteges = Array.from(
-      texte.matchAll(occurrencesIdentifiant),
-      (trouve): [number, number] => [trouve.index, trouve.index + trouve[0].length],
-    );
-    if (!proteges.length) return remplacer(texte, plagesDe(texte));
+    const trouves = Array.from(texte.matchAll(occurrences), trouve => ({
+      plage: [trouve.index, trouve.index + trouve[0].length] as [number, number],
+      protege: protege !== '' && trouve[0].toLowerCase() === protegeMinuscule,
+    }));
+    if (!trouves.length) return remplacer(texte, plagesDe(texte));
     const trouvees = plagesDe(texte);
     let debut = 0;
-    for (const [depart, arrivee] of [...proteges, [texte.length, texte.length]]) {
+    for (const [depart, arrivee] of [...trouves.map(t => t.plage), [texte.length, texte.length]]) {
       if (depart > debut) trouvees.push(...plagesDe(texte.slice(debut, depart), debut));
       debut = arrivee;
     }
-    return remplacer(texte, horsOccurrences(trouvees, proteges));
+    const proteges = trouves.filter(t => t.protege).map(t => t.plage);
+    const internes = trouves.filter(t => !t.protege).map(t => t.plage);
+    return remplacer(texte, [...(proteges.length ? horsOccurrences(trouvees, proteges) : trouvees), ...internes]);
   };
 }
+
+/**
+ * Un identifiant interne cité en texte libre ([[D-512]] §1) : « PAT » suivi de
+ * trois chiffres ou plus, séparés au plus d'un tiret ou d'un tiret bas, hors
+ * d'un mot (« compat123 » reste). Celui du dossier exporté se cherche en plus
+ * tel quel, quelle que soit sa forme (`PAT_SEED_01`).
+ */
+const IDENTIFIANT_INTERNE_GENERIQUE = '(?<![\\p{L}\\p{N}])pat[_\\-]?\\d{3,12}(?!\\p{N})';
 
 /**
  * Les plages qui ne tiennent pas DANS une occurrence de l'identifiant, en un

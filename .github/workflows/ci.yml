@@ -52,6 +52,8 @@ jobs:
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
       NEXTAUTH_SECRET: ci-test-secret-r8-2-playwright-automation
       NEXTAUTH_URL: http://localhost:3000
+      # Valeur factice : le pseudonyme d'export de la version « IA externe » (D-512 §1).
+      WN_EXPORT_PSEUDONYME_SECRET: ci-test-secret-export-pseudonyme-non-production
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
     steps:

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { validateSyntheseSchema } from '@/lib/anthropic';
 import { MODELE_REDACTION_PRATICIEN } from '@/lib/synthese-praticien';
 import { dateFr, dateHeureFr, NON_RENSEIGNE, type BlocExport, type SyntheseExport } from './modele';
+import { dateurRelatif } from './datesExport';
 import { sectionSynthese } from './sectionSynthese';
 
 const GENEREE = new Date('2026-09-12T08:30:00Z');
@@ -388,5 +389,24 @@ describe('sectionSynthese — garde de module', () => {
     const source = readFileSync(join(__dirname, 'sectionSynthese.ts'), 'utf8');
     expect(source).not.toMatch(/from ['"]@\/lib\/anthropic['"]/);
     expect(source).not.toMatch(/validateSyntheseSchema\(/);
+  });
+});
+
+describe('sectionSynthese — version « IA externe » : jours relatifs ([[D-512]] §3)', () => {
+  // J0 = 01/09/2026.
+  const relatif = dateurRelatif({ jour: '2026-09-01', repere: 'consultation' });
+
+  it('génération, validation et brouillon plus récent en J+n, sans heure', () => {
+    const blocs = sectionSynthese(synthese(), { statut: 'Brouillon_IA', dateGeneration: BROUILLON }, relatif);
+    const textes = blocs.map(texte);
+    expect(textes).toContain('Générée à : J+11');
+    expect(textes).toContain('Validée à : J+13');
+    expect(textes.join('\n')).toContain('générée à J+19');
+    expect(textes.join('\n')).not.toMatch(/\d{2}\/\d{2}\/\d{4}|\d{2}:\d{2}/);
+  });
+
+  it('sans synthèse validée, le brouillon en J+n', () => {
+    const textes = sectionSynthese(null, { statut: 'Brouillon_IA', dateGeneration: BROUILLON }, relatif).map(texte);
+    expect(textes.join('\n')).toContain('généré à J+19 existe');
   });
 });

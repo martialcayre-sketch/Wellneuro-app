@@ -5,10 +5,9 @@
 // validé. Ici, une absence se dit absente — jamais vide, jamais normale (DC-24).
 
 import { estRedactionPraticien } from '@/lib/synthese-praticien';
+import { DATEUR_CALENDAIRE, type Dateur } from './datesExport';
 import {
   citer,
-  dateFr,
-  dateHeureFr,
   NON_RENSEIGNE,
   type BlocExport,
   type BrouillonPlusRecentExport,
@@ -110,15 +109,17 @@ function libelleBrouillon(statut: string): string {
 export function sectionSynthese(
   synthese: SyntheseExport | null,
   brouillonPlusRecent: BrouillonPlusRecentExport,
+  dateur: Dateur = DATEUR_CALENDAIRE,
 ): BlocExport[] {
+  const le = dateur.relatif ? 'à' : 'le';
   const blocs: BlocExport[] = [{ type: 'titre', niveau: 1, texte: '4. Dernière synthèse validée' }];
 
   if (!synthese) {
     blocs.push({ type: 'paragraphe', texte: "Aucune synthèse n'a encore été validée par le praticien." });
     if (brouillonPlusRecent) {
       blocs.push(discret(
-        `Un brouillon (${libelleBrouillon(brouillonPlusRecent.statut)}) généré le `
-        + `${dateFr(brouillonPlusRecent.dateGeneration)} existe ; il n'est pas inclus car il n'a pas été validé.`,
+        `Un brouillon (${libelleBrouillon(brouillonPlusRecent.statut)}) généré `
+        + `${dateur.le(brouillonPlusRecent.dateGeneration)} existe ; il n'est pas inclus car il n'a pas été validé.`,
       ));
     }
     return blocs;
@@ -126,11 +127,11 @@ export function sectionSynthese(
 
   blocs.push(
     { type: 'champ', libelle: 'Statut', valeur: STATUT_VALIDE.get(synthese.statut) ?? synthese.statut },
-    { type: 'champ', libelle: 'Générée le', valeur: dateHeureFr(synthese.dateGeneration) },
+    { type: 'champ', libelle: `Générée ${le}`, valeur: dateur.jourHeure(synthese.dateGeneration) },
     {
       type: 'champ',
-      libelle: 'Validée le',
-      valeur: synthese.dateValidation ? dateHeureFr(synthese.dateValidation) : NON_RENSEIGNE,
+      libelle: `Validée ${le}`,
+      valeur: synthese.dateValidation ? dateur.jourHeure(synthese.dateValidation) : NON_RENSEIGNE,
     },
     {
       type: 'champ',
@@ -145,7 +146,7 @@ export function sectionSynthese(
   }
   if (brouillonPlusRecent) {
     blocs.push(discret(
-      `Une synthèse plus récente existe en brouillon (générée le ${dateFr(brouillonPlusRecent.dateGeneration)}) ; `
+      `Une synthèse plus récente existe en brouillon (générée ${dateur.le(brouillonPlusRecent.dateGeneration)}) ; `
       + "elle n'est pas incluse car elle n'a pas été validée.",
     ));
   }
