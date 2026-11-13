@@ -853,6 +853,21 @@ describe('extinction — fenêtre d’extinction de l’instrument (D-500)', () 
     }]);
   });
 
+  it('D-508 §2 — sans tolérance : une milliseconde après l’horloge suffit à ne pas éteindre', () => {
+    // Verrouille l'absence de tout chiffre technique (contre-audit Codex, P2-1).
+    const resultat = evaluerOrientationDetaillee(entree({}, '2026-07-26T12:00:00.001Z'));
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arretsNonEvalues).toEqual([{
+      stopRuleId: 'STOP-TEST',
+      passations: [{
+        idQuestionnaire: 'Q_STR_01',
+        dateReponse: '2026-07-26T12:00:00.001Z',
+        fenetreJours: 30,
+        dateeApresMaintenant: true,
+      }],
+    }]);
+  });
+
   it('D-508 §2 — une passation datée exactement de l’horloge éteint encore (âge nul)', () => {
     const resultat = evaluerOrientationDetaillee(entree({}, '2026-07-26T12:00:00.000Z'));
     expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
