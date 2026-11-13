@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProtocolDiffusionPanel, TEXTE_ANNONCE_LETTRE, TEXTE_PORTAIL_COMPLEMENT } from './ProtocolDiffusionPanel';
 import type { ApercuCourrierComplement } from '@/lib/correspondance/courrierComplementRemise';
 import {
@@ -518,5 +518,70 @@ describe('ProtocolDiffusionPanel — l’annonce du courrier complément (D-345,
     const bloc = screen.getByTestId('apercu-courrier-complement');
     expect(bloc.textContent).not.toContain(TEXTE_PORTAIL_COMPLEMENT);
     expect(bloc.textContent).not.toContain(TEXTE_ANNONCE_LETTRE);
+  });
+});
+
+// PRA-3b PR 4, Q14 a : le clic valide la version ENREGISTRÉE. Tant que le
+// constructeur porte une saisie que le serveur n'a pas, il est suspendu, et la
+// raison se lit juste au-dessus, au texte existant.
+describe('ProtocolDiffusionPanel — une saisie locale suspend la validation (PRA-3b Q14 a)', () => {
+  it('bouton désactivé, raison au-dessus et décrite, aucun clic transmis', () => {
+    const onApprove = vi.fn();
+    render(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} onApprove={onApprove} modificationsLocales />,
+    );
+    const bouton = screen.getByRole('button', { name: 'Valider pour diffusion' }) as HTMLButtonElement;
+    const raison = screen.getByText('Modifications locales non enregistrées.');
+    expect(bouton.disabled).toBe(true);
+    expect(bouton.getAttribute('aria-describedby')).toBe(raison.id);
+    expect(raison.compareDocumentPosition(bouton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(bouton);
+    expect(onApprove).not.toHaveBeenCalled();
+  });
+
+  it('sans saisie locale : le geste est disponible, et rien n’est dit', () => {
+    const onApprove = vi.fn();
+    render(
+      <ProtocolDiffusionPanel canApprove approved={false} stale={false} approvedAt={null} onApprove={onApprove} />,
+    );
+    const bouton = screen.getByRole('button', { name: 'Valider pour diffusion' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(false);
+    expect(bouton.hasAttribute('aria-describedby')).toBe(false);
+    expect(screen.queryByText('Modifications locales non enregistrées.')).toBeNull();
+    fireEvent.click(bouton);
+    expect(onApprove).toHaveBeenCalledTimes(1);
+  });
+});
+
+// PRA-3b PR 4 (matrice) : L'APERÇU NE DIFFUSE RIEN. Le monter, aperçu patient,
+// fiches et lettre compris, n'émet aucune requête — ni écriture, ni envoi. Seul
+// le clic de l'appelant écrit.
+describe('ProtocolDiffusionPanel — l’aperçu n’écrit ni n’envoie rien', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('monter le panneau et ses aperçus n’appelle jamais le réseau', () => {
+    const fetchEspion = vi.fn();
+    vi.stubGlobal('fetch', fetchEspion);
+    render(
+      <ProtocolDiffusionPanel
+        canApprove
+        approved={false}
+        stale={false}
+        approvedAt={null}
+        onApprove={vi.fn()}
+        apercu={{
+          ok: true,
+          contenu: {
+            priorityLabel: 'Axe signé', purpose: 'Raison patient.', followUpCriterion: 'Critère patient.',
+            adviceSheetRef: null, limitations: [],
+            actions: [{ actionId: 'a1', type: 'food' as const, title: 'Action ferme', minimalPlan: 'Plan minimal.' }],
+          },
+        }}
+        troisPlansApercu={[{ actionId: 'a1', idealPlan: 'Plan idéal.', rescuePlan: 'Plan de secours.' }]}
+        lettre={{ idCorrespondance: 'lettre_1', consigneLe: '2026-10-03T08:00:00.000Z', dejaRemise: false }}
+      />,
+    );
+    expect(screen.getByText('Plan minimal.')).toBeTruthy();
+    expect(fetchEspion).not.toHaveBeenCalled();
   });
 });

@@ -19,4 +19,15 @@ Tu partages la copie de travail de la session qui t'a lancé : lis par `git diff
 
 Lis le diff avant le reste. Priorise les défauts qui changent le comportement, exposent des données, contournent l’auth, touchent aux migrations ou à la logique clinique. Cite fichier et ligne. Ignore les préférences de style non bloquantes.
 
-Rends : constats classés par sévérité, questions, tests manquants et verdict go/no-go.
+Grille des défauts que les revues externes trouvaient après la PR : passés les bancs locaux, ils étaient relevés par PR-Agent, CodeRabbit, Copilot ou Codex (audit du cadrage « autonomie des sessions », 2026-11-12). Passe chaque classe sur le diff, même si personne ne la demande, et rends pour chacune « vu », « sans objet » ou le constat :
+
+1. **Concurrence et verrous** : deux requêtes simultanées (double clic, deux onglets, deux sessions) ; une lecture suivie d'une écriture sans transaction ni verrou ; une contrainte d'unicité attendue mais absente ; un `upsert` qui écrase.
+2. **Ordre des gardes** : autorisation, validation et existence sont vérifiées avant toute écriture et tout effet de bord (e-mail, journal, appel externe). Cherche un `return` précoce qui saute une garde, ou une branche d'erreur qui écrit quand même.
+3. **Horloge et fuseau** : date calendaire de Paris ou instant UTC ; « hier » calculé en retirant 24 h, faux au changement d'heure ; `now()` d'un trigger face à une date écrite par le client ; bornes incluses ou exclues ; minuit UTC.
+4. **Statuts énumérés** : chaque valeur est traitée (clos, annulé, transféré, expiré…). Cherche un `switch` ou un filtre qui oublie une valeur neuve, ou une valeur inconnue qui passe en silence au lieu d'échouer.
+5. **Patron d'authentification** : une route touchée reprend à l'identique le patron de ses voisines (statut sans session, statut hors périmètre). Elle vérifie l'appartenance au patient ou au praticien, pas seulement la session.
+6. **Messages bruts persistés ou journalisés** : un objet d'erreur Prisma ou d'API, un corps de requête ou une `stack` écrits en base, dans un journal ou dans une réponse. Ils peuvent porter une donnée patient ou un secret.
+
+La session te lance de préférence sur le diff local, avant le premier push (`git diff --merge-base origin/main` : commité ou non, sans ce que `main` a reçu depuis ; plus les fichiers non suivis, `??` de `git status --short`, lus par Read, car ce diff ne les montre pas) : tes constats se corrigent avant que les bots ne relisent.
+
+Rends : constats classés par sévérité, la grille, questions, tests manquants et verdict go/no-go.

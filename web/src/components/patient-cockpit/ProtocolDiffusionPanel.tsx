@@ -250,7 +250,7 @@ function ApercuCourrierComplementBloc({
             <button
               type="submit"
               disabled={preparation === 'saving' || destinataire.trim() === ''}
-              className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground disabled:opacity-50"
+              className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
             >
               Préparer le courrier au médecin
             </button>
@@ -288,6 +288,7 @@ export function ProtocolDiffusionPanel({
   annonceProtocole = null,
   state = 'idle',
   error = null,
+  modificationsLocales = false,
   onApprove,
 }: {
   // Une version relue existe et peut être validée pour diffusion.
@@ -357,6 +358,12 @@ export function ProtocolDiffusionPanel({
   annonceProtocole?: AnnonceFiches | null;
   state?: DiffusionState;
   error?: string | null;
+  /**
+   * Le constructeur porte une saisie que le serveur n'a pas (PRA-3b Q14 a) :
+   * le clic validerait la version ENREGISTRÉE, autre que celle à l'écran. Il
+   * est suspendu, et la raison se lit juste au-dessus, au texte existant.
+   */
+  modificationsLocales?: boolean;
   onApprove?: () => void;
 }) {
   return (
@@ -507,11 +514,17 @@ export function ProtocolDiffusionPanel({
 
       {onApprove && canApprove && (
         <div className="mt-3">
+          {modificationsLocales && (
+            <p id="protocol-diffusion-modifications-locales" role="status" className="mb-2 text-base text-status-warning">
+              Modifications locales non enregistrées.
+            </p>
+          )}
           <button
             type="button"
             onClick={onApprove}
-            disabled={state === 'saving'}
-            className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            disabled={state === 'saving' || modificationsLocales}
+            aria-describedby={modificationsLocales ? 'protocol-diffusion-modifications-locales' : undefined}
+            className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
           >
             {approved && stale ? 'Re-valider pour diffusion' : 'Valider pour diffusion'}
           </button>

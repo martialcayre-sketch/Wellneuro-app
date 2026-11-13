@@ -803,6 +803,60 @@ describe('ClinicalRuntimeSection', () => {
     expect(urls(fetchMock, '/api/praticien/trajectoire')).toBe(trajectoireAvant + 1);
   });
 
+  // PRA-3b PR 4, Q14 a : une saisie locale non enregistrée suspend « Valider
+  // pour diffusion » — le clic validerait la version ENREGISTRÉE, autre que
+  // celle à l'écran. La saisie survit à l'aller-retour de sous-vue.
+  it('une saisie locale non enregistrée suspend la validation pour diffusion, et survit à l’aller-retour', async () => {
+    const urls = (mock: { mock: { calls: unknown[][] } }, route: string, methode = 'GET') =>
+      mock.mock.calls.filter(
+        (appel) =>
+          String(appel[0]).includes(route)
+          && ((appel[1] as { method?: string } | undefined)?.method ?? 'GET') === methode,
+      ).length;
+    const fetchMock = fetchParRoute({
+      cockpitGet: Array.from({ length: 4 }, () => rep(readyAvecCandidats())),
+      protocolesVersions: rep({
+        ok: true,
+        active: { versionId: 'v1' },
+        history: [{
+          versionId: 'v1', status: 'practitioner_reviewed', createdAt: '2026-10-14T10:00:00.000Z',
+          reviewedAt: '2026-10-14T10:05:00.000Z', inputHash: 'h1', isActive: true,
+        }],
+      }),
+      protocolesDiffusionGet: rep({ ok: true, approval: null, stale: false }),
+      protocolesDiffusionPost: rep({ ok: true }),
+      protocolesCheckins: rep({ ok: true, checkins: [], resume: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        phase="actions"
+      />,
+    );
+    await screen.findByText('Actions (0/7)');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(screen.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Saisie locale' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Diffusion' }));
+    const valider = await screen.findByRole('button', { name: 'Valider pour diffusion' }) as HTMLButtonElement;
+    expect(valider.disabled).toBe(true);
+    expect(screen.getByText('Modifications locales non enregistrées.')).toBeTruthy();
+    fireEvent.click(valider);
+    expect(urls(fetchMock, '/api/praticien/protocoles/diffusion', 'POST')).toBe(0);
+
+    // Retour au protocole : la saisie est intacte, le bouton pressé garde le focus.
+    const protocole = screen.getByRole('button', { name: 'Protocole' });
+    protocole.focus();
+    fireEvent.click(protocole);
+    expect(protocole.getAttribute('aria-pressed')).toBe('true');
+    expect(document.activeElement).toBe(protocole);
+    expect((screen.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Saisie locale');
+  });
+
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;
