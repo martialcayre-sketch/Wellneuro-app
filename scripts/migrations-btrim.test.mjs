@@ -43,12 +43,15 @@ const GEL = {
 /**
  * Remplace commentaires et littéraux de chaîne par des blancs de même
  * longueur : ce qui reste est la structure SQL. Gère `--`, `/* *\/`, `'…'`
- * (apostrophe doublée), `E'…'` (antislash d'échappement) et `$tag$…$tag$`,
- * lu comme du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, masqué sinon.
- * Limite : `EXECUTE format($q$…$q$, …)` n'est pas lu (le littéral suit
- * `format(`) ; aucune migration n'a cette forme.
+ * (apostrophe doublée), `E'…'` (antislash d'échappement) et `$tag$…$tag$`.
+ *
+ * Deux lectures d'une chaîne `$tag$`, que `compterBtrimUnArgument` combine :
+ * - `"contexte"` : du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, un
+ *   littéral ailleurs ;
+ * - `"sql"` : la lecture d'avant, qui lit tout contenu dollar comme du SQL,
+ *   sauf après `IS` (`COMMENT … IS $$…$$` n'admet qu'une constante).
  */
-export function masquerSql(sql) {
+export function masquerSql(sql, lecture = "contexte") {
   let sortie = "";
   let i = 0;
   const n = sql.length;
@@ -67,12 +70,20 @@ export function masquerSql(sql) {
       sortie += blanc(sql.slice(i, j));
       i = j;
     } else if (c === "$") {
-      // Collé à un identifiant (`a$b$c`), un `$` en fait partie : pas de
-      // délimiteur, sinon la suite du fichier serait effacée jusqu'au prochain.
-      const m = /[A-Za-z0-9_$]/.test(sql[i - 1] ?? "") ? null : /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      // Collé à un identifiant (`a$b$c`, `é$q$`), un `$` en fait partie : pas
+      // de délimiteur, sinon la suite du fichier serait effacée jusqu'au
+      // prochain. Postgres admet les lettres non ASCII dans un identifiant.
+      const m = /[\p{L}\p{N}_$]/u.test(sql[i - 1] ?? "") ? null : /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
       if (!m) {
         sortie += c;
         i += 1;
+        continue;
+      }
+      if (lecture === "sql" && !/\bIS\s*$/i.test(sortie)) {
+        // Lecture d'avant : seules les balises sont masquées, le contenu est
+        // lu par la boucle comme du SQL.
+        sortie += blanc(m[0]);
+        i += m[0].length;
         continue;
       }
       // Une chaîne `$tag$ … $tag$` est du SQL quand elle suit `AS` (corps de
@@ -80,15 +91,15 @@ export function masquerSql(sql) {
       // exécuté) : elle est lue, masquée à son tour (ses propres chaînes,
       // commentaires et `$q$` imbriqués). Ailleurs (`COMMENT … IS $$…$$`,
       // argument `btrim($$a,b$$)`), c'est un littéral, rendu comme `'…'` : sa
-      // virgule n'est pas un second argument, un `btrim(x)` qu'il cite n'est pas
-      // un appel, et il reste visible comme argument (`trim($$ $$ from t)`).
+      // virgule n'est pas un second argument, et il reste visible comme
+      // argument. (Lecture « contexte » seulement.)
       const ouverture = i + m[0].length;
       const fermeture = sql.indexOf(m[0], ouverture);
       const fin = fermeture === -1 ? n : fermeture + m[0].length;
-      const corps = /(?:\bAS|\bDO(?:\s+LANGUAGE\s+\w+)?|\bEXECUTE)\s*$/i.test(sortie);
+      const corps = lecture !== "sql" && /(?:\bAS|\bDO(?:\s+LANGUAGE\s+(?:\w+|"[^"]*"))?|\bEXECUTE)\s*$/i.test(sortie);
       if (corps) {
         const finContenu = fermeture === -1 ? n : fermeture;
-        sortie += blanc(m[0]) + masquerSql(sql.slice(ouverture, finContenu));
+        sortie += blanc(m[0]) + masquerSql(sql.slice(ouverture, finContenu), lecture);
         if (fermeture !== -1) sortie += blanc(m[0]);
       } else {
         const brut = sql.slice(i, fin);
@@ -129,9 +140,19 @@ export function masquerSql(sql) {
  * retirent que l'espace ASCII : `btrim(x)`, `ltrim(x)`, `rtrim(x)`, et
  * `trim(x)`, `trim(both from x)`. `trim(both E' \t' from x)` et
  * `trim(x, ' \t')` nomment leurs caractères et ne comptent pas.
+ *
+ * Le compte retenu est le plus haut des deux lectures de `masquerSql`. Ce banc
+ * ne peut donc jamais voir moins que la lecture d'avant : une forme que
+ * l'heuristique « contexte » ne reconnaît pas (`EXECUTE format($q$…$q$)`,
+ * `DO LANGUAGE "plpgsql"`) reste comptée. Prix accepté, un refus prudent :
+ * `trim($$ $$ from t)` compte, alors qu'il nomme ses caractères. Aucune
+ * migration n'a cette forme.
  */
 export function compterBtrimUnArgument(sql) {
-  const s = masquerSql(sql);
+  return Math.max(compterDans(masquerSql(sql, "sql")), compterDans(masquerSql(sql, "contexte")));
+}
+
+function compterDans(s) {
   const re = /\b(btrim|ltrim|rtrim|trim)\s*\(/gi;
   let compte = 0;
   let m;
@@ -221,17 +242,22 @@ test("parseur : corps après AS, DO [LANGUAGE x] et EXECUTE lus ; littéraux imb
   assert.equal(compterBtrimUnArgument("DO LANGUAGE plpgsql $$ BEGIN PERFORM btrim(x); END $$;"), 1);
   // Le SQL dynamique est exécuté : il est lu.
   assert.equal(compterBtrimUnArgument("DO $$ BEGIN EXECUTE $q$ALTER TABLE t ADD CHECK (btrim(c) <> '')$q$; END $$;"), 1);
-  assert.equal(compterBtrimUnArgument("DO $$ BEGIN RAISE NOTICE $m$btrim(x)$m$; END $$;"), 0);
+  // Refus prudent, accepté : la lecture d'avant lit ce message comme du SQL.
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN RAISE NOTICE $m$btrim(x)$m$; END $$;"), 1);
   assert.equal(compterBtrimUnArgument("CREATE FUNCTION f() RETURNS text AS $f$ SELECT 'it''s' || btrim(x) $f$ LANGUAGE sql;"), 1);
-});
-
-test("parseur : un littéral dollar reste un argument visible", () => {
-  assert.equal(compterBtrimUnArgument("CHECK (trim(both $$ \t$$ from t) <> '')"), 0);
-  assert.equal(compterBtrimUnArgument("CHECK (trim($$ $$ from t) <> '')"), 0);
 });
 
 test("parseur : un $ collé à un identifiant n'ouvre pas de littéral", () => {
   assert.equal(compterBtrimUnArgument("SELECT a$b$c FROM t; ALTER TABLE t ADD CHECK (btrim(c) <> '');"), 1);
+  assert.equal(compterBtrimUnArgument("CREATE TABLE t (é$q$ text, c text CHECK (btrim(c) <> ''));"), 1);
+});
+
+// Contre-revue Codex sur #2094 : jamais moins que la lecture d'avant.
+test("parseur : les formes que le contexte ne reconnaît pas restent comptées", () => {
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN EXECUTE format($q$ALTER TABLE t ADD CHECK (btrim(c) <> '')$q$); END $$;"), 1);
+  assert.equal(compterBtrimUnArgument('DO LANGUAGE "plpgsql" $$ BEGIN PERFORM btrim(chr(9)); END $$;'), 1);
+  // Refus prudent, accepté : un jeu de caractères en littéral dollar compte.
+  assert.equal(compterBtrimUnArgument("CHECK (trim($$ $$ from t) <> '')"), 1);
 });
 
 test("migrations : aucun btrim à un argument hors du gel, aucun compte gelé en hausse", () => {

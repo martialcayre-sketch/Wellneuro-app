@@ -18,9 +18,12 @@ lot. Les quatre contrôles tenaient sur toutes les formes présentes dans le dé
 - Le contrôle des doublons Prisma sort dans un script, `wn-doublons-prisma.sh`, pour qu'un banc le couvre. Le remède
   donné supprime désormais tout le répertoire régénérable, puisqu'un répertoire « * 2 » ne se supprime pas avec
   `-delete`.
-- Une chaîne `$tag$` est lue comme du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`. Toute autre chaîne dollar est un
-  littéral. Limite écrite dans le parseur : `EXECUTE format($q$…$q$)` n'est pas lu, et aucune migration n'a cette
-  forme.
+- Chaînes `$tag$` : le banc les lit de deux façons et retient le compte le plus haut, pour ne jamais voir moins que
+  la lecture d'avant. La première est la lecture par contexte (du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, un
+  littéral ailleurs). La seconde est la lecture d'avant, qui lit tout comme du SQL sauf après `IS`.
+  - C'est la réponse aux trois P2 de la contre-revue Codex sur 4aa1aeb8, trois affaiblissements réels :
+    `EXECUTE format($q$…)`, `DO LANGUAGE "plpgsql"` et l'identifiant `é$q$`.
+  - Le prix est un refus prudent sur deux formes absentes des migrations.
 
 ## Fichiers modifiés
 
@@ -50,6 +53,8 @@ lot. Les quatre contrôles tenaient sur toutes les formes présentes dans le dé
     l'option.
 - `wn-reviewer` sur l'écart : GO, bancs rejoués à 146/146. Ses trois P2 de texte sont corrigés : ce handoff, la
   docstring, la limite `EXECUTE format(…)`.
+- Contre-revue Codex (P0, diff poussé 4aa1aeb8) : avis conforme. Trois P2 corrigés par la double lecture, avec des
+  tests pour chacun (9/9). Les autres contrôles (crochet, doublons, anti-secrets) n'ont reçu aucun constat.
 
 ## Problèmes ouverts
 

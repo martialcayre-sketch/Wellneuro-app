@@ -7,12 +7,17 @@ Codex, qui avaient été routés au lot `autonomie-pieges-restes` :
   - toute la famille est vue : `ltrim(x)`, `rtrim(x)`, `trim(x)` et
     `trim(both from x)`, sans caractères, retirent seulement l'espace ASCII,
     comme `btrim(x)`. Leur gel est à zéro ;
-  - une chaîne `$tag$…$tag$` n'est lue comme du SQL que si elle en est (après
-    `AS`, `DO [LANGUAGE x]` ou `EXECUTE`), masquée à son tour. Ailleurs, c'est
-    un littéral, rendu comme `'…'` : `btrim($$a,b$$)` compte bien,
-    `COMMENT … IS $$btrim(x)$$` ne compte plus, et une apostrophe dans un
-    littéral dollar ne masque plus la suite du fichier. Un `$` collé à un
-    identifiant (`a$b$c`) n'ouvre pas de littéral.
+  - les chaînes `$tag$…$tag$` sont lues de deux façons, et le banc retient
+    le compte le plus haut, si bien qu'il ne voit jamais moins qu'avant.
+    - La lecture par contexte lit du SQL après `AS`, `DO [LANGUAGE x]` ou
+      `EXECUTE`, et un littéral ailleurs. `btrim($$a,b$$)` compte donc bien,
+      et une apostrophe dans un littéral dollar ne masque plus la suite.
+    - La lecture d'avant lit tout le contenu comme du SQL, sauf après `IS` :
+      `COMMENT … IS $$btrim(x)$$` ne compte plus.
+    - Un `$` collé à un identifiant (`a$b$c`, `é$q$`) n'ouvre pas de
+      littéral.
+    - Le prix est un refus prudent sur `trim($$ $$ from t)` et sur un
+      message dollar qui cite un appel, deux formes absentes des migrations.
 - `.claude/hooks/block-risky-commands.mjs` : `npx prisma@7 format` est
   refusé comme `prisma format`, et un `--check` placé après un `#` (un
   commentaire du shell) ne l'excuse plus.
