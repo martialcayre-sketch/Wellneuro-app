@@ -310,7 +310,7 @@ if (event === "SessionStart") {
   }
   if (!constat.contient) {
     const source = fetchOk ? "le nouvel `origin/main`" : "l'`origin/main` connu (fetch impossible)";
-    process.stdout.write(`Freshness Git : la branche ne contient pas ${source} (HEAD ${constat.head.slice(0, 12)} · origin/main ${constat.originMain.slice(0, 12)}). Aucune édition avant remise à niveau : \`--ff-only\` si la branche de session n'a aucun commit propre, sinon ou en cas d'échec arbitrage (D-518) ; le garde réévalue à chaque tentative d'édition, sans reprise de session.\n`);
+    process.stdout.write(`Freshness Git : la branche ne contient pas ${source} (HEAD ${constat.head.slice(0, 12)} · origin/main ${constat.originMain.slice(0, 12)}). Aucune édition avant remise à niveau : branche de session, dans son propre worktree, sans commit propre (\`git log origin/main..HEAD\` vide) → \`git merge --ff-only origin/main\` ; sinon, ou si l'avance échoue, arbitrage du responsable (D-518) ; le garde réévalue à chaque tentative d'édition, sans reprise de session.\n`);
     journaliser("constat", "retard", constat);
     process.exit(0);
   }

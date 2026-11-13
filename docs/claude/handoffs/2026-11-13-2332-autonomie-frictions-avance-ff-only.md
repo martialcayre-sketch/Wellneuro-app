@@ -57,6 +57,10 @@ session, et la session ne fusionne toujours pas une branche commitée.
 - Contre-revue Codex (P0, `wn-codex-avis.mjs --mode revue`, diff poussé d96b27a6) : avis conforme, aucun P0 ni P1, pas
   d'élargissement de l'option A. Un P2 corrigé : une avance « peut » échouer sur un chemin commun, mais pas toujours,
   par exemple quand la modification locale est identique à la version entrante.
+- PR-Agent sur 16096482 : → 0, deux remarques corrigées.
+  - L'avis de démarrage ne nommait ni la commande complète ni la condition « dans son propre worktree ».
+  - Le banc ne figeait ni le worktree ni le recours.
+  - Le banc vérifie maintenant les deux textes sur la commande, les deux conditions, le recours et D-518 (29/29).
 
 ## Problèmes ouverts
 
