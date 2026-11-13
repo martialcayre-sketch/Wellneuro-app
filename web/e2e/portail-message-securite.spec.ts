@@ -85,6 +85,43 @@ function bienPlace(m: Mesure): boolean {
 }
 
 /**
+ * Journal de diagnostic, joint au message d'échec : chaque défilement, fin de
+ * défilement et redimensionnement du document, avec la position du message.
+ * Il départage un défilement animé interrompu d'un décalage de mise en page
+ * survenu après lui. Ouvert juste avant le geste qui fait paraître le message.
+ */
+async function ouvrirLeJournal(page: Page): Promise<void> {
+  await page.evaluate((debut) => {
+    const fenetre = window as unknown as { __journalD506?: unknown[]; __arretD506?: () => void };
+    fenetre.__arretD506?.();
+    const journal: unknown[] = [];
+    fenetre.__journalD506 = journal;
+    const t0 = performance.now();
+    const noter = (evenement: string) => {
+      const message = [...document.querySelectorAll<HTMLElement>('[role="alert"]')]
+        .find(el => el.textContent?.includes(debut));
+      journal.push([
+        Math.round(performance.now() - t0), evenement, Math.round(window.scrollY),
+        message ? Math.round(message.getBoundingClientRect().top) : null,
+        document.documentElement.scrollHeight,
+      ]);
+    };
+    const surDefilement = () => noter('defilement');
+    const surFin = () => noter('fin');
+    window.addEventListener('scroll', surDefilement, { passive: true });
+    window.addEventListener('scrollend', surFin);
+    const observateur = new ResizeObserver(() => noter('taille'));
+    observateur.observe(document.body);
+    noter('ouverture');
+    fenetre.__arretD506 = () => {
+      window.removeEventListener('scroll', surDefilement);
+      window.removeEventListener('scrollend', surFin);
+      observateur.disconnect();
+    };
+  }, DEBUT_DU_MESSAGE);
+}
+
+/**
  * La mesure n'est jugée qu'une fois le défilement terminé : cinq relevés
  * identiques de suite, à 200 ms d'écart, soit 800 ms sans mouvement. Relevée
  * en cours de course, ou avant son départ (WebKit en CI peut tarder à lancer
@@ -107,7 +144,9 @@ async function attendreLeMessagePlace(page: Page): Promise<Mesure> {
     return stable !== null;
   }, { timeout: 8_000, intervals: [200] }).toBe(true);
   const m = stable as unknown as Mesure;
-  expect(bienPlace(m), `placement du message : ${JSON.stringify(m)}`).toBe(true);
+  const journal = await page.evaluate(() =>
+    (window as unknown as { __journalD506?: unknown[] }).__journalD506?.slice(-80) ?? null);
+  expect(bienPlace(m), `placement du message : ${JSON.stringify(m)} ; journal [ms, événement, scrollY, haut du message, hauteur du document] : ${JSON.stringify(journal)}`).toBe(true);
   return m;
 }
 
@@ -165,6 +204,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
         const dansLeMessage = !!actif?.closest('[role="alert"]')?.textContent?.includes(debut);
         return { balise: actif?.tagName, nom: (actif as HTMLInputElement | null)?.name ?? '', dansLeMessage };
       }, DEBUT_DU_MESSAGE);
+      await ouvrirLeJournal(page);
       await b7(1).check();
       const focusAvant = await focus();
       const sousLaQuestion = await attendreLeMessagePlace(page);
@@ -173,6 +213,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
       expect(focusApres.dansLeMessage).toBe(false);
 
       // Au résumé : une nouvelle apparition.
+      await ouvrirLeJournal(page);
       await page.getByRole('button', { name: 'Voir le résumé' }).click();
       await expect(page.getByRole('heading', { name: 'Vérifiez votre questionnaire' })).toBeFocused();
       const auResume = await attendreLeMessagePlace(page);
@@ -218,6 +259,7 @@ test.describe.serial('Portail — message de sécurité dans la fenêtre ([[D-50
 
     // Section des signaux.
     const caseSignal = page.getByLabel(/Idées noires ou suicidaires/);
+    await ouvrirLeJournal(page);
     await caseSignal.check();
     const auxSignaux = await attendreLeMessagePlace(page);
 
