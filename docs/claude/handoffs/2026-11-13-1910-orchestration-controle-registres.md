@@ -50,6 +50,9 @@ aucune machine ne les relit.
     il est désormais assaini une fois à l'entrée (caractères de contrôle retirés, 80 caractères au plus), si bien
     que constats, détails et boîte le recopient sans risque. Limite dite : un identifiant au bon alphabet reste
     recopié tel quel, borné ; un identifiant altéré reste signalé hors format.
+  - « Texte libre recopié » (levé sur a47f2dce) : corrigé. La boîte rendait `ref` et `de`, deux champs libres ;
+    elle ne rend plus, de `ref`, que les renvois `#N` et les identifiants datés (sinon « hors forme »), et de
+    `de`, le nom ramené à la forme d'une boîte, masqué s'il porte un indice interdit.
   - Le message « skip » de CodeRabbit n'est pas une revue : rien à traiter.
 - Écartés de cette PR, à porter dans des lots à part :
   - l'étape `ci.yml` qui jouerait le banc (revue P1, orchestration CI) ;
@@ -88,6 +91,8 @@ aucune machine ne les relit.
 - Après le correctif d'assainissement et la fusion de `origin/main` : `node --test scripts/lib/registres.test.mjs`
   19/19, code 0 (le cas « aucun texte libre en sortie » porte désormais un identifiant piégé) ; `npm run check`
   rejoué sur l'arbre fusionné : code 0.
+- Après le correctif « texte libre recopié » : banc 19/19, code 0 (le cas de la boîte porte un jeton, une adresse
+  et une référence hors forme) ; `npm run check` : code 0.
 - T2 non joué : le lot ne touche ni UI ni API.
 
 ## Problèmes ouverts

@@ -343,6 +343,20 @@ test('boîte : lignes non traitées de la boîte, casse et accents indifférents
     ['20260110-1302-d', 'emis'],
   ]);
   assert.ok(!('texte' in lignes[0]));
+  // `ref` et `de` sont libres : seules leurs formes reconnues sortent.
+  const jeton = `ghp_${'a'.repeat(36)}`;
+  const [l1, l2, l3] = boite(
+    [
+      message({ id: '20260110-1300-a', ref: `#101 ${jeton}`, de: 'A bis' }),
+      message({ id: '20260110-1301-a', ref: 'voir 20260110-1250-d, merci', de: 'quelqu.un@exemple.fr' }),
+      message({ id: '20260110-1302-a', ref: 'la PR de la file' }),
+    ],
+    'integrateur',
+  );
+  assert.deepEqual([l1.ref, l1.de], ['#101', 'a-bis']);
+  assert.deepEqual([l2.ref, l2.de], ['20260110-1250-d', '(masqué)']);
+  assert.equal(l3.ref, '(hors forme)');
+  assert.ok(![l1, l2, l3].some((l) => JSON.stringify(l).includes(jeton) || JSON.stringify(l).includes('@')));
 });
 
 test('analyse et rendu : comptes, ligne machine, aucun texte libre en sortie', () => {

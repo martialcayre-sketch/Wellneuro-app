@@ -326,13 +326,25 @@ export function lotsSuivants(lots) {
   return suivants;
 }
 
+// `ref` et `de` sont des champs libres : la boîte n'en rend que des formes
+// reconnues. De `ref`, les seuls renvois `#N` et identifiants datés ; de `de`,
+// le nom ramené à la forme d'une boîte, masqué s'il porte un indice interdit.
+const RE_RENVOIS = /#\d+|\b\d{8}-\d{4}-[a-z0-9]+(?:-[a-z0-9]+)*\b/g;
+const porteIndice = (v) => INDICES_INTERDITS.some(([, motif]) => motif.test(texte(v)));
+function refAffichee(ref) {
+  if (vide(ref)) return '';
+  const renvois = texte(ref).match(RE_RENVOIS);
+  return renvois ? court(renvois.join(' ')) : '(hors forme)';
+}
+const deAffiche = (de) => (porteIndice(de) ? '(masqué)' : court(normaliserBoite(de)));
+
 /** La boîte d'une session : ses lignes non `traite`, les plus anciennes d'abord. */
 export function boite(messages, nom) {
   const cle = normaliserBoite(nom);
   return assainirIds(messages)
     .filter((m) => normaliserBoite(m.a) === cle && m.etat !== 'traite')
     .sort((x, y) => (instant(x.emis_le) ?? 0) - (instant(y.emis_le) ?? 0) || x.id.localeCompare(y.id))
-    .map((m) => ({ id: m.id, de: court(m.de), objet: court(m.objet, 20), ref: court(m.ref), etat: court(m.etat, 10) }));
+    .map((m) => ({ id: m.id, de: deAffiche(m.de), objet: court(m.objet, 20), ref: refAffichee(m.ref), etat: court(m.etat, 10) }));
 }
 
 // Le total et la répartition vivent à part : une valeur d'état « total », vide
