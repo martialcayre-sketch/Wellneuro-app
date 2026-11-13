@@ -273,6 +273,10 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
     voit. Mutation réelle jouée puis retirée (alias dans `tsconfig` et
     importeur sous `web/src/app/`) : le banc nomme l'importeur.
+  - Validations : banc de garde à 7 tests verts ; T1 rapide et T1 complet à
+    0 sur l'arbre fusionné avec `bff47e88`. Main a ensuite apporté
+    `c8542cab`, de la documentation seule. T3 local non rejoué : le
+    correctif ne touche qu'un banc, et le CI rejoue la séquence entière.
 
 ## Problèmes ouverts
 
