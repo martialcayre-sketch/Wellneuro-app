@@ -97,12 +97,26 @@ l'édition, jamais par l'absence du marqueur — un marqueur manquant signifie
 - Portée : le dépôt du `cwd` de la session, pas celui du fichier édité. Une
   écriture par chemin absolu vers un **autre** worktree n'est pas gardée — la
   convention « une session = un worktree » est ce qui tient cette limite.
+- **Cible hors de tout dépôt** (bloc-notes de la session, mémoire, depuis le
+  2026-11-13, lot `autonomie-frictions`) : autorisée sans fetch ni marqueur,
+  journalisée `hors-depot`. Seul le « not a git repository » explicite de Git
+  exempte (`LC_ALL=C`, délai de 2 s, aucune variable `GIT_*` héritée) ; un
+  délai dépassé ou une autre erreur laissent le garde juger. Jamais exemptés :
+  - une cible sous la racine du worktree courant ou sous la copie principale
+    (worktrees imbriqués compris), même avec un pointeur `.git` cassé ;
+  - un chemin dont un lien symbolique ne se résout pas (un lien qui se
+    résout est jugé sur sa destination), un chemin qui porte un segment `..`,
+    un fichier à plusieurs noms (lien physique) ;
+  - toute cible quand la racine du `cwd` est illisible.
+  Une cible dans un autre dépôt reste jugée, comme avant, sur la fraîcheur du
+  dépôt du `cwd`. Le journal avait compté 359 refus sur des cibles externes en
+  seize jours.
 - **Journal des verdicts** (`D-375` §1, depuis H86) : une ligne JSON par
   verdict — date, outil, cible `interne`/`externe`/`inconnue` au worktree du
   `cwd` (jamais le chemin ; un worktree imbriqué sous `.claude/worktrees/`
   est externe), `HEAD`, `origin/main`, verdict (`constat` au démarrage,
   `autorise`, `refus`), motif (`a-jour`, `degrade`, `retard`, `illisible`,
-  `fetch-jamais-abouti`) ; jamais de contenu de fichier. Fichier
+  `fetch-jamais-abouti`, `hors-depot`) ; jamais de contenu de fichier. Fichier
   `.claude/logs/git-freshness.log` de la **copie principale** (parent du
   dossier Git commun : tous les worktrees y écrivent), ignoré par Git et
   persistant, distinct du marqueur. Écrit **après** le verdict émis, avec des

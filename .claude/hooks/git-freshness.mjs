@@ -2,7 +2,8 @@
 // Au démarrage/reprise, fetch origin/main sans toucher au worktree et mémorise
 // le constat. Avant Edit/Write, réévalue : l'appartenance de origin/main à HEAD
 // est toujours recalculée à chaud, en local ; seul le fetch réseau est limité à
-// une tentative toutes les 15 minutes. Le verdict est porté par l'état Git réel,
+// une tentative toutes les 15 minutes. Une cible hors de tout dépôt Git
+// (bloc-notes, mémoire) n'est pas jugée. Le verdict est porté par l'état Git réel,
 // jamais par l'absence du marqueur. Aucun pull, merge, rebase ni checkout.
 // Chaque verdict laisse une ligne dans un journal persistant (D-375 §1).
 import crypto from "node:crypto";
@@ -38,13 +39,13 @@ const DELAI_GIT_MS = 10_000;
 // délai de Claude Code : ses appels Git ont un budget court.
 const DELAI_GIT_JOURNAL_MS = 2_000;
 
-function git(args, { dans = cwd, delai = DELAI_GIT_MS } = {}) {
+function git(args, { dans = cwd, delai = DELAI_GIT_MS, env = { ...process.env } } = {}) {
   return spawnSync("git", args, {
     cwd: dans,
     encoding: "utf8",
     timeout: delai,
     killSignal: "SIGKILL",
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    env: { ...env, GIT_TERMINAL_PROMPT: "0" },
   });
 }
 
@@ -135,6 +136,85 @@ function cible() {
   if (!ici) return "inconnue";
   const dossier = dossierExistant(fichier);
   return dossier && racineReelle(dossier) === ici ? "interne" : "externe";
+}
+
+// Cible hors de tout dépôt Git (bloc-notes de la session, mémoire) : la
+// fraîcheur de la branche n'y joue aucun rôle. Seul un « pas un dépôt »
+// explicite de Git exempte — message forcé en anglais (`LC_ALL=C`) ; un délai
+// dépassé, un Git absent ou toute autre erreur laissent le garde juger. Un
+// autre worktree, un autre dépôt restent gardés : ils sont dans un dépôt.
+// Aucune variable `GIT_*` héritée n'entre dans ce constat : `GIT_DIR`,
+// `GIT_CEILING_DIRECTORIES` ou une borne de système de fichiers feraient dire
+// « pas un dépôt » à Git sur une cible qui en est un (contre-revue Codex, #2064).
+// Le chemin est lu sur disque, liens résolus : un lien du bloc-notes vers le
+// dépôt n'exempte rien, et un lien qui ne se résout pas non plus. Une cible
+// sous la racine du worktree courant ou sous la copie principale (worktrees
+// imbriqués compris) n'est jamais exemptée, même si Git la dit hors dépôt
+// (pointeur `.git` cassé) ; sans racine lisible pour le `cwd`, rien n'est exempté.
+function sous(chemin, racine) {
+  return chemin === racine || chemin.startsWith(racine.endsWith(path.sep) ? racine : racine + path.sep);
+}
+
+function horsDepot() {
+  const fichier = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
+  if (typeof fichier !== "string" || !fichier) return false;
+  // Un `..` se résoudrait lexicalement avant la lecture des liens : un lien
+  // traversé puis remonté échapperait au contrôle. Aucune exemption.
+  if (fichier.split(/[\\/]+/).includes("..")) return false;
+  // Chaque élément du chemin qui existe est relu : un lien symbolique (fichier
+  // ou dossier, pendant ou non) ferme l'exemption, sauf s'il se résout.
+  const cibleAbsolue = path.resolve(cwd, fichier);
+  for (let courant = cibleAbsolue; ; courant = path.dirname(courant)) {
+    let lien = false;
+    try {
+      lien = fs.lstatSync(courant).isSymbolicLink();
+    } catch {
+      // absent : rien à relire à ce niveau
+    }
+    if (lien) {
+      try {
+        fs.realpathSync.native(courant);
+      } catch {
+        return false;
+      }
+    }
+    if (path.dirname(courant) === courant) break;
+  }
+  // Fichier existant : son dossier réel, pas celui du lien qui le désigne.
+  // Un lien physique ne se voit pas au realpath : un fichier à plusieurs
+  // noms peut être celui du dépôt. Aucune exemption.
+  let cibleReelle = cibleAbsolue;
+  try {
+    cibleReelle = fs.realpathSync.native(cibleAbsolue);
+    if (fs.statSync(cibleReelle).nlink > 1) return false;
+  } catch {
+    // fichier neuf : son plus proche dossier existant est résolu ci-dessous
+  }
+  const dossier = dossierExistant(cibleReelle);
+  if (!dossier) return false;
+  let dossierReel;
+  try {
+    dossierReel = fs.realpathSync.native(dossier);
+  } catch {
+    return false;
+  }
+  const ici = racineReelle(cwd);
+  if (!ici || sous(dossierReel, ici)) return false;
+  const commun = git(["rev-parse", "--git-common-dir"], { delai: DELAI_GIT_JOURNAL_MS });
+  if (commun.status !== 0) return false;
+  try {
+    const copiePrincipale = fs.realpathSync.native(path.dirname(path.resolve(cwd, commun.stdout.trim())));
+    if (sous(dossierReel, copiePrincipale)) return false;
+  } catch {
+    return false;
+  }
+  const env = Object.fromEntries(Object.entries(process.env).filter(([cle]) => !/^GIT_/i.test(cle)));
+  const resultat = git(["rev-parse", "--show-toplevel"], {
+    dans: dossierReel,
+    delai: DELAI_GIT_JOURNAL_MS,
+    env: { ...env, LC_ALL: "C", GIT_DISCOVERY_ACROSS_FILESYSTEM: "1" },
+  });
+  return resultat.status === 128 && /not a git repository/i.test(resultat.stderr);
 }
 
 // Journal des verdicts (D-375 §1) : une ligne JSON par verdict, pour compter
@@ -245,6 +325,10 @@ if (event === "SessionStart") {
 // MultiEdit et NotebookEdit, qui écrivent des fichiers comme les autres. Les
 // ignorer ouvrirait une porte que `protect-wellneuro-files.mjs`, lui, ferme.
 if (event === "PreToolUse" && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(String(input.tool_name || ""))) {
+  if (horsDepot()) {
+    journaliser("autorise", "hors-depot", constater());
+    process.exit(0);
+  }
   const { constat, fetchOk, verifiedAt } = evaluer();
 
   if (!constat.head || !constat.originMain) {

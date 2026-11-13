@@ -42,6 +42,10 @@ function assertDemande(resultat) {
   assert.equal(resultat.status, 0, resultat.stderr);
   const sortie = JSON.parse(resultat.stdout);
   assert.equal(sortie.hookSpecificOutput?.permissionDecision, "ask");
+  // D-505 : la session appelle Codex par la commande fermée, plus par le skill personnel.
+  const motif = sortie.hookSpecificOutput.permissionDecisionReason;
+  assert.match(motif, /node scripts\/wn-codex-avis\.mjs --mode revue/);
+  assert.doesNotMatch(motif, /wellneuro-pr-review/);
 }
 
 function assertAutoriseAvecTrace(resultat) {

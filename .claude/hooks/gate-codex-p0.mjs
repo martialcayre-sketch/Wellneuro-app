@@ -228,8 +228,9 @@ process.stdout.write(JSON.stringify({
       `avant PR/merge, et aucune trace n'apparaît dans les fragments ` +
       `changelog.d/handoffs ni dans les messages de commit de la branche. ` +
       `Confirmer que la passe a eu lieu (ou l'a rendue inutile — cas nommé ` +
-      `en § Signaux), ou l'interrompre pour préparer le bloc ` +
-      `$wellneuro-pr-review avant de continuer.`,
+      `en § Signaux), ou l'interrompre pour lancer la contre-revue ` +
+      `(D-505) : node scripts/wn-codex-avis.mjs --mode revue --paquet ` +
+      `<fichier> --sortie <avis.json>, puis consigner le verdict.`,
   },
 }));
 process.exit(0);
