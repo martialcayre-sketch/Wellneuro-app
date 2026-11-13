@@ -210,7 +210,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le
   CI de `main` ni le déploiement — il converge seul sur la prochaine tête
   verte (`D-248`) ; la session fait `/clear` aussitôt — dès « prête »
-  pour une PR que merge l'intégrateur. Sauf migration, authentification ou `.coderabbit.yaml`,
+  pour une PR que merge l'intégrateur ; en l'absence du responsable, elle
+  prend au carnet le lot suivant (`D-510` §7). Sauf migration, authentification ou `.coderabbit.yaml`,
   que la session suit jusqu'au constat. Demeurent, avant chaque merge :
   l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné,
   registre, chevauchement, `main` inchangé), puis sa 7 ter, le gel par
