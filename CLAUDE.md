@@ -210,7 +210,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Libération dès le merge** (`D-373` §1) : une PR ordinaire n'attend ni le
   CI de `main` ni le déploiement — il converge seul sur la prochaine tête
   verte (`D-248`) ; la session fait `/clear` aussitôt — dès « prête »
-  pour une PR que merge l'intégrateur. Sauf migration, authentification ou `.coderabbit.yaml`,
+  pour une PR que merge l'intégrateur ; en l'absence du responsable, elle
+  prend au carnet le lot suivant (`D-510` §7). Sauf migration, authentification ou `.coderabbit.yaml`,
   que la session suit jusqu'au constat. Demeurent, avant chaque merge :
   l'étape 7 bis de `wn-merge` (déploiement, contrôle sur l'arbre fusionné,
   registre, chevauchement, `main` inchangé), puis sa 7 ter, le gel par
@@ -237,6 +238,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   repris que désigne la tâche, sinon le dernier au tri sur `main` (`D-372`).
 - Puis lire sa boîte du registre des messages, l'accuser, et la relire avant
   « prête » (`D-503`, `docs/ROLES_MACHINES.md`).
+- Sans lot désigné, prendre au carnet le lot `pret` suivant de sa file ; un
+  lot qui bute se range `bloque` et la session prend le suivant (`D-510`).
 - **Lancer à la racine du dépôt** (VS Code ouvert sur
   `~/Developer/Wellneuro-app`, ou `/cd` vers lui) — jamais sur `~/Developer` :
   ni skills ni agents `wn`, et les gardes y échouaient en silence.
@@ -251,7 +254,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   PR que merge l'intégrateur) — sauf migration,
   authentification ou `.coderabbit.yaml` (`D-373` §1, voir § PR, CI, merge) ;
   `/compact` seulement dans un lot (une migration et son code consommateur
-  forment un lot). Pause de plus d'une heure : `/compact` avant de partir
+  forment un lot). En l'absence du responsable (rien écrit depuis une
+  heure), la session enchaîne le lot suivant après son handoff (`D-510` §7). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de
