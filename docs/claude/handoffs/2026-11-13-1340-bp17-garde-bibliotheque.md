@@ -150,6 +150,14 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
     `prototype`, `__proto__`, `Reflect`, `Proxy` et minuteries refusés, par
     nom ou par clé constante. Limite déclarée : une clé tirée d'une variable.
     Mutation : nommé.
+- Contre-passe Codex ciblée sur `96e31eed` (delta) : P1-a, P1-b, P1-c
+  **fermés** ; P2 **non fermé** par deux formes voisines — clé en gabarit à
+  interpolation constante (`` [`constr${"uctor"}`] ``) et clé chaîne de
+  déstructuration (`{ "constructor": e } = f`). **Corrigé** : toute chaîne
+  égale à un nom interdit, où qu'elle soit, et la valeur constante des
+  gabarits et des noms de propriété calculés. Mutation réelle (les deux
+  formes dans `vocabulaire.ts`) : nommé. Limite inchangée : une clé composée
+  à partir d'une variable.
 
 ## Problèmes ouverts
 

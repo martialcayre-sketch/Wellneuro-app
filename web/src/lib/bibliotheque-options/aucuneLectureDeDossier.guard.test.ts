@@ -5,10 +5,12 @@ import {
   createSourceFile,
   forEachChild,
   isBinaryExpression,
+  isComputedPropertyName,
   isElementAccessExpression,
   isIdentifier,
   isParenthesizedExpression,
   isStringLiteralLike,
+  isTemplateExpression,
   SyntaxKind,
   parseConfigFileTextToJson,
   parseJsonConfigFileContent,
@@ -104,22 +106,37 @@ function cleConstante(n: Node): string | null {
     const d = cleConstante(n.right);
     return g === null || d === null ? null : g + d;
   }
+  // Gabarit à interpolations constantes : `constr${"uctor"}` (contre-passe Codex sur #2060).
+  if (isTemplateExpression(n)) {
+    let valeur = n.head.text;
+    for (const segment of n.templateSpans) {
+      const v = cleConstante(segment.expression);
+      if (v === null) return null;
+      valeur += v + segment.literal.text;
+    }
+    return valeur;
+  }
   return null;
 }
 
 /**
- * Les accès globaux qu'un source nomme : un identifiant, ou la clé constante
- * d'un accès calculé (`x["constr" + "uctor"]`). LIMITE DÉCLARÉE : une clé
- * tirée d'une variable (`x[k]`) n'est pas lue — la fermeture est figée par
- * liste exacte, et ses fichiers se relisent à chaque changement.
+ * Les accès globaux qu'un source nomme : un identifiant ; une chaîne, où
+ * qu'elle soit — clé de déstructuration (`{ "constructor": e } = f`), clé
+ * d'objet, argument (contre-passe Codex sur #2060) ; la valeur constante d'un
+ * accès calculé ou d'un nom de propriété calculé (`x["constr" + "uctor"]`,
+ * `` x[`constr${"uctor"}`] ``). LIMITE DÉCLARÉE : une clé composée à partir
+ * d'une variable (`x[k]`, `x[a + "uctor"]`) n'est pas lue — la fermeture est
+ * figée par liste exacte, et ses fichiers se relisent à chaque changement.
  */
 function accesGlobaux(source: string, chemin: string): string[] {
   const fichier = createSourceFile(chemin, source, ScriptTarget.Latest, true, chemin.endsWith('.tsx') ? ScriptKind.TSX : ScriptKind.TS);
   const trouves = new Set<string>();
   const visiter = (n: Node): void => {
     if (isIdentifier(n) && ACCES_GLOBAUX.has(n.text)) trouves.add(n.text);
-    if (isElementAccessExpression(n)) {
-      const cle = cleConstante(n.argumentExpression);
+    if (isStringLiteralLike(n) && ACCES_GLOBAUX.has(n.text)) trouves.add(n.text);
+    const calcule = isElementAccessExpression(n) ? n.argumentExpression : isComputedPropertyName(n) ? n.expression : null;
+    if (calcule) {
+      const cle = cleConstante(calcule);
       if (cle !== null && ACCES_GLOBAUX.has(cle)) trouves.add(cle);
     }
     forEachChild(n, visiter);
@@ -199,8 +216,14 @@ describe('bibliothèque des options — aucune lecture de dossier (D-480 §5.4)'
       ['const e = (() => {})["constr" + "uctor"]("x")();', 'constructor'],
       ['const p = Object.getPrototypeOf(x).__proto__;', '__proto__'],
       ['const r = Reflect.get(x, "y");', 'Reflect'],
+      // Formes voisines (contre-passe Codex sur #2060).
+      ['const e = (() => {})[`constr${"uctor"}`]("x")();', 'constructor'],
+      ['const { "constructor": e } = () => {}; e("x")();', 'constructor'],
+      ['const { ["constr" + "uctor"]: e } = () => {};', 'constructor'],
+      ["const g = Reflect ? 1 : 0; const o = { 'process': 1 };", 'process'],
     ];
     for (const [source, attendu] of formes) expect(accesGlobaux(source, 'x.ts'), source).toContain(attendu);
+    // Une prose ou une chaîne qui CONTIENT le mot sans l'être n'est pas un accès.
     expect(accesGlobaux('// fetch process\nconst t = "fetch window";', 'x.ts')).toEqual([]);
   });
 
