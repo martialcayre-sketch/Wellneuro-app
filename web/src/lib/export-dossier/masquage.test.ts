@@ -681,7 +681,9 @@ describe('creerMasqueur — garanties', () => {
       masquer(texte);
       expect(performance.now() - debut, motif).toBeLessThan(1500);
     }
-  });
+    // Huit motifs (D-512 : ceux du pseudonyme s'ajoutent) : la borne qui compte
+    // est celle de chaque motif ; le délai du test en couvre la somme.
+  }, 20_000);
 
   // Revue finale de #1237 : l'expression se compile au premier appel, de façon
   // synchrone — un dossier aux champs extrêmes, mais admis par les routes,
