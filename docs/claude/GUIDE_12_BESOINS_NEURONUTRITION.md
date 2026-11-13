@@ -25,12 +25,21 @@ Le cerveau a besoin d'une alimentation optimale et antioxydante (modèle
 méditerranéen ou MIND), riche en légumes, baies, noix, et pauvre en produits
 ultra-transformés.
 
-- **Variables d'entrée** : score de l'Enquête Alimentaire SIIN (/90).
-  Biomarqueurs : indice HOMA, hémoglobine glyquée (stabilité glycémique),
-  index Oméga-3.
-- **Règle de décision** : si score < 70/90 ou index Oméga-3 < 8 %, recommander
-  une correction de l'assiette (réduction des index glycémiques élevés,
-  apport en oméga-3).
+- **Section réécrite sur le dossier de preuve signé** (`D-516`, 2026-11-13,
+  `D-312` §3). Les claims, valeurs et sources sont au dossier privé du
+  besoin 1 ; ici, les mécanismes seulement (`D-251` §4).
+- **Variables d'entrée** : la mesure dérivée de l'Enquête alimentaire SIIN,
+  forme complète — le total hors items du sous-score du rythme, qui restent au
+  besoin 3, maximum dérivé du barème servi ; deux biomarqueurs, lus chacun à
+  part. Le troisième biomarqueur de la version précédente de cette section est
+  « non évalué ». Sous la forme courte de l'enquête, le besoin est non évalué.
+- **Règle de décision** : un constat descriptif, item par item, sans tranche ;
+  chaque biomarqueur rapporté avec sa valeur de référence signée et sa source,
+  sans diagnostic ; trois constats séparés, sans règle « ou ». La règle
+  précédente (tranche sur le total, « ou » entre deux variables) est retirée.
+- **Population, « non évalué », pondération** : `D-516` §4 et §6.3. Seuls les
+  claims cités par une position signée fondent un constat ou un conseil
+  (`D-516` §5.4). Application : lot J3-12f.
 
 ### 2. Les micronutriments essentiels
 
