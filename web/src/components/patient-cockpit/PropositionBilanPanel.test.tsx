@@ -742,3 +742,25 @@ describe('PropositionBilanPanel — compositions signées (D-323 §2-§3)', () =
     expect(screen.getByText('Interprétation sous validation médicale.')).toBeTruthy();
   });
 });
+
+describe('une seule action pleine par zone (PRA-3b, Q3a)', () => {
+  it('« Établir et consigner » le courrier et le document patient sont bordés ; la déclaration ouverte reste pleine', () => {
+    rendre({ onEtablirCourrier: vi.fn(), onEtablirDocumentPatient: vi.fn(), lectureDocumentsPatient: 'ok' });
+    for (const nom of ['Établir et consigner le courrier', 'Établir et consigner le document patient']) {
+      const bouton = screen.getByRole('button', { name: nom });
+      expect(bouton.className).not.toContain('bg-primary');
+      expect(bouton.className).toContain('border-border');
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Déjà exploré hors outil…' }));
+    expect(screen.getByRole('button', { name: 'Consigner la déclaration' }).className).toContain('bg-primary');
+    expect(screen.getAllByRole('button').filter(b => b.className.includes('bg-primary'))).toHaveLength(1);
+  });
+
+  it('les sous-parties sont des titres h4 sous le titre h3 du panneau (Q2a)', () => {
+    rendre({ onEtablirCourrier: vi.fn(), onEtablirDocumentPatient: vi.fn(), lectureDocumentsPatient: 'ok' });
+    expect(screen.getByRole('heading', { level: 3, name: 'Biologie — proposition de bilan' })).toBeTruthy();
+    for (const nom of ['Courrier au médecin traitant', 'Document remis au patient', 'Documents déjà remis']) {
+      expect(screen.getByRole('heading', { level: 4, name: nom })).toBeTruthy();
+    }
+  });
+});

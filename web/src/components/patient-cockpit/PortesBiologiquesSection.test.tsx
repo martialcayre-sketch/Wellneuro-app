@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PortesBiologiquesSection } from './PortesBiologiquesSection';
 
@@ -218,5 +218,66 @@ describe('PortesBiologiquesSection', () => {
     await waitFor(() =>
       expect(fetch).toHaveBeenCalledWith('/api/praticien/assiettes-indiquees/portes-biologiques?idPatient=PAT%202'),
     );
+  });
+
+  describe('« Réessayer » (T-17, PRA-3b, P29)', () => {
+    function enchainer(reponses: unknown[]) {
+      let rang = 0;
+      const fetchMock = vi.fn(async () => {
+        const reponse = reponses[Math.min(rang, reponses.length - 1)];
+        rang += 1;
+        if (reponse instanceof Error) throw reponse;
+        return { json: async () => reponse };
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      return fetchMock;
+    }
+
+    it('une lecture en échec offre « Réessayer », qui relit seul ; réussi, les portes paraissent et le focus va au titre', async () => {
+      const fetchMock = enchainer([new Error('réseau'), ACTIF]);
+      render(<PortesBiologiquesSection idPatient="PAT1" />);
+      await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Lecture impossible de la biologie des assiettes.'));
+      fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+      expect(await screen.findByText('Assiette de méthylation')).toBeTruthy();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('heading', { name: /ce que disent les sources/i })),
+      );
+    });
+
+    it('une relecture qui échoue encore garde le message et rend le focus au bouton', async () => {
+      enchainer([new Error('réseau'), new Error('réseau')]);
+      render(<PortesBiologiquesSection idPatient="PAT1" />);
+      const bouton = await screen.findByRole('button', { name: 'Réessayer' });
+      fireEvent.click(bouton);
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })));
+      expect(screen.getByRole('alert').textContent).toBe('Lecture impossible de la biologie des assiettes.');
+    });
+
+    it('le corpus non interrogé offre « Réessayer » sous son message, et rien ne s’efface pendant la relecture', async () => {
+      let liberer: (valeur: unknown) => void = () => {};
+      let rang = 0;
+      vi.stubGlobal('fetch', vi.fn(async () => {
+        rang += 1;
+        if (rang === 1) return { json: async () => ({ ...ACTIF, corpusLu: false }) };
+        return { json: () => new Promise(resoudre => { liberer = resoudre; }) };
+      }));
+      render(<PortesBiologiquesSection idPatient="PAT1" />);
+      const alerte = await screen.findByText(/corpus n’a pas pu être interrogé/);
+      const bouton = screen.getByRole('button', { name: 'Réessayer' });
+      expect(alerte.compareDocumentPosition(bouton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      fireEvent.click(bouton);
+      await waitFor(() => expect((screen.getByRole('button', { name: 'Réessayer' }) as HTMLButtonElement).disabled).toBe(true));
+      expect(screen.getByText(/corpus n’a pas pu être interrogé/)).toBeTruthy();
+      await act(async () => {
+        liberer(ACTIF);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+      await waitFor(() => expect(screen.queryByText(/corpus n’a pas pu être interrogé/)).toBeNull());
+      expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+    });
   });
 });

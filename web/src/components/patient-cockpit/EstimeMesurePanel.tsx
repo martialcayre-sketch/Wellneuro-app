@@ -680,7 +680,7 @@ export function EstimeMesurePanel({
     return (
       <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h4 className="text-sm font-semibold text-foreground">Estimé ↔ mesuré</h4>
+          <h3 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h3>
           <Badge variant="info">Second temps — à activer</Badge>
         </div>
         <p className="mt-2 text-base text-muted-foreground">
@@ -708,7 +708,7 @@ export function EstimeMesurePanel({
   return (
     <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="text-sm font-semibold text-foreground">Estimé ↔ mesuré</h4>
+        <h3 className="font-display text-base font-semibold text-foreground">Estimé ↔ mesuré</h3>
         <Badge variant="info">Mesures consignées</Badge>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -748,7 +748,7 @@ export function EstimeMesurePanel({
         <ul className="mt-3 space-y-2">
           {[...parAnalyte.entries()].map(([code, serie]) => (
             <li key={code} className="rounded-lg border border-border p-3">
-              <p className="text-sm font-medium text-foreground">{serie[0].analyteLibelle}</p>
+              <h4 className="text-sm font-medium text-foreground">{serie[0].analyteLibelle}</h4>
               {/* LA PLAGE SOURCÉE, JUXTAPOSÉE — JAMAIS UN VERDICT ([[D-157]]).
                   Aucun écart n'est calculé, aucune couleur d'état n'est posée,
                   aucun tri par « anormalité » n'existe : ce bloc rend ce que le
@@ -892,58 +892,95 @@ export function EstimeMesurePanel({
                           · mesure de laboratoire — elle ne se corrige pas par une saisie praticien
                         </span>
                       )}
-                      {!corrigee && !annulee && correctionDe !== mesure.id && mesure.source === 'saisie_praticien' && (
-                        <button
-                          type="button"
-                          // Désactivé tant qu'un autre second temps est ouvert :
-                          // en changer démonterait le formulaire et jetterait
-                          // la valeur en cours de frappe, alors qu'on protège
-                          // soigneusement cette même saisie contre un refus.
-                          disabled={envoiEnCours || secondTempsOuvert}
-                          // Un nom accessible DATÉ : sans lui, n boutons
-                          // « Corriger » sont indiscernables au lecteur d'écran.
-                          aria-label={`Corriger la mesure du ${formatDateHeure(mesure.preleveLe)}`}
-                          onClick={() => {
-                            setErreur(null);
-                            setCorrectionDe(mesure.id);
-                          }}
-                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        >
-                          Corriger
-                        </button>
-                      )}
-                      {annulable && acteDe?.id !== mesure.id && correctionDe !== mesure.id && (
-                        <button
-                          type="button"
-                          disabled={envoiEnCours || secondTempsOuvert}
-                          aria-label={`Annuler le résultat du ${formatDateHeure(mesure.preleveLe)}`}
-                          onClick={() => {
-                            setErreur(null);
-                            setActeDe({ id: mesure.id, acte: 'annulation' });
-                          }}
-                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        >
-                          Annuler ce résultat
-                        </button>
-                      )}
                       {placeReprise && (
                         <span className="ml-1">
                           · une autre mesure a pris sa place : l’annulation ne se révoque plus
                         </span>
                       )}
-                      {visee && !placeReprise && acteDe?.id !== mesure.id && (
-                        <button
-                          type="button"
-                          disabled={envoiEnCours || secondTempsOuvert}
-                          aria-label={`Révoquer l’annulation du résultat du ${formatDateHeure(mesure.preleveLe)}`}
-                          onClick={() => {
-                            setErreur(null);
-                            setActeDe({ id: mesure.id, acte: 'revocation' });
-                          }}
-                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        >
-                          Révoquer l’annulation
-                        </button>
+                      {((!corrigee && !annulee && correctionDe !== mesure.id && mesure.source === 'saisie_praticien')
+                        || (annulable && acteDe?.id !== mesure.id && correctionDe !== mesure.id)
+                        || (visee && !placeReprise && acteDe?.id !== mesure.id)
+                        || (statutOffert && statutDe?.id !== mesure.id)) && (
+                        // LES GESTES SOUS LA MESURE (PRA-3b, P25) : une rangée à eux, à
+                        // 44 px, au lieu d'une suite de boutons dans la ligne en `text-xs`.
+                        <div className="mt-2 flex flex-wrap gap-2">
+                        {!corrigee && !annulee && correctionDe !== mesure.id && mesure.source === 'saisie_praticien' && (
+                          <button
+                            type="button"
+                            // Désactivé tant qu'un autre second temps est ouvert :
+                            // en changer démonterait le formulaire et jetterait
+                            // la valeur en cours de frappe, alors qu'on protège
+                            // soigneusement cette même saisie contre un refus.
+                            disabled={envoiEnCours || secondTempsOuvert}
+                            // Un nom accessible DATÉ : sans lui, n boutons
+                            // « Corriger » sont indiscernables au lecteur d'écran.
+                            aria-label={`Corriger la mesure du ${formatDateHeure(mesure.preleveLe)}`}
+                            onClick={() => {
+                              setErreur(null);
+                              setCorrectionDe(mesure.id);
+                            }}
+                            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                          >
+                            Corriger
+                          </button>
+                        )}
+                        {annulable && acteDe?.id !== mesure.id && correctionDe !== mesure.id && (
+                          <button
+                            type="button"
+                            disabled={envoiEnCours || secondTempsOuvert}
+                            aria-label={`Annuler le résultat du ${formatDateHeure(mesure.preleveLe)}`}
+                            onClick={() => {
+                              setErreur(null);
+                              setActeDe({ id: mesure.id, acte: 'annulation' });
+                            }}
+                            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                          >
+                            Annuler ce résultat
+                          </button>
+                        )}
+                        {visee && !placeReprise && acteDe?.id !== mesure.id && (
+                          <button
+                            type="button"
+                            disabled={envoiEnCours || secondTempsOuvert}
+                            aria-label={`Révoquer l’annulation du résultat du ${formatDateHeure(mesure.preleveLe)}`}
+                            onClick={() => {
+                              setErreur(null);
+                              setActeDe({ id: mesure.id, acte: 'revocation' });
+                            }}
+                            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                          >
+                            Révoquer l’annulation
+                          </button>
+                        )}
+                        {statutOffert && statutDe?.id !== mesure.id && (
+                          <button
+                            type="button"
+                            disabled={envoiEnCours || secondTempsOuvert}
+                            aria-label={`${statutActif ? 'Changer le statut' : 'Poser un statut'} de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
+                            onClick={() => {
+                              setErreur(null);
+                              setStatutDe({ id: mesure.id, acte: 'pose' });
+                            }}
+                            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                          >
+                            {statutActif ? 'Changer le statut' : 'Poser un statut'}
+                          </button>
+                        )}
+                        {statutOffert && statutActif && statutDe?.id !== mesure.id && (
+                          <button
+                            type="button"
+                            disabled={envoiEnCours || secondTempsOuvert}
+                            aria-label={`Retirer le statut de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
+                            onClick={() => {
+                              setErreur(null);
+                              setStatutDe({ id: mesure.id, acte: 'retrait' });
+                            }}
+                            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                          >
+                            Retirer le statut
+                          </button>
+                        )}
+                        </div>
                       )}
                       {acteDe?.id === mesure.id && (
                         <ActeAnnulationResultat
@@ -962,34 +999,6 @@ export function EstimeMesurePanel({
                             return ok;
                           }}
                         />
-                      )}
-                      {statutOffert && statutDe?.id !== mesure.id && (
-                        <button
-                          type="button"
-                          disabled={envoiEnCours || secondTempsOuvert}
-                          aria-label={`${statutActif ? 'Changer le statut' : 'Poser un statut'} de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
-                          onClick={() => {
-                            setErreur(null);
-                            setStatutDe({ id: mesure.id, acte: 'pose' });
-                          }}
-                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        >
-                          {statutActif ? 'Changer le statut' : 'Poser un statut'}
-                        </button>
-                      )}
-                      {statutOffert && statutActif && statutDe?.id !== mesure.id && (
-                        <button
-                          type="button"
-                          disabled={envoiEnCours || secondTempsOuvert}
-                          aria-label={`Retirer le statut de la mesure du ${formatDateHeure(mesure.preleveLe)}`}
-                          onClick={() => {
-                            setErreur(null);
-                            setStatutDe({ id: mesure.id, acte: 'retrait' });
-                          }}
-                          className="ml-2 min-h-11 rounded-lg border border-border px-2 py-1 text-xs text-foreground disabled:opacity-50"
-                        >
-                          Retirer le statut
-                        </button>
                       )}
                       {statutDe?.id === mesure.id && (
                         <ActeStatutResultat

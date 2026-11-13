@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v4+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v5+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -109,6 +109,13 @@ Depuis la v4 (`D-501` §7), la rubrique « question » se compose des seules
 désignations approuvées et de la réserve qu'impose le statut d'usage : elle
 pose la question d'usage sans l'affirmer, et la contre-lecture la juge
 fidèle sans claim de l'usage. Tout autre élément y est un fait.
+
+Depuis la v5 (`D-501` §8), la qualification d'état fonctionnel que `D-477`
+§2 impose au libellé d'une hypothèse est jugée comme une forme du cadre
+signé, pas comme un fait : le libellé reste fidèle sans claim qui la nomme,
+pourvu qu'il désigne le nutriment et le sens que décrivent les claims. Tout
+autre élément y est un fait. La rédaction d'un libellé lit aussi une réponse
+rendue nue, sur une ligne, sans l'objet JSON demandé (`lireReponseLibelle`).
 
 ## Ce que l'outil ne voit pas
 

@@ -389,7 +389,7 @@ export function PropositionBilanSection({
         aria-busy={relectureProposition || undefined}
         className="rounded-xl border border-border bg-surface p-4"
       >
-        <h3 id="proposition-bilan-title" className="text-sm font-semibold text-foreground">
+        <h3 id="proposition-bilan-title" className="font-display text-base font-semibold text-foreground">
           Biologie — proposition de bilan
         </h3>
         <div role="alert" className="mt-3 flex flex-col gap-3 rounded-lg bg-status-warning/10 p-3 text-base text-status-warning">

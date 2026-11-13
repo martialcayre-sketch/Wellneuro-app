@@ -3205,7 +3205,7 @@ export function FichePatientPanel({
                 // n'est pas focalisable).
                 requestAnimationFrame(() => document.getElementById('zone-focale')?.focus());
               }}
-              className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="min-h-11 shrink-0 rounded-lg border border-accent px-3 py-2 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Ouvrir l’arbitrage
             </button>
