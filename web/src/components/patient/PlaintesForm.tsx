@@ -10,6 +10,7 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PLAINTES } from '@/lib/plaintes';
 
 // Pagination du questionnaire (4 + 3 curseurs) — réduit le défilement vertical
@@ -39,6 +40,8 @@ export function PlaintesForm({ assignation, email, onDone }: {
   const [values, setValues] = useState<Record<string, number>>(() => valeursInitiales(assignation.idAssignation));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Q6a : le lien T-36 ne suit que le refus HTTP 401, jamais un autre refus.
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(() => readDraftSavedAt(assignation.idAssignation));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
@@ -47,13 +50,14 @@ export function PlaintesForm({ assignation, email, onDone }: {
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    writeDraft(assignation.idAssignation, Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)])));
-    setSavedAt(readDraftSavedAt(assignation.idAssignation));
+    // Q4a : une écriture échouée n'affiche ni confirmation ni heure antérieure.
+    const ecrit = writeDraft(assignation.idAssignation, Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)])));
+    setSavedAt(ecrit ? readDraftSavedAt(assignation.idAssignation) : null);
   }, [values, assignation.idAssignation]);
 
   const handleSauvegarder = () => {
-    writeDraft(assignation.idAssignation, Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)])));
-    setSavedAt(readDraftSavedAt(assignation.idAssignation));
+    const ecrit = writeDraft(assignation.idAssignation, Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)])));
+    setSavedAt(ecrit ? readDraftSavedAt(assignation.idAssignation) : null);
   };
 
   const confirmerReinitialiser = () => {
@@ -71,6 +75,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
   const confirmerTransmission = async () => {
     setError('');
     setSaveError(undefined);
+    setSessionExpiree(false);
     setSubmitting(true);
     try {
       const total = PLAINTES.reduce((s, p) => s + values[p.key], 0);
@@ -96,7 +101,11 @@ export function PlaintesForm({ assignation, email, onDone }: {
         }),
       });
       const data = (await res.json()) as PatientSubmitResponse;
-      if (!data.ok) { setError(data.error); setSaveError('submission-incomplete'); }
+      if (!data.ok) {
+        setError(data.error);
+        setSaveError('submission-incomplete');
+        setSessionExpiree(res.status === 401);
+      }
       else { clearDraft(assignation.idAssignation); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
@@ -123,7 +132,8 @@ export function PlaintesForm({ assignation, email, onDone }: {
       {PAGES[page].map(p => (
         <div key={p.key}>
           <div className="flex justify-between items-center mb-1">
-            <span id={`${idCurseurs}-${p.key}`} className="text-sm font-medium text-muted-foreground"><span aria-hidden="true">{p.icon}</span> {p.label}</span>
+            {/* Q3b : l'emoji de la dimension n'est plus affiché, le libellé suffit. */}
+            <span id={`${idCurseurs}-${p.key}`} className="text-sm font-medium text-muted-foreground">{p.label}</span>
             <span className="text-sm font-bold text-primary w-6 text-right">{values[p.key]}</span>
           </div>
           <input
@@ -140,6 +150,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
         </div>
       ))}
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      {sessionExpiree && <LienReconnexion />}
       <SaveStatusIndicator savedAt={savedAt} error={saveError} />
       <div className="flex gap-2">
         {page > 0 && (

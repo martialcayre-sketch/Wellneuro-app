@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SaisieJourneeForm } from './SaisieJourneeForm';
+import { MESSAGE_MANQUE_PRESENCES, MESSAGE_MANQUE_PRISES } from './libelles';
 import type { JourReponses } from '@/lib/agenda-alimentaire/types';
 
 // Ce que ces tests protègent, dans l'ordre où le lot précédent a désigné les
@@ -40,9 +41,36 @@ function derniereReponse(onSubmit: ReturnType<typeof vi.fn>): JourReponses {
 afterEach(cleanup);
 
 describe('rien n’est pré-coché', () => {
-  it('le bouton d’envoi est inactif sur une journée vierge', () => {
+  it('Q12a : sur une journée vierge, le bouton reste actif et dit ce qui manque au clic', () => {
+    const { onSubmit } = rendre();
+    expect(cta().disabled).toBe(false);
+    expect(screen.queryByText(MESSAGE_MANQUE_PRISES)).toBeNull();
+    fireEvent.click(cta());
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(MESSAGE_MANQUE_PRISES)).toBeTruthy();
+  });
+
+  it('Q12a : poser une prise efface la consigne devenue caduque', () => {
     rendre();
-    expect(cta().disabled).toBe(true);
+    fireEvent.click(cta());
+    expect(screen.getByText(MESSAGE_MANQUE_PRISES)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /ajouter une prise/i }));
+    expect(screen.queryByText(MESSAGE_MANQUE_PRISES)).toBeNull();
+  });
+
+  it('Q12a : la consigne vient dans la fenêtre, sans déplacer le focus', () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      rendre();
+      cta().focus();
+      fireEvent.click(cta());
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(document.activeElement).toBe(cta());
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 
   it('aucun bouton de présence n’est enfoncé à l’ouverture', () => {
@@ -85,10 +113,12 @@ describe('tri-état des quatre présences', () => {
     fireEvent.click(bouton(/protéines à votre première prise \?\s*oui/i));
     fireEvent.click(bouton(/légumes à au moins deux prises \?\s*oui/i));
     fireEvent.click(bouton(/fruits ou des fruits à coque \?\s*oui/i));
-    // `ultraTransformes` reste sans réponse.
-    expect(cta().disabled).toBe(true);
+    // `ultraTransformes` reste sans réponse : Q12a, le bouton reste actif et
+    // la consigne du code paraît au clic.
+    expect(cta().disabled).toBe(false);
     fireEvent.click(cta());
     expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(MESSAGE_MANQUE_PRESENCES)).toBeTruthy();
   });
 
   it('le bouton « je ne sais pas » s’affiche enfoncé une fois choisi (`null`, pas `false`)', () => {
