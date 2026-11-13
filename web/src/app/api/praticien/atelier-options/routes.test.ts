@@ -115,6 +115,16 @@ describe('atelier de la bibliothèque des options — drapeau, session, garde du
     expect(await res.json()).toMatchObject({ ok: false, reason: 'structure_non_signee' });
   });
 
+  it('une lecture qui ferme (texte de dernière version introuvable) : GET 500, sans texte au journal', async () => {
+    const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
+    lireAtelierOptions.mockRejectedValue(new Error('Texte d’une dernière version introuvable : lecture de l’atelier refusée.'));
+    const res = await GET();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'exception' });
+    expect(JSON.stringify(erreur.mock.calls)).not.toContain('introuvable');
+    erreur.mockRestore();
+  });
+
   it('une exception : 500 générique, sans texte au journal', async () => {
     const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
     verserTexte.mockRejectedValue(Object.assign(new Error('Texte synthétique secret'), { code: 'P2002' }));

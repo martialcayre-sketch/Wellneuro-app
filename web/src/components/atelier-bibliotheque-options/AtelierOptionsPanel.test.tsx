@@ -90,6 +90,27 @@ describe('atelier de la bibliothèque des options (D-480 §3)', () => {
     expect(JSON.parse(init.body as string)).toEqual({ optionId: 'OPT_BANC_A', rubrique: 'dose', texte: 'Texte synthétique.', derniereVersionVue: null });
   });
 
+  it('un refus « état divergent » ne fait pas perdre le brouillon, et la version plus récente s’affiche (revue PR-Agent)', async () => {
+    let lectures = 0;
+    const recente = atelier('non_signee', { version: { ...VERSION, id: 'texte0000009', texte: 'Version d’un autre onglet.' }, etat: { etat: 'a_valider' }, etatActes: { etat: 'a_valider' } });
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return new Response(JSON.stringify({ ok: false, error: 'L’état a changé depuis l’affichage — rechargez l’atelier.' }));
+      lectures += 1;
+      return new Response(JSON.stringify({ ok: true, atelier: lectures === 1 ? atelier('non_signee') : recente, peutDecider: true }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AtelierOptionsPanel />);
+    await screen.findByRole('region', { name: 'OPT_BANC_A' });
+    const item = () => screen.getByText('Dose').closest('li') as HTMLElement;
+    fireEvent.click(within(item()).getByRole('button', { name: 'Saisir le texte' }));
+    fireEvent.change(within(item()).getByLabelText(/Texte de la rubrique « Dose »/), { target: { value: 'Brouillon long, synthétique.' } });
+    fireEvent.click(within(item()).getByRole('button', { name: 'Enregistrer la version' }));
+    expect(await screen.findByText('Version d’un autre onglet.')).toBeTruthy();
+    expect(screen.getByText(/L’état a changé depuis l’affichage/)).toBeTruthy();
+    const champ = within(item()).getByLabelText(/Texte de la rubrique « Dose »/) as HTMLTextAreaElement;
+    expect(champ.value).toBe('Brouillon long, synthétique.');
+  });
+
   it('structure à relire : nommée comme telle, validation fermée', async () => {
     servir(atelier('a_relire', { version: VERSION, etat: { etat: 'a_valider' }, etatActes: { etat: 'a_valider' } }), true);
     render(<AtelierOptionsPanel />);

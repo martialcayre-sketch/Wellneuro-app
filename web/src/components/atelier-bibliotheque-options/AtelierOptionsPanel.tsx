@@ -14,7 +14,7 @@
 // Les types seulement, depuis les modules serveur : un import de valeur tirerait
 // Prisma dans le bundle client.
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { GesteTexte } from '@/components/fiches-usage/GesteTexte';
@@ -46,26 +46,40 @@ async function ecrire(chemin: string, corps: string): Promise<ReponseEcriture> {
 
 type Soumettre = (chemin: string, corps: string, succes: string) => Promise<boolean>;
 
+/**
+ * LE BROUILLON VIT CHEZ LE PARENT, par couple option × rubrique (revue PR-Agent
+ * de #2082) : un refus `etat_divergent` recharge l'atelier et change la
+ * dernière version, une erreur de relecture suspend les gestes. Ni l'un ni
+ * l'autre ne doit faire perdre un texte saisi à la main. La version plus
+ * récente s'affiche au-dessus du brouillon, qui part ensuite sur elle.
+ */
+type Brouillons = {
+  lire: (cle: string) => string | undefined;
+  ecrire: (cle: string, texte: string | undefined) => void;
+};
+
 function SaisieTexte({
   optionId,
   rubrique,
   derniereVersionVue,
   envoi,
   soumettre,
+  brouillons,
 }: {
   optionId: string;
   rubrique: string;
   derniereVersionVue: string | null;
   envoi: boolean;
   soumettre: Soumettre;
+  brouillons: Brouillons;
 }) {
-  const [ouverte, setOuverte] = useState(false);
-  const [texte, setTexte] = useState('');
+  const cle = `${optionId}|${rubrique}`;
+  const texte = brouillons.lire(cle);
   const idTexte = useId();
-  if (!ouverte) {
+  if (texte === undefined) {
     return (
       <div>
-        <Button type="button" variant="outline" className="min-h-11" disabled={envoi} onClick={() => setOuverte(true)}>
+        <Button type="button" variant="outline" className="min-h-11" disabled={envoi} onClick={() => brouillons.ecrire(cle, '')}>
           {derniereVersionVue ? 'Saisir une version neuve' : 'Saisir le texte'}
         </Button>
       </div>
@@ -77,10 +91,7 @@ function SaisieTexte({
       JSON.stringify({ optionId, rubrique, texte, derniereVersionVue }),
       'Version enregistrée, à valider.',
     );
-    if (ok) {
-      setTexte('');
-      setOuverte(false);
-    }
+    if (ok) brouillons.ecrire(cle, undefined);
   };
   return (
     <div className="flex flex-col gap-2">
@@ -93,23 +104,14 @@ function SaisieTexte({
         autoFocus
         value={texte}
         disabled={envoi}
-        onChange={e => setTexte(e.target.value)}
+        onChange={e => brouillons.ecrire(cle, e.target.value)}
         className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
       />
       <div className="flex flex-wrap gap-2">
         <Button type="button" className="min-h-11" disabled={envoi || !/\S/u.test(texte)} onClick={() => void envoyer()}>
           {envoi ? 'En cours…' : 'Enregistrer la version'}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          disabled={envoi}
-          onClick={() => {
-            setTexte('');
-            setOuverte(false);
-          }}
-        >
+        <Button type="button" variant="outline" className="min-h-11" disabled={envoi} onClick={() => brouillons.ecrire(cle, undefined)}>
           Annuler
         </Button>
       </div>
@@ -125,6 +127,7 @@ function Rubrique({
   saisieOuverte,
   envoi,
   soumettre,
+  brouillons,
 }: {
   optionId: string;
   r: RubriqueAffichee;
@@ -133,6 +136,7 @@ function Rubrique({
   saisieOuverte: boolean;
   envoi: boolean;
   soumettre: Soumettre;
+  brouillons: Brouillons;
 }) {
   const badge = libelleEtatRubrique(r.etat);
   const v = r.version;
@@ -182,12 +186,12 @@ function Rubrique({
       )}
       {peutDecider && saisieOuverte && (
         <SaisieTexte
-          key={v?.id ?? 'aucune'}
           optionId={optionId}
           rubrique={r.rubrique}
           derniereVersionVue={v?.id ?? null}
           envoi={envoi}
           soumettre={soumettre}
+          brouillons={brouillons}
         />
       )}
     </li>
@@ -200,6 +204,20 @@ export function AtelierOptionsPanel() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [retour, setRetour] = useState<Retour | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [brouillonsLus, setBrouillons] = useState<Record<string, string>>({});
+  const brouillons = useMemo<Brouillons>(
+    () => ({
+      lire: cle => brouillonsLus[cle],
+      ecrire: (cle, texte) =>
+        setBrouillons(avant => {
+          const apres = { ...avant };
+          if (texte === undefined) delete apres[cle];
+          else apres[cle] = texte;
+          return apres;
+        }),
+    }),
+    [brouillonsLus],
+  );
   // Seule la réponse du DERNIER chargement s'applique.
   const generation = useRef(0);
 
@@ -310,6 +328,7 @@ export function AtelierOptionsPanel() {
                 saisieOuverte
                 envoi={envoi}
                 soumettre={soumettre}
+                brouillons={brouillons}
               />
             ))}
           </ul>
@@ -340,6 +359,7 @@ export function AtelierOptionsPanel() {
                     saisieOuverte={false}
                     envoi={envoi}
                     soumettre={soumettre}
+                    brouillons={brouillons}
                   />
                 ))}
               </ul>
