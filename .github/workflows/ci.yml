@@ -490,6 +490,17 @@ jobs:
       - name: Contrôle de clôture (banc)
         run: node --test scripts/wn-controle-cloture.test.mjs
 
+      # Bancs des gardes que l'intégrateur exige avant un merge (preuve de
+      # revue PR-Agent sur la tête, sonde release-db, chevauchement, contrôle
+      # sur l'arbre fusionné, avis Codex de D-505) et du contrôle des
+      # registres (lot L1, #2072). Ils ne tournaient qu'à la main, par
+      # `npm run check` : une garde de merge redevenue muette restait verte
+      # tant que personne ne rejouait son banc (lot `orchestration-3`). Tous
+      # sont hermétiques : dépôts git et faux `gh`/`codex` fabriqués en
+      # dossier temporaire, aucun réseau ; node, git et bash suffisent.
+      - name: Gardes de merge et contrôle des registres (bancs)
+        run: node --test scripts/lib/registres.test.mjs scripts/wn-revue-pr-agent.test.mjs scripts/wn-sonde-release-db.test.mjs scripts/wn-chevauchement.test.mjs scripts/wn-controle-fusion.test.mjs scripts/wn-codex-avis.test.mjs
+
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
       # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
