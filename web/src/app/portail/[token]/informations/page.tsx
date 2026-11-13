@@ -103,7 +103,7 @@ export default function InformationsPage() {
         <PatientPageHeader title="Informations, confidentialité et droits" />
         <Link
           href={`/portail/${token}/questionnaires`}
-          className="shrink-0 text-sm text-primary hover:underline"
+          className="shrink-0 text-sm text-primary hover:underline print:hidden"
         >
           ← Mon parcours
         </Link>
@@ -115,7 +115,7 @@ export default function InformationsPage() {
           <p className="text-xs text-muted-foreground">
             Version {conditions.version} — publiée le {conditions.publieLe}
           </p>
-          <Link href={`/portail/${token}/conditions`} className="inline-block text-sm text-primary hover:underline">
+          <Link href={`/portail/${token}/conditions`} className="inline-block text-sm text-primary hover:underline print:hidden">
             Lire les conditions d’utilisation
           </Link>
         </CarteCentre>

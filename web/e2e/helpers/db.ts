@@ -256,6 +256,18 @@ export async function lireRatifications(
   });
 }
 
+/** Les désaccords posés sur la compréhension d'un dossier, dans l'ordre —
+ *  le banc de reconnexion (PAT-5) vérifie dans quel dossier un envoi écrit. */
+export async function lireDesaccordsComprehension(
+  idPatient: string,
+): Promise<{ idSynthese: string; texte: string | null }[]> {
+  return prisma.desaccordComprehension.findMany({
+    where: { idPatient },
+    select: { idSynthese: true, texte: true },
+    orderBy: { creeLe: 'asc' },
+  });
+}
+
 /**
  * Les demandes de correction d'un dossier, dans l'ordre. `texte` est rendu tel
  * qu'il est en base — `null` compris : c'est justement ce que le banc doit

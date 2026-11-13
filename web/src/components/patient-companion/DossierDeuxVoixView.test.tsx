@@ -1248,3 +1248,82 @@ describe('DossierDeuxVoixView — les accusés', () => {
     expect(document.activeElement).toBe(region);
   });
 });
+
+// PAT-5 : « Me reconnecter » sous un 401 d'envoi, dans un nouvel onglet (Q6a,
+// [[D-488]] DOC-9) ; intitulés et fonds des deux voix (Q3a) ; commandes
+// masquées à l'impression (Q5a).
+describe('DossierDeuxVoixView — PAT-5', () => {
+  const refus = (status: number, error: string) => ({
+    ok: false,
+    status,
+    json: async () => ({ ok: false, error }),
+  });
+
+  it('401 à l’envoi : « Me reconnecter » ouvre la connexion dans un NOUVEL onglet', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('C’est bien ça'));
+
+    fetchMock.mockResolvedValueOnce(refus(401, 'Session expirée. Reconnectez-vous.'));
+    fireEvent.click(screen.getByText('C’est bien ça'));
+
+    const lien = await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(lien.getAttribute('href')).toBe('/portail/connexion');
+    expect(lien.getAttribute('target')).toBe('_blank');
+    expect(lien.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('401 sur « Le dire autrement » : le texte saisi reste dans la page', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('Le dire autrement'));
+    fireEvent.click(screen.getByText('Le dire autrement'));
+    const champ = screen.getByLabelText('Écrivez cet objectif avec vos mots') as HTMLTextAreaElement;
+    fireEvent.change(champ, { target: { value: 'Dormir d’une traite.' } });
+
+    fetchMock.mockResolvedValueOnce(refus(401, 'Session expirée. Reconnectez-vous.'));
+    fireEvent.click(screen.getByText('Envoyer ma version'));
+
+    await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(
+      (screen.getByLabelText('Écrivez cet objectif avec vos mots') as HTMLTextAreaElement).value,
+    ).toBe('Dormir d’une traite.');
+  });
+
+  it('un autre refus ne propose pas de reconnexion', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('C’est bien ça'));
+
+    fetchMock.mockResolvedValueOnce(refus(409, 'Cette version a changé.'));
+    fireEvent.click(screen.getByText('C’est bien ça'));
+
+    await screen.findByText('Cette version a changé.');
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('les deux voix ont un intitulé lisible et leur fond, que le texte double', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('Ce que votre praticien en a compris'));
+
+    const voixPatient = screen.getByText('Ce que vous avez dit');
+    expect(voixPatient.className).toContain('font-semibold');
+    expect(voixPatient.parentElement?.className).toContain('bg-voice-patient');
+    const voixPraticien = screen.getByText('Ce que votre praticien en a compris');
+    expect(voixPraticien.className).toContain('font-semibold');
+    expect(voixPraticien.parentElement?.className).toContain('bg-voice-practitioner');
+    // À l'impression, les fonds tombent : les intitulés restent seuls.
+    expect(voixPatient.parentElement?.className).toContain('print:bg-transparent');
+  });
+
+  it('commandes et liens d’action masqués à l’impression (Q5a)', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+    await waitFor(() => expect(texteRendu()).toContain('C’est bien ça'));
+
+    expect(screen.getByText('C’est bien ça').closest('div.pt-1')?.className).toContain('print:hidden');
+    expect(screen.getByText('Déposer ce qui compte pour moi aujourd’hui').className).toContain('print:hidden');
+    expect(screen.getByText('Répondre à ce texte').className).toContain('print:hidden');
+  });
+});

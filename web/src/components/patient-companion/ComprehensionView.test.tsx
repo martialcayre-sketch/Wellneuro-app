@@ -230,3 +230,68 @@ describe('ComprehensionView', () => {
     }
   });
 });
+
+// PAT-5 : T-33 au titre (Q4a), « Me reconnecter » sous un 401 dans un nouvel
+// onglet (Q6a, [[D-488]] DOC-9), commandes masquées à l'impression (Q5a).
+describe('ComprehensionView — PAT-5', () => {
+  const refus = (status: number, error: string) => ({
+    ok: false,
+    status,
+    json: async () => ({ ok: false, error }),
+  });
+
+  async function ouvrirEtEcrire(texte: string) {
+    chargementRendu(SYNTHESE);
+    render(<ComprehensionView />);
+    await waitFor(() => expect(screen.getByText('Ce n’est pas exactement ça')).toBeTruthy());
+    fireEvent.click(screen.getByText('Ce n’est pas exactement ça'));
+    fireEvent.change(screen.getByLabelText('Ce qui ne correspond pas'), { target: { value: texte } });
+  }
+
+  it('titre T-33, à la première personne, en chargement, sur la page et en erreur', async () => {
+    chargementRendu(SYNTHESE);
+    render(<ComprehensionView />);
+    expect(screen.getByRole('heading', { name: 'Ce que mon praticien a compris de moi' })).toBeTruthy();
+    await screen.findByText(SYNTHESE.texte);
+    expect(screen.getByRole('heading', { name: 'Ce que mon praticien a compris de moi' })).toBeTruthy();
+    expect(document.body.textContent).not.toContain('Ce que votre praticien a compris de vous');
+    cleanup();
+
+    fetchMock.mockResolvedValueOnce(json({ ok: false, error: 'Indisponible.' }, false));
+    render(<ComprehensionView />);
+    await screen.findByText('Indisponible.');
+    expect(screen.getByRole('heading', { name: 'Ce que mon praticien a compris de moi' })).toBeTruthy();
+  });
+
+  it('401 : « Me reconnecter » ouvre la connexion dans un NOUVEL onglet, le texte reste', async () => {
+    await ouvrirEtEcrire('Ce que je voulais dire est autre.');
+    fetchMock.mockResolvedValueOnce(refus(401, 'Session expirée. Reconnectez-vous.'));
+    fireEvent.click(screen.getByText('Envoyer'));
+
+    const lien = await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(lien.getAttribute('href')).toBe('/portail/connexion');
+    expect(lien.getAttribute('target')).toBe('_blank');
+    expect(lien.getAttribute('rel')).toContain('noopener');
+    expect((screen.getByLabelText('Ce qui ne correspond pas') as HTMLTextAreaElement).value).toBe(
+      'Ce que je voulais dire est autre.',
+    );
+  });
+
+  it('un autre refus ne propose pas de reconnexion', async () => {
+    await ouvrirEtEcrire('Autre chose.');
+    fetchMock.mockResolvedValueOnce(refus(400, 'Refusé.'));
+    fireEvent.click(screen.getByText('Envoyer'));
+
+    await screen.findByText('Refusé.');
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('les commandes sont masquées à l’impression (Q5a)', async () => {
+    chargementRendu(SYNTHESE);
+    render(<ComprehensionView />);
+    const ouvrir = await screen.findByText('Ce n’est pas exactement ça');
+    expect(ouvrir.closest('button')?.className).toContain('print:hidden');
+    fireEvent.click(ouvrir);
+    expect(screen.getByText('Envoyer').closest('button')?.parentElement?.className).toContain('print:hidden');
+  });
+});

@@ -3,6 +3,7 @@
 import { AvisLectureDatee } from '@/components/patient/AvisLectureDatee';
 import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { useCallback, useEffect, useState } from 'react';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
@@ -46,6 +47,8 @@ export function ComprehensionView() {
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreurEnvoi, setErreurEnvoi] = useState('');
+  // Refus 401 à l'envoi : « Me reconnecter », dans un nouvel onglet (Q6a de PAT-5).
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [depose, setDepose] = useState(false);
 
   const charger = useCallback(async () => {
@@ -79,6 +82,7 @@ export function ComprehensionView() {
     if (etat.phase !== 'pret' || !etat.donnees.synthese) return;
     setEnvoi(true);
     setErreurEnvoi('');
+    setSessionExpiree(false);
     try {
       const res = await fetch('/api/portail/comprehension', {
         method: 'POST',
@@ -103,6 +107,7 @@ export function ComprehensionView() {
         // une suite de clics à refaire, c'est une parole — l'effacer serait la
         // perdre.
         setErreurEnvoi(data.error ?? 'Votre message n’a pas pu être enregistré.');
+        setSessionExpiree(res.status === 401);
       }
     } catch {
       setErreurEnvoi('Erreur réseau. Réessayez — votre texte est conservé ici.');
@@ -114,7 +119,7 @@ export function ComprehensionView() {
   if (etat.phase === 'chargement') {
     return (
       <PatientCard className="space-y-4">
-        <PatientPageHeader title="Ce que votre praticien a compris de vous" />
+        <PatientPageHeader title="Ce que mon praticien a compris de moi" />
         <p className="text-sm text-muted-foreground">Chargement…</p>
       </PatientCard>
     );
@@ -123,7 +128,7 @@ export function ComprehensionView() {
   if (etat.phase === 'erreur') {
     return (
       <PatientCard className="space-y-4">
-        <PatientPageHeader title="Ce que votre praticien a compris de vous" />
+        <PatientPageHeader title="Ce que mon praticien a compris de moi" />
         <PatientInlineMessage tone="error">{etat.message}</PatientInlineMessage>
       </PatientCard>
     );
@@ -140,7 +145,7 @@ export function ComprehensionView() {
       {synthese && <ConsignerLecturePortail espece="synthese" />}
       <PatientCard className="space-y-5">
         <PatientPageHeader
-          title="Ce que votre praticien a compris de vous"
+          title="Ce que mon praticien a compris de moi"
           subtitle="C’est sa compréhension, écrite avec ses mots. Si elle ne correspond pas à ce que vous vouliez dire, dites-le : c’est utile."
         />
 
@@ -181,7 +186,7 @@ export function ComprehensionView() {
                   setOuvertureFormulaire(true);
                   setDepose(false);
                 }}
-                className="w-full"
+                className="w-full print:hidden"
               >
                 Ce n’est pas exactement ça
               </PatientButton>
@@ -227,8 +232,15 @@ export function ComprehensionView() {
                 {erreurEnvoi && (
                   <PatientInlineMessage tone="error">{erreurEnvoi}</PatientInlineMessage>
                 )}
+                {/* Nouvel onglet : le texte saisi n'existe que dans cette page
+                    ([[D-488]], DOC-9 ; question `20261113-1856-d`). */}
+                {sessionExpiree && (
+                  <div className="print:hidden">
+                    <LienReconnexion nouvelOnglet />
+                  </div>
+                )}
 
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row print:hidden">
                   <PatientButton
                     type="submit"
                     variant="primary"
@@ -244,6 +256,7 @@ export function ComprehensionView() {
                     onClick={() => {
                       setOuvertureFormulaire(false);
                       setErreurEnvoi('');
+                      setSessionExpiree(false);
                     }}
                     className="w-full"
                   >

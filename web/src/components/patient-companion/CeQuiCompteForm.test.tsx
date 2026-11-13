@@ -373,3 +373,44 @@ describe('CeQuiCompteForm — brouillon local (t06)', () => {
     expect(screen.queryByText('Brouillon restauré sur cet appareil.')).toBeNull();
   });
 });
+
+// Q6a de PAT-5 ([[D-488]], DOC-9) : « Me reconnecter » sous le seul refus 401,
+// dans le même onglet — le brouillon vit sur l'appareil et revient après la
+// reconnexion.
+describe('CeQuiCompteForm — « Me reconnecter » sous un 401 (T-36)', () => {
+  const refus = (status: number, error: string) => ({
+    ok: false,
+    status,
+    json: async () => ({ ok: false, error }),
+  });
+
+  it('401 : le lien mène à la connexion, dans le même onglet, et le texte reste', async () => {
+    fetchMock.mockResolvedValue(json({ ok: true, entree: { id: 'ENT_1' } }, true));
+    await rendreLeFormulaire();
+    fetchMock.mockResolvedValueOnce(refus(401, 'Session expirée. Reconnectez-vous.'));
+    ecrire(TEXTE);
+    envoyer();
+
+    const lien = await screen.findByRole('link', { name: 'Me reconnecter' });
+    expect(lien.getAttribute('href')).toBe('/portail/connexion');
+    expect(lien.getAttribute('target')).toBeNull();
+    expect(champTexte().value).toBe(TEXTE);
+  });
+
+  it('un autre refus ne propose pas de reconnexion', async () => {
+    fetchMock.mockResolvedValue(json({ ok: true, entree: { id: 'ENT_1' } }, true));
+    await rendreLeFormulaire();
+    fetchMock.mockResolvedValueOnce(refus(400, 'Refusé.'));
+    ecrire(TEXTE);
+    envoyer();
+
+    await screen.findByText('Refusé.');
+    expect(screen.queryByRole('link', { name: 'Me reconnecter' })).toBeNull();
+  });
+
+  it('le bouton d’envoi est masqué à l’impression (Q5a)', async () => {
+    fetchMock.mockResolvedValue(json({ ok: true, entree: { id: 'ENT_1' } }, true));
+    await rendreLeFormulaire();
+    expect(screen.getByText('Envoyer').closest('button')?.className).toContain('print:hidden');
+  });
+});

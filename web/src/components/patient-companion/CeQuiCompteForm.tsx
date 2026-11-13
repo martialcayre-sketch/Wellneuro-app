@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { LienReconnexion } from '@/components/patient/LienReconnexion';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
@@ -96,6 +97,8 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
   const [restaure, setRestaure] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
+  // Refus 401 à l'envoi : « Me reconnecter » sous le message (Q6a de PAT-5).
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   const [fenetre, setFenetre] = useState<EtatFenetreEcran>({ etat: 'chargement' });
 
   /**
@@ -158,6 +161,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
   const soumettre = useCallback(async () => {
     setEnvoi(true);
     setErreur('');
+    setSessionExpiree(false);
     try {
       const res = await fetch('/api/portail/ce-qui-compte', {
         method: 'POST',
@@ -182,6 +186,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
         // tomber sur un texte tout juste rédigé. Ce n'est pas une suite de
         // clics à refaire, c'est une parole — l'effacer serait la perdre.
         setErreur(data.error ?? 'Votre dépôt n’a pas pu être enregistré.');
+        setSessionExpiree(res.status === 401);
       }
     } catch {
       setErreur('Erreur réseau. Réessayez — votre texte est conservé ici.');
@@ -290,6 +295,13 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
           formulaire entier, parce qu'il porte désormais aussi la cadence. Le
           garder ici en plus l'aurait rendu inatteignable. */}
       {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
+      {/* Même onglet : le brouillon vit sur l'appareil et revient après la
+          reconnexion ([[D-488]], DOC-9). */}
+      {sessionExpiree && (
+        <div className="print:hidden">
+          <LienReconnexion />
+        </div>
+      )}
 
       <PatientButton
         type="submit"
@@ -297,7 +309,7 @@ function FormulaireCeQuiCompte({ idPatient, onDepose }: { idPatient: string | nu
         disabled={texte.trim().length === 0}
         loading={envoi}
         loadingLabel="Envoi…"
-        className="w-full"
+        className="w-full print:hidden"
       >
         Envoyer
       </PatientButton>
