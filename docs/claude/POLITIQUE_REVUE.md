@@ -32,6 +32,22 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 | P1 | `Agent(wn-reviewer)` (Opus/high) | une passe **si l'indépendance est utile** | sur signal seulement |
 | P0 | `Agent(wn-reviewer)` + `/security-review` si la nature s'y prête | **une passe obligatoire** | sur signal seulement |
 
+**Moment de la revue interne : avant le push** (lot `autonomie-frictions`,
+2026-11-13). La passe de la ligne ci-dessus, `/code-review` ou
+`wn-reviewer`, se joue de préférence sur le diff local, avant le premier
+push. Ses constats se corrigent alors avant que PR-Agent ne relise, plutôt
+qu'en une tête de plus après lui. Ce n'est pas une passe de plus : c'est la
+même, jouée plus tôt. Le diff non commité suffit, fichiers non suivis
+compris : une branche sans commit propre reste avançable par `--ff-only`
+quand `main` bouge pendant la revue, tant que `main` ne touche pas les mêmes
+fichiers. Une telle passe n'a pas de sha : quand `wn-reviewer` tient lieu de
+revue exigée (`D-499` §2, `D-448`), son GO porte sur la tête poussée, et un
+commit poussé ensuite demande une revue de l'écart (règle 1.6 de
+`.claude/rules/pr-revue-et-release-db.md`). La passe Codex P0 garde sa place : elle porte sur le diff
+poussé (`D-505`). Depuis la même date, `wn-reviewer` passe une grille de six
+classes de défauts que les revues externes relevaient après l'ouverture de la
+PR (`.claude/agents/wn-reviewer.md`).
+
 **Campagne BIO-PARCOURS seulement** (`D-266` §11, 2026-10-04) : la passe
 Codex y vise nommément toute **migration**, tout **module clinique signé**
 (table TS signée, fiche d'usage, bibliothèque d'options) et toute **décision
@@ -150,10 +166,9 @@ est le plus petit coût de revue donnant une confiance suffisante.
 
 Les classes et paliers vivent dans `wn-lot` ; l'exception migration/auth et
 la vérification base après merge dans `wn-merge`/`REGLES_PR_MERGE.md` ; les
-contrôles cliniques opposables dans `.claude/rules/clinique-scoring.md` ; la
-revue de CodeRabbit précède le merge par l'assistant (`D-290`, qui a pris la
-suite de Copilot le 2026-10-14) ; s'il saute la PR ou bute sur son quota,
-celle de Copilot le remplace si son quota est présumé disponible (`D-468`),
-sinon celle de PR-Agent sur la tête (`D-393`). L'une ou l'autre
-s'ajoute au barème ci-dessus sans en remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
+contrôles cliniques opposables dans `.claude/rules/clinique-scoring.md`. La
+revue de bot exigée avant le merge est celle de PR-Agent sur la tête,
+prouvée par `wn-revue-pr-agent.mjs` → 0 ; à défaut, celle de `wn-reviewer`
+sur la tête (`D-499`, `D-448`). Elle s'ajoute au barème ci-dessus sans en
+remplacer aucune ligne. Ce document n'ajoute aucun reviewer :
 il fixe **quand** chacun s'engage et quand il ne s'engage pas.
