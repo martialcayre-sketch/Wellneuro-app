@@ -61,6 +61,19 @@ la session de la refonte.
 - Branche recréée sur `origin/main` 40c432e78 (`git switch -C`, sans merge ni rebase : aucun commit propre,
   aucun fichier commun avec #2042 et #2047), liberté de cycle approuvée le 2026-11-11.
 
+## Reprise après la contre-revue Codex (2026-11-13, après-midi)
+
+- Codex (D-505 §4) a rendu BLOQUER sur `8ec61493`. La PR a été reprise par une autre session, sur
+  demande du responsable, qui a aussi autorisé la fusion de `origin/main` dans la branche (sans conflit,
+  aucun fichier commun).
+- P1 (fuite) : corrigé. L'exclusion « date suivie d'une heure » du motif téléphone n'est plus prise qu'avec une date
+  valide (mois de 01 à 12, année 19xx ou 20xx) suivie d'une heure valide (00 à 23, puis minutes, « : » ou « h »).
+  « 06 98 2024 32 », « 06 12 2024 32 » et « 06 2024 1030 » sont masqués ; au corpus, dans les deux sens.
+- P2 (fidélité) : écarté avec motif. « 05 11 98 08 15 » a la forme exacte d'un numéro du Sud-Ouest ; rien ne
+  les distingue, le masque l'emporte. Un test le documente.
+- Validations : suite `export-dossier` verte (586 tests) ; T1 ; CI, PR-Agent et contre-passe Codex ciblée sur la
+  nouvelle tête.
+
 ## Problèmes ouverts
 
 - P1-2 et P1-3 attendent l'arbitrage du responsable (décision D-xxx amendant D-252 §2).

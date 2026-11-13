@@ -15,4 +15,7 @@ clinique. P1-2 (identifiant du dossier) et P1-3 (âge, dates, lieux, profession)
   téléchargeable dans ses deux versions.
 - P2-1 : le journal des accès (G-TRUST-04) écrit la version exportée dans son gabarit de route
   (`/api/praticien/export-dossier?version=ia-externe` ou `?version=complete`) : un export complet se retrouve.
+- Contre-revue Codex : une date n'excuse plus un numéro que si elle est valide (mois de 01 à 12) et suivie d'une heure
+  valide ; « 06 98 2024 32 » passait en clair. Une date à année sur deux chiffres suivie d'une heure, indiscernable
+  d'un numéro, reste masquée.
 - Registre RGPD : le risque « NIR en texte libre non masqué » est levé ; la sortie de l'export est précisée.

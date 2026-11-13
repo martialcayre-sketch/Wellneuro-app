@@ -206,6 +206,10 @@ const FUITES: Fuite[] = [
   { origine: 'P1-1', texte: 'Sécu : 2 85 03 75 115 123 45', identite: ['285037511512345'] },
   { origine: 'P1-1', texte: 'NIR 285037511512345 et 1850375115123', identite: ['285037511512345', '1850375115123'] },
   { origine: 'P1-1', texte: 'NIR 2 85 03 2A 115 123', identite: ['285032a115123'] },
+  // Contre-revue Codex de #2051, P1 : « 98 » n'est pas un mois, « 32 » pas une heure.
+  { origine: 'Codex #2051', texte: 'Contact : 06 98 2024 32', identite: ['0698202432'] },
+  { origine: 'Codex #2051', texte: 'mon frère : 06 12 2024 32', identite: ['0612202432'] },
+  { origine: 'Codex #2051', texte: 'portable 06 2024 1030', identite: ['0620241030'] },
 ];
 
 // ── (b) FIDÉLITÉ ───────────────────────────────────────────────────────────
@@ -275,6 +279,7 @@ const FIDELITE: Fidelite[] = [
   { origine: 'P1-1', texte: 'Bilan du 01/02/2024 10:30, revu le 01.02.2024 10:30' },
   { origine: 'P1-1', texte: 'le 01-02-2024 à 10 h, puis le 01 02 2024 10 30' },
   { origine: 'P1-1', texte: 'le 05.11.1998 08 15, le 05 11 98 à 08 15, le 12-03-2026 09 00' },
+  { origine: 'Codex #2051', texte: 'le 01 02 2024 10 h, le 31.12.1999 23 59, le 15-03-2026 0815' },
   { origine: 'P1-1', texte: 'Glycémie 0,95 g/L ; TSH 1,85 mUI/L ; ferritine 45 µg/L' },
   { origine: 'P1-1', texte: 'Vitamine D 25-OH : 30 ng/mL ; 1 000 UI/jour ; 2 x 500 mg' },
   { origine: 'P1-1', texte: 'Sommeil 23:30 – 06:45, 3 réveils, 7 h 15' },

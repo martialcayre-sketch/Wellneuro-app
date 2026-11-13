@@ -543,6 +543,24 @@ describe('creerMasqueur — garanties', () => {
     expect(masquer('PAT030@autre.example.test')).toBe(M);
   });
 
+  // Contre-revue Codex de #2051, P2 (écarté) : une date à année sur deux
+  // chiffres suivie d'une heure a la forme exacte d'un numéro du Sud-Ouest.
+  // Rien ne les distingue : dans le doute, le masque l'emporte.
+  it('masque une date à année sur deux chiffres suivie d’une heure, indiscernable d’un numéro', () => {
+    expect(masquer('Bilan du 05 11 98 08 15')).toBe(`Bilan du ${M}`);
+    expect(masquer('Fixe : 05 11 98 08 15')).toBe(`Fixe : ${M}`);
+  });
+
+  it('une date n’excuse un numéro que si elle est valide et suivie d’une heure valide', () => {
+    expect(masquer('le 01.02.2024 10 30')).toBe('le 01.02.2024 10 30');
+    expect(masquer('le 12-03-2026 09 00')).toBe('le 12-03-2026 09 00');
+    expect(masquer('le 01 02 2024 10 h')).toBe('le 01 02 2024 10 h');
+    expect(masquer('06 98 2024 32')).toBe(M);
+    expect(masquer('06 12 2024 32')).toBe(M);
+    expect(masquer('06 2024 1030')).toBe(M);
+    expect(masquer('le 01 13 2024 10 30')).toBe(`le ${M} 30`);
+  });
+
   it('reste linéaire sur les formes génériques : 80 000 caractères hostiles en moins de 200 ms chacun', () => {
     const N = 80_000;
     const remplir = (motif: string) => motif.repeat(Math.ceil(N / motif.length)).slice(0, N);
@@ -553,6 +571,8 @@ describe('creerMasqueur — garanties', () => {
       remplir('a@' + 'b'.repeat(70) + ' '),
       remplir('06 '),
       remplir('06 12 34 '),
+      remplir('01 02 2024 '),
+      remplir('12-03-2026 0'),
       remplir('1 85 03 '),
       remplir('2a'),
       remplir('+33 (0)6 '),

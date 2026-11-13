@@ -607,11 +607,19 @@ const EMAIL_GENERIQUE =
 // chiffre de 1 à 9, puis huit chiffres, chacun précédé au plus d'un
 // séparateur (espace, point, tiret, mêlés ou non) : « 06 12-34 56 78 »,
 // « 06 1234 5678 », « 0612 345 678 ». La barre et les deux-points n'en sont
-// pas. Une date suivie d'une heure n'est pas un numéro : au « 0 » d'un jour
-// (« 01.02.2024 10 30 ») ou d'un mois (« 02.2024 10 30 ») suivi d'une année
-// en 19xx ou 20xx, la forme ne se cherche pas.
+// pas. Une date suivie d'une heure n'est pas un numéro, mais seulement une
+// VRAIE date suivie d'une VRAIE heure : au « 0 » d'un jour (« 01.02.2024 10 30 »)
+// ou d'un mois précédé de son jour (« 12-03-2026 09 00 »), mois de 01 à 12,
+// année en 19xx ou 20xx, heure de 00 à 23 suivie de ses minutes (« 10 30 », « 10:30 ») ou de « h ».
+// Sans ces bornes, « 06 98 2024 32 » passait pour une date et le numéro d'un
+// tiers sortait en clair (contre-revue Codex de #2051, P1). Une date à année
+// sur deux chiffres suivie d'une heure (« 05 11 98 08 15 ») a la forme exacte
+// d'un numéro (05 : indicatif du Sud-Ouest) : elle reste masquée — dans le
+// doute, le masque l'emporte (même contre-revue, P2, écarté).
+const HEURE_APRES_DATE = '[ .\\-](?:[01]\\d|2[0-3])(?:[ .\\-:]?[0-5]\\d(?!\\d)|\\s?h)';
 const TELEPHONE_GENERIQUE =
-  '(?:0(?!\\d[ .\\-]\\d\\d[ .\\-](?:19|20)\\d\\d)(?!\\d[ .\\-](?:19|20)\\d\\d[ .\\-])' +
+  `(?:0(?!\\d[ .\\-](?:0[1-9]|1[0-2])[ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE})` +
+  `(?!(?<=(?<!\\d)(?:0[1-9]|[12]\\d|3[01])[ .\\-]0)[1-9][ .\\-](?:19|20)\\d\\d${HEURE_APRES_DATE})` +
   '|(?:\\+|00)[ .\\-]?33[ .\\-]?(?:\\(0\\)[ .\\-]?)?)[1-9](?:[ .\\-]?\\d){8}';
 // NIR : sexe, année, mois, département (2A, 2B compris), commune, ordre, clé
 // facultative — 13 ou 15 chiffres, groupés ou non. La clé n'est pas
