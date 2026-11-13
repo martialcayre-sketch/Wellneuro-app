@@ -112,7 +112,10 @@ impose notamment :
 - Voir une donnée de patient.
 - Choisir une fiche pour un dossier : aucune sélection d'après le dossier
   n'existe dans ce lot (`D-314` §7).
-- Valider un texte ou un libellé.
+- Valider un texte ou un libellé de sa propre initiative. Seul l'assistant
+  de développement le fait, sur délégation explicite du responsable, en
+  session et sur un périmètre nommé (`D-509`) ; le circuit de rédaction ne
+  valide jamais.
 - Ajouter un nombre, une dose ou un identifiant absents de ses sources.
 
 ## Limites connues
@@ -120,11 +123,18 @@ impose notamment :
 - **Le contrôle automatique ne lit pas le sens.** Un sens déplacé, une
   population élargie ou un nombre écrit en lettres lui échappent. La
   contre-lecture les cherche, et la relecture du praticien reste la
-  dernière porte (`D-195` §1).
+  dernière porte (`D-195` §1). Quand la validation est déléguée, cette
+  relecture est celle de l'assistant, un modèle de la même famille que le
+  rédacteur : la relecture par le responsable lui-même reste recommandée
+  (`D-509` §3).
 - **La base enregistre la déclaration de relecture, pas la preuve d'un geste
-  humain.** Cette garantie tient par l'application, qui n'accepte un acte que
-  du responsable connecté, désigné par une liste d'adresses fermée par défaut
-  (`D-314` §9).
+  humain.** L'application n'accepte un acte que d'une adresse de la liste
+  des validateurs, fermée par défaut (`D-314` §9) ; elle ne dit pas qui
+  a relu. Un acte délégué porte la même adresse et la même déclaration
+  qu'un acte du responsable, et ne s'en distingue pas en base : seule la
+  trace écrite de la délégation (décision du lot, journal du plan) le dit.
+  L'acte humain qui répond de la validation est alors la délégation, pas la
+  relecture (`D-509` §3).
 
 ## Références
 
