@@ -419,6 +419,13 @@ jobs:
       - name: Invariants de ci.yml (déclencheurs, concurrency)
         run: node --test scripts/ci-invariants.test.mjs
 
+      # Banc du guetteur borné (`scripts/wn-guetteur.mjs`) : motif des
+      # déclarations « prête », sondes de merge et de release-db, codes de la
+      # boucle. Le guetteur vivait hors dépôt sans banc versionné. Ni npm ni
+      # réseau : node suffit.
+      - name: Guetteur borné (banc)
+        run: node --test scripts/wn-guetteur.test.mjs
+
       # Piège converti en contrôle (lot `autonomie-frictions`) : `btrim(texte)`
       # à un argument ne retire que l'espace ASCII, si bien qu'un CHECK « non
       # vide » laisse passer une tabulation. Refusé dans toute migration neuve ;
