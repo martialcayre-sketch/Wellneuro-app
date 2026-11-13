@@ -5,6 +5,8 @@
 - Branche `chore/orchestration-controle-registres`, dans le worktree `.claude/worktrees/orch-registres`.
 - Créée sur `origin/main` (24d8641d), puis recréée trois fois sur la nouvelle tête pendant qu'elle était encore
   sans commit (`git switch -C`, aucun fichier commun) : base finale 9ac34746.
+- `origin/main` fusionné dans la branche après l'ouverture de la PR (délégation du 2026-10-16, fusion sans
+  conflit, aucun fichier commun) : le garde de fraîcheur l'exigeait avant le correctif de revue.
 - Session concurrente « Orchestration » : `git` et `gh` en direct. La PR se déclare « prête » ; l'intégrateur merge.
 - Lot du carnet `orchestration-1` (D-510), file D, ordre 40. Ligne `chevauchement` posée à la boîte `D` : le lot
   voisine `autonomie-sondes-et-messages`, sans fichier commun.
@@ -42,6 +44,13 @@ aucune machine ne les relit.
       seuil ; en inventer un serait ajouter une règle ;
     - « le contrôle du suffixe d'identifiant est trop permissif » : c'est un avis, pas une règle, et l'usage abrège
       les noms de boîte ; une boîte émettrice vide est déjà une anomalie de champ.
+- Revue PR-Agent sur la PR #2072 : deux constats, un verdict chacun.
+  - « Correspondance par sous-chaîne » : corrigé avant la revue (même constat que la revue interne).
+  - « Identifiant non assaini en sortie » : corrigé. L'identifiant d'une ligne est le nom de son fichier d'export ;
+    il est désormais assaini une fois à l'entrée (caractères de contrôle retirés, 80 caractères au plus), si bien
+    que constats, détails et boîte le recopient sans risque. Limite dite : un identifiant au bon alphabet reste
+    recopié tel quel, borné ; un identifiant altéré reste signalé hors format.
+  - Le message « skip » de CodeRabbit n'est pas une revue : rien à traiter.
 - Écartés de cette PR, à porter dans des lots à part :
   - l'étape `ci.yml` qui jouerait le banc (revue P1, orchestration CI) ;
   - toute lecture de GitHub (déclarations « prête », revues, checks) ;
@@ -73,6 +82,12 @@ aucune machine ne les relit.
   - actions dues : 51 questions répondues sans suite, 14 lignes `emis` à relancer, 13 merges à constater, 1 lot
     sans nouvelles depuis plus de quatre heures, 1 lot `bloque` dont la question est répondue, 1 question ouverte.
   - Rejoué sur le même export après les correctifs de revue : mêmes agrégats.
+- CI de la PR sur a276cdf0 : `node scripts/wn-attendre-ci.mjs 2072` → code 0. Revue :
+  `node scripts/wn-revue-pr-agent.mjs 2072` → code 0 sur ce sha. Les deux sont à rejouer sur la tête qui porte le
+  correctif ci-dessus ; leur résultat se lit sur la PR, pas dans ce fichier.
+- Après le correctif d'assainissement et la fusion de `origin/main` : `node --test scripts/lib/registres.test.mjs`
+  19/19, code 0 (le cas « aucun texte libre en sortie » porte désormais un identifiant piégé) ; `npm run check`
+  rejoué sur l'arbre fusionné : code 0.
 - T2 non joué : le lot ne touche ni UI ni API.
 
 ## Problèmes ouverts
@@ -95,11 +110,14 @@ aucune machine ne les relit.
 
 ## Prochaine action exacte
 
-1. Attendre le CI de la PR par `node scripts/wn-attendre-ci.mjs <N>` (tâche de fond), puis la revue par
-   `node scripts/wn-revue-pr-agent.mjs <N>` ; un verdict par commentaire.
+1. Attendre le CI de la PR #2072 sur sa tête par `node scripts/wn-attendre-ci.mjs 2072` (tâche de fond), puis la
+   revue par `node scripts/wn-revue-pr-agent.mjs 2072` ; un verdict par commentaire.
 2. Relire la boîte `orchestration` et la ligne `orchestration-1` du carnet, puis déclarer « prête @<sha> ».
-3. Lot suivant de la série, après réponse du responsable aux questions posées : l'étape `ci.yml` pour ce banc et
-   les cinq bancs de garde (P1), puis l'instantané GitHub en lecture seule.
+3. Lots suivants de la série, qui n'attendent aucune réponse : l'étape `ci.yml` pour ce banc et les cinq bancs de
+   garde (P1), puis l'instantané GitHub en lecture seule.
+4. Cinq questions sont à la liste commune (file D, 2026-11-13, de 1940-d à 1944-d) : une de sécurité, quatre sur
+   l'outillage de l'intégrateur, la veille sans session, le cockpit et le barème de délégation. Les lots qui en
+   dépendent (versement de l'outillage, cockpit, veille) attendent la réponse du responsable.
 
 ## Interdits encore actifs
 

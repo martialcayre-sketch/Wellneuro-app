@@ -68,6 +68,12 @@ export function court(v, n = 40) {
   return s.length > n ? `${s.slice(0, n)}…` : s;
 }
 
+// L'identifiant d'une ligne est le nom de son fichier d'export : un texte que
+// ce script ne contrôle pas. Il est assaini à l'entrée, une fois, pour que
+// tout ce qui le recopie ensuite (constats, détails, boîte) sorte sans
+// caractère de contrôle et borné. Un identifiant altéré reste hors format.
+const assainirIds = (lignes) => lignes.map((l) => ({ ...l, id: court(l.id, 80) }));
+
 /** Millisecondes d'un horodatage ISO, ou `null` s'il est vide ou illisible. */
 export function instant(v) {
   if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(v.trim())) return null;
@@ -323,7 +329,7 @@ export function lotsSuivants(lots) {
 /** La boîte d'une session : ses lignes non `traite`, les plus anciennes d'abord. */
 export function boite(messages, nom) {
   const cle = normaliserBoite(nom);
-  return messages
+  return assainirIds(messages)
     .filter((m) => normaliserBoite(m.a) === cle && m.etat !== 'traite')
     .sort((x, y) => (instant(x.emis_le) ?? 0) - (instant(y.emis_le) ?? 0) || x.id.localeCompare(y.id))
     .map((m) => ({ id: m.id, de: court(m.de), objet: court(m.objet, 20), ref: court(m.ref), etat: court(m.etat, 10) }));
@@ -341,7 +347,8 @@ function compter(lignes, champ) {
 }
 
 /** L'analyse entière d'un export : constats de règle, actions dues, lots suivants, comptes. */
-export function analyser({ messages = [], lots = [], questions = [], absentes = [] }, maintenant) {
+export function analyser({ messages: m = [], lots: l = [], questions: q = [], absentes = [] }, maintenant) {
+  const [messages, lots, questions] = [m, l, q].map(assainirIds);
   const constats = [...controlerMessages(messages), ...controlerLots(lots, questions.length > 0 ? questions : null), ...controlerQuestions(questions)];
   return {
     comptes: {

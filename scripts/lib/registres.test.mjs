@@ -365,6 +365,13 @@ test('analyse et rendu : comptes, ligne machine, aucun texte libre en sortie', (
   assert.match(lignes[0], /^⚠ export vieux de 45 min/);
   assert.equal(lignes.at(-1), 'REGISTRES anomalies=1 avis=0 actions=3 boite=1');
   assert.ok(!lignes.join('\n').includes(secret) && !JSON.stringify(analyse).includes(secret));
+  // Un identifiant est un nom de fichier d'export : assaini à l'entrée, il ne
+  // porte en sortie ni saut de ligne, ni séquence d'échappement, ni phrase entière.
+  const piege = `20260110-1300-a\n\u001b[31m${'x'.repeat(200)}`;
+  const sale = analyser({ messages: [message({ id: piege })], lots: [lot({ id: piege, etat: 'pris', pr: '', tenu_le: iso(T0 - 5 * H) })] }, T0);
+  const rendu = rendre(sale, { ageExportMin: 1, boiteNom: 'integrateur', lignesBoite: boite([message({ id: piege })], 'integrateur') });
+  assert.ok(sale.anomalies.some((a) => a.collection === 'messages' && a.regle === 'identifiant'), 'un identifiant altéré reste hors format');
+  assert.ok(rendu.every((ligne) => !/[\u0000-\u001f\u007f-\u009f]/.test(ligne) && !ligne.includes('x'.repeat(81))));
   assert.equal(codeDeSortie(analyse), SORTIE_ANOMALIES);
   assert.equal(codeDeSortie({ anomalies: [], actions: [{}] }), SORTIE_ACTIONS);
   assert.equal(codeDeSortie({ anomalies: [], actions: [] }), SORTIE_CONFORME);
