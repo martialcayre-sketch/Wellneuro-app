@@ -185,6 +185,21 @@ attend d'être lu.
 - **Hors registre.** Les urgences, la sécurité et les release-db restent
   immédiates. Le responsable n'a rien à y faire ; la page lui montre les
   lignes en attente.
+- **Le guetteur** (`scripts/wn-guetteur.mjs`, lot
+  `autonomie-sondes-et-messages`, 2026-11-13). Trois sondes bornées, en
+  lecture seule (seul `prete --amorcer` écrit, dans le fichier que l'appelant
+  lui donne), à lancer en tâche de fond pour être prévenu plutôt que
+  sonder :
+  - `prete` : les déclarations « prête @<sha> » neuves, pour l'intégrateur ;
+  - `merge <N>` : la PR mergée ou fermée, pour la file qui l'a déclarée ;
+  - `release-db` : un run en attente d'approbation, geste humain (`D-087`).
+
+  Codes : `0` événement, `3` délai échu (la ligne compte les lectures en
+  échec, s'il y en a eu), `2` aucune lecture aboutie. Il ne
+  remplace ni le registre ni le commentaire de PR, qui font foi.
+  `crossSessionInbound` vaut `accept` dans les réglages utilisateur du Mac
+  (constaté le 2026-11-13) : une sonnette `SendMessage` arrive sans
+  approbation au terminal.
 
 ### Le carnet de lots (`D-510`)
 

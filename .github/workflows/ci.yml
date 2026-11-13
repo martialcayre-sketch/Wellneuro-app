@@ -417,6 +417,13 @@ jobs:
       - name: Invariants de ci.yml (déclencheurs, concurrency)
         run: node --test scripts/ci-invariants.test.mjs
 
+      # Banc du guetteur borné (`scripts/wn-guetteur.mjs`) : motif des
+      # déclarations « prête », sondes de merge et de release-db, codes de la
+      # boucle. Le guetteur vivait hors dépôt sans banc versionné. Ni npm ni
+      # réseau : node suffit.
+      - name: Guetteur borné (banc)
+        run: node --test scripts/wn-guetteur.test.mjs
+
       # Le classement d'un échec E2E (blocage navigateur vs défaut applicatif)
       # ne sert qu'en local — `wn-test-worktree.sh` ne tourne pas ici. Son BANC,
       # lui, a sa place dans les deux passes : le banc de parité ne contrôle que
