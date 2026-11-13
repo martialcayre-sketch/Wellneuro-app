@@ -2,7 +2,8 @@
 // Au démarrage/reprise, fetch origin/main sans toucher au worktree et mémorise
 // le constat. Avant Edit/Write, réévalue : l'appartenance de origin/main à HEAD
 // est toujours recalculée à chaud, en local ; seul le fetch réseau est limité à
-// une tentative toutes les 15 minutes. Le verdict est porté par l'état Git réel,
+// une tentative toutes les 15 minutes. Une cible hors de tout dépôt Git
+// (bloc-notes, mémoire) n'est pas jugée. Le verdict est porté par l'état Git réel,
 // jamais par l'absence du marqueur. Aucun pull, merge, rebase ni checkout.
 // Chaque verdict laisse une ligne dans un journal persistant (D-375 §1).
 import crypto from "node:crypto";
@@ -38,13 +39,13 @@ const DELAI_GIT_MS = 10_000;
 // délai de Claude Code : ses appels Git ont un budget court.
 const DELAI_GIT_JOURNAL_MS = 2_000;
 
-function git(args, { dans = cwd, delai = DELAI_GIT_MS } = {}) {
+function git(args, { dans = cwd, delai = DELAI_GIT_MS, env = {} } = {}) {
   return spawnSync("git", args, {
     cwd: dans,
     encoding: "utf8",
     timeout: delai,
     killSignal: "SIGKILL",
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", ...env },
   });
 }
 
@@ -135,6 +136,20 @@ function cible() {
   if (!ici) return "inconnue";
   const dossier = dossierExistant(fichier);
   return dossier && racineReelle(dossier) === ici ? "interne" : "externe";
+}
+
+// Cible hors de tout dépôt Git (bloc-notes de la session, mémoire) : la
+// fraîcheur de la branche n'y joue aucun rôle. Seul un « pas un dépôt »
+// explicite de Git exempte — message forcé en anglais (`LC_ALL=C`) ; un délai
+// dépassé, un Git absent ou toute autre erreur laissent le garde juger. Un
+// autre worktree, un autre dépôt restent gardés : ils sont dans un dépôt.
+function horsDepot() {
+  const fichier = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
+  if (typeof fichier !== "string" || !fichier) return false;
+  const dossier = dossierExistant(fichier);
+  if (!dossier) return false;
+  const resultat = git(["rev-parse", "--show-toplevel"], { dans: dossier, delai: DELAI_GIT_JOURNAL_MS, env: { LC_ALL: "C" } });
+  return resultat.status === 128 && /not a git repository/i.test(resultat.stderr);
 }
 
 // Journal des verdicts (D-375 §1) : une ligne JSON par verdict, pour compter
@@ -245,6 +260,10 @@ if (event === "SessionStart") {
 // MultiEdit et NotebookEdit, qui écrivent des fichiers comme les autres. Les
 // ignorer ouvrirait une porte que `protect-wellneuro-files.mjs`, lui, ferme.
 if (event === "PreToolUse" && /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(String(input.tool_name || ""))) {
+  if (horsDepot()) {
+    journaliser("autorise", "hors-depot", constater());
+    process.exit(0);
+  }
   const { constat, fetchOk, verifiedAt } = evaluer();
 
   if (!constat.head || !constat.originMain) {

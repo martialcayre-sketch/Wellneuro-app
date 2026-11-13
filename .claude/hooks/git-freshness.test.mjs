@@ -420,9 +420,77 @@ test("journal : une ligne par verdict, champs fixes, jamais de contenu ni de che
   assert.deepEqual(lignes.map((l) => [l.outil, l.cible, l.verdict, l.motif]), [
     ["SessionStart", null, "constat", "a-jour"],
     ["Write", "interne", "autorise", "a-jour"],
-    ["Edit", "externe", "autorise", "a-jour"],
+    ["Edit", "externe", "autorise", "hors-depot"],
   ]);
-  assert.doesNotMatch(brut, /CONTENU-NE-DOIT-PAS-FUIR|fichier-secret-nom|hors-depot/);
+  assert.doesNotMatch(brut, /CONTENU-NE-DOIT-PAS-FUIR|fichier-secret-nom|hors-depot\.txt/);
+});
+
+test("branche en retard : une cible hors de tout dépôt (bloc-notes, mémoire) reste libre, sans fetch", (t) => {
+  const contexte = repo();
+  const { root, work } = contexte;
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const session = `hors-depot-${Date.now()}`;
+  t.after(() => fs.rmSync(marqueur(work, session), { force: true }));
+  avancerLeRemote(contexte, "hors-depot");
+  run(["fetch", "origin"], work);
+  const blocNotes = path.join(root, "bloc-notes", "neuf", "note.md");
+
+  for (const outil of ["Write", "Edit", "MultiEdit"]) {
+    assertAutorise(invoke(work, {
+      hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: outil, tool_input: { file_path: blocNotes },
+    }), `${outil} hors dépôt`);
+  }
+  // Aucune évaluation de fraîcheur : ni fetch, ni marqueur.
+  assert.equal(fs.existsSync(marqueur(work, session)), false);
+  assert.deepEqual(journal(work).lignes.map((l) => [l.cible, l.verdict, l.motif]), [
+    ["externe", "autorise", "hors-depot"], ["externe", "autorise", "hors-depot"], ["externe", "autorise", "hors-depot"],
+  ]);
+  // Le même outil, dans le dépôt, reste refusé.
+  const refus = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: path.join(work, "a.md") } });
+  assert.match(refus.stdout, /"permissionDecision":"deny"/);
+});
+
+test("branche en retard : un autre dépôt ou un autre worktree restent gardés", (t) => {
+  const contexte = repo();
+  const { root, work } = contexte;
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const session = `autre-depot-${Date.now()}`;
+  t.after(() => fs.rmSync(marqueur(work, session), { force: true }));
+  const autreDepot = path.join(root, "autre-depot");
+  fs.mkdirSync(autreDepot);
+  run(["init", "-q"], autreDepot);
+  const voisin = path.join(work, ".claude", "worktrees", "voisin");
+  run(["worktree", "add", "-b", "lot/voisin", voisin, "origin/main"], work);
+  avancerLeRemote(contexte, "autre-depot");
+
+  for (const fichier of [path.join(autreDepot, "x.md"), path.join(voisin, "y.md"), "sans-tool-input"]) {
+    const tool_input = fichier === "sans-tool-input" ? undefined : { file_path: fichier };
+    const refus = invoke(work, { hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input });
+    assert.match(refus.stdout, /"permissionDecision":"deny"/, fichier);
+  }
+});
+
+test("Git qui pend sur la cible : pas d'exemption, le garde juge", (t) => {
+  const contexte = repo();
+  const { root, work } = contexte;
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const session = `cible-lente-${Date.now()}`;
+  t.after(() => fs.rmSync(marqueur(work, session), { force: true }));
+  avancerLeRemote(contexte, "cible-lente");
+  const horsDepot = path.join(root, "bloc-notes");
+  fs.mkdirSync(horsDepot);
+  const vraiGit = spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout.trim();
+  const bin = path.join(root, "bin");
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, "git"), `#!/bin/sh\ncase "$(pwd -P)" in "${fs.realpathSync(horsDepot)}"*) exec sleep 30;; esac\nexec "${vraiGit}" "$@"\n`, { mode: 0o755 });
+
+  const refus = spawnSync("node", [hook], {
+    cwd: work,
+    input: JSON.stringify({ hook_event_name: "PreToolUse", session_id: session, cwd: work, tool_name: "Write", tool_input: { file_path: path.join(horsDepot, "n.md") } }),
+    encoding: "utf8",
+    env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}` },
+  });
+  assert.match(refus.stdout, /"permissionDecision":"deny"/);
 });
 
 test("journal : le refus pour retard porte les deux SHA et son motif", (t) => {
