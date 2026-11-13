@@ -62,9 +62,12 @@ export function estIdentifiantOption(valeur: unknown): valeur is string {
 //
 // Une rubrique renvoie à ses sources, jamais à un texte : un claim certifié,
 // cité `identifiant@version` ; une position d'expert, citée par version
-// `WN-PE-NNNN@vN.M` ([[D-480]] §5.3) ; ou, pour la DOSE seule, l'information
-// manquante, jamais une valeur (cadrage §4.2, `DC-01`). Les formats sont ceux
-// des claims épinglés des tables signées et des positions d'expert.
+// `WN-PE-NNNN@vN.M` ([[D-480]] §5.3) ; ou l'information manquante, jamais une
+// valeur (cadrage §4.2, `DC-01`), dans toute rubrique SAUF les précautions
+// ([[D-514]] §2, qui amende D-480 §4). Les formats sont ceux des claims
+// épinglés des tables signées et des positions d'expert. Aucune autre forme :
+// une dose du registre des compléments se cite par le claim certifié ou la
+// position signée qui la porte ([[D-514]] §1).
 
 /** `WN-CL-NNNN-NNN@vN.M` — le `v` est exigé, comme dans les claims épinglés. */
 export const RE_RENVOI_CLAIM = /^(WN-CL-[0-9]{4}-[0-9]{3})@(v[0-9]+\.[0-9]+)$/;
@@ -75,11 +78,19 @@ export const RE_RENVOI_CLAIM = /^(WN-CL-[0-9]{4}-[0-9]{3})@(v[0-9]+\.[0-9]+)$/;
  */
 const corpsDe = (re: RegExp) => re.source.replace(/^\^/, '').replace(/\$$/, '');
 export const RE_RENVOI_POSITION = new RegExp(`^(${corpsDe(POSITION_ID_RE)})@(${corpsDe(VERSION_POSITION_RE)})$`);
-/** La dose sans source : « information manquante », jamais une valeur. */
+/** Une rubrique DÉCLARÉE manquante : « information manquante », jamais une valeur. */
 export const INFORMATION_MANQUANTE = 'information_manquante';
 
-/** La seule rubrique qui admet l'information manquante ([[D-480]] §4). */
-export const RUBRIQUES_INFORMATION_MANQUANTE: readonly RubriqueOption[] = ['dose'];
+/**
+ * Les rubriques qui admettent l'information manquante : toutes, SAUF les
+ * précautions ([[D-514]] §2, qui étend D-480 §4 au-delà de la dose). « Déclarée
+ * manquante » se distingue ainsi de « non portée » (liste vide), que D-480
+ * §5.2 sépare (DC-11). Les précautions doivent être documentées (§5.1, DC-38) :
+ * ni vides, ni déclarées manquantes.
+ */
+export const RUBRIQUES_INFORMATION_MANQUANTE: readonly RubriqueOption[] = RUBRIQUES_OPTION.filter(
+  r => r !== 'precautions',
+);
 
 export type Renvoi =
   | { nature: 'claim'; claimId: string; versionClaim: string }
