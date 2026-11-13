@@ -147,6 +147,10 @@ const IMPORTEURS_ADMIS = [
   // d'annulation ([[D-294]]), module PUR `annulationMotifs`, avec le geste
   // qui les propose (`ActeAnnulationResultat`).
   'web/src/components/patient-cockpit/ActeAnnulationResultat.tsx',
+  // Le bloc du contexte de prélèvement ([[D-497]] §4, BP-05) : le module PUR
+  // `contextePrelevement` (forme des sept champs, libellés) — aucune valeur
+  // de résultat lue, aucune qualification.
+  'web/src/components/biologie/BlocContextePrelevement.tsx',
   'web/src/components/patient-cockpit/EstimeMesurePanel.tsx',
   'web/src/components/patient-cockpit/ImportCompteRenduPanel.tsx',
   // L'écran de l'acte de lecture ([[D-268]], BP-10) : codes et états, sans valeur.

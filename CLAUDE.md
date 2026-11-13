@@ -132,9 +132,11 @@ session réécrit tout le cache. `/model` seulement juste après `/clear`.
 - Revue proportionnelle au risque (P0/P1/P2, budgets, signaux d'escalade) :
   `docs/claude/POLITIQUE_REVUE.md`. Ordinaire : `/code-review medium` (nommer
   le niveau — il réutilise sinon le dernier tapé) ; fort risque : agent
-  `wn-reviewer` ; sécurité : `/security-review`. Contre-audit Codex : geste
-  manuel de l'utilisateur (diff collé) — jamais d'intégration automatisée,
-  jamais de seconde passe sans signal.
+  `wn-reviewer` ; sécurité : `/security-review`. Codex : appelé par la
+  session, seulement par `node scripts/wn-codex-avis.mjs` (`D-505` :
+  contre-revue P0, avis joint aux questions cliniques, accord sur une
+  question ordinaire) ; jamais de donnée patient ni de secret, jamais de
+  seconde passe sans signal.
 
 ## Garde-fous d'écriture (hooks)
 

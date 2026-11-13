@@ -11,6 +11,7 @@ import {
   PARTIES_REPRISES_CONDITIONS_V3,
   PARTIES_REPRISES_CONDITIONS_V4,
   PARTIES_REPRISES_CONDITIONS_V5,
+  PARTIES_REPRISES_CONDITIONS_V6,
   REGISTRE_DOCUMENTS_TRUST,
   sectionsDeLaPartie,
   VERSION_CONSENTEMENT_COURANTE,
@@ -78,6 +79,8 @@ describe('registre des documents TRUST', () => {
       // `D-335` (BP-13) — les données physiologiques et les traitements en lignes ;
       // `D-391` §6.
       'donnees_confidentialite@v22',
+      // `D-497` §7 (BP-05) — le contexte du prélèvement des analyses.
+      'donnees_confidentialite@v23',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -110,6 +113,8 @@ describe('registre des documents TRUST', () => {
       'conditions_utilisation@v4',
       // `D-292` §5 — la partie 3 passe à la v22 (`D-335`, `D-391` §6).
       'conditions_utilisation@v5',
+      // `D-292` §5 — la partie 3 passe à la v23 (`D-497` §7).
+      'conditions_utilisation@v6',
     ]);
   });
 
@@ -155,7 +160,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v22');
+    expect(courant.version).toBe('v23');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -900,9 +905,19 @@ describe('registre des documents TRUST', () => {
   // à l'apostrophe typographique du registre près — la citation qui suit un
   // titre, lignes recollées.
   function citationsV22(apres: string): string[] {
+    return citationsDe('2026-10-28-bp13-v22-texte-patient', apres);
+  }
+
+  // D-497 §7 : la v23, les conditions v6 et l'e-mail @6, relus dans la
+  // proposition de BP-05 (A1, A2 validés avec D-497 ; B1, B2 le 2026-11-12).
+  function citationsV23(apres: string): string[] {
+    return citationsDe('2026-11-12-bp05-texte-patient', apres);
+  }
+
+  function citationsDe(proposition: string, apres: string): string[] {
     const readme = fs
       .readFileSync(
-        path.resolve(__dirname, '../../../../../docs/claude/propositions/2026-10-28-bp13-v22-texte-patient/README.md'),
+        path.resolve(__dirname, `../../../../../docs/claude/propositions/${proposition}/README.md`),
         'utf8',
       )
       .replaceAll("'", '’');
@@ -928,8 +943,7 @@ describe('registre des documents TRUST', () => {
     expect(paragrapheNeuf).toBeTruthy();
 
     const v21 = getVersion('donnees_confidentialite', 'v21')!;
-    const v22 = getDocumentCourant('donnees_confidentialite');
-    expect(v22.version).toBe('v22');
+    const v22 = getVersion('donnees_confidentialite', 'v22')!;
 
     // Juste après le paragraphe des documents déposés (v19).
     const recueil = v22.sections.find(s => s.titre === 'Quelles données sont recueillies ?')!;
@@ -944,7 +958,8 @@ describe('registre des documents TRUST', () => {
     expect(paragrapheNeuf).toContain('que votre praticien peut soumettre à ChatGPT');
     expect(paragrapheNeuf).toContain('un document que votre praticien destine à un médecin');
 
-    // Les durées de D-378 n'y sont pas : elles passent en v23.
+    // Les durées de D-378 n'y sont pas : elles attendent une version ultérieure
+    // (la v23 est celle de D-497, BP-05).
     const conservation = v22.sections.find(s => s.titre === 'Combien de temps sont-elles conservées ?')!;
     expect(conservation.paragraphes.join(' ')).toContain('en cours de formalisation');
 
@@ -956,6 +971,36 @@ describe('registre des documents TRUST', () => {
     expect(v22.changeSummary).toBe(resume);
     expect(v22.requiresAcknowledgement).toBe(true);
     expect(v22.publieLe > v21.publieLe).toBe(true);
+  });
+
+  it('la v23 porte le paragraphe de D-497, après celui des résultats, et rien d’autre', () => {
+    const [paragrapheNeuf] = citationsV23('## A1. Le paragraphe neuf');
+    const [resume] = citationsV23('## A2. Le résumé du changement');
+    expect(paragrapheNeuf).toBeTruthy();
+
+    const v22 = getVersion('donnees_confidentialite', 'v22')!;
+    const v23 = getDocumentCourant('donnees_confidentialite');
+    expect(v23.version).toBe('v23');
+
+    const recueil = v23.sections.find(s => s.titre === 'Quelles données sont recueillies ?')!;
+    const rang = recueil.paragraphes.findIndex(p =>
+      p.startsWith('Ces résultats sont enregistrés par votre praticien à partir du compte rendu'));
+    expect(rang).toBeGreaterThanOrEqual(0);
+    expect(recueil.paragraphes[rang + 1]).toBe(paragrapheNeuf);
+
+    // Ce que D-497 §5 tient : rien à l'IA, rien côté patient, « inconnu » écrit.
+    expect(paragrapheNeuf).toContain('l’application ne les envoie à aucun outil d’intelligence artificielle');
+    expect(paragrapheNeuf).toContain('Seul votre praticien les voit');
+    expect(paragrapheNeuf).toContain('peut rester « inconnue »');
+
+    // Rien d'autre : sans le paragraphe neuf, la v23 redevient la v22.
+    expect(
+      v23.sections.map(s => ({ ...s, paragraphes: s.paragraphes.filter(p => p !== paragrapheNeuf) })),
+    ).toEqual(v22.sections);
+
+    expect(v23.changeSummary).toBe(resume);
+    expect(v23.requiresAcknowledgement).toBe(true);
+    expect(v23.publieLe > v22.publieLe).toBe(true);
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {
@@ -992,7 +1037,7 @@ describe('registre des documents TRUST', () => {
     const conditions = getDocumentCourant('conditions_utilisation');
 
     it('reprennent, dans l’ordre, les quatre textes d’information validés', () => {
-      expect(conditions.version).toBe('v5');
+      expect(conditions.version).toBe('v6');
       expect(PARTIES_REPRISES_CONDITIONS_V1.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
         'cadre_accompagnement@v1',
         'limites_securite@v1',
@@ -1027,6 +1072,13 @@ describe('registre des documents TRUST', () => {
         'donnees_confidentialite@v22',
         'usage_ia@v8',
       ]);
+      // La v6 aussi, vers la v23 (`D-497` §7).
+      expect(PARTIES_REPRISES_CONDITIONS_V6.map(p => `${p.source.key}@${p.source.version}`)).toEqual([
+        'cadre_accompagnement@v1',
+        'limites_securite@v1',
+        'donnees_confidentialite@v23',
+        'usage_ia@v8',
+      ]);
       expect([...new Set(conditions.sections.map(s => s.partie))]).toEqual([
         'Le cadre de votre accompagnement',
         'Limites et sécurité médicale',
@@ -1041,7 +1093,7 @@ describe('registre des documents TRUST', () => {
     // portent pas. Avant ACT-1, refaire l'assemblage (nouvelle source, nouveau
     // hash) ; après, publier une nouvelle version des conditions.
     it('chaque partie reprise est la version COURANTE de son texte, mot pour mot', () => {
-      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V5) {
+      for (const { partie, source } of PARTIES_REPRISES_CONDITIONS_V6) {
         const courant = getDocumentCourant(source.key);
         expect(
           courant.version,
@@ -1118,10 +1170,17 @@ describe('registre des documents TRUST', () => {
       );
       // La v5 garde la partie 5 de la v4 ; son résumé est relu dans la
       // proposition de `D-391` §6 (B1).
-      expect(partie5(conditions)).toEqual(partie5(conditionsV4));
-      expect(conditions.titre).toBe(conditionsV4.titre);
-      expect(conditions.resume).toBe(conditionsV4.resume);
-      expect(conditions.changeSummary).toBe(citationsV22('### B1. Le résumé des conditions v5')[0]);
+      const conditionsV5 = getVersion('conditions_utilisation', 'v5')!;
+      expect(partie5(conditionsV5)).toEqual(partie5(conditionsV4));
+      expect(conditionsV5.titre).toBe(conditionsV4.titre);
+      expect(conditionsV5.resume).toBe(conditionsV4.resume);
+      expect(conditionsV5.changeSummary).toBe(citationsV22('### B1. Le résumé des conditions v5')[0]);
+      // La v6 garde la partie 5 de la v5 ; son résumé est relu dans la
+      // proposition de `D-497` §7 (B1, validé le 2026-11-12).
+      expect(partie5(conditions)).toEqual(partie5(conditionsV5));
+      expect(conditions.titre).toBe(conditionsV5.titre);
+      expect(conditions.resume).toBe(conditionsV5.resume);
+      expect(conditions.changeSummary).toBe(citationsV23('### B1. Le résumé des conditions v6')[0]);
     });
 
     it('réclament un accusé, et la partie 5 dit le bouton par son libellé', () => {

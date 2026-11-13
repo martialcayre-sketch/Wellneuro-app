@@ -8,7 +8,8 @@ import { classeEtCode } from '@/lib/observability/classeEtCode';
 // Décisions du praticien sur les lignes d'une extraction (BIO-INGEST LOT-02,
 // [[D-256]] A3/A5) : valider (crée le résultat) ou écarter (avec motif). Le
 // seul chemin d'un import vers `resultats_biologiques`. Tout ou rien.
-// Corps : `{ idPatient, idImport, decisions: [...] }`.
+// Corps : `{ idPatient, idImport, decisions: [...], contexte? }` — le contexte
+// du prélèvement ([[D-497]] §4), écrit sur chaque résultat validé.
 //
 // PAS de journal d'accès : dispense d'écriture GD-1 ([[D-118]]) — `saisi_par`,
 // `traite_par` et leurs dates attribuent déjà chaque écriture.
@@ -23,7 +24,7 @@ function echec(reason: string, error: string, status: number, lignes?: unknown) 
 
 export async function POST(req: Request) {
   try {
-    let body: { idPatient?: unknown; idImport?: unknown; decisions?: unknown };
+    let body: { idPatient?: unknown; idImport?: unknown; decisions?: unknown; contexte?: unknown };
     try {
       body = (await req.json()) as typeof body;
     } catch {
@@ -45,7 +46,14 @@ export async function POST(req: Request) {
     });
     if (!patient || !accepteNouvelEnvoi(patient)) return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
 
-    const issue = await deciderLignes({ idPatient, idImport, traitePar: garde.email, decisions: body.decisions });
+    const issue = await deciderLignes({
+      idPatient,
+      idImport,
+      traitePar: garde.email,
+      decisions: body.decisions,
+      // Le contexte du prélèvement ([[D-497]] §4), jugé par `deciderLignes`.
+      contexte: body.contexte,
+    });
     if (!issue.ok) return echec(issue.reason, issue.error, issue.status, issue.lignes);
     return NextResponse.json(issue, { status: 201 });
   } catch (err) {

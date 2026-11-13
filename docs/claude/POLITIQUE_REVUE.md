@@ -2,10 +2,10 @@
 
 > **La profondeur de revue suit le risque, jamais le nombre de modèles
 > disponibles.** Une seconde revue Codex n'est **jamais** automatique : c'est
-> un outil d'escalade, pas une étape du workflow. Codex n'est jamais invoqué
-> par Claude — c'est un geste manuel de l'utilisateur (diff collé), décision
-> du 2026-08-21 (`CLAUDE.md` § Modèle) : Claude **prépare** le paquet de
-> revue et **demande** la passe quand la politique l'exige.
+> un outil d'escalade, pas une étape du workflow. Depuis `D-505`, la session
+> appelle Codex elle-même, par une seule commande fermée
+> (`node scripts/wn-codex-avis.mjs`), quand la politique l'exige ; le geste
+> manuel de l'utilisateur (règle du 2026-08-21) reste permis et sert de repli.
 
 ## Classification silencieuse du risque
 
@@ -26,7 +26,7 @@ documentaire reste P2. Les classes de `wn-lot` (§ table) donnent le défaut :
 
 ## Budget par niveau — une revue de plus exige une mission différente
 
-| Niveau | Revue interne | Codex (manuel) | Seconde passe Codex |
+| Niveau | Revue interne | Codex (`D-505`) | Seconde passe Codex |
 |---|---|---|---|
 | P2 | `/code-review medium` (nommer le niveau : sinon il réutilise le dernier tapé), une seule | non par défaut | non |
 | P1 | `Agent(wn-reviewer)` (Opus/high) | une passe **si l'indépendance est utile** | sur signal seulement |
@@ -38,7 +38,7 @@ Codex y vise nommément toute **migration**, tout **module clinique signé**
 de frontière** (registre des frontières, étages, vocabulaire réglementaire) ;
 les autres lots P0 de la campagne passent par `Agent(wn-reviewer)`. **Hors de
 cette campagne, la ligne P0 de la table ci-dessus est inchangée** : une passe
-Codex obligatoire. La passe reste un geste manuel de l'utilisateur.
+Codex obligatoire. La passe se fait comme ci-dessous (`D-505`).
 
 **Revue de diff par workflow : P0 seulement**, une passe par mission ; un
 tour de plus exige un fait nouveau. Chercheurs `sonnet`/`medium`,
@@ -71,11 +71,35 @@ commence par : « Ceci est une deuxième passe ciblée. Ne réaudite pas
 l'ensemble de la PR. Examine uniquement les findings suivants et leurs
 corrections ; confirme ou réfute avec des preuves concrètes. »
 
-## Invocation Codex — skill personnel `$wellneuro-pr-review`
+## Invocation Codex — par la session (`D-505`)
 
-La passe standard s'invoque par le skill personnel Codex de l'utilisateur —
-hors dépôt, déclenché manuellement, sur son abonnement et son connecteur
-GitHub. Claude **prépare le bloc**, l'utilisateur le lance :
+La session écrit le paquet (diff de la PR poussée, deux à cinq invariants),
+jamais la commande :
+
+```bash
+gh pr diff <N> > paquet.txt   # puis les invariants à la suite
+node scripts/wn-codex-avis.mjs --mode revue --paquet paquet.txt \
+  --sortie avis.json --rendu avis.md
+gh pr comment <N> --body-file avis.md
+```
+
+`0` seul vaut passe faite. En mode `revue`, le script refuse un paquet qui
+porte un secret (`2`, rien n'est parti) ; il ne filtre ni adresse ni
+identifiant, parce que le diff est déjà public : la session relit son diff
+avant l'envoi et en retire toute donnée patient (`D-505` §3). Le filtre des
+adresses et des identifiants de dossier ne vaut qu'en mode `question` ; un avis où Codex a lu ou
+lancé quoi que ce soit est non conforme (`3`) ; Codex indisponible rend `4`.
+Chaque constat reçoit son verdict sur la PR (corrigé, écarté avec motif,
+routé avec adresse), et le fragment du lot nomme la contre-revue Codex et
+`D-505`. Le même script, en mode `question`, donne l'avis à l'aveugle joint
+aux questions de la liste commune (`D-505` §5-6). À chaque nouvelle version
+du binaire Codex, `--mode controle` rejoue l'essai adverse avant tout usage
+(`0` seul vaut barrière tenue).
+
+**Repli** (`D-505` §7) : sur `3` ou `4` persistant, le skill personnel
+Codex de l'utilisateur, `$wellneuro-pr-review` — hors dépôt, sur son
+abonnement et son connecteur GitHub. Claude **prépare le bloc**,
+l'utilisateur le lance :
 
 ```text
 $wellneuro-pr-review

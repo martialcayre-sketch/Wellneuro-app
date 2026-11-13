@@ -17,6 +17,7 @@ const { prisma, journal } = vi.hoisted(() => {
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { Prisma } from '@/generated/prisma';
+import { CONTEXTE_INCONNU } from '@/lib/biology-library/contextePrelevement';
 import { deciderLignes } from './decisions';
 
 const MAINTENANT = new Date('2026-10-02T10:00:00.000Z');
@@ -161,6 +162,14 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
       source: 'saisie_praticien',
       saisiPar: 'praticien@wellneuro.fr',
       supersedesResultatId: null,
+      // Sans contexte (client antérieur) : une ligne « inconnu », jamais aucune (D-497 §4).
+      contextesPrelevement: {
+        create: {
+          ...CONTEXTE_INCONNU,
+          patient: { connect: { idPatient: 'pat_sophie' } },
+          praticienEmail: 'praticien@wellneuro.fr',
+        },
+      },
     });
     expect(data).not.toHaveProperty('saisiLe');
     expect(journal).toEqual(['resultat.create', 'ligne.updateMany']);
@@ -168,6 +177,30 @@ describe('deciderLignes — valider crée le résultat, PUIS décide la ligne', 
       where: { id: 'l1', idImport: 'imp_1', idPatient: 'pat_sophie', statut: 'proposee' },
       data: { statut: 'validee', idResultat: 'res_1', traitePar: 'praticien@wellneuro.fr' },
     });
+  });
+
+  it('le contexte de la validation part sur le résultat créé (D-497 §4)', async () => {
+    const contexte = { ...CONTEXTE_INCONNU, grossesse: 'non', episodeInflammatoire: 'oui' };
+    const issue = await deciderLignes({ ...BASE, decisions: [valider('l1')], contexte });
+    expect(issue).toMatchObject({ ok: true, validees: 1 });
+    const { data } = prisma.resultatBiologique.create.mock.calls[0][0];
+    expect(data.contextesPrelevement).toEqual({
+      create: {
+        ...contexte,
+        patient: { connect: { idPatient: 'pat_sophie' } },
+        praticienEmail: 'praticien@wellneuro.fr',
+      },
+    });
+  });
+
+  it('un contexte mal formé refuse toute la validation, sans transaction', async () => {
+    const issue = await deciderLignes({
+      ...BASE,
+      decisions: [valider('l1')],
+      contexte: { ...CONTEXTE_INCONNU, delaiDernierePriseEtat: 'renseigne', delaiDernierePrise: 3 },
+    });
+    expect(issue).toMatchObject({ ok: false, reason: 'contexte_invalide', status: 400 });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('écrit un `Decimal` EXACT, en chaîne de bout en bout (LOT-10)', async () => {
