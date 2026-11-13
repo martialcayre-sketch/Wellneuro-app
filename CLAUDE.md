@@ -254,8 +254,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   PR que merge l'intégrateur) — sauf migration,
   authentification ou `.coderabbit.yaml` (`D-373` §1, voir § PR, CI, merge) ;
   `/compact` seulement dans un lot (une migration et son code consommateur
-  forment un lot). En l'absence du responsable, la session enchaîne le lot
-  suivant après son handoff (`D-510` §7). Pause de plus d'une heure : `/compact` avant de partir
+  forment un lot). En l'absence du responsable (rien écrit depuis une
+  heure), la session enchaîne le lot suivant après son handoff (`D-510` §7). Pause de plus d'une heure : `/compact` avant de partir
   (cache chaud) ou handoff puis `/clear` — jamais `/compact` au retour.
 - Le hook de fraîcheur Git impose une branche contenant `origin/main` au
   démarrage et rejuge à chaque tentative d'édition. Jamais de

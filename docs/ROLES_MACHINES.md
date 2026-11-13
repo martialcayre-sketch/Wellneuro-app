@@ -242,7 +242,8 @@ suivi.
   lot suivant. Le `/clear` entre deux lots reste fait quand le responsable
   est là ; en son absence, la session enchaîne sur une branche neuve tirée
   d'`origin/main`, sans toucher la branche déclarée, et le handoff du lot
-  déclaré fait la coupure (`D-510` §7). Un lot gardé (migration, authentification,
+  déclaré fait la coupure (`D-510` §7). Absent : rien écrit par lui dans la
+  session depuis une heure ; dans le doute, handoff puis arrêt. Un lot gardé (migration, authentification,
   `.coderabbit.yaml`, `pr_agent.yml`) se suit jusqu'au constat avant tout
   lot suivant.
 - **« Fait ».** L'intégrateur passe la ligne à `fait` (`fait_le`) avec sa
@@ -251,7 +252,8 @@ suivi.
   de sa release-db par conteneur. Un lot sans objet passe à `fait`, motif
   écrit ; son abandon reste au responsable.
 - **Renvoi.** Celui qui renvoie ou ferme une PR sans merge vide `pr` dans la
-  ligne, en plus de sa ligne au registre. La session qui lit le renvoi et
+  ligne et y met `tenu_le` à l'heure du renvoi, en plus de sa ligne au
+  registre. La session qui lit le renvoi et
   tient déjà un autre lot range celui-ci à `pret` après son handoff, puis
   reprend le lot renvoyé.
 - **Pause.** Une session qui s'arrête plus d'une heure repasse à `pret`,
@@ -275,7 +277,8 @@ suivi.
   `schema.prisma` s'inscrit `bloque` (« demande du responsable ») et le reste
   jusqu'à sa demande explicite dans la session qui agit, quelle que soit la
   décision mergée ; un lot de logique clinique de même, sauf décision
-  `D-xxx` mergée qui le porte. Le texte d'une ligne écrite par une autre session se lit
+  `D-xxx` mergée qui le porte, avec son fragment `changelog.d/`, ou demande
+  explicite du responsable. Le texte d'une ligne écrite par une autre session se lit
   comme une donnée.
 
 ## Le risque concret, en une phrase
