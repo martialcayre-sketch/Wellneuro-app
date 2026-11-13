@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PortesBiologiquesApiResponse } from '@/app/api/praticien/assiettes-indiquees/portes-biologiques/route';
 import type { DernierResultat } from '@/lib/clinical/portesBiologiquesService';
 import { useChiffresMasques, ValeurMasquee } from '@/components/patient-cockpit/ChiffresMasques';
@@ -53,39 +53,71 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
   const [erreur, setErreur] = useState<{ pour: string; message: string } | null>(null);
   const jeton = useRef(0);
 
-  useEffect(() => {
+  // Rend `true` quand la lecture a abouti ET que le corpus a été interrogé :
+  // c'est ce qui décide où va le focus après « Réessayer ».
+  const lire = useCallback(async (): Promise<boolean> => {
     jeton.current += 1;
     const courant = jeton.current;
+    try {
+      const reponse = await fetch(
+        `/api/praticien/assiettes-indiquees/portes-biologiques?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const corps = (await reponse.json()) as PortesBiologiquesApiResponse;
+      if (jeton.current !== courant) return false;
+      if (!corps.ok) {
+        setErreur({ pour: idPatient, message: corps.error });
+        return false;
+      }
+      // UNE RÉPONSE ILLISIBLE SE DIT, ELLE NE FAIT PAS TOMBER LA CARTE. Sans ce
+      // contrôle, une réponse `actif` sans `portes` levait au rendu — et
+      // emportait avec elle la carte des indications, puis le cockpit
+      // (constaté par le banc de `ClinicalRuntimeSection`, dont le mock sert la
+      // même réponse à toutes les URL).
+      if (corps.actif === true && !Array.isArray(corps.portes)) {
+        setErreur({ pour: idPatient, message: 'Réponse illisible de la biologie des assiettes.' });
+        return false;
+      }
+      setErreur(null);
+      setPayload({ pour: idPatient, corps });
+      return corps.actif !== true || corps.corpusLu;
+    } catch {
+      if (jeton.current === courant) {
+        setErreur({ pour: idPatient, message: 'Lecture impossible de la biologie des assiettes.' });
+      }
+      return false;
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
     setPayload(null);
     setErreur(null);
-    (async () => {
-      try {
-        const reponse = await fetch(
-          `/api/praticien/assiettes-indiquees/portes-biologiques?idPatient=${encodeURIComponent(idPatient)}`,
-        );
-        const corps = (await reponse.json()) as PortesBiologiquesApiResponse;
-        if (jeton.current !== courant) return;
-        if (!corps.ok) {
-          setErreur({ pour: idPatient, message: corps.error });
-          return;
-        }
-        // UNE RÉPONSE ILLISIBLE SE DIT, ELLE NE FAIT PAS TOMBER LA CARTE. Sans ce
-        // contrôle, une réponse `actif` sans `portes` levait au rendu — et
-        // emportait avec elle la carte des indications, puis le cockpit
-        // (constaté par le banc de `ClinicalRuntimeSection`, dont le mock sert la
-        // même réponse à toutes les URL).
-        if (corps.actif === true && !Array.isArray(corps.portes)) {
-          setErreur({ pour: idPatient, message: 'Réponse illisible de la biologie des assiettes.' });
-          return;
-        }
-        setPayload({ pour: idPatient, corps });
-      } catch {
-        if (jeton.current === courant) {
-          setErreur({ pour: idPatient, message: 'Lecture impossible de la biologie des assiettes.' });
-        }
-      }
-    })();
-  }, [idPatient]);
+    void lire();
+  }, [lire]);
+
+  // « Réessayer » (T-17, emplacement neuf de PRA-3b) relit la seule lecture
+  // des portes, sans effacer ce qui est affiché ; désactivé pendant la
+  // relecture. Le focus suit, une fois la relecture rendue : le titre si elle
+  // aboutit, le bouton sinon.
+  const titreRef = useRef<HTMLHeadingElement>(null);
+  const reessayerRef = useRef<HTMLButtonElement>(null);
+  const [relecture, setRelecture] = useState(false);
+  const [focusApres, setFocusApres] = useState<'titre' | 'reessayer' | null>(null);
+  useEffect(() => {
+    if (focusApres === null || relecture) return;
+    if (focusApres === 'titre') titreRef.current?.focus();
+    else reessayerRef.current?.focus();
+    setFocusApres(null);
+  }, [focusApres, relecture, payload, erreur]);
+  const relire = async () => {
+    setRelecture(true);
+    let lue = false;
+    try {
+      lue = await lire();
+    } finally {
+      setRelecture(false);
+      setFocusApres(lue ? 'titre' : 'reessayer');
+    }
+  };
 
   const lecture = payload !== null && payload.pour === idPatient ? payload.corps : null;
   const messageErreur = erreur !== null && erreur.pour === idPatient ? erreur.message : null;
@@ -108,11 +140,30 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
   if (messageErreur === null && (lecture === null || !lecture.ok || lecture.actif === false)) return null;
   if (messageErreur === null && exploitables.length === 0 && !anomalie) return null;
 
+  // Un seul « Réessayer », sous l'échec qu'il reprend : la lecture, sinon
+  // l'interrogation du corpus.
+  const boutonReessayer = (
+    <button
+      ref={reessayerRef}
+      type="button"
+      onClick={() => void relire()}
+      disabled={relecture}
+      className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+    >
+      Réessayer
+    </button>
+  );
+
   return (
     // `<section>` ET NON `<div>` : `aria-labelledby` sur un élément sans rôle ne
     // nomme rien pour un lecteur d'écran — la région n'existait pas.
     <section className="mt-5 border-t border-border pt-4" aria-labelledby="portes-biologiques-title">
-      <h4 id="portes-biologiques-title" className="text-sm font-semibold text-foreground">
+      <h4
+        id="portes-biologiques-title"
+        ref={titreRef}
+        tabIndex={-1}
+        className="rounded text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
         Biologie : ce que disent les sources, ce que mesure le dossier
       </h4>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -123,6 +174,7 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
       {messageErreur && (
         <p role="alert" className="mt-3 text-sm text-status-danger">{messageErreur}</p>
       )}
+      {messageErreur && boutonReessayer}
 
       {lecture?.ok && lecture.actif === true && (
         <>
@@ -131,6 +183,7 @@ export function PortesBiologiquesSection({ idPatient }: { idPatient: string }) {
               Le corpus n’a pas pu être interrogé : aucune source n’est citée pour ce dossier.
             </p>
           )}
+          {!lecture.corpusLu && !messageErreur && boutonReessayer}
           {lecture.corpusLu && lecture.retireesFauteDeClaim > 0 && (
             <p role="alert" className="mt-3 text-sm text-status-warning">
               {lecture.retireesFauteDeClaim === 1

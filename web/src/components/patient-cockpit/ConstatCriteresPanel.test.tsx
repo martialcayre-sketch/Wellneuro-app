@@ -133,9 +133,22 @@ describe('ConstatCriteresPanel', () => {
     expect(screen.getByRole('alert').textContent).toContain('Critère clinique inconnu ou inactif.');
   });
 
+  it('expose de vrais boutons radio, sans choix d’office, dans un groupe nommé (PRA-3b, P29)', () => {
+    render(<ConstatCriteresPanel criteres={[critere()]} onConstater={vi.fn()} />);
+    const groupe = screen.getByRole('group', { name: /^Constat pour / });
+    const radios = within(groupe).getAllByRole('radio') as HTMLInputElement[];
+    expect(radios.map(r => r.type)).toEqual(['radio', 'radio']);
+    expect(radios.every(r => !r.checked)).toBe(true);
+    expect(new Set(radios.map(r => r.name)).size).toBe(1);
+    expect(groupe.querySelector('[aria-checked], [aria-pressed], [role="radiogroup"]')).toBeNull();
+    fireEvent.click(radios[1]);
+    expect(radios[1].checked).toBe(true);
+    expect(radios[0].checked).toBe(false);
+  });
+
   it('gèle la saisie pendant l’enregistrement', () => {
     render(<ConstatCriteresPanel criteres={[critere()]} state="saving" onConstater={vi.fn()} />);
-    expect((screen.getByRole('radio', { name: 'Constaté présent' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('radio', { name: 'Constaté présent' }) as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Consigner le constat' }) as HTMLButtonElement).disabled)
       .toBe(true);
   });

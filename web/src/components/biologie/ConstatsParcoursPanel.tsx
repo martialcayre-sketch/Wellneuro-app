@@ -179,13 +179,14 @@ function FormulairePose({
           Le constat en vigueur est retiré : l’hypothèse revient à « aucun constat posé ». Le retrait est daté et
           reste à l’historique, avec le constat qu’il retire.
         </p>
-        {erreur && <p role="alert" className="mt-2 text-xs text-destructive">{erreur}</p>}
+        {erreur && <p role="alert" className="mt-2 text-xs text-status-danger">{erreur}</p>}
         <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={envoi}
             onClick={() => void envoyer({ acte: 'retrait', hypothese: geste.hypotheseCode, remplace: geste.remplace })}
-            className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            // Un retrait n'est jamais une action pleine (PRA-3b, Q3a).
+            className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted disabled:opacity-50"
           >
             Retirer le constat
           </button>
@@ -282,7 +283,7 @@ function FormulairePose({
           className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-2 text-sm"
         />
       </label>
-      {erreur && <p role="alert" className="text-xs text-destructive">{erreur}</p>}
+      {erreur && <p role="alert" className="text-xs text-status-danger">{erreur}</p>}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -352,22 +353,48 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
   // réponse plus ancienne n'écrase pas une relecture plus récente (revue
   // CodeRabbit de #1603).
   const sequence = useRef(0);
-  const charger = useCallback(async () => {
+  const charger = useCallback(async (): Promise<boolean> => {
     const numero = ++sequence.current;
     setErreur(null);
     try {
       const res = await fetch(`/api/praticien/biologie/constats?idPatient=${encodeURIComponent(idPatient)}`);
       const rendu = (await res.json().catch(() => null)) as ({ ok: true } & Donnees) | { ok: false; error?: string } | null;
-      if (numero !== sequence.current) return;
+      if (numero !== sequence.current) return false;
       if (!res.ok || !rendu || !rendu.ok) {
         setErreur((rendu && !rendu.ok && rendu.error) || 'Les constats n’ont pas pu être lus.');
-        return;
+        return false;
       }
       setDonnees(rendu);
+      return true;
     } catch {
       if (numero === sequence.current) setErreur('Les constats n’ont pas pu être lus.');
+      return false;
     }
   }, [idPatient]);
+
+  // « Réessayer » (T-17, emplacement neuf de PRA-3b) relit la seule lecture
+  // des constats ; désactivé pendant la relecture. Le focus suit, une fois la
+  // relecture rendue : le titre si elle réussit, le bouton sinon.
+  const titreRef = useRef<HTMLHeadingElement>(null);
+  const reessayerRef = useRef<HTMLButtonElement>(null);
+  const [relecture, setRelecture] = useState(false);
+  const [focusApres, setFocusApres] = useState<'titre' | 'reessayer' | null>(null);
+  useEffect(() => {
+    if (focusApres === null || relecture) return;
+    if (focusApres === 'titre') titreRef.current?.focus();
+    else reessayerRef.current?.focus();
+    setFocusApres(null);
+  }, [focusApres, relecture, erreur]);
+  const relire = async () => {
+    setRelecture(true);
+    let lue = false;
+    try {
+      lue = await charger();
+    } finally {
+      setRelecture(false);
+      setFocusApres(lue ? 'titre' : 'reessayer');
+    }
+  };
 
   useEffect(() => {
     if (ouvert) void charger();
@@ -384,10 +411,30 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section aria-labelledby="constats-parcours-titre" className="mt-6 rounded-xl border border-border p-4">
-      <h3 id="constats-parcours-titre" className="text-base font-semibold text-foreground">Constats du parcours</h3>
+      <h3
+        id="constats-parcours-titre"
+        ref={titreRef}
+        tabIndex={-1}
+        className="rounded text-base font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
+        Constats du parcours
+      </h3>
       <p className="mt-1 text-xs text-muted-foreground">{AVERTISSEMENT_FILET}</p>
-      {erreur && <p role="alert" className="mt-2 text-sm text-destructive">{erreur}</p>}
-      {avis && <p role="alert" className="mt-2 text-sm text-destructive">{avis}</p>}
+      {erreur && (
+        <div className="mt-2 rounded-lg border border-status-danger/60 p-3">
+          <p role="alert" className="text-sm text-status-danger">{erreur}</p>
+          <button
+            ref={reessayerRef}
+            type="button"
+            onClick={() => void relire()}
+            disabled={relecture}
+            className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+      {avis && <p role="alert" className="mt-2 text-sm text-status-danger">{avis}</p>}
       {donnees && !donnees.structureSignee && (
         <p className="mt-2 text-sm text-muted-foreground">
           La structure des fiches d’usage n’est pas encore signée : aucun constat ne se pose.
@@ -406,7 +453,7 @@ export function ConstatsParcoursPanel({ idPatient }: { idPatient: string }) {
             const offerte = donnees.offertes.some(o => o.hypotheseCode === code);
             return (
               <li key={code} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium text-foreground">{libelle(code)}</p>
+                <h4 className="text-sm font-medium text-foreground">{libelle(code)}</h4>
                 {tete ? <Acte acte={tete} /> : <p className="text-xs text-muted-foreground">Aucun constat posé.</p>}
                 {lue && lue.aRelire.length > 0 && (
                   <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">

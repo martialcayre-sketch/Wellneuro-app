@@ -210,4 +210,38 @@ describe('ConstatsParcoursPanel (D-331)', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('La note dépasse 2000 caractères.');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('un échec de lecture se dit en jeton de danger, avec « Réessayer » qui relit seul ; le focus suit (PRA-3b, P29)', async () => {
+    let lectures = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      lectures += 1;
+      return lectures <= 2
+        ? new Response(JSON.stringify({ ok: false }), { status: 500 })
+        : new Response(JSON.stringify(LECTURE), { status: 200 });
+    }));
+    rendre();
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toBe('Les constats n’ont pas pu être lus.');
+    expect(alerte.className).toContain('text-status-danger');
+    expect(alerte.className).not.toContain('text-destructive');
+    // Relecture en échec : le message reste, le focus revient sur le bouton.
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    await waitFor(() => expect(lectures).toBe(2));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Réessayer' })));
+    // Relecture réussie : les constats paraissent, le focus passe au titre.
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(await screen.findByText('Hypothèse de test')).toBeTruthy();
+    expect(lectures).toBe(3);
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Constats du parcours' })));
+  });
+
+  it('« Retirer le constat » n’est jamais une action pleine (PRA-3b, Q3a)', async () => {
+    stubFetch(LECTURE);
+    rendre();
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer le constat' }));
+    const confirmer = screen.getAllByRole('button', { name: 'Retirer le constat' }).at(-1)!;
+    expect(confirmer.className).not.toContain('bg-primary');
+    expect(confirmer.className).toContain('border-border');
+  });
 });

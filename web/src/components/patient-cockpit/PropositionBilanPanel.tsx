@@ -167,7 +167,7 @@ function PanelsIndisponibles({ panels }: { panels: PanelIndisponible[] }) {
             règle n’est pas appliquée.
           </p>
           <details className="mt-1 text-xs text-muted-foreground">
-            <summary className="cursor-pointer">Claims concernés</summary>
+            <summary className="min-h-11 cursor-pointer py-3">Claims concernés</summary>
             <ul className="mt-1 list-disc pl-4">
               {panel.claimsNonAdmissibles.map(claim => (
                 <li key={`${claim.claimId}@${claim.versionClaim}`}>
@@ -259,7 +259,7 @@ function FormulaireCourrier({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <p className="text-xs font-medium text-foreground">Courrier au médecin traitant</p>
+      <h4 className="text-sm font-medium text-foreground">Courrier au médecin traitant</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         Établi à partir de la proposition ci-dessus, dans un registre non prescriptif :
         la décision de demander ces explorations, comme leur interprétation, revient au
@@ -316,7 +316,9 @@ function FormulaireCourrier({
           setConsigneSans(medecin.trim());
           onEtablir(medecin.trim());
         }}
-        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        // Bordé (PRA-3b, Q3a) : une seule action pleine par zone, celle du
+        // formulaire de déclaration que le praticien a ouvert.
+        className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
       >
         Établir et consigner le courrier
       </button>
@@ -407,7 +409,7 @@ function FormulaireDocumentPatient({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <p className="text-xs font-medium text-foreground">Document remis au patient</p>
+      <h4 className="text-sm font-medium text-foreground">Document remis au patient</h4>
       <p className="mt-1 text-xs text-muted-foreground">
         La trace écrite de ce qui est proposé au patient et pourquoi, dans son registre —
         aucune valeur d’analyse, aucune demande. <strong>Aucun envoi automatique</strong> —
@@ -420,7 +422,8 @@ function FormulaireDocumentPatient({
           setEnvoiEnCours(true);
           onEtablir(false);
         }}
-        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        // Bordé, comme le courrier (PRA-3b, Q3a).
+        className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
       >
         Établir et consigner le document patient
       </button>
@@ -511,7 +514,7 @@ function DocumentsRemis({
 
   return (
     <div className="mt-3 rounded-lg border border-border p-3">
-      <p className="text-xs font-medium text-foreground">Documents déjà remis</p>
+      <h4 className="text-sm font-medium text-foreground">Documents déjà remis</h4>
 
       {lecture === 'chargement' && (
         <p className="mt-1 text-xs text-muted-foreground">Lecture du dossier…</p>
@@ -519,14 +522,14 @@ function DocumentsRemis({
 
       {lecture === 'erreur' && (
         <div className="mt-1">
-          <p role="alert" className="text-xs text-status-danger">
+          <p role="alert" className="text-sm text-status-danger">
             La liste n’a pas pu être lue : impossible d’affirmer qu’aucun document n’a été
             remis.
           </p>
           <button
             type="button"
             onClick={onRelire}
-            className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground"
+            className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Relire la liste
           </button>
@@ -651,7 +654,7 @@ function VueParAnalyte({ lignes }: { lignes: LignePanelProposition[] }) {
   if (analyses.length === 0) return null;
   return (
     <details className="mt-3 rounded-lg border border-border p-3">
-      <summary className="cursor-pointer text-sm font-medium text-foreground">
+      <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-foreground">
         Vue par analyte ({analyses.length} {analyses.length > 1 ? 'analyses' : 'analyse'})
       </summary>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -756,7 +759,7 @@ export function PropositionBilanPanel({
         <h3
           id="proposition-bilan-title"
           tabIndex={-1}
-          className="text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="rounded font-display text-base font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           Biologie — proposition de bilan
         </h3>
@@ -842,7 +845,7 @@ export function PropositionBilanPanel({
                 */}
                 {(ligne.motifs.length > 0 || ligne.justificationClaims.length > 0) && (
                   <details className="mt-1">
-                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                    <summary className="min-h-11 cursor-pointer py-3 text-xs font-medium text-muted-foreground">
                       Ce qui justifie cette ligne
                     </summary>
                     {ligne.motifs.length > 0 && (
@@ -992,7 +995,7 @@ export function PropositionBilanPanel({
           restent lisibles au clic et entières dans le DOM — un méta-discours
           permanent noyait la donnée clinique du panneau. */}
       <details className="mt-3 rounded-lg border border-border p-3">
-        <summary className="cursor-pointer text-xs font-medium text-foreground">
+        <summary className="min-h-11 cursor-pointer py-3 text-xs font-medium text-foreground">
           Ce que cette vue ne sait pas
         </summary>
         <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
