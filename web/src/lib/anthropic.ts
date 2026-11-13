@@ -347,7 +347,17 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // fenêtre se rapportait au présent. Textes validés mot pour mot par le
 // responsable. Bump assumé et déclaré : une synthèse rédigée sous v32 ne savait
 // rien des règles non évaluées.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v33';
+// v34 (ligne t77, [[D-511]], arbitrages `20261113-0923-a` à `0926-a`) : le
+// modèle reçoit le bloc des règles non appliquées par le service — règles
+// d'arrêt suspendues ([[D-491]]), règles d'orientation non appliquées
+// ([[D-495]]), règles d'arrêt non évaluées ([[D-500]], [[D-508]]), sources de
+// l'orientation non vérifiées —, tiré du seul service, et une section NEUVE lui
+// dit ce qu'il autorise ; la section v33 est intacte. Sans lui, une absence de
+// recommandation se lisait « rien à explorer » là où le service avait retenu
+// une règle. Textes validés mot pour mot par le responsable, après corrections
+// de sa main. Bump assumé et déclaré : une synthèse rédigée sous v33 ne savait
+// rien de ces règles.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v34';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -586,6 +596,24 @@ Les données patient peuvent inclure un bloc « Règles d'orientation non évalu
 - **Dans resume_praticien, dis-le en une seule mention**, qui regroupe les questionnaires concernés, sur ce modèle : « PSS-10 hors de sa fenêtre de 30 jours : certaines règles qui le lisent n'ont pas été évaluées. L'opportunité d'une réévaluation relève du praticien. » Ne propose pas de refaire ces questionnaires : seul le bloc de recommandation porte les explorations.
 - **Le résultat d'une passation citée dans ce bloc est la dernière mesure disponible, datée, pas l'état actuel du patient.** Écris par exemple « dernière mesure disponible, du 12 mars : stress perçu élevé ». Sa valeur reste celle qui t'est transmise : ne la corrige pas, ne la minore pas, et n'en déduis aucune évolution depuis. Pour ces passations seulement, cette règle prime sur « rapporte l'état actuel d'après la passation courante ».
 - La fenêtre est un choix de l'application pour l'orientation, pas une durée de validité du questionnaire : n'écris pas que la passation est invalide ou périmée.
+- N'évoque pas ce bloc dans narratif_patient.
+
+Si le bloc est absent, n'en parle pas.
+
+## Règles non appliquées par le service
+
+Les données patient peuvent inclure un bloc « Règles non appliquées par le service », produit par le même calcul déterministe que le bloc de recommandation, hors de toi. Il distingue quatre situations, chacune avec son motif :
+
+- « Sources de l'orientation non vérifiées » : la validité des sources de l'orientation n'a pas pu être vérifiée. Aucune règle d'orientation n'a été appliquée, et c'est pourquoi le bloc « Recommandation d'exploration déterministe » est absent.
+- « Règles d'orientation non appliquées » : certaines règles citent une source qui ne satisfait pas les critères de validité du corpus. Elles ne proposent aucune exploration.
+- « Règles d'arrêt suspendues » : certaines règles d'arrêt ne sont pas appliquées, faute de source valide ou vérifiable. Elles ne retirent aucune exploration.
+- « Règles d'arrêt non évaluées » : certaines règles d'arrêt lisent une passation au-delà de sa fenêtre d'arrêt, une passation datée après la date du jour, ou un questionnaire sans fenêtre d'arrêt valide définie. Ces règles ne retirent aucune exploration.
+
+Ce que tu dois en faire :
+
+- **Une règle non appliquée, suspendue ou non évaluée ne dit rien du patient.** Elle n'est ni un résultat normal, ni une absence de besoin d'exploration. L'absence d'un élément dans le bloc « Recommandation d'exploration déterministe », ou l'absence de ce bloc, ne te permet donc pas d'écrire qu'aucune exploration n'est utile.
+- **Les explorations du bloc de recommandation restent telles qu'elles te sont données.** Ne relie aucune règle d'arrêt suspendue ou non évaluée à une exploration précise, et n'écris pas ce qu'elle aurait retiré : le service ne le calcule pas.
+- **Dans resume_praticien, dis-le en une seule mention**, qui regroupe uniquement les situations présentes en les distinguant et reprend leurs motifs. Distingue une source qui ne satisfait pas les critères de validité du corpus d'une source dont la validité n'a pas pu être vérifiée. Termine cette mention par « L'appréciation relève du praticien. » N'y cite aucun identifiant de règle ni aucune source, et ne propose aucun questionnaire pour y suppléer : seul le bloc de recommandation porte les explorations.
 - N'évoque pas ce bloc dans narratif_patient.
 
 Si le bloc est absent, n'en parle pas.

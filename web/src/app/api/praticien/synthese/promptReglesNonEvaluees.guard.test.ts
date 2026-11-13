@@ -13,7 +13,10 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const CONSIGNE = SYSTEM_PROMPT_GOUVERNANCE;
 const TITRE_SECTION = "## Règles d'orientation non évaluées";
-const SECTION_SUIVANTE = '## Besoins mesurés et non mesurés';
+// Depuis v34 ([[D-511]]), la section des règles non appliquées par le service
+// s'insère entre celle-ci et celle des besoins : la borne de fin la suit, et
+// l'empreinte de la section v33 est inchangée.
+const SECTION_SUIVANTE = '## Règles non appliquées par le service';
 
 const EMPREINTE_SECTION = 'e957110d87808289';
 
@@ -74,7 +77,7 @@ describe('message envoyé au modèle — le bloc suit celui de l’orientation',
 
   it('il part même sans bloc d’orientation, et disparaît quand il est vide', () => {
     expect(SOURCE).toContain(
-      "...(blocOrientation ? [blocOrientation] : []),\n    ...(blocNonEvaluees ? [blocNonEvaluees] : []),\n    ...(blocBesoins ? [blocBesoins] : []),",
+      "...(blocOrientation ? [blocOrientation] : []),\n    ...(blocNonEvaluees ? [blocNonEvaluees] : []),\n    ...(blocNonServies ? [blocNonServies] : []),\n    ...(blocBesoins ? [blocBesoins] : []),",
     );
   });
 

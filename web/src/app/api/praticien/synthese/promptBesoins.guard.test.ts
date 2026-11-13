@@ -98,6 +98,7 @@ describe('message envoyé au modèle — le bloc passe par le canal de l’orien
 
   // Depuis [[D-471]], le bloc des règles non évaluées s'intercale entre les deux.
   it('le bloc suit celui de l’orientation, et disparaît quand il est vide', () => {
-    expect(SOURCE).toContain("...(blocOrientation ? [blocOrientation] : []),\n    ...(blocNonEvaluees ? [blocNonEvaluees] : []),\n    ...(blocBesoins ? [blocBesoins] : []),");
+    // Depuis v34 ([[D-511]]), le bloc des règles non servies s'insère avant celui des besoins.
+    expect(SOURCE).toContain("...(blocOrientation ? [blocOrientation] : []),\n    ...(blocNonEvaluees ? [blocNonEvaluees] : []),\n    ...(blocNonServies ? [blocNonServies] : []),\n    ...(blocBesoins ? [blocBesoins] : []),");
   });
 });
