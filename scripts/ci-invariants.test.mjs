@@ -379,8 +379,8 @@ test('le cache Next précède le build d’`e2e`, saute en documentaire et a une
   const cache = etape(e2e, 'Cache de compilation Next');
   const build = etape(e2e, 'Build');
   assert.ok(cache.debut < build.debut, 'le cache Next doit être restauré AVANT le build, qui le lit.');
-  assert.match(cache.texte, /if:\s*steps\.scope\.outputs\.docs_only != 'true'/,
-    'le cache Next doit sauter quand `docs_only` vaut vrai, comme le cache Playwright.');
+  assert.match(cache.texte, /if:\s*steps\.scope\.outputs\.e2e == 'true'/,
+    'le cache Next doit sauter quand le périmètre ne demande pas l’E2E, comme le cache Playwright.');
   assert.match(cache.texte, /uses:\s*actions\/cache@v4/);
   assert.match(cache.texte, /path:\s*web\/\.next\/cache\s*$/m);
 
@@ -438,4 +438,193 @@ test('`build.sh` efface le cache webpack par défaut', () => {
     'build.sh doit effacer `.next/cache/webpack` sauf si WN_GARDER_CACHE_WEBPACK vaut exactement 1 : '
       + 'sans cet effacement, l’image Scalingo dépasse 2048 Mo (#1001).');
   assert.equal((build.match(/rm -rf \.next\/cache\/webpack/g) || []).length, 1);
+});
+
+// 6. LE PÉRIMÈTRE DU DIFF SE JOUE, IL NE SE LIT PAS SEULEMENT. Le calcul est un
+//    bloc bash en ligne : une expression régulière qui glisse range une PR du
+//    mauvais côté sans que rien ne rougisse. Le 2026-11-13, 57 PR sur les 300
+//    dernières avaient ainsi modifié une documentation que le code LIT
+//    (décisions, propositions de textes patients, corpus) en jouant zéro test.
+//    Le bloc est extrait de ci.yml et exécuté tel quel, dans un dépôt jetable,
+//    sur des diffs fabriqués.
+
+/** Le corps du bloc `run: |` de l'étape partagée `&perimetre`, sans sa marge. */
+function scriptPerimetre() {
+  const lignes = SOURCE.split('\n');
+  const ancre = lignes.findIndex((l) => /^\s*- &perimetre\s*$/.test(l));
+  assert.ok(ancre >= 0, 'ci.yml : ancre `&perimetre` introuvable.');
+  const run = lignes.findIndex((l, k) => k > ancre && /^\s*run:\s*\|\s*$/.test(l));
+  const indentation = /^\s*/.exec(lignes[run])[0].length;
+  const corps = [];
+  for (const l of lignes.slice(run + 1)) {
+    if (l.trim() !== '' && /^\s*/.exec(l)[0].length <= indentation) break;
+    corps.push(l);
+  }
+  const marge = Math.min(...corps.filter((l) => l.trim()).map((l) => /^\s*/.exec(l)[0].length));
+  return corps.map((l) => l.slice(marge)).join('\n');
+}
+
+/**
+ * Sorties du périmètre pour un diff dont `fichiers` sont créés après la base.
+ * `evenement` : `pull_request` (base = celle de la PR) ou `push` (base =
+ * `github.event.before`). L'expression qui ne sert pas reçoit une base
+ * introuvable : un bloc qui lirait la mauvaise base traiterait tout comme du
+ * code, et les cas « léger » rougiraient.
+ */
+function perimetrePour(t, fichiers, { baseConnue = true, evenement = 'pull_request' } = {}) {
+  const depot = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-perimetre-'));
+  t.after(() => fs.rmSync(depot, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', ['-c', 'user.email=ci@exemple.test', '-c', 'user.name=ci', ...args],
+    { cwd: depot, encoding: 'utf8' }).trim();
+  git('init', '-q');
+  fs.writeFileSync(path.join(depot, 'LISEZMOI.txt'), 'base\n');
+  git('add', '-A');
+  git('commit', '-qm', 'base');
+  const base = baseConnue ? git('rev-parse', 'HEAD') : '0'.repeat(40);
+  for (const f of fichiers) {
+    fs.mkdirSync(path.join(depot, path.dirname(f)), { recursive: true });
+    fs.writeFileSync(path.join(depot, f), 'x\n');
+  }
+  git('add', '-A');
+  git('commit', '-qm', 'diff', '--allow-empty');
+  const ailleurs = 'f'.repeat(40);
+  const script = scriptPerimetre()
+    .replaceAll('${{ github.event_name }}', evenement)
+    .replaceAll('${{ github.event.pull_request.base.sha }}', evenement === 'pull_request' ? base : ailleurs)
+    .replaceAll('${{ github.event.before }}', evenement === 'push' ? base : ailleurs);
+  assert.doesNotMatch(script, /\$\{\{/, 'le bloc du périmètre porte une expression que ce banc ne remplace pas.');
+  const sortie = path.join(depot, 'sortie.txt');
+  fs.writeFileSync(sortie, '');
+  execFileSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', '-c', script],
+    { cwd: depot, env: { ...process.env, GITHUB_OUTPUT: sortie }, encoding: 'utf8' });
+  return Object.fromEntries(fs.readFileSync(sortie, 'utf8').split('\n').filter(Boolean).map((l) => l.split('=')));
+}
+
+const CODE = { docs_only: 'false', unitaires: 'true', e2e: 'true' };
+const DOC_LUE = { docs_only: 'true', unitaires: 'true', e2e: 'false' };
+const DOC = { docs_only: 'true', unitaires: 'false', e2e: 'false' };
+
+test('le périmètre classe chaque diff du bon côté, et la documentation lue par le code joue les tests', (t) => {
+  const cas = [
+    [['web/src/lib/x.ts'], CODE],
+    [['web/package.json'], CODE],
+    [['.github/workflows/autre.yml'], CODE],
+    [['docs/claude/handoffs/x.md', 'changelog.d/x.md'], DOC],
+    [['docs/decisions/D-999.md'], DOC_LUE],
+    [['docs/claude/propositions/2026-01-01-x/README.md'], DOC_LUE],
+    [['docs/claude/corpus/source_registry.json'], DOC_LUE],
+    [['docs/claude/campagnes/c1/supports/carte.html'], DOC_LUE],
+    [['docs/claude/campagnes/CADRAGE_X_2026-01-01.md'], DOC_LUE],
+    [['docs/FEATURE_FLAGS.md'], DOC_LUE],
+    [['docs/DOSSIER_RGPD.md'], DOC_LUE],
+    [['docs/claude/corpus/instrument_registry.json'], CODE],
+    [['docs/claude/corpus/measurement_evidence.json'], CODE],
+    [['docs/questionnaires-drive-mapping.md'], CODE],
+    [['tools/corpus/fiches/consignes/a.md'], CODE],
+    // L'outillage racine est lu par des gardes Vitest (écrivains et importeurs
+    // interdits) : il joue `typage-tests`, jamais l'E2E sur une PR.
+    [['scripts/wn-outil.mjs'], { docs_only: 'false', unitaires: 'true', e2e: 'false' }],
+    [['scripts/wn-outil.mjs', '.claude/hooks/garde.mjs', 'changelog.d/x.md'], { docs_only: 'false', unitaires: 'true', e2e: 'false' }],
+    [['.claude/hooks/garde.mjs', 'changelog.d/x.md'], { docs_only: 'false', unitaires: 'false', e2e: 'false' }],
+    [['scripts/wn-outil.mjs', 'docs/decisions/D-999.md'], { docs_only: 'false', unitaires: 'true', e2e: 'false' }],
+    [['scripts/wn-playwright-apt.mjs'], CODE],
+    [['scripts/wn-outil.mjs', 'web/src/a.ts'], CODE],
+    [[], CODE],
+  ];
+  for (const [fichiers, attendu] of cas) {
+    assert.deepEqual(perimetrePour(t, fichiers), attendu, fichiers.join(', ') || 'diff vide');
+  }
+  assert.deepEqual(perimetrePour(t, ['docs/x.md'], { baseConnue: false }), CODE, 'base introuvable : tout est du code');
+});
+
+test('sur `push` de `main`, l’outillage garde l’E2E : ce run déploie la tête', (t) => {
+  const push = { evenement: 'push' };
+  assert.deepEqual(perimetrePour(t, ['scripts/wn-outil.mjs'], push), CODE);
+  assert.deepEqual(perimetrePour(t, ['.claude/hooks/garde.mjs'], push), CODE);
+  assert.deepEqual(perimetrePour(t, ['changelog.d/x.yml'], push), CODE);
+  assert.deepEqual(perimetrePour(t, ['docs/claude/handoffs/x.md'], push), DOC);
+  assert.deepEqual(perimetrePour(t, ['docs/decisions/D-999.md'], push), DOC_LUE);
+});
+
+/**
+ * Les documents que `web/` lit : chemins littéraux (`'docs/…'`, `'../docs/…'`)
+ * et `path.join(…, 'docs', 'a', 'b')`, hors lignes de commentaire. Le
+ * recensement surestime volontiers (un message qui cite un document le compte) :
+ * jouer un test de trop est sans danger, en oublier un ne l'est pas.
+ */
+function documentsLusParWeb() {
+  const litteral = /['"`](?:\.\.\/)*(docs\/[A-Za-z0-9_./-]*)/g;
+  // `'../../docs'` sans barre finale : la racine d'un chemin que la suite
+  // construit. Recensé comme `docs` nu, que le test refuse.
+  // (Un `'docs'` suivi de segments est une jointure, lue ci-dessous ; une
+  // jointure sans segment — coupée en fin de ligne — rend aussi `docs` nu.)
+  const nu = /['"`](?:\.\.\/)+docs['"`]/g;
+  const jointure = /['"]docs['"]((?:\s*,\s*['"][A-Za-z0-9_.-]+['"])*)/g;
+  const trouves = new Set();
+  const parcourir = (dossier) => {
+    for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = path.join(dossier, e.name);
+      if (e.isDirectory()) parcourir(p);
+      else if (/\.(ts|tsx|mjs|js|cjs)$/.test(e.name)) {
+        for (const ligne of fs.readFileSync(p, 'utf8').split('\n')) {
+          if (/^\s*(\/\/|\*|\/\*)/.test(ligne)) continue;
+          for (const m of ligne.matchAll(litteral)) trouves.add(m[1].replace(/\/+$/, ''));
+          if (nu.test(ligne)) trouves.add('docs');
+          nu.lastIndex = 0;
+          for (const m of ligne.matchAll(jointure)) {
+            const segments = [...m[1].matchAll(/['"]([A-Za-z0-9_.-]+)['"]/g)].map((s) => s[1]);
+            trouves.add(['docs', ...segments].join('/'));
+          }
+        }
+      }
+    }
+  };
+  for (const d of ['web/src', 'web/e2e', 'web/prisma', 'web/scripts']) {
+    if (fs.existsSync(path.join(RACINE, d))) parcourir(path.join(RACINE, d));
+  }
+  return [...trouves].sort();
+}
+
+test('chaque document que `web/` lit fait jouer les tests unitaires quand il change seul', (t) => {
+  const documents = documentsLusParWeb();
+  // Un `docs` nu signale un lecteur dont le sous-chemin est construit
+  // (`path.join` sur plusieurs lignes, `'docs/' + nom`, `'../../docs'` puis
+  // une jointure) : ce banc ne peut pas le classer. Écrire le chemin en entier,
+  // ou l'ajouter au motif `lus` et l'expliquer ici.
+  assert.ok(!documents.includes('docs'),
+    'web/ lit sous docs/ par un chemin construit : écrire le chemin lu en entier pour que le périmètre du CI le voie.');
+  // Garde anti-vacuité : le recensement doit au moins retrouver les lectures
+  // connues le 2026-11-13, sinon il ne mesure plus rien.
+  for (const connu of ['docs/decisions', 'docs/FEATURE_FLAGS.md', 'docs/DOSSIER_RGPD.md']) {
+    assert.ok(documents.includes(connu), `recensement : ${connu} n’est plus retrouvé — le motif de lecture a changé`);
+  }
+  const oublies = documents.filter((doc) => {
+    // Un dossier se teste par un fichier qu'il contient.
+    const fichier = /\.[a-z0-9]+$/i.test(doc) ? doc : `${doc}/x.md`;
+    return perimetrePour(t, [fichier]).unitaires !== 'true';
+  });
+  assert.deepEqual(oublies, [],
+    'documents lus par web/ qu’une PR documentaire modifierait sans jouer aucun test : les ajouter au motif `lus` '
+      + 'du périmètre de ci.yml.');
+});
+
+test('`typage-tests` suit la sortie `unitaires`, `e2e` la sortie `e2e`, et `controles` reste sur `docs_only`', () => {
+  const bloc = (nom) => {
+    const debut = SOURCE.indexOf(`\n  ${nom}:\n`);
+    assert.ok(debut >= 0, `ci.yml : job \`${nom}\` introuvable.`);
+    const suite = SOURCE.slice(debut + 1);
+    const fin = suite.slice(1).search(/^  [a-z0-9_-]+:\s*$/m);
+    return fin < 0 ? suite : suite.slice(0, fin + 1);
+  };
+  const conditions = (texte) => [...texte.matchAll(/steps\.scope\.outputs\.([a-z0-9_]+)/g)].map((m) => m[1]);
+  const typage = conditions(bloc('typage-tests'));
+  const e2e = conditions(bloc('e2e'));
+  assert.ok(typage.length >= 8 && typage.every((c) => c === 'unitaires'), `typage-tests : ${typage.join(', ')}`);
+  assert.ok(e2e.length >= 11 && e2e.every((c) => c === 'e2e'), `e2e : ${e2e.join(', ')}`);
+  assert.ok(conditions(bloc('controles')).every((c) => c === 'docs_only'));
+  // Un plafond par job : un run bloqué ne brûle plus six heures de runner.
+  for (const nom of ['controles', 'typage-tests', 'e2e', 'verify']) {
+    assert.match(bloc(nom), /^ {4}timeout-minutes: \d+$/m, `job \`${nom}\` sans timeout-minutes`);
+  }
 });
