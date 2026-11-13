@@ -168,6 +168,17 @@ test('contenu interdit : signalé par champ, la valeur n\'est jamais recopiée',
   assert.match(c.map((x) => x.detail).join(' '), /`ref`.*jeton ou clé/);
   assert.match(c.map((x) => x.detail).join(' '), /`texte`.*adresse e-mail/);
   assert.ok(!JSON.stringify(c).includes(adresse) && !JSON.stringify(c).includes(jeton));
+  // Une valeur citée par une autre règle (`de`, `objet`, `etat`, `file`, `apres`…) est masquée, et le nom d'un
+  // champ, écrit par une autre session, sort assaini et borné.
+  const cles = `x\n\u001b[31m${'y'.repeat(120)}`;
+  const autres = [
+    ...controlerMessages([message({ id: '20260110-1300-a', de: adresse, objet: jeton, etat: adresse })]),
+    ...controlerLots([lot({ file: jeton, etat: adresse, apres: adresse })]),
+    ...controlerMessages([message({ [cles]: adresse })]),
+  ];
+  const sortie = JSON.stringify(autres);
+  assert.ok(autres.length >= 6 && !sortie.includes(adresse) && !sortie.includes(jeton) && !sortie.includes('y'.repeat(61)));
+  assert.ok(autres.every((x) => !/[\u0000-\u001f\u007f-\u009f]/.test(x.detail)));
   const uuid = controlerLots([lot({ motif: 'dossier 0f8fad5b-d9cb-469f-a165-70867728950e' })]);
   assert.deepEqual(regles(uuid, 'avis'), ['contenu']);
   assert.deepEqual(controlerLots([lot({ motif: 'commit 24d8641d8959aa00bb11cc22dd33ee44ff556677' })]), [], 'un sha n\'est pas un identifiant de dossier');

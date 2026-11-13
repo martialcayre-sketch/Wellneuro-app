@@ -62,9 +62,18 @@ export function normaliserBoite(nom) {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Une valeur courte rendue sans caractère de contrôle, tronquée : jamais un texte libre entier. */
+const porteIndice = (v) => INDICES_INTERDITS.some(([, motif]) => motif.test(texte(v)));
+
+/**
+ * Une valeur courte rendue sans caractère de contrôle, tronquée : jamais un
+ * texte libre entier. C'est par elle que passe toute valeur d'une ligne citée
+ * en sortie ; celle qui porte un indice interdit (adresse, jeton, identifiant
+ * technique) est masquée, jamais citée, même tronquée.
+ */
 export function court(v, n = 40) {
-  const s = String(v ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ');
+  const brut = String(v ?? '');
+  if (porteIndice(brut)) return '(masqué)';
+  const s = brut.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ');
   return s.length > n ? `${s.slice(0, n)}…` : s;
 }
 
@@ -109,7 +118,7 @@ function controlerContenu(ligne, r) {
   for (const [chemin, valeur] of chaines(ligne, '')) {
     if (chemin === 'id') continue;
     for (const [nature, motif] of INDICES_INTERDITS) {
-      if (motif.test(valeur)) r.avis(ligne.id, 'contenu', `le champ \`${chemin}\` semble porter : ${nature} — à relire, un registre n'héberge ni donnée patient ni secret`);
+      if (motif.test(valeur)) r.avis(ligne.id, 'contenu', `le champ \`${court(chemin, 60)}\` semble porter : ${nature} — à relire, un registre n'héberge ni donnée patient ni secret`);
     }
   }
 }
@@ -330,7 +339,6 @@ export function lotsSuivants(lots) {
 // reconnues. De `ref`, les seuls renvois `#N` et identifiants datés ; de `de`,
 // le nom ramené à la forme d'une boîte, masqué s'il porte un indice interdit.
 const RE_RENVOIS = /#\d+|\b\d{8}-\d{4}-[a-z0-9]+(?:-[a-z0-9]+)*\b/g;
-const porteIndice = (v) => INDICES_INTERDITS.some(([, motif]) => motif.test(texte(v)));
 function refAffichee(ref) {
   if (vide(ref)) return '';
   const renvois = texte(ref).match(RE_RENVOIS);

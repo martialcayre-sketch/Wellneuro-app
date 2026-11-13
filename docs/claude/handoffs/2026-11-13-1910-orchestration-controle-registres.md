@@ -53,6 +53,9 @@ aucune machine ne les relit.
   - « Texte libre recopié » (levé sur a47f2dce) : corrigé. La boîte rendait `ref` et `de`, deux champs libres ;
     elle ne rend plus, de `ref`, que les renvois `#N` et les identifiants datés (sinon « hors forme »), et de
     `de`, le nom ramené à la forme d'une boîte, masqué s'il porte un indice interdit.
+  - « Valeur libre recopiée » et « Nom de champ non assaini » (levés sur 4e94cb88) : corrigés ensemble, à la
+    source. Toute valeur citée en sortie passe par `court()`, qui masque désormais une valeur portant un indice
+    interdit (adresse, jeton, identifiant technique), même tronquée ; le nom d'un champ y passe aussi, borné.
   - Le message « skip » de CodeRabbit n'est pas une revue : rien à traiter.
 - Écartés de cette PR, à porter dans des lots à part :
   - l'étape `ci.yml` qui jouerait le banc (revue P1, orchestration CI) ;
@@ -93,6 +96,12 @@ aucune machine ne les relit.
   rejoué sur l'arbre fusionné : code 0.
 - Après le correctif « texte libre recopié » : banc 19/19, code 0 (le cas de la boîte porte un jeton, une adresse
   et une référence hors forme) ; `npm run check` : code 0.
+- Seconde fusion de `origin/main` (conflit d'une ligne dans `web/package.json`, la liste des bancs : ligne de main
+  gardée, banc du lot réinséré) puis correctif des valeurs citées : banc 19/19 (le cas « contenu interdit » cite
+  une adresse et un jeton par six autres règles, et une clé de champ piégée) ; `npm run check` : code 0.
+- CI de 4e94cb88 : `typage-tests` rouge sur une erreur non rattrapée née pendant `PatientPreview.test.tsx`
+  (minuteur Radix dans jsdom, tous les tests verts par ailleurs) ; aucun fichier du lot en cause, job relancé puis
+  rendu caduc par la tête suivante.
 - T2 non joué : le lot ne touche ni UI ni API.
 
 ## Problèmes ouverts
