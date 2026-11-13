@@ -554,6 +554,11 @@ test('sur `push` de `main`, l’outillage garde l’E2E : ce run déploie la tê
  */
 function documentsLusParWeb() {
   const litteral = /['"`](?:\.\.\/)*(docs\/[A-Za-z0-9_./-]*)/g;
+  // `'../../docs'` sans barre finale : la racine d'un chemin que la suite
+  // construit. Recensé comme `docs` nu, que le test refuse.
+  // (Un `'docs'` suivi de segments est une jointure, lue ci-dessous ; une
+  // jointure sans segment — coupée en fin de ligne — rend aussi `docs` nu.)
+  const nu = /['"`](?:\.\.\/)+docs['"`]/g;
   const jointure = /['"]docs['"]((?:\s*,\s*['"][A-Za-z0-9_.-]+['"])*)/g;
   const trouves = new Set();
   const parcourir = (dossier) => {
@@ -565,6 +570,8 @@ function documentsLusParWeb() {
         for (const ligne of fs.readFileSync(p, 'utf8').split('\n')) {
           if (/^\s*(\/\/|\*|\/\*)/.test(ligne)) continue;
           for (const m of ligne.matchAll(litteral)) trouves.add(m[1].replace(/\/+$/, ''));
+          if (nu.test(ligne)) trouves.add('docs');
+          nu.lastIndex = 0;
           for (const m of ligne.matchAll(jointure)) {
             const segments = [...m[1].matchAll(/['"]([A-Za-z0-9_.-]+)['"]/g)].map((s) => s[1]);
             trouves.add(['docs', ...segments].join('/'));
@@ -576,11 +583,17 @@ function documentsLusParWeb() {
   for (const d of ['web/src', 'web/e2e', 'web/prisma', 'web/scripts']) {
     if (fs.existsSync(path.join(RACINE, d))) parcourir(path.join(RACINE, d));
   }
-  return [...trouves].filter((c) => c !== 'docs').sort();
+  return [...trouves].sort();
 }
 
 test('chaque document que `web/` lit fait jouer les tests unitaires quand il change seul', (t) => {
   const documents = documentsLusParWeb();
+  // Un `docs` nu signale un lecteur dont le sous-chemin est construit
+  // (`path.join` sur plusieurs lignes, `'docs/' + nom`, `'../../docs'` puis
+  // une jointure) : ce banc ne peut pas le classer. Écrire le chemin en entier,
+  // ou l'ajouter au motif `lus` et l'expliquer ici.
+  assert.ok(!documents.includes('docs'),
+    'web/ lit sous docs/ par un chemin construit : écrire le chemin lu en entier pour que le périmètre du CI le voie.');
   // Garde anti-vacuité : le recensement doit au moins retrouver les lectures
   // connues le 2026-11-13, sinon il ne mesure plus rien.
   for (const connu of ['docs/decisions', 'docs/FEATURE_FLAGS.md', 'docs/DOSSIER_RGPD.md']) {

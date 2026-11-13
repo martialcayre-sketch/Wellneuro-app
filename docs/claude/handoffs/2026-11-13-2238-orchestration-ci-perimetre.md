@@ -15,8 +15,11 @@ Mesures préalables (30 jours) : environ 53 000 minutes par mois. Sur les 300 de
 
 ## Décisions prises
 
-- Aucune D-xxx : le lot ne retire aucun contrôle exigé ni par `verify` ni par une décision. `controles`, `verify` et la
-  protection de branche sont inchangés.
+- Aucune D-xxx : le lot ne retire aucun contrôle exigé ni par `verify` ni par une décision. Les conditions de
+  `controles` et de `verify`, et la protection de branche, sont inchangées ; seul un plafond de durée leur est ajouté.
+- Seconde revue `wn-reviewer` sur 233769eb : GO. Deux mineurs corrigés ensuite : un chemin `docs` construit rougit
+  désormais le recensement au lieu d'y échapper (M1) ; formulation des plafonds (M2). M3 (la route qui lit les
+  décisions n'a pas d'E2E sur une PR de décisions seule) reste noté aux problèmes ouverts.
 - La mesure a trouvé un trou, fermé en priorité sur l'allègement : 57 des 300 dernières PR touchaient une documentation
   que le code lit (décisions, propositions de textes patients, corpus, supports et cadrages de campagne,
   `FEATURE_FLAGS.md`, `DOSSIER_RGPD.md`) en jouant zéro test. Elles jouent désormais `typage-tests` (sortie

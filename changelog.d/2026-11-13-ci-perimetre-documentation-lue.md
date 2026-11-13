@@ -28,5 +28,6 @@ retirer de sûr. La mesure faite pour cela a d'abord trouvé un trou.
 Bilan : en minutes, l'effet net est proche de zéro, voire légèrement
 positif, car les PR de décisions jouent désormais leurs tests. Aucun
 allègement sûr ne change l'ordre de grandeur de la consommation ; le dépôt
-reste public. `verify`, sa protection de branche et `controles` ne
-changent pas.
+reste public. Les conditions de `verify` et de `controles`, et la
+protection de branche, ne changent pas ; seul un plafond de durée leur est
+ajouté.
