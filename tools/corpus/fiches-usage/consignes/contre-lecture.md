@@ -19,6 +19,15 @@ qu'impose le statut d'usage, elle est FIDÈLE même si aucun claim n'établit
 l'usage décisionnel : cet usage vient du cadre signé. Tout autre élément
 qu'elle contient est un fait, jugé comme tel.
 
+L'objet de chaque rubrique, pour juger un débordement : question : la
+question d'usage ; population : la population en clair ;
+preanalytique_contexte : le préanalytique et le contexte requis ;
+resultats_consequences : les résultats possibles et les conséquences
+autorisées ; interpretations : les interprétations permises et interdites ;
+options : les options ; precautions : les précautions ; surveillance_arret :
+la surveillance et le critère d'arrêt ; limites : les limites ;
+argument_preference : l'argument de préférence.
+
 Le libellé d'une hypothèse nomme un état, il n'affirme pas un fait. Le
 cadre signé lui impose sa forme : un état fonctionnel, portant sur un seul
 nutriment, dans le sens bas. Un libellé qui nomme ainsi l'état du nutriment
@@ -40,7 +49,10 @@ Il est INFIDÈLE s'il contient au moins un des défauts suivants :
 - une désignation employée pour affirmer un fait que les claims n'établissent
   pas ;
 - pour une rubrique : un texte qui déborde sur l'objet d'une autre rubrique ;
-- une condition, une limite ou une réserve d'un claim tue ou affaiblie ;
+- une condition, une limite ou une réserve d'un claim tue ou affaiblie,
+  dans un fait que le texte affirme ou dans ce qui relève de l'objet de sa
+  rubrique ; une rubrique « question » composée comme dit plus haut
+  n'omet rien ;
 - un sens déplacé : une association présentée comme une cause, une
   possibilité comme une certitude, une hypothèse comme un diagnostic ;
 - un médicament, une prescription, une donnée de patient ou un exemple de cas ;

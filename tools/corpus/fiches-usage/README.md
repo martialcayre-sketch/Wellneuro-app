@@ -83,7 +83,7 @@ rejoué rend `BROUILLON_INCHANGE`.
 
 ## La consigne versionnée
 
-`versionConsigne` vaut `fiche-usage-v5+<empreinte des deux consignes>`,
+`versionConsigne` vaut `fiche-usage-v6+<empreinte des deux consignes>`,
 épinglée dans `lib/consigne.mjs` et gardée par `lib/consigne.test.mjs`.
 
 Depuis la v2 (`D-501`), le message d'une fiche porte ses cinq axes signés,
@@ -116,6 +116,12 @@ signé, pas comme un fait : le libellé reste fidèle sans claim qui la nomme,
 pourvu qu'il désigne le nutriment et le sens que décrivent les claims. Tout
 autre élément y est un fait. La rédaction d'un libellé lit aussi une réponse
 rendue nue, sur une ligne, sans l'objet JSON demandé (`lireReponseLibelle`).
+
+Depuis la v6 (`D-501` §9), la rubrique « question » s'écrit en une phrase
+interrogative. Aucune phrase ne dit ce que les sources taisent, hors la
+phrase d'absence pour une rubrique non documentée. La rubrique « population »
+ne nomme que la population d'usage. L'objet de chaque rubrique, repris du
+cadrage v3 §3.2, est donné au rédacteur comme au contre-lecteur.
 
 ## Ce que l'outil ne voit pas
 
