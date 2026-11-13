@@ -155,8 +155,32 @@ transmises, agendas du sommeil et alimentaire, observation alimentaire.
 Habillage seulement : `QuestionField` garde sa garde de saisie, les
 questions et les règles restent celles du catalogue actif. Pendant un
 questionnaire : ni rail, ni barre, ni onglets ; le bouton « Menu » selon les
-gardes. **Réception** : brouillons conservés ; reprise après coupure ;
-encart d'urgence et messages de sécurité intacts, mot pour mot.
+gardes. Prototype PAT-4 itération 2 arbitré ; inscription DOC-7 de
+[[D-481]] et [[D-488]], [[D-506]] et [[D-507]]. Préparation détaillée :
+pat4-prealables.md. **Réception** : brouillons conservés et reprise après
+coupure pour les questionnaires ; critère sans objet pour la saisie en
+cours des agendas (Q7a, aucun brouillon ajouté). Encart et message de
+sécurité intacts, mot pour mot ; visibilité amendée par [[D-506]] (Q1b)
+avec les mesures Q11b sur le vrai composant, Chromium et WebKit puis
+téléphone réel, et retour au responsable si le message dépasse la fenêtre.
+T-36 sur les 401 de transmission, y compris les deux agendas ;
+retour par l'entrée et Mon parcours, pas directement au questionnaire.
+Textes T-40 à T-44 et T-48 acceptés dans [[D-488]], DOC-7.
+Aucun décor (Q10a). Le passage du brouillon alimentaire sur l'appareil
+reste dans le lot Q5b séparé, pas dans PAT-4.
+
+### Q5b — Brouillon d'observation alimentaire sur l'appareil
+
+Lot distinct de PAT-4, décidé par [[D-507]], fiche
+lot-q5b-brouillon-appareil.md. localStorage, 30 jours depuis la dernière
+écriture, effacement des seules notes dont l'envoi est confirmé, purge
+avertie après déconnexion confirmée ([[D-244]]). T-49 et T-50 acceptés
+dans [[D-488]], DOC-7 ; dossier RGPD et information patient à livrer
+avec le comportement. T-45 sans objet ; aucun code de ce lot dans PAT-4.
+**Réception** : reprise après fermeture d'onglet, expiration au prochain
+accès, aucune perte sur erreur, conservation des notes non transmises,
+aucune recréation de la copie purgée par effet, purge des deux stockages
+à la déconnexion et concordance de l'information publiée.
 
 ### PAT-5 — Lectures et espaces reçus
 
