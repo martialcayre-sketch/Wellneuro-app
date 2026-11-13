@@ -1745,9 +1745,10 @@ export function ClinicalRuntimeSection({
 
   // Validation explicite « pour diffusion » de la version active relue. Jamais
   // d'envoi patient : l'approbation ne fait qu'attester le contenu.
-  // Un refus de registre en attente de confirmation laisse lui aussi la saisie
-  // hors du serveur : le constructeur a remis son témoin à zéro au clic.
-  const modificationsLocalesEnAttente = brouillonHorsServeur || confirmationRegistre !== null;
+  // Le constructeur compte aussi le refus de registre en attente de
+  // confirmation, qu'il reçoit : lui seul sait si le praticien a abandonné sa
+  // saisie depuis (« Réinitialiser »).
+  const modificationsLocalesEnAttente = brouillonHorsServeur;
   const approveForDiffusion = async () => {
     if (fixture || !readyDecisionCardId || modificationsLocalesEnAttente) return;
     const activeVersion = versions.find((version) => version.isActive);

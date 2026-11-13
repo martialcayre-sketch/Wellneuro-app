@@ -380,10 +380,25 @@ export function ProtocolMiniBuilder({
   }
 
   // CE QUI N'EST PAS SUR LE SERVEUR (PRA-3b Q14 a). Un enregistrement en vol,
-  // refusé (`error`) ou devancé par une autre version (`stale`) laisse la saisie
-  // locale hors du serveur, même si `editedSinceSave` est retombé au clic.
+  // refusé (`error`), devancé par une autre version (`stale`) ou arrêté sur un
+  // refus de registre à confirmer laisse la saisie locale hors du serveur, même
+  // si `editedSinceSave` est retombé au clic.
+  //
+  // LE REFUS SE LÈVE AUSSI QUAND LE PRATICIEN ABANDONNE SA SAISIE (revue
+  // PR-Agent de #2087) : `saveState` et le refus de registre sont tenus par le
+  // cockpit, et « Réinitialiser » ne les touche pas. Sans ce témoin, la
+  // validation restait suspendue sur une saisie qui n'existait plus, jusqu'au
+  // prochain enregistrement réussi. Tout nouvel état d'enregistrement le remet
+  // à faux : un refus neuf suspend de nouveau.
+  const [refusAbandonne, setRefusAbandonne] = useState(false);
+  const [saveStateVu, setSaveStateVu] = useState(saveState);
+  if (saveState !== saveStateVu) {
+    setSaveStateVu(saveState);
+    setRefusAbandonne(false);
+  }
+  const refusEnSuspens = saveState === 'error' || saveState === 'stale' || confirmationRegistre !== null;
   const modificationsEnAttente = editedSinceSave
-    || saveState === 'saving' || saveState === 'error' || saveState === 'stale';
+    || saveState === 'saving' || (refusEnSuspens && !refusAbandonne);
   useEffect(() => {
     onModificationsLocales?.(modificationsEnAttente);
   }, [modificationsEnAttente, onModificationsLocales]);
@@ -608,6 +623,7 @@ export function ProtocolMiniBuilder({
     setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel(''); setLoadJustification('');
     setReviewed(false); setMessage(null); setErreur(null); setNextActionId(1); setEditedSinceSave(false);
     setVideALaMain(true);
+    setRefusAbandonne(true);
   };
 
   // Validations locales communes à « Marquer comme relu » et « Enregistrer la
@@ -1074,9 +1090,10 @@ export function ProtocolMiniBuilder({
                   {/* LES TROIS PLANS GRANDISSENT AVEC LEUR TEXTE (PRA-3b Q13 a) :
                       un plan de trois cents caractères se lit en entier au lieu
                       de défiler dans une ligne. Ils restent d'UNE ligne logique,
-                      comme le champ d'une ligne qu'ils remplacent : un saut de
-                      ligne collé ou tapé est retiré, le contenu servi au patient
-                      ne change pas de forme. */}
+                      comme le champ d'une ligne qu'ils remplacent : Entrée
+                      n'insère rien, et un saut de ligne collé devient une
+                      espace — retiré sec, il soudait les mots (revue PR-Agent
+                      de #2087). Le contenu servi ne change pas de forme. */}
                   {(['idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {
                     const labels = { idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
                     return (
@@ -1086,7 +1103,8 @@ export function ProtocolMiniBuilder({
                             aria-label={`${labels[field]} de l’action ${index + 1}`}
                             rows={1}
                             value={action[field]}
-                            onChange={event => updateAction(action.actionId, { [field]: event.target.value.replace(/[\r\n]+/g, '') })}
+                            onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault(); }}
+                            onChange={event => updateAction(action.actionId, { [field]: event.target.value.replace(/[ \t]*[\r\n]+[ \t]*/g, ' ') })}
                             className={CHAMP_EXTENSIBLE}
                           />
                         </div>

@@ -1432,12 +1432,17 @@ describe('ProtocolMiniBuilder — un protocole chargé reste lisible (PRA-3b Q13
     expect(ui.getByLabelText('Raison d’être').parentElement?.getAttribute('data-valeur')).toBe('Raison en vigueur');
   });
 
-  it('un plan reste d’une ligne logique : un saut de ligne collé est retiré', () => {
+  it('un plan reste d’une ligne logique : un saut de ligne collé devient une espace, Entrée n’insère rien', () => {
     const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
     const ui = within(container);
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
-    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Marcher\nau soleil\r\nle matin' } });
-    expect((ui.getByLabelText('Plan idéal de l’action 1') as HTMLTextAreaElement).value).toBe('Marcherau soleille matin');
+    const plan = ui.getByLabelText('Plan idéal de l’action 1') as HTMLTextAreaElement;
+    fireEvent.change(plan, { target: { value: 'Marcher\nau soleil \r\n\n le matin' } });
+    // Revue PR-Agent de #2087 : retiré sec, le saut soudait les mots.
+    expect(plan.value).toBe('Marcher au soleil le matin');
+    // `fireEvent.keyDown` rend faux quand l'action par défaut est empêchée.
+    expect(fireEvent.keyDown(plan, { key: 'Enter' })).toBe(false);
+    expect(fireEvent.keyDown(plan, { key: 'a' })).toBe(true);
   });
 
   it('« Actions » est un titre de niveau 4, et nomme le sommaire d’ancres dès deux actions', () => {
@@ -1509,5 +1514,45 @@ describe('ProtocolMiniBuilder — la saisie locale hors du serveur (PRA-3b Q14 a
       rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSave} onModificationsLocales={signal} saveState={refus} />);
       expect(signal).toHaveBeenLastCalledWith(true);
     }
+  });
+
+  // Revue PR-Agent de #2087 : `saveState` et le refus de registre sont tenus
+  // par le cockpit. Sans ce banc, « Réinitialiser » laissait la validation
+  // suspendue sur une saisie qui n'existait plus.
+  it('« Réinitialiser » après un refus lève la suspension ; un refus neuf la repose', () => {
+    const signal = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { container, rerender } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="error" />,
+    );
+    const ui = within(container);
+    expect(signal).toHaveBeenLastCalledWith(true);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.click(ui.getByRole('button', { name: 'Réinitialiser' }));
+    expect(signal).toHaveBeenLastCalledWith(false);
+
+    // Un nouvel enregistrement, refusé à son tour : la suspension revient.
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="saving" />);
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} onModificationsLocales={signal} saveState="stale" />);
+    expect(signal).toHaveBeenLastCalledWith(true);
+    confirmSpy.mockRestore();
+  });
+
+  it('un refus de registre en attente suspend, et « Réinitialiser » le lève', () => {
+    const signal = vi.fn();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={vi.fn()}
+        onModificationsLocales={signal}
+        confirmationRegistre={{ message: 'Terme à reformuler.', jeton: 'j' }}
+        onConfirmerRegistre={vi.fn()}
+      />,
+    );
+    expect(signal).toHaveBeenLastCalledWith(true);
+    fireEvent.click(within(container).getByRole('button', { name: 'Réinitialiser' }));
+    expect(signal).toHaveBeenLastCalledWith(false);
+    confirmSpy.mockRestore();
   });
 });
