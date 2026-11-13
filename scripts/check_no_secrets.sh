@@ -167,6 +167,10 @@ check_pattern "private_key"         "private_key${SEP}-----BEGIN"
 # `web/test-results/`, ignorées, ne sont pas visées. Formes : `trace.zip`,
 # `…-trace.zip`, et les pièces d'une trace dézippée (`*.trace`, `*.network`).
 # Un `git` en panne sort en 2, comme plus haut.
+# Ne couvre pas : une trace renommée. Le rapport HTML de Playwright range ses
+# pièces sous `playwright-report/data/<sha1>.zip`, un nom que rien ne
+# distingue d'une archive ordinaire ; `web/playwright-report/` est ignoré par
+# Git (`web/.gitignore`), et c'est cette exclusion qui tient, pas ce contrôle.
 TRACES="$(mktemp)" || { echo "ERREUR: mktemp a échoué — contrôle NON CONCLUANT." >&2; exit 2; }
 trap 'rm -f "${LISTE:-}" "$TRACES"' EXIT
 if [[ "$MODE" == "staged" ]]; then
@@ -178,12 +182,15 @@ else
 fi
 MOTIF_TRACE='(^|[-_.])trace\.zip$|\.(trace|network)$'
 traces_trouvees=""
+# Comparaison insensible à la casse sans `tr` : deux processus par fichier
+# suivi coûtaient une dizaine de secondes en mode complet.
+shopt -s nocasematch
 while IFS= read -r -d '' fichier; do
-  base="$(printf '%s' "${fichier##*/}" | tr '[:upper:]' '[:lower:]')"
-  if [[ "$base" =~ $MOTIF_TRACE ]]; then
+  if [[ "${fichier##*/}" =~ $MOTIF_TRACE ]]; then
     traces_trouvees+="$fichier"$'\n'
   fi
 done < "$TRACES"
+shopt -u nocasematch
 if [[ -n "$traces_trouvees" ]]; then
   printf '%s' "$traces_trouvees"
   echo "ERREUR: trace Playwright suivie par Git (porte un cookie de session) — la retirer de l'index ; reproduire sa forme dans une fixture écrite à la main." >&2

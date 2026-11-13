@@ -14,6 +14,9 @@
 //
 // La lecture ignore les commentaires SQL et le contenu des chaînes : un
 // commentaire qui cite `btrim(x)` pour expliquer le piège n'est pas un appel.
+// Depuis le lot `autonomie-pieges-restes`, la famille entière est vue :
+// `ltrim(x)`, `rtrim(x)` et `trim(x)` sans caractères ont le même défaut.
+// Aucune migration n'en contenait : leur gel est à zéro.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -40,7 +43,10 @@ const GEL = {
 /**
  * Remplace commentaires et littéraux de chaîne par des blancs de même
  * longueur : ce qui reste est la structure SQL. Gère `--`, `/* *\/`, `'…'`
- * (apostrophe doublée), `E'…'` (antislash d'échappement) et `$tag$…$tag$`.
+ * (apostrophe doublée), `E'…'` (antislash d'échappement) et `$tag$…$tag$`,
+ * lu comme du SQL après `AS`, `DO [LANGUAGE x]` ou `EXECUTE`, masqué sinon.
+ * Limite : `EXECUTE format($q$…$q$, …)` n'est pas lu (le littéral suit
+ * `format(`) ; aucune migration n'a cette forme.
  */
 export function masquerSql(sql) {
   let sortie = "";
@@ -61,16 +67,34 @@ export function masquerSql(sql) {
       sortie += blanc(sql.slice(i, j));
       i = j;
     } else if (c === "$") {
-      const m = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
+      // Collé à un identifiant (`a$b$c`), un `$` en fait partie : pas de
+      // délimiteur, sinon la suite du fichier serait effacée jusqu'au prochain.
+      const m = /[A-Za-z0-9_$]/.test(sql[i - 1] ?? "") ? null : /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i));
       if (!m) {
         sortie += c;
         i += 1;
         continue;
       }
-      // Le corps d'une fonction `$$ … $$` est du SQL : un trigger peut y
-      // appeler `btrim`. On garde le corps, on ne masque que les balises.
-      sortie += blanc(m[0]);
-      i += m[0].length;
+      // Une chaîne `$tag$ … $tag$` est du SQL quand elle suit `AS` (corps de
+      // fonction, de trigger), `DO [LANGUAGE x]` ou `EXECUTE` (SQL dynamique,
+      // exécuté) : elle est lue, masquée à son tour (ses propres chaînes,
+      // commentaires et `$q$` imbriqués). Ailleurs (`COMMENT … IS $$…$$`,
+      // argument `btrim($$a,b$$)`), c'est un littéral, rendu comme `'…'` : sa
+      // virgule n'est pas un second argument, un `btrim(x)` qu'il cite n'est pas
+      // un appel, et il reste visible comme argument (`trim($$ $$ from t)`).
+      const ouverture = i + m[0].length;
+      const fermeture = sql.indexOf(m[0], ouverture);
+      const fin = fermeture === -1 ? n : fermeture + m[0].length;
+      const corps = /(?:\bAS|\bDO(?:\s+LANGUAGE\s+\w+)?|\bEXECUTE)\s*$/i.test(sortie);
+      if (corps) {
+        const finContenu = fermeture === -1 ? n : fermeture;
+        sortie += blanc(m[0]) + masquerSql(sql.slice(ouverture, finContenu));
+        if (fermeture !== -1) sortie += blanc(m[0]);
+      } else {
+        const brut = sql.slice(i, fin);
+        sortie += brut.length >= 2 ? "'" + blanc(brut.slice(1, -1)) + "'" : blanc(brut);
+      }
+      i = fin;
     } else if (c === "'") {
       const echappe = i > 0 && /[eE]/.test(sql[i - 1]) && !/[A-Za-z0-9_]/.test(sql[i - 2] ?? "");
       let j = i + 1;
@@ -100,23 +124,39 @@ export function masquerSql(sql) {
   return sortie;
 }
 
-/** Nombre d'appels `btrim(…)` à un seul argument dans un texte SQL. */
+/**
+ * Nombre d'appels de la famille `trim` sans jeu de caractères, donc qui ne
+ * retirent que l'espace ASCII : `btrim(x)`, `ltrim(x)`, `rtrim(x)`, et
+ * `trim(x)`, `trim(both from x)`. `trim(both E' \t' from x)` et
+ * `trim(x, ' \t')` nomment leurs caractères et ne comptent pas.
+ */
 export function compterBtrimUnArgument(sql) {
   const s = masquerSql(sql);
-  const re = /\bbtrim\s*\(/gi;
+  const re = /\b(btrim|ltrim|rtrim|trim)\s*\(/gi;
   let compte = 0;
   let m;
   while ((m = re.exec(s))) {
+    // `plat` : le contenu au premier niveau, les parenthèses imbriquées vidées.
     let profondeur = 1;
-    let virgules = 0;
+    let plat = "";
     let j = m.index + m[0].length;
     for (; j < s.length && profondeur > 0; j += 1) {
       const c = s[j];
-      if (c === "(") profondeur += 1;
-      else if (c === ")") profondeur -= 1;
-      else if (c === "," && profondeur === 1) virgules += 1;
+      if (c === "(") {
+        profondeur += 1;
+        if (profondeur === 2) plat += "(";
+      } else if (c === ")") {
+        profondeur -= 1;
+        if (profondeur === 1) plat += ")";
+      } else if (profondeur === 1) plat += c;
     }
-    if (profondeur === 0 && virgules === 0) compte += 1;
+    if (profondeur !== 0) continue;
+    let caracteres = plat.includes(",");
+    if (!caracteres && m[1].toLowerCase() === "trim") {
+      const [avant, ...apres] = plat.split(/\bfrom\b/i);
+      caracteres = apres.length > 0 && avant.replace(/\b(?:leading|trailing|both)\b/gi, "").trim() !== "";
+    }
+    if (!caracteres) compte += 1;
   }
   return compte;
 }
@@ -152,6 +192,46 @@ test("parseur : le corps d'une fonction $$ … $$ est lu", () => {
   assert.equal(compterBtrimUnArgument(sql), 1);
   const sql2 = "CREATE FUNCTION f() RETURNS trigger AS $corps$ BEGIN IF btrim(NEW.t, ' \t') = '' THEN RAISE; END IF; END $corps$ LANGUAGE plpgsql;";
   assert.equal(compterBtrimUnArgument(sql2), 0);
+});
+
+// P2 de wn-reviewer et de Codex sur #2074.
+test("parseur : trim, ltrim et rtrim sans caractères comptent", () => {
+  assert.equal(compterBtrimUnArgument("CHECK (ltrim(t) <> '')"), 1);
+  assert.equal(compterBtrimUnArgument("CHECK (RTRIM(t) <> '')"), 1);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(t) <> '')"), 1);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(both from t) <> '')"), 1);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(leading from lower(t)) <> '')"), 1);
+  assert.equal(compterBtrimUnArgument("CHECK (ltrim(t, E' \\t') <> '')"), 0);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(both E' \\t\\r\\n' from t) <> '')"), 0);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(both chr(9) from t) <> '')"), 0);
+  assert.equal(compterBtrimUnArgument("CHECK (trim(t, ' \t') <> '')"), 0);
+});
+
+test("parseur : un littéral dollar hors corps est une chaîne", () => {
+  // Sa virgule n'est pas un second argument…
+  assert.equal(compterBtrimUnArgument("SELECT btrim($$a,b$$);"), 1);
+  // … et le texte qu'il porte n'est pas un appel.
+  assert.equal(compterBtrimUnArgument("COMMENT ON COLUMN t.c IS $$btrim(x)$$;"), 0);
+  // Une apostrophe dans un littéral dollar ne masque pas la suite du fichier.
+  assert.equal(compterBtrimUnArgument("COMMENT ON TABLE t IS $$l'arbitrage$$;\nALTER TABLE t ADD CHECK (btrim(c) <> '');"), 1);
+});
+
+test("parseur : corps après AS, DO [LANGUAGE x] et EXECUTE lus ; littéraux imbriqués non", () => {
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN PERFORM btrim(x); END $$;"), 1);
+  assert.equal(compterBtrimUnArgument("DO LANGUAGE plpgsql $$ BEGIN PERFORM btrim(x); END $$;"), 1);
+  // Le SQL dynamique est exécuté : il est lu.
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN EXECUTE $q$ALTER TABLE t ADD CHECK (btrim(c) <> '')$q$; END $$;"), 1);
+  assert.equal(compterBtrimUnArgument("DO $$ BEGIN RAISE NOTICE $m$btrim(x)$m$; END $$;"), 0);
+  assert.equal(compterBtrimUnArgument("CREATE FUNCTION f() RETURNS text AS $f$ SELECT 'it''s' || btrim(x) $f$ LANGUAGE sql;"), 1);
+});
+
+test("parseur : un littéral dollar reste un argument visible", () => {
+  assert.equal(compterBtrimUnArgument("CHECK (trim(both $$ \t$$ from t) <> '')"), 0);
+  assert.equal(compterBtrimUnArgument("CHECK (trim($$ $$ from t) <> '')"), 0);
+});
+
+test("parseur : un $ collé à un identifiant n'ouvre pas de littéral", () => {
+  assert.equal(compterBtrimUnArgument("SELECT a$b$c FROM t; ALTER TABLE t ADD CHECK (btrim(c) <> '');"), 1);
 });
 
 test("migrations : aucun btrim à un argument hors du gel, aucun compte gelé en hausse", () => {
