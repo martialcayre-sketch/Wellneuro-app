@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { authOptions, profilPraticienAutorise } from './auth';
-import { contexteResolution, designe, importsResolus, type ContexteResolution } from './bio-parcours/resolutionImports';
+import { atteintLePaquet, contexteResolution, designe, importsResolus, type ContexteResolution } from './bio-parcours/resolutionImports';
 
 // Garde structurelle — séparation des rôles patient / praticien (IDP2 LOT-03b).
 //
@@ -66,12 +66,12 @@ const SURFACES_PATIENT = [...RACINES_PATIENT.flatMap(fichiersSources), ...FICHIE
 // par mot (`getServerSession`, `authOptions`, le nom du cookie) restent sur le
 // texte : elles ne sont pas des imports.
 let contexte: ContexteResolution | undefined;
-const importsVers = (chemin: string, motif: RegExp, cibles: readonly string[], source?: string) =>
+const importsVers = (chemin: string, motif: RegExp, cibles: readonly string[], source?: string, paquet?: string) =>
   importsResolus(`web/src/${chemin}`, (contexte ??= contexteResolution()), source)
-    .filter(i => designe(i, motif, cibles))
+    .filter(i => designe(i, motif, cibles) || (paquet !== undefined && atteintLePaquet(i, paquet)))
     .map(i => i.specificateur);
 const NEXT_AUTH = /^next-auth(\/|$)/;
-const CIBLES_NEXT_AUTH = ['web/node_modules/next-auth/'];
+const CIBLES_NEXT_AUTH: readonly string[] = [];
 const AUTH_PRATICIEN = /\/auth$/;
 const CIBLES_AUTH_PRATICIEN = ['web/src/lib/auth.ts'];
 
@@ -97,7 +97,7 @@ describe('séparation des rôles — NextAuth est réservé aux praticiens', () 
 
   it.each(SURFACES_PATIENT)('%s n’importe pas NextAuth', chemin => {
     const source = readFileSync(join(RACINE, chemin), 'utf8');
-    expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source)).toEqual([]);
+    expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source, 'next-auth')).toEqual([]);
     expect(source).not.toMatch(/\bgetServerSession\b/);
     expect(source).not.toMatch(/\bnext-auth\.session-token\b/);
   });
@@ -120,7 +120,7 @@ describe('séparation des rôles — NextAuth est réservé aux praticiens', () 
       "import 'next-auth';",
       'const m = await import(chemin);',
     ]) {
-      expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source), source).toHaveLength(1);
+      expect(importsVers(chemin, NEXT_AUTH, CIBLES_NEXT_AUTH, source, 'next-auth'), source).toHaveLength(1);
     }
     for (const source of [
       "import { authOptions as o } from '../auth';",

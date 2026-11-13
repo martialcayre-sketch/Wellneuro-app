@@ -100,6 +100,11 @@ export interface ImportSyntaxique {
    * effacés à la compilation, ils ne chargent rien. Tout le reste est un
    * import de VALEUR — un import nommé sans `type`, même s'il ne sert qu'en
    * type, est compté comme valeur (lecture prudente).
+   *
+   * VALABLE TANT QUE `web/tsconfig.json` ne pose ni `verbatimModuleSyntax` ni
+   * `preserveValueImports` (verrou de `resolutionImports.guard.test.ts`) :
+   * sous l'une ou l'autre, `import { type A } from 'x'` devient
+   * `import 'x'`, qui CHARGE le module (`wn-reviewer` sur ce lot).
    */
   typeSeul: boolean;
 }

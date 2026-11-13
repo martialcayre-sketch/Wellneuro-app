@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { estUnTest, fichiersSource, lire } from './balayageSources';
-import { contexteResolution, designe, importsResolus, type ContexteResolution, type ImportResolu } from './resolutionImports';
+import {
+  atteintLePaquet,
+  contexteResolution,
+  designe,
+  importsResolus,
+  type ContexteResolution,
+  type ImportResolu,
+} from './resolutionImports';
 
 // BP-01 ([[D-266]] §7) — DC-03 est bloquante pour toute sortie LLM du
 // programme : chaque module du périmètre biologie qui appelle un LLM importe
@@ -51,7 +58,9 @@ const CLIENT_LLM = 'web/src/lib/anthropic.ts';
 const VERIFICATEUR = 'web/src/lib/bio-parcours/verifierDc03.ts';
 
 function appelleUnLlm(imports: readonly ImportResolu[]): boolean {
-  return imports.some(i => designe(i, /^@\/lib\/anthropic$|(^|\/)anthropic$|^@anthropic-ai\//, [CLIENT_LLM, 'web/node_modules/@anthropic-ai/']));
+  return imports.some(
+    i => designe(i, /^@\/lib\/anthropic$|(^|\/)anthropic$|^@anthropic-ai\//, [CLIENT_LLM]) || atteintLePaquet(i, '@anthropic-ai'),
+  );
 }
 
 function dansLePerimetre(chemin: string, imports: readonly ImportResolu[]): boolean {

@@ -184,6 +184,15 @@ describe('résolution des imports — configurations verrouillées (bancs de gar
     expect(Object.keys(config.compilerOptions).sort()).toEqual(CLES_TSCONFIG_ADMISES);
     expect(config.compilerOptions.paths).toEqual({ '@/*': ['./src/*'] });
     expect(config.compilerOptions.moduleResolution).toBe('bundler');
+    // `typeSeul` (`balayageSources.ts`) suppose que l'import nommé tout en
+    // `type` est EFFACÉ : sous `verbatimModuleSyntax` ou `preserveValueImports`,
+    // il devient un import latéral qui charge le module, et les bancs qui
+    // exemptent les types (bundle client, écritures, réserve D-465, sites IA)
+    // verraient vert un chargement réel. Ces options ne s'admettent qu'après
+    // avoir retiré cette exemption (`wn-reviewer` sur bp17-extension-bancs-garde).
+    for (const option of ['verbatimModuleSyntax', 'preserveValueImports', 'importsNotUsedAsValues']) {
+      expect(config.compilerOptions, option).not.toHaveProperty(option);
+    }
 
     // `next.config.mjs` : empreinte du fichier entier. Une branche conditionnelle
     // (`NODE_ENV`, variable d'environnement) n'est vue par aucune évaluation.

@@ -207,5 +207,16 @@ describe('BioFlow publié — la frontière du domaine (D-306, J3-bioflow)', () 
     ]);
     expect(masques.derogations).toEqual(['web/src/lib/neuf/e.ts', 'web/src/lib/neuf/f.ts', 'web/src/lib/neuf/g.ts']);
     expect(masques.lecteurs).toEqual(['web/src/lib/neuf/h.ts']);
+    // Un alias `paths` sous `@/` qui mène à un fichier du domaine sans le nommer : dérogation ;
+    // le même alias vers l'entrée publiée : lecteur.
+    const contexte = contexteResolution();
+    const alias = (cible: string) => ({
+      ...contexte,
+      cache: undefined,
+      options: { ...contexte.options, paths: { ...contexte.options.paths, '@/bio': [cible] } },
+    });
+    const source = [{ chemin: 'web/src/lib/neuf/i.ts', source: 'import { x } from "@/bio";' }];
+    expect(frontiere(source, alias('./src/lib/biology-library/catalogue.ts')).derogations).toEqual(['web/src/lib/neuf/i.ts']);
+    expect(frontiere(source, alias('./src/lib/biology-library/publie.ts')).lecteurs).toEqual(['web/src/lib/neuf/i.ts']);
   });
 });

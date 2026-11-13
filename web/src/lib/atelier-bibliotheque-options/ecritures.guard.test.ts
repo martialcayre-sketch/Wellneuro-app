@@ -103,6 +103,9 @@ describe('Bibliothèque des options — qui écrit et qui lit le texte (D-480 §
       expect(importeLaLecture(neuf, source), source).toBe(true);
     }
     expect(importeLaLecture(neuf, "import type { AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
+    // Tous les noms en `type` : effacé à la compilation (tant que `verbatimModuleSyntax` reste absent, verrou commun).
+    expect(importeLaLecture(neuf, "import { type AtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(false);
+    expect(importeLaLecture(neuf, "import { type AtelierOptions, lireAtelierOptions } from '@/lib/atelier-bibliotheque-options/lecture';")).toBe(true);
     expect(importeLaLecture(neuf, "import { x } from '@/lib/atelier-bibliotheque-options/etat';")).toBe(false);
   });
 });

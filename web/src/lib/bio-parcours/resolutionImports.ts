@@ -73,6 +73,11 @@ export function fichierAtteint(
  * hors de tout verrou de configuration. Un spécificateur nu doit donc nommer
  * une dépendance déclarée de `web/package.json` ou un module natif de Node ;
  * sinon il ferme le verrou, quel que soit l'environnement.
+ *
+ * SI UN BANC ROUGIT SUR UN NOM NU LÉGITIME (`server-only`, un paquet de types
+ * comme `geojson`) : DÉCLARER la dépendance dans `web/package.json`, jamais
+ * assouplir cette règle — tous les bancs qui résolvent la partagent, et un
+ * nom nu non déclaré est exactement ce qu'un `NODE_PATH` servirait.
  */
 export function dependancesDeclarees(racine: string = RACINE): Set<string> {
   const paquet = JSON.parse(readFileSync(join(racine, 'web/package.json'), 'utf8')) as Record<
@@ -194,6 +199,16 @@ export function hoteEnMemoire(sources: ReadonlyMap<string, string>): ModuleResol
  */
 export function designe(i: ImportResolu, motif: RegExp, cibles: readonly string[]): boolean {
   return i.indetermine || motif.test(i.specificateur) || atteintSous(i.atteint, cibles);
+}
+
+/**
+ * L'import atteint-il le paquet `nom` installé ? Par le chemin canonicalisé,
+ * où qu'il soit : le contrôle de fusion pose `web/node_modules` en lien
+ * symbolique, et le fichier atteint sort alors du dépôt (`../…`) — une cible
+ * `web/node_modules/<nom>/` ne correspondrait plus (`wn-reviewer` sur ce lot).
+ */
+export function atteintLePaquet(i: ImportResolu, nom: string): boolean {
+  return i.atteint !== null && new RegExp(`(^|/)node_modules/${nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`).test(i.atteint);
 }
 
 /**

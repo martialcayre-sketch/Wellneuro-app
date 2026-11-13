@@ -6,6 +6,7 @@ import { CLAIMS_SOUS_RESERVE_INDICATION } from '@/lib/fiches-usage/reserveIndica
 import { INDICATIONS_BIOLOGIE_V1 } from '@/lib/biology-library/indicationsBiologieV1';
 import { CORPUS_CLINIQUE_SYNTHESE_V1 } from '@/lib/clinical/corpusSyntheseV1';
 import {
+  atteintLePaquet,
   contexteResolution,
   designe,
   hoteEnMemoire,
@@ -155,12 +156,14 @@ function lecteursAtteints(
  * texte (motif historique), OU un import qui NOMME ou ATTEINT le client du dépôt
  * ou le SDK, lu par le parseur et résolu (commentaire glissé, concaténation,
  * alias, lien symbolique). */
-const CIBLES_MODELE = ['web/src/lib/anthropic.ts', 'web/node_modules/@anthropic-ai/'];
+const CIBLES_MODELE = ['web/src/lib/anthropic.ts'];
 function appelleLeModele(cle: string, source: string, contexte: ContexteResolution): boolean {
   return (
     APPEL_MODELE.test(source) ||
     importsResolus(`web/src/${cle}`, contexte, source).some(
-      (i) => !i.indetermine && designe(i, /^@\/lib\/anthropic$|(^|\/)anthropic$|^@anthropic-ai\//, CIBLES_MODELE),
+      (i) =>
+        !i.indetermine &&
+        (designe(i, /^@\/lib\/anthropic$|(^|\/)anthropic$|^@anthropic-ai\//, CIBLES_MODELE) || atteintLePaquet(i, '@anthropic-ai')),
     )
   );
 }

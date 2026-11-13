@@ -168,6 +168,11 @@ function racinesMonteesDansLePortail(depart: readonly string[] = fichiersSources
         racines.add(INDETERMINE);
         continue;
       }
+      // Un `@/components/x/…` qui ne se résout pas (un asset) garde sa racine, comme avant.
+      if (i.atteint === null && i.specificateur.startsWith('@/components/')) {
+        racines.add(i.specificateur.split('/').slice(1, 3).join('/'));
+        continue;
+      }
       if (!i.atteint?.startsWith(COMPOSANTS)) continue;
       racines.add(`components/${i.atteint.slice(COMPOSANTS.length).split('/')[0]}`);
       const cible = join(RACINE_DEPOT, i.atteint);

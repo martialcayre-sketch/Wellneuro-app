@@ -104,6 +104,9 @@ describe('Positions d’expert — qui écrit (D-439)', () => {
       expect(importeLaLecture(neuf, source), source).toBe(true);
     }
     expect(importeLaLecture(neuf, "import type { AtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(false);
+    // Tous les noms en `type` : effacé à la compilation (tant que `verbatimModuleSyntax` reste absent, verrou commun).
+    expect(importeLaLecture(neuf, "import { type AtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(false);
+    expect(importeLaLecture(neuf, "import { type AtelierPositions, lireAtelierPositions } from '@/lib/positions-expert/lecture';")).toBe(true);
     expect(importeLaLecture(neuf, "import { x } from '@/lib/positions-expert/vocabulaire';")).toBe(false);
     // Le parseur et le résolveur lisent tout `web/src` : délai élargi.
   }, 120_000);

@@ -179,7 +179,8 @@ function modulesDeValeur(chemin: string, source: string): { noms: string[]; inde
     .filter(i => !i.typeSeul)
     .map(i => {
       const paquet = i.atteint?.match(/(?:^|\/)node_modules\/((?:@[^/]+\/)?[^/]+)/)?.[1];
-      return { noms: paquet ? [i.specificateur, `${paquet}/`] : [i.specificateur], indetermine: i.indetermine };
+      // Avec et sans barre finale : `^@anthropic-ai\/` comme `^ai$` doivent le reconnaître.
+      return { noms: paquet ? [i.specificateur, paquet, `${paquet}/`] : [i.specificateur], indetermine: i.indetermine };
     });
 }
 
