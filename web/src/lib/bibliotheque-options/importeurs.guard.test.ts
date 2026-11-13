@@ -59,7 +59,9 @@ const importeLaBibliotheque = (specificateur: string) =>
  * au dossier par un spécificateur qui ne le nomme pas (`"@options"`). Chaque
  * spécificateur est donc RÉSOLU comme le fait TypeScript, avec les options de
  * `web/tsconfig.json`, et le fichier atteint est comparé au dossier (casse
- * ignorée, liens symboliques suivis). Next reprend `paths` et `baseUrl` dans
+ * ignorée). UN LIEN SYMBOLIQUE n'est PAS suivi pour un import relatif :
+ * TypeScript garde le chemin du lien (constaté) — détour routé vers la PR 4
+ * (contre-passe Codex n° 7, arbitrage du 2026-11-13). Next reprend `paths` et `baseUrl` dans
  * webpack ; ses alias propres, que TypeScript ne voit pas, sont verrouillés
  * plus bas.
  */

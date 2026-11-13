@@ -263,7 +263,8 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   Le routage vers la PR 4 est refusé : l'invariant §8 est exigé ici.
   - P1-4, corrigé : chaque spécificateur est résolu par `resolveModuleName`
     de TypeScript, avec les options de `web/tsconfig.json`, et le fichier
-    atteint est comparé au dossier (casse ignorée, liens symboliques suivis).
+    atteint est comparé au dossier (casse ignorée ; un lien symbolique n'est
+    pas suivi pour un import relatif, voir la contre-passe n° 7).
     Cela couvre `paths`, `baseUrl` et les `imports` de `package.json`.
     Les alias propres à Next (`webpack`, `resolveAlias`) échappent à
     TypeScript : un verrou exige que `next.config.mjs` reste l'unique
@@ -355,6 +356,18 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
       arrêt. Si elle bloque encore, le reste part à la PR 4, avec un
       verdict.
     - Validations : bancs du dossier verts ; T1 complet à 0.
+  - Contre-passe Codex n° 7 sur `85d17707` : **BLOQUER** sur un lien
+    symbolique hors du dossier. Avec `web/src/lib/detour ->
+    bibliotheque-options`, l'import `./detour/vocabulaire` passe :
+    TypeScript garde le chemin du lien pour un import relatif, alors que le
+    bundler charge la bibliothèque.
+    - Constaté en bac à sable : `resolvedFileName` vaut
+      `…/detour/vocabulaire.ts`. L'affirmation « liens symboliques suivis »
+      du banc et de ce handoff était donc fausse ; elle est corrigée.
+    - **Routé vers la PR 4**, par l'arbitrage du responsable ci-dessus.
+      Correctif pressenti : canonicaliser le fichier atteint (`realpath`)
+      avant la comparaison, avec une contre-épreuve par lien réel.
+    - Constats des passes n° 2 à n° 6 : fermés selon cette même passe.
   - Contre-épreuve en mémoire : `@options` par `paths`, un joker
     `opt/*`, `baseUrl` et `#options` par un `package.json` réécrit dans
     l'hôte de résolution. Le motif seul rate `@options`, la résolution le
@@ -391,8 +404,11 @@ accepté (`20261111-1131-c`). Aucun ne touche au clinique.
   garde de consommation. Sont routés au même endroit l'outillage de
   `scripts/` et `tools/`, `module.hot` et les fichiers ignorés ou de test
   importés par la production (`wn-reviewer`). Les détours par la
-  configuration sont fermés ici pour la bibliothèque (P1-4) ; la PR 4
-  n'aura qu'à reprendre le résolveur pour les autres bancs.
+  configuration sont fermés ici pour la bibliothèque (P1-4). Reste un
+  détour, routé vers la PR 4 : un lien symbolique hors du dossier, atteint
+  par un import relatif (contre-passe Codex n° 7, avec `realpath` à
+  poser). La PR 4 reprendra aussi le résolveur, les verrous de
+  configuration et la règle des noms nus pour les autres bancs.
 - Une re-signature des fiches d'usage qui RETIRE une hypothèse citée fait
   passer l'état à `non_signee` (structure incohérente), et non à `a_relire`.
   Ce sens est sûr, mais l'affichage du cockpit (PR 6) devra le distinguer
