@@ -118,12 +118,24 @@ function arretsSuspendus(orientation: Actif): {
   });
 }
 
+/**
+ * Une fenêtre servie est `null` (aucune fenêtre valide) ou un nombre ENTIER
+ * POSITIF de jours — le critère même de `fenetreValide` (`orientationRulesV1`),
+ * repris ici sans borne nouvelle. `NaN`, `Infinity`, zéro ou un négatif
+ * feraient écrire au modèle « dépasse sa fenêtre d'arrêt de NaN jours » : la
+ * passation est ignorée comme malformée (contre-revue Codex, [[D-505]]).
+ */
+function fenetreServieValide(fenetreJours: unknown): boolean {
+  return fenetreJours === null
+    || (typeof fenetreJours === 'number' && Number.isInteger(fenetreJours) && fenetreJours > 0);
+}
+
 function passationValide(p: unknown): p is PassationPerimee {
   const passation = p as Partial<PassationPerimee> | null;
   return chaine(passation?.idQuestionnaire)
     && chaine(passation.dateReponse)
     && !Number.isNaN(Date.parse(passation.dateReponse))
-    && (passation.fenetreJours === null || typeof passation.fenetreJours === 'number')
+    && fenetreServieValide(passation.fenetreJours)
     && (passation.dateeApresMaintenant === undefined || passation.dateeApresMaintenant === true);
 }
 

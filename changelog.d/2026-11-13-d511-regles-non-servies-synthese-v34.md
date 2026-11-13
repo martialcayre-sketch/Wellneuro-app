@@ -16,3 +16,5 @@ patron de D-471. Aucun seuil, aucune migration ; `release-db` sans migration au 
 - Trace : `donneesEntree.blocReglesNonServies`, identifiants et motifs des trois listes, deux booléens.
 - Sept constats routés par les revues de #2025 : journalisation de la lecture partagée, mocks, bancs croisés,
   contrat de `lectureOrientation`, deux compléments à D-495.
+- Contre-revue Codex P0 (D-505, mode `revue`) : aucun P0 ni P1 ; un P2 corrigé (fenêtre servie non entière ou non
+  positive ignorée comme malformée).

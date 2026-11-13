@@ -159,6 +159,15 @@ describe('construireBlocReglesNonServies — corpus illisible et absences', () =
     expect(bloc).toBe('');
     expect(construireBlocReglesNonServies(actif({ reglesNonAppliquees: 'pas une liste' }), false)).toBe('');
   });
+
+  it('défensif : une fenêtre qui n’est pas un entier positif est malformée, jamais écrite (contre-revue Codex)', () => {
+    for (const fenetreJours of [Number.NaN, Number.POSITIVE_INFINITY, 0, -7, 2.5, '30']) {
+      const bloc = construireBlocReglesNonServies(actif({
+        arretsNonEvalues: [{ stopRuleId: 'STOP-STR', passations: [{ ...PSS_PERIME, fenetreJours }] }],
+      }), false);
+      expect(bloc, String(fenetreJours)).toBe('');
+    }
+  });
 });
 
 describe('traceReglesNonServies — ce qui ne part pas au modèle (D-511 §5)', () => {
