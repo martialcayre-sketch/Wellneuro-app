@@ -1301,6 +1301,65 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.reglesNonAppliquees).toEqual(nonAppliquees);
   });
 
+  // ── [[D-511]] §6.7 — bancs croisés t71b × t78 (revues de #2025) ────────────
+  //
+  // Une règle d'arrêt PÉRIMÉE (fenêtre d'extinction de 7 jours, PSQI vieux de
+  // 20 jours) qui vise la recommandation d'une règle d'orientation NON
+  // APPLIQUÉE : la recommandation n'existe pas, l'arrêt n'avait rien à éteindre,
+  // il n'est donc pas dit non évalué ([[D-500]] §4). Et corpus illisible, la
+  // forme rendue est inactive : elle ne porte aucune liste, `arretsNonEvalues`
+  // compris — le bloc de la synthèse ne peut rien en tirer ([[D-511]] §2).
+  function armerLArretPerime() {
+    signerLArret();
+    armerLesContradictions();
+    mockArretRegles.length = 0;
+    mockArretRegles.push({
+      ...ARRET_DRAPEAU,
+      id: 'STOP-TEST-FENETRE',
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_SOM_01', operateur: '>=', valeur: 0 }],
+    });
+    mockFenetresArret.Q_SOM_01 = { delaiJours: 7 };
+  }
+
+  it('D-511 : arrêt périmé visant la recommandation d’une règle non appliquée — `arretsNonEvalues` vide', async () => {
+    armerLArretPerime();
+    mockAdmissibilite.nonAdmissibles.add('WN-CL-0000-010::v1.0');
+    try {
+      const resultat = await evaluerOrientationPourPatient('PAT-1');
+      if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+      expect(resultat.recommandations).toEqual([]);
+      expect(resultat.reglesNonAppliquees.map(r => r.regleId)).toEqual(['R-TEST-DRAPEAU']);
+      expect(resultat.arretsNonEvalues).toEqual([]);
+    } finally {
+      delete mockFenetresArret.Q_SOM_01;
+    }
+  });
+
+  it('D-511 : contre-épreuve — la même règle appliquée, l’arrêt périmé est dit non évalué', async () => {
+    armerLArretPerime();
+    try {
+      const resultat = await evaluerOrientationPourPatient('PAT-1');
+      if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+      expect(resultat.arretsNonEvalues.map(a => a.stopRuleId)).toEqual(['STOP-TEST-FENETRE']);
+    } finally {
+      delete mockFenetresArret.Q_SOM_01;
+    }
+  });
+
+  it('D-511 : corpus illisible avec un arrêt périmé — la forme rendue ne porte pas `arretsNonEvalues`', async () => {
+    armerLArretPerime();
+    mockAdmissibilite.illisiblePour.add('orientationAdmissible');
+    try {
+      const resultat = await evaluerOrientationPourPatient('PAT-1');
+      expect(resultat.actif).toBe(false);
+      expect(resultat).not.toHaveProperty('arretsNonEvalues');
+      expect(resultat).not.toHaveProperty('arretsSuspendus');
+      expect(resultat).not.toHaveProperty('reglesNonAppliquees');
+    } finally {
+      delete mockFenetresArret.Q_SOM_01;
+    }
+  });
+
   it('D-491 : une règle d\'arrêt suspendue ne touche pas l\'exclusion des instruments déjà mesurés (elle ne cite aucun claim)', async () => {
     signerLArret();
     armerLesContradictions();

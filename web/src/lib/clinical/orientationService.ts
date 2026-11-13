@@ -431,6 +431,14 @@ export function scoresRecalculesPourRaisonnement(
  * l'appelant ([[D-495]] §4). La synthèse la partage avec la convergence, pour
  * que les deux calculs portent sur la même table filtrée — `null` compris
  * (corpus illisible). Absente (`undefined`), le service la fait lui-même.
+ *
+ * CONTRAT ([[D-511]] §6.4), NON CONTRÔLÉ ICI — un seul appelant le passe
+ * (`generation.ts`), qui le rappelle au point d'appel. L'objet passé est celui
+ * que `reglesOrientationAdmissibles()` a rendu DANS LA MÊME REQUÊTE et qui a
+ * servi à la convergence : jamais une lecture d'une autre requête, ni une valeur
+ * reconstruite ou filtrée par l'appelant. Le service le croit sur parole — une
+ * table plus large ferait proposer une règle dont un claim n'est pas
+ * admissible. `null` vaut corpus illisible et rend l'orientation inactive.
  */
 export async function evaluerOrientationPourPatient(
   idPatient: string,
