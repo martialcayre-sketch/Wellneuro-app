@@ -487,8 +487,9 @@ export function OrientationPanel({
    * Les règles d'ARRÊT non évaluées — [[D-500]] §4. Une règle d'arrêt dont un
    * déclencheur lit une passation plus ancienne que la fenêtre d'extinction de
    * son instrument, ou un instrument sans fenêtre d'extinction, ne retire
-   * aucune exploration. Deux phrases distinctes, textes du responsable :
-   * « passation trop ancienne » et « fenêtre non définie ». Le moteur ne la
+   * aucune exploration. Trois phrases distinctes, textes du responsable :
+   * « passation trop ancienne », « fenêtre non définie » et, depuis
+   * [[D-508]] §2, « passation datée après la date du jour ». Le moteur ne la
    * rapporte que si elle avait une exploration à retirer. HORS de tout repli,
    * et RENDU DANS LES DEUX BRANCHES — même motif que les règles suspendues.
    */
@@ -505,6 +506,11 @@ export function OrientationPanel({
               <span className="font-medium">{`Règle d’arrêt non évaluée : ${arret.stopRuleId}.`}</span>
               {arret.passations.map(passation => {
                 const titre = CATALOGUE_DEFINITIONS[passation.idQuestionnaire]?.titre ?? passation.idQuestionnaire;
+                // Troisième cas, texte du responsable ([[D-508]] §2) : une
+                // passation datée après la date du jour n'éteint pas.
+                if (passation.dateeApresMaintenant) {
+                  return ` La passation de ${titre} est datée du ${jourLisible(passation.dateReponse)}, après la date du jour.`;
+                }
                 return passation.fenetreJours === null
                   ? ` Aucune fenêtre de fraîcheur n’est définie pour ${titre}.`
                   : ` La passation de ${titre} du ${jourLisible(passation.dateReponse)} dépasse sa fenêtre de ${passation.fenetreJours} jours.`;
