@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { Consultation } from '@/app/api/praticien/consultations/route';
 import {
   RenseignementsPatientPanel,
@@ -219,5 +219,33 @@ describe('phraseEtatRenseignements — la ligne qui reste visible sans ouvrir le
       createdAt: '2026-09-10T09:00:00.000Z',
     };
     expect(phraseEtatRenseignements([enCours])).toContain('anamnèse déposée le 10/09/2026');
+  });
+});
+
+describe('RenseignementsPatientPanel — PRA-3b, P06', () => {
+  it('« Réessayer » (T-17) relit la seule lecture, puis rend le focus au contenu relu', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ unavailable: true, reason: 'exception' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ consultations: [CONSULTATION_REMPLIE] }) });
+    const { container } = render(<Harnais />);
+    within(container).getByRole('button', { name: 'Charger' }).click();
+
+    const alerte = await within(container).findByRole('alert');
+    fireEvent.click(within(alerte).getByRole('button', { name: 'Réessayer' }));
+
+    await waitFor(() => expect(container.textContent).toContain('Je dors mal depuis six mois.'));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(within(container).queryByRole('alert')).toBeNull();
+    // Le bouton a disparu : le focus revient au contenu relu, pas au corps.
+    expect(document.activeElement?.textContent).toContain('Je dors mal depuis six mois.');
+  });
+
+  it('les sections sont des h3 sous le titre h2 du tiroir (Q2 a) : aucun niveau sauté', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ consultations: [CONSULTATION_REMPLIE] }) });
+    const { container } = render(<Harnais />);
+    within(container).getByRole('button', { name: 'Charger' }).click();
+
+    await waitFor(() => expect(within(container).getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(0));
+    expect(within(container).queryAllByRole('heading', { level: 4 })).toHaveLength(0);
   });
 });

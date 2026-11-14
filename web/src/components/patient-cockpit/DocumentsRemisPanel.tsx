@@ -48,7 +48,8 @@ export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="text-base font-semibold text-foreground">Documents remis</h3>
+      {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
+      <h4 className="text-base font-semibold text-foreground">Documents remis</h4>
 
       {etat.statut === 'chargement' && <p className="mt-2 text-sm text-muted-foreground">Chargement…</p>}
 
@@ -59,7 +60,7 @@ export function DocumentsRemisPanel({ idPatient }: { idPatient: string }) {
           <button
             type="button"
             onClick={() => void charger()}
-            className="min-h-9 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="min-h-11 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             Réessayer la lecture des documents remis
           </button>

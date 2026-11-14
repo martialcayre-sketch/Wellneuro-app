@@ -45,8 +45,10 @@ function libelleMotif(motif: string | null): string {
   return motif && motif in LIBELLES_MOTIF_RETRAIT ? LIBELLES_MOTIF_RETRAIT[motif as MotifRetraitDocument] : '';
 }
 
+// Gestes de ligne à 44 px (PRA-3b, P31), tous bordés : aucun plein.
+// `inline-flex` : le lien « Ouvrir le document » porte la même classe.
 const bouton =
-  'min-h-9 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50';
+  'inline-flex min-h-11 items-center rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50';
 
 function LigneDocument({
   idPatient,
@@ -140,7 +142,7 @@ function LigneDocument({
               value={categorie}
               disabled={occupe}
               onChange={e => setCategorie(e.target.value as CategorieDocument)}
-              className="min-h-9 rounded-lg border border-border bg-surface px-2 text-xs"
+              className="min-h-11 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               {CATEGORIES_DOCUMENT.map(c => (
                 <option key={c} value={c}>
@@ -161,7 +163,7 @@ function LigneDocument({
           <fieldset className="flex flex-wrap items-center gap-2 text-xs text-foreground" disabled={occupe}>
             <legend className="sr-only">Motif du retrait</legend>
             {MOTIFS_RETRAIT_DOCUMENT.map(m => (
-              <label key={m} className="flex items-center gap-1">
+              <label key={m} className="flex min-h-11 items-center gap-1">
                 <input
                   type="radio"
                   name={`motif-${document.id}`}
@@ -233,7 +235,8 @@ export function DocumentsDeposesPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h3 className="text-base font-semibold text-foreground">Documents déposés par le patient</h3>
+      {/* h4 sous la phase « Patient » (h3), PRA-3b Q2 a. */}
+      <h4 className="text-base font-semibold text-foreground">Documents déposés par le patient</h4>
 
       {/* Une lecture en échec ne se rend jamais comme une liste vide. */}
       {etat.statut === 'erreur' && (

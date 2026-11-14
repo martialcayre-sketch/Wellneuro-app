@@ -781,6 +781,11 @@ export function FichePatientPanel({
   // la déclenche s'il est ouvert depuis une autre phase.
   const renseignements = useRenseignementsPatient(idPatient);
   const { etat: etatRenseignements, charger: chargerRenseignements } = renseignements;
+  const ligneRenseignementsRef = useRef<HTMLDivElement>(null);
+  const relireRenseignements = useCallback(async () => {
+    await chargerRenseignements();
+    ligneRenseignementsRef.current?.focus();
+  }, [chargerRenseignements]);
   useEffect(() => {
     if (phaseActive === 'patient' && etatRenseignements === 'repos') void chargerRenseignements();
   }, [phaseActive, etatRenseignements, chargerRenseignements]);
@@ -1927,6 +1932,7 @@ export function FichePatientPanel({
                 key={dossier.idPatient}
                 patient={dossier}
                 onEnregistre={chargerPassations}
+                niveauTitre="h4"
               />
               <div className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1997,12 +2003,27 @@ export function FichePatientPanel({
 
               Une lecture en échec ne dit JAMAIS « aucun renseignement » : elle
               le dit, et le dit comme une erreur. */}
-          <div className="rounded-xl border border-border bg-surface p-4">
+          <div
+            ref={ligneRenseignementsRef}
+            tabIndex={-1}
+            className="rounded-xl border border-border bg-surface p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
             {etatRenseignements === 'erreur' ? (
-              <p role="alert" className="text-base text-status-warning">
-                {renseignements.erreur} Ce n’est pas une absence : ce dossier peut porter une fiche
-                signalétique et une anamnèse.
-              </p>
+              <div role="alert" className="flex flex-wrap items-center gap-3">
+                <p className="min-w-0 text-base text-status-warning">
+                  {renseignements.erreur} Ce n’est pas une absence : ce dossier peut porter une fiche
+                  signalétique et une anamnèse.
+                </p>
+                {/* « Réessayer » (T-17, PRA-3b) relit les seuls renseignements,
+                    puis rend le focus à la ligne relue. */}
+                <button
+                  type="button"
+                  onClick={() => void relireRenseignements()}
+                  className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  Réessayer
+                </button>
+              </div>
             ) : etatRenseignements === 'chargee' ? (
               <p className="text-base text-muted-foreground">
                 {phraseEtatRenseignements(renseignements.consultations)}{' '}
@@ -2037,7 +2058,7 @@ export function FichePatientPanel({
                     onClick={() => onDebloquer(a.idAssignation)}
                     disabled={suiviClos || deverrouillageId === a.idAssignation}
                     aria-describedby={suiviClos ? `motif-clos-${a.idAssignation}` : undefined}
-                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-status-warning text-white disabled:opacity-60"
+                    className="min-h-11 shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium border border-accent text-solar-ink hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
                   </button>
@@ -2077,7 +2098,7 @@ export function FichePatientPanel({
                     onClick={() => onDebloquer(a.idAssignation)}
                     disabled={suiviClos || deverrouillageId === a.idAssignation}
                     aria-describedby={suiviClos ? `motif-clos-${a.idAssignation}` : undefined}
-                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-accent text-solar-ink hover:bg-accent/10 disabled:opacity-60"
+                    className="min-h-11 shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium border border-accent text-solar-ink hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
                   </button>
@@ -2096,7 +2117,7 @@ export function FichePatientPanel({
               <button
                 type="button"
                 onClick={() => void chargerEchues()}
-                className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="ml-auto min-h-11 shrink-0 rounded-lg border border-accent px-3 py-1 text-sm font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 Réessayer la lecture des questionnaires échus
               </button>
